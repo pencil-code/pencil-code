@@ -24,7 +24,7 @@
   public :: initiate_isendrcv_shockbdry, finalize_isendrcv_shockbdry
   public :: initiate_shearing, finalize_shearing
 
-  public :: transp
+  public :: transp,transp_xy
 
 ! Radiation ray routines
   public :: radboundary_xy_recv,radboundary_xy_send

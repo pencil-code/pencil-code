@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.332 2006-10-06 15:27:48 brandenb Exp $
+! $Id: magnetic.f90,v 1.333 2006-10-06 17:08:22 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -207,7 +207,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.332 2006-10-06 15:27:48 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.333 2006-10-06 17:08:22 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -419,11 +419,9 @@ module Magnetic
          case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
-         case('cosysinz'); call cosy_sinz(amplaa(j),f,iaa,ky_aa(j),kz_aa(j))
          case('magnetogram'); call mdi_init(f)
          case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('crazy', '5'); call crazy(amplaa(j),f,iaa)
-         case('robertsflow'); call robertsflow(amplaa(j),f,iaa)
          case('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,xx,kx_aa(j))
          case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
          case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,xx,yy,rmode)   
@@ -2817,26 +2815,26 @@ module Magnetic
 !
 !  pontential field condition
 !
-      use Fourier, only: fourier_transform_other
+      use Fourier, only: fourier_transform_xy_parallel,fourier_transform_other
+      use Mpicomm, only: transp_xy
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 
-      real, dimension (nx,ny) :: kx,ky,kappa,kappa1
+      real, dimension (nx,ny,iax:iay) :: kk
+      real, dimension (nx,ny) :: kappa,kappa1
       real, dimension (nx,ny) :: aa_re,aa_im,az_re,az_im,daadz_re,daadz_im
       integer :: i,j
 !
 !  define wave vector
 !
-      kx = spread(cshift((/(i-nx/2,i=0,nx-1)/),+nx/2),2,ny)
-      ky = spread(cshift((/(i-ny/2,i=0,ny-1)/),+ny/2),1,nx)
+      kk(:,:,iax) = spread(kx_fft                    ,2,ny)
+      kk(:,:,iay) = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
 !
 !  calculate 1/k^2, zero mean
 !
-      kappa = sqrt(kx**2+ky**2)
-      kappa(1,1) = 1.0
-      kappa1 = 1.0/kappa
-      kappa1(1,1) = 0.0
+      kappa = sqrt(kk(:,:,iax)**2+kk(:,:,iay)**2); kappa(1,1) = 1.0
+      kappa1 = 1.0/kappa; kappa1(1,1) = 0.0
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
@@ -2849,42 +2847,56 @@ module Magnetic
         az_re = 0.0
         az_im = 0.0
 
-        do i=iax,iaz
+        do i=iax,iay
 
           aa_re = f(l1:l2,m1:m2,n1,i)
           aa_im = 0.0
 
-          call fourier_transform_other(aa_re,aa_im)
+          call fourier_transform_xy_parallel(aa_re,aa_im)
+          daadz_re = kappa*aa_re
+          daadz_im = kappa*aa_im
+          call fourier_transform_xy_parallel(daadz_re,daadz_im,linv=.true.)
 
-          if (i==iax.or.i==iay) then
-            daadz_re = -kappa*aa_re
-            daadz_im = -kappa*aa_im
-            ! Compute az from ax and ay to ensure grad div A = 0
-            ! on the boundary
-            az_re = az_re - merge(kx,ky,i==iax)*aa_im  ! Scaled with kappa
-            az_im = az_im + merge(kx,ky,i==iax)*aa_re  ! Scaled with kappa
-          endif
-
-          if (i==iaz) then
-            daadz_re = -az_re
-            daadz_im = -az_im
-          endif
-
-          call fourier_transform_other(daadz_re,daadz_im,linv=.true.)
-
-          ! Set first derivative by filling the ghost zones
           do j=1,nghost
-            f(l1:l2,m1:m2,n1-j,i) = f(l1:l2,m1:m2,n1+j,i) + 2*j*dz*daadz_re
+            f(l1:l2,m1:m2,n1-j,i) = f(l1:l2,m1:m2,n1+j,i) - 2*j*dz*daadz_re
           enddo
 
+          az_re = az_re + kk(:,:,i)*aa_im  ! Scaled with kappa
+          az_im = az_im - kk(:,:,i)*aa_re  ! Scaled with kappa
+
+        enddo
+
+        daadz_re = az_re
+        daadz_im = az_im
+
+        call fourier_transform_xy_parallel(daadz_re,daadz_im,linv=.true.)
+
+        do j=1,nghost
+          f(l1:l2,m1:m2,n1-j,iaz) = f(l1:l2,m1:m2,n1+j,iaz) - 2*j*dz*daadz_re
         enddo
 
         az_re = kappa1*az_re  ! Rescale with kappa
         az_im = kappa1*az_im  ! Rescale with kappa
 
-        call fourier_transform_other(az_re,az_im,linv=.true.)
+        call fourier_transform_xy_parallel(az_re,az_im,linv=.true.)
 
         f(l1:l2,m1:m2,n1,iaz) = az_re
+!
+!  Make sure *all* ghost zones are set
+!  Tobi: I hope there is a more compact way of doing this...
+!
+        do i=1,nghost
+          f(l1-i,m1:m2,n1,iaz) = f(l2+1-i,m1:m2 ,n1,iaz)
+          f(l2+i,m1:m2,n1,iaz) = f(l1-1+i,m1:m2 ,n1,iaz)
+          f(:   ,m1-i ,n1,iaz) = f(:     ,m2+1-i,n1,iaz)
+          f(:   ,m2+i ,n1,iaz) = f(:     ,m1-1+i,n1,iaz)
+          do j=1,nghost
+            f(l1-i,m1:m2,n1-j,iax:iaz) = f(l2+1-i,m1:m2 ,n1-j,iax:iaz)
+            f(l2+i,m1:m2,n1-j,iax:iaz) = f(l1-1+i,m1:m2 ,n1-j,iax:iaz)
+            f(:   ,m1-i ,n1-j,iax:iaz) = f(:     ,m2+1-i,n1-j,iax:iaz)
+            f(:   ,m2+i ,n1-j,iax:iaz) = f(:     ,m1-1+i,n1-j,iax:iaz)
+          enddo
+        enddo
 
 !
 !  pontential field condition at the top
@@ -2894,42 +2906,56 @@ module Magnetic
         az_re = 0.0
         az_im = 0.0
 
-        do i=iax,iaz
+        do i=iax,iay
 
           aa_re = f(l1:l2,m1:m2,n2,i)
           aa_im = 0.0
 
-          call fourier_transform_other(aa_re,aa_im)
+          call fourier_transform_xy_parallel(aa_re,aa_im)
+          daadz_re = -kappa*aa_re
+          daadz_im = -kappa*aa_im
+          call fourier_transform_xy_parallel(daadz_re,daadz_im,linv=.true.)
 
-          if (i==iax.or.i==iay) then
-            daadz_re = -kappa*aa_re
-            daadz_im = -kappa*aa_im
-            ! Compute az from ax and ay to ensure grad div A = 0
-            ! on the boundary
-            az_re = az_re - merge(kx,ky,i==iax)*aa_im  ! Scaled with kappa
-            az_im = az_im + merge(kx,ky,i==iax)*aa_re  ! Scaled with kappa
-          endif
-
-          if (i==iaz) then
-            daadz_re = -az_re
-            daadz_im = -az_im
-          endif
-
-          call fourier_transform_other(daadz_re,daadz_im,linv=.true.)
-
-          ! Set first derivative by filling the ghost zones
           do j=1,nghost
             f(l1:l2,m1:m2,n2+j,i) = f(l1:l2,m1:m2,n2-j,i) + 2*j*dz*daadz_re
           enddo
 
+          az_re = az_re - kk(:,:,i)*aa_im  ! Scaled with kappa
+          az_im = az_im + kk(:,:,i)*aa_re  ! Scaled with kappa
+
         enddo
 
-        az_re = kappa1*az_re  ! Rescale with kappa
-        az_im = kappa1*az_im  ! Rescale with kappa
+        daadz_re = -az_re
+        daadz_im = -az_im
 
-        call fourier_transform_other(az_re,az_im,linv=.true.)
+        call fourier_transform_xy_parallel(daadz_re,daadz_im,linv=.true.)
+
+        do j=1,nghost
+          f(l1:l2,m1:m2,n2+j,i) = f(l1:l2,m1:m2,n2-j,i) + 2*j*dz*daadz_re
+        enddo
+
+        az_re = kappa1*az_re
+        az_im = kappa1*az_im
+
+        call fourier_transform_xy_parallel(az_re,az_im,linv=.true.)
 
         f(l1:l2,m1:m2,n2,iaz) = az_re
+!
+!  Make sure *all* ghost zones are set
+!  Tobi: I hope there is a more compact way of doing this...
+!
+        do i=1,nghost
+          f(l1-i,m1:m2,n2,iaz) = f(l2+1-i,m1:m2 ,n2,iaz)
+          f(l2+i,m1:m2,n2,iaz) = f(l1-1+i,m1:m2 ,n2,iaz)
+          f(:   ,m1-i ,n2,iaz) = f(:     ,m2+1-i,n2,iaz)
+          f(:   ,m2+i ,n2,iaz) = f(:     ,m1-1+i,n2,iaz)
+          do j=1,nghost
+            f(l1-i,m1:m2,n2+j,iax:iaz) = f(l2+1-i,m1:m2 ,n2+j,iax:iaz)
+            f(l2+i,m1:m2,n2+j,iax:iaz) = f(l1-1+i,m1:m2 ,n2+j,iax:iaz)
+            f(:   ,m1-i ,n2+j,iax:iaz) = f(:     ,m2+1-i,n2+j,iax:iaz)
+            f(:   ,m2+i ,n2+j,iax:iaz) = f(:     ,m1-1+i,n2+j,iax:iaz)
+          enddo
+        enddo
 
       case default
 

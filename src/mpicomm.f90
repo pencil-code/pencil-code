@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.190 2006-10-05 15:42:24 theine Exp $
+! $Id: mpicomm.f90,v 1.191 2006-10-06 17:08:22 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2067,5 +2067,116 @@ module Mpicomm
       call mpibarrier()
 !
     endsubroutine transp
+!***********************************************************************
+    subroutine transp_xy(a)
+!
+!  Doing the transpose of information distributed on several processors
+!  Used for doing FFTs in the y and z directions.
+!  This routine is presently restricted to the case nxgrid=nygrid (if var=y)
+!  and nygrid=nzgrid (if var=z)
+!
+!  03-sep-02/nils: coded
+!  26-oct-02/axel: comments added
+!   6-jun-03/axel: works now also in 2-D (need only nxgrid=nygrid)
+!   5-oct-06/tobi: generalized to nxgrid = n*nygrid
+!
+! TODO: Implement nxgrid = n*nzgrid
+!
+      real, dimension(nx,ny), intent(inout) :: a
+!
+      real, dimension(ny,ny) :: send_buf_y, recv_buf_y, tmp
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer :: sendc_y,recvc_y,px
+      integer :: ytag=101,partner,ierr
+      integer :: m,n,ibox,iy
+
+      if (mod(nxgrid,nygrid)/=0) then
+        print*,'transp: nxgrid needs to be an integer multiple of '//&
+               'nygrid for var==y'
+        call stop_it('Inconsistency: mod(nxgrid,nygrid)/=0')
+      endif
+
+!
+!  Calculate the size of buffers.
+!  Buffers used for the y-transpose have the same size in y and z.
+
+      sendc_y=ny**2
+      recvc_y=ny**2
+!
+!  Send information to different processors (x-y transpose)
+!  Divide x-range in as many intervals as we have processors in y.
+!  The index px counts through all of them; partner is the index of the
+!  processor we need to communicate with. Thus, px is the ipy of partner,
+!  but at the same time the x index of the given block.
+!
+!  Example: ipy=1, ipz=0, then partner=0,2,3, ..., nprocy-1.
+!
+!
+!        ... |
+!          3 |  D  E  F  /
+!          2 |  B  C  /  F'
+!  ipy=    1 |  A  /  C' E'
+!          0 |  /  A' B' D'
+!            +--------------
+!        px=    0  1  2  3 ..
+!
+
+!        ipy
+!         ^
+!  C D    |
+!  A B    |      --> px
+!
+!  if ipy=1,px=0, then exchange block A with A' on partner=0
+!  if ipy=1,px=2, then exchange block C' with C on partner=2
+!
+!  if nxgrid is an integer multiple of nygrid, we divide the whole domain
+!  into nxgrid/nygrid boxes (indexed by ibox below) of unit aspect ratio
+!  (grid point wise) and only transpose within those boxes.
+!
+!  The following communication patterns is kind of self-regulated. It
+!  avoids deadlock, because there will always be at least one matching
+!  pair of processors; the others will have to wait until their partner
+!  posts the corresponding request.
+!    Doing send and recv together for a given pair of processors
+!  (although in an order that avoids deadlocking) allows us to get away
+!  with only send_buf and recv_buf as buffers
+!
+      do px=0,nprocy-1
+        do ibox=0,nxgrid/nygrid-1
+          if (px/=ipy) then
+            partner=px+ipz*nprocy ! = iproc + (px-ipy)
+            iy=(ibox*nprocy+px)*ny
+            send_buf_y=a(iy+1:iy+ny,:)
+            if (px<ipy) then      ! above diagonal: send first, receive then
+              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+            elseif (px>ipy) then  ! below diagonal: receive first, send then
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
+            endif
+            a(iy+1:iy+ny,:)=recv_buf_y
+          endif
+        enddo
+      enddo
+!
+!  Transposing the received data (x-y transpose)
+!  Example:
+!
+!  |12 13 | 14 15|      | 6  7 | 14 15|      | 3  7 | 11 15|
+!  | 8  9 | 10 11|      | 2  3 | 10 11|      | 2  6 | 10 14|
+!  |------+------|  ->  |------+------|  ->  |------+------|
+!  | 4  5 |  6  7|      | 4  5 | 12 13|      | 1  5 |  9 13|
+!  | 0  1 |  2  3|      | 0  1 |  8  9|      | 0  4 |  8 12|
+!     original          2x2 blocks         each block
+!                       transposed         transposed
+!
+      do px=0,nprocy-1
+        do ibox=0,nxgrid/nygrid-1
+          iy=(ibox*nprocy+px)*ny
+          tmp=transpose(a(iy+1:iy+ny,:)); a(iy+1:iy+ny,:)=tmp
+        enddo
+      enddo
+
+    endsubroutine transp_xy
 !***********************************************************************
 endmodule Mpicomm
