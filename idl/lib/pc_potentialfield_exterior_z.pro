@@ -1,5 +1,5 @@
-;$Id: pc_potentialfield_exterior_z.pro,v 1.1 2006-10-06 08:08:11 brandenb Exp $
-PRO pc_potentialfield_exterior_z,aa,aaa=aaa,plo=plo
+;$Id: pc_potentialfield_exterior_z.pro,v 1.2 2006-10-06 15:24:47 brandenb Exp $
+PRO pc_potentialfield_exterior_z,aa,aaa=aaa,zzz=zzz,plo=plo
 ;
 ;  calculate potential field in the exterior in the z-direction
 ;
@@ -68,7 +68,7 @@ endfor
 ;
 if keyword_set(plo) then begin
   x=grid.x
-  contour,reform(aaa(*,22,*,1)),x,zzz,nlev=30
+  contour,reform(aaa(*,3,*,1)),x,zzz,nlev=30
   oplot,x,x-x+.5,col=122
   oplot,x,x-x-.5,col=122
 endif
