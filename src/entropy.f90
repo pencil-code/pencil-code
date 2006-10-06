@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.433 2006-10-04 14:51:53 bingert Exp $
+! $Id: entropy.f90,v 1.434 2006-10-06 19:05:58 wlyra Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -24,7 +24,7 @@ module Entropy
   use Messages
   use Interstellar
   use Viscosity
-  use EquationOfState, only: gamma, gamma1, cs20, cs2top, cs2bot, &
+  use EquationOfState, only: gamma, gamma1, gamma11, cs20, cs2top, cs2bot, &
                          isothtop, mpoly0, mpoly1, mpoly2, cs2cool, &
                          beta_glnrho_global
 
@@ -65,6 +65,8 @@ module Entropy
   logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
   logical :: lupw_ss=.false.,lmultilayer=.true.
   logical :: lpressuregradient_gas=.true.,ladvection_entropy=.true., lviscosity_heat=.true.
+  logical :: lfreeze_sint=.false.,lfreeze_sext=.false.
+
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -121,7 +123,7 @@ module Entropy
       heat_uniform,lupw_ss,cool_int,cool_ext,chi_hyper3, &
       lturbulent_heat,deltaT_poleq,lpressuregradient_gas, &
       tdown, allp,beta_glnrho_global,ladvection_entropy, &
-      lviscosity_heat,r_bcz
+      lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
@@ -129,7 +131,7 @@ module Entropy
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
   integer :: idiag_yHm=0,idiag_yHmax=0,idiag_TTm=0,idiag_TTmax=0,idiag_TTmin=0
   integer :: idiag_fconvz=0,idiag_dcoolz=0,idiag_fradz=0,idiag_fturbz=0
-  integer :: idiag_ssmz=0,idiag_ssmy=0,idiag_ssmx=0,idiag_TTmz=0
+  integer :: idiag_ssmz=0,idiag_ssmy=0,idiag_ssmx=0,idiag_TTmz=0,idiag_TTp=0
 
   contains
 
@@ -157,7 +159,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.433 2006-10-04 14:51:53 bingert Exp $")
+           "$Id: entropy.f90,v 1.434 2006-10-06 19:05:58 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -229,6 +231,11 @@ module Entropy
           call warning('initialize_entropy','You should not set Kbot and hcond0 at the same time')
         endif
       endif
+!
+!  freeze entroopy
+!
+      if (lfreeze_sint) lfreeze_varint(iss) = .true.
+      if (lfreeze_sext) lfreeze_varext(iss) = .true.
 !
 !  make sure the top boundary condition for temperature (if cT is used)
 !  knows about the cooling function or vice versa (cs2cool will take over
@@ -1562,9 +1569,9 @@ module Entropy
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_ssm/=0 .or. idiag_ssmz/=0 .or. idiag_ssmy/=0.or.idiag_ssmx/=0) &
-          lpenc_diagnos(i_ss)=.true.
-          lpenc_diagnos(i_rho)=.true.
-          lpenc_diagnos(i_ee)=.true.
+           lpenc_diagnos(i_ss)=.true.
+      lpenc_diagnos(i_rho)=.true.
+      lpenc_diagnos(i_ee)=.true.
       if (idiag_eth/=0 .or. idiag_ethtot/=0 .or. idiag_ethdivum/=0 ) then
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_ee)=.true.
@@ -1578,6 +1585,7 @@ module Entropy
           lpenc_diagnos(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_dtc/=0) lpenc_diagnos(i_cs2)=.true.
+      if (idiag_TTp/=0) lpenc_diagnos(i_cs2)=.true.
 !
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
@@ -1823,6 +1831,7 @@ module Entropy
         if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
+        if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2/gamma,idiag_TTp)
 !
 !  xy averages for fluxes; doesn't need to be as frequent (check later)
 !  idiag_fradz is done in the calc_headcond routine
@@ -1848,7 +1857,8 @@ module Entropy
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx) :: f_target
+      real, dimension(nx) :: f_target,cs2_0
+      real :: g0=1.,r0_pot=0.1
 !
       select case(borderss)
 !
@@ -1856,8 +1866,10 @@ module Entropy
          f_target=0.
       case('constant')
          f_target=ss_const
-!      case('initial-condition')
-!         f_target=f(l1:l2,m,n,iss)
+      case('globaldisk')
+         cs2_0=(cs20*rcyl_mn**2)*(g0*(rcyl_mn**2+r0_pot**2)**(-1.5))
+         !           [  r      *                omega             ]**2     
+         f_target= gamma11*log(cs2_0) !- gamma1*gamma11*lnrho
       case('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_entropy: borderss='nothing'"
@@ -2695,6 +2707,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'TTm',idiag_TTm)
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
+        call parse_name(iname,cname(iname),cform(iname),'TTp',idiag_TTp)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -2753,6 +2766,7 @@ module Entropy
         write(3,*) 'i_TTmax=',idiag_TTmax
         write(3,*) 'i_TTmin=',idiag_TTmin
         write(3,*) 'i_TTm=',idiag_TTm
+        write(3,*) 'i_TTp=',idiag_TTp
         write(3,*) 'iyH=',iyH
         write(3,*) 'ilnTT=',ilnTT
       endif
