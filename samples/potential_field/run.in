@@ -1,0 +1,21 @@
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2006-10-06 15:26:15 brandenb Exp $',
+  nt=1001, it1=50, isave=20, itorder=3
+  nt=100, it1=10, isave=20, itorder=3
+  dsnap=10., dvid=.5, ialive=1
+  bcz = 's','s','a','a2','pot','nil','nil'
+  bcz = 's','s','a','a2','c1','nil','nil'
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&magnetic_run_pars
+  llorentzforce=F
+  eta=2e-2
+/
+&viscosity_run_pars
+  nu=2e-2
+/

@@ -1,0 +1,8 @@
+it(i8)
+t(f10.3)
+dt(e10.2)
+brms(e12.4)
+bmax(e12.4)
+jrms(e12.4)
+jmax(e12.4)
+rhom(0pf10.6)
