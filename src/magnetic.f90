@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.333 2006-10-06 17:08:22 theine Exp $
+! $Id: magnetic.f90,v 1.334 2006-10-06 17:28:33 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -207,7 +207,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.333 2006-10-06 17:08:22 theine Exp $")
+           "$Id: magnetic.f90,v 1.334 2006-10-06 17:28:33 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2813,10 +2813,11 @@ module Magnetic
 !***********************************************************************
     subroutine bc_aa_pot2(f,topbot)
 !
-!  pontential field condition
+!  Pontential field boundary condition
 !
-      use Fourier, only: fourier_transform_xy_parallel,fourier_transform_other
-      use Mpicomm, only: transp_xy
+!   6-oct-06/tobi: Coded
+!
+      use Fourier, only: fourier_transform_xy_parallel
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
@@ -2826,27 +2827,36 @@ module Magnetic
       real, dimension (nx,ny) :: aa_re,aa_im,az_re,az_im,daadz_re,daadz_im
       integer :: i,j
 !
-!  define wave vector
+!  Get local wave numbers
 !
       kk(:,:,iax) = spread(kx_fft                    ,2,ny)
       kk(:,:,iay) = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
 !
-!  calculate 1/k^2, zero mean
+!  Calculate 1/k^2, zero mean
 !
-      kappa = sqrt(kk(:,:,iax)**2+kk(:,:,iay)**2); kappa(1,1) = 1.0
-      kappa1 = 1.0/kappa; kappa1(1,1) = 0.0
+      kappa = sqrt(kk(:,:,iax)**2+kk(:,:,iay)**2)
+      where (kappa > 0)
+        kappa1 = 1/kappa
+      elsewhere
+        kappa1 = 0
+      endwhere
 !
-!  check whether we want to do top or bottom (this is precessor dependent)
+!  Check whether we want to do top or bottom (this is precessor dependent)
 !
       select case(topbot)
 !
-!  pontential field condition at the bottom
+!  Pontential field condition at the bottom
 !
       case('bot')
-
-        az_re = 0.0
-        az_im = 0.0
-
+!
+!  Initialize Fourier coefficients of the z-component
+!
+        az_re = 0
+        az_im = 0
+!
+!  Loop over x- and y-component, determine ghost zone values, and
+!  compute z-component
+!
         do i=iax,iay
 
           aa_re = f(l1:l2,m1:m2,n1,i)
@@ -2865,7 +2875,9 @@ module Magnetic
           az_im = az_im - kk(:,:,i)*aa_re  ! Scaled with kappa
 
         enddo
-
+!
+!  Determine ghost zone and boundary values of the z-component
+!
         daadz_re = az_re
         daadz_im = az_im
 
@@ -2899,13 +2911,18 @@ module Magnetic
         enddo
 
 !
-!  pontential field condition at the top
+!  Pontential field condition at the top
 !
       case('top')
-
+!
+!  Initialize Fourier coefficients of the z-component
+!
         az_re = 0.0
         az_im = 0.0
-
+!
+!  Loop over x- and y-component, determine ghost zone values, and
+!  compute z-component
+!
         do i=iax,iay
 
           aa_re = f(l1:l2,m1:m2,n2,i)
@@ -2924,7 +2941,9 @@ module Magnetic
           az_im = az_im + kk(:,:,i)*aa_re  ! Scaled with kappa
 
         enddo
-
+!
+!  Determine ghost zone and boundary values of the z-component
+!
         daadz_re = -az_re
         daadz_im = -az_im
 

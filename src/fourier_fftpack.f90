@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.8 2006-10-06 17:08:22 theine Exp $
+! $Id: fourier_fftpack.f90,v 1.9 2006-10-06 17:28:33 theine Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -627,10 +627,11 @@ module Fourier
 !***********************************************************************
     subroutine fourier_transform_xy_parallel(a_re,a_im,linv)
 !
-!  Subroutine to do Fourier transform of a 2-D array of arbitrary size.
+!  Subroutine to do Fourier transform of a 2-D array under MPI.
+!  nxgrid is restricted to be an integer multiple of nygrid.
 !  The routine overwrites the input data.
 !
-!  28-jul-2006/anders: adapted from fourier_transform_1
+!   6-oct-2006/tobi: adapted from fourier_transform_other_2
 !
       use Mpicomm, only: transp_xy
 

@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.191 2006-10-06 17:08:22 theine Exp $
+! $Id: mpicomm.f90,v 1.192 2006-10-06 17:28:33 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2070,15 +2070,10 @@ module Mpicomm
 !***********************************************************************
     subroutine transp_xy(a)
 !
-!  Doing the transpose of information distributed on several processors
-!  Used for doing FFTs in the y and z directions.
-!  This routine is presently restricted to the case nxgrid=nygrid (if var=y)
-!  and nygrid=nzgrid (if var=z)
+!  Doing the transpose of information distributed on several processors.
+!  This routine transposes 2D arrays in x and y only.
 !
-!  03-sep-02/nils: coded
-!  26-oct-02/axel: comments added
-!   6-jun-03/axel: works now also in 2-D (need only nxgrid=nygrid)
-!   5-oct-06/tobi: generalized to nxgrid = n*nygrid
+!   6-oct-06/tobi: Adapted from transp
 !
 ! TODO: Implement nxgrid = n*nzgrid
 !
