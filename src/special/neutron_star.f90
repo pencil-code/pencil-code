@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.14 2006-10-03 15:00:07 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.15 2006-10-06 11:32:42 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -94,6 +94,7 @@ module Special
   integer :: H_disk_point=0
 
   real :: beta_hand=1.
+  real :: nu_for_1D=1. 
   real :: mu_local=0.
   logical :: l1D_cooling=.false.,l1D_heating=.false.
   logical :: lheat_conduct=.true.
@@ -118,7 +119,7 @@ module Special
       T_disk, &
       uu_left, uy_left, uy_right, &
       l1D_cooling,l1D_heating,lheat_conduct,beta_hand, &
-      ltop_velocity_kep, lextrapolate_bot_density, &
+      nu_for_1D, ltop_velocity_kep, lextrapolate_bot_density, &
       lnstar_entropy, lnstar_T_const, lnstar_1D, &
       lgrav_x_mdf
 
@@ -182,11 +183,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.14 2006-10-03 15:00:07 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.15 2006-10-06 11:32:42 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.14 2006-10-03 15:00:07 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.15 2006-10-06 11:32:42 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -523,16 +524,15 @@ endsubroutine read_special_run_pars
 	   
 	   else
 	   
-	 !  print*,'hjhjhjhjhjh'
-	   
-         df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
-         -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
-     	 -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:H_disk_point+4)**2*gamma/cs2_star))
+	 	   
+             df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
+             -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
+     	     -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:H_disk_point+4)**2*gamma/cs2_star))
 			
 	  
 			      
              df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
-        	     -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho) &
+             -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho) &
 	     -log(rho_surf)-(1.-M_star/2./z(n)**3*x(H_disk_point+4)**2*gamma/cs2_star))
 	    endif
 						    
@@ -588,16 +588,20 @@ endsubroutine read_special_run_pars
           !  df(l_sz:l2,m,n,ilnrho)=df(l_sz:l2,m,n,ilnrho)&
           !       -1./(5.*dt)*(1.-rho_surf/exp(f(l_sz:l2,m,n,ilnrho)))
 
-           
-           do i=l_sz,l2   
-             df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
-             -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
-	    +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/cs2_star)
-				    
+           if (lnstar_1D) then
+ 
+           else 
+            do i=l_sz,l2   
+              df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
+              -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
+	      +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/cs2_star)
+          		    
 		!  df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
                 !   -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))		    
 		   
            enddo
+           endif 
+		
 
 
          endif
@@ -638,7 +642,8 @@ endsubroutine read_special_run_pars
 
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
             M_star/z(n)**2*(1.-p%uu(:,2)*p%uu(:,2)*z(n)/M_star)
-          if (nxgrid /= 1) then 
+       
+        if (nxgrid /= 1) then 
 
           if (lgrav_x_mdf) then 
             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)- &
@@ -660,7 +665,7 @@ endsubroutine read_special_run_pars
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
               -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
           else
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-1./(5.*dt)*(p%uu(:,1)-0.)
+           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-1./(5.*dt)*(p%uu(:,1)-0.)
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
             -1./(5.*dt)*(f(l1:l2,m,n,iuz)-f(l1:l2,m,n-1,iuz))
 
@@ -821,7 +826,7 @@ endsubroutine read_special_run_pars
    if (T_disk.EQ.0) then
      T_disk=cs0**2/gamma1
    endif 
-   !  print*,'  TT_cs0     ',TT_cs0
+  
  
        if ( dt .GT. 0..AND. n .GT. 24 .AND. n .LT. nzgrid-20) then
    
@@ -905,9 +910,9 @@ endsubroutine read_special_run_pars
             l_sz_1=nxgrid-5
 
           if (lnstar_1D) then   
-            df(l_sz:l2,m,n,iss)=df(l_sz:l2,m,n,iss) &
-            -1./(5.*dt)*(f(l_sz:l2,m,n,iss)-log(T_disk)/gamma) &
-            /p%rho(l_sz_1:nxgrid)/p%TT(l_sz_1:nxgrid)  
+     !       df(l_sz:l2,m,n,iss)=df(l_sz:l2,m,n,iss) &
+     !       -1./(5.*dt)*(f(l_sz:l2,m,n,iss)-log(T_disk)/gamma) &
+     !       /p%rho(l_sz_1:nxgrid)/p%TT(l_sz_1:nxgrid)  
           else
 
             do j=l_sz,l2   
@@ -1057,9 +1062,12 @@ endsubroutine read_special_run_pars
 !  This line should really be in the viscosity module,
 !  but this is currently not used anyway.
 !
-!     thdiff_1D =p%rho*nu*(1.5*f(l1:l2,m,n,iuy)/xyz0(3))**2
+ !    thdiff_1D =p%rho*nu*(1.5*f(l1:l2,m,n,iuy)/xyz0(3))**2
+      thdiff_1D =p%rho*nu_for_1D*(1.5*f(l1:l2,m,n,iuy)/xyz0(3))**2
       
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
+
+
 
      
     !   if (lsurface_zone) then
