@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.174 2006-10-06 15:27:48 brandenb Exp $ 
+! $Id: initcond.f90,v 1.175 2006-10-06 19:09:20 wlyra Exp $ 
 
 module Initcond 
  
@@ -1449,10 +1449,10 @@ module Initcond
 !
 !  Keplerian initial condition
 !
-!   2-may-05/axel+wlad: coded   
+!  02-may-05/axel+wlad: coded   
 !
       use Cdata
-      use EquationOfState, only : cs0
+      use EquationOfState, only : cs0,gamma11
       use Global, only: set_global
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1488,11 +1488,22 @@ module Initcond
            'set sound speed as global variabel: Mach number=',1./cs0
       cs2 = (OO*rr_cyl*cs0)**2
 !     
-      do ncount=n1,n2
-         do mcount=m1,m2
-            call set_global(cs2(l1:l2,mcount,ncount),mcount,ncount,'cs2',nx)
+      if (llocal_iso) then 
+         do ncount=n1,n2
+            do mcount=m1,m2
+               call set_global(cs2(l1:l2,mcount,ncount),mcount,ncount,'cs2',nx)
+            enddo
          enddo
-      enddo   
+      else if (lentropy) then
+         f(:,:,:,iss) = f(:,:,:,iss) + gamma11*log(cs2) 
+!- (gamma-1) * (lnrho-lnrho0))
+      else 
+         print*,"No thermodynamical variable. Choose if you want a "
+         print*,"local thermodynamical approximation (switch llocal_iso=T in "
+         print*,"init_pars and entropy=noentropy on Makefile.local), or if "
+         print*,"you want to compute the entropy via sound speed and density"
+         call stop_it("")
+      endif
 !
     endsubroutine keplerian
 !***********************************************************************
@@ -2326,7 +2337,6 @@ module Initcond
     endif !(ampl.eq.0)
 !
     endsubroutine powern
-
 !***********************************************************************
     subroutine power_randomphase(ampl,initpower,cutoff,f,i1,i2)
 !
@@ -2545,12 +2555,12 @@ module Initcond
       use Cdata
       use Mpicomm, only: stop_it
       use General
-      use EquationOfState, only:cs0
+      use EquationOfState, only:cs0,gamma1,gamma
 
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz) :: xx,yy,zz,rr_cyl,H2 
+      real, dimension(mx,my,mz) :: xx,yy,zz,rr_cyl,HH 
       real :: lnrho_const,plaw
-      real :: r0_pot=0.1,n_pot=2
+      real :: r0_pot=0.1,n_pot=2,rsmooth
 !
       if (n_pot.ne.2) then
          print*,'initcond.f90: You are trying to model a protoplanetary disk' 
@@ -2560,7 +2570,7 @@ module Initcond
          call stop_it('')
       endif
 !
-      rr_cyl   = sqrt(xx**2 + yy**2) + epsi
+      rr_cyl   = sqrt(xx**2 + yy**2) + tini
 !
       if ((nzgrid==1).or.(lcylindrical)) then
 !
@@ -2572,11 +2582,24 @@ module Initcond
 !
 ! Vertical stratification - H2 is the square of the pressure scale height
 !        
-         H2 = (rr_cyl**2 + r0_pot**2)*cs0**2
-         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr_cyl) - 0.5*(zz**2/H2) 
+         rsmooth=0.75*r_int
+         where (rr_cyl .ge. rsmooth) 
+            HH = rr_cyl*cs0
+         elsewhere
+            HH = rsmooth*cs0
+         endwhere
+!
+! WL:ok, this HH is not continuous, but it won't be any problem as long
+! as freezing in the internal radius is used
+!
+         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr_cyl) - 0.5*(zz/HH)**2 
 !
       endif
 !    
+      if (lentropy) then
+         f(:,:,:,iss) = f(:,:,:,iss) - gamma1/gamma*f(:,:,:,ilnrho)
+      endif
+!
     endsubroutine power_law
 !*********************************************************
     subroutine corona_init(f)
