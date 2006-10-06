@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.330 2006-10-05 18:39:59 wlyra Exp $
+! $Id: magnetic.f90,v 1.331 2006-10-06 12:11:07 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -207,7 +207,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.330 2006-10-05 18:39:59 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.331 2006-10-06 12:11:07 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -424,8 +424,8 @@ module Magnetic
          case('crazy', '5'); call crazy(amplaa(j),f,iaa)
          case('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,xx,kx_aa(j))
          case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
-         case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,iaa,xx,yy,rmode)   
-         case('Alfven-rz'); call alfven_rz(amplaa(j),f,iaa,xx,yy,rmode)   
+         case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,xx,yy,rmode)   
+         case('Alfven-rz'); call alfven_rz(amplaa(j),f,xx,yy,rmode)   
          case('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
          case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
          case('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa,xx,yy,zz)
@@ -2262,7 +2262,7 @@ module Magnetic
 !
     endsubroutine alfven_z
 !***********************************************************************
-    subroutine alfven_rphi(B0,f,iaa,xx,yy,mode)
+    subroutine alfven_rphi(B0,f,xx,yy,mode)
 !
 !  Alfven wave propagating on radial direction with
 !  field pointing to the phi direction.
@@ -2276,16 +2276,15 @@ module Magnetic
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz) :: xx,yy,rrcyl
       real :: B0,kr,mode
-      integer :: iaa
 !
       kr = 2*pi*mode/(r_ext-r_int)
       rrcyl = sqrt(xx**2 + yy**2)
 !
-      f(:,:,:,iaa+2) =  -B0/kr*sin(kr*(rrcyl-r_int))
+      f(:,:,:,iaz) =  -B0/kr*sin(kr*(rrcyl-r_int))
 !
     endsubroutine alfven_rphi
 !***********************************************************************
-    subroutine alfven_rz(B0,f,iaa,xx,yy,mode)
+    subroutine alfven_rz(B0,f,xx,yy,mode)
 !
 !  Alfven wave propagating on radial direction with
 !  field pointing to the z direction.
@@ -2299,7 +2298,6 @@ module Magnetic
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz) :: xx,yy,rrcyl,Aphi
       real :: B0,kr,mode
-      integer :: iaa
 !
       kr = 2*pi*mode/(r_ext-r_int)
       rrcyl = sqrt(xx**2 + yy**2) + tini
@@ -2307,8 +2305,8 @@ module Magnetic
       Aphi =  B0/kr * sin(kr*(rrcyl-r_int)) + &
            B0/(kr**2*rrcyl)*cos(kr*(rrcyl-r_int))
 !   
-      f(:,:,:,iaa+0) = Aphi * (-yy/rrcyl) 
-      f(:,:,:,iaa+1) = Aphi * ( xx/rrcyl)
+      f(:,:,:,iax) = Aphi * (-yy/rrcyl) 
+      f(:,:,:,iay) = Aphi * ( xx/rrcyl)
 !
     endsubroutine alfven_rz
 !***********************************************************************
