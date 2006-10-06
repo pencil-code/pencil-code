@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.3 2006-08-23 16:53:31 mee Exp $
+! $Id: gravity_r.f90,v 1.4 2006-10-06 19:08:27 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -44,10 +44,13 @@ module Gravity
   real :: z1,z2,zref,zgrav,gravz,zinfty
   character (len=labellen) :: grav_profile='const'
   logical :: lnumerical_equilibrium=.false.
+  logical :: lcylindrical_gravity=.false.
 
-  namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium
+  namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
+       lcylindrical_gravity
   
-  namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium
+  namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
+       lcylindrical_gravity
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
@@ -73,7 +76,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.3 2006-08-23 16:53:31 mee Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.4 2006-10-06 19:08:27 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -102,8 +105,6 @@ module Gravity
 
       logical, save :: first=.true.
       logical :: lpade=.true. ! set to false for 1/r potential
-
-      integer :: i
 
       !ajwm - should this be done on RELOAD too??
       if (first) then
@@ -197,7 +198,7 @@ module Gravity
         do n=n1,n2
         do m=m1,m2
 !
-           if (lcylindrical) then
+           if (lcylindrical_gravity) then
               rr_mn=sqrt(x(l1:l2)**2+y(m)**2)+tini
            else   
               rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)+tini
@@ -230,7 +231,7 @@ module Gravity
           gg_mn(:,1) = x(l1:l2)/rr_mn*g_r
           gg_mn(:,2) = y(  m  )/rr_mn*g_r
           gg_mn(:,3) = z(  n  )/rr_mn*g_r
-          if (lcylindrical) gg_mn(:,3)=0.
+          if (lcylindrical_gravity) gg_mn(:,3)=0.
          
           call set_global(gg_mn,m,n,'gg',nx)
 
