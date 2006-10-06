@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.173 2006-10-04 14:18:25 bingert Exp $ 
+! $Id: initcond.f90,v 1.174 2006-10-06 15:27:48 brandenb Exp $ 
 
 module Initcond 
  
@@ -31,7 +31,7 @@ module Initcond
   public :: htube, htube2, hat, hat3d
   public :: wave_uu, wave, parabola
   public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
-  public :: sinx_siny_cosz, sin2x_sin2y_cosz
+  public :: sinx_siny_cosz, sin2x_sin2y_cosz, cosy_sinz
   public :: halfcos_x, magsupport, vfield
   public :: uniform_x, uniform_y, uniform_z
   public :: vfluxlayer, hfluxlayer
@@ -185,6 +185,31 @@ module Initcond
 !
 10    format(1x,a,4f8.2)
     endsubroutine cosx_cosy_cosz
+!***********************************************************************
+    subroutine cosy_sinz(ampl,f,i,ky,kz)
+!
+!  initial condition for potential field test
+!
+!   6-oct-06/axel: coded
+!
+      integer :: i,j
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,optional :: ky,kz
+      real :: ampl,ky1=1.,kz1=pi
+!
+!  wavenumber k
+!
+      if (present(ky)) ky1=ky
+      if (present(kz)) kz1=kz
+!
+      j=i+0; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(cos(ky1*y),1,mx),3,mz)&
+                                       *spread(spread(sin(kz1*z),1,mx),2,my) 
+!
+      j=i+1; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(sin(ky1*y),1,mx),3,mz)&
+                                       *spread(spread(cos(kz1*z),1,mx),2,my) 
+!
+10    format(1x,a,4f8.2)
+    endsubroutine cosy_sinz
 !***********************************************************************
     subroutine cosx_coscosy_cosz(ampl,f,i,kx,ky,kz)
 !

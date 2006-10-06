@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.67 2006-08-29 17:16:42 mee Exp $
+! $Id: eos_idealgas.f90,v 1.68 2006-10-06 15:27:48 brandenb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.67 2006-08-29 17:16:42 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.68 2006-10-06 15:27:48 brandenb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -878,7 +878,7 @@ module EquationOfState
       endif
     end subroutine eosperturb
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,yH,lnTT,ee,pp,kapparho)
+    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,kapparho)
 !
 !   Calculate thermodynamical quantities
 !
@@ -893,6 +893,7 @@ module EquationOfState
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
+      real, dimension(psize), intent(out), optional :: lnrho,ss
       real, dimension(psize), intent(out), optional :: yH,ee,pp,kapparho
       real, dimension(psize), intent(out), optional :: lnTT
       real, dimension(psize) :: lnTT_, cs2_
@@ -936,6 +937,7 @@ module EquationOfState
         lnTT_=lnTT0+cv1*ss_+gamma1*(lnrho_-lnrho0)
         if (gamma1==0.) &
             call fatal_error('eoscalc_farray','gamma=1 not allowed w/entropy')
+        if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT_
         if (present(ee)) ee=cv*exp(lnTT_)
         if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
@@ -966,6 +968,7 @@ module EquationOfState
           call fatal_error('eoscalc_farray','no such pencil size')
         end select
 !
+        if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT_
         if (present(ee)) ee=cv*exp(lnTT_)
         if (ieosvars==ilnrho_lnTT) then
@@ -1004,6 +1007,7 @@ module EquationOfState
           call fatal_error('eoscalc_farray','no such pencil size')
         end select
 !
+        if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=log(cs2_/gamma1)
         if (present(ee)) ee=gamma11*cs2_/gamma1
         if (present(pp)) pp=gamma11*cs2_*exp(lnrho_)

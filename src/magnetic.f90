@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.331 2006-10-06 12:11:07 wlyra Exp $
+! $Id: magnetic.f90,v 1.332 2006-10-06 15:27:48 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -207,7 +207,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.331 2006-10-06 12:11:07 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.332 2006-10-06 15:27:48 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -419,9 +419,11 @@ module Magnetic
          case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+         case('cosysinz'); call cosy_sinz(amplaa(j),f,iaa,ky_aa(j),kz_aa(j))
          case('magnetogram'); call mdi_init(f)
          case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('crazy', '5'); call crazy(amplaa(j),f,iaa)
+         case('robertsflow'); call robertsflow(amplaa(j),f,iaa)
          case('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,xx,kx_aa(j))
          case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
          case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,xx,yy,rmode)   
