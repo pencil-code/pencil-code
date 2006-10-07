@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.335 2006-10-07 10:09:44 brandenb Exp $
+! $Id: magnetic.f90,v 1.336 2006-10-07 14:32:51 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -207,7 +207,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.335 2006-10-07 10:09:44 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.336 2006-10-07 14:32:51 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3011,8 +3011,9 @@ module Magnetic
 !
       case('bot')
         if (headtt) print*,'bc_aa_pot: pot-field bdry cond at bottom'
-        if (nprocy/=1) &
-             call stop_it("bc_aa_pot: pot-field doesn't work with nprocy/=1")
+        if (mod(nxgrid,nygrid)/=0) &
+             call stop_it("bc_aa_pot: pot-field doesn't work "//&
+                          "with mod(nxgrid,nygrid)/=1")
         do j=0,1
           f2=f(l1:l2,m1:m2,n1+1,iax+j)
           f3=f(l1:l2,m1:m2,n1+2,iax+j)
@@ -3029,8 +3030,9 @@ module Magnetic
 !
       case('top')
         if (headtt) print*,'bc_aa_pot: pot-field bdry cond at top'
-        if (nprocy/=1) &
-             call stop_it("bc_aa_pot: pot-field doesn't work with nprocy/=1")
+        if (mod(nxgrid,nygrid)/=0) &
+             call stop_it("bc_aa_pot: pot-field doesn't work "//&
+                          "with mod(nxgrid,nygrid)/=1")
         do j=0,1
           f2=f(l1:l2,m1:m2,n2-1,iax+j)
           f3=f(l1:l2,m1:m2,n2-2,iax+j)
@@ -3064,7 +3066,7 @@ module Magnetic
       real, dimension (nx,ny) :: fac,kk,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
       real, dimension (nx,ny,nghost+1) :: fz
       real, dimension (nx) :: kx
-      real, dimension (ny) :: ky
+      real, dimension (nygrid) :: ky
       real :: delz
       integer :: i,irev
 !
@@ -3075,17 +3077,17 @@ module Magnetic
 !
 !  Transform; real and imaginary parts
 !
-      call fourier_transform_other(f2r,f2i)
-      call fourier_transform_other(f3r,f3i)
+      call fourier_transform_xy_parallel(f2r,f2i)
+      call fourier_transform_xy_parallel(f3r,f3i)
 !
 !  define wave vector
 !
       kx=cshift((/(i-(nx-1)/2,i=0,nx-1)/),+(nx-1)/2)*2*pi/Lx
-      ky=cshift((/(i-(ny-1)/2,i=0,ny-1)/),+(ny-1)/2)*2*pi/Ly
+      ky=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
 !
 !  calculate 1/k^2, zero mean
 !
-      kk=sqrt(spread(kx**2,2,ny)+spread(ky**2,1,nx))
+      kk=sqrt(spread(kx**2,2,ny)+spread(ky(ipy*ny+1:(ipy+1)*ny)**2,1,nx))
 !
 !  one-sided derivative
 !
@@ -3103,7 +3105,7 @@ module Magnetic
 !
 !  Transform back
 !
-        call fourier_transform_other(g1r,g1i,linv=.true.)
+        call fourier_transform_xy_parallel(g1r,g1i,linv=.true.)
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !
@@ -3130,7 +3132,7 @@ module Magnetic
       real, dimension (nx,ny) :: fac,kk,kkkx,kkky,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
       real, dimension (nx,ny,nghost+1) :: fz
       real, dimension (nx) :: kx
-      real, dimension (ny) :: ky
+      real, dimension (nygrid) :: ky
       real :: delz
       integer :: i,irev
 !
@@ -3139,19 +3141,19 @@ module Magnetic
 !
 !  Transform
 !
-      call fourier_transform_other(f2r,f2i)
-      call fourier_transform_other(f3r,f3i)
+      call fourier_transform_xy_parallel(f2r,f2i)
+      call fourier_transform_xy_parallel(f3r,f3i)
 !
 !  define wave vector
 !
       kx=cshift((/(i-nx/2,i=0,nx-1)/),+nx/2)
-      ky=cshift((/(i-ny/2,i=0,ny-1)/),+ny/2)
+      ky=cshift((/(i-nygrid/2,i=0,nygrid-1)/),+nygrid/2)
 !
 !  calculate 1/k^2, zero mean
 !
-      kk=sqrt(spread(kx**2,2,ny)+spread(ky**2,1,nx))
+      kk=sqrt(spread(kx**2,2,ny)+spread(ky(ipy*ny+1:(ipy+1)*ny)**2,1,nx))
       kkkx=spread(kx,2,ny)
-      kkky=spread(ky,1,nx)
+      kkky=spread(ky(ipy*ny+1:(ipy+1)*ny),1,nx)
 !
 !  calculate 1/kk
 !
@@ -3172,7 +3174,7 @@ module Magnetic
 !
 !  Transform back
 !
-        call fourier_transform_other(g1r,g1i,linv=.true.)
+        call fourier_transform_xy_parallel(g1r,g1i,linv=.true.)
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !  but reverse sign if irev=+1 (if we are at the top)
