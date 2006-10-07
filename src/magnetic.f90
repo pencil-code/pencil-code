@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.336 2006-10-07 14:32:51 theine Exp $
+! $Id: magnetic.f90,v 1.337 2006-10-07 15:01:45 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -207,7 +207,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.336 2006-10-07 14:32:51 theine Exp $")
+           "$Id: magnetic.f90,v 1.337 2006-10-07 15:01:45 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -982,16 +982,6 @@ module Magnetic
         if (llorentzforce) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
       endif
 !
-!  add eta mu_0 j2/rho to entropy or temperature equation
-!
-      if (lentropy) then
-        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+eta*mu0*p%j2*p%rho1*p%TT1
-      endif
-
-      if (ltemperature) then
-        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+eta*mu0*p%j2*p%rho1*p%cv1*p%TT1
-      endif
-!
 !  Restivivity term
 !
 !  Because of gauge invariance, we can add the gradient of an arbitrary scalar
@@ -1097,6 +1087,18 @@ module Magnetic
       endif
 !
       if (headtt) print*,'daa_dt: iresistivity=',iresistivity
+!
+!  add eta mu_0 j2/rho to entropy or temperature equation
+!
+      if (lentropy) then
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
+                          + etatotal*mu0*p%j2*p%rho1*p%TT1
+      endif
+
+      if (ltemperature) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
+                            + etatotal*mu0*p%j2*p%rho1*p%cv1*p%TT1
+      endif
 !
 !  Switch off diffusion in boundary slice if requested by boundconds
 !
@@ -2803,9 +2805,9 @@ module Magnetic
 !
       select case(topbot)
       case('bot')               ! bottom boundary
-        lfrozen_bb_bot(j) = .true.    ! set flag
+        lfrozen_bb_bot(j-iax+1) = .true.    ! set flag
       case('top')               ! top boundary
-        lfrozen_bb_top(j) = .true.    ! set flag
+        lfrozen_bb_top(j-iax+1) = .true.    ! set flag
       case default
         print*, "bc_frozen_in_bb: ", topbot, " should be `top' or `bot'"
       endselect
