@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.186 2006-09-21 23:19:17 wlyra Exp $
+! $Id: register.f90,v 1.187 2006-10-07 09:50:08 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -603,19 +603,32 @@ module Register
       if (print_in_double .and. (numeric_precision() == 'D')) then
         print_in_file = 'print.in.double'
       endif
-      if (lroot) print*, 'Reading print formats from ' // trim(print_in_file)
-      open(1,FILE=print_in_file)
-      iname=0
-      do iname_tmp=1,mname
-        read(1,*,end=99) cname_tmp
-        if (cname_tmp(1:1)/='!'.and.cname_tmp(1:1)/='#') then
-          iname=iname+1
-          cname(iname)=cname_tmp
+91    if (lroot) print*, 'Reading print formats from ' // trim(print_in_file)
+      inquire(FILE=print_in_file, EXIST=exist)
+      if (exist) then
+        open(1,FILE=print_in_file)
+        iname=0
+        do iname_tmp=1,mname
+          read(1,*,end=99) cname_tmp
+          if (cname_tmp(1:1)/='!'.and.cname_tmp(1:1)/='#') then
+            iname=iname+1
+            cname(iname)=cname_tmp
+          endif
+        enddo
+99      nname=iname
+        if (lroot.and.ip<14) print*,'rprint_list: nname=',nname
+        close(1)
+      else
+        open(1,FILE=print_in_file)
+        write(1,*) "it(i9)"
+        close(1)
+        if (lroot) then
+          print*,'You must have a print.in file in the run directory!'
+          print*,'For now we generated a minimalistic version.'
+          print*,'Please edit it and type reload run.'
         endif
-      enddo
-99    nname=iname
-      if (lroot.and.ip<14) print*,'rprint_list: nname=',nname
-      close(1)
+        goto 91
+      endif
 !
 !  read in the list of variables for video slices
 !
