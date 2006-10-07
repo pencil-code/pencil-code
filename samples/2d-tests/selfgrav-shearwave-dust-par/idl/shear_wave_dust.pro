@@ -1,5 +1,5 @@
 ;;
-;;  $Id: shear_wave_dust.pro,v 1.1 2006-07-21 19:58:26 ajohan Exp $
+;;  $Id: shear_wave_dust.pro,v 1.2 2006-10-07 11:03:15 ajohan Exp $
 ;;
 ;;  Semi-analytical solution of the linear growth of a non-axisymmetric
 ;;  self-gravitating dust wave in a Keplerian shear flow.
@@ -18,7 +18,7 @@ Omega=1.0d
 qshear=1.5d
 tauf=1.0d
 ;;  Parameters for the time-solver.
-nt=1000
+nt=10000
 dt=1.0d-3
 tt=dblarr(nt)
 ;;  Runge-Kutta coefficients
@@ -26,9 +26,9 @@ alpha= [  0.0d, -5/ 9.0d, -153/128.0d]
 beta = [1/3.0d, 15/16.0d,    8/ 15.0d]
 dt_beta=dt*beta
 ;;  The result is stored in these arrays.
-wwx  =dcomplexarr(nt)
-wwy  =dcomplexarr(nt)
-rrhod=dcomplexarr(nt)
+wwx  =dblarr(nt)
+wwy  =dblarr(nt)
+rrhod=dblarr(nt)
 ;;  Initial condition
 t  =0.0d
 rhod=complex(0.001d,0.0d)
