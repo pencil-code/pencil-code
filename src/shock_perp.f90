@@ -1,4 +1,4 @@
-! $Id: shock_perp.f90,v 1.7 2006-08-24 22:40:25 mee Exp $
+! $Id: shock_perp.f90,v 1.8 2006-10-07 14:49:15 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -105,7 +105,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_perp.f90,v 1.7 2006-08-24 22:40:25 mee Exp $")
+           "$Id: shock_perp.f90,v 1.8 2006-10-07 14:49:15 theine Exp $")
 !
     endsubroutine register_shock
 !***********************************************************************
@@ -263,6 +263,13 @@ module Shock
           slices%xz= f(l1:l2    ,slices%iy,n1:n2     ,ishock)
           slices%xy= f(l1:l2    ,m1:m2    ,slices%iz ,ishock)
           slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,ishock)
+          slices%ready = .true.
+
+        case ('shock_perp')
+          slices%yz= f(slices%ix,m1:m2    ,n1:n2     ,ishock_perp)
+          slices%xz= f(l1:l2    ,slices%iy,n1:n2     ,ishock_perp)
+          slices%xy= f(l1:l2    ,m1:m2    ,slices%iz ,ishock_perp)
+          slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,ishock_perp)
           slices%ready = .true.
 !
       endselect
