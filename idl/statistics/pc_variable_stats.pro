@@ -1,4 +1,4 @@
-;  $Id: pc_variable_stats.pro,v 1.2 2005-08-28 13:07:40 ajohan Exp $
+;  $Id: pc_variable_stats.pro,v 1.3 2006-10-07 10:10:02 ajohan Exp $
 ;
 ;  Summarize data
 ;  omit ghost zones in the analysis
@@ -15,15 +15,15 @@ stat_headings=[ $
                '   ',             $
                'minval         ',$
                'maxval          ',$
-               'mean           ',$
-               'rms' ]
+               'mean         ',$
+               'stddev' ]
 stats        =[ $
                "' '+strmid(strlowcase(varname)+'          ',0,10)",       $
                "'-->'",         $
                'min(statvar)', $
                'max(statvar)', $
                'mean(statvar)',$
-               'rms(statvar)' ]
+               'stddev(statvar)' ]
 stat_formats =[ $
                'A10',$
                'A',$
