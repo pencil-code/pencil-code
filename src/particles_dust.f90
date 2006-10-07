@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.149 2006-09-27 12:44:33 ajohan Exp $
+! $Id: particles_dust.f90,v 1.150 2006-10-07 10:33:20 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -119,7 +119,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.149 2006-09-27 12:44:33 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.150 2006-10-07 10:33:20 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1506,7 +1506,11 @@ k_loop:   do while (.not. (k>npar_loc))
           if (lfirst.and.ldt) then
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             dt1_advpx=fp(k,ivpx)*dx_1(ix0)/cdtp
-            dt1_advpy=fp(k,ivpy)*dy_1(iy0)/cdtp
+            if (lshear) then
+              dt1_advpy=(-qshear*Omega*fp(k,ixp)+fp(k,ivpy))*dy_1(iy0)/cdtp
+            else
+              dt1_advpy=fp(k,ivpy)*dy_1(iy0)/cdtp
+            endif
             dt1_advpz=fp(k,ivpz)*dz_1(iz0)/cdtp
 
             dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost),dt1_advpx)
