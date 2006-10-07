@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.334 2006-10-06 17:28:33 theine Exp $
+! $Id: magnetic.f90,v 1.335 2006-10-07 10:09:44 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -207,7 +207,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.334 2006-10-06 17:28:33 theine Exp $")
+           "$Id: magnetic.f90,v 1.335 2006-10-07 10:09:44 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -419,6 +419,7 @@ module Magnetic
          case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+         case('cosysinz'); call cosy_sinz(amplaa(j),f,iaa,ky_aa(j),kz_aa(j))
          case('magnetogram'); call mdi_init(f)
          case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('crazy', '5'); call crazy(amplaa(j),f,iaa)
@@ -3121,6 +3122,7 @@ module Magnetic
 !
 !  22-mar-02/axel: coded
 !  29-sep-06/axel: removed multiple calls, removed normalization, non-para
+!   7-oct-06/axel: corrected sign for irev==+1.
 !
       use Cdata
       use Fourier
@@ -3173,9 +3175,10 @@ module Magnetic
         call fourier_transform_other(g1r,g1i,linv=.true.)
 !
 !  reverse order if irev=-1 (if we are at the bottom)
+!  but reverse sign if irev=+1 (if we are at the top)
 !
-        if (irev==+1) fz(:,:,       i+1) = g1r
-        if (irev==-1) fz(:,:,nghost-i+1) = g1r
+        if (irev==+1) fz(:,:,       i+1) = -g1r
+        if (irev==-1) fz(:,:,nghost-i+1) = +g1r
       enddo
 !
     endsubroutine potentdiv
