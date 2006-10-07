@@ -1,6 +1,6 @@
-! $Id: eos_idealgas.f90,v 1.68 2006-10-06 15:27:48 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.69 2006-10-07 10:31:59 brandenb Exp $
 
-!  Dummy routine for ideal gas
+!  Equation of state for an ideal gas without ionization.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.68 2006-10-06 15:27:48 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.69 2006-10-07 10:31:59 brandenb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -878,7 +878,7 @@ module EquationOfState
       endif
     end subroutine eosperturb
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,kapparho)
+    subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,kapparho)
 !
 !   Calculate thermodynamical quantities
 !
@@ -893,7 +893,7 @@ module EquationOfState
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(out), optional :: lnrho,ss
+      real, dimension(psize), intent(out), optional :: lnrho
       real, dimension(psize), intent(out), optional :: yH,ee,pp,kapparho
       real, dimension(psize), intent(out), optional :: lnTT
       real, dimension(psize) :: lnTT_, cs2_
