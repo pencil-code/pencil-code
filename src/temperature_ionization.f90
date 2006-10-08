@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.20 2006-10-07 14:57:42 theine Exp $
+! $Id: temperature_ionization.f90,v 1.21 2006-10-08 13:31:38 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -87,7 +87,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.20 2006-10-07 14:57:42 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.21 2006-10-08 13:31:38 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -371,7 +371,7 @@ module Entropy
 !   2-feb-03/axel: added possibility of ionization
 !
       use Viscosity, only: calc_viscous_heat
-      use Sub, only: max_mn_name,sum_mn_name,identify_bcs,sine_step
+      use Sub, only: max_mn_name,sum_mn_name,identify_bcs,cubic_step
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent (out) :: df
@@ -410,7 +410,7 @@ module Entropy
 !  velocity damping in the coronal heating zone
 !
       if (lhydro.and.tau_damp_cor>0) then
-        prof = sine_step(z(n),(ztop+zcor)/2,(ztop-zcor)/2)
+        prof = cubic_step(z(n),(ztop+zcor)/2,(ztop-zcor)/2)
         damp = prof*f(l1:l2,m,n,iux:iuz)/tau_damp_cor
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - damp
       endif
@@ -516,7 +516,7 @@ module Entropy
 !***********************************************************************
     subroutine calc_heat_cool(f,df,p)
 
-      use Sub, only: sine_step
+      use Sub, only: cubic_step
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -538,7 +538,7 @@ module Entropy
 !  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
 !
       if (tau_heat_cor>0) then
-        prof = sine_step(z(n),(ztop+zcor)/2,(ztop-zcor)/2)
+        prof = cubic_step(z(n),(ztop+zcor)/2,(ztop-zcor)/2)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  &
                             - prof*(1-TT_cor/p%TT)/tau_heat_cor
       endif
