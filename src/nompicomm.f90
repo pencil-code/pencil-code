@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.144 2006-10-08 16:59:31 theine Exp $
+! $Id: nompicomm.f90,v 1.145 2006-10-08 17:02:14 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -946,7 +946,7 @@ module Mpicomm
 
     endsubroutine transp_xy
 !***********************************************************************
-    subroutine communicate_bc_aa_pot(daadz,az)
+    subroutine communicate_bc_aa_pot(f,topbot)
 !
 !  Helper routine for bc_aa_pot in Magnetic.
 !  Needed due to Fourier transforms which only work on (l1:l2,m1:m2)
@@ -954,10 +954,11 @@ module Mpicomm
 !   8-oct-2006/tobi: Coded
 !
       use Cdata, only: iax,iaz
-      use Messages, only: fatal_error
 
-      real, dimension (mx,my,iax:iaz), intent (inout) :: daadz
-      real, dimension (mx,my), intent (inout) :: az
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+
+      integer :: nn1,nn2
 
       select case (topbot)
         case ('bot'); nn1=1;  nn2=n1
