@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.337 2006-10-07 15:01:45 theine Exp $
+! $Id: magnetic.f90,v 1.338 2006-10-08 00:12:27 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -207,7 +207,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.337 2006-10-07 15:01:45 theine Exp $")
+           "$Id: magnetic.f90,v 1.338 2006-10-08 00:12:27 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2821,6 +2821,7 @@ module Magnetic
 !   6-oct-06/tobi: Coded
 !
       use Fourier, only: fourier_transform_xy_parallel
+      use Mpicomm, only: communicate_bc_aa_pot2
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
@@ -2828,6 +2829,8 @@ module Magnetic
       real, dimension (nx,ny,iax:iay) :: kk
       real, dimension (nx,ny) :: kappa,kappa1
       real, dimension (nx,ny) :: aa_re,aa_im,az_re,az_im,daadz_re,daadz_im
+      real, dimension (mx,my,iax:iaz) :: daadz
+      real, dimension (mx,my) :: az
       integer :: i,j
 !
 !  Get local wave numbers
@@ -2861,57 +2864,47 @@ module Magnetic
 !  compute z-component
 !
         do i=iax,iay
-
+!
+!  Derivative of ax and ay on the boundary
+!
           aa_re = f(l1:l2,m1:m2,n1,i)
           aa_im = 0.0
-
           call fourier_transform_xy_parallel(aa_re,aa_im)
           daadz_re = kappa*aa_re
           daadz_im = kappa*aa_im
           call fourier_transform_xy_parallel(daadz_re,daadz_im,linv=.true.)
-
-          do j=1,nghost
-            f(l1:l2,m1:m2,n1-j,i) = f(l1:l2,m1:m2,n1+j,i) - 2*j*dz*daadz_re
-          enddo
-
+          daadz(l1:l2,m1:m2,i) = daadz_re
+!
+!  Compute z-component
+!
           az_re = az_re + kk(:,:,i)*aa_im  ! Scaled with kappa
           az_im = az_im - kk(:,:,i)*aa_re  ! Scaled with kappa
-
         enddo
 !
-!  Determine ghost zone and boundary values of the z-component
+!  Derivative of az on the boundary
 !
         daadz_re = az_re
         daadz_im = az_im
-
         call fourier_transform_xy_parallel(daadz_re,daadz_im,linv=.true.)
-
-        do j=1,nghost
-          f(l1:l2,m1:m2,n1-j,iaz) = f(l1:l2,m1:m2,n1+j,iaz) - 2*j*dz*daadz_re
-        enddo
-
+        daadz(l1:l2,m1:m2,iaz) = daadz_re
+!
+!  Boundary value of az
+!
         az_re = kappa1*az_re  ! Rescale with kappa
         az_im = kappa1*az_im  ! Rescale with kappa
-
         call fourier_transform_xy_parallel(az_re,az_im,linv=.true.)
-
-        f(l1:l2,m1:m2,n1,iaz) = az_re
+        az(l1:l2,m1:m2) = az_re
 !
-!  Make sure *all* ghost zones are set
-!  Tobi: I hope there is a more compact way of doing this...
+!  Communicate along y
 !
-        do i=1,nghost
-          f(l1-i,m1:m2,n1,iaz) = f(l2+1-i,m1:m2 ,n1,iaz)
-          f(l2+i,m1:m2,n1,iaz) = f(l1-1+i,m1:m2 ,n1,iaz)
-          f(:   ,m1-i ,n1,iaz) = f(:     ,m2+1-i,n1,iaz)
-          f(:   ,m2+i ,n1,iaz) = f(:     ,m1-1+i,n1,iaz)
-          do j=1,nghost
-            f(l1-i,m1:m2,n1-j,iax:iaz) = f(l2+1-i,m1:m2 ,n1-j,iax:iaz)
-            f(l2+i,m1:m2,n1-j,iax:iaz) = f(l1-1+i,m1:m2 ,n1-j,iax:iaz)
-            f(:   ,m1-i ,n1-j,iax:iaz) = f(:     ,m2+1-i,n1-j,iax:iaz)
-            f(:   ,m2+i ,n1-j,iax:iaz) = f(:     ,m1-1+i,n1-j,iax:iaz)
-          enddo
+        call communicate_bc_aa_pot2(daadz,az)
+!
+!  Fill ghost zones in z and set z-component
+!
+        do j=1,nghost
+          f(:,:,n1-j,iax:iaz) = f(:,:,n1+j,iax:iaz) - 2*j*dz*daadz
         enddo
+        f(:,:,n1,iaz) = az
 
 !
 !  Pontential field condition at the top
@@ -2927,57 +2920,47 @@ module Magnetic
 !  compute z-component
 !
         do i=iax,iay
-
+!
+!  Derivative of ax and ay on the boundary
+!
           aa_re = f(l1:l2,m1:m2,n2,i)
           aa_im = 0.0
-
           call fourier_transform_xy_parallel(aa_re,aa_im)
           daadz_re = -kappa*aa_re
           daadz_im = -kappa*aa_im
           call fourier_transform_xy_parallel(daadz_re,daadz_im,linv=.true.)
-
-          do j=1,nghost
-            f(l1:l2,m1:m2,n2+j,i) = f(l1:l2,m1:m2,n2-j,i) + 2*j*dz*daadz_re
-          enddo
-
+          daadz(l1:l2,m1:m2,i) = daadz_re
+!
+!  Compute z-component
+!
           az_re = az_re - kk(:,:,i)*aa_im  ! Scaled with kappa
           az_im = az_im + kk(:,:,i)*aa_re  ! Scaled with kappa
-
         enddo
 !
-!  Determine ghost zone and boundary values of the z-component
+!  Derivative of az on the boundary
 !
         daadz_re = -az_re
         daadz_im = -az_im
-
         call fourier_transform_xy_parallel(daadz_re,daadz_im,linv=.true.)
-
-        do j=1,nghost
-          f(l1:l2,m1:m2,n2+j,i) = f(l1:l2,m1:m2,n2-j,i) + 2*j*dz*daadz_re
-        enddo
-
+        daadz(l1:l2,m1:m2,iaz) = daadz_re
+!
+!  Boundary value of az
+!
         az_re = kappa1*az_re
         az_im = kappa1*az_im
-
         call fourier_transform_xy_parallel(az_re,az_im,linv=.true.)
-
-        f(l1:l2,m1:m2,n2,iaz) = az_re
+        az(l1:l2,m1:m2) = az_re
 !
-!  Make sure *all* ghost zones are set
-!  Tobi: I hope there is a more compact way of doing this...
+!  Communicate along y
 !
-        do i=1,nghost
-          f(l1-i,m1:m2,n2,iaz) = f(l2+1-i,m1:m2 ,n2,iaz)
-          f(l2+i,m1:m2,n2,iaz) = f(l1-1+i,m1:m2 ,n2,iaz)
-          f(:   ,m1-i ,n2,iaz) = f(:     ,m2+1-i,n2,iaz)
-          f(:   ,m2+i ,n2,iaz) = f(:     ,m1-1+i,n2,iaz)
-          do j=1,nghost
-            f(l1-i,m1:m2,n2+j,iax:iaz) = f(l2+1-i,m1:m2 ,n2+j,iax:iaz)
-            f(l2+i,m1:m2,n2+j,iax:iaz) = f(l1-1+i,m1:m2 ,n2+j,iax:iaz)
-            f(:   ,m1-i ,n2+j,iax:iaz) = f(:     ,m2+1-i,n2+j,iax:iaz)
-            f(:   ,m2+i ,n2+j,iax:iaz) = f(:     ,m1-1+i,n2+j,iax:iaz)
-          enddo
+        call communicate_bc_aa_pot2(daadz,az)
+!
+!  Fill ghost zones in z and set z-component
+!
+        do j=1,nghost
+          f(:,:,n2+j,iax:iaz) = f(:,:,n2-j,iax:iaz) + 2*j*dz*daadz
         enddo
+        f(:,:,n2,iaz) = az
 
       case default
 
