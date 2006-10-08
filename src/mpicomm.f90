@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.193 2006-10-08 00:12:27 theine Exp $
+! $Id: mpicomm.f90,v 1.194 2006-10-08 13:29:45 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -335,10 +335,10 @@ module Mpicomm
 !
       if (nprocy>1) then
 
-        lbufyo(:,:,1:3) = daadz(l1:l2,m1:m1i,:)
-        lbufyo(:,:,  4) =    az(l1:l2,m1:m1i)
-        ubufyo(:,:,1:3) = daadz(l1:l2,m2i:m2,:)
-        ubufyo(:,:,  4) =    az(l1:l2,m2i:m2)
+        lbufyo(:,:,1:3) = daadz(l1:l2, m1:m1i,:)
+        lbufyo(:,:,  4) =    az(l1:l2, m1:m1i)
+        ubufyo(:,:,1:3) = daadz(l1:l2,m2i:m2 ,:)
+        ubufyo(:,:,  4) =    az(l1:l2,m2i:m2 )
 
         nbufy=nx*12
 
@@ -350,26 +350,26 @@ module Mpicomm
                           MPI_COMM_WORLD,isend_rq_touppy,ierr)
                           
 
-        daadz(l1:l2, 1:m1-1,:) = lbufyi(:,:,1:3)
-           az(l1:l2, 1:m1-1)   = lbufyi(:,:,  4)
-        daadz(l1:l2,m2+1:my,:) = ubufyi(:,:,1:3)
-           az(l1:l2,m2+1:my)   = ubufyi(:,:,  4)
+        daadz(l1:l2,   1:m1-1,:) = lbufyi(:,:,1:3)
+           az(l1:l2,   1:m1-1)   = lbufyi(:,:,  4)
+        daadz(l1:l2,m2+1:my  ,:) = ubufyi(:,:,1:3)
+           az(l1:l2,m2+1:my  )   = ubufyi(:,:,  4)
 
       else
 
-        daadz(l1:l2, 1:m1-1,:) = daadz(l1:l2,m2i:m2,:)
-           az(l1:l2, 1:m1-1)   =    az(l1:l2,m2i:m2)
-        daadz(l1:l2,m2+1:my,:) = daadz(l1:l2,m1:m1i,:)
-           az(l1:l2,m2+1:my)   =    az(l1:l2,m1:m1i)
+        daadz(l1:l2,   1:m1-1,:) = daadz(l1:l2,m2i:m2 ,:)
+           az(l1:l2,   1:m1-1)   =    az(l1:l2,m2i:m2 )
+        daadz(l1:l2,m2+1:my  ,:) = daadz(l1:l2, m1:m1i,:)
+           az(l1:l2,m2+1:my  )   =    az(l1:l2, m1:m1i)
 
       endif
 !
 !  Periodic boundaries in x
 !
-      daadz(1:l1-1, :,:) = daadz(l2i:l2,:,:)
-         az(1:l1-1, :)   = az(l2i:l2,:)
-      daadz(n2+1:mz,:,:) = daadz(l1:l1i,:,:)
-         az(n2+1:mz,:)   = az(l1:l1i,:)
+      daadz(   1:l1-1,:,:) = daadz(l2i:l2 ,:,:)
+         az(   1:l1-1,:)   =    az(l2i:l2 ,:)
+      daadz(l2+1:mx  ,:,:) = daadz( l1:l1i,:,:)
+         az(l2+1:mx  ,:)   =    az( l1:l1i,:)
 
     endsubroutine communicate_bc_aa_pot2
 !***********************************************************************
