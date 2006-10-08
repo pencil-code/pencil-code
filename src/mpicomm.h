@@ -25,7 +25,7 @@
   public :: initiate_shearing, finalize_shearing
 
   public :: transp,transp_xy
-  public :: communicate_bc_aa_pot2
+  public :: communicate_bc_aa_pot,communicate_bc_aa_pot2
 
 ! Radiation ray routines
   public :: radboundary_xy_recv,radboundary_xy_send

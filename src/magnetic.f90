@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.338 2006-10-08 00:12:27 theine Exp $
+! $Id: magnetic.f90,v 1.339 2006-10-08 16:59:30 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -207,7 +207,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.338 2006-10-08 00:12:27 theine Exp $")
+           "$Id: magnetic.f90,v 1.339 2006-10-08 16:59:30 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2979,7 +2979,7 @@ module Magnetic
 !   8-jul-2002/axel: introduced topbot argument
 !
       use Cdata
-      use Mpicomm, only: stop_it
+      use Mpicomm, only: stop_it,communicate_bc_aa_pot
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3010,6 +3010,7 @@ module Magnetic
         f3=f(l1:l2,m1:m2,n1,iay)
         call potentdiv(fz,f2,f3,-1)
         f(l1:l2,m1:m2,1:n1,iaz)=-fz
+        call communicate_bc_aa_pot(f,topbot)
 !
 !  pontential field condition at the top
 !
@@ -3029,6 +3030,7 @@ module Magnetic
         f3=f(l1:l2,m1:m2,n2,iay)
         call potentdiv(fz,f2,f3,+1)
         f(l1:l2,m1:m2,n2:mz,iaz)=-fz
+        call communicate_bc_aa_pot(f,topbot)
       case default
         if (lroot) print*,"bc_aa_pot: invalid argument"
       endselect

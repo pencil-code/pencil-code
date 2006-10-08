@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.143 2006-10-08 00:12:27 theine Exp $
+! $Id: nompicomm.f90,v 1.144 2006-10-08 16:59:31 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -945,6 +945,38 @@ module Mpicomm
       endif
 
     endsubroutine transp_xy
+!***********************************************************************
+    subroutine communicate_bc_aa_pot(daadz,az)
+!
+!  Helper routine for bc_aa_pot in Magnetic.
+!  Needed due to Fourier transforms which only work on (l1:l2,m1:m2)
+!
+!   8-oct-2006/tobi: Coded
+!
+      use Cdata, only: iax,iaz
+      use Messages, only: fatal_error
+
+      real, dimension (mx,my,iax:iaz), intent (inout) :: daadz
+      real, dimension (mx,my), intent (inout) :: az
+
+      select case (topbot)
+        case ('bot'); nn1=1;  nn2=n1
+        case ('top'); nn1=n2; nn2=mz
+        case default; call stop_it("communicate_bc_aa_pot: "//topbot//&
+                                   " should be either `top' or `bot'")
+      end select
+!
+!  Periodic boundaries in y
+!
+      f(l1:l2,   1:m1-1,nn1:nn2,iax:iaz) = f(l1:l2,m2i:m2 ,nn1:nn2,iax:iaz)
+      f(l1:l2,m2+1:my  ,nn1:nn2,iax:iaz) = f(l1:l2, m1:m1i,nn1:nn2,iax:iaz)
+!
+!  Periodic boundaries in x
+!
+      f(   1:l1-1,:,nn1:nn2,iax:iaz) = f(l2i:l2 ,:,nn1:nn2,iax:iaz)
+      f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
+
+    endsubroutine communicate_bc_aa_pot
 !***********************************************************************
     subroutine communicate_bc_aa_pot2(daadz,az)
 !
