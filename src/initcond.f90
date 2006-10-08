@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.175 2006-10-06 19:09:20 wlyra Exp $ 
+! $Id: initcond.f90,v 1.176 2006-10-08 20:58:26 dobler Exp $ 
 
 module Initcond 
  
@@ -60,6 +60,8 @@ module Initcond
     module procedure gaunoise_rprof_scal
   endinterface
 
+  character(LEN=labellen) :: wave_fmt1='(1x,a,4f8.2)'
+
   contains
 
 !***********************************************************************
@@ -115,13 +117,13 @@ module Initcond
       if (ampl==0) then
         if (lroot) print*,'sinx_siny_cosz: ampl=0'
       else
-        if (lroot) print 10,'sinx_siny_cosz: ampl,kx,ky,kz=',ampl,kx1,ky1,kz1
+        if (lroot) write(*,wave_fmt1) 'sinx_siny_cosz: ampl,kx,ky,kz=', &
+                                      ampl,kx1,ky1,kz1
         f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(sin(kx1*x),2,my),3,mz)&
                                    *spread(spread(sin(ky1*y),1,mx),3,mz)&
                                    *spread(spread(cos(kz1*z),1,mx),2,my))
       endif
 !
-10    format(1x,a,4f8.2)
     endsubroutine sinx_siny_cosz
 !***********************************************************************
     subroutine sin2x_sin2y_cosz(ampl,f,i,kx,ky,kz)
@@ -146,13 +148,13 @@ module Initcond
       if (ampl==0) then
         if (lroot) print*,'sin2x_sin2y_cosz: ampl=0'
       else
-        if (lroot) print 10,'sin2x_sin2y_cosz: ampl,kx,ky,kz=',ampl,kx1,ky1,kz1
+        if (lroot) write(*,wave_fmt1) 'sin2x_sin2y_cosz: ampl,kx,ky,kz=',&
+                                      ampl,kx1,ky1,kz1
         f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(sin(kx1*x)**2,2,my),3,mz)&
                                    +spread(spread(sin(ky1*y)**2,1,mx),3,mz))&
                                    *spread(spread(cos(kz1*z),1,mx),2,my)
       endif
 !
-10    format(1x,a,4f8.2)
     endsubroutine sin2x_sin2y_cosz
 !***********************************************************************
     subroutine cosx_cosy_cosz(ampl,f,i,kx,ky,kz)
@@ -177,13 +179,13 @@ module Initcond
       if (ampl==0) then
         if (lroot) print*,'cosx_cosy_cosz: ampl=0'
       else
-        if (lroot) print 10,'cosx_cosy_cosz: ampl,kx,ky,kz=',ampl,kx1,ky1,kz1
+        if (lroot) write(*,wave_fmt1) 'cosx_cosy_cosz: ampl,kx,ky,kz=', &
+                                      ampl,kx1,ky1,kz1
         f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(cos(kx1*x),2,my),3,mz)&
                                    *spread(spread(cos(ky1*y),1,mx),3,mz)&
                                    *spread(spread(cos(kz1*z),1,mx),2,my))
       endif
 !
-10    format(1x,a,4f8.2)
     endsubroutine cosx_cosy_cosz
 !***********************************************************************
     subroutine cosy_sinz(ampl,f,i,ky,kz)
@@ -208,7 +210,6 @@ module Initcond
       j=i+1; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(sin(ky1*y),1,mx),3,mz)&
                                        *spread(spread(cos(kz1*z),1,mx),2,my) 
 !
-10    format(1x,a,4f8.2)
     endsubroutine cosy_sinz
 !***********************************************************************
     subroutine cosx_coscosy_cosz(ampl,f,i,kx,ky,kz)
@@ -233,7 +234,8 @@ module Initcond
       if (ampl==0) then
         if (lroot) print*,'cosx_cosy_cosz: ampl=0'
       else
-        if (lroot) print 10,'cosx_cosy_cosz: ampl,kx,ky,kz=',ampl,kx1,ky1,kz1
+        if (lroot) write(*,wave_fmt1) 'cosx_cosy_cosz: ampl,kx,ky,kz=', &
+                                      ampl,kx1,ky1,kz1
         f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(cos(kx1*x),2,my),3,mz) &
                                    *spread(spread(-cos(ky1*y)*(          &  
                                      ((1./9.)*sin(ky*y)**8)+((8./63.)*   &
@@ -245,7 +247,6 @@ module Initcond
                                    *spread(spread(cos(kz1*z),1,mx),2,my))
       endif
 !
-10    format(1x,a,4f8.2)
     endsubroutine cosx_coscosy_cosz
 !***********************************************************************
     subroutine hat(ampl,f,i,width,kx,ky,kz)
