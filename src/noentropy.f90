@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.91 2006-10-04 13:18:11 wlyra Exp $
+! $Id: noentropy.f90,v 1.92 2006-10-08 12:11:41 ajohan Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -9,16 +9,14 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED cs2,pp,TT1,Ma2,cv1
+! PENCILS PROVIDED cs2,pp,TT1,Ma2,fpres,cv1
 !
 !***************************************************************
 
 module Entropy
-
-  !
-  ! isothermal case; almost nothing to do
-  !
-
+!
+! isothermal case; almost nothing to do
+!
   use Cparam
   use Cdata
   use Messages
@@ -27,17 +25,14 @@ module Entropy
 
   include 'entropy.h'
   
-  !namelist /entropy_init_pars/ dummyss
-  !namelist /entropy_run_pars/ dummyss 
-
-  ! run parameters
+! run parameters
   real :: hcond0=0.,hcond1=impossible,chi=impossible
   real :: Fbot=impossible,FbotKbot=impossible,Kbot=impossible
   real :: Ftop=impossible,FtopKtop=impossible
   logical :: lmultilayer=.true.
   logical :: lheatc_chiconst=.false.
  
-  ! other variables (needs to be consistent with reset list below)
+! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_ssm=0,idiag_ugradpm=0
   integer :: idiag_thermalpressure=0
 
@@ -57,11 +52,10 @@ module Entropy
       if (.not. first) call fatal_error('register_entropy','module registration called twice')
       first = .false.
 !
-!
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.91 2006-10-04 13:18:11 wlyra Exp $")
+           "$Id: noentropy.f90,v 1.92 2006-10-08 12:11:41 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -127,11 +121,8 @@ module Entropy
       use Cdata
       use EquationOfState, only: beta_glnrho_scaled
 !
+      if (lhydro) lpenc_requested(i_fpres)=.true.
       if (leos.and.ldt) lpenc_requested(i_cs2)=.true.
-      if (lhydro) then
-        lpenc_requested(i_cs2)=.true.
-        lpenc_requested(i_glnrho)=.true.
-      endif
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !
       if (idiag_ugradpm/=0) then
@@ -155,6 +146,10 @@ module Entropy
         lpencil_in(i_u2)=.true.
         lpencil_in(i_cs2)=.true.
       endif
+      if (lpencil_in(i_fpres)) then
+        lpencil_in(i_cs2)=.true.
+        lpencil_in(i_glnrho)=.true.
+      endif
       if (lpencil_in(i_TT1) .and. gamma1/=0.) lpencil_in(i_cs2)=.true.
       if (lpencil_in(i_cs2) .and. gamma1/=0.) lpencil_in(i_lnrho)=.true.
 !
@@ -174,10 +169,18 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
+      integer :: j
+!
       intent(in) :: f
       intent(inout) :: p
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
+! fpres
+      if (lpencil(i_fpres)) then
+        do j=1,3
+          p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
+        enddo
+      endif
 !
       if (NO_WARN) print*, f, p
 !
@@ -211,7 +214,7 @@ module Entropy
       if (lhydro) then
         do j=1,3
           ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-p%cs2*p%glnrho(:,j)
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%fpres(:,j)
         enddo
 !
 !  Add pressure force from global density gradient.

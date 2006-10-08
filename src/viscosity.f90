@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.31 2006-09-27 05:39:35 brandenb Exp $
+! $Id: viscosity.f90,v 1.32 2006-10-08 12:11:41 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -83,7 +83,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.31 2006-09-27 05:39:35 brandenb Exp $")
+           "$Id: viscosity.f90,v 1.32 2006-10-08 12:11:41 ajohan Exp $")
 
       ivisc(1)='nu-const'
 
@@ -309,7 +309,6 @@ module Viscosity
 !
 !  20-11-04/anders: coded
 !
-      if (lentropy .or. ltemperature) lpenc_requested(i_visc_heat)=.true.
       if (lentropy .and. (lvisc_simplified .or. lvisc_rho_nu_const .or. &
           lvisc_nu_const .or. lvisc_nu_shock)) lpenc_requested(i_TT1)=.true.
       if ( lvisc_rho_nu_const .or. lvisc_nu_const .or. &
@@ -354,7 +353,6 @@ module Viscosity
       if (lvisc_nu_shock.and.idiag_epsK/=0) then
         lpenc_diagnos(i_fvisc)=.true.
         lpenc_diagnos(i_diffus_total)=.true.
-        if (lentropy.or.ltemperature) lpenc_diagnos(i_visc_heat)=.true.
         lpenc_diagnos(i_shock)=.true.
         lpenc_diagnos(i_divu)=.true.
         lpenc_diagnos(i_rho)=.true.
@@ -401,24 +399,18 @@ module Viscosity
       intent(in) :: f
       intent(inout) :: p
 !
+!  Viscosity operator
 !
-!  viscosity operator
-!
-      p%fvisc=0. 
-      p%diffus_total=0.
-      p%visc_heat=0.
-           
-!!!
+      p%fvisc=0.0
+      p%diffus_total=0.0
+      p%visc_heat=0.0
+!!
 !! Calculate the heating term due to the viscous force
 !!
 !      if (lpencil(i_visc_heat)) then
 !        call dot_mn(p%uu,p%fvisc,ufvisc)
 !        p%visc_heat = -ufvisc
 !      endif
-!
-!!!!!!!!!!   DIFFUSIVITIES BELOW HERE EITHER DO NOT CONSERVE  !!!!!!!!
-!!!!!!!!!!      TOTAL ENERGY OR EXPLICITLY HANDLE HEATING     !!!!!!!!
-!
 !
       if (lvisc_simplified) then
 !
@@ -427,6 +419,10 @@ module Viscosity
 !  numerically easy and in most cases qualitatively OK
 !
         p%fvisc=p%fvisc+nu*p%del2u
+        if (lpencil(i_visc_heat)) then  ! Heating term not implemented
+          call fatal_error('calc_pencils_viscosity', 'viscous heating term '// &
+              'is not implemented for lvisc_simplified')
+        endif
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu
       endif
 !
@@ -437,10 +433,9 @@ module Viscosity
 !
         murho1=nu*p%rho1  !(=mu/rho)
         do i=1,3
-         p%fvisc(:,i)=p%fvisc(:,i)+murho1*(p%del2u(:,i)+1./3.*p%graddivu(:,i))
+          p%fvisc(:,i)=p%fvisc(:,i)+murho1*(p%del2u(:,i)+1./3.*p%graddivu(:,i))
         enddo  
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + &
-                                                2*nu*p%sij2*p%rho1
+        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + 2*nu*p%sij2*p%rho1
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+murho1
       endif
 !
@@ -454,11 +449,9 @@ module Viscosity
         else
           p%fvisc=p%fvisc+nu*(p%del2u+1./3.*p%graddivu)
         endif
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + &
-                                                 2*nu*p%sij2
+        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + 2*nu*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu
      endif
-!
 !
 !  viscous force: nu_shock
 !
@@ -476,13 +469,15 @@ module Viscosity
         endif
       endif
 !
-!
-!
       if (lvisc_hyper2_simplified) then
 !
 !  viscous force: nu_hyper2*de46v (not momentum-conserving)
 !
         p%fvisc=p%fvisc+nu_hyper2*p%del4u
+        if (lpencil(i_visc_heat)) then  ! Heating term not implemented
+          call fatal_error('calc_pencils_viscosity', 'viscous heating term '// &
+              'is not implemented for lvisc_hyper2_simplified')
+        endif
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper2*dxyz_4/dxyz_2
       endif
 !
@@ -491,6 +486,10 @@ module Viscosity
 !  viscous force: nu_hyper3*del6v (not momentum-conserving)
 !
         p%fvisc=p%fvisc+nu_hyper3*p%del6u
+        if (lpencil(i_visc_heat)) then  ! Heating term not implemented
+          call fatal_error('calc_pencils_viscosity', 'viscous heating term '// &
+              'is not implemented for lvisc_hyper3_simplified')
+        endif
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
       endif
 !
@@ -502,6 +501,10 @@ module Viscosity
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i)+murho1*p%del6u(:,i)
         enddo
+        if (lpencil(i_visc_heat)) then  ! Heating term not implemented
+          call fatal_error('calc_pencils_viscosity', 'viscous heating term '// &
+              'is not implemented for lvisc_hyper3_rho_nu_const')
+        endif
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
       endif
 !
@@ -513,6 +516,10 @@ module Viscosity
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i)+murho1*p%del6u_bulk(:,i)
         enddo
+        if (lpencil(i_visc_heat)) then  ! Heating term not implemented
+          call fatal_error('calc_pencils_viscosity', 'viscous heating term '// &
+              'is not implemented for lvisc_hyper3_rho_nu_const_bulk')
+        endif
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
       endif
 !
@@ -521,6 +528,10 @@ module Viscosity
 !  viscous force: nu_hyper3*(del6u+S.glnrho), where S_ij=d^5 u_i/dx_j^5
 !
         p%fvisc=p%fvisc+nu_hyper3*(p%del6u+p%uij5glnrho)
+        if (lpencil(i_visc_heat)) then  ! Heating term not implemented
+          call fatal_error('calc_pencils_viscosity', 'viscous heating term '// &
+              'is not implemented for lvisc_hyper3_nu_const')
+        endif
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
       endif
 !
@@ -548,6 +559,10 @@ module Viscosity
           call multsv_mn(nu_smag,p%sglnrho,tmp2)
           call multsv_mn(nu_smag,p%del2u+1./3.*p%graddivu,tmp)
           p%fvisc=p%fvisc+2*tmp2+tmp
+          if (lpencil(i_visc_heat)) then  ! Heating term not implemented
+            call fatal_error('calc_pencils_viscosity','viscous heating term '//&
+                'is not implemented for lvisc_smag_simplified')
+          endif
           if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_smag
         else
           if (lfirstpoint) print*, 'calc_viscous_force: '// &
@@ -568,13 +583,18 @@ module Viscosity
           call multsv_mn(nu_smag,p%sglnrho,tmp2)
           call multsv_mn(nu_smag,p%del2u+1./3.*p%graddivu,tmp)
           p%fvisc=p%fvisc+2*tmp2+tmp
+          if (lpencil(i_visc_heat)) then  ! Heating term not implemented
+            call fatal_error('calc_pencils_viscosity','viscous heating term '//&
+                'is not implemented for lvisc_smag_cross_simplified')
+          endif
           if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_smag
         else
           if (lfirstpoint) print*, 'calc_viscous_force: '// &
               "ldensity better be .true. for ivisc='smagorinsky'"
         endif
      endif
-      if(NO_WARN) print*,f,p    !(to keep compiler quiet)
+!
+     if (NO_WARN) print*, f    !(to keep compiler quiet)
 !
     endsubroutine calc_pencils_viscosity
 !***********************************************************************
@@ -600,34 +620,6 @@ module Viscosity
       type (pencil_case) :: p
 !      
       real, dimension (nx) :: Hmax
-!
-!      heat=0.
-!
-!      if (lvisc_simplified) then
-!        if (headtt) print*,"no viscous heating: ivisc(x)='simplified'"
-!      endif
-!!
-!      if (lvisc_rho_nu_const) then
-!        if (headtt) print*,"viscous heating: ivisc(x)='rho_nu-const'"
-!        heat = heat + 2*nu*p%sij2*p%rho1
-!      endif
-!!
-!      if (lvisc_nu_const) then
-!        if (headtt) print*,"viscous heating: ivisc(x)='nu_const'"
-!        heat = heat +2*nu*p%sij2
-!      endif
-!!
-!      if (lvisc_nu_shock) then
-!        if (headtt) print*,"viscous heating: ivisc(x)='nu_shock'"
-!        heat = heat + nu_shock*p%shock*p%divu**2
-!      endif
-!
-!      if (lvisc_snr_damp) then
-!ajwm   No heat is added here in this case, rather the
-!ajwm   force code keeps a total of the amount of heat needed
-!ajwm   and the interstellar code puts that much back as a gaussian
-!ajwm   bump of heat afterwards.
-!      endif
 !
 !  Add viscous heat (which has units of energy/mass) to the RHS
 !  of the entropy ...

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.434 2006-10-06 19:05:58 wlyra Exp $
+! $Id: entropy.f90,v 1.435 2006-10-08 12:11:41 ajohan Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ugss,Ma2
+! PENCILS PROVIDED ugss,Ma2,fpres
 !
 !***************************************************************
 module Entropy
@@ -64,7 +64,8 @@ module Entropy
   logical :: lheatc_corona=.false.
   logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
   logical :: lupw_ss=.false.,lmultilayer=.true.
-  logical :: lpressuregradient_gas=.true.,ladvection_entropy=.true., lviscosity_heat=.true.
+  logical :: lpressuregradient_gas=.true.,ladvection_entropy=.true.
+  logical :: lviscosity_heat=.true.
   logical :: lfreeze_sint=.false.,lfreeze_sext=.false.
 
   character (len=labellen), dimension(ninit) :: initss='nothing'
@@ -159,7 +160,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.434 2006-10-06 19:05:58 wlyra Exp $")
+           "$Id: entropy.f90,v 1.435 2006-10-08 12:11:41 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1470,15 +1471,11 @@ module Entropy
       use Cdata
       use EquationOfState, only: beta_glnrho_scaled
 !
+      lpenc_requested(i_cp1tilde)=.true.
       if (ldt) lpenc_requested(i_cs2)=.true.
-      if (lpressuregradient_gas) then
-        lpenc_requested(i_cs2)=.true.
-        lpenc_requested(i_cp1tilde)=.true.
-        lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_gss)=.true.
-        if (leos_idealgas) lpenc_requested(i_glnTT)=.true.
-      endif
+      if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
       if (ladvection_entropy) lpenc_requested(i_ugss)=.true.
+      if (lviscosity_heat) lpenc_requested(i_visc_heat)=.true.
       if (tau_cor>0.0) then
         lpenc_requested(i_cp1tilde)=.true.
         lpenc_requested(i_TT1)=.true.
@@ -1556,11 +1553,9 @@ module Entropy
         lpenc_requested(i_glnTT)=.true.
       endif
       if (lheatc_hyper3ss) lpenc_requested(i_del6ss)=.true.
-      if (lpressuregradient_gas) lpenc_requested(i_cp1tilde)=.true.
 !
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !
-   
       lpenc_diagnos2d(i_ss)=.true.
 !
       if (idiag_dtchi/=0) lpenc_diagnos(i_rho1)=.true.
@@ -1605,6 +1600,16 @@ module Entropy
         lpencil_in(i_u2)=.true.
         lpencil_in(i_cs2)=.true.
       endif
+      if (lpencil_in(i_fpres)) then
+        lpencil_in(i_cs2)=.true.
+        lpencil_in(i_glnrho)=.true.
+        lpencil_in(i_gss)=.true.
+        if (leos_idealgas) then
+          lpencil_in(i_glnTT)=.true.
+        else
+          lpencil_in(i_cp1tilde)=.true.
+        endif
+      endif
 !
     endsubroutine pencil_interdep_entropy
 !***********************************************************************
@@ -1620,15 +1625,31 @@ module Entropy
 !      
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
+      integer :: j
+!
       intent(in) :: f
       intent(inout) :: p
-!
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! ugss
       if (lpencil(i_ugss)) &
           call u_dot_gradf(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
+! fpres
+      if (lpencil(i_fpres)) then
+        if (leos_idealgas) then
+          do j=1,3
+            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma11
+          enddo
+!  TH: The following would work if one uncomments the intrinsic operator
+!  extensions in sub.f90. Please Test.
+!          p%fpres      =-p%cs2*(p%glnrho + p%glnTT)*gamma11
+        else
+          do j=1,3
+            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
+          enddo
+        endif
+      endif
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************
@@ -1684,31 +1705,14 @@ module Entropy
 !
       if (lhydro) then
 !
-!  pressure term in momentum equation (setting lpressuregradient_gas to
+!  Pressure term in momentum equation (setting lpressuregradient_gas to
 !  .false. allows suppressing pressure term for test purposes)
 !
         if (lpressuregradient_gas) then
-          if (leos_idealgas) then
-            do j=1,3
-              ju=j+iuu-1
-              df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) - &
-                  p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma11
-           enddo
-!
-!  TH: The following would work if one uncomments the intrinsic operator
-!  extensions in sub.f90. Please Test.
-!
-!          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - &
-!                                  p%cs2*(p%glnrho + p%glnTT)*gamma11
-!
-
-          else
-            do j=1,3
-              ju=j+iuu-1
-              df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) - &
-                  p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
-            enddo
-          endif
+          do j=1,3
+            ju=j+iuu-1
+            df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) + p%fpres(:,j)
+          enddo
         endif
 !
 !  velocity damping in the coronal heating zone
