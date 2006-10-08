@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.339 2006-10-08 16:59:30 theine Exp $
+! $Id: magnetic.f90,v 1.340 2006-10-08 21:43:06 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -207,7 +207,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.339 2006-10-08 16:59:30 theine Exp $")
+           "$Id: magnetic.f90,v 1.340 2006-10-08 21:43:06 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3133,8 +3133,8 @@ module Magnetic
 !
 !  define wave vector
 !
-      kx=cshift((/(i-nx/2,i=0,nx-1)/),+nx/2)
-      ky=cshift((/(i-nygrid/2,i=0,nygrid-1)/),+nygrid/2)
+      kx=cshift((/(i-nx/2,i=0,nx-1)/),+nx/2)*2*pi/Lx
+      ky=cshift((/(i-nygrid/2,i=0,nygrid-1)/),+nygrid/2)*2*pi/Ly
 !
 !  calculate 1/k^2, zero mean
 !
