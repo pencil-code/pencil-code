@@ -2,7 +2,7 @@
 !  Run parameters for Kelvin-Helmholtz turbulence.
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.6 2006-04-12 15:01:11 ajohan Exp $',
+  cvsid='$Id: run.in,v 1.7 2006-10-09 12:34:15 ajohan Exp $',
   nt=20, it1=5, cdt=0.4, cdtv=0.80, isave=1000, itorder=3
   dsnap=1.0, dvid=0.01, dtmin=1e-6, isaveglobal=1000
   lpencil_check=T
@@ -19,6 +19,7 @@
 /
 &entropy_run_pars
   lupw_ss=T
+  lviscosity_heat=F
 /
 &shear_run_pars
 /
