@@ -1,0 +1,58 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in vertically stratified atmosphere/solar convection zone
+! Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2006-10-09 22:28:05 theine Exp $'
+  nt=5000,it1=10,isave=10,itorder=3
+  cdt=0.4,cdtv=0.2,dtmin=1e-6
+  bcz = 's','s','a','StS','StS','s:c1','s:nil','a:nil','s','s'
+  bcz = 's','s','a','StS','StS','s','s','a','s','s'
+  lmaxadvec_sum=T
+  lwrite_aux=T
+/
+&eos_run_pars
+  xHe=0.1
+/
+
+&hydro_run_pars
+  !tdamp=0.1
+  !dampu=100.0
+  !ldamp_fade=T
+/
+&density_run_pars
+  lupw_lnrho=T                          ! avoid wiggles
+/
+&grav_run_pars
+  gravz_profile='const'
+  gravz=-2.75
+  reduced_top=0.5
+  zgrav=0.1
+/
+&entropy_run_pars
+  chi=1e-2
+  lupw_lnTT=T                             ! avoid wiggles
+/
+&magnetic_run_pars
+  iresistivity='eta-const','shock-perp'
+  lweyl_gauge=T
+  eta=1e-2, eta_shock=5.
+  B_ext=0.0,0.0,0.892061
+  va2max_jxb=2500., va2power_jxb=4
+/
+&radiation_run_pars
+  bc_rad='p:p','p:p','S:c'
+  radx=1, rady=1, radz=1, rad2max=1
+  TT_top=4e3,tau_top=0.2
+  lradflux=T
+/
+
+&viscosity_run_pars
+  ivisc='nu-const','nu-shock'
+  nu=1e-2,nu_shock=5.
+/
+&shock_run_pars
+  lshock_first=F
+  ldivu_perp=T
+/
