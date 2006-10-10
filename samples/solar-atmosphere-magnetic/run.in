@@ -4,11 +4,11 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2006-10-09 22:28:05 theine Exp $'
-  nt=5000,it1=10,isave=10,itorder=3
+  cvsid='$Id: run.in,v 1.2 2006-10-10 20:48:59 theine Exp $'
+  nt=150,it1=10,isave=10,itorder=3
   cdt=0.4,cdtv=0.2,dtmin=1e-6
+  bcz = 's','s','a','StS','StS','s:pot','s:nil','a:nil','s','s'
   bcz = 's','s','a','StS','StS','s:c1','s:nil','a:nil','s','s'
-  bcz = 's','s','a','StS','StS','s','s','a','s','s'
   lmaxadvec_sum=T
   lwrite_aux=T
 /

@@ -4,7 +4,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2006-10-09 22:28:05 theine Exp $'
+  cvsid='$Id: start.in,v 1.2 2006-10-10 20:48:59 theine Exp $'
 
   unit_length=1e8               !
   unit_velocity=1e6             ! unit system (relative to cgs)
@@ -14,6 +14,7 @@
   xyz0  = -1.6544103, -1.6544103, -2.61196  ! first corner of box
   Lxyz  =  3.3088207,  3.3088207,  3.20542  ! box size
   lperi =  T ,   T ,   F        ! periodic direction?
+  bcz = 's','s','a','StS','StS','s:pot','s:nil','a:nil','s','s'
   bcz = 's','s','a','StS','StS','s:c1','s:nil','a:nil','s','s'
 
   lwrite_aux=T                  ! write out auxiliary variables
