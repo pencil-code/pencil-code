@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.243 2006-10-07 16:31:39 theine Exp $
+### $Id: Makefile.src,v 1.244 2006-10-10 20:48:41 bingert Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -552,6 +552,7 @@ LD_FFTW2=
 #CFLAGS=-O3 -dalign -xarch=v9b -DFUNDERSC=1 #(corona[1-2])
 #LD_MPI=-L/opt/local/mpich/lib -lmpich -lsocket -lnsl -laio
 #LD_MPI=-lmpi  #(corona[1-2])
+#LD_MPI= #(scrooge.)
 #F77=$(FC)
 
 ## UNICOS/mk:
