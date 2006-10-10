@@ -4,6 +4,7 @@
 ###
 
 MPICOMM=nompicomm
+MPICOMM=mpicomm
 HYDRO=hydro
 DENSITY=density
 MAGNETIC=magnetic
