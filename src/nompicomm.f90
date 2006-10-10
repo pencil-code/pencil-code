@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.145 2006-10-08 17:02:14 theine Exp $
+! $Id: nompicomm.f90,v 1.146 2006-10-10 20:35:55 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -978,33 +978,5 @@ module Mpicomm
       f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
 
     endsubroutine communicate_bc_aa_pot
-!***********************************************************************
-    subroutine communicate_bc_aa_pot2(daadz,az)
-!
-!  Helper routine for bc_aa_pot2 in Magnetic.
-!  Needed due to Fourier transforms which only work on (l1:l2,m1:m2)
-!
-!   7-oct-2006/tobi: Coded
-!
-      use Cdata, only: iax,iaz
-
-      real, dimension (mx,my,iax:iaz), intent (inout) :: daadz
-      real, dimension (mx,my), intent (inout) :: az
-!
-!  Periodic boundaries in y
-!
-      daadz(l1:l2, 1:m1-1,:) = daadz(l1:l2,m2i:m2,:)
-         az(l1:l2, 1:m1-1)   =    az(l1:l2,m2i:m2)
-      daadz(l1:l2,m2+1:my,:) = daadz(l1:l2,m1:m1i,:)
-         az(l1:l2,m2+1:my)   =    az(l1:l2,m1:m1i)
-!
-!  Periodic boundaries in x
-!
-      daadz(1:l1-1, :,:) = daadz(l2i:l2,:,:)
-         az(1:l1-1, :)   = az(l2i:l2,:)
-      daadz(n2+1:mz,:,:) = daadz(l1:l1i,:,:)
-         az(n2+1:mz,:)   = az(l1:l1i,:)
-
-    endsubroutine communicate_bc_aa_pot2
 !***********************************************************************
 endmodule Mpicomm

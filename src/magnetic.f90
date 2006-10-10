@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.340 2006-10-08 21:43:06 theine Exp $
+! $Id: magnetic.f90,v 1.341 2006-10-10 20:35:55 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -207,7 +207,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.340 2006-10-08 21:43:06 theine Exp $")
+           "$Id: magnetic.f90,v 1.341 2006-10-10 20:35:55 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2818,29 +2818,28 @@ module Magnetic
 !
 !  Pontential field boundary condition
 !
-!   6-oct-06/tobi: Coded
+!  10-oct-06/tobi: Coded
 !
       use Fourier, only: fourier_transform_xy_parallel
-      use Mpicomm, only: communicate_bc_aa_pot2
+      use Mpicomm, only: communicate_bc_aa_pot
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 
-      real, dimension (nx,ny,iax:iay) :: kk
-      real, dimension (nx,ny) :: kappa,kappa1
-      real, dimension (nx,ny) :: aa_re,aa_im,az_re,az_im,daadz_re,daadz_im
-      real, dimension (mx,my,iax:iaz) :: daadz
-      real, dimension (mx,my) :: az
+      real, dimension (nx,ny,iax:iaz) :: aa_re,aa_im
+      real, dimension (nx,ny) :: kx,ky,kappa,kappa1
+      real, dimension (nx,ny) :: tmp_re,tmp_im
+      real, dimension (nx,ny) :: fac
       integer :: i,j
 !
 !  Get local wave numbers
 !
-      kk(:,:,iax) = spread(kx_fft                    ,2,ny)
-      kk(:,:,iay) = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
+      kx = spread(kx_fft                    ,2,ny)
+      ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
 !
 !  Calculate 1/k^2, zero mean
 !
-      kappa = sqrt(kk(:,:,iax)**2+kk(:,:,iay)**2)
+      kappa = sqrt(kx**2 + ky**2)
       where (kappa > 0)
         kappa1 = 1/kappa
       elsewhere
@@ -2855,116 +2854,75 @@ module Magnetic
 !
       case('bot')
 !
-!  Initialize Fourier coefficients of the z-component
-!
-        az_re = 0
-        az_im = 0
-!
-!  Loop over x- and y-component, determine ghost zone values, and
-!  compute z-component
+!  Fourier transforms of x- and y-components on the boundary
 !
         do i=iax,iay
-!
-!  Derivative of ax and ay on the boundary
-!
-          aa_re = f(l1:l2,m1:m2,n1,i)
-          aa_im = 0.0
-          call fourier_transform_xy_parallel(aa_re,aa_im)
-          daadz_re = kappa*aa_re
-          daadz_im = kappa*aa_im
-          call fourier_transform_xy_parallel(daadz_re,daadz_im,linv=.true.)
-          daadz(l1:l2,m1:m2,i) = daadz_re
-!
-!  Compute z-component
-!
-          az_re = az_re + kk(:,:,i)*aa_im  ! Scaled with kappa
-          az_im = az_im - kk(:,:,i)*aa_re  ! Scaled with kappa
+          tmp_re = f(l1:l2,m1:m2,n1,i)
+          tmp_im = 0.0
+          call fourier_transform_xy_parallel(tmp_re,tmp_im)
+          aa_re(:,:,i) = tmp_re
+          aa_im(:,:,i) = tmp_im
         enddo
 !
-!  Derivative of az on the boundary
+!  Compute z-component from div A = 0
 !
-        daadz_re = az_re
-        daadz_im = az_im
-        call fourier_transform_xy_parallel(daadz_re,daadz_im,linv=.true.)
-        daadz(l1:l2,m1:m2,iaz) = daadz_re
+        aa_re(:,:,iaz) = + kappa1*(kx*aa_im(:,:,iax)+ky*aa_im(:,:,iay))
+        aa_im(:,:,iaz) = - kappa1*(kx*aa_re(:,:,iax)+ky*aa_re(:,:,iay))
 !
-!  Boundary value of az
-!
-        az_re = kappa1*az_re  ! Rescale with kappa
-        az_im = kappa1*az_im  ! Rescale with kappa
-        call fourier_transform_xy_parallel(az_re,az_im,linv=.true.)
-        az(l1:l2,m1:m2) = az_re
-!
-!  Communicate along y
-!
-        call communicate_bc_aa_pot2(daadz,az)
-!
-!  Fill ghost zones in z and set z-component
+!  Determine potential field in ghost zones
 !
         do j=1,nghost
-          f(:,:,n1-j,iax:iaz) = f(:,:,n1+j,iax:iaz) - 2*j*dz*daadz
+          fac = exp(-j*kappa*dz)
+          do i=iax,iaz
+            tmp_re = fac*aa_re(:,:,i)
+            tmp_im = fac*aa_im(:,:,i)
+            call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+            f(l1:l2,m1:m2,n1-j,i) = tmp_re
+          enddo
         enddo
-        f(:,:,n1,iaz) = az
-
+!
+!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
+!
+        call communicate_bc_aa_pot(f,topbot)
 !
 !  Pontential field condition at the top
 !
       case('top')
 !
-!  Initialize Fourier coefficients of the z-component
-!
-        az_re = 0.0
-        az_im = 0.0
-!
-!  Loop over x- and y-component, determine ghost zone values, and
-!  compute z-component
+!  Fourier transforms of x- and y-components on the boundary
 !
         do i=iax,iay
-!
-!  Derivative of ax and ay on the boundary
-!
-          aa_re = f(l1:l2,m1:m2,n2,i)
-          aa_im = 0.0
-          call fourier_transform_xy_parallel(aa_re,aa_im)
-          daadz_re = -kappa*aa_re
-          daadz_im = -kappa*aa_im
-          call fourier_transform_xy_parallel(daadz_re,daadz_im,linv=.true.)
-          daadz(l1:l2,m1:m2,i) = daadz_re
-!
-!  Compute z-component
-!
-          az_re = az_re - kk(:,:,i)*aa_im  ! Scaled with kappa
-          az_im = az_im + kk(:,:,i)*aa_re  ! Scaled with kappa
+          tmp_re = f(l1:l2,m1:m2,n2,i)
+          tmp_im = 0.0
+          call fourier_transform_xy_parallel(tmp_re,tmp_im)
+          aa_re(:,:,i) = tmp_re
+          aa_im(:,:,i) = tmp_im
         enddo
 !
-!  Derivative of az on the boundary
+!  Compute z-component from div A = 0
 !
-        daadz_re = -az_re
-        daadz_im = -az_im
-        call fourier_transform_xy_parallel(daadz_re,daadz_im,linv=.true.)
-        daadz(l1:l2,m1:m2,iaz) = daadz_re
+        aa_re(:,:,iaz) = - kappa1*(kx*aa_im(:,:,iax)+ky*aa_im(:,:,iay))
+        aa_im(:,:,iaz) = + kappa1*(kx*aa_re(:,:,iax)+ky*aa_re(:,:,iay))
 !
-!  Boundary value of az
-!
-        az_re = kappa1*az_re
-        az_im = kappa1*az_im
-        call fourier_transform_xy_parallel(az_re,az_im,linv=.true.)
-        az(l1:l2,m1:m2) = az_re
-!
-!  Communicate along y
-!
-        call communicate_bc_aa_pot2(daadz,az)
-!
-!  Fill ghost zones in z and set z-component
+!  Determine potential field in ghost zones
 !
         do j=1,nghost
-          f(:,:,n2+j,iax:iaz) = f(:,:,n2-j,iax:iaz) + 2*j*dz*daadz
+          fac = exp(-j*kappa*dz)
+          do i=iax,iaz
+            tmp_re = fac*aa_re(:,:,i)
+            tmp_im = fac*aa_im(:,:,i)
+            call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+            f(l1:l2,m1:m2,n2+j,i) = tmp_re
+          enddo
         enddo
-        f(:,:,n2,iaz) = az
+!
+!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
+!
+        call communicate_bc_aa_pot(f,topbot)
 
       case default
 
-        if (lroot) print*,"bc_aa_pot: invalid argument"
+        if (lroot) print*,"bc_aa_pot2: invalid argument"
 
       endselect
 
