@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.195 2006-10-08 16:59:31 theine Exp $
+! $Id: mpicomm.f90,v 1.196 2006-10-10 13:23:59 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2205,15 +2205,23 @@ module Mpicomm
 
         nbufy=nx*nghost*(nghost+1)*3
 
-        call MPI_SENDRECV(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy, &
-                          ubufyi,nbufy,MPI_REAL,yuneigh,tolowy, &
-                          MPI_COMM_WORLD,isend_rq_tolowy,ierr)
-        call MPI_SENDRECV(ubufyo,nbufy,MPI_REAL,yuneigh,touppy, &
-                          lbufyi,nbufy,MPI_REAL,ylneigh,touppy, &
-                          MPI_COMM_WORLD,isend_rq_touppy,ierr)
+        call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy, &
+                       MPI_COMM_WORLD,irecv_rq_fromuppy,ierr)
+        call MPI_IRECV(lbufyi,nbufy,MPI_REAL,ylneigh,touppy, &
+                       MPI_COMM_WORLD,irecv_rq_fromlowy,ierr)
+        call MPI_ISEND(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy, &
+                       MPI_COMM_WORLD,isend_rq_tolowy,ierr)
+        call MPI_ISEND(ubufyo,nbufy,MPI_REAL,yuneigh,touppy, &
+                       MPI_COMM_WORLD,isend_rq_touppy,ierr)
+
+        call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,ierr)
+        call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,ierr)
 
         f(l1:l2,   1:m1-1,nn1:nn2,iax:iaz) = lbufyi
         f(l1:l2,m2+1:my  ,nn1:nn2,iax:iaz) = ubufyi
+
+        call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,ierr)
+        call MPI_WAIT(isend_rq_touppy,isend_stat_tu,ierr)
 
       else
 
@@ -2255,18 +2263,25 @@ module Mpicomm
 
         nbufy=nx*12
 
-        call MPI_SENDRECV(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy, &
-                          ubufyi,nbufy,MPI_REAL,yuneigh,tolowy, &
-                          MPI_COMM_WORLD,isend_rq_tolowy,ierr)
-        call MPI_SENDRECV(ubufyo,nbufy,MPI_REAL,yuneigh,touppy, &
-                          lbufyi,nbufy,MPI_REAL,ylneigh,touppy, &
-                          MPI_COMM_WORLD,isend_rq_touppy,ierr)
-                          
+        call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy, &
+                       MPI_COMM_WORLD,irecv_rq_fromuppy,ierr)
+        call MPI_IRECV(lbufyi,nbufy,MPI_REAL,ylneigh,touppy, &
+                       MPI_COMM_WORLD,irecv_rq_fromlowy,ierr)
+        call MPI_ISEND(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy, &
+                       MPI_COMM_WORLD,isend_rq_tolowy,ierr)
+        call MPI_ISEND(ubufyo,nbufy,MPI_REAL,yuneigh,touppy, &
+                       MPI_COMM_WORLD,isend_rq_touppy,ierr)
+
+        call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,ierr)
+        call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,ierr)
 
         daadz(l1:l2,   1:m1-1,:) = lbufyi(:,:,1:3)
            az(l1:l2,   1:m1-1)   = lbufyi(:,:,  4)
         daadz(l1:l2,m2+1:my  ,:) = ubufyi(:,:,1:3)
            az(l1:l2,m2+1:my  )   = ubufyi(:,:,  4)
+
+        call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,ierr)
+        call MPI_WAIT(isend_rq_touppy,isend_stat_tu,ierr)
 
       else
 
