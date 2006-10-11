@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.73 2006-10-04 08:46:06 wlyra Exp $
+! $Id: planet.f90,v 1.74 2006-10-11 00:42:25 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -162,7 +162,7 @@ module Planet
       real, dimension(nr) :: bp_sum,br_sum,bz_sum
       real, dimension(nx) :: uphi,urad,uzed
       real, dimension(nx) :: bphi,brad,bzed
-      integer, dimension(nr) :: k,ktot
+      integer, dimension(nr) :: k,ktot,ktot1
       real :: step,rloop_int,rloop_ext
       integer :: ir,i
       type (pencil_case) :: p
@@ -195,6 +195,7 @@ module Planet
       do ir=1,nr
          rloop_int = r_int + (ir-1)*step
          rloop_ext = r_int + ir*step
+!
          do i=1,nx
             if ((rcyl_mn(i).le.rloop_ext).and.(rcyl_mn(i).ge.rloop_int)) then
 !
@@ -218,7 +219,9 @@ module Planet
 !
 ! go filling the sums and the counter
 !
+      !print*,'s_rho=',s_rho
       call mpireduce_sum(s_rho,rho_sum,nr)
+      !print*,'rho_sum=',rho_sum
 !
       call mpireduce_sum(s_urad,ur_sum,nr)
       call mpireduce_sum(s_uphi,up_sum,nr)
@@ -230,7 +233,9 @@ module Planet
          call mpireduce_sum(s_bzed,bz_sum,nr)
       endif
 !
+      !print*,'k=',k
       call mpireduce_sum_int(k,ktot,nr)
+      !print*,'ktot=',ktot
 !
 ! Broadcast the values
 !
@@ -254,19 +259,25 @@ module Planet
 !
 ! stop if any ktot is zero
 !
-         if (any(ktot == 0)) &
-              call error("set_new_average","ktot=0") 
+         !print*,'rho_sum=',rho_sum
 
-         rhoavg_coarse=rho_sum/ktot
+         if (any(ktot == 0)) then
+            !print*,ktot
+            call error("set_new_average","ktot=0") 
+         endif
+
+         ktot1=1./ktot
+
+         rhoavg_coarse=rho_sum*ktot1
 !
-         uavg_coarse(:,1)=ur_sum/ktot
-         uavg_coarse(:,2)=up_sum/ktot
-         uavg_coarse(:,3)=uz_sum/ktot
+         uavg_coarse(:,1)=ur_sum*ktot1
+         uavg_coarse(:,2)=up_sum*ktot1
+         uavg_coarse(:,3)=uz_sum*ktot1
 !
          if (lmagnetic) then
-            bavg_coarse(:,1)=br_sum/ktot
-            bavg_coarse(:,2)=bp_sum/ktot
-            bavg_coarse(:,3)=bz_sum/ktot
+            bavg_coarse(:,1)=br_sum*ktot1
+            bavg_coarse(:,2)=bp_sum*ktot1
+            bavg_coarse(:,3)=bz_sum*ktot1
          endif
 !
 ! set the averages as global variables to use in the next timestep
