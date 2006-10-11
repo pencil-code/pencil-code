@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.176 2006-10-08 20:58:26 dobler Exp $ 
+! $Id: initcond.f90,v 1.177 2006-10-11 01:08:40 wlyra Exp $ 
 
 module Initcond 
  
@@ -2542,7 +2542,7 @@ module Initcond
 !
     endsubroutine random_isotropic_KS
 !********************************************************** 
-    subroutine power_law(f,xx,yy,zz,lnrho_const,plaw)
+    subroutine power_law(f,xx,yy,zz,lnrho_const,plaw,lstratified)
 !
 ! 24-fev-05/wlad : coded.
 ! Yields from Minimum Mass Solar Nebula model
@@ -2562,6 +2562,7 @@ module Initcond
       real, dimension(mx,my,mz) :: xx,yy,zz,rr_cyl,HH 
       real :: lnrho_const,plaw
       real :: r0_pot=0.1,n_pot=2,rsmooth
+      logical :: lstratified
 !
       if (n_pot.ne.2) then
          print*,'initcond.f90: You are trying to model a protoplanetary disk' 
@@ -2573,7 +2574,7 @@ module Initcond
 !
       rr_cyl   = sqrt(xx**2 + yy**2) + tini
 !
-      if ((nzgrid==1).or.(lcylindrical)) then
+      if ((nzgrid==1).or.(.not.lstratified)) then
 !
 ! Radial stratification
 !

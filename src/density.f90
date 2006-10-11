@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.273 2006-10-06 19:06:56 wlyra Exp $
+! $Id: density.f90,v 1.274 2006-10-11 01:08:40 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -48,6 +48,7 @@ module Density
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
+  logical :: lstratified=.false.
 
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
@@ -64,7 +65,7 @@ module Density
        mpoly,strati_type,beta_glnrho_global,         &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
-       wdamp,plaw,lcontinuity_gas
+       wdamp,plaw,lcontinuity_gas,lstratified
      
 
   namelist /density_run_pars/ &
@@ -104,7 +105,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.273 2006-10-06 19:06:56 wlyra Exp $")
+           "$Id: density.f90,v 1.274 2006-10-11 01:08:40 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -646,7 +647,7 @@ module Density
       !minimum mass solar nebula
       !
         if (lroot)  print*,'init_lnrho: initialize initial condition for planet building'
-        call power_law(f,xx,yy,zz,lnrho_const,plaw)
+        call power_law(f,xx,yy,zz,lnrho_const,plaw,lstratified)
 
      case ('step_xz') 
         call fatal_error('init_lnrho','neutron_star initial condition is now in the special/neutron_star.f90 code')
