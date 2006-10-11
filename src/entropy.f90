@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.435 2006-10-08 12:11:41 ajohan Exp $
+! $Id: entropy.f90,v 1.436 2006-10-11 01:07:18 wlyra Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -160,7 +160,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.435 2006-10-08 12:11:41 ajohan Exp $")
+           "$Id: entropy.f90,v 1.436 2006-10-11 01:07:18 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1835,7 +1835,7 @@ module Entropy
         if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
-        if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2/gamma,idiag_TTp)
+        if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma11,idiag_TTp)
 !
 !  xy averages for fluxes; doesn't need to be as frequent (check later)
 !  idiag_fradz is done in the calc_headcond routine
@@ -1850,7 +1850,6 @@ module Entropy
     endsubroutine dss_dt
 !***********************************************************************
     subroutine set_border_entropy(f,df)
-!
 !
 !  Calculates the driving term for the border profile
 !  of the ss variable.
