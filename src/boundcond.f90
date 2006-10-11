@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.123 2006-10-04 10:45:36 theine Exp $
+! $Id: boundcond.f90,v 1.124 2006-10-11 12:12:47 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -355,6 +355,8 @@ module Boundcond
                 if (j==iaa) call bc_aa_pot(f,topbot)
               case ('pot')
                 if (j==iaa) call bc_aa_pot2(f,topbot)
+              case ('pot3')
+                if (j==iaa) call bc_aa_pot3(f,topbot)
               case ('cT')       ! constant temp.
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
                 if (j==iss)   call bc_ss_temp_z(f,topbot)

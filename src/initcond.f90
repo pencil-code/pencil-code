@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.177 2006-10-11 01:08:40 wlyra Exp $ 
+! $Id: initcond.f90,v 1.178 2006-10-11 12:12:47 dobler Exp $ 
 
 module Initcond 
  
@@ -192,7 +192,8 @@ module Initcond
 !
 !  initial condition for potential field test
 !
-!   6-oct-06/axel: coded
+!   06-oct-06/axel: coded
+!   11-oct-06/wolf: modified to only set one component of aa
 !
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
@@ -204,11 +205,16 @@ module Initcond
       if (present(ky)) ky1=ky
       if (present(kz)) kz1=kz
 !
-      j=i+0; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(cos(ky1*y),1,mx),3,mz)&
-                                       *spread(spread(sin(kz1*z),1,mx),2,my) 
+      j=i; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(cos(ky1*y),1,mx),3,mz)&
+                                     *spread(spread(sin(kz1*z),1,mx),2,my) 
 !
-      j=i+1; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(sin(ky1*y),1,mx),3,mz)&
-                                       *spread(spread(cos(kz1*z),1,mx),2,my) 
+!  Axel, are you OK with this? If so, I'll eliminate j above.
+!
+!  Don't do this: we now call this twice from magnetic.f90, and setting
+!  just Ax /= 0 makes perfect sense for potential bc tests. 
+!
+!      j=i+1; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(sin(ky1*y),1,mx),3,mz)&
+!                                       *spread(spread(cos(kz1*z),1,mx),2,my) 
 !
     endsubroutine cosy_sinz
 !***********************************************************************

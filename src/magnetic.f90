@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.341 2006-10-10 20:35:55 theine Exp $
+! $Id: magnetic.f90,v 1.342 2006-10-11 12:12:47 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -207,7 +207,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.341 2006-10-10 20:35:55 theine Exp $")
+           "$Id: magnetic.f90,v 1.342 2006-10-11 12:12:47 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -419,7 +419,9 @@ module Magnetic
          case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
-         case('cosysinz'); call cosy_sinz(amplaa(j),f,iaa,ky_aa(j),kz_aa(j))
+         case('cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
+                           call cosy_sinz(amplaa(j),f,iay,ky_aa(j),kz_aa(j))
+         case('Ax=cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
          case('magnetogram'); call mdi_init(f)
          case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('crazy', '5'); call crazy(amplaa(j),f,iaa)
@@ -451,7 +453,7 @@ module Magnetic
             f(:,:,:,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*xx)
             f(:,:,:,iaz) = amplaa(j)/kx_aa(j)*cos(kx_aa(j)*xx)
          case('geo-benchmark-case1','geo-benchmark-case2'); call geo_benchmark_B(f)
-            
+
          case default
             !
             !  Catch unknown values
@@ -2813,6 +2815,135 @@ module Magnetic
       endselect
 !
     endsubroutine bc_frozen_in_bb
+!***********************************************************************
+    subroutine bc_aa_pot3(f,topbot)
+!
+!  Pontential field boundary condition
+!
+!  11-oct-06/wolf: Adapted from Tobi's bc_aa_pot2
+!
+      use Fourier, only: fourier_transform_xy_parallel
+      use Mpicomm, only: communicate_bc_aa_pot
+
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+
+      real, dimension (nx,ny,iax:iaz) :: aa_re,aa_im
+      real, dimension (nx,ny) :: kx,ky,kappa,kappa1,exp_fact
+      real, dimension (nx,ny) :: tmp_re,tmp_im
+      real, dimension (nx,ny) :: fac
+      real    :: delta_z
+      integer :: i,j
+!
+!  Get local wave numbers
+!
+      kx = spread(kx_fft                    ,2,ny)
+      ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
+!
+!  Calculate 1/k^2, zero mean
+!
+      kappa = sqrt(kx**2 + ky**2)
+      where (kappa > 0)
+        kappa1 = 1/kappa
+      elsewhere
+        kappa1 = 0
+      endwhere
+!
+!  Check whether we want to do top or bottom (this is precessor dependent)
+!
+      select case(topbot)
+!
+!  Potential field condition at the bottom
+!
+      case('bot')
+
+        do j=1,nghost
+!
+! Calculate delta_z based on z(), not on dz to improve behavior for
+! non-equidistant grid (still not really correct, but could be OK)
+!
+          delta_z  = z(n1+j) - z(n1-j)
+          exp_fact = exp(-kappa*delta_z)
+
+!
+!  Determine potential field in ghost zones
+!
+          !  Fourier transforms of x- and y-components on the boundary
+          do i=iax,iay
+            tmp_re = f(l1:l2,m1:m2,n1+j,i)
+            tmp_im = 0.0
+            call fourier_transform_xy_parallel(tmp_re,tmp_im)
+            aa_re(:,:,i) = tmp_re*exp_fact
+            aa_im(:,:,i) = tmp_im*exp_fact
+          enddo
+
+          !  Compute z-component from div A = 0
+          aa_re(:,:,iaz) = + kappa1*(kx*aa_im(:,:,iax)+ky*aa_im(:,:,iay))
+          aa_im(:,:,iaz) = - kappa1*(kx*aa_re(:,:,iax)+ky*aa_re(:,:,iay))
+
+          ! Transform back
+          do i=iax,iaz
+            tmp_re = aa_re(:,:,i)
+            tmp_im = aa_im(:,:,i)
+            call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+            f(l1:l2,m1:m2,n1-j,i) = tmp_re
+          enddo
+
+        enddo
+!
+!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
+!
+        call communicate_bc_aa_pot(f,topbot)
+!
+!  Potential field condition at the top
+!
+      case('top')
+
+        do j=1,nghost
+!
+! Calculate delta_z based on z(), not on dz to improve behavior for
+! non-equidistant grid (still not really correct, but could be OK)
+!
+          delta_z  = z(n2+j) - z(n2-j)
+          exp_fact = exp(-kappa*delta_z)
+
+!
+!  Determine potential field in ghost zones
+!
+          !  Fourier transforms of x- and y-components on the boundary
+          do i=iax,iay
+            tmp_re = f(l1:l2,m1:m2,n2-j,i)
+            tmp_im = 0.0
+            call fourier_transform_xy_parallel(tmp_re,tmp_im)
+            aa_re(:,:,i) = tmp_re*exp_fact
+            aa_im(:,:,i) = tmp_im*exp_fact
+          enddo
+
+          ! Compute z-component from div A = 0
+          aa_re(:,:,iaz) = - kappa1*(kx*aa_im(:,:,iax)+ky*aa_im(:,:,iay))
+          aa_im(:,:,iaz) = + kappa1*(kx*aa_re(:,:,iax)+ky*aa_re(:,:,iay))
+
+          ! Transform back
+          do i=iax,iaz
+            tmp_re = aa_re(:,:,i)
+            tmp_im = aa_im(:,:,i)
+            call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+            f(l1:l2,m1:m2,n2+j,i) = tmp_re
+          enddo
+
+        enddo
+!
+!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
+!
+        call communicate_bc_aa_pot(f,topbot)
+
+      case default
+
+        if (lroot) print*,"bc_aa_pot2: invalid argument"
+
+      endselect
+
+    endsubroutine bc_aa_pot3
 !***********************************************************************
     subroutine bc_aa_pot2(f,topbot)
 !

@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.73 2006-10-04 10:46:51 theine Exp $
+! $Id: nomagnetic.f90,v 1.74 2006-10-11 12:12:47 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -59,7 +59,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.73 2006-10-04 10:46:51 theine Exp $")
+           "$Id: nomagnetic.f90,v 1.74 2006-10-11 12:12:47 dobler Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -305,6 +305,18 @@ module Magnetic
     endsubroutine bc_frozen_in_bb
 !***********************************************************************
     subroutine bc_aa_pot2(f,topbot)
+!
+!  Dummy routine for potential field boundary condition
+!
+!  14-jun-2002/axel: adapted from similar
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      if (ip==1) print*,topbot,f  !(to keep compiler quiet)
+    endsubroutine bc_aa_pot2
+!***********************************************************************
+    subroutine bc_aa_pot3(f,topbot)
 !
 !  Dummy routine for potential field boundary condition
 !
