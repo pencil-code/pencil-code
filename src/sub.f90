@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.254 2006-10-03 14:44:26 bingert Exp $ 
+! $Id: sub.f90,v 1.255 2006-10-11 21:53:10 brandenb Exp $ 
 
 module Sub 
 
@@ -31,7 +31,7 @@ module Sub
   public :: del6_nodx, del6v, del6, del6_other
   public :: gradf_upw1st
 
-  public :: dot, dot2, dot_mn, dot2_mn, dot_add, dot_sub
+  public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub
   public :: cross, cross_mn
   public :: sum_mn, max_mn
   public :: multsv, multsv_add, multsv_mn
@@ -919,6 +919,45 @@ module Sub
       c=a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
 !
     endsubroutine dot_mn
+!***********************************************************************
+    subroutine dot_mn_sv(a,b,c)
+!
+!  dot product, c=a.b, between non-pencilized vector and  pencil array
+!  10-oct-06/axel: coded
+!
+      use Cdata
+!
+      real, dimension (3)    :: a
+      real, dimension (nx,3) :: b
+      real, dimension (nx)   :: c
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      c=a(1)*b(:,1)+a(2)*b(:,2)+a(3)*b(:,3)
+!
+    endsubroutine dot_mn_sv
+!***********************************************************************
+    subroutine dot_mn_sm(a,b,c)
+!
+!  dot product, c=a.b, between non-pencilized vector and  pencil matrix
+!  10-oct-06/axel: coded
+!
+      use Cdata
+!
+      real, dimension (3)      :: a
+      real, dimension (nx,3,3) :: b
+      real, dimension (nx,3)   :: c
+      integer :: i
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      do i=1,3
+        c(:,i)=a(1)*b(:,i,1)+a(2)*b(:,i,2)+a(3)*b(:,i,3)
+      enddo
+!
+    endsubroutine dot_mn_sm
 !***********************************************************************
     subroutine dot_0(a,b,c)
 !

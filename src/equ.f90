@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.328 2006-09-21 23:19:17 wlyra Exp $
+! $Id: equ.f90,v 1.329 2006-10-11 21:53:09 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -375,9 +375,10 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.328 2006-09-21 23:19:17 wlyra Exp $")
+           "$Id: equ.f90,v 1.329 2006-10-11 21:53:09 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
+!  Do diagnostics only in the first of the 3 (=itorder) substeps.
 !
       ldiagnos=lfirst.and.lout
       l2davgfirst=lfirst.and.l2davg
@@ -630,6 +631,13 @@ module Equ
         if (lparticles) call particles_pde_pencil(f,df,p)
 !
         if (lplanet) call runtime_phiavg(p)
+!
+!  Call diagnostics that involves the full right hand side
+!  This must be done at the end of all calls that might modify df.
+!
+        if (ldiagnos) then
+          if (lmagnetic) call df_diagnos_magnetic(f,df,p)
+        endif
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)

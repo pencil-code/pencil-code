@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.45 2006-08-23 16:53:33 mee Exp $
+! $Id: timestep.f90,v 1.46 2006-10-11 21:53:10 brandenb Exp $
 
 module Timestep
 
@@ -69,7 +69,7 @@ module Timestep
           ds=0.
         else
           lfirst=.false.
-          df=alpha(itsub)*df  !(could be subsumed into pde, but could be dangerous!)
+          df=alpha(itsub)*df  !(could be subsumed into pde, but is dangerous!)
           ds=alpha(itsub)*ds
         endif
 !

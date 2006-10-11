@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.342 2006-10-11 12:12:47 dobler Exp $
+! $Id: magnetic.f90,v 1.343 2006-10-11 21:53:09 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -54,7 +54,7 @@ module Magnetic
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
   character (len=labellen) :: Omega_profile='nothing',alpha_profile='nothing'
   ! input parameters
-  real, dimension(3) :: B_ext=(/0.,0.,0./),B_ext_tmp
+  real, dimension(3) :: B_ext=(/0.,0.,0./),B1_ext,B_ext_tmp
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real, dimension(nx,3) :: uxbb !(temporary)
@@ -70,7 +70,7 @@ module Magnetic
   real :: mu_r=-0.5 !(still needed for backwards compatibility)
   real :: mu_ext_pot=-0.5,inclaa=0.
   real :: rescale_aa=1.
-  real :: ampl_B0=0.,D_smag=0.17,B_ext21
+  real :: ampl_B0=0.,D_smag=0.17,B_ext21,B_ext11
   real :: Omega_ampl=0.
   real :: rmode=1.,zmode=1.,rm_int=0.,rm_ext=0.
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
@@ -160,6 +160,7 @@ module Magnetic
   integer :: idiag_uxbm=0,idiag_oxuxbm=0,idiag_jxbxbm=0,idiag_gpxbm=0
   integer :: idiag_uxDxuxbm=0,idiag_jbmphi=0,idiag_dteta=0
   integer :: idiag_b3b21m=0,idiag_b1b32m=0,idiag_b2b13m=0
+  integer :: idiag_udotxbm=0,idiag_uxbdotm=0
   integer :: idiag_uxbmx=0,idiag_uxbmy=0,idiag_uxbmz=0,idiag_uxjm=0
   integer :: idiag_brmphi=0,idiag_bpmphi=0,idiag_bzmphi=0,idiag_b2mphi=0
   integer :: idiag_uxbrmphi=0,idiag_uxbpmphi=0,idiag_uxbzmphi=0,idiag_ujxbm=0
@@ -207,7 +208,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.342 2006-10-11 12:12:47 dobler Exp $")
+           "$Id: magnetic.f90,v 1.343 2006-10-11 21:53:09 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -254,7 +255,7 @@ module Magnetic
         nu_ni1=0.
       endif
 !
-!  calculate B_ext21
+!  calculate B_ext21 = 1/B_ext**2 and the unit vector B1_ext = B_ext/|B_ext|
 !
       B_ext21=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
       if (B_ext21/=0.) then
@@ -262,6 +263,8 @@ module Magnetic
       else
         B_ext21=1.
       endif
+      B_ext11=sqrt(B_ext21)
+      B1_ext=B_ext*B_ext11
 !
 !  set to zero and then rescale the magnetic field
 !  (in future, could call something like init_aa_simple)
@@ -966,7 +969,7 @@ module Magnetic
       real :: tmp,eta_out1,OmegaSS=1.
       integer :: i,j
 !
-      intent(in)     :: f
+      intent(in)     :: f,p
       intent(inout)  :: df     
 !
 !  identify module and boundary conditions
@@ -1311,9 +1314,6 @@ module Magnetic
           uxb_dotB0=B_ext(1)*p%uxb(:,1)+B_ext(2)*p%uxb(:,2)+B_ext(3)*p%uxb(:,3)
           uxb_dotB0=uxb_dotB0*B_ext21
           if (idiag_uxbm/=0) call sum_mn_name(uxb_dotB0,idiag_uxbm)
-          !if (idiag_uxbmx/=0) call sum_mn_name(p%uxb(:,1),idiag_uxbmx)
-          !if (idiag_uxbmy/=0) call sum_mn_name(p%uxb(:,2),idiag_uxbmy)
-          !if (idiag_uxbmz/=0) call sum_mn_name(p%uxb(:,3),idiag_uxbmz)
           if (idiag_uxbmx/=0) call sum_mn_name(uxbb(:,1),idiag_uxbmx)
           if (idiag_uxbmy/=0) call sum_mn_name(uxbb(:,2),idiag_uxbmy)
           if (idiag_uxbmz/=0) call sum_mn_name(uxbb(:,3),idiag_uxbmz)
@@ -1439,6 +1439,50 @@ module Magnetic
       endif
 !
     endsubroutine daa_dt
+!***********************************************************************
+    subroutine df_diagnos_magnetic(f,df,p)
+!
+!  calculate diagnostics that involves df
+!  Here we calculate <du/dt x b> and <u x db/dt>.
+!  The latter is calculated as <divu dai/dt> -  <uji daj/dt>
+!  This is used in dynamo theory for checking the minimal tau approximation.
+!
+!  10-oct-06/axel: coded
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!      
+      real, dimension (nx,3) :: uudot,aadot,udotxb,B1_gradu
+      real, dimension (nx) :: B1dot_udotxb,B1dot_uxbdot,B1dot_aadot,uxbdot2
+!
+      intent(in)  :: f, df, p
+!
+!  this routine is only called when ldiagnos=T
+!  start with <du/dt x b>
+!
+      if (idiag_udotxbm/=0) then
+        uudot=df(l1:l2,m,n,iux:iuz)
+        call cross_mn(uudot,p%bb,udotxb)
+        call dot_mn_sv(B1_ext,udotxb,B1dot_udotxb)
+        call sum_mn_name(B1dot_udotxb,idiag_udotxbm)
+      endif
+!
+!  next, do <divu dai/dt> -  <uji daj/dt>
+!
+      if (idiag_uxbdotm/=0) then
+        aadot=df(l1:l2,m,n,iax:iaz)
+        call dot_mn_sv(B1_ext,aadot,B1dot_aadot)
+        call dot_mn_sm(B1_ext,p%uij,B1_gradu)
+        call dot_mn(B1_gradu,aadot,uxbdot2)
+        B1dot_uxbdot=p%divu*B1dot_aadot-uxbdot2
+        call sum_mn_name(B1dot_uxbdot,idiag_uxbdotm)
+      endif
+!
+    endsubroutine df_diagnos_magnetic
 !***********************************************************************
     subroutine set_border_magnetic(f,df)
 !
@@ -1830,7 +1874,9 @@ module Magnetic
         idiag_bmz=0; idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
         idiag_uxbm=0; idiag_oxuxbm=0; idiag_jxbxbm=0.; idiag_gpxbm=0.
         idiag_uxDxuxbm=0.; idiag_uxbmx=0; idiag_uxbmy=0; idiag_uxbmz=0
-        idiag_uxjm=0; idiag_ujxbm=0; idiag_b3b21m=0; idiag_b1b32m=0; idiag_b2b13m=0
+        idiag_uxjm=0; idiag_ujxbm=0
+        idiag_b3b21m=0; idiag_b1b32m=0; idiag_b2b13m=0
+        idiag_udotxbm=0; idiag_uxbdotm=0
         idiag_brmphi=0; idiag_bpmphi=0; idiag_bzmphi=0; idiag_b2mphi=0
         idiag_jbmphi=0; idiag_uxbrmphi=0; idiag_uxbpmphi=0; idiag_uxbzmphi=0;
         idiag_dteta=0; idiag_uxBrms=0; idiag_Bresrms=0; idiag_Rmrms=0
@@ -1893,6 +1939,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'b3b21m',idiag_b3b21m)
         call parse_name(iname,cname(iname),cform(iname),'b1b32m',idiag_b1b32m)
         call parse_name(iname,cname(iname),cform(iname),'b2b13m',idiag_b2b13m)
+        call parse_name(iname,cname(iname),cform(iname),'udotxbm',idiag_udotxbm)
+        call parse_name(iname,cname(iname),cform(iname),'uxbdotm',idiag_uxbdotm)
         call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
         call parse_name(iname,cname(iname),cform(iname),'bmy',idiag_bmy)
         call parse_name(iname,cname(iname),cform(iname),'bmz',idiag_bmz)
@@ -2008,6 +2056,8 @@ module Magnetic
         write(3,*) 'i_b3b21m=',idiag_b3b21m
         write(3,*) 'i_b1b32m=',idiag_b1b32m
         write(3,*) 'i_b2b13m=',idiag_b2b13m
+        write(3,*) 'i_udotxbm=',idiag_udotxbm
+        write(3,*) 'i_uxbdotm=',idiag_uxbdotm
         write(3,*) 'i_bxmz=',idiag_bxmz
         write(3,*) 'i_bymz=',idiag_bymz
         write(3,*) 'i_bzmz=',idiag_bzmz

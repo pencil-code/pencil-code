@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.75 2006-10-11 21:00:17 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.76 2006-10-11 21:53:10 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -59,7 +59,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.75 2006-10-11 21:00:17 brandenb Exp $")
+           "$Id: nomagnetic.f90,v 1.76 2006-10-11 21:53:10 brandenb Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -158,7 +158,6 @@ module Magnetic
 !  3-may-2002/wolf: dummy routine
 !
       use Cdata
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -169,6 +168,22 @@ module Magnetic
       if (NO_WARN) print*,f,df,p ! (keep compiler quiet)
 !
     endsubroutine daa_dt
+!***********************************************************************
+    subroutine df_diagnos_magnetic(f,df,p)
+!
+!  11-oct-06/axel: dummy routine
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!      
+      intent(in)  :: f, df, p
+!
+      if (NO_WARN) print*,f,df,p ! (keep compiler quiet)
+!   
+    endsubroutine df_diagnos_magnetic
 !***********************************************************************
     subroutine rescaling(f)
 !
