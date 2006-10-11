@@ -1,11 +1,11 @@
 &run_pars
-  cvsid='$Id: run.in,v 1.4 2006-10-11 12:12:47 dobler Exp $',
+  cvsid='$Id: run.in,v 1.5 2006-10-11 23:28:25 theine Exp $',
   !nt=1001, it1=50, isave=20, itorder=3
   nt=100, it1=10, isave=20, itorder=3
   !tmax=1.0, it1=10, isave=20, itorder=3
   dsnap=10., dvid=.5, ialive=1
   bcz = 's','s','a','a2','pot','nil','nil'
-!  bcz = 's','s','a','a2','pot3','nil','nil'
+!  bcz = 's','s','a','a2','pwd','nil','nil'
 !  bcz = 's','s','a','a2','c1','nil','nil'
 /
 &eos_run_pars
