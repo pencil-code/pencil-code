@@ -3,11 +3,11 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.5 2006-03-17 23:09:13 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.6 2006-10-11 20:44:23 brandenb Exp $',
   ip=13,
   nt=50, it1=10, isave=500, itorder=3
   !tmax=200.
-  tmax=0.918
+  !tmax=0.918
   cdt=0.4, cdtv=0.3, dtmin=1e-6,
   dsnap=0.5, dvid=0., d2davg=10.
   tavg=10.,                   ! time constant for time averaging

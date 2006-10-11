@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.2 2005-09-02 23:51:58 dobler Exp $',
+  cvsid='$Id: start.in,v 1.3 2006-10-11 20:44:23 brandenb Exp $',
   ip=14,                        ! debugging parameter
   xyz0  = -2.5,-2.5,-2.5,       ! first corner of box
   xyz1  =  2.5, 2.5, 2.5,       ! second corner of box
@@ -35,5 +35,6 @@
   initss='isentropic-star'
 /
 &magnetic_init_pars
-  initaa='piecewise-dipole', amplaa=3., inclaa=0.52360 !inclaa=1.57
+  !initaa='piecewise-dipole', amplaa=3., inclaa=0.52360 !inclaa=1.57
+  initaa='piecewise-dipole', amplaa=.5, inclaa=0.52360 !inclaa=1.57
 /
