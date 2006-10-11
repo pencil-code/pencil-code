@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.8 2006-08-23 16:53:30 mee Exp $ 
+! $Id: border_profiles.f90,v 1.9 2006-10-11 00:41:41 wlyra Exp $ 
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -142,17 +142,11 @@ module BorderProfiles
          rlim_mn = x_mn
       endif
 !
-      pborder = cubic_step(rlim_mn,r_int,wborder_int,SHIFT=1.)&
-           *(1-cubic_step(rlim_mn,r_ext,wborder_ext,SHIFT=-1.))
-!         
-! Set pborder to zero at the limits of the border
+! cint = 1-step_int , cext = step_ext
+! pborder = cint+cext
 !
-      do i=1,nx
-         if ((rlim_mn(i).lt.r_int).or.&
-              ((rlim_mn(i).gt.r_int+2*wborder_int).and.(rlim_mn(i).lt.r_ext-2*wborder_ext)).or. &
-               (rlim_mn(i).gt.r_ext)) &
-               pborder(i)=0.
-      enddo
+      pborder = 1-cubic_step(rlim_mn,r_int,wborder_int,SHIFT=1.) + &
+           cubic_step(rlim_mn,r_ext,wborder_ext,SHIFT=-1.)
 !
     endsubroutine get_border
 !***********************************************************************
