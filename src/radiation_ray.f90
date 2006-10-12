@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.102 2006-08-23 16:53:32 mee Exp $
+! $Id: radiation_ray.f90,v 1.103 2006-10-12 14:40:50 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -169,7 +169,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.102 2006-08-23 16:53:32 mee Exp $")
+           "$Id: radiation_ray.f90,v 1.103 2006-10-12 14:40:50 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -968,7 +968,7 @@ module Radiation
 !
 !  16-jun-03/axel+tobi: coded
 !
-      use Cdata, only: ldebug,headt,directory_snap
+      use Cdata, only: ldebug,headt,directory_snap,ipz
       use IO, only: output
 !
 !  identifier
@@ -1545,8 +1545,8 @@ module Radiation
         case ('Isurf')
           nullify(slices%yz)
           nullify(slices%xz)
-          slices%xy=>Isurf_xy
-          nullify(slices%xy2)
+          nullify(slices%xy)
+          slices%xy2=>Isurf_xy
           slices%ready = .true.
 !
 !  Heating rate (auxiliary variable)
@@ -1556,6 +1556,15 @@ module Radiation
           slices%xz=f(l1:l2,iy_loc,n1:n2,iQrad)
           slices%xy=f(l1:l2,m1:m2,iz_loc,iQrad)
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,iQrad)
+          slices%ready = .true.
+!
+!  Heating rate (auxiliary variable)
+!
+        case ('kapparho')
+          slices%yz=f(ix_loc,m1:m2,n1:n2,ikapparho)
+          slices%xz=f(l1:l2,iy_loc,n1:n2,ikapparho)
+          slices%xy=f(l1:l2,m1:m2,iz_loc,ikapparho)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ikapparho)
           slices%ready = .true.
 !
 !  Radiative Flux (auxiliary variable)
