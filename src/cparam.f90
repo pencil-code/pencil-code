@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.53 2006-08-23 16:53:31 mee Exp $
+! $Id: cparam.f90,v 1.54 2006-10-12 17:53:00 wlyra Exp $
 
 module Cparam
 
@@ -40,7 +40,8 @@ module Cparam
   integer, parameter :: m1i=m1+nghost-1,m2i=m2-nghost+1
   integer, parameter :: n1i=n1+nghost-1,n2i=n2-nghost+1
 !
-  integer, parameter :: nrcyl=nx/2 ! used for azimuthal averages
+  integer, parameter :: nrcyl=nx/2     ! used for azimuthal averages
+  integer, parameter :: nrcylrun=nx/20 ! used for runtime azimuthal averages
 !
 !  array dimension for reduce operation (maxima and sums)
 !  use here symbol mreduce, use nreduce in call
@@ -87,6 +88,7 @@ module Cparam
   integer, parameter :: ilabel_integrate=3,ilabel_surf=4
   integer, parameter :: ilabel_sum_par=5,ilabel_sum_sqrt_par=6
   integer, parameter :: ilabel_sum_weighted=7,ilabel_sum_weighted_sqrt=8
+  integer, parameter :: ilabel_sum_lim=9
 !
 ! physical constants, taken from:
 ! http://physics.nist.gov/cuu/Constants/index.html

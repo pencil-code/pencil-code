@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.255 2006-10-11 21:53:10 brandenb Exp $ 
+! $Id: sub.f90,v 1.256 2006-10-12 17:53:00 wlyra Exp $ 
 
 module Sub 
 
@@ -440,25 +440,31 @@ module Sub
       use Cdata
 !
       real, dimension (nx) :: a,aux
-      real :: sumaux,dsv
+      real :: dv
       integer :: iname,i
-!
-      dsv=dx*dy
-      if (nzgrid/=1) dsv=dx*dy*dz
 !
       if (iname /= 0) then 
 !
-        do i=1,nx
-           if ((rcyl_mn(i) .le. r_ext).and.(rcyl_mn(i) .ge. r_int)) then
-              aux(i) = a(i) 
-            else
-              aux(i) = 0.
-           endif
-        enddo
+         dv=1.
+         if (nxgrid/=1) dv=dv*dx
+         if (nygrid/=1) dv=dv*dy
+         if (nzgrid/=1) dv=dv*dz
 !
-        sumaux = sum(aux)
-        sumaux = sumaux * dsv
-        call surf_mn_name(sumaux,iname)
+         do i=1,nx
+            if ((rcyl_mn(i) .le. r_ext).and.(rcyl_mn(i) .ge. r_int)) then
+               aux(i) = a(i) 
+            else
+               aux(i) = 0.
+            endif
+         enddo
+!
+         if (lfirstpoint) then
+            fname(iname)=sum(aux)*dv
+         else
+            fname(iname)=fname(iname)+sum(aux)*dv
+         endif
+!
+         itype_name(iname)=ilabel_sum_lim
 !
       endif
 !

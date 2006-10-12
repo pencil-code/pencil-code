@@ -1,4 +1,4 @@
- ! $Id: global_avgs.f90,v 1.7 2006-08-20 22:35:50 wlyra Exp $
+ ! $Id: global_avgs.f90,v 1.8 2006-10-12 17:53:00 wlyra Exp $
 
 module Global
 
@@ -40,8 +40,8 @@ module Global
   real, dimension (mx,my,mz,3) :: bbs
   real, dimension (mx,my,mz,3) :: uus
 !
-  real, dimension (10,3) :: bavg_coarse,uavg_coarse
-  real, dimension (10) :: rhoavg_coarse
+  real, dimension (nrcylrun,3) :: bavg_coarse,uavg_coarse
+  real, dimension (nrcylrun) :: rhoavg_coarse
 !  
   contains
 
@@ -453,9 +453,9 @@ module Global
       call output(trim(directory)//'/gg.dat',gg,3)
       call output(trim(directory)//'/bbs.dat',bbs,3)
       call output(trim(directory)//'/uus.dat',uus,3)
-      call output(trim(directory)//'/uavg_coarse.dat',uavg_coarse,3,10)
-      call output(trim(directory)//'/bavg_coarse.dat',bavg_coarse,3,10)
-      call output(trim(directory)//'/rhoavg_coarse.dat',rhoavg_coarse,1,10)
+      call output(trim(directory)//'/uavg_coarse.dat',uavg_coarse,3,nrcylrun)
+      call output(trim(directory)//'/bavg_coarse.dat',bavg_coarse,3,nrcylrun)
+      call output(trim(directory)//'/rhoavg_coarse.dat',rhoavg_coarse,1,nrcylrun)
 !
     endsubroutine wglobal
 !***********************************************************************
@@ -474,9 +474,9 @@ module Global
       call input(trim(directory)//'/gg.dat',gg,3,0)
       call input(trim(directory)//'/bbs.dat',bbs,3,0)
       call input(trim(directory)//'/uus.dat',uus,3,0)
-      call input_coarse(trim(directory)//'/uavg_coarse.dat',uavg_coarse,3,0,10)
-      call input_coarse(trim(directory)//'/bavg_coarse.dat',bavg_coarse,3,0,10)
-      call input_coarse(trim(directory)//'/rhoavg_coarse.dat',rhoavg_coarse,1,0,10)
+      call input_coarse(trim(directory)//'/uavg_coarse.dat',uavg_coarse,3,0,nrcylrun)
+      call input_coarse(trim(directory)//'/bavg_coarse.dat',bavg_coarse,3,0,nrcylrun)
+      call input_coarse(trim(directory)//'/rhoavg_coarse.dat',rhoavg_coarse,1,0,nrcylrun)
 !
     endsubroutine rglobal
 !***********************************************************************

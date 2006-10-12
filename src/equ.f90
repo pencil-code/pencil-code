@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.329 2006-10-11 21:53:09 brandenb Exp $
+! $Id: equ.f90,v 1.330 2006-10-12 17:53:00 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -61,7 +61,7 @@ module Equ
       use Sub
 !
       real, dimension (mname) :: fmax_tmp, fsum_tmp, fmax, fsum, fweight_tmp
-      real :: dv
+      real :: dv,vol
       integer :: iname,imax_count,isum_count,nmax_count,nsum_count
       logical :: lweight_comm
 !
@@ -143,6 +143,14 @@ module Equ
 
               if (itype_name(iname)==ilabel_surf)          & 
                   fname(iname)=fsum(isum_count)
+
+              if (itype_name(iname)==ilabel_sum_lim) then
+                 vol=1.
+                 if (lcylindrical)  vol=vol*pi*(r_ext**2-r_int**2)
+                 if (nzgrid/=1)     vol=vol*Lz
+                 if (lspherical)    vol=1.333333333*pi*(r_ext**3-r_int**3) 
+                 fname(iname)=fsum(isum_count)/vol
+              endif
 
              if (itype_name(iname)==ilabel_sum_weighted) then
                if (fweight(isum_count)/=0.0) then
@@ -375,7 +383,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.329 2006-10-11 21:53:09 brandenb Exp $")
+           "$Id: equ.f90,v 1.330 2006-10-12 17:53:00 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -562,6 +570,8 @@ module Equ
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
 !  --------------------------------------------------------
 !
+        if (lplanet) call runtime_phiavg(p)
+!
 !  hydro, density, and entropy evolution
 !
         call duu_dt(f,df,p)
@@ -629,8 +639,6 @@ module Equ
         if (lshear)                      call shearing(f,df)
 !
         if (lparticles) call particles_pde_pencil(f,df,p)
-!
-        if (lplanet) call runtime_phiavg(p)
 !
 !  Call diagnostics that involves the full right hand side
 !  This must be done at the end of all calls that might modify df.
