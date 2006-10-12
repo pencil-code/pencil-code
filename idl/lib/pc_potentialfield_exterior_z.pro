@@ -1,4 +1,4 @@
-;$Id: pc_potentialfield_exterior_z.pro,v 1.2 2006-10-06 15:24:47 brandenb Exp $
+;$Id: pc_potentialfield_exterior_z.pro,v 1.3 2006-10-12 10:55:31 brandenb Exp $
 PRO pc_potentialfield_exterior_z,aa,aaa=aaa,zzz=zzz,plo=plo
 ;
 ;  calculate potential field in the exterior in the z-direction
@@ -16,9 +16,15 @@ nz=dim.nz
 pc_read_grid,obj=grid,/quiet
 z=grid.z
 ;
+;  expand the new z mesh by a certain factor (currently =3)
+;
 nznew=3*dim.nz
 aaa=fltarr(dim.mx,dim.my,nznew,3)
 zzz=fltarr(nznew)
+;
+;  determine the locations where the interior should be within
+;  the new mesh.
+;
 nn1=nz
 nn2=2*nz-1
 aaa(*,*,nn1:nn2,*)=aa(*,*,n1:n2,*)
