@@ -4,17 +4,8 @@
 ###
 
 MPICOMM   = nompicomm
-GLOBAL    = noglobal
-
 HYDRO     = nohydro
 DENSITY   = nodensity
-ENTROPY   = noentropy
 MAGNETIC  =   magnetic
-RADIATION = noradiation
-PSCALAR   = nopscalar
-
-GRAVITY   = nogravity
-FORCING   = noforcing
 VISCOSITY = noviscosity
 EOS       = noeos
-SHEAR     = noshear
