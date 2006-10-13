@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.62 2006-08-29 20:08:06 dobler Exp $
+! $Id: nohydro.f90,v 1.63 2006-10-13 06:19:14 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,7 +70,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.62 2006-08-29 20:08:06 dobler Exp $")
+           "$Id: nohydro.f90,v 1.63 2006-10-13 06:19:14 brandenb Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -239,13 +239,26 @@ module Hydro
 ! divu
         if (lpencil(i_divu)) p%divu= (kkx_aa-kky_aa)*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
 !
-!  Gen-Roberts flow (positive helicity)
+!  Glen-Roberts flow (positive helicity)
 !
       elseif (kinflow=='poshel-roberts') then
         if (headtt) print*,'Pos Helicity Roberts flow; kx_aa,ky_aa=',kkx_aa,kky_aa
         p%uu(:,1)=-cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
         p%uu(:,2)=+sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
         p%uu(:,3)=+cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)
+! divu (check!)
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  Convection rolls
+!  Stream function: psi_y = cos(kx*x) * cos(kz*z)
+!
+      elseif (kinflow=='rolls') then
+        if (headtt) print*,'Convection rolls; kx_aa,kz_aa=',kkx_aa,kkz_aa
+        p%uu(:,1)=kkz_aa*cos(kkx_aa*x(l1:l2))*sin(kkz_aa*z(n))
+        p%uu(:,2)=+0.
+        p%uu(:,3)=kkx_aa*sin(kkx_aa*x(l1:l2))*cos(kkz_aa*z(n))
+! divu
+        if (lpencil(i_divu)) p%divu=0.
 !
 !  KS-flow
 !

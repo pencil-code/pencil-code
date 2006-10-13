@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.69 2006-10-07 10:31:59 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.70 2006-10-13 06:19:14 brandenb Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.69 2006-10-07 10:31:59 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.70 2006-10-13 06:19:14 brandenb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -195,18 +195,20 @@ module EquationOfState
       cv=gamma11*cp
       cv1=gamma*cp1
 !
-!  check that everything is OK
-!
-      if (lroot) print*,'initialize_eos: unit_temperature=',unit_temperature
-      if (lroot) print*,'initialize_eos: cp=',cp
-!
 !  Need to calculate the equivalent of cs0
 !  Distinguish between gamma=1 case and not.
 !
       if (gamma1 /= 0.) then
-        lnTT0=log(cs20/(cp*gamma1))
+        lnTT0=log(cs20/(cp*gamma1))  !(general case)
       else
-        lnTT0=log(cs20/cp)  !(check!)
+        lnTT0=log(cs20/cp)  !(isothermal/polytropic cases: check!)
+      endif
+!
+!  check that everything is OK
+!
+      if (lroot) then
+        print*,'initialize_eos: unit_temperature=',unit_temperature
+        print*,'initialize_eos: cp,lnTT0=',cp,lnTT0
       endif
 !   
     endsubroutine units_eos
@@ -237,6 +239,7 @@ module EquationOfState
         write (1,'(a,1pd26.16)') 'k_B=',k_B
         write (1,'(a,1pd26.16)') 'm_H=',m_H
         write (1,*) 'lnTTO=',lnTT0
+        write (1,*) 'cp=',cp
         close (1)
       endif
 !
@@ -1008,7 +1011,7 @@ module EquationOfState
         end select
 !
         if (present(lnrho)) lnrho=lnrho_
-        if (present(lnTT)) lnTT=log(cs2_/gamma1)
+        if (present(lnTT)) lnTT=lnTT0+log(cs2_)
         if (present(ee)) ee=gamma11*cs2_/gamma1
         if (present(pp)) pp=gamma11*cs2_*exp(lnrho_)
 !

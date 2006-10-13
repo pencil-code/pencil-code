@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.42 2006-08-23 16:53:32 mee Exp $
+! $Id: radiation.f90,v 1.1 2006-10-13 06:19:14 brandenb Exp $
 
 !  Radiation in the fluxlimited-diffusion approximation.
 !  Doesn't work convincingly (and maybe never will). Look at the
@@ -99,7 +99,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.42 2006-08-23 16:53:32 mee Exp $")
+           "$Id: radiation.f90,v 1.1 2006-10-13 06:19:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -626,6 +626,7 @@ module Radiation
     subroutine init_equil(f)
 !
 !  Routine for calculating equilibrium solution of radiation
+!  This routine is now outdated and doen't include cp /= 1.
 !
 !  18-jul-02/nils: coded
 !

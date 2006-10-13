@@ -1,4 +1,6 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
+!$Id: mpicomm.h,v 1.26 2006-10-13 06:19:14 brandenb Exp $
+!
   private
 
   public :: mpicomm_init, mpifinalize
