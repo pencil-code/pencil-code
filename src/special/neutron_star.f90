@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.15 2006-10-06 11:32:42 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.16 2006-10-13 15:14:46 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -97,9 +97,7 @@ module Special
   real :: nu_for_1D=1. 
   real :: mu_local=0.
   logical :: l1D_cooling=.false.,l1D_heating=.false.
-  logical :: lheat_conduct=.true.
-
-  logical :: lheatc_diffusion=.false.
+  logical :: l1D_cool_heat=.false.
   logical :: lgrav_x_mdf=.false. 
 !
 ! Keep some over used pencils
@@ -115,10 +113,9 @@ module Special
       H_disk_point_int, &
       H_disk, H_disk_point, &
       L_disk, R_star, M_star, &
-      T_star,accretion_flux, &
-      T_disk, &
+      T_star,accretion_flux, T_disk, &
       uu_left, uy_left, uy_right, &
-      l1D_cooling,l1D_heating,lheat_conduct,beta_hand, &
+      l1D_cooling,l1D_heating,beta_hand, &
       nu_for_1D, ltop_velocity_kep, lextrapolate_bot_density, &
       lnstar_entropy, lnstar_T_const, lnstar_1D, &
       lgrav_x_mdf
@@ -131,7 +128,7 @@ module Special
        L_disk, R_star, M_star, T_star, &
        accretion_flux, lnstar_entropy, &
        lnstar_T_const,lnstar_1D, &
-       l1D_cooling,l1D_heating,lheat_conduct, lgrav_x_mdf
+       l1D_cooling,l1D_heating, lgrav_x_mdf
 !!
 !! Declare any index variables necessary for main or 
 !! 
@@ -183,11 +180,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.15 2006-10-06 11:32:42 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.16 2006-10-13 15:14:46 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.15 2006-10-06 11:32:42 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.16 2006-10-13 15:14:46 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -220,9 +217,9 @@ module Special
 !!
 !!  Initialize any module variables which are parameter dependant  
 !!
-    lheatc_diffusion=lheat_conduct.or.l1D_cooling.or.l1D_heating
-    if (lheatc_diffusion.and.lroot) &
-          print*, 'neutron_star: heat conduction: diffusion of radiation'
+    l1D_cool_heat=l1D_cooling.or.l1D_heating
+    if (l1D_cool_heat.and.lroot) &
+          print*, 'neutron_star: 1D cooling or heating'
 !
 ! DO NOTHING
       if(NO_WARN) print*,f  !(keep compiler quiet)
@@ -296,14 +293,6 @@ module Special
          lpenc_requested(i_rho)=.true.
       endif
 !
-     if (lheatc_diffusion) then 
-        lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_TT)=.true.
-        lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_gss)=.true.
-        lpenc_requested(i_del2lnrho)=.true.
-        lpenc_requested(i_del2ss)=.true.
-      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -818,7 +807,7 @@ endsubroutine read_special_run_pars
       type (pencil_case), intent(in) :: p
       integer :: j, l_sz, l_sz_1
 
-      if (lheatc_diffusion) call calc_heatcond_diffusion(f,df,p)
+      if (l1D_cool_heat) call rad_cool_heat_1D(f,df,p)
 
 !f (accretion on NS)
 !
@@ -979,56 +968,26 @@ endsubroutine read_special_run_pars
 !  PRIVATE UTITLITY ROUTINES
 !
 !***********************************************************************
-    subroutine calc_heatcond_diffusion(f,df,p)
+    subroutine rad_cool_heat_1D(f,df,p)
 !
 !  heat conduction
 !  Natalia (NS)
 !   12-apr-06/axel: adapted from Wolfgang's more complex version
 !
-      use Sub, only: max_mn_name,dot
+
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: glnT,glnThcond !,glhc
-      real, dimension (nx) :: chix
-      real, dimension (nx) :: thdiff,g2,thdiff_1D
-      real, dimension (nx) :: hcond
+       real, dimension (nx) :: diffus_chi1
+      real, dimension (nx) :: thdiff_1D
       real ::  beta
-      integer :: l_sz, l_sz_1 
+      integer :: l_sz, l_sz_1,j 
 
       intent(in) :: f,p
       intent(out) :: df
  
-!
-!  Heat conduction
-!
-      chix = p%rho1*p%rho1*p%TT**3*16./3.*sigmaSB/kappa_es!hcond
-      glnT = gamma*p%gss + gamma1*p%glnrho ! grad ln(T)
-      glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
-      call dot(glnT,glnThcond,g2)
-!
-!AB:  derivs of chix missing??
-!
-      thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
-
-
-   !  add heat conduction to entropy equation
-    !
-     if (lheat_conduct) then
-        if (ldecelerat_zone) then
-          if (nxgrid == 1) then
-           if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
-          else
-           if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
-          endif
-         if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
-        else
-         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff   
-         if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
-        endif
-     endif 
-! 
+ 
 
 
 !   cooling in 1D case 
@@ -1050,8 +1009,7 @@ endsubroutine read_special_run_pars
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
        if (headtt) print*,'calc_heatcond_diffusion: added thdiff_1D'
    
-  !     print*,' cooling  ',thdiff_1D
-      endif
+       endif
     endif 
  
 !   heating in 1D case 
@@ -1067,46 +1025,12 @@ endsubroutine read_special_run_pars
       
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
 
-
-
-     
-    !   if (lsurface_zone) then
-       !    df(l2-l_sz:l2,m,n,iss) = df(l2-l_sz:l2,m,n,iss) + thdiff_1D(l_sz_1:nxgrid)
-      
-    !     df(l1:l2-l_sz,m,n,iss) = df(l1:l2-l_sz,m,n,iss) + thdiff_1D(1:l_sz_1)
-    !   else
-    !       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
-    !   endif
-
-  ! print*,'heating',thdiff_1D
       if (headtt) print*,'calc_heatcond_diffusion: added thdiff_1D'
     endif 
  
-!AB: shouldn't we use all 3 components here?
-        df(l1:l2,m,n,iuz) = &
-         df(l1:l2,m,n,iuz)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,3) 
 
-        df(l1:l2,m,n,iux) = &
-         df(l1:l2,m,n,iux)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,1) 
 !
-!  include constraint from radiative time step
-!
-      if (lfirst.and.ldt) then
-        advec_crad2=p%rho1*16./3.*sigmaSB/c_light*p%TT**4
-      endif
-
-     if (headtt) print*,'calc_radiation_pressure: added to z-component'
-!
-!  check maximum diffusion from thermal diffusion
-!  With heat conduction, the second-order term for entropy is
-!  gamma*chix*del2ss
-!
-      if (lfirst.and.ldt) then
-! Calculate timestep limitation
-        diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)
-      endif
-!
-    endsubroutine calc_heatcond_diffusion
+    endsubroutine rad_cool_heat_1D
 !*************************************************************************
     subroutine mass_source_NS(f,df,rho)
 !
@@ -1361,10 +1285,6 @@ endsubroutine read_special_run_pars
 
      endif
 
-!print*,'IC    ', f(l1:l2,mi,ni,iss),f(l1:l2,mi,ni,ilnrho),lnTT(1)
-!print*,T_star**4+const_tmp*exp(f(l1:l2,mi,ni,ilnrho))*(1./zz(l1:l2,mi,ni)-1./R_star)
-
- !print*, lnTT,ni
        end do 
      end do   
 

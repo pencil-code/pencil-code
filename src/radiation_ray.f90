@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.103 2006-10-12 14:40:50 theine Exp $
+! $Id: radiation_ray.f90,v 1.104 2006-10-13 15:14:45 nbabkovs Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -90,6 +90,9 @@ module Radiation
   logical :: lintrinsic=.true.,lcommunicate=.true.,lrevision=.true.
   logical :: lradpressure=.false.,lradflux=.false.
 
+  logical ::  lrad_cool_diffus=.false., lrad_pres_diffus=.false.
+  logical ::  ldt_rad_limit=.false.
+
   character :: lrad_str,mrad_str,nrad_str
   character(len=3) :: raydir_str
 !
@@ -106,7 +109,7 @@ module Radiation
        Srad_const,amplSrad,radius_Srad, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lradflux, &
-       Frad_boundary_ref
+       Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus,ldt_rad_limit
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
@@ -115,7 +118,7 @@ module Radiation
        kx_Srad,ky_Srad,kz_Srad,kx_kapparho,ky_kapparho,kz_kapparho, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure, &
-       Frad_boundary_ref
+       Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus
 
   contains
 
@@ -169,7 +172,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.103 2006-10-12 14:40:50 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.104 2006-10-13 15:14:45 nbabkovs Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -324,6 +327,8 @@ module Radiation
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: j,k
+
+
 !
 !  Identifier
 !
@@ -375,6 +380,8 @@ module Radiation
         endif
 
       enddo
+
+
 
     endsubroutine radtransfer
 !***********************************************************************
@@ -1146,6 +1153,13 @@ module Radiation
           df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%rho1*p%cv1*p%TT1*cooling
         endif
       endif
+
+! Natalia
+! calculate the cooling and pressure term in the diffusion 
+! approximation
+
+if (ldt_rad_limit) call calc_rad_diffusion(f,df,p)
+
 !
 !  diagnostics
 !
@@ -1354,6 +1368,12 @@ module Radiation
         if (lentropy) then
           lpenc_requested(i_TT1)=.true.
           lpenc_requested(i_rho1)=.true.
+          lpenc_requested(i_TT)=.true.
+          lpenc_requested(i_glnrho)=.true.
+          lpenc_requested(i_gss)=.true.
+          lpenc_requested(i_del2lnrho)=.true.
+          lpenc_requested(i_del2ss)=.true.
+          lpenc_requested(i_cp1tilde)=.true.
         endif
 
         if (ltemperature) then
@@ -1363,6 +1383,9 @@ module Radiation
         endif
 
       endif
+
+
+     
 !
     endsubroutine pencil_criteria_radiation
 !***********************************************************************
@@ -1611,4 +1634,96 @@ module Radiation
 !
     end subroutine bc_ee_outflow_x
 !***********************************************************************
+   subroutine calc_rad_diffusion(f,df,p)
+!
+!  radiation in the diffusion approximation
+!  Natalia 
+!   12-apr-06/axel: adapted from Wolfgang's more complex version
+!
+      use Sub, only: max_mn_name,dot
+      use Cdata
+      use Cparam
+      use EquationOfState
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3) :: glnT,glnThcond !,glhc
+      real, dimension (nx) :: chix,diffus_chi1
+      real, dimension (nx) :: thdiff,g2,thdiff_1D
+      real, dimension (nx) :: hcond
+      real ::  beta
+      integer :: l_sz, l_sz_1,j 
+
+      intent(in) :: f,p
+      intent(out) :: df
+ 
+   chix = p%rho1*p%rho1*p%TT**3*16./3.*sigmaSB/kappa_es!hcond
+
+!print*,chix(4)
+
+     if (lrad_cool_diffus) then
+!
+!  Heat conduction
+!
+   
+      glnT = gamma*p%gss + gamma1*p%glnrho ! grad ln(T)
+      glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+      call dot(glnT,glnThcond,g2)
+!
+!AB:  derivs of chix missing??
+!
+      thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
+
+
+   !  add heat conduction to entropy equation
+    !
+         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff   
+         if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
+      
+     endif
+
+     if (lrad_pres_diffus) then
+!
+! Add radiative pressure term to momentum equation
+!
+        df(l1:l2,m,n,iuz) = &
+         df(l1:l2,m,n,iuz)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,3) 
+
+        df(l1:l2,m,n,iuy) = &
+         df(l1:l2,m,n,iuy)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,2) 
+
+        df(l1:l2,m,n,iux) = &
+         df(l1:l2,m,n,iux)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,1) 
+ 
+     if (headtt) print*,'calc_radiation_pressure: added to z-component'
+
+     endif 
+! 
+
+!
+!  include constraint from radiative time step
+!
+      if (lfirst.and.ldt) then
+        advec_crad2=p%rho1*16./3.*sigmaSB/c_light*p%TT**4
+      endif
+
+ 
+!
+!  check maximum diffusion from thermal diffusion
+!  With heat conduction, the second-order term for entropy is
+!  gamma*chix*del2ss
+!
+      if (lfirst.and.ldt) then
+! Calculate timestep limitation
+
+      diffus_chi1=min(gamma*chix*dxyz_2,sigmaSB*kappa_es*p%TT**3*4.* p%cp1tilde)
+
+
+      diffus_chi=max(diffus_chi,diffus_chi1)
+     endif
+!
+    endsubroutine calc_rad_diffusion
+
+
 endmodule Radiation
