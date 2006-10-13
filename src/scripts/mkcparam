@@ -1,5 +1,5 @@
 #!/bin/sh
-#  -*-Perl-*-
+#  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
 #======================================================================#
 # Run the right perl version:
 if [ -x /usr/local/bin/perl ]; then
@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.40 2006-10-08 12:11:41 ajohan Exp $
+# CVS: $Id: mkcparam,v 1.41 2006-10-13 21:53:03 theine Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
