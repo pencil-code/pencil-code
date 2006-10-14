@@ -1,10 +1,10 @@
-; $Id: pc_read_dim.pro,v 1.14 2004-09-24 09:00:50 ajohan Exp $
+; $Id: pc_read_dim.pro,v 1.15 2006-10-14 15:26:39 theine Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-09-24 09:00:50 $
-;  $Revision: 1.14 $
+;  $Date: 2006-10-14 15:26:39 $
+;  $Revision: 1.15 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -15,7 +15,8 @@ pro pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar, $
                  mxgrid=mxgrid, mygrid=mygrid, mzgrid=mzgrid, $
                  precision=precision, $
                  nghostx=nghostx, nghosty=nghosty, nghostz=nghostz, $
-                 nprocx=nprocx, nprocy=nprocy, nprocz=nprocz,$
+                 nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, $
+                 ipx=ipx,ipy=ipy,ipz=ipz, $
                  l1=l1, l2=l2, m1=m1, m2=m2, n1=n1, n2=n2, $ 
                  object=object, $ 
                  datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
