@@ -2,7 +2,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.2 2006-10-11 12:12:47 dobler Exp $',
+  cvsid='$Id: start.in,v 1.3 2006-10-15 05:44:25 dobler Exp $',
   xyz0  = -3.14159, -3.14159, -0.5
   xyz1  =  3.14159,  3.14159,  0.5
   lperi =  T ,   T ,   F
@@ -17,12 +17,29 @@
 &magnetic_init_pars
 !  initaa='sinxsinz', amplaa=1e-2, kx_aa=1., ky_aa=0., kz_aa=0.
 !  initaa='robertsflow', amplaa=1e-2
-  initaa='cosysinz', amplaa=1e-2, ky_aa=1., kz_aa=3.14159
+!  initaa='cosysinz', amplaa=1e-2, ky_aa=1., kz_aa=3.14159
 !  initaa='tmp', amplaa=1.e-2, ky_aa=1., kz_aa=3.6731944
-!  initaa='Ax=cosysinz', amplaa=1.e-2, ky_aa= 1., kz_aa=3.6731944
-!  initaa='Ax=cosysinz', amplaa=1.e-2, ky_aa= 2., kz_aa=4.0575157
-!  initaa='Ax=cosysinz', amplaa=1.e-2, ky_aa= 4., kz_aa=4.5778595
-!  initaa='Ax=cosysinz', amplaa=1.e-2, ky_aa= 8., kz_aa=5.1408631
-!  initaa='Ax=cosysinz', amplaa=1.e-2, ky_aa=12., kz_aa=5.4329195
-!  initaa='Ax=cosysinz', amplaa=1.e-2, ky_aa=16., kz_aa=5.6088503
+
+! Analytical free-decay solution:
+! Decay rate is gamma=eta*(kx^2+kz^2)
+! kz can be found using octave (assuming Lz=1):
+!   function y=f(kz); kx=1.0; y=tan(kz/2)+kz/kx; endfunction;
+!   kzinit=1*pi/kx+0.2; fsolve("f",kzinit)
+! where kx can be varied as needed, and using a factor 3, 5, etc in front
+! of pi will yield values for higher vertical wave numbers (higher modes).
+!
+! Note that, for nx=ny=nz=32, the Nyqist wave numbers are
+! pi/dx = pi/dy = 16,  pi/dz = 97.4
+!
+!  initaa='Ax=cosysinz', ky_aa= 1., kz_aa=3.6731944
+!  initaa='Ax=cosysinz', ky_aa= 1., kz_aa=9.6316846
+!  initaa='Ax=cosysinz', ky_aa= 1., kz_aa=15.834105
+   initaa='Ax=cosysinz', ky_aa= 1., kz_aa=22.081660
+!  initaa='Ax=cosysinz', ky_aa= 1., kz_aa=28.344864
+!
+!  initaa='Ax=cosysinz', ky_aa= 2., kz_aa=4.0575157
+!  initaa='Ax=cosysinz', ky_aa= 4., kz_aa=4.5778595
+!  initaa='Ax=cosysinz', ky_aa= 8., kz_aa=5.1408631
+!   initaa='Ax=cosysinz', ky_aa=12., kz_aa=5.4329195
+!  initaa='Ax=cosysinz', ky_aa=16., kz_aa=5.6088503
 /

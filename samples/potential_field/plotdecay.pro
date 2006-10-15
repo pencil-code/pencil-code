@@ -11,13 +11,22 @@
 ;;;  Usage:
 ;;;    @plotdecay
 
-.r start
-.r r
-.r ts
 
-kx = 1. & mu_tilde = 3.6731944
-; kx = 8. & mu_tilde = 0.64260789
-; kx = 12. & mu_tilde = 0.452743291
+pc_read_param, /PARAM2, OBJECT=par2, /QUIET
+eta = par2.eta
+
+pc_read_ts, OBJECT=ts
+
+; kx =  1. & mu_tilde =  3.6731944
+; kx =  1. & mu_tilde =  9.6316846
+; kx =  1. & mu_tilde = 15.834105
+; kx =  1. & mu_tilde = 22.081660
+; kx =  1. & mu_tilde = 28.344864
+;
+; kx =  2. & mu_tilde =  2.02875785
+; kx =  4. & mu_tilde =  1.14446488
+; kx =  8. & mu_tilde =  0.64260789
+  kx = 12. & mu_tilde =  0.452743291
 
 gamma = eta*kx^2*(1 + mu_tilde^2)
 
@@ -31,24 +40,23 @@ save_state
 !x.range = [0, 1]
 !y.range = 1 + [-1,1]*0.3
 xr = minmax(ts.t)
+idx=[0,1,2,3,4]
 
-var = ts.brms/mean(ts.brms/timefact)
+var = ts.brms/mean(ts.brms[idx]/timefact)
 plot, ts.t, var/timefact, PSYM=-4, TITLE='brms'
 oplot, xr, [1,1], color=120
 
-var = ts.jrms/mean(ts.jrms/timefact)
+var = ts.jrms/mean(ts.jrms[idx]/timefact)
 plot, ts.t, var/timefact, PSYM=-4, TITLE='jrms'
 oplot, xr, [1,1], color=120
 
-var = ts.bmax/mean(ts.bmax/timefact)
+var = ts.bmax/mean(ts.bmax[idx]/timefact)
 plot, ts.t, var/timefact, PSYM=-4, TITLE='bmax'
 oplot, xr, [1,1], color=120
 
-var = ts.jmax/mean(ts.jmax/timefact)
+var = ts.jmax/mean(ts.jmax[idx]/timefact)
 plot, ts.t, var/timefact, PSYM=-4, TITLE='jmax'
 oplot, xr, [1,1], color=120
 
-
 restore_state
-
 ; End of file plotdecay.pro
