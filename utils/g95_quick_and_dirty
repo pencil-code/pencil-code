@@ -4,7 +4,7 @@
 # Author: wd (Wolfgang.Dobler@ucalgary.ca)
 # Date:   28-Aug-2006
 # Synopsis:
-#   Use a really nasty trick to accelerate re-compilation of the Pencil Code.
+#   Fast re-compilation of modular F90 codes through foul play with mtimes.
 # Usage:
 #   g95_quick_and_dirty <g95-arguments>  # (i.e. use as drop-in replacement)
 #
@@ -12,47 +12,60 @@
 #   ifort_quick_and_dirty <g95-arguments>
 #
 # Description:
-#   This is designed to work with a Makefile that bases dependencies on .o
-#   files (not really logical for module dependencies, but the only portable
-#   option, as some compilers do not produce .mod files at all).
+#   This compiler wrapper avoids unnecessary re-compilation by clever
+#   back-dating of time stamps for .f90, .o and .mod files.
 #
-#   Currently, g95 and ifort (>=8.0) are supported; to add other
-#   compilers, we need to know where the time stamp is located in the .mod
-#   files, so we can mask it out before calculationg MD5 sums.
+#   The scheme (inspired by g95's `smart compilation feature') is as
+#   follows:
 #
-#   The trick (inspired by g95's `smart compilation feature') is to avoid
-#   unnecessary recompilation based on the following scheme:
-#   If
-#   (a) the module info file <file>.mod existed before, and has not
-#       changed after compilation of <file>.f90,
-#   or
-#   (b) there was no <file>.mod before, and there is none after compilation
-#       (i.e. the .f or .f90 file defines no module)
-#   then the time stamps for <file>.{f90,mod,o}, are re-set to the creation
-#   time of the original <file.mod>, and all *.x are removed (to ensure they
-#   get re-linked).
-#     Thus, if a detail in <file>.f90 is changed that does not affect
-#   the interface to other files, none of the other files is re-compiled,
-#   and only the executables are re-linked against the new <file>.o.
+#   1. The time stamps of any .mod files that have not really changed
+#      (same content as before) are back-dated to their values before
+#      compilation of <file.f90>.
+#   2. If no .mod files have been really changed or newly created, then
+#      - the time stamps of <file>.f90 and <file>.o are reset to the
+#        pre-compilation time stamp of <file.o>, and
+#      - all files *.x are removed to ensure they get re-linked.
 #
-# Sort me out:
-# - What to do when one source file creates different modules (some old,
-#   some new, ...)
-# - What to do in the absence of modules (thing ifc v.6 or 7, but also our
-#   .f  and main program files)
-# - The description isn't correct: we have (e.g.) nompicomm.{f90,o} with
-#   mpicomm.mod (or MPICOMM.mod)
+#   Thus, if a detail in <file>.f90 is changed that does not affect the
+#   interface to other files, none of the other files will get
+#   re-compiled, and only the executables are re-linked against the new
+#   <file>.o.
+#
+# Notes:
+#   1. This is designed to work with a Makefile that bases dependencies on
+#      .o files (not really logical for module dependencies, but the only
+#      portable option, as some compilers do not produce .mod files at
+#      all).
+#        The way it is implemented (resetting the .mod time stamps as
+#      well) may make the trick work for .mod-based dependencies as well,
+#      but I certainly won't adapt the Pencil Code's makefiles just to
+#      test this.
+#   2. Currently, g95 and ifort (>=8.0) are supported. To add other
+#      compilers, we need to know where the time stamp is located in the
+#      .mod files, so we can mask it out before calculationg MD5 sums for
+#      comparison.
+
+
+# Copyright (C) 2006  Wolfgang Dobler
+#
+# This program is free software; you can redistribute and/or modify it
+# under the same conditions as Perl.
+
 
 use strict;
 use Digest::MD5 qw(md5_hex);
 
-my $debug=1;
+my $debug=0;                    # 0: be quiet
+                                # 1: be verbose
+                                # 2: dump all time stamps and md5 sums
+
 if ($debug) {
     eval "use Data::Dumper";    # Needed later
     print "=" x 70, "\n" if ($debug); # Visually separate our invocations
 }
 
 my ($fc, @fcargs, $src, $obj);
+my (%ts_before, %ts_after, %md5_before, %md5_after);
 
 
 ## 1. Dissect name to find out which compiler to run
@@ -60,20 +73,22 @@ my $cmdname = (split('/', $0))[-1];
 if ($cmdname =~ /(.*)_quick_and_dirty/) {
     $fc     = $1;
     @fcargs = @ARGV;
+    if (grep /^-c$/, @fcargs) {
+        # Call of type $(FC) .. -c to produce .o and .mod files
+        # --> Do the nasty manipulations
+    } else {
+        # No `-c' option
+        print STDERR "Assuming a linking call; not manipulating anything...\n"
+          if ($debug);
+        compile($fc, @fcargs);
+        exit 0;
+    }
 } else {
     die "I ought to be called <...>_quick_and_dirty, but you call me `$0'\n";
 }
 
-## 2. Get time stamps and hash of MD5 digests of all .mod files
-my @mod_files = <*.mod>;
-my %ts_before  = get_ts_hash(@mod_files);
-my %md5_before = get_md5_hash(@mod_files);
-if ($debug) {
-    print STDERR "Before: ", Dumper(\%ts_before);
-    print STDERR "Before: ", Dumper(\%md5_before);
-}
 
-## 3. Get file name of source file *.f90 or *.f
+## 2. Get file name of source file *.f90 or *.f
 my @srcfiles = grep /(.*\.f(?:90)?)$/, @fcargs ;
 if (@srcfiles ne 1) {
     die "$cmdname: Cannot handle multiple source files yet (@srcfiles)\n"
@@ -83,54 +98,56 @@ $src = $srcfiles[0];
 my ($base,$suf) = ($src =~ /(.*)\.(f(?:90)?)/);
 $obj = "$base.o";
 
-## 4. Compile
-print STDERR "Compiling...\n" if ($debug);
-my $retval = system($fc, @fcargs);
-if ($retval ne 0) {
-    die "Error during compilation: $fc returned $retval (\$\!=`$!')\n";
-}
-print STDERR "..done.\n" if ($debug);
-system('touch', 'general.mod');
 
-## 5. Get updated MD5 hash
-@mod_files = <*.mod>;
-my %ts_after  = get_ts_hash(@mod_files);
-my %md5_after = get_md5_hash(@mod_files);
-if ($debug) {
-    print STDERR "After: ", Dumper(\%ts_before);
-    print STDERR "After: ", Dumper(\%md5_before);
-}
+## 3. Get hashes, compile, get updated hashes
+get_ts_and_md5_for_mod(\%ts_before, \%md5_before, 'Before');
+my $fake_time_o = get_timestamp($obj);
+compile($fc, @fcargs);
+get_ts_and_md5_for_mod(\%ts_after,  \%md5_after,  'After' );
 
-## 6. Compare
+
+## 4. Compare
+my $backdate_src_o = 1;      # back-date .{f90,o} unless we change our opinion
+
 my @changed = get_updated_files(\%ts_before,\%ts_after); # compare mtimes
-foreach my $file (@changed) {
-    # Now compare MD5 hashes
-    my $old_md5 = ($md5_before{$file} || 'none');
-    my $new_md5 = ($md5_after{$file}  || 'New');
-    if ($new_md5 ne $old_md5) {
-        print STDERR "$file: has changed\n" if ($debug);
-    } else {
-        print STDERR "$file: updated, but not changed\n" if ($debug);
-
-        # Change atime and mtime for .mod, .f90 and .o files
-        my $fake_time= $ts_before{$file};
-        print STDERR "Touching $file, $src, $obj to $fake_time\n" if ($debug);
-        utime
-          $fake_time, $fake_time,
-          ($file, $src, $obj)
-              or die "Couldn't touch ($file, $src, $obj)\n";
-
-        # Delete any .x files to enforce re-linking
-        my @x_files = <*.x>;
-        if (@x_files) {
-            print STDERR "Unlinking @x_files\n" if ($debug);
-            unlink @x_files or die "Couldn't remove @x_files\n";
+my @really_changed
+  = map {    ($md5_before{$_} || 'none')
+          ne ($md5_after {$_} || 'New' )
         }
+        @changed;
+print_details_of_changes() if ($debug);
+
+# Cycle through _all_ updated .mod files and back-date if appropriate.
+foreach my $mod_file (@changed) {
+    if (grep /^$mod_file$/, @really_changed) {
+        # Dount touch .f90 or .o if any .mod has really changed
+        $backdate_src_o = 0;
+    } else {
+        # Back-date .mod file
+        my $fake_time = $ts_before{$mod_file};
+        back_date($fake_time, $mod_file);
     }
 }
 
+# Handle back-dating of .f90 and .o files:
+if ($backdate_src_o) {
+    back_date($fake_time_o, $src, $obj);
+    delete_x_files();
+}
 
 
+# ---------------------------------------------------------------------- #
+# ---------------------------------------------------------------------- #
+sub get_timestamp {
+# Get time stamp of a file
+    my $file = shift or die "get_ts: need one argument\n";
+
+    #   dev   ino   mode  nlink uid   gid   rdev  size  atime mtime
+    my (undef,undef,undef,undef,undef,undef,undef,undef,undef,$mtime)
+      = stat($file) or die "Cannot stat file $file\n";
+
+    return $mtime;
+}
 # ---------------------------------------------------------------------- #
 sub get_ts_hash {
 # Takes a list of file names,
@@ -139,10 +156,7 @@ sub get_ts_hash {
      my %ts_hash;
 
      foreach my $file (@files) {
-         #   dev   ino   mode  nlink uid   gid   rdev  size  atime mtime
-         my (undef,undef,undef,undef,undef,undef,undef,undef,undef,$mtime)
-             = stat($file) or die "Cannot stat file $file\n";
-         $ts_hash{$file} = $mtime;
+         $ts_hash{$file} = get_timestamp($file);
      }
 
      return %ts_hash;
@@ -179,6 +193,21 @@ sub get_md5_hash {
     return %mod_hash;
 }
 # ---------------------------------------------------------------------- #
+sub get_ts_and_md5_for_mod {
+# Get time stamps and MD5 hashes of all *.mod files
+    my $ts_ref  = shift;
+    my $md5_ref = shift;
+    my $phase   = (shift || 'Unknown phase');
+
+    my @mod_files = <*.mod>;
+    %$ts_ref  = get_ts_hash( @mod_files);
+    %$md5_ref = get_md5_hash(@mod_files);
+    if ($debug>1) {
+        print STDERR "$phase: ", Dumper($ts_ref);
+        print STDERR "$phase: ", Dumper($md5_ref);
+    }
+}
+# ---------------------------------------------------------------------- #
 sub get_updated_files {
 # Takes two hash refs { filename => mtime },
 # returns list of all files that have obtained newer mtime in hash 2, or
@@ -198,7 +227,51 @@ sub get_updated_files {
     return @changed;
 }
 # ---------------------------------------------------------------------- #
+sub compile {
+# Run the true compiler
 
+    my $fc     = shift;
+    my @fcargs = @_;
+
+    print STDERR "Compiling...\n" if ($debug);
+    my $retval = system($fc, @fcargs);
+    if ($retval ne 0) {
+        die "Error during compilation: $fc returned $retval (\$\!=`$!')\n";
+    }
+    print STDERR "..done.\n" if ($debug);
+}
+# ---------------------------------------------------------------------- #
+sub back_date {
+# Change atime and mtime for files
+    my $fake_time = shift;
+    my @files     = @_;
+
+    print STDERR "Touching ", join(',', @files), " to $fake_time\n" if ($debug);
+    utime $fake_time, $fake_time, @files
+      or die "Couldn't touch ", join(',', @files), "\n";
+}
+# ---------------------------------------------------------------------- #
+sub delete_x_files {
+# Delete *.x to enforce re-linking
+    my @x_files = <*.x>;
+    if (@x_files) {
+        print STDERR "Unlinking @x_files\n" if ($debug);
+        unlink @x_files or die "Couldn't remove @x_files\n";
+    }
+}
+# ---------------------------------------------------------------------- #
+sub print_details_of_changes {
+# For each file in @changes, print a line stating whether it has really
+# changed, or not
+    foreach my $mod_file (@changed) {
+        if (grep /^$mod_file$/, @really_changed) {
+            print STDERR "$mod_file: has changed\n";
+        } else { 
+            print STDERR "$mod_file: updated, but not changed\n";
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
 
 
 # End of file g95_quick_and_dirty
