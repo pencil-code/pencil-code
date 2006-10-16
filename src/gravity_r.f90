@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.4 2006-10-06 19:08:27 wlyra Exp $
+! $Id: gravity_r.f90,v 1.5 2006-10-16 11:49:19 dintrans Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -76,7 +76,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.4 2006-10-06 19:08:27 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.5 2006-10-16 11:49:19 dintrans Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -155,6 +155,14 @@ module Gravity
           if (lroot) print*,'initialize_gravity: smoothed 1/r potential'
           lpade=.false.
 
+        case ('sph-hat')
+          if (lroot) print*,'initialize_gravity: hat profile'
+          lpade=.false.
+
+        case ('sph-const')
+          if (lroot) print*,'initialize_gravity: constant g_r in the sphere'
+          lpade=.false.
+
         ! geodynamo
         case ('geo-kws-approx')     ! approx. 1/r potential between r=.5 and r=1
           if (lroot) print*, 'initialize_gravity: approximate 1/r potential'
@@ -167,10 +175,6 @@ module Gravity
                              'smoothed 1/r potential in spherical shell'
           if (r0_pot < epsi) print*, 'WARNING: grav_r: r0_pot is too small.'//&
                                      'Can be set in grav_r namelists.'
-          lpade=.false.
-        case ('geo-hat')
-          call information('initialize_gravity', &
-            ' hat profile for the two-layers system')
           lpade=.false.
         ! end geodynamo
 
@@ -216,11 +220,12 @@ module Gravity
                                             cpot(3) /), rr_mn)**2
 
           else
-            if (ipotential .eq. 'geo-hat') then
-!             g_r=-g0
+            if (ipotential .eq. 'sph-hat') then
               ! hat profile for the two-layers system
               g_r=step(rr_mn,r_int,widthgg)-step(rr_mn,r_ext,widthgg)
               g_r=-g0*g_r
+            elseif (ipotential .eq. 'sph-const') then
+              g_r=-g0
             else
               ! smoothed 1/r potential in a spherical shell
               g_r=-g0*rr_mn**(n_pot-1) &
