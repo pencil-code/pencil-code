@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.245 2006-10-13 06:19:14 brandenb Exp $
+### $Id: Makefile.src,v 1.246 2006-10-16 10:44:41 dintrans Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -305,10 +305,10 @@ LD_FFTW2=
 #FC=f95 -dusty #(davey[12])
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11)
 #CC=mpicc #(obelix)
-#FC=ifort -stand f90 #(Kolmogorov|ulysse|shal|efigi)
-#FFLAGS=-O3 #(Kolmogorov|ulysse|shal|efigi)
-##CC=gcc #(Kolmogorov|ulysse|shal|efigi)
-##CFLAGS=-O3 -DFUNDERSC=1 #(Kolmogorov|ulysse|shal|efigi)
+#FC=ifort -stand f90 #(Kolmogorov|shal|efigi)
+#FFLAGS=-O3 #(Kolmogorov|shal|efigi)
+##CC=gcc #(Kolmogorov|shal|efigi)
+##CFLAGS=-O3 -DFUNDERSC=1 #(Kolmogorov|shal|efigi)
 #LD_MPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil #(Kolmogorov|shal|efigi)
 #LIBMPISUFFIX=_#(Kolmogorov|shal|efigi)
 #FC=g95 -fsecond-underscore #(Pencil)
@@ -506,7 +506,13 @@ LD_FFTW2=
 #FFLAGS=-O3 #(brahe|cfe2)
 #CFLAGS=-O3 -DFUNDERSC=1 #(brahe|cfe2)
 #LD_MPI=-lmpi #(brahe|cfe2)
-
+##
+## Toulouse's Opteron cluster (116 procs)
+##
+#FC=ifort #(cict*)
+#FFLAGS=-O3 -I/usr/local/mpilam/include #(cict*)
+#LD_MPI= -L/usr/local/mpilam/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread -ldl #(cict*)
+#LIBMPISUFFIX=_#(cict*)
 
 ## Darwin:
 ## Power Macintosh
@@ -537,7 +543,12 @@ LD_FFTW2=
 #CC=gcc-3.3 #(Chandrasekhar|sunpci1)
 #FFLAGS=-O3 #(Chandrasekhar|sunpci1)
 #CFLAGS=-O3 -DFUNDERSC=2 #(Chandrasekhar|sunpci1)
-
+##
+## Boris' MacBook Pro
+##
+#FC=ifort #(ulysse)
+#FFLAGS=-O3 -stand f90 -assume no2underscores -vec-report0 #(ulysse)
+#CFLAGS=-DFUNDERSC=1 #(ulysse)
 
 ## SunOS:
 ## Solaris

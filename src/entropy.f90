@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.436 2006-10-11 01:07:18 wlyra Exp $
+! $Id: entropy.f90,v 1.437 2006-10-16 10:44:41 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -160,7 +160,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.436 2006-10-11 01:07:18 wlyra Exp $")
+           "$Id: entropy.f90,v 1.437 2006-10-16 10:44:41 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -185,7 +185,6 @@ module Entropy
       logical :: lstarting
 !
       real :: beta1,cp1tilde,lnrho_dummy=0.
-!     real :: beta0,r_bcz,TT_crit
       real :: beta0,TT_crit
       integer :: i
       logical :: lnothing
@@ -1068,7 +1067,7 @@ module Entropy
 !  scaling is applied, ie no further free parameter is assumed.)
 !
 !  12-jul-05/axel: coded
-!  17-Nov-2005/bdintrans: updated using strat_MLT
+!  17-Nov-2005/dintrans: updated using strat_MLT
 !
       use Cdata
       use Gravity, only: gravz, z1
@@ -2817,11 +2816,10 @@ module Entropy
 !  18-sep-2002/axel: added lmultilayer switch
 !  09-aug-2006/dintrans: added a radial profile hcond(r)
 !
-      use Sub, only: step
+      use Sub, only: step, calc_unitvects_sphere
       use Gravity
 !
       real, dimension (nx) :: hcond
-!     real :: r_bcz
 !
       if (lgravz) then
         if (lmultilayer) then
@@ -2833,6 +2831,7 @@ module Entropy
         endif
       else
         if (lmultilayer) then
+          call calc_unitvects_sphere()
           hcond = 1. + (hcond1-1.)*step(r_mn,r_bcz,-widthss)
           hcond = hcond0*hcond
         else
@@ -2849,12 +2848,11 @@ module Entropy
 !
 !  23-jan-2002/wolf: coded
 !
-      use Sub, only: der_step
+      use Sub, only: der_step, calc_unitvects_sphere
       use Gravity
 !
       real, dimension (nx,3) :: glhc
       real, dimension (nx)   :: dhcond
-!     real :: r_bcz
 !
       if (lgravz) then
         if (lmultilayer) then
@@ -2867,10 +2865,15 @@ module Entropy
         endif
       else
         if (lmultilayer) then
+          call calc_unitvects_sphere()
           dhcond=hcond0*(hcond1-1.)*der_step(r_mn,r_bcz,-widthss)
           glhc(:,1) = x_mn/r_mn*dhcond
           glhc(:,2) = y_mn/r_mn*dhcond
-          glhc(:,3) = z_mn/r_mn*dhcond
+          if (lcylindrical) then 
+            glhc(:,3) = 0.
+          else
+            glhc(:,3) = z_mn/r_mn*dhcond
+          endif
         else
           glhc = 0.
         endif
@@ -3093,11 +3096,10 @@ module Entropy
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss
-!     real :: beta0,beta1,TT_crit,r_bcz
       real :: beta0,beta1,TT_crit
       real :: lnrho_int,lnrho_ext,lnrho_crit
 
-      print*,'r_bcz=',r_bcz
+      if (headtt) print*,'r_bcz in entropy.f90=',r_bcz
 !
 !  beta is the temperature gradient
 !  1/beta = -(g/cp) 1./[(1-1/gamma)*(m+1)]
