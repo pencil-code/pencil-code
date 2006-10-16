@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.104 2006-10-13 15:14:45 nbabkovs Exp $
+! $Id: radiation_ray.f90,v 1.105 2006-10-16 08:34:14 dobler Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -172,7 +172,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.104 2006-10-13 15:14:45 nbabkovs Exp $")
+           "$Id: radiation_ray.f90,v 1.105 2006-10-16 08:34:14 dobler Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1717,13 +1717,15 @@ if (ldt_rad_limit) call calc_rad_diffusion(f,df,p)
       if (lfirst.and.ldt) then
 ! Calculate timestep limitation
 
-      diffus_chi1=min(gamma*chix*dxyz_2,sigmaSB*kappa_es*p%TT**3*4.* p%cp1tilde)
+      diffus_chi1=min(gamma*chix*dxyz_2, &
+                      real(sigmaSB*kappa_es*p%TT**3*4.*p%cp1tilde))
 
 
       diffus_chi=max(diffus_chi,diffus_chi1)
      endif
 !
     endsubroutine calc_rad_diffusion
+!***********************************************************************
 
 
 endmodule Radiation
