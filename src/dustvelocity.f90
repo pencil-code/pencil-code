@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.115 2006-08-23 16:53:31 mee Exp $
+! $Id: dustvelocity.f90,v 1.116 2006-10-16 08:16:31 dobler Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -137,7 +137,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.115 2006-08-23 16:53:31 mee Exp $")
+           "$Id: dustvelocity.f90,v 1.116 2006-10-16 08:16:31 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -915,7 +915,7 @@ module Dustvelocity
           endif
           if (lmagnetic) AA_sfta=AA_sfta-p%JxBr
           BB_sfta=-1/tausd(k)
-          df(l1:l2,m,n,iudx(k):iudz(k)) = 1/dt_beta(itsub)*( &
+          df(l1:l2,m,n,iudx(k):iudz(k)) = 1/dt_beta_ts(itsub)*( &
               f(l1:l2,m,n,iux:iuz)-f(l1:l2,m,n,iudx(k):iudz(k))-AA_sfta/BB_sfta)
         enddo
       endif

@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.46 2006-10-11 21:53:10 brandenb Exp $
+! $Id: timestep.f90,v 1.47 2006-10-16 08:16:31 dobler Exp $
 
 module Timestep
 
@@ -40,25 +40,25 @@ module Timestep
 !  coefficients for up to order 3
 !
       if (itorder==1) then
-        alpha=(/ 0., 0., 0. /)
-        beta =(/ 1., 0., 0. /)
+        alpha_ts=(/ 0., 0., 0. /)
+        beta_ts =(/ 1., 0., 0. /)
       elseif (itorder==2) then
-        alpha=(/ 0., -1./2., 0. /)
-        beta=(/ 1./2.,  1.,  0. /)
+        alpha_ts=(/ 0., -1./2., 0. /)
+        beta_ts=(/ 1./2.,  1.,  0. /)
       elseif (itorder==3) then
-        !alpha=(/0., -2./3., -1./)
-        !beta=(/1./3., 1., 1./2./)
+        !alpha_ts=(/0., -2./3., -1./)
+        !beta_ts=(/1./3., 1., 1./2./)
         !  use coefficients of Williamson (1980)
-        alpha=(/  0. ,  -5./9., -153./128. /)
-        beta=(/ 1./3., 15./16.,    8./15.  /)
+        alpha_ts=(/  0. ,  -5./9., -153./128. /)
+        beta_ts=(/ 1./3., 15./16.,    8./15.  /)
       else
         if (lroot) print*,'Not implemented: itorder=',itorder
         call mpifinalize
       endif
 !
-!  dt_beta may be needed in other modules (like Dustdensity) for fixed dt
+!  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
 !
-      if (.not. ldt) dt_beta=dt*beta
+      if (.not. ldt) dt_beta_ts=dt*beta_ts
 !
 !  Set up df and ds for each time sub
 !
@@ -69,8 +69,8 @@ module Timestep
           ds=0.
         else
           lfirst=.false.
-          df=alpha(itsub)*df  !(could be subsumed into pde, but is dangerous!)
-          ds=alpha(itsub)*ds
+          df=alpha_ts(itsub)*df  !(could be subsumed into pde, but is dangerous!)
+          ds=alpha_ts(itsub)*ds
         endif
 !
 !  Set up particle derivative array.
@@ -100,13 +100,13 @@ module Timestep
           call mpibcast_real(dt,1)
         endif
 
-        if (ldt) dt_beta=dt*beta
+        if (ldt) dt_beta_ts=dt*beta_ts
         if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
 !
 ! Add artificial damping at the location of SN explosions for
 ! a short time after insertion.
 !
-        if (linterstellar) call calc_snr_damp_int(dt_beta(itsub))
+        if (linterstellar) call calc_snr_damp_int(dt_beta_ts(itsub))
 !
 !  Time evolution of grid variables
 !  (do this loop in pencils, for cache efficiency)
@@ -115,7 +115,7 @@ module Timestep
 !ajwm Note to self... Just how much overhead is there in calling
 !ajwm a sub this often...
           if (lborder_profiles) call border_quenching(df,j)
-          f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta(itsub)*df(l1:l2,m,n,j)
+          f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta_ts(itsub)*df(l1:l2,m,n,j)
         enddo; enddo; enddo
 !
 !  Time evolution of particle variables
@@ -124,11 +124,11 @@ module Timestep
 !
 !  Advance deltay of the shear
 !
-        if (lshear) call advance_shear(dt_beta(itsub)*ds)
+        if (lshear) call advance_shear(dt_beta_ts(itsub)*ds)
 !
 !  Increase time
 !
-        t=t+dt_beta(itsub)*ds
+        t=t+dt_beta_ts(itsub)*ds
 !
       enddo
 !

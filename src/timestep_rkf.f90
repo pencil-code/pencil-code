@@ -1,4 +1,4 @@
-! $Id: timestep_rkf.f90,v 1.3 2006-08-23 16:53:33 mee Exp $
+! $Id: timestep_rkf.f90,v 1.4 2006-10-16 08:16:31 dobler Exp $
 
 module Timestep
 
@@ -61,9 +61,9 @@ module Timestep
         call fatal_error('rk_2n','itorder must be 5 for Runge-Kutta-Fehlberg')
 
 !
-!  dt_beta may be needed in other modules (like Dustdensity) for fixed dt
+!  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
 !
-!      if (.not. ldt) dt_beta=dt*beta
+!      if (.not. ldt) dt_beta_ts=dt*beta_ts
 !
 
       if (linterstellar.or.lshear.or.lparticles) &

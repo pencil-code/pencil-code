@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.339 2006-09-27 05:39:35 brandenb Exp $
+! ! $Id: cdata.f90,v 1.340 2006-10-16 08:16:31 dobler Exp $
 
 module Cdata
 
@@ -39,7 +39,7 @@ module Cdata
   real, dimension(3) :: Lxyz_loc,xyz0_loc,xyz1_loc
   real :: t,dt=0.
   real :: dt1_last=0.
-  real, dimension (3) :: alpha=0.0,beta=0.0,dt_beta=1.0
+  real, dimension (3) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
 
   real :: cdt=0.4,cdtv=0.25,cdts=1.0,cdtr=1.0
   real :: cdtvDim
