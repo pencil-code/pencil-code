@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: pc_svn_add_rundir,v 1.1 2006-09-18 15:46:48 joishi Exp $
+# CVS: $Id: pc_svn_add_rundir,v 1.2 2006-10-17 20:50:15 joishi Exp $
 
 # Name:   svn-add-rundir
 # Author: joishi (joishi@amnh.org) (modified from W. Dobler's cvs-add-rundir)
@@ -24,7 +24,7 @@ if ($#argv > 0) then
   endif
 endif
 
-(cd ..; svn add $rundir:t)
+(cd ..; svn add -N $rundir:t)
 svn add *.in
 svn add -N src
 svn propset svn:keywords "Id" *.in
