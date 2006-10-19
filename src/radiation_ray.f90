@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.105 2006-10-16 08:34:14 dobler Exp $
+! $Id: radiation_ray.f90,v 1.106 2006-10-19 15:33:30 nbabkovs Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -172,7 +172,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.105 2006-10-16 08:34:14 dobler Exp $")
+           "$Id: radiation_ray.f90,v 1.106 2006-10-19 15:33:30 nbabkovs Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1155,10 +1155,10 @@ module Radiation
       endif
 
 ! Natalia
-! calculate the cooling and pressure term in the diffusion 
+! calculate the cooling and pressure terms in the diffusion 
 ! approximation
 
-if (ldt_rad_limit) call calc_rad_diffusion(f,df,p)
+       if (ldt_rad_limit) call calc_rad_diffusion(f,df,p)
 
 !
 !  diagnostics
@@ -1176,7 +1176,7 @@ if (ldt_rad_limit) call calc_rad_diffusion(f,df,p)
 !
     endsubroutine radiative_cooling
 !***********************************************************************
-    subroutine radiative_pressure(f,df,p)
+     subroutine radiative_pressure(f,df,p)
 !
 !  Add radiative pressure to equation of motion
 !
@@ -1370,11 +1370,9 @@ if (ldt_rad_limit) call calc_rad_diffusion(f,df,p)
           lpenc_requested(i_rho1)=.true.
           lpenc_requested(i_TT)=.true.
           lpenc_requested(i_glnrho)=.true.
-          lpenc_requested(i_gss)=.true.
-          lpenc_requested(i_del2lnrho)=.true.
-          lpenc_requested(i_del2ss)=.true.
           lpenc_requested(i_cp1tilde)=.true.
         endif
+
 
         if (ltemperature) then
           lpenc_requested(i_TT1)=.true.
@@ -1385,6 +1383,14 @@ if (ldt_rad_limit) call calc_rad_diffusion(f,df,p)
       endif
 
 
+      if (lrad_cool_diffus) then
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_gss)=.true.
+        lpenc_requested(i_del2lnrho)=.true.
+        lpenc_requested(i_del2ss)=.true.
+     endif
      
 !
     endsubroutine pencil_criteria_radiation
@@ -1673,9 +1679,9 @@ if (ldt_rad_limit) call calc_rad_diffusion(f,df,p)
 !
 !AB:  derivs of chix missing??
 !
-      thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
+      thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho+ g2)
 
-
+!print*, '  print p%del2ss(10)  ',p%del2ss(10)
    !  add heat conduction to entropy equation
     !
          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff   
@@ -1717,11 +1723,13 @@ if (ldt_rad_limit) call calc_rad_diffusion(f,df,p)
       if (lfirst.and.ldt) then
 ! Calculate timestep limitation
 
-      diffus_chi1=min(gamma*chix*dxyz_2, &
+      if (lrad_cool_diffus .and. lrad_pres_diffus) then
+          diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)
+        else
+          diffus_chi1=min(gamma*chix*dxyz_2, &
                       real(sigmaSB*kappa_es*p%TT**3*4.*p%cp1tilde))
-
-
-      diffus_chi=max(diffus_chi,diffus_chi1)
+          diffus_chi=max(diffus_chi,diffus_chi1)
+      endif
      endif
 !
     endsubroutine calc_rad_diffusion
