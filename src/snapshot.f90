@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.8 2006-08-30 13:28:40 dintrans Exp $
+! $Id: snapshot.f90,v 1.9 2006-10-19 20:07:47 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -32,13 +32,10 @@ contains
 !
       use Cdata
       use Mpicomm
-      use Boundcond
-      use Radiation
-      use Viscosity, only: calc_viscosity
-      use EquationOfState
-      use General
-      use Sub
-      use IO
+      use Boundcond, only: update_ghosts
+      use General, only: safe_character_assign
+      use Sub, only: read_snaptime,update_snaptime
+      use IO, only: log_filename_to_file
 !
 !  the dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90
@@ -72,8 +69,8 @@ contains
 !
         call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch,ENUM=.true.)
         if (lsnap) then
-          call calc_viscosity(a)
           call update_ghosts(a)
+          call update_auxiliaries(a)
           call output_snap(chsnap//ch,a,msnap)
           if(ip<=10.and.lroot) print*,'wsnap: written snapshot ',chsnap//ch
           if (present(flist)) call log_filename_to_file(chsnap//ch,flist)
@@ -83,8 +80,8 @@ contains
 !
 !  write snapshot without label (typically, var.dat)
 !
-        call calc_viscosity(a)
         call update_ghosts(a)
+        call update_auxiliaries(a)
         call output_snap(chsnap,a,msnap)
         if (present(flist)) call log_filename_to_file(chsnap,flist)
       endif
@@ -368,6 +365,29 @@ contains
       if (lserial_io) call end_serialize()
 
     endsubroutine input_snap
+!***********************************************************************
+    subroutine update_auxiliaries(a)
+
+      use Cparam
+      use Cdata
+      use Shock, only: calc_shock_profile,calc_shock_profile_simple
+      use EquationOfState, only: ioncalc
+      use Radiation, only: radtransfer
+      use Viscosity, only: lvisc_first,calc_viscosity
+
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: a
+
+      if (lshock) then
+        call calc_shock_profile(a)
+        call calc_shock_profile_simple(a)
+      endif
+      if (leos_ionization.or.leos_temperature_ionization) call ioncalc(a)
+      if (lradiation_ray)  call radtransfer(a)
+      if (lvisc_hyper.or.lvisc_smagorinsky) then
+        if (.not.lvisc_first.or.lfirst) call calc_viscosity(a)
+      endif
+
+    endsubroutine update_auxiliaries
 !***********************************************************************
 endmodule Snapshot
 
