@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.331 2006-10-16 08:16:31 dobler Exp $
+! $Id: equ.f90,v 1.332 2006-10-19 19:47:09 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -383,7 +383,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.331 2006-10-16 08:16:31 dobler Exp $")
+           "$Id: equ.f90,v 1.332 2006-10-19 19:47:09 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -465,7 +465,7 @@ module Equ
       if (lradiation_ray)  call radtransfer(f)
       if (lshock) call calc_shock_profile_simple(f)
       if (lvisc_hyper.or.lvisc_smagorinsky) then
-        if ((lvisc_first.and.lfirst).or..not.lvisc_first) call calc_viscosity(f)
+        if (.not.lvisc_first.or.lfirst) call calc_viscosity(f)
       endif
 !
 !  Calculate averages for testfield procedure (only when lsoca=.false.)
