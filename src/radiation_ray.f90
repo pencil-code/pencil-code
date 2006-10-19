@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.109 2006-10-19 17:11:25 theine Exp $
+! $Id: radiation_ray.f90,v 1.110 2006-10-19 22:38:52 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -118,7 +118,7 @@ module Radiation
        kx_Srad,ky_Srad,kz_Srad,kx_kapparho,ky_kapparho,kz_kapparho, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure, &
-       Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus
+       Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus,ldt_rad_limit
 
   contains
 
@@ -172,7 +172,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.109 2006-10-19 17:11:25 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.110 2006-10-19 22:38:52 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
