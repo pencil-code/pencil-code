@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.108 2006-10-19 17:00:30 theine Exp $
+! $Id: radiation_ray.f90,v 1.109 2006-10-19 17:11:25 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -172,7 +172,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.108 2006-10-19 17:00:30 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.109 2006-10-19 17:11:25 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1373,7 +1373,6 @@ module Radiation
           lpenc_requested(i_cp1tilde)=.true.
         endif
 
-
         if (ltemperature) then
           lpenc_requested(i_TT1)=.true.
           lpenc_requested(i_rho1)=.true.
@@ -1382,14 +1381,13 @@ module Radiation
 
       endif
 
-
       if (lrad_cool_diffus) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_TT)=.true.
-        lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_gss)=.true.
+        lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnrho)=.true.
         lpenc_requested(i_del2ss)=.true.
+        lpenc_requested(i_cp1tilde)=.true.
      endif
      
 !
@@ -1657,7 +1655,7 @@ module Radiation
       real, dimension (nx,3) :: glnThcond,duu
       real, dimension (nx) :: chix,diffus_chi1
       real, dimension (nx) :: thdiff,g2
-      integer :: j 
+      integer :: j
 
       intent(in) :: f,p
       intent(out) :: df
