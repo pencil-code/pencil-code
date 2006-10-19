@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.16 2006-10-13 15:14:46 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.17 2006-10-19 15:36:06 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -95,8 +95,13 @@ module Special
 
   real :: beta_hand=1.
   real :: nu_for_1D=1. 
-  real :: mu_local=0.
+ 
   logical :: l1D_cooling=.false.,l1D_heating=.false.
+
+  logical :: lraddif_local=.false.
+
+  
+
   logical :: l1D_cool_heat=.false.
   logical :: lgrav_x_mdf=.false. 
 !
@@ -110,7 +115,7 @@ module Special
       initnstar,lmass_source_NS,leffective_gravity, &
       laccelerat_zone, ldecelerat_zone, lsurface_zone, &
       rho_star,rho_disk,rho_surf, &
-      H_disk_point_int, &
+      H_disk_point_int, lraddif_local,&
       H_disk, H_disk_point, &
       L_disk, R_star, M_star, &
       T_star,accretion_flux, T_disk, &
@@ -123,7 +128,7 @@ module Special
 ! run parameters
   namelist /neutron_star_run_pars/ &
       lmass_source_NS,leffective_gravity, rho_star,rho_disk,rho_surf, &
-      laccelerat_zone, ldecelerat_zone, lsurface_zone, &
+      laccelerat_zone, ldecelerat_zone, lsurface_zone,lraddif_local, &
        H_disk, H_disk_point, &
        L_disk, R_star, M_star, T_star, &
        accretion_flux, lnstar_entropy, &
@@ -180,11 +185,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.16 2006-10-13 15:14:46 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.17 2006-10-19 15:36:06 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.16 2006-10-13 15:14:46 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.17 2006-10-19 15:36:06 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -217,7 +222,11 @@ module Special
 !!
 !!  Initialize any module variables which are parameter dependant  
 !!
+
+   
     l1D_cool_heat=l1D_cooling.or.l1D_heating
+
+   
     if (l1D_cool_heat.and.lroot) &
           print*, 'neutron_star: 1D cooling or heating'
 !
@@ -285,13 +294,26 @@ module Special
       if (laccelerat_zone)  lpenc_requested(i_rho)=.true.
     !  if (lmass_source_NS)  lpenc_requested(i_rho)=.true.
 !Natalia (accretion on a NS)
-       if (lnstar_entropy) then
+      
+
+   if (lnstar_entropy) then
          lpenc_requested(i_TT)=.true.
           lpenc_requested(i_lnTT)=.true.
          lpenc_requested(i_cs2)=.true.
          lpenc_requested(i_ss)=.true.
          lpenc_requested(i_rho)=.true.
       endif
+!
+     if (lraddif_local) then 
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_gss)=.true.
+        lpenc_requested(i_del2lnrho)=.true.
+        lpenc_requested(i_del2ss)=.true.
+      endif
+
+
 !
 !
     endsubroutine pencil_criteria_special
@@ -807,7 +829,9 @@ endsubroutine read_special_run_pars
       type (pencil_case), intent(in) :: p
       integer :: j, l_sz, l_sz_1
 
-      if (l1D_cool_heat) call rad_cool_heat_1D(f,df,p)
+        if (l1D_cool_heat) call rad_cool_heat_1D(f,df,p)
+
+        if (lraddif_local) call raddif_local(f,df,p)
 
 !f (accretion on NS)
 !
@@ -988,8 +1012,6 @@ endsubroutine read_special_run_pars
       intent(out) :: df
  
  
-
-
 !   cooling in 1D case 
 !
     if (l1D_cooling) then
@@ -1009,30 +1031,126 @@ endsubroutine read_special_run_pars
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
        if (headtt) print*,'calc_heatcond_diffusion: added thdiff_1D'
    
-       endif
+  !     print*,' cooling  ',thdiff_1D
+      endif
     endif 
  
 !   heating in 1D case 
 !
     if (l1D_heating) then
-!
-!  commented out reference to nu for the time being.
-!  This line should really be in the viscosity module,
-!  but this is currently not used anyway.
-!
- !    thdiff_1D =p%rho*nu*(1.5*f(l1:l2,m,n,iuy)/xyz0(3))**2
+
       thdiff_1D =p%rho*nu_for_1D*(1.5*f(l1:l2,m,n,iuy)/xyz0(3))**2
       
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
 
-      if (headtt) print*,'calc_heatcond_diffusion: added thdiff_1D'
-    endif 
- 
+     
+    !   if (lsurface_zone) then
+       !    df(l2-l_sz:l2,m,n,iss) = df(l2-l_sz:l2,m,n,iss) + thdiff_1D(l_sz_1:nxgrid)
+      
+    !     df(l1:l2-l_sz,m,n,iss) = df(l1:l2-l_sz,m,n,iss) + thdiff_1D(1:l_sz_1)
+    !   else
+    !       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
+    !   endif
+
+  ! print*,'heating',thdiff_1D
+
+  endif
 
 !
     endsubroutine rad_cool_heat_1D
 !*************************************************************************
-    subroutine mass_source_NS(f,df,rho)
+ subroutine raddif_local(f,df,p)
+!
+!  heat conduction
+!  Natalia (NS)
+!   12-apr-06/axel: adapted from Wolfgang's more complex version
+!
+      use Sub, only: max_mn_name,dot
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3) :: glnT,glnThcond !,glhc
+      real, dimension (nx) :: chix,diffus_chi1
+      real, dimension (nx) :: thdiff,g2,thdiff_1D
+      real, dimension (nx) :: hcond
+      real ::  beta
+      integer :: l_sz, l_sz_1 
+
+      intent(in) :: f,p
+      intent(out) :: df
+ 
+!
+!  Heat conduction
+!
+      chix = p%rho1*p%rho1*p%TT**3*16./3.*sigmaSB/kappa_es!hcond
+      glnT = gamma*p%gss + gamma1*p%glnrho ! grad ln(T)
+      glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+      call dot(glnT,glnThcond,g2)
+!
+!AB:  derivs of chix missing??
+!
+      thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
+!print*,' p%del2ss(10)'   ,p%del2ss(10)
+
+   !  add heat conduction to entropy equation
+    !
+     
+
+!All calculations till 1.10.2006 were made with this option
+! Check it
+     !   if (ldecelerat_zone) then
+     !     if (nxgrid == 1) then
+     !      if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
+     !     else
+     !      if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
+     !     endif
+     !    if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
+     !   else
+         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff   
+         if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
+     !   endif
+    
+! 
+
+
+      if (headtt) print*,'calc_heatcond_diffusion: added thdiff_1D'
+  
+ 
+
+        df(l1:l2,m,n,iuz) = &
+         df(l1:l2,m,n,iuz)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,3) 
+
+        df(l1:l2,m,n,iuy) = &
+          df(l1:l2,m,n,iuy)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,2) 
+
+        df(l1:l2,m,n,iux) = &
+         df(l1:l2,m,n,iux)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,1) 
+!
+!  include constraint from radiative time step
+!
+      if (lfirst.and.ldt) then
+        advec_crad2=p%rho1*16./3.*sigmaSB/c_light*p%TT**4
+      endif
+
+     if (headtt) print*,'calc_radiation_pressure: added to z-component'
+!
+!  check maximum diffusion from thermal diffusion
+!  With heat conduction, the second-order term for entropy is
+!  gamma*chix*del2ss
+!
+      if (lfirst.and.ldt) then
+! Calculate timestep limitation
+        diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)
+
+     !   diffus_chi1=min(gamma*chix*dxyz_2, &
+      !              real(sigmaSB*kappa_es*p%TT**3*4.*p%cp1tilde))
+     !   diffus_chi=max(diffus_chi,diffus_chi1)
+      endif
+    endsubroutine raddif_local
+!*************************************************************************
+
+     subroutine mass_source_NS(f,df,rho)
 !
 !  add mass sources and sinks
 !
@@ -1081,6 +1199,7 @@ endsubroutine read_special_run_pars
 !
     endsubroutine mass_source_NS
 !***********************************************************************
+
     subroutine density_step(f,xx,zz)
 !
 !Natalia
@@ -1204,6 +1323,7 @@ endsubroutine read_special_run_pars
 
     endsubroutine density_step
 !***************************************************************
+
     subroutine entropy_step(f,xx,zz,T_star)
 !Natalia
 !Initialization of entropy in a case of the step-like distribution
@@ -1293,7 +1413,8 @@ endsubroutine read_special_run_pars
     !    f(:,:,:,iss)=(zz(:,:,:)-R_star)/Lxyz(3)*(lnTT0-lnTT0/10.)/gamma+lnTT0/10./gamma
 
     endsubroutine entropy_step
-!***********************************************************************
+!**********************************************************************
+
     subroutine velocity_step(f)
 !Natalia
 !Initialization of velocity in a case of the step-like distribution
@@ -1355,6 +1476,7 @@ endsubroutine read_special_run_pars
 
     endsubroutine  velocity_step
 !***********************************************************************
+
     subroutine velocity_kep_disk(f,zz)
 !Natalia
 !Initialization of velocity in a case of the step-like distribution
@@ -1467,6 +1589,7 @@ endsubroutine read_special_run_pars
 !
     endsubroutine bc_BL_x
  !***********************************************************************
+
     subroutine bc_BL_z(f,sgn,bc)
 !
 !  Step boundary conditions.
