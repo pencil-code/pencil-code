@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.107 2006-10-19 15:42:55 nbabkovs Exp $
+! $Id: radiation_ray.f90,v 1.108 2006-10-19 17:00:30 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -172,7 +172,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.107 2006-10-19 15:42:55 nbabkovs Exp $")
+           "$Id: radiation_ray.f90,v 1.108 2006-10-19 17:00:30 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1640,7 +1640,7 @@ module Radiation
 !
     end subroutine bc_ee_outflow_x
 !***********************************************************************
-   subroutine calc_rad_diffusion(f,df,p)
+    subroutine calc_rad_diffusion(f,df,p)
 !
 !  radiation in the diffusion approximation
 !  Natalia 
@@ -1654,81 +1654,70 @@ module Radiation
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: glnT,glnThcond !,glhc
+      real, dimension (nx,3) :: glnThcond,duu
       real, dimension (nx) :: chix,diffus_chi1
-      real, dimension (nx) :: thdiff,g2,thdiff_1D
-      real, dimension (nx) :: hcond
-      real ::  beta
-      integer :: l_sz, l_sz_1,j 
+      real, dimension (nx) :: thdiff,g2
+      integer :: j 
 
       intent(in) :: f,p
       intent(out) :: df
  
-   chix = p%rho1*p%rho1*p%TT**3*16./3.*sigmaSB/kappa_es!hcond
+      chix = p%rho1*p%rho1*p%TT**3*16./3.*sigmaSB/kappa_es!hcond
 
-
-     if (lrad_cool_diffus) then
+      if (lrad_cool_diffus) then
 !
 !  Heat conduction
 !
-   
-      glnT = gamma*p%gss + gamma1*p%glnrho ! grad ln(T)
-      glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
-      call dot(glnT,glnThcond,g2)
+        glnThcond = p%glnTT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+        call dot(p%glnTT,glnThcond,g2)
 !
 !AB:  derivs of chix missing??
 !
-      thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho+ g2)
+        thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho+ g2)
 
    !  add heat conduction to entropy equation
     !
-         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff   
-         if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff   
+        if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
       
-     endif
+      endif
 
-     if (lrad_pres_diffus) then
+      if (lrad_pres_diffus) then
 !
 ! Add radiative pressure term to momentum equation
 !
-        df(l1:l2,m,n,iuz) = &
-         df(l1:l2,m,n,iuz)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,3) 
-
-        df(l1:l2,m,n,iuy) = &
-         df(l1:l2,m,n,iuy)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,2) 
-
-        df(l1:l2,m,n,iux) = &
-         df(l1:l2,m,n,iux)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,1) 
+        do j=1,3
+          duu(:,j) = -(16./3.)*p%rho1*(sigmaSB/c_light)*p%TT**4*p%glnTT(:,j)
+        enddo
+         
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + duu
  
-     if (headtt) print*,'calc_radiation_pressure: added to z-component'
+        if (headtt) print*,'calc_radiation_pressure: added to z-component'
 
-     endif 
-! 
-
+      endif 
 !
 !  include constraint from radiative time step
 !
       if (lfirst.and.ldt) then
-        advec_crad2=p%rho1*16./3.*sigmaSB/c_light*p%TT**4
+        advec_crad2=(16./3.)*p%rho1*(sigmaSB/c_light)*p%TT**4
       endif
-
- 
 !
 !  check maximum diffusion from thermal diffusion
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chix*del2ss
 !
       if (lfirst.and.ldt) then
+!
 ! Calculate timestep limitation
-
-      if (lrad_cool_diffus .and. lrad_pres_diffus) then
+!
+        if (lrad_cool_diffus .and. lrad_pres_diffus) then
           diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)
         else
           diffus_chi1=min(gamma*chix*dxyz_2, &
                       real(sigmaSB*kappa_es*p%TT**3*4.*p%cp1tilde))
           diffus_chi=max(diffus_chi,diffus_chi1)
+        endif
       endif
-     endif
 !
     endsubroutine calc_rad_diffusion
 !***********************************************************************
