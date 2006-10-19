@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.106 2006-10-19 15:33:30 nbabkovs Exp $
+! $Id: radiation_ray.f90,v 1.107 2006-10-19 15:42:55 nbabkovs Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -172,7 +172,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.106 2006-10-19 15:33:30 nbabkovs Exp $")
+           "$Id: radiation_ray.f90,v 1.107 2006-10-19 15:42:55 nbabkovs Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1666,7 +1666,6 @@ module Radiation
  
    chix = p%rho1*p%rho1*p%TT**3*16./3.*sigmaSB/kappa_es!hcond
 
-!print*,chix(4)
 
      if (lrad_cool_diffus) then
 !
@@ -1681,7 +1680,6 @@ module Radiation
 !
       thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho+ g2)
 
-!print*, '  print p%del2ss(10)  ',p%del2ss(10)
    !  add heat conduction to entropy equation
     !
          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff   
