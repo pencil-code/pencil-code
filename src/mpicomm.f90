@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.197 2006-10-10 20:35:55 theine Exp $
+! $Id: mpicomm.f90,v 1.198 2006-10-21 14:48:21 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2083,7 +2083,7 @@ module Mpicomm
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc_y,recvc_y,px
       integer :: ytag=101,partner,ierr
-      integer :: m,n,ibox,iy
+      integer :: ibox,iy
 
       if (mod(nxgrid,nygrid)/=0) then
         print*,'transp: nxgrid needs to be an integer multiple of '//&
