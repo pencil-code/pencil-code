@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.437 2006-10-16 10:44:41 dintrans Exp $
+! $Id: entropy.f90,v 1.438 2006-10-21 19:23:36 theine Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -160,7 +160,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.437 2006-10-16 10:44:41 dintrans Exp $")
+           "$Id: entropy.f90,v 1.438 2006-10-21 19:23:36 theine Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -2954,7 +2954,7 @@ module Entropy
       type (pencil_case) :: p
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
       if (tdown .eq. 0) call fatal_error("newton_cool","tdown=0 not allowed")
       if (pretend_lnTT) call fatal_error("newton_cool","not implemented when pretend_lnTT = T")
