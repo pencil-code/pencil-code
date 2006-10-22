@@ -55,13 +55,25 @@
 use strict;
 use Digest::MD5 qw(md5_hex);
 
-my $debug=0;                    # 0: be quiet
+my $debug=1;                    # 0: be quiet
                                 # 1: be verbose
                                 # 2: dump all time stamps and md5 sums
+my $debugfile="./g95_quickndirty.log";
 
 if ($debug) {
+
+    if ($debugfile) {
+        open DEBUG, ">>$debugfile" or die "Cannot append to $debugfile";
+    } else {
+        *DEBUG = *STDERR;
+    }
+
     eval "use Data::Dumper";    # Needed later
-    print "=" x 70, "\n" if ($debug); # Visually separate our invocations
+
+    # Visually separate our invocations
+    print DEBUG "\n", "=" x 25;
+    print DEBUG " ", scalar(localtime()), " ";
+    print DEBUG " ", "=" x 25, "\n";
 }
 
 my ($fc, @fcargs, $src, $obj);
@@ -78,7 +90,7 @@ if ($cmdname =~ /(.*)_quick_and_dirty/) {
         # --> Do the nasty manipulations
     } else {
         # No `-c' option
-        print STDERR "Assuming a linking call; not manipulating anything...\n"
+        print DEBUG "Assuming a linking call; not manipulating anything...\n"
           if ($debug);
         compile($fc, @fcargs);
         exit 0;
@@ -144,7 +156,10 @@ sub get_timestamp {
 
     #   dev   ino   mode  nlink uid   gid   rdev  size  atime mtime
     my (undef,undef,undef,undef,undef,undef,undef,undef,undef,$mtime)
-      = stat($file) or die "Cannot stat file $file\n";
+      = stat($file);
+
+    $mtime = time() unless defined($mtime); # default to now for
+                                            # non-existant files
 
     return $mtime;
 }
@@ -203,8 +218,8 @@ sub get_ts_and_md5_for_mod {
     %$ts_ref  = get_ts_hash( @mod_files);
     %$md5_ref = get_md5_hash(@mod_files);
     if ($debug>1) {
-        print STDERR "$phase: ", Dumper($ts_ref);
-        print STDERR "$phase: ", Dumper($md5_ref);
+        print DEBUG "$phase: ", Dumper($ts_ref);
+        print DEBUG "$phase: ", Dumper($md5_ref);
     }
 }
 # ---------------------------------------------------------------------- #
@@ -233,12 +248,17 @@ sub compile {
     my $fc     = shift;
     my @fcargs = @_;
 
-    print STDERR "Compiling...\n" if ($debug);
+    if ($debug) {
+        print DEBUG "Compiling...\n";
+        print DEBUG "$fc  @fcargs\n";
+    }
+
     my $retval = system($fc, @fcargs);
     if ($retval ne 0) {
         die "Error during compilation: $fc returned $retval (\$\!=`$!')\n";
     }
-    print STDERR "..done.\n" if ($debug);
+
+    print DEBUG "..done.\n" if ($debug);
 }
 # ---------------------------------------------------------------------- #
 sub back_date {
@@ -246,16 +266,24 @@ sub back_date {
     my $fake_time = shift;
     my @files     = @_;
 
-    print STDERR "Touching ", join(',', @files), " to $fake_time\n" if ($debug);
-    utime $fake_time, $fake_time, @files
-      or die "Couldn't touch ", join(',', @files), "\n";
+    if (defined($fake_time)) {
+        print DEBUG "Touching ", join(',', @files),
+          " to $fake_time = ", scalar localtime($fake_time), "\n"
+          if ($debug);
+        utime $fake_time, $fake_time, @files
+          or die "Couldn't touch ", join(',', @files), "\n";
+    } else {
+        print DEBUG "Not touching ", join(',', @files),
+          " -- fake_time undefined\n"
+            if ($debug);
+    }
 }
 # ---------------------------------------------------------------------- #
 sub delete_x_files {
 # Delete *.x to enforce re-linking
     my @x_files = <*.x>;
     if (@x_files) {
-        print STDERR "Unlinking @x_files\n" if ($debug);
+        print DEBUG "Unlinking @x_files\n" if ($debug);
         unlink @x_files or die "Couldn't remove @x_files\n";
     }
 }
@@ -265,9 +293,9 @@ sub print_details_of_changes {
 # changed, or not
     foreach my $mod_file (@changed) {
         if (grep /^$mod_file$/, @really_changed) {
-            print STDERR "$mod_file: has changed\n";
+            print DEBUG "$mod_file: has changed\n";
         } else { 
-            print STDERR "$mod_file: updated, but not changed\n";
+            print DEBUG "$mod_file: updated, but not changed\n";
         }
     }
 }
