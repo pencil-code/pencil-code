@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.125 2006-10-11 22:25:22 theine Exp $
+! $Id: boundcond.f90,v 1.126 2006-10-22 15:36:25 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -264,7 +264,7 @@ module Boundcond
 !
     endsubroutine boundconds_y
 !***********************************************************************
-    subroutine boundconds_z(f,ivar1_opt,ivar2_opt,df)
+    subroutine boundconds_z(f,ivar1_opt,ivar2_opt)
 !
 !  Boundary conditions in x except for periodic part handled by communication.
 !  boundconds_x() needs to be called before communicating (because we
@@ -285,7 +285,6 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
-      real, dimension (mx,my,mz,mvar), optional :: df
 !
       real, dimension (mcom) :: fbcz12, fbcz12_1, fbcz12_2
       real :: Ftopbot,FtopbotK
@@ -402,13 +401,7 @@ module Boundcond
               case ('StS') ! solar surface boundary conditions
                 if (j==ilnrho) call bc_stellar_surface(f,topbot)
               case ('sun') ! solar surface boundary conditions
-                if (j==ilnrho) then
-                  if (present(df)) then
-                    call bc_stellar_surface_2(f,topbot,df)
-                  else
-                    call bc_stellar_surface_2(f,topbot)
-                  endif
-                endif
+                if (j==ilnrho) call bc_stellar_surface_2(f,topbot)
               case ('set')      ! set boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
               case ('nil')      ! do nothing; assume that everything is set

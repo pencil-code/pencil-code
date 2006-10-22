@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.332 2006-10-19 19:47:09 theine Exp $
+! $Id: equ.f90,v 1.333 2006-10-22 15:36:25 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -383,7 +383,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.332 2006-10-19 19:47:09 theine Exp $")
+           "$Id: equ.f90,v 1.333 2006-10-22 15:36:25 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -445,7 +445,7 @@ module Equ
       if (early_finalize) then
         call finalize_isendrcv_bdry(f)
         call boundconds_y(f)
-        call boundconds_z(f,df=df)
+        call boundconds_z(f)
       endif
 !
 !  set inverse timestep to zero before entering loop over m and n
@@ -489,7 +489,7 @@ module Equ
         if (.not.early_finalize.and.necessary(imn)) then
           call finalize_isendrcv_bdry(f)
           call boundconds_y(f)
-          call boundconds_z(f,df=df)
+          call boundconds_z(f)
         endif
 !
 !  coordinates are needed frequently

@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.146 2006-10-10 20:35:55 theine Exp $
+! $Id: nompicomm.f90,v 1.147 2006-10-22 15:36:25 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -978,5 +978,27 @@ module Mpicomm
       f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
 
     endsubroutine communicate_bc_aa_pot
+!***********************************************************************
+    subroutine communicate_stellar_surface(jxbr_z)
+!
+!  Helper routine for stellar_surface in EOS.
+!  Needed due to Fourier transforms which only work on (l1:l2,m1:m2)
+!
+!   8-oct-2006/tobi: Coded
+!
+      real, dimension (mx,my), intent (inout) :: jxbr_z
+
+!
+!  Periodic boundaries in y
+!
+      jxbr_z(l1:l2,   1:m1-1) = jxbr_z(l1:l2,m2i:m2 )
+      jxbr_z(l1:l2,m2+1:my  ) = jxbr_z(l1:l2, m1:m1i)
+!
+!  Periodic boundaries in x
+!
+      jxbr_z(   1:l1-1,:) = jxbr_z(l2i:l2 ,:)
+      jxbr_z(l2+1:mx  ,:) = jxbr_z( l1:l1i,:)
+
+    endsubroutine communicate_stellar_surface
 !***********************************************************************
 endmodule Mpicomm

@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.198 2006-10-21 14:48:21 theine Exp $
+! $Id: mpicomm.f90,v 1.199 2006-10-22 15:36:25 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2236,5 +2236,61 @@ module Mpicomm
       f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
 
     endsubroutine communicate_bc_aa_pot
+!***********************************************************************
+    subroutine communicate_stellar_surface(jxb_z)
+!
+!  Helper routine for stellar_surface in EOS.
+!  Needed due to Fourier transforms which only work on (l1:l2,m1:m2)
+!
+!   8-oct-2006/tobi: Coded
+!
+      use Cdata, only: iax,iaz
+
+      real, dimension (mx,my), intent (inout) :: jxb_z
+
+      real, dimension (nx,nghost) :: lbufyo,ubufyo,lbufyi,ubufyi
+      integer :: nbufy
+
+!
+!  Periodic boundaries in y -- communicate along y if necessary
+!
+      if (nprocy>1) then
+
+        lbufyo = jxb_z(l1:l2, m1:m1i)
+        ubufyo = jxb_z(l1:l2,m2i:m2 )
+
+        nbufy=nx*nghost
+
+        call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy, &
+                       MPI_COMM_WORLD,irecv_rq_fromuppy,ierr)
+        call MPI_IRECV(lbufyi,nbufy,MPI_REAL,ylneigh,touppy, &
+                       MPI_COMM_WORLD,irecv_rq_fromlowy,ierr)
+        call MPI_ISEND(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy, &
+                       MPI_COMM_WORLD,isend_rq_tolowy,ierr)
+        call MPI_ISEND(ubufyo,nbufy,MPI_REAL,yuneigh,touppy, &
+                       MPI_COMM_WORLD,isend_rq_touppy,ierr)
+
+        call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,ierr)
+        call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,ierr)
+
+        jxb_z(l1:l2,   1:m1-1) = lbufyi
+        jxb_z(l1:l2,m2+1:my  ) = ubufyi
+
+        call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,ierr)
+        call MPI_WAIT(isend_rq_touppy,isend_stat_tu,ierr)
+
+      else
+
+        jxb_z(l1:l2,   1:m1-1) = jxb_z(l1:l2,m2i:m2 )
+        jxb_z(l1:l2,m2+1:my  ) = jxb_z(l1:l2, m1:m1i)
+
+      endif
+!
+!  Periodic boundaries in x
+!
+      jxb_z(   1:l1-1,:) = jxb_z(l2i:l2 ,:)
+      jxb_z(l2+1:mx  ,:) = jxb_z( l1:l1i,:)
+
+    endsubroutine communicate_stellar_surface
 !***********************************************************************
 endmodule Mpicomm

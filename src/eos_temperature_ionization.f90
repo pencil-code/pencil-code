@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.45 2006-08-29 18:14:59 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.46 2006-10-22 15:36:25 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -52,13 +52,17 @@ module EquationOfState
   real :: lnpp_bot=0.
   real :: ss_bot=0.
 
+  real :: va2max_eos=huge1
+  integer :: va2power_eos=5
+  real, dimension (3) :: B_ext_eos=(/0.,0.,0./)
+
   ! input parameters
   namelist /eos_init_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
-                           tau_relax
+                           tau_relax,va2max_eos,va2power_eos,B_ext_eos
 
   ! run parameters
   namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
-                          tau_relax
+                          tau_relax,va2max_eos,va2power_eos,B_ext_eos
 
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
@@ -122,7 +126,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.45 2006-08-29 18:14:59 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.46 2006-10-22 15:36:25 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1825,26 +1829,30 @@ module EquationOfState
 !  11-May-2006/tobi: coded
 !  16-May-2006/tobi: isentropic lower boundary
 !
-      use Gravity, only: gravz
-      use Sub, only: curl_mn,cross_mn,gij,bij_etc
-      use Global, only: get_global
+      use Cdata, only: m,n
+      use Gravity, only: gravz,grav_profile,reduced_top
+      use Mpicomm, only: communicate_stellar_surface
+      use Sub, only: gij,curl_mn,dot2_mn,bij_etc,cross_mn,multsv_mn
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout), optional :: df
       character (len=3), intent (in) :: topbot
-      real, dimension (mx,my,mz,mvar), optional :: df
 
-      real, dimension (mx,my) :: lnrho,lnTT,rho1,TT1,uz
+      real, dimension (mx,my) :: lnrho,lnTT,rho1,TT1
       real, dimension (mx,my) :: rhs,sqrtrhs,yH
       real, dimension (mx,my) :: mu1,rho1pp
       real, dimension (mx,my) :: yH_term_cv,yH_term_cp
       real, dimension (mx,my) :: TT_term_cv,TT_term_cp
-      real, dimension (mx,my) :: dlnppdlnrho
-      real, dimension (mx,my) :: dlnrhodz,dlnTTdz,dlnppdz,dssdz
-      real, dimension (mx,my) :: dlnpp,dss
-      real, dimension (mx,my) :: cv,cp,cs2,nabla_ad,alpha,delta,gamma
-      real, dimension (mx,my) :: lnpp,ss,tmp
-      real, dimension (3) :: coeffs
-      integer :: i,j,k
+      real, dimension (mx,my) :: alpha,delta
+      real, dimension (mx,my) :: cv,cp,cs2,nabla_ad
+      real, dimension (mx,my) :: dlnrhodz,dlnTTdz
+      real :: fac
+      integer :: i,j
+
+      real, dimension (nx,3,3) :: aij,bij
+      real, dimension (nx,3) :: bb,jj,jxb,jxbr
+      real, dimension (nx) :: b2,va2,fac2,rho1_jxb
+      real, dimension (mx,my) :: jxbr_z,geff
 
       select case (topbot)
 
@@ -1853,140 +1861,77 @@ module EquationOfState
 !
       case ('bot')
 
-        if (bcz1(ilnTT)/='sun') then
-          call fatal_error("bc_stellar_surface_2", &
-                           "This boundary condition for density also sets "// &
+!
+!  Boundary condition for density, temperature, and vector potential
+!
+        if (bcz1(ilnTT)/='sun'.and.bcz1(ilnTT)/='') then
+          call fatal_error("bc_stellar_surface2", &
+                           "This boundary condition for density also sets "//&
                            "temperature. We therfore require "// &
-                           "bcz1(ilnTT)='sun'")
+                           "bcz1(ilnTT)='sun' or bcz1(ilnTT)=''")
         endif
 
+!
+!  Get variables from f-array
+!
         lnrho = f(:,:,n1,ilnrho)
         lnTT = f(:,:,n1,ilnTT)
         rho1 = exp(-lnrho)
         TT1 = exp(-lnTT)
 
-        ! Hydrogen ionization fraction
-        rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
+!
+!  Hydrogen ionization fraction
+!
+        rhs = exp(lnrho_e-lnrho + 1.5*(lnTT-lnTT_ion) - TT_ion*TT1)
         sqrtrhs = sqrt(rhs)
         yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
 
-        ! Mean molecular weight
+!
+!  Inverse mean molecular weight
+!
         mu1 = mu1_0*(1 + yH + xHe)
 
-        ! Pressure
+!
+!  Pressure over density
+!
         rho1pp = Rgas*mu1/TT1
-        lnpp = alog(rho1pp) + lnrho
-        !lnpp_bot = sum(lnpp(l1:l2,m1:m2))/(nx*ny)
-        dlnpp = lnpp - lnpp_bot
 
-        ! Entropy
-        tmp = 2.5 - 1.5*(lnTT_ion-lnTT) - lnrho
-        where (yH < 1) ! Neutral Hydrogen
-          ss = (1-yH)*(tmp + lnrho_H - log(1-yH))
-        endwhere
-        where (yH > 0) ! Electrons and ionized Hydrogen
-          ss = ss + yH*(tmp + lnrho_H - log(yH))
-          ss = ss + yH*(tmp + lnrho_e - log(yH))
-        endwhere
-        ! Don't use this without Helium!
-        !if (xHe > 0) then ! Helium
-          ss = ss + xHe*(tmp + lnrho_He - log(xHe))
-        !endif
-        ss = Rgas*mu1_0*ss
-        !ss_bot = maxval(ss(l1:l2,m1:m2))
-        dss = ss - ss_bot
-
-        ! Useful definitions
+!
+!  Abreviations
+!
         yH_term_cv = yH*(1-yH)/((2-yH)*(1+yH+xHe))
-        TT_term_cv = 1.5 + TT1*TT_ion
+        TT_term_cv = 1.5 + TT_ion*TT1
+
         yH_term_cp = yH*(1-yH)/(2+xHe*(2-yH))
-        TT_term_cp = 2.5 + TT1*TT_ion
+        TT_term_cp = 2.5 + TT_ion*TT1
 
-        ! For alpha and delta, see Kippenhahn & Weigert
-        alpha = yH_term_cp/yH_term_cv
-        delta = 1 + yH_term_cp*TT_term_cp
+!
+!  Specific heats in units of Rgas/mu
+!
+        cv = 1.5 + yH_term_cv*TT_term_cv**2
         cp = 2.5 + yH_term_cp*TT_term_cp**2
-        gamma = cp/(1.5 + yH_term_cv*TT_term_cv**2)
-        cs2 = gamma*rho1pp*yH_term_cv/yH_term_cp
+
+!
+!  See Kippenhahn & Weigert
+!
+        alpha = ((2-yH)*(1+yH+xHe))/(2+xHe*(2-yH))
+        delta = 1 + yH_term_cp*TT_term_cp
+
+!
+!  Speed of sound
+!
+        cs2 = cp*rho1pp/(alpha*cv)
+
+!
+!  Adiabatic pressure gradient
+!
         nabla_ad = delta/cp
-        cp = Rgas*mu1*cp
 
-        ! z-components of velocity at the bottom
-        uz = f(:,:,n1,iuz)
-
-        if (present(df)) then
-          ! Add cancellation terms to rhs of the continuity and energy equation
-          df(:,:,n1,ilnrho) = df(:,:,n1,ilnrho) - (dlnpp/tau_relax)*rho1pp/cs2
-          df(:,:,n1,ilnTT)  = df(:,:,n1,ilnTT) - (dlnpp/tau_relax)*nabla_ad
-          where (uz > 0)
-            df(:,:,n1,ilnrho) = df(:,:,n1,ilnrho) &
-                              + (dss/tau_relax)/(Rgas*mu1*nabla_ad)
-            df(:,:,n1,ilnTT)  = df(:,:,n1,ilnTT) - (dss/tau_relax)/cp
-          endwhere
-        endif
-
-        ! Coefficients for `one-sided' derivatives
-        ! (anti-symmetric extrapolation with respect to the boundary
-        ! value is implied)
-        coeffs = (/+90,-18,+2/)*(1./60)*dz_1(n1)
-
-        ! Initialize derivatives
-        dlnppdz              = -74*(1./60)*dz_1(n1)*lnpp_bot
-        where (uz > 0) dssdz = -74*(1./60)*dz_1(n1)*ss_bot
-
-        ! Loop over the first few active zones in order to compute
-        ! the z-derivative of pressure and entropy on the boundary
-        do k=1,nghost
-
-          lnrho = f(:,:,n1+k,ilnrho)
-          lnTT = f(:,:,n1+k,ilnTT)
-          rho1 = exp(-lnrho)
-          TT1 = exp(-lnTT)
-
-          ! Hydrogen ionization fraction
-          rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
-          sqrtrhs = sqrt(rhs)
-          yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
-
-          ! Mean molecular weight
-          mu1 = mu1_0*(1 + yH + xHe)
-
-          ! Logarithmic pressure
-          lnpp = alog(Rgas*mu1) + lnrho + lnTT
-          dlnppdz = dlnppdz + coeffs(k)*lnpp
-
-          ! Entropy in upflow regions
-          where (uz > 0)
-            tmp = 2.5 - 1.5*(lnTT_ion-lnTT) - lnrho
-            where (yH < 1) ! Neutral Hydrogen
-              ss = (1-yH)*(tmp + lnrho_H - log(1-yH))
-            endwhere
-            where (yH > 0) ! Electrons and ionized Hydrogen
-              ss = ss + yH*(tmp + lnrho_H - log(yH))
-              ss = ss + yH*(tmp + lnrho_e - log(yH))
-            endwhere
-            ! Don't use this with no Helium!
-            !if (xHe > 0) then ! Helium
-              ss = ss + xHe*(tmp + lnrho_He - log(xHe))
-            !endif
-            ss = Rgas*mu1_0*ss
-            dssdz = dssdz + coeffs(k)*ss
-          endwhere
-
-        enddo
-
-        ! Ensure ientropic outflow, set pressure to pp_bot
-        where (uz <= 0)
-          dlnrhodz = (alpha/gamma)*dlnppdz
-          dlnTTdz = nabla_ad*dlnppdz
-        endwhere
-
-        ! Set the entropy for incoming material to ss_bot,
-        ! set pressure to pp_bot
-        where (uz > 0)
-          dlnrhodz = (alpha/gamma)*dlnppdz - delta*(dssdz/cp)
-          dlnTTdz = nabla_ad*dlnppdz + dssdz/cp
-        endwhere
+!
+!  z-derivatives of density and temperature on the boundary
+!
+        dlnrhodz = gravz/cs2
+        dlnTTdz = (nabla_ad/rho1pp)*gravz
 
 !
 !  Fill ghost zones accordingly
@@ -2002,25 +1947,80 @@ module EquationOfState
       case ('top')
 
 !
-!  Get variables from f-array
+!  Boundary condition for density, temperature, and vector potential
 !
-        rho1 = exp(-f(:,:,n2,ilnrho))
-        TT1 = exp(-f(:,:,n2,ilnTT))
+        if (bcz2(ilnTT)/='sun'.and.bcz2(ilnTT)/='') then
+          call fatal_error("bc_stellar_surface2", &
+                           "This boundary condition for density also sets "//&
+                           "temperature. We therfore require "// &
+                           "bcz2(ilnTT)='sun' or bcz2(ilnTT)=''")
+        endif
+        if (bcz2(iax)/='sun'.and.bcz2(iax)/='') then
+          call fatal_error("bc_stellar_surface2", &
+                           "This boundary condition for density also sets "//&
+                           "temperature. We therfore require "// &
+                           "bcz2(iax)='sun' or bcz2(iax)=''")
+        endif
+        if (bcz2(iay)/='sun'.and.bcz2(iay)/='') then
+          call fatal_error("bc_stellar_surface2", &
+                           "This boundary condition for density also sets "//&
+                           "temperature. We therfore require "// &
+                           "bcz2(iay)='sun' or bcz2(iay)=''")
+        endif
+        if (bcz2(iaz)/='sun'.and.bcz2(iaz)/='') then
+          call fatal_error("bc_stellar_surface2", &
+                           "This boundary condition for density also sets "//&
+                           "temperature. We therfore require "// &
+                           "bcz2(iaz)='sun' or bcz2(iaz)=''")
+        endif
 
 !
-!  Boundary condition for density and temperature
+!  Potential field boundary condition for the vector potential
 !
-        if (bcz2(ilnTT)/='sun') then
-          call fatal_error("bc_stellar_surface_2", &
-                           "This boundary condition for density also sets "// &
-                           "temperature. We therfore require "// &
-                           "bcz2(ilnTT)='sun'")
+        call bc_aa_pot3(f,topbot)
+
+!
+!  Get variables from f-array
+!
+        lnrho = f(:,:,n2,ilnrho)
+        lnTT = f(:,:,n2,ilnTT)
+        rho1 = exp(-lnrho)
+        TT1 = exp(-lnTT)
+
+!
+!  Compute Lorentz force on the boundary
+!
+        n = n2
+        do m = m1,m2
+          call gij(f,iaa,aij,1)
+          call curl_mn(aij,bb)
+          do j = 1,3; bb(:,j) = bb(:,j) + B_ext_eos(j); enddo
+          call dot2_mn(bb,b2)
+          va2 = b2*rho1(l1:l2,m)
+          call bij_etc(f,iaa,bij)
+          call curl_mn(bij,jj)
+          call cross_mn(jj,bb,jxb)
+          fac2 = (1+(va2/va2max_eos)**va2power_eos)**(-1.0/va2power_eos)
+          rho1_jxb = fac2*rho1(l1:l2,m)
+          call multsv_mn(rho1_jxb,jxb,jxbr)
+          jxbr_z(l1:l2,m) = jxbr(:,3)
+        enddo
+        call communicate_stellar_surface(jxbr_z)
+
+!
+!  `Effective' gravitational acceleration (geff = gravz - rho1*dz1ppm)
+!
+        if (grav_profile=='reduced_top') then
+          fac = reduced_top
+        else
+          fac = 1.0
         endif
+        geff = fac*gravz + jxbr_z
 
 !
 !  Hydrogen ionization fraction
 !
-        rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
+        rhs = exp(lnrho_e-lnrho + 1.5*(lnTT-lnTT_ion) - TT_ion*TT1)
         sqrtrhs = sqrt(rhs)
         yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
 
@@ -2037,12 +2037,12 @@ module EquationOfState
 !
 !  Pressure derivative
 !
-        dlnppdlnrho = 1 - yH*(1-yH)/((2-yH)*(1+yH+xHe))
+        alpha = ((2-yH)*(1+yH+xHe))/(2+xHe*(2-yH))
 
 !
 !  z-derivatives of density on the boundary
 !
-        dlnrhodz = gravz/(rho1pp*dlnppdlnrho)
+        dlnrhodz = gravz*alpha/rho1pp
 
 !
 !  Fill ghost zones accordingly
@@ -2069,5 +2069,134 @@ module EquationOfState
       if (NO_WARN) print*,f,topbot
 !
     end subroutine bc_lnrho_hydrostatic_z
+!***********************************************************************
+    subroutine bc_aa_pot3(f,topbot)
+!
+!  Pontential field boundary condition
+!
+!  11-oct-06/wolf: Adapted from Tobi's bc_aa_pot2
+!
+      use Fourier, only: fourier_transform_xy_parallel
+      use Mpicomm, only: communicate_bc_aa_pot
+
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+
+      real, dimension (nx,ny,iax:iaz) :: aa_re,aa_im
+      real, dimension (nx,ny) :: kx,ky,kappa,kappa1,exp_fact
+      real, dimension (nx,ny) :: tmp_re,tmp_im
+      real, dimension (nx,ny) :: fac
+      real    :: delta_z
+      integer :: i,j
+!
+!  Get local wave numbers
+!
+      kx = spread(kx_fft                    ,2,ny)
+      ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
+!
+!  Calculate 1/k^2, zero mean
+!
+      kappa = sqrt(kx**2 + ky**2)
+      where (kappa > 0)
+        kappa1 = 1/kappa
+      elsewhere
+        kappa1 = 0
+      endwhere
+!
+!  Check whether we want to do top or bottom (this is precessor dependent)
+!
+      select case(topbot)
+!
+!  Potential field condition at the bottom
+!
+      case('bot')
+
+        do j=1,nghost
+!
+! Calculate delta_z based on z(), not on dz to improve behavior for
+! non-equidistant grid (still not really correct, but could be OK)
+!
+          delta_z  = z(n1+j) - z(n1-j)
+          exp_fact = exp(-kappa*delta_z)
+
+!
+!  Determine potential field in ghost zones
+!
+          !  Fourier transforms of x- and y-components on the boundary
+          do i=iax,iay
+            tmp_re = f(l1:l2,m1:m2,n1+j,i)
+            tmp_im = 0.0
+            call fourier_transform_xy_parallel(tmp_re,tmp_im)
+            aa_re(:,:,i) = tmp_re*exp_fact
+            aa_im(:,:,i) = tmp_im*exp_fact
+          enddo
+
+          !  Compute z-component from div A = 0
+          aa_re(:,:,iaz) = + kappa1*(kx*aa_im(:,:,iax)+ky*aa_im(:,:,iay))
+          aa_im(:,:,iaz) = - kappa1*(kx*aa_re(:,:,iax)+ky*aa_re(:,:,iay))
+
+          ! Transform back
+          do i=iax,iaz
+            tmp_re = aa_re(:,:,i)
+            tmp_im = aa_im(:,:,i)
+            call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+            f(l1:l2,m1:m2,n1-j,i) = tmp_re
+          enddo
+
+        enddo
+!
+!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
+!
+        call communicate_bc_aa_pot(f,topbot)
+!
+!  Potential field condition at the top
+!
+      case('top')
+
+        do j=1,nghost
+!
+! Calculate delta_z based on z(), not on dz to improve behavior for
+! non-equidistant grid (still not really correct, but could be OK)
+!
+          delta_z  = z(n2+j) - z(n2-j)
+          exp_fact = exp(-kappa*delta_z)
+
+!
+!  Determine potential field in ghost zones
+!
+          !  Fourier transforms of x- and y-components on the boundary
+          do i=iax,iay
+            tmp_re = f(l1:l2,m1:m2,n2-j,i)
+            tmp_im = 0.0
+            call fourier_transform_xy_parallel(tmp_re,tmp_im)
+            aa_re(:,:,i) = tmp_re*exp_fact
+            aa_im(:,:,i) = tmp_im*exp_fact
+          enddo
+
+          ! Compute z-component from div A = 0
+          aa_re(:,:,iaz) = - kappa1*(kx*aa_im(:,:,iax)+ky*aa_im(:,:,iay))
+          aa_im(:,:,iaz) = + kappa1*(kx*aa_re(:,:,iax)+ky*aa_re(:,:,iay))
+
+          ! Transform back
+          do i=iax,iaz
+            tmp_re = aa_re(:,:,i)
+            tmp_im = aa_im(:,:,i)
+            call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+            f(l1:l2,m1:m2,n2+j,i) = tmp_re
+          enddo
+
+        enddo
+!
+!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
+!
+        call communicate_bc_aa_pot(f,topbot)
+
+      case default
+
+        if (lroot) print*,"bc_aa_pot2: invalid argument"
+
+      endselect
+
+    endsubroutine bc_aa_pot3
 !***********************************************************************
 endmodule EquationOfState
