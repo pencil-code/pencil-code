@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.46 2006-10-22 15:36:25 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.47 2006-10-22 23:19:57 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -126,7 +126,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.46 2006-10-22 15:36:25 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.47 2006-10-22 23:19:57 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -2042,7 +2042,7 @@ module EquationOfState
 !
 !  z-derivatives of density on the boundary
 !
-        dlnrhodz = gravz*alpha/rho1pp
+        dlnrhodz = geff*alpha/rho1pp
 
 !
 !  Fill ghost zones accordingly
