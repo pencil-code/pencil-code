@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.275 2006-10-23 10:03:30 bingert Exp $
+! $Id: density.f90,v 1.276 2006-10-23 10:05:43 bingert Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -105,7 +105,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.275 2006-10-23 10:03:30 bingert Exp $")
+           "$Id: density.f90,v 1.276 2006-10-23 10:05:43 bingert Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1531,7 +1531,7 @@ module Density
           zref2=zinfty**2-(mpoly+1.)*cs20/(-.5*gamma*gravz)
           if(zref2<0) then
             if(lroot) print*,'polytropic_simple: zref**2<0 is not ok'
-            zinfty2=0. !(and see what happens)
+            zref2=0. !(and see what happens)
           endif
           zref=sqrt(zref2)
         else
