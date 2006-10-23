@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.274 2006-10-11 01:08:40 wlyra Exp $
+! $Id: density.f90,v 1.275 2006-10-23 10:03:30 bingert Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -105,7 +105,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.274 2006-10-11 01:08:40 wlyra Exp $")
+           "$Id: density.f90,v 1.275 2006-10-23 10:03:30 bingert Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1509,7 +1509,7 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: pot,dlncs2,ptop,pbot,zero=0.
-      real :: ggamma,ztop,zbot,zinfty2,pot_ext,lnrho_ref
+      real :: ggamma,ztop,zbot,zref2,pot_ext,lnrho_ref
 !
 !  identifier
 !
@@ -1522,21 +1522,22 @@ module Density
       if (lgravz) then
         if (grav_profile=='const') then
           if(lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
-          zinfty=zref+(mpoly+1.)*cs20/(-gamma*gravz)
+          zref=zinfty-(mpoly+1.)*cs20/(-gamma*gravz)
         elseif (grav_profile=='const_zero') then
           if(lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
-          zinfty=zref+(mpoly+1.)*cs20/(-gamma*gravz)
+          zref=zinfty-(mpoly+1.)*cs20/(-gamma*gravz)
         elseif (grav_profile=='linear') then
           if(lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
-          zinfty2=zref**2+(mpoly+1.)*cs20/(-.5*gamma*gravz)
-          if(zinfty2<0) then
-            if(lroot) print*,'polytropic_simple: zinfty**2<0 is not ok'
+          zref2=zinfty**2-(mpoly+1.)*cs20/(-.5*gamma*gravz)
+          if(zref2<0) then
+            if(lroot) print*,'polytropic_simple: zref**2<0 is not ok'
             zinfty2=0. !(and see what happens)
           endif
-          zinfty=sqrt(zinfty2)
+          zref=sqrt(zref2)
         else
-          if(lroot) print*,'polytropic_simple: zinfty not prepared!'
+          if(lroot) print*,'polytropic_simple: zref not prepared!'
         endif
+        if (lroot) print*,'polytroic_simple: zref:',zref
 !
 !  check whether zinfty lies outside the domain (otherwise density
 !  would vanish within the domain). At the moment we are not properly
