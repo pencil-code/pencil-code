@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.345 2006-10-24 15:21:28 theine Exp $
+! $Id: magnetic.f90,v 1.346 2006-10-24 16:37:11 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -209,7 +209,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.345 2006-10-24 15:21:28 theine Exp $")
+           "$Id: magnetic.f90,v 1.346 2006-10-24 16:37:11 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -797,9 +797,9 @@ module Magnetic
             B_ext_tmp(3)=B_ext(3)
           endif
 !  add the external field
-          if (B_ext(1)/=0.) p%bb(:,1)=p%bb(:,1)+B_ext_tmp(1)
-          if (B_ext(2)/=0.) p%bb(:,2)=p%bb(:,2)+B_ext_tmp(2)
-          if (B_ext(3)/=0.) p%bb(:,3)=p%bb(:,3)+B_ext_tmp(3)
+          if (B_ext_tmp(1)/=0.) p%bb(:,1)=p%bb(:,1)+B_ext_tmp(1)
+          if (B_ext_tmp(2)/=0.) p%bb(:,2)=p%bb(:,2)+B_ext_tmp(2)
+          if (B_ext_tmp(3)/=0.) p%bb(:,3)=p%bb(:,3)+B_ext_tmp(3)
           if (headtt) print*,'calc_pencils_magnetic: B_ext=',B_ext
           if (headtt) print*,'calc_pencils_magnetic: B_ext_tmp=',B_ext_tmp
         endif
@@ -827,9 +827,6 @@ module Magnetic
       endif
 ! uga
       if (lpencil(i_uga)) then
-        if (headtt.and.lupw_aa) then
-          print *,'calc_pencils_magnetic: upwinding advection term. '//&
-                  'Not well tested; use at own risk!'; endif
         call u_dot_gradf(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
       endif
 ! b2
@@ -975,12 +972,12 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
-      real, dimension (nx,3) :: geta,uxDxuxb,fres
+      real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b3b21,b1b32,b2b13,sign_jo,rho1_jxb
       real, dimension (nx) :: eta_mn,eta_smag,etatotal,fres2,etaSS
       real :: tmp,eta_out1,OmegaSS=1.
-      integer :: i,j
+      integer :: i,j,k
 !
       intent(in)     :: f,p
       intent(inout)  :: df     
@@ -1130,11 +1127,37 @@ module Magnetic
 !
 !  Induction equation
 !
-      df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + p%uxb + fres
+      if (.not. lupw_aa) then
+        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + p%uxb + fres
+      else
+!
+!  Use upwinding for the advection term.
+!  For this, we rewrite the Lorentz force --
+!    (u x B)_k = (u x B_ext)_k + u_i A_i,k - u_i A_k,i
+!              = (u x B_ext)_k + (u_i A_i),k - A_i u_i,k - u_i A_k,i
+!  -- and use the gauge freedom to eliminate (u_i A_i),k
+!
+        if (headtt) then
+          print *,'calc_pencils_magnetic: upwinding advection term. '//&
+                  'Not well tested; use at own risk!'; endif
+!  Add Lorentz force that results from the external field.
+!  Note: For now, this only works for uniform external fields.
+        uxb_upw(:,1) = p%uu(:,2)*B_ext(3) - p%uu(:,3)*B_ext(2)
+        uxb_upw(:,2) = p%uu(:,3)*B_ext(1) - p%uu(:,1)*B_ext(3)
+        uxb_upw(:,3) = p%uu(:,1)*B_ext(2) - p%uu(:,2)*B_ext(1)
+!  Add A_i u_i,k
+        do j=1,3; do k=1,3
+          uxb_upw(:,j) = uxb_upw(:,j) - p%aa(:,k)*p%uij(:,k,j)
+        enddo; enddo
+!  Add `upwinded' advection term
+        uxb_upw = uxb_upw - p%uga
+!  Full right hand side of the induction equation
+        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_upw + fres
+      endif
 !
 !  Subtract contribution from mean background flow
 !
-         if (llarge_scale_Bz) call subtract_mean_lorentz(df)
+      if (llarge_scale_Bz) call subtract_mean_lorentz(df)
 !
 !  Ambipolar diffusion in the strong coupling approximation
 !
