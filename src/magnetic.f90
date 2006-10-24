@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.343 2006-10-11 21:53:09 brandenb Exp $
+! $Id: magnetic.f90,v 1.344 2006-10-24 04:54:10 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -208,7 +208,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.343 2006-10-11 21:53:09 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.344 2006-10-24 04:54:10 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -816,7 +816,7 @@ module Magnetic
         call cross_mn(p%uu,p%bbb,uxbb)
         if (lee_ext) then
           call get_global(ee_ext,m,n,'ee_ext')
-          p%uxB=p%uxb+ee_ext
+          p%uxb=p%uxb+ee_ext
         endif
       endif
 ! b2
