@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.256 2006-10-12 17:53:00 wlyra Exp $ 
+! $Id: sub.f90,v 1.257 2006-10-24 14:11:16 theine Exp $ 
 
 module Sub 
 
@@ -98,6 +98,11 @@ module Sub
     module procedure cross_global
     module procedure cross_mn
     module procedure cross_0
+  endinterface
+
+  interface u_dot_gradf
+    module procedure u_dot_gradf_scl
+    module procedure u_dot_gradf_vec
   endinterface
 
   interface dot
@@ -2134,7 +2139,35 @@ module Sub
 !
     endsubroutine del6_nodx
 !***********************************************************************
-    subroutine u_dot_gradf(f,k,gradf,uu,ugradf,upwind)
+    subroutine u_dot_gradf_vec(f,k,gradf,uu,ugradf,upwind)
+
+      use Cdata
+
+      intent(in) :: f,k,gradf,uu,upwind
+      intent(out) :: ugradf
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3,3) :: gradf
+      real, dimension (nx,3) :: uu,ugradf
+      real, dimension (nx) :: tmp
+      integer :: j,k
+      logical, optional :: upwind
+
+      if (present(upwind)) then
+        do j=1,3
+          call u_dot_gradf_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
+          ugradf(:,j)=tmp
+        enddo
+      else
+        do j=1,3
+          call u_dot_gradf_scl(f,k+j-1,gradf(:,j,:),uu,tmp)
+          ugradf(:,j)=tmp
+        enddo
+      endif
+
+    endsubroutine u_dot_gradf_vec
+!***********************************************************************
+    subroutine u_dot_gradf_scl(f,k,gradf,uu,ugradf,upwind)
 !
 !  Do advection-type term u.grad f_k.
 !  Assumes gradf to be known, but takes f and k as arguments to be able
@@ -2167,7 +2200,7 @@ module Sub
         ugradf = ugradf - abs(uu(:,3))*del6f
       endif
 !
-    endsubroutine u_dot_gradf
+    endsubroutine u_dot_gradf_scl
 !***********************************************************************
     subroutine gradf_upw1st(f,uu,k,gradf)
 !

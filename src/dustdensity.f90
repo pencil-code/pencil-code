@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.168 2006-10-16 08:16:31 dobler Exp $
+! $Id: dustdensity.f90,v 1.169 2006-10-24 14:11:15 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -138,7 +138,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.168 2006-10-16 08:16:31 dobler Exp $")
+           "$Id: dustdensity.f90,v 1.169 2006-10-24 14:11:15 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -766,6 +766,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
+      real, dimension (nx) :: tmp
       real, dimension (nx,3) :: tmp_pencil_3
       integer :: i,k,mm,nn
 !      
@@ -805,17 +806,15 @@ module Dustdensity
         if (lpencil(i_glnnd2)) call dot2_mn(p%glnnd(:,:,k),p%glnnd2(:,k))
 ! udgnd
         if (lpencil(i_udgnd)) then
-          if (lupw_ndmdmi) then
-            call u_dot_gradf(f,ind(k),p%gnd(:,:,k),p%uud(:,:,k),p%udgnd, &
-                upwind=.true.)
-          else
-            call dot_mn(p%uud(:,:,k),p%gnd(:,:,k),p%udgnd)
-          endif
+          call u_dot_gradf(f,ind(k),p%gnd(:,:,k),p%uud(:,:,k),tmp, &
+                           UPWIND=lupw_ndmdmi)
+          p%udgnd(:,k)=tmp
         endif
 ! udglnnd
         if (lpencil(i_udglnnd)) then
-          call u_dot_gradf(f,ind(k),p%glnnd(:,:,k),p%uud(:,:,k),p%udglnnd, &
-              UPWIND=lupw_ndmdmi)
+          call u_dot_gradf(f,ind(k),p%glnnd(:,:,k),p%uud(:,:,k),tmp, &
+                           UPWIND=lupw_ndmdmi)
+          p%udglnnd(:,k)=tmp
         endif
 ! md
         if (lpencil(i_md)) then
@@ -851,21 +850,15 @@ module Dustdensity
         endif
 ! udgmd
         if (lpencil(i_udgmd)) then
-          if (lupw_ndmdmi) then
-            call u_dot_gradf(f,ind(k),p%gmd(:,:,k),p%uud(:,:,k),p%udgmd, &
-                upwind=.true.)
-          else
-            call dot_mn(p%uud(:,:,k),p%gmd(:,:,k),p%udgmd)
-          endif
+          call u_dot_gradf(f,ind(k),p%gmd(:,:,k),p%uud(:,:,k),tmp, &
+                           UPWIND=lupw_ndmdmi)
+          p%udgmd(:,k)=tmp
         endif
 ! udgmi
         if (lpencil(i_udgmi)) then
-          if (lupw_ndmdmi) then
-            call u_dot_gradf(f,ind(k),p%gmi(:,:,k),p%uud(:,:,k),p%udgmi, &
-                upwind=.true.)
-          else
-            call dot_mn(p%uud(:,:,k),p%gmi(:,:,k),p%udgmi)
-          endif
+          call u_dot_gradf(f,ind(k),p%gmi(:,:,k),p%uud(:,:,k),tmp, &
+                           UPWIND=lupw_ndmdmi)
+          p%udgmi(:,k)=tmp
         endif
 ! rhod
         if (lpencil(i_rhod)) p%rhod(:,k)=p%nd(:,k)*p%md(:,k)
