@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.344 2006-10-24 04:54:10 dobler Exp $
+! $Id: magnetic.f90,v 1.345 2006-10-24 15:21:28 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -15,7 +15,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED aa,a2,aij,bb,bbb,ab,uxb,b2,bij,del2a,graddiva,jj
-! PENCILS PROVIDED j2,jb,va2,jxb,jxbr,ub,uxb,uxb2,uxj,beta
+! PENCILS PROVIDED j2,jb,va2,jxb,jxbr,ub,uxb,uxb2,uxj,beta,uga
 ! PENCILS PROVIDED djuidjbi,jo,ujxb,oxu,oxuxb,jxbxb,jxbrxb
 ! PENCILS PROVIDED glnrhoxb,del4a,del6a,oxj,diva,jij,sj,ss12 
 ! PENCILS PROVIDED mf_EMF, mf_EMFdotB
@@ -123,6 +123,7 @@ module Magnetic
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
   logical :: llarge_scale_Bz=.false.
   logical :: lweyl_gauge=.false.
+  logical :: lupw_aa=.false.
 
   namelist /magnetic_run_pars/ &
        eta,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
@@ -132,7 +133,7 @@ module Magnetic
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        bthresh,bthresh_per_brms, &
-       iresistivity,lweyl_gauge, &
+       iresistivity,lweyl_gauge,lupw_aa, &
        alphaSSm, &
        eta_int,eta_ext,eta_shock,wresistivity, &
        rhomin_jxb,va2max_jxb,va2power_jxb,llorentzforce,linduction, &
@@ -208,7 +209,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.344 2006-10-24 04:54:10 dobler Exp $")
+           "$Id: magnetic.f90,v 1.345 2006-10-24 15:21:28 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -557,6 +558,7 @@ module Magnetic
           lpenc_requested(i_diva)=.true.
         endif
       endif
+      if (lupw_aa) lpenc_requested(i_uga)=.true.
       if (lresi_shell) lpenc_requested(i_diva)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
@@ -724,6 +726,10 @@ module Magnetic
           lpencil_in(i_graddivA)=.true.
         endif
       endif
+      if (lpencil_in(i_uga)) then
+        lpencil_in(i_aij)=.true.
+        lpencil_in(i_uu)=.true.
+      endif
 !  Pencils bij, del2a and graddiva come in a bundle.
       if ( lpencil_in(i_bij) .and. &
           (lpencil_in(i_del2a).or.lpencil_in(i_graddiva)) ) then
@@ -818,6 +824,13 @@ module Magnetic
           call get_global(ee_ext,m,n,'ee_ext')
           p%uxb=p%uxb+ee_ext
         endif
+      endif
+! uga
+      if (lpencil(i_uga)) then
+        if (headtt.and.lupw_aa) then
+          print *,'calc_pencils_magnetic: upwinding advection term. '//&
+                  'Not well tested; use at own risk!'; endif
+        call u_dot_gradf(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
       endif
 ! b2
       if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
