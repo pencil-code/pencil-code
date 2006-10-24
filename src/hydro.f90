@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.289 2006-10-04 13:18:11 wlyra Exp $
+! $Id: hydro.f90,v 1.290 2006-10-24 00:23:12 theine Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -173,7 +173,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.289 2006-10-04 13:18:11 wlyra Exp $")
+           "$Id: hydro.f90,v 1.290 2006-10-24 00:23:12 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -688,8 +688,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f       
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: gui
-      real, dimension (nx) :: ugui, tmp
+      real, dimension (nx) :: tmp
       integer :: i,j
 !
       intent(in) :: f
@@ -731,21 +730,16 @@ module Hydro
       if (lpencil(i_ugu)) then
         if (.not. lupw_uu) then
           call multmv_mn(p%uij,p%uu,p%ugu)
-        else ! upwinding of velocity -- experimental and inefficent
+        else ! upwinding of velocity -- experimental
           if (headtt) print*, &
-              'calc_pencils_hydro: upwinding advection term; use at own risk!'
-!
-          call grad(f,iux,gui)    ! gu=grad ux
-          call u_dot_gradf(f,iux,gui,p%uu,ugui,UPWIND=lupw_uu)
-          p%ugu(:,1) = ugui
-!
-          call grad(f,iuy,gui)    ! gu=grad ux
-          call u_dot_gradf(f,iuy,gui,p%uu,ugui,UPWIND=lupw_uu)
-          p%ugu(:,2) = ugui
-!
-          call grad(f,iuz,gui)    ! gu=grad ux
-          call u_dot_gradf(f,iuz,gui,p%uu,ugui,UPWIND=lupw_uu)
-          p%ugu(:,3) = ugui
+              'calc_pencils_hydro: upwinding advection term. '//&
+              'Not well tested; use at own risk!'
+          call u_dot_gradf(f,iux,p%uij(:,1,:),p%uu,tmp,UPWIND=lupw_uu)
+          p%ugu(:,1) = tmp
+          call u_dot_gradf(f,iuy,p%uij(:,2,:),p%uu,tmp,UPWIND=lupw_uu)
+          p%ugu(:,2) = tmp
+          call u_dot_gradf(f,iuz,p%uij(:,3,:),p%uu,tmp,UPWIND=lupw_uu)
+          p%ugu(:,3) = tmp
         endif
       endif
 !
