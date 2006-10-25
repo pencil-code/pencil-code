@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.347 2006-10-25 14:10:20 theine Exp $
+! $Id: magnetic.f90,v 1.348 2006-10-25 15:06:59 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -123,7 +123,7 @@ module Magnetic
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
   logical :: llarge_scale_Bz=.false.
   logical :: lweyl_gauge=.false.
-  logical :: lupw_aa=.false.
+  logical :: lupw_aa=.false.,lparker_gauge=.false.
 
   namelist /magnetic_run_pars/ &
        eta,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
@@ -133,7 +133,7 @@ module Magnetic
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        bthresh,bthresh_per_brms, &
-       iresistivity,lweyl_gauge,lupw_aa, &
+       iresistivity,lweyl_gauge,lupw_aa,lparker_gauge, &
        alphaSSm, &
        eta_int,eta_ext,eta_shock,wresistivity, &
        rhomin_jxb,va2max_jxb,va2power_jxb,llorentzforce,linduction, &
@@ -209,7 +209,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.347 2006-10-25 14:10:20 theine Exp $")
+           "$Id: magnetic.f90,v 1.348 2006-10-25 15:06:59 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -558,7 +558,11 @@ module Magnetic
           lpenc_requested(i_diva)=.true.
         endif
       endif
-      if (lupw_aa) lpenc_requested(i_uga)=.true.
+      if (lupw_aa.or.lparker_gauge) then
+        lpenc_requested(i_uga)=.true.
+        lpenc_requested(i_uu)=.true.
+        lpenc_requested(i_uij)=.true.
+      endif
       if (lresi_shell) lpenc_requested(i_diva)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
@@ -1127,17 +1131,17 @@ module Magnetic
 !
 !  Induction equation
 !
-      if (.not. lupw_aa) then
+      if (.not. (lupw_aa.or.lparker_gauge)) then
         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + p%uxb + fres
       else
 !
 !  Use upwinding for the advection term.
 !  For this, we rewrite the Lorentz force --
-!    (u x B)_k = (u x B_ext)_k + u_i A_i,k - u_i A_k,i
-!              = (u x B_ext)_k + (u_i A_i),k - A_i u_i,k - u_i A_k,i
-!  -- and use the gauge freedom to eliminate (u_i A_i),k
+!    (u x B)_j = (u x B_ext)_j + u_k A_k,j - u_k A_j,k
+!              = (u x B_ext)_j + (u_k A_k),j - A_k u_k,j - u_i A_k,i
+!  -- and use the gauge freedom to eliminate (u_k A_k),j
 !
-        if (headtt) then
+        if (lupw_aa.and.headtt) then
           print *,'calc_pencils_magnetic: upwinding advection term. '//&
                   'Not well tested; use at own risk!'; endif
 !  Add Lorentz force that results from the external field.
