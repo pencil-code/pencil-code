@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.16 2006-10-23 09:11:22 brandenb Exp $
+! $Id: gravity_simple.f90,v 1.17 2006-10-25 14:52:12 bingert Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -103,7 +103,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.16 2006-10-23 09:11:22 brandenb Exp $")
+           "$Id: gravity_simple.f90,v 1.17 2006-10-25 14:52:12 bingert Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -429,22 +429,38 @@ module Gravity
 !
     endsubroutine potential_penc
 !***********************************************************************
-    subroutine potential_point(x,y,z,r, pot,pot0, grav)
+    subroutine potential_point(xpos,ypos,zpos,r, pot,pot0, grav)
 !
 !  Calculates gravity potential in one point
 !
 !  13-nov-04/anders: coded
+!  24-oct-06bing: activated for cartesian coordinates
 !
-      use Mpicomm, only: stop_it
+      use Cdata
 !
       real :: pot
-      real, optional :: x,y,z,r
+      real, dimension(nx) :: potx
+      real, dimension(ny) :: poty
+      real, dimension(nz) :: potz
+      real, optional :: xpos,ypos,zpos,r
       real, optional :: pot0,grav
 !
-      call stop_it('potential_point: Not implemented for gravity_simple')
+      potx=0  
+      poty=0
+      potz=0
 !
-      if(NO_WARN) print*,x,y,z,r,pot,pot0,grav     !(to keep compiler quiet)
-!        
+      where (xpos .ge. x(l1:l2) .and. xpos .lt. x(l1:l2)+dx)
+         potx = potx_xpencil
+      endwhere
+      where (ypos .ge. y(m1:m2) .and. ypos .lt. y(m1:m2)+dy)
+         poty = poty_ypencil
+      endwhere
+      where (zpos .ge. z(n1:n2) .and. zpos .lt. z(n1:n2)+dz)
+         potz = potz_zpencil
+      endwhere
+!
+      pot = sum(potx)+sum(poty)+sum(potz)
+!
     endsubroutine potential_point
 !***********************************************************************
     subroutine read_gravity_init_pars(unit,iostat)
