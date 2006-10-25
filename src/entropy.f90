@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.438 2006-10-21 19:23:36 theine Exp $
+! $Id: entropy.f90,v 1.439 2006-10-25 14:10:20 theine Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -160,7 +160,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.438 2006-10-21 19:23:36 theine Exp $")
+           "$Id: entropy.f90,v 1.439 2006-10-25 14:10:20 theine Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1633,7 +1633,7 @@ module Entropy
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! ugss
       if (lpencil(i_ugss)) &
-          call u_dot_gradf(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
+          call u_dot_grad(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
 ! fpres
       if (lpencil(i_fpres)) then
         if (leos_idealgas) then

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.346 2006-10-24 16:37:11 theine Exp $
+! $Id: magnetic.f90,v 1.347 2006-10-25 14:10:20 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -209,7 +209,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.346 2006-10-24 16:37:11 theine Exp $")
+           "$Id: magnetic.f90,v 1.347 2006-10-25 14:10:20 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -827,7 +827,7 @@ module Magnetic
       endif
 ! uga
       if (lpencil(i_uga)) then
-        call u_dot_gradf(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
+        call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
       endif
 ! b2
       if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)

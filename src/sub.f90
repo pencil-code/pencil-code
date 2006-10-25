@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.257 2006-10-24 14:11:16 theine Exp $ 
+! $Id: sub.f90,v 1.258 2006-10-25 14:10:20 theine Exp $ 
 
 module Sub 
 
@@ -25,7 +25,7 @@ module Sub
   public :: grad, div, div_mn, curl, curli, curl_mn
   public :: gij, g2ij, bij_etc
   public :: der_step
-  public :: u_dot_gradf
+  public :: u_dot_grad
   public :: del2, del2v, del2v_etc
   public :: del4v, del2vi_etc
   public :: del6_nodx, del6v, del6, del6_other
@@ -100,9 +100,9 @@ module Sub
     module procedure cross_0
   endinterface
 
-  interface u_dot_gradf
-    module procedure u_dot_gradf_scl
-    module procedure u_dot_gradf_vec
+  interface u_dot_grad
+    module procedure u_dot_grad_scl
+    module procedure u_dot_grad_vec
   endinterface
 
   interface dot
@@ -2139,7 +2139,7 @@ module Sub
 !
     endsubroutine del6_nodx
 !***********************************************************************
-    subroutine u_dot_gradf_vec(f,k,gradf,uu,ugradf,upwind)
+    subroutine u_dot_grad_vec(f,k,gradf,uu,ugradf,upwind)
 
       use Cdata
 
@@ -2155,19 +2155,19 @@ module Sub
 
       if (present(upwind)) then
         do j=1,3
-          call u_dot_gradf_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
+          call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
           ugradf(:,j)=tmp
         enddo
       else
         do j=1,3
-          call u_dot_gradf_scl(f,k+j-1,gradf(:,j,:),uu,tmp)
+          call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp)
           ugradf(:,j)=tmp
         enddo
       endif
 
-    endsubroutine u_dot_gradf_vec
+    endsubroutine u_dot_grad_vec
 !***********************************************************************
-    subroutine u_dot_gradf_scl(f,k,gradf,uu,ugradf,upwind)
+    subroutine u_dot_grad_scl(f,k,gradf,uu,ugradf,upwind)
 !
 !  Do advection-type term u.grad f_k.
 !  Assumes gradf to be known, but takes f and k as arguments to be able
@@ -2200,7 +2200,7 @@ module Sub
         ugradf = ugradf - abs(uu(:,3))*del6f
       endif
 !
-    endsubroutine u_dot_gradf_scl
+    endsubroutine u_dot_grad_scl
 !***********************************************************************
     subroutine gradf_upw1st(f,uu,k,gradf)
 !

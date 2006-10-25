@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.12 2006-08-23 16:53:31 mee Exp $
+! $Id: entropy_onefluid.f90,v 1.13 2006-10-25 14:10:20 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.12 2006-08-23 16:53:31 mee Exp $")
+           "$Id: entropy_onefluid.f90,v 1.13 2006-10-25 14:10:20 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1535,7 +1535,7 @@ module Entropy
       endif
 ! ugss
       if (lpencil(i_ugss)) &
-          call u_dot_gradf(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
+          call u_dot_grad(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
 !ajwm Should probably combine the following two somehow.
 ! hss
       if (lpencil(i_hss)) then

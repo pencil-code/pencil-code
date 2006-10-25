@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.21 2006-10-08 13:31:38 theine Exp $
+! $Id: temperature_ionization.f90,v 1.22 2006-10-25 14:10:20 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -87,7 +87,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.21 2006-10-08 13:31:38 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.22 2006-10-25 14:10:20 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -340,7 +340,7 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
-      use Sub, only: u_dot_gradf
+      use Sub, only: u_dot_grad
 
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       type (pencil_case), intent (inout) :: p
@@ -355,7 +355,7 @@ module Entropy
 !  (Needs to be here because of lupw_lnTT)
 !
       if (lpencil(i_uglnTT)) then
-        call u_dot_gradf(f,ilnTT,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_lnTT)
+        call u_dot_grad(f,ilnTT,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_lnTT)
       endif
 
     endsubroutine calc_pencils_entropy

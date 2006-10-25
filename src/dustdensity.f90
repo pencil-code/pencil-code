@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.169 2006-10-24 14:11:15 theine Exp $
+! $Id: dustdensity.f90,v 1.170 2006-10-25 14:10:20 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -138,7 +138,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.169 2006-10-24 14:11:15 theine Exp $")
+           "$Id: dustdensity.f90,v 1.170 2006-10-25 14:10:20 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -806,13 +806,13 @@ module Dustdensity
         if (lpencil(i_glnnd2)) call dot2_mn(p%glnnd(:,:,k),p%glnnd2(:,k))
 ! udgnd
         if (lpencil(i_udgnd)) then
-          call u_dot_gradf(f,ind(k),p%gnd(:,:,k),p%uud(:,:,k),tmp, &
+          call u_dot_grad(f,ind(k),p%gnd(:,:,k),p%uud(:,:,k),tmp, &
                            UPWIND=lupw_ndmdmi)
           p%udgnd(:,k)=tmp
         endif
 ! udglnnd
         if (lpencil(i_udglnnd)) then
-          call u_dot_gradf(f,ind(k),p%glnnd(:,:,k),p%uud(:,:,k),tmp, &
+          call u_dot_grad(f,ind(k),p%glnnd(:,:,k),p%uud(:,:,k),tmp, &
                            UPWIND=lupw_ndmdmi)
           p%udglnnd(:,k)=tmp
         endif
@@ -850,13 +850,13 @@ module Dustdensity
         endif
 ! udgmd
         if (lpencil(i_udgmd)) then
-          call u_dot_gradf(f,ind(k),p%gmd(:,:,k),p%uud(:,:,k),tmp, &
+          call u_dot_grad(f,ind(k),p%gmd(:,:,k),p%uud(:,:,k),tmp, &
                            UPWIND=lupw_ndmdmi)
           p%udgmd(:,k)=tmp
         endif
 ! udgmi
         if (lpencil(i_udgmi)) then
-          call u_dot_gradf(f,ind(k),p%gmi(:,:,k),p%uud(:,:,k),tmp, &
+          call u_dot_grad(f,ind(k),p%gmi(:,:,k),p%uud(:,:,k),tmp, &
                            UPWIND=lupw_ndmdmi)
           p%udgmi(:,k)=tmp
         endif
