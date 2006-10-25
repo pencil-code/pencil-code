@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.17 2006-10-25 14:52:12 bingert Exp $
+! $Id: gravity_simple.f90,v 1.18 2006-10-25 22:50:12 bingert Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -103,7 +103,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.17 2006-10-25 14:52:12 bingert Exp $")
+           "$Id: gravity_simple.f90,v 1.18 2006-10-25 22:50:12 bingert Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -437,29 +437,28 @@ module Gravity
 !  24-oct-06bing: activated for cartesian coordinates
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real :: pot
-      real, dimension(nx) :: potx
-      real, dimension(ny) :: poty
-      real, dimension(nz) :: potz
       real, optional :: xpos,ypos,zpos,r
       real, optional :: pot0,grav
+      integer :: i
 !
-      potx=0  
-      poty=0
-      potz=0
+      pot=0
 !
-      where (xpos .ge. x(l1:l2) .and. xpos .lt. x(l1:l2)+dx)
-         potx = potx_xpencil
-      endwhere
-      where (ypos .ge. y(m1:m2) .and. ypos .lt. y(m1:m2)+dy)
-         poty = poty_ypencil
-      endwhere
-      where (zpos .ge. z(n1:n2) .and. zpos .lt. z(n1:n2)+dz)
-         potz = potz_zpencil
-      endwhere
+      if (nghost .lt. 1) call stop_it("potential_point: need at least on ghost cell")
 !
-      pot = sum(potx)+sum(poty)+sum(potz)
+      do i=l1,l2
+         if (xpos .ge. x(i) .and. xpos .lt. x(i+1) .and. present(xpos)) pot=pot+potx_xpencil(i-nghost)
+      enddo
+!
+      do i=m1,m2
+         if (ypos .ge. x(i) .and. ypos .lt. y(i+1) .and. present(ypos)) pot=pot+poty_ypencil(i-nghost)
+      enddo
+!
+      do i=n1,l2
+         if (zpos .ge. z(i) .and. zpos .lt. z(i+1) .and. present(zpos)) pot=pot+potz_zpencil(i-nghost)
+      enddo
 !
     endsubroutine potential_point
 !***********************************************************************
