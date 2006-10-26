@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.280 2006-10-26 09:37:13 bingert Exp $
+! $Id: density.f90,v 1.281 2006-10-26 16:49:56 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -105,7 +105,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.280 2006-10-26 09:37:13 bingert Exp $")
+           "$Id: density.f90,v 1.281 2006-10-26 16:49:56 theine Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1048,12 +1048,12 @@ module Density
 !  19-11-04/anders: coded
 !
       use Global, only: set_global,global_derivs
-      use Sub
+      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij
 !      
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
-      integer :: i, mm_lokal, nn_lokal
+      integer :: i, mm, nn
 !
       intent(in) :: f
       intent(inout) :: p
@@ -1094,15 +1094,15 @@ module Density
 ! uglnrho
       if (lpencil(i_uglnrho)) then
         if (ldensity_nolog) then
-          call dot_mn(p%uu,p%glnrho,p%uglnrho)
+          call dot(p%uu,p%glnrho,p%uglnrho)
         else
           call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
         endif
       endif
 ! ugrho
-      if (lpencil(i_ugrho)) call dot_mn(p%uu,p%grho,p%ugrho)
+      if (lpencil(i_ugrho)) call dot(p%uu,p%grho,p%ugrho)
 ! glnrho2
-      if (lpencil(i_glnrho2)) call dot2_mn(p%glnrho,p%glnrho2)
+      if (lpencil(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
 ! del2lnrho
       if (lpencil(i_del2lnrho)) then
         if (ldensity_nolog) then
@@ -1131,8 +1131,8 @@ module Density
           call del6(f,ilnrho,p%del6rho)
         else
           if (lfirstpoint .and. lglobal_nolog_density) then
-            do mm_lokal=1,my; do nn_lokal=1,mz
-              call set_global(exp(f(:,mm_lokal,nn_lokal,ilnrho)),mm_lokal,nn_lokal,'rho',mx)
+            do mm=1,my; do nn=1,mz
+              call set_global(exp(f(:,mm,nn,ilnrho)),mm,nn,'rho',mx)
             enddo; enddo
           endif
           if (lglobal_nolog_density) call global_derivs(m,n,'rho',der6=p%del6rho) 
@@ -1161,9 +1161,9 @@ module Density
         endif
       endif
 ! sglnrho
-      if (lpencil(i_sglnrho)) call multmv_mn(p%sij,p%glnrho,p%sglnrho)
+      if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
 ! uij5glnrho
-      if (lpencil(i_uij5glnrho)) call multmv_mn(p%uij5,p%glnrho,p%uij5glnrho)
+      if (lpencil(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
 !
     endsubroutine calc_pencils_density
 !***********************************************************************
