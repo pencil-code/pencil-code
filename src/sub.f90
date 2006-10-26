@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.259 2006-10-26 04:36:49 dobler Exp $ 
+! $Id: sub.f90,v 1.260 2006-10-26 08:54:06 bingert Exp $ 
 
 module Sub 
 
@@ -4031,7 +4031,7 @@ nameloop: do
 !
       use Cparam, only: mseed
       use Mpicomm, only: lroot,stop_it      
-      use General
+      use General, only: random_seed_wrapper
 !
       integer :: nseed
 !
