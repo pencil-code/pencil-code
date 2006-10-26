@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.248 2006-10-25 11:15:55 mkorpi Exp $
+### $Id: Makefile.src,v 1.249 2006-10-26 05:45:53 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -319,7 +319,7 @@ LD_FFTW2=
 #LD_MPI=-L/opt/mpich/lib #(nw43)
 #LD_MPI=-L/usr/local/mpich/lib #(pcponty)
 #LD_MPI= # (Samos|fire|sandin)
-#LDMPI=-L/usr/lib/lam/lib -llam -lmpi -llamf77mpi -llammpi++ -llammpio -lnsl -lutil #(mhd|metropolis)
+#LD_MPI=-L/usr/lib/lam/lib -llam -lmpi -llamf77mpi -llammpi++ -llammpio -lnsl -lutil #(mhd|metropolis)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall -m32 #(lynx|opto[1-4])
 #CFLAGS=-DFUNDERSC=1 #(obelix)
 #CFLAGS=-O3 -DFUNDERSC=2 -Wall #(mhd|metropolis)
