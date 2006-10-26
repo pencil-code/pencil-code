@@ -1,4 +1,4 @@
-! $Id: read_vectorfiles.f90,v 1.5 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: read_vectorfiles.f90,v 1.6 2006-10-26 11:51:30 bingert Exp $
 
 !***********************************************************************
       program read_vectorfiles
@@ -8,7 +8,7 @@
 !   8-aug-03/axel: coded
 !
       use Cparam
-      use General
+      use General, only: safe_character_assign,chn
 !
       implicit none
 
