@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.81 2006-07-14 10:12:58 ajohan Exp $
+! $Id: prints.f90,v 1.82 2006-10-26 11:36:55 bingert Exp $
 
 module Print
 
@@ -371,7 +371,7 @@ public :: write_zaverages
 !
 !   2-jan-03/wolf: adapted from write_zaverages
 !
-      use General
+      use General, only: safe_character_assign,safe_character_append
 !
       integer :: i
       character (len=4) :: ch
