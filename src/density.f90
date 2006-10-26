@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.279 2006-10-26 09:13:17 bingert Exp $
+! $Id: density.f90,v 1.280 2006-10-26 09:37:13 bingert Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -105,7 +105,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.279 2006-10-26 09:13:17 bingert Exp $")
+           "$Id: density.f90,v 1.280 2006-10-26 09:37:13 bingert Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1048,12 +1048,12 @@ module Density
 !  19-11-04/anders: coded
 !
       use Global, only: set_global,global_derivs
-      use Sub, only: u_dot_grad
+      use Sub
 !      
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
-      integer :: i, mm, nn
+      integer :: i, mm_lokal, nn_lokal
 !
       intent(in) :: f
       intent(inout) :: p
@@ -1131,8 +1131,8 @@ module Density
           call del6(f,ilnrho,p%del6rho)
         else
           if (lfirstpoint .and. lglobal_nolog_density) then
-            do mm=1,my; do nn=1,mz
-              call set_global(exp(f(:,mm,nn,ilnrho)),mm,nn,'rho',mx)
+            do mm_lokal=1,my; do nn_lokal=1,mz
+              call set_global(exp(f(:,mm_lokal,nn_lokal,ilnrho)),mm_lokal,nn_lokal,'rho',mx)
             enddo; enddo
           endif
           if (lglobal_nolog_density) call global_derivs(m,n,'rho',der6=p%del6rho) 
