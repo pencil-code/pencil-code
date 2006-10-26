@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.349 2006-10-25 17:26:08 theine Exp $
+! $Id: magnetic.f90,v 1.350 2006-10-26 17:13:38 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -209,7 +209,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.349 2006-10-25 17:26:08 theine Exp $")
+           "$Id: magnetic.f90,v 1.350 2006-10-26 17:13:38 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -559,6 +559,7 @@ module Magnetic
         endif
       endif
       if (lupw_aa.or.lparker_gauge) then
+        lpenc_requested(i_aa)=.true.
         lpenc_requested(i_uga)=.true.
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_uij)=.true.
@@ -1134,37 +1135,29 @@ module Magnetic
       if (.not. (lupw_aa.or.lparker_gauge)) then
         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + p%uxb + fres
       else
-        uxb_upw=0.0
+!
+!  Use upwinding for the advection term.
+!  For this, we rewrite the Lorentz force --
+!    (u x B)_j = (u x B_ext)_j + u_k A_k,j - u_k A_j,k
+!              = (u x B_ext)_j + (u_k A_k),j - A_k u_k,j - u_i A_k,i
+!  -- and use the gauge freedom to eliminate (u_k A_k),j
+!
+        if (lupw_aa.and.headtt) then
+          print *,'calc_pencils_magnetic: upwinding advection term. '//&
+                  'Not well tested; use at own risk!'; endif
+!  Add Lorentz force that results from the external field.
+!  Note: For now, this only works for uniform external fields.
+        uxb_upw(:,1) = p%uu(:,2)*B_ext(3) - p%uu(:,3)*B_ext(2)
+        uxb_upw(:,2) = p%uu(:,3)*B_ext(1) - p%uu(:,1)*B_ext(3)
+        uxb_upw(:,3) = p%uu(:,1)*B_ext(2) - p%uu(:,2)*B_ext(1)
+!  Add A_i u_i,k
         do j=1,3; do k=1,3
-          uxb_upw(:,j) = uxb_upw(:,j) + p%uu(:,k)*p%aij(:,k,j) &
-                                      - p%uu(:,k)*p%aij(:,j,k)
-          !uxb_upw(:,j) = uxb_upw(:,j) - p%aa(:,k)*p%uij(:,k,j) &
-          !                            - p%uu(:,k)*p%aij(:,j,k)
+          uxb_upw(:,j) = uxb_upw(:,j) - p%aa(:,k)*p%uij(:,k,j)
         enddo; enddo
+!  Add `upwinded' advection term
+        uxb_upw = uxb_upw - p%uga
+!  Full right hand side of the induction equation
         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_upw + fres
-! !
-! !  Use upwinding for the advection term.
-! !  For this, we rewrite the Lorentz force --
-! !    (u x B)_j = (u x B_ext)_j + u_k A_k,j - u_k A_j,k
-! !              = (u x B_ext)_j + (u_k A_k),j - A_k u_k,j - u_i A_k,i
-! !  -- and use the gauge freedom to eliminate (u_k A_k),j
-! !
-!         if (lupw_aa.and.headtt) then
-!           print *,'calc_pencils_magnetic: upwinding advection term. '//&
-!                   'Not well tested; use at own risk!'; endif
-! !  Add Lorentz force that results from the external field.
-! !  Note: For now, this only works for uniform external fields.
-!         uxb_upw(:,1) = p%uu(:,2)*B_ext(3) - p%uu(:,3)*B_ext(2)
-!         uxb_upw(:,2) = p%uu(:,3)*B_ext(1) - p%uu(:,1)*B_ext(3)
-!         uxb_upw(:,3) = p%uu(:,1)*B_ext(2) - p%uu(:,2)*B_ext(1)
-! !  Add A_i u_i,k
-!         do j=1,3; do k=1,3
-!           uxb_upw(:,j) = uxb_upw(:,j) - p%aa(:,k)*p%uij(:,k,j)
-!         enddo; enddo
-! !  Add `upwinded' advection term
-!         uxb_upw = uxb_upw - p%uga
-! !  Full right hand side of the induction equation
-!         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_upw + fres
       endif
 !
 !  Subtract contribution from mean background flow
