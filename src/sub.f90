@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.258 2006-10-25 14:10:20 theine Exp $ 
+! $Id: sub.f90,v 1.259 2006-10-26 04:36:49 dobler Exp $ 
 
 module Sub 
 
@@ -2477,7 +2477,7 @@ module Sub
 !***********************************************************************
     subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,enum)
 !
-      use General
+      use General, only: chn
 !
 !  Check whether we need to write snapshot; if so, update the snapshot
 !  file (e.g. tsnap.dat).
