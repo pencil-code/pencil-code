@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.178 2006-10-11 12:12:47 dobler Exp $ 
+! $Id: initcond.f90,v 1.179 2006-10-26 19:44:47 bingert Exp $ 
 
 module Initcond 
  
@@ -2618,7 +2618,7 @@ module Initcond
 !      Temperatur is hard coded as three polynoms.
 !      
       use Cdata
-      use EquationOfState, only: lnrho0,gamma,gamma1,cs20
+      use EquationOfState, only: lnrho0,gamma,gamma1,cs20,cs2top,cs2bot
       
       real, dimension(mx,my,mz,mfarray) :: f
       real :: tmp
@@ -2652,6 +2652,9 @@ module Initcond
                !
                tmp =  (b_lnT(i)*(b_z(i+1) - z(j)) +   &
                     b_lnT(i+1)*(z(j)-b_z(i)) ) / (b_z(i+1)-b_z(i))
+               !
+               if (j .eq. n1) cs2bot = gamma1*exp(tmp)
+               if (j .eq. n2) cs2top = gamma1*exp(tmp)
                !
                f(:,:,j,iss) = (alog(gamma1/cs20)+tmp- &
                     gamma1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
