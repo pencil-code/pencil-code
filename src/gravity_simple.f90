@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.19 2006-10-27 08:11:43 brandenb Exp $
+! $Id: gravity_simple.f90,v 1.20 2006-10-27 10:33:17 brandenb Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -103,7 +103,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.19 2006-10-27 08:11:43 brandenb Exp $")
+           "$Id: gravity_simple.f90,v 1.20 2006-10-27 10:33:17 brandenb Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -442,23 +442,44 @@ module Gravity
       real :: pot
       real, optional :: xpos,ypos,zpos,r
       real, optional :: pot0,grav
+      real :: potx_xpoint,poty_ypoint,potz_zpoint
       integer :: i
 !
       pot=0
 !
       if (nghost .lt. 1) call stop_it("potential_point: need at least on ghost cell")
 !
-      do i=l1,l2
-         if (xpos .ge. x(i) .and. xpos .lt. x(i+1) .and. present(xpos)) pot=pot+potx_xpencil(i-nghost)
-      enddo
+!     do i=l1,l2
+!        if (xpos .ge. x(i) .and. xpos .lt. x(i+1) .and. present(xpos)) pot=pot+potx_xpencil(i-nghost)
+!     enddo
 !
-      do i=m1,m2
-         if (ypos .ge. x(i) .and. ypos .lt. y(i+1) .and. present(ypos)) pot=pot+poty_ypencil(i-nghost)
-      enddo
+!     do i=m1,m2
+!        if (ypos .ge. x(i) .and. ypos .lt. y(i+1) .and. present(ypos)) pot=pot+poty_ypencil(i-nghost)
+!     enddo
 !
-      do i=n1,n2
-         if (zpos .ge. z(i) .and. zpos .lt. z(i+1) .and. present(zpos)) pot=pot+potz_zpencil(i-nghost)
-      enddo
+!     do i=n1,n2
+!        if (zpos .ge. z(i) .and. zpos .lt. z(i+1) .and. present(zpos)) pot=pot+potz_zpencil(i-nghost)
+!     enddo
+!
+!
+!  Different z-gravity profiles
+!
+      potx_xpoint=0.
+      poty_ypoint=0.
+!
+      select case (gravz_profile)
+
+      case('zero')
+        if (lroot) print*,'initialize_gravity: no z-gravity'
+
+      case('const')
+        if (lroot) print*,'initialize_gravity: constant gravz=', gravz
+        potz_zpoint=-gravz*(zpos-zinfty)
+      endselect
+!
+!  Calculate potential from master pencils defined in initialize_gravity
+!
+      pot = potx_xpoint + poty_ypoint + potz_zpoint
 !
     endsubroutine potential_point
 !***********************************************************************

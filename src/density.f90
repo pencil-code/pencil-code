@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.282 2006-10-27 08:11:43 brandenb Exp $
+! $Id: density.f90,v 1.283 2006-10-27 10:33:17 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -105,7 +105,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.282 2006-10-27 08:11:43 brandenb Exp $")
+           "$Id: density.f90,v 1.283 2006-10-27 10:33:17 brandenb Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1609,18 +1609,14 @@ module Density
 !  In spherical geometry, ztop is z at the outer edge of the box,
 !  so this calculation still makes sense.
 !
-        if (ipz==nprocz-1) then
-          call potential(xyz0(1),xyz0(2),ztop,pot=ptop)
-          cs2top=-gamma/(mpoly+1.)*ptop
-        endif
+        call potential(xyz0(1),xyz0(2),ztop,pot=ptop)
+        cs2top=-gamma/(mpoly+1.)*ptop
 !
 !  In spherical geometry ztop should never be used.
 !  Even in slab geometry ztop is not normally used.
 !
-        if (ipz==0) then
-          call potential(xyz0(1),xyz0(2),zbot,pot=pbot)
-          cs2bot=-gamma/(mpoly+1.)*pbot
-        endif
+        call potential(xyz0(1),xyz0(2),zbot,pot=pbot)
+        cs2bot=-gamma/(mpoly+1.)*pbot
       endif
 !
     endsubroutine polytropic_simple
