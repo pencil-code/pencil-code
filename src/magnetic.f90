@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.350 2006-10-26 17:13:38 theine Exp $
+! $Id: magnetic.f90,v 1.351 2006-10-27 08:11:43 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -209,7 +209,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.350 2006-10-26 17:13:38 theine Exp $")
+           "$Id: magnetic.f90,v 1.351 2006-10-27 08:11:43 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -980,6 +980,7 @@ module Magnetic
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b3b21,b1b32,b2b13,sign_jo,rho1_jxb
+      real, dimension (nx) :: B1dot_glnrhoxb
       real, dimension (nx) :: eta_mn,eta_smag,etatotal,fres2,etaSS
       real :: tmp,eta_out1,OmegaSS=1.
       integer :: i,j,k
@@ -1401,11 +1402,11 @@ module Magnetic
 !
 !  triple correlation from pressure gradient (for imposed field)
 !  (assume cs2=1, and that no entropy evolution is included)
-        !
+!  This is ok for all applications currently under consideration.
+!
         if (idiag_gpxbm/=0) then
-          gpxb_dotB0=B_ext(1)*p%glnrhoxb(:,1)+B_ext(2)*p%glnrhoxb(:,2)+B_ext(3)*p%glnrhoxb(:,3)
-          gpxb_dotB0=gpxb_dotB0*B_ext21
-          call sum_mn_name(oxuxb_dotB0,idiag_gpxbm)
+          call dot_mn_sv(B1_ext,p%glnrhoxb,B1dot_glnrhoxb)
+          call sum_mn_name(B1dot_glnrhoxb,idiag_gpxbm)
         endif
 !
 !  < u x curl(uxB) > = < E_i u_{j,j} - E_j u_{j,i} >

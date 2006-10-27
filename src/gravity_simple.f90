@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.18 2006-10-25 22:50:12 bingert Exp $
+! $Id: gravity_simple.f90,v 1.19 2006-10-27 08:11:43 brandenb Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -103,7 +103,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.18 2006-10-25 22:50:12 bingert Exp $")
+           "$Id: gravity_simple.f90,v 1.19 2006-10-27 08:11:43 brandenb Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -456,7 +456,7 @@ module Gravity
          if (ypos .ge. x(i) .and. ypos .lt. y(i+1) .and. present(ypos)) pot=pot+poty_ypencil(i-nghost)
       enddo
 !
-      do i=n1,l2
+      do i=n1,n2
          if (zpos .ge. z(i) .and. zpos .lt. z(i+1) .and. present(zpos)) pot=pot+potz_zpencil(i-nghost)
       enddo
 !
