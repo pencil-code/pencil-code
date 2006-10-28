@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.439 2006-10-25 14:10:20 theine Exp $
+! $Id: entropy.f90,v 1.440 2006-10-28 10:21:45 brandenb Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -160,7 +160,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.439 2006-10-25 14:10:20 theine Exp $")
+           "$Id: entropy.f90,v 1.440 2006-10-28 10:21:45 brandenb Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -2214,7 +2214,7 @@ module Entropy
 !
 !     Calculate diffusion term
 !
-      call  tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,GVKPERP=gvKperp,GVKPARA=gvKpara)
+      call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,GVKPERP=gvKperp,GVKPARA=gvKpara)
 !
       thdiff = thdiff*exp(-p%lnrho-p%lnTT) 
 ! 

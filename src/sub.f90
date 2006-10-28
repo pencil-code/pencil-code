@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.260 2006-10-26 08:54:06 bingert Exp $ 
+! $Id: sub.f90,v 1.261 2006-10-28 10:21:46 brandenb Exp $ 
 
 module Sub 
 
@@ -1028,8 +1028,11 @@ module Sub
       if (present(fast_sqrt)) fast_sqrt1=fast_sqrt
       if (present(precise_sqrt)) precise_sqrt1=precise_sqrt
 !
+!  rescale before taking sqrt, but add tini in case a=0.
+!  AB: is this really needed?
+!
       if (precise_sqrt1) then
-         a_max=maxval(abs(a),dim=2)
+         a_max=tini+maxval(abs(a),dim=2)
          b=(a(:,1)/a_max)**2+(a(:,2)/a_max)**2+(a(:,3)/a_max)**2
          b=a_max*sqrt(b)
       else
@@ -4417,9 +4420,10 @@ nameloop: do
 !  calculates parts common to both variable and constant tensor first
 !  note:ecr=lnecr in the below comment
 !  
-!  vKperp*del2ecr + d_i(vKperp)d_i(ecr) + (vKpara-vKperp) d_i ( n_i n_j d_j
-!  ecr)
-!      + n_i n_j d_i(ecr)d_j(vKpara-vKperp)
+!  write diffusion tensor as K_ij = Kpara*ni*nj + (Kperp-Kpara)*del_ij.
+!
+!  vKperp*del2ecr + d_i(vKperp)d_i(ecr) + (vKpara-vKperp) d_i(n_i*n_j*d_j ecr)
+!      + n_i*n_j*d_i(ecr)d_j(vKpara-vKperp)
 !   
 !  = vKperp*del2ecr + gKperp.gecr + (vKpara-vKperp) (H.G + ni*nj*Gij) 
 !      + ni*nj*Gi*(vKpara_j - vKperp_j),
@@ -4429,7 +4433,7 @@ nameloop: do
 !  calculates (K.gecr).gecr
 !  =  vKperp(gecr.gecr) + (vKpara-vKperp)*Gi(ni*nj*Gj)
 !                     
-!  adds both parts into decr/dt  
+!  adds both parts into decr/dt
 !
 !  10-oct-03/axel: adapted from pscalar
 !  30-nov-03/snod: adapted from tensor_diff without variable diffusion
