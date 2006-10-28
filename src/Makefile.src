@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.249 2006-10-26 05:45:53 dobler Exp $
+### $Id: Makefile.src,v 1.250 2006-10-28 14:06:16 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -341,12 +341,11 @@ LD_FFTW2=
 ##
 ## Axel on h05n35 (ifc 8.1)
 ##
-#FC=ifort #(h05n35*)
-#FFLAGS=-I/pdc/vol/lam/7.0.4/system/include -O3 #(h05n35*)
-#CC=icc #(h05n35*)
+#FC=mpif90 #(h05n35*)
+#FFLAGS=-O3 #(h05n35*)
+#CC=mpicc #(h05n35*)
 #CFLAGS=-O3 -DFUNDERSC=1 #(h05n35*)
-#LD_MPI=-I/pdc/vol/lam/7.0.4/system/include -pthread -L/pdc/vol/gm/2.0.6/lib -L/pdc/vol/lam/7.0.4/system/lib -llammpio -llamf77mpi -lmpi -llam -lutil -lgm #(h05n35*)
-#LIBMPISUFFIX=_#(h05n35*)
+#LD_MPI= #(h05n35*)
 ##
 ## Axel on Horseshoe (ifc 9.0)
 ##
