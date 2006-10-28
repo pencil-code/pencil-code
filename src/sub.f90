@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.261 2006-10-28 10:21:46 brandenb Exp $ 
+! $Id: sub.f90,v 1.262 2006-10-28 10:31:44 brandenb Exp $ 
 
 module Sub 
 
@@ -4457,7 +4457,8 @@ nameloop: do
 !
 !  calculate unit vector of bb
 !
-      call dot2_mn(bb,abs_b,PRECISE_SQRT=.true.)
+!     call dot2_mn(bb,abs_b,PRECISE_SQRT=.true.)
+      call dot2_mn(bb,abs_b,FAST_SQRT=.true.)
       b1=1./max(tini,abs_b)
       call multsv_mn(b1,bb,bunit)
 !
@@ -4479,7 +4480,8 @@ nameloop: do
 !  by 1/sqrt(1.+dxmin^2*H^2).
 !  and dot H with ecr gradient
 !
-      call dot2_mn(hhh,hhh2,PRECISE_SQRT=.true.)
+!     call dot2_mn(hhh,hhh2,PRECISE_SQRT=.true.)
+      call dot2_mn(hhh,hhh2,FAST_SQRT=.true.)
       quenchfactor=1./max(1.,limiter_tensordiff*hhh2*dxmin)
       call multsv_mn(quenchfactor,hhh,hhh)
       call dot_mn(hhh,gecr,tmp)
