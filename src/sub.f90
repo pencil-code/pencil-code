@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.262 2006-10-28 10:31:44 brandenb Exp $ 
+! $Id: sub.f90,v 1.263 2006-10-30 20:56:25 wlyra Exp $ 
 
 module Sub 
 
@@ -28,7 +28,7 @@ module Sub
   public :: u_dot_grad
   public :: del2, del2v, del2v_etc
   public :: del4v, del2vi_etc
-  public :: del6_nodx, del6v, del6, del6_other
+  public :: del6_nodx, del6v, del6, del6_other, del6fj, del6fjv
   public :: gradf_upw1st
 
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub
@@ -1923,7 +1923,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: del6f
 !
-!  do the del2 diffusion operator
+!  do the del6 diffusion operator
 !
       k1=k-1
       do i=1,3
@@ -2141,6 +2141,60 @@ module Sub
       del6f = d6fdx + d6fdy + d6fdz
 !
     endsubroutine del6_nodx
+!***********************************************************************
+    subroutine del6fj(f,vec,k,del6f)
+!
+!  Calculates fj*del6 (defined here as fx*d^6/dx^6 + fy*d^6/dy^6 + fz*d^6/dz^6)
+!  needed for hyperdissipation of a scalar (diffrho) with non-cubic cells where the
+!  coefficient depends on resolution. Returns scalar.
+!
+!  30-oct-06/wlad: adapted from del6
+!
+      use Cdata
+      use Deriv
+!
+      intent(in) :: f,k
+      intent(out) :: del6f
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
+      real, dimension (3) :: vec
+      integer :: k
+!
+      call der6(f,k,d6fdx,1)
+      call der6(f,k,d6fdy,2)
+      call der6(f,k,d6fdz,3)
+      del6f = vec(1)*d6fdx + vec(2)*d6fdy + vec(3)*d6fdz
+!
+    endsubroutine del6fj
+!***********************************************************************
+    subroutine del6fjv(f,vec,k,del6f)
+!
+!  Calculates fj*del6 (defined here as fx*d^6/dx^6 + fy*d^6/dy^6 + fz*d^6/dz^6)
+!  needed for hyperdissipation of vectors (visc, res) with non-cubic cells where 
+!  the coefficient depends on resolution. Returns vector.
+!
+!  30-oct-06/wlad: adapted from del6v
+!
+      use Cdata
+      use Deriv
+!
+      intent(in) :: f,k
+      intent(out) :: del6f
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: del6f
+      real, dimension (nx) :: tmp
+      integer :: i,k,k1
+      real, dimension (3) :: vec
+!
+      k1=k-1
+      do i=1,3
+        call del6fj(f,vec,k1+i,tmp)
+        del6f(:,i)=tmp
+      enddo
+!
+    endsubroutine del6fjv
 !***********************************************************************
     subroutine u_dot_grad_vec(f,k,gradf,uu,ugradf,upwind)
 

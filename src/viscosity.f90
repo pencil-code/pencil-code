@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.32 2006-10-08 12:11:41 ajohan Exp $
+! $Id: viscosity.f90,v 1.33 2006-10-30 20:56:25 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -29,6 +29,7 @@ module Viscosity
   integer, parameter :: nvisc_max = 4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   real :: nu=0., nu_mol=0., nu_hyper2=0., nu_hyper3=0., nu_shock=0.
+  real, dimension(3) :: nuvec_hyper3=0.
 
   ! dummy logical
   logical :: lvisc_first=.false.
@@ -40,6 +41,7 @@ module Viscosity
   logical :: lvisc_hyper2_simplified=.false.
   logical :: lvisc_hyper3_simplified=.false.
   logical :: lvisc_hyper3_rho_nu_const=.false.
+  logical :: lvisc_hyper3_nu_vector=.false.
   logical :: lvisc_hyper3_rho_nu_const_bulk=.false.
   logical :: lvisc_hyper3_nu_const=.false.
   logical :: lvisc_smag_simplified=.false.
@@ -52,7 +54,7 @@ module Viscosity
 
   ! run parameters
   namelist /viscosity_run_pars/ &
-      nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock
+      nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, nuvec_hyper3
  
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_epsK=0,idiag_epsK2=0,idiag_epsK_LES=0
@@ -83,7 +85,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.32 2006-10-08 12:11:41 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.33 2006-10-30 20:56:25 wlyra Exp $")
 
       ivisc(1)='nu-const'
 
@@ -115,6 +117,7 @@ module Viscosity
       lvisc_hyper2_simplified=.false.
       lvisc_hyper3_simplified=.false.
       lvisc_hyper3_rho_nu_const=.false.
+      lvisc_hyper3_nu_vector=.false.
       lvisc_hyper3_rho_nu_const_bulk=.false.
       lvisc_hyper3_nu_const=.false.
       lvisc_smag_simplified=.false.
@@ -148,6 +151,10 @@ module Viscosity
         case ('hyper3_rho_nu-const')
           if (lroot) print*,'viscous force: nu_hyper/rho*del6v'
           lvisc_hyper3_rho_nu_const=.true.
+       case ('hyper3_nu-vector')
+          if (lroot) print*,&
+               'viscous force(i): 1/rho*(nu_x*d^6/dx^6 + nu_y*d^6/dy^6 + nu_z*d^6/dz^6)v'
+          lvisc_hyper3_nu_vector=.true.
         case ('hyper3_rho_nu-const_bulk')
           if (lroot) print*,'viscous force: duj/dt = nu_hyper/rho*d6uj/dxj6'
           lvisc_hyper3_rho_nu_const_bulk=.true.
@@ -191,6 +198,12 @@ module Viscosity
               nu_hyper3==0.0 ) &
             call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_hyper3 is zero!')
+        if ( (lvisc_hyper3_nu_vector) .and.  &         
+             ((nuvec_hyper3(1)==0. .and. nxgrid/=1 ).or. &
+              (nuvec_hyper3(2)==0. .and. nygrid/=1 ).or. &
+              (nuvec_hyper3(3)==0. .and. nzgrid/=1 )) ) & 
+            call fatal_error('initialize_viscosity', &
+             'A viscosity coefficient of nuvec_hyper3 is zero!')
         if ( (lvisc_smag_simplified.or.lvisc_smag_cross_simplified).and. &
              C_smag==0.0 ) &
             call fatal_error('initialize_viscosity', &
@@ -207,30 +220,29 @@ module Viscosity
     subroutine read_viscosity_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+!
       if (present(iostat).and.NO_WARN) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+!
     endsubroutine read_viscosity_init_pars
 !***********************************************************************
     subroutine write_viscosity_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+!
       if (NO_WARN) print*,unit
-                                                                                                   
+!
     endsubroutine write_viscosity_init_pars
 !***********************************************************************
     subroutine read_viscosity_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+!
       if (present(iostat)) then
         read(unit,NML=viscosity_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=viscosity_run_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+!
 99    return
     endsubroutine read_viscosity_run_pars
 !***********************************************************************
@@ -321,11 +333,12 @@ module Viscosity
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified) &
           lpenc_requested(i_del2u)=.true.
       if (lvisc_hyper3_simplified .or. lvisc_hyper3_rho_nu_const .or. &
-          lvisc_hyper3_nu_const) lpenc_requested(i_del6u)=.true.
+          lvisc_hyper3_nu_const) &
+          lpenc_requested(i_del6u)=.true.
       if (lvisc_hyper3_rho_nu_const_bulk) lpenc_requested(i_del6u_bulk)=.true.
       if (lvisc_hyper2_simplified) lpenc_requested(i_del4u)=.true.
       if (lvisc_rho_nu_const .or. lvisc_hyper3_rho_nu_const .or. &
-          lvisc_hyper3_rho_nu_const_bulk .or. &
+          lvisc_hyper3_rho_nu_const_bulk .or.  lvisc_hyper3_nu_vector .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified) &
           lpenc_requested(i_rho1)=.true.
       if (lvisc_nu_const .or. &
@@ -391,7 +404,7 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx,3) :: tmp,tmp2
+      real, dimension (nx,3) :: tmp,tmp2,tmp3
       real, dimension (nx) :: murho1,nu_smag
 !
       integer :: i
@@ -506,6 +519,30 @@ module Viscosity
               'is not implemented for lvisc_hyper3_rho_nu_const')
         endif
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
+      endif
+!
+      if (lvisc_hyper3_nu_vector) then
+!
+!  viscous force: f_i = mu_i/rho*del6u
+!  Used for non-cubic cells
+!         
+         call del6fjv(f,nuvec_hyper3,iuu,tmp3)
+         do i=1,3
+            p%fvisc(:,i)=p%fvisc(:,i)+tmp3(:,i)*p%rho1
+         enddo
+         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
+            call fatal_error('calc_pencils_viscosity', 'viscous heating term '// &
+                 'is not implemented for lvisc_hyper3_nu_vector')
+         endif
+!
+! WL: why is diffus due to viscosity prop to dx_1**4 while
+! the one due to mass diffusion and resistivity is prop to dx_1**6 ?
+!
+         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+&
+                 nuvec_hyper3(1)*dx_1(l1:l2)**4 + &
+                 nuvec_hyper3(2)*dy_1(m)**4 + &
+                 nuvec_hyper3(3)*dz_1(n)**4
+!
       endif
 !
       if (lvisc_hyper3_rho_nu_const_bulk) then
@@ -642,7 +679,7 @@ module Viscosity
 !***********************************************************************
     subroutine calc_viscous_force(df,p)
 !
-!  calculate viscous heating term for right hand side of entropy equation
+!  calculate viscous force term for right hand side of  equation
 !
 !  20-nov-02/tony: coded
 !   9-jul-04/nils: added Smagorinsky viscosity
