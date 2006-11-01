@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.286 2006-11-01 08:54:01 dobler Exp $
+! $Id: density.f90,v 1.287 2006-11-01 19:44:18 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -45,7 +45,8 @@ module Density
   real :: wdamp=0.,plaw=0.
   real, dimension(3) :: diffrho_hyper3_vector=0.
   integer, parameter :: ndiff_max=4
-  logical :: lupw_lnrho=.false.,lmass_source=.false.,lcontinuity_gas=.true.
+  logical :: lupw_lnrho=.false.,lupw_rho=.false.
+  logical :: lmass_source=.false.,lcontinuity_gas=.true.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_vector=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
@@ -71,7 +72,7 @@ module Density
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
-       cs2bot,cs2top,lupw_lnrho,idiff,lmass_source,     &
+       cs2bot,cs2top,lupw_lnrho,lupw_rho,idiff,lmass_source,     &
        lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
        wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,         &
        lnrho_const,plaw,lcontinuity_gas,borderlnrho,    &
@@ -107,7 +108,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.286 2006-11-01 08:54:01 dobler Exp $")
+           "$Id: density.f90,v 1.287 2006-11-01 19:44:18 theine Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -976,8 +977,11 @@ module Density
       if (ldensity_nolog) lpenc_requested(i_rho)=.true.
       if (lcontinuity_gas) then
         lpenc_requested(i_divu)=.true.
-        if (ldensity_nolog) lpenc_requested(i_ugrho)=.true.
-        if (.not. ldensity_nolog) lpenc_requested(i_uglnrho)=.true.
+        if (ldensity_nolog) then
+          lpenc_requested(i_ugrho)=.true.
+        else
+          lpenc_requested(i_uglnrho)=.true.
+        endif
       endif
       if (ldiff_shock) then
         lpenc_requested(i_shock)=.true.
@@ -991,13 +995,16 @@ module Density
           lpenc_requested(i_del2lnrho)=.true.
         endif
       endif
-      if ( ldiff_normal .and. .not. ldensity_nolog) then
-        lpenc_requested(i_glnrho2)=.true.
-        lpenc_requested(i_del2lnrho)=.true.
+      if (ldiff_normal) then
+        if (ldensity_nolog) then
+          lpenc_requested(i_del2rho)=.true.
+        else
+          lpenc_requested(i_glnrho2)=.true.
+          lpenc_requested(i_del2lnrho)=.true.
+        endif
       endif
-      if (ldiff_normal .and. ldensity_nolog) lpenc_requested(i_del2rho)=.true.
       if (ldiff_hyper3.or.ldiff_hyper3_vector) lpenc_requested(i_del6rho)=.true.
-      if (ldiff_hyper3 .and. .not. ldensity_nolog) lpenc_requested(i_rho)=.true.
+      if (ldiff_hyper3.and..not.ldensity_nolog) lpenc_requested(i_rho)=.true.
       if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
 !
       lpenc_diagnos2d(i_lnrho)=.true.
@@ -1113,7 +1120,13 @@ module Density
         endif
       endif
 ! ugrho
-      if (lpencil(i_ugrho)) call dot(p%uu,p%grho,p%ugrho)
+      if (lpencil(i_ugrho)) then
+        if (ldensity_nolog) then
+          call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
+        else
+          call dot(p%uu,p%grho,p%ugrho)
+        endif
+      endif
 ! glnrho2
       if (lpencil(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
 ! del2lnrho
