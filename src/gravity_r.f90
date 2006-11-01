@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.5 2006-10-16 11:49:19 dintrans Exp $
+! $Id: gravity_r.f90,v 1.6 2006-11-01 08:54:01 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -76,7 +76,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.5 2006-10-16 11:49:19 dintrans Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.6 2006-11-01 08:54:01 dobler Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -85,7 +85,7 @@ module Gravity
 !
     endsubroutine register_gravity
 !***********************************************************************
-    subroutine initialize_gravity()
+    subroutine initialize_gravity(lstarting)
 !
 !  Set up cpot according to the value of ipotential, and initialize the
 !  global variable gg (gravity field).
@@ -100,11 +100,11 @@ module Gravity
       use Global
 !
       real, dimension (nx,3) :: gg_mn=0.
-      real, dimension (nx) :: g_r,rr_mn
-      real :: widthgg=0.01
-
+      real, dimension (nx)   :: g_r,rr_mn
+      real                   :: widthgg=0.01
+      logical       :: lstarting
       logical, save :: first=.true.
-      logical :: lpade=.true. ! set to false for 1/r potential
+      logical       :: lpade=.true. ! set to false for 1/r potential
 
       !ajwm - should this be done on RELOAD too??
       if (first) then

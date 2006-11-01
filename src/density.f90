@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.285 2006-11-01 02:16:49 theine Exp $
+! $Id: density.f90,v 1.286 2006-11-01 08:54:01 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -107,7 +107,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.285 2006-11-01 02:16:49 theine Exp $")
+           "$Id: density.f90,v 1.286 2006-11-01 08:54:01 dobler Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -442,7 +442,7 @@ module Density
         if (lgravr) then
           if (lroot) print*, &
                'init_lnrho: isentropic star with isothermal atmosphere'
-!          call initialize_gravity()     ! get coefficients cpot(1:5)
+!          call initialize_gravity(LSTARTING=.true.)     ! get coefficients cpot(1:5)
           call potential(xx,yy,zz,POT=pot,POT0=pot0) ! gravity potential
           call output(trim(directory)//'/pot.dat',pot,1)
           !

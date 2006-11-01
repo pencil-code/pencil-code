@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.440 2006-10-28 10:21:45 brandenb Exp $
+! $Id: entropy.f90,v 1.441 2006-11-01 08:54:01 dobler Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -160,7 +160,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.440 2006-10-28 10:21:45 brandenb Exp $")
+           "$Id: entropy.f90,v 1.441 2006-11-01 08:54:01 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -671,7 +671,7 @@ module Entropy
           if (lgravr) then
             if (lroot) print*, &
                  'init_lnrho: isentropic star with isothermal atmosphere'
-            ! call initialize_gravity()     ! already done by init_lnrho
+            ! call initialize_gravity(LSTARTING=.true.)     ! already done by init_lnrho
             call potential(xx,yy,zz,POT=pot,POT0=pot0) ! gravity potential
             !
             ! rho0, cs0,pot0 are the values in the centre

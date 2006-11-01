@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.187 2006-10-07 09:50:08 brandenb Exp $
+! $Id: register.f90,v 1.188 2006-11-01 08:54:01 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -253,7 +253,7 @@ module Register
       call initialize_prints()
       call initialize_timeavg(f) ! initialize time averages
       call initialize_eos()
-      call initialize_gravity()
+      call initialize_gravity(lstarting)
       call initialize_selfgravity()
       call initialize_density(f,lstarting)
       call initialize_hydro(f,lstarting)

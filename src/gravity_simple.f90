@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.20 2006-10-27 10:33:17 brandenb Exp $
+! $Id: gravity_simple.f90,v 1.21 2006-11-01 08:54:01 dobler Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -103,7 +103,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.20 2006-10-27 10:33:17 brandenb Exp $")
+           "$Id: gravity_simple.f90,v 1.21 2006-11-01 08:54:01 dobler Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -112,7 +112,7 @@ module Gravity
 !
     endsubroutine register_gravity
 !***********************************************************************
-    subroutine initialize_gravity()
+    subroutine initialize_gravity(lstarting)
 !
 !  Calculate master pencils for gravity. These are put into gravity pencils
 !  in the subroutine calc_pencils_grav.
@@ -122,8 +122,20 @@ module Gravity
       use Mpicomm, only: stop_it
       use Sub, only: notanumber, cubic_step
 !
-      real :: ztop
+      real                 :: ztop
       real, dimension (nz) :: prof  
+      logical              :: lstarting
+!
+!  Sanity check
+!
+      if (.not. lstarting) then
+        if (gravx_profile == 'zero' .and. &
+            gravy_profile == 'zero' .and. &
+            gravz_profile == 'zero') then
+          call fatal_error('initialize_gravity', &
+              "You don't need gravity_simple for zero gravity...")
+        endif
+      endif
 !
 !  Different x-gravity profiles
 !
