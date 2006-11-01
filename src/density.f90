@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.284 2006-10-30 20:56:25 wlyra Exp $
+! $Id: density.f90,v 1.285 2006-11-01 02:16:49 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -79,7 +79,7 @@ module Density
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
-  integer :: idiag_rhomin=0,idiag_rhomax=0
+  integer :: idiag_rhomin=0,idiag_rhomax=0,idiag_uglnrhom=0
   integer :: idiag_lnrhomphi=0,idiag_rhomphi=0,idiag_dtd=0
   integer :: idiag_rhomz=0, idiag_rhomy=0, idiag_rhomx=0, idiag_rhomxy=0
 
@@ -107,7 +107,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.284 2006-10-30 20:56:25 wlyra Exp $")
+           "$Id: density.f90,v 1.285 2006-11-01 02:16:49 theine Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1007,6 +1007,7 @@ module Density
            idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rhomin/=0 .or. &
            idiag_rhomax/=0 .or. idiag_rhomxy/=0) lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
+      if (idiag_uglnrhom/=0) lpenc_diagnos(i_uglnrho)=.true.
 
 !
     endsubroutine pencil_criteria_density
@@ -1312,16 +1313,17 @@ module Density
 !  Calculate density diagnostics
 !
       if (ldiagnos) then
-        if (idiag_rhom/=0)    call sum_mn_name(p%rho,idiag_rhom)
+        if (idiag_rhom/=0)     call sum_mn_name(p%rho,idiag_rhom)
         if (idiag_rhomin/=0) &
             call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)      
-        if (idiag_rhomax/=0)  call max_mn_name(p%rho,idiag_rhomax)
-        if (idiag_rho2m/=0)   call sum_mn_name(p%rho**2,idiag_rho2m)
-        if (idiag_lnrho2m/=0) call sum_mn_name(p%lnrho**2,idiag_lnrho2m)
-        if (idiag_rhomz/=0)   call xysum_mn_name_z(p%rho,idiag_rhomz)
-        if (idiag_rhomx/=0)   call yzsum_mn_name_x(p%rho,idiag_rhomx)
-        if (idiag_rhomy/=0)   call xzsum_mn_name_y(p%rho,idiag_rhomy)
-        if (idiag_rhomxy/=0)  call zsum_mn_name_xy(p%rho,idiag_rhomxy)
+        if (idiag_rhomax/=0)   call max_mn_name(p%rho,idiag_rhomax)
+        if (idiag_rho2m/=0)    call sum_mn_name(p%rho**2,idiag_rho2m)
+        if (idiag_lnrho2m/=0)  call sum_mn_name(p%lnrho**2,idiag_lnrho2m)
+        if (idiag_uglnrhom/=0) call sum_mn_name(p%uglnrho,idiag_uglnrhom)
+        if (idiag_rhomz/=0)    call xysum_mn_name_z(p%rho,idiag_rhomz)
+        if (idiag_rhomx/=0)    call yzsum_mn_name_x(p%rho,idiag_rhomx)
+        if (idiag_rhomy/=0)    call xzsum_mn_name_y(p%rho,idiag_rhomy)
+        if (idiag_rhomxy/=0)   call zsum_mn_name_xy(p%rho,idiag_rhomxy)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
       endif
@@ -1394,7 +1396,7 @@ module Density
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_rhom=0; idiag_rho2m=0; idiag_lnrho2m=0
+        idiag_rhom=0; idiag_rho2m=0; idiag_lnrho2m=0; idiag_uglnrhom=0
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0; idiag_rhomxy=0
@@ -1411,6 +1413,7 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'rhomin',idiag_rhomin)
         call parse_name(iname,cname(iname),cform(iname),'rhomax',idiag_rhomax)
         call parse_name(iname,cname(iname),cform(iname),'lnrho2m',idiag_lnrho2m)
+        call parse_name(iname,cname(iname),cform(iname),'uglnrhom',idiag_uglnrhom)
         call parse_name(iname,cname(iname),cform(iname),'dtd',idiag_dtd)
       enddo
 !
@@ -1454,6 +1457,7 @@ module Density
         write(3,*) 'i_rhomin=',idiag_rhomin
         write(3,*) 'i_rhomax=',idiag_rhomax
         write(3,*) 'i_lnrho2m=',idiag_lnrho2m
+        write(3,*) 'i_uglnrhom=',idiag_uglnrhom
         write(3,*) 'i_rhomz=',idiag_rhomz
         write(3,*) 'i_rhomy=',idiag_rhomy
         write(3,*) 'i_rhomx=',idiag_rhomx
