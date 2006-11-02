@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.250 2006-10-28 14:06:16 brandenb Exp $
+### $Id: Makefile.src,v 1.251 2006-11-02 10:33:35 bingert Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -258,10 +258,9 @@ LD_FFTW2=
 #FFLAGS=-O3 -Wl,-rpath,/opt/intel/compiler60/ia32/lib #(taspd209a)
 #LD_MPI=-I/usr/lib/lam/include -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lnsl -lutil #(taspd209a)
 #LIBMPISUFFIX=_#(taspd209a)
-#FC=/opt/intel/compiler70/ia32/bin/ifc -I/usr/local/share/lam-mpi/include #(frontend)
-#FFLAGS=-O3 -L/opt/intel/compiler70/bin/lib #(frontend)
-#LIBMPISUFFIX=_#(frontend)
-#LD_MPI=-L/usr/local/share/lam-mpi/lib -llammpio -llamf77mpi -lmpi -llam -lutil -lbproc -ldl -lpthread #(frontend)
+#FC=/usr/local/ifort/bin/mpif90 #(frontend)
+#FFLAGS=-O3 #(frontend)
+#CFLAGS=-O3 -DFUNDERSC=1 #(frontend) 
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FFLAGS=-O3 -static-libcxa #(ns0|char)
 #FFLAGS=-O3 -xW -vec_report0 #(obelix)
