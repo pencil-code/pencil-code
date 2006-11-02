@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.351 2006-10-27 08:11:43 brandenb Exp $
+! $Id: magnetic.f90,v 1.352 2006-11-02 00:36:18 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -209,7 +209,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.351 2006-10-27 08:11:43 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.352 2006-11-02 00:36:18 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -558,11 +558,15 @@ module Magnetic
           lpenc_requested(i_diva)=.true.
         endif
       endif
-      if (lupw_aa.or.lparker_gauge) then
-        lpenc_requested(i_aa)=.true.
+      if (lupw_aa) then
         lpenc_requested(i_uga)=.true.
         lpenc_requested(i_uu)=.true.
-        lpenc_requested(i_uij)=.true.
+        if (lparker_gauge) then
+          lpenc_requested(i_aa)=.true.
+          lpenc_requested(i_uij)=.true.
+        else
+          lpenc_requested(i_aij)=.true.
+        endif
       endif
       if (lresi_shell) lpenc_requested(i_diva)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
@@ -1133,7 +1137,7 @@ module Magnetic
 !
 !  Induction equation
 !
-      if (.not. (lupw_aa.or.lparker_gauge)) then
+      if (.not.lupw_aa) then
         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + p%uxb + fres
       else
 !
@@ -1152,9 +1156,15 @@ module Magnetic
         uxb_upw(:,2) = p%uu(:,3)*B_ext(1) - p%uu(:,1)*B_ext(3)
         uxb_upw(:,3) = p%uu(:,1)*B_ext(2) - p%uu(:,2)*B_ext(1)
 !  Add A_i u_i,k
-        do j=1,3; do k=1,3
-          uxb_upw(:,j) = uxb_upw(:,j) - p%aa(:,k)*p%uij(:,k,j)
-        enddo; enddo
+        if (lparker_gauge) then
+          do j=1,3; do k=1,3
+            uxb_upw(:,j) = uxb_upw(:,j) - p%aa(:,k)*p%uij(:,k,j)
+          enddo; enddo
+        else
+          do j=1,3; do k=1,3
+            uxb_upw(:,j) = uxb_upw(:,j) + p%uu(:,k)*p%aij(:,k,j)
+          enddo; enddo
+        endif
 !  Add `upwinded' advection term
         uxb_upw = uxb_upw - p%uga
 !  Full right hand side of the induction equation
