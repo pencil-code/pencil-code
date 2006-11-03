@@ -1,4 +1,4 @@
-! $Id: spiegel.f90,v 1.1 2006-10-20 17:23:12 nbabkovs Exp $
+! $Id: spiegel.f90,v 1.2 2006-11-03 15:21:53 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -156,11 +156,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: spiegel.f90,v 1.1 2006-10-20 17:23:12 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: spiegel.f90,v 1.2 2006-11-03 15:21:53 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: spiegel.f90,v 1.1 2006-10-20 17:23:12 nbabkovs Exp $")
+           "$Id: spiegel.f90,v 1.2 2006-11-03 15:21:53 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -466,7 +466,7 @@ endsubroutine read_special_run_pars
 ! add effective gravity term = -Fgrav+Fcentrifugal
 ! Natalia
 !
-     
+     l_sz=l2-5
          
        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-M_star/z(n)**3*x(l1:l2)
     !   df(l1:l2,m,n,iuz)=df(l_sz:l2,m,n,iuz)&

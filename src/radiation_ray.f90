@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.111 2006-11-03 13:50:41 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.112 2006-11-03 15:21:53 nbabkovs Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -173,7 +173,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.111 2006-11-03 13:50:41 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.112 2006-11-03 15:21:53 nbabkovs Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1164,6 +1164,7 @@ module Radiation
         call calc_rad_diffusion(f,df,p)
         cooling=f(l1:l2,m,n,iQrad)
       else
+        call calc_rad_diffusion(f,df,p)
         cooling=f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,iQrad)
       endif
 !
