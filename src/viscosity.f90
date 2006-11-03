@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.33 2006-10-30 20:56:25 wlyra Exp $
+! $Id: viscosity.f90,v 1.34 2006-11-03 13:50:41 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -85,7 +85,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.33 2006-10-30 20:56:25 wlyra Exp $")
+           "$Id: viscosity.f90,v 1.34 2006-11-03 13:50:41 brandenb Exp $")
 
       ivisc(1)='nu-const'
 
@@ -321,9 +321,10 @@ module Viscosity
 !
 !  20-11-04/anders: coded
 !
-      if (lentropy .and. (lvisc_simplified .or. lvisc_rho_nu_const .or. &
-          lvisc_nu_const .or. lvisc_nu_shock)) lpenc_requested(i_TT1)=.true.
-      if ( lvisc_rho_nu_const .or. lvisc_nu_const .or. &
+      if ((lentropy.or.ltemperature) .and. &
+          (lvisc_simplified .or. lvisc_rho_nu_const .or. &
+           lvisc_nu_const .or. lvisc_nu_shock)) lpenc_requested(i_TT1)=.true.
+      if (lvisc_rho_nu_const .or. lvisc_nu_const .or. &
           lvisc_smag_cross_simplified) then
         if (lentropy.or.ltemperature) lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.

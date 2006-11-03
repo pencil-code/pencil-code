@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.22 2006-10-25 14:10:20 theine Exp $
+! $Id: temperature_ionization.f90,v 1.23 2006-11-03 13:50:41 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -87,7 +87,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.22 2006-10-25 14:10:20 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.23 2006-11-03 13:50:41 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -273,6 +273,7 @@ module Entropy
       if (lviscosity) then
         lpenc_requested(i_cv1)=.true.
         lpenc_requested(i_TT1)=.true.
+        lpenc_requested(i_visc_heat)=.true.
       endif
 
       if (lcalc_heat_cool) then

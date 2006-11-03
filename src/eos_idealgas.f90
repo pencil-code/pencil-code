@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.70 2006-10-13 06:19:14 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.71 2006-11-03 13:50:41 brandenb Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -9,7 +9,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1tilde,glnTT,TT,TT1
+! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1,glnTT,TT,TT1
 ! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1
 !
 !***************************************************************
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.70 2006-10-13 06:19:14 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.71 2006-11-03 13:50:41 brandenb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -630,8 +630,10 @@ module EquationOfState
         call fatal_error("calc_pencils_eos","case not implemented yet")
       endselect
 !
+!  inverse cv and cp values
+!
        if (lpencil(i_cv1)) p%cv1=cv1
-       if (lpencil(i_cp1tilde)) p%cp1tilde=cp1
+       if (lpencil(i_cp1)) p%cp1=cp1
 !
     endsubroutine calc_pencils_eos
 !***********************************************************************
@@ -670,18 +672,18 @@ module EquationOfState
 !
     end subroutine isothermal_density_ion
 !***********************************************************************
-    subroutine pressure_gradient_farray(f,cs2,cp1tilde)
+    subroutine pressure_gradient_farray(f,cs2,cp1)
 !
-!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   Calculate thermodynamical quantities, cs2 and cp1
 !   and optionally glnPP and glnTT
-!   gP/rho=cs2*(glnrho+cp1tilde*gss)
+!   gP/rho=cs2*(glnrho+cp1*gss)
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
       use Cdata
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(out) :: cs2,cp1tilde
+      real, dimension(nx), intent(out) :: cs2,cp1
       real, dimension(nx) :: lnrho,ss
 !
       if (ldensity_nolog) then
@@ -703,16 +705,12 @@ module EquationOfState
 !!            ju=j+iuu-1
 !!            if (pretend_lnTT) then
 !!              df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) - &
-!!                  p%cs2*(p%glnrho(:,j)/gamma + p%cp1tilde*p%gss(:,j))
+!!                  p%cs2*(p%glnrho(:,j)/gamma + p%cp1*p%gss(:,j))
 !!            else
 !!              df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) - &
-!!                  p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
+!!                  p%cs2*(p%glnrho(:,j) + p%cp1*p%gss(:,j))
 !!            endif
 !!           enddo
-!
-!  inverse cp (will be different from 1 when cp is not 1)
-!
-      cp1tilde=cp1
 !
     endsubroutine pressure_gradient_farray
 !***********************************************************************
@@ -742,9 +740,9 @@ module EquationOfState
 !***********************************************************************
     subroutine temperature_gradient(f,glnrho,gss,glnTT)
 !
-!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   Calculate thermodynamical quantities
 !   and optionally glnPP and glnTT
-!   gP/rho=cs2*(glnrho+cp1tilde*gss)
+!   gP/rho=cs2*(glnrho+cp1*gss)
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
@@ -770,9 +768,9 @@ module EquationOfState
 !***********************************************************************
     subroutine temperature_laplacian(f,del2lnrho,del2ss,del2lnTT)
 !
-!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   Calculate thermodynamical quantities
 !   and optionally glnPP and glnTT
-!   gP/rho=cs2*(glnrho+cp1tilde*gss)
+!   gP/rho=cs2*(glnrho+cp1*gss)
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
@@ -797,9 +795,9 @@ module EquationOfState
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
 !
-!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   Calculate thermodynamical quantities, cs2 and cp1
 !   and optionally hlnPP and hlnTT
-!   hP/rho=cs2*(hlnrho+cp1tilde*hss)
+!   hP/rho=cs2*(hlnrho+cp1*hss)
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
@@ -888,7 +886,7 @@ module EquationOfState
 !   2-feb-03/axel: simple example coded
 !   13-jun-03/tobi: the ionization fraction as part of the f-array
 !                   now needs to be given as an argument as input
-!   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
+!   17-nov-03/tobi: moved calculation of cs2 and cp1 to
 !                   subroutine pressure_gradient
 !
       use Cdata
@@ -1035,7 +1033,7 @@ module EquationOfState
 !   2-feb-03/axel: simple example coded
 !   13-jun-03/tobi: the ionization fraction as part of the f-array
 !                   now needs to be given as an argument as input
-!   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
+!   17-nov-03/tobi: moved calculation of cs2 and cp1 to
 !                   subroutine pressure_gradient
 !   27-mar-06/tony: Introduces cv, cv1, gamma11 to make faster 
 !                   + more explicit
@@ -1108,7 +1106,7 @@ module EquationOfState
 !   2-feb-03/axel: simple example coded
 !   13-jun-03/tobi: the ionization fraction as part of the f-array
 !                   now needs to be given as an argument as input
-!   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
+!   17-nov-03/tobi: moved calculation of cs2 and cp1 to
 !                   subroutine pressure_gradient
 !   27-mar-06/tony: Introduces cv, cv1, gamma11 to make faster 
 !                   + more explicit

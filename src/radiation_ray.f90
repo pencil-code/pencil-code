@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.110 2006-10-19 22:38:52 theine Exp $
+! $Id: radiation_ray.f90,v 1.111 2006-11-03 13:50:41 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -102,6 +102,7 @@ module Radiation
   integer :: idiag_frms=0,idiag_fmax=0,idiag_Erad_rms=0,idiag_Erad_max=0
   integer :: idiag_Egas_rms=0,idiag_Egas_max=0,idiag_Qradrms=0,idiag_Qradmax=0
   integer :: idiag_Fradzm=0,idiag_Sradm=0,idiag_xyFradzm=0
+  integer :: idiag_dtchi=0
 
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
@@ -118,7 +119,7 @@ module Radiation
        kx_Srad,ky_Srad,kz_Srad,kx_kapparho,ky_kapparho,kz_kapparho, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure, &
-       Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus,ldt_rad_limit
+       Frad_boundary_ref,lrad_cool_diffus,lrad_pres_diffus,ldt_rad_limit
 
   contains
 
@@ -172,7 +173,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.110 2006-10-19 22:38:52 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.111 2006-11-03 13:50:41 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -206,12 +207,12 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !  03-jul-03/tobi: position array added
 !
-      use Cdata, only: lroot,sigmaSB,pi,datadir
+      use Cdata, only: lroot,sigmaSB,c_light,pi,datadir
       use Cdata, only: dx,dy,dz
       use Sub, only: parse_bc_rad
       use Mpicomm, only: stop_it
 
-      real :: radlength
+      real :: radlength,arad_normal
       logical :: periodic_xy_plane,bad_ray
 !
 !  Check that the number of rays does not exceed maximum
@@ -296,9 +297,16 @@ module Radiation
 !
 !  Calculate arad for LTE source function
 !  Note that this arad is *not* the usual radiation-density constant.
+!  so S = arad*TT^4 = (c/4pi)*arad_normal*TT^4, so
+!  arad_normal = 4pi/c*arad
 !
       arad=SigmaSB/pi
-      if (lroot) print*,'initialize_radiation: arad=',arad
+      if (lroot) then
+        arad_normal=4.*SigmaSB/c_light
+        print*,'initialize_radiation: arad=',arad
+        print*,'initialize_radiation: arad_normal=',arad_normal
+        print*,'initialize_radiation: sigmaSB=',sigmaSB
+      endif
 !
 !  Calculate weights
 !
@@ -323,12 +331,10 @@ module Radiation
 !
 !  16-jun-03/axel+tobi: coded
 !
-      use Cdata, only: ldebug,headt,iQrad,iFradx,iFradz
+      use Cdata, only: ldebug,headt,iQrad,iFrad,iFradx,iFradz
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: j,k
-
-
 !
 !  Identifier
 !
@@ -338,6 +344,12 @@ module Radiation
 !
       call source_function(f)
       call opacity(f)
+!
+!  do the rest only if we don't do diffusion approximation
+!
+      if (lrad_cool_diffus.or.lrad_pres_diffus) then
+        if(headt) print*,'do diffusion approximation, no rays'
+      else
 !
 !  Initialize heating rate
 !
@@ -374,14 +386,16 @@ module Radiation
 !
         if (lradflux) then
           do j=1,3
-            k=iFradx+(j-1)
+            k=iFrad+(j-1)
             f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j)*(Qrad+Srad)
           enddo
         endif
 
       enddo
-
-
+!
+!  end of diffusion approximation
+!
+      endif
 
     endsubroutine radtransfer
 !***********************************************************************
@@ -1141,7 +1155,17 @@ module Radiation
       type (pencil_case) :: p
       real, dimension (nx) :: cooling,Qrad2
 !
-      cooling=f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,iQrad)
+!  add radiative cooling, either from the intensity
+!  or in the diffusion approximation
+!  AB: Tobi, would it be better/possible to redefine Qrad so as
+!  AB: to include the kapparho factor. Then we'd have Qrad=-divFrad.
+!
+      if (lrad_cool_diffus.or.lrad_pres_diffus) then
+        call calc_rad_diffusion(f,df,p)
+        cooling=f(l1:l2,m,n,iQrad)
+      else
+        cooling=f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,iQrad)
+      endif
 !
 !  Add radiative cooling
 !
@@ -1153,13 +1177,6 @@ module Radiation
           df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%rho1*p%cv1*p%TT1*cooling
         endif
       endif
-
-! Natalia
-! calculate the cooling and pressure terms in the diffusion 
-! approximation
-
-       if (ldt_rad_limit) call calc_rad_diffusion(f,df,p)
-
 !
 !  diagnostics
 !
@@ -1191,27 +1208,24 @@ module Radiation
       real, dimension (nx,3) :: radpressure
       integer :: j,k
 !
-      if (lradflux) then
+!  radiative pressure force = kappa*Frad/c = (kappa*rho)*rho1*Frad/c
+!
+      if (lradpressure) then
         do j=1,3
-          k=iFradx+(j-1)
+          k=iFrad+(j-1)
           radpressure(:,j)=p%rho1*f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,k)/c_light
         enddo
-!
-!  Add radiative radpressure
-!
-        if (lradpressure) then
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure
-        endif
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure
+      endif
 !
 !  diagnostics
 !
-        if (ldiagnos) then
-          if (idiag_Fradzm/=0) then
-            call sum_mn_name(f(l1:l2,m,n,iFradz),idiag_Fradzm)
-          endif
-          if (idiag_xyFradzm/=0) then
-            call xysum_mn_name_z(f(l1:l2,m,n,iFradz),idiag_xyFradzm)
-          endif
+      if (ldiagnos) then
+        if (idiag_Fradzm/=0) then
+          call sum_mn_name(f(l1:l2,m,n,iFradz),idiag_Fradzm)
+        endif
+        if (idiag_xyFradzm/=0) then
+          call xysum_mn_name_z(f(l1:l2,m,n,iFradz),idiag_xyFradzm)
         endif
       endif
 
@@ -1220,6 +1234,7 @@ module Radiation
     subroutine source_function(f)
 !
 !  calculates source function
+!  (This module is currently ignored if diffusion approximation is used)
 !
 !  03-apr-04/tobi: coded
 !
@@ -1275,6 +1290,9 @@ module Radiation
     subroutine opacity(f)
 !
 !  calculates opacity
+!
+!  Note that currently the diffusion approximation does not take
+!  into account any gradient terms of kappa.
 !
 !  03-apr-04/tobi: coded
 !
@@ -1370,7 +1388,7 @@ module Radiation
           lpenc_requested(i_rho1)=.true.
           lpenc_requested(i_TT)=.true.
           lpenc_requested(i_glnrho)=.true.
-          lpenc_requested(i_cp1tilde)=.true.
+          lpenc_requested(i_cp1)=.true.
         endif
 
         if (ltemperature) then
@@ -1385,9 +1403,8 @@ module Radiation
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_glnTT)=.true.
-        lpenc_requested(i_del2lnrho)=.true.
-        lpenc_requested(i_del2ss)=.true.
-        lpenc_requested(i_cp1tilde)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+        lpenc_requested(i_cp1)=.true.
      endif
      
 !
@@ -1502,6 +1519,7 @@ module Radiation
       if (lreset) then
         idiag_Qradrms=0; idiag_Qradmax=0; idiag_Fradzm=0; idiag_Sradm=0
         idiag_xyFradzm=0
+        idiag_dtchi=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1511,6 +1529,7 @@ module Radiation
         call parse_name(iname,cname(iname),cform(iname),'Qradmax',idiag_Qradmax)
         call parse_name(iname,cname(iname),cform(iname),'Fradzm',idiag_Fradzm)
         call parse_name(iname,cname(iname),cform(iname),'Sradm',idiag_Sradm)
+        call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -1533,6 +1552,7 @@ module Radiation
         write(3,*) 'i_Fradzm=',idiag_Fradzm
         write(3,*) 'i_xyFradzm=',idiag_xyFradzm
         write(3,*) 'i_Sradm=',idiag_Sradm
+        write(3,*) 'i_dtchi=',idiag_dtchi
         write(3,*) 'nname=',nname
         write(3,*) 'ie=',ie
         write(3,*) 'ifx=',ifx
@@ -1641,8 +1661,9 @@ module Radiation
     subroutine calc_rad_diffusion(f,df,p)
 !
 !  radiation in the diffusion approximation
-!  Natalia 
-!   12-apr-06/axel: adapted from Wolfgang's more complex version
+!
+!  12-apr-06/natalia: adapted from Wolfgang's more complex version
+!   3-nov-06/axel: included gradient of conductivity, gradK.gradT
 !
       use Sub, only: max_mn_name,dot
       use Cdata
@@ -1653,46 +1674,34 @@ module Radiation
       type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnThcond,duu
-      real, dimension (nx) :: chix,diffus_chi1
-      real, dimension (nx) :: thdiff,g2
-      integer :: j
+      real, dimension (nx) :: Krad,chi_rad,g2,diffus_chi1
+      real :: fact,cdtrad=0.8
+      integer :: j,k
 
-      intent(in) :: f,p
-      intent(out) :: df
- 
-      chix = p%rho1*p%rho1*p%TT**3*16./3.*sigmaSB/kappa_es!hcond
-
-      if (lrad_cool_diffus) then
+      intent(inout) :: f,df
+      intent(in) :: p
 !
-!  Heat conduction
+!  calculate diffusion coefficient, Krad=16*sigmaSB*T^3/(3*kappa*rho)
 !
-        glnThcond = p%glnTT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
-        call dot(p%glnTT,glnThcond,g2)
+      fact=16.*sigmaSB/(3.*kappa_es)
+      Krad=fact*p%TT**3*p%rho1
 !
-!AB:  derivs of chix missing??
+!  calculate Qrad = div(K*gradT) = KT*[del2lnTT + (4*glnTT-glnrho).glnTT]
+!  Note: this is only correct for constant kappa (and here kappa=kappa_es)
 !
-        thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho+ g2)
-
-   !  add heat conduction to entropy equation
-    !
-        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff   
-        if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
-      
+      if (lrad_cool_diffus.and.lcooling) then
+        call dot(4*p%glnTT-p%glnrho,p%glnTT,g2)
+        f(l1:l2,m,n,iQrad)=Krad*p%TT*(p%del2lnTT+g2)
       endif
-
-      if (lrad_pres_diffus) then
 !
-! Add radiative pressure term to momentum equation
+!  radiative flux, Frad = -K*gradT; note that -div(Frad)=Qrad
 !
+      if (lrad_pres_diffus.and.lradflux) then
         do j=1,3
-          duu(:,j) = -(16./3.)*p%rho1*(sigmaSB/c_light)*p%TT**4*p%glnTT(:,j)
+          k=iFrad+(j-1)
+          f(l1:l2,m,n,k)=-Krad*p%TT*p%glnTT(:,j)
         enddo
-         
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + duu
- 
-        if (headtt) print*,'calc_radiation_pressure: added to z-component'
-
-      endif 
+      endif
 !
 !  include constraint from radiative time step
 !
@@ -1701,19 +1710,34 @@ module Radiation
       endif
 !
 !  check maximum diffusion from thermal diffusion
-!  With heat conduction, the second-order term for entropy is
-!  gamma*chix*del2ss
+!  With heat conduction, the second-order term for leading entropy term
+!  is gamma*chi_rad*del2ss
 !
       if (lfirst.and.ldt) then
 !
-! Calculate timestep limitation
+!  Calculate timestep limitation. In the diffusion approximation the
+!  time step is just the diffusive time step, but with full radiation
+!  transfer there is a similar constraint resulting from the finite
+!  propagation speed of the radiation field, Vrad=Frad/Egas, which limits
+!  the time step to dt_rad = Vrad/lphoton, where lphoton=1/(kappa*rho),
+!  Frad=sigmaSB*T^4, and Egas=rho*cv*T. (At the moment we use cp.)
+!  cdtrad=0.8 is an empirical coefficient (harcoded for the time being)
 !
+        chi_rad=Krad*p%rho1*p%cp1
         if (lrad_cool_diffus .and. lrad_pres_diffus) then
-          diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)
+          diffus_chi=max(diffus_chi,gamma*chi_rad*dxyz_2)
         else
-          diffus_chi1=min(gamma*chix*dxyz_2, &
-                      real(sigmaSB*kappa_es*p%TT**3*4.*p%cp1tilde))
+          diffus_chi1=min(gamma*chi_rad*dxyz_2, &
+                      real(sigmaSB*kappa_es*p%TT**3*p%cv1/cdtrad))
           diffus_chi=max(diffus_chi,diffus_chi1)
+        endif
+      endif
+!
+!  check radiative time step
+!
+      if (lfirst.and.ldt) then
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
       endif
 !
