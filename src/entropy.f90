@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.442 2006-11-03 13:50:41 brandenb Exp $
+! $Id: entropy.f90,v 1.443 2006-11-04 07:47:36 brandenb Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -160,7 +160,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.442 2006-11-03 13:50:41 brandenb Exp $")
+           "$Id: entropy.f90,v 1.443 2006-11-04 07:47:36 brandenb Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -172,14 +172,10 @@ module Entropy
 !
       use Cdata
       use Gravity, only: gravz,g0
-      use EquationOfState, only: cs0, get_soundspeed, &
+      use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
                                  beta_glnrho_global, beta_glnrho_scaled, &
                                  mpoly, mpoly0, mpoly1, mpoly2, &
-                                 select_eos_variable, pressure_gradient
-!
-!AB: Tony, what's the plan; should these entries all be declared at the
-!AB: beginning of the module (as is done now already), or should we do it
-!AB: again in each routine?
+                                 select_eos_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -358,10 +354,9 @@ module Entropy
             print*,'initialize_entropy: set boundary temperatures for spherical shell problem'
           endif
 !
-!  To get cp1 factor, we need to call pressure_gradient
-!  (AB: this is really a bit strange, of course!!)
+!  calulate temperature gradient from polytropic index
 !
-!         call pressure_gradient(lnrho_dummy,ss_const,cs20,cp1)
+          call get_cp1(cp1)
           beta1=cp1*g0/(mpoly+1)*gamma/gamma1
 !
 !  temperatures at shell boundaries
@@ -1011,13 +1006,13 @@ module Entropy
 !
 !  20-feb-04/tobi: coded
 !
-      use EquationOfState, only: pressure_gradient
+      use EquationOfState, only: eoscalc,ilnrho_ss
       use Gravity, only: gravz
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: lnrho_bot,ss_const
-      real :: cs2,cp1,lnrho,lnrho_m
-
+      real :: cs2_,lnrho,lnrho_m
+!
       if (.not. lgravz) then
         call fatal_error("hydrostatic_isentropic","Currently only works for vertical gravity field")
       endif
@@ -1028,10 +1023,10 @@ module Entropy
       !
       lnrho=lnrho_bot
       do n=1,nz*ipz
-        call pressure_gradient(lnrho,ss_const,cs2,cp1)
-        lnrho_m=lnrho+dz*gravz/cs2/2
-        call pressure_gradient(lnrho_m,ss_const,cs2,cp1)
-        lnrho=lnrho+dz*gravz/cs2
+        call eoscalc(ilnrho_ss,lnrho,ss_const,cs2=cs2_)
+        lnrho_m=lnrho+dz*gravz/cs2_/2
+        call eoscalc(ilnrho_ss,lnrho_m,ss_const,cs2=cs2_)
+        lnrho=lnrho+dz*gravz/cs2_
       enddo
 
       !
@@ -1039,10 +1034,10 @@ module Entropy
       !
       f(:,:,n1,ilnrho)=lnrho
       do n=n1+1,n2
-        call pressure_gradient(lnrho,ss_const,cs2,cp1)
-        lnrho_m=lnrho+dz*gravz/cs2/2
-        call pressure_gradient(lnrho_m,ss_const,cs2,cp1)
-        lnrho=lnrho+dz*gravz/cs2
+        call eoscalc(ilnrho_ss,lnrho,ss_const,cs2=cs2_)
+        lnrho_m=lnrho+dz*gravz/cs2_/2
+        call eoscalc(ilnrho_ss,lnrho_m,ss_const,cs2=cs2_)
+        lnrho=lnrho+dz*gravz/cs2_
         f(:,:,n,ilnrho)=lnrho
       enddo
 
@@ -1163,7 +1158,7 @@ module Entropy
 !  20-oct-03/dave -- coded
 !
       use Gravity, only: g0
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly,pressure_gradient
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
       use Sub, only: calc_unitvects_sphere
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1172,10 +1167,8 @@ module Entropy
 !
 !  beta1 is the temperature gradient
 !  1/beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
-!  To get cp1 factor, we need to call pressure_gradient
-!  (AB: this is really a bit strange, of course!!)
 !
-      call pressure_gradient(lnrho_dummy,ss_const,cs20,cp1)
+      call get_cp1(cp1)
       beta1=cp1*g0/(mpoly+1)*gamma/gamma1
 !
 !  set intial condition
@@ -1237,7 +1230,7 @@ module Entropy
 !
       use Cdata
       use Gravity, only: gravz
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, pressure_gradient
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 
@@ -1246,10 +1239,8 @@ module Entropy
 !
 !  beta1 is the temperature gradient
 !  1/beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
-!  To get cp1 factor, we need to call pressure_gradient
-!  (AB: this is really a bit strange, of course!!)
 !
-      call pressure_gradient(lnrho_dummy,ss_const,cs20,cp1)
+      call get_cp1(cp1)
       beta1=cp1*gamma/gamma1*gravz/(mpoly+1)
 !
 !  set initial condition (first in terms of TT, and then in terms of ss)
@@ -1279,7 +1270,7 @@ module Entropy
 !   but abandoned as overcomplicated to adapt for nprocz /= 0.]
 !
       use Mpicomm, only: mpibcast_real
-      use EquationOfState, only: eoscalc, ilnrho_pp, pressure_gradient, getmu,rho0, eosperturb
+      use EquationOfState, only: eoscalc, ilnrho_pp, getmu,rho0, eosperturb
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: absz
@@ -1289,7 +1280,6 @@ module Entropy
       real, parameter :: T_c_cgs=500.0,T_w_cgs=8.0e3,T_i_cgs=8.0e3,T_h_cgs=1.0e6 
       real :: T_c,T_w,T_i,T_h
       real, dimension(nx) :: rho,pp,lnrho,ss
-      real :: cp1 !,mu 
 !      real, dimension(nx) :: pp 
 !     double precision :: pp0 
 !      real, dimension(2) :: fmpi2
@@ -1349,22 +1339,8 @@ module Entropy
              (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h))
 !           
           call eosperturb(f,nx,pp=pp) 
-!          call eoscalc(f,nx,yH=yH,lnTT=lnTT)
           ss=f(l1:l2,m,n,ilnrho)
-
 !
-!  FIXME:
-!    In file entropy.f90:1238
-!
-!      real, dimension(nx) :: rho,pp,lnrho,ss,lnTT,yH
-!                                          1
-!    Warning (113): Variable 'ss' at (1) is used but not set
-
-!call error('ferriere', 'Using uninitialized ss(1)')
-
-          if (n==n1) call pressure_gradient(lnrho(1),ss(1),cs2bot,cp1)
-          if (n==n2) call pressure_gradient(lnrho(1),ss(1),cs2top,cp1)
-!        
           fmpi1=(/ cs2bot /)
           call mpibcast_real(fmpi1,1,0)
           cs2bot=fmpi1(1) 
@@ -1646,7 +1622,7 @@ module Entropy
 !          p%fpres      =-p%cs2*(p%glnrho + p%glnTT)*gamma11
         else
           do j=1,3
-            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%cp1*p%gss(:,j))
+            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
           enddo
         endif
       endif
@@ -3091,8 +3067,7 @@ module Entropy
 !  09-aug-06/dintrans: coded
 !
       use Gravity, only: g0
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly0, mpoly1, &
-                                 pressure_gradient, lnrho0
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly0, mpoly1, lnrho0
       use Sub, only: calc_unitvects_sphere
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -3104,6 +3079,7 @@ module Entropy
 !
 !  beta is the temperature gradient
 !  1/beta = -(g/cp) 1./[(1-1/gamma)*(m+1)]
+!  AB: Boris, did you ignore cp below?
 !
       beta0=-g0/(mpoly0+1)*gamma/gamma1
       beta1=-g0/(mpoly1+1)*gamma/gamma1

@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.27 2006-08-29 17:12:02 mee Exp $
+! $Id: eos_fixed_ionization.f90,v 1.28 2006-11-04 07:47:36 brandenb Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -11,7 +11,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1tilde,glnTT,TT,TT1
+! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1,cp1tilde,glnTT,TT,TT1
 ! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1
 !
 !***************************************************************
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.27 2006-08-29 17:12:02 mee Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.28 2006-11-04 07:47:36 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -487,6 +487,21 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       rho=exp(max(lnrho,-15.))
     end subroutine getdensity
 !***********************************************************************
+    subroutine get_cp1(cp1_)
+!
+!  04-nov-06/axel: added to alleviate spurious use of pressure_gradient
+!
+!  return the value of cp1 to outside modules
+!
+      real, intent(out) :: cp1_
+!
+!  Hasn't been implemented yet
+!
+      call fatal_error('get_cp1','SHOULD NOT BE CALLED WITH eos_fixed_ion...')
+      cp1_=impossible
+!
+    end subroutine get_cp1
+!***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
 !   Calculate thermodynamical quantities, cs2 and cp1tilde
@@ -660,7 +675,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     endsubroutine eoscalc_farray
 !***********************************************************************
-    subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
+    subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
 !   Calculate thermodynamical quantities
 !
@@ -677,8 +692,8 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, intent(in) :: var1,var2
       real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
-      real, intent(out), optional :: ee,pp
-      real :: lnrho_,ss_,lnTT_,TT_,rho_,ee_,pp_
+      real, intent(out), optional :: ee,pp,cs2
+      real :: lnrho_,ss_,lnTT_,TT_,rho_,ee_,pp_,cs2_
 !
       select case (ivars)
 
@@ -690,6 +705,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         rho_   = exp(lnrho_)
         ee_    = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
         pp_    = (1+yH0+xHe-xH2)*rho_*TT_*ss_ion
+        cs2_=impossible
 
       case (ilnrho_ee)
         lnrho_ = var1
@@ -699,6 +715,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
         rho_   = exp(lnrho_)
         pp_    = (1+yH0+xHe-xH2)*rho_*TT_*ss_ion
+        cs2_=impossible
 
       case (ilnrho_pp)
         lnrho_ = var1
@@ -708,11 +725,13 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         lnTT_  = log(TT_)
         ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
         ee_    = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
+        cs2_=impossible
 
       case (ilnrho_lnTT)
         lnrho_ = var1
         lnTT_  = var2
         ss_    = (lnTT_-lnTTlnrho*lnrho_-lnTT0)/lnTTss
+        cs2_=impossible
 
       case default 
         call stop_it('eoscalc_point: thermodynamic case')
@@ -724,6 +743,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       if (present(lnTT)) lnTT=lnTT_
       if (present(ee)) ee=ee_
       if (present(pp)) pp=pp_
+      if (present(cs2)) cs2=cs2_
 !
     endsubroutine eoscalc_point
 !***********************************************************************

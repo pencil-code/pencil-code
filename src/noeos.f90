@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.29 2006-08-23 16:53:32 mee Exp $
+! $Id: noeos.f90,v 1.30 2006-11-04 07:47:37 brandenb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -80,7 +80,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.29 2006-08-23 16:53:32 mee Exp $')
+           '$Id: noeos.f90,v 1.30 2006-11-04 07:47:37 brandenb Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -204,6 +204,16 @@ module EquationOfState
       if (NO_WARN) print*,yH,EE,TT  !(keep compiler quiet)
 
     end subroutine getdensity
+!***********************************************************************
+    subroutine get_cp1(cp1_)
+!
+!  return the value of cp1 to outside modules
+!
+      real, intent(out) :: cp1_
+!
+      cp1_=impossible
+!
+    end subroutine get_cp1
 !***********************************************************************
     subroutine isothermal_density_ion(pot,tmp)
 !

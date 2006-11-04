@@ -2,7 +2,7 @@
 
   private
                                                                                                        
-  public :: eoscalc,pressure_gradient,temperature_gradient
+  public :: eoscalc,pressure_gradient,temperature_gradient,get_cp1
   public :: temperature_laplacian
   public :: ilnrho_ss, ilnrho_lnTT, ilnrho_pp, ilnrho_ee
   public :: eosperturb

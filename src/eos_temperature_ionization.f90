@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.47 2006-10-22 23:19:57 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.48 2006-11-04 07:47:37 brandenb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -126,7 +126,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.47 2006-10-22 23:19:57 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.48 2006-11-04 07:47:37 brandenb Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -492,6 +492,23 @@ module EquationOfState
       if (NO_WARN) print*,yH,EE,TT  !(keep compiler quiet)
 
     end subroutine getdensity
+!***********************************************************************
+    subroutine get_cp1(cp1_)
+!
+!  04-nov-06/axel: added to alleviate spurious use of pressure_gradient
+!
+!  return the value of cp1 to outside modules
+!
+      real, intent(out) :: cp1_
+!
+!  for variable ionization, it doesn't make sense to calculate
+!  just a single value of cp1, because it must depend on position.
+!  Therefore, return impossible, so one can reconsider this case.
+!   
+      call fatal_error('get_cp1',"SHOULDN'T BE CALLED WITH eos_temperature_...")
+      cp1_=impossible
+!   
+    end subroutine get_cp1
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !

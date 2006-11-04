@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.38 2006-08-29 17:12:02 mee Exp $
+! $Id: eos_ionization.f90,v 1.39 2006-11-04 07:47:37 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -10,7 +10,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 2
 !
-! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1tilde,glnTT,TT,TT1
+! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1,cp1tilde,glnTT,TT,TT1
 ! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1
 !
 !***************************************************************
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.38 2006-08-29 17:12:02 mee Exp $")
+           "$Id: eos_ionization.f90,v 1.39 2006-11-04 07:47:37 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -510,7 +510,8 @@ module EquationOfState
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
 !
-!  DOCUMENT ME!
+!  calculate density. Is currently only being used by the interstellar
+!  module. I guess we can/should replace this now by a call to eoscalc.
 !
       real, intent(in) :: EE,TT,yH
       real, intent(out) :: rho
@@ -518,6 +519,23 @@ module EquationOfState
       rho=EE/(1.5*(1.+yH+xHe)*ss_ion*TT+yH*ee_ion)
 
     end subroutine getdensity
+!***********************************************************************
+    subroutine get_cp1(cp1_)
+!
+!  04-nov-06/axel: added to alleviate spurious use of pressure_gradient
+!
+!  return the value of cp1 to outside modules
+!
+      real, intent(out) :: cp1_
+!
+!  for variable ionization, it doesn't make sense to calculate
+!  just a single value of cp1, because it must depend on position.
+!  Therefore, return impossible, so one can reconsider this case.
+!
+      call fatal_error('get_cp1','SHOULD NOT BE CALLED WITH eos_ionization')
+      cp1_=impossible
+!
+    end subroutine get_cp1
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
@@ -853,7 +871,7 @@ module EquationOfState
 !
     endsubroutine eoscalc_pencil
 !!***********************************************************************
-    subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
+    subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
 !   Calculate thermodynamical quantities
 !
@@ -870,8 +888,8 @@ module EquationOfState
       real, intent(in) :: var1,var2
       real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
-      real, intent(out), optional :: ee,pp
-      real :: lnrho_,ss_,yH_,lnTT_,TT_,TT1_,rho_,ee_,pp_
+      real, intent(out), optional :: ee,pp,cs2
+      real :: lnrho_,ss_,yH_,lnTT_,TT_,TT1_,rho_,ee_,pp_,cs2_
       real :: fractions,rhs,sqrtrhs
 !
       select case (ivars)
@@ -889,6 +907,7 @@ module EquationOfState
         rho_=exp(lnrho_)
         ee_=1.5*(1+yH_+xHe)*ss_ion*TT_+yH_*ee_ion
         pp_=(1+yH_+xHe)*rho_*TT_*ss_ion
+        cs2_=impossible
 
       case (ilnrho_lnTT)
         lnrho_=var1
@@ -904,6 +923,7 @@ module EquationOfState
                    -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
         pp_=(1+yH_+xHe)*exp(lnrho_)*TT_*ss_ion
+        cs2_=impossible
 
       case (ilnrho_ee)
         lnrho_=var1
@@ -918,6 +938,7 @@ module EquationOfState
                     -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
                     -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
         pp_=fractions*rho_*TT_*ss_ion
+        cs2_=impossible
 
       case (ilnrho_pp)
         lnrho_=var1
@@ -932,6 +953,7 @@ module EquationOfState
                    -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
                    -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
+        cs2_=impossible
 
       case default
         call stop_it("eoscalc_point: I don't get what the independent variables are.")
@@ -944,6 +966,7 @@ module EquationOfState
       if (present(lnTT)) lnTT=lnTT_
       if (present(ee)) ee=ee_
       if (present(pp)) pp=pp_
+      if (present(cs2)) cs2=cs2_
 !
     endsubroutine eoscalc_point
 !***********************************************************************
