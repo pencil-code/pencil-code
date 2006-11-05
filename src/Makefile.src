@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.251 2006-11-02 10:33:35 bingert Exp $
+### $Id: Makefile.src,v 1.252 2006-11-05 06:29:02 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -868,7 +868,7 @@ EXECUTABLES=start$(PC_META_TYPE).x run$(PC_META_TYPE).x \
 # delete already compiled .x files:
 LAST_OBJ=$(EXECUTABLES:.x=.o)
 code: Makefile_inc
-	# Realize error even when last command in pipe is FCCLEANER:
+	@# Realize error even when last command in pipe is FCCLEANER:
 	if [ ! -z "$(FCCLEANER)" ]; then \
 	    ($(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) \
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
