@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.352 2006-11-02 00:36:18 theine Exp $
+! $Id: magnetic.f90,v 1.353 2006-11-05 14:15:13 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -123,7 +123,7 @@ module Magnetic
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
   logical :: llarge_scale_Bz=.false.
   logical :: lweyl_gauge=.false.
-  logical :: lupw_aa=.false.,lparker_gauge=.false.
+  logical :: lupw_aa=.false.
 
   namelist /magnetic_run_pars/ &
        eta,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
@@ -133,7 +133,7 @@ module Magnetic
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        bthresh,bthresh_per_brms, &
-       iresistivity,lweyl_gauge,lupw_aa,lparker_gauge, &
+       iresistivity,lweyl_gauge,lupw_aa, &
        alphaSSm, &
        eta_int,eta_ext,eta_shock,wresistivity, &
        rhomin_jxb,va2max_jxb,va2power_jxb,llorentzforce,linduction, &
@@ -209,7 +209,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.352 2006-11-02 00:36:18 theine Exp $")
+           "$Id: magnetic.f90,v 1.353 2006-11-05 14:15:13 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -559,14 +559,8 @@ module Magnetic
         endif
       endif
       if (lupw_aa) then
-        lpenc_requested(i_uga)=.true.
         lpenc_requested(i_uu)=.true.
-        if (lparker_gauge) then
-          lpenc_requested(i_aa)=.true.
-          lpenc_requested(i_uij)=.true.
-        else
-          lpenc_requested(i_aij)=.true.
-        endif
+        lpenc_requested(i_aij)=.true.
       endif
       if (lresi_shell) lpenc_requested(i_diva)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
@@ -972,6 +966,7 @@ module Magnetic
 !
       use Cdata
       use Sub
+      use Deriv, only: der6
       use IO, only: output_pencil
       use Special, only: special_calc_magnetic
       use Mpicomm, only: stop_it
@@ -985,7 +980,7 @@ module Magnetic
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b3b21,b1b32,b2b13,sign_jo,rho1_jxb
       real, dimension (nx) :: B1dot_glnrhoxb
-      real, dimension (nx) :: eta_mn,eta_smag,etatotal,fres2,etaSS
+      real, dimension (nx) :: eta_mn,eta_smag,etatotal,fres2,etaSS,penc
       real :: tmp,eta_out1,OmegaSS=1.
       integer :: i,j,k
 !
@@ -1142,10 +1137,15 @@ module Magnetic
       else
 !
 !  Use upwinding for the advection term.
-!  For this, we rewrite the Lorentz force --
-!    (u x B)_j = (u x B_ext)_j + u_k A_k,j - u_k A_j,k
-!              = (u x B_ext)_j + (u_k A_k),j - A_k u_k,j - u_i A_k,i
-!  -- and use the gauge freedom to eliminate (u_k A_k),j
+!
+!  We only do upwinding for advection-like terms, u_i f_k,j,
+!  for which i=j. This means that for instance in the evolution
+!  equation for A_x,
+!
+!  d(A_x)/dt + u_y A_x,y + u_z A_x,z = u_y A_y,x + u_z A_z,x
+!
+!  we only do upwinding for the advection-type terms on the
+!  left hand side.
 !
         if (lupw_aa.and.headtt) then
           print *,'calc_pencils_magnetic: upwinding advection term. '//&
@@ -1155,18 +1155,14 @@ module Magnetic
         uxb_upw(:,1) = p%uu(:,2)*B_ext(3) - p%uu(:,3)*B_ext(2)
         uxb_upw(:,2) = p%uu(:,3)*B_ext(1) - p%uu(:,1)*B_ext(3)
         uxb_upw(:,3) = p%uu(:,1)*B_ext(2) - p%uu(:,2)*B_ext(1)
-!  Add A_i u_i,k
-        if (lparker_gauge) then
-          do j=1,3; do k=1,3
-            uxb_upw(:,j) = uxb_upw(:,j) - p%aa(:,k)*p%uij(:,k,j)
-          enddo; enddo
-        else
-          do j=1,3; do k=1,3
-            uxb_upw(:,j) = uxb_upw(:,j) + p%uu(:,k)*p%aij(:,k,j)
-          enddo; enddo
-        endif
-!  Add `upwinded' advection term
-        uxb_upw = uxb_upw - p%uga
+!  Add u_k A_k,j and `upwinded' advection term
+        do j=1,3; do k=1,3
+          if (k/=j) then
+            uxb_upw(:,j) = uxb_upw(:,j) + p%uu(:,k)*(p%aij(:,k,j)-p%aij(:,j,k))
+            call der6(f,iaa+j-1,penc,k,upwind=.true.)
+            uxb_upw(:,j) = uxb_upw(:,j) + abs(p%uu(:,k))*penc
+          endif
+        enddo; enddo
 !  Full right hand side of the induction equation
         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_upw + fres
       endif

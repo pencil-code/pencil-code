@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.264 2006-11-04 18:58:31 theine Exp $ 
+! $Id: sub.f90,v 1.265 2006-11-05 14:15:12 theine Exp $ 
 
 module Sub 
 
@@ -103,7 +103,6 @@ module Sub
   interface u_dot_grad
     module procedure u_dot_grad_scl
     module procedure u_dot_grad_vec
-    module procedure u_dot_grad_j
   endinterface
 
   interface dot
@@ -2257,36 +2256,6 @@ module Sub
       endif; endif
 !
     endsubroutine u_dot_grad_scl
-!***********************************************************************
-    subroutine u_dot_grad_j(f,k,j,gradf,uu,ugradf,upwind)
-!
-!  Do advection-type terms u_j grad_j f_k (no summation over j)
-!  with optional upwind correction.
-!
-!  04-Nov-2006/tobi: coded
-!
-      use Cdata
-      use Deriv, only: der6
-
-      intent(in) :: f,k,j,gradf,uu,upwind
-      intent(out) :: ugradf
-
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: uu,gradf
-      real, dimension (nx) :: ugradf,del6f
-      integer :: k,j
-      logical, optional :: upwind
-
-      ugradf = uu(:,j)*gradf(:,j)
-!
-!  upwind correction
-!
-      if (present(upwind)) then; if (upwind) then
-        call der6(f,k,del6f,j,UPWIND=.true.)
-        ugradf = ugradf - abs(uu(:,j))*del6f
-      endif; endif
-
-    endsubroutine u_dot_grad_j
 !***********************************************************************
     subroutine gradf_upw1st(f,uu,k,gradf)
 !
