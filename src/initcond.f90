@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.179 2006-10-26 19:44:47 bingert Exp $ 
+! $Id: initcond.f90,v 1.180 2006-11-06 09:55:26 bingert Exp $ 
 
 module Initcond 
  
@@ -2619,9 +2619,9 @@ module Initcond
 !      
       use Cdata
       use EquationOfState, only: lnrho0,gamma,gamma1,cs20,cs2top,cs2bot
-      
+
       real, dimension(mx,my,mz,mfarray) :: f
-      real :: tmp
+      real :: tmp,ztop,zbot
       real, dimension(150) :: b_lnT,b_lnrho,b_z
       integer :: i,lend,j
       !
@@ -2653,15 +2653,33 @@ module Initcond
                tmp =  (b_lnT(i)*(b_z(i+1) - z(j)) +   &
                     b_lnT(i+1)*(z(j)-b_z(i)) ) / (b_z(i+1)-b_z(i))
                !
-               if (j .eq. n1) cs2bot = gamma1*exp(tmp)
-               if (j .eq. n2) cs2top = gamma1*exp(tmp)
-               !
                f(:,:,j,iss) = (alog(gamma1/cs20)+tmp- &
                     gamma1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
                exit            
             endif
          enddo
       enddo
+      !
+      ztop=xyz0(3)+Lxyz(3)
+      zbot=xyz0(3)
+      !
+      do i=1,149 
+         if (ztop .ge. b_z(i) .and. ztop .lt. b_z(i+1) ) then
+            !
+            tmp =  (b_lnT(i)*(b_z(i+1) - ztop) +   &
+                 b_lnT(i+1)*(ztop-b_z(i)) ) / (b_z(i+1)-b_z(i))
+            cs2top = gamma1*exp(tmp)
+            !
+         endif
+         if (zbot .ge. b_z(i) .and. zbot .lt. b_z(i+1) ) then
+            !
+            tmp =  (b_lnT(i)*(b_z(i+1) - zbot) +   &
+                 b_lnT(i+1)*(zbot-b_z(i)) ) / (b_z(i+1)-b_z(i))
+            cs2bot = gamma1*exp(tmp)
+            !
+         endif
+      enddo
+!      
     endsubroutine corona_init
 !*********************************************************
     subroutine mdi_init(f)
