@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.253 2006-11-06 11:33:04 nbabkovs Exp $
+### $Id: Makefile.src,v 1.254 2006-11-06 17:54:10 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -227,7 +227,7 @@ LD_FFTW2=
 #FFLAGS=-I /usr/local/Packages/mpich-1.2.6/ch-p4/include #(lfc101)
 #LD_MPI=-L /usr/local/Packages/mpich-1.2.6/ch-p4/lib/ -lmpich #(lfc101)
 #LDONLYFLAGS=farg.o #(lfc101)
-#FC=ifort #(nw[0-9]*|hamlet|lynx|brahe|nq[0-9]*|aida[0-9]*)
+#FC=ifort #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*|aida[0-9]*)
 #FFLAGS=-O3 -I/home/johansen/mpich/include -static-libcxa #(aida[0-9]*)
 #LD_MPI=-L /home/johansen/mpich/lib -lmpich #(aida[0-9]*)
 #FC=ifort #(swift)
@@ -283,7 +283,7 @@ LD_FFTW2=
 ##AB: next line uncommented on Tobi's advice
 #LD_MPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread #(fe[0-4])
 #LD_MPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam #(nw50)
-#LD_MPI=-L/home/ajohan/f90/lib -llamf77mpi -lmpi -llam #(ns0|nq[0-9]*|nw[0-9]*)
+#LD_MPI=-L/home/ajohan/f90/lib -llamf77mpi -lmpi -llam #(ns0|nq[0-9]*|nw[0-9]+)
 #LD_MPI=-Wl,-m elf_i386 -L/home/ajohan/f90/lib -llamf77mpi -lmpi -llam #(lynx)
 #LD_MPI=-lmpi #(brahe)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
@@ -294,8 +294,8 @@ LD_FFTW2=
 #FFLAGS= #(fe[0-4])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto|Aladdin)
 #FFLAGS=-O4 #(nl3)
-#FFLAGS=-i_dynamic -O3 #(nw[0-9]*|nl11|sandin|lynx)
-#FFLAGS=-O3  #(nw[0-9]*|nl11|sandin|lynx)
+#FFLAGS=-i_dynamic -O3 #(nw[0-9]+|nl11|sandin|lynx)
+#FFLAGS=-O3  #(nw[0-9]+|nl11|sandin|lynx)
 #FCCLEANER=2>&1 | scripts/cleanf95 #(obelix)
 #FFLAGS= #(davey[12])
 #FC=ifc -i_dynamic -I/usr/lib/lam/include #(nw17|nl11)
@@ -326,7 +326,7 @@ LD_FFTW2=
 #F77=$(FC) -lm  #(tycho|monolith)
 #F77=$(FC) #(erland|bohm|igor|onsager)
 #F77=$(FC) #(Owen|Master|nw17|nl11)
-#F77FLAGS=-w90 #(nw[0-9]*|ns0|nw17|nl11|sandin)
+#F77FLAGS=-w90 #(nw[0-9]+|ns0|nw17|nl11|sandin)
 #FC=ifort #(lws.Stanford.EDU|lws2.Stanford.EDU)
 #F77=$(FC) #(lws.Stanford.EDU|lws2.Stanford.EDU)
 #FFLAGS=-O3 -ipo #(lws.Stanford.EDU|lws2.Stanford.EDU)
@@ -438,11 +438,11 @@ LD_FFTW2=
 ##
 ## clx IBM Linux Cluster, Bologna IT
 ##
-#LD_MPI=    #(node[0-9]*)
-#FC=mpif90 # (node[0-9]*)
-#CC=mpicc  # (node[0-9]*)
-#FFLAGS=-fast -Mvect=sse -Mipa -Minline  # (node[0-9]*)
-#FFLAGS=-fast -tp p7 -fastsse -Mvect=sse -O2 # (node[0-9]*)
+#LD_MPI=    #(node[0-9]+)
+#FC=mpif90 # (node[0-9]+)
+#CC=mpicc  # (node[0-9]+)
+#FFLAGS=-fast -Mvect=sse -Mipa -Minline  # (node[0-9]+)
+#FFLAGS=-fast -tp p7 -fastsse -Mvect=sse -O2 # (node[0-9]+)
 ##
 ## giga[0-9] Newcastle eScience (tony,dave,greame)
 ##
