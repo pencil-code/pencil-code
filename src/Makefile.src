@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.252 2006-11-05 06:29:02 dobler Exp $
+### $Id: Makefile.src,v 1.253 2006-11-06 11:33:04 nbabkovs Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -379,7 +379,6 @@ LD_FFTW2=
 ##
 ## Natalia's laptop (Natalia, 1.8 GHz)
 ##
-##FC=gfortran #(natalia)
 #FC=ifort #(nbabkovs)
 ##
 ## renton & morvern (ngrs's desktop & laptop)
@@ -479,6 +478,12 @@ LD_FFTW2=
 #F95=$(FC) #(ra[1-99]*)
 #CC=mpicc  #(ra[1-99]*)
 ##
+## draco in oulu
+## (for some reason this machine interpretes also ra[],
+## so we have to keep this entry just blow that one.)
+##
+#FC=ifort #(draco.oulu.fi)
+#CC=gcc #(draco.oulu.fi)
 ##
 ## CSC cluster - (Espoo, Finland)
 ## www.csc.fi
