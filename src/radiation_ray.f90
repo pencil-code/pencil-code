@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.113 2006-11-06 12:16:48 nbabkovs Exp $
+! $Id: radiation_ray.f90,v 1.114 2006-11-06 15:15:41 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -81,6 +81,7 @@ module Radiation
   real :: kapparho_const=1.0,amplkapparho=1.0,radius_kapparho=1.0
   real :: kx_kapparho=0.0,ky_kapparho=0.0,kz_kapparho=0.0
   real :: Frad_boundary_ref=0.0
+  real :: cdtrad_thin=1., cdtrad_thick=0.8
 !
 !  Default values for one pair of vertical rays
 !
@@ -102,7 +103,7 @@ module Radiation
   integer :: idiag_frms=0,idiag_fmax=0,idiag_Erad_rms=0,idiag_Erad_max=0
   integer :: idiag_Egas_rms=0,idiag_Egas_max=0,idiag_Qradrms=0,idiag_Qradmax=0
   integer :: idiag_Fradzm=0,idiag_Sradm=0,idiag_xyFradzm=0
-  integer :: idiag_dtchi=0
+  integer :: idiag_dtchi=0,idiag_dtrad=0
 
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
@@ -119,7 +120,8 @@ module Radiation
        kx_Srad,ky_Srad,kz_Srad,kx_kapparho,ky_kapparho,kz_kapparho, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure, &
-       Frad_boundary_ref,lrad_cool_diffus,lrad_pres_diffus,ldt_rad_limit
+       Frad_boundary_ref,lrad_cool_diffus,lrad_pres_diffus,ldt_rad_limit, &
+       cdtrad_thin,cdtrad_thick
 
   contains
 
@@ -173,7 +175,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.113 2006-11-06 12:16:48 nbabkovs Exp $")
+           "$Id: radiation_ray.f90,v 1.114 2006-11-06 15:15:41 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1520,7 +1522,7 @@ module Radiation
       if (lreset) then
         idiag_Qradrms=0; idiag_Qradmax=0; idiag_Fradzm=0; idiag_Sradm=0
         idiag_xyFradzm=0
-        idiag_dtchi=0
+        idiag_dtchi=0; idiag_dtrad=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1531,6 +1533,7 @@ module Radiation
         call parse_name(iname,cname(iname),cform(iname),'Fradzm',idiag_Fradzm)
         call parse_name(iname,cname(iname),cform(iname),'Sradm',idiag_Sradm)
         call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
+        call parse_name(iname,cname(iname),cform(iname),'dtrad',idiag_dtrad)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -1554,6 +1557,7 @@ module Radiation
         write(3,*) 'i_xyFradzm=',idiag_xyFradzm
         write(3,*) 'i_Sradm=',idiag_Sradm
         write(3,*) 'i_dtchi=',idiag_dtchi
+        write(3,*) 'i_dtrad=',idiag_dtrad
         write(3,*) 'nname=',nname
         write(3,*) 'ie=',ie
         write(3,*) 'ifx=',ifx
@@ -1676,7 +1680,8 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnThcond,duu
       real, dimension (nx) :: Krad,chi_rad,g2,diffus_chi1
-      real :: fact,cdtrad=0.8, rho_max=0., dl_max=0.
+      real, dimension (nx) :: local_optical_depth,opt_thin,opt_thick,dt1_rad
+      real :: fact, rho_max=0. !, dl_max=0.
       integer :: j,k
 
       intent(inout) :: f,df
@@ -1705,6 +1710,7 @@ module Radiation
       endif
 !
 !  include constraint from radiative time step
+!  (has to do with radiation pressure waves)
 !
       if (lfirst.and.ldt) then
         advec_crad2=(16./3.)*p%rho1*(sigmaSB/c_light)*p%TT**4
@@ -1731,23 +1737,42 @@ module Radiation
         if (lrad_cool_diffus .and. lrad_pres_diffus) then
           diffus_chi=max(diffus_chi,gamma*chi_rad*dxyz_2)
         else
-          rho_max=maxval(p%rho)
-          dl_max=max(dx,dy,dz)
-         if (dl_max .GT. sqrt(gamma)/(rho_max*kappa_es)) then
-          diffus_chi=max(diffus_chi,gamma*chi_rad*dxyz_2)
-         else
-          diffus_chi1=min(gamma*chi_rad*dxyz_2, &
-                      real(sigmaSB*kappa_es*p%TT**3*p%cv1/cdtrad))
-          diffus_chi=max(diffus_chi,diffus_chi1)
-         endif
+!
+!  calculate switches for optically thin/thick regions
+!  (should really make dxmax a pencil)
+!
+          local_optical_depth=dxmax*f(l1:l2,m,n,ikapparho)
+          opt_thick=sign(.5,local_optical_depth-1.)+.5
+          opt_thin=1.-opt_thick
+!
+!--       rho_max=maxval(p%rho)
+!--       dl_max=max(dx,dy,dz)
+!--      if (dxmax .GT. sqrt(gamma)/(rho_max*kappa_es)) then
+!--        diffus_chi=max(diffus_chi,gamma*chi_rad*dxyz_2)
+!--      else
+!--       diffus_chi1=min(gamma*chi_rad*dxyz_2, &
+!--                   real(sigmaSB*kappa_es*p%TT**3*p%cv1/cdtrad))
+!--       diffus_chi1=real(sigmaSB*kappa_es*p%TT**3*p%cv1/cdtrad)
+!--       diffus_chi=max(diffus_chi,diffus_chi1)
+
+          dt1_rad=opt_thin*sigmaSB*kappa_es*p%TT**3*p%cv1/cdtrad_thin
+          dt1_max=max(dt1_max,dt1_rad)
+          diffus_chi=max(diffus_chi,opt_thick*gamma*chi_rad*dxyz_2/cdtrad_thick)
+
+!--      endif
         endif
       endif
 !
 !  check radiative time step
 !
       if (lfirst.and.ldt) then
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        if (ldiagnos) then
+          if (idiag_dtchi/=0) then
+            call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+          endif
+          if (idiag_dtrad/=0) then
+            call max_mn_name(dt1_rad,idiag_dtrad,l_dt=.true.)
+          endif
         endif
       endif
 !

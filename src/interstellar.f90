@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.140 2006-08-30 13:32:40 mee Exp $
+! $Id: interstellar.f90,v 1.141 2006-11-06 15:15:41 brandenb Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -203,6 +203,7 @@ module Interstellar
   real, parameter :: rho_min=1.e-6
 !
 ! Cooling timestep limiter coefficient
+! (This value is overly restrictive. cdt_tauc=0.5 is a better value.)
 !
   real :: cdt_tauc=0.08
 !
@@ -389,7 +390,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.140 2006-08-30 13:32:40 mee Exp $")
+           "$Id: interstellar.f90,v 1.141 2006-11-06 15:15:41 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
