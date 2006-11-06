@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.112 2006-11-03 15:21:53 nbabkovs Exp $
+! $Id: radiation_ray.f90,v 1.113 2006-11-06 12:16:48 nbabkovs Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -173,7 +173,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.112 2006-11-03 15:21:53 nbabkovs Exp $")
+           "$Id: radiation_ray.f90,v 1.113 2006-11-06 12:16:48 nbabkovs Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1676,7 +1676,7 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnThcond,duu
       real, dimension (nx) :: Krad,chi_rad,g2,diffus_chi1
-      real :: fact,cdtrad=0.8
+      real :: fact,cdtrad=0.8, rho_max=0., dl_max=0.
       integer :: j,k
 
       intent(inout) :: f,df
@@ -1724,13 +1724,22 @@ module Radiation
 !  Frad=sigmaSB*T^4, and Egas=rho*cv*T. (At the moment we use cp.)
 !  cdtrad=0.8 is an empirical coefficient (harcoded for the time being)
 !
+
+       
         chi_rad=Krad*p%rho1*p%cp1
+
         if (lrad_cool_diffus .and. lrad_pres_diffus) then
           diffus_chi=max(diffus_chi,gamma*chi_rad*dxyz_2)
         else
+          rho_max=maxval(p%rho)
+          dl_max=max(dx,dy,dz)
+         if (dl_max .GT. sqrt(gamma)/(rho_max*kappa_es)) then
+          diffus_chi=max(diffus_chi,gamma*chi_rad*dxyz_2)
+         else
           diffus_chi1=min(gamma*chi_rad*dxyz_2, &
                       real(sigmaSB*kappa_es*p%TT**3*p%cv1/cdtrad))
           diffus_chi=max(diffus_chi,diffus_chi1)
+         endif
         endif
       endif
 !
