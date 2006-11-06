@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.114 2006-11-06 15:15:41 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.115 2006-11-06 18:07:59 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -175,7 +175,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.114 2006-11-06 15:15:41 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.115 2006-11-06 18:07:59 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1386,6 +1386,11 @@ module Radiation
 !
       if (lcooling) then
 
+!
+!  need cv1 in any case for the time step calculation
+!
+        lpenc_requested(i_cv1)=.true.
+
         if (lentropy) then
           lpenc_requested(i_TT1)=.true.
           lpenc_requested(i_rho1)=.true.
@@ -1409,7 +1414,6 @@ module Radiation
         lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_cp1)=.true.
      endif
-     
 !
     endsubroutine pencil_criteria_radiation
 !***********************************************************************
