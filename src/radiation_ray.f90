@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.115 2006-11-06 18:07:59 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.116 2006-11-07 11:49:31 nbabkovs Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -175,7 +175,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.115 2006-11-06 18:07:59 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.116 2006-11-07 11:49:31 nbabkovs Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1759,7 +1759,7 @@ module Radiation
 !--       diffus_chi1=real(sigmaSB*kappa_es*p%TT**3*p%cv1/cdtrad)
 !--       diffus_chi=max(diffus_chi,diffus_chi1)
 
-          dt1_rad=opt_thin*sigmaSB*kappa_es*p%TT**3*p%cv1/cdtrad_thin
+          dt1_rad=opt_thin*sigmaSB*kappa_es*p%TT**3*p%cp1/cdtrad_thin
           dt1_max=max(dt1_max,dt1_rad)
           diffus_chi=max(diffus_chi,opt_thick*gamma*chi_rad*dxyz_2/cdtrad_thick)
 
