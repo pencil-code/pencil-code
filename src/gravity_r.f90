@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.6 2006-11-01 08:54:01 dobler Exp $
+! $Id: gravity_r.f90,v 1.7 2006-11-07 20:23:01 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -43,14 +43,14 @@ module Gravity
   ! variables for compatibility with grav_z (used by Entropy and Density):
   real :: z1,z2,zref,zgrav,gravz,zinfty
   character (len=labellen) :: grav_profile='const'
-  logical :: lnumerical_equilibrium=.false.
+  logical :: lnumerical_equilibrium=.false.,lnumeqz=.false.
   logical :: lcylindrical_gravity=.false.
 
   namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-       lcylindrical_gravity
+       lcylindrical_gravity,lnumeqz
   
   namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-       lcylindrical_gravity
+       lcylindrical_gravity,lnumeqz
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
@@ -76,7 +76,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.6 2006-11-01 08:54:01 dobler Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.7 2006-11-07 20:23:01 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -163,6 +163,10 @@ module Gravity
           if (lroot) print*,'initialize_gravity: constant g_r in the sphere'
           lpade=.false.
 
+        case ('no-smooth')
+           if (lroot) print*,'initialize_gravity: non-smoothed newtonian gravity'
+           lpade=.false.
+
         ! geodynamo
         case ('geo-kws-approx')     ! approx. 1/r potential between r=.5 and r=1
           if (lroot) print*, 'initialize_gravity: approximate 1/r potential'
@@ -190,7 +194,7 @@ module Gravity
 !
 !  initialize gg, so we can later retrieve gravity via get_global
 !
-      if (lnumerical_equilibrium) then
+      if (lnumerical_equilibrium.or.lnumeqz) then
 
         if (lroot) then
           print*,'inititialize_gravity: numerical exact equilibrium -- gravity'
@@ -226,6 +230,8 @@ module Gravity
               g_r=-g0*g_r
             elseif (ipotential .eq. 'sph-const') then
               g_r=-g0
+            elseif (ipotential .eq. 'no-smooth') then
+              g_r=-g0/rr_mn**2 
             else
               ! smoothed 1/r potential in a spherical shell
               g_r=-g0*rr_mn**(n_pot-1) &
@@ -237,9 +243,9 @@ module Gravity
           gg_mn(:,2) = y(  m  )/rr_mn*g_r
           gg_mn(:,3) = z(  n  )/rr_mn*g_r
           if (lcylindrical_gravity) gg_mn(:,3)=0.
-         
+!
           call set_global(gg_mn,m,n,'gg',nx)
-
+!
           enddo
         enddo
 !
