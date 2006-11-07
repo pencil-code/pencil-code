@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.21 2006-11-01 08:54:01 dobler Exp $
+! $Id: gravity_simple.f90,v 1.22 2006-11-07 16:43:25 bingert Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -103,7 +103,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.21 2006-11-01 08:54:01 dobler Exp $")
+           "$Id: gravity_simple.f90,v 1.22 2006-11-07 16:43:25 bingert Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -446,7 +446,7 @@ module Gravity
 !  Calculates gravity potential in one point
 !
 !  13-nov-04/anders: coded
-!  24-oct-06bing: activated for cartesian coordinates
+!  24-oct-06bing: added constant gravity profiles
 !
       use Cdata
       use Mpicomm, only: stop_it
@@ -457,39 +457,30 @@ module Gravity
       real :: potx_xpoint,poty_ypoint,potz_zpoint
       integer :: i
 !
-      pot=0
-!
-      if (nghost .lt. 1) call stop_it("potential_point: need at least on ghost cell")
-!
-!     do i=l1,l2
-!        if (xpos .ge. x(i) .and. xpos .lt. x(i+1) .and. present(xpos)) pot=pot+potx_xpencil(i-nghost)
-!     enddo
-!
-!     do i=m1,m2
-!        if (ypos .ge. x(i) .and. ypos .lt. y(i+1) .and. present(ypos)) pot=pot+poty_ypencil(i-nghost)
-!     enddo
-!
-!     do i=n1,n2
-!        if (zpos .ge. z(i) .and. zpos .lt. z(i+1) .and. present(zpos)) pot=pot+potz_zpencil(i-nghost)
-!     enddo
-!
-!
-!  Different z-gravity profiles
-!
       potx_xpoint=0.
       poty_ypoint=0.
+      potz_zpoint=0.
 !
-      select case (gravz_profile)
-
+      select case (gravx_profile)
       case('zero')
-        if (lroot) print*,'initialize_gravity: no z-gravity'
-
+        if (lroot) print*,'potential_point: no x-gravity'
       case('const')
-        if (lroot) print*,'initialize_gravity: constant gravz=', gravz
-        potz_zpoint=-gravz*(zpos-zinfty)
+        potx_xpoint=-gravx*(xpos-xinfty)
       endselect
 !
-!  Calculate potential from master pencils defined in initialize_gravity
+      select case (gravy_profile)
+      case('zero')
+        if (lroot) print*,'potential_point: no y-gravity'
+      case('const')
+        poty_ypoint=-gravy*(ypos-yinfty)
+      endselect
+!
+      select case (gravz_profile)
+      case('zero')
+        if (lroot) print*,'potential_point: no z-gravity'
+      case('const')
+        potz_zpoint=-gravz*(zpos-zinfty)
+      endselect
 !
       pot = potx_xpoint + poty_ypoint + potz_zpoint
 !
