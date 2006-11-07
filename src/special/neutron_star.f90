@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.17 2006-10-19 15:36:06 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.18 2006-11-07 15:21:39 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -63,8 +63,6 @@ module Special
   include 'special.h'
   
   ! input parameters 
-  logical :: lsharp=.false., lsmooth=.false.
-
   logical :: lmass_source_NS=.false. 
   logical :: leffective_gravity=.false.
 
@@ -74,8 +72,7 @@ module Special
   real :: uu_left=0.
   real :: uy_left=0.,uy_right=0.
  
-  real :: H_disk=0.
-  real :: L_disk=0.
+ 
   real :: R_star=0.
   real :: M_star=0. 
   real :: T_star=0.
@@ -92,6 +89,7 @@ module Special
   logical :: lnstar_1D=.false.
   integer :: ac_dc_size=5
   integer :: H_disk_point=0
+  integer :: L_disk_point=0
 
   real :: beta_hand=1.
   real :: nu_for_1D=1. 
@@ -116,8 +114,8 @@ module Special
       laccelerat_zone, ldecelerat_zone, lsurface_zone, &
       rho_star,rho_disk,rho_surf, &
       H_disk_point_int, lraddif_local,&
-      H_disk, H_disk_point, &
-      L_disk, R_star, M_star, &
+       H_disk_point, &
+      L_disk_point, R_star, M_star, &
       T_star,accretion_flux, T_disk, &
       uu_left, uy_left, uy_right, &
       l1D_cooling,l1D_heating,beta_hand, &
@@ -129,8 +127,7 @@ module Special
   namelist /neutron_star_run_pars/ &
       lmass_source_NS,leffective_gravity, rho_star,rho_disk,rho_surf, &
       laccelerat_zone, ldecelerat_zone, lsurface_zone,lraddif_local, &
-       H_disk, H_disk_point, &
-       L_disk, R_star, M_star, T_star, &
+       R_star, M_star, T_star, &
        accretion_flux, lnstar_entropy, &
        lnstar_T_const,lnstar_1D, &
        l1D_cooling,l1D_heating, lgrav_x_mdf
@@ -185,11 +182,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.17 2006-10-19 15:36:06 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.18 2006-11-07 15:21:39 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.17 2006-10-19 15:36:06 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.18 2006-11-07 15:21:39 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -256,21 +253,9 @@ module Special
       select case(initnstar)
         case('default')
           if(lroot) print*,'init_special: Default neutron star setup'
-          call density_step(f,xx,zz)
-          call entropy_step(f,xx,zz,T_star)
-          call velocity_step(f)
-        case('sharp')
-          if(lroot) print*,'init_special: Sharp neutron star setup'
-          lsharp=.true.
-          call density_step(f,xx,zz)
-          call entropy_step(f,xx,zz,T_star)
-          call velocity_kep_disk(f,zz)
-        case('smooth')
-          if(lroot) print*,'init_special: Sharp neutron star setup'
-          lsmooth=.true.
-          call density_step(f,xx,zz)
-          call entropy_step(f,xx,zz,T_star)
-          call velocity_kep_disk(f,zz)
+          call density_init(f,xx,zz)
+          call entropy_init(f,xx,zz)
+          call velocity_init(f,zz)
         case default
           !
           !  Catch unknown values
@@ -445,13 +430,6 @@ endsubroutine read_special_run_pars
     endsubroutine rprint_special
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the 
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
 !   06-oct-03/tony: coded
 !
       use Cdata
@@ -472,87 +450,45 @@ endsubroutine read_special_run_pars
 !  mass sources and sinks for the boundary layer on NS in 1D approximation
 !
       if (lmass_source_NS) call mass_source_NS(f,df,p%rho)
-!
-! Natalia
-! deceleration zone in a case of a Keplerian disk
-
- 
 
        if (laccelerat_zone) then
-     
-         
+
          if (n .GE. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
        
             if (lnstar_entropy) then   
              
-             if (nxgrid .LE. 1) then       
+             if (nxgrid == 1) then       
               if (lnstar_T_const) then
               else            
               endif    
 
              else
 
-         ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)&
-         !     -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,n-1,ilnrho))
+   
 
-
-         !    df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)&
-         !     -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,nzgrid-ac_dc_size,ilnrho))
-        
-        !df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
-        !  -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
-        !  -log(rho_surf)-(1.-(x(1:H_disk_point)/H_disk)**2))
-
-        !  df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
-        !  -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
-        !  -log(rho_surf)-(1.-(x(1:H_disk_point)/H_disk)))
-     
-    ! do i=1,H_disk_point+4
-    !         df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
-    !               -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i+1,m,n,ilnrho))
-    ! enddo    
-    !     df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
-    !-1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)
-    !-log(rho_surf)-(1.-(x(H_disk_point+1)/H_disk)))
-       
-        ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) & 
-        !   -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
-	!   -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/cs2_star))
-			     
-
-
-
-        ! df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
-        ! -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)-f(H_disk_point+5:l2,m,n-1,ilnrho))
-
-           if (H_disk_point .GE. nxgrid) then
+              if (H_disk_point .GE. nxgrid) then
 	  
-	     df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-	     -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
-             -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/cs2_star))
+	        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+	        -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
+                -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/cs2_star))
 			   
-			   
-	   
-	   else
-	   
+	      else
+	     
 	 	   
-             df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
-             -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
-     	     -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:H_disk_point+4)**2*gamma/cs2_star))
+               df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
+               -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
+     	       -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:H_disk_point+4)**2*gamma/cs2_star))
 			
 	  
 			      
-             df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
-             -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho) &
-	     -log(rho_surf)-(1.-M_star/2./z(n)**3*x(H_disk_point+4)**2*gamma/cs2_star))
-	    endif
+               df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
+               -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho) &
+	       -log(rho_surf)-(1.-M_star/2./z(n)**3*x(H_disk_point+4)**2*gamma/cs2_star))
+             endif
 						    
-             endif 
-           endif
-           
-
-
-         endif 
+          endif 
+        endif
+     endif 
 
        if (ldecelerat_zone) then
         
@@ -564,16 +500,6 @@ endsubroutine read_special_run_pars
                 -1./p%rho(:)/(5.*dt) &
                 *(p%rho(:)-rho_star*exp(-M_star/R_star/cs0**2*gamma*(1.-R_star/z(n))))
                else            
-
-              !   df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-              !           -1./p%rho(:)/(5.*dt) &
-              !   *(p%rho(:)-rho_star*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
-              ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-              !  -1./p%rho(:)/(5.*dt) &
-              !  *(p%rho(:)-rho_star*exp(-M_star/R_star/(gamma1*T_star)*gamma*(1.-R_star/z(n))))
-              
-           !  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-           !   -1./(5.*dt)*(p%rho(:)-rho_star)/p%rho(:)
           
             endif    
 
@@ -592,12 +518,8 @@ endsubroutine read_special_run_pars
 
       if (lsurface_zone) then
 
-
           if ( dt .GT.0.) then
             l_sz=l2-5
-
-          !  df(l_sz:l2,m,n,ilnrho)=df(l_sz:l2,m,n,ilnrho)&
-          !       -1./(5.*dt)*(1.-rho_surf/exp(f(l_sz:l2,m,n,ilnrho)))
 
            if (lnstar_1D) then
  
@@ -607,14 +529,8 @@ endsubroutine read_special_run_pars
               -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
 	      +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/cs2_star)
           		    
-		!  df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
-                !   -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))		    
-		   
-           enddo
+            enddo
            endif 
-		
-
-
          endif
       endif
 
@@ -628,11 +544,6 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
 !
 !   16-jul-06/natalia: coded
 !
@@ -680,15 +591,6 @@ endsubroutine read_special_run_pars
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
             -1./(5.*dt)*(f(l1:l2,m,n,iuz)-f(l1:l2,m,n-1,iuz))
 
-!natalia  .... REASON FOR BLOCK QUOTE ...
-!natalia            df(l1:H_disk_point+4,m,n,iuz)=df(l1:H_disk_point+4,m,n,iuz)&
-!natalia              -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,iuz)-f(l1:H_disk_point+4,m,n-1,iuz))
-!natalia
-!natalia            df(l1:H_disk_point+4,m,n,iuz)=df(l1:H_disk_point+4,m,n,iuz)&
-!natalia              -1./(5.*dt)*(p%uu(1:H_disk_point,3)+accretion_flux/p%rho(1:H_disk_point))
-!natalia
-!natalia            df(H_disk_point+5:l2,m,n,iuz)=df(H_disk_point+5:l2,m,n,iuz)&
-!natalia              -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,iuz)-f(H_disk_point+5:l2,m,nzgrid-ac_dc_size,iuz))
            endif 
          endif
        endif
@@ -730,26 +632,14 @@ endsubroutine read_special_run_pars
           l_sz=l2-5
 !
 
-!natalia  ... REASON FOR BLOCK QUOTE ...
-!          do j=l_sz,l2   
-!            df(j,m,n,iux)=df(j,m,n,iux)&
-!                 -1./(3.*dt)*(-f(j-1,m,n,iux)+f(j,m,n,iux))
-!            df(j,m,n,iux)=df(j,m,n,iux)&
-!                 -1./(10.*dt)*(f(j,m,n,iux)-f(j+1,m,n,iux))
-!          enddo
-!
         if (lnstar_1D) then
              df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
                    -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
-!
-!
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
                   -1./(5.*dt)*(f(l1:l2,m,n,iuy)-sqrt(M_star/xyz0(3)))
-!
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
              -1./(5.*dt)*(f(l1:l2,m,n,iuz)+accretion_flux/p%rho(:))
-!
-         else
+        else
            do j=l_sz,l2   
              df(j,m,n,iux)=df(j,m,n,iux)&
                   -1./(5.*dt)*(f(j,m,n,iux)-f(j-1,m,n,iux))
@@ -758,19 +648,7 @@ endsubroutine read_special_run_pars
              df(j,m,n,iuz)=df(j,m,n,iuz)&
                   -1./(5.*dt)*(f(j,m,n,iuz)-f(j-1,m,n,iuz))
            enddo
-!
-!natalia ... REASON FOR BLOCK QUOTE ...
-!           df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
-!                  -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
-!
-!
-!           df(l_sz:l2,m,n,iuy)=df(l_sz:l2,m,n,iuy)&
-!                  -1./(5.*dt)*(f(l_sz:l2,m,n,iuy)-sqrt(M_star/z(n)))
-!
-!           df(l_sz:l2,m,n,iuz)=df(l_sz:l2,m,n,iuz)&
-!                  -1./(5.*dt)*(f(l_sz:l2,m,n,iuz)+accretion_flux/p%rho(:))
- 
-     
+
          endif 
     
         
@@ -782,11 +660,6 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
 !
 !   06-oct-03/tony: coded
 !
@@ -814,14 +687,7 @@ endsubroutine read_special_run_pars
 !!***********************************************************************
     subroutine special_calc_entropy(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
+
       use Cdata
       
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
@@ -836,26 +702,21 @@ endsubroutine read_special_run_pars
 !f (accretion on NS)
 !
     if (lnstar_entropy) then
-   if (T_disk.EQ.0) then
-     T_disk=cs0**2/gamma1
-   endif 
+      if (T_disk.EQ.0) then
+         T_disk=cs0**2/gamma1
+      endif 
   
  
-       if ( dt .GT. 0..AND. n .GT. 24 .AND. n .LT. nzgrid-20) then
+      if ( dt .GT. 0..AND. n .GT. 24 .AND. n .LT. nzgrid-20) then
    
          if (lnstar_T_const) then
-    
-          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-1./(dt)*(p%TT(:)-T_disk)/T_disk
-           !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-           !   -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/p%TT(:)
-
-
-        else
+           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-1./(dt)*(p%TT(:)-T_disk)/T_disk
+         else
        
-        endif
+      endif
  
     
-       endif 
+    endif 
 
 
       if (ldecelerat_zone) then
@@ -864,28 +725,13 @@ endsubroutine read_special_run_pars
           if (lnstar_T_const) then
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
            -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_disk    
-          !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-          ! -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(TT_cs0)/gamma)/p%rho(:)/T_disk
-          !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-          ! -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
-
+ 
           else
               df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
            -1./(5.*dt)*(p%TT(:)-T_star)/T_star
-         !   df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-         !  -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star!p%TT(:)
-
-          !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-          !     -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star   
- 
-          !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-          !  -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(T_star)/gamma)/p%rho(:)/T_star
    
           endif
         end if  
-
-
-    !     endif 
      endif  
    
      if (laccelerat_zone) then
@@ -895,24 +741,10 @@ endsubroutine read_special_run_pars
               if (lnstar_T_const) then   
                  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
                  -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
-              else  
+              endif   
+          endif
 
-              !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-              !   -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
-              !    df(l1:H_disk_point+4,m,n,iss)=df(l1:H_disk_point+4,m,n,iss) &
-               !   -1./(5.*dt)*(p%TT(1:H_disk_point)-T_disk)/T_disk
-               ! df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-               !  -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(T_disk)/gamma)
-              ! df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-              ! -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n-1,ilnrho))/p%rho(:)/T_disk
-      
-
-              endif
-         else
-         endif     
- 
-
-     endif 
+         endif 
 
      endif  
     endif
@@ -923,11 +755,7 @@ endsubroutine read_special_run_pars
             l_sz_1=nxgrid-5
 
           if (lnstar_1D) then   
-     !       df(l_sz:l2,m,n,iss)=df(l_sz:l2,m,n,iss) &
-     !       -1./(5.*dt)*(f(l_sz:l2,m,n,iss)-log(T_disk)/gamma) &
-     !       /p%rho(l_sz_1:nxgrid)/p%TT(l_sz_1:nxgrid)  
           else
-
             do j=l_sz,l2   
              df(j,m,n,iss)=df(j,m,n,iss)&
                -1./(5.*dt)*(f(j,m,n,iss)-f(j-1,m,n,iss))
@@ -935,17 +763,7 @@ endsubroutine read_special_run_pars
 
           endif
 
-      !        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-      !       -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
-        
-          !    df(l_sz:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-       !     -1./(1.*dt)*(f(l_sz:l2,m,n,iss)*gamma+gamma1*f(l_sz:l2,m,n,ilnrho))/ &
-       !     p%rho(l_sz_1:nxgrid)/T_disk!p%TT(l_sz_1:nxgrid) 
-
-      !   df(l_sz:l2,m,n,iss)=df(l_sz:l2,m,n,iss) &
-      !      -1./(5.*dt)*(p%TT(l_sz_1:nxgrid)-T_disk)/T_disk
-
-       
+   
          endif
       endif
 
@@ -1099,17 +917,17 @@ endsubroutine read_special_run_pars
 
 !All calculations till 1.10.2006 were made with this option
 ! Check it
-     !   if (ldecelerat_zone) then
-     !     if (nxgrid == 1) then
-     !      if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
-     !     else
-     !      if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
-     !     endif
-     !    if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
-     !   else
+        if (ldecelerat_zone) then
+          if (nxgrid == 1) then
+           if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
+          else
+           if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
+          endif
+         if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
+        else
          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff   
          if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
-     !   endif
+        endif
     
 ! 
 
@@ -1166,7 +984,7 @@ endsubroutine read_special_run_pars
       integer :: idxz  
       real, dimension (nx), intent(in) :: rho 
 
-       sink_area=Lxyz(3)/(nzgrid-1.)*sink_area_points
+       sink_area=dz*sink_area_points
 
 ! 
 !  No clue what this index is good for, but nzgrid-30 is not a
@@ -1182,9 +1000,7 @@ endsubroutine read_special_run_pars
        flux=V_0*rho_0     
 
 !       V_0=rho_0*V_acc*(sink_area_points+1)/integral_rho
-!
-!
-!       ksi=2.*((Lxyz(3)/(nzgrid-1.)*(sink_area_points+4-n))/sink_area)/sink_area
+!      ksi=2.*((Lxyz(3)/(nzgrid-1.)*(sink_area_points+4-n))/sink_area)/sink_area
        ksi=1./sink_area
 
        if ( 25 .gt. n .and. n .lt. sink_area_points+25) then 
@@ -1200,345 +1016,140 @@ endsubroutine read_special_run_pars
     endsubroutine mass_source_NS
 !***********************************************************************
 
-    subroutine density_step(f,xx,zz)
-!
-!Natalia
-!Initialization of density in a case of the step-like distribution
-!
+     subroutine density_init(f,xx,zz)
+     !
+     !Natalia 
+     !Initialization of density in a case of the step-like distribution
+     !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (my,mz) :: lnrho_2d
       real, dimension (mx,my,mz) :: xx, zz
-
-!
-      integer :: step_width, step_length,i
-      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll,  ln_ro_l, ln_ro_r, ln_ro_u
-      real :: cs2_star
-!
-
+      real ::  ln_ro_l, ln_ro_r, ln_ro_u, cs2_star
+      integer :: i
+ 
        call eoscalc(ilnrho_lnTT,log(rho_star),log(T_star), cs2=cs2_star)
 
-      
-      hdisk=H_disk 
-      ldisk=L_disk
-!
-      H_disk_min=Lxyz(1)/(nxgrid-1)
-      L_disk_min=Lxyz(3)/(nzgrid-1)
-!
-      if (H_disk .gt. Lxyz(1)-H_disk_min) hdisk=Lxyz(1)
-      if (H_disk .lt. H_disk_min) hdisk=0.
-!
-      if (L_disk .gt. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
-      if (L_disk .lt. L_disk_min) ldisk=0.
-!
-      step_width=nint((nxgrid-1)*hdisk/Lxyz(1))
-      step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
-!
-      if (hdisk .EQ. Lxyz(1) .AND. ldisk .EQ. Lxyz(3))  f(:,:,:,ilnrho)=log(rho_star)
-!
-      if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,ilnrho)=log(rho_disk)
-!
-      if (hdisk .EQ. Lxyz(1) .AND. ldisk .LT. Lxyz(3)) then
-        f(:,:,1:step_length+3,ilnrho)=log(rho_disk)
-        f(:,:,step_length+3+1:mz,ilnrho)=log(rho_star)
-      endif
-!
-      if (lsharp) then
-        if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
-          f(1:step_width+3,:,:,ilnrho)=log(rho_star)
-          f(step_width+3+1:mx,:,:,ilnrho)=log(rho_disk)
-        endif
-!
-        if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
-          if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
-            f(1:step_width+3,:,step_length+3+1:mz,ilnrho)=log(rho_star)
-            f(step_width+3+1:mx,:,step_length+3+1:mz,ilnrho)=log(rho_disk)
-            f(:,:,1:step_length+3,ilnrho)=log(rho_disk)
-          end if
-        end if
-      end if 
-!
-      if (lsmooth) then
+
         ln_ro_r=log(rho_disk)
         ln_ro_l=log(rho_star)
         ln_ro_u=log(rho_surf)
-!
-        ll=Lxyz(3)-ldisk
-!
-        if (nxgrid/=1.and.nzgrid/=1) then
-!natalia  ... REASON FOR BLOCK COMMENT ...
-!natalia          lnrho_2d(:,:)=(zz(l1,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
-!natalia
-!natalia          do i=1,l1
-!natalia           f(i,:,:,ilnrho)=lnrho_2d(:,:)
-!natalia          enddo 
-!natalia       
-!natalia          do i=l1+1,mx
-!natalia           f(i,:,:,ilnrho)=(xx(i,:,:)-xx(l1,:,:))/Lxyz(1)*(ln_ro_l-lnrho_2d(:,:))+ln_ro_l 
-!natalia          enddo        
-!natalia
-!natalia          do i=1,H_disk_point+4
-!natalia           f(i,:,:,ilnrho)=ln_ro_r
-!natalia          enddo 
-!natalia       
-!natalia          do i=H_disk_point+5,mx
-!natalia            f(i,:,:,ilnrho)=ln_ro_u 
-!natalia          enddo    
-!natalia
-!natalia
-!natalia        if (H_disk.GT.0.) f(:,:,:,ilnrho)=f(:,:,:,ilnrho)+(1.-(xx(:,:,:)/H_disk)**2)
-!natalia          if (H_disk.GT.0.) 
-!natalia        f(:,:,:,ilnrho)=ln_ro_u+(1.-(xx(:,:,:)/H_disk)**2)
-!
 
- !   do i=1,44!H_disk_point+4
-        do i=1,H_disk_point_int+4
-    !    f(i,:,:,ilnrho)=ln_ro_u+(1.-(xx(i,:,:)/H_disk)**2)
-     f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(i)**2*gamma/cs2_star)
+       if (nxgrid/=1.and.nzgrid/=1) then
  
-       enddo 
+         do i=1,H_disk_point_int+4
+    !     f(i,:,:,ilnrho)=ln_ro_u+(1.-(xx(i,:,:)/H_disk)**2)
+          f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(i)**2*gamma/cs2_star)
+         enddo 
 
-		   
-		   
-       do i=H_disk_point_int+5,mx
-    !     do i=45,mx
-	 
-     !	f(i,:,:,ilnrho)=f(44,:,:,ilnrho)
-	
-    ! f(i,:,:,ilnrho)=f(H_disk_point+4,:,:,ilnrho)
-     f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(H_disk_point_int+4)**2*gamma/cs2_star)
-     
-     
-      enddo    
+         do i=H_disk_point_int+5,mx
+         ! f(i,:,:,ilnrho)=f(H_disk_point+4,:,:,ilnrho)
+          f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(H_disk_point_int+4)**2*gamma/cs2_star)
+         enddo    
 
-
-
-        else 
-          if (nzgrid .GT. 1) then 
+       else
+         if (nzgrid .GT. 1) then 
             f(:,:,:,ilnrho)=(zz(:,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
-          else
-            if (H_disk.GT.0.) f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1)*(ln_ro_u-ln_ro_r)+ln_ro_r
-          endif 
-        endif     
-      endif
-
-    endsubroutine density_step
+         else
+            f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1)*(ln_ro_u-ln_ro_r)+ln_ro_r
+         endif 
+       endif
+   
+      endsubroutine density_init
 !***************************************************************
 
-    subroutine entropy_step(f,xx,zz,T_star)
-!Natalia
-!Initialization of entropy in a case of the step-like distribution
- use EquationOfState
+      subroutine entropy_init(f,xx,zz)
+      !Natalia
+      !Initialization of entropy in a case of the step-like distribution
+      use EquationOfState
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx, zz
       real, dimension (nx) ::  lnrho, lnTT,ss
-      integer :: step_width, step_length, mi,ni, li,  decel_zone
-      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll, T_star, const_tmp
+      integer ::  mi,ni
+      real ::  ll
 
 
-      decel_zone=ac_dc_size+4
-
-      hdisk=H_disk 
-      ldisk=L_disk
-
-      H_disk_min=Lxyz(1)/(nxgrid-1)
-      L_disk_min=Lxyz(3)/(nzgrid-1)
-
-      if (H_disk .GT. Lxyz(1)-H_disk_min) hdisk=Lxyz(1)
-      if (H_disk .LT. H_disk_min) hdisk=0.
-
-      if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
-      if (L_disk .LT. L_disk_min) ldisk=0.
-
-      step_width=nint((nxgrid-1)*hdisk/Lxyz(1))
-      step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
-
-
-      lnTT=log(T_star)!  log(T0)
- if (T_disk.EQ.0) then
-     T_disk=cs0**2/gamma1
-   endif 
+      if (T_star.GT.0)  lnTT=log(T_star)
+        print*,'T_star=',T_star
+      
+      if (T_disk.EQ.0) then
+         T_disk=cs0**2/gamma1
+      endif 
     
 
-      print*,'T_star=',T_star
+      
       do ni=n1,n2;
        do mi=m1,m2;
-     if (lnstar_T_const) then
-       f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
-      else
-      ! lnrho=f(l1:l2,mi,ni,ilnrho)
-      ! const_tmp=M_star/sigmaSB*c_light*3./4.
-
-     !  lnTT=0.25*log(T_star**4+const_tmp*exp(f(l1:l2,mi,ni,ilnrho))*(1./zz(l1:l2,mi,ni)-1./R_star))
-    
-     !  call eoscalc(4,lnrho,lnTT,ss=ss)
+       
+         if (lnstar_T_const) then
+           f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+         else
   
-      ! f(l1:l2,mi,ni,iss)=ss  
+           if (nxgrid .LE. 1) then
+            f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+           else
+            f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
 
-     if (nxgrid .LE. 1) then
-        f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
-     else
-         f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
-
-     !  lnrho=f(l1:l2,mi,ni,ilnrho)
+             !  lnrho=f(l1:l2,mi,ni,ilnrho)
+             !  lnTT=log(T_disk)
+             !  call eoscalc(4,lnrho,lnTT,ss=ss)
+             !  f(l1:l2,mi,ni,iss)=ss  
     
-   
-     !  lnTT=log(T_disk)
-   
-     !  call eoscalc(4,lnrho,lnTT,ss=ss)
-  
-     !  f(l1:l2,mi,ni,iss)=ss  
-
-
-   !    f(l1,mi,ni,iss)=-f(l1,mi,ni,ilnrho)*gamma1/gamma
-   
-   !     do li=l1+1,l2;
-   !         lnrho=f(li,mi,ni,ilnrho)
-   !         lnTT=(xx(li,mi,ni)-0.)/Lxyz(1)*(log(TT_cs0)-log(TT_cs0*0.01))+log(TT_cs0*0.01)
-   !         call eoscalc(4,lnrho,lnTT,ss=ss)
-   !         f(l1:l2,mi,ni,iss)=ss  
-   !    enddo
-
-     endif 
-
-
-
-     endif
+             !  f(l1,mi,ni,iss)=-f(l1,mi,ni,ilnrho)*gamma1/gamma
+           endif 
+         endif
 
        end do 
-     end do   
+      end do   
 
-     !   f(l1:l2,:,:,iss)=lnTT0/gamma
-
-    !    f(:,:,:,iss)=(zz(:,:,:)-R_star)/Lxyz(3)*(lnTT0-lnTT0/10.)/gamma+lnTT0/10./gamma
-
-    endsubroutine entropy_step
-!**********************************************************************
-
-    subroutine velocity_step(f)
-!Natalia
-!Initialization of velocity in a case of the step-like distribution
-
-      use Cdata
-
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: step_width, step_length
-      real ::  H_disk_min, L_disk_min, hdisk, ldisk
-    
-      hdisk=H_disk 
-      ldisk=L_disk
-    
-      H_disk_min=Lxyz(1)/(nxgrid-1)
-      L_disk_min=Lxyz(3)/(nzgrid-1)
-
-      if (H_disk .GT. Lxyz(1)-H_disk_min) hdisk=Lxyz(1)
-      if (H_disk .LT. H_disk_min) hdisk=0.
-
-      if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
-      if (L_disk .LT. L_disk_min) ldisk=0.
-
-
-       
-      step_width=nint((nxgrid-1)*hdisk/Lxyz(1))
-      step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
-
-
-      if (hdisk .EQ. Lxyz(1) .AND. ldisk .EQ. Lxyz(3))  then
-        f(:,:,:,iuz)=uu_left
-        f(:,:,:,iuy)=uy_left
-      end if
-
-      if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,iuy)=uy_right
-      if (hdisk .EQ. 0. .OR. ldisk .EQ. 0.) f(:,:,:,iuy)=uy_right
-      
-       
-      if (hdisk .EQ. Lxyz(1) .AND. ldisk .LT. Lxyz(3)) then
-        f(:,:,step_length+3+1:mz,iuz)=uu_left
-        f(:,:,step_length+3+1:mz,iuy)=uy_left
-        f(:,:,1:step_length+3,iuy)=uy_right
-      endif
-
-      if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
-        f(1:step_width+3,:,:,iuz)=uu_left
-        f(1:step_width+3,:,:,iuy)=uy_left
-        f(step_width+3+1:mx,:,:,iuy)=uy_right
-      endif
-
-
-      if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
-        if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
-          f(1:step_width+3,:,step_length+3+1:mz,iuz)=uu_left
-          f(1:step_width+3,:,step_length+3+1:mz,iuy)=uy_left
-          f(step_width+3+1:mx,:,step_length+3+1:mz,iuy)=uy_right
-          f(:,:,1:step_length+3,iuy)=uy_right
-        end if
-      end if
-
-    endsubroutine  velocity_step
+   
+      endsubroutine entropy_init
+!*********************************************************************
 !***********************************************************************
-
-    subroutine velocity_kep_disk(f,zz)
-!Natalia
-!Initialization of velocity in a case of the step-like distribution
+      subroutine velocity_init(f,zz)
+      !Natalia
+      !Initialization of velocity in a case of the step-like distribution
 
       use Cdata
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: zz
-      integer :: step_length, decel_zone
-      real ::   L_disk_min,  ldisk,   ll
+      integer :: decel_zone
+      real ::   ll
+      integer :: L_disk_point=46
 
       decel_zone=ac_dc_size+4
-       
+      ll=L_disk_point*dz
 
-      ll=Lxyz(3)-L_disk
-      ldisk=L_disk
-
-   if (nzgrid .GT. 1) then
-      L_disk_min=Lxyz(3)/(nzgrid-1)
-
-      if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
-      if (L_disk .LT. L_disk_min) ldisk=0.
+     !ll=Lxyz(3)-L_disk
+     if (nzgrid .GT. 1) then
      
-      step_length=nint((nzgrid-1)*ll/Lxyz(3))
-
-      if (ldisk .LT. L_disk_min) then
-        f(:,:,:,iuz)=uu_left
-        f(:,:,:,iuy)=(zz-R_star)/ll*sqrt(M_star/(ll+R_star))
-      endif
-
-      if (ldisk .GE. Lxyz(3)) then
-        f(:,:,:,iuz)=uu_left
-        f(:,:,:,iuy)=sqrt(M_star/zz)
-      endif
-!
-      if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
-
-        f(:,:,:,iuz)=uu_left
+      f(:,:,:,iux)=uu_left
+      f(:,:,:,iuz)=uu_left
        if (ldecelerat_zone .AND. decel_zone .LT. nzgrid) then 
  
-        f(:,:,step_length+3+1:mz,iuy)=sqrt(M_star/zz(:,:,step_length+3+1:mz))
+        f(:,:,L_disk_point+4:mz,iuy)= &
+          sqrt(M_star/zz(:,:,L_disk_point+4:mz))
 
-        f(:,:,decel_zone+1:step_length+3,iuy)= &
-           (zz(:,:,decel_zone+1:step_length+3)-R_star-(decel_zone-4)*L_disk_min) &
-           /(ll-(decel_zone-4)*L_disk_min)*sqrt(M_star/(ll+R_star))
+        f(:,:,decel_zone+1:L_disk_point+3,iuy)= &
+           (zz(:,:,decel_zone+1:L_disk_point+3)-R_star-(decel_zone-4)*dz) &
+           /(ll-(decel_zone-4)*dz)*sqrt(M_star/(ll+R_star))
         f(:,:,1:decel_zone,iuy)=0.
 
        else
-         f(:,:,step_length+3+1:mz,iuy)=sqrt(M_star/zz(:,:,step_length+3+1:mz))
-         f(:,:,1:step_length+3,iuy)= &
-           (zz(:,:,1:step_length+3)-R_star)/ll*sqrt(M_star/(ll+R_star))
-       end if
+         f(:,:,L_disk_point+4:mz,iuy)= &
+           sqrt(M_star/zz(:,:,L_disk_point+3+1:mz))
+         f(:,:,1:L_disk_point+3,iuy)= &
+           (zz(:,:,1:L_disk_point+3)-R_star)/ll*sqrt(M_star/(ll+R_star))
+       endif
+     
+     else
+      f(:,:,:,iux)=uu_left
+      f(:,:,:,iuz)=uu_left
+      f(:,:,:,iuy)=sqrt(M_star/xyz0(3))
+     endif
 
-      end if
-   else
-    f(:,:,:,iux)=uu_left
-    f(:,:,:,iuz)=uu_left
-    f(:,:,:,iuy)=sqrt(M_star/xyz0(3))
-   endif
 
-
-    endsubroutine  
+    endsubroutine  velocity_init
 !***********************************************************************
     subroutine bc_BL_x(f,sgn,bc)
 !
@@ -1561,8 +1172,7 @@ endsubroutine read_special_run_pars
         else
            do i=1,nghost; f(l1-i,:,:,j)= f(l1+i,:,:,j); enddo
         endif
-          !   f(l1,:,:,j) = 0. ! set bdry value=0 (indep of initcond)
-
+     
       elseif (bc%location==iBC_X_TOP) then
       ! top boundary
         if (nxgrid <= 1) then
@@ -1575,10 +1185,7 @@ endsubroutine read_special_run_pars
             f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
           endif
         else
-!            f(l2+1,:,:,j)=0.25*(  9*f(l2,:,:,j)- 3*f(l2-1,:,:,j)- 5*f(l2-2,:,:,j)+ 3*f(l2-3,:,:,j))
-!            f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
-!            f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
-!
+
           do i=1,nghost; f(l1+i,:,:,j)=f(l1-i,:,:,j); enddo
 !
         endif
@@ -1588,8 +1195,7 @@ endsubroutine read_special_run_pars
       endif
 !
     endsubroutine bc_BL_x
- !***********************************************************************
-
+ !********************************************************************
     subroutine bc_BL_z(f,sgn,bc)
 !
 !  Step boundary conditions.
@@ -1603,17 +1209,9 @@ endsubroutine read_special_run_pars
       real :: value1,value2 
       type (boundary_condition) :: bc
       real, dimension(nx) :: lnrho,lnTT,ss
-      integer :: sgn,i,j, step_width, n1p4,n2m4, i_tmp
-      real :: H_disk_min, L_disk_min, ddz, ddx
-    !  integer, parameter :: ilnrho_lnTT=4
-
-      j=bc%ivar
-      H_disk_min=Lxyz(1)/(nxgrid-1)
-      step_width=nint((nxgrid-1)*H_disk/Lxyz(1))
-      ddx=H_disk_min
-
-      L_disk_min=Lxyz(3)/(nzgrid-1)
-      ddz=L_disk_min
+      integer :: sgn,i,j,  n1p4,n2m4, i_tmp
+   
+    j=bc%ivar
 
       if (j == 4 .or. j==5) then
         value1=log(bc%value1)
@@ -1642,17 +1240,9 @@ endsubroutine read_special_run_pars
             !+ other terms for sound speed not equal to cs_0
             call eoscalc(4,lnrho,lnTT,ss=ss)
             f(l1:l2,m1,n1,iss)=ss 
-            !  print*, 'boundary entropy ', ss
-            !ss=exp(ss-(-log(cs0**2/(gamma1))-gamma1*lnrho)/gamma)
-            !   ss=exp(log(cs0**2/(gamma1))+gamma*ss+gamma1*lnrho)
-            !print*, 'boundary entropy ', ss
+        
           else
-            if (H_disk >= H_disk_min .and. H_disk <= Lxyz(1)-H_disk_min) then
-              f(1:step_width+3,:,n1,j)=value1
-              f(step_width+3+1:mx,:,n1,j)=value2
-            endif
-            if (H_disk < H_disk_min)    f(:,:,n1,j)=value2
-            if (H_disk > Lxyz(1)-H_disk_min)    f(:,:,n1,j)=value1
+            f(:,:,n1,j)=value1
           endif
           do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
         endif
@@ -1673,28 +1263,11 @@ endsubroutine read_special_run_pars
               call eoscalc(4,lnrho,lnTT,ss=ss)
               f(l1:l2,m2,n2,iss)=ss
             else 
-              if (H_disk >= H_disk_min .and. H_disk <= Lxyz(1)-H_disk_min) then
-                f(1:step_width+3,:,n2,j)=value1
-                f(step_width+3+1:mx,:,n2,j)=value2
-              endif
-              if (H_disk < H_disk_min)    f(:,:,n2,j)=value2
-              if (H_disk > Lxyz(1)-H_disk_min)    f(:,:,n2,j)=value1
+              f(:,:,n2,j)=value1
             endif
           else
 
-!           if (j==4) then
-!             f(1:H_disk_point+4,:,n2,j)=value1
-!             f(H_disk_point+5:mx,:,n2,j)=value2
-!
-!             do i=1,H_disk_point+4
-!               f(i,:,n2,ilnrho)=log(5.)+(1.-(ddx*i/H_disk)**2)
-!             enddo 
-!
-!             do i=H_disk_point+5,mx
-!               f(i,:,n2,ilnrho)=f(H_disk_point+4,:,n2,ilnrho)
-!             enddo    
-!
-!           else 
+
             n2m4=n2-4
             i_tmp=H_disk_point+5
 
