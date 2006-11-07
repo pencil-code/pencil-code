@@ -1,4 +1,4 @@
- ! $Id: global_avgs.f90,v 1.8 2006-10-12 17:53:00 wlyra Exp $
+ ! $Id: global_avgs.f90,v 1.9 2006-11-07 20:20:51 wlyra Exp $
 
 module Global
 
@@ -35,7 +35,7 @@ module Global
   endinterface
 !
 !
-  real, dimension (mx,my,mz,3) :: gg
+  real, dimension (mx,my,mz,3) :: gg,glnTT
   real, dimension (mx,my,mz) :: rho,cs2,rhos
   real, dimension (mx,my,mz,3) :: bbs
   real, dimension (mx,my,mz,3) :: uus
@@ -81,6 +81,9 @@ module Global
 !
       case ('gg')
          gg(l1:l2,m,n,1:3) = var
+!
+     case ('glnTT')
+         glnTT(l1:l2,m,n,1:3) = var
 !
       case ('bbs')
          bbs(l1:l2,m,n,1:3) = var
@@ -215,6 +218,9 @@ module Global
 !
       case ('gg')
         var = gg(l1:l2,m,n,1:3)
+!
+     case ('glnTT')
+        var = glnTT(l1:l2,m,n,1:3)
 !
       case ('bbs')
         var = bbs(l1:l2,m,n,1:3)
@@ -397,6 +403,9 @@ module Global
       case ('gg')
         var = gg(l,m,n,1:3)
 !
+      case ('glnTT')
+        var = glnTT(l,m,n,1:3)
+!
       case ('uus')
         var = uus(l,m,n,1:3)
 !
@@ -451,6 +460,7 @@ module Global
       call output(trim(directory)//'/cs2.dat',cs2,1)
       call output(trim(directory)//'/rhos.dat',rhos,1)
       call output(trim(directory)//'/gg.dat',gg,3)
+      call output(trim(directory)//'/glnTT.dat',glnTT,3)
       call output(trim(directory)//'/bbs.dat',bbs,3)
       call output(trim(directory)//'/uus.dat',uus,3)
       call output(trim(directory)//'/uavg_coarse.dat',uavg_coarse,3,nrcylrun)
@@ -472,6 +482,7 @@ module Global
       call input(trim(directory)//'/cs2.dat',cs2,1,0)
       call input(trim(directory)//'/rhos.dat',rhos,1,0)
       call input(trim(directory)//'/gg.dat',gg,3,0)
+      call input(trim(directory)//'/glnTT.dat',glnTT,3,0)
       call input(trim(directory)//'/bbs.dat',bbs,3,0)
       call input(trim(directory)//'/uus.dat',uus,3,0)
       call input_coarse(trim(directory)//'/uavg_coarse.dat',uavg_coarse,3,0,nrcylrun)

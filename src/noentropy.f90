@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.92 2006-10-08 12:11:41 ajohan Exp $
+! $Id: noentropy.f90,v 1.93 2006-11-07 20:20:51 wlyra Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -55,7 +55,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.92 2006-10-08 12:11:41 ajohan Exp $")
+           "$Id: noentropy.f90,v 1.93 2006-11-07 20:20:51 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -149,6 +149,7 @@ module Entropy
       if (lpencil_in(i_fpres)) then
         lpencil_in(i_cs2)=.true.
         lpencil_in(i_glnrho)=.true.
+        if (llocal_iso)  lpencil_in(i_glnTT)=.true.
       endif
       if (lpencil_in(i_TT1) .and. gamma1/=0.) lpencil_in(i_cs2)=.true.
       if (lpencil_in(i_cs2) .and. gamma1/=0.) lpencil_in(i_lnrho)=.true.
@@ -164,7 +165,6 @@ module Entropy
 !
       use Cdata
       use EquationOfState, only: gamma,gamma1,cs20,lnrho0
-
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -177,9 +177,13 @@ module Entropy
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! fpres
       if (lpencil(i_fpres)) then
-        do j=1,3
-          p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
-        enddo
+         do j=1,3
+            if (llocal_iso) then
+               p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)  + p%glnTT(:,j))
+            else
+               p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
+            endif
+         enddo
       endif
 !
       if (NO_WARN) print*, f, p

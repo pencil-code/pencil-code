@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.72 2006-11-04 07:47:37 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.73 2006-11-07 20:20:51 wlyra Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.72 2006-11-04 07:47:37 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.73 2006-11-07 20:20:51 wlyra Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -609,12 +609,12 @@ module EquationOfState
         elseif (leos_localisothermal) then
           if (lpencil(i_cs2)) call get_global(p%cs2,m,n,'cs2')
           if (lpencil(i_lnTT)) p%lnTT=log(p%cs2*cp1/gamma1)
-          if (lpencil(i_glnTT)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal") !p%glnTT=0
+          if (lpencil(i_glnTT)) call get_global(p%glnTT,m,n,'glnTT')  
           if (lpencil(i_hlnTT)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal") 
           if (lpencil(i_del2lnTT)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal") 
           if (lpencil(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma1*(p%lnrho-lnrho0))
           if (lpencil(i_del2ss)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal") 
-          if (lpencil(i_gss)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal") 
+          if (lpencil(i_gss)) p%gss=cv*(p%glnTT-gamma1*p%glnrho)
           if (lpencil(i_hss)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal") 
         else
           call fatal_error("calc_pencils_eos","Full equation of state not implemented for ilnrho_cs2")
@@ -908,6 +908,7 @@ module EquationOfState
 !
       use Cdata
       use Sub, only: max_mn_name, sum_mn_name
+      use Global, only: get_global
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
@@ -1009,6 +1010,8 @@ module EquationOfState
             cs2_=exp(gamma1*(lnrho_-lnrho0)+log(cs20))
           elseif (leos_isothermal) then
             cs2_=cs20
+          elseif (leos_localisothermal) then
+            call get_global(cs2_,m,n,'cs2') 
           else
             call fatal_error('eoscalc_farray','full eos for cs2 not implemented')
           endif
@@ -1018,6 +1021,8 @@ module EquationOfState
             cs2_=exp(gamma1*(lnrho_-lnrho0)+log(cs20))
           elseif (leos_isothermal) then
             cs2_=cs20
+          elseif (leos_localisothermal) then
+            call get_global(cs2_,m,n,'cs2')
           else
             call fatal_error('eoscalc_farray','full eos for cs2 not implemented')
           endif
