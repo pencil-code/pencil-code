@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.293 2006-10-25 14:10:20 theine Exp $
+! $Id: hydro.f90,v 1.294 2006-11-07 20:24:45 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -173,7 +173,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.293 2006-10-25 14:10:20 theine Exp $")
+           "$Id: hydro.f90,v 1.294 2006-11-07 20:24:45 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -317,7 +317,6 @@ module Hydro
           ! Ensure really is zero, as may have used lread_oldsnap
           f(:,:,:,iux:iuz)=0. 
         case('const_uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
-        case('keplerian'); call keplerian(f,xx,yy)
         case('mode'); call modev(ampluu(j),coefuu,f,iuu,kx_uu,ky_uu,kz_uu,xx,yy,zz)
         case('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
         case('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
@@ -1083,14 +1082,20 @@ module Hydro
 !
       use Cdata
       use BorderProfiles, only: border_driving
+      use EquationOfState, only: cs0,cs20
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
-      real, dimension(nx) :: OO
-      real :: g0=1.,r0_pot=0.1
+      real, dimension(nx) :: OO,tmp
+      real :: g0=1.
       integer :: ju,j
 !
+! these tmps and where's are needed because these square roots
+! go negative in the frozen inner disk if the sound speed is big enough
+! (like a corona, no hydrostatic equilibrium)
+!
+
       select case(borderuu)
       case('zero','0')
          f_target=0.
@@ -1099,7 +1104,23 @@ module Hydro
             f_target(:,j) = uu_const(j)
          enddo
       case('globaldisk')
-         OO=sqrt(g0*(rcyl_mn**2+r0_pot**2)**(-1.5))
+         tmp = (1-cs0**2)*g0*rcyl_mn**(-3)
+         where (tmp.ge.0)
+            OO=sqrt(tmp)
+         elsewhere
+            OO=0.
+         endwhere
+         !OO=sqrt(g0*rcyl_mn**(-3))
+         f_target(:,1) = -y(  m  )*OO
+         f_target(:,2) =  x(l1:l2)*OO
+         f_target(:,3) =  0.
+      case('globaldisk-strat')
+         tmp = g0*(r_mn**(-3) - cs20*rcyl_mn**(-4))
+         where (tmp.ge.0)
+            OO=sqrt(tmp)
+         elsewhere
+            OO=0.
+         endwhere
          f_target(:,1) = -y(  m  )*OO
          f_target(:,2) =  x(l1:l2)*OO
          f_target(:,3) =  0.

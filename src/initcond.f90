@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.180 2006-11-06 09:55:26 bingert Exp $ 
+! $Id: initcond.f90,v 1.181 2006-11-07 20:24:45 wlyra Exp $ 
 
 module Initcond 
  
@@ -1452,7 +1452,7 @@ module Initcond
 !
     endsubroutine vortex_2d
 !***********************************************************************
-    subroutine keplerian(f,xx,yy)
+    subroutine keplerian(f,xx,yy,zz,lstrat)
 !
 !  Keplerian initial condition
 !
@@ -1463,54 +1463,107 @@ module Initcond
       use Global, only: set_global
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,rr_cyl,OO,cs2
-      integer ::mcount,ncount
-      real :: g0=1.,r0_pot=0.1
-      integer :: n_pot=2
-!
-      if (n_pot.ne.2) then
-         print*,'initcond.f90: You are trying to model a protoplanetary disk'
-         print*,'with smoothed gravity but the smoothing lenght is not equal'
-         print*,'to 2. Better stop and change, since it will lead to boundary'
-         print*,'troubles as Omega does not flatten properly.'
-         call stop_it('')
-      endif
+      real, dimension (mx,my,mz) :: xx,yy,zz
+      real, dimension (mx) :: r_cyl,r_sph
+      real, dimension (mx) :: OO_cyl,OO_sph,cs2,OO,tmp
+      real, dimension (mx) :: glnTT_rad
+      real, dimension (mx,3) :: glnTT_mn
+      real :: g0=1.
+      integer :: m,n,i
+      logical :: lstrat,lrfirst
 !
 !  Angular velocity for centrifugally supported disc in given potential.
 !  Subtract angular velocity of the reference frame, if Omega is non-zero 
 !
       if (lroot) print*,'Accretion disk initial condition'
 !
-      rr_cyl=sqrt(xx**2+yy**2)+tini
+      do n=1,mz
+         do m=1,my
+            lrfirst = (lroot.and.(n==1.and.m==1))
 !
-      OO = sqrt(g0 * (rr_cyl**2 + r0_pot**2)**(-1.5))
+            r_sph=sqrt(x**2 + y(m)**2 + z(n)**2)+tini
+            r_cyl=sqrt(x**2 + y(m)**2          )+tini
+! omegas 
+            OO_sph = sqrt(g0/r_sph**3)
+            OO_cyl = sqrt(g0/r_cyl**3)
+!
+            if (lrfirst) print*,&
+                 'set sound speed as global variable: Mach number=',1./cs0
+!
+! sound speed is always cylindrical
+!
+            cs2 = (OO_cyl*r_cyl*cs0)**2
 !    
-      f(:,:,:,iux)=f(:,:,:,iux)-yy*(OO - Omega) !Omega is defined in cdata
-      f(:,:,:,iuy)=f(:,:,:,iuy)+xx*(OO - Omega)
-      f(:,:,:,iuz)=0.
+! pressure gradient correction - see notes
 !
-! Also set soundspeed as global variable      
+            if (lstrat) then
+!stratified disk
+               tmp = OO_sph**2 !- cs2/r_cyl**2
+               where (tmp.ge.0)
+                  OO=sqrt(tmp)
+               elsewhere
+                  OO=0.
+               endwhere
+            else
+!cylindrical disk
+               tmp = OO_cyl**2 !* (1-cs0**2)
+               where (tmp.ge.0)
+                  OO=sqrt(tmp)
+               elsewhere
+                  OO=0.
+               endwhere
+            endif
 !
-      if (lroot) print*,&
-           'set sound speed as global variabel: Mach number=',1./cs0
-      cs2 = (OO*rr_cyl*cs0)**2
-!     
-      if (llocal_iso) then 
-         do ncount=n1,n2
-            do mcount=m1,m2
-               call set_global(cs2(l1:l2,mcount,ncount),mcount,ncount,'cs2',nx)
+! check for not a numbers
+!
+            do i=1,mx
+               if ((tmp(i).lt.0).and.(r_cyl(i).gt.r_int)) then
+                  print*,'Pressure gradient correction is bigger than the'
+                  print*,'centrifugal force in the physical domain. Better'
+                  print*,'stop and check'
+                  call stop_it("")
+               endif
             enddo
-         enddo
-      else if (lentropy) then
-         f(:,:,:,iss) = f(:,:,:,iss) + gamma11*log(cs2) 
+!
+! for 2D with pressure gradient correction (see notes)
+!
+            f(:,m,n,iux)= -y(  m  )*OO
+            f(:,m,n,iuy)=      x   *OO
+            f(:,m,n,iuz)=  0.
+!
+! grad(lnTT) is needed for the pressure gradient
+! grad(lnTT) = 2/c grad(c) = 2/s [1 - 3s^2/(2(s^2+s0^2))]  ! s--> r_cyl
+!
+! for s >> s0, grad(lnTT) = -1/s
+!
+            if (llocal_iso) then 
+!
+               if ((m>=m1).and.(m<=m2).and.(n>=n1).and.(n<=n2)) then
+                  call set_global(cs2(l1:l2),m,n,'cs2',nx)
+!
+! calculate grad of log of temperature for pressure gradient
+!
+                  glnTT_rad = -1./r_cyl
+!
+                  glnTT_mn(:,1) =   x /r_cyl*glnTT_rad
+                  glnTT_mn(:,2) = y(m)/r_cyl*glnTT_rad
+                  glnTT_mn(:,3) = 0.
+!
+                  call set_global(glnTT_mn(l1:l2,:),m,n,'glnTT',nx)
+               endif
+!
+            else if (lentropy) then
+               f(:,m,n,iss) = f(:,m,n,iss) + gamma11*log(cs2) 
 !- (gamma-1) * (lnrho-lnrho0))
-      else 
-         print*,"No thermodynamical variable. Choose if you want a "
-         print*,"local thermodynamical approximation (switch llocal_iso=T in "
-         print*,"init_pars and entropy=noentropy on Makefile.local), or if "
-         print*,"you want to compute the entropy via sound speed and density"
-         call stop_it("")
-      endif
+            else 
+               print*,"No thermodynamical variable. Choose if you want a "
+               print*,"local thermodynamical approximation (switch llocal_iso=T in "
+               print*,"init_pars and entropy=noentropy on Makefile.local), or if "
+               print*,"you want to compute the entropy via sound speed and density"
+               call stop_it("")
+            endif
+         enddo
+      enddo
 !
     endsubroutine keplerian
 !***********************************************************************
@@ -2562,54 +2615,121 @@ module Initcond
       use Cdata
       use Mpicomm, only: stop_it
       use General
-      use EquationOfState, only:cs0,gamma1,gamma
-
+      use EquationOfState, only:cs0,gamma11,gamma1,gamma
+      use Global,only : set_global
+      use Deriv, only: der
+!
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz) :: xx,yy,zz,rr_cyl,HH 
-      real :: lnrho_const,plaw
-      real :: r0_pot=0.1,n_pot=2,rsmooth
+      real, dimension(mx,my,mz) :: xx,yy,zz,rr_cyl,rr_sph,OO
+      real, dimension(mx,my,mz) :: OO_sph,OO_cyl,ccs2,tmp=0.,rho=0.
+      real, dimension(nx) :: r1_sph=0.,r1_cyl=0.,glnTT_rad
+      real, dimension(nx) :: cs2=0.,g_r=0.,grhoz=0.
+      real, dimension(nx,3) :: gg_mn=0.,glnTT_mn=0
+      real :: lnrho_const,plaw,g0=1.
       logical :: lstratified
 !
-      if (n_pot.ne.2) then
-         print*,'initcond.f90: You are trying to model a protoplanetary disk' 
-         print*,'with smoothed gravity but the smoothing lenght is not equal'  
-         print*,'to 2. Better stop and change, since it will lead to boundary'
-         print*,'troubles as Omega does not flatten properly.'
-         call stop_it('')
+! All needed stuff
+!
+      rr_cyl   = sqrt(xx**2 + yy**2        )+tini
+      rr_sph   = sqrt(xx**2 + yy**2 + zz**2)+tini
+      OO_sph=sqrt(g0/rr_sph**3)
+      OO_cyl=sqrt(g0/rr_cyl**3)
+      ccs2=(OO_cyl*rr_cyl*cs0)**2
+!
+      if (((nzgrid==1).or.(lcylindrical)).and.(plaw/=0)) then
+! Radial stratification
+         if (lroot) print*,'Radial stratification with power law=',plaw
+         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr_cyl)
+      else 
+         f(:,:,:,ilnrho) = lnrho_const
       endif
 !
-      rr_cyl   = sqrt(xx**2 + yy**2) + tini
+! Write vertical stratification on top of radial stratification
 !
-      if ((nzgrid==1).or.(.not.lstratified)) then
-!
-! Radial stratification
-!
-         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr_cyl)
-
-      else 
-!
-! Vertical stratification - H2 is the square of the pressure scale height
-!        
-         rsmooth=0.75*r_int
-         where (rr_cyl .ge. rsmooth) 
-            HH = rr_cyl*cs0
+      if (lstratified) then
+         if (lroot) &
+              print*,'Adding vertical stratification with scale height h/r=',cs0
+! log density
+         f(:,:,:,ilnrho) = (rr_cyl - rr_sph)/(rr_sph*cs0**2)
+! pressure corrected velocities
+         tmp = OO_sph**2 - ccs2/rr_cyl**2                                  
+         where (tmp.ge.0)
+            OO=sqrt(tmp)
          elsewhere
-            HH = rsmooth*cs0
+            OO=0.
          endwhere
 !
-! WL:ok, this HH is not continuous, but it won't be any problem as long
-! as freezing in the internal radius is used
+! code gravity here for stratified runs
 !
-         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr_cyl) - 0.5*(zz/HH)**2 
-!
+            rho=exp(f(:,:,:,ilnrho))
+            do m=m1,m2
+               do n=n1,n2
+                  r1_sph=1./rr_sph(l1:l2,m,n)
+                  g_r=-r1_sph**2
+                  gg_mn(:,1) = x(l1:l2)*r1_sph * g_r
+                  gg_mn(:,2) = y(  m  )*r1_sph * g_r
+                  call der(rho,grhoz,3)
+                  gg_mn(:,3) = ccs2(l1:l2,m,n)*grhoz/rho(l1:l2,m,n)
+                  call set_global(gg_mn,m,n,'gg',nx)
+               enddo
+            enddo
+
+      else 
+! Cylindrical disk 
+         if (lroot) print*,'Cylindrical disk initial condition'
+
+         tmp = OO_cyl**2 * (1-cs0**2)
+         where (tmp.ge.0)
+            OO=sqrt(tmp)
+         elsewhere
+            OO=0.
+         endwhere
       endif
+!
+! Velocity field
+!
+      f(:,:,:,iux)= -yy*OO
+      f(:,:,:,iuy)=  xx*OO
+      f(:,:,:,iuz)=  0.
 !    
-      if (lentropy) then
-         f(:,:,:,iss) = f(:,:,:,iss) - gamma1/gamma*f(:,:,:,ilnrho)
+! Thermodynamical quantities
+!
+      if (llocal_iso) then
+         if (lroot) print*,&
+              'set sound speed as global variable: Mach number at midplane=',1./cs0
+         do n=n1,n2
+            do m=m1,m2
+!sound speed
+               call set_global(ccs2(l1:l2,m,n),m,n,'cs2',nx)
+!
+! grad(lnTT) is needed for the pressure gradient
+! grad(lnTT) = 2/c grad(c) = 2/s [1 - 3s^2/(2(s^2+s0^2))]  ! s--> r_cyl
+!
+! for s >> s0, grad(lnTT) = -1/s
+!
+               r1_cyl=1./rr_cyl(l1:l2,m,n)
+!
+               glnTT_rad = -r1_cyl
+               glnTT_mn(:,1) = x(l1:l2)*r1_cyl*glnTT_rad
+               glnTT_mn(:,2) = y(  m  )*r1_cyl*glnTT_rad
+               glnTT_mn(:,3) = 0.
+!
+               call set_global(glnTT_mn(l1:l2,:),m,n,'glnTT',nx)
+            enddo
+         enddo
+      else if (lentropy) then
+         f(:,:,:,iss) = f(:,:,:,iss) + gamma11*log(ccs2) &
+              - gamma1/gamma*f(:,:,:,ilnrho)
+      else 
+         print*,"No thermodynamical variable. Choose if you want a "
+         print*,"local thermodynamical approximation (switch llocal_iso=T in"
+         print*,"init_pars and entropy=noentropy on Makefile.local), or if "
+         print*,"you want to compute the entropy via sound speed and density"
+         call stop_it("")
       endif
 !
     endsubroutine power_law
-!*********************************************************
+!****************************************************************
     subroutine corona_init(f)
 !
 ! 07-dec-05/bing : coded.
