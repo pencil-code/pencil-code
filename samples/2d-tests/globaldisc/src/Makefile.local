@@ -23,5 +23,5 @@ PARTICLES_NBODY = particles_nbody
 BORDER_PROF     = border_profiles
 PLANET    = planet
 
-#REAL_PRECISION=double
+REAL_PRECISION=double
 
