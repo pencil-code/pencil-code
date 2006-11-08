@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.177 2006-10-28 14:07:04 brandenb Exp $
+# $Id: getconf.csh,v 1.178 2006-11-08 06:14:15 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -754,15 +754,25 @@ else if ($hn =~ rio* || $hn =~ pia*) then
 
 else if ($hn =~ *.pdc.kth.se) then
   echo "Linux cluster at KTH in Stockholm"
-  module add i-compilers mpich easy
+  df
+  echo "do the same after having added heimdal"
+  module add heimdal
+  df
+  #module add i-compilers mpich easy
+  module add i-compilers easy
   if ($mpi) echo "Use mpirun"
   set mpirun = mpirun
   #
   # follow instructions from:
   # http://zope.pdc.kth.se/pdc/systems_support/computers/lucidor/lucidorruntour#Dedicated
   #
-  #set mpirunops = "-nolocal -np $SP_PROCS -machinefile $SP_HOSTFILE"
-  set mpirunops = "-np $SP_PROCS -machinefile $SP_HOSTFILE"
+  #set mpirunops = "-np $SP_PROCS -machinefile $SP_HOSTFILE"
+  #
+  #  Lenngren
+  #
+  echo "added i-compilers scampi module"
+  module add i-compilers scampi
+  set mpirunops = "-np $SP_PROCS"
 
   #if ($?SP_HOSTFILE) then
   #  cat $SP_HOSTFILE >! lamhosts
