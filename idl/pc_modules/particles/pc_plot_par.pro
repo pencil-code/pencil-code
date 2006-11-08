@@ -1,10 +1,11 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.13 2006-04-14 10:09:55 ajohan Exp $
+;  $Id: pc_plot_par.pro,v 1.14 2006-11-08 06:19:44 ajohan Exp $
 ;
 pro pc_plot_par, xx, $
     x=x, y=y, z=z, com=com, shiftx=shiftx, shifty=shifty, shiftz=shiftz, $
     pos=pos, ps=ps, color=color, drawgrid=drawgrid, $
-    filename=filename, imgdir=imgdir, datadir=datadir, quiet=quiet
+    filename=filename, imgdir=imgdir, datadir=datadir, $
+    lxy=lxy, lxz=lxz, lyz=lyz, quiet=quiet
 
 default, x, 0 & default, y, 0 & default, z, 0
 default, shiftx, 0 & default, shifty, 0 & default, shiftz, 0
@@ -16,6 +17,9 @@ default, drawgrid, 0
 default, filename, 'particles.eps'
 default, imgdir, '.'
 default, datadir, './data/'
+default, lxy, 0
+default, lxz, 0
+default, lyz, 0
 default, quiet, 0
 
 if (n_elements(x) ne 1 or n_elements(y) ne 1 or n_elements(z) ne 1) then begin
@@ -31,6 +35,12 @@ endif else begin
   y0=par.xyz0[1] & y1=y0+par.Lxyz[1]
   z0=par.xyz0[2] & z1=z0+par.Lxyz[2]
 endelse
+;;
+;;  Force 2-D plane.
+;;
+if (lxy) then nz=1
+if (lxz) then ny=1
+if (lyz) then nx=1
 
 if (shifty ne 0.0) then begin
   for k=0L,n_elements(xx[*,1])-1 do begin
@@ -93,12 +103,12 @@ if ( (nx ne 1) and (ny ne 1) and (nz ne 1) ) then begin
  
 endif else if ( (nx ne 1) and (ny ne 1) and (nz eq 1) ) then begin
   
-  plot, xx[*,0], xrange=[x0,x1], yrange=[y0,y1], /nodata
+  plot, xx[*,0], xrange=[x0,x1], yrange=[y0,y1], /nodata, xstyle=1, ystyle=1
   plots, xx[*,0], xx[*,1], psym=3
  
 endif else if ( (nx ne 1) and (ny eq 1) and (nz ne 1) ) then begin
   
-  plot, xx[*,0], xrange=[x0,x1], yrange=[z0,z1], /nodata
+  plot, xx[*,0], xrange=[x0,x1], yrange=[z0,z1], /nodata, xstyle=1, ystyle=1
   plots, xx[*,0], xx[*,2], psym=3
   if (drawgrid) then begin
     oplot, [x[nx/2]  ,x[nx/2]]  , [z[0]     ,z[nz-1]]
@@ -109,7 +119,7 @@ endif else if ( (nx ne 1) and (ny eq 1) and (nz ne 1) ) then begin
 
 endif else if ( (nx eq 1) and (ny ne 1) and (nz ne 1) ) then begin
   
-  plot, xx[*,0], xrange=[y0,y1], yrange=[z0,z1], /nodata
+  plot, xx[*,0], xrange=[y0,y1], yrange=[z0,z1], /nodata, xstyle=1, ystyle=1
   plots, xx[*,1], xx[*,2], psym=3
 
 endif
