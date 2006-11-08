@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.20 2006-11-07 17:43:03 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.21 2006-11-08 11:45:04 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -180,11 +180,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.20 2006-11-07 17:43:03 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.21 2006-11-08 11:45:04 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.20 2006-11-07 17:43:03 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.21 2006-11-08 11:45:04 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -1013,8 +1013,7 @@ endsubroutine read_special_run_pars
        if (headtt) print*,'dlnrho_dt: mass source*rho = ', flux/sink_area
 !
     endsubroutine mass_source_NS
-!***********************************************************************
-
+!********************************************************************
      subroutine density_init(f,xx,zz)
      !
      !Natalia 
@@ -1025,8 +1024,8 @@ endsubroutine read_special_run_pars
       real ::  ln_ro_l, ln_ro_r, ln_ro_u, cs2_star
       integer :: i
  
-       call eoscalc(ilnrho_lnTT,log(rho_star),log(T_star), cs2=cs2_star)
-
+      ! call eoscalc(ilnrho_lnTT,log(rho_disk),log(T_disk), cs2=cs2_star)
+       call eoscalc(ilnrho_lnTT,log(rho_disk),log(T_disk), cs2=cs2_star)
 
         ln_ro_r=log(rho_disk)
         ln_ro_l=log(rho_star)
@@ -1036,14 +1035,17 @@ endsubroutine read_special_run_pars
  
          do i=1,H_disk_point_int+4
     !     f(i,:,:,ilnrho)=ln_ro_u+(1.-(xx(i,:,:)/H_disk)**2)
-          f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(i)**2*gamma/cs2_star)
+          f(i,:,:,ilnrho)=ln_ro_u*0+(1.*0-M_star/2./zz(i,:,:)**3*x(i)**2*gamma/cs2_star)
          enddo 
-
+! 071006
          do i=H_disk_point_int+5,mx
          ! f(i,:,:,ilnrho)=f(H_disk_point+4,:,:,ilnrho)
-          f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(H_disk_point_int+4)**2*gamma/cs2_star)
+          f(i,:,:,ilnrho)=ln_ro_u*0+(1.*0-M_star/2./zz(i,:,:)**3*x(H_disk_point_int+4)**2*gamma/cs2_star)
+         
+!     f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(i)**2*gamma/cs2_star)
          enddo    
 
+        f(:,:,:,ilnrho)= f(:,:,:,ilnrho)+((zz(:,:,:)-R_star)/Lxyz(3))**0.25*(ln_ro_r-ln_ro_l)+ln_ro_l
        else
          if (nzgrid .GT. 1) then 
             f(:,:,:,ilnrho)=(zz(:,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
@@ -1056,15 +1058,14 @@ endsubroutine read_special_run_pars
 !***************************************************************
 
       subroutine entropy_init(f,xx,zz)
-      !Natalia
-      !Initialization of entropy in a case of the step-like distribution
-      use EquationOfState
+   
+     ! use EquationOfState
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx, zz
       real, dimension (nx) ::  lnrho, lnTT,ss
-      integer ::  mi,ni
-      real ::  ll
+      integer ::  mi,ni,li,i
+      real ::  ll, cs2_star
 
 
       if (T_star.GT.0)  lnTT=log(T_star)
@@ -1074,7 +1075,8 @@ endsubroutine read_special_run_pars
          T_disk=cs0**2/gamma1
       endif 
     
-
+         !cs2_star=sqrt(T_star*gamma1)
+         call eoscalc(ilnrho_lnTT,log(rho_disk),log(T_disk), cs2=cs2_star)
       
       do ni=n1,n2;
        do mi=m1,m2;
@@ -1086,15 +1088,36 @@ endsubroutine read_special_run_pars
            if (nxgrid .LE. 1) then
             f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
            else
-        !    f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+    !        f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
 ! 071006
                lnrho=f(l1:l2,mi,ni,ilnrho)
-              lnTT=log(T_disk)
-         !     lnTT=(zz(l1:l2,mi,ni)-R_star)/Lxyz(3)*(log(T_disk)-log(T_star))+log(T_star)
+          !    lnTT=log(T_disk)
+  
+      !    do i=1,H_disk_point_int+4
+      !        lnTT(i)=log(T_disk)+0.5*(1.-M_star/2./zz(i,mi,ni)**3*x(i)**2*gamma/cs2_star)
+      !   enddo 
+
+       !  do i=H_disk_point_int+5,nx
+       !    lnTT(i)=log(T_disk)+0.5*(1.-M_star/2./zz(i,mi,ni)**3*x(H_disk_point_int+4)**2*gamma/cs2_star)
+       !  enddo   
+
+      !   lnTT= lnTT+0.5*(zz(l1:l2,mi,ni)-R_star)/Lxyz(3)*(log(T_disk)-log(T_star))+log(T_star)
+ 
+        lnTT=(zz(l1:l2,mi,ni)-R_star)/Lxyz(3)*(log(T_disk)-log(T_star))+log(T_star)
                call eoscalc(4,lnrho,lnTT,ss=ss)
                f(l1:l2,mi,ni,iss)=ss  
     
              !  f(l1,mi,ni,iss)=-f(l1,mi,ni,ilnrho)*gamma1/gamma
+
+
+  !   do li=l1+1,l2;
+  !          lnrho=f(li,mi,ni,ilnrho)
+  !          lnTT=(xx(li,mi,ni)-0.)/Lxyz(1)*(log(T_disk)-log(T_disk*0.01))+log(T_disk*0.01)
+  !          call eoscalc(4,lnrho,lnTT,ss=ss)
+  !          f(l1:l2,mi,ni,iss)=ss  
+  !    enddo
+
+
            endif 
          endif
 
