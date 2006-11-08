@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.347 2006-11-08 07:05:20 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.348 2006-11-08 09:48:31 mee Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2006-11-08 07:05:20 $ $,~ $ $Revision: 1.347 $ $}
+%\date{$ $Date: 2006-11-08 09:48:31 $ $,~ $ $Revision: 1.348 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2006-11-08 07:05:20 $ $,~ $ $Revision: 1.347 $ $}\\
+  \emph{$ $Date: 2006-11-08 09:48:31 $ $,~ $ $Revision: 1.348 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -5436,7 +5436,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2006-11-08 07:05:20 $ $,~ $ $Revision: 1.347 $ $}
+  \hfill\normalsize\rm$ $Date: 2006-11-08 09:48:31 $ $,~ $ $Revision: 1.348 $ $}
 
 \section{Timings}
 
@@ -5944,6 +5944,19 @@ Here are some settings from wd's \file[.emacs]{\~{}/.emacs} file:
                (define-key f90-mode-map [(meta backspace)] 'backward-kill-word)
   )))
 \end{Verbatim}
+\subsection{Other best practices}
+When implementing IF or SELECT blocks always write
+code for all cases -- including the default or else case. 
+This should be done even when that code is only a call to 
+raise an error that the case should not have been reached.
+If you see a missing case anywhere then do add it.  These
+failsafes are essential in a large multi-purpose multi-user 
+code like the Pencil Code.
+
+If a case is supposed to do nothing and it may be unclear that the
+coder has recognised this fact then make it explicit by adding the 
+default case with a comment like  ! Do Nothing  .   
+The compiler will clean away any such empty blocks.
 
 
 % ====================================================================== %
@@ -8796,7 +8809,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.347 2006-11-08 07:05:20 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.348 2006-11-08 09:48:31 mee Exp $ $}
 
 
 \end{document}
