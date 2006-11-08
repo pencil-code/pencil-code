@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.254 2006-11-06 17:54:10 dobler Exp $
+### $Id: Makefile.src,v 1.255 2006-11-08 06:13:37 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -338,13 +338,23 @@ LD_FFTW2=
 #CFLAGS=-O3  -DFUNDERSC=1 #(damtp)
 #LD_MPI=-I/usr/include -pthread  -llamf77mpi -lmpi -llam -lutil #(damtp)
 ##
-## Axel on h05n35 (ifc 8.1)
+## Axel on Lucidor, h05n35 (ifc 8.1)
 ##
-#FC=mpif90 #(h05n35*)
-#FFLAGS=-O3 #(h05n35*)
-#CC=mpicc #(h05n35*)
-#CFLAGS=-O3 -DFUNDERSC=1 #(h05n35*)
-#LD_MPI= #(h05n35*)
+#FC=mpif90 #(h05n35.*)
+#FFLAGS=-O3 #(h05n35.*)
+#CC=mpicc #(h05n35.*)
+#CFLAGS=-O3 -DFUNDERSC=1 #(h05n35.*)
+#LD_MPI= #(h05n35.*)
+##
+## Axel on Lenngren, d14n36 (ifc 9.1)
+## module add i-compilers/latest scampi
+## /pdc/vol/i-fce/9.1.039/bin/ifort
+##
+#FC=ifort #(d14n36.*)
+#FFLAGS=-pthread -I/opt/scali/include -no-cpprt #(d14n36.*)
+#CC=gcc #(d14n36.*)
+#CFLAGS=-DFUNDERSC=1 #(d14n36.*)
+#LD_MPI=-pthread -L/opt/scali/lib64 -lfmpi -lmpi #(d14n36.*)
 ##
 ## Axel on Horseshoe (ifc 9.0)
 ##
