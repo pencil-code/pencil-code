@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.182 2006-11-08 11:39:06 wlyra Exp $ 
+! $Id: initcond.f90,v 1.183 2006-11-08 16:35:49 wlyra Exp $ 
 
 module Initcond 
  
@@ -2502,14 +2502,14 @@ module Initcond
       use General
       use EquationOfState, only:cs0,gamma11,gamma1,gamma
       use Global,only : set_global
+      use Sub, only: grad
       use Deriv, only: der
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz) :: xx,yy,zz,rr_cyl,rr_sph,OO
-      real, dimension(mx,my,mz) :: OO_sph,OO_cyl,ccs2,tmp=0.,rho=0.
-      real, dimension(nx) :: r1_sph=0.,r1_cyl=0.,glnTT_rad
-      real, dimension(nx) :: cs2=0.,g_r=0.,grhoz=0.
-      real, dimension(nx,3) :: gg_mn=0.,glnTT_mn=0
+      real, dimension(mx,my,mz) :: OO_sph,OO_cyl,ccs2,tmp,rho
+      real, dimension(nx) :: r1_sph,g_r,grhoz
+      real, dimension(nx,3) :: gg_mn,glnTT
       real :: lnrho_const,plaw,g0=1.
       logical :: lstratified
 !
@@ -2581,24 +2581,14 @@ module Initcond
       if (llocal_iso) then
          if (lroot) print*,&
               'set sound speed as global variable: Mach number at midplane=',1./cs0
+         tmp = log(ccs2)
          do n=n1,n2
             do m=m1,m2
 !sound speed
                call set_global(ccs2(l1:l2,m,n),m,n,'cs2',nx)
-!
-! grad(lnTT) is needed for the pressure gradient
-! grad(lnTT) = 2/c grad(c) = 2/s [1 - 3s^2/(2(s^2+s0^2))]  ! s--> r_cyl
-!
-! for s >> s0, grad(lnTT) = -1/s
-!
-               r1_cyl=1./rr_cyl(l1:l2,m,n)
-!
-               glnTT_rad = -r1_cyl
-               glnTT_mn(:,1) = x(l1:l2)*r1_cyl*glnTT_rad
-               glnTT_mn(:,2) = y(  m  )*r1_cyl*glnTT_rad
-               glnTT_mn(:,3) = 0.
-!
-               call set_global(glnTT_mn(l1:l2,:),m,n,'glnTT',nx)
+!temperature gradient
+               call grad(tmp,glnTT)
+               call set_global(glnTT,m,n,'glnTT',nx)
             enddo
          enddo
       else if (lentropy) then
