@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.346 2006-10-23 20:32:57 tarek Exp $
+%%  CVS: $Id: manual.tex,v 1.347 2006-11-08 07:05:20 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2006-10-23 20:32:57 $ $,~ $ $Revision: 1.346 $ $}
+%\date{$ $Date: 2006-11-08 07:05:20 $ $,~ $ $Revision: 1.347 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2006-10-23 20:32:57 $ $,~ $ $Revision: 1.346 $ $}\\
+  \emph{$ $Date: 2006-11-08 07:05:20 $ $,~ $ $Revision: 1.347 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -5436,7 +5436,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2006-10-23 20:32:57 $ $,~ $ $Revision: 1.346 $ $}
+  \hfill\normalsize\rm$ $Date: 2006-11-08 07:05:20 $ $,~ $ $Revision: 1.347 $ $}
 
 \section{Timings}
 
@@ -5533,6 +5533,8 @@ where \code{nw=nx*ny*nz}.
                      & nomag/entro/rad2/ion &  4x1   &  1-nov-03 & AB \\
    4 & fe1   & 5.48 & $16^2{\times}512$                                  
                      & nomag/entro/rad2/ion &  1x4   &  1-nov-03 & AB \\
+   4 & Luci  & 1.81 &  $64^3$ & magn/noentro &        & 28-oct-06 & AB \\
+   4 & Lenn  & 1.21 &  $64^3$ & magn/noentro &        &  7-nov-06 & AB \\
    4 & Kabul & 1.5  & $128^3$ & magn/noentro &  47 MB & 20-jun-02 & WD \\
    4 & Hwwsx5& 1.8  & $256^3$ & convstar     & 8.2 GB & 29-jan-03 & WD \\
    8 & Nqall & 3.0  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
@@ -5575,6 +5577,8 @@ where \code{nw=nx*ny*nz}.
   16 & Gridur& 0.81 & $128^3$ & magn/noentro &        & 19-aug-02 & NE \\
   16 & Gridur& 0.66 & $256^3$ & magn/noentro &        & 19-aug-02 & NE \\
   16 & Sander& 0.53 & $256^3$ & magn/noentro &        &  8-sep-02 & AB \\
+  16 & Luci  & 0.375& $128^3$ & magn/noentro &        & 28-oct-06 & AB \\
+  16 & Lenn  & 0.284& $128^3$ & magn/noentro &        & 28-oct-06 & AB \\
   32 & giga? & 0.32 & $256^3$ & magn/noentro &        & 13-sep-03 & AB \\
   32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
   32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
@@ -5594,6 +5598,7 @@ where \code{nw=nx*ny*nz}.
   64 & giga  & 0.166& $512^3$ & magn/noentro &64*173MB& 10-jul-03 & AB \\
   64 & Gridur& 0.25 & $256^3$ & magn/noentro &        & 19-aug-02 & NE \\
   64 & Ukaff & 0.17 & $512^3$ & magn/noentro &        & 21-may-02 & AB \\
+  64 & Steno & 0.075& $512^3$ & magn/noentro &  8x16  & 19-oct-06 & AB \\
  128 & fe1   & 0.44 & $256^3$ & nomag/entro/rad8/ion &  4x32  & 10-mar-04 & TH \\
  128 & fe1   & 2.8  & $512^3$ & magn/noentro & 16x8   &  5-sep-02 & AB \\
  128 & fe1   & 0.51 & $512^3$ & magn/noentro & 8x16   &  5-sep-02 & AB \\
@@ -5659,6 +5664,12 @@ The machines we have used can be characterized as follows:
 \item[Steno] 118 node IBM cluster with dual node AMD Opteron processors
 with 10 Gb infiniband network, compiled with pgf90 -fastsse -tp k8-64e (Copenhagen).
 \item[Gridur:] Origin 3000
+\item[Luci:] (full name Lucidor) is an HP Itanium cluster, each of the 90
+nodes has two 900 MHz Itanium 2 "McKinley" processors and 6 GB of main memory.
+The interconnect is myrinet.
+\item[Lenn:] (full name Lenngren) is a Dell Xeon cluster with 442 nodes.
+Each node has two 3.4GHz "Nocona" Xeon processors and 8GB of main memory. 
+A high performance Infiniband network from Mellanox is used for MPI traffic.
 \end{description}
 
 Table~\ref{Ttimescale-convsample} shows a similar list, but for a few
@@ -8785,7 +8796,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.346 2006-10-23 20:32:57 tarek Exp $ $}
+$ $Id: manual.tex,v 1.347 2006-11-08 07:05:20 brandenb Exp $ $}
 
 
 \end{document}
