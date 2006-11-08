@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.443 2006-11-04 07:47:36 brandenb Exp $
+! $Id: entropy.f90,v 1.444 2006-11-08 09:49:57 bingert Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -160,7 +160,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.443 2006-11-04 07:47:36 brandenb Exp $")
+           "$Id: entropy.f90,v 1.444 2006-11-08 09:49:57 bingert Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -2539,7 +2539,7 @@ module Entropy
 !    calculate cool term:  C = ne*ni*Q(T) 
 !    with ne*ni = 1.2*np^2 = 1.2*rho^2/(1.4*mp)^2
 !    Q(T) = H*T^B is piecewice poly
-!    [Q] = [v]^3 / [rho] / [l]
+!    [Q] = [v]^3 [rho] [l]^5
 !
 !  15-dec-04/bing: coded
 !
@@ -2558,8 +2558,8 @@ module Entropy
 !
 !     All is in SI units and has to be rescaled to PENCIL units
 !
-      unit_lnQ=3*alog(real(unit_velocity))-alog(real(unit_length))-alog(real(unit_density))
-      if (unit_system .eq. 'cgs') unit_lnQ = unit_lnQ+alog(1.e7)
+      unit_lnQ=3*alog(real(unit_velocity))+5*alog(real(unit_length))+alog(real(unit_density))
+      if (unit_system .eq. 'cgs') unit_lnQ = unit_lnQ+alog(1.e13)
 !
       lnTT_SI = p%lnTT + alog(real(unit_temperature)) 
 !
