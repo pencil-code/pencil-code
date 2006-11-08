@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.181 2006-11-07 20:24:45 wlyra Exp $ 
+! $Id: initcond.f90,v 1.182 2006-11-08 11:39:06 wlyra Exp $ 
 
 module Initcond 
  
@@ -23,7 +23,7 @@ module Initcond
   public :: gaussian, gaussian3d, beltrami, tor_pert
   public :: jump, bjump, stratification
   public :: modes, modev, modeb, crazy
-  public :: trilinear, keplerian, baroclinic
+  public :: trilinear, baroclinic
   public :: diffrot, olddiffrot
   public :: powern, power_randomphase
   public :: planet, planet_hc
@@ -1452,121 +1452,6 @@ module Initcond
 !
     endsubroutine vortex_2d
 !***********************************************************************
-    subroutine keplerian(f,xx,yy,zz,lstrat)
-!
-!  Keplerian initial condition
-!
-!  02-may-05/axel+wlad: coded   
-!
-      use Cdata
-      use EquationOfState, only : cs0,gamma11
-      use Global, only: set_global
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
-      real, dimension (mx) :: r_cyl,r_sph
-      real, dimension (mx) :: OO_cyl,OO_sph,cs2,OO,tmp
-      real, dimension (mx) :: glnTT_rad
-      real, dimension (mx,3) :: glnTT_mn
-      real :: g0=1.
-      integer :: m,n,i
-      logical :: lstrat,lrfirst
-!
-!  Angular velocity for centrifugally supported disc in given potential.
-!  Subtract angular velocity of the reference frame, if Omega is non-zero 
-!
-      if (lroot) print*,'Accretion disk initial condition'
-!
-      do n=1,mz
-         do m=1,my
-            lrfirst = (lroot.and.(n==1.and.m==1))
-!
-            r_sph=sqrt(x**2 + y(m)**2 + z(n)**2)+tini
-            r_cyl=sqrt(x**2 + y(m)**2          )+tini
-! omegas 
-            OO_sph = sqrt(g0/r_sph**3)
-            OO_cyl = sqrt(g0/r_cyl**3)
-!
-            if (lrfirst) print*,&
-                 'set sound speed as global variable: Mach number=',1./cs0
-!
-! sound speed is always cylindrical
-!
-            cs2 = (OO_cyl*r_cyl*cs0)**2
-!    
-! pressure gradient correction - see notes
-!
-            if (lstrat) then
-!stratified disk
-               tmp = OO_sph**2 !- cs2/r_cyl**2
-               where (tmp.ge.0)
-                  OO=sqrt(tmp)
-               elsewhere
-                  OO=0.
-               endwhere
-            else
-!cylindrical disk
-               tmp = OO_cyl**2 !* (1-cs0**2)
-               where (tmp.ge.0)
-                  OO=sqrt(tmp)
-               elsewhere
-                  OO=0.
-               endwhere
-            endif
-!
-! check for not a numbers
-!
-            do i=1,mx
-               if ((tmp(i).lt.0).and.(r_cyl(i).gt.r_int)) then
-                  print*,'Pressure gradient correction is bigger than the'
-                  print*,'centrifugal force in the physical domain. Better'
-                  print*,'stop and check'
-                  call stop_it("")
-               endif
-            enddo
-!
-! for 2D with pressure gradient correction (see notes)
-!
-            f(:,m,n,iux)= -y(  m  )*OO
-            f(:,m,n,iuy)=      x   *OO
-            f(:,m,n,iuz)=  0.
-!
-! grad(lnTT) is needed for the pressure gradient
-! grad(lnTT) = 2/c grad(c) = 2/s [1 - 3s^2/(2(s^2+s0^2))]  ! s--> r_cyl
-!
-! for s >> s0, grad(lnTT) = -1/s
-!
-            if (llocal_iso) then 
-!
-               if ((m>=m1).and.(m<=m2).and.(n>=n1).and.(n<=n2)) then
-                  call set_global(cs2(l1:l2),m,n,'cs2',nx)
-!
-! calculate grad of log of temperature for pressure gradient
-!
-                  glnTT_rad = -1./r_cyl
-!
-                  glnTT_mn(:,1) =   x /r_cyl*glnTT_rad
-                  glnTT_mn(:,2) = y(m)/r_cyl*glnTT_rad
-                  glnTT_mn(:,3) = 0.
-!
-                  call set_global(glnTT_mn(l1:l2,:),m,n,'glnTT',nx)
-               endif
-!
-            else if (lentropy) then
-               f(:,m,n,iss) = f(:,m,n,iss) + gamma11*log(cs2) 
-!- (gamma-1) * (lnrho-lnrho0))
-            else 
-               print*,"No thermodynamical variable. Choose if you want a "
-               print*,"local thermodynamical approximation (switch llocal_iso=T in "
-               print*,"init_pars and entropy=noentropy on Makefile.local), or if "
-               print*,"you want to compute the entropy via sound speed and density"
-               call stop_it("")
-            endif
-         enddo
-      enddo
-!
-    endsubroutine keplerian
-!***********************************************************************
     subroutine baroclinic(f,xx,yy,zz,gamma,rho0,dlnrhobdx,co1_ss,co2_ss,cs20)
 !
 !  Baroclinic shearing sheet initial condition
@@ -2677,7 +2562,6 @@ module Initcond
       else 
 ! Cylindrical disk 
          if (lroot) print*,'Cylindrical disk initial condition'
-
          tmp = OO_cyl**2 * (1-cs0**2)
          where (tmp.ge.0)
             OO=sqrt(tmp)
