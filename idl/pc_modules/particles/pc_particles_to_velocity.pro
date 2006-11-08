@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_velocity.pro,v 1.3 2006-10-20 08:48:09 ajohan Exp $
+;  $Id: pc_particles_to_velocity.pro,v 1.4 2006-11-08 07:51:28 ajohan Exp $
 ;
 ;  Convert positions and velocities of particles to a grid velocity field.
 ;
@@ -117,7 +117,7 @@ endif
 ;
 ;  Define velocity array.
 ;
-ww=fltarr(nx,ny,nz)*one
+ww=fltarr(nx,ny,nz,3)*one
 ;
 ;  Three different ways to assign particle velocity to the grid are implemented:
 ;  (see the book by Hockney & Eastwood)
@@ -268,7 +268,7 @@ if (cic or tsc) then begin
   if (nz ne 1) then begin
     ww[l1-1:l2+1,m1-1:m2+1,n1,*]= $
         ww[l1-1:l2+1,m1-1:m2+1,n1,*] + ww[l1-1:l2+1,m1-1:m2+1,n2+1,*]
-    ww[l1-1:l2+1,m1-1:m2+1,n2]= $
+    ww[l1-1:l2+1,m1-1:m2+1,n2,*]= $
         ww[l1-1:l2+1,m1-1:m2+1,n2,*] + ww[l1-1:l2+1,m1-1:m2+1,n1-1,*]
   endif
 ;
