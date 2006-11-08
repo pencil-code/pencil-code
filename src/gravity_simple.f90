@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.22 2006-11-07 16:43:25 bingert Exp $
+! $Id: gravity_simple.f90,v 1.23 2006-11-08 09:39:16 mee Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -97,13 +97,13 @@ module Gravity
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_gravity: called twice')
+      if (.not. first) call fatal_error('register_gravity','called twice')
       first = .false.
 !
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.22 2006-11-07 16:43:25 bingert Exp $")
+           "$Id: gravity_simple.f90,v 1.23 2006-11-08 09:39:16 mee Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -119,7 +119,6 @@ module Gravity
 !
 !  12-nov-04/anders: coded, copied init conds from grav_x, grav_y and grav_y.
 !
-      use Mpicomm, only: stop_it
       use Sub, only: notanumber, cubic_step
 !
       real                 :: ztop
@@ -157,7 +156,7 @@ module Gravity
 !  pot_ratio gives the resulting ratio in the density.
 !
       case('tanh')
-        if (dgravx==0.) call stop_it("initialize_gravity: dgravx=0 not OK")
+        if (dgravx==0.) call fatal_error("initialize_gravity","dgravx=0 not OK")
         if (lroot) print*,'initialize_gravity: tanh x-grav, gravx=',gravx
         if (lroot) print*,'initialize_gravity: xgrav,dgravx=',xgrav,dgravx
         gravx=-alog(pot_ratio)/dgravx
@@ -175,7 +174,7 @@ module Gravity
       case default
         if (lroot) print*, &
             'initialize_gravity: unknown gravx_profile ', gravx_profile
-        call stop_it('initialize_gravity: chosen gravx_profile not valid')
+        call fatal_error('initialize_gravity','chosen gravx_profile not valid')
 
       endselect
 !
@@ -205,7 +204,7 @@ module Gravity
       case default
         if (lroot) print*, &
             'initialize_gravity: unknown gravy_profile ', gravy_profile
-        call stop_it('initialize_gravity: chosen gravy_profile not valid')
+        call fatal_error('initialize_gravity','chosen gravy_profile not valid')
 
       endselect
 !
@@ -257,7 +256,7 @@ module Gravity
           g_C = g_C_cgs/unit_velocity*unit_time
           g_D = g_D_cgs/unit_length
       else if (unit_system=='SI') then
-        call stop_it('initialize_gravity: SI unit conversions not inplemented')
+        call fatal_error('initialize_gravity','SI unit conversions not inplemented')
       endif
 !
 !  gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
@@ -278,20 +277,20 @@ module Gravity
       case default
         if (lroot) print*, &
             'initialize_gravity: unknown gravz_profile ', gravz_profile
-        call stop_it('initialize_gravity: chosen gravz_profile not valid')
+        call fatal_error('initialize_gravity','chosen gravz_profile not valid')
 
       endselect
 !
 !  Sanity check
 !
       if (notanumber(gravx_xpencil)) then
-        call stop_it('initialize_gravity: found NaN or +/-Inf in gravx_xpencil')
+        call fatal_error('initialize_gravity','found NaN or +/-Inf in gravx_xpencil')
       endif
       if (notanumber(gravy_ypencil)) then
-        call stop_it('initialize_gravity: found NaN or +/-Inf in gravy_ypencil')
+        call fatal_error('initialize_gravity','found NaN or +/-Inf in gravy_ypencil')
       endif
       if (notanumber(gravz_zpencil)) then
-        call stop_it('initialize_gravity: found NaN or +/-Inf in gravz_zpencil')
+        call fatal_error('initialize_gravity','found NaN or +/-Inf in gravz_zpencil')
       endif
 !
     endsubroutine initialize_gravity
@@ -406,12 +405,10 @@ module Gravity
 !
 !  13-nov-04/anders: coded
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension (mx,my,mz) :: xx,yy,zz, pot
       real, optional :: pot0
 !
-      call stop_it('potential_global: this subroutine has been '// & 
+      call fatal_error('potential_global','this subroutine has been '// & 
           'deprecated for gravity_simple')
 !
       if (NO_WARN) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
@@ -449,7 +446,6 @@ module Gravity
 !  24-oct-06bing: added constant gravity profiles
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real :: pot
       real, optional :: xpos,ypos,zpos,r
@@ -466,6 +462,9 @@ module Gravity
         if (lroot) print*,'potential_point: no x-gravity'
       case('const')
         potx_xpoint=-gravx*(xpos-xinfty)
+      case default
+        call fatal_error('potential_point', &
+             'gravx_profile='//gravx_profile//' not implemented')
       endselect
 !
       select case (gravy_profile)
@@ -473,6 +472,9 @@ module Gravity
         if (lroot) print*,'potential_point: no y-gravity'
       case('const')
         poty_ypoint=-gravy*(ypos-yinfty)
+      case default
+        call fatal_error('potential_point', &
+             'gravy_profile='//gravy_profile//' not implemented')
       endselect
 !
       select case (gravz_profile)
@@ -480,6 +482,9 @@ module Gravity
         if (lroot) print*,'potential_point: no z-gravity'
       case('const')
         potz_zpoint=-gravz*(zpos-zinfty)
+      case default
+        call fatal_error('potential_point', &
+             'gravz_profile='//gravz_profile//' not implemented')
       endselect
 !
       pot = potx_xpoint + poty_ypoint + potz_zpoint
