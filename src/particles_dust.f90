@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.150 2006-10-07 10:33:20 ajohan Exp $
+! $Id: particles_dust.f90,v 1.151 2006-11-09 07:23:13 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -119,7 +119,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.150 2006-10-07 10:33:20 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.151 2006-11-09 07:23:13 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -341,6 +341,10 @@ module Particles
         case ('origin')
           if (lroot) print*, 'init_particles: All particles at origin'
           fp(1:npar_loc,ixp:izp)=0.
+
+        case ('zero-z')
+          if (lroot) print*, 'init_particles: Zero z coordinate'
+          fp(1:npar_loc,izp)=0.
  
         case ('constant')
           if (lroot) &
