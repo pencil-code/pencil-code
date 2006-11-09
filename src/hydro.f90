@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.295 2006-11-09 08:31:18 brandenb Exp $
+! $Id: hydro.f90,v 1.296 2006-11-09 18:03:30 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -174,7 +174,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.295 2006-11-09 08:31:18 brandenb Exp $")
+           "$Id: hydro.f90,v 1.296 2006-11-09 18:03:30 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -238,8 +238,8 @@ module Hydro
 !  calculate inverse damping times for damping momentum in the
 !  x and y directions
 !
-      tau_damp_ruxm1=1./tau_damp_ruxm
-      tau_damp_ruym1=1./tau_damp_ruym
+      if (tau_damp_ruxm /= 0.) tau_damp_ruxm1=1./tau_damp_ruxm
+      if (tau_damp_ruym /= 0.) tau_damp_ruym1=1./tau_damp_ruym
 !
 !  set freezing arrays
 !
