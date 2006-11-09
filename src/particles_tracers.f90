@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.30 2006-09-22 10:18:31 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.31 2006-11-09 07:23:51 ajohan Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -27,16 +27,17 @@ module Particles
   real :: xp0=0.0, yp0=0.0, zp0=0.0, eps_dtog=0.01
   logical :: ldragforce_equi_global_eps=.false.
   logical :: lquadratic_interpolation=.false.
+  logical :: ltrace_dust=.false.
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
 
   namelist /particles_init_pars/ &
       initxxp, xp0, yp0, zp0, bcpx, bcpy, bcpz, eps_dtog, &
       ldragforce_equi_global_eps, lquadratic_interpolation, &
-      lparticlemesh_cic, lparticlemesh_tsc
+      lparticlemesh_cic, lparticlemesh_tsc, ltrace_dust
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, lquadratic_interpolation, &
-      lparticlemesh_cic, lparticlemesh_tsc
+      lparticlemesh_cic, lparticlemesh_tsc, ltrace_dust
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -59,7 +60,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.30 2006-09-22 10:18:31 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.31 2006-11-09 07:23:51 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -354,10 +355,18 @@ module Particles
 !
       if (npar_imn(imn)/=0) then
         do k=k1_imn(imn),k2_imn(imn)
-          if (lquadratic_interpolation) then
-            call interpolate_quadratic(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:))
+          if (lparticlemesh_tsc) then
+            if (ltrace_dust) then
+              call interpolate_quadratic_spline(f,iudx(1),iudz(1),fp(k,ixp:izp),uu,ineargrid(k,:))
+            else
+              call interpolate_quadratic_spline(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:))
+            endif
           else
-            call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:))
+            if (ltrace_dust) then
+              call interpolate_linear(f,iudx(1),iudz(1),fp(k,ixp:izp),uu,ineargrid(k,:))
+            else
+              call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:))
+            endif
           endif
           if (nxgrid/=1) dfp(k,ixp) = dfp(k,ixp) + uu(1)
           if (nygrid/=1) dfp(k,iyp) = dfp(k,iyp) + uu(2)
