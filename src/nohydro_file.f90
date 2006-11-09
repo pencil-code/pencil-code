@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.25 2006-08-23 16:53:32 mee Exp $
+! $Id: nohydro_file.f90,v 1.26 2006-11-09 08:31:18 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,8 +60,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.25 $", &
-           "$Date: 2006-08-23 16:53:32 $")
+           "$Revision: 1.26 $", &
+           "$Date: 2006-11-09 08:31:18 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -159,6 +159,17 @@ module Hydro
 !
       if(NO_WARN) print*,f,df,glnrho,divu,rho1,u2  !(keep compiler quiet)
     endsubroutine duu_dt
+!***********************************************************************
+    subroutine calc_lhydro_pars(f)
+!
+!  dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      if (NO_WARN) print*, f     !(keep compiler quiet)
+!
+    endsubroutine calc_lhydro_pars
 !***********************************************************************
     subroutine read_hydro_init_pars(unit,iostat)
       integer, intent(in) :: unit

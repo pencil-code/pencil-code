@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.333 2006-10-22 15:36:25 theine Exp $
+! $Id: equ.f90,v 1.334 2006-11-09 08:31:18 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -383,7 +383,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.333 2006-10-22 15:36:25 theine Exp $")
+           "$Id: equ.f90,v 1.334 2006-11-09 08:31:18 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -430,7 +430,8 @@ module Equ
 !
       if (lshock) call calc_shock_profile(f)
 !
-! Prepare x-ghost zones required before f-array communication AND shock calculation
+!  Prepare x-ghost zones; required before f-array communication
+!  AND shock calculation
 !
       call boundconds_x(f)
 !
@@ -468,8 +469,10 @@ module Equ
         if (.not.lvisc_first.or.lfirst) call calc_viscosity(f)
       endif
 !
-!  Calculate averages for testfield procedure (only when lsoca=.false.)
+!  Calculate averages, currently only required for certain settings
+!  in hydro of the testfield procedure (only when lsoca=.false.)
 !
+      if (lhydro.and.ldensity) call calc_lhydro_pars(f)
       if (ltestfield) call calc_ltestfield_pars(f)
 !
 !  do loop over y and z

@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.63 2006-10-13 06:19:14 brandenb Exp $
+! $Id: nohydro.f90,v 1.64 2006-11-09 08:31:18 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,7 +70,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.63 2006-10-13 06:19:14 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.64 2006-11-09 08:31:18 brandenb Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -339,6 +339,17 @@ module Hydro
 !
     endsubroutine duu_dt
 !***********************************************************************
+    subroutine calc_lhydro_pars(f)
+!
+!  dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      if (NO_WARN) print*, f     !(keep compiler quiet)
+!
+    endsubroutine calc_lhydro_pars
+!***********************************************************************
     subroutine random_isotropic_KS_setup_tony(initpower,kmin,kmax)
 !
 !   produces random, isotropic field from energy spectrum following the
@@ -360,7 +371,6 @@ module Hydro
 !
     real, dimension (3) :: k_unit
     real, dimension (3) :: e1,e2
-!    real, dimension (4) :: r
     real,dimension (6) :: r
     real,dimension (3) ::j,l  !get rid of this - these replace ee,ee1
     real :: initpower,kmin,kmax
