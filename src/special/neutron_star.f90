@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.22 2006-11-08 16:18:00 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.23 2006-11-09 17:25:37 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -180,11 +180,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.22 2006-11-08 16:18:00 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.23 2006-11-09 17:25:37 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.22 2006-11-08 16:18:00 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.23 2006-11-09 17:25:37 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -443,7 +443,7 @@ endsubroutine read_special_run_pars
 
 
     
-       call eoscalc(ilnrho_lnTT,log(rho_star),log(T_star), cs2=cs2_star)
+       call eoscalc(ilnrho_lnTT,log(rho_disk),log(T_disk), cs2=cs2_star)
 
 !  mass sources and sinks for the boundary layer on NS in 1D approximation
 !
@@ -464,25 +464,25 @@ endsubroutine read_special_run_pars
 
    
 
-              if (H_disk_point .GE. nxgrid) then
+             ! if (H_disk_point .GE. nxgrid) then
 	  
 	        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
 	        -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
                 -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/cs2_star))
 			   
-	      else
+	    !  else
 	     
 	 	   
-               df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
-               -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
-     	       -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:H_disk_point+4)**2*gamma/cs2_star))
+       !        df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
+       !        -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
+     !	       -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:H_disk_point+4)**2*gamma/cs2_star))
 			
 	  
 			      
-               df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
-               -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho) &
-	       -log(rho_surf)-(1.-M_star/2./z(n)**3*x(H_disk_point+4)**2*gamma/cs2_star))
-             endif
+        !       df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
+         !      -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho) &
+	       !-log(rho_surf)-(1.-M_star/2./z(n)**3*x(H_disk_point+4)**2*gamma/cs2_star))
+            ! endif
 						    
           endif 
         endif
@@ -1040,7 +1040,8 @@ endsubroutine read_special_run_pars
 ! 071006
          do i=H_disk_point_int+5,mx
          ! f(i,:,:,ilnrho)=f(H_disk_point+4,:,:,ilnrho)
-          f(i,:,:,ilnrho)=ln_ro_u*0+(1.*0-M_star/2./zz(i,:,:)**3*x(H_disk_point_int+4)**2*gamma/cs2_star)*0
+      !    f(i,:,:,ilnrho)=ln_ro_u*0+(1.*0-M_star/2./zz(i,:,:)**3*x(H_disk_point_int+4)**2*gamma/cs2_star)*0
+        f(i,:,:,ilnrho)=ln_ro_u*0+(1.*0-M_star/2./zz(i,:,:)**3*x(i)**2*gamma/cs2_star)*0
          
 !     f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(i)**2*gamma/cs2_star)
          enddo    
@@ -1190,8 +1191,8 @@ endsubroutine read_special_run_pars
       if (bc%location==iBC_X_BOT) then
       ! bottom boundary
         if (j == 1) then 
-            f(l1,:,:,j) = 0.
-            do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
+           do i=1,nghost; f(l1-i,:,:,j)=-f(l1+i,:,:,j); enddo
+              f(l1,:,:,j) = 0.
         else
            do i=1,nghost; f(l1-i,:,:,j)= f(l1+i,:,:,j); enddo
         endif
