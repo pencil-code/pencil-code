@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.88 2006-11-09 07:22:06 ajohan Exp $
+! $Id: particles_sub.f90,v 1.89 2006-11-09 07:25:14 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -52,9 +52,9 @@ module Particles_sub
 !
 !  Read snapshot time.
 !
-        read(1) t
+!        read(1) t
 !        
-        if (ip<=8) print*,'input_particles: read ',filename
+        if (ip<=8) print*, 'input_particles: read ', filename
 !
       close(1)
 !
