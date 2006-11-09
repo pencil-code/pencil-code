@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.87 2006-09-27 05:20:51 ajohan Exp $
+! $Id: particles_sub.f90,v 1.88 2006-11-09 07:22:06 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1464,9 +1464,45 @@ module Particles_sub
 !
         if (lparticlemesh_cic.or.lparticlemesh_tsc) call fold_f(f,irhop,irhop)
         f(l1:l2,m1:m2,n1:n2,irhop)=rhop_tilde*f(l1:l2,m1:m2,n1:n2,irhop)
+!        call sharpen_tsc_density(f)
       endif
 !
     endsubroutine map_xxp_grid
+!***********************************************************************
+    subroutine sharpen_tsc_density(f)
+!
+!  Sharpen density amplitudes (experimental).
+!
+!   9-nov-06/anders: coded
+!
+      use Fourier
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      real, dimension (nx,ny,nz) :: a1, b1
+      integer :: ikx, iky, ikz
+      real :: k2
+!
+      a1=f(l1:l2,m1:m2,n1:n2,irhop)
+      b1=0.0
+      if (lshear) then
+        call fourier_transform_shear(a1,b1)
+      else
+        call fourier_transform(a1,b1)
+      endif
+      do ikz=1,nz; do iky=1,ny; do ikx=1,nx
+        k2 = kx_fft(ikx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
+        a1(ikx,iky,ikz)=a1(ikx,iky,ikz)/(1-dx**2*k2/8)
+        b1(ikx,iky,ikz)=b1(ikx,iky,ikz)/(1-dx**2*k2/8)
+      enddo; enddo; enddo
+      if (lshear) then
+        call fourier_transform_shear(a1,b1,linv=.true.)
+      else
+        call fourier_transform(a1,b1,linv=.true.)
+      endif
+      f(l1:l2,m1:m2,n1:n2,irhop)=a1
+!
+    endsubroutine sharpen_tsc_density
 !***********************************************************************
     subroutine particle_pencil_index(ineargrid)
 !
