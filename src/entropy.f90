@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.444 2006-11-08 09:49:57 bingert Exp $
+! $Id: entropy.f90,v 1.445 2006-11-10 09:31:52 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -34,7 +34,7 @@ module Entropy
 
   !real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss=0.
-  real :: luminosity=0.,wheat=0.1,cool=0.,rcool=1.,wcool=0.1
+  real :: luminosity=0.,wheat=0.1,cool=0.,rcool=0.,wcool=0.1
   real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.,ampl_TT=0.
   real :: chi=0.,chi_t=0.,chi_shock=0.,chi_hyper3=0.
   real :: Kgperp=0.,Kgpara=0.,tdown=0,allp=2
@@ -160,7 +160,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.444 2006-11-08 09:49:57 bingert Exp $")
+           "$Id: entropy.f90,v 1.445 2006-11-10 09:31:52 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -363,14 +363,14 @@ module Entropy
 !
           TT_ext=T0
           if (initss(1) .eq. 'shell_layers') then
-            lmultilayer=.true.
+!           lmultilayer=.true.  ! this is the default...
             if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
             beta0=-g0/(mpoly0+1)*gamma/gamma1
             beta1=-g0/(mpoly1+1)*gamma/gamma1
             TT_crit=TT_ext+beta0*(r_bcz-r_ext)
             TT_int=TT_crit+beta1*(r_int-r_bcz)
           else
-            lmultilayer=.false.
+            lmultilayer=.false.  ! to ensure that hcond=cte
             TT_int=TT_ext*(1.+beta1*(r_ext/r_int-1.))
           endif
           if (lroot) then
@@ -381,6 +381,7 @@ module Entropy
 !         sound speeds
           call get_soundspeed(log(TT_ext),cs2_ext)
           call get_soundspeed(log(TT_int),cs2_int)
+          cs2cool=cs2_ext
 !
       endselect
 !
@@ -2453,6 +2454,7 @@ module Entropy
         ! surface cooling; entropy or temperature
         ! cooling profile; maximum = 1
 !        prof = 0.5*(1+tanh((r_mn-1.)/wcool))
+        if (rcool==0.) rcool=r_ext
         prof = step(r_mn,rcool,wcool)
         !
         !  pick type of cooling
@@ -2469,7 +2471,8 @@ module Entropy
         case ('shell')          !  heating/cooling at shell boundaries
           heat=0.                            ! default
           select case(initss(1))
-            case ('geo-kws','shell_layers'); heat=0.        ! can add heating later based on value of initss
+!           case ('geo-kws','shell_layers'); heat=0.        ! can add heating later based on value of initss
+            case ('geo-kws'); heat=0.    ! can add heating later based on value of initss
           endselect
           !
           !  possibility of a latitudinal heating profile
