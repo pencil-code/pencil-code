@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.353 2006-11-05 14:15:13 theine Exp $
+! $Id: magnetic.f90,v 1.354 2006-11-10 13:03:18 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -54,7 +54,7 @@ module Magnetic
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
   character (len=labellen) :: Omega_profile='nothing',alpha_profile='nothing'
   ! input parameters
-  real, dimension(3) :: B_ext=(/0.,0.,0./),B1_ext,B_ext_tmp
+  real, dimension(3) :: B_ext=(/0.,0.,0./),B1_ext,B_ext_tmp,etavec_hyper3
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real, dimension(nx,3) :: uxbb !(temporary)
@@ -80,6 +80,7 @@ module Magnetic
   logical :: lresi_etaSS=.false.
   logical :: lresi_hyper2=.false.
   logical :: lresi_hyper3=.false.
+  logical :: lresi_hyper3_vec=.false.
   logical :: lresi_eta_shock=.false.
   logical :: lresi_eta_shock_perp=.false.
   logical :: lresi_shell=.false.
@@ -141,7 +142,7 @@ module Magnetic
        lee_ext,lbb_ext,ljj_ext,displacement_gun, &
        pertaa,pertamplaa,D_smag,brms_target,rescaling_fraction, &
        lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint,lfreeze_aext, &
-       llarge_scale_Bz,borderaa
+       llarge_scale_Bz,borderaa,etavec_hyper3
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0
@@ -209,7 +210,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.353 2006-11-05 14:15:13 theine Exp $")
+           "$Id: magnetic.f90,v 1.354 2006-11-10 13:03:18 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -284,6 +285,7 @@ module Magnetic
       lresi_eta_const=.false.
       lresi_hyper2=.false.
       lresi_hyper3=.false.
+      lresi_hyper3_vec=.false.
       lresi_eta_shock=.false.
       lresi_eta_shock_perp=.false.
       lresi_smagorinsky=.false.
@@ -303,6 +305,9 @@ module Magnetic
         case('hyper3')
           if (lroot) print*, 'resistivity: hyper3'
           lresi_hyper3=.true.
+        case('hyper3-vec')
+           if (lroot) print*, 'resistivity: hyper3_vec'
+           lresi_hyper3_vec=.true.
         case('shell')
           if (lroot) print*, 'resistivity: shell'
           lresi_shell=.true.
@@ -346,6 +351,12 @@ module Magnetic
         if (lresi_hyper3.and.eta_hyper3==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper3 is zero!')
+        if ( (lresi_hyper3_vec) .and.  &
+             ((etavec_hyper3(1)==0. .and. nxgrid/=1 ).or. &
+              (etavec_hyper3(2)==0. .and. nygrid/=1 ).or. &
+              (etavec_hyper3(3)==0. .and. nzgrid/=1 )) ) &
+              call fatal_error('initialize_magnetic', &
+              'A resistivity coefficient of etavec_hyper3 is zero!')
         if (lresi_eta_shock.and.eta_shock==0.0) &
           call fatal_error('initialize_magnetic', &
           'Resistivity coefficient eta_shock is zero!')
@@ -976,7 +987,7 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
-      real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw
+      real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b3b21,b1b32,b2b13,sign_jo,rho1_jxb
       real, dimension (nx) :: B1dot_glnrhoxb
@@ -1051,6 +1062,11 @@ module Magnetic
       if (lresi_hyper3) then
         fres=fres+eta_hyper3*p%del6a
         etatotal=etatotal+eta_hyper3
+      endif
+!
+      if (lresi_hyper3_vec) then
+         call del6fjv(f,etavec_hyper3,iaa,tmp2)
+         fres=fres+tmp2
       endif
 !
       if (lresi_shell) then
@@ -1228,7 +1244,17 @@ module Magnetic
         advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
                    (p%bb(:,2)*dy_1(  m  ))**2+ &
                    (p%bb(:,3)*dz_1(  n  ))**2)*mu01*rho1_jxb
-        diffus_eta=(etatotal+meanfield_etat)*dxyz_2
+
+        if (lresi_hyper3_vec) then
+           diffus_eta=etavec_hyper3(1)*dx_1(l1:l2)**6 + &
+                etavec_hyper3(2)*dy_1(m)**6 + &
+                etavec_hyper3(3)*dz_1(n)**6
+        else if (lresi_hyper3) then
+           diffus_eta=eta_hyper3*dxyz_6
+        else
+           diffus_eta=(etatotal+meanfield_etat)*dxyz_2
+        endif
+        
         if (ldiagnos.and.idiag_dteta/=0) then
           call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
         endif
