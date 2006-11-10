@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.89 2006-11-09 07:25:14 ajohan Exp $
+! $Id: particles_sub.f90,v 1.90 2006-11-10 05:49:25 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1481,7 +1481,7 @@ module Particles_sub
 !
       real, dimension (nx,ny,nz) :: a1, b1
       integer :: ikx, iky, ikz
-      real :: k2
+      real :: k2, k4
 !
       a1=f(l1:l2,m1:m2,n1:n2,irhop)
       b1=0.0
@@ -1492,8 +1492,9 @@ module Particles_sub
       endif
       do ikz=1,nz; do iky=1,ny; do ikx=1,nx
         k2 = kx_fft(ikx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
-        a1(ikx,iky,ikz)=a1(ikx,iky,ikz)/(1-dx**2*k2/8)
-        b1(ikx,iky,ikz)=b1(ikx,iky,ikz)/(1-dx**2*k2/8)
+        k4 = kx_fft(ikx)**4 + ky_fft(iky+ipy*ny)**4 + kz_fft(ikz+ipz*nz)**4
+        a1(ikx,iky,ikz)=a1(ikx,iky,ikz)/(1-dx**2*k2/8+13*dx**4*k4/1920)
+        b1(ikx,iky,ikz)=b1(ikx,iky,ikz)/(1-dx**2*k2/8+13*dx**4*k4/1920)
       enddo; enddo; enddo
       if (lshear) then
         call fourier_transform_shear(a1,b1,linv=.true.)
