@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.34 2006-11-03 13:50:41 brandenb Exp $
+! $Id: viscosity.f90,v 1.35 2006-11-10 13:09:30 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -85,7 +85,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.34 2006-11-03 13:50:41 brandenb Exp $")
+           "$Id: viscosity.f90,v 1.35 2006-11-10 13:09:30 wlyra Exp $")
 
       ivisc(1)='nu-const'
 
@@ -536,13 +536,12 @@ module Viscosity
                  'is not implemented for lvisc_hyper3_nu_vector')
          endif
 !
-! WL: why is diffus due to viscosity prop to dx_1**4 while
-! the one due to mass diffusion and resistivity is prop to dx_1**6 ?
+! diffusion time: it will be multiplied by dxyz_2 again further down
 !
          if (lfirst.and.ldt) p%diffus_total=p%diffus_total+&
-                 nuvec_hyper3(1)*dx_1(l1:l2)**4 + &
-                 nuvec_hyper3(2)*dy_1(m)**4 + &
-                 nuvec_hyper3(3)*dz_1(n)**4
+                 (nuvec_hyper3(1)*dx_1(l1:l2)**6 + &
+                  nuvec_hyper3(2)*dy_1(m)**6     + &
+                  nuvec_hyper3(3)*dz_1(n)**6)    / dxyz_2
 !
       endif
 !
