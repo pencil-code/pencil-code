@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.16 2006-06-17 19:56:18 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.17 2006-11-11 15:04:12 ajohan Exp $
 ;
 ;  Convert positions of particles to a grid density field.
 ;
@@ -38,43 +38,12 @@ dx_2=1.0d/dx^2 & dy_2=1.0d/dy^2 & dz_2=1.0d/dz^2
 ;
 x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]
 x1=par.xyz1[0] & y1=par.xyz1[1] & z1=par.xyz1[2]
-l1=dim.l1 & l2=dim.l2 & mx=dim.mx
-m1=dim.m1 & m2=dim.m2 & my=dim.my
-n1=dim.n1 & n2=dim.n2 & mz=dim.mz
 ;
 ;  Set interpolation scheme
 ;
 interpolation_scheme='ngp'
 if (cic) then interpolation_scheme='cic'
 if (tsc) then interpolation_scheme='tsc'
-;  The CIC and TSC schemes work with ghost cells, so if x, y, z are given
-;  without ghost zones, add the ghost zones automatically.
-if (cic or tsc) then begin
-  if (nx ne mx) then begin
-    x2=fltarr(mx)*one
-    x2[l1:l2]=x
-    for l=l1-1,   0,-1 do x2[l]=x2[l+1]-dx
-    for l=l2+1,mx-1,+1 do x2[l]=x2[l-1]+dx
-    x=x2
-    nx=mx
-  endif
-  if (ny ne my) then begin
-    y2=fltarr(my)*one
-    y2[m1:m2]=y
-    for m=m1-1,   0,-1 do y2[m]=y2[m+1]-dy
-    for m=m2+1,my-1,+1 do y2[m]=y2[m-1]+dy
-    y=y2
-    ny=my
-  endif
-  if (nz ne mz) then begin
-    z2=fltarr(mz)*one
-    z2[n1:n2]=z
-    for n=n1-1,   0,-1 do z2[n]=z2[n+1]-dz
-    for n=n2+1,mz-1,+1 do z2[n]=z2[n-1]+dz
-    z=z2
-    nz=mz
-  endif
-endif
 ;
 ;  Possible to map the particles on a finer grid.
 ;
@@ -85,7 +54,7 @@ if (fine gt 1) then begin
   if (nx gt 1) then begin
     nx=fine*nx
     dx=dx/fine
-    x=fltarr(nx)
+    x=fltarr(nx)*one
     x[0]=x0+dx/2
     for i=1,nx-1 do begin
       x[i]=x[0]+i*dx
@@ -95,7 +64,7 @@ if (fine gt 1) then begin
   if (ny gt 1) then begin
     ny=fine*ny
     dy=dy/fine
-    y=fltarr(ny)
+    y=fltarr(ny)*one
     y[0]=y0+dy/2
     for i=1,ny-1 do begin
       y[i]=y[0]+i*dy
@@ -105,7 +74,7 @@ if (fine gt 1) then begin
   if (nz gt 1) then begin
     nz=fine*nz
     dz=dz/fine
-    z=fltarr(nz)
+    z=fltarr(nz)*one
     z[0]=z0+dz/2
     for i=1,nz-1 do begin
       z[i]=z[0]+i*dz
@@ -115,6 +84,54 @@ if (fine gt 1) then begin
   dx_1=1.0d/dx   & dy_1=1.0d/dy   & dz_1=1.0d/dz
   dx_2=1.0d/dx^2 & dy_2=1.0d/dy^2 & dz_2=1.0d/dz^2
 ;
+endif
+;  The CIC and TSC schemes work with ghost cells, so if x, y, z are given
+;  without ghost zones, add the ghost zones automatically.
+if (cic or tsc) then begin
+  nghost=1
+  if (nx ne 1) then begin
+    mx=nx+2*nghost
+    l1=nghost & l2=l1+nx-1
+  endif else begin
+    l1=0 & l2=0
+  endelse
+  if (ny ne 1) then begin
+    my=ny+2*nghost
+    m1=nghost & m2=m1+ny-1
+  endif else begin
+    m1=0 & m2=0
+  endelse
+  if (nz ne 1) then begin
+    mz=nz+2*nghost
+    n1=nghost & n2=n1+nz-1
+  endif else begin
+    n1=0 & n2=0
+  endelse
+
+  if (nx ne 1) then begin
+    x2=fltarr(mx)*one
+    x2[l1:l2]=x
+    for l=l1-1,   0,-1 do x2[l]=x2[l+1]-dx
+    for l=l2+1,mx-1,+1 do x2[l]=x2[l-1]+dx
+    x=x2
+    nx=mx
+  endif
+  if (ny ne 1) then begin
+    y2=fltarr(my)*one
+    y2[m1:m2]=y
+    for m=m1-1,   0,-1 do y2[m]=y2[m+1]-dy
+    for m=m2+1,my-1,+1 do y2[m]=y2[m-1]+dy
+    y=y2
+    ny=my
+  endif
+  if (nz ne 1) then begin
+    z2=fltarr(mz)*one
+    z2[n1:n2]=z
+    for n=n1-1,   0,-1 do z2[n]=z2[n+1]-dz
+    for n=n2+1,mz-1,+1 do z2[n]=z2[n-1]+dz
+    z=z2
+    nz=mz
+  endif
 endif
 ;
 ;  Keplerian shear needs to be taken into account when measuring velocity
