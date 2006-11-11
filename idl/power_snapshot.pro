@@ -68,9 +68,9 @@ for l=0,nx-1 do begin
 endfor
 
 
-;g_x=g_x/(ny*nz)
-;g_y=g_y/(nx*nz)
-;g_z=g_z/(nx*ny)
+g_x=g_x/(ny*nz)
+g_y=g_y/(nx*nz)
+g_z=g_z/(nx*ny)
 
 if (plot) then begin
   pmin=min(g_x[1:nx/2-1])
