@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.151 2006-11-09 07:23:13 ajohan Exp $
+! $Id: particles_dust.f90,v 1.152 2006-11-11 15:17:44 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -119,7 +119,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.151 2006-11-09 07:23:13 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.152 2006-11-11 15:17:44 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1881,13 +1881,12 @@ k_loop:   do while (.not. (k>npar_loc))
               vpm(l)=vpm(l)/p%np(l)
             endif
           enddo
-          print*, 1/tausp1_par
 !  The collisional time-scale is 1/tau_coll=nd*vrms*sigma_coll.
 !  Inserting Epstein friction time gives 1/tau_coll=3*rhod/rho*vprms/tauf.
           if (npar_species>1) then
-            tau_coll1=(1.0-coeff_restitution)*coll_geom_fac*3*p%epsp*vpm*tausp1m
+            tau_coll1=(1.0-coeff_restitution)*p%epsp*vpm*tausp1m
           else
-            tau_coll1=(1.0-coeff_restitution)*coll_geom_fac*3*p%epsp*vpm*tausp1_par
+            tau_coll1=(1.0-coeff_restitution)*p%epsp*vpm*tausp1_par
           endif
 !  Limit inverse time-step of collisional cooling if requested.
           if (tau_coll_min>0.0) then 
