@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.23 2006-09-07 21:08:29 joishi Exp $
+; $Id: pc_read_pvar.pro,v 1.24 2006-11-11 15:10:45 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -33,7 +33,7 @@ pc_set_precision, dim=dim, /quiet
 ;
 mpvar=pdim.mpvar
 npar=pdim.npar
-default, npar_max, npar
+default, npar_max, npar & if (npar_max gt npar) then npar_max=npar
 ncpus=dim.nprocx*dim.nprocy*dim.nprocz
 ;
 ;  Time and grid parameters.
