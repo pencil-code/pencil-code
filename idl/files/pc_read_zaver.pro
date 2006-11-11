@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.8 2006-08-28 11:09:00 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.9 2006-11-11 15:11:14 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -106,6 +106,8 @@ openr, file, filename, /f77
 if (png) then begin
   set_plot, 'z'
   device, set_resolution=[zoom*nx,zoom*ny]
+  print, 'Deleting old png files in the directory ', imgdir
+  spawn, '\rm -f '+imgdir+'/img_*.png'
 endif
 ;;
 ;;  Read z-averages and put in arrays if requested.
