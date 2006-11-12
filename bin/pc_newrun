@@ -1,6 +1,6 @@
 #!/bin/sh 
 #
-#  $Id: pc_newrun,v 1.4 2006-03-05 10:02:15 ajohan Exp $
+#  $Id: pc_newrun,v 1.5 2006-11-12 09:03:32 brandenb Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
@@ -62,14 +62,6 @@ $PENCIL_HOME/bin/mkdatadir
 #
 #  make src dir and go there
 #
-
-if [ $same_source ]; then
-  if [ -h $olddir/src ]; then 
-    ln -s `readlink $olddir/src`
-  else
-    ln -s $olddir/src
-  fi
-else
   mkdir src
   cd src
 #
@@ -86,7 +78,6 @@ else
 #  This gives the possibility to link your own routines
 #  into src (setup-src below won't overwrite those)
 #
-fi
 
   [ -f $parentdir/bin/setup-src.local ] && $parentdir/bin/setup-src.local
 #
@@ -105,3 +96,20 @@ cp *.in $targetdir
 [ -f k.dat ] && cp k.dat $targetdir
 [ -f stratification.dat ] && cp stratification.dat $targetdir
 #
+
+#
+#  if same_source, then link all *.x files from the original directory.
+#  (We don't want to use a link to the entire secr directory, because
+#  then a run directory that is checked in would not possess a record
+#  of it's own src/*.local files.
+#
+if [ $same_source ]; then
+  cd $targetdir/src
+  pwd
+
+  if [ -h $olddir/src ]; then
+    ln -s `readlink $olddir/src/*.x .`
+  else
+    ln -s $olddir/src/*.x .
+  fi
+fi
