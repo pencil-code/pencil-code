@@ -24,7 +24,8 @@
 #   2. If no .mod files have been really changed or newly created, then
 #      - the time stamps of <file>.f90 and <file>.o are reset to the
 #        pre-compilation time stamp of <file.o>, and
-#      - all files *.x are removed to ensure they get re-linked.
+#      - all files *.x are backdated to the golden 1970s to ensure they
+#        get re-linked.
 #
 #   Thus, if a detail in <file>.f90 is changed that does not affect the
 #   interface to other files, none of the other files will get
@@ -55,10 +56,11 @@
 use strict;
 use Digest::MD5 qw(md5_hex);
 
-my $debug=1;                    # 0: be quiet
+my $debug = 1;                  # 0: be quiet
                                 # 1: be verbose
                                 # 2: dump all time stamps and md5 sums
-my $debugfile="./g95_quickndirty.log";
+my $debugfile = "./g95_quickndirty.log";
+my $time_immemorial = 1;        # Thu Jan 1 00:00:01 UCT 1970
 
 if ($debug) {
 
@@ -144,7 +146,7 @@ foreach my $mod_file (@changed) {
 # Handle back-dating of .f90 and .o files:
 if ($backdate_src_o) {
     back_date($fake_time_o, $src, $obj);
-    delete_x_files();
+    backdate_x_files($time_immemorial);
 }
 
 
@@ -261,6 +263,17 @@ sub compile {
     print DEBUG "..done.\n" if ($debug);
 }
 # ---------------------------------------------------------------------- #
+sub backdate_x_files {
+# Backdate *.x to enforce re-linking
+    my $time = shift();
+
+    my @x_files = <*.x>;
+    if (@x_files) {
+        print DEBUG "Backdating @x_files\n" if ($debug);
+        back_date($time, @x_files);
+    }
+}
+# ---------------------------------------------------------------------- #
 sub back_date {
 # Change atime and mtime for files
     my $fake_time = shift;
@@ -276,15 +289,6 @@ sub back_date {
         print DEBUG "Not touching ", join(',', @files),
           " -- fake_time undefined\n"
             if ($debug);
-    }
-}
-# ---------------------------------------------------------------------- #
-sub delete_x_files {
-# Delete *.x to enforce re-linking
-    my @x_files = <*.x>;
-    if (@x_files) {
-        print DEBUG "Unlinking @x_files\n" if ($debug);
-        unlink @x_files or die "Couldn't remove @x_files\n";
     }
 }
 # ---------------------------------------------------------------------- #
