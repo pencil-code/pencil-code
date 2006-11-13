@@ -1,5 +1,7 @@
 module Grid
 
+  use Messages
+
   implicit none
 
   interface grid_profile        ! Overload the grid_profile' subroutine
@@ -155,7 +157,9 @@ module Grid
           x     = x00 + g1-g1lo
           xprim = g1der1
           xprim2= g1der2
-
+        case default
+          call fatal_error("construct_grid", &
+                           "No such x grid function - "//grid_func(1))
         endselect
 
         dx_1=1./xprim
@@ -208,6 +212,9 @@ module Grid
           y     = y00 + g2-g2lo
           yprim = g2der1
           yprim2= g2der2
+        case default
+          call fatal_error("construct_grid", &
+                           "No such y grid function - "//grid_func(2))
 
         endselect
 
@@ -261,7 +268,9 @@ module Grid
           z     = z00 + g3-g3lo
           zprim = g3der1
           zprim2= g3der2
-
+        case default
+          call fatal_error("construct_grid", &
+                           "No such z grid function - "//grid_func(3))
         endselect
 
         dz_1=1./zprim
