@@ -1,4 +1,4 @@
-! $Id: shock_perp.f90,v 1.8 2006-10-07 14:49:15 theine Exp $
+! $Id: shock_perp.f90,v 1.9 2006-11-13 19:34:09 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -98,14 +98,14 @@ module Shock
       if (.not. first) call stop_it('register_shock called twice')
       first = .false.
 !
-      call farray_register_auxilliary('shock',ishock,communicated=.true.) 
-      call farray_register_auxilliary('shock_perp',ishock_perp, &
+      call farray_register_auxiliary('shock',ishock,communicated=.true.) 
+      call farray_register_auxiliary('shock_perp',ishock_perp, &
                                                      communicated=.true.) 
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_perp.f90,v 1.8 2006-10-07 14:49:15 theine Exp $")
+           "$Id: shock_perp.f90,v 1.9 2006-11-13 19:34:09 mee Exp $")
 !
     endsubroutine register_shock
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.6 2006-08-27 12:04:34 mee Exp $ 
+! $Id: farray.f90,v 1.7 2006-11-13 19:34:09 mee Exp $ 
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  THis includes handling different 
@@ -21,11 +21,11 @@ module FArrayManager
 !
   public :: farray_register_variable
   public :: farray_register_pde
-  public :: farray_register_auxilliary
+  public :: farray_register_auxiliary
   public :: farray_register_global
   public :: farray_use_variable
   public :: farray_use_pde
-  public :: farray_use_auxilliary
+  public :: farray_use_auxiliary
   public :: farray_use_global
   public :: farray_size_by_name
   public :: farray_type_by_name
@@ -37,8 +37,8 @@ module FArrayManager
 !
   integer, public, parameter :: iFARRAY_TYPE_NOSUCHTYPE=0
   integer, public, parameter :: iFARRAY_TYPE_PDE=1
-  integer, public, parameter :: iFARRAY_TYPE_COMM_AUXILLIARY=2
-  integer, public, parameter :: iFARRAY_TYPE_AUXILLIARY=3
+  integer, public, parameter :: iFARRAY_TYPE_COMM_AUXILIARY=2
+  integer, public, parameter :: iFARRAY_TYPE_AUXILIARY=3
   integer, public, parameter :: iFARRAY_TYPE_GLOBAL=4
   integer, public, parameter :: iFARRAY_TYPE_SCRATCH=5
 !
@@ -134,7 +134,7 @@ module FArrayManager
  
     endsubroutine farray_register_global
 !***********************************************************************
-    subroutine farray_register_auxilliary(varname,ivar,communicated,vector,ierr) 
+    subroutine farray_register_auxiliary(varname,ivar,communicated,vector,ierr) 
       character (len=*) :: varname
       integer :: ivar
       type (farray_contents_list), pointer :: item
@@ -146,9 +146,9 @@ module FArrayManager
 
       if (present(communicated)) then
         if (communicated) then 
-          vartype=iFARRAY_TYPE_COMM_AUXILLIARY
+          vartype=iFARRAY_TYPE_COMM_AUXILIARY
         else 
-          vartype=iFARRAY_TYPE_AUXILLIARY
+          vartype=iFARRAY_TYPE_AUXILIARY
         endif
       endif
 
@@ -162,7 +162,7 @@ module FArrayManager
         call farray_register_variable(varname,ivar,vartype)
       endif
  
-    endsubroutine farray_register_auxilliary
+    endsubroutine farray_register_auxiliary
 !***********************************************************************
     subroutine farray_register_variable(varname,ivar,vartype,vector,ierr) 
       character (len=*) :: varname
@@ -230,34 +230,34 @@ module FArrayManager
           "the MVAR CONTRIBUTION header is incorrect in one of the physics "// &
           "modules. ")
           endif
-        case (iFARRAY_TYPE_COMM_AUXILLIARY)
+        case (iFARRAY_TYPE_COMM_AUXILIARY)
           if (naux+ncomponents>maux) then
             if (present(ierr)) then
               ierr=iFARRAY_ERR_OUTOFSPACE
               ivar=0
               return
             endif
-            print*,"Registering f-array auxilliary variable: ",varname
+            print*,"Registering f-array auxiliary variable: ",varname
             call fatal_error("farray_register_variable", &
           "There are insufficient maux variables allocated.  This either means "//&
           "the MAUX CONTRIBUTION header is incorrect in one of the physics "// &
           "modules. Or that there you are using some code that can, depending "// &
-          "on runtime parameters, require extra auxilliary variables.  For the "// &
+          "on runtime parameters, require extra auxiliary variables.  For the "// &
           "latter try adding an MAUX CONTRIBUTION header to cparam.local.")
           endif
-        case (iFARRAY_TYPE_AUXILLIARY)
+        case (iFARRAY_TYPE_AUXILIARY)
           if (naux_com+ncomponents>maux_com) then
             if (present(ierr)) then
               ierr=iFARRAY_ERR_OUTOFSPACE
               ivar=0
               return
             endif
-            print*,"Registering f-array communicated auxilliary variable: ",varname
+            print*,"Registering f-array communicated auxiliary variable: ",varname
             call fatal_error("farray_register_variable", &
           "There are insufficient maux_com variables allocated.  This either means "//&
           "the COMMUNICATED AUXILLIARIES header is incorrect in one of the physics "// &
           "modules. Or that there you are using some code that can, depending "// &
-          "on runtime parameters, require extra auxilliary variables.  For the "// &
+          "on runtime parameters, require extra auxiliary variables.  For the "// &
           "latter try adding an MAUX CONTRIBUTION and COMMUNICATED AUXILIARIES "// & 
           "headers to cparam.local.")
           endif
@@ -289,11 +289,11 @@ module FArrayManager
         case (iFARRAY_TYPE_PDE)
           ivar=nvar+1
           nvar=nvar+ncomponents
-        case (iFARRAY_TYPE_COMM_AUXILLIARY)
+        case (iFARRAY_TYPE_COMM_AUXILIARY)
           ivar=mvar+naux_com+1
           naux=naux+ncomponents
           naux_com=naux_com+ncomponents
-        case (iFARRAY_TYPE_AUXILLIARY)
+        case (iFARRAY_TYPE_AUXILIARY)
           ivar=mvar+naux+1
           naux=naux+ncomponents
         case (iFARRAY_TYPE_GLOBAL)
@@ -515,7 +515,7 @@ module FArrayManager
  
     endsubroutine farray_use_global
 !***********************************************************************
-    subroutine farray_use_auxilliary(varname,ivar,communicated,vector,ierr) 
+    subroutine farray_use_auxiliary(varname,ivar,communicated,vector,ierr) 
       character (len=*) :: varname
       integer, pointer  :: ivar
       type (farray_contents_list), pointer :: item
@@ -527,9 +527,9 @@ module FArrayManager
 
       if (present(communicated)) then
         if (communicated) then
-          vartype=iFARRAY_TYPE_COMM_AUXILLIARY
+          vartype=iFARRAY_TYPE_COMM_AUXILIARY
         else
-          vartype=iFARRAY_TYPE_AUXILLIARY
+          vartype=iFARRAY_TYPE_AUXILIARY
         endif
       endif
 
@@ -543,7 +543,7 @@ module FArrayManager
         call farray_use_variable(varname,ivar,vartype)
       endif
  
-    endsubroutine farray_use_auxilliary
+    endsubroutine farray_use_auxiliary
 !***********************************************************************
     subroutine farray_use_variable(varname,ivar,vartype,component,vector,ierr) 
       character (len=*) :: varname
