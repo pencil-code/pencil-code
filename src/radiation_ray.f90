@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.117 2006-11-07 11:55:39 nbabkovs Exp $
+! $Id: radiation_ray.f90,v 1.118 2006-11-13 12:50:06 nbabkovs Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -92,7 +92,7 @@ module Radiation
   logical :: lradpressure=.false.,lradflux=.false.
 
   logical ::  lrad_cool_diffus=.false., lrad_pres_diffus=.false.
-  logical ::  ldt_rad_limit=.false.
+  logical ::  lnatalia=.false.
 
   character :: lrad_str,mrad_str,nrad_str
   character(len=3) :: raydir_str
@@ -111,7 +111,7 @@ module Radiation
        Srad_const,amplSrad,radius_Srad, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lradflux, &
-       Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus,ldt_rad_limit
+       Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus,lnatalia
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
@@ -120,7 +120,7 @@ module Radiation
        kx_Srad,ky_Srad,kz_Srad,kx_kapparho,ky_kapparho,kz_kapparho, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure, &
-       Frad_boundary_ref,lrad_cool_diffus,lrad_pres_diffus,ldt_rad_limit, &
+       Frad_boundary_ref,lrad_cool_diffus,lrad_pres_diffus,lnatalia, &
        cdtrad_thin,cdtrad_thick
 
   contains
@@ -175,7 +175,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.117 2006-11-07 11:55:39 nbabkovs Exp $")
+           "$Id: radiation_ray.f90,v 1.118 2006-11-13 12:50:06 nbabkovs Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1701,7 +1701,15 @@ module Radiation
 !
       if (lrad_cool_diffus.and.lcooling) then
         call dot(4*p%glnTT-p%glnrho,p%glnTT,g2)
-        f(l1:l2,m,n,iQrad)=Krad*p%TT*(p%del2lnTT+g2)
+        if (lnatalia) then
+            if (n .LE. nzgrid-5 ) then
+             f(l1:l2-5,m,n,iQrad)=Krad(1:nx-5)*p%TT(1:nx-5)*(p%del2lnTT(1:nx-5)+g2(1:nx-5))
+            endif
+        else
+        
+           f(l1:l2,m,n,iQrad)=Krad*p%TT*(p%del2lnTT+g2)
+        endif      
+
       endif
 !
 !  radiative flux, Frad = -K*gradT; note that -div(Frad)=Qrad
