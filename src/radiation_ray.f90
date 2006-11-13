@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.118 2006-11-13 12:50:06 nbabkovs Exp $
+! $Id: radiation_ray.f90,v 1.119 2006-11-13 12:53:33 nbabkovs Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -175,7 +175,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.118 2006-11-13 12:50:06 nbabkovs Exp $")
+           "$Id: radiation_ray.f90,v 1.119 2006-11-13 12:53:33 nbabkovs Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1686,7 +1686,7 @@ module Radiation
       real, dimension (nx) :: Krad,chi_rad,g2,diffus_chi1
       real, dimension (nx) :: local_optical_depth,opt_thin,opt_thick,dt1_rad
       real :: fact, rho_max=0. !, dl_max=0.
-      integer :: j,k
+      integer :: j,k,  zone_size
 
       intent(inout) :: f,df
       intent(in) :: p
@@ -1702,8 +1702,9 @@ module Radiation
       if (lrad_cool_diffus.and.lcooling) then
         call dot(4*p%glnTT-p%glnrho,p%glnTT,g2)
         if (lnatalia) then
-            if (n .LE. nzgrid-5 ) then
-             f(l1:l2-5,m,n,iQrad)=Krad(1:nx-5)*p%TT(1:nx-5)*(p%del2lnTT(1:nx-5)+g2(1:nx-5))
+          zone_size=5
+            if (n .LE. nzgrid-zone_size ) then
+             f(l1:l2-zone_size,m,n,iQrad)=Krad(1:nx-zone_size)*p%TT(1:nx-zone_size)*(p%del2lnTT(1:nx-zone_size)+g2(1:nx-zone_size))
             endif
         else
         
