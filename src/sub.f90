@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.265 2006-11-05 14:15:12 theine Exp $ 
+! $Id: sub.f90,v 1.266 2006-11-13 15:43:48 mee Exp $ 
 
 module Sub 
 
@@ -505,20 +505,29 @@ module Sub
 !
 !  successively calculate sum of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true. ultimately multiply by dv 
-!  to get the integral
-!AB: please explain; so at the moment its still the same as sum_mn_name!?
+!  to get the integral.  This differs from sum_mn_name by the 
+!  setting of ilabel_integrate and hence in the behaviour in the final
+!  step.
 !
-!   30-may-03/tony: adapted form sum_mn_name
+!   30-may-03/tony: adapted from sum_mn_name
+!   13-nov-06/tony: modified to handle stretched mesh 
 !
       use Cdata
+      use Grid
 !
-      real, dimension (nx) :: a
+      real, dimension (nx) :: a,fac
       integer :: iname
 !
+
+      fac=1.
+!ajwm FIX ME: Divisions are evil!
+      if (.not.lequidist(1)) fac=fac/dx_1(l1:l2)
+      if (.not.lequidist(2)) fac=fac/dy_1(m)
+      if (.not.lequidist(3)) fac=fac/dz_1(n)
       if (lfirstpoint) then
-        fname(iname)=sum(a)
+        fname(iname)=sum(a*fac)
       else
-        fname(iname)=fname(iname)+sum(a)
+        fname(iname)=fname(iname)+sum(a*fac)
       endif
 !
 !  set corresponding entry in itype_name

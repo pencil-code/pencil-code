@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.334 2006-11-09 08:31:18 brandenb Exp $
+! $Id: equ.f90,v 1.335 2006-11-13 15:43:48 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -135,9 +135,9 @@ module Equ
 
              if (itype_name(iname)==ilabel_integrate) then
                dv=1.
-               if (nxgrid/=1) dv=dv*dx
-               if (nygrid/=1) dv=dv*dy
-               if (nzgrid/=1) dv=dv*dz
+               if (nxgrid/=1.and.lequidist(1)) dv=dv*dx
+               if (nygrid/=1.and.lequidist(2)) dv=dv*dy
+               if (nzgrid/=1.and.lequidist(3)) dv=dv*dz
                fname(iname)=fsum(isum_count)*dv
               endif
 
@@ -383,7 +383,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.334 2006-11-09 08:31:18 brandenb Exp $")
+           "$Id: equ.f90,v 1.335 2006-11-13 15:43:48 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
