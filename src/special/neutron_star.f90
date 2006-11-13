@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.23 2006-11-09 17:25:37 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.24 2006-11-13 12:15:48 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -180,11 +180,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.23 2006-11-09 17:25:37 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.24 2006-11-13 12:15:48 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.23 2006-11-09 17:25:37 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.24 2006-11-13 12:15:48 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -468,7 +468,8 @@ endsubroutine read_special_run_pars
 	  
 	        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
 	        -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
-                -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/cs2_star))
+        !   -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/cs2_star)
+	        -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/(p%TT*gamma1)))
 			   
 	    !  else
 	     
@@ -525,7 +526,8 @@ endsubroutine read_special_run_pars
             do i=l_sz,l2   
               df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
               -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
-	      +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/cs2_star)
+	 !    +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/cs2_star)
+	      +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/(p%TT(i)*gamma1))
           		    
             enddo
            endif 
@@ -556,6 +558,9 @@ endsubroutine read_special_run_pars
 ! add effective gravity term = -Fgrav+Fcentrifugal
 ! Natalia
 !
+
+       l_sz=l2-5*0
+
       if (leffective_gravity) then
         if (headtt) &
           print*,'duu_dt: Effectiv gravity; Omega, Rstar=', Omega, R_star, M_star
@@ -566,10 +571,10 @@ endsubroutine read_special_run_pars
         if (nxgrid /= 1) then 
 
           if (lgrav_x_mdf) then 
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)- &
-              M_star/z(n)**2/sqrt(z(n)**2+x(l1:l2)**2)*x(l1:l2)*(z(n)-R_star)/(Lxyz(1)*0.5)
+            df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)- &
+              M_star/z(n)**2/sqrt(z(n)**2+x(l1:l_sz)**2)*x(l1:l_sz)*(z(n)-R_star)/(Lxyz(1)*0.5)
            else
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-M_star/z(n)**3*x(l1:l2)
+            df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)-M_star/z(n)**3*x(l1:l_sz)
            endif
           endif
       endif
@@ -646,6 +651,13 @@ endsubroutine read_special_run_pars
              df(j,m,n,iuz)=df(j,m,n,iuz)&
                   -1./(5.*dt)*(f(j,m,n,iuz)-f(j-1,m,n,iuz))
            enddo
+
+
+        !   do j=l1,l1+5
+	!   df(j,m,n,iux)=df(j,m,n,iux)&
+	!    -1./(5.*dt)*(f(j,m,n,iux)-0.)
+			     
+	!   enddo    
 
          endif 
     
@@ -740,7 +752,10 @@ endsubroutine read_special_run_pars
               if (lnstar_T_const) then   
                  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
                  -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
-              endif   
+              endif
+	  else
+	 !  df(l1:l2,m,n,iss)=0      
+	         
           endif
 
          endif 
@@ -756,6 +771,8 @@ endsubroutine read_special_run_pars
           if (lnstar_1D) then   
           else
             do j=l_sz,l2   
+	!     df(j,m,n,iss)=0
+		
              df(j,m,n,iss)=df(j,m,n,iss)&
                -1./(5.*dt)*(f(j,m,n,iss)-f(j-1,m,n,iss))
             enddo 
@@ -1191,11 +1208,13 @@ endsubroutine read_special_run_pars
       if (bc%location==iBC_X_BOT) then
       ! bottom boundary
         if (j == 1) then 
-           do i=1,nghost; f(l1-i,:,:,j)=-f(l1+i,:,:,j); enddo
+          do i=1,nghost; f(l1-i,:,:,j)=-f(l1+i,:,:,j); enddo
               f(l1,:,:,j) = 0.
+        !  do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
+	      
         else
            do i=1,nghost; f(l1-i,:,:,j)= f(l1+i,:,:,j); enddo
-        endif
+       endif
      
       elseif (bc%location==iBC_X_TOP) then
       ! top boundary
