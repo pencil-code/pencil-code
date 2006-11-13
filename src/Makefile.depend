@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.55 2006-11-06 04:22:20 mee Exp $
+### $Id: Makefile.depend,v 1.56 2006-11-13 15:44:41 mee Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -158,7 +158,7 @@ read_vectorfiles$(PC_META_TYPE).o: read_vectorfiles.f90 $(read_vectorfiles_deps)
 #
 $(CPARAM_OBJ):    $(CPARAM_SRC)  cparam$(PC_META_TYPE).local cparam$(PC_META_TYPE).inc
 $(CDATA_OBJ):     $(CDATA_SRC)   $(CPARAM_OBJ)
-$(GRID_OBJ):      $(GRID_SRC)    $(CDATA_OBJ) $(MPICOMM_OBJ)
+$(GRID_OBJ):      $(GRID_SRC)    $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ)
 $(GENERAL_OBJ):   $(GENERAL_SRC) $(MESSAGES_OBJ) $(CPARAM_OBJ) $(CDATA_OBJ)
 
 #
@@ -184,7 +184,7 @@ $(FARRAY_OBJ):              farray.f90           $(CDATA_OBJ) $(MESSAGES_OBJ) $(
 $(SHARED_VARIABLES_OBJ):    shared_variables.f90 $(MESSAGES_OBJ) 
 $(BORDER_PROF_OBJ):                              $(CDATA_OBJ) $(BORDER_PROF_SRC) $(SUB_OBJ)
 slices$(PC_META_TYPE).o:    slices.f90           $(CDATA_OBJ) $(SUB_OBJ) $(EOS_OBJ) $(PARTICLES_MAIN_OBJ) $(SHOCK_OBJ) $(INTERSTELLAR_OBJ) $(HYDRO_OBJ) $(RADIATION_OBJ) $(MAGNETIC_OBJ) $(SPECIAL_OBJ) $(CHIRAL_OBJ)
-$(SUB_OBJ):                 sub.f90              $(CDATA_OBJ) $(MPICOMM_OBJ) deriv$(PC_META_TYPE).o $(MESSAGES_OBJ) $(GENERAL_OBJ)
+$(SUB_OBJ):                 sub.f90              $(CDATA_OBJ) $(MPICOMM_OBJ) deriv$(PC_META_TYPE).o $(MESSAGES_OBJ) $(GENERAL_OBJ) $(GRID_OBJ)
 param_io$(PC_META_TYPE).o:  param_io.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(TIMESTEP_OBJ) $(TIMEAVG_OBJ) $(physics) $(PARTICLES_MAIN_OBJ)  
 register$(PC_META_TYPE).o:  register.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(physics) $(TIMEAVG_OBJ) prints$(PC_META_TYPE).o equ$(PC_META_TYPE).o
 equ$(PC_META_TYPE).o:       equ.f90              $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(physics) boundcond$(PC_META_TYPE).o $(GLOBAL_OBJ) $(PARTICLES_MAIN_OBJ) $(INTERSTELLAR_OBJ)
