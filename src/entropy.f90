@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.445 2006-11-10 09:31:52 dintrans Exp $
+! $Id: entropy.f90,v 1.446 2006-11-13 14:38:56 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -67,6 +67,7 @@ module Entropy
   logical :: lpressuregradient_gas=.true.,ladvection_entropy=.true.
   logical :: lviscosity_heat=.true.
   logical :: lfreeze_sint=.false.,lfreeze_sext=.false.
+  logical :: lhcond_global=.false.
 
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
@@ -124,7 +125,7 @@ module Entropy
       heat_uniform,lupw_ss,cool_int,cool_ext,chi_hyper3, &
       lturbulent_heat,deltaT_poleq,lpressuregradient_gas, &
       tdown, allp,beta_glnrho_global,ladvection_entropy, &
-      lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext
+      lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
@@ -160,7 +161,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.445 2006-11-10 09:31:52 dintrans Exp $")
+           "$Id: entropy.f90,v 1.446 2006-11-13 14:38:56 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -176,6 +177,8 @@ module Entropy
                                  beta_glnrho_global, beta_glnrho_scaled, &
                                  mpoly, mpoly0, mpoly1, mpoly2, &
                                  select_eos_variable
+      use Global, only: set_global
+      use IO
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -184,6 +187,8 @@ module Entropy
       real :: beta0,TT_crit
       integer :: i
       logical :: lnothing
+      real, dimension (nx) :: hcond
+      real, dimension (nx,3) :: glhc
 !
 ! Check any module dependencies
 !
@@ -456,6 +461,17 @@ module Entropy
         endselect
         lnothing=.true.
       enddo
+
+      if (lhcond_global) then
+        do n=n1,n2
+        do m=m1,m2
+          call heatcond(hcond) 
+          call gradloghcond(glhc)
+          call set_global(hcond,m,n,'hcond',nx)
+          call set_global(glhc,m,n,'glhc',nx)
+        enddo
+        enddo
+      endif
 !
 !  A word of warning...
 !
@@ -2217,6 +2233,7 @@ module Entropy
       use Sub
       use IO
       use Gravity
+      use Global, only: get_global
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -2247,15 +2264,24 @@ module Entropy
           if (z_mn(1) /= z_prev) then
             call heatcond(hcond)
             call gradloghcond(glhc)
-            call chit_profile(chit_prof)
-            call gradlogchit_profile(glchit_prof)
+            if (chi_t/=0) then
+              call chit_profile(chit_prof)
+              call gradlogchit_profile(glchit_prof)
+            endif
             z_prev = z_mn(1)
           endif
         else
-          call heatcond(hcond)       ! returns hcond=hcond0
-          call gradloghcond(glhc)    ! returns glhc=0
-          call chit_profile(chit_prof)
-          call gradlogchit_profile(glchit_prof)
+          if (lhcond_global) then
+            call get_global(hcond,m,n,'hcond')
+            call get_global(glhc,m,n,'glhc')
+          else
+            call heatcond(hcond)
+            call gradloghcond(glhc)
+          endif
+          if (chi_t/=0) then
+            call chit_profile(chit_prof)
+            call gradlogchit_profile(glchit_prof)
+          endif
         endif
         !
         ! NB: the following left in for the record, but the version below,
@@ -2287,7 +2313,7 @@ module Entropy
 !
 !  write z-profile (for post-processing)
 !
-      call write_zprof('hcond',hcond)
+      if (headt .and. lfirst .and. lgravz) call write_zprof('hcond',hcond)
 !
 !  Write radiative flux array
 !
@@ -2371,6 +2397,7 @@ module Entropy
       use Cdata
       use Sub
       use Gravity
+      use IO
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -2451,6 +2478,8 @@ module Entropy
         ! heating profile, normalised, so volume integral = 1
         prof = exp(-0.5*(r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5)
         heat = luminosity*prof
+        if (headt .and. lfirst .and. ip<=9) &
+          call output_pencil(trim(directory)//'/heat.dat',heat,1)
         ! surface cooling; entropy or temperature
         ! cooling profile; maximum = 1
 !        prof = 0.5*(1+tanh((r_mn-1.)/wcool))
