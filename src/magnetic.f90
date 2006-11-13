@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.354 2006-11-10 13:03:18 wlyra Exp $
+! $Id: magnetic.f90,v 1.355 2006-11-13 23:37:37 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -210,7 +210,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.354 2006-11-10 13:03:18 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.355 2006-11-13 23:37:37 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2988,12 +2988,11 @@ module Magnetic
 !
           delta_z  = z(n1+j) - z(n1-j)
           exp_fact = exp(-kappa*delta_z)
-
 !
 !  Determine potential field in ghost zones
 !
           !  Fourier transforms of x- and y-components on the boundary
-          do i=iax,iay
+          do i=iax,iaz
             tmp_re = f(l1:l2,m1:m2,n1+j,i)
             tmp_im = 0.0
             call fourier_transform_xy_parallel(tmp_re,tmp_im)
@@ -3001,11 +3000,7 @@ module Magnetic
             aa_im(:,:,i) = tmp_im*exp_fact
           enddo
 
-          !  Compute z-component from div A = 0
-          aa_re(:,:,iaz) = + kappa1*(kx*aa_im(:,:,iax)+ky*aa_im(:,:,iay))
-          aa_im(:,:,iaz) = - kappa1*(kx*aa_re(:,:,iax)+ky*aa_re(:,:,iay))
-
-          ! Transform back
+         ! Transform back
           do i=iax,iaz
             tmp_re = aa_re(:,:,i)
             tmp_im = aa_im(:,:,i)
@@ -3030,22 +3025,17 @@ module Magnetic
 !
           delta_z  = z(n2+j) - z(n2-j)
           exp_fact = exp(-kappa*delta_z)
-
 !
 !  Determine potential field in ghost zones
 !
           !  Fourier transforms of x- and y-components on the boundary
-          do i=iax,iay
+          do i=iax,iaz
             tmp_re = f(l1:l2,m1:m2,n2-j,i)
             tmp_im = 0.0
             call fourier_transform_xy_parallel(tmp_re,tmp_im)
             aa_re(:,:,i) = tmp_re*exp_fact
             aa_im(:,:,i) = tmp_im*exp_fact
           enddo
-
-          ! Compute z-component from div A = 0
-          aa_re(:,:,iaz) = - kappa1*(kx*aa_im(:,:,iax)+ky*aa_im(:,:,iay))
-          aa_im(:,:,iaz) = + kappa1*(kx*aa_re(:,:,iax)+ky*aa_re(:,:,iay))
 
           ! Transform back
           do i=iax,iaz
