@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.446 2006-11-13 14:38:56 dintrans Exp $
+! $Id: entropy.f90,v 1.447 2006-11-14 16:08:01 bingert Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -82,8 +82,8 @@ module Entropy
   double precision, parameter, dimension (10) :: & 
        intlnT_1 =(/4.605, 8.959, 9.906, 10.534, 11.283, 12.434, 13.286, 14.541, 17.51, 20.723 /) 
   double precision, parameter, dimension (9) :: &
-       lnH_1 = (/ -220.884,  -141.165, -80.245, -101.314, -78.748, -53.88, -80.452, -70.758, -91.182/), &
-       B_1   = (/     15.,      6.15,      0.,      2.0,      0.,    -2.,      0., -0.6667,    0.5 /)  
+       lnH_1 = (/ -534.017,  -141.165, -80.245, -101.314, -78.748, -53.88, -80.452, -70.758, -91.182/), &
+       B_1   = (/     50.,      6.15,      0.,      2.0,      0.,    -2.,      0., -0.6667,    0.5 /)  
   !
   ! A second set of parameters for cool_RTV (from interstellar.f90)
   !
@@ -161,7 +161,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.446 2006-11-13 14:38:56 dintrans Exp $")
+           "$Id: entropy.f90,v 1.447 2006-11-14 16:08:01 bingert Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1755,6 +1755,9 @@ module Entropy
         vKperp(:) = Kgperp
         call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs*p%rho1
+        if (lfirst.and.ldt) then         
+           dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
+        endif
       endif
       if (lheatc_spitzer) call calc_heatcond_spitzer(df,p)
       if (lheatc_corona) then
@@ -2576,7 +2579,7 @@ module Entropy
 !  15-dec-04/bing: coded
 !
       use IO
-!     
+!
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni
       integer :: i,imax
@@ -2602,6 +2605,7 @@ module Entropy
 !     rtv_cool=exp(lnneni+lnQ-unit_lnQ-lnrho-lnTT)
 !   
 ! First set of parameters
+      rtv_cool=0.
       if (cool_RTV .gt. 0.) then
         imax = size(intlnT_1,1)       
         lnQ(:)=0.0
@@ -2954,7 +2958,7 @@ module Entropy
 !  25-sep-2006/bing: updated, using external data
 !
       use EquationOfState, only: lnrho0,gamma
-
+!
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: newton
       real, dimension (150), save :: b_lnT,b_z  
@@ -2979,9 +2983,9 @@ module Entropy
          !
          b_lnT = b_lnT - alog(real(unit_temperature))
          if (unit_system == 'SI') then
-           b_z(:) = b_z(:) * 1.e6 / unit_length 
+           b_z = b_z * 1.e6 / unit_length 
          elseif (unit_system == 'cgs') then
-           b_z(:) = b_z(:) * 1.e8 / unit_length 
+           b_z = b_z * 1.e8 / unit_length 
          endif
       endif
 !
