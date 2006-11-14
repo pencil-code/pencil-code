@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.184 2006-11-12 10:51:32 wlyra Exp $ 
+! $Id: initcond.f90,v 1.185 2006-11-14 16:58:21 wlyra Exp $ 
 
 module Initcond 
  
@@ -2588,20 +2588,23 @@ module Initcond
       enddo
 
 !
-! code gravity here for stratified runs
+! code gravity here for stratified runs, else it will be coded
+! in gravity_r.f90
 !
       rho  = exp(f(:,:,:,ilnrho))
       ccs2 = cs20/(sqrt(xx**2+yy**2)+tini)
 !
       do m=m1,m2
          do n=n1,n2
-            rmn_sph = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2)+tini
+            if (lstratified) then
+               rmn_sph = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2)+tini
 !
-            gg_mn(:,1) = -x(l1:l2)/rmn_sph**3
-            gg_mn(:,2) = -y(  m  )/rmn_sph**3
-            call der(rho,grhoz,3)
-            gg_mn(:,3) = ccs2(l1:l2,m,n)*grhoz/rho(l1:l2,m,n)
-            call set_global(gg_mn,m,n,'gg',nx)
+               gg_mn(:,1) = -x(l1:l2)/rmn_sph**3
+               gg_mn(:,2) = -y(  m  )/rmn_sph**3
+               call der(rho,grhoz,3)
+               gg_mn(:,3) = ccs2(l1:l2,m,n)*grhoz/rho(l1:l2,m,n)
+               call set_global(gg_mn,m,n,'gg',nx)
+            endif
 !    
 ! Thermodynamical quantities
 !
