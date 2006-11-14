@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.126 2006-10-22 15:36:25 theine Exp $
+! $Id: boundcond.f90,v 1.127 2006-11-14 16:16:53 bingert Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1783,11 +1783,11 @@ module Boundcond
 !
 !    27-mai-04/bing:coded
 !
-       Use Sub
        Use Cdata
 
        real, dimension (mx,my,mz,mfarray) :: f
-       real, dimension (nx,ny*nprocy) :: uxd,uyd,uxl,uxr,uyl,uyr
+       real, dimension (nx,ny*nprocy),save :: uxl,uxr,uyl,uyr
+       real, dimension (nx,ny*nprocy) :: uxd,uyd
        integer :: lend,iostat=0,i=0,j
        real :: tl=0.,tr=0.,delta_t
        intent (inout) :: f
@@ -1827,6 +1827,7 @@ module Boundcond
           read (10,rec=2*i+1)   uxr 
           read (10,rec=2*i+2)   uyr
           close (10)       
+
        endif
 !      
 !   simple linear interploation between timesteps
@@ -1838,8 +1839,6 @@ module Boundcond
 !    
 !   Fill the ghost cells and the bottom layer with vel. field
 !
-       f(l1:l2,m1:m2,1:n1,iuz) = 0.
-!       
        do j=1,n1
           f(l1:l2,m1:m2,j,iux) = uxd(:,ipy*ny:(ipy+1)*ny) / 100./unit_velocity 
           f(l1:l2,m1:m2,j,iuy) = uyd(:,ipy*ny:(ipy+1)*ny) / 100./unit_velocity 
