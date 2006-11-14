@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.27 2006-11-14 12:01:30 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.28 2006-11-14 12:29:47 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -180,11 +180,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.27 2006-11-14 12:01:30 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.28 2006-11-14 12:29:47 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.27 2006-11-14 12:01:30 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.28 2006-11-14 12:29:47 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -486,7 +486,8 @@ endsubroutine read_special_run_pars
        do i=l1+1,l2 
         p_gas=p%cs2(i-1)/gamma*p%rho(i-1)
         p_rad=sigmaSB*p%TT(i-1)**4/c_light
-        grad_rho=2.25*nu_for_1D*Sigma_rho*kappa_es/c_light*(3./16.*p_gas/p_rad+1.)-x(i-1)
+        grad_rho=2.25*nu_for_1D*Sigma_rho*kappa_es/c_light &
+         *(3./16.*p_gas/p_rad+1.)-x(i-1)
         grad_rho=grad_rho*f(i-1,m,n,2)**2/z(n)**2*gamma/p%cs2(i-1)
 		
           df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&  
@@ -544,16 +545,21 @@ endsubroutine read_special_run_pars
             l_sz=l2-5
 
            if (lnstar_1D) then
- 
+
            else 
+
             do i=l_sz,l2   
+             if (n .LT. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
               df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
               -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
 	 !    +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/cs2_star)
 	      +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/p%cs2(i-1) &
 	     +M_star/z(n)**3*(x(i)-x(i-1))**2*gamma/p%cs2(i-1)*0.5*0. )
-          		    
+             endif
             enddo
+
+
+
            endif 
          endif
       endif
