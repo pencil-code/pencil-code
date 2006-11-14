@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.29 2006-11-14 14:08:53 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.30 2006-11-14 14:14:29 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -180,11 +180,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.29 2006-11-14 14:08:53 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.30 2006-11-14 14:14:29 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.29 2006-11-14 14:08:53 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.30 2006-11-14 14:14:29 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -472,7 +472,7 @@ endsubroutine read_special_run_pars
 	!        -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/(p%cs2(l1:l2))))
 
 
-        df(l1,m,n,ilnrho)=df(i,m,n,ilnrho)&
+        df(l1,m,n,ilnrho)=df(l1,m,n,ilnrho)&
            -1./(5.*dt)*(f(l1,m,n,ilnrho)-log(rho_disk))
 
           do i=l2-5,l2 
