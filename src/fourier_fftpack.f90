@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.9 2006-10-06 17:28:33 theine Exp $
+! $Id: fourier_fftpack.f90,v 1.10 2006-11-14 03:32:49 theine Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -656,17 +656,21 @@ module Fourier
       endif
 
       if (lforward) then
+
+        if (nxgrid>1) then
 !
 !  Transform x-direction.
 !      
-        call cffti(nxgrid,wsavex)
+          call cffti(nxgrid,wsavex)
 
-        do m=1,ny
-          ax=cmplx(a_re(:,m),a_im(:,m))
-          call cfftf(nxgrid,ax,wsavex)
-          a_re(:,m)=real(ax)
-          a_im(:,m)=aimag(ax)
-        enddo
+          do m=1,ny
+            ax=cmplx(a_re(:,m),a_im(:,m))
+            call cfftf(nxgrid,ax,wsavex)
+            a_re(:,m)=real(ax)
+            a_im(:,m)=aimag(ax)
+          enddo
+
+        endif
 
         if (nygrid>1) then
 !
@@ -717,17 +721,21 @@ module Fourier
           call transp_xy(a_im)
 
         endif
+
+        if (nxgrid>1) then
 !
 !  Transform x-direction back.
 !      
-        call cffti(nxgrid,wsavex)
+          call cffti(nxgrid,wsavex)
 
-        do m=1,ny
-          ax=cmplx(a_re(:,m),a_im(:,m))
-          call cfftb(nxgrid,ax,wsavex)
-          a_re(:,m)=real(ax)
-          a_im(:,m)=aimag(ax)
-        enddo
+          do m=1,ny
+            ax=cmplx(a_re(:,m),a_im(:,m))
+            call cfftb(nxgrid,ax,wsavex)
+            a_re(:,m)=real(ax)
+            a_im(:,m)=aimag(ax)
+          enddo
+
+        endif
 
       endif
 !
