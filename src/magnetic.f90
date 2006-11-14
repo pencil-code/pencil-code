@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.355 2006-11-13 23:37:37 dobler Exp $
+! $Id: magnetic.f90,v 1.356 2006-11-14 03:33:44 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -210,7 +210,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.355 2006-11-13 23:37:37 dobler Exp $")
+           "$Id: magnetic.f90,v 1.356 2006-11-14 03:33:44 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3101,18 +3101,13 @@ module Magnetic
 !
 !  Fourier transforms of x- and y-components on the boundary
 !
-        do i=iax,iay
+        do i=iax,iaz
           tmp_re = f(l1:l2,m1:m2,n1,i)
           tmp_im = 0.0
           call fourier_transform_xy_parallel(tmp_re,tmp_im)
           aa_re(:,:,i) = tmp_re
           aa_im(:,:,i) = tmp_im
         enddo
-!
-!  Compute z-component from div A = 0
-!
-        aa_re(:,:,iaz) = + kappa1*(kx*aa_im(:,:,iax)+ky*aa_im(:,:,iay))
-        aa_im(:,:,iaz) = - kappa1*(kx*aa_re(:,:,iax)+ky*aa_re(:,:,iay))
 !
 !  Determine potential field in ghost zones
 !
@@ -3136,18 +3131,13 @@ module Magnetic
 !
 !  Fourier transforms of x- and y-components on the boundary
 !
-        do i=iax,iay
+        do i=iax,iaz
           tmp_re = f(l1:l2,m1:m2,n2,i)
           tmp_im = 0.0
           call fourier_transform_xy_parallel(tmp_re,tmp_im)
           aa_re(:,:,i) = tmp_re
           aa_im(:,:,i) = tmp_im
         enddo
-!
-!  Compute z-component from div A = 0
-!
-        aa_re(:,:,iaz) = - kappa1*(kx*aa_im(:,:,iax)+ky*aa_im(:,:,iay))
-        aa_im(:,:,iaz) = + kappa1*(kx*aa_re(:,:,iax)+ky*aa_re(:,:,iay))
 !
 !  Determine potential field in ghost zones
 !
