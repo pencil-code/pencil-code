@@ -1,36 +1,29 @@
 !                     -*-f90-*-   (for emacs)
-!  run parameters for corona 
+!  run parameters for corona
 !
 &run_pars
   ip=14
-  cvsid='$Id: run.in,v 1.2 2006-10-12 15:44:10 bingert Exp $'
+  cvsid='$Id: run.in,v 1.3 2006-11-14 15:51:34 bingert Exp $'
   nt=20, it1=5, isave=50
   cdt=0.4, cdtv=0.08, cdts=0.08, itorder=3
-  dsnap=1.5e4, dtmin=1e-7 
+  dsnap=0.03
   !
-  bcx = 'p'   ,'p'   ,'p'  ,'p' ,'p'   ,'p'   ,'p','p'
-  bcy = 'p'   ,'p'   ,'p'  ,'p' ,'p'   ,'p'   ,'p','p'
-  bcz = 'g:a2' ,'g:a2' ,'g:a','a2:s','a2:s','fB:a2','fB:a2','a2:a2'
+  bcz = 'g:s' ,'nil:s' ,'a','a2','cT','fB:a2','fB:a2','a2:a2'
   force_lower_bound='uxy_convection '
 ! lpencil_check=T
 /
 &eos_run_pars
-  gamma  = 1.6666666
-  cp = 1.
-  mu =0.667
 /
 &hydro_run_pars
 /
 &density_run_pars
-  idiff='shock'
-  diffrho_shock=1.
 /
 &grav_run_pars
 /
 &entropy_run_pars
-  iheatcond='shock','K-const'
-  chi_shock=1.
-  hcond0=1.e-3
+  iheatcond='K-const'
+  !
+  hcond0=1.e-7
 /
 &magnetic_run_pars
  iresistivity='shock','eta-const'
