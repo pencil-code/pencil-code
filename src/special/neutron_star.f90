@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.28 2006-11-14 12:29:47 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.29 2006-11-14 14:08:53 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -180,11 +180,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.28 2006-11-14 12:29:47 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.29 2006-11-14 14:08:53 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.28 2006-11-14 12:29:47 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.29 2006-11-14 14:08:53 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -475,25 +475,34 @@ endsubroutine read_special_run_pars
         df(l1,m,n,ilnrho)=df(i,m,n,ilnrho)&
            -1./(5.*dt)*(f(l1,m,n,ilnrho)-log(rho_disk))
 
+          do i=l2-5,l2 
+ 
+           df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&  
+            -1./(5.*dt)*(f(i,m,n,ilnrho) &
+            -log(rho_surf) &
+            -(1.-M_star/2./z(n)**3*x(i)**2*gamma/cs2_star))
+	
+          enddo
+
          ! do i=l1+1,l2 
          !  df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&  
          !  -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
          !  +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/p%cs2(i-1))
          ! enddo
 
-       Sigma_rho=sqrt(pi)/2.*rho_disk*Lxyz(1)
+     !  Sigma_rho=sqrt(pi)/2.*rho_disk*Lxyz(1)
 
-       do i=l1+1,l2 
-        p_gas=p%cs2(i-1)/gamma*p%rho(i-1)
-        p_rad=sigmaSB*p%TT(i-1)**4/c_light
-        grad_rho=2.25*nu_for_1D*Sigma_rho*kappa_es/c_light &
-         *(3./16.*p_gas/p_rad+1.)-x(i-1)
-        grad_rho=grad_rho*f(i-1,m,n,2)**2/z(n)**2*gamma/p%cs2(i-1)
+     !  do i=l1+1,l2 
+     !   p_gas=p%cs2(i-1)/gamma*p%rho(i-1)
+     !   p_rad=sigmaSB*p%TT(i-1)**4/c_light
+     !   grad_rho=2.25*nu_for_1D*Sigma_rho*kappa_es/c_light &
+     !    *(3./16.*p_gas/p_rad+1.)-x(i-1)
+     !   grad_rho=grad_rho*f(i-1,m,n,2)**2/z(n)**2*gamma/p%cs2(i-1)
 		
-          df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&  
-           -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
-           -grad_rho*(x(i)-x(i-1)))
-       enddo
+      !    df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&  
+      !     -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
+      !     -grad_rho*(x(i)-x(i-1)))
+      ! enddo
   
 	    !  else
 	     
