@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.24 2006-11-13 12:15:48 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.25 2006-11-14 11:19:21 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -180,11 +180,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.24 2006-11-13 12:15:48 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.25 2006-11-14 11:19:21 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.24 2006-11-13 12:15:48 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.25 2006-11-14 11:19:21 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -466,11 +466,24 @@ endsubroutine read_special_run_pars
 
              ! if (H_disk_point .GE. nxgrid) then
 	  
-	        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-	        -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
+	!        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+	!        -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
         !   -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/cs2_star)
-	        -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/(p%TT*gamma1)))
+	!        -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/(p%cs2(l1:l2))))
 			   
+		
+	      
+	     df(l1,m,n,ilnrho)=df(i,m,n,ilnrho)&
+	      -1./(5.*dt)*(f(l1,m,n,ilnrho)-log(rho_disk))
+			      
+	      do i=l1+1,l2
+		df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
+		 -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
+		 +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/p%cs2(i-1)  )
+										  
+	      enddo
+											      
+		
 	    !  else
 	     
 	 	   
@@ -527,7 +540,8 @@ endsubroutine read_special_run_pars
               df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
               -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
 	 !    +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/cs2_star)
-	      +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/(p%TT(i)*gamma1))
+	      +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/p%cs2(i-1) &
+	     +M_star/z(n)**3*(x(i)-x(i-1))**2*gamma/p%cs2(i-1)*0.5*0. )
           		    
             enddo
            endif 
@@ -755,7 +769,9 @@ endsubroutine read_special_run_pars
               endif
 	  else
 	 !  df(l1:l2,m,n,iss)=0      
-	         
+	    !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)&
+	    !              -1./(5.*dt)*(f(l1:l2,m,n,iss)-f(l1:l2,m,n-1,iss))
+			       
           endif
 
          endif 
