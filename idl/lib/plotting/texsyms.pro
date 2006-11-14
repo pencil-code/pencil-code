@@ -1,4 +1,4 @@
-;;;;;;;;;;;;;;;;;;;;;;;              -*- coding:latin-1 -*-
+;;;;;;;;;;;;;;;;;;;;;;;              -*- coding:latin1 -*-
 ;;;   texsyms.pro   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -92,6 +92,7 @@ function texsyms, DEVICE=device
               downarrow   : '!7¯!X', $
               leftarrow   : '!7¬!X', $
               rightarrow  : '!7®!X', $
+              infty       : '!7¥!X',  $
     ; harder stuff like tilde on top of symbol, etc
     ; Usage: PLOT, [...], TITLE=sym.tilde+'!8Q!X' to get \tilde{Q}, etc
               tilde       : '!S!N!A!3~!R!X', $
@@ -171,6 +172,7 @@ function texsyms, DEVICE=device
               downarrow   : '!95!X',  $
               leftarrow   : '!94!X',  $
               rightarrow  : '!96!X',  $
+              infty       : '!7y!X', $
     ; harder stuff like tilde on top of symbol, etc
     ; Usage: PLOT, [...], TITLE=sym.tilde+'!8Q!X' to get \tilde{Q}, etc
               tilde       : '!S!U!N!A!9A!R!X', $
