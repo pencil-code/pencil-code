@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.255 2006-09-21 23:19:17 wlyra Exp $ 
+! $Id: param_io.f90,v 1.256 2006-11-14 18:22:43 dobler Exp $ 
 
 module Param_IO
 
@@ -98,7 +98,8 @@ module Param_IO
        lpoint,mpoint,npoint, &
        lrescaling, lcylindrical, &
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
-       lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d
+       lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
+       lbidiagonal_derij
   contains
 
 !***********************************************************************

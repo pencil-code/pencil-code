@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.340 2006-10-16 08:16:31 dobler Exp $
+! ! $Id: cdata.f90,v 1.341 2006-11-14 18:22:43 dobler Exp $
 
 module Cdata
 
@@ -241,6 +241,7 @@ module Cdata
   logical :: save_lastsnap=.true.
   logical :: lcopysnapshots_exp=.false.
   logical :: lwrite_2d=.false.
+  logical :: lbidiagonal_derij=.false.
 
 ! Constant 'parameters' cannot occur in namelists, so inorder to get the now constant module
 ! logicals into the lphysics name list... We have some proxies that are used to initialise

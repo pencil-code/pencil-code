@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.32 2006-08-23 16:53:31 mee Exp $
+! $Id: deriv.f90,v 1.33 2006-11-14 18:22:43 dobler Exp $
 
 module Deriv
   
@@ -632,6 +632,7 @@ module Deriv
 !  accurate to 6th order, explicit, periodic
 !   8-sep-01/axel: coded
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
+!  14-nov-06/wolf: implemented bidiagonal scheme
 !
       use Cdata
 !
@@ -642,88 +643,149 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !
-      if ((i==1.and.j==2).or.(i==2.and.j==1)) then
-        if (nxgrid/=1.and.nygrid/=1) then
-          fac=(1./60.**2)*dx_1(l1:l2)*dy_1(m)
-          df=fac*( &
-            45.*((45.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
-                  -9.*(f(l1+2:l2+2,m+1,n,k)-f(l1-2:l2-2,m+1,n,k))  &
-                     +(f(l1+3:l2+3,m+1,n,k)-f(l1-3:l2-3,m+1,n,k))) &
-                -(45.*(f(l1+1:l2+1,m-1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
-                  -9.*(f(l1+2:l2+2,m-1,n,k)-f(l1-2:l2-2,m-1,n,k))  &
-                     +(f(l1+3:l2+3,m-1,n,k)-f(l1-3:l2-3,m-1,n,k))))&
-            -9.*((45.*(f(l1+1:l2+1,m+2,n,k)-f(l1-1:l2-1,m+2,n,k))  &
-                  -9.*(f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k))  &
-                     +(f(l1+3:l2+3,m+2,n,k)-f(l1-3:l2-3,m+2,n,k))) &
-                -(45.*(f(l1+1:l2+1,m-2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
-                  -9.*(f(l1+2:l2+2,m-2,n,k)-f(l1-2:l2-2,m-2,n,k))  &
-                     +(f(l1+3:l2+3,m-2,n,k)-f(l1-3:l2-3,m-2,n,k))))&
-               +((45.*(f(l1+1:l2+1,m+3,n,k)-f(l1-1:l2-1,m+3,n,k))  &
-                  -9.*(f(l1+2:l2+2,m+3,n,k)-f(l1-2:l2-2,m+3,n,k))  &
-                     +(f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k))) &
-                -(45.*(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))  &
-                  -9.*(f(l1+2:l2+2,m-3,n,k)-f(l1-2:l2-2,m-3,n,k))  &
-                     +(f(l1+3:l2+3,m-3,n,k)-f(l1-3:l2-3,m-3,n,k))))&
-                 )
-        else
-          df=0.
-          if (ip<=5) print*, 'derij: Degenerate case in x-direction'
+
+      if (lbidiagonal_derij) then
+        !
+        ! Use bidiagonal mixed-derivative operator, i.e. 
+        ! employ only the three neighbouring points on each of the four
+        ! half-diagonals. This gives 6th-order mixed derivatives as the
+        ! version below, but involves just 12 points instead of 36.
+        !
+        if ((i==1.and.j==2).or.(i==2.and.j==1)) then
+          if (nxgrid/=1.and.nygrid/=1) then
+            fac=(1./720.)*dx_1(l1:l2)*dy_1(m)
+            df=fac*( &
+                        270.*( f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k)  &
+                              +f(l1-1:l2-1,m-1,n,k)-f(l1+1:l2+1,m-1,n,k)) &
+                       - 27.*( f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k)  &
+                              +f(l1-2:l2-2,m-2,n,k)-f(l1+2:l2+2,m-2,n,k)) &
+                       +  2.*( f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k)  &
+                              +f(l1-3:l2-3,m-3,n,k)-f(l1+3:l2+3,m-3,n,k)) &
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in x or y direction'
+          endif
+        elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
+          if (nygrid/=1.and.nzgrid/=1) then
+            fac=(1./720.)*dy_1(m)*dz_1(n)
+            df=fac*( &
+                        270.*( f(l1:l2,m+1,n+1,k)-f(l1:l2,m+1,n-1,k)  &
+                              +f(l1:l2,m-1,n-1,k)-f(l1:l2,m-1,n+1,k)) &
+                       - 27.*( f(l1:l2,m+2,n+2,k)-f(l1:l2,m+2,n-2,k)  &
+                              +f(l1:l2,m-2,n-2,k)-f(l1:l2,m-2,n+2,k)) &
+                       +  2.*( f(l1:l2,m+3,n+3,k)-f(l1:l2,m+3,n-3,k)  &
+                              +f(l1:l2,m-3,n-3,k)-f(l1:l2,m-3,n+3,k)) &
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in y-direction'
+          endif
+        elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
+          if (nzgrid/=1.and.nxgrid/=1) then
+            fac=(1./720.)*dz_1(n)*dx_1(l1:l2)
+            df=fac*( &
+                        270.*( f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k)  &
+                              +f(l1-1:l2-1,m,n-1,k)-f(l1+1:l2+1,m,n-1,k)) &
+                       - 27.*( f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k)  &
+                              +f(l1-2:l2-2,m,n-2,k)-f(l1+2:l2+2,m,n-2,k)) &
+                       +  2.*( f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k)  &
+                              +f(l1-3:l2-3,m,n-3,k)-f(l1+3:l2+3,m,n-3,k)) &
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in z-direction'
+          endif
         endif
-      elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
-        if (nygrid/=1.and.nzgrid/=1) then
-          fac=(1./60.**2)*dy_1(m)*dz_1(n)
-          df=fac*( &
-            45.*((45.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
-                  -9.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m-2,n+1,k))  &
-                     +(f(l1:l2,m+3,n+1,k)-f(l1:l2,m-3,n+1,k))) &
-                -(45.*(f(l1:l2,m+1,n-1,k)-f(l1:l2,m-1,n-1,k))  &
-                  -9.*(f(l1:l2,m+2,n-1,k)-f(l1:l2,m-2,n-1,k))  &
-                     +(f(l1:l2,m+3,n-1,k)-f(l1:l2,m-3,n-1,k))))&
-            -9.*((45.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m-1,n+2,k))  &
-                  -9.*(f(l1:l2,m+2,n+2,k)-f(l1:l2,m-2,n+2,k))  &
-                     +(f(l1:l2,m+3,n+2,k)-f(l1:l2,m-3,n+2,k))) &
-                -(45.*(f(l1:l2,m+1,n-2,k)-f(l1:l2,m-1,n-2,k))  &
-                  -9.*(f(l1:l2,m+2,n-2,k)-f(l1:l2,m-2,n-2,k))  &
-                     +(f(l1:l2,m+3,n-2,k)-f(l1:l2,m-3,n-2,k))))&
-               +((45.*(f(l1:l2,m+1,n+3,k)-f(l1:l2,m-1,n+3,k))  &
-                  -9.*(f(l1:l2,m+2,n+3,k)-f(l1:l2,m-2,n+3,k))  &
-                     +(f(l1:l2,m+3,n+3,k)-f(l1:l2,m-3,n+3,k))) &
-                -(45.*(f(l1:l2,m+1,n-3,k)-f(l1:l2,m-1,n-3,k))  &
-                  -9.*(f(l1:l2,m+2,n-3,k)-f(l1:l2,m-2,n-3,k))  &
-                     +(f(l1:l2,m+3,n-3,k)-f(l1:l2,m-3,n-3,k))))&
-                 )
-        else
-          df=0.
-          if (ip<=5) print*, 'derij: Degenerate case in y-direction'
+
+      else                      ! not using bidiagonal mixed derivatives
+        !
+        ! This is the old, straight-forward scheme
+        !
+        if ((i==1.and.j==2).or.(i==2.and.j==1)) then
+          if (nxgrid/=1.and.nygrid/=1) then
+            fac=(1./60.**2)*dx_1(l1:l2)*dy_1(m)
+            df=fac*( &
+              45.*((45.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
+                    -9.*(f(l1+2:l2+2,m+1,n,k)-f(l1-2:l2-2,m+1,n,k))  &
+                       +(f(l1+3:l2+3,m+1,n,k)-f(l1-3:l2-3,m+1,n,k))) &
+                  -(45.*(f(l1+1:l2+1,m-1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
+                    -9.*(f(l1+2:l2+2,m-1,n,k)-f(l1-2:l2-2,m-1,n,k))  &
+                       +(f(l1+3:l2+3,m-1,n,k)-f(l1-3:l2-3,m-1,n,k))))&
+              -9.*((45.*(f(l1+1:l2+1,m+2,n,k)-f(l1-1:l2-1,m+2,n,k))  &
+                    -9.*(f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k))  &
+                       +(f(l1+3:l2+3,m+2,n,k)-f(l1-3:l2-3,m+2,n,k))) &
+                  -(45.*(f(l1+1:l2+1,m-2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
+                    -9.*(f(l1+2:l2+2,m-2,n,k)-f(l1-2:l2-2,m-2,n,k))  &
+                       +(f(l1+3:l2+3,m-2,n,k)-f(l1-3:l2-3,m-2,n,k))))&
+                 +((45.*(f(l1+1:l2+1,m+3,n,k)-f(l1-1:l2-1,m+3,n,k))  &
+                    -9.*(f(l1+2:l2+2,m+3,n,k)-f(l1-2:l2-2,m+3,n,k))  &
+                       +(f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k))) &
+                  -(45.*(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))  &
+                    -9.*(f(l1+2:l2+2,m-3,n,k)-f(l1-2:l2-2,m-3,n,k))  &
+                       +(f(l1+3:l2+3,m-3,n,k)-f(l1-3:l2-3,m-3,n,k))))&
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in x-direction'
+          endif
+        elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
+          if (nygrid/=1.and.nzgrid/=1) then
+            fac=(1./60.**2)*dy_1(m)*dz_1(n)
+            df=fac*( &
+              45.*((45.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
+                    -9.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m-2,n+1,k))  &
+                       +(f(l1:l2,m+3,n+1,k)-f(l1:l2,m-3,n+1,k))) &
+                  -(45.*(f(l1:l2,m+1,n-1,k)-f(l1:l2,m-1,n-1,k))  &
+                    -9.*(f(l1:l2,m+2,n-1,k)-f(l1:l2,m-2,n-1,k))  &
+                       +(f(l1:l2,m+3,n-1,k)-f(l1:l2,m-3,n-1,k))))&
+              -9.*((45.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m-1,n+2,k))  &
+                    -9.*(f(l1:l2,m+2,n+2,k)-f(l1:l2,m-2,n+2,k))  &
+                       +(f(l1:l2,m+3,n+2,k)-f(l1:l2,m-3,n+2,k))) &
+                  -(45.*(f(l1:l2,m+1,n-2,k)-f(l1:l2,m-1,n-2,k))  &
+                    -9.*(f(l1:l2,m+2,n-2,k)-f(l1:l2,m-2,n-2,k))  &
+                       +(f(l1:l2,m+3,n-2,k)-f(l1:l2,m-3,n-2,k))))&
+                 +((45.*(f(l1:l2,m+1,n+3,k)-f(l1:l2,m-1,n+3,k))  &
+                    -9.*(f(l1:l2,m+2,n+3,k)-f(l1:l2,m-2,n+3,k))  &
+                       +(f(l1:l2,m+3,n+3,k)-f(l1:l2,m-3,n+3,k))) &
+                  -(45.*(f(l1:l2,m+1,n-3,k)-f(l1:l2,m-1,n-3,k))  &
+                    -9.*(f(l1:l2,m+2,n-3,k)-f(l1:l2,m-2,n-3,k))  &
+                       +(f(l1:l2,m+3,n-3,k)-f(l1:l2,m-3,n-3,k))))&
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in y-direction'
+          endif
+        elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
+          if (nzgrid/=1.and.nxgrid/=1) then
+            fac=(1./60.**2)*dz_1(n)*dx_1(l1:l2)
+            df=fac*( &
+              45.*((45.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
+                    -9.*(f(l1+2:l2+2,m,n+1,k)-f(l1-2:l2-2,m,n+1,k))  &
+                       +(f(l1+3:l2+3,m,n+1,k)-f(l1-3:l2-3,m,n+1,k))) &
+                  -(45.*(f(l1+1:l2+1,m,n-1,k)-f(l1-1:l2-1,m,n-1,k))  &
+                    -9.*(f(l1+2:l2+2,m,n-1,k)-f(l1-2:l2-2,m,n-1,k))  &
+                       +(f(l1+3:l2+3,m,n-1,k)-f(l1-3:l2-3,m,n-1,k))))&
+              -9.*((45.*(f(l1+1:l2+1,m,n+2,k)-f(l1-1:l2-1,m,n+2,k))  &
+                    -9.*(f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k))  &
+                       +(f(l1+3:l2+3,m,n+2,k)-f(l1-3:l2-3,m,n+2,k))) &
+                  -(45.*(f(l1+1:l2+1,m,n-2,k)-f(l1-1:l2-1,m,n-2,k))  &
+                    -9.*(f(l1+2:l2+2,m,n-2,k)-f(l1-2:l2-2,m,n-2,k))  &
+                       +(f(l1+3:l2+3,m,n-2,k)-f(l1-3:l2-3,m,n-2,k))))&
+                 +((45.*(f(l1+1:l2+1,m,n+3,k)-f(l1-1:l2-1,m,n+3,k))  &
+                    -9.*(f(l1+2:l2+2,m,n+3,k)-f(l1-2:l2-2,m,n+3,k))  &
+                       +(f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k))) &
+                  -(45.*(f(l1+1:l2+1,m,n-3,k)-f(l1-1:l2-1,m,n-3,k))  &
+                    -9.*(f(l1+2:l2+2,m,n-3,k)-f(l1-2:l2-2,m,n-3,k))  &
+                       +(f(l1+3:l2+3,m,n-3,k)-f(l1-3:l2-3,m,n-3,k))))&
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in z-direction'
+          endif
         endif
-      elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
-        if (nzgrid/=1.and.nxgrid/=1) then
-          fac=(1./60.**2)*dz_1(n)*dx_1(l1:l2)
-          df=fac*( &
-            45.*((45.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
-                  -9.*(f(l1+2:l2+2,m,n+1,k)-f(l1-2:l2-2,m,n+1,k))  &
-                     +(f(l1+3:l2+3,m,n+1,k)-f(l1-3:l2-3,m,n+1,k))) &
-                -(45.*(f(l1+1:l2+1,m,n-1,k)-f(l1-1:l2-1,m,n-1,k))  &
-                  -9.*(f(l1+2:l2+2,m,n-1,k)-f(l1-2:l2-2,m,n-1,k))  &
-                     +(f(l1+3:l2+3,m,n-1,k)-f(l1-3:l2-3,m,n-1,k))))&
-            -9.*((45.*(f(l1+1:l2+1,m,n+2,k)-f(l1-1:l2-1,m,n+2,k))  &
-                  -9.*(f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k))  &
-                     +(f(l1+3:l2+3,m,n+2,k)-f(l1-3:l2-3,m,n+2,k))) &
-                -(45.*(f(l1+1:l2+1,m,n-2,k)-f(l1-1:l2-1,m,n-2,k))  &
-                  -9.*(f(l1+2:l2+2,m,n-2,k)-f(l1-2:l2-2,m,n-2,k))  &
-                     +(f(l1+3:l2+3,m,n-2,k)-f(l1-3:l2-3,m,n-2,k))))&
-               +((45.*(f(l1+1:l2+1,m,n+3,k)-f(l1-1:l2-1,m,n+3,k))  &
-                  -9.*(f(l1+2:l2+2,m,n+3,k)-f(l1-2:l2-2,m,n+3,k))  &
-                     +(f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k))) &
-                -(45.*(f(l1+1:l2+1,m,n-3,k)-f(l1-1:l2-1,m,n-3,k))  &
-                  -9.*(f(l1+2:l2+2,m,n-3,k)-f(l1-2:l2-2,m,n-3,k))  &
-                     +(f(l1+3:l2+3,m,n-3,k)-f(l1-3:l2-3,m,n-3,k))))&
-                 )
-        else
-          df=0.
-          if (ip<=5) print*, 'derij: Degenerate case in z-direction'
-        endif
-      endif
+
+      endif                     ! bidiagonal derij
 !
     endsubroutine derij
 !***********************************************************************
