@@ -44,3 +44,10 @@ qoutclean:
 mpiclean:
 	rm -f copy-snapshots.log copy-snapshots2.log lamhosts remote-top.log
 	rm -f run_command.log lamboot.log
+
+# Divine our configuration
+semiauto-conf:
+	$(MAKE) -s cleanall
+	@(cd src; $(MAKE) -s FROM_PARENT=src/ semiauto-conf)
+
+

@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.255 2006-11-08 06:13:37 brandenb Exp $
+### $Id: Makefile.src,v 1.256 2006-11-14 01:01:57 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -759,12 +759,34 @@ Makefile_inc:
 Makefile: Makefile.src
 	scripts/check-mkfile Makefile$(PC_META_TYPE).local Makefile.src
 	scripts/adapt-mkfile Makefile.src Makefile
+
 pacx-makefile: Makefile.src
 	scripts/acx-adapt-mkfile Makefile.src pacx-Makefile
 	cp pacx-Makefile Makefile
+
 depend dep:
 	rm -f Makefile.depend
 	scripts/mkdep start.f90 run.f90 read_videofiles.f90 read_vectorfiles.f90 equ.f90 $(TIMESTEP).f90 debug_c.c $(GRID).f90 $(comm_deps:$(PC_META_TYPE).o=.f90)  > Makefile.depend
+
+# Help us finding out what compiler, MPI library, etc we have and give recommendations
+semiauto-conf:
+	echo "Running semiauto-conf"
+	@scripts/semiauto-conf \
+	  FC="$(FC)" \
+	  FFLAGS="$(FFLAGS)" \
+	  FFLAGS_GENERAL="$(FFLAGS_GENERAL)" \
+	  FFLAGS_FOURIER="$(FFLAGS_FOURIER)" \
+	  F90FLAGS="$(F90FLAGS)" \
+	  CC="$(CC)" \
+	  CFLAGS="$(CFLAGS)" \
+	  CFLAGS_GENERAL="$(CFLAGS_GENERAL)" \
+	  CFLAGS_FOURIER="$(CFLAGS_FOURIER)" \
+	  LD="$(LD)" \
+	  LD_MPI="$(LD_MPI)" \
+	  LD_FLAGS="$(LD_FLAGS)" \
+	  LD_FOURIER="$(LD_FOURIER)" \
+	  LIBMPISUFFIX="$(LIBMPISUFFIX)"
+
 # Generate files for automated debugging and testing etc.
 start_buildtime:
 	@echo "<buildtime><timestamp type='start'>`date`</timestamp>" > .buildtime
@@ -790,7 +812,7 @@ buildinfo:
 			       -e "PLANET='$(PLANET)';"\
 	                       -e "SHOCK_PROFILE='$(SHOCK_PROFILE)';SHOCK_FINDER='$(SHOCK_FINDER)';" > .buildinfo
 
-#
+
 # Ignore cparam dependencies upon .f90 files to save a few time consuming
 # recompiles! Just check for switching of modules instead.
 all.dot: Makefile.src Makefile$(PC_META_TYPE).local scripts/mkdot
@@ -992,6 +1014,7 @@ clean:
 # Clean up all
 cleann: clean
 	rm -f Makefile TAGS mpicomm_.f90 mpicomm_double*.f90
+	rm -rf semiauto-conf_tmp
 	rm -f *.inc && touch Makefile.inc
 	$(MAKE) $(MAKEOPTS) -f Makefile.src Makefile
 # same thing
