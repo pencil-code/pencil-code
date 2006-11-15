@@ -1,7 +1,11 @@
-! $Id: global_avgs.f90,v 1.10 2006-11-15 12:44:06 ajohan Exp $
+! $Id: global_avgs.f90,v 1.11 2006-11-15 14:01:37 wlyra Exp $
 !
-! This module takes care of globular clusters. It is programmed by some guy
-! named Anders.
+! This module takes care of all the global variables needed when solving
+! cylindrical problems in a cartesian grid. It saves as global variables
+! the phi-averages of the velocity and magnetic fields  
+!
+! For spatially variable but time-independent sound speeds, the sound speed
+! must also be saved as global variable, as well as its gradient.
 !
 module Global
 
@@ -53,7 +57,7 @@ module Global
 !
 !  Register Global module.
 !
-!  13-jun-05/anders: coded
+!  13-jun-05/wlad: coded
 !
       use Cdata, only: lglobal, lglobal_nolog_density
 !
@@ -106,7 +110,7 @@ module Global
 !
 !  set (m,n)-pencil of the global scalar variable identified by LABEL
 !
-!  13-jun-05/anders: adapted
+!  13-jun-05/wlad: adapted
 !
       integer :: length
       real, dimension(length) :: var
@@ -149,7 +153,7 @@ module Global
 !
 !  set global variable identified by LABEL
 !
-!  13-jun-05/anders: adapted
+!  13-jun-05/wlad: adapted
 !
       integer :: length
       real, dimension(length,3) :: var
@@ -175,7 +179,7 @@ module Global
 !
 !  set global variable identified by LABEL
 !
-!  13-jun-05/anders: adapted
+!  13-jun-05/wlad: adapted
 !
       integer :: length
       real, dimension(length) :: var
@@ -199,7 +203,7 @@ module Global
 !
 !  reset global variable identified by LABEL
 !
-!  20-jun-05/anders: dummy
+!  20-jun-05/wlad: dummy
 !
       character (len=*) :: label
 !
@@ -243,7 +247,7 @@ module Global
 !
 !  set (m,n)-pencil of the global scalar variable identified by LABEL
 !
-!  13-jun-05/anders: adapted
+!  13-jun-05/wlad: adapted
 !
       real, dimension(nx) :: var
       integer :: m,n
@@ -321,7 +325,7 @@ module Global
 !
 !  set point value of the global scalar variable identified by LABEL
 !
-!  20-jun-05/anders: adapted
+!  20-jun-05/wlad: adapted
 !
       real :: var
       integer :: l,m,n
@@ -351,7 +355,7 @@ module Global
 !
 !  set point of global vector variable identified by LABEL
 !
-!  20-jun-05/anders: dummy
+!  20-jun-05/wlad: dummy
 !
       real, dimension(3) :: var
       integer :: l,m,n
@@ -365,7 +369,7 @@ module Global
 !
 !  Get (l,m,n)-point of the global scalar variable identified by LABEL
 !
-!  15-sep-05/anders: adapted
+!  15-sep-05/wlad: adapted
 !
       real :: var
       integer :: l,m,n
@@ -395,7 +399,7 @@ module Global
 !
 !  Get (l,m,n)-point of the global vector variable identified by LABEL.
 !
-!  15-sep-05/anders: adapted
+!  15-sep-05/wlad: adapted
 !
       real, dimension(3) :: var
       integer :: l,m,n
@@ -428,7 +432,7 @@ module Global
 !
 !  take any derivative of global scalar variable.
 !
-!  13-jun-05/anders: coded
+!  13-jun-05/wlad: coded
 !
       use Sub, only: del6_other
 !
