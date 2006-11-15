@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.32 2006-11-15 10:05:36 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.33 2006-11-15 10:41:36 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -180,11 +180,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.32 2006-11-15 10:05:36 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.33 2006-11-15 10:41:36 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.32 2006-11-15 10:05:36 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.33 2006-11-15 10:41:36 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -631,12 +631,12 @@ endsubroutine read_special_run_pars
               -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
           else
            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-1./(5.*dt)*(p%uu(:,1)-0.)
-        !    df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-        !    -1./(5.*dt)*(f(l1:l2,m,n,iuz)-f(l1:l2,m,n-1,iuz))
-
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-            -1./(5.*dt)*(f(l1:l2,m,n,iuz)* &
-            (1.-p%rho(l1:l2)/(rho_disk*exp(-M_star/2./z(n)**3*x(l1:l2)**2*gamma/(p%cs2(l1:l2))))))
+            -1./(5.*dt)*(f(l1:l2,m,n,iuz)-f(l1:l2,m,n-1,iuz))
+
+         !   df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+         !   -1./(5.*dt)*(f(l1:l2,m,n,iuz)* &
+         !   (1.-p%rho(l1:l2)/(rho_disk*exp(-M_star/2./z(n)**3*x(l1:l2)**2*gamma/(p%cs2(l1:l2))))))
            endif 
          endif
        endif
@@ -1287,8 +1287,13 @@ endsubroutine read_special_run_pars
             f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
           endif
         else
+          
 
-          do i=1,nghost; f(l1+i,:,:,j)=f(l1-i,:,:,j); enddo
+           f(l2+1,:,:,j)=0.25*(  9*f(l2,:,:,j)- 3*f(l2-1,:,:,j)- 5*f(l2-2,:,:,j)+ 3*f(l2-3,:,:,j))
+            f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
+            f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
+
+       !   do i=1,nghost; f(l1+i,:,:,j)=f(l1-i,:,:,j); enddo
 !
         endif
       else
