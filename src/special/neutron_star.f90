@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.31 2006-11-14 14:35:20 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.32 2006-11-15 10:05:36 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -180,11 +180,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.31 2006-11-14 14:35:20 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.32 2006-11-15 10:05:36 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.31 2006-11-14 14:35:20 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.32 2006-11-15 10:05:36 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -469,7 +469,8 @@ endsubroutine read_special_run_pars
 	        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
 	        -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
         !   -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/cs2_star)
-	        -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/(p%cs2(l1:l2))))
+	      !  -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/(p%cs2(l1:l2))))
+              -log(rho_disk)-(-M_star/2./z(n)**3*x(l1:l2)**2*gamma/(p%cs2(l1:l2))))
 
 
        ! df(l1,m,n,ilnrho)=df(l1,m,n,ilnrho)&
@@ -630,9 +631,12 @@ endsubroutine read_special_run_pars
               -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
           else
            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-1./(5.*dt)*(p%uu(:,1)-0.)
-            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-            -1./(5.*dt)*(f(l1:l2,m,n,iuz)-f(l1:l2,m,n-1,iuz))
+        !    df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+        !    -1./(5.*dt)*(f(l1:l2,m,n,iuz)-f(l1:l2,m,n-1,iuz))
 
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+            -1./(5.*dt)*(f(l1:l2,m,n,iuz)* &
+            (1.-p%rho(l1:l2)/(rho_disk*exp(-M_star/2./z(n)**3*x(l1:l2)**2*gamma/(p%cs2(l1:l2))))))
            endif 
          endif
        endif
@@ -1101,15 +1105,22 @@ endsubroutine read_special_run_pars
       !    f(i,:,:,ilnrho)=ln_ro_u*0+(1.*0-M_star/2./zz(i,:,:)**3*x(H_disk_point_int+4)**2*gamma/cs2_star)*0
         f(i,:,:,ilnrho)=ln_ro_u*0+(1.*0-M_star/2./zz(i,:,:)**3*x(i)**2*gamma/cs2_star)*0
          
+         
 !     f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(i)**2*gamma/cs2_star)
          enddo    
 
-        f(:,:,:,ilnrho)= f(:,:,:,ilnrho)+((zz(:,:,:)-R_star)/Lxyz(3))**0.25*(ln_ro_r-ln_ro_l)+ln_ro_l
+    !  f(:,:,:,ilnrho)=ln_ro_r-M_star/2./zz(:,:,:)**3*xx(:,:,:)**2*gamma/cs2_star
+
+        f(:,:,:,ilnrho)= f(:,:,:,ilnrho) &
+                       +((zz(:,:,:)-R_star)/Lxyz(3))**0.25 &
+                       *(ln_ro_r-ln_ro_l)+ln_ro_l
        else
          if (nzgrid .GT. 1) then 
-            f(:,:,:,ilnrho)=(zz(:,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
+            f(:,:,:,ilnrho)=((zz(:,:,:)-R_star)/Lxyz(3))**0.25 &
+                           *(ln_ro_r-ln_ro_l)+ln_ro_l
          else
-            f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1)*(ln_ro_u-ln_ro_r)+ln_ro_r
+            f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1) &
+                           *(ln_ro_u-ln_ro_r)+ln_ro_r
          endif 
        endif
    
@@ -1145,7 +1156,14 @@ endsubroutine read_special_run_pars
          else
   
            if (nxgrid .LE. 1) then
-            f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+        !    f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+             lnrho=f(l1:l2,mi,ni,ilnrho)
+             lnTT=(zz(l1:l2,mi,ni)-R_star)/Lxyz(3) &
+                 *(log(T_disk)-log(T_star))+log(T_star)
+               
+             call eoscalc(4,lnrho,lnTT,ss=ss)
+               f(l1:l2,mi,ni,iss)=ss 
+
            else
     !        f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
 ! 071006
