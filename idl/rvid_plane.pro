@@ -1,4 +1,5 @@
-pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
+pro rvid_plane,field,mpeg=mpeg,png=png,PNG_TRUECOLOR=png_truecolor,tmin=tmin,
+               tmax=tmax,max=amax,$
                min=amin,extension=extension,nrepeat=nrepeat,wait=wait,$
                njump=njump,datadir=datadir,OLDFILE=OLDFILE,debug=debug,$
                proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,imgdir=imgdir,$
@@ -8,7 +9,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
                nsmooth=nsmooth, textsize=textsize, $
                _extra=_extra
 ;
-; $Id: rvid_plane.pro,v 1.26 2006-11-11 15:09:45 ajohan Exp $
+; $Id: rvid_plane.pro,v 1.27 2006-11-15 17:33:13 dobler Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -16,6 +17,9 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
 ;  if the keyword /mpeg is given, the file movie.mpg is written.
 ;  tmin is the time after which data are written
 ;  nrepeat is the number of repeated images (to slow down movie)
+;    An alternative is to set the /png_truecolor flag and postprocess the
+;  PNG images with ${PENCIL_HOME}/utils/makemovie (requires imagemagick
+;  and mencoder to be installed)
 ;
 ;  Typical calling sequence
 ;  rvid_plane,'uz',amin=-1e-1,amax=1e-1,/proc
@@ -49,6 +53,7 @@ default,ximg,1
 default,yimg,1
 default,textsize,1.0
 ;
+if (keyword_set(png_truecolor)) then png=1
 ; Construct location of slice_var.plane files 
 ;
 default, datatopdir, 'data'
@@ -357,6 +362,8 @@ while (not eof(1)) do begin
           tvlct, red, green, blue, /GET
           imgname = imgdir+'/img_'+istr2+'.png'
           write_png, imgname, image, red, green, blue
+          if (keyword_set(png_truecolor)) then $
+              spawn, 'mogrify -type TrueColor ' + imgname
           itpng=itpng+1 ;(counter)
           ;
         end else if (keyword_set(mpeg)) then begin
