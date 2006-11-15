@@ -1,5 +1,8 @@
- ! $Id: global_avgs.f90,v 1.9 2006-11-07 20:20:51 wlyra Exp $
-
+! $Id: global_avgs.f90,v 1.10 2006-11-15 12:44:06 ajohan Exp $
+!
+! This module takes care of globular clusters. It is programmed by some guy
+! named Anders.
+!
 module Global
 
 !
