@@ -1,4 +1,4 @@
-;;;;;;;;;;;;;;;;;;;;;;;       -*- coding:latin1 -*-  vim:set encoding=utf-8:
+;;;;;;;;;;;;;;;;;;;;;;;      -*- coding:latin1 -*-  vim:set encoding=latin1:
 ;;;   texsyms.pro   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
