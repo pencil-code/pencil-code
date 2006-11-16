@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.149 2006-11-16 16:43:57 theine Exp $
+! $Id: nompicomm.f90,v 1.150 2006-11-16 16:47:23 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -651,13 +651,13 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
-    subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce)
+    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce)
 !
       integer :: nreduce
-      real, dimension(nreduce) :: fmax_tmp, fmax
+      real, dimension(nreduce) :: fsum_tmp, fsum
 !
-      fmax=fmax_tmp
-    endsubroutine mpiallreduce_max_arr
+      fsum=fsum_tmp
+    endsubroutine mpiallreduce_sum_arr
 !***********************************************************************
     subroutine mpiallreduce_sum_scl(fsum_tmp,fsum)
 !
@@ -666,13 +666,13 @@ module Mpicomm
       fsum=fsum_tmp
     endsubroutine mpiallreduce_sum_scl
 !***********************************************************************
-    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce)
+    subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce)
 !
       integer :: nreduce
-      real, dimension(nreduce) :: fsum_tmp, fsum
+      real, dimension(nreduce) :: fmax_tmp, fmax
 !
-      fsum=fsum_tmp
-    endsubroutine mpireduce_sum_arr
+      fmax=fmax_tmp
+    endsubroutine mpiallreduce_max_arr
 !***********************************************************************
     subroutine mpiallreduce_max_scl(fmax_tmp,fmax)
 !
