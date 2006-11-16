@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.7 2006-11-07 20:23:01 wlyra Exp $
+! $Id: gravity_r.f90,v 1.8 2006-11-16 07:02:18 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -6,6 +6,7 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
+! MGLOBAL CONTRIBUTION 3
 !
 !***************************************************************
 
@@ -46,6 +47,8 @@ module Gravity
   logical :: lnumerical_equilibrium=.false.,lnumeqz=.false.
   logical :: lcylindrical_gravity=.false.
 
+  integer :: iglobal_gg=0
+
   namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
        lcylindrical_gravity,lnumeqz
   
@@ -68,6 +71,7 @@ module Gravity
       use Cdata
       use Mpicomm, only: stop_it
       use Sub
+      use FArrayManager
 !
       logical, save :: first=.true.
 !
@@ -76,16 +80,18 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.7 2006-11-07 20:23:01 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.8 2006-11-16 07:02:18 mee Exp $")
 !
       lgrav =.true.
       lgravr=.true.
       lgravr_gas =.true.
       lgravr_dust=.true.
+
+      call farray_register_global('gg',iglobal_gg,vector=3) 
 !
     endsubroutine register_gravity
 !***********************************************************************
-    subroutine initialize_gravity(lstarting)
+    subroutine initialize_gravity(f,lstarting)
 !
 !  Set up cpot according to the value of ipotential, and initialize the
 !  global variable gg (gravity field).
@@ -95,10 +101,10 @@ module Gravity
 !  22-nov-02/tony: renamed
 !
       use Cdata
-      use Sub, only: poly, calc_unitvects_sphere,step
+      use Sub, only: poly, step
       use Mpicomm
-      use Global
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: gg_mn=0.
       real, dimension (nx)   :: g_r,rr_mn
       real                   :: widthgg=0.01
@@ -244,7 +250,8 @@ module Gravity
           gg_mn(:,3) = z(  n  )/rr_mn*g_r
           if (lcylindrical_gravity) gg_mn(:,3)=0.
 !
-          call set_global(gg_mn,m,n,'gg',nx)
+
+          f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
 !
           enddo
         enddo
@@ -357,13 +364,11 @@ module Gravity
 !
       use Cdata
       use Sub
-      use Global
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: gg_mn
-      real, dimension (nx) :: g_r
+!      real, dimension (nx) :: g_r
 !
 !  evr is the radial unit vector
 !
@@ -380,15 +385,12 @@ module Gravity
 !      g_r = - r_mn**2 * poly( (/ 3., 0., 1. /), r_mn) &
 !                   / poly( (/ 1., 0., 1., 1. /), r_mn)**2
 !
-! dgm: radial unit vector evr now calculated in subroutine 
-! calc_unitvects_sphere()
-!
 !      gg_mn = evr*spread(g_r,2,3)
 !      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg_mn
 !else
 
-      call get_global(gg_mn,m,n,'gg')
-      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg_mn
+      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
+                  + f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
 !
 !
 !endif
