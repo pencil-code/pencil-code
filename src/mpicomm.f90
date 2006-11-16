@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.199 2006-10-22 15:36:25 theine Exp $
+! $Id: mpicomm.f90,v 1.200 2006-11-16 16:32:12 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -118,6 +118,11 @@ module Mpicomm
   interface mpibcast_char
     module procedure mpibcast_char_scl
     module procedure mpibcast_char_arr
+  endinterface
+
+  interface mpiallreduce_sum
+    module procedure mpiallreduce_sum_arr
+    module procedure mpiallreduce_sum_scl
   endinterface
 
   interface mpiallreduce_max
@@ -1552,6 +1557,31 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
+    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce)
+!
+      integer :: nreduce
+      real, dimension(nreduce) :: fsum_tmp,fsum
+!
+!  calculate total sum for each array element
+!  and return to all processors
+!
+      call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_MAX, &
+                      MPI_COMM_WORLD, ierr)
+!
+    endsubroutine mpiallreduce_sum_arr
+!***********************************************************************
+    subroutine mpiallreduce_sum_scl(fsum_tmp,fsum)
+!
+      real :: fsum_tmp,fsum
+!
+!  calculate total sum for each array element
+!  and return to all processors
+!
+      call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_MAX, &
+                      MPI_COMM_WORLD, ierr)
+!
+    endsubroutine mpiallreduce_sum_scl
+!***********************************************************************
     subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce)
 !
       integer :: nreduce
@@ -1561,6 +1591,7 @@ module Mpicomm
 !
       call MPI_ALLREDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, &
                       MPI_COMM_WORLD, ierr)
+!
     endsubroutine mpiallreduce_max_arr
 !***********************************************************************
     subroutine mpiallreduce_max_scl(fmax_tmp,fmax)
@@ -1571,6 +1602,7 @@ module Mpicomm
 !
       call MPI_ALLREDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, &
                       MPI_COMM_WORLD, ierr)
+!
     endsubroutine mpiallreduce_max_scl
 !***********************************************************************
     subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce)
