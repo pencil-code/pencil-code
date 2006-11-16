@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.298 2006-11-16 15:40:53 wlyra Exp $
+! $Id: hydro.f90,v 1.299 2006-11-16 19:58:18 mee Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -174,7 +174,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.298 2006-11-16 15:40:53 wlyra Exp $")
+           "$Id: hydro.f90,v 1.299 2006-11-16 19:58:18 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1057,7 +1057,7 @@ module Hydro
              call sum_lim_mn_name(p%rho*(p%uu(:,2)*x(l1:l2)-p%uu(:,1)*y(m)),&
              idiag_totangmom,p)
 !
-!  cylindrical stresses for global disk
+!  cylindrical stresses for global disc
 !
         if (idiag_urm/=0 .or. idiag_upm/=0 .or. idiag_uzzm/=0 &
            .or. idiag_ur2m/=0 .or. idiag_up2m/=0 .or. idiag_uzz2m/=0 &
@@ -1212,7 +1212,7 @@ module Hydro
       integer :: ju,j
 !
 ! these tmps and where's are needed because these square roots
-! go negative in the frozen inner disk if the sound speed is big enough
+! go negative in the frozen inner disc if the sound speed is big enough
 ! (like a corona, no hydrostatic equilibrium)
 !
 
@@ -1223,7 +1223,7 @@ module Hydro
          do j=1,3
             f_target(:,j) = uu_const(j)
          enddo
-      case('globaldisk')
+      case('globaldisc')
          tmp = (1-cs0**2)*g0*p%rcyl_mn**(-3)
          where (tmp.ge.0)
             OO=sqrt(tmp)
@@ -1234,7 +1234,7 @@ module Hydro
          f_target(:,1) = -y(  m  )*OO
          f_target(:,2) =  x(l1:l2)*OO
          f_target(:,3) =  0.
-      case('globaldisk-strat')
+      case('globaldisc-strat')
          tmp = g0*(p%r_mn**(-3) - cs20*p%rcyl_mn**(-4))
          !this is also wrong!
          where (tmp.ge.0)

@@ -1,4 +1,4 @@
- ! $Id: global_gg_bext_cs2.f90,v 1.2 2006-07-17 11:37:31 mee Exp $
+ ! $Id: global_gg_bext_cs2.f90,v 1.3 2006-11-16 19:58:18 mee Exp $
 
 module Global
 
@@ -6,7 +6,7 @@ module Global
 !  A module container and access functions (`methods') for additional
 !  variables which are globally needed --- here this is the gravity field
 !  gg, an external magnetic field (such that B=curl(A)+B_ext_pot), and
-!  the local sound speed profile cs2 falling with r-1 for the global-disk
+!  the local sound speed profile cs2 falling with r-1 for the global-disc
 !  comparison project setup (i.e. extremely NOT general!!!!)
 !
 

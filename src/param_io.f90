@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.257 2006-11-16 19:24:34 mee Exp $ 
+! $Id: param_io.f90,v 1.258 2006-11-16 19:58:18 mee Exp $ 
 
 module Param_IO
 
@@ -68,7 +68,7 @@ module Param_IO
        xyz_step,xi_step_frac,xi_step_width, &
        lcylindrical,llocal_iso,init_loops,lwrite_2d
  !      lextrapolate_bot_density,ltop_velocity_kep,laccelerat_zone, &
- !      ldecelerat_zone,lsurface_zone,lnstar_entropy,lnstar_T_const,lnstar_1D, T_disk
+ !      ldecelerat_zone,lsurface_zone,lnstar_entropy,lnstar_T_const,lnstar_1D, T_disc
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,ddt,cdtv,cdts,cdtr,isave,itorder, &
        dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, max_walltime, &

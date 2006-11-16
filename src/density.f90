@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.291 2006-11-16 18:35:54 wlyra Exp $
+! $Id: density.f90,v 1.292 2006-11-16 19:58:18 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -111,7 +111,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.291 2006-11-16 18:35:54 wlyra Exp $")
+           "$Id: density.f90,v 1.292 2006-11-16 19:58:18 mee Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -660,11 +660,11 @@ module Density
         call information('init_lnrho','kws hydrostatic in spherical shell and exterior')
         call shell_lnrho(f)
 
-      case('globaldisk')
+      case('globaldisc')
       !
       !minimum mass solar nebula
       !
-        if (lroot)  print*,'init_lnrho: initialize initial condition for Keplerian globaldisk'
+        if (lroot)  print*,'init_lnrho: initialize initial condition for Keplerian global disc'
         call power_law(f,iglobal_gg,lnrho_const,plaw,lstratified)
 
      case ('step_xz') 
@@ -1594,7 +1594,7 @@ module Density
 !
 !  check whether zinfty lies outside the domain (otherwise density
 !  would vanish within the domain). At the moment we are not properly
-!  testing the lower boundary on the case of a disk (commented out).
+!  testing the lower boundary on the case of a disc (commented out).
 !
         ztop=xyz0(3)+Lxyz(3)
         zbot=xyz0(3)

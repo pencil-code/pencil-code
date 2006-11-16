@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.359 2006-11-16 19:12:56 wlyra Exp $
+! $Id: magnetic.f90,v 1.360 2006-11-16 19:58:18 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -210,7 +210,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.359 2006-11-16 19:12:56 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.360 2006-11-16 19:58:18 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2672,10 +2672,10 @@ module Magnetic
     subroutine force_free_jet(mu,xx,yy,zz)
 !
 !  Force free magnetic field configuration for jet simulations
-!  with a fixed accretion disk at the bottom boundary.
+!  with a fixed accretion disc at the bottom boundary.
 !
 !  The input parameter mu specifies the radial dependency of
-!  the magnetic field in the disk.
+!  the magnetic field in the disc.
 !
 !  Solves the laplace equation in cylindrical coordinates for the
 !  phi-component of the vector potential. A_r and A_z are taken to
@@ -2683,7 +2683,7 @@ module Magnetic
 !
 !    nabla**2 A_phi - A_phi / r**2 = 0
 !
-!  For the desired boundary condition in the accretion disk
+!  For the desired boundary condition in the accretion disc
 !
 !    B_r=B0*r**(mu-1)  (z == 0)
 !

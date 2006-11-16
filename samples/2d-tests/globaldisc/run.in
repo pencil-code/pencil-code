@@ -3,7 +3,7 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.30 2006-09-22 00:17:57 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.31 2006-11-16 19:58:19 mee Exp $',
   ip=14,
   nt=50, it1=5, isave=100, itorder=3, ialive=1
   cdt=0.4, 
@@ -25,7 +25,7 @@ rho0= 1.
 &hydro_run_pars
   wdamp=0. 
   lfreeze_uint=T,lfreeze_uext=T
-  borderuu='globaldisk'
+  borderuu='globaldisc'
 /
 &density_run_pars
   lupw_lnrho=T ! use upwinding for lnrho to avoid wiggles

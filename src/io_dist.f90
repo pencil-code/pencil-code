@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.91 2006-08-03 07:07:27 ajohan Exp $
+! $Id: io_dist.f90,v 1.92 2006-11-16 19:58:18 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -95,7 +95,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.91 2006-08-03 07:07:27 ajohan Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.92 2006-11-16 19:58:18 mee Exp $")
 !
     endsubroutine register_io
 !
@@ -172,7 +172,7 @@ contains
     subroutine input_coarse(file,a,nv,mode,nr)
 !
 !  read global file with coarse resolution
-!  needed for phi_avg on globaldisk
+!  needed for phi_avg on global disc
 !  
 !  22-05-06/wlad: adapted from input
 !
@@ -238,7 +238,7 @@ contains
     subroutine output_scal_coarse(file,a,nv,nr)
 !
 !  write global file of coarse resolution
-!  needed for phi_avg of globaldisk
+!  needed for phi_avg of global disc
 !
 !  22-05-06/wlad: adapted from output_vect
 !
@@ -268,7 +268,7 @@ contains
     subroutine output_vect_coarse(file,a,nv,nr)
 !
 !  write global file of coarse resolution
-!  needed for phi_avg of globaldisk
+!  needed for phi_avg of global disc
 !
 !  22-05-06/wlad: adapted from output_vect
 !

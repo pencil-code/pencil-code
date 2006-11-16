@@ -1,6 +1,6 @@
-! $Id: planet.f90,v 1.76 2006-11-16 07:00:51 mee Exp $
+! $Id: planet.f90,v 1.77 2006-11-16 19:58:18 mee Exp $
 !
-!  This modules contains the routines for accretion disk and planet
+!  This modules contains the routines for accretion disc and planet
 !  building simulations. 
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************

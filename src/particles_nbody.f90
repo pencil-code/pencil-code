@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.31 2006-11-16 07:23:16 mee Exp $
+! $Id: particles_nbody.f90,v 1.32 2006-11-16 19:58:18 mee Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -25,7 +25,7 @@ module Particles_nbody
   real, dimension(nspar) :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
   real, dimension(nspar) :: pmass,position,r_smooth
-  real :: delta_vsp0=1.0,disk_mass=0., Gvalue=0.
+  real :: delta_vsp0=1.0,disc_mass=0., Gvalue=0.
   character (len=labellen) :: initxxsp='origin', initvvsp='nothing'
   logical :: lcalc_orbit=.true.,lmigrate=.false.
   logical :: lreset_cm=.false.,lnogravz_star=.false.,lexclude_frozen=.true.
@@ -35,13 +35,13 @@ module Particles_nbody
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
        bcspx, bcspy, bcspz, pmass, r_smooth, position, lcylindrical_gravity, &
-       lexclude_frozen, disk_mass
+       lexclude_frozen, disc_mass
   
 
   namelist /particles_nbody_run_pars/ &
        bcspx, bcspy, bcspz, dsnap_par_minor, linterp_reality_check, &
        lcalc_orbit,lreset_cm,lnogravz_star,lfollow_particle,  &
-       lmigrate, lexclude_frozen, disk_mass
+       lmigrate, lexclude_frozen, disc_mass
 
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.31 2006-11-16 07:23:16 mee Exp $")
+           "$Id: particles_nbody.f90,v 1.32 2006-11-16 19:58:18 mee Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -86,7 +86,7 @@ module Particles_nbody
       integer :: k
       logical :: lstarting
 !
-      Gvalue = disk_mass/(pi*(r_ext**2 - r_int**2))
+      Gvalue = disc_mass/(pi*(r_ext**2 - r_int**2))
 !
     endsubroutine initialize_particles_nbody
 !***********************************************************************

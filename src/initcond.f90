@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.189 2006-11-16 18:50:32 mee Exp $ 
+! $Id: initcond.f90,v 1.190 2006-11-16 19:58:18 mee Exp $ 
 
 module Initcond 
  
@@ -2557,12 +2557,12 @@ module Initcond
               OO=0.
             endwhere
           else
-! Cylindrical disk
-            if (lheader) print*,'Cylindrical disk initial condition'
+! Cylindrical disc
+            if (lheader) print*,'Cylindrical disc initial condition'
             if (cs20.lt.1.0) then
                OO = sqrt(OO_cyl**2 * (1-cs20))
             else
-               call stop_it("Imaginary velocites due to large temperatures in the disk.")
+               call stop_it("Imaginary velocites due to large temperatures in the disc.")
             endif
            endif
 !
