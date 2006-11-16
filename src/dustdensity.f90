@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.170 2006-10-25 14:10:20 theine Exp $
+! $Id: dustdensity.f90,v 1.171 2006-11-16 07:21:10 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -69,6 +69,8 @@ module Dustdensity
   integer, dimension(ndustspec) :: idiag_nd2m=0,idiag_rhodm=0,idiag_epsdrms=0
   integer, dimension(ndustspec) :: idiag_ndmx=0,idiag_rhodmz=0
 
+  integer :: iglobal_nd=0
+
   contains
 
 !***********************************************************************
@@ -138,7 +140,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.170 2006-10-25 14:10:20 theine Exp $")
+           "$Id: dustdensity.f90,v 1.171 2006-11-16 07:21:10 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -163,6 +165,7 @@ module Dustdensity
 !
 !  24-nov-02/tony: coded 
       use Mpicomm, only: stop_it
+      use FArrayManager
 !
       integer :: i,j,k
       logical :: lnothing
@@ -238,12 +241,12 @@ module Dustdensity
         ldiffd_hyper3lnnd=.false.
       endif
 !
-      if (ldiffd_hyper3 .and. ldustdensity_log .and. &
-          .not. lglobal_nolog_density) then
-         call fatal_error('initialize_dustdensity', &
-             'must have '// &
-             'global_nolog_density module for del6nd with '// &
-             'logarithmic dust density')
+!  Hyperdiffusion only works with (not log) density. One must either use
+!  ldensity_nolog=T or work with GLOBAL =   global_nolog_density.
+!
+      if (ldiffd_hyper3 .and. ldustdensity_log) then
+        if (lroot) print*,"initialize_dustdensity: Creating global array for nd to use hyperdiffusion"
+        call farray_register_global('nd',iglobal_nd)  
       endif
 !      
     endsubroutine initialize_dustdensity
@@ -760,7 +763,6 @@ module Dustdensity
 !
 !  13-nov-04/anders: coded
 !
-      use Global, only: set_global,global_derivs
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -892,12 +894,12 @@ module Dustdensity
 ! del6nd
         if (lpencil(i_del6nd)) then
           if (ldustdensity_log) then
-            if (lfirstpoint .and. lglobal_nolog_density) then
+            if (lfirstpoint.and.iglobal_nd/=0) then
               do mm=1,my; do nn=1,mz
-                call set_global(exp(f(:,mm,nn,ind(k))),mm,nn,'nd',mx)
+                f(:,mm,nn,iglobal_nd)=exp(f(:,mm,nn,ind(k)))
               enddo; enddo
             endif
-            if (lglobal_nolog_density) call global_derivs(m,n,'nd',der6=p%del6nd(:,k))
+            if (iglobal_nd/=0) call del6(f,iglobal_nd,p%del6nd(:,k))
           else
             call del6(f,ind(k),p%del6nd(:,k))
           endif
