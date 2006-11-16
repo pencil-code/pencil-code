@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.452 2006-11-16 16:45:52 dintrans Exp $
+! $Id: entropy.f90,v 1.453 2006-11-16 18:14:15 mee Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -164,7 +164,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.452 2006-11-16 16:45:52 dintrans Exp $")
+           "$Id: entropy.f90,v 1.453 2006-11-16 18:14:15 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -189,9 +189,6 @@ module Entropy
       real :: beta0,TT_crit
       integer :: i
       logical :: lnothing
-      real, dimension (nx) :: hcond
-      real, dimension (nx,3) :: glhc
-      type (pencil_case) :: p
 !
 ! Check any module dependencies
 !
@@ -468,16 +465,6 @@ module Entropy
       if (lhcond_global) then
         call farray_register_global("hcond",iglobal_hcond)
         call farray_register_global("glhc",iglobal_glhc,vector=3)
-        do n=n1,n2
-        do m=m1,m2
-          p%r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-          p%z_mn=spread(z(n),1,nx)
-          call heatcond(p,hcond) 
-          call gradloghcond(p,glhc)
-          f(l1:l2,m,n,iglobal_hcond)=hcond 
-          f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc 
-        enddo
-        enddo
       endif
 !
 !  A word of warning...
@@ -620,6 +607,7 @@ module Entropy
             tmp=xx**2+yy**2+(zz-0.5*(z1+z2))**2
             f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/max(radius_ss**2-tmp,1e-20))
             hcond0=-gamma/(gamma-1)*gravz/(mpoly0+1)/mixinglength_flux
+            print*,'init_ss: hcond0=',hcond0
            endif
 
         case('sedov') 
@@ -1506,7 +1494,13 @@ module Entropy
           lpenc_requested(i_rho1)=.true.
           lpenc_requested(i_glnTT)=.true.
           lpenc_requested(i_del2lnTT)=.true.
-          lpenc_requested(i_z_mn)=.true.
+          if (lmultilayer) then
+            if (lgravz) then
+              lpenc_requested(i_z_mn)=.true.
+            else
+              lpenc_requested(i_r_mn)=.true.
+            endif
+          endif
         endif
         if (chi_t/=0) then
           lpenc_requested(i_del2ss)=.true.
@@ -2265,53 +2259,67 @@ module Entropy
       real, dimension (nx) :: thdiff,g2
       real, dimension (nx) :: hcond,chit_prof
       real :: z_prev=-1.23e20
+      logical :: lglobal_filled =.false.
 !
-      save :: z_prev,hcond,glhc
+      save :: z_prev,hcond,glhc,lglobal_filled
 !
       intent(in) :: p
       intent(out) :: df
-      integer, pointer :: ihcond, iglhc
 !
       if (pretend_lnTT) call fatal_error("calc_heatcond","not implemented when pretend_lnTT = T")
 !
 !  Heat conduction / entropy diffusion
 !
-      if (hcond0 /= 0) then
+      if (hcond0 == 0) then
+        chix = 0
+        thdiff = 0
+        hcond = 0
+        glhc = 0
+      else
         if (headtt) then
           print*,'calc_heatcond: hcond0=',hcond0
+          print*,'calc_heatcond: lgravz=',lgravz
           if (lgravz) print*,'calc_heatcond: Fbot,Ftop=',Fbot,Ftop
         endif
-        if (lgravz) then
-          if (headtt) print*,'calc_heatcond: lgravz=',lgravz
-          ! For vertical geometry, we only need to calculate this for each
-          ! new value of z -> speedup by about 8% at 32x32x64
-          if (z(n) /= z_prev) then
-            if (lhcond_global) then
-              call farray_use_global("hcond",ihcond)
-              call farray_use_global("glhc",iglhc)
-              hcond=f(l1:l2,m,n,ihcond)
-              glhc=f(l1:l2,m,n,iglhc:iglhc+2)
-            else
+
+        if (lhcond_global) then
+          if (lglobal_filled) then
+            hcond=f(l1:l2,m,n,iglobal_hcond)
+            glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
+          else
+            ! First time round calculate hcond and store it in
+            ! the global array... Need not worry about possible
+            ! lgravz optimization since we only do this once!
+            call heatcond(p,hcond)
+            call gradloghcond(p,glhc)
+            f(l1:l2,m,n,iglobal_hcond)=hcond
+            f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc
+            if (llastpoint) lglobal_filled=.true.
+          endif
+        else
+          if (lgravz) then
+            ! For vertical geometry, we only need to calculate this for each
+            ! new value of z -> speedup by about 8% at 32x32x64
+            if (z(n) /= z_prev) then
               call heatcond(p,hcond)
               call gradloghcond(p,glhc)
             endif
-            if (chi_t/=0) then
-              call chit_profile(chit_prof)
-              call gradlogchit_profile(glchit_prof)
-            endif
-            z_prev = z(n)
-          endif
-        else
-          if (lhcond_global) then
-            call farray_use_global("hcond",ihcond)
-            call farray_use_global("glhc",iglhc)
-            hcond=f(l1:l2,m,n,ihcond)
-            glhc=f(l1:l2,m,n,iglhc:iglhc+2)
           else
             call heatcond(p,hcond)
             call gradloghcond(p,glhc)
           endif
-          if (chi_t/=0) then
+        endif
+
+        if (chi_t/=0) then
+          if (lgravz) then
+            ! For vertical geometry, we only need to calculate this for each
+            ! new value of z -> speedup by about 8% at 32x32x64
+            if (z(n) /= z_prev) then
+              call chit_profile(chit_prof)
+              call gradlogchit_profile(glchit_prof)
+              z_prev = z(n)
+            endif
+          else
             call chit_profile(chit_prof)
             call gradlogchit_profile(glchit_prof)
           endif
@@ -2335,14 +2343,7 @@ module Entropy
         glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
         call dot(p%glnTT,glnThcond,g2)
         thdiff = p%rho1*hcond * (p%del2lnTT + g2)  
-      else
-        chix = 0
-        thdiff = 0
-        ! not really needed, I (wd) guess -- but be sure before you
-        ! remove them
-        hcond = 0
-        glhc = 0
-      endif
+      endif  ! hcond0/=0
 !
 !  write z-profile (for post-processing)
 !
