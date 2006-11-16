@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.42 2006-10-24 15:21:29 theine Exp $
+# CVS: $Id: mkcparam,v 1.43 2006-11-16 07:04:31 mee Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -93,6 +93,7 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'b2'           => ', dimension (nx)',
                   'bb'           => ', dimension (nx,3)',
                   'bbb'          => ', dimension (nx,3)',
+                  'bavg'         => ', dimension (nx,3)',
                   'bij'          => ', dimension (nx,3,3)',
                   'beta'         => ', dimension (nx)',
                   'bgecr'        => ', dimension (nx)',
@@ -141,6 +142,7 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'djuidjbi'     => ', dimension (nx)',
                   'ecr'          => ', dimension (nx)',
                   'ee'           => ', dimension (nx)',
+                  'evr'          => ', dimension (nx,3)',
                   'fpres'        => ', dimension (nx,3)',
                   'fvisc'        => ', dimension (nx,3)',
                   'gamma'        => ', dimension (nx)',
@@ -207,13 +209,22 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'oxj'          => ', dimension (nx,3)',
                   'oxu'          => ', dimension (nx,3)',
                   'oxuxb'        => ', dimension (nx,3)',
+                  'phix'         => ', dimension (nx)',
+                  'phiy'         => ', dimension (nx)',
+                  'phi_mn'       => ', dimension (nx)',
+                  'pomx'         => ', dimension (nx)',
+                  'pomy'         => ', dimension (nx)',
                   'potself'      => ', dimension (nx)',
                   'pp'           => ', dimension (nx)',
+                  'r_mn'         => ', dimension (nx)',
+                  'rcyl_mn'      => ', dimension (nx)',
+                  'rcyl_mn1'     => ', dimension (nx)',
                   'rho'          => ', dimension (nx)',
                   'rho1'         => ', dimension (nx)',
                   'rho1gpp'      => ', dimension (nx,3)',
                   'rhod'         => ', dimension (nx,ndustspec)',
                   'rhop'         => ', dimension (nx)',
+                  'rhoavg'       => ', dimension (nx)',
                   'epsd'         => ', dimension (nx,ndustspec)',
                   'epsp'         => ', dimension (nx)',
                   'sglnrho'      => ', dimension (nx,3)',
@@ -257,11 +268,15 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'udgnd'        => ', dimension (nx,ndustspec)',
                   'ugss'         => ', dimension (nx)',
                   'uglnTT'       => ', dimension (nx)',
+                  'uavg'         => ', dimension (nx,3)',
                   'uxb'          => ', dimension (nx,3)',
                   'uxb2'         => ', dimension (nx)',
                   'uxj'          => ', dimension (nx,3)',
                   'va2'          => ', dimension (nx)',
                   'visc_heat'    => ', dimension (nx)',
+                  'x_mn'         => ', dimension (nx)',
+                  'y_mn'         => ', dimension (nx)',
+                  'z_mn'         => ', dimension (nx)',
                   'yH'           => ', dimension (nx)'
                  );
 
