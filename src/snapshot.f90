@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.10 2006-11-16 06:56:37 mee Exp $
+! $Id: snapshot.f90,v 1.11 2006-11-16 18:23:44 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -397,7 +397,7 @@ contains
       else
         write(lun_output) a
       endif
-      write(lun_output) x,y,z,dx,dy,dz
+      write(lun_output) t,x,y,z,dx,dy,dz
 !
       close(lun_output)
       if (lserial_io) call end_serialize()
@@ -449,11 +449,7 @@ contains
 !
 !  check whether we want to read deltay from snapshot
 !
-        if (lshear) then
-          read(1) x,y,z,dx,dy,dz,deltay
-        else
-          read(1) x,y,z,dx,dy,dz
-        endif
+        read(1) t,x,y,z,dx,dy,dz
 !
         if (ip<=3) print*,'input_globals: ip,x=',ip,x
         if (ip<=3) print*,'input_globals: y=',y
