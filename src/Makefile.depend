@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.56 2006-11-13 15:44:41 mee Exp $
+### $Id: Makefile.depend,v 1.57 2006-11-16 07:08:03 mee Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -186,12 +186,12 @@ $(BORDER_PROF_OBJ):                              $(CDATA_OBJ) $(BORDER_PROF_SRC)
 slices$(PC_META_TYPE).o:    slices.f90           $(CDATA_OBJ) $(SUB_OBJ) $(EOS_OBJ) $(PARTICLES_MAIN_OBJ) $(SHOCK_OBJ) $(INTERSTELLAR_OBJ) $(HYDRO_OBJ) $(RADIATION_OBJ) $(MAGNETIC_OBJ) $(SPECIAL_OBJ) $(CHIRAL_OBJ)
 $(SUB_OBJ):                 sub.f90              $(CDATA_OBJ) $(MPICOMM_OBJ) deriv$(PC_META_TYPE).o $(MESSAGES_OBJ) $(GENERAL_OBJ) $(GRID_OBJ)
 param_io$(PC_META_TYPE).o:  param_io.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(TIMESTEP_OBJ) $(TIMEAVG_OBJ) $(physics) $(PARTICLES_MAIN_OBJ)  
-register$(PC_META_TYPE).o:  register.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(physics) $(TIMEAVG_OBJ) prints$(PC_META_TYPE).o equ$(PC_META_TYPE).o
-equ$(PC_META_TYPE).o:       equ.f90              $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(physics) boundcond$(PC_META_TYPE).o $(GLOBAL_OBJ) $(PARTICLES_MAIN_OBJ) $(INTERSTELLAR_OBJ)
+register$(PC_META_TYPE).o:  register.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(physics) $(TIMEAVG_OBJ) prints$(PC_META_TYPE).o equ$(PC_META_TYPE).o $(GRID_OBJ)
+equ$(PC_META_TYPE).o:       equ.f90              $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(physics) boundcond$(PC_META_TYPE).o $(GLOBAL_OBJ) $(PARTICLES_MAIN_OBJ) $(INTERSTELLAR_OBJ) $(GRID_OBJ)
 boundcond$(PC_META_TYPE).o: boundcond.f90        $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(ENTROPY_OBJ) $(MAGNETIC_OBJ) $(DENSITY_OBJ) $(RADIATION_OBJ) $(HYDRO_OBJ)
 $(INITCOND_OBJ):            initcond.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(GENERAL_OBJ) $(FOURIER_OBJ) $(SUB_OBJ) $(EOS_OBJ)
 $(TIMESTEP_OBJ):            $(TIMESTEP).f90      $(CDATA_OBJ) $(MPICOMM_OBJ) equ$(PC_META_TYPE).o $(FORCING_OBJ) $(BORDER_PROF_OBJ)
-snapshot$(PC_META_TYPE).o:  snapshot.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(IO_OBJ) boundcond$(PC_META_TYPE).o $(POWER_OBJ) $(STRUCT_FUNC_OBJ) $(RADIATION_OBJ) $(EOS_OBJ) $(MAGNETIC_OBJ) persist$(PC_META_TYPE).o $(PARTICLES_MAIN_OBJ) $(SHOCK_OBJ)
+snapshot$(PC_META_TYPE).o:  snapshot.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(IO_OBJ) boundcond$(PC_META_TYPE).o $(POWER_OBJ) $(STRUCT_FUNC_OBJ) $(RADIATION_OBJ) $(EOS_OBJ) $(MAGNETIC_OBJ) persist$(PC_META_TYPE).o $(PARTICLES_MAIN_OBJ) $(SHOCK_OBJ)
 $(MESSAGES_OBJ):            messages.f90         $(CDATA_OBJ) $(MPICOMM_OBJ)
 $(GHOSTFOLD_OBJ):           $(GHOSTFOLD_SRC)     $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(FOURIER_OBJ)
 persist$(PC_META_TYPE).o:   persist.f90          $(CDATA_OBJ) $(GENERAL_OBJ) $(INTERSTELLAR_OBJ) $(FORCING_OBJ)
