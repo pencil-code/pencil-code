@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.162 2006-08-23 16:53:32 mee Exp $
+! $Id: start.f90,v 1.163 2006-11-16 06:57:54 mee Exp $
 !
 !***********************************************************************
       program start
@@ -91,7 +91,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.162 2006-08-23 16:53:32 mee Exp $")
+             "$Id: start.f90,v 1.163 2006-11-16 06:57:54 mee Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -370,7 +370,10 @@
 !
 !  write global variables:
 !
-        call wglobal()
+        if (lglobal) call wglobal()
+        if (mglobal/=0)  &
+                call output_globals(trim(directory_snap)//'/global.dat', &
+                            f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  Write input parameters to a parameter file (for run.x and IDL).
 !  Do this late enough, so init_entropy etc. can adjust them

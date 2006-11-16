@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.233 2006-08-23 16:53:32 mee Exp $
+! $Id: run.f90,v 1.234 2006-11-16 06:57:54 mee Exp $
 !
 !***********************************************************************
       program run
@@ -67,7 +67,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.233 2006-08-23 16:53:32 mee Exp $")
+             "$Id: run.f90,v 1.234 2006-11-16 06:57:54 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -184,7 +184,10 @@
 !  read time and global variables (if any)
 !
         call rtime(trim(directory)//'/time.dat',t)
-        call rglobal()
+        if (lglobal) call rglobal()
+        if (mglobal/=0)  &
+                call input_globals(trim(directory_snap)//'/global.dat', &
+                            f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  read coordinates
 !
@@ -250,7 +253,10 @@
         call choose_pencils()
         call write_pencil_info()
 !
-        call wglobal()
+        if (lglobal) call wglobal()
+        if (mglobal/=0)  &
+                call output_globals(trim(directory_snap)//'/global.dat', &
+                            f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  update ghost zones, so rprint works corrected for at the first
 !  time step even if we didn't read ghost zones
@@ -417,10 +423,10 @@
 !
 !  Find out which pencils to calculate at current time-step
 !
-          lpencil = lpenc_requested .or. &
-              (lpenc_diagnos .and. lout) .or. &
-              (lpenc_diagnos2d .and. l2davg) .or. &
-              (lpenc_video .and. lvid)
+          lpencil = lpenc_requested
+          if (lout)   lpencil=lpencil .or. lpenc_diagnos
+          if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
+          if (lvid)   lpencil=lpencil .or. lpenc_video
 !! For debugging missing pencils   
 !!      lpencil = .true. 
 !
@@ -512,7 +518,12 @@
 !  Save global variables.
 !
           if (isaveglobal/=0) then            
-            if (mod(it,isaveglobal)==0) call wglobal()
+            if (mod(it,isaveglobal)==0) then
+              if (lglobal) call wglobal()
+              if (mglobal/=0)  &
+                call output_globals(trim(directory_snap)//'/global.dat', &
+                            f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+            endif
           endif
 !
 !  Do exit when timestep has become too short.
