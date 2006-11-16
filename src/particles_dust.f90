@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.152 2006-11-11 15:17:44 ajohan Exp $
+! $Id: particles_dust.f90,v 1.153 2006-11-16 22:47:07 mee Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -119,7 +119,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.152 2006-11-11 15:17:44 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.153 2006-11-16 22:47:07 mee Exp $")
 !
 !  Indices for particle position.
 !
@@ -293,7 +293,7 @@ module Particles
         if (lparticlemesh_cic .or. lparticlemesh_tsc) lfold_df=.true.
       endif
 !
-!  Write constants to disc.
+!  Write constants to disk.
 !      
       if (lroot) then
         open (1,file=trim(datadir)//'/pc_constants.pro')
