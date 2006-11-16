@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.256 2006-11-14 18:22:43 dobler Exp $ 
+! $Id: param_io.f90,v 1.257 2006-11-16 19:24:34 mee Exp $ 
 
 module Param_IO
 
@@ -329,7 +329,7 @@ module Param_IO
         print*
         print*,'-----BEGIN sample namelist ------'
                              print*,'&init_pars                /'
-                             print*,'&eos_init_pars            /'
+        if (leos          )  print*,'&eos_init_pars            /'
         if (lhydro        )  print*,'&hydro_init_pars          /'
         if (ldensity      )  print*,'&density_init_pars        /'
         ! no input parameters for forcing
@@ -634,7 +634,7 @@ module Param_IO
         print*
         print*,'-----BEGIN sample namelist ------'
                             print*,'&run_pars                 /'
-                            print*,'&eos_run_pars             /'
+        if (leos          ) print*,'&eos_run_pars             /'
         if (lhydro        ) print*,'&hydro_run_pars           /'
         if (ldensity      ) print*,'&density_run_pars         /'
         if (lforcing      ) print*,'&forcing_run_pars         /'
