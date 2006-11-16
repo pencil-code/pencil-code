@@ -4,6 +4,8 @@ makefile Makefile
 *.d
 *.inc
 *.il
+*.mod
+*.x
 nompicomm_.f90
 mpicomm_.f90
 mpicomm_double.f90
