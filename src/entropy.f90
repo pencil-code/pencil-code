@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.447 2006-11-14 16:08:01 bingert Exp $
+! $Id: entropy.f90,v 1.448 2006-11-16 07:11:31 mee Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -68,6 +68,9 @@ module Entropy
   logical :: lviscosity_heat=.true.
   logical :: lfreeze_sint=.false.,lfreeze_sext=.false.
   logical :: lhcond_global=.false.
+
+  integer :: iglobal_hcond=0
+  integer :: iglobal_glhc=0
 
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
@@ -161,7 +164,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.447 2006-11-14 16:08:01 bingert Exp $")
+           "$Id: entropy.f90,v 1.448 2006-11-16 07:11:31 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -172,12 +175,12 @@ module Entropy
 !  21-jul-2002/wolf: coded
 !
       use Cdata
+      use FArrayManager
       use Gravity, only: gravz,g0
       use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
                                  beta_glnrho_global, beta_glnrho_scaled, &
                                  mpoly, mpoly0, mpoly1, mpoly2, &
                                  select_eos_variable
-      use Global, only: set_global
       use IO
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -463,12 +466,14 @@ module Entropy
       enddo
 
       if (lhcond_global) then
+        call farray_register_global("hcond",iglobal_hcond)
+        call farray_register_global("glhc",iglobal_glhc,vector=3)
         do n=n1,n2
         do m=m1,m2
           call heatcond(hcond) 
           call gradloghcond(glhc)
-          call set_global(hcond,m,n,'hcond',nx)
-          call set_global(glhc,m,n,'glhc',nx)
+          f(l1:l2,m,n,iglobal_hcond)=hcond 
+          f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc 
         enddo
         enddo
       endif
@@ -683,7 +688,6 @@ module Entropy
           if (lgravr) then
             if (lroot) print*, &
                  'init_lnrho: isentropic star with isothermal atmosphere'
-            ! call initialize_gravity(LSTARTING=.true.)     ! already done by init_lnrho
             call potential(xx,yy,zz,POT=pot,POT0=pot0) ! gravity potential
             !
             ! rho0, cs0,pot0 are the values in the centre
@@ -1176,10 +1180,9 @@ module Entropy
 !
       use Gravity, only: g0
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
-      use Sub, only: calc_unitvects_sphere
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT
+      real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT,r_mn
       real :: beta1,cp1,lnrho_dummy=0.
 !
 !  beta1 is the temperature gradient
@@ -1194,7 +1197,7 @@ module Entropy
         n=nn(imn)
         m=mm(imn)
 !
-        call calc_unitvects_sphere()
+        r_mn=sqrt(x(l1:l2)*2+y(m)**2+z(n)**2)
         call shell_ss_perturb(pert_TT)
 !
         where (r_mn >= r_ext) TT = TT_ext
@@ -1217,10 +1220,8 @@ module Entropy
 !
 !  22-june-04/dave -- coded
 !
-      use Sub, only: calc_phiavg_general
-
       real, dimension (nx), intent(out) :: pert_TT
-      real, dimension (nx) :: xr,cos_4phi,sin_theta4
+      real, dimension (nx) :: xr,cos_4phi,sin_theta4,r_mn,rcyl_mn,phi_mn
       real :: ampl0=.885065
 !
       select case(initss(1))
@@ -1229,7 +1230,9 @@ module Entropy
           pert_TT=0.
 !
         case ('geo-benchmark')
-          call calc_phiavg_general()
+          r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+          rcyl_mn=sqrt(x(l1:l2)**2+y(m)**2)
+          phi_mn=atan2(spread(y(m),1,nx),x(l1:l2))
           xr=2*r_mn-r_int-r_ext              ! radial part of perturbation
           cos_4phi=cos(4*phi_mn)             ! azimuthal part
           sin_theta4=(rcyl_mn/r_mn)**4       ! meridional part
@@ -1251,7 +1254,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 
-      real, dimension (nx) :: lnrho,lnTT,TT,ss
+      real, dimension (nx) :: lnrho,lnTT,TT,ss,z_mn
       real :: beta1,cp1,lnrho_dummy=0.
 !
 !  beta1 is the temperature gradient
@@ -1490,6 +1493,7 @@ module Entropy
         lpenc_requested(i_TT1)=.true.
       endif
       if (pretend_lnTT) lpenc_requested(i_divu)=.true.
+      if (lgravr) lpenc_requested(i_r_mn)=.true.
       if (lheatc_simple) then 
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_glnTT)=.true.
@@ -1546,6 +1550,13 @@ module Entropy
         lpenc_requested(i_glnTT)=.true.
       endif
       if (lheatc_hyper3ss) lpenc_requested(i_del6ss)=.true.
+      if (cooltype=='shell') then
+        lpenc_requested(i_r_mn)=.true.
+        if (deltaT_poleq/=0.) then
+          lpenc_requested(i_z_mn)=.true.
+          lpenc_requested(i_rcyl_mn)=.true.
+        endif
+      endif
 !
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !
@@ -1573,7 +1584,11 @@ module Entropy
           lpenc_diagnos(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_dtc/=0) lpenc_diagnos(i_cs2)=.true.
-      if (idiag_TTp/=0) lpenc_diagnos(i_cs2)=.true.
+      if (idiag_TTp/=0) then 
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_cs2)=.true.
+        lpenc_diagnos(i_rcyl_mn)=.true.
+      endif
 !
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
@@ -1747,7 +1762,7 @@ module Entropy
 !
 !  thermal conduction
 !
-      if (lheatc_Kconst) call calc_heatcond(df,p)
+      if (lheatc_Kconst) call calc_heatcond(f,df,p)
       if (lheatc_simple) call calc_heatcond_simple(df,p)
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_tensordiffusion) then
@@ -1796,7 +1811,7 @@ module Entropy
 !
 !  Apply border profile
 !
-      if (lborder_profiles) call set_border_entropy(f,df)
+      if (lborder_profiles) call set_border_entropy(f,df,p)
 !
 !  phi-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
@@ -1831,7 +1846,7 @@ module Entropy
         if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
-        if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma11,idiag_TTp)
+        if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma11,idiag_TTp,p)
 !
 !  xy averages for fluxes; doesn't need to be as frequent (check later)
 !  idiag_fradz is done in the calc_headcond routine
@@ -1845,7 +1860,7 @@ module Entropy
 !
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine set_border_entropy(f,df)
+    subroutine set_border_entropy(f,df,p)
 !
 !  Calculates the driving term for the border profile
 !  of the ss variable.
@@ -1855,6 +1870,7 @@ module Entropy
       use BorderProfiles, only: border_driving
 !
       real, dimension(mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target,cs2_0
       real :: g0=1.,r0_pot=0.1
@@ -1866,7 +1882,7 @@ module Entropy
       case('constant')
          f_target=ss_const
       case('globaldisk')
-         cs2_0=(cs20*rcyl_mn**2)*(g0*(rcyl_mn**2+r0_pot**2)**(-1.5))
+         cs2_0=(cs20*p%rcyl_mn**2)*(g0*(p%rcyl_mn**2+r0_pot**2)**(-1.5))
          !           [  r      *                omega             ]**2     
          f_target= gamma11*log(cs2_0) !- gamma1*gamma11*lnrho
       case('nothing')
@@ -1879,7 +1895,7 @@ module Entropy
          call fatal_error('set_border_entropy',errormsg)
       endselect
 !
-      call border_driving(f,df,f_target,iss)
+      call border_driving(f,df,p,f_target,iss)
 !
     endsubroutine set_border_entropy
 !***********************************************************************
@@ -2224,7 +2240,7 @@ module Entropy
 !      
     endsubroutine calc_heatcond_spitzer
 !***********************************************************************
-    subroutine calc_heatcond(df,p)
+    subroutine calc_heatcond(f,df,p)
 !
 !  heat conduction
 !
@@ -2236,8 +2252,8 @@ module Entropy
       use Sub
       use IO
       use Gravity
-      use Global, only: get_global
 !
+      real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: glnThcond,glhc,glchit_prof !,glnT
@@ -2264,19 +2280,19 @@ module Entropy
           if (headtt) print*,'calc_heatcond: lgravz=',lgravz
           ! For vertical geometry, we only need to calculate this for each
           ! new value of z -> speedup by about 8% at 32x32x64
-          if (z_mn(1) /= z_prev) then
+          if (z(n) /= z_prev) then
             call heatcond(hcond)
             call gradloghcond(glhc)
             if (chi_t/=0) then
               call chit_profile(chit_prof)
               call gradlogchit_profile(glchit_prof)
             endif
-            z_prev = z_mn(1)
+            z_prev = z(n)
           endif
         else
           if (lhcond_global) then
-            call get_global(hcond,m,n,'hcond')
-            call get_global(glhc,m,n,'glhc')
+            hcond=f(l1:l2,m,n,iglobal_hcond)
+            glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
           else
             call heatcond(hcond)
             call gradloghcond(glhc)
@@ -2456,9 +2472,9 @@ module Entropy
         case ('gaussian')
           prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
         case ('step')
-          prof = step(z_mn,z2,wcool)
+          prof = step(spread(z(n),1,nx),z2,wcool)
         case ('cubic_step')
-          prof = cubic_step(z_mn,z2,wcool)
+          prof = cubic_step(spread(z(n),1,nx),z2,wcool)
         endselect
 !
 !  write out (during first time step only) and apply
@@ -2479,7 +2495,7 @@ module Entropy
       if (lgravr) then
         ! central heating
         ! heating profile, normalised, so volume integral = 1
-        prof = exp(-0.5*(r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5)
+        prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5)
         heat = luminosity*prof
         if (headt .and. lfirst .and. ip<=9) &
           call output_pencil(trim(directory)//'/heat.dat',heat,1)
@@ -2487,7 +2503,7 @@ module Entropy
         ! cooling profile; maximum = 1
 !        prof = 0.5*(1+tanh((r_mn-1.)/wcool))
         if (rcool==0.) rcool=r_ext
-        prof = step(r_mn,rcool,wcool)
+        prof = step(p%r_mn,rcool,wcool)
         !
         !  pick type of cooling
         !
@@ -2513,17 +2529,17 @@ module Entropy
           !
           if (deltaT_poleq/=0.) then
             if (headtt) print*,'calc_heat_cool: deltaT_poleq=',deltaT_poleq
-            if (headtt) print*,'rcyl_mn=',rcyl_mn
-            if (headtt) print*,'z_mn=',z_mn
-            theta_profile=(1./3.-(rcyl_mn/z_mn)**2)*deltaT_poleq
-            prof = step(r_mn,r_ext,wcool)      ! outer heating/cooling step
+            if (headtt) print*,'p%rcyl_mn=',p%rcyl_mn
+            if (headtt) print*,'p%z_mn=',p%z_mn
+            theta_profile=(1./3.-(p%rcyl_mn/p%z_mn)**2)*deltaT_poleq
+            prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
             heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
-            prof = 1 - step(r_mn,r_int,wcool)  ! inner heating/cooling step
+            prof = 1 - step(p%r_mn,r_int,wcool)  ! inner heating/cooling step
             heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
           else
-            prof = step(r_mn,r_ext,wcool)      ! outer heating/cooling step
+            prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
             heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
-            prof = 1 - step(r_mn,r_int,wcool)  ! inner heating/cooling step
+            prof = 1 - step(p%r_mn,r_int,wcool)  ! inner heating/cooling step
             heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
           endif
 !
@@ -2829,22 +2845,22 @@ module Entropy
 !  18-sep-2002/axel: added lmultilayer switch
 !  09-aug-2006/dintrans: added a radial profile hcond(r)
 !
-      use Sub, only: step, calc_unitvects_sphere
+      use Sub, only: step
       use Gravity
 !
-      real, dimension (nx) :: hcond
+      real, dimension (nx) :: hcond, r_mn
 !
       if (lgravz) then
         if (lmultilayer) then
-          hcond = 1 + (hcond1-1)*step(z_mn,z1,-widthss) &
-                    + (hcond2-1)*step(z_mn,z2,widthss)
+          hcond = 1 + (hcond1-1)*step(spread(z(n),1,nx),z1,-widthss) &
+                    + (hcond2-1)*step(spread(z(n),1,nx),z2,widthss)
           hcond = hcond0*hcond
         else
           hcond=Kbot
         endif
       else
         if (lmultilayer) then
-          call calc_unitvects_sphere()
+          r_mn=sqrt(x(l1:l2)*2+y(m)**2+z(n)**2)
           hcond = 1. + (hcond1-1.)*step(r_mn,r_bcz,-widthss)
           hcond = hcond0*hcond
         else
@@ -2861,14 +2877,15 @@ module Entropy
 !
 !  23-jan-2002/wolf: coded
 !
-      use Sub, only: der_step, calc_unitvects_sphere
+      use Sub, only: der_step
       use Gravity
 !
       real, dimension (nx,3) :: glhc
-      real, dimension (nx)   :: dhcond
+      real, dimension (nx)   :: dhcond, r_mn, z_mn
 !
       if (lgravz) then
         if (lmultilayer) then
+          z_mn=spread(z(n),1,nx)
           glhc(:,1:2) = 0.
           glhc(:,3) = (hcond1-1)*der_step(z_mn,z1,-widthss) &
                       + (hcond2-1)*der_step(z_mn,z2,widthss)
@@ -2878,10 +2895,11 @@ module Entropy
         endif
       else
         if (lmultilayer) then
-          call calc_unitvects_sphere()
+          z_mn=spread(z(n),1,nx)
+          r_mn=sqrt(x(l1:l2)*2+y(m)**2+z(n)**2)
           dhcond=hcond0*(hcond1-1.)*der_step(r_mn,r_bcz,-widthss)
-          glhc(:,1) = x_mn/r_mn*dhcond
-          glhc(:,2) = y_mn/r_mn*dhcond
+          glhc(:,1) = x(l1:l2)/r_mn*dhcond
+          glhc(:,2) = y(m)/r_mn*dhcond
           if (lcylindrical) then 
             glhc(:,3) = 0.
           else
@@ -2908,10 +2926,11 @@ module Entropy
       use Sub, only: step
       use Gravity
 !
-      real, dimension (nx) :: chit_prof
+      real, dimension (nx) :: chit_prof,z_mn
 !
       if (lgravz) then
         if (lmultilayer) then
+          z_mn=spread(z(n),1,nx)
           chit_prof = 1 + (chit_prof1-1)*step(z_mn,z1,-widthss) &
                         + (chit_prof2-1)*step(z_mn,z2,widthss)
         else
@@ -2934,9 +2953,11 @@ module Entropy
       use Gravity
 !
       real, dimension (nx,3) :: glchit_prof
+      real, dimension (nx) :: z_mn
 !
       if (lgravz) then
         if (lmultilayer) then
+          z_mn=spread(z(n),1,nx)
           glchit_prof(:,1:2) = 0.
           glchit_prof(:,3) = (chit_prof1-1)*der_step(z_mn,z1,-widthss) &
                            + (chit_prof2-1)*der_step(z_mn,z2,widthss)
@@ -3104,10 +3125,9 @@ module Entropy
 !
       use Gravity, only: g0
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly0, mpoly1, lnrho0
-      use Sub, only: calc_unitvects_sphere
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: lnrho,lnTT,TT,ss
+      real, dimension (nx) :: lnrho,lnTT,TT,ss,r_mn
       real :: beta0,beta1,TT_crit
       real :: lnrho_int,lnrho_ext,lnrho_crit
 
@@ -3132,7 +3152,7 @@ module Entropy
         n=nn(imn)
         m=mm(imn)
 !
-        call calc_unitvects_sphere()
+        r_mn=sqrt(x(l1:l2)*2+y(m)**2+z(n)**2)
 !
 !  convective layer
 !

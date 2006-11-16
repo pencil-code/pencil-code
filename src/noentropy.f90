@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.93 2006-11-07 20:20:51 wlyra Exp $
+! $Id: noentropy.f90,v 1.94 2006-11-16 07:11:32 mee Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -55,7 +55,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.93 2006-11-07 20:20:51 wlyra Exp $")
+           "$Id: noentropy.f90,v 1.94 2006-11-16 07:11:32 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -128,6 +128,12 @@ module Entropy
       if (idiag_ugradpm/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_uglnrho)=.true.
+      endif
+!
+      if (idiag_thermalpressure/=0) then
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_cs2)=.true.
+        lpenc_diagnos(i_rcyl_mn)=.true.
       endif
 !
     endsubroutine pencil_criteria_entropy
@@ -240,7 +246,7 @@ module Entropy
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%rho*p%cs2*p%uglnrho,idiag_ugradpm)
         if (idiag_thermalpressure/=0) &
-            call sum_lim_mn_name(p%rho*p%cs2,idiag_thermalpressure)
+            call sum_lim_mn_name(p%rho*p%cs2,idiag_thermalpressure,p)
       endif
 !
       if (NO_WARN) print*,f !(keep compiler quiet)

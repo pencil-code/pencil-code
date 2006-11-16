@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.14 2006-11-01 08:54:01 dobler Exp $
+! $Id: entropy_onefluid.f90,v 1.15 2006-11-16 07:11:32 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.14 2006-11-01 08:54:01 dobler Exp $")
+           "$Id: entropy_onefluid.f90,v 1.15 2006-11-16 07:11:32 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -617,7 +617,6 @@ module Entropy
           if (lgravr) then
             if (lroot) print*, &
                  'init_lnrho: isentropic star with isothermal atmosphere'
-            ! call initialize_gravity(LSTARTING=.true.)     ! already done by init_lnrho
             call potential(xx,yy,zz,POT=pot,POT0=pot0) ! gravity potential
             !
             ! rho0, cs0,pot0 are the values in the centre
@@ -1083,10 +1082,9 @@ module Entropy
 !
       use Gravity, only: g0
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly
-      use Sub, only: calc_unitvects_sphere
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT
+      real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT,r_mn
       real :: beta1
 !
       beta1 = g0/(mpoly+1)
@@ -1094,7 +1092,7 @@ module Entropy
         n=nn(imn)
         m=mm(imn)
 !
-        call calc_unitvects_sphere()
+        r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
         call shell_ss_perturb(pert_TT)
 !
         where (r_mn >= r_ext) TT = TT_ext
@@ -1119,10 +1117,8 @@ module Entropy
 !
 !  22-june-04/dave -- coded
 !
-      use Sub, only: calc_phiavg_general
-
       real, dimension (nx), intent(out) :: pert_TT
-      real, dimension (nx) :: xr,cos_4phi,sin_theta4
+      real, dimension (nx) :: xr,cos_4phi,sin_theta4,r_mn,rcyl_mn
       real :: ampl0=.885065
 !
       select case(initss(1))
@@ -1131,7 +1127,8 @@ module Entropy
           pert_TT=0.
 !
         case ('geo-benchmark')
-          call calc_phiavg_general()
+          r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+          rcyl_mn=sqrt(x(l1:l2)**2+y(m)**2)
           xr=2*r_mn-r_int-r_ext              ! radial part of perturbation
           cos_4phi=cos(4*phi_mn)             ! azimuthal part
           sin_theta4=(rcyl_mn/r_mn)**4       ! meridional part
