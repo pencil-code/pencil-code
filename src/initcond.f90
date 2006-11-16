@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.187 2006-11-16 18:10:29 mee Exp $ 
+! $Id: initcond.f90,v 1.188 2006-11-16 18:35:54 wlyra Exp $ 
 
 module Initcond 
  
@@ -2508,14 +2508,13 @@ module Initcond
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx) :: r_cyl,r_sph,OO,OO_sph,OO_cyl,tmp,tmp2
-      real, dimension(nx) :: grhoz,rmn_sph, rho
+      real, dimension(nx) :: grhoz,rmn_sph,rmn_cyl,rho
       real, dimension(nx,3) :: gg_mn,glnTT
       real :: lnrho_const,plaw,g0=1.
       logical :: lstratified,lheader
       integer :: iglobal_gg
       integer, pointer :: iglobal_cs2,iglobal_glnTT
-
-
+!
       nullify(iglobal_cs2)
       nullify(iglobal_glnTT)
 !
@@ -2533,23 +2532,7 @@ module Initcond
           OO_sph=sqrt(g0/r_sph**3)
           OO_cyl=sqrt(g0/r_cyl**3)
 !
-! pressure correction
-!
-          if (lstratified) then
-            tmp = r_cyl/r_sph
-          else
-            tmp = 1.  !in cylindrical 3D r_cyl/r_sph is not unity
-          endif
-!
-          tmp2 = OO_cyl**2 * (tmp-cs20)
-!
-          where (tmp2.ge.0)
-            OO=sqrt(tmp2)
-          elsewhere
-            OO=0.
-          endwhere
-!
-! don't overwrite...
+! density
 !
           if (((nzgrid==1).or.(lcylindrical)).and.(plaw/=0)) then
 ! Radial stratification
@@ -2567,7 +2550,7 @@ module Initcond
 ! log density
             f(:,m,n,ilnrho) = (r_cyl - r_sph)/(r_sph*cs20)
 ! pressure corrected velocities
-            tmp = OO_cyl**2 * (r_cyl/r_sph - cs20)
+            tmp = OO_cyl**2 * (r_cyl/r_sph - cs20)  !this is wrong. check!
             where (tmp.ge.0)
               OO=sqrt(tmp)
             elsewhere
@@ -2576,13 +2559,12 @@ module Initcond
           else
 ! Cylindrical disk
             if (lheader) print*,'Cylindrical disk initial condition'
-            tmp = OO_cyl**2 * (1-cs20)
-            where (tmp.ge.0)
-              OO=sqrt(tmp)
-            elsewhere
-              OO=0.
-            endwhere
-          endif
+            if (cs20.lt.1.0) then
+               OO = sqrt(OO_cyl**2 * (1-cs20))
+            else
+               call stop_it("Imaginary velocites due to large temperatures in the disk.")
+            endif
+           endif
 !
 ! Velocity field. Don't overwrite           
 !
@@ -2601,16 +2583,19 @@ module Initcond
       do m=m1,m2
         do n=n1,n2
           rmn_sph = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2)+tini
+          rmn_cyl = sqrt(x(l1:l2)**2 + y(m)**2)+tini
 !
-          gg_mn(:,1) = -x(l1:l2)/rmn_sph**3
-          gg_mn(:,2) = -y(  m  )/rmn_sph**3
+          if (lstratified) then
+             gg_mn(:,1) = -x(l1:l2)/rmn_sph**3
+             gg_mn(:,2) = -y(  m  )/rmn_sph**3
 !               call der(rho,grhoz,3)
-          call der(f,ilnrho,grhoz,3)
-          rho=exp(f(l1:l2,m,n,ilnrho))
-          grhoz=grhoz*rho
+             call der(f,ilnrho,grhoz,3)
+             rho=exp(f(l1:l2,m,n,ilnrho))
+             grhoz=grhoz*rho
 
-          gg_mn(:,3) = cs20/(grhoz*rho*(sqrt(x(l1:l2)**2+y(m)**2)+tini))
-          f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
+             gg_mn(:,3) = cs20/(grhoz*rho*(sqrt(x(l1:l2)**2+y(m)**2)+tini))
+             f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
+          endif
 !    
 ! Thermodynamical quantities
 !
@@ -2619,11 +2604,11 @@ module Initcond
                   'set sound speed as global variable: Mach number at midplane=',1./cs0
 !sound speed
             call farray_use_global('cs2',iglobal_cs2)
-            f(l1:l2,m,n,iglobal_cs2)= cs20/(sqrt(x(l1:l2)**2+y(m)**2)+tini)
+            f(l1:l2,m,n,iglobal_cs2)= cs20/rmn_cyl
 !temperature gradient
             call farray_use_global('glnTT',iglobal_glnTT)
-            f(l1:l2,m,n,iglobal_glnTT  )=-x(l1:l2)/(x(l1:l2)**2+y(m)**2+tini)
-            f(l1:l2,m,n,iglobal_glnTT+1)=-y(m)    /(y(l1:l2)**2+y(m)**2+tini)
+            f(l1:l2,m,n,iglobal_glnTT  )=-x(l1:l2)/rmn_cyl**2
+            f(l1:l2,m,n,iglobal_glnTT+1)=-  y(m)  /rmn_cyl**2
             f(l1:l2,m,n,iglobal_glnTT+2)=0.
 !else do it all as entropy
           else if (lentropy) then
