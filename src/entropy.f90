@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.451 2006-11-16 13:15:12 dintrans Exp $
+! $Id: entropy.f90,v 1.452 2006-11-16 16:45:52 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -164,7 +164,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.451 2006-11-16 13:15:12 dintrans Exp $")
+           "$Id: entropy.f90,v 1.452 2006-11-16 16:45:52 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -471,6 +471,7 @@ module Entropy
         do n=n1,n2
         do m=m1,m2
           p%r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+          p%z_mn=spread(z(n),1,nx)
           call heatcond(p,hcond) 
           call gradloghcond(p,glhc)
           f(l1:l2,m,n,iglobal_hcond)=hcond 
@@ -1198,7 +1199,7 @@ module Entropy
         n=nn(imn)
         m=mm(imn)
 !
-        r_mn=sqrt(x(l1:l2)*2+y(m)**2+z(n)**2)
+        r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
         call shell_ss_perturb(pert_TT)
 !
         where (r_mn >= r_ext) TT = TT_ext
@@ -2254,8 +2255,9 @@ module Entropy
       use Sub
       use IO
       use Gravity
+      use FArrayManager
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: glnThcond,glhc,glchit_prof !,glnT
@@ -2268,6 +2270,7 @@ module Entropy
 !
       intent(in) :: p
       intent(out) :: df
+      integer, pointer :: ihcond, iglhc
 !
       if (pretend_lnTT) call fatal_error("calc_heatcond","not implemented when pretend_lnTT = T")
 !
@@ -2283,8 +2286,15 @@ module Entropy
           ! For vertical geometry, we only need to calculate this for each
           ! new value of z -> speedup by about 8% at 32x32x64
           if (z(n) /= z_prev) then
-            call heatcond(p,hcond)
-            call gradloghcond(p,glhc)
+            if (lhcond_global) then
+              call farray_use_global("hcond",ihcond)
+              call farray_use_global("glhc",iglhc)
+              hcond=f(l1:l2,m,n,ihcond)
+              glhc=f(l1:l2,m,n,iglhc:iglhc+2)
+            else
+              call heatcond(p,hcond)
+              call gradloghcond(p,glhc)
+            endif
             if (chi_t/=0) then
               call chit_profile(chit_prof)
               call gradlogchit_profile(glchit_prof)
@@ -2293,8 +2303,10 @@ module Entropy
           endif
         else
           if (lhcond_global) then
-            hcond=f(l1:l2,m,n,iglobal_hcond)
-            glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
+            call farray_use_global("hcond",ihcond)
+            call farray_use_global("glhc",iglhc)
+            hcond=f(l1:l2,m,n,ihcond)
+            glhc=f(l1:l2,m,n,iglhc:iglhc+2)
           else
             call heatcond(p,hcond)
             call gradloghcond(p,glhc)
