@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.185 2006-11-14 16:58:21 wlyra Exp $ 
+! $Id: initcond.f90,v 1.186 2006-11-16 07:18:01 mee Exp $ 
 
 module Initcond 
  
@@ -2486,7 +2486,7 @@ module Initcond
 !
     endsubroutine random_isotropic_KS
 !********************************************************** 
-    subroutine power_law(f,xx,yy,zz,lnrho_const,plaw,lstratified)
+    subroutine power_law(f,iglobal_gg,lnrho_const,plaw,lstratified)
 !
 ! 24-fev-05/wlad : coded.
 ! Yields from Minimum Mass Solar Nebula model
@@ -2498,137 +2498,158 @@ module Initcond
 ! rho(z) = exp(-z^2/(2*H^2), where H=cs/Omega is the scale height
 !
       use Cdata
+      use FArrayManager
       use Mpicomm, only: stop_it
       use General
       use EquationOfState, only:cs0,cs20,gamma11,gamma1,gamma
-      use Global,only : set_global
       use Sub, only: grad
       use Deriv, only: der
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz) :: xx,yy,zz,rho,ccs2
       real, dimension(mx) :: r_cyl,r_sph,OO,OO_sph,OO_cyl,tmp,tmp2
-      real, dimension(nx) :: grhoz,rmn_sph
+      real, dimension(nx) :: grhoz,rmn_sph, rho
       real, dimension(nx,3) :: gg_mn,glnTT
       real :: lnrho_const,plaw,g0=1.
       logical :: lstratified,lheader
+      integer :: iglobal_gg
+      integer, pointer :: iglobal_cs2,iglobal_glnTT
+
+
+      nullify(iglobal_cs2)
+      nullify(iglobal_glnTT)
 !
 ! Pencilize to save memory
 !
       do m=1,my
-         do n=1,mz
+        do n=1,mz
 !
-            lheader=(lroot.and.(m==1).and.(n==1))
+          lheader=(lroot.and.(m==1).and.(n==1))
 !
 ! All needed stuff
 !
-            r_cyl   = sqrt(x**2 + y(m)**2 )+tini
-            r_sph   = sqrt(x**2 + y(m)**2 + z(n)**2)+tini
-            OO_sph=sqrt(g0/r_sph**3)
-            OO_cyl=sqrt(g0/r_cyl**3)
+          r_cyl   = sqrt(x**2 + y(m)**2 )+tini
+          r_sph   = sqrt(x**2 + y(m)**2 + z(n)**2)+tini
+          OO_sph=sqrt(g0/r_sph**3)
+          OO_cyl=sqrt(g0/r_cyl**3)
 !
 ! pressure correction
 !
-            if (lstratified) then
-               tmp = r_cyl/r_sph
-            else
-               tmp = 1.  !in cylindrical 3D r_cyl/r_sph is not unity
-            endif
+          if (lstratified) then
+            tmp = r_cyl/r_sph
+          else
+            tmp = 1.  !in cylindrical 3D r_cyl/r_sph is not unity
+          endif
 !
-            tmp2 = OO_cyl**2 * (tmp-cs20)
+          tmp2 = OO_cyl**2 * (tmp-cs20)
 !
-            where (tmp2.ge.0)
-               OO=sqrt(tmp2)
-            elsewhere
-               OO=0.
-            endwhere
+          where (tmp2.ge.0)
+            OO=sqrt(tmp2)
+          elsewhere
+            OO=0.
+          endwhere
 !
 ! don't overwrite...
 !
-            if (((nzgrid==1).or.(lcylindrical)).and.(plaw/=0)) then
+          if (((nzgrid==1).or.(lcylindrical)).and.(plaw/=0)) then
 ! Radial stratification
-               if (lheader) print*,'Radial stratification with power law=',plaw
-               f(:,m,n,ilnrho) = lnrho_const - plaw*alog(r_cyl)
-            else 
-               f(:,m,n,ilnrho) = lnrho_const
-            endif
+          if (lheader) print*,'Radial stratification with power law=',plaw
+            f(:,m,n,ilnrho) = lnrho_const - plaw*alog(r_cyl)
+          else 
+            f(:,m,n,ilnrho) = lnrho_const
+          endif
 !
 ! Write vertical stratification on top of radial stratification
 !
-            if (lstratified) then
-               if (lheader) &
-                    print*,'Adding vertical stratification with scale height h/r=',cs0
+          if (lstratified) then
+            if (lheader) &
+              print*,'Adding vertical stratification with scale height h/r=',cs0
 ! log density
-               f(:,m,n,ilnrho) = (r_cyl - r_sph)/(r_sph*cs20)
+            f(:,m,n,ilnrho) = (r_cyl - r_sph)/(r_sph*cs20)
 ! pressure corrected velocities
-               tmp = OO_cyl**2 * (r_cyl/r_sph - cs20)
-               where (tmp.ge.0)
-                  OO=sqrt(tmp)
-               elsewhere
-                  OO=0.
-               endwhere
-            else
+            tmp = OO_cyl**2 * (r_cyl/r_sph - cs20)
+            where (tmp.ge.0)
+              OO=sqrt(tmp)
+            elsewhere
+              OO=0.
+            endwhere
+          else
 ! Cylindrical disk
-               if (lheader) print*,'Cylindrical disk initial condition'
-               tmp = OO_cyl**2 * (1-cs20)
-               where (tmp.ge.0)
-                  OO=sqrt(tmp)
-               elsewhere
-                  OO=0.
-               endwhere
-            endif
+            if (lheader) print*,'Cylindrical disk initial condition'
+            tmp = OO_cyl**2 * (1-cs20)
+            where (tmp.ge.0)
+              OO=sqrt(tmp)
+            elsewhere
+              OO=0.
+            endwhere
+          endif
 !
 ! Velocity field. Don't overwrite           
 !
-            f(:,m,n,iux)= f(:,m,n,iux) - y(m)*OO
-            f(:,m,n,iuy)= f(:,m,n,iuy) +    x*OO
-            f(:,m,n,iuz)= f(:,m,n,iuz) +  0.
+          f(:,m,n,iux)= f(:,m,n,iux) - y(m)*OO
+          f(:,m,n,iuy)= f(:,m,n,iuy) +    x*OO
+          f(:,m,n,iuz)= f(:,m,n,iuz) +  0.
 !
-         enddo
+        enddo
       enddo
-
 !
 ! code gravity here for stratified runs, else it will be coded
 ! in gravity_r.f90
 !
-      rho  = exp(f(:,:,:,ilnrho))
-      ccs2 = cs20/(sqrt(xx**2+yy**2)+tini)
+!      rho  = exp(f(:,:,:,ilnrho))
 !
       do m=m1,m2
-         do n=n1,n2
-            if (lstratified) then
-               rmn_sph = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2)+tini
+        do n=n1,n2
+          rmn_sph = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2)+tini
 !
-               gg_mn(:,1) = -x(l1:l2)/rmn_sph**3
-               gg_mn(:,2) = -y(  m  )/rmn_sph**3
-               call der(rho,grhoz,3)
-               gg_mn(:,3) = ccs2(l1:l2,m,n)*grhoz/rho(l1:l2,m,n)
-               call set_global(gg_mn,m,n,'gg',nx)
-            endif
+          gg_mn(:,1) = -x(l1:l2)/rmn_sph**3
+          gg_mn(:,2) = -y(  m  )/rmn_sph**3
+!               call der(rho,grhoz,3)
+          call der(f,ilnrho,grhoz,3)
+          rho=exp(f(l1:l2,m,n,ilnrho))
+          grhoz=grhoz*rho
+
+          gg_mn(:,3) = cs20/(grhoz*rho*(sqrt(x(l1:l2)**2+y(m)**2)+tini))
+          f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
 !    
 ! Thermodynamical quantities
 !
-            if (llocal_iso) then
-               if (lheader) print*,&
-                    'set sound speed as global variable: Mach number at midplane=',1./cs0
+          if (llocal_iso) then
+            if (lheader) print*,&
+                  'set sound speed as global variable: Mach number at midplane=',1./cs0
 !sound speed
-               call set_global(ccs2(l1:l2,m,n),m,n,'cs2',nx)
+            call farray_use_global('cs2',iglobal_cs2)
+            f(l1:l2,m,n,iglobal_cs2)= cs20/(sqrt(x(l1:l2)**2+y(m)**2)+tini)
 !temperature gradient
-               call grad(log(ccs2),glnTT)
-               call set_global(glnTT,m,n,'glnTT',nx)
+            call farray_use_global('glnTT',iglobal_glnTT)
+            f(l1:l2,m,n,iglobal_glnTT  )=-x(l1:l2)/(x(l1:l2)**2+y(m)**2+tini)
+            f(l1:l2,m,n,iglobal_glnTT+1)=-y(m)    /(y(l1:l2)**2+y(m)**2+tini)
+            f(l1:l2,m,n,iglobal_glnTT+2)=0.
 !else do it all as entropy
-            else if (lentropy) then
-               f(:,m,n,iss) = f(:,m,n,iss) + gamma11*log(ccs2(:,m,n)) &
-                    - gamma1/gamma*f(:,m,n,ilnrho)
-            else 
-               print*,"No thermodynamical variable. Choose if you want a "
-               print*,"local thermodynamical approximation (switch llocal_iso=T in"
-               print*,"init_pars and entropy=noentropy on Makefile.local), or if "
-               print*,"you want to compute the entropy via sound speed and density"
-               call stop_it("")
-            endif
-         enddo
+          else if (lentropy) then
+            f(:,m,n,iss) = f(:,m,n,iss) &
+                + gamma11*(log(cs20)- 0.5*log(x(:)**2+y(m)**2)) &
+                - gamma1/gamma*f(:,m,n,ilnrho)
+          else 
+            print*,"No thermodynamical variable. Choose if you want a "
+            print*,"local thermodynamical approximation (switch llocal_iso=T in"
+            print*,"init_pars and entropy=noentropy on Makefile.local), or if "
+            print*,"you want to compute the entropy via sound speed and density"
+            call stop_it("")
+          endif
+        enddo
       enddo
+      if (iglobal_gg/=0) then
+        print*,"Max global gg(1) = ",maxval(f(l1:l2,m1:m2,n1:n2,iglobal_gg))
+        print*,"Sum global gg(1) = ",sum(f(l1:l2,m1:m2,n1:n2,iglobal_gg))
+      endif
+      if (associated(iglobal_cs2)) then
+        print*,"Max global cs2 = ",maxval(f(l1:l2,m1:m2,n1:n2,iglobal_cs2))
+        print*,"Sum global cs2 = ",sum(f(l1:l2,m1:m2,n1:n2,iglobal_cs2))
+      endif
+      if (associated(iglobal_glnTT)) then
+        print*,"Max global glnTT(1) = ",maxval(f(l1:l2,m1:m2,n1:n2,iglobal_glnTT))
+        print*,"Sum global glnTT(1) = ",sum(f(l1:l2,m1:m2,n1:n2,iglobal_glnTT))
+      endif
 !
     endsubroutine power_law
 !****************************************************************
