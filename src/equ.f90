@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.335 2006-11-13 15:43:48 mee Exp $
+! $Id: equ.f90,v 1.336 2006-11-16 06:54:23 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -363,6 +363,7 @@ module Equ
       use Boundcond
       use Shear
       use Density
+      use Grid, only: calc_pencils_grid
       use Shock, only: calc_pencils_shock, calc_shock_profile, calc_shock_profile_simple
       use Viscosity, only: calc_viscosity, calc_pencils_viscosity, &
                            lvisc_first, idiag_epsK
@@ -383,7 +384,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.335 2006-11-13 15:43:48 mee Exp $")
+           "$Id: equ.f90,v 1.336 2006-11-16 06:54:23 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -495,34 +496,6 @@ module Equ
           call boundconds_z(f)
         endif
 !
-!  coordinates are needed frequently
-!  --- but not for isotropic turbulence; and there are many other
-!  circumstances where this is not needed.
-!  Note: cylindrical radius currently only needed for phi-averages.
-!
-        call calc_unitvects_sphere()
-!
-!  calculate profile for phi-averages if needed
-!  Note that rcyl_mn is also needed for Couette flow experiments,
-!  so let's hope that everybody remembers to do averages as well...
-!
-        if (l2davgfirst.and.lwrite_phiaverages) then
-          call calc_phiavg_general()
-          call calc_phiavg_profile()
-          call calc_phiavg_unitvects()
-        elseif (lcylindrical) then
-          call calc_phiavg_general()
-        endif
-!
-!  general phiaverage quantities -- useful for debugging
-!
-        if (l2davgfirst) then
-          call phisum_mn_name_rz(rcyl_mn,idiag_rcylmphi)
-          call phisum_mn_name_rz(phi_mn,idiag_phimphi)
-          call phisum_mn_name_rz(z_mn,idiag_zmphi)
-          call phisum_mn_name_rz(r_mn,idiag_rmphi)
-        endif
-!
 !  For each pencil, accumulate through the different modules
 !  advec_XX and diffus_XX, which are essentially the inverse
 !  advective and diffusive timestep for that module.
@@ -547,6 +520,33 @@ module Equ
           dxyz_4 = dx_1(l1:l2)**4+dy_1(m)**4+dz_1(n)**4
           dxyz_6 = dx_1(l1:l2)**6+dy_1(m)**6+dz_1(n)**6
         endif
+
+        if (l2davgfirst) then
+          lpencil(i_rcyl_mn)=.true.
+        endif
+!
+        if (any(lfreeze_varext).or.any(lfreeze_varint)) then
+          if (lcylindrical) then
+            lpencil(i_rcyl_mn)=.true.
+          else
+            lpencil(i_r_mn)=.true.
+          endif
+        endif
+!
+!
+                            call calc_pencils_grid(f,p)
+!
+!  calculate profile for phi-averages if needed
+!  Note that rcyl_mn is also needed for Couette flow experiments,
+!  so let's hope that everybody remembers to do averages as well...
+!
+        if (l2davgfirst.and.lwrite_phiaverages) then
+!          call calc_phiavg_general()
+          call calc_phiavg_profile(p)
+!          call calc_phiavg_unitvects()
+!        elseif (lcylindrical) then
+!          call calc_phiavg_general()
+        endif
 !
 !  Calculate pencils for the pencil_case
 !
@@ -567,13 +567,12 @@ module Equ
         if (lchiral)        call calc_pencils_chiral(f,p)
         if (lradiation)     call calc_pencils_radiation(f,p)
         if (lspecial)       call calc_pencils_special(f,p)
+        if (lplanet)        call calc_pencils_planet(f,p)
         if (lparticles)     call particles_calc_pencils(f,p)
 !
 !  --------------------------------------------------------
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
 !  --------------------------------------------------------
-!
-        if (lplanet) call runtime_phiavg(p)
 !
 !  hydro, density, and entropy evolution
 !
@@ -650,6 +649,15 @@ module Equ
           if (lmagnetic) call df_diagnos_magnetic(f,df,p)
         endif
 !
+!  general phiaverage quantities -- useful for debugging
+!
+        if (l2davgfirst) then
+          call phisum_mn_name_rz(p%rcyl_mn,idiag_rcylmphi)
+          call phisum_mn_name_rz(p%phi_mn,idiag_phimphi)
+          call phisum_mn_name_rz(p%z_mn,idiag_zmphi)
+          call phisum_mn_name_rz(p%r_mn,idiag_rmphi)
+        endif
+!
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
 !  -------------------------------------------------------------
@@ -662,10 +670,10 @@ module Equ
                   ' : ', lfreeze_varint
           if (lcylindrical) then
             pfreeze_int = &
-                quintic_step(rcyl_mn,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
+                quintic_step(p%rcyl_mn,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
           else
             pfreeze_int = &
-                quintic_step(r_mn   ,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
+                quintic_step(p%r_mn   ,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
           endif
 !          
           do iv=1,nvar
@@ -680,10 +688,10 @@ module Equ
                   ' : ', lfreeze_varext
           if (lcylindrical) then
             pfreeze_ext = &
-                1-quintic_step(rcyl_mn,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
+                1-quintic_step(p%rcyl_mn,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
           else
             pfreeze_ext = &
-                1-quintic_step(r_mn   ,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
+                1-quintic_step(p%r_mn   ,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
           endif
 !
           do iv=1,nvar
@@ -696,8 +704,8 @@ module Equ
           if (headtt) &
               print*, 'pde: freezing variables inside square : ', &
                   lfreeze_varsquare
-          pfreeze = 1. - quintic_step(x_mn,xfreeze_square, wfreeze,SHIFT=-1.) &
-                       * quintic_step(y_mn,yfreeze_square,-wfreeze,SHIFT=-1.)
+          pfreeze = 1. - quintic_step(x(l1:l2),xfreeze_square, wfreeze,SHIFT=-1.) &
+                       * quintic_step(spread(y(m),1,nx),yfreeze_square,-wfreeze,SHIFT=-1.)
 !
           do iv=1,nvar          
             if (lfreeze_varsquare(iv)) &
@@ -802,12 +810,12 @@ module Equ
 !
           if (any(lfreeze_varint)) then
              if (lcylindrical) then
-                where (rcyl_mn .le. rfreeze_int)
+                where (p%rcyl_mn .le. rfreeze_int)
                    maxadvec=0.
                    maxdiffus=0.
                 endwhere
              else
-                where (r_mn .le. rfreeze_int)
+                where (p%r_mn .le. rfreeze_int)
                    maxadvec=0.
                    maxdiffus=0.
                 endwhere
@@ -816,12 +824,12 @@ module Equ
 !
           if (any(lfreeze_varext)) then
              if (lcylindrical) then
-                where (rcyl_mn .ge. rfreeze_ext)
+                where (p%rcyl_mn .ge. rfreeze_ext)
                    maxadvec=0.
                    maxdiffus=0.
                 endwhere
              else
-                where (r_mn .ge. rfreeze_ext)
+                where (p%r_mn .ge. rfreeze_ext)
                    maxadvec=0.
                    maxdiffus=0.
                 endwhere
@@ -997,7 +1005,7 @@ module Equ
 !
 !  Allocate memory for alternative df, fname
 !
-      allocate(f_other(mx,my,mz,mvar+maux),stat=mem_stat1)
+      allocate(f_other(mx,my,mz,mfarray)  ,stat=mem_stat1)
       allocate(df_ref(mx,my,mz,mvar)      ,stat=mem_stat2)
       allocate(fname_ref(mname)           ,stat=mem_stat3)
       if ((mem_stat1 + mem_stat2 + mem_stat3) > 0) then
@@ -1012,6 +1020,10 @@ module Equ
                          "failed to allocate required memory")
         endif
       endif
+!
+! Start with the initial f
+!
+      f_other=f
 !
 !  Check requested pencils
 !
@@ -1101,7 +1113,7 @@ f_loop:   do iv=1,mvar
       do penc=1,npencils 
         df=0.0
         call random_seed_wrapper(put=iseed_org)
-        do i=1,mvar
+        do i=1,mfarray
           call random_number_wrapper(f_other(:,:,:,i))
         enddo
         fname=0.0

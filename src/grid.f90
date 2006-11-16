@@ -1,8 +1,27 @@
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! PENCILS PROVIDED x_mn, y_mn, z_mn, r_mn
+! PENCILS PROVIDED phix, phiy
+! PENCILS PROVIDED pomx, pomy
+! PENCILS PROVIDED rcyl_mn, rcyl_mn1, phi_mn
+! PENCILS PROVIDED evr
+!
+!***************************************************************
 module Grid
 
+  use Cparam
   use Messages
 
   implicit none
+
+  private
+
+  public :: construct_grid
+  public :: pencil_criteria_grid
+  public :: pencil_interdep_grid
+  public :: calc_pencils_grid
 
   interface grid_profile        ! Overload the grid_profile' subroutine
     module procedure grid_profile_point
@@ -288,6 +307,93 @@ module Grid
 
     endsubroutine construct_grid
 !***********************************************************************
+    subroutine pencil_criteria_grid()
+! 
+!  All pencils that this special module depends on are specified here.
+! 
+!  15-nov-06/tony: coded
+!
+    endsubroutine pencil_criteria_grid
+!***********************************************************************
+    subroutine pencil_interdep_grid(lpencil_in)
+!
+!  Interdependency among pencils provided by this module are specified here.
+!
+!  15-nov-06/tony: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (lpencil_in(i_rcyl_mn1)) lpencil_in(i_rcyl_mn)=.true.
+      if (lpencil_in(i_evr)) then
+        lpencil_in(i_x_mn)=.true.
+        lpencil_in(i_y_mn)=.true.
+        lpencil_in(i_z_mn)=.true.
+        lpencil_in(i_r_mn)=.true.
+      endif
+      if (lpencil_in(i_phi_mn)) then
+        lpencil_in(i_y_mn)=.true.
+      endif
+      if (  lpencil_in(i_pomx) &
+       .or. lpencil_in(i_pomy) &
+       .or. lpencil_in(i_phix) &
+       .or. lpencil_in(i_phiy)) then
+        lpencil_in(i_rcyl_mn1)=.true.
+      endif
+!
+    endsubroutine pencil_interdep_grid
+!***********************************************************************
+    subroutine calc_pencils_grid(f,p)
+!
+!  Calculate Grid/geometry related pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!   15-nov-06/tony: coded
+!
+      use Cparam
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray) :: f       
+      type (pencil_case) :: p
+!
+      intent(in) :: f
+      intent(inout) :: p
+!
+      if (lpencil(i_x_mn)) p%x_mn = x(l1:l2)
+      if (lpencil(i_y_mn)) p%y_mn = spread(y(m),1,nx)
+      if (lpencil(i_z_mn)) p%z_mn = spread(z(n),1,nx)
+      if (lpencil(i_r_mn)) p%r_mn = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)      
+!
+!  evr is the radial unit vector
+!
+      if (lpencil(i_evr)) then
+        p%evr(:,1) = p%x_mn
+        p%evr(:,2) = p%y_mn
+        p%evr(:,3) = p%z_mn
+        p%evr = p%evr / spread(p%r_mn+tini,2,3)
+      endif
+!
+      if (lpencil(i_rcyl_mn)) p%rcyl_mn = sqrt(x(l1:l2)**2+y(m)**2)
+      if (lpencil(i_phi_mn))  p%phi_mn  = atan2(p%y_mn,x(l1:l2))
+!
+!  pomega and 1/pomega
+!
+      if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
+!
+!  pomega unit vector
+!
+      if (lpencil(i_pomx)) p%pomx= x(l1:l2)*p%rcyl_mn1
+      if (lpencil(i_pomy)) p%pomy= y(m)*p%rcyl_mn1
+!
+!  phi unit vector
+!
+!ajwm Are phi[xy] really needed if they are simply [+-]pom[xy]?
+      if (lpencil(i_phix)) p%phix=-y(m)*p%rcyl_mn1
+      if (lpencil(i_phiy)) p%phiy= x(l1:l2)*p%rcyl_mn1
+!
+      if(NO_WARN) print*,f   !(keep compiler quiet)
+!
+    endsubroutine calc_pencils_grid
+!***********************************************************************
     subroutine grid_profile_point(xi,grid_func,g,gder1,gder2,err, &
                                   dxyz,xistep,delta)
 !
@@ -426,7 +532,6 @@ module Grid
 !
 !  Finds the xi that corresponds to the inflection point of the grid-function
 !  by means of a newton-raphson root-finding algorithm.
-!
 !
 !  25-jun-04/tobi+wolf: coded
 !

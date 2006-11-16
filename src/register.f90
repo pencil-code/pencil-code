@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.188 2006-11-01 08:54:01 dobler Exp $
+! $Id: register.f90,v 1.189 2006-11-16 06:54:23 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -253,7 +253,7 @@ module Register
       call initialize_prints()
       call initialize_timeavg(f) ! initialize time averages
       call initialize_eos()
-      call initialize_gravity(lstarting)
+      call initialize_gravity(f,lstarting)
       call initialize_selfgravity()
       call initialize_density(f,lstarting)
       call initialize_hydro(f,lstarting)
@@ -453,6 +453,7 @@ module Register
 !  20-11-04/anders: coded
 !
       use Cdata
+      use Grid, only: pencil_criteria_grid
       use EquationOfState, only: pencil_criteria_eos
       use Hydro, only: pencil_criteria_hydro
       use Density, only: pencil_criteria_density
@@ -475,6 +476,7 @@ module Register
       use Special, only: pencil_criteria_special
       use Particles_main, only: particles_pencil_criteria
 !
+      call pencil_criteria_grid()
       call pencil_criteria_density()
       call pencil_criteria_eos()
       call pencil_criteria_hydro()
@@ -530,10 +532,13 @@ module Register
       use Chiral, only: pencil_interdep_chiral
       use Radiation, only: pencil_interdep_radiation
       use Special, only: pencil_interdep_special
+      use Planet, only: pencil_interdep_planet
+      use Grid, only: pencil_interdep_grid
       use Particles_main, only: particles_pencil_interdep
 !      
       logical, dimension (npencils) :: lpencil_in
 !
+      call pencil_interdep_grid(lpencil_in)
       call pencil_interdep_density(lpencil_in)
       call pencil_interdep_eos(lpencil_in)
       call pencil_interdep_hydro(lpencil_in)
@@ -551,6 +556,7 @@ module Register
       call pencil_interdep_cosmicrayflux(lpencil_in)
       call pencil_interdep_chiral(lpencil_in)
       call pencil_interdep_radiation(lpencil_in)
+      call pencil_interdep_planet(lpencil_in)
       call pencil_interdep_special(lpencil_in)
       if (lparticles) call particles_pencil_interdep(lpencil_in)
 !    

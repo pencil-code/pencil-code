@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.341 2006-11-14 18:22:43 dobler Exp $
+! ! $Id: cdata.f90,v 1.342 2006-11-16 06:54:22 mee Exp $
 
 module Cdata
 
@@ -13,8 +13,6 @@ module Cdata
   real, dimension (mz) :: z,dz_1,dz_tilde
   real, dimension (nx) :: dxyz_2, dxyz_4, dxyz_6
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
-  real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn,rcyl_mn,phi_mn
-  real, dimension (nx,3) :: evr    ! spherical unit radius vector
   real, dimension (nxgrid) :: kx_fft
   real, dimension (nygrid) :: ky_fft
   real, dimension (nzgrid) :: kz_fft
@@ -170,7 +168,6 @@ module Cdata
   real, dimension (nx,nz,nprocz,mnamexz) :: fnamexz
   real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fnamerz
   real, dimension (nrcyl,nx) :: phiavg_profile
-  real, dimension (nx) :: pomx,pomy,phix,phiy
   character (LEN=30) :: cname(mname),cform(mname)
   character (LEN=30) :: cnamev(mname)
   character (LEN=30) :: cnamexy(mnamexy),cformxy(mnamexy)

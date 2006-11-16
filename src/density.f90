@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.289 2006-11-07 20:24:45 wlyra Exp $
+! $Id: density.f90,v 1.290 2006-11-16 06:54:22 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -59,6 +59,9 @@ module Density
   character (len=4) :: iinit_str
   complex :: coeflnrho=0.
 
+  integer :: iglobal_gg=0
+  integer :: iglobal_rho=0
+
   namelist /density_init_pars/ &
        ampllnrho,initlnrho,initlnrho2,widthlnrho,    &
        rho_left,rho_right,lnrho_const,rho_const,cs2bot,cs2top, &
@@ -108,7 +111,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.289 2006-11-07 20:24:45 wlyra Exp $")
+           "$Id: density.f90,v 1.290 2006-11-16 06:54:22 mee Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -126,7 +129,9 @@ module Density
 !
 
       use CData, only: lfreeze_varext,lfreeze_varint,lreloading,ilnrho
+      use FArrayManager
       use EquationOfState, only: select_eos_variable
+      use Gravity, only: lnumerical_equilibrium
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -215,11 +220,9 @@ module Density
 !  Hyperdiffusion only works with (not log) density. One must either use
 !  ldensity_nolog=T or work with GLOBAL =   global_nolog_density.
 !
-      if ((ldiff_hyper3.or.ldiff_hyper3_vector) .and. (.not. ldensity_nolog) .and. &
-          (.not. lglobal_nolog_density) ) then
-         call fatal_error('initialize_density','must have '// &
-             'global_nolog_density module for del6rho with '// &
-             'logarithmic density')
+      if ((ldiff_hyper3.or.ldiff_hyper3_vector) .and. (.not. ldensity_nolog)) then
+        if (lroot) print*,"initialize_density: Creating global array for rho to use hyperdiffusion"
+        call farray_register_global('rho',iglobal_rho)  
       endif
 !
       if (lfreeze_lnrhoint) lfreeze_varint(ilnrho) = .true.
@@ -231,6 +234,11 @@ module Density
           call select_eos_variable('rho',ilnrho)
         else 
           call select_eos_variable('lnrho',ilnrho)
+        endif
+!
+        if (any(initlnrho=='globaldisk') &
+             .or.lnumerical_equilibrium) then
+          call farray_register_global('gg',iglobal_gg,vector=3) 
         endif
 !
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
@@ -287,7 +295,6 @@ module Density
 ! 15-oct-03/dave: added spherical shell (kws)
 !
       use General, only: chn,complex_phase
-      use Global
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential, &
                           lnumerical_equilibrium
       use Selfgravity,only: rhs_poisson_const
@@ -443,7 +450,6 @@ module Density
         if (lgravr) then
           if (lroot) print*, &
                'init_lnrho: isentropic star with isothermal atmosphere'
-!          call initialize_gravity(LSTARTING=.true.)     ! get coefficients cpot(1:5)
           call potential(xx,yy,zz,POT=pot,POT0=pot0) ! gravity potential
           call output(trim(directory)//'/pot.dat',pot,1)
           !
@@ -660,7 +666,7 @@ module Density
       !minimum mass solar nebula
       !
         if (lroot)  print*,'init_lnrho: initialize initial condition for Keplerian globaldisk'
-        call power_law(f,xx,yy,zz,lnrho_const,plaw,lstratified)
+        call power_law(f,iglobal_gg,lnrho_const,plaw,lstratified)
 
      case ('step_xz') 
         call fatal_error('init_lnrho','neutron_star initial condition is now in the special/neutron_star.f90 code')
@@ -897,10 +903,9 @@ module Density
 !  22-oct-03/dave -- coded
 !
       use Gravity, only: g0,potential
-      use Sub, only: calc_unitvects_sphere
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: pot
+      real, dimension (nx) :: pot, r_mn
       real :: beta1,lnrho_int,lnrho_ext,pot_int,pot_ext
 !
       beta1=g0/(mpoly+1)*gamma/gamma1  ! gamma1/gamma=R_{*} (for cp=1)
@@ -913,7 +918,7 @@ module Density
         n=nn(imn)
         m=mm(imn)
 !
-        call calc_unitvects_sphere()
+        r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
 !
         ! in the fluid shell
         where (r_mn < r_ext .AND. r_mn > r_int) f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*log(1+beta1*(r_ext/r_mn-1.))
@@ -941,14 +946,13 @@ module Density
 !    (1/rho) grad(P) = cs20 (rho/rho0)^(gamma-2) grad(rho)
 !
       use Sub, only: grad
-      use Global, only: set_global
       use IO
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: lnrho,cs2
       real, dimension (nx,3) :: glnrho
       real, dimension (nx,3) :: gg_mn
-      integer :: j
+      integer :: i,j
       
       do m=m1,m2
       do n=n1,n2
@@ -959,7 +963,7 @@ module Density
         do j=1,3
           gg_mn(:,j)=cs2*glnrho(:,j)
         enddo
-        call set_global(gg_mn,m,n,'gg',nx)
+        f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
 
       enddo
       enddo
@@ -1006,6 +1010,8 @@ module Density
       if (ldiff_hyper3.or.ldiff_hyper3_vector) lpenc_requested(i_del6rho)=.true.
       if (ldiff_hyper3.and..not.ldensity_nolog) lpenc_requested(i_rho)=.true.
       if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
+!
+      if (lmass_source) lpenc_requested(i_rcyl_mn)=.true.
 !
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
@@ -1067,7 +1073,6 @@ module Density
 !
 !  19-11-04/anders: coded
 !
-      use Global, only: set_global,global_derivs
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij
 !      
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1075,8 +1080,7 @@ module Density
 !      
       integer :: i, mm, nn
 !
-      intent(in) :: f
-      intent(inout) :: p
+      intent(inout) :: f,p
 ! lnrho
       if (lpencil(i_lnrho)) then
         if (ldensity_nolog) then
@@ -1156,12 +1160,20 @@ module Density
         if (ldensity_nolog) then
           call del6(f,ilnrho,p%del6rho)
         else
-          if (lfirstpoint .and. lglobal_nolog_density) then
-            do mm=1,my; do nn=1,mz
-              call set_global(exp(f(:,mm,nn,ilnrho)),mm,nn,'rho',mx)
-            enddo; enddo
+          if (lfirstpoint) then
+            !
+            ! Fill global rho array using the ilnrho data
+!ajwm This won't work unless earlt_finalize is used... ?
+            if (iglobal_rho/=0) then
+              do mm=1,my; do nn=1,mz
+                f(:,mm,nn,iglobal_rho) = exp(f(:,mm,nn,ilnrho))
+              enddo; enddo
+            else
+              call fatal_error("calc_pencils_density",&
+                       "A global rho slot must be available for calculating del6rho from lnrho")
+            endif
           endif
-          if (lglobal_nolog_density) call global_derivs(m,n,'rho',der6=p%del6rho) 
+          if (iglobal_rho/=0) call del6(f,iglobal_rho,p%del6rho)
         endif
       endif
 ! del6lnrho
@@ -1230,7 +1242,7 @@ module Density
 !
 !  mass sources and sinks
 !
-      if (lmass_source) call mass_source(f,df)
+      if (lmass_source) call mass_source(f,df,p)
 !
 !  Mass diffusion
 !
@@ -1313,7 +1325,7 @@ module Density
 !
 !  Apply border profile  
 !
-      if (lborder_profiles) call set_border_density(f,df)
+      if (lborder_profiles) call set_border_density(f,df,p)
 !
 !  phi-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
@@ -1343,7 +1355,7 @@ module Density
 !
     endsubroutine dlnrho_dt
 !***********************************************************************
-    subroutine set_border_density(f,df)
+    subroutine set_border_density(f,df,p)
 !
 !  Calculates the driving term for the border profile
 !  of the lnrho variable.
@@ -1354,6 +1366,7 @@ module Density
       use EquationOfState, only: cs0,cs20
 !
       real, dimension(mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target,OO_sph,OO_cyl,cs,theta
       real :: r0_pot=0.1
@@ -1370,7 +1383,7 @@ module Density
          !OO_cyl = sqrt((rcyl_mn**2 + r0_pot**2)**(-1.5))
          !cs = OO_cyl*rcyl_mn*cs0
          !f_target=lnrho_const - 0.5*(theta/cs0)**2
-         f_target=(rcyl_mn-r_mn)/(cs20*r_mn)
+         f_target=(p%rcyl_mn-p%r_mn)/(cs20*p%r_mn)
       case('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_lnrho: borderlnrho='nothing'"
@@ -1383,7 +1396,7 @@ module Density
 !
       if (ldensity_nolog) f_target=exp(f_target)
 !
-      call border_driving(f,df,f_target,ilnrho)
+      call border_driving(f,df,p,f_target,ilnrho)
 !
     endsubroutine set_border_density
 !***********************************************************************
@@ -1549,7 +1562,7 @@ module Density
                              potential
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: pot,dlncs2
+      real, dimension (nx) :: pot,dlncs2,r_mn
       real :: ggamma,ztop,zbot,zref2,pot_ext,lnrho_ref,ptop,pbot
 !
 !  identifier
@@ -1662,7 +1675,7 @@ module Density
 !
     endsubroutine polytropic_simple
 !***********************************************************************
-    subroutine mass_source(f,df)
+    subroutine mass_source(f,df,p)
 !
 !  add mass sources and sinks
 !
@@ -1674,19 +1687,20 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
       real, dimension(nx) :: fint,fext,pdamp
 !
       if(ldebug) print*,'mass_source: cs20,cs0=',cs20,cs0
 !
 !  cylindrical profile for inner cylinder
 !
-      pdamp=1-step(rcyl_mn,r_int,wdamp) ! inner damping profile
+      pdamp=1-step(p%rcyl_mn,r_int,wdamp) ! inner damping profile
       fint=-damplnrho_int*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_int)
       df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+fint
 !
 !  cylindrical profile for outer cylinder
 !
-      pdamp=step(rcyl_mn,r_ext,wdamp) ! outer damping profile
+      pdamp=step(p%rcyl_mn,r_ext,wdamp) ! outer damping profile
       fext=-damplnrho_ext*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_ext)
       df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+fext
 !     df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+f(l1:l2,m,n,iux)*fext

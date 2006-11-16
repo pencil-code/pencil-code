@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.296 2006-11-09 18:03:30 dobler Exp $
+! $Id: hydro.f90,v 1.297 2006-11-16 06:54:22 mee Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -174,7 +174,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.296 2006-11-09 18:03:30 dobler Exp $")
+           "$Id: hydro.f90,v 1.297 2006-11-16 06:54:22 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -306,7 +306,6 @@ module Hydro
       use Cdata
       use EquationOfState, only: cs20, gamma, beta_glnrho_scaled
       use General
-      use Global
       use Gravity, only: grav_const,z1
       use Initcond
       use Mpicomm, only: stop_it
@@ -619,6 +618,11 @@ module Hydro
 !
       if (lspecial) lpenc_requested(i_u2)=.true.
 !
+      if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) then
+        lpenc_requested(i_r_mn)=.true.
+        if (lcylindrical) lpenc_requested(i_rcyl_mn)=.true.
+      endif
+!
 !  1/rho needed for correcting the damping term
 !
       if (tau_damp_ruxm/=0..or.tau_damp_ruym/=0.) lpenc_requested(i_rho1)=.true.
@@ -651,12 +655,55 @@ module Hydro
           idiag_u2m/=0 .or. idiag_um2/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_fmassz/=0 .or. idiag_ruxuymz/=0) lpenc_diagnos(i_rho)=.true.
+
+      if (     idiag_totmass/=0 &
+          .or. idiag_totangmom/=0 &
+          .or. idiag_urm/=0 &
+          .or. idiag_upm/=0 &
+          .or. idiag_uzzm/=0 &
+          .or. idiag_ur2m/=0 &
+          .or. idiag_up2m/=0 &
+          .or. idiag_uzz2m/=0 &
+          .or. idiag_urupm/=0 &
+          .or. idiag_uzupm/=0 &
+          .or. idiag_uruzm/=0 ) then
+           lpenc_diagnos(i_rcyl_mn)=.true.
+           lpenc_diagnos(i_uavg)=.true.
+      endif
+
+      if (     idiag_urm/=0 &
+          .or. idiag_ur2m/=0 &
+          .or. idiag_urupm/=0 &
+          .or. idiag_uruzm/=0 ) then
+        lpenc_diagnos(i_pomx)=.true.
+        lpenc_diagnos(i_pomy)=.true.
+      endif
+
+      if (     idiag_upm/=0 &
+          .or. idiag_up2m/=0 &
+          .or. idiag_urupm/=0 &
+          .or. idiag_uzupm/=0 ) then
+        lpenc_diagnos(i_phix)=.true.
+        lpenc_diagnos(i_phiy)=.true.
+      endif
+
+      if ( idiag_ur2m/=0 &
+           .or. idiag_up2m/=0 &
+           .or. idiag_uzz2m/=0 &
+           .or. idiag_urupm/=0 &
+           .or. idiag_uzupm/=0 &
+           .or. idiag_uruzm/=0 ) lpenc_diagnos(i_rho)=.true.
+
       if (idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinz/=0 .or. &
           idiag_ekinz/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_u2)=.true.
       endif
       if (idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0) lpenc_diagnos(i_rho)=.true.
+      if (idiag_urm/=0 .or. idiag_upm/=0 .or. idiag_uzzm/=0 &
+         .or. idiag_ur2m/=0 .or. idiag_up2m/=0 .or. idiag_uzz2m/=0 &
+         .or. idiag_urupm/=0 .or. idiag_uzupm/=0 .or. idiag_uruzm/=0) &
+        lpenc_diagnos(i_uavg)=.true.
 !
     endsubroutine pencil_criteria_hydro
 !***********************************************************************
@@ -803,8 +850,6 @@ module Hydro
       use IO
       use Mpicomm, only: stop_it
       use Special, only: special_calc_hydro
-      use Global, only: get_global
-!ajwm QUICK FIX.... Shouldn't be here!
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -893,7 +938,7 @@ module Hydro
 !
 ! geodynamo
 ! addition of dampuint evaluation
-      if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) call udamping(f,df)
+      if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) call udamping(f,df,p)
 ! end geodynamo
 !
 !  adding differential rotation via a frictional term
@@ -903,7 +948,7 @@ module Hydro
 !
       if (tau_diffrot1/=0) then
         if (wdamp/=0.) then
-          pdamp=1.-step(x_mn,rdampint,wdamp) ! outer damping profile
+          pdamp=1.-step(x(l1:l2),rdampint,wdamp) ! outer damping profile
         else
           pdamp=1.
         endif
@@ -932,7 +977,7 @@ module Hydro
 !
 !  Apply border profiles
 !
-      if (lborder_profiles) call set_border_hydro(f,df)
+      if (lborder_profiles) call set_border_hydro(f,df,p)
 !
 !  write slices for output in wvid in run.f90
 !  This must be done outside the diagnostics loop (accessed at different times).
@@ -1007,10 +1052,10 @@ module Hydro
         if (idiag_ekintot/=0) & 
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
         if (idiag_ekinz/=0) call xysum_mn_name_z(.5*p%rho*p%u2,idiag_ekinz)
-        if (idiag_totmass/=0) call sum_lim_mn_name(p%rho,idiag_totmass)
+        if (idiag_totmass/=0) call sum_lim_mn_name(p%rho,idiag_totmass,p)
         if (idiag_totangmom/=0) &
              call sum_lim_mn_name(p%rho*(p%uu(:,2)*x(l1:l2)-p%uu(:,1)*y(m)),&
-             idiag_totangmom)
+             idiag_totangmom,p)
 !
 !  cylindrical stresses for global disk
 !
@@ -1093,8 +1138,8 @@ module Hydro
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then
-        call phisum_mn_name_rz(p%uu(:,1)*pomx+p%uu(:,2)*pomy,idiag_urmphi)
-        call phisum_mn_name_rz(p%uu(:,1)*phix+p%uu(:,2)*phiy,idiag_upmphi)
+        call phisum_mn_name_rz(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmphi)
+        call phisum_mn_name_rz(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmphi)
         call phisum_mn_name_rz(p%uu(:,3),idiag_uzmphi)
         call phisum_mn_name_rz(p%u2,idiag_u2mphi)
         if (idiag_oumphi/=0) call phisum_mn_name_rz(p%ou,idiag_oumphi)
@@ -1147,7 +1192,7 @@ module Hydro
 !
     endsubroutine calc_lhydro_pars
 !***********************************************************************
-    subroutine set_border_hydro(f,df)
+    subroutine set_border_hydro(f,df,p)
 !
 !  Calculates the driving term for the border profile
 !  of the uu variable.
@@ -1159,6 +1204,7 @@ module Hydro
       use EquationOfState, only: cs0,cs20
 !
       real, dimension(mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
       real, dimension(nx) :: OO,tmp
@@ -1178,7 +1224,7 @@ module Hydro
             f_target(:,j) = uu_const(j)
          enddo
       case('globaldisk')
-         tmp = (1-cs0**2)*g0*rcyl_mn**(-3)
+         tmp = (1-cs0**2)*g0*p%rcyl_mn**(-3)
          where (tmp.ge.0)
             OO=sqrt(tmp)
          elsewhere
@@ -1189,7 +1235,7 @@ module Hydro
          f_target(:,2) =  x(l1:l2)*OO
          f_target(:,3) =  0.
       case('globaldisk-strat')
-         tmp = g0*(r_mn**(-3) - cs20*rcyl_mn**(-4))
+         tmp = g0*(p%r_mn**(-3) - cs20*p%rcyl_mn**(-4))
          where (tmp.ge.0)
             OO=sqrt(tmp)
          elsewhere
@@ -1212,7 +1258,7 @@ module Hydro
 !
       do j=1,3
          ju=j+iuu-1
-         call border_driving(f,df,f_target(:,j),ju)
+         call border_driving(f,df,p,f_target(:,j),ju)
       enddo
 !
     endsubroutine set_border_hydro
@@ -1227,7 +1273,6 @@ module Hydro
 !
       use Cdata
       use Sub
-      use Global, only: get_global
 !
       type (pencil_case) :: p
       real, dimension (nx,3) :: uus
@@ -1235,21 +1280,19 @@ module Hydro
 !
 ! from the runtime phi-average
 !
-      call get_global(uus,m,n,'uus')
+      ur=p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy - p%uavg(:,1)
+      up=p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy - p%uavg(:,2)
+      uz=p%uu(:,3) - p%uavg(:,3)
 !
-      ur=p%uu(:,1)*pomx+p%uu(:,2)*pomy - uus(:,1)
-      up=p%uu(:,1)*phix+p%uu(:,2)*phiy - uus(:,2)
-      uz=p%uu(:,3) - uus(:,3)
-!
-      if (idiag_urm/=0)    call sum_lim_mn_name(ur,idiag_urm)
-      if (idiag_upm/=0)    call sum_lim_mn_name(up,idiag_upm)
-      if (idiag_uzzm/=0)   call sum_lim_mn_name(uz,idiag_uzzm)
-      if (idiag_ur2m/=0)   call sum_lim_mn_name(p%rho*ur**2,idiag_ur2m)
-      if (idiag_up2m/=0)   call sum_lim_mn_name(p%rho*up**2,idiag_up2m)
-      if (idiag_uzz2m/=0)  call sum_lim_mn_name(p%rho*uz**2,idiag_uzz2m)
-      if (idiag_urupm/=0)  call sum_lim_mn_name(p%rho*ur*up,idiag_urupm)
-      if (idiag_uzupm/=0)  call sum_lim_mn_name(p%rho*uz*up,idiag_uzupm)
-      if (idiag_uruzm/=0)  call sum_lim_mn_name(p%rho*ur*uz,idiag_uruzm)
+      if (idiag_urm/=0)    call sum_lim_mn_name(ur,idiag_urm,p)
+      if (idiag_upm/=0)    call sum_lim_mn_name(up,idiag_upm,p)
+      if (idiag_uzzm/=0)   call sum_lim_mn_name(uz,idiag_uzzm,p)
+      if (idiag_ur2m/=0)   call sum_lim_mn_name(p%rho*ur**2,idiag_ur2m,p)
+      if (idiag_up2m/=0)   call sum_lim_mn_name(p%rho*up**2,idiag_up2m,p)
+      if (idiag_uzz2m/=0)  call sum_lim_mn_name(p%rho*uz**2,idiag_uzz2m,p)
+      if (idiag_urupm/=0)  call sum_lim_mn_name(p%rho*ur*up,idiag_urupm,p)
+      if (idiag_uzupm/=0)  call sum_lim_mn_name(p%rho*uz*up,idiag_uzupm,p)
+      if (idiag_uruzm/=0)  call sum_lim_mn_name(p%rho*ur*uz,idiag_uruzm,p)
 !
     endsubroutine calc_hydro_stress
 !***********************************************************************
@@ -1285,7 +1328,7 @@ module Hydro
 !
     endsubroutine calc_othresh
 !***********************************************************************
-    subroutine udamping(f,df)
+    subroutine udamping(f,df,p)
 !
 !  damping terms (artificial, but sometimes useful):
 !
@@ -1297,6 +1340,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
 !
       real, dimension(nx) :: pdamp,fint_work,fext_work
       real, dimension(nx,3) :: fint,fext
@@ -1374,25 +1418,25 @@ module Hydro
           endif
         endif
 !
-!  2. damp motions for r_mn > rdampext or r_ext AND r_mn < rdampint or r_int
+!  2. damp motions for p%r_mn > rdampext or r_ext AND p%r_mn < rdampint or r_int
 !
-        if (lgravr) then        ! why lgravr here? to ensure we know r_mn??
+        if (lgravr) then        ! why lgravr here? to ensure we know p%r_mn??
 ! geodynamo
 ! original block
-!          pdamp = step(r_mn,rdamp,wdamp) ! damping profile
+!          pdamp = step(p%r_mn,rdamp,wdamp) ! damping profile
 !          do i=iux,iuz
 !            df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
 !          enddo
 !
           if (dampuext > 0.0 .and. rdampext /= impossible) then
-            pdamp = step(r_mn,rdampext,wdamp) ! outer damping profile
+            pdamp = step(p%r_mn,rdampext,wdamp) ! outer damping profile
             do i=iux,iuz
               df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
             enddo
           endif
 
           if (dampuint > 0.0) then
-            pdamp = 1 - step(r_mn,rdampint,wdamp) ! inner damping profile
+            pdamp = 1 - step(p%r_mn,rdampint,wdamp) ! inner damping profile
             do i=iux,iuz
               df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuint*pdamp*f(l1:l2,m,n,i)
             enddo
@@ -1413,9 +1457,9 @@ module Hydro
 !
 !
           if (lcylindrical) then
-            pdamp = step(rcyl_mn,rdampext,wdamp) ! outer damping profile
+            pdamp = step(p%rcyl_mn,rdampext,wdamp) ! outer damping profile
           else
-            pdamp = step(r_mn,rdampext,wdamp) ! outer damping profile
+            pdamp = step(p%r_mn,rdampext,wdamp) ! outer damping profile
           endif
           do i=1,3
             j=iux-1+i
@@ -1434,9 +1478,9 @@ module Hydro
 !
           if (dampuint > 0.0) then
             if (lcylindrical) then
-              pdamp = 1 - step(rcyl_mn,rdampint,wdamp) ! inner damping profile
+              pdamp = 1 - step(p%rcyl_mn,rdampint,wdamp) ! inner damping profile
             else
-              pdamp = 1 - step(r_mn,rdampint,wdamp) ! inner damping profile
+              pdamp = 1 - step(p%r_mn,rdampint,wdamp) ! inner damping profile
             endif
             fint(:,1)=-dampuint*pdamp*(f(l1:l2,m,n,iux)+y(m)*Omega_int)
             fint(:,2)=-dampuint*pdamp*(f(l1:l2,m,n,iuy)-x(l1:l2)*Omega_int)
