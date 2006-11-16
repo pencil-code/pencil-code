@@ -1,4 +1,4 @@
-! $Id: global_avgs.f90,v 1.11 2006-11-15 14:01:37 wlyra Exp $
+! $Id: global_avgs.f90,v 1.12 2006-11-16 07:16:03 mee Exp $
 !
 ! This module takes care of all the global variables needed when solving
 ! cylindrical problems in a cartesian grid. It saves as global variables
@@ -47,8 +47,6 @@ module Global
   real, dimension (mx,my,mz,3) :: bbs
   real, dimension (mx,my,mz,3) :: uus
 !
-  real, dimension (nrcylrun,3) :: bavg_coarse,uavg_coarse
-  real, dimension (nrcylrun) :: rhoavg_coarse
 !  
   contains
 
