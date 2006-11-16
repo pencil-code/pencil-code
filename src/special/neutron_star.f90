@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.33 2006-11-15 10:41:36 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.34 2006-11-16 11:26:55 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -87,7 +87,6 @@ module Special
   logical :: lnstar_entropy=.false.
   logical :: lnstar_1D=.false.
   integer :: ac_dc_size=5
-  integer :: H_disk_point=0
   integer :: L_disk_point=0
 
   real :: beta_hand=1.
@@ -105,15 +104,14 @@ module Special
 ! Keep some over used pencils
 !
   real, dimension(nx) :: z_2
-  integer :: H_disk_point_int=0
+ 
 
 ! start parameters
   namelist /neutron_star_init_pars/ &
       initnstar,lmass_source_NS,leffective_gravity, &
       laccelerat_zone, ldecelerat_zone, lsurface_zone, &
-      rho_star,rho_disk,rho_surf, &
-      H_disk_point_int, lraddif_local,&
-       H_disk_point, &
+      rho_star,rho_disk, rho_surf,&
+      lraddif_local,&
       L_disk_point, R_star, M_star, &
       T_star,accretion_flux, T_disk, &
       uu_init, &
@@ -124,7 +122,7 @@ module Special
 
 ! run parameters
   namelist /neutron_star_run_pars/ &
-      lmass_source_NS,leffective_gravity, rho_star,rho_disk,rho_surf, &
+      lmass_source_NS,leffective_gravity, rho_star,rho_disk, &
       laccelerat_zone, ldecelerat_zone, lsurface_zone,lraddif_local, &
        accretion_flux, lnstar_entropy, &
        lnstar_T_const,lnstar_1D, &
@@ -180,11 +178,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.33 2006-11-15 10:41:36 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.34 2006-11-16 11:26:55 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.33 2006-11-15 10:41:36 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.34 2006-11-16 11:26:55 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -439,10 +437,7 @@ endsubroutine read_special_run_pars
       type (pencil_case), intent(in) :: p
       integer :: i, l_sz, tmp_int
       real :: cs2_star, p_gas,p_rad, Sigma_rho, grad_rho
-!
 
-
-    
        call eoscalc(ilnrho_lnTT,log(rho_disk),log(T_disk), cs2=cs2_star)
 
 !  mass sources and sinks for the boundary layer on NS in 1D approximation
@@ -450,128 +445,57 @@ endsubroutine read_special_run_pars
       if (lmass_source_NS) call mass_source_NS(f,df,p%rho)
 
        if (laccelerat_zone) then
-
          if (n .GE. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
-       
-            if (lnstar_entropy) then   
-             
-             if (nxgrid == 1) then       
-              if (lnstar_T_const) then
-              else            
+          if (lnstar_entropy) then   
+            if (nxgrid == 1) then       
+              if (lnstar_T_const) then           
               endif    
-
-             else
-
-   
-
-             ! if (H_disk_point .GE. nxgrid) then
-	  
-	        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-	        -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
-        !   -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/cs2_star)
-	      !  -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/(p%cs2(l1:l2))))
-              -log(rho_disk)-(-M_star/2./z(n)**3*x(l1:l2)**2*gamma/(p%cs2(l1:l2))))
-
-
-       ! df(l1,m,n,ilnrho)=df(l1,m,n,ilnrho)&
-       !    -1./(5.*dt)*(f(l1,m,n,ilnrho)-log(rho_disk))
-
-       !   do i=l2-5,l2 
- 
-       !    df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&  
-       !     -1./(5.*dt)*(f(i,m,n,ilnrho) &
-       !     -log(rho_surf) &
-       !     -(1.-M_star/2./z(n)**3*x(i)**2*gamma/cs2_star))
-	
-       !   enddo
-
-         ! do i=l1+1,l2 
-         !  df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&  
-         !  -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
-         !  +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/p%cs2(i-1))
-         ! enddo
-
-     !  Sigma_rho=sqrt(pi)/2.*rho_disk*Lxyz(1)
-
-     !  do i=l1+1,l2 
-     !   p_gas=p%cs2(i-1)/gamma*p%rho(i-1)
-     !   p_rad=sigmaSB*p%TT(i-1)**4/c_light
-     !   grad_rho=2.25*nu_for_1D*Sigma_rho*kappa_es/c_light &
-     !    *(3./16.*p_gas/p_rad+1.)-x(i-1)
-     !   grad_rho=grad_rho*f(i-1,m,n,2)**2/z(n)**2*gamma/p%cs2(i-1)
-		
-      !    df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&  
-      !     -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
-      !     -grad_rho*(x(i)-x(i-1)))
-      ! enddo
-  
-	    !  else
-	     
-	 	   
-       !        df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
-       !        -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
-     !	       -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:H_disk_point+4)**2*gamma/cs2_star))
-			
-	  
-			      
-        !       df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
-         !      -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho) &
-	       !-log(rho_surf)-(1.-M_star/2./z(n)**3*x(H_disk_point+4)**2*gamma/cs2_star))
-            ! endif
-						    
-          endif 
-        endif
-     endif 
+            else
+               df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+	          -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
+                  -log(rho_disk)-(-M_star/2./z(n)**3 &
+                  *x(l1:l2)**2*gamma/(p%cs2(l1:l2))))
+            endif 
+          endif
+         endif 
+       endif
 
        if (ldecelerat_zone) then
-        
          if (n .LE. ac_dc_size+4 .AND. dt .GT. 0.) then
-       
+
             if (lnstar_entropy) then          
               if (lnstar_T_const) then
                df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                -1./p%rho(:)/(5.*dt) &
-                *(p%rho(:)-rho_star*exp(-M_star/R_star/cs0**2*gamma*(1.-R_star/z(n))))
-               else            
-          
-            endif    
+                -1./p%rho(:)/(5.*dt)*(p%rho(:)-rho_star &
+                *exp(-M_star/R_star/cs0**2*gamma*(1.-R_star/z(n))))
+              endif    
 
             else
                df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                         -1./p%rho(:)/(5.*dt) &
-                 *(p%rho(:)-rho_star*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
+                 -1./p%rho(:)/(5.*dt) &
+                 *(p%rho(:)-rho_star &
+                 *exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
             endif
-      
-          endif
+         endif
        endif
-           
-     endif  
+
 
 ! surface zone in a case of a Keplerian disk
 
       if (lsurface_zone) then
-
-          if ( dt .GT.0.) then
+         if ( dt .GT.0.) then
             l_sz=l2-5
-
-           if (lnstar_1D) then
-
+          if (lnstar_1D) then
            else 
-
-            do i=l_sz,l2   
-             if (n .LT. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
-              df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
-              -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
-	 !    +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/cs2_star)
-	      +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/p%cs2(i-1) &
-	     +M_star/z(n)**3*(x(i)-x(i-1))**2*gamma/p%cs2(i-1)*0.5*0. )
-             endif
-            enddo
-
-
-
-           endif 
-         endif
+           do i=l_sz,l2   
+            if (n .LT. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
+             df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
+             -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
+	     +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/p%cs2(i-1)) 
+            endif
+           enddo
+          endif 
+        endif
       endif
 
 
@@ -623,23 +547,21 @@ endsubroutine read_special_run_pars
 !
       if (laccelerat_zone) then
         if (n .ge. nzgrid-ac_dc_size  .and. dt .gt.0.) then
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-             -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
+              -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
        
-          if (nxgrid == 1) then  
-            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+           if (nxgrid == 1) then  
+             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
               -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
-          else
-           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-1./(5.*dt)*(p%uu(:,1)-0.)
-            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-            -1./(5.*dt)*(f(l1:l2,m,n,iuz)-f(l1:l2,m,n-1,iuz))
+           else
+             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
+                              -1./(5.*dt)*(p%uu(:,1)-0.)
+             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+              -1./(5.*dt)*(f(l1:l2,m,n,iuz)-f(l1:l2,m,n-1,iuz))
 
-         !   df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-         !   -1./(5.*dt)*(f(l1:l2,m,n,iuz)* &
-         !   (1.-p%rho(l1:l2)/(rho_disk*exp(-M_star/2./z(n)**3*x(l1:l2)**2*gamma/(p%cs2(l1:l2))))))
            endif 
-         endif
-       endif
+        endif
+      endif
 !
 ! deceleration zone in a case of a Keplerian disk
 !
@@ -648,24 +570,18 @@ endsubroutine read_special_run_pars
           if (lnstar_entropy) then  
 !            if (lnstar_T_const) then
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-!               -1./(5.*dt)*(p%uu(:,2)-f(l1:l2,m,n-1,iuy))
-               -1./(5.*dt)*(p%uu(:,2)-0.)   
-                 
+                -1./(5.*dt)*(p%uu(:,2)-0.)   
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-!               -1./(5.*dt)*(p%uu(:,3)-f(l1:l2,m,n-1,iuz)) 
-               -1./(5.*dt)*(p%uu(:,3)-0.)   
+                -1./(5.*dt)*(p%uu(:,3)-0.)   
 !            endif  
           else  
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)&
-                           -1./(5.*dt)*(p%uu(:,1)-0.)
-
-            
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
+                -1./(5.*dt)*(p%uu(:,1)-0.)
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-                           -1./(5.*dt)*(p%uu(:,2)-0.)
-!
+                -1./(5.*dt)*(p%uu(:,2)-0.)
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-                          -1./(5.*dt)*(p%uu(:,3)-0.)
-!
+                -1./(5.*dt)*(p%uu(:,3)-0.)
+
           endif   
         endif
       endif
@@ -676,16 +592,17 @@ endsubroutine read_special_run_pars
         if ( dt .gt.0.) then
 !
           l_sz=l2-5
-!
 
-        if (lnstar_1D) then
+         if (lnstar_1D) then
              df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
                    -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-                  -1./(5.*dt)*(f(l1:l2,m,n,iuy)-sqrt(M_star/xyz0(3)))
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+                  -1./(5.*dt)*(f(l1:l2,m,n,iuy) &
+                  -sqrt(M_star/xyz0(3)))
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-             -1./(5.*dt)*(f(l1:l2,m,n,iuz)+accretion_flux/p%rho(:))
-        else
+                  -1./(5.*dt)*(f(l1:l2,m,n,iuz)&
+                  +accretion_flux/p%rho(:))
+         else
            do j=l_sz,l2   
              df(j,m,n,iux)=df(j,m,n,iux)&
                   -1./(5.*dt)*(f(j,m,n,iux)-f(j-1,m,n,iux))
@@ -695,18 +612,9 @@ endsubroutine read_special_run_pars
                   -1./(5.*dt)*(f(j,m,n,iuz)-f(j-1,m,n,iuz))
            enddo
 
-
-        !   do j=l1,l1+5
-	!   df(j,m,n,iux)=df(j,m,n,iux)&
-	!    -1./(5.*dt)*(f(j,m,n,iux)-0.)
-			     
-	!   enddo    
-
          endif 
-    
-        
-         endif
-
+       
+       endif
       endif
 
     endsubroutine special_calc_hydro
@@ -752,81 +660,68 @@ endsubroutine read_special_run_pars
 
         if (lraddif_local) call raddif_local(f,df,p)
 
-!f (accretion on NS)
-!
     if (lnstar_entropy) then
+    
+
       if (T_disk.EQ.0) then
          T_disk=cs0**2/gamma1
       endif 
   
  
       if ( dt .GT. 0..AND. n .GT. 24 .AND. n .LT. nzgrid-20) then
-   
          if (lnstar_T_const) then
-           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-1./(dt)*(p%TT(:)-T_disk)/T_disk
-         else
-         
-      endif
- 
-    
-    endif 
+           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) & 
+                   -1./(dt)*(p%TT(:)-T_disk)/T_disk
+         endif
+      endif 
 
 
       if (ldecelerat_zone) then
     
          if ( dt .GT. 0..AND. n .LE. ac_dc_size+4 ) then
           if (lnstar_T_const) then
-          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-           -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_disk    
+           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+            -1./(2.*dt)*(f(l1:l2,m,n,iss) &
+            *gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_disk    
  
           else
-! 071006
-       !       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-       !    -1./(5.*dt)*(p%TT(:)-T_star)/T_star
-         
           endif
-        end if  
-     endif  
+         endif  
+      endif  
    
      if (laccelerat_zone) then
          if (n .GE. nzgrid-ac_dc_size  .AND. dt .GT.0.) then
-                   
-          if (nxgrid .LE.1) then
+           if (nxgrid .LE.1) then
               if (lnstar_T_const) then   
                  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
                  -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
               endif
-	  else
-	 !  df(l1:l2,m,n,iss)=0      
-	    !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)&
-	    !              -1./(5.*dt)*(f(l1:l2,m,n,iss)-f(l1:l2,m,n-1,iss))
-			       
-          endif
+	   else
+           endif
 
-         endif 
+          endif 
 
      endif  
-    endif
+  
 
        if (lsurface_zone) then
           if ( dt .GT.0.) then
             l_sz=l2-5
             l_sz_1=nxgrid-5
 
-          if (lnstar_1D) then   
-          else
-            do j=l_sz,l2   
-	!     df(j,m,n,iss)=0
-		
-             df(j,m,n,iss)=df(j,m,n,iss)&
-               -1./(5.*dt)*(f(j,m,n,iss)-f(j-1,m,n,iss))
-            enddo 
-
+            if (lnstar_1D) then   
+             else
+               do j=l_sz,l2   
+	         df(j,m,n,iss)=df(j,m,n,iss)&
+                 -1./(5.*dt)*(f(j,m,n,iss)-f(j-1,m,n,iss))
+               enddo 
+            endif
           endif
+       endif
 
-   
-         endif
+     
       endif
+   
 
 ! Keep compiler quiet by ensuring every parameter is used
       if (NO_WARN) print*,df,p
@@ -1094,22 +989,10 @@ endsubroutine read_special_run_pars
         ln_ro_u=log(rho_surf)
 
        if (nxgrid/=1.and.nzgrid/=1) then
- 
-         do i=1,H_disk_point_int+4
-    !     f(i,:,:,ilnrho)=ln_ro_u+(1.-(xx(i,:,:)/H_disk)**2)
-          f(i,:,:,ilnrho)=ln_ro_u*0+(1.*0-M_star/2./zz(i,:,:)**3*x(i)**2*gamma/cs2_star)*0
-         enddo 
-! 071006
-         do i=H_disk_point_int+5,mx
-         ! f(i,:,:,ilnrho)=f(H_disk_point+4,:,:,ilnrho)
-      !    f(i,:,:,ilnrho)=ln_ro_u*0+(1.*0-M_star/2./zz(i,:,:)**3*x(H_disk_point_int+4)**2*gamma/cs2_star)*0
-        f(i,:,:,ilnrho)=ln_ro_u*0+(1.*0-M_star/2./zz(i,:,:)**3*x(i)**2*gamma/cs2_star)*0
-         
-         
-!     f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(i)**2*gamma/cs2_star)
-         enddo    
-
-    !  f(:,:,:,ilnrho)=ln_ro_r-M_star/2./zz(:,:,:)**3*xx(:,:,:)**2*gamma/cs2_star
+  
+       !   f(:,:,:,ilnrho)=ln_ro_r &
+       !     -M_star/2./zz(i,:,:)**3*x(i)**2*gamma/cs2_star
+    
 
         f(:,:,:,ilnrho)= f(:,:,:,ilnrho) &
                        +((zz(:,:,:)-R_star)/Lxyz(3))**0.25 &
@@ -1156,7 +1039,7 @@ endsubroutine read_special_run_pars
          else
   
            if (nxgrid .LE. 1) then
-        !    f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+       
              lnrho=f(l1:l2,mi,ni,ilnrho)
              lnTT=(zz(l1:l2,mi,ni)-R_star)/Lxyz(3) &
                  *(log(T_disk)-log(T_star))+log(T_star)
@@ -1165,35 +1048,17 @@ endsubroutine read_special_run_pars
                f(l1:l2,mi,ni,iss)=ss 
 
            else
-    !        f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
-! 071006
-               lnrho=f(l1:l2,mi,ni,ilnrho)
-          !    lnTT=log(T_disk)
-  
-      !    do i=1,H_disk_point_int+4
-      !        lnTT(i)=log(T_disk)+0.5*(1.-M_star/2./zz(i,mi,ni)**3*x(i)**2*gamma/cs2_star)
-      !   enddo 
-
-       !  do i=H_disk_point_int+5,nx
-       !    lnTT(i)=log(T_disk)+0.5*(1.-M_star/2./zz(i,mi,ni)**3*x(H_disk_point_int+4)**2*gamma/cs2_star)
-       !  enddo   
-
-      !   lnTT= lnTT+0.5*(zz(l1:l2,mi,ni)-R_star)/Lxyz(3)*(log(T_disk)-log(T_star))+log(T_star)
  
-        lnTT=(zz(l1:l2,mi,ni)-R_star)/Lxyz(3)*(log(T_disk)-log(T_star))+log(T_star)
-               call eoscalc(4,lnrho,lnTT,ss=ss)
-               f(l1:l2,mi,ni,iss)=ss  
+            lnrho=f(l1:l2,mi,ni,ilnrho)
+    
+            lnTT=(zz(l1:l2,mi,ni)-R_star)/Lxyz(3) &
+                *(log(T_disk)-log(T_star))+log(T_star)
+        
+            call eoscalc(4,lnrho,lnTT,ss=ss)
+            
+            f(l1:l2,mi,ni,iss)=ss  
     
              !  f(l1,mi,ni,iss)=-f(l1,mi,ni,ilnrho)*gamma1/gamma
-
-
-  !   do li=l1+1,l2;
-  !          lnrho=f(li,mi,ni,ilnrho)
-  !          lnTT=(xx(li,mi,ni)-0.)/Lxyz(1)*(log(T_disk)-log(T_disk*0.01))+log(T_disk*0.01)
-  !          call eoscalc(4,lnrho,lnTT,ss=ss)
-  !          f(l1:l2,mi,ni,iss)=ss  
-  !    enddo
-
 
            endif 
          endif
@@ -1293,8 +1158,6 @@ endsubroutine read_special_run_pars
             f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
             f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
 
-       !   do i=1,nghost; f(l1+i,:,:,j)=f(l1-i,:,:,j); enddo
-!
         endif
       else
         print*, "bc_BL_x: ", bc%location, " should be `top(", &
@@ -1373,26 +1236,6 @@ endsubroutine read_special_run_pars
               f(:,:,n2,j)=value1
             endif
           else
-
-
-            n2m4=n2-4
-            i_tmp=H_disk_point+5
-
-            f(i_tmp:mx,:,n2+1,j)=0.2   *(   9*f(i_tmp:mx,:,n2  ,j) &
-                                         -  4*f(i_tmp:mx,:,n2-2,j) &
-                                         -  3*f(i_tmp:mx,:,n2-3,j) &
-                                         +  3*f(i_tmp:mx,:,n2m4,j))
-            f(i_tmp:mx,:,n2+2,j)=0.2   *(  15*f(i_tmp:mx,:,n2  ,j) &
-                                        -   2*f(i_tmp:mx,:,n2-1,j) &
-                                        -   9*f(i_tmp:mx,:,n2-2,j) &
-                                        -   6*f(i_tmp:mx,:,n2-3,j) &
-                                        +   7*f(i_tmp:mx,:,n2m4,j))
-            f(i_tmp:mx,:,n2+3,j)=1./35.*( 157*f(i_tmp:mx,:,n2  ,j) &
-                                         - 33*f(i_tmp:mx,:,n2-1,j) &
-                                         -108*f(i_tmp:mx,:,n2-2,j) &
-                                         - 68*f(i_tmp:mx,:,n2-3,j) &
-                                         + 87*f(i_tmp:mx,:,n2m4,j))
-!           endif
 
           endif
         endif
