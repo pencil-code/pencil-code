@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.200 2006-11-16 16:32:12 theine Exp $
+! $Id: mpicomm.f90,v 1.201 2006-11-16 16:52:50 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1565,7 +1565,7 @@ module Mpicomm
 !  calculate total sum for each array element
 !  and return to all processors
 !
-      call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_MAX, &
+      call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, &
                       MPI_COMM_WORLD, ierr)
 !
     endsubroutine mpiallreduce_sum_arr
@@ -1577,7 +1577,7 @@ module Mpicomm
 !  calculate total sum for each array element
 !  and return to all processors
 !
-      call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_MAX, &
+      call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, &
                       MPI_COMM_WORLD, ierr)
 !
     endsubroutine mpiallreduce_sum_scl
