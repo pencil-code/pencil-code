@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.186 2006-11-16 07:18:01 mee Exp $ 
+! $Id: initcond.f90,v 1.187 2006-11-16 18:10:29 mee Exp $ 
 
 module Initcond 
  
@@ -2488,10 +2488,11 @@ module Initcond
 !********************************************************** 
     subroutine power_law(f,iglobal_gg,lnrho_const,plaw,lstratified)
 !
-! 24-fev-05/wlad : coded.
 ! Yields from Minimum Mass Solar Nebula model
 !
 ! Initial condition for density 
+
+! 24-feb-05/wlad : coded.
 !
 ! rho    = rho(R) * rho(z) 
 ! rho(R) = R**-plaw 
