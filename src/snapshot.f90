@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.9 2006-10-19 20:07:47 theine Exp $
+! $Id: snapshot.f90,v 1.10 2006-11-16 06:56:37 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -9,6 +9,8 @@
 
 module Snapshot
 
+  use Messages
+
   implicit none
 
   private
@@ -16,6 +18,7 @@ module Snapshot
   integer :: lun_output=92
 
   public :: rsnap, wsnap, powersnap
+  public :: output_globals, input_globals
 
 contains
 
@@ -365,6 +368,103 @@ contains
       if (lserial_io) call end_serialize()
 
     endsubroutine input_snap
+!***********************************************************************
+    subroutine output_globals(file,a,nv)
+!
+!  write snapshot file of globals, always write mesh, 
+!
+!  10-nov-06/tony: coded
+!
+      use Cdata
+      use Mpicomm, only: start_serialize,end_serialize
+!
+      real, dimension (mx,my,mz,nv) :: a
+      integer :: nv
+      character (len=*) :: file
+!
+      if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
+!
+      if (lserial_io) call start_serialize()
+      open(lun_output,FILE=file,FORM='unformatted')
+
+      write(lun_output) mx,my,mz,nv
+      if (lwrite_2d) then
+        if (ny==1) then
+          write(lun_output) a(:,4,:,:)
+        else
+          write(lun_output) a(:,:,4,:)
+        endif
+      else
+        write(lun_output) a
+      endif
+      write(lun_output) x,y,z,dx,dy,dz
+!
+      close(lun_output)
+      if (lserial_io) call end_serialize()
+!
+    endsubroutine output_globals
+!***********************************************************************
+    subroutine input_globals(file,a,nv)
+!
+!  read globals snapshot file, ignoring mesh 
+!  10-nov-06/tony: coded
+!
+      use Cdata
+      use Mpicomm, only: start_serialize,end_serialize
+!
+      character (len=*) :: file
+      integer :: nv,mode
+      real, dimension (mx,my,mz,nv) :: a
+      real, allocatable, dimension (:,:,:) :: aa
+      integer :: ggmx,ggmy,ggmz,ggnv
+!
+      if (lserial_io) call start_serialize()
+      open(1,FILE=file,FORM='unformatted')
+      if (ip<=8) print*,'input_globals: open, mx,my,mz,nv=',mx,my,mz,nv
+      read(1) ggmx,ggmy,ggmz,ggnv
+
+      if ((mx/=ggmx).or.(my/=ggmy).or.(mz/=ggmz).or.(nv/=ggnv)) then
+        print*,"problem (mx,my,mz,nv): ",mx,my,mz,nv
+        print*,"file '"//trim(file)//"' (mx,my,mz,nv): ",ggmx,ggmy,ggmz,ggnv
+        call fatal_error("input_globals",&
+            "Problem and globals data differ in size!!")
+      endif
+
+      if (lwrite_2d) then
+        if (ny==1) then
+          allocate(aa(mx,mz,nv))
+          read(1) aa
+          a(:,4,:,:)=aa
+        else
+          allocate(aa(mx,my,nv))
+          read(1) aa
+          a(:,:,4,:)=aa
+        endif
+        deallocate(aa)
+      else
+        read(1) a
+      endif
+      if (ip<=8) print*,'input_globals: read ',file
+      if (mode==1) then
+!
+!  check whether we want to read deltay from snapshot
+!
+        if (lshear) then
+          read(1) x,y,z,dx,dy,dz,deltay
+        else
+          read(1) x,y,z,dx,dy,dz
+        endif
+!
+        if (ip<=3) print*,'input_globals: ip,x=',ip,x
+        if (ip<=3) print*,'input_globals: y=',y
+        if (ip<=3) print*,'input_globals: z=',z
+!
+      endif
+!
+      close(1)
+      if (lserial_io) call end_serialize()
+
+    endsubroutine input_globals
 !***********************************************************************
     subroutine update_auxiliaries(a)
 
