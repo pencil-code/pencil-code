@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.73 2006-11-07 20:20:51 wlyra Exp $
+! $Id: eos_idealgas.f90,v 1.74 2006-11-16 07:12:37 mee Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -39,6 +39,8 @@ module EquationOfState
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
   integer, parameter :: ilnrho_lnTT=4,ilnrho_cs2=5
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8
+
+  integer :: iglobal_cs2, iglobal_glnTT
 
   ! secondary parameters calculated in initialize
 !  real :: TT_ion=impossible,TT_ion_=impossible
@@ -107,7 +109,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.73 2006-11-07 20:20:51 wlyra Exp $')
+           '$Id: eos_idealgas.f90,v 1.74 2006-11-16 07:12:37 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -251,6 +253,8 @@ module EquationOfState
 !
 !   02-apr-06/tony: implemented
 !
+      use FArrayManager
+
       character (len=*), intent(in) :: variable
       integer, intent(in) :: findex
       integer :: this_var=0
@@ -281,6 +285,10 @@ module EquationOfState
           this_var=ieosvar_cs2
           if (findex==-2) then
             leos_localisothermal=.true.
+
+            call farray_register_global('cs2',iglobal_cs2)
+            call farray_register_global('glnTT',iglobal_glnTT,vector=3)
+
           elseif (findex.lt.0) then
             leos_isothermal=.true.
           endif
@@ -509,7 +517,6 @@ module EquationOfState
 !  02-04-06/tony: coded
 !
       use Cparam
-      use Global, only: get_global
       use Sub
 !      
       real, dimension (mx,my,mz,mfarray) :: f
@@ -607,9 +614,9 @@ module EquationOfState
           if (lpencil(i_gss)) p%gss=-(cp-cv)*p%glnrho
           if (lpencil(i_hss)) p%hss=-(cp-cv)*p%hlnrho
         elseif (leos_localisothermal) then
-          if (lpencil(i_cs2)) call get_global(p%cs2,m,n,'cs2')
+          if (lpencil(i_cs2)) p%cs2=f(l1:l2,m,n,iglobal_cs2)
           if (lpencil(i_lnTT)) p%lnTT=log(p%cs2*cp1/gamma1)
-          if (lpencil(i_glnTT)) call get_global(p%glnTT,m,n,'glnTT')  
+          if (lpencil(i_glnTT)) p%glnTT=f(l1:l2,m,n,iglobal_glnTT:iglobal_glnTT+2)
           if (lpencil(i_hlnTT)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal") 
           if (lpencil(i_del2lnTT)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal") 
           if (lpencil(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma1*(p%lnrho-lnrho0))
@@ -908,7 +915,6 @@ module EquationOfState
 !
       use Cdata
       use Sub, only: max_mn_name, sum_mn_name
-      use Global, only: get_global
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
@@ -1011,7 +1017,7 @@ module EquationOfState
           elseif (leos_isothermal) then
             cs2_=cs20
           elseif (leos_localisothermal) then
-            call get_global(cs2_,m,n,'cs2') 
+            cs2_=f(l1:l2,m,n,iglobal_cs2)
           else
             call fatal_error('eoscalc_farray','full eos for cs2 not implemented')
           endif
@@ -1022,7 +1028,7 @@ module EquationOfState
           elseif (leos_isothermal) then
             cs2_=cs20
           elseif (leos_localisothermal) then
-            call get_global(cs2_,m,n,'cs2')
+            cs2_=f(:,m,n,iglobal_cs2)
           else
             call fatal_error('eoscalc_farray','full eos for cs2 not implemented')
           endif
