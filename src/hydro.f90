@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.297 2006-11-16 06:54:22 mee Exp $
+! $Id: hydro.f90,v 1.298 2006-11-16 15:40:53 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -174,7 +174,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.297 2006-11-16 06:54:22 mee Exp $")
+           "$Id: hydro.f90,v 1.298 2006-11-16 15:40:53 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1236,6 +1236,7 @@ module Hydro
          f_target(:,3) =  0.
       case('globaldisk-strat')
          tmp = g0*(p%r_mn**(-3) - cs20*p%rcyl_mn**(-4))
+         !this is also wrong!
          where (tmp.ge.0)
             OO=sqrt(tmp)
          elsewhere
@@ -1275,7 +1276,6 @@ module Hydro
       use Sub
 !
       type (pencil_case) :: p
-      real, dimension (nx,3) :: uus
       real, dimension (nx) :: ur,up,uz
 !
 ! from the runtime phi-average
