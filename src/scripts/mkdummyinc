@@ -1,5 +1,5 @@
 #!/bin/sh
-#  -*-Perl-*-
+#  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
 #======================================================================#
 # Run the right perl version:
 if [ -x /usr/local/bin/perl ]; then
@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkdummyinc
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Started:   18-Jul-2006
-# CVS: $Id: mkdummyinc,v 1.1 2006-07-29 18:06:33 mee Exp $
+# CVS: $Id: mkdummyinc,v 1.2 2006-11-16 16:29:02 theine Exp $
 # Usage:
 #   mkdummy [-o outfile] -d dummyfile < source_file \n
 # Description:
