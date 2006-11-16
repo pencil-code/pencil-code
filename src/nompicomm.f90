@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.147 2006-10-22 15:36:25 theine Exp $
+! $Id: nompicomm.f90,v 1.148 2006-11-16 07:24:21 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -237,7 +237,7 @@ module Mpicomm
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-!  Periodic boundary conditions in x, with shearing sheat
+!  Periodic boundary conditions in x, with shearing sheet
 !
       if (nygrid==1) then !If 2D
         f( 1:l1-1,:,:,ivar1:ivar2) = f(l2i:l2,:,:,ivar1:ivar2)
