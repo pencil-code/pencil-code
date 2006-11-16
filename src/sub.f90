@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.266 2006-11-13 15:43:48 mee Exp $ 
+! $Id: sub.f90,v 1.267 2006-11-16 07:07:15 mee Exp $ 
 
 module Sub 
 
@@ -8,7 +8,7 @@ module Sub
 
   private
 
-  public :: step,calc_unitvects_sphere
+  public :: step
 
   public :: identify_bcs, parse_bc, parse_bc_rad
 
@@ -54,8 +54,7 @@ module Sub
   public :: ysum_mn_name_xz, zsum_mn_name_xy, phisum_mn_name_rz
   public :: date_time_string
 
-  public :: calc_phiavg_general, calc_phiavg_profile
-  public :: calc_phiavg_unitvects
+  public :: calc_phiavg_profile
 
   public :: max_for_dt
 
@@ -433,7 +432,7 @@ module Sub
 !
     endsubroutine sum_weighted_name
 !***********************************************************************
-    subroutine sum_lim_mn_name(a,iname)
+    subroutine sum_lim_mn_name(a,iname,p)
 !
 !  Successively calculate integral of a, which is supplied at each call.
 !  Just takes values between r_int < r < r_ext
@@ -445,6 +444,7 @@ module Sub
       use Cdata
 !
       real, dimension (nx) :: a,aux
+      type (pencil_case) :: p
       real :: dv
       integer :: iname,i
 !
@@ -456,7 +456,7 @@ module Sub
          if (nzgrid/=1) dv=dv*dz
 !
          do i=1,nx
-            if ((rcyl_mn(i) .le. r_ext).and.(rcyl_mn(i) .ge. r_int)) then
+            if ((p%rcyl_mn(i) .le. r_ext).and.(p%rcyl_mn(i) .ge. r_int)) then
                aux(i) = a(i) 
             else
                aux(i) = 0.
@@ -659,6 +659,31 @@ module Sub
 !
     endsubroutine zsum_mn_name_xy
 !***********************************************************************
+    subroutine calc_phiavg_profile(p)
+!
+!  Calculate profile for phi-averaging for given pencil
+!
+!   2-feb-03/wolf: coded
+!
+      use Cdata
+!
+      type (pencil_case) :: p
+      real :: r0,width
+      integer :: ir
+      real, dimension(nx) :: rcyl_mn
+!
+!  We use a quartic-Gaussian profile ~ exp(-r^4)
+!
+!      width = .5*drcyl
+      width = .7*drcyl
+      rcyl_mn=sqrt(x(l1:l2)**2+y(m)**2)
+      do ir=1,nrcyl
+        r0 = rcyl(ir)
+        phiavg_profile(ir,:) = exp(-0.5*((rcyl_mn-r0)/width)**4)
+      enddo
+!
+    endsubroutine calc_phiavg_profile
+!***********************************************************************
     subroutine phisum_mn_name_rz(a,iname)
 !
 !  Successively calculate sum over phi of a, which is supplied at each call.
@@ -708,88 +733,6 @@ module Sub
       endif
 !
     endsubroutine phisum_mn_name_rz
-!***********************************************************************
-    subroutine calc_phiavg_general()
-!
-!  Calculate cylindrical quantities for given pencil.
-!  Needed for phi-averages.
-!
-      use Cdata
-!
-      rcyl_mn = sqrt(x_mn**2+y_mn**2)
-      phi_mn  = atan2(y_mn,x_mn)
-!
-    endsubroutine calc_phiavg_general
-!***********************************************************************
-    subroutine calc_phiavg_profile()
-!
-!  Calculate profile for phi-averaging for given pencil
-!
-!   2-feb-03/wolf: coded
-!
-      use Cdata
-!
-      real :: r0,width
-      integer :: ir
-!
-!  We use a quartic-Gaussian profile ~ exp(-r^4)
-!
-!      width = .5*drcyl
-      width = .7*drcyl
-      do ir=1,nrcyl
-        r0 = rcyl(ir)
-        phiavg_profile(ir,:) = exp(-0.5*((rcyl_mn-r0)/width)**4)
-      enddo
-!
-    endsubroutine calc_phiavg_profile
-!***********************************************************************
-    subroutine calc_phiavg_unitvects()
-!
-!  Calculate unit vectors for phi-averaging for given pencil
-!
-!  23-nov-03/axel: coded
-!
-      use Cdata
-!
-      real, dimension (nx) :: rcyl_mn1
-!
-!  pomega and 1/pomega
-!
-      rcyl_mn1=1./max(rcyl_mn,tini)
-!
-!  pomega unit vector
-!
-      pomx=+x_mn*rcyl_mn1
-      pomy=+y_mn*rcyl_mn1
-!
-!  phi unit vector
-!
-      phix=-y_mn*rcyl_mn1
-      phiy=+x_mn*rcyl_mn1
-!
-    endsubroutine calc_phiavg_unitvects
-!***********************************************************************
-    subroutine calc_unitvects_sphere()
-!
-!  Calculate spherical radius unit vectors for given pencil
-!
-!  24-nov-03/dave: coded
-!
-      use Cdata
-!
-      x_mn = x(l1:l2)
-      y_mn = spread(y(m),1,nx)
-      z_mn = spread(z(n),1,nx)
-      r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)      
-!
-!  evr is the radial unit vector
-!
-      evr(:,1) = x_mn
-      evr(:,2) = y_mn
-      evr(:,3) = z_mn
-      evr = evr / spread(r_mn+tini,2,3)
-!
-    endsubroutine calc_unitvects_sphere
 !***********************************************************************
     subroutine max_mn(a,res)
 !
