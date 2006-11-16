@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.9 2006-10-11 00:41:41 wlyra Exp $ 
+! $Id: border_profiles.f90,v 1.10 2006-11-16 07:09:32 mee Exp $ 
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -99,25 +99,26 @@ module BorderProfiles
 !
     endsubroutine initialize_border_profiles
 !***********************************************************************
-    subroutine border_driving(f,df,f_target,j)
+    subroutine border_driving(f,df,p,f_target,j)
 !                                                           
 !  Position-dependent driving term that attempts to drive pde
 !  the variable toward some target solution on the boundary.
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target,pborder,drive_time
       integer :: j
 !
-      call get_drive_time(drive_time)
-      call get_border(pborder)
+      call get_drive_time(p,drive_time)
+      call get_border(p,pborder)
 !     
       df(l1:l2,m,n,j) = df(l1:l2,m,n,j) &
            - (f(l1:l2,m,n,j) - f_target)*pborder/drive_time 
 !
     endsubroutine border_driving
 !***********************************************************************
-    subroutine get_border(pborder)
+    subroutine get_border(p,pborder)
 !
 ! Apply a step function that smoothly goes from zero to one on both sides. 
 ! In practice, means that the driving takes place 
@@ -131,15 +132,16 @@ module BorderProfiles
       use Sub, only: cubic_step
 !
       real, dimension(nx),intent(out) :: pborder
+      type (pencil_case) :: p
       real, dimension(nx) :: rlim_mn
       integer :: i
 !
       if (lcylindrical) then
-         rlim_mn = rcyl_mn
+         rlim_mn = p%rcyl_mn
       else if (lspherical) then
-         rlim_mn = r_mn
+         rlim_mn = p%r_mn
       else    
-         rlim_mn = x_mn
+         rlim_mn = p%x_mn
       endif
 !
 ! cint = 1-step_int , cext = step_ext
@@ -150,7 +152,7 @@ module BorderProfiles
 !
     endsubroutine get_border
 !***********************************************************************
-    subroutine get_drive_time(drive_time)
+    subroutine get_drive_time(p,drive_time)
 !
 ! This is problem-dependent, since the driving should occur in the
 ! typical time-scale of the problem. Currently, only the keplerian
@@ -159,8 +161,9 @@ module BorderProfiles
 ! 28-Jul-06/wlad : coded
 !
       real, dimension(nx),intent(out) :: drive_time
+      type (pencil_case) :: p
 !
-      drive_time = 2*pi*(rcyl_mn)**(1.5)
+      drive_time = 2*pi*(p%rcyl_mn)**(1.5)
 !
     endsubroutine get_drive_time
 !***********************************************************************
