@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.358 2006-11-16 15:40:53 wlyra Exp $
+! $Id: magnetic.f90,v 1.359 2006-11-16 19:12:56 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -210,7 +210,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.358 2006-11-16 15:40:53 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.359 2006-11-16 19:12:56 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3417,13 +3417,10 @@ module Magnetic
 !
 !   dAr/dt = (uxB)_r = uphi*Bz -> Ar=uphi*Bz*t
 !
-!  which eventually overgrow the solenoidal component of 
-!  the field and crash the simulation. This subroutine 
-!  artificially removed this unwanted component in the 
-!  induction equation. 
-!
-!  Take phi average on the processor
-!
+!  which eventually overgrows the solenoidal component of 
+!  the field and leads to numerical problems. This subroutine 
+!  artificially removes this unwanted component from the 
+!  induction equation, using phi-averages calculated in runtime
 !
 !  22-mar-06/wlad: coded
 !
