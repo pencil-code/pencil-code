@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.121 2006-11-14 12:30:52 nbabkovs Exp $
+! $Id: radiation_ray.f90,v 1.122 2006-11-16 10:17:00 nbabkovs Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -175,7 +175,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.121 2006-11-14 12:30:52 nbabkovs Exp $")
+           "$Id: radiation_ray.f90,v 1.122 2006-11-16 10:17:00 nbabkovs Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1703,9 +1703,9 @@ module Radiation
         call dot(4*p%glnTT-p%glnrho,p%glnTT,g2)
         if (lnatalia) then
           zone_size=5
-         !   if (n .LE. nzgrid-zone_size ) then
+            if (n .LE. nzgrid-zone_size ) then
              f(l1:l2-zone_size,m,n,iQrad)=Krad(1:nx-zone_size)*p%TT(1:nx-zone_size)*(p%del2lnTT(1:nx-zone_size)+g2(1:nx-zone_size))
-         !   endif
+            endif
         else
         
            f(l1:l2,m,n,iQrad)=Krad*p%TT*(p%del2lnTT+g2)
