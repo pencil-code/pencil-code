@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.454 2006-11-16 19:58:18 mee Exp $
+! $Id: entropy.f90,v 1.455 2006-11-16 22:13:59 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -164,7 +164,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.454 2006-11-16 19:58:18 mee Exp $")
+           "$Id: entropy.f90,v 1.455 2006-11-16 22:13:59 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -189,6 +189,9 @@ module Entropy
       real :: beta0,TT_crit
       integer :: i
       logical :: lnothing
+      type (pencil_case) :: p
+      real, dimension (nx) :: hcond
+      real, dimension (nx,3) :: glhc
 !
 ! Check any module dependencies
 !
@@ -465,6 +468,16 @@ module Entropy
       if (lhcond_global) then
         call farray_register_global("hcond",iglobal_hcond)
         call farray_register_global("glhc",iglobal_glhc,vector=3)
+        do n=n1,n2
+        do m=m1,m2
+          p%r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+          p%z_mn=spread(z(n),1,nx)
+          call heatcond(p,hcond)
+          call gradloghcond(p,glhc)
+          f(l1:l2,m,n,iglobal_hcond)=hcond
+          f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc
+        enddo
+        enddo
       endif
 !
 !  A word of warning...
@@ -2249,7 +2262,7 @@ module Entropy
       use Sub
       use IO
       use Gravity
-      use FArrayManager
+!     use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2259,9 +2272,8 @@ module Entropy
       real, dimension (nx) :: thdiff,g2
       real, dimension (nx) :: hcond,chit_prof
       real :: z_prev=-1.23e20
-      logical :: lglobal_filled =.false.
 !
-      save :: z_prev,hcond,glhc,lglobal_filled
+      save :: z_prev, hcond, glhc, chit_prof, glchit_prof
 !
       intent(in) :: p
       intent(out) :: df
@@ -2282,44 +2294,32 @@ module Entropy
           if (lgravz) print*,'calc_heatcond: Fbot,Ftop=',Fbot,Ftop
         endif
 
-        if (lhcond_global) then
-          if (lglobal_filled) then
-            hcond=f(l1:l2,m,n,iglobal_hcond)
-            glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
-          else
-            ! First time round calculate hcond and store it in
-            ! the global array... Need not worry about possible
-            ! lgravz optimization since we only do this once!
-            call heatcond(p,hcond)
-            call gradloghcond(p,glhc)
-            f(l1:l2,m,n,iglobal_hcond)=hcond
-            f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc
-            if (llastpoint) lglobal_filled=.true.
-          endif
-        else
-          if (lgravz) then
-            ! For vertical geometry, we only need to calculate this for each
-            ! new value of z -> speedup by about 8% at 32x32x64
-            if (z(n) /= z_prev) then
+        if (lgravz) then
+          ! For vertical geometry, we only need to calculate this
+          ! for each new value of z -> speedup by about 8% at 32x32x64
+          if (z(n) /= z_prev) then
+            if (lhcond_global) then
+              hcond=f(l1:l2,m,n,iglobal_hcond)
+              glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
+            else
               call heatcond(p,hcond)
               call gradloghcond(p,glhc)
             endif
+            if (chi_t/=0) then
+              call chit_profile(chit_prof)
+              call gradlogchit_profile(glchit_prof)
+            endif
+            z_prev = z(n)
+          endif
+        else
+          if (lhcond_global) then
+            hcond=f(l1:l2,m,n,iglobal_hcond)
+            glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
           else
             call heatcond(p,hcond)
             call gradloghcond(p,glhc)
           endif
-        endif
-
-        if (chi_t/=0) then
-          if (lgravz) then
-            ! For vertical geometry, we only need to calculate this for each
-            ! new value of z -> speedup by about 8% at 32x32x64
-            if (z(n) /= z_prev) then
-              call chit_profile(chit_prof)
-              call gradlogchit_profile(glchit_prof)
-              z_prev = z(n)
-            endif
-          else
+          if (chi_t/=0) then
             call chit_profile(chit_prof)
             call gradlogchit_profile(glchit_prof)
           endif
