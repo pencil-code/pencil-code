@@ -1,4 +1,4 @@
-! $Id: cosmicrayflux.f90,v 1.8 2006-08-23 16:53:31 mee Exp $
+! $Id: cosmicrayflux.f90,v 1.9 2006-11-16 07:14:42 mee Exp $
 
 !  Cosmic Ray Flux
 !  
@@ -79,7 +79,7 @@ module Cosmicrayflux
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicrayflux.f90,v 1.8 2006-08-23 16:53:31 mee Exp $")
+           "$Id: cosmicrayflux.f90,v 1.9 2006-11-16 07:14:42 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -186,7 +186,6 @@ module Cosmicrayflux
       use Cdata
       use Sub
       use Deriv
-      use Global, only: get_global
 !
       real, dimension (mx,my,mz,mfarray) :: f       
       type (pencil_case) :: p
@@ -212,7 +211,6 @@ module Cosmicrayflux
       use Cdata
       use Sub
       use Slices
-      use Global, only: get_global
       use IO, only: output_pencil
       use Mpicomm, only: stop_it
 !      use EquationOfState, only: eoscalc,gamma1
