@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.23 2006-11-08 09:39:16 mee Exp $
+! $Id: gravity_simple.f90,v 1.24 2006-11-16 07:03:06 mee Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -103,7 +103,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.23 2006-11-08 09:39:16 mee Exp $")
+           "$Id: gravity_simple.f90,v 1.24 2006-11-16 07:03:06 mee Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -112,7 +112,7 @@ module Gravity
 !
     endsubroutine register_gravity
 !***********************************************************************
-    subroutine initialize_gravity(lstarting)
+    subroutine initialize_gravity(f,lstarting)
 !
 !  Calculate master pencils for gravity. These are put into gravity pencils
 !  in the subroutine calc_pencils_grav.
@@ -121,9 +121,10 @@ module Gravity
 !
       use Sub, only: notanumber, cubic_step
 !
+      real, dimension(mx,my,mz,mfarray) :: f
+      logical              :: lstarting
       real                 :: ztop
       real, dimension (nz) :: prof  
-      logical              :: lstarting
 !
 !  Sanity check
 !
@@ -292,6 +293,8 @@ module Gravity
       if (notanumber(gravz_zpencil)) then
         call fatal_error('initialize_gravity','found NaN or +/-Inf in gravz_zpencil')
       endif
+!
+      if (NO_WARN) print*,f
 !
     endsubroutine initialize_gravity
 !***********************************************************************

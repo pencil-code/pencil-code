@@ -1,4 +1,4 @@
-! $Id: nogravity.f90,v 1.4 2006-11-01 08:54:01 dobler Exp $
+! $Id: nogravity.f90,v 1.5 2006-11-16 07:03:06 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -68,7 +68,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nogravity.f90,v 1.4 2006-11-01 08:54:01 dobler Exp $")
+           "$Id: nogravity.f90,v 1.5 2006-11-16 07:03:06 mee Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -76,13 +76,16 @@ module Gravity
 !
     endsubroutine register_gravity
 !***********************************************************************
-    subroutine initialize_gravity(lstarting)
+    subroutine initialize_gravity(f,lstarting)
 !
 !  Set up some variables for gravity; do nothing in nograv
 !  16-jul-02/wolf: coded
 !  22-nov-02/tony: renamed from setup_grav
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       logical :: lstarting
+!
+      if (NO_WARN) print*,f,lstarting
 !
     endsubroutine initialize_gravity
 !***********************************************************************
