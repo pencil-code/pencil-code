@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.30 2006-09-23 00:25:08 dobler Exp $
+! $Id: particles_nbody.f90,v 1.31 2006-11-16 07:23:16 mee Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.30 2006-09-23 00:25:08 dobler Exp $")
+           "$Id: particles_nbody.f90,v 1.31 2006-11-16 07:23:16 mee Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -97,7 +97,14 @@ module Particles_nbody
 !  22-sep-06/wlad: adapted
 !
       lpenc_requested(i_rho)=.true.
-      if (idiag_totenergy/=0) lpenc_diagnos(i_u2)=.true.
+      if (idiag_totenergy/=0) then 
+        lpenc_diagnos(i_u2)=.true.
+        lpenc_diagnos(i_rcyl_mn)=.true.
+      endif
+!
+      if (any(idiag_torqext/=0) .or. any(idiag_torqint/=0)) then 
+        lpenc_diagnos(i_rcyl_mn)=.true.
+      endif
 !
     endsubroutine pencil_criteria_par_nbody
 !***********************************************************************
@@ -372,7 +379,7 @@ module Particles_nbody
 ! Get the acceleration particle ks suffers due to gas gravity 
 !
                xxpar = fsp(ks,ixp:izp)
-               call gas_gravity(rrp,p%rho,xxpar,accg,r_smooth(ks))
+               call gas_gravity(p,rrp,xxpar,accg,r_smooth(ks))
 !
 ! Add it to its dfp
 !
@@ -386,7 +393,7 @@ module Particles_nbody
 !
             if (ldiagnos) then
                if ((idiag_torqext(ks)/=0).or.(idiag_torqint(ks)/=0)) &
-                    call calc_torque(p%rho,rpcyl_mn(:,ks),ks)
+                    call calc_torque(p,rpcyl_mn(:,ks),ks)
 !
 ! Total energy 
 !
@@ -395,7 +402,7 @@ module Particles_nbody
                   pot_energy = pot_energy - &
                        pmass(ks)*(rpcyl_mn(:,ks)**2+r_smooth(ks)**2)**(-0.5)
                   if (ks==nspar) &
-                       call sum_lim_mn_name(p%rho*0.5*p%u2 + pot_energy,idiag_totenergy)
+                       call sum_lim_mn_name(p%rho*0.5*p%u2 + pot_energy,idiag_totenergy,p)
                endif
             endif
          enddo
@@ -603,7 +610,7 @@ module Particles_nbody
 !
     endsubroutine reset_center_of_mass
 !***********************************************************************
-    subroutine gas_gravity(rrp,dens,xxpar,accg,rp0)
+    subroutine gas_gravity(p,rrp,xxpar,accg,rp0)
 !
 ! Calculates acceleration on the point (x,y,z)=xxpar
 ! due to the gravity of the gas. 
@@ -613,11 +620,11 @@ module Particles_nbody
       use Mpicomm
 !
       real, dimension(nx,3) :: xxgas
-      real, dimension(nx) :: rrp,grav_gas,dens
+      type (pencil_case) :: p
+      real, dimension(nx) :: rrp,grav_gas
       real, dimension(3) :: accg,sum_loc,xxpar
       real :: dv,rp0
       integer :: k,j
-      type (pencil_case) :: p
 !
       intent(out) :: accg
 !
@@ -636,7 +643,7 @@ module Particles_nbody
 ! gx = grav_gas * r\hat dot x\hat
 ! -> gx = grav_gas * (x-x0)/r = G*(rho*dv)*mass*(r**2+r0**2)**(-1.5) * (x-x0)
 !
-      grav_gas = Gvalue*dens*dv*(rrp**2 + rp0**2)**(-1.5)
+      grav_gas = Gvalue*p%rho*dv*(rrp**2 + rp0**2)**(-1.5)
 !
 ! Everything outside the accretion radius of the particle should not exert gravity
 !
@@ -646,11 +653,11 @@ module Particles_nbody
 !
       if (lexclude_frozen) then
          if (lcylindrical) then
-            where ((rcyl_mn.le.r_int).or.(rcyl_mn.ge.r_ext))
+            where ((p%rcyl_mn.le.r_int).or.(p%rcyl_mn.ge.r_ext))
                grav_gas = 0
             endwhere
          else
-            where ((r_mn.le.r_int).or.(r_mn.ge.r_ext))
+            where ((p%r_mn.le.r_int).or.(p%r_mn.ge.r_ext))
                grav_gas = 0
             endwhere
          endif
@@ -769,7 +776,7 @@ module Particles_nbody
 !
     endsubroutine share_sinkparticles
 !***********************************************************************
-    subroutine calc_torque(dens,dist,ks)
+    subroutine calc_torque(p,dist,ks)
 !
 ! Output torque diagnostic for sink particle ks
 ! 05-nov-05/wlad : coded
@@ -777,8 +784,9 @@ module Particles_nbody
       use Sub
       use Mpicomm, only: stop_it
 !
+      type (pencil_case) :: p
       real, dimension(nx) :: torque,torqint,torqext
-      real, dimension(nx) :: dist,rpre,dens
+      real, dimension(nx) :: dist,rpre
       real :: rr,w2,smap,hills
       integer :: ks,i
 !
@@ -792,7 +800,7 @@ module Particles_nbody
       hills = smap*(pmass(ks)/3.)**(1./3.)
 !
       rpre  = fsp(ks,ixp)*y(m) - fsp(ks,iyp)*x(l1:l2)
-      torque = pmass(ks)*dens*rpre*&
+      torque = pmass(ks)*p%rho*rpre*&
            (dist**2 + r_smooth(ks)**2)**(-1.5)
 !
       torqext=0.
@@ -806,18 +814,18 @@ module Particles_nbody
 !
 ! External torque
 !
-            if (rcyl_mn(i).ge.rr) torqext(i) = torque(i)
+            if (p%rcyl_mn(i).ge.rr) torqext(i) = torque(i)
 !
 ! Internal torque
 !
-            if (rcyl_mn(i).le.rr) torqint(i) = torque(i)
+            if (p%rcyl_mn(i).le.rr) torqint(i) = torque(i)
 !
          endif
 !
       enddo
 !
-      call sum_lim_mn_name(torqext,idiag_torqext(ks))
-      call sum_lim_mn_name(torqint,idiag_torqint(ks))
+      call sum_lim_mn_name(torqext,idiag_torqext(ks),p)
+      call sum_lim_mn_name(torqint,idiag_torqint(ks),p)
 !
     endsubroutine calc_torque
 !***********************************************************************
