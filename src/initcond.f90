@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.188 2006-11-16 18:35:54 wlyra Exp $ 
+! $Id: initcond.f90,v 1.189 2006-11-16 18:50:32 mee Exp $ 
 
 module Initcond 
  
@@ -2580,21 +2580,33 @@ module Initcond
 !
 !      rho  = exp(f(:,:,:,ilnrho))
 !
-      do m=m1,m2
+      if (lstratified) then
+        do n=0,mz
+          do m=0,my
+            f(:,m,n,iglobal_gg)=exp(f(:,m,n,ilnrho))
+          enddo
+        enddo
         do n=n1,n2
+          do m=m1,m2
+            call der(f,iglobal_gg,grhoz,3)
+            f(l1:l2,m,n,iglobal_gg+1)=grhoz
+          enddo
+        enddo
+      endif
+
+      do n=n1,n2
+        do m=m1,m2
           rmn_sph = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2)+tini
           rmn_cyl = sqrt(x(l1:l2)**2 + y(m)**2)+tini
 !
           if (lstratified) then
-             gg_mn(:,1) = -x(l1:l2)/rmn_sph**3
-             gg_mn(:,2) = -y(  m  )/rmn_sph**3
-!               call der(rho,grhoz,3)
-             call der(f,ilnrho,grhoz,3)
-             rho=exp(f(l1:l2,m,n,ilnrho))
-             grhoz=grhoz*rho
-
-             gg_mn(:,3) = cs20/(grhoz*rho*(sqrt(x(l1:l2)**2+y(m)**2)+tini))
-             f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
+            rho=  f(l1:l2,m,n,iglobal_gg)
+            grhoz=f(l1:l2,m,n,iglobal_gg+1)
+!
+            gg_mn(:,1) = -x(l1:l2)/rmn_sph**3
+            gg_mn(:,2) = -y(  m  )/rmn_sph**3
+            gg_mn(:,3) = cs20/(grhoz*rho*(sqrt(x(l1:l2)**2+y(m)**2)+tini))
+            f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
           endif
 !    
 ! Thermodynamical quantities
