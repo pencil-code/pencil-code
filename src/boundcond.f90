@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.127 2006-11-14 16:16:53 bingert Exp $
+! $Id: boundcond.f90,v 1.128 2006-11-16 07:08:48 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -20,6 +20,8 @@ module Boundcond
   public :: boundconds, boundconds_x, boundconds_y, boundconds_z
   public :: bc_per_x, bc_per_y, bc_per_z
   public :: update_ghosts
+
+  integer, pointer :: iglobal_gg
 
   contains
 
@@ -1540,10 +1542,10 @@ module Boundcond
       use Cdata, only: x,y,iux,iuy,iuz,pi, &
                        mx,my,mz,m1,m2,l1,l2,mfarray,nx
       use Mpicomm, only: stop_it
-      use Global, only: get_global
       use Hydro, only: kep_cutoff_pos_ext,kep_cutoff_width_ext
       use Hydro, only: kep_cutoff_pos_int,kep_cutoff_width_int
       use Hydro, only: u_out_kep
+      use FArrayManager
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: idz,j
@@ -1566,7 +1568,21 @@ module Boundcond
         do m=m1,m2
 
           r=sqrt(x(l1:l2)**2+y(m)**2)
-          call get_global(gg,m,idz,'gg')
+
+          !
+          ! First time round, look up gg in the f-array
+          ! and get it's index.
+          !
+          if (.not.associated(iglobal_gg)) then
+            call farray_use_global('gg',iglobal_gg,vector=3)          
+            if (.not.associated(iglobal_gg)) then
+              call fatal_error("bc_force_kepler", & 
+               "Could not get global gg from an f-array slot")
+            endif
+          endif
+
+          gg=f(l1:l2,m,idz,iglobal_gg:iglobal_gg+2)
+          
           g_r=sqrt(gg(:,1)**2+gg(:,2)**2)
 
           ux(l1:l2,m)=-y(  m  )*sqrt(g_r/(r+10*tiny(r)))
