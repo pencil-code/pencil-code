@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.448 2006-11-16 07:11:31 mee Exp $
+! $Id: entropy.f90,v 1.449 2006-11-16 11:16:15 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -164,7 +164,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.448 2006-11-16 07:11:31 mee Exp $")
+           "$Id: entropy.f90,v 1.449 2006-11-16 11:16:15 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -192,6 +192,7 @@ module Entropy
       logical :: lnothing
       real, dimension (nx) :: hcond
       real, dimension (nx,3) :: glhc
+      type (pencil_case) :: p
 !
 ! Check any module dependencies
 !
@@ -470,8 +471,8 @@ module Entropy
         call farray_register_global("glhc",iglobal_glhc,vector=3)
         do n=n1,n2
         do m=m1,m2
-          call heatcond(hcond) 
-          call gradloghcond(glhc)
+          call heatcond(p,hcond) 
+          call gradloghcond(p,glhc)
           f(l1:l2,m,n,iglobal_hcond)=hcond 
           f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc 
         enddo
@@ -2281,8 +2282,8 @@ module Entropy
           ! For vertical geometry, we only need to calculate this for each
           ! new value of z -> speedup by about 8% at 32x32x64
           if (z(n) /= z_prev) then
-            call heatcond(hcond)
-            call gradloghcond(glhc)
+            call heatcond(p,hcond)
+            call gradloghcond(p,glhc)
             if (chi_t/=0) then
               call chit_profile(chit_prof)
               call gradlogchit_profile(glchit_prof)
@@ -2294,8 +2295,8 @@ module Entropy
             hcond=f(l1:l2,m,n,iglobal_hcond)
             glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
           else
-            call heatcond(hcond)
-            call gradloghcond(glhc)
+            call heatcond(p,hcond)
+            call gradloghcond(p,glhc)
           endif
           if (chi_t/=0) then
             call chit_profile(chit_prof)
@@ -2833,7 +2834,7 @@ module Entropy
 !
     endsubroutine calc_heatcond_zprof
 !***********************************************************************
-    subroutine heatcond(hcond)
+    subroutine heatcond(p,hcond)
 !
 !  calculate the heat conductivity hcond along a pencil.
 !  This is an attempt to remove explicit reference to hcond[0-2] from
@@ -2848,7 +2849,8 @@ module Entropy
       use Sub, only: step
       use Gravity
 !
-      real, dimension (nx) :: hcond, r_mn
+      real, dimension (nx) :: hcond
+      type (pencil_case) :: p
 !
       if (lgravz) then
         if (lmultilayer) then
@@ -2860,8 +2862,7 @@ module Entropy
         endif
       else
         if (lmultilayer) then
-          r_mn=sqrt(x(l1:l2)*2+y(m)**2+z(n)**2)
-          hcond = 1. + (hcond1-1.)*step(r_mn,r_bcz,-widthss)
+          hcond = 1. + (hcond1-1.)*step(p%r_mn,r_bcz,-widthss)
           hcond = hcond0*hcond
         else
           hcond = hcond0
@@ -2870,7 +2871,7 @@ module Entropy
 !
     endsubroutine heatcond
 !***********************************************************************
-    subroutine gradloghcond(glhc)
+    subroutine gradloghcond(p,glhc)
 !
 !  calculate grad(log hcond), where hcond is the heat conductivity
 !  NB: *Must* be in sync with heatcond() above.
@@ -2881,7 +2882,8 @@ module Entropy
       use Gravity
 !
       real, dimension (nx,3) :: glhc
-      real, dimension (nx)   :: dhcond, r_mn, z_mn
+      real, dimension (nx)   :: dhcond, z_mn
+      type (pencil_case) :: p
 !
       if (lgravz) then
         if (lmultilayer) then
@@ -2895,15 +2897,13 @@ module Entropy
         endif
       else
         if (lmultilayer) then
-          z_mn=spread(z(n),1,nx)
-          r_mn=sqrt(x(l1:l2)*2+y(m)**2+z(n)**2)
-          dhcond=hcond0*(hcond1-1.)*der_step(r_mn,r_bcz,-widthss)
-          glhc(:,1) = x(l1:l2)/r_mn*dhcond
-          glhc(:,2) = y(m)/r_mn*dhcond
+          dhcond=hcond0*(hcond1-1.)*der_step(p%r_mn,r_bcz,-widthss)
+          glhc(:,1) = x(l1:l2)/p%r_mn*dhcond
+          glhc(:,2) = y(m)/p%r_mn*dhcond
           if (lcylindrical) then 
             glhc(:,3) = 0.
           else
-            glhc(:,3) = z_mn/r_mn*dhcond
+            glhc(:,3) = z(n)/p%r_mn*dhcond
           endif
         else
           glhc = 0.
