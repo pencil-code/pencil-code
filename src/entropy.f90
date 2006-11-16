@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.450 2006-11-16 11:44:22 dintrans Exp $
+! $Id: entropy.f90,v 1.451 2006-11-16 13:15:12 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -164,7 +164,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.450 2006-11-16 11:44:22 dintrans Exp $")
+           "$Id: entropy.f90,v 1.451 2006-11-16 13:15:12 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -181,7 +181,6 @@ module Entropy
                                  beta_glnrho_global, beta_glnrho_scaled, &
                                  mpoly, mpoly0, mpoly1, mpoly2, &
                                  select_eos_variable
-      use IO
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -471,6 +470,7 @@ module Entropy
         call farray_register_global("glhc",iglobal_glhc,vector=3)
         do n=n1,n2
         do m=m1,m2
+          p%r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
           call heatcond(p,hcond) 
           call gradloghcond(p,glhc)
           f(l1:l2,m,n,iglobal_hcond)=hcond 
@@ -1505,6 +1505,7 @@ module Entropy
           lpenc_requested(i_rho1)=.true.
           lpenc_requested(i_glnTT)=.true.
           lpenc_requested(i_del2lnTT)=.true.
+          lpenc_requested(i_z_mn)=.true.
         endif
         if (chi_t/=0) then
           lpenc_requested(i_del2ss)=.true.
@@ -2854,8 +2855,8 @@ module Entropy
 !
       if (lgravz) then
         if (lmultilayer) then
-          hcond = 1 + (hcond1-1)*step(spread(z(n),1,nx),z1,-widthss) &
-                    + (hcond2-1)*step(spread(z(n),1,nx),z2,widthss)
+          hcond = 1 + (hcond1-1)*step(p%z_mn,z1,-widthss) &
+                    + (hcond2-1)*step(p%z_mn,z2,widthss)
           hcond = hcond0*hcond
         else
           hcond=Kbot
@@ -2882,15 +2883,13 @@ module Entropy
       use Gravity
 !
       real, dimension (nx,3) :: glhc
-      real, dimension (nx)   :: dhcond, z_mn
+      real, dimension (nx)   :: dhcond
       type (pencil_case) :: p
 !
       if (lgravz) then
         if (lmultilayer) then
-          z_mn=spread(z(n),1,nx)
-          glhc(:,1:2) = 0.
-          glhc(:,3) = (hcond1-1)*der_step(z_mn,z1,-widthss) &
-                      + (hcond2-1)*der_step(z_mn,z2,widthss)
+          glhc(:,3) = (hcond1-1)*der_step(p%z_mn,z1,-widthss) &
+                      + (hcond2-1)*der_step(p%z_mn,z2,widthss)
           glhc(:,3) = hcond0*glhc(:,3)
         else
           glhc = 0.
