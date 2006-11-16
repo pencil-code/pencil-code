@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.356 2006-11-14 03:33:44 theine Exp $
+! $Id: magnetic.f90,v 1.357 2006-11-16 07:22:44 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -210,7 +210,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.356 2006-11-14 03:33:44 theine Exp $")
+           "$Id: magnetic.f90,v 1.357 2006-11-16 07:22:44 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -560,6 +560,10 @@ module Magnetic
           lpenc_requested(i_diva)=.true.
         endif
       endif
+      if (lresi_shell) then
+        lpenc_requested(i_r_mn)=.true.
+        lpenc_requested(i_evr)=.true.
+      endif
       if (lresi_eta_shock_perp) then
         lpenc_requested(i_shock_perp)=.true.
         if (lweyl_gauge) then
@@ -581,6 +585,17 @@ module Magnetic
       if (lentropy .or. lresi_smagorinsky .or. ltemperature) then
         lpenc_requested(i_j2)=.true.
       endif
+
+      if (llarge_scale_Bz) then
+        lpenc_requested(i_uavg)=.true.
+        lpenc_requested(i_bavg)=.true.
+        lpenc_requested(i_x_mn)=.true.
+        lpenc_requested(i_y_mn)=.true.
+        lpenc_requested(i_rcyl_mn)=.true.
+      endif
+
+      if (borderaa=='Alfven-rz') lpenc_requested(i_rcyl_mn1)=.true.
+
       if (lentropy .or. ltemperature .or. ldt) lpenc_requested(i_rho1)=.true.
       if (lentropy .or. ltemperature) lpenc_requested(i_TT1)=.true.
       if (ltemperature) lpenc_requested(i_cv1)=.true.
@@ -596,6 +611,34 @@ module Magnetic
         if (delta_effect/=0.) lpenc_requested(i_oxj)=.true.
       endif
       if (nu_ni/=0.) lpenc_diagnos(i_jxbrxb)=.true.
+!
+      if (     idiag_brmphi/=0 &
+          .or. idiag_uxbrmphi/=0 &
+          .or. idiag_br2m/=0 &
+          .or. idiag_brbpm/=0 &
+          .or. idiag_brbzm/=0 ) then
+        lpenc_diagnos(i_pomx)=.true.
+        lpenc_diagnos(i_pomy)=.true.
+      endif
+!
+      if (     idiag_bpmphi/=0 &
+          .or. idiag_uxbpmphi/=0 &
+          .or. idiag_bpm/=0 &
+          .or. idiag_bp2m/=0 &
+          .or. idiag_brbpm/=0 ) then
+        lpenc_diagnos(i_phix)=.true.
+        lpenc_diagnos(i_phiy)=.true.
+      endif
+!
+      if ( idiag_brm/=0 &
+          .or. idiag_bpm/=0 &
+          .or. idiag_bzm/=0 &
+          .or. idiag_br2m/=0 &
+          .or. idiag_bp2m/=0 &
+          .or. idiag_bzz2m/=0 &
+          .or. idiag_brbpm/=0 &
+          .or. idiag_bzbpm/=0 &
+          .or. idiag_brbzm/=0 ) lpenc_diagnos(i_rcyl_mn)=.true.
 !
       if (idiag_aybym2/=0 .or. idiag_exaym2/=0) lpenc_diagnos(i_aa)=.true.
       if (idiag_arms/=0 .or. idiag_amax/=0) lpenc_diagnos(i_a2)=.true.
@@ -623,6 +666,10 @@ module Magnetic
       if (idiag_exaym2/=0 .or. idiag_exjm2/=0) lpenc_diagnos(i_jj)=.true.
       if (idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
           idiag_bmax/=0) lpenc_diagnos(i_b2)=.true.
+      if (idiag_brm/=0 .or. idiag_bpm/=0 .or. idiag_bzm/=0 .or. &
+          idiag_br2m/=0 .or. idiag_bp2m/=0 .or. idiag_bzz2m/=0 .or. &
+          idiag_brbpm/=0 .or. idiag_bzbpm/=0 .or. idiag_brbzm/=0) &
+           lpenc_diagnos(i_bavg)=.true.
 !
     endsubroutine pencil_criteria_magnetic
 !***********************************************************************
@@ -1070,7 +1117,7 @@ module Magnetic
       endif
 !
       if (lresi_shell) then
-        call eta_shell(eta_mn,geta)
+        call eta_shell(p,eta_mn,geta)
         do j=1,3
           fres(:,j)=fres(:,j)+eta_mn*p%del2a(:,j)+geta(:,j)*p%diva
         enddo
@@ -1185,7 +1232,7 @@ module Magnetic
 !
 !  Subtract contribution from mean background flow
 !
-      if (llarge_scale_Bz) call subtract_mean_lorentz(df)
+      if (llarge_scale_Bz) call subtract_mean_lorentz(df,p)
 !
 !  Ambipolar diffusion in the strong coupling approximation
 !
@@ -1270,20 +1317,20 @@ module Magnetic
 !
 !  Apply border profiles
 !
-      if (lborder_profiles) call set_border_magnetic(f,df)
+      if (lborder_profiles) call set_border_magnetic(f,df,p)
 !
 !  phi-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then
-        call phisum_mn_name_rz(p%bb(:,1)*pomx+p%bb(:,2)*pomy,idiag_brmphi)
-        call phisum_mn_name_rz(p%bb(:,1)*phix+p%bb(:,2)*phiy,idiag_bpmphi)
+        call phisum_mn_name_rz(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmphi)
+        call phisum_mn_name_rz(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,idiag_bpmphi)
         call phisum_mn_name_rz(p%bb(:,3),idiag_bzmphi)
         call phisum_mn_name_rz(p%b2,idiag_b2mphi)
         if (idiag_jbmphi/=0) call phisum_mn_name_rz(p%jb,idiag_jbmphi)
         if (any((/idiag_uxbrmphi,idiag_uxbpmphi,idiag_uxbzmphi/) /= 0)) then
-          call phisum_mn_name_rz(p%uxb(:,1)*pomx+p%uxb(:,2)*pomy,idiag_uxbrmphi)
-          call phisum_mn_name_rz(p%uxb(:,1)*phix+p%uxb(:,2)*phiy,idiag_uxbpmphi)
+          call phisum_mn_name_rz(p%uxb(:,1)*p%pomx+p%uxb(:,2)*p%pomy,idiag_uxbrmphi)
+          call phisum_mn_name_rz(p%uxb(:,1)*p%phix+p%uxb(:,2)*p%phiy,idiag_uxbpmphi)
           call phisum_mn_name_rz(p%uxb(:,3)                     ,idiag_uxbzmphi)
         endif
       endif
@@ -1558,7 +1605,7 @@ module Magnetic
 !
     endsubroutine df_diagnos_magnetic
 !***********************************************************************
-    subroutine set_border_magnetic(f,df)
+    subroutine set_border_magnetic(f,df,p)
 !
 !  Calculates the driving term for the border profile
 !  of the aa variable.
@@ -1570,6 +1617,7 @@ module Magnetic
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
       real, dimension(nx) :: Aphi,rcyl_mn1
@@ -1584,16 +1632,15 @@ module Magnetic
          kr1 = 1./kr
          f_target(:,1) = 0.
          f_target(:,2) = 0.
-         f_target(:,3) = -amplaa(1)*kr1*sin(kr*(rcyl_mn-r_int))
+         f_target(:,3) = -amplaa(1)*kr1*sin(kr*(p%rcyl_mn-r_int))
       case('Alfven-rz')
          kr = 2*pi*rmode/(r_ext-r_int)
          kr1 = 1./kr
-         rcyl_mn1=1./rcyl_mn
-         Aphi =  amplaa(1)*kr1 * sin(kr*(rcyl_mn-r_int)) + &
-              amplaa(1)*kr1**2*rcyl_mn1*cos(kr*(rcyl_mn-r_int))
+         Aphi =  amplaa(1)*kr1 * sin(kr*(p%rcyl_mn-r_int)) + &
+              amplaa(1)*kr1**2*p%rcyl_mn1*cos(kr*(p%rcyl_mn-r_int))
 !
-         f_target(:,1) = Aphi * (-y(  m  )*rcyl_mn1)
-         f_target(:,2) = Aphi * ( x(l1:l2)*rcyl_mn1)
+         f_target(:,1) = Aphi * (-y(  m  )*p%rcyl_mn1)
+         f_target(:,2) = Aphi * ( x(l1:l2)*p%rcyl_mn1)
          f_target(:,3) = 0.
       case('nothing')
          if (lroot.and.ip<=5) &
@@ -1607,7 +1654,7 @@ module Magnetic
 !
       do j=1,3
          ju=j+iaa-1
-         call border_driving(f,df,f_target(:,j),ju)
+         call border_driving(f,df,p,f_target(:,j),ju)
       enddo
 !
     endsubroutine set_border_magnetic
@@ -1618,7 +1665,8 @@ module Magnetic
 !  Currently needs the runtime phi averages
 !  that are calculated at the planet code.
 !
-!  23-may-06/wlad : coded
+!  23-may-06/wlad: coded
+!  16-nov-06/tony: removed global and use pencil_case
 !
       use Cdata
       use Sub
@@ -1630,31 +1678,30 @@ module Magnetic
 !
 ! from the runtime phi-average
 !
-      call get_global(bbs,m,n,'bbs')
+      br=p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy - p%bavg(:,1)
+      bp=p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy - p%bavg(:,2)
+      bz=p%bb(:,3) - p%bavg(:,3)
 !
-      br=p%bb(:,1)*pomx+p%bb(:,2)*pomy - bbs(:,1)
-      bp=p%bb(:,1)*phix+p%bb(:,2)*phiy - bbs(:,2)
-      bz=p%bb(:,3) - bbs(:,3)
-!
-      if (idiag_brm/=0)    call sum_lim_mn_name(br,idiag_brm)
-      if (idiag_bpm/=0)    call sum_lim_mn_name(bp,idiag_bpm)
-      if (idiag_bzm/=0)    call sum_lim_mn_name(bz,idiag_bzm)
-      if (idiag_br2m/=0)   call sum_lim_mn_name(br**2,idiag_br2m)
-      if (idiag_bp2m/=0)   call sum_lim_mn_name(bp**2,idiag_bp2m)
-      if (idiag_bzz2m/=0)  call sum_lim_mn_name(bz**2,idiag_bzz2m)
-      if (idiag_brbpm/=0)  call sum_lim_mn_name(br*bp,idiag_brbpm)
-      if (idiag_bzbpm/=0)  call sum_lim_mn_name(bz*bp,idiag_bzbpm)
-      if (idiag_brbzm/=0)  call sum_lim_mn_name(br*bz,idiag_brbzm)
+      if (idiag_brm/=0)    call sum_lim_mn_name(br,idiag_brm,p)
+      if (idiag_bpm/=0)    call sum_lim_mn_name(bp,idiag_bpm,p)
+      if (idiag_bzm/=0)    call sum_lim_mn_name(bz,idiag_bzm,p)
+      if (idiag_br2m/=0)   call sum_lim_mn_name(br**2,idiag_br2m,p)
+      if (idiag_bp2m/=0)   call sum_lim_mn_name(bp**2,idiag_bp2m,p)
+      if (idiag_bzz2m/=0)  call sum_lim_mn_name(bz**2,idiag_bzz2m,p)
+      if (idiag_brbpm/=0)  call sum_lim_mn_name(br*bp,idiag_brbpm,p)
+      if (idiag_bzbpm/=0)  call sum_lim_mn_name(bz*bp,idiag_bzbpm,p)
+      if (idiag_brbzm/=0)  call sum_lim_mn_name(br*bz,idiag_brbzm,p)
 !
     endsubroutine calc_mag_stress
 !***********************************************************************
-    subroutine eta_shell(eta_mn,geta)
+    subroutine eta_shell(p,eta_mn,geta)
 !
 !   24-nov-03/dave: coded 
 !
       use Cdata
       use Sub, only: step, der_step
 !
+      type (pencil_case) :: p
       real, dimension (nx) :: eta_mn
       real, dimension (nx) :: prof,eta_r
       real, dimension (nx,3) :: geta
@@ -1667,18 +1714,18 @@ module Magnetic
 !
 !     calculate steps in resistivity
 !
-      prof=step(r_mn,r_int,wresistivity)
+      prof=step(p%r_mn,r_int,wresistivity)
       eta_mn=d_int*(1-prof)
-      prof=step(r_mn,r_ext,wresistivity)
+      prof=step(p%r_mn,r_ext,wresistivity)
       eta_mn=eta+eta_mn+d_ext*prof
 !
 !     calculate radial derivative of steps and gradient of eta
 !
-      prof=der_step(r_mn,r_int,wresistivity)
+      prof=der_step(p%r_mn,r_int,wresistivity)
       eta_r=-d_int*prof
-      prof=der_step(r_mn,r_ext,wresistivity)
+      prof=der_step(p%r_mn,r_ext,wresistivity)
       eta_r=eta_r+d_ext*prof
-      geta=evr*spread(eta_r,2,3)
+      geta=p%evr*spread(eta_r,2,3)
 !
     endsubroutine eta_shell
 !***********************************************************************
@@ -2755,14 +2802,13 @@ module Magnetic
 !  23-jul-05/wolf:coded
 !
       use Cdata, only: pi,tini, &
-                       imn,m,n,mm,nn,x_mn,y_mn,z_mn,r_mn, &
+                       imn,m,n,mm,nn, &
                        r_int,r_ext
-      use Sub, only: calc_unitvects_sphere
 !
       real, intent(inout), dimension (mx,my,mz,mfarray) :: f
       real, intent(in), dimension (mx,my,mz) :: xx,yy,zz
       real, intent(in) :: ampl,inclaa
-      real, dimension (nx) :: r_1_mn,r_2_mn,sigma0,sigma1
+      real, dimension (nx) :: r_1_mn,r_2_mn,sigma0,sigma1, r_mn
       real :: fact
       real, dimension(2) :: beta(0:1)
       real, dimension(2,3) :: a(0:1,1:3),b(0:1,1:3)
@@ -2771,7 +2817,7 @@ module Magnetic
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
-        call calc_unitvects_sphere() ! gives us [x-z]_mn, r_mn
+        r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
         r_1_mn = 1./max(r_mn,tini)
         r_2_mn = 1./max(r_mn**2,tini)
 
@@ -2799,9 +2845,9 @@ module Magnetic
           sigma1 = a(1,1)*r_mn + b(1,1)*r_2_mn
         endwhere
         sigma1 = sigma1*sqrt(2.)
-        f(l1:l2,m,n,ivar+0) = -sigma0*y_mn*r_1_mn
-        f(l1:l2,m,n,ivar+1) =  sigma0*x_mn*r_1_mn + sigma1*z_mn*r_1_mn
-        f(l1:l2,m,n,ivar+2) =                     - sigma1*y_mn*r_1_mn
+        f(l1:l2,m,n,ivar+0) = -sigma0*y(m)*r_1_mn
+        f(l1:l2,m,n,ivar+1) =  sigma0*x(l1:l2)*r_1_mn + sigma1*z(n)*r_1_mn
+        f(l1:l2,m,n,ivar+2) =                     - sigma1*y(m)*r_1_mn
       enddo
 !
       if (NO_WARN) print*, xx(1,1,1),yy(1,1,1),zz(1,1,1) !(keep compiler quiet)
@@ -2813,20 +2859,19 @@ module Magnetic
 !  30-june-04/grs: coded
 !
       use Cdata
-      use Sub, only: calc_unitvects_sphere
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f     
-      real, dimension(nx) :: theta_mn,ar,atheta,aphi
+      real, dimension(nx) :: theta_mn,ar,atheta,aphi,r_mn,phi_mn
       real :: C_int,C_ext,A_int,A_ext
       integer :: j
 
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
-        call calc_unitvects_sphere()
-        theta_mn=acos(z_mn/r_mn)
-        phi_mn=atan2(y_mn,x_mn)
+        r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+        theta_mn=acos(spread(z(n),1,nx)/r_mn)
+        phi_mn=atan2(spread(y(m),1,nx),x(l1:l2))
         
  ! calculate ax,ay,az (via ar,atheta,aphi) inside shell (& leave zero outside shell)
 
@@ -3365,7 +3410,7 @@ module Magnetic
 !
     endsubroutine potentdiv
 !***********************************************************************
-    subroutine subtract_mean_lorentz(df)
+    subroutine subtract_mean_lorentz(df,p)
 !
 !  A vertical large scale magnetic field Bz
 !  
@@ -3388,19 +3433,15 @@ module Magnetic
       use Global, only: get_global
       use Mpicomm, only: stop_it
 !
+      type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: bbs,uus
       real, dimension(nx) :: rcyl_mn1
 !
       intent(inout) :: df
 !
-      call get_global(bbs,m,n,'bbs')
-      call get_global(uus,m,n,'uus')
-!     
-      rcyl_mn1=1./rcyl_mn
-!
-      df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - uus(:,2)*bbs(:,3)*x(l1:l2)*rcyl_mn1 
-      df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - uus(:,2)*bbs(:,3)*y(  m  )*rcyl_mn1
+      df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - p%uavg(:,2)*p%bavg(:,3)*p%x_mn*p%rcyl_mn1 
+      df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - p%uavg(:,2)*p%bavg(:,3)*p%y_mn*p%rcyl_mn1
 !
     endsubroutine subtract_mean_lorentz
 !************************************************************************
