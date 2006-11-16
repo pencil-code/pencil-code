@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.86 2006-08-06 01:26:26 mee Exp $
+# CVS: $Id: run.csh,v 1.87 2006-11-16 18:21:24 mee Exp $
 
 #                       run.csh
 #                      ---------
@@ -49,6 +49,7 @@ if ($local_disc) then
     foreach node ($nodelist)
       foreach d (`cd $datadir; ls -d proc* allprocs`)
         $SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
+        if (-e $datadir/$d/global.dat) then $SCP $datadir/$d/global.dat ${node}:$SCRATCH_DIR/$d/
         if ($lparticles) $SCP $datadir/$d/pvar.dat ${node}:$SCRATCH_DIR/$d/
         $SCP $datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/
       end
