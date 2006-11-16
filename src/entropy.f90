@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.449 2006-11-16 11:16:15 dintrans Exp $
+! $Id: entropy.f90,v 1.450 2006-11-16 11:44:22 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -164,7 +164,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.449 2006-11-16 11:16:15 dintrans Exp $")
+           "$Id: entropy.f90,v 1.450 2006-11-16 11:44:22 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -3152,7 +3152,7 @@ module Entropy
         n=nn(imn)
         m=mm(imn)
 !
-        r_mn=sqrt(x(l1:l2)*2+y(m)**2+z(n)**2)
+        r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
 !
 !  convective layer
 !
