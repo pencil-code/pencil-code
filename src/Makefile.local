@@ -13,6 +13,6 @@ MAGNETIC  = nomagnetic
 RADIATION = noradiation
 PSCALAR   = nopscalar
 
-GRAVITY   = nograv
+GRAVITY   = nogravity
 FORCING   = noforcing
 SHEAR     = noshear
