@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.360 2006-11-16 19:58:18 mee Exp $
+! $Id: magnetic.f90,v 1.361 2006-11-17 03:41:20 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -210,7 +210,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.360 2006-11-16 19:58:18 mee Exp $")
+           "$Id: magnetic.f90,v 1.361 2006-11-17 03:41:20 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3425,13 +3425,10 @@ module Magnetic
 !  22-mar-06/wlad: coded
 !
       use Cdata
-      use Global, only: get_global
       use Mpicomm, only: stop_it
 !
       type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension(nx,3) :: bbs,uus
-      real, dimension(nx) :: rcyl_mn1
 !
       intent(inout) :: df
 !
