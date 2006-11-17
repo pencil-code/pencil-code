@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.32 2006-11-16 19:58:18 mee Exp $
+! $Id: particles_nbody.f90,v 1.33 2006-11-17 07:11:43 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.32 2006-11-16 19:58:18 mee Exp $")
+           "$Id: particles_nbody.f90,v 1.33 2006-11-17 07:11:43 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -180,13 +180,20 @@ module Particles_nbody
 !
          if (lroot) then 
             print*,'fixed-cm: redefining the mass of the last sink particle' 
-            print*,'fixed-cm: it assumed that the sum of the mass of the particles is always 1.'
+            print*,'fixed-cm: it assumes that the sum of the mass of the particles is always 1.'
          endif
 !
          aux = 0. ; aux2=0.
          do ks=1,nspar-1
             aux  = aux  + pmass(ks)
             aux2 = aux2 + pmass(ks)*position(ks)
+            if (aux .ge. 1.) then
+                 print*,"particles_nbody,init_particles. The mass of one (or more) of the particles is too big!"
+                 print*,"the masses should never be bigger than one. Please scale your assemble so that the combined"
+                 print*,"mass of the (n-1) particles is less than 1. The mass of the last particle in the pmass array"
+                 print*,"will be reassigned to ensure that the total mass is 1."
+                 call stop_it(" ")
+              endif
          enddo
 
 !
