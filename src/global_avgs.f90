@@ -1,4 +1,4 @@
-! $Id: global_avgs.f90,v 1.12 2006-11-16 07:16:03 mee Exp $
+! $Id: global_avgs.f90,v 1.13 2006-11-17 07:03:41 wlyra Exp $
 !
 ! This module takes care of all the global variables needed when solving
 ! cylindrical problems in a cartesian grid. It saves as global variables
@@ -20,8 +20,6 @@ module Global
   interface set_global
     module procedure set_global_vect
     module procedure set_global_scal
-    module procedure set_global_coarse_vect
-    module procedure set_global_coarse_scal
   endinterface
 
   interface set_global_point
@@ -32,8 +30,6 @@ module Global
   interface get_global
     module procedure get_global_vect
     module procedure get_global_scal
-    module procedure get_global_coarse_vect
-    module procedure get_global_coarse_scal
   endinterface
 
   interface get_global_point
@@ -43,10 +39,7 @@ module Global
 !
 !
   real, dimension (mx,my,mz,3) :: gg,glnTT
-  real, dimension (mx,my,mz) :: rho,cs2,rhos
-  real, dimension (mx,my,mz,3) :: bbs
-  real, dimension (mx,my,mz,3) :: uus
-!
+  real, dimension (mx,my,mz) :: rho,cs2
 !  
   contains
 
@@ -90,12 +83,6 @@ module Global
      case ('glnTT')
          glnTT(l1:l2,m,n,1:3) = var
 !
-      case ('bbs')
-         bbs(l1:l2,m,n,1:3) = var
-!
-      case ('uus')
-         uus(l1:l2,m,n,1:3) = var
-!
       case default
          if (lroot) print*, 'set_global_vect: No such value for label', trim(label)
          call stop_it('set_global_vect')
@@ -130,13 +117,6 @@ module Global
          elseif (length==mx) then
             cs2(:,m,n) = var
          endif
-
-      case ('rhos')
-         if (length==nx) then
-            rhos(l1:l2,m,n) = var
-         elseif (length==mx) then
-            rhos(:,m,n) = var
-         endif
 !
       case default
          if (lroot) &
@@ -147,56 +127,6 @@ module Global
 !
     endsubroutine set_global_scal
 !***********************************************************************
-    subroutine set_global_coarse_vect(var,label,length)
-!
-!  set global variable identified by LABEL
-!
-!  13-jun-05/wlad: adapted
-!
-      integer :: length
-      real, dimension(length,3) :: var
-      character (len=*) ::label
-!
-      select case(label)
-!
-      case ('uavg')
-         uavg_coarse(1:length,1:3) = var
-      case ('bavg')
-         bavg_coarse(1:length,1:3) = var
-!
-      case default
-         if (lroot) &
-              print*, 'set_global_coarse_vect: No such value for label', trim(label)
-         call stop_it('set_global_coarse_vect')
-!
-      endselect
-!
-    endsubroutine set_global_coarse_vect
-!***********************************************************************
-    subroutine set_global_coarse_scal(var,label,length)
-!
-!  set global variable identified by LABEL
-!
-!  13-jun-05/wlad: adapted
-!
-      integer :: length
-      real, dimension(length) :: var
-      character (len=*) ::label
-!
-      select case(label)
-!
-      case ('rhoavg')
-         rhoavg_coarse(1:length) = var
-!
-      case default
-         if (lroot) &
-              print*, 'set_global_coarse_scal: No such value for label', trim(label)
-         call stop_it('set_global_coarse_scal')
-!
-      endselect
-!
-    endsubroutine set_global_coarse_scal
-!**********************************************************************
     subroutine reset_global(label)
 !
 !  reset global variable identified by LABEL
@@ -227,12 +157,6 @@ module Global
      case ('glnTT')
         var = glnTT(l1:l2,m,n,1:3)
 !
-      case ('bbs')
-        var = bbs(l1:l2,m,n,1:3)
-!
-      case ('uus')
-        var = uus(l1:l2,m,n,1:3)
-!
       case default
         if (lroot) print*, 'get_global_vect: No such value for label', trim(label)
         call stop_it('get_global_vect')
@@ -259,9 +183,6 @@ module Global
       case ('cs2')
          var = cs2(l1:l2,m,n)
 !
-      case ('rhos')
-         var = rhos(l1:l2,m,n)
-!
       case default
          if (lroot) print*, 'get_global_scal: No such value for label', trim(label)
          call stop_it('get_global_scal')
@@ -270,55 +191,6 @@ module Global
 !
     endsubroutine get_global_scal
 !***********************************************************************
-    subroutine get_global_coarse_vect(var,label,length)
-!                                                                               
-!  Get (m,n)-pencil of the global vector variable identified by LABEL.          
-!                                                                               
-!  18-jul-02/wolf coded                                                         
-!                             
-      integer :: length
-      real, dimension(length,3) :: var
-      character (len=*) ::label
-!
-      select case(label)
-!
-      case ('uavg')
-        var = uavg_coarse
-!
-      case ('bavg')
-        var = bavg_coarse
-!
-      case default
-        if (lroot) print*, 'get_global_coarse_vect: No such value for label', trim(label)
-        call stop_it('get_global_coarse_vect')
-!
-      endselect
-!
-    endsubroutine get_global_coarse_vect
-!********************************************************************
-    subroutine get_global_coarse_scal(var,label,length)
-!
-!  Get (m,n)-pencil of the global vector variable identified by LABEL.
-!
-!  18-jul-02/wolf: coded
-!
-      integer :: length
-      real, dimension(length) :: var
-      character (len=*) ::label
-!
-      select case(label)
-!
-      case ('rhoavg')
-        var = rhoavg_coarse
-!
-      case default
-        if (lroot) print*, 'get_global_coarse_scal: No such value for label', trim(label)
-        call stop_it('get_global_coarse_scal')
-!
-      endselect
-!
-    endsubroutine get_global_coarse_scal
-!*************************************************************************
     subroutine set_global_scal_point(var,l,m,n,label)
 !
 !  set point value of the global scalar variable identified by LABEL
@@ -336,9 +208,6 @@ module Global
 !
       case ('rho')
          rho(l,m,n) = rho(l,m,n) + var
-!
-      case ('rhos')
-         rhos(l,m,n) = rhos(l,m,n) + var
 !
       case default
          if (lroot) print*, &
@@ -381,9 +250,6 @@ module Global
       case ('rho')
          var = rho(l,m,n)
 !
-      case ('rhos')
-         var = rhos(l,m,n)
-!
       case default
         if (lroot) print*, &
             'get_global_scal_point: No such value for label', trim(label)
@@ -410,12 +276,6 @@ module Global
 !
       case ('glnTT')
         var = glnTT(l,m,n,1:3)
-!
-      case ('uus')
-        var = uus(l,m,n,1:3)
-!
-      case ('bbs')
-        var = bbs(l,m,n,1:3)
 !
       case default
         if (lroot) print*, &
@@ -466,11 +326,6 @@ module Global
       call output(trim(directory)//'/rhos.dat',rhos,1)
       call output(trim(directory)//'/gg.dat',gg,3)
       call output(trim(directory)//'/glnTT.dat',glnTT,3)
-      call output(trim(directory)//'/bbs.dat',bbs,3)
-      call output(trim(directory)//'/uus.dat',uus,3)
-      call output(trim(directory)//'/uavg_coarse.dat',uavg_coarse,3,nrcylrun)
-      call output(trim(directory)//'/bavg_coarse.dat',bavg_coarse,3,nrcylrun)
-      call output(trim(directory)//'/rhoavg_coarse.dat',rhoavg_coarse,1,nrcylrun)
 !
     endsubroutine wglobal
 !***********************************************************************
@@ -481,18 +336,13 @@ module Global
 !  10-jan-02/wolf: coded
 !
       use Cdata, only: directory
-      use IO, only: input,input_coarse
+      use IO, only: input
 !
       call input(trim(directory)//'/rho.dat',rho,1,0)
       call input(trim(directory)//'/cs2.dat',cs2,1,0)
       call input(trim(directory)//'/rhos.dat',rhos,1,0)
       call input(trim(directory)//'/gg.dat',gg,3,0)
       call input(trim(directory)//'/glnTT.dat',glnTT,3,0)
-      call input(trim(directory)//'/bbs.dat',bbs,3,0)
-      call input(trim(directory)//'/uus.dat',uus,3,0)
-      call input_coarse(trim(directory)//'/uavg_coarse.dat',uavg_coarse,3,0,nrcylrun)
-      call input_coarse(trim(directory)//'/bavg_coarse.dat',bavg_coarse,3,0,nrcylrun)
-      call input_coarse(trim(directory)//'/rhoavg_coarse.dat',rhoavg_coarse,1,0,nrcylrun)
 !
     endsubroutine rglobal
 !***********************************************************************

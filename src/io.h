@@ -6,7 +6,6 @@
   public :: register_io
   public :: output_pencil
   public :: input, output
-  public :: input_coarse
 
   public :: wgrid, rgrid, wtime, rtime
   public :: directory_names, log_filename_to_file

@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.92 2006-11-16 19:58:18 mee Exp $
+! $Id: io_dist.f90,v 1.93 2006-11-17 07:03:41 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -26,8 +26,6 @@ module Io
   interface output              ! Overload the `output' function
     module procedure output_vect
     module procedure output_scal
-    module procedure output_vect_coarse
-    module procedure output_scal_coarse
   endinterface
 
   interface output_pencil        ! Overload the `output_pencil' function
@@ -95,7 +93,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.92 2006-11-16 19:58:18 mee Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.93 2006-11-17 07:03:41 wlyra Exp $")
 !
     endsubroutine register_io
 !
@@ -169,42 +167,6 @@ contains
 
     endsubroutine input
 !***********************************************************************
-    subroutine input_coarse(file,a,nv,mode,nr)
-!
-!  read global file with coarse resolution
-!  needed for phi_avg on global disc
-!  
-!  22-05-06/wlad: adapted from input
-!
-      use Cdata
-      use Mpicomm, only: start_serialize,end_serialize
-!
-      character (len=*) :: file
-      integer :: nv,mode,nr
-      real, dimension (nr,nv) :: a
-!
-      if (lserial_io) call start_serialize()
-      open(1,FILE=file,FORM='unformatted')
-      if (ip<=8) print*,'input: open, nr,nv=',nr,nv
-      read(1) a
-      if (ip<=8) print*,'input: read ',file
-      if (mode==1) then
-!
-!  check whether we want to read deltay from snapshot
-!
-        if (lshear) then
-          read(1) t,x,y,z,dx,dy,dz,deltay
-        else
-          read(1) t,x,y,z,dx,dy,dz
-        endif
-!
-      endif
-!
-      close(1)
-      if (lserial_io) call end_serialize()
-!
-    endsubroutine input_coarse
-!***********************************************************************
     subroutine output_vect(file,a,nv)
 !
 !  write snapshot file, always write time and mesh, could add other things
@@ -234,66 +196,6 @@ contains
       if (lserial_io) call end_serialize()
 !
     endsubroutine output_vect
-!***********************************************************************
-    subroutine output_scal_coarse(file,a,nv,nr)
-!
-!  write global file of coarse resolution
-!  needed for phi_avg of global disc
-!
-!  22-05-06/wlad: adapted from output_vect
-!
-      use Cdata
-      use Mpicomm, only: start_serialize,end_serialize
-!
-      integer :: nv,nr
-      real, dimension (nr) :: a
-      character (len=*) :: file
-!
-      if (lserial_io) call start_serialize()
-      open(lun_output,FILE=file,FORM='unformatted')
-      write(lun_output) a
-      if (lshear) then
-        write(lun_output) t,x,y,z,dx,dy,dz,deltay
-      else
-        write(lun_output) t,x,y,z,dx,dy,dz
-      endif
-!
-      close(lun_output)
-      if (lserial_io) call end_serialize()
-!
-      if (NO_WARN) print*, nv
-!
-    endsubroutine output_scal_coarse
-!***********************************************************************
-    subroutine output_vect_coarse(file,a,nv,nr)
-!
-!  write global file of coarse resolution
-!  needed for phi_avg of global disc
-!
-!  22-05-06/wlad: adapted from output_vect
-!
-      use Cdata
-      use Mpicomm, only: start_serialize,end_serialize
-!
-      integer :: nv,nr
-      real, dimension (nr,nv) :: a
-      character (len=*) :: file
-!
-      if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
-!
-      if (lserial_io) call start_serialize()
-      open(lun_output,FILE=file,FORM='unformatted')
-      write(lun_output) a
-      if (lshear) then
-        write(lun_output) t,x,y,z,dx,dy,dz,deltay
-      else
-        write(lun_output) t,x,y,z,dx,dy,dz
-      endif
-!
-      close(lun_output)
-      if (lserial_io) call end_serialize()
-!
-    endsubroutine output_vect_coarse
 !***********************************************************************
     subroutine output_scal(file,a,nv)
 !
