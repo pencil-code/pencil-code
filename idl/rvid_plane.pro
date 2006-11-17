@@ -1,4 +1,4 @@
-pro rvid_plane,field,mpeg=mpeg,png=png,TRUEPNG=png_truecolor,tmin=tmin,
+pro rvid_plane,field,mpeg=mpeg,png=png,TRUEPNG=png_truecolor,tmin=tmin,$
                tmax=tmax,max=amax,$
                min=amin,extension=extension,nrepeat=nrepeat,wait=wait,$
                njump=njump,datadir=datadir,OLDFILE=OLDFILE,debug=debug,$
@@ -9,7 +9,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,TRUEPNG=png_truecolor,tmin=tmin,
                nsmooth=nsmooth, textsize=textsize, $
                _extra=_extra
 ;
-; $Id: rvid_plane.pro,v 1.28 2006-11-15 19:25:59 wlyra Exp $
+; $Id: rvid_plane.pro,v 1.29 2006-11-17 01:11:08 wlyra Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
