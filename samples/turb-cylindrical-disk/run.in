@@ -1,0 +1,77 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters!
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2006-11-17 01:20:32 wlyra Exp $',
+  ip=14,
+  nt=100, it1=5, isave=500, itorder=3, ialive=1
+  cdt=0.4, 
+  cdtv=0.8, 
+  dtmin=1e-6,
+  dsnap=6.30, dvid=1.0, d2davg=1000 !slice at Tjup/20
+  slice_position='m'
+  !dt=1e-3
+  !ttransient=0.,
+  !tavg = 10.,                    ! time constant for time averaging
+  !random_gen='nr_f90',
+  wfreeze_int = 1e-8 !0.1
+  wfreeze_ext = 1e-8 !0.2
+  !
+  wborder_int=0.05
+  wborder_ext=0.2
+  !
+  !fshift_int = 1
+  !fshift_ext = -1
+  !
+/
+&eos_run_pars
+  rho0= 1. 
+/
+&hydro_run_pars
+  wdamp=0. 
+  !lcalc_turbulence_pars=F
+  lfreeze_uint=T,lfreeze_uext=T
+  borderuu='globaldisk'
+/
+&density_run_pars
+  lupw_lnrho=T ! use upwinding for lnrho to avoid wiggles
+               ! upwinding violates mass conservation!
+  lfreeze_lnrhoint=T
+  lfreeze_lnrhoext=T
+  
+  borderlnrho='constant'
+
+  lnrho_int= 0. 
+  lnrho_const=0.
+
+  !ammount of hyper-diffusivity needed??? - similar to nu
+  diffrho_hyper3=5E-12 , idiff='hyper3','shock'
+  diffrho_shock=1.0 
+  !diffrho=1e-6
+  !idiff='normal'
+/
+&grav_run_pars
+  ipotential='no-smooth', 
+  g0=1.
+  lcylindrical_gravity=T
+/
+&magnetic_run_pars
+  B_ext=0.,0.,1e-3
+  iresistivity='hyper3','shock'
+  eta_hyper3=5e-12
+  lfreeze_aint=T,lfreeze_aext=T
+  llarge_scale_Bz=T
+  eta_shock=1.0
+  borderaa='zero'
+/
+&viscosity_run_pars
+  !ivisc='nu-const','nu-shock'
+  !nu=1e-2,nu_shock=1.0
+  ivisc='hyper3_rho_nu-const','nu-shock'
+  nu_hyper3=5e-12,nu_shock=1.0
+/
+&shock_run_pars
+  lshock_first=T
+  lshock_max5=T
+/
