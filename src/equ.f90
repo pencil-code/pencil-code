@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.336 2006-11-16 06:54:23 mee Exp $
+! $Id: equ.f90,v 1.337 2006-11-17 00:22:15 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -384,7 +384,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.336 2006-11-16 06:54:23 mee Exp $")
+           "$Id: equ.f90,v 1.337 2006-11-17 00:22:15 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -984,6 +984,7 @@ module Equ
 !
       use Cdata
       use General, only: random_number_wrapper, random_seed_wrapper
+      use Sub, only: notanumber
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
@@ -1033,7 +1034,7 @@ module Equ
                                 ! reference dt_beta_ts(itsub)
       call random_seed_wrapper(get=iseed_org)
       call random_seed_wrapper(put=iseed_org)
-      do i=1,mvar+maux
+      do i=1,mfarray
         call random_number_wrapper(f_other(:,:,:,i))
       enddo
       df_ref=0.0
@@ -1044,6 +1045,8 @@ module Equ
       lpencil=lpenc_requested
       call pde(f_other,df_ref,p)
       dt1_max_ref=dt1_max
+      if (notanumber(df_ref))       print*,'pencil_consistency_check: NaNs in df_ref'
+      if (notanumber(dt1_max_ref))  print*,'pencil_consistency_check: NaNs in dt1_max_ref'
 !
       do penc=1,npencils 
         df=0.0
@@ -1058,6 +1061,7 @@ module Equ
         lpencil=lpenc_requested
         lpencil(penc)=(.not. lpencil(penc))
         call pde(f_other,df,p)
+        if (notanumber(df))       print*,'pencil_consistency_check: NaNs in df_ref'
 !
 !  Compare results...
 !
@@ -1079,7 +1083,7 @@ f_loop:   do iv=1,mvar
 ! 
         if (lconsistent .and. lpenc_requested(penc)) then
           if (lroot) print '(a,i4,a)', &
-              'pencil_consistency_check: OPTIMISATION POTENTIAL... pencil '// &
+              'pencil_consistency_check: possible overcalculation... pencil '// &
               trim(pencil_names(penc))//' (',penc,')', &
               'is requested, but does not appear to be required!'
         elseif ( (.not. lconsistent) .and. (.not. lpenc_requested(penc)) ) then
