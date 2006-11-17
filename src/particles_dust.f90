@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.153 2006-11-16 22:47:07 mee Exp $
+! $Id: particles_dust.f90,v 1.154 2006-11-17 03:45:43 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -59,12 +59,14 @@ module Particles
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
   character (len=labellen) :: gravx_profile='zero',  gravz_profile='zero'
+  character (len=labellen) :: gravr_profile='zero'
 
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, rhop_tilde, &
       eps_dtog, nu_epicycle, lsmooth_dragforce_dust, &
-      gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, Ri0, eps1, &
+      gravx_profile, gravz_profile, gravr_profile, &
+      gravx, gravz, kx_gg, kz_gg, Ri0, eps1, &
       lmigration_redo, ldragforce_equi_global_eps, coeff, &
       kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, &
       kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
@@ -74,14 +76,15 @@ module Particles
       lcollisional_cooling_twobody, ipar_fence_species, tausp_species, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole, &
-      epsp_friction_increase
+      epsp_friction_increase,lcartesian_mig
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
       ldragforce_gas_par, ldragforce_dust_par, lsmooth_dragforce_dust, &
       rhop_tilde, eps_dtog, cdtp, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
-      gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
+      gravx_profile, gravz_profile, gravr_profile, &
+      gravx, gravz, kx_gg, kz_gg, &
       lmigration_redo, tstart_dragforce_par, tstart_grav_par, &
       lparticlemesh_cic, lparticlemesh_tsc, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, &
@@ -119,7 +122,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.153 2006-11-16 22:47:07 mee Exp $")
+           "$Id: particles_dust.f90,v 1.154 2006-11-17 03:45:43 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -324,6 +327,7 @@ module Particles
       real :: vpx_sum, vpy_sum, vpz_sum
       real :: r, p, px, py, pz, eps, cs, k2_xxp
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
+      real :: rad,phi
       integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
 !
@@ -366,7 +370,24 @@ module Particles
               fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
           if (nzgrid/=1) &
               fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
- 
+
+       case ('random-cylindrical')
+          if (lroot) print*, 'init_particles: Random particle cylindrical positions'
+          do k=1,npar_loc
+
+             call random_number_wrapper(rad)
+             call random_number_wrapper(phi)
+             rad = r_int + (rad**0.6)*(r_ext-r_int)  
+             !this 0.6 gives approximate area normalization. Don't ask me why.
+             phi = 2*pi*phi
+             if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
+             if (nygrid/=1) fp(k,iyp)=rad*sin(phi)
+
+             if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+             if (nzgrid/=1) &
+               fp(k,izp)=xyz0_loc(3)+fp(k,izp)*Lxyz_loc(3)
+          enddo
+
         case ('np-constant')
           if (lroot) print*, 'init_particles: Constant number density'
           k=1
@@ -1621,7 +1642,8 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real :: Omega2, np_tilde
+      real, dimension(3) :: ggp
+      real :: Omega2, np_tilde, rcylp, OO2
       integer :: k
       logical :: lheader, lfirstcall=.true.
 !
@@ -1671,7 +1693,7 @@ k_loop:   do while (.not. (k>npar_loc))
             dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
                 gravx*sin(kx_gg*fp(1:npar_loc,ixp))
  
-          case ('default')
+          case default
             call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
 
         endselect
@@ -1690,14 +1712,37 @@ k_loop:   do while (.not. (k>npar_loc))
             if (lheader) &
                 print*, 'dvvp_dt: Sinusoidal gravity field in z-direction.'
             dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
-                gravz*sin(kz_gg*fp(1:npar_loc,izp))
- 
-          case ('default')
+                gravz*sin(kz_gg*fp(1:npar_loc,izp))                
+
+          case default
             call fatal_error('dvvp_dt','chosen gravz_profile is not valid!')
 
         endselect
 !
-      endif
+        select case (gravr_profile)
+
+        case ('zero')
+           if (lheader) print*, 'dvvp_dt: No spherical gravity'
+
+        case('no-smooth')
+           !Experimental: assumes GM=1, static and cylindrical gravity
+           if (lheader) print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
+           do k=1,npar_loc
+              rcylp=sqrt(fp(k,ixp)**2 + fp(k,iyp)**2)
+              OO2=rcylp**(-3)
+              ggp(1) = -fp(k,ixp)*OO2
+              ggp(2) = -fp(k,iyp)*OO2
+              ggp(3) = -fp(k,izp)*OO2
+!                                                                     
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+           enddo
+
+        case default
+           call fatal_error('dvvp_dt','chosen gravr_profile is not valid!')
+!
+       endselect
+ 
+    endif
 !
 !  Diagnostic output
 !
