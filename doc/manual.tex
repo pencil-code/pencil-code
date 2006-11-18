@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.349 2006-11-17 15:53:04 mee Exp $
+%%  CVS: $Id: manual.tex,v 1.350 2006-11-18 06:51:06 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2006-11-17 15:53:04 $ $,~ $ $Revision: 1.349 $ $}
+%\date{$ $Date: 2006-11-18 06:51:06 $ $,~ $ $Revision: 1.350 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2006-11-17 15:53:04 $ $,~ $ $Revision: 1.349 $ $}\\
+  \emph{$ $Date: 2006-11-18 06:51:06 $ $,~ $ $Revision: 1.350 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -4071,7 +4071,7 @@ and then $z$. After solving the Poisson equation in Fourier space, we transform
 back to real space in the opposite order. We differ here from the method by
 \cite{Gammie2001} in that we shift in Fourier space rather than in real
 space\footnote{We were kindly made aware of the possibility of interpolating in
-Fourier space by C. McNally on his website.}. The Fourier interpolation formula
+Fourier space by C.\ McNally on his website.}. The Fourier interpolation formula
 has the advantage over polynomial interpolation in that it is continuous and
 smooth in all its derivatives.
 
@@ -5153,12 +5153,13 @@ rather big file \file[zaverages.dat]{data/zaverages.dat}.
 \label{f-array}
 The `f' array is the largest array in the Pencil Code and its primary role
 is to store the current state of the timestepped PDE variables.  The f array
-and its slightly smaller counter part are the only full size 3D arrays in
+and its slightly smaller counter part (the df array; see below)
+are the only full size 3D arrays in
 the code.  The f array is of type real but PDEs for a complex variable may 
 be solved by using two slots in the f array.  The actual size of the f array
 is $\rm{mx}\times\rm{my}\times\rm{mz}\times\rm{mfarray}$. Here, 
 $\rm{mfarray}=\rm{mvar}+\rm{maux}+\rm{mglobal}+\rm{mscratch}$
-where $\rm{mvar}$ refers to the number of real PDE variables,
+where $\rm{mvar}$ refers to the number of real PDE variables.
 %% WORK IN PROGRESS 
 
 \subsection{The df array}
@@ -5166,13 +5167,13 @@ where $\rm{mvar}$ refers to the number of real PDE variables,
 The `df' array is the second largest chunk of data in the Pencil Code.
 By using a 2N storage scheme (see \ref{S-2N-scheme}) after 
 Williamson \cite{2Nstorage} the code only needs one more storage
-area for each timestepped variable on top of the current state storred in
+area for each timestepped variable on top of the current state stored in
 the f-array.  As such, and in contrast to the f array, the df array is of size
 $\rm{mx}\times\rm{my}\times\rm{mz}\times\rm{mvar}$.  Like the df array it is
 of type real.  In fact the ghost zones
 of df are not required or calculated but having f and df arrays of the same
 size make the coding more transparent.  For $\rm{mx}$, $\rm{my}$ and
-$\rm{mz}$ large the wasted storage becomes negligable.
+$\rm{mz}$ large the wasted storage becomes negligible.
 
 \subsection{The pencil case}
 \label{pencil-case}
@@ -5294,7 +5295,7 @@ directory to a new name in the src/special/ directory.  It is currently only
 possible to have one special modules at a time and so several new bits of 
 physics are often put in to one special module. For this reasons a name 
 should be chosen that relates to the problem to be solved rather than
-the speficic physics being implemented.
+the specific physics being implemented.
 
 The first thing to do in your new module is to change the lspecial=.false.
 header to say lspecial=.true.
@@ -5320,7 +5321,7 @@ source.
 \subsection{Adding switchable modules}
 
 In some cases where a piece of physics is thought to be more fundamental,
-useful in many situations or simply more flexability is required it may be
+useful in many situations or simply more flexibility is required it may be
 necessary to add a new module \name{newphysics} together with the
 corresponding \name{nonewphysics} module.  The special modules follow
 the same structure as the rest of the switchable modules and so using
@@ -5460,7 +5461,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2006-11-17 15:53:04 $ $,~ $ $Revision: 1.349 $ $}
+  \hfill\normalsize\rm$ $Date: 2006-11-18 06:51:06 $ $,~ $ $Revision: 1.350 $ $}
 
 \section{Timings}
 
@@ -5602,13 +5603,14 @@ where \code{nw=nx*ny*nz}.
   16 & Gridur& 0.66 & $256^3$ & magn/noentro &        & 19-aug-02 & NE \\
   16 & Sander& 0.53 & $256^3$ & magn/noentro &        &  8-sep-02 & AB \\
   16 & Luci  & 0.375& $128^3$ & magn/noentro &        & 28-oct-06 & AB \\
-  16 & Lenn  & 0.284& $128^3$ & magn/noentro &        & 28-oct-06 & AB \\
+  16 & Lenn  & 0.284& $128^3$ & magn/noentro &        &  8-nov-06 & AB \\
   32 & giga? & 0.32 & $256^3$ & magn/noentro &        & 13-sep-03 & AB \\
   32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
   32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
   32 & fe1   & 0.168& $512^3$ &nomag/noentro&        &  9-oct-02 & AB \\
   32 & fe1   & 1.26 & $64^2\times256$ &nomag/entro/rad/ion&
                                                       &  7-sep-03 & AB \\
+  32 & Lenn  & 0.147& $256^3$ &nomag/entro/cool/fo& 4x8 &  8-nov-06 & AB \\
   32 & Steno & 0.076& $256^3$ &nomag/entro/cool/fo& 4x8 & 20-jun-06 & AB \\
   32 & Steno & 0.081& $256^3$ &nomag/entro/cool& 4x8 & 20-jun-06 & AB \\
   32 & Steno & 0.085& $256^3$ &nomag/entro/cool/sh& 4x8 & 20-jun-06 & AB \\
@@ -5692,7 +5694,7 @@ with 10 Gb infiniband network, compiled with pgf90 -fastsse -tp k8-64e (Copenhag
 nodes has two 900 MHz Itanium 2 "McKinley" processors and 6 GB of main memory.
 The interconnect is myrinet.
 \item[Lenn:] (full name Lenngren) is a Dell Xeon cluster with 442 nodes.
-Each node has two 3.4GHz "Nocona" Xeon processors and 8GB of main memory. 
+Each node has two 3.4GHz ``Nocona'' Xeon processors and 8GB of main memory. 
 A high performance Infiniband network from Mellanox is used for MPI traffic.
 \end{description}
 
@@ -5960,7 +5962,7 @@ Here are some settings from wd's \file[.emacs]{\~{}/.emacs} file:
          auto-mode-alist))
 
   ;; Make M-Backspace behave in Xemacs as it does in GNU Emacs. The default
-  ;; behaviour is apparently a long-known bug the fix for which wasn't
+  ;; behavior is apparently a long-known bug the fix for which wasn't
   ;; propagated from fortran.el to f90.el.
   ;; (http://list-archive.xemacs.org/xemacs-patches/200109/msg00026.html):
   (add-hook 'f90-mode-hook
@@ -5978,7 +5980,7 @@ failsafes are essential in a large multi-purpose multi-user
 code like the Pencil Code.
 
 If a case is supposed to do nothing and it may be unclear that the
-coder has recognised this fact then make it explicit by adding the 
+coder has recognized this fact then make it explicit by adding the 
 default case with a comment like  ! Do Nothing  .   
 The compiler will clean away any such empty blocks.
 
@@ -8827,7 +8829,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.349 2006-11-17 15:53:04 mee Exp $ $}
+$ $Id: manual.tex,v 1.350 2006-11-18 06:51:06 brandenb Exp $ $}
 
 
 \end{document}
