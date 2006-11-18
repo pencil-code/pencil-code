@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.31 2006-11-09 07:23:51 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.32 2006-11-18 13:22:24 mee Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -60,7 +60,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.31 2006-11-09 07:23:51 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.32 2006-11-18 13:22:24 mee Exp $")
 !
 !  Indices for particle position.
 !
@@ -98,8 +98,6 @@ module Particles
 !  parameters.
 !
 !  29-dec-04/anders: coded
-!
-      use EquationOfState, only: cs0
 !
       logical :: lstarting
 !
