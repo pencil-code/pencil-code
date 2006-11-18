@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.258 2006-11-16 19:58:18 mee Exp $ 
+! $Id: param_io.f90,v 1.259 2006-11-18 18:55:42 brandenb Exp $ 
 
 module Param_IO
 
@@ -80,7 +80,7 @@ module Param_IO
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        lwrite_yaverages,lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
        lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
-       ix,iy,iz,iz2,slice_position, &
+       ix,iy,iz,iz2,slice_position,zbot_slice,ztop_slice, &
        bcx,bcy,bcz,r_int,r_ext, &
        lfreeze_varsquare,lfreeze_varint,lfreeze_varext, &
        xfreeze_square,yfreeze_square,rfreeze_int,rfreeze_ext, &
@@ -599,11 +599,6 @@ module Param_IO
           endif
         endif
       endif
-!
-!  Determine slice positions and whether slices are to be written on this
-!  processor.
-!
-      call setup_slices()
 !
 !  parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries

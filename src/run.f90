@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.234 2006-11-16 06:57:54 mee Exp $
+! $Id: run.f90,v 1.235 2006-11-18 18:55:42 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -67,7 +67,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.234 2006-11-16 06:57:54 mee Exp $")
+             "$Id: run.f90,v 1.235 2006-11-18 18:55:42 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -202,6 +202,11 @@
 !       if (lequidist(2)) dy_1=1./dy
 !       if (lequidist(3)) dz_1=1./dz
 !^^^^^-This can perhaps now be removed. Please check-^^^^^^^^^
+!
+!  Determine slice positions and whether slices are to be written on this
+!  processor. This can only be done after the grid has been established.
+!
+        call setup_slices()
 !
 !  Write parameters to log file (done after reading var.dat, since we
 !  want to output time t

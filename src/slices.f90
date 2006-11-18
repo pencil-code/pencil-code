@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.71 2006-08-29 17:18:03 mee Exp $
+! $Id: slices.f90,v 1.72 2006-11-18 18:55:42 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -512,7 +512,6 @@ module Slices
 !
       use Cdata
       use Messages, only: fatal_error
-
 !
 !  set slice position. The default for slice_position is 'p' for periphery,
 !  although setting ix, iy, iz, iz2 by hand will overwrite this.
@@ -554,16 +553,13 @@ module Slices
         lwrite_slice_xz=(ipy==nprocy/2)
         lwrite_slice_yz=.true.
 !
-!  slice position when the first meshpoint in z is the equator (sphere)
-!  For one z-processor, iz remains n1, but iz2 is set to the middle.
-!
-!  TH: The text above does not properly describe the code below.
-!  TH: A certain processor layout is implied here
+!  slice position similar to periphery (p), but the two z positions
+!  can now be given in terms of z (zbot_slice, ztop_slice).
 !
       elseif (slice_position=='c') then
-        ix_loc=(l1+l2)/2; iy_loc=m1; iz_loc=n1; iz2_loc=n2
-        lwrite_slice_xy2=(ipz==nprocz-1)
-        lwrite_slice_xy=(ipz==0)
+        ix_loc=l1; iy_loc=m1
+        call zlocation(zbot_slice,iz_loc,lwrite_slice_xy)
+        call zlocation(ztop_slice,iz2_loc,lwrite_slice_xy2)
         lwrite_slice_xz=(ipy==0)
         lwrite_slice_yz=.true.
 !
@@ -643,6 +639,41 @@ module Slices
       endif
 
     endsubroutine setup_slices
+!***********************************************************************
+    subroutine zlocation(zpos,izpos,lproc)
+!
+!  if zpos lies within this processor, then lproc=T and zpos=z(izpos).
+!  Otherwise lproc=F and izpos=1.
+!
+!  18-nov-06/axel: coded
+!
+      use Cdata, only: n1,n2,z
+!
+      real :: zpos
+      integer :: izpos,n
+      logical :: lproc
+!
+!  run through all z positions until we hit the right interval.
+!  If the right interval is found, jump out of the loop.
+!
+      do n=n1,n2-1
+        if (z(n)<zpos.and.z(n+1)>zpos) then
+          izpos=n
+          lproc=.true.
+          goto 900
+        else
+        endif
+      enddo
+!
+!  if nothing is found, we set lproc=.false. and
+!  and put izpos=1
+!
+      izpos=1
+      lproc=.false.
+!
+900   continue
+!
+    endsubroutine zlocation
 !***********************************************************************
 
 endmodule Slices

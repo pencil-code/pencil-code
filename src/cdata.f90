@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.342 2006-11-16 06:54:22 mee Exp $
+! ! $Id: cdata.f90,v 1.343 2006-11-18 18:55:42 brandenb Exp $
 
 module Cdata
 
@@ -92,6 +92,7 @@ module Cdata
   real, dimension(3,1) :: coeff_grid=1.0
   real, dimension(3,2) :: xyz_step,xi_step_frac,xi_step_width=1.5
   real :: zeta_grid0=0.
+  real :: zbot_slice=0.,ztop_slice=1.
 
   integer, dimension(mseed) :: seed=0
 
