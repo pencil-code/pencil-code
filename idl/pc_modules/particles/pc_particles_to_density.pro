@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.17 2006-11-11 15:04:12 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.18 2006-11-19 15:06:21 ajohan Exp $
 ;
 ;  Convert positions of particles to a grid density field.
 ;
@@ -269,9 +269,9 @@ case interpolation_scheme of
       if (nx ne 1) then ix0 = round((xxp[k,0]-x[0])*dx_1)
       if (ny ne 1) then iy0 = round((xxp[k,1]-y[0])*dy_1)
       if (nz ne 1) then iz0 = round((xxp[k,2]-z[0])*dz_1)
-      if (ix0 eq nx) then ix0=ix0-1
-      if (iy0 eq ny) then iy0=iy0-1
-      if (iz0 eq nz) then iz0=iz0-1
+      if (ix0 eq mx-1) then ix0=ix0-1
+      if (iy0 eq my-1) then iy0=iy0-1
+      if (iz0 eq mz-1) then iz0=iz0-1
       if (ix0 eq -1) then ix0=0
       if (iy0 eq -1) then iy0=0
       if (iz0 eq -1) then iz0=0
