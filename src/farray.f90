@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.8 2006-11-19 13:53:28 mee Exp $ 
+! $Id: farray.f90,v 1.9 2006-11-19 14:15:28 mee Exp $ 
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  THis includes handling different 
@@ -294,7 +294,7 @@ module FArrayManager
           naux=naux+ncomponents
           naux_com=naux_com+ncomponents
         case (iFARRAY_TYPE_AUXILIARY)
-          ivar=mvar+naux+1
+          ivar=mvar+maux_com+(naux-naux_com)+1
           naux=naux+ncomponents
         case (iFARRAY_TYPE_GLOBAL)
           ivar=mvar+maux+nglobal+1
