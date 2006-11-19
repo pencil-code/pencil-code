@@ -1,18 +1,21 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.14 2006-11-08 06:19:44 ajohan Exp $
+;  $Id: pc_plot_par.pro,v 1.15 2006-11-19 15:05:15 ajohan Exp $
 ;
 pro pc_plot_par, xx, $
     x=x, y=y, z=z, com=com, shiftx=shiftx, shifty=shifty, shiftz=shiftz, $
-    pos=pos, ps=ps, color=color, drawgrid=drawgrid, $
+    position=position, ps=ps, color=color, pcolor=pcolor, fcolor=fcolor, $
+    noerase=noerase, drawgrid=drawgrid, $
+    ax=ax, az=az, $
     filename=filename, imgdir=imgdir, datadir=datadir, $
     lxy=lxy, lxz=lxz, lyz=lyz, quiet=quiet
 
 default, x, 0 & default, y, 0 & default, z, 0
 default, shiftx, 0 & default, shifty, 0 & default, shiftz, 0
 default, com, 0
-default, pos, [0.1,0.1,0.9,0.9]
+default, position, [0.1,0.1,0.9,0.9]
 default, ps, 0
 default, color, 0
+default, noerase, 0
 default, drawgrid, 0
 default, filename, 'particles.eps'
 default, imgdir, '.'
@@ -20,6 +23,8 @@ default, datadir, './data/'
 default, lxy, 0
 default, lxz, 0
 default, lyz, 0
+default, ax, 45
+default, az, 45
 default, quiet, 0
 
 if (n_elements(x) ne 1 or n_elements(y) ne 1 or n_elements(z) ne 1) then begin
@@ -58,12 +63,10 @@ endif
 
 if ( (nx ne 1) and (ny ne 1) and (nz ne 1) ) then begin
   thick=3
-  !p.charsize=2.0
   xsize=14.0
   ysize=11.0
 endif else begin
   thick=3
-  !p.charsize=1.0
   xsize=12.0
   ysize=12.0
 endelse
@@ -80,26 +83,28 @@ endelse
 !x.thick=thick & !y.thick=thick & !z.thick=thick
 
 if (color) then loadct, 12
-frame_color=100
-par_color=200
+default, fcolor, 100
+default, pcolor, 200
 
 if ( (nx ne 1) and (ny ne 1) and (nz ne 1) ) then begin
 
-  surface,  [[0.0,0.0,0.0],[0.0,0.0,0.0]], col=frame_color, $
+  surface,  [[0.0,0.0,0.0],[0.0,0.0,0.0]], col=fcolor, $
       xrange=[x0,x1], yrange=[y0,y1], zrange=[z0,z1], $
-      xstyle=1, ystyle=1, zstyle=1, /save, /nodata, pos=pos
-  axis, xaxis=1, x0, y1, z1, /t3d, xtickformat='noticknames_aj',col=frame_color
-  axis, xaxis=1, x0, y1, z0, /t3d, xtickformat='noticknames_aj',col=frame_color
-  axis, yaxis=1, x1, y0, z0, /t3d, ytickformat='noticknames_aj',col=frame_color
-  axis, yaxis=1, x1, y0, z1, /t3d, ytickformat='noticknames_aj',col=frame_color
-  axis, zaxis=0, x1, y1, z0, /t3d, ztickformat='noticknames_aj',col=frame_color
-  axis, zaxis=0, x1, y0, z0, /t3d, ztickformat='noticknames_aj',col=frame_color
+      xstyle=1, ystyle=1, zstyle=1, /save, /nodata, position=position, $
+      xtickformat='(A1)', ytickformat='(A1)', ztickformat='(A1)', $
+      ax=ax, az=az, noerase=noerase
+  axis, xaxis=1, x0, y1, z1, /t3d, xtickformat='(A1)',col=fcolor
+  axis, xaxis=1, x0, y1, z0, /t3d, xtickformat='(A1)',col=fcolor
+  axis, yaxis=1, x1, y0, z0, /t3d, ytickformat='(A1)',col=fcolor
+  axis, yaxis=1, x1, y0, z1, /t3d, ytickformat='(A1)',col=fcolor
+  axis, zaxis=0, x1, y1, z0, /t3d, ztickformat='(A1)',col=fcolor
+  axis, zaxis=0, x1, y0, z0, /t3d, ztickformat='(A1)',col=fcolor
 
-  plots, xx[*,0], xx[*,1], xx[*,2], psym=3, col=par_color, /t3d
+  plots, xx[*,0], xx[*,1], xx[*,2], psym=3, col=pcolor, /t3d
 
-  axis, zaxis=1, x0, y0, z0, /t3d, ztickformat='noticknames_aj',col=frame_color
-  axis, yaxis=0, x0, y0, z1, /t3d, ytickformat='noticknames_aj',col=frame_color
-  axis, xaxis=0, x0, y0, z1, /t3d, xtickformat='noticknames_aj',col=frame_color
+  axis, zaxis=1, x0, y0, z0, /t3d, ztickformat='(A1)',col=fcolor
+  axis, yaxis=0, x0, y0, z1, /t3d, ytickformat='(A1)',col=fcolor
+  axis, xaxis=0, x0, y0, z1, /t3d, xtickformat='(A1)',col=fcolor
  
 endif else if ( (nx ne 1) and (ny ne 1) and (nz eq 1) ) then begin
   
