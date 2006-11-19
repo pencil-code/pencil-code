@@ -105,9 +105,10 @@ $failed{"MPI_found"}++ unless ($n_usc_mpi >= 0);
 
 # 6. Summarize
 my $n_failed = 0 + keys(%failed);
-print "You have \$n_usc_f90=$n_usc_f90, "
-    . "\$n_usc_mpi=$n_usc_mpi, "
-    . "\$n_usc_c=$n_usc_c\n";
+print "You have "
+    . "\$n_usc_f90=$n_usc_f90, "
+    . "\$n_usc_c=$n_usc_c, "
+    . "\$n_usc_mpi=$n_usc_mpi\n";
 if (%failed) {
     print "$n_failed tests failed: ";
     print join(', ', keys(%failed)), "\n";
@@ -504,8 +505,8 @@ sub version {
 # Return CVS data and version info.
     my $doll='\$';		# Need this to trick CVS
     my $cmdname = (split('/', $0))[-1];
-    my $rev = '$Revision: 1.7 $';
-    my $date = '$Date: 2006-11-19 23:32:49 $';
+    my $rev = '$Revision: 1.8 $';
+    my $date = '$Date: 2006-11-19 23:40:44 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     "$cmdname version $rev ($date)\n";
