@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.455 2006-11-16 22:13:59 dintrans Exp $
+! $Id: entropy.f90,v 1.456 2006-11-19 18:09:43 bingert Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -37,7 +37,7 @@ module Entropy
   real :: luminosity=0.,wheat=0.1,cool=0.,rcool=0.,wcool=0.1
   real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.,ampl_TT=0.
   real :: chi=0.,chi_t=0.,chi_shock=0.,chi_hyper3=0.
-  real :: Kgperp=0.,Kgpara=0.,tdown=0,allp=2
+  real :: Kgperp=0.,Kgpara=0.,tdown=1.,allp=2.
   real :: ss_left=1.,ss_right=1.
   real :: ss0=0.,khor_ss=1.,ss_const=0.
   real :: pp_const=0.
@@ -85,8 +85,8 @@ module Entropy
   double precision, parameter, dimension (10) :: & 
        intlnT_1 =(/4.605, 8.959, 9.906, 10.534, 11.283, 12.434, 13.286, 14.541, 17.51, 20.723 /) 
   double precision, parameter, dimension (9) :: &
-       lnH_1 = (/ -534.017,  -141.165, -80.245, -101.314, -78.748, -53.88, -80.452, -70.758, -91.182/), &
-       B_1   = (/     50.,      6.15,      0.,      2.0,      0.,    -2.,      0., -0.6667,    0.5 /)  
+       lnH_1 = (/ -542.398,  -228.833, -80.245, -101.314, -78.748, -53.88, -80.452, -70.758, -91.182/), &
+       B_1   = (/     50.,      15.,      0.,      2.0,      0.,    -2.,      0., -0.6667,    0.5 /)  
   !
   ! A second set of parameters for cool_RTV (from interstellar.f90)
   !
@@ -164,7 +164,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.455 2006-11-16 22:13:59 dintrans Exp $")
+           "$Id: entropy.f90,v 1.456 2006-11-19 18:09:43 bingert Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -2399,7 +2399,6 @@ module Entropy
           call fatal_error('calc_heatcond','NaNs in thdiff')
         endif
       endif
-
       if (headt .and. lfirst .and. ip<=9) then
         call output_pencil(trim(directory)//'/chi.dat',chix,1)
         call output_pencil(trim(directory)//'/hcond.dat',hcond,1)
@@ -3002,7 +3001,6 @@ module Entropy
       intent(in) :: p
       intent(inout) :: df
 !
-      if (tdown .eq. 0) call fatal_error("newton_cool","tdown=0 not allowed")
       if (pretend_lnTT) call fatal_error("newton_cool","not implemented when pretend_lnTT = T")
 !
 !  Initial temperature profile is given in ln(T) in [K] over z in [Mm] 
@@ -3041,17 +3039,19 @@ module Entropy
         enddo
       endif
 !
-      newton = tdown/gamma*((lnTTor - p%lnTT) + gamma1*df(l1:l2,m,n,ilnrho))
-      newton = newton * exp(allp*(-abs(p%lnrho-lnrho0)))
+      if (dt .ne. 0 )  then 
+         newton = tdown/gamma/dt*((lnTTor - p%lnTT) ) 
+         newton = newton * exp(allp*(-abs(p%lnrho-lnrho0)))
 !
 !  Add newton cooling term to entropy
 !
-      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + newton
+         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + newton
 !
-      if (lfirst.and.ldt) then
-         !
-         dt1_max=max(dt1_max,maxval(abs(newton)*gamma)/(cdts))
-      endif      
+         if (lfirst.and.ldt) then
+            !
+            dt1_max=max(dt1_max,maxval(abs(newton)*gamma)/(cdts))
+         endif
+      endif
 !
     endsubroutine newton_cool
 !***********************************************************************
