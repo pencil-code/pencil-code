@@ -70,8 +70,12 @@ program shock_finder2D
 endprogram shock_finder2D
 !***********************************************************************
 subroutine make_calc_body(unitno)
+!
   use Cparam
   use SurfaceData
+!
+  implicit none
+!
   integer :: unitno
   write(unitno,"(a)") "!  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)"
   write(unitno,"(a)") "!"
@@ -124,6 +128,9 @@ endsubroutine make_calc_body
 !***********************************************************************
 subroutine make_calc_3d_int_j_ji(unitno)
   use Cparam
+!
+  implicit none
+!
   integer :: unitno,i,j,k
   character (len=4) :: istr='',jstr='',kstr=''
   character (len=5) :: pistr='',nistr=''
@@ -176,6 +183,9 @@ endsubroutine make_calc_3d_int_j_ji
 !***********************************************************************
 subroutine make_calc_3d_int_k_ki(unitno)
   use Cparam
+!
+  implicit none
+!
   integer :: unitno,i,j,k
   character (len=4) :: istr='',jstr='',kstr=''
   character (len=5) :: pistr='',nistr=''
@@ -229,6 +239,9 @@ endsubroutine make_calc_3d_int_k_ki
 !***********************************************************************
 subroutine make_calc_3d_int_kj_kji(unitno,k)
   use Cparam
+!
+  implicit none
+!
   integer :: unitno,i,j,k
   character (len=4) :: istr='',jstr='',kstr=''
   character (len=5) :: pistr='',nistr=''
@@ -306,6 +319,9 @@ endsubroutine make_calc_3d_int_kj_kji
 !***********************************************************************
 subroutine make_calc_internalboundary(unitno)
   use Cparam
+!
+  implicit none
+!
   integer :: unitno,i,j,k
   logical :: ibound, jbound, kbound
   character (len=4) :: istr='',jstr='',kstr=''
@@ -514,6 +530,9 @@ endsubroutine make_calc_internalboundary
 !***********************************************************************
 subroutine make_calc_3d_ext_j_ji(unitno)
   use Cparam
+!
+  implicit none
+!
   integer :: unitno,i,j,k
   character (len=4) :: istr='',jstr='',kstr=''
   character (len=5) :: pistr='',nistr=''
@@ -580,6 +599,9 @@ endsubroutine make_calc_3d_ext_j_ji
 !***********************************************************************
 subroutine make_calc_3d_ext_k_ki(unitno)
   use Cparam
+!
+  implicit none
+!
   integer :: unitno,i,j,k
   character (len=4) :: istr='',jstr='',kstr=''
   character (len=5) :: pistr='',nistr=''
@@ -646,6 +668,9 @@ endsubroutine make_calc_3d_ext_k_ki
 !***********************************************************************
 subroutine make_calc_3d_ext_kj_kji(unitno,k)
   use Cparam
+!
+  implicit none
+!
   integer :: unitno,i,j,k
   character (len=4) :: istr='',jstr='',kstr=''
   character (len=5) :: pistr='',nistr=''
@@ -878,6 +903,9 @@ endsubroutine make_calc_3d_ext_kj_kji
 !***********************************************************************
 subroutine make_calc_externalboundary(unitno)
   use Cparam
+!
+  implicit none
+!
   integer :: unitno,i,j,k
   integer :: imin, imax
   integer :: jmin, jmax
@@ -1186,7 +1214,9 @@ endsubroutine make_calc_externalboundary
 !***********************************************************************
 subroutine evaluate_facefactors(unitno,rotation)
    use SurfaceData   
-
+!
+  implicit none
+!
    integer :: rotation, unitno
    integer :: i,face_type,dir1,dir2,dir3
    character(len=2), dimension(3) :: dmesh = (/ 'dx','dy','dz' /) 
@@ -1206,6 +1236,9 @@ subroutine declare_facefactors(unitno)
 !
    use SurfaceData   
 !
+  implicit none
+!
+!
    integer :: unitno
    integer :: face_type
 !
@@ -1217,6 +1250,9 @@ subroutine declare_facefactors(unitno)
 endsubroutine declare_facefactors
 !***********************************************************************
 subroutine offset_name(vname,offset,offname) 
+!
+  implicit none
+!
    character(len=*), intent(inout) :: vname,offname
    integer, intent(in) :: offset
    integer :: colon
@@ -1252,7 +1288,11 @@ subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax, &
 !
    use SurfaceData   
 !
+!
+  implicit none
+!
 !   character(len=*), optional, intent(in) :: intname, iname, jname, kname
+   integer :: imin,imax,jmin,jmax,kmin,kmax
    integer :: rotation, unitno
    integer :: ncontrib
    integer :: i,face_type,comp_it,comp,pnt,mesh,dir1,dir2,dir3
@@ -1285,7 +1325,7 @@ subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax, &
      lskip_open_bracket=.false.
      do pnt=1,npoints
        if ( face_types(faces(pnt)) /= face_type ) cycle
-       If (      (points(dir1,pnt).lt.imin).or.(points(dir1,pnt).gt.imax)   &
+       If (     (points(dir1,pnt).lt.imin).or.(points(dir1,pnt).gt.imax)   &
            .or. (points(dir2,pnt).lt.jmin).or.(points(dir2,pnt).gt.jmax)   &
            .or. (points(dir3,pnt).lt.kmin).or.(points(dir3,pnt).gt.kmax) ) cycle  
        do comp_it=0,2
@@ -1339,6 +1379,9 @@ subroutine read_surfaceinfo
    use Cparam
    use SurfaceData
 !
+  implicit none
+!
+!
    integer :: pnt, face_type
    character(len=20) :: header 
 !
@@ -1383,6 +1426,9 @@ subroutine read_surfaceinfo
 endsubroutine read_surfaceinfo
 !***********************************************************************
     subroutine chn(n,ch)
+!
+      implicit none
+!
 !
       character (len=4) :: ch
       integer :: n
