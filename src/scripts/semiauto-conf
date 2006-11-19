@@ -317,7 +317,12 @@ sub make {
     } else {
         $redirect = ">> $makelog";
     }
-    if (system("make @args $redirect 2>&1") == 0) {
+
+    # Run `make' only report success if `make' does, and any .o or .x
+    # targets really exist now (some mpich mpif77 script did nothing and
+    # reported sucess :-( )
+    if ((system("make @args $redirect 2>&1") == 0)
+        && (-e $arg || $arg !~ /\.[xo]$/)) {
         log_to_file("make @args", 'Success');
         if ($question) {
             print "Yes\n";
@@ -343,16 +348,14 @@ sub evaluate_compiler_tests {
           . "Your FFLAGS: <"
           . join(' ', $make_args{FFLAGS},
                       $make_args{FFLAGS_GENERAL},
-                      $make_args{FFLAGS_FOURIER},
-                      $make_args{F90Flags})
+                      $make_args{F90FLAGS})
           . ">\n";
     }
     if ($failed{'C_comp'}) {
         die boldface('Hopeless') . ": CC=<$make_args{CC}> does not work.\n"
             . "Your CFLAGS: <"
             . join(' ', $make_args{CFLAGS},
-                        $make_args{CFLAGS_GENERAL},
-                        $make_args{CFLAGS_FOURIER})
+                        $make_args{CFLAGS_GENERAL})
             . ">\n";
     }
     if ($failed{'F77_comp'}) {
@@ -360,8 +363,7 @@ sub evaluate_compiler_tests {
             . "Your FFLAGS: <"
             . join(' ', $make_args{FFLAGS},
                         $make_args{FFLAGS_GENERAL},
-                        $make_args{FFLAGS_FOURIER},
-                        $make_args{F77Flags})
+                        $make_args{F77FLAGS})
             . ">\n";
     }
 }
@@ -502,8 +504,8 @@ sub version {
 # Return CVS data and version info.
     my $doll='\$';		# Need this to trick CVS
     my $cmdname = (split('/', $0))[-1];
-    my $rev = '$Revision: 1.5 $';
-    my $date = '$Date: 2006-11-19 22:11:59 $';
+    my $rev = '$Revision: 1.6 $';
+    my $date = '$Date: 2006-11-19 22:43:39 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     "$cmdname version $rev ($date)\n";
@@ -537,8 +539,8 @@ print MAKEFILE <<'EOF2'
 .SUFFIXES:                      # get rid of that annoying Modula rule
 .SUFFIXES: .f .f90 .c .o .x .inc .h
 
-ALL_FFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER)
-ALL_CFLAGS=$(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER)
+ALL_FFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
+ALL_CFLAGS=$(CFLAGS) $(CFLAGS_GENERAL)
 
 .f90.o:
 	$(FC) $(ALL_FFLAGS) $(F90FLAGS) -o $*.o -c $*.f90
@@ -561,7 +563,7 @@ default: variables minimal_f90 minimal_mpi.o minimal_iodist.o minimal_debug_c.o
 iodist_debug_c.x: minimal_iodist.o minimal_debug_c.o
 	$(LD) $(LDFLAGS) \
 	    minimal_iodist.o minimal_debug_c.o \
-	    $(LD_MPI) $(LD_FOURIER) \
+	    $(LD_MPI) \
 	    -o iodist_debug_c.x
 
 MPICOMM=minimal_mpi$(LIBMPISUFFIX)
@@ -571,13 +573,13 @@ minimal_mpi_.f90: minimal_mpi.f90
 minimal_mpi.x: $(MPICOMM).o
 	$(LD) $(LDFLAGS) \
 	    $(MPICOMM).o \
-	    $(LD_MPI) $(LD_FOURIER) \
+	    $(LD_MPI) \
 	    -o minimal_mpi.x
 
 minimal_mpi_c.x: minimal_mpi_c.o
 	$(LD) $(LDFLAGS) \
 	    minimal_mpi_c.o \
-	    $(LD_MPI) $(LD_FOURIER) \
+	    $(LD_MPI) \
 	    -o minimal_mpi_c.x
 
 sysinfo:
@@ -599,7 +601,7 @@ sysinfo:
 	true
 
 variables:
-	printf "%s\n" \
+	@printf "%s\n" \
 	  '$$(FC)             = <$(FC)>' \
 	  '$$(FFLAGS)         = <$(FFLAGS)>' \
 	  '$$(FFLAGS_GENERAL) = <$(FFLAGS_GENERAL)>' \
