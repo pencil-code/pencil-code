@@ -1336,6 +1336,7 @@ endsubroutine evaluate_integral
 !***********************************************************************
 subroutine read_surfaceinfo
 !
+   use Cparam
    use SurfaceData
 !
    integer :: pnt, face_type
