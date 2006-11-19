@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.72 2006-11-18 18:55:42 brandenb Exp $
+! $Id: slices.f90,v 1.73 2006-11-19 08:11:33 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -615,13 +615,26 @@ module Slices
           lwrite_slice_xy2=.false.
         endif
       endif
-
 !
 !  write slice position to a file (for convenient post-processing)
 !
       if (lroot) then
         open(1,file=trim(datadir)//'/slice_position.dat',STATUS='unknown')
         write(1,'(a)') slice_position
+        close(1)
+      endif
+!
+!  write the ipz processor numbers for the two slices
+!  The first number (=ipz) is essential, the others just for interest.
+!
+      if (lwrite_slice_xy.and.ipy==0) then
+        open(1,file=trim(directory)//'/zbot_procnum.dat',STATUS='unknown')
+        write(1,'(2i5,e12.4)') ipz,iz_loc,z(iz_loc)
+        close(1)
+      endif
+      if (lwrite_slice_xy2.and.ipy==0) then
+        open(1,file=trim(directory)//'/ztop_procnum.dat',STATUS='unknown')
+        write(1,'(2i5,e12.4)') ipz,iz2_loc,z(iz2_loc)
         close(1)
       endif
 !  
