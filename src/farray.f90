@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.7 2006-11-13 19:34:09 mee Exp $ 
+! $Id: farray.f90,v 1.8 2006-11-19 13:53:28 mee Exp $ 
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  THis includes handling different 
@@ -453,24 +453,28 @@ module FArrayManager
 !***********************************************************************
     subroutine save_analysis_info(item) 
 !
+! This routine processes an item/slot in the farray and sets/writes
+! any metadata required by internal or external analysis tools
+! eg. IDL, OpenDX...
+!
       use Cdata, only: varname
       use General, only: chn
 !
       type (farray_contents_list), pointer :: item
       integer :: i
       character (len=5) :: istr
-
-      do i=1,item%ncomponents
-        call chn(i,istr)
 !
-!  Put variable name in array
+!  Put variable name in array for
+!  use by analysis tool output
 !
-        if (item%ncomponents>1) then      
-          varname(item%ivar(1)%p+i-1) = item%varname//trim(istr)
-        else
-          varname(item%ivar(1)%p) = item%varname
-        endif
-      enddo
+      if (item%ncomponents>1) then      
+        do i=0,item%ncomponents-1
+          call chn(i+1,istr)
+          varname(item%ivar(1)%p+i) = item%varname//trim(istr)
+        enddo
+      else
+        varname(item%ivar(1)%p) = item%varname
+      endif
     endsubroutine save_analysis_info
 !***********************************************************************
     subroutine farray_use_pde(varname,ivar,vector,ierr) 
