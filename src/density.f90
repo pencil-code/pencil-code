@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.293 2006-11-20 00:39:24 dobler Exp $
+! $Id: density.f90,v 1.294 2006-11-20 03:27:23 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -111,7 +111,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.293 2006-11-20 00:39:24 dobler Exp $")
+           "$Id: density.f90,v 1.294 2006-11-20 03:27:23 dobler Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -827,10 +827,11 @@ module Density
         beta1 = gamma*gravz/(mpoly+1)
         tmp = 1 + beta1*(zz-zint)/cs2int
         ! Abort if args of log() are negative
-        if (any(tmp <= 0.)) then
+        if (any((tmp <= 0.) .and. (zz <= zblend))) then
           call fatal_error('polytropic_lnrho_z', &
               'Imaginary density values -- your z_inf is too low.')
         endif
+        tmp = max(tmp,epsi)  ! ensure arg to log is positive
         tmp = lnrhoint + mpoly*log(tmp)
         lnrhoint = lnrhoint + mpoly*log(1 + beta1*(zbot-zint)/cs2int)
       endif
@@ -884,10 +885,11 @@ module Density
         beta1 = gamma*gravz*nu_epicycle2/(mpoly+1)
         tmp = 1 + beta1*(zz**2-zint**2)/cs2int/2.
         ! Abort if args of log() are negative
-        if (any(tmp <= 0.)) then
+        if (any((tmp <= 0.) .and. (zz <= zblend))) then
           call fatal_error('polytropic_lnrho_disc', &
               'Imaginary density values -- your z_inf is too low.')
         endif
+        tmp = max(tmp,epsi)  ! ensure arg to log is positive
         tmp = lnrhoint + mpoly*log(tmp)
         lnrhoint = lnrhoint + mpoly*log(1 + beta1*(zbot**2-zint**2)/cs2int/2.)
       endif

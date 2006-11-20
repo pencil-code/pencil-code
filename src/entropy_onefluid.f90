@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.16 2006-11-20 00:39:24 dobler Exp $
+! $Id: entropy_onefluid.f90,v 1.17 2006-11-20 03:27:23 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.16 2006-11-20 00:39:24 dobler Exp $")
+           "$Id: entropy_onefluid.f90,v 1.17 2006-11-20 03:27:23 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -840,10 +840,11 @@ module Entropy
         beta1 = gamma*gravz/(mpoly+1)
         tmp = 1 + beta1*(zz-zint)/cs2int
         ! Abort if args of log() are negative
-        if (any(tmp <= 0.)) then
+        if (any((tmp <= 0.) .and. (zz <= zblend))) then
           call fatal_error('polytropic_ss_z', &
               'Imaginary entropy values -- your z_inf is too low.')
         endif
+        tmp = max(tmp,epsi)  ! ensure arg to log is positive
         tmp = ssint + (1-mpoly*gamma1)/gamma &
                       * log(tmp)
         ssint = ssint + (1-mpoly*gamma1)/gamma & ! ss at layer interface
@@ -899,10 +900,11 @@ module Entropy
         beta1 = gamma*gravz*nu_epicycle2/(mpoly+1)
         tmp = 1 + beta1*(zz**2-zint**2)/cs2int/2.
         ! Abort if args of log() are negative
-        if (any(tmp <= 0.)) then
+        if (any((tmp <= 0.) .and. (zz <= zblend))) then
           call fatal_error('polytropic_ss_disc', &
               'Imaginary entropy values -- your z_inf is too low.')
         endif
+        tmp = max(tmp,epsi)  ! ensure arg to log is positive
         tmp = ssint + (1-mpoly*gamma1)/gamma &
                       * log(tmp)
         ssint = ssint + (1-mpoly*gamma1)/gamma & ! ss at layer interface
