@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.21 2006-08-23 16:53:33 mee Exp $
+! $Id: temperature.f90,v 1.22 2006-11-20 00:39:24 dobler Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -93,7 +93,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.21 2006-08-23 16:53:33 mee Exp $")
+           "$Id: temperature.f90,v 1.22 2006-11-20 00:39:24 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -217,7 +217,11 @@ iss=ilnTT  !(need to think how to deal with this...)
       else
         beta1 = gamma*gravz/(mpoly+1)
         tmp = 1 + beta1*(zz-zint)/cs2int
-        tmp = max(tmp,epsi)  ! ensure arg to log is positive
+        ! Abort if args of log() are negative
+        if (any(tmp <= 0.)) then
+          call fatal_error('polytropic_ss_z', &
+              'Imaginary temperature values -- your z_inf is too low.')
+        endif
         tmp = ssint + (1-mpoly*gamma1)/gamma &
                       * log(tmp)
         ssint = ssint + (1-mpoly*gamma1)/gamma & ! ss at layer interface

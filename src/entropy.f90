@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.456 2006-11-19 18:09:43 bingert Exp $
+! $Id: entropy.f90,v 1.457 2006-11-20 00:39:24 dobler Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -164,7 +164,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.456 2006-11-19 18:09:43 bingert Exp $")
+           "$Id: entropy.f90,v 1.457 2006-11-20 00:39:24 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -939,7 +939,11 @@ module Entropy
       else
         beta1 = gamma*gravz/(mpoly+1)
         tmp = 1 + beta1*(zz-zint)/cs2int
-        tmp = max(tmp,epsi)  ! ensure arg to log is positive
+        ! Abort if args of log() are negative
+        if (any(tmp <= 0.)) then
+          call fatal_error('polytropic_ss_z', &
+              'Imaginary entropy values -- your z_inf is too low.')
+        endif
         tmp = ssint + (1-mpoly*gamma1)/gamma &
                       * log(tmp)
         ssint = ssint + (1-mpoly*gamma1)/gamma & ! ss at layer interface
@@ -995,7 +999,11 @@ module Entropy
       else
         beta1 = gamma*gravz*nu_epicycle2/(mpoly+1)
         tmp = 1 + beta1*(zz**2-zint**2)/cs2int/2.
-        tmp = max(tmp,epsi)  ! ensure arg to log is positive
+        ! Abort if args of log() are negative
+        if (any(tmp <= 0.)) then
+          call fatal_error('polytropic_ss_disc', &
+              'Imaginary entropy values -- your z_inf is too low.')
+        endif
         tmp = ssint + (1-mpoly*gamma1)/gamma &
                       * log(tmp)
         ssint = ssint + (1-mpoly*gamma1)/gamma & ! ss at layer interface
