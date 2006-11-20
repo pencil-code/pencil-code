@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.9 2006-11-19 14:15:28 mee Exp $ 
+! $Id: farray.f90,v 1.10 2006-11-20 18:57:15 dobler Exp $ 
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  THis includes handling different 
@@ -86,8 +86,8 @@ module FArrayManager
 !
 ! Type counters (need to move nvar, naux and naux_com here too)
 !
-  integer :: nscratch
-  integer :: nglobal
+  integer :: nscratch=0
+  integer :: nglobal=0
  
   contains
 
