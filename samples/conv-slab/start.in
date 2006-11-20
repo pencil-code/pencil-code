@@ -4,11 +4,17 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.12 2006-06-20 06:19:54 brandenb Exp $',
+  cvsid='$Id: start.in,v 1.13 2006-11-20 04:59:00 dobler Exp $',
   ip=14,                        ! debugging parameter
   xyz0  = -0.5, -0.5, -0.68,        ! first corner of box
   Lxyz  =  1.,   1.,   2.,          ! box size
   lperi =  T ,   T ,   F,           ! periodic direction?
+  ! Boundary conditions; are overriden by run.in,
+  ! but setting them here may help with interpreting
+  ! the initial structure
+  bcx = 'p','p','p', 'p',    'p'
+  bcy = 'p','p','p', 'p',    'p'
+  bcz = 's','s','a','a2','a2:cT'
 /
 &eos_init_pars
   cs0=.57735, gamma=1.6666666,
