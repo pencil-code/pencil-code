@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.190 2006-11-16 19:58:18 mee Exp $ 
+! $Id: initcond.f90,v 1.191 2006-11-21 11:55:43 wlyra Exp $ 
 
 module Initcond 
  
@@ -2559,8 +2559,8 @@ module Initcond
           else
 ! Cylindrical disc
             if (lheader) print*,'Cylindrical disc initial condition'
-            if (cs20.lt.1.0) then
-               OO = sqrt(OO_cyl**2 * (1-cs20))
+            if (((1+plaw)*cs20).lt.1.0) then
+               OO = sqrt(OO_cyl**2 * (1-(1+plaw)*cs20))
             else
                call stop_it("Imaginary velocites due to large temperatures in the disc.")
             endif
