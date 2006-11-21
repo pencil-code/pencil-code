@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.18 2006-11-21 10:07:56 ajohan Exp $
+! $Id: particles_radius.f90,v 1.19 2006-11-21 10:38:55 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -54,7 +54,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.18 2006-11-21 10:07:56 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.19 2006-11-21 10:38:55 ajohan Exp $")
 !
 !  Index for particle radius.
 !
@@ -165,7 +165,7 @@ module Particles_radius
 !
 !  Identify module and boundary conditions.
 !
-      if (lheader) print*,'dap_dt: Calculate dap_dt'
+      if (lheader) print*,'dap_dt_pencil: Calculate dap_dt'
 !
 !  Increase in particle radius due to sweep-up of small grains in the gas.
 !
