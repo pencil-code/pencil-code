@@ -1,4 +1,4 @@
-! $Id: noparticles_number.f90,v 1.6 2006-08-23 16:53:32 mee Exp $
+! $Id: noparticles_number.f90,v 1.7 2006-11-21 07:40:42 ajohan Exp $
 !
 !  This module takes care of everything related to particle number.
 !
@@ -62,6 +62,30 @@ module Particles_number
       if (NO_WARN) print*, f, fp
 !
     endsubroutine init_particles_number
+!***********************************************************************
+    subroutine pencil_criteria_particles_number()
+!   
+!  All pencils that the Particles_number module depends on are specified here.
+! 
+!  21-nov-06/anders: dummy
+!   
+    endsubroutine pencil_criteria_particles_number
+!***********************************************************************
+    subroutine dnptilde_dt_pencil(f,df,fp,dfp,p,ineargrid)
+!
+!  Evolution of internal particle number.
+!
+!  24-oct-05/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
+!
+    endsubroutine dnptilde_dt_pencil
 !***********************************************************************
     subroutine dnptilde_dt(f,df,fp,dfp,ineargrid)
 !

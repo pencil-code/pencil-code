@@ -1,4 +1,4 @@
-! $Id: noparticles_radius.f90,v 1.7 2006-08-23 16:53:32 mee Exp $
+! $Id: noparticles_radius.f90,v 1.8 2006-11-21 07:40:42 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -57,6 +57,30 @@ module Particles_radius
       if (NO_WARN) print*, f, fp
 !
     endsubroutine init_particles_radius
+!***********************************************************************
+    subroutine pencil_criteria_particles_radius()
+!   
+!  All pencils that the Particles_radius module depends on are specified here.
+! 
+!  21-nov-06/anders: dummy
+!
+    endsubroutine pencil_criteria_particles_radius
+!***********************************************************************
+    subroutine dap_dt_pencil(f,df,fp,dfp,p,ineargrid)
+!
+!  Evolution of particle radius.
+!
+!  21-nov-06/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
+!
+    endsubroutine dap_dt_pencil
 !***********************************************************************
     subroutine dap_dt(f,df,fp,dfp,ineargrid)
 !

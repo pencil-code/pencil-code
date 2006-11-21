@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.16 2006-08-23 16:53:32 mee Exp $
+! $Id: particles_radius.f90,v 1.17 2006-11-21 07:40:42 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -50,7 +50,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.16 2006-08-23 16:53:32 mee Exp $")
+           "$Id: particles_radius.f90,v 1.17 2006-11-21 07:40:42 ajohan Exp $")
 !
 !  Index for particle radius.
 !
@@ -115,7 +115,23 @@ module Particles_radius
 !
     endsubroutine init_particles_radius
 !***********************************************************************
-    subroutine dap_dt(f,df,fp,dfp,ineargrid)
+    subroutine pencil_criteria_particles_radius()
+!   
+!  All pencils that the Particles_radius module depends on are specified here.
+! 
+!  21-nov-06/anders: coded
+!
+      use Cdata
+!
+      lpenc_requested(i_uu)=.true.
+      lpenc_requested(i_rho)=.true.
+      lpenc_requested(i_cc)=.true. 
+!
+      if (idiag_dvp12mwcdot/=0) lpenc_diagnos(i_cc)=.true.
+!
+    endsubroutine pencil_criteria_particles_radius
+!***********************************************************************
+    subroutine dap_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !  Evolution of particle radius.
 !
@@ -128,6 +144,7 @@ module Particles_radius
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uu
@@ -148,49 +165,65 @@ module Particles_radius
 !
 !  Increase in particle radius due to sweep-up of small grains in the gas.
 !
-      do k=1,npar_loc
-        ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+      if (npar_imn(imn)/=0) then
+        do k=k1_imn(imn),k2_imn(imn)
+          ix0=ineargrid(k,1)
 !  No interpolation needed here.
-        rho=f(ix0,iy0,iz0,ilnrho)
-        if (.not. ldensity_nolog) rho=exp(rho)
-        uu=f(ix0,iy0,iz0,iux:iuz)
 !  Relative speed.
-        deltavp=sqrt( &
-            (fp(k,ivpx)-uu(1))**2 + &
-            (fp(k,ivpy)-uu(2))**2 + &
-            (fp(k,ivpz)-uu(3))**2 )
-        if (deltavp12_floor/=0.0) &
-            deltavp=sqrt(deltavp**2+deltavp12_floor**2)
+          deltavp=sqrt( &
+              (fp(k,ivpx)-p%uu(ix0-nghost,1))**2 + &
+              (fp(k,ivpy)-p%uu(ix0-nghost,2))**2 + &
+              (fp(k,ivpz)-p%uu(ix0-nghost,3))**2 )
+          if (deltavp12_floor/=0.0) &
+              deltavp=sqrt(deltavp**2+deltavp12_floor**2)
 !  Allow boulders to sweep up small grains if relative velocity not too high.
-        if (deltavp<=vthresh_sweepup .or. vthresh_sweepup<0.0) then
-          if (.not. lpscalar) then
-            call fatal_error('dap_dt','must have passive scalar module for sweep-up')
-          else
-            cc=f(ix0,iy0,iz0,ilncc)
-            if (.not. lpscalar_nolog) cc=exp(cc)
+          if (deltavp<=vthresh_sweepup .or. vthresh_sweepup<0.0) then
+            if (.not. lpscalar) then
+              call fatal_error('dap_dt','must have passive scalar module for sweep-up')
+            else
 !  Radius increase due to sweep-up          
-            dfp(k,iap) = dfp(k,iap) + 0.25*deltavp*cc*rho/rhops
+              dfp(k,iap) = dfp(k,iap) + &
+                  0.25*deltavp*p%cc(ix0-nghost)*p%rho(ix0-nghost)/rhops
 !
 !  Deplete gas of small grains.
 !
-            call get_nptilde(fp,k,np_tilde)
-            if (lpscalar_nolog) then 
-              df(ix0,iy0,iz0,ilncc) = df(ix0,iy0,iz0,ilncc) - &
-                  np_tilde*pi*fp(k,iap)**2*deltavp*cc
-            else
-              df(ix0,iy0,iz0,ilncc) = df(ix0,iy0,iz0,ilncc) - &
-                  np_tilde*pi*fp(k,iap)**2*deltavp
+              call get_nptilde(fp,k,np_tilde)
+              if (lpscalar_nolog) then 
+                df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
+                    np_tilde*pi*fp(k,iap)**2*deltavp*p%cc(ix0-nghost)
+              else
+                df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
+                    np_tilde*pi*fp(k,iap)**2*deltavp
+              endif
             endif
           endif
-        endif
 !
-        if (ldiagnos) then
-          if (idiag_dvp12m/=0) call sum_par_name((/deltavp/),idiag_dvp12m)
-          if (idiag_dvp12mwcdot/=0) &
-              call sum_weighted_name((/deltavp/), &
-              (/cc*np_tilde*fp(k,iap)**2*deltavp/),idiag_dvp12mwcdot)
-        endif
-      enddo
+          if (ldiagnos) then
+            if (idiag_dvp12m/=0) call sum_par_name((/deltavp/),idiag_dvp12m)
+            if (idiag_dvp12mwcdot/=0) &
+                call sum_weighted_name((/deltavp/), &
+                (/p%cc(ix0-nghost)*np_tilde*fp(k,iap)**2*deltavp/), &
+                idiag_dvp12mwcdot)
+          endif
+        enddo
+      endif
+!
+      lfirstcall=.false.
+!
+    endsubroutine dap_dt_pencil
+!***********************************************************************
+    subroutine dap_dt(f,df,fp,dfp,ineargrid)
+!
+!  Evolution of particle radius.
+!
+!  21-nov-06/anders: coded
+!
+      use Sub
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
 !  Diagnostic output
 !
@@ -202,8 +235,6 @@ module Particles_radius
         if (idiag_apmax/=0) &
             call max_par_name(fp(1:npar_loc,iap),idiag_apmax)
       endif
-!
-      lfirstcall=.false.
 !
     endsubroutine dap_dt
 !***********************************************************************
