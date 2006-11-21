@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.91 2006-11-17 03:43:06 wlyra Exp $
+! $Id: particles_sub.f90,v 1.92 2006-11-21 10:39:53 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1642,7 +1642,7 @@ module Particles_sub
       integer :: k, ix0
 !
       kshepherd=0
-      kneighbour=0
+      if (imn==1) kneighbour=0
 !
       if (npar_imn(imn)/=0) then
         do k=k1_imn(imn),k2_imn(imn)
