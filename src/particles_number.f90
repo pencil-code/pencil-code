@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.14 2006-11-21 07:40:42 ajohan Exp $
+! $Id: particles_number.f90,v 1.15 2006-11-21 10:07:56 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -22,15 +22,19 @@ module Particles_number
   include 'particles_number.h'
 
   real :: np_tilde0, vthresh_coagulation=0.0, deltavp22_floor=0.0
+  real :: tstart_fragmentation_par=0.0
+  logical :: lfragmentation_par=.true.
   character (len=labellen), dimension(ninit) :: initnptilde='nothing'
 
   integer :: idiag_nptm=0, idiag_dvp22m=0, idiag_dvp22mwcdot=0
 
   namelist /particles_number_init_pars/ &
-      initnptilde, vthresh_coagulation, deltavp22_floor
+      initnptilde, vthresh_coagulation, deltavp22_floor, &
+      lfragmentation_par, tstart_fragmentation_par
 
   namelist /particles_number_run_pars/ &
-      initnptilde, vthresh_coagulation, deltavp22_floor
+      initnptilde, vthresh_coagulation, deltavp22_floor, &
+      lfragmentation_par, tstart_fragmentation_par
 
   contains
 
@@ -49,7 +53,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.14 2006-11-21 07:40:42 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.15 2006-11-21 10:07:56 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -159,93 +163,97 @@ module Particles_number
 !
       if (lheader) print*,'dnptilde_dt: Calculate dnptilde_dt'
 !
-!  Fragmentation inside each superparticle.
+!  Collisional fragmentation inside each superparticle.
 !
-      if (npar_imn(imn)/=0) then
-        do l=l1,l2
+      if (lfragmentation_par .and. t>=tstart_fragmentation_par) then
+        if (npar_imn(imn)/=0) then
+          do l=l1,l2
 !  Get index number of shepherd particle at grid point.
-          k=kshepherd(l-nghost)
+            k=kshepherd(l-nghost)
 !  Continue only if there is actually a shepherd particle.        
-          if (k>0) then
-            if (ip<=6.and.lroot) then
-              print*, 'dnptilde_dt: l, m, n=', l, m, n
-              print*, 'dnptilde_dt: kshepherd, np(l,m,n)=', k, f(l,m,n,inp)
-              print*, 'dnptilde_dt: x(l), y(m), z(n)  =', x(l), y(m), z(n)
-            endif
+            if (k>0) then
+              if (ip<=6.and.lroot) then
+                print*, 'dnptilde_dt: l, m, n=', l, m, n
+                print*, 'dnptilde_dt: kshepherd, np(l,m,n)=', k, f(l,m,n,inp)
+                print*, 'dnptilde_dt: x(l), y(m), z(n)  =', x(l), y(m), z(n)
+              endif
 !  Only continue of the shepherd particle has a neighbour.
-            do while (k/=0)
-              j=k
+              do while (k/=0)
+                j=k
 !  Consider neighbours one at a time.
-              do while (kneighbour(j)/=0)
-                j=kneighbour(j)
-                if (ip<=6.and.lroot) then
-                  print*, &
-                      'dnptilde_dt: collisions between particle ', k, 'and', j
-                endif
+                do while (kneighbour(j)/=0)
+                  j=kneighbour(j)
+                  if (ip<=6.and.lroot) then
+                    print*, &
+                        'dnptilde_dt: collisions between particle ', k, 'and', j
+                  endif
 !  Collision speed.
-                deltavp=sqrt( &
-                    (fp(k,ivpx)-fp(j,ivpx))**2 + &
-                    (fp(k,ivpy)-fp(j,ivpy))**2 + &
-                    (fp(k,ivpz)-fp(j,ivpz))**2 )
-                if (deltavp22_floor/=0.0) &
-                    deltavp=sqrt(deltavp**2+deltavp22_floor**2)
+                  deltavp=sqrt( &
+                      (fp(k,ivpx)-fp(j,ivpx))**2 + &
+                      (fp(k,ivpy)-fp(j,ivpy))**2 + &
+                      (fp(k,ivpz)-fp(j,ivpz))**2 )
+                  if (deltavp22_floor/=0.0) &
+                      deltavp=sqrt(deltavp**2+deltavp22_floor**2)
 !  Collision cross section.
-                sigma_jk=pi*(fp(j,iap)+fp(k,iap))**2
+                  sigma_jk=pi*(fp(j,iap)+fp(k,iap))**2
 !  Collision rate between two superparticles.
-                cdot = sigma_jk*fp(j,inptilde)*fp(k,inptilde)*deltavp
+                  cdot = sigma_jk*fp(j,inptilde)*fp(k,inptilde)*deltavp
 !  Either coagulation...    [warning: this coagulation scheme is a bit cheaty]
-                if (deltavp<=vthresh_coagulation) then
-                  dfp(j,inptilde) = dfp(j,inptilde) - 0.5*cdot
-                  dfp(k,inptilde) = dfp(k,inptilde) - 0.5*cdot
-                  dfp(k,iap) = dfp(k,iap) + &
-                      1/3.*fp(k,iap)/fp(k,inptilde)*(0.5*cdot)
-                  dfp(j,iap) = dfp(j,iap) + &
-                      1/3.*fp(j,iap)/fp(j,inptilde)*(0.5*cdot)
+                  if (deltavp<=vthresh_coagulation) then
+                    dfp(j,inptilde) = dfp(j,inptilde) - 0.5*cdot
+                    dfp(k,inptilde) = dfp(k,inptilde) - 0.5*cdot
+                    dfp(k,iap) = dfp(k,iap) + &
+                        1/3.*fp(k,iap)/fp(k,inptilde)*(0.5*cdot)
+                    dfp(j,iap) = dfp(j,iap) + &
+                        1/3.*fp(j,iap)/fp(j,inptilde)*(0.5*cdot)
 !  ...or fragmentation.
-               else
-                  dfp(j,inptilde) = dfp(j,inptilde) - cdot
+                  else
+                    dfp(j,inptilde) = dfp(j,inptilde) - cdot
+                    dfp(k,inptilde) = dfp(k,inptilde) - cdot
+                    if (lpscalar_nolog) then
+                      df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
+                          p%rho1(l-nghost)*4/3.*pi*rhops* &
+                          (fp(j,iap)**3+fp(k,iap)**3)*cdot
+                    else
+                      df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
+                          p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops* &
+                          (fp(j,iap)**3+fp(k,iap)**3)*cdot
+                    endif
+                  endif  ! fragmentation or coagulation
+!  Collision diagnostics.              
+                  if (ldiagnos) then
+                    if (idiag_dvp22mwcdot/=0) &
+                        call sum_weighted_name((/deltavp/),(/cdot/), &
+                        idiag_dvp22mwcdot)
+                  endif
+                enddo
+!  Subgrid model of collisions within a superparticle.
+                if (deltavp22_floor/=0.0) then
+                  if (ip<=6.and.lroot) then
+                    print*, 'dnptilde_dt: collisions within particle ', k
+                  endif
+                  deltavp=deltavp22_floor
+                  sigma_jk=pi*(fp(k,iap)+fp(k,iap))**2
+                  cdot = sigma_jk*fp(k,inptilde)*fp(k,inptilde)*deltavp
                   dfp(k,inptilde) = dfp(k,inptilde) - cdot
                   if (lpscalar_nolog) then
                     df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
-                        p%rho1(l-nghost)*4/3.*pi*rhops* &
-                        (fp(j,iap)**3+fp(k,iap)**3)*cdot
+                        p%rho1(l-nghost)*4/3.*pi*rhops*fp(k,iap)**3*cdot
                   else
                     df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
-                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops* &
-                        (fp(j,iap)**3+fp(k,iap)**3)*cdot
+                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops*fp(k,iap)**3*cdot
                   endif
-                endif  ! fragmentation or coagulation
-!  Collision diagnostics.              
-                if (ldiagnos) then
-                  if (idiag_dvp22mwcdot/=0) call sum_weighted_name((/deltavp/),(/cdot/),idiag_dvp22mwcdot)
-                endif
+                endif  ! subgrid model
+                k=kneighbour(k)
               enddo
-!  Subgrid model of collisions within a superparticle.
-              if (deltavp22_floor/=0.0) then
-                if (ip<=6.and.lroot) then
-                  print*, 'dnptilde_dt: collisions within particle ', k
-                endif
-                deltavp=deltavp22_floor
-                sigma_jk=pi*(fp(k,iap)+fp(k,iap))**2
-                cdot = sigma_jk*fp(k,inptilde)*fp(k,inptilde)*deltavp
-                dfp(k,inptilde) = dfp(k,inptilde) - cdot
-                if (lpscalar_nolog) then
-                  df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
-                      p%rho1(l-nghost)*4/3.*pi*rhops*fp(k,iap)**3*cdot
-                else
-                  df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
-                      p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops*fp(k,iap)**3*cdot
-                endif
-              endif  ! subgrid model
-              k=kneighbour(k)
-            enddo
 !  "if (k>0) then"
-          endif
-          if (ldiagnos) then
-            if (idiag_dvp22m/=0) call sum_par_name_nw((/deltavp/),idiag_dvp22m)
-          endif
-        enddo
-      endif
+            endif
+            if (ldiagnos) then
+              if (idiag_dvp22m/=0) call sum_par_name_nw((/deltavp/),idiag_dvp22m)
+            endif ! ldiagnos
+          enddo ! l1,l2
+        endif ! npar_imn/=0
+      endif ! lfragmentation_par
 !
       lfirstcall=.false.
 !

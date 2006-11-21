@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.17 2006-11-21 07:40:42 ajohan Exp $
+! $Id: particles_radius.f90,v 1.18 2006-11-21 10:07:56 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -22,13 +22,17 @@ module Particles_radius
   include 'particles_radius.h'
 
   real :: ap0=0.0, vthresh_sweepup=-1.0, deltavp12_floor=0.0
+  real :: tstart_sweepup_par=0.0
+  logical :: lsweepup_par=.true.
   character (len=labellen), dimension(ninit) :: initap='nothing'
 
   namelist /particles_radius_init_pars/ &
-      initap, ap0, rhops, vthresh_sweepup, deltavp12_floor
+      initap, ap0, rhops, vthresh_sweepup, deltavp12_floor, &
+      lsweepup_par, tstart_sweepup_par
 
   namelist /particles_radius_run_pars/ &
-      rhops, vthresh_sweepup, deltavp12_floor
+      rhops, vthresh_sweepup, deltavp12_floor, &
+      lsweepup_par, tstart_sweepup_par
 
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dvp12mwcdot=0
@@ -50,7 +54,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.17 2006-11-21 07:40:42 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.18 2006-11-21 10:07:56 ajohan Exp $")
 !
 !  Index for particle radius.
 !
@@ -165,47 +169,50 @@ module Particles_radius
 !
 !  Increase in particle radius due to sweep-up of small grains in the gas.
 !
-      if (npar_imn(imn)/=0) then
-        do k=k1_imn(imn),k2_imn(imn)
-          ix0=ineargrid(k,1)
+      if (lsweepup_par .and. t>=tstart_sweepup_par) then
+        if (npar_imn(imn)/=0) then
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
 !  No interpolation needed here.
 !  Relative speed.
-          deltavp=sqrt( &
-              (fp(k,ivpx)-p%uu(ix0-nghost,1))**2 + &
-              (fp(k,ivpy)-p%uu(ix0-nghost,2))**2 + &
-              (fp(k,ivpz)-p%uu(ix0-nghost,3))**2 )
-          if (deltavp12_floor/=0.0) &
-              deltavp=sqrt(deltavp**2+deltavp12_floor**2)
+            deltavp=sqrt( &
+                (fp(k,ivpx)-p%uu(ix0-nghost,1))**2 + &
+                (fp(k,ivpy)-p%uu(ix0-nghost,2))**2 + &
+                (fp(k,ivpz)-p%uu(ix0-nghost,3))**2 )
+            if (deltavp12_floor/=0.0) &
+                deltavp=sqrt(deltavp**2+deltavp12_floor**2)
 !  Allow boulders to sweep up small grains if relative velocity not too high.
-          if (deltavp<=vthresh_sweepup .or. vthresh_sweepup<0.0) then
-            if (.not. lpscalar) then
-              call fatal_error('dap_dt','must have passive scalar module for sweep-up')
-            else
+            if (deltavp<=vthresh_sweepup .or. vthresh_sweepup<0.0) then
+              if (.not. lpscalar) then
+                call fatal_error('dap_dt', &
+                    'must have passive scalar module for sweep-up')
+              else
 !  Radius increase due to sweep-up          
-              dfp(k,iap) = dfp(k,iap) + &
-                  0.25*deltavp*p%cc(ix0-nghost)*p%rho(ix0-nghost)/rhops
+                dfp(k,iap) = dfp(k,iap) + &
+                    0.25*deltavp*p%cc(ix0-nghost)*p%rho(ix0-nghost)/rhops
 !
 !  Deplete gas of small grains.
 !
-              call get_nptilde(fp,k,np_tilde)
-              if (lpscalar_nolog) then 
-                df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
-                    np_tilde*pi*fp(k,iap)**2*deltavp*p%cc(ix0-nghost)
-              else
-                df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
-                    np_tilde*pi*fp(k,iap)**2*deltavp
+                call get_nptilde(fp,k,np_tilde)
+                if (lpscalar_nolog) then 
+                  df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
+                      np_tilde*pi*fp(k,iap)**2*deltavp*p%cc(ix0-nghost)
+                else
+                  df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
+                      np_tilde*pi*fp(k,iap)**2*deltavp
+                endif
               endif
             endif
-          endif
 !
-          if (ldiagnos) then
-            if (idiag_dvp12m/=0) call sum_par_name((/deltavp/),idiag_dvp12m)
-            if (idiag_dvp12mwcdot/=0) &
-                call sum_weighted_name((/deltavp/), &
-                (/p%cc(ix0-nghost)*np_tilde*fp(k,iap)**2*deltavp/), &
-                idiag_dvp12mwcdot)
-          endif
-        enddo
+            if (ldiagnos) then
+              if (idiag_dvp12m/=0) call sum_par_name((/deltavp/),idiag_dvp12m)
+              if (idiag_dvp12mwcdot/=0) &
+                  call sum_weighted_name((/deltavp/), &
+                  (/p%cc(ix0-nghost)*np_tilde*fp(k,iap)**2*deltavp/), &
+                  idiag_dvp12mwcdot)
+            endif
+          enddo
+        endif
       endif
 !
       lfirstcall=.false.
