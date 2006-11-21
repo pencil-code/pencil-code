@@ -1,0 +1,30 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Initialisation parameters for MRI turbulence
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2006-11-21 09:39:44 ajohan Exp $',
+  lperi =      T,      T,      T
+  ip=14, lwrite_ic=T, lwrite_aux=T
+  lcopysnapshots_exp=T
+/
+&eos_init_pars
+  gamma=1.0, rho0=1.0
+/
+&density_init_pars
+  ldensity_nolog=T
+/
+&pscalar_init_pars
+  initlncc='constant', cc_const=1.0
+/
+&particles_init_pars
+  initxxp='nothing', eps_dtog=1.0
+/
+&particles_radius_init_pars
+  initap='constant', ap0=1.0, rhops=1.0
+  deltavp12_floor=0.01
+/
+&particles_number_init_pars
+  initnptilde='constant'
+  deltavp22_floor=0.01
+/
