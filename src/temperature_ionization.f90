@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.25 2006-11-22 20:13:59 theine Exp $
+! $Id: temperature_ionization.f90,v 1.26 2006-11-22 21:44:22 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -89,7 +89,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.25 2006-11-22 20:13:59 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.26 2006-11-22 21:44:22 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -290,6 +290,7 @@ module Entropy
       if (lheatc_chiconst) then
         lpenc_requested(i_del2lnTT)=.true.
         if (lheatc_chiconst_accurate) then
+          lpenc_requested(i_cp1)=.true.
           lpenc_requested(i_gradcp)=.true.
           lpenc_requested(i_gamma)=.true.
         endif
@@ -497,14 +498,15 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx) :: g2
-      real, dimension (nx) :: gamma
+      real, dimension (nx) :: g2,gamma
+      real, dimension (nx,3) :: gradlncp
 
 !
 !  g2
 !
       if (lheatc_chiconst_accurate) then
-        call dot(p%glnTT+p%glnrho+p%gradcp,p%glnTT,g2)
+        call multsv(p%cp1,p%gradcp,gradlncp)
+        call dot(p%glnTT+p%glnrho+gradlncp,p%glnTT,g2)
         gamma = p%gamma
       else
         call dot(p%glnTT+p%glnrho,p%glnTT,g2)
