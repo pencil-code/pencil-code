@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.178 2006-11-08 06:14:15 brandenb Exp $
+# $Id: getconf.csh,v 1.179 2006-11-22 06:02:17 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -749,6 +749,32 @@ else if ($hn =~ rio* || $hn =~ pia*) then
       $SSH $node 'killall start.x run.x'
       echo $SSH $node '\rm -rf /var/tmp/'$USER'/*'
       $SSH $node '\rm -rf /var/tmp/$USER/*'
+    end
+  endif
+
+else if ($hn =~ *mckenzie*) then
+  echo "McKenzie cluster at CITA"
+  if ($#nodelist == 1) then
+    echo "Apparently an interactive run."
+    set nodelist = `repeat $ncpus echo $nodelist`
+  else
+    set nprocpernode = 2
+    if ($mpi) then
+      cat $PBS_NODEFILE >! lamhosts
+      lamboot -v lamhosts >>& lamboot.log
+      set local_disc = 1
+      set one_local_disc = 0
+    else
+      set local_disc = 0
+      set one_local_disc = 1
+    endif
+    set mpirun = /opt/lam-7.1.2b24-ifort/bin/mpirun
+    setenv SSH 'ssh -x'
+    setenv SCP scp
+    setenv SCRATCH_DIR /scratch/$USER
+    foreach node ($nodelist)
+      echo $SSH $node '\rm -rf /scratch/'$USER'/*'
+      $SSH $node '\rm -rf /scratch/$USER/*'
     end
   endif
 
