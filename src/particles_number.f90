@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.16 2006-11-21 10:38:55 ajohan Exp $
+! $Id: particles_number.f90,v 1.17 2006-11-22 05:17:38 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -53,7 +53,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.16 2006-11-21 10:38:55 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.17 2006-11-22 05:17:38 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -120,7 +120,7 @@ module Particles_number
 !
     endsubroutine init_particles_number
 !***********************************************************************
-    subroutine pencil_criteria_particles_number()
+    subroutine pencil_criteria_par_number()
 !   
 !  All pencils that the Particles_number module depends on are specified here.
 ! 
@@ -131,7 +131,7 @@ module Particles_number
       lpenc_requested(i_rho1)=.true.
       lpenc_requested(i_cc1)=.true.
 !
-    endsubroutine pencil_criteria_particles_number
+    endsubroutine pencil_criteria_par_number
 !***********************************************************************
     subroutine dnptilde_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !

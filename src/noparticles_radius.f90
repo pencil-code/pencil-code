@@ -1,4 +1,4 @@
-! $Id: noparticles_radius.f90,v 1.8 2006-11-21 07:40:42 ajohan Exp $
+! $Id: noparticles_radius.f90,v 1.9 2006-11-22 05:17:38 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -58,13 +58,13 @@ module Particles_radius
 !
     endsubroutine init_particles_radius
 !***********************************************************************
-    subroutine pencil_criteria_particles_radius()
+    subroutine pencil_criteria_par_radius()
 !   
 !  All pencils that the Particles_radius module depends on are specified here.
 ! 
 !  21-nov-06/anders: dummy
 !
-    endsubroutine pencil_criteria_particles_radius
+    endsubroutine pencil_criteria_par_radius
 !***********************************************************************
     subroutine dap_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !

@@ -1,4 +1,4 @@
-! $Id: noparticles_number.f90,v 1.7 2006-11-21 07:40:42 ajohan Exp $
+! $Id: noparticles_number.f90,v 1.8 2006-11-22 05:17:38 ajohan Exp $
 !
 !  This module takes care of everything related to particle number.
 !
@@ -63,13 +63,13 @@ module Particles_number
 !
     endsubroutine init_particles_number
 !***********************************************************************
-    subroutine pencil_criteria_particles_number()
+    subroutine pencil_criteria_par_number()
 !   
 !  All pencils that the Particles_number module depends on are specified here.
 ! 
 !  21-nov-06/anders: dummy
 !   
-    endsubroutine pencil_criteria_particles_number
+    endsubroutine pencil_criteria_par_number
 !***********************************************************************
     subroutine dnptilde_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !

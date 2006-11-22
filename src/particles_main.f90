@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.54 2006-11-21 07:40:42 ajohan Exp $
+! $Id: particles_main.f90,v 1.55 2006-11-22 05:17:38 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -243,8 +243,8 @@ module Particles_main
 !  20-apr-06/anders: coded
 !
       call pencil_criteria_particles()
-      if (lparticles_radius) call pencil_criteria_particles_radius()
-      if (lparticles_number) call pencil_criteria_particles_number()
+      if (lparticles_radius) call pencil_criteria_par_radius()
+      if (lparticles_number) call pencil_criteria_par_number()
       if (lparticles_selfgravity) call pencil_criteria_par_selfgrav()
       if (lparticles_nbody) call pencil_criteria_par_nbody()
 !

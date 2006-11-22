@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.19 2006-11-21 10:38:55 ajohan Exp $
+! $Id: particles_radius.f90,v 1.20 2006-11-22 05:17:38 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -54,7 +54,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.19 2006-11-21 10:38:55 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.20 2006-11-22 05:17:38 ajohan Exp $")
 !
 !  Index for particle radius.
 !
@@ -119,7 +119,7 @@ module Particles_radius
 !
     endsubroutine init_particles_radius
 !***********************************************************************
-    subroutine pencil_criteria_particles_radius()
+    subroutine pencil_criteria_par_radius()
 !   
 !  All pencils that the Particles_radius module depends on are specified here.
 ! 
@@ -133,7 +133,7 @@ module Particles_radius
 !
       if (idiag_dvp12mwcdot/=0) lpenc_diagnos(i_cc)=.true.
 !
-    endsubroutine pencil_criteria_particles_radius
+    endsubroutine pencil_criteria_par_radius
 !***********************************************************************
     subroutine dap_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !

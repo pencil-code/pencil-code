@@ -3,7 +3,7 @@
  
   public :: register_particles_radius, initialize_particles_radius
   public :: init_particles_radius
-  public :: pencil_criteria_particles_radius
+  public :: pencil_criteria_par_radius
   public :: dap_dt, dap_dt_pencil
   public :: read_particles_rad_init_pars, write_particles_rad_init_pars
   public :: read_particles_rad_run_pars, write_particles_rad_run_pars
