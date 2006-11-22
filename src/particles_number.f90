@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.17 2006-11-22 05:17:38 ajohan Exp $
+! $Id: particles_number.f90,v 1.18 2006-11-22 12:36:54 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -22,19 +22,20 @@ module Particles_number
   include 'particles_number.h'
 
   real :: np_tilde0, vthresh_coagulation=0.0, deltavp22_floor=0.0
-  real :: tstart_fragmentation_par=0.0
+  real :: tstart_fragmentation_par=0.0, cdtpf=0.2
   logical :: lfragmentation_par=.true.
   character (len=labellen), dimension(ninit) :: initnptilde='nothing'
 
   integer :: idiag_nptm=0, idiag_dvp22m=0, idiag_dvp22mwcdot=0
+  integer :: idiag_dtfragp=0
 
   namelist /particles_number_init_pars/ &
       initnptilde, vthresh_coagulation, deltavp22_floor, &
-      lfragmentation_par, tstart_fragmentation_par
+      lfragmentation_par, tstart_fragmentation_par, cdtpf
 
   namelist /particles_number_run_pars/ &
       initnptilde, vthresh_coagulation, deltavp22_floor, &
-      lfragmentation_par, tstart_fragmentation_par
+      lfragmentation_par, tstart_fragmentation_par, cdtpf
 
   contains
 
@@ -53,7 +54,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.17 2006-11-22 05:17:38 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.18 2006-11-22 12:36:54 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -148,6 +149,7 @@ module Particles_number
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
+      real, dimension (nx) :: dt1_fragmentation
       real :: deltavp, sigma_jk, cdot
       integer :: j, k, l
       logical :: lheader, lfirstcall=.true.
@@ -166,6 +168,9 @@ module Particles_number
 !  Collisional fragmentation inside each superparticle.
 !
       if (lfragmentation_par .and. t>=tstart_fragmentation_par) then
+!
+        if (lfirst.and.ldt) dt1_fragmentation=0.0
+!
         if (npar_imn(imn)/=0) then
           do l=l1,l2
 !  Get index number of shepherd particle at grid point.
@@ -197,7 +202,7 @@ module Particles_number
 !  Collision cross section.
                   sigma_jk=pi*(fp(j,iap)+fp(k,iap))**2
 !  Collision rate between two superparticles.
-                  cdot = sigma_jk*fp(j,inptilde)*fp(k,inptilde)*deltavp
+                  cdot=sigma_jk*fp(j,inptilde)*fp(k,inptilde)*deltavp
 !  Either coagulation...    [warning: this coagulation scheme is a bit cheaty]
                   if (deltavp<=vthresh_coagulation) then
                     dfp(j,inptilde) = dfp(j,inptilde) - 0.5*cdot
@@ -220,6 +225,12 @@ module Particles_number
                           (fp(j,iap)**3+fp(k,iap)**3)*cdot
                     endif
                   endif  ! fragmentation or coagulation
+!  Time-step contribution
+                  if (lfirst.and.ldt) then
+                    dt1_fragmentation(l-nghost) = dt1_fragmentation(l-nghost) +&
+                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops* &
+                        (fp(j,iap)**3+fp(k,iap)**3)*cdot
+                  endif
 !  Collision diagnostics.              
                   if (ldiagnos) then
                     if (idiag_dvp22mwcdot/=0) &
@@ -243,15 +254,30 @@ module Particles_number
                     df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
                         p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops*fp(k,iap)**3*cdot
                   endif
+!  Time-step contribution
+                  if (lfirst.and.ldt) then
+                    dt1_fragmentation(l-nghost) = dt1_fragmentation(l-nghost) +&
+                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops*fp(k,iap)**3*cdot
+                  endif
                 endif  ! subgrid model
+!
                 k=kneighbour(k)
               enddo
 !  "if (k>0) then"
             endif
+!
             if (ldiagnos) then
               if (idiag_dvp22m/=0) call sum_par_name_nw((/deltavp/),idiag_dvp22m)
             endif ! ldiagnos
           enddo ! l1,l2
+!
+          if (lfirst.and.ldt) then
+            dt1_fragmentation=dt1_fragmentation/cdtpf
+            dt1_max=max(dt1_max,dt1_fragmentation)
+            if (ldiagnos.and.idiag_dtfragp/=0) &
+                call max_mn_name(dt1_fragmentation,idiag_dtfragp,l_dt=.true.)
+          endif
+!
         endif ! npar_imn/=0
       endif ! lfragmentation_par
 !
@@ -376,6 +402,7 @@ module Particles_number
 !
       if (lreset) then
         idiag_nptm=0; idiag_dvp22m=0; idiag_dvp22mwcdot=0
+        idiag_dtfragp=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -386,6 +413,7 @@ module Particles_number
         call parse_name(iname,cname(iname),cform(iname),'nptm',idiag_nptm)
         call parse_name(iname,cname(iname),cform(iname),'dvp22m',idiag_dvp22m)
         call parse_name(iname,cname(iname),cform(iname),'dvp22mwcdot',idiag_dvp22mwcdot)
+        call parse_name(iname,cname(iname),cform(iname),'dtfragp',idiag_dtfragp)
       enddo
 !
     endsubroutine rprint_particles_number

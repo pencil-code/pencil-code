@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.20 2006-11-22 05:17:38 ajohan Exp $
+! $Id: particles_radius.f90,v 1.21 2006-11-22 12:36:54 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -22,20 +22,20 @@ module Particles_radius
   include 'particles_radius.h'
 
   real :: ap0=0.0, vthresh_sweepup=-1.0, deltavp12_floor=0.0
-  real :: tstart_sweepup_par=0.0
+  real :: tstart_sweepup_par=0.0, cdtps=0.2
   logical :: lsweepup_par=.true.
   character (len=labellen), dimension(ninit) :: initap='nothing'
 
   namelist /particles_radius_init_pars/ &
       initap, ap0, rhops, vthresh_sweepup, deltavp12_floor, &
-      lsweepup_par, tstart_sweepup_par
+      lsweepup_par, tstart_sweepup_par, cdtps
 
   namelist /particles_radius_run_pars/ &
       rhops, vthresh_sweepup, deltavp12_floor, &
-      lsweepup_par, tstart_sweepup_par
+      lsweepup_par, tstart_sweepup_par, cdtps
 
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
-  integer :: idiag_dvp12m=0, idiag_dvp12mwcdot=0
+  integer :: idiag_dvp12m=0, idiag_dvp12mwcdot=0, idiag_dtsweepp=0
 
   contains
 
@@ -54,7 +54,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.20 2006-11-22 05:17:38 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.21 2006-11-22 12:36:54 ajohan Exp $")
 !
 !  Index for particle radius.
 !
@@ -151,8 +151,8 @@ module Particles_radius
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (3) :: uu
-      real :: rho, deltavp, cc, np_tilde
+      real, dimension (nx) :: dt1_sweepup
+      real :: deltavp, np_tilde
       integer :: k, ix0, iy0, iz0
       logical :: lheader, lfirstcall=.true.
 !
@@ -170,6 +170,9 @@ module Particles_radius
 !  Increase in particle radius due to sweep-up of small grains in the gas.
 !
       if (lsweepup_par .and. t>=tstart_sweepup_par) then
+!
+        if (lfirst.and.ldt) dt1_sweepup=0.0
+!
         if (npar_imn(imn)/=0) then
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
@@ -201,6 +204,12 @@ module Particles_radius
                   df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
                       np_tilde*pi*fp(k,iap)**2*deltavp
                 endif
+!  Time-step contribution
+                if (lfirst.and.ldt) then
+                  dt1_sweepup(ix0-nghost) = dt1_sweepup(ix0-nghost) + &
+                      np_tilde*pi*fp(k,iap)**2*deltavp
+                endif
+!
               endif
             endif
 !
@@ -213,6 +222,14 @@ module Particles_radius
             endif
           enddo
         endif
+!  Time-step contribution
+          if (lfirst.and.ldt) then
+            dt1_sweepup=dt1_sweepup/cdtps
+            dt1_max=max(dt1_max,dt1_sweepup)
+            if (ldiagnos.and.idiag_dtsweepp/=0) &
+                call max_mn_name(dt1_sweepup,idiag_dtsweepp,l_dt=.true.)
+          endif
+!
       endif
 !
       lfirstcall=.false.
@@ -316,7 +333,7 @@ module Particles_radius
 !
       if (lreset) then
         idiag_apm=0; idiag_ap2m=0; idiag_apmin=0; idiag_apmax=0
-        idiag_dvp12m=0; idiag_dvp12mwcdot=0
+        idiag_dvp12m=0; idiag_dvp12mwcdot=0; idiag_dtsweepp=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -330,6 +347,7 @@ module Particles_radius
         call parse_name(iname,cname(iname),cform(iname),'apmax',idiag_apmax)
         call parse_name(iname,cname(iname),cform(iname),'dvp12m',idiag_dvp12m)
         call parse_name(iname,cname(iname),cform(iname),'dvp12mwcdot',idiag_dvp12mwcdot)
+        call parse_name(iname,cname(iname),cform(iname),'dtsweepp',idiag_dtsweepp)
       enddo
 !
     endsubroutine rprint_particles_radius
