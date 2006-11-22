@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.128 2006-11-16 07:08:48 mee Exp $
+! $Id: boundcond.f90,v 1.129 2006-11-22 10:46:44 bingert Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1799,13 +1799,17 @@ module Boundcond
 !
 !    27-mai-04/bing:coded
 !
-       Use Cdata
-
+       use Cdata
+       use EquationOfState, only : gamma,gamma1,cs20,lnrho0
+ 
        real, dimension (mx,my,mz,mfarray) :: f
        real, dimension (nx,ny*nprocy),save :: uxl,uxr,uyl,uyr
        real, dimension (nx,ny*nprocy) :: uxd,uyd
+       real, dimension (nx,ny) :: quenching,pp,betaq,fac
+       real, dimension (nx,ny) :: bbz,bb2
        integer :: lend,iostat=0,i=0,j
-       real :: tl=0.,tr=0.,delta_t
+       real,save :: tl=0.,tr=0.,delta_t=0.
+
        intent (inout) :: f
 !
 !     Read the time table
@@ -1843,6 +1847,11 @@ module Boundcond
           read (10,rec=2*i+1)   uxr 
           read (10,rec=2*i+2)   uyr
           close (10)       
+          
+          uxl = uxl / 10. / unit_velocity
+          uxr = uxr / 10. / unit_velocity
+          uyl = uyl / 10. / unit_velocity
+          uyr = uyr / 10. / unit_velocity
 
        endif
 !      
@@ -1852,12 +1861,50 @@ module Boundcond
           uxd  = (t*unit_time - (tl+delta_t)) * (uxr - uxl) / (tr - tl) + uxl
           uyd  = (t*unit_time - (tl+delta_t)) * (uyr - uyl) / (tr - tl) + uyl       
        endif     
+!
+!   suppress footpoint motion at low plasma beta
+!
+!   First get Bz component:
+!
+      if (nxgrid/=1) then
+          fac=(1./60)*spread(dx_1(l1:l2),2,ny)
+          bbz= fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,n,iay)-f(l1-1:l2-1,m1:m2,n,iay)) &
+               -  9.0*(f(l1+2:l2+2,m1:m2,n,iay)-f(l1-2:l2-2,m1:m2,n,iay)) &
+               +      (f(l1+3:l2+3,m1:m2,n,iay)-f(l1-3:l2-3,m1:m2,n,iay)))
+       else
+          if (ip<=5) print*, 'der_main: Degenerate case in x-direction'
+       endif
+       if (nygrid/=1) then
+          fac=(1./60)*spread(spread(dy_1(m),1,nx),2,ny)
+          bbz= bbz -fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,n,iax)-f(l1:l2,m1-1:m2-1,n,iax)) &
+               -  9.0*(f(l1:l2,m1+2:m2+2,n,iax)-f(l1:l2,m1-2:m2-2,n,iax)) &
+               +      (f(l1:l2,m1+3:m2+3,n,iax)-f(l1:l2,m1-3:m2-3,n,iax)))
+       else
+          if (ip<=5) print*, 'der_main: Degenerate case in y-direction'
+       endif
+
+       bb2 = bbz*bbz 
+
+       bb2 = bb2/(2*mu0)*300.
+!       
+       pp = gamma* (f(l1:l2,m1:m2,n1,iss)+f(l1:l2,m1:m2,n1,ilnrho))-gamma1*lnrho0
+       pp = exp(pp) * cs20/gamma
+!
+!   limit plasma beta  
+! 
+       where (bb2 .gt. 1.e-20)
+          betaq =  pp / bb2
+       elsewhere
+          betaq = pp * 1.e20
+       endwhere
+!       
+       quenching = (1.+betaq**2)/(3. +betaq**2)
 !    
 !   Fill the ghost cells and the bottom layer with vel. field
 !
        do j=1,n1
-          f(l1:l2,m1:m2,j,iux) = uxd(:,ipy*ny:(ipy+1)*ny) / 100./unit_velocity 
-          f(l1:l2,m1:m2,j,iuy) = uyd(:,ipy*ny:(ipy+1)*ny) / 100./unit_velocity 
+          f(l1:l2,m1:m2,j,iux) =  uxd(:,ipy*ny:(ipy+1)*ny) *quenching
+          f(l1:l2,m1:m2,j,iuy) =  uyd(:,ipy*ny:(ipy+1)*ny) *quenching
        enddo
 
      endsubroutine uu_driver
