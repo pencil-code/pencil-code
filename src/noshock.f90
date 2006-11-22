@@ -1,4 +1,4 @@
-! $Id: noshock.f90,v 1.8 2006-08-23 16:53:32 mee Exp $
+! $Id: noshock.f90,v 1.9 2006-11-22 21:41:16 theine Exp $
 
 !  This module calculates a divergence of u based shock finding
 !  profile used by shock viscosities and diffusion terms.
@@ -63,18 +63,19 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noshock.f90,v 1.8 2006-08-23 16:53:32 mee Exp $")
+           "$Id: noshock.f90,v 1.9 2006-11-22 21:41:16 theine Exp $")
 !
     endsubroutine register_shock
 !***********************************************************************
-    subroutine initialize_shock(lstarting)
+    subroutine initialize_shock(f,lstarting)
 !
 !  20-nov-02/tony: coded
 !  24-jan-05/tony: modified from visc_shock.f90
 !
-       logical, intent(in) :: lstarting 
+      real, dimension (mx,my,mz,mfarray) :: f
+      logical, intent(in) :: lstarting 
 
-      if (NO_WARN) print*,lstarting
+      if (NO_WARN) print*,lstarting,f(1,1,1,1)
 
     endsubroutine initialize_shock
 !***********************************************************************
