@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.154 2006-11-17 03:45:43 wlyra Exp $
+! $Id: particles_dust.f90,v 1.155 2006-11-22 12:36:07 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -122,7 +122,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.154 2006-11-17 03:45:43 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.155 2006-11-22 12:36:07 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -186,10 +186,12 @@ module Particles
       if (tausp/=0.) then
         tausp1=1/tausp
       else
-        ldragforce_dust_par=.false.
-        ldragforce_gas_par=.false.
-        if (lroot) print*, 'initialize_particles: tausp=0, so drag force '// &
-            'was turned off!'
+        if (iap==0) then  ! Particle_radius module calculates taus independently
+          ldragforce_dust_par=.false.
+          ldragforce_gas_par=.false.
+          if (lroot) print*, 'initialize_particles: tausp=0, so drag force '// &
+              'was turned off!'
+        endif
       endif
 !
 !  If not explicitly set in start.in, the index fence between the particle
