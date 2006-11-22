@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.26 2006-11-22 21:44:22 theine Exp $
+! $Id: temperature_ionization.f90,v 1.27 2006-11-22 21:55:29 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -89,7 +89,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.26 2006-11-22 21:44:22 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.27 2006-11-22 21:55:29 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -493,7 +493,7 @@ module Entropy
 !           =chi*(g2.glnTT+g2lnTT),
 !  where g2=glnrho+glnTT
 !
-      use Sub, only: max_mn_name,dot,del2
+      use Sub, only: max_mn_name,dot,del2,multsv
 
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
