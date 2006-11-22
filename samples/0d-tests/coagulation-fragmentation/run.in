@@ -2,21 +2,26 @@
 !  Run parameters for MRI turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2006-11-21 09:39:44 ajohan Exp $',
-  nt=1000, it1=100, cdt=0.4, cdtv=0.80, isave=1000, itorder=3
-  dsnap=1.0, dvid=1.0, dtmin=1e-6
+  cvsid='$Id: run.in,v 1.2 2006-11-22 12:43:52 ajohan Exp $',
+  nt=100, it1=1, cdt=0.4, cdtv=0.80, isave=1000, itorder=3
+  dsnap=1.0e37, dvid=1.0, dtmin=1e-9
   lpencil_check=T
+  dtmax=1.0e9
 /
 &eos_run_pars
 /
 &density_run_pars
 /
 &pscalar_run_pars
+  lupw_lncc=T
 /
 &particles_run_pars
-  tausp=1.0, beta_dPdr_dust=-0.1
+  beta_dPdr_dust=-0.1
+  ldragforce_dust_par=F, ldragforce_gas_par=F
 /
 &particles_radius_run_pars
+  cdtps=0.2
 /
 &particles_number_run_pars
+  cdtpf=0.2
 /
