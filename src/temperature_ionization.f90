@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.24 2006-11-22 17:00:03 theine Exp $
+! $Id: temperature_ionization.f90,v 1.25 2006-11-22 20:13:59 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -89,7 +89,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.24 2006-11-22 17:00:03 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.25 2006-11-22 20:13:59 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -390,6 +390,10 @@ module Entropy
       real, dimension (nx) :: Hmax
       real :: prof
       integer :: j
+!
+!  Initialize maximum heating to zero
+!
+      Hmax = 0.0
 
 !
 !  Identify module and boundary conditions
