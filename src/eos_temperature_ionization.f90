@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.48 2006-11-04 07:47:37 brandenb Exp $
+! $Id: eos_temperature_ionization.f90,v 1.49 2006-11-22 17:00:03 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -11,7 +11,7 @@
 !
 ! PENCILS PROVIDED ss,ee,pp,lnTT,cs2,nabla_ad,glnTT,TT,TT1
 ! PENCILS PROVIDED yH,del2lnTT,cv,cv1,cp,cp1,gamma,gamma1,gamma11,mu1
-! PENCILS PROVIDED glnTT,rho1gpp,delta
+! PENCILS PROVIDED glnTT,rho1gpp,delta,gradcp
 !
 !***************************************************************
 
@@ -66,7 +66,7 @@ module EquationOfState
 
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
-  logical :: lcalc_cp=.false. 
+  logical :: lcalc_cp=.false.,lcalc_cp_full=.false.
 !  real :: gamma=impossible, gamma1=impossible, gamma11=impossible
   real :: gamma=5./3., gamma1=impossible, gamma11=impossible
   real :: cs2bot=impossible, cs2top=impossible 
@@ -76,6 +76,9 @@ module EquationOfState
   integer :: isothtop=0
   real, dimension (3) :: beta_glnrho_global=impossible
   real, dimension (3) :: beta_glnrho_scaled=impossible
+
+! Allocatable 3D-array for cp
+  real, dimension (:,:,:), allocatable :: cp_full
 
   contains
 
@@ -126,7 +129,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.48 2006-11-04 07:47:37 brandenb Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.49 2006-11-22 17:00:03 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -270,6 +273,8 @@ module EquationOfState
       if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
       if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true.
 
+      if (lpencil_in(i_gradcp)) lcalc_cp_full=.true.
+
       if (NO_WARN) print *,lpencil_in
 
     endsubroutine pencil_interdep_eos
@@ -341,9 +346,18 @@ module EquationOfState
 !
 !  Specific heat at constant pressure
 !
-      if (lpencil(i_cp)) p%cp = Rgas*p%mu1*(2.5 + yH_term_cp*TT_term_cp**2)
+      if (lpencil(i_cp)) then
+        if (lcalc_cp_full) then
+          p%cp = cp_full(l1:l2,m,n)
+        else
+          p%cp = Rgas*p%mu1*(2.5 + yH_term_cp*TT_term_cp**2)
+        endif
+      endif
       if (lpencil(i_cp1)) p%cp1 = 1/p%cp
-
+!
+!  Gradient of the above
+!
+      if (lpencil(i_gradcp)) call grad(cp_full,p%gradcp)
 !
 !  Polytropic index
 !
@@ -443,6 +457,9 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
 
       real, dimension (mx) :: yH,rho1,TT1,rhs,sqrtrhs
+      real, dimension (mx) :: mu1,yH_term_cp,TT_term_cp
+
+      if (.not.allocated(cp_full)) allocate (cp_full(mx,my,mz))
 
       if (lconst_yH) then
       
@@ -464,6 +481,13 @@ module EquationOfState
           endwhere
 
           f(:,m,n,iyH) = yH
+
+          if (lcalc_cp_full) then
+            mu1 = mu1_0*(1 + yH + xHe)
+            yH_term_cp = yH*(1-yH)/(2+xHe*(2-yH))
+            TT_term_cp = 2.5 + TT_ion*TT1
+            cp_full(:,m,n) = Rgas*mu1*(2.5 + yH_term_cp*TT_term_cp**2)
+          endif
 
         enddo
         enddo

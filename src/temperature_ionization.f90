@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.23 2006-11-03 13:50:41 brandenb Exp $
+! $Id: temperature_ionization.f90,v 1.24 2006-11-22 17:00:03 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -34,7 +34,8 @@ module Entropy
   real :: zbot=0.0,ztop=0.0
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
-  logical :: lupw_lnTT,lcalc_heat_cool=.false.,lheatc_chiconst=.false.
+  logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
+  logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=4) :: iinit_str
 
@@ -51,7 +52,8 @@ module Entropy
   ! run parameters
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
-      heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor
+      heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
+      lheatc_chiconst_accurate
 
   ! other variables (needs to be consistent with reset list below)
     integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
@@ -87,7 +89,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.23 2006-11-03 13:50:41 brandenb Exp $")
+           "$Id: temperature_ionization.f90,v 1.24 2006-11-22 17:00:03 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -285,7 +287,13 @@ module Entropy
 
       if (ladvection_temperature) lpenc_requested(i_uglnTT)=.true.
 
-      if (lheatc_chiconst) lpenc_requested(i_del2lnTT)=.true.
+      if (lheatc_chiconst) then
+        lpenc_requested(i_del2lnTT)=.true.
+        if (lheatc_chiconst_accurate) then
+          lpenc_requested(i_gradcp)=.true.
+          lpenc_requested(i_gamma)=.true.
+        endif
+      endif
 
 !
 !  Diagnostics
@@ -486,28 +494,29 @@ module Entropy
       type (pencil_case) :: p
 
       real, dimension (nx) :: g2
-      real :: gamma0
+      real, dimension (nx) :: gamma
 
 !
 !  g2
 !
-      call dot(p%glnTT+p%glnrho,p%glnTT,g2)
-
-!
-!  gamma0 is the ratio cp/cv for yH=0 or yH=1
-!
-      gamma0 = 5.0/3.0
+      if (lheatc_chiconst_accurate) then
+        call dot(p%glnTT+p%glnrho+p%gradcp,p%glnTT,g2)
+        gamma = p%gamma
+      else
+        call dot(p%glnTT+p%glnrho,p%glnTT,g2)
+        gamma = 5.0/3.0
+      endif
 
 !
 !  Add heat conduction to RHS of temperature equation
 !
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma0*chi*(g2 + p%del2lnTT)
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chi*(g2 + p%del2lnTT)
 
 !
 !  check maximum diffusion from thermal diffusion
 !
       if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,gamma0*chi*dxyz_2)
+        diffus_chi=max(diffus_chi,gamma*chi*dxyz_2)
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
