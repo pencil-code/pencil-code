@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.458 2006-11-20 03:27:23 dobler Exp $
+! $Id: entropy.f90,v 1.459 2006-11-22 11:00:02 bingert Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -164,7 +164,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.458 2006-11-20 03:27:23 dobler Exp $")
+           "$Id: entropy.f90,v 1.459 2006-11-22 11:00:02 bingert Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -2198,14 +2198,15 @@ module Entropy
 !
 !  10-feb-04/bing: coded
 !
-      use EquationOfState
+      use EquationOfState, only: gamma,gamma1
       use Sub
-      use IO
+      use IO, only: output_pencil
 !       
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gvKpara,gvKperp,tmpv
       real, dimension (nx) :: bb2,thdiff,b1
       real, dimension (nx) :: tmps,quenchfactor,vKpara,vKperp
+!
       integer ::i,j
       type (pencil_case) :: p
 !
@@ -2248,6 +2249,11 @@ module Entropy
 !     Calculate diffusion term
 !
       call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,GVKPERP=gvKperp,GVKPARA=gvKpara)
+!
+      if (lfirst .and. ip == 13) then
+         call output_pencil(trim(directory)//'/spitzer.dat',thdiff,1)
+         call output_pencil(trim(directory)//'/viscous.dat',p%visc_heat*exp(p%lnrho),1)
+      endif
 !
       thdiff = thdiff*exp(-p%lnrho-p%lnTT) 
 ! 
@@ -2408,6 +2414,9 @@ module Entropy
           print*, 'calc_heatcond: m,n,y(m),z(n)=',m,n,y(m),z(n)
           call fatal_error('calc_heatcond','NaNs in thdiff')
         endif
+      endif
+      if (lfirst .and. ip == 13) then
+         call output_pencil(trim(directory)//'/heatcond.dat',thdiff,1)
       endif
       if (headt .and. lfirst .and. ip<=9) then
         call output_pencil(trim(directory)//'/chi.dat',chix,1)
@@ -2618,7 +2627,7 @@ module Entropy
 !
 !  15-dec-04/bing: coded
 !
-      use IO
+      use IO, only: output_pencil
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni
@@ -2679,6 +2688,9 @@ module Entropy
       rtv_cool=rtv_cool * cool_RTV  ! for adjusting by setting cool_RTV in run.in
 !
 !     add to entropy equation
+!
+      if (lfirst .and. ip == 13) &
+           call output_pencil(trim(directory)//'/rtv.dat',rtv_cool*exp(p%lnrho+p%lnTT),1)      
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)-rtv_cool 
 !
@@ -3000,6 +3012,7 @@ module Entropy
 !  25-sep-2006/bing: updated, using external data
 !
       use EquationOfState, only: lnrho0,gamma
+      use Io, only:  output_pencil
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: newton
@@ -3054,6 +3067,9 @@ module Entropy
          newton = newton * exp(allp*(-abs(p%lnrho-lnrho0)))
 !
 !  Add newton cooling term to entropy
+!
+         if (lfirst .and. ip == 13) &
+              call output_pencil(trim(directory)//'/newton.dat',newton*exp(p%lnrho+p%lnTT),1)
 !
          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + newton
 !
