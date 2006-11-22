@@ -1,4 +1,4 @@
-! $Id: shock_perp.f90,v 1.9 2006-11-13 19:34:09 mee Exp $
+! $Id: shock_perp.f90,v 1.10 2006-11-22 18:44:45 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -105,17 +105,23 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_perp.f90,v 1.9 2006-11-13 19:34:09 mee Exp $")
+           "$Id: shock_perp.f90,v 1.10 2006-11-22 18:44:45 theine Exp $")
 !
     endsubroutine register_shock
 !***********************************************************************
-    subroutine initialize_shock(lstarting)
+    subroutine initialize_shock(f,lstarting)
 !
 !  20-nov-02/tony: coded
 !
        use CData
 
+       real, dimension (mx,my,mz,mfarray) :: f
        logical, intent(in) :: lstarting 
+!
+!  Initialize shock profile to zero
+!
+      f(:,:,:,ishock)=0.0
+      f(:,:,:,ishock_perp)=0.0
 !
 !  Calculate factors for polynomial smoothing
 !
