@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.300 2006-11-23 20:42:37 theine Exp $
+! $Id: hydro.f90,v 1.301 2006-11-23 20:59:18 theine Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -116,7 +116,7 @@ module Hydro
   integer :: idiag_oxoym=0,idiag_oxozm=0,idiag_oyozm=0
   integer :: idiag_ruxm=0,idiag_ruym=0,idiag_ruzm=0,idiag_rumax=0
   integer :: idiag_uxmz=0,idiag_uymz=0,idiag_uzmz=0,idiag_umx=0,idiag_umy=0
-  integer :: idiag_uxmy=0,idiag_uymy=0,idiag_uzmy=0
+  integer :: idiag_uxmy=0,idiag_uymy=0,idiag_uzmy=0,idiag_u2mz=0
   integer :: idiag_umz=0,idiag_uxmxy=0,idiag_uymxy=0,idiag_uzmxy=0
   integer :: idiag_uxmx=0,idiag_uymx=0,idiag_uzmx=0
   integer :: idiag_Marms=0,idiag_Mamax=0,idiag_divum=0,idiag_divu2m=0
@@ -174,7 +174,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.300 2006-11-23 20:42:37 theine Exp $")
+           "$Id: hydro.f90,v 1.301 2006-11-23 20:59:18 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -652,7 +652,8 @@ module Hydro
       if (idiag_u1u32m/=0) lpenc_diagnos(i_u1u32)=.true.
       if (idiag_u2u13m/=0) lpenc_diagnos(i_u2u13)=.true.
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_rumax/=0 .or. &
-          idiag_u2m/=0 .or. idiag_um2/=0) lpenc_diagnos(i_u2)=.true.
+          idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0) &
+        lpenc_diagnos(i_u2)=.true.
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_fmassz/=0 .or. idiag_ruxuymz/=0) lpenc_diagnos(i_rho)=.true.
 
@@ -1097,6 +1098,7 @@ module Hydro
         if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
         if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
         if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
+        if (idiag_u2mz/=0)  call zsum_mn_name_xy(p%u2,idiag_u2mz)
 !
 !  mean momenta
 !
@@ -1734,6 +1736,7 @@ module Hydro
             'fkinz',idiag_fkinz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'ekinz',idiag_ekinz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'u2mz',idiag_u2mz)
       enddo
 !
 !  check for those quantities for which we want xz-averages
@@ -1854,6 +1857,7 @@ module Hydro
         write(3,*) 'i_uxmxy=',idiag_uxmxy
         write(3,*) 'i_uymxy=',idiag_uymxy
         write(3,*) 'i_uzmxy=',idiag_uzmxy
+        write(3,*) 'i_u2mz=',idiag_u2mz
         write(3,*) 'i_urmphi=',idiag_urmphi
         write(3,*) 'i_upmphi=',idiag_upmphi
         write(3,*) 'i_uzmphi=',idiag_uzmphi
