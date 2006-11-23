@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.299 2006-11-16 19:58:18 mee Exp $
+! $Id: hydro.f90,v 1.300 2006-11-23 20:42:37 theine Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -80,7 +80,7 @@ module Hydro
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
-  logical :: lforcing_continuous=.false.
+  logical :: lforcing_continuous=.false.,lremove_mean_momenta=.false.
   character (len=labellen) :: iforcing_continuous='ABC'
 !
 ! geodynamo
@@ -88,7 +88,7 @@ module Hydro
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot, &
-       xexp_diffrot,kx_diffrot, &
+       xexp_diffrot,kx_diffrot,lremove_mean_momenta, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
@@ -174,7 +174,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.299 2006-11-16 19:58:18 mee Exp $")
+           "$Id: hydro.f90,v 1.300 2006-11-23 20:42:37 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -824,7 +824,7 @@ module Hydro
 ! graddivu
       if (lpencil(i_del2u)) then 
         if (lpencil(i_graddivu)) then 
-          call del2v_etc(f,iuu,p%del2u,GRADDIV=p%graddivu)
+          call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu)
         else
           call del2v(f,iuu,p%del2u)
         endif
@@ -1154,7 +1154,7 @@ module Hydro
 !   9-nov-06/axel: adapted from calc_ltestfield_pars
 !
       use Cdata, only: iux,iuy,ilnrho,l1,l2,m1,m2,n1,n2,lroot
-      use Mpicomm, only: mpireduce_sum
+      use Mpicomm, only: mpiallreduce_sum
 ! 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rho,rux,ruy
@@ -1186,7 +1186,7 @@ module Hydro
 !
       fsum_tmp(1)=ruxm
       fsum_tmp(2)=ruym
-      call mpireduce_sum(fsum_tmp,fsum,nreduce)
+      call mpiallreduce_sum(fsum_tmp,fsum,nreduce)
       ruxm=fsum(1)
       ruym=fsum(2)
 !
@@ -2061,5 +2061,56 @@ module Hydro
 !
       first = .false.
     endsubroutine calc_mflow
+!***********************************************************************
+    subroutine remove_mean_momenta(f)
+!
+!  Substract mean x-momentum over density from the x-velocity field.
+!  Useful to avoid unphysical winds in shearing box simulations.
+!
+!  15-nov-06/tobi: coded
+!
+      use Cdata, only: ilnrho,iux,iuz
+      use Mpicomm, only: mpiallreduce_sum
+
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+
+      real, dimension (nx) :: rho,rho1,uu
+      real :: fac,fsum_tmp,fsum
+      real, dimension (iux:iuz) :: rum
+      integer :: m,n,j
+
+      if (lremove_mean_momenta) then
+
+        rum = 0.0
+        fac = 1.0/nwgrid
+
+        do n = n1,n2
+        do m = m1,m2
+          rho = exp(f(l1:l2,m,n,ilnrho))
+          do j=iux,iuz
+            uu = f(l1:l2,m,n,j)
+            rum(j) = rum(j) + fac*sum(rho*uu)
+          enddo
+        enddo
+        enddo
+
+        do j=iux,iuz
+          fsum_tmp = rum(j)
+          call mpiallreduce_sum(fsum_tmp,fsum)
+          rum(j) = fsum
+        enddo
+
+        do n = n1,n2
+        do m = m1,m2
+          rho1 = exp(-f(l1:l2,m,n,ilnrho))
+          do j=iux,iuz
+            f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - rho1*rum(j)
+          enddo
+        enddo
+        enddo
+
+      endif
+
+    endsubroutine remove_mean_momenta
 !***********************************************************************
 endmodule Hydro

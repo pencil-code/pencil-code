@@ -9,7 +9,7 @@
   public :: init_uu, duu_dt, calc_lhydro_pars, calc_pencils_hydro
   public :: pencil_criteria_hydro, pencil_interdep_hydro
 
-  public :: calc_mflow
+  public :: calc_mflow,remove_mean_momenta
 
 !ajwm SHOULDN'T BE EXPORTED
 !

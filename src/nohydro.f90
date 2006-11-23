@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.64 2006-11-09 08:31:18 brandenb Exp $
+! $Id: nohydro.f90,v 1.65 2006-11-23 20:42:38 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,7 +70,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.64 2006-11-09 08:31:18 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.65 2006-11-23 20:42:38 theine Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -883,6 +883,18 @@ module Hydro
 !  19-jul-03/axel: adapted from hydro
 !
     endsubroutine calc_mflow
+!***********************************************************************
+    subroutine remove_mean_momenta(f)
+!
+!  dummy routine
+!
+!  32-nov-06/tobi: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      if (NO_WARN) print *,f(1,1,1,1)
+
+    endsubroutine remove_mean_momenta
 !***********************************************************************
 
 endmodule Hydro

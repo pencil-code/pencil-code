@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.343 2006-11-18 18:55:42 brandenb Exp $
+! ! $Id: cdata.f90,v 1.344 2006-11-23 20:42:37 theine Exp $
 
 module Cdata
 
@@ -182,7 +182,7 @@ module Cdata
   integer :: idiag_t=0,idiag_it=0,idiag_dt=0
   integer :: idiag_walltime=0,idiag_timeperstep=0
   integer :: idiag_rcylmphi=0,idiag_phimphi=0,idiag_zmphi=0,idiag_rmphi=0
-  integer :: idiag_dtv=0
+  integer :: idiag_dtv=0,idiag_dtdiffus=0
   integer :: idiag_nu_LES=0
 !
 !  initialization of various switches; actual settings depends on the

@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.337 2006-11-17 00:22:15 mee Exp $
+! $Id: equ.f90,v 1.338 2006-11-23 20:42:37 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -384,7 +384,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.337 2006-11-17 00:22:15 mee Exp $")
+           "$Id: equ.f90,v 1.338 2006-11-23 20:42:37 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -413,6 +413,13 @@ module Equ
 !  later.
 !
       call calc_selfpotential(f)
+!
+!  Remove mean x-momentum if desired.
+!  Useful to avoid unphysical winds in shearing box simulations.
+!  (This is only done if lremove_mean_momenta=T,
+!  to be set in hydro_run_pars).
+!
+      if (lshear) call remove_mean_momenta(f)
 !
 !  Check for dust grain mass interval overflows
 !  (should consider having possibility for all modules to fiddle with the
@@ -843,6 +850,9 @@ module Equ
 !
           if (ldiagnos.and.idiag_dtv/=0) then
             call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
+          endif
+          if (ldiagnos.and.idiag_dtdiffus/=0) then
+            call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
           endif
         endif
 !
