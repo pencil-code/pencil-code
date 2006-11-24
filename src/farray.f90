@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.10 2006-11-20 18:57:15 dobler Exp $ 
+! $Id: farray.f90,v 1.11 2006-11-24 20:49:22 dobler Exp $ 
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  THis includes handling different 
@@ -100,6 +100,9 @@ module FArrayManager
       integer, parameter :: vartype = iFARRAY_TYPE_PDE
       integer, optional :: ierr
       integer, optional :: vector
+      !
+      intent(in)  :: varname,vector
+      intent(out) :: ivar,ierr
 
       if (present(ierr).and.present(vector)) then
         call farray_register_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
@@ -121,6 +124,9 @@ module FArrayManager
       integer, parameter :: vartype = iFARRAY_TYPE_GLOBAL
       integer, optional :: ierr
       integer, optional :: vector
+      !
+      intent(in)  :: varname,vector
+      intent(out) :: ivar,ierr
 
       if (present(ierr).and.present(vector)) then
         call farray_register_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
@@ -143,6 +149,9 @@ module FArrayManager
       integer, optional :: ierr
       integer, optional :: vector
       logical, optional :: communicated
+      !
+      intent(in)  :: varname,communicated,vector
+      intent(out) :: ivar,ierr
 
       if (present(communicated)) then
         if (communicated) then 
@@ -173,6 +182,9 @@ module FArrayManager
       integer, optional :: ierr
       integer, optional :: vector
       integer :: memstat
+      !
+      intent(in)  :: varname,vartype,vector
+      intent(out) :: ivar,ierr
 !
       if (vartype==iFARRAY_TYPE_SCRATCH) then
         print*,"Registering f-array variable: ",varname
@@ -314,6 +326,9 @@ module FArrayManager
       integer, optional :: ierr
       integer, optional :: vector
       integer :: memstat, consecutive_free, iscratch
+      !
+      intent(in)  :: varname,vector
+      intent(out) :: ivar,ierr
 !
       
       ncomponents=1
@@ -409,6 +424,9 @@ module FArrayManager
       integer, optional :: ierr
       integer, optional :: vector
       integer :: iscratch
+      !
+      intent(in)  :: varname,ivar,vector
+      intent(out) :: ierr
 !
       
       ncomponents=1
@@ -463,6 +481,7 @@ module FArrayManager
       type (farray_contents_list), pointer :: item
       integer :: i
       character (len=5) :: istr
+
 !
 !  Put variable name in array for
 !  use by analysis tool output
@@ -485,6 +504,9 @@ module FArrayManager
       integer, parameter :: vartype = iFARRAY_TYPE_PDE
       integer, optional :: ierr
       integer, optional :: vector
+      !
+      intent(in)  :: varname,vector
+      intent(out) :: ierr
 
       if (present(ierr).and.present(vector)) then
         call farray_use_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
@@ -506,6 +528,9 @@ module FArrayManager
       integer, parameter :: vartype = iFARRAY_TYPE_GLOBAL
       integer, optional :: ierr
       integer, optional :: vector
+      !
+      intent(in)  :: varname,vector
+      intent(out) :: ierr
 
       if (present(ierr).and.present(vector)) then
         call farray_use_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
@@ -528,6 +553,9 @@ module FArrayManager
       integer, optional :: ierr
       integer, optional :: vector
       logical, optional :: communicated
+      !
+      intent(in)  :: varname,communicated,vector
+      intent(out) :: ierr
 
       if (present(communicated)) then
         if (communicated) then
@@ -559,8 +587,10 @@ module FArrayManager
       integer, optional :: vector
       integer, optional :: vartype
       integer, optional :: component
-!
-      
+      !
+      intent(in)  :: varname,vartype,component,vector
+      intent(out) :: ierr
+ 
       if (present(ierr)) ierr=0
 
 !
@@ -621,6 +651,8 @@ module FArrayManager
       logical, optional :: include_scratch
       logical :: variable_exists
       type (farray_contents_list), pointer :: item
+      !
+      intent(in) :: varname,include_scratch
 !
       item=>thelist
       do while (associated(item))
@@ -651,6 +683,8 @@ module FArrayManager
       logical, optional :: include_scratch
       logical, optional :: only_scratch
       type (farray_contents_list), pointer :: find_by_name
+      !
+      intent(in) :: varname,include_scratch,only_scratch
 !
       find_by_name=>thelist
       do while (associated(find_by_name))
@@ -693,6 +727,8 @@ module FArrayManager
       character (len=*) :: varname
       integer :: farray_size_by_name
       type (farray_contents_list), pointer :: item
+      !
+      intent(in) :: varname
 !
       item=>find_by_name(varname)
       if (associated(item)) then
@@ -708,6 +744,8 @@ module FArrayManager
       character (len=*) :: varname
       integer :: farray_type_by_name
       type (farray_contents_list), pointer :: item
+      !
+      intent(in) :: varname
 !
       item=>find_by_name(varname)
       if (associated(item)) then
@@ -725,6 +763,8 @@ module FArrayManager
 !      integer, optional :: component
 !      integer, optional :: ierr
 !      type (farray_contents_list), pointer :: item
+!      !
+!      intent(in) :: varname,component,ierr
 !!
 !      item=>thelist
 !      do while (associated(item))
@@ -747,7 +787,7 @@ module FArrayManager
     subroutine free_list(list) 
       type (farray_contents_list), pointer :: list
       type (farray_contents_list), pointer :: next
- 
+
       do while (associated(list))
         next=>list%next
         deallocate(list)
