@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.344 2006-11-23 20:42:37 theine Exp $
+! ! $Id: cdata.f90,v 1.345 2006-11-25 06:36:40 dobler Exp $
 
 module Cdata
 
@@ -279,7 +279,9 @@ module Cdata
   real, dimension(mcom) :: fbcx2=0.,fbcy2=0.,fbcz2=0., fbcz2_1=0., fbcz2_2=0.
 
   character (len=2*bclen+1), dimension(mcom) :: bcx='p',bcy='p',bcz='p'
-  character (len=bclen), dimension(mcom) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
+  character (len=bclen), dimension(mcom) :: bcx1='',bcx2='', &
+                                            bcy1='',bcy2='', &
+                                            bcz1='',bcz2=''
   character (len=10), dimension(mfarray) :: varname
   character (len=labellen) :: force_lower_bound='',force_upper_bound=''
   character (len=120) :: datadir='data' ! default; may be overwritten in
