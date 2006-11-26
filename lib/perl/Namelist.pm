@@ -5,8 +5,8 @@
 # Description:
 #   Parse F90 namelist into a hash and export in different formats.
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2005-12-14 20:41:48 $
-# $Revision: 1.3 $
+# $Date: 2006-11-26 21:49:42 $
+# $Revision: 1.4 $
 
 # Current test statistics:
 # All tests successful, 1 subtest skipped.
@@ -731,11 +731,11 @@ sub parse_namelist {
 	    @values = get_value(\$text,\$type,$var,$debug); # drop $debug here..
 	    $nslots++;
 	    push @$orderref, $var;
-	} elsif ($text =~ s/^\/\s*//) { # string is </>
+	} elsif ($text =~ s{^/\s*}{}) { # string is </>
 	    $status = NL_END;
 	    last;		# end of namelist
 	} else {
-	    show_error("Expected var=[...] not found ","",$text);
+	    show_error("Expected var=[...] not found ","",$text,1);
 	    return;
 	}
 
@@ -785,7 +785,7 @@ sub extract_nl_name {
 	    $$textref = $text; # propagate remainder of $text back
 	    return '';
 	} else {
-	    show_error("Namelist does not start with &\n","",$text);
+	    show_error("Namelist does not start with &\n","",$text,1);
 	    return '';
 	}
     }
@@ -842,8 +842,7 @@ sub get_value {
     }
 
     if ($type == UNKNOWN) {
-	show_error("Cannot identify data type","$varname=","$text");
-	croak();
+	show_error("Cannot identify data type","$varname=","$text",1);
     }
 
     # Extract data
