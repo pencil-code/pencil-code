@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.123 2006-11-26 16:36:19 nbabkovs Exp $
+! $Id: radiation_ray.f90,v 1.124 2006-11-26 17:30:31 nbabkovs Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -92,7 +92,7 @@ module Radiation
   logical :: lradpressure=.false.,lradflux=.false.
 
   logical ::  lrad_cool_diffus=.false., lrad_pres_diffus=.false.
-  logical ::  lnatalia=.false.
+ 
 
   character :: lrad_str,mrad_str,nrad_str
   character(len=3) :: raydir_str
@@ -111,7 +111,7 @@ module Radiation
        Srad_const,amplSrad,radius_Srad, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lradflux, &
-       Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus,lnatalia
+       Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
@@ -120,7 +120,7 @@ module Radiation
        kx_Srad,ky_Srad,kz_Srad,kx_kapparho,ky_kapparho,kz_kapparho, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure, &
-       Frad_boundary_ref,lrad_cool_diffus,lrad_pres_diffus,lnatalia, &
+       Frad_boundary_ref,lrad_cool_diffus,lrad_pres_diffus, &
        cdtrad_thin,cdtrad_thick
 
   contains
@@ -175,7 +175,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.123 2006-11-26 16:36:19 nbabkovs Exp $")
+           "$Id: radiation_ray.f90,v 1.124 2006-11-26 17:30:31 nbabkovs Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1701,21 +1701,7 @@ module Radiation
 !
       if (lrad_cool_diffus.and.lcooling) then
         call dot(4*p%glnTT-p%glnrho,p%glnTT,g2)
-        if (lnatalia) then
-          zone_size=0
-        !    if (n .LE. nzgrid-zone_size .AND. n .GE. zone_size+4 ) then
-	!     if (n .LE. nzgrid-zone_size  ) then
-	     
-             f(l1:l2-zone_size,m,n,iQrad)=Krad(1:nx-zone_size)*p%TT(1:nx-zone_size)*(p%del2lnTT(1:nx-zone_size)+g2(1:nx-zone_size))
-        !    endif
-        else
-        ! if ( n .GE. zone_size+4 ) then
-	 
-           f(l1:l2,m,n,iQrad)=Krad*p%TT*(p%del2lnTT+g2)
-
-        ! endif
-        endif      
-
+         f(l1:l2,m,n,iQrad)=Krad*p%TT*(p%del2lnTT+g2)
       endif
 !
 !  radiative flux, Frad = -K*gradT; note that -div(Frad)=Qrad
