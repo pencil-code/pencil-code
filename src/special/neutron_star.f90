@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.34 2006-11-16 11:26:55 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.35 2006-11-26 16:34:51 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -178,11 +178,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.34 2006-11-16 11:26:55 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.35 2006-11-26 16:34:51 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.34 2006-11-16 11:26:55 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.35 2006-11-26 16:34:51 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -451,11 +451,15 @@ endsubroutine read_special_run_pars
               if (lnstar_T_const) then           
               endif    
             else
-               df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-	          -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
+	     l_sz=l2-5*0
+               df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho) &
+	          -1./(5.*dt)*(f(l1:l_sz,m,n,ilnrho) &
                   -log(rho_disk)-(-M_star/2./z(n)**3 &
-                  *x(l1:l2)**2*gamma/(p%cs2(l1:l2))))
-            endif 
+                  *x(l1:l_sz)**2*gamma/(p%cs2(l1:l_sz))))
+            !   df(l_sz+1:l2,m,n,ilnrho)=df(l_sz+1:l2,m,n,ilnrho) &
+	    !    -1./(5.*dt)*(f(l_sz+1:l2,m,n,ilnrho)-f(l_sz+1:l2,m,n-1,ilnrho))
+		
+	    endif 
           endif
          endif 
        endif
@@ -471,10 +475,30 @@ endsubroutine read_special_run_pars
               endif    
 
             else
-               df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                 -1./p%rho(:)/(5.*dt) &
-                 *(p%rho(:)-rho_star &
-                 *exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
+	    
+	    ! if (n>n1) then 
+	     
+            
+	!     df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+	     
+	!     -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,n+1,ilnrho)) 
+			 
+	     
+	       
+	    !    -1./(5.*dt) &
+	    !	*(f(l1:l2,m,n,ilnrho)-log(rho_star) &
+ 	    !     +M_star/R_star**2*gamma/p%cs2(:)*(1.-R_star**2/z(n)**2)) 
+	     
+	       
+	    !     -1./(5.*dt) & 
+	    !   *(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,n+1,ilnrho) &
+	    !      -M_star/z(n)**2*gamma/p%cs2(:)*dz)
+			 
+	    !  endif
+						  
+                ! -1./p%rho(:)/(5.*dt) &
+                ! *(p%rho(:)-rho_star &
+                ! *exp(-M_star/R_star*gamma/p%cs2(:)*(1.-R_star/z(n))))
             endif
          endif
        endif
@@ -491,7 +515,10 @@ endsubroutine read_special_run_pars
             if (n .LT. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
              df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
              -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
-	     +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/p%cs2(i-1)) 
+	     +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/p%cs2(i-1))
+	    else
+	    df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
+	     -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))   
             endif
            enddo
           endif 
@@ -554,10 +581,19 @@ endsubroutine read_special_run_pars
              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
               -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
            else
-             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
-                              -1./(5.*dt)*(p%uu(:,1)-0.)
-             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-              -1./(5.*dt)*(f(l1:l2,m,n,iuz)-f(l1:l2,m,n-1,iuz))
+	   
+	 l_sz=l2-5  
+             df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux) &
+                              -1./(5.*dt)*(f(l1:l_sz,m,n,iux)-0.)
+
+        !    df(l_sz+1:l2,m,n,iux)=df(l_sz+1:l2,m,n,iux) &
+	!     -1./(5.*dt)*(f(l_sz+1:l2,m,n,iux)-f(l_sz+1:l2,m,n-1,iux))
+			    
+			    
+         l_sz=l2-5	 
+	 
+             df(l1:l_sz,m,n,iuz)=df(l1:l_sz,m,n,iuz)&
+              -1./(5.*dt)*(f(l1:l_sz,m,n,iuz)-f(l1:l_sz,m,n-1,iuz))
 
            endif 
         endif
@@ -575,13 +611,23 @@ endsubroutine read_special_run_pars
                 -1./(5.*dt)*(p%uu(:,3)-0.)   
 !            endif  
           else  
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
-                -1./(5.*dt)*(p%uu(:,1)-0.)
+           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
+    
+            -1./(5.*dt)*(f(l1:l2,m,n,iux)-0.)
+	! -1./(5.*dt)*(f(l1:l2,m,n,iux)-f(l1:l2,m,n+1,iux))
+	 
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
                 -1./(5.*dt)*(p%uu(:,2)-0.)
+		
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-                -1./(5.*dt)*(p%uu(:,3)-0.)
+    !         -1./(5.*dt)*(f(l1:l2-5,m,n,iuz) &
+!	     -(-f(l1:l2-5,m,n-1,iuz)+4*f(l1:l2-5,m,n+1,iuz))/3.)
+  !
+               -1./(5.*dt)*(p%uu(:,3)-0.)
 
+        ! df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+        !       -1./(5.*dt)*(f(l1:l2,m,n,iuz)-f(l1:l2,m,n-1,iuz)*0.)
+	
           endif   
         endif
       endif
@@ -685,6 +731,18 @@ endsubroutine read_special_run_pars
             *gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_disk    
  
           else
+	!    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+	     
+	!    -1./(5.*dt)*(f(l1:l2,m,n,iss) &
+	!                *gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/p%TT(:)
+			 
+	     
+	!      -1./(5.*dt)*(f(l1:l2,m,n,iss) - f(l1:l2,m,n-1,iss))
+	      
+	 
+	!        -1./(5.*dt)*(f(l1:l2-5,m,n,iss) - log(T_star)/gamma)
+	!        -1./(10.*dt)*(p%TT(:)-T_star)/p%TT(:)
+						   
           endif
          endif  
       endif  
@@ -697,6 +755,18 @@ endsubroutine read_special_run_pars
                  -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
               endif
 	   else
+                ! df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+		!                  -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk (!bad!)
+				  
+
+	!    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+	!      -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(T_disk)/gamma)/p%TT(:)/p%rho(:)
+		
+	    
+!	df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+!	  -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho)) &
+!	  /T_disk/p%rho(:)
+				    	       
            endif
 
           endif 
@@ -712,7 +782,7 @@ endsubroutine read_special_run_pars
             if (lnstar_1D) then   
              else
                do j=l_sz,l2   
-	         df(j,m,n,iss)=df(j,m,n,iss)&
+	         df(j,m,n,iss)=df(j,m,n,iss)*0.&
                  -1./(5.*dt)*(f(j,m,n,iss)-f(j-1,m,n,iss))
                enddo 
             endif
@@ -990,8 +1060,8 @@ endsubroutine read_special_run_pars
 
        if (nxgrid/=1.and.nzgrid/=1) then
   
-       !   f(:,:,:,ilnrho)=ln_ro_r &
-       !     -M_star/2./zz(i,:,:)**3*x(i)**2*gamma/cs2_star
+          f(:,:,:,ilnrho)=ln_ro_r*0 &
+            -M_star/2./zz(:,:,:)**3*xx(:,:,:)**2*gamma/cs2_star
     
 
         f(:,:,:,ilnrho)= f(:,:,:,ilnrho) &
@@ -1129,6 +1199,8 @@ endsubroutine read_special_run_pars
       integer :: i,j
 
       j=bc%ivar
+      
+       
       if (bc%location==iBC_X_BOT) then
       ! bottom boundary
         if (j == 1) then 
@@ -1138,6 +1210,11 @@ endsubroutine read_special_run_pars
 	      
         else
            do i=1,nghost; f(l1-i,:,:,j)= f(l1+i,:,:,j); enddo
+	   
+	  ! if (j==5) then
+	!     f(l1,:,n1,j)=(f(l1+1,:,n1,j)+f(l1-1,:,n1,j))/2
+	!   endif
+	   
        endif
      
       elseif (bc%location==iBC_X_TOP) then
@@ -1183,6 +1260,7 @@ endsubroutine read_special_run_pars
    
     j=bc%ivar
 
+
       if (j == 4 .or. j==5) then
         value1=log(bc%value1)
         value2=log(bc%value2)
@@ -1193,13 +1271,16 @@ endsubroutine read_special_run_pars
 
       if (bc%location==iBC_Z_BOT) then
       ! bottom boundary
-        if (lextrapolate_bot_density .and. j>=4) then
-          n1p4=n1+4
+    !    if (lextrapolate_bot_density .and. j>=4) then
+!          n1p4=n1+4
 
-          f(:,:,n1-1,j)=0.2   *(  9*f(:,:,n1,j)                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
-          f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j)- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
-          f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
-        else
+!          f(:,:,n1-1,j)=0.2   *(  9*f(:,:,n1,j)  -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
+!          f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j)- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
+!          f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
+!        else
+	
+ 	
+	
           if (j==5) then
             lnrho=f(l1:l2,m1,n1,ilnrho)
             if (lnstar_T_const) then 
@@ -1209,20 +1290,66 @@ endsubroutine read_special_run_pars
             endif
             !+ other terms for sound speed not equal to cs_0
             call eoscalc(4,lnrho,lnTT,ss=ss)
-            f(l1:l2,m1,n1,iss)=ss 
+           f(l1:l2,m1,n1,iss)=ss 
+	  ! f(l1:l2,m1,n1,iss)=log(T_star)/gamma
+	    do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
         
           else
-            f(:,:,n1,j)=value1
-          endif
-          do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
-        endif
+	  
+	!  if ( j==4 .OR. j .LE. 2) then
+	   if ( j==4 ) then
+	 
+	  do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
+	  
+	    
+
+        !     n1p4=n1+4
+	     
+         ! f(:,:,n1-1,j)=0.2   *(  9*f(:,:,n1,j) &
+	 ! -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
+	 ! f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j) &
+	 ! - 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
+		   
+	 ! f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j) &
+	 ! -33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
+		    	         
+	    
+	    else
+	
+	!    if (j==3) then
+	    
+	!    else
+	        
+             f(:,:,n1,j)=value1
+         !  endif
+
+ 	   do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
+	       
+	        
+           endif    	    
+         endif
+
+!if  (j==1 .OR. j==3 ) then
+!f(:,:,n1-1,j)=0.2   *(  9*f(:,:,n1,j)   
+!-  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
+      
+!      f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j)
+!     - 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
+     
+!      f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)
+!      -33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
+!else	
+    
+
+        !  do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
+!endif
       elseif (bc%location==iBC_Z_TOP) then
       ! top boundary
 
         if (ltop_velocity_kep .and. j==2) then 
           f(:,:,n2,j)=sqrt(M_star/(R_star+Lxyz(3)))
         else
-          if (nxgrid <= 1) then
+         ! if (nxgrid <= 1) then
             if (j==5) then
               lnrho=f(l1:l2,m2,n2,ilnrho)
               if (T_disk.EQ.0) then    
@@ -1233,11 +1360,14 @@ endsubroutine read_special_run_pars
               call eoscalc(4,lnrho,lnTT,ss=ss)
               f(l1:l2,m2,n2,iss)=ss
             else 
+	     if (j==4) then
+	     else
               f(:,:,n2,j)=value1
+	     endif 
             endif
-          else
+         ! else
 
-          endif
+         ! endif
         endif
 
         do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
