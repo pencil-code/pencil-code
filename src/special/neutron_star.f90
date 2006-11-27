@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.36 2006-11-26 17:30:31 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.37 2006-11-27 18:58:03 dobler Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -178,11 +178,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.36 2006-11-26 17:30:31 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.37 2006-11-27 18:58:03 dobler Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.36 2006-11-26 17:30:31 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.37 2006-11-27 18:58:03 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -429,7 +429,7 @@ endsubroutine read_special_run_pars
 !   06-oct-03/tony: coded
 !
       use Cdata
-      use Viscosity    
+      ! use Viscosity    
       use EquationOfState
     
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
