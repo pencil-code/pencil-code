@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.16 2006-11-27 08:56:04 ajohan Exp $
+! $Id: selfgravity.f90,v 1.17 2006-11-27 09:14:00 ajohan Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -44,6 +44,8 @@ module Selfgravity
       tstart_selfgrav, lklimit_shear, kmax
 
   integer :: idiag_gpoten=0, idiag_gpotenmxy=0
+  integer :: idiag_gpotselfxm=0, idiag_gpotselfym=0, idiag_gpotselfzm=0
+  integer :: idiag_gpotselfx2m=0, idiag_gpotselfy2m=0, idiag_gpotselfz2m=0
 
   contains
 
@@ -70,7 +72,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.16 2006-11-27 08:56:04 ajohan Exp $")
+           "$Id: selfgravity.f90,v 1.17 2006-11-27 09:14:00 ajohan Exp $")
 !
 !  Put variable name in array
 !
@@ -287,6 +289,18 @@ module Selfgravity
 !
       if (ldiagnos) then
         if (idiag_gpoten/=0) call sum_mn_name(p%potself*p%rho,idiag_gpoten)
+        if (idiag_gpotselfxm/=0) &
+            call sum_mn_name(p%gpotself(:,1),idiag_gpotselfxm)
+        if (idiag_gpotselfym/=0) &
+            call sum_mn_name(p%gpotself(:,2),idiag_gpotselfym)
+        if (idiag_gpotselfzm/=0) &
+            call sum_mn_name(p%gpotself(:,3),idiag_gpotselfzm)
+        if (idiag_gpotselfx2m/=0) &
+            call sum_mn_name(p%gpotself(:,1)**2,idiag_gpotselfx2m)
+        if (idiag_gpotselfy2m/=0) &
+            call sum_mn_name(p%gpotself(:,2)**2,idiag_gpotselfy2m)
+        if (idiag_gpotselfz2m/=0) &
+            call sum_mn_name(p%gpotself(:,3)**2,idiag_gpotselfz2m)
         if (idiag_gpotenmxy/=0) call zsum_mn_name_xy(p%potself*p%rho,idiag_gpotenmxy)
       endif
 !
@@ -364,11 +378,25 @@ module Selfgravity
       if (present(lwrite)) lwr=lwrite
 !
       if (lreset) then
-        idiag_gpoten = 0; idiag_gpotenmxy=0
+        idiag_gpoten=0; idiag_gpotenmxy=0
+        idiag_gpotselfxm=0; idiag_gpotselfym=0; idiag_gpotselfzm=0
+        idiag_gpotselfx2m=0; idiag_gpotselfy2m=0; idiag_gpotselfz2m=0
       endif
 !
       do iname=1,nname 
         call parse_name(iname,cname(iname),cform(iname),'gpoten',idiag_gpoten)
+        call parse_name(iname,cname(iname),cform(iname),'gpotselfxm', &
+            idiag_gpotselfxm)
+        call parse_name(iname,cname(iname),cform(iname),'gpotselfym', &
+            idiag_gpotselfym)
+        call parse_name(iname,cname(iname),cform(iname),'gpotselfzm', &
+            idiag_gpotselfzm)
+        call parse_name(iname,cname(iname),cform(iname),'gpotselfx2m', &
+            idiag_gpotselfx2m)
+        call parse_name(iname,cname(iname),cform(iname),'gpotselfy2m', &
+            idiag_gpotselfy2m)
+        call parse_name(iname,cname(iname),cform(iname),'gpotselfz2m', &
+            idiag_gpotselfz2m)
       enddo
 !
 !  check for those quantities for which we want z-averages
