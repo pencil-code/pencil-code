@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.15 2006-08-23 16:53:32 mee Exp $
+! $Id: selfgravity.f90,v 1.16 2006-11-27 08:56:04 ajohan Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -43,7 +43,7 @@ module Selfgravity
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
       tstart_selfgrav, lklimit_shear, kmax
 
-  integer :: idiag_gpoten=0
+  integer :: idiag_gpoten=0, idiag_gpotenmxy=0
 
   contains
 
@@ -70,7 +70,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.15 2006-08-23 16:53:32 mee Exp $")
+           "$Id: selfgravity.f90,v 1.16 2006-11-27 08:56:04 ajohan Exp $")
 !
 !  Put variable name in array
 !
@@ -154,7 +154,7 @@ module Selfgravity
 !  15-may-06/anders+jeff: adapted
 !
       lpenc_requested(i_gpotself)=.true.
-      if (idiag_gpoten/=0) then
+      if (idiag_gpoten/=0 .or. idiag_gpotenmxy/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_potself)=.true.
       endif
@@ -287,6 +287,7 @@ module Selfgravity
 !
       if (ldiagnos) then
         if (idiag_gpoten/=0) call sum_mn_name(p%potself*p%rho,idiag_gpoten)
+        if (idiag_gpotenmxy/=0) call zsum_mn_name_xy(p%potself*p%rho,idiag_gpotenmxy)
       endif
 !
       if (NO_WARN) print*, f, p !(keep compiler quiet)
@@ -356,23 +357,31 @@ module Selfgravity
 
       logical :: lreset,lwr
       logical, optional :: lwrite
-      integer :: iname
+!
+      integer :: iname, inamexy
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
       if (lreset) then
-        idiag_gpoten = 0
+        idiag_gpoten = 0; idiag_gpotenmxy=0
       endif
 !
       do iname=1,nname 
         call parse_name(iname,cname(iname),cform(iname),'gpoten',idiag_gpoten)
       enddo
 !
+!  check for those quantities for which we want z-averages
+!
+      do inamexy=1,nnamexy
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'gpotenmxy', idiag_gpotenmxy)
+      enddo
+!
 !  write column where which variable is stored
 !
       if (lwr) then
         write(3,*) 'i_gpoten=',idiag_gpoten
+        write(3,*) 'i_gpotenmxy=',idiag_gpotenmxy
         write(3,*) 'ipotself=', ipotself
       endif
 !
