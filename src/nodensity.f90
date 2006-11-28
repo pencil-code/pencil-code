@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.46 2006-08-23 16:53:32 mee Exp $
+! $Id: nodensity.f90,v 1.47 2006-11-28 12:26:14 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -31,6 +31,7 @@ module Density
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0
   integer :: idiag_rhomin=0,idiag_rhomax=0
+  logical :: ldensity_nolog=.false.
 
   contains
 
@@ -55,7 +56,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.46 2006-08-23 16:53:32 mee Exp $")
+           "$Id: nodensity.f90,v 1.47 2006-11-28 12:26:14 theine Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
