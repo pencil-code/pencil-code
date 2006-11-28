@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.301 2006-11-23 20:59:18 theine Exp $
+! $Id: hydro.f90,v 1.302 2006-11-28 11:54:17 theine Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -174,7 +174,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.301 2006-11-23 20:59:18 theine Exp $")
+           "$Id: hydro.f90,v 1.302 2006-11-28 11:54:17 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2075,6 +2075,7 @@ module Hydro
 !
       use Cdata, only: ilnrho,iux,iuz
       use Mpicomm, only: mpiallreduce_sum
+      use Density, only: ldensity_nolog
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 
@@ -2090,7 +2091,11 @@ module Hydro
 
         do n = n1,n2
         do m = m1,m2
-          rho = exp(f(l1:l2,m,n,ilnrho))
+          if (ldensity_nolog) then
+            rho = f(l1:l2,m,n,ilnrho)
+          else
+            rho = exp(f(l1:l2,m,n,ilnrho))
+          endif
           do j=iux,iuz
             uu = f(l1:l2,m,n,j)
             rum(j) = rum(j) + fac*sum(rho*uu)
@@ -2106,7 +2111,11 @@ module Hydro
 
         do n = n1,n2
         do m = m1,m2
-          rho1 = exp(-f(l1:l2,m,n,ilnrho))
+          if (ldensity_nolog) then
+            rho1 = 1.0/f(l1:l2,m,n,ilnrho)
+          else
+            rho1 = exp(-f(l1:l2,m,n,ilnrho))
+          endif
           do j=iux,iuz
             f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - rho1*rum(j)
           enddo
