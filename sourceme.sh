@@ -9,11 +9,6 @@
 #  into your .bashrc
 #
 
-#  You may or may not want to put the lines
-#    setenv PENCIL_HOME [...]
-#    . $PENCIL_HOME/sourceme.sh
-#  into your .bashrc
-
 if [ -z $PENCIL_HOME ]; then
   unset _sourceme		# tabula rasa without PENCIL_HOME
   #
