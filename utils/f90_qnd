@@ -1,56 +1,20 @@
 #!/usr/bin/perl -w
 
-# Name:   g95_quick_and_dirty
+# Name:   f90_qnd
 # Author: wd (Wolfgang.Dobler@ucalgary.ca)
 # Date:   28-Aug-2006
 # Synopsis:
 #   Fast re-compilation of modular F90 codes through foul play with mtimes.
 # Usage:
-#   g95_quick_and_dirty <g95-arguments>  # (i.e. use as drop-in replacement)
-#
-#   ln -s g95_quick_and_dirty ifort_quick_and_dirty
-#   ifort_quick_and_dirty <g95-arguments>
-#
-# Description:
-#   This compiler wrapper avoids unnecessary re-compilation by clever
-#   back-dating of time stamps for .f90, .o and .mod files.
-#
-#   The scheme (inspired by g95's `smart compilation feature') is as
-#   follows:
-#
-#   1. The time stamps of any .mod files that have not really changed
-#      (same content as before) are back-dated to their values before
-#      compilation of <file.f90>.
-#   2. If no .mod files have been really changed or newly created, then
-#      - the time stamps of <file>.f90 and <file>.o are reset to the
-#        pre-compilation time stamp of <file.o>, and
-#      - all files *.x are backdated to the golden 1970s to ensure they
-#        get re-linked.
-#
-#   Thus, if a detail in <file>.f90 is changed that does not affect the
-#   interface to other files, none of the other files will get
-#   re-compiled, and only the executables are re-linked against the new
-#   <file>.o.
-#
-# Notes:
-#   1. This is designed to work with a Makefile that bases dependencies on
-#      .o files (not really logical for module dependencies, but the only
-#      portable option, as some compilers do not produce .mod files at
-#      all).
-#        The way it is implemented (resetting the .mod time stamps as
-#      well) may make the trick work for .mod-based dependencies as well,
-#      but I certainly won't adapt the Pencil Code's makefiles just to
-#      test this.
-#   2. Currently, g95 and ifort (>=8.0) are supported. To add other
-#      compilers, we need to know where the time stamp is located in the
-#      .mod files, so we can mask it out before calculationg MD5 sums for
-#      comparison.
-
+#   export F90_QND_F90=g95
+#   export F90_QND_F90=ifort
+#   f90_qnd <f90-arguments>  # (i.e. drop-in replacement for f90 compiler)
+# For full documentation, run `perldoc f90_qnd'.
 
 # Copyright (C) 2006  Wolfgang Dobler
 #
 # This program is free software; you can redistribute and/or modify it
-# under the same conditions as Perl.
+# under the same conditions as Perl (see `perldoc perlartistic').
 
 
 use strict;
@@ -59,18 +23,19 @@ use Digest::MD5 qw(md5_hex);
 my $debug = 1;                  # 0: be quiet
                                 # 1: be verbose
                                 # 2: dump all time stamps and md5 sums
-my $debugfile = "./g95_quickndirty.log";
+my $debugfile = "./f90_qnd.log";
 my $time_immemorial = 1;        # Thu Jan 1 00:00:01 UCT 1970
 
 if ($debug) {
 
     if ($debugfile) {
-        open DEBUG, ">>$debugfile" or die "Cannot append to $debugfile";
+        open DEBUG, ">>$debugfile"
+          or die boldface("Cannot append to $debugfile");
     } else {
         *DEBUG = *STDERR;
     }
 
-    eval "use Data::Dumper";    # Needed later
+    eval "use Data::Dumper" if ($debug > 1);    # Needed later
 
     # Visually separate our invocations
     print DEBUG "\n", "=" x 25;
@@ -80,33 +45,54 @@ if ($debug) {
 
 my ($fc, @fcargs, $src, $obj);
 my (%ts_before, %ts_after, %md5_before, %md5_after);
+(my $cmdname = $0) =~ s|.*/||;
 
+## 1. Find out which compiler to run and determine module type
 
-## 1. Dissect name to find out which compiler to run
-my $cmdname = (split('/', $0))[-1];
-if ($cmdname =~ /(.*)_quick_and_dirty/) {
-    $fc     = $1;
-    @fcargs = @ARGV;
-    if (grep /^-c$/, @fcargs) {
-        # Call of type $(FC) .. -c to produce .o and .mod files
-        # --> Do the nasty manipulations
-    } else {
-        # No `-c' option
-        print DEBUG "Assuming a linking call; not manipulating anything...\n"
-          if ($debug);
-        compile($fc, @fcargs);
-        exit 0;
-    }
+# Compiler
+if (defined($ENV{F90_QND_F90})) {
+    $fc = $ENV{F90_QND_F90};
 } else {
-    die "I ought to be called <...>_quick_and_dirty, but you call me `$0'\n";
+    $fc = find_f90_in_path();
+    warn boldface("$cmdname: F90_QND_F90 is not set; defaulting to `$fc'\n");
 }
+
+# Compiler arguments
+@fcargs = @ARGV;
+if (grep /^-c$/, @fcargs) {
+    # Call of type $(FC) .. -c to produce .o and .mod files
+    # --> Do the nasty manipulations
+} else {
+    # No `-c' option
+    print DEBUG "Assuming a linking call; not manipulating anything...\n"
+      if ($debug);
+    compile($fc, @fcargs);
+    exit 0;
+}
+
+# Determine module type
+my $fc_base   = $fc;
+$fc_base =~ s{.*/}{};           # base filename
+$fc_base =~ s/-[0-9.]+//;       # remove trailing version number
+my %modtype = ( g95      => 'g95'   ,
+                gfortran => 'g95'   ,
+                ifort    => 'ifort' ,
+                ifc      => 'ifort' ,
+                );
+my $unknown = '[unkown]';
+my $fc_modtype = $ENV{F90_QND_MODTYPE}
+                 || $modtype{$fc_base}
+                 || $unknown;
+
+die boldface("Cannot determine module type, please set F90_QND_MODTYPE\n")
+  if ($fc_modtype eq $unknown);
 
 
 ## 2. Get file name of source file *.f90 or *.f
 my @srcfiles = grep /(.*\.f(?:90)?)$/, @fcargs ;
 if (@srcfiles ne 1) {
-    die "$cmdname: Cannot handle multiple source files yet (@srcfiles)\n"
-      . "  -- and does this make sense?.\n";
+    die boldface("$cmdname: Cannot handle multiple source files yet"
+                 . " (@srcfiles)\n-- and does this make sense?\n");
 }
 $src = $srcfiles[0];
 my ($base,$suf) = ($src =~ /(.*)\.(f(?:90)?)/);
@@ -152,9 +138,55 @@ if ($backdate_src_o) {
 
 # ---------------------------------------------------------------------- #
 # ---------------------------------------------------------------------- #
+sub find_f90_in_path {
+# Try to find an f90 compiler in our executable PATH, or die.
+
+    my @compilers = qw( f90 f95 g95 gfortran ifort ifc pgf90 );
+    my $fc;
+    foreach my $fcomp (@compilers) {
+        next unless in_PATH($fcomp);
+        $fc = $fcomp; last
+    }
+    if (defined($fc)) {
+        return $fc;
+    } else {
+        die boldface("No F90 compiler found; please set F90_QND_F90\n");
+    }
+}
+# --------------------------------------------------------------------- #
+sub in_PATH {
+# Check whether an executable is available in the execution PATH.
+    my $file = shift;
+
+    my $path;
+    foreach $path (split(/:/,$ENV{PATH})) {
+        if (-x "$path/$file") { return 1; }
+    }
+    return 0;
+}
+# ---------------------------------------------------------------------- #
+sub boldface {
+# Convert string argument to bold face using ANSI terminal sequence,
+# provided STDOUT is connected to a terminal. Set the second argument to
+# enforce boldfacing even for non-terminal output .
+    my $string   = shift();
+    my $force_bf = shift() || 0;
+
+    my ($bfa,$bfe);
+    my $esc = chr(0x1b);
+    if (-t STDOUT || $force_bf) {  # if STDOUT is connected to a terminal
+        $bfa = "${esc}[1m";
+        $bfe = "${esc}[0m";
+    } else {
+        $bfa = '';
+        $bfe = '';
+    }
+    return $bfa . $string . $bfe;
+}
+# ---------------------------------------------------------------------- #
 sub get_timestamp {
-# Get time stamp of a file
-    my $file = shift or die "get_ts: need one argument\n";
+# Get time stamp of a file.
+    my $file = shift or die boldface("get_ts: need one argument\n");
 
     #   dev   ino   mode  nlink uid   gid   rdev  size  atime mtime
     my (undef,undef,undef,undef,undef,undef,undef,undef,undef,$mtime)
@@ -187,7 +219,8 @@ sub get_md5_hash {
 
     foreach my $file (@files) {
         local $/=undef;
-        open(FILE, "< $file") or die "Cannot open file $file for reading\n";
+        open(FILE, "< $file")
+          or die boldface("Cannot open file $file for reading\n");
         my $data = <FILE>;
 
         # Eliminate time stamp from ASCII-formatted g95 module file:
@@ -257,7 +290,8 @@ sub compile {
 
     my $retval = system($fc, @fcargs);
     if ($retval ne 0) {
-        die "Error during compilation: $fc returned $retval (\$\!=`$!')\n";
+        die boldface("Error during compilation:"
+                     . " $fc returned $retval (\$\!=`$!')\n");
     }
 
     print DEBUG "..done.\n" if ($debug);
@@ -267,7 +301,12 @@ sub backdate_x_files {
 # Backdate *.x to enforce re-linking
     my $time = shift();
 
-    my @x_files = <*.x>;
+    my $exec_re = '\.x$';
+    $exec_re = $ENV{F90_QND_EXEC_RE} if (defined($ENV{F90_QND_EXEC_RE}));
+
+    my @all_files = <*>;
+    my @x_files = grep /$exec_re/, @all_files;
+
     if (@x_files) {
         print DEBUG "Backdating @x_files\n" if ($debug);
         back_date($time, @x_files);
@@ -284,7 +323,7 @@ sub back_date {
           " to $fake_time = ", scalar localtime($fake_time), "\n"
           if ($debug);
         utime $fake_time, $fake_time, @files
-          or die "Couldn't touch ", join(',', @files), "\n";
+          or die boldface("Couldn't touch ", join(',', @files), "\n");
     } else {
         print DEBUG "Not touching ", join(',', @files),
           " -- fake_time undefined\n"
@@ -306,4 +345,120 @@ sub print_details_of_changes {
 # ---------------------------------------------------------------------- #
 
 
-# End of file g95_quick_and_dirty
+__END__
+
+=head1 NAME
+
+B<f90_qnd> - Fast re-compilation of modular F90 codes through foul play
+with mtimes
+
+=head1 SYNOPSIS
+
+   export F90_QND_F90=g95
+   export F90_QND_F90=ifort
+   f90_qnd <f90-arguments>  # (i.e. drop-in replacement for f90 compiler)
+
+=head1 DESCRIPTION
+
+This compiler wrapper avoids unnecessary re-compilation by clever
+back-dating of time stamps for .f90, .o and .mod files.
+`qnd' stands for `quick and dirty'.
+
+The scheme (inspired by g95's `smart compilation feature') works as
+follows:
+
+=over 4
+
+=item 1.
+
+The time stamps of any .mod files that have not really changed
+(same content as before) are back-dated to their values before
+compilation of <file.f90>.
+
+=item 2.
+
+If no .mod files have been really changed or newly created, then
+
+=over 2
+
+=item -
+
+the time stamps of <file>.f90 and <file>.o are reset to the
+pre-compilation time stamp of <file.o>, and
+
+=item -
+
+all xecutable files (by default *.x) are backdated to the golden 1970s to
+ensure they get re-linked.
+
+=back
+
+Thus, if a detail in <file>.f90 is changed that does not affect the
+interface to other files, none of the other source files will get
+recompiled, and only the executables are re-linked against the new
+<file>.o.
+
+=back
+
+=head1 ENVIRONMENT
+
+=over 4
+
+=item F90_QND_F90
+
+F90 compiler to use.
+
+=item F90_QND_MODTYPE
+
+If the name of your compiler is not recognized (currently only
+/g95|ifort|ifc/ are), you need to set this variable to one of the
+supported module types (currently 'g95' or 'ifort').
+
+=item F90_QND_EXEC_RE
+
+When backdating object files, I<f90_qnd> will backdate executables so they
+will get re-linked. An executable in this sense is any file whose name
+matches the Perl regular expression F90_QND_EXEC_RE. The default is
+`\.x$'.
+
+=back
+
+=head1 NOTES
+
+=over 4
+
+=item 1.
+
+This should work with Makefiles that base dependencies on .o files (not
+really logical for module dependencies, but the only portable option, as
+some compilers do not produce .mod files at all), as well as Makefiles
+with dependencies on .mod files. Only the former has been tested so far.
+
+=item 2.
+
+Currently, g95 and ifort (>=8.0) are supported. To add other compilers, we
+need to know where the time stamp is located in the .mod files, so we can
+mask it out before calculationg MD5 sums for comparison.
+
+=item 3.
+
+If the compiler call contains no `-c' option we assume the compiler was
+called for linking, and no time stamps are manipulated.
+
+=back
+
+=head1 AUTHOR
+
+Wolfgang Dobler <Wolfgang.Dobler AT ucalgary DOT ca>
+
+=head1 COPYRIGHT
+
+(C) 2006  Wolfgang Dobler
+
+This program is free software; you can redistribute and/or modify it
+under the same conditions as Perl (see L<perlgpl> and L<perlartistic>).
+
+=cut
+
+
+# End of file f90_qnd
