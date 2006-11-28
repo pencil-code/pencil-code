@@ -9,4 +9,5 @@
 
   public :: pencil_criteria_density, pencil_interdep_density
   public :: calc_pencils_density
+  public :: ldensity_nolog
 
