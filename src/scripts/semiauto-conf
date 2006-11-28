@@ -465,9 +465,10 @@ sub boldface {
     my $force_bf = shift() || 0;
 
     my ($bfa,$bfe);
+    my $esc = chr(0x1b);
     if (-t STDOUT || $force_bf) {  # if STDOUT is connected to a terminal
-        $bfa = chr(0x1b) . '[1m';
-        $bfe = chr(0x1b) . '[0m';
+        $bfa = "${esc}[1m";
+        $bfe = "${esc}[0m";
     } else {
         $bfa = '';
         $bfe = '';
@@ -505,8 +506,8 @@ sub version {
 # Return CVS data and version info.
     my $doll='\$';		# Need this to trick CVS
     my $cmdname = (split('/', $0))[-1];
-    my $rev = '$Revision: 1.8 $';
-    my $date = '$Date: 2006-11-19 23:40:44 $';
+    my $rev = '$Revision: 1.9 $';
+    my $date = '$Date: 2006-11-28 20:15:20 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     "$cmdname version $rev ($date)\n";
