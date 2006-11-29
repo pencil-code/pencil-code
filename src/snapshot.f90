@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.11 2006-11-16 18:23:44 mee Exp $
+! $Id: snapshot.f90,v 1.12 2006-11-29 02:20:31 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -378,8 +378,8 @@ contains
       use Cdata
       use Mpicomm, only: start_serialize,end_serialize
 !
-      real, dimension (mx,my,mz,nv) :: a
       integer :: nv
+      real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
 !
       if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
