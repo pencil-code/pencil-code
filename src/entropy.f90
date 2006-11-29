@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.459 2006-11-22 11:00:02 bingert Exp $
+! $Id: entropy.f90,v 1.460 2006-11-29 02:09:40 dobler Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -164,7 +164,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.459 2006-11-22 11:00:02 bingert Exp $")
+           "$Id: entropy.f90,v 1.460 2006-11-29 02:09:40 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1082,7 +1082,7 @@ module Entropy
 
     endsubroutine hydrostatic_isentropic
 !***********************************************************************
-    subroutine mixinglength(cs2cool,mixinglength_flux,f)
+    subroutine mixinglength(cs2cool_mlt,mixinglength_flux,f)
 !
 !  Mixing length initial condition.
 !
@@ -1106,7 +1106,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nzgrid) :: cs2m,lnrhom,ssm
-      real :: zm,ztop,cs2cool,mixinglength_flux
+      real :: zm,ztop,cs2cool_mlt,mixinglength_flux
       real :: zbot,rbot,rt_old,rt_new,rb_old,rb_new,crit, &
               rhotop,rhobot
       integer :: iter
@@ -1131,7 +1131,7 @@ module Entropy
 !  produce first estimate
 !
       rhotop=rt_old
-      cs2top=cs2cool
+      cs2top=cs2cool_mlt
       call strat_MLT (rhotop, cs2top, mixinglength_flux, lnrhom, &
                   ssm, cs2m, rhobot)
       rb_old=rhobot
@@ -3081,7 +3081,7 @@ module Entropy
 !
     endsubroutine newton_cool
 !***********************************************************************
-    subroutine strat_MLT (rhotop, cs2top, mixinglength_flux, lnrhom, &
+    subroutine strat_MLT (rhotop, cs2top_mlt, mixinglength_flux, lnrhom, &
                      ssm, cs2m, rhobot)
 !
 ! 04-mai-2006/boris: called by 'mixinglength' to iterate the MLT
@@ -3092,7 +3092,7 @@ module Entropy
       use EquationOfState, only: gamma, gamma1
 !
       real, dimension (nzgrid) :: lnrhom, ssm, cs2m, zz, eem
-      real :: rhotop, cs2top, zm, ztop, dlnrho, dee, &
+      real :: rhotop, cs2top_mlt, zm, ztop, dlnrho, dee, &
               mixinglength_flux, lnrhobot, rhobot
       real :: del, delad, fr_frac, fc_frac, fc, polyad=3./2.
       integer :: nbot1, nbot2
@@ -3100,8 +3100,8 @@ module Entropy
 !  inital values at the top
 !
       lnrhom(1)=alog(rhotop)
-      cs2m(1)=cs2top
-      eem(1)=cs2top/gamma/gamma1
+      cs2m(1)=cs2top_mlt
+      eem(1)=cs2top_mlt/gamma/gamma1
       ssm(1)=(alog(cs2m(1))-gamma1*lnrhom(1))/gamma
       ztop=xyz0(3)+Lxyz(3)
       zz(1)=ztop
