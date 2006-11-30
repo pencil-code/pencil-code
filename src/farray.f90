@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.12 2006-11-30 09:03:35 dobler Exp $
+! $Id: farray.f90,v 1.13 2006-11-30 14:17:56 mee Exp $
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  THis includes handling different
@@ -242,7 +242,7 @@ module FArrayManager
           "the MVAR CONTRIBUTION header is incorrect in one of the physics "// &
           "modules. ")
           endif
-        case (iFARRAY_TYPE_COMM_AUXILIARY)
+        case (iFARRAY_TYPE_AUXILIARY)
           if (naux+ncomponents>maux) then
             if (present(ierr)) then
               ierr=iFARRAY_ERR_OUTOFSPACE
@@ -257,7 +257,7 @@ module FArrayManager
           "on runtime parameters, require extra auxiliary variables.  For the "// &
           "latter try adding an MAUX CONTRIBUTION header to cparam.local.")
           endif
-        case (iFARRAY_TYPE_AUXILIARY)
+        case (iFARRAY_TYPE_COMM_AUXILIARY)
           if (naux_com+ncomponents>maux_com) then
             if (present(ierr)) then
               ierr=iFARRAY_ERR_OUTOFSPACE
@@ -288,6 +288,10 @@ module FArrayManager
           "on runtime parameters, require extra global variables.  For the "// &
           "latter try adding an MGLOBAL CONTRIBUTION header to cparam.local.")
           endif
+        case default
+          print*,"Registering f-array variable: ",varname
+          call fatal_error("farray_register_variable", &
+          "Invalid vartype set")
       endselect
 !
       call new_item_atstart(thelist,new=new)
