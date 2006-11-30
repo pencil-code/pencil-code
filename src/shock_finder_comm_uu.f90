@@ -1,6 +1,6 @@
 
 module SurfaceData
-  
+
   implicit none
 
   logical :: xextent=.false.
@@ -14,11 +14,11 @@ module SurfaceData
   integer :: problem_dimensions=2
   integer :: nfaces=8
   integer :: nface_types=2
-  integer, allocatable, dimension(:,:) :: points 
-  integer, allocatable, dimension(:,:) :: normals 
-  integer, allocatable, dimension(:) :: faces 
-  integer, allocatable, dimension(:) :: face_types 
-  character(len=60), allocatable, dimension(:) :: area_elements 
+  integer, allocatable, dimension(:,:) :: points
+  integer, allocatable, dimension(:,:) :: normals
+  integer, allocatable, dimension(:) :: faces
+  integer, allocatable, dimension(:) :: face_types
+  character(len=60), allocatable, dimension(:) :: area_elements
 endmodule
 !***********************************************************************
 program shock_finder3D
@@ -38,7 +38,7 @@ program shock_finder3D
                      "D but the problem is ", problem_dimensions,"D. STOPPING."
      STOP
   endif
- 
+
   xextent=(nxgrid/=1)
   yextent=(nygrid/=1)
   zextent=(nzgrid/=1)
@@ -139,7 +139,7 @@ subroutine make_calc_externalboundary(unitno)
   character (len=5) :: pistr='',nistr=''
   character (len=5) :: pjstr='',njstr=''
   character (len=5) :: pkstr='',nkstr=''
-  
+
   write(unitno,"(a)") "!  called: make_calc_externalboundary"
   write(unitno,"(a)") "  subroutine shock_calc_externalboundary(f)"
   write(unitno,"(a)") "    use Cdata"
@@ -152,11 +152,11 @@ subroutine make_calc_externalboundary(unitno)
 endsubroutine make_calc_externalboundary
 !***********************************************************************
 subroutine evaluate_facefactors(unitno,rotation)
-   use SurfaceData   
+   use SurfaceData
 
    integer :: rotation, unitno
    integer :: i,face_type,dir1,dir2,dir3
-   character(len=2), dimension(3) :: dmesh = (/ 'dx','dy','dz' /) 
+   character(len=2), dimension(3) :: dmesh = (/ 'dx','dy','dz' /)
 
    dir1=mod(3-rotation,3)+1
    dir2=mod(4-rotation,3)+1
@@ -171,7 +171,7 @@ endsubroutine evaluate_facefactors
 !***********************************************************************
 subroutine declare_facefactors(unitno)
 !
-   use SurfaceData   
+   use SurfaceData
 !
    integer :: unitno
    integer :: face_type
@@ -183,7 +183,7 @@ subroutine declare_facefactors(unitno)
 !
 endsubroutine declare_facefactors
 !***********************************************************************
-subroutine offset_name(vname,offset,offname) 
+subroutine offset_name(vname,offset,offname)
    character(len=*), intent(inout) :: vname,offname
    integer, intent(in) :: offset
    integer :: colon
@@ -196,20 +196,20 @@ subroutine offset_name(vname,offset,offname)
 
    if (offset.gt.0) offset_sgn='+'
    if (offset.lt.0) offset_sgn='-'
- 
+
    colon=SCAN(vname, ':')
    if (colon==0) then
      write (offname,"(a,a1,i1)") &
         trim(vname),offset_sgn,abs(offset)
      return
    else
-     vname1=vname(1:colon-1)  
-     vname2=vname(colon+1:len_trim(vname))  
+     vname1=vname(1:colon-1)
+     vname2=vname(colon+1:len_trim(vname))
      write (offname,"(a,a1,i1,a1,a,a1,i1)") &
         trim(vname1),offset_sgn,abs(offset),":", &
         trim(vname2),offset_sgn,abs(offset)
    endif
-   
+
 
 
 endsubroutine offset_name
@@ -217,7 +217,7 @@ endsubroutine offset_name
 subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax, &
     kmin,kmax,intname,iname,jname,kname)
 !
-   use SurfaceData   
+   use SurfaceData
 !
 !   character(len=*), optional, intent(in) :: intname, iname, jname, kname
    integer :: rotation, unitno
@@ -225,7 +225,7 @@ subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax, &
    integer :: i,face_type,comp_it,comp,pnt,mesh,dir1,dir2,dir3
    logical :: lfirst=.true., lfirst_term=.true.
    character :: sgn = '+'
-   character(len=3), dimension(3) :: vel = (/ 'iux','iuy','iuz' /) 
+   character(len=3), dimension(3) :: vel = (/ 'iux','iuy','iuz' /)
    character(len=*) :: intname !='integral'
    character(len=*) :: iname, jname, kname
    character(len=50) :: offname
@@ -254,7 +254,7 @@ subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax, &
        if ( face_types(faces(pnt)) /= face_type ) cycle
        If (      (points(dir1,pnt).lt.imin).or.(points(dir1,pnt).gt.imax)   &
            .or. (points(dir2,pnt).lt.jmin).or.(points(dir2,pnt).gt.jmax)   &
-           .or. (points(dir3,pnt).lt.kmin).or.(points(dir3,pnt).gt.kmax) ) cycle  
+           .or. (points(dir3,pnt).lt.kmin).or.(points(dir3,pnt).gt.kmax) ) cycle
        do comp_it=0,2
          comp=mod(comp_it+rotation,3)+1
          do mesh=1,3
@@ -274,13 +274,13 @@ subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax, &
            write (unitno,"(a)",ADVANCE='no') trim(offname)//"   , "
            call offset_name(trim(kname),points(dir3,pnt),offname)
            write (unitno,"(a)",ADVANCE='no') trim(offname)//"   , "
-  
+
            write (unitno,"(a3,a3)") vel(comp_it+1),") &"
            lfirst_term=.false.
          endif
        enddo
      enddo
-!  
+!
      if (ncontrib==0) then
        if (face_type==nface_types) then
          write (unitno,"(a)") "                    0. ) "
@@ -306,7 +306,7 @@ subroutine read_surfaceinfo
    use SurfaceData
 !
    integer :: pnt, face_type
-   character(len=20) :: header 
+   character(len=20) :: header
 !
 ! Read surface information
 !

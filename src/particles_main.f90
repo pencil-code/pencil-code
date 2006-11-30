@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.55 2006-11-22 05:17:38 ajohan Exp $
+! $Id: particles_main.f90,v 1.56 2006-11-30 09:03:36 dobler Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -161,7 +161,7 @@ module Particles_main
     endsubroutine particles_write_dsnapshot
 !***********************************************************************
     subroutine particles_write_pdim(filename)
-!   
+!
 !  Write npar and mpvar to file.
 !
 !  09-jan-05/anders: coded
@@ -205,7 +205,7 @@ module Particles_main
 !  16-feb-06/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!      
+!
       call boundconds_particles(fp,npar_loc,ipar,dfp=dfp)
 !
 !  Map the particle positions on the grid for later use.
@@ -214,7 +214,7 @@ module Particles_main
       call map_xxp_grid(f,fp,ineargrid)
 !
 !  Sort particles so that they can be accessed contiguously in the memory.
-!      
+!
       call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)
 !
       if (lparticles_nbody) call share_sinkparticles(fp)
@@ -338,7 +338,7 @@ module Particles_main
     endsubroutine particles_pde
 !***********************************************************************
     subroutine read_particles_init_pars_wrap(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -353,7 +353,7 @@ module Particles_main
     endsubroutine read_particles_init_pars_wrap
 !***********************************************************************
     subroutine write_particles_init_pars_wrap(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       call write_particles_init_pars(unit)
@@ -362,12 +362,12 @@ module Particles_main
       if (lparticles_selfgravity) &
           call write_particles_selfg_init_pars(unit)
       if (lparticles_nbody) &
-          call write_particles_nbody_init_pars(unit) 
+          call write_particles_nbody_init_pars(unit)
 !
     endsubroutine write_particles_init_pars_wrap
 !***********************************************************************
     subroutine read_particles_run_pars_wrap(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -377,12 +377,12 @@ module Particles_main
       if (lparticles_selfgravity) &
           call read_particles_selfg_run_pars(unit,iostat)
       if (lparticles_nbody) &
-          call read_particles_nbody_run_pars(unit,iostat) 
+          call read_particles_nbody_run_pars(unit,iostat)
 !
     endsubroutine read_particles_run_pars_wrap
 !***********************************************************************
     subroutine write_particles_run_pars_wrap(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       call write_particles_run_pars(unit)

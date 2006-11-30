@@ -1,4 +1,4 @@
-! $Id: noparticles_number.f90,v 1.8 2006-11-22 05:17:38 ajohan Exp $
+! $Id: noparticles_number.f90,v 1.9 2006-11-30 09:03:36 dobler Exp $
 !
 !  This module takes care of everything related to particle number.
 !
@@ -64,11 +64,11 @@ module Particles_number
     endsubroutine init_particles_number
 !***********************************************************************
     subroutine pencil_criteria_par_number()
-!   
+!
 !  All pencils that the Particles_number module depends on are specified here.
-! 
+!
 !  21-nov-06/anders: dummy
-!   
+!
     endsubroutine pencil_criteria_par_number
 !***********************************************************************
     subroutine dnptilde_dt_pencil(f,df,fp,dfp,p,ineargrid)
@@ -129,7 +129,7 @@ module Particles_number
     endsubroutine get_nptilde
 !***********************************************************************
     subroutine read_particles_num_init_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -138,7 +138,7 @@ module Particles_number
     endsubroutine read_particles_num_init_pars
 !***********************************************************************
     subroutine write_particles_num_init_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       if (NO_WARN) print*, unit
@@ -146,7 +146,7 @@ module Particles_number
     endsubroutine write_particles_num_init_pars
 !***********************************************************************
     subroutine read_particles_num_run_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -155,7 +155,7 @@ module Particles_number
     endsubroutine read_particles_num_run_pars
 !***********************************************************************
     subroutine write_particles_num_run_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       if (NO_WARN) print*, unit
@@ -163,7 +163,7 @@ module Particles_number
     endsubroutine write_particles_num_run_pars
 !***********************************************************************
     subroutine rprint_particles_number(lreset,lwrite)
-!   
+!
 !  Read and register print parameters relevant for internal particle number.
 !
 !  24-nov-05/anders: dummy
@@ -177,10 +177,10 @@ module Particles_number
       logical :: lwr
 !
 !  Write information to index.pro
-! 
+!
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-!        
+!
       if (lwr) write(3,*) 'inptilde=', inptilde
 !
       if (NO_WARN) print*, lreset

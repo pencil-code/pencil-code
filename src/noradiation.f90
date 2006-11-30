@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.34 2006-08-23 16:53:32 mee Exp $
+! $Id: noradiation.f90,v 1.35 2006-11-30 09:03:36 dobler Exp $
 
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -14,13 +14,14 @@ module Radiation
 
   use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 
   implicit none
 
   include 'radiation.h'
 
   ! radiation turned off
- 
+
   !namelist /radiation_init_pars/ dummyuu
   !namelist /radiation_run_pars/  dummyuu
 
@@ -48,7 +49,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.34 2006-08-23 16:53:32 mee Exp $")
+           "$Id: noradiation.f90,v 1.35 2006-11-30 09:03:36 dobler Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -63,7 +64,8 @@ module Radiation
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if(NO_WARN) print*,f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+
     endsubroutine radtransfer
 !***********************************************************************
     subroutine initialize_radiation()
@@ -71,7 +73,7 @@ module Radiation
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  24-nov-02/tony: coded 
+!  24-nov-02/tony: coded
 !
 !  do nothing
 !
@@ -89,8 +91,9 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if(NO_WARN) print*,f,df,p !(keep compiler quiet)
-!        
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine radiative_cooling
 !***********************************************************************
     subroutine radiative_pressure(f,df,p)
@@ -105,13 +108,17 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if(NO_WARN) print*,f,df,p !(keep compiler quiet)
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine radiative_pressure
 !***********************************************************************
     subroutine output_radiation(lun)
+!
       integer, intent(in) :: lun
-      if(NO_WARN) print*,lun  !(keep compiler quiet)
+
+      call keep_compiler_quiet(lun)
+
     endsubroutine output_radiation
 !***********************************************************************
     subroutine init_rad(f,xx,yy,zz)
@@ -125,13 +132,15 @@ module Radiation
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
-      if(NO_WARN) print*,f,xx,yy,zz !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(xx,yy,zz)
+
     endsubroutine init_rad
 !***********************************************************************
     subroutine pencil_criteria_radiation()
-! 
+!
 !  All pencils that the Radiation module depends on are specified here.
-! 
+!
 !  21-11-04/anders: coded
 !
     endsubroutine pencil_criteria_radiation
@@ -142,27 +151,28 @@ module Radiation
 !  is specified here.
 !
 !  21-11-04/anders: coded
-!     
+!
       logical, dimension (npencils) :: lpencil_in
-!     
-      if (NO_WARN) print*, lpencil_in  !(keep compiler quiet)
-! 
+!
+      call keep_compiler_quiet(lpencil_in)
+!
     endsubroutine pencil_interdep_radiation
 !***********************************************************************
     subroutine calc_pencils_radiation(f,p)
-!   
+!
 !  Calculate Radiation pencils.
 !  Most basic pencils should come first, as others may depend on them.
-! 
+!
 !  21-11-04/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(in) :: f,p
 !
-      if (NO_WARN) print*, f, p !(keep compiler quiet)
-! 
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
     endsubroutine calc_pencils_radiation
 !***********************************************************************
    subroutine de_dt(f,df,p,gamma)
@@ -174,39 +184,42 @@ module Radiation
       type (pencil_case) :: p
       real :: gamma
 !
-      if(NO_WARN) print*,f,df,p,gamma !(keep compiler quiet)
-!        
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(gamma)
+!
     endsubroutine de_dt
 !***********************************************************************
     subroutine read_radiation_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+
     endsubroutine read_radiation_init_pars
 !***********************************************************************
     subroutine write_radiation_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      call keep_compiler_quiet(unit)
+
     endsubroutine write_radiation_init_pars
 !***********************************************************************
     subroutine read_radiation_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+
     endsubroutine read_radiation_run_pars
 !***********************************************************************
     subroutine write_radiation_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
-      if (NO_WARN) print*,unit
+
+      call keep_compiler_quiet(unit)
+
     endsubroutine write_radiation_run_pars
 !*******************************************************************
     subroutine rprint_radiation(lreset,lwrite)
@@ -249,7 +262,8 @@ module Radiation
         write(3,*) 'iFradz=',iFradz
       endif
 !
-      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
+
     endsubroutine rprint_radiation
 !***********************************************************************
     subroutine get_slices_radiation(f,slices)
@@ -261,7 +275,8 @@ module Radiation
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      if (NO_WARN) print*, f(1,1,1,1), slices%ready
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices)
 !
     endsubroutine get_slices_radiation
 !***********************************************************************

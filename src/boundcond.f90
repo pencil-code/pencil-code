@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.129 2006-11-22 10:46:44 bingert Exp $
+! $Id: boundcond.f90,v 1.130 2006-11-30 09:03:34 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -47,7 +47,7 @@ module Boundcond
 !
       call boundconds_x(f,ivar1,ivar2)      ! Do not change this order.
       call boundconds_y(f,ivar1,ivar2)
-      call boundconds_z(f,ivar1,ivar2)      
+      call boundconds_z(f,ivar1,ivar2)
 !
     endsubroutine boundconds
 !***********************************************************************
@@ -76,7 +76,7 @@ module Boundcond
       integer :: ivar1, ivar2, j, k, ip_ok
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
-      type (boundary_condition) :: bc 
+      type (boundary_condition) :: bc
 !
       if (ldebug) print*, 'boundconds_x: ENTER: boundconds_x'
 !
@@ -191,7 +191,7 @@ module Boundcond
       integer :: ivar1, ivar2, j, k, ip_ok
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
-      type (boundary_condition) :: bc 
+      type (boundary_condition) :: bc
 !
       if (ldebug) print*,'boundconds_y: ENTER: boundconds_y'
 !
@@ -293,7 +293,7 @@ module Boundcond
       integer :: ivar1, ivar2, j, k, ip_ok
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
-      type (boundary_condition) :: bc 
+      type (boundary_condition) :: bc
 !
       if (ldebug) print*,'boundconds_z: ENTER: boundconds_z'
 !
@@ -373,7 +373,7 @@ module Boundcond
               case ('c2')       ! complex
                 if (j==iss) call bc_ss_temp_old(f,topbot)
               case ('db')       ! complex
-                call bc_db_z(f,topbot,j) 
+                call bc_db_z(f,topbot,j)
               case ('ce')       ! complex
                 if (j==iss) call bc_ss_energy(f,topbot)
               case ('e1')       ! extrapolation
@@ -1332,10 +1332,10 @@ module Boundcond
     subroutine bc_db_z(f,topbot,j)
 !
 !  ``One-sided'' boundary condition for density.
-!  Set ghost zone to reproduce one-sided boundary condition 
+!  Set ghost zone to reproduce one-sided boundary condition
 !  (2nd order):
-!  Finding the derivatives on the boundary using a one 
-!  sided final difference method. This derivative is being 
+!  Finding the derivatives on the boundary using a one
+!  sided final difference method. This derivative is being
 !  used to calculate the boundary points. This will probably
 !  only be used for ln(rho)
 !
@@ -1371,14 +1371,14 @@ module Boundcond
       endselect
 !
     endsubroutine bc_db_z
-!*********************************************************************** 
+!***********************************************************************
     subroutine bc_db_x(f,topbot,j)
 !
 !  ``One-sided'' boundary condition for density.
-!  Set ghost zone to reproduce one-sided boundary condition 
+!  Set ghost zone to reproduce one-sided boundary condition
 !  (2nd order):
-!  Finding the derivatives on the boundary using a one 
-!  sided final difference method. This derivative is being 
+!  Finding the derivatives on the boundary using a one
+!  sided final difference method. This derivative is being
 !  used to calculate the boundary points. This will probably
 !  only be used for ln(rho)
 !
@@ -1499,10 +1499,10 @@ module Boundcond
       if (iuz == 0) call stop_it("BC_FORCE_UXY_SIN_COS: Bad idea...")
 !
       if (j==iux) then
-        if (Ly>0) then; ky=2*pi/Ly; else; ky=0.; endif 
+        if (Ly>0) then; ky=2*pi/Ly; else; ky=0.; endif
         f(:,:,idz,j) = spread(cos(ky*y),1,mx)
       elseif (j==iuy) then
-        if (Lx>0) then; kx=2*pi/Lx; else; kx=0.; endif 
+        if (Lx>0) then; kx=2*pi/Lx; else; kx=0.; endif
         f(:,:,idz,j) = spread(sin(kx*x),2,my)
       elseif (j==iuz) then
         f(:,:,idz,j) = 0.
@@ -1526,10 +1526,10 @@ module Boundcond
       if (iaz == 0) call stop_it("BC_FORCE_AXY_SIN_COS: Bad idea...")
 !
       if (j==iax) then
-        if (Ly>0) then; ky=2*pi/Ly; else; ky=0.; endif 
+        if (Ly>0) then; ky=2*pi/Ly; else; ky=0.; endif
         f(:,:,idz,j) = spread(cos(ky*y),1,mx)
       elseif (j==iay) then
-        if (Lx>0) then; kx=2*pi/Lx; else; kx=0.; endif 
+        if (Lx>0) then; kx=2*pi/Lx; else; kx=0.; endif
         f(:,:,idz,j) = spread(sin(kx*x),2,my)
       elseif (j==iaz) then
         f(:,:,idz,j) = 0.
@@ -1574,15 +1574,15 @@ module Boundcond
           ! and get it's index.
           !
           if (.not.associated(iglobal_gg)) then
-            call farray_use_global('gg',iglobal_gg,vector=3)          
+            call farray_use_global('gg',iglobal_gg,vector=3)
             if (.not.associated(iglobal_gg)) then
-              call fatal_error("bc_force_kepler", & 
+              call fatal_error("bc_force_kepler", &
                "Could not get global gg from an f-array slot")
             endif
           endif
 
           gg=f(l1:l2,m,idz,iglobal_gg:iglobal_gg+2)
-          
+
           g_r=sqrt(gg(:,1)**2+gg(:,2)**2)
 
           ux(l1:l2,m)=-y(  m  )*sqrt(g_r/(r+10*tiny(r)))
@@ -1793,7 +1793,7 @@ module Boundcond
     endsubroutine update_ghosts
 !***********************************************************************
      subroutine uu_driver(f)
-! 
+!
 !    Simulated velocity field used as photospherec motions
 !    Use of velocity field produced by Boris Gudiksen
 !
@@ -1801,7 +1801,7 @@ module Boundcond
 !
        use Cdata
        use EquationOfState, only : gamma,gamma1,cs20,lnrho0
- 
+
        real, dimension (mx,my,mz,mfarray) :: f
        real, dimension (nx,ny*nprocy),save :: uxl,uxr,uyl,uyr
        real, dimension (nx,ny*nprocy) :: uxd,uyd
@@ -1815,7 +1815,7 @@ module Boundcond
 !     Read the time table
 !
        if (t*unit_time < tl+delta_t .or. t*unit_time>=tr+delta_t .and. iostat /= -2) then
-!         
+!
           inquire(IOLENGTH=lend) tl
           close (10)
           open (10,file='driver/time_k',form='unformatted',status='unknown',recl=lend,access='direct')
@@ -1824,12 +1824,12 @@ module Boundcond
           i=0
           do while (iostat == 0)
             i=i+1
-            read (10,rec=i,iostat=iostat) tl          
+            read (10,rec=i,iostat=iostat) tl
             read (10,rec=i+1,iostat=iostat) tr
             if (iostat /= 0) then
               i=1
               delta_t = t*unit_time                  ! EOF is reached => read again
-              read (10,rec=i,iostat=iostat) tl          
+              read (10,rec=i,iostat=iostat) tl
               read (10,rec=i+1,iostat=iostat) tr
               iostat=-1
             else
@@ -1837,30 +1837,30 @@ module Boundcond
             endif
           enddo
           close (10)
-!          
+!
 ! Read velocity field
 !
           open (10,file='driver/vel_k.dat',form='unformatted',status='unknown',recl=lend*nx*ny*nprocy,access='direct')
           read (10,rec=(2*i-1)) uxl
           read (10,rec=2*i)     uyl
 
-          read (10,rec=2*i+1)   uxr 
+          read (10,rec=2*i+1)   uxr
           read (10,rec=2*i+2)   uyr
-          close (10)       
-          
+          close (10)
+
           uxl = uxl / 10. / unit_velocity
           uxr = uxr / 10. / unit_velocity
           uyl = uyl / 10. / unit_velocity
           uyr = uyr / 10. / unit_velocity
 
        endif
-!      
+!
 !   simple linear interploation between timesteps
-!       
+!
        if (tr /= tl) then
           uxd  = (t*unit_time - (tl+delta_t)) * (uxr - uxl) / (tr - tl) + uxl
-          uyd  = (t*unit_time - (tl+delta_t)) * (uyr - uyl) / (tr - tl) + uyl       
-       endif     
+          uyd  = (t*unit_time - (tl+delta_t)) * (uyr - uyl) / (tr - tl) + uyl
+       endif
 !
 !   suppress footpoint motion at low plasma beta
 !
@@ -1883,23 +1883,23 @@ module Boundcond
           if (ip<=5) print*, 'der_main: Degenerate case in y-direction'
        endif
 
-       bb2 = bbz*bbz 
+       bb2 = bbz*bbz
 
        bb2 = bb2/(2*mu0)*300.
-!       
+!
        pp = gamma* (f(l1:l2,m1:m2,n1,iss)+f(l1:l2,m1:m2,n1,ilnrho))-gamma1*lnrho0
        pp = exp(pp) * cs20/gamma
 !
-!   limit plasma beta  
-! 
+!   limit plasma beta
+!
        where (bb2 .gt. 1.e-20)
           betaq =  pp / bb2
        elsewhere
           betaq = pp * 1.e20
        endwhere
-!       
+!
        quenching = (1.+betaq**2)/(3. +betaq**2)
-!    
+!
 !   Fill the ghost cells and the bottom layer with vel. field
 !
        do j=1,n1

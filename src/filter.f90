@@ -1,16 +1,16 @@
-! $Id: filter.f90,v 1.5 2006-08-23 16:53:31 mee Exp $
+! $Id: filter.f90,v 1.6 2006-11-30 09:03:35 dobler Exp $
 
 module Filter
 
   use Mpicomm
   use Sub
- 
+
   implicit none
 
   private
 
   public :: rmwig, rmwig_xyaverage
-  
+
   contains
 
 !***********************************************************************
@@ -118,7 +118,7 @@ module Filter
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
-        if (necessary(imn)) then 
+        if (necessary(imn)) then
           call finalize_isendrcv_bdry(f)
         endif
         do ivar=ivar1,ivar2
@@ -206,7 +206,7 @@ module Filter
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
-        if (necessary(imn)) then 
+        if (necessary(imn)) then
           call finalize_isendrcv_bdry(f)
         endif
         call del6_nodx(f,ivar,tmp)

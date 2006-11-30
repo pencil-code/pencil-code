@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.52 2006-11-21 06:51:10 ajohan Exp $
+! $Id: pscalar_nolog.f90,v 1.53 2006-11-30 09:03:36 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc.
@@ -110,7 +110,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.52 2006-11-21 06:51:10 ajohan Exp $")
+           "$Id: pscalar_nolog.f90,v 1.53 2006-11-30 09:03:36 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -283,9 +283,9 @@ module Pscalar
     endsubroutine init_lncc
 !***********************************************************************
     subroutine pencil_criteria_pscalar()
-! 
+!
 !  All pencils that the Pscalar module depends on are specified here.
-! 
+!
 !  20-11-04/anders: coded
 !
       integer :: i
@@ -354,10 +354,10 @@ module Pscalar
 !
       use Cdata
       use Sub
-!      
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(in) :: f
       intent(inout) :: p
 ! cc
@@ -376,7 +376,7 @@ module Pscalar
       if (lpencil(i_del2cc)) call del2(f,icc,p%del2cc)
 ! hcc
       if (lpencil(i_hcc)) call g2ij(f,icc,p%hcc)
-!      
+!
     endsubroutine calc_pencils_pscalar
 !***********************************************************************
     subroutine dlncc_dt(f,df,p)
@@ -391,7 +391,7 @@ module Pscalar
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!      
+!
       real, dimension (nx) :: diff_op,diff_op2,bump
       integer :: j
 !
@@ -425,10 +425,10 @@ module Pscalar
 !            rsink=rsink+usink*dt
 !          else
 !            rsink=0.
-!          endif 
+!          endif
           bump=pscalar_sink* &
           exp(-.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
-!          exp(-.5*((x(l1:l2)-rsink(0))**2+(y(m)-rsink(1))**2+(z(n)-rsink(2))**2)/Rpscalar_sink**2) 
+!          exp(-.5*((x(l1:l2)-rsink(0))**2+(y(m)-rsink(1))**2+(z(n)-rsink(2))**2)/Rpscalar_sink**2)
           df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-bump*f(l1:l2,m,n,icc)
         endif
 !
@@ -519,43 +519,43 @@ module Pscalar
     subroutine read_pscalar_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=pscalar_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=pscalar_init_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+
+
 99    return
     endsubroutine read_pscalar_init_pars
 !***********************************************************************
     subroutine write_pscalar_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       write(unit,NML=pscalar_init_pars)
-                                                                                                   
+
     endsubroutine write_pscalar_init_pars
 !***********************************************************************
     subroutine read_pscalar_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=pscalar_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=pscalar_run_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+
+
 99    return
     endsubroutine read_pscalar_run_pars
 !***********************************************************************
     subroutine write_pscalar_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       write(unit,NML=pscalar_run_pars)
-                                                                                                   
+
     endsubroutine write_pscalar_run_pars
 !***********************************************************************
     subroutine rprint_pscalar(lreset,lwrite)
@@ -579,7 +579,7 @@ module Pscalar
       if (lreset) then
         idiag_rhoccm=0; idiag_ccmax=0; idiag_ccmin=0.; idiag_ccm=0
         idiag_Qrhoccm=0; idiag_Qpsclm=0
-        idiag_ccmz=0; 
+        idiag_ccmz=0;
         idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0; idiag_Crmsm=0
         idiag_cc1m=0; idiag_cc2m=0; idiag_cc3m=0; idiag_cc4m=0; idiag_cc5m=0
         idiag_cc6m=0; idiag_cc7m=0; idiag_cc8m=0; idiag_cc9m=0; idiag_cc10m=0

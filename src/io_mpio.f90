@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.37 2006-11-17 07:03:41 wlyra Exp $
+! $Id: io_mpio.f90,v 1.38 2006-11-30 09:03:35 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -24,7 +24,7 @@ module Io
   implicit none
 
   include 'io.h'
- 
+
   interface output              ! Overload the `output' function
     module procedure output_vect
     module procedure output_scal
@@ -113,7 +113,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.37 2006-11-17 07:03:41 wlyra Exp $")
+           "$Id: io_mpio.f90,v 1.38 2006-11-30 09:03:35 dobler Exp $")
 !
 !  consistency check
 !
@@ -125,7 +125,7 @@ contains
       start_index(2) = ipy*localsize(2)
       start_index(3) = ipz*localsize(3)
 !
-!  construct the new datatype `io_filetype' 
+!  construct the new datatype `io_filetype'
 !
       call MPI_TYPE_CREATE_SUBARRAY(3, &
                globalsize, localsize, start_index, &
@@ -206,7 +206,7 @@ contains
         start_index_v(3) = ipz*nz
         start_index_v(4) = 0
 !
-!  construct the new datatype `io_filetype_n' 
+!  construct the new datatype `io_filetype_n'
 !
         call MPI_TYPE_CREATE_SUBARRAY(4, &
                  globalsize_v, localsize_v, start_index_v, &
@@ -267,7 +267,7 @@ contains
 !  create a derived datatype describing the data layout in memory
 !  (i.e. including the ghost zones)
 !
-        mem_start_index_v(1:2) = 0 
+        mem_start_index_v(1:2) = 0
         call MPI_TYPE_CREATE_SUBARRAY(2, &
                  memsize_v, localsize_v, mem_start_index_v, &
                  MPI_ORDER_FORTRAN, MPI_REAL, &
@@ -276,7 +276,7 @@ contains
       endif
 !
     endsubroutine commit_io_type_vect_1D
-!*********************************************************************** 
+!***********************************************************************
     subroutine input(file,a,nv,mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
@@ -660,7 +660,7 @@ contains
         !
         x(l2+i) = x(l2) + i*dx
         y(m2+i) = y(m2) + i*dy
-        z(n2+i) = z(n2) + i*dz        
+        z(n2+i) = z(n2) + i*dz
       enddo
 !
 !  Find minimum/maximum grid spacing. Note that

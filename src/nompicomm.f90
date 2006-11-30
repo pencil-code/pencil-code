@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.150 2006-11-16 16:47:23 theine Exp $
+! $Id: nompicomm.f90,v 1.151 2006-11-30 09:03:36 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -34,7 +34,7 @@ module Mpicomm
     module procedure mpirecv_int_scl
     module procedure mpirecv_int_arr
   endinterface
-  
+
   interface mpisend_logical
      module procedure mpisend_logical_scl
      module procedure mpisend_logical_arr
@@ -45,7 +45,7 @@ module Mpicomm
     module procedure mpisend_real_arr
     module procedure mpisend_real_arr2
   endinterface
-  
+
   interface mpisend_int
     module procedure mpisend_int_scl
     module procedure mpisend_int_arr
@@ -220,7 +220,7 @@ module Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
-!    
+!
       if (NO_WARN) print*, f, ivar1_opt, ivar2_opt !(keep compiler quiet)
 !
     endsubroutine initiate_shearing
@@ -263,14 +263,14 @@ module Mpicomm
             +c3*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs  ,2) &
             +c4*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-1,2) &
             +c5*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-2,2) &
-            +c6*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-3,2)  
+            +c6*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-3,2)
         f(l2+1:mx,m1:m2,:,ivar1:ivar2) = &
              c1*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs-2,2) &
             +c2*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs-1,2) &
             +c3*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs  ,2) &
             +c4*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+1,2) &
             +c5*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+2,2) &
-            +c6*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+3,2) 
+            +c6*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+3,2)
       endif
 !
     endsubroutine finalize_shearing
@@ -361,13 +361,13 @@ module Mpicomm
 !
 !  04-sep-06/wlyra: dummy
 !
-      integer :: nbcast_array                                           
-      logical :: bcast_array                                               
-      integer :: proc_src, tag_id                                       
+      integer :: nbcast_array
+      logical :: bcast_array
+      integer :: proc_src, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id  
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
 !
-    endsubroutine mpirecv_logical_scl                                      
+    endsubroutine mpirecv_logical_scl
 !***********************************************************************
     subroutine mpirecv_logical_arr(bcast_array,nbcast_array,proc_src,tag_id)
 !
@@ -375,16 +375,16 @@ module Mpicomm
 !
 !  04-sep-06/wlyra: dummy
 !
-      integer :: nbcast_array                                           
-      logical, dimension(nbcast_array) :: bcast_array                      
-      integer :: proc_src, tag_id                                       
+      integer :: nbcast_array
+      logical, dimension(nbcast_array) :: bcast_array
+      integer :: proc_src, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id  
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
 !
-    endsubroutine mpirecv_logical_arr                                      
+    endsubroutine mpirecv_logical_arr
 !***********************************************************************
     subroutine mpirecv_real_scl(bcast_array,nbcast_array,proc_src,tag_id)
-!   
+!
 !  Receive real scalar from other processor.
 !
 !  02-jul-05/anders: dummy
@@ -394,11 +394,11 @@ module Mpicomm
       integer :: proc_src, tag_id
 !
       if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
-!      
+!
     endsubroutine mpirecv_real_scl
 !***********************************************************************
     subroutine mpirecv_real_arr(bcast_array,nbcast_array,proc_src,tag_id)
-!   
+!
 !  Receive real array from other processor.
 !
 !  02-jul-05/anders: dummy
@@ -436,7 +436,7 @@ module Mpicomm
       integer :: proc_src, tag_id
 !
       if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
-!      
+!
     endsubroutine mpirecv_int_scl
 !***********************************************************************
     subroutine mpirecv_int_arr(bcast_array,nbcast_array,proc_src,tag_id)
@@ -459,13 +459,13 @@ module Mpicomm
 !
 !  02-jul-05/anders: dummy
 !
-      integer :: nbcast_array                                           
-      logical :: bcast_array                                               
-      integer :: proc_rec, tag_id                                       
-!                                                                       
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id  
-!                                                                       
-    endsubroutine mpisend_logical_scl                                      
+      integer :: nbcast_array
+      logical :: bcast_array
+      integer :: proc_rec, tag_id
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
+!
+    endsubroutine mpisend_logical_scl
 !***********************************************************************
     subroutine mpisend_logical_arr(bcast_array,nbcast_array,proc_rec,tag_id)
 !
@@ -473,11 +473,11 @@ module Mpicomm
 !
 !  02-jul-05/anders: dummy
 !
-      integer :: nbcast_array                                           
-      logical, dimension(nbcast_array) :: bcast_array                      
-      integer :: proc_rec, tag_id                                       
+      integer :: nbcast_array
+      logical, dimension(nbcast_array) :: bcast_array
+      integer :: proc_rec, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id  
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
 !
     endsubroutine mpisend_logical_arr
 !***********************************************************************
@@ -492,7 +492,7 @@ module Mpicomm
       integer :: proc_rec, tag_id
 !
       if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
-!      
+!
     endsubroutine mpisend_real_scl
 !***********************************************************************
     subroutine mpisend_real_arr(bcast_array,nbcast_array,proc_rec,tag_id)
@@ -534,7 +534,7 @@ module Mpicomm
       integer :: proc_rec, tag_id
 !
       if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
-!      
+!
     endsubroutine mpisend_int_scl
 !***********************************************************************
     subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id)
@@ -556,7 +556,7 @@ module Mpicomm
       integer :: nbcast_array
       logical :: lbcast_array
       integer, optional :: proc
-!    
+!
       if (NO_WARN) print*, lbcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_logical_scl
@@ -566,7 +566,7 @@ module Mpicomm
       integer :: nbcast_array
       logical, dimension(nbcast_array) :: lbcast_array
       integer, optional :: proc
-!    
+!
       if (NO_WARN) print*, lbcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_logical_arr
@@ -576,7 +576,7 @@ module Mpicomm
       integer :: nbcast_array
       integer :: ibcast_array
       integer, optional :: proc
-!    
+!
       if (NO_WARN) print*, ibcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_int_scl
@@ -586,7 +586,7 @@ module Mpicomm
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: ibcast_array
       integer, optional :: proc
-!    
+!
       if (NO_WARN) print*, ibcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_int_arr
@@ -851,7 +851,7 @@ module Mpicomm
 !  6-nov-01/wolf: coded
 !
       character (len=*) :: msg
-!      
+!
       if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
       call mpifinalize
       STOP 1                    ! Return nonzero exit status
@@ -913,9 +913,9 @@ module Mpicomm
           deallocate (tmp)
 
         endif
-!   
+!
 !  Doing x-z transpose if var='z'
-!   
+!
       elseif (var=='z') then
         if (nzgrid/=1) then
 !

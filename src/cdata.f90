@@ -1,11 +1,11 @@
-! ! $Id: cdata.f90,v 1.345 2006-11-25 06:36:40 dobler Exp $
+! ! $Id: cdata.f90,v 1.346 2006-11-30 09:03:34 dobler Exp $
 
 module Cdata
 
 !!! Global variables
 
   use Cparam
-  public 
+  public
 
   integer :: itorder=3
   real, dimension (mx) :: x,dx_1,dx_tilde
@@ -48,7 +48,7 @@ module Cdata
   real :: dsnap=100.,d2davg=100.,dvid=0.,dtmin=1.e-6,dtmax=1E37,dspec=impossible
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: r_ref=0.
-  
+
 ! parameter for freezing
   real :: xfreeze_square=impossible,yfreeze_square=impossible
   real :: rfreeze_int=-impossible,rfreeze_ext=-impossible
@@ -68,7 +68,7 @@ module Cdata
   double precision :: unit_density=impossible,unit_temperature=impossible
 ! Derived units
   double precision :: unit_mass,unit_energy,unit_time,unit_flux
-  
+
   double precision :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
                       chiH,chiH_,sigmaH_,sigmaSB,kappa_es
   double precision :: c_light=impossible,G_Newton=impossible,hbar=impossible

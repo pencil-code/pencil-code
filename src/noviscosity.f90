@@ -1,7 +1,7 @@
-! $Id: noviscosity.f90,v 1.8 2006-08-23 16:53:32 mee Exp $
+! $Id: noviscosity.f90,v 1.9 2006-11-30 09:03:36 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
-!  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
+!  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -33,7 +33,7 @@ module Viscosity
 
   ! run parameters
   !namelist /viscosity_run_pars/ dummy
- 
+
   ! Not implemented but needed for bodged implementation in hydro
   integer :: idiag_epsK=0
   character (len=labellen) :: ivisc='nu-const'
@@ -61,7 +61,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noviscosity.f90,v 1.8 2006-08-23 16:53:32 mee Exp $")
+           "$Id: noviscosity.f90,v 1.9 2006-11-30 09:03:36 dobler Exp $")
 
     endsubroutine register_viscosity
 !***********************************************************************
@@ -76,23 +76,23 @@ module Viscosity
     subroutine read_viscosity_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat).and.NO_WARN) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_viscosity_init_pars
 !***********************************************************************
     subroutine write_viscosity_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine write_viscosity_init_pars
 !***********************************************************************
     subroutine read_viscosity_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat).and.NO_WARN) print*,iostat
       if (NO_WARN) print*,unit
 
@@ -100,9 +100,9 @@ module Viscosity
 !***********************************************************************
     subroutine write_viscosity_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine write_viscosity_run_pars
 !*******************************************************************
     subroutine rprint_viscosity(lreset,lwrite)
@@ -113,12 +113,12 @@ module Viscosity
 !
       logical :: lreset
       logical, optional :: lwrite
-!   
+!
       if(NO_WARN) print*,lreset,present(lwrite)  !(to keep compiler quiet)
     endsubroutine rprint_viscosity
 !***********************************************************************
     subroutine pencil_criteria_viscosity()
-!    
+!
 !  All pencils that the Viscosity module depends on are specified here.
 !
 !  20-11-04/anders: coded
@@ -134,7 +134,7 @@ module Viscosity
       use Cdata
 !
       logical, dimension (npencils) :: lpencil_in
-!      
+!
       if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
 !
     endsubroutine pencil_interdep_viscosity
@@ -153,9 +153,9 @@ module Viscosity
 !
       intent(in) :: f
       intent(inout) :: p
-! shock    
+! shock
       if (lpencil(i_shock)) p%shock=0.
-! gshock    
+! gshock
       if (lpencil(i_gshock)) p%gshock=0.
 !
       if (NO_WARN) print*, f
@@ -165,7 +165,7 @@ module Viscosity
     subroutine calc_viscosity(f)
 !
 !
-!    
+!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if(NO_WARN) print*,f  !(to keep compiler quiet)
@@ -182,7 +182,7 @@ module Viscosity
 
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!      
+!
       real, dimension (nx) :: Hmax
 !
       intent(in) :: df,p,Hmax
@@ -192,7 +192,7 @@ module Viscosity
     endsubroutine calc_viscous_heat
 !***********************************************************************
     subroutine calc_viscous_force(df,p)
-!    
+!
 !  calculate viscous heating term for right hand side of entropy equation
 !
 !  20-nov-02/tony: coded
@@ -205,7 +205,7 @@ module Viscosity
       intent (in) :: df,p
 !
       if(NO_WARN) print*,df,p  !(keep compiler quiet)
-!        
+!
     end subroutine calc_viscous_force
 !***********************************************************************
 

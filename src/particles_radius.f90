@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.21 2006-11-22 12:36:54 ajohan Exp $
+! $Id: particles_radius.f90,v 1.22 2006-11-30 09:03:36 dobler Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -54,7 +54,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.21 2006-11-22 12:36:54 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.22 2006-11-30 09:03:36 dobler Exp $")
 !
 !  Index for particle radius.
 !
@@ -103,7 +103,7 @@ module Particles_radius
       integer :: j
 !
       do j=1,ninit
-        
+
         select case(initap(j))
 
         case('nothing')
@@ -120,16 +120,16 @@ module Particles_radius
     endsubroutine init_particles_radius
 !***********************************************************************
     subroutine pencil_criteria_par_radius()
-!   
+!
 !  All pencils that the Particles_radius module depends on are specified here.
-! 
+!
 !  21-nov-06/anders: coded
 !
       use Cdata
 !
       lpenc_requested(i_uu)=.true.
       lpenc_requested(i_rho)=.true.
-      lpenc_requested(i_cc)=.true. 
+      lpenc_requested(i_cc)=.true.
 !
       if (idiag_dvp12mwcdot/=0) lpenc_diagnos(i_cc)=.true.
 !
@@ -190,14 +190,14 @@ module Particles_radius
                 call fatal_error('dap_dt', &
                     'must have passive scalar module for sweep-up')
               else
-!  Radius increase due to sweep-up          
+!  Radius increase due to sweep-up
                 dfp(k,iap) = dfp(k,iap) + &
                     0.25*deltavp*p%cc(ix0-nghost)*p%rho(ix0-nghost)/rhops
 !
 !  Deplete gas of small grains.
 !
                 call get_nptilde(fp,k,np_tilde)
-                if (lpscalar_nolog) then 
+                if (lpscalar_nolog) then
                   df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
                       np_tilde*pi*fp(k,iap)**2*deltavp*p%cc(ix0-nghost)
                 else
@@ -263,7 +263,7 @@ module Particles_radius
     endsubroutine dap_dt
 !***********************************************************************
     subroutine read_particles_rad_init_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -278,7 +278,7 @@ module Particles_radius
     endsubroutine read_particles_rad_init_pars
 !***********************************************************************
     subroutine write_particles_rad_init_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_radius_init_pars)
@@ -286,7 +286,7 @@ module Particles_radius
     endsubroutine write_particles_rad_init_pars
 !***********************************************************************
     subroutine read_particles_rad_run_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -301,7 +301,7 @@ module Particles_radius
     endsubroutine read_particles_rad_run_pars
 !***********************************************************************
     subroutine write_particles_rad_run_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_radius_run_pars)
@@ -309,7 +309,7 @@ module Particles_radius
     endsubroutine write_particles_rad_run_pars
 !***********************************************************************
     subroutine rprint_particles_radius(lreset,lwrite)
-!   
+!
 !  Read and register print parameters relevant for particles radius.
 !
 !  22-aug-05/anders: coded
@@ -324,7 +324,7 @@ module Particles_radius
       logical :: lwr
 !
 !  Write information to index.pro
-! 
+!
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
       if (lwr) write(3,*) 'iap=', iap

@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.17 2006-11-27 09:14:00 ajohan Exp $
+! $Id: selfgravity.f90,v 1.18 2006-11-30 09:03:36 dobler Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -34,11 +34,11 @@ module Selfgravity
   real :: kmax=0.0
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
   logical :: lklimit_shear=.false.
-  
+
   namelist /selfgrav_init_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
       tstart_selfgrav
-      
+
   namelist /selfgrav_run_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
       tstart_selfgrav, lklimit_shear, kmax
@@ -72,7 +72,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.17 2006-11-27 09:14:00 ajohan Exp $")
+           "$Id: selfgravity.f90,v 1.18 2006-11-30 09:03:36 dobler Exp $")
 !
 !  Put variable name in array
 !
@@ -150,9 +150,9 @@ module Selfgravity
     endsubroutine initialize_selfgravity
 !***********************************************************************
     subroutine pencil_criteria_selfgravity()
-! 
+!
 !  All pencils that the Selfgravity module depends on are specified here.
-! 
+!
 !  15-may-06/anders+jeff: adapted
 !
       lpenc_requested(i_gpotself)=.true.
@@ -186,7 +186,7 @@ module Selfgravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(inout) :: f, p
 !
       if (lpencil(i_potself)) p%potself = f(l1:l2,m,n,ipotself)
@@ -305,7 +305,7 @@ module Selfgravity
       endif
 !
       if (NO_WARN) print*, f, p !(keep compiler quiet)
-!        
+!
     endsubroutine duu_dt_selfgrav
 !***********************************************************************
     subroutine read_selfgravity_init_pars(unit,iostat)
@@ -337,7 +337,7 @@ module Selfgravity
     subroutine read_selfgravity_run_pars(unit,iostat)
 !
 !  Read self gravity run parameters
-!    
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -383,7 +383,7 @@ module Selfgravity
         idiag_gpotselfx2m=0; idiag_gpotselfy2m=0; idiag_gpotselfz2m=0
       endif
 !
-      do iname=1,nname 
+      do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'gpoten',idiag_gpoten)
         call parse_name(iname,cname(iname),cform(iname),'gpotselfxm', &
             idiag_gpotselfxm)

@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.8 2006-11-16 07:02:18 mee Exp $
+! $Id: gravity_r.f90,v 1.9 2006-11-30 09:03:35 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -51,7 +51,7 @@ module Gravity
 
   namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
        lcylindrical_gravity,lnumeqz
-  
+
   namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
        lcylindrical_gravity,lnumeqz
 
@@ -80,14 +80,14 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.8 2006-11-16 07:02:18 mee Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.9 2006-11-30 09:03:35 dobler Exp $")
 !
       lgrav =.true.
       lgravr=.true.
       lgravr_gas =.true.
       lgravr_dust=.true.
 
-      call farray_register_global('gg',iglobal_gg,vector=3) 
+      call farray_register_global('gg',iglobal_gg,vector=3)
 !
     endsubroutine register_gravity
 !***********************************************************************
@@ -140,15 +140,15 @@ module Gravity
           if (lroot) print*, 'M super giant gravity potential'
           cpot = (/ 1.100, 0.660, 2.800, 1.400, 0.100 /)
 
-        case ('A7-star')       ! Ap star 
+        case ('A7-star')       ! Ap star
           if (lroot) print*, 'A star gravity potential'
           cpot = (/ 4.080, -3.444, 15.2000, 11.2000, -12.1000 /)
 
-        case ('A0-star')       ! A0 star 
+        case ('A0-star')       ! A0 star
           if (lroot) print*, 'A0 star gravity potential'
 !          cpot = (/ 4.7446,  -1.9456,  0.6884,  4.8007, 1.79877 /)
           cpot = (/ 4.3641,  -1.5612,  0.4841, 4.0678, 1.2548 /)
- 
+
         case ('simple')         ! simple potential for tests
           if (lroot) print*, 'initialize_gravity: very simple gravity potential'
           cpot =  (/ 1., 0., 0., 1., 0. /)
@@ -195,7 +195,7 @@ module Gravity
         if (lroot) print*, 'initialize_gravity: '//&
                            'No such value for ipotential: ', trim(ipotential)
         call stop_it("")
-        
+
       endselect
 !
 !  initialize gg, so we can later retrieve gravity via get_global
@@ -214,7 +214,7 @@ module Gravity
 !
            if (lcylindrical_gravity) then
               rr_mn=sqrt(x(l1:l2)**2+y(m)**2)+tini
-           else   
+           else
               rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)+tini
            endif
 !
@@ -237,7 +237,7 @@ module Gravity
             elseif (ipotential .eq. 'sph-const') then
               g_r=-g0
             elseif (ipotential .eq. 'no-smooth') then
-              g_r=-g0/rr_mn**2 
+              g_r=-g0/rr_mn**2
             else
               ! smoothed 1/r potential in a spherical shell
               g_r=-g0*rr_mn**(n_pot-1) &
@@ -271,7 +271,7 @@ module Gravity
       else
         read(unit,NML=grav_init_pars,ERR=99)
       endif
-                                                                                                                                                                                                
+
 99    return
     endsubroutine read_gravity_init_pars
 !***********************************************************************
@@ -291,7 +291,7 @@ module Gravity
       else
         read(unit,NML=grav_run_pars,ERR=99)
       endif
-                                                                                                                                                                                                
+
 99    return
     endsubroutine read_gravity_run_pars
 !***********************************************************************
@@ -320,18 +320,18 @@ module Gravity
     endsubroutine init_gg
 !***********************************************************************
     subroutine pencil_criteria_gravity()
-! 
+!
 !  All pencils that the Gravity module depends on are specified here.
-! 
+!
 !  20-11-04/anders: coded
-! 
+!
 !
     endsubroutine pencil_criteria_gravity
 !***********************************************************************
     subroutine pencil_interdep_gravity(lpencil_in)
 !
 !  Interdependency among pencils from the Gravity module is specified here.
-! 
+!
 !  20-11-04/anders: coded
 !
       logical, dimension(npencils) :: lpencil_in
@@ -346,10 +346,10 @@ module Gravity
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  12-nov-04/anders: coded
-! 
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(in) :: f,p
 !
       if (NO_WARN) print*, f, p  !(keep compiler quiet)
@@ -398,7 +398,7 @@ module Gravity
 ! if (headtt) call output_pencil(trim(datadir)//'/proc0/gg0.dat',gg_mn,3)
 !
       if (NO_WARN) print*,f,p !(to keep compiler quiet)
-!        
+!
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential_global(xx,yy,zz, pot,pot0)
@@ -417,7 +417,7 @@ module Gravity
 
       real, dimension (mx,my,mz) :: rr
 !
-!  remove this if you are sure rr is already calculated elsewhere      
+!  remove this if you are sure rr is already calculated elsewhere
 !
       rr=sqrt(xx**2+yy**2+zz**2)
 
@@ -450,7 +450,7 @@ module Gravity
       real, optional :: ymn,zmn,pot0
       real, optional, dimension (nx) :: xmn,rmn
       real, optional, dimension (nx,3) :: grav
-      
+
       if (present(rmn)) then
         rad = rmn
       else

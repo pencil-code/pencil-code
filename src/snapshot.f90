@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.14 2006-11-30 08:55:49 dobler Exp $
+! $Id: snapshot.f90,v 1.15 2006-11-30 09:03:36 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -30,7 +30,7 @@ contains
 !
 !  30-sep-97/axel: coded
 !  08-oct-02/tony: expanded file to handle 120 character datadir // '/tsnap.dat'
-!   5-apr-03/axel: possibility for additional (hard-to-get) output 
+!   5-apr-03/axel: possibility for additional (hard-to-get) output
 !  31-may-03/axel: wsnap can write either w/ or w/o auxiliary variables
 !
       use Cdata
@@ -95,7 +95,7 @@ contains
 !
 !  Read snapshot file
 !
-!  24-jun-05/tony: coded from snap reading code in run.f90 
+!  24-jun-05/tony: coded from snap reading code in run.f90
 !
       use Cdata
       use Mpicomm
@@ -110,7 +110,7 @@ contains
       integer :: ivar
 !
         if (ip<=6.and.lroot) print*,'reading var files'
-!          
+!
 !  no need to read maux variables as they will be calculated
 !  at the first time step -- even if lwrite_aux is set
 !  Allow for the possibility to read in files that didn't
@@ -126,7 +126,7 @@ contains
             do ivar=iaz+1,mvar
               f(:,:,:,ivar)=f(:,:,:,ivar-3)
             enddo
-            f(:,:,:,iax:iaz)=0. 
+            f(:,:,:,iax:iaz)=0.
           endif
 ! dgm
           if (lrun) call pert_aa(f)
@@ -151,7 +151,7 @@ contains
 !***********************************************************************
    subroutine powersnap(a,lwrite_only)
 !
-!  Write a snapshot of power spectrum 
+!  Write a snapshot of power spectrum
 !
 !  30-sep-97/axel: coded
 !  07-oct-02/nils: adapted from wsnap
@@ -177,7 +177,7 @@ contains
       integer, save :: ifirst=0,nspec
       real, save :: tspec
       integer :: ivec,im,in
-      real, dimension (nx) :: bb 
+      real, dimension (nx) :: bb
 !
 !  set llwrite_only
 !
@@ -233,7 +233,7 @@ contains
         endif
 !
 !  Spectra of particle variables.
-!         
+!
         if (lparticles) call particles_powersnap(a)
 !
 !  Structure functions
@@ -371,7 +371,7 @@ contains
 !***********************************************************************
     subroutine output_globals(file,a,nv)
 !
-!  write snapshot file of globals, always write mesh, 
+!  write snapshot file of globals, always write mesh,
 !
 !  10-nov-06/tony: coded
 !
@@ -406,7 +406,7 @@ contains
 !***********************************************************************
     subroutine input_globals(file,a,nv)
 !
-!  read globals snapshot file, ignoring mesh 
+!  read globals snapshot file, ignoring mesh
 !  10-nov-06/tony: coded
 !
       use Cdata

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.302 2006-11-28 11:54:17 theine Exp $
+! $Id: hydro.f90,v 1.303 2006-11-30 09:03:35 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -21,7 +21,7 @@ module Hydro
 
   use Cparam
   use Cdata , only: Omega, theta, huge1
-  use Viscosity 
+  use Viscosity
   use Messages
 
   implicit none
@@ -174,7 +174,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.302 2006-11-28 11:54:17 theine Exp $")
+           "$Id: hydro.f90,v 1.303 2006-11-30 09:03:35 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -200,7 +200,7 @@ module Hydro
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  24-nov-02/tony: coded 
+!  24-nov-02/tony: coded
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
 !
       use Mpicomm, only: stop_it
@@ -208,7 +208,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
-!  
+!
 ! Check any module dependencies
 !
       if (.not. leos) then
@@ -216,19 +216,19 @@ module Hydro
       endif
 !
 !  r_int and r_ext override rdampint and rdampext if both are set
-! 
+!
       if (dampuint /= 0.) then
         if (r_int > epsi) then
           rdampint = r_int
         elseif (rdampint <= epsi) then
           write(*,*) 'initialize_hydro: inner radius not yet set, dampuint= ',dampuint
-        endif 
-      endif    
+        endif
+      endif
 !
 !  damping parameters for damping velocities outside an embedded sphere
 !
-      if (dampuext /= 0.0) then      
-        if (r_ext < impossible) then         
+      if (dampuext /= 0.0) then
+        if (r_ext < impossible) then
           rdampext = r_ext
         elseif (rdampext == impossible) then
           write(*,*) 'initialize_hydro: outer radius not yet set, dampuext= ',dampuext
@@ -245,9 +245,9 @@ module Hydro
 !
       if (lfreeze_uint) lfreeze_varint(iux:iuz) = .true.
       if (lfreeze_uext) lfreeze_varext(iux:iuz) = .true.
-!       
+!
 !  Turn off advection for 0-D runs.
-!       
+!
       if (nxgrid*nygrid*nzgrid==1) then
         ladvection_velocity=.false.
         print*, 'initialize_entropy: 0-D run, turned off advection of velocity'
@@ -263,8 +263,8 @@ module Hydro
 
       if (present(iostat)) then
         read(unit,NML=hydro_init_pars,ERR=99, IOSTAT=iostat)
-      else 
-        read(unit,NML=hydro_init_pars,ERR=99) 
+      else
+        read(unit,NML=hydro_init_pars,ERR=99)
       endif
 
 99    return
@@ -282,8 +282,8 @@ module Hydro
 
       if (present(iostat)) then
         read(unit,NML=hydro_run_pars,ERR=99, IOSTAT=iostat)
-      else 
-        read(unit,NML=hydro_run_pars,ERR=99) 
+      else
+        read(unit,NML=hydro_run_pars,ERR=99)
       endif
 
 99    return
@@ -326,7 +326,7 @@ module Hydro
         case('zero', '0')
           if(lroot) print*,'init_uu: zero velocity'
           ! Ensure really is zero, as may have used lread_oldsnap
-          f(:,:,:,iux:iuz)=0. 
+          f(:,:,:,iux:iuz)=0.
         case('const_uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
         case('mode'); call modev(ampluu(j),coefuu,f,iuu,kx_uu,ky_uu,kz_uu,xx,yy,zz)
         case('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
@@ -536,11 +536,11 @@ module Hydro
           tmp = (zz-z1)/widthuu**2*prof*(cos(tmp) + 2*sin(2*tmp) + 3*cos(3*tmp))
           f(:,:,:,iux) = tmp*kx_uu/kabs
           f(:,:,:,iuy) = tmp*ky_uu/kabs
-    
+
         case('up-down')
 !
 !  flow upwards in one spot, downwards in another; not soneloidal
-! 
+!
           if (lroot) print*,'init_uu: up-down'
           prof = ampluu(j)*exp(-0.5*(zz-z1)**2/widthuu**2) ! vertical profile
           tmp = sqrt((xx-(x0+0.3*Lx))**2+(yy-(y0+0.3*Ly))**2)! dist. from spot 1
@@ -548,14 +548,14 @@ module Hydro
           tmp = sqrt((xx-(x0+0.5*Lx))**2+(yy-(y0+0.8*Ly))**2)! dist. from spot 1
           f(:,:,:,iuz) = f(:,:,:,iuz) - 0.7*prof*exp(-0.5*(tmp**2)/widthuu**2)
 
-        case('powern') 
+        case('powern')
 ! initial spectrum k^power
           call powern(ampluu(j),initpower,cutoff,f,iux,iuz)
 
-        case('power_randomphase') 
+        case('power_randomphase')
 ! initial spectrum k^power
           call power_randomphase(ampluu(j),initpower,cutoff,f,iux,iuz)
-    
+
         case('random-isotropic-KS')
           call random_isotropic_KS(ampluu(j),initpower,cutoff,f,iux,iuz,N_modes_uu)
 
@@ -567,7 +567,7 @@ module Hydro
           if (lroot) print*, 'init_hydro: set sub-Keplerian gas velocity'
           f(:,:,:,iux) = -1/(2*Omega)*1/gamma*cs20*beta_glnrho_scaled(2)
           f(:,:,:,iuy) = 1/(2*Omega)*1/gamma*cs20*beta_glnrho_scaled(1)
-  
+
         case default
           !
           !  Catch unknown values
@@ -575,7 +575,7 @@ module Hydro
           if (lroot) print*, 'init_uu: No such value for inituu: ', &
             trim(inituu(j))
           call stop_it("")
-  
+
         endselect
 !
 !  End loop over initial conditions
@@ -612,7 +612,7 @@ module Hydro
 !  20-11-04/anders: coded
 !
       use Cdata
-!      
+!
       if (ladvection_velocity) lpenc_requested(i_ugu)=.true.
       if (ldt) lpenc_requested(i_uu)=.true.
 !
@@ -753,7 +753,7 @@ module Hydro
       use Deriv
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f       
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       real, dimension (nx) :: tmp
@@ -823,8 +823,8 @@ module Hydro
       endif
 ! del2u
 ! graddivu
-      if (lpencil(i_del2u)) then 
-        if (lpencil(i_graddivu)) then 
+      if (lpencil(i_del2u)) then
+        if (lpencil(i_graddivu)) then
           call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu)
         else
           call del2v(f,iuu,p%del2u)
@@ -855,7 +855,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!      
+!
       real, dimension (nx) :: pdamp
       real :: c2,s2
       integer :: j
@@ -1038,7 +1038,7 @@ module Hydro
         if (idiag_uxuymz/=0)  call xysum_mn_name_z(p%uu(:,1)*p%uu(:,2),idiag_uxuymz)
         if (idiag_uxuzmz/=0)  call xysum_mn_name_z(p%uu(:,1)*p%uu(:,3),idiag_uxuzmz)
         if (idiag_uyuzmz/=0)  call xysum_mn_name_z(p%uu(:,2)*p%uu(:,3),idiag_uyuzmz)
-        if (idiag_ruxuymz/=0) & 
+        if (idiag_ruxuymz/=0) &
           call xysum_mn_name_z(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuymz)
         if (idiag_uxuymy/=0)  call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,2),idiag_uxuymy)
         if (idiag_uxuzmy/=0)  call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,3),idiag_uxuzmy)
@@ -1050,7 +1050,7 @@ module Hydro
         if (idiag_duydzma/=0) call sum_mn_name(abs(p%uij(:,2,3)),idiag_duydzma)
 !
         if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
-        if (idiag_ekintot/=0) & 
+        if (idiag_ekintot/=0) &
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
         if (idiag_ekinz/=0) call xysum_mn_name_z(.5*p%rho*p%u2,idiag_ekinz)
         if (idiag_totmass/=0) call sum_lim_mn_name(p%rho,idiag_totmass,p)
@@ -1157,7 +1157,7 @@ module Hydro
 !
       use Cdata, only: iux,iuy,ilnrho,l1,l2,m1,m2,n1,n2,lroot
       use Mpicomm, only: mpiallreduce_sum
-! 
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rho,rux,ruy
       integer, parameter :: nreduce=2
@@ -1268,8 +1268,8 @@ module Hydro
 !***********************************************************************
     subroutine calc_hydro_stress(p)
 !
-!  Subroutine to calculate cylindrical stresses. 
-!  Currently needs the runtime phi averages 
+!  Subroutine to calculate cylindrical stresses.
+!  Currently needs the runtime phi averages
 !  that are calculated at the planet code.
 !
 !  23-may-06/wlad : coded
@@ -1348,7 +1348,7 @@ module Hydro
       real, dimension(nx,3) :: fint,fext
       real :: zbot,ztop,t_infl,t_span,tau,pfade
       integer :: i,j
-!  
+!
 !  warn about the damping term
 !
         if (headtt .and. (dampu /= 0.) .and. (t < tdamp)) then
@@ -1443,7 +1443,7 @@ module Hydro
               df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuint*pdamp*f(l1:l2,m,n,i)
             enddo
           endif
-! end geodynamo 
+! end geodynamo
         endif
 !
 !  coupling the above internal and external rotation rates to lgravr is not
@@ -1980,7 +1980,7 @@ module Hydro
       real :: umx,umy,umz
       integer :: l,j
 !
-!  For vector output (of oo vectors) we need orms 
+!  For vector output (of oo vectors) we need orms
 !  on all processors. It suffices to have this for times when lout=.true.,
 !  but we need to broadcast the result to all procs.
 !

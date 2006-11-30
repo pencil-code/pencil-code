@@ -1,4 +1,4 @@
-! $Id: nocosmicray.f90,v 1.13 2006-08-23 16:53:32 mee Exp $
+! $Id: nocosmicray.f90,v 1.14 2006-11-30 09:03:35 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -34,7 +34,7 @@ module Cosmicray
 !***********************************************************************
     subroutine register_cosmicray()
 !
-!  Initialise variables which should know that we solve for active 
+!  Initialise variables which should know that we solve for active
 !  scalar: iecr - the cosmic ray energy density; increase nvar accordingly
 !
 !  09-oct-03/tony: coded
@@ -51,7 +51,7 @@ module Cosmicray
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nocosmicray.f90,v 1.13 2006-08-23 16:53:32 mee Exp $")
+           "$Id: nocosmicray.f90,v 1.14 2006-11-30 09:03:35 dobler Exp $")
 !
     endsubroutine register_cosmicray
 !***********************************************************************
@@ -74,14 +74,14 @@ module Cosmicray
     subroutine read_cosmicray_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_cosmicray_init_pars
 !***********************************************************************
     subroutine write_cosmicray_init_pars(unit)
-!    
+!
       integer, intent(in) :: unit
 !
       if (NO_WARN) print*,unit
@@ -126,16 +126,16 @@ module Cosmicray
     endsubroutine init_ecr
 !***********************************************************************
     subroutine pencil_criteria_cosmicray()
-! 
+!
 !  All pencils that the Cosmicray module depends on are specified here.
-! 
+!
 !  20-11-04/anders: coded
 !
 !
     endsubroutine pencil_criteria_cosmicray
 !***********************************************************************
     subroutine pencil_interdep_cosmicray(lpencil_in)
-!       
+!
 !  Interdependency among pencils provided by the Cosmicray module
 !  is specified here.
 !
@@ -148,7 +148,7 @@ module Cosmicray
     endsubroutine pencil_interdep_cosmicray
 !***********************************************************************
     subroutine calc_pencils_cosmicray(f,p)
-!       
+!
 !  Calculate Cosmicray pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
@@ -176,7 +176,7 @@ module Cosmicray
       intent(in) :: f,df,p
 !
       if (NO_WARN) print*,f,df,p
-!        
+!
     endsubroutine decr_dt
 !***********************************************************************
     subroutine rprint_cosmicray(lreset,lwrite)

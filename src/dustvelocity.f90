@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.116 2006-10-16 08:16:31 dobler Exp $
+! $Id: dustvelocity.f90,v 1.117 2006-11-30 09:03:34 dobler Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -113,8 +113,8 @@ module Dustvelocity
       ldustvelocity = .true.
 !
       do k=1,ndustspec
-        iuud(k) = nvar+1      ! Unecessary index... iudx would suffice 
-        iudx(k) = nvar+1             
+        iuud(k) = nvar+1      ! Unecessary index... iudx would suffice
+        iudx(k) = nvar+1
         iudy(k) = nvar+2
         iudz(k) = nvar+3
         nvar = nvar+3                ! add 3 variables pr. dust layer
@@ -137,7 +137,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.116 2006-10-16 08:16:31 dobler Exp $")
+           "$Id: dustvelocity.f90,v 1.117 2006-11-30 09:03:34 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -208,7 +208,7 @@ module Dustvelocity
 !  Calculate inverse of minimum gas friction time.
 !
       if (tausgmin/=0.0) then
-        tausg1max=1.0/tausgmin      
+        tausg1max=1.0/tausgmin
         if (lroot) print*, 'initialize_dustvelocity: '// &
             'minimum gas friction time tausgmin=', tausgmin
       endif
@@ -219,7 +219,7 @@ module Dustvelocity
 !
         if (lroot) &
             print*, 'initialize_dustvelocity: dust_chemistry = ', dust_chemistry
-!            
+!
         select case (dust_chemistry)
 
         case ('nothing')
@@ -229,11 +229,11 @@ module Dustvelocity
 !
 !  Surface tension and Young's modulus for sticking velocity
 !
-          gsurften   = 370. ! erg cm^-2 
+          gsurften   = 370. ! erg cm^-2
           Eyoung     = 7e10 ! dyn cm^-2
           nu_Poisson = 0.25 !
           Eyoungred  = Eyoung/(2*(1-nu_Poisson**2))
-        
+
           mumon = 18.
           mmon  = mumon*1.6733e-24
           unit_md = mmon
@@ -249,7 +249,7 @@ module Dustvelocity
 
         mumon1=1/mumon
 !
-!  Constant used in determination of sticking velocity 
+!  Constant used in determination of sticking velocity
 !    (extra factor 2 from Dominik & Tielens, 1997, end of Sec. 3.2)
 !
         ustcst = sqrt(2* 2*9.6 * gsurften**(5/3.) * Eyoungred**(-2/3.))
@@ -268,7 +268,7 @@ module Dustvelocity
         enddo
 !
 !  Grain geometry
-!        
+!
         select case(dust_geometry)
 
         case ('sphere')
@@ -289,7 +289,7 @@ module Dustvelocity
 !
       if (ldragforce_dust) then
         select case (draglaw)
-     
+
         case ('epstein_var')
           rhodsad1 = 1./(rhods*ad)
         case ('epstein_cst')
@@ -309,7 +309,7 @@ module Dustvelocity
           if (nud(k) == 0.) nud(k)=nud_all
         enddo
       endif
-!      
+!
       if (betad_all /= 0.) then
         if (lroot .and. ip<6) &
             print*, 'initialize_dustvelocity: betad_all=',betad_all
@@ -337,7 +337,7 @@ module Dustvelocity
     subroutine copy_bcs_dust
 !
 !  Copy boundary conditions on first dust species to all others
-!    
+!
 !  27-feb-04/anders: Copied from initialize_dustvelocity
 !
       if (lmdvar .and. lmice) then
@@ -354,7 +354,7 @@ module Dustvelocity
         bcx(imd(ndustspec)+1:)  = bcx(iudz(1)+3:)
         bcy(imd(ndustspec)+1:)  = bcy(iudz(1)+3:)
         bcz(imd(ndustspec)+1:)  = bcz(iudz(1)+3:)
-      else  
+      else
 !
 !  Copy boundary conditions after dust conditions to end of array
 !
@@ -363,7 +363,7 @@ module Dustvelocity
         bcz(ind(ndustspec)+1:)  = bcz(iudz(1)+2:)
       endif
 !
-!  Move boundary condition to correct place for first dust species 
+!  Move boundary condition to correct place for first dust species
 !
       bcx(ind(1))  = bcx(iudz(1)+1)
       if (lmdvar) bcx(imd(1))  = bcx(iudz(1)+2)
@@ -532,7 +532,7 @@ module Dustvelocity
           endif
 
           if (lroot) print*, 'init_uud: average dust-to-gas ratio=', eps
-          
+
           do l=l1,l2; do m=m1,m2; do n=n1,n2
             cs=sqrt(cs20)
 
@@ -638,22 +638,22 @@ module Dustvelocity
                   sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
             endif
           endif
-!          
+!
           do m=m1,m2; do n=n1,n2
-!            
+!
             f(l1:l2,m,n,ind(1)) = 0.0*f(l1:l2,m,n,ind(1)) + &
                 eps*ampluud*cos(kz_uud*z(n))*cos(kx_uud*x(l1:l2))
-!                
+!
             f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + &
                 ampluud* &
                 ( real(coeff(7))*cos(kx_uud*x(l1:l2)) - &
                  aimag(coeff(7))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
-!                
+!
             f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + &
                 eta_glnrho*v_Kepler*ampluud* &
                 ( real(coeff(4))*cos(kx_uud*x(l1:l2)) - &
                  aimag(coeff(4))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
-!                
+!
             f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
                 eta_glnrho*v_Kepler*ampluud* &
                 ( real(coeff(5))*cos(kx_uud*x(l1:l2)) - &
@@ -663,12 +663,12 @@ module Dustvelocity
                 eta_glnrho*v_Kepler*(-ampluud)* &
                 (aimag(coeff(6))*cos(kx_uud*x(l1:l2)) + &
                   real(coeff(6))*sin(kx_uud*x(l1:l2)))*sin(kz_uud*z(n))
-!                
+!
             f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) + &
                 eta_glnrho*v_Kepler*ampluud* &
                 ( real(coeff(1))*cos(kx_uud*x(l1:l2)) - &
                  aimag(coeff(1))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
-!                
+!
             f(l1:l2,m,n,iudy(1)) = f(l1:l2,m,n,iudy(1)) + &
                 eta_glnrho*v_Kepler*ampluud* &
                 ( real(coeff(2))*cos(kx_uud*x(l1:l2)) - &
@@ -690,15 +690,15 @@ module Dustvelocity
         endselect
 !
 !  End loop over initial conditions
-!        
+!
       enddo
 !
     endsubroutine init_uud
 !***********************************************************************
     subroutine pencil_criteria_dustvelocity()
-! 
+!
 !  All pencils that the Dustvelocity module depends on are specified here.
-! 
+!
 !  20-11-04/anders: coded
 !
       lpenc_requested(i_uud)=.true.
@@ -810,7 +810,7 @@ module Dustvelocity
 ! divud
         if (lpencil(i_divud)) &
             p%divud(:,k) = p%udij(:,1,1,k) + p%udij(:,2,2,k) + p%udij(:,3,3,k)
-! udgud      
+! udgud
         if (lpencil(i_udgud)) call multmv_mn(p%udij,p%uud(:,:,k),p%udgud)
 ! ood
         if (lpencil(i_ood)) then
@@ -850,7 +850,7 @@ module Dustvelocity
         if (lpencil(i_del2ud)) call del2v(f,iuud(k),p%del2ud(:,:,k))
 ! del6ud
         if (lpencil(i_del6ud)) call del6v(f,iuud(k),p%del6ud(:,:,k))
-! graddivud          
+! graddivud
         if (lpencil(i_graddivud)) &
             call del2v_etc(f,iuud(k),GRADDIV=p%graddivud(:,:,k))
       enddo
@@ -873,7 +873,7 @@ module Dustvelocity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!      
+!
       real, dimension (nx,3) :: fviscd,tausd13,tausg13,AA_sfta,BB_sfta
       real, dimension (nx) :: tausg1,mudrhod1
       real :: c2,s2 !(coefs for Coriolis force with inclined Omega)
@@ -1157,7 +1157,7 @@ module Dustvelocity
               call max_mn_name(p%od2,idiag_odmax(k),lsqrt=.true.)
           if (idiag_od2m(k)/=0) call sum_mn_name(p%od2,idiag_od2m(k))
           if (idiag_oudm(k)/=0) call sum_mn_name(p%oud,idiag_oudm(k))
-!          
+!
         endif
 !
 !  End loop over dust species
@@ -1171,7 +1171,7 @@ module Dustvelocity
 !  Calculate surface of dust particles
 !
     integer :: i
-!    
+!
     ad(1)    = (0.75*md(1)*unit_md/(pi*rhods))**dimd1
     surfd(1) = 4*pi*ad(1)**2
     do i=2,ndustspec
@@ -1186,7 +1186,7 @@ module Dustvelocity
 !  Calculate surface of dust particles
 !
       integer :: i,j
-!    
+!
       do i=1,ndustspec
         do j=1,ndustspec
           scolld(i,j) = pi*(ad(i)+ad(j))**2
@@ -1201,13 +1201,13 @@ module Dustvelocity
 !
       use Cdata
       use Sub, only: dot2
-      
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rho,rhod,csrho,cs2,deltaud2
       integer :: k
 !
       select case(draglaw)
-        
+
       case ('epstein_cst')
         ! Do nothing, initialized in initialize_dustvelocity
       case ('epstein_cst_b')
@@ -1226,43 +1226,43 @@ module Dustvelocity
     subroutine read_dustvelocity_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=dustvelocity_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=dustvelocity_init_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+
+
 99    return
     endsubroutine read_dustvelocity_init_pars
 !***********************************************************************
     subroutine write_dustvelocity_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       write(unit,NML=dustvelocity_init_pars)
-                                                                                                   
+
     endsubroutine write_dustvelocity_init_pars
 !***********************************************************************
     subroutine read_dustvelocity_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=dustvelocity_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=dustvelocity_run_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+
+
 99    return
     endsubroutine read_dustvelocity_run_pars
 !***********************************************************************
     subroutine write_dustvelocity_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       write(unit,NML=dustvelocity_run_pars)
-                                                                                                   
+
     endsubroutine write_dustvelocity_run_pars
 !***********************************************************************
     subroutine rprint_dustvelocity(lreset,lwrite)
@@ -1285,7 +1285,7 @@ module Dustvelocity
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      
+
       if (lwr) then
         write(3,*) 'ndustspec=',ndustspec
         write(3,*) 'nname=',nname

@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.18 2006-08-23 16:53:33 mee Exp $ 
+! $Id: timeavg.f90,v 1.19 2006-11-30 09:03:36 dobler Exp $
 
 module Timeavg
 
@@ -10,7 +10,7 @@ module Timeavg
 
   implicit none
 
-  include 'timeavg.h' 
+  include 'timeavg.h'
 !
   include 'ctimeavg.local'
 !
@@ -94,7 +94,7 @@ module Timeavg
     subroutine wsnap_timeavgs(chsnap,enum,flist)
 !
 !  Write snapshot file for time averages, labelled consecutively if
-!  enum==.true. 
+!  enum==.true.
 !  Otherwise write without label (used for timeavg.dat).
 !  If `flist' is given, add name of snapshot to file flist.
 !

@@ -1,7 +1,7 @@
-! $Id: ghostfold_nompicomm.f90,v 1.7 2006-08-31 06:00:35 ajohan Exp $
+! $Id: ghostfold_nompicomm.f90,v 1.8 2006-11-30 09:03:35 dobler Exp $
 !
-!  This module performs some special mpifunctions that 
-!  also require the Fourier routines. 
+!  This module performs some special mpifunctions that
+!  also require the Fourier routines.
 !
 module GhostFold
 
@@ -74,9 +74,9 @@ module GhostFold
 !
       if (nxgrid/=1) then
         df(l1,m1:m2,n1:n2,ivar1:ivar2)=df(l1,m1:m2,n1:n2,ivar1:ivar2) + &
-            df(l2+1,m1:m2,n1:n2,ivar1:ivar2) 
+            df(l2+1,m1:m2,n1:n2,ivar1:ivar2)
         df(l2,m1:m2,n1:n2,ivar1:ivar2)=df(l2,m1:m2,n1:n2,ivar1:ivar2) + &
-            df(l1-1,m1:m2,n1:n2,ivar1:ivar2) 
+            df(l1-1,m1:m2,n1:n2,ivar1:ivar2)
         df(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
         df(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
       endif
@@ -140,9 +140,9 @@ module GhostFold
 !
       if (nxgrid/=1) then
         f(l1,m1:m2,n1:n2,ivar1:ivar2)=f(l1,m1:m2,n1:n2,ivar1:ivar2) + &
-            f(l2+1,m1:m2,n1:n2,ivar1:ivar2) 
+            f(l2+1,m1:m2,n1:n2,ivar1:ivar2)
         f(l2,m1:m2,n1:n2,ivar1:ivar2)=f(l2,m1:m2,n1:n2,ivar1:ivar2) + &
-            f(l1-1,m1:m2,n1:n2,ivar1:ivar2) 
+            f(l1-1,m1:m2,n1:n2,ivar1:ivar2)
         f(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
         f(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
       endif

@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.64 2006-11-21 06:51:10 ajohan Exp $
+! $Id: pscalar.f90,v 1.65 2006-11-30 09:03:36 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -85,7 +85,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.64 2006-11-21 06:51:10 ajohan Exp $")
+           "$Id: pscalar.f90,v 1.65 2006-11-30 09:03:36 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -118,10 +118,10 @@ module Pscalar
 !  24-nov-02/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-! 
+!
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
-!   
+!
       if (NO_WARN) print*,'f=',f
     endsubroutine initialize_pscalar
 !***********************************************************************
@@ -182,9 +182,9 @@ module Pscalar
     endsubroutine init_lncc
 !***********************************************************************
     subroutine pencil_criteria_pscalar()
-! 
+!
 !  All pencils that the Pscalar module depends on are specified here.
-! 
+!
 !  20-11-04/anders: coded
 !
       integer :: i
@@ -242,7 +242,7 @@ module Pscalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(in) :: f
       intent(inout) :: p
 ! cc
@@ -256,7 +256,7 @@ module Pscalar
           call u_dot_grad(f,ilncc,p%glncc,p%uu,p%uglncc,UPWIND=lupw_lncc)
 ! del2lncc
       if (lpencil(i_del2lncc)) call del2(f,ilncc,p%del2lncc)
-! hlncc        
+! hlncc
       if (lpencil(i_hlncc)) call g2ij(f,ilncc,p%hlncc)
 !
     endsubroutine calc_pencils_pscalar
@@ -273,7 +273,7 @@ module Pscalar
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!      
+!
       real, dimension (nx) :: diff_op
       integer :: j
 !
@@ -350,43 +350,43 @@ module Pscalar
     subroutine read_pscalar_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=pscalar_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=pscalar_init_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+
+
 99    return
     endsubroutine read_pscalar_init_pars
 !***********************************************************************
     subroutine write_pscalar_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       write(unit,NML=pscalar_init_pars)
-                                                                                                   
+
     endsubroutine write_pscalar_init_pars
 !***********************************************************************
     subroutine read_pscalar_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=pscalar_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=pscalar_run_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+
+
 99    return
     endsubroutine read_pscalar_run_pars
 !***********************************************************************
     subroutine write_pscalar_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       write(unit,NML=pscalar_run_pars)
-                                                                                                   
+
     endsubroutine write_pscalar_run_pars
 !***********************************************************************
     subroutine rprint_pscalar(lreset,lwrite)
@@ -496,7 +496,7 @@ module Pscalar
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real :: tensor_pscalar_diff
-!      
+!
       real, save, dimension (nx,ny,nz,3) :: bunit,hhh
       real, dimension (nx) :: tmp,scr
       integer :: iy,iz,i,j

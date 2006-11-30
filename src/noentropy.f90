@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.94 2006-11-16 07:11:32 mee Exp $
+! $Id: noentropy.f90,v 1.95 2006-11-30 09:03:35 dobler Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -24,14 +24,14 @@ module Entropy
   implicit none
 
   include 'entropy.h'
-  
+
 ! run parameters
   real :: hcond0=0.,hcond1=impossible,chi=impossible
   real :: Fbot=impossible,FbotKbot=impossible,Kbot=impossible
   real :: Ftop=impossible,FtopKtop=impossible
   logical :: lmultilayer=.true.
   logical :: lheatc_chiconst=.false.
- 
+
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_ssm=0,idiag_ugradpm=0
   integer :: idiag_thermalpressure=0
@@ -55,7 +55,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.94 2006-11-16 07:11:32 mee Exp $")
+           "$Id: noentropy.f90,v 1.95 2006-11-30 09:03:35 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -64,7 +64,7 @@ module Entropy
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  24-nov-02/tony: coded 
+!  24-nov-02/tony: coded
 !
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
                                  cs0, select_eos_variable
@@ -78,11 +78,11 @@ module Entropy
 !
     !  if (lpretend_lnTT) then
     !    call select_eos_vars('ss',-1) !isentropic
-    !  else 
+    !  else
     !  endif
       if (llocal_iso) then
         call select_eos_variable('cs2',-2) !special local isothermal
-      else 
+      else
         call select_eos_variable('ss',-1) !isentropic => polytropic
       endif
 !
@@ -113,9 +113,9 @@ module Entropy
     endsubroutine init_ss
 !***********************************************************************
     subroutine pencil_criteria_entropy()
-! 
+!
 !  All pencils that the Entropy module depends on are specified here.
-! 
+!
 !  20-11-04/anders: coded
 !
       use Cdata
@@ -139,7 +139,7 @@ module Entropy
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
     subroutine pencil_interdep_entropy(lpencil_in)
-!       
+!
 !  Interdependency among pencils from the Entropy module is specified here.
 !
 !  20-11-04/anders: coded
@@ -163,7 +163,7 @@ module Entropy
     endsubroutine pencil_interdep_entropy
 !***********************************************************************
     subroutine calc_pencils_entropy(f,p)
-!       
+!
 !  Calculate Entropy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
@@ -196,7 +196,7 @@ module Entropy
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************
-    subroutine dss_dt(f,df,p) 
+    subroutine dss_dt(f,df,p)
 !
 !  Isothermal/polytropic equation of state
 !
@@ -206,7 +206,7 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!      
+!
       integer :: j,ju
 !
       intent(in) :: f,p
@@ -228,7 +228,7 @@ module Entropy
         enddo
 !
 !  Add pressure force from global density gradient.
-!  
+!
         if (maxval(abs(beta_glnrho_global))/=0.0) then
           if (headtt) print*, 'dss_dt: adding global pressure gradient force'
           do j=1,3
@@ -256,31 +256,31 @@ module Entropy
     subroutine read_entropy_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_entropy_init_pars
 !***********************************************************************
     subroutine write_entropy_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine write_entropy_init_pars
 !***********************************************************************
     subroutine read_entropy_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_entropy_run_pars
 !***********************************************************************
     subroutine write_entropy_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
     endsubroutine write_entropy_run_pars
 !***********************************************************************

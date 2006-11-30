@@ -1,9 +1,9 @@
-! $Id: noshock.f90,v 1.9 2006-11-22 21:41:16 theine Exp $
+! $Id: noshock.f90,v 1.10 2006-11-30 09:03:36 dobler Exp $
 
 !  This module calculates a divergence of u based shock finding
 !  profile used by shock viscosities and diffusion terms.
 !    eg. the total voscosity is taken as:
-!           nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
+!           nu_total = nu + nu_shock*dx*smooth(max5(-(div u))))
 !    where dx*smooth(max5(-(div u)))) is the profile calculated
 !    here in.
 
@@ -25,6 +25,7 @@ module Shock
   use Cparam
   use Cdata
   use Messages
+  use Sub, only: keep_compiler_quiet
 
   implicit none
 
@@ -35,7 +36,7 @@ module Shock
 
   ! run parameters
   !namelist /shock_run_pars/ dummy
- 
+
   ! other variables (needs to be consistent with reset list below)
 
   contains
@@ -63,7 +64,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noshock.f90,v 1.9 2006-11-22 21:41:16 theine Exp $")
+           "$Id: noshock.f90,v 1.10 2006-11-30 09:03:36 dobler Exp $")
 !
     endsubroutine register_shock
 !***********************************************************************
@@ -73,9 +74,10 @@ module Shock
 !  24-jan-05/tony: modified from visc_shock.f90
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, intent(in) :: lstarting 
+      logical, intent(in) :: lstarting
 
-      if (NO_WARN) print*,lstarting,f(1,1,1,1)
+      call keep_compiler_quiet(lstarting)
+      call keep_compiler_quiet(f)
 
     endsubroutine initialize_shock
 !***********************************************************************
@@ -83,8 +85,8 @@ module Shock
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
 
     endsubroutine read_shock_init_pars
 !***********************************************************************
@@ -132,12 +134,13 @@ module Shock
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      if (NO_WARN) print*, f(1,1,1,1), slices%ready
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_shock
-!!***********************************************************************
+!***********************************************************************
     subroutine pencil_criteria_shock()
-!    
+!
 !  All pencils that the Shock module depends on are specified here.
 !
 !  20-11-04/anders: coded
@@ -156,13 +159,13 @@ module Shock
       use Cdata
 !
       logical, dimension (npencils) :: lpencil_in
-!      
+!
       if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
 !
     endsubroutine pencil_interdep_shock
 !***********************************************************************
     subroutine calc_pencils_shock(f,p)
-!     
+!
 !  Calculate Viscosity pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !

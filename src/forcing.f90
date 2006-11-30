@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.96 2006-09-27 05:39:35 brandenb Exp $
+! $Id: forcing.f90,v 1.97 2006-11-30 09:03:35 dobler Exp $
 
 module Forcing
 
@@ -72,7 +72,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.96 2006-09-27 05:39:35 brandenb Exp $")
+           "$Id: forcing.f90,v 1.97 2006-11-30 09:03:35 dobler Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -565,7 +565,7 @@ module Forcing
           call sum_mn_name(ff,idiag_ffm)
         endif
         if (lmagnetic) then
-          if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then 
+          if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
             call curl(f,iaa,bb)
             call cross(forcing_rhs,bb,fxb)
             call sum_mn_name(fxb(:,1),idiag_fxbxm)
@@ -652,7 +652,7 @@ module Forcing
       ! For printouts
       !
       if (lout) then
-        if (idiag_rufm/=0) then 
+        if (idiag_rufm/=0) then
           irufm=irufm/(nwgrid)
           !
           !  on different processors, irufm needs to be communicated
@@ -755,7 +755,7 @@ module Forcing
       ! For printouts
       !
       if (lout) then
-        if (idiag_rufm/=0) then 
+        if (idiag_rufm/=0) then
           irufm=irufm/(nwgrid)
           !
           !  on different processors, irufm needs to be communicated
@@ -855,7 +855,7 @@ module Forcing
       ! For printouts
       !
       if (lout) then
-        if (idiag_rufm/=0) then 
+        if (idiag_rufm/=0) then
           irufm=irufm/(nwgrid)
           !
           !  on different processors, irufm needs to be communicated
@@ -870,7 +870,7 @@ module Forcing
           itype_name(idiag_rufm)=ilabel_sum
         endif
         if (lmagnetic) then
-          if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then 
+          if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
             call curl(f,iaa,bb)
             call cross(forcing_rhs,bb,fxb)
             call sum_mn_name(fxb(:,1),idiag_fxbxm)
@@ -965,7 +965,7 @@ module Forcing
       ! For printouts
       !
       if (lout) then
-        if (idiag_rufm/=0) then 
+        if (idiag_rufm/=0) then
           irufm=irufm/(nwgrid)
           !
           !  on different processors, irufm needs to be communicated
@@ -1019,7 +1019,7 @@ module Forcing
 !
 !  generate random numbers
 !
-      if (t .gt. tsforce) then  
+      if (t .gt. tsforce) then
         call random_number_wrapper(fran)
         location=fran*Lxyz+xyz0
         tsforce=t+dtforce
@@ -1086,7 +1086,7 @@ module Forcing
       ! For printouts
       !
       if (lout) then
-        if (idiag_rufm/=0) then 
+        if (idiag_rufm/=0) then
           irufm=irufm/(nwgrid)
           !
           !  on different processors, irufm needs to be communicated
@@ -1736,13 +1736,13 @@ module Forcing
          read(9,*) (kkz(ik),ik=1,nk)
          close(9)
       endif
-      ifirst=ifirst+1         
+      ifirst=ifirst+1
 !
 !  Re-calculate forcing wave numbers if necessary
 !
       !tsforce is set to -10 in cdata.f90. It should also be saved in a file
       !so that it will be read again on restarts.
-      if (t .gt. tsforce) then  
+      if (t .gt. tsforce) then
          if (tsforce .lt. 0) then
             call random_number_wrapper(fran1)
          else
@@ -1774,7 +1774,7 @@ module Forcing
       force_vec=p_weight*force1+(1-p_weight)*force2
 !
 ! Find energy input
-!      
+!
       if (lout .or. lwork_ff) then
         if (idiag_rufm/=0 .or. lwork_ff) then
           irufm=0
@@ -1793,7 +1793,7 @@ module Forcing
       endif
       irufm=irufm/(ncpus*nw)
 !
-! If we want to make energy input constant  
+! If we want to make energy input constant
 !
       if (lwork_ff) then
 
@@ -1806,7 +1806,7 @@ module Forcing
         irufm=fsum(1)
         call mpibcast_real(irufm,1)
 !
-! What should be added to force_vec in order to make the energy 
+! What should be added to force_vec in order to make the energy
 ! input equal to work_ff?
 !
         mulforce_vec=work_ff/irufm
@@ -1814,14 +1814,14 @@ module Forcing
       endif
 !
 !  Add forcing
-! 
+!
       f(l1:l2,m1:m2,n1:n2,1:3)= &
            f(l1:l2,m1:m2,n1:n2,1:3)+force_vec(l1:l2,m1:m2,n1:n2,:)*mulforce_vec
 !
 ! Save for printouts
 !
       if (lout) then
-        if (idiag_rufm/=0) then          
+        if (idiag_rufm/=0) then
           fname(idiag_rufm)=irufm*mulforce_vec
           itype_name(idiag_rufm)=ilabel_sum
         endif
@@ -2034,23 +2034,23 @@ module Forcing
     subroutine read_forcing_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat).and.NO_WARN) print*,iostat 
+
+      if (present(iostat).and.NO_WARN) print*,iostat
       if (NO_WARN) print *,unit
-                                                                                                   
+
     endsubroutine read_forcing_init_pars
 !***********************************************************************
     subroutine write_forcing_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print *,unit
-                                                                                                   
+
     endsubroutine write_forcing_init_pars
 !***********************************************************************
     subroutine read_forcing_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=forcing_run_pars,ERR=99, IOSTAT=iostat)
       else
@@ -2062,9 +2062,9 @@ module Forcing
 !***********************************************************************
     subroutine write_forcing_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       write(unit,NML=forcing_run_pars)
-                                                                                                   
+
     endsubroutine write_forcing_run_pars
 !***********************************************************************
     subroutine input_persistent_forcing(id,lun,done)
@@ -2110,9 +2110,9 @@ module Forcing
     endsubroutine output_persistent_forcing
 !***********************************************************************
     subroutine pencil_criteria_forcing()
-! 
+!
 !  All pencils that the Density module depends on are specified here.
-! 
+!
 !  17-jul-06/axel: coded
 !
       use Cdata
@@ -2137,7 +2137,7 @@ module Forcing
         lpencil_in(i_rho)=.true.
         lpencil_in(i_rho1)=.true.
       endif
-!   
+!
     endsubroutine pencil_interdep_forcing
 !***********************************************************************
     subroutine rprint_forcing(lreset,lwrite)

@@ -1,4 +1,4 @@
-! $Id: visc_smagorinsky.f90,v 1.11 2006-08-23 16:53:33 mee Exp $
+! $Id: visc_smagorinsky.f90,v 1.12 2006-11-30 09:03:36 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here smagorinsky viscosity
@@ -34,7 +34,7 @@ module Viscosity
 
   ! run parameters
   namelist /viscosity_run_pars/ nu, lvisc_first,ivisc,c_smag
- 
+
   ! other variables (needs to be consistent with reset list below)
   !integer :: idiag_nu_LES=0
 
@@ -69,7 +69,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_smagorinsky.f90,v 1.11 2006-08-23 16:53:33 mee Exp $")
+           "$Id: visc_smagorinsky.f90,v 1.12 2006-11-30 09:03:36 dobler Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -109,7 +109,7 @@ module Viscosity
 !
       use Cdata
       use Sub
-! 
+!
       logical :: lreset
       logical, optional :: lwrite
       integer :: iname
@@ -135,12 +135,12 @@ module Viscosity
           write(3,*) 'i_nu_LES=',idiag_nu_LES
         endif
       endif
-!   
+!
       if(NO_WARN) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_viscosity
 !***********************************************************************
     subroutine pencil_criteria_viscosity()
-!    
+!
 !  All pencils that the Viscosity module depends on are specified here.
 !
 !  21-11-04/anders: coded
@@ -156,13 +156,13 @@ module Viscosity
       use Cdata
 !
       logical, dimension (npencils) :: lpencil_in
-!      
+!
       if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
 !
     endsubroutine pencil_interdep_viscosity
 !***********************************************************************
     subroutine calc_pencils_viscosity(f,p)
-!     
+!
 !  Calculate Viscosity pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
@@ -210,7 +210,7 @@ module Viscosity
 !
             sij2=sij2+tmp(l1:l2,m1:m2,n1:n2,1)*tmp(l1:l2,m1:m2,n1:n2,2) &
                  +0.5*tmp(l1:l2,m1:m2,n1:n2,1)**2 &
-                 +0.5*tmp(l1:l2,m1:m2,n1:n2,2)**2 
+                 +0.5*tmp(l1:l2,m1:m2,n1:n2,2)**2
          enddo
       enddo
 !
@@ -264,34 +264,34 @@ module Viscosity
       if (j==1 .and. nxgrid/=1) then
           tmp(     1,:,:) = (- 3.*var(1,:,:) &
                             + 4.*var(2,:,:) &
-                            - 1.*var(3,:,:))/(2.*dx) 
+                            - 1.*var(3,:,:))/(2.*dx)
           tmp(2:mx-1,:,:) = (- 1.*var(1:mx-2,:,:) &
-                            + 1.*var(3:mx  ,:,:))/(2.*dx) 
+                            + 1.*var(3:mx  ,:,:))/(2.*dx)
           tmp(    mx,:,:) = (+ 1.*var(mx-2,:,:) &
                             - 4.*var(mx-1,:,:) &
-                            + 3.*var(mx  ,:,:))/(2.*dx) 
+                            + 3.*var(mx  ,:,:))/(2.*dx)
       endif
 !
       if (j==2 .and. nygrid/=1) then
           tmp(:,     1,:) = (- 3.*var(:,1,:) &
                             + 4.*var(:,2,:) &
-                            - 1.*var(:,3,:))/(2.*dy) 
+                            - 1.*var(:,3,:))/(2.*dy)
           tmp(:,2:my-1,:) = (- 1.*var(:,1:my-2,:) &
-                            + 1.*var(:,3:my  ,:))/(2.*dy) 
+                            + 1.*var(:,3:my  ,:))/(2.*dy)
           tmp(:,    my,:) = (+ 1.*var(:,my-2,:) &
                             - 4.*var(:,my-1,:) &
-                            + 3.*var(:,my  ,:))/(2.*dy) 
+                            + 3.*var(:,my  ,:))/(2.*dy)
       endif
 !
       if (j==3 .and. nzgrid/=1) then
           tmp(:,:,     1) = (- 3.*var(:,:,1) &
                             + 4.*var(:,:,2) &
-                            - 1.*var(:,:,3))/(2.*dz) 
+                            - 1.*var(:,:,3))/(2.*dz)
           tmp(:,:,2:mz-1) = (- 1.*var(:,:,1:mz-2) &
-                            + 1.*var(:,:,3:mz  ))/(2.*dz) 
+                            + 1.*var(:,:,3:mz  ))/(2.*dz)
           tmp(:,:,    mz) = (+ 1.*var(:,:,mz-2) &
                             - 4.*var(:,:,mz-1) &
-                            + 3.*var(:,:,mz  ))/(2.*dz) 
+                            + 3.*var(:,:,mz  ))/(2.*dz)
       endif
 !
     end subroutine der_2nd_nof
@@ -399,7 +399,7 @@ module Viscosity
          !
          if (lroot) print*, 'No such value for ivisc: ', trim(ivisc)
          call stop_it('calc_viscous_forcing')
-         
+
       endselect
       !
       ! Add ordinary viscosity if nu /= 0

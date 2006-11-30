@@ -1,6 +1,6 @@
-! $Id: sub.f90,v 1.267 2006-11-16 07:07:15 mee Exp $ 
+! $Id: sub.f90,v 1.268 2006-11-30 09:03:36 dobler Exp $
 
-module Sub 
+module Sub
 
   use Messages
 
@@ -42,7 +42,7 @@ module Sub
 
   public :: read_line_from_file, noform
   public :: remove_file
-  
+
   public :: update_snaptime, read_snaptime
   public :: inpui, outpui, inpup, outpup
   public :: parse_shell
@@ -72,7 +72,7 @@ module Sub
   endinterface
 
   interface grad                 ! Overload the `grad' function
-    module procedure grad_main   ! grad of an 'mvar' variable  
+    module procedure grad_main   ! grad of an 'mvar' variable
     module procedure grad_other  ! grad of another field (mx,my,mz)
   endinterface
 
@@ -85,9 +85,15 @@ module Sub
   endinterface
 
   interface keep_compiler_quiet ! Overload `keep_compiler_quiet' function
-    module procedure keep_compiler_quiet_r4d
+    module procedure keep_compiler_quiet_r
+    module procedure keep_compiler_quiet_r1d
     module procedure keep_compiler_quiet_r3d
+    module procedure keep_compiler_quiet_r4d
     module procedure keep_compiler_quiet_p
+    module procedure keep_compiler_quiet_bc
+    module procedure keep_compiler_quiet_sl
+    module procedure keep_compiler_quiet_i1d
+    module procedure keep_compiler_quiet_i
     module procedure keep_compiler_quiet_l1d
     module procedure keep_compiler_quiet_l
   endinterface
@@ -229,9 +235,9 @@ module Sub
 
 !ajwm Commented pending a C replacement
 !  INTERFACE getenv
-!    SUBROUTINE GETENV (VAR, VALUE) 
-!      CHARACTER(LEN=*) VAR, VALUE 
-!    END SUBROUTINE 
+!    SUBROUTINE GETENV (VAR, VALUE)
+!      CHARACTER(LEN=*) VAR, VALUE
+!    END SUBROUTINE
 !  END INTERFACE
 
   real, dimension(7,7,7), parameter :: smth_kernel = reshape((/ &
@@ -270,7 +276,7 @@ module Sub
  2.69243e-05,5.46411e-08,1.24384e-08,9.14337e-06, 0.000183649, 0.000425400, 0.000183649, 9.14337e-06, 1.24384e-08, 9.07894e-11,&
  2.21580e-07,9.14337e-06,2.69243e-05,9.14337e-06, 2.21580e-07, 9.07894e-11, 5.03438e-15, 9.07894e-11, 1.24384e-08, 5.46411e-08,&
  1.24384e-08,9.07894e-11,5.03438e-15 /), (/ 7, 7, 7 /))
- 
+
   contains
 
 !***********************************************************************
@@ -364,7 +370,7 @@ module Sub
 !    we can just use
 !         call sum_mn_name(b2,idiag_b2m)
 !  Same holds for similar routines.
-!  Update [28-Sep-2004 wd]: 
+!  Update [28-Sep-2004 wd]:
 !    Done here, but not yet in all other routines
 !
       use Cdata
@@ -373,7 +379,7 @@ module Sub
       integer :: iname
       logical, optional :: lsqrt
 !
-      if (iname /= 0) then 
+      if (iname /= 0) then
 !
         if (lfirstpoint) then
           fname(iname)=sum(a)
@@ -408,7 +414,7 @@ module Sub
 !
       integer, save :: it_save=-1, itsub_save=-1
 !
-      if (iname/=0) then 
+      if (iname/=0) then
 !
         if (it/=it_save .or. itsub/=itsub_save) then
           fname(iname)=0.0
@@ -448,7 +454,7 @@ module Sub
       real :: dv
       integer :: iname,i
 !
-      if (iname /= 0) then 
+      if (iname /= 0) then
 !
          dv=1.
          if (nxgrid/=1) dv=dv*dx
@@ -457,7 +463,7 @@ module Sub
 !
          do i=1,nx
             if ((p%rcyl_mn(i) .le. r_ext).and.(p%rcyl_mn(i) .ge. r_int)) then
-               aux(i) = a(i) 
+               aux(i) = a(i)
             else
                aux(i) = 0.
             endif
@@ -474,7 +480,7 @@ module Sub
       endif
 !
     endsubroutine sum_lim_mn_name
-!*********************************************************    
+!*********************************************************
     subroutine surf_mn_name(a,iname)
 !
 !  successively calculate surface integral. This routine assumes
@@ -504,13 +510,13 @@ module Sub
     subroutine integrate_mn_name(a,iname)
 !
 !  successively calculate sum of a, which is supplied at each call.
-!  Start from zero if lfirstpoint=.true. ultimately multiply by dv 
-!  to get the integral.  This differs from sum_mn_name by the 
+!  Start from zero if lfirstpoint=.true. ultimately multiply by dv
+!  to get the integral.  This differs from sum_mn_name by the
 !  setting of ilabel_integrate and hence in the behaviour in the final
 !  step.
 !
 !   30-may-03/tony: adapted from sum_mn_name
-!   13-nov-06/tony: modified to handle stretched mesh 
+!   13-nov-06/tony: modified to handle stretched mesh
 !
       use Cdata
       use Grid
@@ -726,7 +732,7 @@ module Sub
         if (iname==1 .and. n_nghost==1) then
           do ir=1,nrcyl
             fnamerz(ir,0,ipz+1,iname) &
-                 = fnamerz(ir,0,ipz+1,iname) + sum(1.*phiavg_profile(ir,:))   
+                 = fnamerz(ir,0,ipz+1,iname) + sum(1.*phiavg_profile(ir,:))
           enddo
         endif
 !
@@ -1565,7 +1571,7 @@ module Sub
 !  calculate curl of a vector, get vector
 !  12-sep-97/axel: coded
 !  10-sep-01/axel: adapted for cache efficiency
-!  11-sep-04/axel: began adding spherical coordinates 
+!  11-sep-04/axel: began adding spherical coordinates
 !
       use Cdata
       use Deriv
@@ -1738,9 +1744,9 @@ module Sub
 !     enddo
 !
 
-!      
+!
 !  calculate f_{i,jk} for i /= j /= k
-! 
+!
       if (present(gradcurl)) then
         call derij(f,k1+1,tmp,2,3)
         fjik(:,1)=tmp
@@ -1748,7 +1754,7 @@ module Sub
         fjik(:,2)=tmp
         call derij(f,k1+3,tmp,1,2)
         fjik(:,3)=tmp
-      endif 
+      endif
 !
       if (present(del2)) then
         do i=1,3
@@ -1779,7 +1785,7 @@ module Sub
 
          gradcurl(:,3,1) = fjji(:,3,2) - fijj(:,2,3)
          gradcurl(:,3,2) = fijj(:,1,3) - fjji(:,3,1)
-         gradcurl(:,3,3) = fjik(:,2)   - fjik(:,1)         
+         gradcurl(:,3,3) = fjik(:,2)   - fjik(:,1)
       endif
 !
     endsubroutine del2v_etc
@@ -2123,7 +2129,7 @@ module Sub
     subroutine del6fjv(f,vec,k,del6f)
 !
 !  Calculates fj*del6 (defined here as fx*d^6/dx^6 + fy*d^6/dy^6 + fz*d^6/dz^6)
-!  needed for hyperdissipation of vectors (visc, res) with non-cubic cells where 
+!  needed for hyperdissipation of vectors (visc, res) with non-cubic cells where
 !  the coefficient depends on resolution. Returns vector.
 !
 !  30-oct-06/wlad: adapted from del6v
@@ -2350,7 +2356,7 @@ module Sub
         numeric_precision = 'D'
       else
         print*, 'WARNING: encountered unknown precision ', real_prec
-        numeric_precision = '?'        
+        numeric_precision = '?'
       endif
 !
     endfunction numeric_precision
@@ -2388,7 +2394,7 @@ module Sub
       !  only root writes allprocs/dim.dat (with io_mpio.f90),
       !  but everybody writes to their procN/dim.dat (with io_dist.f90)
       !
-      if (lroot .or. .not. lmonolithic_io) then 
+      if (lroot .or. .not. lmonolithic_io) then
         open(1,file=file)
         write(1,'(5i7)') mxout1,myout1,mzout1,mvar,maux
         !
@@ -2630,7 +2636,7 @@ module Sub
 !***********************************************************************
     subroutine despike(f,j,retval,factor)
 !
-!  Remove large spikes from 
+!  Remove large spikes from
 !  14-aug-06/tony: coded
 !
       use Cdata
@@ -2859,7 +2865,7 @@ module Sub
 !  of correct length (depending on format) with dashes
 !  for output as legend.dat and first line of time_series.dat
 !
-!  22-jun-02/axel: coded 
+!  22-jun-02/axel: coded
 !
       character (len=*) :: cname
       character (len=20) :: noform,cform,cnumber,dash='----------'
@@ -2912,14 +2918,14 @@ module Sub
 99    print*,'noform: formatting problem'
       print*,'problematic cnumber= <',cnumber,'>'
       number=10
-      goto 10     
+      goto 10
     endfunction noform
 !***********************************************************************
     function levi_civita(i,j,k)
 !
 !  totally antisymmetric tensor
 !
-!  20-jul-03/axel: coded 
+!  20-jul-03/axel: coded
 !
       real :: levi_civita
       integer :: i,j,k
@@ -2944,7 +2950,7 @@ module Sub
 !
 !  Horner's scheme for polynomial evaluation.
 !  Version for 1d array.
-!  17-jan-02/wolf: coded 
+!  17-jan-02/wolf: coded
 !
       real, dimension(:) :: coef
       real, dimension(:) :: x
@@ -2964,7 +2970,7 @@ module Sub
 !
 !  Horner's scheme for polynomial evaluation.
 !  Version for scalar.
-!  17-jan-02/wolf: coded 
+!  17-jan-02/wolf: coded
 !
       real, dimension(:) :: coef
       real :: x
@@ -2984,7 +2990,7 @@ module Sub
 !
 !  Horner's scheme for polynomial evaluation.
 !  Version for 3d array.
-!  17-jan-02/wolf: coded 
+!  17-jan-02/wolf: coded
 !
       real, dimension(:) :: coef
       real, dimension(:,:,:) :: x
@@ -3039,7 +3045,7 @@ module Sub
 !***********************************************************************
       function cubic_step_pt(x,x0,width,shift)
 !
-!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w]. 
+!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w].
 !  Optional argument SHIFT shifts center:
 !  for shift=1. the interval is [x0    ,x0+2*w],
 !  for shift=-1. it is          [x0-2*w,x0    ].
@@ -3067,7 +3073,7 @@ module Sub
 !***********************************************************************
       function cubic_step_mn(x,x0,width,shift)
 !
-!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w]. 
+!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w].
 !  Version for 1d arg (in particular pencils).
 !
 !  18-apr-04/wolf: coded
@@ -3090,7 +3096,7 @@ module Sub
 !***********************************************************************
       function cubic_step_global(x,x0,width,shift)
 !
-!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w]. 
+!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w].
 !  Version for 3d-array arg.
 !
 !  18-apr-04/wolf: coded
@@ -3112,7 +3118,7 @@ module Sub
 !***********************************************************************
       function cubic_der_step_pt(x,x0,width,shift)
 !
-!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w]. 
+!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w].
 !  Optional argument SHIFT shifts center:
 !  for shift=1. the interval is [x0    ,x0+2*w],
 !  for shift=-1. it is          [x0-2*w,x0    ].
@@ -3139,7 +3145,7 @@ module Sub
 !***********************************************************************
       function cubic_der_step_mn(x,x0,width,shift)
 !
-!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w]. 
+!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w].
 !  Version for 1d arg (in particular pencils).
 !
 !  12-jul-05/axel: adapted from cubic_step_mn
@@ -3163,7 +3169,7 @@ module Sub
 !***********************************************************************
       function cubic_der_step_global(x,x0,width,shift)
 !
-!  Smooth unit der_step function with cubic (smooth) transition over [x0-w,x0+w]. 
+!  Smooth unit der_step function with cubic (smooth) transition over [x0-w,x0+w].
 !  Version for 3d-array arg.
 !
 !  12-jul-05/axel: adapted from cubic_step_global
@@ -3186,7 +3192,7 @@ module Sub
 !***********************************************************************
       function quintic_step_pt(x,x0,width,shift)
 !
-!  Smooth unit step function with quintic (smooth) transition over [x0-w,x0+w]. 
+!  Smooth unit step function with quintic (smooth) transition over [x0-w,x0+w].
 !  Optional argument SHIFT shifts center:
 !  for shift=1. the interval is [x0    ,x0+2*w],
 !  for shift=-1. it is          [x0-2*w,x0    ].
@@ -3215,7 +3221,7 @@ module Sub
       function quintic_step_mn(x,x0,width,shift)
 !
 !  Smooth unit step function with quintic (smooth) transition over [x0-w,x0+w].
-! 
+!
 !  Version for 1d arg (in particular pencils).
 !
 !  09-aug-05/wolf: coded
@@ -3238,7 +3244,7 @@ module Sub
 !***********************************************************************
       function quintic_step_global(x,x0,width,shift)
 !
-!  Smooth unit step function with quintic (smooth) transition over [x0-w,x0+w]. 
+!  Smooth unit step function with quintic (smooth) transition over [x0-w,x0+w].
 !
 !  Version for 3d-array arg.
 !
@@ -3261,7 +3267,7 @@ module Sub
 !***********************************************************************
       function quintic_der_step_pt(x,x0,width,shift)
 !
-!  Derivative of smooth unit step function, localized to [x0-w,x0+w]. 
+!  Derivative of smooth unit step function, localized to [x0-w,x0+w].
 !
 !  This version is for scalar args.
 !
@@ -3287,7 +3293,7 @@ module Sub
 !***********************************************************************
       function quintic_der_step_mn(x,x0,width,shift)
 !
-!  Derivative of smooth unit step function, localized to [x0-w,x0+w]. 
+!  Derivative of smooth unit step function, localized to [x0-w,x0+w].
 !
 !  Version for 1d arg (in particular pencils).
 !
@@ -3313,7 +3319,7 @@ module Sub
 !***********************************************************************
       function quintic_der_step_global(x,x0,width,shift)
 !
-!  Derivative of smooth unit step function, localized to [x0-w,x0+w]. 
+!  Derivative of smooth unit step function, localized to [x0-w,x0+w].
 !
 !  Version for 3d-array arg.
 !
@@ -3338,7 +3344,7 @@ module Sub
 !***********************************************************************
       function sine_step_pt(x,x0,width,shift)
 !
-!  Smooth unit step function with sine (smooth) transition over [x0-w,x0+w]. 
+!  Smooth unit step function with sine (smooth) transition over [x0-w,x0+w].
 !  Optional argument SHIFT shifts center:
 !  for shift=1. the interval is [x0    ,x0+2*w],
 !  for shift=-1. it is          [x0-2*w,x0    ].
@@ -3367,7 +3373,7 @@ module Sub
       function sine_step_mn(x,x0,width,shift)
 !
 !  Smooth unit step function with sine (smooth) transition over [x0-w,x0+w].
-! 
+!
 !  Version for 1d arg (in particular pencils).
 !
 !  13-jun-06/tobi: Adapted from cubic_step
@@ -3390,7 +3396,7 @@ module Sub
 !***********************************************************************
       function sine_step_global(x,x0,width,shift)
 !
-!  Smooth unit step function with sine (smooth) transition over [x0-w,x0+w]. 
+!  Smooth unit step function with sine (smooth) transition over [x0-w,x0+w].
 !
 !  Version for 3d-array arg.
 !
@@ -3546,7 +3552,7 @@ module Sub
           endselect
 
         endif
-!        
+!
 !  Overwrite with supplied intervals
 !
         if (present(int1)) then  ! x
@@ -3591,6 +3597,76 @@ module Sub
 !
       endsubroutine nan_inform
 !***********************************************************************
+      subroutine keep_compiler_quiet_r(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        use Cparam, only: NO_WARN
+!
+        real     :: v1, v2, v3, v4
+        optional ::     v2, v3, v4
+!
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_r', &
+              'The world is a disk, and we never got here...')
+          print*,                  v1
+          if (present(v2)) print*, v2
+          if (present(v3)) print*, v3
+          if (present(v4)) print*, v4
+        endif
+!
+      endsubroutine keep_compiler_quiet_r
+!***********************************************************************
+      subroutine keep_compiler_quiet_r1d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        use Cparam, only: NO_WARN
+!
+        real, dimension(:) :: v1, v2, v3, v4
+        optional           ::     v2, v3, v4
+!
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_r3d', &
+              '91 is a prime, and we never got here...')
+          print*,                  minval(v1)
+          if (present(v2)) print*, minval(v2)
+          if (present(v3)) print*, minval(v3)
+          if (present(v4)) print*, minval(v4)
+        endif
+!
+      endsubroutine keep_compiler_quiet_r1d
+!***********************************************************************
+      subroutine keep_compiler_quiet_r3d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        use Cparam, only: NO_WARN
+!
+        real, dimension(:,:,:) :: v1, v2, v3, v4
+        optional               ::     v2, v3, v4
+!
+
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_r3d', &
+              '91 is a prime, and we never got here...')
+          print*,                  minval(v1)
+          if (present(v2)) print*, minval(v2)
+          if (present(v3)) print*, minval(v3)
+          if (present(v4)) print*, minval(v4)
+        endif
+!
+      endsubroutine keep_compiler_quiet_r3d
+!***********************************************************************
       subroutine keep_compiler_quiet_r4d(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
@@ -3614,30 +3690,6 @@ module Sub
 !
       endsubroutine keep_compiler_quiet_r4d
 !***********************************************************************
-      subroutine keep_compiler_quiet_r3d(v1,v2,v3,v4)
-!
-!  Call this to avoid compiler warnings about unused variables.
-!  Optional arguments allow for more variables of the same shape+type.
-!
-!  04-aug-06/wolf: coded
-!
-        use Cparam, only: NO_WARN
-!
-        real, dimension(:,:,:) :: v1, v2, v3, v4
-        optional               ::     v2, v3, v4
-!
-        
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_r3d', &
-              '91 is a prime, and we never got here...')
-          print*,                  minval(v1)
-          if (present(v2)) print*, minval(v2)
-          if (present(v3)) print*, minval(v3)
-          if (present(v4)) print*, minval(v4)
-        endif
-!
-      endsubroutine keep_compiler_quiet_r3d
-!***********************************************************************
       subroutine keep_compiler_quiet_p(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
@@ -3650,7 +3702,7 @@ module Sub
         type (pencil_case) :: v1, v2, v3, v4
         optional           ::     v2, v3, v4
 !
-        
+
         if (NO_WARN) then
           call error('keep_compiler_quiet_p', &
               'The world is a disk, and we never got here...')
@@ -3661,6 +3713,102 @@ module Sub
         endif
 !
       endsubroutine keep_compiler_quiet_p
+!***********************************************************************
+      subroutine keep_compiler_quiet_bc(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        use Cparam, only: NO_WARN, boundary_condition
+!
+        type (boundary_condition) :: v1, v2, v3, v4
+        optional                  ::     v2, v3, v4
+!
+
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_p', &
+              'The world is a disk, and we never got here...')
+          print*,                  v1
+          if (present(v2)) print*, v2
+          if (present(v3)) print*, v3
+          if (present(v4)) print*, v4
+        endif
+!
+      endsubroutine keep_compiler_quiet_bc
+!***********************************************************************
+      subroutine keep_compiler_quiet_sl(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        use Cparam, only: NO_WARN, slice_data
+!
+        type (slice_data) :: v1, v2, v3, v4
+        optional          ::     v2, v3, v4
+!
+
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_p', &
+              'The world is a disk, and we never got here...')
+          print*,                  v1%ix
+          if (present(v2)) print*, v2%ix
+          if (present(v3)) print*, v3%ix
+          if (present(v4)) print*, v4%ix
+        endif
+!
+      endsubroutine keep_compiler_quiet_sl
+!***********************************************************************
+      subroutine keep_compiler_quiet_i1d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        use Cparam, only: NO_WARN
+!
+        integer, dimension(:)  :: v1, v2, v3, v4
+        optional               ::     v2, v3, v4
+!
+
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_i1d', &
+              'The world is a disk, and we never got here...')
+          print*,                  v1(1)
+          if (present(v2)) print*, v2(1)
+          if (present(v3)) print*, v3(1)
+          if (present(v4)) print*, v4(1)
+        endif
+!
+      endsubroutine keep_compiler_quiet_i1d
+!***********************************************************************
+      subroutine keep_compiler_quiet_i(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        use Cparam, only: NO_WARN
+!
+        integer  :: v1, v2, v3, v4
+        optional ::     v2, v3, v4
+!
+
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_1', &
+              'The world is a disk, and we never got here...')
+          print*,                  v1
+          if (present(v2)) print*, v2
+          if (present(v3)) print*, v3
+          if (present(v4)) print*, v4
+        endif
+!
+      endsubroutine keep_compiler_quiet_i
 !***********************************************************************
       subroutine keep_compiler_quiet_l1d(v1,v2,v3,v4)
 !
@@ -3674,9 +3822,9 @@ module Sub
         logical, dimension(:)  :: v1, v2, v3, v4
         optional               ::     v2, v3, v4
 !
-        
+
         if (NO_WARN) then
-          call error('keep_compiler_quiet_4d', &
+          call error('keep_compiler_quiet_l1d', &
               'The world is a disk, and we never got here...')
           print*,                  v1(1)
           if (present(v2)) print*, v2(1)
@@ -3698,9 +3846,9 @@ module Sub
         logical  :: v1, v2, v3, v4
         optional ::     v2, v3, v4
 !
-        
+
         if (NO_WARN) then
-          call error('keep_compiler_quiet_4d', &
+          call error('keep_compiler_quiet_l', &
               'The world is a disk, and we never got here...')
           print*,                  v1
           if (present(v2)) print*, v2
@@ -3875,7 +4023,7 @@ module Sub
         do while (i <= nname)
           if (ccname(i) == vlabel) then
             if (nname+2 > mname) then ! sanity check
-              call stop_it("EXPAND_CNAME: Too many labels in list") 
+              call stop_it("EXPAND_CNAME: Too many labels in list")
             endif
             ccname(i+3:nname+2) = ccname(i+1:nname)
             ccname(i:i+2) = (/xlabel,ylabel,zlabel/)
@@ -3896,7 +4044,7 @@ module Sub
 !
       character (len=*) :: strin, strout
       character (len=255) :: envname, chunk !, envvalue
-      character (len=1) :: chr 
+      character (len=1) :: chr
       character (len=64), parameter :: envnamechars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-'
       integer :: inptr, inlen, envstart, nameptr
 !
@@ -3915,8 +4063,8 @@ dlrloop:do
         inptr = envstart + 1;
         if (inptr .gt. inlen) exit dlrloop
 
-        nameptr = inptr 
-nameloop: do 
+        nameptr = inptr
+nameloop: do
           chr = trim(strin(nameptr:nameptr))
           if (index(envnamechars,chr) .gt. 0) then
             nameptr=nameptr+1
@@ -3935,7 +4083,7 @@ nameloop: do
 
         inptr=nameptr
         if (inptr .gt. inlen) exit dlrloop
- 
+
       enddo dlrloop
 
       if (inptr .le. inlen) then
@@ -4037,7 +4185,7 @@ nameloop: do
 !    NAG: 1, Compaq: 2, Intel: 47, SGI: 64, NEC: 256
 !
       use Cparam, only: mseed
-      use Mpicomm, only: lroot,stop_it      
+      use Mpicomm, only: lroot,stop_it
       use General, only: random_seed_wrapper
 !
       integer :: nseed
@@ -4123,7 +4271,7 @@ nameloop: do
       write(1,'(A)'  ) '# Creator: The Pencil Code'
       write(1,'(A,A)') '# Date: ', trim(date)
       write(1,'(A,A)') 'file = ', trim(datadir)//'/proc0/var.dat'
-      write(1,'(A,I4," x ",I4," x ",I4)') 'grid = ', mx, my, mz 
+      write(1,'(A,I4," x ",I4," x ",I4)') 'grid = ', mx, my, mz
       write(1,'(A)'  ) '# NB: setting lsb (little endian); may need to change this to msb'
       write(1,'(A,A," ",A)') 'format = ', 'lsb', 'ieee'
       write(1,'(A,A)') 'header = ', 'bytes 4'
@@ -4135,7 +4283,7 @@ nameloop: do
       write(1,'(A,A)') 'dependency = ', trim(dep)
       write(1,'(A,A,6(", ",1PG12.4))') 'positions = ', &
            'regular, regular, regular', &
-           x00, dx, y00, dy, z00, dz 
+           x00, dx, y00, dy, z00, dz
       write(1,'(A)') ''
       write(1,'(A)') 'end'
 !
@@ -4423,27 +4571,27 @@ nameloop: do
 !  calculates tensor diffusion with variable tensor (or constant tensor)
 !  calculates parts common to both variable and constant tensor first
 !  note:ecr=lnecr in the below comment
-!  
+!
 !  write diffusion tensor as K_ij = Kpara*ni*nj + (Kperp-Kpara)*del_ij.
 !
 !  vKperp*del2ecr + d_i(vKperp)d_i(ecr) + (vKpara-vKperp) d_i(n_i*n_j*d_j ecr)
 !      + n_i*n_j*d_i(ecr)d_j(vKpara-vKperp)
-!   
-!  = vKperp*del2ecr + gKperp.gecr + (vKpara-vKperp) (H.G + ni*nj*Gij) 
+!
+!  = vKperp*del2ecr + gKperp.gecr + (vKpara-vKperp) (H.G + ni*nj*Gij)
 !      + ni*nj*Gi*(vKpara_j - vKperp_j),
 !  where H_i = (nj bij - 2 ni nj nk bk,j)/|b| and vKperp, vKpara are variable
 !  diffusion coefficients
-! 
+!
 !  calculates (K.gecr).gecr
 !  =  vKperp(gecr.gecr) + (vKpara-vKperp)*Gi(ni*nj*Gj)
-!                     
+!
 !  adds both parts into decr/dt
 !
 !  10-oct-03/axel: adapted from pscalar
 !  30-nov-03/snod: adapted from tensor_diff without variable diffusion
 !  04-dec-03/snod: converted for evolution of lnecr (=ecr)
 !   9-apr-04/axel: adapted for general purpose tensor diffusion
-!  25-jun-05/bing: 
+!  25-jun-05/bing:
 !
       use Cdata
 !
@@ -4508,11 +4656,11 @@ nameloop: do
         tmp=tmp+tmpi**2
 !
 !  calculate gecr2 - needed for lnecr form
-!  
+!
         call dot2_mn(gecr,gecr2)
       endif
 !
-!  if variable tensor, add extra terms and add result into decr/dt 
+!  if variable tensor, add extra terms and add result into decr/dt
 !
 !  set gvKpara, gvKperp
 !

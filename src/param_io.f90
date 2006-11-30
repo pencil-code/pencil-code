@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.259 2006-11-18 18:55:42 brandenb Exp $ 
+! $Id: param_io.f90,v 1.260 2006-11-30 09:03:36 dobler Exp $
 
 module Param_IO
 
@@ -36,8 +36,8 @@ module Param_IO
   use Shock
   use Messages
   use Planet
- 
-  implicit none 
+
+  implicit none
 
   private
 
@@ -47,7 +47,7 @@ module Param_IO
   public :: rparam, wparam, wparam2, write_pencil_info
 
   !
-  ! The following fixes namelist problems withi MIPSpro 7.3.1.3m 
+  ! The following fixes namelist problems withi MIPSpro 7.3.1.3m
   ! under IRIX -- at least for the moment
   !
   character (len=labellen) :: mips_is_buggy='system'
@@ -132,7 +132,7 @@ module Param_IO
 !
 !   2-nov-02/axel: adapted from get_datadir
 !
-      character (len=*) :: dir 
+      character (len=*) :: dir
       character (len=120) :: tdir
       character (len=10) :: a_format
       logical :: exist
@@ -321,7 +321,7 @@ module Param_IO
 !***********************************************************************
     subroutine sample_startpars(label,iostat)
       use Mpicomm, only: stop_it
-      
+
       character (len=*), optional :: label
       integer, optional :: iostat
 
@@ -563,7 +563,7 @@ module Param_IO
 !
 !  Copy boundary conditions on first dust species to all others
 !
-      call copy_bcs_dust 
+      call copy_bcs_dust
 !
 !  print cvs id from first line
 !
@@ -577,7 +577,7 @@ module Param_IO
 !
 !  Give online feedback if called with the PRINT optional argument
 !  Note: Some compiler's [like Compaq's] code crashes with the more
-!  compact `if (present(print) .and. print)' 
+!  compact `if (present(print) .and. print)'
 !
       if (present(print)) then
         if (print) then
@@ -621,7 +621,7 @@ module Param_IO
 !***********************************************************************
     subroutine sample_runpars(label,iostat)
       use Mpicomm, only: stop_it
-      
+
       character (len=*), optional :: label
       integer, optional :: iostat
 
@@ -833,7 +833,7 @@ module Param_IO
         print*,"any(bc=='p'.or. bc=='she'), .not.lperi(j) = ", &
           any(bc=='p'.or. bc=='she'), .not.lperi(j)
         print*, "any(bcx/='p'.and.bcx/='she'), lperi(j) = ", &
-          any(bc=='p'.or. bc=='she'), .not.lperi(j) 
+          any(bc=='p'.or. bc=='she'), .not.lperi(j)
       endif
 !
     endsubroutine warning_lperi
@@ -903,7 +903,7 @@ module Param_IO
         call write_particles_init_pars_wrap(1)
         call write_shock_init_pars(1)
         ! The following parameters need to be communicated to IDL
-        write(1,NML=lphysics              ) 
+        write(1,NML=lphysics              )
         close(1)
 !      endif
 !
@@ -1021,6 +1021,6 @@ module Param_IO
      enddo
 !
    endsubroutine write_pencil_info
-!   
+!
 endmodule Param_IO
 

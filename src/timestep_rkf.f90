@@ -1,4 +1,4 @@
-! $Id: timestep_rkf.f90,v 1.4 2006-10-16 08:16:31 dobler Exp $
+! $Id: timestep_rkf.f90,v 1.5 2006-11-30 09:03:36 dobler Exp $
 
 module Timestep
 
@@ -53,10 +53,10 @@ module Timestep
       integer :: j,i
 
       ldt=.false.
-  
+
       ! General error condition
       errcon = (5.0/safety)**(1.0/dt_increase)
-  
+
       if (itorder/=5) &
         call fatal_error('rk_2n','itorder must be 5 for Runge-Kutta-Fehlberg')
 
@@ -70,7 +70,7 @@ module Timestep
             call fatal_error("rk_2n", &
                    "Shear, interstallar and particles are not" // &
                    " yet supported by the adaptive rkf scheme")
-  
+
       lfirst=.true.
       do i=1,10
         ! Do a Runge-Kutta step
@@ -89,7 +89,7 @@ module Timestep
           print*, 'WARNING: Timestep underflow in rkqs()'
         end if
       end do
-  
+
 !      print*,"errmax, errcon", errmax,errcon
       if (errmax > errcon) then
         ! Increase the time step
@@ -98,7 +98,7 @@ module Timestep
         ! But not by more than a factor of 5
         dt_next = 5.0*dt
       end if
-  
+
       ! Time step that was actually performed
       dt_did = dt
 
@@ -150,7 +150,7 @@ module Timestep
       real, parameter :: dc4      = c4 - 13525.0 / 55296.0
       real, parameter :: dc5      = c5 - 277.0 / 14336.0
       real, parameter :: dc6      = c6 - 0.25
-  
+
       real, dimension (mx,my,mz,mvar), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       type (pencil_case), intent(inout) :: p
@@ -160,7 +160,7 @@ module Timestep
       real, intent(inout) :: errmax
       real :: errmaxs
       integer :: j
-  
+
       k=0.
       df=0.
       errmax=0.
@@ -173,7 +173,7 @@ module Timestep
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
 
       enddo; enddo; enddo
-  
+
       lfirst=.false.
 
       call pde(f+b21*k(1,:,:,:,:), k(2,:,:,:,:),p)
@@ -181,17 +181,17 @@ module Timestep
           k(2,l1:l2,m,n,j) = dt*k(2,l1:l2,m,n,j)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
-  
-  
-  
+
+
+
       call pde(f+b31*k(1,:,:,:,:)+&
                        b32*k(2,:,:,:,:), k(3,:,:,:,:),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           k(3,l1:l2,m,n,j) = dt*k(3,l1:l2,m,n,j)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
-  
-  
+
+
       call pde(f+b41*k(1,:,:,:,:)+&
                        b42*k(2,:,:,:,:)+&
                        b43*k(3,:,:,:,:), k(4,:,:,:,:),p)
@@ -199,8 +199,8 @@ module Timestep
           k(4,l1:l2,m,n,j) = dt*k(4,l1:l2,m,n,j)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
-  
-  
+
+
       call pde(f+b51*k(1,:,:,:,:)+&
                  b52*k(2,:,:,:,:)+&
                  b53*k(3,:,:,:,:)+&
@@ -209,7 +209,7 @@ module Timestep
           k(5,l1:l2,m,n,j) = dt*k(5,l1:l2,m,n,j)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
       enddo; enddo; enddo
-  
+
 
       errmaxs=0.
       call pde(f+b61*k(1,:,:,:,:)+&
@@ -220,7 +220,7 @@ module Timestep
       do j=1,mvar; do n=n1,n2; do m=m1,m2
           df(l1:l2,m,n,j) = dt*df(l1:l2,m,n,j)
       !                *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
-    
+
           err = dc1*k(1,l1:l2,m,n,j) + dc2*k(2,l1:l2,m,n,j) + &
                 dc3*k(3,l1:l2,m,n,j) + dc4*k(4,l1:l2,m,n,j) + &
                 dc5*k(5,l1:l2,m,n,j) + dc6*df(l1:l2,m,n,j)
@@ -228,8 +228,8 @@ module Timestep
           df(l1:l2,m,n,j) = c1*k(1,l1:l2,m,n,j) + c2*k(2,l1:l2,m,n,j) + &
                             c3*k(3,l1:l2,m,n,j) + c4*k(4,l1:l2,m,n,j) + &
                             c5*k(5,l1:l2,m,n,j) + c6*df(l1:l2,m,n,j)
-    
-  
+
+
           ! Get the maximum error over the whole field
 !
 ! Per variable error
@@ -244,23 +244,23 @@ module Timestep
 !          scal=  ( &
 !               abs(f(l1:l2,m,n,j))  + abs(k(1,l1:l2,m,n,j)) + 1e-30)
 !          errmaxs = max(maxval(abs(err/scal)),errmaxs)
- 
-! Constant fractional error 
+
+! Constant fractional error
 !          errmaxs = max(maxval(abs(err/f(l1:l2,m,n,j))),errmaxs)
       enddo; enddo; enddo
       errmaxs=errmaxs/eps
 !
       call mpiallreduce_max(errmaxs,errmax)
-  
+
   end subroutine rkck
 !***********************************************************************
     subroutine timestep_autopsy
 !
-!  After the event, determine where the timestep too short occured 
-!  Kinda like playing Cluedo... Just without the dice. 
+!  After the event, determine where the timestep too short occured
+!  Kinda like playing Cluedo... Just without the dice.
 !
 !  25-aug-04/tony: coded
-! 
+!
       use Cdata
       use Cparam
       use Mpicomm, only: start_serialize, end_serialize
@@ -268,25 +268,25 @@ module Timestep
       real :: dt_local, dt1_max_local, dt1_max_global
       integer :: l
       integer, dimension(1) :: turn
- 
+
       if (lroot) then
         print*,"-------- General Description of Time Step Failure -----------"
         print*,"  it=",it
         print*,"  t=",t
         print*,"  Detailed breakdown not available for Adaptive Runge--Kutta--Fehlberg scheme"
       endif
-  
+
 ! Procs testify in serial
 !     call start_serialize
 !!        if ( dt >= dt_local ) then
 !          print*,"------------------ START OF CONFESSION (", iproc, ") ----------------------"
 !            print*,"     "
 !            print*,"------------------- END OF CONFESSION -----------------------"
-!  
+!
 !!          endif
 !!        endif
 !     call end_serialize
- 
+
     endsubroutine timestep_autopsy
 !***********************************************************************
     subroutine border_profiles()

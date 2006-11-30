@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.201 2006-11-16 16:52:50 theine Exp $
+! $Id: mpicomm.f90,v 1.202 2006-11-30 09:03:35 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -726,7 +726,7 @@ module Mpicomm
 !
       ivar1=1; ivar2=mcom
       if (present(ivar1_opt)) ivar1=ivar1_opt
-      if (present(ivar2_opt)) ivar2=ivar2_opt      
+      if (present(ivar2_opt)) ivar2=ivar2_opt
 !
 !  Sixth order interpolation along the y-direction
 !
@@ -833,7 +833,7 @@ module Mpicomm
 !
       ivar1=1; ivar2=mcom
       if (present(ivar1_opt)) ivar1=ivar1_opt
-      if (present(ivar2_opt)) ivar2=ivar2_opt      
+      if (present(ivar2_opt)) ivar2=ivar2_opt
 !
 !  Sliding periodic boundary conditions in x
 !  ulf:02-mar-02
@@ -1093,7 +1093,7 @@ module Mpicomm
           tag_id, MPI_COMM_WORLD, stat, ierr)
 !
     endsubroutine mpirecv_logical_arr
-!***********************************************************************    
+!***********************************************************************
     subroutine mpirecv_real_scl(bcast_array,nbcast_array,proc_src,tag_id)
 !
 !  Receive real scalar from other processor.
@@ -1243,7 +1243,7 @@ module Mpicomm
           tag_id, MPI_COMM_WORLD,ierr)
 !
     endsubroutine mpisend_logical_arr
-!***********************************************************************   
+!***********************************************************************
     subroutine mpisend_real_scl(bcast_array,nbcast_array,proc_rec,tag_id)
 !
 !  Send real scalar to other processor.
@@ -1909,7 +1909,7 @@ module Mpicomm
 !
       logical :: global_stop_flag
 !
-!  Get global OR of lemergency_brake and distribute it, so all 
+!  Get global OR of lemergency_brake and distribute it, so all
 !  processors agree on whether to call stop_it():
 !
       call MPI_ALLREDUCE(lemergency_brake,global_stop_flag,1,MPI_LOGICAL, &

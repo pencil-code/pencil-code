@@ -308,9 +308,9 @@ module Grid
     endsubroutine construct_grid
 !***********************************************************************
     subroutine pencil_criteria_grid()
-! 
+!
 !  All pencils that this special module depends on are specified here.
-! 
+!
 !  15-nov-06/tony: coded
 !
     endsubroutine pencil_criteria_grid
@@ -352,7 +352,7 @@ module Grid
       use Cparam
       use Cdata
 !
-      real, dimension (mx,my,mz,mfarray) :: f       
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -361,7 +361,7 @@ module Grid
       if (lpencil(i_x_mn)) p%x_mn = x(l1:l2)
       if (lpencil(i_y_mn)) p%y_mn = spread(y(m),1,nx)
       if (lpencil(i_z_mn)) p%z_mn = spread(z(n),1,nx)
-      if (lpencil(i_r_mn)) p%r_mn = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)      
+      if (lpencil(i_r_mn)) p%r_mn = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
 !
 !  evr is the radial unit vector
 !
@@ -445,7 +445,7 @@ module Grid
                               tanh(dble((xi-xistep(2))/delta(2))) )    +  &
             dxyz(3)*0.5*( 1.0 + tanh(dble((xi-xistep(2))/delta(2))) )
 
-        endif 
+        endif
         if (present(gder2)) then
          gder2=                                                                &
           dxyz(1)*0.5*(-1.0)/delta(1)/cosh(dble((xi-xistep(1))/delta(1)))**2 + &
@@ -453,8 +453,8 @@ module Grid
                       (-1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2)+ &
           dxyz(3)*0.5*( 1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2
 
-        endif 
-       endif 
+        endif
+       endif
 
       case default
         if (present(err)) err=.true.
@@ -510,7 +510,7 @@ module Grid
                               tanh(dble((xi-xistep(2))/delta(2))) )    +  &
             dxyz(3)*0.5*( 1.0 + tanh(dble((xi-xistep(2))/delta(2))) )
 
-        endif 
+        endif
         if (present(gder2)) then
          gder2=                                                               &
           dxyz(1)*0.5* (-1.0)/delta(1)/cosh(dble((xi-xistep(1))/delta(1)))**2 +&
@@ -518,7 +518,7 @@ module Grid
                        (-1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2)+&
           dxyz(3)*0.5* ( 1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2
 
-        endif 
+        endif
        endif
 
       case default
@@ -572,7 +572,7 @@ module Grid
         if (lreturn) return
 
         if (abs(dxi)<tol) lreturn=.true.
-        
+
       enddo
 
       call stop_it("FIND_STAR: maximum number of iterations exceeded")

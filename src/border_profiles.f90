@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.10 2006-11-16 07:09:32 mee Exp $ 
+! $Id: border_profiles.f90,v 1.11 2006-11-30 09:03:34 dobler Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -8,7 +8,7 @@
 !
 !***************************************************************
 
-module BorderProfiles 
+module BorderProfiles
 
   use Cparam
   use Cdata
@@ -100,7 +100,7 @@ module BorderProfiles
     endsubroutine initialize_border_profiles
 !***********************************************************************
     subroutine border_driving(f,df,p,f_target,j)
-!                                                           
+!
 !  Position-dependent driving term that attempts to drive pde
 !  the variable toward some target solution on the boundary.
 !
@@ -112,20 +112,20 @@ module BorderProfiles
 !
       call get_drive_time(p,drive_time)
       call get_border(p,pborder)
-!     
+!
       df(l1:l2,m,n,j) = df(l1:l2,m,n,j) &
-           - (f(l1:l2,m,n,j) - f_target)*pborder/drive_time 
+           - (f(l1:l2,m,n,j) - f_target)*pborder/drive_time
 !
     endsubroutine border_driving
 !***********************************************************************
     subroutine get_border(p,pborder)
 !
-! Apply a step function that smoothly goes from zero to one on both sides. 
-! In practice, means that the driving takes place 
+! Apply a step function that smoothly goes from zero to one on both sides.
+! In practice, means that the driving takes place
 ! from r_int to r_int+2*wborder_int, and
 ! from r_ext-2*wborder_ext to r_ext
 !
-! Regions away from these limits are unaffected. 
+! Regions away from these limits are unaffected.
 !
 ! 28-Jul-06/wlad : coded
 !
@@ -140,7 +140,7 @@ module BorderProfiles
          rlim_mn = p%rcyl_mn
       else if (lspherical) then
          rlim_mn = p%r_mn
-      else    
+      else
          rlim_mn = p%x_mn
       endif
 !
@@ -157,7 +157,7 @@ module BorderProfiles
 ! This is problem-dependent, since the driving should occur in the
 ! typical time-scale of the problem. Currently, only the keplerian
 ! orbital time is implemented.
-! 
+!
 ! 28-Jul-06/wlad : coded
 !
       real, dimension(nx),intent(out) :: drive_time
@@ -171,7 +171,7 @@ module BorderProfiles
 !
       real, dimension (mx,my,mz,mvar) :: df
       integer :: j
-! 
+!
 !  Position-dependent quenching factor that multiplies rhs of pde
 !  by a factor that goes gradually to zero near the boundaries.
 !  border_frac is a 3-D array, separately for all three directions.

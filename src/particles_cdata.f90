@@ -1,4 +1,4 @@
-! $Id: particles_cdata.f90,v 1.20 2006-11-17 03:43:06 wlyra Exp $
+! $Id: particles_cdata.f90,v 1.21 2006-11-30 09:03:36 dobler Exp $
 !!
 !! Global particle variables
 !!
@@ -7,8 +7,8 @@ module Particles_cdata
 
   use Cdata
 
-  public 
-  
+  public
+
   real :: dsnap_par_minor=0.0
   real :: rhops=1.0e10, rhop_tilde=0.0, mp_tilde=0.0
   integer, dimension (mpar_loc) :: ipar

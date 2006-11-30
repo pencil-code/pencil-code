@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.35 2006-08-23 16:53:32 mee Exp $
+! $Id: shear.f90,v 1.36 2006-11-30 09:03:36 dobler Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.35 2006-08-23 16:53:32 mee Exp $")
+           "$Id: shear.f90,v 1.36 2006-11-30 09:03:36 dobler Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -80,34 +80,34 @@ module Shear
     subroutine read_shear_init_pars(unit,iostat)
 !
 !
-!    
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-!      
+!
       if (present(iostat)) then
         read(unit,NML=shear_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=shear_init_pars,ERR=99)
       endif
-!      
+!
 99    return
 !
     endsubroutine read_shear_init_pars
 !***********************************************************************
     subroutine write_shear_init_pars(unit)
-!    
+!
 !
 !
       integer, intent(in) :: unit
 !
       write(unit,NML=shear_init_pars)
-!      
+!
     endsubroutine write_shear_init_pars
 !***********************************************************************
     subroutine read_shear_run_pars(unit,iostat)
 !
 !
-!    
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -116,13 +116,13 @@ module Shear
       else
         read(unit,NML=shear_run_pars,ERR=99)
       endif
-!      
+!
 99    return
 !
     endsubroutine read_shear_run_pars
 !***********************************************************************
     subroutine write_shear_run_pars(unit)
-!    
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=shear_run_pars)
@@ -161,14 +161,14 @@ module Shear
 !  Add extra rotation profile.
 !
       if (luy0_extra) uy0=uy0+uy0_extra(n-nghost)
-!        
+!
       do j=1,nvar
         call der(f,j,dfdy,2)
         df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-uy0*dfdy
       enddo
 !
-! Taking care of the fact that the Coriolis force changes when 
-! we have got shear. The rest of the Coriolis force is calculated 
+! Taking care of the fact that the Coriolis force changes when
+! we have got shear. The rest of the Coriolis force is calculated
 ! in hydro.
 !
       if (lhydro) then

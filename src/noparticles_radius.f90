@@ -1,4 +1,4 @@
-! $Id: noparticles_radius.f90,v 1.9 2006-11-22 05:17:38 ajohan Exp $
+! $Id: noparticles_radius.f90,v 1.10 2006-11-30 09:03:36 dobler Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -59,9 +59,9 @@ module Particles_radius
     endsubroutine init_particles_radius
 !***********************************************************************
     subroutine pencil_criteria_par_radius()
-!   
+!
 !  All pencils that the Particles_radius module depends on are specified here.
-! 
+!
 !  21-nov-06/anders: dummy
 !
     endsubroutine pencil_criteria_par_radius
@@ -98,7 +98,7 @@ module Particles_radius
     endsubroutine dap_dt
 !***********************************************************************
     subroutine read_particles_rad_init_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -107,7 +107,7 @@ module Particles_radius
     endsubroutine read_particles_rad_init_pars
 !***********************************************************************
     subroutine write_particles_rad_init_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       if (NO_WARN) print*, unit
@@ -115,7 +115,7 @@ module Particles_radius
     endsubroutine write_particles_rad_init_pars
 !***********************************************************************
     subroutine read_particles_rad_run_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -124,7 +124,7 @@ module Particles_radius
     endsubroutine read_particles_rad_run_pars
 !***********************************************************************
     subroutine write_particles_rad_run_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       if (NO_WARN) print*, unit
@@ -132,7 +132,7 @@ module Particles_radius
     endsubroutine write_particles_rad_run_pars
 !***********************************************************************
     subroutine rprint_particles_radius(lreset,lwrite)
-!   
+!
 !  Read and register print parameters relevant for particles radius.
 !
 !  22-aug-05/anders: dummy
@@ -142,7 +142,7 @@ module Particles_radius
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-!        
+!
       if (lwr) then
         write(3,*) 'iap=', iap
       endif

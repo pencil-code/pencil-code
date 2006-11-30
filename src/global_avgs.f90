@@ -1,8 +1,8 @@
-! $Id: global_avgs.f90,v 1.13 2006-11-17 07:03:41 wlyra Exp $
+! $Id: global_avgs.f90,v 1.14 2006-11-30 09:03:35 dobler Exp $
 !
 ! This module takes care of all the global variables needed when solving
 ! cylindrical problems in a cartesian grid. It saves as global variables
-! the phi-averages of the velocity and magnetic fields  
+! the phi-averages of the velocity and magnetic fields
 !
 ! For spatially variable but time-independent sound speeds, the sound speed
 ! must also be saved as global variable, as well as its gradient.
@@ -40,7 +40,7 @@ module Global
 !
   real, dimension (mx,my,mz,3) :: gg,glnTT
   real, dimension (mx,my,mz) :: rho,cs2
-!  
+!
   contains
 
 !***********************************************************************

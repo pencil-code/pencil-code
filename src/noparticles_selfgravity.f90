@@ -1,4 +1,4 @@
-! $Id: noparticles_selfgravity.f90,v 1.6 2006-08-23 16:53:32 mee Exp $
+! $Id: noparticles_selfgravity.f90,v 1.7 2006-11-30 09:03:36 dobler Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -61,28 +61,28 @@ module Particles_selfgravity
     endsubroutine calc_selfpotential_particles
 !***********************************************************************
     subroutine pencil_criteria_par_selfgrav()
-!   
+!
 !  All pencils that the Particles_selfgrav module depends on are specified here.
-!         
+!
 !  02-jul-06/anders: dummy
 !
     endsubroutine pencil_criteria_par_selfgrav
 !***********************************************************************
     subroutine pencil_interdep_par_selfgrav(lpencil_in)
-!   
+!
 !  Interdependency among pencils provided by the Particles_selfgrav module
 !  is specified here.
-!         
+!
 !  02-jul-06/anders: dummy
 !
       logical, dimension(npencils) :: lpencil_in
 !
       if (NO_WARN) print*, lpencil_in
-!   
+!
     endsubroutine pencil_interdep_par_selfgrav
 !***********************************************************************
     subroutine calc_pencils_par_selfgrav(f,p)
-!   
+!
 !  Calculate particle pencils.
 !
 !  02-jul-06/anders: dummy
@@ -91,7 +91,7 @@ module Particles_selfgravity
       type (pencil_case) :: p
 !
       if (NO_WARN) print*, f, p
-!   
+!
     endsubroutine calc_pencils_par_selfgrav
 !***********************************************************************
     subroutine dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
@@ -139,7 +139,7 @@ module Particles_selfgravity
 !
 !  14-jun-06/anders: dummy
 !
-      integer, intent (in) :: unit, iostat 
+      integer, intent (in) :: unit, iostat
 !
       if (NO_WARN) print*, unit, iostat
 !
@@ -168,7 +168,7 @@ module Particles_selfgravity
     subroutine write_particles_selfg_run_pars(unit)
 !
 !  14-jun-06/anders: dummy
-!    
+!
       integer, intent (in) :: unit
 !
       if (NO_WARN) print*, unit
@@ -176,7 +176,7 @@ module Particles_selfgravity
     endsubroutine write_particles_selfg_run_pars
 !***********************************************************************
     subroutine rprint_particles_selfgrav(lreset,lwrite)
-!   
+!
 !  Read and register print parameters relevant for particle self-gravity.
 !
 !  14-jun-06/anders: dummy
@@ -192,7 +192,7 @@ module Particles_selfgravity
       if (present(lwrite)) lwr=lwrite
 !
 !  Write information to index.pro
-! 
+!
       if (lwr) then
         write(3,*) 'igpotselfx=0'
         write(3,*) 'igpotselfy=0'

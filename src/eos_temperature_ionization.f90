@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.49 2006-11-22 17:00:03 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.50 2006-11-30 09:03:35 dobler Exp $
 
 !  Dummy routine for ideal gas
 
@@ -69,7 +69,7 @@ module EquationOfState
   logical :: lcalc_cp=.false.,lcalc_cp_full=.false.
 !  real :: gamma=impossible, gamma1=impossible, gamma11=impossible
   real :: gamma=5./3., gamma1=impossible, gamma11=impossible
-  real :: cs2bot=impossible, cs2top=impossible 
+  real :: cs2bot=impossible, cs2top=impossible
   real :: cs2cool=impossible
   real :: mpoly=impossible, mpoly0=impossible
   real :: mpoly1=impossible, mpoly2=impossible
@@ -129,7 +129,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.49 2006-11-22 17:00:03 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.50 2006-11-30 09:03:35 dobler Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -436,18 +436,18 @@ module EquationOfState
 !
 !  02-apr-03/tony: implemented dummy
 !
-! 
+!
       logical :: lreset
       logical, optional :: lwrite
-!   
+!
       if (NO_WARN) print*,lreset,present(lwrite)  !(keep compiler quiet)
-!   
+!
     endsubroutine rprint_eos
 !***********************************************************************
     subroutine ioninit(f)
-!   
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!   
+!
       if(NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine ioninit
@@ -462,7 +462,7 @@ module EquationOfState
       if (.not.allocated(cp_full)) allocate (cp_full(mx,my,mz))
 
       if (lconst_yH) then
-      
+
         f(:,m,n,iyH) = yH_const
 
       else
@@ -507,12 +507,12 @@ module EquationOfState
     end subroutine eosperturb
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
-      
+
       real, intent(in) :: EE,TT,yH
       real, intent(inout) :: rho
 
       call fatal_error('getdensity','SHOULD NOT BE CALLED WITH NOEOS')
-      rho = 0. 
+      rho = 0.
       if (NO_WARN) print*,yH,EE,TT  !(keep compiler quiet)
 
     end subroutine getdensity
@@ -528,10 +528,10 @@ module EquationOfState
 !  for variable ionization, it doesn't make sense to calculate
 !  just a single value of cp1, because it must depend on position.
 !  Therefore, return impossible, so one can reconsider this case.
-!   
+!
       call fatal_error('get_cp1',"SHOULDN'T BE CALLED WITH eos_temperature_...")
       cp1_=impossible
-!   
+!
     end subroutine get_cp1
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
@@ -836,7 +836,7 @@ module EquationOfState
 !
 !  Sound speed (and hence Temperature), is
 !  initialised to the reference value:
-!           sound speed: cs^2_0            from start.in  
+!           sound speed: cs^2_0            from start.in
 !           density: rho0 = exp(lnrho0)
 !
 !  11-jun-03/tony: extracted from isothermal routine in Density module
@@ -898,12 +898,12 @@ module EquationOfState
 !
       real, intent(in) :: Fheat, FheatK, hcond0, hcond1, chi
       logical, intent(in) :: lmultilayer, lcalc_heatcond_constchi
-      
+
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
-      
+
 !
       if(ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
@@ -928,7 +928,7 @@ module EquationOfState
         cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+gamma*f(:,:,n1,iss))
 !
 !  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy. 
+!  we have the nonconstant rho_xy*chi in tmp_xy.
 !
         if(lcalc_heatcond_constchi) then
           tmp_xy=Fheat/(rho_xy*chi*cs2_xy)
@@ -959,7 +959,7 @@ module EquationOfState
         cs2_xy=cs20*exp(gamma1*(f(:,:,n2,ilnrho)-lnrho0)+gamma*f(:,:,n2,iss))
 !
 !  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy. 
+!  we have the nonconstant rho_xy*chi in tmp_xy.
 !
         if(lcalc_heatcond_constchi) then
           tmp_xy=Fheat/(rho_xy*chi*cs2_xy)
@@ -1023,7 +1023,7 @@ module EquationOfState
         do i=1,nghost
           f(:,:,n1-i,iss) = 2*tmp_xy - f(:,:,n1+i,iss)
         enddo
- 
+
 !
 !  top boundary
 !
@@ -1041,7 +1041,7 @@ module EquationOfState
         f(:,:,n2,iss) = tmp_xy
         do i=1,nghost
           f(:,:,n2+i,iss) = 2*tmp_xy - f(:,:,n2-i,iss)
-        enddo 
+        enddo
       case default
         call fatal_error('bc_ss_temp_old','invalid argument')
       endselect
@@ -1104,7 +1104,7 @@ module EquationOfState
       case default
         call fatal_error('bc_ss_temp_x','invalid argument')
       endselect
-      
+
 
 !
     endsubroutine bc_ss_temp_x

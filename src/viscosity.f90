@@ -1,8 +1,8 @@
 
-! $Id: viscosity.f90,v 1.35 2006-11-10 13:09:30 wlyra Exp $
+! $Id: viscosity.f90,v 1.36 2006-11-30 09:03:36 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
-!  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
+!  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -55,7 +55,7 @@ module Viscosity
   ! run parameters
   namelist /viscosity_run_pars/ &
       nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, nuvec_hyper3
- 
+
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_epsK=0,idiag_epsK2=0,idiag_epsK_LES=0
   integer :: idiag_dtnu=0
@@ -85,7 +85,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.35 2006-11-10 13:09:30 wlyra Exp $")
+           "$Id: viscosity.f90,v 1.36 2006-11-30 09:03:36 dobler Exp $")
 
       ivisc(1)='nu-const'
 
@@ -198,10 +198,10 @@ module Viscosity
               nu_hyper3==0.0 ) &
             call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_hyper3 is zero!')
-        if ( (lvisc_hyper3_nu_vector) .and.  &         
+        if ( (lvisc_hyper3_nu_vector) .and.  &
              ((nuvec_hyper3(1)==0. .and. nxgrid/=1 ).or. &
               (nuvec_hyper3(2)==0. .and. nygrid/=1 ).or. &
-              (nuvec_hyper3(3)==0. .and. nzgrid/=1 )) ) & 
+              (nuvec_hyper3(3)==0. .and. nzgrid/=1 )) ) &
             call fatal_error('initialize_viscosity', &
              'A viscosity coefficient of nuvec_hyper3 is zero!')
         if ( (lvisc_smag_simplified.or.lvisc_smag_cross_simplified).and. &
@@ -261,7 +261,7 @@ module Viscosity
 !
       use Cdata
       use Sub
-! 
+!
       logical :: lreset
       logical, optional :: lwrite
       integer :: iname
@@ -310,13 +310,13 @@ module Viscosity
           write(3,*) 'itest=',0
         endif
       endif
-!   
+!
       if(NO_WARN) print*,lreset  !(to keep compiler quiet)
-!        
+!
     endsubroutine rprint_viscosity
 !***********************************************************************
     subroutine pencil_criteria_viscosity()
-!    
+!
 !  All pencils that the Viscosity module depends on are specified here.
 !
 !  20-11-04/anders: coded
@@ -385,7 +385,7 @@ module Viscosity
       use Cdata
 !
       logical, dimension (npencils) :: lpencil_in
-!      
+!
       if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
 
       if (lpencil_in(i_visc_heat)) lpencil_in(i_rho)=.true.
@@ -393,7 +393,7 @@ module Viscosity
     endsubroutine pencil_interdep_viscosity
 !***********************************************************************
     subroutine calc_pencils_viscosity(f,p)
-!     
+!
 !  Calculate Viscosity pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
@@ -448,7 +448,7 @@ module Viscosity
         murho1=nu*p%rho1  !(=mu/rho)
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i)+murho1*(p%del2u(:,i)+1./3.*p%graddivu(:,i))
-        enddo  
+        enddo
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + 2*nu*p%sij2*p%rho1
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+murho1
       endif
@@ -526,7 +526,7 @@ module Viscosity
 !
 !  viscous force: f_i = mu_i/rho*del6u
 !  Used for non-cubic cells
-!         
+!
          call del6fjv(f,nuvec_hyper3,iuu,tmp3)
          do i=1,3
             p%fvisc(:,i)=p%fvisc(:,i)+tmp3(:,i)*p%rho1
@@ -636,7 +636,7 @@ module Viscosity
     endsubroutine calc_pencils_viscosity
 !***********************************************************************
     subroutine calc_viscosity(f)
-!    
+!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if(NO_WARN) print*,f  !(to keep compiler quiet)
@@ -655,7 +655,7 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!      
+!
       real, dimension (nx) :: Hmax
 !
 !  Add viscous heat (which has units of energy/mass) to the RHS
@@ -670,11 +670,11 @@ module Viscosity
       if (ltemperature) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%visc_heat
       endif
-!      
+!
       if (lfirst .and. ldt) Hmax=Hmax+p%visc_heat
 !
       if(NO_WARN) print*,p  !(keep compiler quiet)
-!        
+!
     endsubroutine calc_viscous_heat
 !***********************************************************************
     subroutine calc_viscous_force(df,p)
@@ -692,7 +692,7 @@ module Viscosity
       real, dimension (nx) :: nu_smag
       real, dimension (nx,3) :: nuD2uxb
       type (pencil_case) :: p
-!      
+!
       intent (in) :: p
       intent (inout) :: df
 

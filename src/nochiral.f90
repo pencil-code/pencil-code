@@ -1,4 +1,4 @@
-! $Id: nochiral.f90,v 1.8 2006-08-23 16:53:32 mee Exp $
+! $Id: nochiral.f90,v 1.9 2006-11-30 09:03:35 dobler Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -54,7 +54,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nochiral.f90,v 1.8 2006-08-23 16:53:32 mee Exp $")
+           "$Id: nochiral.f90,v 1.9 2006-11-30 09:03:35 dobler Exp $")
 !
     endsubroutine register_chiral
 !***********************************************************************
@@ -66,10 +66,10 @@ module Chiral
 !  28-may-04/axel: adapted from pscalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
-! 
+!
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
-!   
+!
       if(NO_WARN) print*,'f=',f
     endsubroutine initialize_chiral
 !***********************************************************************
@@ -88,15 +88,15 @@ module Chiral
     endsubroutine init_chiral
 !***********************************************************************
     subroutine pencil_criteria_chiral()
-! 
+!
 !  All pencils that the Chiral module depends on are specified here.
-! 
+!
 !  21-11-04/anders: coded
 !
     endsubroutine pencil_criteria_chiral
 !***********************************************************************
     subroutine pencil_interdep_chiral(lpencil_in)
-!       
+!
 !  Interdependency among pencils provided by the Chiral module
 !  is specified here.
 !
@@ -109,21 +109,21 @@ module Chiral
     endsubroutine pencil_interdep_chiral
 !***********************************************************************
     subroutine calc_pencils_chiral(f,p)
-!       
+!
 !  Calculate Chiral pencils.
 !  Most basic pencils should come first, as others may depend on them.
-!   
+!
 !  21-11-04/anders: coded
 !
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(in) :: f,p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
-!   
+!
     endsubroutine calc_pencils_chiral
 !***********************************************************************
     subroutine dXY_chiral_dt(f,df,p)
@@ -145,31 +145,31 @@ module Chiral
     subroutine read_chiral_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_chiral_init_pars
 !***********************************************************************
     subroutine write_chiral_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine write_chiral_init_pars
 !***********************************************************************
     subroutine read_chiral_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_chiral_run_pars
 !***********************************************************************
     subroutine write_chiral_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
     endsubroutine write_chiral_run_pars
 !***********************************************************************
@@ -213,7 +213,8 @@ module Chiral
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      if (NO_WARN) print*, f(1,1,1,1), slices%ready
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices)
 !
     endsubroutine get_slices_chiral
 !***********************************************************************

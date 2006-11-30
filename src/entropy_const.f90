@@ -1,4 +1,4 @@
-! $Id: entropy_const.f90,v 1.10 2006-08-23 16:53:31 mee Exp $
+! $Id: entropy_const.f90,v 1.11 2006-11-30 09:03:35 dobler Exp $
 
 !  This module is for systems with spatially fixed entropy
 !  distribution. This implies Ds/Dt=u.grads only, which is used
@@ -80,7 +80,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_const.f90,v 1.10 2006-08-23 16:53:31 mee Exp $")
+           "$Id: entropy_const.f90,v 1.11 2006-11-30 09:03:35 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -128,7 +128,7 @@ module Entropy
 !
 !  initialise entropy; called from start.f90
 !  07-nov-2001/wolf: coded
-!  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name]) 
+!  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
 !
       use Cdata
 !

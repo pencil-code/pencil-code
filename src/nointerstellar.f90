@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.30 2006-08-23 16:53:32 mee Exp $
+! $Id: nointerstellar.f90,v 1.31 2006-11-30 09:03:35 dobler Exp $
 !
 !  Dummy module
 !
@@ -15,6 +15,7 @@ module Interstellar
   use Cparam
   use Cdata
   use Messages
+  use sub, only: keep_compiler_quiet
 
   implicit none
 
@@ -22,7 +23,7 @@ module Interstellar
 
   !namelist /interstellar_init_pars/ dummy
   !namelist /interstellar_run_pars/ dummy
- 
+
   contains
 
 !***********************************************************************
@@ -42,7 +43,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.30 2006-08-23 16:53:32 mee Exp $")
+           "$Id: nointerstellar.f90,v 1.31 2006-11-30 09:03:35 dobler Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -53,7 +54,7 @@ module Interstellar
 !***********************************************************************
     subroutine initialize_interstellar(lstarting)
 !
-!  Perform any post-parameter-read initialization eg. set derived 
+!  Perform any post-parameter-read initialization eg. set derived
 !  parameters
 !
 !  24-nov-02/tony: coded - dummy
@@ -122,39 +123,41 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      if (NO_WARN) print*, f(1,1,1,1), slices%ready
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_interstellar
 !!***********************************************************************
     subroutine read_interstellar_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+
     endsubroutine read_interstellar_init_pars
 !***********************************************************************
     subroutine write_interstellar_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
-      if (NO_WARN) print*,unit
-                                                                                                   
-    endsubroutine write_interstellar_init_pars
+
+      call keep_compiler_quiet(unit)
+
+endsubroutine write_interstellar_init_pars
 !***********************************************************************
     subroutine read_interstellar_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+
     endsubroutine read_interstellar_run_pars
 !***********************************************************************
     subroutine write_interstellar_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
-      if (NO_WARN) print*,unit
+
+      call keep_compiler_quiet(unit)
+
     endsubroutine write_interstellar_run_pars
 !***********************************************************************
     subroutine init_interstellar(f)
@@ -167,14 +170,14 @@ module Interstellar
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_interstellar
 !***********************************************************************
     subroutine pencil_criteria_interstellar()
-! 
+!
 !  All pencils that the Interstellar module depends on are specified here.
-! 
+!
 !  26-03-05/tony: coded
 !
 !
@@ -193,9 +196,8 @@ module Interstellar
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (NO_WARN) print*,f      
+      call keep_compiler_quiet(f)
 !
-!      
     endsubroutine interstellar_before_boundary
 !***********************************************************************
     subroutine calc_heat_cool_interstellar(f,df,p,Hmax)
@@ -206,11 +208,12 @@ module Interstellar
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(in) :: df
-      type (pencil_case), intent(in) :: p 
-      real, dimension(nx), intent(in) :: Hmax 
+      type (pencil_case), intent(in) :: p
+      real, dimension(nx), intent(in) :: Hmax
 !
-! (to keep compiler quiet)
-      if (NO_WARN) print*,'calc_heat_cool_interstellar',f,df,p,Hmax
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(Hmax)
 !
     endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
@@ -223,8 +226,7 @@ module Interstellar
     real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,mvar) :: df
 !
-! (to keep compiler quiet)
-      if (NO_WARN) print*,'SN check',f,df
+    call keep_compiler_quiet(f,df)
 !
     endsubroutine check_SN
 !***********************************************************************
@@ -234,8 +236,7 @@ module Interstellar
 !
       real, dimension(mx), intent(inout) :: penc
 !
-!
-      if (NO_WARN) print*,penc(1)
+      call keep_compiler_quiet(penc)
 !
     endsubroutine calc_snr_unshock
 !***********************************************************************
@@ -245,8 +246,7 @@ module Interstellar
 !
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*,p
-!
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_snr_damping
 !***********************************************************************
@@ -255,8 +255,9 @@ module Interstellar
       use Cdata
       real :: int_dt
 !
-      if (NO_WARN) print*,int_dt
+      call keep_compiler_quiet(int_dt)
 !
     endsubroutine calc_snr_damp_int
 !***********************************************************************
+
 endmodule interstellar

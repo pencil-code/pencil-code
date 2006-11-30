@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.47 2006-10-16 08:16:31 dobler Exp $
+! $Id: timestep.f90,v 1.48 2006-11-30 09:03:36 dobler Exp $
 
 module Timestep
 
@@ -87,7 +87,7 @@ module Timestep
 !  This is done here because it uses UUmax which was calculated in pde.
 !  Only do it on the root processor, then broadcast dt to all others.
 !
-        if (lfirst.and.ldt) then 
+        if (lfirst.and.ldt) then
           dt1_local=maxval(dt1_max(1:nx))
 
 
@@ -136,17 +136,17 @@ module Timestep
 !***********************************************************************
     subroutine timestep_autopsy
 !
-!  After the event, determine where the timestep too short occured 
-!  Kinda like playing Cluedo... Just without the dice. 
+!  After the event, determine where the timestep too short occured
+!  Kinda like playing Cluedo... Just without the dice.
 !
 !  25-aug-04/tony: coded
-! 
+!
       use Cdata
       use Cparam
       use Mpicomm, only: start_serialize, end_serialize
 
       real :: dt_local, dt1_max_local, dt1_max_global
- 
+
       dt1_max_global=1./dt  !Could more accurately calculate this and mpireduce
       dt1_max_local=maxval(dt1_max)
       dt_local=1.0/dt1_max_local
@@ -158,7 +158,7 @@ module Timestep
       endif
 !Note: ALL processors will do this.
 ! Identify the murderer
-  
+
 ! Procs testify in serial
      call start_serialize
 !        if ( dt >= dt_local ) then
@@ -185,12 +185,12 @@ module Timestep
 !            if (dt1_max(l) >= dt1_max_global) then
 !               print*,"    f(",l+nghost-1,",?,?,?)"," -> x =",x(l)
 !            endif
-!          enddo 
+!          enddo
 
 ! With the lead pipe?
-!          if (maxval(sqrt(dt1_advec**2+dt1_diffus**2)) < dt1_max_local) then  
+!          if (maxval(sqrt(dt1_advec**2+dt1_diffus**2)) < dt1_max_local) then
 !            print *,"  It appears it is not a CFL advection/diffusion limit."
-!            print*,"  Perhaps another limiter eg. the cooling time" 
+!            print*,"  Perhaps another limiter eg. the cooling time"
 !          else
 !            if (maxval(dt1_advec)>maxval(dt1_diffus)) then
 !              print*,"  It appears the dagger was in the form of an advection term."
@@ -225,7 +225,7 @@ module Timestep
 !              if (lchiral) &
 !                print*,"     Chirality diffusion: maxval(diffus_chiral)       = ", maxval(diffus_chiral)
 !            endif
-!  
+!
 !            print*,"  Also, cdt (advection), cdtv (diffusion) = ",cdt,cdtv
             print*,"     Fluid velocity:       maxval(advec_uu)           = ", maxval(advec_uu)/cdt
             print*,"     Shear velocity:       maxval(advec_shear)        = ", maxval(advec_shear)/cdt
@@ -241,11 +241,11 @@ module Timestep
             print*,"     Dust viscosity:       maxval(diffus_nud)         = ", maxval(diffus_nud)/cdtv
             print*,"     Chirality diffusion:  maxval(diffus_chiral)      = ", maxval(diffus_chiral)/cdtv
             print*,"------------------- END OF CONFESSION -----------------------"
-  
+
 !          endif
 !        endif
      call end_serialize
- 
+
     endsubroutine timestep_autopsy
 !***********************************************************************
 

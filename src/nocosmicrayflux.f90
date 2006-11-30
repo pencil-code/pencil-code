@@ -1,4 +1,4 @@
-! $Id: nocosmicrayflux.f90,v 1.5 2006-08-23 16:53:32 mee Exp $
+! $Id: nocosmicrayflux.f90,v 1.6 2006-11-30 09:03:35 dobler Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -37,7 +37,7 @@ module Cosmicrayflux
       first = .false.
 
       if (lroot) call cvs_id( &
-           "$Id: nocosmicrayflux.f90,v 1.5 2006-08-23 16:53:32 mee Exp $")
+           "$Id: nocosmicrayflux.f90,v 1.6 2006-11-30 09:03:35 dobler Exp $")
 
     endsubroutine register_cosmicrayflux
 !***********************************************************************
@@ -52,14 +52,14 @@ module Cosmicrayflux
     subroutine read_cosmicrayflux_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_cosmicrayflux_init_pars
 !***********************************************************************
     subroutine write_cosmicrayflux_init_pars(unit)
-!    
+!
       integer, intent(in) :: unit
 !
       if (NO_WARN) print*,unit
@@ -129,7 +129,7 @@ module Cosmicrayflux
 !
       intent(in) :: f,df,p
 !
-      if (NO_WARN) print*,f,df,p        
+      if (NO_WARN) print*,f,df,p
 !
     endsubroutine dfcr_dt
 !***********************************************************************

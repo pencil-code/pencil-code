@@ -1,4 +1,4 @@
- ! $Id: global_gg_bext_cs2.f90,v 1.3 2006-11-16 19:58:18 mee Exp $
+ ! $Id: global_gg_bext_cs2.f90,v 1.4 2006-11-30 09:03:35 dobler Exp $
 
 module Global
 
@@ -122,7 +122,7 @@ module Global
     endsubroutine set_global_scal
 !***********************************************************************
     subroutine set_global_vect_point(var,l,m,n,label)
-!   
+!
 !  set point of global vector variable identified by LABEL
 !
 !  20-jun-05/anders: dummy

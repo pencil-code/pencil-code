@@ -1,9 +1,9 @@
-! $Id: global_pot.f90,v 1.5 2005-06-27 00:14:18 mee Exp $
+! $Id: global_pot.f90,v 1.6 2006-11-30 09:03:35 dobler Exp $
 
 module Global
 
 !
-!  A module container for additional variables which are globally needed 
+!  A module container for additional variables which are globally needed
 !  --- here this is the (negative) gravity potential.
 !  Put into a module, so one can easily switch.
 !  NB: These variables use half as much memory as a new variable, so

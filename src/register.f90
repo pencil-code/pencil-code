@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.191 2006-11-23 20:42:38 theine Exp $
+! $Id: register.f90,v 1.192 2006-11-30 09:03:36 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -6,10 +6,10 @@
 
 module Register
 
-  implicit none 
+  implicit none
 
   private
-  
+
   public :: register_modules, initialize_modules, rprint_list
   public :: choose_pencils
 
@@ -28,7 +28,7 @@ module Register
       use Cdata
       use General,         only: setup_mm_nn
       use Mpicomm,         only: mpicomm_init,stop_it,stop_it_if_any
-      use Sub 
+      use Sub
       use Param_IO,        only: get_datadir,get_snapdir
       use IO,              only: register_io
       use Global,          only: register_global
@@ -66,7 +66,7 @@ module Register
 !
 !  initialize nvar; is increased by the following routines
 !
-      nvar     = 0 
+      nvar     = 0
       naux     = 0
       naux_com = 0
 !
@@ -151,7 +151,7 @@ module Register
 !  6-nov-01/wolf: coded
 ! 23-feb-03/axel: added physical constants conversion
 !  7-oct-03/david: initialize_gravity before density, etc (its needed there)
-! 11-sep-04/axel: began adding spherical coordinates 
+! 11-sep-04/axel: began adding spherical coordinates
 !
       use Cdata
       use Sub, only: remove_zprof
@@ -238,7 +238,7 @@ module Register
       m_H=m_p+m_e
       m_He=3.97153*m_H
       chiH=13.6*eV
-      chiH_=0.754*eV        
+      chiH_=0.754*eV
 !
 !  print parameters in code units, but only when used
 !
@@ -273,7 +273,7 @@ module Register
       call initialize_shock(f,lstarting)
       call initialize_viscosity(lstarting)
       call initialize_special(f)
-      call initialize_border_profiles() 
+      call initialize_border_profiles()
 !
 ! Store the value of impossible for use in IDL
 !
@@ -498,7 +498,7 @@ module Register
       call pencil_criteria_planet()
       call pencil_criteria_special()
       if (lparticles) call particles_pencil_criteria()
-!    
+!
     endsubroutine pencil_criteria
 !***********************************************************************
     subroutine pencil_interdep(lpencil_in)
@@ -535,7 +535,7 @@ module Register
       use Planet, only: pencil_interdep_planet
       use Grid, only: pencil_interdep_grid
       use Particles_main, only: particles_pencil_interdep
-!      
+!
       logical, dimension (npencils) :: lpencil_in
 !
       call pencil_interdep_grid(lpencil_in)
@@ -559,7 +559,7 @@ module Register
       call pencil_interdep_planet(lpencil_in)
       call pencil_interdep_special(lpencil_in)
       if (lparticles) call particles_pencil_interdep(lpencil_in)
-!    
+!
     endsubroutine pencil_interdep
 !***********************************************************************
     subroutine rprint_list(lreset)
@@ -817,7 +817,7 @@ module Register
 !  phi-averages
 !
       !
-      !  expand some shorthand labels 
+      !  expand some shorthand labels
       !
       call expand_cname(cnamerz,nnamerz,'uumphi','urmphi','upmphi','uzmphi')
       call expand_cname(cnamerz,nnamerz,'bbmphi','brmphi','bpmphi','bzmphi')

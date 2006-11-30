@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.10 2006-08-23 16:53:32 mee Exp $
+! $Id: particles_selfgravity.f90,v 1.11 2006-11-30 09:03:36 dobler Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -23,7 +23,7 @@ module Particles_selfgravity
   implicit none
 
   include 'particles_selfgravity.h'
-  
+
   real :: dummy
   real, pointer :: tstart_selfgrav
   logical :: lselfgravity_particles=.true.
@@ -54,7 +54,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.10 2006-08-23 16:53:32 mee Exp $")
+           "$Id: particles_selfgravity.f90,v 1.11 2006-11-30 09:03:36 dobler Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -123,9 +123,9 @@ module Particles_selfgravity
     endsubroutine calc_selfpotential_particles
 !***********************************************************************
     subroutine pencil_criteria_par_selfgrav()
-!   
+!
 !  All pencils that the Particles_selfgrav module depends on are specified here.
-!         
+!
 !  02-jul-06/anders: adapted
 !
       lpenc_requested(i_gpotself)=.true.
@@ -137,20 +137,20 @@ module Particles_selfgravity
     endsubroutine pencil_criteria_par_selfgrav
 !***********************************************************************
     subroutine pencil_interdep_par_selfgrav(lpencil_in)
-!   
+!
 !  Interdependency among pencils provided by the Particles_selfgrav module
 !  is specified here.
-!         
+!
 !  02-jul-06/anders: adapted
 !
       logical, dimension(npencils) :: lpencil_in
 !
       if (NO_WARN) print*, lpencil_in
-!   
+!
     endsubroutine pencil_interdep_par_selfgrav
 !***********************************************************************
     subroutine calc_pencils_par_selfgrav(f,p)
-!   
+!
 !  Calculate particle pencils.
 !
 !  02-jul-06/anders: adapted
@@ -159,7 +159,7 @@ module Particles_selfgravity
       type (pencil_case) :: p
 !
       if (NO_WARN) print*, f, p
-!   
+!
     endsubroutine calc_pencils_par_selfgrav
 !***********************************************************************
     subroutine dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
@@ -181,7 +181,7 @@ module Particles_selfgravity
 !
       if (ldiagnos) then
         if (idiag_gpotenp/=0) call sum_mn_name(p%potself*p%rhop,idiag_gpotenp)
-      endif 
+      endif
 !
       if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
 !
@@ -236,7 +236,7 @@ module Particles_selfgravity
     endsubroutine dvvp_dt_selfgrav
 !***********************************************************************
     subroutine read_particles_selfg_init_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -251,7 +251,7 @@ module Particles_selfgravity
     endsubroutine read_particles_selfg_init_pars
 !***********************************************************************
     subroutine write_particles_selfg_init_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_selfgrav_init_pars)
@@ -259,7 +259,7 @@ module Particles_selfgravity
     endsubroutine write_particles_selfg_init_pars
 !***********************************************************************
     subroutine read_particles_selfg_run_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -274,7 +274,7 @@ module Particles_selfgravity
     endsubroutine read_particles_selfg_run_pars
 !***********************************************************************
     subroutine write_particles_selfg_run_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_selfgrav_run_pars)
@@ -282,7 +282,7 @@ module Particles_selfgravity
     endsubroutine write_particles_selfg_run_pars
 !***********************************************************************
     subroutine rprint_particles_selfgrav(lreset,lwrite)
-!   
+!
 !  Read and register print parameters relevant for particle self-gravity.
 !
 !  14-jun-06/anders: adapted
@@ -308,7 +308,7 @@ module Particles_selfgravity
       enddo
 !
 !  Write information to index.pro
-! 
+!
       if (lwr) then
         write(3,*) 'igpotselfx=', igpotselfx
         write(3,*) 'igpotselfy=', igpotselfy

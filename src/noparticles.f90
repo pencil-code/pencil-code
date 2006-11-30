@@ -1,4 +1,4 @@
-! $Id: noparticles.f90,v 1.19 2006-08-27 20:16:33 wlyra Exp $
+! $Id: noparticles.f90,v 1.20 2006-11-30 09:03:36 dobler Exp $
 !
 !  This module takes care of everything related to no particles.
 !
@@ -57,18 +57,18 @@ module Particles
     endsubroutine init_particles
 !***********************************************************************
     subroutine pencil_criteria_particles()
-!   
+!
 !  All pencils that the Particles module depends on are specified here.
-!         
+!
 !  20-apr-06/anders: dummy
 !
     endsubroutine pencil_criteria_particles
 !***********************************************************************
     subroutine pencil_interdep_particles(lpencil_in)
-!   
+!
 !  Interdependency among pencils provided by the Particles module
 !  is specified here.
-!         
+!
 !  16-feb-06/anders: dummy
 !
       logical, dimension(npencils) :: lpencil_in
@@ -78,7 +78,7 @@ module Particles
     endsubroutine pencil_interdep_particles
 !***********************************************************************
     subroutine calc_pencils_particles(f,p)
-!   
+!
 !  Calculate particle pencils.
 !
 !  16-feb-06/anders: dummy
@@ -153,7 +153,7 @@ module Particles
     endsubroutine dvvp_dt
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -162,7 +162,7 @@ module Particles
     endsubroutine read_particles_init_pars
 !***********************************************************************
     subroutine write_particles_init_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       if (NO_WARN) print*, unit
@@ -170,7 +170,7 @@ module Particles
     endsubroutine write_particles_init_pars
 !***********************************************************************
     subroutine read_particles_run_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -179,7 +179,7 @@ module Particles
     endsubroutine read_particles_run_pars
 !***********************************************************************
     subroutine write_particles_run_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
        if (NO_WARN) print*, unit
@@ -199,19 +199,19 @@ module Particles
     endsubroutine powersnap_particles
 !***********************************************************************
     subroutine rprint_particles(lreset,lwrite)
-!   
+!
 !  Read and register print parameters relevant for particles
 !
 !  22-aug-05/anders: dummy
 !
       logical :: lreset, lwr
       logical, optional :: lwrite
-! 
+!
 !  Write information to index.pro
-! 
+!
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      
+
       if (lwr) then
         write(3,*) 'ixp=0'
         write(3,*) 'iyp=0'

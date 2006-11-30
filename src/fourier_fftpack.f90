@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.10 2006-11-14 03:32:49 theine Exp $
+! $Id: fourier_fftpack.f90,v 1.11 2006-11-30 09:03:35 dobler Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -57,7 +57,7 @@ module Fourier
         enddo; enddo
 !
 !  Transform y-direction.
-!      
+!
         if (nygrid/=1) then
           if (nygrid/=nxgrid) then
             if (lroot) print*, 'fourier_transform: must have nygrid=nxgrid!'
@@ -78,7 +78,7 @@ module Fourier
         endif
 !
 !  Transform z-direction.
-!      
+!
         if (nzgrid/=1) then
           if (nzgrid/=nxgrid) then
             if (lroot) print*, 'fourier_transform: must have nzgrid=nxgrid!'
@@ -105,7 +105,7 @@ module Fourier
         if (nzgrid/=1) then
 !
 !  Transform z-direction back.
-!      
+!
           if (nzgrid/=nxgrid) then
             if (lroot) print*, 'fourier_transform: must have nzgrid=nxgrid!'
             call fatal_error('fourier_transform','')
@@ -560,7 +560,7 @@ module Fourier
       if (lforward) then
 !
 !  Transform x-direction.
-!      
+!
         call cffti(nx_other,wsavex)
 !
         if (lroot .and. ip<10) &
@@ -573,7 +573,7 @@ module Fourier
         enddo
 !
 !  Transform y-direction.
-!      
+!
         call cffti(ny_other,wsavey)
 !
         if (lroot .and. ip<10) &
@@ -587,7 +587,7 @@ module Fourier
       else
 !
 !  Transform x-direction back.
-!      
+!
         call cffti(nx_other,wsavex)
 !
         if (lroot .and. ip<10) &
@@ -600,7 +600,7 @@ module Fourier
         enddo
 !
 !  Transform y-direction back.
-!      
+!
         call cffti(ny_other,wsavey)
 !
         if (lroot .and. ip<10) &
@@ -660,7 +660,7 @@ module Fourier
         if (nxgrid>1) then
 !
 !  Transform x-direction.
-!      
+!
           call cffti(nxgrid,wsavex)
 
           do m=1,ny
@@ -675,7 +675,7 @@ module Fourier
         if (nygrid>1) then
 !
 !  Transform y-direction.
-!      
+!
           call transp_xy(a_re)
           call transp_xy(a_im)
 
@@ -701,7 +701,7 @@ module Fourier
         if (nygrid>1) then
 !
 !  Transform y-direction back.
-!      
+!
           call transp_xy(a_re)
           call transp_xy(a_im)
 
@@ -725,7 +725,7 @@ module Fourier
         if (nxgrid>1) then
 !
 !  Transform x-direction back.
-!      
+!
           call cffti(nxgrid,wsavex)
 
           do m=1,ny

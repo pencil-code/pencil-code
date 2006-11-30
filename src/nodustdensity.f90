@@ -1,4 +1,4 @@
-! $Id: nodustdensity.f90,v 1.30 2006-08-23 16:53:32 mee Exp $
+! $Id: nodustdensity.f90,v 1.31 2006-11-30 09:03:35 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -54,7 +54,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustdensity.f90,v 1.30 2006-08-23 16:53:32 mee Exp $")
+           "$Id: nodustdensity.f90,v 1.31 2006-11-30 09:03:35 dobler Exp $")
 !
     endsubroutine register_dustdensity
 !***********************************************************************
@@ -81,9 +81,9 @@ module Dustdensity
     endsubroutine init_nd
 !***********************************************************************
     subroutine pencil_criteria_dustdensity()
-! 
+!
 !  All pencils that the Dustdensity module depends on are specified here.
-! 
+!
 !  20-11-04/anders: coded
 !
     endsubroutine pencil_criteria_dustdensity
@@ -92,7 +92,7 @@ module Dustdensity
 !
 !  Interdependency among pencils provided by the Dustdensity module
 !  is specified here.
-!         
+!
 !  20-11-04/anders: coded
 !
       logical, dimension(npencils) :: lpencil_in
@@ -110,7 +110,7 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(in) :: f, p
 !
       if (NO_WARN) print*, f, p
@@ -135,31 +135,31 @@ module Dustdensity
     subroutine read_dustdensity_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_dustdensity_init_pars
 !***********************************************************************
     subroutine write_dustdensity_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine write_dustdensity_init_pars
 !***********************************************************************
     subroutine read_dustdensity_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_dustdensity_run_pars
 !***********************************************************************
     subroutine write_dustdensity_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
     endsubroutine write_dustdensity_run_pars
 !***********************************************************************

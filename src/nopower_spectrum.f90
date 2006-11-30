@@ -1,4 +1,4 @@
-! $Id: nopower_spectrum.f90,v 1.15 2006-08-23 16:53:32 mee Exp $
+! $Id: nopower_spectrum.f90,v 1.16 2006-11-30 09:03:36 dobler Exp $
 !
 module  power_spectrum
   !
@@ -55,7 +55,7 @@ module  power_spectrum
     integer, optional :: ivar
 !
     if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
-!    
+!
     if (NO_WARN) print*, f, sp, ivec, ivar
 !
   endsubroutine power_1d

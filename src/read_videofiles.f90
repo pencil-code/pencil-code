@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.21 2006-08-03 16:02:23 mee Exp $
+! $Id: read_videofiles.f90,v 1.22 2006-11-30 09:03:36 dobler Exp $
 
 !***********************************************************************
       program rvid_box
@@ -266,7 +266,7 @@
           print*,"*** eg. uu and in the case of vector or other multiple slices appending   ***"
           print*,"*** a number. For example the slice 'ux' is now 'uu1' and the slice 'uz'  ***"
           print*,"*** is now called 'uu3', 'ay'->'aa2' etc. Similarly for aa, bb, oo, uu    ***"
-          print*,"*** and Frad slices.                                                      ***" 
+          print*,"*** and Frad slices.                                                      ***"
           print*,"*****************************************************************************"
           print*,""
       endselect

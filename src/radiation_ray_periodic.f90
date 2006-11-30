@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.51 2006-08-23 16:53:32 mee Exp $
+! $Id: radiation_ray_periodic.f90,v 1.52 2006-11-30 09:03:36 dobler Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -38,7 +38,7 @@ module Radiation
   endtype Qpoint
 !
 ! Slice precalculation buffers
-! 
+!
 !  real, target, dimension (ny,nz,ndir) :: Isurf_yz
 !  real, target, dimension (nx,nz,ndir) :: Isurf_xz
 ! Only these two appear to be used at present
@@ -166,7 +166,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.51 2006-08-23 16:53:32 mee Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.52 2006-11-30 09:03:36 dobler Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -223,7 +223,7 @@ module Radiation
 
         rad2=lrad**2+mrad**2+nrad**2
 
-        if ((rad2>0.and.rad2<=rad2max).and..not.(rad2==2.and.nrad==0)) then 
+        if ((rad2>0.and.rad2<=rad2max).and..not.(rad2==2.and.nrad==0)) then
 
           dir(idir,1)=lrad
           dir(idir,2)=mrad
@@ -259,7 +259,7 @@ module Radiation
       ndir=idir-1
 !
 !  Determine when terms like  exp(-dtau)-1  are to be evaluated
-!  as a power series 
+!  as a power series
 !
 !  Experimentally determined optimum
 !  Relative errors for (emdtau1, emdtau2) will be
@@ -448,7 +448,7 @@ module Radiation
 !
       do n=nnstart,nnstop,nsign
       do m=mmstart,mmstop,msign
-      do l=llstart,llstop,lsign 
+      do l=llstart,llstop,lsign
 
         dtau_m=sqrt(f(l-lrad,m-mrad,n-nrad,ikapparho)* &
                     f(l,m,n,ikapparho))*dlength
@@ -616,7 +616,7 @@ module Radiation
 !
 !  Determine the boundary heating rates at all upstream boundaries.
 !
-!  First the boundary heating rates at the non-periodic xy-boundary 
+!  First the boundary heating rates at the non-periodic xy-boundary
 !  are set either through the boundary condition for the entire
 !  computational domain (ipz==ipzstart) or through communication with
 !  the neighboring processor in the upstream z-direction (ipz/=ipzstart).
@@ -869,7 +869,7 @@ module Radiation
           emtau1_tot_zx=1.0
         elsewhere (tau_tot_zx<dtau_thresh_min)
           emtau1_tot_zx=tau_tot_zx*(1-0.5*tau_tot_zx*(1-tau_tot_zx/3))
-        elsewhere 
+        elsewhere
           emtau1_tot_zx=1-exp(-tau_tot_zx)
         endwhere
   !
@@ -1188,13 +1188,13 @@ module Radiation
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       if (NO_WARN) print*,f,xx,yy,zz !(keep compiler quiet)
-!        
+!
     endsubroutine init_rad
 !***********************************************************************
     subroutine pencil_criteria_radiation()
-! 
+!
 !  All pencils that the Radiation module depends on are specified here.
-! 
+!
 !  21-11-04/anders: coded
 !
       if (lcooling) then
@@ -1220,27 +1220,27 @@ module Radiation
 !  is specified here.
 !
 !  21-11-04/anders: coded
-! 
+!
       logical, dimension (npencils) :: lpencil_in
-! 
+!
       if (NO_WARN) print*, lpencil_in  !(keep compiler quiet)
-! 
+!
     endsubroutine pencil_interdep_radiation
 !***********************************************************************
     subroutine calc_pencils_radiation(f,p)
-!   
+!
 !  Calculate Radiation pencils.
 !  Most basic pencils should come first, as others may depend on them.
-! 
+!
 !  21-11-04/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(in) :: f,p
 !
       if (NO_WARN) print*, f !(keep compiler quiet)
-! 
+!
     endsubroutine calc_pencils_radiation
 !***********************************************************************
    subroutine de_dt(f,df,p,gamma)
@@ -1255,7 +1255,7 @@ module Radiation
       real :: gamma
 !
       if (NO_WARN) print*,f,df,p,gamma !(keep compiler quiet)
-!        
+!
     endsubroutine de_dt
 !***********************************************************************
     subroutine read_radiation_init_pars(unit,iostat)
@@ -1309,7 +1309,7 @@ module Radiation
 !
       use Cdata
       use Sub
-!  
+!
       integer :: iname,inamez
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -1363,9 +1363,9 @@ module Radiation
         write(3,*) 'iFrady=',iFrady
         write(3,*) 'iFradz=',iFradz
       endif
-!   
+!
       if (NO_WARN) print*,lreset  !(to keep compiler quiet)
-!        
+!
     endsubroutine rprint_radiation
 !***********************************************************************
     subroutine get_slices_radiation(f,slices)

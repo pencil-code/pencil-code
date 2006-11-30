@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.30 2006-08-23 16:53:32 mee Exp $
+! $Id: nodustvelocity.f90,v 1.31 2006-11-30 09:03:35 dobler Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -73,7 +73,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.30 2006-08-23 16:53:32 mee Exp $")
+           "$Id: nodustvelocity.f90,v 1.31 2006-11-30 09:03:35 dobler Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -108,11 +108,11 @@ module Dustvelocity
     endsubroutine init_uud
 !***********************************************************************
     subroutine pencil_criteria_dustvelocity()
-! 
+!
 !  All pencils that the Dustvelocity module depends on are specified here.
-!  
+!
 !  20-11-04/anders: coded
-! 
+!
     endsubroutine pencil_criteria_dustvelocity
 !***********************************************************************
     subroutine pencil_interdep_dustvelocity(lpencil_in)
@@ -129,7 +129,7 @@ module Dustvelocity
     endsubroutine pencil_interdep_dustvelocity
 !***********************************************************************
     subroutine calc_pencils_dustvelocity(f,p)
-!   
+!
 !  Calculate Dustvelocity pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
@@ -137,7 +137,7 @@ module Dustvelocity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(in) :: f,p
 !
       if (NO_WARN) print*, f, p
@@ -181,31 +181,31 @@ module Dustvelocity
     subroutine read_dustvelocity_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_dustvelocity_init_pars
 !***********************************************************************
     subroutine write_dustvelocity_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine write_dustvelocity_init_pars
 !***********************************************************************
     subroutine read_dustvelocity_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_dustvelocity_run_pars
 !***********************************************************************
     subroutine write_dustvelocity_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
     endsubroutine write_dustvelocity_run_pars
 !***********************************************************************

@@ -1,10 +1,10 @@
-! $Id: gravity_simple.f90,v 1.24 2006-11-16 07:03:06 mee Exp $
+! $Id: gravity_simple.f90,v 1.25 2006-11-30 09:03:35 dobler Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
 !    gx=gx(x) or gy=gy(y) or gz=gz(z)
 !  Here the gravity master pencils gravx_xpencil, gravy_ypencil and
-!  gravz_zpencil only need to be calculated once, and then these can 
+!  gravz_zpencil only need to be calculated once, and then these can
 !  simply be added to the equations of motion again and again.
 !
 
@@ -56,7 +56,7 @@ module Gravity
   character (len=labellen) :: gravx_profile='zero',gravy_profile='zero'
   character (len=labellen) :: gravz_profile='zero'
 !
-!  Parameters used by other modules (only defined for other gravities) 
+!  Parameters used by other modules (only defined for other gravities)
 !
   logical :: lnumerical_equilibrium=.false.
   real :: g0=0.
@@ -103,7 +103,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.24 2006-11-16 07:03:06 mee Exp $")
+           "$Id: gravity_simple.f90,v 1.25 2006-11-30 09:03:35 dobler Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -124,7 +124,7 @@ module Gravity
       real, dimension(mx,my,mz,mfarray) :: f
       logical              :: lstarting
       real                 :: ztop
-      real, dimension (nz) :: prof  
+      real, dimension (nz) :: prof
 !
 !  Sanity check
 !
@@ -268,7 +268,7 @@ module Gravity
 !AB: As it is now, it can never make much sense.
         gravz_zpencil = -(g_A*z(n1:n2)/sqrt(z(n1:n2)**2+g_B**2) + g_C*z(n1:n2)/g_D)
 
-      case('reduced_top') 
+      case('reduced_top')
         if (lroot) print*,'duu_dt_grav: reduced, gravz=',gravz
         if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
         ztop = xyz0(3)+Lxyz(3)
@@ -303,7 +303,7 @@ module Gravity
 !  Initialise gravity; called from start.f90
 !
 !  12-nov-04/anders: coded
-! 
+!
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -316,9 +316,9 @@ module Gravity
     endsubroutine init_gg
 !***********************************************************************
     subroutine pencil_criteria_gravity()
-! 
+!
 !  All pencils that the Gravity module depends on are specified here.
-! 
+!
 !  20-11-04/anders: coded
 !
 !
@@ -347,7 +347,7 @@ module Gravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(in) :: f
       intent(inout) :: p
 !
@@ -398,7 +398,7 @@ module Gravity
       endif
 !
       if (NO_WARN) print*,f,p !(keep compiler quiet)
-!        
+!
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential_global(xx,yy,zz,pot,pot0)
@@ -411,7 +411,7 @@ module Gravity
       real, dimension (mx,my,mz) :: xx,yy,zz, pot
       real, optional :: pot0
 !
-      call fatal_error('potential_global','this subroutine has been '// & 
+      call fatal_error('potential_global','this subroutine has been '// &
           'deprecated for gravity_simple')
 !
       if (NO_WARN) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
@@ -523,7 +523,7 @@ module Gravity
     subroutine read_gravity_run_pars(unit,iostat)
 !
 !  Read gravity run parameters
-!    
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -574,7 +574,7 @@ module Gravity
       endif
 !
       if(NO_WARN) print*,lreset  !(to keep compiler quiet)
-!        
+!
     endsubroutine rprint_gravity
 !***********************************************************************
 

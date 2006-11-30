@@ -1,13 +1,13 @@
-! $Id: diffops_cartesian.f90,v 1.4 2006-08-23 16:53:31 mee Exp $ 
+! $Id: diffops_cartesian.f90,v 1.5 2006-11-30 09:03:34 dobler Exp $
 
 module DiffOps
 
   implicit none
-  
+
   private
 
   interface grad                 ! Overload the `grad' function
-    module procedure grad_main   ! grad of an 'mvar' variable  
+    module procedure grad_main   ! grad of an 'mvar' variable
     module procedure grad_other  ! grad of another field (mx,my,mz)
   endinterface
 

@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.26 2006-11-09 08:31:18 brandenb Exp $
+! $Id: nohydro_file.f90,v 1.27 2006-11-30 09:03:35 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,8 +60,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.26 $", &
-           "$Date: 2006-11-09 08:31:18 $")
+           "$Revision: 1.27 $", &
+           "$Date: 2006-11-30 09:03:35 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -70,7 +70,7 @@ module Hydro
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  24-nov-02/tony: coded 
+!  24-nov-02/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -174,31 +174,31 @@ module Hydro
     subroutine read_hydro_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_hydro_init_pars
 !***********************************************************************
     subroutine write_hydro_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine write_hydro_init_pars
 !***********************************************************************
     subroutine read_hydro_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_hydro_run_pars
 !***********************************************************************
     subroutine write_hydro_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
     endsubroutine write_hydro_run_pars
 !***********************************************************************
@@ -260,10 +260,10 @@ module Hydro
 !***********************************************************************
     subroutine calc_mflow
 !
-!  dummy routine 
-!          
+!  dummy routine
+!
 !  19-jul-03/axel: adapted from hydro
-!   
+!
     endsubroutine calc_mflow
 !***********************************************************************
 

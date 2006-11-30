@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.19 2006-08-23 16:53:32 mee Exp $
+! $Id: noforcing.f90,v 1.20 2006-11-30 09:03:35 dobler Exp $
 
 module Forcing
 
@@ -40,7 +40,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.19 2006-08-23 16:53:32 mee Exp $")
+           "$Id: noforcing.f90,v 1.20 2006-11-30 09:03:35 dobler Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -70,31 +70,31 @@ module Forcing
     subroutine read_forcing_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_forcing_init_pars
 !***********************************************************************
     subroutine write_forcing_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine write_forcing_init_pars
 !***********************************************************************
     subroutine read_forcing_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_forcing_run_pars
 !***********************************************************************
     subroutine write_forcing_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
     endsubroutine write_forcing_run_pars
 !***********************************************************************

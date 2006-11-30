@@ -1,7 +1,7 @@
-! $Id: ghostfold_mpicomm.f90,v 1.9 2006-08-31 06:00:35 ajohan Exp $
+! $Id: ghostfold_mpicomm.f90,v 1.10 2006-11-30 09:03:35 dobler Exp $
 !
-!  This module performs some special mpifunctions that 
-!  also require the Fourier routines. 
+!  This module performs some special mpifunctions that
+!  also require the Fourier routines.
 !
 module GhostFold
 
@@ -28,7 +28,7 @@ module GhostFold
 !
       real, dimension (mx,my,mz,mvar) :: df
       integer :: ivar1, ivar2
-!      
+!
       real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: df_tmp_xy
       real, dimension (nx+2,1,nz,ivar2-ivar1+1) :: df_tmp_xz
       real, dimension (ny,nz) :: df_tmp_yz
@@ -144,7 +144,7 @@ module GhostFold
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
-!      
+!
       real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: f_tmp_xy
       real, dimension (nx+2,1,nz,ivar2-ivar1+1) :: f_tmp_xz
       real, dimension (ny,nz) :: f_tmp_yz

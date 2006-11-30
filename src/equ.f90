@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.338 2006-11-23 20:42:37 theine Exp $
+! $Id: equ.f90,v 1.339 2006-11-30 09:03:35 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -141,14 +141,14 @@ module Equ
                fname(iname)=fsum(isum_count)*dv
               endif
 
-              if (itype_name(iname)==ilabel_surf)          & 
+              if (itype_name(iname)==ilabel_surf)          &
                   fname(iname)=fsum(isum_count)
 
               if (itype_name(iname)==ilabel_sum_lim) then
                  vol=1.
                  if (lcylindrical)  vol=vol*pi*(r_ext**2-r_int**2)
                  if (nzgrid/=1)     vol=vol*Lz
-                 if (lspherical)    vol=1.333333333*pi*(r_ext**3-r_int**3) 
+                 if (lspherical)    vol=1.333333333*pi*(r_ext**3-r_int**3)
                  fname(iname)=fsum(isum_count)/vol
               endif
 
@@ -384,7 +384,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.338 2006-11-23 20:42:37 theine Exp $")
+           "$Id: equ.f90,v 1.339 2006-11-30 09:03:35 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -460,7 +460,7 @@ module Equ
 !  set inverse timestep to zero before entering loop over m and n
 !
       if (lfirst.and.ldt) then
-        if (dtmax/=0) then 
+        if (dtmax/=0) then
           dt1_max=1./dtmax
         else
           dt1_max=0.
@@ -507,7 +507,7 @@ module Equ
 !  advec_XX and diffus_XX, which are essentially the inverse
 !  advective and diffusive timestep for that module.
 !  (note: advec_cs2 and advec_va2 are inverse _squared_ timesteps)
-!  
+!
         if (lfirst) then
           advec_uu=0.; advec_shear=0.; advec_hall=0.
           advec_cs2=0.; advec_va2=0.; advec_crad2=0.; advec_uud=0;
@@ -607,8 +607,8 @@ module Equ
 !  Add gravity, if present
 !
         if (lgrav) then
-          if (lhydro.or.ldustvelocity) then 
-             call duu_dt_grav(f,df,p)             
+          if (lhydro.or.ldustvelocity) then
+             call duu_dt_grav(f,df,p)
           endif
         endif
 !
@@ -632,7 +632,7 @@ module Equ
 !
         if (lradiation_fld) call de_dt(f,df,p,gamma)
 !
-!  Add and extra 'special' physics 
+!  Add and extra 'special' physics
 !
         if (lspecial)                    call dspecial_dt(f,df,p)
 !
@@ -682,7 +682,7 @@ module Equ
             pfreeze_int = &
                 quintic_step(p%r_mn   ,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
           endif
-!          
+!
           do iv=1,nvar
             if (lfreeze_varint(iv)) &
                 df(l1:l2,m,n,iv) = pfreeze_int*df(l1:l2,m,n,iv)
@@ -714,7 +714,7 @@ module Equ
           pfreeze = 1. - quintic_step(x(l1:l2),xfreeze_square, wfreeze,SHIFT=-1.) &
                        * quintic_step(spread(y(m),1,nx),yfreeze_square,-wfreeze,SHIFT=-1.)
 !
-          do iv=1,nvar          
+          do iv=1,nvar
             if (lfreeze_varsquare(iv)) &
                 df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
           enddo
@@ -841,7 +841,7 @@ module Equ
                    maxdiffus=0.
                 endwhere
              endif
-          endif                                    
+          endif
 !
           dt1_advec=maxadvec/cdt
           dt1_diffus=maxdiffus/cdtv
@@ -907,10 +907,10 @@ module Equ
 !
       if (lparticles) call particles_pde(f,df)
 !
-!  in case of lvisc_hyper=true epsK is calculated for the whole array 
+!  in case of lvisc_hyper=true epsK is calculated for the whole array
 !  at not just for one pencil, it must therefore be added outside the
 !  m,n loop.
-!      
+!
 !ajwm idiag_epsK needs close inspection... and requires tidying up
 !ajwm to be consistent in the viscosity.f90 routine.
 !      if (lvisc_hyper .and. ldiagnos) fname(idiag_epsK)=epsK_hyper
@@ -986,7 +986,7 @@ module Equ
 !      (program dies with error message)
 !    - Not calculating a requested pencil does not change df
 !      (program gives a warning)
-!  If there are missing pencils, the programmer should go into the 
+!  If there are missing pencils, the programmer should go into the
 !  pencil_criteria_XXX subs and request the proper pencils (based cleverly
 !  on run parameters).
 !
@@ -1008,7 +1008,7 @@ module Equ
       integer :: mem_stat1, mem_stat2, mem_stat3
 !
       if (lroot) print*, &
-          'pencil_consistency_check: checking the pencil case'      
+          'pencil_consistency_check: checking the pencil case'
 !
 ! Prevent code from dying due to any errors...
 !
@@ -1058,13 +1058,13 @@ module Equ
       if (notanumber(df_ref))       print*,'pencil_consistency_check: NaNs in df_ref'
       if (notanumber(dt1_max_ref))  print*,'pencil_consistency_check: NaNs in dt1_max_ref'
 !
-      do penc=1,npencils 
+      do penc=1,npencils
         df=0.0
         call random_seed_wrapper(put=iseed_org)
         do i=1,mvar+maux
           call random_number_wrapper(f_other(:,:,:,i))
         enddo
-        call initialize_pencils(p,penc0) 
+        call initialize_pencils(p,penc0)
 !
 !  Calculate results with one pencil swapped
 !
@@ -1090,7 +1090,7 @@ f_loop:   do iv=1,mvar
             enddo; enddo; enddo
           enddo f_loop
         endif
-! 
+!
         if (lconsistent .and. lpenc_requested(penc)) then
           if (lroot) print '(a,i4,a)', &
               'pencil_consistency_check: possible overcalculation... pencil '// &
@@ -1115,7 +1115,7 @@ f_loop:   do iv=1,mvar
         call random_number_wrapper(f_other(:,:,:,i))
       enddo
       fname=0.0
-      call initialize_pencils(p,penc0) 
+      call initialize_pencils(p,penc0)
 !
 !  Calculate reference diagnostics with all diagnostic pencils on
 !
@@ -1124,14 +1124,14 @@ f_loop:   do iv=1,mvar
       call pde(f_other,df,p)
       fname_ref=fname
 
-      do penc=1,npencils 
+      do penc=1,npencils
         df=0.0
         call random_seed_wrapper(put=iseed_org)
         do i=1,mfarray
           call random_number_wrapper(f_other(:,:,:,i))
         enddo
         fname=0.0
-        call initialize_pencils(p,penc0) 
+        call initialize_pencils(p,penc0)
 !
 !  Calculate diagnostics with one pencil swapped
 !
@@ -1146,10 +1146,10 @@ f_loop:   do iv=1,mvar
           lconsistent=(fname(k)==fname_ref(k))
           if (.not.lconsistent) exit
         enddo
-!        
+!
 !  ref = result same as "correct" reference result
 !    d = swapped pencil set as diagnostic
-!    r = swapped pencil set as requested (can take over for diagnostic pencil) 
+!    r = swapped pencil set as requested (can take over for diagnostic pencil)
 !
 !   ref +  d +  r = d not needed but set, r not needed but set; optimize d
 !   ref +  d + !r = d not needed but set, r not needed and not set; optimize d
@@ -1183,7 +1183,7 @@ f_loop:   do iv=1,mvar
       headt=.true.
       lout=.false.
       lfirst=.false.
-      df=0.0      
+      df=0.0
       deallocate(df_ref)
       deallocate(fname_ref)
       deallocate(f_other)

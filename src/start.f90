@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.163 2006-11-16 06:57:54 mee Exp $
+! $Id: start.f90,v 1.164 2006-11-30 09:03:36 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -91,7 +91,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.163 2006-11-16 06:57:54 mee Exp $")
+             "$Id: start.f90,v 1.164 2006-11-30 09:03:36 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -203,7 +203,7 @@
 !  random initial data.
 !  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
 !  would produce very short-period random numbers with the Intel compiler;
-!  so we need to retain most of the initial entropy of the generator. 
+!  so we need to retain most of the initial entropy of the generator.
 !
         call get_nseed(nseed)   ! get state length of random number generator
         call random_seed_wrapper(get=seed(1:nseed))

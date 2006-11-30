@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.294 2006-11-20 03:27:23 dobler Exp $
+! $Id: density.f90,v 1.295 2006-11-30 09:03:34 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -27,7 +27,7 @@ module Density
                              gamma,gamma1,cs2top,cs2bot, &
                              mpoly,beta_glnrho_global
 
-  use Special 
+  use Special
 
   implicit none
 
@@ -71,7 +71,7 @@ module Density
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
        wdamp,plaw,lcontinuity_gas,lstratified
-     
+
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
@@ -106,12 +106,12 @@ module Density
       if (.not. first) call fatal_error('register_density','module registration called twice')
       first = .false.
 
-      call farray_register_pde('lnrho',ilnrho) 
+      call farray_register_pde('lnrho',ilnrho)
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.294 2006-11-20 03:27:23 dobler Exp $")
+           "$Id: density.f90,v 1.295 2006-11-30 09:03:34 dobler Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -123,7 +123,7 @@ module Density
 !  For compatibility with other applications, we keep the possibility
 !  of giving diffrho units of dxmin*cs0, but cs0 is not well defined general
 !
-!  24-nov-02/tony: coded 
+!  24-nov-02/tony: coded
 !  31-aug-03/axel: normally, diffrho should be given in absolute units
 !
 !
@@ -222,7 +222,7 @@ module Density
 !
       if ((ldiff_hyper3.or.ldiff_hyper3_vector) .and. (.not. ldensity_nolog)) then
         if (lroot) print*,"initialize_density: Creating global array for rho to use hyperdiffusion"
-        call farray_register_global('rho',iglobal_rho)  
+        call farray_register_global('rho',iglobal_rho)
       endif
 !
       if (lfreeze_lnrhoint) lfreeze_varint(ilnrho) = .true.
@@ -232,12 +232,12 @@ module Density
 !
         if (ldensity_nolog) then
           call select_eos_variable('rho',ilnrho)
-        else 
+        else
           call select_eos_variable('lnrho',ilnrho)
         endif
 !
         if (lstratified .or. lnumerical_equilibrium) then
-          call farray_register_global('gg',iglobal_gg,vector=3) 
+          call farray_register_global('gg',iglobal_gg,vector=3)
         endif
 !
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
@@ -247,14 +247,14 @@ module Density
     subroutine read_density_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=density_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=density_init_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+
+
 99    return
     endsubroutine read_density_init_pars
 !***********************************************************************
@@ -268,7 +268,7 @@ module Density
     subroutine read_density_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=density_run_pars,ERR=99, IOSTAT=iostat)
       else
@@ -596,7 +596,7 @@ module Density
       case('shock-tube', '13')
         !
         !  shock tube test (should be consistent with hydro module)
-        !  
+        !
         call information('init_lnrho','polytopic standing shock')
         prof=.5*(1.+tanh(xx/widthlnrho))
         f(:,:,:,ilnrho)=log(rho_left)+(log(rho_right)-log(rho_left))*prof
@@ -604,7 +604,7 @@ module Density
       case('sin-xy')
         !
         !  sin profile in x and y
-        !  
+        !
         call information('init_lnrho','lnrho=sin(x)*sin(y)')
         f(:,:,:,ilnrho) = &
              log(rho0) + ampllnrho*sin(kx_lnrho*xx)*sin(ky_lnrho*yy)
@@ -612,7 +612,7 @@ module Density
       case('sin-xy-rho')
         !
         !  sin profile in x and y, but in rho, not ln(rho)
-        !  
+        !
         call information('init_lnrho','rho=sin(x)*sin(y)')
         f(:,:,:,ilnrho) = &
              log(rho0*(1+ampllnrho*sin(kx_lnrho*xx)*sin(ky_lnrho*yy)))
@@ -620,7 +620,7 @@ module Density
       case('linear')
         !
         !  linear profile in kk.xxx
-        !  
+        !
         call information('init_lnrho','linear profile')
         f(:,:,:,ilnrho) = log(rho0) &
              + ampllnrho*(kx_lnrho*xx+ky_lnrho*yy+kz_lnrho*zz) &
@@ -641,7 +641,7 @@ module Density
         !
         call planet_hc(amplrho,f,xx,yy,zz,eps_planet,radius_lnrho, &
             gamma,cs20,rho0,widthlnrho)
-      
+
       case('Ferriere'); call information('init_lnrho','Ferriere set in entropy')
 
       case('geo-kws')
@@ -655,7 +655,7 @@ module Density
       !
       ! radial hydrostatic profile throughout box, which is consistent
       ! with constant temperature in exterior regions, and gives continuous
-      ! density at shell boundaries 
+      ! density at shell boundaries
       !
         call information('init_lnrho','kws hydrostatic in spherical shell and exterior')
         call shell_lnrho(f)
@@ -667,7 +667,7 @@ module Density
         if (lroot)  print*,'init_lnrho: initialize initial condition for Keplerian global disc'
         call power_law(f,iglobal_gg,lnrho_const,plaw,lstratified)
 
-     case ('step_xz') 
+     case ('step_xz')
         call fatal_error('init_lnrho','neutron_star initial condition is now in the special/neutron_star.f90 code')
 
      case('jeans-wave-x')
@@ -676,10 +676,10 @@ module Density
         print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
           real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
 
-        f(:,:,:,ilnrho) = lnrho_const + & 
+        f(:,:,:,ilnrho) = lnrho_const + &
           ampllnrho*sin(kx_lnrho*xx)
         f(:,:,:,iux) = f(:,:,:,iux) &
-             + abs(omega_jeans*ampllnrho) * & 
+             + abs(omega_jeans*ampllnrho) * &
              sin(kx_lnrho*xx+complex_phase(omega_jeans*ampllnrho))
 
      case('jeans-wave-oblique')
@@ -690,19 +690,19 @@ module Density
         print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
           real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
 
-        f(:,:,:,ilnrho) = lnrho_const + & 
+        f(:,:,:,ilnrho) = lnrho_const + &
           ampllnrho*sin(kx_lnrho*xx + ky_lnrho*yy + kz_lnrho*zz)
         if (kx_lnrho .ne. 0) &
              f(:,:,:,iux) = f(:,:,:,iux) &
-             + abs(omega_jeans*ampllnrho) * & 
+             + abs(omega_jeans*ampllnrho) * &
              sin(kx_lnrho*xx+complex_phase(omega_jeans*ampllnrho))
         if (ky_lnrho .ne. 0) &
              f(:,:,:,iuy) = f(:,:,:,iuy) &
-             + abs(omega_jeans*ampllnrho) * & 
+             + abs(omega_jeans*ampllnrho) * &
              sin(ky_lnrho*yy+complex_phase(omega_jeans*ampllnrho))
-        if (kz_lnrho .ne. 0) & 
+        if (kz_lnrho .ne. 0) &
              f(:,:,:,iuz) = f(:,:,:,iuz) &
-             + abs(omega_jeans*ampllnrho) * & 
+             + abs(omega_jeans*ampllnrho) * &
              sin(kz_lnrho*zz+complex_phase(omega_jeans*ampllnrho))
 
      case('toomre-wave-x')
@@ -712,13 +712,13 @@ module Density
         print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
           real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
 
-        f(:,:,:,ilnrho) = lnrho_const + & 
+        f(:,:,:,ilnrho) = lnrho_const + &
           ampllnrho*sin(kx_lnrho*xx)
         f(:,:,:,iux) = f(:,:,:,iux) &
-             + abs(omega_jeans*ampllnrho) * & 
+             + abs(omega_jeans*ampllnrho) * &
              sin(kx_lnrho*xx+complex_phase(omega_jeans*ampllnrho))
         f(:,:,:,iuy) = f(:,:,:,iuy) &
-             + abs(ampllnrho*cmplx(0,-0.5*Omega/(kx_lnrho*rho0))) * & 
+             + abs(ampllnrho*cmplx(0,-0.5*Omega/(kx_lnrho*rho0))) * &
              sin(kx_lnrho*xx+complex_phase(ampllnrho*cmplx(0,-0.5*Omega/(kx_lnrho*rho0))))
 
       case default
@@ -754,9 +754,9 @@ module Density
 !  Tobi: This is only kept for backwards compatibility
 !
       select case(initlnrho2)
-    
+
       case('nothing')
-    
+
         if (lroot.and.ip<=5) print*,"init_lnrho: initlnrho2='nothing'"
 
       case('addblob')
@@ -943,8 +943,8 @@ module Density
           where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext+(pot_ext-pot)*exp(-lnrho_ext/mpoly)*gamma/gamma1
           where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int+(pot_int-pot)*exp(-lnrho_int/mpoly)*gamma/gamma1
         endif
-      enddo 
-!      
+      enddo
+!
     endsubroutine shell_lnrho
 !***********************************************************************
     subroutine numerical_equilibrium(f)
@@ -962,7 +962,7 @@ module Density
       real, dimension (nx,3) :: glnrho
       real, dimension (nx,3) :: gg_mn
       integer :: i,j
-      
+
       do m=m1,m2
       do n=n1,n2
 
@@ -980,9 +980,9 @@ module Density
     endsubroutine numerical_equilibrium
 !***********************************************************************
     subroutine pencil_criteria_density()
-! 
+!
 !  All pencils that the Density module depends on are specified here.
-! 
+!
 !  19-11-04/anders: coded
 !
       use Cdata
@@ -1083,10 +1083,10 @@ module Density
 !  19-11-04/anders: coded
 !
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij
-!      
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       integer :: i, mm, nn
 !
       intent(inout) :: f,p
@@ -1228,7 +1228,7 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!      
+!
       real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho, tmp
 !
       intent(in)  :: f,p
@@ -1238,7 +1238,7 @@ module Density
 !
       if (headtt.or.ldebug) print*,'dlnrho_dt: SOLVE dlnrho_dt'
       if (headtt) call identify_bcs('lnrho',ilnrho)
-! 
+!
 !  continuity equation
 !
       if (lcontinuity_gas) then
@@ -1286,7 +1286,7 @@ module Density
             if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+&
                  diffrho_hyper3_vector(1)*dx_1(l1:l2)**6 + &
                  diffrho_hyper3_vector(2)*dy_1(m)**6 + &
-                 diffrho_hyper3_vector(3)*dz_1(n)**6 
+                 diffrho_hyper3_vector(3)*dz_1(n)**6
             if (headtt) &
                  print*,'dlnrho_dt: diffrho_hyper3=(Dx,Dy,Dz)=',diffrho_hyper3_vector
          else
@@ -1303,7 +1303,7 @@ module Density
       endif
 !
 !  Shock diffusion
-!      
+!
       if (ldiff_shock) then
         if (ldensity_nolog) then
           call dot_mn(p%gshock,p%grho,gshockgrho)
@@ -1332,7 +1332,7 @@ module Density
 !ajwm  Cannot alter special interface!!
       if (lspecial) call special_calc_density(f,df,p)
 !
-!  Apply border profile  
+!  Apply border profile
 !
       if (lborder_profiles) call set_border_density(f,df,p)
 !
@@ -1343,13 +1343,13 @@ module Density
         call phisum_mn_name_rz(p%lnrho,idiag_lnrhomphi)
         call phisum_mn_name_rz(p%rho,idiag_rhomphi)
       endif
-!       
+!
 !  Calculate density diagnostics
 !
       if (ldiagnos) then
         if (idiag_rhom/=0)     call sum_mn_name(p%rho,idiag_rhom)
         if (idiag_rhomin/=0) &
-            call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)      
+            call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)
         if (idiag_rhomax/=0)   call max_mn_name(p%rho,idiag_rhomax)
         if (idiag_rho2m/=0)    call sum_mn_name(p%rho**2,idiag_rho2m)
         if (idiag_lnrho2m/=0)  call sum_mn_name(p%lnrho**2,idiag_lnrho2m)
@@ -1513,15 +1513,15 @@ module Density
 !  This routine should be independent of the gravity module used.
 !  When entropy is present, this module also initializes entropy.
 !
-!  Sound speed (and hence Temperature), and density (at infinity) are 
+!  Sound speed (and hence Temperature), and density (at infinity) are
 !  initialised to their respective reference values:
-!           sound speed: cs^2_0            from start.in  
+!           sound speed: cs^2_0            from start.in
 !           density: rho0 = exp(lnrho0)
 !
 !   8-jul-02/axel: incorporated/adapted from init_lnrho
 !  11-jul-02/axel: fixed sign; should be tmp=gamma*pot/cs20
-!  02-apr-03/tony: made entropy explicit rather than using tmp/-gamma  
-!  11-jun-03/tony: moved entropy initialisation to separate routine 
+!  02-apr-03/tony: made entropy explicit rather than using tmp/-gamma
+!  11-jun-03/tony: moved entropy initialisation to separate routine
 !                  to allow isothermal condition for arbitrary density
 !
       use Gravity

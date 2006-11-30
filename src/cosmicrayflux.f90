@@ -1,7 +1,7 @@
-! $Id: cosmicrayflux.f90,v 1.9 2006-11-16 07:14:42 mee Exp $
+! $Id: cosmicrayflux.f90,v 1.10 2006-11-30 09:03:34 dobler Exp $
 
 !  Cosmic Ray Flux
-!  
+!
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -79,7 +79,7 @@ module Cosmicrayflux
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicrayflux.f90,v 1.9 2006-11-16 07:14:42 mee Exp $")
+           "$Id: cosmicrayflux.f90,v 1.10 2006-11-30 09:03:34 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -112,7 +112,7 @@ module Cosmicrayflux
       real, dimension (mx,my,mz,mfarray) :: f
 
       if(tau /= 0.) tau1=1./tau
-      
+
 !
     endsubroutine initialize_cosmicrayflux
 !***********************************************************************
@@ -162,10 +162,10 @@ module Cosmicrayflux
 !  19-11-04/anders: coded
 !
       use Cdata
-!      
+!
       lpenc_requested(i_gecr)=.true.
       lpenc_requested(i_bb)=.true.
-                      
+
 !      lpenc_requested(i_fcr)=.true.
 !
     endsubroutine pencil_criteria_cosmicrayflux
@@ -181,15 +181,15 @@ module Cosmicrayflux
     subroutine calc_pencils_cosmicrayflux(f,p)
 !
 !  Calculate Cosmicray Flux pencils - to be done
-!  
+!
 !
       use Cdata
       use Sub
       use Deriv
 !
-      real, dimension (mx,my,mz,mfarray) :: f       
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
 !      real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext,jj_ext
 !      real, dimension (nx) :: rho1_jxb,quenching_factor,alpha_total
 !      real :: B2_ext,c,s
@@ -199,14 +199,14 @@ module Cosmicrayflux
       intent(inout) :: p
 ! fcr
 !      if (lpencil(i_fcr)) p%fcr=f(l1:l2,m,n,ifcrx:ifcrz)
-!      
+!
     endsubroutine calc_pencils_cosmicrayflux
 !***********************************************************************
     subroutine dfcr_dt(f,df,p)
 !
 !  Cosmicray Flux evolution
 !
-!  08-mar-05/snod: adapted from daa_dt 
+!  08-mar-05/snod: adapted from daa_dt
 !
       use Cdata
       use Sub
@@ -221,7 +221,7 @@ module Cosmicrayflux
       real, dimension (nx) :: tmp
       integer :: i,j
       type (pencil_case) :: p
-!      
+!
 !      real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
 !      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,hall_ueff2
 !      real, dimension (nx) :: b2b13,sign_jo
@@ -230,7 +230,7 @@ module Cosmicrayflux
 !      integer :: i,j
 !
       intent(in)     :: f
-      intent(inout)  :: df     
+      intent(inout)  :: df
 !
 !  identify module and boundary conditions
 !
@@ -246,8 +246,8 @@ module Cosmicrayflux
 !  with frequency omega_Bz_ext
       b21=1./max(tiny(b2),b2)
       call multsv_mn(sqrt(b21),p%bb,bunit)
-!                        
-!  
+!
+!
 
       do i=1,3
         tmp=0.
@@ -261,9 +261,9 @@ module Cosmicrayflux
 !
       df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
       - tau1*f(l1:l2,m,n,ifcrx:ifcrz)                       &
-      - kperp*p%gecr                                        & 
-      - (kpara - kperp)*BuiBujgecr 
-!      
+      - kperp*p%gecr                                        &
+      - (kpara - kperp)*BuiBujgecr
+!
 !
 !  Calculate diagnostic quantities
 !
@@ -324,15 +324,15 @@ module Cosmicrayflux
 !***********************************************************************
     subroutine write_cosmicrayflux_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       write(unit,NML=cosmicrayflux_init_pars)
-                                                                                                   
+
     endsubroutine write_cosmicrayflux_init_pars
 !***********************************************************************
     subroutine read_cosmicrayflux_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=cosmicrayflux_run_pars,ERR=99, IOSTAT=iostat)
       else

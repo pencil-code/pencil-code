@@ -1,7 +1,7 @@
-! $Id: deriv.f90,v 1.33 2006-11-14 18:22:43 dobler Exp $
+! $Id: deriv.f90,v 1.34 2006-11-30 09:03:34 dobler Exp $
 
 module Deriv
-  
+
   use Messages
 
   implicit none
@@ -646,7 +646,7 @@ module Deriv
 
       if (lbidiagonal_derij) then
         !
-        ! Use bidiagonal mixed-derivative operator, i.e. 
+        ! Use bidiagonal mixed-derivative operator, i.e.
         ! employ only the three neighbouring points on each of the four
         ! half-diagonals. This gives 6th-order mixed derivatives as the
         ! version below, but involves just 12 points instead of 36.

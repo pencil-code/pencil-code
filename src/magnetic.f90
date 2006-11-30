@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.362 2006-11-23 20:59:18 theine Exp $
+! $Id: magnetic.f90,v 1.363 2006-11-30 09:03:35 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -17,7 +17,7 @@
 ! PENCILS PROVIDED aa,a2,aij,bb,bbb,ab,uxb,b2,bij,del2a,graddiva,jj
 ! PENCILS PROVIDED j2,jb,va2,jxb,jxbr,ub,uxb,uxb2,uxj,beta,uga
 ! PENCILS PROVIDED djuidjbi,jo,ujxb,oxu,oxuxb,jxbxb,jxbrxb
-! PENCILS PROVIDED glnrhoxb,del4a,del6a,oxj,diva,jij,sj,ss12 
+! PENCILS PROVIDED glnrhoxb,del4a,del6a,oxj,diva,jij,sj,ss12
 ! PENCILS PROVIDED mf_EMF, mf_EMFdotB
 !
 !***************************************************************
@@ -169,8 +169,8 @@ module Magnetic
   integer :: idiag_uxbrmphi=0,idiag_uxbpmphi=0,idiag_uxbzmphi=0,idiag_ujxbm=0
   integer :: idiag_uxBrms=0,idiag_Bresrms=0,idiag_Rmrms=0
   integer :: idiag_brm=0,idiag_bpm=0,idiag_bzm=0
-  integer :: idiag_br2m=0,idiag_bp2m=0,idiag_bzz2m=0  
-  integer :: idiag_brbpm=0,idiag_bzbpm=0,idiag_brbzm=0,idiag_vA2m=0 
+  integer :: idiag_br2m=0,idiag_bp2m=0,idiag_bzz2m=0
+  integer :: idiag_brbpm=0,idiag_bzbpm=0,idiag_brbzm=0,idiag_vA2m=0
 
   contains
 
@@ -211,7 +211,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.362 2006-11-23 20:59:18 theine Exp $")
+           "$Id: magnetic.f90,v 1.363 2006-11-30 09:03:35 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -244,7 +244,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
-      integer :: i      
+      integer :: i
 !
 !  Precalculate 1/mu (moved here from register.f90)
 !
@@ -396,7 +396,7 @@ module Magnetic
       do j=1,ninit
 
          select case(initaa(j))
-         
+
          case('nothing'); if(lroot .and. j==1) print*,'init_uu: nothing'
          case('zero', '0'); f(:,:,:,iax:iaz) = 0.
          case('rescale'); f(:,:,:,iax:iaz)=amplaa(j)*f(:,:,:,iax:iaz)
@@ -443,8 +443,8 @@ module Magnetic
          case('crazy', '5'); call crazy(amplaa(j),f,iaa)
          case('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,xx,kx_aa(j))
          case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
-         case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,xx,yy,rmode)   
-         case('Alfven-rz'); call alfven_rz(amplaa(j),f,xx,yy,rmode)   
+         case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,xx,yy,rmode)
+         case('Alfven-rz'); call alfven_rz(amplaa(j),f,xx,yy,rmode)
          case('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
          case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
          case('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa,xx,yy,zz)
@@ -539,7 +539,7 @@ module Magnetic
 !  19-11-04/anders: coded
 !
       use Cdata
-!      
+!
       lpenc_requested(i_bb)=.true.
       lpenc_requested(i_uxb)=.true.
 !
@@ -818,9 +818,9 @@ module Magnetic
       use Deriv
       use Global, only: get_global
 !
-      real, dimension (mx,my,mz,mfarray) :: f       
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext,jj_ext
       real, dimension (nx) :: rho1_jxb,alpha_total
       real, dimension (nx) :: alpha_tmp
@@ -959,7 +959,7 @@ module Magnetic
       if (lpencil(i_del4a)) call del4v(f,iaa,p%del4a)
 ! del6a
       if (lpencil(i_del6a)) call del6v(f,iaa,p%del6a)
-! oxj        
+! oxj
       if (lpencil(i_oxj)) call cross_mn(p%oo,p%jj,p%oxJ)
 ! jij
       if (lpencil(i_jij)) then
@@ -1034,7 +1034,7 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!      
+!
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b3b21,b1b32,b2b13,sign_jo,rho1_jxb
@@ -1044,7 +1044,7 @@ module Magnetic
       integer :: i,j,k
 !
       intent(in)     :: f,p
-      intent(inout)  :: df     
+      intent(inout)  :: df
 !
 !  identify module and boundary conditions
 !
@@ -1162,7 +1162,7 @@ module Magnetic
 !
       if (lresi_smagorinsky_cross) then
         sign_jo=1.
-        do i=1,nx 
+        do i=1,nx
           if (p%jo(i) .lt. 0) sign_jo(i)=-1.
         enddo
         eta_smag=(D_smag*dxmax)**2.*sign_jo*sqrt(p%jo*sign_jo)
@@ -1302,7 +1302,7 @@ module Magnetic
         else
            diffus_eta=(etatotal+meanfield_etat)*dxyz_2
         endif
-        
+
         if (ldiagnos.and.idiag_dteta/=0) then
           call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
         endif
@@ -1360,7 +1360,7 @@ module Magnetic
 
         if (idiag_djuidjbim/=0) call sum_mn_name(p%djuidjbi,idiag_djuidjbim)
 !
-!  cylindrical components of the magnetic field and maxwell stress 
+!  cylindrical components of the magnetic field and maxwell stress
 !
         if (idiag_brm/=0 .or. idiag_bpm/=0 .or. idiag_bzm/=0 .or. &
             idiag_br2m/=0 .or. idiag_bp2m/=0 .or. idiag_bzz2m/=0 .or. &
@@ -1580,7 +1580,7 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!      
+!
       real, dimension (nx,3) :: uudot,aadot,udotxb,B1_gradu
       real, dimension (nx) :: B1dot_udotxb,B1dot_uxbdot,B1dot_aadot,uxbdot2
 !
@@ -1698,7 +1698,7 @@ module Magnetic
 !***********************************************************************
     subroutine eta_shell(p,eta_mn,geta)
 !
-!   24-nov-03/dave: coded 
+!   24-nov-03/dave: coded
 !
       use Cdata
       use Sub, only: step, der_step
@@ -2004,9 +2004,9 @@ module Magnetic
         idiag_brmphi=0; idiag_bpmphi=0; idiag_bzmphi=0; idiag_b2mphi=0
         idiag_jbmphi=0; idiag_uxbrmphi=0; idiag_uxbpmphi=0; idiag_uxbzmphi=0;
         idiag_dteta=0; idiag_uxBrms=0; idiag_Bresrms=0; idiag_Rmrms=0
-        idiag_brm=0; idiag_bpm=0; idiag_bzm=0 
-        idiag_br2m=0; idiag_bp2m=0; idiag_bzz2m=0; idiag_brbpm=0 
-        idiag_bzbpm=0; idiag_brbzm=0; idiag_va2m=0 
+        idiag_brm=0; idiag_bpm=0; idiag_bzm=0
+        idiag_br2m=0; idiag_bp2m=0; idiag_bzz2m=0; idiag_brbpm=0
+        idiag_bzbpm=0; idiag_brbzm=0; idiag_va2m=0
 !
       endif
 !
@@ -2313,7 +2313,7 @@ module Magnetic
       real :: bmx,bmy,bmz
       integer :: l,j
 !
-!  For vector output (of bb vectors) we need brms 
+!  For vector output (of bb vectors) we need brms
 !  on all processors. It suffices to have this for times when lout=.true.,
 !  but we need to broadcast the result to all procs.
 !
@@ -2453,7 +2453,7 @@ module Magnetic
 !  field pointing to the phi direction.
 !
 !  Bphi = B0 cos(k r) ==> Az = -1/k B0 sin(k r)
-!  
+!
 !  04-oct-06/wlad: coded
 !
       use Cdata
@@ -2475,7 +2475,7 @@ module Magnetic
 !  field pointing to the z direction.
 !
 !  Bz = B0 cos(k r) ==> Aphi = B0/k sin(k r) + B0/(k2*r)*cos(k r)
-!      
+!
 !  04-oct-06/wlad: coded
 !
       use Cdata
@@ -2489,8 +2489,8 @@ module Magnetic
 !
       Aphi =  B0/kr * sin(kr*(rrcyl-r_int)) + &
            B0/(kr**2*rrcyl)*cos(kr*(rrcyl-r_int))
-!   
-      f(:,:,:,iax) = Aphi * (-yy/rrcyl) 
+!
+      f(:,:,:,iax) = Aphi * (-yy/rrcyl)
       f(:,:,:,iay) = Aphi * ( xx/rrcyl)
 !
     endsubroutine alfven_rz
@@ -2870,7 +2870,7 @@ module Magnetic
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f     
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx) :: theta_mn,ar,atheta,aphi,r_mn,phi_mn
       real :: C_int,C_ext,A_int,A_ext
       integer :: j
@@ -2881,11 +2881,11 @@ module Magnetic
         r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
         theta_mn=acos(spread(z(n),1,nx)/r_mn)
         phi_mn=atan2(spread(y(m),1,nx),x(l1:l2))
-        
+
  ! calculate ax,ay,az (via ar,atheta,aphi) inside shell (& leave zero outside shell)
 
         do j=1,ninit
-           select case(initaa(j)) 
+           select case(initaa(j))
            case('geo-benchmark-case1')
               if (lroot .and. imn==1) print*, 'geo_benchmark_B: geo-benchmark-case1'
               C_int=-( -1./63.*r_int**4 + 11./84.*r_int**3*r_ext            &
@@ -2899,11 +2899,11 @@ module Magnetic
 
               where (r_mn < r_int)
                 ar=C_int*ampl_B0*80.*2.*(3.*sin(theta_mn)**2-2.)*r_mn
-                atheta=3.*C_int*ampl_B0*80.*sin(2.*theta_mn)*r_mn 
+                atheta=3.*C_int*ampl_B0*80.*sin(2.*theta_mn)*r_mn
                 aphi=ampl_B0*A_int*r_mn*sin(theta_mn)
               endwhere
 
-              where (r_mn <= r_ext .and. r_mn >= r_int) 
+              where (r_mn <= r_ext .and. r_mn >= r_int)
                 ar=ampl_B0*80.*2.*(3.*sin(theta_mn)**2-2.)*                 &
                    (   1./36.*r_mn**5 - 1./12.*(r_int+r_ext)*r_mn**4        &
                      + 1./14.*(r_int**2+4.*r_int*r_ext+r_ext**2)*r_mn**3    &
@@ -2917,7 +2917,7 @@ module Magnetic
                      + 2./25.*r_int**2*r_ext**2*r_mn                        &
                      + 3./5.*r_int**2*r_ext**2*r_mn*log(r_mn) )
                 aphi=ampl_B0*5./8.*sin(theta_mn)*                           &
-                   ( 4.*r_ext*r_mn - 3.*r_mn**2 - r_int**4/r_mn**2 ) 
+                   ( 4.*r_ext*r_mn - 3.*r_mn**2 - r_int**4/r_mn**2 )
               endwhere
 
               where (r_mn > r_ext)
@@ -2925,7 +2925,7 @@ module Magnetic
                 atheta=-2.*C_ext*ampl_B0*80.*sin(2.*theta_mn)/r_mn**4
                 aphi=ampl_B0*A_ext/r_mn**2*sin(theta_mn)
               endwhere
-  
+
           ! debug checks -- look at a pencil near the centre...
               if (ip<=4 .and. imn==(ny+1)*nz/2) then
                  print*,'r_int,r_ext',r_int,r_ext
@@ -2939,7 +2939,7 @@ module Magnetic
                       'geo_benchmark_B: minmax(phi_mn), imn, iproc:', &
                       iproc, imn, minval(phi_mn), maxval(phi_mn)
                  write(*,'(a45,2i6,2f15.7)') &
-                      'geo_benchmark_B: minmax(ar), imn, iproc:', & 
+                      'geo_benchmark_B: minmax(ar), imn, iproc:', &
                       iproc, imn, minval(ar), maxval(ar)
                  write(*,'(a45,2i6,2f15.7)') &
                       'geo_benchmark_B: minmax(atheta), imn, iproc:', &
@@ -2948,7 +2948,7 @@ module Magnetic
                       'geo_benchmark_B: minmax(aphi), imn, iproc:', &
                       iproc, imn, minval(aphi), maxval(aphi)
               endif
-              
+
            case('geo-benchmark-case2')
               if (lroot .and. imn==1) print*, 'geo_benchmark_B: geo-benchmark-case2 not yet coded.'
 
@@ -2968,9 +2968,9 @@ module Magnetic
         print*,'geo_benchmark_B: minmax(ay) on iproc:', iproc, minval(f(l1:l2,m1:m2,n1:n2,iay)),maxval(f(l1:l2,m1:m2,n1:n2,iay))
         print*,'geo_benchmark_B: minmax(az) on iproc:', iproc, minval(f(l1:l2,m1:m2,n1:n2,iaz)),maxval(f(l1:l2,m1:m2,n1:n2,iaz))
      endif
-     
+
     endsubroutine geo_benchmark_B
-    
+
 !***********************************************************************
     subroutine bc_frozen_in_bb(topbot,j)
 !
@@ -3222,7 +3222,7 @@ module Magnetic
 !  Potential field boundary condition for magnetic vector potential at
 !  bottom or top boundary (in z).
 !
-!  14-jun-2002/axel: adapted from similar 
+!  14-jun-2002/axel: adapted from similar
 !   8-jul-2002/axel: introduced topbot argument
 !
       use Cdata
@@ -3422,15 +3422,15 @@ module Magnetic
     subroutine subtract_mean_lorentz(df,p)
 !
 !  A vertical large scale magnetic field Bz
-!  
-!  gives rise to a linearly growing component in the 
+!
+!  gives rise to a linearly growing component in the
 !  radial potential
 !
 !   dAr/dt = (uxB)_r = uphi*Bz -> Ar=uphi*Bz*t
 !
-!  which eventually overgrows the solenoidal component of 
-!  the field and leads to numerical problems. This subroutine 
-!  artificially removes this unwanted component from the 
+!  which eventually overgrows the solenoidal component of
+!  the field and leads to numerical problems. This subroutine
+!  artificially removes this unwanted component from the
 !  induction equation, using phi-averages calculated in runtime
 !
 !  22-mar-06/wlad: coded
@@ -3443,7 +3443,7 @@ module Magnetic
 !
       intent(inout) :: df
 !
-      df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - p%uavg(:,2)*p%bavg(:,3)*p%x_mn*p%rcyl_mn1 
+      df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - p%uavg(:,2)*p%bavg(:,3)*p%x_mn*p%rcyl_mn1
       df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - p%uavg(:,2)*p%bavg(:,3)*p%y_mn*p%rcyl_mn1
 !
     endsubroutine subtract_mean_lorentz

@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.27 2006-10-05 15:42:25 theine Exp $
+! $Id: struct_func.f90,v 1.28 2006-11-30 09:03:36 dobler Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -58,7 +58,7 @@ module struct_func
       character (len=*) :: variabl
       character (len=20):: filetowrite
       logical :: llsf=.false., llpdf=.false.
-      ! 
+      !
       !
       !
       if (iproc==root) print*,'Doing structure functions'
@@ -113,7 +113,7 @@ module struct_func
       !  Setting some variables depending on wether we want to
       !  calculate pdf or structure functions.
       !
-      if (variabl .eq. 'pdfu') then 
+      if (variabl .eq. 'pdfu') then
         vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
         filetowrite='/pdfu-'
         pdf_max= 1.  !(for the time being; assumes |u|<1)
@@ -125,7 +125,7 @@ module struct_func
         p_du=0.
         llpdf=.true.
         llsf=.false.
-      elseif (variabl .eq. 'pdfb') then 
+      elseif (variabl .eq. 'pdfb') then
         vect=b_vec
         filetowrite='/pdfb-'
         pdf_max= 1.  !(for the time being; assumes |u|<1)
@@ -218,7 +218,7 @@ module struct_func
               !
               ! Loop over all q values
               !
-              do q=1,qmax-1   
+              do q=1,qmax-1
                 if (variabl .eq. 'flux') then
                   sf(lb_ll,q,direction) &
                        =sf(lb_ll,q,direction) &

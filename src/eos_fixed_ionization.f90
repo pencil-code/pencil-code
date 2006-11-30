@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.28 2006-11-04 07:47:36 brandenb Exp $
+! $Id: eos_fixed_ionization.f90,v 1.29 2006-11-30 09:03:35 dobler Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -60,16 +60,16 @@ module EquationOfState
   ! run parameters
   namelist /eos_run_pars/ yH0,xHe,xH2,opacity_type,kappa_cst
 
-!ajwm  can't use impossible else it breaks reading param.nml 
-!ajwm  SHOULDN'T BE HERE... But can wait till fully unwrapped 
+!ajwm  can't use impossible else it breaks reading param.nml
+!ajwm  SHOULDN'T BE HERE... But can wait till fully unwrapped
   real :: cs0=1., rho0=1., cp=1.
   real :: cs20=1., lnrho0=0.
   logical :: lcalc_cp = .false.
   real :: gamma=5./3., gamma1,gamma11, nabla_ad
   !real :: cp=impossible, cp1=impossible
   real :: cp1=impossible
-!ajwm  can't use impossible else it breaks reading param.nml 
-  real :: cs2bot=1., cs2top=1. 
+!ajwm  can't use impossible else it breaks reading param.nml
+  real :: cs2bot=1., cs2top=1.
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   real, dimension (3) :: beta_glnrho_global=0.0,beta_glnrho_scaled=0.0
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.28 2006-11-04 07:47:36 brandenb Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.29 2006-11-30 09:03:35 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -143,7 +143,7 @@ module EquationOfState
 !***********************************************************************
     subroutine initialize_eos()
 !
-!  Perform any post-parameter-read initialization, e.g. set derived 
+!  Perform any post-parameter-read initialization, e.g. set derived
 !  parameters.
 !
 !   2-feb-03/axel: adapted from Interstellar module
@@ -158,7 +158,7 @@ module EquationOfState
 !  it is better to divide m_e and chiH separately by hbar.
 !
       if(headtt) print*,'initialize_eos: assume cp is not 1, yH0=',yH0
-      mu1yHxHe=1.+3.97153*xHe  
+      mu1yHxHe=1.+3.97153*xHe
       TT_ion=chiH/k_B
       lnTT_ion=log(chiH/k_B)
       TT_ion_=chiH_/k_B
@@ -168,7 +168,7 @@ module EquationOfState
       lnrho_p=1.5*log((m_p/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
       lnrho_He=1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
       lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
-      ss_ion=k_B/m_H/mu1yHxHe      
+      ss_ion=k_B/m_H/mu1yHxHe
       ee_ion=ss_ion*TT_ion
       gamma1=gamma-1.
       gamma11=1./gamma
@@ -212,7 +212,7 @@ module EquationOfState
 !
       lnTT0=lnTT_ion+(2./3.)*((yH_term+one_yH_term+xHe_term)/ &
           (1+yH0+xHe-xH2)-2.5)
-!      
+!
       if(lroot) then
         print*,'initialize_eos: reference values for ionization'
         print*,'initialize_eos: TT_ion,ss_ion,kappa0=', &
@@ -313,7 +313,7 @@ module EquationOfState
 !!        ieosvar1=findex
 !!        ieosvar_selected=ieosvar_selected+this_var
 !!        return
-!!      endif 
+!!      endif
 !!!
 !!! Ensure the indexes are in the correct order.
 !!!
@@ -326,11 +326,11 @@ module EquationOfState
 !!      ieosvar_selected=ieosvar_selected+this_var
 !!      select case (ieosvar_selected)
 !!        case (ieosvar_lnrho+ieosvar_ss)
-!!          ieosvars=ilnrho_ss 
+!!          ieosvars=ilnrho_ss
 !!        case (ieosvar_lnrho+ieosvar_lnTT)
-!!          ieosvars=ilnrho_lnTT 
+!!          ieosvars=ilnrho_lnTT
 !!        case (ieosvar_lnrho+ieosvar_cs2)
-!!          ieosvars=ilnrho_cs2 
+!!          ieosvars=ilnrho_cs2
 !!        case default
 !!          print*,"select_eos_variable: Thermodynamic variable combination, ieosvar_selected= ",ieosvar_selected
 !!          call fatal_error("select_eos_variable", &
@@ -347,18 +347,18 @@ module EquationOfState
 !  21-11-04/anders: moved diagnostics to entropy
 !
       use Cdata
-! 
+!
       logical :: lreset
       logical, optional :: lwrite
 !
       if(NO_WARN) print*,lreset  !(to keep compiler quiet)
-!        
+!
     endsubroutine rprint_eos
 !***********************************************************************
     subroutine pencil_criteria_eos()
-! 
+!
 !  All pencils that the EquationOfState module depends on are specified here.
-! 
+!
 !  02-04-06/tony: coded
 !
 !  EOS is a pencil provider but evolves nothing so it is unlokely that
@@ -367,7 +367,7 @@ module EquationOfState
     endsubroutine pencil_criteria_eos
 !***********************************************************************
     subroutine pencil_interdep_eos(lpencil_in)
-!       
+!
 !  Interdependency among pencils from the Entropy module is specified here.
 !
 !  20-11-04/anders: coded
@@ -393,24 +393,24 @@ module EquationOfState
     endsubroutine pencil_interdep_eos
 !***********************************************************************
     subroutine calc_pencils_eos(f,p)
-!       
+!
 !  Calculate Entropy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  02-04-06/tony: coded
 !
       use Sub
-!      
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(in) :: f
       intent(inout) :: p
 !
-! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG 
+! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG
 ! FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
 ! The code is not wrong however since this is correctly
-! handled by the eos module. 
+! handled by the eos module.
 ! ss
       if (lpencil(i_ss)) p%ss=f(l1:l2,m,n,iss)
 !
@@ -426,7 +426,7 @@ module EquationOfState
       if (lpencil(i_yH)) call eoscalc(f,nx,yH=p%yH)
 ! TT
       if (lpencil(i_TT)) p%TT=exp(p%lnTT)
-! TT1        
+! TT1
       if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
 ! cs2 and cp1tilde
       if (lpencil(i_cs2) .or. lpencil(i_cp1tilde)) &
@@ -477,7 +477,7 @@ module EquationOfState
     subroutine getdensity(EE,TT,yH,rho)
 
       use Mpicomm, only: stop_it
-      
+
       real, intent(in) :: EE,TT,yH
       real, intent(out) :: rho
       real :: lnrho
@@ -611,7 +611,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
     endsubroutine temperature_hessian
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp,ss)
-      
+
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(in), optional :: ee,pp,ss
@@ -733,7 +733,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         ss_    = (lnTT_-lnTTlnrho*lnrho_-lnTT0)/lnTTss
         cs2_=impossible
 
-      case default 
+      case default
         call stop_it('eoscalc_point: thermodynamic case')
      end select
 
@@ -801,7 +801,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         lnTT_  = var2
         ss_    = (lnTT_-lnTTlnrho*lnrho_-lnTT0)/lnTTss
 
-      case default 
+      case default
         call stop_it('eoscalc_pencil: thermodynamic case')
      end select
 
@@ -820,8 +820,8 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 
       if (present(iostat)) then
         read(unit,NML=eos_init_pars,ERR=99, IOSTAT=iostat)
-      else 
-        read(unit,NML=eos_init_pars,ERR=99) 
+      else
+        read(unit,NML=eos_init_pars,ERR=99)
       endif
 
 99    return
@@ -839,8 +839,8 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 
       if (present(iostat)) then
         read(unit,NML=eos_run_pars,ERR=99, IOSTAT=iostat)
-      else 
-        read(unit,NML=eos_run_pars,ERR=99) 
+      else
+        read(unit,NML=eos_run_pars,ERR=99)
       endif
 
 99    return
@@ -878,7 +878,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  Sound speed (and hence Temperature), is
 !  initialised to the reference value:
-!           sound speed: cs^2_0            from start.in  
+!           sound speed: cs^2_0            from start.in
 !           density: rho0 = exp(lnrho0)
 !
 !  11-jun-03/tony: extracted from isothermal routine in Density module
@@ -896,7 +896,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       do m=m1,m2
 !
         lnrho=f(l1:l2,m,n,ilnrho)
-        ss=ss_ion*((1+yH0+xHe-xH2)*(1.5*log(T0/TT_ion)-lnrho+2.5) & 
+        ss=ss_ion*((1+yH0+xHe-xH2)*(1.5*log(T0/TT_ion)-lnrho+2.5) &
                    -yH_term-one_yH_term-xHe_term)
         f(l1:l2,m,n,iss)=ss
 !
@@ -963,7 +963,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       real, intent(in) :: Fbot, FbotKbot, hcond0, hcond1, chi
       logical, intent(in) :: lmultilayer, lcalc_heatcond_constchi
-      
+
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !

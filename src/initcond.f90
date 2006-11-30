@@ -1,7 +1,7 @@
-! $Id: initcond.f90,v 1.191 2006-11-21 11:55:43 wlyra Exp $ 
+! $Id: initcond.f90,v 1.192 2006-11-30 09:03:35 dobler Exp $
 
-module Initcond 
- 
+module Initcond
+
 !  This module contains code used by the corresponding physics
 !  modules to set up various initial conditions (stratitication,
 !  perturbations, and other structures). This module is not used
@@ -206,15 +206,15 @@ module Initcond
       if (present(kz)) kz1=kz
 !
       j=i; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(cos(ky1*y),1,mx),3,mz)&
-                                     *spread(spread(sin(kz1*z),1,mx),2,my) 
+                                     *spread(spread(sin(kz1*z),1,mx),2,my)
 !
 !  Axel, are you OK with this? If so, I'll eliminate j above.
 !
 !  Don't do this: we now call this twice from magnetic.f90, and setting
-!  just Ax /= 0 makes perfect sense for potential bc tests. 
+!  just Ax /= 0 makes perfect sense for potential bc tests.
 !
 !      j=i+1; f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(sin(ky1*y),1,mx),3,mz)&
-!                                       *spread(spread(cos(kz1*z),1,mx),2,my) 
+!                                       *spread(spread(cos(kz1*z),1,mx),2,my)
 !
     endsubroutine cosy_sinz
 !***********************************************************************
@@ -243,7 +243,7 @@ module Initcond
         if (lroot) write(*,wave_fmt1) 'cosx_cosy_cosz: ampl,kx,ky,kz=', &
                                       ampl,kx1,ky1,kz1
         f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(cos(kx1*x),2,my),3,mz) &
-                                   *spread(spread(-cos(ky1*y)*(          &  
+                                   *spread(spread(-cos(ky1*y)*(          &
                                      ((1./9.)*sin(ky*y)**8)+((8./63.)*   &
                                      sin(ky*y)**6)+((16./105.)*          &
                                      sin(ky*y)**4)+((64./315.)*          &
@@ -338,7 +338,7 @@ module Initcond
                 (0.5+0.5*tanh(kx2*(width2-x(l)**2))) * &
                 (0.5+0.5*tanh(ky2*(width2-y(m)**2))) * &
                 (0.5+0.5*tanh(kz2*(width2-z(n)**2))) )
-        enddo; enddo; enddo    
+        enddo; enddo; enddo
       endif
 !
     endsubroutine hat3d
@@ -788,13 +788,13 @@ module Initcond
 !  where phi=sqrt(2)*cos(kx)*cos(ky)
 !
       j=i+0; f(:,:,:,j)=f(:,:,:,j)-fac1*spread(spread(cos(k*x),2,my),3,mz)&
-                                       *spread(spread(sin(k*y),1,mx),3,mz) 
+                                       *spread(spread(sin(k*y),1,mx),3,mz)
 !
       j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac1*spread(spread(sin(k*x),2,my),3,mz)&
-                                       *spread(spread(cos(k*y),1,mx),3,mz) 
+                                       *spread(spread(cos(k*y),1,mx),3,mz)
 !
       j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac2*spread(spread(cos(k*x),2,my),3,mz)&
-                                       *spread(spread(cos(k*y),1,mx),3,mz) 
+                                       *spread(spread(cos(k*y),1,mx),3,mz)
 !
     endsubroutine robertsflow
 !***********************************************************************
@@ -965,7 +965,7 @@ module Initcond
 !
       if (lroot) print*, 'sinwave_phase: i, ampl, kx, ky, kz, phase=', &
           i, ampl, kx, ky, kz, phase
-!          
+!
       do m=m1,m2; do n=n1,n2
         f(l1:l2,m,n,i) = f(l1:l2,m,n,i) + &
             ampl*sin(kx*x(l1:l2)+ky*y(m)+kz*z(n)+phase)
@@ -987,7 +987,7 @@ module Initcond
 !
       if (lroot) print*, 'coswave_phase: i, ampl, kx, ky, kz, phase=', &
           i, ampl, kx, ky, kz, phase
-!          
+!
       do m=m1,m2; do n=n1,n2
         f(l1:l2,m,n,i) = f(l1:l2,m,n,i) + &
             ampl*cos(kx*x(l1:l2)+ky*y(m)+kz*z(n)+phase)
@@ -1158,7 +1158,7 @@ module Initcond
         call stop_it('')
 
       endselect
-!      
+!
       close(19)
 !
     endsubroutine stratification
@@ -1172,7 +1172,7 @@ module Initcond
 !  26-Jul-03/anders: Revived from June 1 version
 !
       use Mpicomm, only: mpireduce_sum, mpibcast_real
-      
+
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,hh,xi
       real, dimension (mx,my) :: delS
@@ -1270,7 +1270,7 @@ module Initcond
       if (ip<14) &
         print*,'planet_hc: iproc,lnrhosum_thisbox=',iproc,lnrhosum_thisbox
 !
-!  Must put sum_thisbox in 1-dimensional array 
+!  Must put sum_thisbox in 1-dimensional array
 !
       lnrhosum_thisbox_tmp = (/ lnrhosum_thisbox /)
 !
@@ -1281,13 +1281,13 @@ module Initcond
         print*,'planet_hc: lnrhosum_wholebox=',lnrhosum_wholebox
 !
 !  Calculate <rho> and send to all processors
-!      
+!
       if (lroot) rho0 = exp(-lnrhosum_wholebox(1)/(nxgrid*nygrid*nzgrid))
       call mpibcast_real(rho0,1)
       if (ip<14) print*,'planet_hc: iproc,rho0=',iproc,rho0
 !
 !  Multiply density by rho0 (divide by <rho>)
-!      
+!
       f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) + log(rho0)
 !
     endsubroutine planet_hc
@@ -1357,7 +1357,7 @@ module Initcond
 !
 !  Calculate enthalpy outside vortex
 !
-      where (r_ell .gt. 1) hh=-0.5*Omega**2*zz**2 + 0.5*Omega**2*ztop**2 + hh0 
+      where (r_ell .gt. 1) hh=-0.5*Omega**2*zz**2 + 0.5*Omega**2*ztop**2 + hh0
 !
 !  Calculate velocities (Kepler speed subtracted)
 !
@@ -1370,7 +1370,7 @@ module Initcond
            hh0,minval(hh(l1:l2,m1:m2,n1:n2))
       if (lentropy .and. lroot) print*,'planet: smin,smax', &
            minval(f(:,:,:,iss)), maxval(f(:,:,:,iss))
-      if (gamma1<0. .and. lroot) & 
+      if (gamma1<0. .and. lroot) &
            print*,'planet: must have gamma>1 for planet solution'
 !
 !  have to use explicit indices here, because ghostzones are not set
@@ -1397,7 +1397,7 @@ module Initcond
       if (ip<14) &
         print*,'planet_hc: iproc,lnrhosum_thisbox=',iproc,lnrhosum_thisbox
 !
-!  Must put sum_thisbox in 1-dimensional array 
+!  Must put sum_thisbox in 1-dimensional array
 !
       lnrhosum_thisbox_tmp = (/ lnrhosum_thisbox /)
 !
@@ -1408,15 +1408,15 @@ module Initcond
         print*,'planet_hc: lnrhosum_wholebox=',lnrhosum_wholebox
 !
 !  Calculate <rho> and send to all processors
-!      
+!
       if (lroot) rho0 = exp(-lnrhosum_wholebox(1)/(nxgrid*nygrid*nzgrid))
       call mpibcast_real(rho0,1)
       if (ip<14) print*,'planet_hc: iproc,rho0=',iproc,rho0
 !
 !  Multiply density by rho0 (divide by <rho>)
-!      
+!
       f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) + log(rho0)
-!      
+!
     endsubroutine planet
 !***********************************************************************
     subroutine vortex_2d(f,xx,yy,b_ell,width,rbound)
@@ -1441,7 +1441,7 @@ module Initcond
       if(lroot) print*,'vortex_2d: Ellipse axes (b_ell,a_ell)=', b_ell,a_ell
 !
 !  Limit vortex to within r_ell
-!        
+!
       r_ell = sqrt(xx**2/b_ell**2+yy**2/a_ell**2)
       xi = 1./(exp((1/width)*(r_ell-rbound))+1.)
 !
@@ -1708,7 +1708,7 @@ module Initcond
           print*,'arcade_x: i,zmid=',i,zmid
           print*,'arcade_x: ampl,kx,kz=',ampl,kx,kz
         endif
-        
+
         f(:,:,:,i+1)=f(:,:,:,i+1)+ampl*exp(-.5*(kx*xx)**2)* &
           cos(min(abs(kz*(zz-zmid)),.5*pi))
       endif
@@ -1833,9 +1833,9 @@ module Initcond
       real,optional :: kx
       real :: k
 !
-      if (present(kx)) then 
-         k = kx 
-      else 
+      if (present(kx)) then
+         k = kx
+      else
          k = 2*pi/Lx
       endif
 
@@ -2233,7 +2233,7 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: u_re,u_im
       real :: ampl,initpower,cutoff
- 
+
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
         if (lroot) print*,'powern: set variable to zero; i1,i2=',i1,i2
@@ -2251,32 +2251,32 @@ module Initcond
           k2z = cshift((/(i-(nz+1)/2,i=0,nz-1)/),+(nz+1)/2)*2*pi/Lz
           k2 = k2 + (spread(spread(k2z,1,nx),2,ny))**2
 
-          k2(1,1,1) = 1.  ! Avoid division by zero 
+          k2(1,1,1) = 1.  ! Avoid division by zero
 
           do i=i1,i2
             u_re=f(l1:l2,m1:m2,n1:n2,i)
-            u_im=0. 
+            u_im=0.
             !  fft of gausian noise w/ k^2 spectrum
             call fourier_transform(u_re,u_im)
             ! change to k^n spectrum
-            u_re =(k2)**(.25*initpower-.5)*u_re 
-            u_im =(k2)**(.25*initpower-.5)*u_im 
+            u_re =(k2)**(.25*initpower-.5)*u_re
+            u_im =(k2)**(.25*initpower-.5)*u_im
             ! cutoff (changed to hyperviscous cutoff filter)
             if (cutoff .ne. 0.) then
-              u_re = u_re*exp(-(k2/cutoff**2.)**2) 
-              u_im = u_im*exp(-(k2/cutoff**2.)**2) 
-            endif   
-            ! back to real space 
+              u_re = u_re*exp(-(k2/cutoff**2.)**2)
+              u_im = u_im*exp(-(k2/cutoff**2.)**2)
+            endif
+            ! back to real space
             call fourier_transform(u_re,u_im,linv=.true.)
             f(l1:l2,m1:m2,n1:n2,i)=u_re
-            
-            if (lroot .and. (cutoff.eq.0)) then 
+
+            if (lroot .and. (cutoff.eq.0)) then
               print*,'powern: k^',initpower,' spectrum : var  i=',i
             else
               print*,'powern: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
                      initpower,', k0 =',cutoff,' : var  i=',i
-            endif 
-          enddo !i            
+            endif
+          enddo !i
       endif !(initpower.ne.2.).or.(cutoff.ne.0.)
 
     endif !(ampl.eq.0)
@@ -2300,7 +2300,7 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: u_re,u_im,r
       real :: ampl,initpower,mhalf,cutoff
- 
+
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
         if (lroot) print*,'powern: set variable to zero; i1,i2=',i1,i2
@@ -2317,7 +2317,7 @@ module Initcond
         k2z = cshift((/(i-(nz+1)/2,i=0,nz-1)/),+(nz+1)/2)*2*pi/Lz
         k2 = k2 + (spread(spread(k2z,1,nx),2,ny))**2
 
-        k2(1,1,1) = 1.  ! Avoid division by zero 
+        k2(1,1,1) = 1.  ! Avoid division by zero
 !
 !  To get shell integrated power spectrum E ~ k^n, we need u ~ k^m
 !  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1.
@@ -2333,20 +2333,20 @@ module Initcond
           call random_number_wrapper(r); u_im=ampl*k2**mhalf*sin(pi*(2*r-1))
           ! cutoff (changed to hyperviscous cutoff filter)
           if (cutoff .ne. 0.) then
-            u_re = u_re*exp(-(k2/cutoff**2.)**2) 
-            u_im = u_im*exp(-(k2/cutoff**2.)**2) 
-          endif   
-          ! back to real space 
+            u_re = u_re*exp(-(k2/cutoff**2.)**2)
+            u_im = u_im*exp(-(k2/cutoff**2.)**2)
+          endif
+          ! back to real space
           call fourier_transform(u_re,u_im,linv=.true.)
           f(l1:l2,m1:m2,n1:n2,i)=u_re
-          
-          if (lroot .and. (cutoff.eq.0)) then 
+
+          if (lroot .and. (cutoff.eq.0)) then
             print*,'powern: k^',initpower,' spectrum : var  i=',i
           else
             print*,'powern: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
                    initpower,', k0 =',cutoff,' : var  i=',i
-          endif 
-        enddo !i            
+          endif
+        enddo !i
 
       endif !(ampl.eq.0)
 !
@@ -2356,18 +2356,18 @@ module Initcond
     subroutine random_isotropic_KS(ampl,initpower,cutoff,f,i1,i2,N_modes)
 !
 !   produces random, isotropic field from energy spectrum following the
-!   KS method (Malik and Vassilicos, 1999.)  
+!   KS method (Malik and Vassilicos, 1999.)
 !
-!   more to do; unsatisfactory so far - at least for a steep power-law energy spectrum 
-!   
+!   more to do; unsatisfactory so far - at least for a steep power-law energy spectrum
+!
 !   24-sept-04/snod: coded first attempt
-!  
-    use Sub    
+!
+    use Sub
     integer :: modeN,N_modes,l,n,m,i1,i2
     real, dimension (mx,my,mz,mfarray) :: f
 
-! how many wavenumbers? 
-    real, dimension (3,1024) :: kk,RA,RB !or through whole field for each wavenumber? 
+! how many wavenumbers?
+    real, dimension (3,1024) :: kk,RA,RB !or through whole field for each wavenumber?
     real, dimension (3) :: k_unit,vec,ee,e1,e2,field
     real :: ampl,initpower,cutoff,kmin,ps,k,phi,theta,alpha,beta,dk
     real :: ex,ey,ez,norm,kdotx,r
@@ -2396,9 +2396,9 @@ module Initcond
 !  set kmin
 !
     kmin=2.*pi/Lxyz(1)
-!       
-    do modeN=1,N_modes  
-!   
+!
+    do modeN=1,N_modes
+!
 !  pick wavenumber
 !
        k=modeN*kmin
@@ -2409,10 +2409,10 @@ module Initcond
 !
 !   pick 4 random angles for each mode
 !
-  
-       call random_number_wrapper(r); theta=pi*(2*r - 0.)  
-       call random_number_wrapper(r); phi=pi*(2*r - 0.)  
-       call random_number_wrapper(r); alpha=pi*(2*r - 0.)  
+
+       call random_number_wrapper(r); theta=pi*(2*r - 0.)
+       call random_number_wrapper(r); phi=pi*(2*r - 0.)
+       call random_number_wrapper(r); alpha=pi*(2*r - 0.)
        call random_number_wrapper(r); beta=pi*(2*r - 0.)
 !       call random_number_wrapper(r); gamma(modeN)=pi*(2*r - 0.)  ! random phase?
 
@@ -2432,7 +2432,7 @@ module Initcond
 !   (bit of code from forcing to construct x', y')
 !
        if((k_unit(2).eq.0).and.(k_unit(3).eq.0)) then
-        ex=0.; ey=1.; ez=0.           
+        ex=0.; ey=1.; ez=0.
        else
         ex=1.; ey=0.; ez=0.
        endif
@@ -2452,11 +2452,11 @@ module Initcond
        ps=(k**(initpower/2.))*sqrt(dk*2./3.)
 !
 !   give RA and RB length ps
-!   
+!
        RA(:,modeN)=ps*RA(:,modeN)
        RB(:,modeN)=ps*RB(:,modeN)
 !
-!   form RA = RA x k_unit and RB = RB x k_unit 
+!   form RA = RA x k_unit and RB = RB x k_unit
 !
        call cross(RA(:,modeN),k_unit(:),RA(:,modeN))
        call cross(RB(:,modeN),k_unit(:),RB(:,modeN))
@@ -2474,28 +2474,28 @@ module Initcond
           vec(3)=z(n)
           do modeN=1,N_modes  ! sum over N_modes modes
              call dot(kk(:,modeN),vec,kdotx)
-             field = field + cos(kdotx)*RA(:,modeN) + sin(kdotx)*RB(:,modeN)    
+             field = field + cos(kdotx)*RA(:,modeN) + sin(kdotx)*RB(:,modeN)
           enddo
           f(l,m,n,i1)   = f(l,m,n,i1)   + field(1)
           f(l,m,n,i1+1) = f(l,m,n,i1+1) + field(2)
           f(l,m,n,i1+2) = f(l,m,n,i1+2) + field(3)
-        enddo             
-      enddo 
-    enddo  
+        enddo
+      enddo
+    enddo
 !
 !
     endsubroutine random_isotropic_KS
-!********************************************************** 
+!**********************************************************
     subroutine power_law(f,iglobal_gg,lnrho_const,plaw,lstratified)
 !
 ! Yields from Minimum Mass Solar Nebula model
 !
-! Initial condition for density 
+! Initial condition for density
 
 ! 24-feb-05/wlad : coded.
 !
-! rho    = rho(R) * rho(z) 
-! rho(R) = R**-plaw 
+! rho    = rho(R) * rho(z)
+! rho(R) = R**-plaw
 ! rho(z) = exp(-z^2/(2*H^2), where H=cs/Omega is the scale height
 !
       use Cdata
@@ -2538,7 +2538,7 @@ module Initcond
 ! Radial stratification
           if (lheader) print*,'Radial stratification with power law=',plaw
             f(:,m,n,ilnrho) = lnrho_const - plaw*alog(r_cyl)
-          else 
+          else
             f(:,m,n,ilnrho) = lnrho_const
           endif
 !
@@ -2566,7 +2566,7 @@ module Initcond
             endif
            endif
 !
-! Velocity field. Don't overwrite           
+! Velocity field. Don't overwrite
 !
           f(:,m,n,iux)= f(:,m,n,iux) - y(m)*OO
           f(:,m,n,iuy)= f(:,m,n,iuy) +    x*OO
@@ -2608,7 +2608,7 @@ module Initcond
             gg_mn(:,3) = cs20/(grhoz*rho*(sqrt(x(l1:l2)**2+y(m)**2)+tini))
             f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
           endif
-!    
+!
 ! Thermodynamical quantities
 !
           if (llocal_iso) then
@@ -2627,7 +2627,7 @@ module Initcond
             f(:,m,n,iss) = f(:,m,n,iss) &
                 + gamma11*(log(cs20)- 0.5*log(x(:)**2+y(m)**2)) &
                 - gamma1/gamma*f(:,m,n,ilnrho)
-          else 
+          else
             print*,"No thermodynamical variable. Choose if you want a "
             print*,"local thermodynamical approximation (switch llocal_iso=T in"
             print*,"init_pars and entropy=noentropy on Makefile.local), or if "
@@ -2654,10 +2654,10 @@ module Initcond
     subroutine corona_init(f)
 !
 ! 07-dec-05/bing : coded.
-!      intialize the density for given temperprofile in vertical 
+!      intialize the density for given temperprofile in vertical
 !      z direction by solving hydrostatic equilibrium.
 !      Temperatur is hard coded as three polynoms.
-!      
+!
       use Cdata
       use EquationOfState, only: lnrho0,gamma,gamma1,cs20,cs2top,cs2bot
 
@@ -2668,12 +2668,12 @@ module Initcond
       !
       ! temperature given as function lnT(z) in SI units
       ! [T] = K   &   [z] = Mm   & [rho] = kg/m^3
-      !      
+      !
       inquire(IOLENGTH=lend) tmp
       open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
       read (10) b_lnT
       read (10) b_z
-      close (10) 
+      close (10)
       !
       open (10,file='driver/b_lnrho.dat',form='unformatted',status='unknown',recl=lend*150)
       read (10) b_lnrho
@@ -2685,8 +2685,8 @@ module Initcond
       !
       ! simple linear interpolation
       !
-      do j=n1,n2 
-         do i=1,149 
+      do j=n1,n2
+         do i=1,149
             if (z(j) .ge. b_z(i) .and. z(j) .lt. b_z(i+1) ) then
                f(:,:,j,ilnrho) = (b_lnrho(i)*(b_z(i+1) - z(j)) +   &
                     b_lnrho(i+1)*(z(j)-b_z(i)) ) / (b_z(i+1)-b_z(i))
@@ -2696,7 +2696,7 @@ module Initcond
                !
                f(:,:,j,iss) = (alog(gamma1/cs20)+tmp- &
                     gamma1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
-               exit            
+               exit
             endif
          enddo
       enddo
@@ -2704,7 +2704,7 @@ module Initcond
       ztop=xyz0(3)+Lxyz(3)
       zbot=xyz0(3)
       !
-      do i=1,149 
+      do i=1,149
          if (ztop .ge. b_z(i) .and. ztop .lt. b_z(i+1) ) then
             !
             tmp =  (b_lnT(i)*(b_z(i+1) - ztop) +   &
@@ -2720,16 +2720,16 @@ module Initcond
             !
          endif
       enddo
-!      
+!
     endsubroutine corona_init
 !*********************************************************
     subroutine mdi_init(f)
 !
 ! 13-dec-05/bing : coded.
 ! intialize the vector potential
-! by potential field extrapolation 
+! by potential field extrapolation
 ! of a mdi magnetogram
-!      
+!
       use Cdata
       use Fourier
       use Sub
@@ -2737,15 +2737,15 @@ module Initcond
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx,nygrid) :: kx,ky,k2
 
-      real, dimension(nx,nygrid) :: Bz0,Bz0_i,Bz0_r 
+      real, dimension(nx,nygrid) :: Bz0,Bz0_i,Bz0_r
       real, dimension(nx,nygrid) :: Ax_r,Ax_i,Ay_r,Ay_i
-      
+
       real, dimension(nx) :: kxp
       real, dimension(nygrid) :: kyp
-      
+
       real :: mu0_SI,u_b
       integer :: i,idx2,idy2
- 
+
       ! Auxiliary quantities:
       !
       ! idx2 and idy2 are essentially =2, but this makes compilers
@@ -2754,11 +2754,11 @@ module Initcond
       idx2 = min(2,nxgrid)
       idy2 = min(2,nygrid)
       !
-      ! Magnetic field strength unit [B] = u_b 
+      ! Magnetic field strength unit [B] = u_b
       !
-      mu0_SI = 4.*pi*1.e-7         
+      mu0_SI = 4.*pi*1.e-7
       u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
-      ! 
+      !
       kxp=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
       kyp=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
       !
@@ -2782,14 +2782,14 @@ module Initcond
          !
          !  Calculate transformed vector potential at "each height"
          !
-         where (k2 .ne. 0 ) 
-            Ax_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*z(i) ) 
+         where (k2 .ne. 0 )
+            Ax_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*z(i) )
             Ax_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*z(i) )
             !
             Ay_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*z(i) )
             Ay_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*z(i) )
          elsewhere
-            Ax_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) ) 
+            Ax_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) )
             Ax_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) )
             !
             Ay_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
@@ -2802,9 +2802,9 @@ module Initcond
          !
          f(l1:l2,m1:m2,i,iax) = Ax_r(:,ipy*ny+1:(ipy+1)*ny+1)
          f(l1:l2,m1:m2,i,iay) = Ay_r(:,ipy*ny+1:(ipy+1)*ny+1)
-         f(l1:l2,m1:m2,i,iaz) = 0. 
+         f(l1:l2,m1:m2,i,iaz) = 0.
       enddo
-      
+
     endsubroutine mdi_init
 !*********************************************************
     subroutine const_lou(ampl,f,i,xx,yy,zz)
@@ -2829,4 +2829,4 @@ module Initcond
 !*********************************************************
 endmodule Initcond
 
-       
+

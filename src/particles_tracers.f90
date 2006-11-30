@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.32 2006-11-18 13:22:24 mee Exp $
+! $Id: particles_tracers.f90,v 1.33 2006-11-30 09:03:36 dobler Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -60,7 +60,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.32 2006-11-18 13:22:24 mee Exp $")
+           "$Id: particles_tracers.f90,v 1.33 2006-11-30 09:03:36 dobler Exp $")
 !
 !  Indices for particle position.
 !
@@ -165,14 +165,14 @@ module Particles
         case ('origin')
           if (lroot) print*, 'init_particles: All particles at origin'
           fp(1:npar_loc,ixp:izp)=0.
- 
+
         case ('constant')
           if (lroot) &
               print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
           fp(1:npar_loc,ixp)=xp0
           fp(1:npar_loc,iyp)=yp0
           fp(1:npar_loc,izp)=zp0
- 
+
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
@@ -186,7 +186,7 @@ module Particles
               fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
           if (nzgrid/=1) &
               fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
- 
+
         case ('gaussian-z')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
           do k=1,npar_loc
@@ -205,9 +205,9 @@ module Particles
               fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
           if (nygrid/=1) &
               fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
- 
+
         case('dragforce_equilibrium')
-!         
+!
 !  Equilibrium between drag forces on dust and gas and other forces
 !  (from Nakagawa, Sekiya, & Hayashi 1986).
 !
@@ -252,7 +252,7 @@ module Particles
         endselect
 !
       enddo
-!      
+!
 !  Particles are not allowed to be present in non-existing dimensions.
 !  This would give huge problems with interpolation later.
 !
@@ -276,9 +276,9 @@ module Particles
     endsubroutine init_particles
 !***********************************************************************
     subroutine pencil_criteria_particles()
-! 
+!
 !  All pencils that the Particles module depends on are specified here.
-! 
+!
 !  20-04-06/anders: coded
 !
     endsubroutine pencil_criteria_particles
@@ -287,7 +287,7 @@ module Particles
 !
 !  Interdependency among pencils provided by the Particles module
 !  is specified here.
-!         
+!
 !  15-feb-06/anders: coded
 !
       logical, dimension(npencils) :: lpencil_in
@@ -348,7 +348,7 @@ module Particles
       if (headtt) print*, 'dxxp_dt: Set rate of change of particle '// &
           'position equal to gas velocity.'
 !
-!  Interpolate gas velocity to position of particles. 
+!  Interpolate gas velocity to position of particles.
 !  Then set particle velocity equal to the local gas velocity.
 !
       if (npar_imn(imn)/=0) then
@@ -440,7 +440,7 @@ module Particles
     endsubroutine dvvp_dt
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -455,7 +455,7 @@ module Particles
     endsubroutine read_particles_init_pars
 !***********************************************************************
     subroutine write_particles_init_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_init_pars)
@@ -463,7 +463,7 @@ module Particles
     endsubroutine write_particles_init_pars
 !***********************************************************************
     subroutine read_particles_run_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -478,7 +478,7 @@ module Particles
     endsubroutine read_particles_run_pars
 !***********************************************************************
     subroutine write_particles_run_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_run_pars)
@@ -498,7 +498,7 @@ module Particles
     endsubroutine powersnap_particles
 !***********************************************************************
     subroutine rprint_particles(lreset,lwrite)
-!   
+!
 !  Read and register print parameters relevant for particles
 !
 !  29-dec-04/anders: coded
@@ -511,12 +511,12 @@ module Particles
 !
       integer :: iname
       logical :: lwr
-! 
+!
 !  Write information to index.pro
-! 
+!
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      
+
       if (lwr) then
         write(3,*) 'ixp=', ixp
         write(3,*) 'iyp=', iyp

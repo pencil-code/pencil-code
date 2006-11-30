@@ -1,4 +1,4 @@
-! $Id: persist.f90,v 1.5 2006-07-12 05:41:03 brandenb Exp $
+! $Id: persist.f90,v 1.6 2006-11-30 09:03:36 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   persist.f90   !!!
@@ -6,12 +6,12 @@
 
 !!!  Module to handle variables whose state should persist
 !!!  between executions of run.x, e.g. the random number seeds
-!!!  and some other forcing state information. 
+!!!  and some other forcing state information.
 !!!
 !!!  25-Apr-2005/tony: Implemented initial try at backwards compatible
 !!!                    additions to var.dat files.
 !!!
-!!!  The idea is to use integer block and record type tags to store 
+!!!  The idea is to use integer block and record type tags to store
 !!!  arbitrary extra information in the var files along with the
 !!!  actual field information.
 !!!
@@ -56,8 +56,8 @@ contains
         if (lroot) print*,'input_persistent: No persistent data to read'
         return
       endif
-      
-dataloop: do 
+
+dataloop: do
         read(lun,iostat=ierr,end=1000) id
         done=.false.
         if (id==id_block_PERSISTANT) then

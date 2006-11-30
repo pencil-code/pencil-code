@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.155 2006-11-22 12:36:07 ajohan Exp $
+! $Id: particles_dust.f90,v 1.156 2006-11-30 09:03:36 dobler Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -122,7 +122,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.155 2006-11-22 12:36:07 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.156 2006-11-30 09:03:36 dobler Exp $")
 !
 !  Indices for particle position.
 !
@@ -233,7 +233,7 @@ module Particles
 !  following the formula
 !    rhop_tilde*N_cell = eps*rhom
 !  where rhop_tilde is the mass density per particle, N_cell is the number of
-!  particles per grid cell and rhom is the mean gas density in the box. 
+!  particles per grid cell and rhom is the mean gas density in the box.
 !
       if (rhop_tilde==0.0) then
 ! For stratification, take into account gas present outside the simulation box.
@@ -262,7 +262,7 @@ module Particles
       endif
 !
 !  Inverse of minimum gas friction time (time-step control).
-!      
+!
       if (tausg_min/=0.0) tausg1_max=1.0/tausg_min
 !
 !  Set minimum collisional time-scale so that time-step is not affected.
@@ -285,21 +285,21 @@ module Particles
           print*, '                      together with gas density module!'
         endif
         call fatal_error('initialize_particles','')
-      endif      
+      endif
 !
 !  Need to map particles on the grid for dragforce on gas.
-!      
+!
       if (ldragforce_gas_par) then
         lcalc_np=.true.
 !
-!  When drag force is smoothed, df is also set in the first ghost zone. This 
+!  When drag force is smoothed, df is also set in the first ghost zone. This
 !  region needs to be folded back into the df array after pde is finished,
 !
         if (lparticlemesh_cic .or. lparticlemesh_tsc) lfold_df=.true.
       endif
 !
 !  Write constants to disk.
-!      
+!
       if (lroot) then
         open (1,file=trim(datadir)//'/pc_constants.pro')
           write (1,*) 'rhop_tilde=', rhop_tilde
@@ -351,14 +351,14 @@ module Particles
         case ('zero-z')
           if (lroot) print*, 'init_particles: Zero z coordinate'
           fp(1:npar_loc,izp)=0.
- 
+
         case ('constant')
           if (lroot) &
               print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
           fp(1:npar_loc,ixp)=xp0
           fp(1:npar_loc,iyp)=yp0
           fp(1:npar_loc,izp)=zp0
- 
+
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
@@ -379,7 +379,7 @@ module Particles
 
              call random_number_wrapper(rad)
              call random_number_wrapper(phi)
-             rad = r_int + (rad**0.6)*(r_ext-r_int)  
+             rad = r_int + (rad**0.6)*(r_ext-r_int)
              !this 0.6 gives approximate area normalization. Don't ask me why.
              phi = 2*pi*phi
              if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
@@ -457,7 +457,7 @@ k_loop:   do while (.not. (k>npar_loc))
               npar_loc_z=npar_loc
             endif
           endif
-!  Distance between particles.          
+!  Distance between particles.
           dx_par=Lxyz_loc(1)/npar_loc_x
           dy_par=Lxyz_loc(2)/npar_loc_y
           dz_par=Lxyz_loc(3)/npar_loc_z
@@ -566,7 +566,7 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(k,izp) = fp(k,izp) - kz_xxp/k2_xxp*amplxxp* &
                 sin(kx_xxp*fp(k,ixp)+ky_xxp*fp(k,iyp)+kz_xxp*fp(k,izp))
           enddo
- 
+
         case ('gaussian-z')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
           do k=1,npar_loc
@@ -585,7 +585,7 @@ k_loop:   do while (.not. (k>npar_loc))
               fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
           if (nygrid/=1) &
               fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
- 
+
         case ('hole')
           call map_nearest_grid(fp,ineargrid)
           call map_xxp_grid(f,fp,ineargrid)
@@ -597,26 +597,26 @@ k_loop:   do while (.not. (k>npar_loc))
               if (nxgrid/=0) fp(k,ixp)=fp(k,ixp)-dx
             endif
           enddo
- 
+
         case ('streaming')
           call streaming(fp,f)
- 
+
         case ('streaming_coldstart')
           call streaming_coldstart(fp,f)
- 
+
         case ('constant-Ri')
           call constant_richardson(fp,f)
- 
+
         case default
           if (lroot) &
               print*, 'init_particles: No such such value for initxxp: ', &
               trim(initxxp(j))
           call stop_it("")
- 
+
         endselect
 
       enddo ! do j=1,ninit
-!      
+!
 !  Particles are not allowed to be present in non-existing dimensions.
 !  This would give huge problems with interpolation later.
 !
@@ -644,7 +644,7 @@ k_loop:   do while (.not. (k>npar_loc))
         case ('zero')
           if (lroot) print*, 'init_particles: Zero particle velocity'
           fp(1:npar_loc,ivpx:ivpz)=0.
- 
+
         case ('constant')
           if (lroot) print*, 'init_particles: Constant particle velocity'
           if (lroot) &
@@ -652,7 +652,7 @@ k_loop:   do while (.not. (k>npar_loc))
           fp(1:npar_loc,ivpx)=vpx0
           fp(1:npar_loc,ivpy)=vpy0
           fp(1:npar_loc,ivpz)=vpz0
- 
+
         case ('sinwave-phase')
           if (lroot) print*, 'init_particles: sinwave-phase'
           if (lroot) &
@@ -662,7 +662,7 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(k,ivpy)=fp(k,ivpy)+vpy0*sin(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
             fp(k,ivpz)=fp(k,ivpz)+vpz0*sin(kx_vpz*fp(k,ixp)+ky_vpz*fp(k,iyp)+kz_vpz*fp(k,izp)+phase_vpz)
           enddo
- 
+
         case ('coswave-phase')
           if (lroot) print*, 'init_particles: coswave-phase'
           if (lroot) &
@@ -672,7 +672,7 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(k,ivpy)=fp(k,ivpy)+vpy0*cos(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
             fp(k,ivpz)=fp(k,ivpz)+vpz0*cos(kx_vpz*fp(k,ixp)+ky_vpz*fp(k,iyp)+kz_vpz*fp(k,izp)+phase_vpz)
           enddo
- 
+
         case ('random')
           if (lroot) print*, 'init_particles: Random particle velocities; '// &
               'delta_vp0=', delta_vp0
@@ -692,7 +692,7 @@ k_loop:   do while (.not. (k>npar_loc))
           fp(1:npar_loc,ivpy)=fp(1:npar_loc,ivpy)-vpy_sum/npar
           call mpireduce_sum_scl(sum(fp(1:npar_loc,ivpz)),vpz_sum)
           fp(1:npar_loc,ivpz)=fp(1:npar_loc,ivpz)-vpz_sum/npar
- 
+
         case ('follow-gas')
           if (lroot) &
               print*, 'init_particles: Particle velocity equal to gas velocity'
@@ -708,7 +708,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 (sqrt(1+4*1.0*1.0*tausp**2)-1)/ &
                 (2*kx_xxp*1.0*tausp)*sin(kx_xxp*(fp(k,ixp)))
           enddo
- 
+
         case('dragforce_equilibrium')
 !
 !  Equilibrium between drag forces on dust and gas and other forces
@@ -739,14 +739,14 @@ k_loop:   do while (.not. (k>npar_loc))
                 eps = f(l,m,n,irhop)/exp(f(l,m,n,ilnrho))
               endif
             endif
- 
+
             f(l,m,n,iux) = f(l,m,n,iux) - &
                 1/gamma*beta_glnrho_global(1)*eps*Omega*tausp/ &
                 ((1.0+eps)**2+(Omega*tausp)**2)*cs
             f(l,m,n,iuy) = f(l,m,n,iuy) + &
                 1/gamma*beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
                 (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
- 
+
           enddo; enddo; enddo
 !  Set particle velocity field.
           do k=1,npar_loc
@@ -759,16 +759,16 @@ k_loop:   do while (.not. (k>npar_loc))
                 eps = f(ix0,iy0,iz0,irhop)/exp(f(ix0,iy0,iz0,ilnrho))
               endif
             endif
-            
+
             fp(k,ivpx) = fp(k,ivpx) + &
                 1/gamma*beta_glnrho_global(1)*Omega*tausp/ &
                 ((1.0+eps)**2+(Omega*tausp)**2)*cs
             fp(k,ivpy) = fp(k,ivpy) + &
                 1/gamma*beta_glnrho_global(1)*(1+eps)/ &
                 (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
- 
+
           enddo
- 
+
         case('dragforce_equi_dust')
 !
 !  Equilibrium between drag force and Coriolis force on the dust.
@@ -787,7 +787,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 1/gamma*beta_dPdr_dust*Omega*tausp*0.5/ &
                 (Omega*tausp+1/(Omega*tausp))*cs
           enddo
- 
+
         case default
           if (lroot) &
               print*, 'init_particles: No such such value for initvvp: ', &
@@ -814,7 +814,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use EquationOfState, only: gamma, beta_glnrho_global
       use General, only: random_number_wrapper
-!      
+!
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -837,7 +837,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Define a few disc parameters.
 !
       eta_glnrho = -0.5*1/gamma*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
-      v_Kepler   =  1.0/abs(beta_glnrho_global(1))      
+      v_Kepler   =  1.0/abs(beta_glnrho_global(1))
       if (lroot) print*, 'streaming: eta, vK=', eta_glnrho, v_Kepler
 !
 !  Place particles equidistantly.
@@ -906,7 +906,7 @@ k_loop:   do while (.not. (k>npar_loc))
             eta_glnrho*v_Kepler*ampluug* &
             ( real(coeff(4))*cos(kx_xxp*x(l1:l2)) - &
              aimag(coeff(4))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
-!                
+!
         f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
             eta_glnrho*v_Kepler*ampluug* &
             ( real(coeff(5))*cos(kx_xxp*x(l1:l2)) - &
@@ -928,7 +928,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use EquationOfState, only: gamma, beta_glnrho_global
       use General, only: random_number_wrapper
-!      
+!
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -940,7 +940,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Define a few disc parameters.
 !
       eta_glnrho = -0.5*1/gamma*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
-      v_Kepler   =  1.0/abs(beta_glnrho_global(1))      
+      v_Kepler   =  1.0/abs(beta_glnrho_global(1))
       if (lroot) print*, 'streaming: eta, vK=', eta_glnrho, v_Kepler
 !
 !  Place particles according to probability function.
@@ -964,7 +964,7 @@ k_loop:   do while (.not. (k>npar_loc))
 
           xprob = r
           fprob = zprob + amplxxp/kz*cos(kx*xprob)*sin(kz*zprob) - p
-          dfprob= 1.0 + amplxxp*cos(kx*xprob)*cos(kz*zprob) 
+          dfprob= 1.0 + amplxxp*cos(kx*xprob)*cos(kz*zprob)
           dzprob= -fprob/dfprob
           zprob = zprob+0.2*dzprob
 
@@ -1008,12 +1008,12 @@ k_loop:   do while (.not. (k>npar_loc))
             (eta_glnrho*v_Kepler)**2*amplxxp* &
             ( real(coeff(7))*cos(kx_xxp*x(l1:l2)) - &
              aimag(coeff(7))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
-!                
+!
         f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + &
             eta_glnrho*v_Kepler*amplxxp* &
             ( real(coeff(4))*cos(kx_xxp*x(l1:l2)) - &
              aimag(coeff(4))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
-!                
+!
         f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
             eta_glnrho*v_Kepler*amplxxp* &
             ( real(coeff(5))*cos(kx_xxp*x(l1:l2)) - &
@@ -1036,7 +1036,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use EquationOfState, only: beta_glnrho_scaled, gamma, cs20
       use General, only: random_number_wrapper
-!      
+!
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1064,19 +1064,19 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Here Xi = sqrt(eps1*(2+eps1))/(1+eps1).
 !
       do while (abs(fXi)>=0.00001)
-        
+
         dfdXi=2*Xi**2/(1-Xi**2)
         Xi=Xi-0.1*fXi/dfdXi
-         
+
         fXi=-2*Xi + alog((1+Xi)/(1-Xi))-Sigmad/(Hd*rho1)
-             
+
         i=i+1
         if (i>=1000) stop
-                 
+
       enddo
 !
 !  Calculate eps1 from Xi.
-!      
+!
       eps1=-1+1/sqrt(-(Xi**2)+1)
       if (lroot) print*, 'constant_richardson: Hd, eps1=', Hd, eps1
 !
@@ -1118,7 +1118,7 @@ k_loop:   do while (.not. (k>npar_loc))
           i0, ' particles according to Ri=const'
 !
 !  Particles left out by round off are just placed randomly.
-!      
+!
       if (i0+1<=npar_loc) then
         do k=i0+1,npar_loc
           call random_number_wrapper(fp(k,izp))
@@ -1129,7 +1129,7 @@ k_loop:   do while (.not. (k>npar_loc))
       endif
 !
 !  Random positions in x and y.
-!      
+!
       do k=1,npar_loc
         if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
         if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
@@ -1138,9 +1138,9 @@ k_loop:   do while (.not. (k>npar_loc))
           fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
       if (nygrid/=1) &
           fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
-!       
+!
 !  Set gas velocity according to dust-to-gas ratio and global pressure gradient.
-!          
+!
       do imn=1,ny*nz
 
         n=nn(imn); m=mm(imn)
@@ -1154,7 +1154,7 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
 !
 !  Isothermal stratification.
-!        
+!
         if (lentropy) f(l1:l2,m,n,iss) = (1/gamma-1.0)*lnrho
 
         rho=exp(lnrho)
@@ -1178,7 +1178,7 @@ k_loop:   do while (.not. (k>npar_loc))
       enddo
 !
 !  Set particle velocity.
-!      
+!
       do k=1,npar_loc
 
         eps_point=1/sqrt(fp(k,izp)**2/Hd**2+1/(1+eps1)**2)-1
@@ -1197,9 +1197,9 @@ k_loop:   do while (.not. (k>npar_loc))
     endsubroutine constant_richardson
 !***********************************************************************
     subroutine pencil_criteria_particles()
-! 
+!
 !  All pencils that the Particles module depends on are specified here.
-! 
+!
 !  20-04-06/anders: coded
 !
       use Cdata
@@ -1221,10 +1221,10 @@ k_loop:   do while (.not. (k>npar_loc))
     endsubroutine pencil_criteria_particles
 !***********************************************************************
     subroutine pencil_interdep_particles(lpencil_in)
-!   
+!
 !  Interdependency among pencils provided by the Particles module
 !  is specified here.
-!         
+!
 !  16-feb-06/anders: dummy
 !
       logical, dimension(npencils) :: lpencil_in
@@ -1239,7 +1239,7 @@ k_loop:   do while (.not. (k>npar_loc))
     endsubroutine pencil_interdep_particles
 !***********************************************************************
     subroutine calc_pencils_particles(f,p)
-!   
+!
 !  Calculate particle pencils.
 !
 !  16-feb-06/anders: dummy
@@ -1278,7 +1278,7 @@ k_loop:   do while (.not. (k>npar_loc))
     endsubroutine dxxp_dt_pencil
 !***********************************************************************
     subroutine dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
-! 
+!
 !  Evolution of dust particle velocity (called from main pencil loop).
 !
 !  25-apr-06/anders: coded
@@ -1305,9 +1305,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       intent (in) :: f, fp, ineargrid
       intent (inout) :: df, dfp
-! 
+!
 !  Add drag force if stopping time is not infinite.
-! 
+!
       if (ldragforce_dust_par .and. t>=tstart_dragforce_par) then
         if (headtt) print*,'dvvp_dt: Add drag force; tausp=', tausp
         if (npar_imn(imn)/=0) then
@@ -1355,12 +1355,12 @@ k_loop:   do while (.not. (k>npar_loc))
                 endif
               endif
             endif
-!            
+!
 !  Back-reaction friction force from particles on gas. Three methods are
 !  implemented for assigning a particle to the mesh (see Hockney & Eastwood):
 !
 !    0. NGP (Nearest Grid Point)
-!       The entire effect of the particle goes to the nearest grid point. 
+!       The entire effect of the particle goes to the nearest grid point.
 !    1. CIC (Cloud In Cell)
 !       The particle has a region of influence with the size of a grid cell.
 !       This is equivalent to a first order (spline) interpolation scheme.
@@ -1372,7 +1372,7 @@ k_loop:   do while (.not. (k>npar_loc))
             if (ldragforce_gas_par) then
 !
 !  Cloud In Cell (CIC) scheme.
-!              
+!
               if (lparticlemesh_cic) then
                 ixx0=ix0; iyy0=iy0; izz0=iz0
                 ixx1=ix0; iyy1=iy0; izz1=iz0
@@ -1402,13 +1402,13 @@ k_loop:   do while (.not. (k>npar_loc))
                   else
                     rho1_point=p%rho1(ixx-nghost)
                   endif
-!  Add friction force to grid point.                  
+!  Add friction force to grid point.
                   df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                       rhop_tilde*rho1_point*dragforce*weight
                 enddo; enddo; enddo
 !
 !  Triangular Shaped Cloud (TSC) scheme.
-!                
+!
               elseif (lparticlemesh_tsc) then
 !
 !  Particle influences the 27 surrounding grid points, but has a density that
@@ -1456,7 +1456,7 @@ k_loop:   do while (.not. (k>npar_loc))
                     if (nzgrid/=1) &
                     weight_z = 0.75  -       ((fp(k,izp)-z(izz))*dz_1(izz))**2
                   endif
-                  
+
                   weight=1.0
 
                   if (nxgrid/=1) weight=weight*weight_x
@@ -1477,7 +1477,7 @@ k_loop:   do while (.not. (k>npar_loc))
               else
 !
 !  Nearest Grid Point (NGP) scheme.
-!                
+!
                 l=ineargrid(k,1)
                 df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
                     rhop_tilde*p%rho1(l-nghost)*dragforce
@@ -1501,7 +1501,7 @@ k_loop:   do while (.not. (k>npar_loc))
               endif
             endif
           enddo
-!          
+!
 !  Contribution of friction force to time-step. Dust and gas inverse friction
 !  time-steps are added up to give a valid expression even when the two are
 !  of similar magnitude.
@@ -1543,7 +1543,7 @@ k_loop:   do while (.not. (k>npar_loc))
             dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost),dt1_advpx)
             dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost),dt1_advpy)
             dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost),dt1_advpz)
-          endif 
+          endif
         enddo
       endif
 !
@@ -1580,7 +1580,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  02-jan-05/anders: coded
 !
       use General, only: random_number_wrapper, random_seed_wrapper
-!      
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
@@ -1665,7 +1665,7 @@ k_loop:   do while (.not. (k>npar_loc))
         dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
 !
 !  With shear there is an extra term due to the background shear flow.
-!          
+!
         if (lshear) dfp(1:npar_loc,ivpy) = &
             dfp(1:npar_loc,ivpy) + qshear*Omega*fp(1:npar_loc,ivpx)
       endif
@@ -1688,13 +1688,13 @@ k_loop:   do while (.not. (k>npar_loc))
 
           case ('zero')
             if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
- 
+
           case ('sinusoidal')
             if (lheader) &
                 print*, 'dvvp_dt: Sinusoidal gravity field in x-direction.'
             dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
                 gravx*sin(kx_gg*fp(1:npar_loc,ixp))
- 
+
           case default
             call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
 
@@ -1704,17 +1704,17 @@ k_loop:   do while (.not. (k>npar_loc))
 
           case ('zero')
             if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
- 
+
           case ('linear')
             if (lheader) print*, 'dvvp_dt: Linear gravity field in z-direction.'
             dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
                 nu_epicycle2*fp(1:npar_loc,izp)
- 
+
           case ('sinusoidal')
             if (lheader) &
                 print*, 'dvvp_dt: Sinusoidal gravity field in z-direction.'
             dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
-                gravz*sin(kz_gg*fp(1:npar_loc,izp))                
+                gravz*sin(kz_gg*fp(1:npar_loc,izp))
 
           case default
             call fatal_error('dvvp_dt','chosen gravz_profile is not valid!')
@@ -1735,7 +1735,7 @@ k_loop:   do while (.not. (k>npar_loc))
               ggp(1) = -fp(k,ixp)*OO2
               ggp(2) = -fp(k,iyp)*OO2
               ggp(3) = -fp(k,izp)*OO2
-!                                                                     
+!
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
            enddo
 
@@ -1743,7 +1743,7 @@ k_loop:   do while (.not. (k>npar_loc))
            call fatal_error('dvvp_dt','chosen gravr_profile is not valid!')
 !
        endselect
- 
+
     endif
 !
 !  Diagnostic output
@@ -1816,7 +1816,7 @@ k_loop:   do while (.not. (k>npar_loc))
         nochange=.false.
       endif
 !
-      ix0=ineargrid(k,1)      
+      ix0=ineargrid(k,1)
 !
 !  Epstein drag law.
 !
@@ -1936,7 +1936,7 @@ k_loop:   do while (.not. (k>npar_loc))
             tau_coll1=(1.0-coeff_restitution)*p%epsp*vpm*tausp1_par
           endif
 !  Limit inverse time-step of collisional cooling if requested.
-          if (tau_coll_min>0.0) then 
+          if (tau_coll_min>0.0) then
             where (tau_coll1>tau_coll1_max) tau_coll1=tau_coll1_max
           endif
           dt1_max=max(dt1_max,tau_coll1/cdtp)
@@ -1966,7 +1966,7 @@ k_loop:   do while (.not. (k>npar_loc))
               tausp_park3=tausp_park**3
               j=k
               do while (kneighbour(j)/=0)
-!  Collide with the neighbours of k and their neighbours.                
+!  Collide with the neighbours of k and their neighbours.
                 j=kneighbour(j)
                 call get_frictiontime(f,fp,p,ineargrid,j,tausp1_parj, &
                     nochange_opt=.true.)
@@ -1979,13 +1979,13 @@ k_loop:   do while (.not. (k>npar_loc))
                 vbar_jk= &
                     (tausp_parj3*fp(k,ivpx:ivpz)+tausp_park3*fp(j,ivpx:ivpz))/ &
                     (tausp_parj3+tausp_park3)
-!  Cooling time-scale.                
+!  Cooling time-scale.
                 tau_cool1_par= &
                     0.75*coll_geom_fac*(1.0-coeff_restitution)* &
                     rhop_tilde*deltavp*(tausp_parj+tausp_park)**2/ &
                     (tausp_parj3+tausp_park3)
                 dt1_cool=dt1_cool+tau_cool1_par
-!                if (tau_coll_min>0.0) then 
+!                if (tau_coll_min>0.0) then
 !                  if (tau_cool1_par>tau_coll1_max) tau_cool1_par=tau_coll1_max
 !                endif
                 dfp(j,ivpx:ivpz) = dfp(j,ivpx:ivpz) - &
@@ -1994,7 +1994,7 @@ k_loop:   do while (.not. (k>npar_loc))
                     tau_cool1_par*(fp(k,ivpx:ivpz)-vbar_jk)
               enddo
               dt1_max=max(dt1_max(l),dt1_cool/cdtp)
-!  Go through all possible k.              
+!  Go through all possible k.
               k=kneighbour(k)
             enddo
           endif
@@ -2005,7 +2005,7 @@ k_loop:   do while (.not. (k>npar_loc))
     endsubroutine collisional_cooling
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -2020,7 +2020,7 @@ k_loop:   do while (.not. (k>npar_loc))
     endsubroutine read_particles_init_pars
 !***********************************************************************
     subroutine write_particles_init_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_init_pars)
@@ -2028,7 +2028,7 @@ k_loop:   do while (.not. (k>npar_loc))
     endsubroutine write_particles_init_pars
 !***********************************************************************
     subroutine read_particles_run_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -2043,7 +2043,7 @@ k_loop:   do while (.not. (k>npar_loc))
     endsubroutine read_particles_run_pars
 !***********************************************************************
     subroutine write_particles_run_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_run_pars)
@@ -2065,7 +2065,7 @@ k_loop:   do while (.not. (k>npar_loc))
     endsubroutine powersnap_particles
 !***********************************************************************
     subroutine rprint_particles(lreset,lwrite)
-!   
+!
 !  Read and register print parameters relevant for particles
 !
 !  29-dec-04/anders: coded
@@ -2078,12 +2078,12 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       integer :: iname,inamez,inamey,inamex, inamexy
       logical :: lwr
-! 
+!
 !  Write information to index.pro
-! 
+!
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      
+
       if (lwr) then
         write(3,*) 'ixp=', ixp
         write(3,*) 'iyp=', iyp

@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.39 2006-08-31 06:00:35 ajohan Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.40 2006-11-30 09:03:35 dobler Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -107,7 +107,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.39 2006-08-31 06:00:35 ajohan Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.40 2006-11-30 09:03:35 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -135,7 +135,7 @@ module Magnetic
 !  24-nov-2002/tony: dummy routine - nothing to do at present
       use Cdata
 
-      mu01=1./mu0      
+      mu01=1./mu0
 
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -226,7 +226,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !***********************************************************************
     subroutine daa_dt(f,df,uu,rho1,TT1,uij,bb,va2,shock,gshock)
 !
-!  solve relativistic force-free MHD equations 
+!  solve relativistic force-free MHD equations
 !
 !  21-jul-03/axel: turned to ffreeMHDrel, adapted from magnetic
 !
@@ -258,7 +258,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !
       intent(in)     :: f,uu,rho1,TT1,uij,bb,shock,gshock
       intent(out)    :: bij,va2
-      intent(inout)  :: df     
+      intent(inout)  :: df
 !
 !  identify module and boundary conditions
 !
@@ -493,13 +493,13 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
         call output_pencil(trim(directory)//'/JxB.dat',JxB,3)
         call output_pencil(trim(directory)//'/df.dat',df(l1:l2,m,n,:),mvar)
       endif
-!     
+!
 if(ip<3.and.m==4.and.n==4) write(61) ss,Sij,curlS,divS,del2A,curlB
 if(ip<3.and.m==4.and.n==4) write(61) BB,B2,BgS,SgB,Bij,CC,EE,B21
 if(ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !
 if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
-!     
+!
     endsubroutine daa_dt
 !***********************************************************************
     subroutine calculate_vars_magnetic(f,bb,bij,aij,del2A,graddivA)
@@ -517,7 +517,7 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
       real, dimension (nx,3,3) :: bij,aij
       real, dimension (nx,3) :: bb,del2A,graddivA
 
-      
+
       intent(in)  :: f
       intent(out) :: bb,bij,del2A,graddivA
 
@@ -538,43 +538,43 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
     subroutine read_magnetic_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=magnetic_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=magnetic_init_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+
+
 99    return
     endsubroutine read_magnetic_init_pars
 !***********************************************************************
     subroutine write_magnetic_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       write(unit,NML=magnetic_init_pars)
-                                                                                                   
+
     endsubroutine write_magnetic_init_pars
 !***********************************************************************
     subroutine read_magnetic_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=magnetic_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=magnetic_run_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+
+
 99    return
     endsubroutine read_magnetic_run_pars
 !***********************************************************************
     subroutine write_magnetic_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       write(unit,NML=magnetic_run_pars)
-                                                                                                   
+
     endsubroutine write_magnetic_run_pars
 !***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)
@@ -730,7 +730,7 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
       real :: bmx,bmy,bmz
       integer :: l,j
 !
-!  For vector output (of bb vectors) we need brms 
+!  For vector output (of bb vectors) we need brms
 !  on all processors. It suffices to have this for times when lout=.true.,
 !  but we need to broadcast the result to all procs.
 !
@@ -746,7 +746,7 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  Magnetic energy in vertically averaged field
 !  The bymxy and bzmxy must have been calculated,
-!  so they are present on the root processor. 
+!  so they are present on the root processor.
 !
       if (idiag_bmx/=0) then
         if(idiag_bymxy==0.or.idiag_bzmxy==0) then
@@ -786,7 +786,7 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
           bmy=sqrt(sum(bxmy**2+bzmy**2)/(ny*nprocy))
         endif
         call save_name(bmy,idiag_bmy)
-      endif 
+      endif
 !
 !  Magnetic energy in horizontally averaged field
 !  The bxmz and bymz must have been calculated,
@@ -1020,7 +1020,7 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  Potential field boundary condition for magnetic vector potential
 !
-!  14-jun-2002/axel: adapted from similar 
+!  14-jun-2002/axel: adapted from similar
 !   8-jul-2002/axel: introduced topbot argument
 !
       use Cdata

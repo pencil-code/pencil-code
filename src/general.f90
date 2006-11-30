@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.52 2006-08-23 20:33:23 wlyra Exp $
+! $Id: general.f90,v 1.53 2006-11-30 09:03:35 dobler Exp $
 
 module General
 
@@ -13,7 +13,7 @@ module General
   private
 
   public :: safe_character_assign,safe_character_append, chn
-  public :: random_seed_wrapper 
+  public :: random_seed_wrapper
   public :: random_number_wrapper, random_gen
   public :: parse_filename
 
@@ -301,7 +301,7 @@ module General
 !  The 'Minimal Standard' random number generator
 !  by Lewis, Goodman and Miller.
 !
-!  28.08.02/nils: Adapted from Numerical Recipes 
+!  28.08.02/nils: Adapted from Numerical Recipes
 !
       integer,parameter :: ia=16807,im=2147483647,iq=127773,ir=2836, &
            mask=123459876
@@ -357,7 +357,7 @@ module General
       !
       rstate(1)=ieor(rstate(1),ishft(rstate(1),13))
       rstate(1)=ieor(rstate(1),ishft(rstate(1),-17))
-      rstate(1)=ieor(rstate(1),ishft(rstate(1),5)) 
+      rstate(1)=ieor(rstate(1),ishft(rstate(1),5))
       !
       ! Park-Miller sequence by Schrage's method, period 2^31-2
       !
@@ -493,9 +493,9 @@ module General
       destLen = len(dest)
       srcLen = len(src)
 
-      if (destLen<srcLen) then 
+      if (destLen<srcLen) then
          print *, "safe_character_assign: ", &
-              "RUNTIME ERROR: FORCED STRING TRUNCATION WHEN ASSIGNING '" & 
+              "RUNTIME ERROR: FORCED STRING TRUNCATION WHEN ASSIGNING '" &
                //src//"' to '"//dest//"'"
          dest=src(1:destLen)
       else
@@ -847,19 +847,19 @@ module General
       real, dimension (psize1) :: arrx,arry,h,a,b,c,d,sol
       real, dimension (psize2) :: x2,S
       logical, intent(out), optional :: err
-      
+
       intent(in)  :: arrx,arry,x2
       intent(out) :: S
-       
-      if (present(err)) err=.false.      
+
+      if (present(err)) err=.false.
       ct1 = psize1
       ct2 = psize2
-!      
+!
 ! Breaks if x is not monotonically increasing
 !
       do i=1,ct1-1
          if (arrx(i+1).le.arrx(i)) then
-            print*,'spline x:y in x2:y2 : vector x is not monotonically increasing' 
+            print*,'spline x:y in x2:y2 : vector x is not monotonically increasing'
             if (present(err)) err=.true.
             return
          endif
@@ -867,41 +867,41 @@ module General
 !
 ! step h
 !
-      h(1:ct1-1) = arrx(2:ct1) - arrx(1:ct1-1) 
+      h(1:ct1-1) = arrx(2:ct1) - arrx(1:ct1-1)
       h(ct1) = h(ct1-1)
 !
 ! coefficients for tridiagonal system
 !
       a(2:ct1) = h(1:ct1-1)
       a(1) = a(2)
-!      
-      b(2:ct1) = 2*(h(1:ct1-1) + h(2:ct1)) 
+!
+      b(2:ct1) = 2*(h(1:ct1-1) + h(2:ct1))
       b(1) = b(2)
 !
       c = h
-! 
+!
       d(2:ct1-1) = 6*((arry(3:ct1) - arry(2:ct1-1))/h(2:ct1-1) - (arry(2:ct1-1) - arry(1:ct1-2))/h(1:ct1-2))
       d(1) = 0. ; d(ct1) = 0.
-!        
-      call tridag(a,b,c,d,sol)        
+!
+      call tridag(a,b,c,d,sol)
 !
 ! interpolation formula
 !
       do j=1,ct2
          do i=1,ct1-1
-!               
-            if ((x2(j).ge.arrx(i)).and.(x2(j).le.arrx(i+1))) then  
-!               
-!                
+!
+            if ((x2(j).ge.arrx(i)).and.(x2(j).le.arrx(i+1))) then
+!
+!
                S(j) = (1./(6*h(i))) * (sol(i+1)*(x2(j)-arrx(i))**3 + sol(i)*(arrx(i+1) - x2(j))**3)  + &
                     (x2(j) - arrx(i))*(arry(i+1)/h(i) - h(i)*sol(i+1)/6.)                          + &
                     (arrx(i+1) - x2(j))*(arry(i)/h(i) - h(i)*sol(i)/6.)
             endif
-!            
+!
          enddo
 !
-! zero beyond this interval - should perhaps allow for linear interpolation    
-!           
+! zero beyond this interval - should perhaps allow for linear interpolation
+!
          if ((x2(j).le.arrx(1)).or.(x2(j).ge.arrx(ct1))) then
             S(j) = 0.
          endif
@@ -914,13 +914,13 @@ module General
 !  takes complex number and returns Theta where
 !  z = A*exp(i*theta)
 !
-!  17-may-06/anders+jeff: coded 
+!  17-may-06/anders+jeff: coded
 !
       use Cdata, only: pi
 !
       real :: c,re,im,complex_phase
       complex :: z
-!      
+!
       c=abs(z)
       re=real(z)
       im=aimag(z)
@@ -930,7 +930,7 @@ module General
   if ( (re .lt. 0.0) .and. (im .ge. 0.0) ) complex_phase =   pi-asin(im/c)
 ! III
   if ( (re .lt. 0.0) .and. (im .lt. 0.0) ) complex_phase =   pi-asin(im/c)
-! IV 
+! IV
   if ( (re .ge. 0.0) .and. (im .lt. 0.0) ) complex_phase = 2*pi+asin(im/c)
 !
    endfunction complex_phase
@@ -947,7 +947,7 @@ module General
       t=1./(1.+0.5*z)
       erfcc=t*exp(-z*z-1.26551223+t*(1.00002368+t*(.37409196+t* &
             (.09678418+t*(-.18628806+t*(.27886807+t*(-1.13520398+t*  &
-            (1.48851587+t*(-.82215223+t*.17087277)))))))))             
+            (1.48851587+t*(-.82215223+t*.17087277)))))))))
       where (x.lt.0.) erfcc=2.-erfcc
       return
     endfunction erfcc

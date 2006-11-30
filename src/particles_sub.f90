@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.92 2006-11-21 10:39:53 ajohan Exp $
+! $Id: particles_sub.f90,v 1.93 2006-11-30 09:03:36 dobler Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -10,7 +10,7 @@ module Particles_sub
   implicit none
 
   private
- 
+
   public :: input_particles, output_particles
   public :: wsnap_particles, boundconds_particles
   public :: redist_particles_procs, dist_particles_evenly_procs
@@ -27,9 +27,9 @@ module Particles_sub
     subroutine input_particles(filename,fp,npar_loc,ipar)
 !
 !  Read snapshot file with particle data.
-!   
+!
 !  29-dec-04/anders: adapted from input
-! 
+!
       real, dimension (mpar_loc,mpvar) :: fp
       character (len=*) :: filename
       integer, dimension (mpar_loc) :: ipar
@@ -37,9 +37,9 @@ module Particles_sub
 !
       intent (in) :: filename
       intent (out) :: fp,npar_loc,ipar
-!        
+!
       open(1,FILE=filename,FORM='unformatted')
-!     
+!
 !  First read the number of particles present at the processor and the index
 !  numbers of the particles.
 !
@@ -47,13 +47,13 @@ module Particles_sub
         if (npar_loc/=0) read(1) ipar(1:npar_loc)
 !
 !  Then read particle data.
-!        
+!
         if (npar_loc/=0) read(1) fp(1:npar_loc,:)
 !
 !  Read snapshot time.
 !
 !        read(1) t
-!        
+!
         if (ip<=8) print*, 'input_particles: read ', filename
 !
       close(1)
@@ -79,7 +79,7 @@ module Particles_sub
           filename
 !
       open(lun_output,FILE=filename,FORM='unformatted')
-!     
+!
 !  First write the number of particles present at the processor and the index
 !  numbers of the particles.
 !
@@ -122,7 +122,7 @@ module Particles_sub
       logical :: lsnap_minor=.false.
       character (len=fnlen) :: snapname, filename_diag
       character (len=4) :: nsnap_ch,nsnap_minor_ch,nsnap_ch_last
-!      
+!
       optional :: flist
 !
 !  Output snapshot with label in 'tsnap' time intervals
@@ -142,7 +142,7 @@ module Particles_sub
         endif
 !
 !  Possible to output minor particle snapshots (e.g. for a movie).
-!            
+!
         if (dsnap_par_minor/=0.) &
             call update_snaptime(filename_diag,tsnap_minor,nsnap_minor, &
             dsnap_par_minor,t,lsnap_minor,nsnap_minor_ch,ENUM=.true.)
@@ -157,7 +157,7 @@ module Particles_sub
         endif
 !
 !  Regular data snapshots must come synchronized with the fluid snapshots.
-!            
+!
         call update_snaptime(filename_diag,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch, &
             ENUM=.true.)
         if (lsnap) then
@@ -204,7 +204,7 @@ module Particles_sub
 !
       intent (inout) :: fp, npar_loc, ipar, dfp
 
-      if (.not.lcartesian_mig) then 
+      if (.not.lcartesian_mig) then
 !     radial boundary condition
          do k=1,npar_loc
             xold=fp(k,ixp) ; yold=fp(k,iyp)
@@ -216,7 +216,7 @@ module Particles_sub
 !
 !  Particle position must never need more than one addition of Lr to get back
 !  in the box. Often a NaN or Inf in the particle position will show up as a
-!  problem here.                    
+!  problem here.
 !
                if (rad .lt. r_int) then
                   print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
@@ -237,7 +237,7 @@ module Particles_sub
                   call fatal_error_local('boundconds_particles','')
                endif
             endif
-!   
+!
             fp(k,ixp) = rad *xold*r1old !r*cos(theta)
             fp(k,iyp) = rad *yold*r1old !r*sin(theta)
 !
@@ -424,7 +424,7 @@ module Particles_sub
           endif
 !  Calculate serial index of receiving processor.
           iproc_rec=ipy_rec+nprocy*ipz_rec
-!  Migrate particle if it is no longer at the current processor.     
+!  Migrate particle if it is no longer at the current processor.
           if (iproc_rec/=iproc) then
             if (ip<=7) print '(a,i7,a,i3,a,i3)', &
                 'redist_particles_procs: Particle ', ipar(k), &
@@ -483,7 +483,7 @@ module Particles_sub
 !  Diagnostic about number of migrating particles.
 !  WARNING: in time-steps where snapshots are written, this diagnostic
 !  parameter will be zero (quite confusing)!
-!          
+!
         if (ldiagnos.and.(idiag_nmigmax/=0)) &
             call max_name(sum(nmig(iproc,:)),idiag_nmigmax)
 !
@@ -500,7 +500,7 @@ module Particles_sub
         enddo
 !
 !  Set to receive.
-!      
+!
         do i=0,ncpus-1
           if (iproc/=i .and. nmig(i,iproc)/=0) then
             call mpirecv_real(fp(npar_loc+1:npar_loc+nmig(i,iproc),:), &
@@ -529,7 +529,7 @@ module Particles_sub
           endif
 !
 !  Directed send.
-!        
+!
           if (iproc==i) then
             do j=0,ncpus-1
               if (iproc/=j .and. nmig(iproc,j)/=0) then
@@ -565,14 +565,14 @@ module Particles_sub
         endif
 !
 !  If sum is not zero, then the while loop while be executed once more.
-!        
+!
       enddo
 !
     endsubroutine redist_particles_procs
 !***********************************************************************
     subroutine dist_particles_evenly_procs(npar_loc,ipar)
 !
-!  Distribute particles evenly among processors. 
+!  Distribute particles evenly among processors.
 !
 !  05-jan-05/anders: coded
 !
@@ -597,7 +597,7 @@ module Particles_sub
         print*, 'dist_particles_evenly_procs: ipar1=', ipar1
         print*, 'dist_particles_evenly_procs: ipar2=', ipar2
       endif
-!      
+!
 !  Set index interval of particles that belong to the local processor.
 !
       npar_loc=ipar2(iproc)-ipar1(iproc)+1
@@ -832,7 +832,7 @@ module Particles_sub
       zp0=xxp(3)-z(iz0)
 !
 !  Calculate derived grid spacing variables in the first call to this sub.
-!      
+!
       if (lfirstcall) then
         dx1=1/dx;  dy1=1/dy;  dz1=1/dz
         dxdy1=1/(dx*dy);  dxdz1=1/(dx*dz);  dydz1=1/(dy*dz)
@@ -1265,14 +1265,14 @@ module Particles_sub
 !  Straight insertion.
       case (1)
         do k=2,npar_loc
- 
+
           j=k
- 
+
           do while ( ilmn_par(k)<ilmn_par(j-1) )
             j=j-1
             if (j==1) exit
           enddo
- 
+
           if (j/=k) then
             ncount=ncount+k-j
 !
@@ -1326,7 +1326,7 @@ module Particles_sub
         enddo
 !  Counting sort.
       case(3)
-       
+
         kk=k1_imn
         do k=1,npar_loc
           ipark_sorted(kk(ilmn_par(k)))=k
@@ -1335,7 +1335,7 @@ module Particles_sub
         ncount=npar_loc
 
       endselect
-!      
+!
 !  Sort particle data according to sorting index.
 !
       if (lrunningsort .and. isorttype/=1) then
@@ -1401,7 +1401,7 @@ module Particles_sub
 !  implemented for assigning a particle to the mesh (see Hockney & Eastwood):
 !
 !    0. NGP (Nearest Grid Point)
-!       The entire effect of the particle goes to the nearest grid point. 
+!       The entire effect of the particle goes to the nearest grid point.
 !    1. CIC (Cloud In Cell)
 !       The particle has a region of influence with the size of a grid cell.
 !       This is equivalent to a first order (spline) interpolation scheme.
@@ -1415,7 +1415,7 @@ module Particles_sub
         if (lparticlemesh_cic) then
 !
 !  Cloud In Cell (CIC) scheme.
-!  
+!
           do k=1,npar_loc
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             ixx0=ix0; iyy0=iy0; izz0=iz0
@@ -1439,7 +1439,7 @@ module Particles_sub
           enddo
 !
 !  Triangular Shaped Cloud (TSC) scheme.
-!        
+!
         elseif (lparticlemesh_tsc) then
 !
 !  Particle influences the 27 surrounding grid points, but has a density that
@@ -1489,9 +1489,9 @@ module Particles_sub
                 if (nzgrid/=1) &
                 weight_z = 0.75  -       ((fp(k,izp)-z(izz))*dz_1(izz))**2
               endif
- 
+
               weight=1.0
- 
+
               if (nxgrid/=1) weight=weight*weight_x
               if (nygrid/=1) weight=weight*weight_y
               if (nzgrid/=1) weight=weight*weight_z
@@ -1500,7 +1500,7 @@ module Particles_sub
           enddo
 !
 !  Nearest Grid Point (NGP) method.
-!          
+!
         else
           f(l1:l2,m1:m2,n1:n2,irhop)=f(l1:l2,m1:m2,n1:n2,inp)
         endif
@@ -1618,7 +1618,7 @@ module Particles_sub
         dx1=1/dx; dy1=1/dy; dz1=1/dz
         lfirstcall=.false.
       endif
-!      
+!
       if (nxgrid/=1) ix0 = nint((xxp(1)-x(1))*dx1) + 1
       if (nygrid/=1) iy0 = nint((xxp(2)-y(1))*dy1) + 1
       if (nzgrid/=1) iz0 = nint((xxp(3)-z(1))*dz1) + 1
@@ -1651,7 +1651,7 @@ module Particles_sub
           kshepherd(ix0-nghost)=k
         enddo
       endif
-!    
+!
     endsubroutine shepherd_neighbour
 !***********************************************************************
 endmodule Particles_sub

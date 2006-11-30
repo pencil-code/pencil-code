@@ -1,4 +1,4 @@
-! $Id: noparticles_nbody.f90,v 1.7 2006-09-09 14:06:55 wlyra Exp $
+! $Id: noparticles_nbody.f90,v 1.8 2006-11-30 09:03:36 dobler Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -20,7 +20,7 @@ module Particles_nbody
   implicit none
 
   include 'particles_nbody.h'
-  
+
   contains
 
 !***********************************************************************
@@ -30,14 +30,14 @@ module Particles_nbody
 !
 !  14-jun-06/anders: adapted
 !
-!     
+!
     endsubroutine register_particles_nbody
 !***********************************************************************
     subroutine initialize_particles_nbody(lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
-! 
+!
 !  14-jun-06/anders: adapted
 !
       logical :: lstarting
@@ -61,28 +61,28 @@ module Particles_nbody
     endsubroutine init_particles_nbody
 !***********************************************************************
     subroutine pencil_criteria_par_nbody()
-!   
+!
 !  All pencils that the Particles_nbody module depends on are specified here.
-!         
+!
 !  02-jul-06/anders: adapted
 !
     endsubroutine pencil_criteria_par_nbody
 !***********************************************************************
     subroutine pencil_interdep_par_nbody(lpencil_in)
-!   
+!
 !  Interdependency among pencils provided by the Particles_nbody module
 !  is specified here.
-!         
+!
 !  02-jul-06/anders: adapted
 !
       logical, dimension(npencils) :: lpencil_in
 !
       if (NO_WARN) print*, lpencil_in
-!   
+!
     endsubroutine pencil_interdep_par_nbody
 !***********************************************************************
     subroutine calc_pencils_par_nbody(f,p)
-!   
+!
 !  Calculate particle pencils.
 !
 !  02-jul-06/anders: adapted
@@ -91,7 +91,7 @@ module Particles_nbody
       type (pencil_case) :: p
 !
       if (NO_WARN) print*, f, p
-!   
+!
     endsubroutine calc_pencils_par_nbody
 !***********************************************************************
     subroutine dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
@@ -144,26 +144,26 @@ module Particles_nbody
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
     endsubroutine read_particles_nbody_init_pars
-!***********************************************************************                                  
+!***********************************************************************
     subroutine write_particles_nbody_init_pars(unit)
       integer, intent(in) :: unit
       if (NO_WARN) print*,unit
     endsubroutine write_particles_nbody_init_pars
-!***********************************************************************                                  
+!***********************************************************************
     subroutine read_particles_nbody_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
     endsubroutine read_particles_nbody_run_pars
-!***********************************************************************                                  
+!***********************************************************************
     subroutine write_particles_nbody_run_pars(unit)
       integer, intent(in) :: unit
       if (NO_WARN) print*,unit
     endsubroutine write_particles_nbody_run_pars
 !***********************************************************************
     subroutine share_sinkparticles(fp)
-!       
+!
       real, dimension(mpar_loc,mpvar) :: fp
 !
       if (NO_WARN) print*, fp
@@ -171,7 +171,7 @@ module Particles_nbody
     endsubroutine share_sinkparticles
 !************************************************************************
     subroutine rprint_particles_nbody(lreset,lwrite)
-!   
+!
 !  Read and register print parameters relevant for particle self-gravity.
 !
 !  14-jun-06/anders: adapted

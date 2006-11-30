@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.24 2006-08-23 16:53:33 mee Exp $
+! $Id: testfield.f90,v 1.25 2006-11-30 09:03:36 dobler Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -110,7 +110,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.24 2006-08-23 16:53:33 mee Exp $")
+           "$Id: testfield.f90,v 1.25 2006-11-30 09:03:36 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -281,7 +281,7 @@ module Testfield
       integer :: jtest,jfnamez,j
 !
       intent(in)     :: f,p
-      intent(inout)  :: df     
+      intent(inout)  :: df
 !
 !  identify module and boundary conditions
 !

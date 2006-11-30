@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.37 2006-11-16 07:00:51 mee Exp $
+! $Id: noplanet.f90,v 1.38 2006-11-30 09:03:36 dobler Exp $
 !
 !  Dummy module
 !
@@ -24,9 +24,9 @@ module Planet
 contains
 !***********************************************************************
     subroutine pencil_criteria_planet()
-! 
+!
 !  All pencils that the Planet module depends on are specified here.
-! 
+!
 !  16-nov-06/tony: coded
 !
     endsubroutine pencil_criteria_planet
@@ -50,7 +50,7 @@ contains
 !
 !  16-nov-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f       
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f

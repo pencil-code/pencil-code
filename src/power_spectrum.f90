@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.59 2006-10-05 15:42:25 theine Exp $
+! $Id: power_spectrum.f90,v 1.60 2006-11-30 09:03:36 dobler Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -45,7 +45,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.59 2006-10-05 15:42:25 theine Exp $")
+       "$Id: power_spectrum.f90,v 1.60 2006-11-30 09:03:36 dobler Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -143,7 +143,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.59 2006-10-05 15:42:25 theine Exp $")
+       "$Id: power_spectrum.f90,v 1.60 2006-11-30 09:03:36 dobler Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -243,7 +243,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.59 2006-10-05 15:42:25 theine Exp $")
+       "$Id: power_spectrum.f90,v 1.60 2006-11-30 09:03:36 dobler Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -384,7 +384,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.59 2006-10-05 15:42:25 theine Exp $")
+       "$Id: power_spectrum.f90,v 1.60 2006-11-30 09:03:36 dobler Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -485,7 +485,7 @@ module  power_spectrum
 !  identify version
 !
     if (lroot .AND. ip<10) call cvs_id( &
-        "$Id: power_spectrum.f90,v 1.59 2006-10-05 15:42:25 theine Exp $")
+        "$Id: power_spectrum.f90,v 1.60 2006-11-30 09:03:36 dobler Exp $")
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -558,7 +558,7 @@ module  power_spectrum
       spectrumx(ikx) = spectrumx(ikx) + &
           sqrt(a1(ikx,iy,iz)**2 + b1(ikx,iy,iz)**2)
     enddo; enddo; enddo
-!  Multiply all modes, except the constant mode, by two.    
+!  Multiply all modes, except the constant mode, by two.
     spectrumx(2:nk)=2*spectrumx(2:nk)
 !
 !  Doing fourier spectra in all directions if onedall=T
@@ -575,7 +575,7 @@ module  power_spectrum
         do iky=1,nk; do ix=1,nxgrid/nprocy; do iz=1,nz
           spectrumy(iky) = spectrumy(iky) + &
               sqrt(a1(iky,ix,iz)**2 + b1(iky,ix,iz)**2)
-        enddo; enddo; enddo  
+        enddo; enddo; enddo
 !  Multiply all modes, except the constant mode, by two.
         spectrumy(2:nk)=2*spectrumy(2:nk)
       endif

@@ -1,11 +1,11 @@
-! $Id: global_rr.f90,v 1.9 2006-08-20 22:35:50 wlyra Exp $
+! $Id: global_rr.f90,v 1.10 2006-11-30 09:03:35 dobler Exp $
 
 module Global
 
 !
-!  A module container for additional variables which are globally needed 
+!  A module container for additional variables which are globally needed
 !  --- here this is spherical radius (for calculating gravity and heating
-!  /cooling functions) 
+!  /cooling functions)
 !  Put into a module, so one can easily switch.
 !  NB: These variables use half as much memory as a new variable, so
 !  keep their number at minimum.

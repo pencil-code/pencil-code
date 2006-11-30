@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.73 2006-11-19 08:11:33 brandenb Exp $
+! $Id: slices.f90,v 1.74 2006-11-30 09:03:36 dobler Exp $
 
 !  This module produces slices for animation purposes
 
@@ -58,7 +58,7 @@ module Slices
   real, public, dimension (nx,ny) :: lnrho_xy2,ss_xy2,cc_xy2,lncc_xy2
   real, public, dimension (nx,ny) :: nd_xy2
   real, public, dimension (nx,ny,ndustspec) :: md_xy2
-!  Auxiliary variables  
+!  Auxiliary variables
   real, public, dimension (nx,ny) :: yH_xy2,ecr_xy2
 !  Derived variables
   real, public, dimension (nx,ny) :: lnTT_xy2
@@ -70,7 +70,7 @@ module Slices
   real, public, dimension (nx,nz) :: lnrho_xz,ss_xz,cc_xz,lncc_xz
   real, public, dimension (nx,nz) :: nd_xz
   real, public, dimension (nx,nz,ndustspec) :: md_xz
-!  Auxiliary variables  
+!  Auxiliary variables
   real, public, dimension (nx,nz) :: yH_xz,ecr_xz
 !  Derived variables
   real, public, dimension (nx,nz) :: lnTT_xz
@@ -82,7 +82,7 @@ module Slices
   real, public, dimension (ny,nz) :: lnrho_yz,ss_yz,cc_yz,lncc_yz
   real, public, dimension (ny,nz) :: nd_yz
   real, public, dimension (ny,nz,ndustspec) :: md_yz
-!  Auxiliary variables  
+!  Auxiliary variables
   real, public, dimension (ny,nz) :: yH_yz,ecr_yz
 !  Derived variables
   real, public, dimension (ny,nz) :: lnTT_yz
@@ -179,7 +179,7 @@ module Slices
         slices%xy2=>slice_xy2
 
         slices%name=trim(cnamev(inamev))
-        lslices_legacy=.true.       ! By default assume we're not 
+        lslices_legacy=.true.       ! By default assume we're not
                                     ! using module hooks to get the
                                     ! slice contents
         select case (slices%name)
@@ -195,7 +195,7 @@ module Slices
           call wslice(path//'lnrho.xz',lnrho_xz,y(iy_loc),nx,nz)
           call wslice(path//'lnrho.xy',lnrho_xy,z(iz_loc),nx,ny)
           call wslice(path//'lnrho.Xy',lnrho_xy2,z(iz2_loc),nx,ny)
-! 
+!
 !  Entropy (code variable)
 !
         case ('ss')
@@ -324,7 +324,7 @@ module Slices
 !  Temperature (derived variable, sometimes code variable)
 !
         case ('lnTT')
-          if (ilnTT .ne. 0) then        
+          if (ilnTT .ne. 0) then
             lnTT_yz=f(ix_loc,m1:m2,n1:n2,ilnTT)
             lnTT_xz=f(l1:l2,iy_loc,n1:n2,ilnTT)
             lnTT_xy=f(l1:l2,m1:m2,iz_loc,ilnTT)
@@ -437,7 +437,7 @@ module Slices
               call wslice(path//trim(slices%name)//'.Xy',slices%xy2, &
                                                      z(slices%iz2),nx,ny)
             inamev=inamev+1
-           else 
+           else
             call chn(slices%index, sindex)
             if (associated(slices%yz)) &
               call wslice(path//trim(slices%name)//trim(sindex)//'.yz', &
@@ -637,7 +637,7 @@ module Slices
         write(1,'(2i5,e12.4)') ipz,iz2_loc,z(iz2_loc)
         close(1)
       endif
-!  
+!
 !  make sure ix_loc,iy_loc,iz_loc,iz2_loc are not outside the boundaries
 !
       ix_loc=min(ix_loc,l2); iy_loc=min(iy_loc,m2)

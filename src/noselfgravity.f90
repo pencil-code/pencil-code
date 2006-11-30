@@ -1,4 +1,4 @@
-! $Id: noselfgravity.f90,v 1.6 2006-08-23 16:53:32 mee Exp $
+! $Id: noselfgravity.f90,v 1.7 2006-11-30 09:03:36 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -48,9 +48,9 @@ module Selfgravity
     endsubroutine initialize_selfgravity
 !***********************************************************************
     subroutine pencil_criteria_selfgravity()
-! 
+!
 !  All pencils that the Selfgravity module depends on are specified here.
-! 
+!
 !  15-may-06/anders+jeff: dummy
 !
     endsubroutine pencil_criteria_selfgravity
@@ -78,7 +78,7 @@ module Selfgravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       if (NO_WARN) print*, f, p !(keep compiler quiet)
 !
     endsubroutine calc_pencils_selfgravity
@@ -106,7 +106,7 @@ module Selfgravity
       type (pencil_case) :: p
 !
       if (NO_WARN) print*, f, df, p !(keep compiler quiet)
-!        
+!
     endsubroutine duu_dt_selfgrav
 !***********************************************************************
     subroutine read_selfgravity_init_pars(unit,iostat)
@@ -133,7 +133,7 @@ module Selfgravity
     subroutine read_selfgravity_run_pars(unit,iostat)
 !
 !  Read self gravity run parameters
-!    
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !

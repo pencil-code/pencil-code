@@ -127,10 +127,10 @@ module Testfield
       type (pencil_case) :: p
 !
       intent(in)     :: f, p
-      intent(inout)  :: df     
+      intent(inout)  :: df
 !
       if(ip==0) print*, f, df, p  !(to keep compiler quiet)
-!        
+!
     endsubroutine daatest_dt
 !***********************************************************************
     subroutine calc_ltestfield_pars(f)

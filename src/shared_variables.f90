@@ -1,4 +1,4 @@
-! $Id: shared_variables.f90,v 1.10 2006-09-04 10:34:20 mee Exp $ 
+! $Id: shared_variables.f90,v 1.11 2006-11-30 09:03:36 dobler Exp $
 !
 !  This module is an interface to allow modules
 !  to register pointers to their internal variables so that
@@ -7,7 +7,7 @@
 !  This uses a linked list of pointers and is neither efficient
 !  nor easy to use.  THIS IS ON PURPOSE (a deterrent)!
 !
-!  Shared variable should always be avoided for portability 
+!  Shared variable should always be avoided for portability
 !  and generality reasons.  This module allows for the possibility
 !  when needs must but trys to protect agains screw ups that
 !  can derive from shared quantities.
@@ -17,13 +17,13 @@
 !
 !  Variables to be added to the list must have the target property
 !  And a pointer must be provided when getting a variable from
-!  the list. 
+!  the list.
 !
 !  Currently only scalar and 1D reals and integers may be used
 !  2D could perhaps be added but 3D almost certainly should not
 !  be shared this way.
 !
-module SharedVariables 
+module SharedVariables
 !
   use Messages
 !
@@ -90,7 +90,7 @@ module SharedVariables
     integer, dimension(:), pointer :: int1d
 !    character (len=*),     pointer :: char0D
 !
-! Linked list link to next list element 
+! Linked list link to next list element
 !
     type (shared_variable_list), pointer :: next
   endtype shared_variable_list
@@ -98,7 +98,7 @@ module SharedVariables
 ! The head of the list (initially empty)
 !
   type (shared_variable_list), pointer :: thelist
- 
+
   contains
 
 !***********************************************************************
@@ -114,7 +114,7 @@ module SharedVariables
 !
     endsubroutine initialize_shared_variables
 !***********************************************************************
-    subroutine get_variable_real0d(varname,variable,ierr) 
+    subroutine get_variable_real0d(varname,variable,ierr)
       character (len=*) :: varname
       real, pointer :: variable
       type (shared_variable_list), pointer :: item
@@ -155,10 +155,10 @@ module SharedVariables
       endif
       print*,"Getting shared variable: ",varname
       call fatal_error("get_variable","Shared variable does not exist!")
-!    
+!
     endsubroutine get_variable_real0d
 !***********************************************************************
-    subroutine get_variable_real1d(varname,variable,ierr) 
+    subroutine get_variable_real1d(varname,variable,ierr)
       character (len=*) :: varname
       real, dimension(:), pointer :: variable
       type (shared_variable_list), pointer :: item
@@ -199,10 +199,10 @@ module SharedVariables
       endif
       print*,"Getting shared variable: ",varname
       call fatal_error("get_variable","Shared variable does not exist!")
-!    
+!
     endsubroutine get_variable_real1d
 !***********************************************************************
-    subroutine get_variable_int0d(varname,variable,ierr) 
+    subroutine get_variable_int0d(varname,variable,ierr)
       character (len=*) :: varname
       integer, pointer :: variable
       type (shared_variable_list), pointer :: item
@@ -243,10 +243,10 @@ module SharedVariables
       endif
       print*,"Getting shared variable: ",varname
       call fatal_error("get_variable","Shared variable does not exist!")
-!    
+!
     endsubroutine get_variable_int0d
 !***********************************************************************
-    subroutine get_variable_int1d(varname,variable,ierr) 
+    subroutine get_variable_int1d(varname,variable,ierr)
       character (len=*) :: varname
       integer, dimension(:), pointer :: variable
       type (shared_variable_list), pointer :: item
@@ -287,10 +287,10 @@ module SharedVariables
       endif
       print*,"Getting shared variable: ",varname
       call fatal_error("get_variable","Shared variable does not exist!")
-!    
+!
     endsubroutine get_variable_int1d
 !***********************************************************************
-    subroutine put_variable_int0d(varname,variable,ierr) 
+    subroutine put_variable_int0d(varname,variable,ierr)
       character (len=*) :: varname
       integer, target :: variable
       type (shared_variable_list), pointer :: new
@@ -313,10 +313,10 @@ module SharedVariables
       new%varname=varname
       new%vartype=iSHVAR_TYPE_INT0D
       new%int0D=>variable
-!    
+!
     endsubroutine put_variable_int0d
 !***********************************************************************
-    subroutine put_variable_int1d(varname,variable,ierr) 
+    subroutine put_variable_int1d(varname,variable,ierr)
       character (len=*) :: varname
       integer, dimension(:), target :: variable
       type (shared_variable_list), pointer :: new
@@ -339,10 +339,10 @@ module SharedVariables
       new%varname=varname
       new%vartype=iSHVAR_TYPE_INT1D
       new%int1D=>variable
-!    
+!
     endsubroutine put_variable_int1d
 !***********************************************************************
-    subroutine put_variable_real0d(varname,variable,ierr) 
+    subroutine put_variable_real0d(varname,variable,ierr)
 !
       character (len=*) :: varname
       real, target :: variable
@@ -367,10 +367,10 @@ module SharedVariables
       new%varname=varname
       new%vartype=iSHVAR_TYPE_REAL0D
       new%real0D=>variable
-!    
+!
     endsubroutine put_variable_real0d
 !***********************************************************************
-    subroutine put_variable_real1d(varname,variable,ierr) 
+    subroutine put_variable_real1d(varname,variable,ierr)
       character (len=*) :: varname
       real, dimension(:), target :: variable
       type (shared_variable_list), pointer :: new
@@ -393,10 +393,10 @@ module SharedVariables
       new%varname=varname
       new%vartype=iSHVAR_TYPE_REAL1D
       new%real1D=>variable
-!    
+!
     endsubroutine put_variable_real1d
 !***********************************************************************
-    function find_variable(varname) 
+    function find_variable(varname)
       character (len=*) :: varname
       type (shared_variable_list), pointer :: find_variable
 !
@@ -409,13 +409,13 @@ module SharedVariables
       enddo
       nullify(find_variable)
       return
-!    
+!
     endfunction find_variable
 !***********************************************************************
-    subroutine free_list(list) 
+    subroutine free_list(list)
       type (shared_variable_list), pointer :: list
       type (shared_variable_list), pointer :: next
- 
+
       do while (associated(list))
         next=>list%next
         deallocate(list)
@@ -424,21 +424,21 @@ module SharedVariables
       nullify(list)
     endsubroutine free_list
 !***********************************************************************
-    subroutine new_item_atstart(list,new) 
+    subroutine new_item_atstart(list,new)
       type (shared_variable_list), pointer :: list
       type (shared_variable_list), optional, pointer :: new
       type (shared_variable_list), pointer :: new_
 
       allocate(new_)
-      new_%next=>list 
+      new_%next=>list
       list=>new_
-      if (present(new)) new=>new_ 
+      if (present(new)) new=>new_
     endsubroutine new_item_atstart
 !***********************************************************************
     function sharedvars_error_string(ierr) result(string)
 !
 !  Tell what went wrong
-! 
+!
 !  29-aug-06/wolf: adapted
 !
       use Cparam, only: labellen

@@ -1,16 +1,16 @@
-! $Id: nospecial.f90,v 1.23 2006-08-23 16:53:32 mee Exp $
+! $Id: nospecial.f90,v 1.24 2006-11-30 09:03:36 dobler Exp $
 
-!  This module provide a way for users to specify custom 
-!  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
+!  This module provide a way for users to specify custom
+!  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
 !
-!  The module provides a set of standard hooks into the Pencil-Code and 
-!  currently allows the following customizations:                                        
+!  The module provides a set of standard hooks into the Pencil-Code and
+!  currently allows the following customizations:
 !
-!   Description                                     | Relevant function call 
+!   Description                                     | Relevant function call
 !  ---------------------------------------------------------------------------
-!   Special variable registration                   | register_special 
+!   Special variable registration                   | register_special
 !     (pre parameter read)                          |
-!   Special variable initialization                 | initialize_special 
+!   Special variable initialization                 | initialize_special
 !     (post parameter read)                         |
 !                                                   |
 !   Special initial condition                       | init_special
@@ -23,11 +23,11 @@
 !   Special term in the mass (density) equation     | special_calc_density
 !   Special term in the momentum (hydro) equation   | special_calc_hydro
 !   Special term in the entropy equation            | special_calc_entropy
-!   Special term in the induction (magnetic)        | special_calc_magnetic 
+!   Special term in the induction (magnetic)        | special_calc_magnetic
 !      equation                                     |
 !                                                   |
 !   Special equation                                | dspecial_dt
-!     NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE 
+!     NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -47,19 +47,19 @@
 !
 ! The rest of this file may be used as a template for your own
 ! special module.  Lines which are double commented are intended
-! as examples of code.  Simply fill out the prototypes for the 
+! as examples of code.  Simply fill out the prototypes for the
 ! features you want to use.
 !
 ! Save the file with a meaningful name, eg. geo_kws.f90 and place
 ! it in the $PENCIL_HOME/src/special directory.  This path has
 ! been created to allow users ot optionally check their contributions
 ! in to the Pencil-Code CVS repository.  This may be useful if you
-! are working on/using the additional physics with somebodyelse or 
+! are working on/using the additional physics with somebodyelse or
 ! may require some assistance from one of the main Pencil-Code team.
 !
 ! To use your additional physics code edit the Makefile.local in
 ! the src directory under the run directory in which you wish to
-! use your additional physics.  Add a line with all the module 
+! use your additional physics.  Add a line with all the module
 ! selections to say something like:
 !
 !    SPECIAL=special/geo_kws
@@ -74,24 +74,25 @@ module Special
   use Cparam
   use Cdata
   use Messages
+  use Sub, only: keep_compiler_quiet
 
   implicit none
 
   include 'special.h'
-  
+
 !!  character, len(50) :: initcustom
 
 ! input parameters
-!  namelist /special_init_pars/ dummy 
+!  namelist /special_init_pars/ dummy
 !!!eg.    initcustom
 ! run parameters
 !  namelist /special_run_pars/ dummy
 
 !!
-!! Declare any index variables necessary for main or 
-!! 
+!! Declare any index variables necessary for main or
+!!
 !!   integer :: iSPECIAL_VARIABLE_INDEX=0
-!!  
+!!
 !! other variables (needs to be consistent with reset list below)
 !!
 !!   integer :: i_POSSIBLEDIAGNOSTIC=0
@@ -102,9 +103,9 @@ module Special
 !***********************************************************************
     subroutine register_special()
 !
-!  Configure pre-initialised (i.e. before parameter read) variables 
+!  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
-! 
+!
 !
 !  6-oct-03/tony: coded
 !
@@ -119,14 +120,14 @@ module Special
       first = .false.
 
 !!
-!! MUST SET lspecial = .true. to enable use of special hooks in the Pencil-Code 
+!! MUST SET lspecial = .true. to enable use of special hooks in the Pencil-Code
 !!   THIS IS NOW DONE IN THE HEADER ABOVE
 !
 !
 !
-!! 
-!! Set any required f-array indexes to the next available slot 
-!!  
+!!
+!! Set any required f-array indexes to the next available slot
+!!
 !!
 !      iSPECIAL_VARIABLE_INDEX = nvar+1             ! index to access entropy
 !      nvar = nvar+1
@@ -136,14 +137,14 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.23 2006-08-23 16:53:32 mee Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.24 2006-11-30 09:03:36 dobler Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.23 2006-08-23 16:53:32 mee Exp $")
+           "$Id: nospecial.f90,v 1.24 2006-11-30 09:03:36 dobler Exp $")
 !
 !
-!  Perform some sanity checks (may be meaningless if certain things haven't 
+!  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
 !
       if (naux > maux) then
@@ -168,11 +169,11 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !!
-!!  Initialize any module variables which are parameter dependant  
+!!  Initialize any module variables which are parameter dependant
 !!
 !
 ! DO NOTHING
-      if(NO_WARN) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -205,14 +206,15 @@ module Special
 !!          call stop_it("")
 !!      endselect
 !
-      if(NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(xx,yy,zz)
 !
     endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special()
-! 
+!
 !  All pencils that this special module depends on are specified here.
-! 
+!
 !  18-07-06/tony: coded
 !
     endsubroutine pencil_criteria_special
@@ -225,7 +227,7 @@ module Special
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*,lpencil_in(1)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_special
 !***********************************************************************
@@ -238,13 +240,14 @@ module Special
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mfarray) :: f       
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
       intent(inout) :: p
-!     
-      if(NO_WARN) print*,f,p   !(keep compiler quiet)
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -268,7 +271,7 @@ module Special
       use Global
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df     
+      real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
 !
@@ -291,39 +294,41 @@ module Special
 !!      endif
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,p
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
 
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      call keep_compiler_quiet(unit)
+
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
-      if (NO_WARN) print*,unit
+
+      call keep_compiler_quiet(unit)
+
     endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -372,13 +377,14 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      if (NO_WARN) print*, f(1,1,1,1), slices%ready
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_special
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   calculate a additional 'special' term on the right hand side of the
 !   entropy equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -387,7 +393,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
-      
+
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -395,20 +401,19 @@ module Special
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
-!!  
+!!
 !!
 !!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
 !!
 !!
-
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,p
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_density
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   calculate a additional 'special' term on the right hand side of the
 !   entropy equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -417,7 +422,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
-      
+
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -425,22 +430,21 @@ module Special
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
-!!  
+!!
 !!
 !!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
 !!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
 !!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
 !!
 !!
-
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,p
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   calculate a additional 'special' term on the right hand side of the
 !   entropy equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -449,7 +453,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
-      
+
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -457,22 +461,20 @@ module Special
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
-!!  
+!!
 !!
 !!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
 !!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
 !!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
 !!
-!!
-
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,p
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_magnetic
 !!***********************************************************************
     subroutine special_calc_entropy(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   calculate a additional 'special' term on the right hand side of the
 !   entropy equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -481,7 +483,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
-      
+
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -489,20 +491,19 @@ module Special
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
-!!  
+!!
 !!
 !!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
 !!
 !!
-
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,p
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   calculate a additional 'special' term on the right hand side of the
 !   entropy equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -511,17 +512,18 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
-!      
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (boundary_condition) :: bc
 !
-      if (NO_WARN) print*,f,bc%bcname
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(bc)
 !
     endsubroutine special_boundconds
 !***********************************************************************
     subroutine special_before_boundary(f)
 !
-!   Possibility to modify the f array before the boundaries are 
+!   Possibility to modify the f array before the boundaries are
 !   communicated.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -530,10 +532,10 @@ module Special
 !   06-jul-06/tony: coded
 !
       use Cdata
-!      
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
-      if (NO_WARN) print*,f
+      call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
 !***********************************************************************

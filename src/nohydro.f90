@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.65 2006-11-23 20:42:38 theine Exp $
+! $Id: nohydro.f90,v 1.66 2006-11-30 09:03:35 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -18,6 +18,7 @@ module Hydro
   use Cdata, only: huge1
   use Density
   use Messages
+  use Sub, only: keep_compiler_quiet
 
   implicit none
 
@@ -27,8 +28,8 @@ module Hydro
   real :: kep_cutoff_pos_int=-huge1,kep_cutoff_width_int=0.0
   real :: u_out_kep=0.0
 
-  real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber? 
-  real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber? 
+  real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber?
+  real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
   integer :: KS_modes = 3
   !namelist /hydro_init_pars/ dummyuu
   !namelist /hydro_run_pars/  dummyuu
@@ -70,7 +71,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.65 2006-11-23 20:42:38 theine Exp $")
+           "$Id: nohydro.f90,v 1.66 2006-11-30 09:03:35 dobler Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -79,13 +80,13 @@ module Hydro
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  24-nov-02/tony: coded 
+!  24-nov-02/tony: coded
 !
       use Cdata, only: kinflow
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
-!      
+!
       if (kinflow=='KS') then
 !        call random_isotropic_KS_setup(-5./3.,1.,(nxgrid)/2.)
 !
@@ -94,7 +95,7 @@ module Hydro
 !
         call random_isotropic_KS_setup_test
       endif
-! 
+!
       if (ip == 0) print*,f,lstarting  !(keep compiler quiet)
 !
     endsubroutine initialize_hydro
@@ -102,32 +103,33 @@ module Hydro
     subroutine read_hydro_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+
     endsubroutine read_hydro_init_pars
 !***********************************************************************
     subroutine write_hydro_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      call keep_compiler_quiet(unit)
+
     endsubroutine write_hydro_init_pars
 !***********************************************************************
     subroutine read_hydro_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+
     endsubroutine read_hydro_run_pars
 !***********************************************************************
     subroutine write_hydro_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
-      if (NO_WARN) print*,unit
+
+      call keep_compiler_quiet(unit)
+
     endsubroutine write_hydro_run_pars
 !***********************************************************************
     subroutine init_uu(f,xx,yy,zz)
@@ -143,7 +145,9 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if(NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(xx,yy,zz)
+
     endsubroutine init_uu
 !***********************************************************************
     subroutine pencil_criteria_hydro()
@@ -196,7 +200,7 @@ module Hydro
       use Sub, only: dot2_mn, sum_mn_name, max_mn_name, integrate_mn_name
       use Magnetic, only: ABC_A,ABC_B,ABC_C,kx_aa,ky_aa,kz_aa
 !
-      real, dimension (mx,my,mz,mfarray) :: f       
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       real, dimension(nx) :: kdotxwt,cos_kdotxwt,sin_kdotxwt
@@ -222,9 +226,9 @@ module Hydro
           p%uu(:,1)=ABC_A*sin(kkz_aa*z(n))    +ABC_C*cos(kky_aa*y(m))
           p%uu(:,2)=ABC_B*sin(kkx_aa*x(l1:l2))+ABC_A*cos(kkz_aa*z(n))
           p%uu(:,3)=ABC_C*sin(kky_aa*y(m))    +ABC_B*cos(kkx_aa*x(l1:l2))
-        endif 
+        endif
 ! divu
-        if (lpencil(i_divu)) p%divu=0. 
+        if (lpencil(i_divu)) p%divu=0.
 !
 !  Gen-Roberts flow (negative helicity)
 !
@@ -235,7 +239,7 @@ module Hydro
           p%uu(:,1)=+sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
           p%uu(:,2)=-cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
           p%uu(:,3)=+sin(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*sqrt(2.)
-        endif 
+        endif
 ! divu
         if (lpencil(i_divu)) p%divu= (kkx_aa-kky_aa)*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
 !
@@ -267,10 +271,10 @@ module Hydro
         do modeN=1,KS_modes  ! sum over KS_modes modes
            kdotxwt=KS_k(1,modeN)*x(l1:l2)+(KS_k(2,modeN)*y(m)+KS_k(3,modeN)*z(n))+KS_omega(modeN)*t
            cos_kdotxwt=cos(kdotxwt) ;  sin_kdotxwt=sin(kdotxwt)
-           if (lpencil(i_uu)) then 
-             p%uu(:,1) = p%uu(:,1) + cos_kdotxwt*KS_A(1,modeN) + sin_kdotxwt*KS_B(1,modeN)    
-             p%uu(:,2) = p%uu(:,2) + cos_kdotxwt*KS_A(2,modeN) + sin_kdotxwt*KS_B(2,modeN)    
-             p%uu(:,3) = p%uu(:,3) + cos_kdotxwt*KS_A(3,modeN) + sin_kdotxwt*KS_B(3,modeN)    
+           if (lpencil(i_uu)) then
+             p%uu(:,1) = p%uu(:,1) + cos_kdotxwt*KS_A(1,modeN) + sin_kdotxwt*KS_B(1,modeN)
+             p%uu(:,2) = p%uu(:,2) + cos_kdotxwt*KS_A(2,modeN) + sin_kdotxwt*KS_B(2,modeN)
+             p%uu(:,3) = p%uu(:,3) + cos_kdotxwt*KS_A(3,modeN) + sin_kdotxwt*KS_B(3,modeN)
            endif
         enddo
         if (lpencil(i_divu))  p%divu = 0.
@@ -279,9 +283,9 @@ module Hydro
         if (lpencil(i_uu)) then
           if (headtt) print*,'uu=0'
           p%uu=0.
-        endif 
+        endif
 ! divu
-        if (lpencil(i_divu)) p%divu=0. 
+        if (lpencil(i_divu)) p%divu=0.
       endif
 ! u2
       if (lpencil(i_u2)) call dot2_mn(p%uu,p%u2)
@@ -303,11 +307,11 @@ module Hydro
         if (idiag_um2/=0)   call max_mn_name(p%u2,idiag_um2)
 !
         if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
-        if (idiag_ekintot/=0) & 
+        if (idiag_ekintot/=0) &
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
       endif
-!     
-      if(NO_WARN) print*,f   !(keep compiler quiet)
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_hydro
 !***********************************************************************
@@ -335,7 +339,7 @@ module Hydro
       endif
       if (headtt.or.ldebug) print*, 'duu_dt: max(advec_uu) =', maxval(advec_uu)
 !
-      if (NO_WARN) print*, f, df     !(keep compiler quiet)
+      call keep_compiler_quiet(f,df)
 !
     endsubroutine duu_dt
 !***********************************************************************
@@ -346,27 +350,27 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
 !
-      if (NO_WARN) print*, f     !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_lhydro_pars
 !***********************************************************************
     subroutine random_isotropic_KS_setup_tony(initpower,kmin,kmax)
 !
 !   produces random, isotropic field from energy spectrum following the
-!   KS method (Malik and Vassilicos, 1999.)  
+!   KS method (Malik and Vassilicos, 1999.)
 !
-!   more to do; unsatisfactory so far - at least for a steep power-law 
-!   energy spectrum 
-!   
+!   more to do; unsatisfactory so far - at least for a steep power-law
+!   energy spectrum
+!
 !   27-may-05/tony: modified from snod's KS hydro initial
-!   03-feb-06/weezy: Tony's code doesn't appear to have the 
-!                    correct periodicity. 
+!   03-feb-06/weezy: Tony's code doesn't appear to have the
+!                    correct periodicity.
 !                    renamed from random_isotropic_KS_setup
-!  
+!
     use Cdata, only: pi,Lxyz
-    use Sub    
-    use General    
-!  
+    use Sub
+    use General
+!
     integer :: modeN
 !
     real, dimension (3) :: k_unit
@@ -411,9 +415,9 @@ module Hydro
        kmax=128.*pi    !nx*pi
        a=(kmax/kmin)**(1./(KS_modes-1.))
 
-!       
-    do modeN=1,KS_modes  
-!   
+!
+    do modeN=1,KS_modes
+!
 !  pick wavenumber
 !
 !       k=modeN*kmin
@@ -432,37 +436,37 @@ module Hydro
               dk=(a**(KS_modes -2.))*kmin*(a -1.)/2.
 !
        call random_number_wrapper(r)
-       theta=r(1)*pi 
+       theta=r(1)*pi
        phi=r(2)*2.0*pi
        alpha=r(3)*pi
        beta=r(4)*2.0*pi
        newthet=r(5)*pi
        newphi=r(6)*2.0*pi
-! 
+!
        k_unit(1)=sin(theta)*cos(phi)
        k_unit(2)=sin(theta)*sin(phi)
        k_unit(3)=cos(theta)
-! 
+!
        j(1)=sin(alpha)*cos(beta)
        j(2)=sin(alpha)*sin(beta)
        j(3)=cos(alpha)
-! 
+!
        l(1)=sin(newthet)*cos(newphi)
        l(2)=sin(newthet)*sin(newphi)
        l(3)=cos(newthet)
-!  
+!
        KS_k(:,modeN)=k*k_unit(:)
-! 
+!
        call cross(KS_k(:,modeN),j,e1)
        call cross(KS_k(:,modeN),l,e2)
-! 
-!  Make e1 & e2 unit vectors so that we can later make them 
+!
+!  Make e1 & e2 unit vectors so that we can later make them
 !  the correct lengths
-! 
+!
        mkunit=sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
        e1=e1/mkunit
 !
-       mkunit=sqrt(e2(1)**2+e2(2)**2+e2(3)**2)                
+       mkunit=sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
        e2=e2/mkunit
 !
 !        energy=(((k/1.)**2. +1.)**(-11./6.))*(k**2.) &
@@ -479,33 +483,33 @@ module Hydro
 !
     enddo
 !
-!   form RA = RA x k_unit and RB = RB x k_unit 
+!   form RA = RA x k_unit and RB = RB x k_unit
 !
     do modeN=1,KS_modes
       call cross(KS_A(:,modeN),k_unit(:),KS_A(:,modeN))
       call cross(KS_B(:,modeN),k_unit(:),KS_B(:,modeN))
     enddo
 !
-    if (NO_WARN) print*, initpower
+    call keep_compiler_quiet(initpower)
 !
     endsubroutine random_isotropic_KS_setup_tony
 !***********************************************************************
     subroutine random_isotropic_KS_setup(initpower,kmin,kmax)
 !
 !   produces random, isotropic field from energy spectrum following the
-!   KS method (Malik and Vassilicos, 1999.)  
+!   KS method (Malik and Vassilicos, 1999.)
 !
-!   more to do; unsatisfactory so far - at least for a steep power-law 
-!   energy spectrum 
-!   
+!   more to do; unsatisfactory so far - at least for a steep power-law
+!   energy spectrum
+!
 !   27-may-05/tony: modified from snod's KS hydro initial
-!   03-feb-06/weezy: Attempted rewrite to guarantee periodicity of 
-!                    KS modes. 
-!  
+!   03-feb-06/weezy: Attempted rewrite to guarantee periodicity of
+!                    KS modes.
+!
     use Cdata, only: pi,Lxyz
-    use Sub    
-    use General    
-!  
+    use Sub
+    use General
+!
     integer :: modeN
 !
     real, dimension (3) :: k_unit
@@ -527,9 +531,9 @@ module Hydro
     kmax=128.*pi    !nx*pi
     a=(kmax/kmin)**(1./(KS_modes-1.))
 
-!       
-    do modeN=1,KS_modes  
-!   
+!
+    do modeN=1,KS_modes
+!
 !  pick wavenumber
 !
 !      k=modeN*kmin
@@ -545,18 +549,18 @@ module Hydro
 !weezy       if(modeN==1)dk=kmin*(a-1.)/2.
 !weezy       if(modeN.gt.1.and.modeN.lt.KS_modes)dk=(a**(modeN-2.))*kmin*((a**2.) -1.)/2.
 !weezy       if(modeN==KS_modes)dk=(a**(KS_modes -2.))*kmin*(a -1.)/2.
- 
+
 !
 !  pick 4 random angles for each mode
-!         
-      call random_number_wrapper(r); 
-      theta=pi*(r(1) - 0.)  
-      phi=pi*(2*r(2) - 0.)  
-      alpha=pi*(2*r(3) - 0.)  
+!
+      call random_number_wrapper(r);
+      theta=pi*(r(1) - 0.)
+      phi=pi*(2*r(2) - 0.)
+      alpha=pi*(2*r(3) - 0.)
       beta=pi*(2*r(4) - 0.)
 !
 !  random phase?
-!      call random_number_wrapper(r); gamma(modeN)=pi*(2*r - 0.)  
+!      call random_number_wrapper(r); gamma(modeN)=pi*(2*r - 0.)
 !
 !  make a random unit vector by rotating fixed vector to random position
 !  (alternatively make a random transformation matrix for each k)
@@ -564,7 +568,7 @@ module Hydro
       k_unit(1)=sin(theta)*cos(phi)
       k_unit(2)=sin(theta)*sin(phi)
       k_unit(3)=cos(theta)
- 
+
       energy=(((k/kmin)**2. +1.)**(-11./6.))*(k**2.) &
                        *exp(-0.5*(k/kmax)**2.)
 !      energy=(((k/1.)**2. +1.)**(-11./6.))*(k**2.) &
@@ -580,7 +584,7 @@ module Hydro
 !  (bit of code from forcing to construct x', y')
 !
       if((k_unit(2).eq.0).and.(k_unit(3).eq.0)) then
-        ex=0.; ey=1.; ez=0.           
+        ex=0.; ey=1.; ez=0.
       else
         ex=1.; ey=0.; ez=0.
       endif
@@ -588,10 +592,10 @@ module Hydro
 !
       call cross(k_unit(:),ee,e1)
 !  e1: unit vector perp. to KS_k
-      call dot2(e1,norm); e1=e1/sqrt(norm) 
+      call dot2(e1,norm); e1=e1/sqrt(norm)
       call cross(k_unit(:),e1,e2)
 !  e2: unit vector perp. to KS_k, e1
-      call dot2(e2,norm); e2=e2/sqrt(norm) 
+      call dot2(e2,norm); e2=e2/sqrt(norm)
 !
 !  make two random unit vectors KS_B and KS_A in the constructed plane
 !
@@ -610,40 +614,40 @@ module Hydro
       call error('random_isotropic_KS_setup', 'Using uninitialized dk')
       dk=0.                     ! to make compiler happy
 
-      ps=sqrt(2.*energy*dk)   !/3.0) 
+      ps=sqrt(2.*energy*dk)   !/3.0)
 !
 !  give KS_A and KS_B length ps
-!   
+!
       KS_A(:,modeN)=ps*KS_A(:,modeN)
       KS_B(:,modeN)=ps*KS_B(:,modeN)
 !
     enddo
 !
-!   form RA = RA x k_unit and RB = RB x k_unit 
+!   form RA = RA x k_unit and RB = RB x k_unit
 !
-    
+
     do modeN=1,KS_modes
       call cross(KS_A(:,modeN),k_unit(:),KS_A(:,modeN))
       call cross(KS_B(:,modeN),k_unit(:),KS_B(:,modeN))
     enddo
 !
-    if (NO_WARN) print*, initpower
+    call keep_compiler_quiet(initpower)
 !
     endsubroutine random_isotropic_KS_setup
 !***********************************************************************
     subroutine random_isotropic_KS_setup_test
 !
 !   produces random, isotropic field from energy spectrum following the
-!   KS method (Malik and Vassilicos, 1999.)  
+!   KS method (Malik and Vassilicos, 1999.)
 !   This test case only uses 3 very specific modes (useful for comparison
 !   with Louise's kinematic dynamo code.
-!   
+!
 !   03-feb-06/weezy: modified from random_isotropic_KS_setup
-!  
+!
     use Cdata, only: pi,Lxyz
-    use Sub    
-    use General    
-!  
+    use Sub
+    use General
+!
     integer :: modeN
 !
     real, dimension (3,KS_modes) :: k_unit
@@ -662,72 +666,72 @@ module Hydro
     KS_k(1,1)=2.00*pi
     KS_k(2,1)=-2.00*pi
     KS_k(3,1)=2.00*pi
-!    
+!
     KS_k(1,2)=-4.00*pi
     KS_k(2,2)=0.00*pi
     KS_k(3,2)=2.00*pi
-!    
+!
     KS_k(1,3)=4.00*pi
     KS_k(2,3)=2.00*pi
     KS_k(3,3)=-6.00*pi
-!    
+!
     k(1)=kmin
     k(2)=14.04962946
     k(3)=kmax
-!    
+!
     do modeN=1,KS_modes
       k_unit(:,modeN)=KS_k(:,modeN)/k(modeN)
     end do
-!    
+!
     kmax=k(KS_modes)
     kmin=k(1)
-!    
+!
     do modeN=1,KS_modes
       if(modeN==1) dk(modeN)=(k(modeN+1)-k(modeN))/2.
       if(modeN.gt.1.and.modeN.lt.KS_modes) &
                 dk(modeN)=(k(modeN+1)-k(modeN-1))/2.
       if(modeN==KS_modes) dk(modeN)=(k(modeN)-k(modeN-1))/2.
     end do
-!    
+!
     do modeN=1,KS_modes
        energy(modeN)=((k(modeN)**2 +1.)**(-11./6.))*(k(modeN)**2) &
                          *exp(-0.5*(k(modeN)/kmax)**2)
     end do
-!    
+!
     ps=sqrt(2.*energy*dk)
-!    
+!
     KS_A(1,1)=1.00/sqrt(2.00)
     KS_A(2,1)=-1.00/sqrt(2.00)
     KS_A(3,1)=0.00
-!    
+!
     KS_A(1,2)=1.00/sqrt(3.00)
     KS_A(2,2)=1.00/sqrt(3.00)
     KS_A(3,2)=-1.00/sqrt(3.00)
-!    
+!
     KS_A(1,3)=-1.00/2.00
     KS_A(2,3)=-1.00/2.00
     KS_A(3,3)=1.00/sqrt(2.00)
-!    
+!
     KS_B(1,3)=1.00/sqrt(2.00)
     KS_B(2,3)=-1.00/sqrt(2.00)
     KS_B(3,3)=0.00
-!    
+!
     KS_B(1,1)=1.00/sqrt(3.00)
     KS_B(2,1)=1.00/sqrt(3.00)
     KS_B(3,1)=-1.00/sqrt(3.00)
-!    
+!
     KS_B(1,2)=-1.00/2.00
     KS_B(2,2)=-1.00/2.00
     KS_B(3,2)=1.00/sqrt(2.00)
-!    
+!
     do modeN=1,KS_modes
        KS_A(:,modeN)=ps(modeN)*KS_A(:,modeN)
        KS_B(:,modeN)=ps(modeN)*KS_B(:,modeN)
     end do
 !
-!   form RA = RA x k_unit and RB = RB x k_unit 
+!   form RA = RA x k_unit and RB = RB x k_unit
 !
-    
+
      do modeN=1,KS_modes
        call cross(KS_A(:,modeN),k_unit(:,modeN),KS_A(:,modeN))
        call cross(KS_B(:,modeN),k_unit(:,modeN),KS_B(:,modeN))
@@ -872,7 +876,8 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      if (NO_WARN) print*, f(1,1,1,1), slices%ready
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices)
 !
     endsubroutine get_slices_hydro
 !***********************************************************************
@@ -892,7 +897,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
 
-      if (NO_WARN) print *,f(1,1,1,1)
+      call keep_compiler_quiet(f)
 
     endsubroutine remove_mean_momenta
 !***********************************************************************

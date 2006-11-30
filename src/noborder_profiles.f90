@@ -1,4 +1,4 @@
-! $Id: noborder_profiles.f90,v 1.5 2006-11-16 07:14:04 mee Exp $ 
+! $Id: noborder_profiles.f90,v 1.6 2006-11-30 09:03:35 dobler Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -8,7 +8,7 @@
 !
 !***************************************************************
 
-module BorderProfiles 
+module BorderProfiles
 
   use Cparam
   use Cdata
@@ -19,7 +19,7 @@ module BorderProfiles
 
   include 'border_profiles.h'
 !
- 
+
   contains
 
 !***********************************************************************
@@ -41,7 +41,7 @@ module BorderProfiles
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: f_target
       integer :: j
-! 
+!
 !  Dummy routine
 !
       if (NO_WARN) print*,j,f,p,df,f_target
@@ -52,7 +52,7 @@ module BorderProfiles
 !
       real, dimension (mx,my,mz,mvar) :: df
       integer :: j
-! 
+!
 !  Dummy routine
 !
       if (NO_WARN) print*,j,df

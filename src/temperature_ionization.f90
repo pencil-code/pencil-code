@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.27 2006-11-22 21:55:29 theine Exp $
+! $Id: temperature_ionization.f90,v 1.28 2006-11-30 09:03:36 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -89,7 +89,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.27 2006-11-22 21:55:29 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.28 2006-11-30 09:03:36 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -146,7 +146,7 @@ module Entropy
       lheatc_chiconst = (chi/=0.0)
 
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
-!        
+!
       endsubroutine initialize_entropy
 !***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
@@ -155,8 +155,8 @@ module Entropy
 
       if (present(iostat)) then
         read(unit,NML=entropy_init_pars,ERR=99, IOSTAT=iostat)
-      else 
-        read(unit,NML=entropy_init_pars,ERR=99) 
+      else
+        read(unit,NML=entropy_init_pars,ERR=99)
       endif
 
 99    return
@@ -174,8 +174,8 @@ module Entropy
 
       if (present(iostat)) then
         read(unit,NML=entropy_run_pars,ERR=99, IOSTAT=iostat)
-      else 
-        read(unit,NML=entropy_run_pars,ERR=99) 
+      else
+        read(unit,NML=entropy_run_pars,ERR=99)
       endif
 
 99    return
@@ -191,7 +191,7 @@ module Entropy
 !
 !  initialise entropy; called from start.f90
 !  07-nov-2001/wolf: coded
-!  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name]) 
+!  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
 !
       use General, only: chn
       use Sub, only: blob
@@ -248,9 +248,9 @@ module Entropy
     endsubroutine init_ss
 !***********************************************************************
     subroutine pencil_criteria_entropy()
-! 
+!
 !  All pencils that the Entropy module depends on are specified here.
-! 
+!
 !  20-11-04/anders: coded
 !
 
@@ -325,7 +325,7 @@ module Entropy
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
     subroutine pencil_interdep_entropy(lpencil_in)
-!       
+!
 !  Interdependency among pencils from the Entropy module is specified here.
 !
 !  20-11-04/anders: coded
@@ -344,7 +344,7 @@ module Entropy
     endsubroutine pencil_interdep_entropy
 !***********************************************************************
     subroutine calc_pencils_entropy(f,p)
-!       
+!
 !  Calculate Entropy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
@@ -639,5 +639,5 @@ module Entropy
       endif
 !
     endsubroutine rprint_entropy
-!***********************************************************************    
+!***********************************************************************
 endmodule Entropy

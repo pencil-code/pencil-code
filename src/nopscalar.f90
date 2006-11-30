@@ -1,4 +1,4 @@
-! $Id: nopscalar.f90,v 1.23 2006-08-23 16:53:32 mee Exp $
+! $Id: nopscalar.f90,v 1.24 2006-11-30 09:03:36 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -23,7 +23,7 @@ module Pscalar
   include 'pscalar.h'
 
 !ajwm needed by prints.f90 for some reason.
-  real :: rhoccm=0., cc2m=0., gcc2m=0. 
+  real :: rhoccm=0., cc2m=0., gcc2m=0.
   integer :: idiag_gcc2m=0, idiag_cc2m=0, idiag_rhoccm=0
   !namelist /pscalar_init_pars/ dummy
   !namelist /pscalar_run_pars/  dummy
@@ -52,7 +52,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.23 2006-08-23 16:53:32 mee Exp $")
+           "$Id: nopscalar.f90,v 1.24 2006-11-30 09:03:36 dobler Exp $")
 !
     endsubroutine register_pscalar
 !***********************************************************************
@@ -87,13 +87,13 @@ module Pscalar
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
       if (NO_WARN) print*,f,xx,yy,zz !(prevent compiler warnings)
-!        
+!
     endsubroutine init_lncc
 !***********************************************************************
     subroutine pencil_criteria_pscalar()
-! 
+!
 !  All pencils that the Pscalar module depends on are specified here.
-! 
+!
 !  20-11-04/anders: coded
 !
     endsubroutine pencil_criteria_pscalar
@@ -122,7 +122,7 @@ module Pscalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(in) :: f
       intent(inout) :: p
 ! cc
@@ -149,37 +149,37 @@ module Pscalar
       intent(in)  :: f,df,p
 !
       if (NO_WARN) print*,f,df,p
-!        
+!
     endsubroutine dlncc_dt
 !***********************************************************************
     subroutine read_pscalar_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_pscalar_init_pars
 !***********************************************************************
     subroutine write_pscalar_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine write_pscalar_init_pars
 !***********************************************************************
     subroutine read_pscalar_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_pscalar_run_pars
 !***********************************************************************
     subroutine write_pscalar_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
     endsubroutine write_pscalar_run_pars
 !***********************************************************************

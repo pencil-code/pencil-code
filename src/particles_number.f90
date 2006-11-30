@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.18 2006-11-22 12:36:54 ajohan Exp $
+! $Id: particles_number.f90,v 1.19 2006-11-30 09:03:36 dobler Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -54,7 +54,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.18 2006-11-22 12:36:54 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.19 2006-11-30 09:03:36 dobler Exp $")
 !
 !  Index for particle internal number.
 !
@@ -102,7 +102,7 @@ module Particles_number
       integer :: j
 !
       do j=1,ninit
-        
+
         select case(initnptilde(j))
 
         case('nothing')
@@ -122,9 +122,9 @@ module Particles_number
     endsubroutine init_particles_number
 !***********************************************************************
     subroutine pencil_criteria_par_number()
-!   
+!
 !  All pencils that the Particles_number module depends on are specified here.
-! 
+!
 !  21-nov-06/anders: coded
 !
       use Cdata
@@ -175,7 +175,7 @@ module Particles_number
           do l=l1,l2
 !  Get index number of shepherd particle at grid point.
             k=kshepherd(l-nghost)
-!  Continue only if there is actually a shepherd particle.        
+!  Continue only if there is actually a shepherd particle.
             if (k>0) then
               if (ip<=6.and.lroot) then
                 print*, 'dnptilde_dt: l, m, n=', l, m, n
@@ -231,7 +231,7 @@ module Particles_number
                         p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops* &
                         (fp(j,iap)**3+fp(k,iap)**3)*cdot
                   endif
-!  Collision diagnostics.              
+!  Collision diagnostics.
                   if (ldiagnos) then
                     if (idiag_dvp22mwcdot/=0) &
                         call sum_weighted_name((/deltavp/),(/cdot/), &
@@ -332,7 +332,7 @@ module Particles_number
     endsubroutine get_nptilde
 !***********************************************************************
     subroutine read_particles_num_init_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -347,7 +347,7 @@ module Particles_number
     endsubroutine read_particles_num_init_pars
 !***********************************************************************
     subroutine write_particles_num_init_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_number_init_pars)
@@ -355,7 +355,7 @@ module Particles_number
     endsubroutine write_particles_num_init_pars
 !***********************************************************************
     subroutine read_particles_num_run_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -370,7 +370,7 @@ module Particles_number
     endsubroutine read_particles_num_run_pars
 !***********************************************************************
     subroutine write_particles_num_run_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_number_run_pars)
@@ -378,7 +378,7 @@ module Particles_number
     endsubroutine write_particles_num_run_pars
 !***********************************************************************
     subroutine rprint_particles_number(lreset,lwrite)
-!   
+!
 !  Read and register print parameters relevant for internal particle number.
 !
 !  24-aug-05/anders: adapted
@@ -393,7 +393,7 @@ module Particles_number
       logical :: lwr
 !
 !  Write information to index.pro
-! 
+!
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
       if (lwr) write(3,*) 'inptilde=', inptilde

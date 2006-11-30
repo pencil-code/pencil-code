@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.76 2006-10-11 21:53:10 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.77 2006-11-30 09:03:35 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -17,6 +17,7 @@ module Magnetic
 
   use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 
   implicit none
 
@@ -59,7 +60,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.76 2006-10-11 21:53:10 brandenb Exp $")
+           "$Id: nomagnetic.f90,v 1.77 2006-11-30 09:03:35 dobler Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -76,7 +77,8 @@ module Magnetic
 !
       mu01=1./mu0
 !
-      if (NO_WARN) print*,f,lstarting
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -91,7 +93,8 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
-      if (NO_WARN) print*,f,xx,yy,zz !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(xx,yy,zz)
 !
     endsubroutine init_aa
 !***********************************************************************
@@ -105,7 +108,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (NO_WARN) print*,f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine pert_aa
 !***********************************************************************
@@ -119,14 +122,14 @@ module Magnetic
 !***********************************************************************
     subroutine pencil_interdep_magnetic(lpencil_in)
 !
-!  Interdependency among pencils provided by the Magnetic module 
+!  Interdependency among pencils provided by the Magnetic module
 !  is specified here.
 !
 !  20-11-04/anders: coded
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_magnetic
 !***********************************************************************
@@ -136,19 +139,20 @@ module Magnetic
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  20-11-04/anders: coded
-!      
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in)  :: f
       intent(inout) :: p
-!      
+!
       if (lpencil(i_bb)) p%bb=0.
       if (lpencil(i_b2)) p%b2=0.
       if (lpencil(i_jxbr)) p%jxbr=0.
       if (lpencil(i_bij)) p%bij=0.
 !
-      if (NO_WARN) print*, f, p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_magnetic
 !***********************************************************************
@@ -165,7 +169,8 @@ module Magnetic
 !
       intent(in) :: f, df, p
 !
-      if (NO_WARN) print*,f,df,p ! (keep compiler quiet)
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine daa_dt
 !***********************************************************************
@@ -178,17 +183,18 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!      
+!
       intent(in)  :: f, df, p
 !
-      if (NO_WARN) print*,f,df,p ! (keep compiler quiet)
-!   
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine df_diagnos_magnetic
 !***********************************************************************
     subroutine rescaling(f)
 !
 !  Dummy routine
-!  
+!
 !  22-feb-05/axel: coded
 !
       use Cdata
@@ -197,39 +203,40 @@ module Magnetic
 !
       intent(inout) :: f
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine rescaling
 !***********************************************************************
     subroutine read_magnetic_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+
     endsubroutine read_magnetic_init_pars
 !***********************************************************************
     subroutine write_magnetic_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      call keep_compiler_quiet(unit)
+
     endsubroutine write_magnetic_init_pars
 !***********************************************************************
     subroutine read_magnetic_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+
     endsubroutine read_magnetic_run_pars
 !***********************************************************************
     subroutine write_magnetic_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
-      if (NO_WARN) print*,unit
+
+      call keep_compiler_quiet(unit)
+
     endsubroutine write_magnetic_run_pars
 !***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)
@@ -290,7 +297,8 @@ module Magnetic
         write(3,*) 'iaz=',iaz
       endif
 !
-      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
+      call keep_compiler_quiet(lreset)
+
     endsubroutine rprint_magnetic
 !***********************************************************************
     subroutine get_slices_magnetic(f,slices)
@@ -302,7 +310,8 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      if (NO_WARN) print*, f(1,1,1,1), slices%ready
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices)
 !
     endsubroutine get_slices_magnetic
 !***********************************************************************

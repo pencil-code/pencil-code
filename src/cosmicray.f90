@@ -1,10 +1,10 @@
-! $Id: cosmicray.f90,v 1.38 2006-08-23 16:53:31 mee Exp $
+! $Id: cosmicray.f90,v 1.39 2006-11-30 09:03:34 dobler Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
 !  ZEUS 3D implementation.
 !
-!  this module solves for ln(ecr).  ecr is used for lnecr  
+!  this module solves for ln(ecr).  ecr is used for lnecr
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -38,7 +38,7 @@ module Cosmicray
 
   logical :: lnegl = .false.
   logical :: lvariable_tensor_diff = .false.
-  
+
   namelist /cosmicray_init_pars/ &
        initecr,initecr2,amplecr,amplecr2,kx_ecr,ky_ecr,kz_ecr, &
        radius_ecr,epsilon_ecr,widthecr,ecr_const, &
@@ -66,7 +66,7 @@ module Cosmicray
 !***********************************************************************
     subroutine register_cosmicray()
 !
-!  Initialise variables which should know that we solve for active 
+!  Initialise variables which should know that we solve for active
 !  scalar: iecr - the cosmic ray energy density; increase nvar accordingly
 !
 !  09-oct-03/tony: coded
@@ -96,7 +96,7 @@ module Cosmicray
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.38 2006-08-23 16:53:31 mee Exp $")
+           "$Id: cosmicray.f90,v 1.39 2006-11-30 09:03:34 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -149,7 +149,7 @@ module Cosmicray
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz,prof
 print*,"init_ecr: ecr_const,ln(ecr_const) = ", ecr_const, alog(ecr_const)
-print*,"init_ecr: initecr = ", initecr 
+print*,"init_ecr: initecr = ", initecr
 !
       select case(initecr)
         case('zero'); f(:,:,:,iecr)=0.
@@ -184,18 +184,18 @@ print*,"init_ecr: initecr = ", initecr
         case('const_ecr'); f(:,:,:,iecr)=f(:,:,:,iecr)+ecr_const
       endselect
 !
-! 
-!  form lnecr from initecr  
+!
+!  form lnecr from initecr
 !
 !         f(:,:,:,iecr)=alog(f(:,:,:,iecr))
-      
+
       if (NO_WARN) print*,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_ecr
 !***********************************************************************
     subroutine pencil_criteria_cosmicray()
-! 
+!
 !  All pencils that the Cosmicray module depends on are specified here.
-! 
+!
 !  20-11-04/anders: coded
 !
       use Cdata
@@ -216,7 +216,7 @@ print*,"init_ecr: initecr = ", initecr
     endsubroutine pencil_criteria_cosmicray
 !***********************************************************************
     subroutine pencil_interdep_cosmicray(lpencil_in)
-!       
+!
 !  Interdependency among pencils provided by the Cosmicray module.
 !  is specified here.
 !
@@ -232,7 +232,7 @@ print*,"init_ecr: initecr = ", initecr
     endsubroutine pencil_interdep_cosmicray
 !***********************************************************************
     subroutine calc_pencils_cosmicray(f,p)
-!       
+!
 !  Calculate Cosmicray pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
@@ -242,7 +242,7 @@ print*,"init_ecr: initecr = ", initecr
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(in) :: f
       intent(inout) :: p
 ! ecr
@@ -259,9 +259,9 @@ print*,"init_ecr: initecr = ", initecr
 !  cosmic ray evolution
 !  calculate decr/dt + div(u.ecr - flux) = -pcr*divu = -(gammacr-1)*ecr*divu
 !
-!  solve as decr/dt + u.grad(ecr) = -gammacr*divu + div(flux(ecr))  
+!  solve as decr/dt + u.grad(ecr) = -gammacr*divu + div(flux(ecr))
 !  + (K grad(ecr)).(grad(ecr))
-!  
+!
 !  add du = ... - (1/rho)*grad(pcr) to momentum equation
 !
 !  ecr=ecrn
@@ -430,19 +430,19 @@ print*,"init_ecr: initecr = ", initecr
 !  calculates tensor diffusion with variable tensor (or constant tensor)
 !  calculates parts common to both variable and constant tensor first
 !  note:ecr=lnecr in the below comment
-!  
+!
 !  vKperp*del2ecr + d_i(vKperp)d_i(gecr) + (vKpara-vKperp) d_i ( n_i n_j d_j ecr)
 !      + n_i n_j d_i(ecr)d_j(vKpara-vKperp)
-!   
-!  = vKperp*del2ecr + gKperp.gecr + (vKpara-vKperp) (H.G + ni*nj*Gij) 
+!
+!  = vKperp*del2ecr + gKperp.gecr + (vKpara-vKperp) (H.G + ni*nj*Gij)
 !      + ni*nj*Gi*(vKpara_j - vKperp_j),
 !  where H_i = (nj bij - 2 ni nj nk bk,j)/|b| and vKperp, vKpara are variable
 !  diffusion coefficients
-! 
+!
 !  calculates (K.gecr).gecr
 !  =  vKperp(gecr.gecr) + (vKpara-vKperp)*Gi(ni*nj*Gj)
-!                     
-!  adds both parts into decr/dt  
+!
+!  adds both parts into decr/dt
 !
 !  10-oct-03/axel: adapted from pscalar
 !  30-nov-03/snod: adapted from tensor_diff without variable diffusion
@@ -458,7 +458,7 @@ print*,"init_ecr: initecr = ", initecr
       real, dimension (nx) :: hhh2,quenchfactor
 !
 !  use global Kperp, Kpara ?
-! 
+!
 !      real :: Kperp,Kpara
 !
       integer :: i,j,k
@@ -510,7 +510,7 @@ print*,"init_ecr: initecr = ", initecr
       call g2ij(f,iecr,ecr_ij)
 !
       del2ecr=0.
-      do j=1,3 
+      do j=1,3
         del2ecr=del2ecr+ecr_ij(:,j,j)
         do i=1,3
           tmp(:)=tmp(:)+bunit(:,i)*bunit(:,j)*ecr_ij(:,i,j)
@@ -523,17 +523,17 @@ print*,"init_ecr: initecr = ", initecr
       tmp=tmp+tmpi**2
 !
 !  calculate gecr2 - needed for lnecr form
-!  
+!
       call dot2_mn(gecr,gecr2)
 
-!  if variable tensor, add extra terms and add result into decr/dt 
+!  if variable tensor, add extra terms and add result into decr/dt
 !
       if (lvariable_tensor_diff)then
 !
 !  set vKpara, vKperp
 !
 !  if (luse_diff  _coef)
-!  
+!
         vKpara(:)=Kpara
         vKperp(:)=Kperp
 !
@@ -546,28 +546,28 @@ print*,"init_ecr: initecr = ", initecr
 !
         call dot_mn(gvKperp,gecr,tmpj)
 !
-!  add further terms into tmpj     
+!  add further terms into tmpj
 !
         do i=1,3
           tmpi(:)=bunit(:,i)*(gvKpara(:,i)-gvKperp(:,i))
           do j=1,3
             tmpj(:)=tmpj(:)+bunit(:,j)*gecr(:,j)*tmpi(i)
           enddo
-        enddo           
+        enddo
 !
-!  
 !
-        df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr) & 
-        + vKperp*(del2ecr+gecr2) + (vKpara-vKperp)*tmp + tmpj 
+!
+        df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr) &
+        + vKperp*(del2ecr+gecr2) + (vKpara-vKperp)*tmp + tmpj
       else
 !
-!  for constant tensor (or otherwise), just add result into 
+!  for constant tensor (or otherwise), just add result into
 !  the decr/dt equation without tmpj
 !
         df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr) &
         + Kperp*(del2ecr+gecr2) + (Kpara-Kperp)*tmp
- 
-      endif     
+
+      endif
 !
     endsubroutine tensor_diffusion
 !***********************************************************************

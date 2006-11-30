@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.23 2006-11-20 03:27:23 dobler Exp $
+! $Id: temperature.f90,v 1.24 2006-11-30 09:03:36 dobler Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -93,7 +93,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.23 2006-11-20 03:27:23 dobler Exp $")
+           "$Id: temperature.f90,v 1.24 2006-11-30 09:03:36 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -654,43 +654,43 @@ endif
     subroutine read_entropy_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=entropy_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=entropy_init_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+
+
 99    return
     endsubroutine read_entropy_init_pars
 !***********************************************************************
     subroutine write_entropy_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       write(unit,NML=entropy_init_pars)
-                                                                                                   
+
     endsubroutine write_entropy_init_pars
 !***********************************************************************
     subroutine read_entropy_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=entropy_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=entropy_run_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+
+
 99    return
     endsubroutine read_entropy_run_pars
 !***********************************************************************
     subroutine write_entropy_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       write(unit,NML=entropy_run_pars)
-                                                                                                   
+
     endsubroutine write_entropy_run_pars
 !***********************************************************************
     subroutine rprint_entropy(lreset,lwrite)
@@ -843,7 +843,7 @@ endif
         cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+gamma*f(:,:,n1,iss))
 !
 !  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy. 
+!  we have the nonconstant rho_xy*chi in tmp_xy.
 !
         if(lcalc_heatcond_constchi) then
           tmp_xy=Fbot/(rho_xy*chi*cs2_xy)

@@ -1,4 +1,4 @@
-! $Id: nogravity.f90,v 1.5 2006-11-16 07:03:06 mee Exp $
+! $Id: nogravity.f90,v 1.6 2006-11-30 09:03:35 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -68,7 +68,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nogravity.f90,v 1.5 2006-11-16 07:03:06 mee Exp $")
+           "$Id: nogravity.f90,v 1.6 2006-11-30 09:03:35 dobler Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -94,14 +94,14 @@ module Gravity
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat) .and. (NO_WARN)) print*,iostat 
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
 !
-      if (NO_WARN) print*,unit 
+      if (NO_WARN) print*,unit
 !
     endsubroutine read_gravity_init_pars
 !***********************************************************************
     subroutine write_gravity_init_pars(unit)
-!    
+!
       integer, intent(in) :: unit
 !
       if (NO_WARN) print*,unit
@@ -109,20 +109,20 @@ module Gravity
     endsubroutine write_gravity_init_pars
 !***********************************************************************
     subroutine read_gravity_run_pars(unit,iostat)
-!    
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat) .and. (NO_WARN)) print*,iostat 
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
 !
-      if (NO_WARN) print*,unit 
+      if (NO_WARN) print*,unit
 !
     endsubroutine read_gravity_run_pars
 !***********************************************************************
     subroutine write_gravity_run_pars(unit)
-!    
+!
       integer, intent(in) :: unit
-!      
+!
       if (NO_WARN) print*,unit
 !
     endsubroutine write_gravity_run_pars
@@ -140,13 +140,13 @@ module Gravity
 ! Not doing anything (this might change if we decide to store gg)
 !
       if (NO_WARN) print*,f,xx,yy,zz !(keep compiler quiet)
-!        
+!
     endsubroutine init_gg
 !***********************************************************************
     subroutine pencil_criteria_gravity()
-! 
+!
 !  All pencils that the Gravity module depends on are specified here.
-! 
+!
 !  20-11-04/anders: coded
 !
 !
@@ -173,7 +173,7 @@ module Gravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(in) :: f
       intent(inout) :: p
 !
@@ -194,7 +194,7 @@ module Gravity
       type (pencil_case) :: p
 !
       if (NO_WARN) print*,f,df,p  !(keep compiler quiet)
-!        
+!
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential_global(xx,yy,zz,pot,pot0)
@@ -286,7 +286,7 @@ module Gravity
       endif
 !
       if (NO_WARN) print*,lreset  !(to keep compiler quiet)
-!        
+!
     endsubroutine rprint_gravity
 !***********************************************************************
 

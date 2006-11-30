@@ -1,4 +1,4 @@
-! $Id: noparticles_main.f90,v 1.21 2006-09-08 10:45:05 wlyra Exp $
+! $Id: noparticles_main.f90,v 1.22 2006-11-30 09:03:36 dobler Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -100,7 +100,7 @@ module Particles_main
     endsubroutine particles_write_dsnapshot
 !***********************************************************************
     subroutine particles_write_pdim(filename)
-!   
+!
 !  Write npar and mpvar to file.
 !
 !  22-aug-05/anders: dummy
@@ -134,17 +134,17 @@ module Particles_main
 !  16-feb-06/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!      
+!
       if (NO_WARN) print*, f
 !
     endsubroutine particles_boundconds
 !***********************************************************************
     subroutine particles_pencil_criteria()
-!     
+!
 !  Request pencils for particles.
-!     
+!
 !  20-apr-06/anders: dummy
-!     
+!
     endsubroutine particles_pencil_criteria
 !***********************************************************************
     subroutine particles_pencil_interdep(lpencil_in)
@@ -215,7 +215,7 @@ module Particles_main
     endsubroutine particles_pde_pencil
 !***********************************************************************
     subroutine read_particles_init_pars_wrap(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -224,7 +224,7 @@ module Particles_main
     endsubroutine read_particles_init_pars_wrap
 !***********************************************************************
     subroutine write_particles_init_pars_wrap(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       if (NO_WARN) print*, unit
@@ -232,7 +232,7 @@ module Particles_main
     endsubroutine write_particles_init_pars_wrap
 !***********************************************************************
     subroutine read_particles_run_pars_wrap(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -241,7 +241,7 @@ module Particles_main
     endsubroutine read_particles_run_pars_wrap
 !***********************************************************************
     subroutine write_particles_run_pars_wrap(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       if (NO_WARN) print*, unit

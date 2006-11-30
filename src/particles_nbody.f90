@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.33 2006-11-17 07:11:43 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.34 2006-11-30 09:03:36 dobler Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -20,7 +20,7 @@ module Particles_nbody
   implicit none
 
   include 'particles_nbody.h'
-  
+
   real, dimension(nspar,mpvar) :: fsp
   real, dimension(nspar) :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
@@ -36,7 +36,7 @@ module Particles_nbody
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
        bcspx, bcspy, bcspz, pmass, r_smooth, position, lcylindrical_gravity, &
        lexclude_frozen, disc_mass
-  
+
 
   namelist /particles_nbody_run_pars/ &
        bcspx, bcspy, bcspz, dsnap_par_minor, linterp_reality_check, &
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.33 2006-11-17 07:11:43 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.34 2006-11-30 09:03:36 dobler Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -73,14 +73,14 @@ module Particles_nbody
         if (lroot) write(0,*) 'naux = ', naux, ', maux= ', maux
         call fatal_error('register_shock','naux > maux')
       endif
-!     
+!
     endsubroutine register_particles_nbody
 !***********************************************************************
     subroutine initialize_particles_nbody(lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
-! 
+!
 !  27-aug-06/wlad: adapted
 !
       integer :: k
@@ -91,38 +91,38 @@ module Particles_nbody
     endsubroutine initialize_particles_nbody
 !***********************************************************************
     subroutine pencil_criteria_par_nbody()
-!   
+!
 !  All pencils that the Particles_nbody module depends on are specified here.
-!         
+!
 !  22-sep-06/wlad: adapted
 !
       lpenc_requested(i_rho)=.true.
-      if (idiag_totenergy/=0) then 
+      if (idiag_totenergy/=0) then
         lpenc_diagnos(i_u2)=.true.
         lpenc_diagnos(i_rcyl_mn)=.true.
       endif
 !
-      if (any(idiag_torqext/=0) .or. any(idiag_torqint/=0)) then 
+      if (any(idiag_torqext/=0) .or. any(idiag_torqint/=0)) then
         lpenc_diagnos(i_rcyl_mn)=.true.
       endif
 !
     endsubroutine pencil_criteria_par_nbody
 !***********************************************************************
     subroutine pencil_interdep_par_nbody(lpencil_in)
-!   
+!
 !  Interdependency among pencils provided by the Particles_nbody module
 !  is specified here.
-!         
+!
 !  22-sep-06/wlad: adapted
 !
       logical, dimension(npencils) :: lpencil_in
 !
       if (NO_WARN) print*, lpencil_in
-!   
+!
     endsubroutine pencil_interdep_par_nbody
 !***********************************************************************
     subroutine calc_pencils_par_nbody(f,p)
-!   
+!
 !  Calculate sink particle pencils
 !
 !  22-sep-06/wlad: adapted
@@ -131,7 +131,7 @@ module Particles_nbody
       type (pencil_case) :: p
 !
       if (NO_WARN) print*, f, p
-!   
+!
     endsubroutine calc_pencils_par_nbody
 !***********************************************************************
     subroutine init_particles_nbody(f,fp)
@@ -178,8 +178,8 @@ module Particles_nbody
 ! Ok, I have the masses and the positions of all sinks except the last, which will
 ! have a position determined to fix the center of mass on the center of the grid
 !
-         if (lroot) then 
-            print*,'fixed-cm: redefining the mass of the last sink particle' 
+         if (lroot) then
+            print*,'fixed-cm: redefining the mass of the last sink particle'
             print*,'fixed-cm: it assumes that the sum of the mass of the particles is always 1.'
          endif
 !
@@ -222,7 +222,7 @@ module Particles_nbody
                if (nxgrid==1) fp(k,ixp)=x(nghost+1)
                if (nygrid==1) fp(k,iyp)=y(nghost+1)
                if (nzgrid==1) fp(k,izp)=z(nghost+1)
-!               
+!
                print*,&
                     'initparticles_nbody. Sink particle ',ipar(k),&
                     ' located at ixp=',fp(k,ixp)
@@ -251,7 +251,7 @@ module Particles_nbody
            print*, 'init_particles: Zero particle velocity'
            fp(1:nspar,ivpx:ivpz)=0.
         endif
-        
+
       case ('constant')
          if (lroot) then
             print*, 'init_particles: Constant particle velocity'
@@ -266,14 +266,14 @@ module Particles_nbody
 ! Keplerian velocities for the planets, GM=sum(pmass)=1
 !
          aux=0.
-         do ks=1,nspar-1 
-            kep_vel(ks) = abs(position(ks))**(-0.5) 
-            velocity(ks) = sign(1.,position(ks))* (kep_vel(ks)) 
+         do ks=1,nspar-1
+            kep_vel(ks) = abs(position(ks))**(-0.5)
+            velocity(ks) = sign(1.,position(ks))* (kep_vel(ks))
             aux = aux - pmass(ks)*velocity(ks)
          enddo
 !
 ! The last one (star) fixes the CM also with velocity zero
-!         
+!
          velocity(nspar) = aux / pmass(nspar)
 !
 ! Loop through ipar to allocate the sink particles
@@ -333,7 +333,7 @@ module Particles_nbody
       if (lhydro) then
 !
          if (headtt) then
-            print*,'dvvp_dt_nbody_pencil: Add particles gravity to the gas' 
+            print*,'dvvp_dt_nbody_pencil: Add particles gravity to the gas'
             if (nxgrid/=1) print*,'dvvp_dt_nbody_pencil: Particles located at fsp(x)=',fsp(:,ixp)
             if (nygrid/=1) print*,'dvvp_dt_nbody_pencil: Particles located at fsp(y)=',fsp(:,iyp)
             if (nzgrid/=1) print*,'dvvp_dt_nbody_pencil: Particles located at fsp(z)=',fsp(:,izp)
@@ -375,7 +375,7 @@ module Particles_nbody
             if ((ks==nspar).and.lnogravz_star) &
                  ggp(:,3) = 0.
 !
-! Add this acceleration to the gas 
+! Add this acceleration to the gas
 !
             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggp
 !
@@ -383,7 +383,7 @@ module Particles_nbody
 !
             if (lmigrate) then
 !
-! Get the acceleration particle ks suffers due to gas gravity 
+! Get the acceleration particle ks suffers due to gas gravity
 !
                xxpar = fsp(ks,ixp:izp)
                call gas_gravity(p,rrp,xxpar,accg,r_smooth(ks))
@@ -402,7 +402,7 @@ module Particles_nbody
                if ((idiag_torqext(ks)/=0).or.(idiag_torqint(ks)/=0)) &
                     call calc_torque(p,rpcyl_mn(:,ks),ks)
 !
-! Total energy 
+! Total energy
 !
                if (idiag_totenergy/=0) then
                   !potential energy
@@ -420,8 +420,8 @@ module Particles_nbody
 !***********************************************************************
     subroutine dxxp_dt_nbody(dfp)
 !
-!  If the center of mass of the sink particles was moved from the 
-!  center of the grid, reset it. 
+!  If the center of mass of the sink particles was moved from the
+!  center of the grid, reset it.
 !
 !  22-sep-06/wlad: coded
 !
@@ -434,7 +434,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
-!  Evolution of sink particles velocities due to 
+!  Evolution of sink particles velocities due to
 !  particle-particle interaction only
 !
 !  27-aug-06/wlad: coded
@@ -497,17 +497,17 @@ module Particles_nbody
 !
 !  r_ij = sqrt(axr**2 + ayr**2 + azr**2)
 !  invr3_ij = r_ij**(-3)
-! 
+!
                   invr3_ij = (  (fsp(ks,ixp) - fsp(kj,ixp))**2           &
                        +        (fsp(ks,iyp) - fsp(kj,iyp))**2           &
                        +        (fsp(ks,izp) - fsp(kj,izp))**2  )**(-1.5)
 !
 !  Gravitational acceleration
 !
-                  acc(ks,1) = acc(ks,1) - pmass(kj)*invr3_ij*(fsp(ks,ixp) - fsp(kj,ixp)) 
-                  acc(ks,2) = acc(ks,2) - pmass(kj)*invr3_ij*(fsp(ks,iyp) - fsp(kj,iyp)) 
-                  acc(ks,3) = acc(ks,3) - pmass(kj)*invr3_ij*(fsp(ks,izp) - fsp(kj,izp)) 
-!             
+                  acc(ks,1) = acc(ks,1) - pmass(kj)*invr3_ij*(fsp(ks,ixp) - fsp(kj,ixp))
+                  acc(ks,2) = acc(ks,2) - pmass(kj)*invr3_ij*(fsp(ks,iyp) - fsp(kj,iyp))
+                  acc(ks,3) = acc(ks,3) - pmass(kj)*invr3_ij*(fsp(ks,izp) - fsp(kj,izp))
+!
                endif
             enddo
          endif
@@ -530,9 +530,9 @@ module Particles_nbody
             if (lfollow_particle(ks)) then
                do j=1,3
                   jx=j+ixp-1 ; jp=j+ivpx-1
-                  xxspar(1:npar_loc,ks,j) = fsp(ks,jx) 
+                  xxspar(1:npar_loc,ks,j) = fsp(ks,jx)
                   vvspar(1:npar_loc,ks,j) = fsp(ks,jp)
-!            
+!
                   if (idiag_xxspar(ks,j)/=0) &
                        call sum_par_name(xxspar(1:npar_loc,ks,j),idiag_xxspar(ks,j))
                   if (idiag_vvspar(ks,j)/=0) &
@@ -548,7 +548,7 @@ module Particles_nbody
     endsubroutine dvvp_dt_nbody
 !***********************************************************************
     subroutine read_particles_nbody_init_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -563,7 +563,7 @@ module Particles_nbody
     endsubroutine read_particles_nbody_init_pars
 !***********************************************************************
     subroutine write_particles_nbody_init_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_nbody_init_pars)
@@ -571,7 +571,7 @@ module Particles_nbody
     endsubroutine write_particles_nbody_init_pars
 !***********************************************************************
     subroutine read_particles_nbody_run_pars(unit,iostat)
-!    
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -586,7 +586,7 @@ module Particles_nbody
     endsubroutine read_particles_nbody_run_pars
 !***********************************************************************
     subroutine write_particles_nbody_run_pars(unit)
-!    
+!
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_nbody_run_pars)
@@ -598,7 +598,7 @@ module Particles_nbody
 !  If the center of mass was accelerated, reset its position
 !  to the center of the grid. Must be called by a dxxp_dt_nbody?
 !
-!  Assumes that the total mass of the particles is one.  
+!  Assumes that the total mass of the particles is one.
 !
 !  27-aug-06/wlad: coded
 !
@@ -620,7 +620,7 @@ module Particles_nbody
     subroutine gas_gravity(p,rrp,xxpar,accg,rp0)
 !
 ! Calculates acceleration on the point (x,y,z)=xxpar
-! due to the gravity of the gas. 
+! due to the gravity of the gas.
 !
 ! 15-sep-06/wlad : coded
 !
@@ -721,9 +721,9 @@ module Particles_nbody
 ! A sink was found here. Turn the logical true and copy fp to fsp
 !
                   lsink(ks) = .true.
-                  fsp(ks,:) = fp(k,:) 
+                  fsp(ks,:) = fp(k,:)
 !
-! Send it to root. As there will be just nspar calls to 
+! Send it to root. As there will be just nspar calls to
 ! mpisend, the tag can be ipar itself
 !
                   call mpisend_real(fsp(ks,:),mpvar,root,ks)
@@ -732,11 +732,11 @@ module Particles_nbody
                        ' with tag=',ks
                endif
             enddo
-!          
+!
 ! Send the logicals from each processor. As all processors send nspar calls,
 ! the tags are now in base nspar. It assures that two logicals will not have
 ! the same tag.
-!  
+!
             if (.not.lroot) then
                tagsend = nspar*iproc + ks
                call mpisend_logical(lsink(ks),1,root,tagsend)
@@ -876,7 +876,7 @@ module Particles_nbody
         call chn(ks,sks)
         do j=1,3
            if (j==1) str='x';if (j==2) str='y';if (j==3)  str='z'
-           do iname=1,nname 
+           do iname=1,nname
               call parse_name(iname,cname(iname),cform(iname),&
                    trim(str)//'par'//trim(sks),idiag_xxspar(ks,j))
               call parse_name(iname,cname(iname),cform(iname),&
@@ -888,7 +888,7 @@ module Particles_nbody
            if (lwr) then
               write(3,*) ' i_'//trim(str)//'par'//trim(sks)//'=',idiag_xxspar(ks,j)
               write(3,*) 'i_v'//trim(str)//'par'//trim(sks)//'=',idiag_vvspar(ks,j)
-              
+
            endif
 !
         enddo
@@ -905,7 +905,7 @@ module Particles_nbody
            write(3,*) 'i_torqext_'//trim(sks)//'=',idiag_torqext(ks)
         endif
      enddo
-!     
+!
      do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),&
              'totenergy',idiag_totenergy)
@@ -919,5 +919,5 @@ module Particles_nbody
      endif
 !
     endsubroutine rprint_particles_nbody
-!***********************************************************************       
+!***********************************************************************
   endmodule Particles_nbody

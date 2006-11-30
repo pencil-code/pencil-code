@@ -1,6 +1,6 @@
 
 module SurfaceData
-  
+
   implicit none
 
   logical :: xextent=.false.
@@ -14,11 +14,11 @@ module SurfaceData
   integer :: problem_dimensions=2
   integer :: nfaces=8
   integer :: nface_types=2
-  integer, allocatable, dimension(:,:) :: points 
-  integer, allocatable, dimension(:,:) :: normals 
-  integer, allocatable, dimension(:) :: faces 
-  integer, allocatable, dimension(:) :: face_types 
-  character(len=60), allocatable, dimension(:) :: area_elements 
+  integer, allocatable, dimension(:,:) :: points
+  integer, allocatable, dimension(:,:) :: normals
+  integer, allocatable, dimension(:) :: faces
+  integer, allocatable, dimension(:) :: face_types
+  character(len=60), allocatable, dimension(:) :: area_elements
 endmodule
 !***********************************************************************
 program shock_finder2D
@@ -32,7 +32,7 @@ program shock_finder2D
   integer :: rotation=0
 !
   call read_surfaceinfo
- 
+
   xextent=(nxgrid/=1)
   yextent=(nygrid/=1)
   zextent=(nzgrid/=1)
@@ -145,7 +145,7 @@ subroutine make_calc_3d_int_j_ji(unitno)
   write(unitno,"(a)") "    integer :: k"
 
   call evaluate_facefactors(unitno,0)
-! Top/bottom 
+! Top/bottom
   pjstr=""
   njstr=""
   do j=0,2
@@ -200,7 +200,7 @@ subroutine make_calc_3d_int_k_ki(unitno)
   write(unitno,"(a)") "    integer :: j"
 
   call evaluate_facefactors(unitno,0)
-! Left/right 
+! Left/right
   pkstr=""
   nkstr=""
   do k=0,2
@@ -255,7 +255,7 @@ subroutine make_calc_3d_int_kj_kji(unitno,k)
   call declare_facefactors(unitno)
 
   call evaluate_facefactors(unitno,0)
-! Corners 
+! Corners
   pkstr=""
   nkstr=""
   pjstr=""
@@ -352,7 +352,7 @@ subroutine make_calc_internalboundary(unitno)
   elseif ((nxgrid/=1).and.(nygrid/=1)) then
   write(unitno,"(a)") "    real :: integral1,integral2"
   call evaluate_facefactors(unitno,0)
-! Top/bottom 
+! Top/bottom
   do j=0,2
   call chn(j,jstr)
   if (j/=0) njstr='-'//trim(jstr)
@@ -366,7 +366,7 @@ subroutine make_calc_internalboundary(unitno)
   write(unitno,"(a)") "        f(i,m2"//trim(njstr)//",n1,ishock)=integral2"
   write(unitno,"(a)") "      enddo"
   enddo
-! Left/right 
+! Left/right
   do i=0,2
   call chn(i,istr)
   if (i/=0) nistr='-'//trim(istr)
@@ -380,7 +380,7 @@ subroutine make_calc_internalboundary(unitno)
   write(unitno,"(a)") "        f(l2"//trim(nistr)//",j,n1,ishock)=integral2"
   write(unitno,"(a)") "      enddo"
   enddo
-! Corners 
+! Corners
   do j=0,2
   do i=0,2
   call chn(i,istr)
@@ -407,7 +407,7 @@ subroutine make_calc_internalboundary(unitno)
   elseif ((nxgrid/=1).and.(nzgrid/=1)) then
   write(unitno,"(a)") "    real :: integral1,integral2"
   call evaluate_facefactors(unitno,1)
-! Top/bottom 
+! Top/bottom
   do k=0,2
   call chn(k,kstr)
   if (k/=0) nkstr='-'//trim(kstr)
@@ -421,7 +421,7 @@ subroutine make_calc_internalboundary(unitno)
   write(unitno,"(a)") "        f(i,m1,n2"//trim(nkstr)//",ishock)=integral2"
   write(unitno,"(a)") "      enddo"
   enddo
-! Left/right 
+! Left/right
   do i=0,2
   call chn(i,istr)
   if (i/=0) nistr='-'//trim(istr)
@@ -435,7 +435,7 @@ subroutine make_calc_internalboundary(unitno)
   write(unitno,"(a)") "        f(l2"//trim(nistr)//",m1,k,ishock)=integral2"
   write(unitno,"(a)") "      enddo"
   enddo
-! Corners 
+! Corners
   do k=0,2
   do i=0,2
   call chn(i,istr)
@@ -462,7 +462,7 @@ subroutine make_calc_internalboundary(unitno)
   elseif ((nzgrid/=1).and.(nygrid/=1)) then
   write(unitno,"(a)") "    real :: integral1,integral2"
   call evaluate_facefactors(unitno,2)
-! Top/bottom 
+! Top/bottom
   do j=0,2
   call chn(j,jstr)
   if (j/=0) njstr='-'//trim(jstr)
@@ -476,7 +476,7 @@ subroutine make_calc_internalboundary(unitno)
   write(unitno,"(a)") "        f(l1,m2"//trim(njstr)//",k,ishock)=integral2"
   write(unitno,"(a)") "      enddo"
   enddo
-! Left/right 
+! Left/right
   do k=0,2
   call chn(k,kstr)
   if (k/=0) nkstr='-'//trim(kstr)
@@ -490,7 +490,7 @@ subroutine make_calc_internalboundary(unitno)
   write(unitno,"(a)") "        f(l1,j,n2"//trim(nkstr)//",ishock)=integral2"
   write(unitno,"(a)") "      enddo"
   enddo
-! Corners 
+! Corners
   do k=0,2
   do j=0,2
   call chn(k,kstr)
@@ -547,7 +547,7 @@ subroutine make_calc_3d_ext_j_ji(unitno)
   write(unitno,"(a)") "    integer :: k"
 
   call evaluate_facefactors(unitno,0)
-! Top/bottom 
+! Top/bottom
   pjstr=""
   njstr=""
   do j=0,2
@@ -616,7 +616,7 @@ subroutine make_calc_3d_ext_k_ki(unitno)
   write(unitno,"(a)") "    integer :: j"
 
   call evaluate_facefactors(unitno,0)
-! Left/right 
+! Left/right
   pkstr=""
   nkstr=""
   do k=0,2
@@ -684,7 +684,7 @@ subroutine make_calc_3d_ext_kj_kji(unitno,k)
   call declare_facefactors(unitno)
 
   call evaluate_facefactors(unitno,0)
-! Corners 
+! Corners
   pkstr=""
   nkstr=""
   pjstr=""
@@ -915,7 +915,7 @@ subroutine make_calc_externalboundary(unitno)
   character (len=5) :: pistr='',nistr=''
   character (len=5) :: pjstr='',njstr=''
   character (len=5) :: pkstr='',nkstr=''
-  
+
   write(unitno,"(a)") "!  called: make_calc_externalboundary"
   write(unitno,"(a)") "  subroutine shock_calc_externalboundary(f)"
   write(unitno,"(a)") "    use Cdata"
@@ -942,7 +942,7 @@ subroutine make_calc_externalboundary(unitno)
     write(unitno,"(a)") "    real :: integral1,integral2"
     write(unitno,"(a)") "!  make_calc_externalboundary: 2D CASE (xy)"
     call evaluate_facefactors(unitno,0)
-! Top/bottom 
+! Top/bottom
   write(unitno,"(a)") "!  make_calc_externalboundary: ! Top/bottom"
     do j=0,2
   write(unitno,"(a,i2)") "!  make_calc_externalboundary: ! Top/bottom: j = ",j
@@ -958,7 +958,7 @@ subroutine make_calc_externalboundary(unitno)
       write(unitno,"(a)") "        f(i,my"//trim(njstr)//",n1,ishock)=integral2"
       write(unitno,"(a)") "      enddo"
     enddo
-! Left/right 
+! Left/right
   write(unitno,"(a)") "!  make_calc_externalboundary: ! Left/right"
     do i=0,2
   write(unitno,"(a,i2)") "!  make_calc_externalboundary: ! Left/right: i = ",i
@@ -974,7 +974,7 @@ subroutine make_calc_externalboundary(unitno)
       write(unitno,"(a)") "        f(mx"//trim(nistr)//",j,n1,ishock)=integral2"
       write(unitno,"(a)") "      enddo"
     enddo
-! Near Corners 
+! Near Corners
   write(unitno,"(a)") "!  make_calc_externalboundary: ! Near Corners"
   do j=0,2
   do i=0,2
@@ -1012,7 +1012,7 @@ subroutine make_calc_externalboundary(unitno)
       '1 '//trim(pistr),'m2'//trim(njstr),'n1')
   enddo
   enddo
-! Corners 
+! Corners
   write(unitno,"(a)") "!  make_calc_externalboundary: ! Corners"
     do j=0,2
     do i=0,2
@@ -1042,7 +1042,7 @@ subroutine make_calc_externalboundary(unitno)
     write(unitno,"(a)") "    real :: integral1,integral2"
     write(unitno,"(a)") "!  make_calc_externalboundary: 2D CASE (xz)"
     call evaluate_facefactors(unitno,1)
-! Top/bottom 
+! Top/bottom
     do k=0,2
       call chn(k,kstr)
       if (k/=0) nkstr='-'//trim(kstr)
@@ -1056,7 +1056,7 @@ subroutine make_calc_externalboundary(unitno)
       write(unitno,"(a)") "        f(i,m1,mz"//trim(nkstr)//",ishock)=integral2"
       write(unitno,"(a)") "      enddo"
     enddo
-! Left/right 
+! Left/right
     do i=0,2
       call chn(i,istr)
       if (i/=0) nistr='-'//trim(istr)
@@ -1070,7 +1070,7 @@ subroutine make_calc_externalboundary(unitno)
       write(unitno,"(a)") "        f(mx"//trim(nistr)//",m1,k,ishock)=integral2"
       write(unitno,"(a)") "      enddo"
       enddo
-! Near Corners 
+! Near Corners
 !  do k=0,2
 !  do i=0,2
 !  call chn(k,kstr)
@@ -1090,7 +1090,7 @@ subroutine make_calc_externalboundary(unitno)
 !  call evaluate_integral(unitno,2,3-i,+3,0,0,-3,+k,'f(1 '//trim(pistr)//',m1,n2'//trim(nkstr)//',ishock)','1 '//trim(pistr),'m1','n2'//trim(nkstr))
 !  enddo
 !  enddo
-! Corners 
+! Corners
     do k=0,2
     do i=0,2
       call chn(i,istr)
@@ -1118,7 +1118,7 @@ subroutine make_calc_externalboundary(unitno)
     write(unitno,"(a)") "    real :: integral1,integral2"
     write(unitno,"(a)") "!  make_calc_externalboundary: 2D CASE (yz)"
     call evaluate_facefactors(unitno,2)
-! Top/bottom 
+! Top/bottom
     do k=0,2
       call chn(k,kstr)
       if (k/=0) nkstr='-'//trim(kstr)
@@ -1132,7 +1132,7 @@ subroutine make_calc_externalboundary(unitno)
       write(unitno,"(a)") "        f(l1,j,mz"//trim(nkstr)//",ishock)=integral2"
       write(unitno,"(a)") "      enddo"
     enddo
-! Left/right 
+! Left/right
     do j=0,2
       call chn(j,jstr)
       if (j/=0) njstr='-'//trim(jstr)
@@ -1146,7 +1146,7 @@ subroutine make_calc_externalboundary(unitno)
       write(unitno,"(a)") "        f(l1,my"//trim(njstr)//",k,ishock)=integral2"
       write(unitno,"(a)") "      enddo"
     enddo
-! Near Corners 
+! Near Corners
   do k=0,2
   do j=0,2
   call chn(k,kstr)
@@ -1174,7 +1174,7 @@ subroutine make_calc_externalboundary(unitno)
 !  call evaluate_integral(unitno,2,0,0,3-j,+3,-3,+k,'f(l1,1 '//trim(pjstr)//',n2'//trim(nkstr)//',ishock)','l1','1 '//trim(pjstr),'n2'//trim(nkstr))
   enddo
   enddo
-! Corners 
+! Corners
     do k=0,2
     do j=0,2
       call chn(k,kstr)
@@ -1213,13 +1213,13 @@ subroutine make_calc_externalboundary(unitno)
 endsubroutine make_calc_externalboundary
 !***********************************************************************
 subroutine evaluate_facefactors(unitno,rotation)
-   use SurfaceData   
+   use SurfaceData
 !
   implicit none
 !
    integer :: rotation, unitno
    integer :: i,face_type,dir1,dir2,dir3
-   character(len=2), dimension(3) :: dmesh = (/ 'dx','dy','dz' /) 
+   character(len=2), dimension(3) :: dmesh = (/ 'dx','dy','dz' /)
 
    dir1=mod(3-rotation,3)+1
    dir2=mod(4-rotation,3)+1
@@ -1234,7 +1234,7 @@ endsubroutine evaluate_facefactors
 !***********************************************************************
 subroutine declare_facefactors(unitno)
 !
-   use SurfaceData   
+   use SurfaceData
 !
   implicit none
 !
@@ -1249,7 +1249,7 @@ subroutine declare_facefactors(unitno)
 !
 endsubroutine declare_facefactors
 !***********************************************************************
-subroutine offset_name(vname,offset,offname) 
+subroutine offset_name(vname,offset,offname)
 !
   implicit none
 !
@@ -1265,20 +1265,20 @@ subroutine offset_name(vname,offset,offname)
 
    if (offset.gt.0) offset_sgn='+'
    if (offset.lt.0) offset_sgn='-'
- 
+
    colon=SCAN(vname, ':')
    if (colon==0) then
      write (offname,"(a,a1,i1)") &
         trim(vname),offset_sgn,abs(offset)
      return
    else
-     vname1=vname(1:colon-1)  
-     vname2=vname(colon+1:len_trim(vname))  
+     vname1=vname(1:colon-1)
+     vname2=vname(colon+1:len_trim(vname))
      write (offname,"(a,a1,i1,a1,a,a1,i1)") &
         trim(vname1),offset_sgn,abs(offset),":", &
         trim(vname2),offset_sgn,abs(offset)
    endif
-   
+
 
 
 endsubroutine offset_name
@@ -1286,7 +1286,7 @@ endsubroutine offset_name
 subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax, &
     kmin,kmax,intname,iname,jname,kname)
 !
-   use SurfaceData   
+   use SurfaceData
 !
 !
   implicit none
@@ -1298,7 +1298,7 @@ subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax, &
    integer :: i,face_type,comp_it,comp,pnt,mesh,dir1,dir2,dir3
    logical :: lfirst=.true., lfirst_term=.true.
    character :: sgn = '+'
-   character(len=3), dimension(3) :: vel = (/ 'iux','iuy','iuz' /) 
+   character(len=3), dimension(3) :: vel = (/ 'iux','iuy','iuz' /)
    character(len=*) :: intname !='integral'
    character(len=*) :: iname, jname, kname
    character(len=50) :: offname
@@ -1327,7 +1327,7 @@ subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax, &
        if ( face_types(faces(pnt)) /= face_type ) cycle
        If (     (points(dir1,pnt).lt.imin).or.(points(dir1,pnt).gt.imax)   &
            .or. (points(dir2,pnt).lt.jmin).or.(points(dir2,pnt).gt.jmax)   &
-           .or. (points(dir3,pnt).lt.kmin).or.(points(dir3,pnt).gt.kmax) ) cycle  
+           .or. (points(dir3,pnt).lt.kmin).or.(points(dir3,pnt).gt.kmax) ) cycle
        do comp_it=0,2
          comp=mod(comp_it+rotation,3)+1
          do mesh=1,3
@@ -1347,13 +1347,13 @@ subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax, &
            write (unitno,"(a)",ADVANCE='no') trim(offname)//"   , "
            call offset_name(trim(kname),points(dir3,pnt),offname)
            write (unitno,"(a)",ADVANCE='no') trim(offname)//"   , "
-  
+
            write (unitno,"(a3,a3)") vel(comp_it+1),") &"
            lfirst_term=.false.
          endif
        enddo
      enddo
-!  
+!
      if (ncontrib==0) then
        if (face_type==nface_types) then
          write (unitno,"(a)") "                    0. ) "
@@ -1383,7 +1383,7 @@ subroutine read_surfaceinfo
 !
 !
    integer :: pnt, face_type
-   character(len=20) :: header 
+   character(len=20) :: header
 !
 ! Read surface information
 !

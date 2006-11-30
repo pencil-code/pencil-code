@@ -1,4 +1,4 @@
-! $Id: notimeavg.f90,v 1.13 2006-08-23 16:53:32 mee Exp $ 
+! $Id: notimeavg.f90,v 1.14 2006-11-30 09:03:36 dobler Exp $
 
 module Timeavg
 
@@ -9,7 +9,7 @@ module Timeavg
 
   implicit none
 
-  include 'timeavg.h' 
+  include 'timeavg.h'
 !
 !  real, dimension(mx,my,mz,mtavg) :: f_tavg
 !  integer, dimension(mtavg) :: idx_tavg=0
@@ -26,7 +26,7 @@ module Timeavg
     subroutine initialize_timeavg(a)
 !
       real, dimension(mx,my,mz,mfarray) :: a
-      
+
       intent (in) :: a
 !
       if (ip < 0) print*, a

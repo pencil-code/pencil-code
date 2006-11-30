@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.235 2006-11-18 18:55:42 brandenb Exp $
+! $Id: run.f90,v 1.236 2006-11-30 09:03:36 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -67,7 +67,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.235 2006-11-18 18:55:42 brandenb Exp $")
+             "$Id: run.f90,v 1.236 2006-11-30 09:03:36 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -132,7 +132,7 @@
         if (rfreeze_int == -impossible .and. r_int > epsi) then
           rfreeze_int = r_int
         endif
-        
+
         if (rfreeze_ext == -impossible) then
           rfreeze_ext = r_ext
         endif
@@ -253,7 +253,7 @@
         if (ip<=3) call debug_imn_arrays
 !
 !  Find out which pencils are needed and write information about required,
-!  requested and diagnostic pencils to disc 
+!  requested and diagnostic pencils to disc
 !
         call choose_pencils()
         call write_pencil_info()
@@ -315,10 +315,10 @@
               exit Time_loop
             endif
 !
-!  Exit do loop if wall_clock_time has exeeded max_walltime 
+!  Exit do loop if wall_clock_time has exeeded max_walltime
 !
-            if (lroot.and.max_walltime > 0.0) then 
-              if (wall_clock_time > max_walltime) timeover=.true. 
+            if (lroot.and.max_walltime > 0.0) then
+              if (wall_clock_time > max_walltime) timeover=.true.
             endif
             call mpibcast_logical(timeover, 1)
             if (timeover) then
@@ -432,13 +432,13 @@
           if (lout)   lpencil=lpencil .or. lpenc_diagnos
           if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
           if (lvid)   lpencil=lpencil .or. lpenc_video
-!! For debugging missing pencils   
-!!      lpencil = .true. 
+!! For debugging missing pencils
+!!      lpencil = .true.
 !
 !  Time advance
 !
           call rk_2n(f,df,p)
-          if (lroot) then 
+          if (lroot) then
             count = count + 1     !  reliable loop count even for premature exit
           endif
 !
@@ -459,7 +459,7 @@
             time2=mpiwtime()
             wall_clock_time = (time2-time1)
             if (idiag_walltime/=0) &
-                call save_name(wall_clock_time,idiag_walltime) 
+                call save_name(wall_clock_time,idiag_walltime)
           endif
 !
           if (lout.and.lroot.and.idiag_timeperstep/=0) then
@@ -469,7 +469,7 @@
                            /(  it_this_diagnostic -   it_last_diagnostic)
               it_last_diagnostic =   it_this_diagnostic
             time_last_diagnostic = time_this_diagnostic
-            call save_name(time_per_step,idiag_timeperstep) 
+            call save_name(time_per_step,idiag_timeperstep)
           endif
 !
           if (lout) call prints()
@@ -498,7 +498,7 @@
 !
 !  Write slices (for animation purposes)
 !
-          if (lvid.and.lwrite_slices) call wvid(f,trim(directory)//'/slice_') 
+          if (lvid.and.lwrite_slices) call wvid(f,trim(directory)//'/slice_')
 !
 !  Save snapshot every isnap steps in case the run gets interrupted.
 !  The time needs also to be written
@@ -522,7 +522,7 @@
 !
 !  Save global variables.
 !
-          if (isaveglobal/=0) then            
+          if (isaveglobal/=0) then
             if (mod(it,isaveglobal)==0) then
               if (lglobal) call wglobal()
               if (mglobal/=0)  &
@@ -532,7 +532,7 @@
           endif
 !
 !  Do exit when timestep has become too short.
-!  This may indicate an MPI communication problem, so the data are useless 
+!  This may indicate an MPI communication problem, so the data are useless
 !  and won't be saved!
 !
           if ((it < nt) .and. (dt < dtmin)) then

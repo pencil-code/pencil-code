@@ -1,4 +1,4 @@
-! $Id: messages.f90,v 1.9 2006-08-03 07:07:28 ajohan Exp $
+! $Id: messages.f90,v 1.10 2006-11-30 09:03:35 dobler Exp $
 !
 !  This module takes care of messages.
 !
@@ -20,7 +20,7 @@ module Messages
 !
   integer, public, parameter :: iterm_DEFAULT   = 0
   integer, public, parameter :: iterm_BRIGHT    = 1
-  integer, public, parameter :: iterm_UNDERLINE = 4 
+  integer, public, parameter :: iterm_UNDERLINE = 4
   integer, public, parameter :: iterm_FLASH     = 5
   integer, public, parameter :: iterm_FG_BLACK  = 30
   integer, public, parameter :: iterm_FG_RED    = 31
@@ -97,7 +97,7 @@ module Messages
 !
       if (.not.llife_support) then
         errors=errors+1
-!  
+!
         call terminal_highlight_fatal_error()
         write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
         call terminal_defaultcolor()
@@ -121,7 +121,7 @@ module Messages
 !
       if (.not.llife_support) then
         fatal_errors=fatal_errors+1
-!  
+!
         call terminal_highlight_fatal_error()
         write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
         call terminal_defaultcolor()
@@ -140,7 +140,7 @@ module Messages
       if (.not.llife_support) then
         call mpireduce_sum_int(fatal_errors,fatal_errors_total)
         call mpibcast_int(fatal_errors_total,1)
-!  
+!
         if (fatal_errors_total/=0) then
           if (lroot) then
             print*, 'DYING - there was ', fatal_errors_total, ' errors.'
@@ -177,7 +177,7 @@ module Messages
     endsubroutine error
 !***********************************************************************
     subroutine warning(location,message,ip)
-!    
+!
 !  Print out colored warning.
 !
 !  30-jun-05/tony: coded
@@ -200,7 +200,7 @@ module Messages
     endsubroutine warning
 !***********************************************************************
     subroutine information(location,message,level)
-!    
+!
 !  Print out colored warning.
 !
 !  30-jun-05/tony: coded
@@ -211,7 +211,7 @@ module Messages
       integer, optional :: level
       integer :: level_ = iinformation_ip
 !
-      if (present(level)) level_=level 
+      if (present(level)) level_=level
 !
       if (ip<=level_) write (*,*) trim(location)//":"//trim(message)
 !
@@ -309,8 +309,8 @@ module Messages
     endsubroutine cvs_id_3
 !***********************************************************************
     subroutine life_support_off
-!    
-!  Allow code to die on errors 
+!
+!  Allow code to die on errors
 !
 !  30-jun-05/tony: coded
 !
@@ -320,8 +320,8 @@ module Messages
     endsubroutine life_support_off
 !***********************************************************************
     subroutine life_support_on
-!    
-!  Prevent the code from dying on errors 
+!
+!  Prevent the code from dying on errors
 !
 !  30-jun-05/tony: coded
 !
@@ -331,82 +331,82 @@ module Messages
     endsubroutine life_support_on
 !***********************************************************************
     subroutine terminal_setfgcolor(col)
-!    
+!
 !  Set foreground color of terminal text
 !
 !  08-jun-05/tony: coded
 !
       integer :: col
-!      
+!
       if (ltermcap_color) then
-        write(*,fmt='(A1,A1,I2,A1)',ADVANCE='no') CHAR(27), '[', col, 'm' 
+        write(*,fmt='(A1,A1,I2,A1)',ADVANCE='no') CHAR(27), '[', col, 'm'
       endif
 !
     endsubroutine terminal_setfgcolor
 !***********************************************************************
     subroutine terminal_setfgbrightcolor(col)
-!    
+!
 !  Set bright terminal colors
 !
 !  08-jun-05/tony: coded
 !
       integer :: col
-!      
+!
       if (ltermcap_color) then
         write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
-            CHAR(27), '[', iterm_BRIGHT, ';', col, 'm' 
+            CHAR(27), '[', iterm_BRIGHT, ';', col, 'm'
       endif
 !
     endsubroutine terminal_setfgbrightcolor
 !***********************************************************************
     subroutine terminal_defaultcolor
-!    
+!
 !  Set terminal color to default value
 !
 !  08-jun-05/tony: coded
 !
       if (ltermcap_color) then
         write(*,fmt='(A1,A1,I1,A1)',ADVANCE='no') &
-            CHAR(27), '[', iterm_DEFAULT, 'm' 
+            CHAR(27), '[', iterm_DEFAULT, 'm'
       endif
 !
     endsubroutine terminal_defaultcolor
 !***********************************************************************
     subroutine terminal_highlight_warning
-!    
+!
 !  Change to warning color
 !
 !  08-jun-05/tony: coded
 !
       if (ltermcap_color) then
         write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
-            CHAR(27), '[', iterm_BRIGHT, ';', iterm_FG_MAGENTA, 'm' 
+            CHAR(27), '[', iterm_BRIGHT, ';', iterm_FG_MAGENTA, 'm'
       endif
 !
     endsubroutine terminal_highlight_warning
 !***********************************************************************
     subroutine terminal_highlight_error
-!    
+!
 !  Change to warning color
 !
 !  08-jun-05/tony: coded
 !
       if (ltermcap_color) then
         write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
-            CHAR(27), '[', iterm_BRIGHT, ';', iterm_FG_RED, 'm' 
+            CHAR(27), '[', iterm_BRIGHT, ';', iterm_FG_RED, 'm'
       endif
 !
     endsubroutine terminal_highlight_error
 !***********************************************************************
     subroutine terminal_highlight_fatal_error
-!    
+!
 !  Change to warning color
 !
 !  08-jun-05/tony: coded
 !
       if (ltermcap_color) then
         write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
-            CHAR(27), '[', iterm_BRIGHT, ';', iterm_FG_RED, 'm' 
+            CHAR(27), '[', iterm_BRIGHT, ';', iterm_FG_RED, 'm'
       endif
 !
     endsubroutine terminal_highlight_fatal_error

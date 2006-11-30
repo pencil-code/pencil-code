@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.74 2006-11-16 07:12:37 mee Exp $
+! $Id: eos_idealgas.f90,v 1.75 2006-11-30 09:03:35 dobler Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -44,7 +44,7 @@ module EquationOfState
 
   ! secondary parameters calculated in initialize
 !  real :: TT_ion=impossible,TT_ion_=impossible
-!  real :: ss_ion=impossible,kappa0=impossible 
+!  real :: ss_ion=impossible,kappa0=impossible
 !  real :: lnrho_H=impossible,lnrho_e=impossible,lnrho_e_=impossible
 !  real :: lnrho_p=impossible,lnrho_He=impossible
 !
@@ -63,7 +63,7 @@ module EquationOfState
   real :: gamma1    !(=gamma-1)
   real :: gamma11   !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
-  real :: cs2bot=1., cs2top=1. 
+  real :: cs2bot=1., cs2top=1.
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   real, dimension(3) :: beta_glnrho_global=0., beta_glnrho_scaled=0.
@@ -109,7 +109,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.74 2006-11-16 07:12:37 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.75 2006-11-30 09:03:35 dobler Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -156,10 +156,10 @@ module EquationOfState
 !
       if (unit_system == 'cgs') then
          Rgas_unit_sys = k_B_cgs/m_u_cgs
-      elseif (unit_system == 'SI') then  
+      elseif (unit_system == 'SI') then
          Rgas_unit_sys = k_B_cgs/m_u_cgs*1.e-4
       endif
-!      
+!
       if (unit_temperature == impossible) then
         if (cp == impossible) cp=1.
         if (gamma1 == 0.) then
@@ -212,7 +212,7 @@ module EquationOfState
         print*,'initialize_eos: unit_temperature=',unit_temperature
         print*,'initialize_eos: cp,lnTT0=',cp,lnTT0
       endif
-!   
+!
     endsubroutine units_eos
 !***********************************************************************
     subroutine initialize_eos()
@@ -236,7 +236,7 @@ module EquationOfState
 !        write (1,*) 'lnrho_p=',lnrho_p
 !        write (1,*) 'lnrho_He=',lnrho_He
 !        write (1,*) 'lnrho_e_=',lnrho_e_
-!        write (1,*) 'ss_ion=',ss_ion    
+!        write (1,*) 'ss_ion=',ss_ion
 !        write (1,*) 'kappa0=',kappa0
         write (1,'(a,1pd26.16)') 'k_B=',k_B
         write (1,'(a,1pd26.16)') 'm_H=',m_H
@@ -320,7 +320,7 @@ module EquationOfState
         ieosvar1=findex
         ieosvar_selected=ieosvar_selected+this_var
         return
-      endif 
+      endif
 !
 ! Ensure the indexes are in the correct order.
 !
@@ -333,23 +333,23 @@ module EquationOfState
       ieosvar_selected=ieosvar_selected+this_var
       select case (ieosvar_selected)
         case (ieosvar_lnrho+ieosvar_ss)
-          if (lroot) print*,"select_eos_variable: Using lnrho and ss" 
-          ieosvars=ilnrho_ss 
+          if (lroot) print*,"select_eos_variable: Using lnrho and ss"
+          ieosvars=ilnrho_ss
         case (ieosvar_rho+ieosvar_ss)
-          if (lroot) print*,"select_eos_variable: Using rho and ss" 
-          ieosvars=irho_ss 
+          if (lroot) print*,"select_eos_variable: Using rho and ss"
+          ieosvars=irho_ss
         case (ieosvar_lnrho+ieosvar_lnTT)
-          if (lroot) print*,"select_eos_variable: Using lnrho and lnTT" 
-          ieosvars=ilnrho_lnTT 
+          if (lroot) print*,"select_eos_variable: Using lnrho and lnTT"
+          ieosvars=ilnrho_lnTT
         case (ieosvar_rho+ieosvar_lnTT)
-          if (lroot) print*,"select_eos_variable: Using rho and lnTT" 
-          ieosvars=irho_lnTT 
+          if (lroot) print*,"select_eos_variable: Using rho and lnTT"
+          ieosvars=irho_lnTT
         case (ieosvar_lnrho+ieosvar_cs2)
-          if (lroot) print*,"select_eos_variable: Using lnrho and cs2" 
+          if (lroot) print*,"select_eos_variable: Using lnrho and cs2"
           ieosvars=ilnrho_cs2
         case (ieosvar_rho+ieosvar_cs2)
-          if (lroot) print*,"select_eos_variable: Using rho and cs2",iproc 
-          ieosvars=irho_cs2 
+          if (lroot) print*,"select_eos_variable: Using rho and cs2",iproc
+          ieosvars=irho_cs2
         case default
           if (lroot) print*,"select_eos_variable: Thermodynamic variable combination, ieosvar_selected= ",ieosvar_selected
           call fatal_error("select_eos_variable", &
@@ -366,17 +366,17 @@ module EquationOfState
 !
       real, intent(out) :: mu_tmp
 
-!  mu = mu_H * (1 - xHe) + mu_He * xHe 
+!  mu = mu_H * (1 - xHe) + mu_He * xHe
 !     = mu_H + (mu_He-mu_H) * xHe
 !  mu_H = 1.
 !  mu_He = 4.0026 / 1.0079  (molar masses from a Periodic Table)
 !        = 3.97
 !
-      if (mu == 0.) then 
+      if (mu == 0.) then
         mu_tmp=1.+2.97153*xHe
       else
         mu_tmp=mu
-      endif  
+      endif
     endsubroutine getmu
 !*******************************************************************
     subroutine rprint_eos(lreset,lwrite)
@@ -387,18 +387,18 @@ module EquationOfState
 !  21-11-04/anders: moved diagnostics to entropy
 !
       use Cdata
-! 
+!
       logical :: lreset
       logical, optional :: lwrite
 !
-      if (NO_WARN) print*, lreset, lwrite  !(keep compiler quiet)   
+      if (NO_WARN) print*, lreset, lwrite  !(keep compiler quiet)
 !
     endsubroutine rprint_eos
 !***********************************************************************
     subroutine pencil_criteria_eos()
-! 
+!
 !  All pencils that the EquationOfState module depends on are specified here.
-! 
+!
 !  02-04-06/tony: coded
 !
 !  EOS is a pencil provider but evolves nothing so it is unlokely that
@@ -407,7 +407,7 @@ module EquationOfState
     endsubroutine pencil_criteria_eos
 !***********************************************************************
     subroutine pencil_interdep_eos(lpencil_in)
-!       
+!
 !  Interdependency among pencils from the Entropy module is specified here.
 !
 !  20-11-04/anders: coded
@@ -510,7 +510,7 @@ module EquationOfState
     endsubroutine pencil_interdep_eos
 !***********************************************************************
     subroutine calc_pencils_eos(f,p)
-!       
+!
 !  Calculate Entropy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
@@ -518,17 +518,17 @@ module EquationOfState
 !
       use Cparam
       use Sub
-!      
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(in) :: f
       intent(inout) :: p
 !
-! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG 
+! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG
 ! FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
 ! The code is not wrong however since this is correctly
-! handled by the eos module. 
+! handled by the eos module.
 
       select case (ieosvars)
       case (ilnrho_ss,irho_ss)
@@ -538,7 +538,7 @@ module EquationOfState
           if (lpencil(i_hss)) p%hss=0
           if (lpencil(i_del2ss)) p%del2ss=0
           if (lpencil(i_del6ss)) p%del6ss=0
-          if (lpencil(i_cs2)) p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0)) 
+          if (lpencil(i_cs2)) p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
         elseif (leos_isothermal) then
           if (lpencil(i_ss)) p%ss=-(cp-cv)*(p%lnrho-lnrho0)
           if (lpencil(i_gss)) p%gss=-(cp-cv)*p%glnrho
@@ -554,7 +554,7 @@ module EquationOfState
           if (lpencil(i_hss)) call g2ij(f,ieosvar2,p%hss)
           if (lpencil(i_del2ss)) call del2(f,ieosvar2,p%del2ss)
           if (lpencil(i_del6ss)) call del6(f,ieosvar2,p%del6ss)
-          if (lpencil(i_cs2)) p%cs2=cs20*exp(cv1*p%ss+gamma1*(p%lnrho-lnrho0)) 
+          if (lpencil(i_cs2)) p%cs2=cs20*exp(cv1*p%ss+gamma1*(p%lnrho-lnrho0))
         endif
         if (lpencil(i_lnTT)) p%lnTT=lnTT0+cv1*p%ss+gamma1*(p%lnrho-lnrho0)
         if (lpencil(i_pp)) p%pp=(cp-cv)*exp(p%lnTT+p%lnrho)
@@ -571,7 +571,7 @@ module EquationOfState
           if (lpencil(i_glnTT)) p%glnTT=gamma1*p%glnrho
           if (lpencil(i_hlnTT)) p%hlnTT=gamma1*p%hlnrho
           if (lpencil(i_del2lnTT)) p%del2lnTT=gamma1*p%del2lnrho
-          if (lpencil(i_cs2)) p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0)) 
+          if (lpencil(i_cs2)) p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
         elseif (leos_isothermal) then
           if (lpencil(i_lnTT)) p%lnTT=lnTT0
           if (lpencil(i_glnTT)) p%glnTT=0
@@ -617,12 +617,12 @@ module EquationOfState
           if (lpencil(i_cs2)) p%cs2=f(l1:l2,m,n,iglobal_cs2)
           if (lpencil(i_lnTT)) p%lnTT=log(p%cs2*cp1/gamma1)
           if (lpencil(i_glnTT)) p%glnTT=f(l1:l2,m,n,iglobal_glnTT:iglobal_glnTT+2)
-          if (lpencil(i_hlnTT)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal") 
-          if (lpencil(i_del2lnTT)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal") 
+          if (lpencil(i_hlnTT)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal")
+          if (lpencil(i_del2lnTT)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal")
           if (lpencil(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma1*(p%lnrho-lnrho0))
-          if (lpencil(i_del2ss)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal") 
+          if (lpencil(i_del2ss)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal")
           if (lpencil(i_gss)) p%gss=cv*(p%glnTT-gamma1*p%glnrho)
-          if (lpencil(i_hss)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal") 
+          if (lpencil(i_hss)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal")
         else
           call fatal_error("calc_pencils_eos","Full equation of state not implemented for ilnrho_cs2")
         endif
@@ -632,7 +632,7 @@ module EquationOfState
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
         if (lpencil(i_del6ss)) call fatal_error("calc_pencils_eos","del6ss not available for ilnrho_cs2")
-        
+
       case default
         call fatal_error("calc_pencils_eos","case not implemented yet")
       endselect
@@ -646,9 +646,9 @@ module EquationOfState
     endsubroutine calc_pencils_eos
 !***********************************************************************
     subroutine ioninit(f)
-!   
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!   
+!
       if(NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine ioninit
@@ -662,7 +662,7 @@ module EquationOfState
     endsubroutine ioncalc
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
-      
+
       real, intent(in) :: EE,TT,yH
       real, intent(inout) :: rho
 
@@ -897,7 +897,7 @@ module EquationOfState
             f(:,m,n,iss)=ss
           endif
         endif
-    
+
       else
         call not_implemented("eosperturb")
       endif
@@ -1063,9 +1063,9 @@ module EquationOfState
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1 to
 !                   subroutine pressure_gradient
-!   27-mar-06/tony: Introduces cv, cv1, gamma11 to make faster 
+!   27-mar-06/tony: Introduces cv, cv1, gamma11 to make faster
 !                   + more explicit
-!   31-mar-06/tony: I removed messy lcalc_cp stuff completely. cp=1. 
+!   31-mar-06/tony: I removed messy lcalc_cp stuff completely. cp=1.
 !                   is just fine.
 !   22-jun-06/axel: reinstated cp,cp1,cv,cv1 in hopefully all the places.
 !
@@ -1113,7 +1113,7 @@ module EquationOfState
         pp_=ee_*exp(lnrho_)*gamma1
         cs2_=gamma*gamma1*ee_
 
-      case default 
+      case default
         call not_implemented('eoscalc_point')
       end select
 !
@@ -1136,9 +1136,9 @@ module EquationOfState
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1 to
 !                   subroutine pressure_gradient
-!   27-mar-06/tony: Introduces cv, cv1, gamma11 to make faster 
+!   27-mar-06/tony: Introduces cv, cv1, gamma11 to make faster
 !                   + more explicit
-!   31-mar-06/tony: I removed messy lcalc_cp stuff completely. cp=1. 
+!   31-mar-06/tony: I removed messy lcalc_cp stuff completely. cp=1.
 !                   is just fine.
 !   22-jun-06/axel: reinstated cp,cp1,cv,cv1 in hopefully all the places.
 !
@@ -1188,7 +1188,7 @@ module EquationOfState
         pp_=ee_*exp(lnrho_)*gamma1
         cs2_=gamma*gamma1*ee_
 
-      case default 
+      case default
         call not_implemented('eoscalc_point')
       end select
 !
@@ -1263,7 +1263,7 @@ module EquationOfState
 !
 !  Sound speed (and hence Temperature), is
 !  initialised to the reference value:
-!           sound speed: cs^2_0            from start.in  
+!           sound speed: cs^2_0            from start.in
 !           density: rho0 = exp(lnrho0)
 !
 !  11-jun-03/tony: extracted from isothermal routine in Density module
@@ -1347,12 +1347,12 @@ module EquationOfState
 !
       real, intent(in) :: Fheat, FheatK, hcond0, hcond1, chi
       logical, intent(in) :: lmultilayer, lcalc_heatcond_constchi
-      
+
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
-      
+
 !
       if(ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
@@ -1377,7 +1377,7 @@ module EquationOfState
         cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
 !
 !  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy. 
+!  we have the nonconstant rho_xy*chi in tmp_xy.
 !AB: are here any cp factors?
 !
         if(lcalc_heatcond_constchi) then
@@ -1409,7 +1409,7 @@ module EquationOfState
         cs2_xy=cs20*exp(gamma1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
 !
 !  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy. 
+!  we have the nonconstant rho_xy*chi in tmp_xy.
 !
         if(lcalc_heatcond_constchi) then
           tmp_xy=Fheat/(rho_xy*chi*cs2_xy)
@@ -1474,7 +1474,7 @@ module EquationOfState
         do i=1,nghost
           f(:,:,n1-i,iss) = 2*tmp_xy - f(:,:,n1+i,iss)
         enddo
- 
+
 !
 !  top boundary
 !
@@ -1492,7 +1492,7 @@ module EquationOfState
         f(:,:,n2,iss) = tmp_xy
         do i=1,nghost
           f(:,:,n2+i,iss) = 2*tmp_xy - f(:,:,n2-i,iss)
-        enddo 
+        enddo
       case default
         call fatal_error('bc_ss_temp_old','invalid argument')
       endselect

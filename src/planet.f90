@@ -1,7 +1,7 @@
-! $Id: planet.f90,v 1.77 2006-11-16 19:58:18 mee Exp $
+! $Id: planet.f90,v 1.78 2006-11-30 09:03:36 dobler Exp $
 !
 !  This modules contains the routines for accretion disc and planet
-!  building simulations. 
+!  building simulations.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -13,33 +13,33 @@
 !
 !***************************************************************
 !
-! This module takes care of (mostly) everything related to the 
+! This module takes care of (mostly) everything related to the
 ! planet module
 !
 module Planet
-!  
+!
   use Cdata
   use Cparam
   use Messages
-!  
+!
   implicit none
 !
   include 'planet.h'
-!  
+!
   real, dimension(nrcylrun)  :: rho_tmp
   real, dimension(nrcylrun,3) :: u_tmp,b_tmp
   integer, dimension(nrcylrun) :: k_tmp
 !
   real, dimension (nrcylrun,3) :: bavg_coarse,uavg_coarse
   real, dimension (nrcylrun) :: rhoavg_coarse
-! 
+!
   contains
 !
 !***********************************************************************
     subroutine pencil_criteria_planet()
-! 
+!
 !  All pencils that the Planet module depends on are specified here.
-! 
+!
 !  06-nov-05/wlad: coded
 !  16-nov-06/tony: pencilised coordinates and averages
 !
@@ -47,7 +47,7 @@ module Planet
       lpenc_requested(i_uu)=.true.
       lpenc_requested(i_bb)=.true.
       lpenc_requested(i_rcyl_mn)=.true.
-      if (lmagnetic.or.lhydro) then 
+      if (lmagnetic.or.lhydro) then
         lpenc_requested(i_phix)=.true.
         lpenc_requested(i_phiy)=.true.
         lpenc_requested(i_pomx)=.true.
@@ -72,9 +72,9 @@ module Planet
     endsubroutine pencil_interdep_planet
 !*******************************************************************
     subroutine calc_pencils_planet(f,p)
-! 
+!
 !  DOCUMENT ME
-! 
+!
 !  ??-???-??/wlad: coded
 !
       use Mpicomm
@@ -93,14 +93,14 @@ module Planet
       integer :: i,j,ir
       logical :: err
 !
-! in the first time step, there is no average yet 
+! in the first time step, there is no average yet
 ! use the pencil value then. The same will be used
-! for r_int and r_ext 
+! for r_int and r_ext
 !
       if (lmagnetic) then
-        p%bavg(:,1)=p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy 
-        p%bavg(:,2)=p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy 
-        p%bavg(:,3)=p%bb(:,3)                    
+        p%bavg(:,1)=p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy
+        p%bavg(:,2)=p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy
+        p%bavg(:,3)=p%bb(:,3)
       endif
 !
       if (lhydro) then
@@ -108,11 +108,11 @@ module Planet
         p%uavg(:,2)=p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy
         p%uavg(:,3)=p%uu(:,3)
       endif
-!         
+!
 !
 !ajwm This doesn't make sense because it won't be restartable
 !ajwm is this supposed to be "if (headtt)" ???
-! 
+!
       if (it /= 1) then
 !
 ! expand it onto the pencil with spline interpolation
@@ -123,18 +123,18 @@ module Planet
           rloop_ext = r_int + ir*step
           rmid = 0.5*(rloop_int + rloop_ext)
           rcyl_coarse(ir)=rmid
-        enddo   
+        enddo
 !
         if (ldensity) &
           call spline(rcyl_coarse,rhoavg_coarse,p%rcyl_mn,p%rhoavg,nrcylrun,nx,err)
-        do j=1,3 
+        do j=1,3
           if (lhydro) &
             call spline(rcyl_coarse,uavg_coarse(:,j),p%rcyl_mn,p%uavg(:,j),nrcylrun,nx,err)
           if (lmagnetic) &
             call spline(rcyl_coarse,bavg_coarse(:,j),p%rcyl_mn,p%bavg(:,j),nrcylrun,nx,err)
-        enddo      
+        enddo
 !
-! fill in with pencil values the parts of the array that are away from the interpolation 
+! fill in with pencil values the parts of the array that are away from the interpolation
 !
         do i=1,nx
           if ((p%rcyl_mn(i).lt.rcyl_coarse(1)).or.(p%rcyl_mn(i).gt.rcyl_coarse(nrcylrun))) then
@@ -161,9 +161,9 @@ module Planet
 ! rad, phi and zed
 !
       if (lhydro) then
-        uuf(:,1)=p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy 
-        uuf(:,2)=p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy 
-        uuf(:,3)=p%uu(:,3) 
+        uuf(:,1)=p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy
+        uuf(:,2)=p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy
+        uuf(:,3)=p%uu(:,3)
       endif
       if (lmagnetic) then
         bbf(:,1)=p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy
@@ -240,18 +240,18 @@ module Planet
 ! stop if any ktot is zero
 !
         if (any(ktot == 0)) &
-          call error("set_new_average","ktot=0") 
+          call error("set_new_average","ktot=0")
 !
         ktot1=1./ktot
         if (ldensity)  rhoavg_coarse=rho_sum*ktot1
-        do j=1,3 
+        do j=1,3
           if (lhydro)    uavg_coarse(:,j)=u_sum(:,j)*ktot1
           if (lmagnetic) bavg_coarse(:,j)=b_sum(:,j)*ktot1
         enddo
 !
       endif
-!       
+!
     endsubroutine calc_pencils_planet
 !***************************************************************
   endmodule Planet
-  
+

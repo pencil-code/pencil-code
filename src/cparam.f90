@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.54 2006-10-12 17:53:00 wlyra Exp $
+! $Id: cparam.f90,v 1.55 2006-11-30 09:03:34 dobler Exp $
 
 module Cparam
 
@@ -73,13 +73,13 @@ module Cparam
   real, parameter :: impossible=3.9085e37
 !
 !
-! Diagnostic variable types 
+! Diagnostic variable types
 !
 !  Values > 0 get maxed across all  processors before any
 !  transformation using mpi_reduce_max;
 !  values < 0 get summed over all processors before any transformation
 !  using mpi_reduce_sum;
-!  value 0 causes the value simply to be used from the root processor 
+!  value 0 causes the value simply to be used from the root processor
 !
   integer, parameter :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0
   integer, parameter :: ilabel_max_sqrt=-2,ilabel_sum_sqrt=2
@@ -139,7 +139,7 @@ module Cparam
 ! Data structure used to allow module specific
 ! boundary conditions.
 !
-  type boundary_condition 
+  type boundary_condition
     character (len=bclen) :: bcname
     integer :: ivar
     integer :: location

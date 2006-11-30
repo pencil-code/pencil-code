@@ -1,7 +1,7 @@
-! $Id: visc_var.f90,v 1.32 2006-08-23 16:53:33 mee Exp $
+! $Id: visc_var.f90,v 1.33 2006-11-30 09:03:36 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
-!  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
+!  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -65,7 +65,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_var.f90,v 1.32 2006-08-23 16:53:33 mee Exp $")
+           "$Id: visc_var.f90,v 1.33 2006-11-30 09:03:36 dobler Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -95,30 +95,30 @@ module Viscosity
     subroutine read_viscosity_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat).and.NO_WARN) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_viscosity_init_pars
 !***********************************************************************
     subroutine write_viscosity_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine write_viscosity_init_pars
 !***********************************************************************
     subroutine read_viscosity_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=viscosity_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=viscosity_run_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+
+
 99    return
     endsubroutine read_viscosity_run_pars
 !***********************************************************************
@@ -137,7 +137,7 @@ module Viscosity
 !
       use Cdata
       use Sub
-! 
+!
       logical :: lreset
       logical, optional :: lwrite
       integer :: iname
@@ -166,7 +166,7 @@ module Viscosity
           write(3,*) 'itest=',0
         endif
       endif
-!   
+!
       if(NO_WARN) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_viscosity
 !!***********************************************************************
@@ -237,12 +237,12 @@ module Viscosity
 !  rho1 is pre-calculated in equ
 !
 !      if (nu /= 0.) then
-       
+
       shock=0.
       gshock=0.
 
         select case (ivisc)
-        
+
         case('nu-const')
           !
           !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
@@ -263,30 +263,30 @@ module Viscosity
          !  Ditlevsen, Jensen, and Olesen (Phys Rev Lett) show that
          !  E=k^q*psi((t*k^(3+q)/2),nu t^{-(1-q)/(3+q)}), t_code=t-t0
          !  Viscosity is choosen here such that second argument remains constant
-         !  with time. q and t0  must be guessed a priori. q=3.67 might be a good 
+         !  with time. q and t0  must be guessed a priori. q=3.67 might be a good
          !  choice.
-         
-         !  if nu is given in namelist this will correspond to nu at t=1. 
-         !  alternatively, nu_min=nu(t_max) and t_max can be set in namelist 
-         ! 
+
+         !  if nu is given in namelist this will correspond to nu at t=1.
+         !  alternatively, nu_min=nu(t_max) and t_max can be set in namelist
+         !
          !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
          !  -- the correct expression for nu=const
          !
-        
 
-           b = - (1.-q_DJO)/(3.+q_DJO)  
-           if (t.lt.ti_DJO) then 
+
+           b = - (1.-q_DJO)/(3.+q_DJO)
+           if (t.lt.ti_DJO) then
              nu_var = nu
-           else 
+           else
              nu_var= nu*((ti_DJO + t0_DJO)/(t + t0_DJO))**b
-           endif 
+           endif
           tf_DJO = (nu/nuf_DJO)**(1./b)*(ti_DJO + t0_DJO) - t0_DJO
           if (lroot.and.lfirstpoint.and.lout) call write_viscosity
           if (headtt) print*,'Using DJO variable viscosity. with '
-          if (headtt.and.(ip.lt.10)) then   
+          if (headtt.and.(ip.lt.10)) then
               !  print*,'VISC_VAR: nu, nuf,ti,tf,t0,q,nu_var'
               !  print*,nu,nuf_DJO,ti_DJO,tf_DJO,t0_DJO,q_DJO,nu_var
-          endif 
+          endif
           if (headtt) print*,'viscous force: nu_var*(del2u+graddivu/3+2S.glnrho)'
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
           if(ldensity) then
@@ -299,19 +299,19 @@ module Viscosity
           endif
 
         case('nu-DJO-nobulk')
-           
-         b = - (1.-q_DJO)/(3.+q_DJO)  
-          if (t.lt.ti_DJO) then 
+
+         b = - (1.-q_DJO)/(3.+q_DJO)
+          if (t.lt.ti_DJO) then
              nu_var = nu
-           else 
+           else
              nu_var= nu*((ti_DJO + t0_DJO)/(t + t0_DJO))**b
-           endif 
+           endif
           tf_DJO = (nu/nuf_DJO)**(1./b)*(ti_DJO + t0_DJO) - t0_DJO
           if (lroot.and.lfirstpoint.and.lout) call write_viscosity
-          if (headtt.and.(ip.lt.6)) then   
+          if (headtt.and.(ip.lt.6)) then
                 print*,'VISC_VAR: nu, nuf,ti,tf,t0,q'
                 print*,nu,nuf_DJO,ti_DJO,tf_DJO,t0_DJO,q_DJO
-          endif 
+          endif
           if (headtt) print*,'VARIABLE viscous force: nu_var*del2v'
           call del2v(f,iuu,del2u)
           fvisc=nu_var *del2u
@@ -323,7 +323,7 @@ module Viscosity
         if (lroot) print*, 'Program compiled with VISCOSITY = visc_var '
         if (lroot) print*, 'No such value for ivisc: ', trim(ivisc)
         call stop_it('calc_viscous_forcing')
-        
+
       endselect
 
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc

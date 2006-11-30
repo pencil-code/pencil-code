@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.26 2006-08-23 16:53:31 mee Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.27 2006-11-30 09:03:35 dobler Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -17,7 +17,7 @@ module Hydro
 
   use Cparam
   use Density
-  use Viscosity  
+  use Viscosity
   use Messages
 
   implicit none
@@ -96,7 +96,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.26 2006-08-23 16:53:31 mee Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.27 2006-11-30 09:03:35 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -122,13 +122,13 @@ module Hydro
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  24-nov-02/tony: coded 
+!  24-nov-02/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
-!      
+!
       if (ip == 0) print*,f,lstarting
-!     
+!
     endsubroutine initialize_hydro
 !***********************************************************************
     subroutine init_uu(f,xx,yy,zz)
@@ -248,7 +248,7 @@ module Hydro
 !        tmp=sqrt(-2*log(r))*sin(2*pi*p)*exp(-zz**2*10.)
         tmp=exp(-zz**2*10.)*cos(2.*xx+sin(4.*xx))
         f(:,:,:,iuz)=f(:,:,:,iuz)+ampluu*tmp
-  
+
       case('Fourier-trunc')
         !
         !  truncated simple Fourier series as nontrivial initial profile
@@ -266,11 +266,11 @@ module Hydro
         tmp = (zz-z1)/widthuu**2*prof*(cos(tmp) + 2*sin(2*tmp) + 3*cos(3*tmp))
         f(:,:,:,iux) = tmp*kx_uu/kabs
         f(:,:,:,iuy) = tmp*ky_uu/kabs
-  
+
       case('up-down')
         !
         !  flow upwards in one spot, downwards in another; not soneloidal
-        ! 
+        !
         if (lroot) print*,'init_uu: up-down'
         prof = ampluu*exp(-0.5*(zz-z1)**2/widthuu**2) ! vertical profile
         tmp = sqrt((xx-(x0+0.3*Lx))**2+(yy-(y0+0.3*Ly))**2) ! dist. from spot 1
@@ -447,43 +447,43 @@ module Hydro
     subroutine read_hydro_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=hydro_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=hydro_init_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+
+
 99    return
     endsubroutine read_hydro_init_pars
 !***********************************************************************
     subroutine write_hydro_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       write(unit,NML=hydro_init_pars)
-                                                                                                   
+
     endsubroutine write_hydro_init_pars
 !***********************************************************************
     subroutine read_hydro_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat)) then
         read(unit,NML=hydro_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=hydro_run_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+
+
 99    return
     endsubroutine read_hydro_run_pars
 !***********************************************************************
     subroutine write_hydro_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       write(unit,NML=hydro_run_pars)
-                                                                                                   
+
     endsubroutine write_hydro_run_pars
 !***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)
@@ -614,7 +614,7 @@ module Hydro
       real :: umx,umy,umz
       integer :: l,j
 !
-!  For vector output (of oo vectors) we need orms 
+!  For vector output (of oo vectors) we need orms
 !  on all processors. It suffices to have this for times when lout=.true.,
 !  but we need to broadcast the result to all procs.
 !
