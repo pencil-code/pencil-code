@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.13 2006-11-30 06:20:32 dobler Exp $
+! $Id: snapshot.f90,v 1.14 2006-11-30 08:55:49 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -413,7 +413,7 @@ contains
       use Mpicomm, only: start_serialize,end_serialize
 !
       character (len=*) :: file
-      integer :: nv,mode
+      integer :: nv,mode=1
       real, dimension (mx,my,mz,nv) :: a
       real, allocatable, dimension (:,:,:) :: aa
       integer :: ggmx,ggmy,ggmz,ggnv
