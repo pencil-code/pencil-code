@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.15 2006-11-30 09:03:36 dobler Exp $
+! $Id: snapshot.f90,v 1.16 2006-11-30 12:09:04 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -413,7 +413,7 @@ contains
       use Mpicomm, only: start_serialize,end_serialize
 !
       character (len=*) :: file
-      integer :: nv,mode=1
+      integer :: nv
       real, dimension (mx,my,mz,nv) :: a
       real, allocatable, dimension (:,:,:) :: aa
       integer :: ggmx,ggmy,ggmz,ggnv
@@ -446,19 +446,11 @@ contains
       endif
       if (ip<=8) print*,'input_globals: read ',file
 !
-!  FIXME: mode is a local variable that is never set
+      read(1) t,x,y,z,dx,dy,dz
 !
-      if (mode==1) then
-!
-!  check whether we want to read deltay from snapshot
-!
-        read(1) t,x,y,z,dx,dy,dz
-!
-        if (ip<=3) print*,'input_globals: ip,x=',ip,x
-        if (ip<=3) print*,'input_globals: y=',y
-        if (ip<=3) print*,'input_globals: z=',z
-!
-      endif
+      if (ip<=3) print*,'input_globals: ip,x=',ip,x
+      if (ip<=3) print*,'input_globals: y=',y
+      if (ip<=3) print*,'input_globals: z=',z
 !
       close(1)
       if (lserial_io) call end_serialize()
