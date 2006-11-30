@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.18 2006-04-04 09:24:33 ajohan Exp $
+; $Id: pc_read_ts.pro,v 1.19 2006-11-30 13:25:55 theine Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2006-04-04 09:24:33 $
-;  $Revision: 1.18 $
+;  $Date: 2006-11-30 13:25:55 $
+;  $Revision: 1.19 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -92,7 +92,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, "           average. (should probably be odd!)                     "
     print, "  datadir: specify the path to the data directory         [string]"
     print, "           containing the time series file.                       "
-    print, "           Default is 'data/'                                     "
+    print, "           Default is 'data'                                     "
     print, "           NB. if filename contains any / characters, datadir     "
     print, "               be ignored.                                        "
     print, "                                                                  "
@@ -119,13 +119,13 @@ COMPILE_OPT IDL2,HIDDEN
 
 ; Default data directory
 
-  default, datadir, 'data/'
+  default, datadir, 'data'
   default, filename, 'time_series.dat'
   default, monotone, 0
   default, MOVINGAVERAGE,0
 
   if (strpos(filename,'/') eq -1) then begin
-    fullfilename=datadir+filename
+    fullfilename=datadir+'/'+filename
   endif else begin
     fullfilename=filename
   endelse
