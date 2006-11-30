@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.12 2006-11-29 02:20:31 dobler Exp $
+! $Id: snapshot.f90,v 1.13 2006-11-30 06:20:32 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -445,6 +445,9 @@ contains
         read(1) a
       endif
       if (ip<=8) print*,'input_globals: read ',file
+!
+!  FIXME: mode is a local variable that is never set
+!
       if (mode==1) then
 !
 !  check whether we want to read deltay from snapshot
