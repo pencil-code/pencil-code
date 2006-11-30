@@ -14,11 +14,15 @@
 # Copyright (C) 2006  Wolfgang Dobler
 #
 # This program is free software; you can redistribute and/or modify it
-# under the same conditions as Perl (see `perldoc perlartistic').
+# under the same conditions as Perl (see `perldoc perlgpl',
+# `perldoc perlartistic').
 
 
 use strict;
-use Digest::MD5 qw(md5_hex);
+
+# Try to load Digest::MD5 module
+my $md5_implementation = 'Digest::MD5';
+eval { require Digest::MD5 } or $md5_implementation = 'md5sum';
 
 my $debug = 1;                  # 0: be quiet
                                 # 1: be verbose
@@ -172,6 +176,7 @@ sub boldface {
     my $string   = shift();
     my $force_bf = shift() || 0;
 
+    # Set up start/end markers for boldface
     my ($bfa,$bfe);
     my $esc = chr(0x1b);
     if (-t STDOUT || $force_bf) {  # if STDOUT is connected to a terminal
@@ -181,7 +186,12 @@ sub boldface {
         $bfa = '';
         $bfe = '';
     }
-    return $bfa . $string . $bfe;
+
+    # Make sure the end marker appears before a newline, or warn/die will
+    # add unwanted line numbers
+    $string =~ s/^(.*)(\n?)$/$bfa$1$bfe$2/;
+
+    return $string;
 }
 # ---------------------------------------------------------------------- #
 sub get_timestamp {
@@ -224,10 +234,63 @@ sub get_md5_hash {
         my $data = <FILE>;
         close FILE;
         $data = erase_timestamp_from_mod($data);
-        $mod_hash{$file} = md5_hex($data);
+        $mod_hash{$file} = md5_hash_hex($data);
     }
 
     return %mod_hash;
+}
+# ---------------------------------------------------------------------- #
+sub md5_hash_hex {
+# Given a string, return its MD5 hash in hexadecimal format.
+# Uses Digest::MD5 if that module is available, otherwise calls the
+# system command `md5sum' (which should be available on POSIX or cygwin).
+    my $data = shift;
+
+    if ($md5_implementation eq 'Digest::MD5') {
+	return Digest::MD5::md5_hex($data);
+    } elsif ($md5_implementation eq 'md5sum') {
+	return md5_hash_hex_system($data);
+    } else {
+	die "No working MD5 implementation, tried Digest::MD5 and `md5sum'\n";
+    }
+}
+# ---------------------------------------------------------------------- #
+sub md5_hash_hex_system {
+# Use the system's `md5sum' function to calculate MD5 hash of a string
+
+    require IPC::Open2;
+
+    my $data = shift;
+
+    my $md5;
+
+    print DEBUG "Piping data to `md5sum'\n";
+    my $pid = IPC::Open2::open2(\*MD5SUM, \*DATA, "md5sum");
+
+    # Need to fork, so we can write and read to/from the same pipe without
+    # risking deadlock for large data sizes
+    if (my $fid=fork) { # parent
+        close DATA;  # don't forget this one
+        if ($debug>=2) { print DEBUG "Parent: Reading from md5sum\n" }
+        $md5 = <MD5SUM>;
+        close MD5SUM; # not necessary, I guess
+        if ($debug>=2) { print DEBUG "Parent: Read from md5sum\n" }
+        waitpid($fid,0); # not really needed her, but avoids zombies
+        if ($debug>=2) { print DEBUG "Parent: Child has finished\n" }
+    } else {            # child
+        die "Cannot fork: $!" unless defined ($fid);
+        if ($debug>=2) { print DEBUG "Child: Writing to md5sum (pid $pid)\n" }
+        close MD5SUM; # apparently not necessary
+        print DATA $data;
+        close DATA;
+        if ($debug>=2) { print DEBUG "Child: Wrote to md5sum\n" }
+        exit;
+    }
+
+    # Strip trailing ` -\n' from md5sum ouptut
+    $md5 =~ s/\s*(\S+).*/$1/s;
+
+    return $md5;
 }
 # ---------------------------------------------------------------------- #
 sub erase_timestamp_from_mod {
