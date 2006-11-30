@@ -74,19 +74,19 @@ if (grep /^-c$/, @fcargs) {
 my $fc_base   = $fc;
 $fc_base =~ s{.*/}{};           # base filename
 $fc_base =~ s/-[0-9.]+//;       # remove trailing version number
-my %modtype = ( g95      => 'g95'   ,
-                gfortran => 'g95'   ,
-                ifort    => 'ifort' ,
-                ifc      => 'ifort' ,
+my %modtype = ( # map compiler names to module types
+                g95      => 'g95'     ,
+                gfortran => 'g95'     ,
+                ifort    => 'ifort'   ,
+                ifc      => 'ifort'   ,
                 );
-my $unknown = '[unkown]';
 my $fc_modtype = $ENV{F90_QND_MODTYPE}
-                 || $modtype{$fc_base}
-                 || $unknown;
+                 || $modtype{$fc_base};
 
-die boldface("Cannot determine module type, please set F90_QND_MODTYPE\n")
-  if ($fc_modtype eq $unknown);
-
+unless (defined($fc_modtype)) {
+    $fc_modtype = 'generic'; 
+    warn boldface("$cmdname: F90_QND_MODTYPE is not set; defaulting to `$fc_modtype'\n");
+}
 
 ## 2. Get file name of source file *.f90 or *.f
 my @srcfiles = grep /(.*\.f(?:90)?)$/, @fcargs ;
@@ -111,10 +111,10 @@ my $backdate_src_o = 1;      # back-date .{f90,o} unless we change our opinion
 
 my @changed = get_updated_files(\%ts_before,\%ts_after); # compare mtimes
 my @really_changed
-  = map {    ($md5_before{$_} || 'none')
-          ne ($md5_after {$_} || 'New' )
-        }
-        @changed;
+  = grep {    ($md5_before{$_} || 'none')
+           ne ($md5_after {$_} || 'New' )
+         }
+         @changed;
 print_details_of_changes() if ($debug);
 
 # Cycle through _all_ updated .mod files and back-date if appropriate.
@@ -175,8 +175,8 @@ sub boldface {
     my ($bfa,$bfe);
     my $esc = chr(0x1b);
     if (-t STDOUT || $force_bf) {  # if STDOUT is connected to a terminal
-        $bfa = "${esc}[1m";
-        $bfe = "${esc}[0m";
+        $bfa = "$esc" . '[1m';
+        $bfe = "$esc" . '[0m';
     } else {
         $bfa = '';
         $bfe = '';
@@ -222,25 +222,39 @@ sub get_md5_hash {
         open(FILE, "< $file")
           or die boldface("Cannot open file $file for reading\n");
         my $data = <FILE>;
-
-        # Eliminate time stamp from ASCII-formatted g95 module file:
-        if ($fc eq 'g95') {
-            $data =~ s{(G95 module created on) .* (from) }
-              {$1 [removed timestamp] $2}m;
-        }
-        # Eliminate time stamp from binary ifort (>=8) module file:
-        if ($fc eq 'ifort') {
-            # We know that bytes 45 and 46 depend on compile time (45
-            # counts faster [seconds, I guess], 46 slower). Most likely,
-            # the bytes 45..48 contain the seconds of epoch (or whatever
-            # the reference is), so we just null them out
-            substr($data,45,4) = "\0\0\0\0";
-        }
-
+        close FILE;
+        $data = erase_timestamp_from_mod($data);
         $mod_hash{$file} = md5_hex($data);
     }
 
     return %mod_hash;
+}
+# ---------------------------------------------------------------------- #
+sub erase_timestamp_from_mod {
+# Erase time stamp in .mod files of known type
+    my $data = shift; 
+
+    if ($fc_modtype =~ /^(g95|gfortran)$/) {
+        # Eliminate time stamp from ASCII-formatted g95/gfortran module file:
+        # Time stamp line is first line and looks like one of
+        #   G95 module created on Wed Nov 29 18:27:08 2006 from random_nr.f90
+        #   GFORTRAN module created from random_nr.f90 on Wed Nov 29 18:22:38 2006
+        $data =~ s{((?:G95|GFORTRAN) module created .*? on) .* (from|$)}
+                  {$1 [removed timestamp] $2}m
+                 or warn boldface("No time stamp found...\n");
+    } elsif ($fc_modtype =~ /^(ifort|ifc|hp)$/) { 
+        # Eliminate time stamp from binary ifort (>=8) module file:
+        # Bytes 45-48 represent Unix time, so we null them out:
+        substr($data,44,4) = "\0\0\0\0";
+        # Exactly same thing for HP Fortran Compiler V5.5A (Tru64/OSF1).
+    } elsif ($fc_modtype =~ /^(generic|mips)$/) {
+        # No time stamp to remove.
+        # IRIX MIPSPro 7.4 compiler: No time stamp
+    } else {
+        die boldface("Don't know what to do for module type `$fc_modtype'\n");
+    }
+
+    return $data;
 }
 # ---------------------------------------------------------------------- #
 sub get_ts_and_md5_for_mod {
@@ -411,8 +425,10 @@ F90 compiler to use.
 =item F90_QND_MODTYPE
 
 If the name of your compiler is not recognized (currently only
-/g95|ifort|ifc/ are), you need to set this variable to one of the
-supported module types (currently 'g95' or 'ifort').
+/g95|gfortran|ifort|ifc/ are), you need to set this
+variable to one of the supported module types (currently
+`g95=gfortran|ifort=ifc=hp|generic=mips' -- `generic' is for .mod files
+without a time stamp).
 
 =item F90_QND_EXEC_RE
 
