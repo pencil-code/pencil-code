@@ -365,10 +365,14 @@ sub compile {
         print DEBUG "$fc  @fcargs\n";
     }
 
+    # Clear error variable
+    $! = 0;
+
     my $retval = system($fc, @fcargs);
     if ($retval ne 0) {
-        die boldface("Error during compilation:"
-                     . " $fc returned $retval (\$\!=`$!')\n");
+        my $msg = "Error during compilation: $fc returned $retval";
+        $msg .= ' ($!=`' . $!. "')" if ($! ne '');
+        die boldface("$msg\n");
     }
 
     print DEBUG "..done.\n" if ($debug);
