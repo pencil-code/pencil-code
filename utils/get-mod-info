@@ -1,0 +1,48 @@
+#!/bin/sh
+
+# Name:   get-mod-info
+# Author: wd (Wolfgang.Dobler@ucalgary.ca)
+# Date:   30-Nov-2006
+# Description:
+#   Collect enough information about .mod files to allow identifying
+#   timestamps in the format.
+#   Needs to be run from a Pencil Code run directory.
+
+
+compile_and_copy() {
+# Usage:
+#   compile_and_copy <label>
+    (cd src; rm -f *.mod *.o; gmake cdata.o)
+    mv src/cparam.mod ./cparam${1}.mod
+    mv src/cdata.mod  ./cdata${1}.mod
+    mv src/CPARAM.mod ./CPARAM${1}.mod
+    mv src/CDATA.mod  ./CDATA${1}.mod
+}
+
+
+echo "Preparing..."
+pc_setupsrc
+rm -i *.mod mod_files.tar*
+
+echo "Compilation round 1..."
+compile_and_copy 1
+
+# Make sure new time stamp will have at least two bytes updated (if time
+# stamp is in seconds of the Unix epoch or similar)
+echo "Waiting ~ 4 minutes..."
+sleep 260
+
+echo "Compilation round 2..."
+compile_and_copy 2
+
+
+echo "Wrapping up"
+tar cf mod_files.tar *.mod
+gzip mod_files.tar
+
+echo "Please send mod_files.tar.gz to WDobler@ucalgary.ca"
+echo "and add the compiler name and version."
+
+
+
+# End of file get-mod-info
