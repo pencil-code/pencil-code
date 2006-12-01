@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.97 2006-11-30 09:03:35 dobler Exp $
+! $Id: forcing.f90,v 1.98 2006-12-01 14:49:23 pkapyla Exp $
 
 module Forcing
 
@@ -20,7 +20,8 @@ module Forcing
   real :: omega_ff=1.
   real :: tforce_stop=impossible
   real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=impossible
-  real :: dtforce=0.
+  real :: dtforce=0., force_strength=0.
+  real, dimension(3) :: force_direction=(/0.,0.,0./)
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=0. !(initialize profz_hel=1)
   integer :: kfountain=5,ifff,iffx,iffy,iffz
@@ -44,7 +45,8 @@ module Forcing
        omega_ff, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
        lmagnetic_forcing,max_force,dtforce,old_forcing_evector, &
-       iforce_profile,lscale_kvector_tobox
+       iforce_profile,lscale_kvector_tobox, &
+       force_direction, force_strength
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
@@ -72,7 +74,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.97 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: forcing.f90,v 1.98 2006-12-01 14:49:23 pkapyla Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -301,6 +303,7 @@ module Forcing
       real, dimension (nx) :: radius,tmpx,rho1,ff,ruf,uf,of,rho
       real, dimension (mz) :: tmpz
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,uu,oo,bb,fxb
+      real, dimension (nx,3) :: fda
       real, dimension (mx,my,mz,mfarray) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
@@ -315,6 +318,7 @@ module Forcing
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
       real, dimension(3) :: e1,e2,ee,kk
       real :: norm,phi
+      real :: fd,fd2,kkfd
 !
       if (ifirst==0) then
         if (lroot) print*,'forcing_hel: opening k.dat'
@@ -489,6 +493,32 @@ module Forcing
       coef1(3)=k*kez; coef2(3)=relhel*kkez
       if (ip.le.5) print*,'forcing_hel: coef=',coef1,coef2
 !
+! An attempt to implement anisotropic forcing using direction
+! dependent forcing amplitude. Activated only if force_strength,
+! describing the anisotropic part of the forcing, is
+! nonzero. force_direction, which is a vector, defines the preferred
+! direction of forcing. The expression for the forcing amplitude used
+! at the moment is:
+!
+!  f(i) = f0*[1. + epsilon((k dot fd)/(|k||fd|))^2*fd(i)/|fd|] 
+!
+! here f0 and fd are shorthand for force and forcing_direction,
+! respectively, and epsilon=force_strength/force.
+!
+      if (force_strength/=0.) then
+         call dot(force_direction,force_direction,fd2)
+         fd=sqrt(fd2)
+
+         call dot(kk,force_direction,kkfd)
+
+         do j=1,3
+            fda(:,j) = 1. + (force_strength/force)*(kkfd/(k*fd))**2 &
+                 *force_direction(j)/fd
+         end do
+      else
+         fda = 1.
+      end if
+!
 !  In the past we always forced the du/dt, but in some cases
 !  it may be better to force rho*du/dt (if lmomentum_ff=.true.)
 !  For compatibility with earlier results, lmomentum_ff=.false. by default.
@@ -516,7 +546,7 @@ module Forcing
                 jf=j+ifff-1
                 forcing_rhs(:,j)=rho1*profx_ampl*profz_ampl(n)*force_ampl &
                   *real(cmplx(coef1(j),profx_hel*profz_hel(n)*coef2(j)) &
-                  *fx(l1:l2)*fy(m)*fz(n))
+                  *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
                 f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
               endif
             enddo
