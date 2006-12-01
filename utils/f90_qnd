@@ -310,9 +310,10 @@ sub erase_timestamp_from_mod {
         # Bytes 45-48 represent Unix time, so we null them out:
         substr($data,44,4) = "\0\0\0\0";
         # Exactly same thing for HP Fortran Compiler V5.5A (Tru64/OSF1).
-    } elsif ($fc_modtype =~ /^(generic|mips)$/) {
+    } elsif ($fc_modtype =~ /^(generic|mips|sun)$/) {
         # No time stamp to remove.
         # IRIX MIPSPro 7.4 compiler: No time stamp
+        # Sun Fortran 95 7.1: No time stamp
     } else {
         die boldface("Don't know what to do for module type `$fc_modtype'\n");
     }
@@ -428,10 +429,12 @@ sub print_details_of_changes {
 
 __END__
 
+
 =head1 NAME
 
 B<f90_qnd> - Fast re-compilation of modular F90 codes through foul play
 with mtimes
+
 
 =head1 SYNOPSIS
 
@@ -439,11 +442,16 @@ with mtimes
    export F90_QND_F90=ifort
    f90_qnd <f90-arguments>  # (i.e. drop-in replacement for f90 compiler)
 
+
 =head1 DESCRIPTION
 
-This compiler wrapper avoids unnecessary re-compilation by clever
-back-dating of time stamps for .f90, .o and .mod files.
-`qnd' stands for `quick and dirty'.
+This compiler wrapper avoids unnecessary recompilation (the `recompilation
+cascade') by clever back-dating of time stamps for .f90, .o and .mod
+files. `qnd' stands for `quick and dirty'.
+
+B<f90_qnd> ships as part of the Pencil Code
+L<http://www.nordita.dk/software/pencil-code/>, but should also work for
+other modular F90 codes.
 
 The scheme (inspired by g95's `smart compilation feature') works as
 follows:
@@ -481,6 +489,7 @@ recompiled, and only the executables are re-linked against the new
 
 =back
 
+
 =head1 ENVIRONMENT
 
 =over 4
@@ -492,19 +501,48 @@ F90 compiler to use.
 =item F90_QND_MODTYPE
 
 If the name of your compiler is not recognized (currently only
-/g95|gfortran|ifort|ifc/ are), you need to set this
-variable to one of the supported module types (currently
-`g95=gfortran|ifort=ifc=hp|generic=mips' -- `generic' is for .mod files
-without a time stamp).
+/g95|gfortran|ifort|ifc/ are), you need to set this variable to one of the
+supported module types (see the table below).
 
 =item F90_QND_EXEC_RE
 
-When backdating object files, I<f90_qnd> will backdate executables so they
+When backdating object files, B<f90_qnd> will backdate executables so they
 will get re-linked. An executable in this sense is any file whose name
-matches the Perl regular expression F90_QND_EXEC_RE. The default is
+matches the Perl regular expression B<F90_QND_EXEC_RE>. The default is
 `\.x$'.
 
 =back
+
+
+=head1 SUPPORTED COMPILERS
+
+We have tested B<f90_qnd> successfully with the following compilers:
+
+   Compiler       Version   F90_QND_F90   F90_QND_MODTYPE
+  --------------------------------------------------------
+   G95            0.91      g95           g95
+   Gfortran       4.1.1     gfortran      gfortran
+   Intel          8.1       ifc           ifc
+   Intel          9.1       ifort         ifort
+   HP/Compaq/Dec  5.5A      f90           hp
+   MIPSPro        7.4       f90           mips
+   Sun            7.1       f95           sun
+
+In reality there are way fewer module types than indicated by
+this table, as g95=gfortran (text format, first line contains time stamp),
+ifort=ifc=hp (binary, 4-byte Unix time stamp in bytes 45--48),
+generic=mips=sun ([binary,] no time stamp).
+
+To add more compilers, we need to know where the time stamps (if any) are
+located in the .mod files, so we can mask them out before calculationg MD5
+sums for comparison. The Pencil Code comes with the shell script
+C<utils/get-mod-info> to make it easier to extract the relevant
+information.
+
+See also L<http://www.theochem.uwa.edu.au/fortran/recompile/> for a
+information on older compilers' .mod file format (and for other approaches
+to the `recompilation cascade problem').
+
 
 =head1 NOTES
 
@@ -519,20 +557,16 @@ with dependencies on .mod files. Only the former has been tested so far.
 
 =item 2.
 
-Currently, g95 and ifort (>=8.0) are supported. To add other compilers, we
-need to know where the time stamp is located in the .mod files, so we can
-mask it out before calculationg MD5 sums for comparison.
-
-=item 3.
-
-If the compiler call contains no `-c' option we assume the compiler was
+If the compiler call contains no `-c' option, we assume the compiler was
 called for linking, and no time stamps are manipulated.
 
 =back
 
+
 =head1 AUTHOR
 
 Wolfgang Dobler <Wolfgang.Dobler AT ucalgary DOT ca>
+
 
 =head1 COPYRIGHT
 
@@ -544,4 +578,4 @@ under the same conditions as Perl (see L<perlgpl> and L<perlartistic>).
 =cut
 
 
-# End of file f90_qnd
+#  End of file f90_qnd
