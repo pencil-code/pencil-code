@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.24 2006-11-30 09:03:36 dobler Exp $
+! $Id: nospecial.f90,v 1.25 2006-12-04 19:45:36 dobler Exp $
 
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
@@ -137,11 +137,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.24 2006-11-30 09:03:36 dobler Exp $
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.25 2006-12-04 19:45:36 dobler Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.24 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: nospecial.f90,v 1.25 2006-12-04 19:45:36 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -166,6 +166,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use Cdata
+      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !!
@@ -225,6 +226,8 @@ module Special
 !
 !  18-07-06/tony: coded
 !
+      use Sub, only: keep_compiler_quiet
+!
       logical, dimension(npencils) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
@@ -239,6 +242,7 @@ module Special
 !   24-nov-04/tony: coded
 !
       use Cdata
+      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -300,6 +304,9 @@ module Special
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
+!
+      use Sub, only: keep_compiler_quiet
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
@@ -309,6 +316,9 @@ module Special
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
+!
+      use Sub, only: keep_compiler_quiet
+!
       integer, intent(in) :: unit
 
       call keep_compiler_quiet(unit)
@@ -316,6 +326,9 @@ module Special
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
+!
+      use Sub, only: keep_compiler_quiet
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
@@ -325,6 +338,9 @@ module Special
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
+!
+      use Sub, only: keep_compiler_quiet
+!
       integer, intent(in) :: unit
 
       call keep_compiler_quiet(unit)
@@ -374,6 +390,8 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
+      use Sub, only: keep_compiler_quiet
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -393,7 +411,8 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
-
+      use Sub, only: keep_compiler_quiet
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -422,6 +441,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
+      use Sub, only: keep_compiler_quiet
 
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -453,6 +473,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
+      use Sub, only: keep_compiler_quiet
 
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -483,6 +504,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
+      use Sub, only: keep_compiler_quiet
 
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -512,6 +534,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
+      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (boundary_condition) :: bc
@@ -532,6 +555,7 @@ module Special
 !   06-jul-06/tony: coded
 !
       use Cdata
+      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
@@ -539,7 +563,7 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-!
+
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
@@ -549,5 +573,6 @@ module Special
 !**                                                                **
     include 'special_dummies.inc'
 !********************************************************************
+
 endmodule Special
 

@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.38 2006-12-04 18:31:19 brandenb Exp $
+! $Id: neutron_star.f90,v 1.39 2006-12-04 19:45:36 dobler Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -28,19 +28,19 @@
 !
 ! The rest of this file may be used as a template for your own
 ! special module.  Lines which are double commented are intended
-! as examples of code.  Simply fill out the prototypes for the 
+! as examples of code.  Simply fill out the prototypes for the
 ! features you want to use.
 !
 ! Save the file with a meaningful name, eg. geo_kws.f90 and place
 ! it in the $PENCIL_HOME/src/special directory.  This path has
 ! been created to allow users ot optionally check their contributions
 ! in to the Pencil-Code CVS repository.  This may be useful if you
-! are working on/using the additional physics with somebodyelse or 
+! are working on/using the additional physics with somebodyelse or
 ! may require some assistance from one of the main Pencil-Code team.
 !
 ! To use your additional physics code edit the Makefile.local in
 ! the src directory under the run directory in which you wish to
-! use your additional physics.  Add a line with all the module 
+! use your additional physics.  Add a line with all the module
 ! selections to say something like:
 !
 !    SPECIAL=special/nstar
@@ -59,22 +59,23 @@ module Special
 !  use Density, only: rho_up
   use EquationOfState
 
+
   implicit none
 
   include 'special.h'
-  
-  ! input parameters 
-  logical :: lmass_source_NS=.false. 
+
+  ! input parameters
+  logical :: lmass_source_NS=.false.
   logical :: leffective_gravity=.false.
 
   character (len=labellen) :: initnstar='default'
   real :: rho_star=1.,rho_disk=1., rho_surf=1.
 
   real :: uu_init=0.
- 
- 
+
+
   real :: R_star=0.
-  real :: M_star=0. 
+  real :: M_star=0.
   real :: T_star=0.
   real :: T_disk=0.
   real :: accretion_flux=0.
@@ -91,21 +92,21 @@ module Special
   integer :: L_disk_point=0
 
   real :: beta_hand=1.
-  real :: nu_for_1D=1. 
- 
-  logical :: l1D_cooling=.false.,l1D_heating=.false.
+  real :: nu_for_1D=1.
+
+ logical :: l1D_cooling=.false.,l1D_heating=.false.
 
   logical :: lraddif_local=.false.
 
-  
+
 
   logical :: l1D_cool_heat=.false.
-  logical :: lgrav_x_mdf=.false. 
+  logical :: lgrav_x_mdf=.false.
 !
 ! Keep some over used pencils
 !
   real, dimension(nx) :: z_2
- 
+
 
 ! start parameters
   namelist /neutron_star_init_pars/ &
@@ -129,10 +130,10 @@ module Special
        lnstar_T_const,lnstar_1D, &
        l1D_cooling,l1D_heating, lgrav_x_mdf
 !!
-!! Declare any index variables necessary for main or 
-!! 
+!! Declare any index variables necessary for main or
+!!
 !!   integer :: iSPECIAL_VARIABLE_INDEX=0
-!  
+!
 !! other variables (needs to be consistent with reset list below)
 !
   integer :: idiag_dtcrad=0
@@ -143,9 +144,9 @@ module Special
 !***********************************************************************
     subroutine register_special()
 !
-!  Configure pre-initialised (i.e. before parameter read) variables 
+!  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
-! 
+!
 !
 !  6-oct-03/tony: coded
 !
@@ -162,14 +163,14 @@ module Special
       first = .false.
 
 !!
-!! MUST SET lspecial = .true. to enable use of special hooks in the Pencil-Code 
+!! MUST SET lspecial = .true. to enable use of special hooks in the Pencil-Code
 !!   THIS IS NOW DONE IN THE HEADER ABOVE
 !
 !
 !
-!! 
-!! Set any required f-array indexes to the next available slot 
-!!  
+!!
+!! Set any required f-array indexes to the next available slot
+!!
 !!
 !      iSPECIAL_VARIABLE_INDEX = nvar+1             ! index to access entropy
 !      nvar = nvar+1
@@ -179,14 +180,14 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.38 2006-12-04 18:31:19 brandenb Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.39 2006-12-04 19:45:36 dobler Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.38 2006-12-04 18:31:19 brandenb Exp $")
+           "$Id: neutron_star.f90,v 1.39 2006-12-04 19:45:36 dobler Exp $")
 !
 !
-!  Perform some sanity checks (may be meaningless if certain things haven't 
+!  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
 !
       if (naux > maux) then
@@ -207,20 +208,20 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Cdata 
+      use Cdata
    !   use Density
       use EquationOfState
 
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !!
-!!  Initialize any module variables which are parameter dependant  
+!!  Initialize any module variables which are parameter dependant
 !!
 
-   
+
     l1D_cool_heat=l1D_cooling.or.l1D_heating
 
-   
+
     if (l1D_cool_heat.and.lroot) &
           print*, 'neutron_star: 1D cooling or heating'
 !
@@ -266,9 +267,9 @@ module Special
     endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special()
-! 
+!
 !  All pencils that this special module depends on are specified here.
-! 
+!
 !  18-07-06/tony: coded
 !
       use Cdata
@@ -276,7 +277,7 @@ module Special
       if (laccelerat_zone)  lpenc_requested(i_rho)=.true.
     !  if (lmass_source_NS)  lpenc_requested(i_rho)=.true.
 !Natalia (accretion on a NS)
-      
+
 
    if (lnstar_entropy) then
          lpenc_requested(i_TT)=.true.
@@ -286,7 +287,7 @@ module Special
          lpenc_requested(i_rho)=.true.
       endif
 !
-     if (lraddif_local) then 
+     if (lraddif_local) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_glnrho)=.true.
@@ -320,7 +321,7 @@ module Special
       use Global
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df     
+      real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
 !
@@ -370,7 +371,7 @@ module Special
     subroutine read_special_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-    
+
       if (present(iostat)) then
         read(unit,NML=neutron_star_run_pars,ERR=99, IOSTAT=iostat)
       else
@@ -382,7 +383,7 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       write(unit,NML=neutron_star_run_pars)
 
     endsubroutine write_special_run_pars
@@ -430,9 +431,9 @@ endsubroutine read_special_run_pars
 !   06-oct-03/tony: coded
 !
       use Cdata
-      ! use Viscosity    
+      ! use Viscosity
       use EquationOfState
-    
+
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -447,34 +448,34 @@ endsubroutine read_special_run_pars
 
        if (laccelerat_zone) then
          if (n .GE. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
-          if (lnstar_entropy) then   
-            if (nxgrid == 1) then       
-              if (lnstar_T_const) then           
-              endif    
+          if (lnstar_entropy) then
+            if (nxgrid == 1) then
+              if (lnstar_T_const) then
+              endif
             else
-	     l_sz=l2-5*0
+             l_sz=l2-5*0
                df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho) &
-	          -1./(5.*dt)*(f(l1:l_sz,m,n,ilnrho) &
+                  -1./(5.*dt)*(f(l1:l_sz,m,n,ilnrho) &
                   -log(rho_disk)-(-M_star/2./z(n)**3 &
                   *x(l1:l_sz)**2*gamma/(p%cs2(l1:l_sz))))
-  		
-	    endif 
+
+            endif
           endif
-         endif 
+         endif
        endif
 
        if (ldecelerat_zone) then
          if (n .LE. ac_dc_size+4 .AND. dt .GT. 0.) then
 
-            if (lnstar_entropy) then          
+            if (lnstar_entropy) then
               if (lnstar_T_const) then
                df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
                 -1./p%rho(:)/(5.*dt)*(p%rho(:)-rho_star &
                 *exp(-M_star/R_star/cs0**2*gamma*(1.-R_star/z(n))))
-              endif    
+              endif
 
             else
-	    
+
 
             endif
          endif
@@ -487,18 +488,18 @@ endsubroutine read_special_run_pars
          if ( dt .GT.0.) then
             l_sz=l2-5
           if (lnstar_1D) then
-           else 
-           do i=l_sz,l2   
+           else
+           do i=l_sz,l2
             if (n .LT. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
              df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
              -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
-	     +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/p%cs2(i-1))
-	    else
-	    df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
-	     -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))   
+             +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/p%cs2(i-1))
+            else
+            df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
+             -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))
             endif
            enddo
-          endif 
+          endif
         endif
       endif
 
@@ -516,7 +517,7 @@ endsubroutine read_special_run_pars
 !   16-jul-06/natalia: coded
 !
       use Cdata
-!      
+!
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -535,10 +536,10 @@ endsubroutine read_special_run_pars
 
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
             M_star/z(n)**2*(1.-p%uu(:,2)*p%uu(:,2)*z(n)/M_star)
-       
-        if (nxgrid /= 1) then 
 
-          if (lgrav_x_mdf) then 
+        if (nxgrid /= 1) then
+
+          if (lgrav_x_mdf) then
             df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)- &
               M_star/z(n)**2/sqrt(z(n)**2+x(l1:l_sz)**2)*x(l1:l_sz)*(z(n)-R_star)/(Lxyz(1)*0.5)
            else
@@ -553,26 +554,26 @@ endsubroutine read_special_run_pars
         if (n .ge. nzgrid-ac_dc_size  .and. dt .gt.0.) then
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
               -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
-       
-           if (nxgrid == 1) then  
+
+           if (nxgrid == 1) then
              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
               -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
            else
-	   
-	 l_sz=l2-5  
+
+         l_sz=l2-5
              df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux) &
                               -1./(5.*dt)*(f(l1:l_sz,m,n,iux)-0.)
 
         !    df(l_sz+1:l2,m,n,iux)=df(l_sz+1:l2,m,n,iux) &
-	!     -1./(5.*dt)*(f(l_sz+1:l2,m,n,iux)-f(l_sz+1:l2,m,n-1,iux))
-			    
-			    
-         l_sz=l2-5	 
-	 
+        !     -1./(5.*dt)*(f(l_sz+1:l2,m,n,iux)-f(l_sz+1:l2,m,n-1,iux))
+
+
+         l_sz=l2-5
+
              df(l1:l_sz,m,n,iuz)=df(l1:l_sz,m,n,iuz)&
               -1./(5.*dt)*(f(l1:l_sz,m,n,iuz)-f(l1:l_sz,m,n-1,iuz))
 
-           endif 
+           endif
         endif
       endif
 !
@@ -580,24 +581,24 @@ endsubroutine read_special_run_pars
 !
       if (ldecelerat_zone) then
         if (n .le. ac_dc_size+4  .and. dt .gt.0.) then
-          if (lnstar_entropy) then  
+          if (lnstar_entropy) then
 !            if (lnstar_T_const) then
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-                -1./(5.*dt)*(p%uu(:,2)-0.)   
+                -1./(5.*dt)*(p%uu(:,2)-0.)
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-                -1./(5.*dt)*(p%uu(:,3)-0.)   
-!            endif  
-          else  
+                -1./(5.*dt)*(p%uu(:,3)-0.)
+!            endif
+          else
            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
                     -1./(5.*dt)*(p%uu(:,1)-0.)
-	
-	 
+
+
            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
                     -1./(5.*dt)*(p%uu(:,2)-0.)
-		
+
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
                     -1./(5.*dt)*(p%uu(:,3)-0.)
-         endif   
+         endif
         endif
       endif
 
@@ -618,7 +619,7 @@ endsubroutine read_special_run_pars
                   -1./(5.*dt)*(f(l1:l2,m,n,iuz)&
                   +accretion_flux/p%rho(:))
          else
-           do j=l_sz,l2   
+           do j=l_sz,l2
              df(j,m,n,iux)=df(j,m,n,iux)&
                   -1./(5.*dt)*(f(j,m,n,iux)-f(j-1,m,n,iux))
              df(j,m,n,iuy)=df(j,m,n,iuy)&
@@ -627,8 +628,8 @@ endsubroutine read_special_run_pars
                   -1./(5.*dt)*(f(j,m,n,iuz)-f(j-1,m,n,iuz))
            enddo
 
-         endif 
-       
+         endif
+
        endif
       endif
 
@@ -640,7 +641,7 @@ endsubroutine read_special_run_pars
 !   06-oct-03/tony: coded
 !
       use Cdata
-      
+
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -648,7 +649,7 @@ endsubroutine read_special_run_pars
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
-!!  
+!!
 !!
 !!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
 !!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
@@ -665,7 +666,7 @@ endsubroutine read_special_run_pars
 !
 
       use Cdata
-      
+
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -676,70 +677,70 @@ endsubroutine read_special_run_pars
         if (lraddif_local) call raddif_local(f,df,p)
 
     if (lnstar_entropy) then
-    
+
 
       if (T_disk.EQ.0) then
          T_disk=cs0**2/gamma1
-      endif 
-  
- 
+      endif
+
+
       if ( dt .GT. 0..AND. n .GT. 24 .AND. n .LT. nzgrid-20) then
          if (lnstar_T_const) then
-           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) & 
+           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
                    -1./(dt)*(p%TT(:)-T_disk)/T_disk
          endif
-      endif 
+      endif
 
 
       if (ldecelerat_zone) then
-    
+
          if ( dt .GT. 0..AND. n .LE. ac_dc_size+4 ) then
           if (lnstar_T_const) then
            df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
             -1./(2.*dt)*(f(l1:l2,m,n,iss) &
-            *gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_disk    
- 
+            *gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_disk
+
           else
 
-						   
+
           endif
-         endif  
-      endif  
-   
+         endif
+      endif
+
      if (laccelerat_zone) then
          if (n .GE. nzgrid-ac_dc_size  .AND. dt .GT.0.) then
            if (nxgrid .LE.1) then
-              if (lnstar_T_const) then   
+              if (lnstar_T_const) then
                  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
                  -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
               endif
-	   else
-  	    	       
+           else
+
            endif
 
-          endif 
+          endif
 
-     endif  
-  
+     endif
+
 
        if (lsurface_zone) then
           if ( dt .GT.0.) then
             l_sz=l2-5
             l_sz_1=nxgrid-5
 
-            if (lnstar_1D) then   
+            if (lnstar_1D) then
              else
-               do j=l_sz,l2   
-	         df(j,m,n,iss)=df(j,m,n,iss)*0.&
+               do j=l_sz,l2
+                 df(j,m,n,iss)=df(j,m,n,iss)*0.&
                  -1./(5.*dt)*(f(j,m,n,iss)-f(j-1,m,n,iss))
-               enddo 
+               enddo
             endif
           endif
        endif
 
-     
+
       endif
-   
+
 
 ! Keep compiler quiet by ensuring every parameter is used
       if (NO_WARN) print*,df,p
@@ -748,7 +749,7 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   calculate a additional 'special' term on the right hand side of the
 !   entropy equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -757,7 +758,7 @@ endsubroutine read_special_run_pars
 !   06-oct-03/tony: coded
 !
       use Cdata
-!      
+!
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       type (boundary_condition) :: bc
 !
@@ -798,13 +799,13 @@ endsubroutine read_special_run_pars
        real, dimension (nx) :: diffus_chi1
       real, dimension (nx) :: thdiff_1D
       real ::  beta
-      integer :: l_sz, l_sz_1,j 
+      integer :: l_sz, l_sz_1,j
 
       intent(in) :: f,p
       intent(out) :: df
- 
- 
-!   cooling in 1D case 
+
+
+!   cooling in 1D case
 !
     if (l1D_cooling) then
 
@@ -814,7 +815,7 @@ endsubroutine read_special_run_pars
                  *p%rho1*beta
 
       l_sz=l2-10
-      l_sz_1=nxgrid-10 
+      l_sz_1=nxgrid-10
 
       if (ldecelerat_zone) then
         if (n .GT. ac_dc_size+4)   df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
@@ -822,23 +823,23 @@ endsubroutine read_special_run_pars
       else
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
        if (headtt) print*,'calc_heatcond_diffusion: added thdiff_1D'
-   
+
   !     print*,' cooling  ',thdiff_1D
       endif
-    endif 
- 
-!   heating in 1D case 
+    endif
+
+!   heating in 1D case
 !
     if (l1D_heating) then
 
       thdiff_1D =p%rho*nu_for_1D*(1.5*f(l1:l2,m,n,iuy)/xyz0(3))**2
-      
+
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
 
-     
+
     !   if (lsurface_zone) then
        !    df(l2-l_sz:l2,m,n,iss) = df(l2-l_sz:l2,m,n,iss) + thdiff_1D(l_sz_1:nxgrid)
-      
+
     !     df(l1:l2-l_sz,m,n,iss) = df(l1:l2-l_sz,m,n,iss) + thdiff_1D(1:l_sz_1)
     !   else
     !       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
@@ -867,11 +868,11 @@ endsubroutine read_special_run_pars
       real, dimension (nx) :: thdiff,g2,thdiff_1D
       real, dimension (nx) :: hcond
       real ::  beta
-      integer :: l_sz, l_sz_1 
+      integer :: l_sz, l_sz_1
 
       intent(in) :: f,p
       intent(out) :: df
- 
+
 !
 !  Heat conduction
 !
@@ -887,37 +888,37 @@ endsubroutine read_special_run_pars
 
    !  add heat conduction to entropy equation
     !
-     
+
 
 !All calculations till 1.10.2006 were made with this option
 ! Check it
         if (ldecelerat_zone) then
           if (nxgrid == 1) then
-           if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
+           if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
           else
-           if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
+           if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
           endif
          if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
         else
-         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff   
+         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
          if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
         endif
-    
-! 
+
+!
 
 
       if (headtt) print*,'calc_heatcond_diffusion: added thdiff_1D'
-  
- 
+
+
 
         df(l1:l2,m,n,iuz) = &
-         df(l1:l2,m,n,iuz)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,3) 
+         df(l1:l2,m,n,iuz)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,3)
 
         df(l1:l2,m,n,iuy) = &
-          df(l1:l2,m,n,iuy)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,2) 
+          df(l1:l2,m,n,iuy)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,2)
 
         df(l1:l2,m,n,iux) = &
-         df(l1:l2,m,n,iux)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,1) 
+         df(l1:l2,m,n,iux)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,1)
 !
 !  include constraint from radiative time step
 !
@@ -949,38 +950,38 @@ endsubroutine read_special_run_pars
 !  2006/Natalia
 !
       use Cdata
-!     
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !     real, dimension(nx) :: fint,fext,pdamp
       real  ::  sink_area, V_acc, V_0, rho_0, ksi, integral_rho=0., flux
       integer :: sink_area_points=50, i
-      integer :: idxz  
-      real, dimension (nx), intent(in) :: rho 
+      integer :: idxz
+      real, dimension (nx), intent(in) :: rho
 
        sink_area=dz*sink_area_points
 
-! 
+!
 !  No clue what this index is good for, but nzgrid-30 is not a
 !  valid index for e.g. 2-d runs, so sanitize it to avoid
 !  `Array reference at (1) is out of bounds' with g95 -Wall
-! 
+!
        idxz = min(nzgrid-30,n2)
 
        V_0=f(4,4,idxz,iuz)
        rho_0=exp(f(4,4,idxz,ilnrho))
        flux=accretion_flux
-   
-       flux=V_0*rho_0     
+
+       flux=V_0*rho_0
 
 !       V_0=rho_0*V_acc*(sink_area_points+1)/integral_rho
 !      ksi=2.*((Lxyz(3)/(nzgrid-1.)*(sink_area_points+4-n))/sink_area)/sink_area
        ksi=1./sink_area
 
-       if ( 25 .gt. n .and. n .lt. sink_area_points+25) then 
+       if ( 25 .gt. n .and. n .lt. sink_area_points+25) then
          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-flux*ksi/rho(:)
        endif
- 
+
        if ( n .eq. 25 .or. n .eq. sink_area_points+25) then
          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-0.5*flux*ksi/rho(:)
        endif
@@ -991,45 +992,45 @@ endsubroutine read_special_run_pars
 !********************************************************************
      subroutine density_init(f,xx,zz)
      !
-     !Natalia 
+     !Natalia
      !Initialization of density in a case of the step-like distribution
      !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx, zz
       real ::  ln_ro_l, ln_ro_r, ln_ro_u, cs2_disk
       integer :: i
- 
+
        call eoscalc(ilnrho_lnTT,log(rho_disk),log(T_disk), cs2=cs2_disk)
-   
+
 
         ln_ro_r=log(rho_disk)
         ln_ro_l=log(rho_star)
         ln_ro_u=log(rho_surf)
 
        if (nxgrid/=1.and.nzgrid/=1) then
-  
+
           f(:,:,:,ilnrho)= &
             -M_star/2./zz(:,:,:)**3*xx(:,:,:)**2*gamma/cs2_disk
-    
+
 
         f(:,:,:,ilnrho)= f(:,:,:,ilnrho) &
                        +((zz(:,:,:)-R_star)/Lxyz(3))**0.25 &
                        *(ln_ro_r-ln_ro_l)+ln_ro_l
        else
-         if (nzgrid .GT. 1) then 
+         if (nzgrid .GT. 1) then
             f(:,:,:,ilnrho)=((zz(:,:,:)-R_star)/Lxyz(3))**0.25 &
                            *(ln_ro_r-ln_ro_l)+ln_ro_l
          else
             f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1) &
                            *(ln_ro_u-ln_ro_r)+ln_ro_r
-         endif 
+         endif
        endif
-   
+
       endsubroutine density_init
 !***************************************************************
 
       subroutine entropy_init(f,xx,zz)
-   
+
      ! use EquationOfState
 
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1041,50 +1042,50 @@ endsubroutine read_special_run_pars
 
       if (T_star.GT.0)  lnTT=log(T_star)
         print*,'T_star=',T_star
-      
+
       if (T_disk.EQ.0) then
          T_disk=cs0**2/gamma1
-      endif 
-    
+      endif
+
          !cs2_star=sqrt(T_star*gamma1)
          call eoscalc(ilnrho_lnTT,log(rho_disk),log(T_disk), cs2=cs2_star)
-      
+
       do ni=n1,n2;
        do mi=m1,m2;
-       
+
          if (lnstar_T_const) then
            f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
          else
-  
+
            if (nxgrid .LE. 1) then
-       
+
              lnrho=f(l1:l2,mi,ni,ilnrho)
              lnTT=(zz(l1:l2,mi,ni)-R_star)/Lxyz(3) &
                  *(log(T_disk)-log(T_star))+log(T_star)
-               
+
              call eoscalc(4,lnrho,lnTT,ss=ss)
-               f(l1:l2,mi,ni,iss)=ss 
+               f(l1:l2,mi,ni,iss)=ss
 
            else
- 
+
             lnrho=f(l1:l2,mi,ni,ilnrho)
-    
+
             lnTT=(zz(l1:l2,mi,ni)-R_star)/Lxyz(3) &
                 *(log(T_disk)-log(T_star))+log(T_star)
-        
+
             call eoscalc(4,lnrho,lnTT,ss=ss)
-            
-            f(l1:l2,mi,ni,iss)=ss  
-    
+
+            f(l1:l2,mi,ni,iss)=ss
+
              !  f(l1,mi,ni,iss)=-f(l1,mi,ni,ilnrho)*gamma1/gamma
 
-           endif 
+           endif
          endif
 
-       end do 
-      end do   
+       end do
+      end do
 
-   
+
       endsubroutine entropy_init
 !*********************************************************************
 !***********************************************************************
@@ -1105,11 +1106,11 @@ endsubroutine read_special_run_pars
 
      !ll=Lxyz(3)-L_disk
      if (nzgrid .GT. 1) then
-     
+
       f(:,:,:,iux)=uu_init
       f(:,:,:,iuz)=uu_init
-       if (ldecelerat_zone .AND. decel_zone .LT. nzgrid) then 
- 
+       if (ldecelerat_zone .AND. decel_zone .LT. nzgrid) then
+
         f(:,:,L_disk_point+4:mz,iuy)= &
           sqrt(M_star/zz(:,:,L_disk_point+4:mz))
 
@@ -1124,7 +1125,7 @@ endsubroutine read_special_run_pars
          f(:,:,1:L_disk_point+3,iuy)= &
            (zz(:,:,1:L_disk_point+3)-R_star)/ll*sqrt(M_star/(ll+R_star))
        endif
-     
+
      else
       f(:,:,:,iux)=uu_init
       f(:,:,:,iuz)=uu_init
@@ -1147,24 +1148,24 @@ endsubroutine read_special_run_pars
       integer :: i,j
 
       j=bc%ivar
-      
-       
+
+
       if (bc%location==iBC_X_BOT) then
       ! bottom boundary
-        if (j == 1) then 
+        if (j == 1) then
           do i=1,nghost; f(l1-i,:,:,j)=-f(l1+i,:,:,j); enddo
               f(l1,:,:,j) = 0.
         !  do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
-	      
+
         else
-           do i=1,nghost; f(l1-i,:,:,j)= f(l1+i,:,:,j); enddo
-	   
-	  ! if (j==5) then
-	!     f(l1,:,n1,j)=(f(l1+1,:,n1,j)+f(l1-1,:,n1,j))/2
-	!   endif
-	   
+          do i=1,nghost; f(l1-i,:,:,j)= f(l1+i,:,:,j); enddo
+
+          ! if (j==5) then
+        !     f(l1,:,n1,j)=(f(l1+1,:,n1,j)+f(l1-1,:,n1,j))/2
+        !   endif
+
        endif
-     
+
       elseif (bc%location==iBC_X_TOP) then
       ! top boundary
         if (nxgrid <= 1) then
@@ -1177,7 +1178,7 @@ endsubroutine read_special_run_pars
             f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
           endif
         else
-          
+
 
            f(l2+1,:,:,j)=0.25*(  9*f(l2,:,:,j)- 3*f(l2-1,:,:,j)- 5*f(l2-2,:,:,j)+ 3*f(l2-3,:,:,j))
             f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
@@ -1201,11 +1202,11 @@ endsubroutine read_special_run_pars
       use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: value1,value2 
+      real :: value1,value2
       type (boundary_condition) :: bc
       real, dimension(nx) :: lnrho,lnTT,ss
       integer :: sgn,i,j,  n1p4,n2m4, i_tmp
-   
+
     j=bc%ivar
 
 
@@ -1226,27 +1227,27 @@ endsubroutine read_special_run_pars
 !          f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j)- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
 !          f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
 !        else
-	
- 	
-	
+
+
+
           if (j==5) then
             lnrho=f(l1:l2,m1,n1,ilnrho)
-            if (lnstar_T_const) then 
+            if (lnstar_T_const) then
               lnTT=log(cs0**2/(gamma1))
-            else     
+            else
               lnTT=log(T_star)
             endif
             !+ other terms for sound speed not equal to cs_0
             call eoscalc(4,lnrho,lnTT,ss=ss)
-           f(l1:l2,m1,n1,iss)=ss 
-	  ! f(l1:l2,m1,n1,iss)=log(T_star)/gamma
+           f(l1:l2,m1,n1,iss)=ss
+           ! f(l1:l2,m1,n1,iss)=log(T_star)/gamma
 
           else
- 	   if ( j==4 ) then
-	    else
-             f(:,:,n1,j)=value1
-           endif    	    
-         endif
+            if ( j==4 ) then
+            else
+              f(:,:,n1,j)=value1
+           endif
+          endif
 
 
           do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
@@ -1254,24 +1255,24 @@ endsubroutine read_special_run_pars
       elseif (bc%location==iBC_Z_TOP) then
       ! top boundary
 
-        if (ltop_velocity_kep .and. j==2) then 
+        if (ltop_velocity_kep .and. j==2) then
           f(:,:,n2,j)=sqrt(M_star/(R_star+Lxyz(3)))
         else
          ! if (nxgrid <= 1) then
             if (j==5) then
               lnrho=f(l1:l2,m2,n2,ilnrho)
-              if (T_disk.EQ.0) then    
+              if (T_disk.EQ.0) then
               lnTT=log(cs0**2/(gamma1))
               else
-              lnTT=log(T_disk)    
-              endif           
+              lnTT=log(T_disk)
+              endif
               call eoscalc(4,lnrho,lnTT,ss=ss)
               f(l1:l2,m2,n2,iss)=ss
-            else 
-	     if (j==4) then
-	     else
-              f(:,:,n2,j)=value1
-	     endif 
+            else
+              if (j==4) then
+              else
+                f(:,:,n2,j)=value1
+              endif
             endif
          ! else
 
@@ -1280,7 +1281,7 @@ endsubroutine read_special_run_pars
 
         do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
 
-      else 
+      else
         print*, "bc_BL_z: ", bc%location, " should be `top(", &
                         iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
       endif
@@ -1289,7 +1290,7 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine special_before_boundary(f)
 !
-!   Possibility to modify the f array before the boundaries are 
+!   Possibility to modify the f array before the boundaries are
 !   communicated.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -1298,7 +1299,7 @@ endsubroutine read_special_run_pars
 !   06-jul-06/tony: coded
 !
       use Cdata
-!      
+!
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
 !
       if (NO_WARN) print*,f(1,1,1,1)
@@ -1306,6 +1307,7 @@ endsubroutine read_special_run_pars
     endsubroutine special_before_boundary
 !
 !********************************************************************
+
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
 !**  This is an automatically generated include file that creates  **
@@ -1314,5 +1316,6 @@ endsubroutine read_special_run_pars
 !**                                                                **
     include 'special_dummies.inc'
 !********************************************************************
+
 endmodule Special
 
