@@ -3,7 +3,7 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2006-11-17 01:20:32 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.2 2006-12-04 18:26:32 wlyra Exp $',
   ip=14,
   nt=100, it1=5, isave=500, itorder=3, ialive=1
   cdt=0.4, 
@@ -32,7 +32,7 @@
   wdamp=0. 
   !lcalc_turbulence_pars=F
   lfreeze_uint=T,lfreeze_uext=T
-  borderuu='globaldisk'
+  borderuu='globaldisc'
 /
 &density_run_pars
   lupw_lnrho=T ! use upwinding for lnrho to avoid wiggles

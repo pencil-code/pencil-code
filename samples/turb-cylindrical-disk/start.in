@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2006-11-17 01:20:32 wlyra Exp $',
+  cvsid='$Id: start.in,v 1.2 2006-12-04 18:26:32 wlyra Exp $',
   ip=14,                        ! debugging parameter
   xyz0  = -2.6,-2.6,-0.26,       ! first corner of box
   xyz1  =  2.6, 2.6, 0.26,       ! second corner of box
@@ -31,7 +31,7 @@
   ampluu=1e-4
 /
 &density_init_pars
-  initlnrho='globaldisk' 
+  initlnrho='globaldisc' 
   lnrho_const=0.  
   ldensity_nolog=T
 /

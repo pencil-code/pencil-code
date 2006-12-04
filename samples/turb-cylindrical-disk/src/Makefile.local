@@ -3,8 +3,8 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   =   mpicomm
-GLOBAL    =   global_avgs
+MPICOMM   =     mpicomm
+GLOBAL    =   noglobal
 
 HYDRO     =   hydro
 DENSITY   =   density
