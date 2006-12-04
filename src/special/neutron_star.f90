@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.37 2006-11-27 18:58:03 dobler Exp $
+! $Id: neutron_star.f90,v 1.38 2006-12-04 18:31:19 brandenb Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -55,6 +55,7 @@ module Special
   use Cparam
   use Cdata
   use Messages
+  use Sub, only: keep_compiler_quiet
 !  use Density, only: rho_up
   use EquationOfState
 
@@ -178,11 +179,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.37 2006-11-27 18:58:03 dobler Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.38 2006-12-04 18:31:19 brandenb Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.37 2006-11-27 18:58:03 dobler Exp $")
+           "$Id: neutron_star.f90,v 1.38 2006-12-04 18:31:19 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
