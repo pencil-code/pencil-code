@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.461 2006-11-30 09:03:35 dobler Exp $
+! $Id: entropy.f90,v 1.462 2006-12-04 11:29:41 wlyra Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -164,7 +164,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.461 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: entropy.f90,v 1.462 2006-12-04 11:29:41 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1902,8 +1902,7 @@ module Entropy
       case('constant')
          f_target=ss_const
       case('globaldisc')
-         cs2_0=(cs20*p%rcyl_mn**2)*(g0*(p%rcyl_mn**2+r0_pot**2)**(-1.5))
-         !           [  r      *                omega             ]**2
+         cs2_0=(cs20*p%rcyl_mn**2)*(p%rcyl_mn**(-3))
          f_target= gamma11*log(cs2_0) !- gamma1*gamma11*lnrho
       case('nothing')
          if (lroot.and.ip<=5) &
