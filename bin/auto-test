@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.78 2006-08-25 23:50:37 dobler Exp $
+# CVS: $Id: auto-test,v 1.79 2006-12-04 11:21:53 wlyra Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -49,7 +49,7 @@ my @sampdir = qw( conv-slab cosmicray kin-dynamo geodynamo
                   interstellar
                   dust-vortex MRI-turbulence_hyper random_uu_particles
                   chiral-diffusion backwards-compatible testfield meissner
-                  2d-tests/globaldisc
+                  turb-cylindrical-disk 2d-tests/globaldisc
                 );
 # Test the following subdirs of runs/ :
 #my @runsdir = qw( radiation/solar1d4);
@@ -139,7 +139,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.78 2006-08-25 23:50:37 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.79 2006-12-04 11:21:53 wlyra Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
