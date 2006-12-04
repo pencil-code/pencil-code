@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.259 2006-11-20 12:28:54 mkorpi Exp $
+### $Id: Makefile.src,v 1.260 2006-12-04 11:25:28 wlyra Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -238,9 +238,7 @@ LD_FFTW2=
 #FC=ifort #(opto[1-4])
 #FFLAGS=-O3 -I/home/johansen/mpich/include/ #(opto[1-4])
 #LD_MPI=-Wl,-m elf_i386 -L/home/johansen/mpich/lib/ -lmpich #(opto[1-4])
-##FC=mpif95n #(rio*|pia*)
-##FFLAGS=-mismatch -O3 -I/afs/ipp/amd64_sles9/soft/mvapich-0.9.7/nag/include #(rio*|pia*)
-#FC=/afs/ipp/amd64_sles9/soft/mvapich-0.9.5/f95i/bin/mpif90 #(rio*|pia*)
+#FC=/afs/ipp/amd64_sles9/soft/mvapich/mvapich2-0.9.5/f95i.9.1/bin/mpif90 #(rio*|pia*)
 #FC=ifort #(eh[1-4])
 #FFLAGS=-O3 -I/opt/lam-7.1.2b24-ifort/include/ #(eh[1-4])
 #LD_MPI=-lltdl -L/opt/lam-7.1.2b24-ifort/lib -llamf77mpi -llammpio -lmpi -llam -lpthread #(eh[1-4])
