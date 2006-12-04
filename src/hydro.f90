@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.303 2006-11-30 09:03:35 dobler Exp $
+! $Id: hydro.f90,v 1.304 2006-12-04 11:26:29 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -174,7 +174,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.303 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: hydro.f90,v 1.304 2006-12-04 11:26:29 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1210,7 +1210,7 @@ module Hydro
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
       real, dimension(nx) :: OO,tmp
-      real :: g0=1.
+      real :: g0=1.,plaw=0.0
       integer :: ju,j
 !
 ! these tmps and where's are needed because these square roots
@@ -1226,7 +1226,7 @@ module Hydro
             f_target(:,j) = uu_const(j)
          enddo
       case('globaldisc')
-         tmp = (1-cs0**2)*g0*p%rcyl_mn**(-3)
+         tmp = (1-(plaw+1)*cs0**2)*g0*p%rcyl_mn**(-3)
          where (tmp.ge.0)
             OO=sqrt(tmp)
          elsewhere
