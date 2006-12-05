@@ -6,5 +6,5 @@
 !
 !  MGLOBAL CONTRIBUTION 4
 !
-integer, parameter :: ncpus=4,nprocy=4,nprocz=ncpus/nprocy,nprocx=1
+integer, parameter :: ncpus=8,nprocy=8,nprocz=ncpus/nprocy,nprocx=1
 integer, parameter :: nxgrid=320,nygrid=320,nzgrid=32
