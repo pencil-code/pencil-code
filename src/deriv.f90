@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.34 2006-11-30 09:03:34 dobler Exp $
+! $Id: deriv.f90,v 1.35 2006-12-05 19:32:16 ajohan Exp $
 
 module Deriv
 
@@ -8,7 +8,7 @@ module Deriv
 
   private
 
-  public :: der, der2, der3, der4, der5, der6, derij
+  public :: der, der2, der3, der4, der5, der6, derij, der5i1j
   public :: der6_other
   public :: der_upwind1st
 
@@ -664,7 +664,7 @@ module Deriv
                    )
           else
             df=0.
-            if (ip<=5) print*, 'derij: Degenerate case in x or y direction'
+            if (ip<=5) print*, 'derij: Degenerate case in x- or y-direction'
           endif
         elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
           if (nygrid/=1.and.nzgrid/=1) then
@@ -679,7 +679,7 @@ module Deriv
                    )
           else
             df=0.
-            if (ip<=5) print*, 'derij: Degenerate case in y-direction'
+            if (ip<=5) print*, 'derij: Degenerate case in y- or z-direction'
           endif
         elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
           if (nzgrid/=1.and.nxgrid/=1) then
@@ -694,7 +694,7 @@ module Deriv
                    )
           else
             df=0.
-            if (ip<=5) print*, 'derij: Degenerate case in z-direction'
+            if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
           endif
         endif
 
@@ -727,7 +727,7 @@ module Deriv
                    )
           else
             df=0.
-            if (ip<=5) print*, 'derij: Degenerate case in x-direction'
+            if (ip<=5) print*, 'derij: Degenerate case in x- or y-direction'
           endif
         elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
           if (nygrid/=1.and.nzgrid/=1) then
@@ -754,7 +754,7 @@ module Deriv
                    )
           else
             df=0.
-            if (ip<=5) print*, 'derij: Degenerate case in y-direction'
+            if (ip<=5) print*, 'derij: Degenerate case in y- or z-direction'
           endif
         elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
           if (nzgrid/=1.and.nxgrid/=1) then
@@ -781,13 +781,218 @@ module Deriv
                    )
           else
             df=0.
-            if (ip<=5) print*, 'derij: Degenerate case in z-direction'
+            if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
           endif
         endif
 
       endif                     ! bidiagonal derij
 !
     endsubroutine derij
+!***********************************************************************
+    subroutine der5i1j(f,k,df,i,j)
+!
+!  Calculate 6th derivative with respect to two different directions.
+!
+!  05-dec-06/anders: adapted from derij
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: df,fac
+      integer :: i,j,k
+!
+!debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
+!debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
+!
+      if ((i==1.and.j==1)) then
+        if (nxgrid/=1) then
+          call der6(f,k,df,j)
+        else
+          df=0.
+          if (ip<=5) print*, 'der5i1j: Degenerate case in x-direction'
+        endif
+      elseif ((i==2.and.j==2)) then
+        if (nygrid/=1) then
+          call der6(f,k,df,j)
+        else
+          df=0.
+          if (ip<=5) print*, 'der5i1j: Degenerate case in y-direction'
+        endif
+      elseif ((i==3.and.j==3)) then
+        if (nzgrid/=1) then
+          call der6(f,k,df,j)
+        else
+          df=0.
+          if (ip<=5) print*, 'der5i1j: Degenerate case in z-direction'
+        endif
+      elseif ((i==1.and.j==2)) then
+        if (nxgrid/=1.and.nygrid/=1) then
+          fac=dx_1(l1:l2)**5*dy_1(m)
+          df=fac*( &
+            2.5*((45.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
+                  -9.*(f(l1+1:l2+1,m+2,n,k)-f(l1-1:l2-1,m+2,n,k))  &
+                     +(f(l1+1:l2+1,m+3,n,k)-f(l1-1:l2-1,m+3,n,k))) &
+                -(45.*(f(l1+1:l2+1,m-1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
+                  -9.*(f(l1+1:l2+1,m-2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
+                     +(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))))&
+           -2.0*((45.*(f(l1+2:l2+2,m+1,n,k)-f(l1-2:l2-2,m+1,n,k))  &
+                  -9.*(f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k))  &
+                     +(f(l1+2:l2+2,m+3,n,k)-f(l1-2:l2-2,m+3,n,k))) &
+                -(45.*(f(l1+2:l2+2,m-1,n,k)-f(l1-2:l2-2,m-1,n,k))  &
+                  -9.*(f(l1+2:l2+2,m-2,n,k)-f(l1-2:l2-2,m-2,n,k))  &
+                     +(f(l1+2:l2+2,m-3,n,k)-f(l1-2:l2-2,m-3,n,k))))&
+           +0.5*((45.*(f(l1+3:l2+3,m+1,n,k)-f(l1-3:l2-3,m+1,n,k))  &
+                  -9.*(f(l1+3:l2+3,m+2,n,k)-f(l1-3:l2-3,m+2,n,k))  &
+                     +(f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k))) &
+                -(45.*(f(l1+3:l2+3,m-1,n,k)-f(l1-3:l2-3,m-1,n,k))  &
+                  -9.*(f(l1+3:l2+3,m-2,n,k)-f(l1-3:l2-3,m-2,n,k))  &
+                     +(f(l1+3:l2+3,m-3,n,k)-f(l1-3:l2-3,m-3,n,k))))&
+                 )
+        else
+          df=0.
+          if (ip<=5) print*, 'der5i1j: Degenerate case in x- or y-direction'
+        endif
+      elseif ((i==2.and.j==1)) then
+        if (nygrid/=1.and.nxgrid/=1) then
+          fac=dy_1(m)**5*dx_1(l1:l2)
+          df=fac*( &
+            2.5*((45.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
+                  -9.*(f(l1+2:l2+2,m+1,n,k)-f(l1-2:l2-2,m+1,n,k))  &
+                     +(f(l1+3:l2+3,m+1,n,k)-f(l1-3:l2-3,m+1,n,k))) &
+                -(45.*(f(l1+1:l2+1,m-1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
+                  -9.*(f(l1+2:l2+2,m-1,n,k)-f(l1-2:l2-2,m-1,n,k))  &
+                     +(f(l1+3:l2+3,m-1,n,k)-f(l1-3:l2-3,m-1,n,k))))&
+           -2.0*((45.*(f(l1+1:l2+1,m+2,n,k)-f(l1-1:l2-1,m+2,n,k))  &
+                  -9.*(f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k))  &
+                     +(f(l1+3:l2+3,m+2,n,k)-f(l1-3:l2-3,m+2,n,k))) &
+                -(45.*(f(l1+1:l2+1,m-2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
+                  -9.*(f(l1+2:l2+2,m-2,n,k)-f(l1-2:l2-2,m-2,n,k))  &
+                     +(f(l1+3:l2+3,m-2,n,k)-f(l1-3:l2-3,m-2,n,k))))&
+           +0.5*((45.*(f(l1+1:l2+1,m+3,n,k)-f(l1-1:l2-1,m+3,n,k))  &
+                  -9.*(f(l1+2:l2+2,m+3,n,k)-f(l1-2:l2-2,m+3,n,k))  &
+                     +(f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k))) &
+                -(45.*(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))  &
+                  -9.*(f(l1+2:l2+2,m-3,n,k)-f(l1-2:l2-2,m-3,n,k))  &
+                     +(f(l1+3:l2+3,m-3,n,k)-f(l1-3:l2-3,m-3,n,k))))&
+                 )
+        else
+          df=0.
+          if (ip<=5) print*, 'der5i1j: Degenerate case in y- or x-direction'
+        endif
+      elseif ((i==1.and.j==3)) then
+        if (nxgrid/=1.and.nzgrid/=1) then
+          fac=dx_1(l1:l2)**5*dz_1(n)
+          df=fac*( &
+            2.5*((45.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
+                  -9.*(f(l1+1:l2+1,m,n+2,k)-f(l1-1:l2-1,m,n+2,k))  &
+                     +(f(l1+1:l2+1,m,n+3,k)-f(l1-1:l2-1,m,n+3,k))) &
+                -(45.*(f(l1+1:l2+1,m,n-1,k)-f(l1-1:l2-1,m,n-1,k))  &
+                  -9.*(f(l1+1:l2+1,m,n-2,k)-f(l1-1:l2-1,m,n-2,k))  &
+                     +(f(l1+1:l2+1,m,n-3,k)-f(l1-1:l2-1,m,n-3,k))))&
+           -2.0*((45.*(f(l1+2:l2+2,m,n+1,k)-f(l1-2:l2-2,m,n+1,k))  &
+                  -9.*(f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k))  &
+                     +(f(l1+2:l2+2,m,n+3,k)-f(l1-2:l2-2,m,n+3,k))) &
+                -(45.*(f(l1+2:l2+2,m,n-1,k)-f(l1-2:l2-2,m,n-1,k))  &
+                  -9.*(f(l1+2:l2+2,m,n-2,k)-f(l1-2:l2-2,m,n-2,k))  &
+                     +(f(l1+2:l2+2,m,n-3,k)-f(l1-2:l2-2,m,n-3,k))))&
+           +0.5*((45.*(f(l1+3:l2+3,m,n+1,k)-f(l1-3:l2-3,m,n+1,k))  &
+                  -9.*(f(l1+3:l2+3,m,n+2,k)-f(l1-3:l2-3,m,n+2,k))  &
+                     +(f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k))) &
+                -(45.*(f(l1+3:l2+3,m,n-1,k)-f(l1-3:l2-3,m,n-1,k))  &
+                  -9.*(f(l1+3:l2+3,m,n-2,k)-f(l1-3:l2-3,m,n-2,k))  &
+                     +(f(l1+3:l2+3,m,n-3,k)-f(l1-3:l2-3,m,n-3,k))))&
+                 )
+        else
+          df=0.
+          if (ip<=5) print*, 'der5i1j: Degenerate case in x- or z-direction'
+        endif
+      elseif ((i==3.and.j==1)) then
+        if (nzgrid/=1.and.nygrid/=1) then
+          fac=dz_1(n)**5*dy_1(m)
+          df=fac*( &
+            2.5*((45.*(f(l1+1:l2+1,m,n+1,k)-f(l1+1-1:l2+1-1,m,n+1,k))  &
+                  -9.*(f(l1+2:l2+2,m,n+1,k)-f(l1+2-1:l2+2-1,m,n+1,k))  &
+                     +(f(l1+3:l2+3,m,n+1,k)-f(l1+3-1:l2+3-1,m,n+1,k))) &
+                -(45.*(f(l1-1:l2-1,m,n+1,k)-f(l1-1-1:l2-1-1,m,n+1,k))  &
+                  -9.*(f(l1-2:l2-2,m,n+1,k)-f(l1-2-1:l2-2-1,m,n+1,k))  &
+                     +(f(l1-3:l2-3,m,n+1,k)-f(l1-3-1:l2-3-1,m,n+1,k))))&
+           -2.0*((45.*(f(l1+1:l2+1,m,n+2,k)-f(l1+1-2:l2+1-2,m,n+2,k))  &
+                  -9.*(f(l1+2:l2+2,m,n+2,k)-f(l1+2-2:l2+2-2,m,n+2,k))  &
+                     +(f(l1+3:l2+3,m,n+2,k)-f(l1+3-2:l2+3-2,m,n+2,k))) &
+                -(45.*(f(l1-1:l2-1,m,n+2,k)-f(l1-1-2:l2-1-2,m,n+2,k))  &
+                  -9.*(f(l1-2:l2-2,m,n+2,k)-f(l1-2-2:l2-2-2,m,n+2,k))  &
+                     +(f(l1-3:l2-3,m,n+2,k)-f(l1-3-2:l2-3-2,m,n+2,k))))&
+           +0.5*((45.*(f(l1+1:l2+1,m,n+3,k)-f(l1+1-3:l2+1-3,m,n+3,k))  &
+                  -9.*(f(l1+2:l2+2,m,n+3,k)-f(l1+2-3:l2+2-3,m,n+3,k))  &
+                     +(f(l1+3:l2+3,m,n+3,k)-f(l1+3-3:l2+3-3,m,n+3,k))) &
+                -(45.*(f(l1-1:l2-1,m,n+3,k)-f(l1-1-3:l2-1-3,m,n+3,k))  &
+                  -9.*(f(l1-2:l2-2,m,n+3,k)-f(l1-2-3:l2-2-3,m,n+3,k))  &
+                     +(f(l1-3:l2-3,m,n+3,k)-f(l1-3-3:l2-3-3,m,n+3,k))))&
+                 )
+        else
+          df=0.
+          if (ip<=5) print*, 'der5i1j: Degenerate case in z- or x-direction'
+        endif
+      elseif ((i==2.and.j==3)) then
+        if (nygrid/=1.and.nzgrid/=1) then
+          fac=dy_1(m)**5*dz_1(n)
+          df=fac*( &
+            2.5*((45.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m+1,n+1,k))  &
+                  -9.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m+1,n+2,k))  &
+                     +(f(l1:l2,m+1,n+3,k)-f(l1:l2,m+1,n+3,k))) &
+                -(45.*(f(l1:l2,m+1,n-1,k)-f(l1:l2,m+1,n-1,k))  &
+                  -9.*(f(l1:l2,m+1,n-2,k)-f(l1:l2,m+1,n-2,k))  &
+                     +(f(l1:l2,m+1,n-3,k)-f(l1:l2,m+1,n-3,k))))&
+           -2.0*((45.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m+2,n+1,k))  &
+                  -9.*(f(l1:l2,m+2,n+2,k)-f(l1:l2,m+2,n+2,k))  &
+                     +(f(l1:l2,m+2,n+3,k)-f(l1:l2,m+2,n+3,k))) &
+                -(45.*(f(l1:l2,m+2,n-1,k)-f(l1:l2,m+2,n-1,k))  &
+                  -9.*(f(l1:l2,m+2,n-2,k)-f(l1:l2,m+2,n-2,k))  &
+                     +(f(l1:l2,m+2,n-3,k)-f(l1:l2,m+2,n-3,k))))&
+           +0.5*((45.*(f(l1:l2,m+3,n+1,k)-f(l1:l2,m+3,n+1,k))  &
+                  -9.*(f(l1:l2,m+3,n+2,k)-f(l1:l2,m+3,n+2,k))  &
+                     +(f(l1:l2,m+3,n+3,k)-f(l1:l2,m+3,n+3,k))) &
+                -(45.*(f(l1:l2,m+3,n-1,k)-f(l1:l2,m+3,n-1,k))  &
+                  -9.*(f(l1:l2,m+3,n-2,k)-f(l1:l2,m+3,n-2,k))  &
+                     +(f(l1:l2,m+3,n-3,k)-f(l1:l2,m+3,n-3,k))))&
+                 )
+        else
+          df=0.
+          if (ip<=5) print*, 'der5i1j: Degenerate case in y- or z-direction'
+        endif
+      elseif ((i==3.and.j==2)) then
+        if (nzgrid/=1.and.nygrid/=1) then
+          fac=dz_1(n)**5*dy_1(m)
+          df=fac*( &
+            2.5*((45.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m+1,n+1,k))  &
+                  -9.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m+2,n+1,k))  &
+                     +(f(l1:l2,m+3,n+1,k)-f(l1:l2,m+3,n+1,k))) &
+                -(45.*(f(l1:l2,m-1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
+                  -9.*(f(l1:l2,m-2,n+1,k)-f(l1:l2,m-2,n+1,k))  &
+                     +(f(l1:l2,m-3,n+1,k)-f(l1:l2,m-3,n+1,k))))&
+           -2.0*((45.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m+1,n+2,k))  &
+                  -9.*(f(l1:l2,m+2,n+2,k)-f(l1:l2,m+2,n+2,k))  &
+                     +(f(l1:l2,m+3,n+2,k)-f(l1:l2,m+3,n+2,k))) &
+                -(45.*(f(l1:l2,m-1,n+2,k)-f(l1:l2,m-1,n+2,k))  &
+                  -9.*(f(l1:l2,m-2,n+2,k)-f(l1:l2,m-2,n+2,k))  &
+                     +(f(l1:l2,m-3,n+2,k)-f(l1:l2,m-3,n+2,k))))&
+           +0.5*((45.*(f(l1:l2,m+1,n+3,k)-f(l1:l2,m+1,n+3,k))  &
+                  -9.*(f(l1:l2,m+2,n+3,k)-f(l1:l2,m+2,n+3,k))  &
+                     +(f(l1:l2,m+3,n+3,k)-f(l1:l2,m+3,n+3,k))) &
+                -(45.*(f(l1:l2,m-1,n+3,k)-f(l1:l2,m-1,n+3,k))  &
+                  -9.*(f(l1:l2,m-2,n+3,k)-f(l1:l2,m-2,n+3,k))  &
+                     +(f(l1:l2,m-3,n+3,k)-f(l1:l2,m-3,n+3,k))))&
+                 )
+        else
+          df=0.
+          if (ip<=5) print*, 'der5i1j: Degenerate case in z- or y-direction'
+        endif
+      else
+        print*, 'der5i1j: no such value for i,j=', i, j
+        call fatal_error('der5i1j','')
+      endif
+!
+    endsubroutine der5i1j
 !***********************************************************************
     subroutine der_upwind1st(f,uu,k,df,j)
 !
