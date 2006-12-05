@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.78 2006-11-30 09:03:36 dobler Exp $
+! $Id: planet.f90,v 1.79 2006-12-05 20:09:11 wlyra Exp $
 !
 !  This modules contains the routines for accretion disc and planet
 !  building simulations.
@@ -109,11 +109,7 @@ module Planet
         p%uavg(:,3)=p%uu(:,3)
       endif
 !
-!
-!ajwm This doesn't make sense because it won't be restartable
-!ajwm is this supposed to be "if (headtt)" ???
-!
-      if (it /= 1) then
+      if (.not.headtt) then
 !
 ! expand it onto the pencil with spline interpolation
 !
@@ -152,11 +148,6 @@ module Planet
           endif
         enddo
       endif
-!
-!
-! Calc new average???
-!
-
 !
 ! rad, phi and zed
 !
