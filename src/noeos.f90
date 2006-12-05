@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.30 2006-11-04 07:47:37 brandenb Exp $
+! $Id: noeos.f90,v 1.31 2006-12-05 20:43:35 dobler Exp $
 
 !  Dummy routine for ideal gas
 
@@ -43,16 +43,16 @@ module EquationOfState
   real :: cp=impossible, cp1=impossible
 
   ! input parameters
-  !namelist /eos_init_pars/ dummy 
+  !namelist /eos_init_pars/ dummy
 
   ! run parameters
   !namelist /eos_run_pars/ dummy
 
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
-  logical :: lcalc_cp=.false. 
+  logical :: lcalc_cp=.false.
   real :: gamma=5./3., gamma1=2./3.,gamma11=3./5.
-  real :: cs2bot=1., cs2top=1. 
+  real :: cs2bot=1., cs2top=1.
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   integer :: isothtop=1
@@ -80,7 +80,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.30 2006-11-04 07:47:37 brandenb Exp $')
+           '$Id: noeos.f90,v 1.31 2006-12-05 20:43:35 dobler Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -129,18 +129,18 @@ module EquationOfState
 !
 !  02-apr-03/tony: implemented dummy
 !
-! 
+!
       logical :: lreset
       logical, optional :: lwrite
-!   
+!
       if (NO_WARN) print*,lreset,present(lwrite)  !(keep compiler quiet)
-!   
+!
     endsubroutine rprint_eos
 !***********************************************************************
     subroutine pencil_criteria_eos()
-! 
+!
 !  All pencils that the EquationOfState module depends on are specified here.
-! 
+!
 !  02-04-06/tony: coded
 !
 !  DUMMY ROUTINE
@@ -148,7 +148,7 @@ module EquationOfState
     endsubroutine pencil_criteria_eos
 !***********************************************************************
     subroutine pencil_interdep_eos(lpencil_in)
-!       
+!
 !  Interdependency among pencils from the Entropy module is specified here.
 !
 !  20-11-04/anders: coded
@@ -160,17 +160,17 @@ module EquationOfState
     endsubroutine pencil_interdep_eos
 !***********************************************************************
     subroutine calc_pencils_eos(f,p)
-!       
+!
 !  Calculate Entropy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  02-04-06/tony: coded
 !
       use Sub
-!      
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      
+!
       intent(in) :: f
       intent(inout) :: p
 !
@@ -179,9 +179,9 @@ module EquationOfState
     endsubroutine calc_pencils_eos
 !***********************************************************************
     subroutine ioninit(f)
-!   
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!   
+!
       if(NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine ioninit
@@ -195,12 +195,12 @@ module EquationOfState
     endsubroutine ioncalc
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
-      
+
       real, intent(in) :: EE,TT,yH
       real, intent(inout) :: rho
 
       call fatal_error('getdensity','SHOULD NOT BE CALLED WITH NOEOS')
-      rho = 0. 
+      rho = 0.
       if (NO_WARN) print*,yH,EE,TT  !(keep compiler quiet)
 
     end subroutine getdensity
@@ -323,7 +323,7 @@ module EquationOfState
     endsubroutine temperature_hessian
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp)
-      
+
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(in), optional :: ee,pp
@@ -344,7 +344,7 @@ module EquationOfState
 !
       call fatal_error('temperature_gradient','SHOULD NOT BE CALLED WITH NOEOS')
 
-      lnTT=0. 
+      lnTT=0.
       yH=0.
       ee=0.
       pp=0.
@@ -462,7 +462,7 @@ module EquationOfState
 !
 !  Sound speed (and hence Temperature), is
 !  initialised to the reference value:
-!           sound speed: cs^2_0            from start.in  
+!           sound speed: cs^2_0            from start.in
 !           density: rho0 = exp(lnrho0)
 !
 !  11-jun-03/tony: extracted from isothermal routine in Density module
@@ -524,12 +524,12 @@ module EquationOfState
 !
       real, intent(in) :: Fheat, FheatK, hcond0, hcond1, chi
       logical, intent(in) :: lmultilayer, lcalc_heatcond_constchi
-      
+
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
-      
+
 !
       if(ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
@@ -554,7 +554,7 @@ module EquationOfState
         cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+gamma*f(:,:,n1,iss))
 !
 !  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy. 
+!  we have the nonconstant rho_xy*chi in tmp_xy.
 !
         if(lcalc_heatcond_constchi) then
           tmp_xy=Fheat/(rho_xy*chi*cs2_xy)
@@ -585,7 +585,7 @@ module EquationOfState
         cs2_xy=cs20*exp(gamma1*(f(:,:,n2,ilnrho)-lnrho0)+gamma*f(:,:,n2,iss))
 !
 !  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy. 
+!  we have the nonconstant rho_xy*chi in tmp_xy.
 !
         if(lcalc_heatcond_constchi) then
           tmp_xy=Fheat/(rho_xy*chi*cs2_xy)
@@ -649,7 +649,7 @@ module EquationOfState
         do i=1,nghost
           f(:,:,n1-i,iss) = 2*tmp_xy - f(:,:,n1+i,iss)
         enddo
- 
+
 !
 !  top boundary
 !
@@ -667,7 +667,7 @@ module EquationOfState
         f(:,:,n2,iss) = tmp_xy
         do i=1,nghost
           f(:,:,n2+i,iss) = 2*tmp_xy - f(:,:,n2-i,iss)
-        enddo 
+        enddo
       case default
         call fatal_error('bc_ss_temp_old','invalid argument')
       endselect
@@ -730,7 +730,7 @@ module EquationOfState
       case default
         call fatal_error('bc_ss_temp_x','invalid argument')
       endselect
-      
+
 
 !
     endsubroutine bc_ss_temp_x
@@ -1297,7 +1297,7 @@ module EquationOfState
     end subroutine bc_stellar_surface
 !***********************************************************************
     subroutine bc_stellar_surface_2(f,topbot,df)
-! 
+!
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
@@ -1306,11 +1306,11 @@ module EquationOfState
 !
       call stop_it("bc_stellar_surface_2: NOT IMPLEMENTED IN EOS_IDEALGAS")
       if (NO_WARN) print*,f,df,topbot
-! 
+!
     end subroutine bc_stellar_surface_2
 !***********************************************************************
     subroutine bc_lnrho_hydrostatic_z(f,topbot)
-! 
+!
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
@@ -1318,7 +1318,7 @@ module EquationOfState
 !
       call stop_it("bc_lnrho_hydrostatic_z: NOT IMPLEMENTED IN NOEOS")
       if (NO_WARN) print*,f,topbot
-! 
+!
     end subroutine bc_lnrho_hydrostatic_z
 !***********************************************************************
 endmodule EquationOfState

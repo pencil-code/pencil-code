@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.47 2006-11-28 12:26:14 theine Exp $
+! $Id: nodensity.f90,v 1.48 2006-12-05 20:43:34 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -56,7 +56,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.47 2006-11-28 12:26:14 theine Exp $")
+           "$Id: nodensity.f90,v 1.48 2006-12-05 20:43:34 dobler Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -65,7 +65,7 @@ module Density
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  24-nov-02/tony: coded 
+!  24-nov-02/tony: coded
 !
       use Cdata, only: lentropy
       use EquationOfState, only: select_eos_variable
@@ -97,9 +97,9 @@ module Density
     endsubroutine init_lnrho
 !***********************************************************************
     subroutine pencil_criteria_density()
-! 
+!
 !  All pencils that the Density module depends on are specified here.
-! 
+!
 !  20-11-04/anders: coded
 !
     endsubroutine pencil_criteria_density
@@ -123,7 +123,7 @@ module Density
 !
 !  20-11-04/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f       
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -174,31 +174,31 @@ module Density
     subroutine read_density_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_density_init_pars
 !***********************************************************************
     subroutine write_density_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine write_density_init_pars
 !***********************************************************************
     subroutine read_density_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+
       if (present(iostat) .and. (NO_WARN)) print*,iostat
       if (NO_WARN) print*,unit
-                                                                                                   
+
     endsubroutine read_density_run_pars
 !***********************************************************************
     subroutine write_density_run_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
+
       if (NO_WARN) print*,unit
     endsubroutine write_density_run_pars
 !***********************************************************************
