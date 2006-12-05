@@ -233,7 +233,7 @@ sub get_md5_hash {
           or die boldface("Cannot open file $file for reading\n");
         my $data = <FILE>;
         close FILE;
-        $data = erase_timestamp_from_mod($data);
+        $data = erase_timestamp_from_mod($data,$file);
         $mod_hash{$file} = md5_hash_hex($data);
     }
 
@@ -295,16 +295,17 @@ sub md5_hash_hex_system {
 # ---------------------------------------------------------------------- #
 sub erase_timestamp_from_mod {
 # Erase time stamp in .mod files of known type
-    my $data = shift; 
+    my $data = shift;
+    my $file = shift;           # file name for diagnostics
 
     if ($fc_modtype =~ /^(g95|gfortran)$/) {
         # Eliminate time stamp from ASCII-formatted g95/gfortran module file:
         # Time stamp line is first line and looks like one of
         #   G95 module created on Wed Nov 29 18:27:08 2006 from random_nr.f90
         #   GFORTRAN module created from random_nr.f90 on Wed Nov 29 18:22:38 2006
-        $data =~ s{((?:G95|GFORTRAN) module created .*? on) .* (from|$)}
+        $data =~ s{((?:G95|GFORTRAN) module created.*? on) .* (from|$)}
                   {$1 [removed timestamp] $2}m
-                 or warn boldface("No time stamp found...\n");
+                 or warn boldface("No time stamp found in <$file> ...\n");
     } elsif ($fc_modtype =~ /^(ifort|ifc|hp)$/) { 
         # Eliminate time stamp from binary ifort (>=8) module file:
         # Bytes 45-48 represent Unix time, so we null them out:
