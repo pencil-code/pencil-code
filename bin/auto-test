@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.79 2006-12-04 11:21:53 wlyra Exp $
+# CVS: $Id: auto-test,v 1.80 2006-12-05 20:27:10 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -39,17 +39,33 @@ use IPC::Open2;
 
 # ---------------------------------------------------------------------- #
 # Test the following subdirs of samples/ :
-my @sampdir = qw( conv-slab cosmicray kin-dynamo geodynamo
-                  helical-MHDturb interlocked-fluxrings mdwarf
+my @sampdir1 = qw ( all-modules no-modules );
+my @sampdir2 = qw ( geodynamo );
+my @sampdir3 = qw ();
+
+my @sampdir = qw( conv-slab
+                  cosmicray
+                  kin-dynamo
+                  geodynamo
+                  helical-MHDturb
+                  interlocked-fluxrings
+                  mdwarf
                   0d-tests/heating_ionize
-                  0d-tests/heating_noionize conv-slab-noequi
-                  1d-tests/solar-atmosphere 1d-tests/sod_10
+                  0d-tests/heating_noionize
+                  conv-slab-noequi
+                  1d-tests/solar-atmosphere
+                  1d-tests/sod_10
                   2d-tests/Kelvin-Helmholtz-disc
                   2d-tests/selfgravitating-shearwave
                   interstellar
-                  dust-vortex MRI-turbulence_hyper random_uu_particles
-                  chiral-diffusion backwards-compatible testfield meissner
-                  turb-cylindrical-disk 2d-tests/globaldisc
+                  dust-vortex
+                  MRI-turbulence_hyper
+                  random_uu_particles
+                  chiral-diffusion
+                  backwards-compatible
+                  testfield
+                  meissner
+                  2d-tests/globaldisc
                 );
 # Test the following subdirs of runs/ :
 #my @runsdir = qw( radiation/solar1d4);
@@ -139,7 +155,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.79 2006-12-04 11:21:53 wlyra Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.80 2006-12-05 20:27:10 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
