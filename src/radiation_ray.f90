@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.125 2006-11-30 09:03:36 dobler Exp $
+! $Id: radiation_ray.f90,v 1.126 2006-12-05 18:50:45 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -175,7 +175,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.125 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: radiation_ray.f90,v 1.126 2006-12-05 18:50:45 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -380,7 +380,9 @@ module Radiation
 
         if (lrevision) call Qrevision
 !
-!  calculate heating rate
+!  calculate heating rate, so at the end of the loop
+!  f(:,:,:,iQrad) = \int_{4\pi} (I-S) d\Omega, not divided by 4pi.
+!  In the paper the directional Q is defined with the opposite sign.
 !
         f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad
 !

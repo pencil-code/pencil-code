@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.98 2006-12-01 14:49:23 pkapyla Exp $
+! $Id: forcing.f90,v 1.99 2006-12-05 18:50:45 brandenb Exp $
 
 module Forcing
 
@@ -74,7 +74,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.98 2006-12-01 14:49:23 pkapyla Exp $")
+           "$Id: forcing.f90,v 1.99 2006-12-05 18:50:45 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -508,9 +508,7 @@ module Forcing
       if (force_strength/=0.) then
          call dot(force_direction,force_direction,fd2)
          fd=sqrt(fd2)
-
          call dot(kk,force_direction,kkfd)
-
          do j=1,3
             fda(:,j) = 1. + (force_strength/force)*(kkfd/(k*fd))**2 &
                  *force_direction(j)/fd

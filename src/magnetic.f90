@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.363 2006-11-30 09:03:35 dobler Exp $
+! $Id: magnetic.f90,v 1.364 2006-12-05 18:50:45 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -211,7 +211,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.363 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: magnetic.f90,v 1.364 2006-12-05 18:50:45 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2533,8 +2533,8 @@ module Magnetic
 !
 !  satisfies the equations
 !  dux/dt - 2*Omega*uy = -Ay''
-!  duy/dt + 1/2*Omega*ux = +Ax''
-!  dAx/dt = 3/2*Omega*Ay + uy
+!  duy/dt + (2-q)*Omega*ux = +Ax''
+!  dAx/dt = q*Omega*Ay + uy
 !  dAy/dt = -ux
 !
 !  Assume B0=rho0=mu0=1
