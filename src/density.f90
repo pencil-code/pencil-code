@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.295 2006-11-30 09:03:34 dobler Exp $
+! $Id: density.f90,v 1.296 2006-12-06 11:00:25 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -111,7 +111,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.295 2006-11-30 09:03:34 dobler Exp $")
+           "$Id: density.f90,v 1.296 2006-12-06 11:00:25 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -237,7 +237,8 @@ module Density
         endif
 !
         if (lstratified .or. lnumerical_equilibrium) then
-          call farray_register_global('gg',iglobal_gg,vector=3)
+           if (lroot) print*,'initializing global gravity in density'
+           call farray_register_global('gg',iglobal_gg,vector=3) 
         endif
 !
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)

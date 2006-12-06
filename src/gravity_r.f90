@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.9 2006-11-30 09:03:35 dobler Exp $
+! $Id: gravity_r.f90,v 1.10 2006-12-06 11:00:25 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -44,16 +44,16 @@ module Gravity
   ! variables for compatibility with grav_z (used by Entropy and Density):
   real :: z1,z2,zref,zgrav,gravz,zinfty
   character (len=labellen) :: grav_profile='const'
-  logical :: lnumerical_equilibrium=.false.,lnumeqz=.false.
+  logical :: lnumerical_equilibrium=.false.,lstratified=.false.
   logical :: lcylindrical_gravity=.false.
 
   integer :: iglobal_gg=0
 
   namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-       lcylindrical_gravity,lnumeqz
+       lcylindrical_gravity,lstratified
 
   namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-       lcylindrical_gravity,lnumeqz
+       lcylindrical_gravity,lstratified
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
@@ -71,7 +71,6 @@ module Gravity
       use Cdata
       use Mpicomm, only: stop_it
       use Sub
-      use FArrayManager
 !
       logical, save :: first=.true.
 !
@@ -80,14 +79,12 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.9 2006-11-30 09:03:35 dobler Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.10 2006-12-06 11:00:25 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
       lgravr_gas =.true.
       lgravr_dust=.true.
-
-      call farray_register_global('gg',iglobal_gg,vector=3)
 !
     endsubroutine register_gravity
 !***********************************************************************
@@ -103,6 +100,7 @@ module Gravity
       use Cdata
       use Sub, only: poly, step
       use Mpicomm
+      use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: gg_mn=0.
@@ -200,15 +198,17 @@ module Gravity
 !
 !  initialize gg, so we can later retrieve gravity via get_global
 !
-      if (lnumerical_equilibrium.or.lnumeqz) then
-
+      if (lnumerical_equilibrium.or.lstratified) then
+! 
         if (lroot) then
           print*,'inititialize_gravity: numerical exact equilibrium -- gravity'
           print*,'                      will be calculated in density module'
         endif
-
+!
       else
-
+!
+        call farray_register_global('gg',iglobal_gg,vector=3)
+!
         do n=n1,n2
         do m=m1,m2
 !
@@ -257,7 +257,6 @@ module Gravity
         enddo
 !
       endif
-
       endif
 !
     endsubroutine initialize_gravity
@@ -364,10 +363,13 @@ module Gravity
 !
       use Cdata
       use Sub
+      use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
+      integer, pointer :: iglobal_gg
+      real,dimension(nx) :: rr
 !      real, dimension (nx) :: g_r
 !
 !  evr is the radial unit vector
@@ -388,7 +390,8 @@ module Gravity
 !      gg_mn = evr*spread(g_r,2,3)
 !      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg_mn
 !else
-
+      call farray_use_global('gg',iglobal_gg)
+! 
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
                   + f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
 !
