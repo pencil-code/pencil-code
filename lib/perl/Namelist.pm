@@ -5,8 +5,8 @@
 # Description:
 #   Parse F90 namelist into a hash and export in different formats.
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2006-11-26 22:36:54 $
-# $Revision: 1.6 $
+# $Date: 2006-12-06 22:46:17 $
+# $Revision: 1.7 $
 
 # Current test statistics:
 # All tests successful, 1 subtest skipped.
@@ -850,8 +850,9 @@ sub get_value {
     my $re_type = $regexp2[$type];
 
     while ($text =~ s/^($multiregexp)?($re_type)\s*(?:(,|\s+|\n|!)|(?=\/))\s*//s) {
-	my $mul = ( $1 || 1);
-	my ($val,$rest) = ($2,$3);
+	my $mul = ($1 || 1);
+	my $val = $2;
+	my $rest = ($3 || '');
 	$mul =~ s/\*//;
 	if ($debug) {
 	    print STDERR "\$mul=<$mul>, \$val=<$val>\n";
