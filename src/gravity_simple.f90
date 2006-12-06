@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.25 2006-11-30 09:03:35 dobler Exp $
+! $Id: gravity_simple.f90,v 1.26 2006-12-06 11:16:43 brandenb Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -59,6 +59,7 @@ module Gravity
 !  Parameters used by other modules (only defined for other gravities)
 !
   logical :: lnumerical_equilibrium=.false.
+  logical :: lboussinesq=.false.
   real :: g0=0.
   real :: lnrho_bot=0.,lnrho_top=0.,ss_bot=0.,ss_top=0.
   character (len=labellen) :: grav_profile='const'
@@ -69,14 +70,14 @@ module Gravity
        z1,z2,zref,lnrho_bot,lnrho_top,ss_bot,ss_top, &
        lgravx_gas,lgravx_dust,lgravy_gas,lgravy_dust,lgravz_gas,lgravz_dust, &
        xinfty,yinfty,zinfty, &
-       reduced_top
+       reduced_top,lboussinesq
 
   namelist /grav_run_pars/ &
        gravx_profile,gravy_profile,gravz_profile,gravx,gravy,gravz, &
        xgrav,ygrav,zgrav,kx_gg,ky_gg,kz_gg,dgravx,nu_epicycle,pot_ratio, &
        lgravx_gas,lgravx_dust,lgravy_gas,lgravy_dust,lgravz_gas,lgravz_dust, &
        xinfty,yinfty,zinfty, &
-       zref,reduced_top
+       zref,reduced_top,lboussinesq
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
@@ -103,7 +104,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.25 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: gravity_simple.f90,v 1.26 2006-12-06 11:16:43 brandenb Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -223,6 +224,12 @@ module Gravity
         if (lroot) print*,'initialize_gravity: constant gravz=', gravz
         gravz_zpencil=gravz
         potz_zpencil=-gravz*(z(n1:n2)-zinfty)
+
+      case('boussinesq')
+        if (lroot) print*,'initialize_gravity: boussinesq gravz=', gravz
+        gravz_zpencil=gravz
+        potz_zpencil=-gravz*(z(n1:n2)-zinfty)
+        lboussinesq=.true.
 
       case('const_zero')  !  Const. gravity acc. (but zero for z>zgrav)
         if (headtt) print*,'initialize_gravity: const_zero gravz=', gravz
@@ -365,7 +372,13 @@ module Gravity
 !
 !  Add gravitational acceleration to gas and dust
 !
+!  The special option lboussinesq=T is applicable when |z|/H  << 1.
+!  However, in the present formulation the resulting equations,
+!  du/dt = -lnrho, and dlnrho/dt=-du/dz, lead to an instability
+!  with the growth rate lambda = (1+i)*sqrt(k/2).
+!
 !  12-nov-04/anders: coded
+!   5-dec-06/petri: added Boussinesq approximation
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -379,10 +392,16 @@ module Gravity
 !  Add gravity acceleration on gas
 !
       if (lhydro) then
-        if (lgravx_gas) df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + p%gg(:,1)
-        if (lgravy_gas) df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + p%gg(:,2)
-        if (lgravz_gas) df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + p%gg(:,3)
-      endif
+        if (lboussinesq) then
+          if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%lnrho*p%gg(:,1)
+          if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%lnrho*p%gg(:,2)
+          if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%lnrho*p%gg(:,3)
+        else
+          if (lgravx_gas) df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + p%gg(:,1)
+          if (lgravy_gas) df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + p%gg(:,2)
+          if (lgravz_gas) df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + p%gg(:,3)
+        end if
+      end if
 !
 !  Add gravity acceleration on dust
 !
