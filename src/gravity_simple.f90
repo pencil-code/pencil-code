@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.26 2006-12-06 11:16:43 brandenb Exp $
+! $Id: gravity_simple.f90,v 1.27 2006-12-06 13:26:41 brandenb Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -104,7 +104,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.26 2006-12-06 11:16:43 brandenb Exp $")
+           "$Id: gravity_simple.f90,v 1.27 2006-12-06 13:26:41 brandenb Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -393,9 +393,13 @@ module Gravity
 !
       if (lhydro) then
         if (lboussinesq) then
-          if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%lnrho*p%gg(:,1)
-          if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%lnrho*p%gg(:,2)
-          if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%lnrho*p%gg(:,3)
+          if (lentropy) then
+            if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%ss*p%gg(:,1)
+            if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%ss*p%gg(:,2)
+            if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%ss*p%gg(:,3)
+          else
+            if (headtt) print*,'duu_dt_grav: lbounssinesq w/o lentropy not ok!'
+          end if
         else
           if (lgravx_gas) df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + p%gg(:,1)
           if (lgravy_gas) df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + p%gg(:,2)

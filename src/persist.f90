@@ -1,4 +1,4 @@
-! $Id: persist.f90,v 1.6 2006-11-30 09:03:36 dobler Exp $
+! $Id: persist.f90,v 1.7 2006-12-06 13:26:41 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   persist.f90   !!!
@@ -52,7 +52,7 @@ contains
       if ((ip<=8).and.lroot) print*,'input_persistent: '
 !
       read(lun,end=1000) id
-      if (id/=id_block_PERSISTANT) then
+      if (id/=id_block_PERSISTENT) then
         if (lroot) print*,'input_persistent: No persistent data to read'
         return
       endif
@@ -60,7 +60,7 @@ contains
 dataloop: do
         read(lun,iostat=ierr,end=1000) id
         done=.false.
-        if (id==id_block_PERSISTANT) then
+        if (id==id_block_PERSISTENT) then
           exit dataloop
         endif
         if (ierr<0) exit dataloop
@@ -92,11 +92,11 @@ dataloop: do
 !
       if ((ip<=8).and.lroot) print*,'output_persistent: '
 !
-      write(lun_output) id_block_PERSISTANT
+      write(lun_output) id_block_PERSISTENT
       call output_persistent_general(lun_output)
       call output_persistent_interstellar(lun_output)
       call output_persistent_forcing(lun_output)
-      write(lun_output) id_block_PERSISTANT
+      write(lun_output) id_block_PERSISTENT
 !
     endsubroutine output_persistent
 

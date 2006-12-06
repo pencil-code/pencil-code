@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.305 2006-12-06 06:10:04 ajohan Exp $
+! $Id: hydro.f90,v 1.306 2006-12-06 13:26:41 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -73,8 +73,9 @@ module Hydro
   ! run parameters
   real :: tdamp=0.,dampu=0.,wdamp=0.
   real :: dampuint=0.0,dampuext=0.0,rdampint=-1e20,rdampext=impossible
-  real :: ruxm=0.,ruym=0.,tau_damp_ruxm1=0.,tau_damp_ruym1=0.
-  real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
+  real :: ruxm=0.,ruym=0.,ruzm=0.
+  real :: tau_damp_ruxm1=0.,tau_damp_ruym1=0.,tau_damp_ruzm1=0.
+  real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_damp_ruzm=0.,tau_diffrot1=0.
   real :: ampl_diffrot=0.,Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   real :: k1_ff=1.,ampl_ff=1.
@@ -88,7 +89,7 @@ module Hydro
   namelist /hydro_run_pars/ &
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
-       tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot, &
+       tau_damp_ruxm,tau_damp_ruym,tau_damp_ruzm,tau_diffrot1,ampl_diffrot, &
        xexp_diffrot,kx_diffrot,lremove_mean_momenta, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, &
@@ -175,7 +176,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.305 2006-12-06 06:10:04 ajohan Exp $")
+           "$Id: hydro.f90,v 1.306 2006-12-06 13:26:41 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -241,6 +242,7 @@ module Hydro
 !
       if (tau_damp_ruxm /= 0.) tau_damp_ruxm1=1./tau_damp_ruxm
       if (tau_damp_ruym /= 0.) tau_damp_ruym1=1./tau_damp_ruym
+      if (tau_damp_ruzm /= 0.) tau_damp_ruzm1=1./tau_damp_ruzm
 !
 !  set freezing arrays
 !
@@ -626,7 +628,8 @@ module Hydro
 !
 !  1/rho needed for correcting the damping term
 !
-      if (tau_damp_ruxm/=0..or.tau_damp_ruym/=0.) lpenc_requested(i_rho1)=.true.
+      if (tau_damp_ruxm/=0..or.tau_damp_ruym/=0..or.tau_damp_ruzm/=0.) &
+        lpenc_requested(i_rho1)=.true.
 !
 !  video pencils
 !
@@ -701,7 +704,8 @@ module Hydro
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_u2)=.true.
       endif
-      if (idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0) lpenc_diagnos(i_rho)=.true.
+      if (idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0) &
+        lpenc_diagnos(i_rho)=.true.
       if (idiag_urm/=0 .or. idiag_upm/=0 .or. idiag_uzzm/=0 &
          .or. idiag_ur2m/=0 .or. idiag_up2m/=0 .or. idiag_uzz2m/=0 &
          .or. idiag_urupm/=0 .or. idiag_uzupm/=0 .or. idiag_uruzm/=0) &
@@ -984,6 +988,8 @@ module Hydro
         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ruxm*p%rho1*tau_damp_ruxm1
       if (tau_damp_ruym/=0.) &
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ruym*p%rho1*tau_damp_ruym1
+      if (tau_damp_ruzm/=0.) &
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ruzm*p%rho1*tau_damp_ruzm1
 !
 !  interface for your personal subroutines calls
 !
@@ -1168,12 +1174,12 @@ module Hydro
 !
 !   9-nov-06/axel: adapted from calc_ltestfield_pars
 !
-      use Cdata, only: iux,iuy,ilnrho,l1,l2,m1,m2,n1,n2,lroot
+      use Cdata, only: iux,iuy,iuz,ilnrho,l1,l2,m1,m2,n1,n2,lroot
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: rho,rux,ruy
-      integer, parameter :: nreduce=2
+      real, dimension (nx) :: rho,rux,ruy,ruz
+      integer, parameter :: nreduce=3
       real, dimension (nreduce) :: fsum_tmp,fsum
       integer :: m,n
       real :: fact
@@ -1182,17 +1188,20 @@ module Hydro
 !
 !  calculate averages of rho*ux and rho*uy
 !
-      if (tau_damp_ruxm/=0. .or. tau_damp_ruym/=0.) then
+      if (tau_damp_ruxm/=0. .or. tau_damp_ruym/=0. .or. tau_damp_ruzm/=0.) then
         ruxm=0.
         ruym=0.
+        ruzm=0.
         fact=1./nwgrid
         do n=n1,n2
           do m=m1,m2
             rho=exp(f(l1:l2,m,n,ilnrho))
             rux=rho*f(l1:l2,m,n,iux)
             ruy=rho*f(l1:l2,m,n,iuy)
+            ruz=rho*f(l1:l2,m,n,iuz)
             ruxm=ruxm+fact*sum(rux)
             ruym=ruym+fact*sum(ruy)
+            ruzm=ruzm+fact*sum(ruz)
           enddo
         enddo
       endif
@@ -1201,9 +1210,11 @@ module Hydro
 !
       fsum_tmp(1)=ruxm
       fsum_tmp(2)=ruym
+      fsum_tmp(3)=ruzm
       call mpiallreduce_sum(fsum_tmp,fsum,nreduce)
       ruxm=fsum(1)
       ruym=fsum(2)
+      ruzm=fsum(3)
 !
     endsubroutine calc_lhydro_pars
 !***********************************************************************

@@ -3,7 +3,7 @@
 ! This file declares all the integer tags used to allow variable
 ! numbers and types of records in varfiles and other datafiles.
 !
-integer, parameter :: id_block_PERSISTANT = 2000 
+integer, parameter :: id_block_PERSISTENT = 2000 
 !
 !
 ! Integers 
