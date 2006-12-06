@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.156 2006-11-30 09:03:36 dobler Exp $
+! $Id: particles_dust.f90,v 1.157 2006-12-06 13:09:16 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -122,7 +122,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.156 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: particles_dust.f90,v 1.157 2006-12-06 13:09:16 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -329,7 +329,7 @@ module Particles
       real :: vpx_sum, vpy_sum, vpz_sum
       real :: r, p, px, py, pz, eps, cs, k2_xxp
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
-      real :: rad,phi
+      real :: rad,phi,OO
       integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
 !
@@ -380,6 +380,7 @@ module Particles
              call random_number_wrapper(rad)
              call random_number_wrapper(phi)
              rad = r_int + (rad**0.6)*(r_ext-r_int)
+             !rad = r_int + rad*(r_ext-r_int)
              !this 0.6 gives approximate area normalization. Don't ask me why.
              phi = 2*pi*phi
              if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
@@ -787,6 +788,22 @@ k_loop:   do while (.not. (k>npar_loc))
                 1/gamma*beta_dPdr_dust*Omega*tausp*0.5/ &
                 (Omega*tausp+1/(Omega*tausp))*cs
           enddo
+
+       case ('Keplerian')
+!
+!  Keplerian velocities assuming GM=1 
+!
+          if (lroot) then
+             print*,'init_particles: Keplerian velocities assuming GM=1'
+          endif
+          do k=1,npar_loc
+             rad=sqrt(fp(k,ixp)**2 + fp(k,iyp)**2 + fp(k,izp)**2)
+             OO=rad**(-1.5)
+             fp(k,ivpx) = -OO*fp(k,iyp)
+             fp(k,ivpy) =  OO*fp(k,ixp)
+             fp(k,ivpz) = 0.
+          enddo
+
 
         case default
           if (lroot) &
