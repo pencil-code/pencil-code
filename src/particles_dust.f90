@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.158 2006-12-06 13:14:45 ajohan Exp $
+! $Id: particles_dust.f90,v 1.159 2006-12-06 14:57:13 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -122,7 +122,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.158 2006-12-06 13:14:45 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.159 2006-12-06 14:57:13 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -329,7 +329,7 @@ module Particles
       real :: vpx_sum, vpy_sum, vpz_sum
       real :: r, p, px, py, pz, eps, cs, k2_xxp
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
-      real :: rad,phi,OO
+      real :: rad,rad2,phi,OO
       integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
 !
@@ -377,11 +377,10 @@ module Particles
           if (lroot) print*, 'init_particles: Random particle cylindrical positions'
           do k=1,npar_loc
 
-             call random_number_wrapper(rad)
+             call random_number_wrapper(rad2)
              call random_number_wrapper(phi)
-             rad = r_int + (rad**0.6)*(r_ext-r_int)
-             !rad = r_int + rad*(r_ext-r_int)
-             !this 0.6 gives approximate area normalization. Don't ask me why.
+             rad2 = r_int**2 + rad2*(r_ext**2-r_int**2)
+             rad = sqrt(rad2)
              phi = 2*pi*phi
              if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
              if (nygrid/=1) fp(k,iyp)=rad*sin(phi)
