@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.87 2006-11-16 18:21:24 mee Exp $
+# CVS: $Id: run.csh,v 1.88 2006-12-06 19:51:55 wlyra Exp $
 
 #                       run.csh
 #                      ---------
@@ -66,6 +66,9 @@ if ($local_disc) then
         set k = `expr $nprocpernode \* $i + $j`
         if ($?notserial_procN) set k = `expr $i + $nnodes \* $j`
         $SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/
+	if (-e $datadir/proc$k/global.dat) then 
+	  $SCP $datadir/proc$k/global.dat ${node}:$SCRATCH_DIR/proc$k/
+        endif
         if ($lparticles) then
           $SCP $datadir/proc$k/pvar.dat ${node}:$SCRATCH_DIR/proc$k/
         endif
