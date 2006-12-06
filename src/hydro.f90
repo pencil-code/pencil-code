@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.304 2006-12-04 11:26:29 wlyra Exp $
+! $Id: hydro.f90,v 1.305 2006-12-06 06:10:04 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -13,6 +13,7 @@
 !
 ! PENCILS PROVIDED divu,oo,o2,ou,u2,uij,uu,sij,sij2,uij5,ugu
 ! PENCILS PROVIDED u3u21,u1u32,u2u13,del2u,del4u,del6u,graddivu,del6u_bulk
+! PENCILS PROVIDED grad5divu
 !
 !***************************************************************
 module Hydro
@@ -174,7 +175,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.304 2006-12-04 11:26:29 wlyra Exp $")
+           "$Id: hydro.f90,v 1.305 2006-12-06 06:10:04 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -756,8 +757,8 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: tmp
-      integer :: i,j
+      real, dimension (nx) :: tmp, tmp2
+      integer :: i, j, ju
 !
       intent(in) :: f
       intent(inout) :: p
@@ -831,6 +832,18 @@ module Hydro
         endif
       else
         if (lpencil(i_graddivu)) call del2v_etc(f,iuu,GRADDIV=p%graddivu)
+      endif
+! grad5divu
+      if (lpencil(i_grad5divu)) then
+        do i=1,3
+          tmp=0.0
+          do j=1,3
+            ju=iuu+j-1
+            call der5i1j(f,ju,tmp2,i,j)
+            tmp=tmp+tmp2
+          enddo
+          p%grad5divu(:,i)=tmp
+        enddo
       endif
 !
     endsubroutine calc_pencils_hydro

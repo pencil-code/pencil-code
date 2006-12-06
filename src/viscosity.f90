@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.37 2006-12-05 22:57:08 wlyra Exp $
+! $Id: viscosity.f90,v 1.38 2006-12-06 06:10:04 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -86,7 +86,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.37 2006-12-05 22:57:08 wlyra Exp $")
+           "$Id: viscosity.f90,v 1.38 2006-12-06 06:10:04 ajohan Exp $")
 
       ivisc(1)='nu-const'
 
@@ -153,7 +153,7 @@ module Viscosity
         case ('hyper3_rho_nu-const')
           if (lroot) print*,'viscous force: nu_hyper/rho*del6v'
           lvisc_hyper3_rho_nu_const=.true.
-       case ('hyper3_rho_nu-const-symm')
+       case ('hyper3_rho_nu-const_symm')
           if (lroot) print*,'viscous force(i): nu_hyper/rho*(del6ui+der5(divu,i))'
           lvisc_hyper3_rho_nu_const_symm=.true.
        case ('hyper3_nu-vector')
@@ -182,7 +182,7 @@ module Viscosity
         case ('')
           ! do nothing
         case default
-          if (lroot) print*, 'No such such value for ivisc(',i,'): ', trim(ivisc(i))
+          if (lroot) print*, 'No such value for ivisc(',i,'): ', trim(ivisc(i))
           call stop_it('calc_viscous_forcing')
         endselect
       enddo
@@ -342,6 +342,7 @@ module Viscosity
       if (lvisc_hyper3_simplified .or. lvisc_hyper3_rho_nu_const .or. &
           lvisc_hyper3_nu_const .or. lvisc_hyper3_rho_nu_const_symm) &
           lpenc_requested(i_del6u)=.true.
+      if (lvisc_hyper3_rho_nu_const_symm) lpenc_requested(i_grad5divu)=.true.
       if (lvisc_hyper3_rho_nu_const_bulk) lpenc_requested(i_del6u_bulk)=.true.
       if (lvisc_hyper2_simplified) lpenc_requested(i_del4u)=.true.
       if (lvisc_rho_nu_const .or. lvisc_hyper3_rho_nu_const .or. &
@@ -415,7 +416,7 @@ module Viscosity
       real, dimension (nx,3) :: tmp,tmp2
       real, dimension (nx) :: murho1,nu_smag,tmp3,tmp4
 !
-      integer :: i,j,ju
+      integer :: i,j
 !
       intent(in) :: f
       intent(inout) :: p
@@ -533,22 +534,14 @@ module Viscosity
 !
 !  for Sij=1/2 * (d5jui + d5iuj)
 !  viscous force_i: mu/rho*(del6ui + d5i(divu))
-!        murho1=nu_hyper3*p%rho1  ! (=mu_hyper3/rho)
 !
-         do i=1,3
-            tmp3=0.
-            do j=1,3
-               ju=iuu+j-1
-               call der5i1j(f,ju,tmp4,i,j)
-               tmp3 = tmp3 + tmp4
-            enddo
-            p%fvisc(:,i)=p%fvisc(:,i)+.5*murho1*(p%del6u(:,i) + tmp3)
-         enddo
-         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
-            call fatal_error('calc_pencils_viscosity', 'viscous heating term '// &
-                 'is not implemented for lvisc_hyper3_rho_nu_const_symm')
-         endif
-         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
+        murho1=nu_hyper3*p%rho1  ! (=mu_hyper3/rho)
+        p%fvisc=p%fvisc+0.5*murho1*(p%del6u + p%grad5divu)
+        if (lpencil(i_visc_heat)) then  ! Heating term not implemented
+           call fatal_error('calc_pencils_viscosity', 'viscous heating term '//&
+               'is not implemented for lvisc_hyper3_rho_nu_const_symm')
+        endif
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
       endif
 !
       if (lvisc_hyper3_nu_vector) then
