@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.364 2006-12-05 18:50:45 brandenb Exp $
+! $Id: magnetic.f90,v 1.365 2006-12-06 23:02:02 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -167,6 +167,7 @@ module Magnetic
   integer :: idiag_uxbmx=0,idiag_uxbmy=0,idiag_uxbmz=0,idiag_uxjm=0
   integer :: idiag_brmphi=0,idiag_bpmphi=0,idiag_bzmphi=0,idiag_b2mphi=0
   integer :: idiag_uxbrmphi=0,idiag_uxbpmphi=0,idiag_uxbzmphi=0,idiag_ujxbm=0
+  integer :: idiag_jxbrmphi=0,idiag_jxbpmphi=0,idiag_jxbzmphi=0
   integer :: idiag_uxBrms=0,idiag_Bresrms=0,idiag_Rmrms=0
   integer :: idiag_brm=0,idiag_bpm=0,idiag_bzm=0
   integer :: idiag_br2m=0,idiag_bp2m=0,idiag_bzz2m=0
@@ -211,7 +212,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.364 2006-12-05 18:50:45 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.365 2006-12-06 23:02:02 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -615,6 +616,7 @@ module Magnetic
 !
       if (     idiag_brmphi/=0 &
           .or. idiag_uxbrmphi/=0 &
+          .or. idiag_jxbrmphi/=0 &
           .or. idiag_br2m/=0 &
           .or. idiag_brbpm/=0 &
           .or. idiag_brbzm/=0 ) then
@@ -624,6 +626,7 @@ module Magnetic
 !
       if (     idiag_bpmphi/=0 &
           .or. idiag_uxbpmphi/=0 &
+          .or. idiag_jxbpmphi/=0 &
           .or. idiag_bpm/=0 &
           .or. idiag_bp2m/=0 &
           .or. idiag_brbpm/=0 ) then
@@ -1334,6 +1337,11 @@ module Magnetic
           call phisum_mn_name_rz(p%uxb(:,1)*p%phix+p%uxb(:,2)*p%phiy,idiag_uxbpmphi)
           call phisum_mn_name_rz(p%uxb(:,3)                     ,idiag_uxbzmphi)
         endif
+        if (any((/idiag_jxbrmphi,idiag_jxbpmphi,idiag_jxbzmphi/) /= 0)) then
+          call phisum_mn_name_rz(p%jxb(:,1)*p%pomx+p%jxb(:,2)*p%pomy,idiag_jxbrmphi)
+          call phisum_mn_name_rz(p%jxb(:,1)*p%phix+p%jxb(:,2)*p%phiy,idiag_jxbpmphi)
+          call phisum_mn_name_rz(p%jxb(:,3)                     ,idiag_jxbzmphi)
+        endif
       endif
 !
 !  Calculate diagnostic quantities
@@ -2002,7 +2010,8 @@ module Magnetic
         idiag_b3b21m=0; idiag_b1b32m=0; idiag_b2b13m=0
         idiag_udotxbm=0; idiag_uxbdotm=0
         idiag_brmphi=0; idiag_bpmphi=0; idiag_bzmphi=0; idiag_b2mphi=0
-        idiag_jbmphi=0; idiag_uxbrmphi=0; idiag_uxbpmphi=0; idiag_uxbzmphi=0;
+        idiag_jbmphi=0; idiag_uxbrmphi=0; idiag_uxbpmphi=0; idiag_uxbzmphi=0
+        idiag_jxbrmphi=0; idiag_jxbpmphi=0; idiag_jxbzmphi=0
         idiag_dteta=0; idiag_uxBrms=0; idiag_Bresrms=0; idiag_Rmrms=0
         idiag_brm=0; idiag_bpm=0; idiag_bzm=0
         idiag_br2m=0; idiag_bp2m=0; idiag_bzz2m=0; idiag_brbpm=0
@@ -2133,6 +2142,10 @@ module Magnetic
         call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbrmphi',idiag_uxbrmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbpmphi',idiag_uxbpmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbzmphi',idiag_uxbzmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'jxbrmphi',idiag_jxbrmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'jxbpmphi',idiag_jxbpmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'jxbzmphi',idiag_jxbzmphi)
+
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
