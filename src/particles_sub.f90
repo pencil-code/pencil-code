@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.93 2006-11-30 09:03:36 dobler Exp $
+! $Id: particles_sub.f90,v 1.94 2006-12-06 15:34:09 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -198,50 +198,41 @@ module Particles_sub
       integer, dimension (mpar_loc) :: ipar
       integer :: npar_loc
 !
-      real :: xold,yold,rad,r1old
+      real :: xold,yold,rad,r1old,OO
 !
       integer :: k
 !
       intent (inout) :: fp, npar_loc, ipar, dfp
 
       if (.not.lcartesian_mig) then
-!     radial boundary condition
-         do k=1,npar_loc
-            xold=fp(k,ixp) ; yold=fp(k,iyp)
-            rad = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2)
-            r1old = 1./max(rad,tini)
-!      rp < r_int
-            if (rad .lt. r_int) then
-               rad=rad+(r_ext-r_int)
+!  radial boundary condition
+        do k=1,npar_loc
+          rad = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2)
+!  rp < r_int : flush particle and move to outer boundary
+          if (rad<r_int) then
+            xold=fp(k,ixp); yold=fp(k,iyp); r1old = 1./max(rad,tini)
+            rad=r_ext
 !
-!  Particle position must never need more than one addition of Lr to get back
-!  in the box. Often a NaN or Inf in the particle position will show up as a
-!  problem here.
+            fp(k,ixp) = rad*xold*r1old ! r*cos(theta)
+            fp(k,iyp) = rad*yold*r1old ! r*sin(theta)
+            OO=rad**(-1.5)
+!  Set particle velocity to local Kepler speed.
+            fp(k,ivpx) = -OO*fp(k,iyp)
+            fp(k,ivpy) =  OO*fp(k,ixp)
+          endif
+!  rp > r_ext : flush particle and move to outer boundary
+          if (rad>r_ext) then
+            xold=fp(k,ixp); yold=fp(k,iyp); r1old = 1./max(rad,tini)
 !
-               if (rad .lt. r_int) then
-                  print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
-                       ' was further than r_ext outside the simulation box!'
-                  print*, 'This must never happen.'
-                  print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
-                  call fatal_error_local('boundconds_particles','')
-               endif
-            endif
-!      rp > r_ext
-            if (rad >= r_ext) then
-               rad=rad-(r_ext-r_int)
-               if (rad>=r_ext) then
-                  print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
-                       ' was further than r_ext outside the simulation box!'
-                  print*, 'This must never happen.'
-                  print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
-                  call fatal_error_local('boundconds_particles','')
-               endif
-            endif
+            rad=r_ext
+            fp(k,ixp) = rad*xold*r1old ! r*cos(theta)
+            fp(k,iyp) = rad*yold*r1old ! r*sin(theta)
+            OO=rad**(-1.5)
+            fp(k,ivpx) = -OO*fp(k,iyp)
+            fp(k,ivpy) =  OO*fp(k,ixp)
+          endif
 !
-            fp(k,ixp) = rad *xold*r1old !r*cos(theta)
-            fp(k,iyp) = rad *yold*r1old !r*sin(theta)
-!
-         enddo
+        enddo
       else
 !
 !  Boundary condition in the x-direction.
