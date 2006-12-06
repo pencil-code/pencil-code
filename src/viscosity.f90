@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.38 2006-12-06 06:10:04 ajohan Exp $
+! $Id: viscosity.f90,v 1.39 2006-12-06 08:07:19 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -86,7 +86,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.38 2006-12-06 06:10:04 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.39 2006-12-06 08:07:19 ajohan Exp $")
 
       ivisc(1)='nu-const'
 
@@ -536,7 +536,9 @@ module Viscosity
 !  viscous force_i: mu/rho*(del6ui + d5i(divu))
 !
         murho1=nu_hyper3*p%rho1  ! (=mu_hyper3/rho)
-        p%fvisc=p%fvisc+0.5*murho1*(p%del6u + p%grad5divu)
+        do i=1,3
+          p%fvisc(:,i)=p%fvisc(:,i)+0.5*murho1*(p%del6u(:,i) + p%grad5divu(:,i))
+        enddo
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
            call fatal_error('calc_pencils_viscosity', 'viscous heating term '//&
                'is not implemented for lvisc_hyper3_rho_nu_const_symm')
