@@ -4,7 +4,7 @@
 !  Local settings concerning grid size and number of CPUs.
 !  This file is included by cparam.f90
 !
-! MGLOBAL CONTRIBUTION 7
+! MGLOBAL CONTRIBUTION 4
 !
 integer, parameter :: ncpus=1,nprocy=1,nprocz=ncpus/nprocy,nprocx=1
 integer, parameter :: nxgrid=250,nygrid=250,nzgrid=1
