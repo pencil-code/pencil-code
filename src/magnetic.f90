@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.365 2006-12-06 23:02:02 wlyra Exp $
+! $Id: magnetic.f90,v 1.366 2006-12-06 23:26:27 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -212,7 +212,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.365 2006-12-06 23:02:02 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.366 2006-12-06 23:26:27 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1236,7 +1236,7 @@ module Magnetic
 !
 !  Subtract contribution from mean background flow
 !
-      if (llarge_scale_Bz) call subtract_mean_lorentz(df,p)
+      if (llarge_scale_Bz) call subtract_mean_emf(df,p)
 !
 !  Ambipolar diffusion in the strong coupling approximation
 !
@@ -3432,7 +3432,7 @@ module Magnetic
 !
     endsubroutine potentdiv
 !***********************************************************************
-    subroutine subtract_mean_lorentz(df,p)
+    subroutine subtract_mean_emf(df,p)
 !
 !  A vertical large scale magnetic field Bz
 !
@@ -3456,10 +3456,12 @@ module Magnetic
 !
       intent(inout) :: df
 !
-      df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - p%uavg(:,2)*p%bavg(:,3)*p%x_mn*p%rcyl_mn1
-      df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - p%uavg(:,2)*p%bavg(:,3)*p%y_mn*p%rcyl_mn1
+      df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - &
+           p%uavg(:,2)*p%bavg(:,3)*p%x_mn*p%rcyl_mn1
+      df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - &
+           p%uavg(:,2)*p%bavg(:,3)*p%y_mn*p%rcyl_mn1
 !
-    endsubroutine subtract_mean_lorentz
+    endsubroutine subtract_mean_emf
 !************************************************************************
     subroutine bb_unitvec_shock(f,bb_hat)
 !
