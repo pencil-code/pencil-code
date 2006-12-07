@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.182 2006-12-07 13:32:11 ajohan Exp $
+# $Id: getconf.csh,v 1.183 2006-12-07 14:10:28 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -734,13 +734,13 @@ else if ($hn =~ rio* || $hn =~ pia*) then
     set nodelist = `repeat $ncpus echo $nodelist`
   else
     set nprocpernode = 1
-    if ($mpi) then
-      set local_disc = 1
-      set one_local_disc = 0
-    else
+#    if ($mpi) then
+#      set local_disc = 1
+#      set one_local_disc = 0
+#    else
       set local_disc = 0
       set one_local_disc = 1
-    endif
+#    endif
     set mpirun = /afs/ipp/amd64_sles9/soft/mvapich/mvapich2-0.9.5/f95i.9.1/bin/mpiexec
     set nodelist=`cat $TMPDIR/machines`
     echo $nodelist
