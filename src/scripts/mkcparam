@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.45 2006-12-06 06:10:05 ajohan Exp $
+# CVS: $Id: mkcparam,v 1.46 2006-12-07 11:01:12 ajohan Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -453,6 +453,7 @@ my $npar_mig=0;
 my $npar_species=0;
 my $nspar=0;
 foreach my $line (@cparam) {
+  $line=substr($line, 0, index($line,"!"));# Ignore lines that are commented out
   if ($line=~ 'mpar_loc')     {$mpar_loc=1;}
   if ($line=~ 'npar_mig')     {$npar_mig=1;}
   if ($line=~ 'npar_species') {$npar_species=1;}
