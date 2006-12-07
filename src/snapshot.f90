@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.16 2006-11-30 12:09:04 mee Exp $
+! $Id: snapshot.f90,v 1.17 2006-12-07 10:42:19 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -417,6 +417,7 @@ contains
       real, dimension (mx,my,mz,nv) :: a
       real, allocatable, dimension (:,:,:) :: aa
       integer :: ggmx,ggmy,ggmz,ggnv
+      real :: tscratch
 !
       if (lserial_io) call start_serialize()
       open(1,FILE=file,FORM='unformatted')
@@ -446,7 +447,7 @@ contains
       endif
       if (ip<=8) print*,'input_globals: read ',file
 !
-      read(1) t,x,y,z,dx,dy,dz
+      read(1) tscratch,x,y,z,dx,dy,dz
 !
       if (ip<=3) print*,'input_globals: ip,x=',ip,x
       if (ip<=3) print*,'input_globals: y=',y
