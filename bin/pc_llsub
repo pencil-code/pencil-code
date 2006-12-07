@@ -17,7 +17,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   llsub
 # Author: Tobias Heinemann (theine@nordita.dk)
 # Date:   23-Apr-2006
-# CVS:    $Id: pc_llsub,v 1.4 2006-12-06 23:14:00 theine Exp $
+# CVS:    $Id: pc_llsub,v 1.5 2006-12-07 01:22:25 theine Exp $
 # Description:
 #   Wrapper script to pass start.csh and run.csh (or both) to IBM Loadleveler
 #   God knows why it does not take any useful command line options on its
@@ -79,7 +79,7 @@ $pipe = "| cat" if ($output);
 if ($ncpus eq 0) {
   open (CPARAM,'src/cparam.local');
   while (<CPARAM>) {
-    if ($_ =~ s/ncpus *= *([0-9]+)//) {
+    if ($_ =~ "ncpus *= *([0-9]+)") {
       $ncpus = $1;
     }
   }
