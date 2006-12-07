@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.183 2006-12-07 14:10:28 ajohan Exp $
+# $Id: getconf.csh,v 1.184 2006-12-07 14:56:32 wlyra Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -727,7 +727,7 @@ else if ($hn =~ rio* || $hn =~ pia*) then
   echo "opteron cluster at RZG with SGE queue."
   touch ~/.mpdpasswd
   chmod 600 ~/.mpdpasswd
-  echo secretword=mofassa > ~/.mpdpasswd
+  echo secretword=mofassa >! ~/.mpdpasswd
   \cp -p ~/.mpdpasswd ~/.mpd.conf
   if ($#nodelist == 1) then
     echo "Apparently an interactive run."
