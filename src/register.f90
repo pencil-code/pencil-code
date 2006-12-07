@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.192 2006-11-30 09:03:36 dobler Exp $
+! $Id: register.f90,v 1.193 2006-12-07 00:47:20 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -822,6 +822,7 @@ module Register
       call expand_cname(cnamerz,nnamerz,'uumphi','urmphi','upmphi','uzmphi')
       call expand_cname(cnamerz,nnamerz,'bbmphi','brmphi','bpmphi','bzmphi')
       call expand_cname(cnamerz,nnamerz,'uxbmphi','uxbrmphi','uxbpmphi','uxbzmphi')
+      call expand_cname(cnamerz,nnamerz,'jxbmphi','jxbrmphi','jxbpmphi','jxbzmphi')
       !
       !  some generic quantities (mostly coordinates for debugging)
       !
