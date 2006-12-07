@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.181 2006-12-06 08:55:26 ajohan Exp $
+# $Id: getconf.csh,v 1.182 2006-12-07 13:32:11 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -728,7 +728,7 @@ else if ($hn =~ rio* || $hn =~ pia*) then
   touch ~/.mpdpasswd
   chmod 600 ~/.mpdpasswd
   echo secretword=mofassa > ~/.mpdpasswd
-  cp -p ~/.mpdpasswd ~/.mpd.conf
+  \cp -p ~/.mpdpasswd ~/.mpd.conf
   if ($#nodelist == 1) then
     echo "Apparently an interactive run."
     set nodelist = `repeat $ncpus echo $nodelist`
