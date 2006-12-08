@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.75 2006-11-30 09:03:35 dobler Exp $
+! $Id: eos_idealgas.f90,v 1.76 2006-12-08 15:26:38 theine Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -109,7 +109,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.75 2006-11-30 09:03:35 dobler Exp $')
+           '$Id: eos_idealgas.f90,v 1.76 2006-12-08 15:26:38 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -492,15 +492,14 @@ module EquationOfState
         if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
         if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
         if (lpencil_in(i_ee)) lpencil_in(i_lnTT)=.true.
-        if (lpencil_in(i_pp)) then
-          lpencil_in(i_lnTT)=.true.
-          lpencil_in(i_lnrho)=.true.
-        endif
+        if (lpencil_in(i_pp)) lpencil_in(i_rho)=.true.
         if (leos_isothermal) then
           if (lpencil_in(i_ss)) lpencil_in(i_lnrho)=.true.
           if (lpencil_in(i_del2ss)) lpencil_in(i_del2lnrho)=.true.
           if (lpencil_in(i_gss)) lpencil_in(i_glnrho)=.true.
           if (lpencil_in(i_hss)) lpencil_in(i_hlnrho)=.true.
+        else
+          if (lpencil_in(i_pp)) lpencil_in(i_cs2)=.true.
         endif
 
       case default
@@ -613,6 +612,7 @@ module EquationOfState
           if (lpencil(i_del2ss)) p%del2ss=-(cp-cv)*p%del2lnrho
           if (lpencil(i_gss)) p%gss=-(cp-cv)*p%glnrho
           if (lpencil(i_hss)) p%hss=-(cp-cv)*p%hlnrho
+          if (lpencil(i_pp)) p%pp=gamma11*p%rho*cs20
         elseif (leos_localisothermal) then
           if (lpencil(i_cs2)) p%cs2=f(l1:l2,m,n,iglobal_cs2)
           if (lpencil(i_lnTT)) p%lnTT=log(p%cs2*cp1/gamma1)
@@ -623,10 +623,10 @@ module EquationOfState
           if (lpencil(i_del2ss)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal")
           if (lpencil(i_gss)) p%gss=cv*(p%glnTT-gamma1*p%glnrho)
           if (lpencil(i_hss)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal")
+          if (lpencil(i_pp)) p%pp=gamma11*p%rho*p%cs2
         else
           call fatal_error("calc_pencils_eos","Full equation of state not implemented for ilnrho_cs2")
         endif
-        if (lpencil(i_pp)) p%pp=(cp-cv)*exp(p%lnTT+p%lnrho)
         if (lpencil(i_ee)) p%ee=(gamma11/gamma1)*p%cs2
         if (lpencil(i_yH)) p%yH=impossible
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)

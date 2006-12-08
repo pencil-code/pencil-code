@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.95 2006-11-30 09:03:35 dobler Exp $
+! $Id: noentropy.f90,v 1.96 2006-12-08 15:26:38 theine Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -55,7 +55,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.95 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: noentropy.f90,v 1.96 2006-12-08 15:26:38 theine Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -67,7 +67,7 @@ module Entropy
 !  24-nov-02/tony: coded
 !
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
-                                 cs0, select_eos_variable
+                                 cs0, select_eos_variable,gamma1
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -83,7 +83,11 @@ module Entropy
       if (llocal_iso) then
         call select_eos_variable('cs2',-2) !special local isothermal
       else
-        call select_eos_variable('ss',-1) !isentropic => polytropic
+        if (gamma1 == 0.) then
+          call select_eos_variable('cs2',-1) !isothermal => polytropic
+        else
+          call select_eos_variable('ss',-1) !isentropic => polytropic
+        endif
       endif
 !
 !  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
