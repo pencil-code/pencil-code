@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.39 2006-12-04 19:45:36 dobler Exp $
+! $Id: neutron_star.f90,v 1.40 2006-12-11 13:23:53 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -93,6 +93,8 @@ module Special
 
   real :: beta_hand=1.
   real :: nu_for_1D=1.
+  real :: star_rot=0.
+  logical :: hot_star=.false.
 
  logical :: l1D_cooling=.false.,l1D_heating=.false.
 
@@ -120,7 +122,7 @@ module Special
       l1D_cooling,l1D_heating,beta_hand, &
       nu_for_1D, ltop_velocity_kep, lextrapolate_bot_density, &
       lnstar_entropy, lnstar_T_const, lnstar_1D, &
-      lgrav_x_mdf
+      lgrav_x_mdf, star_rot, hot_star
 
 ! run parameters
   namelist /neutron_star_run_pars/ &
@@ -128,7 +130,7 @@ module Special
       laccelerat_zone, ldecelerat_zone, lsurface_zone,lraddif_local, &
        accretion_flux, lnstar_entropy, &
        lnstar_T_const,lnstar_1D, &
-       l1D_cooling,l1D_heating, lgrav_x_mdf
+       l1D_cooling,l1D_heating, lgrav_x_mdf, star_rot, hot_star
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -180,11 +182,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.39 2006-12-04 19:45:36 dobler Exp $
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.40 2006-12-11 13:23:53 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.39 2006-12-04 19:45:36 dobler Exp $")
+           "$Id: neutron_star.f90,v 1.40 2006-12-11 13:23:53 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -453,12 +455,27 @@ endsubroutine read_special_run_pars
               if (lnstar_T_const) then
               endif
             else
-             l_sz=l2-5*0
+             l_sz=l2-10
+	if (hot_star) then
+	 df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho) &
+	 -1./(5.*dt)*(f(l1:l_sz,m,n,ilnrho) &
+	  -log(rho_disk)-(-M_star/2./z(n)**3 &
+	     *x(l1:l_sz)**2*gamma/cs2_star))
+	     
+!	df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+!	 -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) -f(l1:l2,m,n-1,ilnrho)) 
+	 
+	else   
                df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho) &
                   -1./(5.*dt)*(f(l1:l_sz,m,n,ilnrho) &
                   -log(rho_disk)-(-M_star/2./z(n)**3 &
                   *x(l1:l_sz)**2*gamma/(p%cs2(l1:l_sz))))
+        endif
+ 
 
+               df(l_sz+1:l2,m,n,ilnrho)=df(l_sz+1:l2,m,n,ilnrho) &
+	         -1./(5.*dt)*(f(l_sz+1:l2,m,n,ilnrho)-f(l_sz,m,n,ilnrho))				 
+  
             endif
           endif
          endif
@@ -474,6 +491,11 @@ endsubroutine read_special_run_pars
                 *exp(-M_star/R_star/cs0**2*gamma*(1.-R_star/z(n))))
               endif
 
+            if (hot_star) then
+	     df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+	       -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,n+1,ilnrho))
+	    endif
+	    
             else
 
 
@@ -491,9 +513,15 @@ endsubroutine read_special_run_pars
            else
            do i=l_sz,l2
             if (n .LT. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
+
+            if (hot_star) then
+	     df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
+	     -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))
+	    else
              df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
              -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
              +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/p%cs2(i-1))
+            endif
             else
             df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
              -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))
@@ -537,6 +565,10 @@ endsubroutine read_special_run_pars
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
             M_star/z(n)**2*(1.-p%uu(:,2)*p%uu(:,2)*z(n)/M_star)
 
+           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+ &
+	               +p%uu(:,1)*p%uu(:,2)/z(n)
+		       
+
         if (nxgrid /= 1) then
 
           if (lgrav_x_mdf) then
@@ -561,8 +593,15 @@ endsubroutine read_special_run_pars
            else
 
          l_sz=l2-5
+	 
+	 if (hot_star) then
+	  df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)&
+	    -1./(5.*dt)*(f(l1:l_sz,m,n,iux)-f(l1:l_sz,m,n-1,iux))
+			 
+	 else
              df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux) &
                               -1./(5.*dt)*(f(l1:l_sz,m,n,iux)-0.)
+         endif
 
         !    df(l_sz+1:l2,m,n,iux)=df(l_sz+1:l2,m,n,iux) &
         !     -1./(5.*dt)*(f(l_sz+1:l2,m,n,iux)-f(l_sz+1:l2,m,n-1,iux))
@@ -570,9 +609,15 @@ endsubroutine read_special_run_pars
 
          l_sz=l2-5
 
+        ! if (hot_star) then
+	! else
              df(l1:l_sz,m,n,iuz)=df(l1:l_sz,m,n,iuz)&
               -1./(5.*dt)*(f(l1:l_sz,m,n,iuz)-f(l1:l_sz,m,n-1,iuz))
+        !    df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)&
+	!       -1./(5.*dt)*(f(l1:l_sz,m,n,iux)-f(l1:l_sz,m,n-1,iux))
+			  
 
+        ! endif
            endif
         endif
       endif
@@ -582,12 +627,26 @@ endsubroutine read_special_run_pars
       if (ldecelerat_zone) then
         if (n .le. ac_dc_size+4  .and. dt .gt.0.) then
           if (lnstar_entropy) then
-!            if (lnstar_T_const) then
+
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-                -1./(5.*dt)*(p%uu(:,2)-0.)
+                -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n))*star_rot)
+		
+!	if (hot_star) then
+!	else	
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
                 -1./(5.*dt)*(p%uu(:,3)-0.)
-!            endif
+		
+	if (hot_star) then	
+	      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)&
+	        -1./(5.*dt)*(p%uu(:,1)-0.)
+	endif	      	
+		
+!	endif
+		
+	!if (hot_star) then	
+	!     df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)&
+	!     -1./(5.*dt)*(f(l1:l2,m,n,iux)-f(l1:l2,m,n-1,iux))	
+        ! endif
           else
            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
                     -1./(5.*dt)*(p%uu(:,1)-0.)
@@ -619,6 +678,23 @@ endsubroutine read_special_run_pars
                   -1./(5.*dt)*(f(l1:l2,m,n,iuz)&
                   +accretion_flux/p%rho(:))
          else
+	 
+	 
+	
+!	if (hot_star) then
+	
+!	if (n.gt.ac_dc_size+4) then
+!	      do j=l_sz,l2
+	
+!	        df(j,m,n,iux)=df(j,m,n,iux)&
+!	          -1./(5.*dt)*(f(j,m,n,iux)-f(j-1,m,n,iux))
+!	        df(j,m,n,iuy)=df(j,m,n,iuy)&
+!	          -1./(5.*dt)*(f(j,m,n,iuy)-f(j-1,m,n,iuy))
+!         	df(j,m,n,iuz)=df(j,m,n,iuz)&
+!	          -1./(5.*dt)*(f(j,m,n,iuz)-f(j-1,m,n,iuz))
+!          	enddo
+!        endif			      
+!	else
            do j=l_sz,l2
              df(j,m,n,iux)=df(j,m,n,iux)&
                   -1./(5.*dt)*(f(j,m,n,iux)-f(j-1,m,n,iux))
@@ -627,6 +703,7 @@ endsubroutine read_special_run_pars
              df(j,m,n,iuz)=df(j,m,n,iuz)&
                   -1./(5.*dt)*(f(j,m,n,iuz)-f(j-1,m,n,iuz))
            enddo
+!        endif 
 
          endif
 
@@ -1073,6 +1150,16 @@ endsubroutine read_special_run_pars
             lnTT=(zz(l1:l2,mi,ni)-R_star)/Lxyz(3) &
                 *(log(T_disk)-log(T_star))+log(T_star)
 
+        !  if (hot_star) then
+	  
+	!  for li=l1,l2 do
+	!    lnTT(li-3)=(xx(li,mi,ni)-0)/Lxyz(1) &
+	!       *(log(T_disk*0.7)-lnTT(li-3))+lnTT(li-3)
+        !  enddo			  
+	  
+	!  endif
+            
+
             call eoscalc(4,lnrho,lnTT,ss=ss)
 
             f(l1:l2,mi,ni,iss)=ss
@@ -1109,6 +1196,13 @@ endsubroutine read_special_run_pars
 
       f(:,:,:,iux)=uu_init
       f(:,:,:,iuz)=uu_init
+      
+      if (hot_star) then
+
+         f(:,:,:,iuy)=sqrt(M_star/xyz0(3))
+	 
+
+      else
        if (ldecelerat_zone .AND. decel_zone .LT. nzgrid) then
 
         f(:,:,L_disk_point+4:mz,iuy)= &
@@ -1126,6 +1220,7 @@ endsubroutine read_special_run_pars
            (zz(:,:,1:L_disk_point+3)-R_star)/ll*sqrt(M_star/(ll+R_star))
        endif
 
+     endif
      else
       f(:,:,:,iux)=uu_init
       f(:,:,:,iuz)=uu_init
@@ -1245,7 +1340,14 @@ endsubroutine read_special_run_pars
           else
             if ( j==4 ) then
             else
+	    if (j==1 .and. hot_star) then
+	    else
+	      if (j==2) then
+               f(:,:,n1,j)=sqrt(M_star/R_star)*star_rot
+	      else
               f(:,:,n1,j)=value1
+	      endif
+	    endif  
            endif
           endif
 
