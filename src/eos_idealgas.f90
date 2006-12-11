@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.76 2006-12-08 15:26:38 theine Exp $
+! $Id: eos_idealgas.f90,v 1.77 2006-12-11 07:43:34 dobler Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -109,7 +109,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.76 2006-12-08 15:26:38 theine Exp $')
+           '$Id: eos_idealgas.f90,v 1.77 2006-12-11 07:43:34 dobler Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -627,7 +627,13 @@ module EquationOfState
         else
           call fatal_error("calc_pencils_eos","Full equation of state not implemented for ilnrho_cs2")
         endif
-        if (lpencil(i_ee)) p%ee=(gamma11/gamma1)*p%cs2
+        if (lpencil(i_ee)) then
+          if (gamma1 /= 0.) then
+            p%ee=(gamma11/gamma1)*p%cs2
+          else
+            p%ee=p%cs2            
+          endif
+        endif
         if (lpencil(i_yH)) p%yH=impossible
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
