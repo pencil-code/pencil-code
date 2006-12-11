@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.40 2006-12-11 13:23:53 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.41 2006-12-11 17:09:30 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -95,6 +95,7 @@ module Special
   real :: nu_for_1D=1.
   real :: star_rot=0.
   logical :: hot_star=.false.
+  logical :: new_T_profile=.false.
 
  logical :: l1D_cooling=.false.,l1D_heating=.false.
 
@@ -122,7 +123,7 @@ module Special
       l1D_cooling,l1D_heating,beta_hand, &
       nu_for_1D, ltop_velocity_kep, lextrapolate_bot_density, &
       lnstar_entropy, lnstar_T_const, lnstar_1D, &
-      lgrav_x_mdf, star_rot, hot_star
+      lgrav_x_mdf, star_rot, hot_star, new_T_profile
 
 ! run parameters
   namelist /neutron_star_run_pars/ &
@@ -130,7 +131,7 @@ module Special
       laccelerat_zone, ldecelerat_zone, lsurface_zone,lraddif_local, &
        accretion_flux, lnstar_entropy, &
        lnstar_T_const,lnstar_1D, &
-       l1D_cooling,l1D_heating, lgrav_x_mdf, star_rot, hot_star
+       l1D_cooling,l1D_heating, lgrav_x_mdf, star_rot, hot_star, new_T_profile
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -182,11 +183,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.40 2006-12-11 13:23:53 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.41 2006-12-11 17:09:30 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.40 2006-12-11 13:23:53 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.41 2006-12-11 17:09:30 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -747,7 +748,8 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      integer :: j, l_sz, l_sz_1
+      integer :: j, l_sz, l_sz_1, li
+      real :: dT_dx_i1
 
         if (l1D_cool_heat) call rad_cool_heat_1D(f,df,p)
 
@@ -792,6 +794,23 @@ endsubroutine read_special_run_pars
                  -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
               endif
            else
+     
+          if (hot_star .and. new_T_profile) then
+               
+            df(l1,m,n,iss)=df(l1,m,n,iss) &
+                 -1./(5.*dt)*(p%TT(1)-T_disk)/p%TT(1)
+   
+            do li=l1+1,l2      
+  
+            dT_dx_i1=-M_star/z(n)**3*x(li-l1) &
+              *3./16./sigmaSB*c_light*p%rho(li-l1)/p%TT(li-l1)**3
+
+            df(li,m,n,iss)=df(li,m,n,iss) &
+            -1./(5.*dt)*(p%TT(li-l1+1)-p%TT(li-l1)-dT_dx_i1*dx)/p%TT(li-l1+1)
+            enddo 
+
+          endif 
+
 
            endif
 
@@ -807,10 +826,26 @@ endsubroutine read_special_run_pars
 
             if (lnstar_1D) then
              else
+              if (hot_star .and. new_T_profile) then
+                
+                df(l1,m,n,iss)=df(l1,m,n,iss) &
+                   -1./(5.*dt)*(p%TT(1)-T_disk)/p%TT(1)
+   
+                do li=l_sz,l2      
+  
+                 dT_dx_i1=-M_star/z(n)**3*x(li-l1) &
+                          *3./16./sigmaSB*c_light  &
+                          *p%rho(li-l1)/p%TT(li-l1)**3
+
+                 df(li,m,n,iss)=df(li,m,n,iss) &
+                   -1./(5.*dt)*(p%TT(li-l1+1)-p%TT(li-l1)-dT_dx_i1*dx)/p%TT(li-l1+1)
+                enddo 
+              else       
                do j=l_sz,l2
                  df(j,m,n,iss)=df(j,m,n,iss)*0.&
                  -1./(5.*dt)*(f(j,m,n,iss)-f(j-1,m,n,iss))
                enddo
+              endif  
             endif
           endif
        endif
@@ -1112,9 +1147,9 @@ endsubroutine read_special_run_pars
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx, zz
-      real, dimension (nx) ::  lnrho, lnTT,ss
+      real, dimension (nx) ::  lnrho, lnTT,ss, TT_0
       integer ::  mi,ni,li,i
-      real ::  ll, cs2_star
+      real ::  ll, cs2_star, dT_dx_i1
 
 
       if (T_star.GT.0)  lnTT=log(T_star)
@@ -1158,6 +1193,25 @@ endsubroutine read_special_run_pars
         !  enddo			  
 	  
 	!  endif
+
+        if (hot_star .and. new_T_profile) then
+    
+         
+              TT_0(1)=exp(lnTT(l1))
+
+                do li=l1+1,l2
+                dT_dx_i1=-M_star/(zz(li-1,mi,ni))**3*xx(li-1,mi,ni) &
+                *3./16./sigmaSB*c_light*exp(f(li-1,mi,ni,ilnrho)) &
+                /TT_0(li-l1)**3
+
+                TT_0(li-l1+1)=TT_0(li-l1)+dT_dx_i1*dx           
+
+                lnTT(li-l1+1)=log(TT_0(li-l1+1))
+
+   
+                enddo
+               
+        endif
             
 
             call eoscalc(4,lnrho,lnTT,ss=ss)
@@ -1297,10 +1351,10 @@ endsubroutine read_special_run_pars
       use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: value1,value2
+      real :: value1,value2, dT_dx_i1
       type (boundary_condition) :: bc
-      real, dimension(nx) :: lnrho,lnTT,ss
-      integer :: sgn,i,j,  n1p4,n2m4, i_tmp
+      real, dimension(nx) :: lnrho,lnTT,ss,TT_0
+      integer :: sgn,i,j,  n1p4,n2m4, i_tmp,li
 
     j=bc%ivar
 
@@ -1366,7 +1420,24 @@ endsubroutine read_special_run_pars
               if (T_disk.EQ.0) then
               lnTT=log(cs0**2/(gamma1))
               else
-              lnTT=log(T_disk)
+
+               if (hot_star .and. new_T_profile) then
+                                  
+                TT_0(1)=T_disk
+
+                do li=l1+1,l2
+                dT_dx_i1=-M_star/(R_star+Lxyz(3))**3*(li-l1)*dx &
+                *3./16./sigmaSB*c_light*exp(f(li-1,m2,n2,4)) &
+                /TT_0(li-l1)**3
+
+                TT_0(li-l1+1)=TT_0(li-l1)+dT_dx_i1*dx
+
+                enddo
+                lnTT=log(TT_0)    
+               !  lnTT=log(T_disk)
+               else   
+                lnTT=log(T_disk)
+               endif 
               endif
               call eoscalc(4,lnrho,lnTT,ss=ss)
               f(l1:l2,m2,n2,iss)=ss
