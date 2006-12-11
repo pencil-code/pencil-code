@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.77 2006-12-11 07:43:34 dobler Exp $
+! $Id: eos_idealgas.f90,v 1.78 2006-12-11 08:06:37 brandenb Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -109,7 +109,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.77 2006-12-11 07:43:34 dobler Exp $')
+           '$Id: eos_idealgas.f90,v 1.78 2006-12-11 08:06:37 brandenb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -513,7 +513,7 @@ module EquationOfState
 !  Calculate Entropy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!  02-04-06/tony: coded
+!  02-apr-06/tony: coded
 !
       use Cparam
       use Sub
@@ -530,6 +530,9 @@ module EquationOfState
 ! handled by the eos module.
 
       select case (ieosvars)
+!
+!  work out thermodynamic quantities for given lnrho or rho and ss
+!
       case (ilnrho_ss,irho_ss)
         if (leos_isentropic) then
           if (lpencil(i_ss)) p%ss=0
@@ -564,6 +567,9 @@ module EquationOfState
         if (lpencil(i_glnTT)) p%glnTT=gamma1*p%glnrho+cv1*p%gss
         if (lpencil(i_del2lnTT)) p%del2lnTT=gamma1*p%del2lnrho+cv1*p%del2ss
         if (lpencil(i_hlnTT)) p%hlnTT=gamma1*p%hlnrho+cv1*p%hss
+!
+!  work out thermodynamic quantities for given lnrho or rho and lnTT
+!
       case (ilnrho_lnTT,irho_lnTT)
         if (leos_isentropic) then
           if (lpencil(i_lnTT)) p%lnTT=gamma1*(p%lnrho-lnrho0)+lnTT0
@@ -597,7 +603,7 @@ module EquationOfState
         if (lpencil(i_hss)) p%hss=cv*(p%hlnTT-gamma1*p%hlnrho)
         if (lpencil(i_del6ss)) call fatal_error("calc_pencils_eos","del6ss not available for ilnrho_lnTT")
 !
-!
+!  work out thermodynamic quantities for given lnrho or rho and cs2
 !
       case (ilnrho_cs2,irho_cs2)
         if (leos_isentropic) then
@@ -627,6 +633,10 @@ module EquationOfState
         else
           call fatal_error("calc_pencils_eos","Full equation of state not implemented for ilnrho_cs2")
         endif
+!
+!  internal energy
+!  For gamma=1, we use R/mu = c_p = c_v, thus ee = c_vT = R/mu T = p/rho = cs^2.
+!
         if (lpencil(i_ee)) then
           if (gamma1 /= 0.) then
             p%ee=(gamma11/gamma1)*p%cs2
@@ -638,7 +648,6 @@ module EquationOfState
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
         if (lpencil(i_del6ss)) call fatal_error("calc_pencils_eos","del6ss not available for ilnrho_cs2")
-
       case default
         call fatal_error("calc_pencils_eos","case not implemented yet")
       endselect
