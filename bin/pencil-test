@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2006-08-26 16:41:35 $
-# $Revision: 1.30 $
+# $Date: 2006-12-12 06:41:28 $
+# $Revision: 1.31 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -80,7 +80,7 @@ GetOptions(\%opts,
 	            --tag-stable=s
 	            --tag-broken=s
 	       )) or die "$!\n";
-die '$Id: pencil-test,v 1.30 2006-08-26 16:41:35 mee Exp $ ' . "\n"
+die '$Id: pencil-test,v 1.31 2006-12-12 06:41:28 dobler Exp $ ' . "\n"
             if    ($opts{'v'} || $opts{'version'});
 die usage() if    ($opts{'h'} || $opts{'help'}     || @ARGV < 1);
 my $debug       = (              $opts{'debug'}       || 0 );
@@ -90,7 +90,7 @@ my $pencil_home = ($opts{'D'} || $opts{'pencil-home'} || '$PENCIL_HOME' );
 my $nice        = ($opts{'N'} || $opts{'nice'}        || 0 );
 my $infofile    = ($opts{'i'} || $opts{'infofile'}    || '' );
 my $update      = ($opts{'u'} || $opts{'update'}      || 0 );
-my $UPDATE      = ($opts{'U'} || $opts{'UPDATE'}      || 0 );
+my $UPDATE      = ($opts{'U'} || $opts{'up-d-samples'}|| 0 );
 my $tag_stable  = (              $opts{'tag-stable'}  || 0 );
 my $tag_broken  = (              $opts{'tag-broken'}  || 0 );
 if ($UPDATE) { $update=1 };
