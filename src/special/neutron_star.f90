@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.41 2006-12-11 17:09:30 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.42 2006-12-12 12:08:52 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -183,11 +183,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.41 2006-12-11 17:09:30 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.42 2006-12-12 12:08:52 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.41 2006-12-11 17:09:30 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.42 2006-12-12 12:08:52 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -440,6 +440,7 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
+      real, dimension (nx) :: cs2_new
       integer :: i, l_sz, tmp_int
       real :: cs2_star, p_gas,p_rad, Sigma_rho, grad_rho
 
@@ -458,10 +459,13 @@ endsubroutine read_special_run_pars
             else
              l_sz=l2-10
 	if (hot_star) then
+	
+!	cs2_new=p%cs2-0.5*(p%cs2+cs2_star)
+	
 	 df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho) &
 	 -1./(5.*dt)*(f(l1:l_sz,m,n,ilnrho) &
 	  -log(rho_disk)-(-M_star/2./z(n)**3 &
-	     *x(l1:l_sz)**2*gamma/cs2_star))
+	     *x(l1:l_sz)**2*gamma/(0.5*(p%cs2(l1:l_sz)+cs2_star))))
 	     
 !	df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
 !	 -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) -f(l1:l2,m,n-1,ilnrho)) 
@@ -493,8 +497,9 @@ endsubroutine read_special_run_pars
               endif
 
             if (hot_star) then
-	     df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-	       -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,n+1,ilnrho))
+	    l_sz=l2-5*0
+	     df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho) &
+	       -1./(5.*dt)*(f(l1:l_sz,m,n,ilnrho)-f(l1:l_sz,m,n+1,ilnrho))
 	    endif
 	    
             else
@@ -516,8 +521,10 @@ endsubroutine read_special_run_pars
             if (n .LT. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
 
             if (hot_star) then
+	    if (n .gt. ac_dc_size+4) then
 	     df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
 	     -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))
+	    endif 
 	    else
              df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
              -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
@@ -576,7 +583,13 @@ endsubroutine read_special_run_pars
             df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)- &
               M_star/z(n)**2/sqrt(z(n)**2+x(l1:l_sz)**2)*x(l1:l_sz)*(z(n)-R_star)/(Lxyz(1)*0.5)
            else
-            df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)-M_star/z(n)**3*x(l1:l_sz)
+	   if (hot_star) then
+	     if (n .gt. ac_dc_size+4) then
+	       df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)-M_star/z(n)**3*x(l1:l_sz)
+	     endif
+	   else
+             df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)-M_star/z(n)**3*x(l1:l_sz)
+           endif
            endif
           endif
       endif
@@ -780,7 +793,16 @@ endsubroutine read_special_run_pars
             *gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_disk
 
           else
-
+	  if (hot_star) then
+            !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+             ! -1./(5.*dt)*(p%TT(:)-T_star)/T_star
+	      
+	    
+	     l_sz=l2-5
+	      
+	      df(l1:l_sz,m,n,iss)=df(l1:l_sz,m,n,iss)*0 &
+	      -1./(5.*dt)*(f(l1:l_sz,m,n,iss)-f(l1:l_sz,m,n+1,iss))
+          endif		   
 
           endif
          endif
@@ -828,8 +850,9 @@ endsubroutine read_special_run_pars
              else
               if (hot_star .and. new_T_profile) then
                 
-                df(l1,m,n,iss)=df(l1,m,n,iss) &
-                   -1./(5.*dt)*(p%TT(1)-T_disk)/p%TT(1)
+	      if (n .gt. ac_dc_size+4) then
+            !    df(l1,m,n,iss)=df(l1,m,n,iss) &
+            !       -1./(5.*dt)*(p%TT(1)-T_disk)/p%TT(1)
    
                 do li=l_sz,l2      
   
@@ -839,7 +862,14 @@ endsubroutine read_special_run_pars
 
                  df(li,m,n,iss)=df(li,m,n,iss) &
                    -1./(5.*dt)*(p%TT(li-l1+1)-p%TT(li-l1)-dT_dx_i1*dx)/p%TT(li-l1+1)
-                enddo 
+                enddo
+	      else
+	      	 do j=l_sz,l2
+		   df(j,m,n,iss)=df(j,m,n,iss)*0&
+		  -1./(5.*dt)*(f(j,m,n,iss)-f(j-1,m,n,iss))
+	        enddo
+								  
+	      endif	
               else       
                do j=l_sz,l2
                  df(j,m,n,iss)=df(j,m,n,iss)*0.&
@@ -1395,6 +1425,8 @@ endsubroutine read_special_run_pars
             if ( j==4 ) then
             else
 	    if (j==1 .and. hot_star) then
+	    
+	    f(:,:,n1,j)=value1
 	    else
 	      if (j==2) then
                f(:,:,n1,j)=sqrt(M_star/R_star)*star_rot
