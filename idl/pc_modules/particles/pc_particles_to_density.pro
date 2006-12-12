@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.19 2006-11-26 10:17:56 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.20 2006-12-12 14:36:54 ajohan Exp $
 ;
 ;  Convert positions of particles to a grid density field.
 ;
@@ -7,7 +7,8 @@
 ;
 function pc_particles_to_density, xxp, x, y, z, $
     cic=cic, tsc=tsc, fine=fine, normalize=normalize, $
-    datadir=datadir, vvp=vvp, sigmap=sigmap, quiet=quiet
+    datadir=datadir, vvp=vvp, vprms=vprms, lscalar_rms=lscalar_rms, $
+    lshear=lshear, quiet=quiet
 
 COMMON pc_precision, zero, one
 ;
@@ -15,6 +16,8 @@ COMMON pc_precision, zero, one
 ;
 default, cic, 0
 default, tsc, 0
+default, lscalar_rms, 0
+default, lshear, 0
 default, quiet, 0
 default, normalize, 0
 ;
@@ -134,24 +137,18 @@ if (cic or tsc) then begin
   endif
 endif
 ;
-;  Keplerian shear needs to be taken into account when measuring velocity
-;  dispersions.
-;
-if (n_elements(vvp) ne 0) then begin
-  lsigma=1
-  lshear=par.lshear
-endif else begin
-  lsigma=0
-endelse
-;
 ;  Define density and velocity dispersion arrays.
 ;
 np=fltarr(nx,ny,nz)*one
 
-if (lsigma) then begin
-  vvpm  =fltarr(nx,ny,nz,3)*one
-  vvp2m =fltarr(nx,ny,nz,3)*one
-  sigmap=fltarr(nx,ny,nz,3)*one
+if (keyword_set(vprms)) then begin
+  vvpm=fltarr(nx,ny,nz,3)*one
+  if (lscalar_rms) then begin
+    vprms=fltarr(nx,ny,nz)*one
+  endif else begin
+    vvp2m=fltarr(nx,ny,nz,3)*one
+    vprms=fltarr(nx,ny,nz,3)*one
+  endelse
 endif
 ;
 ;  Three different ways to assign particle density to the grid are implemented:
@@ -167,6 +164,8 @@ case interpolation_scheme of
   'ngp': begin
 ;
     if (not quiet) then print, 'Assigning density using NGP method.'
+;  Nearest grid point is stored in array.
+    ineargrid=intarr(npar,3)
 ;
     for k=0L,npar-1 do begin
 ;  
@@ -179,42 +178,64 @@ case interpolation_scheme of
       if (ix eq -1) then ix=0
       if (iy eq -1) then iy=0
       if (iz eq -1) then iz=0
+      ineargrid[k,*]=[ix,iy,iz]
 ;
 ;  Particles are assigned to the nearest grid point.
 ;
       np[ix,iy,iz]=np[ix,iy,iz]+1.0*one
-;  Velocity dispersion
-      if (lsigma) then begin
-        vvpm[ix,iy,iz,0]  = vvpm[ix,iy,iz,0]  + vvp[k,0]
-        vvp2m[ix,iy,iz,0] = vvp2m[ix,iy,iz,0] + vvp[k,0]^2
+;  Mean velocity (needed for velocity dispersion).
+      if (keyword_set(vprms)) then begin
+        vvpm[ix,iy,iz,0]  = vvpm[ix,iy,iz,0] + vvp[k,0]
         if (lshear) then begin
           vvpm[ix,iy,iz,1]  = vvpm[ix,iy,iz,1]  +(vvp[k,1]-1.5*1.0*xxp[k,0])
-          vvp2m[ix,iy,iz,1] = vvp2m[ix,iy,iz,1] +(vvp[k,1]-1.5*1.0*xxp[k,0])^2
         endif else begin
           vvpm[ix,iy,iz,1]  = vvpm[ix,iy,iz,1]  + vvp[k,1]
-          vvp2m[ix,iy,iz,1] = vvp2m[ix,iy,iz,1] + vvp[k,1]^2
         endelse
         vvpm[ix,iy,iz,2]  = vvpm[ix,iy,iz,2]  + vvp[k,2]
-        vvp2m[ix,iy,iz,2] = vvp2m[ix,iy,iz,2] + vvp[k,2]^2
+        if (not lscalar_rms) then begin
+          vvp2m[ix,iy,iz,0] = vvp2m[ix,iy,iz,0] + vvp[k,0]^2
+          if (lshear) then begin
+            vvp2m[ix,iy,iz,1] = $
+                vvp2m[ix,iy,iz,1] +(vvp[k,1]-1.5*1.0*xxp[k, 0])^2
+          endif else begin
+            vvp2m[ix,iy,iz,1] = vvp2m[ix,iy,iz,1] + vvp[k,1]
+          endelse
+          vvp2m[ix,iy,iz,2] = vvp2m[ix,iy,iz,2] + vvp[k,2]^2
+        endif
       endif
 ;
     endfor ; loop over particles
-
-    if (lsigma) then begin
+;
+;  Calculate velocity dispersions.
+;
+    if (keyword_set(vprms)) then begin
       ii=array_indices(np,where(np gt 1.0))
-;  Divide by number of particles
       ii3=intarr(n_elements(ii[0,*]))
+;  Normalize sums to get average.
       for j=0,2 do begin
         ii3[*]=j
         vvpm[ii[0,*],ii[1,*],ii[2,*],ii3] = $
             vvpm[ii[0,*],ii[1,*],ii[2,*],ii3]/np[ii[0,*],ii[1,*],ii[2,*]]
-        vvp2m[ii[0,*],ii[1,*],ii[2,*],ii3] = $
+        if (not lscalar_rms) then $
+            vvp2m[ii[0,*],ii[1,*],ii[2,*],ii3] = $
             vvp2m[ii[0,*],ii[1,*],ii[2,*],ii3]/np[ii[0,*],ii[1,*],ii[2,*]]
       endfor
-      sigmap=vvp2m-vvpm^2
-      i0=where(sigmap lt 0.0)
-      if (i0[0] ne -1) then sigmap[i0]=0.0
-      sigmap=sqrt(sigmap)
+;  Scalar velocity dispersion.
+      if (lscalar_rms) then begin
+        for k=0L,npar-1 do begin
+          ix=ineargrid[k,0] & iy=ineargrid[k,1] & iz=ineargrid[k,2]
+          vprms[ix,iy,iz]=vprms[ix,iy,iz]+ $
+              total((vvp[k,*]-vvpm[ix,iy,iz,*])^2,2)
+        endfor
+        ii=where(np gt 1.0)
+        vprms[ii] = sqrt(vprms[ii]/np[ii])
+      endif else begin
+;  Vector velocity dispersion.
+        vprms=vvp2m-vvpm^2
+        i0=where(vprms lt 0.0)
+        if (i0[0] ne -1) then vprms[i0]=0.0
+        vprms=sqrt(vprms)
+      endelse
     endif
 ;
   end ; 'ngp'
