@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.236 2006-11-30 09:03:36 dobler Exp $
+! $Id: run.f90,v 1.237 2006-12-12 06:55:58 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -49,6 +49,7 @@
         integer :: count, ierr
         logical :: stop=.false.,timeover=.false.
         logical :: lreinit_file=.false., exist=.false.
+        logical :: lreload_file=.false., lreload_always_file=.false.
         real :: wall_clock_time=0., time_per_step=0.
         double precision :: time_last_diagnostic, time_this_diagnostic
         integer :: it_last_diagnostic,it_this_diagnostic
@@ -67,7 +68,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.236 2006-11-30 09:03:36 dobler Exp $")
+             "$Id: run.f90,v 1.237 2006-12-12 06:55:58 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -327,8 +328,14 @@
             endif
 !
 !  Re-read parameters if file `RELOAD' exists; then remove the file
+!  (this allows us to change parameters on the fly).
+!  Re-read parameters if file `RELOAD_ALWAYS' exists; don't remove file
+!  (only useful for debugging RELOAD issues).
 !
-            if (lroot) inquire(FILE="RELOAD", EXIST=lreloading)
+            if (lroot) inquire(FILE="RELOAD", EXIST=lreload_file)
+            if (lroot) inquire(FILE="RELOAD_ALWAYS", EXIST=lreload_always_file)
+            lreloading = lreload_file .or. lreload_always_file
+            !
             call mpibcast_logical(lreloading, 1)
             if (lreloading) then
               if (lroot) write(0,*) 'Found RELOAD file -- reloading parameters'
@@ -343,8 +350,10 @@
               endif
               call choose_pencils()
               call wparam2()
-              if (lroot) call remove_file("RELOAD")
-              lreloading = .false.
+              if (lroot .and. lreload_file) call remove_file("RELOAD")
+              lreload_file        = .false.
+              lreload_always_file = .false.
+              lreloading          = .false.
             endif
 !
 !  Reinit variables found in `REINIT' file; then remove the file. Currently

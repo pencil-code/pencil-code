@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.80 2006-12-05 20:27:10 dobler Exp $
+# CVS: $Id: auto-test,v 1.81 2006-12-12 06:55:58 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -110,6 +110,7 @@ Options:
   -C,  --clean             \tClean up (make cleann) before compiling
   -c,  --compile-only      \tTest compilation only
   -n,  --norun             \tTest compilation and starting only
+  -r,  --reload            \tKeep reloading parameters (using KEEP_RELOADING)
   -l,  --list              \tList test directories (don't run any tests)
   -t,  --time              \tPrint CPU time used
   -i,  --infofile=<file>   \tAfter last test, print content of <file>
@@ -137,6 +138,7 @@ GetOptions(\%opts,
 	       -C   --clean
 	       -c   --compile-only
 	       -n   --norun
+               -r   --reload
 	       -l   --list
 	       -t   --time
 	       -i=s --infofile=s
@@ -155,12 +157,13 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.80 2006-12-05 20:27:10 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.81 2006-12-12 06:55:58 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
 my $debug       = (              $opts{'debug'}       || 0    );
 my $clean       = ($opts{'C'} || $opts{'clean'}       || 0    );
+my $reload      = ($opts{'r'} || $opts{'reload'}      || 0    );
 my $list_only   = ($opts{'l'} || $opts{'list'}        || 0    );
 my $time        = ($opts{'t'} || $opts{'time'}        || 0    );
 my $infofile    = ($opts{'i'} || $opts{'infofile'}    || ''   );
@@ -324,10 +327,7 @@ sub handle_lock_file {
     # Write our own lock file
     if ($got_lock) {
         print STDERR "Writing <$$> to lock file $lockfile\n" if ($debug);
-        open(LOCK, "> $lockfile")
-          or die "Cannot open $lockfile for writing\n";
-        print LOCK "$$\n";
-        close LOCK or die "Cannot close $lockfile\n";
+        write_to_file($lockfile, "$$", 0, 1);
         $remove_lock = 1;       # clean up lock at END
     }
 
@@ -486,7 +486,25 @@ sub test_run {
     if ($t_run) {
 	my $dir = shift;
 	print "    Running..           ";
+
+        # Handle KEEP_RELOADING file (our -r/--reload option)
+        my $reload_file = "$dir/KEEP_RELOADING";
+        if (-e $reload_file) {
+            warn "Found file $reload_file -- deleting\n";
+            unlink $reload_file or die "Cannot unlink $reload_file!\n";
+        }
+        if ($reload) {
+            write_to_file($reload_file, '');
+            print " [KEEP_RELOADING]";
+        }
+
+        # Run the Code
 	$res = test_shell_cmd("$nice run.csh",$dir,"running");
+
+        # Clean up
+        if (-e $reload_file) {
+            unlink $reload_file or die "Cannot unlink $reload_file!\n";
+        }
     }
 }
 # ---------------------------------------------------------------------- #
@@ -496,7 +514,6 @@ sub test_results {
 	my $dir = shift;
 	my ($rdmsg,$diagn);
 	print "    Validating results..";
-#	print "    [Not yet implemented]";
 	my @output = split(/[\n\r]+/,$res);
 	my_ok(0,0,"",$dir,"results","quiet");
 	my @foutput = extract_results(\@output); # filtered output
@@ -699,7 +716,7 @@ sub compare_numbers_fuzzily {
 # ---------------------------------------------------------------------- #
 sub test_rundir {
 # Test compilation, starting, running and results
-    my $dir = shift;
+    my $dir      = shift;
     my $makeopts = shift;
     my $created_datadir = 0;
 
@@ -734,11 +751,11 @@ sub test_rundir {
 	}
     }
 
-    # Test compilation
+    # 1. Test compilation
     test_compile($dir,$makeopts);
     return if ($test_status);
 
-    # Ensure we have a data directory and test starting and running
+    # 2. Ensure we have a data directory and test starting...
     return unless ($t_start);	# no need for a data directory unless we start
 				# the code
     if (! -d 'data') {
@@ -767,11 +784,11 @@ sub test_rundir {
     }
     test_start($dir);
     goto cleanup if ($test_status);
-    # we only get here if compiling and starting was OK
+    # 3 ..and running (we only get here if compiling and starting was OK)
     test_run($dir);
     return if ($test_status);
 
-    # need to check the output here..
+    # 4. Check the output
     test_results($dir);
 
     # Clean up if necessary
@@ -798,7 +815,7 @@ sub s_to_hms{
 }
 # ---------------------------------------------------------------------- #
 sub postprocess {
-    # Clean compiler output with postprocessor
+# Clean compiler output with postprocessor
     my $text = shift;
 
     print STDERR "  PP: Cleaning compiler output with <$postproc>\n"
@@ -826,6 +843,35 @@ sub postprocess {
     }
     print STDERR "  PP: done postprocessing\n" if ($debug);
     $text;
+}
+# ---------------------------------------------------------------------- #
+sub write_to_file {
+# Write TEXT to file FILE, aborting if file exists (unless OVERWRITE is
+# set), and write a helpful header (unless NOHEADER is set)
+    my $file      = shift;
+    my $text      = shift || '';
+    my $overwrite = shift || 0;
+    my $noheader  = shift || 0;
+    my $header = !$noheader;    # Avoid iterated negation (=spinning head)
+
+    if (-e $file && !$overwrite) {
+        die "File $file exists!\n";
+    } else {
+        open(FILE,"> $file") or die "Cannot open file $file for writing\n";
+        if ($header) {
+            my $shortfile = $file;
+            $shortfile =~ s{/\./}{/}g; # remove `./' path components
+            $shortfile =~ s{^.*?([^/]*/?[^/]*)$}{$1}g; # keep only last path component
+            print FILE "$shortfile\n";
+            print FILE "-" x length($shortfile), "\n";
+            print FILE "Created: ", scalar localtime(), "\n\n";
+            print FILE "This file was automatically generated by auto-test,"
+                     . " so think twice before\nyou modify it.\n\n";
+        }
+        chomp($text);
+        print FILE "$text\n" if (length($text));
+        close FILE or die "Cannot close file $file\n";
+    }
 }
 # ---------------------------------------------------------------------- #
 
