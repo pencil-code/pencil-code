@@ -1,12 +1,12 @@
 ;
-;  $Id: pc_map_particles_on_grid.pro,v 1.1 2006-04-17 12:13:32 ajohan Exp $
+;  $Id: pc_map_particles_on_grid.pro,v 1.2 2006-12-12 05:42:42 ajohan Exp $
 ;
 ;  Map the particle positions on the grid.
 ;
 ;  Author: Anders Johansen
 ;
 pro pc_map_particles_on_grid, xxp, x, y, z, $
-    ineargrid=ineargrid, ineighbour=ineighbour, ishepherd=ishepherd, $
+    ineargrid=ineargrid, kneighbour=kneighbour, kshepherd=kshepherd, $
     datadir=datadir
 
 COMMON pc_precision, zero, one
@@ -43,13 +43,13 @@ for k=0L,npar-1 do begin
 
 endfor
 
-ineighbour=lonarr(npar)
-ishepherd =lonarr(nx,ny,nz)
+kneighbour=lonarr(npar,/nozero) & kneighbour[*]=-1
+kshepherd =lonarr(nx,ny,nz,/nozero) & kshepherd[*,*,*]=-1
 
 for k=0L,npar-1 do begin
   ix=ineargrid[k,0] & iy=ineargrid[k,1] & iz=ineargrid[k,2]
-  ineighbour[k]=ishepherd[ix,iy,iz]
-  ishepherd[ix,iy,iz]=k
+  kneighbour[k]=kshepherd[ix,iy,iz]
+  kshepherd[ix,iy,iz]=k
 endfor
 
 end
