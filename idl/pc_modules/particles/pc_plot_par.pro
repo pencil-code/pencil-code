@@ -1,10 +1,10 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.15 2006-11-19 15:05:15 ajohan Exp $
+;  $Id: pc_plot_par.pro,v 1.16 2006-12-14 13:35:29 ajohan Exp $
 ;
 pro pc_plot_par, xx, $
     x=x, y=y, z=z, com=com, shiftx=shiftx, shifty=shifty, shiftz=shiftz, $
     position=position, ps=ps, color=color, pcolor=pcolor, fcolor=fcolor, $
-    noerase=noerase, drawgrid=drawgrid, $
+    noerase=noerase, drawgrid=drawgrid, thick=thick, $
     ax=ax, az=az, $
     filename=filename, imgdir=imgdir, datadir=datadir, $
     lxy=lxy, lxz=lxz, lyz=lyz, quiet=quiet
@@ -17,6 +17,7 @@ default, ps, 0
 default, color, 0
 default, noerase, 0
 default, drawgrid, 0
+default, thick, 3.0
 default, filename, 'particles.eps'
 default, imgdir, '.'
 default, datadir, './data/'
@@ -62,11 +63,9 @@ if (com eq 1) then begin
 endif
 
 if ( (nx ne 1) and (ny ne 1) and (nz ne 1) ) then begin
-  thick=3
   xsize=14.0
   ysize=11.0
 endif else begin
-  thick=3
   xsize=12.0
   ysize=12.0
 endelse
@@ -75,9 +74,10 @@ if (ps) then begin
   set_plot, 'ps'
   device, /encapsulated, color=color, xsize=xsize, ysize=ysize, $
       font_size=11, filename=imgdir+'/'+filename
-endif else begin
-  thick=1
-endelse
+endif
+
+pcharthick=!p.charthick & pthick=!p.thick
+xthick=!x.thick & ythick=!y.thick & zthick=!z.thick
 
 !p.charthick=thick & !p.thick=thick
 !x.thick=thick & !y.thick=thick & !z.thick=thick
@@ -134,5 +134,8 @@ if (ps) then begin
   device, /close
   set_plot, 'x'
 endif
+
+!p.charthick=pcharthick & !p.thick=pthick
+!x.thick=xthick & !y.thick=ythick & !z.thick=zthick
 
 end
