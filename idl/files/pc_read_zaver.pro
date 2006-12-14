@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.9 2006-11-11 15:11:14 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.10 2006-12-14 07:45:23 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -8,7 +8,8 @@
 pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, lplot=lplot, iplot=iplot, min=min, max=max, zoom=zoom, $
     xax=xax, yax=yax, xtitle=xtitle, ytitle=ytitle, title=title, $
-    noaxes=noaxes, t_title=t_title, $
+    lsubbox=lsubbox, rsubbox=rsubbox, noaxes=noaxes, $
+    t_title=t_title, t_scale=t_scale, t_zero=t_zero, $
     position=position, fillwindow=fillwindow, tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, quiet=quiet
@@ -35,6 +36,10 @@ default, xsize, 10.0
 default, ysize, 10.0
 default, title, ''
 default, t_title, 0
+default, t_scale, 1.0
+default, t_zero, 0.0
+default, lsubbox, 0
+default, rsubbox, 5
 default, fillwindow, 0
 default, tformat, '(f5.1)'
 default, it1, 10
@@ -57,6 +62,7 @@ ny=dim.ny
 if (n_elements(xax) eq 0) then xax=findgen(nx)
 if (n_elements(yax) eq 0) then yax=findgen(ny)
 x0=xax[0] & x1=xax[nx-1] & y0=yax[0] & y1=yax[ny-1]
+Lx=xax[nx-1]-xax[0] & Ly=yax[ny-1]-yax[0]
 ;;
 ;;  Read variables from zaver.in
 ;;
@@ -143,12 +149,67 @@ while (not eof(file)) do begin
         endelse
       endelse
 ;;  Put current time in title if requested.      
-      if (t_title) then title='t='+strtrim(string(t,format=tformat),2)
+      if (t_title) then $
+          title='t='+strtrim(string(t/t_scale-t_zero,format=tformat),2)
 ;;  tvscl-type plot with axes.        
       plotimage, array_plot, $
           range=[min, max], imgxrange=[x0,x1], imgyrange=[y0,y1], $
           xtitle=xtitle, ytitle=ytitle, title=title, $
           position=position, noerase=noerase, noaxes=noaxes
+;;
+;;  Enlargement of ``densest'' point.          
+;;
+      if (lsubbox) then begin
+        imax=where(array_plot eq max(array_plot))
+        imax=array_indices(array_plot,imax)
+        subpos=[0.7,0.7,0.9,0.9]
+;;  Plot box indicating enlarged region.
+        oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
+                xax[imax[0]]+rsubbox,xax[imax[0]]-rsubbox, $
+                xax[imax[0]]-rsubbox], $
+               [yax[imax[1]]-rsubbox,yax[imax[1]]-rsubbox, $
+                yax[imax[1]]+rsubbox,yax[imax[1]]+rsubbox, $
+                yax[imax[1]]-rsubbox]
+;;  Box crosses lower boundary.
+        if (yax[imax[1]]-rsubbox lt y0) then begin
+          oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
+                  xax[imax[0]]+rsubbox,xax[imax[0]]-rsubbox, $
+                  xax[imax[0]]-rsubbox], $
+                 [yax[imax[1]]+Ly-rsubbox,yax[imax[1]]+Ly-rsubbox, $
+                  yax[imax[1]]+Ly+rsubbox,yax[imax[1]]+Ly+rsubbox, $
+                  yax[imax[1]]+Ly-rsubbox]
+        endif
+;;  Box crosses upper boundary.
+        if (yax[imax[1]]+rsubbox gt y1) then begin
+          oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
+                  xax[imax[0]]+rsubbox,xax[imax[0]]-rsubbox, $
+                  xax[imax[0]]-rsubbox], $
+                 [yax[imax[1]]-Ly-rsubbox,yax[imax[1]]-Ly-rsubbox, $
+                  yax[imax[1]]-Ly+rsubbox,yax[imax[1]]-Ly+rsubbox, $
+                  yax[imax[1]]-Ly-rsubbox]
+        endif
+;;  Subplot and box.
+        if ( (xax[imax[0]]-rsubbox lt x0) or $
+             (xax[imax[0]]+rsubbox gt x1) ) then begin
+          array_plot=shift(array_plot,[nx/2,0])
+          if (xax[imax[0]]-rsubbox lt x0) then imax[0]=imax[0]+nx/2
+          if (xax[imax[0]]+rsubbox gt x1) then imax[0]=imax[0]-nx/2
+        endif
+        if ( (yax[imax[1]]-rsubbox lt y0) or $
+             (yax[imax[1]]+rsubbox gt y1) ) then begin
+          array_plot=shift(array_plot,[0,ny/2])
+          if (yax[imax[1]]-rsubbox lt y0) then imax[1]=imax[1]+ny/2
+          if (yax[imax[1]]+rsubbox gt y1) then imax[1]=imax[1]-ny/2
+        endif
+        plotimage, array_plot, $
+            xrange=xax[imax[0]]+[-rsubbox,rsubbox], $
+            yrange=yax[imax[1]]+[-rsubbox,rsubbox], $
+            range=[min,max], imgxrange=[x0,x1], imgyrange=[y0,y1], $
+            position=subpos, /noerase, /noaxes
+        plots, [subpos[0],subpos[2],subpos[2],subpos[0],subpos[0]], $
+               [subpos[1],subpos[1],subpos[3],subpos[3],subpos[1]], /normal
+      endif
+
 ;;  For png output, take image from z-buffer.          
       if (png) then begin
         image = tvrd()
