@@ -1,0 +1,11 @@
+${PENCIL_HOME}/utils/wolf
+-------------------------
+
+Pencil Code utilities by wd. All scripts in this directory are licensed
+under the GPL 2 or any later version.
+
+Manifest:
+
+  run_code.csh  -- parallel debugging; you'll need to type `r' manually
+                   for each process
+  run_gdb.csh   -- parallel debugging; does `r' and `backtrace' for you
