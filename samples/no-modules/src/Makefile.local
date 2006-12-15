@@ -1,0 +1,8 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   = nompicomm
+VISCOSITY = noviscosity
+EOS       = noeos

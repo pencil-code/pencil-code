@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.130 2006-11-30 09:03:34 dobler Exp $
+! $Id: boundcond.f90,v 1.131 2006-12-15 02:07:58 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -73,7 +73,7 @@ module Boundcond
       integer, optional :: ivar1_opt, ivar2_opt
 !
       real, dimension (mcom) :: fbcx12
-      integer :: ivar1, ivar2, j, k, ip_ok
+      integer :: ivar1, ivar2, j, k, ip_ok, one
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
       type (boundary_condition) :: bc
@@ -92,7 +92,12 @@ module Boundcond
 !  Boundary conditions in x.
 !
       case default
-        if (bcx1(1)=='she') then
+        ! [wd dec-06:] Replaced
+        !   if (bcx1(1)=='she') then
+        ! with the following construct to keep compiler from complaining if
+        ! we have no variables (and boundconds) at all (samples/no-modules):
+        one = min(1,mcom)
+        if (any(bcx1(1:one)=='she')) then
           if (ip<12.and.headtt) print*, &
                'boundconds_x: use shearing sheet boundary condition'
           call initiate_shearing(f,ivar1,ivar2)
