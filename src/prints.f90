@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.82 2006-10-26 11:36:55 bingert Exp $
+! $Id: prints.f90,v 1.83 2006-12-15 22:56:36 dobler Exp $
 
 module Print
 
@@ -13,7 +13,7 @@ module Print
   public :: initialize_prints, prints
   public :: write_1daverages, write_2daverages
   public :: write_2daverages_prepare
-public :: write_zaverages
+  public :: write_zaverages
 
   character (len=4) :: ch2davg
 
@@ -113,10 +113,10 @@ public :: write_zaverages
 !  produce the format
 !  must set cform(1) explicitly, and then do iname>=2 in loop
 !
-        fform='('//cform(1)
+        fform = '(' // cform(1)
         legend=noform(cname(1))
         do iname=2,nname
-          call safe_character_append(fform,  comma//cform(iname))
+          call safe_character_append(fform,  comma // cform(iname))
           call safe_character_append(legend, noform(cname(iname)))
         enddo
         call safe_character_append(fform, ')')

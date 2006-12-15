@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.268 2006-11-30 09:03:36 dobler Exp $
+! $Id: sub.f90,v 1.269 2006-12-15 22:56:36 dobler Exp $
 
 module Sub
 
@@ -2867,12 +2867,17 @@ module Sub
 !
 !  22-jun-02/axel: coded
 !
+      integer, parameter :: max_col_width=30
       character (len=*) :: cname
-      character (len=20) :: noform,cform,cnumber,dash='----------'
+      character (len=max_col_width) :: noform,cform,cnumber,dashes
       integer :: index_e,index_f,index_g,index_i,index_d,index_r,index1,index2
       integer :: iform0,iform1,iform2,length,number,number1,number2
 !
       intent(in)  :: cname
+!
+!  fill DASHES with, well, dashes
+!
+      dashes = repeat('-', max_col_width)
 !
 !  find position of left bracket to isolate format, cform
 !
@@ -2909,8 +2914,16 @@ module Sub
       cnumber=cform(index1+1:index2-1)
       read(cnumber,'(i4)',err=99) number
 10    number1=max(0,(number-length)/2)
-      number2=max(0,number-length-number1)
-      noform=dash(1:number1)//cname(1:length)//dash(1:number2)
+      number2=max(1,number-length-number1) ! at least one separating dash
+!
+!  sanity check
+!
+      if (number1+length+number2 > max_col_width) then
+        call error("noform", &
+                   "Increase max_col_width or sanitize print.in{,.double}")
+      endif
+
+      noform=dashes(1:number1)//cname(1:length)//dashes(1:number2)
       return
 !
 ! in case of errors:
@@ -2919,6 +2932,7 @@ module Sub
       print*,'problematic cnumber= <',cnumber,'>'
       number=10
       goto 10
+!
     endfunction noform
 !***********************************************************************
     function levi_civita(i,j,k)
