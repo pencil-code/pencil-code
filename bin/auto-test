@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.81 2006-12-12 06:55:58 dobler Exp $
+# CVS: $Id: auto-test,v 1.82 2006-12-15 21:31:44 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -85,8 +85,8 @@ my $reference_out = 'reference.out'; # automatically changed to
 my $tmpdir      = "/var/tmp/pencil-tmp-$$";
 my $lockdir     = '/var/tmp';     # put / check for lock file here
 my $lockfile    = "$lockdir/pencil-auto-test.pid";
+my $headerpat   = '^-*\s*(-+\s*[A-Za-z0-9_]+)+-*\s*$'; # regexp for header line
 my $noheader    = "Couldn't find header line";
-my $headerpat   = '^-*\s*(-+[A-Za-z0-9_]+)+-*\s*$'; # regexp for header line
 my $cfloat = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # regexp
                                                                # for C float
 my $res;
@@ -157,7 +157,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.81 2006-12-12 06:55:58 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.82 2006-12-15 21:31:44 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -179,7 +179,12 @@ my $nodelist    = (              $opts{'nodelist'}    || 0    );
 my $nosummary   = (              $opts{'no-summary'}  || 0    );
 my $nolock      = (              $opts{'nolock'}      ||$opts{'no-lock'} || 0 );
 
-my @exit_status=('setting up directory','cleaning up','compilation','starting','running','results');
+my @exit_status=('setting up directory',
+                 'cleaning up',
+                 'compilation',
+                 'starting',
+                 'running',
+                 'results');
 
 my $makeopts  = '';
 if ($makejobs) { $makeopts = "-j $makejobs"; }
@@ -526,6 +531,7 @@ sub test_results {
 		my_ok($comp,1,$diagn,$dir,"results");
 	    }
 	} else { # No header line found
+            warn " No header line found\n";
 	    my_ok(0,1,join("\n",@output),$dir,"results");
 	}
     }
