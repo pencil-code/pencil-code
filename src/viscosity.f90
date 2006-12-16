@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.40 2006-12-06 08:58:33 ajohan Exp $
+! $Id: viscosity.f90,v 1.41 2006-12-16 18:49:49 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -86,7 +86,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.40 2006-12-06 08:58:33 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.41 2006-12-16 18:49:49 theine Exp $")
 
       ivisc(1)='nu-const'
 
@@ -442,8 +442,10 @@ module Viscosity
 !
         p%fvisc=p%fvisc+nu*p%del2u
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
-          call fatal_error('calc_pencils_viscosity', 'viscous heating term '// &
+          if (headtt) then
+            call warning('calc_pencils_viscosity', 'viscous heating term '// &
               'is not implemented for lvisc_simplified')
+          endif
         endif
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu
       endif
@@ -497,8 +499,10 @@ module Viscosity
 !
         p%fvisc=p%fvisc+nu_hyper2*p%del4u
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
-          call fatal_error('calc_pencils_viscosity', 'viscous heating term '// &
+          if (headtt) then
+            call warning('calc_pencils_viscosity', 'viscous heating term '// &
               'is not implemented for lvisc_hyper2_simplified')
+          endif
         endif
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper2*dxyz_4/dxyz_2
       endif
@@ -509,8 +513,10 @@ module Viscosity
 !
         p%fvisc=p%fvisc+nu_hyper3*p%del6u
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
-          call fatal_error('calc_pencils_viscosity', 'viscous heating term '// &
+          if (headtt) then
+            call warning('calc_pencils_viscosity', 'viscous heating term '// &
               'is not implemented for lvisc_hyper3_simplified')
+          endif
         endif
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
       endif
@@ -524,8 +530,10 @@ module Viscosity
           p%fvisc(:,i)=p%fvisc(:,i)+murho1*p%del6u(:,i)
         enddo
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
-          call fatal_error('calc_pencils_viscosity', 'viscous heating term '// &
+          if (headtt) then
+            call warning('calc_pencils_viscosity', 'viscous heating term '// &
               'is not implemented for lvisc_hyper3_rho_nu_const')
+          endif
         endif
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
       endif
@@ -540,8 +548,10 @@ module Viscosity
           p%fvisc(:,i)=p%fvisc(:,i)+murho1*(p%del6u(:,i) + p%grad5divu(:,i))
         enddo
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
-           call fatal_error('calc_pencils_viscosity', 'viscous heating term '//&
+          if (headtt) then
+             call warning('calc_pencils_viscosity', 'viscous heating term '//&
                'is not implemented for lvisc_hyper3_rho_nu_const_symm')
+          endif
         endif
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
       endif
@@ -556,8 +566,10 @@ module Viscosity
             p%fvisc(:,i)=p%fvisc(:,i)+tmp(:,i)*p%rho1
          enddo
          if (lpencil(i_visc_heat)) then  ! Heating term not implemented
-            call fatal_error('calc_pencils_viscosity', 'viscous heating term '// &
+           if (headtt) then
+             call warning('calc_pencils_viscosity', 'viscous heating term '// &
                  'is not implemented for lvisc_hyper3_nu_vector')
+           endif
          endif
 !
 ! diffusion time: it will be multiplied by dxyz_2 again further down
@@ -578,8 +590,10 @@ module Viscosity
           p%fvisc(:,i)=p%fvisc(:,i)+murho1*p%del6u_bulk(:,i)
         enddo
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
-          call fatal_error('calc_pencils_viscosity', 'viscous heating term '// &
+          if (headtt) then
+            call warning('calc_pencils_viscosity', 'viscous heating term '// &
               'is not implemented for lvisc_hyper3_rho_nu_const_bulk')
+          endif
         endif
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
       endif
@@ -590,8 +604,10 @@ module Viscosity
 !
         p%fvisc=p%fvisc+nu_hyper3*(p%del6u+p%uij5glnrho)
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
-          call fatal_error('calc_pencils_viscosity', 'viscous heating term '// &
+          if (headtt) then
+            call warning('calc_pencils_viscosity', 'viscous heating term '// &
               'is not implemented for lvisc_hyper3_nu_const')
+          endif
         endif
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
       endif
@@ -621,8 +637,10 @@ module Viscosity
           call multsv_mn(nu_smag,p%del2u+1./3.*p%graddivu,tmp)
           p%fvisc=p%fvisc+2*tmp2+tmp
           if (lpencil(i_visc_heat)) then  ! Heating term not implemented
-            call fatal_error('calc_pencils_viscosity','viscous heating term '//&
+            if (headtt) then
+              call warning('calc_pencils_viscosity','viscous heating term '//&
                 'is not implemented for lvisc_smag_simplified')
+            endif
           endif
           if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_smag
         else
@@ -645,8 +663,10 @@ module Viscosity
           call multsv_mn(nu_smag,p%del2u+1./3.*p%graddivu,tmp)
           p%fvisc=p%fvisc+2*tmp2+tmp
           if (lpencil(i_visc_heat)) then  ! Heating term not implemented
-            call fatal_error('calc_pencils_viscosity','viscous heating term '//&
+            if (headtt) then
+              call warning('calc_pencils_viscosity','viscous heating term '//&
                 'is not implemented for lvisc_smag_cross_simplified')
+            endif
           endif
           if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_smag
         else
