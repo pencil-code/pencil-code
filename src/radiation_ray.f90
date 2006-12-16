@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.126 2006-12-05 18:50:45 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.127 2006-12-16 18:36:33 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -175,7 +175,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.126 2006-12-05 18:50:45 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.127 2006-12-16 18:36:33 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -850,20 +850,6 @@ module Radiation
 !  calculate the downstream heating rates at the xy-boundary and send them
 !  to the next processor.
 !
-      if (mrad/=0.and.ipy/=ipystop) then
-
-        forall (l=ll1:ll2,n=nn1:nn2)
-
-          emtau_zx(l,n) = exp(-tau(l,mmstop,n))
-          Qrad_zx(l,n) = Qrad(l,mmstop,n)
-          Qsend_zx(l,n) = Qpt_zx(l,n)%val*emtau_zx(l,n)+Qrad_zx(l,n)
-
-        endforall
-
-        call radboundary_zx_send(mrad,idir,Qsend_zx)
-
-      endif
-
       if (nrad/=0.and.ipz/=ipzstop) then
 
         forall (l=ll1:ll2,m=mm1:mm2)
