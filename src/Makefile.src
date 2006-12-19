@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.261 2006-12-15 22:54:09 dobler Exp $
+### $Id: Makefile.src,v 1.262 2006-12-19 01:41:04 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -908,7 +908,8 @@ EXECUTABLES=start$(PC_META_TYPE).x run$(PC_META_TYPE).x \
 LAST_OBJ=$(EXECUTABLES:.x=.o)
 code: Makefile_inc
 	@# Realize error even when last command in pipe is FCCLEANER:
-	if [ ! -z "$(FCCLEANER)" ]; then \
+	@echo "$(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
+	@if [ ! -z "$(FCCLEANER)" ]; then \
 	    ($(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) \
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
 	else \
@@ -917,7 +918,8 @@ code: Makefile_inc
 
 FASTEXECS=startfast$(PC_META_TYPE).x runfast$(PC_META_TYPE).x read_videofiles$(PC_META_TYPE).x read_vectorfiles$(PC_META_TYPE).x
 fast:
-	if [ ! -z "$(FCCLEANER)" ]; then \
+	@echo "$(MAKE) $(MAKEOPTS) $(FASTEXECS)"
+	@if [ ! -z "$(FCCLEANER)" ]; then \
 	    ($(MAKE) $(MAKEOPTS) $(FASTEXECS) \
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
 	else \
@@ -925,7 +927,8 @@ fast:
 	fi
 
 debug:
-	if [ ! -z "$(FCCLEANER)" ]; then \
+	@echo "$(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start$(PC_META_TYPE).x run$(PC_META_TYPE).x"
+	@if [ ! -z "$(FCCLEANER)" ]; then \
 	    ($(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start$(PC_META_TYPE).x run$(PC_META_TYPE).x \
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
 	else \
