@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.39 2006-11-30 09:03:34 dobler Exp $
+! $Id: cosmicray.f90,v 1.40 2006-12-20 07:24:22 dobler Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -80,7 +80,6 @@ module Cosmicray
       if (.not. first) call stop_it('register_cosmicray called twice')
       first = .false.
 !
-      lcosmicray = .true.
       iecr = nvar+1            ! index to access icr
       nvar = nvar+1            ! added 1 variable
 !
@@ -96,7 +95,7 @@ module Cosmicray
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.39 2006-11-30 09:03:34 dobler Exp $")
+           "$Id: cosmicray.f90,v 1.40 2006-12-20 07:24:22 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -297,7 +296,7 @@ print*,"init_ecr: initecr = ", initecr
       if (.not.lnegl) then
         do j=0,2
           df(l1:l2,m,n,iux+j) = df(l1:l2,m,n,iux+j) - &
-              gammacr1*p%rho1*p%gecr(:,1+j)*exp(ecr(:))
+              gammacr1*p%rho1*p%gecr(:,1+j)*exp(p%ecr(:))
         enddo
       endif
 !
