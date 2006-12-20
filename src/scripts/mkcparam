@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.46 2006-12-07 11:01:12 ajohan Exp $
+# CVS: $Id: mkcparam,v 1.47 2006-12-20 07:22:53 dobler Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -440,7 +440,11 @@ subroutine initialize_pencils(p,penc0)
 EOF
 
 # Set mp (number of particles) to zero if particles are not used
-if ($mpvar == 0) {print OUT "integer, parameter :: npar=1\n\n";}
+if ($mpvar == 0) {
+    print OUT "integer, parameter :: npar=1\n\n";
+} else {
+    print OUT "! npar should be declared and set in cparam.local\n\n";
+}
 
 my @cparam='';
 
