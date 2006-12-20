@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.43 2006-12-16 18:47:00 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.44 2006-12-20 07:25:16 dobler Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -183,11 +183,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.43 2006-12-16 18:47:00 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.44 2006-12-20 07:25:16 dobler Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.43 2006-12-16 18:47:00 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.44 2006-12-20 07:25:16 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -573,9 +573,9 @@ endsubroutine read_special_run_pars
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
             M_star/z(n)**2*(1.-p%uu(:,2)*p%uu(:,2)*z(n)/M_star)
 
-           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+ &
-	               +p%uu(:,1)*p%uu(:,2)/z(n)
-		       
+           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+                       +p%uu(:,1)*p%uu(:,2)/z(n)
+
 
         if (nxgrid /= 1) then
 
@@ -583,11 +583,11 @@ endsubroutine read_special_run_pars
             df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)- &
               M_star/z(n)**2/sqrt(z(n)**2+x(l1:l_sz)**2)*x(l1:l_sz)*(z(n)-R_star)/(Lxyz(1)*0.5)
            else
-	   if (hot_star) then
-	     if (n .gt. ac_dc_size+4) then
-	       df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)-M_star/z(n)**3*x(l1:l_sz)
-	     endif
-	   else
+           if (hot_star) then
+             if (n .gt. ac_dc_size+4) then
+               df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)-M_star/z(n)**3*x(l1:l_sz)
+             endif
+           else
              df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)-M_star/z(n)**3*x(l1:l_sz)
            endif
            endif
