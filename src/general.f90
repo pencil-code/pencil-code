@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.53 2006-11-30 09:03:35 dobler Exp $
+! $Id: general.f90,v 1.54 2006-12-20 13:01:39 ajohan Exp $
 
 module General
 
@@ -20,7 +20,7 @@ module General
   public :: setup_mm_nn
   public :: input_persistent_general, output_persistent_general
 
-  public :: spline,complex_phase,erfcc
+  public :: spline,tridag,complex_phase,erfcc
 
   include 'record_types.h'
 
