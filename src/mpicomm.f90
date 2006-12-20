@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.203 2006-12-19 14:00:05 ajohan Exp $
+! $Id: mpicomm.f90,v 1.204 2006-12-20 23:52:03 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2237,18 +2237,18 @@ module Mpicomm
 !
       b(ipz*nz+1:(ipz+1)*nz,:)=transpose(a(ipz*nxt+1:(ipz+1)*nxt,:))
       do px=0,nprocz-1
-        if (px/=ipz) then
-          partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
-          send_buf=a(px*nxt+1:(px+1)*nxt,:)
-          if (px<ipz) then      ! above diagonal: send first, receive then
-            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
-            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
-          elseif (px>ipz) then  ! below diagonal: receive first, send then
-            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
-            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
-          endif
-          b(px*nz+1:(px+1)*nz,:)=transpose(recv_buf)
-        endif
+!         if (px/=ipz) then
+!           partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
+!           send_buf=a(px*nxt+1:(px+1)*nxt,:)
+!           if (px<ipz) then      ! above diagonal: send first, receive then
+!             call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+!             call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+!           elseif (px>ipz) then  ! below diagonal: receive first, send then
+!             call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+!             call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+!           endif
+!           b(px*nz+1:(px+1)*nz,:)=transpose(recv_buf)
+!         endif
       enddo
 !
     endsubroutine transp_xz
