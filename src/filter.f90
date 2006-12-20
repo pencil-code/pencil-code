@@ -1,4 +1,9 @@
-! $Id: filter.f90,v 1.6 2006-11-30 09:03:35 dobler Exp $
+! $Id: filter.f90,v 1.7 2006-12-20 07:23:14 dobler Exp $
+
+!
+!  Filters for smoothing, removing trends (like spurious build-up of
+!  horizontal momentum) and similar.
+!
 
 module Filter
 
@@ -26,8 +31,10 @@ module Filter
 !  collect the result in df, from where it is applied to f after the
 !  loop.
 !    This version removes in the three directions consecutively (damping
-!  each Nyquist frequency fully). This implies three sets of
+!  each Nyquist frequency fully). This implies three instances of
 !  communication, but that seems to be the way to do it.
+!    Note: Wolfgang believes that the necessity for using rmwig on lnrho
+!  is no longer given, because upwinding solves the problem.
 !
 !  30-Aug-02/wolf: coded
 !  28-jul-03/axel: moved to own module, allowed range ivar1-ivar2
