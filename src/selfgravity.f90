@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.18 2006-11-30 09:03:36 dobler Exp $
+! $Id: selfgravity.f90,v 1.19 2006-12-20 13:10:50 ajohan Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -33,15 +33,15 @@ module Selfgravity
 
   real :: kmax=0.0
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
-  logical :: lklimit_shear=.false.
+  logical :: lklimit_shear=.false., lpoisson_fftxy_discretez=.false.
 
   namelist /selfgrav_init_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
-      tstart_selfgrav
+      tstart_selfgrav, lpoisson_fftxy_discretez
 
   namelist /selfgrav_run_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
-      tstart_selfgrav, lklimit_shear, kmax
+      tstart_selfgrav, lklimit_shear, kmax, lpoisson_fftxy_discretez
 
   integer :: idiag_gpoten=0, idiag_gpotenmxy=0
   integer :: idiag_gpotselfxm=0, idiag_gpotselfym=0, idiag_gpotselfzm=0
@@ -72,7 +72,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.18 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: selfgravity.f90,v 1.19 2006-12-20 13:10:50 ajohan Exp $")
 !
 !  Put variable name in array
 !
@@ -249,10 +249,14 @@ module Selfgravity
 !  Send the right-hand-side of the Poisson equation to the Poisson solver and
 !  receive the self-gravity potential back.
 !
-        if (kmax/=0.0) then
-          call poisson_solver_fft(rhs_poisson,kmax=kmax)
+        if (lpoisson_fftxy_discretez) then
+          call poisson_solver_fftxy_discretez(rhs_poisson)
         else
-          call poisson_solver_fft(rhs_poisson)
+          if (kmax/=0.0) then
+            call poisson_solver_fft(rhs_poisson,kmax=kmax)
+          else
+            call poisson_solver_fft(rhs_poisson)
+          endif
         endif
 !
 !  Put potential into f array.

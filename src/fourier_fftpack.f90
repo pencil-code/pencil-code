@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.11 2006-11-30 09:03:35 dobler Exp $
+! $Id: fourier_fftpack.f90,v 1.12 2006-12-20 13:10:50 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -170,6 +170,105 @@ module Fourier
       if (lroot .and. ip<10) print*, 'fourier_transform: fft has finished'
 !
     endsubroutine fourier_transform
+!***********************************************************************
+    subroutine fourier_transform_xy(a_re,a_im,linv)
+!
+!  Subroutine to do Fourier transform in x and y.
+!  The routine overwrites the input data.
+!  This version works currently only when nxgrid=nygrid!
+!  The length of the work arrays for ffts is therefore always nx.
+!
+!  19-12t-06/anders: adapted from fourier_transform
+!
+      real, dimension(nx,ny,nz) :: a_re,a_im
+      logical, optional :: linv
+!
+      complex, dimension(nx) :: ax
+      real, dimension(4*nx+15) :: wsavex
+      integer :: l,m,n
+      logical :: lforward
+!
+      lforward=.true.
+      if (present(linv)) then
+        if (linv) lforward=.false.
+      endif
+!
+!  Need to initialize cfft only once, because we require nxgrid=nygrid.
+!
+      call cffti(nx,wsavex)
+!
+      if (lforward) then
+        if (lroot .and. ip<10) print*, 'fourier_transform_xy: doing FFTpack in x'
+        do n=1,nz; do m=1,ny
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          call cfftf(nx,ax,wsavex)
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
+        enddo; enddo
+!
+!  Transform y-direction.
+!
+        if (nygrid/=1) then
+          if (nygrid/=nxgrid) then
+            if (lroot) print*, 'fourier_transform_xy: must have nygrid=nxgrid!'
+            call fatal_error('fourier_transform_xy','')
+          endif
+          call transp(a_re,'y')
+          call transp(a_im,'y')
+!
+!  The length of the array in the y-direction is nx.
+!
+          if (lroot .and. ip<10) print*, 'fourier_transform_xy: doing FFTpack in y'
+          do n=1,nz; do l=1,ny
+            ax=cmplx(a_re(:,l,n),a_im(:,l,n))
+            call cfftf(nx,ax,wsavex)
+            a_re(:,l,n)=real(ax)
+            a_im(:,l,n)=aimag(ax)
+          enddo; enddo
+        endif
+!
+!  Transform y-direction back.
+!
+        if (nygrid/=1) then
+          if (nygrid/=nxgrid) then
+            if (lroot) print*, 'fourier_transform: must have nygrid=nxgrid!'
+            call fatal_error('fourier_transform','')
+          endif
+!
+          if (lroot .and. ip<10) print*, 'fourier_transform_xy: doing FFTpack in y'
+          do n=1,nz; do l=1,ny
+            ax=cmplx(a_re(:,l,n),a_im(:,l,n))
+            call cfftb(nx,ax,wsavex)
+            a_re(:,l,n)=real(ax)
+            a_im(:,l,n)=aimag(ax)
+          enddo; enddo
+        endif
+!
+!  Transform x-direction back. Transpose to go from (y,x,z) to (x,y,z).
+!
+        if (lroot .and. ip<10) print*, 'fourier_transform_xy: doing FFTpack in x'
+        if (nygrid/=1) then
+          call transp(a_re,'y')
+          call transp(a_im,'y')
+        endif
+        do n=1,nz; do m=1,ny
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          call cfftb(nx,ax,wsavex)
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
+        enddo; enddo
+      endif
+!
+!  Normalize
+!
+      if (lforward) then
+        a_re=a_re/(nxgrid*nygrid)
+        a_im=a_im/(nxgrid*nygrid)
+      endif
+!
+      if (lroot .and. ip<10) print*, 'fourier_transform_xy: fft has finished'
+!
+    endsubroutine fourier_transform_xy
 !***********************************************************************
     subroutine fourier_transform_xz(a_re,a_im,linv)
 !
@@ -473,6 +572,137 @@ module Fourier
       endif
 !
     endsubroutine fourier_transform_shear
+!***********************************************************************
+    subroutine fourier_transform_shear_xy(a_re,a_im,linv)
+!
+!  Subroutine to do Fourier transform in shearing coordinates.
+!  The routine overwrites the input data
+!
+!  The transform from real space to Fourier space goes as follows:
+!
+!  (x,y,z)
+!     |
+!  (y,x,z) - (ky,x,z) - (ky',x,z)
+!                            |
+!                       (x,ky',z) - (kx,ky',z)
+!
+!  Vertical lines refer to a transposition operation, horizontal lines to any
+!  other operation. Here ky' refers to a coordinate frame where y has been
+!  transformed so that the x-direction is purely periodic (not shear periodic).
+!  The transformation from Fourier space to real space takes place like sketched
+!  in the diagram, only in the opposite direction (starting lower right).
+!
+!  19-dec-06/anders: adapted from fourier_transform_shear
+!
+      use Cdata, only: pi, Lx, x0, x, deltay, ky_fft
+!
+      real, dimension (nx,ny,nz) :: a_re,a_im
+      logical, optional :: linv
+!
+      complex, dimension (nxgrid) :: ax
+      complex, dimension (nxgrid) :: ay
+      complex, dimension (nxgrid) :: az
+      real, dimension (4*nxgrid+15) :: wsave
+      real :: deltay_x
+      integer :: l,m,n
+      logical :: lforward
+!
+      lforward=.true.
+      if (present(linv)) then
+        if (linv) lforward=.false.
+      endif
+!
+!  if nxgrid/=nygrid/=nzgrid, stop.
+!
+      if (nygrid/=nxgrid .and. nygrid /= 1) then
+        print*, 'fourier_transform_shear_xy: '// &
+            'need to have nygrid=nxgrid if nygrid/=1.'
+        call fatal_error('fourier_transform_shear','')
+      endif
+!
+!  Need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid.
+!
+      call cffti(nxgrid,wsave)
+!
+      if (lforward) then
+!
+!  Transform y-direction. Must start with y, because x is not periodic (yet).
+!
+        if (nygrid/=1) then
+          if (lroot.and.ip<10) &
+              print*, 'fourier_transform_shear: doing FFTpack in y'
+          call transp(a_re,'y')
+          call transp(a_im,'y')
+          do n=1,nz; do l=1,ny
+            ay=cmplx(a_re(:,l,n),a_im(:,l,n))
+            call cfftf(nxgrid,ay,wsave)
+!  Shift y-coordinate so that x-direction is periodic. This is best done in
+!  k-space, by multiplying the complex amplitude by exp[i*ky*deltay(x)].
+            deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
+            ay(2:nxgrid)=ay(2:nxgrid)*exp(cmplx(0.0, ky_fft(2:nxgrid)*deltay_x))
+            a_re(:,l,n)=real(ay)
+            a_im(:,l,n)=aimag(ay)
+          enddo; enddo
+        endif
+!
+!  Transform x-direction.
+!
+        if (lroot.and.ip<10) &
+            print*, 'fourier_transform_shear: doing FFTpack in x'
+        if (nygrid/=1) then
+          call transp(a_re,'y')
+          call transp(a_im,'y')
+        endif
+        do n=1,nz; do m=1,ny
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          call cfftf(nxgrid,ax,wsave)
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
+        enddo; enddo
+      else
+!
+!  Transform x-direction back.
+!
+        if (lroot.and.ip<10) &
+            print*, 'fourier_transform_shear: doing FFTpack in x'
+        do n=1,nz; do m=1,ny
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          call cfftb(nxgrid,ax,wsave)
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
+        enddo; enddo
+!
+!  Transform y-direction back. Would be more practical to end with the
+!  x-direction, but the transformation from y' to y means that we must transform
+!  the y-direction last.
+!
+        if (nygrid/=1) then
+          call transp(a_re,'y')
+          call transp(a_im,'y')
+          if (lroot.and.ip<10) &
+              print*, 'fourier_transform_shear: doing FFTpack in y'
+          do n=1,nz; do l=1,ny
+            ay=cmplx(a_re(:,l,n),a_im(:,l,n))
+!  Shift y-coordinate back to regular frame (see above).
+            deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
+            ay(2:nxgrid)=ay(2:nxgrid)*exp(cmplx(0.0,-ky_fft(2:nxgrid)*deltay_x))
+            call cfftb(nxgrid,ay,wsave)
+            a_re(:,l,n)=real(ay)
+            a_im(:,l,n)=aimag(ay)
+          enddo; enddo
+          call transp(a_re,'y')  ! Deliver array back in (x,y,z) order.
+          call transp(a_im,'y')
+        endif
+      endif
+!
+!  Normalize
+!
+      if (lforward) then
+        a_re=a_re/(nxgrid*nygrid)
+        a_im=a_im/(nxgrid*nygrid)
+      endif
+!
+    endsubroutine fourier_transform_shear_xy
 !***********************************************************************
     subroutine fourier_transform_other_1(a_re,a_im,linv)
 !

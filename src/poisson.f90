@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.16 2006-08-31 06:00:35 ajohan Exp $
+! $Id: poisson.f90,v 1.17 2006-12-20 13:10:50 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -48,7 +48,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.16 2006-08-31 06:00:35 ajohan Exp $")
+        "$Id: poisson.f90,v 1.17 2006-12-20 13:10:50 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -117,6 +117,75 @@ module Poisson
       endif
 !
     endsubroutine poisson_solver_fft
+!***********************************************************************
+    subroutine poisson_solver_fftxy_discretez(a1)
+!
+!  Solve the Poisson equation by Fourier transforming in the xy-plane and
+!  solving the discrete matrix equation in the z-direction.
+!
+!  19-dec-2006/anders: coded
+!
+      use General, only: tridag
+      use Mpicomm, only: transp_xz
+!
+      real, dimension (nx,ny,nz) :: a1
+!
+      real, dimension (nx,ny,nz) :: b1
+      real, dimension (nzgrid,nx/nprocz) :: a1t, b1t
+      real, dimension (nzgrid) :: a_tri, b_tri, c_tri, r_tri, u_tri
+      integer :: ikx, iky, ikz
+      logical :: err
+!
+!  identify version
+!
+      if (lroot .and. ip<10) call cvs_id( &
+        "$Id: poisson.f90,v 1.17 2006-12-20 13:10:50 ajohan Exp $")
+!
+!  The right-hand-side of the Poisson equation is purely real.
+!
+      b1 = 0.0
+!  Forward transform (to k-space).
+      if (lshear) then
+        call fourier_transform_shear_xy(a1,b1)
+      else
+        call fourier_transform_xy(a1,b1)
+      endif
+!
+!  Solve for discrete z-direction with zero potential at the z-boundary.
+!
+      do iky=1,ny
+        call transp_xz(a1(:,iky,:),a1t)
+        a_tri(:)=1.0/dz**2
+        c_tri(:)=1.0/dz**2
+        do ikx=1,nx
+          b_tri=-2.0/dz**2-kx_fft(ikx)**2-ky_fft(iky)**2
+          r_tri=a1t(:,ikx)
+          call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
+          a1t(:,ikx)=u_tri
+        enddo
+        call transp_xz(a1t,a1(:,iky,:))
+      enddo
+!
+      do iky=1,ny
+        call transp_xz(b1(:,iky,:),b1t)
+        a_tri(:)=1.0/dz**2
+        c_tri(:)=1.0/dz**2
+        do ikx=1,nx
+          b_tri=-2.0/dz**2-kx_fft(ikx)**2-ky_fft(iky)**2
+          r_tri=b1t(:,ikx)
+          call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
+          b1t(:,ikx)=u_tri
+        enddo
+        call transp_xz(b1t,b1(:,iky,:))
+      enddo
+!  Inverse transform (to real space).
+      if (lshear) then
+        call fourier_transform_shear_xy(a1,b1,linv=.true.)
+      else
+        call fourier_transform_xy(a1,b1,linv=.true.)
+      endif
+!
+    endsubroutine poisson_solver_fftxy_discretez
 !***********************************************************************
 
 endmodule Poisson

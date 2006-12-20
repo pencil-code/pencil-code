@@ -1,4 +1,4 @@
-! $Id: nofourier.f90,v 1.4 2006-10-06 17:08:22 theine Exp $
+! $Id: nofourier.f90,v 1.5 2006-12-20 13:10:50 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -34,6 +34,20 @@ module Fourier
       if (NO_WARN) print*, a_re, a_im, linv
 !
     endsubroutine fourier_transform
+!***********************************************************************
+    subroutine fourier_transform_xy(a_re,a_im,linv)
+!
+!  Subroutine to do Fourier transform in the x- and y-directions.
+!
+      real, dimension(nx,ny,nz) :: a_re,a_im
+      logical, optional :: linv
+!
+      call fatal_error('fourier_transform_xy', &
+          'this sub is not available in nofourier.f90!')
+!
+      if (NO_WARN) print*, a_re, a_im, linv
+!
+    endsubroutine fourier_transform_xy
 !***********************************************************************
     subroutine fourier_transform_xz(a_re,a_im,linv)
 !
@@ -76,6 +90,21 @@ module Fourier
       if (NO_WARN) print*, a_re, a_im, linv
 !
     endsubroutine fourier_transform_shear
+!***********************************************************************
+    subroutine fourier_transform_shear_xy(a_re,a_im,linv)
+!
+!  Subroutine to do Fourier transform in shearing coordinates in x- and
+!  y-directions.
+!
+      real, dimension(nx,ny,nz) :: a_re,a_im
+      logical, optional :: linv
+!
+      call fatal_error('fourier_transform_shear_xy', &
+          'this sub is not available in nofourier.f90!')
+!
+      if (NO_WARN) print*, a_re, a_im, linv
+!
+    endsubroutine fourier_transform_shear_xy
 !***********************************************************************
     subroutine fourier_transform_other_1(a_re,a_im,linv)
 !

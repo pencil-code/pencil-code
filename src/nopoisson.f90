@@ -1,4 +1,4 @@
-! $Id: nopoisson.f90,v 1.5 2006-08-17 12:37:33 ajohan Exp $
+! $Id: nopoisson.f90,v 1.6 2006-12-20 13:10:50 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -36,6 +36,18 @@ module Poisson
       if (NO_WARN) print*, a1, kmax
 !
     endsubroutine poisson_solver_fft
+!***********************************************************************
+    subroutine poisson_solver_fftxy_discretez(a1)
+!
+!  Solve the Poisson equation by Fourier transforming on a periodic grid.
+!
+!  20-dec-2006/anders: dummy
+!
+      real, dimension (nx,ny,nz) :: a1
+!
+      if (NO_WARN) print*, a1
+!
+    endsubroutine poisson_solver_fftxy_discretez
 !***********************************************************************
 
 endmodule Poisson
