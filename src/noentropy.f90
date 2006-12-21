@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.96 2006-12-08 15:26:38 theine Exp $
+! $Id: noentropy.f90,v 1.97 2006-12-21 10:16:55 ajohan Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -55,7 +55,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.96 2006-12-08 15:26:38 theine Exp $")
+           "$Id: noentropy.f90,v 1.97 2006-12-21 10:16:55 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -187,13 +187,13 @@ module Entropy
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! fpres
       if (lpencil(i_fpres)) then
-         do j=1,3
-            if (llocal_iso) then
-               p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)  + p%glnTT(:,j))
-            else
-               p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
-            endif
-         enddo
+        do j=1,3
+          if (llocal_iso) then
+            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)  + p%glnTT(:,j))
+          else
+            p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
+          endif
+        enddo
       endif
 !
       if (NO_WARN) print*, f, p
