@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.41 2006-12-22 08:34:42 dobler Exp $
+! $Id: eos_ionization.f90,v 1.42 2006-12-22 20:26:35 dobler Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.41 2006-12-22 08:34:42 dobler Exp $")
+           "$Id: eos_ionization.f90,v 1.42 2006-12-22 20:26:35 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1047,7 +1047,9 @@ module EquationOfState
 !
       do i=1,maxit
         where (.not.found)
-          where (((yH-yHlow)*df-f)*((yH-yHhigh)*df-f)>0.or.abs(2*f)>abs(dyHold*df))
+          where (      sign(1.,((yH-yHlow)*df-f)) &
+                    == sign(1.,((yH-yHhigh)*df-f)) &
+                  .or. abs(2*f) > abs(dyHold*df) )
             !
             !  Bisection
             !
@@ -1123,7 +1125,9 @@ module EquationOfState
         if (present(rtdebug)) then
           if (rtdebug) print*,'rtsafe: i,yH=',i,yH
         endif
-        if (((yH-yHl)*df-f)*((yH-yHh)*df-f)>0.or.abs(2*f)>abs(dyHold*df)) then
+        if (        sign(1.,((yH-yHl)*df-f)) &
+                 == sign(1.,((yH-yHh)*df-f)) &
+              .or. abs(2*f) > abs(dyHold*df) ) then
           dyHold=dyH
           dyH=0.5*(yHl-yHh)
           yH=yHh+dyH
