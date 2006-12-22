@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.48 2006-12-22 21:36:37 dobler Exp $
+! $Id: neutron_star.f90,v 1.49 2006-12-22 21:43:16 dobler Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -179,11 +179,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.48 2006-12-22 21:36:37 dobler Exp $
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.49 2006-12-22 21:43:16 dobler Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.48 2006-12-22 21:36:37 dobler Exp $")
+           "$Id: neutron_star.f90,v 1.49 2006-12-22 21:43:16 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1226,7 +1226,12 @@ module Special
       real, dimension (mx,my,mz) :: zz
       integer :: decel_zone
       real ::   ll
-      integer :: L_disk_point=46
+      integer :: L_disk_point
+
+      ! Make sure L_disk_point+3 is a valid index (shouldn't this
+      ! variable be calculated based on nz, rather than hard-coded to
+      ! 46?)
+      L_disk_point = min(46,mz-3)
 
       decel_zone=ac_dc_size+4
       ll=L_disk_point*dz
