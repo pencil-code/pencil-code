@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.46 2006-12-22 08:37:50 dobler Exp $
+! $Id: neutron_star.f90,v 1.47 2006-12-22 17:57:06 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -95,12 +95,9 @@ module Special
   real :: nu_for_1D=1.
   real :: star_rot=0.
   logical :: hot_star=.false.
-  logical :: new_T_profile=.false.
+  logical :: T_disk_const=.false. 
 
   logical :: l1D_cooling=.false.,l1D_heating=.false.
-
-  logical :: lraddif_local=.false.
-
 
 
   logical :: l1D_cool_heat=.false.
@@ -116,22 +113,21 @@ module Special
       initnstar,lmass_source_NS,leffective_gravity, &
       laccelerat_zone, ldecelerat_zone, lsurface_zone, &
       rho_star,rho_disk, rho_surf,&
-      lraddif_local,&
       L_disk_point, R_star, M_star, &
       T_star,accretion_flux, T_disk, &
       uu_init, &
       l1D_cooling,l1D_heating,beta_hand, &
       nu_for_1D, ltop_velocity_kep, lextrapolate_bot_density, &
       lnstar_entropy, lnstar_T_const, lnstar_1D, &
-      lgrav_x_mdf, star_rot, hot_star, new_T_profile
+      lgrav_x_mdf, star_rot, hot_star, T_disk_const
 
 ! run parameters
   namelist /neutron_star_run_pars/ &
       lmass_source_NS,leffective_gravity, rho_star,rho_disk, &
-      laccelerat_zone, ldecelerat_zone, lsurface_zone,lraddif_local, &
+      laccelerat_zone, ldecelerat_zone, lsurface_zone, &
        accretion_flux, lnstar_entropy, &
-       lnstar_T_const,lnstar_1D, &
-       l1D_cooling,l1D_heating, lgrav_x_mdf, star_rot, hot_star, new_T_profile
+       lnstar_T_const,lnstar_1D, T_disk_const,&
+       l1D_cooling,l1D_heating, lgrav_x_mdf, star_rot, hot_star
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -183,11 +179,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.46 2006-12-22 08:37:50 dobler Exp $
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.47 2006-12-22 17:57:06 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.46 2006-12-22 08:37:50 dobler Exp $")
+           "$Id: neutron_star.f90,v 1.47 2006-12-22 17:57:06 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -297,15 +293,7 @@ module Special
          lpenc_requested(i_rho)=.true.
       endif
 !
-     if (lraddif_local) then
-        lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_TT)=.true.
-        lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_gss)=.true.
-        lpenc_requested(i_del2lnrho)=.true.
-        lpenc_requested(i_del2ss)=.true.
-      endif
-
+     
 
 !
 !
@@ -446,9 +434,10 @@ module Special
 
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension (mx) :: rho_prf
       type (pencil_case), intent(in) :: p
       real, dimension (nx) :: cs2_new
-      integer :: i, l_sz, tmp_int
+      integer :: i, l_sz, tmp_int,n_tmp
       real :: cs2_star, p_gas,p_rad, Sigma_rho, grad_rho
 
        call eoscalc(ilnrho_lnTT,log(rho_disk),log(T_disk), cs2=cs2_star)
@@ -458,36 +447,64 @@ module Special
       if (lmass_source_NS) call mass_source_NS(f,df,p%rho)
 
        if (laccelerat_zone) then
-         if (n .GE. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
+         if (n .GE. n2-ac_dc_size .AND. dt .GT. 0.) then
           if (lnstar_entropy) then
             if (nxgrid == 1) then
               if (lnstar_T_const) then
               endif
             else
              l_sz=l2-10
-	if (hot_star) then
-	
-!	cs2_new=p%cs2-0.5*(p%cs2+cs2_star)
-	
-	 df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho) &
-	 -1./(5.*dt)*(f(l1:l_sz,m,n,ilnrho) &
-	  -log(rho_disk)-(-M_star/2./z(n)**3 &
-	     *x(l1:l_sz)**2*gamma/(0.5*(p%cs2(l1:l_sz)+cs2_star))))
-	     
-!	df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-!	 -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) -f(l1:l2,m,n-1,ilnrho)) 
-	 
-	else   
+        if (hot_star) then
+        l_sz=l2-10
+
+!     cs2_new=p%cs2-0.5*(p%cs2+cs2_star)
+
+    if (T_disk_const) then
+
+      rho_prf(l1:l_sz)=log(rho_disk)-M_star/2./z(n)**3 &
+                   *x(l1:l_sz)**2*gamma/(0.5*(p%cs2(1:nx-ac_dc_size)+cs2_star)) 
+      rho_prf(l_sz+1:l2)=rho_prf(l_sz)
+
+
+ 
+
+
+      else 
+        rho_prf(l1:l2)=(0.5*log(rho_disk)-log(rho_disk))*x(l1:l2)/Lxyz(1)+log(rho_disk)
+      endif 
+  
+     if (n .le. n2-ac_dc_size+1) then
+       if (n==n2-ac_dc_size) then
+        df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho) &
+         -1./(5.*dt)*(f(l1:l_sz,m,n,ilnrho) &
+         -1./3.*(2.*f(l1:l_sz,m,n,ilnrho) +rho_prf(l1:l_sz)))
+       else
+       df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho) &
+                 -1./(5.*dt)*(f(l1:l_sz,m,n,ilnrho) &
+                 -1./3.*(f(l1:l_sz,m,n,ilnrho) +2.*rho_prf(l1:l_sz)))
+      endif
+     else
+        df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho) &
+        -1./(5.*dt)*(f(l1:l_sz,m,n,ilnrho) &
+        -log(rho_disk)-(-M_star/2./z(n)**3 &
+        *x(l1:l_sz)**2*gamma/(0.5*(p%cs2(l1:l_sz)+cs2_star))))
+     endif
+
+!      df(l_sz+1:l2,m,n,ilnrho)=df(l_sz+1:l2,m,n,ilnrho) &
+!          -1./(5.*dt)*(f(l_sz+1:l2,m,n,ilnrho)- &
+!          f(l_sz,m,n,ilnrho))
+!        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+!        -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)
+!          -f(l1:l2,m,n-1,ilnrho))
+        else 
                df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho) &
                   -1./(5.*dt)*(f(l1:l_sz,m,n,ilnrho) &
                   -log(rho_disk)-(-M_star/2./z(n)**3 &
                   *x(l1:l_sz)**2*gamma/(p%cs2(l1:l_sz))))
         endif
- 
 
-               df(l_sz+1:l2,m,n,ilnrho)=df(l_sz+1:l2,m,n,ilnrho) &
-	         -1./(5.*dt)*(f(l_sz+1:l2,m,n,ilnrho)-f(l_sz,m,n,ilnrho))				 
-  
+        df(l_sz+1:l2,m,n,ilnrho)=df(l_sz+1:l2,m,n,ilnrho) &
+         -1./(5.*dt)*(f(l_sz+1:l2,m,n,ilnrho)-f(l_sz,m,n,ilnrho))
             endif
           endif
          endif
@@ -500,15 +517,23 @@ module Special
               if (lnstar_T_const) then
                df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
                 -1./p%rho(:)/(5.*dt)*(p%rho(:)-rho_star &
-                *exp(-M_star/R_star/cs0**2*gamma*(1.-R_star/z(n))))
+                *exp(-M_star/R_star/cs0**2*gamma &
+                *(1.-R_star/z(n))))
               endif
 
             if (hot_star) then
-	    l_sz=l2-5*0
-	     df(l1:l_sz,m,n,ilnrho)=df(l1:l_sz,m,n,ilnrho) &
-	       -1./(5.*dt)*(f(l1:l_sz,m,n,ilnrho)-f(l1:l_sz,m,n+1,ilnrho))
-	    endif
-	    
+           l_sz=l2-5*0
+
+               n_tmp=ac_dc_size+4-n
+
+               if (n_tmp == 0) then 
+                else
+
+                df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)&
+                -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
+                -f(l1:l2,m,ac_dc_size+4+n_tmp,ilnrho)) 
+            endif
+            endif
             else
 
 
@@ -525,28 +550,21 @@ module Special
           if (lnstar_1D) then
            else
            do i=l_sz,l2
-            if (n .LT. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
-
             if (hot_star) then
-	    if (n .gt. ac_dc_size+4) then
-	     df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
-	     -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))
-	    endif 
-	    else
-             df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
-             -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
-             +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/p%cs2(i-1))
-            endif
+
             else
+
+            if (n .LT. n2-ac_dc_size .AND. dt .GT. 0.) then
+
             df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
              -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))
             endif
-           enddo
-          endif
+            endif
+           enddo 
+
         endif
-      endif
-
-
+        endif
+        endif
 !
 ! Keep compiler quiet by ensuring every parameter is used
 !
@@ -565,7 +583,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      integer :: j,l_sz
+      integer :: j,l_sz, n_tmp
 !
 ! add effective gravity term = -Fgrav+Fcentrifugal
 ! Natalia
@@ -590,11 +608,13 @@ module Special
             df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)- &
               M_star/z(n)**2/sqrt(z(n)**2+x(l1:l_sz)**2)*x(l1:l_sz)*(z(n)-R_star)/(Lxyz(1)*0.5)
            else
+
            if (hot_star) then
              if (n .gt. ac_dc_size+4) then
                df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)-M_star/z(n)**3*x(l1:l_sz)
              endif
            else
+
              df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)-M_star/z(n)**3*x(l1:l_sz)
            endif
            endif
@@ -604,22 +624,41 @@ module Special
 ! acceleration zone in a case of a Keplerian disk
 !
       if (laccelerat_zone) then
-        if (n .ge. nzgrid-ac_dc_size  .and. dt .gt.0.) then
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-              -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
+        if (n .ge. n2-ac_dc_size  .and. dt .gt.0.) then
+        if (hot_star) then
+        l_sz=l2-5*0
+          if (n.le.n2-ac_dc_size+1) then
+           if (n==n2-ac_dc_size) then
+               df(l1:l_sz,m,n,iuy)=df(l1:l_sz,m,n,iuy)&
+               -1./(5.*dt)*(f(l1:l_sz,m,n,iuy) &
+               -1./3.*(sqrt(M_star/z(n))+2.*f(l1:l_sz,m,n1,iuy)))
+            else
+                df(l1:l_sz,m,n,iuy)=df(l1:l_sz,m,n,iuy)&
+                -1./(5.*dt)*(f(l1:l_sz,m,n,iuy) &
+                -1./3.*(f(l1:l_sz,m,n-1,iuy)+2.* sqrt(M_star/z(n))))
+            endif 
+           else
+            df(l1:l_sz,m,n,iuy)=df(l1:l_sz,m,n,iuy)&  
+            -1./(5.*dt)*(f(l1:l_sz,m,n,iuy)-f(l1:l_sz,m,n-1,iuy))
+           endif
+
+
+        else
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
+             -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
+        endif
 
            if (nxgrid == 1) then
              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
               -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
            else
 
-         l_sz=l2-5
-	 
-	 if (hot_star) then
-	  df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)&
-	    -1./(5.*dt)*(f(l1:l_sz,m,n,iux)-f(l1:l_sz,m,n-1,iux))
-			 
-	 else
+         l_sz=l2-5*0
+
+         if (hot_star) then 
+            df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)&
+             -1./(5.*dt)*(f(l1:l_sz,m,n,iux)-f(l1:l_sz,m,n-1,iux))
+            else
              df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux) &
                               -1./(5.*dt)*(f(l1:l_sz,m,n,iux)-0.)
          endif
@@ -628,16 +667,14 @@ module Special
         !     -1./(5.*dt)*(f(l_sz+1:l2,m,n,iux)-f(l_sz+1:l2,m,n-1,iux))
 
 
-         l_sz=l2-5
+         l_sz=l2-5*0
 
         ! if (hot_star) then
-	! else
+         ! else
              df(l1:l_sz,m,n,iuz)=df(l1:l_sz,m,n,iuz)&
               -1./(5.*dt)*(f(l1:l_sz,m,n,iuz)-f(l1:l_sz,m,n-1,iuz))
         !    df(l1:l_sz,m,n,iux)=df(l1:l_sz,m,n,iux)&
-	!       -1./(5.*dt)*(f(l1:l_sz,m,n,iux)-f(l1:l_sz,m,n-1,iux))
-			  
-
+         !       -1./(5.*dt)*(f(l1:l_sz,m,n,iux)-f(l1:l_sz,m,n-1,iux))
         ! endif
            endif
         endif
@@ -650,24 +687,30 @@ module Special
           if (lnstar_entropy) then
 
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-                -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n))*star_rot)
-		
-!	if (hot_star) then
-!	else	
+               -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n))*star_rot)
+!       if (hot_star) then
+!       else	
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-                -1./(5.*dt)*(p%uu(:,3)-0.)
-		
-	if (hot_star) then	
-	      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)&
-	        -1./(5.*dt)*(p%uu(:,1)-0.)
-	endif	      	
-		
-!	endif
-		
-	!if (hot_star) then	
-	!     df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)&
-	!     -1./(5.*dt)*(f(l1:l2,m,n,iux)-f(l1:l2,m,n-1,iux))	
-        ! endif
+               -1./(5.*dt)*(p%uu(:,3)-0.)
+        if (hot_star) then	
+               df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)&
+               -1./(5.*dt)*(p%uu(:,1)-0.)
+        endif
+        !endif
+
+        if (hot_star) then
+
+         n_tmp=ac_dc_size+4-n
+
+        if (n_tmp == 0) then
+
+         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)&
+          -1./(5.*dt)*(f(l1:l2,m,n,iux)-0.)
+         else
+         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)&
+          -1./(5.*dt)*(f(l1:l2,m,n,iux)-f(l1:l2,m,ac_dc_size+4+n_tmp,iux))
+        endif
+         endif
           else
            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
                     -1./(5.*dt)*(p%uu(:,1)-0.)
@@ -699,23 +742,9 @@ module Special
                   -1./(5.*dt)*(f(l1:l2,m,n,iuz)&
                   +accretion_flux/p%rho(:))
          else
-	 
-	 
-	
-!	if (hot_star) then
-	
-!	if (n.gt.ac_dc_size+4) then
-!	      do j=l_sz,l2
-	
-!	        df(j,m,n,iux)=df(j,m,n,iux)&
-!	          -1./(5.*dt)*(f(j,m,n,iux)-f(j-1,m,n,iux))
-!	        df(j,m,n,iuy)=df(j,m,n,iuy)&
-!	          -1./(5.*dt)*(f(j,m,n,iuy)-f(j-1,m,n,iuy))
-!         	df(j,m,n,iuz)=df(j,m,n,iuz)&
-!	          -1./(5.*dt)*(f(j,m,n,iuz)-f(j-1,m,n,iuz))
-!          	enddo
-!        endif			      
-!	else
+        if (hot_star) then
+
+           else
            do j=l_sz,l2
              df(j,m,n,iux)=df(j,m,n,iux)&
                   -1./(5.*dt)*(f(j,m,n,iux)-f(j-1,m,n,iux))
@@ -724,7 +753,7 @@ module Special
              df(j,m,n,iuz)=df(j,m,n,iuz)&
                   -1./(5.*dt)*(f(j,m,n,iuz)-f(j-1,m,n,iuz))
            enddo
-!        endif 
+        endif 
 
          endif
 
@@ -767,15 +796,28 @@ module Special
 
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension (nx) ::T_disk_ref
       type (pencil_case), intent(in) :: p
-      integer :: j, l_sz, l_sz_1, li
+      integer :: j, l_sz, l_sz_1, li,n_tmp
       real :: dT_dx_i1
 
         if (l1D_cool_heat) call rad_cool_heat_1D(f,df,p)
 
-        if (lraddif_local) call raddif_local(f,df,p)
+      
 
     if (lnstar_entropy) then
+
+
+    if (hot_star) then
+    if (n.lt. n2-ac_dc_size) then
+    l_sz=l2-5*0
+    do li=l_sz,l2
+     df(li,m,n,iss)=df(li,m,n,iss) &
+       -0.01*M_star/z(n)**3*c_light*kappa_es/&
+         p%rho(li-l1+1)/p%TT(li-l1+1)
+    enddo
+    endif
+    endif
 
 
       if (T_disk.EQ.0) then
@@ -800,23 +842,25 @@ module Special
             *gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_disk
 
           else
-	  if (hot_star) then
+        if (hot_star) then
             !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
              ! -1./(5.*dt)*(p%TT(:)-T_star)/T_star
-	      
-	    
-	     l_sz=l2-5*0
-	      
-	      df(l1:l_sz,m,n,iss)=df(l1:l_sz,m,n,iss)*0 &
-	      -1./(5.*dt)*(f(l1:l_sz,m,n,iss)-f(l1:l_sz,m,n+1,iss))
-          endif		   
+          l_sz=l2-5*0
+
+         n_tmp=ac_dc_size+4-n
+           if (n_tmp == 0) then
+           else
+              df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)&
+             -1./(5.*dt)*(f(l1:l2,m,n,iss)-f(l1:l2,m,ac_dc_size+4+n_tmp,iss))
+            endif
+          endif
 
           endif
          endif
       endif
 
      if (laccelerat_zone) then
-         if (n .GE. nzgrid-ac_dc_size  .AND. dt .GT.0.) then
+         if (n .GE. n2-ac_dc_size  .AND. dt .GT.0.) then
            if (nxgrid .LE.1) then
               if (lnstar_T_const) then
                  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
@@ -824,12 +868,31 @@ module Special
               endif
            else
      
-          if (hot_star .and. new_T_profile) then
-               
+     
+          if (hot_star) then
+          
+	 ! T_disk_ref=(0.95*T_disk-T_disk)*(x(l1:l2)/Lxyz(1))+T_disk
+
+           l_sz=l2-ac_dc_size
+
+         if (T_disk_const) then
+           df(l1:l_sz,m,n,iss)=df(l1:l_sz,m,n,iss) &
+             -1./(5.*dt)*(p%TT(1:nx-ac_dc_size)-T_disk)/T_disk
+         else
+
+	  
+	  
+	      df(l1:l_sz,m,n,iss)=df(l1:l_sz,m,n,iss) &
+	         -1./(5.*dt)*(p%TT(1:nx-ac_dc_size)/ &
+		 T_disk_ref(1:nx-ac_dc_size)-1.)
+			       
+	  
+	              
             df(l1,m,n,iss)=df(l1,m,n,iss) &
-                 -1./(5.*dt)*(p%TT(1)-T_disk)/p%TT(1)
+                    -1./(5.*dt)*(p%TT(1)-T_disk)/p%TT(1)
    
-            do li=l1+1,l2      
+        
+	    do li=l1+1,l2-5      
   
             dT_dx_i1=-M_star/z(n)**3*x(li-l1) &
               *3./16./sigmaSB*c_light*p%rho(li-l1)/p%TT(li-l1)**3
@@ -845,39 +908,21 @@ module Special
 
           endif
 
+      endif
+
      endif
 
 
        if (lsurface_zone) then
           if ( dt .GT.0.) then
             l_sz=l2-5
-            l_sz_1=nxgrid-5
+            l_sz_1=n2-5
 
             if (lnstar_1D) then
              else
-              if (hot_star .and. new_T_profile) then
-                
-	      if (n .gt. ac_dc_size+4) then
-            !    df(l1,m,n,iss)=df(l1,m,n,iss) &
-            !       -1./(5.*dt)*(p%TT(1)-T_disk)/p%TT(1)
-   
-                do li=l_sz,l2      
-  
-                 dT_dx_i1=-M_star/z(n)**3*x(li-l1) &
-                          *3./16./sigmaSB*c_light  &
-                          *p%rho(li-l1)/p%TT(li-l1)**3
+              if (hot_star) then
 
-                 df(li,m,n,iss)=df(li,m,n,iss) &
-                   -1./(5.*dt)*(p%TT(li-l1+1)-p%TT(li-l1)-dT_dx_i1*dx)/p%TT(li-l1+1)
-                enddo
-	      else
-	      	 do j=l_sz,l2
-		   df(j,m,n,iss)=df(j,m,n,iss)*0&
-		  -1./(5.*dt)*(f(j,m,n,iss)-f(j-1,m,n,iss))
-	        enddo
-								  
-	      endif	
-              else       
+              else
                do j=l_sz,l2
                  df(j,m,n,iss)=df(j,m,n,iss)*0.&
                  -1./(5.*dt)*(f(j,m,n,iss)-f(j-1,m,n,iss))
@@ -1001,95 +1046,7 @@ module Special
 !
     endsubroutine rad_cool_heat_1D
 !*************************************************************************
-    subroutine raddif_local(f,df,p)
-!
-!  heat conduction
-!  Natalia (NS)
-!   12-apr-06/axel: adapted from Wolfgang's more complex version
-!
-      use Sub, only: max_mn_name,dot
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      type (pencil_case) :: p
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: glnT,glnThcond !,glhc
-      real, dimension (nx) :: chix,diffus_chi1
-      real, dimension (nx) :: thdiff,g2,thdiff_1D
-      real, dimension (nx) :: hcond
-      real ::  beta
-      integer :: l_sz, l_sz_1
 
-      intent(in) :: f,p
-      intent(out) :: df
-
-!
-!  Heat conduction
-!
-      chix = p%rho1*p%rho1*p%TT**3*16./3.*sigmaSB/kappa_es!hcond
-      glnT = gamma*p%gss + gamma1*p%glnrho ! grad ln(T)
-      glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
-      call dot(glnT,glnThcond,g2)
-!
-!AB:  derivs of chix missing??
-!
-      thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
-!print*,' p%del2ss(10)'   ,p%del2ss(10)
-
-   !  add heat conduction to entropy equation
-    !
-
-
-!All calculations till 1.10.2006 were made with this option
-! Check it
-        if (ldecelerat_zone) then
-          if (nxgrid == 1) then
-           if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
-          else
-           if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
-          endif
-         if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
-        else
-         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
-         if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
-        endif
-
-!
-
-
-      if (headtt) print*,'calc_heatcond_diffusion: added thdiff_1D'
-
-
-
-        df(l1:l2,m,n,iuz) = &
-         df(l1:l2,m,n,iuz)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,3)
-
-        df(l1:l2,m,n,iuy) = &
-          df(l1:l2,m,n,iuy)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,2)
-
-        df(l1:l2,m,n,iux) = &
-         df(l1:l2,m,n,iux)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,1)
-!
-!  include constraint from radiative time step
-!
-      if (lfirst.and.ldt) then
-        advec_crad2=p%rho1*16./3.*sigmaSB/c_light*p%TT**4
-      endif
-
-     if (headtt) print*,'calc_radiation_pressure: added to z-component'
-!
-!  check maximum diffusion from thermal diffusion
-!  With heat conduction, the second-order term for entropy is
-!  gamma*chix*del2ss
-!
-      if (lfirst.and.ldt) then
-! Calculate timestep limitation
-        diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)
-
-     !   diffus_chi1=min(gamma*chix*dxyz_2, &
-      !              real(sigmaSB*kappa_es*p%TT**3*4.*p%cp1tilde))
-     !   diffus_chi=max(diffus_chi,diffus_chi1)
-      endif
-    endsubroutine raddif_local
 !*************************************************************************
     subroutine mass_source_NS(f,df,rho)
 !
@@ -1228,7 +1185,7 @@ module Special
 	  
 	!  endif
 
-              if (hot_star .and. new_T_profile) then
+              if (hot_star) then
              
                 TT_0(1)=exp(lnTT(l1))
 
@@ -1306,7 +1263,7 @@ module Special
      else
       f(:,:,:,iux)=uu_init
       f(:,:,:,iuz)=uu_init
-      f(:,:,:,iuy)=sqrt(M_star/xyz0(3))
+      f(:,:,:,iuy)=sqrt(M_star/zz(:,:,:))
      endif
 
 
@@ -1329,10 +1286,14 @@ module Special
 
       if (bc%location==iBC_X_BOT) then
       ! bottom boundary
-        if (j == 1) then
-          do i=1,nghost; f(l1-i,:,:,j)=-f(l1+i,:,:,j); enddo
-              f(l1,:,:,j) = 0.
-        !  do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
+        !if (j == 1) then
+	 if (j == 1) then
+	 
+          do i=1,nghost; f(l1-i,:,ac_dc_size+5:mz,j) &
+	                 =-f(l1+i,:,ac_dc_size+5:mz,j); enddo
+              f(l1,:,ac_dc_size+5:mz,j) = 0.
+          do i=1,nghost; f(l1-i,:,1:ac_dc_size+4,j) &
+	      =2*f(l1,:,1:ac_dc_size+4,j)+sgn*f(l1+i,:,1:ac_dc_size+4,j); enddo
 
         else
           do i=1,nghost; f(l1-i,:,:,j)= f(l1+i,:,:,j); enddo
@@ -1355,12 +1316,13 @@ module Special
             f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
           endif
         else
-
-
+        !  if (j==4 .or. j==5) then
+	!   do i=1,nghost; f(l2+i,:,:,j)=f(l2+i-1,:,:,j); enddo
+        !  else
            f(l2+1,:,:,j)=0.25*(  9*f(l2,:,:,j)- 3*f(l2-1,:,:,j)- 5*f(l2-2,:,:,j)+ 3*f(l2-3,:,:,j))
             f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
             f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
-
+        !  endif
         endif
       else
         print*, "bc_BL_x: ", bc%location, " should be `top(", &
@@ -1451,7 +1413,7 @@ module Special
               lnTT=log(cs0**2/(gamma1))
               else
 
-               if (hot_star .and. new_T_profile) then
+               if (hot_star) then
                                   
                 TT_0(1)=T_disk
 
@@ -1472,10 +1434,10 @@ module Special
               call eoscalc(4,lnrho,lnTT,ss=ss)
               f(l1:l2,m2,n2,iss)=ss
             else
-              if (j==4) then
-              else
-                f(:,:,n2,j)=value1
-              endif
+            !  if (j==4) then
+            !  else
+            !    f(:,:,n2,j)=value1
+            !  endif
             endif
          ! else
 
