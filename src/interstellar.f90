@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.142 2006-11-30 09:03:35 dobler Exp $
+! $Id: interstellar.f90,v 1.143 2006-12-22 01:46:38 dobler Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development.
@@ -123,7 +123,7 @@ module Interstellar
 !  real, parameter :: TTunits=46.6
 !
 ! Minimum resulting central temperature of a SN explosion.
-! If this is not reached then consider moving mass to acheive this.
+! If this is not reached then consider moving mass to achieve this.
 !
   real, parameter :: TT_SN_min_cgs=1.e7
   real :: uu_sedov_max=0.
@@ -390,7 +390,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.142 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: interstellar.f90,v 1.143 2006-12-22 01:46:38 dobler Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -530,7 +530,7 @@ module Interstellar
         if (TT_SN_max==impossible) TT_SN_max=TT_SN_max_cgs / unit_temperature
         if (rho_SN_min==impossible) rho_SN_min=rho_SN_min_cgs / unit_density
         TT_SN_min=TT_SN_min_cgs / unit_temperature
-        TT_cutoff=TT_cutoff / unit_temperature
+        TT_cutoff=TT_cutoff_cgs / unit_temperature
         if (SNI_area_rate==impossible) SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
         if (h_SNI==impossible)         h_SNI=h_SNI_cgs / unit_length
         h_SNII=h_SNII_cgs / unit_length
