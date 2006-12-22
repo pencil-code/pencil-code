@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.44 2006-12-20 07:25:16 dobler Exp $
+! $Id: neutron_star.f90,v 1.45 2006-12-22 01:50:35 dobler Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -74,10 +74,10 @@ module Special
   real :: uu_init=0.
 
 
-  real :: R_star=0.
-  real :: M_star=0.
-  real :: T_star=0.
-  real :: T_disk=0.
+  real :: R_star=1.
+  real :: M_star=1.
+  real :: T_star=1.
+  real :: T_disk=1.
   real :: accretion_flux=0.
 
   logical :: lextrapolate_bot_density=.false.
@@ -97,7 +97,7 @@ module Special
   logical :: hot_star=.false.
   logical :: new_T_profile=.false.
 
- logical :: l1D_cooling=.false.,l1D_heating=.false.
+  logical :: l1D_cooling=.false.,l1D_heating=.false.
 
   logical :: lraddif_local=.false.
 
@@ -183,11 +183,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.44 2006-12-20 07:25:16 dobler Exp $
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.45 2006-12-22 01:50:35 dobler Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.44 2006-12-20 07:25:16 dobler Exp $")
+           "$Id: neutron_star.f90,v 1.45 2006-12-22 01:50:35 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1142,8 +1142,7 @@ endsubroutine read_special_run_pars
       real ::  ln_ro_l, ln_ro_r, ln_ro_u, cs2_disk
       integer :: i
 
-       call eoscalc(ilnrho_lnTT,log(rho_disk),log(T_disk), cs2=cs2_disk)
-
+        call eoscalc(ilnrho_lnTT,log(rho_disk),log(T_disk), cs2=cs2_disk)
 
         ln_ro_r=log(rho_disk)
         ln_ro_l=log(rho_star)
@@ -1151,11 +1150,11 @@ endsubroutine read_special_run_pars
 
        if (nxgrid/=1.and.nzgrid/=1) then
 
-          f(:,:,:,ilnrho)= &
+         f(:,:,:,ilnrho)= &
             -M_star/2./zz(:,:,:)**3*xx(:,:,:)**2*gamma/cs2_disk
 
 
-        f(:,:,:,ilnrho)= f(:,:,:,ilnrho) &
+         f(:,:,:,ilnrho)= f(:,:,:,ilnrho) &
                        +((zz(:,:,:)-R_star)/Lxyz(3))**0.25 &
                        *(ln_ro_r-ln_ro_l)+ln_ro_l
        else
@@ -1284,7 +1283,7 @@ endsubroutine read_special_run_pars
       if (hot_star) then
 
          f(:,:,:,iuy)=sqrt(M_star/xyz0(3))
-	 
+
 
       else
        if (ldecelerat_zone .AND. decel_zone .LT. nzgrid) then
@@ -1299,7 +1298,7 @@ endsubroutine read_special_run_pars
 
        else
          f(:,:,L_disk_point+4:mz,iuy)= &
-           sqrt(M_star/zz(:,:,L_disk_point+3+1:mz))
+           sqrt(M_star / max(zz(:,:,L_disk_point+3+1:mz),tini))
          f(:,:,1:L_disk_point+3,iuy)= &
            (zz(:,:,1:L_disk_point+3)-R_star)/ll*sqrt(M_star/(ll+R_star))
        endif
