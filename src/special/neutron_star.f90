@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.45 2006-12-22 01:50:35 dobler Exp $
+! $Id: neutron_star.f90,v 1.46 2006-12-22 08:37:50 dobler Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -183,11 +183,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.45 2006-12-22 01:50:35 dobler Exp $
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.46 2006-12-22 08:37:50 dobler Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.45 2006-12-22 01:50:35 dobler Exp $")
+           "$Id: neutron_star.f90,v 1.46 2006-12-22 08:37:50 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -222,13 +222,20 @@ module Special
 !!
 
 
-    l1D_cool_heat=l1D_cooling.or.l1D_heating
+      l1D_cool_heat=l1D_cooling.or.l1D_heating
 
 
-    if (l1D_cool_heat.and.lroot) &
+      if (l1D_cool_heat.and.lroot) &
           print*, 'neutron_star: 1D cooling or heating'
 !
-! DO NOTHING
+!  Make sure initialization (somehow) works with eos_ionization.f90
+!
+      if (gamma == impossible) then
+        gamma  = 1
+        gamma1 = 0.
+        gamma11 = 1.
+      endif
+!
       if(NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine initialize_special
@@ -382,7 +389,7 @@ module Special
       endif
 
 99    return
-endsubroutine read_special_run_pars
+    endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
       integer, intent(in) :: unit
@@ -994,7 +1001,7 @@ endsubroutine read_special_run_pars
 !
     endsubroutine rad_cool_heat_1D
 !*************************************************************************
- subroutine raddif_local(f,df,p)
+    subroutine raddif_local(f,df,p)
 !
 !  heat conduction
 !  Natalia (NS)
@@ -1084,8 +1091,7 @@ endsubroutine read_special_run_pars
       endif
     endsubroutine raddif_local
 !*************************************************************************
-
-     subroutine mass_source_NS(f,df,rho)
+    subroutine mass_source_NS(f,df,rho)
 !
 !  add mass sources and sinks
 !
@@ -1132,45 +1138,44 @@ endsubroutine read_special_run_pars
 !
     endsubroutine mass_source_NS
 !********************************************************************
-     subroutine density_init(f,xx,zz)
-     !
-     !Natalia
-     !Initialization of density in a case of the step-like distribution
-     !
+    subroutine density_init(f,xx,zz)
+!
+! Natalia
+! Initialization of density in a case of the step-like distribution
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx, zz
       real ::  ln_ro_l, ln_ro_r, ln_ro_u, cs2_disk
       integer :: i
 
-        call eoscalc(ilnrho_lnTT,log(rho_disk),log(T_disk), cs2=cs2_disk)
+      call eoscalc(ilnrho_lnTT,log(rho_disk),log(T_disk), cs2=cs2_disk)
 
-        ln_ro_r=log(rho_disk)
-        ln_ro_l=log(rho_star)
-        ln_ro_u=log(rho_surf)
+      ln_ro_r=log(rho_disk)
+      ln_ro_l=log(rho_star)
+      ln_ro_u=log(rho_surf)
 
-       if (nxgrid/=1.and.nzgrid/=1) then
+      if (nxgrid/=1.and.nzgrid/=1) then
 
-         f(:,:,:,ilnrho)= &
-            -M_star/2./zz(:,:,:)**3*xx(:,:,:)**2*gamma/cs2_disk
+        f(:,:,:,ilnrho)= &
+            -M_star/2./max(zz(:,:,:)**3,tini)*xx(:,:,:)**2*gamma/cs2_disk
 
 
-         f(:,:,:,ilnrho)= f(:,:,:,ilnrho) &
-                       +((zz(:,:,:)-R_star)/Lxyz(3))**0.25 &
+        f(:,:,:,ilnrho)= f(:,:,:,ilnrho) &
+                       +(abs(zz(:,:,:)-R_star)/Lxyz(3))**0.25 &
                        *(ln_ro_r-ln_ro_l)+ln_ro_l
-       else
-         if (nzgrid .GT. 1) then
-            f(:,:,:,ilnrho)=((zz(:,:,:)-R_star)/Lxyz(3))**0.25 &
+      else
+        if (nzgrid > 1) then
+          f(:,:,:,ilnrho)=(abs(zz(:,:,:)-R_star)/Lxyz(3))**0.25 &
                            *(ln_ro_r-ln_ro_l)+ln_ro_l
-         else
-            f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1) &
+        else
+          f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1) &
                            *(ln_ro_u-ln_ro_r)+ln_ro_r
-         endif
-       endif
+        endif
+      endif
 
-      endsubroutine density_init
+    endsubroutine density_init
 !***************************************************************
-
-      subroutine entropy_init(f,xx,zz)
+    subroutine entropy_init(f,xx,zz)
 
      ! use EquationOfState
 
@@ -1192,27 +1197,27 @@ endsubroutine read_special_run_pars
          call eoscalc(ilnrho_lnTT,log(rho_disk),log(T_disk), cs2=cs2_star)
 
       do ni=n1,n2;
-       do mi=m1,m2;
+        do mi=m1,m2;
 
-         if (lnstar_T_const) then
-           f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
-         else
+          if (lnstar_T_const) then
+            f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+          else
 
-           if (nxgrid .LE. 1) then
+            if (nxgrid <= 1) then
 
-             lnrho=f(l1:l2,mi,ni,ilnrho)
-             lnTT=(zz(l1:l2,mi,ni)-R_star)/Lxyz(3) &
-                 *(log(T_disk)-log(T_star))+log(T_star)
+              lnrho=f(l1:l2,mi,ni,ilnrho)
+              lnTT=(zz(l1:l2,mi,ni)-R_star)/Lxyz(3) &
+                  *(log(T_disk)-log(T_star))+log(T_star)
 
-             call eoscalc(4,lnrho,lnTT,ss=ss)
-               f(l1:l2,mi,ni,iss)=ss
+              call eoscalc(4,lnrho,lnTT,ss=ss)
+              f(l1:l2,mi,ni,iss)=ss
 
-           else
+            else
 
-            lnrho=f(l1:l2,mi,ni,ilnrho)
+              lnrho=f(l1:l2,mi,ni,ilnrho)
 
-            lnTT=(zz(l1:l2,mi,ni)-R_star)/Lxyz(3) &
-                *(log(T_disk)-log(T_star))+log(T_star)
+              lnTT=(zz(l1:l2,mi,ni)-R_star)/Lxyz(3) &
+                  *(log(T_disk)-log(T_star))+log(T_star)
 
         !  if (hot_star) then
 	  
@@ -1223,38 +1228,32 @@ endsubroutine read_special_run_pars
 	  
 	!  endif
 
-        if (hot_star .and. new_T_profile) then
-    
-         
-              TT_0(1)=exp(lnTT(l1))
+              if (hot_star .and. new_T_profile) then
+             
+                TT_0(1)=exp(lnTT(l1))
 
                 do li=l1+1,l2
-                dT_dx_i1=-M_star/(zz(li-1,mi,ni))**3*xx(li-1,mi,ni) &
-                *3./16./sigmaSB*c_light*exp(f(li-1,mi,ni,ilnrho)) &
-                /TT_0(li-l1)**3
+                  dT_dx_i1=-M_star/(zz(li-1,mi,ni))**3*xx(li-1,mi,ni) &
+                      *3./16./sigmaSB*c_light*exp(f(li-1,mi,ni,ilnrho)) &
+                      /TT_0(li-l1)**3
 
-                TT_0(li-l1+1)=TT_0(li-l1)+dT_dx_i1*dx           
+                  TT_0(li-l1+1)=TT_0(li-l1)+dT_dx_i1*dx           
 
-                lnTT(li-l1+1)=log(TT_0(li-l1+1))
-
-   
+                  lnTT(li-l1+1)=log(TT_0(li-l1+1))
                 enddo
-               
-        endif
+              endif
             
+              call eoscalc(4,lnrho,lnTT,ss=ss)
 
-            call eoscalc(4,lnrho,lnTT,ss=ss)
-
-            f(l1:l2,mi,ni,iss)=ss
+              f(l1:l2,mi,ni,iss)=ss
 
              !  f(l1,mi,ni,iss)=-f(l1,mi,ni,ilnrho)*gamma1/gamma
 
-           endif
-         endif
+            endif
+          endif
 
-       end do
-      end do
-
+        enddo
+      enddo
 
       endsubroutine entropy_init
 !*********************************************************************
