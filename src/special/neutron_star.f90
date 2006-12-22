@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.47 2006-12-22 17:57:06 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.48 2006-12-22 21:36:37 dobler Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -179,11 +179,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.47 2006-12-22 17:57:06 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.48 2006-12-22 21:36:37 dobler Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.47 2006-12-22 17:57:06 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.48 2006-12-22 21:36:37 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -880,11 +880,12 @@ module Special
              -1./(5.*dt)*(p%TT(1:nx-ac_dc_size)-T_disk)/T_disk
          else
 
-	  
-	  
-	      df(l1:l_sz,m,n,iss)=df(l1:l_sz,m,n,iss) &
-	         -1./(5.*dt)*(p%TT(1:nx-ac_dc_size)/ &
-		 T_disk_ref(1:nx-ac_dc_size)-1.)
+!
+!  FIXME: T_disk_ref is used, but never set
+!
+! 	      df(l1:l_sz,m,n,iss)=df(l1:l_sz,m,n,iss) &
+! 	         -1./(5.*dt)*(p%TT(1:nx-ac_dc_size)/ &
+! 		 T_disk_ref(1:nx-ac_dc_size)-1.)
 			       
 	  
 	              
