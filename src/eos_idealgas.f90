@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.78 2006-12-11 08:06:37 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.79 2006-12-22 01:51:50 dobler Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -109,7 +109,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.78 2006-12-11 08:06:37 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.79 2006-12-22 01:51:50 dobler Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -922,7 +922,7 @@ module EquationOfState
 !
 !   Calculate thermodynamical quantities
 !
-!   2-feb-03/axel: simple example coded
+!   02-feb-03/axel: simple example coded
 !   13-jun-03/tobi: the ionization fraction as part of the f-array
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1 to
@@ -1120,6 +1120,7 @@ module EquationOfState
         ee_=pp_*exp(-lnrho_)/gamma1
         lnTT_=log(cv1*ee_)
         cs2_=gamma*gamma1*ee_
+
       case (ilnrho_lnTT)
         lnrho_=var1
         lnTT_=var2
