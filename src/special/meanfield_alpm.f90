@@ -1,4 +1,4 @@
-! $Id: meanfield_alpm.f90,v 1.5 2006-07-29 18:06:34 mee Exp $
+! $Id: meanfield_alpm.f90,v 1.6 2006-12-22 23:17:02 dobler Exp $
 !
 !  This module serves as a sample for a special_XXX module that
 !  introduces additional primitive variables. Use this as a basis for your
@@ -83,7 +83,7 @@ module Special
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: meanfield_alpm.f90,v 1.5 2006-07-29 18:06:34 mee Exp $")
+           "$Id: meanfield_alpm.f90,v 1.6 2006-12-22 23:17:02 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -308,7 +308,7 @@ module Special
 !
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine special_calc_density(df,p)
+    subroutine special_calc_density(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
@@ -319,9 +319,11 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
-      
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+
+      real, dimension (mx,my,mz,mvar) :: f,df
+      type (pencil_case) :: p
+      !
+      intent(in) :: f,df,p
 
 !!
 !!  SAMPLE IMPLEMENTATION
@@ -333,7 +335,7 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
+      if (NO_WARN) print*,f,df,p
 
     endsubroutine special_calc_density
 !***********************************************************************
@@ -369,7 +371,7 @@ module Special
 
     endsubroutine special_calc_hydro
 !***********************************************************************
-    subroutine special_calc_magnetic(df,p)
+    subroutine special_calc_magnetic(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
@@ -380,9 +382,11 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
-      
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+
+      real, dimension (mx,my,mz,mvar) :: f,df
+      type (pencil_case) :: p
+      !
+      intent(in) :: f,df,p
 
 !!
 !!  SAMPLE IMPLEMENTATION
@@ -400,7 +404,7 @@ module Special
 
     endsubroutine special_calc_magnetic
 !!***********************************************************************
-    subroutine special_calc_entropy(df,p)
+    subroutine special_calc_entropy(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
@@ -412,8 +416,10 @@ module Special
 !
       use Cdata
       
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, dimension (mx,my,mz,mvar) :: f,df
+      type (pencil_case) :: p
+      !
+      intent(in) :: f,df,p
 
 !!
 !!  SAMPLE IMPLEMENTATION
