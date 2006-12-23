@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.127 2006-12-16 18:36:33 theine Exp $
+! $Id: radiation_ray.f90,v 1.128 2006-12-23 18:58:40 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -41,11 +41,11 @@ module Radiation
     real, pointer :: val
     logical, pointer :: set
   endtype Qpoint
-!
-! Slice precalculation buffers
-!
-  real, target, dimension (nx,ny) :: Isurf_xy
-!
+
+  type radslice
+    real, dimension (nx,ny) :: xy2
+  endtype radslice
+
   real, dimension (mx,my,mz) :: Srad,tau,Qrad,Qrad0
   real, dimension (mx,my,mz,3) :: Frad
   type (Qbound), dimension (my,mz), target :: Qbc_yz
@@ -62,6 +62,7 @@ module Radiation
   integer, dimension (maxdir,3) :: dir
   real, dimension (maxdir,3) :: unit_vec
   real, dimension (maxdir) :: weight,weightn,mu
+  type (radslice), dimension (maxdir), target :: Isurf
   real :: arad
   real :: dtau_thresh_min,dtau_thresh_max
   integer :: lrad,mrad,nrad,rad2
@@ -71,6 +72,7 @@ module Radiation
   integer :: mmstart,mmstop,mm1,mm2,msign
   integer :: nnstart,nnstop,nn1,nn2,nsign
   integer :: ipzstart,ipzstop,ipystart,ipystop
+  integer :: nIsurf
   logical :: lperiodic_ray,lperiodic_ray_x,lperiodic_ray_y,lperiodic_ray_z
   character (len=labellen) :: source_function_type='LTE',opacity_type='Hminus'
   real :: tau_top=0.0,TT_top=0.0
@@ -175,7 +177,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.127 2006-12-16 18:36:33 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.128 2006-12-23 18:58:40 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -232,6 +234,7 @@ module Radiation
 !  Count
 !
       idir=1
+      nIsurf=0
 
       do nrad=-radz,radz
       do mrad=-rady,rady
@@ -999,8 +1002,8 @@ module Radiation
 !
 !  calculate surface intensity for upward rays
 !
-      if (lrad==0.and.mrad==0.and.nrad==1) then
-        Isurf_xy=Qrad(l1:l2,m1:m2,nnstop)+Srad(l1:l2,m1:m2,nnstop)
+      if (nrad>0) then
+        Isurf(idir)%xy2=Qrad(l1:l2,m1:m2,nnstop)+Srad(l1:l2,m1:m2,nnstop)
       endif
 !
       if (lrad_debug) then
@@ -1579,6 +1582,7 @@ module Radiation
       type (slice_data) :: slices
 !
       integer :: inamev
+      integer, save :: idir_last=0
 !
 !  Loop over slices
 !
@@ -1587,11 +1591,24 @@ module Radiation
 !  Surface intensity (derived variable)
 !
         case ('Isurf')
-          nullify(slices%yz)
-          nullify(slices%xz)
-          nullify(slices%xy)
-          slices%xy2=>Isurf_xy
-          slices%ready = .true.
+          if (slices%index >= nIsurf) then
+            slices%ready = .false.
+          else
+            if (slices%index == 0) idir_last=0
+            nullify(slices%yz)
+            nullify(slices%xz)
+            nullify(slices%xy)
+            do idir=idir_last+1,ndir
+              nrad=dir(idir,3)
+              if (nrad>0) then
+                slices%xy2=>Isurf(idir)%xy2
+                slices%index = slices%index+1
+                if (slices%index < nIsurf) slices%ready = .true.
+                idir_last=idir
+                exit
+              endif
+            enddo
+          endif
 !
 !  Heating rate (auxiliary variable)
 !
