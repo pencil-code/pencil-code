@@ -1,4 +1,4 @@
-! $Id: chiral.f90,v 1.12 2006-11-30 09:03:34 dobler Exp $
+! $Id: chiral.f90,v 1.13 2006-12-25 22:47:29 dobler Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -92,7 +92,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: chiral.f90,v 1.12 2006-11-30 09:03:34 dobler Exp $")
+           "$Id: chiral.f90,v 1.13 2006-12-25 22:47:29 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -284,9 +284,9 @@ module Chiral
 !
 !  abbreviations for quadratic quantities
 !
-      XX2_chiral=.5*XX_chiral**2/RRXX_chiral
-      YY2_chiral=.5*YY_chiral**2/RRYY_chiral
-      RR21_chiral=1./(XX2_chiral+YY2_chiral)
+      XX2_chiral=.5*XX_chiral**2/max(RRXX_chiral, tini)
+      YY2_chiral=.5*YY_chiral**2/max(RRYY_chiral, tini)
+      RR21_chiral=1./max(XX2_chiral+YY2_chiral, tini)
 !
 !  fidelity factor
 !
