@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.128 2006-12-23 18:58:40 theine Exp $
+! $Id: radiation_ray.f90,v 1.129 2006-12-27 07:48:18 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -84,6 +84,7 @@ module Radiation
   real :: kx_kapparho=0.0,ky_kapparho=0.0,kz_kapparho=0.0
   real :: Frad_boundary_ref=0.0
   real :: cdtrad_thin=1., cdtrad_thick=0.8
+  real :: scalefactor_Srad=1.
 !
 !  Default values for one pair of vertical rays
 !
@@ -113,7 +114,8 @@ module Radiation
        Srad_const,amplSrad,radius_Srad, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lradflux, &
-       Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus
+       Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus, &
+       scalefactor_Srad
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
@@ -123,7 +125,8 @@ module Radiation
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure, &
        Frad_boundary_ref,lrad_cool_diffus,lrad_pres_diffus, &
-       cdtrad_thin,cdtrad_thick
+       cdtrad_thin,cdtrad_thick, &
+       scalefactor_Srad
 
   contains
 
@@ -177,7 +180,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.128 2006-12-23 18:58:40 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.129 2006-12-27 07:48:18 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1247,7 +1250,7 @@ module Radiation
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnTT=lnTT)
-          Srad(:,m,n)=arad*exp(4*lnTT)
+          Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad
         enddo
         enddo
 

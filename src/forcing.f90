@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.99 2006-12-05 18:50:45 brandenb Exp $
+! $Id: forcing.f90,v 1.100 2006-12-27 07:48:18 brandenb Exp $
 
 module Forcing
 
@@ -74,7 +74,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.99 2006-12-05 18:50:45 brandenb Exp $")
+           "$Id: forcing.f90,v 1.100 2006-12-27 07:48:18 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -2129,44 +2129,18 @@ module Forcing
 !
       integer :: lun
 !
-      if (lroot) print*,'output_persistent_forcing: ', location, tsforce
+      if (lroot) then
+        if (tsforce>=0.) print*,'output_persistent_forcing: ', location, tsforce
+      endif
+!
+!  write details
+!
       write (lun) id_record_FORCING_LOCATION
       write (lun) location
       write (lun) id_record_FORCING_TSFORCE
       write (lun) tsforce
 !
     endsubroutine output_persistent_forcing
-!***********************************************************************
-    subroutine pencil_criteria_forcing()
-!
-!  All pencils that the Density module depends on are specified here.
-!
-!  17-jul-06/axel: coded
-!
-      use Cdata
-!
-      if (lforcing) then
-        if (idiag_rufm/=0) lpenc_diagnos(i_rho)=.true.
-        lpenc_requested(i_rho)=.true.
-        lpenc_requested(i_rho1)=.true.
-      endif
-!
-    endsubroutine pencil_criteria_forcing
-!***********************************************************************
-    subroutine pencil_interdep_forcing(lpencil_in)
-!
-!  Interdependency among pencils from the Density module is specified here.
-!
-!  17-jul-06/axel: coded
-!
-      logical, dimension(npencils) :: lpencil_in
-!
-      if (lforcing) then
-        lpencil_in(i_rho)=.true.
-        lpencil_in(i_rho1)=.true.
-      endif
-!
-    endsubroutine pencil_interdep_forcing
 !***********************************************************************
     subroutine rprint_forcing(lreset,lwrite)
 !
