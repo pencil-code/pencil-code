@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.161 2007-01-02 16:12:08 ajohan Exp $
+! $Id: particles_dust.f90,v 1.162 2007-01-02 17:09:33 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -123,7 +123,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.161 2007-01-02 16:12:08 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.162 2007-01-02 17:09:33 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -181,19 +181,18 @@ module Particles
 !
       if (lstarting) call dist_particles_evenly_procs(npar_loc,ipar)
 !
-!  The inverse stopping time is needed for drag force.
+!  The inverse stopping time is needed for drag force and collisional cooling.
 !
       tausp1=0.0
+      if (tausp/=0.) then
+        tausp1=1/tausp
+      endif
       if (ldragforce_dust_par .or. ldragforce_gas_par) then
-        if (tausp/=0.) then
-          tausp1=1/tausp
-        else
-          if (npar_species==1) then
-            if (iap==0) then  ! Particle_radius module calculates taus independently
-              if (lroot) print*, &
-                  'initialize_particles: drag force must have tausp/=0 !'
-              call fatal_error('initialize_particles','')
-            endif
+        if (tausp==0.0 .and. npar_species==1) then
+          if (iap==0) then  ! Particle_radius module calculates taus independently
+            if (lroot) print*, &
+                'initialize_particles: drag force must have tausp/=0 !'
+            call fatal_error('initialize_particles','')
           endif
         endif
       endif
@@ -215,10 +214,7 @@ module Particles
 !
 !  Inverse friction time is needed for drag force.
 !
-          do jspec=1,npar_species
-            if (tausp_species(jspec)/=0.0) &
-                tausp1_species(jspec)=1/tausp_species(jspec)
-          enddo
+          tausp1_species=1/tausp_species
         endif
 !
 !  If not explicitly set in start.in, the index fence between the particle
@@ -238,6 +234,9 @@ module Particles
         if (lroot) print*, &
             'initialize_particles: Species fences at particle index ', &
             ipar_fence_species
+      else
+        tausp_species=tausp
+        tausp1_species=1/tausp1_species
       endif
 !
 !  Global gas pressure gradient seen from the perspective of the dust.
@@ -1259,6 +1258,9 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_requested(i_epsp)=.true.
         lpenc_requested(i_np)=.true.
       endif
+      if (lcollisional_cooling_rms) then
+        lpenc_requested(i_epsp)=.true.
+      endif
       if (lcollisional_cooling_rms .or. lcollisional_dragforce_cooling) then
         lpenc_requested(i_np)=.true.
         lpenc_requested(i_rho1)=.true.
@@ -2109,7 +2111,7 @@ k_loop:   do while (.not. (k>npar_loc))
             tau_coll1_species(:,jspecies,ispecies) = &
                   vcoll*np_species(:,ispecies)*rhop_tilde*p%rho1 / ( &
                 tausp_species(jspecies)**3/ &
-                (tausp_species(ispecies)**2+tausp_species(jspecies)**2) )
+                (tausp_species(ispecies)+tausp_species(jspecies))**2 )
             where (np_species(:,ispecies)/=0.0) &
               tau_coll1_species(:,ispecies,jspecies)= &
                    tau_coll1_species(:,jspecies,ispecies)*np_species(:,jspecies)/np_species(:,ispecies)
