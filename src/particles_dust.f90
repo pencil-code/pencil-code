@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.159 2006-12-06 14:57:13 wlyra Exp $
+! $Id: particles_dust.f90,v 1.160 2007-01-02 12:53:29 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -50,6 +50,7 @@ module Particles
   logical :: lpar_spec=.false.
   logical :: lcollisional_cooling_rms=.false.
   logical :: lcollisional_cooling_twobody=.false.
+  logical :: lcollisional_dragforce_cooling=.false.
   logical :: ltau_coll_min_courant=.true.
   logical :: lsmooth_dragforce_dust=.false., lsmooth_dragforce_gas=.false.
   logical :: ldragforce_equi_global_eps=.false.
@@ -76,7 +77,7 @@ module Particles
       lcollisional_cooling_twobody, ipar_fence_species, tausp_species, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole, &
-      epsp_friction_increase,lcartesian_mig
+      epsp_friction_increase,lcartesian_mig, lcollisional_dragforce_cooling
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -87,7 +88,7 @@ module Particles
       gravx, gravz, kx_gg, kz_gg, &
       lmigration_redo, tstart_dragforce_par, tstart_grav_par, &
       lparticlemesh_cic, lparticlemesh_tsc, lcollisional_cooling_rms, &
-      lcollisional_cooling_twobody, &
+      lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, epsp_friction_increase
 
@@ -122,7 +123,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.159 2006-12-06 14:57:13 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.160 2007-01-02 12:53:29 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -638,6 +639,23 @@ k_loop:   do while (.not. (k>npar_loc))
       do j=1,ninit
 
         select case(initvvp(j))
+
+        case ('test')
+          fp(    1: 9999,ivpx)=fp(    1: 9999,ivpx)+0.00001
+          fp(    1: 9999,ivpy)=fp(    1: 9999,ivpy)+0.00002
+          fp(    1: 9999,ivpz)=fp(    1: 9999,ivpz)+0.00003
+          fp( 9999:19999,ivpx)=fp( 9999:19999,ivpx)+0.0001
+          fp( 9999:19999,ivpy)=fp( 9999:19999,ivpy)+0.0002
+          fp( 9999:19999,ivpz)=fp( 9999:19999,ivpz)+0.0003
+          fp(19999:29999,ivpx)=fp(19999:29999,ivpx)+0.001
+          fp(19999:29999,ivpy)=fp(19999:29999,ivpy)+0.002
+          fp(19999:29999,ivpz)=fp(19999:29999,ivpz)+0.003
+          fp(29999:39999,ivpx)=fp(29999:39999,ivpx)+0.01
+          fp(29999:39999,ivpy)=fp(29999:39999,ivpy)+0.02
+          fp(29999:39999,ivpz)=fp(29999:39999,ivpz)+0.03
+          fp(39999:49999,ivpx)=fp(39999:49999,ivpx)+0.1
+          fp(39999:49999,ivpy)=fp(39999:49999,ivpy)+0.2
+          fp(39999:49999,ivpz)=fp(39999:49999,ivpz)+0.3
 
         case ('nothing')
           if (lroot.and.j==1) print*, 'init_particles: No particle velocity set'
@@ -1223,9 +1241,9 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_requested(i_epsp)=.true.
         lpenc_requested(i_np)=.true.
       endif
-      if (lcollisional_cooling_rms) then
-        lpenc_requested(i_epsp)=.true.
+      if (lcollisional_cooling_rms .or. lcollisional_dragforce_cooling) then
         lpenc_requested(i_np)=.true.
+        lpenc_requested(i_rho1)=.true.
       endif
 !
       lpenc_diagnos(i_np)=.true.
@@ -1537,8 +1555,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Collisional cooling is in a separate subroutine.
 !
-      if ( (lcollisional_cooling_rms .or. lcollisional_cooling_twobody) .and. &
-          t>=tstart_collisional_cooling) &
+      if ( (lcollisional_cooling_rms .or. lcollisional_cooling_twobody .or. &
+          lcollisional_dragforce_cooling) .and. t>=tstart_collisional_cooling) &
           call collisional_cooling(f,fp,dfp,p,ineargrid)
 !
 !  Contribution of dust particles to time step.
@@ -1893,13 +1911,19 @@ k_loop:   do while (.not. (k>npar_loc))
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
+      real, dimension (nx,npar_species,npar_species) :: tau_coll_species
+      real, dimension (nx,npar_species,npar_species) :: tau_coll1_species
+      real, dimension (nx,3,npar_species) :: vvpm_species
+      real, dimension (nx,npar_species) :: np_species, vpm_species
+      real, dimension (nx,npar_species) :: tau_coll1_tot
       real, dimension (nx,3) :: vvpm
-      real, dimension (nx) :: vpm, tau_coll1, tausp1m
+      real, dimension (nx) :: vpm, tau_coll1, tausp1m, vcoll
       real, dimension (3) :: deltavp_vec, vbar_jk
       real :: deltavp, tau_cool1_par, dt1_cool
       real :: tausp1_par, tausp1_parj, tausp1_park, tausp_parj, tausp_park
       real :: tausp_parj3, tausp_park3
       integer :: j, k, l, ix0
+      integer :: ispecies, jspecies
 !
 !  Add collisional cooling of the rms speed.
 !
@@ -2017,6 +2041,98 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       endif
 !
+!  Treat collisions as a drag force that damps the rms speed at the same
+!  time-scale.
+!
+      if (lcollisional_dragforce_cooling) then
+        if (npar_imn(imn)/=0) then
+          vvpm_species=0.0; vpm_species=0.0; np_species=0.0
+!  Calculate mean velocity and number of particles for each species.
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            ispecies=npar_species*(ipar(k)-1)/npar+1
+            vvpm_species(ix0-nghost,:,ispecies) = &
+                vvpm_species(ix0-nghost,:,ispecies) + fp(k,ivpx:ivpz)
+            np_species(ix0-nghost,ispecies)  = &
+                np_species(ix0-nghost,ispecies) + 1.0
+          enddo
+          do l=1,nx
+            do ispecies=1,npar_species
+              if (np_species(l,ispecies)>1.0) then
+                vvpm_species(l,:,ispecies)=vvpm_species(l,:,ispecies)/np_species(l,ispecies)
+              endif
+            enddo
+          enddo
+!  Calculate rms speed for each species.
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            ispecies=npar_species*(ipar(k)-1)/npar+1
+            vpm_species(ix0-nghost,ispecies) = &
+                vpm_species(ix0-nghost,ispecies) + sqrt( &
+                (fp(k,ivpx)-vvpm_species(ix0-nghost,1,ispecies))**2 + &
+                (fp(k,ivpy)-vvpm_species(ix0-nghost,2,ispecies))**2 + &
+                (fp(k,ivpz)-vvpm_species(ix0-nghost,3,ispecies))**2 )
+          enddo
+          do l=1,nx
+            do ispecies=1,npar_species
+              if (np_species(l,ispecies)>1.0) then
+                vpm_species(l,ispecies)=vpm_species(l,ispecies)/np_species(l,ispecies)
+              endif
+            enddo
+          enddo
+!
+!  Collisional drag force time-scale between particles i and j with R_i < R_j.
+!
+!    tau_ji = tau_j^3/(tau_i+tau_j)^2/(deltav_ij/cs*rhoi/rhog)
+!    tau_ij = tau_ji*rho_j/rho_i
+!
+          do ispecies=1,npar_species; do jspecies=ispecies,npar_species
+            vcoll= &
+                sqrt(vpm_species(:,ispecies)**2+vpm_species(:,ispecies)**2 + &
+                  (vvpm_species(:,1,ispecies)-vvpm_species(:,1,jspecies))**2 + &
+                  (vvpm_species(:,2,ispecies)-vvpm_species(:,2,jspecies))**2 + &
+                  (vvpm_species(:,3,ispecies)-vvpm_species(:,3,jspecies))**2)
+            tau_coll1_species(:,jspecies,ispecies) = &
+                  vcoll*np_species(:,ispecies)*rhop_tilde*p%rho1 / ( &
+                tausp_species(jspecies)**3/ &
+                (tausp_species(ispecies)**2+tausp_species(jspecies)**2) )
+            where (np_species(:,ispecies)/=0.0) &
+              tau_coll1_species(:,ispecies,jspecies)= &
+                   tau_coll1_species(:,jspecies,ispecies)*np_species(:,jspecies)/np_species(:,ispecies)
+          enddo; enddo
+!
+          tau_coll1_tot=0.0
+          do ispecies=1,npar_species; do jspecies=1,npar_species
+            tau_coll1_tot(:,ispecies)=tau_coll1_tot(:,ispecies)+tau_coll1_species(:,ispecies,jspecies)
+          enddo; enddo
+!  Limit inverse time-step of collisional cooling if requested.
+          if (tau_coll_min>0.0) then
+            do ispecies=1,npar_species; do l=1,nx
+              if (tau_coll1_tot(l,ispecies) > tau_coll1_max) then
+                tau_coll1_species(l,ispecies,:)=tau_coll1_species(l,ispecies,:)* &
+                    tau_coll1_max/tau_coll1_tot(l,ispecies)
+              endif
+            enddo; enddo
+            tau_coll1_tot=0.0
+            do ispecies=1,npar_species; do jspecies=1,npar_species
+              tau_coll1_tot(:,ispecies)=tau_coll1_tot(:,ispecies)+tau_coll1_species(:,ispecies,jspecies)
+            enddo; enddo
+          endif
+          do ispecies=1,npar_species
+            dt1_max=max(dt1_max,tau_coll1_tot(:,ispecies)/cdtp)
+          enddo
+!
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            ispecies=npar_species*(ipar(k)-1)/npar+1
+            do jspecies=1,npar_species
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
+                  tau_coll1_species(ix0-nghost,ispecies,jspecies)* &
+                  (fp(k,ivpx:ivpz)-vvpm_species(ix0-nghost,:,jspecies))
+            enddo
+          enddo
+        endif
+      endif
     endsubroutine collisional_cooling
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
