@@ -3,7 +3,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.4 2007-01-02 00:52:10 mee Exp $'
+  cvsid='$Id: start.in,v 1.1 2007-01-02 00:52:10 mee Exp $'
   xyz0  =-750., 0.0, 0.0,      ! first corner of box
   xyz1  = 50., 1.0, 1.0,      ! box size
   lperi = F , T , T,          ! periodic direction?
