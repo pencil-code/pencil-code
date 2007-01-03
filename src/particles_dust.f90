@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.164 2007-01-03 13:53:17 ajohan Exp $
+! $Id: particles_dust.f90,v 1.165 2007-01-03 14:12:29 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -46,7 +46,7 @@ module Particles
   real :: coeff_restitution=0.5
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer, dimension (npar_species) :: ipar_fence_species=0
-  logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.false.
+  logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
   logical :: lpar_spec=.false.
   logical :: lcollisional_cooling_rms=.false.
   logical :: lcollisional_cooling_twobody=.false.
@@ -100,7 +100,7 @@ module Particles
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
   integer :: idiag_rhoptilm=0, idiag_dtdragp=0, idiag_nparmax=0
   integer :: idiag_rhopm=0, idiag_rhoprms=0, idiag_rhop2m=0, idiag_rhopmax=0
-  integer :: idiag_rhopmin=0
+  integer :: idiag_rhopmin=0, idiag_decollp=0
   integer :: idiag_npmx=0, idiag_npmy=0, idiag_npmz=0
   integer :: idiag_rhopmx=0, idiag_rhopmy=0, idiag_rhopmz=0
   integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
@@ -123,7 +123,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.164 2007-01-03 13:53:17 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.165 2007-01-03 14:12:29 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1937,7 +1937,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (3) :: deltavp_vec, vbar_jk
       real :: deltavp, tau_cool1_par, dt1_cool
       real :: tausp1_par, tausp1_parj, tausp1_park, tausp_parj, tausp_park
-      real :: tausp_parj3, tausp_park3
+      real :: tausp_parj3, tausp_park3, decollp=0.0
       integer :: j, k, l, ix0
       integer :: ispecies, jspecies
 !
@@ -2137,7 +2137,7 @@ k_loop:   do while (.not. (k>npar_loc))
           do ispecies=1,npar_species
             dt1_max=max(dt1_max,tau_coll1_tot(:,ispecies)/cdtp)
           enddo
-!
+!  Add to equation of motion.
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
             ispecies=npar_species*(ipar(k)-1)/npar+1
@@ -2145,7 +2145,19 @@ k_loop:   do while (.not. (k>npar_loc))
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
                   tau_coll1_species(ix0-nghost,ispecies,jspecies)* &
                   (fp(k,ivpx:ivpz)-vvpm_species(ix0-nghost,:,jspecies))
+              if (ldiagnos) then
+                decollp = decollp - &  ! Energy dissipation by collisions.
+                    rhop_tilde*tau_coll1_species(ix0-nghost,ispecies,jspecies)*&
+                    sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz) - &
+                                         vvpm_species(ix0-nghost,:,jspecies)))
+              endif
             enddo
+!  Diagnostics.
+            if (ldiagnos) then
+              if (idiag_decollp/=0) &
+                  call sum_par_name((/decollp/),idiag_decollp)
+                decollp=0.0
+            endif
           enddo
         endif
       endif
@@ -2253,7 +2265,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
         idiag_rhoptilm=0; idiag_dtdragp=0; idiag_dedragp=0
         idiag_rhopm=0; idiag_rhoprms=0; idiag_rhop2m=0; idiag_rhopmax=0
-        idiag_rhopmin=0
+        idiag_rhopmin=0; idiag_decollp=0;
         idiag_nparmax=0; idiag_nmigmax=0; idiag_mpt=0
         idiag_npmx=0; idiag_npmy=0; idiag_npmz=0
         idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
@@ -2297,6 +2309,8 @@ k_loop:   do while (.not. (k>npar_loc))
             'rhoptilm',idiag_rhoptilm)
         call parse_name(iname,cname(iname),cform(iname), &
             'dedragp',idiag_dedragp)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'decollp',idiag_decollp)
       enddo
 !
 !  check for those quantities for which we want x-averages
