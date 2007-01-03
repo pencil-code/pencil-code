@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.163 2007-01-03 05:38:58 ajohan Exp $
+! $Id: particles_dust.f90,v 1.164 2007-01-03 13:53:17 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -123,7 +123,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.163 2007-01-03 05:38:58 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.164 2007-01-03 13:53:17 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -214,7 +214,7 @@ module Particles
 !
 !  Inverse friction time is needed for drag force.
 !
-          tausp1_species=1/tausp_species
+          where (tausp_species/=0.0) tausp1_species=1/tausp_species
         endif
 !
 !  If not explicitly set in start.in, the index fence between the particle
