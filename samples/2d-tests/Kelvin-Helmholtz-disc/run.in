@@ -2,7 +2,7 @@
 !  Run parameters for Kelvin-Helmholtz turbulence.
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.7 2006-10-09 12:34:15 ajohan Exp $',
+  cvsid='$Id: run.in,v 1.8 2007-01-03 05:36:58 ajohan Exp $',
   nt=20, it1=5, cdt=0.4, cdtv=0.80, isave=1000, itorder=3
   dsnap=1.0, dvid=0.01, dtmin=1e-6, isaveglobal=1000
   lpencil_check=T
@@ -27,6 +27,6 @@
   nu_hyper3=3.0e-18, ivisc='hyper3_rho_nu-const'
 /
 &particles_run_pars
-  ldragforce_gas_par=T
+  ldragforce_dust_par=T, ldragforce_gas_par=T
   cdtp=0.2
 /
