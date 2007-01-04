@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.165 2007-01-03 14:12:29 ajohan Exp $
+! $Id: particles_dust.f90,v 1.166 2007-01-04 07:05:08 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -46,7 +46,7 @@ module Particles
   real :: coeff_restitution=0.5
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer, dimension (npar_species) :: ipar_fence_species=0
-  logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
+  logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: lpar_spec=.false.
   logical :: lcollisional_cooling_rms=.false.
   logical :: lcollisional_cooling_twobody=.false.
@@ -123,7 +123,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.165 2007-01-03 14:12:29 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.166 2007-01-04 07:05:08 ajohan Exp $")
 !
 !  Indices for particle position.
 !
