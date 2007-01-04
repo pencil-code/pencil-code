@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.166 2007-01-04 07:05:08 ajohan Exp $
+! $Id: particles_dust.f90,v 1.167 2007-01-04 13:50:10 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -123,7 +123,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.166 2007-01-04 07:05:08 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.167 2007-01-04 13:50:10 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -235,8 +235,8 @@ module Particles
             'initialize_particles: Species fences at particle index ', &
             ipar_fence_species
       else
-        tausp_species=tausp
-        tausp1_species=1/tausp1_species
+        tausp_species(1)=tausp
+        if (tausp_species(1)/=0.0) tausp1_species=1/tausp1_species
       endif
 !
 !  Global gas pressure gradient seen from the perspective of the dust.
