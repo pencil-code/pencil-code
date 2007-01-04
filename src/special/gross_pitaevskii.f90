@@ -1,4 +1,4 @@
-! $Id: gross_pitaevskii.f90,v 1.8 2006-08-23 16:53:33 mee Exp $
+! $Id: gross_pitaevskii.f90,v 1.9 2007-01-04 18:11:38 dobler Exp $
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
 !
@@ -178,15 +178,15 @@ module Special
       ipsi_imag = nvar+1             ! index to access imaginary part of psi
       nvar = nvar+1
 !
-!      iSPECIAL_AUXILLIARY_VARIABLE_INDEX = naux+1             ! index to access entropy
+!      iSPECIAL_AUXILIARY_VARIABLE_INDEX = naux+1             ! index to access entropy
 !      naux = naux+1
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.8 2006-08-23 16:53:33 mee Exp $ 
+!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.9 2007-01-04 18:11:38 dobler Exp $ 
 !  when the file in committed to a CVS repository.
 !
-      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.8 2006-08-23 16:53:33 mee Exp $")
+      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.9 2007-01-04 18:11:38 dobler Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
 !  been configured in a custom module but they do no harm)

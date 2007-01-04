@@ -1,9 +1,9 @@
-! $Id: farray.f90,v 1.13 2006-11-30 14:17:56 mee Exp $
+! $Id: farray.f90,v 1.14 2007-01-04 18:11:37 dobler Exp $
 !
 !  This module allocates and manages indices in the f-array
-!  in a controlled way.  THis includes handling different
+!  in a controlled way.  This includes handling different
 !  types of variable that may be stored in the f-array like
-!  PDE variables, auxilliaries, communicated auxilliaries
+!  PDE variables, auxiliaries, communicated auxiliaries
 !  and global variables.
 !
 !  The code follows the similar principles to the SharedVariables
@@ -267,7 +267,7 @@ module FArrayManager
             print*,"Registering f-array communicated auxiliary variable: ",varname
             call fatal_error("farray_register_variable", &
           "There are insufficient maux_com variables allocated.  This either means "//&
-          "the COMMUNICATED AUXILLIARIES header is incorrect in one of the physics "// &
+          "the COMMUNICATED AUXILIARIES header is incorrect in one of the physics "// &
           "modules. Or that there you are using some code that can, depending "// &
           "on runtime parameters, require extra auxiliary variables.  For the "// &
           "latter try adding an MAUX CONTRIBUTION and COMMUNICATED AUXILIARIES "// &

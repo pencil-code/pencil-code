@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.51 2006-12-24 17:02:44 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.52 2007-01-04 18:11:38 dobler Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -174,16 +174,16 @@ module Special
 !      iSPECIAL_VARIABLE_INDEX = nvar+1             ! index to access entropy
 !      nvar = nvar+1
 !
-!      iSPECIAL_AUXILLIARY_VARIABLE_INDEX = naux+1             ! index to access entropy
+!      iSPECIAL_AUXILIARY_VARIABLE_INDEX = naux+1             ! index to access entropy
 !      naux = naux+1
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.51 2006-12-24 17:02:44 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.52 2007-01-04 18:11:38 dobler Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.51 2006-12-24 17:02:44 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.52 2007-01-04 18:11:38 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
