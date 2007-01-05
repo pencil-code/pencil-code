@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.14 2007-01-04 18:11:37 dobler Exp $
+! $Id: farray.f90,v 1.15 2007-01-05 19:53:27 dobler Exp $
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  This includes handling different
@@ -153,11 +153,11 @@ module FArrayManager
       intent(in)  :: varname,communicated,vector
       intent(out) :: ivar,ierr
 
+      vartype = iFARRAY_TYPE_AUXILIARY
+      ! ... unless
       if (present(communicated)) then
         if (communicated) then
           vartype=iFARRAY_TYPE_COMM_AUXILIARY
-        else
-          vartype=iFARRAY_TYPE_AUXILIARY
         endif
       endif
 
