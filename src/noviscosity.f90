@@ -1,4 +1,4 @@
-! $Id: noviscosity.f90,v 1.9 2006-11-30 09:03:36 dobler Exp $
+! $Id: noviscosity.f90,v 1.10 2007-01-05 20:08:58 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -61,7 +61,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noviscosity.f90,v 1.9 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: noviscosity.f90,v 1.10 2007-01-05 20:08:58 dobler Exp $")
 
     endsubroutine register_viscosity
 !***********************************************************************
@@ -172,7 +172,7 @@ module Viscosity
 !
     endsubroutine calc_viscosity
 !!***********************************************************************
-    subroutine calc_viscous_heat(df,p,Hmax)
+    subroutine calc_viscous_heat(f,df,p,Hmax)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -180,7 +180,8 @@ module Viscosity
 !
       use Cdata
 
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar)    :: df
       type (pencil_case) :: p
 !
       real, dimension (nx) :: Hmax

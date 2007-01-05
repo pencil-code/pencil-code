@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.18 2006-11-30 09:03:35 dobler Exp $
+! $Id: entropy_onefluid.f90,v 1.19 2007-01-05 20:08:58 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.18 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: entropy_onefluid.f90,v 1.19 2007-01-05 20:08:58 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1674,7 +1674,7 @@ module Entropy
 !
 !  Calculate viscous contribution to entropy
 !
-      if (lviscosity) call calc_viscous_heat(df,p,Hmax)
+      if (lviscosity) call calc_viscous_heat(f,df,p,Hmax)
 !
 !  thermal conduction
 !

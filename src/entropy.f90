@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.462 2006-12-04 11:29:41 wlyra Exp $
+! $Id: entropy.f90,v 1.463 2007-01-05 20:08:58 dobler Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -164,7 +164,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.462 2006-12-04 11:29:41 wlyra Exp $")
+           "$Id: entropy.f90,v 1.463 2007-01-05 20:08:58 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1777,7 +1777,7 @@ module Entropy
 !  Calculate viscous contribution to entropy
 !
       if (lviscosity) then
-         if (lviscosity_heat)   call calc_viscous_heat(df,p,Hmax)
+         if (lviscosity_heat)   call calc_viscous_heat(f,df,p,Hmax)
       endif
 !
 !  thermal conduction

@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.41 2006-12-16 18:49:49 theine Exp $
+! $Id: viscosity.f90,v 1.42 2007-01-05 20:08:58 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -21,6 +21,7 @@ module Viscosity
   use Cparam
   use Cdata
   use Messages
+  use Sub, only: keep_compiler_quiet
 
   implicit none
 
@@ -48,6 +49,7 @@ module Viscosity
   logical :: lvisc_smag_simplified=.false.
   logical :: lvisc_smag_cross_simplified=.false.
   logical :: lvisc_snr_damp=.false.
+  logical :: lvisc_heat_as_aux
 
   ! input parameters
   !integer :: dummy1
@@ -55,7 +57,8 @@ module Viscosity
 
   ! run parameters
   namelist /viscosity_run_pars/ &
-      nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, nuvec_hyper3
+      nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
+      nuvec_hyper3, lvisc_heat_as_aux
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_epsK=0,idiag_epsK2=0,idiag_epsK_LES=0
@@ -86,16 +89,12 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.41 2006-12-16 18:49:49 theine Exp $")
+           "$Id: viscosity.f90,v 1.42 2007-01-05 20:08:58 dobler Exp $")
 
       ivisc(1)='nu-const'
-
-! Following test unnecessary as no extra variable is evolved
 !
-!      if (nvar > mvar) then
-!        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-!        call stop_it('Register_viscosity: nvar > mvar')
-!      endif
+!  register an extra aux slot for dissipation rate if requested (so
+!  visc_heat is written sto snapshots and can be easily analyzed later)
 !
     endsubroutine register_viscosity
 !***********************************************************************
@@ -105,6 +104,7 @@ module Viscosity
 !
       use Cdata
       use Mpicomm, only: stop_it
+      use FArrayManager
 
       logical, intent(in) :: lstarting
       integer :: i
@@ -219,7 +219,11 @@ module Viscosity
             'Viscosity coefficient nu_shock is zero!')
       endif
 !
-      if (NO_WARN) print*, lstarting
+      if (lvisc_heat_as_aux) then
+         call farray_register_auxiliary('visc_heat',ivisc_heat)
+      endif
+!
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_viscosity
 !***********************************************************************
@@ -687,7 +691,7 @@ module Viscosity
 !
     endsubroutine calc_viscosity
 !***********************************************************************
-    subroutine calc_viscous_heat(df,p,Hmax)
+    subroutine calc_viscous_heat(f,df,p,Hmax)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -697,7 +701,8 @@ module Viscosity
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar)    :: df
       type (pencil_case) :: p
 !
       real, dimension (nx) :: Hmax
@@ -717,7 +722,13 @@ module Viscosity
 !
       if (lfirst .and. ldt) Hmax=Hmax+p%visc_heat
 !
-      if(NO_WARN) print*,p  !(keep compiler quiet)
+!  Store viscout heating rate in auxliliary variable if requested.
+!  Just neccessary immediately before writing snapshots, but how would we
+!  know we are?
+!
+      if (lvisc_heat_as_aux) then
+        f(l1:l2,m,n,ivisc_heat) = p%visc_heat
+      endif
 !
     endsubroutine calc_viscous_heat
 !***********************************************************************

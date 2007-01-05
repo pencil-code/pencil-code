@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.28 2006-11-30 09:03:36 dobler Exp $
+! $Id: temperature_ionization.f90,v 1.29 2007-01-05 20:08:58 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -89,7 +89,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.28 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: temperature_ionization.f90,v 1.29 2007-01-05 20:08:58 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -438,7 +438,7 @@ module Entropy
 !
 !  Calculate viscous contribution to temperature
 !
-      if (lviscosity) call calc_viscous_heat(df,p,Hmax)
+      if (lviscosity) call calc_viscous_heat(f,df,p,Hmax)
 
 !
 !  Various heating/cooling mechanisms
