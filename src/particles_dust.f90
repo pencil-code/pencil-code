@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.169 2007-01-05 06:31:15 ajohan Exp $
+! $Id: particles_dust.f90,v 1.170 2007-01-05 07:04:18 dobler Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -123,7 +123,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.169 2007-01-05 06:31:15 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.170 2007-01-05 07:04:18 dobler Exp $")
 !
 !  Indices for particle position.
 !
@@ -351,8 +351,9 @@ module Particles
       real :: vpx_sum, vpy_sum, vpz_sum
       real :: r, p, px, py, pz, eps, cs, k2_xxp
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
-      real :: rad,rad2,phi,OO
+      real :: rad,rad2,phi,OO,fact
       integer :: l, j, k, ix0, iy0, iz0
+      integer :: igroup, idx_min, idx_max
       logical :: lequidistant=.false.
 !
       intent (out) :: f, fp, ineargrid
@@ -662,21 +663,30 @@ k_loop:   do while (.not. (k>npar_loc))
         select case(initvvp(j))
 
         case ('test')
-          fp(    1: 9999,ivpx)=fp(    1: 9999,ivpx)+0.00001
-          fp(    1: 9999,ivpy)=fp(    1: 9999,ivpy)+0.00002
-          fp(    1: 9999,ivpz)=fp(    1: 9999,ivpz)+0.00003
-          fp( 9999:19999,ivpx)=fp( 9999:19999,ivpx)+0.0001
-          fp( 9999:19999,ivpy)=fp( 9999:19999,ivpy)+0.0002
-          fp( 9999:19999,ivpz)=fp( 9999:19999,ivpz)+0.0003
-          fp(19999:29999,ivpx)=fp(19999:29999,ivpx)+0.001
-          fp(19999:29999,ivpy)=fp(19999:29999,ivpy)+0.002
-          fp(19999:29999,ivpz)=fp(19999:29999,ivpz)+0.003
-          fp(29999:39999,ivpx)=fp(29999:39999,ivpx)+0.01
-          fp(29999:39999,ivpy)=fp(29999:39999,ivpy)+0.02
-          fp(29999:39999,ivpz)=fp(29999:39999,ivpz)+0.03
-          fp(39999:49999,ivpx)=fp(39999:49999,ivpx)+0.1
-          fp(39999:49999,ivpy)=fp(39999:49999,ivpy)+0.2
-          fp(39999:49999,ivpz)=fp(39999:49999,ivpz)+0.3
+!           fp(    1: 9999,ivpx)=fp(    1: 9999,ivpx)+0.00001
+!           fp(    1: 9999,ivpy)=fp(    1: 9999,ivpy)+0.00002
+!           fp(    1: 9999,ivpz)=fp(    1: 9999,ivpz)+0.00003
+!           fp( 9999:19999,ivpx)=fp( 9999:19999,ivpx)+0.0001
+!           fp( 9999:19999,ivpy)=fp( 9999:19999,ivpy)+0.0002
+!           fp( 9999:19999,ivpz)=fp( 9999:19999,ivpz)+0.0003
+!           fp(19999:29999,ivpx)=fp(19999:29999,ivpx)+0.001
+!           fp(19999:29999,ivpy)=fp(19999:29999,ivpy)+0.002
+!           fp(19999:29999,ivpz)=fp(19999:29999,ivpz)+0.003
+!           fp(29999:39999,ivpx)=fp(29999:39999,ivpx)+0.01
+!           fp(29999:39999,ivpy)=fp(29999:39999,ivpy)+0.02
+!           fp(29999:39999,ivpz)=fp(29999:39999,ivpz)+0.03
+!           fp(39999:49999,ivpx)=fp(39999:49999,ivpx)+0.1
+!           fp(39999:49999,ivpy)=fp(39999:49999,ivpy)+0.2
+!           fp(39999:49999,ivpz)=fp(39999:49999,ivpz)+0.3
+          fact = 0.00001
+          do igroup=1,5
+            idx_min = max( (igroup-1)*10000 - 1, 1)
+            idx_max =       igroup   *10000 - 1
+            fp(idx_min:idx_max,ivpx) = fp(idx_min:idx_max,ivpx) + 1*fact 
+            fp(idx_min:idx_max,ivpy) = fp(idx_min:idx_max,ivpy) + 2*fact 
+            fp(idx_min:idx_max,ivpz) = fp(idx_min:idx_max,ivpz) + 3*fact 
+            fact = fact*10
+          enddo
 
         case ('nothing')
           if (lroot.and.j==1) print*, 'init_particles: No particle velocity set'
