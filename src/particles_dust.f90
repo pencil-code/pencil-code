@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.168 2007-01-05 05:34:22 dobler Exp $
+! $Id: particles_dust.f90,v 1.169 2007-01-05 06:31:15 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -123,7 +123,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.168 2007-01-05 05:34:22 dobler Exp $")
+           "$Id: particles_dust.f90,v 1.169 2007-01-05 06:31:15 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -214,7 +214,10 @@ module Particles
 !
 !  Inverse friction time is needed for drag force.
 !
-          tausp1_species = 1 / max(tausp_species,tini)
+          do jspec=1,npar_species
+            if (tausp_species(jspec)/=0.0) &
+                tausp1_species(jspec)=1/tausp_species(jspec)
+          enddo
         endif
 !
 !  If not explicitly set in start.in, the index fence between the particle
@@ -236,7 +239,8 @@ module Particles
             ipar_fence_species
       else
         tausp_species(1)=tausp
-        tausp1_species = 1 / max(tausp1_species,tini)
+        if (tausp_species(1)/=0.0) &
+            tausp1_species(1)=1/tausp_species(1)
       endif
 !
 !  Global gas pressure gradient seen from the perspective of the dust.
