@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.463 2007-01-05 20:08:58 dobler Exp $
+! $Id: entropy.f90,v 1.464 2007-01-09 12:32:28 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -113,7 +113,8 @@ module Entropy
       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
       T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy, &
-      lviscosity_heat,r_bcz
+      lviscosity_heat, &
+      r_bcz,luminosity,wheat,hcond0
   ! run parameters
   namelist /entropy_run_pars/ &
       hcond0,hcond1,hcond2,widthss,borderss, &
@@ -164,7 +165,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.463 2007-01-05 20:08:58 dobler Exp $")
+           "$Id: entropy.f90,v 1.464 2007-01-09 12:32:28 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -180,10 +181,11 @@ module Entropy
       use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
                                  beta_glnrho_global, beta_glnrho_scaled, &
                                  mpoly, mpoly0, mpoly1, mpoly2, &
-                                 select_eos_variable
+                                 select_eos_variable,gamma,gamma1
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
+      real, dimension (nx) :: aa=0.
 !
       real :: beta1,cp1,lnrho_dummy=0.
       real :: beta0,TT_crit
@@ -192,6 +194,10 @@ module Entropy
       type (pencil_case) :: p
       real, dimension (nx) :: hcond
       real, dimension (nx,3) :: glhc
+      real :: r_mn,flumi,g_r,u
+      real, dimension (3) :: gg_mn=0.
+      integer :: imn,l
+      integer, pointer :: iglobal_gg
 !
 ! Check any module dependencies
 !
@@ -391,6 +397,13 @@ module Entropy
           call get_soundspeed(log(TT_int),cs2_int)
           cs2cool=cs2_ext
 !
+        case('star_heat')
+          if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
+          TT_ext=T0
+          call get_soundspeed(log(TT_ext),cs2_ext)
+          cs2cool=cs2_ext
+          call star_heat_grav(f)
+
       endselect
 !
 !  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
@@ -819,6 +832,13 @@ module Entropy
           !
           call information('init_ss',' two polytropic layers in a spherical shell')
           call shell_ss_layers(f)
+
+        case ('star_heat')
+          !
+          ! radial temperature profiles for spherical shell problem
+          !
+          call information('init_ss',' two polytropic layers with heat')
+          call star_heat(f)
 
         case ('polytropic_simple')
           !
@@ -2362,7 +2382,8 @@ module Entropy
 !
 !  write z-profile (for post-processing)
 !
-      if (headt .and. lfirst .and. lgravz) call write_zprof('hcond',hcond)
+!     if (headt .and. lfirst .and. lgravz) call write_zprof('hcond',hcond)
+      if (lfirst) call write_zprof('hcond',hcond)
 !
 !  Write radiative flux array
 !
@@ -3221,5 +3242,129 @@ module Entropy
       enddo
 !
     endsubroutine shell_ss_layers
+!***********************************************************************
+    subroutine star_heat(f)
+!
+!  Initialize entropy for two superposed polytropes with a central heating
+!
+!  20-dec-06/dintrans: coded
+!
+    use Cdata
+    use EquationOfState, only: gamma, gamma1, mpoly0, mpoly1, lnrho0
+    use Sub, only: step
+
+    real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+    real, dimension (3) :: gg_mn=0.
+    integer :: i,nr,imn,istop,l,i1,i2
+    integer, pointer :: iglobal_gg
+    parameter (nr=32)
+    real, dimension (nr) :: r,eps,flumi,hcond,grav,temp,lnrho,ss,c1
+    real :: dtemp,dlnrho,dss,dr,u,r_mn,g_r,lnrho_r,ss_r
+
+    do i=1,nr
+!     r(i)=r_ext*float(i-1)/(nr-1)
+      r(i)=xyz1(1)*float(i-1)/(nr-1)
+    enddo
+
+    flumi(1)=0.
+    do i=2,nr
+      u=r(i)/sqrt(2.)/wheat
+      flumi(i)=luminosity*(erf(u)-2.*u/sqrt(pi)*exp(-u**2))
+    enddo
+
+    hcond1=(mpoly1+1.)/(mpoly0+1.)
+    hcond=1.+(hcond1-1.)*step(r,r_bcz,-widthss)
+    hcond=hcond0*hcond
+
+    temp(nr)=1. ; lnrho(nr)=0. ; ss(nr)=0.
+    dr=r(2)
+    do i=nr-1,1,-1
+      dtemp=flumi(i+1)/(4.*pi*r(i+1)**2)/hcond(i+1)
+      if (r(i+1) .gt. r_bcz) then
+        dlnrho=mpoly0*dtemp
+        dss=dtemp*((mpoly0+1.)/gamma-mpoly0)
+      else
+        dlnrho=mpoly1*dtemp
+        dss=dtemp*((mpoly1+1.)/gamma-mpoly1)
+      endif
+      temp(i)=temp(i+1)+dtemp*dr
+      lnrho(i)=lnrho(i+1)+dlnrho*dr
+      ss(i)=ss(i+1)+dss*dr
+    enddo 
+
+    do imn=1,ny*nz
+      n=nn(imn)
+      m=mm(imn)
+!
+      do l=l1,l2
+        r_mn=sqrt(x(l)**2+y(m)**2+z(n)**2)
+        if (r_mn > r_ext) then
+          lnrho_r=lnrho(nr)
+          ss_r=ss(nr)
+        else
+          istop=0 ; i=1
+          do while (istop .ne. 1)
+            if (r(i) >= r_mn) istop=1
+            i=i+1
+          enddo
+          i1=i-2 ; i2=i-1
+          lnrho_r=(lnrho(i1)*(r(i2)-r_mn)+lnrho(i2)*(r_mn-r(i1)))/(r(i2)-r(i1))
+          ss_r=(ss(i1)*(r(i2)-r_mn)+ss(i2)*(r_mn-r(i1)))/(r(i2)-r(i1))
+        endif
+        f(l,m,n,ilnrho)=lnrho_r
+        f(l,m,n,iss)=ss_r
+      enddo
+    enddo
+!
+    print*,'--> write in data/model'
+    open(unit=1,file='data/model',status='unknown')
+    write(1,'(6a12)') 'r','lumi','hcond','temp','rho','ss'
+    do i=1,nr
+      write(1,'(6e12.3)') r(i),flumi(i),hcond(i),temp(i),exp(lnrho(i)),ss(i)
+    enddo
+    close(1)
+
+    endsubroutine star_heat
+!***********************************************************************
+    subroutine star_heat_grav(f)
+!
+!  Initialize the gravity for two superposed polytropes with a central heating
+!
+!  20-dec-06/dintrans: coded
+!
+    use Cdata
+    use EquationOfState, only: gamma, gamma1, mpoly0
+    use Sub
+    use IO
+    use FArrayManager
+
+    integer :: imn,m,n
+    integer, pointer :: iglobal_gg
+    real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+    real, dimension (nx,3) :: gg_mn=0.
+    real, dimension (nx) :: rr_mn,u_mn,lumi_mn,g_r
+
+    call farray_use_global('gg',iglobal_gg)
+    print*,'**************************************************'
+    print*,'star_heat_grav: luminosity,wheat,hcond0,iglobal_gg=',luminosity,wheat, &
+            hcond0,iglobal_gg
+    print*,'**************************************************'
+
+    do imn=1,ny*nz
+      n=nn(imn)
+      m=mm(imn)
+      rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+!
+      u_mn=rr_mn/sqrt(2.)/wheat
+      lumi_mn=luminosity*(erf(u_mn)-2.*u_mn/sqrt(pi)*exp(-u_mn**2))
+      g_r=-lumi_mn/(4.*pi*rr_mn**2)*gamma1/gamma*(mpoly0+1.)/hcond0
+      gg_mn(:,1)=x(l1:l2)/rr_mn*g_r
+      gg_mn(:,2)=y(m)/rr_mn*g_r
+      gg_mn(:,3)=z(n)/rr_mn*g_r
+      f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
+!     call output_pencil(trim(directory)//'/grav.dat',gg_mn,3)
+    enddo
+!
+    endsubroutine star_heat_grav
 !***********************************************************************
 endmodule Entropy
