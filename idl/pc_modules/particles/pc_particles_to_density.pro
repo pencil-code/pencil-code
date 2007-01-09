@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.20 2006-12-12 14:36:54 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.21 2007-01-09 12:19:13 ajohan Exp $
 ;
 ;  Convert positions of particles to a grid density field.
 ;
@@ -92,24 +92,13 @@ endif
 ;  without ghost zones, add the ghost zones automatically.
 if (cic or tsc) then begin
   nghost=1
-  if (nx ne 1) then begin
-    mx=nx+2*nghost
-    l1=nghost & l2=l1+nx-1
-  endif else begin
-    l1=0 & l2=0
-  endelse
-  if (ny ne 1) then begin
-    my=ny+2*nghost
-    m1=nghost & m2=m1+ny-1
-  endif else begin
-    m1=0 & m2=0
-  endelse
-  if (nz ne 1) then begin
-    mz=nz+2*nghost
-    n1=nghost & n2=n1+nz-1
-  endif else begin
-    n1=0 & n2=0
-  endelse
+
+  mx=nx+2*nghost
+  l1=nghost & l2=l1+nx-1
+  my=ny+2*nghost
+  m1=nghost & m2=m1+ny-1
+  mz=nz+2*nghost
+  n1=nghost & n2=n1+nz-1
 
   if (nx ne 1) then begin
     x2=fltarr(mx)*one
@@ -139,7 +128,7 @@ endif
 ;
 ;  Define density and velocity dispersion arrays.
 ;
-np=fltarr(nx,ny,nz)*one
+np=fltarr(mx,my,mz)*one
 
 if (keyword_set(vprms)) then begin
   vvpm=fltarr(nx,ny,nz,3)*one
@@ -172,12 +161,12 @@ case interpolation_scheme of
       ix = round((xxp[k,0]-x[0])*dx_1)
       iy = round((xxp[k,1]-y[0])*dy_1)
       iz = round((xxp[k,2]-z[0])*dz_1)
-      if (ix eq nx) then ix=ix-1
-      if (iy eq ny) then iy=iy-1
-      if (iz eq nz) then iz=iz-1
-      if (ix eq -1) then ix=0
-      if (iy eq -1) then iy=0
-      if (iz eq -1) then iz=0
+      if (ix gt l2) then ix=l2
+      if (ix lt l1) then ix=l1
+      if (iy gt m2) then iy=m2
+      if (iy lt m1) then iy=m1
+      if (iz gt n2) then iz=n2
+      if (iz lt n1) then iz=n1
       ineargrid[k,*]=[ix,iy,iz]
 ;
 ;  Particles are assigned to the nearest grid point.
@@ -251,12 +240,12 @@ case interpolation_scheme of
       ix0 = round((xxp[k,0]-x[0])*dx_1)
       iy0 = round((xxp[k,1]-y[0])*dy_1)
       iz0 = round((xxp[k,2]-z[0])*dz_1)
-      if (ix0 eq nx) then ix0=ix0-1
-      if (iy0 eq ny) then iy0=iy0-1
-      if (iz0 eq nz) then iz0=iz0-1
-      if (ix0 eq -1) then ix0=0
-      if (iy0 eq -1) then iy0=0
-      if (iz0 eq -1) then iz0=0
+      if (ix0 gt l2) then ix0=l2
+      if (ix0 lt l1) then ix0=l1
+      if (iy0 gt m2) then iy0=m2
+      if (iy0 lt m1) then iy0=m1
+      if (iz0 gt n2) then iz0=n2
+      if (iz0 lt n1) then iz0=n1
 ;  Find lower grid point in surrounding grid points.        
       if ( (x[ix0] gt xxp[k,0]) and (nx ne 1) ) then ix0=ix0-1
       if ( (y[iy0] gt xxp[k,1]) and (ny ne 1) ) then iy0=iy0-1
@@ -289,8 +278,8 @@ case interpolation_scheme of
       ix0=l1 & iy0=m1 & iz0=n1
       if (nx ne 1) then begin
         ix0 = round((xxp[k,0]-x[0])*dx_1)
-        if (ix0 eq mx-1) then ix0=ix0-1
-        if (ix0 eq -1) then ix0=0
+        if (ix0 gt l2) then ix0=l2
+        if (ix0 lt l1) then ix0=l1
 ;  Each particle affects its nearest grid point and the two neighbours of that
 ;  grid point in all directions.
         ixx0=ix0-1 & ixx1=ix0+1
@@ -299,16 +288,16 @@ case interpolation_scheme of
       endelse
       if (ny ne 1) then begin
         iy0 = round((xxp[k,1]-y[0])*dy_1)
-        if (iy0 eq my-1) then iy0=iy0-1
-        if (iy0 eq -1) then iy0=0
+        if (iy0 gt m2) then iy0=m2
+        if (iy0 lt m1) then iy0=m1
         iyy0=iy0-1 & iyy1=iy0+1
       endif else begin
         iyy0=iy0 & iyy1=iy0
       endelse
       if (nz ne 1) then begin
         iz0 = round((xxp[k,2]-z[0])*dz_1)
-        if (iz0 eq mz-1) then iz0=iz0-1
-        if (iz0 eq -1) then iz0=0
+        if (iz0 gt n2) then iz0=n2
+        if (iz0 lt n1) then iz0=n1
         izz0=iz0-1 & izz1=iz0+1
       endif else begin
         izz0=iz0 & izz1=iz0
