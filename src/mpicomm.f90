@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.204 2006-12-20 23:52:03 dobler Exp $
+! $Id: mpicomm.f90,v 1.205 2007-01-09 12:16:02 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -348,14 +348,14 @@ module Mpicomm
         lbufyo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n2,ivar1:ivar2) !!(lower y-zone)
         ubufyo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n2,ivar1:ivar2) !!(upper y-zone)
         nbufy=mx*nz*nghost*(ivar2-ivar1+1)
-        call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy,MPI_COMM_WORLD, &
-            irecv_rq_fromuppy,ierr)
-        call MPI_IRECV(lbufyi,nbufy,MPI_REAL,ylneigh,touppy,MPI_COMM_WORLD, &
-            irecv_rq_fromlowy,ierr)
-        call MPI_ISEND(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy,MPI_COMM_WORLD, &
-            isend_rq_tolowy,ierr)
-        call MPI_ISEND(ubufyo,nbufy,MPI_REAL,yuneigh,touppy,MPI_COMM_WORLD, &
-            isend_rq_touppy,ierr)
+        call MPI_IRECV(ubufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
+            yuneigh,tolowy,MPI_COMM_WORLD,irecv_rq_fromuppy,ierr)
+        call MPI_IRECV(lbufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
+            ylneigh,touppy,MPI_COMM_WORLD,irecv_rq_fromlowy,ierr)
+        call MPI_ISEND(lbufyo(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
+            ylneigh,tolowy,MPI_COMM_WORLD,isend_rq_tolowy,ierr)
+        call MPI_ISEND(ubufyo(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
+            yuneigh,touppy,MPI_COMM_WORLD,isend_rq_touppy,ierr)
       endif
 !
 !  Periodic boundary conditions in z
@@ -364,14 +364,14 @@ module Mpicomm
         lbufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n1:n1i,ivar1:ivar2) !!(lower z-zone)
         ubufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n2i:n2,ivar1:ivar2) !!(upper z-zone)
         nbufz=mx*ny*nghost*(ivar2-ivar1+1)
-        call MPI_IRECV(ubufzi,nbufz,MPI_REAL,zuneigh,tolowz,MPI_COMM_WORLD, &
-            irecv_rq_fromuppz,ierr)
-        call MPI_IRECV(lbufzi,nbufz,MPI_REAL,zlneigh,touppz,MPI_COMM_WORLD, &
-            irecv_rq_fromlowz,ierr)
-        call MPI_ISEND(lbufzo,nbufz,MPI_REAL,zlneigh,tolowz,MPI_COMM_WORLD, &
-            isend_rq_tolowz,ierr)
-        call MPI_ISEND(ubufzo,nbufz,MPI_REAL,zuneigh,touppz,MPI_COMM_WORLD, &
-            isend_rq_touppz,ierr)
+        call MPI_IRECV(ubufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
+            zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,ierr)
+        call MPI_IRECV(lbufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
+            zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,ierr)
+        call MPI_ISEND(lbufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
+            zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,ierr)
+        call MPI_ISEND(ubufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
+            zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,ierr)
       endif
 !
 !  The four corners (in counter-clockwise order)
@@ -382,22 +382,22 @@ module Mpicomm
         uubufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n2i:n2,ivar1:ivar2)
         lubufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n2i:n2,ivar1:ivar2)
         nbufyz=mx*nghost*nghost*(ivar2-ivar1+1)
-        call MPI_IRECV(uubufi,nbufyz,MPI_REAL,uucorn,TOll,MPI_COMM_WORLD, &
-            irecv_rq_FRuu,ierr)
-        call MPI_IRECV(lubufi,nbufyz,MPI_REAL,lucorn,TOul,MPI_COMM_WORLD, &
-            irecv_rq_FRlu,ierr)
-        call MPI_IRECV(llbufi,nbufyz,MPI_REAL,llcorn,TOuu,MPI_COMM_WORLD, &
-            irecv_rq_FRll,ierr)
-        call MPI_IRECV(ulbufi,nbufyz,MPI_REAL,ulcorn,TOlu,MPI_COMM_WORLD, &
-            irecv_rq_FRul,ierr)
-        call MPI_ISEND(llbufo,nbufyz,MPI_REAL,llcorn,TOll,MPI_COMM_WORLD, &
-            isend_rq_TOll,ierr)
-        call MPI_ISEND(ulbufo,nbufyz,MPI_REAL,ulcorn,TOul,MPI_COMM_WORLD, &
-            isend_rq_TOul,ierr)
-        call MPI_ISEND(uubufo,nbufyz,MPI_REAL,uucorn,TOuu,MPI_COMM_WORLD, &
-            isend_rq_TOuu,ierr)
-        call MPI_ISEND(lubufo,nbufyz,MPI_REAL,lucorn,TOlu,MPI_COMM_WORLD, &
-            isend_rq_TOlu,ierr)
+        call MPI_IRECV(uubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+            uucorn,TOll,MPI_COMM_WORLD,irecv_rq_FRuu,ierr)
+        call MPI_IRECV(lubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+            lucorn,TOul,MPI_COMM_WORLD,irecv_rq_FRlu,ierr)
+        call MPI_IRECV(llbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+            llcorn,TOuu,MPI_COMM_WORLD,irecv_rq_FRll,ierr)
+        call MPI_IRECV(ulbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+            ulcorn,TOlu,MPI_COMM_WORLD,irecv_rq_FRul,ierr)
+        call MPI_ISEND(llbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+            llcorn,TOll,MPI_COMM_WORLD,isend_rq_TOll,ierr)
+        call MPI_ISEND(ulbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+            ulcorn,TOul,MPI_COMM_WORLD,isend_rq_TOul,ierr)
+        call MPI_ISEND(uubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+            uucorn,TOuu,MPI_COMM_WORLD,isend_rq_TOuu,ierr)
+        call MPI_ISEND(lubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+            lucorn,TOlu,MPI_COMM_WORLD,isend_rq_TOlu,ierr)
       endif
 !
 !  communication sample
