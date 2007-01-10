@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.465 2007-01-10 17:09:28 dintrans Exp $
+! $Id: entropy.f90,v 1.466 2007-01-10 17:30:52 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -165,7 +165,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.465 2007-01-10 17:09:28 dintrans Exp $")
+           "$Id: entropy.f90,v 1.466 2007-01-10 17:30:52 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -619,13 +619,9 @@ module Entropy
 
         case('mixinglength')
            call mixinglength(cs2cool,mixinglength_flux,f)
-           if (ampl_ss/=0.) then
-            print*,'init_ss: put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
-            tmp=xx**2+yy**2+(zz-0.5*(z1+z2))**2
-            f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/max(radius_ss**2-tmp,1e-20))
-            hcond0=-gamma/(gamma-1)*gravz/(mpoly0+1)/mixinglength_flux
-            print*,'init_ss: hcond0=',hcond0
-           endif
+           if (ampl_ss/=0.) call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
+           hcond0=-gamma/(gamma-1)*gravz/(mpoly0+1)/mixinglength_flux
+           print*,'init_ss: hcond0=',hcond0
 
         case('sedov')
           if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
