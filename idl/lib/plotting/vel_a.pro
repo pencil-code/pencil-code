@@ -4,7 +4,7 @@
 ;;;  Author: axel, wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   8-Jul-1999
 ;;;  Version: vel_a 1.2
-;;;  CVS $Revision: 1.4 $
+;;;  CVS $Revision: 1.5 $
 ;;;  Based on: vel.pro,v 1.4 1997/01/15 03:11:50 idl Exp,
 ;;;  Description: A clone of IDL's vel allowing for
 ;;;    a) X and Y arguments and the corresponding {X,Y}RANGE,
@@ -137,12 +137,12 @@ return,x
 end
 
 
-PRO VEL_A,U,W,xx,yy,LENGTH = length,XMAX = xmax, $
+PRO VEL_A,U,W,xx,yy,LENGTH=length,XMAX=xmax, $
           nvecs = nvecs, nsteps = nsteps, $
-          title = title, overplot = overplot, $
-          seed = seed, noerase = noerase, $
-          color = color, $
-          _EXTRA = extra
+          title = title, over=over, $
+          seed=seed, noeras=noeras, $
+          color=color, $
+          _EXTRA=extra
 ;+
 ; NAME:
 ;	VEL
