@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.42 2007-01-05 20:08:58 dobler Exp $
+! $Id: viscosity.f90,v 1.43 2007-01-10 20:17:07 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -49,7 +49,7 @@ module Viscosity
   logical :: lvisc_smag_simplified=.false.
   logical :: lvisc_smag_cross_simplified=.false.
   logical :: lvisc_snr_damp=.false.
-  logical :: lvisc_heat_as_aux
+  logical :: lvisc_heat_as_aux=.false.
 
   ! input parameters
   !integer :: dummy1
@@ -89,12 +89,9 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.42 2007-01-05 20:08:58 dobler Exp $")
+           "$Id: viscosity.f90,v 1.43 2007-01-10 20:17:07 dobler Exp $")
 
       ivisc(1)='nu-const'
-!
-!  register an extra aux slot for dissipation rate if requested (so
-!  visc_heat is written sto snapshots and can be easily analyzed later)
 !
     endsubroutine register_viscosity
 !***********************************************************************
@@ -218,6 +215,9 @@ module Viscosity
             call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_shock is zero!')
       endif
+!
+!  register an extra aux slot for dissipation rate if requested (so
+!  visc_heat is written sto snapshots and can be easily analyzed later)
 !
       if (lvisc_heat_as_aux) then
          call farray_register_auxiliary('visc_heat',ivisc_heat)
