@@ -4,7 +4,7 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1.1.1 2006-05-04 14:41:33 dintrans Exp $',
+  cvsid='$Id: run.in,v 1.2 2007-01-10 17:45:26 dintrans Exp $',
   nt=50, it1=10, isave=200, itorder=3,
   dsnap=1., cdt=0.25,
   lpencil_check=T
@@ -19,9 +19,8 @@
 &grav_run_pars
 /
 &entropy_run_pars
-  Luminosity=0., wheat=0.1, cool=10., wcool=0.1,
-  cooling_profile='cubic_step',
-  iheatcond='K-profile',
+  cooling_profile='cubic_step', cool=10., wcool=0.1,
+  iheatcond='K-profile', lhcond_global=T,
   lupw_ss=T
 /
 &viscosity_run_pars
