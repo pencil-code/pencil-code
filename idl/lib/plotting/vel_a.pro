@@ -4,7 +4,7 @@
 ;;;  Author: axel, wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   8-Jul-1999
 ;;;  Version: vel_a 1.2
-;;;  CVS $Revision: 1.5 $
+;;;  CVS $Revision: 1.6 $
 ;;;  Based on: vel.pro,v 1.4 1997/01/15 03:11:50 idl Exp,
 ;;;  Description: A clone of IDL's vel allowing for
 ;;;    a) X and Y arguments and the corresponding {X,Y}RANGE,
@@ -137,11 +137,12 @@ return,x
 end
 
 
-PRO VEL_A,U,W,xx,yy,LENGTH=length,XMAX=xmax, $
-          nvecs = nvecs, nsteps = nsteps, $
-          title = title, over=over, $
-          seed=seed, noeras=noeras, $
-          color=color, $
+PRO VEL_A,U,W,xx,yy, $
+          LENGTH=length, XMAX=xmax, $
+          NVECS=nvecs, NSTEPS=nsteps, $
+          TITLE=title, OVERPLOT=overplot, $
+          SEED=seed, NOERASE=noerase, $
+          COLOR=color, $
           _EXTRA=extra
 ;+
 ; NAME:
@@ -206,7 +207,7 @@ PRO VEL_A,U,W,xx,yy,LENGTH=length,XMAX=xmax, $
 ;       7/12/94 HJM - Fixed error in weighting factors in function
 ;                     vel_mybi() which produced incorrect velocity vectors.
 ;       sometimes - ab added xx and yy arguments and introduces
-;                   keywords OVER, NOERASE and SEED
+;                   keywords OVERPLOT, NOERASE and SEED
 ;       8/7/99  - wd improved the xx and yy argument handling and fixed
 ;                 a bug for different x- and y-axis ranges.
 ;       31/8/99 - wd switched loop indices to type long integer
@@ -236,11 +237,11 @@ if n_elements(xx) le 0 then begin ; Mimic the old behaviour
 endif else begin
   x1=min(xx) & dxx=max(xx)-x1
   y1=min(yy) & dyy=max(yy)-y1
-  if keyword_set(noeras) then begin
-    if not keyword_set(over) then plot,x1+dxx*[0,1,1,0,0],y1+dyy*[0,0,1,1,0],$
-        title=title,/nodata,/noeras,color=color
+  if keyword_set(noerase) then begin
+    if not keyword_set(overplot) then plot,x1+dxx*[0,1,1,0,0],y1+dyy*[0,0,1,1,0],$
+        title=title,/nodata,/noerase,color=color
   end else begin
-    if not keyword_set(over) then plot,x1+dxx*[0,1,1,0,0],y1+dyy*[0,0,1,1,0],$
+    if not keyword_set(overplot) then plot,x1+dxx*[0,1,1,0,0],y1+dyy*[0,0,1,1,0],$
         title=title,/nodata,color=color
   end
   X=ARROWS_A(U,W,Nvecs,LENGTH, nsteps=nsteps,seed=seed,dx=dxx,dy=dyy)
