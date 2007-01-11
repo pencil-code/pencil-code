@@ -1,9 +1,9 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
-!  Initialisation parameters
+!  Convection in a (relatively) flat box
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.5 2005-06-26 17:34:33 eos_merger_tony Exp $',
+  cvsid='$Id: start.in,v 1.6 2007-01-11 22:06:56 dobler Exp $',
   ip=14,                        ! debugging parameter
   xyz0  = -2., -2.,  0.,        ! first corner of box
   Lxyz  =  4.,  4.,  1.,        ! box size
@@ -23,6 +23,7 @@
   initlnrho='polytropic'
 /
 &grav_init_pars
+  gravz_profile='const'
   gravz=-1.,zref=0.5
   z1=0.5,                       ! may be used for initial perturbation
 /
