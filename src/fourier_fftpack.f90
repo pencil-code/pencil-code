@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.12 2006-12-20 13:10:50 ajohan Exp $
+! $Id: fourier_fftpack.f90,v 1.13 2007-01-11 14:51:12 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -226,6 +226,7 @@ module Fourier
             a_im(:,l,n)=aimag(ax)
           enddo; enddo
         endif
+      else
 !
 !  Transform y-direction back.
 !
