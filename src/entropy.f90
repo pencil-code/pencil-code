@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.466 2007-01-10 17:30:52 dintrans Exp $
+! $Id: entropy.f90,v 1.467 2007-01-11 23:05:02 dobler Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -165,7 +165,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.466 2007-01-10 17:30:52 dintrans Exp $")
+           "$Id: entropy.f90,v 1.467 2007-01-11 23:05:02 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -184,20 +184,15 @@ module Entropy
                                  select_eos_variable,gamma,gamma1
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
-      real, dimension (nx) :: aa=0.
-!
-      real :: beta1,cp1,lnrho_dummy=0.
-      real :: beta0,TT_crit
-      integer :: i
-      logical :: lnothing
-      type (pencil_case) :: p
-      real, dimension (nx) :: hcond
       real, dimension (nx,3) :: glhc
-      real :: r_mn,flumi,g_r,u
+      real, dimension (nx) :: aa=0., hcond=0.
       real, dimension (3) :: gg_mn=0.
-      integer :: imn,l
+      real :: beta1, cp1, lnrho_dummy=0., beta0, TT_crit
+      real :: r_mn, flumi, g_r, u
+      integer :: i
       integer, pointer :: iglobal_gg
+      logical :: lstarting, lnothing
+      type (pencil_case) :: p
 !
 ! Check any module dependencies
 !
@@ -3244,17 +3239,17 @@ module Entropy
 !
 !  20-dec-06/dintrans: coded
 !
-    use Cdata
     use EquationOfState, only: gamma, gamma1, mpoly0, mpoly1, lnrho0
-    use Sub, only: step
+    use Sub,             only: step, quintic_step
 
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-    real, dimension (3) :: gg_mn=0.
-    integer :: i,nr,imn,istop,l,i1,i2
-    integer, pointer :: iglobal_gg
-    parameter (nr=32)
+    !
+    integer, parameter :: nr=32
     real, dimension (nr) :: r,eps,flumi,hcond,grav,temp,lnrho,ss,c1
-    real :: dtemp,dlnrho,dss,dr,u,r_mn,g_r,lnrho_r,ss_r
+    real, dimension (3)  :: gg_mn=0.
+    real                 :: dtemp,dlnrho,dss,dr,u,r_mn,g_r,lnrho_r,ss_r
+    integer            :: i,imn,istop,l,i1,i2
+    integer, pointer   :: iglobal_gg
 
     do i=1,nr
 !     r(i)=r_ext*float(i-1)/(nr-1)
@@ -3264,7 +3259,10 @@ module Entropy
     flumi(1)=0.
     do i=2,nr
       u=r(i)/sqrt(2.)/wheat
-      flumi(i)=luminosity*(erf(u)-2.*u/sqrt(pi)*exp(-u**2))
+! The erf() function is an extension to standard F90; thus replacing it
+! with our quintic step profile 
+!      flumi(i)=luminosity*(erf(u)-2.*u/sqrt(pi)*exp(-u**2))
+      flumi(i)=luminosity*(2*quintic_step(u,0.,3.5)-1-2.*u/sqrt(pi)*exp(-u**2))
     enddo
 
     hcond1=(mpoly1+1.)/(mpoly0+1.)
@@ -3327,22 +3325,21 @@ module Entropy
 !
 !  20-dec-06/dintrans: coded
 !
-    use Cdata
     use EquationOfState, only: gamma, gamma1, mpoly0
     use Sub
     use IO
     use FArrayManager
 
-    integer :: imn,m,n
-    integer, pointer :: iglobal_gg
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
     real, dimension (nx,3) :: gg_mn=0.
-    real, dimension (nx) :: rr_mn,u_mn,lumi_mn,g_r
-
+    real, dimension (nx)   :: rr_mn,u_mn,lumi_mn,g_r
+    integer          :: imn,m,n
+    integer, pointer :: iglobal_gg
+ 
     call farray_use_global('gg',iglobal_gg)
     print*,'**************************************************'
-    print*,'star_heat_grav: luminosity,wheat,hcond0,iglobal_gg=',luminosity,wheat, &
-            hcond0,iglobal_gg
+    print*,'star_heat_grav: luminosity,wheat,hcond0,iglobal_gg=', &
+        luminosity,wheat,hcond0,iglobal_gg
     print*,'**************************************************'
 
     do imn=1,ny*nz
@@ -3351,7 +3348,11 @@ module Entropy
       rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
 !
       u_mn=rr_mn/sqrt(2.)/wheat
-      lumi_mn=luminosity*(erf(u_mn)-2.*u_mn/sqrt(pi)*exp(-u_mn**2))
+! The erf() function is an extension to standard F90; thus replacing it
+! with our quintic step profile 
+!      lumi_mn=luminosity*(erf(u_mn)-2.*u_mn/sqrt(pi)*exp(-u_mn**2))
+      lumi_mn=luminosity*(2.*quintic_step(u_mn,0.,3.5)-1 &
+                          - 2.*u_mn/sqrt(pi)*exp(-u_mn**2))
       g_r=-lumi_mn/(4.*pi*rr_mn**2)*gamma1/gamma*(mpoly0+1.)/hcond0
       gg_mn(:,1)=x(l1:l2)/rr_mn*g_r
       gg_mn(:,2)=y(m)/rr_mn*g_r
