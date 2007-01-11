@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.17 2006-12-20 13:10:50 ajohan Exp $
+! $Id: poisson.f90,v 1.18 2007-01-11 16:29:36 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -48,7 +48,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.17 2006-12-20 13:10:50 ajohan Exp $")
+        "$Id: poisson.f90,v 1.18 2007-01-11 16:29:36 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -133,13 +133,14 @@ module Poisson
       real, dimension (nx,ny,nz) :: b1
       real, dimension (nzgrid,nx/nprocz) :: a1t, b1t
       real, dimension (nzgrid) :: a_tri, b_tri, c_tri, r_tri, u_tri
+      real :: k2
       integer :: ikx, iky, ikz
       logical :: err
 !
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.17 2006-12-20 13:10:50 ajohan Exp $")
+        "$Id: poisson.f90,v 1.18 2007-01-11 16:29:36 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -151,14 +152,28 @@ module Poisson
         call fourier_transform_xy(a1,b1)
       endif
 !
-!  Solve for discrete z-direction with zero potential at the z-boundary.
+!  Solve for discrete z-direction with zero density above and below z-boundary.
 !
       do iky=1,ny
         call transp_xz(a1(:,iky,:),a1t)
         a_tri(:)=1.0/dz**2
         c_tri(:)=1.0/dz**2
-        do ikx=1,nx
-          b_tri=-2.0/dz**2-kx_fft(ikx)**2-ky_fft(iky)**2
+        do ikx=1,nxgrid/nprocz
+          k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
+          b_tri=-2.0/dz**2-k2
+!
+          if (k2==0.0) then
+            b_tri(1)=-2.0/dz**2-2*dz/xyz0(3)
+            c_tri(1)=1.0/dz**2+1.0
+            b_tri(nzgrid)=-2.0/dz**2-2*dz/xyz1(3)
+            a_tri(nzgrid)=1.0/dz**2+1.0
+          else
+            b_tri(1)=-2.0/dz**2-2*sqrt(k2)*dz
+            c_tri(1)=1.0/dz**2+1.0
+            b_tri(nzgrid)=-2.0/dz**2-2*sqrt(k2)*dz
+            a_tri(nzgrid)=1.0/dz**2+1.0
+          endif
+!
           r_tri=a1t(:,ikx)
           call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
           a1t(:,ikx)=u_tri
@@ -170,8 +185,22 @@ module Poisson
         call transp_xz(b1(:,iky,:),b1t)
         a_tri(:)=1.0/dz**2
         c_tri(:)=1.0/dz**2
-        do ikx=1,nx
-          b_tri=-2.0/dz**2-kx_fft(ikx)**2-ky_fft(iky)**2
+        do ikx=1,nxgrid/nprocz
+          k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
+          b_tri=-2.0/dz**2-k2
+!
+          if (k2==0.0) then
+            b_tri(1)=-2.0/dz**2-2*dz/xyz0(3)
+            c_tri(1)=1.0/dz**2+1.0
+            b_tri(nzgrid)=-2.0/dz**2-2*dz/xyz1(3)
+            a_tri(nzgrid)=1.0/dz**2+1.0
+          else
+            b_tri(1)=-2.0/dz**2-2*sqrt(k2)*dz
+            c_tri(1)=1.0/dz**2+1.0
+            b_tri(nzgrid)=-2.0/dz**2-2*sqrt(k2)*dz
+            a_tri(nzgrid)=1.0/dz**2+1.0
+          endif
+!
           r_tri=b1t(:,ikx)
           call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
           b1t(:,ikx)=u_tri
