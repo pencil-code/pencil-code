@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.205 2007-01-09 12:16:02 ajohan Exp $
+! $Id: mpicomm.f90,v 1.206 2007-01-11 16:27:43 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2213,12 +2213,13 @@ module Mpicomm
 !
 !  19-dec-06/anders: Adapted from transp
 !
+      integer, parameter :: nxt=nx/nprocz
       real, dimension(nx,nz), intent(in) :: a
-      real, dimension(nzgrid,nx/nprocz), intent (out) :: b
+      real, dimension(nzgrid,nxt), intent (out) :: b
 !
-      real, dimension(nzgrid,nx/nprocz) :: send_buf, recv_buf
+      real, dimension(nxt,nz) :: send_buf, recv_buf
       integer, dimension(MPI_STATUS_SIZE) :: stat
-      integer :: sendc,recvc,px,nxt
+      integer :: sendc,recvc,px
       integer :: ztag=101,partner,ierr
       integer :: ibox,iy
 !
@@ -2230,25 +2231,24 @@ module Mpicomm
 !  Calculate the size of buffers.
 !  Buffers used for the y-transpose have the same size in y and z.
 !
-      nxt=nx/nprocz
       sendc=nx*nz; recvc=sendc
 !
 !  Send information to different processors (x-z transpose)
 !
       b(ipz*nz+1:(ipz+1)*nz,:)=transpose(a(ipz*nxt+1:(ipz+1)*nxt,:))
       do px=0,nprocz-1
-!         if (px/=ipz) then
-!           partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
-!           send_buf=a(px*nxt+1:(px+1)*nxt,:)
-!           if (px<ipz) then      ! above diagonal: send first, receive then
-!             call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
-!             call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
-!           elseif (px>ipz) then  ! below diagonal: receive first, send then
-!             call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
-!             call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
-!           endif
-!           b(px*nz+1:(px+1)*nz,:)=transpose(recv_buf)
-!         endif
+        if (px/=ipz) then
+          partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
+          send_buf=a(px*nxt+1:(px+1)*nxt,:)
+          if (px<ipz) then      ! above diagonal: send first, receive then
+            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+          elseif (px>ipz) then  ! below diagonal: receive first, send then
+            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+          endif
+          b(px*nz+1:(px+1)*nz,:)=transpose(recv_buf)
+        endif
       enddo
 !
     endsubroutine transp_xz
