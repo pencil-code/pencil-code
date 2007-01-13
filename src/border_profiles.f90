@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.11 2006-11-30 09:03:34 dobler Exp $
+! $Id: border_profiles.f90,v 1.12 2007-01-13 21:37:40 dobler Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -98,6 +98,18 @@ module BorderProfiles
       endif
 !
     endsubroutine initialize_border_profiles
+!***********************************************************************
+    subroutine pencil_criteria_borderprofiles()
+!
+!  All pencils that this module depends on are specified here.
+!
+!  25-dec-06/wolf: coded
+!
+      use Cdata
+!
+      lpenc_requested(i_x_mn)=.true.
+!
+    endsubroutine pencil_criteria_borderprofiles
 !***********************************************************************
     subroutine border_driving(f,df,p,f_target,j)
 !
