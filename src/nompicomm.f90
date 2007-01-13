@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.152 2006-12-19 14:00:05 ajohan Exp $
+! $Id: nompicomm.f90,v 1.153 2007-01-13 17:36:16 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -974,11 +974,25 @@ module Mpicomm
 !  19-dec-06/anders: Adapted from transp
 !
       real, dimension(nx,nz), intent(in) :: a
-      real, dimension(nz,nx), intent (out) :: b
+      real, dimension(nz,nx), intent(out) :: b
 !
       b=transpose(a)
 !
     endsubroutine transp_xz
+!***********************************************************************
+    subroutine transp_zx(b,a)
+!
+!  Doing the transpose of information distributed on several processors.
+!  This routine transposes 2D arrays in x and z only.
+!
+!  19-dec-06/anders: Adapted from transp
+!
+      real, dimension(nz,nx), intent(in) :: b
+      real, dimension(nx,nz), intent(out) :: a
+!
+      a=transpose(b)
+!
+    endsubroutine transp_zx
 !***********************************************************************
     subroutine communicate_bc_aa_pot(f,topbot)
 !

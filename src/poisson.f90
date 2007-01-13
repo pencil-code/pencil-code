@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.18 2007-01-11 16:29:36 ajohan Exp $
+! $Id: poisson.f90,v 1.19 2007-01-13 17:36:16 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -48,7 +48,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.18 2007-01-11 16:29:36 ajohan Exp $")
+        "$Id: poisson.f90,v 1.19 2007-01-13 17:36:16 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -126,7 +126,7 @@ module Poisson
 !  19-dec-2006/anders: coded
 !
       use General, only: tridag
-      use Mpicomm, only: transp_xz
+      use Mpicomm, only: transp_xz, transp_zx
 !
       real, dimension (nx,ny,nz) :: a1
 !
@@ -140,7 +140,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.18 2007-01-11 16:29:36 ajohan Exp $")
+        "$Id: poisson.f90,v 1.19 2007-01-13 17:36:16 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -178,7 +178,7 @@ module Poisson
           call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
           a1t(:,ikx)=u_tri
         enddo
-        call transp_xz(a1t,a1(:,iky,:))
+        call transp_zx(a1t,a1(:,iky,:))
       enddo
 !
       do iky=1,ny
@@ -205,7 +205,7 @@ module Poisson
           call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
           b1t(:,ikx)=u_tri
         enddo
-        call transp_xz(b1t,b1(:,iky,:))
+        call transp_zx(b1t,b1(:,iky,:))
       enddo
 !  Inverse transform (to real space).
       if (lshear) then

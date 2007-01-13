@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.206 2007-01-11 16:27:43 ajohan Exp $
+! $Id: mpicomm.f90,v 1.207 2007-01-13 17:36:16 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2221,7 +2221,6 @@ module Mpicomm
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc,recvc,px
       integer :: ztag=101,partner,ierr
-      integer :: ibox,iy
 !
       if (mod(nxgrid,nprocz)/=0) then
         print*,'transp_xz: nxgrid needs to be an integer multiple of nprocz'
@@ -2252,6 +2251,52 @@ module Mpicomm
       enddo
 !
     endsubroutine transp_xz
+!***********************************************************************
+    subroutine transp_zx(a,b)
+!
+!  Doing the transpose of information distributed on several processors.
+!  This routine transposes 2D arrays in x and z only.
+!
+!  19-dec-06/anders: Adapted from transp
+!
+      integer, parameter :: nxt=nx/nprocz
+      real, dimension(nzgrid,nxt), intent (in) :: a
+      real, dimension(nx,nz), intent(out) :: b
+!
+      real, dimension(nz,nxt) :: send_buf, recv_buf
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer :: sendc,recvc,px
+      integer :: ztag=101,partner,ierr
+!
+      if (mod(nxgrid,nprocz)/=0) then
+        print*,'transp_xz: nxgrid needs to be an integer multiple of nprocz'
+        call stop_it('Inconsistency: mod(nxgrid,nprocz)/=0')
+      endif
+!
+!  Calculate the size of buffers.
+!  Buffers used for the y-transpose have the same size in y and z.
+!
+      sendc=nz*nxt; recvc=sendc
+!
+!  Send information to different processors (x-z transpose)
+!
+      b(ipz*nxt+1:(ipz+1)*nxt,:)=transpose(a(ipz*nz+1:(ipz+1)*nz,:))
+      do px=0,nprocz-1
+        if (px/=ipz) then
+          partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
+          send_buf=a(px*nz+1:(px+1)*nz,:)
+          if (px<ipz) then      ! above diagonal: send first, receive then
+            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+          elseif (px>ipz) then  ! below diagonal: receive first, send then
+            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+          endif
+          b(px*nxt+1:(px+1)*nxt,:)=transpose(recv_buf)
+        endif
+      enddo
+!
+    endsubroutine transp_zx
 !***********************************************************************
     subroutine communicate_bc_aa_pot(f,topbot)
 !
