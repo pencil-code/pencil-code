@@ -1,5 +1,5 @@
                      samples/no-modules
                      ------------------
 
-Don't use any physics modules; together with samples/all-modules, this
+Don't use any physics modules; together with samples/most-modules, this
 constitutes the minimal set of auto-tests.
