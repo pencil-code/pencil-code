@@ -1,0 +1,6 @@
+!                       -*-f90-*-    (for Emacs)
+!  ctimeavg.local
+!
+!  Set the number of slots to be used for time averages
+!
+integer, parameter :: mtavg=8

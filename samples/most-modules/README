@@ -1,0 +1,5 @@
+                     samples/most-modules
+                     --------------------
+
+Use as many physics modules as possible; together with samples/no-modules,
+this constitutes the minimal set of auto-tests.
