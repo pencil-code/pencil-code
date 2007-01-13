@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.42 2006-12-22 20:26:35 dobler Exp $
+! $Id: eos_ionization.f90,v 1.43 2007-01-13 22:16:48 dobler Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.42 2006-12-22 20:26:35 dobler Exp $")
+           "$Id: eos_ionization.f90,v 1.43 2007-01-13 22:16:48 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -732,8 +732,9 @@ module EquationOfState
       real, dimension(psize), intent(out), optional :: lnrho,ss
       real, dimension(psize), intent(out), optional :: yH,lnTT
       real, dimension(psize), intent(out), optional :: ee,pp,kapparho
-      real, dimension(psize) :: lnrho_,ss_,yH_,lnTT_,TT_,fractions
+      real, dimension(psize) :: lnrho_,ss_,yH_,lnTT_,TT_,fractions,exponent
 !
+
       select case (psize)
 
       case (nx)
@@ -768,8 +769,13 @@ module EquationOfState
       if (present(kapparho)) then
 !        lnchi=2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_) &
 !             +TT_ion_/TT_+log(yH_+yMetals)+log(1-yH_+epsi)+lnchi0
-         kapparho=exp(2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_/TT_) &
-                 *(yH_+yMetals)*(1-yH_)*kappa0
+        exponent = (2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_/TT_)
+        !
+        ! Ensure exponentiation and successive multiplication with
+        ! numbers up to ~ 1e4 avoids overflow:
+        !
+        exponent = min(exponent,log(huge1)-5.)
+        kapparho = exp(exponent) * (yH_+yMetals)*(1-yH_)*kappa0
       endif
 !
     endsubroutine eoscalc_farray
