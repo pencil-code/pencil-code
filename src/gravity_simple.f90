@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.27 2006-12-06 13:26:41 brandenb Exp $
+! $Id: gravity_simple.f90,v 1.28 2007-01-13 22:01:20 dobler Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -104,7 +104,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.27 2006-12-06 13:26:41 brandenb Exp $")
+           "$Id: gravity_simple.f90,v 1.28 2007-01-13 22:01:20 dobler Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -271,7 +271,7 @@ module Gravity
 !   at solar radius.  (for interstellar runs)
 !
 !  nb: 331.5 is conversion factor: 10^-9 cm/s^2 -> kpc/Gyr^2)  (/= 321.1 ?!?)
-!AB: These numbers should be inserted in the appropriate unuts.
+!AB: These numbers should be inserted in the appropriate units.
 !AB: As it is now, it can never make much sense.
         gravz_zpencil = -(g_A*z(n1:n2)/sqrt(z(n1:n2)**2+g_B**2) + g_C*z(n1:n2)/g_D)
 
