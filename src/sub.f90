@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.269 2006-12-15 22:56:36 dobler Exp $
+! $Id: sub.f90,v 1.270 2007-01-13 21:45:51 dobler Exp $
 
 module Sub
 
@@ -2449,11 +2449,18 @@ module Sub
 !  special treatment when dtout is negative
 !  now tout and nout refer to the next snapshopt to be written
 !
-          if (dtout.lt.0.) then
+          if (dtout < 0.) then
             tout=log10(t)
           else
             !  make sure the tout is a good time
-            if (dtout.ne.0.) tout=t-mod(t,abs(dtout))+dtout
+            if (dtout /= 0.) then
+              tout = t - mod(t,abs(dtout)) + dtout
+            else
+              call warning("read_snaptime", &
+                  "Am I writing snapshots every 0 time units? (check " // &
+                  trim(file) // ")" )
+              tout = t
+            endif
           endif
           nout=1
           write(lun,*) tout,nout
