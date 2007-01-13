@@ -1,4 +1,4 @@
-! $Id: noborder_profiles.f90,v 1.6 2006-11-30 09:03:35 dobler Exp $
+! $Id: noborder_profiles.f90,v 1.7 2007-01-13 21:46:44 dobler Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -33,6 +33,14 @@ module BorderProfiles
     ! DUMMY ROUTINE
 !
     endsubroutine initialize_border_profiles
+!***********************************************************************
+    subroutine pencil_criteria_borderprofiles()
+!
+!  All pencils that this module depends on are specified here.
+!
+!  DUMMY ROUTINE
+!
+    endsubroutine pencil_criteria_borderprofiles
 !***********************************************************************
     subroutine border_driving(f,df,p,f_target,j)
 !
