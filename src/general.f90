@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.54 2006-12-20 13:01:39 ajohan Exp $
+! $Id: general.f90,v 1.55 2007-01-13 21:56:35 dobler Exp $
 
 module General
 
@@ -839,7 +839,8 @@ module General
 !***********************************************************************
     subroutine spline(arrx,arry,x2,S,psize1,psize2,err)
 !
-! Interpolates in x2 a natural cubic spline with knots defined by the 1d arrays arrx and arry
+! Interpolates in x2 a natural cubic spline with knots defined by the 1d
+! arrays arrx and arry
 ! 25-03-05/wlad : coded
 !
       integer, intent(in) :: psize1,psize2
@@ -854,6 +855,13 @@ module General
       if (present(err)) err=.false.
       ct1 = psize1
       ct2 = psize2
+!
+! Short-circuit if there is only 1 knot
+!
+      if (ct1 == 1) then
+        S = arry(1)
+        return
+      endif
 !
 ! Breaks if x is not monotonically increasing
 !
@@ -900,12 +908,15 @@ module General
 !
          enddo
 !
-! zero beyond this interval - should perhaps allow for linear interpolation
+! use border values beyond this interval - should perhaps allow for linear
+! interpolation
 !
-         if ((x2(j).le.arrx(1)).or.(x2(j).ge.arrx(ct1))) then
-            S(j) = 0.
+         if (x2(j).le.arrx(1)) then
+           S(j) = arry(1)
+         elseif (x2(j).ge.arrx(ct1)) then
+           S(j) = arry(ct1)
          endif
-      enddo
+       enddo
 !
     endsubroutine spline
 !*****************************************************************************
