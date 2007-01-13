@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.467 2007-01-11 23:05:02 dobler Exp $
+! $Id: entropy.f90,v 1.468 2007-01-13 21:44:25 dobler Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -165,7 +165,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.467 2007-01-11 23:05:02 dobler Exp $")
+           "$Id: entropy.f90,v 1.468 2007-01-13 21:44:25 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1926,7 +1926,9 @@ module Entropy
          call fatal_error('set_border_entropy',errormsg)
       endselect
 !
-      call border_driving(f,df,p,f_target,iss)
+      if (borderss /= 'nothing') then
+        call border_driving(f,df,p,f_target,iss)
+      endif
 !
     endsubroutine set_border_entropy
 !***********************************************************************

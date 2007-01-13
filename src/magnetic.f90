@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.366 2006-12-06 23:26:27 wlyra Exp $
+! $Id: magnetic.f90,v 1.367 2007-01-13 21:44:25 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -212,7 +212,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.366 2006-12-06 23:26:27 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.367 2007-01-13 21:44:25 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1664,10 +1664,12 @@ module Magnetic
          call fatal_error('set_border_magnetic',errormsg)
       endselect
 !
-      do j=1,3
-         ju=j+iaa-1
-         call border_driving(f,df,p,f_target(:,j),ju)
-      enddo
+      if (borderaa /= 'nothing') then
+        do j=1,3
+          ju=j+iaa-1
+          call border_driving(f,df,p,f_target(:,j),ju)
+        enddo
+      endif
 !
     endsubroutine set_border_magnetic
 !***********************************************************************

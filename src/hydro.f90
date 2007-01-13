@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.306 2006-12-06 13:26:41 brandenb Exp $
+! $Id: hydro.f90,v 1.307 2007-01-13 21:44:26 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -176,7 +176,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.306 2006-12-06 13:26:41 brandenb Exp $")
+           "$Id: hydro.f90,v 1.307 2007-01-13 21:44:26 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1283,10 +1283,12 @@ module Hydro
          call fatal_error('set_border_hydro',errormsg)
       endselect
 !
-      do j=1,3
-         ju=j+iuu-1
-         call border_driving(f,df,p,f_target(:,j),ju)
-      enddo
+      if (borderuu /= 'nothing') then
+        do j=1,3
+          ju=j+iuu-1
+          call border_driving(f,df,p,f_target(:,j),ju)
+        enddo
+      endif
 !
     endsubroutine set_border_hydro
 !***********************************************************************

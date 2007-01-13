@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.296 2006-12-06 11:00:25 wlyra Exp $
+! $Id: density.f90,v 1.297 2007-01-13 21:44:25 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -111,7 +111,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.296 2006-12-06 11:00:25 wlyra Exp $")
+           "$Id: density.f90,v 1.297 2007-01-13 21:44:25 dobler Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1328,7 +1328,6 @@ module Density
           print*,'dlnrho_dt: max(diffus_diffrho) =', maxval(diffus_diffrho)
 !
 !
-
 !
 !ajwm  Cannot alter special interface!!
       if (lspecial) call special_calc_density(f,df,p)
@@ -1406,7 +1405,9 @@ module Density
 !
       if (ldensity_nolog) f_target=exp(f_target)
 !
-      call border_driving(f,df,p,f_target,ilnrho)
+      if (borderlnrho /= 'nothing') then
+        call border_driving(f,df,p,f_target,ilnrho)
+      endif
 !
     endsubroutine set_border_density
 !***********************************************************************
