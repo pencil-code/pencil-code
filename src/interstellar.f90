@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.143 2006-12-22 01:46:38 dobler Exp $
+! $Id: interstellar.f90,v 1.144 2007-01-13 21:52:24 dobler Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development.
@@ -390,7 +390,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.143 2006-12-22 01:46:38 dobler Exp $")
+           "$Id: interstellar.f90,v 1.144 2007-01-13 21:52:24 dobler Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -1148,7 +1148,7 @@ module Interstellar
 !  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt]
 !  so therefore we now need to multiply by TT1.
 !
-       if (ltemperature) then
+      if (ltemperature) then
          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+heatcool
        else
          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+heatcool
@@ -1483,7 +1483,7 @@ cool_loop: do i=1,ncool
 !
 !   determine position for next SN (w/ fixed scale-height)
 !
-    use Cdata, only: headtt, dx, dy, dz, lroot, lperi, xyz0
+    use Cdata, only: headtt, dx, dy, dz, lroot, lperi, xyz0, tini
     use General, only: random_number_wrapper
 !    use Mpicomm
 !    use General
@@ -1523,12 +1523,12 @@ cool_loop: do i=1,ncool
 !  Cumulative probability function in z currently calculated each time.
 !  It's constant, and could be stored (and calculated in init)
 !
-      cum_prob_SN(1:nzskip)=0.0
+      cum_prob_SN=0.0
       do i=nzskip+1,nzgrid-nzskip
         zn=z00+(i-1)*dz
         cum_prob_SN(i)=cum_prob_SN(i-1)+exp(-(zn/h_SN)**2)
       enddo
-      cum_prob_SN=cum_prob_SN/cum_prob_SN(nzgrid-nzskip)
+      cum_prob_SN = cum_prob_SN / max(cum_prob_SN(nzgrid-nzskip), tini)
 !
 !  The following should never be needed, but just in case floating point
 !  errors ever lead to cum_prob_SNI(nzgrid-nzskip) < rnd < 1.
@@ -1790,7 +1790,6 @@ find_SN: do n=n1,n2
 !
 !   Handle common SN positioning processor communications
 !
-!
 !   27-aug-2003/tony: coded
 !
     use Cdata
@@ -2041,7 +2040,6 @@ find_SN: do n=n1,n2
          'explode_SN: SNR%site%TT, TT_SN_new, TT_SN_min, SNR%site%ee =', &
                                 SNR%site%TT,TT_SN_new,TT_SN_min, SNR%site%ee
       if (lroot) print*,'explode_SN: yH_SN_new =',yH_SN_new
-
       if ((TT_SN_new < TT_SN_min).or.(mass_movement=='constant')) then
          if (lroot) print*,'explode_SN: SN will be too cold!'
          lmove_mass=.not.(mass_movement == 'off')
