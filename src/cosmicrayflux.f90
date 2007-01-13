@@ -1,4 +1,4 @@
-! $Id: cosmicrayflux.f90,v 1.10 2006-11-30 09:03:34 dobler Exp $
+! $Id: cosmicrayflux.f90,v 1.11 2007-01-13 21:42:04 dobler Exp $
 
 !  Cosmic Ray Flux
 !
@@ -79,7 +79,7 @@ module Cosmicrayflux
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicrayflux.f90,v 1.10 2006-11-30 09:03:34 dobler Exp $")
+           "$Id: cosmicrayflux.f90,v 1.11 2007-01-13 21:42:04 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -217,8 +217,9 @@ module Cosmicrayflux
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: BuiBujgecr, b2, b21, bunit
-      real, dimension (nx) :: tmp
+      real, dimension (nx,3) :: BuiBujgecr, bunit
+      real, dimension (nx)   :: b2, b21
+      real, dimension (nx)   :: tmp
       integer :: i,j
       type (pencil_case) :: p
 !
@@ -244,7 +245,7 @@ module Cosmicrayflux
 !
       call dot2_mn(p%bb,b2)
 !  with frequency omega_Bz_ext
-      b21=1./max(tiny(b2),b2)
+      b21=1./max(tini,b2)
       call multsv_mn(sqrt(b21),p%bb,bunit)
 !
 !
