@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.20 2007-01-13 21:49:57 dobler Exp $
+! $Id: particles_number.f90,v 1.21 2007-01-14 07:15:27 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -54,7 +54,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.20 2007-01-13 21:49:57 dobler Exp $")
+           "$Id: particles_number.f90,v 1.21 2007-01-14 07:15:27 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -216,10 +216,12 @@ module Particles_number
                   if (deltavp<=vthresh_coagulation) then
                     dfp(j,inptilde) = dfp(j,inptilde) - 0.5*cdot
                     dfp(k,inptilde) = dfp(k,inptilde) - 0.5*cdot
-                    dfp(k,iap) = dfp(k,iap) + &
-                        1/3.*(0.5*cdot)*fp(k,iap) / max(fp(k,inptilde),tini)
-                    dfp(j,iap) = dfp(j,iap) + &
-                        1/3.*(0.5*cdot)*fp(j,iap) / max(fp(j,inptilde),tini)
+!                    if (fp(k,inptilde)/=0.0) &
+                        dfp(k,iap) = dfp(k,iap) + &
+                        1/3.*(0.5*cdot)*fp(k,iap)/fp(k,inptilde)
+!                    if (fp(j,inptilde)/=0.0) &
+                        dfp(j,iap) = dfp(j,iap) + &
+                        1/3.*(0.5*cdot)*fp(j,iap)/fp(j,inptilde)
 !  ...or fragmentation.
                   else
                     dfp(j,inptilde) = dfp(j,inptilde) - cdot
