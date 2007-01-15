@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.469 2007-01-15 12:31:01 dintrans Exp $
+! $Id: entropy.f90,v 1.470 2007-01-15 16:11:50 ajohan Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -137,7 +137,8 @@ module Entropy
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
   integer :: idiag_yHm=0,idiag_yHmax=0,idiag_TTm=0,idiag_TTmax=0,idiag_TTmin=0
   integer :: idiag_fconvz=0,idiag_dcoolz=0,idiag_fradz=0,idiag_fturbz=0
-  integer :: idiag_ssmz=0,idiag_ssmy=0,idiag_ssmx=0,idiag_TTmz=0,idiag_TTp=0
+  integer :: idiag_ssmx=0,idiag_ssmy=0,idiag_ssmz=0,idiag_TTp=0
+  integer :: idiag_TTmx=0,idiag_TTmy=0,idiag_TTmz=0
 
   contains
 
@@ -165,7 +166,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.469 2007-01-15 12:31:01 dintrans Exp $")
+           "$Id: entropy.f90,v 1.470 2007-01-15 16:11:50 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1611,8 +1612,8 @@ module Entropy
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
-      if (idiag_TTm/=0 .or. idiag_TTmz/=0 .or. idiag_TTmax/=0 &
-        .or. idiag_TTmin/=0) &
+      if (idiag_TTm/=0 .or. idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. &
+          idiag_TTmz/=0 .or. idiag_TTmax/=0 .or. idiag_TTmin/=0) &
           lpenc_diagnos(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_dtc/=0) lpenc_diagnos(i_cs2)=.true.
@@ -1887,6 +1888,8 @@ module Entropy
         if (idiag_ssmz/=0) call xysum_mn_name_z(p%ss,idiag_ssmz)
         if (idiag_ssmy/=0) call xzsum_mn_name_y(p%ss,idiag_ssmy)
         if (idiag_ssmx/=0) call yzsum_mn_name_x(p%ss,idiag_ssmx)
+        if (idiag_TTmx/=0) call yzsum_mn_name_x(p%TT,idiag_TTmx)
+        if (idiag_TTmy/=0) call xzsum_mn_name_y(p%TT,idiag_TTmy)
         if (idiag_TTmz/=0) call xysum_mn_name_z(p%TT,idiag_TTmz)
       endif
 !
@@ -2767,7 +2770,8 @@ module Entropy
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
-        idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0; idiag_TTmz=0
+        idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0
+        idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -2806,12 +2810,14 @@ module Entropy
 !
       do inamey=1,nnamey
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'ssmy',idiag_ssmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'TTmy',idiag_TTmy)
       enddo
 !
 !  check for those quantities for which we want yz-averages
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ssmx',idiag_ssmx)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmx',idiag_TTmx)
       enddo
 !
 !  check for those quantities for which we want phi-averages
