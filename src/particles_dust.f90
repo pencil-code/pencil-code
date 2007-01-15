@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.173 2007-01-14 07:22:05 ajohan Exp $
+! $Id: particles_dust.f90,v 1.174 2007-01-15 05:58:58 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -123,7 +123,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.173 2007-01-14 07:22:05 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.174 2007-01-15 05:58:58 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1862,7 +1862,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (ldraglaw_epstein) then
         if (iap/=0) then
-!          if (fp(k,iap)/=0.0) &
+          if (fp(k,iap)/=0.0) &
               tausp1_par = 1/(fp(k,iap)*rhops)
         else
           if (npar_species>1) then
