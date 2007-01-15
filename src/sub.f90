@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.270 2007-01-13 21:45:51 dobler Exp $
+! $Id: sub.f90,v 1.271 2007-01-15 12:31:01 dintrans Exp $
 
 module Sub
 
@@ -15,7 +15,7 @@ module Sub
   public :: poly, notanumber
   public :: keep_compiler_quiet
   public :: blob, vecout
-  public :: cubic_step, cubic_der_step, quintic_step, quintic_der_step
+  public :: cubic_step, cubic_der_step, quintic_step, quintic_der_step, erfunc
   public :: sine_step
   public :: hypergeometric2F1
   public :: gamma_function
@@ -201,6 +201,11 @@ module Sub
     module procedure quintic_der_step_pt
     module procedure quintic_der_step_mn
     module procedure quintic_der_step_global
+  endinterface
+
+  interface erfunc
+    module procedure erfunc_pt
+    module procedure erfunc_mn
   endinterface
 
   interface sine_step
@@ -4919,6 +4924,60 @@ nameloop: do
 
     endfunction pencil_substract2
 !***********************************************************************
+    function erfunc_pt(x)
 
+! Error function from Numerical Recipes.
+! erfunc(x) = 1 - erfc(x)
+!
+!  This version is for scalar args.
+!
+! 15-Jan-2007/dintrans: coded
+!
+    implicit none
 
+    real :: erfunc_pt,dumerfc,x,t,z
+
+    z = abs(x)
+    t = 1.0 / ( 1.0 + 0.5 * z )
+
+    dumerfc =  t * exp(-z * z - 1.26551223 + t *	&
+	( 1.00002368 + t * ( 0.37409196 + t *		&
+        ( 0.09678418 + t * (-0.18628806 + t *		&
+	( 0.27886807 + t * (-1.13520398 + t *		&
+        ( 1.48851587 + t * (-0.82215223 + t * 0.17087277 )))))))))
+
+    if ( x.lt.0.0 ) dumerfc = 2.0 - dumerfc
+    erfunc_pt = 1.0 - dumerfc
+
+    end function erfunc_pt
+!***********************************************************************
+    function erfunc_mn(x)
+
+! Error function from Numerical Recipes.
+! erfunc_mn(x) = 1 - erfc(x)
+!
+!  Version for 1d arg (in particular pencils).
+!
+! 15-Jan-2007/dintrans: coded
+!
+    implicit none
+
+    real, dimension(:) :: x
+    real, dimension(size(x,1)) :: erfunc_mn,dumerfc,t,z
+
+    z = abs(x)
+    t = 1.0 / ( 1.0 + 0.5 * z )
+
+    dumerfc =  t * exp(-z * z - 1.26551223 + t *	&
+	( 1.00002368 + t * ( 0.37409196 + t *		&
+        ( 0.09678418 + t * (-0.18628806 + t *		&
+	( 0.27886807 + t * (-1.13520398 + t *		&
+        ( 1.48851587 + t * (-0.82215223 + t * 0.17087277 )))))))))
+
+    where ( x.lt.0. ) dumerfc = 2.0 - dumerfc
+
+    erfunc_mn = 1.0 - dumerfc
+
+    end function erfunc_mn
+!***********************************************************************
 endmodule Sub

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.468 2007-01-13 21:44:25 dobler Exp $
+! $Id: entropy.f90,v 1.469 2007-01-15 12:31:01 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -165,7 +165,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.468 2007-01-13 21:44:25 dobler Exp $")
+           "$Id: entropy.f90,v 1.469 2007-01-15 12:31:01 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -3242,7 +3242,7 @@ module Entropy
 !  20-dec-06/dintrans: coded
 !
     use EquationOfState, only: gamma, gamma1, mpoly0, mpoly1, lnrho0
-    use Sub,             only: step, quintic_step
+    use Sub,             only: step, erfunc
 
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
     !
@@ -3258,13 +3258,11 @@ module Entropy
       r(i)=xyz1(1)*float(i-1)/(nr-1)
     enddo
 
-    flumi(1)=0.
+    flumi(1)=0. 
     do i=2,nr
       u=r(i)/sqrt(2.)/wheat
-! The erf() function is an extension to standard F90; thus replacing it
-! with our quintic step profile 
-!      flumi(i)=luminosity*(erf(u)-2.*u/sqrt(pi)*exp(-u**2))
-      flumi(i)=luminosity*(2*quintic_step(u,0.,3.5)-1-2.*u/sqrt(pi)*exp(-u**2))
+      flumi(i)=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
+      write(11,'(3e14.5)') r(i),flumi(i)
     enddo
 
     hcond1=(mpoly1+1.)/(mpoly0+1.)
@@ -3328,7 +3326,7 @@ module Entropy
 !  20-dec-06/dintrans: coded
 !
     use EquationOfState, only: gamma, gamma1, mpoly0
-    use Sub
+    use Sub, only: erfunc
     use IO
     use FArrayManager
 
@@ -3350,11 +3348,7 @@ module Entropy
       rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
 !
       u_mn=rr_mn/sqrt(2.)/wheat
-! The erf() function is an extension to standard F90; thus replacing it
-! with our quintic step profile 
-!      lumi_mn=luminosity*(erf(u_mn)-2.*u_mn/sqrt(pi)*exp(-u_mn**2))
-      lumi_mn=luminosity*(2.*quintic_step(u_mn,0.,3.5)-1 &
-                          - 2.*u_mn/sqrt(pi)*exp(-u_mn**2))
+      lumi_mn=luminosity*(erfunc(u_mn)-2.*u_mn/sqrt(pi)*exp(-u_mn**2))
       g_r=-lumi_mn/(4.*pi*rr_mn**2)*gamma1/gamma*(mpoly0+1.)/hcond0
       gg_mn(:,1)=x(l1:l2)/rr_mn*g_r
       gg_mn(:,2)=y(m)/rr_mn*g_r
