@@ -1,4 +1,4 @@
-;; $Id: pc_read_xzaver.pro,v 1.3 2006-08-28 11:09:00 ajohan Exp $
+;; $Id: pc_read_xzaver.pro,v 1.4 2007-01-16 06:13:56 ajohan Exp $
 ;;
 ;;   Read xz-averages from file
 ;;
@@ -11,7 +11,7 @@ COMMON pc_precision, zero, one
 ;;
 default, datadir, './data'
 default, varfile, 'xzaverages.dat'
-default, montone, 0
+default, monotone, 0
 default, quiet, 0
 ;;
 ;;  Get necessary dimensions.
