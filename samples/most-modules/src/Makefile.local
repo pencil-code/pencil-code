@@ -3,8 +3,7 @@
 ### Included by `Makefile'
 ###
 
-#MPICOMM               =   mpicomm
-MPICOMM               = nompicomm
+MPICOMM               =   mpicomm
 IO                    =   io_dist
 TIMEAVG               =   timeavg
 
