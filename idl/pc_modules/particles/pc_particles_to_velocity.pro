@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_velocity.pro,v 1.4 2006-11-08 07:51:28 ajohan Exp $
+;  $Id: pc_particles_to_velocity.pro,v 1.5 2007-01-16 06:14:39 ajohan Exp $
 ;
 ;  Convert positions and velocities of particles to a grid velocity field.
 ;
@@ -21,6 +21,7 @@ default, quiet, 0
 pc_set_precision, datadir=datadir
 pc_read_param, obj=par, datadir=datadir, /quiet
 pc_read_dim  , obj=dim, datadir=datadir, /quiet
+pc_read_const, obj=cst, datadir=datadir, /quiet
 ;
 npar=0L
 npar=n_elements(xxp[*,0])
@@ -115,9 +116,10 @@ if (fine gt 1) then begin
 ;
 endif
 ;
-;  Define velocity array.
+;  Define velocity and density array.
 ;
 ww=fltarr(nx,ny,nz,3)*one
+rhop=fltarr(nx,ny,nz)*one
 ;
 ;  Three different ways to assign particle velocity to the grid are implemented:
 ;  (see the book by Hockney & Eastwood)
@@ -147,7 +149,8 @@ case interpolation_scheme of
 ;
 ;  Particles are assigned to the nearest grid point.
 ;
-      ww[ix,iy,iz,*]=ww[ix,iy,iz,*]+1.0*vvp[k,*]
+      ww[ix,iy,iz,*]=ww[ix,iy,iz,*]+cst.rhop_tilde*vvp[k,*]
+      rhop[ix,iy,iz]=rhop[ix,iy,iz]+cst.rhop_tilde
 ;
     endfor ; loop over particles
 ;
@@ -180,11 +183,12 @@ case interpolation_scheme of
       iz1=iz0 & if (nz ne 1) then iz1=iz0+1
 ;  Calculate weight of each particle on the grid.
       for ixx=ix0,ix1 do begin & for iyy=iy0,iy1 do begin & for izz=iz0,iz1 do begin
-        weight=1.0d
+        weight=cst.rhop_tilde
         if (nx ne 1) then weight=weight*( 1.0d - abs(xxp[k,0]-x[ixx])*dx_1 )
         if (ny ne 1) then weight=weight*( 1.0d - abs(xxp[k,1]-y[iyy])*dy_1 )
         if (nz ne 1) then weight=weight*( 1.0d - abs(xxp[k,2]-z[izz])*dz_1 )
         ww[ixx,iyy,izz,*]=ww[ixx,iyy,izz,*]+weight*vvp[k,*]
+        rhop[ixx,iyy,izz]=rhop[ixx,iyy,izz]+weight
       endfor & endfor & endfor
 ; 
     endfor ; end loop over particles
@@ -247,12 +251,13 @@ case interpolation_scheme of
           weight_z = 0.75d  -         (xxp[k,2]-z[izz])^2*dz_2
         endelse
 ;
-        weight=1.0d
+        weight=cst.rhop_tilde
         if (nx ne 1) then weight=weight*weight_x
         if (ny ne 1) then weight=weight*weight_y
         if (nz ne 1) then weight=weight*weight_z
 ;
         ww[ixx,iyy,izz,*]=ww[ixx,iyy,izz,*]+weight*vvp[k,*]
+        rhop[ixx,iyy,izz]=rhop[ixx,iyy,izz]+weight
       endfor & endfor & endfor
 ; 
     endfor ; end loop over particles
@@ -288,6 +293,13 @@ if (cic or tsc) then begin
 ;
   ww=ww[l1:l2,m1:m2,n1:n2,*]
 endif
+;
+;  Normalize momentum sum with total density.
+;
+for iz=0,nz-1 do begin & for iy=0,ny-1 do begin & for ix=0,nx-1 do begin
+  if (rhop[ix,iy,iz] ne 0.0) then $
+      ww[ix,iy,iz,*]=ww[ix,iy,iz,*]/rhop[ix,iy,iz,*]
+endfor & endfor & endfor
 ;
 ;  Purge missing directions from ww before returning it.
 ;
