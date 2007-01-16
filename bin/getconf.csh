@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.184 2006-12-07 14:56:32 wlyra Exp $
+# $Id: getconf.csh,v 1.185 2007-01-16 16:37:00 theine Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -136,16 +136,8 @@ if ($?PBS_NODEFILE) then
   if ($debug) echo "PBS job"
   set nodelist = `cat $PBS_NODEFILE | grep -v '^#' | sed 's/:[0-9]*//'`
 else if ($?LOADL_PROCESSOR_LIST) then
-  set nodelist = ""
-  set lastproc = ""
-  foreach proc ($LOADL_PROCESSOR_LIST)
-    if ("$proc" != "$lastproc") then
-      set nodelist = "$nodelist $proc"
-    endif
-    set lastproc = "$proc"
-  end
-  unset proc
-  unset lastproc
+  if ($debug) echo "LoadLeveler job"
+  set nodelist = `echo $LOADL_PROCESSOR_LIST | tr " " "\n" | uniq`
 else if ($?PE_HOSTFILE) then
   if ($debug) echo "SGE Parallel Environment job - $PE"
   set nodelist = `cat $PE_HOSTFILE | grep -v '^#' | sed 's/\ .*//'`
