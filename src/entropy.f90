@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.470 2007-01-15 16:11:50 ajohan Exp $
+! $Id: entropy.f90,v 1.471 2007-01-16 06:31:35 ajohan Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -166,7 +166,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.470 2007-01-15 16:11:50 ajohan Exp $")
+           "$Id: entropy.f90,v 1.471 2007-01-16 06:31:35 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -2817,7 +2817,7 @@ module Entropy
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ssmx',idiag_ssmx)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmx',idiag_TTmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'TTmx',idiag_TTmx)
       enddo
 !
 !  check for those quantities for which we want phi-averages
