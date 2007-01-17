@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.271 2007-01-15 12:31:01 dintrans Exp $
+! $Id: sub.f90,v 1.272 2007-01-17 17:27:14 wlyra Exp $
 
 module Sub
 
@@ -22,7 +22,7 @@ module Sub
 
   public :: get_nseed
 
-  public :: grad, div, div_mn, curl, curli, curl_mn
+  public :: grad, div, div_mn, curl, curli, curl_mn, div_other
   public :: gij, g2ij, bij_etc
   public :: der_step
   public :: u_dot_grad
@@ -1077,6 +1077,21 @@ module Sub
       g=g+tmp
 !
     end subroutine div
+!***********************************************************************
+    subroutine div_other(f,g)
+      use Cdata
+      use Deriv
+      real, dimension (mx,my,mz,3) :: f
+      real, dimension (nx) :: g, tmp
+!
+      call der(f(:,:,:,1),tmp,1)
+      g=tmp
+      call der(f(:,:,:,2),tmp,2)
+      g=g+tmp
+      call der(f(:,:,:,3),tmp,3)
+      g=g+tmp
+!
+    end subroutine div_other
 !***********************************************************************
     subroutine div_mn(aij,b,a)
 !
