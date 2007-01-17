@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.307 2007-01-13 21:44:26 dobler Exp $
+! $Id: hydro.f90,v 1.308 2007-01-17 17:24:19 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -129,7 +129,7 @@ module Hydro
   integer :: idiag_ekintot=0, idiag_ekin=0, idiag_ekinz=0
   integer :: idiag_fmassz=0, idiag_fkinz=0
   integer :: idiag_ur2m=0,idiag_up2m=0,idiag_uzz2m=0
-  integer :: idiag_urm=0,idiag_upm=0,idiag_uzzm=0
+  integer :: idiag_urm=0,idiag_upm=0,idiag_uzzm=0,idiag_mdot=0
   integer :: idiag_uzupm=0,idiag_uruzm=0,idiag_urupm=0
   integer :: idiag_totmass=0,idiag_totangmom=0
   integer :: idiag_rufm=0
@@ -176,7 +176,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.307 2007-01-13 21:44:26 dobler Exp $")
+           "$Id: hydro.f90,v 1.308 2007-01-17 17:24:19 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1081,8 +1081,8 @@ module Hydro
 !
         if (idiag_urm/=0 .or. idiag_upm/=0 .or. idiag_uzzm/=0 &
            .or. idiag_ur2m/=0 .or. idiag_up2m/=0 .or. idiag_uzz2m/=0 &
-           .or. idiag_urupm/=0 .or. idiag_uzupm/=0 .or. idiag_uruzm/=0) &
-           call calc_hydro_stress(p)
+           .or. idiag_urupm/=0 .or. idiag_uzupm/=0 .or. idiag_uruzm/=0 &
+           .or. idiag_mdot/=0) call calc_hydro_stress(f,p)
 !
 !  kinetic field components at one point (=pt)
 !
@@ -1250,13 +1250,7 @@ module Hydro
             f_target(:,j) = uu_const(j)
          enddo
       case('globaldisc')
-         tmp = (1-(plaw+1)*cs0**2)*g0*p%rcyl_mn**(-3)
-         where (tmp.ge.0)
-            OO=sqrt(tmp)
-         elsewhere
-            OO=0.
-         endwhere
-         !OO=sqrt(g0*rcyl_mn**(-3))
+         OO = sqrt(p%rcyl_mn**(-3) * (1-(1+plaw)*cs20))
          f_target(:,1) = -y(  m  )*OO
          f_target(:,2) =  x(l1:l2)*OO
          f_target(:,3) =  0.
@@ -1292,7 +1286,7 @@ module Hydro
 !
     endsubroutine set_border_hydro
 !***********************************************************************
-    subroutine calc_hydro_stress(p)
+    subroutine calc_hydro_stress(f,p)
 !
 !  Subroutine to calculate cylindrical stresses.
 !  Currently needs the runtime phi averages
@@ -1303,8 +1297,11 @@ module Hydro
       use Cdata
       use Sub
 !
+      real, dimension(mx,my,mz,mfarray) :: f
+      real,dimension(mx,my,mz,3) :: tmp
       type (pencil_case) :: p
-      real, dimension (nx) :: ur,up,uz
+      real, dimension (nx) :: ur,up,uz,divmassflux
+      integer :: i
 !
 ! from the runtime phi-average
 !
@@ -1321,6 +1318,13 @@ module Hydro
       if (idiag_urupm/=0)  call sum_lim_mn_name(p%rho*ur*up,idiag_urupm,p)
       if (idiag_uzupm/=0)  call sum_lim_mn_name(p%rho*uz*up,idiag_uzupm,p)
       if (idiag_uruzm/=0)  call sum_lim_mn_name(p%rho*ur*uz,idiag_uruzm,p)
+      if (idiag_mdot/=0) then
+         do i=1,3 
+            tmp(:,:,:,i)=f(:,:,:,ilnrho)*f(:,:,:,iuu+i-1)
+         enddo
+         call div_other(tmp,divmassflux)
+         call sum_lim_mn_name(divmassflux,idiag_mdot,p)
+      endif
 !
     endsubroutine calc_hydro_stress
 !***********************************************************************
@@ -1653,7 +1657,7 @@ module Hydro
         idiag_ux2my=0; idiag_uy2my=0; idiag_uz2my=0
         idiag_uxuymy=0; idiag_uxuzmy=0; idiag_uyuzmy=0
         idiag_ur2m=0; idiag_up2m=0; idiag_uzz2m=0
-        idiag_urm=0; idiag_upm=0; idiag_uzzm=0
+        idiag_urm=0; idiag_upm=0; idiag_uzzm=0; idiag_mdot=0
         idiag_uzupm=0; idiag_uruzm=0; idiag_urupm=0
         idiag_totmass=0; idiag_totangmom=0
         idiag_rufm=0
@@ -1726,6 +1730,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'urm',idiag_urm)
         call parse_name(iname,cname(iname),cform(iname),'upm',idiag_upm)
         call parse_name(iname,cname(iname),cform(iname),'uzzm',idiag_uzzm)
+        call parse_name(iname,cname(iname),cform(iname),'mdot',idiag_mdot)
         call parse_name(iname,cname(iname),cform(iname),'uzupm',idiag_uzupm)
         call parse_name(iname,cname(iname),cform(iname),'uruzm',idiag_uruzm)
         call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
@@ -1896,6 +1901,7 @@ module Hydro
         write(3,*) 'i_urm=',idiag_urm
         write(3,*) 'i_upm=',idiag_upm
         write(3,*) 'i_uzzm=',idiag_uzzm
+        write(3,*) 'i_mdot=',idiag_mdot
         write(3,*) 'i_ur2m=',idiag_ur2m
         write(3,*) 'i_up2m=',idiag_up2m
         write(3,*) 'i_uzz2m=',idiag_uzz2m
