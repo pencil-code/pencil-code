@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.79 2006-12-22 01:51:50 dobler Exp $
+! $Id: eos_idealgas.f90,v 1.80 2007-01-18 11:44:22 ajohan Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -9,7 +9,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1,cp1tilde,glnTT,TT,TT1
+! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp,cp1,cp1tilde,glnTT,TT,TT1
 ! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1
 !
 !***************************************************************
@@ -109,7 +109,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.79 2006-12-22 01:51:50 dobler Exp $')
+           '$Id: eos_idealgas.f90,v 1.80 2007-01-18 11:44:22 ajohan Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -414,6 +414,7 @@ module EquationOfState
 !
       logical, dimension(npencils) :: lpencil_in
 !
+      if (lpencil_in(i_cp)) lpencil_in(i_cp1)=.true.
       select case (ieosvars)
       case (ilnrho_ss,irho_ss)
         if (lpencil_in(i_ee)) then
@@ -656,6 +657,7 @@ module EquationOfState
 !
        if (lpencil(i_cv1)) p%cv1=cv1
        if (lpencil(i_cp1)) p%cp1=cp1
+       if (lpencil(i_cp))  p%cp=1/p%cp1
        if (lpencil(i_cp1tilde)) p%cp1tilde=cp1
 !
     endsubroutine calc_pencils_eos
