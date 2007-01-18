@@ -1,4 +1,5 @@
-! $Id: entropy.f90,v 1.477 2007-01-18 14:09:59 ajohan Exp $
+! $Id: entropy.f90,v 1.478 2007-01-18 23:22:38 dintrans Exp $
+
 !
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -166,7 +167,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.477 2007-01-18 14:09:59 ajohan Exp $")
+           "$Id: entropy.f90,v 1.478 2007-01-18 23:22:38 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -386,10 +387,8 @@ module Entropy
 !
         case('star_heat')
           if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
-          TT_ext=T0
-          call get_soundspeed(log(TT_ext),cs2_ext)
-          cs2cool=cs2_ext
-          print*,'TT_ext,cs2cool=',TT_ext,cs2cool
+          if (lroot) print*,'initialize_entropy: set cs2cool=cs20'
+          cs2cool=cs0**2
           call star_heat_grav(f)
 
       endselect
@@ -3250,17 +3249,19 @@ module Entropy
 !
 !  20-dec-06/dintrans: coded
 !
+    use Cdata
     use EquationOfState, only: gamma, gamma1, rho0, lnrho0, cs20, get_soundspeed,eoscalc, ilnrho_lnTT
     use Sub, only: step, erfunc
 
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+    real, dimension(nx) :: aa
 !
     integer, parameter   :: nr=100
     real, dimension (nr) :: r,lnrhom,tempm
     real                 :: u,r_mn,lnrho_r,temp_r,cs2,lnTT,ss
     integer              :: i,imn,istop,l,i1,i2,iter
     real :: rhotop,cs2top,rbot,rt_old,rt_new,rhobot,rb_old,rb_new,crit
-
+   
 !  the bottom value that we want for density at r=r_bcz
     rbot=1.
     rt_old=0.1*rbot
@@ -3354,9 +3355,8 @@ module Entropy
 !
 !  20-dec-06/dintrans: coded
 !
-    use EquationOfState, only: gamma, gamma1, mpoly0
     use Sub, only: erfunc
-    use IO
+    use EquationOfState, only: gamma, gamma1, mpoly0
     use FArrayManager
 
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -3383,7 +3383,6 @@ module Entropy
       gg_mn(:,2)=y(m)/rr_mn*g_r
       gg_mn(:,3)=z(n)/rr_mn*g_r
       f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
-!     call output_pencil(trim(directory)//'/grav.dat',gg_mn,3)
     enddo
 !
     endsubroutine star_heat_grav
