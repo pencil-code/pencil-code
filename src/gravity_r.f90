@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.10 2006-12-06 11:00:25 wlyra Exp $
+! $Id: gravity_r.f90,v 1.11 2007-01-18 09:55:26 dintrans Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -79,7 +79,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.10 2006-12-06 11:00:25 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.11 2007-01-18 09:55:26 dintrans Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -105,7 +105,6 @@ module Gravity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: gg_mn=0.
       real, dimension (nx)   :: g_r,rr_mn
-      real                   :: widthgg=0.01
       logical       :: lstarting
       logical, save :: first=.true.
       logical       :: lpade=.true. ! set to false for 1/r potential
@@ -157,10 +156,6 @@ module Gravity
 
         case ('smoothed-newton')
           if (lroot) print*,'initialize_gravity: smoothed 1/r potential'
-          lpade=.false.
-
-        case ('sph-hat')
-          if (lroot) print*,'initialize_gravity: hat profile'
           lpade=.false.
 
         case ('sph-const')
@@ -230,11 +225,7 @@ module Gravity
                                             cpot(3) /), rr_mn)**2
 
           else
-            if (ipotential .eq. 'sph-hat') then
-              ! hat profile for the two-layers system
-              g_r=step(rr_mn,r_int,widthgg)-step(rr_mn,r_ext,widthgg)
-              g_r=-g0*g_r
-            elseif (ipotential .eq. 'sph-const') then
+            if (ipotential .eq. 'sph-const') then
               g_r=-g0
             elseif (ipotential .eq. 'no-smooth') then
               g_r=-g0/rr_mn**2

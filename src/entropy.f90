@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.471 2007-01-16 06:31:35 ajohan Exp $
+! $Id: entropy.f90,v 1.472 2007-01-18 09:55:26 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -166,7 +166,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.471 2007-01-16 06:31:35 ajohan Exp $")
+           "$Id: entropy.f90,v 1.472 2007-01-18 09:55:26 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -389,6 +389,7 @@ module Entropy
           TT_ext=T0
           call get_soundspeed(log(TT_ext),cs2_ext)
           cs2cool=cs2_ext
+          print*,'TT_ext,cs2cool=',TT_ext,cs2cool
           call star_heat_grav(f)
 
       endselect
@@ -614,7 +615,7 @@ module Entropy
         case('hor-tube'); call htube2(ampl_ss,f,iss,iss,xx,yy,zz,radius_ss,epsilon_ss)
 
         case('mixinglength')
-           call mixinglength(cs2cool,mixinglength_flux,f)
+           call mixinglength(mixinglength_flux,f)
            if (ampl_ss/=0.) call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
            hcond0=-gamma/(gamma-1)*gravz/(mpoly0+1)/mixinglength_flux
            print*,'init_ss: hcond0=',hcond0
@@ -820,7 +821,7 @@ module Entropy
           !
           ! radial temperature profiles for spherical shell problem
           !
-          call information('init_ss',' two polytropic layers with heat')
+          call information('init_ss',' two polytropic layers with a central heating')
           call star_heat(f)
 
         case ('polytropic_simple')
@@ -1085,7 +1086,7 @@ module Entropy
 
     endsubroutine hydrostatic_isentropic
 !***********************************************************************
-    subroutine mixinglength(cs2cool_mlt,mixinglength_flux,f)
+    subroutine mixinglength(mixinglength_flux,f)
 !
 !  Mixing length initial condition.
 !
@@ -1104,12 +1105,11 @@ module Entropy
       use Cdata
       use Gravity, only: gravz, z1
       use General, only: safe_character_assign
-!--   use EquationOfState, only: mpoly1
-      use EquationOfState, only: gamma, gamma1, cs2top, cs0, rho0, cs20, lnrho0
+      use EquationOfState, only: gamma, gamma1, rho0, lnrho0, cs0, cs20, cs2top
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nzgrid) :: cs2m,lnrhom
-      real :: zm,ztop,cs2cool_mlt,mixinglength_flux,lnrho,cs2,ss
+      real :: zm,ztop,mixinglength_flux,lnrho,cs2,ss
       real :: zbot,rbot,rt_old,rt_new,rb_old,rb_new,crit, &
               rhotop,rhobot
       integer :: iter
@@ -1135,7 +1135,7 @@ module Entropy
 !  produce first estimate
 !
       rhotop=rt_old
-      cs2top=cs2cool_mlt
+      cs2top=cs20  ! just to be sure...
       call strat_MLT (rhotop, cs2top, mixinglength_flux, lnrhom, &
                   cs2m, rhobot)
       rb_old=rhobot
@@ -1170,15 +1170,14 @@ module Entropy
    10 continue
    20 if (ipz.eq.0) print*,'- iteration completed: rhotop,crit=',rhotop,crit
 !
-! redefine cs0 and rho0 as we don't have rho0=1 at the top (important for the eos stuff!)
+! redefine rho0 and lnrho0 as we don't have rho0=1 at the top 
+! (important for eoscalc!)
 ! put density and entropy into f-array
 ! write the initial stratification in data/proc*/stratMLT.dat
 !
-      cs0=sqrt(cs2cool_mlt)
-      cs20=cs0**2
-      rho0=exp(lnrhom(1))
-      lnrho0=lnrhom(1)
-      print*,'new rho0, lnrho0, cs0 and cs20=',rho0,lnrho0,cs0,cs20
+      rho0=rhotop
+      lnrho0=log(rhotop)
+      print*,'new rho0 and lnrho0=',rho0,lnrho0
 !
       call safe_character_assign(wfile,trim(directory)//'/stratMLT.dat')
       open(11+ipz,file=wfile,status='unknown')
@@ -2435,7 +2434,8 @@ module Entropy
       if (lfirst .and. ip == 13) then
          call output_pencil(trim(directory)//'/heatcond.dat',thdiff,1)
       endif
-      if (headt .and. lfirst .and. ip<=9) then
+!     if (headt .and. lfirst .and. ip<=9) then
+      if (lfirst .and. ip<=9) then
         call output_pencil(trim(directory)//'/chi.dat',chix,1)
         call output_pencil(trim(directory)//'/hcond.dat',hcond,1)
         call output_pencil(trim(directory)//'/glhc.dat',glhc,3)
@@ -3247,49 +3247,64 @@ module Entropy
 !
 !  20-dec-06/dintrans: coded
 !
-    use EquationOfState, only: gamma, gamma1, mpoly0, mpoly1, lnrho0
-    use Sub,             only: step, erfunc
+    use EquationOfState, only: gamma, gamma1, rho0, lnrho0, cs20, get_soundspeed,eoscalc, ilnrho_lnTT
+    use Sub, only: step, erfunc
 
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-    !
-    integer, parameter :: nr=32
-    real, dimension (nr) :: r,eps,flumi,hcond,grav,temp,lnrho,ss,c1
-    real, dimension (3)  :: gg_mn=0.
-    real                 :: dtemp,dlnrho,dss,dr,u,r_mn,g_r,lnrho_r,ss_r
-    integer            :: i,imn,istop,l,i1,i2
-    integer, pointer   :: iglobal_gg
+!
+    integer, parameter   :: nr=32
+    real, dimension (nr) :: r,lnrhom,tempm
+    real                 :: u,r_mn,lnrho_r,temp_r,cs2,lnTT,ss
+    integer              :: i,imn,istop,l,i1,i2,iter
+    real :: rhotop,cs2top,rbot,rt_old,rt_new,rhobot,rb_old,rb_new,crit
 
+!  the bottom value that we want for density at r=r_bcz
+    rbot=1.
+    rt_old=0.1*rbot
+    rt_new=0.12*rbot
+
+!  need to iterate for rhobot=1
+!  produce first estimate
+    rhotop=rt_old
+    cs2top=cs20    ! just to be sure...
+    call strat_heat(rhotop,cs2top,lnrhom,tempm,rhobot)
+    rb_old=rhobot
+
+!  next estimate
+    rhotop=rt_new
+    call strat_heat(rhotop,cs2top,lnrhom,tempm,rhobot)
+    rb_new=rhobot
+
+    do 10 iter=1,10
+!  new estimate
+      rhotop=rt_old+(rt_new-rt_old)/(rb_new-rb_old)*(rbot-rb_old)
+!
+!  check convergence
+!
+      crit=abs(rhotop/rt_new-1.)
+      if (crit.le.1e-4) goto 20
+      call strat_heat(rhotop,cs2top,lnrhom,tempm,rhobot)
+!
+!
+!  update new estimates
+!
+      rt_old=rt_new
+      rb_old=rb_new
+      rt_new=rhotop
+      rb_new=rhobot
+ 10 continue
+ 20 print*,'- iteration completed: rhotop,crit=',rhotop,crit
+
+!  redefine rho0 and lnrho0 (important for eoscalc!)
+    rho0=rhotop
+    lnrho0=log(rhotop)
+    T0=cs20/gamma1
+    print*,'final rho0, lnrho0, T0=',rho0, lnrho0, T0
+    
+!  the radial grid on which we know rho and temp
     do i=1,nr
-!     r(i)=r_ext*float(i-1)/(nr-1)
-      r(i)=xyz1(1)*float(i-1)/(nr-1)
+      r(i)=r_ext*float(i-1)/(nr-1)
     enddo
-
-    flumi(1)=0. 
-    do i=2,nr
-      u=r(i)/sqrt(2.)/wheat
-      flumi(i)=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
-      write(11,'(3e14.5)') r(i),flumi(i)
-    enddo
-
-    hcond1=(mpoly1+1.)/(mpoly0+1.)
-    hcond=1.+(hcond1-1.)*step(r,r_bcz,-widthss)
-    hcond=hcond0*hcond
-
-    temp(nr)=1. ; lnrho(nr)=0. ; ss(nr)=0.
-    dr=r(2)
-    do i=nr-1,1,-1
-      dtemp=flumi(i+1)/(4.*pi*r(i+1)**2)/hcond(i+1)
-      if (r(i+1) .gt. r_bcz) then
-        dlnrho=mpoly0*dtemp
-        dss=dtemp*((mpoly0+1.)/gamma-mpoly0)
-      else
-        dlnrho=mpoly1*dtemp
-        dss=dtemp*((mpoly1+1.)/gamma-mpoly1)
-      endif
-      temp(i)=temp(i+1)+dtemp*dr
-      lnrho(i)=lnrho(i+1)+dlnrho*dr
-      ss(i)=ss(i+1)+dss*dr
-    enddo 
 
     do imn=1,ny*nz
       n=nn(imn)
@@ -3298,28 +3313,33 @@ module Entropy
       do l=l1,l2
         r_mn=sqrt(x(l)**2+y(m)**2+z(n)**2)
         if (r_mn > r_ext) then
-          lnrho_r=lnrho(nr)
-          ss_r=ss(nr)
+          lnrho_r=lnrhom(nr)
+          temp_r=T0
         else
           istop=0 ; i=1
-          do while (istop .ne. 1)
+          do while (istop /= 1)
             if (r(i) >= r_mn) istop=1
             i=i+1
           enddo
           i1=i-2 ; i2=i-1
-          lnrho_r=(lnrho(i1)*(r(i2)-r_mn)+lnrho(i2)*(r_mn-r(i1)))/(r(i2)-r(i1))
-          ss_r=(ss(i1)*(r(i2)-r_mn)+ss(i2)*(r_mn-r(i1)))/(r(i2)-r(i1))
+          lnrho_r=(lnrhom(i1)*(r(i2)-r_mn)+lnrhom(i2)*(r_mn-r(i1)))/(r(i2)-r(i1))
+          temp_r=(tempm(i1)*(r(i2)-r_mn)+tempm(i2)*(r_mn-r(i1)))/(r(i2)-r(i1))
         endif
         f(l,m,n,ilnrho)=lnrho_r
-        f(l,m,n,iss)=ss_r
+        lnTT=log(temp_r)
+        call eoscalc(ilnrho_lnTT,lnrho_r,lnTT,ss=ss)
+        f(l,m,n,iss)=ss
       enddo
     enddo
 !
-    print*,'--> write in data/model'
+    print*,'--> write initial setup in data/model'
     open(unit=1,file='data/model',status='unknown')
-    write(1,'(6a12)') 'r','lumi','hcond','temp','rho','ss'
-    do i=1,nr
-      write(1,'(6e12.3)') r(i),flumi(i),hcond(i),temp(i),exp(lnrho(i)),ss(i)
+    write(1,'(a6,3a14)') 'r','rho','ss','cs2'
+    do i=nr,1,-1
+      lnTT=log(tempm(i))
+      call get_soundspeed(lnTT,cs2)
+      call eoscalc(ilnrho_lnTT,lnrhom(i),lnTT,ss=ss)
+      write(1,'(f6.3,3e14.5)') r(i),exp(lnrhom(i)),ss,cs2
     enddo
     close(1)
 
@@ -3364,5 +3384,68 @@ module Entropy
     enddo
 !
     endsubroutine star_heat_grav
+!***********************************************************************
+    subroutine strat_heat(rhotop,cs2top,lnrhom,tempm,rhobot)
+!
+!  compute the radial stratification for two superposed polytropic
+!  layers and a central heating
+!
+!  17-jan-07/dintrans: coded
+!
+    use EquationOfState, only: gamma, gamma1, mpoly0, mpoly1, lnrho0, cs20
+    use Sub, only: step, erfunc
+
+    integer, parameter   :: nr=32
+    integer              :: i,nbot1,nbot2
+    real, dimension (nr) :: r,flumim,hcondm,tempm,lnrhom
+    real                 :: dtemp,dlnrho,dr,u,rhotop,cs2top,  &
+                            rhobot,lnrhobot
+
+    do i=1,nr
+      r(i)=r_ext*float(i-1)/(nr-1)
+    enddo
+
+    flumim(1)=0. 
+    do i=2,nr
+      u=r(i)/sqrt(2.)/wheat
+      flumim(i)=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
+    enddo
+
+!  radiative conductivity profile
+    hcond1=(mpoly1+1.)/(mpoly0+1.)
+    hcondm=1.+(hcond1-1.)*step(r,r_bcz,-widthss)
+    hcondm=hcond0*hcondm
+
+!  start from surface values for rho and temp
+    tempm(nr)=cs2top/gamma1 ; lnrhom(nr)=log(rhotop)
+    dr=r(2)
+    do i=nr-1,1,-1
+      dtemp=flumim(i+1)/(4.*pi*r(i+1)**2)/hcondm(i+1)
+      if (r(i+1) > r_bcz) then
+        dlnrho=mpoly0*dtemp
+      else
+        dlnrho=mpoly1*dtemp
+      endif
+      tempm(i)=tempm(i+1)+dtemp*dr
+      lnrhom(i)=lnrhom(i+1)+dlnrho*dr
+    enddo 
+!
+!  find the value of rhobot
+!
+    do i=1,nr
+      if (r(i) > r_bcz) exit
+    enddo
+!   stop 'find rhobot: didnt find bottom value of z'
+    nbot1=i-1
+    nbot2=i
+!
+!  interpolate
+!
+    lnrhobot=lnrhom(nbot1)+(lnrhom(nbot2)-lnrhom(nbot1))/ &
+             (r(nbot2)-r(nbot1))*(r_bcz-r(nbot1))
+    rhobot=exp(lnrhobot)
+    print*,'find rhobot=',rhobot,r(nbot1),r(nbot2)
+
+    endsubroutine strat_heat
 !***********************************************************************
 endmodule Entropy
