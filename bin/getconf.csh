@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.185 2007-01-16 16:37:00 theine Exp $
+# $Id: getconf.csh,v 1.186 2007-01-18 22:52:23 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -643,6 +643,11 @@ else if ($hn =~ hades) then
 
 else if ($hn =~ kolmogorov) then
   echo "Kolmogorov on Wolfgang's desk"
+  set mpirun = 'mpiexec'
+  set mpirunops = '-boot'
+
+else if ($hn =~ kepler) then
+  echo "Kepler in Calgary"
   set mpirun = 'mpiexec'
   set mpirunops = '-boot'
 
