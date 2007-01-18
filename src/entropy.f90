@@ -1,9 +1,8 @@
-! $Id: entropy.f90,v 1.472 2007-01-18 09:55:26 dintrans Exp $
-
-
+! $Id: entropy.f90,v 1.473 2007-01-18 10:28:14 ajohan Exp $
+!
 !  This module takes care of entropy (initial condition
 !  and time advance)
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -165,8 +164,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-
-           "$Id: entropy.f90,v 1.472 2007-01-18 09:55:26 dintrans Exp $")
+           "$Id: entropy.f90,v 1.473 2007-01-18 10:28:14 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1715,7 +1713,7 @@ module Entropy
 !
       real, dimension (nx) :: rhs,Hmax=0.
       real, dimension (nx) :: vKpara,vKperp
-      real :: zbot,ztop,xi,profile_cor
+      real :: ztop,xi,profile_cor
       real :: uT
       integer :: j,ju
 !
@@ -1727,16 +1725,10 @@ module Entropy
       if (headtt.or.ldebug) print*,'dss_dt: SOLVE dss_dt'
       if (headtt) call identify_bcs('ss',iss)
 !
-!  define bottom and top z positions
-!
-      zbot=xyz0(3)
-      ztop=xyz0(3)+Lxyz(3)
-!
 !  calculate cs2, TT1, and cp1 in a separate routine
 !  With IONIZATION=noionization, assume perfect gas with const coeffs
 !
-      if (headtt) print*,'dss_dt: lnTT,cs2,cp1=', &
-          p%lnTT(1), p%cs2(1), p%cp1(1)
+      if (headtt) print*,'dss_dt: lnTT,cs2,cp1=', p%lnTT(1), p%cs2(1), p%cp1(1)
 !
 !  ``cs2/dx^2'' for timestep
 !
@@ -1755,7 +1747,17 @@ module Entropy
           enddo
         endif
 !
-!  velocity damping in the coronal heating zone
+!  Add pressure force from global density gradient.
+!
+      if (maxval(abs(beta_glnrho_global))/=0.0) then
+        if (headtt) print*, 'dss_dt: adding global pressure gradient force'
+        do j=1,3
+          df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
+              - 1/gamma*p%cs2*beta_glnrho_scaled(j)
+        enddo
+      endif
+!
+!  Velocity damping in the coronal heating zone
 !
         if (tau_cor>0) then
           if (z(n)>=z_cor) then
@@ -1768,7 +1770,7 @@ module Entropy
 !
       endif
 !
-!  advection term
+!  Advection of entropy.
 !
       if (ladvection_entropy) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
 !
@@ -1776,27 +1778,23 @@ module Entropy
 !
       if (pretend_lnTT) df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-p%divu*p%ss
 !
-!  Add pressure force from global density gradient.
-!
-      if (maxval(abs(beta_glnrho_global))/=0.0) then
-        if (headtt) print*, 'dss_dt: adding global pressure gradient force'
-        do j=1,3
-          df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
-              - 1/gamma*p%cs2*beta_glnrho_scaled(j)
-        enddo
-      endif
-!
 !  Calculate viscous contribution to entropy
 !
-      if (lviscosity) then
-         if (lviscosity_heat)   call calc_viscous_heat(f,df,p,Hmax)
-      endif
+      if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(f,df,p,Hmax)
 !
-!  thermal conduction
+!  Thermal conduction delegated to different subroutines.
 !
-      if (lheatc_Kconst) call calc_heatcond(f,df,p)
-      if (lheatc_simple) call calc_heatcond_simple(df,p)
+      if (lheatc_Kconst)   call calc_heatcond(f,df,p)
+      if (lheatc_simple)   call calc_heatcond_simple(df,p)
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
+      if (lheatc_shock)    call calc_heatcond_shock(df,p)
+      if (lheatc_hyper3ss) call calc_heatcond_hyper3(df,p)
+      if (lheatc_spitzer)  call calc_heatcond_spitzer(df,p)
+      if (lheatc_corona) then
+        call calc_heatcond_spitzer(df,p)
+        call newton_cool(df,p)
+        call calc_heat_cool_RTV(df,p)
+      endif
       if (lheatc_tensordiffusion) then
         vKpara(:) = Kgpara
         vKperp(:) = Kgperp
@@ -1806,37 +1804,27 @@ module Entropy
            dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
         endif
       endif
-      if (lheatc_spitzer) call calc_heatcond_spitzer(df,p)
-      if (lheatc_corona) then
-        call calc_heatcond_spitzer(df,p)
-        call newton_cool(df,p)
-        call calc_heat_cool_RTV(df,p)
-      endif
-      if (lheatc_shock) call calc_heatcond_shock(df,p)
-      if (lheatc_hyper3ss) call calc_heatcond_hyper3(df,p)
 !
-!
-!  heating/cooling
+!  Explicit heating/cooling terms.
 !
       if ((luminosity /= 0) .or. &
           (cool /= 0) .or. &
           (tau_cor /= 0) .or. &
           (tauheat_buffer /= 0) .or. &
           (heat_uniform /= 0) .or. &
-          (cool_ext /= 0 .AND. cool_int /= 0) .or. &
+          (cool_ext /= 0 .and. cool_int /= 0) .or. &
           (lturbulent_heat)) &
           call calc_heat_cool(df,p,Hmax)
 !
-!  interstellar radiative cooling and UV heating
+!  Interstellar radiative cooling and UV heating.
 !
-      if (linterstellar) &
-          call calc_heat_cool_interstellar(f,df,p,Hmax)
+      if (linterstellar) call calc_heat_cool_interstellar(f,df,p,Hmax)
 !
-!  possibility of entropy relaxation in exterior region
+!  Possibility of entropy relaxation in exterior region.
 !
       if (tau_ss_exterior/=0.) call calc_tau_ss_exterior(df,p)
-
-!  entry possibility for "personal" entries.
+!
+!  Entry possibility for "personal" entries.
 !  In that case you'd need to provide your own "special" routine.
 !
       if (lspecial) call special_calc_entropy(f,df,p)
@@ -1845,8 +1833,7 @@ module Entropy
 !
       if (lborder_profiles) call set_border_entropy(f,df,p)
 !
-!  phi-averages
-!  Note that this does not necessarily happen with ldiagnos=.true.
+!  Phi-averages.
 !
       if (l2davgfirst) then
         call phisum_mn_name_rz(p%ss,idiag_ssmphi)
@@ -1856,7 +1843,7 @@ module Entropy
 !
 !      if (lfirst.and.ldt) dt1_max=max(dt1_max,Hmax/ee/cdts)
 !
-!  Calculate entropy related diagnostics
+!  Calculate entropy related diagnostics.
 !
       if (ldiagnos) then
         !uT=unit_temperature !(define shorthand to avoid long lines below)
@@ -1880,14 +1867,13 @@ module Entropy
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
         if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma11,idiag_TTp,p)
 !
-!  xy averages for fluxes; doesn't need to be as frequent (check later)
 !  idiag_fradz is done in the calc_headcond routine
-!
-        if (idiag_fconvz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
+        if (idiag_fconvz/=0) &
+            call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
         if (idiag_ssmz/=0) call xysum_mn_name_z(p%ss,idiag_ssmz)
         if (idiag_ssmy/=0) call xzsum_mn_name_y(p%ss,idiag_ssmy)
         if (idiag_ssmx/=0) call yzsum_mn_name_x(p%ss,idiag_ssmx)
-        if (idiag_TTmx/=0) call yzsum_mn_name_x(p%TT,idiag_TTmx)
+        if (idiag_TTmx/=0) call yzsum_mn_name_x(p%TT,idiag_TTmz)
         if (idiag_TTmy/=0) call xzsum_mn_name_y(p%TT,idiag_TTmy)
         if (idiag_TTmz/=0) call xysum_mn_name_z(p%TT,idiag_TTmz)
       endif
@@ -2293,7 +2279,6 @@ module Entropy
       use Sub
       use IO
       use Gravity
-!     use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2795,15 +2780,11 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'TTp',idiag_TTp)
       enddo
 !
-!  check for those quantities for which we want xy-averages
+!  check for those quantities for which we want yz-averages
 !
-      do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fturbz',idiag_fturbz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fconvz',idiag_fconvz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'dcoolz',idiag_dcoolz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz',idiag_fradz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssmz',idiag_ssmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ssmx',idiag_ssmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'TTmx',idiag_TTmx)
       enddo
 !
 !  check for those quantities for which we want xz-averages
@@ -2813,11 +2794,15 @@ module Entropy
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'TTmy',idiag_TTmy)
       enddo
 !
-!  check for those quantities for which we want yz-averages
+!  check for those quantities for which we want xy-averages
 !
-      do inamex=1,nnamex
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ssmx',idiag_ssmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'TTmx',idiag_TTmx)
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fturbz',idiag_fturbz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fconvz',idiag_fconvz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'dcoolz',idiag_dcoolz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz',idiag_fradz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssmz',idiag_ssmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
       enddo
 !
 !  check for those quantities for which we want phi-averages
