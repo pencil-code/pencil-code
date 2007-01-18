@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.43 2007-01-10 20:17:07 dobler Exp $
+! $Id: viscosity.f90,v 1.44 2007-01-18 13:55:09 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -89,7 +89,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.43 2007-01-10 20:17:07 dobler Exp $")
+           "$Id: viscosity.f90,v 1.44 2007-01-18 13:55:09 ajohan Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -425,18 +425,11 @@ module Viscosity
       intent(in) :: f
       intent(inout) :: p
 !
-!  Viscosity operator
+!  Viscous force and viscous heating are calculated here (for later use).
 !
       p%fvisc=0.0
-      p%diffus_total=0.0
       p%visc_heat=0.0
-!!
-!! Calculate the heating term due to the viscous force
-!!
-!      if (lpencil(i_visc_heat)) then
-!        call dot_mn(p%uu,p%fvisc,ufvisc)
-!        p%visc_heat = -ufvisc
-!      endif
+      p%diffus_total=0.0
 !
       if (lvisc_simplified) then
 !
@@ -708,17 +701,14 @@ module Viscosity
       real, dimension (nx) :: Hmax
 !
 !  Add viscous heat (which has units of energy/mass) to the RHS
-!  of the entropy ...
+!  of the entropy...
 !
-      if (lentropy) then
-         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) +  p%TT1*p%visc_heat
-      endif
+      if (lentropy) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) +  p%TT1*p%visc_heat
 !
 !  ... or temperature equation.
 !
-      if (ltemperature) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%visc_heat
-      endif
+      if (ltemperature) &
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%visc_heat
 !
       if (lfirst .and. ldt) Hmax=Hmax+p%visc_heat
 !
@@ -726,9 +716,7 @@ module Viscosity
 !  Just neccessary immediately before writing snapshots, but how would we
 !  know we are?
 !
-      if (lvisc_heat_as_aux) then
-        f(l1:l2,m,n,ivisc_heat) = p%visc_heat
-      endif
+      if (lvisc_heat_as_aux) f(l1:l2,m,n,ivisc_heat) = p%visc_heat
 !
     endsubroutine calc_viscous_heat
 !***********************************************************************
@@ -780,9 +768,7 @@ module Viscosity
            call max_mn_name(sqrt(p%u2(:))*dxmax/p%diffus_total,idiag_meshRemax)
 !  Viscous heating as explicit analytical term.
         if (idiag_epsK/=0) then
-!           call dot2(p%uu,fvisc,visc_heat)
-!           call sum_mn_name(visc_heat,idiag_epsK)
-          if (lvisc_nu_const) call sum_mn_name(2*nu*p%rho*p%sij2,idiag_epsK)
+          if (lvisc_nu_const)     call sum_mn_name(2*nu*p%rho*p%sij2,idiag_epsK)
           if (lvisc_rho_nu_const) call sum_mn_name(2*nu*p%sij2,idiag_epsK)
           if (lvisc_nu_shock) &  ! Heating from shock viscosity.
               call sum_mn_name((nu_shock*p%shock*p%divu**2)*p%rho,idiag_epsK)
@@ -796,9 +782,7 @@ module Viscosity
 !  analytical heating term, so that epsK and epsK2 are equals.
 !  However, in strongly random flow, there can be significant difference
 !  between epsK and epsK2, even for periodic boundaries.
-        if (idiag_epsK2/=0) then
-          call sum_mn_name(p%visc_heat*p%rho,idiag_epsK2)
-        endif
+        if (idiag_epsK2/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK2)
 !  Viscous heating for Smagorinsky viscosity.
         if (idiag_epsK_LES/=0) then
           if (lvisc_smag_simplified) then
