@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.473 2007-01-18 10:28:14 ajohan Exp $
+! $Id: entropy.f90,v 1.474 2007-01-18 11:57:56 ajohan Exp $
 !
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -56,6 +56,7 @@ module Entropy
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
   real :: heat_uniform=0.,cool_RTV=0.
   real :: deltaT_poleq=0.,beta_hand=1.,r_bcz=0.
+  real :: tau_cool=0.0, TTref_cool=0.0
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kconst=.false.,lheatc_simple=.false.,lheatc_chiconst=.false.
@@ -113,7 +114,7 @@ module Entropy
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
       T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat, &
-      r_bcz,luminosity,wheat,hcond0
+      r_bcz,luminosity,wheat,hcond0,tau_cool,TTref_cool
   ! run parameters
   namelist /entropy_run_pars/ &
       hcond0,hcond1,hcond2,widthss,borderss, &
@@ -128,7 +129,8 @@ module Entropy
       heat_uniform,lupw_ss,cool_int,cool_ext,chi_hyper3, &
       lturbulent_heat,deltaT_poleq,lpressuregradient_gas, &
       tdown, allp,beta_glnrho_global,ladvection_entropy, &
-      lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global
+      lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global, &
+      tau_cool,TTref_cool
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
@@ -164,7 +166,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.473 2007-01-18 10:28:14 ajohan Exp $")
+           "$Id: entropy.f90,v 1.474 2007-01-18 11:57:56 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1574,7 +1576,7 @@ module Entropy
       if (lheatc_shock) then
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_gss)=.true.
-        lpenc_requested(i_del2ss)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_gshock)=.true.
         lpenc_requested(i_shock)=.true.
         lpenc_requested(i_glnTT)=.true.
@@ -1586,6 +1588,10 @@ module Entropy
           lpenc_requested(i_z_mn)=.true.
           lpenc_requested(i_rcyl_mn)=.true.
         endif
+      endif
+      if (tau_cool/=0.0) then
+        lpenc_requested(i_cp)=.true.
+        lpenc_requested(i_TT)=.true.
       endif
 !
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
@@ -1807,13 +1813,10 @@ module Entropy
 !
 !  Explicit heating/cooling terms.
 !
-      if ((luminosity /= 0) .or. &
-          (cool /= 0) .or. &
-          (tau_cor /= 0) .or. &
-          (tauheat_buffer /= 0) .or. &
-          (heat_uniform /= 0) .or. &
-          (cool_ext /= 0 .and. cool_int /= 0) .or. &
-          (lturbulent_heat)) &
+      if ((luminosity/=0.0) .or. (cool/=0.0) .or. &
+          (tau_cor/=0.0) .or. (tauheat_buffer/=0.0) .or. &
+          (heat_uniform/=0.0) .or. (tau_cool/=0.0) &
+          (cool_ext/=0.0 .and. cool_int/=0.0) .or. lturbulent_heat) &
           call calc_heat_cool(df,p,Hmax)
 !
 !  Interstellar radiative cooling and UV heating.
@@ -2095,7 +2098,7 @@ module Entropy
           thdiff=thdiff+chi_t*(p%del2ss+g2)
         endif
       else
-        thdiff=chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
+        thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
         if (chi_t/=0.) then
           call dot(p%glnrho+p%glnTT,p%gss,g2)
           thdiff=thdiff+chi_t*(p%del2ss+g2)
@@ -2588,6 +2591,10 @@ module Entropy
 !  add spatially uniform heating (usually as a test)
 !
       if (heat_uniform/=0.) heat=heat+heat_uniform
+!
+!  Constant cooling time to TTref_cool.
+!
+      if (tau_cool/=0.0) heat=heat-p%cp*(p%TT-TTref_cool)/tau_cool
 !
 !  add "coronal" heating (to simulate a hot corona)
 !  assume a linearly increasing reference profile
