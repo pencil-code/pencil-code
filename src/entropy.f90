@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.476 2007-01-18 13:54:28 ajohan Exp $
+! $Id: entropy.f90,v 1.477 2007-01-18 14:09:59 ajohan Exp $
 !
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -134,7 +134,7 @@ module Entropy
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
-  integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0,idiag_pdivum=0
+  integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0,idiag_pdivum=0,idiag_heatm=0
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
   integer :: idiag_yHm=0,idiag_yHmax=0,idiag_TTm=0,idiag_TTmax=0,idiag_TTmin=0
   integer :: idiag_fconvz=0,idiag_dcoolz=0,idiag_fradz=0,idiag_fturbz=0
@@ -166,7 +166,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.476 2007-01-18 13:54:28 ajohan Exp $")
+           "$Id: entropy.f90,v 1.477 2007-01-18 14:09:59 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -2452,7 +2452,7 @@ module Entropy
 !***********************************************************************
     subroutine calc_heat_cool(df,p,Hmax)
 !
-!  add combined heating and cooling
+!  Add combined heating and cooling to entropy equation.
 !
 !  02-jul-02/wolf: coded
 !
@@ -2466,48 +2466,46 @@ module Entropy
       real, dimension (nx) :: Hmax
 !
       real, dimension (nx) :: heat,prof,theta_profile
-      real :: ssref,zbot,ztop,profile_buffer,xi,profile_cor
+      real :: zbot,ztop,profile_buffer,xi,profile_cor
 !
       intent(in) :: p
       intent(out) :: df
 !
-      if (pretend_lnTT) call fatal_error("calc_heat_cool","not implemented when pretend_lnTT = T")
+      if (pretend_lnTT) call fatal_error( &
+          'calc_heat_cool','not implemented when pretend_lnTT = T')
 !
-!  identifier
+!  Vertical gravity determines some heat/cool models.
 !
-      if (headtt) print*,'calc_heat_cool: lgravz=',lgravz
+      if (headtt) print*, 'calc_heat_cool: lgravz=', lgravz
 !
-!  define bottom and top height
+!  Define bottom and top height.
 !
       zbot=xyz0(3)
       ztop=xyz0(3)+Lxyz(3)
 !
-!  initialize
+!  Initialize heating/cooling term.
 !
       heat=0.
 !
-!  Vertical case:
-!  Heat at bottom, cool top layers
+!  Vertical gravity case: Heat at bottom, cool top layers
 !
-      if (lgravz .and. (luminosity .ne. 0. .or. cool .ne. 0.)) then
+      if (lgravz .and. ( (luminosity/=0.) .or. (cool/=0.) ) ) then
 !
 !  TEMPORARY: Add heat near bottom. Wrong: should be Heat/(T*rho)
 !AB: Wolfgang, the last part of above comment seems wrong;
 !AB: We do divide by rho and T. But what about the heating profile?
 !
-! heating profile, normalised, so volume integral = 1
+!  Heating profile, normalised, so volume integral = 1
         prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
              /(sqrt(pi/2.)*wheat*Lx*Ly)
         heat = luminosity*prof
-! smoothly switch on heating if required
-        if ((ttransient > 0) .and. (t < ttransient)) then
+!  Smoothly switch on heating if required.
+        if ((ttransient>0) .and. (t<ttransient)) then
           heat = heat * t*(2*ttransient-t)/ttransient**2
         endif
-!AB: is ssref used anywhere?
-        ssref = ss0 + (-log(gamma) + log(cs20))/gamma + grads0*ztop
 !
-!  allow for different cooling profile functions
-!  The gaussian default is rather broad and disturbs the entire interior
+!  Allow for different cooling profile functions.
+!  The gaussian default is rather broad and disturbs the entire interior.
 !
         if (headtt) print*, 'cooling_profile: cooling_profile,z2,wcool=', &
             cooling_profile, z2, wcool
@@ -2520,36 +2518,35 @@ module Entropy
           prof = cubic_step(spread(z(n),1,nx),z2,wcool)
         endselect
 !
-!  write out (during first time step only) and apply
+!  Write out cooling profile (during first time step only) and apply.
 !
         call write_zprof('cooling_profile',prof)
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
 !
-!  Write divergence of cooling flux
+!  Write divergence of cooling flux.
 !
         if (ldiagnos) then
           if (idiag_dcoolz/=0) call xysum_mn_name_z(heat,idiag_dcoolz)
         endif
       endif
 !
-!  Spherical case:
-!  heat at centre, cool outer layers
+!  Spherical gravity case: heat at centre, cool outer layers.
 !
       if (lgravr) then
-        ! central heating
-        ! heating profile, normalised, so volume integral = 1
+!  central heating
+!  heating profile, normalised, so volume integral = 1
         prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5)
         heat = luminosity*prof
         if (headt .and. lfirst .and. ip<=9) &
           call output_pencil(trim(directory)//'/heat.dat',heat,1)
-        ! surface cooling; entropy or temperature
-        ! cooling profile; maximum = 1
+!  surface cooling; entropy or temperature
+!  cooling profile; maximum = 1
 !        prof = 0.5*(1+tanh((r_mn-1.)/wcool))
         if (rcool==0.) rcool=r_ext
         prof = step(p%r_mn,rcool,wcool)
-        !
-        !  pick type of cooling
-        !
+!
+!  pick type of cooling
+!
         select case(cooltype)
         case ('cs2', 'Temp')    ! cooling to reference temperature cs2cool
           heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
@@ -2562,14 +2559,13 @@ module Entropy
         case ('shell')          !  heating/cooling at shell boundaries
           heat=0.                            ! default
           select case(initss(1))
-!           case ('geo-kws','shell_layers'); heat=0.        ! can add heating later based on value of initss
             case ('geo-kws'); heat=0.    ! can add heating later based on value of initss
           endselect
-          !
-          !  possibility of a latitudinal heating profile
-          !  T=T0-(2/3)*delT*P2(costheta), for testing Taylor-Proudman theorem
-          !  Note that P2(x)=(1/2)*(3*x^2-1).
-          !
+!
+!  possibility of a latitudinal heating profile
+!  T=T0-(2/3)*delT*P2(costheta), for testing Taylor-Proudman theorem
+!  Note that P2(x)=(1/2)*(3*x^2-1).
+!
           if (deltaT_poleq/=0.) then
             if (headtt) print*,'calc_heat_cool: deltaT_poleq=',deltaT_poleq
             if (headtt) print*,'p%rcyl_mn=',p%rcyl_mn
@@ -2593,16 +2589,16 @@ module Entropy
         endselect
       endif
 !
-!  add spatially uniform heating (usually as a test)
+!  Add spatially uniform heating.
 !
       if (heat_uniform/=0.) heat=heat+heat_uniform
 !
-!  Constant cooling time to TTref_cool.
+!  Add cooling with constant time-scale to TTref_cool.
 !
       if (tau_cool/=0.0) heat=heat-p%cp*(p%TT-TTref_cool)/tau_cool
 !
-!  add "coronal" heating (to simulate a hot corona)
-!  assume a linearly increasing reference profile
+!  Add "coronal" heating (to simulate a hot corona).
+!  Assume a linearly increasing reference profile.
 !  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
 !
       if (tau_cor>0) then
@@ -2613,7 +2609,7 @@ module Entropy
         endif
       endif
 !
-!  add heating and cooling to a reference temperature in a buffer
+!  Add heating and cooling to a reference temperature in a buffer
 !  zone at the z boundaries. Only regions in |z| > zheat_buffer are affected.
 !  Inverse width of the transition is given by dheat_buffer1.
 !
@@ -2625,10 +2621,16 @@ module Entropy
             (TTheat_buffer-1/p%TT1)/(p%rho1*tauheat_buffer)
       endif
 !
-!  add to entropy equation
+!  Add heating/cooling to entropy equation.
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%rho1*heat
       if (lfirst.and.ldt) Hmax=Hmax+heat*p%rho1
+!
+!  Heating/cooling related diagnostics.
+!
+      if (ldiagnos) then
+        if (idiag_heatm/=0) call sum_mn_name(heat,idiag_heatm)
+      endif
 !
     endsubroutine calc_heat_cool
 !***********************************************************************
@@ -2763,7 +2765,7 @@ module Entropy
 !
       if (lreset) then
         idiag_dtc=0; idiag_eth=0; idiag_ethdivum=0; idiag_ssm=0
-        idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_pdivum=0
+        idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_pdivum=0; idiag_heatm=0
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
@@ -2783,6 +2785,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
         call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
+        call parse_name(iname,cname(iname),cform(iname),'heatm',idiag_heatm)
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
         call parse_name(iname,cname(iname),cform(iname),'yHm',idiag_yHm)
@@ -2836,6 +2839,7 @@ module Entropy
         write(3,*) 'i_eem=',idiag_eem
         write(3,*) 'i_ppm=',idiag_ppm
         write(3,*) 'i_pdivum=',idiag_pdivum
+        write(3,*) 'i_heatm=',idiag_heatm
         write(3,*) 'i_csm=',idiag_csm
         write(3,*) 'i_ugradpm=',idiag_ugradpm
         write(3,*) 'i_ssmphi=',idiag_ssmphi
