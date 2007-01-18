@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.475 2007-01-18 13:40:44 dintrans Exp $
+! $Id: entropy.f90,v 1.476 2007-01-18 13:54:28 ajohan Exp $
 !
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -134,7 +134,7 @@ module Entropy
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
-  integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0
+  integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0,idiag_pdivum=0
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
   integer :: idiag_yHm=0,idiag_yHmax=0,idiag_TTm=0,idiag_TTmax=0,idiag_TTmin=0
   integer :: idiag_fconvz=0,idiag_dcoolz=0,idiag_fradz=0,idiag_fturbz=0
@@ -166,7 +166,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.475 2007-01-18 13:40:44 dintrans Exp $")
+           "$Id: entropy.f90,v 1.476 2007-01-18 13:54:28 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1603,6 +1603,10 @@ module Entropy
       if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
+      if (idiag_pdivum/=0) then
+        lpenc_diagnos(i_pp)=.true.
+        lpenc_diagnos(i_divu)=.true.
+      endif
       if (idiag_ssm/=0 .or. idiag_ssmz/=0 .or. idiag_ssmy/=0.or.idiag_ssmx/=0) &
            lpenc_diagnos(i_ss)=.true.
       lpenc_diagnos(i_rho)=.true.
@@ -1611,7 +1615,7 @@ module Entropy
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_ee)=.true.
       endif
-      if (idiag_fconvz/=0 .or. idiag_fturbz/=0 ) then
+      if (idiag_fconvz/=0 .or. idiag_fturbz/=0) then
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
@@ -1851,14 +1855,15 @@ module Entropy
       if (ldiagnos) then
         !uT=unit_temperature !(define shorthand to avoid long lines below)
         uT=1. !(AB: for the time being; to keep compatible with auto-test
-        if (idiag_TTmax/=0) call max_mn_name(p%TT*uT,idiag_TTmax)
-        if (idiag_TTmin/=0) call max_mn_name(-p%TT*uT,idiag_TTmin,lneg=.true.)
-        if (idiag_TTm/=0) call sum_mn_name(p%TT*uT,idiag_TTm)
-        if (idiag_yHmax/=0) call max_mn_name(p%yH,idiag_yHmax)
-        if (idiag_yHm/=0) call sum_mn_name(p%yH,idiag_yHm)
+        if (idiag_TTmax/=0)  call max_mn_name(p%TT*uT,idiag_TTmax)
+        if (idiag_TTmin/=0)  call max_mn_name(-p%TT*uT,idiag_TTmin,lneg=.true.)
+        if (idiag_TTm/=0)    call sum_mn_name(p%TT*uT,idiag_TTm)
+        if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
+        if (idiag_yHmax/=0)  call max_mn_name(p%yH,idiag_yHmax)
+        if (idiag_yHm/=0)    call sum_mn_name(p%yH,idiag_yHm)
         if (idiag_dtc/=0) &
             call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
-        if (idiag_eth/=0) call sum_mn_name(p%rho*p%ee,idiag_eth)
+        if (idiag_eth/=0)    call sum_mn_name(p%rho*p%ee,idiag_eth)
         if (idiag_ethtot/=0) call integrate_mn_name(p%rho*p%ee,idiag_ethtot)
         if (idiag_ethdivum/=0) &
             call sum_mn_name(p%rho*p%ee*p%divu,idiag_ethdivum)
@@ -2758,7 +2763,7 @@ module Entropy
 !
       if (lreset) then
         idiag_dtc=0; idiag_eth=0; idiag_ethdivum=0; idiag_ssm=0
-        idiag_eem=0; idiag_ppm=0; idiag_csm=0
+        idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_pdivum=0
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
@@ -2777,6 +2782,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
+        call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
         call parse_name(iname,cname(iname),cform(iname),'yHm',idiag_yHm)
@@ -2829,6 +2835,7 @@ module Entropy
         write(3,*) 'i_ssm=',idiag_ssm
         write(3,*) 'i_eem=',idiag_eem
         write(3,*) 'i_ppm=',idiag_ppm
+        write(3,*) 'i_pdivum=',idiag_pdivum
         write(3,*) 'i_csm=',idiag_csm
         write(3,*) 'i_ugradpm=',idiag_ugradpm
         write(3,*) 'i_ssmphi=',idiag_ssmphi
