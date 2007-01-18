@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.474 2007-01-18 11:57:56 ajohan Exp $
+! $Id: entropy.f90,v 1.475 2007-01-18 13:40:44 dintrans Exp $
 !
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -166,7 +166,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.474 2007-01-18 11:57:56 ajohan Exp $")
+           "$Id: entropy.f90,v 1.475 2007-01-18 13:40:44 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1815,7 +1815,7 @@ module Entropy
 !
       if ((luminosity/=0.0) .or. (cool/=0.0) .or. &
           (tau_cor/=0.0) .or. (tauheat_buffer/=0.0) .or. &
-          (heat_uniform/=0.0) .or. (tau_cool/=0.0) &
+          (heat_uniform/=0.0) .or. (tau_cool/=0.0) .or. &
           (cool_ext/=0.0 .and. cool_int/=0.0) .or. lturbulent_heat) &
           call calc_heat_cool(df,p,Hmax)
 !
@@ -3244,7 +3244,7 @@ module Entropy
 
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-    integer, parameter   :: nr=32
+    integer, parameter   :: nr=100
     real, dimension (nr) :: r,lnrhom,tempm
     real                 :: u,r_mn,lnrho_r,temp_r,cs2,lnTT,ss
     integer              :: i,imn,istop,l,i1,i2,iter
@@ -3387,7 +3387,7 @@ module Entropy
     use EquationOfState, only: gamma, gamma1, mpoly0, mpoly1, lnrho0, cs20
     use Sub, only: step, erfunc
 
-    integer, parameter   :: nr=32
+    integer, parameter   :: nr=100
     integer              :: i,nbot1,nbot2
     real, dimension (nr) :: r,flumim,hcondm,tempm,lnrhom
     real                 :: dtemp,dlnrho,dr,u,rhotop,cs2top,  &
