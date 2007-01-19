@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.479 2007-01-19 00:52:52 dobler Exp $
+! $Id: entropy.f90,v 1.480 2007-01-19 01:09:33 dobler Exp $
 
 !
 !  This module takes care of entropy (initial condition
@@ -167,7 +167,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.479 2007-01-19 00:52:52 dobler Exp $")
+           "$Id: entropy.f90,v 1.480 2007-01-19 01:09:33 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -3253,7 +3253,6 @@ module Entropy
 !
 !  20-dec-06/dintrans: coded
 !
-    use Cdata
     use EquationOfState, only: gamma, gamma1, rho0, lnrho0, cs20, get_soundspeed,eoscalc, ilnrho_lnTT
     use Sub, only: step, erfunc
 
