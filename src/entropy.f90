@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.480 2007-01-19 01:09:33 dobler Exp $
+! $Id: entropy.f90,v 1.481 2007-01-19 07:36:33 ajohan Exp $
 
 !
 !  This module takes care of entropy (initial condition
@@ -167,7 +167,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.480 2007-01-19 01:09:33 dobler Exp $")
+           "$Id: entropy.f90,v 1.481 2007-01-19 07:36:33 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1702,9 +1702,7 @@ module Entropy
 !**********************************************************************
     subroutine dss_dt(f,df,p)
 !
-!  calculate right hand side of entropy equation
-!  heat condution is currently disabled until old stuff,
-!  which in now in calc_heatcond, has been reinstalled.
+!  Calculate right hand side of entropy equation.
 !
 !  17-sep-01/axel: coded
 !   9-jun-02/axel: pressure gradient added to du/dt already here
@@ -1722,25 +1720,16 @@ module Entropy
 !
       real, dimension (nx) :: rhs,Hmax=0.
       real, dimension (nx) :: vKpara,vKperp
-      real :: ztop,xi,profile_cor
-      real :: uT
+      real :: ztop,xi,profile_cor,uT
       integer :: j,ju
 !
       intent(inout)  :: f,p
       intent(out) :: df
 !
-!  identify module and boundary conditions
+!  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dss_dt: SOLVE dss_dt'
       if (headtt) call identify_bcs('ss',iss)
-!
-!  define top z position
-!
-      ztop=xyz0(3)+Lxyz(3)
-!
-!  calculate cs2, TT1, and cp1 in a separate routine
-!  With IONIZATION=noionization, assume perfect gas with const coeffs
-!
       if (headtt) print*,'dss_dt: lnTT,cs2,cp1=', p%lnTT(1), p%cs2(1), p%cp1(1)
 !
 !  ``cs2/dx^2'' for timestep
@@ -1748,10 +1737,10 @@ module Entropy
       if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
       if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
-      if (lhydro) then
-!
 !  Pressure term in momentum equation (setting lpressuregradient_gas to
 !  .false. allows suppressing pressure term for test purposes)
+!
+      if (lhydro) then
 !
         if (lpressuregradient_gas) then
           do j=1,3
@@ -1762,17 +1751,18 @@ module Entropy
 !
 !  Add pressure force from global density gradient.
 !
-      if (maxval(abs(beta_glnrho_global))/=0.0) then
-        if (headtt) print*, 'dss_dt: adding global pressure gradient force'
-        do j=1,3
-          df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
-              - 1/gamma*p%cs2*beta_glnrho_scaled(j)
-        enddo
-      endif
+        if (maxval(abs(beta_glnrho_global))/=0.0) then
+          if (headtt) print*, 'dss_dt: adding global pressure gradient force'
+          do j=1,3
+            df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
+                - 1/gamma*p%cs2*beta_glnrho_scaled(j)
+          enddo
+        endif
 !
 !  Velocity damping in the coronal heating zone
 !
         if (tau_cor>0) then
+          ztop=xyz0(3)+Lxyz(3)
           if (z(n)>=z_cor) then
             xi=(z(n)-z_cor)/(ztop-z_cor)
             profile_cor=xi**2*(3-2*xi)
@@ -1787,7 +1777,7 @@ module Entropy
 !
       if (ladvection_entropy) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
 !
-!  if pretend_lnTT=.true., we pretend that ss is actually lnTT
+!  If pretend_lnTT=.true., we pretend that ss is actually lnTT
 !
       if (pretend_lnTT) df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-p%divu*p%ss
 !
@@ -1878,7 +1868,6 @@ module Entropy
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
         if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma11,idiag_TTp,p)
 !
-!  idiag_fradz is done in the calc_headcond routine
         if (idiag_fconvz/=0) &
             call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
         if (idiag_ssmz/=0) call xysum_mn_name_z(p%ss,idiag_ssmz)
