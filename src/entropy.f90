@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.478 2007-01-18 23:22:38 dintrans Exp $
+! $Id: entropy.f90,v 1.479 2007-01-19 00:52:52 dobler Exp $
 
 !
 !  This module takes care of entropy (initial condition
@@ -167,7 +167,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.478 2007-01-18 23:22:38 dintrans Exp $")
+           "$Id: entropy.f90,v 1.479 2007-01-19 00:52:52 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1733,6 +1733,10 @@ module Entropy
 !
       if (headtt.or.ldebug) print*,'dss_dt: SOLVE dss_dt'
       if (headtt) call identify_bcs('ss',iss)
+!
+!  define top z position
+!
+      ztop=xyz0(3)+Lxyz(3)
 !
 !  calculate cs2, TT1, and cp1 in a separate routine
 !  With IONIZATION=noionization, assume perfect gas with const coeffs
