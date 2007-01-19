@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.85 2007-01-19 08:27:41 dobler Exp $
+# CVS: $Id: auto-test,v 1.86 2007-01-19 20:19:08 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -115,6 +115,7 @@ Options:
   -n,  --norun             \tTest compilation and starting only
   -r,  --reload            \tKeep reloading parameters (using KEEP_RELOADING)
   -l,  --list              \tList test directories (don't run any tests)
+  -L,  --list-all          \tList test dirs including those lacking reference.out
   -t,  --time              \tPrint CPU time used
   -i,  --infofile=<file>   \tAfter last test, print content of <file>
   -D,  --pencil-home=<dir> \tSet PENCIL_HOME directory to <dir>
@@ -123,11 +124,22 @@ Options:
   -d,  --datadir           \tUse mkdir if data/ is needed, don't ln -s /var/tmp
   -s,  --short             \tPrint short directory names only
   -p,  --postproc=PP       \tApply postprocessor PP to output from make
+  -a,  --all-dirs          \tRecurse through all subdirectories of samples/
        --rsh=RSH-PROG      \tUse the specified program as to get a remote shell
        --nodelist=NODE1,.. \tUse a forked remote shell to parallelize
        --no-summary        \tDo not summarize at the end
        --nolock            \tIgnore and don't write lock file
        --debug             \tPrint lots of debugging output
+Examples:
+  auto-test      # run auto-test standard program, recycling .o files
+  auto-test -C   # run auto-test standard program, compiling from scratch
+  auto-test .    # run auto-test in current directory
+  auto-test -l   # list dirs in standard program
+  auto-test -a   # run auto-test in all subdirs of samples/ with a
+                 # referece.out{,.double} file
+  auto-test -al  # list all dirs `auto-test -a' would run in
+  auto-test -aL  # list all run dirs under samples/, even those without
+                 # reference data
 ";
 
 ## Process command line options
@@ -143,6 +155,7 @@ GetOptions(\%opts,
 	       -n   --norun
                -r   --reload
 	       -l   --list
+	       -L   --list-all
 	       -t   --time
 	       -i=s --infofile=s
 	       -D=s --pencil-home=s
@@ -151,6 +164,7 @@ GetOptions(\%opts,
 	       -d   --datadir
 	       -s   --short
 	       -p=s --postproc=s
+               -a   --all-dirs
                     --rsh=s
                     --nodelist=s
 	            --no-summary
@@ -160,7 +174,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.85 2007-01-19 08:27:41 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.86 2007-01-19 20:19:08 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -168,6 +182,7 @@ my $debug       = (              $opts{'debug'}       || 0    );
 my $clean       = ($opts{'C'} || $opts{'clean'}       || 0    );
 my $reload      = ($opts{'r'} || $opts{'reload'}      || 0    );
 my $list_only   = ($opts{'l'} || $opts{'list'}        || 0    );
+my $list_all    = ($opts{'L'} || $opts{'list-all'}    || 0    );
 my $time        = ($opts{'t'} || $opts{'time'}        || 0    );
 my $infofile    = ($opts{'i'} || $opts{'infofile'}    || ''   );
 my $pencil_home = ($opts{'D'} || $opts{'pencil-home'} || "$ENV{PENCIL_HOME}"
@@ -177,7 +192,8 @@ my $makejobs    = ($opts{'j'} || $opts{'jobs'}        || 0    );
 my $datadir     = ($opts{'d'} || $opts{'datadir'}     || 0    );
 my $short       = ($opts{'s'} || $opts{'short'}       || 0    );
 my $postproc    = ($opts{'p'} || $opts{'postproc'}    || ''   );
-my $RSH         = (              $opts{'rsh'}         || 'ssh');
+my $deep        = ($opts{'a'} || $opts{'all-dirs'}    || 0    );
+my $rsh         = (              $opts{'rsh'}         || 'ssh');
 my $nodelist    = (              $opts{'nodelist'}    || 0    );
 my $nosummary   = (              $opts{'no-summary'}  || 0    );
 my $nolock      = (              $opts{'nolock'}      ||$opts{'no-lock'} || 0 );
@@ -189,6 +205,8 @@ my @exit_status=('setting up directory',
                  'running',
                  'results');
 
+$list_only = 1 if ($list_all);
+
 my $makeopts  = '';
 if ($makejobs) { $makeopts = "-j $makejobs"; }
 
@@ -196,6 +214,8 @@ my $nice="";
 if ($niceval != 0) { $nice = "\\nice -n $niceval" };
 # Note: Csh's builtin `nice' cmd has a different calling syntax, so we
 # need to use ther real nice cmd here.
+
+my @testdirs;                   # full names of all dirs to run tests in
 
 ## Debugging output:
 if ($debug) {
@@ -228,6 +248,9 @@ my $topdir = "$pencil_home";
 chdir $topdir;
 $ENV{PATH} .= ":$pencil_home/bin";
 
+# Don't follow these boring subdirectories when recursing through whole tree:
+my $prunedirs = '^(data|src|CVS|RCS|_darcs|.hg|.svn)$';
+
 # Autoflush stdout:
 $| = 1;
 
@@ -238,29 +261,36 @@ if ($list_only) {
     print "Test directories:\n"
 }
 
-if (@ARGV) {			# Process dirs given in cmd line
+if (@ARGV) {
+    ## Process dirs given in cmd line
     @ARGV = map { s{^(?!/)}{$cwd/}; $_ } @ARGV; # Make `.' and similar work
     for my $d (@ARGV) {
 	test_rundir("$d",$makeopts);
     }
     if ((scalar @ARGV)==1) {
-      if (%failed) {
-        keys %failed;                  # this is a no-op -> remove
-        my ($d,$phase) = each %failed; # ..and this is bizarre
-        my $exit_code=1;
-        foreach my $status (@exit_status) {
-          exit $exit_code if ($phase =~ /$status/ );
-          $exit_code++;
+        if (%failed) {
+            keys %failed;                  # this is a no-op -> remove
+            my ($d,$phase) = each %failed; # ..and this is bizarre
+            my $exit_code=1;
+            foreach my $status (@exit_status) {
+                exit $exit_code if ($phase =~ /$status/ );
+                $exit_code++;
+            }
+            exit $exit_code;
         }
-        exit $exit_code;
-      }
     }
 } else {
     ## No dirs in cmd line -> do standard program
-    my @testdirs = (            # collect full dir names
-                    map { "$topdir/samples/$_" } @sampdirs,
-                    map { "$topdir/runs/$_" }    @runsdirs,
-                   );
+    if ($deep) {
+        # Scan samples/ tree recursively
+        find_test_dirs("$topdir/samples"); # populates @testdirs
+    } else {
+        # Use predefined directories
+        @testdirs =
+          ( map { "$topdir/samples/$_" } @sampdirs,
+            map { "$topdir/runs/$_"    } @runsdirs,
+          );
+    }
 
     if ($nodelist) {
         # Run tests in parallel
@@ -277,6 +307,7 @@ if (@ARGV) {			# Process dirs given in cmd line
         }
     }
 }
+
 
 # ---------------------------------------------------------------------- #
 sub handle_lock_file {
@@ -356,8 +387,8 @@ sub do_tests_in_parallel {
 		$running++;
 		if (! ($nodes{$node}{'pid'} = fork)) {
 		    my $nodeb=$node;
-		    exec "$RSH $node auto-test --no-summary $passthru_opts $job | sed 's/^/$nodeb : /'";
-		    exit 0;
+		    exec "$rsh $node auto-test --no-summary $passthru_opts $job | sed 's/^/$nodeb : /'";
+		    # didn't get here
 		}
 	    }
 	}
@@ -411,7 +442,54 @@ sub my_ok {
     }
 }
 # ---------------------------------------------------------------------- #
+sub find_test_dirs {
+# Traverse the samples/ directory tree and find all run directories
+    eval { require File::Find };
+    if ($@) {
+        die "Could not load File::Find (required for the --deep option):\n"
+          . "$@\n";
+    }
+    import File::Find qw( find );
+
+    my @rootdirs = @_;
+
+    find( { wanted      => \&FF_wanted,
+            follow      => 1,
+            follow_skip => 2,
+          },
+          @rootdirs);
+
+
+#      $File::Find::prune = 1;
+
+}
+# ---------------------------------------------------------------------- #
+sub FF_wanted {
+# `wanted' function for File::Find, i.e. callback function that is called
+# from each file or directory found.
+
+    my $name = $File::Find::name;
+
+    # Suppress spurious `used only once' warning:
+    my $dummy = "$File::Find::prune $File::Find::name";
+
+    if (-d $name) {
+        if ($_ =~ /$prunedirs/) {
+            # Don't recurse into well-known boring dirs:
+            $File::Find::prune = 1;
+        } else {
+            # Directory, but not boring:
+            if ( $list_all
+                 || -r "$name/reference.out"
+                 || -r "$name/reference.out.double" ) {
+                push @testdirs, $name;
+            }
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
 sub test_shell_cmd {
+# As the name says...
     my $cmd = shift;
     my $dir = (shift || "<Unknown directory>");
     my $phase = (shift || "<Unknown phase>");
