@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.29 2006-11-30 09:03:35 dobler Exp $
+! $Id: eos_fixed_ionization.f90,v 1.30 2007-01-19 07:23:01 ajohan Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -11,7 +11,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1,cp1tilde,glnTT,TT,TT1
+! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp,cp1,cp1tilde,glnTT,TT,TT1
 ! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1
 !
 !***************************************************************
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.29 2006-11-30 09:03:35 dobler Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.30 2007-01-19 07:23:01 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
