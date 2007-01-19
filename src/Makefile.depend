@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.57 2006-11-16 07:08:03 mee Exp $
+### $Id: Makefile.depend,v 1.58 2007-01-19 20:25:07 dobler Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -225,7 +225,7 @@ $(DUSTVELOCITY_OBJ): dustvelocity.h  $(DUSTVELOCITY_SRC)  $(COMMON_DEPS) $(INITC
 $(DUSTDENSITY_OBJ):  dustdensity.h   $(DUSTDENSITY_SRC)   $(COMMON_DEPS) $(INITCOND_OBJ) $(DUSTVELOCITY_OBJ)
 $(TESTFIELD_OBJ):    testfield.h     $(TESTFIELD_SRC)     $(COMMON_DEPS) $(INITCOND_OBJ) $(IO_OBJ) $(HYDRO_OBJ) $(DENSITY_OBJ)
 $(INTERSTELLAR_OBJ): interstellar.h  $(INTERSTELLAR_SRC)  $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(EOS_OBJ)
-$(EOS_OBJ):          eos.h           $(EOS_SRC)           $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(GRAVITY_OBJ)
+$(EOS_OBJ):          eos.h           $(EOS_SRC)           $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(GRAVITY_OBJ)
 $(IO_OBJ):           io.h            $(IO_SRC)            $(COMMON_DEPS) $(GENERAL_OBJ) $(SUB_OBJ)
 #$(TIMEAVG_OBJ):         $(TIMEAVG_SRC) $(CDATA_OBJ) $(SUB_OBJ) $(IO_OBJ) $(MPICOMM_OBJ) ctimeavg.local
 $(TIMEAVG_OBJ):      timeavg.h        $(TIMEAVG_SRC)      $(COMMON_DEPS) $(IO_OBJ)
