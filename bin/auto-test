@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.84 2007-01-13 22:28:50 dobler Exp $
+# CVS: $Id: auto-test,v 1.85 2007-01-19 08:27:41 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -39,11 +39,11 @@ use IPC::Open2;
 
 # ---------------------------------------------------------------------- #
 # Test the following subdirs of samples/ :
-my @sampdir1 = qw ( no-modules all-modules );
-my @sampdir2 = qw ( geodynamo );
-my @sampdir3 = qw ();
+my @sampdirs1 = qw ( no-modules all-modules );
+my @sampdirs2 = qw ( geodynamo );
+my @sampdirs3 = qw ();
 
-my @sampdir = qw(
+my @sampdirs = qw(
                   no-modules
                   most-modules
                   conv-slab
@@ -71,12 +71,12 @@ my @sampdir = qw(
                   2d-tests/globaldisc
                 );
 # Test the following subdirs of runs/ :
-#my @runsdir = qw( radiation/solar1d4);
-my @runsdir = qw( );
+#my @runsdirs = qw( radiation/solar1d4);
+my @runsdirs = qw( );
 # ---------------------------------------------------------------------- #
 ## Override for testing:
-#@sampdir = qw( conv-slab );
-#@runsdir = qw(  );
+#@sampdirs = qw( conv-slab );
+#@runsdirs = qw(  );
 
 my $ntests      = 0;                 # total number of tests run
 my $failed      = 0;
@@ -160,7 +160,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.84 2007-01-13 22:28:50 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.85 2007-01-19 08:27:41 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -255,42 +255,25 @@ if (@ARGV) {			# Process dirs given in cmd line
         exit $exit_code;
       }
     }
-} else {			# No dirs in cmd line -> do standard program
+} else {
+    ## No dirs in cmd line -> do standard program
+    my @testdirs = (            # collect full dir names
+                    map { "$topdir/samples/$_" } @sampdirs,
+                    map { "$topdir/runs/$_" }    @runsdirs,
+                   );
+
     if ($nodelist) {
-        my @queue;
-        for my $d (@sampdir) {
-            unshift @queue, "$topdir/samples/$d";
-        }
-        # Process dirs in runs/ directory
-        if (@runsdir) {
-            if (-d "$topdir/runs") {
-                for my $d (@runsdir) {
-		    unshift @queue, "$topdir/runs/$d";
-                }
-            } else {
-                print "Not checking in $topdir/runs : no such directory\n";
-            }
-        }
+        # Run tests in parallel
         my @nodes=split /,/ , $nodelist;
         my $passthru_opts = '';
         if ($clean)    { $passthru_opts .= '-C '; }
         if ($makejobs) { $passthru_opts .= " -j $makejobs"; }
         if ($opts{'c'} || $opts{'compile-only'}) { $passthru_opts .= ' -c'; }
-        do_tests_in_parallel(\@queue,\@nodes,$passthru_opts);
+        do_tests_in_parallel(\@testdirs,\@nodes,$passthru_opts);
     } else {
-        # Process dirs in samples/ directory
-        for my $d (@sampdir) {
-            test_rundir("$topdir/samples/$d",$makeopts);
-        }
-        # Process dirs in runs/ directory
-        if (@runsdir) {
-            if (-d "$topdir/runs") {
-                for my $d (@runsdir) {
-		    test_rundir("$topdir/runs/$d",$makeopts);
-                }
-            } else {
-                print "Not checking in $topdir/runs : no such directory\n";
-            }
+        # Run tests consecutively
+        for my $d (@testdirs) {
+            test_rundir("$d",$makeopts);
         }
     }
 }
