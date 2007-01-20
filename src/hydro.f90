@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.308 2007-01-17 17:24:19 wlyra Exp $
+! $Id: hydro.f90,v 1.309 2007-01-20 11:22:33 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -40,6 +40,10 @@ module Hydro
   real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz
   real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz
 !
+!  precession matrices
+!
+  real, dimension (3,3) :: mat_cori=0.,mat_cent=0.
+!
 ! init parameters
 !
   real :: widthuu=.1, radiusuu=1., urand=0., kx_uu=1., ky_uu=1., kz_uu=1.
@@ -48,6 +52,7 @@ module Hydro
   real :: initpower=1.,cutoff=0.
   real :: ampl_ux=0.0, ampl_uy=0.0, ampl_uz=0.0
   real :: phase_ux=0.0, phase_uy=0.0, phase_uz=0.0
+  real :: omega_precession=0.
   real, dimension (ninit) :: ampluu=0.0
   character (len=labellen), dimension(ninit) :: inituu='nothing'
   character (len=labellen) :: borderuu='nothing'
@@ -59,6 +64,7 @@ module Hydro
   integer :: N_modes_uu=0
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: ladvection_velocity=.true.
+  logical :: lprecession=.false.
 
   namelist /hydro_init_pars/ &
        ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
@@ -68,7 +74,8 @@ module Hydro
        kep_cutoff_pos_ext, kep_cutoff_width_ext, &
        kep_cutoff_pos_int, kep_cutoff_width_int, &
        u_out_kep, N_modes_uu, lcoriolis_force, lcentrifugal_force, &
-       ladvection_velocity
+       ladvection_velocity, &
+       lprecession, omega_precession
 
   ! run parameters
   real :: tdamp=0.,dampu=0.,wdamp=0.
@@ -94,7 +101,8 @@ module Hydro
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-       lforcing_continuous,iforcing_continuous,k1_ff,ampl_ff
+       lforcing_continuous,iforcing_continuous,k1_ff,ampl_ff, &
+       lprecession, omega_precession
 
 ! end geodynamo
 
@@ -176,7 +184,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.308 2007-01-17 17:24:19 wlyra Exp $")
+           "$Id: hydro.f90,v 1.309 2007-01-20 11:22:33 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -617,6 +625,7 @@ module Hydro
       use Cdata
 !
       if (ladvection_velocity) lpenc_requested(i_ugu)=.true.
+      if (lprecession) lpenc_requested(i_rr)=.true.
       if (ldt) lpenc_requested(i_uu)=.true.
 !
       if (lspecial) lpenc_requested(i_u2)=.true.
@@ -894,7 +903,7 @@ module Hydro
       if (ladvection_velocity) &
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%ugu
 !
-!  Coriolis force, -2*Omega x u
+!  Coriolis force, -2*Omega x u (unless lprecession=T)
 !  Omega=(-sin_theta, 0, cos_theta)
 !  theta corresponds to latitude, but to have the box located on the
 !  right hand side of the sphere (grav still pointing dowward and then
@@ -902,37 +911,41 @@ module Hydro
 !  for example.
 !
       if (Omega/=0.) then
-        if (theta==0) then
-          if (lcoriolis_force) then
-            if (headtt) print*,'duu_dt: add Coriolis force; Omega=',Omega
-            c2=2*Omega
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)
+        if (lprecession) then
+          call precession(f,df,p)
+        else
+          if (theta==0) then
+            if (lcoriolis_force) then
+              if (headtt) print*,'duu_dt: add Coriolis force; Omega=',Omega
+              c2=2*Omega
+              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
+              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)
 !
 !  add centrifugal force (doing this with periodic boundary
 !  conditions in x and y would not be compatible, so it is
 !  therefore usually ignored in those cases!)
 !
-          endif
-          if (lcentrifugal_force) then
-            if (headtt) print*,'duu_dt: add Centrifugal force; Omega=',Omega
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+x(l1:l2)*Omega**2
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+y(  m  )*Omega**2
-          endif
-        else
+            endif
+            if (lcentrifugal_force) then
+              if (headtt) print*,'duu_dt: add Centrifugal force; Omega=',Omega
+              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+x(l1:l2)*Omega**2
+              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+y(  m  )*Omega**2
+            endif
+          else
 !
 !  add Coriolis force with an angle (defined such that theta=-60,
 !  for example, would correspond to 30 degrees latitude).
 !  Omega=(sin(theta), 0, cos(theta)).
 !
-          if (lcoriolis_force) then
-            if (headtt) &
-                print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
-            c2=2*Omega*cos(theta*pi/180.)
-            s2=2*Omega*sin(theta*pi/180.)
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)+s2*p%uu(:,3)
-            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)             -s2*p%uu(:,2)
+            if (lcoriolis_force) then
+              if (headtt) &
+                  print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
+              c2=2*Omega*cos(theta*pi/180.)
+              s2=2*Omega*sin(theta*pi/180.)
+              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
+              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)+s2*p%uu(:,3)
+              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)             -s2*p%uu(:,2)
+            endif
           endif
         endif
       endif
@@ -1174,13 +1187,16 @@ module Hydro
 !
 !   9-nov-06/axel: adapted from calc_ltestfield_pars
 !
-      use Cdata, only: iux,iuy,iuz,ilnrho,l1,l2,m1,m2,n1,n2,lroot
+      use Cdata, only: iux,iuy,iuz,ilnrho,l1,l2,m1,m2,n1,n2,lroot,t
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rho,rux,ruy,ruz
       integer, parameter :: nreduce=3
       real, dimension (nreduce) :: fsum_tmp,fsum
+      real, dimension (3,3) :: mat_cori1=0.,mat_cori2=0.
+      real, dimension (3,3) :: mat_cent1=0.,mat_cent2=0.,mat_cent3=0.
+      real :: c,s
       integer :: m,n
       real :: fact
 !
@@ -1188,6 +1204,7 @@ module Hydro
 !
 !  calculate averages of rho*ux and rho*uy
 !
+      if (ldensity) then
       if (tau_damp_ruxm/=0. .or. tau_damp_ruym/=0. .or. tau_damp_ruzm/=0.) then
         ruxm=0.
         ruym=0.
@@ -1215,6 +1232,34 @@ module Hydro
       ruxm=fsum(1)
       ruym=fsum(2)
       ruzm=fsum(3)
+      endif
+!
+!  calculate precession matrices
+!
+      if (lprecession) then
+        c=cos(omega_precession*t)
+        s=sin(omega_precession*t)
+        mat_cori1(2,3)=+1.
+        mat_cori1(3,2)=-1.
+        mat_cori2(1,2)=+c
+        mat_cori2(1,3)=-s
+        mat_cori2(2,1)=-c
+        mat_cori2(3,1)=+s
+        mat_cent1(2,2)=+1.
+        mat_cent1(3,3)=+1.
+        mat_cent2(1,1)=+1.
+        mat_cent2(2,2)=+c**2
+        mat_cent2(3,3)=+s**2
+        mat_cent2(2,3)=-2.*s*c
+        mat_cent2(3,2)=-2.*s*c
+        mat_cent3(1,2)=-s+c
+        mat_cent3(2,1)=-s-c
+        mat_cent3(1,3)=-s-c
+        mat_cent3(3,1)=+s-c
+        mat_cori=2.*(omega_precession*mat_cori1+Omega*mat_cori2)
+        mat_cent=omega_precession**2*mat_cent1+Omega**2*mat_cent2 &
+          +2.*omega_precession*Omega*mat_cent3
+      endif
 !
     endsubroutine calc_lhydro_pars
 !***********************************************************************
@@ -1359,6 +1404,41 @@ module Hydro
       othresh=othresh_scl*othresh_per_orms*orms
 !
     endsubroutine calc_othresh
+!***********************************************************************
+    subroutine precession(f,df,p)
+!
+!  precession terms
+!
+!  19-jan-07/axel: added terms derived by Gailitis
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+      use Sub, only: step,sum_mn_name
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      integer :: i,j,k
+!
+!  info about precession term
+!
+      if (headtt) then
+        print*, 'precession: omega_precession=', omega_precession
+      endif
+!
+!  matrix multiply
+!
+      do j=1,3
+      do i=1,3
+        k=iuu-1+i
+        df(l1:l2,m,n,k)=df(l1:l2,m,n,k) &
+          +mat_cent(i,j)*p%rr(:,j) &
+          +mat_cori(i,j)*p%uu(:,j)
+      enddo
+      enddo
+!
+    endsubroutine precession
 !***********************************************************************
     subroutine udamping(f,df,p)
 !

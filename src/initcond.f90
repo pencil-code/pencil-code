@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.192 2006-11-30 09:03:35 dobler Exp $
+! $Id: initcond.f90,v 1.193 2007-01-20 11:22:33 brandenb Exp $
 
 module Initcond
 
@@ -31,7 +31,7 @@ module Initcond
   public :: htube, htube2, hat, hat3d
   public :: wave_uu, wave, parabola
   public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
-  public :: sinx_siny_cosz, sin2x_sin2y_cosz, cosy_sinz
+  public :: sinx_siny_sinz, sinx_siny_cosz, sin2x_sin2y_cosz, cosy_sinz
   public :: halfcos_x, magsupport, vfield
   public :: uniform_x, uniform_y, uniform_z
   public :: vfluxlayer, hfluxlayer
@@ -94,6 +94,37 @@ module Initcond
       endif
 !
     endsubroutine sinxsinz
+!***********************************************************************
+    subroutine sinx_siny_sinz(ampl,f,i,kx,ky,kz)
+!
+!  sinusoidal wave, adapted from sinxsinz (that routine was already doing
+!  this, but under a different name)
+!
+!  20-jan-07/axel: adapted
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+!
+!  wavenumber k, helicity H=ampl (can be either sign)
+!
+!  sinx(kx*x)*sin(kz*z)
+!
+      if (present(kx)) kx1=kx
+      if (present(ky)) ky1=ky
+      if (present(kz)) kz1=kz
+      if (ampl==0) then
+        if (lroot) print*,'sinx_siny_sinz: ampl=0'
+      else
+        if (lroot) write(*,wave_fmt1) 'sinx_siny_sinz: ampl,kx,ky,kz=', &
+                                      ampl,kx1,ky1,kz1
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(sin(kx1*x),2,my),3,mz)&
+                                   *spread(spread(sin(ky1*y),1,mx),3,mz)&
+                                   *spread(spread(sin(kz1*z),1,mx),2,my))
+      endif
+!
+    endsubroutine sinx_siny_sinz
 !***********************************************************************
     subroutine sinx_siny_cosz(ampl,f,i,kx,ky,kz)
 !

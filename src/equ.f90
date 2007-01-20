@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.339 2006-11-30 09:03:35 dobler Exp $
+! $Id: equ.f90,v 1.340 2007-01-20 11:22:33 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -384,7 +384,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.339 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: equ.f90,v 1.340 2007-01-20 11:22:33 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -540,8 +540,9 @@ module Equ
           endif
         endif
 !
+!  calculate grid/geometry related pencils
 !
-                            call calc_pencils_grid(f,p)
+        call calc_pencils_grid(f,p)
 !
 !  calculate profile for phi-averages if needed
 !  Note that rcyl_mn is also needed for Couette flow experiments,

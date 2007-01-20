@@ -6,7 +6,7 @@
 ! PENCILS PROVIDED phix, phiy
 ! PENCILS PROVIDED pomx, pomy
 ! PENCILS PROVIDED rcyl_mn, rcyl_mn1, phi_mn
-! PENCILS PROVIDED evr
+! PENCILS PROVIDED evr, rr
 !
 !***************************************************************
 module Grid
@@ -324,6 +324,11 @@ module Grid
       logical, dimension(npencils) :: lpencil_in
 !
       if (lpencil_in(i_rcyl_mn1)) lpencil_in(i_rcyl_mn)=.true.
+      if (lpencil_in(i_rr)) then
+        lpencil_in(i_x_mn)=.true.
+        lpencil_in(i_y_mn)=.true.
+        lpencil_in(i_z_mn)=.true.
+      endif
       if (lpencil_in(i_evr)) then
         lpencil_in(i_x_mn)=.true.
         lpencil_in(i_y_mn)=.true.
@@ -362,6 +367,14 @@ module Grid
       if (lpencil(i_y_mn)) p%y_mn = spread(y(m),1,nx)
       if (lpencil(i_z_mn)) p%z_mn = spread(z(n),1,nx)
       if (lpencil(i_r_mn)) p%r_mn = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+!
+!  set position vector
+!
+      if (lpencil(i_rr)) then
+        p%rr(:,1)=p%x_mn
+        p%rr(:,2)=p%y_mn
+        p%rr(:,3)=p%z_mn
+      endif
 !
 !  evr is the radial unit vector
 !
