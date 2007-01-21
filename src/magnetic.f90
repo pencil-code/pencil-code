@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.367 2007-01-13 21:44:25 dobler Exp $
+! $Id: magnetic.f90,v 1.368 2007-01-21 14:29:50 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -121,10 +121,13 @@ module Magnetic
   real :: eta_int=0.,eta_ext=0.,wresistivity=.01
   real :: tau_aa_exterior=0.
   real :: alphaSSm=0.
+  real :: k1_ff=1.,ampl_ff=1.
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
   logical :: llarge_scale_Bz=.false.
   logical :: lweyl_gauge=.false.
   logical :: lupw_aa=.false.
+  logical :: lforcing_continuous=.false.
+  character (len=labellen) :: iforcing_continuous='fixed_swirl'
 
   namelist /magnetic_run_pars/ &
        eta,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
@@ -133,6 +136,7 @@ module Magnetic
        meanfield_etat, &
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
+       lforcing_continuous,iforcing_continuous,k1_ff,ampl_ff,radius, &
        bthresh,bthresh_per_brms, &
        iresistivity,lweyl_gauge,lupw_aa, &
        alphaSSm, &
@@ -172,6 +176,7 @@ module Magnetic
   integer :: idiag_brm=0,idiag_bpm=0,idiag_bzm=0
   integer :: idiag_br2m=0,idiag_bp2m=0,idiag_bzz2m=0
   integer :: idiag_brbpm=0,idiag_bzbpm=0,idiag_brbzm=0,idiag_vA2m=0
+  integer :: idiag_jfm=0
 
   contains
 
@@ -212,7 +217,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.367 2007-01-13 21:44:25 dobler Exp $")
+           "$Id: magnetic.f90,v 1.368 2007-01-21 14:29:50 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1277,6 +1282,10 @@ module Magnetic
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(eta_out1*mu0)*p%jj
       endif
 !
+!  add possibility of forcing that is not delta-correlated in time
+!
+      if (lforcing_continuous) call forcing_continuous(df,p)
+!
 !  possibility of relaxation of A in exterior region
 !
       if (tau_aa_exterior/=0.) call calc_tau_aa_exterior(f,df)
@@ -1972,6 +1981,83 @@ module Magnetic
 !
     endsubroutine write_magnetic_run_pars
 !***********************************************************************
+    subroutine forcing_continuous(df,p)
+!
+!  add a continuous forcing term (here currently only for localized rotors)
+!
+!  21-jan-07/axel: adapted from hydro
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3) :: forcing_rhs,fxb
+      real, dimension (nx) :: jf,phi
+      real, dimension (mx), save :: phix,sinx,cosx
+      real, dimension (my), save :: phiy,siny,cosy
+      real, dimension (mz), save :: phiz,sinz,cosz
+      real, save :: R2,R12
+      type (pencil_case) :: p
+      integer, save :: ifirst
+      integer :: j,jfff,ifff
+      real :: fact
+!
+!  at the first step, the sin and cos functions are calculated for all
+!  x,y,z points and are then saved and used for all subsequent steps
+!  and pencils
+!
+      if(ip<=6) print*,'forcing_continuous: ifirst=',ifirst
+      if (ifirst==0) then
+        if (iforcing_continuous=='fixed_swirl') then
+          if (lroot) print*,'forcing_continuous: fixed_swirl'
+          R2=radius**2
+          R12=1./R2
+          phix=exp(-R12*x**2)
+          phiy=exp(-R12*y**2)
+          phiz=exp(-R12*z**2)
+        elseif (iforcing_continuous=='RobertsFlow') then
+          if (lroot) print*,'forcing_continuous: RobertsFlow'
+          sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
+          siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+        endif
+      endif
+      ifirst=ifirst+1
+      if(ip<=6) print*,'forcing_continuous: dt, ifirst=',dt,ifirst
+!
+!  calculate forcing
+!
+      if (iforcing_continuous=='fixed_swirl') then
+        fact=ampl_ff
+        phi=2.*R12*fact*phix(l1:l2)*phiy(m)*phiz(n)
+        forcing_rhs(:,1)=(-y(m    )+2.*x(l1:l2)*z(n))*phi
+        forcing_rhs(:,2)=(+x(l1:l2)+2.*y(m    )*z(n))*phi
+        forcing_rhs(:,3)=(R2-x(l1:l2)**2-y(m)**2)*2.*R12*phi
+      elseif (iforcing_continuous=='RobertsFlow') then
+        fact=ampl_ff
+        forcing_rhs(:,1)=-fact*cosx(l1:l2)*siny(m)
+        forcing_rhs(:,2)=+fact*sinx(l1:l2)*cosy(m)
+        forcing_rhs(:,3)=+fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
+      endif
+!
+!  apply forcing in uncurled induction equation
+!
+      ifff=iax
+      do j=1,3
+        jfff=j+ifff-1
+        df(l1:l2,m,n,jfff)=df(l1:l2,m,n,jfff)+forcing_rhs(:,j)
+      enddo
+!
+!  diagnostics
+!
+      if (ldiagnos) then
+        if (idiag_jfm/=0) then
+          call dot_mn(p%jj,forcing_rhs,jf)
+          call sum_mn_name(jf,idiag_jfm)
+        endif
+      endif
+!
+    endsubroutine forcing_continuous
+!***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for magnetic fields
@@ -2018,6 +2104,7 @@ module Magnetic
         idiag_brm=0; idiag_bpm=0; idiag_bzm=0
         idiag_br2m=0; idiag_bp2m=0; idiag_bzz2m=0; idiag_brbpm=0
         idiag_bzbpm=0; idiag_brbzm=0; idiag_va2m=0
+        idiag_jfm=0
 !
       endif
 !
@@ -2094,6 +2181,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'brbpm',idiag_brbpm)
         call parse_name(iname,cname(iname),cform(iname),'bzbpm',idiag_bzbpm)
         call parse_name(iname,cname(iname),cform(iname),'brbzm',idiag_brbzm)
+        call parse_name(iname,cname(iname),cform(iname),'jfm',idiag_jfm)
 !
       enddo
 !
@@ -2236,6 +2324,7 @@ module Magnetic
         write(3,*) 'i_uxBrms=',idiag_uxBrms
         write(3,*) 'i_Bresrms=',idiag_Bresrms
         write(3,*) 'i_Rmrms=',idiag_Rmrms
+        write(3,*) 'i_jfm=',idiag_jfm
         write(3,*) 'nname=',nname
         write(3,*) 'nnamexy=',nnamexy
         write(3,*) 'nnamexz=',nnamexz

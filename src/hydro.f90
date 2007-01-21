@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.309 2007-01-20 11:22:33 brandenb Exp $
+! $Id: hydro.f90,v 1.310 2007-01-21 14:29:50 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -184,7 +184,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.309 2007-01-20 11:22:33 brandenb Exp $")
+           "$Id: hydro.f90,v 1.310 2007-01-21 14:29:50 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1988,7 +1988,7 @@ module Hydro
         write(3,*) 'i_urupm=',idiag_urupm
         write(3,*) 'i_totmass=',idiag_totmass
         write(3,*) 'i_totangmom=',idiag_totangmom
-        write(3,*) 'rufm=',idiag_rufm
+        write(3,*) 'i_rufm=',idiag_rufm
         write(3,*) 'i_fxbxm=',idiag_fxbxm
         write(3,*) 'i_fxbym=',idiag_fxbym
         write(3,*) 'i_fxbzm=',idiag_fxbzm
