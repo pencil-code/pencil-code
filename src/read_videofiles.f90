@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.22 2006-11-30 09:03:36 dobler Exp $
+! $Id: read_videofiles.f90,v 1.23 2007-01-21 07:27:04 brandenb Exp $
 
 !***********************************************************************
       program rvid_box
@@ -91,9 +91,10 @@
         ipz_bottom=0.
         ipy_front=nprocy/2
       elseif (slice_position=='c') then
-        ipz_top=nprocz-1
-        ipz_bottom=0
+        call read_ipz_position(trim(datadir)//'/ztop_procnum.dat',ipz_top)
+        call read_ipz_position(trim(datadir)//'/zbot_procnum.dat',ipz_bottom)
         ipy_front=0
+print*,'ipz_top,ipz_bottom=',ipz_top,ipz_bottom
       elseif (slice_position=='q') then
         ipz_top=0
         ipz_bottom=nprocz-1
@@ -272,6 +273,31 @@
       endselect
 
       end
+!***********************************************************************
+    subroutine read_ipz_position(file,ipz)
+!
+!  reads just one number from file
+!
+!  19-nov-06/axel: coded
+!
+      character (len=*) :: file
+      integer :: ipz,lun=1
+!
+      open(lun,file=file,status='old',err=98)
+      read(lun,*) ipz
+      close(lun)
+      goto 99
+!
+!  escape procedure of file doesn't exist
+!
+98    print*,";;;"
+      print*,";;; data/z*_procnum.dat files don't exist."
+      print*,";;; Type (e.g. by cut+paste):"
+      print*,";;;    cp data/proc*/z*_procnum.dat data"
+      print*,";;;"
+      stop
+!
+99    end
 !***********************************************************************
     subroutine rslice(file,a,pos,ndim1,ndim2,t,it,lun,eof,err)
 !
