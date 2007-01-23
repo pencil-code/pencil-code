@@ -1,4 +1,4 @@
-;  $Id: time_series.pro,v 1.26 2006-10-14 06:33:13 brandenb Exp $
+;  $Id: time_series.pro,v 1.27 2007-01-23 22:03:22 brandenb Exp $
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
@@ -65,6 +65,7 @@ if defined(i_exjm2) ne 0 then exjm2=reform(a(i_exjm2-1,*))
 if defined(i_abm) ne 0 then abm=reform(a(i_abm-1,*))
 if defined(i_jbm) ne 0 then jbm=reform(a(i_jbm-1,*))
 if defined(i_oum) ne 0 then oum=reform(a(i_oum-1,*))
+if defined(i_ubm) ne 0 then ubm=reform(a(i_ubm-1,*))
 if defined(i_ssm) ne 0 then ssm=reform(a(i_ssm-1,*))
 if defined(i_TTm) ne 0 then TTm=reform(a(i_TTm-1,*))
 if defined(i_yHm) ne 0 then yHm=reform(a(i_yHm-1,*))
@@ -78,6 +79,7 @@ if defined(i_ecrmax) ne 0 then ecrmax=reform(a(i_ecrmax-1,*))
 if defined(i_ecrdivum) ne 0 then ecrdivum=reform(a(i_ecrdivum-1,*))
 if defined(i_ecrpt) ne 0 then ecrpt=reform(a(i_ecrpt-1,*))
 if defined(i_rhom) ne 0 then rhom=reform(a(i_rhom-1,*))
+if defined(i_ppm) ne 0 then ppm=reform(a(i_ppm-1,*))
 if defined(i_bmx) ne 0 then bmx=reform(a(i_bmx-1,*))
 if defined(i_bmy) ne 0 then bmy=reform(a(i_bmy-1,*))
 if defined(i_bmz) ne 0 then bmz=reform(a(i_bmz-1,*))

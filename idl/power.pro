@@ -1,9 +1,9 @@
 PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
           spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
-          tot=tot,lin=lin,png=png,yrange=yrange,norm=norm, $
-          compensate=compensate,datatopdir=datatopdir
+          tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
+          compensate1=compensate1,compensate2=compensate2,datatopdir=datatopdir
 ;
-;  $Id: power.pro,v 1.26 2004-09-22 08:44:58 brandenb Exp $
+;  $Id: power.pro,v 1.27 2007-01-23 22:03:22 brandenb Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -48,7 +48,9 @@ default,tmax,1e34
 default,tot,0
 default,lin,0
 default,dir,''
-default,compensate,0
+default,compensate1,0
+default,compensate2,compensate1
+default,compensate,compensate1
 default,datatopdir,'data'
 ;
 ;  This is done to make the code backward compatible.
@@ -197,10 +199,19 @@ openr,1, datatopdir+'/'+file1
 	      !p.title='t='+str(time)
 	      default,yrange,[globalmin,globalmax]
               if iplot eq 1 then begin
-		plot_oo,k,spectrum1*k^compensate,back=255,col=0,yr=yrange
-		;plot_oo,k,spectrum1
+		plot_oo,k,spectrum1*k^compensate1,back=255,col=0,yr=yrange
          	if (file2 ne '') then begin
-		  oplot,k,spectrum2*k^compensate,col=122
+                  ;
+		  ; possibility of special settings for helicity plotting
+		  ; of second variable
+                  ;
+                  if keyword_set(helicity2) then begin
+		    oplot,k,.5*abs(spectrum2)*k^compensate2,col=122
+		    oplot,k,+.5*spectrum2*k^compensate2,col=122,ps=6
+		    oplot,k,-.5*spectrum2*k^compensate2,col=55,ps=6
+                  endif else begin
+		    oplot,k,abs(spectrum2)*k^compensate2,col=122
+                  endelse
 		  if (tot eq 1) then begin
 		    oplot,k,(spectrum1+spectrum2)*k^compensate,col=47
 		  endif
@@ -227,6 +238,7 @@ openr,1, datatopdir+'/'+file1
           tvlct, red, green, blue, /GET
           imgname = dir+'img_'+istr2+'.png'
           write_png, imgname, image, red, green, blue
+          print,'itpng=',itpng
           itpng=itpng+1 ;(counter)
         endif
       ;
