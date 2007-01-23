@@ -3,12 +3,14 @@
 !  sample file for 1-D sound wave
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.2 2006-04-01 07:36:52 brandenb Exp $'
+  cvsid='$Id: run.in,v 1.3 2007-01-23 19:41:12 dobler Exp $'
   !nt=560, it1=20, dt=3., isave=50, itorder=3,
   nt=100, it1=20, dt=3., isave=50, itorder=3,
   dsnap=20., dvid=5e-5,tmax=7e3, dtmin=1e-12
   lwrite_aux=T
   lpencil_check=F
+/
+&eos_run_pars
 /
 &hydro_run_pars
 /
@@ -16,7 +18,8 @@
 /
 &entropy_run_pars
   heat_uniform=1.
-  xHe=.1
+  ! xHe=.1 ! [wd 23-Jan-2007:] Commented out as there is no xHe in
+           !                   temperature_ionization.f90 
 /
 &viscosity_run_pars
   nu=0.0

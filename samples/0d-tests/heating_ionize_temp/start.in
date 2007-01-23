@@ -3,10 +3,12 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2006-03-31 17:16:19 theine Exp $'
+  cvsid='$Id: start.in,v 1.2 2007-01-23 19:41:12 dobler Exp $'
   unit_length=1e8, unit_velocity=1e5, unit_density=1e-6, unit_temperature=1e0
   Lxyz=1e0, xyz0=0.
   lwrite_aux=T
+/
+&eos_init_pars
 /
 &hydro_init_pars
 /
@@ -15,5 +17,6 @@
 /
 &entropy_init_pars
   initlnTT='const_lnTT', lnTT_const=4.26750
-  xHe=.1
+  ! xHe=.1 ! [wd 23-Jan-2007:] Commented out as there is no xHe in
+           !                   temperature_ionization.f90 
 /
