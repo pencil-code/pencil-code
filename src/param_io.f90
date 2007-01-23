@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.260 2006-11-30 09:03:36 dobler Exp $
+! $Id: param_io.f90,v 1.261 2007-01-23 19:39:13 dobler Exp $
 
 module Param_IO
 
@@ -336,6 +336,7 @@ module Param_IO
         if (lgrav         )  print*,'&grav_init_pars           /'
         if (lselfgravity  )  print*,'&selfgrav_init_pars       /'
         if (lentropy      )  print*,'&entropy_init_pars        /'
+        if (ltemperature  )  print*,'&entropy_init_pars        /'
         if (lmagnetic     )  print*,'&magnetic_init_pars       /'
         if (ltestfield    )  print*,'&testfield_init_pars      /'
         if (lradiation    )  print*,'&radiation_init_pars      /'
@@ -636,6 +637,7 @@ module Param_IO
         if (lgrav         ) print*,'&grav_run_pars            /'
         if (lselfgravity  ) print*,'&selfgrav_run_pars        /'
         if (lentropy      ) print*,'&entropy_run_pars         /'
+        if (ltemperature  ) print*,'&entropy_run_pars         /'
         if (lmagnetic     ) print*,'&magnetic_run_pars        /'
         if (ltestfield    ) print*,'&testfield_run_pars       /'
         if (lradiation    ) print*,'&radiation_run_pars       /'
