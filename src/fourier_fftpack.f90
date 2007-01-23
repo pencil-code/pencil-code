@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.13 2007-01-11 14:51:12 ajohan Exp $
+! $Id: fourier_fftpack.f90,v 1.14 2007-01-23 18:24:32 dobler Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -437,8 +437,10 @@ module Fourier
       complex, dimension (nxgrid) :: az
       real, dimension (4*nxgrid+15) :: wsave
       real :: deltay_x
-      integer :: l,m,n
+      integer :: l,m,n,two
       logical :: lforward
+!
+      two = 2         ! avoid `array out of bounds' below for nygrid=1
 !
       lforward=.true.
       if (present(linv)) then
@@ -477,7 +479,7 @@ module Fourier
 !  Shift y-coordinate so that x-direction is periodic. This is best done in
 !  k-space, by multiplying the complex amplitude by exp[i*ky*deltay(x)].
             deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
-            ay(2:nxgrid)=ay(2:nxgrid)*exp(cmplx(0.0, ky_fft(2:nxgrid)*deltay_x))
+            ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0, ky_fft(two:nxgrid)*deltay_x))
             a_re(:,l,n)=real(ay)
             a_im(:,l,n)=aimag(ay)
           enddo; enddo
@@ -555,7 +557,7 @@ module Fourier
             ay=cmplx(a_re(:,l,n),a_im(:,l,n))
 !  Shift y-coordinate back to regular frame (see above).
             deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
-            ay(2:nxgrid)=ay(2:nxgrid)*exp(cmplx(0.0,-ky_fft(2:nxgrid)*deltay_x))
+            ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0,-ky_fft(two:nxgrid)*deltay_x))
             call cfftb(nxgrid,ay,wsave)
             a_re(:,l,n)=real(ay)
             a_im(:,l,n)=aimag(ay)
@@ -605,8 +607,10 @@ module Fourier
       complex, dimension (nxgrid) :: az
       real, dimension (4*nxgrid+15) :: wsave
       real :: deltay_x
-      integer :: l,m,n
+      integer :: l,m,n,two
       logical :: lforward
+!
+      two = 2         ! avoid `array out of bounds' below for nygrid=1
 !
       lforward=.true.
       if (present(linv)) then
@@ -629,7 +633,7 @@ module Fourier
 !
 !  Transform y-direction. Must start with y, because x is not periodic (yet).
 !
-        if (nygrid/=1) then
+        if (nygrid>1) then
           if (lroot.and.ip<10) &
               print*, 'fourier_transform_shear: doing FFTpack in y'
           call transp(a_re,'y')
@@ -640,7 +644,7 @@ module Fourier
 !  Shift y-coordinate so that x-direction is periodic. This is best done in
 !  k-space, by multiplying the complex amplitude by exp[i*ky*deltay(x)].
             deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
-            ay(2:nxgrid)=ay(2:nxgrid)*exp(cmplx(0.0, ky_fft(2:nxgrid)*deltay_x))
+            ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0, ky_fft(two:nxgrid)*deltay_x))
             a_re(:,l,n)=real(ay)
             a_im(:,l,n)=aimag(ay)
           enddo; enddo
@@ -677,7 +681,7 @@ module Fourier
 !  x-direction, but the transformation from y' to y means that we must transform
 !  the y-direction last.
 !
-        if (nygrid/=1) then
+        if (nygrid>1) then
           call transp(a_re,'y')
           call transp(a_im,'y')
           if (lroot.and.ip<10) &
@@ -686,7 +690,7 @@ module Fourier
             ay=cmplx(a_re(:,l,n),a_im(:,l,n))
 !  Shift y-coordinate back to regular frame (see above).
             deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
-            ay(2:nxgrid)=ay(2:nxgrid)*exp(cmplx(0.0,-ky_fft(2:nxgrid)*deltay_x))
+            ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0,-ky_fft(two:nxgrid)*deltay_x))
             call cfftb(nxgrid,ay,wsave)
             a_re(:,l,n)=real(ay)
             a_im(:,l,n)=aimag(ay)
