@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.117 2006-11-30 09:03:34 dobler Exp $
+! $Id: dustvelocity.f90,v 1.118 2007-01-23 18:42:45 dobler Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -137,7 +137,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.117 2006-11-30 09:03:34 dobler Exp $")
+           "$Id: dustvelocity.f90,v 1.118 2007-01-23 18:42:45 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -224,6 +224,8 @@ module Dustvelocity
 
         case ('nothing')
           unit_md = 1.
+          mumon   = 1.
+          mmon    = 1.
 
         case ('ice')
 !
@@ -1075,7 +1077,7 @@ module Dustvelocity
           if (idiag_dtnud(k)/=0) &
               call max_mn_name(diffus_nud/cdtv,idiag_dtnud(k),l_dt=.true.)
         endif
-        if (headtt.or.ldebug) then
+        if ((headtt.or.ldebug) .and. (ip<6)) then
           print*,'duud_dt: max(advec_uud) =',maxval(advec_uud)
           print*,'duud_dt: max(diffus_nud) =',maxval(diffus_nud)
         endif
