@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2006-12-12 06:55:58 $
-# $Revision: 1.32 $
+# $Date: 2007-01-24 19:17:26 $
+# $Revision: 1.33 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -50,7 +50,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   or `hydrogen-bond' fail. Note that the patterns are anchored at the end,
 #   but not at the beginning.
 # Crontab entry:
-#   05 01 * * *     $HOME/bin/pencil-test -HUr -N 15 -m '{-:solar1d4},email1@domain1,email2@domain2' kabul > $HOME/public_html/pencil-code/tests/kabul.html
+#   05 01 * * *     $HOME/bin/pencil-test -HUrs -N 15 -m '{-:solar1d4},email1@domain1,email2@domain2' kabul > $HOME/public_html/pencil-code/tests/kabul.html
 
 use strict;
 use Getopt::Long;
@@ -72,6 +72,7 @@ GetOptions(\%opts,
 	       -u   --update
 	       -U   --up-d-samples
 	       -r   --reload
+	       -s   --short
 	       -c   --clean
 	       -D=s --pencil-home=s
 	       -N=s --nice=s
@@ -82,7 +83,7 @@ GetOptions(\%opts,
 	            --tag-stable=s
 	            --tag-broken=s
 	       )) or die "$!\n";
-die '$Id: pencil-test,v 1.32 2006-12-12 06:55:58 dobler Exp $ ' . "\n"
+die '$Id: pencil-test,v 1.33 2007-01-24 19:17:26 dobler Exp $ ' . "\n"
             if    ($opts{'v'} || $opts{'version'});
 die usage() if    ($opts{'h'} || $opts{'help'}     || @ARGV < 1);
 my $debug       = (              $opts{'debug'}       || 0 );
@@ -94,6 +95,7 @@ my $infofile    = ($opts{'i'} || $opts{'infofile'}    || '' );
 my $update      = ($opts{'u'} || $opts{'update'}      || 0 );
 my $UPDATE      = ($opts{'U'} || $opts{'up-d-samples'}|| 0 );
 my $reload      = ($opts{'r'} || $opts{'reload'}      || 0 );
+my $short       = ($opts{'s'} || $opts{'short'}       || 0 );
 my $tag_stable  = (              $opts{'tag-stable'}  || 0 );
 my $tag_broken  = (              $opts{'tag-broken'}  || 0 );
 if ($UPDATE) { $update=1 };
@@ -157,6 +159,7 @@ foreach my $host (@ARGV) {
     if ($with_xml)       { $remcmd .= " --xml" };
     if ($clean)          { $remcmd .= " --clean" };
     if ($reload)         { $remcmd .= " --reload" };
+    if ($short)          { $remcmd .= " --short" };
     if ($nice)           { $remcmd .= " --nice=$nice" };
     if ($infofile ne '') { $remcmd .= " --infofile=$infofile" };
     if ($postproc)       { $remcmd .= " --postproc=\"$postproc\"" };
