@@ -3,11 +3,13 @@
 !  run parameters for forced helical MHD turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.6 2005-06-26 17:34:17 eos_merger_tony Exp $',
+  cvsid='$Id: run.in,v 1.7 2007-01-24 13:29:01 ajohan Exp $',
   nt=10000000, it1=100, cdt=0.4, cdtv=0.8, isave=50, itorder=3,
   dsnap=10.0, dvid=10.0, dtmin=1e-9, ip=20
   bcz = 'p','p','p','p','p', dt=0.001
   tmax=10000.0
+/
+&eos_run_pars
 /
 &hydro_run_pars
 /
@@ -17,7 +19,7 @@
 &ionization_run_pars
 /
 &dustvelocity_run_pars
-  ldustdrag=F
+  ldragforce_dust=F
 /
 &dustdensity_run_pars
 /

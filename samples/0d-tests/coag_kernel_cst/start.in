@@ -4,9 +4,12 @@
 !
 &init_pars
   ip=20,lwrite_ic=T
-  cvsid='$Id: start.in,v 1.8 2005-06-26 17:34:17 eos_merger_tony Exp $'
+  cvsid='$Id: start.in,v 1.9 2007-01-24 13:29:01 ajohan Exp $'
   Lxyz=+0.,+0.,+0., xyz0=0.,0.,0., 
   lperi=T,T,T
+/
+&eos_init_pars
+  gamma=1.0
 /
 &hydro_init_pars
 /
@@ -15,8 +18,8 @@
 &ionization_init_pars
 /
 &dustvelocity_init_pars
-  md0=1., deltamd=1.2
+  md0=1.0, deltamd=1.2, ldustcoagulation=T
 /
 &dustdensity_init_pars
-  initnd='kernel_cst', nd00=1., dkern_cst=1., ldustcoagulation=T
+  initnd='kernel_cst', nd0=1.0, dkern_cst=1.0
 /
