@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2007-01-24 19:17:26 $
-# $Revision: 1.33 $
+# $Date: 2007-01-24 19:19:20 $
+# $Revision: 1.34 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -32,6 +32,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #                              before compiling
 #   -c, --clean            -- `make cleann' before compiling
 #   -r, --reload           -- Keep reloading parameters (using KEEP_RELOADING)
+#   -s, --short            -- Print short directory names only
 #   -D <DIR>, --pencil-home=<DIR>
 #                          -- set PENCIL_HOME directory to DIR
 #   -N <N>, --nice=<N>     -- Run tests with nice value of <N>
@@ -83,7 +84,7 @@ GetOptions(\%opts,
 	            --tag-stable=s
 	            --tag-broken=s
 	       )) or die "$!\n";
-die '$Id: pencil-test,v 1.33 2007-01-24 19:17:26 dobler Exp $ ' . "\n"
+die '$Id: pencil-test,v 1.34 2007-01-24 19:19:20 dobler Exp $ ' . "\n"
             if    ($opts{'v'} || $opts{'version'});
 die usage() if    ($opts{'h'} || $opts{'help'}     || @ARGV < 1);
 my $debug       = (              $opts{'debug'}       || 0 );
