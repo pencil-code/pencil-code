@@ -29,6 +29,7 @@ my $debug = 1;                  # 0: be quiet
                                 # 2: dump all time stamps and md5 sums
 my $debugfile = "./f90_qnd.log";
 my $time_immemorial = 1;        # Thu Jan 1 00:00:01 UCT 1970
+my $touch_only = 0;             # Compile by default
 
 if ($debug) {
 
@@ -61,8 +62,13 @@ if (defined($ENV{F90_QND_F90})) {
     warn boldface("$cmdname: F90_QND_F90 is not set; defaulting to `$fc'\n");
 }
 
-# Compiler arguments
+## Compiler arguments
 @fcargs = @ARGV;
+# Fast-track: are we to touch, rather than compile?
+if ($ENV{F90_QND_TOUCHONLY}) {
+    touch_files_and_exit(@fcargs);
+}
+
 if (grep /^-c$/, @fcargs) {
     # Call of type $(FC) .. -c to produce .o and .mod files
     # --> Do the nasty manipulations
@@ -192,6 +198,42 @@ sub boldface {
     $string =~ s/^(.*)(\n?)$/$bfa$1$bfe$2/;
 
     return $string;
+}
+# ---------------------------------------------------------------------- #
+sub touch_files_and_exit {
+# Instead of compiling, just touch .f90 and .o file.
+# Assumes the option # `-o file.o' is given on the command line
+    my @fc_args = @_;
+
+    # Extract output file name (cmd line arg aftero the `-o'):
+    while (my $arg = shift @fc_args) {
+        last if $arg eq '-o';
+    }
+    unless (@fc_args) {
+        warn boldface("No -o option found, not touching anything.\n");
+        exit(1);
+    }
+
+    my $outfile = shift @fc_args;
+    if ($outfile =~ /^-.*/) {
+        die boldface("Fatal: -o is followed by an option.\n");
+    }
+
+    # Construct list of files to touch (.o, .f90, .f)
+    my @files;
+    if ($outfile =~ /^(.*)\.o$/) {
+        my $base = $1;
+        push @files, $outfile    if (-e $outfile);
+        push @files, "$base.f90" if (-e "$base.f90");
+        push @files, "$base.f"   if (-e "$base.f");
+    }
+    # else: don't touch anything
+
+    # Touch files
+    my $now = time();
+    back_date($now, @files);
+
+    exit 0;
 }
 # ---------------------------------------------------------------------- #
 sub get_timestamp {
@@ -401,6 +443,8 @@ sub back_date {
     my $fake_time = shift;
     my @files     = @_;
 
+    return 0 unless(@files);
+
     if (defined($fake_time)) {
         print DEBUG "Touching ", join(',', @files),
           " to $fake_time = ", scalar localtime($fake_time), "\n"
@@ -412,6 +456,8 @@ sub back_date {
           " -- fake_time undefined\n"
             if ($debug);
     }
+
+    return scalar @files;       # return number of back-dated files
 }
 # ---------------------------------------------------------------------- #
 sub print_details_of_changes {
