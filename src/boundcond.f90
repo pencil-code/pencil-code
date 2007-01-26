@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.131 2006-12-15 02:07:58 dobler Exp $
+! $Id: boundcond.f90,v 1.132 2007-01-26 00:19:37 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1808,8 +1808,8 @@ module Boundcond
        use EquationOfState, only : gamma,gamma1,cs20,lnrho0
 
        real, dimension (mx,my,mz,mfarray) :: f
-       real, dimension (nx,ny*nprocy),save :: uxl,uxr,uyl,uyr
-       real, dimension (nx,ny*nprocy) :: uxd,uyd
+       real, dimension (nxgrid,nygrid),save :: uxl,uxr,uyl,uyr
+       real, dimension (nxgrid,nygrid) :: uxd,uyd
        real, dimension (nx,ny) :: quenching,pp,betaq,fac
        real, dimension (nx,ny) :: bbz,bb2
        integer :: lend,iostat=0,i=0,j
@@ -1845,7 +1845,7 @@ module Boundcond
 !
 ! Read velocity field
 !
-          open (10,file='driver/vel_k.dat',form='unformatted',status='unknown',recl=lend*nx*ny*nprocy,access='direct')
+          open (10,file='driver/vel_k.dat',form='unformatted',status='unknown',recl=lend*nxgrid*nygrid,access='direct')
           read (10,rec=(2*i-1)) uxl
           read (10,rec=2*i)     uyl
 
@@ -1873,23 +1873,22 @@ module Boundcond
 !
       if (nxgrid/=1) then
           fac=(1./60)*spread(dx_1(l1:l2),2,ny)
-          bbz= fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,n,iay)-f(l1-1:l2-1,m1:m2,n,iay)) &
-               -  9.0*(f(l1+2:l2+2,m1:m2,n,iay)-f(l1-2:l2-2,m1:m2,n,iay)) &
-               +      (f(l1+3:l2+3,m1:m2,n,iay)-f(l1-3:l2-3,m1:m2,n,iay)))
+          bbz= fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,n1,iay)-f(l1-1:l2-1,m1:m2,n1,iay)) &
+               -  9.0*(f(l1+2:l2+2,m1:m2,n1,iay)-f(l1-2:l2-2,m1:m2,n1,iay)) &
+               +      (f(l1+3:l2+3,m1:m2,n1,iay)-f(l1-3:l2-3,m1:m2,n1,iay)))
        else
-          if (ip<=5) print*, 'der_main: Degenerate case in x-direction'
+          if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
        endif
        if (nygrid/=1) then
-          fac=(1./60)*spread(spread(dy_1(m),1,nx),2,ny)
-          bbz= bbz -fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,n,iax)-f(l1:l2,m1-1:m2-1,n,iax)) &
-               -  9.0*(f(l1:l2,m1+2:m2+2,n,iax)-f(l1:l2,m1-2:m2-2,n,iax)) &
-               +      (f(l1:l2,m1+3:m2+3,n,iax)-f(l1:l2,m1-3:m2-3,n,iax)))
+          fac=(1./60)*spread(dy_1(m1:m2),1,nx)
+          bbz= bbz -fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,n1,iax)-f(l1:l2,m1-1:m2-1,n1,iax)) &
+               -  9.0*(f(l1:l2,m1+2:m2+2,n1,iax)-f(l1:l2,m1-2:m2-2,n1,iax)) &
+               +      (f(l1:l2,m1+3:m2+3,n1,iax)-f(l1:l2,m1-3:m2-3,n1,iax)))
        else
-          if (ip<=5) print*, 'der_main: Degenerate case in y-direction'
+          if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
        endif
 
        bb2 = bbz*bbz
-
        bb2 = bb2/(2*mu0)*300.
 !
        pp = gamma* (f(l1:l2,m1:m2,n1,iss)+f(l1:l2,m1:m2,n1,ilnrho))-gamma1*lnrho0
@@ -1905,11 +1904,11 @@ module Boundcond
 !
        quenching = (1.+betaq**2)/(3. +betaq**2)
 !
-!   Fill the ghost cells and the bottom layer with vel. field
+!   Fill the ghost cells and the bottom layer with velocity field
 !
        do j=1,n1
-          f(l1:l2,m1:m2,j,iux) =  uxd(:,ipy*ny:(ipy+1)*ny) *quenching
-          f(l1:l2,m1:m2,j,iuy) =  uyd(:,ipy*ny:(ipy+1)*ny) *quenching
+          f(l1:l2,m1:m2,j,iux) =  uxd(:,ipy*ny+1:(ipy+1)*ny) *quenching
+          f(l1:l2,m1:m2,j,iuy) =  uyd(:,ipy*ny+1:(ipy+1)*ny) *quenching
        enddo
 
      endsubroutine uu_driver
