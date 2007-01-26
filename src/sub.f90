@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.273 2007-01-18 13:40:44 dintrans Exp $
+! $Id: sub.f90,v 1.274 2007-01-26 01:55:42 dobler Exp $
 
 module Sub
 
@@ -3159,10 +3159,7 @@ module Sub
 !***********************************************************************
       function cubic_der_step_pt(x,x0,width,shift)
 !
-!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w].
-!  Optional argument SHIFT shifts center:
-!  for shift=1. the interval is [x0    ,x0+2*w],
-!  for shift=-1. it is          [x0-2*w,x0    ].
+!  Derivative of smooth unit step function, localized to [x0-w,x0+w].
 !  This version is for scalar args.
 !
 !  12-jul-05/axel: adapted from cubic_step_pt
@@ -3186,7 +3183,7 @@ module Sub
 !***********************************************************************
       function cubic_der_step_mn(x,x0,width,shift)
 !
-!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w].
+!  Derivative of smooth unit step function, localized to [x0-w,x0+w].
 !  Version for 1d arg (in particular pencils).
 !
 !  12-jul-05/axel: adapted from cubic_step_mn
@@ -3210,7 +3207,7 @@ module Sub
 !***********************************************************************
       function cubic_der_step_global(x,x0,width,shift)
 !
-!  Smooth unit der_step function with cubic (smooth) transition over [x0-w,x0+w].
+!  Derivative of smooth unit step function, localized to [x0-w,x0+w].
 !  Version for 3d-array arg.
 !
 !  12-jul-05/axel: adapted from cubic_step_global
