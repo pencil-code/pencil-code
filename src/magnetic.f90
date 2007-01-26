@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.368 2007-01-21 14:29:50 brandenb Exp $
+! $Id: magnetic.f90,v 1.369 2007-01-26 02:11:43 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -217,7 +217,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.368 2007-01-21 14:29:50 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.369 2007-01-26 02:11:43 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -448,6 +448,7 @@ module Magnetic
          case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('crazy', '5'); call crazy(amplaa(j),f,iaa)
          case('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,xx,kx_aa(j))
+         case('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,yy,ky_aa(j),mu0)
          case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
          case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,xx,yy,rmode)
          case('Alfven-rz'); call alfven_rz(amplaa(j),f,xx,yy,rmode)
@@ -2504,6 +2505,9 @@ module Magnetic
 !  ux = +sin(kx-ot), for B0x=1 and rho=1.
 !  Az = -cos(kx-ot), ie By = sin(kx-ot)
 !
+!  [wd dec-2006: This seems to be compressible. Is this a magnetosonic
+!   wave after all? Slow or fast?]
+!
 !  satisfies the equations
 !  dlnrho/dt = -ux'
 !  dux/dt = -cs2*(lnrho)'
@@ -2526,6 +2530,33 @@ module Magnetic
       f(:,:,:,iaa+2)=-ampl*cos(kx*xx)
 !
     endsubroutine alfven_x
+!***********************************************************************
+    subroutine alfven_y(ampl,f,iuu,iaa,yy,ky,mu0)
+!
+!  Alfven wave propagating in the y-direction; can be used in 2-d runs.
+!  ux = cos(ky-ot), for B0y=1 and rho=1.
+!  Az = sin(ky-ot), ie Bx=-cos(ky-ot)
+!
+!  [wd nov-2006: There should be a 1/ky in the aa term here and in
+!  alfven_x, I think]
+!
+!  satisfies the equations
+!  dux/dt = Bx'  ==>  dux/dt = -Az''
+!  dBx/dt = ux'  ==>  dAz/dt = -ux.
+!
+!  06-dec-06/wolf: adapted from alfven_z
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz)         :: yy
+      real                               :: ampl,ky,mu0
+      integer                            :: iuu,iaa
+!
+!  ux and Az
+!
+      f(:,:,:,iuu+0) = +ampl*cos(ky*yy)
+      f(:,:,:,iaa+2) = -ampl*sin(ky*yy)*sqrt(mu0)/ky
+!
+    endsubroutine alfven_y
 !***********************************************************************
     subroutine alfven_z(ampl,f,iuu,iaa,zz,kz,mu0)
 !
