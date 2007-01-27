@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.83 2006-12-15 22:56:36 dobler Exp $
+! $Id: prints.f90,v 1.84 2007-01-27 11:04:06 brandenb Exp $
 
 module Print
 
@@ -262,6 +262,14 @@ module Print
         !
         if (ip<=10) print*, 'write_2daverages: wrote phi(etc.)avgs'//ch2davg
       endif
+!
+!  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
+!  (Of course, yaverages_xz does not need to be calculated for that.)
+!  AB: the following lines are still kept in equ.f90
+!
+!     if (.not.l2davgfirst.and.ldiagnos.and.ldiagnos_need_zaverages) then
+!       if (lwrite_zaverages) call zaverages_xy
+!     endif
 !
     endsubroutine write_2daverages
 !***********************************************************************

@@ -1,5 +1,4 @@
-
-! $Id: equ.f90,v 1.340 2007-01-20 11:22:33 brandenb Exp $
+! $Id: equ.f90,v 1.341 2007-01-27 11:04:06 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -384,7 +383,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.340 2007-01-20 11:22:33 brandenb Exp $")
+           "$Id: equ.f90,v 1.341 2007-01-27 11:04:06 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -527,7 +526,10 @@ module Equ
           dxyz_4 = dx_1(l1:l2)**4+dy_1(m)**4+dz_1(n)**4
           dxyz_6 = dx_1(l1:l2)**6+dy_1(m)**6+dz_1(n)**6
         endif
-
+!
+!  [AB: Isn't it true that not all 2-D averages use rcyl_mn?
+!  lwrite_phiaverages=T is required, and perhaps only that.]
+!
         if (l2davgfirst) then
           lpencil(i_rcyl_mn)=.true.
         endif
@@ -928,18 +930,21 @@ module Equ
         call yzaverages_x
       endif
 !
+!  AB: I think all the 2-D averages are currently done via write_2daverages,
+!  which is called in run.f90 Therefore I commented out the following lines.
+!
 !  2-D averages
 !
-      if (l2davgfirst) then
-        if (lwrite_yaverages) call yaverages_xz
-        if (lwrite_zaverages) call zaverages_xy
-        if (lwrite_phiaverages) call phiaverages_rz
-      endif
-      if (.not.l2davgfirst.and.ldiagnos.and.ldiagnos_need_zaverages) then
+!     if (l2davgfirst) then
+!       if (lwrite_yaverages) call yaverages_xz
+!       if (lwrite_zaverages) call zaverages_xy
+!       if (lwrite_phiaverages) call phiaverages_rz
+!     endif
 !
 !  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
 !  (Of course, yaverages_xz does not need to be calculated for that.)
 !
+      if (.not.l2davgfirst.and.ldiagnos.and.ldiagnos_need_zaverages) then
         if (lwrite_zaverages) call zaverages_xy
       endif
 !
