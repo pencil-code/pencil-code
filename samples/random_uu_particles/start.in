@@ -4,7 +4,7 @@
 !  velocity field.
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.7 2006-06-19 23:46:32 ajohan Exp $',
+  cvsid='$Id: start.in,v 1.8 2007-01-28 14:54:09 ajohan Exp $',
   xyz0  = -0.5, -0.5, -0.5
   Lxyz  =  1.0,  1.0,  1.0
   lperi =    T,    T,    T
@@ -13,14 +13,16 @@
 &eos_init_pars
 /
 &hydro_init_pars
-  inituu='gaussian-noise', ampluu=0.001
+  inituu='zero'
 /
 &density_init_pars
   ldensity_nolog=T
 /
+&entropy_init_pars
+/
 &particles_init_pars
   initxxp='random', initvvp='random'
-  delta_vp0=0.001
+  delta_vp0=0.05
   eps_dtog=1.0
   lparticlemesh_cic=T
 /

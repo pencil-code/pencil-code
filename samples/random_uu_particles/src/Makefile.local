@@ -8,7 +8,7 @@ GLOBAL    = noglobal
 
 HYDRO     =   hydro
 DENSITY   =   density
-ENTROPY   = noentropy
+ENTROPY   =   entropy
 MAGNETIC  = nomagnetic
 RADIATION = noradiation
 PSCALAR   = nopscalar
