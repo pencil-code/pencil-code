@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.175 2007-01-28 11:51:36 ajohan Exp $
+! $Id: particles_dust.f90,v 1.176 2007-01-28 14:44:22 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -47,7 +47,7 @@ module Particles
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer, dimension (npar_species) :: ipar_fence_species=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
-  logical :: ldragforce_heating=.false., lpar_spec=.false.
+  logical :: ldragforce_heat=.false., lpar_spec=.false.
   logical :: lcollisional_cooling_rms=.false.
   logical :: lcollisional_cooling_twobody=.false.
   logical :: lcollisional_dragforce_cooling=.false.
@@ -78,7 +78,7 @@ module Particles
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole, &
       epsp_friction_increase,lcartesian_mig, lcollisional_dragforce_cooling, &
-      ldragforce_heating
+      ldragforce_heat
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -92,7 +92,7 @@ module Particles
       lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
-      ldragforce_heating
+      ldragforce_heat
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -125,7 +125,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.175 2007-01-28 11:51:36 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.176 2007-01-28 14:44:22 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1247,7 +1247,7 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_requested(i_epsp)=.true.
         lpenc_requested(i_np)=.true.
       endif
-      if (ldragforce_heating) then
+      if (ldragforce_heat) then
         lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_rho1)=.true.
       endif
@@ -1261,7 +1261,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       lpenc_diagnos(i_np)=.true.
       lpenc_diagnos(i_rhop)=.true.
-      if (ldragforce_heating) then
+      if (ldragforce_heat) then
         lpenc_diagnos(i_TT1)=.true.
         lpenc_diagnos(i_rho1)=.true.
       endif
@@ -1363,8 +1363,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (headtt) print*,'dvvp_dt: Add drag force; tausp=', tausp
         if (npar_imn(imn)/=0) then
 !
-          if ( ldragforce_heating .or. &
-              (ldiagnos .and. idiag_dedragp/=0) ) drag_heat=0.0
+          if (ldragforce_heat.or.(ldiagnos.and.idiag_dedragp/=0)) drag_heat=0.0
 !
           if (lfirst.and.ldt) then
             dt1_drag_dust=0.0
@@ -1396,9 +1395,9 @@ k_loop:   do while (.not. (k>npar_loc))
             dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-uup)
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !
-!  Heating of gas by drag force.
+!  Heating of gas due to drag force.
 !
-            if (ldragforce_heating .or. (ldiagnos .and. idiag_dedragp/=0)) then
+            if (ldragforce_heat .or. (ldiagnos .and. idiag_dedragp/=0)) then
               if (ldragforce_gas_par) then
                 up2=sum((fp(k,ivpx:ivpz)-uup)**2)
               else
@@ -1556,7 +1555,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Add drag force heating in pencils.
 !
-          if (lentropy .and. ldragforce_heating) &
+          if (lentropy .and. ldragforce_heat) &
               df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%rho1*p%TT1*drag_heat
 !
 !  Contribution of friction force to time-step. Dust and gas inverse friction
