@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.174 2007-01-15 05:58:58 ajohan Exp $
+! $Id: particles_dust.f90,v 1.175 2007-01-28 11:51:36 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -47,7 +47,7 @@ module Particles
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer, dimension (npar_species) :: ipar_fence_species=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
-  logical :: lpar_spec=.false.
+  logical :: ldragforce_heating=.false., lpar_spec=.false.
   logical :: lcollisional_cooling_rms=.false.
   logical :: lcollisional_cooling_twobody=.false.
   logical :: lcollisional_dragforce_cooling=.false.
@@ -77,7 +77,8 @@ module Particles
       lcollisional_cooling_twobody, ipar_fence_species, tausp_species, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole, &
-      epsp_friction_increase,lcartesian_mig, lcollisional_dragforce_cooling
+      epsp_friction_increase,lcartesian_mig, lcollisional_dragforce_cooling, &
+      ldragforce_heating
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -90,12 +91,13 @@ module Particles
       lparticlemesh_cic, lparticlemesh_tsc, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
-      tstart_collisional_cooling, tausg_min, epsp_friction_increase
+      tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
+      ldragforce_heating
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
-  integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0
+  integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0, idiag_ekinp=0
   integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
   integer :: idiag_rhoptilm=0, idiag_dtdragp=0, idiag_nparmax=0
@@ -123,7 +125,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.174 2007-01-15 05:58:58 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.175 2007-01-28 11:51:36 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1245,6 +1247,10 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_requested(i_epsp)=.true.
         lpenc_requested(i_np)=.true.
       endif
+      if (ldragforce_heating) then
+        lpenc_requested(i_TT1)=.true.
+        lpenc_requested(i_rho1)=.true.
+      endif
       if (lcollisional_cooling_rms) then
         lpenc_requested(i_epsp)=.true.
       endif
@@ -1255,6 +1261,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       lpenc_diagnos(i_np)=.true.
       lpenc_diagnos(i_rhop)=.true.
+      if (ldragforce_heating) then
+        lpenc_diagnos(i_TT1)=.true.
+        lpenc_diagnos(i_rho1)=.true.
+      endif
       if (idiag_epspmx/=0 .or. idiag_epspmy/=0 .or. idiag_epspmz/=0) &
           lpenc_diagnos(i_epsp)=.true.
 !
@@ -1336,6 +1346,7 @@ k_loop:   do while (.not. (k>npar_loc))
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
+      real, dimension (nx) :: drag_heat
       real, dimension (3) :: uup, dragforce
       real :: rho_point, rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
@@ -1351,6 +1362,9 @@ k_loop:   do while (.not. (k>npar_loc))
       if (ldragforce_dust_par .and. t>=tstart_dragforce_par) then
         if (headtt) print*,'dvvp_dt: Add drag force; tausp=', tausp
         if (npar_imn(imn)/=0) then
+!
+          if ( ldragforce_heating .or. &
+              (ldiagnos .and. idiag_dedragp/=0) ) drag_heat=0.0
 !
           if (lfirst.and.ldt) then
             dt1_drag_dust=0.0
@@ -1382,18 +1396,16 @@ k_loop:   do while (.not. (k>npar_loc))
             dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-uup)
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !
-!  Drag force diagnostics
+!  Heating of gas by drag force.
 !
-            if (ldiagnos) then
-              if (idiag_dedragp/=0) then
-                if (ldragforce_gas_par) then
-                  up2=sum((fp(k,ivpx:ivpz)-uup)**2)
-                  call sum_par_name((/-rhop_tilde*tausp1_par*up2/),idiag_dedragp)
-                else
-                  up2=sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-uup))
-                  call sum_par_name((/-rhop_tilde*tausp1_par*up2/),idiag_dedragp)
-                endif
+            if (ldragforce_heating .or. (ldiagnos .and. idiag_dedragp/=0)) then
+              if (ldragforce_gas_par) then
+                up2=sum((fp(k,ivpx:ivpz)-uup)**2)
+              else
+                up2=sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-uup))
               endif
+              drag_heat(ix0-nghost)=drag_heat(ix0-nghost) + &
+                  rhop_tilde*tausp1_par*up2
             endif
 !
 !  Back-reaction friction force from particles on gas. Three methods are
@@ -1542,6 +1554,11 @@ k_loop:   do while (.not. (k>npar_loc))
             endif
           enddo
 !
+!  Add drag force heating in pencils.
+!
+          if (lentropy .and. ldragforce_heating) &
+              df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%rho1*p%TT1*drag_heat
+!
 !  Contribution of friction force to time-step. Dust and gas inverse friction
 !  time-steps are added up to give a valid expression even when the two are
 !  of similar magnitude.
@@ -1609,6 +1626,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
         if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
         if (idiag_rhopmxy/=0) call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
+        if (idiag_dedragp/=0) call sum_mn_name(drag_heat,idiag_dedragp)
       endif
 !
     endsubroutine dvvp_dt_pencil
@@ -1805,6 +1823,11 @@ k_loop:   do while (.not. (k>npar_loc))
             call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
+        if (idiag_ekinp/=0) &
+            call sum_par_name(0.5*rhop_tilde*npar_per_cell* &
+                             (fp(1:npar_loc,ivpx)**2 + &
+                              fp(1:npar_loc,ivpy)**2 + &
+                              fp(1:npar_loc,ivpz)**2),idiag_ekinp)
         if (idiag_vpxmax/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
         if (idiag_vpymax/=0) call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
         if (idiag_vpzmax/=0) call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
@@ -2248,7 +2271,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
         idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
-        idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0
+        idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0; idiag_ekinp=0
         idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
         idiag_rhoptilm=0; idiag_dtdragp=0; idiag_dedragp=0
@@ -2278,6 +2301,7 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'vpx2m',idiag_vpx2m)
         call parse_name(iname,cname(iname),cform(iname),'vpy2m',idiag_vpy2m)
         call parse_name(iname,cname(iname),cform(iname),'vpz2m',idiag_vpz2m)
+        call parse_name(iname,cname(iname),cform(iname),'ekinp',idiag_ekinp)
         call parse_name(iname,cname(iname),cform(iname),'vpxmax',idiag_vpxmax)
         call parse_name(iname,cname(iname),cform(iname),'vpymax',idiag_vpymax)
         call parse_name(iname,cname(iname),cform(iname),'vpzmax',idiag_vpzmax)

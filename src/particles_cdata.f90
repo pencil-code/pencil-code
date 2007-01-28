@@ -1,4 +1,4 @@
-! $Id: particles_cdata.f90,v 1.21 2006-11-30 09:03:36 dobler Exp $
+! $Id: particles_cdata.f90,v 1.22 2007-01-28 11:51:36 ajohan Exp $
 !!
 !! Global particle variables
 !!
@@ -8,6 +8,8 @@ module Particles_cdata
   use Cdata
 
   public
+
+  real, parameter :: npar_per_cell=npar/real(nwgrid)
 
   real :: dsnap_par_minor=0.0
   real :: rhops=1.0e10, rhop_tilde=0.0, mp_tilde=0.0
