@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.87 2007-01-30 00:41:04 dobler Exp $
+# CVS: $Id: auto-test,v 1.88 2007-01-30 07:57:20 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -46,31 +46,31 @@ my @sampdirs3 = qw ();
 
 my @sampdirs = qw(
                   no-modules
-                  most-modules
-                  conv-slab
-                  cosmicray
-                  kin-dynamo
-                  geodynamo
-                  helical-MHDturb
-                  interlocked-fluxrings
-                  mdwarf
-                  0d-tests/heating_ionize
                   0d-tests/heating_noionize
-                  conv-slab-noequi
-                  1d-tests/solar-atmosphere
+                  chiral-diffusion
+                  cosmicray
+                  backwards-compatible
                   1d-tests/sod_10
-                  2d-tests/Kelvin-Helmholtz-disc
+                  helical-MHDturb
                   2d-tests/selfgravitating-shearwave
-                  interstellar
+                  testfield
+                  0d-tests/heating_ionize
+                  most-modules
+                  random_uu_particles
+                  1d-tests/solar-atmosphere
+                  kin-dynamo
+                  meissner
+                  conv-slab-noequi
+                  conv-slab
+                  2d-tests/globaldisc
+                  mdwarf
+                  2d-tests/Kelvin-Helmholtz-disc
                   dust-vortex
                   MRI-turbulence_hyper
-                  random_uu_particles
-                  chiral-diffusion
-                  backwards-compatible
-                  testfield
-                  meissner
-                  2d-tests/globaldisc
-                );
+                  interstellar
+                  geodynamo
+                  interlocked-fluxrings
+                 );
 # Test the following subdirs of runs/ :
 #my @runsdirs = qw( radiation/solar1d4);
 my @runsdirs = qw( );
@@ -178,7 +178,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.87 2007-01-30 00:41:04 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.88 2007-01-30 07:57:20 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -246,7 +246,7 @@ handle_lock_file() or exit(LOCK_FAILED) unless ($list_only);
 my $cwd = `pwd`; chomp($cwd);
 
 # Make sure we are in the top directory and have the right PATH
-die "Need to set environment variable PENCIL_HOME\n" 
+die "Need to set environment variable PENCIL_HOME\n"
     unless (defined($pencil_home));
 my $topdir = "$pencil_home";
 chdir $topdir;
@@ -265,7 +265,11 @@ if ($list_only) {
     print "Test directories:\n"
 }
 
-my $t0_global = time();         # start time
+my %t_global = (
+                'compile'   => 0,
+                'start+run' => 0,
+               );
+my $t0_global = time();         # remember start time
 
 if (@ARGV) {
     ## Process dirs given in cmd line
@@ -874,8 +878,10 @@ sub test_rundir {
     test_compile($dir,$makeopts,$t0);
     return if ($test_status);
 
-    # 2. Ensure we have a data directory and test starting...
     my $t1 = time();
+    $t_global{'compile'} += ($t1-$t0);
+
+    # 2. Ensure we have a data directory and test starting...
     return unless ($t_start);	# no need for a data directory unless we start
 				# the code
     if (! -d 'data') {
@@ -909,6 +915,9 @@ sub test_rundir {
     test_run($dir,$t2);
     return if ($test_status);
 
+    my $t3 = time();
+    $t_global{'start+run'} += ($t3-$t1);
+
     # 4. Check the output
     test_results($dir);
 
@@ -919,9 +928,13 @@ sub test_rundir {
 	system("rm", "-r", "$tmpdir");
     }
 
-    my $t3 = time();
+    my $t4 = time();
     if ($time) {
-        print "    Time used: ", s_to_hms($t3-$t0, 44), "\n";
+        print "    Time used: ",
+          s_to_hms($t3-$t0, 44),
+          " = ", s_to_hms($t1-$t0),
+          " + ", s_to_hms($t3-$t1),
+          "\n";
     }
 }
 # ---------------------------------------------------------------------- #
@@ -1050,6 +1063,8 @@ END {
             my $t1_global = time(); # end time
             print "Total wall-clock time:            ",
               s_to_hms($t1_global-$t0_global, 7),
+              " = ", s_to_hms($t_global{'compile'}),
+              " + ", s_to_hms($t_global{'start+run'}),
               "\n";
 	}
 
