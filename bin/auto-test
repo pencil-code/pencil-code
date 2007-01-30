@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.86 2007-01-19 20:19:08 dobler Exp $
+# CVS: $Id: auto-test,v 1.87 2007-01-30 00:41:04 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -29,6 +29,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # - Remove directory from /var/tmp when encountering Ctl-c
 # - Treat `cvs update' as separate stage that can be `OK' or not
 use strict;
+use constant NOQUIET     => 0;
 use constant QUIET       => 1;
 use constant LOCK_FAILED => 128; # return status if we can't get lock
 use Cwd;
@@ -95,8 +96,11 @@ my $cfloat = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # regexp
 my $res;
 my ($t_comp,$t_start,$t_run,$t_res) = (1,1,1,1); # test everything by default
 my (%opts);			# variables written by GetOptions
-my $help = 0;
 (my $cmdname = $0) =~ s{.*/}{};
+my $help  = 0;
+my $itest = 1;
+my $indi_fmt = '%-17s';         # allow that much space for indicators like
+                               # `[double]' or `[KEEP_RELOADING]'
 
 my $usage =
 "Usage:  $cmdname [options] [dir1 [dir2 [..]]]
@@ -174,7 +178,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.86 2007-01-19 20:19:08 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.87 2007-01-30 00:41:04 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -261,22 +265,37 @@ if ($list_only) {
     print "Test directories:\n"
 }
 
+my $t0_global = time();         # start time
+
 if (@ARGV) {
     ## Process dirs given in cmd line
     @ARGV = map { s{^(?!/)}{$cwd/}; $_ } @ARGV; # Make `.' and similar work
+    $ntests = @ARGV;
     for my $d (@ARGV) {
 	test_rundir("$d",$makeopts);
     }
     if ((scalar @ARGV)==1) {
         if (%failed) {
-            keys %failed;                  # this is a no-op -> remove
-            my ($d,$phase) = each %failed; # ..and this is bizarre
+            # Do some bizarre chicken sacrifice voodoo
+            # [wd 29-Jan-2007:] Tried to sanitize this without knowing what
+            #                   it was supposed to do
+
+            # Assuming that the exit code is supposed to indicate the
+            # worst phase that failed (i.e., 2 means setting up directory
+            # failed, ..., 7 means results are wrong, 8 means something
+            # unexpected failed, see @exit_status above):
             my $exit_code=1;
+            # Loop through exit codes, starting with most serious one:
             foreach my $status (@exit_status) {
-                exit $exit_code if ($phase =~ /$status/ );
-                $exit_code++;
+                # Exit if any of the exit codes stored in %failed matches
+                # $status:
+                if (grep /^$status$/, values %failed) {
+                    exit $exit_code;
+                } else {
+                    $exit_code++;
+                }
             }
-            exit $exit_code;
+            exit $exit_code;    # Still here? Then exit now.
         }
     }
 } else {
@@ -291,7 +310,7 @@ if (@ARGV) {
             map { "$topdir/runs/$_"    } @runsdirs,
           );
     }
-
+    $ntests = @testdirs;
     if ($nodelist) {
         # Run tests in parallel
         my @nodes=split /,/ , $nodelist;
@@ -383,7 +402,6 @@ sub do_tests_in_parallel {
 		next if $nodes{$node}{'busy'};
 		my $job = shift @queue;
 		$nodes{$node}{'busy'}=$job;
-		$ntests++;
 		$running++;
 		if (! ($nodes{$node}{'pid'} = fork)) {
 		    my $nodeb=$node;
@@ -427,15 +445,23 @@ sub my_ok {
     my $dir = shift;
     my $phase = shift;
     my $quiet = (shift || 0);
+    my $dt    = shift;
+
+    my $timestr;
+    if (defined($dt) && $time) {
+        $timestr = s_to_hms($dt,7);
+    } else {
+        $timestr = '';
+    }
 
     # Allow for calls like `ok(0)' or `ok(1)':
     if (!defined($arg2)) {
 	$arg2 = $arg1 ? $arg1 : 1;
     }
     if ($arg1 eq $arg2) {
-	print "  ok\n" unless ($quiet);
+	print " ok      $timestr\n" unless ($quiet);
     } else {
-	print "  not ok:\n$mesg\n";
+	print " not ok: $timestr\n$mesg\n";
 	$test_status = 1;
 	# report only first failure:
 	$failed{$dir} = $phase unless defined($failed{$dir});
@@ -494,6 +520,7 @@ sub test_shell_cmd {
     my $dir = (shift || "<Unknown directory>");
     my $phase = (shift || "<Unknown phase>");
     my $quiet = (shift || 0);	# flag for suppressing the `ok'
+    my $t_ref = shift;
 
     print STDERR "\nRunning `$cmd`" if ($debug);
     my $res = (`$cmd 2>&1` || "Very BAD: `$cmd` returned undef");
@@ -504,7 +531,11 @@ sub test_shell_cmd {
 	print STDERR "Postprocessing output..\n" if ($debug);
 	$res = postprocess($res);
     }
-    my_ok($cmdstatus,0,$res,$dir,$phase,$quiet); # $? = 0 means success
+    my $dt;
+    $dt = time()-$t_ref if (defined($t_ref));  # otherwise leave undefined
+
+    my_ok($cmdstatus, 0, $res, $dir, $phase, $quiet, $dt);
+    # $? = 0 means success
     $res;		   # Return output so we can analyze it if desired
 }
 # ---------------------------------------------------------------------- #
@@ -513,8 +544,9 @@ sub test_compile {
     if ($t_comp) {
 	my $dir = shift;
 	my @makeopts = (shift); # gets one string ("" or "-j N")
+        my $t_ref = shift;      # start time
 
-	print "    Compiling..         ";
+	print "    Compiling..          ";
 
         # First pc_setupsrc, then make clean (if requested). Must be done
         # in this order as pc_setupsrc links the Makefile to the run directory.
@@ -532,29 +564,38 @@ sub test_compile {
         if (-r 'print.in.double' && -r 'reference.out.double') {
             push @makeopts, 'REAL_PRECISION=double';
             $reference_out = 'reference.out.double';
-            print " [double precision] ";
+            printf "$indi_fmt ", '[double]';
         } else {
             $reference_out = 'reference.out';
+            printf "$indi_fmt ", '';
         }
         print STDERR "\@makeopts = @makeopts\n" if ($debug);
-	test_shell_cmd("cd src;$nice make @makeopts",$dir,"compilation");
+	test_shell_cmd("cd src;$nice make @makeopts", $dir, "compilation",
+                       NOQUIET, $t_ref);
     }
 }
 # ---------------------------------------------------------------------- #
 sub test_start {
 # Test starting only
+    my $dir   = shift;          # not used...
+    my $t_ref = shift;          # start time
+
     if ($t_start) {
 	my $dir = shift;
-	print "    Starting..          ";
-	test_shell_cmd("$nice start.csh",$dir,"starting");
+	print "    Starting..           ";
+        printf "$indi_fmt ", '';
+	test_shell_cmd("$nice start.csh",$dir,"starting",
+                       NOQUIET, $t_ref);
     }
 }
 # ---------------------------------------------------------------------- #
 sub test_run {
 # Test running only (does not analyze output, but returns it)
+    my $dir   = shift;
+    my $t_ref = shift;          # start time
+
     if ($t_run) {
-	my $dir = shift;
-	print "    Running..           ";
+	print "    Running..            ";
 
         # Handle KEEP_RELOADING file (our -r/--reload option)
         my $reload_file = "$dir/KEEP_RELOADING";
@@ -564,11 +605,14 @@ sub test_run {
         }
         if ($reload) {
             write_to_file($reload_file, '');
-            print " [KEEP_RELOADING]";
+            printf "$indi_fmt ", '[KEEP_RELOADING]';
+        } else {
+            printf "$indi_fmt ", '';
         }
 
         # Run the Code
-	$res = test_shell_cmd("$nice run.csh",$dir,"running");
+	$res = test_shell_cmd("$nice run.csh",$dir,"running",
+                              NOQUIET, $t_ref);
 
         # Clean up
         if (-e $reload_file) {
@@ -579,10 +623,12 @@ sub test_run {
 # ---------------------------------------------------------------------- #
 sub test_results {
 # Analyze results from code
+    my $dir = shift;
+
     if ($t_res) {
-	my $dir = shift;
 	my ($rdmsg,$diagn);
-	print "    Validating results..";
+	print "    Validating results.. ";
+        printf "$indi_fmt ", '';
 	my @output = split(/[\n\r]+/,$res);
 	my_ok(0,0,"",$dir,"results","quiet");
 	my @foutput = extract_results(\@output); # filtered output
@@ -789,6 +835,7 @@ sub test_rundir {
     my $dir      = shift;
     my $makeopts = shift;
     my $created_datadir = 0;
+    my $t0 = time();
 
     $test_status = 0;		#  so far, everything is OK
 
@@ -810,8 +857,10 @@ sub test_rundir {
 	print "$cwd\n";
 	return;
     }
-    print "\n", $cwd, ":\n";
-    $ntests++;
+    print "\n$cwd:";
+    print " ($itest/$ntests)" if ($ntests>1);
+    print "\n";
+    $itest++;
 
     # Make sure we have everything we need
     if (! defined(-e 'src/run.f90')) { # has `pc_setupsrc' been run yet?
@@ -822,10 +871,11 @@ sub test_rundir {
     }
 
     # 1. Test compilation
-    test_compile($dir,$makeopts);
+    test_compile($dir,$makeopts,$t0);
     return if ($test_status);
 
     # 2. Ensure we have a data directory and test starting...
+    my $t1 = time();
     return unless ($t_start);	# no need for a data directory unless we start
 				# the code
     if (! -d 'data') {
@@ -852,10 +902,11 @@ sub test_rundir {
         system("mkdir -p data");
       }
     }
-    test_start($dir);
+    test_start($dir,$t1);
     goto cleanup if ($test_status);
     # 3 ..and running (we only get here if compiling and starting was OK)
-    test_run($dir);
+    my $t2 = time();
+    test_run($dir,$t2);
     return if ($test_status);
 
     # 4. Check the output
@@ -867,11 +918,18 @@ sub test_rundir {
 	system("rm", "data");
 	system("rm", "-r", "$tmpdir");
     }
+
+    my $t3 = time();
+    if ($time) {
+        print "    Time used: ", s_to_hms($t3-$t0, 44), "\n";
+    }
 }
 # ---------------------------------------------------------------------- #
 sub s_to_hms{
 # Convert no. of seconds to [ddd][hh:]mm:ss string
-    my $secs = shift;
+    my $secs  = shift;
+    my $width = (shift || 0);
+
     my $ss = $secs % 60;
     my $mm = floor($secs/60) % 60;
     my $hh = floor($secs/3600) % 24;
@@ -880,6 +938,10 @@ sub s_to_hms{
     my $string = sprintf("%02d:%02d", $mm,$ss);
     if ($hh) { $string = sprintf("%02d:", $hh) . $string };
     if ($dd) { $string = sprintf("%dd", $dd) . $string };
+
+    if (length($string) < $width) {
+        $string = (" " x ($width-length($string))) . $string;
+    };
 
     $string;
 }
@@ -982,8 +1044,13 @@ END {
 	if ($time) {
 	    my @t = times();
 	    print "\nCPU time (including compilation): ",
-	          s_to_hms($t[2]) . "u ",
-                  s_to_hms($t[3]) . "s\n";
+	          s_to_hms($t[2], 7) . "u ",
+                  s_to_hms($t[3]   ) . "s\n";
+
+            my $t1_global = time(); # end time
+            print "Total wall-clock time:            ",
+              s_to_hms($t1_global-$t0_global, 7),
+              "\n";
 	}
 
         # Print info from file
