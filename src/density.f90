@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.300 2007-01-31 12:32:48 wlyra Exp $
+! $Id: density.f90,v 1.301 2007-01-31 14:30:36 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -86,7 +86,8 @@ module Density
   integer :: idiag_rhomin=0,idiag_rhomax=0,idiag_uglnrhom=0
   integer :: idiag_lnrhomphi=0,idiag_rhomphi=0,idiag_dtd=0
   integer :: idiag_rhomz=0, idiag_rhomy=0, idiag_rhomx=0
-  integer :: idiag_rhomxy=0, idiag_rhomphiz=0
+  integer :: idiag_rhomxy=0, idiag_rhomr=0
+  integer :: idiag_totmass=0
 
   contains
 
@@ -112,7 +113,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.300 2007-01-31 12:32:48 wlyra Exp $")
+           "$Id: density.f90,v 1.301 2007-01-31 14:30:36 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1030,7 +1031,8 @@ module Density
 !
       if (idiag_rhom/=0 .or. idiag_rhomz/=0 .or. idiag_rhomy/=0 .or. &
            idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rhomin/=0 .or. &
-           idiag_rhomax/=0 .or. idiag_rhomxy/=0) lpenc_diagnos(i_rho)=.true.
+           idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_totmass/=0) &
+           lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
       if (idiag_uglnrhom/=0) lpenc_diagnos(i_uglnrho)=.true.
 
@@ -1350,6 +1352,7 @@ module Density
 !
       if (ldiagnos) then
         if (idiag_rhom/=0)     call sum_mn_name(p%rho,idiag_rhom)
+        if (idiag_totmass/=0)     call sum_lim_mn_name(p%rho,idiag_totmass,p)
         if (idiag_rhomin/=0) &
             call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)
         if (idiag_rhomax/=0)   call max_mn_name(p%rho,idiag_rhomax)
@@ -1360,7 +1363,7 @@ module Density
         if (idiag_rhomx/=0)    call yzsum_mn_name_x(p%rho,idiag_rhomx)
         if (idiag_rhomy/=0)    call xzsum_mn_name_y(p%rho,idiag_rhomy)
         if (idiag_rhomxy/=0)   call zsum_mn_name_xy(p%rho,idiag_rhomxy)
-        if (idiag_rhomphiz/=0) call phizsum_mn_name_r(p%rho,idiag_rhomphiz)
+        if (idiag_rhomr/=0)    call phizsum_mn_name_r(p%rho,idiag_rhomr)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
       endif
@@ -1439,8 +1442,8 @@ module Density
         idiag_rhom=0; idiag_rho2m=0; idiag_lnrho2m=0; idiag_uglnrhom=0
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
-        idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0; 
-        idiag_rhomxy=0; idiag_rhomphiz=0
+        idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0 
+        idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0
         cdiffrho=0.
         diffrho=0.
       endif
@@ -1456,6 +1459,7 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'lnrho2m',idiag_lnrho2m)
         call parse_name(iname,cname(iname),cform(iname),'uglnrhom',idiag_uglnrhom)
         call parse_name(iname,cname(iname),cform(iname),'dtd',idiag_dtd)
+        call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -1479,7 +1483,7 @@ module Density
 !  check for those quantities for which we want phiz-averages
 !
       do inamer=1,nnamer
-        call parse_name(inamer,cnamer(inamer),cformr(inamer),'rhomphiz',idiag_rhomphiz)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'rhomr',idiag_rhomr)
       enddo
 !
 !  check for those quantities for which we want z-averages
@@ -1512,8 +1516,9 @@ module Density
         write(3,*) 'ilnrho=',ilnrho
         write(3,*) 'i_lnrhomphi=',idiag_lnrhomphi
         write(3,*) 'i_rhomphi=',idiag_rhomphi
-        write(3,*) 'i_rhomphiz=',idiag_rhomphiz
+        write(3,*) 'i_rhomr=',idiag_rhomr
         write(3,*) 'i_dtd=',idiag_dtd
+        write(3,*) 'i_totmass=',idiag_totmass
       endif
 !
     endsubroutine rprint_density
