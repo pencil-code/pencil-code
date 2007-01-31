@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.310 2007-01-21 14:29:50 brandenb Exp $
+! $Id: hydro.f90,v 1.311 2007-01-31 12:32:00 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -184,7 +184,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.310 2007-01-21 14:29:50 brandenb Exp $")
+           "$Id: hydro.f90,v 1.311 2007-01-31 12:32:00 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1908,7 +1908,7 @@ module Hydro
         call parse_name(irz,cnamerz(irz),cformrz(irz),'oumphi',idiag_oumphi)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which hydro variable is stored
 !
       if (lwr) then
         write(3,*) 'i_ekin=',idiag_ekin
