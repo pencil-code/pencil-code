@@ -1,4 +1,4 @@
-! $Id: nocosmicray.f90,v 1.14 2006-11-30 09:03:35 dobler Exp $
+! $Id: nocosmicray.f90,v 1.15 2007-01-31 12:50:12 wlyra Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -51,7 +51,7 @@ module Cosmicray
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nocosmicray.f90,v 1.14 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: nocosmicray.f90,v 1.15 2007-01-31 12:50:12 wlyra Exp $")
 !
     endsubroutine register_cosmicray
 !***********************************************************************
@@ -200,7 +200,7 @@ module Cosmicray
 !        idiag_rhoccm=0; idiag_ccmax=0; idiag_lnccm=0; idiag_lnccmz=0
       endif
 !
-!  write column where which magnetic variable is stored
+!  write column where which cosmic ray variable is stored
 !
       if (lwr) then
 !        write(3,*) 'i_lnccmz=',idiag_lnccmz

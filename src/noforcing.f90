@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.20 2006-11-30 09:03:35 dobler Exp $
+! $Id: noforcing.f90,v 1.21 2007-01-31 12:50:12 wlyra Exp $
 
 module Forcing
 
@@ -40,7 +40,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.20 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: noforcing.f90,v 1.21 2007-01-31 12:50:12 wlyra Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -149,7 +149,7 @@ module Forcing
         call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which forcing variable is stored
 !
       if (lwr) then
         write(3,*) 'i_rufm=',idiag_rufm

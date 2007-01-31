@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.31 2006-11-30 09:03:35 dobler Exp $
+! $Id: nointerstellar.f90,v 1.32 2007-01-31 12:50:12 wlyra Exp $
 !
 !  Dummy module
 !
@@ -43,7 +43,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.31 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: nointerstellar.f90,v 1.32 2007-01-31 12:50:12 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -90,7 +90,7 @@ module Interstellar
 !***********************************************************************
     subroutine rprint_interstellar(lreset,lwrite)
 !
-!  reads and registers print parameters relevant to entropy
+!  reads and registers print parameters relevant to interstellar
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
@@ -104,7 +104,7 @@ module Interstellar
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  write column where which magnetic variable is stored
+!  write column where which interstellar variable is stored
 !
       if (lwr) then
         write(3,*) 'i_taucmin=0'

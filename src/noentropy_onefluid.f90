@@ -1,4 +1,4 @@
-! $Id: noentropy_onefluid.f90,v 1.5 2006-11-30 09:03:35 dobler Exp $
+! $Id: noentropy_onefluid.f90,v 1.6 2007-01-31 12:50:12 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -59,7 +59,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy_onefluid.f90,v 1.5 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: noentropy_onefluid.f90,v 1.6 2007-01-31 12:50:12 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -318,7 +318,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which entropy variable is stored
 !
       if (lwr) then
         write(3,*) 'i_dtc=',idiag_dtc

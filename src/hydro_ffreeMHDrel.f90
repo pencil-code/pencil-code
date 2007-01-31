@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.27 2006-11-30 09:03:35 dobler Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.28 2007-01-31 12:50:12 wlyra Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -96,7 +96,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.27 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.28 2007-01-31 12:50:12 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -559,7 +559,7 @@ module Hydro
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uzmxy',idiag_uzmxy)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which hydro variable is stored
 !
       if (lwr) then
         write(3,*) 'i_u2m=',idiag_u2m

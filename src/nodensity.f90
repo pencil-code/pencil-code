@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.48 2006-12-05 20:43:34 dobler Exp $
+! $Id: nodensity.f90,v 1.49 2007-01-31 12:50:12 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -56,7 +56,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.48 2006-12-05 20:43:34 dobler Exp $")
+           "$Id: nodensity.f90,v 1.49 2007-01-31 12:50:12 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -225,7 +225,7 @@ module Density
         idiag_rhomin=0; idiag_rhomax=0
       endif
 !
-!  write column where which magnetic variable is stored
+!  write column where which density variable is stored
 !
       if (lwr) then
         write(3,*) 'i_rhom=',idiag_rhom

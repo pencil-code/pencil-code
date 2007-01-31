@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.195 2007-01-31 12:20:40 wlyra Exp $
+! $Id: register.f90,v 1.196 2007-01-31 12:50:12 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -850,7 +850,7 @@ module Register
         call parse_name(irz,cnamerz(irz),cformrz(irz),'rmphi',   idiag_rmphi)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which variable is stored
 !
       if (lwr) then
         write(3,*) 'i_t=',idiag_t

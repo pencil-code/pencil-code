@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.27 2006-11-30 09:03:35 dobler Exp $
+! $Id: nohydro_file.f90,v 1.28 2007-01-31 12:50:12 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,8 +60,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.27 $", &
-           "$Date: 2006-11-30 09:03:35 $")
+           "$Revision: 1.28 $", &
+           "$Date: 2007-01-31 12:50:12 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -236,7 +236,7 @@ module Hydro
 !       call parse_name(iname,cname(iname),cform(iname),'oum',idiag_oum)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which hydro variable is stored
 !
       if (lwr) then
         write(3,*) 'i_u2m=',idiag_u2m

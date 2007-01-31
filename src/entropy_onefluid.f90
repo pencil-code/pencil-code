@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.19 2007-01-05 20:08:58 dobler Exp $
+! $Id: entropy_onefluid.f90,v 1.20 2007-01-31 12:50:12 wlyra Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.19 2007-01-05 20:08:58 dobler Exp $")
+           "$Id: entropy_onefluid.f90,v 1.20 2007-01-31 12:50:12 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2537,7 +2537,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ssmphi',idiag_ssmphi)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which entropy variable is stored
 !
       if (lwr) then
         write(3,*) 'i_dtc=',idiag_dtc

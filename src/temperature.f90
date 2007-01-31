@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.24 2006-11-30 09:03:36 dobler Exp $
+! $Id: temperature.f90,v 1.25 2007-01-31 12:50:12 wlyra Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -93,7 +93,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.24 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: temperature.f90,v 1.25 2007-01-31 12:50:12 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -721,7 +721,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which entropy variable is stored
 !
       if (lwr) then
         write(3,*) 'i_ssm=',idiag_ssm

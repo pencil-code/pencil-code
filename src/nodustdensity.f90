@@ -1,4 +1,4 @@
-! $Id: nodustdensity.f90,v 1.31 2006-11-30 09:03:35 dobler Exp $
+! $Id: nodustdensity.f90,v 1.32 2007-01-31 12:50:12 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -54,7 +54,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustdensity.f90,v 1.31 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: nodustdensity.f90,v 1.32 2007-01-31 12:50:12 wlyra Exp $")
 !
     endsubroutine register_dustdensity
 !***********************************************************************
@@ -205,7 +205,7 @@ module Dustdensity
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  write column where which magnetic variable is stored
+!  write column where which dust density variable is stored
 !
       if (lwr) then
         write(3,*) 'i_rhodm=',idiag_rhodm

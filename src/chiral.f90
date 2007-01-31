@@ -1,4 +1,4 @@
-! $Id: chiral.f90,v 1.13 2006-12-25 22:47:29 dobler Exp $
+! $Id: chiral.f90,v 1.14 2007-01-31 12:50:12 wlyra Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -92,7 +92,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: chiral.f90,v 1.13 2006-12-25 22:47:29 dobler Exp $")
+           "$Id: chiral.f90,v 1.14 2007-01-31 12:50:12 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -378,7 +378,7 @@ module Chiral
 !***********************************************************************
     subroutine rprint_chiral(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for magnetic fields
+!  reads and registers print parameters relevant for chirality
 !
 !  28-may-04/axel: adapted from pscalar
 !
@@ -419,7 +419,7 @@ module Chiral
             'QQ21QQm',idiag_QQ21QQm_chiral)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which chiral variable is stored
 !
       if (lwr) then
         write(3,*) 'i_XX_chiralm=',idiag_XX_chiralm
@@ -437,7 +437,7 @@ module Chiral
 !***********************************************************************
     subroutine get_slices_chiral(f,slices)
 !
-!  Write slices for animation of hydro variables.
+!  Write slices for animation of chiral variables.
 !
 !  26-jul-06/tony: coded
 !

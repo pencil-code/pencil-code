@@ -1,4 +1,4 @@
-! $Id: nochiral.f90,v 1.9 2006-11-30 09:03:35 dobler Exp $
+! $Id: nochiral.f90,v 1.10 2007-01-31 12:50:12 wlyra Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -54,7 +54,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nochiral.f90,v 1.9 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: nochiral.f90,v 1.10 2007-01-31 12:50:12 wlyra Exp $")
 !
     endsubroutine register_chiral
 !***********************************************************************
@@ -175,7 +175,7 @@ module Chiral
 !***********************************************************************
     subroutine rprint_chiral(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for magnetic fields
+!  reads and registers print parameters relevant for chirality
 !
 !  28-may-04/axel: adapted from pscalar
 !
@@ -193,7 +193,7 @@ module Chiral
         idiag_YY_chiralmax=0
       endif
 !
-!  write column where which magnetic variable is stored
+!  write column where which chiral variable is stored
 !
       if (lwr) then
         write(3,*) 'i_XX_chiralmax=',idiag_XX_chiralmax

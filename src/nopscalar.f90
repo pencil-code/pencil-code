@@ -1,4 +1,4 @@
-! $Id: nopscalar.f90,v 1.24 2006-11-30 09:03:36 dobler Exp $
+! $Id: nopscalar.f90,v 1.25 2007-01-31 12:50:12 wlyra Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -52,7 +52,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.24 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: nopscalar.f90,v 1.25 2007-01-31 12:50:12 wlyra Exp $")
 !
     endsubroutine register_pscalar
 !***********************************************************************
@@ -185,7 +185,7 @@ module Pscalar
 !***********************************************************************
     subroutine rprint_pscalar(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for magnetic fields
+!  reads and registers print parameters relevant for passive scalar
 !
 !   6-jul-02/axel: coded
 !
@@ -203,7 +203,7 @@ module Pscalar
       if (lreset) then
       endif
 !
-!  write column where which magnetic variable is stored
+!  write column where which passive scalar variable is stored
 !
       if (lwr) then
         write(3,*) 'i_rhoccm=0'

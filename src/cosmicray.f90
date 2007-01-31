@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.40 2006-12-20 07:24:22 dobler Exp $
+! $Id: cosmicray.f90,v 1.41 2007-01-31 12:50:12 wlyra Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -95,7 +95,7 @@ module Cosmicray
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.40 2006-12-20 07:24:22 dobler Exp $")
+           "$Id: cosmicray.f90,v 1.41 2007-01-31 12:50:12 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -379,7 +379,7 @@ print*,"init_ecr: initecr = ", initecr
 !***********************************************************************
     subroutine rprint_cosmicray(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for magnetic fields
+!  reads and registers print parameters relevant for cosmic rays
 !
 !   6-jul-02/axel: coded
 !
@@ -413,7 +413,7 @@ print*,"init_ecr: initecr = ", initecr
 !        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ecrmz',idiag_ecrmz)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which cosmic ray variable is stored
 !
       if (lwr) then
         write(3,*) 'i_ecrm=',idiag_ecrm

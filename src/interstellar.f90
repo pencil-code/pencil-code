@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.144 2007-01-13 21:52:24 dobler Exp $
+! $Id: interstellar.f90,v 1.145 2007-01-31 12:50:12 wlyra Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development.
@@ -390,7 +390,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.144 2007-01-13 21:52:24 dobler Exp $")
+           "$Id: interstellar.f90,v 1.145 2007-01-31 12:50:12 wlyra Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -654,7 +654,7 @@ module Interstellar
 !***********************************************************************
     subroutine rprint_interstellar(lreset,lwrite)
 !
-!  reads and registers print parameters relevant to entropy
+!  reads and registers print parameters relevant to interstellar
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
@@ -707,7 +707,7 @@ module Interstellar
         call parse_name(iname,cname(iname),cform(iname),'Gamm',idiag_Gamm)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which interstellar variable is stored
 !
       if (lwr) then
         write(3,*) 'i_taucmin=',idiag_taucmin

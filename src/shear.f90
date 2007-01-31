@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.36 2006-11-30 09:03:36 dobler Exp $
+! $Id: shear.f90,v 1.37 2007-01-31 12:50:12 wlyra Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.36 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: shear.f90,v 1.37 2007-01-31 12:50:12 wlyra Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -292,7 +292,7 @@ module Shear
         call parse_name(iname,cname(iname),cform(iname),'dtshear',idiag_dtshear)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which shear variable is stored
 !
       if (lwr) then
         write(3,*) 'i_dtshear=',idiag_dtshear

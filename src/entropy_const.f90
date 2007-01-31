@@ -1,4 +1,4 @@
-! $Id: entropy_const.f90,v 1.11 2006-11-30 09:03:35 dobler Exp $
+! $Id: entropy_const.f90,v 1.12 2007-01-31 12:50:12 wlyra Exp $
 
 !  This module is for systems with spatially fixed entropy
 !  distribution. This implies Ds/Dt=u.grads only, which is used
@@ -80,7 +80,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_const.f90,v 1.11 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: entropy_const.f90,v 1.12 2007-01-31 12:50:12 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -247,7 +247,7 @@ module Entropy
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ssmphi',idiag_ssmphi)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which entropy variable is stored
 !
       if (lwr) then
         write(3,*) 'i_dtc=',idiag_dtc
