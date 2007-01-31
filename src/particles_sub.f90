@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.94 2006-12-06 15:34:09 ajohan Exp $
+! $Id: particles_sub.f90,v 1.95 2007-01-31 14:31:43 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -203,9 +203,13 @@ module Particles_sub
       integer :: k
 !
       intent (inout) :: fp, npar_loc, ipar, dfp
-
+!
+! Cylindrical boundary conditions      
+!
       if (.not.lcartesian_mig) then
+!
 !  radial boundary condition
+!
         do k=1,npar_loc
           rad = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2)
 !  rp < r_int : flush particle and move to outer boundary
@@ -232,10 +236,43 @@ module Particles_sub
             fp(k,ivpy) =  OO*fp(k,ixp)
           endif
 !
-        enddo
+       enddo
+!
+       if (nzgrid/=1) then
+        if (bcpz=='p') then
+          do k=1,npar_loc
+!  zp < z0
+            if (fp(k,izp)< xyz0(3)) then
+              fp(k,izp)=fp(k,izp)+Lxyz(3)
+              if (fp(k,izp)< xyz0(3)) then
+                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                    ' was further than Lz outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                call fatal_error_local('boundconds_particles','')
+              endif
+            endif
+!  zp > z1
+            if (fp(k,izp)>=xyz1(3)) then
+              fp(k,izp)=fp(k,izp)-Lxyz(3)
+              if (fp(k,izp)>=xyz1(3)) then
+                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                    ' was further than Lz outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                call fatal_error_local('boundconds_particles','')
+              endif
+            endif
+          enddo
+        else
+          print*, 'boundconds_particles: No such boundary condition bcpz=', bcpz
+          call stop_it('boundconds_particles')
+        endif
+      endif
+!
       else
 !
-!  Boundary condition in the x-direction.
+!  Cartesian boundaries: Boundary condition in the x-direction.
 !
       if (nxgrid/=1) then
         if (bcpx=='p') then
@@ -426,6 +463,7 @@ module Particles_sub
               print*, 'redist_particles_procs: receiving proc does not exist'
               print*, 'redist_particles_procs: iproc, iproc_rec=', &
                   iproc, iproc_rec
+              stop
             endif
 !  Copy migrating particle to the end of the fp array.
             nmig(iproc,iproc_rec)=nmig(iproc,iproc_rec)+1
