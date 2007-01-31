@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.176 2007-01-28 14:44:22 ajohan Exp $
+! $Id: particles_dust.f90,v 1.177 2007-01-31 14:23:13 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -107,6 +107,7 @@ module Particles
   integer :: idiag_rhopmx=0, idiag_rhopmy=0, idiag_rhopmz=0
   integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
   integer :: idiag_mpt=0, idiag_dedragp=0, idiag_rhopmxy=0
+  integer :: idiag_rhopmr=0
 
   contains
 
@@ -125,7 +126,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.176 2007-01-28 14:44:22 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.177 2007-01-31 14:23:13 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -1625,6 +1626,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
         if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
         if (idiag_rhopmxy/=0) call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
+        if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr) 
         if (idiag_dedragp/=0) call sum_mn_name(drag_heat,idiag_dedragp)
       endif
 !
@@ -2245,7 +2247,7 @@ k_loop:   do while (.not. (k>npar_loc))
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname,inamez,inamey,inamex, inamexy
+      integer :: iname,inamez,inamey,inamex,inamexy,inamer
       logical :: lwr
 !
 !  Write information to index.pro
@@ -2280,7 +2282,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_npmx=0; idiag_npmy=0; idiag_npmz=0
         idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
         idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
-        idiag_rhopmxy=0
+        idiag_rhopmxy=0; idiag_rhopmr=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -2352,6 +2354,12 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       do inamexy=1,nnamexy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhopmxy',idiag_rhopmxy)
+      enddo
+!
+!  check for those quantities for which we want phiz-averages
+!
+      do inamer=1,nnamer
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'rhopmr',idiag_rhopmr)
       enddo
 !
     endsubroutine rprint_particles

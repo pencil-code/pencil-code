@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.369 2007-01-26 02:11:43 dobler Exp $
+! $Id: magnetic.f90,v 1.370 2007-01-31 14:23:13 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -129,6 +129,7 @@ module Magnetic
   logical :: lforcing_continuous=.false.
   character (len=labellen) :: iforcing_continuous='fixed_swirl'
 
+
   namelist /magnetic_run_pars/ &
        eta,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
        lmeanfield_theory,alpha_effect,alpha_quenching,delta_effect, &
@@ -176,8 +177,8 @@ module Magnetic
   integer :: idiag_brm=0,idiag_bpm=0,idiag_bzm=0
   integer :: idiag_br2m=0,idiag_bp2m=0,idiag_bzz2m=0
   integer :: idiag_brbpm=0,idiag_bzbpm=0,idiag_brbzm=0,idiag_vA2m=0
-  integer :: idiag_jfm=0
-
+  integer :: idiag_jfm=0,idiag_brbpmr=0
+  integer :: idiag_b2mr=0,idiag_brmr=0,idiag_bpmr=0,idiag_bzmr=0
   contains
 
 !***********************************************************************
@@ -217,7 +218,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.369 2007-01-26 02:11:43 dobler Exp $")
+           "$Id: magnetic.f90,v 1.370 2007-01-31 14:23:13 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -620,22 +621,16 @@ module Magnetic
       endif
       if (nu_ni/=0.) lpenc_diagnos(i_jxbrxb)=.true.
 !
-      if (     idiag_brmphi/=0 &
-          .or. idiag_uxbrmphi/=0 &
-          .or. idiag_jxbrmphi/=0 &
-          .or. idiag_br2m/=0 &
-          .or. idiag_brbpm/=0 &
-          .or. idiag_brbzm/=0 ) then
+      if (idiag_brmphi/=0 .or. idiag_uxbrmphi/=0 .or. idiag_jxbrmphi/=0 &
+          .or. idiag_br2m/=0 .or. idiag_brbpm/=0 .or. idiag_brbzm/=0 &
+          .or. idiag_brmr/=0 .or. idiag_brbpmr/=0) then
         lpenc_diagnos(i_pomx)=.true.
         lpenc_diagnos(i_pomy)=.true.
       endif
 !
-      if (     idiag_bpmphi/=0 &
-          .or. idiag_uxbpmphi/=0 &
-          .or. idiag_jxbpmphi/=0 &
-          .or. idiag_bpm/=0 &
-          .or. idiag_bp2m/=0 &
-          .or. idiag_brbpm/=0 ) then
+      if (idiag_bpmphi/=0 .or. idiag_uxbpmphi/=0 .or. idiag_jxbpmphi/=0 &
+          .or. idiag_bpm/=0 .or. idiag_bp2m/=0 .or. idiag_brbpm/=0 & 
+          .or. idiag_bpmr/=0 .or. idiag_brbpmr/=0) then
         lpenc_diagnos(i_phix)=.true.
         lpenc_diagnos(i_phiy)=.true.
       endif
@@ -1350,7 +1345,7 @@ module Magnetic
         if (any((/idiag_jxbrmphi,idiag_jxbpmphi,idiag_jxbzmphi/) /= 0)) then
           call phisum_mn_name_rz(p%jxb(:,1)*p%pomx+p%jxb(:,2)*p%pomy,idiag_jxbrmphi)
           call phisum_mn_name_rz(p%jxb(:,1)*p%phix+p%jxb(:,2)*p%phiy,idiag_jxbpmphi)
-          call phisum_mn_name_rz(p%jxb(:,3)                     ,idiag_jxbzmphi)
+          call phisum_mn_name_rz(p%jxb(:,3)                         ,idiag_jxbzmphi)
         endif
       endif
 !
@@ -1406,6 +1401,16 @@ module Magnetic
         if (idiag_bxmxz/=0) call ysum_mn_name_xz(p%bb(:,1),idiag_bxmxz)
         if (idiag_bymxz/=0) call ysum_mn_name_xz(p%bb(:,2),idiag_bymxz)
         if (idiag_bzmxz/=0) call ysum_mn_name_xz(p%bb(:,3),idiag_bzmxz)
+!
+!  phi-z averages (also does not need to be as frequent)
+!
+        if (idiag_b2mr/=0) call phizsum_mn_name_r(p%b2,idiag_b2mr)
+        if (idiag_brmr/=0) &
+             call phizsum_mn_name_r(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmr)
+        if (idiag_bpmr/=0) &
+             call phizsum_mn_name_r(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,idiag_bpmr)
+        if (idiag_bzmr/=0) &
+             call phizsum_mn_name_r(p%bb(:,3),idiag_bzmr)
 !
 !  magnetic field components at one point (=pt)
 !
@@ -1713,6 +1718,8 @@ module Magnetic
       if (idiag_brbpm/=0)  call sum_lim_mn_name(br*bp,idiag_brbpm,p)
       if (idiag_bzbpm/=0)  call sum_lim_mn_name(bz*bp,idiag_bzbpm,p)
       if (idiag_brbzm/=0)  call sum_lim_mn_name(br*bz,idiag_brbzm,p)
+!
+      if (idiag_brbpmr/=0) call phizsum_mn_name_r(br*bp,idiag_brbpmr)
 !
     endsubroutine calc_mag_stress
 !***********************************************************************
@@ -2069,7 +2076,7 @@ module Magnetic
       use Cdata
       use Sub
 !
-      integer :: iname,inamez,ixy,ixz,irz
+      integer :: iname,inamez,ixy,ixz,irz,inamer
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -2105,7 +2112,8 @@ module Magnetic
         idiag_brm=0; idiag_bpm=0; idiag_bzm=0
         idiag_br2m=0; idiag_bp2m=0; idiag_bzz2m=0; idiag_brbpm=0
         idiag_bzbpm=0; idiag_brbzm=0; idiag_va2m=0
-        idiag_jfm=0
+        idiag_jfm=0; idiag_brbpmr=0
+        idiag_b2mr=0; idiag_brmr=0; idiag_bpmr=0; idiag_bzmr=0
 !
       endif
 !
@@ -2236,7 +2244,16 @@ module Magnetic
         call parse_name(irz,cnamerz(irz),cformrz(irz),'jxbrmphi',idiag_jxbrmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'jxbpmphi',idiag_jxbpmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'jxbzmphi',idiag_jxbzmphi)
-
+      enddo
+!
+!  check for those quantities for which we want phiz-averages
+!
+      do inamer=1,nnamer
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'brmr',  idiag_brmr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'bpmr',  idiag_bpmr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'bzmr',  idiag_bzmr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'b2mr',  idiag_b2mr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'brbpmr',idiag_brbpmr)
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
@@ -2316,6 +2333,11 @@ module Magnetic
         write(3,*) 'i_bpmphi=',idiag_bpmphi
         write(3,*) 'i_bzmphi=',idiag_bzmphi
         write(3,*) 'i_b2mphi=',idiag_b2mphi
+        write(3,*) 'i_brmr=',idiag_brmr
+        write(3,*) 'i_bpmr=',idiag_bpmr
+        write(3,*) 'i_bzmr=',idiag_bzmr
+        write(3,*) 'i_b2mr=',idiag_b2mr
+        write(3,*) 'i_brbpmr=',idiag_brbpmr
         write(3,*) 'i_br2m=',idiag_br2m
         write(3,*) 'i_bp2m=',idiag_bp2m
         write(3,*) 'i_bzz2m=',idiag_bzz2m

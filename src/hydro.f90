@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.311 2007-01-31 12:32:00 wlyra Exp $
+! $Id: hydro.f90,v 1.312 2007-01-31 14:23:13 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -139,9 +139,10 @@ module Hydro
   integer :: idiag_ur2m=0,idiag_up2m=0,idiag_uzz2m=0
   integer :: idiag_urm=0,idiag_upm=0,idiag_uzzm=0,idiag_mdot=0
   integer :: idiag_uzupm=0,idiag_uruzm=0,idiag_urupm=0
-  integer :: idiag_totmass=0,idiag_totangmom=0
-  integer :: idiag_rufm=0
+  integer :: idiag_totangmom=0,idiag_rufm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
+  integer :: idiag_u2mr=0,idiag_urupmr=0
+  integer :: idiag_urmr=0,idiag_upmr=0,idiag_uzmr=0
 
   contains
 
@@ -184,7 +185,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.311 2007-01-31 12:32:00 wlyra Exp $")
+           "$Id: hydro.f90,v 1.312 2007-01-31 14:23:13 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -670,43 +671,31 @@ module Hydro
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_fmassz/=0 .or. idiag_ruxuymz/=0) lpenc_diagnos(i_rho)=.true.
 
-      if (     idiag_totmass/=0 &
-          .or. idiag_totangmom/=0 &
-          .or. idiag_urm/=0 &
-          .or. idiag_upm/=0 &
-          .or. idiag_uzzm/=0 &
-          .or. idiag_ur2m/=0 &
-          .or. idiag_up2m/=0 &
-          .or. idiag_uzz2m/=0 &
-          .or. idiag_urupm/=0 &
-          .or. idiag_uzupm/=0 &
-          .or. idiag_uruzm/=0 ) then
-           lpenc_diagnos(i_rcyl_mn)=.true.
-           lpenc_diagnos(i_uavg)=.true.
+      if (idiag_totangmom/=0 .or. idiag_urm/=0 .or. idiag_upm/=0 &
+          .or. idiag_uzzm/=0 .or. idiag_ur2m/=0 .or. idiag_up2m/=0 &
+          .or. idiag_uzz2m/=0 .or. idiag_urupm/=0 .or. idiag_uzupm/=0 &
+          .or. idiag_uruzm/=0) then
+        lpenc_diagnos(i_rcyl_mn)=.true.
+        lpenc_diagnos(i_uavg)=.true.
       endif
 
-      if (     idiag_urm/=0 &
-          .or. idiag_ur2m/=0 &
-          .or. idiag_urupm/=0 &
-          .or. idiag_uruzm/=0 ) then
+      if (idiag_urm/=0 .or. idiag_ur2m/=0 .or. idiag_urupm/=0 &
+          .or. idiag_uruzm/=0 .or. idiag_urmr/=0 .or. &
+          idiag_urupmr/=0) then
         lpenc_diagnos(i_pomx)=.true.
         lpenc_diagnos(i_pomy)=.true.
       endif
 
-      if (     idiag_upm/=0 &
-          .or. idiag_up2m/=0 &
-          .or. idiag_urupm/=0 &
-          .or. idiag_uzupm/=0 ) then
+      if (idiag_upm/=0 .or. idiag_up2m/=0 .or. idiag_urupm/=0 &
+           .or. idiag_uzupm/=0 .or. idiag_upmr/=0 .or. &
+           idiag_urupmr/=0) then
         lpenc_diagnos(i_phix)=.true.
         lpenc_diagnos(i_phiy)=.true.
       endif
 
-      if ( idiag_ur2m/=0 &
-           .or. idiag_up2m/=0 &
-           .or. idiag_uzz2m/=0 &
-           .or. idiag_urupm/=0 &
-           .or. idiag_uzupm/=0 &
-           .or. idiag_uruzm/=0 ) lpenc_diagnos(i_rho)=.true.
+      if ( idiag_ur2m/=0 .or. idiag_up2m/=0 .or. idiag_uzz2m/=0 &
+           .or. idiag_urupm/=0 .or. idiag_uzupm/=0 .or. idiag_uruzm/=0) &
+          lpenc_diagnos(i_rho)=.true.
 
       if (idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinz/=0 .or. &
           idiag_ekinz/=0) then
@@ -1085,7 +1074,6 @@ module Hydro
         if (idiag_ekintot/=0) &
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
         if (idiag_ekinz/=0) call xysum_mn_name_z(.5*p%rho*p%u2,idiag_ekinz)
-        if (idiag_totmass/=0) call sum_lim_mn_name(p%rho,idiag_totmass,p)
         if (idiag_totangmom/=0) &
              call sum_lim_mn_name(p%rho*(p%uu(:,2)*x(l1:l2)-p%uu(:,1)*y(m)),&
              idiag_totangmom,p)
@@ -1132,6 +1120,16 @@ module Hydro
         if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
         if (idiag_u2mz/=0)  call zsum_mn_name_xy(p%u2,idiag_u2mz)
 !
+!  phi-z averages (also does not need to be as frequent)
+!
+        if (idiag_u2mr/=0) call phizsum_mn_name_r(p%u2,idiag_u2mr)
+        if (idiag_urmr/=0) &
+             call phizsum_mn_name_r(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmr)
+        if (idiag_upmr/=0) &
+             call phizsum_mn_name_r(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmr)
+        if (idiag_uzmr/=0) &
+             call phizsum_mn_name_r(p%uu(:,3),idiag_uzmr)
+!
 !  mean momenta
 !
         if (idiag_ruxm/=0) call sum_mn_name(p%rho*p%uu(:,1),idiag_ruxm)
@@ -1139,7 +1137,6 @@ module Hydro
         if (idiag_ruzm/=0) call sum_mn_name(p%rho*p%uu(:,3),idiag_ruzm)
 !
 !  things related to vorticity
-!
 !
         if (idiag_oum/=0) call sum_mn_name(p%ou,idiag_oum)
         if (idiag_orms/=0) call sum_mn_name(p%o2,idiag_orms,lsqrt=.true.)
@@ -1370,6 +1367,8 @@ module Hydro
          call div_other(tmp,divmassflux)
          call sum_lim_mn_name(divmassflux,idiag_mdot,p)
       endif
+!
+      if (idiag_urupmr/=0) call phizsum_mn_name_r(ur*up,idiag_urupmr)
 !
     endsubroutine calc_hydro_stress
 !***********************************************************************
@@ -1702,7 +1701,7 @@ module Hydro
       use Cdata
       use Sub
 !
-      integer :: iname,inamez,inamey,inamex,ixy,irz
+      integer :: iname,inamez,inamey,inamex,ixy,irz,inamer
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -1739,9 +1738,10 @@ module Hydro
         idiag_ur2m=0; idiag_up2m=0; idiag_uzz2m=0
         idiag_urm=0; idiag_upm=0; idiag_uzzm=0; idiag_mdot=0
         idiag_uzupm=0; idiag_uruzm=0; idiag_urupm=0
-        idiag_totmass=0; idiag_totangmom=0
-        idiag_rufm=0
+        idiag_totangmom=0; idiag_rufm=0
         idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
+        idiag_urupmr=0
+        idiag_u2mr=0; idiag_urmr=0; idiag_upmr=0; idiag_uzmr=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1813,7 +1813,6 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'mdot',idiag_mdot)
         call parse_name(iname,cname(iname),cform(iname),'uzupm',idiag_uzupm)
         call parse_name(iname,cname(iname),cform(iname),'uruzm',idiag_uruzm)
-        call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
         call parse_name(iname,cname(iname),cform(iname),'totangmom',idiag_totangmom)
         call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
         call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
@@ -1908,6 +1907,16 @@ module Hydro
         call parse_name(irz,cnamerz(irz),cformrz(irz),'oumphi',idiag_oumphi)
       enddo
 !
+!  check for those quantities for which we want phiz-averages
+!
+      do inamer=1,nnamer
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'urmr',  idiag_urmr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'upmr',  idiag_upmr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'uzmr',  idiag_uzmr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'u2mr',  idiag_u2mr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'urupmr',idiag_urupmr)
+      enddo
+!
 !  write column where which hydro variable is stored
 !
       if (lwr) then
@@ -1974,6 +1983,11 @@ module Hydro
         write(3,*) 'i_uzmphi=',idiag_uzmphi
         write(3,*) 'i_u2mphi=',idiag_u2mphi
         write(3,*) 'i_oumphi=',idiag_oumphi
+        write(3,*) 'i_urmr=',idiag_urmr
+        write(3,*) 'i_upmr=',idiag_upmr
+        write(3,*) 'i_uzmr=',idiag_uzmr
+        write(3,*) 'i_u2mr=',idiag_u2mr
+        write(3,*) 'i_urupmr=',idiag_urupmr
         write(3,*) 'i_fintm=',idiag_fintm
         write(3,*) 'i_fextm=',idiag_fextm
         write(3,*) 'i_duxdzma=',idiag_duxdzma
@@ -1986,7 +2000,6 @@ module Hydro
         write(3,*) 'i_up2m=',idiag_up2m
         write(3,*) 'i_uzz2m=',idiag_uzz2m
         write(3,*) 'i_urupm=',idiag_urupm
-        write(3,*) 'i_totmass=',idiag_totmass
         write(3,*) 'i_totangmom=',idiag_totangmom
         write(3,*) 'i_rufm=',idiag_rufm
         write(3,*) 'i_fxbxm=',idiag_fxbxm
