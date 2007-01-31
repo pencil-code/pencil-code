@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.95 2007-01-31 14:31:43 wlyra Exp $
+! $Id: particles_sub.f90,v 1.96 2007-01-31 22:55:30 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -212,10 +212,10 @@ module Particles_sub
 !
         do k=1,npar_loc
           rad = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2)
-!  rp < r_int : flush particle and move to outer boundary
-          if (rad<r_int) then
+!  rp < rp_int : flush particle and move to outer boundary
+          if (rad<rp_int) then
             xold=fp(k,ixp); yold=fp(k,iyp); r1old = 1./max(rad,tini)
-            rad=r_ext
+            rad=rp_ext
 !
             fp(k,ixp) = rad*xold*r1old ! r*cos(theta)
             fp(k,iyp) = rad*yold*r1old ! r*sin(theta)
@@ -224,11 +224,11 @@ module Particles_sub
             fp(k,ivpx) = -OO*fp(k,iyp)
             fp(k,ivpy) =  OO*fp(k,ixp)
           endif
-!  rp > r_ext : flush particle and move to outer boundary
-          if (rad>r_ext) then
+!  rp > rp_ext : flush particle and move to outer boundary
+          if (rad>rp_ext) then
             xold=fp(k,ixp); yold=fp(k,iyp); r1old = 1./max(rad,tini)
 !
-            rad=r_ext
+            rad=rp_ext
             fp(k,ixp) = rad*xold*r1old ! r*cos(theta)
             fp(k,iyp) = rad*yold*r1old ! r*sin(theta)
             OO=rad**(-1.5)

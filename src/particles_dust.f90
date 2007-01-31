@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.177 2007-01-31 14:23:13 wlyra Exp $
+! $Id: particles_dust.f90,v 1.178 2007-01-31 22:55:30 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -126,7 +126,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.177 2007-01-31 14:23:13 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.178 2007-01-31 22:55:30 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -401,10 +401,9 @@ module Particles
        case ('random-cylindrical')
           if (lroot) print*, 'init_particles: Random particle cylindrical positions'
           do k=1,npar_loc
-
              call random_number_wrapper(rad2)
              call random_number_wrapper(phi)
-             rad2 = r_int**2 + rad2*(r_ext**2-r_int**2)
+             rad2 = rp_int**2 + rad2*(rp_ext**2-rp_int**2)
              rad = sqrt(rad2)
              phi = 2*pi*phi
              if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
