@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.298 2007-01-20 11:22:33 brandenb Exp $
+! $Id: density.f90,v 1.299 2007-01-31 12:30:42 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -85,7 +85,8 @@ module Density
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
   integer :: idiag_rhomin=0,idiag_rhomax=0,idiag_uglnrhom=0
   integer :: idiag_lnrhomphi=0,idiag_rhomphi=0,idiag_dtd=0
-  integer :: idiag_rhomz=0, idiag_rhomy=0, idiag_rhomx=0, idiag_rhomxy=0
+  integer :: idiag_rhomz=0, idiag_rhomy=0, idiag_rhomx=0
+  integer :: idiag_rhomxy=0, idiag_rhomphiz=0
 
   contains
 
@@ -111,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.298 2007-01-20 11:22:33 brandenb Exp $")
+           "$Id: density.f90,v 1.299 2007-01-31 12:30:42 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1359,6 +1360,7 @@ module Density
         if (idiag_rhomx/=0)    call yzsum_mn_name_x(p%rho,idiag_rhomx)
         if (idiag_rhomy/=0)    call xzsum_mn_name_y(p%rho,idiag_rhomy)
         if (idiag_rhomxy/=0)   call zsum_mn_name_xy(p%rho,idiag_rhomxy)
+        if (idiag_rhomphiz/=0) call phizsum_mn_name_r(p%rho,idiag_rhomphiz)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
       endif
@@ -1424,7 +1426,7 @@ module Density
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname, inamex, inamey, inamez, inamexy, irz
+      integer :: iname, inamex, inamey, inamez, inamexy, irz, inamer
       logical :: lwr
 !
       lwr = .false.
@@ -1437,7 +1439,8 @@ module Density
         idiag_rhom=0; idiag_rho2m=0; idiag_lnrho2m=0; idiag_uglnrhom=0
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
-        idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0; idiag_rhomxy=0
+        idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0; 
+        idiag_rhomxy=0; idiag_rhomphiz=0
         cdiffrho=0.
         diffrho=0.
       endif
@@ -1473,6 +1476,12 @@ module Density
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhomx',idiag_rhomx)
       enddo
 !
+!  check for those quantities for which we want phiz-averages
+!
+      do inamer=1,nnamer
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'rhomphiz',idiag_rhomphiz)
+      enddo
+!
 !  check for those quantities for which we want z-averages
 !
       do inamexy=1,nnamexy
@@ -1487,7 +1496,7 @@ module Density
         call parse_name(irz,cnamerz(irz),cformrz(irz),'rhomphi',idiag_rhomphi)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which hydro variable is stored
 !
       if (lwr) then
         write(3,*) 'i_rhom=',idiag_rhom
@@ -1503,6 +1512,7 @@ module Density
         write(3,*) 'ilnrho=',ilnrho
         write(3,*) 'i_lnrhomphi=',idiag_lnrhomphi
         write(3,*) 'i_rhomphi=',idiag_rhomphi
+        write(3,*) 'i_rhomphiz=',idiag_rhomphiz
         write(3,*) 'i_dtd=',idiag_dtd
       endif
 !
