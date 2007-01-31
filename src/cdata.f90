@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.347 2007-01-05 20:08:58 dobler Exp $
+! ! $Id: cdata.f90,v 1.348 2007-01-31 12:20:39 wlyra Exp $
 
 module Cdata
 
@@ -156,16 +156,17 @@ module Cdata
 !  in this section are all the things related to printing
 !
   integer :: nname=0,nnamev=0,nnamexy=0,nnamexz=0,nnamerz=0
-  integer :: nnamez=0,nnamey=0,nnamex=0
+  integer :: nnamez=0,nnamey=0,nnamex=0,nnamer=0
   integer :: nr_directions=1
   integer, parameter :: mname=100,mnamev=100,mnamerz=20
-  integer, parameter :: mnamez=30,mnamey=30,mnamex=30
+  integer, parameter :: mnamez=30,mnamey=30,mnamex=30,mnamer=30
   integer, parameter :: mnamexy=6,mnamexz=6
   integer, dimension (mname) :: itype_name
   real, dimension (mname) :: fname, fweight
   real, dimension (nz,nprocz,mnamez) :: fnamez
   real, dimension (ny,nprocy,mnamey) :: fnamey
   real, dimension (nx,mnamex) :: fnamex
+  real, dimension (nrcyl,mnamer) :: fnamer
   real, dimension (nx,ny,nprocy,mnamexy) :: fnamexy
   real, dimension (nx,nz,nprocz,mnamexz) :: fnamexz
   real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fnamerz
@@ -177,6 +178,7 @@ module Cdata
   character (LEN=30) :: cnamez(mnamez),cformz(mnamez)
   character (LEN=30) :: cnamey(mnamey),cformy(mnamey)
   character (LEN=30) :: cnamex(mnamex),cformx(mnamex)
+  character (LEN=30) :: cnamer(mnamer),cformr(mnamer)
   character (LEN=30) :: cnamerz(mnamerz),cformrz(mnamerz)
 
 ! other variables (needs to be consistent with reset list in register.90)
@@ -216,6 +218,7 @@ module Cdata
   logical :: lout=.false.,headt=.false.,headtt=.true.,ldt,lfirst=.false.
   logical :: ldiagnos=.false.,lvid=.false.,lwrite_prof=.true.
   logical :: l2davg=.false.,l2davgfirst=.false.
+  logical :: l1dphiavg=.false.,lwrite_phizaverages=.true.
   logical :: lwrite_yaverages=.true.,lwrite_zaverages=.true.,lwrite_phiaverages=.true.
   logical :: ldiagnos_need_zaverages=.false.
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.

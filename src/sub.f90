@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.274 2007-01-26 01:55:42 dobler Exp $
+! $Id: sub.f90,v 1.275 2007-01-31 12:20:40 wlyra Exp $
 
 module Sub
 
@@ -51,6 +51,7 @@ module Sub
   public :: max_mn_name,sum_mn_name,integrate_mn_name,sum_weighted_name
   public :: surf_mn_name,sum_lim_mn_name
   public :: xysum_mn_name_z, xzsum_mn_name_y, yzsum_mn_name_x
+  public :: phizsum_mn_name_r
   public :: ysum_mn_name_xz, zsum_mn_name_xy, phisum_mn_name_rz
   public :: date_time_string
 
@@ -617,6 +618,42 @@ module Sub
       fnamex(:,iname)=fnamex(:,iname)+a
 !
     endsubroutine yzsum_mn_name_x
+!***********************************************************************
+    subroutine phizsum_mn_name_r(a,iname)
+!
+!  Successively calculate sum over phi,z of a, which is supplied at each call.
+!  Start from zero if lfirstpoint=.true.
+!  The fnamer array uses one of its slots in mnamer where we put ones and sum
+!  them up in order to get the normalization correct.
+!
+!  29-jan-07/wlad: adapted from yzsum_mn_name_x and phisum_mn_name
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+!
+      real, dimension (nx) :: a
+      integer :: iname,ir
+!
+      if (lfirstpoint) fnamer(:,iname)=0.
+      do ir=1,nrcyl
+         fnamer(ir,iname) = fnamer(ir,iname) + sum(a*phiavg_profile(ir,:))
+      enddo
+!
+! Normalization factor, just need to be done once.
+!
+      if ((iname==nnamer).and.(n.eq.npoint)) then
+!check if an extra slot is available on fnamer
+         if (nnamer==mnamer) &
+              call stop_it("no slot for phi-normalization. decrease nnamer")
+!
+         if (lfirstpoint) fnamer(:,iname+1)=0.
+         do ir=1,nrcyl
+            fnamer(ir,iname+1) &
+                 = fnamer(ir,iname+1) + sum(1.*phiavg_profile(ir,:))
+         enddo
+      endif
+!
+    endsubroutine phizsum_mn_name_r
 !***********************************************************************
     subroutine ysum_mn_name_xz(a,iname)
 !

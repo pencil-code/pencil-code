@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.341 2007-01-27 11:04:06 brandenb Exp $
+! $Id: equ.f90,v 1.342 2007-01-31 12:20:40 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -250,6 +250,35 @@ module Equ
 !
     endsubroutine yzaverages_x
 !***********************************************************************
+    subroutine phizaverages_r()
+!
+!  Calculate phiz-averages (still depending on r)
+!  
+!  29-jan-07/wlad: adapted from yzaverages_x and phiaverages_rz
+!
+      use Mpicomm
+      use Cdata
+!
+      real, dimension (nrcyl,mnamer) :: fsumr
+      real, dimension (nrcyl) :: norm
+      integer :: in,ir
+!
+!  communicate over all processors
+!  the result is only present on the root processor
+!
+      if (nnamer>0) then
+         !the extra slot is where the normalization is stored
+         call mpireduce_sum(fnamer,fsumr,nrcyl*(nnamer+1))
+         if (lroot) then
+            norm=fsumr(:,nnamer+1)
+            do in=1,nnamer
+               fnamer(:,in)=fsumr(:,in)/norm
+            enddo
+         endif
+      endif
+!
+    endsubroutine phizaverages_r
+!***********************************************************************
     subroutine yaverages_xz()
 !
 !  Calculate y-averages (still depending on x and z)
@@ -383,13 +412,14 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.341 2007-01-27 11:04:06 brandenb Exp $")
+           "$Id: equ.f90,v 1.342 2007-01-31 12:20:40 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
 !
       ldiagnos=lfirst.and.lout
       l2davgfirst=lfirst.and.l2davg
+      l1dphiavg=lcylindrical.and.ldiagnos
 !
 !  record times for diagnostic and 2d average output
 !
@@ -558,6 +588,12 @@ module Equ
 !          call calc_phiavg_general()
         endif
 !
+!  For 1D phiz averages
+!
+        !l1dphiavg=lcylindrical.and.ldiagnos
+        if (l1dphiavg.and.lwrite_phizaverages) &
+             call calc_phiavg_profile(p)
+!
 !  Calculate pencils for the pencil_case
 !
                             call calc_pencils_hydro(f,p)
@@ -722,7 +758,6 @@ module Equ
                 df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
           enddo
         endif
-
 !
 !  Freeze components of variables in boundary slice if specified by boundary
 !  condition 'f'
@@ -928,6 +963,7 @@ module Equ
         call xyaverages_z
         call xzaverages_y
         call yzaverages_x
+        call phizaverages_r
       endif
 !
 !  AB: I think all the 2-D averages are currently done via write_2daverages,

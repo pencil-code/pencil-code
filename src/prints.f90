@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.84 2007-01-27 11:04:06 brandenb Exp $
+! $Id: prints.f90,v 1.85 2007-01-31 12:20:40 wlyra Exp $
 
 module Print
 
@@ -211,6 +211,7 @@ module Print
         call write_xyaverages()
         call write_xzaverages()
         call write_yzaverages()
+        call write_phizaverages()
       endif
 !
     endsubroutine write_1daverages
@@ -320,6 +321,29 @@ module Print
       endif
 !
     endsubroutine write_yzaverages
+!***********************************************************************
+    subroutine write_phizaverages()
+!
+!  Write phiz-averages (which are 1d data) that have been requested via
+!  `phizaver.in'
+!
+!  Also write rcyl to the output. It is needed just once, since it will
+!  not change over the simulation. The condition "if (it==1)" is not the
+!  best one, since it is reset upon restarting of a simulation and 
+!  therefore one has to manually remove the extra(s) rcyl from 
+!  the phizaverages.dat file
+!
+!  29-jan-07/wlad: adapted from write_yzaverages
+!
+      if (lroot.and.nnamer>0) then
+        open(1,file=trim(datadir)//'/phizaverages.dat',position='append')
+        if (it==1) write(1,'(1p,8e13.5)') rcyl
+        write(1,'(1pe12.5)') tdiagnos
+        write(1,'(1p,8e13.5)') fnamer(:,1:nnamer)
+        close(1)
+      endif
+!
+    endsubroutine write_phizaverages
 !***********************************************************************
     subroutine write_yaverages(ch)
 !

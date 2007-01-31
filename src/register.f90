@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.194 2007-01-13 21:37:40 dobler Exp $
+! $Id: register.f90,v 1.195 2007-01-31 12:20:40 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -596,7 +596,7 @@ module Register
       use Shear,           only: rprint_shear
       use Mpicomm
 !
-      integer :: iname,inamev,inamez,inamey,inamex,inamexy,inamexz,inamerz
+      integer :: iname,inamev,inamez,inamey,inamex,inamer,inamexy,inamexz,inamerz
       integer :: iname_tmp
       logical :: lreset,exist,print_in_double
       character (LEN=30)    :: cname_tmp
@@ -691,6 +691,21 @@ module Register
         close(1)
       endif
       if (lroot.and.ip<14) print*,'rprint_list: nnamex=',nnamex
+!
+!  read in the list of variables for yz-averages
+!
+      inquire(file='phizaver.in',exist=exist)
+      if (exist) then
+        open(1,file='phizaver.in')
+        do inamer=1,mnamer
+          read(1,*,end=990) cnamer(inamer)
+        enddo
+990      nnamer=inamer-1
+        close(1)
+      else
+         lwrite_phizaverages=.false. ! switch phizaverages off
+      endif
+      if (lroot.and.ip<14) print*,'rprint_list: nnamer=',nnamer
 !
 !  read in the list of variables for y-averages
 !
