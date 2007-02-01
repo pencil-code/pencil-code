@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.301 2007-01-31 14:30:36 wlyra Exp $
+! $Id: density.f90,v 1.302 2007-02-01 13:40:07 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -43,12 +43,12 @@ module Density
   real :: co1_ss=0.,co2_ss=0.,Sigma1=150.
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
   real :: wdamp=0.,plaw=0.
-  real, dimension(3) :: diffrho_hyper3_vector=0.
+  real, dimension(3) :: diffrho_hyper3_aniso=0.
   integer, parameter :: ndiff_max=4
   logical :: lmass_source=.false.,lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
-  logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_vector=.false.
+  logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_aniso=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: lstratified=.false.
 
@@ -79,7 +79,7 @@ module Density
        lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
        wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,         &
        lnrho_const,plaw,lcontinuity_gas,borderlnrho,    &
-       diffrho_hyper3_vector
+       diffrho_hyper3_aniso
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
@@ -113,7 +113,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.301 2007-01-31 14:30:36 wlyra Exp $")
+           "$Id: density.f90,v 1.302 2007-02-01 13:40:07 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -166,7 +166,7 @@ module Density
       ldiff_shock=.false.
       ldiff_hyper3=.false.
       ldiff_hyper3lnrho=.false.
-      ldiff_hyper3_vector=.false.
+      ldiff_hyper3_aniso=.false.
 !
       lnothing=.false.
 !
@@ -181,9 +181,9 @@ module Density
         case ('hyper3lnrho')
           if (lroot) print*,'diffusion: (d^6/dx^6+d^6/dy^6+d^6/dz^6)lnrho'
           ldiff_hyper3lnrho=.true.
-       case ('hyper3_vector')
+       case ('hyper3_aniso')
           if (lroot) print*,'diffusion: (Dx*d^6/dx^6 + Dy*d^6/dy^6 + Dz*d^6/dz^6)rho'
-          ldiff_hyper3_vector=.true.
+          ldiff_hyper3_aniso=.true.
         case ('shock')
           if (lroot) print*,'diffusion: shock diffusion'
           ldiff_shock=.true.
@@ -208,10 +208,10 @@ module Density
             .and. diffrho_hyper3==0.0) &
             call fatal_error('initialize_density', &
             'Diffusion coefficient diffrho_hyper3 is zero!')
-        if ( (ldiff_hyper3_vector) .and.  &
-             ((diffrho_hyper3_vector(1)==0. .and. nxgrid/=1 ).or. &
-              (diffrho_hyper3_vector(2)==0. .and. nygrid/=1 ).or. &
-              (diffrho_hyper3_vector(3)==0. .and. nzgrid/=1 )) ) &
+        if ( (ldiff_hyper3_aniso) .and.  &
+             ((diffrho_hyper3_aniso(1)==0. .and. nxgrid/=1 ).or. &
+              (diffrho_hyper3_aniso(2)==0. .and. nygrid/=1 ).or. &
+              (diffrho_hyper3_aniso(3)==0. .and. nzgrid/=1 )) ) &
             call fatal_error('initialize_density', &
             'A diffusion coefficient of diffrho_hyper3 is zero!')
         if (ldiff_shock .and. diffrho_shock==0.0) &
@@ -222,7 +222,7 @@ module Density
 !  Hyperdiffusion only works with (not log) density. One must either use
 !  ldensity_nolog=T or work with GLOBAL =   global_nolog_density.
 !
-      if ((ldiff_hyper3.or.ldiff_hyper3_vector) .and. (.not. ldensity_nolog)) then
+      if ((ldiff_hyper3.or.ldiff_hyper3_aniso) .and. (.not. ldensity_nolog)) then
         if (lroot) print*,"initialize_density: Creating global array for rho to use hyperdiffusion"
         call farray_register_global('rho',iglobal_rho)
       endif
@@ -1020,7 +1020,7 @@ module Density
           lpenc_requested(i_del2lnrho)=.true.
         endif
       endif
-      if (ldiff_hyper3.or.ldiff_hyper3_vector) lpenc_requested(i_del6rho)=.true.
+      if (ldiff_hyper3.or.ldiff_hyper3_aniso) lpenc_requested(i_del6rho)=.true.
       if (ldiff_hyper3.and..not.ldensity_nolog) lpenc_requested(i_rho)=.true.
       if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
 !
@@ -1284,18 +1284,18 @@ module Density
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
 !
-      if (ldiff_hyper3_vector) then
+      if (ldiff_hyper3_aniso) then
          if (ldensity_nolog) then
-            call del6fj(f,diffrho_hyper3_vector,ilnrho,tmp)
+            call del6fj(f,diffrho_hyper3_aniso,ilnrho,tmp)
             fdiff = fdiff + tmp
             if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+&
-                 diffrho_hyper3_vector(1)*dx_1(l1:l2)**6 + &
-                 diffrho_hyper3_vector(2)*dy_1(m)**6 + &
-                 diffrho_hyper3_vector(3)*dz_1(n)**6
+                 diffrho_hyper3_aniso(1)*dx_1(l1:l2)**6 + &
+                 diffrho_hyper3_aniso(2)*dy_1(m)**6 + &
+                 diffrho_hyper3_aniso(3)*dz_1(n)**6
             if (headtt) &
-                 print*,'dlnrho_dt: diffrho_hyper3=(Dx,Dy,Dz)=',diffrho_hyper3_vector
+                 print*,'dlnrho_dt: diffrho_hyper3=(Dx,Dy,Dz)=',diffrho_hyper3_aniso
          else
-            call stop_it("vectorial hyperdiffusion not implemented for lnrho")
+            call stop_it("anisotropic hyperdiffusion not implemented for lnrho")
          endif
       endif
 !
