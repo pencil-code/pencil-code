@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.275 2007-01-31 12:20:40 wlyra Exp $
+! $Id: sub.f90,v 1.276 2007-02-01 13:38:00 wlyra Exp $
 
 module Sub
 
@@ -632,24 +632,27 @@ module Sub
       use Mpicomm, only: stop_it
 !
       real, dimension (nx) :: a
-      integer :: iname,ir
+      integer :: iname,ir,nnghost
 !
       if (lfirstpoint) fnamer(:,iname)=0.
+      if (lfirstpoint.and.iname==nnamer) fnamer(:,iname+1)=0.
+!
       do ir=1,nrcyl
          fnamer(ir,iname) = fnamer(ir,iname) + sum(a*phiavg_profile(ir,:))
       enddo
 !
-! Normalization factor, just need to be done once.
+! Normalization factor, just needs to be done once.
+! As is it a z-average, multiply by nz afterwards.
 !
-      if ((iname==nnamer).and.(n.eq.npoint)) then
+      nnghost=n-nghost
+      if ((iname==nnamer).and.(nnghost==1)) then
 !check if an extra slot is available on fnamer
          if (nnamer==mnamer) &
               call stop_it("no slot for phi-normalization. decrease nnamer")
 !
-         if (lfirstpoint) fnamer(:,iname+1)=0.
          do ir=1,nrcyl
             fnamer(ir,iname+1) &
-                 = fnamer(ir,iname+1) + sum(1.*phiavg_profile(ir,:))
+                 = fnamer(ir,iname+1) + sum(1.*phiavg_profile(ir,:))*nz
          enddo
       endif
 !
