@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.482 2007-01-25 14:34:41 bingert Exp $
+! $Id: entropy.f90,v 1.483 2007-02-02 12:28:51 ajohan Exp $
 
 !
 !  This module takes care of entropy (initial condition
@@ -140,7 +140,7 @@ module Entropy
   integer :: idiag_yHm=0,idiag_yHmax=0,idiag_TTm=0,idiag_TTmax=0,idiag_TTmin=0
   integer :: idiag_fconvz=0,idiag_dcoolz=0,idiag_fradz=0,idiag_fturbz=0
   integer :: idiag_ssmx=0,idiag_ssmy=0,idiag_ssmz=0,idiag_TTp=0
-  integer :: idiag_TTmx=0,idiag_TTmy=0,idiag_TTmz=0
+  integer :: idiag_TTmx=0,idiag_TTmy=0,idiag_TTmz=0,idiag_TTmxy=0
 
   contains
 
@@ -167,7 +167,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.482 2007-01-25 14:34:41 bingert Exp $")
+           "$Id: entropy.f90,v 1.483 2007-02-02 12:28:51 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1619,7 +1619,8 @@ module Entropy
           lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
       if (idiag_TTm/=0 .or. idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. &
-          idiag_TTmz/=0 .or. idiag_TTmax/=0 .or. idiag_TTmin/=0) &
+          idiag_TTmz/=0 .or. idiag_TTmxy/=0 .or. &
+          idiag_TTmax/=0 .or. idiag_TTmin/=0) &
           lpenc_diagnos(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_dtc/=0) lpenc_diagnos(i_cs2)=.true.
@@ -1870,12 +1871,13 @@ module Entropy
 !
         if (idiag_fconvz/=0) &
             call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
-        if (idiag_ssmz/=0) call xysum_mn_name_z(p%ss,idiag_ssmz)
-        if (idiag_ssmy/=0) call xzsum_mn_name_y(p%ss,idiag_ssmy)
-        if (idiag_ssmx/=0) call yzsum_mn_name_x(p%ss,idiag_ssmx)
-        if (idiag_TTmx/=0) call yzsum_mn_name_x(p%TT,idiag_TTmz)
-        if (idiag_TTmy/=0) call xzsum_mn_name_y(p%TT,idiag_TTmy)
-        if (idiag_TTmz/=0) call xysum_mn_name_z(p%TT,idiag_TTmz)
+        if (idiag_ssmz/=0)  call xysum_mn_name_z(p%ss,idiag_ssmz)
+        if (idiag_ssmy/=0)  call xzsum_mn_name_y(p%ss,idiag_ssmy)
+        if (idiag_ssmx/=0)  call yzsum_mn_name_x(p%ss,idiag_ssmx)
+        if (idiag_TTmx/=0)  call yzsum_mn_name_x(p%TT,idiag_TTmz)
+        if (idiag_TTmy/=0)  call xzsum_mn_name_y(p%TT,idiag_TTmy)
+        if (idiag_TTmz/=0)  call xysum_mn_name_z(p%TT,idiag_TTmz)
+        if (idiag_TTmxy/=0) call zsum_mn_name_xy(p%TT,idiag_TTmxy)
       endif
 !
     endsubroutine dss_dt
@@ -2745,9 +2747,10 @@ module Entropy
       use Cdata
       use Sub
 !
-      integer :: iname,inamez,inamey,inamex,irz
       logical :: lreset,lwr
       logical, optional :: lwrite
+!
+      integer :: iname,inamez,inamey,inamex,inamexy,irz
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -2762,7 +2765,7 @@ module Entropy
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
         idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0
-        idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0
+        idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -2813,6 +2816,12 @@ module Entropy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
       enddo
 !
+!  check for those quantities for which we want z-averages
+!
+      do inamexy=1,nnamexy
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'TTmxy',idiag_TTmxy)
+      enddo
+!
 !  check for those quantities for which we want phi-averages
 !
       do irz=1,nnamerz
@@ -2851,6 +2860,7 @@ module Entropy
         write(3,*) 'i_TTp=',idiag_TTp
         write(3,*) 'iyH=',iyH
         write(3,*) 'ilnTT=',ilnTT
+        write(3,*) 'i_TTmxy=',idiag_TTmxy
       endif
 !
     endsubroutine rprint_entropy
