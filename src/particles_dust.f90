@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.179 2007-02-02 12:20:40 ajohan Exp $
+! $Id: particles_dust.f90,v 1.180 2007-02-02 12:24:30 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -107,7 +107,7 @@ module Particles
   integer :: idiag_npmx=0, idiag_npmy=0, idiag_npmz=0
   integer :: idiag_rhopmx=0, idiag_rhopmy=0, idiag_rhopmz=0
   integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
-  integer :: idiag_mpt=0, idiag_dedragp=0, idiag_rhopmxy=0
+  integer :: idiag_mpt=0, idiag_dedragp=0, idiag_rhopmxy=0, idiag_rhopmr=0
 
   contains
 
@@ -126,7 +126,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.179 2007-02-02 12:20:40 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.180 2007-02-02 12:24:30 ajohan Exp $")
 !
 !  Indices for particle position.
 !
