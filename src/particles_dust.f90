@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.178 2007-01-31 22:55:30 wlyra Exp $
+! $Id: particles_dust.f90,v 1.179 2007-02-02 12:20:40 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -47,7 +47,8 @@ module Particles
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer, dimension (npar_species) :: ipar_fence_species=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
-  logical :: ldragforce_heat=.false., lpar_spec=.false.
+  logical :: ldragforce_heat=.false., lcollisional_heat=.false.
+  logical :: lpar_spec=.false.
   logical :: lcollisional_cooling_rms=.false.
   logical :: lcollisional_cooling_twobody=.false.
   logical :: lcollisional_dragforce_cooling=.false.
@@ -78,7 +79,7 @@ module Particles
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole, &
       epsp_friction_increase,lcartesian_mig, lcollisional_dragforce_cooling, &
-      ldragforce_heat
+      ldragforce_heat, lcollisional_heat
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -92,7 +93,7 @@ module Particles
       lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
-      ldragforce_heat
+      ldragforce_heat, lcollisional_heat
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -107,7 +108,6 @@ module Particles
   integer :: idiag_rhopmx=0, idiag_rhopmy=0, idiag_rhopmz=0
   integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
   integer :: idiag_mpt=0, idiag_dedragp=0, idiag_rhopmxy=0
-  integer :: idiag_rhopmr=0
 
   contains
 
@@ -126,7 +126,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.178 2007-01-31 22:55:30 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.179 2007-02-02 12:20:40 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -401,6 +401,7 @@ module Particles
        case ('random-cylindrical')
           if (lroot) print*, 'init_particles: Random particle cylindrical positions'
           do k=1,npar_loc
+
              call random_number_wrapper(rad2)
              call random_number_wrapper(phi)
              rad2 = rp_int**2 + rad2*(rp_ext**2-rp_int**2)
@@ -1247,7 +1248,7 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_requested(i_epsp)=.true.
         lpenc_requested(i_np)=.true.
       endif
-      if (ldragforce_heat) then
+      if (ldragforce_heat .or. lcollisional_heat) then
         lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_rho1)=.true.
       endif
@@ -1261,7 +1262,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       lpenc_diagnos(i_np)=.true.
       lpenc_diagnos(i_rhop)=.true.
-      if (ldragforce_heat) then
+      if (idiag_dedragp/=0 .or. idiag_decollp/=0) then
         lpenc_diagnos(i_TT1)=.true.
         lpenc_diagnos(i_rho1)=.true.
       endif
@@ -1580,7 +1581,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if ( (lcollisional_cooling_rms .or. lcollisional_cooling_twobody .or. &
           lcollisional_dragforce_cooling) .and. t>=tstart_collisional_cooling) &
-          call collisional_cooling(f,fp,dfp,p,ineargrid)
+          call collisional_cooling(f,df,fp,dfp,p,ineargrid)
 !
 !  Contribution of dust particles to time step.
 !
@@ -1625,8 +1626,8 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
         if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
         if (idiag_rhopmxy/=0) call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
-        if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr) 
         if (idiag_dedragp/=0) call sum_mn_name(drag_heat,idiag_dedragp)
+        if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
       endif
 !
     endsubroutine dvvp_dt_pencil
@@ -1927,13 +1928,16 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine get_frictiontime
 !***********************************************************************
-    subroutine collisional_cooling(f,fp,dfp,p,ineargrid)
+    subroutine collisional_cooling(f,df,fp,dfp,p,ineargrid)
 !
 !  Reduce relative speed between particles due to inelastic collisions.
 !
 !  23-sep-06/anders: coded
 !
+      use Sub
+!
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -1944,13 +1948,15 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (nx,npar_species) :: np_species, vpm_species
       real, dimension (nx,npar_species) :: tau_coll1_tot
       real, dimension (nx,3) :: vvpm
-      real, dimension (nx) :: vpm, tau_coll1, tausp1m, vcoll
+      real, dimension (nx) :: vpm, tau_coll1, tausp1m, vcoll, coll_heat
       real, dimension (3) :: deltavp_vec, vbar_jk
       real :: deltavp, tau_cool1_par, dt1_cool
       real :: tausp1_par, tausp1_parj, tausp1_park, tausp_parj, tausp_park
-      real :: tausp_parj3, tausp_park3, decollp=0.0
+      real :: tausp_parj3, tausp_park3
       integer :: j, k, l, ix0
       integer :: ispecies, jspecies
+!
+      if (ldiagnos .or. lentropy .and. lcollisional_heat) coll_heat=0.0
 !
 !  Add collisional cooling of the rms speed.
 !
@@ -2011,6 +2017,11 @@ k_loop:   do while (.not. (k>npar_loc))
             ix0=ineargrid(k,1)
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
                 tau_coll1(ix0-nghost)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
+            if (lcollisional_heat .or. ldiagnos) then
+              coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + & 
+                  rhop_tilde*tau_coll1(ix0-nghost)*&
+                  sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:)))
+            endif
           enddo
         endif
       endif
@@ -2156,22 +2167,28 @@ k_loop:   do while (.not. (k>npar_loc))
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
                   tau_coll1_species(ix0-nghost,ispecies,jspecies)* &
                   (fp(k,ivpx:ivpz)-vvpm_species(ix0-nghost,:,jspecies))
-              if (ldiagnos) then
-                decollp = decollp - &  ! Energy dissipation by collisions.
+              if (lcollisional_heat .or. ldiagnos) then
+                coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + &
                     rhop_tilde*tau_coll1_species(ix0-nghost,ispecies,jspecies)*&
                     sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz) - &
                                          vvpm_species(ix0-nghost,:,jspecies)))
               endif
             enddo
-!  Diagnostics.
-            if (ldiagnos) then
-              if (idiag_decollp/=0) &
-                  call sum_par_name((/decollp/),idiag_decollp)
-                decollp=0.0
-            endif
           enddo
         endif
       endif
+!
+!  Heating of the gas due to dissipative collisions.
+!
+      if (lentropy .and. lcollisional_heat) &
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%rho1*p%TT1*coll_heat
+
+!  Diagnostics.
+      if (ldiagnos) then
+        if (idiag_decollp/=0) &
+          call sum_mn_name(coll_heat,idiag_decollp)
+      endif
+!
     endsubroutine collisional_cooling
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
