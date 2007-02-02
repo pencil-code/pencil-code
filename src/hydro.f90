@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.312 2007-01-31 14:23:13 wlyra Exp $
+! $Id: hydro.f90,v 1.313 2007-02-02 14:14:47 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -185,7 +185,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.312 2007-01-31 14:23:13 wlyra Exp $")
+           "$Id: hydro.f90,v 1.313 2007-02-02 14:14:47 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1056,24 +1056,12 @@ module Hydro
         if (idiag_uxuym/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,2),idiag_uxuym)
         if (idiag_uxuzm/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,3),idiag_uxuzm)
         if (idiag_uyuzm/=0)   call sum_mn_name(p%uu(:,2)*p%uu(:,3),idiag_uyuzm)
-        if (idiag_uxuymz/=0)  call xysum_mn_name_z(p%uu(:,1)*p%uu(:,2),idiag_uxuymz)
-        if (idiag_uxuzmz/=0)  call xysum_mn_name_z(p%uu(:,1)*p%uu(:,3),idiag_uxuzmz)
-        if (idiag_uyuzmz/=0)  call xysum_mn_name_z(p%uu(:,2)*p%uu(:,3),idiag_uyuzmz)
-        if (idiag_ruxuymz/=0) &
-          call xysum_mn_name_z(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuymz)
-        if (idiag_uxuymy/=0)  call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,2),idiag_uxuymy)
-        if (idiag_uxuzmy/=0)  call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,3),idiag_uxuzmy)
-        if (idiag_uyuzmy/=0)  call xzsum_mn_name_y(p%uu(:,2)*p%uu(:,3),idiag_uyuzmy)
-        if (idiag_uxuymx/=0)  call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,2),idiag_uxuymx)
-        if (idiag_uxuzmx/=0)  call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,3),idiag_uxuzmx)
-        if (idiag_uyuzmx/=0)  call yzsum_mn_name_x(p%uu(:,2)*p%uu(:,3),idiag_uyuzmx)
         if (idiag_duxdzma/=0) call sum_mn_name(abs(p%uij(:,1,3)),idiag_duxdzma)
         if (idiag_duydzma/=0) call sum_mn_name(abs(p%uij(:,2,3)),idiag_duydzma)
 !
         if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
         if (idiag_ekintot/=0) &
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
-        if (idiag_ekinz/=0) call xysum_mn_name_z(.5*p%rho*p%u2,idiag_ekinz)
         if (idiag_totangmom/=0) &
              call sum_lim_mn_name(p%rho*(p%uu(:,2)*x(l1:l2)-p%uu(:,1)*y(m)),&
              idiag_totangmom,p)
@@ -1095,40 +1083,10 @@ module Hydro
 !
 !  this doesn't need to be as frequent (check later)
 !
-        if (idiag_fmassz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3),idiag_fmassz)
-        if (idiag_fkinz/=0) call xysum_mn_name_z(.5*p%rho*p%u2*p%uu(:,3),idiag_fkinz)
-        if (idiag_uxmz/=0)  call xysum_mn_name_z(p%uu(:,1),idiag_uxmz)
-        if (idiag_uymz/=0)  call xysum_mn_name_z(p%uu(:,2),idiag_uymz)
-        if (idiag_uzmz/=0)  call xysum_mn_name_z(p%uu(:,3),idiag_uzmz)
-        if (idiag_uxmy/=0)  call xzsum_mn_name_y(p%uu(:,1),idiag_uxmy)
-        if (idiag_uymy/=0)  call xzsum_mn_name_y(p%uu(:,2),idiag_uymy)
-        if (idiag_uzmy/=0)  call xzsum_mn_name_y(p%uu(:,3),idiag_uzmy)
-        if (idiag_uxmx/=0)  call yzsum_mn_name_x(p%uu(:,1),idiag_uxmx)
-        if (idiag_uymx/=0)  call yzsum_mn_name_x(p%uu(:,2),idiag_uymx)
-        if (idiag_uzmx/=0)  call yzsum_mn_name_x(p%uu(:,3),idiag_uzmx)
-        if (idiag_ux2mz/=0) call xysum_mn_name_z(p%uu(:,1)**2,idiag_ux2mz)
-        if (idiag_uy2mz/=0) call xysum_mn_name_z(p%uu(:,2)**2,idiag_uy2mz)
-        if (idiag_uz2mz/=0) call xysum_mn_name_z(p%uu(:,3)**2,idiag_uz2mz)
-        if (idiag_ux2my/=0) call xzsum_mn_name_y(p%uu(:,1)**2,idiag_ux2my)
-        if (idiag_uy2my/=0) call xzsum_mn_name_y(p%uu(:,2)**2,idiag_uy2my)
-        if (idiag_uz2my/=0) call xzsum_mn_name_y(p%uu(:,3)**2,idiag_uz2my)
-        if (idiag_ux2mx/=0) call yzsum_mn_name_x(p%uu(:,1)**2,idiag_ux2mx)
-        if (idiag_uy2mx/=0) call yzsum_mn_name_x(p%uu(:,2)**2,idiag_uy2mx)
-        if (idiag_uz2mx/=0) call yzsum_mn_name_x(p%uu(:,3)**2,idiag_uz2mx)
         if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
         if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
         if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
         if (idiag_u2mz/=0)  call zsum_mn_name_xy(p%u2,idiag_u2mz)
-!
-!  phi-z averages (also does not need to be as frequent)
-!
-        if (idiag_u2mr/=0) call phizsum_mn_name_r(p%u2,idiag_u2mr)
-        if (idiag_urmr/=0) &
-             call phizsum_mn_name_r(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmr)
-        if (idiag_upmr/=0) &
-             call phizsum_mn_name_r(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmr)
-        if (idiag_uzmr/=0) &
-             call phizsum_mn_name_r(p%uu(:,3),idiag_uzmr)
 !
 !  mean momenta
 !
@@ -1163,6 +1121,51 @@ module Hydro
         if (idiag_u1u32m/=0) call sum_mn_name(p%u1u32,idiag_u1u32m)
         if (idiag_u2u13m/=0) call sum_mn_name(p%u2u13,idiag_u2u13m)
 !
+      endif
+!
+!  1d-averages. Happens at every it1d timesteps, NOT at every it1
+!
+      if (l1ddiagnos) then
+        if (idiag_fmassz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3),idiag_fmassz)
+        if (idiag_fkinz/=0)  call xysum_mn_name_z(.5*p%rho*p%u2*p%uu(:,3),idiag_fkinz)
+        if (idiag_uxmz/=0)   call xysum_mn_name_z(p%uu(:,1),idiag_uxmz)
+        if (idiag_uymz/=0)   call xysum_mn_name_z(p%uu(:,2),idiag_uymz)
+        if (idiag_uzmz/=0)   call xysum_mn_name_z(p%uu(:,3),idiag_uzmz)
+        if (idiag_uxmy/=0)   call xzsum_mn_name_y(p%uu(:,1),idiag_uxmy)
+        if (idiag_uymy/=0)   call xzsum_mn_name_y(p%uu(:,2),idiag_uymy)
+        if (idiag_uzmy/=0)   call xzsum_mn_name_y(p%uu(:,3),idiag_uzmy)
+        if (idiag_uxmx/=0)   call yzsum_mn_name_x(p%uu(:,1),idiag_uxmx)
+        if (idiag_uymx/=0)   call yzsum_mn_name_x(p%uu(:,2),idiag_uymx)
+        if (idiag_uzmx/=0)   call yzsum_mn_name_x(p%uu(:,3),idiag_uzmx)
+        if (idiag_ux2mz/=0)  call xysum_mn_name_z(p%uu(:,1)**2,idiag_ux2mz)
+        if (idiag_uy2mz/=0)  call xysum_mn_name_z(p%uu(:,2)**2,idiag_uy2mz)
+        if (idiag_uz2mz/=0)  call xysum_mn_name_z(p%uu(:,3)**2,idiag_uz2mz)
+        if (idiag_ux2my/=0)  call xzsum_mn_name_y(p%uu(:,1)**2,idiag_ux2my)
+        if (idiag_uy2my/=0)  call xzsum_mn_name_y(p%uu(:,2)**2,idiag_uy2my)
+        if (idiag_uz2my/=0)  call xzsum_mn_name_y(p%uu(:,3)**2,idiag_uz2my)
+        if (idiag_ux2mx/=0)  call yzsum_mn_name_x(p%uu(:,1)**2,idiag_ux2mx)
+        if (idiag_uy2mx/=0)  call yzsum_mn_name_x(p%uu(:,2)**2,idiag_uy2mx)
+        if (idiag_uz2mx/=0)  call yzsum_mn_name_x(p%uu(:,3)**2,idiag_uz2mx)
+        if (idiag_uxuymz/=0) call xysum_mn_name_z(p%uu(:,1)*p%uu(:,2),idiag_uxuymz)
+        if (idiag_uxuzmz/=0) call xysum_mn_name_z(p%uu(:,1)*p%uu(:,3),idiag_uxuzmz)
+        if (idiag_uyuzmz/=0) call xysum_mn_name_z(p%uu(:,2)*p%uu(:,3),idiag_uyuzmz)
+        if (idiag_ruxuymz/=0) &
+          call xysum_mn_name_z(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuymz)
+        if (idiag_uxuymy/=0) call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,2),idiag_uxuymy)
+        if (idiag_uxuzmy/=0) call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,3),idiag_uxuzmy)
+        if (idiag_uyuzmy/=0) call xzsum_mn_name_y(p%uu(:,2)*p%uu(:,3),idiag_uyuzmy)
+        if (idiag_uxuymx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,2),idiag_uxuymx)
+        if (idiag_uxuzmx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,3),idiag_uxuzmx)
+        if (idiag_uyuzmx/=0) call yzsum_mn_name_x(p%uu(:,2)*p%uu(:,3),idiag_uyuzmx)
+        if (idiag_ekinz/=0)  call xysum_mn_name_z(.5*p%rho*p%u2,idiag_ekinz)
+!  phi-z averages
+        if (idiag_u2mr/=0)   call phizsum_mn_name_r(p%u2,idiag_u2mr)
+        if (idiag_urmr/=0) &
+             call phizsum_mn_name_r(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmr)
+        if (idiag_upmr/=0) &
+             call phizsum_mn_name_r(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmr)
+        if (idiag_uzmr/=0) &
+             call phizsum_mn_name_r(p%uu(:,3),idiag_uzmr)
       endif
 !
 !  phi-averages
@@ -1368,7 +1371,8 @@ module Hydro
          call sum_lim_mn_name(divmassflux,idiag_mdot,p)
       endif
 !
-      if (idiag_urupmr/=0) call phizsum_mn_name_r(ur*up,idiag_urupmr)
+      if (l1ddiagnos.and.idiag_urupmr/=0) &
+           call phizsum_mn_name_r(ur*up,idiag_urupmr)
 !
     endsubroutine calc_hydro_stress
 !***********************************************************************

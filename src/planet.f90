@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.80 2007-01-31 12:21:16 wlyra Exp $
+! $Id: planet.f90,v 1.81 2007-02-02 14:14:47 wlyra Exp $
 !
 !  This modules contains the routines for accretion disc and planet
 !  building simulations.
@@ -26,12 +26,12 @@ module Planet
 !
   include 'planet.h'
 !
-  real, dimension(nrcyl)  :: rho_tmp
-  real, dimension(nrcyl,3) :: u_tmp,b_tmp
-  integer, dimension(nrcyl) :: k_tmp
+  real, dimension(nrcylrun)  :: rho_tmp
+  real, dimension(nrcylrun,3) :: u_tmp,b_tmp
+  integer, dimension(nrcylrun) :: k_tmp
 !
-  real, dimension (nrcyl,3) :: bavg_coarse,uavg_coarse
-  real, dimension (nrcyl) :: rhoavg_coarse
+  real, dimension (nrcylrun,3) :: bavg_coarse,uavg_coarse
+  real, dimension (nrcylrun) :: rhoavg_coarse
 !
   contains
 !
@@ -83,13 +83,13 @@ module Planet
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(nx) :: ukepler
-      real, dimension(nrcyl) :: rcyl_coarse
-      real, dimension(nrcyl) :: rmiddle
-      real, dimension(nrcyl) :: s_rho,rho_sum,ktot1
-      real, dimension(nrcyl,3) :: s_u,s_b,u_sum,b_sum
+      real, dimension(nrcylrun) :: rcyl_coarse
+      real, dimension(nrcylrun) :: rmiddle
+      real, dimension(nrcylrun) :: s_rho,rho_sum,ktot1
+      real, dimension(nrcylrun,3) :: s_u,s_b,u_sum,b_sum
       real, dimension(nx,3) :: uuf,bbf
       real :: rloop_int,rloop_ext,rmid,step
-      integer, dimension(nrcyl) :: k,ktot
+      integer, dimension(nrcylrun) :: k,ktot
       integer :: i,j,ir
       logical :: err
 !
@@ -113,8 +113,8 @@ module Planet
 !
 ! expand it onto the pencil with spline interpolation
 !
-        step = (r_ext - r_int)/nrcyl
-        do ir=1,nrcyl
+        step = (r_ext - r_int)/nrcylrun
+        do ir=1,nrcylrun
           rloop_int = r_int + (ir-1)*step
           rloop_ext = r_int + ir*step
           rmid = 0.5*(rloop_int + rloop_ext)
@@ -122,18 +122,18 @@ module Planet
         enddo
 !
         if (ldensity) &
-          call spline(rcyl_coarse,rhoavg_coarse,p%rcyl_mn,p%rhoavg,nrcyl,nx,err)
+          call spline(rcyl_coarse,rhoavg_coarse,p%rcyl_mn,p%rhoavg,nrcylrun,nx,err)
         do j=1,3
           if (lhydro) &
-            call spline(rcyl_coarse,uavg_coarse(:,j),p%rcyl_mn,p%uavg(:,j),nrcyl,nx,err)
+            call spline(rcyl_coarse,uavg_coarse(:,j),p%rcyl_mn,p%uavg(:,j),nrcylrun,nx,err)
           if (lmagnetic) &
-            call spline(rcyl_coarse,bavg_coarse(:,j),p%rcyl_mn,p%bavg(:,j),nrcyl,nx,err)
+            call spline(rcyl_coarse,bavg_coarse(:,j),p%rcyl_mn,p%bavg(:,j),nrcylrun,nx,err)
         enddo
 !
 ! fill in with pencil values the parts of the array that are away from the interpolation
 !
         do i=1,nx
-          if ((p%rcyl_mn(i).lt.rcyl_coarse(1)).or.(p%rcyl_mn(i).gt.rcyl_coarse(nrcyl))) then
+          if ((p%rcyl_mn(i).lt.rcyl_coarse(1)).or.(p%rcyl_mn(i).gt.rcyl_coarse(nrcylrun))) then
             if (ldensity) p%rhoavg(i) = p%rho(i)
             if (lhydro) then
               p%uavg(i,1)=p%uu(i,1)*p%pomx(i)+p%uu(i,2)*p%pomy(i)
@@ -164,7 +164,7 @@ module Planet
 !
 ! number of radial zones
 !
-      step=(r_ext - r_int)/nrcyl
+      step=(r_ext - r_int)/nrcylrun
 !
 ! each zone has its limits rloop_int and rloop_ext
 !
@@ -173,7 +173,7 @@ module Planet
       if (lhydro)    s_u=0.
       if (lmagnetic) s_b=0.
 !
-      do ir=1,nrcyl
+      do ir=1,nrcylrun
         rloop_int = r_int + (ir-1)*step
         rloop_ext = r_int + ir*step
         rmiddle(ir) = 0.5*(rloop_int + rloop_ext)
@@ -212,20 +212,20 @@ module Planet
 !
 ! Sum across processors, send to root
 !
-        call mpireduce_sum_int(k_tmp,ktot,nrcyl)
-        if (ldensity) call mpireduce_sum(rho_tmp,rho_sum,nrcyl)
+        call mpireduce_sum_int(k_tmp,ktot,nrcylrun)
+        if (ldensity) call mpireduce_sum(rho_tmp,rho_sum,nrcylrun)
         do j=1,3
-          if (lhydro)    call mpireduce_sum(u_tmp(:,j),u_sum(:,j),nrcyl)
-          if (lmagnetic) call mpireduce_sum(b_tmp(:,j),b_sum(:,j),nrcyl)
+          if (lhydro)    call mpireduce_sum(u_tmp(:,j),u_sum(:,j),nrcylrun)
+          if (lmagnetic) call mpireduce_sum(b_tmp(:,j),b_sum(:,j),nrcylrun)
         enddo
 !
 ! Broadcast the values
 !
-        call mpibcast_int(ktot,nrcyl)
-        if (ldensity) call mpibcast_real(rho_sum,nrcyl)
+        call mpibcast_int(ktot,nrcylrun)
+        if (ldensity) call mpibcast_real(rho_sum,nrcylrun)
         do j=1,3
-          if (lhydro)    call mpibcast_real(u_sum(:,j),nrcyl)
-          if (lmagnetic) call mpibcast_real(b_sum(:,j),nrcyl)
+          if (lhydro)    call mpibcast_real(u_sum(:,j),nrcylrun)
+          if (lmagnetic) call mpibcast_real(b_sum(:,j),nrcylrun)
         enddo
 !
 ! stop if any ktot is zero

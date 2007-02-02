@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.66 2007-01-31 12:50:12 wlyra Exp $
+! $Id: pscalar.f90,v 1.67 2007-02-02 14:14:47 wlyra Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -85,7 +85,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.66 2007-01-31 12:50:12 wlyra Exp $")
+           "$Id: pscalar.f90,v 1.67 2007-02-02 14:14:47 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -331,18 +331,21 @@ module Pscalar
 !  <u_k u_j d_j c> = <u_k c uu.gradlncc>
 !
       if (ldiagnos) then
-        if (idiag_mcct/=0) call integrate_mn_name(p%rho*p%cc,idiag_mcct)
+        if (idiag_mcct/=0)   call integrate_mn_name(p%rho*p%cc,idiag_mcct)
         if (idiag_rhoccm/=0) call sum_mn_name(p%rho*p%cc,idiag_rhoccm)
-        if (idiag_ccmax/=0) call max_mn_name(p%cc,idiag_ccmax)
-        if (idiag_ccmin/=0) call max_mn_name(-p%cc,idiag_ccmin,lneg=.true.)
-        if (idiag_lnccmz/=0) call xysum_mn_name_z(p%lncc,idiag_lnccmz)
-        if (idiag_ucm/=0) call sum_mn_name(p%uu(:,3)*p%cc,idiag_ucm)
-        if (idiag_uudcm/=0) &
+        if (idiag_ccmax/=0)  call max_mn_name(p%cc,idiag_ccmax)
+        if (idiag_ccmin/=0)  call max_mn_name(-p%cc,idiag_ccmin,lneg=.true.)
+        if (idiag_ucm/=0)    call sum_mn_name(p%uu(:,3)*p%cc,idiag_ucm)
+        if (idiag_uudcm/=0)  &
             call sum_mn_name(p%uu(:,3)*p%cc*p%uglncc,idiag_uudcm)
-        if (idiag_Cz2m/=0) call sum_mn_name(p%rho*p%cc*z(n)**2,idiag_Cz2m)
-        if (idiag_Cz4m/=0) call sum_mn_name(p%rho*p%cc*z(n)**4,idiag_Cz4m)
-        if (idiag_Crmsm/=0) &
+        if (idiag_Cz2m/=0)   call sum_mn_name(p%rho*p%cc*z(n)**2,idiag_Cz2m)
+        if (idiag_Cz4m/=0)   call sum_mn_name(p%rho*p%cc*z(n)**4,idiag_Cz4m)
+        if (idiag_Crmsm/=0)  &
             call sum_mn_name((p%rho*p%cc)**2,idiag_Crmsm,lsqrt=.true.)
+      endif
+!
+      if (l1ddiagnos) then
+         if (idiag_lnccmz/=0) call xysum_mn_name_z(p%lncc,idiag_lnccmz)
       endif
 !
     endsubroutine dlncc_dt

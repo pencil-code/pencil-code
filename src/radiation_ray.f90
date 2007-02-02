@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.129 2006-12-27 07:48:18 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.130 2007-02-02 14:14:47 wlyra Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -180,7 +180,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.129 2006-12-27 07:48:18 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.130 2007-02-02 14:14:47 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1221,11 +1221,14 @@ module Radiation
         if (idiag_Fradzm/=0) then
           call sum_mn_name(f(l1:l2,m,n,iFradz),idiag_Fradzm)
         endif
+      endif
+!      
+      if (l1ddiagnos) then
         if (idiag_xyFradzm/=0) then
-          call xysum_mn_name_z(f(l1:l2,m,n,iFradz),idiag_xyFradzm)
+           call xysum_mn_name_z(f(l1:l2,m,n,iFradz),idiag_xyFradzm)
         endif
       endif
-
+!
     endsubroutine radiative_pressure
 !***********************************************************************
     subroutine source_function(f)

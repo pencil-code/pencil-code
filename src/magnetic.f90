@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.372 2007-02-02 13:15:29 ajohan Exp $
+! $Id: magnetic.f90,v 1.373 2007-02-02 14:14:47 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -218,7 +218,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.372 2007-02-02 13:15:29 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.373 2007-02-02 14:14:47 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1331,27 +1331,6 @@ module Magnetic
 !
       if (lborder_profiles) call set_border_magnetic(f,df,p)
 !
-!  phi-averages
-!  Note that this does not necessarily happen with ldiagnos=.true.
-!
-      if (l2davgfirst) then
-        call phisum_mn_name_rz(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmphi)
-        call phisum_mn_name_rz(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,idiag_bpmphi)
-        call phisum_mn_name_rz(p%bb(:,3),idiag_bzmphi)
-        call phisum_mn_name_rz(p%b2,idiag_b2mphi)
-        if (idiag_jbmphi/=0) call phisum_mn_name_rz(p%jb,idiag_jbmphi)
-        if (any((/idiag_uxbrmphi,idiag_uxbpmphi,idiag_uxbzmphi/) /= 0)) then
-          call phisum_mn_name_rz(p%uxb(:,1)*p%pomx+p%uxb(:,2)*p%pomy,idiag_uxbrmphi)
-          call phisum_mn_name_rz(p%uxb(:,1)*p%phix+p%uxb(:,2)*p%phiy,idiag_uxbpmphi)
-          call phisum_mn_name_rz(p%uxb(:,3)                     ,idiag_uxbzmphi)
-        endif
-        if (any((/idiag_jxbrmphi,idiag_jxbpmphi,idiag_jxbzmphi/) /= 0)) then
-          call phisum_mn_name_rz(p%jxb(:,1)*p%pomx+p%jxb(:,2)*p%pomy,idiag_jxbrmphi)
-          call phisum_mn_name_rz(p%jxb(:,1)*p%phix+p%jxb(:,2)*p%phiy,idiag_jxbpmphi)
-          call phisum_mn_name_rz(p%jxb(:,3)                         ,idiag_jxbzmphi)
-        endif
-      endif
-!
 !  Calculate diagnostic quantities
 !
       if (ldiagnos) then
@@ -1385,35 +1364,12 @@ module Magnetic
 !
 !  this doesn't need to be as frequent (check later)
 !
-        if (idiag_bxmz/=0) call xysum_mn_name_z(p%bb(:,1),idiag_bxmz)
-        if (idiag_bymz/=0) call xysum_mn_name_z(p%bb(:,2),idiag_bymz)
-        if (idiag_bzmz/=0) call xysum_mn_name_z(p%bb(:,3),idiag_bzmz)
-        if (idiag_bx2mz/=0) call xysum_mn_name_z(p%bb(:,1)**2,idiag_bx2mz)
-        if (idiag_by2mz/=0) call xysum_mn_name_z(p%bb(:,2)**2,idiag_by2mz)
-        if (idiag_bz2mz/=0) call xysum_mn_name_z(p%bb(:,3)**2,idiag_bz2mz)
-        if (idiag_bxbymz/=0) &
-            call xysum_mn_name_z(p%bbb(:,1)*p%bbb(:,2),idiag_bxbymz)
-        if (idiag_bxbzmz/=0) &
-            call xysum_mn_name_z(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzmz)
-        if (idiag_bybzmz/=0) &
-            call xysum_mn_name_z(p%bbb(:,2)*p%bbb(:,3),idiag_bybzmz)
-        if (idiag_b2mz/=0) call xysum_mn_name_z(p%b2,idiag_b2mz)
         if (idiag_bxmxy/=0) call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
         if (idiag_bymxy/=0) call zsum_mn_name_xy(p%bb(:,2),idiag_bymxy)
         if (idiag_bzmxy/=0) call zsum_mn_name_xy(p%bb(:,3),idiag_bzmxy)
         if (idiag_bxmxz/=0) call ysum_mn_name_xz(p%bb(:,1),idiag_bxmxz)
         if (idiag_bymxz/=0) call ysum_mn_name_xz(p%bb(:,2),idiag_bymxz)
         if (idiag_bzmxz/=0) call ysum_mn_name_xz(p%bb(:,3),idiag_bzmxz)
-!
-!  phi-z averages (also does not need to be as frequent)
-!
-        if (idiag_b2mr/=0) call phizsum_mn_name_r(p%b2,idiag_b2mr)
-        if (idiag_brmr/=0) &
-             call phizsum_mn_name_r(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmr)
-        if (idiag_bpmr/=0) &
-             call phizsum_mn_name_r(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,idiag_bpmr)
-        if (idiag_bzmr/=0) &
-             call phizsum_mn_name_r(p%bb(:,3),idiag_bzmr)
 !
 !  magnetic field components at one point (=pt)
 !
@@ -1554,6 +1510,53 @@ module Magnetic
         endif
 !
       endif ! endif (ldiagnos)
+!                                                                               
+!  1d-averages. Happens at every it1d timesteps, NOT at every it1               
+!             
+      if (l1ddiagnos) then
+        if (idiag_bxmz/=0)   call xysum_mn_name_z(p%bb(:,1),idiag_bxmz)
+        if (idiag_bymz/=0)   call xysum_mn_name_z(p%bb(:,2),idiag_bymz)
+        if (idiag_bzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_bzmz)
+        if (idiag_bx2mz/=0)  call xysum_mn_name_z(p%bb(:,1)**2,idiag_bx2mz)
+        if (idiag_by2mz/=0)  call xysum_mn_name_z(p%bb(:,2)**2,idiag_by2mz)
+        if (idiag_bz2mz/=0)  call xysum_mn_name_z(p%bb(:,3)**2,idiag_bz2mz)
+        if (idiag_bxbymz/=0) &
+            call xysum_mn_name_z(p%bbb(:,1)*p%bbb(:,2),idiag_bxbymz)
+        if (idiag_bxbzmz/=0) &
+            call xysum_mn_name_z(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzmz)
+        if (idiag_bybzmz/=0) &
+            call xysum_mn_name_z(p%bbb(:,2)*p%bbb(:,3),idiag_bybzmz)
+        if (idiag_b2mz/=0)   call xysum_mn_name_z(p%b2,idiag_b2mz)
+!  phi-z averages
+        if (idiag_b2mr/=0)   call phizsum_mn_name_r(p%b2,idiag_b2mr)
+        if (idiag_brmr/=0)   &
+             call phizsum_mn_name_r(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmr)
+        if (idiag_bpmr/=0)   &
+             call phizsum_mn_name_r(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,idiag_bpmr)
+        if (idiag_bzmr/=0)   &
+             call phizsum_mn_name_r(p%bb(:,3),idiag_bzmr)
+     endif
+!
+!  phi-averages
+!  Note that this does not necessarily happen with ldiagnos=.true.
+!
+      if (l2davgfirst) then
+        call phisum_mn_name_rz(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmphi)
+        call phisum_mn_name_rz(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,idiag_bpmphi)
+        call phisum_mn_name_rz(p%bb(:,3),idiag_bzmphi)
+        call phisum_mn_name_rz(p%b2,idiag_b2mphi)
+        if (idiag_jbmphi/=0) call phisum_mn_name_rz(p%jb,idiag_jbmphi)
+        if (any((/idiag_uxbrmphi,idiag_uxbpmphi,idiag_uxbzmphi/) /= 0)) then
+          call phisum_mn_name_rz(p%uxb(:,1)*p%pomx+p%uxb(:,2)*p%pomy,idiag_uxbrmphi)
+          call phisum_mn_name_rz(p%uxb(:,1)*p%phix+p%uxb(:,2)*p%phiy,idiag_uxbpmphi)
+          call phisum_mn_name_rz(p%uxb(:,3)                     ,idiag_uxbzmphi)
+        endif
+        if (any((/idiag_jxbrmphi,idiag_jxbpmphi,idiag_jxbzmphi/) /= 0)) then
+          call phisum_mn_name_rz(p%jxb(:,1)*p%pomx+p%jxb(:,2)*p%pomy,idiag_jxbrmphi)
+          call phisum_mn_name_rz(p%jxb(:,1)*p%phix+p%jxb(:,2)*p%phiy,idiag_jxbpmphi)
+          call phisum_mn_name_rz(p%jxb(:,3)                         ,idiag_jxbzmphi)
+        endif
+      endif
 !
 !  debug output
 !
@@ -1722,7 +1725,8 @@ module Magnetic
       if (idiag_bzbpm/=0)  call sum_lim_mn_name(bz*bp,idiag_bzbpm,p)
       if (idiag_brbzm/=0)  call sum_lim_mn_name(br*bz,idiag_brbzm,p)
 !
-      if (idiag_brbpmr/=0) call phizsum_mn_name_r(br*bp,idiag_brbpmr)
+      if (l1ddiagnos.and.idiag_brbpmr/=0) &
+           call phizsum_mn_name_r(br*bp,idiag_brbpmr)
 !
     endsubroutine calc_mag_stress
 !***********************************************************************

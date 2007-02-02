@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.118 2007-01-23 18:42:45 dobler Exp $
+! $Id: dustvelocity.f90,v 1.119 2007-02-02 14:14:47 wlyra Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -137,7 +137,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.118 2007-01-23 18:42:45 dobler Exp $")
+           "$Id: dustvelocity.f90,v 1.119 2007-02-02 14:14:47 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1118,18 +1118,20 @@ module Dustvelocity
 !
 !  xy-averages
 !
-          if (idiag_udxmz(k)/=0) &
-              call xysum_mn_name_z(p%uud(:,1,k),idiag_udxmz(k))
-          if (idiag_udymz(k)/=0) &
-              call xysum_mn_name_z(p%uud(:,2,k),idiag_udymz(k))
-          if (idiag_udzmz(k)/=0) &
-              call xysum_mn_name_z(p%uud(:,3,k),idiag_udzmz(k))
-          if (idiag_udx2mz(k)/=0) &
-              call xysum_mn_name_z(p%uud(:,1,k)**2,idiag_udx2mz(k))
-          if (idiag_udy2mz(k)/=0) &
-              call xysum_mn_name_z(p%uud(:,2,k)**2,idiag_udy2mz(k))
-          if (idiag_udz2mz(k)/=0) &
-              call xysum_mn_name_z(p%uud(:,3,k)**2,idiag_udz2mz(k))
+          if (l1ddiagnos) then
+            if (idiag_udxmz(k)/=0) &
+                call xysum_mn_name_z(p%uud(:,1,k),idiag_udxmz(k))
+            if (idiag_udymz(k)/=0) &
+                call xysum_mn_name_z(p%uud(:,2,k),idiag_udymz(k))
+            if (idiag_udzmz(k)/=0) &
+                call xysum_mn_name_z(p%uud(:,3,k),idiag_udzmz(k))
+            if (idiag_udx2mz(k)/=0) &
+                call xysum_mn_name_z(p%uud(:,1,k)**2,idiag_udx2mz(k))
+            if (idiag_udy2mz(k)/=0) &
+                call xysum_mn_name_z(p%uud(:,2,k)**2,idiag_udy2mz(k))
+            if (idiag_udz2mz(k)/=0) &
+                call xysum_mn_name_z(p%uud(:,3,k)**2,idiag_udz2mz(k))
+          endif
 !
 !  z-averages
 !

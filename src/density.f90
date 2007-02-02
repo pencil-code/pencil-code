@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.302 2007-02-01 13:40:07 wlyra Exp $
+! $Id: density.f90,v 1.303 2007-02-02 14:14:47 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -113,7 +113,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.302 2007-02-01 13:40:07 wlyra Exp $")
+           "$Id: density.f90,v 1.303 2007-02-02 14:14:47 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1348,6 +1348,15 @@ module Density
         call phisum_mn_name_rz(p%rho,idiag_rhomphi)
       endif
 !
+!  1d-averages. Happens at every it1d timesteps, NOT at every it1
+!
+      if (l1ddiagnos) then
+         if (idiag_rhomr/=0)    call phizsum_mn_name_r(p%rho,idiag_rhomr)
+         if (idiag_rhomz/=0)    call xysum_mn_name_z(p%rho,idiag_rhomz)
+         if (idiag_rhomx/=0)    call yzsum_mn_name_x(p%rho,idiag_rhomx)
+         if (idiag_rhomy/=0)    call xzsum_mn_name_y(p%rho,idiag_rhomy)
+      endif
+!
 !  Calculate density diagnostics
 !
       if (ldiagnos) then
@@ -1359,11 +1368,7 @@ module Density
         if (idiag_rho2m/=0)    call sum_mn_name(p%rho**2,idiag_rho2m)
         if (idiag_lnrho2m/=0)  call sum_mn_name(p%lnrho**2,idiag_lnrho2m)
         if (idiag_uglnrhom/=0) call sum_mn_name(p%uglnrho,idiag_uglnrhom)
-        if (idiag_rhomz/=0)    call xysum_mn_name_z(p%rho,idiag_rhomz)
-        if (idiag_rhomx/=0)    call yzsum_mn_name_x(p%rho,idiag_rhomx)
-        if (idiag_rhomy/=0)    call xzsum_mn_name_y(p%rho,idiag_rhomy)
         if (idiag_rhomxy/=0)   call zsum_mn_name_xy(p%rho,idiag_rhomxy)
-        if (idiag_rhomr/=0)    call phizsum_mn_name_r(p%rho,idiag_rhomr)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
       endif

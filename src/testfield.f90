@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.25 2006-11-30 09:03:36 dobler Exp $
+! $Id: testfield.f90,v 1.26 2007-02-02 14:14:47 wlyra Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -110,7 +110,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.25 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: testfield.f90,v 1.26 2007-02-02 14:14:47 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -340,19 +340,17 @@ module Testfield
 !
 !  calculate alpha, begin by calculating uxbtest (if not already done above)
 !
-          if (ldiagnos) then
-            if (lsoca) then
+          if ((ldiagnos.or.l1ddiagnos).and.lsoca) then
               call curl(f,iaxtest,btest)
               call cross_mn(p%uu,btest,uxbtest)
-            endif
+           endif
+!
+          if (ldiagnos) then  
             select case(jtest)
             case(1)
               if (idiag_alp11/=0) call sum_mn_name(uxbtest(:,1),idiag_alp11)
               if (idiag_alp21/=0) call sum_mn_name(uxbtest(:,2),idiag_alp21)
               if (idiag_alp31/=0) call sum_mn_name(uxbtest(:,3),idiag_alp31)
-              if (idiag_alp11z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp11z)
-              if (idiag_alp21z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp21z)
-              if (idiag_alp31z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp31z)
               if (idiag_alp11xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_alp11xz)
               if (idiag_alp21xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_alp21xz)
               if (idiag_alp31xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_alp31xz)
@@ -360,9 +358,6 @@ module Testfield
               if (idiag_alp12/=0) call sum_mn_name(uxbtest(:,1),idiag_alp12)
               if (idiag_alp22/=0) call sum_mn_name(uxbtest(:,2),idiag_alp22)
               if (idiag_alp32/=0) call sum_mn_name(uxbtest(:,3),idiag_alp32)
-              if (idiag_alp12z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp12z)
-              if (idiag_alp22z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp22z)
-              if (idiag_alp32z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp32z)
               if (idiag_alp12xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_alp12xz)
               if (idiag_alp22xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_alp22xz)
               if (idiag_alp32xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_alp32xz)
@@ -370,51 +365,30 @@ module Testfield
               if (idiag_alp13/=0) call sum_mn_name(uxbtest(:,1),idiag_alp13)
               if (idiag_alp23/=0) call sum_mn_name(uxbtest(:,2),idiag_alp23)
               if (idiag_alp33/=0) call sum_mn_name(uxbtest(:,3),idiag_alp33)
-              if (idiag_alp13z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp13z)
-              if (idiag_alp23z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp23z)
-              if (idiag_alp33z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp33z)
               if (idiag_alp13xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_alp13xz)
               if (idiag_alp23xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_alp23xz)
               if (idiag_alp33xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_alp33xz)
             case(4)
-              if (idiag_eta111z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta111z)
-              if (idiag_eta211z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta211z)
-              if (idiag_eta311z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta311z)
               if (idiag_eta111xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta111xz)
               if (idiag_eta211xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta211xz)
               if (idiag_eta311xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta311xz)
             case(5)
-              if (idiag_eta121z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta121z)
-              if (idiag_eta221z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta221z)
-              if (idiag_eta321z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta321z)
               if (idiag_eta121xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta121xz)
               if (idiag_eta221xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta221xz)
               if (idiag_eta321xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta321xz)
             case(6)
-              if (idiag_eta131z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta131z)
-              if (idiag_eta231z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta231z)
-              if (idiag_eta331z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta331z)
               if (idiag_eta131xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta131xz)
               if (idiag_eta231xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta231xz)
               if (idiag_eta331xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta331xz)
             case(7)
-              if (idiag_eta113z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta113z)
-              if (idiag_eta213z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta213z)
-              if (idiag_eta313z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta313z)
               if (idiag_eta113xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta113xz)
               if (idiag_eta213xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta213xz)
               if (idiag_eta313xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta313xz)
-            case(8)
-              if (idiag_eta123z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta123z)
-              if (idiag_eta223z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta223z)
-              if (idiag_eta323z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta323z)
+            case(8)              
               if (idiag_eta123xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta123xz)
               if (idiag_eta223xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta223xz)
               if (idiag_eta323xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta323xz)
             case(9)
-              if (idiag_eta133z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta133z)
-              if (idiag_eta233z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta233z)
-              if (idiag_eta333z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta333z)
               if (idiag_eta133xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta133xz)
               if (idiag_eta233xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta233xz)
               if (idiag_eta333xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta333xz)
@@ -430,6 +404,47 @@ module Testfield
               if (idiag_alp13exz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_alp13exz)
               if (idiag_alp23exz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_alp23exz)
               if (idiag_alp33exz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_alp33exz)
+            end select
+          endif
+!
+          if (l1ddiagnos) then
+            select case(jtest)
+            case(1)
+              if (idiag_alp11z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp11z)
+              if (idiag_alp21z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp21z)
+              if (idiag_alp31z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp31z)
+            case(2)
+              if (idiag_alp12z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp12z)
+              if (idiag_alp22z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp22z)
+              if (idiag_alp32z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp32z)
+            case(3)
+              if (idiag_alp13z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp13z)
+              if (idiag_alp23z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp23z)
+              if (idiag_alp33z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp33z)
+            case(4)
+              if (idiag_eta111z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta111z)
+              if (idiag_eta211z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta211z)
+              if (idiag_eta311z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta311z)
+            case(5)
+              if (idiag_eta121z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta121z)
+              if (idiag_eta221z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta221z)
+              if (idiag_eta321z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta321z)
+            case(6)
+              if (idiag_eta131z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta131z)
+              if (idiag_eta231z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta231z)
+              if (idiag_eta331z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta331z)
+            case(7)
+              if (idiag_eta113z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta113z)
+              if (idiag_eta213z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta213z)
+              if (idiag_eta313z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta313z)
+            case(8)
+              if (idiag_eta123z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta123z)
+              if (idiag_eta223z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta223z)
+              if (idiag_eta323z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta323z)
+            case(9)
+              if (idiag_eta133z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta133z)
+              if (idiag_eta233z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta233z)
+              if (idiag_eta333z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta333z)
             end select
           endif
         endif

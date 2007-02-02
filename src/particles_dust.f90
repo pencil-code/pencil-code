@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.180 2007-02-02 12:24:30 ajohan Exp $
+! $Id: particles_dust.f90,v 1.181 2007-02-02 14:14:47 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -126,7 +126,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.180 2007-02-02 12:24:30 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.181 2007-02-02 14:14:47 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -1616,6 +1616,13 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhoprms/=0) call sum_mn_name(p%rhop**2,idiag_rhoprms,lsqrt=.true.)
         if (idiag_rhopmax/=0) call max_mn_name(p%rhop,idiag_rhopmax)
         if (idiag_rhopmin/=0) call max_mn_name(-p%rhop,idiag_rhopmin,lneg=.true.)
+        if (idiag_rhopmxy/=0) call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
+        if (idiag_dedragp/=0) call sum_mn_name(drag_heat,idiag_dedragp)
+      endif
+!
+!  1d-averages. Happens at every it1d timesteps, NOT at every it1
+!
+      if (l1ddiagnos) then
         if (idiag_npmx/=0)    call yzsum_mn_name_x(p%np,idiag_npmx)
         if (idiag_npmy/=0)    call xzsum_mn_name_y(p%np,idiag_npmy)
         if (idiag_npmz/=0)    call xysum_mn_name_z(p%np,idiag_npmz)
@@ -1625,8 +1632,6 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_epspmx/=0)  call yzsum_mn_name_x(p%epsp,idiag_epspmx)
         if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
         if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
-        if (idiag_rhopmxy/=0) call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
-        if (idiag_dedragp/=0) call sum_mn_name(drag_heat,idiag_dedragp)
         if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
       endif
 !

@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.20 2007-01-31 12:50:12 wlyra Exp $
+! $Id: entropy_onefluid.f90,v 1.21 2007-02-02 14:14:47 wlyra Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.20 2007-01-31 12:50:12 wlyra Exp $")
+           "$Id: entropy_onefluid.f90,v 1.21 2007-02-02 14:14:47 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1749,10 +1749,12 @@ module Entropy
         if (idiag_ssm/=0) call sum_mn_name(p%ss,idiag_ssm)
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
+     endif
 !
-!  xy averages for fluxes; doesn't need to be as frequent (check later)
+!  1D averages. Happens at every it1d timesteps, NOT at every it1
 !  idiag_fradz is done in the calc_headcond routine
 !
+     if (l1ddiagnos) then
         if (idiag_fconvz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
         if (idiag_ssmz/=0) call xysum_mn_name_z(p%ss,idiag_ssmz)
         if (idiag_ssmy/=0) call xzsum_mn_name_y(p%ss,idiag_ssmy)
@@ -2125,7 +2127,7 @@ module Entropy
 !
 !  Write radiative flux array
 !
-      if (ldiagnos) then
+      if (l1ddiagnos) then
         if (idiag_fradz/=0) call xysum_mn_name_z(-hcond*p%TT*glnT(:,3),idiag_fradz)
         if (idiag_fturbz/=0) call xysum_mn_name_z(-chi_t*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
       endif
@@ -2267,7 +2269,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !
 !  Write divergence of cooling flux
 !
-        if (ldiagnos) then
+        if (l1ddiagnos) then
           if (idiag_dcoolz/=0) call xysum_mn_name_z(heat,idiag_dcoolz)
         endif
       endif

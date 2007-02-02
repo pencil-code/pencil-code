@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.54 2007-01-31 12:50:12 wlyra Exp $
+! $Id: pscalar_nolog.f90,v 1.55 2007-02-02 14:14:47 wlyra Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc.
@@ -110,7 +110,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.54 2007-01-31 12:50:12 wlyra Exp $")
+           "$Id: pscalar_nolog.f90,v 1.55 2007-02-02 14:14:47 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -480,38 +480,41 @@ module Pscalar
 !  <u_k u_j d_j c> = <u_k c uu.gradcc>
 !
       if (ldiagnos) then
-        if (idiag_Qpsclm/=0) call sum_mn_name(bump,idiag_Qpsclm)
+        if (idiag_Qpsclm/=0)  call sum_mn_name(bump,idiag_Qpsclm)
         if (idiag_Qrhoccm/=0) call sum_mn_name(bump*p%rho*p%cc,idiag_Qrhoccm)
-        if (idiag_rhoccm/=0) call sum_mn_name(p%rho*p%cc,idiag_rhoccm)
-        if (idiag_ccmax/=0) call max_mn_name(p%cc,idiag_ccmax)
-        if (idiag_ccmin/=0) call max_mn_name(-p%cc,idiag_ccmin,lneg=.true.)
-        if (idiag_ccmz/=0) call xysum_mn_name_z(p%cc,idiag_ccmz)
-        if (idiag_ucm/=0) call sum_mn_name(p%uu(:,3)*p%cc,idiag_ucm)
-        if (idiag_uudcm/=0) call sum_mn_name(p%uu(:,3)*p%ugcc,idiag_uudcm)
-        if (idiag_Cz2m/=0) call sum_mn_name(p%rho*p%cc*z(n)**2,idiag_Cz2m)
-        if (idiag_Cz4m/=0) call sum_mn_name(p%rho*p%cc*z(n)**4,idiag_Cz4m)
+        if (idiag_rhoccm/=0)  call sum_mn_name(p%rho*p%cc,idiag_rhoccm)
+        if (idiag_ccmax/=0)   call max_mn_name(p%cc,idiag_ccmax)
+        if (idiag_ccmin/=0)   call max_mn_name(-p%cc,idiag_ccmin,lneg=.true.)
+        if (idiag_ucm/=0)     call sum_mn_name(p%uu(:,3)*p%cc,idiag_ucm)
+        if (idiag_uudcm/=0)   call sum_mn_name(p%uu(:,3)*p%ugcc,idiag_uudcm)
+        if (idiag_Cz2m/=0)    call sum_mn_name(p%rho*p%cc*z(n)**2,idiag_Cz2m)
+        if (idiag_Cz4m/=0)    call sum_mn_name(p%rho*p%cc*z(n)**4,idiag_Cz4m)
         if (idiag_Crmsm/=0) &
             call sum_mn_name((p%rho*p%cc)**2,idiag_Crmsm,lsqrt=.true.)
-        if (idiag_cc1m/=0) call sum_mn_name(p%cc1   ,idiag_cc1m)
-        if (idiag_cc2m/=0) call sum_mn_name(p%cc1**2,idiag_cc2m)
-        if (idiag_cc3m/=0) call sum_mn_name(p%cc1**3,idiag_cc3m)
-        if (idiag_cc4m/=0) call sum_mn_name(p%cc1**4,idiag_cc4m)
-        if (idiag_cc5m/=0) call sum_mn_name(p%cc1**5,idiag_cc5m)
-        if (idiag_cc6m/=0) call sum_mn_name(p%cc1**6,idiag_cc6m)
-        if (idiag_cc7m/=0) call sum_mn_name(p%cc1**7,idiag_cc7m)
-        if (idiag_cc8m/=0) call sum_mn_name(p%cc1**8,idiag_cc8m)
-        if (idiag_cc9m/=0) call sum_mn_name(p%cc1**9,idiag_cc9m)
-        if (idiag_cc10m/=0)call sum_mn_name(p%cc1**10,idiag_cc10m)
-        if (idiag_gcc1m/=0) call sum_mn_name(p%gcc1   ,idiag_gcc1m)
-        if (idiag_gcc2m/=0) call sum_mn_name(p%gcc1**2,idiag_gcc2m)
-        if (idiag_gcc3m/=0) call sum_mn_name(p%gcc1**3,idiag_gcc3m)
-        if (idiag_gcc4m/=0) call sum_mn_name(p%gcc1**4,idiag_gcc4m)
-        if (idiag_gcc5m/=0) call sum_mn_name(p%gcc1**5,idiag_gcc5m)
-        if (idiag_gcc6m/=0) call sum_mn_name(p%gcc1**6,idiag_gcc6m)
-        if (idiag_gcc7m/=0) call sum_mn_name(p%gcc1**7,idiag_gcc7m)
-        if (idiag_gcc8m/=0) call sum_mn_name(p%gcc1**8,idiag_gcc8m)
-        if (idiag_gcc9m/=0) call sum_mn_name(p%gcc1**9,idiag_gcc9m)
-        if (idiag_gcc10m/=0)call sum_mn_name(p%gcc1**10,idiag_gcc10m)
+        if (idiag_cc1m/=0)    call sum_mn_name(p%cc1   ,idiag_cc1m)
+        if (idiag_cc2m/=0)    call sum_mn_name(p%cc1**2,idiag_cc2m)
+        if (idiag_cc3m/=0)    call sum_mn_name(p%cc1**3,idiag_cc3m)
+        if (idiag_cc4m/=0)    call sum_mn_name(p%cc1**4,idiag_cc4m)
+        if (idiag_cc5m/=0)    call sum_mn_name(p%cc1**5,idiag_cc5m)
+        if (idiag_cc6m/=0)    call sum_mn_name(p%cc1**6,idiag_cc6m)
+        if (idiag_cc7m/=0)    call sum_mn_name(p%cc1**7,idiag_cc7m)
+        if (idiag_cc8m/=0)    call sum_mn_name(p%cc1**8,idiag_cc8m)
+        if (idiag_cc9m/=0)    call sum_mn_name(p%cc1**9,idiag_cc9m)
+        if (idiag_cc10m/=0)   call sum_mn_name(p%cc1**10,idiag_cc10m)
+        if (idiag_gcc1m/=0)   call sum_mn_name(p%gcc1   ,idiag_gcc1m)
+        if (idiag_gcc2m/=0)   call sum_mn_name(p%gcc1**2,idiag_gcc2m)
+        if (idiag_gcc3m/=0)   call sum_mn_name(p%gcc1**3,idiag_gcc3m)
+        if (idiag_gcc4m/=0)   call sum_mn_name(p%gcc1**4,idiag_gcc4m)
+        if (idiag_gcc5m/=0)   call sum_mn_name(p%gcc1**5,idiag_gcc5m)
+        if (idiag_gcc6m/=0)   call sum_mn_name(p%gcc1**6,idiag_gcc6m)
+        if (idiag_gcc7m/=0)   call sum_mn_name(p%gcc1**7,idiag_gcc7m)
+        if (idiag_gcc8m/=0)   call sum_mn_name(p%gcc1**8,idiag_gcc8m)
+        if (idiag_gcc9m/=0)   call sum_mn_name(p%gcc1**9,idiag_gcc9m)
+        if (idiag_gcc10m/=0)  call sum_mn_name(p%gcc1**10,idiag_gcc10m)
+      endif
+!
+      if (l1ddiagnos) then
+        if (idiag_ccmz/=0)    call xysum_mn_name_z(p%cc,idiag_ccmz)
       endif
 !
     endsubroutine dlncc_dt
