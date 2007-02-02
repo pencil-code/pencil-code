@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.371 2007-02-01 13:40:07 wlyra Exp $
+! $Id: magnetic.f90,v 1.372 2007-02-02 13:15:29 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -88,7 +88,7 @@ module Magnetic
   logical :: lresi_smagorinsky_cross=.false.
   logical, dimension (3) :: lfrozen_bb_bot=(/.false.,.false.,.false./)
   logical, dimension (3) :: lfrozen_bb_top=(/.false.,.false.,.false./)
-  logical :: reinitalize_aa=.false.
+  logical :: reinitalize_aa=.false., lresistivity_heat=.true.
   logical :: lB_ext_pot=.false.
   logical :: lforce_free_test=.false.
   logical :: lmeanfield_theory=.false.,lOmega_effect=.false.
@@ -105,7 +105,7 @@ module Magnetic
   logical :: lee_ext=.false.,lbb_ext=.false.,ljj_ext=.false.
 
   namelist /magnetic_init_pars/ &
-       B_ext, &
+       B_ext, lresistivity_heat, &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,x0aa,z0aa,widthaa, &
@@ -134,7 +134,7 @@ module Magnetic
        eta,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
        lmeanfield_theory,alpha_effect,alpha_quenching,delta_effect, &
        lmeanfield_noalpm,alpha_profile, &
-       meanfield_etat, &
+       meanfield_etat, lresistivity_heat, &
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        lforcing_continuous,iforcing_continuous,k1_ff,ampl_ff,radius, &
@@ -218,7 +218,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.371 2007-02-01 13:40:07 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.372 2007-02-02 13:15:29 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -371,6 +371,9 @@ module Magnetic
         if (lresi_eta_shock_perp.and.eta_shock==0.0) &
           call fatal_error('initialize_magnetic', &
           'Resistivity coefficient eta_shock is zero!')
+        if (lresistivity_heat .and. .not. lresi_eta_const) &
+            call warning('initialize_magnetic', &
+            'Resistivity heating only works with regular resistivity!')
       endif
 !
       if (NO_WARN) print*, lstarting
@@ -1178,12 +1181,12 @@ module Magnetic
 !
 !  add eta mu_0 j2/rho to entropy or temperature equation
 !
-      if (lentropy) then
+      if (lentropy .and. lresistivity_heat) then
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
                           + etatotal*mu0*p%j2*p%rho1*p%TT1
       endif
 
-      if (ltemperature) then
+      if (ltemperature .and. lresistivity_heat) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
                             + etatotal*mu0*p%j2*p%rho1*p%cv1*p%TT1
       endif
