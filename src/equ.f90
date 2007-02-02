@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.343 2007-02-02 14:10:52 wlyra Exp $
+! $Id: equ.f90,v 1.344 2007-02-02 18:50:51 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -412,7 +412,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.343 2007-02-02 14:10:52 wlyra Exp $")
+           "$Id: equ.f90,v 1.344 2007-02-02 18:50:51 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -973,11 +973,11 @@ module Equ
 !
 !  2-D averages
 !
-!     if (l2davgfirst) then
-!       if (lwrite_yaverages) call yaverages_xz
-!       if (lwrite_zaverages) call zaverages_xy
-!       if (lwrite_phiaverages) call phiaverages_rz
-!     endif
+     if (l2davgfirst) then
+       if (lwrite_yaverages) call yaverages_xz
+       if (lwrite_zaverages) call zaverages_xy
+       if (lwrite_phiaverages) call phiaverages_rz
+     endif
 !
 !  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
 !  (Of course, yaverages_xz does not need to be calculated for that.)
