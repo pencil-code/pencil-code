@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.57 2007-01-31 12:20:40 wlyra Exp $
+! $Id: cparam.f90,v 1.58 2007-02-02 14:10:52 wlyra Exp $
 
 module Cparam
 
@@ -41,6 +41,7 @@ module Cparam
   integer, parameter :: n1i=n1+nghost-1,n2i=n2-nghost+1
 !
   integer, parameter :: nrcyl=nx/2     ! used for azimuthal averages
+  integer, parameter :: nrcylrun=max(nrcyl/20,1)
 !
 !  array dimension for reduce operation (maxima and sums)
 !  use here symbol mreduce, use nreduce in call
@@ -70,6 +71,7 @@ module Cparam
 !  Maybe using NaN (how do you set this in F90?) would be better..
 !
   real, parameter :: impossible=3.9085e37
+  integer, parameter :: impossible_int= 1000000000
 !
 !
 ! Diagnostic variable types

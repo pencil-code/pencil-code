@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.262 2007-01-31 22:55:30 wlyra Exp $
+! $Id: param_io.f90,v 1.263 2007-02-02 14:10:52 wlyra Exp $
 
 module Param_IO
 
@@ -70,7 +70,7 @@ module Param_IO
  !      lextrapolate_bot_density,ltop_velocity_kep,laccelerat_zone, &
  !      ldecelerat_zone,lsurface_zone,lnstar_entropy,lnstar_T_const,lnstar_1D, T_disc
   namelist /run_pars/ &
-       cvsid,ip,nt,it1,dt,cdt,ddt,cdtv,cdts,cdtr,isave,itorder, &
+       cvsid,ip,nt,it1,it1d,dt,cdt,ddt,cdtv,cdts,cdtr,isave,itorder, &
        dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, max_walltime, &
        dtmax, &
        vel_spec,mag_spec,uxj_spec,vec_spec,ou_spec,ab_spec,fft_switch, &

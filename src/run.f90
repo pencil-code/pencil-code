@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.237 2006-12-12 06:55:58 dobler Exp $
+! $Id: run.f90,v 1.238 2007-02-02 14:10:53 wlyra Exp $
 !
 !***********************************************************************
       program run
@@ -68,7 +68,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.237 2006-12-12 06:55:58 dobler Exp $")
+             "$Id: run.f90,v 1.238 2007-02-02 14:10:53 wlyra Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -130,14 +130,15 @@
 !  r_int will override rdampint, which doesn't seem to make much sense (if
 !  you want rdampint to be overridden, then don't specify it in the first
 !  place)
-        if (rfreeze_int == -impossible .and. r_int > epsi) then
-          rfreeze_int = r_int
-        endif
-
-        if (rfreeze_ext == -impossible) then
-          rfreeze_ext = r_ext
-        endif
-
+        if (rfreeze_int == -impossible .and. r_int > epsi) &
+             rfreeze_int = r_int
+        if (rfreeze_ext == -impossible) rfreeze_ext = r_ext
+!
+!  same for particles boundary radii 
+!
+        if (rp_int == -impossible .and. r_int > epsi) &
+             rfreeze_int = rp_int
+        if (rp_ext == -impossible) rp_ext = r_ext
 !
 !  Will we write all slots of f?
 !
@@ -296,11 +297,20 @@
           count = 0
           it_last_diagnostic = count
         endif
+!        
+        if (it1d==impossible_int) then 
+           it1d=it1 
+        else
+           if (it1d < it1) then
+              if (lroot) call stop_it("it1d smaller than it1")
+           endif
+        endif
 !
 !  Do loop in time
 !
         Time_loop: do while (it<=nt)
-          lout=mod(it-1,it1).eq.0
+          lout  =mod(it-1,it1).eq.0
+          l1dout=mod(it-1,it1d).eq.0
           if (lout) then
 !
 !  Exit do loop if file `STOP' exists

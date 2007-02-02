@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.349 2007-01-31 22:55:29 wlyra Exp $
+! ! $Id: cdata.f90,v 1.350 2007-02-02 14:10:52 wlyra Exp $
 
 module Cdata
 
@@ -79,7 +79,7 @@ module Cdata
 
 ! shock viscosity parameters
   real :: cmu,cnu2
-  real :: tdiagnos,t2davgfirst
+  real :: tdiagnos,t1ddiagnos,t2davgfirst
   real :: o2m,om2,oum,epsK_hyper
   real :: UUmax=0.
   real :: x0,y0,z0,Lx,Ly,Lz
@@ -113,7 +113,7 @@ module Cdata
   integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0,ikapparho=0
   integer :: iFrad=0,iFradx=0,iFrady=0,iFradz=0
   integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0, irhop=0
-  integer :: nt=1000000,it1=10
+  integer :: nt=1000000,it1=10,it1d=impossible_int
   integer :: it=1,itsub,ix=-1,iy=-1,iz=-1,iz2=-1
   integer :: ix_loc=-1,iy_loc=-1,iz_loc=-1,iz2_loc=-1
   integer :: icc=0,ilncc=0,ialpm=0
@@ -219,7 +219,7 @@ module Cdata
   logical :: lout=.false.,headt=.false.,headtt=.true.,ldt,lfirst=.false.
   logical :: ldiagnos=.false.,lvid=.false.,lwrite_prof=.true.
   logical :: l2davg=.false.,l2davgfirst=.false.
-  logical :: l1dphiavg=.false.,lwrite_phizaverages=.true.
+  logical :: l1ddiagnos=.false.,l1dout=.false.,l1dphiavg=.false.,lwrite_phizaverages=.true.
   logical :: lwrite_yaverages=.true.,lwrite_zaverages=.true.,lwrite_phiaverages=.true.
   logical :: ldiagnos_need_zaverages=.false.
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.

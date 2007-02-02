@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.342 2007-01-31 12:20:40 wlyra Exp $
+! $Id: equ.f90,v 1.343 2007-02-02 14:10:52 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -412,18 +412,20 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.342 2007-01-31 12:20:40 wlyra Exp $")
+           "$Id: equ.f90,v 1.343 2007-02-02 14:10:52 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
 !
       ldiagnos=lfirst.and.lout
+      l1ddiagnos=lfirst.and.l1dout
       l2davgfirst=lfirst.and.l2davg
-      l1dphiavg=lcylindrical.and.ldiagnos
+      l1dphiavg=lcylindrical.and.l1ddiagnos
 !
 !  record times for diagnostic and 2d average output
 !
-      if (ldiagnos) tdiagnos=t !(diagnostics are for THIS time)
+      if (ldiagnos) tdiagnos=t       !(diagnostics are for THIS time)
+      if (l1ddiagnos) t1ddiagnos=t   !(1-D averages are for THIS time)
       if (l2davgfirst) t2davgfirst=t !(2-D averages are for THIS time)
 !
 !  need to finalize communication early either for test purposes, or

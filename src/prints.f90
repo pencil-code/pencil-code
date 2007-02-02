@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.85 2007-01-31 12:20:40 wlyra Exp $
+! $Id: prints.f90,v 1.86 2007-02-02 14:10:53 wlyra Exp $
 
 module Print
 
@@ -207,7 +207,7 @@ module Print
 !
 !   7-aug-03/wolf: coded
 !
-      if (lout) then
+      if (l1dout) then
         call write_xyaverages()
         call write_xzaverages()
         call write_yzaverages()
@@ -283,7 +283,7 @@ module Print
 !
       if (lroot.and.nnamez>0) then
         open(1,file=trim(datadir)//'/xyaverages.dat',position='append')
-        write(1,'(1pe12.5)') tdiagnos
+        write(1,'(1pe12.5)') t1ddiagnos
         write(1,'(1p,8e13.5)') fnamez(:,:,1:nnamez)
         close(1)
       endif
@@ -299,7 +299,7 @@ module Print
 !
       if (lroot.and.nnamey>0) then
         open(1,file=trim(datadir)//'/xzaverages.dat',position='append')
-        write(1,'(1pe12.5)') tdiagnos
+        write(1,'(1pe12.5)') t1ddiagnos
         write(1,'(1p,8e13.5)') fnamey(:,:,1:nnamey)
         close(1)
       endif
@@ -315,7 +315,7 @@ module Print
 !
       if (lroot.and.nnamex>0) then
         open(1,file=trim(datadir)//'/yzaverages.dat',position='append')
-        write(1,'(1pe12.5)') tdiagnos
+        write(1,'(1pe12.5)') t1ddiagnos
         write(1,'(1p,8e13.5)') fnamex(:,1:nnamex)
         close(1)
       endif
@@ -338,7 +338,7 @@ module Print
       if (lroot.and.nnamer>0) then
         open(1,file=trim(datadir)//'/phizaverages.dat',position='append')
         if (it==1) write(1,'(1p,8e13.5)') rcyl
-        write(1,'(1pe12.5)') tdiagnos
+        write(1,'(1pe12.5)') t1ddiagnos
         write(1,'(1p,8e13.5)') fnamer(:,1:nnamer)
         close(1)
       endif
