@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.344 2007-02-02 18:50:51 ajohan Exp $
+! $Id: equ.f90,v 1.345 2007-02-03 15:43:25 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -300,7 +300,7 @@ module Equ
       if (nnamexz>0) then
         call mpireduce_sum(fnamexz,fsumxz,nnamexz*nx*nz*nprocz)
         if (lroot) &
-            fnamexz(:,:,:,1:nnamez)=fsumxz(:,:,:,1:nnamez)/(ny*nprocy)
+            fnamexz(:,:,:,1:nnamexz)=fsumxz(:,:,:,1:nnamexz)/(ny*nprocy)
       endif
 !
     endsubroutine yaverages_xz
@@ -412,7 +412,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.344 2007-02-02 18:50:51 ajohan Exp $")
+           "$Id: equ.f90,v 1.345 2007-02-03 15:43:25 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
