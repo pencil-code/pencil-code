@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.374 2007-02-02 19:51:18 ajohan Exp $
+! $Id: magnetic.f90,v 1.375 2007-02-03 15:56:27 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -218,7 +218,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.374 2007-02-02 19:51:18 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.375 2007-02-03 15:56:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1513,7 +1513,7 @@ module Magnetic
 !                                                                               
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1               
 !             
-      if (l1ddiagnos) then
+      if (l1ddiagnos .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
         if (idiag_bxmz/=0)   call xysum_mn_name_z(p%bb(:,1),idiag_bxmz)
         if (idiag_bymz/=0)   call xysum_mn_name_z(p%bb(:,2),idiag_bymz)
         if (idiag_bzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_bzmz)
@@ -1535,7 +1535,7 @@ module Magnetic
              call phizsum_mn_name_r(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,idiag_bpmr)
         if (idiag_bzmr/=0)   &
              call phizsum_mn_name_r(p%bb(:,3),idiag_bzmr)
-     endif
+      endif
 !
 !  phi-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
