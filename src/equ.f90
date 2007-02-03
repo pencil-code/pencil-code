@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.345 2007-02-03 15:43:25 ajohan Exp $
+! $Id: equ.f90,v 1.346 2007-02-03 15:55:23 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -412,7 +412,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.345 2007-02-03 15:43:25 ajohan Exp $")
+           "$Id: equ.f90,v 1.346 2007-02-03 15:55:23 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -967,9 +967,6 @@ module Equ
         call yzaverages_x
         call phizaverages_r
       endif
-!
-!  AB: I think all the 2-D averages are currently done via write_2daverages,
-!  which is called in run.f90 Therefore I commented out the following lines.
 !
 !  2-D averages
 !
