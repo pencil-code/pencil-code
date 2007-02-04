@@ -1,4 +1,4 @@
-;; $Id: pc_read_yaver.pro,v 1.1 2007-01-27 09:59:24 brandenb Exp $
+;; $Id: pc_read_yaver.pro,v 1.2 2007-02-04 21:19:19 brandenb Exp $
 ;;
 ;;   Read y-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -14,7 +14,7 @@ pro pc_read_yaver, object=object, varfile=varfile, datadir=datadir, $
     t_title=t_title, t_scale=t_scale, t_zero=t_zero, $
     position=position, fillwindow=fillwindow, tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
-    xsize=xsize, ysize=ysize, it1=it1, quiet=quiet
+    xsize=xsize, ysize=ysize, it1=it1, nt=nt, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;;
@@ -23,7 +23,7 @@ COMMON pc_precision, zero, one
 default, datadir, './data'
 default, varfile, 'yaverages.dat'
 default, nit, 0
-default, lplot, 1
+default, lplot, 0 ;(changed default to 0/axel)
 default, iplot, 0
 default, zoom, 1
 default, min, 0.0
@@ -96,6 +96,7 @@ endif
 ;;  Variables to put single time snapshot in.
 ;;
 array=fltarr(nx,nz,nvar)*one
+help,array
 t  =0.0*one
 ;;
 ;;  Prepare for read
@@ -256,6 +257,7 @@ while (not eof(file)) do begin
     it=it+1
 ;;
 endwhile
+nt=it
 ;;
 ;;  Put data in structure.
 ;;
