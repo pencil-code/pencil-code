@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.49 2007-02-04 09:20:16 dintrans Exp $
+! $Id: viscosity.f90,v 1.50 2007-02-04 23:25:16 dintrans Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -91,7 +91,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.49 2007-02-04 09:20:16 dintrans Exp $")
+           "$Id: viscosity.f90,v 1.50 2007-02-04 23:25:16 dintrans Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -436,7 +436,6 @@ module Viscosity
       use Sub
       use Interstellar, only: calc_snr_damping
       use Deriv, only: der5i1j
-      use IO, only: output_pencil
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -503,8 +502,7 @@ module Viscosity
 !  viscous force: nu(z)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
 !  -- here the nu viscosity depends on z; nu_jump=nu2/nu1
         pnu = nu + nu*(nu_jump-1.)*step(p%z_mn,znu,-widthnu)
-        if (headt .and. lfirst .and. ip == 13) &
-          call output_pencil(trim(directory)//'/damping.dat',pnu,1)
+        if (lfirst) call write_zprof('visc',pnu)
         gradnu(:,1) = 0.
         gradnu(:,2) = 0.
         gradnu(:,3) = nu*(nu_jump-1.)*der_step(p%z_mn,znu,-widthnu)
