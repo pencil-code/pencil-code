@@ -1,14 +1,10 @@
-! $Id: noplanet.f90,v 1.38 2006-11-30 09:03:36 dobler Exp $
+! $Id: noplanet.f90,v 1.39 2007-02-05 22:09:30 wlyra Exp $
 !
 !  Dummy module
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
-!
-! CPARAM logical, parameter :: lplanet = .false.
-!
-! PENCILS PROVIDED uavg,bavg,rhoavg
 !
 !***************************************************************
 
@@ -55,10 +51,6 @@ contains
 !
       intent(in) :: f
       intent(inout) :: p
-!
-      if (lpencil(i_rhoavg)) p%rhoavg=0
-      if (lpencil(i_uavg))   p%uavg=0
-      if (lpencil(i_bavg))   p%bavg=0
 !
       if (NO_WARN) print*, f
 !
