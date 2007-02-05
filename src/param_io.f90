@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.263 2007-02-02 14:10:52 wlyra Exp $
+! $Id: param_io.f90,v 1.264 2007-02-05 22:02:21 wlyra Exp $
 
 module Param_IO
 
@@ -35,7 +35,6 @@ module Param_IO
   use Particles_main
   use Shock
   use Messages
-  use Planet
 
   implicit none
 
@@ -99,7 +98,7 @@ module Param_IO
        lrescaling, lcylindrical, &
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
-       lbidiagonal_derij
+       lbidiagonal_derij,lrtime_phiavg
   contains
 
 !***********************************************************************
@@ -852,7 +851,7 @@ module Param_IO
            leos,leos_temperature_ionization,lspecial, ltestfield, &
            lhydro_var, lentropy_var, ldensity_var, lshock_var, &
            lcosmicray_var, lcosmicrayflux_var, linterstellar_var, &
-           lplanet_var,datadir
+           datadir
 !
       logical :: lhydro         = lhydro_var
       logical :: ldensity       = ldensity_var
@@ -862,14 +861,13 @@ module Param_IO
       logical :: linterstellar  = linterstellar_var
       logical :: lcosmicray     = lcosmicray_var
       logical :: lcosmicrayflux = lcosmicrayflux_var
-      logical :: lplanet        = lplanet_var
 
       namelist /lphysics/ &
            lhydro,ldensity,lentropy,lmagnetic,ltestfield,lpscalar,lradiation, &
            lforcing,lgravz,lgravr,lshear,linterstellar,lcosmicray, &
            lcosmicrayflux,ldustvelocity,ldustdensity,lshock,lradiation_fld, &
            leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
-           lplanet,leos,leos_temperature_ionization
+           leos,leos_temperature_ionization
 !
 !  Write this file from each processor; needed for pacx-MPI (grid-style
 !  computations across different platforms), where the data/ directories
