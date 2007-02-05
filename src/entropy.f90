@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.483 2007-02-02 12:28:51 ajohan Exp $
+! $Id: entropy.f90,v 1.484 2007-02-05 21:58:56 wlyra Exp $
 
 !
 !  This module takes care of entropy (initial condition
@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ugss,Ma2,fpres
+! PENCILS PROVIDED ugss,Ma2,fpres,savg
 !
 !***************************************************************
 module Entropy
@@ -167,7 +167,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.483 2007-02-02 12:28:51 ajohan Exp $")
+           "$Id: entropy.f90,v 1.484 2007-02-05 21:58:56 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1630,6 +1630,8 @@ module Entropy
         lpenc_diagnos(i_rcyl_mn)=.true.
       endif
 !
+      if (lrtime_phiavg) lpenc_diagnos(i_savg)=.true.
+!
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
     subroutine pencil_interdep_entropy(lpencil_in)
@@ -1698,6 +1700,8 @@ module Entropy
           enddo
         endif
       endif
+!
+      if (lpencil(i_savg)) call rtime_phiavg(p%ss,p%savg,p)
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************
@@ -1868,7 +1872,11 @@ module Entropy
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
         if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma11,idiag_TTp,p)
+      endif
 !
+!  1d-averages. Happens at every it1d timesteps, NOT at every it1
+!
+      if (l1ddiagnos) then
         if (idiag_fconvz/=0) &
             call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
         if (idiag_ssmz/=0)  call xysum_mn_name_z(p%ss,idiag_ssmz)
@@ -2370,7 +2378,7 @@ module Entropy
 !
 !  Write radiative flux array
 !
-      if (ldiagnos) then
+      if (l1ddiagnos) then
         if (idiag_fradz/=0) call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz)
         if (idiag_fturbz/=0) call xysum_mn_name_z(-chi_t*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
       endif
@@ -2519,7 +2527,7 @@ module Entropy
 !
 !  Write divergence of cooling flux.
 !
-        if (ldiagnos) then
+        if (l1ddiagnos) then
           if (idiag_dcoolz/=0) call xysum_mn_name_z(heat,idiag_dcoolz)
         endif
       endif
