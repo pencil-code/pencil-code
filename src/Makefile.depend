@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.58 2007-01-19 20:25:07 dobler Exp $
+### $Id: Makefile.depend,v 1.59 2007-02-05 22:04:48 wlyra Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -112,8 +112,6 @@ POWER_OBJ=$(POWER)$(PC_META_TYPE).o
 POWER_SRC=$(POWER).f90
 SHEAR_OBJ=$(SHEAR)$(PC_META_TYPE).o
 SHEAR_SRC=$(SHEAR).f90
-PLANET_OBJ=$(PLANET)$(PC_META_TYPE).o
-PLANET_SRC=$(PLANET).f90
 INTERSTELLAR_OBJ=$(INTERSTELLAR)$(PC_META_TYPE).o
 INTERSTELLAR_SRC=$(INTERSTELLAR).f90
 BORDER_PROF_OBJ=$(BORDER_PROF)$(PC_META_TYPE).o
@@ -231,7 +229,6 @@ $(IO_OBJ):           io.h            $(IO_SRC)            $(COMMON_DEPS) $(GENER
 $(TIMEAVG_OBJ):      timeavg.h        $(TIMEAVG_SRC)      $(COMMON_DEPS) $(IO_OBJ)
 $(POWER_OBJ):        power_spectrum.h $(POWER_SRC)        $(COMMON_DEPS) $(GENERAL_OBJ) $(FOURIER_OBJ)
 $(STRUCT_FUNC_OBJ):  struct_func.h    $(STRUCT_FUNC_SRC)  $(COMMON_DEPS) $(GENERAL_OBJ)
-$(PLANET_OBJ):       planet.h	      $(PLANET_SRC)       $(COMMON_DEPS) $(GENERAL_OBJ) $(CPARAM_OBJ) $(GLOBAL_OBJ)
 $(SPECIAL_OBJ): special.h  $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(GLOBAL_OBJ)
 
 #
