@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.86 2007-02-02 14:10:53 wlyra Exp $
+! $Id: prints.f90,v 1.87 2007-02-05 21:51:11 wlyra Exp $
 
 module Print
 
@@ -39,7 +39,8 @@ module Print
         !  done after each reload of run.in, but this is the easiest way
         !  of doing it.
         !
-        drcyl = dx
+        !drcyl = dx   !this just happens for nrcyl=nx/2
+        drcyl = xyz1(1)/nrcyl
         rcyl = (/ ((i-0.5)*drcyl, i=1,nrcyl) /)
         !
         !  Calculate the three surface elements.
