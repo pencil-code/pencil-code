@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.346 2007-02-03 15:55:23 brandenb Exp $
+! $Id: equ.f90,v 1.347 2007-02-05 21:53:51 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -397,9 +397,8 @@ module Equ
                            lvisc_first, idiag_epsK
       use Interstellar, only: interstellar_before_boundary
       use Particles_main
-      use Planet
 !
-      logical :: early_finalize
+      logical :: early_finalize,ldiagnos_mdt
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -412,7 +411,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.346 2007-02-03 15:55:23 brandenb Exp $")
+           "$Id: equ.f90,v 1.347 2007-02-05 21:53:51 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -579,23 +578,15 @@ module Equ
         call calc_pencils_grid(f,p)
 !
 !  calculate profile for phi-averages if needed
-!  Note that rcyl_mn is also needed for Couette flow experiments,
-!  so let's hope that everybody remembers to do averages as well...
 !
-        if (l2davgfirst.and.lwrite_phiaverages) then
-!          call calc_phiavg_general()
-          call calc_phiavg_profile(p)
-!          call calc_phiavg_unitvects()
-!        elseif (lcylindrical) then
-!          call calc_phiavg_general()
-        endif
+        !subtime-step immediately before ldiagnos
+        ldiagnos_mdt=(mod(it-2,it).eq.0).and.llast 
 !
-!  For 1D phiz averages
-!
-        !l1dphiavg=lcylindrical.and.ldiagnos
-        if (l1dphiavg.and.lwrite_phizaverages) &
-             call calc_phiavg_profile(p)
-!
+        if ((l2davgfirst  .and. lwrite_phiaverages  )  .or. &
+            (l1dphiavg    .and. lwrite_phizaverages )  .or. &
+            ((ldiagnos.or.ldiagnos_mdt).and.lrtime_phiavg)) &
+            call calc_phiavg_profile(p,lrtime_phiavg)
+!            
 !  Calculate pencils for the pencil_case
 !
                             call calc_pencils_hydro(f,p)
@@ -615,7 +606,6 @@ module Equ
         if (lchiral)        call calc_pencils_chiral(f,p)
         if (lradiation)     call calc_pencils_radiation(f,p)
         if (lspecial)       call calc_pencils_special(f,p)
-        if (lplanet)        call calc_pencils_planet(f,p)
         if (lparticles)     call particles_calc_pencils(f,p)
 !
 !  --------------------------------------------------------
@@ -922,6 +912,7 @@ module Equ
 !
         headtt=.false.
      enddo
+!
 !
 !  Check for NaNs in the advection time-step.
 !

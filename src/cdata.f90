@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.350 2007-02-02 14:10:52 wlyra Exp $
+! ! $Id: cdata.f90,v 1.351 2007-02-05 21:53:51 wlyra Exp $
 
 module Cdata
 
@@ -172,6 +172,7 @@ module Cdata
   real, dimension (nx,nz,nprocz,mnamexz) :: fnamexz
   real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fnamerz
   real, dimension (nrcyl,nx) :: phiavg_profile
+  real, dimension (nrcyl) :: norm1
   character (LEN=30) :: cname(mname),cform(mname)
   character (LEN=30) :: cnamev(mname)
   character (LEN=30) :: cnamexy(mnamexy),cformxy(mnamexy)
@@ -216,10 +217,11 @@ module Cdata
   logical :: lgrav=.false.,lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
   logical :: lgravr=.false.,lgravr_gas=.false.,lgravr_dust=.false.
-  logical :: lout=.false.,headt=.false.,headtt=.true.,ldt,lfirst=.false.
+  logical :: lout=.false.,headt=.false.,headtt=.true.,ldt,lfirst=.false.,llast=.false.
   logical :: ldiagnos=.false.,lvid=.false.,lwrite_prof=.true.
   logical :: l2davg=.false.,l2davgfirst=.false.
-  logical :: l1ddiagnos=.false.,l1dout=.false.,l1dphiavg=.false.,lwrite_phizaverages=.true.
+  logical :: l1ddiagnos=.false.,l1dout=.false.,l1dphiavg=.false.
+  logical :: lwrite_phizaverages=.true.,lrtime_phiavg=.false.
   logical :: lwrite_yaverages=.true.,lwrite_zaverages=.true.,lwrite_phiaverages=.true.
   logical :: ldiagnos_need_zaverages=.false.
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.
@@ -257,7 +259,6 @@ module Cdata
   logical, parameter :: linterstellar_var=linterstellar
   logical, parameter :: lcosmicray_var=lcosmicray
   logical, parameter :: lcosmicrayflux_var=lcosmicrayflux
-  logical, parameter :: lplanet_var=lplanet
 
   logical :: lfirstpoint=.false.,llastpoint=.false.
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.
