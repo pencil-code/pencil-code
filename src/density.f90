@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.303 2007-02-02 14:14:47 wlyra Exp $
+! $Id: density.f90,v 1.304 2007-02-05 21:56:47 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -13,7 +13,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED lnrho,rho,rho1,glnrho,grho,uglnrho,ugrho
-! PENCILS PROVIDED glnrho2,del2lnrho,del2rho
+! PENCILS PROVIDED glnrho2,del2lnrho,del2rho,rhoavg
 ! PENCILS PROVIDED del6lnrho,del6rho,hlnrho,sglnrho,uij5glnrho
 !
 !***************************************************************
@@ -113,7 +113,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.303 2007-02-02 14:14:47 wlyra Exp $")
+           "$Id: density.f90,v 1.304 2007-02-05 21:56:47 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1025,6 +1025,8 @@ module Density
       if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
 !
       if (lmass_source) lpenc_requested(i_rcyl_mn)=.true.
+!      
+      if (lrtime_phiavg) lpenc_diagnos(i_rhoavg)=.true.
 !
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
@@ -1087,7 +1089,7 @@ module Density
 !
 !  19-11-04/anders: coded
 !
-      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij
+      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij,rtime_phiavg
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1217,6 +1219,8 @@ module Density
 ! uij5glnrho
       if (lpencil(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
 !
+      if (lpencil(i_rhoavg).and.lfirst) call rtime_phiavg(p%rho,p%rhoavg,p)
+!
     endsubroutine calc_pencils_density
 !***********************************************************************
     subroutine dlnrho_dt(f,df,p)
@@ -1340,7 +1344,7 @@ module Density
 !
       if (lborder_profiles) call set_border_density(f,df,p)
 !
-!  phi-averages
+!  2d-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then
@@ -1361,16 +1365,16 @@ module Density
 !
       if (ldiagnos) then
         if (idiag_rhom/=0)     call sum_mn_name(p%rho,idiag_rhom)
-        if (idiag_totmass/=0)     call sum_lim_mn_name(p%rho,idiag_totmass,p)
+        if (idiag_totmass/=0)  call sum_lim_mn_name(p%rho,idiag_totmass,p)
         if (idiag_rhomin/=0) &
             call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)
         if (idiag_rhomax/=0)   call max_mn_name(p%rho,idiag_rhomax)
         if (idiag_rho2m/=0)    call sum_mn_name(p%rho**2,idiag_rho2m)
         if (idiag_lnrho2m/=0)  call sum_mn_name(p%lnrho**2,idiag_lnrho2m)
         if (idiag_uglnrhom/=0) call sum_mn_name(p%uglnrho,idiag_uglnrhom)
-        if (idiag_rhomxy/=0)   call zsum_mn_name_xy(p%rho,idiag_rhomxy)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
+        if (idiag_rhomxy/=0)    call zsum_mn_name_xy(p%rho,idiag_rhomxy)
       endif
 !
     endsubroutine dlnrho_dt

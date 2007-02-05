@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.313 2007-02-02 14:14:47 wlyra Exp $
+! $Id: hydro.f90,v 1.314 2007-02-05 21:56:47 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -13,7 +13,7 @@
 !
 ! PENCILS PROVIDED divu,oo,o2,ou,u2,uij,uu,sij,sij2,uij5,ugu
 ! PENCILS PROVIDED u3u21,u1u32,u2u13,del2u,del4u,del6u,graddivu,del6u_bulk
-! PENCILS PROVIDED grad5divu
+! PENCILS PROVIDED grad5divu,uavg
 !
 !***************************************************************
 module Hydro
@@ -185,7 +185,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.313 2007-02-02 14:14:47 wlyra Exp $")
+           "$Id: hydro.f90,v 1.314 2007-02-05 21:56:47 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -676,7 +676,6 @@ module Hydro
           .or. idiag_uzz2m/=0 .or. idiag_urupm/=0 .or. idiag_uzupm/=0 &
           .or. idiag_uruzm/=0) then
         lpenc_diagnos(i_rcyl_mn)=.true.
-        lpenc_diagnos(i_uavg)=.true.
       endif
 
       if (idiag_urm/=0 .or. idiag_ur2m/=0 .or. idiag_urupm/=0 &
@@ -702,12 +701,8 @@ module Hydro
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_u2)=.true.
       endif
-      if (idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0) &
-        lpenc_diagnos(i_rho)=.true.
-      if (idiag_urm/=0 .or. idiag_upm/=0 .or. idiag_uzzm/=0 &
-         .or. idiag_ur2m/=0 .or. idiag_up2m/=0 .or. idiag_uzz2m/=0 &
-         .or. idiag_urupm/=0 .or. idiag_uzupm/=0 .or. idiag_uruzm/=0) &
-        lpenc_diagnos(i_uavg)=.true.
+!
+      if (lrtime_phiavg) lpenc_diagnos(i_uavg)=.true.
 !
     endsubroutine pencil_criteria_hydro
 !***********************************************************************
@@ -847,6 +842,8 @@ module Hydro
           p%grad5divu(:,i)=tmp
         enddo
       endif
+!
+      if (lpencil(i_uavg).and.lfirst) call rtime_phiavg(p%uu,p%uavg,p)
 !
     endsubroutine calc_pencils_hydro
 !***********************************************************************
@@ -1334,13 +1331,13 @@ module Hydro
     subroutine calc_hydro_stress(f,p)
 !
 !  Subroutine to calculate cylindrical stresses.
-!  Currently needs the runtime phi averages
-!  that are calculated at the planet code.
+!  Currently needs the runtime phi averages.
 !
 !  23-may-06/wlad : coded
 !
       use Cdata
       use Sub
+      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real,dimension(mx,my,mz,3) :: tmp
@@ -1350,9 +1347,12 @@ module Hydro
 !
 ! from the runtime phi-average
 !
+      if (.not.lrtime_phiavg) &
+          call stop_it("calc_hydro_stress called but lrtime_phiavg is not set")
+!
       ur=p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy - p%uavg(:,1)
       up=p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy - p%uavg(:,2)
-      uz=p%uu(:,3) - p%uavg(:,3)
+      uz=p%uu(:,3)                         - p%uavg(:,3)
 !
       if (idiag_urm/=0)    call sum_lim_mn_name(ur,idiag_urm,p)
       if (idiag_upm/=0)    call sum_lim_mn_name(up,idiag_upm,p)
@@ -1364,6 +1364,7 @@ module Hydro
       if (idiag_uzupm/=0)  call sum_lim_mn_name(p%rho*uz*up,idiag_uzupm,p)
       if (idiag_uruzm/=0)  call sum_lim_mn_name(p%rho*ur*uz,idiag_uruzm,p)
       if (idiag_mdot/=0) then
+! EXTREMELY SLOW!!!!!!!!!
          do i=1,3 
             tmp(:,:,:,i)=f(:,:,:,ilnrho)*f(:,:,:,iuu+i-1)
          enddo

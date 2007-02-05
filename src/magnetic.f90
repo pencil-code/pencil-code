@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.375 2007-02-03 15:56:27 ajohan Exp $
+! $Id: magnetic.f90,v 1.376 2007-02-05 21:56:47 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -18,7 +18,7 @@
 ! PENCILS PROVIDED j2,jb,va2,jxb,jxbr,ub,uxb,uxb2,uxj,beta,uga
 ! PENCILS PROVIDED djuidjbi,jo,ujxb,oxu,oxuxb,jxbxb,jxbrxb
 ! PENCILS PROVIDED glnrhoxb,del4a,del6a,oxj,diva,jij,sj,ss12
-! PENCILS PROVIDED mf_EMF, mf_EMFdotB
+! PENCILS PROVIDED mf_EMF, mf_EMFdotB,bavg
 !
 !***************************************************************
 
@@ -218,7 +218,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.375 2007-02-03 15:56:27 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.376 2007-02-05 21:56:47 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -599,11 +599,11 @@ module Magnetic
       endif
 
       if (llarge_scale_Bz) then
-        lpenc_requested(i_uavg)=.true.
-        lpenc_requested(i_bavg)=.true.
-        lpenc_requested(i_x_mn)=.true.
-        lpenc_requested(i_y_mn)=.true.
-        lpenc_requested(i_rcyl_mn)=.true.
+        lpenc_diagnos(i_uavg)=.true.
+        lpenc_diagnos(i_bavg)=.true.
+        lpenc_diagnos(i_x_mn)=.true.
+        lpenc_diagnos(i_y_mn)=.true.
+        lpenc_diagnos(i_rcyl_mn)=.true.
       endif
 
       if (borderaa=='Alfven-rz') lpenc_requested(i_rcyl_mn1)=.true.
@@ -678,6 +678,8 @@ module Magnetic
           idiag_br2m/=0 .or. idiag_bp2m/=0 .or. idiag_bzz2m/=0 .or. &
           idiag_brbpm/=0 .or. idiag_bzbpm/=0 .or. idiag_brbzm/=0) &
            lpenc_diagnos(i_bavg)=.true.
+!
+      if (lrtime_phiavg) lpenc_diagnos(i_bavg)=.true.
 !
     endsubroutine pencil_criteria_magnetic
 !***********************************************************************
@@ -1011,6 +1013,8 @@ module Magnetic
       endif
       if (lpencil(i_mf_EMFdotB)) call dot_mn(p%mf_EMF,p%bb,p%mf_EMFdotB)
 !
+      if (lpencil(i_bavg)) call rtime_phiavg(p%bb,p%bavg,p)
+!
     endsubroutine calc_pencils_magnetic
 !***********************************************************************
     subroutine daa_dt(f,df,p)
@@ -1240,7 +1244,7 @@ module Magnetic
 !
 !  Subtract contribution from mean background flow
 !
-      if (llarge_scale_Bz) call subtract_mean_emf(df,p)
+      if (llarge_scale_Bz.and.ldiagnos) call subtract_mean_emf(df,p)
 !
 !  Ambipolar diffusion in the strong coupling approximation
 !
@@ -1697,12 +1701,12 @@ module Magnetic
     subroutine calc_mag_stress(p)
 !
 !  Subroutine to calculate cylindrical stresses.
-!  Currently needs the runtime phi averages
-!  that are calculated at the planet code.
+!  Currently needs the runtime phi averages.
 !
 !  23-may-06/wlad: coded
 !  16-nov-06/tony: removed global and use pencil_case
 !
+      use Mpicomm, only: stop_it
       use Cdata
       use Sub
 !
@@ -1710,6 +1714,9 @@ module Magnetic
       real, dimension (nx) :: br,bp,bz
 !
 ! from the runtime phi-average
+!
+      if (.not.lrtime_phiavg) &
+          call stop_it("calc_mag_stress called but lrtime_phiavg is not set")
 !
       br=p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy - p%bavg(:,1)
       bp=p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy - p%bavg(:,2)
@@ -3596,6 +3603,9 @@ module Magnetic
 !  the field and leads to numerical problems. This subroutine
 !  artificially removes this unwanted component from the
 !  induction equation, using phi-averages calculated in runtime
+!
+!  Does not to be done at every sub time step. Maybe even ldiagnos is
+!  too frequent
 !
 !  22-mar-06/wlad: coded
 !
