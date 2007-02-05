@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.66 2006-11-30 09:03:35 dobler Exp $
+! $Id: nohydro.f90,v 1.67 2007-02-05 21:59:58 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -8,7 +8,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED oo,uij,uu,u2,sij,divu,uij5
+! PENCILS PROVIDED oo,uij,uu,u2,sij,divu,uij5,uavg
 !
 !***************************************************************
 
@@ -71,7 +71,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.66 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: nohydro.f90,v 1.67 2007-02-05 21:59:58 wlyra Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -293,6 +293,8 @@ module Hydro
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_u2)=.true.
       endif
+!
+      if (lpencil(i_uavg)) p%uavg=0.
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
