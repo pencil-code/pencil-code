@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.48 2006-11-30 09:03:36 dobler Exp $
+! $Id: timestep.f90,v 1.49 2007-02-05 22:07:10 wlyra Exp $
 
 module Timestep
 
@@ -63,6 +63,7 @@ module Timestep
 !  Set up df and ds for each time sub
 !
       do itsub=1,itorder
+         llast=(itsub==3)
         if (itsub==1) then
           lfirst=.true.
           df=0.
