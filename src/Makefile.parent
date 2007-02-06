@@ -7,7 +7,7 @@
 
 # Build the code:
 default:
-	((echo ""; echo "compiled on" `hostname` " ("`date`")") >> README; cd src; $(MAKE) FROM_PARENT=src/ -f Makefile.src Makefile; $(MAKE) FROM_PARENT=src/ )
+	( (echo ""; echo "compiled on" `hostname` " ("`date`")") >> README; cd src; $(MAKE) FROM_PARENT=src/ -f Makefile.src Makefile; $(MAKE) FROM_PARENT=src/ )
 
 # Use calculated dependencies instead:
 depend dep:
