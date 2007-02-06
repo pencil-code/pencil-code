@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.279 2007-02-06 15:05:21 wlyra Exp $
+! $Id: sub.f90,v 1.280 2007-02-06 22:33:33 dobler Exp $
 
 module Sub
 
@@ -890,9 +890,6 @@ module Sub
       acyl(:,1)=a(:,1)*p%pomx+a(:,2)*p%pomy
       acyl(:,2)=a(:,1)*p%phix+a(:,2)*p%phiy
       acyl(:,3)=a(:,3)
-!
-      print*,'mvar,nvar',mvar,nvar
-      stop
 !
 !  Expand the existing average (from previous tstep) onto the pencil
 !  with spline interpolation. At it=1, the average can't be calculated
