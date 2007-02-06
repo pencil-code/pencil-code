@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.316 2007-02-06 15:05:22 wlyra Exp $
+! $Id: hydro.f90,v 1.317 2007-02-06 15:31:22 theine Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -65,6 +65,7 @@ module Hydro
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: ladvection_velocity=.true.
   logical :: lprecession=.false.
+  logical :: lshear_rateofstrain=.false.
 
   namelist /hydro_init_pars/ &
        ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
@@ -102,7 +103,7 @@ module Hydro
        borderuu, lfreeze_uint, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
        lforcing_continuous,iforcing_continuous,k1_ff,ampl_ff, &
-       lprecession, omega_precession
+       lprecession, omega_precession, lshear_rateofstrain
 
 ! end geodynamo
 
@@ -185,7 +186,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.316 2007-02-06 15:05:22 wlyra Exp $")
+           "$Id: hydro.f90,v 1.317 2007-02-06 15:31:22 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -777,6 +778,12 @@ module Hydro
           enddo
           p%sij(:,j,j)=p%sij(:,j,j)-(1./3.)*p%divu
         enddo
+        if (lshear) then
+          if (lshear_rateofstrain) then
+            p%sij(:,1,2)=p%sij(:,1,2)+Sshear
+            p%sij(:,2,1)=p%sij(:,2,1)+Sshear
+          endif
+        endif
       endif
 ! sij2
       if (lpencil(i_sij2)) call multm2_mn(p%sij,p%sij2)
