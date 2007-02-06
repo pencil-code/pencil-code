@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.278 2007-02-06 12:27:26 theine Exp $
+! $Id: sub.f90,v 1.279 2007-02-06 15:05:21 wlyra Exp $
 
 module Sub
 
@@ -806,7 +806,7 @@ module Sub
 !
     endsubroutine phisum_mn_name_rz
 !***********************************************************************
-    subroutine rtime_phiavg_scl(a,b,p)
+    subroutine rtime_phiavg_scl(a,b,p,irt)
 !
 !  Perform phi-averages in runtime. An average of dimension
 !  nrcyl is calculated and mapped back onto the grid with
@@ -814,16 +814,21 @@ module Sub
 !
 !  Called to set the pencils rhoavg,savg
 !
+!  TODO: frt does not need be of dimension mvar
+!        It should be mvar-3*(number or vector quantities)
+!
+!
 !  05-feb-07/wlad : coded
 !
       use Cdata
       use Mpicomm
       use General, only: spline
 !
-      real, dimension(nx)       :: a,b
-      real, dimension(nrcyl) :: avg_coarse,tmp,tmp_sum
+      real, dimension(nx)    :: a,b
+      real, dimension(nrcyl,mvar) :: tmp,frt
+      real, dimension(nrcyl) :: tmp_sum
       type (pencil_case) :: p
-      integer :: ir
+      integer :: ir,irt
       logical :: err
 !
 !  Expand the existing average (from previous tstep) onto the pencil
@@ -832,36 +837,40 @@ module Sub
       if (it==1) then
          b=a
       else
-         call spline(rcyl,avg_coarse,p%rcyl_mn,b,nrcyl,nx,err)
+         call spline(rcyl,frt(:,irt),p%rcyl_mn,b,nrcyl,nx,err)
       endif
 !
-!  Calculate the new average
+!  Calculate the new average. The tmp must also be quantity-wise, lest
+!  ilnrho will read the old contents of iss or vice-versa.          
 !
-      if (lfirstpoint) tmp=0.
+      if (lfirstpoint) tmp(:,irt)=0.
 !
       do ir=1,nrcyl
-         tmp(ir) = tmp(ir)   + sum(a*phiavg_profile(ir,:))
+         tmp(ir,irt) = tmp(ir,irt) + sum(a*phiavg_profile(ir,:))
       enddo
 !
 !  At the last point the sum is finished on this processor
 !  Just need to sum across processors, send to root and broadcast
 !
       if (llastpoint) then
-         call mpireduce_sum(tmp,tmp_sum,nrcyl)
+         call mpireduce_sum(tmp(:,irt),tmp_sum,nrcyl)
          call mpibcast_real(tmp_sum,nrcyl)
          !normalize
-         avg_coarse=tmp_sum*norm1
+         frt(:,irt)=tmp_sum*norm1
       endif
 !
     endsubroutine rtime_phiavg_scl
 !******************************************************************
-    subroutine rtime_phiavg_vec(a,b,p)
+    subroutine rtime_phiavg_vec(a,b,p,irt)
 !
 !  Perform phi-averages in runtime. An average of dimension
 !  nrcyl is calculated and mapped back onto the grid with
 !  a (expensive) spline interpolation.
 !
 !  Called to set the pencils bavg,uavg
+!
+!  TODO: frt does not need be of dimension mvar
+!        It should be mvar-(number or scalar quantities)
 !
 !  05-feb-07/wlad : coded
 !
@@ -870,9 +879,10 @@ module Sub
       use General, only: spline
 !
       real, dimension(nx,3)     :: a,b,acyl
-      real, dimension(nrcyl,3) :: avg_coarse,tmp,tmp_sum
+      real, dimension(nrcyl,mvar)  :: tmp,frt 
+      real, dimension(nrcyl,3) :: tmp_sum
       type (pencil_case) :: p
-      integer :: ir,j
+      integer :: j,ir,irt,ju
       logical :: err
 !
 !  Pass to cylindrical
@@ -881,6 +891,9 @@ module Sub
       acyl(:,2)=a(:,1)*p%phix+a(:,2)*p%phiy
       acyl(:,3)=a(:,3)
 !
+      print*,'mvar,nvar',mvar,nvar
+      stop
+!
 !  Expand the existing average (from previous tstep) onto the pencil
 !  with spline interpolation. At it=1, the average can't be calculated
 !
@@ -888,28 +901,30 @@ module Sub
          b=acyl
       else
          do j=1,3
-            call spline(rcyl,avg_coarse(:,j),p%rcyl_mn,b(:,j),nrcyl,nx,err)
+            ju=irt-1+j
+            call spline(rcyl,frt(:,ju),p%rcyl_mn,b(:,j),nrcyl,nx,err)
          enddo
       endif
 !
-!  Calculate the new average
+!  Calculate the new average. The tmp must also be quantity-wise, lest
+!  iuu will read the old contents of iaa or vice-versa.
 !
       do j=1,3
-!
-         if (lfirstpoint) tmp(:,j)=0.
+         ju=irt-1+j
+         if (lfirstpoint) tmp(:,ju)=0.
 !
          do ir=1,nrcyl
-            tmp(ir,j) = tmp(ir,j)   + sum(acyl(:,j)*phiavg_profile(ir,:))
+            tmp(ir,ju) = tmp(ir,ju)   + sum(acyl(:,j)*phiavg_profile(ir,:))
          enddo
 !
 !  At the last point the sum is finished on this processor
 !  Just need to sum across processors, send to root and broadcast
 !
          if (llastpoint) then
-            call mpireduce_sum(tmp(:,j),tmp_sum(:,j),nrcyl)
+            call mpireduce_sum(tmp(:,ju),tmp_sum(:,j),nrcyl)
             call mpibcast_real(tmp_sum(:,j),nrcyl)
-            !normalize
-            avg_coarse(:,j)=tmp_sum(:,j)*norm1
+!normalize
+            frt(:,ju)=tmp_sum(:,j)*norm1
          endif
 !
       enddo

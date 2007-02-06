@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.376 2007-02-05 21:56:47 wlyra Exp $
+! $Id: magnetic.f90,v 1.377 2007-02-06 15:05:22 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -218,7 +218,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.376 2007-02-05 21:56:47 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.377 2007-02-06 15:05:22 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1013,7 +1013,7 @@ module Magnetic
       endif
       if (lpencil(i_mf_EMFdotB)) call dot_mn(p%mf_EMF,p%bb,p%mf_EMFdotB)
 !
-      if (lpencil(i_bavg)) call rtime_phiavg(p%bb,p%bavg,p)
+      if (lpencil(i_bavg).and.lfirst) call rtime_phiavg(p%bb,p%bavg,p,iaa)
 !
     endsubroutine calc_pencils_magnetic
 !***********************************************************************
