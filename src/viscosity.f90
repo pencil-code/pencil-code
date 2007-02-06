@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.50 2007-02-04 23:25:16 dintrans Exp $
+! $Id: viscosity.f90,v 1.51 2007-02-06 12:27:26 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -91,7 +91,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.50 2007-02-04 23:25:16 dintrans Exp $")
+           "$Id: viscosity.f90,v 1.51 2007-02-06 12:27:26 theine Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -507,8 +507,12 @@ module Viscosity
         gradnu(:,2) = 0.
         gradnu(:,3) = nu*(nu_jump-1.)*der_step(p%z_mn,znu,-widthnu)
         call multmv(p%sij,gradnu,sgradnu)
-        p%fvisc=p%fvisc+2*pnu*p%sglnrho+pnu*(p%del2u+1./3.*p%graddivu) &
-                +2*sgradnu
+        call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
+        !tobi: The following only works with operator overloading for pencils
+        !      (see sub.f90). Commented out because it seems to be slower.
+        !p%fvisc=p%fvisc+2*pnu*p%sglnrho+pnu*(p%del2u+1./3.*p%graddivu) &
+        !        +2*sgradnu
+        p%fvisc=p%fvisc+tmp+2*sgradnu
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + 2*pnu*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+pnu
      endif
@@ -518,15 +522,17 @@ module Viscosity
 !
       if (lvisc_nu_shock) then
         if (ldensity) then
-          tmp=nu_shock*(p%shock*(p%divu*p%glnrho+p%graddivu)+p%divu*p%gshock)
-          !call multsv(p%divu,p%glnrho,tmp2)
-          !tmp=tmp2 + p%graddivu
-          !call multsv(nu_shock*p%shock,tmp,tmp2)
-          !call multsv_add(tmp2,nu_shock*p%divu,p%gshock,tmp)
+          !tobi: The following only works with operator overloading for pencils
+          !      (see sub.f90). Commented out because it seems to be slower.
+          !tmp=nu_shock*(p%shock*(p%divu*p%glnrho+p%graddivu)+p%divu*p%gshock)
+          call multsv(p%divu,p%glnrho,tmp2)
+          tmp=tmp2 + p%graddivu
+          call multsv(nu_shock*p%shock,tmp,tmp2)
+          call multsv_add(tmp2,nu_shock*p%divu,p%gshock,tmp)
+          p%fvisc=p%fvisc+tmp
           if (lfirst.and.ldt) p%diffus_total=p%diffus_total+(nu_shock*p%shock)
           if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + &
                                                  nu_shock*p%shock*p%divu**2
-          p%fvisc=p%fvisc+tmp
         endif
       endif
 !

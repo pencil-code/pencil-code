@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.277 2007-02-05 21:47:24 wlyra Exp $
+! $Id: sub.f90,v 1.278 2007-02-06 12:27:26 theine Exp $
 
 module Sub
 
@@ -221,28 +221,30 @@ module Sub
   endinterface
 !
 !  extended intrinsic operators to do some scalar/vector pencil arithmetic
+!  Tobi: Array valued functions do seem to be slower than subroutines,
+!        hence commented out for the moment.
 !
-  public :: operator(*),operator(+),operator(/),operator(-)
-
-  interface operator (*)
-    module procedure pencil_multiply1
-    module procedure pencil_multiply2
-  endinterface
-
-  interface operator (+)
-    module procedure pencil_add1
-    module procedure pencil_add2
-  endinterface
-
-  interface operator (/)
-    module procedure pencil_divide1
-    module procedure pencil_divide2
-  endinterface
-
-  interface operator (-)
-    module procedure pencil_substract1
-    module procedure pencil_substract2
-  endinterface
+!  public :: operator(*),operator(+),operator(/),operator(-)
+!
+!  interface operator (*)
+!    module procedure pencil_multiply1
+!    module procedure pencil_multiply2
+!  endinterface
+!
+!  interface operator (+)
+!    module procedure pencil_add1
+!    module procedure pencil_add2
+!  endinterface
+!
+!  interface operator (/)
+!    module procedure pencil_divide1
+!    module procedure pencil_divide2
+!  endinterface
+!
+!  interface operator (-)
+!    module procedure pencil_substract1
+!    module procedure pencil_substract2
+!  endinterface
 
 !ajwm Commented pending a C replacement
 !  INTERFACE getenv
