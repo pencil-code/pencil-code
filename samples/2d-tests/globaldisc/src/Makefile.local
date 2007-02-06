@@ -20,7 +20,6 @@ SHOCK     =   shock
 PARTICLES       = particles_dust
 PARTICLES_NBODY = particles_nbody
 BORDER_PROF     = border_profiles
-PLANET    = planet
 
 REAL_PRECISION=double
 

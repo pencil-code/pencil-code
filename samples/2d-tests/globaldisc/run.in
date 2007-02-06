@@ -3,7 +3,7 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.31 2006-11-16 19:58:19 mee Exp $',
+  cvsid='$Id: run.in,v 1.32 2007-02-06 09:10:51 wlyra Exp $',
   ip=14,
   nt=50, it1=5, isave=100, itorder=3, ialive=1
   cdt=0.4, 
@@ -18,6 +18,7 @@
   wfreeze_ext = 1e-8
   wborder_int=0.05
   wborder_ext=0.2
+  lrtime_phiavg=T
 /
 &eos_run_pars
 rho0= 1. 
