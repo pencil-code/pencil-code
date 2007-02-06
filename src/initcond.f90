@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.194 2007-02-06 09:12:21 wlyra Exp $
+! $Id: initcond.f90,v 1.195 2007-02-06 09:15:49 wlyra Exp $
 
 module Initcond
 
@@ -2533,7 +2533,7 @@ module Initcond
       use FArrayManager
       use Mpicomm, only: stop_it
       use General
-      use EquationOfState, only:cs0,cs20,gamma11,gamma1,gamma,cp
+      use EquationOfState, only:cs0,cs20,gamma11,gamma1,gamma
       use Sub, only: grad
       use Deriv, only: der
 !
@@ -2672,7 +2672,7 @@ module Initcond
           else if (lentropy) then
              rr=sqrt(x(:)**2+y(m)**2)
              f(:,m,n,iss) = f(:,m,n,iss) + &
-             cp/gamma*(log(rr0)-log(rr) -gamma1*f(:,m,n,ilnrho)) !-lnrho0))
+             1./gamma*(log(rr0)-log(rr) -gamma1*f(:,m,n,ilnrho)) !-lnrho0))
           else
             print*,"No thermodynamical variable. Choose if you want a "
             print*,"local thermodynamical approximation (switch llocal_iso=T in"
