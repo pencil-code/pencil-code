@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.314 2007-02-05 21:56:47 wlyra Exp $
+! $Id: hydro.f90,v 1.315 2007-02-06 11:03:26 pkapyla Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -185,7 +185,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.314 2007-02-05 21:56:47 wlyra Exp $")
+           "$Id: hydro.f90,v 1.315 2007-02-06 11:03:26 pkapyla Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1650,6 +1650,11 @@ module Hydro
           if (lroot) print*,'forcing_continuous: RobertsFlow'
           sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
           siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+        elseif (iforcing_continuous=='TG') then
+          if (lroot) print*,'forcing_continuous: TG'
+          sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
+          siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+          cosz=cos(k1_ff*z)
         endif
       endif
       ifirst=ifirst+1
@@ -1667,6 +1672,11 @@ module Hydro
         forcing_rhs(:,1)=-fact*cosx(l1:l2)*siny(m)
         forcing_rhs(:,2)=+fact*sinx(l1:l2)*cosy(m)
         forcing_rhs(:,3)=+fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
+      elseif (iforcing_continuous=='TG') then
+        fact=ampl_ff
+        forcing_rhs(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
+        forcing_rhs(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
+        forcing_rhs(:,3)=0.
       endif
 !
 !  apply forcing in momentum equation
