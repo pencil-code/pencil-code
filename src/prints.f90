@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.87 2007-02-05 21:51:11 wlyra Exp $
+! $Id: prints.f90,v 1.88 2007-02-06 13:54:34 wlyra Exp $
 
 module Print
 
@@ -40,7 +40,11 @@ module Print
         !  of doing it.
         !
         !drcyl = dx   !this just happens for nrcyl=nx/2
-        drcyl = xyz1(1)/nrcyl
+        if (nrcyl/=0) then 
+           drcyl = xyz1(1)/nrcyl
+        else
+           drcyl = 0. 
+        endif
         rcyl = (/ ((i-0.5)*drcyl, i=1,nrcyl) /)
         !
         !  Calculate the three surface elements.
