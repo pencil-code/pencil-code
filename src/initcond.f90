@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.193 2007-01-20 11:22:33 brandenb Exp $
+! $Id: initcond.f90,v 1.194 2007-02-06 09:12:21 wlyra Exp $
 
 module Initcond
 
@@ -2533,23 +2533,34 @@ module Initcond
       use FArrayManager
       use Mpicomm, only: stop_it
       use General
-      use EquationOfState, only:cs0,cs20,gamma11,gamma1,gamma
+      use EquationOfState, only:cs0,cs20,gamma11,gamma1,gamma,cp
       use Sub, only: grad
       use Deriv, only: der
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: r_cyl,r_sph,OO,OO_sph,OO_cyl,tmp,tmp2
+      real, dimension(mx) :: r_cyl,r_sph,OO,OO_sph,OO_cyl,corr,rr
       real, dimension(nx) :: grhoz,rmn_sph,rmn_cyl,rho
       real, dimension(nx,3) :: gg_mn,glnTT
-      real :: lnrho_const,plaw,g0=1.
+      real :: lnrho_const,plaw,corr2
       logical :: lstratified,lheader
       integer :: iglobal_gg
       integer, pointer :: iglobal_cs2,iglobal_glnTT
+!
+      real :: g0,rr0,mach
 !
       nullify(iglobal_cs2)
       nullify(iglobal_glnTT)
 !
 ! Pencilize to save memory
+!
+      if (lentropy) then 
+         g0=1.3e3 !e26(cgs)
+         rr0=7.8  !e12
+      else 
+         g0=1.0
+         rr0=1. 
+      endif
+      mach=sqrt(g0/rr0)/cs0
 !
       do m=1,my
         do n=1,mz
@@ -2565,40 +2576,39 @@ module Initcond
 !
 ! density
 !
-          if (((nzgrid==1).or.(lcylindrical)).and.(plaw/=0)) then
 ! Radial stratification
           if (lheader) print*,'Radial stratification with power law=',plaw
-            f(:,m,n,ilnrho) = lnrho_const - plaw*alog(r_cyl)
-          else
-            f(:,m,n,ilnrho) = lnrho_const
-          endif
+          f(:,m,n,ilnrho) = lnrho_const - plaw*alog(r_cyl)
 !
 ! Write vertical stratification on top of radial stratification
 !
           if (lstratified) then
-            if (lheader) &
-              print*,'Adding vertical stratification with scale height h/r=',cs0
-! log density
-            f(:,m,n,ilnrho) = (r_cyl - r_sph)/(r_sph*cs20)
+             if (lheader) &
+                  print*,'Adding vertical stratification with scale height h/r=',cs0
+! log density, the -65 guarantees that the minimum linear density is 1e-30
+             f(:,m,n,ilnrho) = max((r_cyl - r_sph)/(r_sph*cs20),-65.)
 ! pressure corrected velocities
-            tmp = OO_cyl**2 * (r_cyl/r_sph - cs20)  !this is wrong. check!
-            where (tmp.ge.0)
-              OO=sqrt(tmp)
-            elsewhere
-              OO=0.
-            endwhere
+             corr = r_cyl/r_sph - cs20
+            !check for imaginary velocities
+             !do i=1,mx
+             !   if (corr(i).lt.0) &
+             !        call stop_it("Imaginary velocites due to large temperatures in the disc.")
+             !enddo
+             OO = OO_sph !sqrt(OO_cyl**2 * corr)
           else
 ! Cylindrical disc
-            if (lheader) print*,'Cylindrical disc initial condition'
-            if (((1+plaw)*cs20).lt.1.0) then
-               OO = sqrt(OO_cyl**2 * (1-(1+plaw)*cs20))
-            else
-               call stop_it("Imaginary velocites due to large temperatures in the disc.")
-            endif
-           endif
+             if (lheader) print*,'Cylindrical disc initial condition'
+             corr2 =  1-(1+plaw)/mach**2  
+             if (corr2.ge.0) then
+                OO = sqrt(OO_cyl**2 * corr2)
+             else
+                call stop_it("Imaginary velocites due to large temperatures in the disc.")
+             endif
+          endif
 !
 ! Velocity field. Don't overwrite
 !
+          if (lentropy)  OO = OO_cyl !for heidar
           f(:,m,n,iux)= f(:,m,n,iux) - y(m)*OO
           f(:,m,n,iuy)= f(:,m,n,iuy) +    x*OO
           f(:,m,n,iuz)= f(:,m,n,iuz) +  0.
@@ -2608,8 +2618,6 @@ module Initcond
 !
 ! code gravity here for stratified runs, else it will be coded
 ! in gravity_r.f90
-!
-!      rho  = exp(f(:,:,:,ilnrho))
 !
       if (lstratified) then
         do n=0,mz
@@ -2627,6 +2635,7 @@ module Initcond
 
       do n=n1,n2
         do m=m1,m2
+          lheader=(lroot.and.(m==m1).and.(n==n1))
           rmn_sph = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2)+tini
           rmn_cyl = sqrt(x(l1:l2)**2 + y(m)**2)+tini
 !
@@ -2636,18 +2645,24 @@ module Initcond
 !
             gg_mn(:,1) = -x(l1:l2)/rmn_sph**3
             gg_mn(:,2) = -y(  m  )/rmn_sph**3
-            gg_mn(:,3) = cs20/(grhoz*rho*(sqrt(x(l1:l2)**2+y(m)**2)+tini))
+            gg_mn(:,3) = cs20*grhoz/(rho*rmn_cyl)
             f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
           endif
 !
 ! Thermodynamical quantities
 !
+          if (lheader) print*,&
+               'set sound speed as global variable: Mach number at midplane=',mach
+          if (lentropy.and.llocal_iso) then
+             print*,'You are using lentropy, but llocal_iso is switched on in'
+             print*,'start.in. Better changed it'
+             call stop_it("")
+          endif
+!
           if (llocal_iso) then
-            if (lheader) print*,&
-                  'set sound speed as global variable: Mach number at midplane=',1./cs0
 !sound speed
             call farray_use_global('cs2',iglobal_cs2)
-            f(l1:l2,m,n,iglobal_cs2)= cs20/rmn_cyl
+            f(l1:l2,m,n,iglobal_cs2)= cs20/(rmn_cyl/rr0)
 !temperature gradient
             call farray_use_global('glnTT',iglobal_glnTT)
             f(l1:l2,m,n,iglobal_glnTT  )=-x(l1:l2)/rmn_cyl**2
@@ -2655,9 +2670,9 @@ module Initcond
             f(l1:l2,m,n,iglobal_glnTT+2)=0.
 !else do it all as entropy
           else if (lentropy) then
-            f(:,m,n,iss) = f(:,m,n,iss) &
-                + gamma11*(log(cs20)- 0.5*log(x(:)**2+y(m)**2)) &
-                - gamma1/gamma*f(:,m,n,ilnrho)
+             rr=sqrt(x(:)**2+y(m)**2)
+             f(:,m,n,iss) = f(:,m,n,iss) + &
+             cp/gamma*(log(rr0)-log(rr) -gamma1*f(:,m,n,ilnrho)) !-lnrho0))
           else
             print*,"No thermodynamical variable. Choose if you want a "
             print*,"local thermodynamical approximation (switch llocal_iso=T in"
