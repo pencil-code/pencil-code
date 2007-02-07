@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.487 2007-02-07 21:03:23 wlyra Exp $
+! $Id: entropy.f90,v 1.488 2007-02-07 21:12:03 wlyra Exp $
 
 !
 !  This module takes care of entropy (initial condition
@@ -62,7 +62,7 @@ module Entropy
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kconst=.false.,lheatc_simple=.false.,lheatc_chiconst=.false.
   logical :: lheatc_tensordiffusion=.false.,lheatc_spitzer=.false.
-  logical :: lheatc_dangelo=.false.
+  logical :: lheatc_hubeny=.false.
   logical :: lheatc_corona=.false.
   logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
   logical :: lupw_ss=.false.,lmultilayer=.true.
@@ -168,7 +168,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.487 2007-02-07 21:03:23 wlyra Exp $")
+           "$Id: entropy.f90,v 1.488 2007-02-07 21:12:03 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -419,7 +419,7 @@ module Entropy
       lheatc_chiconst=.false.
       lheatc_tensordiffusion=.false.
       lheatc_spitzer=.false.
-      lheatc_dangelo=.false.
+      lheatc_hubeny=.false.
       lheatc_corona=.false.
       lheatc_shock=.false.
       lheatc_hyper3ss=.false.
@@ -446,9 +446,9 @@ module Entropy
         case ('spitzer')
           lheatc_spitzer=.true.
           if (lroot) print*, 'heat conduction: spitzer'
-        case ('dangelo')
-          lheatc_dangelo=.true.
-          if (lroot) print*, 'heat conduction: dangelo'
+        case ('hubeny')
+          lheatc_hubeny=.true.
+          if (lroot) print*, 'heat conduction: hubeny'
         case ('corona')
           lheatc_corona=.true.
           if (lroot) print*, 'heat conduction: corona'
@@ -1556,7 +1556,7 @@ module Entropy
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
       endif
-      if (lheatc_dangelo) then
+      if (lheatc_hubeny) then
         lpenc_requested(i_rho)=.true.
         lpenc_requested(i_TT)=.true.
       endif
@@ -1808,7 +1808,7 @@ module Entropy
       if (lheatc_shock)    call calc_heatcond_shock(df,p)
       if (lheatc_hyper3ss) call calc_heatcond_hyper3(df,p)
       if (lheatc_spitzer)  call calc_heatcond_spitzer(df,p)
-      if (lheatc_dangelo)  call calc_heatcond_dangelo(df,p)
+      if (lheatc_hubeny)   call calc_heatcond_hubeny(df,p)
       if (lheatc_corona) then
         call calc_heatcond_spitzer(df,p)
         call newton_cool(df,p)
@@ -2290,10 +2290,11 @@ module Entropy
 !
     endsubroutine calc_heatcond_spitzer
 !***********************************************************************
-    subroutine calc_heatcond_dangelo(df,p)
+    subroutine calc_heatcond_hubeny(df,p)
 !
 !  Vertically integrated heat flux from a thin globaldisc.
-!  Taken from D'Angelo et al. (2003), ApJ, 599, 548 
+!  Taken from D'Angelo et al. 2003, ApJ, 599, 548, based on
+!  the grey analytical model of Hubeny 1990, ApJ, 351, 632 
 !
 !  07-feb-07/wlad+heidar : coded
 !
@@ -2308,12 +2309,12 @@ module Entropy
       intent(in) :: p
       intent(out) :: df
 !
-      if (headtt) print*,'enter heatcond dangelo' 
+      if (headtt) print*,'enter heatcond hubeny' 
 !
-      if (pretend_lnTT) call fatal_error("calc_heatcond_dangelo","not implemented when pretend_lnTT = T")
+      if (pretend_lnTT) call fatal_error("calc_heatcond_hubeny","not implemented when pretend_lnTT = T")
 !
       kappa0_cgs=2e-6  !cm2/g
-      kappa0=kappa_cgs*unit_density/unit_length
+      kappa0=kappa0_cgs*unit_density/unit_length
       kappa=kappa0*p%TT**2
 ! 
 !  Optical Depth tau=kappa*rho*H 
@@ -2323,10 +2324,10 @@ module Entropy
       if (nzgrid==1) then
          tau = .5*kappa*p%rho
       else
-         call fatal_error("calc_heat_dangelo","opacity not yet implemented for 3D")
+         call fatal_error("calc_heat_hubeny","opacity not yet implemented for 3D")
       endif
 !
-! Accurate gray description of Hubeny (1990)
+! Analytical gray description of Hubeny (1990)
 ! a1 is the optically thick contribution, 
 ! a3 the optically thin one. 
 !
@@ -2336,7 +2337,7 @@ module Entropy
 !
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) - cooling
 !
-    endsubroutine calc_heatcond_dangelo
+    endsubroutine calc_heatcond_hubeny
 !************************************************************************
     subroutine calc_heatcond(f,df,p)
 !
