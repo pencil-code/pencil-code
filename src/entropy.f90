@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.486 2007-02-07 20:44:57 wlyra Exp $
+! $Id: entropy.f90,v 1.487 2007-02-07 21:03:23 wlyra Exp $
 
 !
 !  This module takes care of entropy (initial condition
@@ -168,7 +168,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.486 2007-02-07 20:44:57 wlyra Exp $")
+           "$Id: entropy.f90,v 1.487 2007-02-07 21:03:23 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1710,7 +1710,8 @@ module Entropy
         endif
       endif
 !
-      if (lpencil(i_savg).and.lfirst) call rtime_phiavg(p%ss,p%savg,p,iss)
+      if (lrtime_phiavg.and.lpencil(i_savg).and.lfirst) &
+           call rtime_phiavg(p%ss,p%savg,p,iss)
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.318 2007-02-07 20:46:25 wlyra Exp $
+! $Id: hydro.f90,v 1.319 2007-02-07 21:03:23 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -186,7 +186,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.318 2007-02-07 20:46:25 wlyra Exp $")
+           "$Id: hydro.f90,v 1.319 2007-02-07 21:03:23 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -851,7 +851,8 @@ module Hydro
         enddo
       endif
 !
-      if (lpencil(i_uavg).and.lfirst) call rtime_phiavg(p%uu,p%uavg,p,iuu)
+      if (lrtime_phiavg.and.lpencil(i_uavg).and.lfirst) &
+           call rtime_phiavg(p%uu,p%uavg,p,iuu)
 !
     endsubroutine calc_pencils_hydro
 !***********************************************************************
