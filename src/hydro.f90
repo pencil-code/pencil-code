@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.319 2007-02-07 21:03:23 wlyra Exp $
+! $Id: hydro.f90,v 1.320 2007-02-07 21:17:16 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -143,7 +143,9 @@ module Hydro
   integer :: idiag_totangmom=0,idiag_rufm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
   integer :: idiag_u2mr=0,idiag_urupmr=0
-  integer :: idiag_urmr=0,idiag_upmr=0,idiag_uzmr=0, idiag_ozmr=0
+  integer :: idiag_urmr=0,idiag_upmr=0,idiag_uzmr=0
+  integer :: idiag_ormr=0,idiag_opmr=0,idiag_ozmr=0
+
 
   contains
 
@@ -186,7 +188,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.319 2007-02-07 21:03:23 wlyra Exp $")
+           "$Id: hydro.f90,v 1.320 2007-02-07 21:17:16 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -673,6 +675,9 @@ module Hydro
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_fmassz/=0 .or. idiag_ruxuymz/=0) lpenc_diagnos(i_rho)=.true.
 
+      if (idiag_ormr/=0 .or. idiag_opmr/=0 .or. idiag_ozmr/=0) &
+           lpenc_diagnos(i_oo)=.true.
+
       if (idiag_totangmom/=0 .or. idiag_urm/=0 .or. idiag_upm/=0 &
           .or. idiag_uzzm/=0 .or. idiag_ur2m/=0 .or. idiag_up2m/=0 &
           .or. idiag_uzz2m/=0 .or. idiag_urupm/=0 .or. idiag_uzupm/=0 &
@@ -682,7 +687,7 @@ module Hydro
 
       if (idiag_urm/=0 .or. idiag_ur2m/=0 .or. idiag_urupm/=0 &
           .or. idiag_uruzm/=0 .or. idiag_urmr/=0 .or. &
-          idiag_urupmr/=0) then
+          idiag_urupmr/=0 .or. idiag_ormr/=0) then
         lpenc_diagnos(i_pomx)=.true.
         lpenc_diagnos(i_pomy)=.true.
       endif
@@ -1172,6 +1177,10 @@ module Hydro
              call phizsum_mn_name_r(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy-p%uavg(:,2),idiag_upmr)
         if (idiag_uzmr/=0) &
              call phizsum_mn_name_r(p%uu(:,3),idiag_uzmr)
+        if (idiag_ormr/=0) &
+             call phizsum_mn_name_r(p%oo(:,1)*p%pomx+p%oo(:,2)*p%pomy,idiag_ormr)
+        if (idiag_opmr/=0) &
+             call phizsum_mn_name_r(p%oo(:,1)*p%phix+p%oo(:,2)*p%phiy,idiag_opmr)
         if (idiag_ozmr/=0) &
              call phizsum_mn_name_r(p%oo(:,3),idiag_ozmr)
       endif
@@ -1186,6 +1195,7 @@ module Hydro
         call phisum_mn_name_rz(p%u2,idiag_u2mphi)
         call phisum_mn_name_rz(p%oo(:,3),idiag_ozmphi)
         if (idiag_oumphi/=0) call phisum_mn_name_rz(p%ou,idiag_oumphi)
+        
       endif
 !
     endsubroutine duu_dt
@@ -1768,7 +1778,8 @@ module Hydro
         idiag_totangmom=0; idiag_rufm=0
         idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
         idiag_urupmr=0
-        idiag_u2mr=0; idiag_urmr=0; idiag_upmr=0; idiag_uzmr=0; idiag_ozmr=0
+        idiag_u2mr=0; idiag_urmr=0; idiag_upmr=0; idiag_uzmr=0
+        idiag_ormr=0; idiag_opmr=0; idiag_ozmr=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1941,6 +1952,8 @@ module Hydro
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'urmr',  idiag_urmr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'upmr',  idiag_upmr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'uzmr',  idiag_uzmr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'ormr',  idiag_ormr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'opmr',  idiag_opmr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'ozmr',  idiag_ozmr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'u2mr',  idiag_u2mr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'urupmr',idiag_urupmr)
@@ -2016,6 +2029,8 @@ module Hydro
         write(3,*) 'i_urmr=',idiag_urmr
         write(3,*) 'i_upmr=',idiag_upmr
         write(3,*) 'i_uzmr=',idiag_uzmr
+        write(3,*) 'i_ormr=',idiag_ormr
+        write(3,*) 'i_opmr=',idiag_opmr
         write(3,*) 'i_ozmr=',idiag_ozmr
         write(3,*) 'i_u2mr=',idiag_u2mr
         write(3,*) 'i_urupmr=',idiag_urupmr
