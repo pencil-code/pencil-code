@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.485 2007-02-06 15:05:22 wlyra Exp $
+! $Id: entropy.f90,v 1.486 2007-02-07 20:44:57 wlyra Exp $
 
 !
 !  This module takes care of entropy (initial condition
@@ -62,6 +62,7 @@ module Entropy
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kconst=.false.,lheatc_simple=.false.,lheatc_chiconst=.false.
   logical :: lheatc_tensordiffusion=.false.,lheatc_spitzer=.false.
+  logical :: lheatc_dangelo=.false.
   logical :: lheatc_corona=.false.
   logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
   logical :: lupw_ss=.false.,lmultilayer=.true.
@@ -139,8 +140,8 @@ module Entropy
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
   integer :: idiag_yHm=0,idiag_yHmax=0,idiag_TTm=0,idiag_TTmax=0,idiag_TTmin=0
   integer :: idiag_fconvz=0,idiag_dcoolz=0,idiag_fradz=0,idiag_fturbz=0
-  integer :: idiag_ssmx=0,idiag_ssmy=0,idiag_ssmz=0,idiag_TTp=0
-  integer :: idiag_TTmx=0,idiag_TTmy=0,idiag_TTmz=0,idiag_TTmxy=0
+  integer :: idiag_ssmx=0,idiag_ssmy=0,idiag_ssmz=0,idiag_TTp=0,idiag_ssmr=0
+  integer :: idiag_TTmx=0,idiag_TTmy=0,idiag_TTmz=0,idiag_TTmxy=0,idiag_TTmr=0
 
   contains
 
@@ -167,7 +168,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.485 2007-02-06 15:05:22 wlyra Exp $")
+           "$Id: entropy.f90,v 1.486 2007-02-07 20:44:57 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -418,6 +419,7 @@ module Entropy
       lheatc_chiconst=.false.
       lheatc_tensordiffusion=.false.
       lheatc_spitzer=.false.
+      lheatc_dangelo=.false.
       lheatc_corona=.false.
       lheatc_shock=.false.
       lheatc_hyper3ss=.false.
@@ -444,6 +446,9 @@ module Entropy
         case ('spitzer')
           lheatc_spitzer=.true.
           if (lroot) print*, 'heat conduction: spitzer'
+        case ('dangelo')
+          lheatc_dangelo=.true.
+          if (lroot) print*, 'heat conduction: dangelo'
         case ('corona')
           lheatc_corona=.true.
           if (lroot) print*, 'heat conduction: corona'
@@ -1551,6 +1556,10 @@ module Entropy
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
       endif
+      if (lheatc_dangelo) then
+        lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_TT)=.true.
+      endif
       if (lheatc_corona) then
         lpenc_requested(i_rho)=.true.
         lpenc_requested(i_lnrho)=.true.
@@ -1606,7 +1615,7 @@ module Entropy
         lpenc_diagnos(i_pp)=.true.
         lpenc_diagnos(i_divu)=.true.
       endif
-      if (idiag_ssm/=0 .or. idiag_ssmz/=0 .or. idiag_ssmy/=0.or.idiag_ssmx/=0) &
+      if (idiag_ssm/=0 .or. idiag_ssmz/=0 .or. idiag_ssmy/=0.or.idiag_ssmx/=0.or.idiag_ssmr/=0) &
            lpenc_diagnos(i_ss)=.true.
       lpenc_diagnos(i_rho)=.true.
       lpenc_diagnos(i_ee)=.true.
@@ -1619,7 +1628,7 @@ module Entropy
           lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
       if (idiag_TTm/=0 .or. idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. &
-          idiag_TTmz/=0 .or. idiag_TTmxy/=0 .or. &
+          idiag_TTmz/=0 .or. idiag_TTmxy/=0 .or. idiag_TTmr/=0 .or. &
           idiag_TTmax/=0 .or. idiag_TTmin/=0) &
           lpenc_diagnos(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
@@ -1798,6 +1807,7 @@ module Entropy
       if (lheatc_shock)    call calc_heatcond_shock(df,p)
       if (lheatc_hyper3ss) call calc_heatcond_hyper3(df,p)
       if (lheatc_spitzer)  call calc_heatcond_spitzer(df,p)
+      if (lheatc_dangelo)  call calc_heatcond_dangelo(df,p)
       if (lheatc_corona) then
         call calc_heatcond_spitzer(df,p)
         call newton_cool(df,p)
@@ -1886,6 +1896,8 @@ module Entropy
         if (idiag_TTmy/=0)  call xzsum_mn_name_y(p%TT,idiag_TTmy)
         if (idiag_TTmz/=0)  call xysum_mn_name_z(p%TT,idiag_TTmz)
         if (idiag_TTmxy/=0) call zsum_mn_name_xy(p%TT,idiag_TTmxy)
+        if (idiag_ssmr/=0)  call phizsum_mn_name_r(p%ss,idiag_ssmr)
+        if (idiag_TTmr/=0)  call phizsum_mn_name_r(p%TT,idiag_TTmr)
       endif
 !
     endsubroutine dss_dt
@@ -2277,6 +2289,54 @@ module Entropy
 !
     endsubroutine calc_heatcond_spitzer
 !***********************************************************************
+    subroutine calc_heatcond_dangelo(df,p)
+!
+!  Vertically integrated heat flux from a thin globaldisc.
+!  Taken from D'Angelo et al. (2003), ApJ, 599, 548 
+!
+!  07-feb-07/wlad+heidar : coded
+!
+      use EquationOfState, only: gamma,gamma1
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: tau,cooling,kappa,a1,a3
+      real :: a2,kappa0,kappa0_cgs
+      type (pencil_case) :: p
+!
+      intent(in) :: p
+      intent(out) :: df
+!
+      if (headtt) print*,'enter heatcond dangelo' 
+!
+      if (pretend_lnTT) call fatal_error("calc_heatcond_dangelo","not implemented when pretend_lnTT = T")
+!
+      kappa0_cgs=2e-6  !cm2/g
+      kappa0=kappa_cgs*unit_density/unit_length
+      kappa=kappa0*p%TT**2
+! 
+!  Optical Depth tau=kappa*rho*H 
+!  If we are using 2D, the pencil value p%rho is actually
+!   sigma, the column density, sigma=rho*2*H
+!
+      if (nzgrid==1) then
+         tau = .5*kappa*p%rho
+      else
+         call fatal_error("calc_heat_dangelo","opacity not yet implemented for 3D")
+      endif
+!
+! Accurate gray description of Hubeny (1990)
+! a1 is the optically thick contribution, 
+! a3 the optically thin one. 
+!
+      a1=0.375*tau ; a2=0.433013 ; a3=0.25/tau
+!
+      cooling = 2*sigmaSB*p%TT**4/(a1+a2+a3)      
+!
+      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) - cooling
+!
+    endsubroutine calc_heatcond_dangelo
+!************************************************************************
     subroutine calc_heatcond(f,df,p)
 !
 !  heat conduction
@@ -2758,7 +2818,7 @@ module Entropy
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
-      integer :: iname,inamez,inamey,inamex,inamexy,irz
+      integer :: iname,inamez,inamey,inamex,inamexy,irz,inamer
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -2772,7 +2832,7 @@ module Entropy
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
-        idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0
+        idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0; idiag_ssmr=0; idiag_TTmr=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0
       endif
 !
@@ -2824,6 +2884,12 @@ module Entropy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
       enddo
 !
+      do inamer=1,nnamer
+         call parse_name(inamer,cnamer(inamer),cformr(inamer),'ssmr',idiag_ssmr)
+         call parse_name(inamer,cnamer(inamer),cformr(inamer),'TTmr',idiag_TTmr)
+      enddo
+
+!
 !  check for those quantities for which we want z-averages
 !
       do inamexy=1,nnamexy
@@ -2858,6 +2924,8 @@ module Entropy
         write(3,*) 'i_fradz=',idiag_fradz
         write(3,*) 'i_ssmz=',idiag_ssmz
         write(3,*) 'i_TTmz=',idiag_TTmz
+        write(3,*) 'i_ssmr=',idiag_ssmr
+        write(3,*) 'i_TTmr=',idiag_TTmr
         write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
         write(3,*) 'i_yHmax=',idiag_yHmax
