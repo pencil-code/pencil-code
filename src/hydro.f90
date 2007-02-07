@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.317 2007-02-06 15:31:22 theine Exp $
+! $Id: hydro.f90,v 1.318 2007-02-07 20:46:25 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -133,7 +133,7 @@ module Hydro
   integer :: idiag_Marms=0,idiag_Mamax=0,idiag_divum=0,idiag_divu2m=0
   integer :: idiag_u3u21m=0,idiag_u1u32m=0,idiag_u2u13m=0,idiag_oumphi=0
   integer :: idiag_urmphi=0,idiag_upmphi=0,idiag_uzmphi=0,idiag_u2mphi=0
-  integer :: idiag_fintm=0,idiag_fextm=0
+  integer :: idiag_fintm=0,idiag_fextm=0,idiag_ozmphi=0
   integer :: idiag_duxdzma=0,idiag_duydzma=0
   integer :: idiag_ekintot=0, idiag_ekin=0, idiag_ekinz=0
   integer :: idiag_fmassz=0, idiag_fkinz=0
@@ -143,7 +143,7 @@ module Hydro
   integer :: idiag_totangmom=0,idiag_rufm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
   integer :: idiag_u2mr=0,idiag_urupmr=0
-  integer :: idiag_urmr=0,idiag_upmr=0,idiag_uzmr=0
+  integer :: idiag_urmr=0,idiag_upmr=0,idiag_uzmr=0, idiag_ozmr=0
 
   contains
 
@@ -186,7 +186,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.317 2007-02-06 15:31:22 theine Exp $")
+           "$Id: hydro.f90,v 1.318 2007-02-07 20:46:25 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -654,6 +654,7 @@ module Hydro
 !
       lpenc_diagnos(i_uu)=.true.
       if (idiag_oumphi/=0) lpenc_diagnos2d(i_ou)=.true.
+      if (idiag_ozmphi/=0) lpenc_diagnos2d(i_oo)=.true.
       if (idiag_u2mphi/=0) lpenc_diagnos2d(i_u2)=.true.
       if (idiag_ox2m/=0 .or. idiag_oy2m/=0 .or. idiag_oz2m/=0 .or. &
           idiag_oxm /=0 .or. idiag_oym /=0 .or. idiag_ozm /=0 .or. &
@@ -1165,11 +1166,13 @@ module Hydro
 !  phi-z averages
         if (idiag_u2mr/=0)   call phizsum_mn_name_r(p%u2,idiag_u2mr)
         if (idiag_urmr/=0) &
-             call phizsum_mn_name_r(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmr)
+             call phizsum_mn_name_r(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy-p%uavg(:,1),idiag_urmr)
         if (idiag_upmr/=0) &
-             call phizsum_mn_name_r(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmr)
+             call phizsum_mn_name_r(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy-p%uavg(:,2),idiag_upmr)
         if (idiag_uzmr/=0) &
              call phizsum_mn_name_r(p%uu(:,3),idiag_uzmr)
+        if (idiag_ozmr/=0) &
+             call phizsum_mn_name_r(p%oo(:,3),idiag_ozmr)
       endif
 !
 !  phi-averages
@@ -1180,6 +1183,7 @@ module Hydro
         call phisum_mn_name_rz(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmphi)
         call phisum_mn_name_rz(p%uu(:,3),idiag_uzmphi)
         call phisum_mn_name_rz(p%u2,idiag_u2mphi)
+        call phisum_mn_name_rz(p%oo(:,3),idiag_ozmphi)
         if (idiag_oumphi/=0) call phisum_mn_name_rz(p%ou,idiag_oumphi)
       endif
 !
@@ -1751,7 +1755,7 @@ module Hydro
         idiag_u3u21m=0; idiag_u1u32m=0; idiag_u2u13m=0
         idiag_oumphi=0; idiag_fintm=0; idiag_fextm=0
         idiag_urmphi=0; idiag_upmphi=0; idiag_uzmphi=0; idiag_u2mphi=0
-        idiag_duxdzma=0; idiag_duydzma=0
+        idiag_duxdzma=0; idiag_duydzma=0; idiag_ozmphi=0
         idiag_ekin=0; idiag_ekintot=0; idiag_ekinz=0
         idiag_fmassz=0; idiag_fkinz=0
         idiag_uxmy=0; idiag_uymy=0; idiag_uzmy=0
@@ -1763,7 +1767,7 @@ module Hydro
         idiag_totangmom=0; idiag_rufm=0
         idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
         idiag_urupmr=0
-        idiag_u2mr=0; idiag_urmr=0; idiag_upmr=0; idiag_uzmr=0
+        idiag_u2mr=0; idiag_urmr=0; idiag_upmr=0; idiag_uzmr=0; idiag_ozmr=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1927,6 +1931,7 @@ module Hydro
         call parse_name(irz,cnamerz(irz),cformrz(irz),'uzmphi',idiag_uzmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'u2mphi',idiag_u2mphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'oumphi',idiag_oumphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'ozmphi',idiag_ozmphi)
       enddo
 !
 !  check for those quantities for which we want phiz-averages
@@ -1935,6 +1940,7 @@ module Hydro
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'urmr',  idiag_urmr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'upmr',  idiag_upmr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'uzmr',  idiag_uzmr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'ozmr',  idiag_ozmr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'u2mr',  idiag_u2mr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'urupmr',idiag_urupmr)
       enddo
@@ -2005,9 +2011,11 @@ module Hydro
         write(3,*) 'i_uzmphi=',idiag_uzmphi
         write(3,*) 'i_u2mphi=',idiag_u2mphi
         write(3,*) 'i_oumphi=',idiag_oumphi
+        write(3,*) 'i_ozmphi=',idiag_ozmphi
         write(3,*) 'i_urmr=',idiag_urmr
         write(3,*) 'i_upmr=',idiag_upmr
         write(3,*) 'i_uzmr=',idiag_uzmr
+        write(3,*) 'i_ozmr=',idiag_ozmr
         write(3,*) 'i_u2mr=',idiag_u2mr
         write(3,*) 'i_urupmr=',idiag_urupmr
         write(3,*) 'i_fintm=',idiag_fintm
