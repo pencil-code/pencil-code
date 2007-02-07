@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.378 2007-02-07 21:03:23 wlyra Exp $
+! $Id: magnetic.f90,v 1.379 2007-02-07 21:33:36 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -173,12 +173,14 @@ module Magnetic
   integer :: idiag_brmphi=0,idiag_bpmphi=0,idiag_bzmphi=0,idiag_b2mphi=0
   integer :: idiag_uxbrmphi=0,idiag_uxbpmphi=0,idiag_uxbzmphi=0,idiag_ujxbm=0
   integer :: idiag_jxbrmphi=0,idiag_jxbpmphi=0,idiag_jxbzmphi=0
+  integer :: idiag_armphi=0,idiag_apmphi=0,idiag_azmphi=0
   integer :: idiag_uxBrms=0,idiag_Bresrms=0,idiag_Rmrms=0
   integer :: idiag_brm=0,idiag_bpm=0,idiag_bzm=0
   integer :: idiag_br2m=0,idiag_bp2m=0,idiag_bzz2m=0
   integer :: idiag_brbpm=0,idiag_bzbpm=0,idiag_brbzm=0,idiag_vA2m=0
   integer :: idiag_jfm=0,idiag_brbpmr=0
   integer :: idiag_b2mr=0,idiag_brmr=0,idiag_bpmr=0,idiag_bzmr=0
+  integer :: idiag_armr=0,idiag_apmr=0,idiag_azmr=0
   contains
 
 !***********************************************************************
@@ -218,7 +220,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.378 2007-02-07 21:03:23 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.379 2007-02-07 21:33:36 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -624,16 +626,18 @@ module Magnetic
       endif
       if (nu_ni/=0.) lpenc_diagnos(i_jxbrxb)=.true.
 !
-      if (idiag_brmphi/=0 .or. idiag_uxbrmphi/=0 .or. idiag_jxbrmphi/=0 &
-          .or. idiag_br2m/=0 .or. idiag_brbpm/=0 .or. idiag_brbzm/=0 &
-          .or. idiag_brmr/=0 .or. idiag_brbpmr/=0) then
+      if (     idiag_brmphi/=0  .or. idiag_uxbrmphi/=0 .or. idiag_jxbrmphi/=0 &
+          .or. idiag_armphi/=0  .or. idiag_br2m/=0     .or. idiag_brbpm/=0    &
+          .or. idiag_brbzm/=0   .or. idiag_brmr/=0     .or. idiag_brbpmr/=0   &
+          .or. idiag_armr/=0 ) then
         lpenc_diagnos(i_pomx)=.true.
         lpenc_diagnos(i_pomy)=.true.
       endif
 !
-      if (idiag_bpmphi/=0 .or. idiag_uxbpmphi/=0 .or. idiag_jxbpmphi/=0 &
-          .or. idiag_bpm/=0 .or. idiag_bp2m/=0 .or. idiag_brbpm/=0 & 
-          .or. idiag_bpmr/=0 .or. idiag_brbpmr/=0) then
+      if (     idiag_bpmphi/=0  .or. idiag_uxbpmphi/=0 .or. idiag_jxbpmphi/=0 &
+          .or. idiag_bpm/=0     .or. idiag_bp2m/=0     .or. idiag_brbpm/=0    & 
+          .or. idiag_bpmr/=0    .or. idiag_brbpmr/=0   .or. idiag_apmphi/=0  &
+          .or. idiag_apmr/=0 ) then
         lpenc_diagnos(i_phix)=.true.
         lpenc_diagnos(i_phiy)=.true.
       endif
@@ -647,6 +651,12 @@ module Magnetic
           .or. idiag_brbpm/=0 &
           .or. idiag_bzbpm/=0 &
           .or. idiag_brbzm/=0 ) lpenc_diagnos(i_rcyl_mn)=.true.
+!
+      if (idiag_armr/=0 .or. idiag_apmr/=0 .or. idiag_azmr/=0) &
+           lpenc_diagnos(i_aa)=.true.
+!
+      if (idiag_armphi/=0 .or. idiag_apmphi/=0 .or. idiag_azmphi/=0) &
+           lpenc_diagnos2d(i_aa)=.true.
 !
       if (idiag_aybym2/=0 .or. idiag_exaym2/=0) lpenc_diagnos(i_aa)=.true.
       if (idiag_arms/=0 .or. idiag_amax/=0) lpenc_diagnos(i_a2)=.true.
@@ -1245,7 +1255,7 @@ module Magnetic
 !
 !  Subtract contribution from mean background flow
 !
-      if (llarge_scale_Bz.and.ldiagnos) call subtract_mean_emf(df,p)
+      if (llarge_scale_Bz) call subtract_mean_emf(df,p)
 !
 !  Ambipolar diffusion in the strong coupling approximation
 !
@@ -1540,6 +1550,14 @@ module Magnetic
              call phizsum_mn_name_r(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,idiag_bpmr)
         if (idiag_bzmr/=0)   &
              call phizsum_mn_name_r(p%bb(:,3),idiag_bzmr)
+        if (idiag_armr/=0)   &
+             call phizsum_mn_name_r(p%aa(:,1)*p%pomx+p%aa(:,2)*p%pomy,idiag_armr)
+        if (idiag_apmr/=0)   &
+             call phizsum_mn_name_r(p%aa(:,1)*p%phix+p%aa(:,2)*p%phiy,idiag_apmr)
+        if (idiag_azmr/=0)   &
+             call phizsum_mn_name_r(p%aa(:,3),idiag_azmr)
+
+
       endif
 !
 !  phi-averages
@@ -1561,7 +1579,12 @@ module Magnetic
           call phisum_mn_name_rz(p%jxb(:,1)*p%phix+p%jxb(:,2)*p%phiy,idiag_jxbpmphi)
           call phisum_mn_name_rz(p%jxb(:,3)                         ,idiag_jxbzmphi)
         endif
-      endif
+        if (any((/idiag_armphi,idiag_apmphi,idiag_azmphi/) /= 0)) then
+          call phisum_mn_name_rz(p%aa(:,1)*p%pomx+p%aa(:,2)*p%pomy,idiag_armphi)
+          call phisum_mn_name_rz(p%aa(:,1)*p%phix+p%aa(:,2)*p%phiy,idiag_apmphi)
+          call phisum_mn_name_rz(p%aa(:,3)                        ,idiag_azmphi)
+        endif
+     endif
 !
 !  debug output
 !
@@ -2123,12 +2146,14 @@ module Magnetic
         idiag_brmphi=0; idiag_bpmphi=0; idiag_bzmphi=0; idiag_b2mphi=0
         idiag_jbmphi=0; idiag_uxbrmphi=0; idiag_uxbpmphi=0; idiag_uxbzmphi=0
         idiag_jxbrmphi=0; idiag_jxbpmphi=0; idiag_jxbzmphi=0
+        idiag_armphi=0; idiag_apmphi=0; idiag_azmphi=0
         idiag_dteta=0; idiag_uxBrms=0; idiag_Bresrms=0; idiag_Rmrms=0
         idiag_brm=0; idiag_bpm=0; idiag_bzm=0
         idiag_br2m=0; idiag_bp2m=0; idiag_bzz2m=0; idiag_brbpm=0
         idiag_bzbpm=0; idiag_brbzm=0; idiag_va2m=0
         idiag_jfm=0; idiag_brbpmr=0
         idiag_b2mr=0; idiag_brmr=0; idiag_bpmr=0; idiag_bzmr=0
+        idiag_armr=0; idiag_apmr=0; idiag_azmr=0
 !
       endif
 !
@@ -2259,6 +2284,10 @@ module Magnetic
         call parse_name(irz,cnamerz(irz),cformrz(irz),'jxbrmphi',idiag_jxbrmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'jxbpmphi',idiag_jxbpmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'jxbzmphi',idiag_jxbzmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'armphi'  ,idiag_armphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'apmphi'  ,idiag_apmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'azmphi'  ,idiag_azmphi)
+
       enddo
 !
 !  check for those quantities for which we want phiz-averages
@@ -2267,6 +2296,9 @@ module Magnetic
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'brmr',  idiag_brmr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'bpmr',  idiag_bpmr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'bzmr',  idiag_bzmr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'armr',  idiag_armr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'apmr',  idiag_apmr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'azmr',  idiag_azmr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'b2mr',  idiag_b2mr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'brbpmr',idiag_brbpmr)
       enddo
@@ -2348,9 +2380,15 @@ module Magnetic
         write(3,*) 'i_bpmphi=',idiag_bpmphi
         write(3,*) 'i_bzmphi=',idiag_bzmphi
         write(3,*) 'i_b2mphi=',idiag_b2mphi
+        write(3,*) 'i_armphi=',idiag_armphi
+        write(3,*) 'i_apmphi=',idiag_apmphi
+        write(3,*) 'i_azmphi=',idiag_azmphi
         write(3,*) 'i_brmr=',idiag_brmr
         write(3,*) 'i_bpmr=',idiag_bpmr
         write(3,*) 'i_bzmr=',idiag_bzmr
+        write(3,*) 'i_armr=',idiag_armr
+        write(3,*) 'i_apmr=',idiag_apmr
+        write(3,*) 'i_azmr=',idiag_azmr
         write(3,*) 'i_b2mr=',idiag_b2mr
         write(3,*) 'i_brbpmr=',idiag_brbpmr
         write(3,*) 'i_br2m=',idiag_br2m
@@ -3615,13 +3653,20 @@ module Magnetic
 !
       type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: OO,ux,uy
+      real, dimension (nx,2) :: puxb
 !
       intent(inout) :: df
 !
-      df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - &
-           p%uavg(:,2)*p%bavg(:,3)*p%x_mn*p%rcyl_mn1
-      df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - &
-           p%uavg(:,2)*p%bavg(:,3)*p%y_mn*p%rcyl_mn1
+!  the constant is sqrt((1-cs20)) for cs0=0.05
+!  Awful, I know, but it will stay like this for now...
+!
+      OO=0.998749*p%rcyl_mn**(-1.5)
+      ux=-OO*y(m)
+      uy= OO*x(l1:l2)
+      puxb(:,1)=uy*B_ext(3) ; puxb(:,2)=-ux*B_ext(3)
+!
+      df(l1:l2,m,n,iax:iay) = df(l1:l2,m,n,iax:iay) - puxb        
 !
     endsubroutine subtract_mean_emf
 !************************************************************************
