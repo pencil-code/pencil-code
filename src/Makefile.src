@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.274 2007-02-05 22:04:25 wlyra Exp $
+### $Id: Makefile.src,v 1.275 2007-02-08 11:24:21 dintrans Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -526,19 +526,21 @@ LD_FFTW2=
 #CFLAGS=-O3 -DFUNDERSC=1 #(brahe|cfe2)
 #LD_MPI=-lmpi #(brahe|cfe2)
 ##
-## Toulouse's Opteron cluster (116 procs)
+## Toulouse's machines: 
+## Opteron cluster (116 procs) + Altix 3700 (120 procs)
 ##
-#FC=ifort #(cict*)
+#FC=ifort #(cict*|soleil)
 #FFLAGS=-O3 -I/usr/local/mpilam/include #(cict*)
 #LD_MPI= -L/usr/local/mpilam/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread -ldl #(cict*)
 #LIBMPISUFFIX=_#(cict*)
+#FFLAGS=-O3 #(soleil)
+#LD_MPI= -lmpi #(soleil)
 
 ## Darwin:
 ## Power Macintosh
 #FC=g95
 #F77=$(FC)
 #FFLAGS=-O3
-#FFLAGS=-O0 #(ulysse)
 #CFLAGS=-DFUNDERSC=2
 #LD_MPI=
 #FC=xlf90 #(Nils)
@@ -559,11 +561,11 @@ LD_FFTW2=
 ##
 ## Petri's laptop (MacBook Pro)
 ##
-#FC=ifort #(Chandrasekhar|dhcp*)
+#FC=ifort #(Chandrasekhar|dhcp*|ulysse)
 #FFLAGS= -I/usr/local/include -O3 -stand f90 -assume no2underscores -vec-report0 #(Chandrasekhar|dhcp*)
-#CFLAGS=-DFUNDERSC=1 #(Chandrasekhar|dhcp*)
+#CFLAGS=-DFUNDERSC=1 #(Chandrasekhar|dhcp*|ulysse)
 #LD_MPI= -L/usr/local/include -llammpio -llamf77mpi -lmpi -llam -ldl #(Chandrasekhar|dhcp*)
-
+#FFLAGS=-O0 #(ulysse)
 
 ## SunOS:
 ## Solaris
