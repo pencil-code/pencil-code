@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.488 2007-02-07 21:12:03 wlyra Exp $
+! $Id: entropy.f90,v 1.489 2007-02-09 15:24:03 dintrans Exp $
 
 !
 !  This module takes care of entropy (initial condition
@@ -168,7 +168,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.488 2007-02-07 21:12:03 wlyra Exp $")
+           "$Id: entropy.f90,v 1.489 2007-02-09 15:24:03 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -833,6 +833,12 @@ module Entropy
           ! vertical temperature profiles for convective layer problem
           !
           call layer_ss(f)
+
+        case('bubble_hs')
+          print*,'init_ss: put bubble in hydrostatic equilibrium: radius_ss,ampl_ss=',radius_ss,ampl_ss
+          tmp=(xx-center1_x)**2+(yy-center1_y)**2+(zz-center1_z)**2
+          f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/radius_ss**2)
+          f(:,:,:,ilnrho)=f(:,:,:,ilnrho)-ampl_ss*exp(-tmp/radius_ss**2)
 
         case default
           !
