@@ -4,10 +4,10 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1.1.1 2006-07-12 19:46:45 dintrans Exp $',
-  nt=100, it1=10, isave=1000, itorder=3,
-  dsnap=0.25,
-  lpencil_check=T  ! test of the requested pencils
+  cvsid='$Id: run.in,v 1.2 2007-02-09 15:22:37 dintrans Exp $',
+  nt=50, it1=10, isave=1000, itorder=3,
+  dsnap=1., cdtv=0.4,
+  lpencil_check=F  ! test of the requested pencils
 /
 &eos_run_pars
 /
@@ -22,5 +22,5 @@
   lupw_ss=T        ! use upwinding for entropy to avoid wiggles
 /
 &viscosity_run_pars
-  ivisc='nu-const', nu=5e-3
+  ivisc='nu-const', nu=1e-3
 /
