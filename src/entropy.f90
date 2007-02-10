@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.489 2007-02-09 15:24:03 dintrans Exp $
+! $Id: entropy.f90,v 1.490 2007-02-10 13:03:39 dintrans Exp $
 
 !
 !  This module takes care of entropy (initial condition
@@ -168,7 +168,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.489 2007-02-09 15:24:03 dintrans Exp $")
+           "$Id: entropy.f90,v 1.490 2007-02-10 13:03:39 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -836,9 +836,8 @@ module Entropy
 
         case('bubble_hs')
           print*,'init_ss: put bubble in hydrostatic equilibrium: radius_ss,ampl_ss=',radius_ss,ampl_ss
-          tmp=(xx-center1_x)**2+(yy-center1_y)**2+(zz-center1_z)**2
-          f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/radius_ss**2)
-          f(:,:,:,ilnrho)=f(:,:,:,ilnrho)-ampl_ss*exp(-tmp/radius_ss**2)
+          call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
+          call blob(-ampl_ss,f,ilnrho,radius_ss,center1_x,center1_y,center1_z)
 
         case default
           !
