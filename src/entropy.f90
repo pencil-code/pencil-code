@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.490 2007-02-10 13:03:39 dintrans Exp $
+! $Id: entropy.f90,v 1.491 2007-02-11 14:33:54 dintrans Exp $
 
 !
 !  This module takes care of entropy (initial condition
@@ -168,7 +168,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.490 2007-02-10 13:03:39 dintrans Exp $")
+           "$Id: entropy.f90,v 1.491 2007-02-11 14:33:54 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -2438,10 +2438,9 @@ module Entropy
         thdiff = p%rho1*hcond * (p%del2lnTT + g2)
       endif  ! hcond0/=0
 !
-!  write z-profile (for post-processing)
+!  Write out hcond z-profile (during first time step only)
 !
-!     if (headt .and. lfirst .and. lgravz) call write_zprof('hcond',hcond)
-      if (lfirst) call write_zprof('hcond',hcond)
+      call write_zprof('hcond',hcond)
 !
 !  Write radiative flux array
 !
@@ -2493,7 +2492,7 @@ module Entropy
           call fatal_error('calc_heatcond','NaNs in thdiff')
         endif
       endif
-      if (lfirst .and. ip == 13) then
+      if (headt .and. lfirst .and. ip == 13) then
          call output_pencil(trim(directory)//'/heatcond.dat',thdiff,1)
       endif
 !     if (headt .and. lfirst .and. ip<=9) then

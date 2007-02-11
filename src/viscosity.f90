@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.52 2007-02-10 13:03:39 dintrans Exp $
+! $Id: viscosity.f90,v 1.53 2007-02-11 14:33:54 dintrans Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -91,7 +91,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.52 2007-02-10 13:03:39 dintrans Exp $")
+           "$Id: viscosity.f90,v 1.53 2007-02-11 14:33:54 dintrans Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -503,7 +503,8 @@ module Viscosity
 !  viscous force: nu(z)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
 !  -- here the nu viscosity depends on z; nu_jump=nu2/nu1
         pnu = nu + nu*(nu_jump-1.)*step(p%z_mn,znu,-widthnu)
-        if (lfirst .and. headt) call write_zprof('visc',pnu)
+!  Write out viscosity z-profile (during first time step only)
+        call write_zprof('visc',pnu)
         gradnu(:,1) = 0.
         gradnu(:,2) = 0.
         gradnu(:,3) = nu*(nu_jump-1.)*der_step(p%z_mn,znu,-widthnu)
