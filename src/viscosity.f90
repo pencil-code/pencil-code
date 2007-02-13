@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.54 2007-02-13 15:11:28 ajohan Exp $
+! $Id: viscosity.f90,v 1.55 2007-02-13 15:16:08 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -91,7 +91,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.54 2007-02-13 15:11:28 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.55 2007-02-13 15:16:08 ajohan Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -183,7 +183,7 @@ module Viscosity
           if (lroot) lvisc_LES=.true.
           lpenc_requested(i_sij)=.true.
           lvisc_smag_simplified=.true.
-        case ('smagorinsky_cross_simplified')
+        case ('smagorinsky_cross_simplif')
           if (lroot) print*,'viscous force: Smagorinsky_simplified'
           if (lroot) lvisc_LES=.true.
           lvisc_smag_cross_simplified=.true.
@@ -354,10 +354,9 @@ module Viscosity
         if (lentropy.or.ltemperature) lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
-      if (lvisc_smag_simplified .or. lvisc_smag_cross_simplified) then
-        lpenc_requested(i_graddivu)=.true.
-        lpenc_requested(i_sij2)=.true.
-      endif
+      if (lvisc_smag_simplified .or. lvisc_smag_cross_simplified) &
+          lpenc_requested(i_graddivu)=.true.
+      if (lvisc_smag_simplified) lpenc_requested(i_sij2)=.true.
       if (lvisc_smag_cross_simplified) lpenc_requested(i_ss12)=.true.
       if (lvisc_nu_prof) lpenc_requested(i_z_mn)=.true.
       if (lvisc_simplified .or. lvisc_rho_nu_const .or. lvisc_nu_const .or. &
