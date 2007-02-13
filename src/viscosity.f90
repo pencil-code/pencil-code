@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.53 2007-02-11 14:33:54 dintrans Exp $
+! $Id: viscosity.f90,v 1.54 2007-02-13 15:11:28 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -91,7 +91,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.53 2007-02-11 14:33:54 dintrans Exp $")
+           "$Id: viscosity.f90,v 1.54 2007-02-13 15:11:28 ajohan Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -350,11 +350,15 @@ module Viscosity
            lvisc_nu_const .or. lvisc_nu_shock .or. &
            lvisc_nu_prof)) lpenc_requested(i_TT1)=.true.
       if (lvisc_rho_nu_const .or. lvisc_nu_const .or. &
-          lvisc_smag_cross_simplified .or. lvisc_nu_prof) then
+          lvisc_nu_prof) then
         if (lentropy.or.ltemperature) lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
-      if (lvisc_smag_simplified) lpenc_requested(i_ss12)=.true.
+      if (lvisc_smag_simplified .or. lvisc_smag_cross_simplified) then
+        lpenc_requested(i_graddivu)=.true.
+        lpenc_requested(i_sij2)=.true.
+      endif
+      if (lvisc_smag_cross_simplified) lpenc_requested(i_ss12)=.true.
       if (lvisc_nu_prof) lpenc_requested(i_z_mn)=.true.
       if (lvisc_simplified .or. lvisc_rho_nu_const .or. lvisc_nu_const .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
@@ -372,7 +376,8 @@ module Viscosity
       if (lvisc_hyper3_rho_nu_const_bulk) lpenc_requested(i_del6u_bulk)=.true.
       if (lvisc_hyper2_simplified) lpenc_requested(i_del4u)=.true.
       if (lvisc_rho_nu_const .or. lvisc_hyper3_rho_nu_const .or. &
-          lvisc_hyper3_rho_nu_const_bulk .or. lvisc_hyper3_rho_nu_const_aniso .or. &
+          lvisc_hyper3_rho_nu_const_bulk .or. &
+          lvisc_hyper3_rho_nu_const_aniso .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_hyper3_rho_nu_const_symm) lpenc_requested(i_rho1)=.true.
 
