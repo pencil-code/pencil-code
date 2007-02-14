@@ -7,8 +7,12 @@
 
 # Build the code:
 default:
-	( (echo $(USER)"@"`hostname` "("`date`")" ) >> src/compile-history.local; cd src; $(MAKE) FROM_PARENT=src/ -f Makefile.src Makefile; $(MAKE) FROM_PARENT=src/ )
-	#(cd src; $(MAKE) FROM_PARENT=src/ -f Makefile.src Makefile; $(MAKE) FROM_PARENT=src/)
+	touch src/.build-history
+	echo $(USER)"@"`hostname` "("`date`")" >> src/.build-history
+	( cd src && \
+	  $(MAKE) FROM_PARENT=src/ -f Makefile.src Makefile && \
+	  $(MAKE) FROM_PARENT=src/ \
+	)
 
 # Use calculated dependencies instead:
 depend dep:
