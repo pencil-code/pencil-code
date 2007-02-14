@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.1 2007-02-14 13:04:17 wlyra Exp $
+! $Id: temperature_idealgas.f90,v 1.2 2007-02-14 13:52:26 wlyra Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -39,6 +39,8 @@ module Entropy
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
+  logical :: lfreeze_lnTTint=.false.,lfreeze_lnTText=.false.
+
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=4) :: iinit_str
 
@@ -56,7 +58,8 @@ module Entropy
   namelist /entropy_run_pars/ &
        lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
       heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
-      lheatc_chiconst_accurate,lcalc_heat_cool
+      lheatc_chiconst_accurate,lcalc_heat_cool,&
+      lfreeze_lnTTint,lfreeze_lnTText
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
   integer :: idiag_yHmax=0,idiag_yHmin=0,idiag_yHm=0
@@ -90,7 +93,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.1 2007-02-14 13:04:17 wlyra Exp $")
+           "$Id: temperature_idealgas.f90,v 1.2 2007-02-14 13:52:26 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -135,6 +138,11 @@ module Entropy
       endif
 !
       call select_eos_variable('lnTT',ilnTT)
+!
+!  freeze temperature
+!
+      if (lfreeze_lnTTint) lfreeze_varint(ilnTT)=.true.
+      if (lfreeze_lnTText) lfreeze_varext(ilnTT)=.true.
 !
     endsubroutine initialize_entropy
 !***********************************************************************
