@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.195 2007-02-06 09:15:49 wlyra Exp $
+! $Id: initcond.f90,v 1.196 2007-02-15 16:27:42 wlyra Exp $
 
 module Initcond
 
@@ -2517,7 +2517,7 @@ module Initcond
 !
     endsubroutine random_isotropic_KS
 !**********************************************************
-    subroutine power_law(f,iglobal_gg,lnrho_const,plaw,lstratified)
+    subroutine power_law(f,iglobal_gg,plaw,ptlaw,lstratified)
 !
 ! Yields from Minimum Mass Solar Nebula model
 !
@@ -2533,29 +2533,29 @@ module Initcond
       use FArrayManager
       use Mpicomm, only: stop_it
       use General
-      use EquationOfState, only:cs0,cs20,gamma11,gamma1,gamma
+      use EquationOfState, only:cs0,cs20,rho0
       use Sub, only: grad
       use Deriv, only: der
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: r_cyl,r_sph,OO,OO_sph,OO_cyl,corr,rr
+      real, dimension(mx) :: r_cyl,r_sph,OO,OO_sph,OO_cyl,corr,rr,TT,tmp
       real, dimension(nx) :: grhoz,rmn_sph,rmn_cyl,rho
       real, dimension(nx,3) :: gg_mn,glnTT
-      real :: lnrho_const,plaw,corr2
+      real :: plaw,ptlaw
       logical :: lstratified,lheader
       integer :: iglobal_gg
       integer, pointer :: iglobal_cs2,iglobal_glnTT
 !
-      real :: g0,rr0,mach
+      real :: g0,rr0,mach,k0,sig,nu
 !
       nullify(iglobal_cs2)
       nullify(iglobal_glnTT)
 !
 ! Pencilize to save memory
 !
-      if (lentropy) then 
+      if (ltemperature) then 
          g0=1.3e3 !e26(cgs)
-         rr0=7.8  !e12
+         rr0=7.47990  !e12
       else 
          g0=1.0
          rr0=1. 
@@ -2564,7 +2564,6 @@ module Initcond
 !
       do m=1,my
         do n=1,mz
-!
           lheader=(lroot.and.(m==1).and.(n==1))
 !
 ! All needed stuff
@@ -2578,7 +2577,7 @@ module Initcond
 !
 ! Radial stratification
           if (lheader) print*,'Radial stratification with power law=',plaw
-          f(:,m,n,ilnrho) = lnrho_const - plaw*alog(r_cyl)
+          f(:,m,n,ilnrho) = alog(rho0) - plaw*alog(r_cyl/rr0)
 !
 ! Write vertical stratification on top of radial stratification
 !
@@ -2589,29 +2588,20 @@ module Initcond
              f(:,m,n,ilnrho) = max((r_cyl - r_sph)/(r_sph*cs20),-65.)
 ! pressure corrected velocities
              corr = r_cyl/r_sph - cs20
-            !check for imaginary velocities
-             !do i=1,mx
-             !   if (corr(i).lt.0) &
-             !        call stop_it("Imaginary velocites due to large temperatures in the disc.")
-             !enddo
              OO = OO_sph !sqrt(OO_cyl**2 * corr)
           else
 ! Cylindrical disc
              if (lheader) print*,'Cylindrical disc initial condition'
-             corr2 =  1-(1+plaw)/mach**2  
-             if (corr2.ge.0) then
-                OO = sqrt(OO_cyl**2 * corr2)
-             else
-                call stop_it("Imaginary velocites due to large temperatures in the disc.")
-             endif
+             corr = ptlaw*cs20/r_cyl**(2+ptlaw)
+             tmp = max(OO_cyl**2-corr,0.)
+             OO=sqrt(tmp)
           endif
 !
 ! Velocity field. Don't overwrite
 !
-          if (lentropy)  OO = OO_cyl !for heidar
           f(:,m,n,iux)= f(:,m,n,iux) - y(m)*OO
           f(:,m,n,iuy)= f(:,m,n,iuy) +    x*OO
-          f(:,m,n,iuz)= f(:,m,n,iuz) +  0.
+          f(:,m,n,iuz)= f(:,m,n,iuz) + 0.
 !
         enddo
       enddo
@@ -2653,8 +2643,8 @@ module Initcond
 !
           if (lheader) print*,&
                'set sound speed as global variable: Mach number at midplane=',mach
-          if (lentropy.and.llocal_iso) then
-             print*,'You are using lentropy, but llocal_iso is switched on in'
+          if (ltemperature.and.llocal_iso) then
+             print*,'You are using temperature, but llocal_iso is switched on in'
              print*,'start.in. Better changed it'
              call stop_it("")
           endif
@@ -2662,22 +2652,23 @@ module Initcond
           if (llocal_iso) then
 !sound speed
             call farray_use_global('cs2',iglobal_cs2)
-            f(l1:l2,m,n,iglobal_cs2)= cs20/(rmn_cyl/rr0)
+            f(l1:l2,m,n,iglobal_cs2)= cs20/(rmn_cyl/rr0)**ptlaw
 !temperature gradient
             call farray_use_global('glnTT',iglobal_glnTT)
-            f(l1:l2,m,n,iglobal_glnTT  )=-x(l1:l2)/rmn_cyl**2
-            f(l1:l2,m,n,iglobal_glnTT+1)=-  y(m)  /rmn_cyl**2
+            f(l1:l2,m,n,iglobal_glnTT  )=-ptlaw*x(l1:l2)/rmn_cyl**2
+            f(l1:l2,m,n,iglobal_glnTT+1)=-ptlaw*  y(m)  /rmn_cyl**2
             f(l1:l2,m,n,iglobal_glnTT+2)=0.
-!else do it all as entropy
-          else if (lentropy) then
+!else do it all as temperature
+          else if (ltemperature) then
              rr=sqrt(x(:)**2+y(m)**2)
-             f(:,m,n,iss) = f(:,m,n,iss) + &
-             1./gamma*(log(rr0)-log(rr) -gamma1*f(:,m,n,ilnrho)) !-lnrho0))
+             k0=2e-6 ; nu=5e-2 ; sig=5.6704E-007
+             TT=sqrt(27./128*k0*nu/sig) * exp(f(:,m,n,ilnrho)) * sqrt(g0/rr**3)
+             f(:,m,n,ilnTT) = f(:,m,n,ilnTT) + alog(TT)
           else
             print*,"No thermodynamical variable. Choose if you want a "
             print*,"local thermodynamical approximation (switch llocal_iso=T in"
             print*,"init_pars and entropy=noentropy on Makefile.local), or if "
-            print*,"you want to compute the entropy via sound speed and density"
+            print*,"you want to compute the temperature directly and evolve it."
             call stop_it("")
           endif
         enddo

@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.309 2007-02-15 16:11:55 theine Exp $
+! $Id: density.f90,v 1.310 2007-02-15 16:27:42 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.309 2007-02-15 16:11:55 theine Exp $")
+           "$Id: density.f90,v 1.310 2007-02-15 16:27:42 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -664,11 +664,9 @@ module Density
         call shell_lnrho(f)
 
       case('globaldisc')
-      !
-      !minimum mass solar nebula
-      !
+!minimum mass solar nebula
         if (lroot)  print*,'init_lnrho: initialize initial condition for Keplerian global disc'
-        !call power_law(f,iglobal_gg,lnrho_const,plaw,ptlaw,lstratified)
+        call power_law(f,iglobal_gg,plaw,ptlaw,lstratified)
 
      case ('step_xz')
         call fatal_error('init_lnrho','neutron_star initial condition is now in the special/neutron_star.f90 code')
