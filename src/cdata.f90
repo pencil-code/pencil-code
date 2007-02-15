@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.351 2007-02-05 21:53:51 wlyra Exp $
+! ! $Id: cdata.f90,v 1.352 2007-02-15 15:23:53 wlyra Exp $
 
 module Cdata
 
@@ -172,7 +172,6 @@ module Cdata
   real, dimension (nx,nz,nprocz,mnamexz) :: fnamexz
   real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fnamerz
   real, dimension (nrcyl,nx) :: phiavg_profile
-  real, dimension (nrcyl) :: norm1
   character (LEN=30) :: cname(mname),cform(mname)
   character (LEN=30) :: cnamev(mname)
   character (LEN=30) :: cnamexy(mnamexy),cformxy(mnamexy)
@@ -221,7 +220,7 @@ module Cdata
   logical :: ldiagnos=.false.,lvid=.false.,lwrite_prof=.true.
   logical :: l2davg=.false.,l2davgfirst=.false.
   logical :: l1ddiagnos=.false.,l1dout=.false.,l1dphiavg=.false.
-  logical :: lwrite_phizaverages=.true.,lrtime_phiavg=.false.
+  logical :: lwrite_phizaverages=.true.
   logical :: lwrite_yaverages=.true.,lwrite_zaverages=.true.,lwrite_phiaverages=.true.
   logical :: ldiagnos_need_zaverages=.false.
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.

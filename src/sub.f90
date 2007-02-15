@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.280 2007-02-06 22:33:33 dobler Exp $
+! $Id: sub.f90,v 1.281 2007-02-15 15:23:53 wlyra Exp $
 
 module Sub
 
@@ -55,7 +55,7 @@ module Sub
   public :: ysum_mn_name_xz, zsum_mn_name_xy, phisum_mn_name_rz
   public :: date_time_string
 
-  public :: calc_phiavg_profile
+  public :: calc_phiavg_profile,calc_phiavg_profile2
 
   public :: max_for_dt
 
@@ -64,7 +64,7 @@ module Sub
 
   public :: tensor_diffusion_coef
 
-  public :: smooth_kernel, despike, rtime_phiavg
+  public :: smooth_kernel, despike
 
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -213,11 +213,6 @@ module Sub
     module procedure sine_step_pt
     module procedure sine_step_mn
     module procedure sine_step_global
-  endinterface
-
-  interface rtime_phiavg
-     module procedure rtime_phiavg_scl
-     module procedure rtime_phiavg_vec
   endinterface
 !
 !  extended intrinsic operators to do some scalar/vector pencil arithmetic
@@ -716,7 +711,7 @@ module Sub
 !
     endsubroutine zsum_mn_name_xy
 !***********************************************************************
-    subroutine calc_phiavg_profile(p,lnorm)
+    subroutine calc_phiavg_profile(p)
 !
 !  Calculate profile for phi-averaging for given pencil
 !
@@ -728,8 +723,6 @@ module Sub
       type (pencil_case) :: p
       real :: r0,width
       integer :: ir
-      logical :: lnorm
-      real, dimension(nrcyl) :: norm,norm_sum
 !
 !  We use a quartic-Gaussian profile ~ exp(-r^4)
 !
@@ -739,20 +732,6 @@ module Sub
         r0 = rcyl(ir)
         phiavg_profile(ir,:) = exp(-0.5*((p%rcyl_mn-r0)/width)**4)
       enddo
-!
-      if (lnorm) then
-         if (lfirstpoint) norm=0.
-         if (n==nghost+1) then
-            do ir=1,nrcyl
-               norm(ir)=norm(ir) + sum(1*phiavg_profile(ir,:))*nz
-            enddo
-         endif
-         if (llastpoint) then
-            call mpireduce_sum(norm,norm_sum,nrcyl)
-            call mpibcast_real(norm_sum,nrcyl)
-            norm1=1./norm_sum
-         endif
-      endif
 !
     endsubroutine calc_phiavg_profile
 !***********************************************************************
@@ -806,128 +785,6 @@ module Sub
 !
     endsubroutine phisum_mn_name_rz
 !***********************************************************************
-    subroutine rtime_phiavg_scl(a,b,p,irt)
-!
-!  Perform phi-averages in runtime. An average of dimension
-!  nrcyl is calculated and mapped back onto the grid with
-!  a (expensive) spline interpolation.
-!
-!  Called to set the pencils rhoavg,savg
-!
-!  TODO: frt does not need be of dimension mvar
-!        It should be mvar-3*(number or vector quantities)
-!
-!
-!  05-feb-07/wlad : coded
-!
-      use Cdata
-      use Mpicomm
-      use General, only: spline
-!
-      real, dimension(nx)    :: a,b
-      real, dimension(nrcyl,mvar) :: tmp,frt
-      real, dimension(nrcyl) :: tmp_sum
-      type (pencil_case) :: p
-      integer :: ir,irt
-      logical :: err
-!
-!  Expand the existing average (from previous tstep) onto the pencil
-!  with spline interpolation. At it=1, the average can't be calculated
-!
-      if (it==1) then
-         b=a
-      else
-         call spline(rcyl,frt(:,irt),p%rcyl_mn,b,nrcyl,nx,err)
-      endif
-!
-!  Calculate the new average. The tmp must also be quantity-wise, lest
-!  ilnrho will read the old contents of iss or vice-versa.          
-!
-      if (lfirstpoint) tmp(:,irt)=0.
-!
-      do ir=1,nrcyl
-         tmp(ir,irt) = tmp(ir,irt) + sum(a*phiavg_profile(ir,:))
-      enddo
-!
-!  At the last point the sum is finished on this processor
-!  Just need to sum across processors, send to root and broadcast
-!
-      if (llastpoint) then
-         call mpireduce_sum(tmp(:,irt),tmp_sum,nrcyl)
-         call mpibcast_real(tmp_sum,nrcyl)
-         !normalize
-         frt(:,irt)=tmp_sum*norm1
-      endif
-!
-    endsubroutine rtime_phiavg_scl
-!******************************************************************
-    subroutine rtime_phiavg_vec(a,b,p,irt)
-!
-!  Perform phi-averages in runtime. An average of dimension
-!  nrcyl is calculated and mapped back onto the grid with
-!  a (expensive) spline interpolation.
-!
-!  Called to set the pencils bavg,uavg
-!
-!  TODO: frt does not need be of dimension mvar
-!        It should be mvar-(number or scalar quantities)
-!
-!  05-feb-07/wlad : coded
-!
-      use Cdata
-      use Mpicomm
-      use General, only: spline
-!
-      real, dimension(nx,3)     :: a,b,acyl
-      real, dimension(nrcyl,mvar)  :: tmp,frt 
-      real, dimension(nrcyl,3) :: tmp_sum
-      type (pencil_case) :: p
-      integer :: j,ir,irt,ju
-      logical :: err
-!
-!  Pass to cylindrical
-!
-      acyl(:,1)=a(:,1)*p%pomx+a(:,2)*p%pomy
-      acyl(:,2)=a(:,1)*p%phix+a(:,2)*p%phiy
-      acyl(:,3)=a(:,3)
-!
-!  Expand the existing average (from previous tstep) onto the pencil
-!  with spline interpolation. At it=1, the average can't be calculated
-!
-      if (it==1) then
-         b=acyl
-      else
-         do j=1,3
-            ju=irt-1+j
-            call spline(rcyl,frt(:,ju),p%rcyl_mn,b(:,j),nrcyl,nx,err)
-         enddo
-      endif
-!
-!  Calculate the new average. The tmp must also be quantity-wise, lest
-!  iuu will read the old contents of iaa or vice-versa.
-!
-      do j=1,3
-         ju=irt-1+j
-         if (lfirstpoint) tmp(:,ju)=0.
-!
-         do ir=1,nrcyl
-            tmp(ir,ju) = tmp(ir,ju)   + sum(acyl(:,j)*phiavg_profile(ir,:))
-         enddo
-!
-!  At the last point the sum is finished on this processor
-!  Just need to sum across processors, send to root and broadcast
-!
-         if (llastpoint) then
-            call mpireduce_sum(tmp(:,ju),tmp_sum(:,j),nrcyl)
-            call mpibcast_real(tmp_sum(:,j),nrcyl)
-!normalize
-            frt(:,ju)=tmp_sum(:,j)*norm1
-         endif
-!
-      enddo
-!
-    endsubroutine rtime_phiavg_vec
-!************************************************************************
     subroutine max_mn(a,res)
 !
 !  successively calculate maximum of a, which is supplied at each call.
