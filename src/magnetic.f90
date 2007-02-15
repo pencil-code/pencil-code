@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.382 2007-02-15 15:43:34 wlyra Exp $
+! $Id: magnetic.f90,v 1.383 2007-02-15 16:02:14 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -216,7 +216,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.382 2007-02-15 15:43:34 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.383 2007-02-15 16:02:14 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1049,7 +1049,7 @@ module Magnetic
 !  add jxb/rho to momentum equation
 !
       if (lhydro) then
-        !if (llorentzforce) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+        if (llorentzforce) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
       endif
 !
 !  Restivivity term
@@ -1188,7 +1188,7 @@ module Magnetic
 !  Induction equation
 !
       if (.not.lupw_aa) then
-        !df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + p%uxb + fres
+        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + p%uxb + fres
       else
 !
 !  Use upwinding for the advection term.
