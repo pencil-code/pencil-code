@@ -3,7 +3,7 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   =   nompicomm
+MPICOMM   = nompicomm
 
 HYDRO     =   hydro
 DENSITY   =   density
@@ -20,6 +20,8 @@ SHOCK     =   shock
 PARTICLES       = particles_dust
 PARTICLES_NBODY = particles_nbody
 BORDER_PROF     = border_profiles
+
+SPECIAL         = special/rtime_phiavg
 
 REAL_PRECISION=double
 
