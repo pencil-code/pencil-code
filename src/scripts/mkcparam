@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.49 2007-02-05 21:58:56 wlyra Exp $
+# CVS: $Id: mkcparam,v 1.50 2007-02-15 15:27:14 wlyra Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -93,7 +93,6 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'b2'           => ', dimension (nx)',
                   'bb'           => ', dimension (nx,3)',
                   'bbb'          => ', dimension (nx,3)',
-                  'bavg'         => ', dimension (nx,3)',
                   'bij'          => ', dimension (nx,3,3)',
                   'beta'         => ', dimension (nx)',
                   'bgecr'        => ', dimension (nx)',
@@ -227,10 +226,8 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'rho1gpp'      => ', dimension (nx,3)',
                   'rhod'         => ', dimension (nx,ndustspec)',
                   'rhop'         => ', dimension (nx)',
-                  'rhoavg'       => ', dimension (nx)',
                   'epsd'         => ', dimension (nx,ndustspec)',
                   'epsp'         => ', dimension (nx)',
-		  'savg'         => ', dimension (nx)',
                   'sglnrho'      => ', dimension (nx,3)',
                   'sdglnnd'      => ', dimension (nx,3,ndustspec)',
                   'shock'        => ', dimension (nx)',
@@ -272,7 +269,6 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'udgnd'        => ', dimension (nx,ndustspec)',
                   'ugss'         => ', dimension (nx)',
                   'uglnTT'       => ', dimension (nx)',
-                  'uavg'         => ', dimension (nx,3)',
                   'uxb'          => ', dimension (nx,3)',
                   'uxb2'         => ', dimension (nx)',
                   'uxj'          => ', dimension (nx,3)',
