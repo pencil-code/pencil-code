@@ -1,4 +1,4 @@
-! $Id: rtime_phiavg.f90,v 1.1 2007-02-15 15:20:56 wlyra Exp $
+! $Id: rtime_phiavg.f90,v 1.2 2007-02-15 16:25:49 wlyra Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -97,6 +97,10 @@ module Special
   integer :: idiag_br2m=0 ,idiag_bp2m=0 ,idiag_bzz2m=0
   integer :: idiag_brbpm=0,idiag_bzbpm=0,idiag_brbzm=0
 !
+! 1D average diagnostics
+! 
+  integer :: idiag_brbpmr=0, idiag_urupmr=0
+!
   contains
 
 !***********************************************************************
@@ -137,11 +141,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.1 2007-02-15 15:20:56 wlyra Exp $
+!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.2 2007-02-15 16:25:49 wlyra Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: rtime_phiavg.f90,v 1.1 2007-02-15 15:20:56 wlyra Exp $")
+           "$Id: rtime_phiavg.f90,v 1.2 2007-02-15 16:25:49 wlyra Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -279,7 +283,7 @@ module Special
 !
 !  define diagnostics variable
 !
-      integer :: iname
+      integer :: iname,inamer
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -299,6 +303,8 @@ module Special
          idiag_brm=0  ;idiag_bpm=0  ;idiag_bzm=0
          idiag_br2m=0 ;idiag_bp2m=0 ;idiag_bzz2m=0
          idiag_brbpm=0;idiag_bzbpm=0;idiag_brbzm=0
+         !1d
+         idiag_brbpmr=0;idiag_urupmr=0
       endif
 !
       do iname=1,nname
@@ -324,7 +330,13 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'brbzm',idiag_brbzm)
       enddo
 !
-!  write column where which magnetic variable is stored
+      do inamer=1,nnamer
+         call parse_name(inamer,cnamer(inamer),cform(inamer),'urupmr',idiag_urupmr)
+         call parse_name(inamer,cnamer(inamer),cform(inamer),'brbpmr',idiag_brbpmr)
+      enddo
+!
+!  write column where which special variable is stored
+!
       if (lwr) then
          !hydro
         write(3,*) 'i_urm=',idiag_urm
@@ -342,7 +354,9 @@ module Special
         write(3,*) 'i_bp2m=',idiag_bp2m
         write(3,*) 'i_bzz2m=',idiag_bzz2m
         write(3,*) 'i_brbpm=',idiag_brbpm
-
+        !1d
+        write(3,*) 'i_brbpmr=',idiag_brbpmr
+        write(3,*) 'i_urupmr=',idiag_urupmr
       endif
 !
     endsubroutine rprint_special
