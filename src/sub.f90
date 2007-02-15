@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.281 2007-02-15 15:23:53 wlyra Exp $
+! $Id: sub.f90,v 1.282 2007-02-15 15:36:01 wlyra Exp $
 
 module Sub
 
@@ -55,7 +55,7 @@ module Sub
   public :: ysum_mn_name_xz, zsum_mn_name_xy, phisum_mn_name_rz
   public :: date_time_string
 
-  public :: calc_phiavg_profile,calc_phiavg_profile2
+  public :: calc_phiavg_profile
 
   public :: max_for_dt
 
