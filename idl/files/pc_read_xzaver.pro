@@ -1,4 +1,4 @@
-;; $Id: pc_read_xzaver.pro,v 1.4 2007-01-16 06:13:56 ajohan Exp $
+;; $Id: pc_read_xzaver.pro,v 1.5 2007-02-15 09:57:06 ajohan Exp $
 ;;
 ;;   Read xz-averages from file
 ;;
@@ -78,7 +78,7 @@ endfor
 if (monotone) then begin
   ii=monotone_array(tt)
 endif else begin
-  ii=indgen(n_elements(tt))
+  ii=lindgen(n_elements(tt))
 endelse
 ;;
 ;;  Put data in structure.

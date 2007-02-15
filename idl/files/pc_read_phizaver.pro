@@ -1,4 +1,4 @@
-;; $Id: pc_read_phizaver.pro,v 1.1 2007-01-31 12:22:40 wlyra Exp $
+;; $Id: pc_read_phizaver.pro,v 1.2 2007-02-15 09:57:06 ajohan Exp $
 ;;
 ;;   Read phiz-averages from file
 ;;
@@ -86,7 +86,7 @@ endfor
 if (monotone) then begin
   ii=monotone_array(tt)
 endif else begin
-  ii=indgen(n_elements(tt))
+  ii=lindgen(n_elements(tt))
 endelse
 ;;
 ;;  Put data in structure.

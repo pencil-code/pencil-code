@@ -1,4 +1,4 @@
-;; $Id: pc_read_yzaver.pro,v 1.3 2006-08-28 11:09:00 ajohan Exp $
+;; $Id: pc_read_yzaver.pro,v 1.4 2007-02-15 09:57:06 ajohan Exp $
 ;;
 ;;   Read yz-averages from file
 ;;
@@ -62,7 +62,7 @@ openr, file, filename
 ;;
 ;;  Read xy-averages and put in arrays.
 ;;
-for it=0,nit-1 do begin
+for it=0L,nit-1 do begin
 ;; Read time
   readf, file, t
   tt[it]=t
@@ -79,7 +79,7 @@ endfor
 if (monotone) then begin
   ii=monotone_array(tt)
 endif else begin
-  ii=indgen(n_elements(tt))
+  ii=lindgen(n_elements(tt))
 endelse
 ;;
 ;;  Put data in structure.
@@ -87,6 +87,7 @@ endelse
 makeobject="object = CREATE_STRUCT(name=objectname,['t'," + $
     arraytostring(varnames,QUOTE="'",/noleader) + "]," + $
     "tt[ii],"+arraytostring(varnames+'[*,ii]',/noleader) + ")"
+print, makeobject
 
 if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /INFO
