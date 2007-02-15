@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.491 2007-02-11 14:33:54 dintrans Exp $
+! $Id: entropy.f90,v 1.492 2007-02-15 15:28:36 wlyra Exp $
 
 !
 !  This module takes care of entropy (initial condition
@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ugss,Ma2,fpres,savg
+! PENCILS PROVIDED ugss,Ma2,fpres
 !
 !***************************************************************
 module Entropy
@@ -168,7 +168,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.491 2007-02-11 14:33:54 dintrans Exp $")
+           "$Id: entropy.f90,v 1.492 2007-02-15 15:28:36 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1644,8 +1644,6 @@ module Entropy
         lpenc_diagnos(i_rcyl_mn)=.true.
       endif
 !
-      if (lrtime_phiavg) lpenc_diagnos(i_savg)=.true.
-!
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
     subroutine pencil_interdep_entropy(lpencil_in)
@@ -1714,9 +1712,6 @@ module Entropy
           enddo
         endif
       endif
-!
-      if (lrtime_phiavg.and.lpencil(i_savg).and.lfirst) &
-           call rtime_phiavg(p%ss,p%savg,p,iss)
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************
