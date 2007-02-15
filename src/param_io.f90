@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.264 2007-02-05 22:02:21 wlyra Exp $
+! $Id: param_io.f90,v 1.265 2007-02-15 15:43:34 wlyra Exp $
 
 module Param_IO
 
@@ -98,7 +98,7 @@ module Param_IO
        lrescaling, lcylindrical, &
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
-       lbidiagonal_derij,lrtime_phiavg
+       lbidiagonal_derij
   contains
 
 !***********************************************************************
