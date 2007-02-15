@@ -1,5 +1,5 @@
 ;;
-;;  $Id: monotone_array.pro,v 1.4 2006-10-07 01:32:29 joishi Exp $
+;;  $Id: monotone_array.pro,v 1.5 2007-02-15 05:36:54 ajohan Exp $
 ;;
 ;;  monotone_array - take array and return index of monotonous growth.
 ;;
@@ -11,7 +11,7 @@ array2=fltarr(n)
 index=intarr(n)
 
 array2[0]=array[0]
-j=0
+j=0L
 
 for i=1L,n-1 do begin
 
