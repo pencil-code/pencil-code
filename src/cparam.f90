@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.60 2007-02-15 15:23:53 wlyra Exp $
+! $Id: cparam.f90,v 1.61 2007-02-15 16:39:36 wlyra Exp $
 
 module Cparam
 
@@ -41,7 +41,7 @@ module Cparam
   integer, parameter :: n1i=n1+nghost-1,n2i=n2-nghost+1
 !
   integer, parameter :: nrcyl=nx/2     ! used for azimuthal averages
-  integer, parameter :: nrcylrun=nx/20
+  integer, parameter :: nrcylrun=max(nx/20,1)
 !
 !  array dimension for reduce operation (maxima and sums)
 !  use here symbol mreduce, use nreduce in call
