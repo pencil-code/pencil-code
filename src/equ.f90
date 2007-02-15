@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.347 2007-02-05 21:53:51 wlyra Exp $
+! $Id: equ.f90,v 1.348 2007-02-15 15:29:30 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -411,7 +411,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.347 2007-02-05 21:53:51 wlyra Exp $")
+           "$Id: equ.f90,v 1.348 2007-02-15 15:29:30 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -579,13 +579,9 @@ module Equ
 !
 !  calculate profile for phi-averages if needed
 !
-        !subtime-step immediately before ldiagnos
-        ldiagnos_mdt=(mod(it-2,it).eq.0).and.llast 
-!
         if ((l2davgfirst  .and. lwrite_phiaverages  )  .or. &
-            (l1dphiavg    .and. lwrite_phizaverages )  .or. &
-            ((ldiagnos.or.ldiagnos_mdt).and.lrtime_phiavg)) &
-            call calc_phiavg_profile(p,lrtime_phiavg)
+            (l1dphiavg    .and. lwrite_phizaverages ))  &
+            call calc_phiavg_profile(p)
 !            
 !  Calculate pencils for the pencil_case
 !
@@ -716,7 +712,7 @@ module Equ
 !
           do iv=1,nvar
             if (lfreeze_varint(iv)) &
-                df(l1:l2,m,n,iv) = pfreeze_int*df(l1:l2,m,n,iv)
+                 df(l1:l2,m,n,iv) = pfreeze_int*df(l1:l2,m,n,iv)
           enddo
         endif
 
