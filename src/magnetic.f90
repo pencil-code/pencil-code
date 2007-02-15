@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.380 2007-02-13 15:16:21 ajohan Exp $
+! $Id: magnetic.f90,v 1.381 2007-02-15 15:26:37 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -18,7 +18,7 @@
 ! PENCILS PROVIDED j2,jb,va2,jxb,jxbr,ub,uxb,uxb2,uxj,beta,uga
 ! PENCILS PROVIDED djuidjbi,jo,ujxb,oxu,oxuxb,jxbxb,jxbrxb
 ! PENCILS PROVIDED glnrhoxb,del4a,del6a,oxj,diva,jij,sj,ss12
-! PENCILS PROVIDED mf_EMF, mf_EMFdotB,bavg
+! PENCILS PROVIDED mf_EMF, mf_EMFdotB
 !
 !***************************************************************
 
@@ -123,7 +123,6 @@ module Magnetic
   real :: alphaSSm=0.
   real :: k1_ff=1.,ampl_ff=1.
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
-  logical :: llarge_scale_Bz=.false.
   logical :: lweyl_gauge=.false.
   logical :: lupw_aa=.false.
   logical :: lforcing_continuous=.false.
@@ -147,7 +146,7 @@ module Magnetic
        lee_ext,lbb_ext,ljj_ext,displacement_gun, &
        pertaa,pertamplaa,D_smag,brms_target,rescaling_fraction, &
        lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint,lfreeze_aext, &
-       llarge_scale_Bz,borderaa,eta_aniso_hyper3
+       borderaa,eta_aniso_hyper3
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0
@@ -175,10 +174,7 @@ module Magnetic
   integer :: idiag_jxbrmphi=0,idiag_jxbpmphi=0,idiag_jxbzmphi=0
   integer :: idiag_armphi=0,idiag_apmphi=0,idiag_azmphi=0
   integer :: idiag_uxBrms=0,idiag_Bresrms=0,idiag_Rmrms=0
-  integer :: idiag_brm=0,idiag_bpm=0,idiag_bzm=0
-  integer :: idiag_br2m=0,idiag_bp2m=0,idiag_bzz2m=0
-  integer :: idiag_brbpm=0,idiag_bzbpm=0,idiag_brbzm=0,idiag_vA2m=0
-  integer :: idiag_jfm=0,idiag_brbpmr=0
+  integer :: idiag_jfm=0,idiag_brbpmr=0,idiag_vA2m=0
   integer :: idiag_b2mr=0,idiag_brmr=0,idiag_bpmr=0,idiag_bzmr=0
   integer :: idiag_armr=0,idiag_apmr=0,idiag_azmr=0
   contains
@@ -220,7 +216,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.380 2007-02-13 15:16:21 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.381 2007-02-15 15:26:37 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -457,6 +453,7 @@ module Magnetic
          case('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,yy,ky_aa(j),mu0)
          case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
          case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,xx,yy,rmode)
+         case('Alfven-zconst'); call alfven_zconst(f,xx,yy)
          case('Alfven-rz'); call alfven_rz(amplaa(j),f,xx,yy,rmode)
          case('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
          case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
@@ -600,15 +597,8 @@ module Magnetic
         lpenc_requested(i_j2)=.true.
       endif
 
-      if (llarge_scale_Bz) then
-        lpenc_diagnos(i_uavg)=.true.
-        lpenc_diagnos(i_bavg)=.true.
-        lpenc_diagnos(i_x_mn)=.true.
-        lpenc_diagnos(i_y_mn)=.true.
-        lpenc_diagnos(i_rcyl_mn)=.true.
-      endif
-
-      if (borderaa=='Alfven-rz') lpenc_requested(i_rcyl_mn1)=.true.
+      if (borderaa=='Alfven-rz')     lpenc_requested(i_rcyl_mn1)=.true.
+      if (borderaa=='Alfven-zconst') lpenc_requested(i_rcyl_mn1)=.true.
 
       if (lentropy .or. ltemperature .or. ldt) lpenc_requested(i_rho1)=.true.
       if (lentropy .or. ltemperature) lpenc_requested(i_TT1)=.true.
@@ -627,30 +617,17 @@ module Magnetic
       if (nu_ni/=0.) lpenc_diagnos(i_jxbrxb)=.true.
 !
       if (     idiag_brmphi/=0  .or. idiag_uxbrmphi/=0 .or. idiag_jxbrmphi/=0 &
-          .or. idiag_armphi/=0  .or. idiag_br2m/=0     .or. idiag_brbpm/=0    &
-          .or. idiag_brbzm/=0   .or. idiag_brmr/=0     .or. idiag_brbpmr/=0   &
-          .or. idiag_armr/=0 ) then
+          .or. idiag_armphi/=0  .or. idiag_brmr/=0     .or. idiag_armr/=0 ) then
         lpenc_diagnos(i_pomx)=.true.
         lpenc_diagnos(i_pomy)=.true.
       endif
 !
       if (     idiag_bpmphi/=0  .or. idiag_uxbpmphi/=0 .or. idiag_jxbpmphi/=0 &
-          .or. idiag_bpm/=0     .or. idiag_bp2m/=0     .or. idiag_brbpm/=0    & 
           .or. idiag_bpmr/=0    .or. idiag_brbpmr/=0   .or. idiag_apmphi/=0  &
           .or. idiag_apmr/=0 ) then
         lpenc_diagnos(i_phix)=.true.
         lpenc_diagnos(i_phiy)=.true.
       endif
-!
-      if ( idiag_brm/=0 &
-          .or. idiag_bpm/=0 &
-          .or. idiag_bzm/=0 &
-          .or. idiag_br2m/=0 &
-          .or. idiag_bp2m/=0 &
-          .or. idiag_bzz2m/=0 &
-          .or. idiag_brbpm/=0 &
-          .or. idiag_bzbpm/=0 &
-          .or. idiag_brbzm/=0 ) lpenc_diagnos(i_rcyl_mn)=.true.
 !
       if (idiag_armr/=0 .or. idiag_apmr/=0 .or. idiag_azmr/=0) &
            lpenc_diagnos(i_aa)=.true.
@@ -684,12 +661,6 @@ module Magnetic
       if (idiag_exaym2/=0 .or. idiag_exjm2/=0) lpenc_diagnos(i_jj)=.true.
       if (idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
           idiag_bmax/=0) lpenc_diagnos(i_b2)=.true.
-      if (idiag_brm/=0 .or. idiag_bpm/=0 .or. idiag_bzm/=0 .or. &
-          idiag_br2m/=0 .or. idiag_bp2m/=0 .or. idiag_bzz2m/=0 .or. &
-          idiag_brbpm/=0 .or. idiag_bzbpm/=0 .or. idiag_brbzm/=0) &
-           lpenc_diagnos(i_bavg)=.true.
-!
-      if (lrtime_phiavg) lpenc_diagnos(i_bavg)=.true.
 !
     endsubroutine pencil_criteria_magnetic
 !***********************************************************************
@@ -1024,7 +995,7 @@ module Magnetic
       endif
       if (lpencil(i_mf_EMFdotB)) call dot_mn(p%mf_EMF,p%bb,p%mf_EMFdotB)
 !
-      if (lrtime_phiavg.and.lpencil(i_bavg).and.lfirst) &
+      if (lrtime_phiavg.and.lpencil(i_bavg)) &
            call rtime_phiavg(p%bb,p%bavg,p,iaa)
 !
     endsubroutine calc_pencils_magnetic
@@ -1081,7 +1052,7 @@ module Magnetic
 !  add jxb/rho to momentum equation
 !
       if (lhydro) then
-        if (llorentzforce) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+        !if (llorentzforce) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
       endif
 !
 !  Restivivity term
@@ -1220,7 +1191,7 @@ module Magnetic
 !  Induction equation
 !
       if (.not.lupw_aa) then
-        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + p%uxb + fres
+        !df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + p%uxb + fres
       else
 !
 !  Use upwinding for the advection term.
@@ -1253,10 +1224,6 @@ module Magnetic
 !  Full right hand side of the induction equation
         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_upw + fres
       endif
-!
-!  Subtract contribution from mean background flow
-!
-      if (llarge_scale_Bz) call subtract_mean_emf(df,p)
 !
 !  Ambipolar diffusion in the strong coupling approximation
 !
@@ -1370,13 +1337,6 @@ module Magnetic
         if (idiag_bybzm/=0) call sum_mn_name(p%bbb(:,2)*p%bbb(:,3),idiag_bybzm)
 
         if (idiag_djuidjbim/=0) call sum_mn_name(p%djuidjbi,idiag_djuidjbim)
-!
-!  cylindrical components of the magnetic field and maxwell stress
-!
-        if (idiag_brm/=0 .or. idiag_bpm/=0 .or. idiag_bzm/=0 .or. &
-            idiag_br2m/=0 .or. idiag_bp2m/=0 .or. idiag_bzz2m/=0 .or. &
-            idiag_brbpm/=0 .or. idiag_bzbpm/=0 .or. idiag_brbzm/=0) &
-            call calc_mag_stress(p)
 !
 !  this doesn't need to be as frequent (check later)
 !
@@ -1704,6 +1664,16 @@ module Magnetic
          f_target(:,1) = Aphi * (-y(  m  )*p%rcyl_mn1)
          f_target(:,2) = Aphi * ( x(l1:l2)*p%rcyl_mn1)
          f_target(:,3) = 0.
+      case('Alfven-zconst')
+         !kr = 2*pi*rmode/(r_ext-r_int)
+         !kr1 = 1./kr
+         Aphi = Lxyz(3)/(4*pi)*sqrt(p%rcyl_mn1)
+! amplaa(1)*kr1 * sin(kr*(p%rcyl_mn-r_int)) + &
+!              amplaa(1)*kr1**2*p%rcyl_mn1*cos(kr*(p%rcyl_mn-r_int))
+!                                                                                                                                                 
+         f_target(:,1) = Aphi * (-y(  m  )*p%rcyl_mn1)
+         f_target(:,2) = Aphi * ( x(l1:l2)*p%rcyl_mn1)
+         f_target(:,3) = 0.
       case('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_magnetic: borderaa='nothing'"
@@ -1722,45 +1692,6 @@ module Magnetic
       endif
 !
     endsubroutine set_border_magnetic
-!***********************************************************************
-    subroutine calc_mag_stress(p)
-!
-!  Subroutine to calculate cylindrical stresses.
-!  Currently needs the runtime phi averages.
-!
-!  23-may-06/wlad: coded
-!  16-nov-06/tony: removed global and use pencil_case
-!
-      use Mpicomm, only: stop_it
-      use Cdata
-      use Sub
-!
-      type (pencil_case) :: p
-      real, dimension (nx) :: br,bp,bz
-!
-! from the runtime phi-average
-!
-      if (.not.lrtime_phiavg) &
-          call stop_it("calc_mag_stress called but lrtime_phiavg is not set")
-!
-      br=p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy - p%bavg(:,1)
-      bp=p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy - p%bavg(:,2)
-      bz=p%bb(:,3) - p%bavg(:,3)
-!
-      if (idiag_brm/=0)    call sum_lim_mn_name(br,idiag_brm,p)
-      if (idiag_bpm/=0)    call sum_lim_mn_name(bp,idiag_bpm,p)
-      if (idiag_bzm/=0)    call sum_lim_mn_name(bz,idiag_bzm,p)
-      if (idiag_br2m/=0)   call sum_lim_mn_name(br**2,idiag_br2m,p)
-      if (idiag_bp2m/=0)   call sum_lim_mn_name(bp**2,idiag_bp2m,p)
-      if (idiag_bzz2m/=0)  call sum_lim_mn_name(bz**2,idiag_bzz2m,p)
-      if (idiag_brbpm/=0)  call sum_lim_mn_name(br*bp,idiag_brbpm,p)
-      if (idiag_bzbpm/=0)  call sum_lim_mn_name(bz*bp,idiag_bzbpm,p)
-      if (idiag_brbzm/=0)  call sum_lim_mn_name(br*bz,idiag_brbzm,p)
-!
-      if (l1ddiagnos.and.idiag_brbpmr/=0) &
-           call phizsum_mn_name_r(br*bp,idiag_brbpmr)
-!
-    endsubroutine calc_mag_stress
 !***********************************************************************
     subroutine eta_shell(p,eta_mn,geta)
 !
@@ -2149,10 +2080,7 @@ module Magnetic
         idiag_jxbrmphi=0; idiag_jxbpmphi=0; idiag_jxbzmphi=0
         idiag_armphi=0; idiag_apmphi=0; idiag_azmphi=0
         idiag_dteta=0; idiag_uxBrms=0; idiag_Bresrms=0; idiag_Rmrms=0
-        idiag_brm=0; idiag_bpm=0; idiag_bzm=0
-        idiag_br2m=0; idiag_bp2m=0; idiag_bzz2m=0; idiag_brbpm=0
-        idiag_bzbpm=0; idiag_brbzm=0; idiag_va2m=0
-        idiag_jfm=0; idiag_brbpmr=0
+        idiag_jfm=0; idiag_brbpmr=0; idiag_va2m=0
         idiag_b2mr=0; idiag_brmr=0; idiag_bpmr=0; idiag_bzmr=0
         idiag_armr=0; idiag_apmr=0; idiag_azmr=0
 !
@@ -2222,15 +2150,6 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'uxBrms',idiag_uxBrms)
         call parse_name(iname,cname(iname),cform(iname),'Bresrms',idiag_Bresrms)
         call parse_name(iname,cname(iname),cform(iname),'Rmrms',idiag_Rmrms)
-        call parse_name(iname,cname(iname),cform(iname),'brm',idiag_brm)
-        call parse_name(iname,cname(iname),cform(iname),'bpm',idiag_bpm)
-        call parse_name(iname,cname(iname),cform(iname),'bzm',idiag_bzm)
-        call parse_name(iname,cname(iname),cform(iname),'br2m',idiag_br2m)
-        call parse_name(iname,cname(iname),cform(iname),'bp2m',idiag_bp2m)
-        call parse_name(iname,cname(iname),cform(iname),'bzz2m',idiag_bzz2m)
-        call parse_name(iname,cname(iname),cform(iname),'brbpm',idiag_brbpm)
-        call parse_name(iname,cname(iname),cform(iname),'bzbpm',idiag_bzbpm)
-        call parse_name(iname,cname(iname),cform(iname),'brbzm',idiag_brbzm)
         call parse_name(iname,cname(iname),cform(iname),'jfm',idiag_jfm)
 !
       enddo
@@ -2365,9 +2284,6 @@ module Magnetic
         write(3,*) 'i_bmx=',idiag_bmx
         write(3,*) 'i_bmy=',idiag_bmy
         write(3,*) 'i_bmz=',idiag_bmz
-        write(3,*) 'i_brm=',idiag_brm
-        write(3,*) 'i_bpm=',idiag_bpm
-        write(3,*) 'i_bzm=',idiag_bzm
         write(3,*) 'i_bxpt=',idiag_bxpt
         write(3,*) 'i_bypt=',idiag_bypt
         write(3,*) 'i_bzpt=',idiag_bzpt
@@ -2391,12 +2307,6 @@ module Magnetic
         write(3,*) 'i_apmr=',idiag_apmr
         write(3,*) 'i_azmr=',idiag_azmr
         write(3,*) 'i_b2mr=',idiag_b2mr
-        write(3,*) 'i_brbpmr=',idiag_brbpmr
-        write(3,*) 'i_br2m=',idiag_br2m
-        write(3,*) 'i_bp2m=',idiag_bp2m
-        write(3,*) 'i_bzz2m=',idiag_bzz2m
-        write(3,*) 'i_brbpm=',idiag_brbpm
-        write(3,*) 'i_bzbpm=',idiag_bzbpm
         write(3,*) 'i_jbmphi=',idiag_jbmphi
         write(3,*) 'i_uxBrms=',idiag_uxBrms
         write(3,*) 'i_Bresrms=',idiag_Bresrms
@@ -2679,6 +2589,30 @@ module Magnetic
       f(:,:,:,iaz) =  -B0/kr*sin(kr*(rrcyl-r_int))
 !
     endsubroutine alfven_rphi
+!***********************************************************************
+    subroutine alfven_zconst(f,xx,yy)
+!
+!  Radially variable field pointing in the z direction
+!  4 Balbus Hawley wavelengths in the vertical direction
+!
+!  Bz = Lz/(8pi)*Omega ==> Aphi = Lz/(4pi) Omega*r
+!
+!  04-oct-06/wlad: coded
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz) :: xx,yy,OO !rrcyl
+      real :: B0
+!
+      OO=sqrt(xx**2+yy**2)**(-1.5)
+      !rrcyl = sqrt(xx**2 + yy**2)
+      B0=Lxyz(3)/(8*pi)
+!
+      f(:,:,:,iax) =  -2*B0*yy*OO !rrcyl**(-1.5)
+      f(:,:,:,iay) =   2*B0*xx*OO !rrcyl**(-1.5)
+!
+    endsubroutine alfven_zconst
 !***********************************************************************
     subroutine alfven_rz(B0,f,xx,yy,mode)
 !
@@ -3630,47 +3564,6 @@ module Magnetic
 !
     endsubroutine potentdiv
 !***********************************************************************
-    subroutine subtract_mean_emf(df,p)
-!
-!  A vertical large scale magnetic field Bz
-!
-!  gives rise to a linearly growing component in the
-!  radial potential
-!
-!   dAr/dt = (uxB)_r = uphi*Bz -> Ar=uphi*Bz*t
-!
-!  which eventually overgrows the solenoidal component of
-!  the field and leads to numerical problems. This subroutine
-!  artificially removes this unwanted component from the
-!  induction equation, using phi-averages calculated in runtime
-!
-!  Does not to be done at every sub time step. Maybe even ldiagnos is
-!  too frequent
-!
-!  22-mar-06/wlad: coded
-!
-      use Cdata
-      use Mpicomm, only: stop_it
-!
-      type (pencil_case) :: p
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: OO,ux,uy
-      real, dimension (nx,2) :: puxb
-!
-      intent(inout) :: df
-!
-!  the constant is sqrt((1-cs20)) for cs0=0.05
-!  Awful, I know, but it will stay like this for now...
-!
-      OO=0.998749*p%rcyl_mn**(-1.5)
-      ux=-OO*y(m)
-      uy= OO*x(l1:l2)
-      puxb(:,1)=uy*B_ext(3) ; puxb(:,2)=-ux*B_ext(3)
-!
-      df(l1:l2,m,n,iax:iay) = df(l1:l2,m,n,iax:iay) - puxb        
-!
-    endsubroutine subtract_mean_emf
-!************************************************************************
     subroutine bb_unitvec_shock(f,bb_hat)
 !
 !  Compute unit vector along the magnetic field.

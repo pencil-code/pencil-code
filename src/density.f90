@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.306 2007-02-07 21:03:23 wlyra Exp $
+! $Id: density.f90,v 1.307 2007-02-15 15:26:38 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -13,7 +13,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED lnrho,rho,rho1,glnrho,grho,uglnrho,ugrho
-! PENCILS PROVIDED glnrho2,del2lnrho,del2rho,rhoavg
+! PENCILS PROVIDED glnrho2,del2lnrho,del2rho
 ! PENCILS PROVIDED del6lnrho,del6rho,hlnrho,sglnrho,uij5glnrho
 !
 !***************************************************************
@@ -42,7 +42,7 @@ module Density
   real :: q_ell=5., hh0=0.
   real :: co1_ss=0.,co2_ss=0.,Sigma1=150.
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
-  real :: wdamp=0.,plaw=0.
+  real :: wdamp=0.,plaw=0,ptlaw=2.
   real, dimension(3) :: diffrho_hyper3_aniso=0.
   integer, parameter :: ndiff_max=4
   logical :: lmass_source=.false.,lcontinuity_gas=.true.
@@ -70,8 +70,7 @@ module Density
        mpoly,strati_type,beta_glnrho_global,         &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
-       wdamp,plaw,lcontinuity_gas,lstratified
-
+       wdamp,plaw,lcontinuity_gas,lstratified,ptlaw
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
@@ -113,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.306 2007-02-07 21:03:23 wlyra Exp $")
+           "$Id: density.f90,v 1.307 2007-02-15 15:26:38 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -669,7 +668,7 @@ module Density
       !minimum mass solar nebula
       !
         if (lroot)  print*,'init_lnrho: initialize initial condition for Keplerian global disc'
-        call power_law(f,iglobal_gg,lnrho_const,plaw,lstratified)
+        call power_law(f,iglobal_gg,lnrho_const,plaw,ptlaw,lstratified)
 
      case ('step_xz')
         call fatal_error('init_lnrho','neutron_star initial condition is now in the special/neutron_star.f90 code')
@@ -1025,8 +1024,6 @@ module Density
       if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
 !
       if (lmass_source) lpenc_requested(i_rcyl_mn)=.true.
-!      
-      if (lrtime_phiavg) lpenc_diagnos(i_rhoavg)=.true.
 !
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
@@ -1218,9 +1215,6 @@ module Density
       if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
 ! uij5glnrho
       if (lpencil(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
-!
-      if (lrtime_phiavg.and.lpencil(i_rhoavg).and.lfirst) &
-           call rtime_phiavg(p%rho,p%rhoavg,p,ilnrho)
 !
     endsubroutine calc_pencils_density
 !***********************************************************************
