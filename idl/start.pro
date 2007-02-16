@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.75 2006-05-17 17:29:25 theine Exp $
+;;; $Id: start.pro,v 1.76 2007-02-16 21:23:19 dobler Exp $
 
 function param
   COMPILE_OPT IDL2,HIDDEN 
@@ -83,17 +83,33 @@ endif else begin
   STOP
 endelse
 zero = 0*one
-;
-;  Read the positions of variables in f
+
+;  Read the positions of variables in f from index.pro
 ;  Can't just use `@data/index', as the data directory may have a different name
+;  [We used to concatenate all lines in a Perl line and execute this, but
+;   by now on some systems this blows the limit on the number of commands
+;   that can be concatenated with '&' (445 on x86-Linux, IDL6.0; see also
+;   the comment to `maxtags' above)]
+openr, 1, datatopdir+'/index.pro', ERROR=err
+if (err ne 0) then begin
+  free_lun, in_file
+  message, !err_string
+endif
 ;
-cmd = 'perl -000 -ne '+"'"+'s/[ \t]+/ /g; print join(" & ",split(/\n/,$_)),"\n"'+"' "+datatopdir+'/index.pro'
-spawn, cmd, result
-res = flatten_strings(result)
-if (execute(res) ne 1) then $
-    message, 'There was a problem with index.pro', /INFO
+line = ''
+lineno = 0
+while (not eof(1)) do begin
+  readf, 1, line
+  lineno = lineno + 1
+  if (execute(line) ne 1) then $
+      message, /INFO, $
+               'There was a problem with index.pro, line ' $
+               + strtrim(lineno,2) + ': ' + line
+endwhile
+close, 1
 ;
 if (quiet le 2) then print,'nname=',nname
+
 ;
 ;  Read grid
 ;
