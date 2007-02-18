@@ -1,4 +1,4 @@
-;; $Id: pc_read_yzaver.pro,v 1.4 2007-02-15 09:57:06 ajohan Exp $
+;; $Id: pc_read_yzaver.pro,v 1.5 2007-02-18 09:13:42 ajohan Exp $
 ;;
 ;;   Read yz-averages from file
 ;;
@@ -87,7 +87,6 @@ endelse
 makeobject="object = CREATE_STRUCT(name=objectname,['t'," + $
     arraytostring(varnames,QUOTE="'",/noleader) + "]," + $
     "tt[ii],"+arraytostring(varnames+'[*,ii]',/noleader) + ")"
-print, makeobject
 
 if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /INFO
