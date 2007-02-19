@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.492 2007-02-15 15:28:36 wlyra Exp $
+! $Id: entropy.f90,v 1.493 2007-02-19 12:34:33 dintrans Exp $
 
 !
 !  This module takes care of entropy (initial condition
@@ -168,7 +168,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.492 2007-02-15 15:28:36 wlyra Exp $")
+           "$Id: entropy.f90,v 1.493 2007-02-19 12:34:33 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -2349,7 +2349,7 @@ module Entropy
 !
       use Cdata
       use Sub
-      use IO
+      use IO, only: output_pencil
       use Gravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2435,7 +2435,7 @@ module Entropy
 !
 !  Write out hcond z-profile (during first time step only)
 !
-      call write_zprof('hcond',hcond)
+      if (lgravz) call write_zprof('hcond',hcond)
 !
 !  Write radiative flux array
 !
@@ -2490,8 +2490,7 @@ module Entropy
       if (headt .and. lfirst .and. ip == 13) then
          call output_pencil(trim(directory)//'/heatcond.dat',thdiff,1)
       endif
-!     if (headt .and. lfirst .and. ip<=9) then
-      if (lfirst .and. ip<=9) then
+      if (lwrite_prof) then
         call output_pencil(trim(directory)//'/chi.dat',chix,1)
         call output_pencil(trim(directory)//'/hcond.dat',hcond,1)
         call output_pencil(trim(directory)//'/glhc.dat',glhc,3)
@@ -2583,7 +2582,7 @@ module Entropy
 !
 !  Write out cooling profile (during first time step only) and apply.
 !
-        call write_zprof('cooling_profile',prof)
+        if (lgravz) call write_zprof('cooling_profile',prof)
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
 !
 !  Write divergence of cooling flux.
