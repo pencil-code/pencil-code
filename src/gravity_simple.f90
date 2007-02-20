@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.28 2007-01-13 22:01:20 dobler Exp $
+! $Id: gravity_simple.f90,v 1.29 2007-02-20 18:51:35 brandenb Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -104,7 +104,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.28 2007-01-13 22:01:20 dobler Exp $")
+           "$Id: gravity_simple.f90,v 1.29 2007-02-20 18:51:35 brandenb Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -171,7 +171,8 @@ module Gravity
 
       case('kepler')
         if (lroot) print*,'initialize_gravity: kepler x-grav, gravx=',gravx
-        gravx_xpencil = -gravx/x(l1:l2)**2
+        gravx_xpencil=-gravx/x(l1:l2)**2
+        potx_xpencil=-gravx/x(l1:l2)
 
       case default
         if (lroot) print*, &
@@ -439,6 +440,7 @@ module Gravity
 !
       if (NO_WARN) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
           pot(1,1,1),pot0  !(keep compiler quiet)
+print*,'potential_global: pot=',pot
 !
     endsubroutine potential_global
 !***********************************************************************
@@ -459,6 +461,7 @@ module Gravity
 !  Calculate potential from master pencils defined in initialize_gravity
 !
       pot = potx_xpencil + poty_ypencil(m-nghost) + potz_zpencil(n-nghost)
+print*,'potential_penc: pot=',pot
 !
       if (NO_WARN) print*, xmn, ymn, zmn, pot0, grav, rmn
 !
@@ -488,6 +491,8 @@ module Gravity
         if (lroot) print*,'potential_point: no x-gravity'
       case('const')
         potx_xpoint=-gravx*(xpos-xinfty)
+      case('kepler')
+        potx_xpoint=-gravx/xpos
       case default
         call fatal_error('potential_point', &
              'gravx_profile='//gravx_profile//' not implemented')
@@ -514,6 +519,7 @@ module Gravity
       endselect
 !
       pot = potx_xpoint + poty_ypoint + potz_zpoint
+print*,'potential_point: pot=',pot
 !
     endsubroutine potential_point
 !***********************************************************************
