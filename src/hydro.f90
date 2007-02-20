@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.323 2007-02-20 17:46:22 dobler Exp $
+! $Id: hydro.f90,v 1.324 2007-02-20 17:50:30 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -124,13 +124,8 @@ module Hydro
   integer :: idiag_uxuym=0,idiag_uxuzm=0,idiag_uyuzm=0
   integer :: idiag_uxuymz=0,idiag_uxuzmz=0,idiag_uyuzmz=0,idiag_ruxuymz=0
   integer :: idiag_uxuymy=0,idiag_uxuzmy=0,idiag_uyuzmy=0
-                                ! DIAG_DOC: (a weird quantity)
   integer :: idiag_uxuymx=0,idiag_uxuzmx=0,idiag_uyuzmx=0
-  integer :: idiag_oxoym=0      ! DIAG_DOC: $\left<\omega_x\omega_y\right>$
-  integer :: idiag_oxozm=0      ! DIAG_DOC: $\left<\omega_x\omega_z\right>$
-  integer :: idiag_oyozm=0      ! DIAG_DOC: $\left<\omega_y\omega_z\right>$
-                                ! DIAG_DOC: (a weird quantity)
-                                ! DIAG_DOC: [really weird..]
+  integer :: idiag_oxoym=0,idiag_oxozm=0,idiag_oyozm=0
   integer :: idiag_ruxm=0,idiag_ruym=0,idiag_ruzm=0,idiag_rumax=0
   integer :: idiag_uxmz=0,idiag_uymz=0,idiag_uzmz=0,idiag_umx=0,idiag_umy=0
   integer :: idiag_uxmy=0,idiag_uymy=0,idiag_uzmy=0,idiag_u2mz=0
@@ -192,7 +187,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.323 2007-02-20 17:46:22 dobler Exp $")
+           "$Id: hydro.f90,v 1.324 2007-02-20 17:50:30 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

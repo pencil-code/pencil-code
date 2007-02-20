@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.25 2007-01-31 12:50:12 wlyra Exp $
+! $Id: temperature.f90,v 1.26 2007-02-20 17:50:30 dobler Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -93,7 +93,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.25 2007-01-31 12:50:12 wlyra Exp $")
+           "$Id: temperature.f90,v 1.26 2007-02-20 17:50:30 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -255,7 +255,7 @@ iss=ilnTT  !(need to think how to deal with this...)
       use Global
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mvar)    :: df
       real, dimension (nx,3) :: uu,glnrho,glnTT
       real, dimension (nx) :: uglnTT,uglnrho,divu
       real, dimension (nx) :: lnrho,lnTT,ss,rho1,cs2,TT1

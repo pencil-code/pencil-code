@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.18 2007-02-20 17:46:22 dobler Exp $
+! $Id: snapshot.f90,v 1.19 2007-02-20 17:50:30 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -282,19 +282,16 @@ contains
 !  11-apr-97/axel: coded
 !
       use Cdata
-      use Mpicomm, only: start_serialize,end_serialize,iproc
+      use Mpicomm, only: start_serialize,end_serialize
       use Persist, only: output_persistent
 !
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
 !
-      if (ip<=8.and.lroot) print*,'output_snap: nv =', nv
+      if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize()
-
-write(0,*) '>>>> output_snap: proc ', iproc, ' writing to ', trim(file)
-
       open(lun_output,FILE=file,FORM='unformatted')
       if (lwrite_2d) then
         if (ny==1) then
