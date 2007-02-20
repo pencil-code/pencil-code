@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.324 2007-02-20 17:50:30 dobler Exp $
+! $Id: hydro.f90,v 1.325 2007-02-20 22:12:19 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -187,7 +187,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.324 2007-02-20 17:50:30 dobler Exp $")
+           "$Id: hydro.f90,v 1.325 2007-02-20 22:12:19 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -780,6 +780,8 @@ module Hydro
 ! uij5
       if (lpencil(i_uij5)) call gij(f,iuu,p%uij5,5)
 ! oo
+!AB: should really go into a curl routine!!
+!
       if (lpencil(i_oo)) then
         p%oo(:,1)=p%uij(:,3,2)-p%uij(:,2,3)
         p%oo(:,2)=p%uij(:,1,3)-p%uij(:,3,1)
@@ -1621,7 +1623,7 @@ module Hydro
         forcing_rhs(:,2)=+fact*sinx(l1:l2)*cosy(m)
         forcing_rhs(:,3)=+fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
       elseif (iforcing_continuous=='TG') then
-        fact=ampl_ff
+        fact=2.*ampl_ff
         forcing_rhs(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
         forcing_rhs(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
         forcing_rhs(:,3)=0.
