@@ -1,4 +1,4 @@
-! $Id: nopoisson.f90,v 1.6 2006-12-20 13:10:50 ajohan Exp $
+! $Id: nopoisson.f90,v 1.7 2007-02-20 17:46:22 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -24,30 +24,31 @@ module Poisson
   contains
 
 !***********************************************************************
-    subroutine poisson_solver_fft(a1,kmax)
+    subroutine inverse_laplacian_fft(phi,kmax,c)
 !
 !  Solve the Poisson equation by Fourier transforming on a periodic grid.
 !
 !  15-may-2006/anders+jeff: dummy
 !
-      real, dimension (nx,ny,nz) :: a1
-      real, optional :: kmax
+      real, dimension (nx,ny,nz) :: phi
+      real, optional             :: kmax,c
 !
-      if (NO_WARN) print*, a1, kmax
+      if (NO_WARN) print*, phi, kmax
 !
-    endsubroutine poisson_solver_fft
+    endsubroutine inverse_laplacian_fft
 !***********************************************************************
-    subroutine poisson_solver_fftxy_discretez(a1)
+    subroutine inverse_laplacian_semispectral(phi,c)
 !
 !  Solve the Poisson equation by Fourier transforming on a periodic grid.
 !
 !  20-dec-2006/anders: dummy
 !
-      real, dimension (nx,ny,nz) :: a1
+      real, dimension (nx,ny,nz) :: phi
+      real, optional             :: c
 !
-      if (NO_WARN) print*, a1
+      if (NO_WARN) print*, phi
 !
-    endsubroutine poisson_solver_fftxy_discretez
+    endsubroutine inverse_laplacian_semispectral
 !***********************************************************************
 
 endmodule Poisson

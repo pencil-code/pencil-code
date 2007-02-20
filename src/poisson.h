@@ -1,1 +1,1 @@
-public :: poisson_solver_fft, poisson_solver_fftxy_discretez
+public :: inverse_laplacian_fft, inverse_laplacian_semispectral

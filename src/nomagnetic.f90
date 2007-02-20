@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.77 2006-11-30 09:03:35 dobler Exp $
+! $Id: nomagnetic.f90,v 1.78 2007-02-20 17:46:22 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -24,9 +24,11 @@ module Magnetic
   include 'magnetic.h'
 
   real, dimension (ninit) :: amplaa=0.0,kx_aa=1.,ky_aa=1.,kz_aa=1.
+  real, dimension(nx) :: meanfield_EMFdotB
   real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: brms=0.
-  real, dimension(nx) :: meanfield_EMFdotB
+  real :: inertial_length=0.,linertial_2
+  logical :: lelectron_inertia=.false.
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0,idiag_abm=0
@@ -60,7 +62,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.77 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: nomagnetic.f90,v 1.78 2007-02-20 17:46:22 dobler Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.40 2006-11-30 09:03:35 dobler Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.41 2007-02-20 17:46:22 dobler Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -56,6 +56,8 @@ module Magnetic
   ! run parameters
   real :: eta=0.,B2min=0,height_eta=0.,eta_out=0.
   real :: tau_aa_exterior=0.
+  real :: inertial_length=0.,linertial_2
+  logical :: lelectron_inertia=.false.
 
   namelist /magnetic_run_pars/ &
        eta,B_ext,B2min,k_aa, &
@@ -107,7 +109,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.40 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.41 2007-02-20 17:46:22 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

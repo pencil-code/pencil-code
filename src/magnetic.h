@@ -16,10 +16,11 @@
   public :: bc_aa_pot, bc_aa_pot2, bc_aa_pot3, bc_frozen_in_bb
   public :: pert_aa, rescaling
   public :: bb_unitvec_shock
+  public :: lelectron_inertia, inertial_length, linertial_2
 
 !ajwm SHOULDN'T BE SHARED
 !
-! Used to get parameters into nohydro for kinematic dynamo simualtions!
+! Used to get parameters into nohydro for kinematic dynamo simulations!
 !
   public :: ABC_A, KZ_AA, ABC_C, KY_AA, ABC_B, KX_AA
 !

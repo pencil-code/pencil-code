@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.19 2006-12-20 13:10:50 ajohan Exp $
+! $Id: selfgravity.f90,v 1.20 2007-02-20 17:46:22 dobler Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -72,7 +72,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.19 2006-12-20 13:10:50 ajohan Exp $")
+           "$Id: selfgravity.f90,v 1.20 2007-02-20 17:46:22 dobler Exp $")
 !
 !  Put variable name in array
 !
@@ -250,12 +250,12 @@ module Selfgravity
 !  receive the self-gravity potential back.
 !
         if (lpoisson_fftxy_discretez) then
-          call poisson_solver_fftxy_discretez(rhs_poisson)
+          call inverse_laplacian_semispectral(rhs_poisson)
         else
           if (kmax/=0.0) then
-            call poisson_solver_fft(rhs_poisson,kmax=kmax)
+            call inverse_laplacian_fft(rhs_poisson,kmax=kmax)
           else
-            call poisson_solver_fft(rhs_poisson)
+            call inverse_laplacian_fft(rhs_poisson)
           endif
         endif
 !
