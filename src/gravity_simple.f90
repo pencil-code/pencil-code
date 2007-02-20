@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.29 2007-02-20 18:51:35 brandenb Exp $
+! $Id: gravity_simple.f90,v 1.30 2007-02-20 22:11:27 brandenb Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -104,12 +104,13 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.29 2007-02-20 18:51:35 brandenb Exp $")
+           "$Id: gravity_simple.f90,v 1.30 2007-02-20 22:11:27 brandenb Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
+!  Set lgravz only when gravz_profile is set.
 !
       lgrav=.true.
-      lgravz=.true.
+      if (gravz_profile/='zero') lgravz=.true.
 !
     endsubroutine register_gravity
 !***********************************************************************
@@ -440,7 +441,6 @@ module Gravity
 !
       if (NO_WARN) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
           pot(1,1,1),pot0  !(keep compiler quiet)
-print*,'potential_global: pot=',pot
 !
     endsubroutine potential_global
 !***********************************************************************
@@ -461,7 +461,6 @@ print*,'potential_global: pot=',pot
 !  Calculate potential from master pencils defined in initialize_gravity
 !
       pot = potx_xpencil + poty_ypencil(m-nghost) + potz_zpencil(n-nghost)
-print*,'potential_penc: pot=',pot
 !
       if (NO_WARN) print*, xmn, ymn, zmn, pot0, grav, rmn
 !
@@ -519,7 +518,6 @@ print*,'potential_penc: pot=',pot
       endselect
 !
       pot = potx_xpoint + poty_ypoint + potz_zpoint
-print*,'potential_point: pot=',pot
 !
     endsubroutine potential_point
 !***********************************************************************
