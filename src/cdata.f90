@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.352 2007-02-15 15:23:53 wlyra Exp $
+! ! $Id: cdata.f90,v 1.353 2007-02-21 15:32:43 brandenb Exp $
 
 module Cdata
 
@@ -22,6 +22,7 @@ module Cdata
   character (len=9) :: coord_system='cartesian'
   logical :: lspherical=.false.,lcylindrical=.false.
   real, dimension (nx) :: r1_mn
+  real, dimension (my) :: sinth,sin1th,costh,cotth
 
 ! timestep related:
   real, dimension (nx) :: advec_uu,advec_shear,advec_hall

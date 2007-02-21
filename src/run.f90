@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.239 2007-02-05 22:02:21 wlyra Exp $
+! $Id: run.f90,v 1.240 2007-02-21 15:32:43 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -67,7 +67,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.239 2007-02-05 22:02:21 wlyra Exp $")
+             "$Id: run.f90,v 1.240 2007-02-21 15:32:43 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -521,7 +521,7 @@
 !  Save snapshot every isnap steps in case the run gets interrupted.
 !  The time needs also to be written
 !
-          if (isave/=0) then
+          if (isave/=0.and..not.lnowrite) then
             if (mod(it,isave)==0) then
               call wsnap(trim(directory_snap)//'/var.dat', &
                          f,mvar_io,ENUM=.false.)
@@ -576,7 +576,7 @@
 !
         if (lroot) print*, 'Writing final snapshot for t=', t
         call wtime(trim(directory)//'/time.dat',t)
-        if (save_lastsnap) then
+        if (save_lastsnap.and..not.lnowrite) then
           call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
           if (lparticles) call particles_write_snapshot( &
               trim(directory_snap)//'/pvar.dat',ENUM=.false.)

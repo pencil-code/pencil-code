@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.282 2007-02-15 15:36:01 wlyra Exp $
+! $Id: sub.f90,v 1.283 2007-02-21 15:32:43 brandenb Exp $
 
 module Sub
 
@@ -1150,10 +1150,9 @@ module Sub
       b=aij(:,1,1)+aij(:,2,2)+aij(:,3,3)
 !
 !  adjustments for spherical corrdinate system
-!  (WORKS CURRENTLY ONLY FOR 1-D IN THE RADIAL DIRECTION)
 !
       if (lspherical) then
-        b=b+2.*r1_mn*a(:,1)
+        b=b+2.*r1_mn*a(:,1)+r1_mn*cotth(m)*a(:,2)+r1_mn*sin1th(m)*a(:,3)
       endif
 !
     endsubroutine div_mn
@@ -1600,6 +1599,13 @@ module Sub
       call der(f,k,tmp,2); g(:,2)=tmp
       call der(f,k,tmp,3); g(:,3)=tmp
 !
+!  adjustments for spherical corrdinate system
+!
+      if (lspherical) then
+        g(:,2)=g(:,2)*r1_mn
+        g(:,3)=g(:,3)*r1_mn*sin1th(m)
+      endif
+!
     endsubroutine grad_main
 !***********************************************************************
     subroutine grad_other(f,g)
@@ -1623,6 +1629,13 @@ module Sub
       call der(f,tmp,1); g(:,1)=tmp
       call der(f,tmp,2); g(:,2)=tmp
       call der(f,tmp,3); g(:,3)=tmp
+!
+!  adjustments for spherical corrdinate system
+!
+      if (lspherical) then
+        g(:,2)=g(:,2)*r1_mn
+        g(:,3)=g(:,3)*r1_mn*sin1th(m)
+      endif
 !
     endsubroutine grad_other
 !***********************************************************************
@@ -2215,19 +2228,25 @@ module Sub
     endsubroutine del6fjv
 !***********************************************************************
     subroutine u_dot_grad_vec(f,k,gradf,uu,ugradf,upwind)
-
+!
+!  u.gradu
+!  for spherical coordinates works correctly for u.gradu,
+!  not for general u.gradA
+!
       use Cdata
-
+!
       intent(in) :: f,k,gradf,uu,upwind
       intent(out) :: ugradf
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: gradf
       real, dimension (nx,3) :: uu,ugradf
       real, dimension (nx) :: tmp
       integer :: j,k
       logical, optional :: upwind
-
+!
+!  upwind
+!
       if (present(upwind)) then
         do j=1,3
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
@@ -2239,7 +2258,16 @@ module Sub
           ugradf(:,j)=tmp
         enddo
       endif
-
+!
+!  adjustments for spherical coordinate system.
+!  The following only works correctly for u.gradu, not for general u.gradA
+!
+      if (lspherical) then
+        ugradf(:,1)=ugradf(:,1)-r1_mn*(uu(:,2)**2+uu(:,3)**2)
+        ugradf(:,2)=ugradf(:,2)+r1_mn*(uu(:,1)*uu(:,2)-cotth(m)*uu(:,3)**2)
+        ugradf(:,3)=ugradf(:,3)+r1_mn*(uu(:,1)*uu(:,3)+cotth(m)*uu(:,2)*uu(:,3))
+      endif
+!
     endsubroutine u_dot_grad_vec
 !***********************************************************************
     subroutine u_dot_grad_scl(f,k,gradf,uu,ugradf,upwind)

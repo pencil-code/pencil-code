@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.197 2007-02-05 22:02:21 wlyra Exp $
+! $Id: register.f90,v 1.198 2007-02-21 15:32:43 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -303,12 +303,35 @@ module Register
         lspherical=.false.
       elseif (coord_system=='spherical') then
         lspherical=.true.
+!
+!  calculate 1/r
+!
         if (x(l1)==0.) then
           r1_mn(2:)=1./x(l1+1:l2)
           r1_mn(1)=0.
         else
           r1_mn=1./x(l1:l2)
         endif
+!
+!  calculate sin(theta)
+!
+        sinth=sin(y)
+        costh=cos(y)
+!
+!  calculate 1/sin(theta)
+!
+        where(y/=0.)
+          sin1th=1./sinth
+        elsewhere
+          sin1th=0.
+        endwhere
+!
+!  calculate cot(theta)
+!
+        cotth=cos(y)*sin1th
+!
+!  end of coord_system=='spherical' query
+!
       endif
 !
 !  print the value for which output is being produced

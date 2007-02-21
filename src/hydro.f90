@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.325 2007-02-20 22:12:19 brandenb Exp $
+! $Id: hydro.f90,v 1.326 2007-02-21 15:32:43 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -187,7 +187,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.325 2007-02-20 22:12:19 brandenb Exp $")
+           "$Id: hydro.f90,v 1.326 2007-02-21 15:32:43 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -894,7 +894,9 @@ module Hydro
 !  for example.
 !
       if (Omega/=0.) then
-        if (lprecession) then
+        if (lspherical) then
+          call coriolis_spherical(f,df,p)
+        elseif (lprecession) then
           call precession(f,df,p)
         else
           if (theta==0) then
@@ -1393,6 +1395,36 @@ module Hydro
       enddo
 !
     endsubroutine precession
+!***********************************************************************
+    subroutine coriolis_spherical(f,df,p)
+!
+!  coriolis_spherical terms using spherical polars
+!
+!  21-feb-07/axel+dhruba: coded
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real :: c2,s2
+!
+!  info about coriolis_spherical term
+!
+      if (headtt) then
+        print*, 'coriolis_spherical: Omega=', Omega
+      endif
+!
+!  -2 Omega x u
+!
+      c2=2*Omega*costh(m)
+      s2=2*Omega*sinth(m)
+      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+s2*p%uu(:,3)
+      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+c2*p%uu(:,3)
+      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-c2*p%uu(:,2)+s2*p%uu(:,1)
+!
+    endsubroutine coriolis_spherical
 !***********************************************************************
     subroutine udamping(f,df,p)
 !

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.265 2007-02-15 15:43:34 wlyra Exp $
+! $Id: param_io.f90,v 1.266 2007-02-21 15:32:43 brandenb Exp $
 
 module Param_IO
 
@@ -77,6 +77,7 @@ module Param_IO
        rhocc_pdf,cc_pdf,lncc_pdf,gcc_pdf,lngcc_pdf, &
        kinflow,random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
+       lnowrite, &
        lwrite_yaverages,lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
        lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        ix,iy,iz,iz2,slice_position,zbot_slice,ztop_slice, &
