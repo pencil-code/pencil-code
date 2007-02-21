@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.37 2006-12-06 08:35:54 ajohan Exp $
+! $Id: deriv.f90,v 1.38 2007-02-21 19:29:26 brandenb Exp $
 
 module Deriv
 
@@ -38,6 +38,7 @@ module Deriv
 !  18-jul-98/axel: corrected mx -> my and mx -> mz in all y and z ders
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
+!  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
 !
       use Cdata
 !
@@ -64,6 +65,7 @@ module Deriv
           df=fac*(+ 45.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
                   -  9.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
                   +      (f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
+          if (lspherical) df=df*r1_mn
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in y-direction'
@@ -74,6 +76,7 @@ module Deriv
           df=fac*(+ 45.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
                   -  9.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
                   +      (f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+          if (lspherical) df=df*r1_mn*sin1th(m)
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in z-direction'
@@ -88,9 +91,10 @@ module Deriv
 !  calculate derivative of a scalar, get scalar
 !  accurate to 6th order, explicit, periodic
 !  replace cshifts by explicit construction -> x6.5 faster!
-!   26-nov-02/tony: coded - duplicate der_main but without k subscript
-!                           then overload the der interface.
-!   25-jun-04/tobi+wolf: adapted for non-equidistant grids
+!  26-nov-02/tony: coded - duplicate der_main but without k subscript
+!                          then overload the der interface.
+!  25-jun-04/tobi+wolf: adapted for non-equidistant grids
+!  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
 
       use Cdata
 !
@@ -117,6 +121,7 @@ module Deriv
           df=fac*(+ 45.0*(f(l1:l2,m+1,n)-f(l1:l2,m-1,n)) &
                   -  9.0*(f(l1:l2,m+2,n)-f(l1:l2,m-2,n)) &
                   +      (f(l1:l2,m+3,n)-f(l1:l2,m-3,n)))
+          if (lspherical) df=df*r1_mn
         else
           df=0.
           if (ip<=5) print*, 'der_other: Degenerate case in y-direction'
@@ -127,6 +132,7 @@ module Deriv
           df=fac*(+ 45.0*(f(l1:l2,m,n+1)-f(l1:l2,m,n-1)) &
                   -  9.0*(f(l1:l2,m,n+2)-f(l1:l2,m,n-2)) &
                   +      (f(l1:l2,m,n+3)-f(l1:l2,m,n-3)))
+          if (lspherical) df=df*r1_mn*sin1th(m)
         else
           df=0.
           if (ip<=5) print*, 'der_other: Degenerate case in z-direction'

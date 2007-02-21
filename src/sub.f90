@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.283 2007-02-21 15:32:43 brandenb Exp $
+! $Id: sub.f90,v 1.284 2007-02-21 19:29:26 brandenb Exp $
 
 module Sub
 
@@ -1137,6 +1137,7 @@ module Sub
 !
 !  calculate divergence from derivative matrix
 !  18-sep-04/axel: coded
+!  21-feb-07/axel: corrected spherical coordinates
 !
       use Cdata
 !
@@ -1152,7 +1153,7 @@ module Sub
 !  adjustments for spherical corrdinate system
 !
       if (lspherical) then
-        b=b+2.*r1_mn*a(:,1)+r1_mn*cotth(m)*a(:,2)+r1_mn*sin1th(m)*a(:,3)
+        b=b+2.*r1_mn*a(:,1)+r1_mn*cotth(m)*a(:,2)
       endif
 !
     endsubroutine div_mn
@@ -1161,6 +1162,7 @@ module Sub
 !
 !  calculate curl from derivative matrix
 !  21-jul-03/axel: coded
+!  21-feb-07/axel: corrected spherical coordinates
 !
       use Cdata
 !
@@ -1173,11 +1175,11 @@ module Sub
       b(:,3)=aij(:,2,1)-aij(:,1,2)
 !
 !  adjustments for spherical corrdinate system
-!  (WORKS CURRENTLY ONLY FOR 1-D IN THE RADIAL DIRECTION)
 !
       if (lspherical.and.present(a)) then
-        b(:,2)=b(:,2)-r1_mn*a(:,3)
-        b(:,3)=b(:,3)+r1_mn*a(:,2)
+        b(:,1)=b(:,1)+a(:,3)*r1_mn*cotth(m)
+        b(:,2)=b(:,2)-a(:,3)*r1_mn
+        b(:,3)=b(:,3)+a(:,2)*r1_mn
       endif
 !
     endsubroutine curl_mn
@@ -1599,13 +1601,6 @@ module Sub
       call der(f,k,tmp,2); g(:,2)=tmp
       call der(f,k,tmp,3); g(:,3)=tmp
 !
-!  adjustments for spherical corrdinate system
-!
-      if (lspherical) then
-        g(:,2)=g(:,2)*r1_mn
-        g(:,3)=g(:,3)*r1_mn*sin1th(m)
-      endif
-!
     endsubroutine grad_main
 !***********************************************************************
     subroutine grad_other(f,g)
@@ -1630,13 +1625,6 @@ module Sub
       call der(f,tmp,2); g(:,2)=tmp
       call der(f,tmp,3); g(:,3)=tmp
 !
-!  adjustments for spherical corrdinate system
-!
-      if (lspherical) then
-        g(:,2)=g(:,2)*r1_mn
-        g(:,3)=g(:,3)*r1_mn*sin1th(m)
-      endif
-!
     endsubroutine grad_other
 !***********************************************************************
     subroutine curl(f,k,g)
@@ -1645,6 +1633,7 @@ module Sub
 !  12-sep-97/axel: coded
 !  10-sep-01/axel: adapted for cache efficiency
 !  11-sep-04/axel: began adding spherical coordinates
+!  21-feb-07/axel: corrected spherical coordinates
 !
       use Cdata
       use Deriv
@@ -1672,12 +1661,12 @@ module Sub
       g(:,3)=tmp1-tmp2
 !
 !  adjustments for spherical corrdinate system
-!  (WORKS CURRENTLY ONLY FOR 1-D IN THE RADIAL DIRECTION)
 !
-!     if (lspherical) then
-!       g(:,2)=g(:,2)-r1_mn*f(l1:l2,m,n,k1+3)
-!       g(:,3)=g(:,3)+r1_mn*f(l1:l2,m,n,k1+2)
-!     endif
+      if (lspherical) then
+        g(:,1)=g(:,1)+f(l1:l2,m,n,k1+3)*r1_mn*cotth(m)
+        g(:,2)=g(:,2)-f(l1:l2,m,n,k1+3)*r1_mn
+        g(:,3)=g(:,3)+f(l1:l2,m,n,k1+2)*r1_mn
+      endif
 !
     endsubroutine curl
 !***********************************************************************
@@ -2232,6 +2221,8 @@ module Sub
 !  u.gradu
 !  for spherical coordinates works correctly for u.gradu,
 !  not for general u.gradA
+!
+!  21-feb-07/axel+dhruba: added spherical coordinates
 !
       use Cdata
 !
