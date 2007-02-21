@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.385 2007-02-20 17:50:30 dobler Exp $
+! $Id: magnetic.f90,v 1.386 2007-02-21 20:02:11 joishi Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -80,6 +80,7 @@ module Magnetic
   logical :: lresi_etaSS=.false.
   logical :: lresi_hyper2=.false.
   logical :: lresi_hyper3=.false.
+  logical :: lresi_zdep=.false.
   logical :: lresi_hyper3_aniso=.false.
   logical :: lresi_eta_shock=.false.
   logical :: lresi_eta_shock_perp=.false.
@@ -120,9 +121,12 @@ module Magnetic
   real :: eta=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
   real :: eta_int=0.,eta_ext=0.,wresistivity=.01
   real :: tau_aa_exterior=0.
+  real :: sigma_ratio=1.,eta_width=0.,eta_z0=1.
   real :: alphaSSm=0.
   real :: k1_ff=1.,ampl_ff=1.
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
+  character (len=labellen) :: zdep_profile='fs'
+  real, dimension(mz) :: eta_z
   logical :: lweyl_gauge=.false.
   logical :: lupw_aa=.false.
   logical :: lforcing_continuous=.false.
@@ -146,6 +150,7 @@ module Magnetic
        lee_ext,lbb_ext,ljj_ext,displacement_gun, &
        pertaa,pertamplaa,D_smag,brms_target,rescaling_fraction, &
        lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint,lfreeze_aext, &
+       sigma_ratio,zdep_profile,eta_width,eta_z0, &
        borderaa,eta_aniso_hyper3
 
   ! other variables (needs to be consistent with reset list below)
@@ -216,7 +221,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.385 2007-02-20 17:50:30 dobler Exp $")
+           "$Id: magnetic.f90,v 1.386 2007-02-21 20:02:11 joishi Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -311,6 +316,10 @@ module Magnetic
         case('hyper3')
           if (lroot) print*, 'resistivity: hyper3'
           lresi_hyper3=.true.
+        case('zdep')
+          if (lroot) print*, 'resistivity: z-dependent'
+          lresi_zdep=.true.
+          call eta_zdep(eta_z,zdep_profile)
         case('hyper3-aniso')
            if (lroot) print*, 'resistivity: hyper3_aniso'
            lresi_hyper3_aniso=.true.
@@ -560,8 +569,8 @@ module Magnetic
       if (dvid/=0.) lpenc_video(i_jb)=.true.
       if (lresi_eta_const .or. lresi_shell .or. &
           lresi_eta_shock .or. lresi_smagorinsky .or. &
-          lresi_smagorinsky_cross) &
-            lpenc_requested(i_del2a)=.true.
+          lresi_zdep .or. &
+          lresi_smagorinsky_cross) lpenc_requested(i_del2a)=.true.
       if (lresi_eta_shock) then
         lpenc_requested(i_shock)=.true.
         if (lweyl_gauge) then
@@ -1101,6 +1110,11 @@ module Magnetic
       if (lresi_hyper3) then
         fres=fres+eta_hyper3*p%del6a
         etatotal=etatotal+eta_hyper3
+      endif
+!
+      if (lresi_zdep) then 
+        fres=fres+eta_z(n)*p%del2a
+        etatotal=etatotal + eta_z(n)
       endif
 !
       if (lresi_hyper3_aniso) then
@@ -3561,6 +3575,35 @@ module Magnetic
 !
     endsubroutine potentdiv
 !***********************************************************************
+    subroutine eta_zdep(eta_z,zdep_profile)
+!
+!  creates a z-dependent resistivity for protoplanetary disk studies
+!
+!  12-jul-2005/joishi: coded
+!
+      use General, only:erfcc
+!
+!      real, dimension(nx) :: eta_z
+      real, dimension(mz) :: eta_z,z2
+      character (len=labellen) :: zdep_profile
+!     
+      intent(out) :: eta_z
+!
+      select case (zdep_profile)
+        case('fs')
+          z2 = z**2.
+!  resistivity profile from Fleming & Stone (ApJ 585:908-920)
+          eta_z = eta*exp(-z2/2.+sigma_ratio*erfcc(abs(z))/4.)
+!
+        case('tanh')
+!  default to spread gradient over ~5 grid cells.           
+           if (eta_width == 0.) eta_width = 5.*dz
+           eta_z = eta*0.5*(tanh((z + eta_z0)/eta_width) & 
+             - tanh((z - eta_z0)/eta_width))
+      endselect
+!
+    endsubroutine eta_zdep
+!************************************************************************
     subroutine bb_unitvec_shock(f,bb_hat)
 !
 !  Compute unit vector along the magnetic field.
