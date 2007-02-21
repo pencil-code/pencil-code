@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.30 2007-02-20 22:11:27 brandenb Exp $
+! $Id: gravity_simple.f90,v 1.31 2007-02-21 08:51:24 brandenb Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -104,13 +104,12 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.30 2007-02-20 22:11:27 brandenb Exp $")
+           "$Id: gravity_simple.f90,v 1.31 2007-02-21 08:51:24 brandenb Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.
 !
       lgrav=.true.
-      if (gravz_profile/='zero') lgravz=.true.
 !
     endsubroutine register_gravity
 !***********************************************************************
@@ -213,7 +212,10 @@ module Gravity
       endselect
 !
 !  Different z-gravity profiles
+!  Set lgravz=T only when gravz_profile is not zero
 !
+      if (gravz_profile/='zero') lgravz=.true.
+
       select case (gravz_profile)
 
       case('zero')
