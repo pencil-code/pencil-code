@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.39 2007-02-22 15:06:03 dhruba Exp $
+! $Id: deriv.f90,v 1.40 2007-02-22 19:29:47 brandenb Exp $
 
 module Deriv
 
@@ -181,7 +181,7 @@ module Deriv
                    +270.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
                    - 27.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
                    +  2.0*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
-          if (lspherical) df2=df2*r1_mn*r1_mn
+          if (lspherical) df2=df2*r2_mn
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dy_tilde(m)*df
@@ -196,7 +196,7 @@ module Deriv
                    +270.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
                    - 27.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
                    +  2.0*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
-          if (lspherical) df2=df2*r1_mn*r1_mn*sin1th(m)*sin1th(m)
+          if (lspherical) df2=df2*r2_mn*sin2th(m)
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dz_tilde(n)*df

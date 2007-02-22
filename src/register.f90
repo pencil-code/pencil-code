@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.198 2007-02-21 15:32:43 brandenb Exp $
+! $Id: register.f90,v 1.199 2007-02-22 19:29:47 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -312,6 +312,7 @@ module Register
         else
           r1_mn=1./x(l1:l2)
         endif
+        r2_mn=r1_mn**2
 !
 !  calculate sin(theta)
 !
@@ -325,6 +326,7 @@ module Register
         elsewhere
           sin1th=0.
         endwhere
+        sin2th=sin1th**2
 !
 !  calculate cot(theta)
 !
