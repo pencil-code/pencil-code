@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.60 2007-02-22 20:12:14 dhruba Exp $
+! $Id: viscosity.f90,v 1.61 2007-02-22 23:22:51 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -91,7 +91,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.60 2007-02-22 20:12:14 dhruba Exp $")
+           "$Id: viscosity.f90,v 1.61 2007-02-22 23:22:51 dobler Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -409,6 +409,9 @@ module Viscosity
         lpenc_diagnos(i_divu)=.true.
         lpenc_diagnos(i_rho)=.true.
       endif
+      if (lvisc_heat_as_aux) then
+        lpenc_diagnos(i_visc_heat)=.true.
+      endif
       if ( (idiag_meshRemax/=0 .or. idiag_dtnu/=0) .and. lvisc_nu_shock) &
           lpenc_diagnos(i_shock)=.true.
 !
@@ -450,8 +453,7 @@ module Viscosity
 !
       integer :: i,j
 !
-      intent(in) :: f
-      intent(inout) :: p
+      intent(inout) :: f,p
 !
 !  Viscous force and viscous heating are calculated here (for later use).
 !
@@ -779,6 +781,12 @@ module Viscosity
         endif
      endif
 !
+!  Store viscous heating rate in auxiliary variable if requested.
+!  Just neccessary immediately before writing snapshots, but how would we
+!  know we are?
+!
+     if (lvisc_heat_as_aux) f(l1:l2,m,n,ivisc_heat) = p%visc_heat
+!
      if (NO_WARN) print*, f    !(to keep compiler quiet)
 !
     endsubroutine calc_pencils_viscosity
@@ -818,12 +826,6 @@ module Viscosity
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%visc_heat
 !
       if (lfirst .and. ldt) Hmax=Hmax+p%visc_heat
-!
-!  Store viscout heating rate in auxliliary variable if requested.
-!  Just neccessary immediately before writing snapshots, but how would we
-!  know we are?
-!
-      if (lvisc_heat_as_aux) f(l1:l2,m,n,ivisc_heat) = p%visc_heat
 !
     endsubroutine calc_viscous_heat
 !***********************************************************************
