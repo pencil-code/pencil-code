@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.57 2007-02-22 15:06:03 dhruba Exp $
+! $Id: viscosity.f90,v 1.58 2007-02-22 15:40:53 dhruba Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -91,7 +91,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.57 2007-02-22 15:06:03 dhruba Exp $")
+           "$Id: viscosity.f90,v 1.58 2007-02-22 15:40:53 dhruba Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -436,6 +436,7 @@ module Viscosity
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  20-11-04/anders: coded
+!  21-02007/dhruba: spherical polar coordinate system ('simplified' viscosity) 
 !
       use Cdata
       use Sub
@@ -471,7 +472,7 @@ module Viscosity
               'is not implemented for lvisc_simplified')
           endif
         endif
-! for spherical polar coordinate system, in 1-d only
+! for spherical polar coordinate system, 
         if(lspherical)then
 ! for r component
           p%fvisc(:,1)=p%fvisc(:,1)+&
