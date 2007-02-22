@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.55 2007-02-13 15:16:08 ajohan Exp $
+! $Id: viscosity.f90,v 1.56 2007-02-22 11:47:22 dhruba Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -91,7 +91,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.55 2007-02-13 15:16:08 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.56 2007-02-22 11:47:22 dhruba Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -471,6 +471,12 @@ module Viscosity
               'is not implemented for lvisc_simplified')
           endif
         endif
+! for spherical polar coordinate system, in 1-d only
+        if(lspherical)then
+          p%fvisc(:,1)=p%fvisc(:,1)+ 2.0*nu*r1_mn*( & 
+                                       p%uij(:,1,1) - r1_mn*p%uu(:,1))
+        endif
+! spherical polar coordinate system end 
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu
       endif
 !
@@ -823,7 +829,7 @@ module Viscosity
       type (pencil_case) :: p
 !
       intent (in) :: p
-      intent (inout) :: df
+      intent (inout) :: df 
 
 !
 !  Add viscosity to equation of motion
