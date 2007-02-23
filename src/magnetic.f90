@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.386 2007-02-21 20:02:11 joishi Exp $
+! $Id: magnetic.f90,v 1.387 2007-02-23 12:02:41 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -221,7 +221,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.386 2007-02-21 20:02:11 joishi Exp $")
+           "$Id: magnetic.f90,v 1.387 2007-02-23 12:02:41 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -895,7 +895,7 @@ module Magnetic
       if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
 ! bij, del2a, graddiva
       if (lpencil(i_bij) .or. lpencil(i_del2a) .or. lpencil(i_graddiva)) &
-          call bij_etc(f,iaa,p%bij,p%del2a,p%graddiva)
+          call bij_etc(f,iaa,p%bij,p%del2a,p%graddiva,p%aij)
 ! jj
       if (lpencil(i_jj)) then
         call curl_mn(p%bij,p%jj,p%bb)
@@ -1225,6 +1225,7 @@ module Magnetic
         uxb_upw(:,2) = p%uu(:,3)*B_ext(1) - p%uu(:,1)*B_ext(3)
         uxb_upw(:,3) = p%uu(:,1)*B_ext(2) - p%uu(:,2)*B_ext(1)
 !  Add u_k A_k,j and `upwinded' advection term
+!  Note: this works currently only in cartesian geometry!
         do j=1,3; do k=1,3
           if (k/=j) then
             uxb_upw(:,j) = uxb_upw(:,j) + p%uu(:,k)*(p%aij(:,k,j)-p%aij(:,j,k))

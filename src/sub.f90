@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.284 2007-02-21 19:29:26 brandenb Exp $
+! $Id: sub.f90,v 1.285 2007-02-23 12:02:41 brandenb Exp $
 
 module Sub
 
@@ -1953,13 +1953,13 @@ module Sub
 !
     endsubroutine del6v
 !***********************************************************************
-    subroutine bij_etc(f,iref,Bij,del2,graddiv)
+    subroutine bij_etc(f,iref,Bij,del2,graddiv,aij)
 !
 !  calculate B_i,j = eps_ikl A_l,jk and A_l,kk
 !
 !  21-jul-03/axel: coded
 !  26-jul-05/tobi: do not calculate both d^2 A/(dx dy) and d^2 A/(dy dx)
-!                  (This wasn't spotted by me but by a guy from SGI...)
+!  23-feb-07/axel: added spherical coordinates
 !
       use Cdata
       use Deriv
@@ -1967,8 +1967,11 @@ module Sub
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       integer, intent (in) :: iref
       real, dimension (nx,3,3), intent (out) :: bij
+      real, dimension (nx,3,3), intent (in), optional :: aij
       real, dimension (nx,3), intent (out), optional :: del2,graddiv
-
+!
+!  locally used variables
+!
       real, dimension (nx,3,3,3) :: d2A
       real, dimension (nx) :: tmp
       integer :: iref1,i,j
@@ -1981,6 +1984,11 @@ module Sub
 !  calculate all mixed and non-mixed second derivatives
 !  of the vector potential (A_k,ij)
 !
+!  do not calculate both d^2 A/(dx dy) and d^2 A/(dy dx)
+!  (This wasn't spotted by me but by a guy from SGI...)
+!  Note: for non-cartesian coordinates there are different correction terms,
+!  see below.
+!
       do i=1,3
         do j=1,3
           call der2(f,iref1+i,tmp,j); d2A(:,j,j,i)=tmp
@@ -1989,6 +1997,19 @@ module Sub
         call derij(f,iref1+i,tmp,3,1); d2A(:,3,1,i)=tmp; d2A(:,1,3,i)=tmp
         call derij(f,iref1+i,tmp,1,2); d2A(:,1,2,i)=tmp; d2A(:,2,1,i)=tmp
       enddo
+!
+!  corrections for spherical polars:
+!  Psi_{,theta^ r^} = Psi_{,r^ theta^} - Psi_{,\theta^}/r
+!  Psi_{,phi^ r^} = Psi_{,r^ phi^} - Psi_{,\phi^}/r
+!  Psi_{,phi^ theta^} = Psi_{,theta^ phi^} - Psi_{,\phi^}*r^{-1}*cot(theta)
+!
+      if (lspherical) then
+        do i=1,3
+          d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*r1_mn
+          d2A(:,3,1,i)=d2A(:,3,1,i)-aij(:,i,3)*r1_mn
+          d2A(:,3,1,i)=d2A(:,3,1,i)-aij(:,i,3)*r1_mn*cotth(m)
+        enddo
+      endif
 !
 !  calculate b_i,j = eps_ikl A_l,jk, as well as optionally,
 !  del2_i = A_i,jj and graddiv_i = A_j,ji

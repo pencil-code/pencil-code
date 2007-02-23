@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.40 2007-02-22 19:29:47 brandenb Exp $
+! $Id: deriv.f90,v 1.41 2007-02-23 12:02:41 brandenb Exp $
 
 module Deriv
 
@@ -793,8 +793,19 @@ module Deriv
             if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
           endif
         endif
-
+!
       endif                     ! bidiagonal derij
+!
+!  Spherical polars
+!
+      if (lspherical) then
+        if ((i==1.and.j==2)) df=df*r1_mn
+        if ((i==2.and.j==1)) df=df*r1_mn !(minus extra terms)
+        if ((i==1.and.j==3)) df=df*r1_mn*sin1th(m)
+        if ((i==3.and.j==1)) df=df*r1_mn*sin1th(m) !(minus extra terms)
+        if ((i==2.and.j==3)) df=df*r2_mn*sin1th(m)
+        if ((i==3.and.j==2)) df=df*r2_mn*sin1th(m) !(minus extra terms)
+      endif
 !
     endsubroutine derij
 !***********************************************************************
