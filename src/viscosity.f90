@@ -1,5 +1,4 @@
-
-! $Id: viscosity.f90,v 1.61 2007-02-22 23:22:51 dobler Exp $
+! $Id: viscosity.f90,v 1.62 2007-02-25 10:24:03 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -91,7 +90,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.61 2007-02-22 23:22:51 dobler Exp $")
+           "$Id: viscosity.f90,v 1.62 2007-02-25 10:24:03 brandenb Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -474,8 +473,10 @@ module Viscosity
               'is not implemented for lvisc_simplified')
           endif
         endif
+!
 ! for spherical polar coordinate system, 
-        if(lspherical)then
+!
+        if (lspherical) then
 ! for r component (factors of line elements are taken care of inside p%uij
           p%fvisc(:,1)=p%fvisc(:,1)+&
                nu*r1_mn*(2.*(p%uij(:,1,1)-p%uij(:,2,2)-p%uij(:,3,3) &
@@ -491,7 +492,8 @@ module Viscosity
                nu*r1_mn*(2.*(p%uij(:,3,1)+p%uij(:,1,3)&
                              +cotth(m)*p%uij(:,2,3) ) &
                          +cotth(m)*p%uij(:,3,2)-sin1th(m)*p%uu(:,3) )
-	write(*,*) p%fvisc(:,2)
+!AB: commented this out for the time being
+!write(*,*) p%fvisc(:,2)
         endif
 ! spherical polar coordinate system end 
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu

@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.132 2007-01-26 00:19:37 dobler Exp $
+! $Id: boundcond.f90,v 1.133 2007-02-25 10:24:01 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -143,6 +143,8 @@ module Boundcond
                   call bc_one_x(f,topbot,j)
                 case ('set')      ! set boundary value
                   call bc_sym_x(f,-1,topbot,j,REL=.true.,val=fbcx12)
+                case ('slo')      ! set boundary value
+                  call bc_slope_x(f,fbcx12,topbot,j)
                 case ('e1')       ! extrapolation
                   call bcx_extrap_2_1(f,topbot,j)
                 case ('e2')       ! extrapolation
@@ -560,6 +562,61 @@ module Boundcond
       endselect
 !
     endsubroutine bc_sym_x
+!***********************************************************************
+    subroutine bc_slope_x(f,slope,topbot,j,rel,val)
+!
+!  Symmetry boundary conditions.
+!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
+!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
+!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  Don't combine rel=T and sgn=1, that wouldn't make much sense.
+!
+!  25-feb-07/axel: adapted from bc_sym_x
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mcom), optional :: val
+      real, dimension (mcom) :: slope
+      integer :: i,j
+      logical, optional :: rel
+      logical :: relative
+!
+      if (present(rel)) then; relative=rel; else; relative=.false.; endif
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
+        if (relative) then
+          do i=1,nghost
+            f(l1-i,:,:,j)=2*f(l1,:,:,j)+slope(j)*f(l1+i,:,:,j)*x(l1+i)/x(l1-i)
+          enddo
+        else
+          do i=1,nghost
+            f(l1-i,:,:,j)=slope(j)*f(l1+i,:,:,j)*x(l1+i)/x(l1-i)
+          enddo
+        endif
+
+      case('top')               ! top boundary
+        if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
+        if (relative) then
+          do i=1,nghost
+            f(l2+i,:,:,j)=2*f(l2,:,:,j)+slope(j)*f(l2-i,:,:,j)
+          enddo
+        else
+          do i=1,nghost
+            f(l2+i,:,:,j)=slope(j)*f(l2-i,:,:,j)*x(l2-i)/x(l2+i)
+          enddo
+        endif
+
+      case default
+        print*, "bc_slope_x: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_slope_x
 !***********************************************************************
     subroutine bc_sym_y(f,sgn,topbot,j,rel,val)
 !

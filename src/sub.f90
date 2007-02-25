@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.285 2007-02-23 12:02:41 brandenb Exp $
+! $Id: sub.f90,v 1.286 2007-02-25 10:24:02 brandenb Exp $
 
 module Sub
 
@@ -1953,7 +1953,7 @@ module Sub
 !
     endsubroutine del6v
 !***********************************************************************
-    subroutine bij_etc(f,iref,Bij,del2,graddiv,aij)
+    subroutine bij_etc(f,iref,Bij,del2,graddiv,aij,aa)
 !
 !  calculate B_i,j = eps_ikl A_l,jk and A_l,kk
 !
@@ -1969,6 +1969,7 @@ module Sub
       real, dimension (nx,3,3), intent (out) :: bij
       real, dimension (nx,3,3), intent (in), optional :: aij
       real, dimension (nx,3), intent (out), optional :: del2,graddiv
+      real, dimension (nx,3), intent (in), optional :: aa
 !
 !  locally used variables
 !
@@ -1998,7 +1999,7 @@ module Sub
         call derij(f,iref1+i,tmp,1,2); d2A(:,1,2,i)=tmp; d2A(:,2,1,i)=tmp
       enddo
 !
-!  corrections for spherical polars:
+!  corrections for spherical polars from swapping mixed derivatives:
 !  Psi_{,theta^ r^} = Psi_{,r^ theta^} - Psi_{,\theta^}/r
 !  Psi_{,phi^ r^} = Psi_{,r^ phi^} - Psi_{,\phi^}/r
 !  Psi_{,phi^ theta^} = Psi_{,theta^ phi^} - Psi_{,\phi^}*r^{-1}*cot(theta)
@@ -2007,16 +2008,30 @@ module Sub
         do i=1,3
           d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*r1_mn
           d2A(:,3,1,i)=d2A(:,3,1,i)-aij(:,i,3)*r1_mn
-          d2A(:,3,1,i)=d2A(:,3,1,i)-aij(:,i,3)*r1_mn*cotth(m)
+          d2A(:,3,2,i)=d2A(:,3,2,i)-aij(:,i,3)*r1_mn*cotth(m)
         enddo
       endif
 !
 !  calculate b_i,j = eps_ikl A_l,jk, as well as optionally,
 !  del2_i = A_i,jj and graddiv_i = A_j,ji
 !
-      bij(:,1,:) = d2A(:,:,2,3) - d2A(:,3,:,2)
-      bij(:,2,:) = d2A(:,:,3,1) - d2A(:,1,:,3)
-      bij(:,3,:) = d2A(:,:,1,2) - d2A(:,2,:,1)
+      bij(:,1,:)=d2A(:,:,2,3)-d2A(:,3,:,2)
+      bij(:,2,:)=d2A(:,:,3,1)-d2A(:,1,:,3)
+      bij(:,3,:)=d2A(:,:,1,2)-d2A(:,2,:,1)
+!
+!  corrections for spherical coordinates
+!
+      if (lspherical) then
+        bij(:,3,2)=bij(:,3,2)+aij(:,2,2)*r1_mn
+        bij(:,2,3)=bij(:,2,3)-aij(:,3,3)*r1_mn
+        bij(:,1,3)=bij(:,1,3)+aij(:,3,3)*r1_mn*cotth(m)
+        bij(:,3,1)=bij(:,3,1)+aij(:,2,1)*r1_mn         +aa(:,2)*r2_mn
+        bij(:,2,1)=bij(:,2,1)-aij(:,3,1)*r1_mn         +aa(:,3)*r2_mn
+        bij(:,1,2)=bij(:,1,2)+aij(:,3,2)*r1_mn*cotth(m)-aa(:,3)*r2_mn*sin2th(m)
+      endif
+!
+!  calculate del2 and graddiv, if requested
+!
       if (present(del2)) then
         del2(:,:) = d2A(:,1,1,:) + d2A(:,2,2,:) + d2A(:,3,3,:)
       endif
