@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.266 2007-02-21 15:32:43 brandenb Exp $
+! $Id: param_io.f90,v 1.267 2007-02-26 21:44:21 brandenb Exp $
 
 module Param_IO
 
@@ -96,6 +96,7 @@ module Param_IO
        force_lower_bound,force_upper_bound,twod, &
        border_frac,border_frac_x,border_frac_y,border_frac_z, &
        lpoint,mpoint,npoint, &
+       lpoint2,mpoint2,npoint2, &
        lrescaling, lcylindrical, &
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
@@ -181,7 +182,6 @@ module Param_IO
 !  read through all items that *may* be present
 !  in the various modules
 !
-
       label='init_pars'
       read(1,NML=init_pars                 ,ERR=99, IOSTAT=ierr)
 

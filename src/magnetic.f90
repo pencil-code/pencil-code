@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.388 2007-02-25 10:24:01 brandenb Exp $
+! $Id: magnetic.f90,v 1.389 2007-02-26 21:44:21 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -221,7 +221,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.388 2007-02-25 10:24:01 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.389 2007-02-26 21:44:21 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -458,6 +458,7 @@ module Magnetic
          case('magnetogram'); call mdi_init(f)
          case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('crazy', '5'); call crazy(amplaa(j),f,iaa)
+         case('sinwave-x'); call sinwave(amplaa(j),f,iaa,kx=kx_aa(j))
          case('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,xx,kx_aa(j))
          case('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,yy,ky_aa(j),mu0)
          case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
@@ -836,6 +837,7 @@ module Magnetic
 ! aij
       if (lpencil(i_aij)) call gij(f,iaa,p%aij,1)
 ! diva
+!AB: should calculate diva from aij above!
       if (lpencil(i_diva)) call div(f,iaa,p%diva)
 ! bb
       if (lpencil(i_bb)) then

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.200 2007-02-26 07:06:38 dobler Exp $
+! $Id: register.f90,v 1.201 2007-02-26 21:44:21 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -339,7 +339,14 @@ module Register
 !  (Have so far only bothered about single processor output.)
 !
       if (lroot) then
-        print*,'x(lpoint),y(mpoint),z(npoint)=',x(lpoint),y(mpoint),z(npoint)
+        lpoint=min(max(l1,lpoint),l2)
+        mpoint=min(max(m1,mpoint),m2)
+        npoint=min(max(n1,npoint),n2)
+        lpoint2=min(max(l1,lpoint2),l2)
+        mpoint2=min(max(m1,mpoint2),m2)
+        npoint2=min(max(n1,npoint2),n2)
+        print*,'(x,y,z)(point)=',x(lpoint),y(mpoint),z(npoint)
+        print*,'(x,y,z)(point2)=',x(lpoint2),y(mpoint2),z(npoint2)
       endif
 !
 !  cleanup profile files
@@ -417,7 +424,7 @@ module Register
     subroutine choose_pencils()
 !
 !  Find out which pencils are needed for all time-steps and also for
-!  diagnostics only. Also takes care of interdependant pencils.
+!  diagnostics only. Also takes care of interdependent pencils.
 !
 !  20-11-04/anders: coded
 !
@@ -527,7 +534,7 @@ module Register
 !***********************************************************************
     subroutine pencil_interdep(lpencil_in)
 !
-!  Find out about interdependant pencils. Each module knows what its own
+!  Find out about interdependent pencils. Each module knows what its own
 !  pencils depend on. The dependency only needs to be specified one level
 !  up, since this subroutine is called several times (currently three).
 !

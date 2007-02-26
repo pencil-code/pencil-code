@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.354 2007-02-22 19:29:47 brandenb Exp $
+! ! $Id: cdata.f90,v 1.355 2007-02-26 21:44:21 brandenb Exp $
 
 module Cdata
 
@@ -146,6 +146,7 @@ module Cdata
 !  for now, these points only apply to the root processor.
 !
   integer :: lpoint=(l1+l2)/2,mpoint=(m1+m2)/2,npoint=(n1+n2)/2
+  integer :: lpoint2=(l1+l2)/4,mpoint2=(m1+m2)/4,npoint2=(n1+n2)/4
 !
 !  pencil-related stuff (also MPI-related stuff)
 !
