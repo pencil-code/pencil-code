@@ -1,4 +1,4 @@
-! $Id: gross_pitaevskii.f90,v 1.9 2007-01-04 18:11:38 dobler Exp $
+! $Id: gross_pitaevskii.f90,v 1.10 2007-02-26 21:43:10 brandenb Exp $
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
 !
@@ -183,10 +183,10 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.9 2007-01-04 18:11:38 dobler Exp $ 
+!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.10 2007-02-26 21:43:10 brandenb Exp $ 
 !  when the file in committed to a CVS repository.
 !
-      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.9 2007-01-04 18:11:38 dobler Exp $")
+      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.10 2007-02-26 21:43:10 brandenb Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
 !  been configured in a custom module but they do no harm)
@@ -216,7 +216,7 @@ module Special
       real, dimension(3) :: xxp, dr
       integer :: l
 !!
-!!  Initialize any module variables which are parameter dependant  
+!!  Initialize any module variables which are parameter dependent  
 !!
       if (test_sphere_radius > 0.) ltest_sphere=.true.
 !
