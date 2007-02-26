@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.181 2007-02-02 14:14:47 wlyra Exp $
+! $Id: particles_dust.f90,v 1.182 2007-02-26 07:15:14 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -48,7 +48,7 @@ module Particles
   integer, dimension (npar_species) :: ipar_fence_species=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: ldragforce_heat=.false., lcollisional_heat=.false.
-  logical :: lpar_spec=.false.
+  logical :: lpar_spec=.false., lcompensate_friction_increase=.false.
   logical :: lcollisional_cooling_rms=.false.
   logical :: lcollisional_cooling_twobody=.false.
   logical :: lcollisional_dragforce_cooling=.false.
@@ -79,7 +79,7 @@ module Particles
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole, &
       epsp_friction_increase,lcartesian_mig, lcollisional_dragforce_cooling, &
-      ldragforce_heat, lcollisional_heat
+      ldragforce_heat, lcollisional_heat, lcompensate_friction_increase
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -93,7 +93,7 @@ module Particles
       lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
-      ldragforce_heat, lcollisional_heat
+      ldragforce_heat, lcollisional_heat, lcompensate_friction_increase
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -126,7 +126,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.181 2007-02-02 14:14:47 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.182 2007-02-26 07:15:14 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1583,6 +1583,12 @@ k_loop:   do while (.not. (k>npar_loc))
           lcollisional_dragforce_cooling) .and. t>=tstart_collisional_cooling) &
           call collisional_cooling(f,df,fp,dfp,p,ineargrid)
 !
+!  Compensate for increased friction time by appying extra friction force to
+!  particles.
+!
+      if (lcompensate_friction_increase) &
+          call compensate_friction_increase(f,df,fp,dfp,p,ineargrid)
+!
 !  Contribution of dust particles to time step.
 !
       if (npar_imn(imn)/=0) then
@@ -2195,6 +2201,53 @@ k_loop:   do while (.not. (k>npar_loc))
       endif
 !
     endsubroutine collisional_cooling
+!***********************************************************************
+    subroutine compensate_friction_increase(f,df,fp,dfp,p,ineargrid)
+!
+!  Compensate for increased friction time in regions of high solids-to-gas
+!  ratio by applying missing friction force to particles only.
+!
+!  26-feb-07/anders: coded
+!
+      use Sub
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      real, dimension (nx,3) :: vvpm
+      real :: tausp1_par, tausp1_par_mod, tausp1_par_org
+      integer :: k, l, ix0
+!
+      if (npar_imn(imn)/=0) then
+!  Calculate mean particle velocity.
+        vvpm=0.0
+        do k=k1_imn(imn),k2_imn(imn)
+          ix0=ineargrid(k,1)
+          vvpm(ix0-nghost,:) = vvpm(ix0-nghost,:) + fp(k,ivpx:ivpz)
+        enddo
+        do l=1,nx
+          if (p%np(l)>1.0) vvpm(l,:)=vvpm(l,:)/p%np(l)
+        enddo
+!
+!  Compare actual and modified friction time and apply the difference as
+!  friction force relative to mean particle velocity.
+!
+        do k=k1_imn(imn),k2_imn(imn)
+          call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par_mod, &
+              nochange_opt=.false.)
+          call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par_org, &
+              nochange_opt=.true.)
+          tausp1_par=tausp1_par_org-tausp1_par_mod
+          ix0=ineargrid(k,1)
+          dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
+              tausp1_par*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
+        enddo
+      endif
+!
+    endsubroutine compensate_friction_increase
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !
