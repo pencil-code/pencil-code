@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.63 2007-02-26 07:06:38 dobler Exp $
+! $Id: viscosity.f90,v 1.64 2007-02-26 08:47:54 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -90,7 +90,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.63 2007-02-26 07:06:38 dobler Exp $")
+           "$Id: viscosity.f90,v 1.64 2007-02-26 08:47:54 dobler Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -240,9 +240,11 @@ module Viscosity
         call farray_register_auxiliary('visc_heat',ivisc_heat)
         print*, '>>>> register_viscosity: ivisc_heat = ', ivisc_heat
         !
-        if (lroot) open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-        write(3,*) 'ivisc_heat=',ivisc_heat
-        if (lroot) close(3)
+        if (lroot) then
+          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+          write(3,*) 'ivisc_heat=',ivisc_heat
+          close(3)
+        endif
       endif
 !
       call keep_compiler_quiet(lstarting)
