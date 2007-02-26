@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.31 2006-08-30 13:28:37 dintrans Exp $
+;  $Id: pc_varcontent.pro,v 1.32 2007-02-26 07:06:39 dobler Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar,run2D=run2D
 COMPILE_OPT IDL2,HIDDEN
@@ -408,6 +408,12 @@ if (param.lwrite_aux ne 0) then begin
   varcontent[igpotselfx].idlvarloc  = 'gpotself_loc'
   varcontent[igpotselfx].idlinitloc = INIT_3VECTOR_LOC
   varcontent[igpotselfx].skip       = 2
+
+  default, ivisc_heat, 0
+  varcontent[ivisc_heat].variable  = 'viscous dissipation'
+  varcontent[ivisc_heat].idlvar    = 'visc_heat'
+  varcontent[ivisc_heat].idlinit   = INIT_SCALAR
+  varcontent[ivisc_heat].idlvarloc = 'visc_heat_loc'
 endif
 
 if keyword_set(scalar) then begin

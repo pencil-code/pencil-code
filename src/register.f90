@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.199 2007-02-22 19:29:47 brandenb Exp $
+! $Id: register.f90,v 1.200 2007-02-26 07:06:38 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -85,7 +85,6 @@ module Register
       call register_io
       call register_global
       call register_eos
-
       call register_shock
       call register_viscosity
       call register_hydro

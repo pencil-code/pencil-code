@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.62 2007-02-25 10:24:03 brandenb Exp $
+! $Id: viscosity.f90,v 1.63 2007-02-26 07:06:38 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -84,13 +84,13 @@ module Viscosity
       first = .false.
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'register_viscosity: constant viscosity'
+        print*, 'register_viscosity: viscosity.f90 module'
       endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.62 2007-02-25 10:24:03 brandenb Exp $")
+           "$Id: viscosity.f90,v 1.63 2007-02-26 07:06:38 dobler Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -229,11 +229,20 @@ module Viscosity
             'Viscosity coefficient nu_shock is zero!')
       endif
 !
-!  register an extra aux slot for dissipation rate if requested (so
-!  visc_heat is written sto snapshots and can be easily analyzed later)
+!  Register an extra aux slot for dissipation rate if requested (so
+!  visc_heat is written sto snapshots and can be easily analyzed later).
+!    NB: We are doing this here, rather than in register_viscosity, as the
+!  register_XXX routines are called before read_{start,run}pars, so
+!  lvisc_heat_as_aux isn't known there. This implies that we need to
+!  append the ivisc_heat line to index.pro manually.
 !
       if (lvisc_heat_as_aux) then
-         call farray_register_auxiliary('visc_heat',ivisc_heat)
+        call farray_register_auxiliary('visc_heat',ivisc_heat)
+        print*, '>>>> register_viscosity: ivisc_heat = ', ivisc_heat
+        !
+        if (lroot) open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+        write(3,*) 'ivisc_heat=',ivisc_heat
+        if (lroot) close(3)
       endif
 !
       call keep_compiler_quiet(lstarting)
@@ -316,7 +325,7 @@ module Viscosity
             'meshRemax',idiag_meshRemax)
       enddo
 !
-!  write column where which ionization variable is stored
+!  write column where which viscosity variable is stored
 !
       if (present(lwrite)) then
         if (lwrite) then
@@ -410,6 +419,8 @@ module Viscosity
       endif
       if (lvisc_heat_as_aux) then
         lpenc_diagnos(i_visc_heat)=.true.
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_sij2)=.true.
       endif
       if ( (idiag_meshRemax/=0 .or. idiag_dtnu/=0) .and. lvisc_nu_shock) &
           lpenc_diagnos(i_shock)=.true.

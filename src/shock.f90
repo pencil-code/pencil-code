@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.29 2006-11-30 09:03:36 dobler Exp $
+! $Id: shock.f90,v 1.30 2007-02-26 07:06:38 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -112,7 +112,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.29 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: shock.f90,v 1.30 2007-02-26 07:06:38 dobler Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -256,7 +256,7 @@ module Shock
             'shockmax',idiag_shockmax)
       enddo
 !
-!  write column where which ionization variable is stored
+!  write column where which shock variable is stored
 !
       if (present(lwrite)) then
         if (lwrite) then
