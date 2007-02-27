@@ -1,4 +1,4 @@
-! $Id: lorenz_gauge.f90,v 1.1 2007-02-26 21:43:10 brandenb Exp $
+! $Id: lorenz_gauge.f90,v 1.2 2007-02-27 05:12:20 brandenb Exp $
 !
 !  Lorentz gauge, dphi/dt = -cphi2*divA
 !
@@ -83,7 +83,7 @@ module Special
 !      naux = naux+1
 !
       if (lroot) call cvs_id( &
-           "$Id: lorenz_gauge.f90,v 1.1 2007-02-26 21:43:10 brandenb Exp $")
+           "$Id: lorenz_gauge.f90,v 1.2 2007-02-27 05:12:20 brandenb Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -365,17 +365,31 @@ module Special
 !***********************************************************************
     subroutine get_slices_special(f,slices)
 !
-!  Write slices for animation of special variables.
+!  Write slices for animation of electric potential
 !
-!  26-jun-06/tony: dummy
+!  26-feb-07/axel: adapted from gross_pitaevskii
 !
-      use Sub, only: keep_compiler_quiet
+      use Cdata
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       type (slice_data) :: slices
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
+      integer :: inamev
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  phi
+!
+        case ('phi')
+          slices%yz=f(ix_loc,m1:m2,n1:n2,iphi)
+          slices%xz=f(l1:l2,iy_loc,n1:n2,iphi)
+          slices%xy=f(l1:l2,m1:m2,iz_loc,iphi)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iphi)
+          slices%ready = .true.
+!
+      endselect
 !
     endsubroutine get_slices_special
 !***********************************************************************
