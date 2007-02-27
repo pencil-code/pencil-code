@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.493 2007-02-19 12:34:33 dintrans Exp $
+! $Id: entropy.f90,v 1.494 2007-02-27 08:46:58 dintrans Exp $
 
 !
 !  This module takes care of entropy (initial condition
@@ -168,7 +168,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.493 2007-02-19 12:34:33 dintrans Exp $")
+           "$Id: entropy.f90,v 1.494 2007-02-27 08:46:58 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -2490,7 +2490,7 @@ module Entropy
       if (headt .and. lfirst .and. ip == 13) then
          call output_pencil(trim(directory)//'/heatcond.dat',thdiff,1)
       endif
-      if (lwrite_prof) then
+      if (lwrite_prof .and. ip<=9) then
         call output_pencil(trim(directory)//'/chi.dat',chix,1)
         call output_pencil(trim(directory)//'/hcond.dat',hcond,1)
         call output_pencil(trim(directory)//'/glhc.dat',glhc,3)
