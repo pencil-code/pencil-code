@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.32 2007-02-26 07:06:39 dobler Exp $
+;  $Id: pc_varcontent.pro,v 1.33 2007-02-27 07:35:15 brandenb Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar,run2D=run2D
 COMPILE_OPT IDL2,HIDDEN
@@ -195,6 +195,12 @@ varcontent[ispecial].idlvar   = 'special'
 varcontent[ispecial].idlinit    = INIT_SCALAR
 varcontent[ispecial].idlvarloc= 'special_loc'
 varcontent[ispecial].idlinitloc = INIT_SCALAR_LOC
+
+varcontent[iphi].variable = 'Electric potential (phi)'
+varcontent[iphi].idlvar   = 'phi'
+varcontent[iphi].idlinit    = INIT_SCALAR
+varcontent[iphi].idlvarloc= 'phi_loc'
+varcontent[iphi].idlinitloc = INIT_SCALAR_LOC
 
 varcontent[iecr].variable = 'Cosmic ray energy density (ecr)'
 varcontent[iecr].idlvar   = 'ecr'
