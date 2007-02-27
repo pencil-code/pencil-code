@@ -1,11 +1,8 @@
 #!/bin/sh
-#$Id: pc_news,v 1.3 2006-11-25 21:49:42 brandenb Exp $
-echo ""
-echo "==> The next German MHD days will be in Heidelberg,"
-echo "       http://www.mpia.de/PSF/MHD2006/"
+#$Id: pc_news,v 1.4 2007-02-27 05:12:44 brandenb Exp $
 echo ""
 echo "==> A new Pencil Code User Meeting will be planned for 2007."
-echo "       http://indico.albanova.se/conferenceDisplay.py?confId=68"
+echo "       http://agenda.albanova.se/conferenceDisplay.py?confId=185"
 echo ""
 echo "    For details, talk, and photos from the last meeting, see"
 echo "       http://www.nordita.dk/conference/PencilCode06/"
