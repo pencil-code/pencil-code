@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.494 2007-02-27 08:46:58 dintrans Exp $
+! $Id: entropy.f90,v 1.495 2007-02-28 07:03:25 ajohan Exp $
 
 !
 !  This module takes care of entropy (initial condition
@@ -168,7 +168,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.494 2007-02-27 08:46:58 dintrans Exp $")
+           "$Id: entropy.f90,v 1.495 2007-02-28 07:03:25 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1770,7 +1770,7 @@ module Entropy
           if (headtt) print*, 'dss_dt: adding global pressure gradient force'
           do j=1,3
             df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
-                - 1/gamma*p%cs2*beta_glnrho_scaled(j)
+                - p%cs2*beta_glnrho_scaled(j)
           enddo
         endif
 !
