@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.173 2007-02-02 14:14:47 wlyra Exp $
+! $Id: dustdensity.f90,v 1.174 2007-02-28 07:11:45 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -140,7 +140,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.173 2007-02-02 14:14:47 wlyra Exp $")
+           "$Id: dustdensity.f90,v 1.174 2007-02-28 07:11:45 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -414,16 +414,16 @@ module Dustdensity
 !  Gas and dust velocity fields.
 !
             if (lhydro) f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - &
-                1/gamma*cs20*beta_glnrho_scaled(1)*eps*tausd(1)/ &
+                cs20*beta_glnrho_scaled(1)*eps*tausd(1)/ &
                 (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
             if (lhydro) f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-                1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps+(Omega*tausd(1))**2)/&
+                cs20*beta_glnrho_scaled(1)*(1+eps+(Omega*tausd(1))**2)/&
                 (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
             if (ldustvelocity) f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) + &
-                1/gamma*cs20*beta_glnrho_scaled(1)*tausd(1)/ &
+                cs20*beta_glnrho_scaled(1)*tausd(1)/ &
                 (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
             if (ldustvelocity) f(l1:l2,m,n,iudy(1)) = f(l1:l2,m,n,iudy(1)) + &
-                1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps)/ &
+                cs20*beta_glnrho_scaled(1)*(1+eps)/ &
                 (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
           enddo; enddo
 
@@ -526,7 +526,7 @@ module Dustdensity
       rho1=1.0
       Hg=1.0
       Sigmad=eps_dtog*rho1*Hg*sqrt(2*pi)
-      Hd = sqrt(Ri0)*abs(beta_glnrho_scaled(1))/(2*gamma)*1.0
+      Hd = sqrt(Ri0)*abs(beta_glnrho_scaled(1))/2*1.0
 !
 !  Need to find eps1 that results in given dust column density.
 !
@@ -626,16 +626,16 @@ module Dustdensity
 !  Gas and dust velocity fields.
 !
         if (lhydro) f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - &
-            1/gamma*cs20*beta_glnrho_scaled(1)*eps(n)*tausd(1)/ &
+            cs20*beta_glnrho_scaled(1)*eps(n)*tausd(1)/ &
             (1.0+2*eps(n)+eps(n)**2+(Omega*tausd(1))**2)
         if (lhydro) f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-            1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps(n)+(Omega*tausd(1))**2)/ &
+            cs20*beta_glnrho_scaled(1)*(1+eps(n)+(Omega*tausd(1))**2)/ &
             (2*Omega*(1.0+2*eps(n)+eps(n)**2+(Omega*tausd(1))**2))
         if (ldustvelocity) f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) + &
-            1/gamma*cs20*beta_glnrho_scaled(1)*tausd(1)/ &
+            cs20*beta_glnrho_scaled(1)*tausd(1)/ &
             (1.0+2*eps(n)+eps(n)**2+(Omega*tausd(1))**2)
         if (ldustvelocity) f(l1:l2,m,n,iudy(1)) = f(l1:l2,m,n,iudy(1)) + &
-            1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps(n))/ &
+            cs20*beta_glnrho_scaled(1)*(1+eps(n))/ &
             (2*Omega*(1.0+2*eps(n)+eps(n)**2+(Omega*tausd(1))**2))
 
       enddo

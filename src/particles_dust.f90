@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.182 2007-02-26 07:15:14 ajohan Exp $
+! $Id: particles_dust.f90,v 1.183 2007-02-28 07:11:46 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -126,7 +126,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.182 2007-02-26 07:15:14 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.183 2007-02-28 07:11:46 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -766,10 +766,10 @@ k_loop:   do while (.not. (k>npar_loc))
             endif
 
             f(l,m,n,iux) = f(l,m,n,iux) - &
-                1/gamma*beta_glnrho_global(1)*eps*Omega*tausp/ &
+                beta_glnrho_global(1)*eps*Omega*tausp/ &
                 ((1.0+eps)**2+(Omega*tausp)**2)*cs
             f(l,m,n,iuy) = f(l,m,n,iuy) + &
-                1/gamma*beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
+                beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
                 (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
 
           enddo; enddo; enddo
@@ -786,10 +786,10 @@ k_loop:   do while (.not. (k>npar_loc))
             endif
 
             fp(k,ivpx) = fp(k,ivpx) + &
-                1/gamma*beta_glnrho_global(1)*Omega*tausp/ &
+                beta_glnrho_global(1)*Omega*tausp/ &
                 ((1.0+eps)**2+(Omega*tausp)**2)*cs
             fp(k,ivpy) = fp(k,ivpy) + &
-                1/gamma*beta_glnrho_global(1)*(1+eps)/ &
+                beta_glnrho_global(1)*(1+eps)/ &
                 (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
 
           enddo
@@ -876,7 +876,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Define a few disc parameters.
 !
-      eta_glnrho = -0.5*1/gamma*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
+      eta_glnrho = -0.5*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
       v_Kepler   =  1.0/abs(beta_glnrho_global(1))
       if (lroot) print*, 'streaming: eta, vK=', eta_glnrho, v_Kepler
 !
@@ -979,7 +979,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Define a few disc parameters.
 !
-      eta_glnrho = -0.5*1/gamma*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
+      eta_glnrho = -0.5*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
       v_Kepler   =  1.0/abs(beta_glnrho_global(1))
       if (lroot) print*, 'streaming: eta, vK=', eta_glnrho, v_Kepler
 !
@@ -1092,7 +1092,7 @@ k_loop:   do while (.not. (k>npar_loc))
       rho1=1.0
       Hg=1.0
       Sigmad=eps_dtog*rho1*Hg*sqrt(2*pi)
-      Hd = sqrt(Ri0)*abs(beta_glnrho_scaled(1))/(2*gamma)*1.0
+      Hd = sqrt(Ri0)*abs(beta_glnrho_scaled(1))/2*1.0
 !
 !  Need to find eps1 that results in given dust column density.
 !
@@ -1209,10 +1209,10 @@ k_loop:   do while (.not. (k>npar_loc))
         if (eps_point<=0.0) eps_point=0.0
 
         f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - &
-            1/gamma*cs20*beta_glnrho_scaled(1)*eps_point*tausp/ &
+            cs20*beta_glnrho_scaled(1)*eps_point*tausp/ &
             (1.0+2*eps_point+eps_point**2+(Omega*tausp)**2)
         f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-            1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps_point+(Omega*tausp)**2)/ &
+            cs20*beta_glnrho_scaled(1)*(1+eps_point+(Omega*tausp)**2)/ &
             (2*Omega*(1.0+2*eps_point+eps_point**2+(Omega*tausp)**2))
         f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.0
       enddo
@@ -1225,10 +1225,10 @@ k_loop:   do while (.not. (k>npar_loc))
         if (eps_point<=0.0) eps_point=0.0
 
         fp(k,ivpx) = fp(k,ivpx) + &
-            1/gamma*cs20*beta_glnrho_scaled(1)*tausp/ &
+            cs20*beta_glnrho_scaled(1)*tausp/ &
             (1.0+2*eps_point+eps_point**2+(Omega*tausp)**2)
         fp(k,ivpy) = fp(k,ivpy) + &
-            1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps_point)/ &
+            cs20*beta_glnrho_scaled(1)*(1+eps_point)/ &
             (2*Omega*(1.0+2*eps_point+eps_point**2+(Omega*tausp)**2))
         fp(k,ivpz) = fp(k,ivpz) - tausp*Omega**2*fp(k,izp)
 

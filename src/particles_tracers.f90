@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.33 2006-11-30 09:03:36 dobler Exp $
+! $Id: particles_tracers.f90,v 1.34 2007-02-28 07:11:46 ajohan Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -60,7 +60,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.33 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: particles_tracers.f90,v 1.34 2007-02-28 07:11:46 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -239,7 +239,7 @@ module Particles
             endif
 
             f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-                1/gamma*beta_glnrho_global(1)/(2*(1.0+eps))*cs
+                beta_glnrho_global(1)/(2*(1.0+eps))*cs
 
           enddo; enddo
 

@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.1 2007-02-28 04:28:05 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.2 2007-02-28 07:11:46 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -121,7 +121,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.1 2007-02-28 04:28:05 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.2 2007-02-28 07:11:46 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -220,7 +220,7 @@ module NeutralVelocity
 !  24-nov-02/tony: renamed for consistance (i.e. init_[variable name])
 !
       use Cdata
-      use EquationOfState, only: cs20, gamma, beta_glnrho_scaled
+      use EquationOfState, only: cs20, gamma
       use General
       use Gravity, only: grav_const,z1
       use Initcond

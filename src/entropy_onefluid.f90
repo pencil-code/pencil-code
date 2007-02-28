@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.21 2007-02-02 14:14:47 wlyra Exp $
+! $Id: entropy_onefluid.f90,v 1.22 2007-02-28 07:11:46 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.21 2007-02-02 14:14:47 wlyra Exp $")
+           "$Id: entropy_onefluid.f90,v 1.22 2007-02-28 07:11:46 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1651,7 +1651,7 @@ module Entropy
             if (headtt) print*, 'dss_dt: adding global pressure gradient force'
               do j=1,3
                 df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
-                    - 1/(1+p%epsd(:,1))*1/gamma*p%cs2*beta_glnrho_scaled(j)
+                    - 1/(1+p%epsd(:,1))*p%cs2*beta_glnrho_scaled(j)
               enddo
             endif
           endif

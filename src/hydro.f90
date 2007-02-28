@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.326 2007-02-21 15:32:43 brandenb Exp $
+! $Id: hydro.f90,v 1.327 2007-02-28 07:11:46 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -187,7 +187,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.326 2007-02-21 15:32:43 brandenb Exp $")
+           "$Id: hydro.f90,v 1.327 2007-02-28 07:11:46 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -579,8 +579,8 @@ module Hydro
 
         case('sub-Keplerian')
           if (lroot) print*, 'init_hydro: set sub-Keplerian gas velocity'
-          f(:,:,:,iux) = -1/(2*Omega)*1/gamma*cs20*beta_glnrho_scaled(2)
-          f(:,:,:,iuy) = 1/(2*Omega)*1/gamma*cs20*beta_glnrho_scaled(1)
+          f(:,:,:,iux) = -1/(2*Omega)*cs20*beta_glnrho_scaled(2)
+          f(:,:,:,iuy) = 1/(2*Omega)*cs20*beta_glnrho_scaled(1)
 
         case default
           !

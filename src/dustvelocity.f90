@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.119 2007-02-02 14:14:47 wlyra Exp $
+! $Id: dustvelocity.f90,v 1.120 2007-02-28 07:11:45 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -137,7 +137,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.119 2007-02-02 14:14:47 wlyra Exp $")
+           "$Id: dustvelocity.f90,v 1.120 2007-02-28 07:11:45 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -556,30 +556,30 @@ module Dustvelocity
 
             if (beta_glnrho_scaled(1)/=0.0) then
               f(l,m,n,iux) = f(l,m,n,iux) - &
-                  1/gamma*cs20*beta_glnrho_scaled(1)*eps*tausd(1)/ &
+                  cs20*beta_glnrho_scaled(1)*eps*tausd(1)/ &
                   (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
               f(l,m,n,iuy) = f(l,m,n,iuy) + &
-                  1/gamma*cs20*beta_glnrho_scaled(1)* &
+                  cs20*beta_glnrho_scaled(1)* &
                   (1+eps+(Omega*tausd(1))**2)/ &
                   (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
               f(l,m,n,iudx(1)) = f(l,m,n,iudx(1)) + &
-                  1/gamma*cs20*beta_glnrho_scaled(1)*tausd(1)/ &
+                  cs20*beta_glnrho_scaled(1)*tausd(1)/ &
                   (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
               f(l,m,n,iudy(1)) = f(l,m,n,iudy(1)) + &
-                  1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps)/ &
+                  cs20*beta_glnrho_scaled(1)*(1+eps)/ &
                   (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
             elseif (beta_dPdr_dust_scaled/=0.0) then
               f(l,m,n,iux) = f(l,m,n,iux) - &
-                  1/gamma*cs20*beta_dPdr_dust_scaled*eps*tausd(1)/ &
+                  cs20*beta_dPdr_dust_scaled*eps*tausd(1)/ &
                   (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
               f(l,m,n,iuy) = f(l,m,n,iuy) - &
-                  1/gamma*cs20*beta_dPdr_dust_scaled*(eps+eps**2)/ &
+                  cs20*beta_dPdr_dust_scaled*(eps+eps**2)/ &
                   (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
               f(l,m,n,iudx(1)) = f(l,m,n,iudx(1)) + &
-                  1/gamma*cs20*beta_dPdr_dust_scaled*tausd(1)/ &
+                  cs20*beta_dPdr_dust_scaled*tausd(1)/ &
                   (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
               f(l,m,n,iudy(1)) = f(l,m,n,iudy(1)) - &
-                  1/gamma*cs20*beta_dPdr_dust_scaled* &
+                  cs20*beta_dPdr_dust_scaled* &
                   (eps+eps**2+(Omega*tausd(1))**2)/ &
                   (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
             endif
@@ -618,7 +618,7 @@ module Dustvelocity
 !
 !  Mode unstable to streaming instability (Youdin & Goodman 2005)
 !
-          eta_glnrho = -0.5*1/gamma*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
+          eta_glnrho = -0.5*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
           v_Kepler   =  1.0/abs(beta_glnrho_global(1))
 
           if (lroot) print*, 'init_uud: eta, vK=', eta_glnrho, v_Kepler
@@ -987,7 +987,7 @@ module Dustvelocity
 !  velocities relative to the shear flow modified by the global pressure grad.)
 !
         if (beta_dPdr_dust/=0.0) df(l1:l2,m,n,iudx(k)) = &
-            df(l1:l2,m,n,iudx(k)) + 1/gamma*p%cs2*beta_dPdr_dust_scaled
+            df(l1:l2,m,n,iudx(k)) + p%cs2*beta_dPdr_dust_scaled
 !
 !  Add pseudo Coriolis force (to drive velocity difference between dust and gas)
 !
