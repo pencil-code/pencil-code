@@ -1,4 +1,4 @@
-! $Id: noneutraldensity.f90,v 1.1 2007-02-28 04:28:05 wlyra Exp $
+! $Id: noneutraldensity.f90,v 1.2 2007-02-28 16:21:17 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhon_dt and init_lnrhon, among other auxiliary routines.
@@ -6,6 +6,7 @@
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
+!
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -54,7 +55,7 @@ module Neutraldensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: noneutraldensity.f90,v 1.1 2007-02-28 04:28:05 wlyra Exp $")
+           "$Id: noneutraldensity.f90,v 1.2 2007-02-28 16:21:17 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -69,15 +70,16 @@ module Neutraldensity
 !
     endsubroutine initialize_neutraldensity
 !***********************************************************************
-    subroutine init_lnrhon(f)
+    subroutine init_lnrhon(f,xx,yy,zz)
 !
 !  initialise lnrhon; called from start.f90
 !
 !  18-mar-03/axel: adapted from neutraldensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if(NO_WARN) print*,f ! keep compiler quiet
+      if(NO_WARN) print*,f,xx,yy,zz ! keep compiler quiet
     endsubroutine init_lnrhon
 !***********************************************************************
     subroutine pencil_criteria_neutraldensity()

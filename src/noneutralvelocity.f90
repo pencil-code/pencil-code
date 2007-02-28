@@ -1,13 +1,14 @@
-! $Id: noneutralvelocity.f90,v 1.1 2007-02-28 04:28:05 wlyra Exp $
+! $Id: noneutralvelocity.f90,v 1.2 2007-02-28 16:21:17 wlyra Exp $
 !  This module takes care of everything related to neutral velocity
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-!! PENCILS PROVIDED uud,divud,sdij
+! PENCILS PROVIDED uun,divun,snij
 !
 !***************************************************************
 
@@ -47,7 +48,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: noneutralvelocity.f90,v 1.1 2007-02-28 04:28:05 wlyra Exp $")
+           "$Id: noneutralvelocity.f90,v 1.2 2007-02-28 16:21:17 wlyra Exp $")
 !
     endsubroutine register_neutralvelocity
 !***********************************************************************
@@ -60,15 +61,16 @@ module NeutralVelocity
 !
     endsubroutine initialize_neutralvelocity
 !***********************************************************************
-    subroutine init_uun(f)
+    subroutine init_uun(f,xx,yy,zz)
 !
 !  initialise uun; called from start.f90
 !
 !  18-mar-03/axel: dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      if (NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
 !
     endsubroutine init_uun
 !***********************************************************************

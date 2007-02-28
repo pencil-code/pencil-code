@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.1 2007-02-28 04:28:05 wlyra Exp $
+! $Id: neutraldensity.f90,v 1.2 2007-02-28 16:21:17 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -7,7 +7,6 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-!! CPARAM logical, parameter :: lneutraldensity = .true.
 !
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
@@ -52,14 +51,14 @@ module NeutralDensity
   integer :: iglobal_gg=0
   integer :: iglobal_rhon=0
 !
-  real :: lnrhon0,lnrhon_left,lnrhon_right
+  real :: lnrhon0,lnrhon_left,lnrhon_right,alpha,zeta
 
   namelist /neutraldensity_init_pars/ &
        ampllnrhon,initlnrhon,    &
        rhon_left,rhon_right,lnrhon_const,rhon_const, &
        idiffn,lneutraldensity_nolog,    &
-       lcontinuity_gas,lnrhon0,lnrhon_left,lnrhon_right
-
+       lcontinuity_gas,lnrhon0,lnrhon_left,lnrhon_right, &
+       alpha,zeta
 
   namelist /neutraldensity_run_pars/ &
        diffrhon,diffrhon_hyper3,diffrhon_shock,   &
@@ -67,7 +66,7 @@ module NeutralDensity
        lnrhon_int,lnrhon_ext, &
        lfreeze_lnrhonint,lfreeze_lnrhonext,         &
        lnrhon_const,lcontinuity_gas,borderlnrhon,    &
-       diffrhon_hyper3_aniso
+       diffrhon_hyper3_aniso, alpha, zeta
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhonm=0,idiag_rhon2m=0,idiag_lnrhon2m=0
@@ -97,11 +96,13 @@ module NeutralDensity
       first = .false.
 
       call farray_register_pde('lnrhon',ilnrhon)
+!      
+      lneutraldensity=.true.
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.1 2007-02-28 04:28:05 wlyra Exp $")
+           "$Id: neutraldensity.f90,v 1.2 2007-02-28 16:21:17 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -211,6 +212,8 @@ module NeutralDensity
         !  call select_eos_variable('lnrhon',ilnrhon)
         !endif
 !
+! Ionization-Recombination equilibrium is usually the case
+!      
     endsubroutine initialize_neutraldensity
 !***********************************************************************
     subroutine read_neutraldensity_init_pars(unit,iostat)
@@ -300,42 +303,42 @@ module NeutralDensity
 
       do iinit=1,ninit
 
-      if (initlnrhon(iinit)/='nothing') then
+         if (initlnrhon(iinit)/='nothing') then
 
-      lnothing=.false.
+            lnothing=.false.
 
-      call chn(iinit,iinit_str)
+            call chn(iinit,iinit_str)
 
-      select case(initlnrhon(iinit))
+            select case(initlnrhon(iinit))
 !
 ! some one-liners from density
 !
-      case('zero', '0'); f(:,:,:,ilnrhon)=0.
-      case('const_lnrhon'); f(:,:,:,ilnrhon)=lnrhon_const
-      case('const_rhon'); f(:,:,:,ilnrhon)=log(rhon_const)
-      case('constant'); f(:,:,:,ilnrhon)=log(rhon_left)
-      case('gaussian-noise')
-        If (lnrhon_left /= 0.) f(:,:,:,ilnrhon)=lnrhon_left
-        call gaunoise(ampllnrhon,f,ilnrhon,ilnrhon)
-      !case('globaldisc')
-!minimum mass solar nebula
-      !  if (lroot)  print*,'init_lnrhon: initialize initial condition for Keplerian global disc'
-      !  call power_law(f,iglobal_gg,plaw,ptlaw,lstratified)
-      case default
-        !
-        !  Catch unknown values
-        !
-        write(unit=errormsg,fmt=*) 'No such value for initlnrhon(' &
-                          //trim(iinit_str)//'): ',trim(initlnrhon(iinit))
-        call fatal_error('init_lnrhon',errormsg)
+            case('zero', '0'); f(:,:,:,ilnrhon)=0.
+            case('const_lnrhon'); f(:,:,:,ilnrhon)=lnrhon_const
+            case('const_rhon'); f(:,:,:,ilnrhon)=log(rhon_const)
+            case('constant'); f(:,:,:,ilnrhon)=log(rhon_left)
+            case('gaussian-noise')
+               if (lnrhon_left /= 0.) f(:,:,:,ilnrhon)=lnrhon_left
+               call gaunoise(ampllnrhon,f,ilnrhon,ilnrhon)
+               !case('globaldisc')
+               !minimum mass solar nebula
+               !  if (lroot)  print*,'init_lnrhon: initialize initial condition for Keplerian global disc'
+               !  call power_law(f,iglobal_gg,plaw,ptlaw,lstratified)
+            case default
+               !
+               !  Catch unknown values
+               !
+               write(unit=errormsg,fmt=*) 'No such value for initlnrhon(' &
+                    //trim(iinit_str)//'): ',trim(initlnrhon(iinit))
+               call fatal_error('init_lnrhon',errormsg)
+               
+            endselect
 
-      endselect
+            if (lroot) print*,'init_lnrhon: initlnrhon(' &
+                 //trim(iinit_str)//') = ',trim(initlnrhon(iinit))
 
-      if (lroot) print*,'init_lnrhon: initlnrhon(' &
-                        //trim(iinit_str)//') = ',trim(initlnrhon(iinit))
-
-      endif
-
+         endif
+         
       enddo
 
       if (lnothing.and.lroot) print*,'init_lnrhon: nothing'
@@ -606,10 +609,23 @@ module NeutralDensity
         endif
       endif
 !
+!  Ionization and recombination
+!
+
+      if (lneutraldensity_nolog) then
+         df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - zeta*p%rhon - alpha*p%rho**2
+         df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + zeta*p%rhon - alpha*p%rho**2
+      else
+         df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - zeta + alpha*p%rho**2*p%rhon1
+         df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + zeta*p%rhon*p%rho1 - alpha*p%rho
+      endif
+
+
+!
 !  Mass diffusion
 !
       fdiff=0.0
-
+!
       if (ldiffn_normal) then  ! Normal diffusion operator
         if (lneutraldensity_nolog) then
           fdiff = fdiff + diffrhon*p%del2rhon

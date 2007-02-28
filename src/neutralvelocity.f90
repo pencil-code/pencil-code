@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.2 2007-02-28 07:11:46 ajohan Exp $
+! $Id: neutralvelocity.f90,v 1.3 2007-02-28 16:21:17 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -6,7 +6,6 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-!! CPARAM logical, parameter :: lneutralvelocity = .true.
 !
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
@@ -37,14 +36,13 @@ module NeutralVelocity
   real, dimension(3) :: uun_const=(/0.,0.,0./)
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: ladvection_velocity=.true.
-
-!collisional drag
-  real :: colldrag
+!collisional drag,ionization,recombination
+  real :: colldrag,zeta,alpha
 
   namelist /neutralvelocity_init_pars/ &
        ampluun, ampl_unx, ampl_uny, ampl_unz, &
        inituun, uun_const, Omega, lcoriolis_force, lcentrifugal_force, &
-       ladvection_velocity
+       ladvection_velocity,zeta,alpha,colldrag
 
   ! run parameters
   logical :: lupw_uun=.false.
@@ -54,7 +52,7 @@ module NeutralVelocity
        Omega,theta, lupw_uun, &
        borderuun, lfreeze_unint, &
        lfreeze_unext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-       colldrag
+       colldrag,zeta,alpha
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_un2m=0,idiag_unm2=0
@@ -118,10 +116,14 @@ module NeutralVelocity
       varname(iuny) = 'uny'
       varname(iunz) = 'unz'
 !
+!
+!
+      lneutralvelocity=.true.
+!
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.2 2007-02-28 07:11:46 ajohan Exp $")
+           "$Id: neutralvelocity.f90,v 1.3 2007-02-28 16:21:17 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -407,6 +409,7 @@ module NeutralVelocity
       type (pencil_case) :: p
 !
       real, dimension (nx) :: pdamp
+      real, dimension (nx) :: ionization,recombination,cions,cneut
       real :: c2,s2
       integer :: j,jn,ji
 !
@@ -470,14 +473,29 @@ module NeutralVelocity
         endif
      endif
 !
-! Neutral-ion collision
+! Neutral-ion collision, ionization and recombination
+!
+     ionization=zeta*p%rho1
+     recombination=alpha*p%rho*p%rhon1
+     cions=colldrag+ionization
+     cneut=colldrag+recombination
 !
      do j=1,3
         jn=j+iuun-1
         ji=j+iuu -1
-        df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) - colldrag*p%rho* (p%uun(:,j)-p%uu(:,j))
-        df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji) + colldrag*p%rhon*(p%uun(:,j)-p%uu(:,j))
+!       
+! neutrals gain by momentum recombination
+!
+        df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) + cneut*p%rho *(p%uu(:,j)-p%uun(:,j))
+!
+! ions gain by momentum by ionization
+! 
+        df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji) - cions*p%rhon*(p%uu(:,j)-p%uun(:,j))
+!
      enddo
+     
+     
+
 !
 ! calculate viscous force
 !
