@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.96 2007-01-31 22:55:30 wlyra Exp $
+! $Id: particles_sub.f90,v 1.97 2007-02-28 06:59:29 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -608,31 +608,46 @@ module Particles_sub
       integer :: npar_loc
       integer, dimension (mpar_loc) :: ipar
 !
-      integer :: i,k
+      integer :: i,k,jspec,npar_per_species
       integer, dimension (0:ncpus-1) :: ipar1, ipar2
 !
       intent (out) :: npar_loc,ipar
 !
-      do i=0,ncpus-1
-        if (i==0) then
-          ipar1(i)=1
-        else
-          ipar1(i)=ipar2(i-1)+1
-        endif
-        ipar2(i)=ipar1(i) + (npar/ncpus-1) + (ncpus-(i+1)+mod(npar,ncpus))/ncpus
-      enddo
-!
-      if (lroot) then
-        print*, 'dist_particles_evenly_procs: ipar1=', ipar1
-        print*, 'dist_particles_evenly_procs: ipar2=', ipar2
-      endif
-!
 !  Set index interval of particles that belong to the local processor.
 !
-      npar_loc=ipar2(iproc)-ipar1(iproc)+1
-      do k=1,npar_loc
-        ipar(k)=k-1+ipar1(iproc)
-      enddo
+      npar_loc=npar/ncpus
+      if (npar_species==1) then
+        do i=0,ncpus-1
+          if (i==0) then
+            ipar1(i)=1
+          else
+            ipar1(i)=ipar2(i-1)+1
+          endif
+          ipar2(i)=ipar1(i) + (npar/ncpus-1) + (ncpus-(i+1)+mod(npar,ncpus))/ncpus
+        enddo
+!
+        if (lroot) then
+          print*, 'dist_particles_evenly_procs: ipar1=', ipar1
+          print*, 'dist_particles_evenly_procs: ipar2=', ipar2
+        endif
+        do k=1,npar_loc
+          ipar(k)=k-1+ipar1(iproc)
+        enddo
+      else
+!
+!  Make sure that particle species are evenly distributed.
+!        
+        npar_per_species=npar/npar_species
+        do jspec=1,npar_species
+          if (lroot) &
+              print*, 'dist_particles_evenly_procs: spec', jspec, 'interval:', &
+              npar_per_species*(jspec-1)+iproc*npar_per_species/ncpus, &
+              npar_per_species*(jspec-1)+(iproc+1)*npar_per_species/ncpus
+          ipar( 1+npar_per_species/ncpus*(jspec-1): &
+                  npar_per_species/ncpus*(jspec  ) )= &
+               (/ (k,k=npar_per_species*(jspec-1)+iproc*npar_per_species/ncpus, npar_per_species*(jspec-1)+(iproc+1)*npar_per_species/ncpus) /)
+        enddo
+      endif
 !
     endsubroutine dist_particles_evenly_procs
 !***********************************************************************
