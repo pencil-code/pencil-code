@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.97 2007-02-28 06:59:29 ajohan Exp $
+! $Id: particles_sub.f90,v 1.98 2007-02-28 15:27:47 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -641,11 +641,10 @@ module Particles_sub
         do jspec=1,npar_species
           if (lroot) &
               print*, 'dist_particles_evenly_procs: spec', jspec, 'interval:', &
-              npar_per_species*(jspec-1)+iproc*npar_per_species/ncpus, &
-              npar_per_species*(jspec-1)+(iproc+1)*npar_per_species/ncpus
+              1+npar_per_species*(jspec-1)+iproc*npar_per_species/ncpus, npar_per_species*(jspec-1)+(iproc+1)*npar_per_species/ncpus
           ipar( 1+npar_per_species/ncpus*(jspec-1): &
                   npar_per_species/ncpus*(jspec  ) )= &
-               (/ (k,k=npar_per_species*(jspec-1)+iproc*npar_per_species/ncpus, npar_per_species*(jspec-1)+(iproc+1)*npar_per_species/ncpus) /)
+               (/ (k,k=1+npar_per_species*(jspec-1)+iproc*npar_per_species/ncpus, npar_per_species*(jspec-1)+(iproc+1)*npar_per_species/ncpus) /)
         enddo
       endif
 !
