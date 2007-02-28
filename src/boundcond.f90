@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.133 2007-02-25 10:24:01 brandenb Exp $
+! $Id: boundcond.f90,v 1.134 2007-02-28 09:51:35 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -595,7 +595,7 @@ module Boundcond
           enddo
         else
           do i=1,nghost
-            f(l1-i,:,:,j)=slope(j)*f(l1+i,:,:,j)*x(l1+i)/x(l1-i)
+            f(l1-i,:,:,j)=f(l1+i,:,:,j)*(x(l1+i)/x(l1-i))**slope(j)
           enddo
         endif
 
@@ -607,7 +607,7 @@ module Boundcond
           enddo
         else
           do i=1,nghost
-            f(l2+i,:,:,j)=slope(j)*f(l2-i,:,:,j)*x(l2-i)/x(l2+i)
+            f(l2+i,:,:,j)=f(l2-i,:,:,j)*(x(l2-i)/x(l2+i))**slope(j)
           enddo
         endif
 

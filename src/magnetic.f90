@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.389 2007-02-26 21:44:21 brandenb Exp $
+! $Id: magnetic.f90,v 1.390 2007-02-28 09:51:35 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -123,7 +123,7 @@ module Magnetic
   real :: tau_aa_exterior=0.
   real :: sigma_ratio=1.,eta_width=0.,eta_z0=1.
   real :: alphaSSm=0.
-  real :: k1_ff=1.,ampl_ff=1.
+  real :: k1_ff=1.,ampl_ff=1.,swirl=1.
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
   character (len=labellen) :: zdep_profile='fs'
   real, dimension(mz) :: eta_z
@@ -140,7 +140,7 @@ module Magnetic
        meanfield_etat, lohmic_heat, &
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
-       lforcing_continuous,iforcing_continuous,k1_ff,ampl_ff,radius, &
+       lforcing_continuous,iforcing_continuous,k1_ff,ampl_ff,swirl,radius, &
        bthresh,bthresh_per_brms, &
        iresistivity,lweyl_gauge,lupw_aa, &
        alphaSSm, &
@@ -172,6 +172,7 @@ module Magnetic
   integer :: idiag_uxbm=0,idiag_oxuxbm=0,idiag_jxbxbm=0,idiag_gpxbm=0
   integer :: idiag_uxDxuxbm=0,idiag_jbmphi=0,idiag_dteta=0
   integer :: idiag_b3b21m=0,idiag_b1b32m=0,idiag_b2b13m=0
+  integer :: idiag_EMFdotBm=0
   integer :: idiag_udotxbm=0,idiag_uxbdotm=0
   integer :: idiag_uxbmx=0,idiag_uxbmy=0,idiag_uxbmz=0,idiag_uxjm=0
   integer :: idiag_brmphi=0,idiag_bpmphi=0,idiag_bzmphi=0,idiag_b2mphi=0
@@ -221,7 +222,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.389 2007-02-26 21:44:21 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.390 2007-02-28 09:51:35 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -565,7 +566,10 @@ module Magnetic
 !
       if (dvid/=0.0) lpenc_video(i_b2)=.true.
 !
-      if ( (hall_term/=0. .and. ldt) .or. height_eta/=0. .or. ip<=4) &
+!  jj pencil always needed when in Weyl gauge
+!
+      if ( (hall_term/=0. .and. ldt) .or. height_eta/=0. .or. ip<=4 .or. &
+          (lweyl_gauge) ) &
           lpenc_requested(i_jj)=.true.
       if (dvid/=0.) lpenc_video(i_jb)=.true.
       if (lresi_eta_const .or. lresi_shell .or. &
@@ -671,6 +675,10 @@ module Magnetic
       if (idiag_exaym2/=0 .or. idiag_exjm2/=0) lpenc_diagnos(i_jj)=.true.
       if (idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
           idiag_bmax/=0) lpenc_diagnos(i_b2)=.true.
+!
+!  pencils for meanfield dynamo diagnostics
+!
+      if (idiag_EMFdotBm/=0) lpenc_diagnos(i_mf_EMFdotB)=.true.
 !
     endsubroutine pencil_criteria_magnetic
 !***********************************************************************
@@ -1499,6 +1507,10 @@ module Magnetic
           call sum_mn_name(b2b13,idiag_b2b13m)
         endif
 !
+!  diagnostic output for mean field dynamos
+!
+        if (idiag_EMFdotBm/=0) call sum_mn_name(p%mf_EMFdotB,idiag_EMFdotBm)
+!
       endif ! endif (ldiagnos)
 !                                                                               
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1               
@@ -2001,7 +2013,7 @@ module Magnetic
       if(ip<=6) print*,'forcing_continuous: ifirst=',ifirst
       if (ifirst==0) then
         if (iforcing_continuous=='fixed_swirl') then
-          if (lroot) print*,'forcing_continuous: fixed_swirl'
+          if (lroot) print*,'forcing_continuous: fixed_swirl; swirl=',swirl
           R2=radius**2
           R12=1./R2
           phix=exp(-R12*x**2)
@@ -2021,8 +2033,8 @@ module Magnetic
       if (iforcing_continuous=='fixed_swirl') then
         fact=ampl_ff
         phi=2.*R12*fact*phix(l1:l2)*phiy(m)*phiz(n)
-        forcing_rhs(:,1)=(-y(m    )+2.*x(l1:l2)*z(n))*phi
-        forcing_rhs(:,2)=(+x(l1:l2)+2.*y(m    )*z(n))*phi
+        forcing_rhs(:,1)=(-swirl*y(m    )+2.*x(l1:l2)*z(n))*phi
+        forcing_rhs(:,2)=(+swirl*x(l1:l2)+2.*y(m    )*z(n))*phi
         forcing_rhs(:,3)=(R2-x(l1:l2)**2-y(m)**2)*2.*R12*phi
       elseif (iforcing_continuous=='RobertsFlow') then
         fact=ampl_ff
@@ -2088,6 +2100,7 @@ module Magnetic
         idiag_uxDxuxbm=0.; idiag_uxbmx=0; idiag_uxbmy=0; idiag_uxbmz=0
         idiag_uxjm=0; idiag_ujxbm=0
         idiag_b3b21m=0; idiag_b1b32m=0; idiag_b2b13m=0
+        idiag_EMFdotBm=0
         idiag_udotxbm=0; idiag_uxbdotm=0
         idiag_brmphi=0; idiag_bpmphi=0; idiag_bzmphi=0; idiag_b2mphi=0
         idiag_jbmphi=0; idiag_uxbrmphi=0; idiag_uxbpmphi=0; idiag_uxbzmphi=0
@@ -2153,6 +2166,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'b3b21m',idiag_b3b21m)
         call parse_name(iname,cname(iname),cform(iname),'b1b32m',idiag_b1b32m)
         call parse_name(iname,cname(iname),cform(iname),'b2b13m',idiag_b2b13m)
+        call parse_name(iname,cname(iname),cform(iname),'EMFdotBm',idiag_EMFdotBm)
         call parse_name(iname,cname(iname),cform(iname),'udotxbm',idiag_udotxbm)
         call parse_name(iname,cname(iname),cform(iname),'uxbdotm',idiag_uxbdotm)
         call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
@@ -2285,6 +2299,7 @@ module Magnetic
         write(3,*) 'i_b3b21m=',idiag_b3b21m
         write(3,*) 'i_b1b32m=',idiag_b1b32m
         write(3,*) 'i_b2b13m=',idiag_b2b13m
+        write(3,*) 'i_EMFdotBm=',idiag_EMFdotBm
         write(3,*) 'i_udotxbm=',idiag_udotxbm
         write(3,*) 'i_uxbdotm=',idiag_uxbdotm
         write(3,*) 'i_bxmz=',idiag_bxmz
