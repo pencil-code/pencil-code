@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.134 2007-02-28 09:51:35 brandenb Exp $
+! $Id: boundcond.f90,v 1.135 2007-02-28 18:54:40 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -143,6 +143,8 @@ module Boundcond
                   call bc_one_x(f,topbot,j)
                 case ('set')      ! set boundary value
                   call bc_sym_x(f,-1,topbot,j,REL=.true.,val=fbcx12)
+                case ('der')      ! set derivative on the boundary
+                  call bc_set_der_x(f,topbot,j,fbcx12(j))
                 case ('slo')      ! set boundary value
                   call bc_slope_x(f,fbcx12,topbot,j)
                 case ('e1')       ! extrapolation
@@ -251,6 +253,8 @@ module Boundcond
                 call bcy_extrap_2_1(f,topbot,j)
               case ('e2')       ! extrapolation
                 call bcy_extrap_2_2(f,topbot,j)
+              case ('der')      ! set derivative on the boundary
+                call bc_set_der_y(f,topbot,j,fbcy12(j))
               case ('')         ! do nothing; assume that everything is set
               case default
                 bc%bcname=bc12(j)
@@ -413,6 +417,8 @@ module Boundcond
                 if (j==ilnrho) call bc_stellar_surface_2(f,topbot)
               case ('set')      ! set boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
+              case ('der')      ! set derivative on the boundary
+                call bc_set_der_z(f,topbot,j,fbcz12(j))
               case ('nil')      ! do nothing; assume that everything is set
               case default
                 bc%bcname=bc12(j)
