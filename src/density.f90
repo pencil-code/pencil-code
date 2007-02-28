@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.311 2007-02-27 08:46:58 dintrans Exp $
+! $Id: density.f90,v 1.312 2007-02-28 16:01:55 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.311 2007-02-27 08:46:58 dintrans Exp $")
+           "$Id: density.f90,v 1.312 2007-02-28 16:01:55 brandenb Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1617,7 +1617,7 @@ module Density
       if (lroot) print*,'polytropic_simple: mpoly=',mpoly
 !
 !  The following is specific only to cases with gravity in the z direction
-!  zinfty is calculated such that rho=rho0 and cs2=cs20 at z=zref.
+!  zref is calculated such that rho=rho0 and cs2=cs20 at z=zref.
 !  Note: gravz is normally negative!
 !
       if (lgravz) then
@@ -1638,7 +1638,7 @@ module Density
         else
           if(lroot) print*,'polytropic_simple: zref not prepared!'
         endif
-        if (lroot) print*,'polytroic_simple: zref:',zref
+        if (lroot) print*,'polytroic_simple: zref=',zref
 !
 !  check whether zinfty lies outside the domain (otherwise density
 !  would vanish within the domain). At the moment we are not properly
@@ -1703,6 +1703,7 @@ module Density
           dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
           f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*dlncs2
           if(lentropy) f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
+          if(ltemperature) f(l1:l2,m,n,ilnTT)=dlncs2-log(gamma1)
         enddo
         enddo
 !
