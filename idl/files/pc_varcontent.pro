@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.34 2007-02-27 15:26:56 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.35 2007-02-28 17:06:15 brandenb Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar,run2D=run2D
 COMPILE_OPT IDL2,HIDDEN
@@ -149,6 +149,19 @@ varcontent[iaatest].idlinit    = 'fltarr(mx,my,mz,3*9)*one'
 varcontent[iaatest].idlvarloc= 'aatest_loc'
 varcontent[iaatest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,3*9)*one'
 varcontent[iaatest].skip  = 26+9
+
+varcontent[iuun].variable   = 'Velocity of neutrals (uun)'
+varcontent[iuun].idlvar     = 'uun'
+varcontent[iuun].idlinit    = INIT_3VECTOR
+varcontent[iuun].idlvarloc  = 'uun_loc'
+varcontent[iuun].idlinitloc = INIT_3VECTOR_LOC
+varcontent[iuun].skip       = 2
+
+varcontent[ilnrhon].variable   = 'Log density of neutrals (lnrhon)'
+varcontent[ilnrhon].idlvar     = 'lnrhon'
+varcontent[ilnrhon].idlinit    = INIT_SCALAR
+varcontent[ilnrhon].idlvarloc  = 'lnrhon_loc'
+varcontent[ilnrhon].idlinitloc = INIT_SCALAR_LOC
 
 varcontent[ifx].variable = 'Radiation vector ?something? (ff)'
 varcontent[ifx].idlvar   = 'ff'
