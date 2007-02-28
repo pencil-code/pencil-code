@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.164 2006-11-30 09:03:36 dobler Exp $
+! $Id: start.f90,v 1.165 2007-02-28 04:29:56 wlyra Exp $
 !
 !***********************************************************************
       program start
@@ -27,22 +27,24 @@
 
         use EquationOfState
 
-        use Hydro,        only: init_uu
-        use Density,      only: init_lnrho
-        use Entropy,      only: init_ss
-        use PScalar,      only: init_lncc
-        use Chiral,       only: init_chiral
-        use Magnetic,     only: init_aa
-        use Gravity,      only: init_gg
-        use Cosmicray,    only: init_ecr
-        use Cosmicrayflux,only: init_fcr
-        use Special,      only: init_special
-        use Dustdensity,  only: init_nd
-        use Dustvelocity, only: init_uud
+        use Hydro,           only: init_uu
+        use Density,         only: init_lnrho
+        use Entropy,         only: init_ss
+        use PScalar,         only: init_lncc
+        use Chiral,          only: init_chiral
+        use Magnetic,        only: init_aa
+        use Gravity,         only: init_gg
+        use Cosmicray,       only: init_ecr
+        use Cosmicrayflux,   only: init_fcr
+        use Special,         only: init_special
+        use Dustdensity,     only: init_nd
+        use Dustvelocity,    only: init_uud
+        use NeutralDensity,  only: init_lnrhon
+        use NeutralVelocity, only: init_uun
 
-        use Selfgravity,  only: calc_selfpotential
-        use Radiation,    only: init_rad, radtransfer
-        use Interstellar, only: init_interstellar
+        use Selfgravity,     only: calc_selfpotential
+        use Radiation,       only: init_rad, radtransfer
+        use Interstellar,    only: init_interstellar
         use Particles_main
 !
         implicit none
@@ -91,7 +93,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.164 2006-11-30 09:03:36 dobler Exp $")
+             "$Id: start.f90,v 1.165 2007-02-28 04:29:56 wlyra Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -318,6 +320,10 @@
         endif
 !
 !  Prepare particles.
+!
+        if (rp_int == -impossible .and. r_int > epsi) &
+             rp_int = r_int
+        if (rp_ext == -impossible) rp_ext = r_ext
 !
         call particles_register_modules()
         call particles_rprint_list(.false.)

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.240 2007-02-21 15:32:43 brandenb Exp $
+! $Id: run.f90,v 1.241 2007-02-28 04:29:56 wlyra Exp $
 !
 !***********************************************************************
       program run
@@ -29,13 +29,15 @@
         use Filter
         use Power_spectrum
         use Timeavg
-        use Interstellar, only: check_SN
+        use Interstellar,    only: check_SN
         use Shear
         use Forcing
         use EquationOfState
-        use Dustvelocity, only: init_uud
-        use Dustdensity, only: init_nd
-        use Magnetic, only: pert_aa, rescaling
+        use Dustvelocity,    only: init_uud
+        use Dustdensity,     only: init_nd
+        use NeutralVelocity, only: init_uun
+        use NeutralDensity,  only: init_lnrhon
+        use Magnetic,        only: pert_aa, rescaling
         use Particles_main
 !
         implicit none
@@ -67,7 +69,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.240 2007-02-21 15:32:43 brandenb Exp $")
+             "$Id: run.f90,v 1.241 2007-02-28 04:29:56 wlyra Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -132,12 +134,6 @@
         if (rfreeze_int == -impossible .and. r_int > epsi) &
              rfreeze_int = r_int
         if (rfreeze_ext == -impossible) rfreeze_ext = r_ext
-!
-!  same for particles boundary radii 
-!
-        if (rp_int == -impossible .and. r_int > epsi) &
-             rfreeze_int = rp_int
-        if (rp_ext == -impossible) rp_ext = r_ext
 !
 !  Will we write all slots of f?
 !

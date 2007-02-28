@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.267 2007-02-26 21:44:21 brandenb Exp $
+! $Id: param_io.f90,v 1.268 2007-02-28 04:29:55 wlyra Exp $
 
 module Param_IO
 
@@ -22,6 +22,8 @@ module Param_IO
   use CosmicrayFlux
   use Dustvelocity
   use Dustdensity
+  use NeutralVelocity
+  use NeutralDensity
   use Radiation
   use EquationOfState
   use Forcing
@@ -243,6 +245,14 @@ module Param_IO
       if (ierr.ne.0) call sample_startpars('dustdensity_init_pars',ierr)
 
       call sgi_fix(lsgifix,1,'start.in')
+      call read_neutralvelocity_init_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_startpars('neutralvelocity_init_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'start.in')
+      call read_neutraldensity_init_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_startpars('neutraldensity_init_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'start.in')
       call read_cosmicray_init_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('cosmicray_init_pars',ierr)
 
@@ -328,27 +338,29 @@ module Param_IO
       if (lroot) then
         print*
         print*,'-----BEGIN sample namelist ------'
-                             print*,'&init_pars                /'
-        if (leos          )  print*,'&eos_init_pars            /'
-        if (lhydro        )  print*,'&hydro_init_pars          /'
-        if (ldensity      )  print*,'&density_init_pars        /'
+                              print*,'&init_pars                 /'
+        if (leos            ) print*,'&eos_init_pars             /'
+        if (lhydro          ) print*,'&hydro_init_pars           /'
+        if (ldensity        ) print*,'&density_init_pars         /'
         ! no input parameters for forcing
-        if (lgrav         )  print*,'&grav_init_pars           /'
-        if (lselfgravity  )  print*,'&selfgrav_init_pars       /'
-        if (lentropy      )  print*,'&entropy_init_pars        /'
-        if (ltemperature  )  print*,'&entropy_init_pars        /'
-        if (lmagnetic     )  print*,'&magnetic_init_pars       /'
-        if (ltestfield    )  print*,'&testfield_init_pars      /'
-        if (lradiation    )  print*,'&radiation_init_pars      /'
-        if (lpscalar      )  print*,'&pscalar_init_pars        /'
-        if (lchiral       )  print*,'&chiral_init_pars         /'
-        if (ldustvelocity )  print*,'&dustvelocity_init_pars   /'
-        if (ldustdensity  )  print*,'&dustdensity_init_pars    /'
-        if (lcosmicray    )  print*,'&cosmicray_init_pars      /'
-        if (lcosmicrayflux)  print*,'&cosmicrayflux_init_pars  /'
-        if (linterstellar )  print*,'&interstellar_init_pars   /'
-        if (lshear        )  print*,'&shear_init_pars          /'
-        if (lspecial      )  print*,'&special_init_pars        /'
+        if (lgrav           ) print*,'&grav_init_pars            /'
+        if (lselfgravity    ) print*,'&selfgrav_init_pars        /'
+        if (lentropy        ) print*,'&entropy_init_pars         /'
+        if (ltemperature    ) print*,'&entropy_init_pars         /'
+        if (lmagnetic       ) print*,'&magnetic_init_pars        /'
+        if (ltestfield      ) print*,'&testfield_init_pars       /'
+        if (lradiation      ) print*,'&radiation_init_pars       /'
+        if (lpscalar        ) print*,'&pscalar_init_pars         /'
+        if (lchiral         ) print*,'&chiral_init_pars          /'
+        if (ldustvelocity   ) print*,'&dustvelocity_init_pars    /'
+        if (ldustdensity    ) print*,'&dustdensity_init_pars     /'
+        if (lneutralvelocity) print*,'&neutralvelocity_init_pars /'
+        if (lneutraldensity ) print*,'&neutraldensity_init_pars  /'
+        if (lcosmicray      ) print*,'&cosmicray_init_pars       /'
+        if (lcosmicrayflux  ) print*,'&cosmicrayflux_init_pars   /'
+        if (linterstellar   ) print*,'&interstellar_init_pars    /'
+        if (lshear          ) print*,'&shear_init_pars           /'
+        if (lspecial        ) print*,'&special_init_pars         /'
         if (lparticles) &
             print*,'&particles_init_pars         /'
         if (lparticles_radius) &
@@ -409,6 +421,8 @@ module Param_IO
         call write_chiral_init_pars(unit)
         call write_dustvelocity_init_pars(unit)
         call write_dustdensity_init_pars(unit)
+        call write_neutralvelocity_init_pars(unit)
+        call write_neutraldensity_init_pars(unit)
         call write_cosmicray_init_pars(unit)
         call write_cosmicrayflux_init_pars(unit)
         call write_interstellar_init_pars(unit)
@@ -528,6 +542,14 @@ module Param_IO
       if (ierr.ne.0) call sample_runpars('dustdensity_run_pars',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
+      call read_neutralvelocity_run_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_runpars('neutralvelocity_run_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'run.in')
+      call read_neutraldensity_run_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_runpars('neutraldensity_run_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'run.in')
       call read_cosmicray_run_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_runpars('cosmicray_run_pars',ierr)
 
@@ -629,28 +651,30 @@ module Param_IO
       if (lroot) then
         print*
         print*,'-----BEGIN sample namelist ------'
-                            print*,'&run_pars                 /'
-        if (leos          ) print*,'&eos_run_pars             /'
-        if (lhydro        ) print*,'&hydro_run_pars           /'
-        if (ldensity      ) print*,'&density_run_pars         /'
-        if (lforcing      ) print*,'&forcing_run_pars         /'
-        if (lgrav         ) print*,'&grav_run_pars            /'
-        if (lselfgravity  ) print*,'&selfgrav_run_pars        /'
-        if (lentropy      ) print*,'&entropy_run_pars         /'
-        if (ltemperature  ) print*,'&entropy_run_pars         /'
-        if (lmagnetic     ) print*,'&magnetic_run_pars        /'
-        if (ltestfield    ) print*,'&testfield_run_pars       /'
-        if (lradiation    ) print*,'&radiation_run_pars       /'
-        if (lpscalar      ) print*,'&pscalar_run_pars         /'
-        if (lchiral       ) print*,'&chiral_run_pars          /'
-        if (ldustvelocity ) print*,'&dustvelocity_run_pars    /'
-        if (ldustdensity  ) print*,'&dustdensity_run_pars     /'
-        if (lcosmicray    ) print*,'&cosmicray_run_pars       /'
-        if (lcosmicrayflux) print*,'&cosmicrayflux_run_pars   /'
-        if (linterstellar ) print*,'&interstellar_run_pars    /'
-        if (lshear        ) print*,'&shear_run_pars           /'
-        if (lviscosity    ) print*,'&viscosity_run_pars       /'
-        if (lspecial      ) print*,'&special_run_pars         /'
+                              print*,'&run_pars                 /'
+        if (leos            ) print*,'&eos_run_pars             /'
+        if (lhydro          ) print*,'&hydro_run_pars           /'
+        if (ldensity        ) print*,'&density_run_pars         /'
+        if (lforcing        ) print*,'&forcing_run_pars         /'
+        if (lgrav           ) print*,'&grav_run_pars            /'
+        if (lselfgravity    ) print*,'&selfgrav_run_pars        /'
+        if (lentropy        ) print*,'&entropy_run_pars         /'
+        if (ltemperature    ) print*,'&entropy_run_pars         /'
+        if (lmagnetic       ) print*,'&magnetic_run_pars        /'
+        if (ltestfield      ) print*,'&testfield_run_pars       /'
+        if (lradiation      ) print*,'&radiation_run_pars       /'
+        if (lpscalar        ) print*,'&pscalar_run_pars         /'
+        if (lchiral         ) print*,'&chiral_run_pars          /'
+        if (ldustvelocity   ) print*,'&dustvelocity_run_pars    /'
+        if (ldustdensity    ) print*,'&dustdensity_run_pars     /'
+        if (lneutralvelocity) print*,'&neutralvelocity_run_pars /'
+        if (lneutraldensity ) print*,'&neutraldensity_run_pars  /'
+        if (lcosmicray      ) print*,'&cosmicray_run_pars       /'
+        if (lcosmicrayflux  ) print*,'&cosmicrayflux_run_pars   /'
+        if (linterstellar   ) print*,'&interstellar_run_pars    /'
+        if (lshear          ) print*,'&shear_run_pars           /'
+        if (lviscosity      ) print*,'&viscosity_run_pars       /'
+        if (lspecial        ) print*,'&special_run_pars         /'
         if (lparticles) &
             print*,'&particles_run_pars         /'
         if (lparticles_radius) &
@@ -733,6 +757,8 @@ module Param_IO
         call write_chiral_run_pars(unit)
         call write_dustvelocity_run_pars(unit)
         call write_dustdensity_run_pars(unit)
+        call write_neutralvelocity_run_pars(unit)
+        call write_neutraldensity_run_pars(unit)
         call write_cosmicray_run_pars(unit)
         call write_cosmicrayflux_run_pars(unit)
         call write_interstellar_run_pars(unit)
@@ -848,6 +874,7 @@ module Param_IO
       use Cdata, only: lmagnetic_var,lpscalar,lradiation, &
            lforcing,lgravz,lgravr,lshear, &
            ldustvelocity,ldustdensity,lradiation_fld,  &
+           lneutralvelocity,lneutraldensity, &
            leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
            leos,leos_temperature_ionization,lspecial, ltestfield, &
            lhydro_var, lentropy_var, ldensity_var, lshock_var, &
@@ -868,7 +895,7 @@ module Param_IO
            lforcing,lgravz,lgravr,lshear,linterstellar,lcosmicray, &
            lcosmicrayflux,ldustvelocity,ldustdensity,lshock,lradiation_fld, &
            leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
-           leos,leos_temperature_ionization
+           leos,leos_temperature_ionization,lneutralvelocity,lneutraldensity
 !
 !  Write this file from each processor; needed for pacx-MPI (grid-style
 !  computations across different platforms), where the data/ directories
@@ -895,6 +922,8 @@ module Param_IO
         call write_chiral_init_pars(1)
         call write_dustvelocity_init_pars(1)
         call write_dustdensity_init_pars(1)
+        call write_neutralvelocity_init_pars(1)
+        call write_neutraldensity_init_pars(1)
         call write_cosmicray_init_pars(1)
         call write_cosmicrayflux_init_pars(1)
         call write_interstellar_init_pars(1)
@@ -938,6 +967,8 @@ module Param_IO
         call read_chiral_init_pars(1)
         call read_dustvelocity_init_pars(1)
         call read_dustdensity_init_pars(1)
+        call read_neutralvelocity_init_pars(1)
+        call read_neutraldensity_init_pars(1)
         call read_cosmicray_init_pars(1)
         call read_cosmicrayflux_init_pars(1)
         call read_interstellar_init_pars(1)
@@ -979,6 +1010,8 @@ module Param_IO
         call write_chiral_run_pars(1)
         call write_dustvelocity_run_pars(1)
         call write_dustdensity_run_pars(1)
+        call write_neutralvelocity_run_pars(1)
+        call write_neutraldensity_run_pars(1)
         call write_cosmicray_run_pars(1)
         call write_cosmicrayflux_run_pars(1)
         call write_interstellar_run_pars(1)

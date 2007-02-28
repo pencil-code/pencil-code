@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.355 2007-02-26 21:44:21 brandenb Exp $
+! ! $Id: cdata.f90,v 1.356 2007-02-28 04:29:55 wlyra Exp $
 
 module Cdata
 
@@ -26,10 +26,10 @@ module Cdata
 
 ! timestep related:
   real, dimension (nx) :: advec_uu,advec_shear,advec_hall
-  real, dimension (nx) :: advec_cs2,advec_va2,advec_crad2,advec_uud
+  real, dimension (nx) :: advec_cs2,advec_va2,advec_crad2,advec_uud,advec_uun
   real, dimension (nx) :: diffus_pscalar
-  real, dimension (nx) :: diffus_chiral,diffus_diffrho,diffus_cr,diffus_nud
-  real, dimension (nx) :: diffus_eta,diffus_nu,diffus_chi,diffus_diffnd
+  real, dimension (nx) :: diffus_chiral,diffus_diffrho,diffus_cr,diffus_nud,diffus_nun
+  real, dimension (nx) :: diffus_eta,diffus_nu,diffus_chi,diffus_diffnd,diffus_diffrhon
   real, dimension (nx) :: dt1_advec,dt1_diffus,dt1_max
 
   real, parameter :: pi=3.14159265358979324D0
@@ -48,7 +48,7 @@ module Cdata
   real :: dx,dy,dz,dxmin,dxmax,drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real :: dsnap=100.,d2davg=100.,dvid=0.,dtmin=1.e-6,dtmax=1E37,dspec=impossible
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
-  real :: rp_int=0.,rp_ext=impossible
+  real :: rp_int=-impossible,rp_ext=-impossible
   real :: r_ref=0.
 
 ! parameter for freezing
@@ -128,6 +128,7 @@ module Cdata
   integer :: mvar_io=0,dimensionality
   integer :: iinit
   integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0,ind=0,imd=0,imi=0
+  integer :: ilnrhon,iuun,iunx,iuny,iunz
   logical, dimension(3) :: lperi,lshift_origin
   logical, dimension(3) :: lequidist=(/.true.,.true.,.true. /)
   character (len=labellen), dimension(3) :: grid_func='linear'
@@ -233,6 +234,8 @@ module Cdata
   logical :: lradiation=.false.,lradiation_ray=.false.,lradiation_fld=.false.
   logical :: ldustdensity=.false.,ldustdensity_log=.false.
   logical :: ldustvelocity=.false.
+  logical :: lneutraldensity=.false.,lneutraldensity_log=.false.
+  logical :: lneutralvelocity=.false.
   logical :: lglobal=.false., lglobal_nolog_density=.false.
   logical :: lvisc_hyper=.false.,lvisc_LES=.false.
   logical :: lvisc_smagorinsky=.false.

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.201 2007-02-26 21:44:21 brandenb Exp $
+! $Id: register.f90,v 1.202 2007-02-28 04:29:55 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -47,6 +47,8 @@ module Register
       use Chiral,          only: register_chiral
       use Dustdensity,     only: register_dustdensity
       use Dustvelocity,    only: register_dustvelocity
+      use NeutralDensity,  only: register_neutraldensity
+      use NeutralVelocity, only: register_neutralvelocity
       use Cosmicray,       only: register_cosmicray
       use CosmicrayFlux,   only: register_cosmicrayflux
       use Interstellar,    only: register_interstellar
@@ -100,6 +102,8 @@ module Register
       call register_chiral
       call register_dustvelocity
       call register_dustdensity
+      call register_neutralvelocity
+      call register_neutraldensity
       call register_cosmicray
       call register_cosmicrayflux
       call register_interstellar
@@ -173,6 +177,8 @@ module Register
       use Chiral,          only: initialize_chiral
       use Dustvelocity,    only: initialize_dustvelocity
       use Dustdensity,     only: initialize_dustdensity
+      use NeutralVelocity, only: initialize_neutralvelocity
+      use NeutralDensity,  only: initialize_neutraldensity
       use Cosmicray,       only: initialize_cosmicray
       use Interstellar,    only: initialize_interstellar
       use Shear,           only: initialize_shear
@@ -265,6 +271,8 @@ module Register
       call initialize_chiral(f)
       call initialize_dustvelocity()
       call initialize_dustdensity()
+      call initialize_neutralvelocity()
+      call initialize_neutraldensity()
       call initialize_cosmicray(f)
       call initialize_cosmicrayflux(f)
       call initialize_interstellar(lstarting)
@@ -497,6 +505,8 @@ module Register
  use Pscalar,         only: pencil_criteria_pscalar
  use Dustvelocity,    only: pencil_criteria_dustvelocity
  use Dustdensity,     only: pencil_criteria_dustdensity
+ use NeutralVelocity, only: pencil_criteria_neutralvelocity
+ use NeutralDensity,  only: pencil_criteria_neutraldensity
  use Magnetic,        only: pencil_criteria_magnetic
  use Testfield,       only: pencil_criteria_testfield
  use Cosmicray,       only: pencil_criteria_cosmicray
@@ -521,6 +531,8 @@ module Register
       call pencil_criteria_interstellar()
       call pencil_criteria_dustvelocity()
       call pencil_criteria_dustdensity()
+      call pencil_criteria_neutralvelocity()
+      call pencil_criteria_neutraldensity()
       call pencil_criteria_magnetic()
       call pencil_criteria_testfield()
       call pencil_criteria_cosmicray()
@@ -558,6 +570,8 @@ module Register
       use Pscalar, only: pencil_interdep_pscalar
       use Dustvelocity, only: pencil_interdep_dustvelocity
       use Dustdensity, only: pencil_interdep_dustdensity
+      use NeutralVelocity, only: pencil_interdep_neutralvelocity
+      use NeutralDensity, only: pencil_interdep_neutraldensity
       use Cosmicray, only: pencil_interdep_cosmicray
       use Cosmicrayflux, only: pencil_interdep_cosmicrayflux
       use Chiral, only: pencil_interdep_chiral
@@ -579,6 +593,8 @@ module Register
       call pencil_interdep_selfgravity(lpencil_in)
       call pencil_interdep_dustvelocity(lpencil_in)
       call pencil_interdep_dustdensity(lpencil_in)
+      call pencil_interdep_neutralvelocity(lpencil_in)
+      call pencil_interdep_neutraldensity(lpencil_in)
       call pencil_interdep_pscalar(lpencil_in)
       call pencil_interdep_magnetic(lpencil_in)
       call pencil_interdep_testfield(lpencil_in)
@@ -613,6 +629,8 @@ module Register
       use Interstellar,    only: rprint_interstellar
       use Dustvelocity,    only: rprint_dustvelocity
       use Dustdensity,     only: rprint_dustdensity
+      use NeutralVelocity, only: rprint_neutralvelocity
+      use NeutralDensity,  only: rprint_neutraldensity
       use Cosmicray,       only: rprint_cosmicray
       use CosmicrayFlux,   only: rprint_cosmicrayflux
       use Gravity,         only: rprint_gravity
@@ -791,28 +809,30 @@ module Register
 !  the f-array and the time_series.dat files are written to data/index.pro
 !
       if (lroot) open(3,file=trim(datadir)//'/index.pro')
-      call rprint_general      (lreset,LWRITE=lroot)
-      call rprint_hydro        (lreset,LWRITE=lroot)
-      call rprint_density      (lreset,LWRITE=lroot)
-      call rprint_forcing      (lreset,LWRITE=lroot)
-      call rprint_entropy      (lreset,LWRITE=lroot)
-      call rprint_magnetic     (lreset,LWRITE=lroot)
-      call rprint_testfield    (lreset,LWRITE=lroot)
-      call rprint_radiation    (lreset,LWRITE=lroot)
-      call rprint_eos          (lreset,LWRITE=lroot)
-      call rprint_pscalar      (lreset,LWRITE=lroot)
-      call rprint_chiral       (lreset,LWRITE=lroot)
-      call rprint_interstellar (lreset,LWRITE=lroot)
-      call rprint_dustvelocity (lreset,LWRITE=lroot)
-      call rprint_dustdensity  (lreset,LWRITE=lroot)
-      call rprint_cosmicray    (lreset,LWRITE=lroot)
-      call rprint_cosmicrayflux(lreset,LWRITE=lroot)
-      call rprint_gravity      (lreset,LWRITE=lroot)
-      call rprint_selfgravity  (lreset,LWRITE=lroot)
-      call rprint_special      (lreset,LWRITE=lroot)
-      call rprint_shock        (lreset,LWRITE=lroot)
-      call rprint_viscosity    (lreset,LWRITE=lroot)
-      call rprint_shear        (lreset,LWRITE=lroot)
+      call rprint_general         (lreset,LWRITE=lroot)
+      call rprint_hydro           (lreset,LWRITE=lroot)
+      call rprint_density         (lreset,LWRITE=lroot)
+      call rprint_forcing         (lreset,LWRITE=lroot)
+      call rprint_entropy         (lreset,LWRITE=lroot)
+      call rprint_magnetic        (lreset,LWRITE=lroot)
+      call rprint_testfield       (lreset,LWRITE=lroot)
+      call rprint_radiation       (lreset,LWRITE=lroot)
+      call rprint_eos             (lreset,LWRITE=lroot)
+      call rprint_pscalar         (lreset,LWRITE=lroot)
+      call rprint_chiral          (lreset,LWRITE=lroot)
+      call rprint_interstellar    (lreset,LWRITE=lroot)
+      call rprint_dustvelocity    (lreset,LWRITE=lroot)
+      call rprint_dustdensity     (lreset,LWRITE=lroot)
+      call rprint_neutralvelocity (lreset,LWRITE=lroot)
+      call rprint_neutraldensity  (lreset,LWRITE=lroot)
+      call rprint_cosmicray       (lreset,LWRITE=lroot)
+      call rprint_cosmicrayflux   (lreset,LWRITE=lroot)
+      call rprint_gravity         (lreset,LWRITE=lroot)
+      call rprint_selfgravity     (lreset,LWRITE=lroot)
+      call rprint_special         (lreset,LWRITE=lroot)
+      call rprint_shock           (lreset,LWRITE=lroot)
+      call rprint_viscosity       (lreset,LWRITE=lroot)
+      call rprint_shear           (lreset,LWRITE=lroot)
       if (lroot) close(3)
 !
     endsubroutine rprint_list

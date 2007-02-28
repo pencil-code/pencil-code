@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.350 2007-02-20 17:50:30 dobler Exp $
+! $Id: equ.f90,v 1.351 2007-02-28 04:29:55 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -385,6 +385,8 @@ module Equ
       use Chiral
       use Dustvelocity
       use Dustdensity
+      use NeutralDensity
+      use NeutralVelocity
       use Cosmicray
       use CosmicrayFlux
       use Special
@@ -411,7 +413,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.350 2007-02-20 17:50:30 dobler Exp $")
+           "$Id: equ.f90,v 1.351 2007-02-28 04:29:55 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -539,12 +541,13 @@ module Equ
 !  (note: advec_cs2 and advec_va2 are inverse _squared_ timesteps)
 !
         if (lfirst) then
-          advec_uu=0.; advec_shear=0.; advec_hall=0.
+          advec_uu=0.; advec_shear=0.; advec_hall=0.; advec_uun=0;
           advec_cs2=0.; advec_va2=0.; advec_crad2=0.; advec_uud=0;
           diffus_pscalar=0.
           diffus_chiral=0.; diffus_diffrho=0.; diffus_cr=0.
           diffus_eta=0.; diffus_nu=0.; diffus_chi=0.
           diffus_nud=0.; diffus_diffnd=0.
+          diffus_nun=0.; diffus_diffrhon=0.
         endif
 !
 !  The following is only kept for backwards compatibility.
@@ -585,24 +588,26 @@ module Equ
 !            
 !  Calculate pencils for the pencil_case
 !
-                            call calc_pencils_hydro(f,p)
-                            call calc_pencils_density(f,p)
-                            call calc_pencils_eos(f,p)
-        if (lshock)         call calc_pencils_shock(f,p)
-        if (lviscosity)     call calc_pencils_viscosity(f,p)
-                            call calc_pencils_entropy(f,p)
-                            call calc_pencils_magnetic(f,p)
-        if (lgrav)          call calc_pencils_gravity(f,p)
-        if (lselfgravity)   call calc_pencils_selfgravity(f,p)
-        if (lpscalar)       call calc_pencils_pscalar(f,p)
-        if (ldustvelocity)  call calc_pencils_dustvelocity(f,p)
-        if (ldustdensity)   call calc_pencils_dustdensity(f,p)
-        if (lcosmicray)     call calc_pencils_cosmicray(f,p)
-        if (lcosmicrayflux) call calc_pencils_cosmicrayflux(f,p)
-        if (lchiral)        call calc_pencils_chiral(f,p)
-        if (lradiation)     call calc_pencils_radiation(f,p)
-        if (lspecial)       call calc_pencils_special(f,p)
-        if (lparticles)     call particles_calc_pencils(f,p)
+                              call calc_pencils_hydro(f,p)
+                              call calc_pencils_density(f,p)
+                              call calc_pencils_eos(f,p)
+        if (lshock)           call calc_pencils_shock(f,p)
+        if (lviscosity)       call calc_pencils_viscosity(f,p)
+                              call calc_pencils_entropy(f,p)
+                              call calc_pencils_magnetic(f,p)
+        if (lgrav)            call calc_pencils_gravity(f,p)
+        if (lselfgravity)     call calc_pencils_selfgravity(f,p)
+        if (lpscalar)         call calc_pencils_pscalar(f,p)
+        if (ldustvelocity)    call calc_pencils_dustvelocity(f,p)
+        if (ldustdensity)     call calc_pencils_dustdensity(f,p)
+        if (lneutralvelocity) call calc_pencils_neutralvelocity(f,p)
+        if (lneutraldensity)  call calc_pencils_neutraldensity(f,p)
+        if (lcosmicray)       call calc_pencils_cosmicray(f,p)
+        if (lcosmicrayflux)   call calc_pencils_cosmicrayflux(f,p)
+        if (lchiral)          call calc_pencils_chiral(f,p)
+        if (lradiation)       call calc_pencils_radiation(f,p)
+        if (lspecial)         call calc_pencils_special(f,p)
+        if (lparticles)       call particles_calc_pencils(f,p)
 !
 !  --------------------------------------------------------
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
@@ -630,6 +635,11 @@ module Equ
 !
         call duud_dt(f,df,p)
         call dndmd_dt(f,df,p)
+!
+!  Neutral evolution
+!
+        call dlnrhon_dt(f,df,p)
+        call duun_dt(f,df,p)
 !
 !  Add gravity, if present
 !
@@ -830,10 +840,13 @@ module Equ
 !  sum or maximum of the advection terms?
 !  (lmaxadvec_sum=.false. by default)
 !
+! WL: why isn't advec_uud in this calculation?
+!
           maxadvec=advec_uu+advec_shear+advec_hall+ &
               sqrt(advec_cs2+advec_va2+advec_crad2)
           maxdiffus=max(diffus_nu,diffus_chi,diffus_eta,diffus_diffrho, &
-              diffus_pscalar,diffus_cr,diffus_nud,diffus_diffnd,diffus_chiral)
+              diffus_pscalar,diffus_cr,diffus_nud,diffus_diffnd,diffus_chiral, &
+              diffus_diffrhon,diffus_nun)
           if (nxgrid==1.and.nygrid==1.and.nzgrid==1) then
             maxadvec=0.
             maxdiffus=0.
