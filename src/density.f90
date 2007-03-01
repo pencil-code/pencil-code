@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.312 2007-02-28 16:01:55 brandenb Exp $
+! $Id: density.f90,v 1.313 2007-03-01 19:53:06 dintrans Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.312 2007-02-28 16:01:55 brandenb Exp $")
+           "$Id: density.f90,v 1.313 2007-03-01 19:53:06 dintrans Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1703,7 +1703,8 @@ module Density
           dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
           f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*dlncs2
           if(lentropy) f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
-          if(ltemperature) f(l1:l2,m,n,ilnTT)=dlncs2-log(gamma1)
+!         if(ltemperature) f(l1:l2,m,n,ilnTT)=dlncs2-log(gamma1)
+          if(ltemperature) f(l1:l2,m,n,ilnTT)=log(-gamma*pot/(mpoly+1.)/gamma1)
         enddo
         enddo
 !
@@ -1712,13 +1713,13 @@ module Density
 !  so this calculation still makes sense.
 !
         call potential(xyz0(1),xyz0(2),ztop,pot=ptop)
-        cs2top=-gamma/(mpoly+1.)*ptop
+        cs2top=-gamma*ptop/(mpoly+1.)
 !
 !  In spherical geometry ztop should never be used.
 !  Even in slab geometry ztop is not normally used.
 !
         call potential(xyz0(1),xyz0(2),zbot,pot=pbot)
-        cs2bot=-gamma/(mpoly+1.)*pbot
+        cs2bot=-gamma*pbot/(mpoly+1.)
       endif
 !
     endsubroutine polytropic_simple

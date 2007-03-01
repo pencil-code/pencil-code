@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.3 2007-03-01 03:22:09 wlyra Exp $
+! $Id: temperature_idealgas.f90,v 1.4 2007-03-01 19:53:06 dintrans Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -44,9 +44,9 @@ module Entropy
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=4) :: iinit_str
 
-! Delete (or use) me asap!                                                       
+! Delete (or use) me asap!
   real :: hcond0,hcond1,Fbot,FbotKbot,Ftop,Kbot,FtopKtop
-  logical :: lmultilayer
+  logical :: lmultilayer=.false.
 
   ! input parameters
   namelist /entropy_init_pars/ &
@@ -93,7 +93,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.3 2007-03-01 03:22:09 wlyra Exp $")
+           "$Id: temperature_idealgas.f90,v 1.4 2007-03-01 19:53:06 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -143,6 +143,11 @@ module Entropy
 !
       if (lfreeze_lnTTint) lfreeze_varint(ilnTT)=.true.
       if (lfreeze_lnTText) lfreeze_varext(ilnTT)=.true.
+
+!
+!  Check whether we want heat conduction
+!
+      lheatc_chiconst = (chi/=0.0)
 !
     endsubroutine initialize_entropy
 !***********************************************************************
@@ -213,16 +218,19 @@ module Entropy
         lpenc_requested(i_visc_heat)=.true.
       endif
 !
-      !if (ldensity) then
-      !   lpenc_requested(i_delta)=.true.
-      !   lpenc_requested(i_divu)=.true.
-      !endif
+      if (ldensity) then
+         lpenc_requested(i_divu)=.true.
+      endif
 !
       if (lcalc_heat_cool) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_cv1)=.true.
+      endif
+!
+      if (lheatc_chiconst) then
+        lpenc_requested(i_del2lnTT)=.true.
       endif
 !
       if (ladvection_temperature) lpenc_requested(i_uglnTT)=.true.
@@ -344,6 +352,7 @@ module Entropy
       use Sub
       use Global
       use Viscosity, only: calc_viscous_heat
+      use EquationOfState, only: gamma1
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -375,13 +384,12 @@ module Entropy
 !
 !  subtract pressure gradient term in momentum equation
 !
-      if (lhydro) then
-         if (lpressuregradient_gas) then
-            do j=1,3
-               ju=j+iuu-1
-               df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) + p%fpres(:,j)
-            enddo
-         endif
+      if (lhydro.and.lpressuregradient_gas) then
+!        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fpres(:,iux:iuz)
+         do j=1,3
+           ju=j+iuu-1
+           df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) + p%fpres(:,j)
+         enddo
       endif
 !
 !  advection term and PdV-work
@@ -398,12 +406,16 @@ module Entropy
 !
       if (lcalc_heat_cool)  call calc_heat_cool(f,df,p)
 !
+!  Thermal conduction: only chi=cte for the moment
+!
+      if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
+!
 !  Need to add left-hand-side of the continuity equation (see manual)
 !  Check this
 
-      !if (ldensity) then
-      !  df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma1*p%divu/p%delta
-      !endif
+      if (ldensity) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma1*p%divu
+      endif
 !
 !  Calculate entropy related diagnostics
 !
@@ -411,9 +423,6 @@ module Entropy
         if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         if (idiag_TTm/=0)   call sum_mn_name(p%TT,idiag_TTm)
-        if (idiag_yHmax/=0) call max_mn_name(p%yH,idiag_yHmax)
-        if (idiag_yHmin/=0) call max_mn_name(-p%yH,idiag_yHmin,lneg=.true.)
-        if (idiag_yHm/=0)   call sum_mn_name(p%yH,idiag_yHm)
         if (idiag_eth/=0)   call sum_mn_name(p%ee/p%rho1,idiag_eth)
         if (idiag_ssm/=0)   call sum_mn_name(p%ss,idiag_ssm)
         if (idiag_dtc/=0) then
@@ -478,6 +487,38 @@ module Entropy
       endif
 !
     endsubroutine calc_heat_cool
+!***********************************************************************
+    subroutine calc_heatcond_constchi(df,p)
+!
+!  01-mar-07/dintrans: adapted from temperature_ionization
+!
+!  calculate chi*grad(rho*T*glnTT)/(rho*TT)
+!           =chi*(g2.glnTT+g2lnTT) where g2=glnrho+glnTT
+!
+      use Sub, only: max_mn_name,dot,del2,multsv
+      use EquationOfState, only: gamma
+
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx) :: g2
+!
+      call dot(p%glnTT+p%glnrho,p%glnTT,g2)
+!
+!  Add heat conduction to RHS of temperature equation
+!
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chi*(g2 + p%del2lnTT)
+
+!
+!  check maximum diffusion from thermal diffusion
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=max(diffus_chi,gamma*chi*dxyz_2)
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
+      endif
+
+    end subroutine calc_heatcond_constchi
 !***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
       integer, intent(in) :: unit
@@ -553,9 +594,6 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
         call parse_name(iname,cname(iname),cform(iname),'TTm',idiag_TTm)
-        call parse_name(iname,cname(iname),cform(iname),'yHmax',idiag_yHmax)
-        call parse_name(iname,cname(iname),cform(iname),'yHmin',idiag_yHmin)
-        call parse_name(iname,cname(iname),cform(iname),'yHm',idiag_yHm)
         call parse_name(iname,cname(iname),cform(iname),'eth',idiag_eth)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
         call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
@@ -576,9 +614,6 @@ module Entropy
         write(3,*) 'i_TTmax=',idiag_TTmax
         write(3,*) 'i_TTmin=',idiag_TTmin
         write(3,*) 'i_TTm=',idiag_TTm
-        write(3,*) 'i_yHmax=',idiag_yHmax
-        write(3,*) 'i_yHmin=',idiag_yHmin
-        write(3,*) 'i_yHm=',idiag_yHm
         write(3,*) 'i_eth=',idiag_eth
         write(3,*) 'i_ssm=',idiag_ssm
         write(3,*) 'i_dtchi=',idiag_dtchi

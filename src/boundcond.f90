@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.135 2007-02-28 18:54:40 brandenb Exp $
+! $Id: boundcond.f90,v 1.136 2007-03-01 19:53:06 dintrans Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -371,7 +371,8 @@ module Boundcond
                 if (j==iaa) call bc_aa_pot3(f,topbot)
               case ('cT')       ! constant temp.
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
-                if (j==iss)   call bc_ss_temp_z(f,topbot)
+                if (j==iss)    call bc_ss_temp_z(f,topbot)
+                if (j==ilnTT)  call bc_temp_z(f,topbot)
               case ('cT2')       ! constant temp. (keep lnrho)
                 if (j==iss)   call bc_ss_temp2_z(f,topbot)
               case ('hs')       ! hydrostatic equilibrium
