@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.327 2007-02-28 07:11:46 ajohan Exp $
+! $Id: hydro.f90,v 1.328 2007-03-01 23:55:14 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -86,11 +86,12 @@ module Hydro
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_damp_ruzm=0.,tau_diffrot1=0.
   real :: ampl_diffrot=0.,Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
-  real :: k1_ff=1.,ampl_ff=1.
+  real :: k1_ff=1.,ampl_ff=1.,width_ff=1.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
-  logical :: lforcing_continuous=.false.,lremove_mean_momenta=.false.
+  logical :: lforcing_continuous=.false.,lembed=.false.
+  logical :: lremove_mean_momenta=.false.
   logical :: llarge_scale_Bz=.false.
   character (len=labellen) :: iforcing_continuous='ABC'
 !
@@ -103,7 +104,7 @@ module Hydro
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-       lforcing_continuous,iforcing_continuous,k1_ff,ampl_ff, &
+       lforcing_continuous,lembed,iforcing_continuous,k1_ff,ampl_ff,width_ff, &
        lprecession, omega_precession, lshear_rateofstrain,llarge_scale_Bz
 
 ! end geodynamo
@@ -187,7 +188,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.327 2007-02-28 07:11:46 ajohan Exp $")
+           "$Id: hydro.f90,v 1.328 2007-03-01 23:55:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1609,9 +1610,9 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: forcing_rhs,fxb
       real, dimension (nx) :: uf
-      real, dimension (mx), save :: sinx,cosx
-      real, dimension (my), save :: siny,cosy
-      real, dimension (mz), save :: sinz,cosz
+      real, dimension (mx), save :: sinx,cosx,embedx
+      real, dimension (my), save :: siny,cosy,embedy
+      real, dimension (mz), save :: sinz,cosz,embedz
       type (pencil_case) :: p
       integer, save :: ifirst
       integer :: j,jf,ifff
@@ -1637,6 +1638,14 @@ module Hydro
           sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
           siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
           cosz=cos(k1_ff*z)
+          if (lembed) then
+            embedx=.5+.5*tanh(x/width_ff)*tanh((pi-x)/width_ff)
+            embedy=.5+.5*tanh(y/width_ff)*tanh((pi-y)/width_ff)
+            embedz=.5+.5*tanh(z/width_ff)*tanh((pi-z)/width_ff)
+            sinx=embedx*sinx; cosx=embedx*cosx
+            siny=embedy*siny; cosy=embedy*cosy
+            cosz=embedz*cosz
+          endif
         endif
       endif
       ifirst=ifirst+1
