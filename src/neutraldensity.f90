@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.2 2007-02-28 16:21:17 wlyra Exp $
+! $Id: neutraldensity.f90,v 1.3 2007-03-01 01:16:53 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -11,9 +11,9 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED lnrhon,rhon,rhon1,glnrhon,grhon,uglnrhon,ugrhon
+! PENCILS PROVIDED lnrhon,rhon,rhon1,glnrhon,grhon,unglnrhon,ungrhon
 ! PENCILS PROVIDED del2lnrhon,del2rhon,glnrhon2
-! PENCILS PROVIDED del6lnrhon,del6rhon,sglnrhon
+! PENCILS PROVIDED del6lnrhon,del6rhon,snglnrhon
 !
 !***************************************************************
 
@@ -36,7 +36,7 @@ module NeutralDensity
   real :: lnrhon_int=0.,lnrhon_ext=0.
   real, dimension(3) :: diffrhon_hyper3_aniso=0.
   integer, parameter :: ndiff_max=4
-  logical :: lmass_source=.false.,lcontinuity_gas=.true.
+  logical :: lmass_source=.false.,lcontinuity_neutral=.true.
   logical :: lupw_lnrhon=.false.,lupw_rhon=.false.
   logical :: ldiffn_normal=.false.,ldiffn_hyper3=.false.,ldiffn_shock=.false.
   logical :: ldiffn_hyper3lnrhon=.false.,ldiffn_hyper3_aniso=.false.
@@ -57,7 +57,7 @@ module NeutralDensity
        ampllnrhon,initlnrhon,    &
        rhon_left,rhon_right,lnrhon_const,rhon_const, &
        idiffn,lneutraldensity_nolog,    &
-       lcontinuity_gas,lnrhon0,lnrhon_left,lnrhon_right, &
+       lcontinuity_neutral,lnrhon0,lnrhon_left,lnrhon_right, &
        alpha,zeta
 
   namelist /neutraldensity_run_pars/ &
@@ -65,12 +65,12 @@ module NeutralDensity
        lupw_lnrhon,lupw_rhon,idiffn,     &
        lnrhon_int,lnrhon_ext, &
        lfreeze_lnrhonint,lfreeze_lnrhonext,         &
-       lnrhon_const,lcontinuity_gas,borderlnrhon,    &
+       lnrhon_const,lcontinuity_neutral,borderlnrhon,    &
        diffrhon_hyper3_aniso, alpha, zeta
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhonm=0,idiag_rhon2m=0,idiag_lnrhon2m=0
-  integer :: idiag_rhonmin=0,idiag_rhonmax=0,idiag_uglnrhonm=0
+  integer :: idiag_rhonmin=0,idiag_rhonmax=0,idiag_unglnrhonm=0
   integer :: idiag_lnrhonmphi=0,idiag_rhonmphi=0,idiag_dtnd=0
   integer :: idiag_rhonmz=0, idiag_rhonmy=0, idiag_rhonmx=0
   integer :: idiag_rhonmxy=0, idiag_rhonmr=0
@@ -102,7 +102,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.2 2007-02-28 16:21:17 wlyra Exp $")
+           "$Id: neutraldensity.f90,v 1.3 2007-03-01 01:16:53 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -128,8 +128,8 @@ module NeutralDensity
 !  Turn off continuity equation term for 0-D runs.
 !
       if (nxgrid*nygrid*nzgrid==1) then
-        lcontinuity_gas=.false.
-        print*, 'initialize_density: 0-D run, turned off continity equation'
+        lcontinuity_neutral=.false.
+        print*, 'initialize_neutraldensity: 0-D run, turned off continity equation'
       endif
 !
 !  Initialize dust diffusion
@@ -365,12 +365,12 @@ module NeutralDensity
       use Cdata
 !
       if (ldensity_nolog) lpenc_requested(i_rhon)=.true.
-      if (lcontinuity_gas) then
+      if (lcontinuity_neutral) then
         lpenc_requested(i_divu)=.true.
         if (ldensity_nolog) then
-          lpenc_requested(i_ugrhon)=.true.
+          lpenc_requested(i_ungrhon)=.true.
         else
-          lpenc_requested(i_uglnrhon)=.true.
+          lpenc_requested(i_unglnrhon)=.true.
         endif
       endif
       if (ldiffn_shock) then
@@ -407,7 +407,7 @@ module NeutralDensity
            idiag_rhonmax/=0 .or. idiag_rhonmxy/=0 .or. idiag_neutralmass/=0) &
            lpenc_diagnos(i_rhon)=.true.
       if (idiag_lnrhon2m/=0) lpenc_diagnos(i_lnrhon)=.true.
-      if (idiag_uglnrhonm/=0) lpenc_diagnos(i_uglnrhon)=.true.
+      if (idiag_unglnrhonm/=0) lpenc_diagnos(i_unglnrhon)=.true.
 
 !
     endsubroutine pencil_criteria_neutraldensity
@@ -425,17 +425,17 @@ module NeutralDensity
       else
         if (lpencil_in(i_rhon)) lpencil_in(i_rhon1)=.true.
       endif
-      if (lpencil_in(i_uglnrhon)) then
-        lpencil_in(i_uu)=.true.
+      if (lpencil_in(i_unglnrhon)) then
+        lpencil_in(i_uun)=.true.
         lpencil_in(i_glnrhon)=.true.
       endif
-      if (lpencil_in(i_ugrhon)) then
-        lpencil_in(i_uu)=.true.
+      if (lpencil_in(i_ungrhon)) then
+        lpencil_in(i_uun)=.true.
         lpencil_in(i_grhon)=.true.
       endif
       if (lpencil_in(i_glnrhon2)) lpencil_in(i_glnrhon)=.true.
-      if (lpencil_in(i_sglnrhon)) then
-        lpencil_in(i_sij)=.true.
+      if (lpencil_in(i_snglnrhon)) then
+        lpencil_in(i_snij)=.true.
         lpencil_in(i_glnrhon)=.true.
       endif
 !  The pencils glnrhon and grhon come in a bundle.
@@ -498,20 +498,20 @@ module NeutralDensity
           endif
         endif
       endif
-! uglnrhon
-      if (lpencil(i_uglnrhon)) then
+! unglnrhon
+      if (lpencil(i_unglnrhon)) then
         if (ldensity_nolog) then
-          call dot(p%uu,p%glnrhon,p%uglnrhon)
+          call dot(p%uun,p%glnrhon,p%unglnrhon)
         else
-          call u_dot_grad(f,ilnrhon,p%glnrhon,p%uu,p%uglnrhon,UPWIND=lupw_lnrhon)
+          call u_dot_grad(f,ilnrhon,p%glnrhon,p%uun,p%unglnrhon,UPWIND=lupw_lnrhon)
         endif
       endif
-! ugrhon
-      if (lpencil(i_ugrhon)) then
+! ungrhon
+      if (lpencil(i_ungrhon)) then
         if (ldensity_nolog) then
-          call u_dot_grad(f,ilnrhon,p%grhon,p%uu,p%ugrhon,UPWIND=lupw_rhon)
+          call u_dot_grad(f,ilnrhon,p%grhon,p%uun,p%ungrhon,UPWIND=lupw_rhon)
         else
-          call dot(p%uu,p%grhon,p%ugrhon)
+          call dot(p%uun,p%grhon,p%ungrhon)
         endif
       endif
 ! glnrhon2
@@ -570,8 +570,8 @@ module NeutralDensity
           call del6(f,ilnrhon,p%del6lnrhon)
         endif
       endif
-! sglnrhon
-      if (lpencil(i_sglnrhon)) call multmv(p%sij,p%glnrhon,p%sglnrhon)
+! snglnrhon
+      if (lpencil(i_snglnrhon)) call multmv(p%snij,p%glnrhon,p%snglnrhon)
 !
     endsubroutine calc_pencils_neutraldensity
 !***********************************************************************
@@ -601,11 +601,11 @@ module NeutralDensity
 !
 !  continuity equation
 !
-      if (lcontinuity_gas) then
+      if (lcontinuity_neutral) then
         if (lneutraldensity_nolog) then
-          df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%ugrhon - p%rhon*p%divun
+          df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%ungrhon - p%rhon*p%divun
         else
-          df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%uglnrhon - p%divun
+          df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%unglnrhon - p%divun
         endif
       endif
 !
@@ -619,8 +619,6 @@ module NeutralDensity
          df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - zeta + alpha*p%rho**2*p%rhon1
          df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + zeta*p%rhon*p%rho1 - alpha*p%rho
       endif
-
-
 !
 !  Mass diffusion
 !
@@ -726,7 +724,7 @@ module NeutralDensity
         if (idiag_rhonmax/=0)   call max_mn_name(p%rhon,idiag_rhonmax)
         if (idiag_rhon2m/=0)    call sum_mn_name(p%rhon**2,idiag_rhon2m)
         if (idiag_lnrhon2m/=0)  call sum_mn_name(p%lnrhon**2,idiag_lnrhon2m)
-        if (idiag_uglnrhonm/=0) call sum_mn_name(p%uglnrhon,idiag_uglnrhonm)
+        if (idiag_unglnrhonm/=0) call sum_mn_name(p%unglnrhon,idiag_unglnrhonm)
         if (idiag_dtnd/=0) &
             call max_mn_name(diffus_diffrhon/cdtv,idiag_dtnd,l_dt=.true.)
         if (idiag_rhonmxy/=0)    call zsum_mn_name_xy(p%rhon,idiag_rhonmxy)
@@ -803,7 +801,7 @@ module NeutralDensity
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_rhonm=0; idiag_rhon2m=0; idiag_lnrhon2m=0; idiag_uglnrhonm=0
+        idiag_rhonm=0; idiag_rhon2m=0; idiag_lnrhon2m=0; idiag_unglnrhonm=0
         idiag_rhonmin=0; idiag_rhonmax=0; idiag_dtnd=0
         idiag_lnrhonmphi=0; idiag_rhonmphi=0
         idiag_rhonmz=0; idiag_rhonmy=0; idiag_rhonmx=0 
@@ -820,7 +818,7 @@ module NeutralDensity
         call parse_name(iname,cname(iname),cform(iname),'rhonmin',idiag_rhonmin)
         call parse_name(iname,cname(iname),cform(iname),'rhonmax',idiag_rhonmax)
         call parse_name(iname,cname(iname),cform(iname),'lnrhon2m',idiag_lnrhon2m)
-        call parse_name(iname,cname(iname),cform(iname),'uglnrhonm',idiag_uglnrhonm)
+        call parse_name(iname,cname(iname),cform(iname),'unglnrhonm',idiag_unglnrhonm)
         call parse_name(iname,cname(iname),cform(iname),'dtnd',idiag_dtnd)
         call parse_name(iname,cname(iname),cform(iname),'neutralmass',idiag_neutralmass)
       enddo
@@ -871,7 +869,7 @@ module NeutralDensity
         write(3,*) 'i_rhonmin=',idiag_rhonmin
         write(3,*) 'i_rhonmax=',idiag_rhonmax
         write(3,*) 'i_lnrhon2m=',idiag_lnrhon2m
-        write(3,*) 'i_uglnrhonm=',idiag_uglnrhonm
+        write(3,*) 'i_unglnrhonm=',idiag_unglnrhonm
         write(3,*) 'i_rhonmz=',idiag_rhonmz
         write(3,*) 'i_rhonmy=',idiag_rhonmy
         write(3,*) 'i_rhonmx=',idiag_rhonmx
