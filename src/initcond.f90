@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.196 2007-02-15 16:27:42 wlyra Exp $
+! $Id: initcond.f90,v 1.197 2007-03-01 08:54:34 bingert Exp $
 
 module Initcond
 
@@ -2736,6 +2736,14 @@ module Initcond
                exit
             endif
          enddo
+         if (z(j) .ge. b_z(150)) then
+            f(:,:,j,ilnrho) = b_lnrho(150)
+            !
+            tmp =  b_lnT(150)
+            !
+            f(:,:,j,iss) = (alog(gamma1/cs20)+tmp- &
+                 gamma1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
+         endif
       enddo
       !
       ztop=xyz0(3)+Lxyz(3)
@@ -2748,6 +2756,8 @@ module Initcond
                  b_lnT(i+1)*(ztop-b_z(i)) ) / (b_z(i+1)-b_z(i))
             cs2top = gamma1*exp(tmp)
             !
+         elseif (ztop .ge. b_z(150)) then
+            cs2top = gamma1*exp(b_lnT(150))
          endif
          if (zbot .ge. b_z(i) .and. zbot .lt. b_z(i+1) ) then
             !
