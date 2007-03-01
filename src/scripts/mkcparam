@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.51 2007-02-28 04:29:56 wlyra Exp $
+# CVS: $Id: mkcparam,v 1.52 2007-03-01 01:17:45 wlyra Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -243,7 +243,6 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'epsd'         => ', dimension (nx,ndustspec)',
                   'epsp'         => ', dimension (nx)',
                   'sglnrho'      => ', dimension (nx,3)',
-		  'sglnrhon'     => ', dimension (nx,3)',
                   'sdglnnd'      => ', dimension (nx,3,ndustspec)',
                   'shock'        => ', dimension (nx)',
                   'shock_perp'   => ', dimension (nx)',
@@ -252,6 +251,7 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'sij2'         => ', dimension (nx)',
                   'sj'           => ', dimension (nx)',
 		  'snij'         => ', dimension (nx,3,3)',
+		  'snglnrhon'    => ', dimension (nx,3)',
                   'ss'           => ', dimension (nx)',
                   'ss12'         => ', dimension (nx)',
                   'TT'           => ', dimension (nx)',
@@ -271,8 +271,6 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'uglncc'       => ', dimension (nx)',
                   'uglnrho'      => ', dimension (nx)',
                   'ugrho'        => ', dimension (nx)',
-		  'uglnrhon'     => ', dimension (nx)',
-                  'ugrhon'       => ', dimension (nx)',
                   'ugu'          => ', dimension (nx,3)',
                   'uij'          => ', dimension (nx,3,3)',
                   'uij2'         => ', dimension (nx)',
@@ -281,6 +279,8 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'ujxb'         => ', dimension (nx)',
 		  'un2'          => ', dimension (nx)',
 		  'unij'         => ', dimension (nx,3,3)',
+		  'unglnrhon'    => ', dimension (nx)',
+                  'ungrhon'      => ', dimension (nx)',
 		  'ungun'        => ', dimension (nx,3)',
                   'uu'           => ', dimension (nx,3)',
                   'uud'          => ', dimension (nx,3,ndustspec)',
