@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.2 2007-02-14 13:52:26 wlyra Exp $
+! $Id: temperature_idealgas.f90,v 1.3 2007-03-01 03:22:09 wlyra Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -63,10 +63,10 @@ module Entropy
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
   integer :: idiag_yHmax=0,idiag_yHmin=0,idiag_yHm=0
-  integer :: idiag_eth=0,idiag_ssm=0
+  integer :: idiag_eth=0,idiag_ssm=0,idiag_thcool=0
   integer :: idiag_dtchi=0,idiag_dtc=0
   integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0
-
+  
   contains
 
 !***********************************************************************
@@ -93,7 +93,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.2 2007-02-14 13:52:26 wlyra Exp $")
+           "$Id: temperature_idealgas.f90,v 1.3 2007-03-01 03:22:09 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -238,25 +238,26 @@ module Entropy
 !
 !  Diagnostics
 !
-      if (idiag_TTmax/=0) lpenc_diagnos(i_TT)=.true.
-      if (idiag_TTmin/=0) lpenc_diagnos(i_TT)=.true.
-      if (idiag_TTm/=0) lpenc_diagnos(i_TT)=.true.
-      if (idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
-      if (idiag_yHmin/=0) lpenc_diagnos(i_yH)=.true.
-      if (idiag_yHm/=0) lpenc_diagnos(i_yH)=.true.
+      if (idiag_TTmax/=0) lpenc_diagnos(i_TT)  =.true.
+      if (idiag_TTmin/=0) lpenc_diagnos(i_TT)  =.true.
+      if (idiag_TTm/=0)   lpenc_diagnos(i_TT)  =.true.
+      if (idiag_yHmax/=0) lpenc_diagnos(i_yH)  =.true.
+      if (idiag_yHmin/=0) lpenc_diagnos(i_yH)  =.true.
+      if (idiag_yHm/=0)   lpenc_diagnos(i_yH)  =.true.
       if (idiag_eth/=0) then
-        lpenc_diagnos(i_rho1)=.true.
-        lpenc_diagnos(i_ee)=.true.
+                          lpenc_diagnos(i_rho1)=.true.
+                          lpenc_diagnos(i_ee)  =.true.
       endif
-      if (idiag_ssm/=0) lpenc_diagnos(i_ss)=.true.
+      if (idiag_ssm/=0)   lpenc_diagnos(i_ss)  =.true.
       if (idiag_dtchi/=0) then
-        lpenc_diagnos(i_rho1)=.true.
-        lpenc_diagnos(i_cv1)=.true.
+                          lpenc_diagnos(i_rho1)=.true.
+                          lpenc_diagnos(i_cv1) =.true.
       endif
-      if (idiag_dtchi/=0) lpenc_diagnos(i_cs2)=.true.
-      if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
-      if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
-      if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
+      if (idiag_dtchi/=0)  lpenc_diagnos(i_cs2)=.true.
+      if (idiag_csm/=0)    lpenc_diagnos(i_cs2)=.true.
+      if (idiag_eem/=0)    lpenc_diagnos(i_ee) =.true.
+      if (idiag_ppm/=0)    lpenc_diagnos(i_pp) =.true.
+      if (idiag_thcool/=0) lpenc_diagnos(i_rho)=.true.
 !
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
@@ -385,8 +386,8 @@ module Entropy
 !
 !  advection term and PdV-work
 !
-        if (ladvection_temperature) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%uglnTT
+      if (ladvection_temperature) then
+         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%uglnTT
       endif
 !
 !  Calculate viscous contribution to temperature
@@ -465,11 +466,16 @@ module Entropy
 !
 ! cooling for Energy: 2*sigmaSB*p%TT**4/(a1+a2+a3)
 !
-      cooling = 2*sigmaSB*p%rho1*p%TT**4/(a1) !+a2+a3)
+      cooling = 2*sigmaSB*p%rho1*p%TT**4/(a1+a2+a3)
 !
 !  this cooling has dimension of energy over time
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%cv1*p%TT1*cooling
+!
+      if (ldiagnos) then
+         !cooling power - energy radiated away (luminosity)
+         if (idiag_thcool/=0) call sum_lim_mn_name(cooling*p%rho,idiag_thcool,p)
+      endif
 !
     endsubroutine calc_heat_cool
 !***********************************************************************
@@ -536,7 +542,7 @@ module Entropy
       if (lreset) then
         idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_yHmax=0; idiag_yHmin=0; idiag_yHm=0
-        idiag_eth=0; idiag_ssm=0
+        idiag_eth=0; idiag_ssm=0; idiag_thcool=0
         idiag_dtchi=0; idiag_dtc=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0
       endif
@@ -557,6 +563,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
+        call parse_name(iname,cname(iname),cform(iname),'thcool',idiag_thcool)
       enddo
 !
 !  write column where which variable is stored
@@ -579,6 +586,7 @@ module Entropy
         write(3,*) 'i_eem=',idiag_eem
         write(3,*) 'i_ppm=',idiag_ppm
         write(3,*) 'i_csm=',idiag_csm
+        write(3,*) 'i_thcool=',idiag_thcool
       endif
 !
     endsubroutine rprint_entropy
