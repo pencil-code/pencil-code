@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.3 2007-02-28 16:21:17 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.4 2007-03-01 01:18:16 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -37,7 +37,10 @@ module NeutralVelocity
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: ladvection_velocity=.true.
 !collisional drag,ionization,recombination
+  logical :: lviscneutral=.true.
   real :: colldrag,zeta,alpha
+  real :: nun=0.
+  character (len=labellen) :: iviscn='nu-const'
 
   namelist /neutralvelocity_init_pars/ &
        ampluun, ampl_unx, ampl_uny, ampl_unz, &
@@ -52,7 +55,7 @@ module NeutralVelocity
        Omega,theta, lupw_uun, &
        borderuun, lfreeze_unint, &
        lfreeze_unext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-       colldrag,zeta,alpha
+       colldrag,zeta,alpha,nun,lviscneutral,iviscn,nun
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_un2m=0,idiag_unm2=0
@@ -123,7 +126,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.3 2007-02-28 16:21:17 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.4 2007-03-01 01:18:16 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -153,7 +156,7 @@ module NeutralVelocity
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
 !
       use Mpicomm, only: stop_it
-      use CData,   only: r_int,r_ext,lfreeze_varint,lfreeze_varext,epsi,leos,iunx,iuny,iunz
+      use CData
 !
 ! Check any module dependencies
 !
@@ -172,6 +175,12 @@ module NeutralVelocity
         ladvection_velocity=.false.
         print*, 'initialize_entropy: 0-D run, turned off advection of velocity'
       endif
+!
+!  Turn off neutral viscosity if zero viscosity
+!
+      if (nun == 0.) lviscneutral=.false.
+      if (lroot) print*, &
+          'initialize_neutralvelocity: lviscneutral,nun=',lviscneutral,nun
 !
       endsubroutine initialize_neutralvelocity
 !***********************************************************************
@@ -287,6 +296,16 @@ module NeutralVelocity
       lpenc_requested(i_rho)=.true.
       lpenc_requested(i_rhon)=.true.
 !
+      if ((iviscn=='nun-const') .and. lneutraldensity) then
+          lpenc_requested(i_snij)=.true.
+          lpenc_requested(i_glnrhon)=.true.
+       endif
+       if (iviscn=='nun-const') then
+          lpenc_requested(i_del2un)=.true.
+          lpenc_requested(i_snglnrhon)=.true.
+          lpenc_requested(i_graddivun)=.true.
+       endif
+!
 !  diagnostic pencils
 !
       lpenc_diagnos(i_uun)=.true.
@@ -325,6 +344,13 @@ module NeutralVelocity
         lpencil_in(i_unij)=.true.
       endif
 !
+      if (lpencil_in(i_snij)) then
+         if (iviscn=='nun-const') then
+            lpencil_in(i_unij)=.true.
+            lpencil_in(i_divun)=.true.
+         endif
+      endif
+!
     endsubroutine pencil_interdep_neutralvelocity
 !***********************************************************************
     subroutine calc_pencils_neutralvelocity(f,p)
@@ -346,36 +372,36 @@ module NeutralVelocity
 !
       intent(in) :: f
       intent(inout) :: p
-! uu
+! uun
       if (lpencil(i_uun)) p%uun=f(l1:l2,m,n,iunx:iunz)
 ! un2
       if (lpencil(i_un2)) then
         call dot2_mn(p%uun,p%un2)
       endif
-! uij
+! unij
       if (lpencil(i_unij)) call gij(f,iuun,p%unij,1)
-! divu
+! divun
       if (lpencil(i_divun)) call div_mn(p%unij,p%divun,p%uun)
-! sij
+! snij
       if (lpencil(i_snij)) then
         do j=1,3
           do i=1,3
             p%snij(:,i,j)=.5*(p%unij(:,i,j)+p%unij(:,j,i))
           enddo
-          p%snij(:,j,j)=p%snij(:,j,j)-(1./3.)*p%divun
+          p%snij(:,j,j)=p%snij(:,j,j)-(.333333)*p%divun
         enddo
       endif
-! ugu
+! ungun
       if (lpencil(i_ungun)) then
         if (headtt.and.lupw_uun) then
           print *,'calc_pencils_neutralvelocity: upwinding advection term. '//&
                   'Not well tested; use at own risk!'; endif
         call u_dot_grad(f,iuun,p%unij,p%uun,p%ungun,UPWIND=lupw_uun)
       endif
-! del6u
+! del6un
       if (lpencil(i_del6u)) call del6v(f,iuun,p%del6un)
-! del2u
-! graddivu
+! del2un
+! graddivun
       if (lpencil(i_del2un)) then
         if (lpencil(i_graddivun)) then
           call del2v_etc(f,iuun,DEL2=p%del2un,GRADDIV=p%graddivun)
@@ -486,20 +512,19 @@ module NeutralVelocity
 !       
 ! neutrals gain by momentum recombination
 !
-        df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) + cneut*p%rho *(p%uu(:,j)-p%uun(:,j))
+        df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) + &
+             cneut*p%rho *(p%uu(:,j)-p%uun(:,j))
 !
 ! ions gain by momentum by ionization
 ! 
-        df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji) - cions*p%rhon*(p%uu(:,j)-p%uun(:,j))
+        df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji) - &
+             cions*p%rhon*(p%uu(:,j)-p%uun(:,j))
 !
      enddo
-     
-     
-
 !
-! calculate viscous force
+! calculate viscous force on neutrals
 !
-      !if (lviscosity) call calc_viscous_force(df,p)
+      if (lviscneutral) call calc_viscous_force_neutral(df,p)
 !
 !  ``uun/dx'' for timestep
 !
@@ -681,6 +706,80 @@ module NeutralVelocity
       endif
 !
     endsubroutine set_border_neutralvelocity
+!***********************************************************************
+    subroutine calc_viscous_force_neutral(df,p)
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension(nx,3) :: fvisc
+      real, dimension(nx) :: murho1,diffus_total
+      integer :: i
+      type (pencil_case) :: p
+!
+      intent(in) :: p
+      intent(inout) :: df
+!
+      fvisc=0
+      diffus_total=0
+!
+      select case (iviscn)
+!
+      case('rho_nun-const') 
+!
+!  viscous force: mu/rho*(del2u+graddivu/3)
+!  -- the correct expression for rho*nu=const
+!
+         if (headtt) print*,'Viscous force (neutral):  mu/rhon*(del2un+graddivun/3)'
+         murho1=nun*p%rhon1  !(=mu/rhon)
+         do i=1,3
+            fvisc(:,i)=fvisc(:,i)+murho1*(p%del2un(:,i)+0.333333*p%graddivun(:,i))
+         enddo
+         !if (lpencil(i_visc_heat)) visc_heat=visc_heat + 2*nun*p%snij2*p%rhon1
+         if (lfirst.and.ldt) diffus_total=diffus_total+murho1
+
+     case('nun-const')
+!
+!  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
+!  -- the correct expression for nu=const
+!
+        if (headtt) &
+             print*,'Viscous force (neutral): nun*(del2un+graddivun/3+2Sn.glnrhon)'
+        if(lneutraldensity) then
+           fvisc=fvisc+2*nun*p%snglnrhon+nun*(p%del2un+0.333333*p%graddivun)
+        else
+           fvisc=fvisc+nun*(p%del2un+0.333333*p%graddivun)
+        endif
+        
+        !if (lpencil(i_visc_heat)) visc_heat=visc_heat + 2*nun*p%snij2
+        if (lfirst.and.ldt) diffus_total=diffus_total+nun
+!
+     case ('')
+        ! do nothing
+     case default
+        if (lroot) print*, 'No such value for iviscn: ', trim(iviscn)
+        call stop_it('calc_viscous_forcing')
+     endselect
+!
+! Add viscosity to the equation of motion
+!
+     df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) + fvisc
+!
+!  Calculate max total diffusion coefficient for timestep calculation etc.
+!
+      diffus_nun=max(diffus_nun,diffus_total*dxyz_2)
+!
+      !if (ldiagnos) then 
+      !  if (idiag_dtnu/=0) &
+      !     call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
+      !   if (idiag_nu_LES /= 0) call sum_mn_name(nu_smag,idiag_nu_LES)
+      !   if (idiag_meshRemax/=0) &
+      !        call max_mn_name(sqrt(p%u2(:))*dxmax/p%diffus_total,idiag_meshRemax)
+      !endif
+!
+    endsubroutine calc_viscous_force_neutral
 !***********************************************************************
     subroutine rprint_neutralvelocity(lreset,lwrite)
 !
