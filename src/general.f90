@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.55 2007-01-13 21:56:35 dobler Exp $
+! $Id: general.f90,v 1.56 2007-03-01 03:18:34 wlyra Exp $
 
 module General
 
@@ -770,7 +770,7 @@ module General
       real, dimension(size(b)) :: gam
       logical, intent(out), optional :: err
       integer :: n,j
-      real :: bet
+      real :: bet,bet1
 
       if (present(err)) err=.false.
       n=size(b)
@@ -781,16 +781,18 @@ module General
          return
       endif
 
-      u(1)=r(1)/bet
+      bet1=1/bet
+
+      u(1)=r(1)*bet1
       do j=2,n
-         gam(j)=c(j-1)/bet
+         gam(j)=c(j-1)*bet1
          bet=b(j)-a(j-1)*gam(j)
          if (bet.eq.0.) then
             print*,'tridag: Error at code stage 2'
             if (present(err)) err=.true.
             return
          endif
-         u(j)=(r(j)-a(j-1)*u(j-1))/bet
+         u(j)=(r(j)-a(j-1)*u(j-1))*bet1
       end do
       do j=n-1,1,-1
          u(j)=u(j)-gam(j+1)*u(j+1)
@@ -845,8 +847,9 @@ module General
 !
       integer, intent(in) :: psize1,psize2
       integer :: i,j,ct1,ct2
-      real, dimension (psize1) :: arrx,arry,h,a,b,c,d,sol
+      real, dimension (psize1) :: arrx,arry,h,h1,a,b,d,sol
       real, dimension (psize2) :: x2,S
+      real :: fac=0.1666666
       logical, intent(out), optional :: err
 
       intent(in)  :: arrx,arry,x2
@@ -877,6 +880,7 @@ module General
 !
       h(1:ct1-1) = arrx(2:ct1) - arrx(1:ct1-1)
       h(ct1) = h(ct1-1)
+      h1=1./h
 !
 ! coefficients for tridiagonal system
 !
@@ -886,12 +890,12 @@ module General
       b(2:ct1) = 2*(h(1:ct1-1) + h(2:ct1))
       b(1) = b(2)
 !
-      c = h
+      !c = h
 !
-      d(2:ct1-1) = 6*((arry(3:ct1) - arry(2:ct1-1))/h(2:ct1-1) - (arry(2:ct1-1) - arry(1:ct1-2))/h(1:ct1-2))
+      d(2:ct1-1) = 6*((arry(3:ct1) - arry(2:ct1-1))*h1(2:ct1-1) - (arry(2:ct1-1) - arry(1:ct1-2))*h1(1:ct1-2))
       d(1) = 0. ; d(ct1) = 0.
 !
-      call tridag(a,b,c,d,sol)
+      call tridag(a,b,h,d,sol)
 !
 ! interpolation formula
 !
@@ -900,10 +904,11 @@ module General
 !
             if ((x2(j).ge.arrx(i)).and.(x2(j).le.arrx(i+1))) then
 !
+! substitute 1/6. by 0.1666666 to avoid divisions 
 !
-               S(j) = (1./(6*h(i))) * (sol(i+1)*(x2(j)-arrx(i))**3 + sol(i)*(arrx(i+1) - x2(j))**3)  + &
-                    (x2(j) - arrx(i))*(arry(i+1)/h(i) - h(i)*sol(i+1)/6.)                          + &
-                    (arrx(i+1) - x2(j))*(arry(i)/h(i) - h(i)*sol(i)/6.)
+               S(j) = (fac*h1(i)) * (sol(i+1)*(x2(j)-arrx(i))**3 + sol(i)*(arrx(i+1) - x2(j))**3)  + &
+                    (x2(j) - arrx(i))*(arry(i+1)*h1(i) - h(i)*sol(i+1)*fac)                          + &
+                    (arrx(i+1) - x2(j))*(arry(i)*h1(i) - h(i)*sol(i)*fac)
             endif
 !
          enddo
