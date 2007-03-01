@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.97 2006-12-21 10:16:55 ajohan Exp $
+! $Id: noentropy.f90,v 1.98 2007-03-01 02:53:34 wlyra Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -55,7 +55,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.97 2006-12-21 10:16:55 ajohan Exp $")
+           "$Id: noentropy.f90,v 1.98 2007-03-01 02:53:34 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -228,7 +228,12 @@ module Entropy
       if (lhydro) then
         do j=1,3
           ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%fpres(:,j)
+          if (lneutralvelocity) then
+             !factor two for electron pressure
+             df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+2*p%fpres(:,j)
+          else
+             df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%fpres(:,j)
+          endif
         enddo
 !
 !  Add pressure force from global density gradient.
@@ -240,7 +245,7 @@ module Entropy
                 - p%cs2*beta_glnrho_scaled(j)
           enddo
         endif
-      endif
+     endif
 !
 !  Calculate entropy related diagnostics
 !

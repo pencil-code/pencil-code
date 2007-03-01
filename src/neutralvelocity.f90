@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.4 2007-03-01 01:18:16 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.5 2007-03-01 02:53:34 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -35,17 +35,17 @@ module NeutralVelocity
   character (len=labellen) :: borderuun='nothing'
   real, dimension(3) :: uun_const=(/0.,0.,0./)
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
-  logical :: ladvection_velocity=.true.
+  logical :: ladvection_velocity=.true.,lpressuregradient=.true.
 !collisional drag,ionization,recombination
   logical :: lviscneutral=.true.
   real :: colldrag,zeta,alpha
-  real :: nun=0.
+  real :: nun=0.,csn0,csn20
   character (len=labellen) :: iviscn='nu-const'
 
   namelist /neutralvelocity_init_pars/ &
        ampluun, ampl_unx, ampl_uny, ampl_unz, &
        inituun, uun_const, Omega, lcoriolis_force, lcentrifugal_force, &
-       ladvection_velocity,zeta,alpha,colldrag
+       ladvection_velocity,zeta,alpha,colldrag,csn0
 
   ! run parameters
   logical :: lupw_uun=.false.
@@ -53,9 +53,9 @@ module NeutralVelocity
 !
   namelist /neutralvelocity_run_pars/ &
        Omega,theta, lupw_uun, &
-       borderuun, lfreeze_unint, &
+       borderuun, lfreeze_unint, lpressuregradient, &
        lfreeze_unext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-       colldrag,zeta,alpha,nun,lviscneutral,iviscn,nun
+       colldrag,zeta,alpha,nun,lviscneutral,iviscn,nun,csn0
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_un2m=0,idiag_unm2=0
@@ -119,14 +119,12 @@ module NeutralVelocity
       varname(iuny) = 'uny'
       varname(iunz) = 'unz'
 !
-!
-!
       lneutralvelocity=.true.
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.4 2007-03-01 01:18:16 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.5 2007-03-01 02:53:34 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -168,6 +166,10 @@ module NeutralVelocity
 !
       if (lfreeze_unint) lfreeze_varint(iunx:iunz) = .true.
       if (lfreeze_unext) lfreeze_varext(iunx:iunz) = .true.
+!
+!  csn20
+!
+      csn20=csn0**2
 !
 !  Turn off advection for 0-D runs.
 !
@@ -305,6 +307,8 @@ module NeutralVelocity
           lpenc_requested(i_snglnrhon)=.true.
           lpenc_requested(i_graddivun)=.true.
        endif
+       if (lpressuregradient) &
+            lpenc_requested(i_glnrhon)=.true.
 !
 !  diagnostic pencils
 !
@@ -417,8 +421,7 @@ module NeutralVelocity
     subroutine duun_dt(f,df,p)
 !
 !  velocity evolution
-!  calculate du/dt = - u.gradu - 2Omega x u + grav + Fvisc
-!  pressure gradient force added in density and entropy modules.
+!  calculate du/dt = - u.gradu - 2Omega x u + Fpres + grav + Fvisc
 !
 !   7-jun-02/axel: incoporated from subroutine pde
 !  10-jun-02/axel+mattias: added Coriolis force
@@ -525,6 +528,16 @@ module NeutralVelocity
 ! calculate viscous force on neutrals
 !
       if (lviscneutral) call calc_viscous_force_neutral(df,p)
+!
+! add pressure gradient on neutrals
+!
+      if (lpressuregradient) then
+         do j=1,3
+            jn=j+iuun-1
+            df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) &
+                 -csn20*p%glnrhon(:,j)
+         enddo
+      endif
 !
 !  ``uun/dx'' for timestep
 !
