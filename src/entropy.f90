@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.496 2007-02-28 10:04:56 ajohan Exp $
+! $Id: entropy.f90,v 1.497 2007-03-01 09:08:28 bingert Exp $
 
 ! 
 !  This module takes care of entropy (initial condition
@@ -37,7 +37,7 @@ module Entropy
   real :: luminosity=0.,wheat=0.1,cool=0.,rcool=0.,wcool=0.1
   real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.,ampl_TT=0.
   real :: chi=0.,chi_t=0.,chi_shock=0.,chi_hyper3=0.
-  real :: Kgperp=0.,Kgpara=0.,tdown=1.,allp=2.
+  real :: Kgperp=0.,Kgpara=0.,tdown=0.,allp=2.
   real :: ss_left=1.,ss_right=1.
   real :: ss0=0.,khor_ss=1.,ss_const=0.
   real :: pp_const=0.
@@ -168,7 +168,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.496 2007-02-28 10:04:56 ajohan Exp $")
+           "$Id: entropy.f90,v 1.497 2007-03-01 09:08:28 bingert Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1560,6 +1560,7 @@ module Entropy
         lpenc_requested(i_hlnTT)=.true.
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_cp)=.true.
       endif
       if (lheatc_hubeny) then
         lpenc_requested(i_rho)=.true.
@@ -1585,6 +1586,7 @@ module Entropy
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
+        lpenc_requested(i_cp)=.true.
       endif
       if (lheatc_shock) then
         lpenc_requested(i_glnrho)=.true.
@@ -1820,6 +1822,7 @@ module Entropy
         call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs*p%rho1
         if (lfirst.and.ldt) then
+           diffus_chi=max(diffus_chi,gamma*Kgpara*exp(-p%lnrho)/p%cp*dxyz_2)           
            dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
         endif
       endif
@@ -1831,6 +1834,8 @@ module Entropy
           (heat_uniform/=0.0) .or. (tau_cool/=0.0) .or. &
           (cool_ext/=0.0 .and. cool_int/=0.0) .or. lturbulent_heat) &
           call calc_heat_cool(df,p,Hmax)
+      if (tdown/=0.0) call newton_cool(df,p)
+      if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
 !
 !  Interstellar radiative cooling and UV heating.
 !
@@ -2286,6 +2291,7 @@ module Entropy
       if (lfirst.and.ldt) then
          !
          dt1_max=max(dt1_max,maxval(abs(thdiff)*gamma)/(cdts))
+         diffus_chi=max(diffus_chi,gamma*Kgpara*exp(2.5*p%lnTT-p%lnrho)/p%cp*dxyz_2)
       endif
 !
     endsubroutine calc_heatcond_spitzer
