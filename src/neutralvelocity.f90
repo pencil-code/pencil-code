@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.5 2007-03-01 02:53:34 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.6 2007-03-02 12:36:53 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -30,6 +30,7 @@ module NeutralVelocity
 ! init parameters
 !
   real :: ampl_unx=0.0, ampl_uny=0.0, ampl_unz=0.0
+  real :: kx_uun=1., ky_uun=1., kz_uun=1.
   real, dimension (ninit) :: ampluun=0.0
   character (len=labellen), dimension(ninit) :: inituun='nothing'
   character (len=labellen) :: borderuun='nothing'
@@ -39,13 +40,15 @@ module NeutralVelocity
 !collisional drag,ionization,recombination
   logical :: lviscneutral=.true.
   real :: colldrag,zeta,alpha
-  real :: nun=0.,csn0,csn20
-  character (len=labellen) :: iviscn='nu-const'
+  real :: nun=0.,csn0,csn20,nun_hyper3=0.
+  real, dimension (nx,3,3) :: unij5
+
+  character (len=labellen),dimension(ninit) :: iviscn=''
 
   namelist /neutralvelocity_init_pars/ &
        ampluun, ampl_unx, ampl_uny, ampl_unz, &
        inituun, uun_const, Omega, lcoriolis_force, lcentrifugal_force, &
-       ladvection_velocity,zeta,alpha,colldrag,csn0
+       ladvection_velocity,zeta,alpha,colldrag,csn0,kx_uun,ky_uun,kz_uun
 
   ! run parameters
   logical :: lupw_uun=.false.
@@ -55,7 +58,7 @@ module NeutralVelocity
        Omega,theta, lupw_uun, &
        borderuun, lfreeze_unint, lpressuregradient, &
        lfreeze_unext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-       colldrag,zeta,alpha,nun,lviscneutral,iviscn,nun,csn0
+       colldrag,zeta,alpha,nun,lviscneutral,iviscn,nun,csn0,nun_hyper3
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_un2m=0,idiag_unm2=0
@@ -80,6 +83,7 @@ module NeutralVelocity
   integer :: idiag_neutralangmom=0
   integer :: idiag_un2mr=0,idiag_unrunpmr=0
   integer :: idiag_unrmr=0,idiag_unpmr=0,idiag_unzmr=0
+  integer :: idiag_divunm=0
 
   contains
 
@@ -124,7 +128,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.5 2007-03-01 02:53:34 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.6 2007-03-02 12:36:53 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -180,9 +184,10 @@ module NeutralVelocity
 !
 !  Turn off neutral viscosity if zero viscosity
 !
-      if (nun == 0.) lviscneutral=.false.
+      if ((nun == 0.).and.(nun_hyper3==0.)) lviscneutral=.false.
       if (lroot) print*, &
-          'initialize_neutralvelocity: lviscneutral,nun=',lviscneutral,nun
+          'initialize_neutralvelocity: lviscneutral,nun,nun_hyper3=',&
+          lviscneutral,nun,nun_hyper3
 !
       endsubroutine initialize_neutralvelocity
 !***********************************************************************
@@ -262,6 +267,9 @@ module NeutralVelocity
         case('gaussian-noise-y'); call gaunoise(ampluun(j),f,iuny)
         case('gaussian-noise-z'); call gaunoise(ampluun(j),f,iunz)
         case('gaussian-noise-xy'); call gaunoise(ampluun(j),f,iunx,iuny)
+        case('sinwave-x'); call sinwave(ampluun(j),f,iunx,kx=kx_uun)
+        case('sinwave-y'); call sinwave(ampluun(j),f,iuny,ky=ky_uun)
+        case('sinwave-z'); call sinwave(ampluun(j),f,iunz,kz=kz_uun)
         case('gaussian-noise-rprof')
           tmp=sqrt(xx**2+yy**2+zz**2)
           call gaunoise_rprof(ampluun(j),tmp,prof,f,iunx,iunz)
@@ -298,15 +306,18 @@ module NeutralVelocity
       lpenc_requested(i_rho)=.true.
       lpenc_requested(i_rhon)=.true.
 !
-      if ((iviscn=='nun-const') .and. lneutraldensity) then
-          lpenc_requested(i_snij)=.true.
+      if (any(iviscn=='nun-const')) then
+         lpenc_requested(i_snij)=.true.
+         lpenc_requested(i_glnrhon)=.true.
+         lpenc_requested(i_del2un)=.true.
+         lpenc_requested(i_snglnrhon)=.true.
+         lpenc_requested(i_graddivun)=.true.
+       endif
+       if (any(iviscn=='hyper3_nun-const')) then
+          !lpenc_requested(i_uij5)=.true.
           lpenc_requested(i_glnrhon)=.true.
        endif
-       if (iviscn=='nun-const') then
-          lpenc_requested(i_del2un)=.true.
-          lpenc_requested(i_snglnrhon)=.true.
-          lpenc_requested(i_graddivun)=.true.
-       endif
+!
        if (lpressuregradient) &
             lpenc_requested(i_glnrhon)=.true.
 !
@@ -321,6 +332,7 @@ module NeutralVelocity
         lpenc_diagnos(i_pomx)=.true.
         lpenc_diagnos(i_pomy)=.true.
       endif
+      if (idiag_divunm/=0) lpenc_diagnos(i_divun)=.true.
 !
       if (idiag_unpmr/=0 .or. idiag_unrunpmr/=0) then
         lpenc_diagnos(i_phix)=.true.
@@ -349,7 +361,7 @@ module NeutralVelocity
       endif
 !
       if (lpencil_in(i_snij)) then
-         if (iviscn=='nun-const') then
+         if (any(iviscn=='nun-const')) then
             lpencil_in(i_unij)=.true.
             lpencil_in(i_divun)=.true.
          endif
@@ -414,6 +426,13 @@ module NeutralVelocity
         endif
       else
         if (lpencil(i_graddivun)) call del2v_etc(f,iuun,GRADDIV=p%graddivun)
+      endif
+!
+! can't do unij5glnrho here, as calc_pencils_neutraldensity is called AFTER
+!
+      if (any(iviscn=='hyper3_nun-const')) then
+         call gij(f,iuun,unij5,5)
+         !call multmv(unij5,p%glnrhon,unij5glnrhon)
       endif
 !
     endsubroutine calc_pencils_neutralvelocity
@@ -513,12 +532,12 @@ module NeutralVelocity
         jn=j+iuun-1
         ji=j+iuu -1
 !       
-! neutrals gain by momentum recombination
+! neutrals gain momentum by recombination
 !
         df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) + &
              cneut*p%rho *(p%uu(:,j)-p%uun(:,j))
 !
-! ions gain by momentum by ionization
+! ions gain momentum by ionization
 ! 
         df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji) - &
              cions*p%rhon*(p%uu(:,j)-p%uun(:,j))
@@ -565,6 +584,7 @@ module NeutralVelocity
         if (idiag_unymax/=0) call max_mn_name(p%uun(:,2),idiag_unymax)
         if (idiag_unzmax/=0) call max_mn_name(p%uun(:,3),idiag_unzmax)
         if (idiag_un2m/=0)     call sum_mn_name(p%un2,idiag_un2m)
+        if (idiag_divunm/=0)    call sum_mn_name(p%divun,idiag_divunm)
         if (idiag_unm2/=0)     call max_mn_name(p%un2,idiag_unm2)
         if (idiag_unxm/=0)     call sum_mn_name(p%uun(:,1),idiag_unxm)
         if (idiag_unym/=0)     call sum_mn_name(p%uun(:,2),idiag_unym)
@@ -577,9 +597,9 @@ module NeutralVelocity
         if (idiag_unyunzm/=0)   call sum_mn_name(p%uun(:,2)*p%uun(:,3),idiag_unyunzm)
         !if (idiag_dunxdzma/=0) call sum_mn_name(abs(p%uij(:,1,3)),idiag_dunxdzma)
         !if (idiag_dunydzma/=0) call sum_mn_name(abs(p%uij(:,2,3)),idiag_dunydzma)
-        if (idiag_neutralangmom/=0) &
-             call sum_lim_mn_name(p%rhon*(p%uun(:,2)*x(l1:l2)-p%uun(:,1)*y(m)),&
-             idiag_neutralangmom,p)
+        !if (idiag_neutralangmom/=0) &
+        !     call sum_lim_mn_name(p%rhon*(p%uun(:,2)*x(l1:l2)-p%uun(:,1)*y(m)),&
+        !     idiag_neutralangmom,p)
 !
 !  kinetic field components at one point (=pt)
 !
@@ -727,70 +747,79 @@ module NeutralVelocity
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension(nx,3) :: fvisc
+      real, dimension(nx,3) :: fvisc,unij5glnrhon
       real, dimension(nx) :: murho1,diffus_total
-      integer :: i
+      integer :: i,j
       type (pencil_case) :: p
 !
       intent(in) :: p
       intent(inout) :: df
 !
-      fvisc=0
-      diffus_total=0
+      fvisc=0.
+      diffus_nun=0.
 !
-      select case (iviscn)
+      do j=1,ninit
+         select case (iviscn(j))
 !
-      case('rho_nun-const') 
+         case('rho_nun-const') 
 !
 !  viscous force: mu/rho*(del2u+graddivu/3)
 !  -- the correct expression for rho*nu=const
 !
-         if (headtt) print*,'Viscous force (neutral):  mu/rhon*(del2un+graddivun/3)'
-         murho1=nun*p%rhon1  !(=mu/rhon)
-         do i=1,3
-            fvisc(:,i)=fvisc(:,i)+murho1*(p%del2un(:,i)+0.333333*p%graddivun(:,i))
-         enddo
-         !if (lpencil(i_visc_heat)) visc_heat=visc_heat + 2*nun*p%snij2*p%rhon1
-         if (lfirst.and.ldt) diffus_total=diffus_total+murho1
+            if (headtt) print*,'Viscous force (neutral):  mu/rhon*(del2un+graddivun/3)'
+            murho1=nun*p%rhon1  !(=mu/rhon)
+            do i=1,3
+               fvisc(:,i)=fvisc(:,i)+murho1*(p%del2un(:,i)+0.333333*p%graddivun(:,i))
+            enddo
+            !if (lpencil(i_visc_heat)) visc_heat=visc_heat + 2*nun*p%snij2*p%rhon1
+            if (lfirst.and.ldt) diffus_nun=diffus_nun+murho1
 
-     case('nun-const')
+         case('nun-const')
 !
 !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
 !  -- the correct expression for nu=const
 !
-        if (headtt) &
-             print*,'Viscous force (neutral): nun*(del2un+graddivun/3+2Sn.glnrhon)'
-        if(lneutraldensity) then
-           fvisc=fvisc+2*nun*p%snglnrhon+nun*(p%del2un+0.333333*p%graddivun)
-        else
-           fvisc=fvisc+nun*(p%del2un+0.333333*p%graddivun)
-        endif
+            if (headtt) &
+                 print*,'Viscous force (neutral): nun*(del2un+graddivun/3+2Sn.glnrhon)'
+            if(lneutraldensity) then
+               fvisc=fvisc+2*nun*p%snglnrhon+nun*(p%del2un+0.333333*p%graddivun)
+            else
+               fvisc=fvisc+nun*(p%del2un+0.333333*p%graddivun)
+            endif
         
         !if (lpencil(i_visc_heat)) visc_heat=visc_heat + 2*nun*p%snij2
-        if (lfirst.and.ldt) diffus_total=diffus_total+nun
+            if (lfirst.and.ldt) diffus_nun=diffus_nun+nun
 !
-     case ('')
-        ! do nothing
-     case default
-        if (lroot) print*, 'No such value for iviscn: ', trim(iviscn)
-        call stop_it('calc_viscous_forcing')
-     endselect
+         case('hyper3_nun-const')
+!
+!  Viscous force: nun*(del6un+Sn.glnrhon), where Sn_ij=d^5 un_i/dx_j^5
+!
+            call multmv(unij5,p%glnrhon,unij5glnrhon)
+!
+            if (headtt) print*, 'Viscous force (neutral): nun*(del6un+Sn.glnrhon)'
+            fvisc = fvisc + nun_hyper3*(p%del6un+unij5glnrhon)
+            if (lfirst.and.ldt) diffus_nun=diffus_nun+nun_hyper3*dxyz_6
+
+         case ('')
+            ! do nothing
+         case default
+            if (lroot) print*, 'No such value for iviscn(',i,'): ', trim(iviscn(i))
+            call stop_it('calc_viscous_forcing')
+         endselect
+      enddo
 !
 ! Add viscosity to the equation of motion
 !
      df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) + fvisc
 !
-!  Calculate max total diffusion coefficient for timestep calculation etc.
-!
-      diffus_nun=max(diffus_nun,diffus_total*dxyz_2)
-!
-      !if (ldiagnos) then 
-      !  if (idiag_dtnu/=0) &
-      !     call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
-      !   if (idiag_nu_LES /= 0) call sum_mn_name(nu_smag,idiag_nu_LES)
-      !   if (idiag_meshRemax/=0) &
-      !        call max_mn_name(sqrt(p%u2(:))*dxmax/p%diffus_total,idiag_meshRemax)
-      !endif
+      if (ldiagnos) then 
+        if (idiag_dtnun/=0) &
+           call max_mn_name(diffus_nun/cdtv,idiag_dtnun,l_dt=.true.)
+         if (idiag_meshRemax/=0) &
+              call max_mn_name(sqrt(p%un2(:))*dxmax/diffus_nun,idiag_meshRemax)
+         endif   
+
+      endif
 !
     endsubroutine calc_viscous_force_neutral
 !***********************************************************************
@@ -829,7 +858,7 @@ module NeutralVelocity
         idiag_unx2my=0; idiag_uny2my=0; idiag_unz2my=0
         idiag_unxunymy=0; idiag_unxunzmy=0; idiag_unyunzmy=0
         idiag_neutralangmom=0;
-        idiag_unrunpmr=0
+        idiag_unrunpmr=0; idiag_divunm=0
         idiag_un2mr=0; idiag_unrmr=0; idiag_unpmr=0; idiag_unzmr=0
       endif
 !
@@ -840,6 +869,7 @@ module NeutralVelocity
         call parse_name(iname,cname(iname),cform(iname),'un2m',idiag_un2m)
         call parse_name(iname,cname(iname),cform(iname),'unm2',idiag_unm2)
         call parse_name(iname,cname(iname),cform(iname),'dtun',idiag_dtun)
+        call parse_name(iname,cname(iname),cform(iname),'divunm',idiag_divunm)
         call parse_name(iname,cname(iname),cform(iname),'unrms',idiag_unrms)
         call parse_name(iname,cname(iname),cform(iname),'unmax',idiag_unmax)
         call parse_name(iname,cname(iname),cform(iname),'unxmax',idiag_unxmax)
@@ -958,6 +988,7 @@ module NeutralVelocity
         write(3,*) 'i_un2m=',idiag_un2m
         write(3,*) 'i_unm2=',idiag_unm2
         write(3,*) 'i_dtun=',idiag_dtun
+        write(3,*) 'i_divunm=',idiag_divunm
         write(3,*) 'i_unrms=',idiag_unrms
         write(3,*) 'i_unmax=',idiag_unmax
         write(3,*) 'i_unxmax=',idiag_unxmax
@@ -994,6 +1025,7 @@ module NeutralVelocity
         write(3,*) 'i_un2mr=',idiag_un2mr
         write(3,*) 'i_unrunpmr=',idiag_unrunpmr
         write(3,*) 'i_neutralangmom=',idiag_neutralangmom
+        write(3,*) 'i_unzm=',idiag_unzm
         write(3,*) 'nname=',nname
         write(3,*) 'iuun=',iuun
         write(3,*) 'iunx=',iunx

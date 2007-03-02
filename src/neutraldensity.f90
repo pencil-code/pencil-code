@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.4 2007-03-01 16:38:02 wlyra Exp $
+! $Id: neutraldensity.f90,v 1.5 2007-03-02 12:36:53 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -29,7 +29,8 @@ module NeutralDensity
   implicit none
 
   include 'neutraldensity.h'
-
+  
+  real :: kx_lnrhon=1.,ky_lnrhon=1.,kz_lnrhon=1.
   real :: ampllnrhon=0.,rhon_left=1.,rhon_right=1.
   real :: diffrhon=0.,diffrhon_hyper3=0.,diffrhon_shock=0.
   real :: lnrhon_const=0., rhon_const=1.
@@ -58,7 +59,7 @@ module NeutralDensity
        rhon_left,rhon_right,lnrhon_const,rhon_const, &
        idiffn,lneutraldensity_nolog,    &
        lcontinuity_neutral,lnrhon0,lnrhon_left,lnrhon_right, &
-       alpha,zeta
+       alpha,zeta,kx_lnrhon,ky_lnrhon,kz_lnrhon
 
   namelist /neutraldensity_run_pars/ &
        diffrhon,diffrhon_hyper3,diffrhon_shock,   &
@@ -102,7 +103,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.4 2007-03-01 16:38:02 wlyra Exp $")
+           "$Id: neutraldensity.f90,v 1.5 2007-03-02 12:36:53 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -317,6 +318,7 @@ module NeutralDensity
             case('const_lnrhon'); f(:,:,:,ilnrhon)=lnrhon_const
             case('const_rhon'); f(:,:,:,ilnrhon)=log(rhon_const)
             case('constant'); f(:,:,:,ilnrhon)=log(rhon_left)
+            case('sinwave-z'); call sinwave(ampllnrhon,f,ilnrhon,kz=kz_lnrhon)
             case('gaussian-noise')
                if (lnrhon_left /= 0.) f(:,:,:,ilnrhon)=lnrhon_left
                call gaunoise(ampllnrhon,f,ilnrhon,ilnrhon)
@@ -366,7 +368,7 @@ module NeutralDensity
 !
       if (ldensity_nolog) lpenc_requested(i_rhon)=.true.
       if (lcontinuity_neutral) then
-        lpenc_requested(i_divu)=.true.
+        lpenc_requested(i_divun)=.true.
         if (ldensity_nolog) then
           lpenc_requested(i_ungrhon)=.true.
         else
@@ -611,7 +613,6 @@ module NeutralDensity
 !
 !  Ionization and recombination
 !
-
       if (lneutraldensity_nolog) then
          df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - zeta*p%rhon + alpha*p%rho**2
          df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + zeta*p%rhon - alpha*p%rho**2
