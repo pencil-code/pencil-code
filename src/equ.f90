@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.351 2007-02-28 04:29:55 wlyra Exp $
+! $Id: equ.f90,v 1.352 2007-03-02 17:45:12 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -413,7 +413,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.351 2007-02-28 04:29:55 wlyra Exp $")
+           "$Id: equ.f90,v 1.352 2007-03-02 17:45:12 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -543,6 +543,7 @@ module Equ
         if (lfirst) then
           advec_uu=0.; advec_shear=0.; advec_hall=0.; advec_uun=0;
           advec_cs2=0.; advec_va2=0.; advec_crad2=0.; advec_uud=0;
+          advec_csn2=0
           diffus_pscalar=0.
           diffus_chiral=0.; diffus_diffrho=0.; diffus_cr=0.
           diffus_eta=0.; diffus_nu=0.; diffus_chi=0.
@@ -842,11 +843,12 @@ module Equ
 !
 ! WL: why isn't advec_uud in this calculation?
 !
-          maxadvec=advec_uu+advec_shear+advec_hall+ &
-              sqrt(advec_cs2+advec_va2+advec_crad2)
+          maxadvec=advec_uu+advec_shear+advec_hall+advec_uun+&
+              sqrt(advec_cs2+advec_va2+advec_crad2+advec_csn2)
           maxdiffus=max(diffus_nu,diffus_chi,diffus_eta,diffus_diffrho, &
               diffus_pscalar,diffus_cr,diffus_nud,diffus_diffnd,diffus_chiral, &
               diffus_diffrhon,diffus_nun)
+!
           if (nxgrid==1.and.nygrid==1.and.nzgrid==1) then
             maxadvec=0.
             maxdiffus=0.

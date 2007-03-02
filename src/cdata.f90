@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.356 2007-02-28 04:29:55 wlyra Exp $
+! ! $Id: cdata.f90,v 1.357 2007-03-02 17:45:11 wlyra Exp $
 
 module Cdata
 
@@ -25,7 +25,7 @@ module Cdata
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth
 
 ! timestep related:
-  real, dimension (nx) :: advec_uu,advec_shear,advec_hall
+  real, dimension (nx) :: advec_uu,advec_shear,advec_hall,advec_csn2
   real, dimension (nx) :: advec_cs2,advec_va2,advec_crad2,advec_uud,advec_uun
   real, dimension (nx) :: diffus_pscalar
   real, dimension (nx) :: diffus_chiral,diffus_diffrho,diffus_cr,diffus_nud,diffus_nun
