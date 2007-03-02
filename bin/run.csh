@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.88 2006-12-06 19:51:55 wlyra Exp $
+# CVS: $Id: run.csh,v 1.89 2007-03-02 08:18:13 dobler Exp $
 
 #                       run.csh
 #                      ---------
@@ -48,8 +48,8 @@ if ($local_disc) then
   if ($one_local_disc) then	# one common local disc
     foreach node ($nodelist)
       foreach d (`cd $datadir; ls -d proc* allprocs`)
-        $SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
-        if (-e $datadir/$d/global.dat) then $SCP $datadir/$d/global.dat ${node}:$SCRATCH_DIR/$d/
+        if (-e $datadir/$d/var.dat) $SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
+        if (-e $datadir/$d/global.dat) $SCP $datadir/$d/global.dat ${node}:$SCRATCH_DIR/$d/
         if ($lparticles) $SCP $datadir/$d/pvar.dat ${node}:$SCRATCH_DIR/$d/
         $SCP $datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/
       end

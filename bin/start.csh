@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.67 2006-12-06 19:53:17 wlyra Exp $
+# CVS: $Id: start.csh,v 1.68 2007-03-02 08:18:13 dobler Exp $
 
 #                       start.csh
 #                      -----------
@@ -129,9 +129,10 @@ endif
 
 # If local disk is used, copy var.dat back to the data directory
 if ($local_disc) then
-  echo "Copying var.dat back to data directory"
+  echo "Copying var.dat etc. back to data directory"
   $copysnapshots -v var.dat     >&! copy-snapshots.log
   if ($lparticles) $copysnapshots -v pvar.dat >>& copy-snapshots.log
+  $copysnapshots -v global.dat  >>& copy-snapshots.log
   $copysnapshots -v timeavg.dat >>& copy-snapshots.log
   $copysnapshots -v dxyz.dat    >>& copy-snapshots.log
 
