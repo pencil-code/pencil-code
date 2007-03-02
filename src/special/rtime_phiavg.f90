@@ -1,4 +1,4 @@
-! $Id: rtime_phiavg.f90,v 1.3 2007-02-26 21:43:10 brandenb Exp $
+! $Id: rtime_phiavg.f90,v 1.4 2007-03-02 18:01:09 wlyra Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -69,9 +69,10 @@ module Special
   integer, dimension(nrcylrun) :: k_tmp
 !
   real, dimension (nrcylrun,3) :: bavg_coarse,uavg_coarse
-  real, dimension (nrcylrun) :: rhoavg_coarse
+  real, dimension (nrcylrun) :: rhoavg_coarse,rcyl_coarse
   real, dimension (nx,3) :: bavg,uavg
   real, dimension (nx) :: rhoavg
+  real :: drc,r1,r2
 !
 ! Keep some over used pencils
 !
@@ -141,11 +142,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.3 2007-02-26 21:43:10 brandenb Exp $
+!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.4 2007-03-02 18:01:09 wlyra Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: rtime_phiavg.f90,v 1.3 2007-02-26 21:43:10 brandenb Exp $")
+           "$Id: rtime_phiavg.f90,v 1.4 2007-03-02 18:01:09 wlyra Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -170,15 +171,35 @@ module Special
 !  06-oct-03/tony: coded
 !
       use Cdata
-   !   use Density
       use EquationOfState
 
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-!!
-!!  Initialize any module variables which are parameter dependent
-!!
+      real :: rloop_int,rloop_ext,tmp,drc1
+      integer :: ir
+!
+!  Initialize any module variables which are parameter dependant
+!
+      tmp = (r_ext - r_int)/nrcylrun
+      !r1=r_int-0.75*tmp
+      !r2=r_ext+0.75*tmp
 
+      !drc=(r2 - r1)/nrcylrun !more half step for each
+      drc=tmp
+      drc1=1./drc
+
+!      rcyl_coarse = (/ (r1+ir*drc, ir=1,nrcylrun) /)
+
+      do ir=1,nrcylrun
+         rloop_int = r_int + (ir-1)*drc!r1 + (ir-1)*drc
+         rloop_ext = r_int +  ir   *drc!r1 +  ir   *drc
+         rcyl_coarse(ir)= 0.5*(rloop_int + rloop_ext)
+      enddo
+!
+      !print*,rcyl_coarse
+      !stop
+
+!
       if(NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine initialize_special
@@ -363,49 +384,22 @@ module Special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !   06-oct-03/tony: coded
+!   called on main loop - the average must be calculated BEFORE
 !
       use Mpicomm
       use General, only: spline
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension(nrcylrun) :: rcyl_coarse
-      real, dimension(nrcylrun) :: rmiddle
       real, dimension(nrcylrun) :: s_rho,rho_sum,ktot1
       real, dimension(nrcylrun,3) :: s_u,s_b,u_sum,b_sum
       real, dimension(nx,3) :: uuf,bbf
-      real :: rloop_int,rloop_ext,rmid,step
       integer, dimension(nrcylrun) :: k,ktot
       integer :: i,j,ir
       logical :: err
-!
-! in the first time step, there is no average yet
-! use the pencil value then. The same will be used
-! for r_int and r_ext
-!
-      if (lmagnetic) then
-        bavg(:,1)=p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy
-        bavg(:,2)=p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy
-        bavg(:,3)=p%bb(:,3)
-      endif
-!
-      if (lhydro) then
-        uavg(:,1)=p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy
-        uavg(:,2)=p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy
-        uavg(:,3)=p%uu(:,3)
-      endif
-!
-      if (.not.headtt) then
+      real :: rloop_int,rloop_ext
 !
 ! expand it onto the pencil with spline interpolation
-!
-        step = (r_ext - r_int)/nrcylrun
-        do ir=1,nrcylrun
-          rloop_int = r_int + (ir-1)*step
-          rloop_ext = r_int + ir*step
-          rmid = 0.5*(rloop_int + rloop_ext)
-          rcyl_coarse(ir)=rmid
-        enddo
 !
         if (ldensity) &
           call spline(rcyl_coarse,rhoavg_coarse,p%rcyl_mn,rhoavg,nrcylrun,nx,err)
@@ -432,101 +426,7 @@ module Special
               bavg(i,3)=p%bb(i,3)
             endif
           endif
-        enddo
-      endif
-!
-! rad, phi and zed
-!
-      if (lhydro) then
-        uuf(:,1)=p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy
-        uuf(:,2)=p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy
-        uuf(:,3)=p%uu(:,3)
-      endif
-      if (lmagnetic) then
-        bbf(:,1)=p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy
-        bbf(:,2)=p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy
-        bbf(:,3)=p%bb(:,3)
-      endif
-!
-! number of radial zones
-!
-      step=(r_ext - r_int)/nrcylrun
-!
-! each zone has its limits rloop_int and rloop_ext
-!
-      k=0
-      if (ldensity)  s_rho=0.
-      if (lhydro)    s_u=0.
-      if (lmagnetic) s_b=0.
-!
-      do ir=1,nrcylrun
-        rloop_int = r_int + (ir-1)*step
-        rloop_ext = r_int + ir*step
-        rmiddle(ir) = 0.5*(rloop_int + rloop_ext)
-        do i=1,nx
-          if ((p%rcyl_mn(i).le.rloop_ext).and.(p%rcyl_mn(i).ge.rloop_int)) then
-!
-            k(ir)=k(ir)+1
-            if (ldensity)    s_rho(ir) = s_rho(ir) + p%rho(i)
-!
-            do j=1,3
-              if (lhydro)    s_u(ir,j) = s_u(ir,j) + uuf(i,j)
-              if (lmagnetic) s_b(ir,j) = s_b(ir,j) + bbf(i,j)
-            enddo
-!
-          endif
-        enddo
-      enddo
-!                                                                                                                                                                          
-! go filling the sums and the counter in this processor                                                                                                                    
-!                                                                                                                                                                          
-      if (lfirstpoint) then
-        k_tmp = k
-        if (ldensity)  rho_tmp = s_rho
-        if (lhydro)    u_tmp=s_u
-        if (lmagnetic) b_tmp=s_b
-      else
-        k_tmp   = k_tmp + k
-        if (ldensity)  rho_tmp = rho_tmp+s_rho
-        if (lhydro)    u_tmp=u_tmp+s_u
-        if (lmagnetic) b_tmp=b_tmp+s_b
-      endif
-!
-! In the last point the sums are finalized
-!
-      if (llastpoint) then
-!
-! Sum across processors, send to root
-!
-        call mpireduce_sum_int(k_tmp,ktot,nrcylrun)
-        if (ldensity) call mpireduce_sum(rho_tmp,rho_sum,nrcylrun)
-        do j=1,3
-          if (lhydro)    call mpireduce_sum(u_tmp(:,j),u_sum(:,j),nrcylrun)
-          if (lmagnetic) call mpireduce_sum(b_tmp(:,j),b_sum(:,j),nrcylrun)
-        enddo
-!
-! Broadcast the values
-!
-        call mpibcast_int(ktot,nrcylrun)
-        if (ldensity) call mpibcast_real(rho_sum,nrcylrun)
-        do j=1,3
-          if (lhydro)    call mpibcast_real(u_sum(:,j),nrcylrun)
-          if (lmagnetic) call mpibcast_real(b_sum(:,j),nrcylrun)
-        enddo
-!
-! stop if any ktot is zero
-!
-        if (any(ktot == 0)) &
-          call error("set_new_average","ktot=0")
-!
-        ktot1=1./ktot
-        if (ldensity)  rhoavg_coarse=rho_sum*ktot1
-        do j=1,3
-          if (lhydro)    uavg_coarse(:,j)=u_sum(:,j)*ktot1
-          if (lmagnetic) bavg_coarse(:,j)=b_sum(:,j)*ktot1
-        enddo
-!
-      endif
+       enddo
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -537,6 +437,7 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
+      real, dimension (nx) :: rhoavg_ep,drive_time,pborder
 !
       if (NO_WARN) print*,df,p
 !
@@ -572,7 +473,7 @@ module Special
       endif
 !
       if (l1ddiagnos.and.idiag_urupmr/=0) &
-           call phizsum_mn_name_r(ur*up,idiag_urupmr)
+           call phizsum_mn_name_r(p%rho*ur*up,idiag_urupmr)
 !
       if (NO_WARN) print*,df,p
 !
@@ -590,17 +491,13 @@ module Special
       type (pencil_case), intent(in) :: p
       real, dimension (nx) :: br,bp,bz
 !
-      df(l1:l2,m,n,iax)=x(l1:l2)*p%rcyl_mn1
-      df(l1:l2,m,n,iay)=y(  m  )*p%rcyl_mn1 
+! put an if here to activate it only for large Bz fields in 
+! keplerian advection
 !
-      !if (it==1) then
-      !   df(l1:l2,m,n,iax:iay) = 0.
-      !else
-         !df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - &
-         !     uavg(:,2)*bavg(:,3)*x(l1:l2)*p%rcyl_mn1
-         !df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - &
-         !     uavg(:,2)*bavg(:,3)*y(m)*p%rcyl_mn1
-      !endif
+      df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - &
+           uavg(:,2)*bavg(:,3)*x(l1:l2)*p%rcyl_mn1
+      df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - &
+           uavg(:,2)*bavg(:,3)*y(m)*p%rcyl_mn1
 ! Keep compiler quiet by ensuring every parameter is used
       if (NO_WARN) print*,df,p
 
@@ -683,18 +580,103 @@ module Special
 !   Some precalculated pencils of data are passed in for efficiency
 !   others may be calculated directly from the f array
 !
+!   Called from equ, but before the evolving loop that calls the dynamical equations.
+!   Set the 1D coarse average here. This average is LOCAL to this special module   
+!
+!   calculate the averages
+!
 !   06-jul-06/tony: coded
 !
       use Cdata
+      use Mpicomm
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(nrcylrun) :: s_rho,rho_sum,ktot1
+      real, dimension(nrcylrun,3) :: s_u,s_b,u_sum,b_sum
+      real, dimension(nx,3) :: uuf,bbf
+      integer, dimension(nrcylrun) :: k,ktot
+      real, dimension(nx) :: prho,prcyl_mn,prcyl_mn1,sin,cos,puu1,puu2,puu3
+      integer :: i,j,ir
+      logical :: err,lfp,llp
+      real :: rloop_int,rloop_ext,ur,up,rr1
+      real,dimension(mvar) :: a,b,c
+!
+      integer :: i0,ll
+      real, dimension(nx) :: rr
+!
+      do m=m1,m2
+         do n=n1,n2
+!            
+            lfp=((m==m1).and.(n==n1))
+            llp=((m==m2).and.(n==n2))
+!
+            prcyl_mn=max(sqrt(x(l1:l2)**2+y(m)**2),tini)
+            prho=f(l1:l2,m,n,ilnrho)
+            prcyl_mn1=1./prcyl_mn
+            sin=y(m)*prcyl_mn1 ; cos= x(l1:l2)*prcyl_mn1
+            puu1=f(l1:l2,m,n,iux);puu2=f(l1:l2,m,n,iuy);puu3=f(l1:l2,m,n,iuz)
+!
+            uuf(:,1)=  puu1*cos+puu2*sin
+            uuf(:,2)= -puu1*sin+puu2*cos
+            uuf(:,3)=  puu3
+!
+            k=0
+            s_rho=0.
+            s_u=0.
+            do ir=1,nrcylrun
+               rloop_int = r_int + (ir-1)*drc
+               rloop_ext = r_int +  ir   *drc
+               do i=1,nx
+                  if ((prcyl_mn(i).le.rloop_ext).and.(prcyl_mn(i).ge.rloop_int)) then
+                     k(ir)=k(ir)+1
+                     s_rho(ir) = s_rho(ir) + prho(i)
+                     do j=1,3
+                        s_u(ir,j) = s_u(ir,j) + uuf(i,j)
+                     enddo
+                  endif
+               enddo
+            enddo
+!
+            if (lfp) then
+               k_tmp=k
+               rho_tmp = s_rho
+               u_tmp=s_u
+            else
+               k_tmp = k_tmp + k
+               rho_tmp = rho_tmp+s_rho
+               u_tmp=u_tmp+s_u
+            endif
+!
+            if (llp) then
+               call mpireduce_sum_int(k_tmp,ktot,nrcylrun)
+               call mpireduce_sum(rho_tmp,rho_sum,nrcylrun)
+               do j=1,3
+                  call mpireduce_sum(u_tmp(:,j),u_sum(:,j),nrcylrun)
+               enddo
+!
+               call mpibcast_int(ktot,nrcylrun)
+               call mpibcast_real(rho_sum,nrcylrun)
+               do j=1,3
+                  call mpibcast_real(u_sum(:,j),nrcylrun)
+               enddo
+!
+               if (any(ktot == 0)) &
+                    call error("set_new_average","ktot=0")
+                ktot1=1./ktot
+                rhoavg_coarse=rho_sum*ktot1
+                do j=1,3
+                   uavg_coarse(:,j)=u_sum(:,j)*ktot1
+                enddo
+             endif
+!
+          enddo
+       enddo
 !
       if (NO_WARN) print*,f(1,1,1,1)
 !
     endsubroutine special_before_boundary
-!
-!********************************************************************
-
+!**********************************************************************
+!**********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
 !**  This is an automatically generated include file that creates  **
