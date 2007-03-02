@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.7 2007-03-02 12:45:15 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.8 2007-03-02 17:43:51 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -62,7 +62,7 @@ module NeutralVelocity
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_un2m=0,idiag_unm2=0
-  integer :: idiag_unxpt=0,idiag_unypt=0,idiag_unzpt=0
+  integer :: idiag_unxpt=0,idiag_unypt=0,idiag_unzpt=0,idiag_dtcn=0
   integer :: idiag_dtun=0,idiag_unrms=0,idiag_unmax=0,idiag_unzrms=0,idiag_unzrmaxs=0
   integer :: idiag_unxmax=0,idiag_unymax=0,idiag_unzmax=0
   integer :: idiag_unxm=0,idiag_unym=0,idiag_unzm=0
@@ -83,7 +83,7 @@ module NeutralVelocity
   integer :: idiag_neutralangmom=0
   integer :: idiag_un2mr=0,idiag_unrunpmr=0
   integer :: idiag_unrmr=0,idiag_unpmr=0,idiag_unzmr=0
-  integer :: idiag_divunm=0
+  integer :: idiag_divunm=0,idiag_dtnun=0
 
   contains
 
@@ -128,7 +128,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.7 2007-03-02 12:45:15 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.8 2007-03-02 17:43:51 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -556,7 +556,14 @@ module NeutralVelocity
             df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) &
                  -csn20*p%glnrhon(:,j)
          enddo
+!
+! csn2/dx^2 for timestep
+! have to include a selection of equation of state...
+!         
       endif
+!
+      if (lfirst.and.ldt) advec_csn2=csn20*dxyz_2
+      if (headtt.or.ldebug) print*,'duun_dt: max(advec_csn2) =',maxval(advec_csn2)
 !
 !  ``uun/dx'' for timestep
 !
@@ -574,6 +581,7 @@ module NeutralVelocity
       if (ldiagnos) then
         if (headtt.or.ldebug) print*,'duun_dt: Calculate maxima and rms values...'
         if (idiag_dtun/=0) call max_mn_name(advec_uun/cdt,idiag_dtun,l_dt=.true.)
+        if (idiag_dtcn/=0) call max_mn_name(sqrt(advec_csn2)/cdt,idiag_dtcn,l_dt=.true.)
         if (idiag_unrms/=0)   call sum_mn_name(p%un2,idiag_unrms,lsqrt=.true.)
         if (idiag_unmax/=0)   call max_mn_name(p%un2,idiag_unmax,lsqrt=.true.)
         if (idiag_unzrms/=0) &
@@ -772,7 +780,7 @@ module NeutralVelocity
                fvisc(:,i)=fvisc(:,i)+murho1*(p%del2un(:,i)+0.333333*p%graddivun(:,i))
             enddo
             !if (lpencil(i_visc_heat)) visc_heat=visc_heat + 2*nun*p%snij2*p%rhon1
-            if (lfirst.and.ldt) diffus_nun=diffus_nun+murho1
+            if (lfirst.and.ldt) diffus_nun=diffus_nun+murho1*dxyz_2
 
          case('nun-const')
 !
@@ -788,7 +796,7 @@ module NeutralVelocity
             endif
         
         !if (lpencil(i_visc_heat)) visc_heat=visc_heat + 2*nun*p%snij2
-            if (lfirst.and.ldt) diffus_nun=diffus_nun+nun
+            if (lfirst.and.ldt) diffus_nun=diffus_nun+nun*dxyz_2
 !
          case('hyper3_nun-const')
 !
@@ -811,6 +819,11 @@ module NeutralVelocity
 ! Add viscosity to the equation of motion
 !
      df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) + fvisc
+!
+     if (ldiagnos) then
+        if (idiag_dtnun/=0) &
+             call max_mn_name(diffus_nun/cdtv,idiag_dtnun,l_dt=.true.)
+     endif
 !
     endsubroutine calc_viscous_force_neutral
 !***********************************************************************
@@ -837,6 +850,7 @@ module NeutralVelocity
       if (lreset) then
         idiag_un2m=0; idiag_unm2=0
         idiag_unxpt=0; idiag_unypt=0; idiag_unzpt=0; idiag_dtun=0
+        idiag_dtnun=0; idiag_dtcn=0        
         idiag_unrms=0; idiag_unmax=0; idiag_unzrms=0; idiag_unzrmaxs=0
         idiag_unxmax=0; idiag_unymax=0; idiag_unzmax=0
         idiag_unxm=0; idiag_unym=0; idiag_unzm=0
@@ -860,6 +874,8 @@ module NeutralVelocity
         call parse_name(iname,cname(iname),cform(iname),'un2m',idiag_un2m)
         call parse_name(iname,cname(iname),cform(iname),'unm2',idiag_unm2)
         call parse_name(iname,cname(iname),cform(iname),'dtun',idiag_dtun)
+        call parse_name(iname,cname(iname),cform(iname),'dtcn',idiag_dtcn)
+        call parse_name(iname,cname(iname),cform(iname),'dtnun',idiag_dtnun)
         call parse_name(iname,cname(iname),cform(iname),'divunm',idiag_divunm)
         call parse_name(iname,cname(iname),cform(iname),'unrms',idiag_unrms)
         call parse_name(iname,cname(iname),cform(iname),'unmax',idiag_unmax)
@@ -979,6 +995,8 @@ module NeutralVelocity
         write(3,*) 'i_un2m=',idiag_un2m
         write(3,*) 'i_unm2=',idiag_unm2
         write(3,*) 'i_dtun=',idiag_dtun
+        write(3,*) 'i_dtcn=',idiag_dtcn
+        write(3,*) 'i_dtnun=',idiag_dtnun
         write(3,*) 'i_divunm=',idiag_divunm
         write(3,*) 'i_unrms=',idiag_unrms
         write(3,*) 'i_unmax=',idiag_unmax
