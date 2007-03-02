@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.6 2007-03-02 12:36:53 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.7 2007-03-02 12:45:15 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -128,7 +128,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.6 2007-03-02 12:36:53 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.7 2007-03-02 12:45:15 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -811,15 +811,6 @@ module NeutralVelocity
 ! Add viscosity to the equation of motion
 !
      df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) + fvisc
-!
-      if (ldiagnos) then 
-        if (idiag_dtnun/=0) &
-           call max_mn_name(diffus_nun/cdtv,idiag_dtnun,l_dt=.true.)
-         if (idiag_meshRemax/=0) &
-              call max_mn_name(sqrt(p%un2(:))*dxmax/diffus_nun,idiag_meshRemax)
-         endif   
-
-      endif
 !
     endsubroutine calc_viscous_force_neutral
 !***********************************************************************
