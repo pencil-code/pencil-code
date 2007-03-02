@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.50 2006-11-30 09:03:35 dobler Exp $
+! $Id: eos_temperature_ionization.f90,v 1.51 2007-03-02 05:59:35 brandenb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -129,7 +129,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.50 2006-11-30 09:03:35 dobler Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.51 2007-03-02 05:59:35 brandenb Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1224,6 +1224,23 @@ module EquationOfState
       endselect
 !
     endsubroutine bc_ss_temp_z
+!***********************************************************************
+    subroutine bc_temp_z(f,topbot)
+!
+!  boundary condition for temperature: constant temperature
+!
+!  26-aug-2003/axel: one can set the value using the "set" condition
+!   
+      use Mpicomm, only: stop_it
+      use Cdata
+! 
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+!   
+      call stop_it("bc_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
+      if (NO_WARN) print*,f,topbot
+!
+    endsubroutine bc_temp_z
 !***********************************************************************
     subroutine bc_lnrho_temp_z(f,topbot)
 !
