@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.25 2006-11-16 19:58:19 mee Exp $',
+  cvsid='$Id: start.in,v 1.26 2007-03-02 18:01:27 wlyra Exp $',
   ip=6,                        ! debugging parameter
   xyz0  = -2.6,-2.6,-0.26,       ! first corner of box
   xyz1  =  2.6, 2.6, 0.26,       ! second corner of box
@@ -29,6 +29,7 @@
   initlnrho='globaldisc' 
   lnrho_const=0.  
   ldensity_nolog=T
+  ptlaw=2, plaw=0
 /
 &particles_init_pars
   initxxp='random', initvvp='random'
