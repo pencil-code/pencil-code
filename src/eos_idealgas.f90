@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.81 2007-03-01 19:53:06 dintrans Exp $
+! $Id: eos_idealgas.f90,v 1.82 2007-03-02 09:06:28 dintrans Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -109,7 +109,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.81 2007-03-01 19:53:06 dintrans Exp $')
+           '$Id: eos_idealgas.f90,v 1.82 2007-03-02 09:06:28 dintrans Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1695,59 +1695,6 @@ module EquationOfState
       endselect
 !
     endsubroutine bc_ss_temp_z
-!***********************************************************************
-    subroutine bc_temp_z(f,topbot)
-!
-!  boundary condition for temperature: constant temperature
-!
-!  01-mar-2007/dintrans: inspired from bc_ss_temp_z
-!
-      use Cdata
-      use Gravity
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i
-!
-      if(ldebug) print*,'bc_temp_z: cs2top, cs2bot=',cs2top, cs2bot
-!
-!  Constant temperature/sound speed for entropy, i.e. antisymmetric
-!  ln(cs2) relative to cs2top/cs2bot.
-!  This assumes that the density is already set (ie density _must_ register
-!  first!)
-!
-!  check whether we want to do top or bottom (this is processor dependent)
-!
-      select case(topbot)
-!
-!  bottom boundary
-!
-      case('bot')
-        if (ldebug) print*, &
-                   'bc_temp_z: set z bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0.) print*, &
-                   'bc_temp_z: cannot have cs2bot = ', cs2bot, ' <= 0'
-        f(:,:,n1,ilnTT) = log(cs2bot/gamma1)
-        do i=1,nghost
-          f(:,:,n1-i,ilnTT) = -f(:,:,n1+i,ilnTT)
-        enddo
-!
-!  top boundary
-!
-      case('top')
-        if (ldebug) print*, &
-                   'bc_temp_z: set z top temperature: cs2top=',cs2top
-        if (cs2top<=0.) print*, &
-                   'bc_temp_z: cannot have cs2top = ', cs2top, ' <= 0'
-        f(:,:,n2,ilnTT) = log(cs2top/gamma1)
-        do i=1,nghost
-          f(:,:,n2+i,ilnTT) = -f(:,:,n2-i,ilnTT)
-        enddo
-      case default
-        call fatal_error('bc_temp_z','invalid argument')
-      endselect
-!
-    endsubroutine bc_temp_z
 !***********************************************************************
     subroutine bc_lnrho_temp_z(f,topbot)
 !

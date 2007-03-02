@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.45 2007-03-02 05:59:35 brandenb Exp $
+! $Id: eos_ionization.f90,v 1.46 2007-03-02 09:06:28 dintrans Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.45 2007-03-02 05:59:35 brandenb Exp $")
+           "$Id: eos_ionization.f90,v 1.46 2007-03-02 09:06:28 dintrans Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1470,23 +1470,6 @@ module EquationOfState
       if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_temp_z
-!***********************************************************************
-    subroutine bc_temp_z(f,topbot)
-!
-!  boundary condition for temperature: constant temperature
-!
-!  26-aug-2003/axel: one can set the value using the "set" condition
-!   
-      use Mpicomm, only: stop_it
-      use Cdata
-! 
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!   
-      call stop_it("bc_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f,topbot
-!
-    endsubroutine bc_temp_z
 !***********************************************************************
     subroutine bc_lnrho_temp_z(f,topbot)
 !

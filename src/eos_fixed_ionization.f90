@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.31 2007-03-02 05:59:34 brandenb Exp $
+! $Id: eos_fixed_ionization.f90,v 1.32 2007-03-02 09:06:28 dintrans Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.31 2007-03-02 05:59:34 brandenb Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.32 2007-03-02 09:06:28 dintrans Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1044,23 +1044,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_temp_z
-!***********************************************************************
-    subroutine bc_temp_z(f,topbot)
-!
-!  boundary condition for temperature: constant temperature
-!
-!  26-aug-2003/axel: one can set the value using the "set" condition
-!   
-      use Mpicomm, only: stop_it
-      use Cdata
-! 
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!   
-      call stop_it("bc_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f,topbot
-!
-    endsubroutine bc_temp_z
 !***********************************************************************
     subroutine bc_lnrho_temp_z(f,topbot)
 !

@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.136 2007-03-01 19:53:06 dintrans Exp $
+! $Id: boundcond.f90,v 1.137 2007-03-02 09:06:28 dintrans Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -372,7 +372,11 @@ module Boundcond
               case ('cT')       ! constant temp.
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
                 if (j==iss)    call bc_ss_temp_z(f,topbot)
-                if (j==ilnTT)  call bc_temp_z(f,topbot)
+                if (j==ilnTT)  then
+                  force_lower_bound='cT'
+                  force_upper_bound='cT'
+                  call bc_force_z(f,-1,topbot,j)
+                endif
               case ('cT2')       ! constant temp. (keep lnrho)
                 if (j==iss)   call bc_ss_temp2_z(f,topbot)
               case ('hs')       ! hydrostatic equilibrium
@@ -1497,6 +1501,7 @@ module Boundcond
 !  26-apr-2004/wolf: coded
 !
       use Cdata
+      use EquationOfState, only: gamma1, cs2top, cs2bot
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1516,6 +1521,8 @@ module Boundcond
             call uu_driver(f)
          case ('kepler')
             call bc_force_kepler(f,n1,j)
+         case ('cT')
+            f(:,:,n1,ilnTT) = log(cs2bot/gamma1)
          case default
             if (lroot) print*, "No such value for force_lower_bound: <", &
                  trim(force_lower_bound),">"
@@ -1538,6 +1545,8 @@ module Boundcond
             call uu_driver(f)
          case ('kepler')
             call bc_force_kepler(f,n2,j)
+         case ('cT')
+            f(:,:,n2,ilnTT) = log(cs2top/gamma1)
          case default
             if (lroot) print*, "No such value for force_upper_bound: <", &
                  trim(force_upper_bound),">"
