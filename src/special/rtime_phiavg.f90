@@ -1,4 +1,4 @@
-! $Id: rtime_phiavg.f90,v 1.4 2007-03-02 18:01:09 wlyra Exp $
+! $Id: rtime_phiavg.f90,v 1.5 2007-03-03 17:41:35 wlyra Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -142,11 +142,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.4 2007-03-02 18:01:09 wlyra Exp $
+!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.5 2007-03-03 17:41:35 wlyra Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: rtime_phiavg.f90,v 1.4 2007-03-02 18:01:09 wlyra Exp $")
+           "$Id: rtime_phiavg.f90,v 1.5 2007-03-03 17:41:35 wlyra Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -603,6 +603,10 @@ module Special
 !
       integer :: i0,ll
       real, dimension(nx) :: rr
+!
+      bavg_coarse=0.
+      uavg_coarse=0
+      rhoavg_coarse=0.
 !
       do m=m1,m2
          do n=n1,n2
