@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.4 2007-03-01 19:53:06 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.5 2007-03-03 19:37:17 dintrans Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -36,6 +36,7 @@ module Entropy
   real :: chi=0.0,heat_uniform=0.0
   real :: zbot=0.0,ztop=0.0
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
+  real :: center1_x=0., center1_y=0., center1_z=0.
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
@@ -52,7 +53,7 @@ module Entropy
   namelist /entropy_init_pars/ &
       initlnTT,radius_lnTT,ampl_lnTT,widthlnTT, &
       lnTT_left,lnTT_right,lnTT_const,TT_const, &
-      kx_lnTT,ky_lnTT,kz_lnTT
+      kx_lnTT,ky_lnTT,kz_lnTT,center1_x,center1_y,center1_z
 
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -93,7 +94,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.4 2007-03-01 19:53:06 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.5 2007-03-03 19:37:17 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -161,8 +162,8 @@ module Entropy
 !  07-nov-2001/wolf: coded 
 !  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
 !
-      use General, only: chn
-      use Sub, only: blob
+      use General,  only: chn
+      use Sub,      only: blob
       use Initcond, only: jump
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -183,7 +184,11 @@ module Entropy
       case('zero', '0'); f(:,:,:,ilnTT) = 0.
       case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
       case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
-         
+      case('bubble_hs')
+!         print*,'init_lnTT: put bubble in hydrostatic equilibrium: radius_lnTT,ampl_lnTT=',radius_lnTT,ampl_lnTT,center1_x,center1_y,center1_z
+          call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
+          call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)
+
          !
         case default
           !
@@ -289,7 +294,6 @@ module Entropy
       if (lpencil_in(i_fpres)) then
         lpencil_in(i_cs2)=.true.
         lpencil_in(i_glnrho)=.true.
-        lpencil_in(i_gss)=.true.
         lpencil_in(i_glnTT)=.true.
       endif
 !
@@ -320,20 +324,12 @@ module Entropy
         call u_dot_grad(f,ilnTT,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_lnTT)
       endif
 !
-      ! fpres
+! fpres
+!
       if (lpencil(i_fpres)) then
-        if (leos_idealgas) then
-          do j=1,3
-            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma11
-          enddo
-!  TH: The following would work if one uncomments the intrinsic operator
-!  extensions in sub.f90. Please Test.
-!  p%fpres      =-p%cs2*(p%glnrho + p%glnTT)*gamma11
-        else
-          do j=1,3
-            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
-          enddo
-        endif
+        do j=1,3
+          p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma11
+        enddo
       endif
 !
     endsubroutine calc_pencils_entropy
@@ -384,19 +380,13 @@ module Entropy
 !
 !  subtract pressure gradient term in momentum equation
 !
-      if (lhydro.and.lpressuregradient_gas) then
-!        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fpres(:,iux:iuz)
-         do j=1,3
-           ju=j+iuu-1
-           df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) + p%fpres(:,j)
-         enddo
-      endif
+      if (lhydro.and.lpressuregradient_gas) &
+         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fpres(:,iux:iuz)
 !
 !  advection term and PdV-work
 !
-      if (ladvection_temperature) then
+      if (ladvection_temperature) &
          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%uglnTT
-      endif
 !
 !  Calculate viscous contribution to temperature
 !
@@ -413,9 +403,7 @@ module Entropy
 !  Need to add left-hand-side of the continuity equation (see manual)
 !  Check this
 
-      if (ldensity) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma1*p%divu
-      endif
+      if (ldensity) df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma1*p%divu
 !
 !  Calculate entropy related diagnostics
 !

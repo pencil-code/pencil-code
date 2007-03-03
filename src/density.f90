@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.313 2007-03-01 19:53:06 dintrans Exp $
+! $Id: density.f90,v 1.314 2007-03-03 19:37:17 dintrans Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.313 2007-03-01 19:53:06 dintrans Exp $")
+           "$Id: density.f90,v 1.314 2007-03-03 19:37:17 dintrans Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1570,17 +1570,19 @@ module Density
 !  Stratification depends on the gravity potential
 !
       if (lroot) print*,'isothermal_density: isothermal stratification'
-      if ( (.not. lentropy) .and. (gamma/=1.0) ) then
-        call fatal_error('isothermal_density','for gamma/=1.0, you need entropy!');
+      if (gamma/=1.0) then
+        if ((.not. lentropy) .or. (.not. ltemperature) ) & 
+          call fatal_error('isothermal_density','for gamma/=1.0, you need entropy or temperature!');
       endif
+!
       do n=n1,n2
         do m=m1,m2
           call potential(x(l1:l2),y(m),z(n),pot=pot)
           tmp=-gamma*pot/cs20
           f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + lnrho0 + tmp
-
           if (lentropy) f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) &
                -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
+          if (ltemperature) f(l1:l2,m,n,ilnTT)=log(cs20/gamma1)
         enddo
       enddo
 !
