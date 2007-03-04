@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.35 2007-02-28 17:06:15 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.36 2007-03-04 11:07:05 brandenb Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar,run2D=run2D
 COMPILE_OPT IDL2,HIDDEN
@@ -150,6 +150,7 @@ varcontent[iaatest].idlvarloc= 'aatest_loc'
 varcontent[iaatest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,3*9)*one'
 varcontent[iaatest].skip  = 26+9
 
+default,iuun,0
 varcontent[iuun].variable   = 'Velocity of neutrals (uun)'
 varcontent[iuun].idlvar     = 'uun'
 varcontent[iuun].idlinit    = INIT_3VECTOR
@@ -157,6 +158,7 @@ varcontent[iuun].idlvarloc  = 'uun_loc'
 varcontent[iuun].idlinitloc = INIT_3VECTOR_LOC
 varcontent[iuun].skip       = 2
 
+default,ilnrhon,0
 varcontent[ilnrhon].variable   = 'Log density of neutrals (lnrhon)'
 varcontent[ilnrhon].idlvar     = 'lnrhon'
 varcontent[ilnrhon].idlinit    = INIT_SCALAR
