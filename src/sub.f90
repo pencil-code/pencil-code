@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.287 2007-03-06 11:33:15 bingert Exp $
+! $Id: sub.f90,v 1.288 2007-03-06 22:03:57 dobler Exp $
 
 module Sub
 
@@ -4249,18 +4249,6 @@ nameloop: do
         endif
 !
       endsubroutine remove_file
-!***********************************************************************
-      subroutine touch_file(fname)
-!
-!  touch file (used for code locking)
-!  25-may-03/axel: coded
-!
-        character (len=*) :: fname
-!
-        open(1,FILE=fname)
-        close(1)
-!
-      endsubroutine touch_file
 !***********************************************************************
       function read_line_from_file(fname)
 !

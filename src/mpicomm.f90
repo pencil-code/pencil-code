@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.207 2007-01-13 17:36:16 ajohan Exp $
+! $Id: mpicomm.f90,v 1.208 2007-03-06 22:03:57 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1852,6 +1852,19 @@ module Mpicomm
       mpiwtick = MPI_WTICK()
     endfunction mpiwtick
 !***********************************************************************
+    subroutine touch_file(fname)
+!
+!  touch file (used for code locking)
+!  25-may-03/axel: coded
+!  06-mar-07/wolf: moved here from sub.f90, so we can use it below
+!
+      character (len=*) :: fname
+!
+      open(1,FILE=fname)
+      close(1)
+!
+    endsubroutine touch_file
+!***********************************************************************
     subroutine die_gracefully()
 !
 !  Stop having shutdown MPI neatly
@@ -1860,6 +1873,12 @@ module Mpicomm
 !
 !  29-jun-05/tony: coded
 !
+      !
+      !  tell the world something went wrong -- mpirun may not propagate
+      !  an error status
+      !
+      if (lroot) call touch_file('ERROR') 
+
       call mpifinalize
       STOP 1                    ! Return nonzero exit status
     endsubroutine die_gracefully
@@ -1875,8 +1894,9 @@ module Mpicomm
       character (len=*) :: msg
 !
       if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
-      call mpifinalize
-      STOP 1                    ! Return nonzero exit status
+
+      call die_gracefully()
+!
     endsubroutine stop_it
 !***********************************************************************
     subroutine stop_it_if_any(stop_flag,msg)
