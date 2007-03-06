@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.137 2007-03-02 09:06:28 dintrans Exp $
+! $Id: boundcond.f90,v 1.138 2007-03-06 13:59:23 bingert Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1938,6 +1938,9 @@ module Boundcond
        if (tr /= tl) then
           uxd  = (t*unit_time - (tl+delta_t)) * (uxr - uxl) / (tr - tl) + uxl
           uyd  = (t*unit_time - (tl+delta_t)) * (uyr - uyl) / (tr - tl) + uyl
+       else
+          uxd = uxl
+          uyd = uyl
        endif
 !
 !   suppress footpoint motion at low plasma beta
@@ -1969,10 +1972,10 @@ module Boundcond
 !
 !   limit plasma beta
 !
-       where (bb2 .gt. 1.e-20)
+       where (bb2 .gt. sqrt(tini))
           betaq =  pp / bb2
        elsewhere
-          betaq = pp * 1.e20
+          betaq = pp * sqrt(tini)
        endwhere
 !
        quenching = (1.+betaq**2)/(3. +betaq**2)
@@ -1983,7 +1986,7 @@ module Boundcond
           f(l1:l2,m1:m2,j,iux) =  uxd(:,ipy*ny+1:(ipy+1)*ny) *quenching
           f(l1:l2,m1:m2,j,iuy) =  uyd(:,ipy*ny+1:(ipy+1)*ny) *quenching
        enddo
-
+!
      endsubroutine uu_driver
 !***********************************************************************
 endmodule Boundcond
