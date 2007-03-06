@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.328 2007-03-01 23:55:14 brandenb Exp $
+! $Id: hydro.f90,v 1.329 2007-03-06 01:04:12 joishi Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -145,6 +145,7 @@ module Hydro
   integer :: idiag_u2mr=0,idiag_urupmr=0
   integer :: idiag_urmr=0,idiag_upmr=0,idiag_uzmr=0
   integer :: idiag_ormr=0,idiag_opmr=0,idiag_ozmr=0
+  integer :: idiag_uxfampm=0,idiag_uyfampm=0,idiag_uzfampm=0
 
 
   contains
@@ -188,7 +189,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.328 2007-03-01 23:55:14 brandenb Exp $")
+           "$Id: hydro.f90,v 1.329 2007-03-06 01:04:12 joishi Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -866,8 +867,8 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: pdamp
-      real :: c2,s2
+      real, dimension (nx) :: pdamp,space_part
+      real :: c2,s2,kx
       integer :: j
 !
       intent(in) :: f,p
@@ -1110,6 +1111,17 @@ module Hydro
         if (idiag_u3u21m/=0) call sum_mn_name(p%u3u21,idiag_u3u21m)
         if (idiag_u1u32m/=0) call sum_mn_name(p%u1u32,idiag_u1u32m)
         if (idiag_u2u13m/=0) call sum_mn_name(p%u2u13,idiag_u2u13m)
+!
+! fourier amplitude f(t) for non-axisymmetric waves: u_x = f(t)*exp[i(kx*x+ky*y+kz*z)]
+!
+        if(idiag_uxfampm/=0 .or. idiag_uyfampm/=0 .or. idiag_uzfampm/=0) then
+          kx = kx_uu + qshear*Omega*ky_uu*t
+          space_part = sin(kx*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) + tini
+        endif
+!
+        if(idiag_uxfampm/=0) call sum_mn_name(p%uu(:,1)/space_part,idiag_uxfampm)
+        if(idiag_uyfampm/=0) call sum_mn_name(p%uu(:,2)/space_part,idiag_uyfampm)
+        if(idiag_uzfampm/=0) call sum_mn_name(p%uu(:,3)/space_part,idiag_uzfampm)
 !
       endif
 !
@@ -1746,6 +1758,7 @@ module Hydro
         idiag_urupmr=0
         idiag_u2mr=0; idiag_urmr=0; idiag_upmr=0; idiag_uzmr=0
         idiag_ormr=0; idiag_opmr=0; idiag_ozmr=0
+        idiag_uxfampm=0; idiag_uyfampm=0; idiag_uzfampm=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1812,6 +1825,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
         call parse_name(iname,cname(iname),cform(iname),'fxbym',idiag_fxbym)
         call parse_name(iname,cname(iname),cform(iname),'fxbzm',idiag_fxbzm)
+        call parse_name(iname,cname(iname),cform(iname),'uxfampm',idiag_uxfampm)
+        call parse_name(iname,cname(iname),cform(iname),'uyfampm',idiag_uyfampm)
+        call parse_name(iname,cname(iname),cform(iname),'uzfampm',idiag_uzfampm)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -1963,6 +1979,9 @@ module Hydro
         write(3,*) 'i_u3u21m=',idiag_u3u21m
         write(3,*) 'i_u1u32m=',idiag_u1u32m
         write(3,*) 'i_u2u13m=',idiag_u2u13m
+        write(3,*) 'i_uxfampm=',idiag_uxfampm
+        write(3,*) 'i_uyfampm=',idiag_uyfampm
+        write(3,*) 'i_uzfampm=',idiag_uzfampm
         write(3,*) 'i_uxpt=',idiag_uxpt
         write(3,*) 'i_uypt=',idiag_uypt
         write(3,*) 'i_uzpt=',idiag_uzpt
