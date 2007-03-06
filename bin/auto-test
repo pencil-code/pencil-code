@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.88 2007-01-30 07:57:20 dobler Exp $
+# CVS: $Id: auto-test,v 1.89 2007-03-06 00:04:44 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -178,7 +178,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.88 2007-01-30 07:57:20 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.89 2007-03-06 00:04:44 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -931,10 +931,22 @@ sub test_rundir {
     my $t4 = time();
     if ($time) {
         print "    Time used: ",
-          s_to_hms($t3-$t0, 44),
-          " = ", s_to_hms($t1-$t0),
-          " + ", s_to_hms($t3-$t1),
+          s_to_hms(time_diff($t0,$t3), 44),
+          " = ", s_to_hms(time_diff($t0,$t1)),
+          " + ", s_to_hms(time_diff($t1,$t3)),
           "\n";
+    }
+}
+# ---------------------------------------------------------------------- #
+sub time_diff{
+# Return difference of times if both args are defined, undef otherwise
+    my $t1 = shift;
+    my $t2 = shift;
+
+    if (defined($t1) && defined($t2)) {
+        return $t2-$t1;
+    } else {
+        return undef;
     }
 }
 # ---------------------------------------------------------------------- #
@@ -943,20 +955,27 @@ sub s_to_hms{
     my $secs  = shift;
     my $width = (shift || 0);
 
-    my $ss = $secs % 60;
-    my $mm = floor($secs/60) % 60;
-    my $hh = floor($secs/3600) % 24;
-    my $dd = floor($secs/86400);
+    my $string;
 
-    my $string = sprintf("%02d:%02d", $mm,$ss);
-    if ($hh) { $string = sprintf("%02d:", $hh) . $string };
-    if ($dd) { $string = sprintf("%dd", $dd) . $string };
+    # Not much to do if arg is undef:
+    if (! defined($secs)) {
+        $string = 'undef';
+    } else {
+        my $ss = $secs % 60;
+        my $mm = floor($secs/60) % 60;
+        my $hh = floor($secs/3600) % 24;
+        my $dd = floor($secs/86400);
+
+        $string = sprintf("%02d:%02d", $mm,$ss);
+        if ($hh) { $string = sprintf("%02d:", $hh) . $string };
+        if ($dd) { $string = sprintf("%dd", $dd) . $string };
+    }
 
     if (length($string) < $width) {
         $string = (" " x ($width-length($string))) . $string;
     };
 
-    $string;
+    return $string;
 }
 # ---------------------------------------------------------------------- #
 sub postprocess {
