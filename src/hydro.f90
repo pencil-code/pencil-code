@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.329 2007-03-06 01:04:12 joishi Exp $
+! $Id: hydro.f90,v 1.330 2007-03-06 22:06:15 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -189,7 +189,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.329 2007-03-06 01:04:12 joishi Exp $")
+           "$Id: hydro.f90,v 1.330 2007-03-06 22:06:15 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1642,9 +1642,14 @@ module Hydro
           siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
           sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
         elseif (iforcing_continuous=='RobertsFlow') then
-          if (lroot) print*,'forcing_continuous: RobertsFlow'
+          if (lroot) print*,'forcing_continuous: Roberts Flow'
           sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
           siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+        elseif (iforcing_continuous=='nocos') then
+          if (lroot) print*,'forcing_continuous: nocos flow'
+          sinx=sin(k1_ff*x)
+          siny=sin(k1_ff*y)
+          sinz=sin(k1_ff*z)
         elseif (iforcing_continuous=='TG') then
           if (lroot) print*,'forcing_continuous: TG'
           sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
@@ -1675,6 +1680,11 @@ module Hydro
         forcing_rhs(:,1)=-fact*cosx(l1:l2)*siny(m)
         forcing_rhs(:,2)=+fact*sinx(l1:l2)*cosy(m)
         forcing_rhs(:,3)=+fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
+      elseif (iforcing_continuous=='nocos') then
+        fact=ampl_ff
+        forcing_rhs(:,1)=fact*sinz(n)
+        forcing_rhs(:,2)=fact*sinx(l1:l2)
+        forcing_rhs(:,3)=fact*siny(m)
       elseif (iforcing_continuous=='TG') then
         fact=2.*ampl_ff
         forcing_rhs(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
