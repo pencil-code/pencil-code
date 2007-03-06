@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: local,v 1.5 2005-06-26 17:34:16 eos_merger_tony Exp $
+# CVS: $Id: local,v 1.6 2007-03-06 21:59:18 dobler Exp $
 
 # Name:   local
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -9,6 +9,12 @@
 #   will not work under some unices (but under Linux).
 
 if ( ($#argv < 1) ||  ("$1" == "-h") || ("$1" == "--help") ) goto usage
+
+set hard = 0
+if ( ("$1" == "-H") || ("$1" == "--hard") ) then
+  set hard = 1
+  shift
+endif
 
 set tmpfile = tmp.$$
 
@@ -20,10 +26,14 @@ endif
 
 foreach f ( $* )
   if (-l $f) then
-    if (-d $f) then		# link to directory
-      cp -rp $deref $f $tmpfile && rm $f && mv $tmpfile $f
-    else			# link to file
-      cp -p $f $tmpfile && rm $f && mv $tmpfile $f
+    if ($hard) then
+      ln -f `readlink $f` $f
+    else
+      if (-d $f) then		# link to directory
+        cp -rp $deref $f $tmpfile && rm $f && mv $tmpfile $f
+      else			# link to file
+        cp -p $f $tmpfile && rm $f && mv $tmpfile $f
+      endif
     endif
   else
     echo "Not a link: $f"
@@ -36,9 +46,10 @@ usage:
 set cmd_name = "$0"             # OSF1 is idiosyncratic
 set cmd_name = ${cmd_name:t}
 echo "Usage:"
-echo "    $cmd_name <file1> [<file2> ..]"
+echo "    $cmd_name [-H] <file1> [<file2> ..]"
 echo ""
 echo "Replace a link to a file by a copy. Will also work on directories,"
 echo "but only under some unix dialects (Linux and OSF1 in particular)."
+echo "With '-H', replace soft link by a hard link"
 
 # End of file local
