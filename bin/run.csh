@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.89 2007-03-02 08:18:13 dobler Exp $
+# CVS: $Id: run.csh,v 1.90 2007-03-06 17:35:25 brandenb Exp $
 
 #                       run.csh
 #                      ---------
@@ -79,7 +79,7 @@ if ($local_disc) then
         set j=`expr $j + 1`
       end
       if (-e $datadir/allprocs/dxyz.dat) then
-        $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/      
+        $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/
       endif
     end
   endif
@@ -144,7 +144,7 @@ endif
 # With this method one can only reload a new executable.
 # One cannot change directory, nor are the var.dat files returned to server.
 # See the NEWDIR method below for more options.
-if (-e "RERUN") then 
+if (-e "RERUN") then
   rm -f RERUN
   echo
   echo "======================================================================="
@@ -153,13 +153,13 @@ if (-e "RERUN") then
   echo "======================================================================="
   echo
   goto rerun
-endif  
+endif
 # ---------------------------------------------------------------------- #
 
 # On machines with local scratch disc, copy var.dat back to the data
 # directory
 if ($local_disc) then
-  echo "Copying all var.dat, VAR*, TIMEAVG*, dxyz.dat, timeavg.dat and crash. dat back from local scratch disks"
+  echo "Copying all var.dat, VAR*, TIMEAVG*, dxyz.dat, timeavg.dat and crash.dat back from local scratch disks"
   $copysnapshots -v var.dat     >&! copy-snapshots2.log
   if ($lparticles) $copysnapshots -v pvar.dat >>& copy-snapshots2.log
   $copysnapshots -v -1          >>& copy-snapshots2.log
@@ -216,7 +216,7 @@ if (-e "NEWDIR") then
     echo "Rerunning; current run status: $run_status"
     goto newdir
   endif
-endif  
+endif
 # ====================================================================== #
 
 # Shut down lam if we have started it
