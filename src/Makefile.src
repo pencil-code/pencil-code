@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.283 2007-03-04 19:21:37 brandenb Exp $
+### $Id: Makefile.src,v 1.284 2007-03-06 13:37:36 tgastine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -305,10 +305,10 @@ LD_FFTW2=
 #FC=f95 -dusty #(davey[12])
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11)
 #CC=mpicc #(obelix)
-#FC=ifort -stand f90 #(Kolmogorov|shal|efigi)
-#FFLAGS=-O3 #(Kolmogorov|shal|efigi)
-##CC=gcc #(Kolmogorov|shal|efigi)
-##CFLAGS=-O3 -DFUNDERSC=1 #(Kolmogorov|shal|efigi)
+#FC=ifort -stand f90 #(Kolmogorov|shal|efigi|pcgastine)
+#FFLAGS=-O3 #(Kolmogorov|shal|efigi|pcgastine)
+##CC=gcc #(Kolmogorov|shal|efigi|pcgastine)
+##CFLAGS=-O3 -DFUNDERSC=1 #(Kolmogorov|shal|efigi|pcgastine)
 #CFLAGS=-O3 -DFUNDERSC=2 #(Kepler)
 #LD_MPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil #(Kolmogorov|shal|efigi)
 #LD_MPI=-I/usr/include -pthread -L/usr/lib64 -llammpio -llamf77mpi -lmpi -llam -laio -laio -lutil #(Kepler)
