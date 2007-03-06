@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.314 2007-03-03 19:37:17 dintrans Exp $
+! $Id: density.f90,v 1.315 2007-03-06 08:38:05 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.314 2007-03-03 19:37:17 dintrans Exp $")
+           "$Id: density.f90,v 1.315 2007-03-06 08:38:05 dobler Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1571,7 +1571,7 @@ module Density
 !
       if (lroot) print*,'isothermal_density: isothermal stratification'
       if (gamma/=1.0) then
-        if ((.not. lentropy) .or. (.not. ltemperature) ) & 
+        if ((.not. lentropy) .and. (.not. ltemperature)) & 
           call fatal_error('isothermal_density','for gamma/=1.0, you need entropy or temperature!');
       endif
 !
