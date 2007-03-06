@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.90 2007-03-06 17:35:25 brandenb Exp $
+# CVS: $Id: run.csh,v 1.91 2007-03-06 22:33:46 dobler Exp $
 
 #                       run.csh
 #                      ---------
@@ -125,6 +125,7 @@ if ($?LOADL_STEP_ID) then
 endif
 
 # Run run.x
+rm -f 'ERROR'
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
 echo $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops >! run_command.log
@@ -178,10 +179,10 @@ if ($local_disc) then
   end
 
   if ($remove_scratch_root) then
-    rm -rf $SCRATCH_DIR/*
     rm -rf $SCRATCH_DIR
   endif
 endif
+
 echo "Done"
 
 # look for NEWDIR file 
@@ -225,7 +226,16 @@ if ($booted_lam) lamhalt
 # remove LOCK file
 if (-e "LOCK") rm -f LOCK
 
-exit $run_status		# propagate status of mpirun
+# Detect error status flagged by code (for cases where this does not get
+# propagated to the mpirun status):
+if (-e 'ERROR') then
+  echo "Found ERROR file from run.x"
+  set run_status2 = 16
+else
+  set run_status2 = 0
+endif
+
+exit ( $run_status | $run_status2 ) # propagate status of mpirun
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h -o run.`timestr` -e run.`timestr` run.csh

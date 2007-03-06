@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.68 2007-03-02 08:18:13 dobler Exp $
+# CVS: $Id: start.csh,v 1.69 2007-03-06 22:33:46 dobler Exp $
 
 #                       start.csh
 #                      -----------
@@ -113,6 +113,7 @@ if ($local_binary) then
 endif
 
 # Run start.x
+rm -f 'ERROR'
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops"
 time $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
@@ -121,7 +122,7 @@ echo ""
 date
 
 # Not sure it makes any sense to continue after mpirun had an error:
-if ($status) then
+if ($start_status) then
   echo "Error status $status found -- aborting"
   exit $start_status
 endif
@@ -144,7 +145,16 @@ endif
 # remove LOCK file
 if (-e "LOCK") rm -f LOCK
 
-exit $start_status		# propagate status of mpirun
+# Detect error status flagged by code (for cases where this does not get
+# propagated to the mpirun status):
+if (-e 'ERROR') then
+  echo "Found ERROR file from start.x"
+  set start_status2 = 16
+else
+  set start_status2 = 0
+endif
+
+exit ( $start_status | $start_status2 )        # propagate status of mpirun
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x
