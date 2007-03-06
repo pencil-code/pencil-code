@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.286 2007-02-25 10:24:02 brandenb Exp $
+! $Id: sub.f90,v 1.287 2007-03-06 11:33:15 bingert Exp $
 
 module Sub
 
@@ -4730,8 +4730,8 @@ nameloop: do
 !
       real, dimension (nx,3,3) :: ecr_ij,bij
       real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp1,gvKpara1
-      real, dimension (nx) :: tmp,abs_b,b1,del2ecr,tmpj,vKperp,vKpara,tmpi,gecr2
-      real, dimension (nx) :: hhh2,quenchfactor,rhs
+      real, dimension (nx) :: abs_b,b1,del2ecr,gecr2,vKperp,vKpara
+      real, dimension (nx) :: hhh2,quenchfactor,rhs,tmp,tmpi,tmpj,tmpk
       real :: limiter_tensordiff=3.
       integer :: i,j,k
       logical, optional :: llog
@@ -4749,7 +4749,9 @@ nameloop: do
 !
 !  calculate first H_i
 !
+      del2ecr=0.
       do i=1,3
+        del2ecr=del2ecr+ecr_ij(:,i,i)
         hhh(:,i)=0.
         do j=1,3
           tmpj(:)=0.
@@ -4773,13 +4775,9 @@ nameloop: do
 !
 !  dot Hessian matrix of ecr with bi*bj, and add into tmp
 !
-      del2ecr=0.
-      do j=1,3
-        del2ecr=del2ecr+ecr_ij(:,j,j)
-        do i=1,3
-          tmp(:)=tmp(:)+bunit(:,i)*bunit(:,j)*ecr_ij(:,i,j)
-        enddo
-      enddo
+      call multmv_mn(ecr_ij,bunit,hhh)
+      call dot_mn(hhh,bunit,tmpj)
+      tmp = tmp+tmpj
 !
 !  calculate (Gi*ni)^2 needed for lnecr form; also add into tmp
 !
@@ -4805,13 +4803,11 @@ nameloop: do
       call dot_mn(gvKperp1,gecr,tmpj)
 !
 !  nonuniform conductivities, add terms into tmpj
+
+      call dot(bunit,gvKpara1-gvKperp1,tmpi)
+      call dot(bunit,gecr,tmpk)
+      tmpj = tmpj+tmpi*tmpk
 !
-      do i=1,3
-        tmpi(:)=bunit(:,i)*(gvKpara1(:,i)-gvKperp1(:,i))
-        do j=1,3
-          tmpj(:)=tmpj(:)+bunit(:,j)*gecr(:,j)*tmpi(:)
-        enddo
-      enddo
 !
 !  calculate rhs
 !
