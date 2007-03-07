@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.289 2007-03-07 04:23:41 wlyra Exp $
+! $Id: sub.f90,v 1.290 2007-03-07 13:49:53 wlyra Exp $
 
 module Sub
 
@@ -1679,8 +1679,7 @@ module Sub
       if (lcylgrid) then
          g(:,3)=g(:,3)+f(l1:l2,m,n,k1+2)*rcyl_mn1
       endif
-
-
+!
     endsubroutine curl
 !***********************************************************************
     subroutine curli(f,k,g,i)
@@ -2038,6 +2037,15 @@ module Sub
         enddo
       endif
 !
+!  for cylindrical, only
+!  Psi_{,phi^ pom^} = Psi_{,pom^ phi^} - Psi_{,\phi^}/pom
+!
+      if (lcylgrid) then
+         do i=1,3
+            d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*rcyl_mn1
+         enddo
+      endif
+!
 !  calculate b_i,j = eps_ikl A_l,jk, as well as optionally,
 !  del2_i = A_i,jj and graddiv_i = A_j,ji
 !
@@ -2056,6 +2064,13 @@ module Sub
         bij(:,1,2)=bij(:,1,2)+aij(:,3,2)*r1_mn*cotth(m)-aa(:,3)*r2_mn*sin2th(m)
       endif
 !
+!  corrections for cylindrical coordinates
+!
+      if (lcylgrid) then
+        bij(:,3,2)=bij(:,3,2)+ aij(:,2,2)*r1_mn
+        bij(:,3,1)=bij(:,3,1)+(aij(:,2,1)+aij(:,1,2))*rcyl_mn1-aa(:,2)*rcyl_mn2
+      endif   
+!
 !  calculate del2 and graddiv, if requested
 !
       if (present(del2)) then
@@ -2064,8 +2079,6 @@ module Sub
       if (present(graddiv)) then
         graddiv(:,:) = d2A(:,:,1,1) + d2A(:,:,2,2) + d2A(:,:,3,3)
       endif
-!
-      if (lcylgrid) call fatal_error('bij_etc','not implemented for lcylgrid')
 !
     endsubroutine bij_etc
 !***********************************************************************

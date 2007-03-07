@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.43 2007-03-07 04:23:41 wlyra Exp $
+! $Id: deriv.f90,v 1.44 2007-03-07 13:49:53 wlyra Exp $
 
 module Deriv
 
@@ -655,9 +655,6 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !
-
-      if (lcylgrid) call fatal_error('derij','not implemented for lcylgrid')
-
       if (lbidiagonal_derij) then
         !
         ! Use bidiagonal mixed-derivative operator, i.e.
@@ -811,6 +808,15 @@ module Deriv
         if ((i==3.and.j==1)) df=df*r1_mn*sin1th(m) !(minus extra terms)
         if ((i==2.and.j==3)) df=df*r2_mn*sin1th(m)
         if ((i==3.and.j==2)) df=df*r2_mn*sin1th(m) !(minus extra terms)
+      endif
+!
+      if (lcylgrid) then
+        if ((i==1.and.j==2)) df=df*rcyl_mn1
+        if ((i==2.and.j==1)) df=df*rcyl_mn1 !(minus extra terms)
+        if ((i==1.and.j==3)) df=df
+        if ((i==3.and.j==1)) df=df
+        if ((i==2.and.j==3)) df=df
+        if ((i==3.and.j==2)) df=df
       endif
 !
     endsubroutine derij
