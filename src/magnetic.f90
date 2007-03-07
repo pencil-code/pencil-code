@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.391 2007-02-28 16:27:18 wlyra Exp $
+! $Id: magnetic.f90,v 1.392 2007-03-07 13:29:49 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -222,7 +222,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.391 2007-02-28 16:27:18 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.392 2007-03-07 13:29:49 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1669,7 +1669,7 @@ module Magnetic
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
-      real, dimension(nx) :: Aphi,rcyl_mn1
+      real, dimension(nx) :: Aphi
       real :: kr,kr1
       integer :: ju,j
 !
