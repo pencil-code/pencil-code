@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.288 2007-03-06 22:03:57 dobler Exp $
+! $Id: sub.f90,v 1.289 2007-03-07 04:23:41 wlyra Exp $
 
 module Sub
 
@@ -1150,12 +1150,16 @@ module Sub
 !
       b=aij(:,1,1)+aij(:,2,2)+aij(:,3,3)
 !
-!  adjustments for spherical corrdinate system
+!  adjustments for spherical coordinate system
 !
       if (lspherical) then
         b=b+2.*r1_mn*a(:,1)+r1_mn*cotth(m)*a(:,2)
       endif
 !
+      if (lcylgrid) then
+        b=b+rcyl_mn1*a(:,1)
+      endif
+
     endsubroutine div_mn
 !***********************************************************************
     subroutine curl_mn(aij,b,a)
@@ -1174,12 +1178,16 @@ module Sub
       b(:,2)=aij(:,1,3)-aij(:,3,1)
       b(:,3)=aij(:,2,1)-aij(:,1,2)
 !
-!  adjustments for spherical corrdinate system
+!  adjustments for spherical coordinate system
 !
       if (lspherical.and.present(a)) then
         b(:,1)=b(:,1)+a(:,3)*r1_mn*cotth(m)
         b(:,2)=b(:,2)-a(:,3)*r1_mn
         b(:,3)=b(:,3)+a(:,2)*r1_mn
+      endif
+!
+      if (lcylgrid.and.present(a)) then
+         b(:,3)=b(:,3)+a(:,2)*rcyl_mn1
       endif
 !
     endsubroutine curl_mn
@@ -1668,6 +1676,11 @@ module Sub
         g(:,3)=g(:,3)+f(l1:l2,m,n,k1+2)*r1_mn
       endif
 !
+      if (lcylgrid) then
+         g(:,3)=g(:,3)+f(l1:l2,m,n,k1+2)*rcyl_mn1
+      endif
+
+
     endsubroutine curl
 !***********************************************************************
     subroutine curli(f,k,g,i)
@@ -1721,13 +1734,18 @@ module Sub
       intent(out) :: del2f
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: del2f,d2fdx,d2fdy,d2fdz
+      real, dimension (nx) :: del2f,d2fdx,d2fdy,d2fdz,tmp
       integer :: k
 !
       call der2(f,k,d2fdx,1)
       call der2(f,k,d2fdy,2)
       call der2(f,k,d2fdz,3)
       del2f=d2fdx+d2fdy+d2fdz
+!
+      if (lcylgrid) then
+         call der(f,k,tmp,1)
+         del2f=del2f+tmp*rcyl_mn1
+      endif
 !
     endsubroutine del2
 !***********************************************************************
@@ -1737,6 +1755,7 @@ module Sub
 !  28-oct-97/axel: coded
 !
       use Cdata
+      use Deriv,only:der
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: del2f
@@ -1753,6 +1772,13 @@ module Sub
         call del2(f,k1+i,tmp)
         del2f(:,i)=tmp
       enddo
+!
+      if (lcylgrid) then
+         call der(f,k1+2,tmp,2)
+         del2f(:,1)=del2f(:,1) -(2*tmp+f(l1:l2,m,n,k1+1))*rcyl_mn1**2
+         call der(f,k1+1,tmp,2)
+         del2f(:,2)=del2f(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn1**2
+      endif
 !
     endsubroutine del2v
 !***********************************************************************
@@ -2039,6 +2065,8 @@ module Sub
         graddiv(:,:) = d2A(:,:,1,1) + d2A(:,:,2,2) + d2A(:,:,3,3)
       endif
 !
+      if (lcylgrid) call fatal_error('bij_etc','not implemented for lcylgrid')
+!
     endsubroutine bij_etc
 !***********************************************************************
     subroutine g2ij(f,k,g)
@@ -2293,6 +2321,13 @@ module Sub
         ugradf(:,1)=ugradf(:,1)-r1_mn*(uu(:,2)**2+uu(:,3)**2)
         ugradf(:,2)=ugradf(:,2)+r1_mn*(uu(:,1)*uu(:,2)-cotth(m)*uu(:,3)**2)
         ugradf(:,3)=ugradf(:,3)+r1_mn*(uu(:,1)*uu(:,3)+cotth(m)*uu(:,2)*uu(:,3))
+      endif
+!
+!  same... have to adjust it for the magnetic field or other vectors
+!
+      if (lcylgrid) then
+         ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)**2)
+         ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,1)*uu(:,2))
       endif
 !
     endsubroutine u_dot_grad_vec
@@ -4249,6 +4284,18 @@ nameloop: do
         endif
 !
       endsubroutine remove_file
+!***********************************************************************
+      subroutine touch_file(fname)
+!
+!  touch file (used for code locking)
+!  25-may-03/axel: coded
+!
+        character (len=*) :: fname
+!
+        open(1,FILE=fname)
+        close(1)
+!
+      endsubroutine touch_file
 !***********************************************************************
       function read_line_from_file(fname)
 !

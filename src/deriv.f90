@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.42 2007-02-25 10:24:01 brandenb Exp $
+! $Id: deriv.f90,v 1.43 2007-03-07 04:23:41 wlyra Exp $
 
 module Deriv
 
@@ -66,6 +66,7 @@ module Deriv
                   -  9.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
                   +      (f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
           if (lspherical) df=df*r1_mn
+          if (lcylgrid)   df=df*rcyl_mn1
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in y-direction'
@@ -122,6 +123,7 @@ module Deriv
                   -  9.0*(f(l1:l2,m+2,n)-f(l1:l2,m-2,n)) &
                   +      (f(l1:l2,m+3,n)-f(l1:l2,m-3,n)))
           if (lspherical) df=df*r1_mn
+          if (lcylgrid)   df=df*rcyl_mn1
         else
           df=0.
           if (ip<=5) print*, 'der_other: Degenerate case in y-direction'
@@ -182,6 +184,7 @@ module Deriv
                    - 27.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
                    +  2.0*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
           if (lspherical) df2=df2*r2_mn
+          if (lcylgrid)   df2=df2*rcyl_mn2
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dy_tilde(m)*df
@@ -652,6 +655,8 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !
+
+      if (lcylgrid) call fatal_error('derij','not implemented for lcylgrid')
 
       if (lbidiagonal_derij) then
         !

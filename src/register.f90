@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.202 2007-02-28 04:29:55 wlyra Exp $
+! $Id: register.f90,v 1.203 2007-03-07 04:23:41 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -308,8 +308,10 @@ module Register
 !
       if (coord_system=='cartesian') then
         lspherical=.false.
+        lcylgrid=.false.
       elseif (coord_system=='spherical') then
         lspherical=.true.
+        lcylgrid=.false.
 !
 !  calculate 1/r
 !
@@ -341,6 +343,12 @@ module Register
 !
 !  end of coord_system=='spherical' query
 !
+      elseif (coord_system=='cylindric') then
+         lspherical=.false.
+         lcylgrid=.true.
+!
+         rcyl_mn1=max(1./x(l1:l2),tini)
+         rcyl_mn2=rcyl_mn1**2
       endif
 !
 !  print the value for which output is being produced

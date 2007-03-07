@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.357 2007-03-02 17:45:11 wlyra Exp $
+! ! $Id: cdata.f90,v 1.358 2007-03-07 04:23:41 wlyra Exp $
 
 module Cdata
 
@@ -20,10 +20,10 @@ module Cdata
 
 ! coordinate system (alternatives: spherical, cylindric)
   character (len=9) :: coord_system='cartesian'
-  logical :: lspherical=.false.,lcylindrical=.false.
+  logical :: lspherical=.false.,lcylindrical=.false.,lcylgrid=.false.
   real, dimension (nx) :: r1_mn,r2_mn
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth
-
+  real, dimension (nx) :: rcyl_mn1,rcyl_mn2
 ! timestep related:
   real, dimension (nx) :: advec_uu,advec_shear,advec_hall,advec_csn2
   real, dimension (nx) :: advec_cs2,advec_va2,advec_crad2,advec_uud,advec_uun
