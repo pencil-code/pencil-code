@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.315 2007-03-06 08:38:05 dobler Exp $
+! $Id: density.f90,v 1.316 2007-03-07 13:19:22 dintrans Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.315 2007-03-06 08:38:05 dobler Exp $")
+           "$Id: density.f90,v 1.316 2007-03-07 13:19:22 dintrans Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -739,6 +739,10 @@ module Density
         f(:,:,:,iuy) = f(:,:,:,iuy) &
              + abs(ampllnrho*cmplx(0,-0.5*Omega/(kx_lnrho*rho0))) * &
              sin(kx_lnrho*xx+complex_phase(ampllnrho*cmplx(0,-0.5*Omega/(kx_lnrho*rho0))))
+
+      case('toto')
+        call information('init_lnrho','toto')
+        call toto(f)
 
       case default
         !
@@ -1759,5 +1763,40 @@ module Density
 !
     endsubroutine mass_source
 
+!***********************************************************************
+    subroutine toto(f)
+!
+!  Initialize density based on specified radial profile in
+!  a spherical shell
+!
+!  07-mar-07/dintrans: coded
+!
+      use Gravity, only: g0
+      use EquationOfState
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (nx) :: temp,lnTT,lnrho,ss
+      real :: beta1,temp_top,temp_bot
+!
+      beta1=-g0/(mpoly+1)*gamma/gamma1  ! gamma1/gamma=R_{*} (for cp=1)
+      temp_top=cs20/gamma1
+      temp_bot=temp_top+beta1*(r_int-r_ext)
+      cs2top=cs20
+      cs2bot=gamma1*temp_bot
+      print*,'toto: beta1,temp_top,r_ext=',beta1,temp_top,r_ext
+!
+      do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
+!
+        temp=temp_top+beta1*(x(l1:l2)-r_ext)
+        lnTT=alog(temp)
+        f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*lnTT-mpoly*log(temp_top)
+        lnrho=f(l1:l2,m,n,ilnrho)
+        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
+        f(l1:l2,m,n,iss)=ss
+      enddo
+!
+    endsubroutine toto
 !***********************************************************************
 endmodule Density
