@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.37 2007-01-31 12:50:12 wlyra Exp $
+! $Id: shear.f90,v 1.38 2007-03-09 14:04:16 pkapyla Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.37 2007-01-31 12:50:12 wlyra Exp $")
+           "$Id: shear.f90,v 1.38 2007-03-09 14:04:16 pkapyla Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -172,15 +172,10 @@ module Shear
 ! in hydro.
 !
       if (lhydro) then
-        if (theta==0) then
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear*f(l1:l2,m,n,iux)
-        else
-          if (headtt) print*,'Sure you want Sshear with finite theta??'
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-               -Sshear*cos(theta*pi/180.)*f(l1:l2,m,n,iux)
-        endif
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear*f(l1:l2,m,n,iux)
+
         if (luy0_extra) df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) &
-            -f(l1:l2,m,n,iuz)*duy0dz_extra(n-nghost)
+           -f(l1:l2,m,n,iuz)*duy0dz_extra(n-nghost)
       endif
 !
 !  Loop over dust species
@@ -190,14 +185,8 @@ module Shear
 !
 !  Correct Coriolis force term for all dust species
 !
-          if (theta==0) then
-            df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) &
-                - Sshear*f(l1:l2,m,n,iudx(k))
-          else
-            if (headtt) print*,'Sure you want Sshear with finite theta??'
-            df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) &
-                - Sshear*cos(theta*pi/180.)*f(l1:l2,m,n,iudx(k))
-          endif
+           df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) &
+              - Sshear*f(l1:l2,m,n,iudx(k))
 !
 !  End loop over dust species
 !
