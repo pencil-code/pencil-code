@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.352 2007-03-02 17:45:12 wlyra Exp $
+! $Id: equ.f90,v 1.353 2007-03-09 07:46:10 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -413,7 +413,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.352 2007-03-02 17:45:12 wlyra Exp $")
+           "$Id: equ.f90,v 1.353 2007-03-09 07:46:10 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -1154,7 +1154,7 @@ f_loop:   do iv=1,mvar
       lfirst=.true.
       df=0.0
       call random_seed_wrapper(put=iseed_org)
-      do i=1,mvar
+      do i=1,mfarray
         call random_number_wrapper(f_other(:,:,:,i))
       enddo
       fname=0.0
