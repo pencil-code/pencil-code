@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.284 2007-03-06 13:37:36 tgastine Exp $
+### $Id: Makefile.src,v 1.285 2007-03-09 00:23:48 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -1014,9 +1014,9 @@ mpicomm_.f90:      mpicomm.f90
 $(MPICOMM_FIX)$(PC_META_TYPE).o: mpicomm.h $(MPICOMM_FIX).f90 cdata$(PC_META_TYPE).o
 	@fflags="$(FFLAGS_SLOPPY)"; \
 	if [ -z "$$fflags" ]; then fflags="$(FFLAGS) $(F90FLAGS)"; fi; \
-	echo $(FC) $$fflags $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) \
+	echo $(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
 	    -o $(MPICOMM_FIX)$(PC_META_TYPE).o -c $(MPICOMM_FIX).f90; \
-	$(FC) $$fflags $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) \
+	$(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
 	    -o $(MPICOMM_FIX)$(PC_META_TYPE).o -c $(MPICOMM_FIX).f90
 #
 
