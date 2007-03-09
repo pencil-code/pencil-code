@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.138 2007-03-06 13:59:23 bingert Exp $
+! $Id: boundcond.f90,v 1.139 2007-03-09 14:25:45 dintrans Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -127,6 +127,11 @@ module Boundcond
                   call bc_van_x(f,topbot,j)
                 case ('cT')       ! constant temp.
                   if (j==iss) call bc_ss_temp_x(f,topbot)
+                  if (j==ilnTT)  then
+                    force_lower_bound='cT'
+                    force_upper_bound='cT'
+                    call bc_force_x(f,-1,topbot,j)
+                  endif
                 case ('sT')       ! symmetric temp.
                   if (j==iss) call bc_ss_stemp_x(f,topbot)
                 case ('in')
@@ -1561,6 +1566,58 @@ module Boundcond
       endselect
 !
     endsubroutine bc_force_z
+!***********************************************************************
+    subroutine bc_force_x(f,sgn,topbot,j)
+!
+!  Force values of j-th variable on x-boundaries topbot.
+!
+!  09-mar-2007/dintrans: coded
+!
+      use Cdata
+      use EquationOfState, only: gamma1, cs2top, cs2bot
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: sgn,i,j
+!
+      select case(topbot)
+!
+!  lower boundary
+!
+      case('bot')
+         select case (force_lower_bound)
+         case ('cT')
+            f(l1,:,:,ilnTT) = log(cs2bot/gamma1)
+         case default
+            if (lroot) print*, "No such value for force_lower_bound: <", &
+                 trim(force_lower_bound),">"
+            call stop_it("")
+         endselect
+         !
+         !  Now fill ghost zones imposing antisymmetry w.r.t. the values just set:
+         !
+         do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
+!
+!  upper boundary
+!
+      case('top')
+         select case (force_upper_bound)
+         case ('cT')
+            f(l2,:,:,ilnTT) = log(cs2top/gamma1)
+         case default
+            if (lroot) print*, "No such value for force_upper_bound: <", &
+                 trim(force_upper_bound),">"
+            call stop_it("")
+         endselect
+         !
+         !  Now fill ghost zones imposing antisymmetry w.r.t. the values just set:
+         !
+         do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
+      case default
+        print*,"bc_force_x: invalid argument topbot=",topbot
+      endselect
+!
+    endsubroutine bc_force_x
 !***********************************************************************
     subroutine bc_force_uxy_sin_cos(f,idz,j)
 !

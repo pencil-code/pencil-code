@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.316 2007-03-07 13:19:22 dintrans Exp $
+! $Id: density.f90,v 1.317 2007-03-09 14:25:45 dintrans Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.316 2007-03-07 13:19:22 dintrans Exp $")
+           "$Id: density.f90,v 1.317 2007-03-09 14:25:45 dintrans Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -740,9 +740,9 @@ module Density
              + abs(ampllnrho*cmplx(0,-0.5*Omega/(kx_lnrho*rho0))) * &
              sin(kx_lnrho*xx+complex_phase(ampllnrho*cmplx(0,-0.5*Omega/(kx_lnrho*rho0))))
 
-      case('toto')
-        call information('init_lnrho','toto')
-        call toto(f)
+      case('cylind-poly')
+        call information('init_lnrho',' cylind-poly')
+        call cylind_poly(f)
 
       case default
         !
@@ -1764,10 +1764,10 @@ module Density
     endsubroutine mass_source
 
 !***********************************************************************
-    subroutine toto(f)
+    subroutine cylind_poly(f)
 !
-!  Initialize density based on specified radial profile in
-!  a spherical shell
+!  Initialize density and entropy/temperature on a cylindrical grid
+!  using a polytrope under a constant (radial) gravity
 !
 !  07-mar-07/dintrans: coded
 !
@@ -1783,7 +1783,8 @@ module Density
       temp_bot=temp_top+beta1*(r_int-r_ext)
       cs2top=cs20
       cs2bot=gamma1*temp_bot
-      print*,'toto: beta1,temp_top,r_ext=',beta1,temp_top,r_ext
+      if (lroot) &
+        print*,'cylind_poly: beta1,temp_top,r_ext=',beta1,temp_top,r_ext
 !
       do imn=1,ny*nz
         n=nn(imn)
@@ -1792,11 +1793,14 @@ module Density
         temp=temp_top+beta1*(x(l1:l2)-r_ext)
         lnTT=alog(temp)
         f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*lnTT-mpoly*log(temp_top)
-        lnrho=f(l1:l2,m,n,ilnrho)
-        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
-        f(l1:l2,m,n,iss)=ss
+        if (lentropy) then
+          lnrho=f(l1:l2,m,n,ilnrho)
+          call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
+          f(l1:l2,m,n,iss)=ss
+        endif
+        if (ltemperature) f(l1:l2,m,n,ilnTT)=lnTT
       enddo
 !
-    endsubroutine toto
+    endsubroutine cylind_poly
 !***********************************************************************
 endmodule Density
