@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.5 2007-03-03 19:37:17 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.6 2007-03-09 09:40:21 dintrans Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -33,20 +33,23 @@ module Entropy
   real :: radius_lnTT=0.1,ampl_lnTT=0.,widthlnTT=2*epsi
   real :: lnTT_left=1.0,lnTT_right=1.0,lnTT_const=0.0,TT_const=1.0
   real :: kx_lnTT=1.0,ky_lnTT=1.0,kz_lnTT=1.0
-  real :: chi=0.0,heat_uniform=0.0
+  real :: chi=impossible,heat_uniform=0.0
   real :: zbot=0.0,ztop=0.0
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
   real :: center1_x=0., center1_y=0., center1_z=0.
+  integer, parameter :: nheatc_max=1
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
+  logical :: lheatc_Kconst=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lfreeze_lnTTint=.false.,lfreeze_lnTText=.false.
+  character (len=labellen) :: iheatcond='nothing'
 
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=4) :: iinit_str
 
 ! Delete (or use) me asap!
-  real :: hcond0,hcond1,Fbot,FbotKbot,Ftop,Kbot,FtopKtop
+  real :: hcond0=impossible, hcond1=0.,Fbot,FbotKbot,Ftop,Kbot,FtopKtop
   logical :: lmultilayer=.false.
 
   ! input parameters
@@ -58,8 +61,8 @@ module Entropy
   ! run parameters
   namelist /entropy_run_pars/ &
        lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
-      heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
-      lheatc_chiconst_accurate,lcalc_heat_cool,&
+      heat_uniform,chi,iheatcond,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
+      lheatc_chiconst_accurate,hcond0,lcalc_heat_cool,&
       lfreeze_lnTTint,lfreeze_lnTText
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
@@ -67,6 +70,7 @@ module Entropy
   integer :: idiag_eth=0,idiag_ssm=0,idiag_thcool=0
   integer :: idiag_dtchi=0,idiag_dtc=0
   integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0
+ 
   
   contains
 
@@ -94,7 +98,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.5 2007-03-03 19:37:17 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.6 2007-03-09 09:40:21 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -131,11 +135,12 @@ module Entropy
       use EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
+      logical :: lstarting, lnothing
       type (pencil_case) :: p
+      integer :: i
 !
       if (.not. leos) then
-         call fatal_error('initialize_entropy','EOS=noeos but entropy requires an EQUATION OF STATE for the fluid')
+         call fatal_error('initialize_entropy','EOS=noeos but temperature_idealgas requires an EQUATION OF STATE for the fluid')
       endif
 !
       call select_eos_variable('lnTT',ilnTT)
@@ -148,8 +153,42 @@ module Entropy
 !
 !  Check whether we want heat conduction
 !
-      lheatc_chiconst = (chi/=0.0)
+          lheatc_Kconst= .false.
+          lheatc_chiconst = .false.
+          lnothing = .false.
 !
+      select case (iheatcond)
+        case('K-const')
+          lheatc_Kconst=.true.
+          call information('initialize_entropy', &
+          ' heat conduction: K=cst --> gamma*K/rho*cp*div(T*grad lnTT)')
+        case('chi-const')
+          lheatc_chiconst=.true.
+          call information('initialize_entropy',' heat conduction: constant chi')
+        case ('nothing')
+          if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
+        case default
+          if (lroot) then
+            write(unit=errormsg,fmt=*)  &
+                'No such value iheatcond = ', trim(iheatcond)
+            call fatal_error('initialize_entropy',errormsg)
+          endif
+       endselect
+       lnothing=.true.
+!
+!  A word of warning...
+!
+      if (lheatc_Kconst .and. hcond0==0.0) then
+        call warning('initialize_entropy', 'hcond0 is zero!')
+      endif
+      if (lheatc_chiconst .and. chi==0.0) then
+        call warning('initialize_entropy','chi is zero!')
+      endif
+      if (iheatcond=='nothing') then
+        if (hcond0 /= impossible) call warning('initialize_entropy', 'No heat conduction, but hcond0 /= 0')
+        if (chi /= impossible) call warning('initialize_entropy', 'No heat conduction, but chi /= 0')
+      endif
+
     endsubroutine initialize_entropy
 !***********************************************************************
     subroutine init_ss(f,xx,yy,zz)
@@ -236,6 +275,12 @@ module Entropy
 !
       if (lheatc_chiconst) then
         lpenc_requested(i_del2lnTT)=.true.
+      endif
+      if (lheatc_Kconst) then
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+        lpenc_requested(i_cp1)=.true.
       endif
 !
       if (ladvection_temperature) lpenc_requested(i_uglnTT)=.true.
@@ -399,6 +444,7 @@ module Entropy
 !  Thermal conduction: only chi=cte for the moment
 !
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
+      if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
 !
 !  Need to add left-hand-side of the continuity equation (see manual)
 !  Check this
@@ -495,7 +541,6 @@ module Entropy
 !  Add heat conduction to RHS of temperature equation
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chi*(g2 + p%del2lnTT)
-
 !
 !  check maximum diffusion from thermal diffusion
 !
@@ -507,6 +552,39 @@ module Entropy
       endif
 
     end subroutine calc_heatcond_constchi
+!***********************************************************************
+    subroutine calc_heatcond_constK(df,p)
+!
+!  calculate gamma*K/rho*cp*div(T*grad lnTT)= 
+!              gamma*K/rho*cp*(gradlnTT.gradlnTT + del2ln TT)
+!
+!
+      use Sub, only: max_mn_name,dot,del2,multsv
+      use EquationOfState, only: gamma
+
+      real, dimension(mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension(nx) :: g2,hcond,chix
+!
+      hcond=hcond0
+      call dot(p%glnTT,p%glnTT,g2)
+!
+!  Add heat conduction to RHS of temperature equation
+!
+      chix=p%rho1*hcond*p%cp1
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g2 + p%del2lnTT)
+
+!
+!  check maximum diffusion from thermal diffusion
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
+      endif
+
+    endsubroutine calc_heatcond_constK
 !***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
       integer, intent(in) :: unit
