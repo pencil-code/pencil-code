@@ -1,8 +1,13 @@
-! $Id: temperature_idealgas.f90,v 1.6 2007-03-09 09:40:21 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.7 2007-03-10 01:06:16 dobler Exp $
 
-!  This module replaces the entropy module by using lnT as dependent
+!  This module can replace the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
 !  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
+!
+!  Note that to use lnTT as thermal variable, you may rather want to use
+!  entropy.f90 with pretend_lnTT=.true. As of March 2007, entropy.f90
+!  has way more options and features than temperature_idealgas.f90. 
+!
 !  At a later point we may want to rename the module Entropy into Energy
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -98,7 +103,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.6 2007-03-09 09:40:21 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.7 2007-03-10 01:06:16 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
