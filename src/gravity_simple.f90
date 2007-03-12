@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.31 2007-02-21 08:51:24 brandenb Exp $
+! $Id: gravity_simple.f90,v 1.32 2007-03-12 21:32:09 wlyra Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -70,14 +70,14 @@ module Gravity
        z1,z2,zref,lnrho_bot,lnrho_top,ss_bot,ss_top, &
        lgravx_gas,lgravx_dust,lgravy_gas,lgravy_dust,lgravz_gas,lgravz_dust, &
        xinfty,yinfty,zinfty, &
-       reduced_top,lboussinesq
+       reduced_top,lboussinesq,grav_profile
 
   namelist /grav_run_pars/ &
        gravx_profile,gravy_profile,gravz_profile,gravx,gravy,gravz, &
        xgrav,ygrav,zgrav,kx_gg,ky_gg,kz_gg,dgravx,nu_epicycle,pot_ratio, &
        lgravx_gas,lgravx_dust,lgravy_gas,lgravy_dust,lgravz_gas,lgravz_dust, &
        xinfty,yinfty,zinfty, &
-       zref,reduced_top,lboussinesq
+       zref,reduced_top,lboussinesq,grav_profile
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
@@ -104,7 +104,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.31 2007-02-21 08:51:24 brandenb Exp $")
+           "$Id: gravity_simple.f90,v 1.32 2007-03-12 21:32:09 wlyra Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.
@@ -247,7 +247,7 @@ module Gravity
         nu_epicycle2=nu_epicycle**2
         if(lroot) print*,'initialize_gravity: linear z-grav, nu=', nu_epicycle
         gravz_zpencil = -nu_epicycle2*z(n1:n2)
-        potz_zpencil=0.5*nu_epicycle2*(z(n1:n2)-zinfty)**2
+        potz_zpencil=0.5*nu_epicycle2*(z(n1:n2)**2-zinfty**2)
 
       case('sinusoidal')
         if (lroot) print*,'initialize_gravity: sinusoidal z-grav, gravz=', gravz
@@ -514,6 +514,8 @@ module Gravity
         if (lroot) print*,'potential_point: no z-gravity'
       case('const')
         potz_zpoint=-gravz*(zpos-zinfty)
+      case('linear')
+        potz_zpoint=-nu_epicycle**2*zpos
       case default
         call fatal_error('potential_point', &
              'gravz_profile='//gravz_profile//' not implemented')
