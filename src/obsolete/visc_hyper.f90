@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.1 2006-09-27 05:39:35 brandenb Exp $
+! $Id: visc_hyper.f90,v 1.2 2007-03-12 13:56:01 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -11,6 +11,7 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 3
+! PENCILS PROVIDED fvisc, diffus_total, visc_heat
 !
 !***************************************************************
 
@@ -26,14 +27,14 @@ module Viscosity
   include 'viscosity.h'
 
   character (len=labellen) :: ivisc='hyper3'
-  real :: maxeffectivenu,nu_mol
+  real :: maxeffectivenu,nu_hyper3, nu_mol=0.0
   logical :: lvisc_first=.false.
 
   ! input parameters
   !namelist /viscosity_init_pars/ dummy
 
   ! run parameters
-  namelist /viscosity_run_pars/ nu, lvisc_first,ivisc
+  namelist /viscosity_run_pars/ nu_hyper3, lvisc_first,ivisc
  
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_epsK2=0
@@ -71,7 +72,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.1 2006-09-27 05:39:35 brandenb Exp $")
+           "$Id: visc_hyper.f90,v 1.2 2007-03-12 13:56:01 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -96,14 +97,10 @@ module Viscosity
 !
       use Cdata
 !
-      if (headtt.and.lroot) print*,'viscosity: nu=',nu
+      logical, intent(in) :: lstarting
 !
-       logical, intent(in) :: lstarting
+      if (headtt.and.lroot) print*,'viscosity: nu_hyper3=', nu_hyper3
 !
-       lneed_sij=.false.
-!
-        if (headtt.and.lroot.and.(.not.lstarting)) print*,'viscosity: nu=',nu
-
     endsubroutine initialize_viscosity
 !***********************************************************************
     subroutine read_viscosity_init_pars(unit,iostat)
@@ -187,6 +184,8 @@ module Viscosity
 !  All pencils that the Viscosity module depends on are specified here.
 !
 !  21-11-04/anders: coded
+!
+      lpenc_requested(i_del6u)=.true.
 !
     endsubroutine pencil_criteria_viscosity
 !***********************************************************************
@@ -298,13 +297,13 @@ module Viscosity
             sij2=sij2+(tmp(l1:l2,m1:m2,n1:n2,2)-tmp(l1:l2,m1:m2,n1:n2,3)/3.)**2
           enddo
 !
-          epsK_hyper=2*nu*sum(sij2)
+          epsK_hyper=2*nu_hyper3*sum(sij2)
         endif
       endif
 !
 !  max effective nu is the max of shock viscosity and the ordinary viscosity
 !
-      !maxeffectivenu = maxval(f(:,:,:,ihyper))*nu
+      !maxeffectivenu = maxval(f(:,:,:,ihyper))*nu_hyper3
   endif
 !
     endsubroutine calc_viscosity
@@ -369,7 +368,7 @@ module Viscosity
 !      
     endsubroutine shock_divu
 !***********************************************************************
-    subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock,Hmax)
+    subroutine calc_viscous_heat(f,df,p,Hmax)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -378,107 +377,93 @@ module Viscosity
       use Cdata
       use Mpicomm
       use Sub
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: rho1,TT1,cs2,Hmax
-      real, dimension (nx) :: sij2, divu,shock
-      real, dimension (nx,3) :: glnrho
-!
-!  traceless strain matrix squared
-!
-      !call multm2(sij,sij2)
-!      if (headtt) print*,'viscous heating: ',ivisc
-
-      !df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1 * &
-       !    (2.*nu*sij2  & 
-        !   + nu_shock * shock * divu**2)
-
-      !call max_for_dt(df(l1:l2,m,n,iss),maxheating)
-!
-      !if(NO_WARN) print*,glnrho,rho1,cs2 !(to keep compiler quiet)
+      real, dimension (mx,my,mz,mvar)    :: df
+      type (pencil_case) :: p
+      real, dimension (nx) :: Hmax
 !      
     endsubroutine calc_viscous_heat
 !***********************************************************************
-    subroutine calc_viscous_force(f,df,glnrho,divu,rho,rho1,shock,gshock,bij)
+    subroutine calc_viscous_force(f,df,p)
 !
-!  calculate viscous force
+!  calculate viscous force term for right hand side of  equation
 !
 !  24-nov-03/nils: coded
+!
 !
       use Cdata
       use Mpicomm
       use Sub
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: bij
+      real, dimension (nx) :: nu_smag
+      real, dimension (nx,3) :: nuD2uxb
+      type (pencil_case) :: p
+!
       real, dimension (nx,3) :: hyper
-      real, dimension (nx,3) :: glnrho,del6u,fvisc,gshock,del4u
-      real, dimension (nx) :: rho,rho1,divu,shock,ufvisc,rufvisc,murho1
+      real, dimension (nx) :: murho1, ufvisc, rufvisc
       integer :: i
 !
-      intent (out) :: df
-      intent(in) :: rho,rho1,divu,shock
+!      intent (in) :: p
+      intent (inout) :: df
 !
-      if (nu /= 0.) then
+      if (nu_hyper3 /= 0.) then
         if (ivisc == 'hyper3') then
-          !  viscous force:nu*(del6u+del4*graddivu/3)
-          !  (Assuming rho*nu=const)
+          !  viscous force:nu_hyper3*(del6u+del4*graddivu/3)
+          !  (Assuming rho*nu_hyper3=const)
           hyper=f(l1:l2,m,n,ihyper:ihyper+2)/3.
-          if (headtt) print*,'viscous force: nu*(del6u+del4*graddivu/3)'
-          call del6v(f,iuu,del6u)
-          fvisc=nu*(del6u+hyper)
-          diffus_nu=max(diffus_nu,nu*dxyz_2)
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
+          if (headtt) print*,'viscous force: nu_hyper3*(del6u+del4*graddivu/3)'
+          p%fvisc=nu_hyper3*(p%del6u+hyper)
+          diffus_nu=max(diffus_nu,nu_hyper3*dxyz_2)
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fvisc
         elseif (ivisc == 'hyper3.1') then
-          !  viscous force:nu*(del6u+del4*graddivu/3)
-          !  (Assuming rho*nu=const, so nu->nu*rho0/rho)
+          !  viscous force:nu_hyper3*(del6u+del4*graddivu/3)
+          !  (Assuming rho*nu_hyper3=const, so nu_hyper3->nu_hyper3/rho)
           hyper=f(l1:l2,m,n,ihyper:ihyper+2)/3.
-          if (headtt) print*,'viscous force: nu*(del6u+del4*graddivu/3)'
-          call del6v(f,iuu,del6u)
-          murho1=(nu*rho0)*rho1
+          if (headtt) print*,'viscous force: nu_hyper3*(del6u+del4*graddivu/3)'
+          murho1=nu_hyper3*p%rho1
           do i=1,3
-            fvisc(:,i)=murho1*(del6u(:,i)+hyper(:,i))
+            p%fvisc(:,i)=murho1*(p%del6u(:,i)+hyper(:,i))
           enddo
-          diffus_nu=max(diffus_nu,nu*dxyz_2)
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
+          diffus_nu=max(diffus_nu,nu_hyper3*dxyz_2)
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fvisc
         elseif (ivisc == 'hyper2') then
-          !  viscous force:nu*(del4u+del2*graddivu/3)
-          !  (Assuming rho*nu=const)
+          !  viscous force:nu_hyper3*(del4u+del2*graddivu/3)
+          !  (Assuming rho*nu_hyper3=const)
           hyper=f(l1:l2,m,n,ihyper:ihyper+2)/3.
-          if (headtt) print*,'viscous force: nu*(del4u+del2*graddivu/3)'
-          call del4v(f,iuu,del4u)
-          fvisc=nu*(del4u+hyper)
-          diffus_nu=max(diffus_nu,nu*dxyz_2)
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
+          if (headtt) print*,'viscous force: nu_hyper3*(del4u+del2*graddivu/3)'
+          p%fvisc=nu_hyper3*(p%del4u+hyper)
+          diffus_nu=max(diffus_nu,nu_hyper3*dxyz_2)
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fvisc
         else
           call stop_it('calc_viscous_force: no such ivisc')  
         endif
-      else ! (nu=0)
-        if (headtt.and.lroot) print*,'no viscous force: (nu=0)'
+      else ! (nu_hyper3=0)
+        if (headtt.and.lroot) print*,'no viscous force: (nu_hyper3=0)'
       endif
 !
 ! Code to double-check epsK
 !
       if (ldiagnos) then
         if (idiag_epsK2/=0) then
-          call dot(f(l1:l2,m,n,iux:iuz),fvisc,ufvisc)
-          rufvisc=ufvisc/rho1
+          call dot(f(l1:l2,m,n,iux:iuz),p%fvisc,ufvisc)
+          rufvisc=ufvisc*p%rho
           call sum_mn_name(-rufvisc,idiag_epsK2)
         endif
         !  mean heating term
-        if ((idiag_epsK/=0) .or. (idiag_epsK_LES/=0)) call multm2_mn(sij,sij2)
-        if ((idiag_epsK_LES/=0) .and. (ivisc .eq. 'smagorinsky_simplified')) &
+!        if ((idiag_epsK/=0) .or. (idiag_epsK_LES/=0)) call multm2_mn(sij,sij2)
+!        if ((idiag_epsK_LES/=0) .and. (ivisc .eq. 'smagorinsky_simplified')) &
         !ajwm nu_smag should already be calculated!
-            call sum_mn_name(2*nu_smag* &
-                              exp(f(l1:l2,m,n,ilnrho))*sij2,idiag_epsK_LES)
-        if (idiag_epsK/=0) then
-           call sum_mn_name(2*nu*exp(f(l1:l2,m,n,ilnrho))*sij2,idiag_epsK)
-        endif
+!            call sum_mn_name(2*nu_smag* &
+!                              exp(f(l1:l2,m,n,ilnrho))*sij2,idiag_epsK_LES)
+!        if (idiag_epsK/=0) then
+!           call sum_mn_name(2*nu_hyper3*exp(f(l1:l2,m,n,ilnrho))*sij2,idiag_epsK)
+!        endif
       endif
 !
-      if(NO_WARN) print*,divu,shock,gshock !(to keep compiler quiet)
+!      if(NO_WARN) print*,divu,shock,gshock !(to keep compiler quiet)
 !        
     end subroutine calc_viscous_force
 !***********************************************************************
