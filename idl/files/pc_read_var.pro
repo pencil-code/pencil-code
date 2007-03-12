@@ -61,7 +61,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.45 2007-03-06 10:11:43 mee Exp $
+;       $Id: pc_read_var.pro,v 1.46 2007-03-12 15:06:00 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -83,7 +83,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Use common block belonging to derivative routines etc. so we can
 ; set them up properly.
 ;
-  common cdat,x,y,z ;,mx,my,mz,nw,ntmax,date0,time0
+  common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
   common pc_precision, zero, one
 ;
