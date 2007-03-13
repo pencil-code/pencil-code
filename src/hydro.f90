@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.330 2007-03-06 22:06:15 brandenb Exp $
+! $Id: hydro.f90,v 1.331 2007-03-13 07:08:42 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -146,7 +146,7 @@ module Hydro
   integer :: idiag_urmr=0,idiag_upmr=0,idiag_uzmr=0
   integer :: idiag_ormr=0,idiag_opmr=0,idiag_ozmr=0
   integer :: idiag_uxfampm=0,idiag_uyfampm=0,idiag_uzfampm=0
-
+  integer :: idiag_oumz=0
 
   contains
 
@@ -189,7 +189,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.330 2007-03-06 22:06:15 brandenb Exp $")
+           "$Id: hydro.f90,v 1.331 2007-03-13 07:08:42 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -665,7 +665,7 @@ module Hydro
           lpenc_diagnos(i_oo)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0) &
           lpenc_diagnos(i_o2)=.true.
-      if (idiag_oum/=0) lpenc_diagnos(i_ou)=.true.
+      if (idiag_oum/=0 .or. idiag_oumz/=0) lpenc_diagnos(i_ou)=.true.
       if (idiag_Marms/=0 .or. idiag_Mamax/=0) lpenc_diagnos(i_Ma2)=.true.
       if (idiag_u3u21m/=0) lpenc_diagnos(i_u3u21)=.true.
       if (idiag_u1u32m/=0) lpenc_diagnos(i_u1u32)=.true.
@@ -1160,6 +1160,7 @@ module Hydro
         if (idiag_uxuzmx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,3),idiag_uxuzmx)
         if (idiag_uyuzmx/=0) call yzsum_mn_name_x(p%uu(:,2)*p%uu(:,3),idiag_uyuzmx)
         if (idiag_ekinz/=0)  call xysum_mn_name_z(.5*p%rho*p%u2,idiag_ekinz)
+        if (idiag_oumz/=0) call xysum_mn_name_z(p%ou,idiag_oumz)
 !  phi-z averages
         if (idiag_u2mr/=0)   call phizsum_mn_name_r(p%u2,idiag_u2mr)
         if (idiag_urmr/=0) &
@@ -1174,7 +1175,7 @@ module Hydro
              call phizsum_mn_name_r(p%oo(:,1)*p%phix+p%oo(:,2)*p%phiy,idiag_opmr)
         if (idiag_ozmr/=0) &
              call phizsum_mn_name_r(p%oo(:,3),idiag_ozmr)
-      endif
+        endif
 !
 !  phi-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
@@ -1752,6 +1753,7 @@ module Hydro
         idiag_uxuymz=0; idiag_uxuzmz=0; idiag_uyuzmz=0; idiag_uxuymz=0
         idiag_ox2m=0; idiag_oy2m=0; idiag_oz2m=0; idiag_oxm=0; idiag_oym=0
         idiag_ozm=0; idiag_oxoym=0; idiag_oxozm=0; idiag_oyozm=0
+        idiag_oumz=0
         idiag_umx=0; idiag_umy=0; idiag_umz=0
         idiag_Marms=0; idiag_Mamax=0; idiag_divum=0; idiag_divu2m=0
         idiag_u3u21m=0; idiag_u1u32m=0; idiag_u2u13m=0
@@ -1867,6 +1869,7 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'ekinz',idiag_ekinz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'u2mz',idiag_u2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oumz',idiag_oumz)
       enddo
 !
 !  check for those quantities for which we want xz-averages
