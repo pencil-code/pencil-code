@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.290 2007-03-07 13:49:53 wlyra Exp $
+! $Id: sub.f90,v 1.291 2007-03-14 19:59:31 wlyra Exp $
 
 module Sub
 
@@ -1116,6 +1116,9 @@ module Sub
       call der(f,k1+3,tmp,3)
       g=g+tmp
 !
+      if (lcylgrid.or.lspherical) &
+           call stop_it("div not implemented for non-cartesian coordinates"
+!
     end subroutine div
 !***********************************************************************
     subroutine div_other(f,g)
@@ -1130,6 +1133,9 @@ module Sub
       g=g+tmp
       call der(f(:,:,:,3),tmp,3)
       g=g+tmp
+!
+      if (lcylgrid.or.lspherical) &
+           call stop_it("div_other not implemented for non-cartesian coordinates"
 !
     end subroutine div_other
 !***********************************************************************
@@ -1719,6 +1725,9 @@ module Sub
 !
       endselect
 !
+      if (lcylgrid.or.lspherical) &
+           call stop_it("curli not implemented for non-cartesian coordinates"
+!
     endsubroutine curli
 !***********************************************************************
     subroutine del2(f,k,del2f)
@@ -1745,6 +1754,9 @@ module Sub
          call der(f,k,tmp,1)
          del2f=del2f+tmp*rcyl_mn1
       endif
+!
+      if (lspherical) &
+           call stop_it("del2 not implemented for spherical coordinates")
 !
     endsubroutine del2
 !***********************************************************************
@@ -1778,6 +1790,9 @@ module Sub
          call der(f,k1+1,tmp,2)
          del2f(:,2)=del2f(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn1**2
       endif
+!
+      if (lspherical) &
+           call stop_it("del2v not implemented for spherical coordinates")
 !
     endsubroutine del2v
 !***********************************************************************
@@ -1875,6 +1890,9 @@ module Sub
          gradcurl(:,3,3) = fjik(:,2)   - fjik(:,1)
       endif
 !
+      if (lcylgrid.or.lspherical) then
+         call stop_it("del2v_etc not implemented for non-cartesian coordinates")
+!
     endsubroutine del2v_etc
 !***********************************************************************
     subroutine del2vi_etc(f,k,ii,del2,graddiv,curlcurl)
@@ -1925,6 +1943,9 @@ module Sub
         endselect
       endif
 !
+      if (lcylgrid.or.lspherical) then
+         call stop_it("del2v_etc not implemented for non-cartesian coordinates")
+!      
     endsubroutine del2vi_etc
 !***********************************************************************
     subroutine del4v(f,k,del4f)
@@ -1942,7 +1963,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: del4f
 !
-!  do the del2 diffusion operator
+!  do the del4 diffusion operator
 !
       k1=k-1
       do i=1,3
