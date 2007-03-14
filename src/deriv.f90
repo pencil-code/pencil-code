@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.44 2007-03-07 13:49:53 wlyra Exp $
+! $Id: deriv.f90,v 1.45 2007-03-14 19:53:56 wlyra Exp $
 
 module Deriv
 
@@ -239,7 +239,10 @@ module Deriv
       endif
 
       if (.not. lequidist(j)) &
-          call fatal_error('der3','NOT IMPLEMENTED for no equidistant grid')
+          call fatal_error('der3','NOT IMPLEMENTED for non-equidistant grid')
+!
+      if (lspherical.or.lcylgrid) &
+           call fatal_error('der3','NOT IMPLEMENTED for non-cartesian coordinates')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -315,7 +318,10 @@ module Deriv
       if (.not. lequidist(j)) then
         call fatal_error('der4','NOT IMPLEMENTED for no equidistant grid')
       endif
-
+!
+      if (lspherical.or.lcylgrid) &
+           call fatal_error('der4','NOT IMPLEMENTED for non-cartesian coordinates')
+!
       if (present(ignoredx)) then
         igndx = ignoredx
       else
@@ -408,6 +414,9 @@ module Deriv
       if (.not. lequidist(j)) &
           call fatal_error('der5','NOT IMPLEMENTED for no equidistant grid')
 !
+      if (lspherical.or.lcylgrid) &
+           call fatal_error('der5','NOT IMPLEMENTED for non-cartesian coordinates')
+!
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
@@ -491,6 +500,9 @@ module Deriv
           call fatal_error('der6','NOT IMPLEMENTED for no equidistant grid')
         endif
       endif
+!
+      if (lspherical.or.lcylgrid) &
+           call fatal_error('der6','NOT IMPLEMENTED for non-cartesian coordinates')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -584,6 +596,9 @@ module Deriv
           call fatal_error('der6_other','NOT IMPLEMENTED for no equidistant grid')
         endif
       endif
+!
+      if (lspherical.or.lcylgrid) &
+           call fatal_error('der6_other','NOT IMPLEMENTED for non-cartesian coordinates')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -1024,6 +1039,9 @@ module Deriv
         print*, 'der5i1j: no such value for i,j=', i, j
         call fatal_error('der5i1j','')
       endif
+!
+      if (lspherical.or.lcylgrid) &
+           call fatal_error('der5i1j','NOT IMPLEMENTED for non-cartesian coordinates')
 !
     endsubroutine der5i1j
 !***********************************************************************
