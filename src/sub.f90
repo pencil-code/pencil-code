@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.293 2007-03-14 20:06:23 wlyra Exp $
+! $Id: sub.f90,v 1.294 2007-03-14 20:10:51 wlyra Exp $
 
 module Sub
 
@@ -1102,6 +1102,7 @@ module Sub
 !
       use Cdata
       use Deriv
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: g, tmp
@@ -1124,6 +1125,8 @@ module Sub
     subroutine div_other(f,g)
       use Cdata
       use Deriv
+      use Mpicomm, only: stop_it
+
       real, dimension (mx,my,mz,3) :: f
       real, dimension (nx) :: g, tmp
 !
@@ -1695,6 +1698,7 @@ module Sub
 !
       use Cdata
       use Deriv
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: g
@@ -1737,6 +1741,7 @@ module Sub
 !
       use Cdata
       use Deriv
+      use Mpicomm, only: stop_it
 !
       intent(in) :: f,k
       intent(out) :: del2f
@@ -1767,6 +1772,7 @@ module Sub
 !
       use Cdata
       use Deriv,only:der
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: del2f
@@ -1808,6 +1814,7 @@ module Sub
 !
       use Cdata
       use Deriv
+      use Mpicomm,only:stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: fjji,fijj
@@ -1907,6 +1914,7 @@ module Sub
 !
       use Cdata
       use Deriv
+      use Mpicomm,only:stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: fjji,fijj
