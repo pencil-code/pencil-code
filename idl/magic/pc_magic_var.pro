@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.21 2006-09-18 15:55:02 dintrans Exp $
+; $Id: pc_magic_var.pro,v 1.22 2007-03-14 09:51:00 dintrans Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2006-09-18 15:55:02 $
-;  $Revision: 1.21 $
+;  $Date: 2007-03-14 09:51:00 $
+;  $Revision: 1.22 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -177,6 +177,15 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
         variables[iv]='lnTT'
       endif else begin
         variables[iv]='pc_eoscalc(lnrho,ss,/lntt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+      endelse
+
+    ; entropy ss
+    endif else if variables[iv] eq 'ss' then begin
+      tags[iv]=variables[iv]
+      if (lionization and not lionization_fixed) then begin
+        message,"Thermodynamic combination not implemented yet: /ss from lnrho and lnTT with lionization"
+      endif else begin
+        variables[iv]='pc_eoscalc(lnrho,lnTT,/ss,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
       endelse
 
     ; Pressure

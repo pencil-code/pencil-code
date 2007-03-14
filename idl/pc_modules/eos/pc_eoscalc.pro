@@ -6,7 +6,7 @@ end
 function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
             lnrho_lntt=lnrho_lntt, lnrho_ss=lnrho_ss, $
             datadir=datadir,param=param,dim=dim, $
-            PRINT=PRINT,QUIET=QUIET,HELP=HELP
+            PRINT=PRINT,QUIET=QUIET,HELP=HELP,ss=ss
 
 
   if ( keyword_set(HELP) ) then begin
@@ -61,6 +61,20 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
       endif else if kEyword_set(ee) then begin
        ;result = fn of  where var1,var2 = lnrho, lnTT
        message,"Thermodynamic combination not implemented yet: /pp,/lnrho_lnTT"
+      endif else if keyword_set(ss) then begin
+       ;result = fn of  where var1,var2 = lnrho, lnTT
+       print,'compute ss from lnrho and lnTT'
+       lnrho=var1
+       lnTT=var2
+      ;
+       cs20=param.cs0^2
+       lnrho0=alog(param.rho0)
+       gamma=param.gamma
+       gamma1=gamma-1.     
+       cp=param.cp
+       lnTT0=alog(cs20/(cp * gamma1))
+;      ss=(lnTT-lnTT0)/gamma-gamma1/gamma*(lnrho-lnrho0)
+       result=(lnTT-lnTT0)/gamma-gamma1/gamma*(lnrho-lnrho0)
       endif
 
     endif else if (keyword_set(lnrho_ee)) then begin
