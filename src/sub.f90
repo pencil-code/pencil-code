@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.291 2007-03-14 19:59:31 wlyra Exp $
+! $Id: sub.f90,v 1.292 2007-03-14 20:05:09 wlyra Exp $
 
 module Sub
 
@@ -1117,7 +1117,7 @@ module Sub
       g=g+tmp
 !
       if (lcylgrid.or.lspherical) &
-           call stop_it("div not implemented for non-cartesian coordinates"
+           call stop_it("div not implemented for non-cartesian coordinates")
 !
     end subroutine div
 !***********************************************************************
@@ -1135,7 +1135,7 @@ module Sub
       g=g+tmp
 !
       if (lcylgrid.or.lspherical) &
-           call stop_it("div_other not implemented for non-cartesian coordinates"
+           call stop_it("div_other not implemented for non-cartesian coordinates")
 !
     end subroutine div_other
 !***********************************************************************
@@ -1726,7 +1726,7 @@ module Sub
       endselect
 !
       if (lcylgrid.or.lspherical) &
-           call stop_it("curli not implemented for non-cartesian coordinates"
+           call stop_it("curli not implemented for non-cartesian coordinates")
 !
     endsubroutine curli
 !***********************************************************************
