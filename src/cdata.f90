@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.358 2007-03-07 04:23:41 wlyra Exp $
+! ! $Id: cdata.f90,v 1.359 2007-03-14 07:56:40 dintrans Exp $
 
 module Cdata
 
@@ -23,7 +23,7 @@ module Cdata
   logical :: lspherical=.false.,lcylindrical=.false.,lcylgrid=.false.
   real, dimension (nx) :: r1_mn,r2_mn
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth
-  real, dimension (nx) :: rcyl_mn1,rcyl_mn2
+  real, dimension (nx) :: rcyl_mn,rcyl_mn1,rcyl_mn2
 ! timestep related:
   real, dimension (nx) :: advec_uu,advec_shear,advec_hall,advec_csn2
   real, dimension (nx) :: advec_cs2,advec_va2,advec_crad2,advec_uud,advec_uun

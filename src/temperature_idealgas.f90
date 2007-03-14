@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.7 2007-03-10 01:06:16 dobler Exp $
+! $Id: temperature_idealgas.f90,v 1.8 2007-03-14 07:56:40 dintrans Exp $
 
 !  This module can replace the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -30,6 +30,7 @@ module Entropy
   use Cdata
   use Messages
   use Interstellar
+  use EquationOfState, only: mpoly0,mpoly1
 
   implicit none
 
@@ -42,34 +43,41 @@ module Entropy
   real :: zbot=0.0,ztop=0.0
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
   real :: center1_x=0., center1_y=0., center1_z=0.
+  real :: r_bcz=0.
   integer, parameter :: nheatc_max=1
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
-  logical :: lheatc_Kconst=.false.
+  logical :: lheatc_Kconst=.false.,lheatc_Kprof=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lfreeze_lnTTint=.false.,lfreeze_lnTText=.false.
   character (len=labellen) :: iheatcond='nothing'
+  logical :: lhcond_global=.false.
+  integer :: iglobal_hcond=0
+  integer :: iglobal_glhc=0
 
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=4) :: iinit_str
 
 ! Delete (or use) me asap!
-  real :: hcond0=impossible, hcond1=0.,Fbot,FbotKbot,Ftop,Kbot,FtopKtop
+  real :: hcond0=impossible, hcond1=1.,Fbot,FbotKbot,Ftop,Kbot,FtopKtop
   logical :: lmultilayer=.false.
 
-  ! input parameters
+! input parameters
   namelist /entropy_init_pars/ &
       initlnTT,radius_lnTT,ampl_lnTT,widthlnTT, &
       lnTT_left,lnTT_right,lnTT_const,TT_const, &
-      kx_lnTT,ky_lnTT,kz_lnTT,center1_x,center1_y,center1_z
+      kx_lnTT,ky_lnTT,kz_lnTT,center1_x,center1_y,center1_z, &
+      mpoly0,mpoly1,r_bcz
 
-  ! run parameters
+! run parameters
   namelist /entropy_run_pars/ &
-       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
+      lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
       heat_uniform,chi,iheatcond,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
       lheatc_chiconst_accurate,hcond0,lcalc_heat_cool,&
-      lfreeze_lnTTint,lfreeze_lnTText
-  ! other variables (needs to be consistent with reset list below)
+      lfreeze_lnTTint,lfreeze_lnTText,widthlnTT,mpoly0,mpoly1, &
+      lhcond_global
+!
+! other variables (needs to be consistent with reset list below)
   integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
   integer :: idiag_yHmax=0,idiag_yHmin=0,idiag_yHm=0
   integer :: idiag_eth=0,idiag_ssm=0,idiag_thcool=0
@@ -103,7 +111,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.7 2007-03-10 01:06:16 dobler Exp $")
+           "$Id: temperature_idealgas.f90,v 1.8 2007-03-14 07:56:40 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -138,8 +146,10 @@ module Entropy
       use FArrayManager
       use Gravity, only: g0
       use EquationOfState
+      use Sub, only: step,der_step
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx)   :: hcond,dhcond
       logical :: lstarting, lnothing
       type (pencil_case) :: p
       integer :: i
@@ -154,19 +164,28 @@ module Entropy
 !
       if (lfreeze_lnTTint) lfreeze_varint(ilnTT)=.true.
       if (lfreeze_lnTText) lfreeze_varext(ilnTT)=.true.
-
 !
 !  Check whether we want heat conduction
 !
-          lheatc_Kconst= .false.
-          lheatc_chiconst = .false.
-          lnothing = .false.
+      lheatc_Kconst= .false.
+      lheatc_Kprof= .false.
+      lheatc_chiconst = .false.
+      lnothing = .false.
 !
       select case (iheatcond)
         case('K-const')
           lheatc_Kconst=.true.
           call information('initialize_entropy', &
           ' heat conduction: K=cst --> gamma*K/rho*cp*div(T*grad lnTT)')
+          Fbot=gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
+        case('K-profile')
+          lheatc_Kprof=.true.
+! 
+!  TODO..... ailleurs !
+!
+          hcond1=(mpoly1+1.)/(mpoly0+1.)
+          Fbot=gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
+          call information('initialize_entropy',' heat conduction: K=K(r)')
         case('chi-const')
           lheatc_chiconst=.true.
           call information('initialize_entropy',' heat conduction: constant chi')
@@ -181,9 +200,28 @@ module Entropy
        endselect
        lnothing=.true.
 !
+!  compute and store hcond and dhcond if hcond_global=.true.
+!
+       if (lhcond_global) then
+         call farray_register_global("hcond",iglobal_hcond)
+         call farray_register_global("glhc",iglobal_glhc)
+         do n=n1,n2
+         do m=m1,m2
+           hcond = 1. + (hcond1-1.)*step(x(l1:l2),r_bcz,-widthlnTT)
+           hcond = hcond0*hcond
+           dhcond = hcond0*(hcond1-1.)*der_step(x(l1:l2),r_bcz,-widthlnTT)
+           f(l1:l2,m,n,iglobal_hcond)=hcond
+           f(l1:l2,m,n,iglobal_glhc)=dhcond
+         enddo
+         enddo
+       endif
+!
 !  A word of warning...
 !
       if (lheatc_Kconst .and. hcond0==0.0) then
+        call warning('initialize_entropy', 'hcond0 is zero!')
+      endif
+      if (lheatc_Kprof .and. hcond0==0.0) then
         call warning('initialize_entropy', 'hcond0 is zero!')
       endif
       if (lheatc_chiconst .and. chi==0.0) then
@@ -228,11 +266,11 @@ module Entropy
       case('zero', '0'); f(:,:,:,ilnTT) = 0.
       case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
       case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
+      case('cylind_layers'); call cylind_layers(f)
       case('bubble_hs')
 !         print*,'init_lnTT: put bubble in hydrostatic equilibrium: radius_lnTT,ampl_lnTT=',radius_lnTT,ampl_lnTT,center1_x,center1_y,center1_z
           call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
           call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)
-
          !
         case default
           !
@@ -282,6 +320,12 @@ module Entropy
         lpenc_requested(i_del2lnTT)=.true.
       endif
       if (lheatc_Kconst) then
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+        lpenc_requested(i_cp1)=.true.
+      endif
+      if (lheatc_Kprof) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
@@ -450,6 +494,7 @@ module Entropy
 !
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
+      if (lheatc_Kprof)    call calc_heatcond(f,df,p)
 !
 !  Need to add left-hand-side of the continuity equation (see manual)
 !  Check this
@@ -591,6 +636,59 @@ module Entropy
 
     endsubroutine calc_heatcond_constK
 !***********************************************************************
+    subroutine calc_heatcond(f,df,p)
+!
+!  12-Mar-2007/dintrans: coded
+!  calculate gamma*K/rho*cp*div(T*grad lnTT)= 
+!              gamma*K/rho*cp*(gradlnTT.gradln(hcond*TT) + del2ln TT)
+!
+!
+      use Sub, only: max_mn_name,dot,del2,multsv,step,der_step
+      use EquationOfState, only: gamma
+
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension(nx) :: g2,hcond,chix
+      real, dimension (nx,3) :: glhc=0.,glnThcond
+      integer :: i
+      logical :: lwrite_hcond=.true.
+      save :: lwrite_hcond
+!
+      if (lhcond_global) then
+        hcond=f(l1:l2,m,n,iglobal_hcond)
+        glhc(:,1)=f(l1:l2,m,n,iglobal_glhc)
+      else
+        hcond = 1. + (hcond1-1.)*step(rcyl_mn,r_bcz,-widthlnTT)
+        hcond = hcond0*hcond
+        glhc(:,1) = hcond0*(hcond1-1.)*der_step(rcyl_mn,r_bcz,-widthlnTT)
+      endif
+      if (lroot .and. lwrite_hcond) then
+        open(1,file=trim(directory)//'/hcond.dat',position='append')
+        write(1,'(3e14.5)') (rcyl_mn(i),hcond(i),glhc(i,1),i=1,nx)
+        close(1)
+        lwrite_hcond=.false.
+      endif
+!
+      glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+      call dot(p%glnTT,glnThcond,g2)
+!
+!  Add heat conduction to RHS of temperature equation
+!
+      chix=p%rho1*hcond*p%cp1
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g2 + p%del2lnTT)
+!
+!  check maximum diffusion from thermal diffusion
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
+      endif
+
+    endsubroutine calc_heatcond
+!***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -600,7 +698,6 @@ module Entropy
       else
         read(unit,NML=entropy_init_pars,ERR=99)
       endif
-
 
 99    return
     endsubroutine read_entropy_init_pars
@@ -696,5 +793,59 @@ module Entropy
       endif
 !
     endsubroutine rprint_entropy
+!***********************************************************************
+    subroutine cylind_layers(f)
+!
+!  initialise lnTT in a cylindrical ring using 2 superposed polytropic layers
+!
+!  12-mar-07/dintrans: coded
+!
+      use Gravity, only: g0
+      use EquationOfState, only: lnrho0,cs20,gamma,gamma1, &
+                                 cs2top,cs2bot,get_cp1
+
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (nx) :: TT
+      real :: beta0,beta1,TT_bcz,TT_ext,TT_int
+      real :: cp1,lnrho_int,lnrho_bcz
+!
+      if (headtt) print*,'r_bcz in cylind_layers.f90=',r_bcz
+!
+!  beta is the temperature gradient
+!  beta = -(g/cp) 1./[(1-1/gamma)*(m+1)]
+!
+      call get_cp1(cp1)
+      beta0=-cp1*g0/(mpoly0+1)*gamma/gamma1
+      beta1=-cp1*g0/(mpoly1+1)*gamma/gamma1
+      TT_ext=cs20/gamma1
+      TT_bcz=TT_ext+beta0*(r_bcz-r_ext)
+      TT_int=TT_bcz+beta1*(r_int-r_bcz)
+      cs2top=cs20
+      cs2bot=gamma1*TT_int
+      lnrho_bcz=lnrho0+mpoly0*log(TT_bcz)-mpoly0*log(TT_ext)
+!
+      do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
+!
+!  convective layer
+!
+        where (rcyl_mn <= r_ext .AND. rcyl_mn > r_bcz)
+          TT=TT_ext+beta0*(rcyl_mn-r_ext)
+          f(l1:l2,m,n,ilnrho)=lnrho0+mpoly0*log(TT)-mpoly0*log(TT_ext)
+          f(l1:l2,m,n,ilnTT)=log(TT)
+        endwhere
+!
+!  radiative layer
+!
+        where (rcyl_mn <= r_bcz)
+          TT=TT_bcz+beta1*(rcyl_mn-r_bcz)
+          f(l1:l2,m,n,ilnrho)=lnrho_bcz+mpoly1*log(TT)-mpoly1*log(TT_bcz)
+          f(l1:l2,m,n,ilnTT)=log(TT)
+        endwhere
+!
+      enddo
+!
+    endsubroutine cylind_layers
 !***********************************************************************
 endmodule Entropy

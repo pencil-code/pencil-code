@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.317 2007-03-09 14:25:45 dintrans Exp $
+! $Id: density.f90,v 1.318 2007-03-14 07:56:40 dintrans Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.317 2007-03-09 14:25:45 dintrans Exp $")
+           "$Id: density.f90,v 1.318 2007-03-14 07:56:40 dintrans Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1778,6 +1778,7 @@ module Density
       real, dimension (nx) :: temp,lnTT,lnrho,ss
       real :: beta1,temp_top,temp_bot
 !
+      mpoly0=mpoly ! to be consistent with the Fbot definition
       beta1=-g0/(mpoly+1)*gamma/gamma1  ! gamma1/gamma=R_{*} (for cp=1)
       temp_top=cs20/gamma1
       temp_bot=temp_top+beta1*(r_int-r_ext)

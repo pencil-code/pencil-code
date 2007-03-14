@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.203 2007-03-07 04:23:41 wlyra Exp $
+! $Id: register.f90,v 1.204 2007-03-14 07:56:40 dintrans Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -347,6 +347,7 @@ module Register
          lspherical=.false.
          lcylgrid=.true.
 !
+         rcyl_mn=x(l1:l2)
          rcyl_mn1=max(1./x(l1:l2),tini)
          rcyl_mn2=rcyl_mn1**2
       endif
