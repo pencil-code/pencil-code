@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.183 2007-02-28 07:11:46 ajohan Exp $
+! $Id: particles_dust.f90,v 1.184 2007-03-14 21:53:37 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -103,7 +103,7 @@ module Particles
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
   integer :: idiag_rhoptilm=0, idiag_dtdragp=0, idiag_nparmax=0
   integer :: idiag_rhopm=0, idiag_rhoprms=0, idiag_rhop2m=0, idiag_rhopmax=0
-  integer :: idiag_rhopmin=0, idiag_decollp=0
+  integer :: idiag_rhopmin=0, idiag_decollp=0, idiag_rhopmphi=0
   integer :: idiag_npmx=0, idiag_npmy=0, idiag_npmz=0
   integer :: idiag_rhopmx=0, idiag_rhopmy=0, idiag_rhopmz=0
   integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
@@ -126,7 +126,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.183 2007-02-28 07:11:46 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.184 2007-03-14 21:53:37 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -1641,6 +1641,10 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
       endif
 !
+      if (l2davgfirst) then
+         call phisum_mn_name_rz(p%rhop,idiag_rhopmphi)
+      endif
+!
     endsubroutine dvvp_dt_pencil
 !***********************************************************************
     subroutine dxxp_dt(f,df,fp,dfp,ineargrid)
@@ -2321,7 +2325,7 @@ k_loop:   do while (.not. (k>npar_loc))
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname,inamez,inamey,inamex,inamexy,inamer
+      integer :: iname,inamez,inamey,inamex,inamexy,inamer,inamerz
       logical :: lwr
 !
 !  Write information to index.pro
@@ -2351,7 +2355,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
         idiag_rhoptilm=0; idiag_dtdragp=0; idiag_dedragp=0
         idiag_rhopm=0; idiag_rhoprms=0; idiag_rhop2m=0; idiag_rhopmax=0
-        idiag_rhopmin=0; idiag_decollp=0;
+        idiag_rhopmin=0; idiag_decollp=0; idiag_rhopmphi=0
         idiag_nparmax=0; idiag_nmigmax=0; idiag_mpt=0
         idiag_npmx=0; idiag_npmy=0; idiag_npmz=0
         idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
@@ -2390,6 +2394,7 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'rhop2m',idiag_rhop2m)
         call parse_name(iname,cname(iname),cform(iname),'rhopmin',idiag_rhopmin)
         call parse_name(iname,cname(iname),cform(iname),'rhopmax',idiag_rhopmax)
+        call parse_name(iname,cname(iname),cform(iname),'rhopmphi',idiag_rhopmphi)
         call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax)
         call parse_name(iname,cname(iname),cform(iname),'mpt',idiag_mpt)
         call parse_name(iname,cname(iname),cform(iname), &
@@ -2434,6 +2439,12 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       do inamer=1,nnamer
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'rhopmr',idiag_rhopmr)
+      enddo
+!
+!  check for those quantities for which we want phi-averages
+!
+      do inamerz=1,nnamerz
+        call parse_name(inamerz,cnamer(inamerz),cformr(inamerz),'rhopmphi',idiag_rhopmphi)
       enddo
 !
     endsubroutine rprint_particles
