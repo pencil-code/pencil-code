@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.292 2007-03-14 20:05:09 wlyra Exp $
+! $Id: sub.f90,v 1.293 2007-03-14 20:06:23 wlyra Exp $
 
 module Sub
 
@@ -1890,7 +1890,7 @@ module Sub
          gradcurl(:,3,3) = fjik(:,2)   - fjik(:,1)
       endif
 !
-      if (lcylgrid.or.lspherical) then
+      if (lcylgrid.or.lspherical) &
          call stop_it("del2v_etc not implemented for non-cartesian coordinates")
 !
     endsubroutine del2v_etc
@@ -1943,7 +1943,7 @@ module Sub
         endselect
       endif
 !
-      if (lcylgrid.or.lspherical) then
+      if (lcylgrid.or.lspherical) &
          call stop_it("del2v_etc not implemented for non-cartesian coordinates")
 !      
     endsubroutine del2vi_etc
