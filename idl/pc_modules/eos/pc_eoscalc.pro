@@ -63,7 +63,6 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
        message,"Thermodynamic combination not implemented yet: /pp,/lnrho_lnTT"
       endif else if keyword_set(ss) then begin
        ;result = fn of  where var1,var2 = lnrho, lnTT
-       print,'compute ss from lnrho and lnTT'
        lnrho=var1
        lnTT=var2
       ;
