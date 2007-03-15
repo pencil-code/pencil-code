@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.392 2007-03-07 13:29:49 wlyra Exp $
+! $Id: magnetic.f90,v 1.393 2007-03-15 02:40:26 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -222,7 +222,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.392 2007-03-07 13:29:49 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.393 2007-03-15 02:40:26 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -607,7 +607,7 @@ module Magnetic
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
       if (lresi_hyper3) lpenc_requested(i_del6a)=.true.
-      if (lspherical) lpenc_requested(i_graddiva)=.true.
+      if (lspherical_coords) lpenc_requested(i_graddiva)=.true.
       if (lentropy .or. lresi_smagorinsky .or. ltemperature) then
         lpenc_requested(i_j2)=.true.
       endif
@@ -736,7 +736,7 @@ module Magnetic
       if (lpencil_in(i_b2)) lpencil_in(i_bb)=.true.
       if (lpencil_in(i_jj)) lpencil_in(i_bij)=.true.
       if (lpencil_in(i_bb)) then
-        if (lspherical) lpencil_in(i_aa)=.true.
+        if (lspherical_coords) lpencil_in(i_aa)=.true.
         lpencil_in(i_aij)=.true.
       endif
       if (lpencil_in(i_djuidjbi)) then
@@ -792,7 +792,7 @@ module Magnetic
         if (meanfield_etat/=0.) lpencil_in(i_jj)=.true.
       endif
       if (lpencil_in(i_del2A)) then
-        if (lspherical) then
+        if (lspherical_coords) then
           lpencil_in(i_jj)=.true.
           lpencil_in(i_graddivA)=.true.
         endif
@@ -918,7 +918,7 @@ module Magnetic
       endif
 !  in spherical geometry, del2a is best written as graddiva-jj.
       if (lpencil(i_del2a)) then
-        if (lspherical) p%del2a=p%graddiva-p%jj
+        if (lspherical_coords) p%del2a=p%graddiva-p%jj
       endif
 ! j2
       if (lpencil(i_j2)) call dot2_mn(p%jj,p%j2)

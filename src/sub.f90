@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.294 2007-03-14 20:10:51 wlyra Exp $
+! $Id: sub.f90,v 1.295 2007-03-15 02:40:26 wlyra Exp $
 
 module Sub
 
@@ -1117,7 +1117,7 @@ module Sub
       call der(f,k1+3,tmp,3)
       g=g+tmp
 !
-      if (lcylgrid.or.lspherical) &
+      if (lcylindrical_coords.or.lspherical_coords) &
            call stop_it("div not implemented for non-cartesian coordinates")
 !
     end subroutine div
@@ -1137,7 +1137,7 @@ module Sub
       call der(f(:,:,:,3),tmp,3)
       g=g+tmp
 !
-      if (lcylgrid.or.lspherical) &
+      if (lcylindrical_coords.or.lspherical_coords) &
            call stop_it("div_other not implemented for non-cartesian coordinates")
 !
     end subroutine div_other
@@ -1161,11 +1161,11 @@ module Sub
 !
 !  adjustments for spherical coordinate system
 !
-      if (lspherical) then
+      if (lspherical_coords) then
         b=b+2.*r1_mn*a(:,1)+r1_mn*cotth(m)*a(:,2)
       endif
 !
-      if (lcylgrid) then
+      if (lcylindrical_coords) then
         b=b+rcyl_mn1*a(:,1)
       endif
 
@@ -1189,13 +1189,13 @@ module Sub
 !
 !  adjustments for spherical coordinate system
 !
-      if (lspherical.and.present(a)) then
+      if (lspherical_coords.and.present(a)) then
         b(:,1)=b(:,1)+a(:,3)*r1_mn*cotth(m)
         b(:,2)=b(:,2)-a(:,3)*r1_mn
         b(:,3)=b(:,3)+a(:,2)*r1_mn
       endif
 !
-      if (lcylgrid.and.present(a)) then
+      if (lcylindrical_coords.and.present(a)) then
          b(:,3)=b(:,3)+a(:,2)*rcyl_mn1
       endif
 !
@@ -1679,13 +1679,13 @@ module Sub
 !
 !  adjustments for spherical corrdinate system
 !
-      if (lspherical) then
+      if (lspherical_coords) then
         g(:,1)=g(:,1)+f(l1:l2,m,n,k1+3)*r1_mn*cotth(m)
         g(:,2)=g(:,2)-f(l1:l2,m,n,k1+3)*r1_mn
         g(:,3)=g(:,3)+f(l1:l2,m,n,k1+2)*r1_mn
       endif
 !
-      if (lcylgrid) then
+      if (lcylindrical_coords) then
          g(:,3)=g(:,3)+f(l1:l2,m,n,k1+2)*rcyl_mn1
       endif
 !
@@ -1729,7 +1729,7 @@ module Sub
 !
       endselect
 !
-      if (lcylgrid.or.lspherical) &
+      if (lcylindrical_coords.or.lspherical_coords) &
            call stop_it("curli not implemented for non-cartesian coordinates")
 !
     endsubroutine curli
@@ -1755,12 +1755,12 @@ module Sub
       call der2(f,k,d2fdz,3)
       del2f=d2fdx+d2fdy+d2fdz
 !
-      if (lcylgrid) then
+      if (lcylindrical_coords) then
          call der(f,k,tmp,1)
          del2f=del2f+tmp*rcyl_mn1
       endif
 !
-      if (lspherical) &
+      if (lspherical_coords) &
            call stop_it("del2 not implemented for spherical coordinates")
 !
     endsubroutine del2
@@ -1790,14 +1790,14 @@ module Sub
         del2f(:,i)=tmp
       enddo
 !
-      if (lcylgrid) then
+      if (lcylindrical_coords) then
          call der(f,k1+2,tmp,2)
          del2f(:,1)=del2f(:,1) -(2*tmp+f(l1:l2,m,n,k1+1))*rcyl_mn1**2
          call der(f,k1+1,tmp,2)
          del2f(:,2)=del2f(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn1**2
       endif
 !
-      if (lspherical) &
+      if (lspherical_coords) &
            call stop_it("del2v not implemented for spherical coordinates")
 !
     endsubroutine del2v
@@ -1863,24 +1863,46 @@ module Sub
         fjik(:,2)=tmp
         call derij(f,k1+3,tmp,1,2)
         fjik(:,3)=tmp
+        if (lcylindrical_coords.or.lspherical_coords) &
+             call stop_it("gradcurl at del2v_etc not implemented for non-cartesian coordinates")
       endif
 !
       if (present(del2)) then
         do i=1,3
           del2(:,i)=fijj(:,i,1)+fijj(:,i,2)+fijj(:,i,3)
         enddo
+        if (lcylindrical_coords) then 
+           call der(f,k1+2,tmp,2)
+           del2(:,1)=del2(:,1) -(2*tmp+f(l1:l2,m,n,k1+1))*rcyl_mn1**2
+           call der(f,k1+1,tmp,2)
+           del2(:,2)=del2(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn1**2
+        endif
+        if (lspherical_coords) &
+             call stop_it("del2 at del2v_etc not implemented for spherical coordinates")
       endif
 !
       if (present(graddiv)) then
         do i=1,3
           graddiv(:,i)=fjji(:,i,1)+fjji(:,i,2)+fjji(:,i,3)
         enddo
+        if (lcylindrical_coords) then
+           call der(f,k1+1,tmp,1)
+           graddiv(:,1)=graddiv(:,1)+tmp*rcyl_mn1 - f(l1:l2,m,n,k1+1)*rcyl_mn2
+           call der(f,k1+1,tmp,2)
+           graddiv(:,2)=graddiv(:,2)+tmp*rcyl_mn1
+           call der(f,k1+1,tmp,3)
+           graddiv(:,3)=graddiv(:,3)+tmp*rcyl_mn1
+        endif
+        if (lspherical_coords) &
+             call stop_it("graddiv at del2v_etc not implemented for spherical coordinates")
       endif
 !
       if (present(curlcurl)) then
         curlcurl(:,1)=fjji(:,1,2)-fijj(:,1,2)+fjji(:,1,3)-fijj(:,1,3)
         curlcurl(:,2)=fjji(:,2,3)-fijj(:,2,3)+fjji(:,2,1)-fijj(:,2,1)
         curlcurl(:,3)=fjji(:,3,1)-fijj(:,3,1)+fjji(:,3,2)-fijj(:,3,2)
+        if (lcylindrical_coords.or.lspherical_coords) &
+             call stop_it("curlcurl at del2v_etc not implemented for non-cartesian coordinates")
       endif
 !
       if(present(gradcurl)) then
@@ -1895,10 +1917,10 @@ module Sub
          gradcurl(:,3,1) = fjji(:,3,2) - fijj(:,2,3)
          gradcurl(:,3,2) = fijj(:,1,3) - fjji(:,3,1)
          gradcurl(:,3,3) = fjik(:,2)   - fjik(:,1)
-      endif
 !
-      if (lcylgrid.or.lspherical) &
-         call stop_it("del2v_etc not implemented for non-cartesian coordinates")
+         if (lcylindrical_coords.or.lspherical_coords) &
+              call stop_it("gradcurl at del2v_etc not implemented for non-cartesian coordinates")
+      endif
 !
     endsubroutine del2v_etc
 !***********************************************************************
@@ -1951,8 +1973,8 @@ module Sub
         endselect
       endif
 !
-      if (lcylgrid.or.lspherical) &
-         call stop_it("del2v_etc not implemented for non-cartesian coordinates")
+      if (lcylindrical_coords.or.lspherical_coords) &
+         call stop_it("del2vi_etc not implemented for non-cartesian coordinates")
 !      
     endsubroutine del2vi_etc
 !***********************************************************************
@@ -2058,7 +2080,7 @@ module Sub
 !  Psi_{,phi^ r^} = Psi_{,r^ phi^} - Psi_{,\phi^}/r
 !  Psi_{,phi^ theta^} = Psi_{,theta^ phi^} - Psi_{,\phi^}*r^{-1}*cot(theta)
 !
-      if (lspherical) then
+      if (lspherical_coords) then
         do i=1,3
           d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*r1_mn
           d2A(:,3,1,i)=d2A(:,3,1,i)-aij(:,i,3)*r1_mn
@@ -2069,7 +2091,7 @@ module Sub
 !  for cylindrical, only
 !  Psi_{,phi^ pom^} = Psi_{,pom^ phi^} - Psi_{,\phi^}/pom
 !
-      if (lcylgrid) then
+      if (lcylindrical_coords) then
          do i=1,3
             d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*rcyl_mn1
          enddo
@@ -2084,7 +2106,7 @@ module Sub
 !
 !  corrections for spherical coordinates
 !
-      if (lspherical) then
+      if (lspherical_coords) then
         bij(:,3,2)=bij(:,3,2)+aij(:,2,2)*r1_mn
         bij(:,2,3)=bij(:,2,3)-aij(:,3,3)*r1_mn
         bij(:,1,3)=bij(:,1,3)+aij(:,3,3)*r1_mn*cotth(m)
@@ -2095,7 +2117,7 @@ module Sub
 !
 !  corrections for cylindrical coordinates
 !
-      if (lcylgrid) then
+      if (lcylindrical_coords) then
         bij(:,3,2)=bij(:,3,2)+ aij(:,2,2)*r1_mn
         bij(:,3,1)=bij(:,3,1)+(aij(:,2,1)+aij(:,1,2))*rcyl_mn1-aa(:,2)*rcyl_mn2
       endif   
@@ -2359,7 +2381,7 @@ module Sub
 !  adjustments for spherical coordinate system.
 !  The following only works correctly for u.gradu, not for general u.gradA
 !
-      if (lspherical) then
+      if (lspherical_coords) then
         ugradf(:,1)=ugradf(:,1)-r1_mn*(uu(:,2)**2+uu(:,3)**2)
         ugradf(:,2)=ugradf(:,2)+r1_mn*(uu(:,1)*uu(:,2)-cotth(m)*uu(:,3)**2)
         ugradf(:,3)=ugradf(:,3)+r1_mn*(uu(:,1)*uu(:,3)+cotth(m)*uu(:,2)*uu(:,3))
@@ -2367,7 +2389,7 @@ module Sub
 !
 !  same... have to adjust it for the magnetic field or other vectors
 !
-      if (lcylgrid) then
+      if (lcylindrical_coords) then
          ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)**2)
          ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,1)*uu(:,2))
       endif

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.497 2007-03-01 09:08:28 bingert Exp $
+! $Id: entropy.f90,v 1.498 2007-03-15 02:40:26 wlyra Exp $
 
 ! 
 !  This module takes care of entropy (initial condition
@@ -168,7 +168,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.497 2007-03-01 09:08:28 bingert Exp $")
+           "$Id: entropy.f90,v 1.498 2007-03-15 02:40:26 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -3040,7 +3040,7 @@ module Entropy
           dhcond=hcond0*(hcond1-1.)*der_step(p%r_mn,r_bcz,-widthss)
           glhc(:,1) = x(l1:l2)/p%r_mn*dhcond
           glhc(:,2) = y(m)/p%r_mn*dhcond
-          if (lcylindrical) then
+          if (lcylinder_in_a_box) then
             glhc(:,3) = 0.
           else
             glhc(:,3) = z(n)/p%r_mn*dhcond

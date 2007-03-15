@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.353 2007-03-09 07:46:10 ajohan Exp $
+! $Id: equ.f90,v 1.354 2007-03-15 02:40:26 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -145,9 +145,9 @@ module Equ
 
               if (itype_name(iname)==ilabel_sum_lim) then
                  vol=1.
-                 if (lcylindrical)  vol=vol*pi*(r_ext**2-r_int**2)
-                 if (nzgrid/=1)     vol=vol*Lz
-                 if (lspherical)    vol=1.333333333*pi*(r_ext**3-r_int**3)
+                 if (lcylinder_in_a_box)  vol=vol*pi*(r_ext**2-r_int**2)
+                 if (nzgrid/=1)           vol=vol*Lz
+                 if (lsphere_in_a_box)    vol=1.333333*pi*(r_ext**3-r_int**3)
                  fname(iname)=fsum(isum_count)/vol
               endif
 
@@ -413,7 +413,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.353 2007-03-09 07:46:10 ajohan Exp $")
+           "$Id: equ.f90,v 1.354 2007-03-15 02:40:26 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -421,7 +421,7 @@ module Equ
       ldiagnos=lfirst.and.lout
       l1ddiagnos=lfirst.and.l1dout
       l2davgfirst=lfirst.and.l2davg
-      l1dphiavg=lcylindrical.and.l1ddiagnos
+      l1dphiavg=lcylinder_in_a_box.and.l1ddiagnos
 !
 !  record times for diagnostic and 2d average output
 !
@@ -570,7 +570,7 @@ module Equ
         endif
 !
         if (any(lfreeze_varext).or.any(lfreeze_varint)) then
-          if (lcylindrical) then
+          if (lcylinder_in_a_box) then
             lpencil(i_rcyl_mn)=.true.
           else
             lpencil(i_r_mn)=.true.
@@ -713,7 +713,7 @@ module Equ
           if (headtt) &
               print*, 'pde: freezing variables for r < ', rfreeze_int, &
                   ' : ', lfreeze_varint
-          if (lcylindrical) then
+          if (lcylinder_in_a_box) then
             pfreeze_int = &
                 quintic_step(p%rcyl_mn,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
           else
@@ -731,7 +731,7 @@ module Equ
           if (headtt) &
               print*, 'pde: freezing variables for r > ', rfreeze_ext, &
                   ' : ', lfreeze_varext
-          if (lcylindrical) then
+          if (lcylinder_in_a_box) then
             pfreeze_ext = &
                 1-quintic_step(p%rcyl_mn,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
           else
@@ -857,7 +857,7 @@ module Equ
 !  exclude the frozen zones from the time-step calculation
 !
           if (any(lfreeze_varint)) then
-             if (lcylindrical) then
+             if (lcylinder_in_a_box) then
                 where (p%rcyl_mn .le. rfreeze_int)
                    maxadvec=0.
                    maxdiffus=0.
@@ -871,7 +871,7 @@ module Equ
           endif
 !
           if (any(lfreeze_varext)) then
-             if (lcylindrical) then
+             if (lcylinder_in_a_box) then
                 where (p%rcyl_mn .ge. rfreeze_ext)
                    maxadvec=0.
                    maxdiffus=0.

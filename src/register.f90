@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.204 2007-03-14 07:56:40 dintrans Exp $
+! $Id: register.f90,v 1.205 2007-03-15 02:40:26 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -307,11 +307,11 @@ module Register
 !  For spherical coordinate system, calculate 1/r, cot(theta)/r, etc
 !
       if (coord_system=='cartesian') then
-        lspherical=.false.
-        lcylgrid=.false.
+        lspherical_coords=.false.
+        lcylindrical_coords=.false.
       elseif (coord_system=='spherical') then
-        lspherical=.true.
-        lcylgrid=.false.
+        lspherical_coords=.true.
+        lcylindrical_coords=.false.
 !
 !  calculate 1/r
 !
@@ -344,8 +344,8 @@ module Register
 !  end of coord_system=='spherical' query
 !
       elseif (coord_system=='cylindric') then
-         lspherical=.false.
-         lcylgrid=.true.
+         lspherical_coords=.false.
+         lcylindrical_coords=.true.
 !
          rcyl_mn=x(l1:l2)
          rcyl_mn1=max(1./x(l1:l2),tini)

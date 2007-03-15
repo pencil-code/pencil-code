@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.359 2007-03-14 07:56:40 dintrans Exp $
+! ! $Id: cdata.f90,v 1.360 2007-03-15 02:40:26 wlyra Exp $
 
 module Cdata
 
@@ -20,7 +20,8 @@ module Cdata
 
 ! coordinate system (alternatives: spherical, cylindric)
   character (len=9) :: coord_system='cartesian'
-  logical :: lspherical=.false.,lcylindrical=.false.,lcylgrid=.false.
+  logical :: lsphere_in_a_box=.false.,lcylinder_in_a_box=.false.
+  logical :: lspherical_coords=.false.,lcylindrical_coords=.false.
   real, dimension (nx) :: r1_mn,r2_mn
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth
   real, dimension (nx) :: rcyl_mn,rcyl_mn1,rcyl_mn2
@@ -251,6 +252,7 @@ module Cdata
   logical :: lcopysnapshots_exp=.false.
   logical :: lwrite_2d=.false.
   logical :: lbidiagonal_derij=.false.
+  logical :: lisotropic_advection=.false.
 
 ! Constant 'parameters' cannot occur in namelists, so inorder to get the now constant module
 ! logicals into the lphysics name list... We have some proxies that are used to initialise

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.268 2007-02-28 04:29:55 wlyra Exp $
+! $Id: param_io.f90,v 1.269 2007-03-15 02:40:26 wlyra Exp $
 
 module Param_IO
 
@@ -67,7 +67,7 @@ module Param_IO
        mu0,force_lower_bound,force_upper_bound, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2,fbcz1_1,fbcz1_2,fbcz2_1,fbcz2_2, &
        xyz_step,xi_step_frac,xi_step_width, &
-       lcylindrical,llocal_iso,init_loops,lwrite_2d
+       lcylinder_in_a_box,lsphere_in_a_box,llocal_iso,init_loops,lwrite_2d
  !      lextrapolate_bot_density,ltop_velocity_kep,laccelerat_zone, &
  !      ldecelerat_zone,lsurface_zone,lnstar_entropy,lnstar_T_const,lnstar_1D, T_disc
   namelist /run_pars/ &
@@ -99,10 +99,10 @@ module Param_IO
        border_frac,border_frac_x,border_frac_y,border_frac_z, &
        lpoint,mpoint,npoint, &
        lpoint2,mpoint2,npoint2, &
-       lrescaling, lcylindrical, &
+       lrescaling, lcylinder_in_a_box, lsphere_in_a_box,&
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
-       lbidiagonal_derij
+       lbidiagonal_derij,lisotropic_advection
   contains
 
 !***********************************************************************
@@ -369,6 +369,8 @@ module Param_IO
             print*,'&particles_number_init_pars  /'
         if (lparticles_selfgravity) &
             print*,'&particles_selfgrav_init_pars/'
+        if (lparticles_nbody) &
+            print*,'&particles_nbody_init_pars   /'
         !if (lshock       ) print*,'&shock_init_pars          /'
         ! no input parameters for viscosity
         print*,'------END sample namelist -------'
@@ -683,6 +685,8 @@ module Param_IO
             print*,'&particles_number_run_pars  /'
         if (lparticles_selfgravity) &
             print*,'&particles_selfgrav_run_pars/'
+        if (lparticles_nbody) &
+            print*,'&particles_nbody_run_pars   /'
         if (lshock        ) print*,'&shock_run_pars           /'
         print*,'------END sample namelist -------'
         print*

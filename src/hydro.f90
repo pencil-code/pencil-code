@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.331 2007-03-13 07:08:42 dhruba Exp $
+! $Id: hydro.f90,v 1.332 2007-03-15 02:40:26 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -92,7 +92,6 @@ module Hydro
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
   logical :: lforcing_continuous=.false.,lembed=.false.
   logical :: lremove_mean_momenta=.false.
-  logical :: llarge_scale_Bz=.false.
   character (len=labellen) :: iforcing_continuous='ABC'
 !
 ! geodynamo
@@ -105,7 +104,7 @@ module Hydro
        borderuu, lfreeze_uint, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
        lforcing_continuous,lembed,iforcing_continuous,k1_ff,ampl_ff,width_ff, &
-       lprecession, omega_precession, lshear_rateofstrain,llarge_scale_Bz
+       lprecession, omega_precession, lshear_rateofstrain
 
 ! end geodynamo
 
@@ -189,7 +188,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.331 2007-03-13 07:08:42 dhruba Exp $")
+           "$Id: hydro.f90,v 1.332 2007-03-15 02:40:26 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -637,7 +636,7 @@ module Hydro
 !
       if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) then
         lpenc_requested(i_r_mn)=.true.
-        if (lcylindrical) lpenc_requested(i_rcyl_mn)=.true.
+        if (lcylinder_in_a_box) lpenc_requested(i_rcyl_mn)=.true.
       endif
 !
 !  1/rho needed for correcting the damping term
@@ -696,6 +695,8 @@ module Hydro
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_u2)=.true.
       endif
+!
+      if (lisotropic_advection) lpenc_requested(i_u2)=.true.
 !
     endsubroutine pencil_criteria_hydro
 !***********************************************************************
@@ -896,7 +897,7 @@ module Hydro
 !  for example.
 !
       if (Omega/=0.) then
-        if (lspherical) then
+        if (lspherical_coords) then
           call coriolis_spherical(f,df,p)
         elseif (lprecession) then
           call precession(f,df,p)
@@ -946,6 +947,19 @@ module Hydro
       if (lfirst.and.ldt) advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
                                    abs(p%uu(:,2))*dy_1(  m  )+ &
                                    abs(p%uu(:,3))*dz_1(  n  )
+!
+!WL: don't know if this is correct, but it's the only way I can make
+!    some 1D and 2D samples work when the non-existent direction has the
+!    largest velocity (like a 2D rz slice of a Keplerian disk that rotates 
+!    on the phi direction)
+!    Please check
+!
+      if (lisotropic_advection) then
+         if (lfirst.and.ldt) then
+            if ((nxgrid==1).or.(nygrid==1).or.(nzgrid==1)) &
+                 advec_uu=sqrt(p%u2*dxyz_2)
+         endif
+      endif
       if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
 !
 !  add possibility of forcing that is not delta-correlated in time
@@ -1560,7 +1574,7 @@ module Hydro
 !  a good idea. So, because of that, spherical Couette flow has to be coded
 !  separately.
 !  ==> reconsider name <==
-!  Allow now also for cylindical Couette flow (if lcylindrical=T)
+!  Allow now also for cylindical Couette flow (if lcylinder_in_a_box=T)
 !
         if (lOmega_int) then
 !
@@ -1568,11 +1582,12 @@ module Hydro
 !  calculate work done to sustain zero rotation on outer cylinder/sphere
 !
 !
-          if (lcylindrical) then
+          if (lcylinder_in_a_box) then
             pdamp = step(p%rcyl_mn,rdampext,wdamp) ! outer damping profile
           else
             pdamp = step(p%r_mn,rdampext,wdamp) ! outer damping profile
           endif
+!
           do i=1,3
             j=iux-1+i
             fext(:,i)=-dampuext*pdamp*f(l1:l2,m,n,j)
@@ -1589,7 +1604,7 @@ module Hydro
 !  calculate work done to sustain uniform rotation on inner cylinder/sphere
 !
           if (dampuint > 0.0) then
-            if (lcylindrical) then
+            if (lcylinder_in_a_box) then
               pdamp = 1 - step(p%rcyl_mn,rdampint,wdamp) ! inner damping profile
             else
               pdamp = 1 - step(p%r_mn,rdampint,wdamp) ! inner damping profile

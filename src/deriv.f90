@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.45 2007-03-14 19:53:56 wlyra Exp $
+! $Id: deriv.f90,v 1.46 2007-03-15 02:40:26 wlyra Exp $
 
 module Deriv
 
@@ -65,8 +65,8 @@ module Deriv
           df=fac*(+ 45.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
                   -  9.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
                   +      (f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
-          if (lspherical) df=df*r1_mn
-          if (lcylgrid)   df=df*rcyl_mn1
+          if (lspherical_coords)     df=df*r1_mn
+          if (lcylindrical_coords)   df=df*rcyl_mn1
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in y-direction'
@@ -77,7 +77,7 @@ module Deriv
           df=fac*(+ 45.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
                   -  9.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
                   +      (f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
-          if (lspherical) df=df*r1_mn*sin1th(m)
+          if (lspherical_coords) df=df*r1_mn*sin1th(m)
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in z-direction'
@@ -122,8 +122,8 @@ module Deriv
           df=fac*(+ 45.0*(f(l1:l2,m+1,n)-f(l1:l2,m-1,n)) &
                   -  9.0*(f(l1:l2,m+2,n)-f(l1:l2,m-2,n)) &
                   +      (f(l1:l2,m+3,n)-f(l1:l2,m-3,n)))
-          if (lspherical) df=df*r1_mn
-          if (lcylgrid)   df=df*rcyl_mn1
+          if (lspherical_coords)     df=df*r1_mn
+          if (lcylindrical_coords)   df=df*rcyl_mn1
         else
           df=0.
           if (ip<=5) print*, 'der_other: Degenerate case in y-direction'
@@ -134,7 +134,7 @@ module Deriv
           df=fac*(+ 45.0*(f(l1:l2,m,n+1)-f(l1:l2,m,n-1)) &
                   -  9.0*(f(l1:l2,m,n+2)-f(l1:l2,m,n-2)) &
                   +      (f(l1:l2,m,n+3)-f(l1:l2,m,n-3)))
-          if (lspherical) df=df*r1_mn*sin1th(m)
+          if (lspherical_coords) df=df*r1_mn*sin1th(m)
         else
           df=0.
           if (ip<=5) print*, 'der_other: Degenerate case in z-direction'
@@ -183,8 +183,8 @@ module Deriv
                    +270.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
                    - 27.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
                    +  2.0*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
-          if (lspherical) df2=df2*r2_mn
-          if (lcylgrid)   df2=df2*rcyl_mn2
+          if (lspherical_coords)     df2=df2*r2_mn
+          if (lcylindrical_coords)   df2=df2*rcyl_mn2
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dy_tilde(m)*df
@@ -199,7 +199,7 @@ module Deriv
                    +270.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
                    - 27.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
                    +  2.0*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
-          if (lspherical) df2=df2*r2_mn*sin2th(m)
+          if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dz_tilde(n)*df
@@ -241,7 +241,7 @@ module Deriv
       if (.not. lequidist(j)) &
           call fatal_error('der3','NOT IMPLEMENTED for non-equidistant grid')
 !
-      if (lspherical.or.lcylgrid) &
+      if (lspherical_coords.or.lcylindrical_coords) &
            call fatal_error('der3','NOT IMPLEMENTED for non-cartesian coordinates')
 !
       if (j==1) then
@@ -319,7 +319,7 @@ module Deriv
         call fatal_error('der4','NOT IMPLEMENTED for no equidistant grid')
       endif
 !
-      if (lspherical.or.lcylgrid) &
+      if (lspherical_coords.or.lcylindrical_coords) &
            call fatal_error('der4','NOT IMPLEMENTED for non-cartesian coordinates')
 !
       if (present(ignoredx)) then
@@ -414,7 +414,7 @@ module Deriv
       if (.not. lequidist(j)) &
           call fatal_error('der5','NOT IMPLEMENTED for no equidistant grid')
 !
-      if (lspherical.or.lcylgrid) &
+      if (lspherical_coords.or.lcylindrical_coords) &
            call fatal_error('der5','NOT IMPLEMENTED for non-cartesian coordinates')
 !
       if (j==1) then
@@ -501,7 +501,7 @@ module Deriv
         endif
       endif
 !
-      if (lspherical.or.lcylgrid) &
+      if (lspherical_coords.or.lcylindrical_coords) &
            call fatal_error('der6','NOT IMPLEMENTED for non-cartesian coordinates')
 !
       if (j==1) then
@@ -597,7 +597,7 @@ module Deriv
         endif
       endif
 !
-      if (lspherical.or.lcylgrid) &
+      if (lspherical_coords.or.lcylindrical_coords) &
            call fatal_error('der6_other','NOT IMPLEMENTED for non-cartesian coordinates')
 !
       if (j==1) then
@@ -816,7 +816,7 @@ module Deriv
 !  Spherical polars. The comments about "minus extra terms" refer to the
 !  presence of extra terms that are being evaluated later in bij_etc.
 !
-      if (lspherical) then
+      if (lspherical_coords) then
         if ((i==1.and.j==2)) df=df*r1_mn
         if ((i==2.and.j==1)) df=df*r1_mn !(minus extra terms)
         if ((i==1.and.j==3)) df=df*r1_mn*sin1th(m)
@@ -825,7 +825,7 @@ module Deriv
         if ((i==3.and.j==2)) df=df*r2_mn*sin1th(m) !(minus extra terms)
       endif
 !
-      if (lcylgrid) then
+      if (lcylindrical_coords) then
         if ((i==1.and.j==2)) df=df*rcyl_mn1
         if ((i==2.and.j==1)) df=df*rcyl_mn1 !(minus extra terms)
         if ((i==1.and.j==3)) df=df
@@ -1040,7 +1040,7 @@ module Deriv
         call fatal_error('der5i1j','')
       endif
 !
-      if (lspherical.or.lcylgrid) &
+      if (lspherical_coords.or.lcylindrical_coords) &
            call fatal_error('der5i1j','NOT IMPLEMENTED for non-cartesian coordinates')
 !
     endsubroutine der5i1j
