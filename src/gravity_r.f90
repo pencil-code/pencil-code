@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.11 2007-01-18 09:55:26 dintrans Exp $
+! $Id: gravity_r.f90,v 1.12 2007-03-15 02:48:58 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -79,7 +79,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.11 2007-01-18 09:55:26 dintrans Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.12 2007-03-15 02:48:58 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -207,11 +207,9 @@ module Gravity
         do n=n1,n2
         do m=m1,m2
 !
-           if (lcylindrical_gravity) then
-              rr_mn=sqrt(x(l1:l2)**2+y(m)**2)+tini
-           else
-              rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)+tini
-           endif
+!  rr_mn differs from system used
+!
+          call get_radial_distance(rr_mn)
 !
           if (lpade) then
 
@@ -223,7 +221,6 @@ module Gravity
                                         cpot(3)**2  /), rr_mn) &
                          / poly( (/ 1., 0., cpot(4), cpot(5), &
                                             cpot(3) /), rr_mn)**2
-
           else
             if (ipotential .eq. 'sph-const') then
               g_r=-g0
@@ -236,12 +233,8 @@ module Gravity
             endif
           endif
 !
-          gg_mn(:,1) = x(l1:l2)/rr_mn*g_r
-          gg_mn(:,2) = y(  m  )/rr_mn*g_r
-          gg_mn(:,3) = z(  n  )/rr_mn*g_r
-          if (lcylindrical_gravity) gg_mn(:,3)=0.
+          call get_gravity_field(g_r,rr_mn,gg_mn)
 !
-
           f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
 !
           enddo
@@ -514,6 +507,67 @@ module Gravity
                                       "not implemented")
 
     endsubroutine potential_point
+!***********************************************************************
+    subroutine get_radial_distance(rr_mn)
+!
+      use Cdata
+!
+      real, dimension(nx),intent(out) :: rr_mn
+!
+!  different distances for different coordinates systems, and the
+!  possibility of cylindrical gravity
+!
+      if (coord_system=='cartesian') then
+         if (lcylindrical_gravity) then
+            rr_mn=sqrt(x(l1:l2)**2+y(m)**2)+tini
+         else
+            rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)+tini
+         endif
+      elseif (coord_system=='cylindric') then
+         if (lcylindrical_gravity) then
+            rr_mn=x(l1:l2)+tini
+         else
+            rr_mn=sqrt(x(l1:l2)**2+z(n)**2)+tini
+         endif
+      elseif(coord_system=='spherical') then
+         if (lcylindrical_gravity) then
+            rr_mn=x(l1:l2)*sqrt(1-cos(y(m)**2))
+         else
+            rr_mn=x(l1:l2)
+         endif
+      endif
+!
+    endsubroutine get_radial_distance
+!***********************************************************************
+    subroutine get_gravity_field(g_r,rr_mn,gg_mn)
+!
+      use Cdata
+!
+      real, dimension(nx),intent(in) :: g_r,rr_mn
+      real, dimension(nx,3),intent(out) :: gg_mn
+!
+      if (coord_system=='cartesian') then
+         gg_mn(:,1) = x(l1:l2)/rr_mn*g_r
+         gg_mn(:,2) = y(  m  )/rr_mn*g_r
+         gg_mn(:,3) = z(  n  )/rr_mn*g_r
+         if (lcylindrical_gravity) gg_mn(:,3)=0.
+      elseif (coord_system=='cylindric') then
+         gg_mn(:,1) = x(l1:l2)/rr_mn*g_r
+         gg_mn(:,2) = 0.
+         gg_mn(:,3) =    z(n)/rr_mn*g_r
+         if (lcylindrical_gravity) gg_mn(:,3)=0.
+      elseif (coord_system=='spherical') then
+         gg_mn(:,2)=0.
+         gg_mn(:,3)=0.
+         if (lcylindrical_gravity) then
+            gg_mn(:,1) = g_r*sin(y(m))
+            gg_mn(:,3) = g_r*cos(y(m))
+         else
+            gg_mn(:,1) = g_r
+         endif
+      endif
+!
+    endsubroutine get_gravity_field
 !***********************************************************************
     subroutine rprint_gravity(lreset,lwrite)
 !
