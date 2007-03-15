@@ -1,4 +1,4 @@
-! $Id: rtime_phiavg.f90,v 1.5 2007-03-03 17:41:35 wlyra Exp $
+! $Id: rtime_phiavg.f90,v 1.6 2007-03-15 12:51:22 wlyra Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -58,7 +58,6 @@ module Special
   use Sub, only: keep_compiler_quiet
   use EquationOfState
 
-
   implicit none
 
   include 'special.h'
@@ -72,7 +71,18 @@ module Special
   real, dimension (nrcylrun) :: rhoavg_coarse,rcyl_coarse
   real, dimension (nx,3) :: bavg,uavg
   real, dimension (nx) :: rhoavg
-  real :: drc,r1,r2
+  real :: drc,r1,r2,B_ext
+  logical :: llarge_scale_Bz
+  integer :: dummy=0
+!
+!  start parameters
+!
+  namelist /special_init_pars/ dummy
+!
+!   run parameters
+!
+  namelist /special_run_pars/ &
+       B_ext,llarge_scale_Bz
 !
 ! Keep some over used pencils
 !
@@ -142,11 +152,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.5 2007-03-03 17:41:35 wlyra Exp $
+!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.6 2007-03-15 12:51:22 wlyra Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: rtime_phiavg.f90,v 1.5 2007-03-03 17:41:35 wlyra Exp $")
+           "$Id: rtime_phiavg.f90,v 1.6 2007-03-15 12:51:22 wlyra Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -293,6 +303,46 @@ module Special
       if (NO_WARN) print*,f,df,p
 
     endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine read_special_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+
+      if (present(iostat)) then
+        read(unit,NML=special_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=special_init_pars,ERR=99)
+      endif
+
+99    return
+    endsubroutine read_special_init_pars
+!***********************************************************************
+    subroutine write_special_init_pars(unit)
+      integer, intent(in) :: unit
+
+      write(unit,NML=special_init_pars)
+
+    endsubroutine write_special_init_pars
+!***********************************************************************
+    subroutine read_special_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+
+      if (present(iostat)) then
+        read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=special_run_pars,ERR=99)
+      endif
+
+99    return
+    endsubroutine read_special_run_pars
+!***********************************************************************
+    subroutine write_special_run_pars(unit)
+      integer, intent(in) :: unit
+
+      write(unit,NML=special_run_pars)
+
+    endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !
@@ -445,7 +495,6 @@ module Special
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-!
 !   16-jul-06/natalia: coded
 !
       use Cdata
@@ -490,14 +539,18 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, dimension (nx) :: br,bp,bz
+      integer :: i
 !
-! put an if here to activate it only for large Bz fields in 
+! Remove mean electromotive force from induction equation.
+! Activated only when large Bz fields and are present 
 ! keplerian advection
 !
-      df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - &
-           uavg(:,2)*bavg(:,3)*x(l1:l2)*p%rcyl_mn1
-      df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - &
-           uavg(:,2)*bavg(:,3)*y(m)*p%rcyl_mn1
+      if (llarge_scale_Bz) then
+         df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - &
+              uavg(:,2)*bavg(:,3)*x(l1:l2)*p%rcyl_mn1
+         df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - &
+              uavg(:,2)*bavg(:,3)*y(m)*p%rcyl_mn1
+      endif
 ! Keep compiler quiet by ensuring every parameter is used
       if (NO_WARN) print*,df,p
 
@@ -589,13 +642,15 @@ module Special
 !
       use Cdata
       use Mpicomm
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nrcylrun) :: s_rho,rho_sum,ktot1
       real, dimension(nrcylrun,3) :: s_u,s_b,u_sum,b_sum
-      real, dimension(nx,3) :: uuf,bbf
+      real, dimension(nx,3) :: uuf,bbf,pbb
       integer, dimension(nrcylrun) :: k,ktot
       real, dimension(nx) :: prho,prcyl_mn,prcyl_mn1,sin,cos,puu1,puu2,puu3
+      real, dimension(nx) :: pbb1,pbb2,pbb3
       integer :: i,j,ir
       logical :: err,lfp,llp
       real :: rloop_int,rloop_ext,ur,up,rr1
@@ -604,38 +659,46 @@ module Special
       integer :: i0,ll
       real, dimension(nx) :: rr
 !
-      bavg_coarse=0.
-      uavg_coarse=0
-      rhoavg_coarse=0.
+      if (lmagnetic) bavg_coarse=0.
+      if (lhydro)    uavg_coarse=0
+      if (ldensity) rhoavg_coarse=0.
 !
       do m=m1,m2
          do n=n1,n2
-!            
+!           
             lfp=((m==m1).and.(n==n1))
             llp=((m==m2).and.(n==n2))
+            k=0;s_rho=0;s_u=0;s_b=0
 !
             prcyl_mn=max(sqrt(x(l1:l2)**2+y(m)**2),tini)
-            prho=f(l1:l2,m,n,ilnrho)
+            if (ldensity) prho=f(l1:l2,m,n,ilnrho)
             prcyl_mn1=1./prcyl_mn
             sin=y(m)*prcyl_mn1 ; cos= x(l1:l2)*prcyl_mn1
-            puu1=f(l1:l2,m,n,iux);puu2=f(l1:l2,m,n,iuy);puu3=f(l1:l2,m,n,iuz)
+            if (lhydro) then
+               puu1=f(l1:l2,m,n,iux);puu2=f(l1:l2,m,n,iuy);puu3=f(l1:l2,m,n,iuz)
+               uuf(:,1)=  puu1*cos+puu2*sin
+               uuf(:,2)= -puu1*sin+puu2*cos
+               uuf(:,3)=  puu3
+            endif    
 !
-            uuf(:,1)=  puu1*cos+puu2*sin
-            uuf(:,2)= -puu1*sin+puu2*cos
-            uuf(:,3)=  puu3
+            if (lmagnetic) then
+               call curl(f,iaa,pbb)
+               pbb1=pbb(:,1);pbb2=pbb(:,2);pbb3=pbb(:,3)+B_ext
+               bbf(:,1)=  pbb1*cos+pbb2*sin
+               bbf(:,2)= -pbb1*sin+pbb2*cos
+               bbf(:,3)=  pbb3
+            endif
 !
-            k=0
-            s_rho=0.
-            s_u=0.
             do ir=1,nrcylrun
                rloop_int = r_int + (ir-1)*drc
                rloop_ext = r_int +  ir   *drc
                do i=1,nx
                   if ((prcyl_mn(i).le.rloop_ext).and.(prcyl_mn(i).ge.rloop_int)) then
                      k(ir)=k(ir)+1
-                     s_rho(ir) = s_rho(ir) + prho(i)
+                     if (ldensity) s_rho(ir) = s_rho(ir) + prho(i)
                      do j=1,3
-                        s_u(ir,j) = s_u(ir,j) + uuf(i,j)
+                        if (lhydro)    s_u(ir,j) = s_u(ir,j) + uuf(i,j)
+                        if (lmagnetic) s_b(ir,j) = s_b(ir,j) + bbf(i,j)
                      enddo
                   endif
                enddo
@@ -643,33 +706,38 @@ module Special
 !
             if (lfp) then
                k_tmp=k
-               rho_tmp = s_rho
-               u_tmp=s_u
+               if (ldensity)  rho_tmp = s_rho
+               if (lhydro)    u_tmp=s_u
+               if (lmagnetic) b_tmp=s_b
             else
                k_tmp = k_tmp + k
-               rho_tmp = rho_tmp+s_rho
-               u_tmp=u_tmp+s_u
+               if (ldensity)  rho_tmp = rho_tmp+s_rho
+               if (lhydro)    u_tmp=u_tmp+s_u
+               if (lmagnetic) b_tmp=b_tmp+s_b
             endif
 !
             if (llp) then
                call mpireduce_sum_int(k_tmp,ktot,nrcylrun)
-               call mpireduce_sum(rho_tmp,rho_sum,nrcylrun)
+               if (ldensity)     call mpireduce_sum(rho_tmp,rho_sum,nrcylrun)
                do j=1,3
-                  call mpireduce_sum(u_tmp(:,j),u_sum(:,j),nrcylrun)
+                  if (lhydro)    call mpireduce_sum(u_tmp(:,j),u_sum(:,j),nrcylrun)
+                  if (lmagnetic) call mpireduce_sum(b_tmp(:,j),b_sum(:,j),nrcylrun)
                enddo
 !
                call mpibcast_int(ktot,nrcylrun)
-               call mpibcast_real(rho_sum,nrcylrun)
+               if (ldensity)     call mpibcast_real(rho_sum,nrcylrun)
                do j=1,3
-                  call mpibcast_real(u_sum(:,j),nrcylrun)
+                  if (lhydro)    call mpibcast_real(u_sum(:,j),nrcylrun)
+                  if (lmagnetic) call mpibcast_real(b_sum(:,j),nrcylrun)
                enddo
 !
                if (any(ktot == 0)) &
                     call error("set_new_average","ktot=0")
                 ktot1=1./ktot
-                rhoavg_coarse=rho_sum*ktot1
+                if (ldensity)     rhoavg_coarse=rho_sum*ktot1
                 do j=1,3
-                   uavg_coarse(:,j)=u_sum(:,j)*ktot1
+                   if (lhydro)    uavg_coarse(:,j)=u_sum(:,j)*ktot1
+                   if (lmagnetic) bavg_coarse(:,j)=b_sum(:,j)*ktot1
                 enddo
              endif
 !
