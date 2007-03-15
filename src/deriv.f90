@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.46 2007-03-15 02:40:26 wlyra Exp $
+! $Id: deriv.f90,v 1.47 2007-03-15 15:35:34 wlyra Exp $
 
 module Deriv
 
@@ -241,8 +241,8 @@ module Deriv
       if (.not. lequidist(j)) &
           call fatal_error('der3','NOT IMPLEMENTED for non-equidistant grid')
 !
-      if (lspherical_coords.or.lcylindrical_coords) &
-           call fatal_error('der3','NOT IMPLEMENTED for non-cartesian coordinates')
+      if (lspherical_coords) &
+           call fatal_error('der3','NOT IMPLEMENTED for spherical coordinates')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -267,6 +267,7 @@ module Deriv
           df=fac*(- 13.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
                   +  8.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
                   -  1.0*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
+          if (lcylindrical_coords)   df=df*rcyl_mn1**3
         else
           df=0.
         endif
@@ -319,8 +320,8 @@ module Deriv
         call fatal_error('der4','NOT IMPLEMENTED for no equidistant grid')
       endif
 !
-      if (lspherical_coords.or.lcylindrical_coords) &
-           call fatal_error('der4','NOT IMPLEMENTED for non-cartesian coordinates')
+      if (lspherical_coords) &
+           call fatal_error('der4','NOT IMPLEMENTED for spherical coordinates')
 !
       if (present(ignoredx)) then
         igndx = ignoredx
@@ -359,6 +360,7 @@ module Deriv
                   - 39.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
                   + 12.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
                   -      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          if (lcylindrical_coords)   df=df*rcyl_mn1**4
         else
           df=0.
         endif
@@ -414,8 +416,8 @@ module Deriv
       if (.not. lequidist(j)) &
           call fatal_error('der5','NOT IMPLEMENTED for no equidistant grid')
 !
-      if (lspherical_coords.or.lcylindrical_coords) &
-           call fatal_error('der5','NOT IMPLEMENTED for non-cartesian coordinates')
+      if (lspherical_coords) &
+           call fatal_error('der5','NOT IMPLEMENTED for spherical coordinates')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -440,6 +442,7 @@ module Deriv
           df=fac*(+  2.5*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
                   -  2.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
                   +  0.5*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
+          if (lcylindrical_coords)   df=df*rcyl_mn1**5
         else
           df=0.
         endif
@@ -501,8 +504,8 @@ module Deriv
         endif
       endif
 !
-      if (lspherical_coords.or.lcylindrical_coords) &
-           call fatal_error('der6','NOT IMPLEMENTED for non-cartesian coordinates')
+      if (lspherical_coords) &
+           call fatal_error('der6','NOT IMPLEMENTED for spherical coordinates')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -533,6 +536,7 @@ module Deriv
                   + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
                   -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
                   +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          if (lcylindrical_coords)   df=df*rcyl_mn1**6
         else
           df=0.
         endif
@@ -597,8 +601,8 @@ module Deriv
         endif
       endif
 !
-      if (lspherical_coords.or.lcylindrical_coords) &
-           call fatal_error('der6_other','NOT IMPLEMENTED for non-cartesian coordinates')
+      if (lspherical_coords) &
+           call fatal_error('der6_other','NOT IMPLEMENTED for spherical coordinates')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -629,6 +633,7 @@ module Deriv
                   + 15.0*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
                   -  6.0*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
                   +      (f(l1:l2,m+3,n)+f(l1:l2,m-3,n)))
+          if (lcylindrical_coords)   df=df*rcyl_mn1**6
         else
           df=0.
         endif
@@ -1061,9 +1066,11 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der_upwind1st,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der_upwind1st,j,1) + 1 !DERCOUNT
 !
-      if (.not. lequidist(j)) then
+      if (.not. lequidist(j)) &
         call fatal_error('der_upwind1st','NOT IMPLEMENTED for no equidistant grid')
-      endif
+!
+      if (lspherical_coords.or.lcylindrical_coords) &
+           call fatal_error('der_upwind1st','NOT IMPLEMENTED for non-cartesian grid')
 !
       if (j == 1) then
         if (nxgrid /= 1) then
