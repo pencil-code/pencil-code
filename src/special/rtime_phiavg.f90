@@ -1,4 +1,4 @@
-! $Id: rtime_phiavg.f90,v 1.6 2007-03-15 12:51:22 wlyra Exp $
+! $Id: rtime_phiavg.f90,v 1.7 2007-03-15 18:40:41 wlyra Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -152,11 +152,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.6 2007-03-15 12:51:22 wlyra Exp $
+!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.7 2007-03-15 18:40:41 wlyra Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: rtime_phiavg.f90,v 1.6 2007-03-15 12:51:22 wlyra Exp $")
+           "$Id: rtime_phiavg.f90,v 1.7 2007-03-15 18:40:41 wlyra Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -235,6 +235,20 @@ module Special
 !
     endsubroutine init_special
 !***********************************************************************
+    subroutine pencil_interdep_special(lpencil_in)
+!
+!  Interdependency among pencils provided by this module are specified here.
+!
+!  18-07-06/tony: coded                                                         
+!
+      use Sub, only: keep_compiler_quiet
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      call keep_compiler_quiet(lpencil_in)
+!
+    endsubroutine pencil_interdep_special
+!***********************************************************************
     subroutine pencil_criteria_special()
 !
 !  All pencils that this special module depends on are specified here.
@@ -303,6 +317,22 @@ module Special
       if (NO_WARN) print*,f,df,p
 
     endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine get_slices_special(f,slices)
+!
+!  Write slices for animation of special variables.
+!
+!  26-jun-06/tony: dummy
+!
+      use Sub, only: keep_compiler_quiet
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_special
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
       integer, intent(in) :: unit
