@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.295 2007-03-15 02:40:26 wlyra Exp $
+! $Id: sub.f90,v 1.296 2007-03-15 18:42:09 wlyra Exp $
 
 module Sub
 
@@ -1984,6 +1984,7 @@ module Sub
 !  09-dec-03/nils: adapted from del6v
 !
       use Cdata
+      use Mpicomm, only:stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: del4f
@@ -2001,6 +2002,9 @@ module Sub
         del4f(:,i)=tmp
       enddo
 !
+      if (lcylindrical_coords.or.lspherical_coords) &
+           call stop_it("del2vi_etc not implemented for non-cartesian coordinates")
+!
     endsubroutine del4v
 !***********************************************************************
     subroutine del6v(f,k,del6f)
@@ -2010,6 +2014,7 @@ module Sub
 !  24-apr-03/nils: adapted from del2v
 !
       use Cdata
+      use Mpicomm, only:stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: del6f
@@ -2026,6 +2031,9 @@ module Sub
         call del6(f,k1+i,tmp)
         del6f(:,i)=tmp
       enddo
+!
+      if (lcylindrical_coords.or.lspherical_coords) &
+           call stop_it("del2vi_etc not implemented for non-cartesian coordinates")
 !
     endsubroutine del6v
 !***********************************************************************
@@ -2204,9 +2212,10 @@ module Sub
 !
       use Cdata
       use Deriv
+      use Mpicomm, only:stop_it
 !
       intent(in) :: f,k
-      intent(out) :: del4f
+      intent(out) :: del4f      
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: del4f,d4fdx,d4fdy,d4fdz
@@ -2217,6 +2226,9 @@ module Sub
       call der4(f,k,d4fdz,3)
       del4f = d4fdx + d4fdy + d4fdz
 !
+      if (lcylindrical_coords.or.lspherical_coords) &
+           call stop_it("del4 not implemented for non-cartesian coordinates")
+!
     endsubroutine del4
 !***********************************************************************
     subroutine del6(f,k,del6f)
@@ -2224,21 +2236,31 @@ module Sub
 !  calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
 !  than del2^3) of a scalar for hyperdiffusion
 !  8-jul-02/wolf: coded
-!
+! 15-mar-07/wlad: implemented cylindrical coordinates as del2^3 
       use Cdata
       use Deriv
+      use Mpicomm, only:stop_it
 !
       intent(in) :: f,k
       intent(out) :: del6f
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f,tmp,tmp2
       real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
       integer :: k
 !
-      call der6(f,k,d6fdx,1)
-      call der6(f,k,d6fdy,2)
-      call der6(f,k,d6fdz,3)
-      del6f = d6fdx + d6fdy + d6fdz
+      if (lcylindrical_coords) then
+         call del2(f,k,tmp)
+         call del2(tmp,k,tmp2)
+         call del2(tmp2,k,del6f)
+      else
+         call der6(f,k,d6fdx,1)
+         call der6(f,k,d6fdy,2)
+         call der6(f,k,d6fdz,3)
+         del6f = d6fdx + d6fdy + d6fdz
+      endif
+!
+      if (lspherical_coords) &
+           call stop_it("del6 not implemented for spherical coordinates")
 !
     endsubroutine del6
 !***********************************************************************
@@ -2251,6 +2273,7 @@ module Sub
 !
       use Cdata
       use Deriv
+      use Mpicomm, only:stop_it
 !
       intent(in) :: f
       intent(out) :: del6f
@@ -2262,6 +2285,9 @@ module Sub
       call der6_other(f,d6fdy,2)
       call der6_other(f,d6fdz,3)
       del6f = d6fdx + d6fdy + d6fdz
+!
+      if (lcylindrical_coords.or.lspherical_coords) &
+           call stop_it("del6_other not implemented for non-cartesian coordinates")
 !
     endsubroutine del6_other
 !***********************************************************************
@@ -2275,6 +2301,7 @@ module Sub
 !
       use Cdata
       use Deriv
+      use Mpicomm, only:stop_it
 !
       intent(in) :: f,k
       intent(out) :: del6f
@@ -2288,6 +2315,9 @@ module Sub
       call der6(f,k,d6fdz,3,IGNOREDX=.true.)
       del6f = d6fdx + d6fdy + d6fdz
 !
+      if (lcylindrical_coords.or.lspherical_coords) &
+           call stop_it("del2_nodx not implemented for non-cartesian coordinates")
+!
     endsubroutine del6_nodx
 !***********************************************************************
     subroutine del6fj(f,vec,k,del6f)
@@ -2300,6 +2330,7 @@ module Sub
 !
       use Cdata
       use Deriv
+      use Mpicomm, only:stop_it
 !
       intent(in) :: f,k
       intent(out) :: del6f
@@ -2314,6 +2345,9 @@ module Sub
       call der6(f,k,d6fdz,3)
       del6f = vec(1)*d6fdx + vec(2)*d6fdy + vec(3)*d6fdz
 !
+      if (lcylindrical_coords.or.lspherical_coords) &
+           call stop_it("del6fj not implemented for non-cartesian coordinates")
+!
     endsubroutine del6fj
 !***********************************************************************
     subroutine del6fjv(f,vec,k,del6f)
@@ -2326,6 +2360,7 @@ module Sub
 !
       use Cdata
       use Deriv
+      use Mpicomm, only:stop_it
 !
       intent(in) :: f,k
       intent(out) :: del6f
@@ -2341,6 +2376,9 @@ module Sub
         call del6fj(f,vec,k1+i,tmp)
         del6f(:,i)=tmp
       enddo
+!
+      if (lcylindrical_coords.or.lspherical_coords) &
+           call stop_it("del2fjv not implemented for non-cartesian coordinates")
 !
     endsubroutine del6fjv
 !***********************************************************************
