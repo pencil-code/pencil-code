@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.297 2007-03-16 05:49:49 dobler Exp $
+! $Id: sub.f90,v 1.298 2007-03-16 06:49:22 brandenb Exp $
 
 module Sub
 
@@ -1118,7 +1118,7 @@ module Sub
       g=g+tmp
 !
       if (lcylindrical_coords.or.lspherical_coords) &
-           call stop_it("div not implemented for non-cartesian coordinates")
+        call stop_it("div not implemented for non-cartesian coordinates")
 !
     end subroutine div
 !***********************************************************************
@@ -1138,7 +1138,7 @@ module Sub
       g=g+tmp
 !
       if (lcylindrical_coords.or.lspherical_coords) &
-           call stop_it("div_other not implemented for non-cartesian coordinates")
+        call stop_it("div_other not implemented for non-cartesian coordinates")
 !
     end subroutine div_other
 !***********************************************************************
@@ -1686,7 +1686,7 @@ module Sub
       endif
 !
       if (lcylindrical_coords) then
-         g(:,3)=g(:,3)+f(l1:l2,m,n,k1+2)*rcyl_mn1
+        g(:,3)=g(:,3)+f(l1:l2,m,n,k1+2)*rcyl_mn1
       endif
 !
     endsubroutine curl
@@ -1730,7 +1730,7 @@ module Sub
       endselect
 !
       if (lcylindrical_coords.or.lspherical_coords) &
-           call stop_it("curli not implemented for non-cartesian coordinates")
+        call stop_it("curli not implemented for non-cartesian coordinates")
 !
     endsubroutine curli
 !***********************************************************************
@@ -1756,12 +1756,12 @@ module Sub
       del2f=d2fdx+d2fdy+d2fdz
 !
       if (lcylindrical_coords) then
-         call der(f,k,tmp,1)
-         del2f=del2f+tmp*rcyl_mn1
+        call der(f,k,tmp,1)
+        del2f=del2f+tmp*rcyl_mn1
       endif
 !
       if (lspherical_coords) &
-           call stop_it("del2 not implemented for spherical coordinates")
+        call stop_it("del2 not implemented for spherical coordinates")
 !
     endsubroutine del2
 !***********************************************************************
@@ -1798,7 +1798,7 @@ module Sub
       endif
 !
       if (lspherical_coords) &
-           call stop_it("del2v not implemented for spherical coordinates")
+        call stop_it("del2v not implemented for spherical coordinates")
 !
     endsubroutine del2v
 !***********************************************************************
@@ -1864,7 +1864,7 @@ module Sub
         call derij(f,k1+3,tmp,1,2)
         fjik(:,3)=tmp
         if (lcylindrical_coords.or.lspherical_coords) &
-             call stop_it("gradcurl at del2v_etc not implemented for non-cartesian coordinates")
+          call stop_it("gradcurl at del2v_etc not implemented for non-cartesian coordinates")
       endif
 !
       if (present(del2)) then
@@ -1878,7 +1878,7 @@ module Sub
            del2(:,2)=del2(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn1**2
         endif
         if (lspherical_coords) &
-             call stop_it("del2 at del2v_etc not implemented for spherical coordinates")
+          call stop_it("del2 at del2v_etc not implemented for spherical coordinates")
       endif
 !
       if (present(graddiv)) then
@@ -1894,7 +1894,7 @@ module Sub
            graddiv(:,3)=graddiv(:,3)+tmp*rcyl_mn1
         endif
         if (lspherical_coords) &
-             call stop_it("graddiv at del2v_etc not implemented for spherical coordinates")
+          call stop_it("graddiv at del2v_etc not implemented for spherical coordinates")
       endif
 !
       if (present(curlcurl)) then
@@ -1902,7 +1902,7 @@ module Sub
         curlcurl(:,2)=fjji(:,2,3)-fijj(:,2,3)+fjji(:,2,1)-fijj(:,2,1)
         curlcurl(:,3)=fjji(:,3,1)-fijj(:,3,1)+fjji(:,3,2)-fijj(:,3,2)
         if (lcylindrical_coords.or.lspherical_coords) &
-             call stop_it("curlcurl at del2v_etc not implemented for non-cartesian coordinates")
+          call stop_it("curlcurl at del2v_etc not implemented for non-cartesian coordinates")
       endif
 !
       if(present(gradcurl)) then
@@ -1919,7 +1919,7 @@ module Sub
          gradcurl(:,3,3) = fjik(:,2)   - fjik(:,1)
 !
          if (lcylindrical_coords.or.lspherical_coords) &
-              call stop_it("gradcurl at del2v_etc not implemented for non-cartesian coordinates")
+           call stop_it("gradcurl at del2v_etc not implemented for non-cartesian coordinates")
       endif
 !
     endsubroutine del2v_etc
@@ -1974,7 +1974,7 @@ module Sub
       endif
 !
       if (lcylindrical_coords.or.lspherical_coords) &
-         call stop_it("del2vi_etc not implemented for non-cartesian coordinates")
+        call stop_it("del2vi_etc not implemented for non-cartesian coordinates")
 !      
     endsubroutine del2vi_etc
 !***********************************************************************
@@ -2104,13 +2104,23 @@ module Sub
             d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*rcyl_mn1
          enddo
       endif
+!x!
+!x!  Note: the next few lines marked with !x will soon be deleted.
+!x!  I keep them here so people can see what I changed.
+!x!
+!x!  calculate b_i,j = eps_ikl A_l,jk, as well as optionally,
+!x!  del2_i = A_i,jj and graddiv_i = A_j,ji
+!x!
+!x      bij(:,1,:)=d2A(:,:,2,3)-d2A(:,3,:,2)
+!x      bij(:,2,:)=d2A(:,:,3,1)-d2A(:,1,:,3)
+!x      bij(:,3,:)=d2A(:,:,1,2)-d2A(:,2,:,1)
 !
-!  calculate b_i,j = eps_ikl A_l,jk, as well as optionally,
+!  calculate b_i,j = eps_ikl A_l,kj, as well as optionally,
 !  del2_i = A_i,jj and graddiv_i = A_j,ji
 !
-      bij(:,1,:)=d2A(:,:,2,3)-d2A(:,3,:,2)
-      bij(:,2,:)=d2A(:,:,3,1)-d2A(:,1,:,3)
-      bij(:,3,:)=d2A(:,:,1,2)-d2A(:,2,:,1)
+      bij(:,1,:)=d2A(:,2,:,3)-d2A(:,3,:,2)
+      bij(:,2,:)=d2A(:,3,:,1)-d2A(:,1,:,3)
+      bij(:,3,:)=d2A(:,1,:,2)-d2A(:,2,:,1)
 !
 !  corrections for spherical coordinates
 !
@@ -2118,7 +2128,7 @@ module Sub
         bij(:,3,2)=bij(:,3,2)+aij(:,2,2)*r1_mn
         bij(:,2,3)=bij(:,2,3)-aij(:,3,3)*r1_mn
         bij(:,1,3)=bij(:,1,3)+aij(:,3,3)*r1_mn*cotth(m)
-        bij(:,3,1)=bij(:,3,1)+aij(:,2,1)*r1_mn         +aa(:,2)*r2_mn
+        bij(:,3,1)=bij(:,3,1)+aij(:,2,1)*r1_mn         -aa(:,2)*r2_mn
         bij(:,2,1)=bij(:,2,1)-aij(:,3,1)*r1_mn         +aa(:,3)*r2_mn
         bij(:,1,2)=bij(:,1,2)+aij(:,3,2)*r1_mn*cotth(m)-aa(:,3)*r2_mn*sin2th(m)
       endif
@@ -2293,7 +2303,7 @@ module Sub
       del6f = d6fdx + d6fdy + d6fdz
 !
       if (lcylindrical_coords.or.lspherical_coords) &
-           call stop_it("del6_other not implemented for non-cartesian coordinates")
+        call stop_it("del6_other not implemented for non-cartesian coordinates")
 !
     endsubroutine del6_other
 !***********************************************************************
@@ -2322,7 +2332,7 @@ module Sub
       del6f = d6fdx + d6fdy + d6fdz
 !
       if (lcylindrical_coords.or.lspherical_coords) &
-           call stop_it("del2_nodx not implemented for non-cartesian coordinates")
+        call stop_it("del2_nodx not implemented for non-cartesian coordinates")
 !
     endsubroutine del6_nodx
 !***********************************************************************
@@ -2352,7 +2362,7 @@ module Sub
       del6f = vec(1)*d6fdx + vec(2)*d6fdy + vec(3)*d6fdz
 !
       if (lcylindrical_coords.or.lspherical_coords) &
-           call stop_it("del6fj not implemented for non-cartesian coordinates")
+        call stop_it("del6fj not implemented for non-cartesian coordinates")
 !
     endsubroutine del6fj
 !***********************************************************************
@@ -2384,7 +2394,7 @@ module Sub
       enddo
 !
       if (lcylindrical_coords.or.lspherical_coords) &
-           call stop_it("del2fjv not implemented for non-cartesian coordinates")
+        call stop_it("del2fjv not implemented for non-cartesian coordinates")
 !
     endsubroutine del6fjv
 !***********************************************************************
