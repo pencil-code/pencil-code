@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.140 2007-03-14 07:56:40 dintrans Exp $
+! $Id: boundcond.f90,v 1.141 2007-03-16 22:12:26 dintrans Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -133,6 +133,7 @@ module Boundcond
                     call bc_force_x(f,-1,topbot,j)
                   endif
                 case ('c1')       ! constant temp.
+                  if (j==iss)   call bc_ss_flux_x(f,topbot,FbotKbot)
                   if (j==ilnTT) call bc_lnTT_flux(f,topbot,hcond0,hcond1,Fbot)
                 case ('sT')       ! symmetric temp.
                   if (j==iss) call bc_ss_stemp_x(f,topbot)
@@ -2088,5 +2089,57 @@ module Boundcond
       endselect
 !
     endsubroutine bc_lnTT_flux
+!***********************************************************************
+    subroutine bc_ss_flux_x(f,topbot,FbotKbot)
+!
+!  constant flux boundary condition for entropy (called when bcx='c1')
+!  17-mar-07/dintrans: coded
+!
+      use Cdata
+      use EquationOfState, only: gamma, gamma1, lnrho0, cs20
+!
+      real, intent(in) :: FbotKbot
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (my,mz) :: tmp_yz,cs2_yz
+      integer :: i
+!
+!  Do the `c1' boundary condition (constant heat flux) for entropy.
+!  check whether we want to do top or bottom (this is precessor dependent)
+!
+      select case(topbot)
+!
+!  bottom boundary
+!  ===============
+!
+      case('bot')
+        if(headtt) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
+!
+!  calculate Fbot/(K*cs2)
+!
+!       cs2_yz=cs20*exp(gamma1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
+        cs2_yz=cs20*exp(gamma1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
+        tmp_yz=FbotKbot/cs2_yz
+!
+!  enforce ds/dx + gamma1/gamma*dlnrho/dx = - gamma1/gamma*Fbot/(K*cs2)
+!
+        do i=1,nghost
+!         f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+(cp-cv)* &
+          f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma1/gamma* &
+              (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)+2*i*dx*tmp_yz)
+        enddo
+!
+!  top boundary
+!  ============
+!
+      case('top')
+        call fatal_error('bc_ss_flux_x','not implemented for top')
+
+      case default
+        call fatal_error('bc_ss_flux_x','invalid argument')
+
+      endselect
+!
+    endsubroutine bc_ss_flux_x
 !***********************************************************************
 endmodule Boundcond

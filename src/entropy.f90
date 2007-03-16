@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.498 2007-03-15 02:40:26 wlyra Exp $
+! $Id: entropy.f90,v 1.499 2007-03-16 22:12:26 dintrans Exp $
 
 ! 
 !  This module takes care of entropy (initial condition
@@ -168,7 +168,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.498 2007-03-15 02:40:26 wlyra Exp $")
+           "$Id: entropy.f90,v 1.499 2007-03-16 22:12:26 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -391,6 +391,9 @@ module Entropy
           if (lroot) print*,'initialize_entropy: set cs2cool=cs20'
           cs2cool=cs0**2
           call star_heat_grav(f)
+
+        case('cylind_layers')
+          if (bcx1(iss)=='c1') FbotKbot=gamma/gamma1/(mpoly1+1.)
 
       endselect
 !
@@ -827,6 +830,9 @@ module Entropy
           !
           call information('init_ss',' two polytropic layers with a central heating')
           call star_heat(f)
+
+        case ('cylind_layers')
+          call cylind_layers(f)
 
         case ('polytropic_simple')
           !
@@ -3533,5 +3539,61 @@ module Entropy
     print*,'find rhobot=',rhobot,r(nbot1),r(nbot2)
 
     endsubroutine strat_heat
+!***********************************************************************
+    subroutine cylind_layers(f)
+!
+!  initialise ss in a cylindrical ring using 2 superposed polytropic layers
+!
+!  17-mar-07/dintrans: coded
+!  
+      use Gravity, only: g0
+      use EquationOfState, only: lnrho0,cs20,gamma,gamma1,cs2top,cs2bot, &
+                                 get_cp1,eoscalc,ilnrho_lnTT
+
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (nx) :: TT,lnTT,lnrho,ss
+      real :: beta0,beta1,TT_bcz,TT_ext,TT_int
+      real :: cp1,lnrho_int,lnrho_bcz
+!
+      if (headtt) print*,'r_bcz in cylind_layers.f90=',r_bcz
+!
+!  beta is the temperature gradient
+!  beta = -(g/cp) 1./[(1-1/gamma)*(m+1)]
+!
+      call get_cp1(cp1)
+      beta0=-cp1*g0/(mpoly0+1)*gamma/gamma1
+      beta1=-cp1*g0/(mpoly1+1)*gamma/gamma1
+      TT_ext=cs20/gamma1
+      TT_bcz=TT_ext+beta0*(r_bcz-r_ext)
+      TT_int=TT_bcz+beta1*(r_int-r_bcz)
+      cs2top=cs20
+      cs2bot=gamma1*TT_int
+      lnrho_bcz=lnrho0+mpoly0*log(TT_bcz)-mpoly0*log(TT_ext)
+!
+      do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
+!
+!  convective layer
+        where (rcyl_mn <= r_ext .AND. rcyl_mn > r_bcz)
+          TT=TT_ext+beta0*(rcyl_mn-r_ext)
+          lnTT=log(TT)
+          lnrho=lnrho0+mpoly0*lnTT-mpoly0*log(TT_ext)
+        endwhere
+!
+!  radiative layer
+!
+        where (rcyl_mn <= r_bcz)
+          TT=TT_bcz+beta1*(rcyl_mn-r_bcz)
+          lnTT=log(TT)
+          lnrho=lnrho_bcz+mpoly1*lnTT-mpoly1*log(TT_bcz)
+        endwhere
+!
+        f(l1:l2,m,n,ilnrho)=lnrho
+        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
+        f(l1:l2,m,n,iss)=ss
+      enddo
+!
+    endsubroutine cylind_layers
 !***********************************************************************
 endmodule Entropy
