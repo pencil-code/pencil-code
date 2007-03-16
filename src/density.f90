@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.318 2007-03-14 07:56:40 dintrans Exp $
+! $Id: density.f90,v 1.319 2007-03-16 06:21:15 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.318 2007-03-14 07:56:40 dintrans Exp $")
+           "$Id: density.f90,v 1.319 2007-03-16 06:21:15 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -696,10 +696,10 @@ module Density
           real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
 
         f(:,:,:,ilnrho) = lnrho_const + &
-          ampllnrho*sin(kx_lnrho*xx)
+          ampllnrho*sin(kx_lnrho*xx+phase_lnrho)
         f(:,:,:,iux) = f(:,:,:,iux) &
              + abs(omega_jeans*ampllnrho) * &
-             sin(kx_lnrho*xx+complex_phase(omega_jeans*ampllnrho))
+             sin(kx_lnrho*xx+phase_lnrho+complex_phase(omega_jeans*ampllnrho))
 
      case('jeans-wave-oblique')
 ! soundwave + self gravity
