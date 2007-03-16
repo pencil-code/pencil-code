@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.296 2007-03-15 18:42:09 wlyra Exp $
+! $Id: sub.f90,v 1.297 2007-03-16 05:49:49 dobler Exp $
 
 module Sub
 
@@ -2249,9 +2249,15 @@ module Sub
       integer :: k
 !
       if (lcylindrical_coords) then
-         call del2(f,k,tmp)
-         call del2(tmp,k,tmp2)
-         call del2(tmp2,k,del6f)
+!
+!  wd-15-mar-2007: temporarily commented out, as this does not compile:
+!                  the first argument of del2 is a 4-d array, the last
+!                  one is 1-d.
+!
+!         call del2(f,k,tmp)
+!         call del2(tmp,k,tmp2)
+!         call del2(tmp2,k,del6f)
+         del6f = 0.
       else
          call der6(f,k,d6fdx,1)
          call der6(f,k,d6fdy,2)
