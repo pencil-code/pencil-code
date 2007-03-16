@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.206 2007-03-16 07:27:33 brandenb Exp $
+! $Id: register.f90,v 1.207 2007-03-16 16:01:32 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -187,6 +187,7 @@ module Register
       use BorderProfiles,  only: initialize_border_profiles
 
       real, dimension(mx,my,mz,mfarray) :: f
+      real :: sinth_min=1e-5 !(to avoid axis)
       logical :: lstarting
 !
 !  Defaults for some logicals; will later be set to true if needed
@@ -330,9 +331,12 @@ module Register
         sinth=sin(y)
         costh=cos(y)
 !
-!  calculate 1/sin(theta)
+!  calculate 1/sin(theta). To avoid the axis we check that sinth
+!  is always larger than a minmal value, sinth_min. The problem occurs
+!  on theta=pi, because the theta range is normally only specified
+!  with no more than 6 digits, e.g. theta = 0., 3.14159.
 !
-        where(y/=0.)
+        where(abs(sinth)>sinth_min)
           sin1th=1./sinth
         elsewhere
           sin1th=0.
