@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.197 2007-03-01 08:54:34 bingert Exp $
+! $Id: initcond.f90,v 1.198 2007-03-16 07:04:52 brandenb Exp $
 
 module Initcond
 
@@ -31,7 +31,8 @@ module Initcond
   public :: htube, htube2, hat, hat3d
   public :: wave_uu, wave, parabola
   public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
-  public :: sinx_siny_sinz, sinx_siny_cosz, sin2x_sin2y_cosz, cosy_sinz
+  public :: sinx_siny_sinz, cosx_siny_cosz, sinx_siny_cosz
+  public :: sin2x_sin2y_cosz, cosy_sinz
   public :: halfcos_x, magsupport, vfield
   public :: uniform_x, uniform_y, uniform_z
   public :: vfluxlayer, hfluxlayer
@@ -156,6 +157,37 @@ module Initcond
       endif
 !
     endsubroutine sinx_siny_cosz
+!***********************************************************************
+    subroutine cosx_siny_cosz(ampl,f,i,kx,ky,kz)
+!
+!  sinusoidal wave, adapted from sinxsinz (that routine was already doing
+!  this, but under a different name)
+!
+!  15-mar-07/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+!
+!  wavenumber k, helicity H=ampl (can be either sign)
+!
+!  sinx(kx*x)*sin(kz*z)
+!
+      if (present(kx)) kx1=kx
+      if (present(ky)) ky1=ky
+      if (present(kz)) kz1=kz
+      if (ampl==0) then
+        if (lroot) print*,'cosx_siny_cosz: ampl=0'
+      else
+        if (lroot) write(*,wave_fmt1) 'cosx_siny_cosz: ampl,kx,ky,kz=', &
+                                      ampl,kx1,ky1,kz1
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(cos(kx1*x),2,my),3,mz)&
+                                   *spread(spread(sin(ky1*y),1,mx),3,mz)&
+                                   *spread(spread(cos(kz1*z),1,mx),2,my))
+      endif
+!
+    endsubroutine cosx_siny_cosz
 !***********************************************************************
     subroutine sin2x_sin2y_cosz(ampl,f,i,kx,ky,kz)
 !

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.393 2007-03-15 02:40:26 wlyra Exp $
+! $Id: magnetic.f90,v 1.394 2007-03-16 07:04:52 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -104,6 +104,7 @@ module Magnetic
   integer :: N_modes_aa=1
   logical :: lgauss=.false.
   logical :: lee_ext=.false.,lbb_ext=.false.,ljj_ext=.false.
+  logical :: lbb_as_aux=.false.,ljj_as_aux=.false.
 
   namelist /magnetic_init_pars/ &
        B_ext, lohmic_heat, &
@@ -115,7 +116,8 @@ module Magnetic
        inclaa,lpress_equil,lpress_equil_via_ss,mu_r, &
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa, &
-       rmode,zmode,rm_int,rm_ext,lgauss
+       rmode,zmode,rm_int,rm_ext,lgauss, &
+       lbb_as_aux,ljj_as_aux
 
   ! run parameters
   real :: eta=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
@@ -151,7 +153,8 @@ module Magnetic
        pertaa,pertamplaa,D_smag,brms_target,rescaling_fraction, &
        lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint,lfreeze_aext, &
        sigma_ratio,zdep_profile,eta_width,eta_z0, &
-       borderaa,eta_aniso_hyper3
+       borderaa,eta_aniso_hyper3, &
+       lbb_as_aux,ljj_as_aux
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0
@@ -222,7 +225,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.393 2007-03-15 02:40:26 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.394 2007-03-16 07:04:52 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -252,6 +255,7 @@ module Magnetic
 !
       use Cdata
       use Messages, only: fatal_error
+      use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -384,6 +388,48 @@ module Magnetic
             'Resistivity heating only works with regular resistivity!')
       endif
 !
+!  Register an extra aux slot for bb if requested (so bb and jj are written
+!  to snapshots and can be easily analyzed later). For this to work you
+!  must reserve enough auxiliary workspace by setting, for example,
+!     SPECIAL   = special/maux6
+!  in your src/Makefile.local file, where special/maux6 is just a copy of
+!  nospecial.f90, but with the following line in the beginning.
+!     ! MAUX CONTRIBUTION 6
+!
+      if (lbb_as_aux) then
+        call farray_register_auxiliary('bb',ibb,vector=3)
+        ibx=ibb
+        iby=ibb+1
+        ibz=ibb+2
+        if (lroot) then
+          print*, 'initialize_magnetic: register_magnetic: ibb = ', ibb
+          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+          write(3,*) 'ibb=',ibb
+          write(3,*) 'ibx=',ibx
+          write(3,*) 'iby=',iby
+          write(3,*) 'ibz=',ibz
+          close(3)
+        endif
+      endif
+!
+!  do the same for jj (current density)
+!
+      if (ljj_as_aux) then
+        call farray_register_auxiliary('jj',ijj,vector=3)
+        ijx=ijj
+        ijy=ijj+1
+        ijz=ijj+2
+        if (lroot) then
+          print*, 'initialize_magnetic: register_magnetic: ijj = ', ijj
+          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+          write(3,*) 'ijj=',ijj
+          write(3,*) 'ijx=',ijx
+          write(3,*) 'ijy=',ijy
+          write(3,*) 'ijz=',ijz
+          close(3)
+        endif
+      endif
+!
       if (NO_WARN) print*, lstarting
 !
     endsubroutine initialize_magnetic
@@ -453,6 +499,8 @@ module Magnetic
          case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
          case('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+         case('sinxcosz'); call sinx_siny_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),0.)
+         case('sinycosz'); call cosx_siny_cosz(amplaa(j),f,iax,kx_aa(j),ky_aa(j),0.)
          case('cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
                            call cosy_sinz(amplaa(j),f,iay,ky_aa(j),kz_aa(j))
          case('Ax=cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
@@ -837,8 +885,7 @@ module Magnetic
       real :: B2_ext,c,s
       integer :: i,j
 !
-      intent(in)  :: f
-      intent(inout) :: p
+      intent(inout) :: f,p
 ! aa
       if (lpencil(i_aa)) p%aa=f(l1:l2,m,n,iax:iaz)
 ! a2
@@ -1014,6 +1061,13 @@ module Magnetic
         if (meanfield_etat/=0.) p%mf_EMF=p%mf_EMF-meanfield_etat*p%jj
       endif
       if (lpencil(i_mf_EMFdotB)) call dot_mn(p%mf_EMF,p%bb,p%mf_EMFdotB)
+!
+!  Store bb in auxiliary variable if requested.
+!  Just neccessary immediately before writing snapshots, but how would we
+!  know we are?
+!
+     if (lbb_as_aux) f(l1:l2,m,n,ibx:ibz)=p%bb
+     if (ljj_as_aux) f(l1:l2,m,n,ijx:ijz)=p%jj
 !
     endsubroutine calc_pencils_magnetic
 !***********************************************************************
