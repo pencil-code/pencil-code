@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.35 2007-03-16 05:19:50 dobler Exp $
+! $Id: particles_nbody.f90,v 1.36 2007-03-16 17:58:22 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -24,24 +24,25 @@ module Particles_nbody
   real, dimension(nspar,mpvar) :: fsp
   real, dimension(nspar) :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
-  real, dimension(nspar) :: pmass,position,r_smooth
-  real :: delta_vsp0=1.0,disc_mass=0., Gvalue=0.
+  real, dimension(nspar) :: pmass,position,r_smooth,pmass1
+  real :: delta_vsp0=1.0,disc_mass=0., g0=1.,totmass,totmass1
   character (len=labellen) :: initxxsp='origin', initvvsp='nothing'
   logical :: lcalc_orbit=.true.,lmigrate=.false.
   logical :: lreset_cm=.false.,lnogravz_star=.false.,lexclude_frozen=.true.
   logical, dimension(nspar) :: lcylindrical_gravity=.false.
   logical, dimension(nspar) :: lfollow_particle=.false.
+  real :: GNewton=impossible
 
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
        bcspx, bcspy, bcspz, pmass, r_smooth, position, lcylindrical_gravity, &
-       lexclude_frozen, disc_mass
+       lexclude_frozen, disc_mass, GNewton
 
 
   namelist /particles_nbody_run_pars/ &
        bcspx, bcspy, bcspz, dsnap_par_minor, linterp_reality_check, &
        lcalc_orbit,lreset_cm,lnogravz_star,lfollow_particle,  &
-       lmigrate, lexclude_frozen, disc_mass
+       lmigrate, lexclude_frozen, disc_mass, GNewton
 
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -65,7 +66,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.35 2007-03-16 05:19:50 dobler Exp $")
+           "$Id: particles_nbody.f90,v 1.36 2007-03-16 17:58:22 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -86,7 +87,21 @@ module Particles_nbody
       integer :: k
       logical :: lstarting
 !
-      Gvalue = disc_mass/(pi*(r_ext**2 - r_int**2))
+! G_Newton. Overwrite the one set by start.in if set again here, 
+! because I might want units in which both G and GM are 1. 
+!
+      if (GNewton == impossible) then
+         GNewton=G_Newton
+      endif
+!
+! inverse mass
+!
+      pmass1=1./pmass
+!
+! inverse total mass
+!
+      totmass=sum(pmass)
+      totmass1=1./totmass
 !
     endsubroutine initialize_particles_nbody
 !***********************************************************************
@@ -180,24 +195,24 @@ module Particles_nbody
 !
          if (lroot) then
             print*,'fixed-cm: redefining the mass of the last sink particle'
-            print*,'fixed-cm: it assumes that the sum of the mass of the particles is always 1.'
+            print*,'fixed-cm: it assumes that the sum of the mass of the particles is always g0'
          endif
 !
          aux = 0. ; aux2=0.
-         do ks=1,nspar-1
-            aux  = aux  + pmass(ks)
-            aux2 = aux2 + pmass(ks)*position(ks)
-            if (aux .ge. 1.) then
-                 print*,"particles_nbody,init_particles. The mass of one (or more) of the particles is too big!"
-                 print*,"the masses should never be bigger than one. Please scale your assemble so that the combined"
-                 print*,"mass of the (n-1) particles is less than 1. The mass of the last particle in the pmass array"
-                 print*,"will be reassigned to ensure that the total mass is 1."
-                 call stop_it(" ")
-              endif
-         enddo
-
 !
-         pmass(nspar)    =  1. - aux
+         do ks=1,nspar-1
+          !  aux  = aux  + pmass(ks)
+            aux2 = aux2 + pmass(ks)*position(ks)
+            !if (aux .ge. 1.) then
+            !     print*,"particles_nbody,init_particles. The mass of one (or more) of the particles is too big!"
+            !     print*,"the masses should never be bigger than g0. Please scale your assemble so that the combined"
+            !     print*,"mass of the (n-1) particles is less than that. The mass of the last particle in the pmass array"
+            !     print*,"will be reassigned to ensure that the total mass is g0"
+            !     call stop_it(" ")
+            !  endif
+         enddo
+!
+         !pmass(nspar)    =  1. - aux
          position(nspar) = -1. * aux2 / pmass(nspar)
 !
          print*,'pmass = ',pmass
@@ -263,11 +278,11 @@ module Particles_nbody
 
       case ('fixed-cm')
 !
-! Keplerian velocities for the planets, GM=sum(pmass)=1
+! Keplerian velocities for the planets
 !
          aux=0.
          do ks=1,nspar-1
-            kep_vel(ks) = abs(position(ks))**(-0.5)
+            kep_vel(ks) = abs(GNewton*totmass/position(ks))**(0.5)
             velocity(ks) = sign(1.,position(ks))* (kep_vel(ks))
             aux = aux - pmass(ks)*velocity(ks)
          enddo
@@ -328,10 +343,9 @@ module Particles_nbody
       intent (in) :: f, p, fp, ineargrid
       intent (inout) :: df,dfp
 !
-! Get the positions of all particles
+! Output the positions of all particles
 !
       if (lhydro) then
-!
          if (headtt) then
             print*,'dvvp_dt_nbody_pencil: Add particles gravity to the gas'
             if (nxgrid/=1) print*,'dvvp_dt_nbody_pencil: Particles located at fsp(x)=',fsp(:,ixp)
@@ -366,7 +380,7 @@ module Particles_nbody
 !
 ! Gravity field from the particle ks
 !
-            grav_particle =-pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
+            grav_particle =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
 !
             ggp(:,1) = (x(l1:l2)-fsp(ks,ixp))*grav_particle
             ggp(:,2) = (y(  m  )-fsp(ks,iyp))*grav_particle
@@ -407,7 +421,7 @@ module Particles_nbody
                if (idiag_totenergy/=0) then
                   !potential energy
                   pot_energy = pot_energy - &
-                       pmass(ks)*(rpcyl_mn(:,ks)**2+r_smooth(ks)**2)**(-0.5)
+                       GNewton*pmass(ks)*(rpcyl_mn(:,ks)**2+r_smooth(ks)**2)**(-0.5)
                   if (ks==nspar) &
                        call sum_lim_mn_name(p%rho*0.5*p%u2 + pot_energy,idiag_totenergy,p)
                endif
@@ -504,9 +518,9 @@ module Particles_nbody
 !
 !  Gravitational acceleration
 !
-                  acc(ks,1) = acc(ks,1) - pmass(kj)*invr3_ij*(fsp(ks,ixp) - fsp(kj,ixp))
-                  acc(ks,2) = acc(ks,2) - pmass(kj)*invr3_ij*(fsp(ks,iyp) - fsp(kj,iyp))
-                  acc(ks,3) = acc(ks,3) - pmass(kj)*invr3_ij*(fsp(ks,izp) - fsp(kj,izp))
+                  acc(ks,1) = acc(ks,1) - GNewton*pmass(kj)*invr3_ij*(fsp(ks,ixp) - fsp(kj,ixp))
+                  acc(ks,2) = acc(ks,2) - GNewton*pmass(kj)*invr3_ij*(fsp(ks,iyp) - fsp(kj,iyp))
+                  acc(ks,3) = acc(ks,3) - GNewton*pmass(kj)*invr3_ij*(fsp(ks,izp) - fsp(kj,izp))
 !
                endif
             enddo
@@ -525,7 +539,6 @@ module Particles_nbody
 !
 !  Position and velocity diagnostics (per sink particle)
 !
-
          if (ldiagnos) then
             if (lfollow_particle(ks)) then
                do j=1,3
@@ -612,7 +625,7 @@ module Particles_nbody
 !
       do k=1,npar_loc
          if (ipar(k)<=nspar) &
-              dfp(k,ixp:izp) = dfp(k,ixp:izp) - vcm
+              dfp(k,ixp:izp) = dfp(k,ixp:izp) - vcm*totmass1
       enddo
 !
     endsubroutine reset_center_of_mass
@@ -650,7 +663,7 @@ module Particles_nbody
 ! gx = grav_gas * r\hat dot x\hat
 ! -> gx = grav_gas * (x-x0)/r = G*(rho*dv)*mass*(r**2+r0**2)**(-1.5) * (x-x0)
 !
-      grav_gas = Gvalue*p%rho*dv*(rrp**2 + rp0**2)**(-1.5)
+      grav_gas = GNewton*p%rho*dv*(rrp**2 + rp0**2)**(-1.5)
 !
 ! Everything outside the accretion radius of the particle should not exert gravity
 !
@@ -671,7 +684,7 @@ module Particles_nbody
       endif
 !
 ! Sum the accelerations on this processor
-! And the over processors with mpireduce
+! And over processors with mpireduce
 !
       xxgas(:,1) = x(l1:l2) ; xxgas(:,2) = y(m) ; xxgas(:,3) = z(n)
 !
@@ -804,10 +817,10 @@ module Particles_nbody
       rr    = sqrt(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)
       w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
       smap  = 1./(2./rr - w2)
-      hills = smap*(pmass(ks)/3.)**(1./3.)
+      hills = smap*(pmass(ks)*pmass1(nspar)/3.)**(1./3.)
 !
       rpre  = fsp(ks,ixp)*y(m) - fsp(ks,iyp)*x(l1:l2)
-      torque = pmass(ks)*p%rho*rpre*&
+      torque = GNewton*pmass(ks)*p%rho*rpre*&
            (dist**2 + r_smooth(ks)**2)**(-1.5)
 !
       torqext=0.
