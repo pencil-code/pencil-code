@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.34 2006-11-30 09:03:36 dobler Exp $
+! $Id: particles_nbody.f90,v 1.35 2007-03-16 05:19:50 dobler Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.34 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: particles_nbody.f90,v 1.35 2007-03-16 05:19:50 dobler Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -659,7 +659,7 @@ module Particles_nbody
       endwhere
 !
       if (lexclude_frozen) then
-         if (lcylindrical) then
+         if (lcylinder_in_a_box) then
             where ((p%rcyl_mn.le.r_int).or.(p%rcyl_mn.ge.r_ext))
                grav_gas = 0
             endwhere

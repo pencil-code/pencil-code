@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.27 2007-03-15 02:56:53 wlyra Exp $',
+  cvsid='$Id: start.in,v 1.28 2007-03-16 05:19:50 dobler Exp $',
   ip=6,                        ! debugging parameter
   xyz0  = -2.6,-2.6,-0.26,       ! first corner of box
   xyz1  =  2.6, 2.6, 0.26,       ! second corner of box
@@ -31,13 +31,15 @@
   ldensity_nolog=T
   ptlaw=2, plaw=0
 /
+&special_init_pars
+/
 &particles_init_pars
   initxxp='random', initvvp='random'
 /
 &particles_nbody_init_pars
   initxxsp='fixed-cm'
   initvvsp='fixed-cm'
-  GNewton=1.0
+!  GNewton=1.0
   pmass=1e-4, 1.
   position=-1., 0.
   r_smooth=0.03,0.0
