@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.269 2007-03-15 02:40:26 wlyra Exp $
+! $Id: param_io.f90,v 1.270 2007-03-16 06:53:56 brandenb Exp $
 
 module Param_IO
 
@@ -53,6 +53,9 @@ module Param_IO
   !
   character (len=labellen) :: mips_is_buggy='system'
 
+!AB/15-Mar-07: the lcylindrical is kept to produce a warning: outdated
+  logical :: lcylindrical
+
   namelist /init_pars/ &
        cvsid,ip,xyz0,xyz1,Lxyz,lperi,lshift_origin, &
        coord_system,lequidist,coeff_grid,zeta_grid0,grid_func,xyz_star, &
@@ -67,6 +70,8 @@ module Param_IO
        mu0,force_lower_bound,force_upper_bound, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2,fbcz1_1,fbcz1_2,fbcz2_1,fbcz2_2, &
        xyz_step,xi_step_frac,xi_step_width, &
+!AB/15-Mar-07: the lcylindrical is kept to produce a warning: outdated
+       lcylindrical, &
        lcylinder_in_a_box,lsphere_in_a_box,llocal_iso,init_loops,lwrite_2d
  !      lextrapolate_bot_density,ltop_velocity_kep,laccelerat_zone, &
  !      ldecelerat_zone,lsurface_zone,lnstar_entropy,lnstar_T_const,lnstar_1D, T_disc
@@ -159,6 +164,7 @@ module Param_IO
     endsubroutine get_snapdir
 !***********************************************************************
     subroutine read_startpars(print,file)
+      use Mpicomm, only: stop_it
 !
 !  read input parameters (done by each processor)
 !
@@ -322,6 +328,21 @@ module Param_IO
         print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
       endif
       call check_consistency_of_lperi('read_startpars')
+!
+!  produce a warning when somebody still sets lcylindrical
+!
+      if (lcylindrical) then
+        if (lroot) then
+          print*
+          print*,'read_startpars: lcylindrical=T is now outdated'
+          print*,'use instead: lcylinder_in_a_box=T'
+          print*,'This renaming became necessary with the development of'
+          print*,'cylindrical coordinates which led to very similar names'
+          print*,'(coord_system="cylindrical_coords")'
+          print*
+        endif
+        call stop_it('')
+      endif
 !
 !  in case of i/o error: print sample input list
 !
