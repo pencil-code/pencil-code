@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.394 2007-03-16 07:04:52 brandenb Exp $
+! $Id: magnetic.f90,v 1.395 2007-03-16 19:57:38 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -225,7 +225,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.394 2007-03-16 07:04:52 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.395 2007-03-16 19:57:38 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -391,18 +391,22 @@ module Magnetic
 !  Register an extra aux slot for bb if requested (so bb and jj are written
 !  to snapshots and can be easily analyzed later). For this to work you
 !  must reserve enough auxiliary workspace by setting, for example,
-!     SPECIAL   = special/maux6
-!  in your src/Makefile.local file, where special/maux6 is just a copy of
-!  nospecial.f90, but with the following line in the beginning.
 !     ! MAUX CONTRIBUTION 6
+!  in the beginning of your src/cparam.local file, *before* setting
+!  ncpus, nprocy, etc.
+!
+!  After a reload, we need to rewrite index.pro, but the auxiliary
+!  arrays are already allocated and must not be allocated again.
 !
       if (lbb_as_aux) then
-        call farray_register_auxiliary('bb',ibb,vector=3)
-        ibx=ibb
-        iby=ibb+1
-        ibz=ibb+2
-        if (lroot) then
-          print*, 'initialize_magnetic: register_magnetic: ibb = ', ibb
+        if (ibb==0) then
+          call farray_register_auxiliary('bb',ibb,vector=3)
+          ibx=ibb
+          iby=ibb+1
+          ibz=ibb+2
+        endif
+        if (ibb/=0.and.lroot) then
+          print*, 'initialize_magnetic: ibb = ', ibb
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
           write(3,*) 'ibb=',ibb
           write(3,*) 'ibx=',ibx
@@ -415,12 +419,14 @@ module Magnetic
 !  do the same for jj (current density)
 !
       if (ljj_as_aux) then
-        call farray_register_auxiliary('jj',ijj,vector=3)
-        ijx=ijj
-        ijy=ijj+1
-        ijz=ijj+2
-        if (lroot) then
-          print*, 'initialize_magnetic: register_magnetic: ijj = ', ijj
+        if (ijj==0) then
+          call farray_register_auxiliary('jj',ijj,vector=3)
+          ijx=ijj
+          ijy=ijj+1
+          ijz=ijj+2
+        endif
+        if (ijj/=0.and.lroot) then
+          print*, 'initialize_magnetic: ijj = ', ijj
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
           write(3,*) 'ijj=',ijj
           write(3,*) 'ijx=',ijx
@@ -1039,6 +1045,7 @@ module Magnetic
         select case(alpha_profile)
         case('nothing'); alpha_tmp=1.
         case('siny'); alpha_tmp=sin(y(m))
+        case('cosy'); alpha_tmp=cos(y(m))
         endselect
 !
 !  possibility of dynamical alpha
@@ -1368,7 +1375,7 @@ module Magnetic
            diffus_eta=eta_aniso_hyper3(1)*dx_1(l1:l2)**6 + &
                 eta_aniso_hyper3(2)*dy_1(m)**6 + &
                 eta_aniso_hyper3(3)*dz_1(n)**6
-        else if (lresi_hyper3) then
+        elseif (lresi_hyper3) then
            diffus_eta=eta_hyper3*dxyz_6
         else
            diffus_eta=(etatotal+meanfield_etat)*dxyz_2
