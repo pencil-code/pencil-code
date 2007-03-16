@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.205 2007-03-15 02:40:26 wlyra Exp $
+! $Id: register.f90,v 1.206 2007-03-16 07:27:33 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -305,11 +305,13 @@ module Register
 !     if (lequidist(3)) dz_1=1./dz
 !
 !  For spherical coordinate system, calculate 1/r, cot(theta)/r, etc
+!  Introduce new names (spherical_coords), in addition to the old ones.
 !
       if (coord_system=='cartesian') then
         lspherical_coords=.false.
         lcylindrical_coords=.false.
-      elseif (coord_system=='spherical') then
+      elseif (coord_system=='spherical' &
+          .or.coord_system=='spherical_coords') then
         lspherical_coords=.true.
         lcylindrical_coords=.false.
 !
@@ -341,9 +343,11 @@ module Register
 !
         cotth=cos(y)*sin1th
 !
-!  end of coord_system=='spherical' query
+!  end of coord_system=='cylindrical_coords' query
+!  Introduce new names (cylindrical_coords), in addition to the old ones.
 !
-      elseif (coord_system=='cylindric') then
+      elseif (coord_system=='cylindric' &
+          .or.coord_system=='cylindrical_coords') then
          lspherical_coords=.false.
          lcylindrical_coords=.true.
 !
