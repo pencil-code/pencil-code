@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.187 2007-02-05 06:05:25 ajohan Exp $
+# $Id: getconf.csh,v 1.188 2007-03-17 06:57:01 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -803,8 +803,7 @@ else if ($hn =~ *.pdc.kth.se) then
   echo "do the same after having added heimdal"
   module add heimdal
   df
-  #module add i-compilers mpich easy
-  module add i-compilers easy
+  module add i-compilers mpich easy
   if ($mpi) echo "Use mpirun"
   set mpirun = mpirun
   #
