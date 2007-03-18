@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.101 2007-03-17 13:15:08 wlyra Exp $
+! $Id: particles_sub.f90,v 1.102 2007-03-18 10:00:07 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -605,6 +605,8 @@ module Particles_sub
 !
 !  05-jan-05/anders: coded
 !
+      use Messages, only: fatal_error
+!
       integer :: npar_loc
       integer, dimension (mpar_loc) :: ipar
 !
@@ -630,6 +632,12 @@ module Particles_sub
         endif
       else
 !
+        if (mod(npar,ncpus)/=0) then
+          if (lroot) print*, 'dist_particles_evenly_procs: npar must be a '// &
+              'whole multiple of ncpus!'
+          call fatal_error('dist_particles_evenly_procs','')
+        endif
+
         npar_loc=npar/ncpus
         if (npar_species==1) then
           do i=0,ncpus-1
