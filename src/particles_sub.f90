@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.102 2007-03-18 10:00:07 ajohan Exp $
+! $Id: particles_sub.f90,v 1.103 2007-03-19 08:22:35 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -631,10 +631,13 @@ module Particles_sub
           enddo
         endif
       else
-!
+!  Must be possible to have same number of particles at each processor.
         if (mod(npar,ncpus)/=0) then
-          if (lroot) print*, 'dist_particles_evenly_procs: npar must be a '// &
-              'whole multiple of ncpus!'
+          if (lroot) then
+            print*, 'dist_particles_evenly_procs: npar must be a '// &
+                'whole multiple of ncpus!'
+            print*, 'npar, ncpus=', npar, ncpus
+          endif
           call fatal_error('dist_particles_evenly_procs','')
         endif
 
@@ -657,6 +660,15 @@ module Particles_sub
             ipar(k)=k-1+ipar1(iproc)
           enddo
         else
+!  Must be possible to have same number of particles at each processor.
+          if (mod(npar_species,npar_loc)/=0) then
+            if (lroot) then
+              print*, 'dist_particles_evenly_procs: npar_species '// &
+                  'must be a whole multiple of npar_loc!'
+              print*, 'npar_species, npar_loc=', npar_species, npar_loc
+            endif
+            call fatal_error('dist_particles_evenly_procs','')
+          endif
 !
 !  Make sure that particle species are evenly distributed.
 !        
