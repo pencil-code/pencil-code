@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.332 2007-03-15 02:40:26 wlyra Exp $
+! $Id: hydro.f90,v 1.333 2007-03-20 21:04:00 joishi Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -145,6 +145,7 @@ module Hydro
   integer :: idiag_urmr=0,idiag_upmr=0,idiag_uzmr=0
   integer :: idiag_ormr=0,idiag_opmr=0,idiag_ozmr=0
   integer :: idiag_uxfampm=0,idiag_uyfampm=0,idiag_uzfampm=0
+  integer :: idiag_uxfampim=0,idiag_uyfampim=0,idiag_uzfampim=0
   integer :: idiag_oumz=0
 
   contains
@@ -188,7 +189,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.332 2007-03-15 02:40:26 wlyra Exp $")
+           "$Id: hydro.f90,v 1.333 2007-03-20 21:04:00 joishi Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -868,7 +869,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: pdamp,space_part
+      real, dimension (nx) :: pdamp,space_part_re,space_part_im
       real :: c2,s2,kx
       integer :: j
 !
@@ -1126,16 +1127,28 @@ module Hydro
         if (idiag_u1u32m/=0) call sum_mn_name(p%u1u32,idiag_u1u32m)
         if (idiag_u2u13m/=0) call sum_mn_name(p%u2u13,idiag_u2u13m)
 !
-! fourier amplitude f(t) for non-axisymmetric waves: u_x = f(t)*exp[i(kx*x+ky*y+kz*z)]
+! fourier amplitude f(t) for non-axisymmetric waves: 
+!         u_x = f(t)*exp[i(kx*x+ky*y+kz*z)]
 !
-        if(idiag_uxfampm/=0 .or. idiag_uyfampm/=0 .or. idiag_uzfampm/=0) then
+        if (idiag_uxfampm/=0 .or. idiag_uyfampm/=0 .or. idiag_uzfampm/=0 .or.&
+            idiag_uxfampim/=0 .or. idiag_uxfampim/=0 .or. idiag_uzfampim/=0) then
           kx = kx_uu + qshear*Omega*ky_uu*t
-          space_part = sin(kx*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) + tini
+          space_part_re = cos(kx*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) 
+          space_part_im = -sin(kx*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) 
         endif
 !
-        if(idiag_uxfampm/=0) call sum_mn_name(p%uu(:,1)/space_part,idiag_uxfampm)
-        if(idiag_uyfampm/=0) call sum_mn_name(p%uu(:,2)/space_part,idiag_uyfampm)
-        if(idiag_uzfampm/=0) call sum_mn_name(p%uu(:,3)/space_part,idiag_uzfampm)
+        if(idiag_uxfampm/=0) &
+            call sum_mn_name(p%uu(:,1)*space_part_re,idiag_uxfampm)
+        if(idiag_uyfampm/=0) &
+            call sum_mn_name(p%uu(:,2)*space_part_re,idiag_uyfampm)
+        if(idiag_uzfampm/=0) &
+            call sum_mn_name(p%uu(:,3)*space_part_re,idiag_uzfampm)
+        if(idiag_uxfampim/=0) &
+            call sum_mn_name(p%uu(:,1)*space_part_im,idiag_uxfampim)
+        if(idiag_uyfampim/=0) &
+            call sum_mn_name(p%uu(:,2)*space_part_im,idiag_uyfampim)
+        if(idiag_uzfampim/=0) &
+            call sum_mn_name(p%uu(:,3)*space_part_im,idiag_uzfampim)
 !
       endif
 !
@@ -1855,6 +1868,10 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uxfampm',idiag_uxfampm)
         call parse_name(iname,cname(iname),cform(iname),'uyfampm',idiag_uyfampm)
         call parse_name(iname,cname(iname),cform(iname),'uzfampm',idiag_uzfampm)
+        call parse_name(iname,cname(iname),cform(iname),'uxfampim',idiag_uxfampim)
+        call parse_name(iname,cname(iname),cform(iname),'uyfampim',idiag_uyfampim)
+        call parse_name(iname,cname(iname),cform(iname),'uzfampim',idiag_uzfampim)
+
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -2010,6 +2027,9 @@ module Hydro
         write(3,*) 'i_uxfampm=',idiag_uxfampm
         write(3,*) 'i_uyfampm=',idiag_uyfampm
         write(3,*) 'i_uzfampm=',idiag_uzfampm
+        write(3,*) 'i_uxfampim=',idiag_uxfampim
+        write(3,*) 'i_uyfampim=',idiag_uyfampim
+        write(3,*) 'i_uzfampim=',idiag_uzfampim
         write(3,*) 'i_uxpt=',idiag_uxpt
         write(3,*) 'i_uypt=',idiag_uypt
         write(3,*) 'i_uzpt=',idiag_uzpt
