@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.74 2006-11-30 09:03:36 dobler Exp $
+! $Id: slices.f90,v 1.75 2007-03-23 15:27:00 bingert Exp $
 
 !  This module produces slices for animation purposes
 
@@ -524,17 +524,15 @@ module Slices
         lwrite_slice_xz=(ipy==0)
         lwrite_slice_yz=.true.
 !
-!  slice position when the first meshpoint in z is the equator (sphere)
-!  For one z-processor, iz remains n1, but iz2 is set to the middle.
-!
-!  TH: The text above does not properly describe the code below.
-!  TH: A certain processor layout is implied here
+!  slice position in middle of the box independ of nprocy,nprocz
+!  second horizontal slice is the upper most layer
 !
       elseif (slice_position=='m') then
-        ix_loc=(l1+l2)/2; iy_loc=m1; iz_loc=n1; iz2_loc=n2
-        if(nprocy==1) then; iy_loc=(m1+m2)/2; endif
-        if(nprocz==1) then; iz_loc=(n1+n2)/2; iz2_loc=(iz+n2)/2; endif
-        lwrite_slice_xy2=(ipz==nprocz/2)
+        ix_loc=(l1+l2)/2
+        if (mod(nprocy,2)==0) then; iy_loc=m1; else; iy_loc=(m1+m2)/2; endif
+        if (mod(nprocz,2)==0) then; iz_loc=n1; else; iz_loc=(n1+n2)/2; endif
+        iz2_loc=n2
+        lwrite_slice_xy2=(ipz==nprocz-1)
         lwrite_slice_xy=(ipz==nprocz/2)
         lwrite_slice_xz=(ipy==nprocy/2)
         lwrite_slice_yz=.true.
