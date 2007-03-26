@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.188 2007-03-17 06:57:01 brandenb Exp $
+# $Id: getconf.csh,v 1.189 2007-03-26 07:43:47 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -798,60 +798,33 @@ else if ($hn =~ *tpb*) then
   endif
 
 else if ($hn =~ *.pdc.kth.se) then
-  echo "Linux cluster at KTH in Stockholm"
-  df
+  echo "Linux cluster at PDC, KTH in Stockholm"
   echo "do the same after having added heimdal"
   module add heimdal
-  df
   module add i-compilers mpich easy
   if ($mpi) echo "Use mpirun"
   set mpirun = mpirun
   #
-  # follow instructions from:
-  # http://zope.pdc.kth.se/pdc/systems_support/computers/lucidor/lucidorruntour#Dedicated
-  #
-  #set mpirunops = "-np $SP_PROCS -machinefile $SP_HOSTFILE"
-  #
-  #  Lenngren
-  #
   echo "added i-compilers scampi module"
   module add i-compilers scampi
-  set mpirunops = "-np $SP_PROCS"
-
-  #if ($?SP_HOSTFILE) then
-  #  cat $SP_HOSTFILE >! lamhosts
-  #  lamboot -v
-  #endif
-# if ($mpi) then
-#   if ($?RUNNINGMPICH) then
-#     set mpirunops = "-machinefile $PBS_NODEFILE"
-#     set mpirun = /usr/local/lib/MPICH/bin/mpirun
-#     set start_x=$PBS_O_WORKDIR/src/start.x
-#     set run_x=$PBS_O_WORKDIR/src/run.x
-#   else
-#     echo "Using LAM-MPI"
-#     cat $PBS_NODEFILE >! lamhosts
-#     lamboot -v lamhosts
-#     set booted_lam = 1
-#     echo "lamnodes:"
-#     lamnodes
-#     # set mpirunops = "-O -c2c -s n0 N -v" #(direct; should be faster)
-#     # set mpirunops = "-O -s n0 N -lamd" #(with debug options on; is slower)
-#     set mpirunops = "-O -s n0 N -ger" #(with debug options on; is slower)
-#     set mpirun = mpirun
-#   endif
-    # use unique scratch directory name, just in case it wasn't cleaned up
-#    if ($?PBS_JOBID) then
-#      setenv SCRATCH_DIR /scratch/$PBS_JOBID
-#    else
-#      setenv SCRATCH_DIR /scratch
-#    endif
-    #set local_disc     = 1
-    #set one_local_disc = 0
-    #set remote_top     = 1
-    #set local_binary   = 1
-    #setenv SSH rsh 
-    #setenv SCP rcp
+  #set mpirunops = "-np $SP_PROCS"
+  set mpirunops = ""
+  #
+  # use unique scratch directory name, just in case it wasn't cleaned up
+  #
+  if ($?PBS_JOBID) then
+    setenv SCRATCH_DIR /scratch/$PBS_JOBID
+    echo "setenv SCRATCH_DIR /scratch/$PBS_JOBID"
+  else
+    setenv SCRATCH_DIR /scratch
+    echo "setenv SCRATCH_DIR /scratch"
+  endif
+# set local_disc     = 1
+# set one_local_disc = 0
+# set remote_top     = 1
+# set local_binary   = 0
+# setenv SSH rsh 
+# setenv SCP rcp
 
 else
   echo "Generic setup; hostname is <$hn>"
