@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.361 2007-03-16 07:04:52 brandenb Exp $
+! ! $Id: cdata.f90,v 1.362 2007-03-27 15:11:48 brandenb Exp $
 
 module Cdata
 
@@ -22,6 +22,7 @@ module Cdata
   character (len=9) :: coord_system='cartesian'
   logical :: lsphere_in_a_box=.false.,lcylinder_in_a_box=.false.
   logical :: lspherical_coords=.false.,lcylindrical_coords=.false.
+  logical :: lcartesian_coords=.true.
   real, dimension (nx) :: r1_mn,r2_mn
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth
   real, dimension (nx) :: rcyl_mn,rcyl_mn1,rcyl_mn2

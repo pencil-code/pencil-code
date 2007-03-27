@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.42 2007-02-20 17:50:30 dobler Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.43 2007-03-27 15:11:48 brandenb Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -107,7 +107,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.42 2007-02-20 17:50:30 dobler Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.43 2007-03-27 15:11:48 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -287,14 +287,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
         del2S=0.
       endif
 !
-!  calculate magnetic field gradient matrix
-!
-      call bij_etc(f,iaa,Bij,del2A,graddivA)
-      call curl_mn(Bij,curlB)
-!
 !  calculate 1/bb^2
-!
-!     call curl(f,iaa,BB)  ! now calculated by CALCULATE_VARS_MAGNETIC
 
       call dot2_mn(BB,B2)
       B21=1./max(B2,B2min)
@@ -509,6 +502,7 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !  Note; for diagnostics purposes keep copy bbb of original field
 !
 !  06-feb-04/bing: coded
+!  27-mar-07/axel: this routine needs to be replaced by calc_pencils_magnetic
 !
       use Cdata
       use Sub
@@ -517,12 +511,12 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
       real, dimension (nx,3,3) :: bij,aij
       real, dimension (nx,3) :: bb,del2A,graddivA
 
-
       intent(in)  :: f
       intent(out) :: bb,bij,del2A,graddivA
 
-      call curl(f,iaa,bb)
-      call bij_etc(f,iaa,bij,del2A,graddivA)
+      call gij(f,iaa,aij,1)
+      call curl_mn(aij,bb,aa)
+      call gij_etc(f,iaa,aa,aij,bij,del2A,graddivA)
 !
 !  possibility to add external field
 !  Note; for diagnostics purposes keep copy of original field

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.395 2007-03-16 19:57:38 brandenb Exp $
+! $Id: magnetic.f90,v 1.396 2007-03-27 15:11:48 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -225,7 +225,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.395 2007-03-16 19:57:38 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.396 2007-03-27 15:11:48 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -846,7 +846,7 @@ module Magnetic
         if (meanfield_etat/=0.) lpencil_in(i_jj)=.true.
       endif
       if (lpencil_in(i_del2A)) then
-        if (lspherical_coords) then
+        if (.not.lcartesian_coords) then
           lpencil_in(i_jj)=.true.
           lpencil_in(i_graddivA)=.true.
         endif
@@ -957,21 +957,27 @@ module Magnetic
       endif
 ! b2
       if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
-! bij, del2a, graddiva
-      if (lpencil(i_bij) .or. lpencil(i_del2a) .or. lpencil(i_graddiva)) &
-          call bij_etc(f,iaa,p%bij,p%del2a,p%graddiva,p%aij,p%aa)
+!
+!  bij, del2a, graddiva
+!  For non-cartesian coordinates jj is always required for del2a=graddiva-jj
+!
+      if (lpencil(i_bij) .or. lpencil(i_del2a) .or. lpencil(i_graddiva)) then
+        if (lcartesian_coords) then
+          call gij_etc(f,iaa,p%aa,p%aij,p%bij,p%del2a,p%graddiva)
+          if (lpencil(i_jj)) call curl_mn(p%bij,p%jj,p%bb)
+        else
+          call gij_etc(f,iaa,p%aa,p%aij,p%bij,GRADDIV=p%graddiva)
+          call curl_mn(p%bij,p%jj,p%bb)
+          if (lpencil(i_del2a)) p%del2a=p%graddiva-p%jj
+        endif
+      endif
 ! jj
       if (lpencil(i_jj)) then
-        call curl_mn(p%bij,p%jj,p%bb)
         p%jj=mu01*p%jj
         if (ljj_ext) then !add external current
           call get_global(jj_ext,m,n,'jj_ext')
           p%jj=p%jj-jj_ext
         endif
-      endif
-!  in spherical geometry, del2a is best written as graddiva-jj.
-      if (lpencil(i_del2a)) then
-        if (lspherical_coords) p%del2a=p%graddiva-p%jj
       endif
 ! j2
       if (lpencil(i_j2)) call dot2_mn(p%jj,p%j2)

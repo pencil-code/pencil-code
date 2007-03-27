@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.333 2007-03-20 21:04:00 joishi Exp $
+! $Id: hydro.f90,v 1.334 2007-03-27 15:11:48 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -11,7 +11,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED divu,oo,o2,ou,u2,uij,uu,sij,sij2,uij5,ugu
+! PENCILS PROVIDED divu,oo,o2,ou,u2,uij,uu,sij,sij2,uij5,ugu,oij,qq
 ! PENCILS PROVIDED u3u21,u1u32,u2u13,del2u,del4u,del6u,graddivu,del6u_bulk
 ! PENCILS PROVIDED grad5divu
 !
@@ -92,6 +92,7 @@ module Hydro
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
   logical :: lforcing_continuous=.false.,lembed=.false.
   logical :: lremove_mean_momenta=.false.
+  logical :: lalways_use_gij_etc=.false.
   character (len=labellen) :: iforcing_continuous='ABC'
 !
 ! geodynamo
@@ -104,7 +105,8 @@ module Hydro
        borderuu, lfreeze_uint, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
        lforcing_continuous,lembed,iforcing_continuous,k1_ff,ampl_ff,width_ff, &
-       lprecession, omega_precession, lshear_rateofstrain
+       lprecession, omega_precession, lshear_rateofstrain, &
+       lalways_use_gij_etc
 
 ! end geodynamo
 
@@ -189,7 +191,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.333 2007-03-20 21:04:00 joishi Exp $")
+           "$Id: hydro.f90,v 1.334 2007-03-27 15:11:48 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -705,12 +707,15 @@ module Hydro
 !
 !  Interdependency among pencils from the Hydro module is specified here.
 !
-!  20-11-04/anders: coded
+!  20-nov-04/anders: coded
+!
+      use Cdata, only: lcartesian_coords
 !
       logical, dimension(npencils) :: lpencil_in
 !
       if (lpencil_in(i_u2)) lpencil_in(i_uu)=.true.
       if (lpencil_in(i_divu)) lpencil_in(i_uij)=.true.
+      if (lpencil_in(i_divu).and..not.lcartesian_coords) lpencil_in(i_oo)=.true.
       if (lpencil_in(i_sij)) then
         lpencil_in(i_uij)=.true.
         lpencil_in(i_divu)=.true.
@@ -740,7 +745,8 @@ module Hydro
 !  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!   08-nov-04/tony: coded
+!  08-nov-04/tony: coded
+!  26-mar-07/axel: started using the gij_etc routine
 !
       use Cdata
       use Deriv
@@ -783,13 +789,11 @@ module Hydro
       if (lpencil(i_sij2)) call multm2_mn(p%sij,p%sij2)
 ! uij5
       if (lpencil(i_uij5)) call gij(f,iuu,p%uij5,5)
-! oo
-!AB: should really go into a curl routine!!
+!
+! oo (=curlu)
 !
       if (lpencil(i_oo)) then
-        p%oo(:,1)=p%uij(:,3,2)-p%uij(:,2,3)
-        p%oo(:,2)=p%uij(:,1,3)-p%uij(:,3,1)
-        p%oo(:,3)=p%uij(:,2,1)-p%uij(:,1,2)
+        call curl_mn(p%uij,p%oo,p%uu)
       endif
 ! o2
       if (lpencil(i_o2)) call dot2_mn(p%oo,p%o2)
@@ -822,16 +826,25 @@ module Hydro
         call der6(f,iuz,tmp,3)
         p%del6u_bulk(:,3)=tmp
       endif
+!
 ! del2u
 ! graddivu
-      if (lpencil(i_del2u)) then
-        if (lpencil(i_graddivu)) then
-          call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu)
-        else
-          call del2v(f,iuu,p%del2u)
-        endif
+!
+      if (lspherical_coords.or.lalways_use_gij_etc) then
+        if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
+        call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
+        call curl_mn(p%oij,p%qq,p%oo)
+        p%del2u=p%graddivu-p%qq
       else
-        if (lpencil(i_graddivu)) call del2v_etc(f,iuu,GRADDIV=p%graddivu)
+        if (lpencil(i_del2u)) then
+          if (lpencil(i_graddivu)) then
+            call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu)
+          else
+            call del2v(f,iuu,p%del2u)
+          endif
+        else
+          if (lpencil(i_graddivu)) call del2v_etc(f,iuu,GRADDIV=p%graddivu)
+        endif
       endif
 ! grad5divu
       if (lpencil(i_grad5divu)) then

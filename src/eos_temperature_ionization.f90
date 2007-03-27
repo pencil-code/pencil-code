@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.52 2007-03-02 09:06:28 dintrans Exp $
+! $Id: eos_temperature_ionization.f90,v 1.53 2007-03-27 15:11:48 brandenb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -129,7 +129,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.52 2007-03-02 09:06:28 dintrans Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.53 2007-03-27 15:11:48 brandenb Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1873,7 +1873,7 @@ module EquationOfState
       use Cdata, only: m,n
       use Gravity, only: gravz,grav_profile,reduced_top
       use Mpicomm, only: communicate_stellar_surface
-      use Sub, only: gij,curl_mn,dot2_mn,bij_etc,cross_mn,multsv_mn
+      use Sub, only: gij,curl_mn,dot2_mn,gij_etc,cross_mn,multsv_mn
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent (inout), optional :: df
@@ -2038,7 +2038,7 @@ module EquationOfState
           do j = 1,3; bb(:,j) = bb(:,j) + B_ext_eos(j); enddo
           call dot2_mn(bb,b2)
           va2 = b2*rho1(l1:l2,m)
-          call bij_etc(f,iaa,bij)
+          call gij_etc(f,iaa,bij)
           call curl_mn(bij,jj)
           call cross_mn(jj,bb,jxb)
           fac2 = (1+(va2/va2max_eos)**va2power_eos)**(-1.0/va2power_eos)

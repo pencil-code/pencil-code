@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.270 2007-03-16 06:53:56 brandenb Exp $
+! $Id: param_io.f90,v 1.271 2007-03-27 15:11:48 brandenb Exp $
 
 module Param_IO
 
@@ -1053,11 +1053,14 @@ module Param_IO
     subroutine write_pencil_info()
 !
 !  Write information about requested and diagnostic pencils
+!  Do this only when on root processor
 !
      use Cparam
 !
      integer :: i
 !
+     if (lroot) then
+     print*,'write_pencil_info: iproc=',iproc
      open(1,FILE=trim(datadir)//'/pencils.list')
      write(1,*) 'Pencils requested:'
      do i=1,npencils
@@ -1078,6 +1081,7 @@ module Param_IO
      do i=1,npencils
        if (lpenc_video(i)) write(1,*) i, pencil_names(i)
      enddo
+     endif
 !
    endsubroutine write_pencil_info
 !

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.207 2007-03-16 16:01:32 brandenb Exp $
+! $Id: register.f90,v 1.208 2007-03-27 15:11:48 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -309,10 +309,12 @@ module Register
 !  Introduce new names (spherical_coords), in addition to the old ones.
 !
       if (coord_system=='cartesian') then
+        lcartesian_coords=.true.
         lspherical_coords=.false.
         lcylindrical_coords=.false.
       elseif (coord_system=='spherical' &
           .or.coord_system=='spherical_coords') then
+        lcartesian_coords=.false.
         lspherical_coords=.true.
         lcylindrical_coords=.false.
 !
@@ -352,12 +354,13 @@ module Register
 !
       elseif (coord_system=='cylindric' &
           .or.coord_system=='cylindrical_coords') then
-         lspherical_coords=.false.
-         lcylindrical_coords=.true.
+        lcartesian_coords=.false.
+        lspherical_coords=.false.
+        lcylindrical_coords=.true.
 !
-         rcyl_mn=x(l1:l2)
-         rcyl_mn1=max(1./x(l1:l2),tini)
-         rcyl_mn2=rcyl_mn1**2
+        rcyl_mn=x(l1:l2)
+        rcyl_mn1=max(1./x(l1:l2),tini)
+        rcyl_mn2=rcyl_mn1**2
       endif
 !
 !  print the value for which output is being produced

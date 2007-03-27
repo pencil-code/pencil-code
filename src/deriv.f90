@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.47 2007-03-15 15:35:34 wlyra Exp $
+! $Id: deriv.f90,v 1.48 2007-03-27 15:11:48 brandenb Exp $
 
 module Deriv
 
@@ -819,7 +819,7 @@ module Deriv
       endif                     ! bidiagonal derij
 !
 !  Spherical polars. The comments about "minus extra terms" refer to the
-!  presence of extra terms that are being evaluated later in bij_etc.
+!  presence of extra terms that are being evaluated later in gij_etc.
 !
       if (lspherical_coords) then
         if ((i==1.and.j==2)) df=df*r1_mn

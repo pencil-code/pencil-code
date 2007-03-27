@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.298 2007-03-16 06:49:22 brandenb Exp $
+! $Id: sub.f90,v 1.299 2007-03-27 15:11:48 brandenb Exp $
 
 module Sub
 
@@ -23,7 +23,7 @@ module Sub
   public :: get_nseed
 
   public :: grad, div, div_mn, curl, curli, curl_mn, div_other
-  public :: gij, g2ij, bij_etc
+  public :: gij, g2ij, gij_etc
   public :: der_step
   public :: u_dot_grad
   public :: del2, del2v, del2v_etc
@@ -1760,7 +1760,7 @@ module Sub
         del2f=del2f+tmp*rcyl_mn1
       endif
 !
-      if (lspherical_coords) &
+     if (lspherical_coords) &
         call stop_it("del2 not implemented for spherical coordinates")
 !
     endsubroutine del2
@@ -2037,7 +2037,7 @@ module Sub
 !
     endsubroutine del6v
 !***********************************************************************
-    subroutine bij_etc(f,iref,Bij,del2,graddiv,aij,aa)
+    subroutine gij_etc(f,iref,aa,aij,Bij,del2,graddiv)
 !
 !  calculate B_i,j = eps_ikl A_l,jk and A_l,kk
 !
@@ -2047,6 +2047,7 @@ module Sub
 !
       use Cdata
       use Deriv
+      use Mpicomm, only:stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       integer, intent (in) :: iref
@@ -2060,7 +2061,6 @@ module Sub
       real, dimension (nx,3,3,3) :: d2A
       real, dimension (nx) :: tmp
       integer :: iref1,i,j
-!
 !
 !  reference point of argument
 !
@@ -2104,16 +2104,6 @@ module Sub
             d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*rcyl_mn1
          enddo
       endif
-!x!
-!x!  Note: the next few lines marked with !x will soon be deleted.
-!x!  I keep them here so people can see what I changed.
-!x!
-!x!  calculate b_i,j = eps_ikl A_l,jk, as well as optionally,
-!x!  del2_i = A_i,jj and graddiv_i = A_j,ji
-!x!
-!x      bij(:,1,:)=d2A(:,:,2,3)-d2A(:,3,:,2)
-!x      bij(:,2,:)=d2A(:,:,3,1)-d2A(:,1,:,3)
-!x      bij(:,3,:)=d2A(:,:,1,2)-d2A(:,2,:,1)
 !
 !  calculate b_i,j = eps_ikl A_l,kj, as well as optionally,
 !  del2_i = A_i,jj and graddiv_i = A_j,ji
@@ -2142,14 +2132,24 @@ module Sub
 !
 !  calculate del2 and graddiv, if requested
 !
-      if (present(del2)) then
-        del2(:,:) = d2A(:,1,1,:) + d2A(:,2,2,:) + d2A(:,3,3,:)
-      endif
       if (present(graddiv)) then
-        graddiv(:,:) = d2A(:,:,1,1) + d2A(:,:,2,2) + d2A(:,:,3,3)
+        graddiv(:,:)=d2A(:,:,1,1)+d2A(:,:,2,2)+d2A(:,:,3,3)
+        if (lspherical_coords) then
+          graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+aij(:,2,1)*r1_mn*cotth(m)
+          graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+aij(:,2,2)*r1_mn*cotth(m)-aa(:,2)*r2_mn*sin2th(m)
+          graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*r1_mn*2+aij(:,2,3)*r1_mn*cotth(m)
+        endif
       endif
 !
-    endsubroutine bij_etc
+      if (present(del2)) then
+        if (lcartesian_coords) then
+          del2(:,:)=d2A(:,1,1,:)+d2A(:,2,2,:)+d2A(:,3,3,:)
+        else
+          call stop_it("gij_etc: use del2=graddiv-curlcurl for non-cartesian coords")
+        endif
+      endif
+!
+    endsubroutine gij_etc
 !***********************************************************************
     subroutine g2ij(f,k,g)
 !
