@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.354 2007-03-15 02:40:26 wlyra Exp $
+! $Id: equ.f90,v 1.355 2007-03-28 18:31:49 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -413,7 +413,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.354 2007-03-15 02:40:26 wlyra Exp $")
+           "$Id: equ.f90,v 1.355 2007-03-28 18:31:49 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -931,6 +931,8 @@ module Equ
        print*, 'pde: dt1_advec contains a NaN at iproc=', iproc
        call fatal_error_local('pde','')
      endif
+!
+!  Take care of flux-limited diffusion
 !
       if (lradiation_fld) f(:,:,:,idd)=DFF_new
 !
