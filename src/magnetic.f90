@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.398 2007-03-28 17:54:07 dobler Exp $
+! $Id: magnetic.f90,v 1.399 2007-03-28 18:02:28 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -225,7 +225,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.398 2007-03-28 17:54:07 dobler Exp $")
+           "$Id: magnetic.f90,v 1.399 2007-03-28 18:02:28 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -375,8 +375,8 @@ module Magnetic
              ((eta_aniso_hyper3(1)==0. .and. nxgrid/=1 ).or. &
               (eta_aniso_hyper3(2)==0. .and. nygrid/=1 ).or. &
               (eta_aniso_hyper3(3)==0. .and. nzgrid/=1 )) ) &
-              call fatal_error('initialize_magnetic', &
-              'A resistivity coefficient of eta_aniso_hyper3 is zero!')
+            call fatal_error('initialize_magnetic', &
+            'A resistivity coefficient of eta_aniso_hyper3 is zero!')
         if (lresi_eta_shock.and.eta_shock==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_shock is zero!')
