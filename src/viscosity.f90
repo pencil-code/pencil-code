@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.65 2007-03-15 02:40:26 wlyra Exp $
+! $Id: viscosity.f90,v 1.66 2007-03-28 08:49:43 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -90,7 +90,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.65 2007-03-15 02:40:26 wlyra Exp $")
+           "$Id: viscosity.f90,v 1.66 2007-03-28 08:49:43 wlyra Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -638,7 +638,7 @@ module Viscosity
           do i=1,3; do j=1,3
 !  Dissipation is *not* positive definite.
             p%visc_heat=p%visc_heat + &
-                nu_hyper3*(p%uij5(:,i,j)+p%uij5(:,j,i))*p%uij(:,i,j)
+                .5*nu_hyper3*(p%uij5(:,i,j)+p%uij5(:,j,i))*p%uij(:,i,j)
           enddo; enddo
         endif
         if (lfirst.and.ldt) &
