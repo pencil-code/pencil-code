@@ -1,8 +1,8 @@
-! $Id: poisson.f90,v 1.21 2007-02-20 17:50:30 dobler Exp $
+! $Id: poisson.f90,v 1.22 2007-03-28 18:10:27 dobler Exp $
 
 !
 !  This module solves the Poisson equation
-!    (d^2/dx^2 + d^2/dy^2 + d^2/dz^2)f = rhs(x,y,z)
+!    (d^2/dx^2 + d^2/dy^2 + d^2/dz^2 - c) f = RHS(x,y,z)
 !  for the function f(x,y,z).
 !
 
@@ -31,15 +31,15 @@ module Poisson
   contains
 
 !***********************************************************************
-    subroutine poisson_solver_fft(a1,kmax)
+    subroutine inverse_laplacian_fft(phi,kmax,c)
 !
 !  Solve the Poisson equation by Fourier transforming on a periodic grid.
 !  This method works both with and without shear.
 !
 !  15-may-2006/anders+jeff: coded
 !
-      real, dimension (nx,ny,nz) :: a1
-      real, optional :: kmax
+      real, dimension (nx,ny,nz) :: phi
+      real, optional             :: kmax,c
 !
       real, dimension (nx,ny,nz) :: b1
       real :: k2
@@ -48,24 +48,24 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.21 2007-02-20 17:50:30 dobler Exp $")
+        "$Id: poisson.f90,v 1.22 2007-03-28 18:10:27 dobler Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
       b1 = 0.0
 !  Forward transform (to k-space).
       if (lshear) then
-        call fourier_transform_shear(a1,b1)
+        call fourier_transform_shear(phi,b1)
       else
-        call fourier_transform(a1,b1)
+        call fourier_transform(phi,b1)
       endif
 !
-!  FT(phi) = -rhs_poisson_const*FT(rho)/k^2
+!  FT(PHI) = -rhs_poisson_const*FT(rho)/k^2
 !
       do ikz=1,nz; do iky=1,ny; do ikx=1,nx
         if ((kx_fft(ikx)==0.0) .and. &
             (ky_fft(iky)==0.0) .and. (kz_fft(ikz)==0.0) ) then
-          a1(ikx,iky,ikz) = 0.0
+          phi(ikx,iky,ikz) = 0.0
           b1(ikx,iky,ikz) = 0.0
         else
           if (lshear) then
@@ -92,17 +92,18 @@ module Poisson
           else
             k2 = kx_fft(ikx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
           endif
+          if (present(c)) k2 = k2+c
 !
 !  Solution of Poisson equation.
 !
-          a1(ikx,iky,ikz) = -a1(ikx,iky,ikz) / k2
+          phi(ikx,iky,ikz) = -phi(ikx,iky,ikz) / k2
           b1(ikx,iky,ikz) = -b1(ikx,iky,ikz) / k2
 !
 !  Limit |k| < kmax
 !
           if (present(kmax)) then
             if (sqrt(k2)>=kmax) then
-              a1(ikx,iky,ikz) = 0.
+              phi(ikx,iky,ikz) = 0.
               b1(ikx,iky,ikz) = 0.
             endif
           endif
@@ -111,14 +112,14 @@ module Poisson
       enddo; enddo; enddo
 !  Inverse transform (to real space).
       if (lshear) then
-        call fourier_transform_shear(a1,b1,linv=.true.)
+        call fourier_transform_shear(phi,b1,linv=.true.)
       else
-        call fourier_transform(a1,b1,linv=.true.)
+        call fourier_transform(phi,b1,linv=.true.)
       endif
 !
-    endsubroutine poisson_solver_fft
+    endsubroutine inverse_laplacian_fft
 !***********************************************************************
-    subroutine poisson_solver_fftxy_discretez(a1)
+    subroutine inverse_laplacian_semispectral(phi,c)
 !
 !  Solve the Poisson equation by Fourier transforming in the xy-plane and
 !  solving the discrete matrix equation in the z-direction.
@@ -128,10 +129,11 @@ module Poisson
       use General, only: tridag
       use Mpicomm, only: transp_xz, transp_zx
 !
-      real, dimension (nx,ny,nz) :: a1
+      real, dimension (nx,ny,nz) :: phi
+      real, optional             :: c
 !
       real, dimension (nx,ny,nz) :: b1
-      real, dimension (nzgrid,nx/nprocz) :: a1t, b1t
+      real, dimension (nzgrid,nx/nprocz) :: rhst, b1t
       real, dimension (nzgrid) :: a_tri, b_tri, c_tri, r_tri, u_tri
       real :: k2
       integer :: ikx, iky, ikz
@@ -140,26 +142,27 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.21 2007-02-20 17:50:30 dobler Exp $")
+        "$Id: poisson.f90,v 1.22 2007-03-28 18:10:27 dobler Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
       b1 = 0.0
 !  Forward transform (to k-space).
       if (lshear) then
-        call fourier_transform_shear_xy(a1,b1)
+        call fourier_transform_shear_xy(phi,b1)
       else
-        call fourier_transform_xy(a1,b1)
+        call fourier_transform_xy(phi,b1)
       endif
 !
 !  Solve for discrete z-direction with zero density above and below z-boundary.
 !
       do iky=1,ny
-        call transp_xz(a1(:,iky,:),a1t)
+        call transp_xz(phi(:,iky,:),rhst)
         a_tri(:)=1.0/dz**2
         c_tri(:)=1.0/dz**2
         do ikx=1,nxgrid/nprocz
           k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
+          if (present(c)) k2 = k2 + c
           b_tri=-2.0/dz**2-k2
 !
           if (k2==0.0) then
@@ -174,11 +177,11 @@ module Poisson
             a_tri(nzgrid)=1.0/dz**2+1.0
           endif
 !
-          r_tri=a1t(:,ikx)
+          r_tri=rhst(:,ikx)
           call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
-          a1t(:,ikx)=u_tri
+          rhst(:,ikx)=u_tri
         enddo
-        call transp_zx(a1t,a1(:,iky,:))
+        call transp_zx(rhst,phi(:,iky,:))
       enddo
 !
       do iky=1,ny
@@ -187,6 +190,7 @@ module Poisson
         c_tri(:)=1.0/dz**2
         do ikx=1,nxgrid/nprocz
           k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
+          if (present(c)) k2 = k2 + c
           b_tri=-2.0/dz**2-k2
 !
           if (k2==0.0) then
@@ -209,12 +213,12 @@ module Poisson
       enddo
 !  Inverse transform (to real space).
       if (lshear) then
-        call fourier_transform_shear_xy(a1,b1,linv=.true.)
+        call fourier_transform_shear_xy(phi,b1,linv=.true.)
       else
-        call fourier_transform_xy(a1,b1,linv=.true.)
+        call fourier_transform_xy(phi,b1,linv=.true.)
       endif
 !
-    endsubroutine poisson_solver_fftxy_discretez
+    endsubroutine inverse_laplacian_semispectral
 !***********************************************************************
 
 endmodule Poisson
