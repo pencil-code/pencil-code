@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.397 2007-03-28 17:43:03 dobler Exp $
+! $Id: magnetic.f90,v 1.398 2007-03-28 17:54:07 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -185,6 +185,7 @@ module Magnetic
   integer :: idiag_jfm=0,idiag_brbpmr=0,idiag_vA2m=0
   integer :: idiag_b2mr=0,idiag_brmr=0,idiag_bpmr=0,idiag_bzmr=0
   integer :: idiag_armr=0,idiag_apmr=0,idiag_azmr=0
+
   contains
 
 !***********************************************************************
@@ -224,7 +225,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.397 2007-03-28 17:43:03 dobler Exp $")
+           "$Id: magnetic.f90,v 1.398 2007-03-28 17:54:07 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -325,8 +326,8 @@ module Magnetic
           lresi_zdep=.true.
           call eta_zdep(eta_z,zdep_profile)
         case('hyper3-aniso')
-           if (lroot) print*, 'resistivity: hyper3_aniso'
-           lresi_hyper3_aniso=.true.
+          if (lroot) print*, 'resistivity: hyper3_aniso'
+          lresi_hyper3_aniso=.true.
         case('shell')
           if (lroot) print*, 'resistivity: shell'
           lresi_shell=.true.
@@ -334,14 +335,14 @@ module Magnetic
           if (lroot) print*, 'resistivity: shock'
           lresi_eta_shock=.true.
           if (.not. lshock) &
-            call fatal_error('initialize_magnetic', &
-                'shock resistivity, but module setting SHOCK=noshock')
+              call fatal_error('initialize_magnetic', &
+              'shock resistivity, but module setting SHOCK=noshock')
         case ('shock-perp')
           if (lroot) print*, 'resistivity: shock_perp'
           lresi_eta_shock_perp=.true.
           if (.not. lshock) &
-            call fatal_error('initialize_magnetic', &
-                'shock resistivity, but module setting SHOCK=noshock')
+              call fatal_error('initialize_magnetic', &
+              'shock resistivity, but module setting SHOCK=noshock')
         case ('smagorinsky')
           if (lroot) print*, 'resistivity: smagorinsky'
           lresi_smagorinsky=.true.
@@ -377,11 +378,11 @@ module Magnetic
               call fatal_error('initialize_magnetic', &
               'A resistivity coefficient of eta_aniso_hyper3 is zero!')
         if (lresi_eta_shock.and.eta_shock==0.0) &
-          call fatal_error('initialize_magnetic', &
-          'Resistivity coefficient eta_shock is zero!')
+            call fatal_error('initialize_magnetic', &
+            'Resistivity coefficient eta_shock is zero!')
         if (lresi_eta_shock_perp.and.eta_shock==0.0) &
-          call fatal_error('initialize_magnetic', &
-          'Resistivity coefficient eta_shock is zero!')
+            call fatal_error('initialize_magnetic', &
+            'Resistivity coefficient eta_shock is zero!')
         if (lohmic_heat .and. .not. lresi_eta_const) &
             call warning('initialize_magnetic', &
             'Resistivity heating only works with regular resistivity!')
@@ -464,98 +465,99 @@ module Magnetic
 !
       do j=1,ninit
 
-         select case(initaa(j))
+        select case(initaa(j))
 
-         case('nothing'); if(lroot .and. j==1) print*,'init_uu: nothing'
-         case('zero', '0'); f(:,:,:,iax:iaz) = 0.
-         case('rescale'); f(:,:,:,iax:iaz)=amplaa(j)*f(:,:,:,iax:iaz)
-         case('mode'); call modev(amplaa(j),coefaa,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),xx,yy,zz)
-         case('modeb'); call modeb(amplaa(j),coefbb,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),xx,yy,zz)
-         case('const_lou'); call const_lou(amplaa(j),f,iaa,xx,yy,zz)
-         case('power_randomphase')
-            call power_randomphase(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz)
-         case('random-isotropic-KS')
-            call random_isotropic_KS(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz,N_modes_aa)
-         case('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
-         case('gaussian-noise-rprof')
-            tmp=sqrt(xx**2+yy**2+zz**2)
-            call gaunoise_rprof(amplaa(j),tmp,prof,f,iax,iaz)
-         case('Beltrami-x', '11'); call beltrami(amplaa(j),f,iaa,KX=kx_aa(j))
-         case('Beltrami-y', '12'); call beltrami(amplaa(j),f,iaa,KY=ky_aa(j))
-         case('Beltrami-z', '1');  call beltrami(amplaa(j),f,iaa,KZ=kz_aa(j))
-         case('propto-ux'); call wave_uu(amplaa(j),f,iaa,kx=kx_aa(j))
-         case('propto-uy'); call wave_uu(amplaa(j),f,iaa,ky=ky_aa(j))
-         case('propto-uz'); call wave_uu(amplaa(j),f,iaa,kz=kz_aa(j))
-         case('diffrot'); call diffrot(amplaa(j),f,iay,xx,yy,zz)
-         case('hor-tube'); call htube(amplaa(j),f,iax,iaz,xx,yy,zz,radius,epsilonaa)
-         case('hor-fluxlayer'); call hfluxlayer(amplaa(j),f,iaa,xx,yy,zz,z0aa,widthaa)
-         case('ver-fluxlayer'); call vfluxlayer(amplaa(j),f,iaa,xx,yy,zz,x0aa,widthaa)
-         case('mag-support'); call magsupport(amplaa(j),f,zz,gravz,cs0,rho0)
-         case('arcade-x'); call arcade_x(amplaa(j),f,iaa,xx,yy,zz,kx_aa(j),kz_aa(j))
-         case('halfcos-Bx'); call halfcos_x(amplaa(j),f,iaa,xx,yy,zz)
-         case('uniform-Bx'); call uniform_x(amplaa(j),f,iaa,xx,yy,zz)
-         case('uniform-By'); call uniform_y(amplaa(j),f,iaa,xx,yy,zz)
-         case('uniform-Bz'); call uniform_z(amplaa(j),f,iaa,xx,yy,zz)
-         case('Bz(x)', '3'); call vfield(amplaa(j),f,iaa,xx)
-         case('vfield2'); call vfield2(amplaa(j),f,iaa,xx)
-         case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
-         case('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa,xx,yy,zz)
-         case('sinxsinz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
-         case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
-         case('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
-         case('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
-         case('sinxcosz'); call sinx_siny_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),0.)
-         case('sinycosz'); call cosx_siny_cosz(amplaa(j),f,iax,kx_aa(j),ky_aa(j),0.)
-         case('cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
-                           call cosy_sinz(amplaa(j),f,iay,ky_aa(j),kz_aa(j))
-         case('Ax=cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
-         case('magnetogram'); call mdi_init(f)
-         case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
-         case('crazy', '5'); call crazy(amplaa(j),f,iaa)
-         case('sinwave-x'); call sinwave(amplaa(j),f,iaa,kx=kx_aa(j))
-         case('linear-zx'); f(:,:,:,iay)=-amplaa(j)*zz**2/Lxyz(3)
-         case('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,xx,kx_aa(j))
-         case('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,yy,ky_aa(j),mu0)
-         case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
-         case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,xx,yy,rmode)
-         case('Alfven-zconst'); call alfven_zconst(f,xx,yy)
-         case('Alfven-rz'); call alfven_rz(amplaa(j),f,xx,yy,rmode)
-         case('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
-         case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
-         case('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa,xx,yy,zz)
-         case('tony-nohel')
-            f(:,:,:,iay) = amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*zz)
-         case('tony-nohel-yz')
-            f(:,:,:,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*2.*pi/Lx*xx)
-         case('tony-hel-xy')
-            f(:,:,:,iax) = amplaa(j)/kz_aa(j)*sin(kz_aa(j)*2.*pi/Lz*zz)
-            f(:,:,:,iay) = amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*zz)
-         case('tony-hel-yz')
-            f(:,:,:,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*2.*pi/Lx*xx)
-            f(:,:,:,iaz) = amplaa(j)/kx_aa(j)*cos(kx_aa(j)*2.*pi/Lx*xx)
-         case('force-free-jet')
-            lB_ext_pot=.true.
-            call force_free_jet(mu_ext_pot,xx,yy,zz)
-         case('Alfven-circ-x')
-            !
-            !  circularly polarised Alfven wave in x direction
-            !
-            if (lroot) print*,'init_aa: circular Alfven wave -> x'
-            f(:,:,:,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*xx)
-            f(:,:,:,iaz) = amplaa(j)/kx_aa(j)*cos(kx_aa(j)*xx)
-         case('geo-benchmark-case1','geo-benchmark-case2'); call geo_benchmark_B(f)
+        case('nothing'); if(lroot .and. j==1) print*,'init_uu: nothing'
+        case('zero', '0'); f(:,:,:,iax:iaz) = 0.
+        case('rescale'); f(:,:,:,iax:iaz)=amplaa(j)*f(:,:,:,iax:iaz)
+        case('mode'); call modev(amplaa(j),coefaa,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),xx,yy,zz)
+        case('modeb'); call modeb(amplaa(j),coefbb,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),xx,yy,zz)
+        case('const_lou'); call const_lou(amplaa(j),f,iaa,xx,yy,zz)
+        case('power_randomphase')
+          call power_randomphase(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz)
+        case('random-isotropic-KS')
+          call random_isotropic_KS(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz,N_modes_aa)
+        case('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
+        case('gaussian-noise-rprof')
+          tmp=sqrt(xx**2+yy**2+zz**2)
+          call gaunoise_rprof(amplaa(j),tmp,prof,f,iax,iaz)
+        case('Beltrami-x', '11'); call beltrami(amplaa(j),f,iaa,KX=kx_aa(j))
+        case('Beltrami-y', '12'); call beltrami(amplaa(j),f,iaa,KY=ky_aa(j))
+        case('Beltrami-z', '1');  call beltrami(amplaa(j),f,iaa,KZ=kz_aa(j))
+        case('propto-ux'); call wave_uu(amplaa(j),f,iaa,kx=kx_aa(j))
+        case('propto-uy'); call wave_uu(amplaa(j),f,iaa,ky=ky_aa(j))
+        case('propto-uz'); call wave_uu(amplaa(j),f,iaa,kz=kz_aa(j))
+        case('diffrot'); call diffrot(amplaa(j),f,iay,xx,yy,zz)
+        case('hor-tube'); call htube(amplaa(j),f,iax,iaz,xx,yy,zz,radius,epsilonaa)
+        case('hor-fluxlayer'); call hfluxlayer(amplaa(j),f,iaa,xx,yy,zz,z0aa,widthaa)
+        case('ver-fluxlayer'); call vfluxlayer(amplaa(j),f,iaa,xx,yy,zz,x0aa,widthaa)
+        case('mag-support'); call magsupport(amplaa(j),f,zz,gravz,cs0,rho0)
+        case('arcade-x'); call arcade_x(amplaa(j),f,iaa,xx,yy,zz,kx_aa(j),kz_aa(j))
+        case('halfcos-Bx'); call halfcos_x(amplaa(j),f,iaa,xx,yy,zz)
+        case('uniform-Bx'); call uniform_x(amplaa(j),f,iaa,xx,yy,zz)
+        case('uniform-By'); call uniform_y(amplaa(j),f,iaa,xx,yy,zz)
+        case('uniform-Bz'); call uniform_z(amplaa(j),f,iaa,xx,yy,zz)
+        case('Bz(x)', '3'); call vfield(amplaa(j),f,iaa,xx)
+        case('vfield2'); call vfield2(amplaa(j),f,iaa,xx)
+        case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
+        case('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa,xx,yy,zz)
+        case('sinxsinz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
+        case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+        case('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+        case('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+        case('sinxcosz'); call sinx_siny_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),0.)
+        case('sinycosz'); call cosx_siny_cosz(amplaa(j),f,iax,kx_aa(j),ky_aa(j),0.)
+        case('cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
+          call cosy_sinz(amplaa(j),f,iay,ky_aa(j),kz_aa(j))
+        case('Ax=cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
+        case('magnetogram'); call mdi_init(f)
+        case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+        case('crazy', '5'); call crazy(amplaa(j),f,iaa)
+        case('sinwave-x'); call sinwave(amplaa(j),f,iaa,kx=kx_aa(j))
+        case('linear-zx'); f(:,:,:,iay)=-amplaa(j)*zz**2/Lxyz(3)
+        case('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,xx,kx_aa(j))
+        case('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,yy,ky_aa(j),mu0)
+        case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
+        case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,xx,yy,rmode)
+        case('Alfven-zconst'); call alfven_zconst(f,xx,yy)
+        case('Alfven-rz'); call alfven_rz(amplaa(j),f,xx,yy,rmode)
+        case('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
+        case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
+        case('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa,xx,yy,zz)
+        case('tony-nohel')
+          f(:,:,:,iay) = amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*zz)
+        case('tony-nohel-yz')
+          f(:,:,:,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*2.*pi/Lx*xx)
+        case('tony-hel-xy')
+          f(:,:,:,iax) = amplaa(j)/kz_aa(j)*sin(kz_aa(j)*2.*pi/Lz*zz)
+          f(:,:,:,iay) = amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*zz)
+        case('tony-hel-yz')
+          f(:,:,:,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*2.*pi/Lx*xx)
+          f(:,:,:,iaz) = amplaa(j)/kx_aa(j)*cos(kx_aa(j)*2.*pi/Lx*xx)
+        case('force-free-jet')
+          lB_ext_pot=.true.
+          call force_free_jet(mu_ext_pot,xx,yy,zz)
+        case('Alfven-circ-x')
+          !
+          !  circularly polarised Alfven wave in x direction
+          !
+          if (lroot) print*,'init_aa: circular Alfven wave -> x'
+          f(:,:,:,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*xx)
+          f(:,:,:,iaz) = amplaa(j)/kx_aa(j)*cos(kx_aa(j)*xx)
+        case('geo-benchmark-case1','geo-benchmark-case2'); call geo_benchmark_B(f)
 
-         case default
-            !
-            !  Catch unknown values
-            !
-            if (lroot) print*, 'init_aa: No such value for initaa: ', trim(initaa(j))
-            call stop_it("")
+        case default
+          !
+          !  Catch unknown values
+          !
+          if (lroot) &
+              print*, 'init_aa: No such value for initaa: ', trim(initaa(j))
+          call stop_it("")
 
-         endselect
-!
-!  End loop over initial conditions
-!
+        endselect
+        !
+        !  End loop over initial conditions
+        !
       enddo
 !
 !  allow for pressure equilibrium (for isothermal tube)
