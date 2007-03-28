@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.198 2007-03-16 07:04:52 brandenb Exp $
+! $Id: initcond.f90,v 1.199 2007-03-28 08:48:58 wlyra Exp $
 
 module Initcond
 
@@ -40,7 +40,7 @@ module Initcond
   public :: vfield2
   public :: hawley_etal99a
   public :: robertsflow
-  public :: power_law
+  public :: power_law,power_law_cyl
   public :: const_lou
   public :: corona_init,mdi_init
 
@@ -2549,7 +2549,7 @@ module Initcond
 !
     endsubroutine random_isotropic_KS
 !**********************************************************
-    subroutine power_law(f,iglobal_gg,plaw,ptlaw,lstratified)
+    subroutine power_law(f,iglobal_gg,plaw,ptlaw,lstratified,lsoftened)
 !
 ! Yields from Minimum Mass Solar Nebula model
 !
@@ -2565,16 +2565,16 @@ module Initcond
       use FArrayManager
       use Mpicomm, only: stop_it
       use General
-      use EquationOfState, only:cs0,cs20,rho0
+      use EquationOfState, only:cs0,cs20,rho0,gamma1,gamma11
       use Sub, only: grad
       use Deriv, only: der
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: r_cyl,r_sph,OO,OO_sph,OO_cyl,corr,rr,TT,tmp
+      real, dimension(mx) :: r_cyl,r_sph,OO,OO_sph,OO_cyl,corr,rr,TT,tmp,ur,atang,fstep
       real, dimension(nx) :: grhoz,rmn_sph,rmn_cyl,rho
       real, dimension(nx,3) :: gg_mn,glnTT
       real :: plaw,ptlaw
-      logical :: lstratified,lheader
+      logical :: lstratified,lheader,lsoftened
       integer :: iglobal_gg
       integer, pointer :: iglobal_cs2,iglobal_glnTT
 !
@@ -2624,15 +2624,25 @@ module Initcond
           else
 ! Cylindrical disc
              if (lheader) print*,'Cylindrical disc initial condition'
-             corr = ptlaw*cs20/r_cyl**(2+ptlaw)
+             if (ltemperature) then
+                corr = gamma11*ptlaw*cs20/r_cyl**(2+ptlaw)
+             else
+                corr = ptlaw*cs20/r_cyl**(2+ptlaw)
+             endif
              tmp = max(OO_cyl**2-corr,0.)
              OO=sqrt(tmp)
           endif
 !
 ! Velocity field. Don't overwrite
 !
-          f(:,m,n,iux)= f(:,m,n,iux) - y(m)*OO
-          f(:,m,n,iuy)= f(:,m,n,iuy) +    x*OO
+          if (lsoftened) then
+             OO_cyl=(r_cyl**2+0.1**2)**(-3/4.)
+             corr=ptlaw*cs20*(r_cyl**2+0.1**2)**(1-ptlaw)/2.
+             OO=sqrt(OO_cyl**2*(1-corr))
+          endif
+!
+          f(:,m,n,iux)= f(:,m,n,iux) - y(m)*OO  !+ur* x /r_cyl
+          f(:,m,n,iuy)= f(:,m,n,iuy) +    x*OO  !+ur*y(m)/r_cyl
           f(:,m,n,iuz)= f(:,m,n,iuz) + 0.
 !
         enddo
@@ -2682,19 +2692,29 @@ module Initcond
           endif
 !
           if (llocal_iso) then
-!sound speed
-            call farray_use_global('cs2',iglobal_cs2)
-            f(l1:l2,m,n,iglobal_cs2)= cs20/(rmn_cyl/rr0)**ptlaw
-!temperature gradient
-            call farray_use_global('glnTT',iglobal_glnTT)
-            f(l1:l2,m,n,iglobal_glnTT  )=-ptlaw*x(l1:l2)/rmn_cyl**2
-            f(l1:l2,m,n,iglobal_glnTT+1)=-ptlaw*  y(m)  /rmn_cyl**2
-            f(l1:l2,m,n,iglobal_glnTT+2)=0.
+!sound speed and temperature gradient
+            if (.not.lsoftened) then
+              call farray_use_global('cs2',iglobal_cs2)
+              f(l1:l2,m,n,iglobal_cs2)= cs20/(rmn_cyl/rr0)**ptlaw
+              call farray_use_global('glnTT',iglobal_glnTT)
+              f(l1:l2,m,n,iglobal_glnTT  )=-ptlaw*x(l1:l2)/rmn_cyl**2
+              f(l1:l2,m,n,iglobal_glnTT+1)=-ptlaw*  y(m)  /rmn_cyl**2
+              f(l1:l2,m,n,iglobal_glnTT+2)=0.
+            else
+              call farray_use_global('cs2',iglobal_cs2)
+              f(l1:l2,m,n,iglobal_cs2)= cs20*(rmn_cyl**2+0.1**2)**(-ptlaw/2.)
+              call farray_use_global('glnTT',iglobal_glnTT)
+              f(l1:l2,m,n,iglobal_glnTT  )=-ptlaw*x(l1:l2)/(rmn_cyl**2+0.1**2)
+              f(l1:l2,m,n,iglobal_glnTT+1)=-ptlaw*  y(m)  /(rmn_cyl**2+0.1**2)
+              f(l1:l2,m,n,iglobal_glnTT+2)=0.
+            endif
 !else do it all as temperature
           else if (ltemperature) then
              rr=sqrt(x(:)**2+y(m)**2)
              k0=2e-6 ; nu=5e-2 ; sig=5.6704E-007
+             !relaxed system
              TT=sqrt(27./128*k0*nu/sig) * exp(f(:,m,n,ilnrho)) * sqrt(g0/rr**3)
+             TT=0.!cs20/(cp*gamma1)
              f(:,m,n,ilnTT) = f(:,m,n,ilnTT) + alog(TT)
           else
             print*,"No thermodynamical variable. Choose if you want a "
@@ -2719,6 +2739,62 @@ module Initcond
       endif
 !
     endsubroutine power_law
+!****************************************************************
+    subroutine power_law_cyl(f,iglobal_gg,plaw,ptlaw,lstratified)
+!
+      use Cdata
+      use FArrayManager
+      use Mpicomm, only: stop_it
+      use General
+      use EquationOfState, only:cs0,cs20,rho0,gamma1,gamma11
+!
+      use Sub, only: grad
+      use Deriv, only: der
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx) :: OO,OO_cyl,corr,tmp
+      real :: plaw,ptlaw
+      logical :: lstratified,lheader
+      integer :: iglobal_gg
+      integer, pointer :: iglobal_cs2,iglobal_glnTT
+!
+      !real :: g0,rr0,mach,k0,sig,nu
+      real :: g0,rr0
+
+      nullify(iglobal_cs2)
+      nullify(iglobal_glnTT)
+
+      g0=1.;rr0=1.
+
+      do m=1,my
+         do n=1,mz
+            lheader=(lroot.and.(m==1).and.(n==1))
+            OO_cyl=sqrt(g0/x**3)
+            if (lheader) print*,'Radial stratification with power law=',plaw
+            f(:,m,n,ilnrho) = alog(rho0) - plaw*alog(x)
+            corr = ptlaw*cs20/x**(2+ptlaw)
+            tmp = max(OO_cyl**2-corr,0.)
+            OO=sqrt(tmp)
+!
+            OO=OO_cyl
+            f(:,m,n,iux)= f(:,m,n,iux) +    0.
+            f(:,m,n,iuy)= f(:,m,n,iuy) + x*OO
+            f(:,m,n,iuz)= f(:,m,n,iuz) +    0.
+!Thermodynamical quantities      
+            if (llocal_iso) then
+               !sound speed
+               call farray_use_global('cs2',iglobal_cs2)
+               f(l1:l2,m,n,iglobal_cs2)= cs20*rcyl_mn1**ptlaw
+               !temperature gradient
+               call farray_use_global('glnTT',iglobal_glnTT)
+               f(l1:l2,m,n,iglobal_glnTT  )=-ptlaw*rcyl_mn2
+               f(l1:l2,m,n,iglobal_glnTT+1)=0.
+               f(l1:l2,m,n,iglobal_glnTT+2)=0.
+            endif
+         enddo
+      enddo
+   
+    endsubroutine power_law_cyl
 !****************************************************************
     subroutine corona_init(f)
 !

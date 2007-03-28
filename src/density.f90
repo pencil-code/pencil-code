@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.319 2007-03-16 06:21:15 ajohan Exp $
+! $Id: density.f90,v 1.320 2007-03-28 08:48:57 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -50,7 +50,7 @@ module Density
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_aniso=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
-  logical :: lstratified=.false.
+  logical :: lstratified=.false.,lsoftened=.false.
 
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
@@ -70,7 +70,8 @@ module Density
        mpoly,strati_type,beta_glnrho_global,         &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
-       wdamp,plaw,lcontinuity_gas,lstratified,ptlaw
+       wdamp,plaw,lcontinuity_gas,lstratified,ptlaw, &
+       lsoftened
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
@@ -112,7 +113,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.319 2007-03-16 06:21:15 ajohan Exp $")
+           "$Id: density.f90,v 1.320 2007-03-28 08:48:57 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -684,7 +685,13 @@ module Density
       case('globaldisc')
 !minimum mass solar nebula
         if (lroot)  print*,'init_lnrho: initialize initial condition for Keplerian global disc'
-        call power_law(f,iglobal_gg,plaw,ptlaw,lstratified)
+        if     (coord_system=='cartesian') then
+           call power_law(f,iglobal_gg,plaw,ptlaw,lstratified,lsoftened)
+        elseif (coord_system=='cylindric') then
+           call power_law_cyl(f,iglobal_gg,plaw,ptlaw,lstratified)
+        else
+           call stop_it("globaldisc not implemented for spherical coord")
+        endif
 
      case ('step_xz')
         call fatal_error('init_lnrho','neutron_star initial condition is now in the special/neutron_star.f90 code')
@@ -1612,7 +1619,7 @@ module Density
 !   8-jul-02/axel: incorporated/adapted from init_lnrho
 !
       use Gravity, only: grav_profile,gravz,zinfty,zref,zgrav,  &
-                             potential
+                             potential,nu_epicycle
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: pot,dlncs2,r_mn
@@ -1635,7 +1642,7 @@ module Density
           zref=zinfty-(mpoly+1.)*cs20/(-gamma*gravz)
         elseif (grav_profile=='linear') then
           if(lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
-          zref2=zinfty**2-(mpoly+1.)*cs20/(-.5*gamma*gravz)
+          zref2=zinfty**2-(mpoly+1.)*cs20/(0.5*gamma*nu_epicycle**2)
           if(zref2<0) then
             if(lroot) print*,'polytropic_simple: zref**2<0 is not ok'
             zref2=0. !(and see what happens)
@@ -1644,7 +1651,7 @@ module Density
         else
           if(lroot) print*,'polytropic_simple: zref not prepared!'
         endif
-        if (lroot) print*,'polytroic_simple: zref=',zref
+        if (lroot) print*,'polytropic_simple: zref=',zref
 !
 !  check whether zinfty lies outside the domain (otherwise density
 !  would vanish within the domain). At the moment we are not properly
