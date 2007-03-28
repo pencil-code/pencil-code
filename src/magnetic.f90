@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.396 2007-03-27 15:11:48 brandenb Exp $
+! $Id: magnetic.f90,v 1.397 2007-03-28 17:43:03 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -54,6 +54,7 @@ module Magnetic
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
   character (len=labellen) :: Omega_profile='nothing',alpha_profile='nothing'
   ! input parameters
+  complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
   real, dimension(3) :: B_ext=(/0.,0.,0./),B1_ext,B_ext_tmp,eta_aniso_hyper3
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
@@ -73,7 +74,13 @@ module Magnetic
   real :: ampl_B0=0.,D_smag=0.17,B_ext21,B_ext11
   real :: Omega_ampl=0.
   real :: rmode=1.,zmode=1.,rm_int=0.,rm_ext=0.
+  real :: nu_ni=0.,nu_ni1,hall_term=0.
+  real :: alpha_effect=0.,alpha_quenching=0.,delta_effect=0.,meanfield_etat=0.
+  real :: displacement_gun=0.
+  real :: pertamplaa=0.
+  real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
+  integer :: N_modes_aa=1
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: llorentzforce=.true.,linduction=.true.
   logical :: lresi_eta_const=.false.
@@ -94,17 +101,10 @@ module Magnetic
   logical :: lforce_free_test=.false.
   logical :: lmeanfield_theory=.false.,lOmega_effect=.false.
   logical :: lmeanfield_noalpm=.false.
-  real :: nu_ni=0.,nu_ni1,hall_term=0.
-  real :: alpha_effect=0.,alpha_quenching=0.,delta_effect=0.,meanfield_etat=0.
-  real :: displacement_gun=0.
-  complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
-  real :: pertamplaa=0.
-  real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
-  character (len=labellen) :: pertaa='zero'
-  integer :: N_modes_aa=1
   logical :: lgauss=.false.
   logical :: lee_ext=.false.,lbb_ext=.false.,ljj_ext=.false.
   logical :: lbb_as_aux=.false.,ljj_as_aux=.false.
+  character (len=labellen) :: pertaa='zero'
 
   namelist /magnetic_init_pars/ &
        B_ext, lohmic_heat, &
@@ -126,14 +126,13 @@ module Magnetic
   real :: sigma_ratio=1.,eta_width=0.,eta_z0=1.
   real :: alphaSSm=0.
   real :: k1_ff=1.,ampl_ff=1.,swirl=1.
-  logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
-  character (len=labellen) :: zdep_profile='fs'
   real, dimension(mz) :: eta_z
+  logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
   logical :: lweyl_gauge=.false.
   logical :: lupw_aa=.false.
   logical :: lforcing_continuous=.false.
+  character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: iforcing_continuous='fixed_swirl'
-
 
   namelist /magnetic_run_pars/ &
        eta,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
@@ -225,7 +224,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.396 2007-03-27 15:11:48 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.397 2007-03-28 17:43:03 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
