@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.399 2007-03-28 18:02:28 dobler Exp $
+! $Id: magnetic.f90,v 1.400 2007-03-28 18:32:45 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -126,11 +126,13 @@ module Magnetic
   real :: sigma_ratio=1.,eta_width=0.,eta_z0=1.
   real :: alphaSSm=0.
   real :: k1_ff=1.,ampl_ff=1.,swirl=1.
+  real :: inertial_length=0.,linertial_2
   real, dimension(mz) :: eta_z
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
   logical :: lweyl_gauge=.false.
   logical :: lupw_aa=.false.
   logical :: lforcing_continuous=.false.
+  logical :: lelectron_inertia=.false.
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: iforcing_continuous='fixed_swirl'
 
@@ -153,6 +155,7 @@ module Magnetic
        lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint,lfreeze_aext, &
        sigma_ratio,zdep_profile,eta_width,eta_z0, &
        borderaa,eta_aniso_hyper3, &
+       lelectron_inertia,inertial_length
        lbb_as_aux,ljj_as_aux
 
   ! other variables (needs to be consistent with reset list below)
@@ -225,7 +228,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.399 2007-03-28 18:02:28 dobler Exp $")
+           "$Id: magnetic.f90,v 1.400 2007-03-28 18:32:45 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -264,6 +267,16 @@ module Magnetic
 !  Precalculate 1/mu (moved here from register.f90)
 !
       mu01=1./mu0
+!
+!  Precalculate 1/inertial_length^2
+!
+      if (inertial_length /= 0.) then
+        linertial_2 = inertial_length**(-2)
+      else
+        linertial_2 = 0.
+        ! make sure not to use this value by checking that
+        ! (inertial_length /= 0.)...
+      endif
 !
 !  Precalculate 1/nu_ni
 !

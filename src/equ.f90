@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.355 2007-03-28 18:31:49 dobler Exp $
+! $Id: equ.f90,v 1.356 2007-03-28 18:32:45 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -392,6 +392,7 @@ module Equ
       use Special
       use Boundcond
       use Shear
+      use Poisson
       use Density
       use Grid, only: calc_pencils_grid
       use Shock, only: calc_pencils_shock, calc_shock_profile, calc_shock_profile_simple
@@ -413,7 +414,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.355 2007-03-28 18:31:49 dobler Exp $")
+           "$Id: equ.f90,v 1.356 2007-03-28 18:32:45 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -935,6 +936,17 @@ module Equ
 !  Take care of flux-limited diffusion
 !
       if (lradiation_fld) f(:,:,:,idd)=DFF_new
+!
+!  Electron inertia: our df(:,:,:,iax:iaz) so far is
+!  (1 - l_e^2\Laplace) daa, thus to get the true daa, we need to invert
+!  that operator
+!
+      if (lelectron_inertia .and. inertial_length/=0.) then
+        do iv = iax,iaz
+          call inverse_laplacian_semispectral(df(:,:,:,iv), C=linertial_2)
+        enddo
+        df(:,:,:,iax:iaz) = -df(:,:,:,iax:iaz) * linertial_2
+      endif
 !
 !  Calculate the gradient of the potential if there is room allocated in the
 !  f-array.
