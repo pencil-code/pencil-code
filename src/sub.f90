@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.299 2007-03-27 15:11:48 brandenb Exp $
+! $Id: sub.f90,v 1.300 2007-03-28 17:33:58 dhruba Exp $
 
 module Sub
 
@@ -1765,7 +1765,7 @@ module Sub
 !
     endsubroutine del2
 !***********************************************************************
-    subroutine del2v(f,k,del2f)
+    subroutine del2v(f,k,del2f,fij,pff)
 !
 !  calculate del2 of a vector, get vector
 !  28-oct-97/axel: coded
@@ -1775,6 +1775,8 @@ module Sub
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, optional, dimension(nx,3,3) :: fij
+      real, optional, dimension(nx,3) :: pff
       real, dimension (nx,3) :: del2f
       real, dimension (nx) :: tmp
       integer :: i,k,k1
@@ -1797,8 +1799,25 @@ module Sub
          del2f(:,2)=del2f(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn1**2
       endif
 !
-      if (lspherical_coords) &
-        call stop_it("del2v not implemented for spherical coordinates")
+      if (lspherical_coords) then
+! for r component (factors of line elements are taken care of inside p%uij
+         del2f(:,1)= del2f(:,1)+&
+               r1_mn*(2.*(fij(:,1,1)-fij(:,2,2)-fij(:,3,3) &
+                             -r1_mn*pff(:,1)-cotth(m)*r1_mn*pff(:,2) ) &
+                         +cotth(m)*fij(:,1,2) )
+! for theta component
+         del2f(:,2)=del2f(:,2)+&
+               r1_mn*(2.*(fij(:,2,1)-cotth(m)*fij(:,3,3)&
+                             +fij(:,1,2) )&
+                         +cotth(m)*fij(:,2,2)-sin1th(m)*sin1th(m)*pff(:,2) )
+! for phi component  
+         del2f(:,3)=del2f(:,3)+&
+               r1_mn*(2.*(fij(:,3,1)+fij(:,1,3)&
+                             +cotth(m)*fij(:,2,3) ) &
+                         +cotth(m)*fij(:,3,2)-sin1th(m)*pff(:,3) )
+      endif
+!      if (lspherical_coords) &
+!        call stop_it("del2v not implemented for spherical coordinates")
 !
     endsubroutine del2v
 !***********************************************************************

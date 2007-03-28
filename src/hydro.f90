@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.334 2007-03-27 15:11:48 brandenb Exp $
+! $Id: hydro.f90,v 1.335 2007-03-28 17:33:58 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -191,7 +191,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.334 2007-03-27 15:11:48 brandenb Exp $")
+           "$Id: hydro.f90,v 1.335 2007-03-28 17:33:58 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -843,6 +843,11 @@ module Hydro
             call del2v(f,iuu,p%del2u)
           endif
         else
+          if(lspherical_coords)then
+             call del2v(f,iuu,p%del2u,p%uij,p%uu)
+          else
+             call del2v(f,iuu,p%del2u)
+          endif
           if (lpencil(i_graddivu)) call del2v_etc(f,iuu,GRADDIV=p%graddivu)
         endif
       endif
