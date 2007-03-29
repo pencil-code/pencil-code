@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.300 2007-03-28 17:33:58 dhruba Exp $
+! $Id: sub.f90,v 1.301 2007-03-29 10:40:28 dhruba Exp $
 
 module Sub
 
@@ -1912,8 +1912,9 @@ module Sub
            call der(f,k1+1,tmp,3)
            graddiv(:,3)=graddiv(:,3)+tmp*rcyl_mn1
         endif
-        if (lspherical_coords) &
-          call stop_it("graddiv at del2v_etc not implemented for spherical coordinates")
+        if (lspherical_coords) then
+           call stop_it("del2v_etc: graddiv is implemented in gij_etc for spherical coords")
+       endif
       endif
 !
       if (present(curlcurl)) then
@@ -2154,9 +2155,12 @@ module Sub
       if (present(graddiv)) then
         graddiv(:,:)=d2A(:,:,1,1)+d2A(:,:,2,2)+d2A(:,:,3,3)
         if (lspherical_coords) then
-          graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+aij(:,2,1)*r1_mn*cotth(m)
-          graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+aij(:,2,2)*r1_mn*cotth(m)-aa(:,2)*r2_mn*sin2th(m)
-          graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*r1_mn*2+aij(:,2,3)*r1_mn*cotth(m)
+          graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+aij(:,2,1)*r1_mn*cotth(m)&
+               -2.*r1_mn*r1_mn*aa(:,1)-r1_mn*r1_mn*cotth(m)*cotth(m)*aa(:,2)
+          graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+aij(:,2,2)*r1_mn*cotth(m)&
+               -aa(:,2)*r2_mn*sin2th(m)
+          graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*r1_mn*2+aij(:,2,3)*r1_mn*cotth(m)&
+               -r1_mn*cotth(m)*aij(:,3,2)
         endif
       endif
 !
