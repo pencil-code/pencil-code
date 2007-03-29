@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.400 2007-03-28 18:32:45 dobler Exp $
+! $Id: magnetic.f90,v 1.401 2007-03-29 04:44:11 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -155,7 +155,7 @@ module Magnetic
        lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint,lfreeze_aext, &
        sigma_ratio,zdep_profile,eta_width,eta_z0, &
        borderaa,eta_aniso_hyper3, &
-       lelectron_inertia,inertial_length
+       lelectron_inertia,inertial_length, &
        lbb_as_aux,ljj_as_aux
 
   ! other variables (needs to be consistent with reset list below)
@@ -228,7 +228,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.400 2007-03-28 18:32:45 dobler Exp $")
+           "$Id: magnetic.f90,v 1.401 2007-03-29 04:44:11 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
