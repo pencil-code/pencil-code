@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.336 2007-03-29 10:40:28 dhruba Exp $
+! $Id: hydro.f90,v 1.337 2007-03-30 23:50:32 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -111,44 +111,139 @@ module Hydro
 ! end geodynamo
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
-  integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
-  integer :: idiag_dtu=0,idiag_urms=0,idiag_umax=0,idiag_uzrms=0,idiag_uzrmaxs=0
-  integer :: idiag_uxmax=0,idiag_uymax=0,idiag_uzmax=0
-  integer :: idiag_orms=0,idiag_omax=0
-  integer :: idiag_uxm=0,idiag_uym=0,idiag_uzm=0
-  integer :: idiag_ux2m=0,idiag_uy2m=0,idiag_uz2m=0
-  integer :: idiag_ux2mz=0,idiag_uy2mz=0,idiag_uz2mz=0
-  integer :: idiag_ux2my=0,idiag_uy2my=0,idiag_uz2my=0
-  integer :: idiag_ux2mx=0,idiag_uy2mx=0,idiag_uz2mx=0
-  integer :: idiag_ox2m=0,idiag_oy2m=0,idiag_oz2m=0
-  integer :: idiag_oxm=0,idiag_oym=0,idiag_ozm=0
-  integer :: idiag_uxuym=0,idiag_uxuzm=0,idiag_uyuzm=0
-  integer :: idiag_uxuymz=0,idiag_uxuzmz=0,idiag_uyuzmz=0,idiag_ruxuymz=0
-  integer :: idiag_uxuymy=0,idiag_uxuzmy=0,idiag_uyuzmy=0
-  integer :: idiag_uxuymx=0,idiag_uxuzmx=0,idiag_uyuzmx=0
-  integer :: idiag_oxoym=0,idiag_oxozm=0,idiag_oyozm=0
-  integer :: idiag_ruxm=0,idiag_ruym=0,idiag_ruzm=0,idiag_rumax=0
-  integer :: idiag_uxmz=0,idiag_uymz=0,idiag_uzmz=0,idiag_umx=0,idiag_umy=0
-  integer :: idiag_uxmy=0,idiag_uymy=0,idiag_uzmy=0,idiag_u2mz=0
-  integer :: idiag_umz=0,idiag_uxmxy=0,idiag_uymxy=0,idiag_uzmxy=0
-  integer :: idiag_uxmx=0,idiag_uymx=0,idiag_uzmx=0
-  integer :: idiag_Marms=0,idiag_Mamax=0,idiag_divum=0,idiag_divu2m=0
-  integer :: idiag_u3u21m=0,idiag_u1u32m=0,idiag_u2u13m=0,idiag_oumphi=0
-  integer :: idiag_urmphi=0,idiag_upmphi=0,idiag_uzmphi=0,idiag_u2mphi=0
-  integer :: idiag_fintm=0,idiag_fextm=0,idiag_ozmphi=0
-  integer :: idiag_duxdzma=0,idiag_duydzma=0
-  integer :: idiag_ekintot=0, idiag_ekin=0, idiag_ekinz=0
-  integer :: idiag_fmassz=0, idiag_fkinz=0
-  integer :: idiag_ur2m=0,idiag_up2m=0,idiag_uzz2m=0
-  integer :: idiag_totangmom=0,idiag_rufm=0
-  integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
-  integer :: idiag_u2mr=0,idiag_urupmr=0
-  integer :: idiag_urmr=0,idiag_upmr=0,idiag_uzmr=0
-  integer :: idiag_ormr=0,idiag_opmr=0,idiag_ozmr=0
-  integer :: idiag_uxfampm=0,idiag_uyfampm=0,idiag_uzfampm=0
-  integer :: idiag_uxfampim=0,idiag_uyfampim=0,idiag_uzfampim=0
-  integer :: idiag_oumz=0
+  integer :: idiag_u2m=0        ! DIAG_DOC: $\left<\uv^2\right>$
+  integer :: idiag_um2=0        ! DIAG_DOC: 
+  integer :: idiag_uxpt=0       ! DIAG_DOC: 
+  integer :: idiag_uypt=0       ! DIAG_DOC: 
+  integer :: idiag_uzpt=0       ! DIAG_DOC: 
+  integer :: idiag_urms=0       ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$
+  integer :: idiag_umax=0       ! DIAG_DOC: $\max(|\uv|)$
+  integer :: idiag_uzrms=0      ! DIAG_DOC: $\left<u_z^2\right>^{1/2}$
+  integer :: idiag_uzrmaxs=0    ! DIAG_DOC: 
+  integer :: idiag_uxmax=0      ! DIAG_DOC: $\max(|u_x|)$
+  integer :: idiag_uymax=0      ! DIAG_DOC: $\max(|u_y|)$
+  integer :: idiag_uzmax=0      ! DIAG_DOC: $\max(|u_z|)$
+  integer :: idiag_uxm=0        ! DIAG_DOC: 
+  integer :: idiag_uym=0        ! DIAG_DOC: 
+  integer :: idiag_uzm=0        ! DIAG_DOC: 
+  integer :: idiag_ux2m=0       ! DIAG_DOC: 
+  integer :: idiag_uy2m=0       ! DIAG_DOC: 
+  integer :: idiag_uz2m=0       ! DIAG_DOC: 
+  integer :: idiag_ux2mx=0      ! DIAG_DOC: 
+  integer :: idiag_uy2mx=0      ! DIAG_DOC: 
+  integer :: idiag_uz2mx=0      ! DIAG_DOC: 
+  integer :: idiag_ux2my=0      ! DIAG_DOC: 
+  integer :: idiag_uy2my=0      ! DIAG_DOC: 
+  integer :: idiag_uz2my=0      ! DIAG_DOC: 
+  integer :: idiag_ux2mz=0      ! DIAG_DOC: 
+  integer :: idiag_uy2mz=0      ! DIAG_DOC: 
+  integer :: idiag_uz2mz=0      ! DIAG_DOC: 
+  integer :: idiag_uxuym=0      ! DIAG_DOC: 
+  integer :: idiag_uxuzm=0      ! DIAG_DOC: 
+  integer :: idiag_uyuzm=0      ! DIAG_DOC: 
+  integer :: idiag_uxuymz=0     ! DIAG_DOC: 
+  integer :: idiag_uxuzmz=0     ! DIAG_DOC: 
+  integer :: idiag_uyuzmz=0     ! DIAG_DOC: 
+  integer :: idiag_uxuymy=0     ! DIAG_DOC: 
+  integer :: idiag_uxuzmy=0     ! DIAG_DOC: 
+  integer :: idiag_uyuzmy=0     ! DIAG_DOC: 
+  integer :: idiag_uxuymx=0     ! DIAG_DOC: 
+  integer :: idiag_uxuzmx=0     ! DIAG_DOC: 
+  integer :: idiag_uyuzmx=0     ! DIAG_DOC: 
+  integer :: idiag_uxmz=0       ! DIAG_DOC: 
+  integer :: idiag_uymz=0       ! DIAG_DOC: 
+  integer :: idiag_uzmz=0       ! DIAG_DOC: 
+  integer :: idiag_umx=0        ! DIAG_DOC: 
+  integer :: idiag_umy=0        ! DIAG_DOC: 
+  integer :: idiag_uxmy=0       ! DIAG_DOC: 
+  integer :: idiag_uymy=0       ! DIAG_DOC: 
+  integer :: idiag_uzmy=0       ! DIAG_DOC: 
+  integer :: idiag_u2mz=0       ! DIAG_DOC: 
+  integer :: idiag_umz=0        ! DIAG_DOC: 
+  integer :: idiag_uxmxy=0      ! DIAG_DOC: 
+  integer :: idiag_uymxy=0      ! DIAG_DOC: 
+  integer :: idiag_uzmxy=0      ! DIAG_DOC: 
+  integer :: idiag_uxmx=0       ! DIAG_DOC: 
+  integer :: idiag_uymx=0       ! DIAG_DOC: 
+  integer :: idiag_uzmx=0       ! DIAG_DOC: 
+  integer :: idiag_divum=0      ! DIAG_DOC: 
+  integer :: idiag_divu2m=0     ! DIAG_DOC: 
+  integer :: idiag_u3u21m=0     ! DIAG_DOC: 
+  integer :: idiag_u1u32m=0     ! DIAG_DOC: 
+  integer :: idiag_u2u13m=0     ! DIAG_DOC: 
+  integer :: idiag_urmphi=0     ! DIAG_DOC: 
+  integer :: idiag_upmphi=0     ! DIAG_DOC: 
+  integer :: idiag_uzmphi=0     ! DIAG_DOC: 
+  integer :: idiag_u2mphi=0     ! DIAG_DOC: 
+  integer :: idiag_ur2m=0       ! DIAG_DOC: 
+  integer :: idiag_up2m=0       ! DIAG_DOC: 
+  integer :: idiag_uzz2m=0      ! DIAG_DOC: 
+  integer :: idiag_u2mr=0       ! DIAG_DOC: 
+  integer :: idiag_urupmr=0     ! DIAG_DOC: 
+  integer :: idiag_urmr=0       ! DIAG_DOC: 
+  integer :: idiag_upmr=0       ! DIAG_DOC: 
+  integer :: idiag_uzmr=0       ! DIAG_DOC: 
+  integer :: idiag_uxfampm=0    ! DIAG_DOC: 
+  integer :: idiag_uyfampm=0    ! DIAG_DOC: 
+  integer :: idiag_uzfampm=0    ! DIAG_DOC: 
+  integer :: idiag_uxfampim=0   ! DIAG_DOC: 
+  integer :: idiag_uyfampim=0   ! DIAG_DOC: 
+  integer :: idiag_uzfampim=0   ! DIAG_DOC: 
+  !
+  integer :: idiag_ruxm=0       ! DIAG_DOC: $\left<\varrho u_x\right>$
+                                ! DIAG_DOC:   \quad(mean $x$-momentum density)
+  integer :: idiag_ruym=0       ! DIAG_DOC: $\left<\varrho u_y\right>$
+                                ! DIAG_DOC:   \quad(mean $y$-momentum density)
+  integer :: idiag_ruzm=0       ! DIAG_DOC: $\left<\varrho u_z\right>$
+                                ! DIAG_DOC:   \quad(mean $z$-momentum density)
+  integer :: idiag_rumax=0      ! DIAG_DOC: $\max(\varrho |\uv|)$
+                                ! DIAG_DOC:   \quad(maximum modulus of momentum)
+  integer :: idiag_ruxuymz=0    ! DIAG_DOC: 
+  integer :: idiag_rufm=0       ! DIAG_DOC: 
+  !
+  integer :: idiag_dtu=0        ! DIAG_DOC: 
+  !
+  integer :: idiag_oum=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}
+                                ! DIAG_DOC:   \cdot\uv\right>$
+  integer :: idiag_o2m=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}^2\right>
+                                ! DIAG_DOC:   \equiv \left<(\curl\uv)^2\right>$
+  integer :: idiag_orms=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}^2
+                                ! DIAG_DOC:   \right>^{1/2}$
+  integer :: idiag_omax=0       ! DIAG_DOC: $\max(|\boldsymbol{\omega}|)$
+  integer :: idiag_ox2m=0       ! DIAG_DOC: $\left<\omega_x^2\right>$
+  integer :: idiag_oy2m=0       ! DIAG_DOC: $\left<\omega_y^2\right>$
+  integer :: idiag_oz2m=0       ! DIAG_DOC: $\left<\omega_z^2\right>$
+  integer :: idiag_oxm=0        ! DIAG_DOC: 
+  integer :: idiag_oym=0        ! DIAG_DOC: 
+  integer :: idiag_ozm=0        ! DIAG_DOC: 
+  integer :: idiag_oxoym=0      ! DIAG_DOC: $\left<\omega_x\omega_y\right>$
+  integer :: idiag_oxozm=0      ! DIAG_DOC: $\left<\omega_x\omega_z\right>$
+  integer :: idiag_oyozm=0      ! DIAG_DOC: $\left<\omega_y\omega_z\right>$
+  integer :: idiag_oumphi=0     ! DIAG_DOC: 
+  integer :: idiag_ozmphi=0     ! DIAG_DOC: 
+  integer :: idiag_ormr=0       ! DIAG_DOC: 
+  integer :: idiag_opmr=0       ! DIAG_DOC: 
+  integer :: idiag_ozmr=0       ! DIAG_DOC: 
+  integer :: idiag_oumz=0       ! DIAG_DOC: 
+  !
+  integer :: idiag_Marms=0      ! DIAG_DOC: $\left<\uv^2/\cs^2\right>$
+                                ! DIAG_DOC:   \quad(rms Mach number)
+  integer :: idiag_Mamax=0      ! DIAG_DOC: $\max |\uv|/\cs$
+                                ! DIAG_DOC:   \quad(maximum Mach number)
+  !
+  integer :: idiag_fintm=0      ! DIAG_DOC: 
+  integer :: idiag_fextm=0      ! DIAG_DOC: 
+  integer :: idiag_duxdzma=0    ! DIAG_DOC: 
+  integer :: idiag_duydzma=0    ! DIAG_DOC: 
+  integer :: idiag_ekin=0       ! DIAG_DOC: 
+  integer :: idiag_ekintot=0    ! DIAG_DOC: 
+  integer :: idiag_ekinz=0      ! DIAG_DOC: 
+  integer :: idiag_totangmom=0  ! DIAG_DOC: 
+  integer :: idiag_fmassz=0     ! DIAG_DOC: 
+  integer :: idiag_fkinz=0      ! DIAG_DOC: 
+  integer :: idiag_fxbxm=0      ! DIAG_DOC: 
+  integer :: idiag_fxbym=0      ! DIAG_DOC: 
+  integer :: idiag_fxbzm=0      ! DIAG_DOC: 
 
   contains
 
@@ -191,7 +286,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.336 2007-03-29 10:40:28 dhruba Exp $")
+           "$Id: hydro.f90,v 1.337 2007-03-30 23:50:32 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1782,36 +1877,112 @@ module Hydro
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_u2m=0; idiag_um2=0; idiag_oum=0; idiag_o2m=0
-        idiag_uxpt=0; idiag_uypt=0; idiag_uzpt=0; idiag_dtu=0
-        idiag_urms=0; idiag_umax=0; idiag_uzrms=0; idiag_uzrmaxs=0
-        idiag_uxmax=0; idiag_uymax=0; idiag_uzmax=0
-        idiag_orms=0; idiag_omax=0
-        idiag_ruxm=0; idiag_ruym=0; idiag_ruzm=0; idiag_rumax=0
-        idiag_uxm=0; idiag_uym=0; idiag_uzm=0
-        idiag_ux2m=0; idiag_uy2m=0; idiag_uz2m=0
-        idiag_uxuym=0; idiag_uxuzm=0; idiag_uyuzm=0
-        idiag_uxuymz=0; idiag_uxuzmz=0; idiag_uyuzmz=0; idiag_uxuymz=0
-        idiag_ox2m=0; idiag_oy2m=0; idiag_oz2m=0; idiag_oxm=0; idiag_oym=0
-        idiag_ozm=0; idiag_oxoym=0; idiag_oxozm=0; idiag_oyozm=0
-        idiag_oumz=0
-        idiag_umx=0; idiag_umy=0; idiag_umz=0
-        idiag_Marms=0; idiag_Mamax=0; idiag_divum=0; idiag_divu2m=0
-        idiag_u3u21m=0; idiag_u1u32m=0; idiag_u2u13m=0
-        idiag_oumphi=0; idiag_fintm=0; idiag_fextm=0
-        idiag_urmphi=0; idiag_upmphi=0; idiag_uzmphi=0; idiag_u2mphi=0
-        idiag_duxdzma=0; idiag_duydzma=0; idiag_ozmphi=0
-        idiag_ekin=0; idiag_ekintot=0; idiag_ekinz=0
-        idiag_fmassz=0; idiag_fkinz=0
-        idiag_uxmy=0; idiag_uymy=0; idiag_uzmy=0
-        idiag_ux2my=0; idiag_uy2my=0; idiag_uz2my=0
-        idiag_uxuymy=0; idiag_uxuzmy=0; idiag_uyuzmy=0
-        idiag_totangmom=0; idiag_rufm=0
-        idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
+        idiag_u2m=0
+        idiag_um2=0
+        idiag_uxpt=0
+        idiag_uypt=0
+        idiag_uzpt=0
+        idiag_urms=0
+        idiag_umax=0
+        idiag_uzrms=0
+        idiag_uzrmaxs=0
+        idiag_uxmax=0
+        idiag_uymax=0
+        idiag_uzmax=0
+        idiag_uxm=0
+        idiag_uym=0
+        idiag_uzm=0
+        idiag_ux2m=0
+        idiag_uy2m=0
+        idiag_uz2m=0
+        idiag_ux2mx=0
+        idiag_uy2mx=0
+        idiag_uz2mx=0
+        idiag_ux2my=0
+        idiag_uy2my=0
+        idiag_uz2my=0
+        idiag_ux2mz=0
+        idiag_uy2mz=0 
+        idiag_uz2mz=0 
+        idiag_uxuym=0
+        idiag_uxuzm=0
+        idiag_uyuzm=0
+        idiag_uxuymz=0
+        idiag_uxuzmz=0
+        idiag_uyuzmz=0
+        idiag_uxuymz=0
+        idiag_umx=0
+        idiag_umy=0
+        idiag_umz=0
+        idiag_divum=0
+        idiag_divu2m=0
+        idiag_u3u21m=0
+        idiag_u1u32m=0
+        idiag_u2u13m=0
+        idiag_urmphi=0
+        idiag_upmphi=0
+        idiag_uzmphi=0
+        idiag_u2mphi=0
+        idiag_uxmy=0
+        idiag_uymy=0
+        idiag_uzmy=0
+        idiag_uxuymy=0
+        idiag_uxuzmy=0
+        idiag_uyuzmy=0
         idiag_urupmr=0
-        idiag_u2mr=0; idiag_urmr=0; idiag_upmr=0; idiag_uzmr=0
-        idiag_ormr=0; idiag_opmr=0; idiag_ozmr=0
-        idiag_uxfampm=0; idiag_uyfampm=0; idiag_uzfampm=0
+        idiag_u2mr=0
+        idiag_urmr=0
+        idiag_upmr=0
+        idiag_uzmr=0
+        idiag_uxfampm=0
+        idiag_uyfampm=0
+        idiag_uzfampm=0
+        !
+        idiag_ruxm=0
+        idiag_ruym=0
+        idiag_ruzm=0
+        idiag_rumax=0
+        idiag_rufm=0
+        !
+        idiag_dtu=0
+        !
+        idiag_oum=0
+        idiag_o2m=0
+        idiag_orms=0
+        idiag_omax=0
+        idiag_ox2m=0
+        idiag_oy2m=0
+        idiag_oz2m=0
+        idiag_oxm=0
+        idiag_oym=0
+        idiag_ozm=0
+        idiag_oxoym=0
+        idiag_oxozm=0
+        idiag_oyozm=0
+        idiag_oumz=0
+        idiag_oumphi=0
+        idiag_ozmphi=0
+        idiag_ormr=0
+        idiag_opmr=0
+        idiag_ozmr=0
+        !
+        idiag_Marms=0
+        idiag_Mamax=0
+        !
+        idiag_fintm=0
+        idiag_fextm=0
+        idiag_duxdzma=0
+        idiag_duydzma=0
+        idiag_ekin=0 
+        idiag_totangmom=0
+        idiag_ekintot=0
+        idiag_ekinz=0
+        idiag_fmassz=0
+        idiag_fkinz=0
+        idiag_fxbxm=0
+        idiag_fxbym=0
+        idiag_fxbzm=0
+
       endif
 !
 !  iname runs through all possible names that may be listed in print.in

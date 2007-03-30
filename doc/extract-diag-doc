@@ -1,0 +1,288 @@
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w
+# line 17
+
+# Name:   extract-diag-doc
+# Author: wd (Wolfgang.Dobler@ucalgary.de)
+# Date:   03-Oct-2006
+# Description:
+#   Extract documentation for diagnostic variables from lines of the form
+#     integer :: idiag_var=0  ! DIAG_DOC: <TeX documentation string>
+#                             ! DIAG_DOC: <possible continuation>
+#   in the modules in ${PENCIL_HOME}/src/
+# Usage:
+#   extract-diag-doc [-v|-h]
+# Options:
+#   -h, --help      This help
+#   -v, --version   Print version number
+#   -q, --quiet     Be quiet
+
+# Copyright (C) 2006  Wolfgang Dobler
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the same conditions as Perl or under the GPL versions 2 or later.
+
+use strict;
+
+use Getopt::Long;
+# Allow for `-Plp' as equivalent to `-P lp' etc:
+Getopt::Long::config("bundling");
+
+my (%opts);			# Options hash for GetOptions
+my $doll='\$';			# Need this to trick CVS
+
+## Process command line
+GetOptions(\%opts,
+	   qw( -h   --help
+	            --debug
+	       -q   --quiet
+               -v   --version ));
+
+my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
+if ($debug) {
+    printopts(\%opts);
+    print "\@ARGV = `@ARGV'\n";
+}
+
+if ($opts{'h'} || $opts{'help'})    { die usage();   }
+if ($opts{'v'} || $opts{'version'}) { die version(); }
+
+my $quiet = ($opts{'q'} || $opts{'quiet'} || '');
+
+my $srcdir    = "$ENV{PENCIL_HOME}/src";
+my $marker_re = '!\s+DIAG_DOC:';
+my $file      = 'diag-table.tex';
+
+# Todo: should have a list of module files in preferred order and then add
+# any other .f90 file to end of list
+my @module_files = qw( hydro.f90 );
+
+my $docref = get_all_docs_from(@module_files);
+$docref = filter_doc($docref);
+write_latex_doc($file,$docref);
+
+# ---------------------------------------------------------------------- #
+sub get_all_docs_from {
+# Read all files given as arguments, extract documentation lines and
+# return hashref
+# { 'file1' => [ ['var11', 'doc11'], ['var12', 'doc12'], ...],
+#   'file1' => [ ['var21', 'doc21'], ['var22', 'doc22'], ...],
+#   ...
+# }
+    my @module_files = @_;
+    my %doc;
+
+    foreach my $module (@module_files) {
+        my @localdoc = get_docs_from_file($module);
+        $doc{$module} = \@localdoc;
+    }
+
+    return \%doc;
+}
+# ---------------------------------------------------------------------- #
+sub get_docs_from_file {
+# Extract documentation lines from one file and return list of array refs
+# ( [var1, doc1], [var2, doc2], ... )
+    my $module = shift;
+
+    my @localdoc;
+    my $file  = "$srcdir/$module";
+    my $count = 0;
+
+    unless (open(MODULE, "< $file")) {
+        warn "Cannot open $file for reading: $!\n";
+        return '';
+    }
+    print "$module:\n";
+    LINE: while(defined(my $line = <MODULE>)) {
+        next unless $line =~ /$marker_re/;
+        my ($var,$misc,$docstring) = ('', '', '');
+
+        my ($decl, $latex)
+          = ($line =~ /^\s*(.*?)\s*$marker_re\s*(.*?)\s*$/);
+
+        if ($decl ne '') {      # there is a declaration part
+            ($var,$misc) = 
+              ($decl =~
+               /^integer\s*::\s*idiag_(\S+)(.*?)(?:\s*=\s*[-+0-9]+\s*)/i);
+            if ($misc =~ /idiag_/i) {
+                warn "In line $. of $file: "
+                  . "multiple diagnostic variables in one line:\n";
+                warn "  $var, $misc\n";
+                next LINE;
+            }
+            push @localdoc, [$var, $latex];
+            $count++;
+
+        } else {              #  no declaration part --> continuation line
+
+            ## Append latex part to previous entry
+            my ($var1,$latex1) = @{ pop @localdoc || [] }
+                or next LINE; # nothing to append to
+            push @localdoc, [$var1, "$latex1\n  $latex"];
+        }
+
+    }
+
+    if ($count) {
+        # print "Found documentation for $count diagnostic variables\n";
+    } else {
+        print "Hmm, no documentation found in $file\n";
+    }
+
+    return @localdoc;
+}
+# ---------------------------------------------------------------------- #
+sub filter_doc {
+# Remove (or not) items with empty documentation lines
+    my $docref = shift;
+
+    my %newdoc;
+    my $empty    = 0;
+    my $nonempty = 0;
+    foreach my $module (keys %$docref) {
+        my @file_docs = @{$docref->{$module}}; # (['var1', 'doc1'],
+                                               #  ['var2', 'doc2'], ...)
+        foreach my $vardocref (@file_docs) {
+            my ($var,$doc) = @$vardocref;
+            if ($doc =~ /\S/) {
+                push @{$newdoc{$module}}, [$var,$doc];
+                $nonempty++;
+            } else {
+                $empty++;
+            }
+        }
+    }
+
+    # Give statistical feedback
+    print "  (doc, undoc, tot) = ($nonempty, $empty, ",
+      $nonempty+$empty, ")\n";
+
+    return \%newdoc;
+}
+# ---------------------------------------------------------------------- #
+sub write_latex_doc {
+    my $latexfile = shift;
+    my $docref  = shift;
+
+    open(LATEX, "> $latexfile") or die "Cannot open latexfile for writing\n";
+    print LATEX
+        "%% This file was automatically generated by extract-diag-doc\n"
+      . "%% from the src/*.f90 files.\n"
+      . "%% So think twice before you modify it.\n\n";
+
+    print LATEX
+        "% ---------------------------------------------------------------- %\n"
+      . "\\begin{longtable}{lp{0.7\\textwidth}}\n"
+      . "\\toprule\n"
+      . "  \\multicolumn{1}{c}{\\emph{Variable}} \& {\\emph{Meaning}} \\\\\n"
+      . "\\midrule\n";
+
+    my @files = keys %$docref;
+    @files = sort { compare_modulenames_for_sorting($a)
+                    <=> compare_modulenames_for_sorting($b)
+                  } @files;
+
+    foreach my $module (@files) {
+        # Header
+        print LATEX
+            "  \\multicolumn{2}{c}{Module \\file{$module}} \\\\\n"
+          . "\\midrule\n";
+
+        # Loop through variables
+        my @file_docs = @{$docref->{$module}}; # (['var1', 'doc1'],
+                                               #  ['var2', 'doc2'], ...)
+        foreach my $vardocref (@file_docs) {
+            my ($var,$doc) = @$vardocref;
+
+            # Indent continued lines, so LaTeX code is easier to read:
+            $doc =~ s{\n}{\n                  }g;
+
+            printf LATEX "  %-15s & %s \\\\\n",
+              "\\var{$var}", $doc;
+        }
+
+    }
+
+    print LATEX
+        "%\n"
+      . "\\bottomrule\n"
+      . "\\end{longtable}\n\n";
+
+}
+# ---------------------------------------------------------------------- #
+sub compare_modulenames_for_sorting {
+# Comparison function that makes sure we get interesting modules (as
+# defined by the author of this script) before more boring ones
+    my $module = shift;
+
+    my %mapping =
+      (
+       'prints'   => 1,
+       'hydro'    => 2,
+       'magnetic' => 3,
+       'density'  => 4,
+       'entropy'  => 5,
+       'magnetic' => 6,
+       'pscalar'  => 7,
+       'equ'      => 8,
+      );
+    my $infty = 100000;         # or will we get more modules...?
+
+    (my $short = $module) =~ s/\.f90$//; # remove suffix
+
+    return $mapping{$short} || $infty;
+}
+# ---------------------------------------------------------------------- #
+sub printopts {
+# Print command line options
+    my $optsref = shift;
+    my %opts = %$optsref;
+    foreach my $opt (keys(%opts)) {
+	print STDERR "\$opts{$opt} = `$opts{$opt}'\n";
+    }
+}
+# ---------------------------------------------------------------------- #
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+	# Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^\s*\#\s*(Description|Usage):/m;
+        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+    $_ or "<No usage information found>\n";
+}
+# ---------------------------------------------------------------------- #
+sub version {
+# Return CVS data and version info.
+    my $doll='\$';		# Need this to trick CVS
+    my $cmdname = (split('/', $0))[-1];
+    my $rev = '$Revision: 1.1 $';
+    my $date = '$Date: 2007-03-30 23:50:32 $';
+    $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
+    $date =~ s/${doll}Date:\s*(\S+).*/$1/;
+    "$cmdname version $rev ($date)\n";
+}
+# ---------------------------------------------------------------------- #
+
+# End of file [name]

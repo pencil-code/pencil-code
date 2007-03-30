@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.67 2007-03-28 17:33:58 dhruba Exp $
+! $Id: viscosity.f90,v 1.68 2007-03-30 23:50:32 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -62,7 +62,8 @@ module Viscosity
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,widthnu
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_epsK=0,idiag_epsK2=0,idiag_epsK_LES=0
+  integer :: idiag_epsK=0  ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
+  integer :: idiag_epsK2=0,idiag_epsK_LES=0
   integer :: idiag_dtnu=0
   integer :: idiag_meshRemax=0
   integer :: idiag_nuD2uxbxm=0, idiag_nuD2uxbym=0, idiag_nuD2uxbzm=0
@@ -90,7 +91,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.67 2007-03-28 17:33:58 dhruba Exp $")
+           "$Id: viscosity.f90,v 1.68 2007-03-30 23:50:32 dobler Exp $")
 
       ivisc(1)='nu-const'
 !
