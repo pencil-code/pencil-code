@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.401 2007-03-29 04:44:11 brandenb Exp $
+! $Id: magnetic.f90,v 1.402 2007-04-01 16:31:21 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -228,7 +228,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.401 2007-03-29 04:44:11 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.402 2007-04-01 16:31:21 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -913,14 +913,14 @@ module Magnetic
 ! aij
       if (lpencil(i_aij)) call gij(f,iaa,p%aij,1)
 ! diva
-!AB: should calculate diva from aij above!
-      if (lpencil(i_diva)) call div(f,iaa,p%diva)
+      if (lpencil(i_diva)) call div_mn(p%aij,p%diva,p%aa)
 ! bb
       if (lpencil(i_bb)) then
         call curl_mn(p%aij,p%bb,p%aa)
-!  save field before adding imposed field (for diagnostics)
-        p%bbb=p%bb
 !
+!  save field before adding imposed field (for diagnostics)
+!
+        p%bbb=p%bb
         B2_ext=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
 !
 !  allow external field to precess about z-axis
