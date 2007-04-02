@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.301 2007-03-29 10:40:28 dhruba Exp $
+! $Id: sub.f90,v 1.302 2007-04-02 15:04:35 dhruba Exp $
 
 module Sub
 
@@ -1093,113 +1093,7 @@ module Sub
       c=c-(a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3))
 !
     endsubroutine dot_mn_sub
-!**********************************************************************
-    subroutine div(f,k,g)
-!
-!  calculate divergence of vector, get scalar
-!  13-dec-01/nils: coded
-!  16-jul-02/nils: adapted from pencil_mpi
-!
-      use Cdata
-      use Deriv
-      use Mpicomm, only: stop_it
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: g, tmp
-      integer :: k,k1
-!
-      k1=k-1
-!
-      call der(f,k1+1,tmp,1)
-      g=tmp
-      call der(f,k1+2,tmp,2)
-      g=g+tmp
-      call der(f,k1+3,tmp,3)
-      g=g+tmp
-!
-      if (lcylindrical_coords.or.lspherical_coords) &
-        call stop_it("div not implemented for non-cartesian coordinates")
-!
-    end subroutine div
-!***********************************************************************
-    subroutine div_other(f,g)
-      use Cdata
-      use Deriv
-      use Mpicomm, only: stop_it
 
-      real, dimension (mx,my,mz,3) :: f
-      real, dimension (nx) :: g, tmp
-!
-      call der(f(:,:,:,1),tmp,1)
-      g=tmp
-      call der(f(:,:,:,2),tmp,2)
-      g=g+tmp
-      call der(f(:,:,:,3),tmp,3)
-      g=g+tmp
-!
-      if (lcylindrical_coords.or.lspherical_coords) &
-        call stop_it("div_other not implemented for non-cartesian coordinates")
-!
-    end subroutine div_other
-!***********************************************************************
-    subroutine div_mn(aij,b,a)
-!
-!  calculate divergence from derivative matrix
-!  18-sep-04/axel: coded
-!  21-feb-07/axel: corrected spherical coordinates
-!
-      use Cdata
-!
-      real, dimension (nx,3,3) :: aij
-      real, dimension (nx,3) :: a
-      real, dimension (nx) :: b
-!
-      intent(in) :: aij,a
-      intent(out) :: b
-!
-      b=aij(:,1,1)+aij(:,2,2)+aij(:,3,3)
-!
-!  adjustments for spherical coordinate system
-!
-      if (lspherical_coords) then
-        b=b+2.*r1_mn*a(:,1)+r1_mn*cotth(m)*a(:,2)
-      endif
-!
-      if (lcylindrical_coords) then
-        b=b+rcyl_mn1*a(:,1)
-      endif
-
-    endsubroutine div_mn
-!***********************************************************************
-    subroutine curl_mn(aij,b,a)
-!
-!  calculate curl from derivative matrix
-!  21-jul-03/axel: coded
-!  21-feb-07/axel: corrected spherical coordinates
-!
-      use Cdata
-!
-      real, dimension (nx,3,3), intent (in) :: aij
-      real, dimension (nx,3), intent (in), optional :: a
-      real, dimension (nx,3), intent (out) :: b
-!
-      b(:,1)=aij(:,3,2)-aij(:,2,3)
-      b(:,2)=aij(:,1,3)-aij(:,3,1)
-      b(:,3)=aij(:,2,1)-aij(:,1,2)
-!
-!  adjustments for spherical coordinate system
-!
-      if (lspherical_coords.and.present(a)) then
-        b(:,1)=b(:,1)+a(:,3)*r1_mn*cotth(m)
-        b(:,2)=b(:,2)-a(:,3)*r1_mn
-        b(:,3)=b(:,3)+a(:,2)*r1_mn
-      endif
-!
-      if (lcylindrical_coords.and.present(a)) then
-         b(:,3)=b(:,3)+a(:,2)*rcyl_mn1
-      endif
-!
-    endsubroutine curl_mn
 !***********************************************************************
     subroutine trace_mn(a,b)
 !
@@ -1643,6 +1537,113 @@ module Sub
       call der(f,tmp,3); g(:,3)=tmp
 !
     endsubroutine grad_other
+!**********************************************************************
+    subroutine div(f,k,g)
+!
+!  calculate divergence of vector, get scalar
+!  13-dec-01/nils: coded
+!  16-jul-02/nils: adapted from pencil_mpi
+!
+      use Cdata
+      use Deriv
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: g, tmp
+      integer :: k,k1
+!
+      k1=k-1
+!
+      call der(f,k1+1,tmp,1)
+      g=tmp
+      call der(f,k1+2,tmp,2)
+      g=g+tmp
+      call der(f,k1+3,tmp,3)
+      g=g+tmp
+!
+      if (lcylindrical_coords.or.lspherical_coords) &
+        call stop_it("div not implemented for non-cartesian coordinates")
+!
+    end subroutine div
+!***********************************************************************
+    subroutine div_other(f,g)
+      use Cdata
+      use Deriv
+      use Mpicomm, only: stop_it
+
+      real, dimension (mx,my,mz,3) :: f
+      real, dimension (nx) :: g, tmp
+!
+      call der(f(:,:,:,1),tmp,1)
+      g=tmp
+      call der(f(:,:,:,2),tmp,2)
+      g=g+tmp
+      call der(f(:,:,:,3),tmp,3)
+      g=g+tmp
+!
+      if (lcylindrical_coords.or.lspherical_coords) &
+        call stop_it("div_other not implemented for non-cartesian coordinates")
+!
+    end subroutine div_other
+!***********************************************************************
+    subroutine div_mn(aij,b,a)
+!
+!  calculate divergence from derivative matrix
+!  18-sep-04/axel: coded
+!  21-feb-07/axel: corrected spherical coordinates
+!
+      use Cdata
+!
+      real, dimension (nx,3,3) :: aij
+      real, dimension (nx,3) :: a
+      real, dimension (nx) :: b
+!
+      intent(in) :: aij,a
+      intent(out) :: b
+!
+      b=aij(:,1,1)+aij(:,2,2)+aij(:,3,3)
+!
+!  adjustments for spherical coordinate system
+!
+      if (lspherical_coords) then
+        b=b+2.*r1_mn*a(:,1)+r1_mn*cotth(m)*a(:,2)
+      endif
+!
+      if (lcylindrical_coords) then
+        b=b+rcyl_mn1*a(:,1)
+      endif
+
+    endsubroutine div_mn
+!***********************************************************************
+    subroutine curl_mn(aij,b,a)
+!
+!  calculate curl from derivative matrix
+!  21-jul-03/axel: coded
+!  21-feb-07/axel: corrected spherical coordinates
+!
+      use Cdata
+!
+      real, dimension (nx,3,3), intent (in) :: aij
+      real, dimension (nx,3), intent (in), optional :: a
+      real, dimension (nx,3), intent (out) :: b
+!
+      b(:,1)=aij(:,3,2)-aij(:,2,3)
+      b(:,2)=aij(:,1,3)-aij(:,3,1)
+      b(:,3)=aij(:,2,1)-aij(:,1,2)
+!
+!  adjustments for spherical coordinate system
+!
+      if (lspherical_coords.and.present(a)) then
+        b(:,1)=b(:,1)+a(:,3)*r1_mn*cotth(m)
+        b(:,2)=b(:,2)-a(:,3)*r1_mn
+        b(:,3)=b(:,3)+a(:,2)*r1_mn
+      endif
+!
+      if (lcylindrical_coords.and.present(a)) then
+         b(:,3)=b(:,3)+a(:,2)*rcyl_mn1
+      endif
+!
+    endsubroutine curl_mn
 !***********************************************************************
     subroutine curl(f,k,g)
 !
@@ -1760,8 +1761,12 @@ module Sub
         del2f=del2f+tmp*rcyl_mn1
       endif
 !
-     if (lspherical_coords) &
-        call stop_it("del2 not implemented for spherical coordinates")
+     if (lspherical_coords) then
+       call der(f,k,tmp,1)
+       del2f=del2f+2.*r1_mn*tmp
+       call der(f,k,tmp,2)
+       del2f=del2f+cotth(m)*r1_mn*tmp
+     endif
 !
     endsubroutine del2
 !***********************************************************************
@@ -1799,7 +1804,7 @@ module Sub
          del2f(:,2)=del2f(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn1**2
       endif
 !
-      if (lspherical_coords) then
+      if (lspherical_coords.and.present(fij).and.present(pff)) then
 ! for r component (factors of line elements are taken care of inside p%uij
          del2f(:,1)= del2f(:,1)+&
                r1_mn*(2.*(fij(:,1,1)-fij(:,2,2)-fij(:,3,3) &
@@ -1816,8 +1821,6 @@ module Sub
                              +cotth(m)*fij(:,2,3) ) &
                          +cotth(m)*fij(:,3,2)-sin1th(m)*pff(:,3) )
       endif
-!      if (lspherical_coords) &
-!        call stop_it("del2v not implemented for spherical coordinates")
 !
     endsubroutine del2v
 !***********************************************************************
@@ -1897,7 +1900,7 @@ module Sub
            del2(:,2)=del2(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn1**2
         endif
         if (lspherical_coords) &
-          call stop_it("del2 at del2v_etc not implemented for spherical coordinates")
+          call stop_it("del2 at del2v_etc not implemented for spherical coordinates:use gij_etc")
       endif
 !
       if (present(graddiv)) then
@@ -1912,17 +1915,18 @@ module Sub
            call der(f,k1+1,tmp,3)
            graddiv(:,3)=graddiv(:,3)+tmp*rcyl_mn1
         endif
-        if (lspherical_coords) then
-           call stop_it("del2v_etc: graddiv is implemented in gij_etc for spherical coords")
-       endif
+        if (lspherical_coords) &
+           call stop_it("del2v_etc: graddiv is implemented in gij_etc for spherical coords:use gij_etc")
       endif
 !
       if (present(curlcurl)) then
         curlcurl(:,1)=fjji(:,1,2)-fijj(:,1,2)+fjji(:,1,3)-fijj(:,1,3)
         curlcurl(:,2)=fjji(:,2,3)-fijj(:,2,3)+fjji(:,2,1)-fijj(:,2,1)
         curlcurl(:,3)=fjji(:,3,1)-fijj(:,3,1)+fjji(:,3,2)-fijj(:,3,2)
-        if (lcylindrical_coords.or.lspherical_coords) &
+        if (lcylindrical_coords) &
           call stop_it("curlcurl at del2v_etc not implemented for non-cartesian coordinates")
+        if (lspherical_coords)&
+          call stop_it("curlcurl at del2v_etc not implemented for non-cartesian coordinates:use gij_etc")
       endif
 !
       if(present(gradcurl)) then
@@ -2159,8 +2163,8 @@ module Sub
                -2.*r1_mn*r1_mn*aa(:,1)-r1_mn*r1_mn*cotth(m)*cotth(m)*aa(:,2)
           graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+aij(:,2,2)*r1_mn*cotth(m)&
                -aa(:,2)*r2_mn*sin2th(m)
-          graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*r1_mn*2+aij(:,2,3)*r1_mn*cotth(m)&
-               -r1_mn*cotth(m)*aij(:,3,2)
+          graddiv(:,3)=graddiv(:,3)+2.*r1_mn*aij(:,1,3)+ & 
+                 r1_mn*cotth(m)*aij(:,2,3)
         endif
       endif
 !
@@ -2168,9 +2172,24 @@ module Sub
         if (lcartesian_coords) then
           del2(:,:)=d2A(:,1,1,:)+d2A(:,2,2,:)+d2A(:,3,3,:)
         else
+          if (lspherical_coords.and.present(aij).and.present(aa)) then
+            del2(:,1)= del2(:,1)+&
+              r1_mn*(2.*(aij(:,1,1)-aij(:,2,2)-aij(:,3,3)&
+              -r1_mn*aa(:,1)-cotth(m)*r1_mn*aa(:,2) ) &
+              +cotth(m)*aij(:,1,2) )
+            del2(:,2)=del2(:,2)+&
+              r1_mn*(2.*(aij(:,2,1)-cotth(m)*aij(:,3,3)&
+              +aij(:,1,2) )&
+              +cotth(m)*aij(:,2,2)-sin1th(m)*sin1th(m)*aa(:,2) )
+            del2(:,3)=del2(:,3)+&
+              r1_mn*(2.*(aij(:,3,1)+aij(:,1,3)&
+              +cotth(m)*aij(:,2,3) ) &
+              +cotth(m)*aij(:,3,2)-sin1th(m)*aa(:,3) )
+          else
           call stop_it("gij_etc: use del2=graddiv-curlcurl for non-cartesian coords")
         endif
       endif
+    endif
 !
     endsubroutine gij_etc
 !***********************************************************************
@@ -2463,6 +2482,7 @@ module Sub
         ugradf(:,2)=ugradf(:,2)+r1_mn*(uu(:,1)*uu(:,2)-cotth(m)*uu(:,3)**2)
         ugradf(:,3)=ugradf(:,3)+r1_mn*(uu(:,1)*uu(:,3)+cotth(m)*uu(:,2)*uu(:,3))
       endif
+! DM : this may need attention later
 !
 !  same... have to adjust it for the magnetic field or other vectors
 !
