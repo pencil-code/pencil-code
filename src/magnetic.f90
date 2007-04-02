@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.403 2007-04-02 15:04:35 dhruba Exp $
+! $Id: magnetic.f90,v 1.404 2007-04-02 15:13:07 dhruba Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -227,7 +227,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.403 2007-04-02 15:04:35 dhruba Exp $")
+           "$Id: magnetic.f90,v 1.404 2007-04-02 15:13:07 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -968,9 +968,10 @@ module Magnetic
 ! DM : this requires later attention
       if (lpencil(i_uga)) then
         if(lspherical_coords) then
-          call warning("calc_pencils_magnetic:u_dot_grad A not implemented for spherical coordinates ") 
+          call warning("calc_pencils_magnetic","u_dot_grad A not implemented for spherical coordinates") 
         else
           call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
+        endif
       endif
 ! b2
       if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
