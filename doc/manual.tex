@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.356 2007-03-12 12:48:47 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.357 2007-04-03 20:45:52 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2007-03-12 12:48:47 $ $,~ $ $Revision: 1.356 $ $}
+%\date{$ $Date: 2007-04-03 20:45:52 $ $,~ $ $Revision: 1.357 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2007-03-12 12:48:47 $ $,~ $ $Revision: 1.356 $ $}\\
+  \emph{$ $Date: 2007-04-03 20:45:52 $ $,~ $ $Revision: 1.357 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -5467,7 +5467,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2007-03-12 12:48:47 $ $,~ $ $Revision: 1.356 $ $}
+  \hfill\normalsize\rm$ $Date: 2007-04-03 20:45:52 $ $,~ $ $Revision: 1.357 $ $}
 
 \section{Timings}
 
@@ -5566,7 +5566,7 @@ where \code{nw=nx*ny*nz}.
                      & nomag/entro/rad2/ion &  4x1   &  1-nov-03 & AB \\
    4 & fe1   & 5.48 & $16^2{\times}512$                                  
                      & nomag/entro/rad2/ion &  1x4   &  1-nov-03 & AB \\
-   4 & Luci  & 1.81 &  $64^3$ & magn/noentro &        & 28-oct-06 & AB \\
+   4 & Luci  & 1.77 &  $64^3$ & magn/noentro &        & 27-feb-07 & AB \\
    4 & Lenn  & 0.65 &  $64^3$ &nomag/noentro &        & 13-jan-07 & AB \\
    4 & Lenn  & 1.21 &  $64^3$ & magn/noentro &        &  7-nov-06 & AB \\
    4 & Kabul & 1.5  & $128^3$ & magn/noentro &  47 MB & 20-jun-02 & WD \\
@@ -5617,8 +5617,8 @@ where \code{nw=nx*ny*nz}.
   32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
   32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
   32 & fe1   & 0.168& $512^3$ &nomag/noentro&        &  9-oct-02 & AB \\
-  32 & fe1   & 1.26 & $64^2\times256$ &nomag/entro/rad/ion&
-                                                      &  7-sep-03 & AB \\
+  32 & fe1   & 1.26 & $64^2\times256$ &nomag/entro/rad/ion& & 7-sep-03 & AB \\
+  32 & Luci  & 0.182& $256^3$ &magn/noentro &        & 26-feb-07 & AB \\
   32 & Lenn  & 0.147& $256^3$ &nomag/entro/cool/fo& 4x8 &  8-nov-06 & AB \\
   32 & Steno & 0.076& $256^3$ &nomag/entro/cool/fo& 4x8 & 20-jun-06 & AB \\
   32 & Steno & 0.081& $256^3$ &nomag/entro/cool& 4x8 & 20-jun-06 & AB \\
@@ -6616,7 +6616,7 @@ select at each timestep randomly one of the 228 possible vectors in
 $4.5<|\kv|<5.5$. We force the system with eigenfunctions of the curl
 operator,
 \begin{equation}
-\fv_{\kv}={\kv\times(\kv\times\ev)-i\sigma|\kv|(\kv\times\ev)
+\fv_{\kv}={i\kv\times(\kv\times\ev)-\sigma|\kv|(\kv\times\ev)
 \over\sqrt{1+\sigma^2}\;\kv^2\sqrt{1-(\kv\cdot\ev)^2/\kv^2}},
 \end{equation}
 where $\ev$ is an arbitrary unit vector needed in order
@@ -8838,7 +8838,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.356 2007-03-12 12:48:47 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.357 2007-04-03 20:45:52 brandenb Exp $ $}
 
 
 \end{document}
