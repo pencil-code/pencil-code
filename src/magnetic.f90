@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.404 2007-04-02 15:13:07 dhruba Exp $
+! $Id: magnetic.f90,v 1.405 2007-04-05 23:54:44 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -227,7 +227,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.404 2007-04-02 15:13:07 dhruba Exp $")
+           "$Id: magnetic.f90,v 1.405 2007-04-05 23:54:44 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -509,6 +509,7 @@ module Magnetic
         case('uniform-Bx'); call uniform_x(amplaa(j),f,iaa,xx,yy,zz)
         case('uniform-By'); call uniform_y(amplaa(j),f,iaa,xx,yy,zz)
         case('uniform-Bz'); call uniform_z(amplaa(j),f,iaa,xx,yy,zz)
+        case('uniform-Bphi'); call uniform_phi(amplaa(j),f,iaa,xx,yy,zz)
         case('Bz(x)', '3'); call vfield(amplaa(j),f,iaa,xx)
         case('vfield2'); call vfield2(amplaa(j),f,iaa,xx)
         case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
@@ -531,7 +532,7 @@ module Magnetic
         case('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,yy,ky_aa(j),mu0)
         case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
         case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,xx,yy,rmode)
-        case('Alfven-zconst'); call alfven_zconst(f,xx,yy)
+        case('Alfven-zconst'); call alfven_zconst(f,xx,yy,zmode)
         case('Alfven-rz'); call alfven_rz(amplaa(j),f,xx,yy,rmode)
         case('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
         case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
@@ -2705,27 +2706,33 @@ module Magnetic
 !
     endsubroutine alfven_rphi
 !***********************************************************************
-    subroutine alfven_zconst(f,xx,yy)
+    subroutine alfven_zconst(f,xx,yy,mode)
 !
 !  Radially variable field pointing in the z direction
 !  4 Balbus Hawley wavelengths in the vertical direction
 !
-!  Bz = Lz/(8pi)*Omega ==> Aphi = Lz/(4pi) Omega*r
+!  Bz=Lz/(8pi)*Omega      ==> Aphi = Lz/(8pi) Omega*r/(2-q)
+!
+!  The smoothed case should be general, since it reduces 
+!  to the non-smoothed for r0_pot=0.
+!
+!  B=C*(r2+r02)^-q ==> Aphi=C/(r*(2-q))*(r2+r02)^(1-q/2)
 !
 !  04-oct-06/wlad: coded
 !
       use Cdata
+      use Gravity, only: qgshear,r0_pot
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz) :: xx,yy,OO !rrcyl
-      real :: B0
+      real, dimension(mx,my,mz) :: xx,yy,rrcyl,Aphi
+      real :: B0,mode
 !
-      OO=sqrt(xx**2+yy**2)**(-1.5)
-      !rrcyl = sqrt(xx**2 + yy**2)
-      B0=Lxyz(3)/(8*pi)
+      B0=Lxyz(3)/(2*mode*pi)
+      rrcyl=sqrt(xx**2+yy**2)
+      Aphi=B0/(rrcyl*(2-qgshear))*(rrcyl**2+r0_pot**2)**(1-qgshear/2.)
 !
-      f(:,:,:,iax) =  -2*B0*yy*OO !rrcyl**(-1.5)
-      f(:,:,:,iay) =   2*B0*xx*OO !rrcyl**(-1.5)
+      f(:,:,:,iax) =  -Aphi*yy
+      f(:,:,:,iay) =   Aphi*xx
 !
     endsubroutine alfven_zconst
 !***********************************************************************
@@ -2739,16 +2746,36 @@ module Magnetic
 !  04-oct-06/wlad: coded
 !
       use Cdata
+      use Mpicomm,only:stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz) :: xx,yy,rrcyl,Aphi
-      real :: B0,kr,mode
+      real :: B0,kr,mode,k1,const
 !
-      kr = 2*pi*mode/(r_ext-r_int)
-      rrcyl = sqrt(xx**2 + yy**2) + tini
+      if (headtt) print*,'radial alfven wave propagating on z direction'
+      if (.not.lcylinder_in_a_box) &
+           call stop_it("alfven_rz, this initial condition works only for embedded cylinders")
 !
-      Aphi =  B0/kr * sin(kr*(rrcyl-r_int)) + &
-           B0/(kr**2*rrcyl)*cos(kr*(rrcyl-r_int))
+! Choose between cases. The non-smoothed case is singular in r=0 for the potential, thus
+! can only be used if freezing is used with a non-zero r_int. The smoothed case
+! has a linear component that prevents singularities and a exponential that prevents
+! the field from growing large in the outer disk
+!
+      rrcyl = max(sqrt(xx**2 + yy**2),tini)
+      if (r_int.gt.0.) then
+         if (lroot) print*,'freezing is being used, ok to use singular potentials'
+         if (lroot) print*,'Bz=B0cos(k.r) ==> Aphi=B0/k*sin(k.r)+B0/(k^2*r)*cos(k r)'
+         kr = 2*pi*mode/(r_ext-r_int)
+         Aphi =  B0/kr * sin(kr*(rrcyl-r_int)) + &
+              B0/(kr**2*rrcyl)*cos(kr*(rrcyl-r_int))
+      else   
+         if (lroot) print*,'Softened magnetic field in the center'
+         if (mode .lt. 5) call stop_it("put more wavelengths in the field")
+          kr = 2*pi*mode/r_ext
+          k1 = 1. !not tested for other values
+          const=B0*exp(1.)*k1/cos(kr/k1)
+          Aphi=const/kr*rrcyl*exp(-k1*rrcyl)*sin(kr*rrcyl)
+      endif
 !
       f(:,:,:,iax) = Aphi * (-yy/rrcyl)
       f(:,:,:,iay) = Aphi * ( xx/rrcyl)

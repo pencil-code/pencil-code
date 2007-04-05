@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.32 2007-03-12 21:32:09 wlyra Exp $
+! $Id: gravity_simple.f90,v 1.33 2007-04-05 23:54:44 wlyra Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -45,7 +45,7 @@ module Gravity
   real :: xgrav=impossible,ygrav=impossible,zgrav=impossible
   real :: xinfty=0.,yinfty=0.,zinfty=0.
   real :: dgravx=0.,pot_ratio=1.
-  real :: z1=0.,z2=1.,zref=0.
+  real :: z1=0.,z2=1.,zref=0.,qgshear=1.5
   real :: nu_epicycle=1.,nu_epicycle2=1.
   real :: r0_pot=0.    ! peak radius for smoothed potential
   real :: g_A, g_C
@@ -104,7 +104,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.32 2007-03-12 21:32:09 wlyra Exp $")
+           "$Id: gravity_simple.f90,v 1.33 2007-04-05 23:54:44 wlyra Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.
