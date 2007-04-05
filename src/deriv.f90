@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.48 2007-03-27 15:11:48 brandenb Exp $
+! $Id: deriv.f90,v 1.49 2007-04-05 22:25:38 wlyra Exp $
 
 module Deriv
 
@@ -832,11 +832,11 @@ module Deriv
 !
       if (lcylindrical_coords) then
         if ((i==1.and.j==2)) df=df*rcyl_mn1
-        if ((i==2.and.j==1)) df=df*rcyl_mn1 !(minus extra terms)
+        if ((i==2.and.j==1)) df=df*rcyl_mn1
         if ((i==1.and.j==3)) df=df
         if ((i==3.and.j==1)) df=df
-        if ((i==2.and.j==3)) df=df
-        if ((i==3.and.j==2)) df=df
+        if ((i==2.and.j==3)) df=df*rcyl_mn1
+        if ((i==3.and.j==2)) df=df*rcyl_mn1
       endif
 !
     endsubroutine derij

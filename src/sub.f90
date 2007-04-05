@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.302 2007-04-02 15:04:35 dhruba Exp $
+! $Id: sub.f90,v 1.303 2007-04-05 22:25:38 wlyra Exp $
 
 module Sub
 
@@ -1798,6 +1798,7 @@ module Sub
       enddo
 !
       if (lcylindrical_coords) then
+         !del2 already contains the extra term 1/r*d(uk)/dt
          call der(f,k1+2,tmp,2)
          del2f(:,1)=del2f(:,1) -(2*tmp+f(l1:l2,m,n,k1+1))*rcyl_mn1**2
          call der(f,k1+1,tmp,2)
@@ -1894,10 +1895,19 @@ module Sub
           del2(:,i)=fijj(:,i,1)+fijj(:,i,2)+fijj(:,i,3)
         enddo
         if (lcylindrical_coords) then 
-           call der(f,k1+2,tmp,2)
-           del2(:,1)=del2(:,1) -(2*tmp+f(l1:l2,m,n,k1+1))*rcyl_mn1**2
-           call der(f,k1+1,tmp,2)
-           del2(:,2)=del2(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn1**2
+          !r-component
+          call der(f,k1+2,tmp,2)
+          del2(:,1)=del2(:,1) -(2*tmp+f(l1:l2,m,n,k1+1))*rcyl_mn1**2
+          call der(f,k1+1,tmp,1)
+          del2(:,1)=del2(:,1) + tmp*rcyl_mn1
+          !phi-component
+          call der(f,k1+1,tmp,2)
+          del2(:,2)=del2(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn1**2
+          call der(f,k1+2,tmp,1)
+          del2(:,2)=del2(:,2) + tmp*rcyl_mn1
+          !z-component
+          call der(f,k1+3,tmp,1)
+          del2(:,3)=del2(:,3) + tmp*rcyl_mn1
         endif
         if (lspherical_coords) &
           call stop_it("del2 at del2v_etc not implemented for spherical coordinates:use gij_etc")
