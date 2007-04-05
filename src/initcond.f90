@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.200 2007-04-05 13:29:46 wlyra Exp $
+! $Id: initcond.f90,v 1.201 2007-04-05 23:53:18 wlyra Exp $
 
 module Initcond
 
@@ -2601,10 +2601,10 @@ module Initcond
       real, dimension(nx,3) :: gg_mn,glnTT
       real :: plaw,ptlaw
       logical :: lstratified,lheader,lsoftened
-      integer :: iglobal_gg
+      integer :: iglobal_gg,i
       integer, pointer :: iglobal_cs2,iglobal_glnTT
 !
-      real :: g0,rr0,mach,k0,sig,nu,q
+      real :: g0,rr0,mach,k0,sig,nu,q,r0_pot
 !
       nullify(iglobal_cs2)
       nullify(iglobal_glnTT)
@@ -2612,66 +2612,72 @@ module Initcond
 ! Pencilize to save memory
 !
       if (ltemperature) then 
-         g0=1.3e3 !e26(cgs)
-         rr0=7.47990  !e12
+        g0=1.3e3 !e26(cgs)
+        rr0=7.47990  !e12
+        rr0=0.74799
       else 
-         g0=1.0
-         rr0=1. 
+        g0=1.0
+        rr0=1. 
+        r0_pot=0.1
       endif
       mach=sqrt(g0/rr0)/cs0
 !
       do m=1,my
-        do n=1,mz
-          lheader=(lroot.and.(m==1).and.(n==1))
+      do n=1,mz
+        lheader=(lroot.and.(m==1).and.(n==1))
 !
 ! All needed stuff
 !
-          r_cyl   = sqrt(x**2 + y(m)**2 )+tini
-          r_sph   = sqrt(x**2 + y(m)**2 + z(n)**2)+tini
-          OO_sph=sqrt(g0/r_sph**(2*q))
-          OO_cyl=sqrt(g0/r_cyl**(2*q))
+        r_cyl   = sqrt(x**2 + y(m)**2 )+tini
+        r_sph   = sqrt(x**2 + y(m)**2 + z(n)**2)+tini
+        OO_sph=sqrt(g0/r_sph**(2*q))
+        OO_cyl=sqrt(g0/r_cyl**(2*q))
 !
-! density
+! Density-Radial stratification
 !
-! Radial stratification
-          if (lheader) print*,'Radial stratification with power law=',plaw
-          f(:,m,n,ilnrho) = alog(rho0) - plaw*alog(r_cyl/rr0)
+        if (lheader) print*,'Radial stratification with power law=',plaw
+        f(:,m,n,ilnrho) = alog(rho0) - plaw*alog(r_cyl/rr0)
 !
 ! Write vertical stratification on top of radial stratification
 !
-          if (lstratified) then
-             if (lheader) &
-                  print*,'Adding vertical stratification with scale height h/r=',cs0
+        if (lstratified) then
+          if (lheader) &
+               print*,'Adding vertical stratification with scale height h/r=',cs0
 ! log density, the -65 guarantees that the minimum linear density is 1e-30
-             f(:,m,n,ilnrho) = max((r_cyl - r_sph)/(r_sph*cs20),-65.)
-! pressure corrected velocities
-             corr = r_cyl/r_sph - cs20
-             OO = OO_sph !sqrt(OO_cyl**2 * corr)
-          else
+          f(:,m,n,ilnrho) = max((r_cyl - r_sph)/(r_sph*cs20),-65.)
+          OO = OO_sph
+        else
 ! Cylindrical disc
-             if (lheader) print*,'Cylindrical disc initial condition'
-             if (ltemperature) then
-                corr = gamma11*ptlaw*cs20/r_cyl**(2+ptlaw)
-             else
-                corr = ptlaw*cs20/r_cyl**(2+ptlaw)
-             endif
-             tmp = max(OO_cyl**2-corr,0.)
-             OO=sqrt(tmp)
-          endif
+          if (lheader) print*,'Cylindrical disc initial condition'
+            if (ltemperature) then
+              corr = gamma11*ptlaw*cs20/r_cyl**(2+ptlaw)
+            else
+              corr = ptlaw*cs20/r_cyl**(2+ptlaw)
+            endif
+            tmp = max(OO_cyl**2-corr,0.)
+            OO=sqrt(tmp)
+        endif
 !
-! Velocity field. Don't overwrite
+! Softened cylindrical
 !
-          if (lsoftened) then
-             OO_cyl=(r_cyl**2+0.1**2)**(-q/2.)
-             corr=ptlaw*cs20*(r_cyl**2+0.1**2)**(1-ptlaw)/2.
-             OO=sqrt(OO_cyl**2*(1-corr))
-          endif
+        if (lsoftened) then
+          if (lheader) print*,'Softened velocity profile'
+          corr=cs20*ptlaw/(r_cyl**2+r0_pot**2)**(1+ptlaw/2.)
+          OO_cyl=(r_cyl**2+r0_pot**2)**(-q/2.)
+          do i=1,mx
+            if (corr(i).gt.OO_cyl(i)**2) &
+                 call stop_it("inner disk is too hot!")
+          enddo
+          OO=sqrt(OO_cyl**2-corr)
+        endif
+! 
+! Velocity field
 !
-          f(:,m,n,iux)= f(:,m,n,iux) - y(m)*OO  !+ur* x /r_cyl
-          f(:,m,n,iuy)= f(:,m,n,iuy) +    x*OO  !+ur*y(m)/r_cyl
-          f(:,m,n,iuz)= f(:,m,n,iuz) + 0.
+        f(:,m,n,iux)= f(:,m,n,iux) - y(m)*OO
+        f(:,m,n,iuy)= f(:,m,n,iuy) +    x*OO
+        f(:,m,n,iuz)= f(:,m,n,iuz) + 0.
 !
-        enddo
+      enddo
       enddo
 !
 ! code gravity here for stratified runs, else it will be coded
@@ -2692,64 +2698,64 @@ module Initcond
       endif
 
       do n=n1,n2
-        do m=m1,m2
-          lheader=(lroot.and.(m==m1).and.(n==n1))
-          rmn_sph = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2)+tini
-          rmn_cyl = sqrt(x(l1:l2)**2 + y(m)**2)+tini
+      do m=m1,m2
+        lheader=(lroot.and.(m==m1).and.(n==n1))
+        rmn_sph = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2)+tini
+        rmn_cyl = sqrt(x(l1:l2)**2 + y(m)**2)+tini
 !
-          if (lstratified) then
-            rho=  f(l1:l2,m,n,iglobal_gg)
-            grhoz=f(l1:l2,m,n,iglobal_gg+1)
+        if (lstratified) then
+          rho=  f(l1:l2,m,n,iglobal_gg)
+          grhoz=f(l1:l2,m,n,iglobal_gg+1)
 !
-            gg_mn(:,1) = -x(l1:l2)/rmn_sph**3
-            gg_mn(:,2) = -y(  m  )/rmn_sph**3
-            gg_mn(:,3) = cs20*grhoz/(rho*rmn_cyl)
-            f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
-          endif
+          gg_mn(:,1) = -x(l1:l2)/rmn_sph**3
+          gg_mn(:,2) = -y(  m  )/rmn_sph**3
+          gg_mn(:,3) = cs20*grhoz/(rho*rmn_cyl)
+          f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
+        endif
 !
 ! Thermodynamical quantities
 !
-          if (lheader) print*,&
-               'set sound speed as global variable: Mach number at midplane=',mach
-          if (ltemperature.and.llocal_iso) then
-             print*,'You are using temperature, but llocal_iso is switched on in'
-             print*,'start.in. Better changed it'
-             call stop_it("")
-          endif
+        if (lheader) print*,&
+             'set sound speed as global variable: Mach number at midplane=',mach
+        if (ltemperature.and.llocal_iso) then
+          print*,'You are using temperature, but llocal_iso is switched on in'
+          print*,'start.in. Better changed it'
+          call stop_it("")
+        endif
 !
-          if (llocal_iso) then
+        if (llocal_iso) then
 !sound speed and temperature gradient
-            if (.not.lsoftened) then
-              call farray_use_global('cs2',iglobal_cs2)
-              f(l1:l2,m,n,iglobal_cs2)= cs20/(rmn_cyl/rr0)**ptlaw
-              call farray_use_global('glnTT',iglobal_glnTT)
-              f(l1:l2,m,n,iglobal_glnTT  )=-ptlaw*x(l1:l2)/rmn_cyl**2
-              f(l1:l2,m,n,iglobal_glnTT+1)=-ptlaw*  y(m)  /rmn_cyl**2
-              f(l1:l2,m,n,iglobal_glnTT+2)=0.
-            else
-              call farray_use_global('cs2',iglobal_cs2)
-              f(l1:l2,m,n,iglobal_cs2)= cs20*(rmn_cyl**2+0.1**2)**(-ptlaw/2.)
-              call farray_use_global('glnTT',iglobal_glnTT)
-              f(l1:l2,m,n,iglobal_glnTT  )=-ptlaw*x(l1:l2)/(rmn_cyl**2+0.1**2)
-              f(l1:l2,m,n,iglobal_glnTT+1)=-ptlaw*  y(m)  /(rmn_cyl**2+0.1**2)
-              f(l1:l2,m,n,iglobal_glnTT+2)=0.
-            endif
-!else do it all as temperature
-          else if (ltemperature) then
-             rr=sqrt(x(:)**2+y(m)**2)
-             k0=2e-6 ; nu=5e-2 ; sig=5.6704E-007
-             !relaxed system
-             TT=sqrt(27./128*k0*nu/sig) * exp(f(:,m,n,ilnrho)) * sqrt(g0/rr**3)
-             TT=0.!cs20/(cp*gamma1)
-             f(:,m,n,ilnTT) = f(:,m,n,ilnTT) + alog(TT)
+          if (.not.lsoftened) then
+            call farray_use_global('cs2',iglobal_cs2)
+            f(l1:l2,m,n,iglobal_cs2)= cs20/(rmn_cyl/rr0)**ptlaw
+            call farray_use_global('glnTT',iglobal_glnTT)
+            f(l1:l2,m,n,iglobal_glnTT  )=-ptlaw*x(l1:l2)/rmn_cyl**2
+            f(l1:l2,m,n,iglobal_glnTT+1)=-ptlaw*  y(m)  /rmn_cyl**2
+            f(l1:l2,m,n,iglobal_glnTT+2)=0.
           else
-            print*,"No thermodynamical variable. Choose if you want a "
-            print*,"local thermodynamical approximation (switch llocal_iso=T in"
-            print*,"init_pars and entropy=noentropy on Makefile.local), or if "
-            print*,"you want to compute the temperature directly and evolve it."
-            call stop_it("")
+            call farray_use_global('cs2',iglobal_cs2)
+            f(l1:l2,m,n,iglobal_cs2)= cs20*(rmn_cyl**2+r0_pot**2)**(-ptlaw/2.)
+            call farray_use_global('glnTT',iglobal_glnTT)
+            f(l1:l2,m,n,iglobal_glnTT  )=-ptlaw*x(l1:l2)/(rmn_cyl**2+r0_pot**2)
+            f(l1:l2,m,n,iglobal_glnTT+1)=-ptlaw*  y(m)  /(rmn_cyl**2+r0_pot**2)
+            f(l1:l2,m,n,iglobal_glnTT+2)=0.
           endif
-        enddo
+!else do it all as temperature
+        else if (ltemperature) then
+          rr=sqrt(x(:)**2+y(m)**2)
+          k0=2e-6 ; nu=5e-2 ; sig=5.6704E-007
+          !relaxed system
+          TT=sqrt(27./128*k0*nu/sig) * exp(f(:,m,n,ilnrho)) * sqrt(g0/rr**3)
+          TT=0.!cs20/(cp*gamma1)
+          f(:,m,n,ilnTT) = f(:,m,n,ilnTT) + alog(TT)
+        else
+          print*,"No thermodynamical variable. Choose if you want a "
+          print*,"local thermodynamical approximation (switch llocal_iso=T in"
+          print*,"init_pars and entropy=noentropy on Makefile.local), or if "
+          print*,"you want to compute the temperature directly and evolve it."
+          call stop_it("")
+        endif
+      enddo
       enddo
       if (iglobal_gg/=0) then
         print*,"Max global gg(1) = ",maxval(f(l1:l2,m1:m2,n1:n2,iglobal_gg))
@@ -2798,9 +2804,6 @@ module Initcond
             OO_cyl=sqrt(g0/x**(2*q))
             if (lheader) print*,'Radial stratification with power law=',plaw
             f(:,m,n,ilnrho) = alog(rho0) - plaw*alog(x)
-            corr = ptlaw*cs20/x**(2+ptlaw)
-            tmp = max(OO_cyl**2-corr,0.)
-            OO=sqrt(tmp)
 !
             OO=OO_cyl
             f(:,m,n,iux)= f(:,m,n,iux) +    0.

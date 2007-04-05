@@ -1,4 +1,4 @@
-! $Id: rtime_phiavg.f90,v 1.7 2007-03-15 18:40:41 wlyra Exp $
+! $Id: rtime_phiavg.f90,v 1.8 2007-04-05 23:53:18 wlyra Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -71,9 +71,10 @@ module Special
   real, dimension (nrcylrun) :: rhoavg_coarse,rcyl_coarse
   real, dimension (nx,3) :: bavg,uavg
   real, dimension (nx) :: rhoavg
-  real :: drc,r1,r2,B_ext
-  logical :: llarge_scale_Bz
+  real :: drc,r1,r2,B_ext=0.,rt_int=0.,rt_ext=impossible
+  logical :: llarge_scale_Bz=.false.
   integer :: dummy=0
+  logical :: laverage_smooth=.true.,lmedian_smooth=.false.
 !
 !  start parameters
 !
@@ -82,7 +83,7 @@ module Special
 !   run parameters
 !
   namelist /special_run_pars/ &
-       B_ext,llarge_scale_Bz
+       B_ext,llarge_scale_Bz,rt_int,rt_ext,laverage_smooth,lmedian_smooth
 !
 ! Keep some over used pencils
 !
@@ -152,11 +153,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.7 2007-03-15 18:40:41 wlyra Exp $
+!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.8 2007-04-05 23:53:18 wlyra Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: rtime_phiavg.f90,v 1.7 2007-03-15 18:40:41 wlyra Exp $")
+           "$Id: rtime_phiavg.f90,v 1.8 2007-04-05 23:53:18 wlyra Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -182,17 +183,26 @@ module Special
 !
       use Cdata
       use EquationOfState
+      use Sub
 
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: rloop_int,rloop_ext,tmp,drc1
       integer :: ir
+      real, dimension(nx) :: rr_cyl,OO,OO_cyl
+      real, dimension(nx,3) :: bb
+      real :: const,kr
 !
 !  Initialize any module variables which are parameter dependant
 !
-      tmp = (r_ext - r_int)/nrcylrun
-      !r1=r_int-0.75*tmp
-      !r2=r_ext+0.75*tmp
+      if (r_int.ne.0) rt_int=r_int
+      if (r_ext.ne.impossible) rt_ext=r_ext
+
+      if (lroot) print*,'rt_int,rt_ext',rt_int,rt_ext
+
+      tmp = (rt_ext - rt_int)/nrcylrun
+      !r1=rt_int-0.75*tmp
+      !r2=rt_ext+0.75*tmp
 
       !drc=(r2 - r1)/nrcylrun !more half step for each
       drc=tmp
@@ -201,16 +211,17 @@ module Special
 !      rcyl_coarse = (/ (r1+ir*drc, ir=1,nrcylrun) /)
 
       do ir=1,nrcylrun
-         rloop_int = r_int + (ir-1)*drc!r1 + (ir-1)*drc
-         rloop_ext = r_int +  ir   *drc!r1 +  ir   *drc
+         rloop_int = rt_int + (ir-1)*drc!r1 + (ir-1)*drc
+         rloop_ext = rt_int +  ir   *drc!r1 +  ir   *drc
          rcyl_coarse(ir)= 0.5*(rloop_int + rloop_ext)
       enddo
 !
       !print*,rcyl_coarse
       !stop
-
 !
       if(NO_WARN) print*,f  !(keep compiler quiet)
+!
+      print*,'print this shit'
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -265,6 +276,8 @@ module Special
         lpenc_requested(i_pomx)=.true.
         lpenc_requested(i_pomy)=.true.
       endif
+!      
+      if (llarge_scale_Bz) lpenc_requested(i_uxb)=.true.
 !      if (lmagnetic) lpenc_requested(i_bavg)=.true.
 !      if (lhydro)    lpenc_requested(i_uavg)=.true.
 !      if (ldensity)  lpenc_requested(i_rhoavg)=.true.
@@ -562,46 +575,69 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
-      use Sub
+     use Cdata
+     use Sub
+     use Mpicomm
 
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-      real, dimension (nx) :: br,bp,bz
-      integer :: i
+     real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+     real, dimension (mx,my,mz,mvar), intent(inout) :: df
+     type (pencil_case), intent(in) :: p
+     real, dimension (nx) :: br,bp,bz,bcalc
+     real, dimension(nx,3) :: puxb
+     real:: const,b0=1e-2,kr
+     integer :: i
 !
 ! Remove mean electromotive force from induction equation.
 ! Activated only when large Bz fields and are present 
 ! keplerian advection
 !
-      if (llarge_scale_Bz) then
-         df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - &
-              uavg(:,2)*bavg(:,3)*x(l1:l2)*p%rcyl_mn1
-         df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - &
-              uavg(:,2)*bavg(:,3)*y(m)*p%rcyl_mn1
-      endif
+     if (llarge_scale_Bz) then
+       if ((lmedian_smooth).and.(laverage_smooth)) then
+         call stop_it("can't have both median and average at the same time")
+       endif
+!smooth a rapidly varying function - median box size=5
+       if (lmedian_smooth) then
+         do i=3,nx-2 
+           puxb(i,:)=1./35*( -3*p%uxb(i-2,:)& 
+                   +12*p%uxb(i-1,:)&
+                   +17*p%uxb(i  ,:)&
+                   +12*p%uxb(i+1,:)&
+                   -3*p%uxb(i+2,:))
+         enddo
+         puxb(1,:)=p%uxb(1,:) ;  puxb(nx,:)=p%uxb(nx,:)    
+         puxb(2,:)=p%uxb(2,:) ;  puxb(nx-1,:)=p%uxb(nx-1,:)
+       elseif (laverage_smooth) then
+         !use averages
+         puxb(:,1)=uavg(:,2)*bavg(:,3)*x(l1:l2)*p%rcyl_mn1
+         puxb(:,2)=uavg(:,2)*bavg(:,3)*y(m)*p%rcyl_mn1
+       else
+         call stop_it("choose average or median smooth for removing mean emf")
+       endif
+!
+       df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - puxb(:,1)
+       df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - puxb(:,2)
+     endif
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
+     if (NO_WARN) print*,df,p
 
-      br=p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy - bavg(:,1)
-      bp=p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy - bavg(:,2)
-      bz=p%bb(:,3)                         - bavg(:,3)
+     br=p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy - bavg(:,1)
+     bp=p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy - bavg(:,2)
+     bz=p%bb(:,3)                         - bavg(:,3)
 !
-      if (ldiagnos) then
-         if (idiag_brm/=0)    call sum_lim_mn_name(br,idiag_brm,p)
-         if (idiag_bpm/=0)    call sum_lim_mn_name(bp,idiag_bpm,p)
-         if (idiag_bzm/=0)    call sum_lim_mn_name(bz,idiag_bzm,p)
-         if (idiag_br2m/=0)   call sum_lim_mn_name(br**2,idiag_br2m,p)
-         if (idiag_bp2m/=0)   call sum_lim_mn_name(bp**2,idiag_bp2m,p)
-         if (idiag_bzz2m/=0)  call sum_lim_mn_name(bz**2,idiag_bzz2m,p)
-         if (idiag_brbpm/=0)  call sum_lim_mn_name(br*bp,idiag_brbpm,p)
-         if (idiag_bzbpm/=0)  call sum_lim_mn_name(bz*bp,idiag_bzbpm,p)
-         if (idiag_brbzm/=0)  call sum_lim_mn_name(br*bz,idiag_brbzm,p)
-      endif
+     if (ldiagnos) then
+        if (idiag_brm/=0)    call sum_lim_mn_name(br,idiag_brm,p)
+        if (idiag_bpm/=0)    call sum_lim_mn_name(bp,idiag_bpm,p)
+        if (idiag_bzm/=0)    call sum_lim_mn_name(bz,idiag_bzm,p)
+        if (idiag_br2m/=0)   call sum_lim_mn_name(br**2,idiag_br2m,p)
+        if (idiag_bp2m/=0)   call sum_lim_mn_name(bp**2,idiag_bp2m,p)
+        if (idiag_bzz2m/=0)  call sum_lim_mn_name(bz**2,idiag_bzz2m,p)
+        if (idiag_brbpm/=0)  call sum_lim_mn_name(br*bp,idiag_brbpm,p)
+        if (idiag_bzbpm/=0)  call sum_lim_mn_name(bz*bp,idiag_bzbpm,p)
+        if (idiag_brbzm/=0)  call sum_lim_mn_name(br*bz,idiag_brbzm,p)
+     endif
 !
-      if (l1ddiagnos.and.idiag_brbpmr/=0) &
-           call phizsum_mn_name_r(br*bp,idiag_brbpmr)
+     if (l1ddiagnos.and.idiag_brbpmr/=0) &
+          call phizsum_mn_name_r(br*bp,idiag_brbpmr)
 !
     endsubroutine special_calc_magnetic
 !***********************************************************************
@@ -720,8 +756,8 @@ module Special
             endif
 !
             do ir=1,nrcylrun
-               rloop_int = r_int + (ir-1)*drc
-               rloop_ext = r_int +  ir   *drc
+               rloop_int = rt_int + (ir-1)*drc
+               rloop_ext = rt_int +  ir   *drc
                do i=1,nx
                   if ((prcyl_mn(i).le.rloop_ext).and.(prcyl_mn(i).ge.rloop_int)) then
                      k(ir)=k(ir)+1
