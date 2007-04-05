@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.199 2007-03-28 08:48:58 wlyra Exp $
+! $Id: initcond.f90,v 1.200 2007-04-05 13:29:46 wlyra Exp $
 
 module Initcond
 
@@ -34,7 +34,7 @@ module Initcond
   public :: sinx_siny_sinz, cosx_siny_cosz, sinx_siny_cosz
   public :: sin2x_sin2y_cosz, cosy_sinz
   public :: halfcos_x, magsupport, vfield
-  public :: uniform_x, uniform_y, uniform_z
+  public :: uniform_x, uniform_y, uniform_z, uniform_phi
   public :: vfluxlayer, hfluxlayer
   public :: vortex_2d
   public :: vfield2
@@ -1882,6 +1882,32 @@ module Initcond
       if (ip==1) print*,yy,zz
     endsubroutine uniform_z
 !***********************************************************************
+    subroutine uniform_phi(ampl,f,i,xx,yy,zz)
+!
+!  Uniform B_phi field (for vector potential)
+!
+!  27-jul-02/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz,rr
+      real :: ampl
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'uniform_phi: set variable to zero; i=',i
+      else
+        print*,'uniform_phi: uniform phi-field ; i=',i
+        if ((ip<=16).and.lroot) print*,'uniform_phi: ampl=',ampl
+        rr=sqrt(xx**2+yy**2)
+        f(:,:,:,i  )=0.
+        f(:,:,:,i+1)=0.
+        f(:,:,:,i+2)=-ampl*rr
+      endif
+!
+      if (ip==1) print*,rr
+    endsubroutine uniform_phi
+!***********************************************************************
     subroutine vfield(ampl,f,i,xx,kx)
 !
 !  Vertical field, for potential field test
@@ -2549,7 +2575,7 @@ module Initcond
 !
     endsubroutine random_isotropic_KS
 !**********************************************************
-    subroutine power_law(f,iglobal_gg,plaw,ptlaw,lstratified,lsoftened)
+    subroutine power_law(f,iglobal_gg,plaw,ptlaw,lstratified,lsoftened,q)
 !
 ! Yields from Minimum Mass Solar Nebula model
 !
@@ -2578,7 +2604,7 @@ module Initcond
       integer :: iglobal_gg
       integer, pointer :: iglobal_cs2,iglobal_glnTT
 !
-      real :: g0,rr0,mach,k0,sig,nu
+      real :: g0,rr0,mach,k0,sig,nu,q
 !
       nullify(iglobal_cs2)
       nullify(iglobal_glnTT)
@@ -2602,8 +2628,8 @@ module Initcond
 !
           r_cyl   = sqrt(x**2 + y(m)**2 )+tini
           r_sph   = sqrt(x**2 + y(m)**2 + z(n)**2)+tini
-          OO_sph=sqrt(g0/r_sph**3)
-          OO_cyl=sqrt(g0/r_cyl**3)
+          OO_sph=sqrt(g0/r_sph**(2*q))
+          OO_cyl=sqrt(g0/r_cyl**(2*q))
 !
 ! density
 !
@@ -2636,7 +2662,7 @@ module Initcond
 ! Velocity field. Don't overwrite
 !
           if (lsoftened) then
-             OO_cyl=(r_cyl**2+0.1**2)**(-3/4.)
+             OO_cyl=(r_cyl**2+0.1**2)**(-q/2.)
              corr=ptlaw*cs20*(r_cyl**2+0.1**2)**(1-ptlaw)/2.
              OO=sqrt(OO_cyl**2*(1-corr))
           endif
@@ -2740,7 +2766,7 @@ module Initcond
 !
     endsubroutine power_law
 !****************************************************************
-    subroutine power_law_cyl(f,iglobal_gg,plaw,ptlaw,lstratified)
+    subroutine power_law_cyl(f,iglobal_gg,plaw,ptlaw,lstratified,q)
 !
       use Cdata
       use FArrayManager
@@ -2759,7 +2785,7 @@ module Initcond
       integer, pointer :: iglobal_cs2,iglobal_glnTT
 !
       !real :: g0,rr0,mach,k0,sig,nu
-      real :: g0,rr0
+      real :: g0,rr0,q
 
       nullify(iglobal_cs2)
       nullify(iglobal_glnTT)
@@ -2769,7 +2795,7 @@ module Initcond
       do m=1,my
          do n=1,mz
             lheader=(lroot.and.(m==1).and.(n==1))
-            OO_cyl=sqrt(g0/x**3)
+            OO_cyl=sqrt(g0/x**(2*q))
             if (lheader) print*,'Radial stratification with power law=',plaw
             f(:,m,n,ilnrho) = alog(rho0) - plaw*alog(x)
             corr = ptlaw*cs20/x**(2+ptlaw)

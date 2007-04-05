@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.12 2007-03-15 02:48:58 wlyra Exp $
+! $Id: gravity_r.f90,v 1.13 2007-04-05 13:29:46 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -38,6 +38,8 @@ module Gravity
   real :: g0=0.
   real :: r0_pot=0.    ! peak radius for smoothed potential
   integer :: n_pot=10  ! exponent for smoothed potential
+  real :: qgshear=1.5  ! (global) shear parameter
+                       !     1.5 for Keplerian disks, 1.0 for galaxies
 
   character (len=labellen) :: ipotential='zero'
 
@@ -50,10 +52,10 @@ module Gravity
   integer :: iglobal_gg=0
 
   namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-       lcylindrical_gravity,lstratified
+       lcylindrical_gravity,lstratified,qgshear
 
   namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-       lcylindrical_gravity,lstratified
+       lcylindrical_gravity,lstratified,qgshear
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
@@ -79,7 +81,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.12 2007-03-15 02:48:58 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.13 2007-04-05 13:29:46 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -165,7 +167,13 @@ module Gravity
         case ('no-smooth')
            if (lroot) print*,'initialize_gravity: non-smoothed newtonian gravity'
            lpade=.false.
-
+        case ('varying-q')
+           if (lroot) print*,'initialize_gravity: shear with Omega proto r^-q, q=',qgshear
+           lpade=.false.
+        case ('varying-q-smooth')
+           if (lroot) &
+                print*,'initialize_gravity: shear with smoothed Omega proto r^-q, q=',qgshear
+           lpade=.false.
         ! geodynamo
         case ('geo-kws-approx')     ! approx. 1/r potential between r=.5 and r=1
           if (lroot) print*, 'initialize_gravity: approximate 1/r potential'
@@ -226,6 +234,10 @@ module Gravity
               g_r=-g0
             elseif (ipotential .eq. 'no-smooth') then
               g_r=-g0/rr_mn**2
+            elseif (ipotential .eq. 'varying-q') then
+              g_r=-g0/rr_mn**(2*qgshear-1) 
+            elseif (ipotential .eq. 'varying-q-smooth') then
+              g_r=-g0*rr_mn/(rr_mn**2+r0_pot**2)**qgshear  
             else
               ! smoothed 1/r potential in a spherical shell
               g_r=-g0*rr_mn**(n_pot-1) &
@@ -510,36 +522,42 @@ module Gravity
 !***********************************************************************
     subroutine get_radial_distance(rr_mn)
 !
+!  Calculate distance for different coordinate systems, and the
+!  possibility of cylindrical (slab) gravity
+!
+!  15-mar-07/wlad : coded
+!
       use Cdata
 !
       real, dimension(nx),intent(out) :: rr_mn
 !
-!  different distances for different coordinates systems, and the
-!  possibility of cylindrical gravity
-!
       if (coord_system=='cartesian') then
-         if (lcylindrical_gravity) then
-            rr_mn=sqrt(x(l1:l2)**2+y(m)**2)+tini
-         else
-            rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)+tini
-         endif
+        if (lcylindrical_gravity) then
+          rr_mn=sqrt(x(l1:l2)**2+y(m)**2)+tini
+        else
+          rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)+tini
+        endif
       elseif (coord_system=='cylindric') then
-         if (lcylindrical_gravity) then
-            rr_mn=x(l1:l2)+tini
-         else
-            rr_mn=sqrt(x(l1:l2)**2+z(n)**2)+tini
-         endif
+        if (lcylindrical_gravity) then
+          rr_mn=x(l1:l2)+tini
+        else
+          rr_mn=sqrt(x(l1:l2)**2+z(n)**2)+tini
+        endif
       elseif(coord_system=='spherical') then
-         if (lcylindrical_gravity) then
-            rr_mn=x(l1:l2)*sqrt(1-cos(y(m)**2))
-         else
-            rr_mn=x(l1:l2)
-         endif
+        if (lcylindrical_gravity) then
+          rr_mn=x(l1:l2)*sqrt(1-cos(y(m)**2))
+        else
+          rr_mn=x(l1:l2)
+        endif
       endif
 !
     endsubroutine get_radial_distance
 !***********************************************************************
     subroutine get_gravity_field(g_r,rr_mn,gg_mn)
+!
+!  Calculate gravity field for different coordinate systems
+!
+!  15-mar-07/wlad: coded
 !
       use Cdata
 !
@@ -547,24 +565,24 @@ module Gravity
       real, dimension(nx,3),intent(out) :: gg_mn
 !
       if (coord_system=='cartesian') then
-         gg_mn(:,1) = x(l1:l2)/rr_mn*g_r
-         gg_mn(:,2) = y(  m  )/rr_mn*g_r
-         gg_mn(:,3) = z(  n  )/rr_mn*g_r
-         if (lcylindrical_gravity) gg_mn(:,3)=0.
+        gg_mn(:,1) = x(l1:l2)/rr_mn*g_r
+        gg_mn(:,2) = y(  m  )/rr_mn*g_r
+        gg_mn(:,3) = z(  n  )/rr_mn*g_r
+        if (lcylindrical_gravity) gg_mn(:,3)=0.
       elseif (coord_system=='cylindric') then
-         gg_mn(:,1) = x(l1:l2)/rr_mn*g_r
-         gg_mn(:,2) = 0.
-         gg_mn(:,3) =    z(n)/rr_mn*g_r
-         if (lcylindrical_gravity) gg_mn(:,3)=0.
+        gg_mn(:,1) = x(l1:l2)/rr_mn*g_r
+        gg_mn(:,2) = 0.
+        gg_mn(:,3) =    z(n)/rr_mn*g_r
+        if (lcylindrical_gravity) gg_mn(:,3)=0.
       elseif (coord_system=='spherical') then
-         gg_mn(:,2)=0.
-         gg_mn(:,3)=0.
-         if (lcylindrical_gravity) then
-            gg_mn(:,1) = g_r*sin(y(m))
-            gg_mn(:,3) = g_r*cos(y(m))
-         else
-            gg_mn(:,1) = g_r
-         endif
+        gg_mn(:,2)=0.
+        gg_mn(:,3)=0.
+        if (lcylindrical_gravity) then
+          gg_mn(:,1) = g_r*sin(y(m))
+          gg_mn(:,3) = g_r*cos(y(m))
+        else
+          gg_mn(:,1) = g_r
+        endif
       endif
 !
     endsubroutine get_gravity_field

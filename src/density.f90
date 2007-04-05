@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.320 2007-03-28 08:48:57 wlyra Exp $
+! $Id: density.f90,v 1.321 2007-04-05 13:29:46 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -42,7 +42,7 @@ module Density
   real :: q_ell=5., hh0=0.
   real :: co1_ss=0.,co2_ss=0.,Sigma1=150.
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
-  real :: wdamp=0.,plaw=0,ptlaw=2.
+  real :: wdamp=0.,plaw=0,ptlaw=2.,qgshear=1.5
   real, dimension(3) :: diffrho_hyper3_aniso=0.
   integer, parameter :: ndiff_max=4
   logical :: lmass_source=.false.,lcontinuity_gas=.true.
@@ -71,7 +71,7 @@ module Density
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
        wdamp,plaw,lcontinuity_gas,lstratified,ptlaw, &
-       lsoftened
+       lsoftened,qgshear
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
@@ -113,7 +113,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.320 2007-03-28 08:48:57 wlyra Exp $")
+           "$Id: density.f90,v 1.321 2007-04-05 13:29:46 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -686,9 +686,9 @@ module Density
 !minimum mass solar nebula
         if (lroot)  print*,'init_lnrho: initialize initial condition for Keplerian global disc'
         if     (coord_system=='cartesian') then
-           call power_law(f,iglobal_gg,plaw,ptlaw,lstratified,lsoftened)
+           call power_law(f,iglobal_gg,plaw,ptlaw,lstratified,lsoftened,qgshear)
         elseif (coord_system=='cylindric') then
-           call power_law_cyl(f,iglobal_gg,plaw,ptlaw,lstratified)
+           call power_law_cyl(f,iglobal_gg,plaw,ptlaw,lstratified,qgshear)
         else
            call stop_it("globaldisc not implemented for spherical coord")
         endif
