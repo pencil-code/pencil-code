@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.131 2007-04-06 17:06:14 heidar Exp $
+! $Id: radiation_ray.f90,v 1.132 2007-04-06 17:46:29 heidar Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -180,7 +180,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.131 2007-04-06 17:06:14 heidar Exp $")
+           "$Id: radiation_ray.f90,v 1.132 2007-04-06 17:46:29 heidar Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1322,7 +1322,7 @@ module Radiation
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: tmp,lnrho,lnTT
-      real, kappa0, kappa0_cgs
+      real :: kappa0, kappa0_cgs
       logical, save :: lfirst=.true.
 !!      real :: unit_density, unit_length
 
