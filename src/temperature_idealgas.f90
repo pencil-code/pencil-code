@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.8 2007-03-14 07:56:40 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.9 2007-04-06 16:44:52 wlyra Exp $
 
 !  This module can replace the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -52,6 +52,7 @@ module Entropy
   logical :: lfreeze_lnTTint=.false.,lfreeze_lnTText=.false.
   character (len=labellen) :: iheatcond='nothing'
   logical :: lhcond_global=.false.
+  logical :: lviscosity_heat=.true.
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
 
@@ -75,7 +76,7 @@ module Entropy
       heat_uniform,chi,iheatcond,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
       lheatc_chiconst_accurate,hcond0,lcalc_heat_cool,&
       lfreeze_lnTTint,lfreeze_lnTText,widthlnTT,mpoly0,mpoly1, &
-      lhcond_global
+      lhcond_global,lviscosity_heat
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
@@ -111,7 +112,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.8 2007-03-14 07:56:40 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.9 2007-04-06 16:44:52 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -299,7 +300,7 @@ module Entropy
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
 !
-      if (lviscosity) then
+      if (lviscosity.and.lviscosity_heat) then
         lpenc_requested(i_cv1)=.true.
         lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_visc_heat)=.true.
@@ -484,7 +485,7 @@ module Entropy
 !
 !  Calculate viscous contribution to temperature
 !
-      if (lviscosity) call calc_viscous_heat(f,df,p,Hmax)
+      if (lviscosity.and.lviscosity_heat) call calc_viscous_heat(f,df,p,Hmax)
 !
 !  Various heating conduction contributions
 !
