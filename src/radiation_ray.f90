@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.130 2007-02-02 14:14:47 wlyra Exp $
+! $Id: radiation_ray.f90,v 1.131 2007-04-06 17:06:14 heidar Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -180,7 +180,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.130 2007-02-02 14:14:47 wlyra Exp $")
+           "$Id: radiation_ray.f90,v 1.131 2007-04-06 17:06:14 heidar Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1051,6 +1051,12 @@ module Radiation
         Qrad0_yz=+Frad_boundary_ref/(2.*weightn(idir))
       endif
 !
+!  Set intensity equal to F
+!
+      if (bc_ray_z=='F') then
+        Qrad0_yz=-Srad(llstart-lrad,:,:)+Frad_boundary_ref/(2.*weightn(idir))
+      endif
+!
     endsubroutine radboundary_yz_set
 !***********************************************************************
     subroutine radboundary_zx_set(Qrad0_zx)
@@ -1087,6 +1093,12 @@ module Radiation
 !
       if (bc_ray_z=='S+F') then
         Qrad0_zx=+Frad_boundary_ref/(2.*weightn(idir))
+      endif
+!
+!  Set intensity equal to F
+!
+      if (bc_ray_z=='F') then
+        Qrad0_zx=-Srad(:,mmstart-mrad,:)+Frad_boundary_ref/(2.*weightn(idir))
       endif
 !
     endsubroutine radboundary_zx_set
@@ -1133,6 +1145,12 @@ module Radiation
 !
       if (bc_ray_z=='S+F') then
         Qrad0_xy=+Frad_boundary_ref/(2.*weightn(idir))
+      endif
+!                              
+!  Set intensity equal to F
+!
+      if (bc_ray_z=='F') then
+        Qrad0_xy=-Srad(:,:,nnstart-nrad)+Frad_boundary_ref/(2.*weightn(idir))
       endif
 !
     endsubroutine radboundary_xy_set
@@ -1303,8 +1321,10 @@ module Radiation
       use IO, only: output
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx) :: tmp,lnrho
+      real, dimension(mx) :: tmp,lnrho,lnTT
+      real, kappa0, kappa0_cgs
       logical, save :: lfirst=.true.
+!!      real :: unit_density, unit_length
 
       select case (opacity_type)
 
@@ -1329,6 +1349,26 @@ module Radiation
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho)
           f(:,m,n,ikapparho)=kappa_cst*exp(lnrho)
+        enddo
+        enddo
+
+      case ('Tsquare') !! Morfill et al. 1985 
+         kappa0_cgs=2e-4 ! 2e-6 in D'Angelo 2003 (wrong!)
+         kappa0=kappa0_cgs!!*unit_density*unit_length
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
+          f(:,m,n,ikapparho)=exp(lnrho)*kappa0*((exp(lnTT))**2)
+        enddo
+        enddo
+
+      case ('Kramers') !! as in Frank et al. 1992 (D'Angelo 2003)
+         kappa0_cgs=6.6e22 !! (7.5e22 in Prialnik)
+         kappa0=kappa0_cgs!!*unit_density*unit_length
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
+          f(:,m,n,ikapparho)=kappa0*(exp(lnrho)**2)*(exp(lnTT))**(-3.5)
         enddo
         enddo
 
@@ -1397,6 +1437,7 @@ module Radiation
         endif
 
         if (ltemperature) then
+          lpenc_requested(i_TT)=.true.!!
           lpenc_requested(i_TT1)=.true.
           lpenc_requested(i_rho1)=.true.
           lpenc_requested(i_cv1)=.true.
