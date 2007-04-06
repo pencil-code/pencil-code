@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.286 2007-03-13 07:08:42 dhruba Exp $
+### $Id: Makefile.src,v 1.287 2007-04-06 13:01:29 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -227,9 +227,12 @@ LD_FFTW2=
 #FFLAGS=-I /usr/local/Packages/mpich-1.2.6/ch-p4/include #(lfc101)
 #LD_MPI=-L /usr/local/Packages/mpich-1.2.6/ch-p4/lib/ -lmpich #(lfc101)
 #LDONLYFLAGS=farg.o #(lfc101)
-#FC=ifort #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*|aida[0-9]*)
-#FFLAGS=-O3 -I/home/johansen/mpich/include -static-libcxa #(aida[0-9]*)
-#LD_MPI=-L /home/johansen/mpich/lib -lmpich #(aida[0-9]*)
+#FC=ifort #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*|aida25)
+#FFLAGS=-O3 -I/home/johansen/mpich/include -static-libcxa #(aida25)
+#LD_MPI=-L /home/johansen/mpich/lib -lmpich #(aida25)
+#FC=g95-andy #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*|aida69)
+#FFLAGS=-fno-second-underscore -O3 -I/home/johansen/local/mpich2/include #(aida69)
+#LD_MPI=-l pthread -L /home/johansen/local/mpich2/lib -lmpich #(aida69)
 #FC=ifort #(swift)
 #FFLAGS=-O3 -I/usr/local/mpich/include #(swift)
 #LD_MPI=-L /usr/local/mpich/lib -lmpich #(swift)
