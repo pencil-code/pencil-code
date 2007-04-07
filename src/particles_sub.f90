@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.103 2007-03-19 08:22:35 ajohan Exp $
+! $Id: particles_sub.f90,v 1.104 2007-04-07 16:57:09 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1675,6 +1675,9 @@ module Particles_sub
     subroutine find_closest_gridpoint(xxp,ix0,iy0,iz0)
 !
 !  Find index (ix0, iy0, iz0) of closest grid point to the point xxp.
+!
+!  WARNING: may not work if lperi is *not* set and the number of processors
+!           in a corresponding direction is larger than 2.
 !
 !  23-aug-05/anders: coded
 !
