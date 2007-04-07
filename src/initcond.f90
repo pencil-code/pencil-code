@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.201 2007-04-05 23:53:18 wlyra Exp $
+! $Id: initcond.f90,v 1.202 2007-04-07 23:54:47 wlyra Exp $
 
 module Initcond
 
@@ -2614,12 +2614,13 @@ module Initcond
       if (ltemperature) then 
         g0=1.3e3 !e26(cgs)
         rr0=7.47990  !e12
-        rr0=0.74799
+        r0_pot=0.74799
       else 
         g0=1.0
-        rr0=1. 
+        rr0=1.
         r0_pot=0.1
       endif
+      if (.not.lsoftened) r0_pot=0
       mach=sqrt(g0/rr0)/cs0
 !
       do m=1,my
@@ -2743,10 +2744,9 @@ module Initcond
 !else do it all as temperature
         else if (ltemperature) then
           rr=sqrt(x(:)**2+y(m)**2)
-          k0=2e-6 ; nu=5e-2 ; sig=5.6704E-007
+          k0=2e-4 ; nu=5e-2 ; sig=5.6704E-007
           !relaxed system
           TT=sqrt(27./128*k0*nu/sig) * exp(f(:,m,n,ilnrho)) * sqrt(g0/rr**3)
-          TT=0.!cs20/(cp*gamma1)
           f(:,m,n,ilnTT) = f(:,m,n,ilnTT) + alog(TT)
         else
           print*,"No thermodynamical variable. Choose if you want a "

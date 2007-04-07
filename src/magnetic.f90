@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.405 2007-04-05 23:54:44 wlyra Exp $
+! $Id: magnetic.f90,v 1.406 2007-04-07 23:54:45 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -227,7 +227,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.405 2007-04-05 23:54:44 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.406 2007-04-07 23:54:45 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2731,8 +2731,8 @@ module Magnetic
       rrcyl=sqrt(xx**2+yy**2)
       Aphi=B0/(rrcyl*(2-qgshear))*(rrcyl**2+r0_pot**2)**(1-qgshear/2.)
 !
-      f(:,:,:,iax) =  -Aphi*yy
-      f(:,:,:,iay) =   Aphi*xx
+      f(:,:,:,iax) =  -Aphi*yy/rrcyl
+      f(:,:,:,iay) =   Aphi*xx/rrcyl
 !
     endsubroutine alfven_zconst
 !***********************************************************************
