@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.104 2007-04-07 16:57:09 ajohan Exp $
+! $Id: particles_sub.f90,v 1.105 2007-04-08 09:41:41 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -411,14 +411,32 @@ module Particles_sub
       integer :: npar_loc
 !
       real, dimension (0:ncpus-1,npar_mig,mpvar) :: fp_mig, dfp_mig
+      real, save :: dx1, dy1, dz1, y0_mig, y1_mig, z0_mig, z1_mig
       integer, dimension (0:ncpus-1,npar_mig) :: ipar_mig
       integer, dimension (0:ncpus-1,0:ncpus-1) :: nmig
-      integer :: i, j, k, iproc_rec, ipy_rec, ipz_rec
-      logical :: lredo, lredo_all
+      integer :: i, j, k, iproc_rec, ipy_rec, ipz_rec, iy0_rec, iz0_rec
+      logical :: lfirstcall=.true., lredo, lredo_all
 !
       intent (inout) :: fp, npar_loc, ipar, dfp
 !
-!  Possible to iterate untill all particles have migrated.
+      if (lfirstcall) then
+!
+!  Need to define special processor boundaries for migration since the physical
+!  processor boundaries may be closer to a ghost point than to a physical grid
+!  point. Thus we need to define the boundary as the average coordinate value
+!  of the last grid point and the first ghost point.
+!        
+        y0_mig=0.5*(y(m1)+y(m1-1)); y1_mig=0.5*(y(m2)+y(m2+1))
+        z0_mig=0.5*(z(n1)+z(n1-1)); z1_mig=0.5*(z(n2)+z(n2+1))
+        if (.not. all(lequidist)) then
+          print*, 'redist_particles_procs: only works for equidistant grid!'
+          call fatal_error('redist_particles_procs','')
+        endif
+        dx1=1/dx; dy1=1/dy; dz1=1/dz
+        lfirstcall=.false.
+      endif
+!
+!  Possible to iterate until all particles have migrated.
 !
       lredo=.false.; lredo_all=.true.
       do while (lredo_all)
@@ -430,24 +448,32 @@ module Particles_sub
         do k=npar_loc,1,-1
 !  Find y index of receiving processor.
           ipy_rec=ipy
-          if (fp(k,iyp)>=xyz1_loc(2)) then
-            do while ( (fp(k,iyp)-(ipy_rec+1)*Lxyz_loc(2)) >= xyz0(2) )
+          if (fp(k,iyp)>=y1_mig) then
+            iy0_rec=nint((fp(k,iyp)-y(1))*dy1)+1-nghost
+            do while (iy0_rec>ny)
               ipy_rec=ipy_rec+1
+              iy0_rec=iy0_rec-ny
             enddo
-          else if (fp(k,iyp)< xyz0_loc(2)) then
-            do while ( (fp(k,iyp)+(nprocy-ipy_rec)*Lxyz_loc(2)) <  xyz1(2) )
+          else if (fp(k,iyp)<y0_mig) then
+            iy0_rec=nint((fp(k,iyp)-y(1))*dy1)+1-nghost
+            do while (iy0_rec<1)
               ipy_rec=ipy_rec-1
+              iy0_rec=iy0_rec+ny
             enddo
           endif
 !  Find z index of receiving processor.
           ipz_rec=ipz
-          if (fp(k,izp)>=xyz1_loc(3)) then
-            do while ( (fp(k,izp)-(ipz_rec+1)*Lxyz_loc(3)) >= xyz0(3) )
+          if (fp(k,izp)>=z1_mig) then
+            iz0_rec=nint((fp(k,izp)-z(1))*dz1)+1-nghost
+            do while (iz0_rec>nz)
               ipz_rec=ipz_rec+1
+              iz0_rec=iz0_rec-nz
             enddo
-          else if (fp(k,izp)< xyz0_loc(3)) then
-            do while ( (fp(k,izp)+(nprocz-ipz_rec)*Lxyz_loc(3)) <  xyz1(3) )
+          else if (fp(k,izp)<z0_mig) then
+            iz0_rec=nint((fp(k,izp)-z(1))*dz1)+1-nghost
+            do while (iz0_rec<1)
               ipz_rec=ipz_rec-1
+              iz0_rec=iz0_rec+nz
             enddo
           endif
 !  Calculate serial index of receiving processor.
@@ -463,6 +489,10 @@ module Particles_sub
               print*, 'redist_particles_procs: receiving proc does not exist'
               print*, 'redist_particles_procs: iproc, iproc_rec=', &
                   iproc, iproc_rec
+              print*, 'redist_particles_procs: ipar(k), xxp=', &
+                  ipar(k), fp(k,ixp:izp)
+              print*, 'redist_particles_procs: y0_mig, y1_mig=', y0_mig, y1_mig
+              print*, 'redist_particles_procs: z0_mig, z1_mig=', z0_mig, z1_mig
               stop
             endif
 !  Copy migrating particle to the end of the fp array.
@@ -540,13 +570,30 @@ module Particles_sub
                 call mpirecv_real(dfp(npar_loc+1:npar_loc+nmig(i,iproc),:), &
                 (/nmig(i,iproc),mpvar/), i, 333)
             if (ip<=6) then
-              print*, 'redist_particles_proc: iproc, iproc_send=', iproc, i
-              print*, 'redist_particles_proc: received fp=', &
+              print*, 'redist_particles_procs: iproc, iproc_send=', iproc, i
+              print*, 'redist_particles_procs: received fp=', &
                   fp(npar_loc+1:npar_loc+nmig(i,iproc),:)
-              print*, 'redist_particles_proc: received ipar=', &
+              print*, 'redist_particles_procs: received ipar=', &
                   ipar(npar_loc+1:npar_loc+nmig(i,iproc))
-              if (present(dfp)) print*, 'redist_particles_proc: received dfp=',&
+              if (present(dfp)) &
+                  print*, 'redist_particles_procs: received dfp=',&
                   dfp(npar_loc+1:npar_loc+nmig(i,iproc),:)
+            endif
+!  Check that received particles are really at the right processor.
+            if (lmigration_real_check) then
+              do k=npar_loc+1,npar_loc+nmig(i,iproc)
+                if (fp(k,iyp)<y0_mig .or. fp(k,iyp)>y1_mig .or. &
+                    fp(k,izp)<z0_mig .or. fp(k,izp)>z1_mig ) then
+                  print*, 'redist_particles_procs: received particle closer '//&
+                      'to ghost point than to physical grid point!'
+                  print*, 'redist_particles_procs: ipar, xxp=', &
+                      ipar(k), fp(k,ixp:izp)
+                  print*, 'redist_particles_procs: y0_mig, y1_mig=', &
+                      y0_mig, y1_mig
+                  print*, 'redist_particles_procs: z0_mig, z1_mig=', &
+                      z0_mig, z1_mig
+                endif
+              enddo
             endif
             npar_loc=npar_loc+nmig(i,iproc)
             if (npar_loc>mpar_loc) then

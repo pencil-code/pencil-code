@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.185 2007-04-08 07:09:18 ajohan Exp $
+! $Id: particles_dust.f90,v 1.186 2007-04-08 09:41:41 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -79,7 +79,8 @@ module Particles
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole, &
       epsp_friction_increase,lcartesian_mig, lcollisional_dragforce_cooling, &
-      ldragforce_heat, lcollisional_heat, lcompensate_friction_increase
+      ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
+      lmigration_real_check
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -93,7 +94,8 @@ module Particles
       lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
-      ldragforce_heat, lcollisional_heat, lcompensate_friction_increase
+      ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
+      lmigration_real_check
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -126,7 +128,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.185 2007-04-08 07:09:18 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.186 2007-04-08 09:41:41 ajohan Exp $")
 !
 !  Indices for particle position.
 !
