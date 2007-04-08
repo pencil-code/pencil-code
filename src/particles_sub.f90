@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.105 2007-04-08 09:41:41 ajohan Exp $
+! $Id: particles_sub.f90,v 1.106 2007-04-08 10:13:33 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -121,7 +121,7 @@ module Particles_sub
       real, save :: tsnap,tsnap_minor
       logical :: lsnap_minor=.false.
       character (len=fnlen) :: snapname, filename_diag
-      character (len=4) :: nsnap_ch,nsnap_minor_ch,nsnap_ch_last
+      character (len=5) :: nsnap_ch,nsnap_minor_ch,nsnap_ch_last
 !
       optional :: flist
 !

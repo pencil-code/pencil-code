@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.29 2007-01-05 20:08:58 dobler Exp $
+! $Id: temperature_ionization.f90,v 1.30 2007-04-08 10:13:35 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -37,7 +37,7 @@ module Entropy
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
-  character (len=4) :: iinit_str
+  character (len=5) :: iinit_str
 
   ! Delete (or use) me asap!
   real :: hcond0,hcond1,Fbot,FbotKbot,Ftop,Kbot,FtopKtop
@@ -89,7 +89,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.29 2007-01-05 20:08:58 dobler Exp $")
+           "$Id: temperature_ionization.f90,v 1.30 2007-04-08 10:13:35 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.499 2007-03-16 22:12:26 dintrans Exp $
+! $Id: entropy.f90,v 1.500 2007-04-08 10:13:31 ajohan Exp $
 
 ! 
 !  This module takes care of entropy (initial condition
@@ -79,7 +79,7 @@ module Entropy
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
-  character (len=4) :: iinit_str
+  character (len=5) :: iinit_str
 
   !
   ! Parameters for subroutine cool_RTV in SI units (from Cook et al. 1989)
@@ -168,7 +168,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.499 2007-03-16 22:12:26 dintrans Exp $")
+           "$Id: entropy.f90,v 1.500 2007-04-08 10:13:31 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************

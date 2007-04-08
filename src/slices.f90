@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.75 2007-03-23 15:27:00 bingert Exp $
+! $Id: slices.f90,v 1.76 2007-04-08 10:13:34 ajohan Exp $
 
 !  This module produces slices for animation purposes
 
@@ -111,7 +111,7 @@ module Slices
 !
       integer, save :: ifirst=0
 !
-      character (len=4) :: ch
+      character (len=5) :: ch
       character (len=130) :: file
 !
 !  Output vid-data in 'tvid' time intervals
@@ -154,7 +154,7 @@ module Slices
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
       character(len=*) :: path
-      character(len=4) :: sindex
+      character(len=5) :: sindex
       logical, save :: lfirstloop=.true.
       logical :: lnewfile=.true.
       logical :: lslices_legacy=.true.

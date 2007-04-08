@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.9 2007-04-06 16:44:52 wlyra Exp $
+! $Id: temperature_idealgas.f90,v 1.10 2007-04-08 10:13:35 ajohan Exp $
 
 !  This module can replace the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -57,7 +57,7 @@ module Entropy
   integer :: iglobal_glhc=0
 
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
-  character (len=4) :: iinit_str
+  character (len=5) :: iinit_str
 
 ! Delete (or use) me asap!
   real :: hcond0=impossible, hcond1=1.,Fbot,FbotKbot,Ftop,Kbot,FtopKtop
@@ -112,7 +112,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.9 2007-04-06 16:44:52 wlyra Exp $")
+           "$Id: temperature_idealgas.f90,v 1.10 2007-04-08 10:13:35 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

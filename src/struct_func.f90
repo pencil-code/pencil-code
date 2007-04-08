@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.28 2006-11-30 09:03:36 dobler Exp $
+! $Id: struct_func.f90,v 1.29 2007-04-08 10:13:34 ajohan Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -54,7 +54,7 @@ module struct_func
       integer :: i,ivec,lb_ll,separation,exp1,exp2
       integer(KIND=ikind8) :: ndiv
       real :: pdf_max,pdf_min,normalization,dx_du
-      character (len=4) :: var
+      character (len=5) :: var
       character (len=*) :: variabl
       character (len=20):: filetowrite
       logical :: llsf=.false., llpdf=.false.

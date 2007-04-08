@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.19 2007-02-20 17:50:30 dobler Exp $
+! $Id: snapshot.f90,v 1.20 2007-04-08 10:13:34 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -45,7 +45,7 @@ contains
 !
       integer :: msnap
       real, dimension (mx,my,mz,msnap) :: a
-      character (len=4) :: ch
+      character (len=5) :: ch
       character (len=fnlen) :: file
       character (len=*) :: chsnap,flist
       logical :: lsnap,enum
@@ -171,7 +171,7 @@ contains
       real, dimension (mx,my,mz,mfarray) :: a
       real, dimension (nx,ny,nz) :: b_vec
       character (len=135) :: file
-      character (len=4) :: ch
+      character (len=5) :: ch
       logical :: lspec,llwrite_only=.false.,ldo_all
       logical, optional :: lwrite_only
       integer, save :: ifirst=0,nspec

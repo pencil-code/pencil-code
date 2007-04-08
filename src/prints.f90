@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.88 2007-02-06 13:54:34 wlyra Exp $
+! $Id: prints.f90,v 1.89 2007-04-08 10:13:33 ajohan Exp $
 
 module Print
 
@@ -15,7 +15,7 @@ module Print
   public :: write_2daverages_prepare
   public :: write_zaverages
 
-  character (len=4) :: ch2davg
+  character (len=5) :: ch2davg
 
   contains
 

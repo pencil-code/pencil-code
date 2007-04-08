@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.120 2007-02-28 07:11:45 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.121 2007-04-08 10:13:29 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -105,7 +105,7 @@ module Dustvelocity
 !
       logical, save :: first=.true.
       integer :: k
-      character(len=4) :: sdust
+      character(len=5) :: sdust
 !
       if (.not. first) call fatal_error('register_dustvelocity','module registration called twice')
       first = .false.
@@ -137,7 +137,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.120 2007-02-28 07:11:45 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.121 2007-04-08 10:13:29 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1283,7 +1283,7 @@ module Dustvelocity
       integer :: iname,inamez,k
       logical :: lreset,lwr
       logical, optional :: lwrite
-      character (len=4) :: sdust,sdustspec,suud1,sudx1,sudy1,sudz1
+      character (len=5) :: sdust,sdustspec,suud1,sudx1,sudy1,sudz1
 !
 !  Write information to index.pro that should not be repeated for i
 !

@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.37 2007-03-18 22:09:19 dobler Exp $
+! $Id: particles_nbody.f90,v 1.38 2007-04-08 10:13:33 ajohan Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -66,7 +66,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.37 2007-03-18 22:09:19 dobler Exp $")
+           "$Id: particles_nbody.f90,v 1.38 2007-04-08 10:13:33 ajohan Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -864,7 +864,7 @@ module Particles_nbody
 !
       integer :: iname,ks,j
       character :: str
-      character (len=4) :: sks
+      character (len=5) :: sks
 !
 !  Write information to index.pro
 !

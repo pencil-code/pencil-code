@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.145 2007-01-31 12:50:12 wlyra Exp $
+! $Id: interstellar.f90,v 1.146 2007-04-08 10:13:32 ajohan Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development.
@@ -390,7 +390,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.145 2007-01-31 12:50:12 wlyra Exp $")
+           "$Id: interstellar.f90,v 1.146 2007-04-08 10:13:32 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -808,7 +808,7 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       logical :: lnothing=.true.
-      character (len=4) :: iinit_str
+      character (len=5) :: iinit_str
       integer :: i,iSNR
 !
       intent(inout) :: f
@@ -1897,7 +1897,7 @@ find_SN: do n=n1,n2
       double precision, dimension(2) :: dmpi2, dmpi2_tmp
       real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old
       real, dimension(nx,3) :: uu
-      character (len=4) :: ch
+      character (len=5) :: ch
       real :: maxlnTT
       real :: radiusA, radiusB
       integer :: i

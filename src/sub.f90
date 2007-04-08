@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.303 2007-04-05 22:25:38 wlyra Exp $
+! $Id: sub.f90,v 1.304 2007-04-08 10:13:34 ajohan Exp $
 
 module Sub
 
@@ -2828,7 +2828,7 @@ module Sub
 !  24-aug-99/axel: allow for logarithmic spacing
 !
       character (len=*) :: file
-      character (len=4) :: ch
+      character (len=5) :: ch
       logical :: lout,enum
       real :: t,tt,tout,dtout
       integer :: lun,nout

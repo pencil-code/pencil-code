@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.174 2007-02-28 07:11:45 ajohan Exp $
+! $Id: dustdensity.f90,v 1.175 2007-04-08 10:13:28 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -87,7 +87,7 @@ module Dustdensity
 !
       logical, save :: first=.true.
       integer :: k
-      character (len=4) :: sdust
+      character (len=5) :: sdust
 !
       if (.not. first) call stop_it('register_dustdensity: called twice')
       first = .false.
@@ -140,7 +140,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.174 2007-02-28 07:11:45 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.175 2007-04-08 10:13:28 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1520,7 +1520,7 @@ module Dustdensity
       integer :: iname,inamez,inamex,k
       logical :: lreset,lwr
       logical, optional :: lwrite
-      character (len=4) :: sdust,sdustspec,snd1,smd1,smi1
+      character (len=5) :: sdust,sdustspec,snd1,smd1,smi1
 !
 !  Write information to index.pro that should not be repeated for all species
 !

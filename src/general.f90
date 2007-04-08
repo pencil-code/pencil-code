@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.56 2007-03-01 03:18:34 wlyra Exp $
+! $Id: general.f90,v 1.57 2007-04-08 10:13:32 ajohan Exp $
 
 module General
 
@@ -415,26 +415,28 @@ module General
 !***********************************************************************
     subroutine chn(n,ch,label)
 !
-      character (len=4) :: ch
+!  make a character out of a number
+!  take care of numbers that have less than 4 digits
+!  30-sep-97/axel: coded
+!
+      character (len=5) :: ch
       character (len=*), optional :: label
       integer :: n
 !
       intent(in) :: n
 !
-!  make a character out of a number
-!  take care of numbers that have less than 4 digits
-!  30-sep-97/axel: coded
-!
-      ch='    '
-      if (n.lt.0) stop 'chn: lt1'
-      if (n.lt.10) then
+      ch='     '
+      if (n<0) stop 'chn: lt1'
+      if (n<10) then
         write(ch(1:1),'(i1)') n
-      elseif (n.lt.100) then
+      elseif (n<100) then
         write(ch(1:2),'(i2)') n
-      elseif (n.lt.1000) then
+      elseif (n<1000) then
         write(ch(1:3),'(i3)') n
-      elseif (n.lt.10000) then
+      elseif (n<10000) then
         write(ch(1:4),'(i4)') n
+      elseif (n<100000) then
+        write(ch(1:5),'(i5)') n
       else
         if (present(label)) print*, 'CHN: <', label, '>'
         print*,'CHN: n=',n
