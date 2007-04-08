@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.184 2007-03-14 21:53:37 wlyra Exp $
+! $Id: particles_dust.f90,v 1.185 2007-04-08 07:09:18 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -126,7 +126,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.184 2007-03-14 21:53:37 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.185 2007-04-08 07:09:18 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1362,9 +1362,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (ldragforce_dust_par .and. t>=tstart_dragforce_par) then
         if (headtt) print*,'dvvp_dt: Add drag force; tausp=', tausp
-        if (npar_imn(imn)/=0) then
 !
-          if (ldragforce_heat.or.(ldiagnos.and.idiag_dedragp/=0)) drag_heat=0.0
+        if (ldragforce_heat.or.(ldiagnos.and.idiag_dedragp/=0)) drag_heat=0.0
+!
+        if (npar_imn(imn)/=0) then
 !
           if (lfirst.and.ldt) then
             dt1_drag_dust=0.0
@@ -1571,8 +1572,6 @@ k_loop:   do while (.not. (k>npar_loc))
             endif
             dt1_drag=dt1_drag/cdtp
             dt1_max=max(dt1_max,dt1_drag)
-            if (ldiagnos.and.idiag_dtdragp/=0) &
-                call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
           endif
         endif
       endif
@@ -1639,6 +1638,8 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
         if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
         if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
+        if (idiag_dtdragp/=0.and.(lfirst.and.ldt))  &
+            call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
       endif
 !
       if (l2davgfirst) then
