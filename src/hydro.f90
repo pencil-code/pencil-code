@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.338 2007-04-02 15:04:35 dhruba Exp $
+! $Id: hydro.f90,v 1.339 2007-04-08 21:44:34 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -286,7 +286,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.338 2007-04-02 15:04:35 dhruba Exp $")
+           "$Id: hydro.f90,v 1.339 2007-04-08 21:44:34 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -873,16 +873,20 @@ module Hydro
           enddo
           p%sij(:,j,j)=p%sij(:,j,j)-(1./3.)*p%divu
         enddo
-        if(lspherical_coords)then
+        if (lspherical_coords) then
 ! p%sij(:,1,1) remains unchanged in spherical coordinates  
           p%sij(:,1,2)=p%sij(:,1,2)-.5*r1_mn*p%uu(:,2)
           p%sij(:,1,3)=p%sij(:,1,3)-.5*r1_mn*p%uu(:,3)
           p%sij(:,2,1)=p%sij(:,1,2)
           p%sij(:,2,2)=p%sij(:,2,2)+r1_mn*p%uu(:,1) 
           p%sij(:,2,3)=p%sij(:,2,3)-.5*r1_mn*cotth(m)*p%uu(:,3)
-          p%sij(:,1,3)= p%sij(:,3,1)
-          p%sij(:,2,3)= p%sij(:,2,3)
+          p%sij(:,1,3)=p%sij(:,3,1)
+          p%sij(:,2,3)=p%sij(:,2,3)
           p%sij(:,3,3)=p%sij(:,3,3)+r1_mn*p%uu(:,1)+cotth(m)*r1_mn*p%uu(:,2) 
+        elseif (lcylindrical_coords) then
+          p%sij(:,1,2)=p%sij(:,1,2)-.5*rcyl_mn1*p%uu(:,2)
+          p%sij(:,2,2)=p%sij(:,2,2)+.5*rcyl_mn1*p%uu(:,1)
+          p%sij(:,2,1)=p%sij(:,1,2)
         endif
         if (lshear) then
           if (lshear_rateofstrain) then
