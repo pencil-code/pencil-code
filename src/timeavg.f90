@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.19 2006-11-30 09:03:36 dobler Exp $
+! $Id: timeavg.f90,v 1.20 2007-04-09 09:02:24 ajohan Exp $
 
 module Timeavg
 
@@ -106,7 +106,7 @@ module Timeavg
       use Sub
       use IO
 !
-      character (len=4) :: ch
+      character (len=5) :: ch
       character (len=fnlen) :: file
       character (len=*) :: chsnap,flist
       logical :: lsnap,enum

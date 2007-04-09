@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.101 2007-01-31 12:50:12 wlyra Exp $
+! $Id: forcing.f90,v 1.102 2007-04-09 09:02:24 ajohan Exp $
 
 module Forcing
 
@@ -74,7 +74,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.101 2007-01-31 12:50:12 wlyra Exp $")
+           "$Id: forcing.f90,v 1.102 2007-04-09 09:02:24 ajohan Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -1703,7 +1703,7 @@ module Forcing
       integer, save :: ifirst=0
       integer, save :: nforce=0
       logical :: lforce
-      character (len=4) :: ch
+      character (len=5) :: ch
       character (len=135) :: file
 !
 !  identifier
