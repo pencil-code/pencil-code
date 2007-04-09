@@ -1,4 +1,4 @@
-! $Id: rtime_phiavg.f90,v 1.8 2007-04-05 23:53:18 wlyra Exp $
+! $Id: rtime_phiavg.f90,v 1.9 2007-04-09 18:51:59 wlyra Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -153,11 +153,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.8 2007-04-05 23:53:18 wlyra Exp $
+!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.9 2007-04-09 18:51:59 wlyra Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: rtime_phiavg.f90,v 1.8 2007-04-05 23:53:18 wlyra Exp $")
+           "$Id: rtime_phiavg.f90,v 1.9 2007-04-09 18:51:59 wlyra Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -201,27 +201,17 @@ module Special
       if (lroot) print*,'rt_int,rt_ext',rt_int,rt_ext
 
       tmp = (rt_ext - rt_int)/nrcylrun
-      !r1=rt_int-0.75*tmp
-      !r2=rt_ext+0.75*tmp
-
-      !drc=(r2 - r1)/nrcylrun !more half step for each
+!
       drc=tmp
       drc1=1./drc
-
-!      rcyl_coarse = (/ (r1+ir*drc, ir=1,nrcylrun) /)
-
+!
       do ir=1,nrcylrun
-         rloop_int = rt_int + (ir-1)*drc!r1 + (ir-1)*drc
-         rloop_ext = rt_int +  ir   *drc!r1 +  ir   *drc
+         rloop_int = rt_int + (ir-1)*drc
+         rloop_ext = rt_int +  ir   *drc
          rcyl_coarse(ir)= 0.5*(rloop_int + rloop_ext)
       enddo
 !
-      !print*,rcyl_coarse
-      !stop
-!
       if(NO_WARN) print*,f  !(keep compiler quiet)
-!
-      print*,'print this shit'
 !
     endsubroutine initialize_special
 !***********************************************************************
