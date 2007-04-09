@@ -8,3 +8,4 @@
 !  
 integer, parameter :: ncpus=2,nprocy=2,nprocz=ncpus/nprocy,nprocx=1
 integer, parameter :: nxgrid=160,nygrid=160,nzgrid=16
+
