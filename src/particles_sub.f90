@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.106 2007-04-08 10:13:33 ajohan Exp $
+! $Id: particles_sub.f90,v 1.107 2007-04-10 04:33:41 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -708,7 +708,7 @@ module Particles_sub
           enddo
         else
 !  Must be possible to have same number of particles at each processor.
-          if (mod(npar_species,npar_loc)/=0) then
+          if (mod(npar_loc,npar_species)/=0) then
             if (lroot) then
               print*, 'dist_particles_evenly_procs: npar_species '// &
                   'must be a whole multiple of npar_loc!'
