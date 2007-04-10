@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.13 2007-03-15 02:40:25 wlyra Exp $
+! $Id: border_profiles.f90,v 1.14 2007-04-10 16:54:16 wlyra Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -172,10 +172,12 @@ module BorderProfiles
 !
 ! 28-Jul-06/wlad : coded
 !
+      use Gravity, only:qgshear
+!
       real, dimension(nx),intent(out) :: drive_time
       type (pencil_case) :: p
 !
-      drive_time = 2*pi*(p%rcyl_mn)**(1.5)
+      drive_time = 2*pi*(p%rcyl_mn)**(qgshear)
 !
     endsubroutine get_drive_time
 !***********************************************************************

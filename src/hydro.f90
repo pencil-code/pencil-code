@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.340 2007-04-10 08:50:21 pkapyla Exp $
+! $Id: hydro.f90,v 1.341 2007-04-10 16:54:16 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -286,7 +286,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.340 2007-04-10 08:50:21 pkapyla Exp $")
+           "$Id: hydro.f90,v 1.341 2007-04-10 16:54:16 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1434,13 +1434,14 @@ module Hydro
       use Cdata
       use BorderProfiles, only: border_driving
       use EquationOfState, only: cs0,cs20
+      use Gravity, only:g0,qgshear,r0_pot 
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
       real, dimension(nx) :: OO,tmp
-      real :: g0=1.,plaw=0.0,ptlaw=2.
+      real :: plaw=0.0,ptlaw=1.
       integer :: ju,j
 !
 ! these tmps and where's are needed because these square roots
@@ -1456,14 +1457,14 @@ module Hydro
             f_target(:,j) = uu_const(j)
          enddo
       case('globaldisc')
-         tmp = max(p%rcyl_mn**(-3) - ptlaw*cs20/p%rcyl_mn**(ptlaw+2),0.)
+         tmp = max(g0*p%rcyl_mn**(-2*qgshear) - ptlaw*cs20/p%rcyl_mn**(ptlaw+2),0.)
          OO = sqrt(tmp)
          f_target(:,1) = -y(  m  )*OO
          f_target(:,2) =  x(l1:l2)*OO
          f_target(:,3) =  0.
       case('globaldisc-strat')
          tmp = g0*(p%r_mn**(-3) - cs20*p%rcyl_mn**(-4))
-         !this is also wrong!
+         !this is wrong!
          where (tmp.ge.0)
             OO=sqrt(tmp)
          elsewhere
