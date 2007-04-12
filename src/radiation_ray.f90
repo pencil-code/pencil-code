@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.132 2007-04-06 17:46:29 heidar Exp $
+! $Id: radiation_ray.f90,v 1.133 2007-04-12 13:33:23 wlyra Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -180,7 +180,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.132 2007-04-06 17:46:29 heidar Exp $")
+           "$Id: radiation_ray.f90,v 1.133 2007-04-12 13:33:23 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1051,7 +1051,7 @@ module Radiation
         Qrad0_yz=+Frad_boundary_ref/(2.*weightn(idir))
       endif
 !
-!  Set intensity equal to F
+!  Set intensity equal to a pre-defined incoming intensity
 !
       if (bc_ray_z=='F') then
         Qrad0_yz=-Srad(llstart-lrad,:,:)+Frad_boundary_ref/(2.*weightn(idir))
@@ -1095,10 +1095,10 @@ module Radiation
         Qrad0_zx=+Frad_boundary_ref/(2.*weightn(idir))
       endif
 !
-!  Set intensity equal to F
+!  Set intensity equal to a pre-defined incoming intensity
 !
       if (bc_ray_z=='F') then
-        Qrad0_zx=-Srad(:,mmstart-mrad,:)+Frad_boundary_ref/(2.*weightn(idir))
+         Qrad0_zx=-Srad(:,mmstart-mrad,:)+Frad_boundary_ref/(2.*weightn(idir))
       endif
 !
     endsubroutine radboundary_zx_set
@@ -1148,6 +1148,12 @@ module Radiation
       endif
 !                              
 !  Set intensity equal to F
+!
+      if (bc_ray_z=='F') then
+        Qrad0_xy=-Srad(:,:,nnstart-nrad)+Frad_boundary_ref/(2.*weightn(idir))
+      endif
+!
+!  Set intensity equal to a pre-defined incoming intensity
 !
       if (bc_ray_z=='F') then
         Qrad0_xy=-Srad(:,:,nnstart-nrad)+Frad_boundary_ref/(2.*weightn(idir))
@@ -1322,9 +1328,9 @@ module Radiation
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: tmp,lnrho,lnTT
-      real :: kappa0, kappa0_cgs
+      real :: kappa0, kappa0_cgs,k1,k2
       logical, save :: lfirst=.true.
-!!      real :: unit_density, unit_length
+      integer :: i
 
       select case (opacity_type)
 
@@ -1353,8 +1359,8 @@ module Radiation
         enddo
 
       case ('Tsquare') !! Morfill et al. 1985 
-         kappa0_cgs=2e-4 ! 2e-6 in D'Angelo 2003 (wrong!)
-         kappa0=kappa0_cgs!!*unit_density*unit_length
+        kappa0_cgs=2e-4 ! 2e-6 in D'Angelo 2003 (wrong!)
+        kappa0=kappa0_cgs!!*unit_density*unit_length
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
@@ -1371,7 +1377,26 @@ module Radiation
           f(:,m,n,ikapparho)=kappa0*(exp(lnrho)**2)*(exp(lnTT))**(-3.5)
         enddo
         enddo
-
+        
+      case ('proplyd')
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
+          do i=1,mx
+            if (exp(lnTT(i)).le.150) then
+              tmp(i)=2e-4*exp(lnTT(i))**2
+            elseif (exp(lnTT(i)).ge.200) then
+              k1=0.861353*lnTT(i)-4.56372
+              tmp(i)=exp(k1)
+            else 
+              k2=-5.22826*lnTT(i)+27.7010
+              tmp(i)=exp(k2)
+            endif
+          enddo
+          f(:,m,n,ikapparho)=exp(lnrho)*tmp
+        enddo
+        enddo
+        
       case ('blob')
         if (lfirst) then
           f(:,:,:,ikapparho)=kapparho_const + amplkapparho &
@@ -1477,7 +1502,7 @@ module Radiation
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!
+!y
       intent(in) :: f,p
 !
       if (NO_WARN) print*, f !(keep compiler quiet)
@@ -1666,7 +1691,7 @@ module Radiation
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,iQrad)
           slices%ready = .true.
 !
-!  Heating rate (auxiliary variable)
+!  Opacity (auxiliary variable)
 !
         case ('kapparho')
           slices%yz=f(ix_loc,m1:m2,n1:n2,ikapparho)
