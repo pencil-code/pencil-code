@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.288 2007-04-12 09:36:12 pkapyla Exp $
+### $Id: Makefile.src,v 1.289 2007-04-12 14:24:22 dhruba Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -572,19 +572,28 @@ LD_FFTW2=
 #FFLAGS=-O3 #(soleil)
 #LD_MPI= -lmpi #(soleil)
 ##
+##Dhruba on maths.qmul cluster
 ##
+#FC=/home/dhruba/mpich/bin/mpif90 -f90=/home/dhruba/bin/g95 -fno-second-underscore  #(cluster.maths.qmul.ac.uk)
+#FFLAGS= -I/home/dhruba/mpich/include/ #(cluster.maths.qmul.ac.uk)
+#CC=/home/dhruba/mpich/bin/mpicc #(cluster.maths.qmul.ac.uk)
+#LD_MPI = -lmpich #(cluster.maths.qmul.ac.uk) 
+##
+
 ## CrayXT4 - (Espoo, Finland)
 ## 1012 Dual-core 2.6GHz Opterons
+##
 #FC=ftn #(louhi)
 #F90=$(FC) #(louhi)
 #CC=cc #(louhi)
 #FFLAGS=-target=catamount -O2 #(louhi)
 #CFLAGS=-DFUNDERSC=1 -O3 #(louhi)
 #LD_MPI= #(louhi)
-
+##
 
 ## Darwin:
 ## Power Macintosh
+##
 #FC=g95
 #F77=$(FC)
 #FFLAGS=-O3
