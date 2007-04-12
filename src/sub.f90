@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.304 2007-04-08 10:13:34 ajohan Exp $
+! $Id: sub.f90,v 1.305 2007-04-12 12:52:14 brandenb Exp $
 
 module Sub
 
@@ -2167,14 +2167,20 @@ module Sub
 !  calculate del2 and graddiv, if requested
 !
       if (present(graddiv)) then
-        graddiv(:,:)=d2A(:,:,1,1)+d2A(:,:,2,2)+d2A(:,:,3,3)
+!--     graddiv(:,:)=d2A(:,:,1,1)+d2A(:,:,2,2)+d2A(:,:,3,3)
+        graddiv(:,:)=d2A(:,1,:,1)+d2A(:,2,:,2)+d2A(:,3,:,3)
         if (lspherical_coords) then
-          graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+aij(:,2,1)*r1_mn*cotth(m)&
-               -2.*r1_mn*r1_mn*aa(:,1)-r1_mn*r1_mn*cotth(m)*cotth(m)*aa(:,2)
-          graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+aij(:,2,2)*r1_mn*cotth(m)&
-               -aa(:,2)*r2_mn*sin2th(m)
-          graddiv(:,3)=graddiv(:,3)+2.*r1_mn*aij(:,1,3)+ & 
-                 r1_mn*cotth(m)*aij(:,2,3)
+!          graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+aij(:,2,1)*r1_mn*cotth(m)&
+!               -2.*r1_mn*r1_mn*aa(:,1)-r2_mn*cotth(m)*aa(:,2)
+!!--            -2.*r1_mn*r1_mn*aa(:,1)-r1_mn*r1_mn*cotth(m)*cotth(m)*aa(:,2)
+!          graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+aij(:,2,2)*r1_mn*cotth(m)&
+!               -aa(:,2)*r2_mn*sin2th(m)
+!          graddiv(:,3)=graddiv(:,3)+2.*r1_mn*aij(:,1,3)+ & 
+!                 r1_mn*cotth(m)*aij(:,2,3)
+!reordered terms, and corrected "cotth(m)*cotth(m)" to "cotth(m)"
+          graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+aij(:,2,1)*r1_mn*cotth(m)-aa(:,2)*r2_mn*cotth(m)-aa(:,1)*r2_mn*2
+          graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+aij(:,2,2)*r1_mn*cotth(m)-aa(:,2)*r2_mn*sin2th(m)
+          graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*r1_mn*2+aij(:,2,3)*r1_mn*cotth(m)
         endif
       endif
 !
@@ -2450,7 +2456,7 @@ module Sub
 !
     endsubroutine del6fjv
 !***********************************************************************
-    subroutine u_dot_grad_vec(f,k,gradf,uu,ugradf,upwind)
+    subroutine u_dot_gradu_vec(f,k,gradf,uu,ugradf,upwind)
 !
 !  u.gradu
 !  for spherical coordinates works correctly for u.gradu,
@@ -2485,7 +2491,7 @@ module Sub
       endif
 !
 !  adjustments for spherical coordinate system.
-!  The following only works correctly for u.gradu, not for general u.gradA
+!  The following now works for general u.gradA
 !
       if (lspherical_coords) then
         ugradf(:,1)=ugradf(:,1)-r1_mn*(uu(:,2)**2+uu(:,3)**2)
@@ -2495,6 +2501,59 @@ module Sub
 ! DM : this may need attention later
 !
 !  same... have to adjust it for the magnetic field or other vectors
+!
+      if (lcylindrical_coords) then
+         ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)**2)
+         ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,1)*uu(:,2))
+      endif
+!
+    endsubroutine u_dot_gradu_vec
+!***********************************************************************
+    subroutine u_dot_grad_vec(f,k,gradf,uu,ugradf,upwind)
+!
+!  u.gradu
+!  for spherical coordinates works correctly for u.gradu,
+!  not for general u.gradA
+!
+!  21-feb-07/axel+dhruba: added spherical coordinates
+!
+      use Cdata
+!
+      intent(in) :: f,k,gradf,uu,upwind
+      intent(out) :: ugradf
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3,3) :: gradf
+      real, dimension (nx,3) :: uu,ff,ugradf
+      real, dimension (nx) :: tmp
+      integer :: j,k
+      logical, optional :: upwind
+!
+!  upwind
+!
+      if (present(upwind)) then
+        do j=1,3
+          call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
+          ugradf(:,j)=tmp
+        enddo
+      else
+        do j=1,3
+          call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp)
+          ugradf(:,j)=tmp
+        enddo
+      endif
+!
+!  adjustments for spherical coordinate system.
+!  The following now works for general u.gradA
+!
+      if (lspherical_coords) then
+        ff=f(l1:l2,m,n,k:k+2)
+        ugradf(:,1)=ugradf(:,1)-r1_mn*(uu(:,2)*ff(:,2)+uu(:,3)*ff(:,3))
+        ugradf(:,2)=ugradf(:,2)+r1_mn*(uu(:,2)*ff(:,1)-uu(:,3)*ff(:,3)*cotth(m))
+        ugradf(:,3)=ugradf(:,3)+r1_mn*(uu(:,3)*ff(:,1)+uu(:,3)*ff(:,2)*cotth(m))
+      endif
+!
+!  the following currently only works for u.gradu, not u.gradA
 !
       if (lcylindrical_coords) then
          ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)**2)

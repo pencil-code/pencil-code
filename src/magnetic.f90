@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.406 2007-04-07 23:54:45 wlyra Exp $
+! $Id: magnetic.f90,v 1.407 2007-04-12 12:52:14 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -33,15 +33,17 @@ module Magnetic
 !
 ! Slice precalculation buffers
 !
-  real, target, dimension (nx,ny,3) :: bb_xy
-  real, target, dimension (nx,ny,3) :: bb_xy2
-  real, target, dimension (nx,nz,3) :: bb_xz
-  real, target, dimension (ny,nz,3) :: bb_yz
+  real, target, dimension (nx,ny,3) :: bb_xy,jj_xy
+  real, target, dimension (nx,ny,3) :: bb_xy2,jj_xy2
+  real, target, dimension (nx,nz,3) :: bb_xz,jj_xz
+  real, target, dimension (ny,nz,3) :: bb_yz,jj_yz
 !
   real, target, dimension (nx,ny) :: b2_xy,jb_xy
   real, target, dimension (nx,ny) :: b2_xy2,jb_xy2
   real, target, dimension (ny,nz) :: b2_yz,jb_yz
   real, target, dimension (nx,nz) :: b2_xz,jb_xz
+!
+  real, dimension (mx,my) :: alpha_input
 !
 ! Parameters
 !
@@ -227,7 +229,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.406 2007-04-07 23:54:45 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.407 2007-04-12 12:52:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -400,6 +402,15 @@ module Magnetic
             'Resistivity heating only works with regular resistivity!')
       endif
 !
+!  check for alpha profile
+!
+      if (alpha_profile=='read') then
+        print*,'read alpha profile'
+        open(1,file='alpha_input.dat',form='unformatted')
+        read(1) alpha_input
+        close(1)
+      endif
+!
 !  Register an extra aux slot for bb if requested (so bb and jj are written
 !  to snapshots and can be easily analyzed later). For this to work you
 !  must reserve enough auxiliary workspace by setting, for example,
@@ -518,7 +529,7 @@ module Magnetic
         case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
-        case('sinxcosz'); call sinx_siny_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),0.)
+        case('sinxcosz'); call sinx_siny_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),kz_aa(j))
         case('sinycosz'); call cosx_siny_cosz(amplaa(j),f,iax,kx_aa(j),ky_aa(j),0.)
         case('cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
           call cosy_sinz(amplaa(j),f,iay,ky_aa(j),kz_aa(j))
@@ -638,8 +649,9 @@ module Magnetic
 !  jj pencil always needed when in Weyl gauge
 !
       if ( (hall_term/=0. .and. ldt) .or. height_eta/=0. .or. ip<=4 .or. &
-          (lweyl_gauge) ) &
+          (lweyl_gauge) .or. (.not.lcartesian_coords) ) &
           lpenc_requested(i_jj)=.true.
+      if (eta/=0..and.(.not.lweyl_gauge)) lpenc_requested(i_del2a)=.true.
       if (dvid/=0.) lpenc_video(i_jb)=.true.
       if (lresi_eta_const .or. lresi_shell .or. &
           lresi_eta_shock .or. lresi_smagorinsky .or. &
@@ -871,16 +883,16 @@ module Magnetic
       endif
       if (lpencil_in(i_ss12)) lpencil_in(i_sj)=.true.
 !  Pencils bij, del2a and graddiva come in a bundle.
-      if ( lpencil_in(i_bij) .and. &
-          (lpencil_in(i_del2a).or.lpencil_in(i_graddiva)) ) then
-        lpencil_in(i_del2a)=.false.
-        lpencil_in(i_graddiva)=.false.
-      endif
-      if (lpencil_in(i_del2a) .and. &
-          (lpencil_in(i_bij).or.lpencil_in(i_graddiva)) ) then
-        lpencil_in(i_bij)=.false.
-        lpencil_in(i_graddiva)=.false.
-      endif
+!     if ( lpencil_in(i_bij) .and. &
+!         (lpencil_in(i_del2a).or.lpencil_in(i_graddiva)) ) then
+!       lpencil_in(i_del2a)=.false.
+!       lpencil_in(i_graddiva)=.false.
+!     endif
+!     if (lpencil_in(i_del2a) .and. &
+!         (lpencil_in(i_bij).or.lpencil_in(i_graddiva)) ) then
+!       lpencil_in(i_bij)=.false.
+!       lpencil_in(i_graddiva)=.false.
+!     endif
 !
     endsubroutine pencil_interdep_magnetic
 !***********************************************************************
@@ -1071,6 +1083,7 @@ module Magnetic
         case('nothing'); alpha_tmp=1.
         case('siny'); alpha_tmp=sin(y(m))
         case('cosy'); alpha_tmp=cos(y(m))
+        case('read'); alpha_tmp=alpha_input(l1:l2,m)
         endselect
 !
 !  possibility of dynamical alpha
@@ -1681,6 +1694,12 @@ module Magnetic
           if (m==iy_loc)  bb_xz(:,n-n1+1,j)=p%bb(:,j)
           if (n==iz_loc)  bb_xy(:,m-m1+1,j)=p%bb(:,j)
           if (n==iz2_loc) bb_xy2(:,m-m1+1,j)=p%bb(:,j)
+        enddo
+        do j=1,3
+          jj_yz(m-m1+1,n-n1+1,j)=p%jj(ix_loc-l1+1,j)
+          if (m==iy_loc)  jj_xz(:,n-n1+1,j)=p%jj(:,j)
+          if (n==iz_loc)  jj_xy(:,m-m1+1,j)=p%jj(:,j)
+          if (n==iz2_loc) jj_xy2(:,m-m1+1,j)=p%jj(:,j)
         enddo
         b2_yz(m-m1+1,n-n1+1)=p%b2(ix_loc-l1+1)
         if (m==iy_loc)  b2_xz(:,n-n1+1)=p%b2
@@ -2478,6 +2497,20 @@ module Magnetic
             slices%xz=>bb_xz(:,:,slices%index)
             slices%xy=>bb_xy(:,:,slices%index)
             slices%xy2=>bb_xy2(:,:,slices%index)
+            if (slices%index < 3) slices%ready = .true.
+          endif
+!
+!  Magnetic field (derived variable)
+!
+        case ('jj')
+          if (slices%index >= 3) then
+            slices%ready = .false.
+          else
+            slices%index = slices%index+1
+            slices%yz=>jj_yz(:,:,slices%index)
+            slices%xz=>jj_xz(:,:,slices%index)
+            slices%xy=>jj_xy(:,:,slices%index)
+            slices%xy2=>jj_xy2(:,:,slices%index)
             if (slices%index < 3) slices%ready = .true.
           endif
 !
