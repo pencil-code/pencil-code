@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.189 2007-03-26 07:43:47 brandenb Exp $
+# $Id: getconf.csh,v 1.190 2007-04-12 09:37:08 pkapyla Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -360,6 +360,15 @@ else if ($hn =~ compute-*.local) then
   set one_local_disc = 0
   set local_binary = 0
 #  setenv SCRATCH_DIR $TMPDIR
+
+else if ($hn =~ louhi-login*) then
+  echo "Louhi - CSC, Espoo, Finland"
+  set mpirunops = ''
+  set mpirun = 'yod'
+  set npops = "-sz $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set local_binary = 0
 
 else if ($hn =~ corona*) then
   echo "Corona SunFire - CSC, Espoo, Finland"

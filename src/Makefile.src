@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.287 2007-04-06 13:01:29 ajohan Exp $
+### $Id: Makefile.src,v 1.288 2007-04-12 09:36:12 pkapyla Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -571,6 +571,17 @@ LD_FFTW2=
 #LIBMPISUFFIX=_#(cict*)
 #FFLAGS=-O3 #(soleil)
 #LD_MPI= -lmpi #(soleil)
+##
+##
+## CrayXT4 - (Espoo, Finland)
+## 1012 Dual-core 2.6GHz Opterons
+#FC=ftn #(louhi)
+#F90=$(FC) #(louhi)
+#CC=cc #(louhi)
+#FFLAGS=-target=catamount -O2 #(louhi)
+#CFLAGS=-DFUNDERSC=1 -O3 #(louhi)
+#LD_MPI= #(louhi)
+
 
 ## Darwin:
 ## Power Macintosh
