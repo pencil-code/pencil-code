@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.322 2007-04-08 10:13:27 ajohan Exp $
+! $Id: density.f90,v 1.323 2007-04-18 19:47:11 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -25,7 +25,7 @@ module Density
   use Messages
   use EquationOfState, only: cs0,cs20,lnrho0,rho0, &
                              gamma,gamma1,cs2top,cs2bot, &
-                             mpoly,beta_glnrho_global
+                             mpoly,beta_glnrho_global,get_cp1
 
   use Special
 
@@ -113,7 +113,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.322 2007-04-08 10:13:27 ajohan Exp $")
+           "$Id: density.f90,v 1.323 2007-04-18 19:47:11 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -240,7 +240,7 @@ module Density
 !
         if (lstratified .or. lnumerical_equilibrium) then
            if (lroot) print*,'initializing global gravity in density'
-           call farray_register_global('gg',iglobal_gg,vector=3) 
+           call farray_register_global('gg',iglobal_gg,vector=3)
         endif
 !
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
@@ -353,6 +353,7 @@ module Density
       case('mode'); call modes(ampllnrho,coeflnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho,xx,yy,zz)
       case('blob'); call blob(ampllnrho,f,ilnrho,radius_lnrho,0.,0.,0.)
       case('isothermal'); call isothermal_density(f)
+      case('local-isothermal'); call local_isothermal_density(f)  
       case('stratification'); call stratification(f,strati_type)
       case('polytropic_simple'); call polytropic_simple(f)
       case('hydrostatic-z', '1'); print*, &
@@ -681,7 +682,7 @@ module Density
       !
         call information('init_lnrho','kws hydrostatic in spherical shell and exterior')
         call shell_lnrho(f)
-
+        
       case('globaldisc')
 !minimum mass solar nebula
         if (lroot)  print*,'init_lnrho: initialize initial condition for Keplerian global disc'
@@ -1387,7 +1388,7 @@ module Density
 !
       if (ldiagnos) then
         if (idiag_rhom/=0)     call sum_mn_name(p%rho,idiag_rhom)
-        if (idiag_totmass/=0)  call sum_lim_mn_name(p%rho,idiag_totmass,p)
+        if (idiag_totmass/=0)  call integrate_mn_name(p%rho,idiag_totmass)
         if (idiag_rhomin/=0) &
             call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)
         if (idiag_rhomax/=0)   call max_mn_name(p%rho,idiag_rhomax)
@@ -1577,6 +1578,7 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: pot,tmp
+      real :: cp1
 !
 !  Stratification depends on the gravity potential
 !
@@ -1586,6 +1588,7 @@ module Density
           call fatal_error('isothermal_density','for gamma/=1.0, you need entropy or temperature!');
       endif
 !
+      call get_cp1(cp1)
       do n=n1,n2
         do m=m1,m2
           call potential(x(l1:l2),y(m),z(n),pot=pot)
@@ -1593,7 +1596,7 @@ module Density
           f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + lnrho0 + tmp
           if (lentropy) f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) &
                -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
-          if (ltemperature) f(l1:l2,m,n,ilnTT)=log(cs20/gamma1)
+          if (ltemperature) f(l1:l2,m,n,ilnTT)=log(cs20*cp1/gamma1)
         enddo
       enddo
 !
@@ -1604,6 +1607,50 @@ module Density
       cs2top=cs20
 !
     endsubroutine isothermal_density
+!***********************************************************************
+    subroutine local_isothermal_density(f)
+!                                                                   
+!  Stratification depends on the gravity potential, which in turn   
+!  varies with radius. This reproduces the initial condition of the 
+!  locally isothermal approximation in which temperature is a power 
+!  law of radial distance
+!
+!  18-apr-07/wlad : coded
+!
+      use Gravity
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: grav_dummy
+      real, dimension (nx) :: pot,pottmp,tmp,rr,cs2,lnrhomid
+      real :: cp1,pot0_dummy
+
+      if (lroot) print*,'isothermal_density: local isothermal stratification'
+      if (gamma/=1.0) then
+        if ((.not. lentropy) .and. (.not. ltemperature)) &
+          call fatal_error('local_isothermal_density','for gamma/=1.0, you need entropy or temperature!');
+      endif
+!
+      call get_cp1(cp1)
+      do n=n1,n2
+        do m=m1,m2
+          rr=sqrt(x(l1:l2)**2+y(m)**2)!+z(n)**2)
+          cs2=cs20/(rr/r_ref)**ptlaw
+          lnrhomid=lnrho0 - plaw*log(rr/r_ref)
+          call potential(x(l1:l2),y(m),z(n),rr,pot=tmp)
+          !this potential gives the whole gradient. 
+          !I want the function that partially derived in 
+          !z gives g0/r^3 * z. This is *NOT* -g0/r
+          pot=-tmp/rr**2 * .5*z(n)**2
+          tmp=-gamma*pot/cs2
+          f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + lnrhomid + tmp
+          if (ltemperature) f(l1:l2,m,n,ilnTT)=log(cs2*cp1/gamma1)
+        enddo
+      enddo
+!
+      cs2bot=cs20
+      cs2top=cs20
+!
+    endsubroutine local_isothermal_density
 !***********************************************************************
     subroutine polytropic_simple(f)
 !
