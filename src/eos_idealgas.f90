@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.82 2007-03-02 09:06:28 dintrans Exp $
+! $Id: eos_idealgas.f90,v 1.83 2007-04-18 19:44:45 wlyra Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -109,7 +109,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.82 2007-03-02 09:06:28 dintrans Exp $')
+           '$Id: eos_idealgas.f90,v 1.83 2007-04-18 19:44:45 wlyra Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -696,7 +696,7 @@ module EquationOfState
 !
       real, intent(out) :: cp1_
 !
-      cp1_=cp
+      cp1_=cp1
 !
     end subroutine get_cp1
 !***********************************************************************
