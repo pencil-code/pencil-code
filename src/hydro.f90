@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.341 2007-04-10 16:54:16 wlyra Exp $
+! $Id: hydro.f90,v 1.342 2007-04-18 21:59:19 joishi Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -198,7 +198,9 @@ module Hydro
                                 ! DIAG_DOC:   \quad(mean $z$-momentum density)
   integer :: idiag_rumax=0      ! DIAG_DOC: $\max(\varrho |\uv|)$
                                 ! DIAG_DOC:   \quad(maximum modulus of momentum)
-  integer :: idiag_ruxuymz=0    ! DIAG_DOC: 
+  integer :: idiag_ruxuym=0     ! DIAG_DOC: $\left<\varrho u_x u_y\right>$
+                                ! DIAG_DOC:   \quad(mean Reynold's stress)
+  integer :: idiag_ruxuymz=0    ! DIAG_DOC:
   integer :: idiag_rufm=0       ! DIAG_DOC: 
   !
   integer :: idiag_dtu=0        ! DIAG_DOC: 
@@ -286,7 +288,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.341 2007-04-10 16:54:16 wlyra Exp $")
+           "$Id: hydro.f90,v 1.342 2007-04-18 21:59:19 joishi Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -769,12 +771,14 @@ module Hydro
       if (idiag_u2u13m/=0) lpenc_diagnos(i_u2u13)=.true.
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_rumax/=0 .or. &
           idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0) &
-        lpenc_diagnos(i_u2)=.true.
+          lpenc_diagnos(i_u2)=.true.
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
-      if (idiag_fmassz/=0 .or. idiag_ruxuymz/=0) lpenc_diagnos(i_rho)=.true.
+      if (idiag_fmassz/=0 .or. idiag_ruxuym/=0 .or. idiag_ruxuymz/=0 .or. &
+          idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0) &
+          lpenc_diagnos(i_rho)=.true.
 
       if (idiag_ormr/=0 .or. idiag_opmr/=0 .or. idiag_ozmr/=0) &
-           lpenc_diagnos(i_oo)=.true.
+          lpenc_diagnos(i_oo)=.true.
 
       if (idiag_totangmom/=0 ) lpenc_diagnos(i_rcyl_mn)=.true.
 
@@ -1192,6 +1196,7 @@ module Hydro
         if (idiag_uxuym/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,2),idiag_uxuym)
         if (idiag_uxuzm/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,3),idiag_uxuzm)
         if (idiag_uyuzm/=0)   call sum_mn_name(p%uu(:,2)*p%uu(:,3),idiag_uyuzm)
+        if (idiag_ruxuym/=0)  call sum_mn_name(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuym)
         if (idiag_duxdzma/=0) call sum_mn_name(abs(p%uij(:,1,3)),idiag_duxdzma)
         if (idiag_duydzma/=0) call sum_mn_name(abs(p%uij(:,2,3)),idiag_duydzma)
 !
@@ -1998,7 +2003,8 @@ module Hydro
         idiag_fxbxm=0
         idiag_fxbym=0
         idiag_fxbzm=0
-
+        idiag_ruxuym=0
+        idiag_ruxuymz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -2028,6 +2034,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uxuym',idiag_uxuym)
         call parse_name(iname,cname(iname),cform(iname),'uxuzm',idiag_uxuzm)
         call parse_name(iname,cname(iname),cform(iname),'uyuzm',idiag_uyuzm)
+        call parse_name(iname,cname(iname),cform(iname),'ruxuym',idiag_ruxuym)
         call parse_name(iname,cname(iname),cform(iname),'ox2m',idiag_ox2m)
         call parse_name(iname,cname(iname),cform(iname),'oy2m',idiag_oy2m)
         call parse_name(iname,cname(iname),cform(iname),'oz2m',idiag_oz2m)
@@ -2199,6 +2206,7 @@ module Hydro
         write(3,*) 'i_uxuym=',idiag_uxuym
         write(3,*) 'i_uxuzm=',idiag_uxuzm
         write(3,*) 'i_uyuzm=',idiag_uyuzm
+        write(3,*) 'i_ruxuym=',idiag_ruxuym
         write(3,*) 'i_ox2m=',idiag_ox2m
         write(3,*) 'i_oy2m=',idiag_oy2m
         write(3,*) 'i_oz2m=',idiag_oz2m
