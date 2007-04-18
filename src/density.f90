@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.323 2007-04-18 19:47:11 wlyra Exp $
+! $Id: density.f90,v 1.324 2007-04-18 20:03:00 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -113,7 +113,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.323 2007-04-18 19:47:11 wlyra Exp $")
+           "$Id: density.f90,v 1.324 2007-04-18 20:03:00 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1636,7 +1636,7 @@ module Density
           rr=sqrt(x(l1:l2)**2+y(m)**2)!+z(n)**2)
           cs2=cs20/(rr/r_ref)**ptlaw
           lnrhomid=lnrho0 - plaw*log(rr/r_ref)
-          call potential(x(l1:l2),y(m),z(n),rr,pot=tmp)
+          call potential(x(l1:l2),y(m),z(n),POT=tmp,RMN=rr)
           !this potential gives the whole gradient. 
           !I want the function that partially derived in 
           !z gives g0/r^3 * z. This is *NOT* -g0/r

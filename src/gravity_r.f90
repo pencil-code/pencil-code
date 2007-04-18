@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.13 2007-04-05 13:29:46 wlyra Exp $
+! $Id: gravity_r.f90,v 1.14 2007-04-18 20:03:00 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -47,15 +47,15 @@ module Gravity
   real :: z1,z2,zref,zgrav,gravz,zinfty
   character (len=labellen) :: grav_profile='const'
   logical :: lnumerical_equilibrium=.false.,lstratified=.false.
-  logical :: lcylindrical_gravity=.false.
+  logical :: lcylindrical_gravity=.false.,lgravity_gas=.true.
 
   integer :: iglobal_gg=0
 
   namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-       lcylindrical_gravity,lstratified,qgshear
+       lcylindrical_gravity,lstratified,qgshear,lgravity_gas
 
   namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-       lcylindrical_gravity,lstratified,qgshear
+       lcylindrical_gravity,lstratified,qgshear,lgravity_gas
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
@@ -81,7 +81,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.13 2007-04-05 13:29:46 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.14 2007-04-18 20:03:00 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -110,7 +110,6 @@ module Gravity
       logical       :: lstarting
       logical, save :: first=.true.
       logical       :: lpade=.true. ! set to false for 1/r potential
-
       !ajwm - should this be done on RELOAD too??
       if (first) then
 !
@@ -365,36 +364,15 @@ module Gravity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       integer, pointer :: iglobal_gg
-      real,dimension(nx) :: rr
-!      real, dimension (nx) :: g_r
-!
-!  evr is the radial unit vector
-!
-!if (.false.) then               ! switch between the two methods for timing
-!if (.true.) then               ! switch between the two methods for timing
-!
-!       g_r = - r_mn * poly( (/ 2*(cpot(1)*cpot(4)-cpot(2)), &
-!                              3*(cpot(1)*cpot(5)-cpot(3)), &
-!                              4*cpot(1)*cpot(3), &
-!                              cpot(5)*cpot(2)-cpot(3)*cpot(4), &
-!                              2*cpot(2)*cpot(3), &
-!                              cpot(3)**2  /), r_mn) &
-!                   / poly( (/ 1., 0., cpot(4), cpot(5), cpot(3) /), r_mn)**2
-!      g_r = - r_mn**2 * poly( (/ 3., 0., 1. /), r_mn) &
-!                   / poly( (/ 1., 0., 1., 1. /), r_mn)**2
-!
-!      gg_mn = evr*spread(g_r,2,3)
-!      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg_mn
-!else
+
       call farray_use_global('gg',iglobal_gg)
 ! 
-      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
-                  + f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
+! if statement for testing purposes
 !
-!
-!endif
-!
-! if (headtt) call output_pencil(trim(datadir)//'/proc0/gg0.dat',gg_mn,3)
+      if (lgravity_gas) then
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
+             + f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
+      endif
 !
       if (NO_WARN) print*,f,p !(to keep compiler quiet)
 !
@@ -435,7 +413,7 @@ module Gravity
 
     endsubroutine potential_global
 !***********************************************************************
-    subroutine potential_penc(xmn,ymn,zmn,rmn, pot,pot0, grav)
+    subroutine potential_penc(xmn,ymn,zmn,pot,pot0,grav,rmn)
 !
 !  Gravity potential along one pencil
 !
@@ -465,6 +443,9 @@ module Gravity
       case ('geo-kws','smoothed-newton')
         pot=-g0*(rmn**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
         if (present(pot0)) pot0=-g0/r0_pot
+
+      case ('no-smooth')
+        pot=-g0/rmn
 
       case default
         pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rad) &
