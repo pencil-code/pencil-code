@@ -58,6 +58,7 @@ module Grid
       use Cdata, only: mx,my,mz
       use Cdata, only: Lx,Ly,Lz
       use Cdata, only: dx_1,dy_1,dz_1
+      use Cdata, only: xprim,yprim,zprim
       use Cdata, only: dx_tilde,dy_tilde,dz_tilde
       use Cdata, only: dxmin, dxmax
       use Cdata, only: x0,y0,z0
@@ -80,9 +81,9 @@ module Grid
       real, dimension(3,3) :: dxyz_step
       real :: xi1star,xi2star,xi3star
 
-      real, dimension(mx) :: g1,g1der1,g1der2,xi1,xprim,xprim2
-      real, dimension(my) :: g2,g2der1,g2der2,xi2,yprim,yprim2
-      real, dimension(mz) :: g3,g3der1,g3der2,xi3,zprim,zprim2
+      real, dimension(mx) :: g1,g1der1,g1der2,xi1,xprim2
+      real, dimension(my) :: g2,g2der1,g2der2,xi2,yprim2
+      real, dimension(mz) :: g3,g3der1,g3der2,xi3,zprim2
 
       real :: a,dummy=0.
       integer :: i
@@ -295,16 +296,26 @@ module Grid
         dz_1=1./zprim
         dz_tilde=-zprim2/zprim**2
       endif
-
-!FIXME:
-! This dxmin/max concept is not compatible with the concept of a spacially
-! varying grid.
 !
       dxmin = minval( (/dx,dy,dz,huge(dx)/), &
                 MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
+      
       dxmax = maxval( (/dx,dy,dz,epsilon(dx)/), &
                 MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
-
+!      
+      if (.not. lequidist(0) .and. nxgrid > 1) then
+        dxmin = minval((/xprim(l1:l2),dxmin/))
+        dxmax = minval((/xprim(l1:l2),dxmax/))
+      endif
+      if (.not. lequidist(1) .and. nygrid > 1) then
+        dxmin = minval((/yprim(m1:m2),dxmin/))
+        dxmax = minval((/yprim(m1:m2),dxmax/))
+      endif
+      if (.not. lequidist(2) .and. nzgrid > 1) then
+        dxmin = minval((/zprim(n1:n2),dxmin/))
+        dxmax = minval((/zprim(n1:n2),dxmax/))
+      endif
+!
     endsubroutine construct_grid
 !***********************************************************************
     subroutine pencil_criteria_grid()

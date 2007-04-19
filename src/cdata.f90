@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.362 2007-03-27 15:11:48 brandenb Exp $
+! ! $Id: cdata.f90,v 1.363 2007-04-19 10:51:33 bingert Exp $
 
 module Cdata
 
@@ -8,9 +8,9 @@ module Cdata
   public
 
   integer :: itorder=3
-  real, dimension (mx) :: x,dx_1,dx_tilde
-  real, dimension (my) :: y,dy_1,dy_tilde
-  real, dimension (mz) :: z,dz_1,dz_tilde
+  real, dimension (mx) :: x,dx_1,dx_tilde,xprim
+  real, dimension (my) :: y,dy_1,dy_tilde,yprim
+  real, dimension (mz) :: z,dz_1,dz_tilde,zprim
   real, dimension (nx) :: dxyz_2, dxyz_4, dxyz_6
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
   real, dimension (nxgrid) :: kx_fft

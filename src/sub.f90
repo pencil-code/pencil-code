@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.305 2007-04-12 12:52:14 brandenb Exp $
+! $Id: sub.f90,v 1.306 2007-04-19 10:51:33 bingert Exp $
 
 module Sub
 
@@ -526,17 +526,15 @@ module Sub
 !   13-nov-06/tony: modified to handle stretched mesh
 !
       use Cdata
-      use Grid
 !
       real, dimension (nx) :: a,fac
       integer :: iname
 !
-
       fac=1.
-!ajwm FIX ME: Divisions are evil!
-      if (.not.lequidist(1)) fac=fac/dx_1(l1:l2)
-      if (.not.lequidist(2)) fac=fac/dy_1(m)
-      if (.not.lequidist(3)) fac=fac/dz_1(n)
+!
+      if (.not.lequidist(1)) then; fac=fac*xprim(l1:l2); else; fac=fac*dx; endif
+      if (.not.lequidist(2)) then; fac=fac*yprim(m);     else; fac=fac*dy; endif
+      if (.not.lequidist(3)) then; fac=fac*zprim(n);     else; fac=fac*dz; endif
       if (lfirstpoint) then
         fname(iname)=sum(a*fac)
       else
@@ -5034,7 +5032,7 @@ nameloop: do
 !
 !     call dot2_mn(hhh,hhh2,PRECISE_SQRT=.true.)
       call dot2_mn(hhh,hhh2,FAST_SQRT=.true.)
-      quenchfactor=1./max(1.,limiter_tensordiff*hhh2*dxmin)
+      quenchfactor=1./max(1.,limiter_tensordiff*hhh2*dxmax)
       call multsv_mn(quenchfactor,hhh,hhh)
       call dot_mn(hhh,gecr,tmp)
 !
