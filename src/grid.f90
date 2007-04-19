@@ -303,15 +303,15 @@ module Grid
       dxmax = maxval( (/dx,dy,dz,epsilon(dx)/), &
                 MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
 !
-      if (.not. lequidist(0) .and. nxgrid > 1) then
+      if (.not. lequidist(1) .and. nxgrid > 1) then
         dxmin = minval((/xprim(l1:l2)/))
         dxmax = minval((/xprim(l1:l2)/))
       endif
-      if (.not. lequidist(1) .and. nygrid > 1) then
+      if (.not. lequidist(2) .and. nygrid > 1) then
         dxmin = minval((/yprim(m1:m2)/))
         dxmax = minval((/yprim(m1:m2)/))
       endif
-      if (.not. lequidist(2) .and. nzgrid > 1) then
+      if (.not. lequidist(3) .and. nzgrid > 1) then
         dxmin = minval((/zprim(n1:n2)/))
         dxmax = minval((/zprim(n1:n2)/))
       endif
