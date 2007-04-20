@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.89 2007-04-08 10:13:33 ajohan Exp $
+! $Id: prints.f90,v 1.90 2007-04-20 20:06:38 dobler Exp $
 
 module Print
 
@@ -135,7 +135,7 @@ module Print
 !  Only those numbers are given (and computed) that are
 !  also listed in print.in.
 !
-        if (first) print*
+        if (first) write(*,*)
         if (first) write(*,'(" ",A)') trim(legend)
 !
 !  write legend to extra file
@@ -149,7 +149,7 @@ module Print
 !
 !  put output line into a string and remove spurious dots
 !
-        if (ldebug) print*,'bef. writing prints'
+        if (ldebug) write(*,*) 'bef. writing prints'
         write(line,trim(fform)) fname(1:nname)
         index_d=index(line,'. ')
         if (index_d >= 1) then
@@ -200,7 +200,7 @@ module Print
         call mpibcast_real(gcc2m,1)
       endif
 !
-      if (ldebug) print*,'exit prints'
+      if (ldebug) write(*,*) 'ixit prints'
       first = .false.
     endsubroutine prints
 !***********************************************************************
@@ -266,7 +266,7 @@ module Print
         if (lwrite_zaverages)   call write_zaverages(ch2davg)
         if (lwrite_phiaverages) call write_phiaverages(ch2davg)
         !
-        if (ip<=10) print*, 'write_2daverages: wrote phi(etc.)avgs'//ch2davg
+        if (ip<=10) write(*,*) 'write_2daverages: wrote phi(etc.)avgs'//ch2davg
       endif
 !
 !  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
@@ -367,7 +367,7 @@ module Print
         close(1)
       endif
 !
-      if (NO_WARN) print*, ch       ! (keep compiler quiet)
+      if (NO_WARN) write(*,*) ch       ! (keep compiler quiet)
 !
     endsubroutine write_yaverages
 !***********************************************************************
@@ -388,7 +388,7 @@ module Print
         close(1)
       endif
 !
-      if (NO_WARN) print*, ch       ! (keep compiler quiet)
+      if (NO_WARN) write(*,*) ch       ! (keep compiler quiet)
 !
     endsubroutine write_zaverages
 !***********************************************************************
