@@ -27,5 +27,7 @@ PARTICLES    = noparticles
 
 FOURIER      =   fourier_fftpack
 
-FFLAGS_GENERAL=-r8
-CFLAGS_GENERAL=-DDOUBLE_PRECISION
+
+# Use double precision
+REAL_PRECISION = double
+

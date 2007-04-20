@@ -20,7 +20,7 @@ GRAVITY   = gravity_simple
 FORCING   = noforcing
 SHEAR     = noshear
 
+
 # Use double precision
-FFLAGS_GENERAL=-r8
-CFLAGS_GENERAL=-DDOUBLE_PRECISION
+REAL_PRECISION = double
 

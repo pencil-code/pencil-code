@@ -6,27 +6,29 @@
 LIBSIG=-L$(HOME)/f90/lib
 LDMPI=-lmpi
 
-MPICOMM  =nompicomm
-GLOBAL   =noglobal
+MPICOMM      = nompicomm
+GLOBAL       = noglobal
 
-HYDRO    =  hydro
-DENSITY  =  density
-ENTROPY  =noentropy
-MAGNETIC =nomagnetic
-RADIATION=noradiation
-PSCALAR  =nopscalar
-IONIZATION =   ionization_fixed
+HYDRO        =   hydro
+DENSITY      =   density
+ENTROPY      = noentropy
+MAGNETIC     = nomagnetic
+RADIATION    = noradiation
+PSCALAR      = nopscalar
+IONIZATION   =   ionization_fixed
 
-GRAVITY  =nogravity
-FORCING  =noforcing
-IO       =io_dist
-SHEAR    =noshear
+GRAVITY      = nogravity
+FORCING      = noforcing
+IO           =   io_dist
+SHEAR        = noshear
 
-DUSTDENSITY =  dustdensity
-DUSTVELOCITY=  dustvelocity
+DUSTDENSITY  =   dustdensity
+DUSTVELOCITY =   dustvelocity
 
-FFTPACK  =nofftpack
-FFT      =nofft
+FFTPACK      = nofftpack
+FFT          = nofft
 
-FFLAGS_GENERAL=-r8
-CFLAGS_GENERAL=-DDOUBLE_PRECISION
+
+# Use double precision
+REAL_PRECISION = double
+

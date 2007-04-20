@@ -19,5 +19,6 @@ SHEAR     =   shear
 
 PARTICLES =   particles_dust
 
-REAL_PRECISION=double
-CFLAGS_GENERAL=-DDOUBLE_PRECISION
+
+# Use double precision
+REAL_PRECISION = double

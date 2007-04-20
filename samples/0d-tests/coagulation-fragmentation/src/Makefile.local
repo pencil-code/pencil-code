@@ -25,5 +25,6 @@ PARTICLES        =   particles_dust
 PARTICLES_RADIUS =   particles_radius
 PARTICLES_NUMBER =   particles_number
 
-FFLAGS_GENERAL=-r8
-CFLAGS_GENERAL=-DDOUBLE_PRECISION
+
+# Use double precision
+REAL_PRECISION = double

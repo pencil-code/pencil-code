@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.357 2007-04-03 20:45:52 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.358 2007-04-20 21:13:48 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2007-04-03 20:45:52 $ $,~ $ $Revision: 1.357 $ $}
+%\date{$ $Date: 2007-04-20 21:13:48 $ $,~ $ $Revision: 1.358 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2007-04-03 20:45:52 $ $,~ $ $Revision: 1.357 $ $}\\
+  \emph{$ $Date: 2007-04-20 21:13:48 $ $,~ $ $Revision: 1.358 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3322,27 +3322,31 @@ This can be done by setting \var{lprocz_slowest}=\code{F}.
 With many compilers, you can easily switch to double precision (8-byte
 floating point numbers) as follows.
 
-Edit \file[Makefile.local]{src/Makefile.local} and add the lines
+Add the lines
 \begin{alltt}
-  FFLAGS_GENERAL=-r8
-  CFLAGS_GENERAL=-DDOUBLE_PRECISION \
+  # Use double precision
+  REAL_PRECISION = double
 \end{alltt}
-In addition, if you are running MPI, replace 
-\begin{alltt}
-  MPICOMM=mpicomm \
-\end{alltt}
-by
-\begin{alltt}
-  MPICOMM=mpicomm_double \
-\end{alltt}
+to \file[Makefile.local]{src/Makefile.local} and (re-)run
+\cmd{pc_setupsrc}.
+
+If \var{REAL_PRECISION} is set to `double', the flag \var{FFLAGS_DOUBLE}
+is appended to the Fortran compile flags.
+The default for \var{FFLAGS_DOUBLE} is \code{-r8}, which works for
+\name{g95} or \cmd{ifort}; for \name{gfortran}, you need to make sure that
+\var{FFLAGS_DOUBLE} is set to \code{-fdefault-real-8}.
+
+You can see the flags in \file{src/Makefile.inc}, which is the first place
+to check if you have problems compiling for double precision.
+
+\medskip
+
 Using double precision might be important in turbulence runs where
-the resolution is $256^3$ meshpoints and above.
+the resolution is $256^3$ meshpoints and above (although such runs
+often seem to work fine at single precision).
 The procedure \file[realtodouble.x]{postproc/src/realtodouble.x} can be
 used to convert existing
 \file{var.dat} and \file{grid.dat} files to double precision.
-% Note: the \code{kind} value on many compiles is 8 for double precision,
-% but with the NAG compiler it is 2.
-% wd: One shouldn't use explicit KIND values anyway
 
 % ---------------------------------------------------------------------- %
 
@@ -5467,7 +5471,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2007-04-03 20:45:52 $ $,~ $ $Revision: 1.357 $ $}
+  \hfill\normalsize\rm$ $Date: 2007-04-20 21:13:48 $ $,~ $ $Revision: 1.358 $ $}
 
 \section{Timings}
 
@@ -8244,6 +8248,8 @@ the latest set of parameters, you need to look at the code.
 The following table lists all (at the time of writing, September 2002)
 possible inputs to the file \file{print.in}.
 
+\input{diag-table.tex}
+
 % ---------------------------------------------------------------------- %
 \begin{longtable}{lp{0.7\textwidth}}
 \toprule
@@ -8838,7 +8844,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.357 2007-04-03 20:45:52 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.358 2007-04-20 21:13:48 dobler Exp $ $}
 
 
 \end{document}

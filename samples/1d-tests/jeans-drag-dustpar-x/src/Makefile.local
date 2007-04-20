@@ -21,5 +21,6 @@ PARTICLES_SELFGRAVITY =   particles_selfgravity
 FOURIER     =   fourier_fftpack
 POWER       = nopower_spectrum
 
-FFLAGS_GENERAL=-r8
-CFLAGS_GENERAL=-DDOUBLE_PRECISION
+
+# Use double precision
+REAL_PRECISION = double

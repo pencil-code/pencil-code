@@ -26,7 +26,9 @@ DUSTVELOCITY = nodustvelocity
 PARTICLES             =   particles_dust
 PARTICLES_SELFGRAVITY =   particles_selfgravity
 
-FOURIER =   fourier_fftpack
+FOURIER      =   fourier_fftpack
 
-FFLAGS_GENERAL=-r8
-CFLAGS_GENERAL=-DDOUBLE_PRECISION
+
+# Use double precision
+REAL_PRECISION = double
+
