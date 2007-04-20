@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.306 2007-04-19 10:51:33 bingert Exp $
+! $Id: sub.f90,v 1.307 2007-04-20 19:23:54 bingert Exp $
 
 module Sub
 
@@ -532,9 +532,12 @@ module Sub
 !
       fac=1.
 !
-      if (.not.lequidist(1)) then; fac=fac*xprim(l1:l2); else; fac=fac*dx; endif
-      if (.not.lequidist(2)) then; fac=fac*yprim(m);     else; fac=fac*dy; endif
-      if (.not.lequidist(3)) then; fac=fac*zprim(n);     else; fac=fac*dz; endif
+!     equidistant case are handled in equ.f90
+!
+      if (.not.lequidist(1)) fac=fac*xprim(l1:l2)
+      if (.not.lequidist(2)) fac=fac*yprim(m)
+      if (.not.lequidist(3)) fac=fac*zprim(n)
+!
       if (lfirstpoint) then
         fname(iname)=sum(a*fac)
       else
