@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.90 2007-04-20 20:06:38 dobler Exp $
+! $Id: prints.f90,v 1.91 2007-04-20 20:07:33 dobler Exp $
 
 module Print
 
@@ -200,7 +200,7 @@ module Print
         call mpibcast_real(gcc2m,1)
       endif
 !
-      if (ldebug) write(*,*) 'ixit prints'
+      if (ldebug) write(*,*) 'exit prints'
       first = .false.
     endsubroutine prints
 !***********************************************************************
