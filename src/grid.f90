@@ -79,6 +79,7 @@ module Grid
       real :: xi3lo,xi3up,g3lo,g3up
       real, dimension(3,2) :: xi_step
       real, dimension(3,3) :: dxyz_step
+      real :: dxmin_x,dxmax_x,dxmin_y,dxmax_y,dxmin_z,dxmax_z
       real :: xi1star,xi2star,xi3star
 
       real, dimension(mx) :: g1,g1der1,g1der2,xi1,xprim2
@@ -297,24 +298,40 @@ module Grid
         dz_tilde=-zprim2/zprim**2
       endif
 !
-      dxmin = minval( (/dx,dy,dz,huge(dx)/), &
-                MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
-
-      dxmax = maxval( (/dx,dy,dz,epsilon(dx)/), &
-                MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
+!  determine global minimum and maximum of grid spacing in any direction
 !
-      if (.not. lequidist(1) .and. nxgrid > 1) then
-        dxmin = minval((/xprim(l1:l2)/))
-        dxmax = minval((/xprim(l1:l2)/))
+      if (lequidist(1) .or. nxgrid <= 1) then
+        dxmin_x = dx
+        dxmax_x = dx
+      else
+        dxmin_x = minval(xprim(l1:l2))
+        dxmax_x = maxval(xprim(l1:l2))
       endif
-      if (.not. lequidist(2) .and. nygrid > 1) then
-        dxmin = minval((/yprim(m1:m2)/))
-        dxmax = minval((/yprim(m1:m2)/))
+      !
+      if (lequidist(2) .or. nygrid <= 1) then
+        dxmin_y = dy
+        dxmax_y = dy
+      else
+        dxmin_y = minval(yprim(m1:m2))
+        dxmax_y = maxval(yprim(m1:m2))
       endif
-      if (.not. lequidist(3) .and. nzgrid > 1) then
-        dxmin = minval((/zprim(n1:n2)/))
-        dxmax = minval((/zprim(n1:n2)/))
+      !
+      if (lequidist(3) .or. nzgrid <= 1) then
+        dxmin_z = dz
+        dxmax_z = dz
+      else
+        dxmin_z = minval(zprim(n1:n2))
+        dxmax_z = maxval(zprim(n1:n2))
       endif
+
+      dxmin = minval( (/dxmin_x, dxmin_y, dxmin_z, huge(dx)/), &
+                MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
+
+      dxmax = maxval( (/dxmax_x, dxmax_y, dxmax_z, epsilon(dx)/), &
+                MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
+
+write(0,*) 'dxmin, dxmax = ', dxmin, dxmax
+
 !
     endsubroutine construct_grid
 !***********************************************************************
