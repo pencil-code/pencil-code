@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.14 2007-04-18 20:03:00 wlyra Exp $
+! $Id: gravity_r.f90,v 1.15 2007-04-21 19:21:02 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -27,6 +27,10 @@ module Gravity
     module procedure potential_global
     module procedure potential_penc
     module procedure potential_point
+  endinterface
+
+  interface acceleration
+    module procedure acceleration_penc
   endinterface
 
   ! coefficients for potential
@@ -81,7 +85,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.14 2007-04-18 20:03:00 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.15 2007-04-21 19:21:02 theine Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -500,6 +504,22 @@ module Gravity
                                       "not implemented")
 
     endsubroutine potential_point
+!***********************************************************************
+    subroutine acceleration_penc(gg)
+!
+!  Gravitational acceleration along one pencil
+!
+!  Dummy routine.
+!
+!  21-apr-07/tobi: coded
+!
+      use Cdata, only: nx
+
+      real, dimension (nx,3) :: gg
+
+      if (NO_WARN) print *,gg(1,1)
+
+    endsubroutine acceleration_penc
 !***********************************************************************
     subroutine get_radial_distance(rr_mn)
 !

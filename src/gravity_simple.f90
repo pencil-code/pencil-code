@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.34 2007-04-10 19:26:28 theine Exp $
+! $Id: gravity_simple.f90,v 1.35 2007-04-21 19:21:02 theine Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -34,12 +34,16 @@ module Gravity
     module procedure potential_penc
     module procedure potential_point
   endinterface
+
+  interface acceleration
+    module procedure acceleration_penc
+  endinterface
 !
 !  Parameters used throughout entire module
 !
-  real, dimension(nx) :: gravx_xpencil=0.,potx_xpencil=0.
-  real, dimension(ny) :: gravy_ypencil=0.,poty_ypencil=0.
-  real, dimension(nz) :: gravz_zpencil=0.,potz_zpencil=0.
+  real, dimension(mx) :: gravx_xpencil=0.,potx_xpencil=0.
+  real, dimension(my) :: gravy_ypencil=0.,poty_ypencil=0.
+  real, dimension(mz) :: gravz_zpencil=0.,potz_zpencil=0.
   real :: gravx=0.,gravy=0.,gravz=0.
   real :: kx_gg=1.,ky_gg=1.,kz_gg=1.,grav_const=1.,reduced_top=1.
   real :: xgrav=impossible,ygrav=impossible,zgrav=impossible
@@ -104,7 +108,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.34 2007-04-10 19:26:28 theine Exp $")
+           "$Id: gravity_simple.f90,v 1.35 2007-04-21 19:21:02 theine Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.
@@ -125,7 +129,7 @@ module Gravity
       real, dimension(mx,my,mz,mfarray) :: f
       logical              :: lstarting
       real                 :: ztop
-      real, dimension (nz) :: prof
+      real, dimension (mz) :: prof
 !
 !  Sanity check
 !
@@ -151,7 +155,7 @@ module Gravity
       case('const')
         if (lroot) print*,'initialize_gravity: constant x-grav=',gravx
         gravx_xpencil=gravx
-        potx_xpencil=-gravx*(x(l1:l2)-xinfty)
+        potx_xpencil=-gravx*(x-xinfty)
 !
 !  tanh profile
 !  for isothermal EOS, we have 0=-cs2*dlnrho+gravx
@@ -162,17 +166,17 @@ module Gravity
         if (lroot) print*,'initialize_gravity: tanh x-grav, gravx=',gravx
         if (lroot) print*,'initialize_gravity: xgrav,dgravx=',xgrav,dgravx
         gravx=-alog(pot_ratio)/dgravx
-        gravx_xpencil=gravx*.5/cosh((x(l1:l2)-xgrav)/dgravx)**2
-        potx_xpencil=-gravx*.5*(1.+tanh((x(l1:l2)-xgrav)/dgravx))*dgravx
+        gravx_xpencil=gravx*.5/cosh((x-xgrav)/dgravx)**2
+        potx_xpencil=-gravx*.5*(1.+tanh((x-xgrav)/dgravx))*dgravx
 
       case('sinusoidal')
         if (lroot) print*,'initialize_gravity: sinusoidal x-grav, gravx=',gravx
-        gravx_xpencil = -gravx*sin(kx_gg*x(l1:l2))
+        gravx_xpencil = -gravx*sin(kx_gg*x)
 
       case('kepler')
         if (lroot) print*,'initialize_gravity: kepler x-grav, gravx=',gravx
-        gravx_xpencil=-gravx/x(l1:l2)**2
-        potx_xpencil=-gravx/x(l1:l2)
+        gravx_xpencil=-gravx/x**2
+        potx_xpencil=-gravx/x
 
       case default
         if (lroot) print*, &
@@ -194,15 +198,15 @@ module Gravity
       case('const')
         if (lroot) print*,'initialize_gravity: constant y-grav=', gravy
         gravy_ypencil=gravy
-        poty_ypencil=-gravy*(y(m1:m2)-yinfty)
+        poty_ypencil=-gravy*(y-yinfty)
 
       case('sinusoidal')
         if (lroot) print*,'initialize_gravity: sinusoidal y-grav, gravy=', gravy
-        gravy_ypencil = -gravy*sin(ky_gg*y(m1:m2))
+        gravy_ypencil = -gravy*sin(ky_gg*y)
 
       case('kepler')
         if (lroot) print*,'initialize_gravity: kepler gravy, y-grav=', gravy
-        gravy_ypencil = -gravy/y(m1:m2)**2
+        gravy_ypencil = -gravy/y**2
 
       case default
         if (lroot) print*, &
@@ -227,12 +231,12 @@ module Gravity
       case('const')
         if (lroot) print*,'initialize_gravity: constant gravz=', gravz
         gravz_zpencil=gravz
-        potz_zpencil=-gravz*(z(n1:n2)-zinfty)
+        potz_zpencil=-gravz*(z-zinfty)
 
       case('boussinesq')
         if (lroot) print*,'initialize_gravity: boussinesq gravz=', gravz
         gravz_zpencil=gravz
-        potz_zpencil=-gravz*(z(n1:n2)-zinfty)
+        potz_zpencil=-gravz*(z-zinfty)
         lboussinesq=.true.
 
       case('const_zero')  !  Const. gravity acc. (but zero for z>zgrav)
@@ -240,23 +244,23 @@ module Gravity
         if (zgrav==impossible .and. lroot) &
             print*,'initialize_gravity: zgrav is not set!'
         do n=n1,n2
-          if (z(n)<=zgrav) gravz_zpencil(n-3) = gravz
+          if (z(n)<=zgrav) gravz_zpencil(n) = gravz
         enddo
 
       case('linear')      !  Linear gravity profile (for accretion discs)
         nu_epicycle2=nu_epicycle**2
         if(lroot) print*,'initialize_gravity: linear z-grav, nu=', nu_epicycle
-        gravz_zpencil = -nu_epicycle2*z(n1:n2)
-        potz_zpencil=0.5*nu_epicycle2*(z(n1:n2)**2-zinfty**2)
+        gravz_zpencil = -nu_epicycle2*z
+        potz_zpencil=0.5*nu_epicycle2*(z**2-zinfty**2)
 
       case('sinusoidal')
         if (lroot) print*,'initialize_gravity: sinusoidal z-grav, gravz=', gravz
-        gravz_zpencil = -gravz*sin(kz_gg*z(n1:n2))
-        potz_zpencil = -gravz/kz_gg*cos(kz_gg*z(n1:n2))
+        gravz_zpencil = -gravz*sin(kz_gg*z)
+        potz_zpencil = -gravz/kz_gg*cos(kz_gg*z)
 
       case('kepler')
         if (lroot) print*,'initialize_gravity: kepler z-grav, gravz=', gravz
-        gravz_zpencil = -gravz/z(n1:n2)**2
+        gravz_zpencil = -gravz/z**2
 
       case('Ferriere')
 !
@@ -277,13 +281,13 @@ module Gravity
 !  nb: 331.5 is conversion factor: 10^-9 cm/s^2 -> kpc/Gyr^2)  (/= 321.1 ?!?)
 !AB: These numbers should be inserted in the appropriate units.
 !AB: As it is now, it can never make much sense.
-        gravz_zpencil = -(g_A*z(n1:n2)/sqrt(z(n1:n2)**2+g_B**2) + g_C*z(n1:n2)/g_D)
+        gravz_zpencil = -(g_A*z/sqrt(z**2+g_B**2) + g_C*z/g_D)
 
       case('reduced_top')
         if (lroot) print*,'duu_dt_grav: reduced, gravz=',gravz
         if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
         ztop = xyz0(3)+Lxyz(3)
-        prof = cubic_step(z(n1:n2),(zgrav+ztop)/2,(ztop-zgrav)/2)
+        !prof = cubic_step(z,(zgrav+ztop)/2,(ztop-zgrav)/2)
         gravz_zpencil = (1 - prof*(1-reduced_top))*gravz
 
       case default
@@ -363,9 +367,9 @@ module Gravity
       intent(inout) :: p
 !
       if (lpencil(i_gg)) then
-        p%gg(:,1) = gravx_xpencil
-        p%gg(:,2) = gravy_ypencil(m-nghost)
-        p%gg(:,3) = gravz_zpencil(n-nghost)
+        p%gg(:,1) = gravx_xpencil(l1:l2)
+        p%gg(:,2) = gravy_ypencil(m)
+        p%gg(:,3) = gravz_zpencil(n)
       endif
 !
       if (NO_WARN) print*, f
@@ -462,7 +466,7 @@ module Gravity
 !
 !  Calculate potential from master pencils defined in initialize_gravity
 !
-      pot = potx_xpencil + poty_ypencil(m-nghost) + potz_zpencil(n-nghost)
+      pot = potx_xpencil(l1:l2) + poty_ypencil(m) + potz_zpencil(n)
 !
       if (NO_WARN) print*, xmn, ymn, zmn, pot0, grav, rmn
 !
@@ -524,6 +528,36 @@ module Gravity
       pot = potx_xpoint + poty_ypoint + potz_zpoint
 !
     endsubroutine potential_point
+!***********************************************************************
+    subroutine acceleration_penc(gg)
+!
+!  Calculates gravitational acceleration on a pencil
+!
+!  21-apr-07/tobi: adapted from potential_penc
+!
+      use Cdata, only: nx,mx,m,n
+
+      real, dimension (:,:), intent (out) :: gg
+!
+!  Calculate acceleration from master pencils defined in initialize_gravity
+!
+      if (size(gg,2) /= 3) then
+        call fatal_error("acceleration_penc","Expecting a 3-vector pencil.")
+      endif
+
+      select case (size(gg,1))
+      case (nx)
+        gg(:,1) = gravx_xpencil(l1:l2)
+      case (mx)
+        gg(:,1) = gravx_xpencil
+      case default
+        call fatal_error("acceleration_penc","Wrong pencil size.")
+      endselect
+
+      gg(:,2) = gravy_ypencil(m)
+      gg(:,3) = gravz_zpencil(n)
+!
+    endsubroutine acceleration_penc
 !***********************************************************************
     subroutine read_gravity_init_pars(unit,iostat)
 !
