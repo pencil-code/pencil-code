@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.359 2007-04-21 03:54:52 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.360 2007-04-21 09:37:41 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2007-04-21 03:54:52 $ $,~ $ $Revision: 1.359 $ $}
+%\date{$ $Date: 2007-04-21 09:37:41 $ $,~ $ $Revision: 1.360 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2007-04-21 03:54:52 $ $,~ $ $Revision: 1.359 $ $}\\
+  \emph{$ $Date: 2007-04-21 09:37:41 $ $,~ $ $Revision: 1.360 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -2849,6 +2849,7 @@ explicitly set boundary conditions in \file{run.in}.
 
 
 \subsubsection{How to specify boundary conditions}
+\index{Ghost zones}
 
 Boundary conditions are implemented through three layers of
 \name{ghost points} on either boundary, which is quite a natural choice
@@ -3312,6 +3313,84 @@ basic message is to watch out for such effects and to try varying
 In cases where \code{nygrid}$>$\code{nzgrid} it may be advantageous to
 swap the ordering of processor numbers.
 This can be done by setting \var{lprocz_slowest}=\code{F}.
+
+\subsubsection{Extra workload caused by the ghost zones}
+\index{Ghost zones}
+
+Normally, the workload caused by the ghost zones is negligible.
+However, if one increases the number of processors, a significant
+fraction of work is done in the ghost zones.
+In other words, the effective mesh size becomes much larger than
+the actual mesh size.
+
+Consider a mesh of size $N_w=N_x\times N_y\times N_z$,
+and distribute the task over $P_w=P_x\times P_y\times P_z$ processors.
+If no communication were required, the number of points per processor
+would be
+\begin{equation}
+{N_w\over P_w}={N_x\times N_y\times N_z\over P_x\times P_y\times P_z}.
+\end{equation}
+However, for finite difference codes some communication is required,
+and the amount of communication depends depends on spatial order of the
+scheme, $Q$.
+The {\sc Pencil Code} works by default with sixth order finite differences,
+so $Q=6$.
+With $Q\neq0$ the number of points per processor is
+\begin{equation}
+{N_w^{\rm(eff)}\over P_w}=
+\left({N_x\over P_x}+Q\right)\times
+\left({N_y\over P_y}+Q\right)\times
+\left({N_z\over P_z}+Q\right).
+\end{equation}
+There is efficient scaling only when
+\begin{equation}
+\min\left({N_x\over P_x}, {N_y\over P_y}, {N_z\over P_z}\right)\gg Q.
+\end{equation}
+In the special case were $N_x=N_y=N_z\equiv N=N_w^{1/3}$
+$P_x=1$, and $P_y=P_z\equiv P=P_w^{1/2}$, we have 
+\begin{equation}
+{N_w^{\rm(eff)}\over P_w}=
+\left(N+Q\right)\times
+\left({N\over P}+Q\right)^2.
+\end{equation}
+For $N=128$ and $Q=6$ the effective mesh size exceeds the actual mesh
+size by a factor
+\begin{equation}
+{N_w^{\rm(eff)}\over N_w}
+=\left(N+Q\right)\times\left({N\over P}+Q\right)^2\times{P_w\over N_w}.
+\end{equation}
+These factors are listed in Table~\ref{EffectiveMesh}.
+
+\begin{table}[h!]\caption{
+$N_w^{\rm(eff)}/N_w$ versus $N$ and $P$.
+}\vspace{12pt}\centerline{\begin{tabular}{rrrrrrrrrrrr}
+$P\backslash N$ &    128  &    256  &    512  &   1024  &   2048 \\
+\hline
+    1  &   1.15  &   1.07  &   1.04  &   1.02  &   1.01 \\
+    2  &   1.19  &   1.09  &   1.05  &   1.02  &   1.01 \\
+    4  &\underline{1.25}&   1.12  &   1.06  &   1.03  &   1.01 \\
+    8  &   1.34  &   1.16  &   1.08  &   1.04  &   1.02 \\
+   16  &   1.48  &\underline{1.22}&   1.11  &   1.05  &   1.03 \\
+   32  &   1.68  &   1.31  &   1.15  &   1.07  &   1.04 \\
+   64  &   1.98  &   1.44  &\underline{1.21}&   1.10  &   1.05 \\
+  128  &   2.45  &   1.64  &   1.30  &   1.14  &   1.07 \\
+  256  &   3.21  &   1.93  &   1.43  &\underline{1.20}&   1.10 \\
+  512  &   4.45  &   2.40  &   1.62  &   1.29  &   1.14 \\
+\label{EffectiveMesh}\end{tabular}}\end{table}
+
+Ideally, one wants to keep the work in the ghost zones at a minimum.
+If one accepts that 20--25\% of work are done in the ghost zones,
+one should use 4 processors for $128^3$ mesh points,
+16 processors for $256^3$ mesh points,
+64 processors for $512^3$ mesh points,
+256 processors for $1024^3$ mesh points,
+and 512 processors for $1536^3$ mesh points.
+
+%\begin{figure}[h!]\begin{center}
+%\includegraphics[width=\columnwidth]{figs/processor_scaling}
+%\end{center}\caption[]{
+%Scaling
+%}\label{pcoolheat}\end{figure}
 
 % ---------------------------------------------------------------------- %
 
@@ -5471,7 +5550,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2007-04-21 03:54:52 $ $,~ $ $Revision: 1.359 $ $}
+  \hfill\normalsize\rm$ $Date: 2007-04-21 09:37:41 $ $,~ $ $Revision: 1.360 $ $}
 
 \section{Timings}
 
@@ -8844,7 +8923,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.359 2007-04-21 03:54:52 dobler Exp $ $}
+$ $Id: manual.tex,v 1.360 2007-04-21 09:37:41 brandenb Exp $ $}
 
 
 \end{document}
