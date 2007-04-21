@@ -45,7 +45,7 @@ all:  manual.pdf manual.dvi manual.ps.gz
 pdffigs:
 	cd figs; make pdf
 
-manual_dvi:
+manual_dvi: manual.tex diag_table.tex
 	@TEXINPUTS="./texinputs:${TEXINPUTS}"; \
 	export TEXINPUTS; \
 	echo "TEXINPUTS=$${TEXINPUTS}"; \
@@ -61,7 +61,7 @@ manual_dvi:
 manual.dvi: driver_dvi manual_dvi
 	@true  # dummy cmd, so make won't apply generic rule at end
 
-manual.pdf: driver_ manual_dvi	# don't use driver_dvipdfm...
+manual.pdf: driver_ manual_dvi		# don't use driver_dvipdfm...
 	dvipdfm -p a4 manual.dvi
 
 # If dvipdfm does not work well for you, use this instead:
@@ -76,6 +76,9 @@ manual.ps: driver_ps2pdf manual_dvi
 
 manual.ps.gz: manual.ps
 	gzip -f manual.ps
+
+diag_table.tex:
+	./extract-diag-doc
 
 driver_:
 	@printf "%s\n" \
