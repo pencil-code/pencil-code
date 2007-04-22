@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.35 2007-04-21 19:21:02 theine Exp $
+! $Id: gravity_simple.f90,v 1.36 2007-04-22 12:03:56 theine Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -108,7 +108,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.35 2007-04-21 19:21:02 theine Exp $")
+           "$Id: gravity_simple.f90,v 1.36 2007-04-22 12:03:56 theine Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.
@@ -287,7 +287,7 @@ module Gravity
         if (lroot) print*,'duu_dt_grav: reduced, gravz=',gravz
         if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
         ztop = xyz0(3)+Lxyz(3)
-        !prof = cubic_step(z,(zgrav+ztop)/2,(ztop-zgrav)/2)
+        prof = cubic_step(z,(zgrav+ztop)/2,(ztop-zgrav)/2)
         gravz_zpencil = (1 - prof*(1-reduced_top))*gravz
 
       case default
