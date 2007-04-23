@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.90 2007-03-06 01:01:12 dobler Exp $
+# CVS: $Id: auto-test,v 1.91 2007-04-23 17:49:21 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -86,9 +86,10 @@ my $failure_message = '';
 my $reference_out = 'reference.out'; # automatically changed to
                                      # reference.out.double below for
                                      # double precision runs
-my $tmpdir      = "/var/tmp/pencil-tmp-$$";
+my $user        = $ENV{USER} || $ENV{LOGNAME} || 'unknown';
+my $tmpdir      = "/var/tmp/pencil-tmp-$user-$$";
 my $lockdir     = '/var/tmp';     # put / check for lock file here
-my $lockfile    = "$lockdir/pencil-auto-test.pid";
+my $lockfile    = "$lockdir/pencil-auto-test-$user.pid";
 my $headerpat   = '^-*\s*(-+\s*[A-Za-z0-9_]+)+-*\s*$'; # regexp for header line
 my $noheader    = "Couldn't find header line";
 my $cfloat = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # regexp
@@ -178,7 +179,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.90 2007-03-06 01:01:12 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.91 2007-04-23 17:49:21 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
