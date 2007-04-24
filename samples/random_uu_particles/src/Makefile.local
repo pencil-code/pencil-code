@@ -23,5 +23,5 @@ DUSTVELOCITY = nodustvelocity
 
 PARTICLES =   particles_dust
 
-FFLAGS_GENERAL=-r8
-CFLAGS_GENERAL=-DDOUBLE_PRECISION
+# Use double precision
+REAL_PRECISION = double
