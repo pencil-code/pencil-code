@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.407 2007-04-12 12:52:14 brandenb Exp $
+! $Id: magnetic.f90,v 1.408 2007-04-25 14:02:50 joishi Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -229,7 +229,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.407 2007-04-12 12:52:14 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.408 2007-04-25 14:02:50 joishi Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -400,6 +400,10 @@ module Magnetic
         if (lohmic_heat .and. .not. lresi_eta_const) &
             call warning('initialize_magnetic', &
             'Resistivity heating only works with regular resistivity!')
+        if (lresi_hyper2.and.lresi_hyper3) &
+            call warning('initialize_magnetic', &
+            '4th & 6th order hyperdiffusion are both set.', &
+            'Timestep is currently only sensitive to fourth order.')
       endif
 !
 !  check for alpha profile
@@ -1214,12 +1218,10 @@ module Magnetic
 !
       if (lresi_hyper2) then
         fres=fres+eta_hyper2*p%del4a
-        etatotal=etatotal+eta_hyper2
       endif
 !
       if (lresi_hyper3) then
         fres=fres+eta_hyper3*p%del6a
-        etatotal=etatotal+eta_hyper3
       endif
 !
       if (lresi_zdep) then 
@@ -1412,9 +1414,12 @@ module Magnetic
         if (lresi_hyper3_aniso) then
            diffus_eta=eta_aniso_hyper3(1)*dx_1(l1:l2)**6 + &
                 eta_aniso_hyper3(2)*dy_1(m)**6 + &
-                eta_aniso_hyper3(3)*dz_1(n)**6
+                eta_aniso_hyper3(3)*dz_1(n)**6 + &
+                etatotal*dxyz_2
         elseif (lresi_hyper3) then
-           diffus_eta=eta_hyper3*dxyz_6
+           diffus_eta=eta_hyper3*dxyz_6 + (etatotal+meanfield_etat)*dxyz_2
+        elseif (lresi_hyper2) then
+           diffus_eta=eta_hyper2*dxyz_4 + (etatotal+meanfield_etat)*dxyz_2
         else
            diffus_eta=(etatotal+meanfield_etat)*dxyz_2
         endif
