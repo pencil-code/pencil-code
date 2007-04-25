@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.408 2007-04-25 14:02:50 joishi Exp $
+! $Id: magnetic.f90,v 1.409 2007-04-25 16:57:49 joishi Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -229,7 +229,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.408 2007-04-25 14:02:50 joishi Exp $")
+           "$Id: magnetic.f90,v 1.409 2007-04-25 16:57:49 joishi Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -402,8 +402,8 @@ module Magnetic
             'Resistivity heating only works with regular resistivity!')
         if (lresi_hyper2.and.lresi_hyper3) &
             call warning('initialize_magnetic', &
-            '4th & 6th order hyperdiffusion are both set.', &
-            'Timestep is currently only sensitive to fourth order.')
+            '4th & 6th order hyperdiffusion are both set. &
+            Timestep is currently only sensitive to fourth order.')
       endif
 !
 !  check for alpha profile
