@@ -330,7 +330,7 @@ module Grid
       dxmax = maxval( (/dxmax_x, dxmax_y, dxmax_z, epsilon(dx)/), &
                 MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
 
-write(0,*) 'dxmin, dxmax = ', dxmin, dxmax
+!write(0,*) 'dxmin, dxmax = ', dxmin, dxmax
 
 !
     endsubroutine construct_grid
