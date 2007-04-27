@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.409 2007-04-25 16:57:49 joishi Exp $
+! $Id: magnetic.f90,v 1.410 2007-04-27 11:12:56 dhruba Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -229,7 +229,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.409 2007-04-25 16:57:49 joishi Exp $")
+           "$Id: magnetic.f90,v 1.410 2007-04-27 11:12:56 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1004,6 +1004,7 @@ module Magnetic
           call gij_etc(f,iaa,p%aa,p%aij,p%bij,GRADDIV=p%graddiva)
           call curl_mn(p%bij,p%jj,p%bb)
           if (lpencil(i_del2a)) p%del2a=p%graddiva-p%jj
+!           if (lpencil(i_del2a)) call del2v(f,iaa,p%del2a,p%aij,p%aa)
         endif
       endif
 ! jj

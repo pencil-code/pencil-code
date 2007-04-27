@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.241 2007-02-28 04:29:56 wlyra Exp $
+! $Id: run.f90,v 1.242 2007-04-27 11:12:56 dhruba Exp $
 !
 !***********************************************************************
       program run
@@ -59,7 +59,7 @@
         lrun = .true.
 !
         call initialize_messages()
-!
+!b
 !  initialize MPI and register physics modules
 !  (must be done before lroot can be used, for example)
 !
@@ -69,7 +69,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.241 2007-02-28 04:29:56 wlyra Exp $")
+             "$Id: run.f90,v 1.242 2007-04-27 11:12:56 dhruba Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)

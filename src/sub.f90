@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.307 2007-04-20 19:23:54 bingert Exp $
+! $Id: sub.f90,v 1.308 2007-04-27 11:12:56 dhruba Exp $
 
 module Sub
 
@@ -1816,7 +1816,7 @@ module Sub
          del2f(:,2)=del2f(:,2)+&
                r1_mn*(2.*(fij(:,2,1)-cotth(m)*fij(:,3,3)&
                              +fij(:,1,2) )&
-                         +cotth(m)*fij(:,2,2)-sin1th(m)*sin1th(m)*pff(:,2) )
+                         +cotth(m)*fij(:,2,2)-r1_mn*sin1th(m)*sin1th(m)*pff(:,2) )
 ! for phi component  
          del2f(:,3)=del2f(:,3)+&
                r1_mn*(2.*(fij(:,3,1)+fij(:,1,3)&
@@ -2186,27 +2186,24 @@ module Sub
       endif
 !
       if (present(del2)) then
-        if (lcartesian_coords) then
-          del2(:,:)=d2A(:,1,1,:)+d2A(:,2,2,:)+d2A(:,3,3,:)
+        del2(:,:)=d2A(:,1,1,:)+d2A(:,2,2,:)+d2A(:,3,3,:)
+        if (lspherical_coords.and.present(aij).and.present(aa)) then
+          del2(:,1)= del2(:,1)+&
+            r1_mn*(2.*(aij(:,1,1)-aij(:,2,2)-aij(:,3,3)&
+            -r1_mn*aa(:,1)-cotth(m)*r1_mn*aa(:,2) ) &
+            +cotth(m)*aij(:,1,2) )
+          del2(:,2)=del2(:,2)+&
+            r1_mn*(2.*(aij(:,2,1)-cotth(m)*aij(:,3,3)&
+            +aij(:,1,2) )&
+            +cotth(m)*aij(:,2,2)-sin1th(m)*sin1th(m)*aa(:,2) )
+          del2(:,3)=del2(:,3)+&
+            r1_mn*(2.*(aij(:,3,1)+aij(:,1,3)&
+            +cotth(m)*aij(:,2,3) ) &
+            +cotth(m)*aij(:,3,2)-sin1th(m)*aa(:,3) )
         else
-          if (lspherical_coords.and.present(aij).and.present(aa)) then
-            del2(:,1)= del2(:,1)+&
-              r1_mn*(2.*(aij(:,1,1)-aij(:,2,2)-aij(:,3,3)&
-              -r1_mn*aa(:,1)-cotth(m)*r1_mn*aa(:,2) ) &
-              +cotth(m)*aij(:,1,2) )
-            del2(:,2)=del2(:,2)+&
-              r1_mn*(2.*(aij(:,2,1)-cotth(m)*aij(:,3,3)&
-              +aij(:,1,2) )&
-              +cotth(m)*aij(:,2,2)-sin1th(m)*sin1th(m)*aa(:,2) )
-            del2(:,3)=del2(:,3)+&
-              r1_mn*(2.*(aij(:,3,1)+aij(:,1,3)&
-              +cotth(m)*aij(:,2,3) ) &
-              +cotth(m)*aij(:,3,2)-sin1th(m)*aa(:,3) )
-          else
-          call stop_it("gij_etc: use del2=graddiv-curlcurl for non-cartesian coords")
         endif
+        if (lcylindrical_coords)  call stop_it("gij_etc: use del2=graddiv-curlcurl for cylindrical coords")
       endif
-    endif
 !
     endsubroutine gij_etc
 !***********************************************************************
@@ -2586,6 +2583,7 @@ module Sub
 !  upwind correction (currently just for z-direction)
 !
       if (present(upwind)) then; if (upwind) then
+        write(*,*)"Dhruba:u_dot_grad_scl"
         call der6(f,k,del6f,1,UPWIND=.true.)
         ugradf = ugradf - abs(uu(:,1))*del6f
         call der6(f,k,del6f,2,UPWIND=.true.)

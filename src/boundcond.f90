@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.142 2007-04-12 12:52:14 brandenb Exp $
+! $Id: boundcond.f90,v 1.143 2007-04-27 11:12:56 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -163,6 +163,10 @@ module Boundcond
                   call bcx_extrap_2_1(f,topbot,j)
                 case ('e2')       ! extrapolation
                   call bcx_extrap_2_2(f,topbot,j)
+                case ('spder')      ! set derivative on the boundary
+                  call bc_set_spder_x(f,topbot,j,fbcx12(j))
+                case ('fix')      ! set boundary value
+                  call bc_fix_x(f,topbot,j,fbcx12(j))
                 case ('')         ! do nothing; assume that everything is set
                 case default
                   bc%bcname=bc12(j)
@@ -883,6 +887,70 @@ module Boundcond
       endselect
 !
     endsubroutine bc_set_der_x
+!***********************************************************************
+    subroutine bc_fix_x(f,topbot,j,val)
+!
+!  Sets the derivative, particularly : 
+!d(rA_{\alpha})/dr = <val>
+!on the boundary to a given value
+!
+!  27-apr-2007/dhruba: coded
+!
+      use Cdata
+!
+      character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer, intent (in) :: j
+
+      real, intent (in) :: val
+      integer :: i
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        do i=1,nghost;f(l1-i,:,:,j)=val; enddo
+
+      case('top')               ! top boundary
+        do i=1,nghost; f(l2+i,:,:,j)=val; enddo
+
+      case default
+        call warning('bc_set_spder_x',topbot//" should be `top' or `bot'")
+
+      endselect
+!
+    endsubroutine bc_fix_x
+!***********************************************************************
+    subroutine bc_set_spder_x(f,topbot,j,val)
+!
+!  Sets the derivative, particularly : 
+!d(rA_{\alpha})/dr = <val>
+!on the boundary to a given value
+!
+!  27-apr-2007/dhruba: coded
+!
+      use Cdata
+!
+      character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer, intent (in) :: j
+
+      real, intent (in) :: val
+      integer :: i
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        do i=1,nghost;f(l1-i,:,:,j)=f(l1+i,:,:,j)-2*i*dx*(val-f(l1,:,:,j)); enddo
+
+      case('top')               ! top boundary
+        do i=1,nghost; f(l2+i,:,:,j)=f(l2-i,:,:,j)+2*i*dx*(val-f(l1,:,:,j)); enddo
+
+      case default
+        call warning('bc_set_spder_x',topbot//" should be `top' or `bot'")
+
+      endselect
+!
+    endsubroutine bc_set_spder_x
 !***********************************************************************
     subroutine bc_set_der_y(f,topbot,j,val)
 !

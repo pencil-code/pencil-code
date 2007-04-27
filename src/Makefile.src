@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.289 2007-04-12 14:24:22 dhruba Exp $
+### $Id: Makefile.src,v 1.290 2007-04-27 11:12:56 dhruba Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -771,6 +771,8 @@ start=start$(PC_META_TYPE).o $(start_deps)
 #
 run=run$(PC_META_TYPE).o $(run_deps)
 #
+optest=$(start_deps) equ$(PC_META_TYPE).o optest.o
+#
 shock_finder=$(SHOCK_FINDER)$(PC_META_TYPE).o $(shock_finder_deps)
 #merge_tony var2ascii_deps=cparam$(PC_META_TYPE).o
 #merge_tony var2ascii=var2ascii$(PC_META_TYPE).o $(var2ascii_deps)
@@ -973,6 +975,7 @@ nompicomm_.f90: nompicomm.f90
 
 EXECUTABLES=start$(PC_META_TYPE).x run$(PC_META_TYPE).x \
 	read_videofiles$(PC_META_TYPE).x read_vectorfiles$(PC_META_TYPE).x
+	
         # write_dummy_namelists$(PC_META_TYPE).x
 # The last few object files to compile. We need to compile _all_ object
 # files before linking, because FC=g95_quick_and_dirty will otherwise
@@ -1022,7 +1025,9 @@ startfast$(PC_META_TYPE).x: $(start_fast_deps) Makefile$(PC_META_TYPE).local
 
 $(SHOCK_FINDER)$(PC_META_TYPE).x: $(shock_finder) Makefile$(PC_META_TYPE).local
 	$(LD) $(LDFLAGS) $(shock_finder) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o $(SHOCK_FINDER)$(PC_META_TYPE).x
-
+# testing spatial differential operators 
+optest$(PC_META_TYPE).x: $(optest) Makefile$(PC_META_TYPE).local
+	$(LD) $(LDFLAGS) $(optest) $(LD_MPI) $(LD_FOURIER) -o optest$(PC_META_TYPE).x
 # Handy for debugging; just compile by hand what is changed.
 # When you use this you must be certain that everying is consistent.
 linkonly:
