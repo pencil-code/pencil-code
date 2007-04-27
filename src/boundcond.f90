@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.143 2007-04-27 11:12:56 dhruba Exp $
+! $Id: boundcond.f90,v 1.144 2007-04-27 15:28:01 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -163,7 +163,7 @@ module Boundcond
                   call bcx_extrap_2_1(f,topbot,j)
                 case ('e2')       ! extrapolation
                   call bcx_extrap_2_2(f,topbot,j)
-                case ('spder')      ! set derivative on the boundary
+                case ('spd')      ! set derivative on the boundary
                   call bc_set_spder_x(f,topbot,j,fbcx12(j))
                 case ('fix')      ! set boundary value
                   call bc_fix_x(f,topbot,j,fbcx12(j))
@@ -909,12 +909,10 @@ module Boundcond
 
       case('bot')               ! bottom boundary
         do i=1,nghost;f(l1-i,:,:,j)=val; enddo
-
       case('top')               ! top boundary
         do i=1,nghost; f(l2+i,:,:,j)=val; enddo
-
       case default
-        call warning('bc_set_spder_x',topbot//" should be `top' or `bot'")
+        call warning('bc_fix_x',topbot//" should be `top' or `bot'")
 
       endselect
 !
@@ -940,10 +938,14 @@ module Boundcond
       select case(topbot)
 
       case('bot')               ! bottom boundary
-        do i=1,nghost;f(l1-i,:,:,j)=f(l1+i,:,:,j)-2*i*dx*(val-f(l1,:,:,j)); enddo
+        do i=1,nghost
+          f(l1-i,:,:,j)=f(l1+i,:,:,j)-2*i*dx*(val-f(l1,:,:,j)*r1_mn(1))
+        enddo
 
       case('top')               ! top boundary
-        do i=1,nghost; f(l2+i,:,:,j)=f(l2-i,:,:,j)+2*i*dx*(val-f(l1,:,:,j)); enddo
+        do i=1,nghost
+          f(l2+i,:,:,j)=f(l2-i,:,:,j)+2*i*dx*(val-f(l1,:,:,j)*r1_mn(nx))
+        enddo
 
       case default
         call warning('bc_set_spder_x',topbot//" should be `top' or `bot'")
