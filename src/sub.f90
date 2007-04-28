@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.308 2007-04-27 11:12:56 dhruba Exp $
+! $Id: sub.f90,v 1.309 2007-04-28 04:19:20 brandenb Exp $
 
 module Sub
 
@@ -2583,7 +2583,6 @@ module Sub
 !  upwind correction (currently just for z-direction)
 !
       if (present(upwind)) then; if (upwind) then
-        write(*,*)"Dhruba:u_dot_grad_scl"
         call der6(f,k,del6f,1,UPWIND=.true.)
         ugradf = ugradf - abs(uu(:,1))*del6f
         call der6(f,k,del6f,2,UPWIND=.true.)
