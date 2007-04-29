@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.342 2007-04-18 21:59:19 joishi Exp $
+! $Id: hydro.f90,v 1.343 2007-04-29 09:38:16 pkapyla Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -288,7 +288,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.342 2007-04-18 21:59:19 joishi Exp $")
+           "$Id: hydro.f90,v 1.343 2007-04-29 09:38:16 pkapyla Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1018,11 +1018,10 @@ module Hydro
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%ugu
 !
 !  Coriolis force, -2*Omega x u (unless lprecession=T)
-!  Omega=(sin_theta, 0, cos_theta)
-!  theta corresponds to latitude, but to have the box located on the
-!  right hand side of the sphere (grav still pointing donward and then
-!  Omega to the left), one should choose Omega=-90 for the equator,
-!  for example.
+!  Omega=(-sin_theta, 0, cos_theta), where theta corresponds to
+!  colatitude. theta=0 places the box to the north pole and theta=90
+!  the equator. Cartesian coordinates (x,y,z) now correspond to
+!  (theta,phi,r) i.e. (south,east,up), in spherical polar coordinates
 !
       if (Omega/=0.) then
         if (lspherical_coords) then
@@ -1049,15 +1048,15 @@ module Hydro
             endif
           else
 !
-!  add Coriolis force with an angle (defined such that theta=-60,
+!  add Coriolis force with an angle (defined such that theta=60,
 !  for example, would correspond to 30 degrees latitude).
-!  Omega=(sin(theta), 0, cos(theta)).
+!  Omega=(-sin_theta, 0, cos_theta).
 !
             if (lcoriolis_force) then
               if (headtt) &
                   print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
-              c2=2*Omega*cos(theta*pi/180.)
-              s2=2*Omega*sin(theta*pi/180.)
+              c2= 2*Omega*cos(theta*pi/180.)
+              s2=-2*Omega*sin(theta*pi/180.)
               df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
               df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)+s2*p%uu(:,3)
               df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)             -s2*p%uu(:,2)
