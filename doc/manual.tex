@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.360 2007-04-21 09:37:41 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.361 2007-04-29 13:31:38 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2007-04-21 09:37:41 $ $,~ $ $Revision: 1.360 $ $}
+%\date{$ $Date: 2007-04-29 13:31:38 $ $,~ $ $Revision: 1.361 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2007-04-21 09:37:41 $ $,~ $ $Revision: 1.360 $ $}\\
+  \emph{$ $Date: 2007-04-29 13:31:38 $ $,~ $ $Revision: 1.361 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3334,7 +3334,7 @@ However, for finite difference codes some communication is required,
 and the amount of communication depends depends on spatial order of the
 scheme, $Q$.
 The {\sc Pencil Code} works by default with sixth order finite differences,
-so $Q=6$.
+so $Q=6$, i.e.\ one needs 6 ghostzones, 3 on each end of the mesh.
 With $Q\neq0$ the number of points per processor is
 \begin{equation}
 {N_w^{\rm(eff)}\over P_w}=
@@ -3346,8 +3346,8 @@ There is efficient scaling only when
 \begin{equation}
 \min\left({N_x\over P_x}, {N_y\over P_y}, {N_z\over P_z}\right)\gg Q.
 \end{equation}
-In the special case were $N_x=N_y=N_z\equiv N=N_w^{1/3}$
-$P_x=1$, and $P_y=P_z\equiv P=P_w^{1/2}$, we have 
+In the special case were $N_x=N_y=N_z\equiv N=N_w^{1/3}$,
+with $P_x=1$ and $P_y=P_z\equiv P=P_w^{1/2}$, we have 
 \begin{equation}
 {N_w^{\rm(eff)}\over P_w}=
 \left(N+Q\right)\times
@@ -5550,7 +5550,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2007-04-21 09:37:41 $ $,~ $ $Revision: 1.360 $ $}
+  \hfill\normalsize\rm$ $Date: 2007-04-29 13:31:38 $ $,~ $ $Revision: 1.361 $ $}
 
 \section{Timings}
 
@@ -8048,10 +8048,16 @@ the latest set of parameters, you need to look at the code.
                  \\
   \var{Omega} [$0.$]
                & magnitude of angular velocity for \name{Coriolis force}
-               (note: currently, no centrifugal force is implemented). \\
+                 (note: the centrifugal force is turned off by default,
+                 unless \code{lcentrifugal_force=T} is set).\\
   \var{theta} [$0.$]
-               & direction of angular velocity ($\vartheta=0$ for
-                 $z$-direction, $\vartheta=\pi/2$ for $x$-direction. \\
+               & direction of angular velocity in degrees ($\vartheta=0$ for
+                 $z$-direction, $\vartheta=90$ for the negative $x$-direction,
+                 corresponding to a box located at the equator of a
+                 rotating sphere.
+                 Thus, e.g., $\vartheta=60$ corresponds to $30^\circ$ latitude.
+                 (Note: prior to April 29, 2007, there was a minus sign in
+                 the definition of $\vartheta$.)\\
   \var{ttransient} [$0.$]
                & initial time span for which to do something special
                  (transient).
@@ -8923,7 +8929,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.360 2007-04-21 09:37:41 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.361 2007-04-29 13:31:38 brandenb Exp $ $}
 
 
 \end{document}
