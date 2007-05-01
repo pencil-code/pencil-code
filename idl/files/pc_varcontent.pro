@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.36 2007-03-04 11:07:05 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.37 2007-05-01 06:17:26 brandenb Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar,run2D=run2D
 COMPILE_OPT IDL2,HIDDEN
@@ -142,6 +142,22 @@ varcontent[iaa].idlvarloc= 'aa_loc'
 varcontent[iaa].idlinitloc = INIT_3VECTOR_LOC
 varcontent[iaa].skip  = 2
 
+default,ibb,0
+varcontent[ibb].variable = 'Magnetic field (bb)'
+varcontent[ibb].idlvar   = 'bb'
+varcontent[ibb].idlinit    = INIT_3VECTOR
+varcontent[ibb].idlvarloc= 'bb_loc'
+varcontent[ibb].idlinitloc = INIT_3VECTOR_LOC
+varcontent[ibb].skip  = 2
+
+default,ijj,0
+varcontent[ijj].variable = 'Current density (jj)'
+varcontent[ijj].idlvar   = 'jj'
+varcontent[ijj].idlinit    = INIT_3VECTOR
+varcontent[ijj].idlvarloc= 'jj_loc'
+varcontent[ijj].idlinitloc = INIT_3VECTOR_LOC
+varcontent[ijj].skip  = 2
+
 default,iaatest,0
 varcontent[iaatest].variable = 'Testfield vector potential (aatest)'
 varcontent[iaatest].idlvar   = 'aatest'
@@ -211,11 +227,12 @@ varcontent[ispecial].idlinit    = INIT_SCALAR
 varcontent[ispecial].idlvarloc= 'special_loc'
 varcontent[ispecial].idlinitloc = INIT_SCALAR_LOC
 
-;varcontent[iphi].variable = 'Electric potential (phi)'
-;varcontent[iphi].idlvar   = 'phi'
-;varcontent[iphi].idlinit    = INIT_SCALAR
-;varcontent[iphi].idlvarloc= 'phi_loc'
-;varcontent[iphi].idlinitloc = INIT_SCALAR_LOC
+default,iphi,0
+varcontent[iphi].variable = 'Electric potential (phi)'
+varcontent[iphi].idlvar   = 'phi'
+varcontent[iphi].idlinit    = INIT_SCALAR
+varcontent[iphi].idlvarloc= 'phi_loc'
+varcontent[iphi].idlinitloc = INIT_SCALAR_LOC
 
 varcontent[iecr].variable = 'Cosmic ray energy density (ecr)'
 varcontent[iecr].idlvar   = 'ecr'
