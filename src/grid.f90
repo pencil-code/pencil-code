@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.18 2007-04-28 04:19:20 brandenb Exp $
+! $Id: grid.f90,v 1.19 2007-05-01 22:31:37 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -331,9 +331,6 @@ module Grid
 
       dxmax = maxval( (/dxmax_x, dxmax_y, dxmax_z, epsilon(dx)/), &
                 MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
-
-!write(0,*) 'dxmin, dxmax = ', dxmin, dxmax
-
 !
     endsubroutine construct_grid
 !***********************************************************************
