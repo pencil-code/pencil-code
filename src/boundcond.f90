@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.144 2007-04-27 15:28:01 dhruba Exp $
+! $Id: boundcond.f90,v 1.145 2007-05-02 14:07:53 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -890,8 +890,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_fix_x(f,topbot,j,val)
 !
-!  Sets the derivative, particularly : 
-!d(rA_{\alpha})/dr = <val>
+!  Sets the value of f , particularly : 
+! A_{\alpha}= <val>
 !on the boundary to a given value
 !
 !  27-apr-2007/dhruba: coded

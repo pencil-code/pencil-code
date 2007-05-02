@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.309 2007-04-28 04:19:20 brandenb Exp $
+! $Id: sub.f90,v 1.310 2007-05-02 14:07:54 dhruba Exp $
 
 module Sub
 
@@ -2171,17 +2171,12 @@ module Sub
 !--     graddiv(:,:)=d2A(:,:,1,1)+d2A(:,:,2,2)+d2A(:,:,3,3)
         graddiv(:,:)=d2A(:,1,:,1)+d2A(:,2,:,2)+d2A(:,3,:,3)
         if (lspherical_coords) then
-!          graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+aij(:,2,1)*r1_mn*cotth(m)&
-!               -2.*r1_mn*r1_mn*aa(:,1)-r2_mn*cotth(m)*aa(:,2)
-!!--            -2.*r1_mn*r1_mn*aa(:,1)-r1_mn*r1_mn*cotth(m)*cotth(m)*aa(:,2)
-!          graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+aij(:,2,2)*r1_mn*cotth(m)&
-!               -aa(:,2)*r2_mn*sin2th(m)
-!          graddiv(:,3)=graddiv(:,3)+2.*r1_mn*aij(:,1,3)+ & 
-!                 r1_mn*cotth(m)*aij(:,2,3)
-!reordered terms, and corrected "cotth(m)*cotth(m)" to "cotth(m)"
-          graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+aij(:,2,1)*r1_mn*cotth(m)-aa(:,2)*r2_mn*cotth(m)-aa(:,1)*r2_mn*2
-          graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+aij(:,2,2)*r1_mn*cotth(m)-aa(:,2)*r2_mn*sin2th(m)
-          graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*r1_mn*2+aij(:,2,3)*r1_mn*cotth(m)
+          graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+ & 
+             aij(:,2,1)*r1_mn*cotth(m)-aa(:,2)*r2_mn*cotth(m)-aa(:,1)*r2_mn*2
+          graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+ & 
+             aij(:,2,2)*r1_mn*cotth(m)-aa(:,2)*r2_mn*sin2th(m)
+          graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*r1_mn*2+ & 
+             aij(:,2,3)*r1_mn*cotth(m)
         endif
       endif
 !
@@ -2195,11 +2190,11 @@ module Sub
           del2(:,2)=del2(:,2)+&
             r1_mn*(2.*(aij(:,2,1)-cotth(m)*aij(:,3,3)&
             +aij(:,1,2) )&
-            +cotth(m)*aij(:,2,2)-sin1th(m)*sin1th(m)*aa(:,2) )
+            +cotth(m)*aij(:,2,2)-r1_mn*sin2th(m)*aa(:,2) )
           del2(:,3)=del2(:,3)+&
             r1_mn*(2.*(aij(:,3,1)+aij(:,1,3)&
             +cotth(m)*aij(:,2,3) ) &
-            +cotth(m)*aij(:,3,2)-sin1th(m)*aa(:,3) )
+            +cotth(m)*aij(:,3,2)-r1_mn*sin2th(m)*aa(:,3) )
         else
         endif
         if (lcylindrical_coords)  call stop_it("gij_etc: use del2=graddiv-curlcurl for cylindrical coords")

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.356 2007-03-28 18:32:45 dobler Exp $
+! $Id: equ.f90,v 1.357 2007-05-02 14:07:53 dhruba Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -414,7 +414,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.356 2007-03-28 18:32:45 dobler Exp $")
+           "$Id: equ.f90,v 1.357 2007-05-02 14:07:53 dhruba Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -558,9 +558,18 @@ module Equ
         if (old_cdtv) then
           dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m)**2,dz_1(n)**2)
         else
-          dxyz_2 = dx_1(l1:l2)**2+dy_1(m)**2+dz_1(n)**2
-          dxyz_4 = dx_1(l1:l2)**4+dy_1(m)**4+dz_1(n)**4
-          dxyz_6 = dx_1(l1:l2)**6+dy_1(m)**6+dz_1(n)**6
+          if(lspherical_coords) then
+            dxyz_2 = dx_1(l1:l2)**2+ & 
+              (r1_mn*dy_1(m))**2+(r1_mn*sin1th(m)*dz_1(n))**2
+            dxyz_4 = dx_1(l1:l2)**4+ &
+              (r1_mn*dy_1(m))**4+(r1_mn*sin1th(m)*dz_1(n))**4
+            dxyz_6 = dx_1(l1:l2)**6+ & 
+              (r1_mn*dy_1(m))**6+(r1_mn*sin1th(m)*dz_1(n))**6
+          else
+            dxyz_2 = dx_1(l1:l2)**2+dy_1(m)**2+dz_1(n)**2
+            dxyz_4 = dx_1(l1:l2)**4+dy_1(m)**4+dz_1(n)**4
+            dxyz_6 = dx_1(l1:l2)**6+dy_1(m)**6+dz_1(n)**6
+          endif
         endif
 !
 !  [AB: Isn't it true that not all 2-D averages use rcyl_mn?

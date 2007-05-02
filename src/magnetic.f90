@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.411 2007-04-27 20:16:39 dobler Exp $
+! $Id: magnetic.f90,v 1.412 2007-05-02 14:07:54 dhruba Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -229,7 +229,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.411 2007-04-27 20:16:39 dobler Exp $")
+           "$Id: magnetic.f90,v 1.412 2007-05-02 14:07:54 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1424,7 +1424,6 @@ module Magnetic
         else
            diffus_eta=(etatotal+meanfield_etat)*dxyz_2
         endif
-
         if (ldiagnos.and.idiag_dteta/=0) then
           call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
         endif
