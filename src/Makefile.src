@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.290 2007-04-27 11:12:56 dhruba Exp $
+### $Id: Makefile.src,v 1.291 2007-05-02 12:42:22 pkapyla Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -579,7 +579,6 @@ LD_FFTW2=
 #CC=/home/dhruba/mpich/bin/mpicc #(cluster.maths.qmul.ac.uk)
 #LD_MPI = -lmpich #(cluster.maths.qmul.ac.uk) 
 ##
-
 ## CrayXT4 - (Espoo, Finland)
 ## 1012 Dual-core 2.6GHz Opterons
 ##
