@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.412 2007-05-02 14:07:54 dhruba Exp $
+! $Id: magnetic.f90,v 1.413 2007-05-09 11:43:35 joishi Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -129,6 +129,7 @@ module Magnetic
   real :: k1_ff=1.,ampl_ff=1.,swirl=1.
   real :: inertial_length=0.,linertial_2
   real, dimension(mz) :: eta_z
+  real, dimension(mz,3) :: geta_z
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
   logical :: lweyl_gauge=.false.
   logical :: lupw_aa=.false.
@@ -229,7 +230,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.412 2007-05-02 14:07:54 dhruba Exp $")
+           "$Id: magnetic.f90,v 1.413 2007-05-09 11:43:35 joishi Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -338,7 +339,7 @@ module Magnetic
         case('zdep')
           if (lroot) print*, 'resistivity: z-dependent'
           lresi_zdep=.true.
-          call eta_zdep(eta_z,zdep_profile)
+          call eta_zdep(eta_z,geta_z,zdep_profile)
         case('hyper3-aniso')
           if (lroot) print*, 'resistivity: hyper3_aniso'
           lresi_hyper3_aniso=.true.
@@ -687,7 +688,7 @@ module Magnetic
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_aij)=.true.
       endif
-      if (lresi_shell) lpenc_requested(i_diva)=.true.
+      if (lresi_shell .or. lresi_zdep) lpenc_requested(i_diva)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
       if (lresi_hyper3) lpenc_requested(i_del6a)=.true.
@@ -1226,7 +1227,9 @@ module Magnetic
       endif
 !
       if (lresi_zdep) then 
-        fres=fres+eta_z(n)*p%del2a
+        do j=1,3
+          fres(:,j)=fres(:,j)+eta_z(n)*p%del2a(:,j)+geta_z(n,j)*p%diva
+        enddo
         etatotal=etatotal + eta_z(n)
       endif
 !
@@ -3744,7 +3747,7 @@ module Magnetic
 !
     endsubroutine potentdiv
 !***********************************************************************
-    subroutine eta_zdep(eta_z,zdep_profile)
+    subroutine eta_zdep(eta_z,geta_z,zdep_profile)
 !
 !  creates a z-dependent resistivity for protoplanetary disk studies
 !
@@ -3752,11 +3755,12 @@ module Magnetic
 !
       use General, only:erfcc
 !
-!      real, dimension(nx) :: eta_z
       real, dimension(mz) :: eta_z,z2
+      real, dimension(mz,3) :: geta_z
       character (len=labellen) :: zdep_profile
+!      integer :: i
 !     
-      intent(out) :: eta_z
+      intent(out) :: eta_z,geta_z
 !
       select case (zdep_profile)
         case('fs')
@@ -3764,11 +3768,23 @@ module Magnetic
 !  resistivity profile from Fleming & Stone (ApJ 585:908-920)
           eta_z = eta*exp(-z2/2.+sigma_ratio*erfcc(abs(z))/4.)
 !
+! its gradient: 
+          geta_z(:,1) = 0.
+          geta_z(:,2) = 0.
+          geta_z(:,3) = eta_z*(-z-sign(1.,z)*sigma_ratio*exp(-z2)/(2.*sqrt(pi)))
+!
         case('tanh')
 !  default to spread gradient over ~5 grid cells.           
            if (eta_width == 0.) eta_width = 5.*dz
            eta_z = eta*0.5*(tanh((z + eta_z0)/eta_width) & 
              - tanh((z - eta_z0)/eta_width))
+!
+! its gradient:
+           geta_z(:,1) = 0.
+           geta_z(:,2) = 0.
+           geta_z(:,3) = -eta/(2.*eta_width) * ((tanh((z + eta_z0)/eta_width))**2. &
+             - (tanh((z - eta_z0)/eta_width))**2.)
+!
       endselect
 !
     endsubroutine eta_zdep
