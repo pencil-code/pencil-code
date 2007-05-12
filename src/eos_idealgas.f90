@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.83 2007-04-18 19:44:45 wlyra Exp $
+! $Id: eos_idealgas.f90,v 1.84 2007-05-12 07:23:10 brandenb Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -109,7 +109,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.83 2007-04-18 19:44:45 wlyra Exp $')
+           '$Id: eos_idealgas.f90,v 1.84 2007-05-12 07:23:10 brandenb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -210,7 +210,7 @@ module EquationOfState
 !
       if (lroot) then
         print*,'initialize_eos: unit_temperature=',unit_temperature
-        print*,'initialize_eos: cp,lnTT0=',cp,lnTT0
+        print*,'initialize_eos: cp,lnTT0,cs0=',cp,lnTT0,cs0
       endif
 !
     endsubroutine units_eos

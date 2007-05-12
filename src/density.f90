@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.324 2007-04-18 20:03:00 wlyra Exp $
+! $Id: density.f90,v 1.325 2007-05-12 07:23:10 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -40,6 +40,7 @@ module Density
   real :: radius_lnrho=.5,kx_lnrho=1.,ky_lnrho=1.,kz_lnrho=1.
   real :: eps_planet=.5
   real :: q_ell=5., hh0=0.
+  real :: xblob=0., yblob=0., zblob=0.
   real :: co1_ss=0.,co2_ss=0.,Sigma1=150.
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
   real :: wdamp=0.,plaw=0,ptlaw=2.,qgshear=1.5
@@ -65,7 +66,7 @@ module Density
   namelist /density_init_pars/ &
        ampllnrho,initlnrho,initlnrho2,widthlnrho,    &
        rho_left,rho_right,lnrho_const,rho_const,cs2bot,cs2top, &
-       radius_lnrho,eps_planet,                      &
+       radius_lnrho,eps_planet,xblob,yblob,zblob,    &
        b_ell,q_ell,hh0,rbound,                       &
        mpoly,strati_type,beta_glnrho_global,         &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
@@ -113,7 +114,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.324 2007-04-18 20:03:00 wlyra Exp $")
+           "$Id: density.f90,v 1.325 2007-05-12 07:23:10 brandenb Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -351,7 +352,7 @@ module Density
       case('const_rho'); f(:,:,:,ilnrho)=log(rho_const)
       case('constant'); f(:,:,:,ilnrho)=log(rho_left)
       case('mode'); call modes(ampllnrho,coeflnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho,xx,yy,zz)
-      case('blob'); call blob(ampllnrho,f,ilnrho,radius_lnrho,0.,0.,0.)
+      case('blob'); call blob(ampllnrho,f,ilnrho,radius_lnrho,xblob,yblob,zblob)
       case('isothermal'); call isothermal_density(f)
       case('local-isothermal'); call local_isothermal_density(f)  
       case('stratification'); call stratification(f,strati_type)
@@ -361,9 +362,9 @@ module Density
       case('xjump'); call jump(f,ilnrho,lnrho_left,lnrho_right,widthlnrho,'x')
       case('yjump'); call jump(f,ilnrho,lnrho_left,lnrho_right,widthlnrho,'y')
       case('zjump'); call jump(f,ilnrho,lnrho_left,lnrho_right,widthlnrho,'z')
-      case('soundwave-x'); call soundwave(ampllnrho,f,ilnrho,kx=1.)
-      case('soundwave-y'); call soundwave(ampllnrho,f,ilnrho,ky=1.)
-      case('soundwave-z'); call soundwave(ampllnrho,f,ilnrho,kz=1.)
+      case('soundwave-x'); call soundwave(ampllnrho,f,ilnrho,kx=kx_lnrho)
+      case('soundwave-y'); call soundwave(ampllnrho,f,ilnrho,ky=ky_lnrho)
+      case('soundwave-z'); call soundwave(ampllnrho,f,ilnrho,kz=kz_lnrho)
       case('sinwave-phase'); call sinwave_phase(f,ilnrho,ampllnrho,kx_lnrho,ky_lnrho,kz_lnrho,phase_lnrho)
       case('coswave-phase'); call coswave_phase(f,ilnrho,ampllnrho,kx_lnrho,ky_lnrho,kz_lnrho,phase_lnrho)
       case('sinwave-x'); call sinwave(ampllnrho,f,ilnrho,kx=kx_lnrho)

@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.145 2007-05-02 14:07:53 dhruba Exp $
+! $Id: boundcond.f90,v 1.146 2007-05-12 07:23:09 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -440,6 +440,8 @@ module Boundcond
                 call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
               case ('der')      ! set derivative on the boundary
                 call bc_set_der_z(f,topbot,j,fbcz12(j))
+              case ('ovr')      ! set boundary value
+                call bc_overshoot_z(f,fbcz12,topbot,j)
               case ('nil')      ! do nothing; assume that everything is set
               case default
                 bc%bcname=bc12(j)
@@ -647,13 +649,12 @@ module Boundcond
 !
     endsubroutine bc_slope_x
 !***********************************************************************
-    subroutine bc_overshoot_x(f,dist,topbot,j,rel,val)
+    subroutine bc_overshoot_x(f,dist,topbot,j)
 !
-!  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
-!  Don't combine rel=T and sgn=1, that wouldn't make much sense.
+!  Overshoot boundary conditions, ie (d/dx-1/dist) f = 0.
+!  Is implemented as d/dx [ f*exp(-x/dist) ] = 0,
+!  so f(l1-i)*exp[-x(l1-i)/dist] = f(l1+i)*exp[-x(l1+i)/dist],
+!  or f(l1-i) = f(l1+i)*exp{[x(l1-i)-x(l1+i)]/dist}.
 !
 !  25-feb-07/axel: adapted from bc_sym_x
 !
@@ -661,47 +662,74 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom), optional :: val
       real, dimension (mcom) :: dist
       integer :: i,j
-      logical, optional :: rel
-      logical :: relative
 !
-      if (present(rel)) then; relative=rel; else; relative=.false.; endif
-
       select case(topbot)
-
+!
+!  bottom
+!
       case('bot')               ! bottom boundary
-        if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
-        if (relative) then
-          do i=1,nghost
-            f(l1-i,:,:,j)=2*f(l1,:,:,j)+dist(j)*f(l1+i,:,:,j)*x(l1+i)/x(l1-i)
-          enddo
-        else
-          do i=1,nghost
-            f(l1-i,:,:,j)=f(l1+i,:,:,j)*exp((x(l1-i)-x(l1+i))/dist(j))
-          enddo
-!         f(l1,:,:,j)=(2.*x(l1+1)*f(l1+1,:,:,j)-.5*x(l1+2)*f(l1+2,:,:,j))/(1.5*x(l1))
-        endif
-
+        do i=1,nghost
+          f(l1-i,:,:,j)=f(l1+i,:,:,j)*exp((x(l1-i)-x(l1+i))/dist(j))
+        enddo
+!
+!  top
+!
       case('top')               ! top boundary
-        if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
-        if (relative) then
-          do i=1,nghost
-            f(l2+i,:,:,j)=2*f(l2,:,:,j)+dist(j)*f(l2-i,:,:,j)
-          enddo
-        else
-          do i=1,nghost
-            f(l2+i,:,:,j)=f(l2-i,:,:,j)*exp((x(l2+i)-x(l2-i))/dist(j))
-          enddo
-        endif
-
+        do i=1,nghost
+          f(l2+i,:,:,j)=f(l2-i,:,:,j)*exp((x(l2+i)-x(l2-i))/dist(j))
+        enddo
+!
+!  default
+!
       case default
         print*, "bc_overshoot_x: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_overshoot_x
+!***********************************************************************
+    subroutine bc_overshoot_z(f,dist,topbot,j)
+!
+!  Overshoot boundary conditions, ie (d/dz-1/dist) f = 0.
+!  Is implemented as d/dz [ f*exp(-z/dist) ] = 0,
+!  so f(n1-i)*exp[-z(n1-i)/dist] = f(n1+i)*exp[-z(n1+i)/dist],
+!  or f(n1-i) = f(n1+i)*exp{[z(n1-i)-z(n1+i)]/dist}.
+!
+!  25-feb-07/axel: adapted from bc_sym_z
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mcom) :: dist
+      integer :: i,j
+!
+      select case(topbot)
+!
+!  bottom
+!
+      case('bot')               ! bottom boundary
+        do i=1,nghost
+          f(:,:,n1-i,j)=f(:,:,n1+i,j)*exp((z(n1-i)-z(n1+i))/dist(j))
+        enddo
+!
+!  top
+!
+      case('top')               ! top boundary
+        do i=1,nghost
+          f(:,:,n2+i,j)=f(:,:,n2-i,j)*exp((z(n2+i)-z(n2-i))/dist(j))
+        enddo
+!
+!  default
+!
+      case default
+        print*, "bc_overshoot_z: ", topbot, " should be `top' or `bot'"
+!
+      endselect
+!
+    endsubroutine bc_overshoot_z
 !***********************************************************************
     subroutine bc_antis_x(f,slope,topbot,j,rel,val)
 !

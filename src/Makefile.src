@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.292 2007-05-04 18:33:33 dintrans Exp $
+### $Id: Makefile.src,v 1.293 2007-05-12 07:23:09 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -625,10 +625,10 @@ LD_FFTW2=
 ##
 ## Petri's laptop (MacBook Pro)
 ##
-#FC=ifort #(Chandrasekhar|dhcp*|ulysse)
-#FFLAGS= -I/usr/local/include -O3 -stand f90 -assume no2underscores -vec-report0 #(Chandrasekhar|dhcp*)
-#CFLAGS=-DFUNDERSC=1 #(Chandrasekhar|dhcp*|ulysse)
-#LD_MPI= -L/usr/local/include -llammpio -llamf77mpi -lmpi -llam -ldl #(Chandrasekhar|dhcp*)
+#FC=ifort #(Chandrasekhar|ulysse)
+#FFLAGS= -I/usr/local/include -O3 -stand f90 -assume no2underscores -vec-report0 #(Chandrasekhar)
+#CFLAGS=-DFUNDERSC=1 #(Chandrasekhar|ulysse)
+#LD_MPI= -L/usr/local/include -llammpio -llamf77mpi -lmpi -llam -ldl #(Chandrasekhar)
 #FFLAGS=-O0 #(ulysse)
 ##
 ## Dhruba's laptop 

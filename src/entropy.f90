@@ -1,5 +1,4 @@
-! $Id: entropy.f90,v 1.500 2007-04-08 10:13:31 ajohan Exp $
-
+! $Id: entropy.f90,v 1.501 2007-05-12 07:23:10 brandenb Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -168,7 +167,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.500 2007-04-08 10:13:31 ajohan Exp $")
+           "$Id: entropy.f90,v 1.501 2007-05-12 07:23:10 brandenb Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -607,6 +606,7 @@ module Entropy
         case('zero', '0'); f(:,:,:,iss) = 0.
         case('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
         case('blob'); call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
+        case('blob_radeq'); call blob_radeq(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
         case('isothermal'); call isothermal_entropy(f,T0)
         case('isothermal_lnrho_ss')
           print*, 'init_ss: Isothermal density and entropy stratification'
@@ -922,6 +922,36 @@ module Entropy
       if (NO_WARN) print*,xx,yy  !(to keep compiler quiet)
 !
     endsubroutine init_ss
+!***********************************************************************
+    subroutine blob_radeq(ampl,f,i,radius,xblob,yblob,zblob)
+!
+!  add blob-like perturbation in radiative pressure equilibrium
+!
+!   6-may-07/axel: coded
+!
+     use Cdata
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, optional :: xblob,yblob,zblob
+      real :: ampl,radius,x01=0.,y01=0.,z01=0.
+      integer :: i
+!
+!  single  blob
+!
+      if (present(xblob)) x01=xblob
+      if (present(yblob)) y01=yblob
+      if (present(zblob)) z01=zblob
+      if (ampl==0) then
+        if (lroot) print*,'ampl=0 in blob_radeq'
+      else
+        if (lroot.and.ip<14) print*,'blob: variable i,ampl=',i,ampl
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(&
+           spread(spread(exp(-((x-x01)/radius)**2),2,my),3,mz)&
+          *spread(spread(exp(-((y-y01)/radius)**2),1,mx),3,mz)&
+          *spread(spread(exp(-((z-z01)/radius)**2),1,mx),2,my))
+      endif
+!
+    endsubroutine blob_radeq
 !***********************************************************************
     subroutine polytropic_ss_z( &
          f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,ssint)
