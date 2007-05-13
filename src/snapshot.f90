@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.20 2007-04-08 10:13:34 ajohan Exp $
+! $Id: snapshot.f90,v 1.21 2007-05-13 15:24:58 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -387,7 +387,6 @@ contains
       if (lserial_io) call start_serialize()
       open(lun_output,FILE=file,FORM='unformatted')
 
-      write(lun_output) mx,my,mz,nv
       if (lwrite_2d) then
         if (ny==1) then
           write(lun_output) a(:,4,:,:)
@@ -397,14 +396,14 @@ contains
       else
         write(lun_output) a
       endif
-      write(lun_output) t,x,y,z,dx,dy,dz
 !
       close(lun_output)
+!
       if (lserial_io) call end_serialize()
 !
     endsubroutine output_globals
 !***********************************************************************
-    subroutine input_globals(file,a,nv)
+    subroutine input_globals(filename,a,nv)
 !
 !  read globals snapshot file, ignoring mesh
 !  10-nov-06/tony: coded
@@ -412,7 +411,7 @@ contains
       use Cdata
       use Mpicomm, only: start_serialize,end_serialize
 !
-      character (len=*) :: file
+      character (len=*) :: filename
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
       real, allocatable, dimension (:,:,:) :: aa
@@ -420,42 +419,15 @@ contains
       real :: tscratch
 !
       if (lserial_io) call start_serialize()
-      open(1,FILE=file,FORM='unformatted')
-      if (ip<=8) print*,'input_globals: open, mx,my,mz,nv=',mx,my,mz,nv
-      read(1) ggmx,ggmy,ggmz,ggnv
-
-      if ((mx/=ggmx).or.(my/=ggmy).or.(mz/=ggmz).or.(nv/=ggnv)) then
-        print*,"problem (mx,my,mz,nv): ",mx,my,mz,nv
-        print*,"file '"//trim(file)//"' (mx,my,mz,nv): ",ggmx,ggmy,ggmz,ggnv
-        call fatal_error("input_globals",&
-            "Problem and globals data differ in size!!")
-      endif
-
-      if (lwrite_2d) then
-        if (ny==1) then
-          allocate(aa(mx,mz,nv))
-          read(1) aa
-          a(:,4,:,:)=aa
-        else
-          allocate(aa(mx,my,nv))
-          read(1) aa
-          a(:,:,4,:)=aa
-        endif
-        deallocate(aa)
-      else
+!
+      open(1,FILE=filename,FORM='unformatted')
+        if (ip<=8) print*,'input_globals: open, mx,my,mz,nv=',mx,my,mz,nv
         read(1) a
-      endif
-      if (ip<=8) print*,'input_globals: read ',file
-!
-      read(1) tscratch,x,y,z,dx,dy,dz
-!
-      if (ip<=3) print*,'input_globals: ip,x=',ip,x
-      if (ip<=3) print*,'input_globals: y=',y
-      if (ip<=3) print*,'input_globals: z=',z
-!
+        if (ip<=8) print*,'input_globals: read ',filename
       close(1)
+!
       if (lserial_io) call end_serialize()
-
+!
     endsubroutine input_globals
 !***********************************************************************
     subroutine update_auxiliaries(a)
