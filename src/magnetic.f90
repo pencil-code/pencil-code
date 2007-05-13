@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.413 2007-05-09 11:43:35 joishi Exp $
+! $Id: magnetic.f90,v 1.414 2007-05-13 15:30:38 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -78,10 +78,13 @@ module Magnetic
   real :: nu_ni=0.,nu_ni1,hall_term=0.
   real :: alpha_effect=0.,alpha_quenching=0.,delta_effect=0.,meanfield_etat=0.
   real :: displacement_gun=0.
-  real :: pertamplaa=0.
+  real :: pertamplaa=0., beta_const=1.0
   real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
   integer :: N_modes_aa=1
+  integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
+  integer :: iglobal_jx_ext=0, iglobal_jy_ext=0, iglobal_jz_ext=0
+  integer :: iglobal_ex_ext=0, iglobal_ey_ext=0, iglobal_ez_ext=0
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: llorentzforce=.true.,linduction=.true.
   logical :: lresi_eta_const=.false.
@@ -103,7 +106,6 @@ module Magnetic
   logical :: lmeanfield_theory=.false.,lOmega_effect=.false.
   logical :: lmeanfield_noalpm=.false.
   logical :: lgauss=.false.
-  logical :: lee_ext=.false.,lbb_ext=.false.,ljj_ext=.false.
   logical :: lbb_as_aux=.false.,ljj_as_aux=.false.
   character (len=labellen) :: pertaa='zero'
 
@@ -118,7 +120,7 @@ module Magnetic
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa, &
        rmode,zmode,rm_int,rm_ext,lgauss, &
-       lbb_as_aux,ljj_as_aux
+       lbb_as_aux,ljj_as_aux,beta_const
 
   ! run parameters
   real :: eta=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
@@ -152,7 +154,7 @@ module Magnetic
        eta_int,eta_ext,eta_shock,wresistivity, &
        rhomin_jxb,va2max_jxb,va2power_jxb,llorentzforce,linduction, &
        reinitalize_aa,rescale_aa,lB_ext_pot, &
-       lee_ext,lbb_ext,ljj_ext,displacement_gun, &
+       displacement_gun, &
        pertaa,pertamplaa,D_smag,brms_target,rescaling_fraction, &
        lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint,lfreeze_aext, &
        sigma_ratio,zdep_profile,eta_width,eta_z0, &
@@ -202,6 +204,7 @@ module Magnetic
 !  1-may-02/wolf: coded
 !
       use Cdata
+      use FArrayManager
       use Mpicomm
       use Sub
 !
@@ -230,7 +233,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.413 2007-05-09 11:43:35 joishi Exp $")
+           "$Id: magnetic.f90,v 1.414 2007-05-13 15:30:38 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -464,6 +467,13 @@ module Magnetic
         endif
       endif
 !
+!  Register global variables
+!
+      if (any(initaa=='hydrostatic_magnetic')) then
+        call farray_register_global('iglobal_by_ext',iglobal_by_ext)
+        call farray_register_global('iglobal_jx_ext',iglobal_jx_ext)
+      endif
+!
       if (NO_WARN) print*, lstarting
 !
     endsubroutine initialize_magnetic
@@ -478,17 +488,19 @@ module Magnetic
 !   7-nov-2001/wolf: coded
 !
       use Cdata
-      use Mpicomm
       use EquationOfState
+      use FArrayManager
       use Gravity, only: gravz
-      use Sub
       use Initcond
+      use Mpicomm
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz,tmp,prof
+!
       real, dimension (nx,3) :: bb
-      real, dimension (nx) :: b2,fact
-      real :: beq2
+      real, dimension (nx) :: b2,fact,rho
+      real :: beq2, scaleH
       integer :: j
 !
       do j=1,ninit
@@ -574,6 +586,17 @@ module Magnetic
           f(:,:,:,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*xx)
           f(:,:,:,iaz) = amplaa(j)/kx_aa(j)*cos(kx_aa(j)*xx)
         case('geo-benchmark-case1','geo-benchmark-case2'); call geo_benchmark_B(f)
+        case('hydrostatic_magnetic')
+          scaleH=1.0*sqrt(1+1/beta_const)
+          print*, 'init_aa: hydrostatic_magnetic: scaleH=', scaleH
+          do m=m1,m2; do n=n1,n2
+            f(l1:l2,m,n,ilnrho)=alog(1.0)-z(n)**2/(2*scaleH**2)
+            rho=exp(f(l1:l2,m,n,ilnrho))
+            f(l1:l2,m,n,iglobal_by_ext)= &
+                sqrt(2*mu0*1.0**2*beta_const*rho)
+            f(l1:l2,m,n,iglobal_jx_ext)= &
+                sqrt(0.5*mu0*1.0**2*beta_const)*sqrt(rho)*z(n)/scaleH**2
+          enddo; enddo
 
         case default
           !
@@ -965,11 +988,10 @@ module Magnetic
           call get_global(bb_ext_pot,m,n,'B_ext_pot')
           p%bb=p%bb+bb_ext_pot
         endif
-!  add external B-field (currently for spheromak experiments)
-        if (lbb_ext) then
-          call get_global(bb_ext,m,n,'bb_ext')
-          p%bb=p%bb+bb_ext
-        endif
+!  add external B-field.
+        if (iglobal_bx_ext/=0) p%bb(:,1)=p%bb(:,1)+f(l1:l2,m,n,iglobal_bx_ext)
+        if (iglobal_by_ext/=0) p%bb(:,2)=p%bb(:,2)+f(l1:l2,m,n,iglobal_by_ext)
+        if (iglobal_bz_ext/=0) p%bb(:,3)=p%bb(:,3)+f(l1:l2,m,n,iglobal_bz_ext)
       endif
 ! ab
       if (lpencil(i_ab)) call dot_mn(p%aa,p%bbb,p%ab)
@@ -977,10 +999,10 @@ module Magnetic
       if (lpencil(i_uxb)) then
         call cross_mn(p%uu,p%bb,p%uxb)
         call cross_mn(p%uu,p%bbb,uxbb)
-        if (lee_ext) then
-          call get_global(ee_ext,m,n,'ee_ext')
-          p%uxb=p%uxb+ee_ext
-        endif
+!  add external e-field.
+        if (iglobal_ex_ext/=0) p%uxb(:,1)=p%uxb(:,1)+f(l1:l2,m,n,iglobal_ex_ext)
+        if (iglobal_ey_ext/=0) p%uxb(:,2)=p%uxb(:,2)+f(l1:l2,m,n,iglobal_ey_ext)
+        if (iglobal_ez_ext/=0) p%uxb(:,3)=p%uxb(:,3)+f(l1:l2,m,n,iglobal_ez_ext)
       endif
 ! uga
 ! DM : this requires later attention
@@ -1011,10 +1033,10 @@ module Magnetic
 ! jj
       if (lpencil(i_jj)) then
         p%jj=mu01*p%jj
-        if (ljj_ext) then !add external current
-          call get_global(jj_ext,m,n,'jj_ext')
-          p%jj=p%jj-jj_ext
-        endif
+!  add external j-field.
+        if (iglobal_jx_ext/=0) p%jj(:,1)=p%jj(:,1)+f(l1:l2,m,n,iglobal_jx_ext)
+        if (iglobal_jy_ext/=0) p%jj(:,2)=p%jj(:,2)+f(l1:l2,m,n,iglobal_jy_ext)
+        if (iglobal_jz_ext/=0) p%jj(:,3)=p%jj(:,3)+f(l1:l2,m,n,iglobal_jz_ext)
       endif
 ! j2
       if (lpencil(i_j2)) call dot2_mn(p%jj,p%j2)
