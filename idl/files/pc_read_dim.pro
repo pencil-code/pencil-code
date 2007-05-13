@@ -1,10 +1,10 @@
-; $Id: pc_read_dim.pro,v 1.15 2006-10-14 15:26:39 theine Exp $
+; $Id: pc_read_dim.pro,v 1.16 2007-05-13 15:23:10 ajohan Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2006-10-14 15:26:39 $
-;  $Revision: 1.15 $
+;  $Date: 2007-05-13 15:23:10 $
+;  $Revision: 1.16 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -90,6 +90,8 @@ my=0L
 mz=0L
 mw=0L
 mvar=0L
+maux=0L
+mglobal=0L
 precision=''
 nx=0L
 ny=0L
@@ -120,7 +122,7 @@ if (found gt 0) then begin
   IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' + filename + '...'
 
   openr,file,filename
-  readf,file,mx,my,mz,mvar,maux
+  readf,file,mx,my,mz,mvar,maux,mglobal
   readf,file,precision
   readf,file,nghostx,nghosty,nghostz
   if (n_elements(proc) eq 1) then begin
@@ -164,24 +166,25 @@ precision = strmid(precision,0,1)
 
 
 ; Build structure of all the variables
-object = CREATE_STRUCT(name=filename,['mx','my','mz','mw','mvar','maux', $
-                        'precision', $
-                        'nx','ny','nz', $
-                        'nghostx','nghosty','nghostz', $
-                        'nxgrid','nygrid','nzgrid', $
-                        'mxgrid','mygrid','mzgrid', $
-                        'l1','l2','m1','m2','n1','n2', $
-                        'ipx','ipy','ipz', $
-                        'nprocx','nprocy','nprocz'], $
-                       mx,my,mz,mw,mvar,maux, $
-                       precision, $
-                       nx,ny,nz,  $
-                       nghostx,nghosty,nghostz, $
-                       nxgrid, nygrid, nzgrid, $
-                       mxgrid, mygrid, mzgrid, $
-                       l1,l2,m1,m2,n1,n2, $
-                       ipx, ipy, ipz, $
-                       nprocx,nprocy,nprocz)
+object = CREATE_STRUCT(name=filename,['mx','my','mz','mw', $
+    'mvar','maux','mglobal', $
+    'precision', $
+    'nx','ny','nz', $
+    'nghostx','nghosty','nghostz', $
+    'nxgrid','nygrid','nzgrid', $
+    'mxgrid','mygrid','mzgrid', $
+    'l1','l2','m1','m2','n1','n2', $
+    'ipx','ipy','ipz', $
+    'nprocx','nprocy','nprocz'], $
+    mx,my,mz,mw,mvar,maux,mglobal, $
+    precision, $
+    nx,ny,nz,  $
+    nghostx,nghosty,nghostz, $
+    nxgrid, nygrid, nzgrid, $
+    mxgrid, mygrid, mzgrid, $
+    l1,l2,m1,m2,n1,n2, $
+    ipx, ipy, ipz, $
+    nprocx,nprocy,nprocz)
 
 
 ; If requested print a summary
