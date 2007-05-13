@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.311 2007-05-13 15:23:10 ajohan Exp $
+! $Id: sub.f90,v 1.312 2007-05-13 17:45:36 theine Exp $
 
 module Sub
 
@@ -2769,7 +2769,7 @@ module Sub
       !
       if (lroot .or. .not. lmonolithic_io) then
         open(1,file=file)
-        write(1,'(5i7)') mxout1,myout1,mzout1,mvar,maux,mglobal
+        write(1,'(3i7,3i4)') mxout1,myout1,mzout1,mvar,maux,mglobal
         !
         !  check for double precision
         !
