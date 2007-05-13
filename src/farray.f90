@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.15 2007-01-05 19:53:27 dobler Exp $
+! $Id: farray.f90,v 1.16 2007-05-13 15:23:44 ajohan Exp $
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  This includes handling different
@@ -12,7 +12,7 @@
 module FArrayManager
 !
   use Cparam, only: mvar,maux,mglobal,maux_com,mscratch
-  use Cdata, only: nvar,naux,naux_com
+  use Cdata, only: nvar,naux,naux_com,datadir
   use Messages
 !
   implicit none
@@ -117,17 +117,22 @@ module FArrayManager
     endsubroutine farray_register_pde
 !***********************************************************************
     subroutine farray_register_global(varname,ivar,vector,ierr)
+!
+!  Register a global variable in the f array. Also write index information
+!  to index.pro for use with pc_read_global.
+!
       character (len=*) :: varname
       integer  :: ivar
+      integer, optional :: ierr
+      integer, optional :: vector
+!
       type (farray_contents_list), pointer :: item
       integer :: ncomponents
       integer, parameter :: vartype = iFARRAY_TYPE_GLOBAL
-      integer, optional :: ierr
-      integer, optional :: vector
-      !
+!
       intent(in)  :: varname,vector
       intent(out) :: ivar,ierr
-
+!
       if (present(ierr).and.present(vector)) then
         call farray_register_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
       elseif (present(ierr)) then
@@ -137,10 +142,17 @@ module FArrayManager
       else
         call farray_register_variable(varname,ivar,vartype)
       endif
-
+!
+      open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+        write(3,*) varname, '=', ivar
+      close(3)
+!
     endsubroutine farray_register_global
 !***********************************************************************
     subroutine farray_register_auxiliary(varname,ivar,communicated,vector,ierr)
+!
+!  Register an auxiliary variable in the f array.
+!
       character (len=*) :: varname
       integer :: ivar
       type (farray_contents_list), pointer :: item
