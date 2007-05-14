@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.414 2007-05-13 15:30:38 ajohan Exp $
+! $Id: magnetic.f90,v 1.415 2007-05-14 10:58:24 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -129,6 +129,7 @@ module Magnetic
   real :: sigma_ratio=1.,eta_width=0.,eta_z0=1.
   real :: alphaSSm=0.
   real :: k1_ff=1.,ampl_ff=1.,swirl=1.
+  real :: k1x_ff=1.,k1y_ff=1.,k1z_ff=1.
   real :: inertial_length=0.,linertial_2
   real, dimension(mz) :: eta_z
   real, dimension(mz,3) :: geta_z
@@ -148,6 +149,7 @@ module Magnetic
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        lforcing_continuous,iforcing_continuous,k1_ff,ampl_ff,swirl,radius, &
+       k1x_ff,k1y_ff,k1z_ff, &
        bthresh,bthresh_per_brms, &
        iresistivity,lweyl_gauge,lupw_aa, &
        alphaSSm, &
@@ -233,7 +235,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.414 2007-05-13 15:30:38 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.415 2007-05-14 10:58:24 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2155,6 +2157,9 @@ module Magnetic
           phix=exp(-R12*x**2)
           phiy=exp(-R12*y**2)
           phiz=exp(-R12*z**2)
+        elseif (iforcing_continuous=='cosxcosz') then
+          cosx=cos(k1x_ff*x)
+          cosz=cos(k1z_ff*z)
         elseif (iforcing_continuous=='RobertsFlow') then
           if (lroot) print*,'forcing_continuous: RobertsFlow'
           sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
@@ -2172,6 +2177,11 @@ module Magnetic
         forcing_rhs(:,1)=(-swirl*y(m    )+2.*x(l1:l2)*z(n))*phi
         forcing_rhs(:,2)=(+swirl*x(l1:l2)+2.*y(m    )*z(n))*phi
         forcing_rhs(:,3)=(R2-x(l1:l2)**2-y(m)**2)*2.*R12*phi
+      elseif (iforcing_continuous=='cosxcosz') then
+        fact=ampl_ff
+        forcing_rhs(:,1)=0.
+        forcing_rhs(:,2)=fact*cosx(l1:l2)*cosz(n)
+        forcing_rhs(:,3)=0.
       elseif (iforcing_continuous=='RobertsFlow') then
         fact=ampl_ff
         forcing_rhs(:,1)=-fact*cosx(l1:l2)*siny(m)
