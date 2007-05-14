@@ -1,4 +1,4 @@
-! $Id: radiation_nongrey.f90,v 1.1 2007-04-19 00:45:45 wlyra Exp $
+! $Id: radiation_nongrey.f90,v 1.2 2007-05-14 22:04:15 wlyra Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -198,7 +198,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_nongrey.f90,v 1.1 2007-04-19 00:45:45 wlyra Exp $")
+           "$Id: radiation_nongrey.f90,v 1.2 2007-05-14 22:04:15 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -392,7 +392,11 @@ module Radiation
 !  Initialize (bolometric) radiative flux and cooling function
 !
       if (lradflux) f(:,:,:,iFradx:iFradz)=0
-
+!
+!  Initialize cooling function
+!
+      divF(:,:,:)=0.
+!      
       do inu=1,nnu
 !
       call source_function(f,inu)
