@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.21 2007-05-13 15:24:58 ajohan Exp $
+! $Id: snapshot.f90,v 1.22 2007-05-14 12:08:14 dintrans Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -327,22 +327,16 @@ contains
       character (len=*) :: file
       integer :: nv,mode
       real, dimension (mx,my,mz,nv) :: a
-      real, allocatable, dimension (:,:,:) :: aa
 !
       if (lserial_io) call start_serialize()
       open(1,FILE=file,FORM='unformatted')
       if (ip<=8) print*,'input_snap: open, mx,my,mz,nv=',mx,my,mz,nv
       if (lwrite_2d) then
         if (ny==1) then
-          allocate(aa(mx,mz,nv))
-          read(1) aa
-          a(:,4,:,:)=aa
+          read(1) a(:,4,:,:)
         else
-          allocate(aa(mx,my,nv))
-          read(1) aa
-          a(:,:,4,:)=aa
+          read(1) a(:,:,4,:)
         endif
-        deallocate(aa)
       else
         read(1) a
       endif
@@ -422,7 +416,15 @@ contains
 !
       open(1,FILE=filename,FORM='unformatted')
         if (ip<=8) print*,'input_globals: open, mx,my,mz,nv=',mx,my,mz,nv
-        read(1) a
+        if (lwrite_2d) then
+          if (ny==1) then
+            read(1) a(:,4,:,:)
+          else
+            read(1) a(:,:,4,:)
+          endif
+        else 
+          read(1) a
+        endif
         if (ip<=8) print*,'input_globals: read ',filename
       close(1)
 !
