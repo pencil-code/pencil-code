@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.27 2007-05-15 19:18:12 brandenb Exp $
+! $Id: testfield.f90,v 1.28 2007-05-15 19:26:08 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -110,7 +110,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.27 2007-05-15 19:18:12 brandenb Exp $")
+           "$Id: testfield.f90,v 1.28 2007-05-15 19:26:08 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -506,6 +506,7 @@ module Testfield
             enddo
 !
 !  do communication for array of size mz,3,ntestfield/3=mz*ntestfield
+!  (Could do the same in momentum removal procedure.)
 !
 !  real, dimension (mz,3,ntestfield/3) :: fsum_tmp,fsum
 !           fsum_tmp=uxbtestm
