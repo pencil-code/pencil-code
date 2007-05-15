@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.55 2007-02-02 14:14:47 wlyra Exp $
+! $Id: pscalar_nolog.f90,v 1.56 2007-05-15 19:18:12 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc.
@@ -68,6 +68,7 @@ module Pscalar
   integer :: idiag_Qrhoccm=0,idiag_Qpsclm=0
   integer :: idiag_ccmz=0,idiag_gcc5m=0,idiag_gcc10m=0
   integer :: idiag_ucm=0,idiag_uudcm=0,idiag_Cz2m=0,idiag_Cz4m=0,idiag_Crmsm=0
+  integer :: idiag_uxcm=0,idiag_uycm=0,idiag_uzcm=0
   integer :: idiag_cc1m=0,idiag_cc2m=0,idiag_cc3m=0,idiag_cc4m=0,idiag_cc5m=0
   integer :: idiag_cc6m=0,idiag_cc7m=0,idiag_cc8m=0,idiag_cc9m=0,idiag_cc10m=0
   integer :: idiag_gcc1m=0,idiag_gcc2m=0,idiag_gcc3m=0,idiag_gcc4m=0
@@ -110,7 +111,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.55 2007-02-02 14:14:47 wlyra Exp $")
+           "$Id: pscalar_nolog.f90,v 1.56 2007-05-15 19:18:12 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -312,7 +313,8 @@ module Pscalar
       if (idiag_rhoccm/=0 .or. idiag_Cz2m/=0 .or. idiag_Cz4m/=0 .or. &
           idiag_Qrhoccm/=0 .or. idiag_Qpsclm/=0) &
           lpenc_diagnos(i_rho)=.true.
-      if (idiag_ucm/=0 .or. idiag_uudcm/=0) lpenc_diagnos(i_uu)=.true.
+      if (idiag_ucm/=0 .or. idiag_uudcm/=0 .or. idiag_uxcm/=0 .or. &
+          idiag_uycm/=0 .or. idiag_uzcm/=0 ) lpenc_diagnos(i_uu)=.true.
       if (idiag_uudcm/=0) lpenc_diagnos(i_ugcc)=.true.
       if (idiag_cc1m/=0 .or. idiag_cc2m/=0 .or. idiag_cc3m/=0 .or. &
           idiag_cc4m/=0 .or. idiag_cc5m/=0 .or. idiag_cc6m/=0 .or. &
@@ -485,6 +487,9 @@ module Pscalar
         if (idiag_rhoccm/=0)  call sum_mn_name(p%rho*p%cc,idiag_rhoccm)
         if (idiag_ccmax/=0)   call max_mn_name(p%cc,idiag_ccmax)
         if (idiag_ccmin/=0)   call max_mn_name(-p%cc,idiag_ccmin,lneg=.true.)
+        if (idiag_uxcm/=0)    call sum_mn_name(p%uu(:,1)*p%cc,idiag_uxcm)
+        if (idiag_uycm/=0)    call sum_mn_name(p%uu(:,2)*p%cc,idiag_uycm)
+        if (idiag_uzcm/=0)    call sum_mn_name(p%uu(:,3)*p%cc,idiag_uzcm)
         if (idiag_ucm/=0)     call sum_mn_name(p%uu(:,3)*p%cc,idiag_ucm)
         if (idiag_uudcm/=0)   call sum_mn_name(p%uu(:,3)*p%ugcc,idiag_uudcm)
         if (idiag_Cz2m/=0)    call sum_mn_name(p%rho*p%cc*z(n)**2,idiag_Cz2m)
@@ -584,6 +589,7 @@ module Pscalar
         idiag_Qrhoccm=0; idiag_Qpsclm=0
         idiag_ccmz=0;
         idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0; idiag_Crmsm=0
+        idiag_uxcm=0; idiag_uycm=0; idiag_uzcm=0
         idiag_cc1m=0; idiag_cc2m=0; idiag_cc3m=0; idiag_cc4m=0; idiag_cc5m=0
         idiag_cc6m=0; idiag_cc7m=0; idiag_cc8m=0; idiag_cc9m=0; idiag_cc10m=0
         idiag_gcc1m=0; idiag_gcc2m=0; idiag_gcc3m=0; idiag_gcc4m=0
@@ -601,6 +607,9 @@ module Pscalar
         call parse_name(iname,cname(iname),cform(iname),'ccmin',idiag_ccmin)
         call parse_name(iname,cname(iname),cform(iname),'ccm',idiag_ccm)
         call parse_name(iname,cname(iname),cform(iname),'ucm',idiag_ucm)
+        call parse_name(iname,cname(iname),cform(iname),'uxcm',idiag_uxcm)
+        call parse_name(iname,cname(iname),cform(iname),'uycm',idiag_uycm)
+        call parse_name(iname,cname(iname),cform(iname),'uzcm',idiag_uzcm)
         call parse_name(iname,cname(iname),cform(iname),'uudcm',idiag_uudcm)
         call parse_name(iname,cname(iname),cform(iname),'Cz2m',idiag_Cz2m)
         call parse_name(iname,cname(iname),cform(iname),'Cz4m',idiag_Cz4m)
@@ -643,6 +652,9 @@ module Pscalar
         write(3,*) 'i_ccmin=',idiag_ccmin
         write(3,*) 'i_ccm=',idiag_ccm
         write(3,*) 'i_ucm=',idiag_ucm
+        write(3,*) 'i_uxcm=',idiag_uxcm
+        write(3,*) 'i_uycm=',idiag_uycm
+        write(3,*) 'i_uzcm=',idiag_uzcm
         write(3,*) 'i_uudcm=',idiag_uudcm
         write(3,*) 'i_ccmz=',idiag_ccmz
         write(3,*) 'i_Cz2m=',idiag_Cz2m

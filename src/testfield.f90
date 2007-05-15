@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.26 2007-02-02 14:14:47 wlyra Exp $
+! $Id: testfield.f90,v 1.27 2007-05-15 19:18:12 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -110,7 +110,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.26 2007-02-02 14:14:47 wlyra Exp $")
+           "$Id: testfield.f90,v 1.27 2007-05-15 19:18:12 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -468,6 +468,7 @@ module Testfield
       real, dimension (nx,3) :: btest,uxbtest
       integer :: jtest,j,nxy=nx*ny
       logical :: headtt_save
+      real :: fac
       type (pencil_case) :: p
 !
       intent(in)     :: f
@@ -476,6 +477,7 @@ module Testfield
 !  so we need to reset it afterwards.
 !
       headtt_save=headtt
+      fac=1./nxy
 !
 !  do each of the 12 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
@@ -497,11 +499,19 @@ module Testfield
                 call curl(f,iaxtest,btest)
                 call cross_mn(p%uu,btest,uxbtest)
                 do j=1,3
-                  uxbtestm(n,j,jtest)=uxbtestm(n,j,jtest)+sum(uxbtest(:,j))/nxy
+                  uxbtestm(n,j,jtest)=uxbtestm(n,j,jtest)+fac*sum(uxbtest(:,j))
                 enddo
                 headtt=.false.
               enddo
             enddo
+!
+!  do communication for array of size mz,3,ntestfield/3=mz*ntestfield
+!
+!  real, dimension (mz,3,ntestfield/3) :: fsum_tmp,fsum
+!           fsum_tmp=uxbtestm
+!           call mpiallreduce_sum(fsum_tmp,fsum)
+!           uxbtestm=fsum
+!
           endif
         endif
       enddo

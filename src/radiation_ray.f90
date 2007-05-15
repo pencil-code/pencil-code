@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.133 2007-04-12 13:33:23 wlyra Exp $
+! $Id: radiation_ray.f90,v 1.134 2007-05-15 19:18:12 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -180,7 +180,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.133 2007-04-12 13:33:23 wlyra Exp $")
+           "$Id: radiation_ray.f90,v 1.134 2007-05-15 19:18:12 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1180,6 +1180,8 @@ module Radiation
 !  AB: Tobi, would it be better/possible to redefine Qrad so as
 !  AB: to include the kapparho factor. Then we'd have Qrad=-divFrad.
 !
+!  AB: the following looks strange...
+!
       if (lrad_cool_diffus.or.lrad_pres_diffus) then
         call calc_rad_diffusion(f,df,p)
         cooling=f(l1:l2,m,n,iQrad)
@@ -1811,10 +1813,7 @@ module Radiation
 !  Frad=sigmaSB*T^4, and Egas=rho*cv*T. (At the moment we use cp.)
 !  cdtrad=0.8 is an empirical coefficient (harcoded for the time being)
 !
-
-
         chi_rad=Krad*p%rho1*p%cp1
-
         if (lrad_cool_diffus .and. lrad_pres_diffus) then
           diffus_chi=max(diffus_chi,gamma*chi_rad*dxyz_2)
         else

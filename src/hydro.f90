@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.343 2007-04-29 09:38:16 pkapyla Exp $
+! $Id: hydro.f90,v 1.344 2007-05-15 19:18:12 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -288,7 +288,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.343 2007-04-29 09:38:16 pkapyla Exp $")
+           "$Id: hydro.f90,v 1.344 2007-05-15 19:18:12 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1348,7 +1348,10 @@ module Hydro
 !***********************************************************************
     subroutine calc_lhydro_pars(f)
 !
-!  calculate <rho*ux> and <rho*uy> when xxx
+!  calculate <rho*ux> and <rho*uy> when tau_damp_ruxm, tau_damp_ruym,
+!  or tau_damp_ruzm are different from zero. Was used to remove net
+!  momenta in any of the three directions. A better method is now
+!  to set lremove_mean_momenta=T in the call to remove_mean_momenta.
 !
 !   9-nov-06/axel: adapted from calc_ltestfield_pars
 !
