@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.502 2007-05-14 12:41:07 dintrans Exp $
+! $Id: entropy.f90,v 1.503 2007-05-15 08:28:32 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -167,7 +167,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.502 2007-05-14 12:41:07 dintrans Exp $")
+           "$Id: entropy.f90,v 1.503 2007-05-15 08:28:32 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -2639,8 +2639,11 @@ module Entropy
       if (lgravr) then
 !  central heating
 !  heating profile, normalised, so volume integral = 1
-!       prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5)
-        prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)
+        if (initss(1).eq.'star_heat') then
+          prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
+        else
+          prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
+        endif
         heat = luminosity*prof
         if (headt .and. lfirst .and. ip<=9) &
           call output_pencil(trim(directory)//'/heat.dat',heat,1)
