@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.312 2007-05-13 17:45:36 theine Exp $
+! $Id: sub.f90,v 1.313 2007-05-15 18:16:07 wlyra Exp $
 
 module Sub
 
@@ -10,7 +10,7 @@ module Sub
 
   public :: step
 
-  public :: identify_bcs, parse_bc, parse_bc_rad
+  public :: identify_bcs, parse_bc, parse_bc_rad, parse_bc_radg
 
   public :: poly, notanumber
   public :: keep_compiler_quiet
@@ -4322,6 +4322,39 @@ module Sub
         enddo
 !
       endsubroutine parse_bc_rad
+!***********************************************************************
+      subroutine parse_bc_radg(bc,bc1,bc2)
+!
+!  Parse boundary conditions, which may be in the form `a' (applies to
+!  both `lower' and `upper' boundary) or `a:s' (use `a' for lower,
+!  `s' for upper boundary.
+!
+!   6-jul-03/axel: adapted from parse_bc
+!
+        use Cparam, only: bclen
+        use Mpicomm
+!
+        character (len=2*bclen+1) :: bc
+        character (len=bclen) :: bc1,bc2
+        integer :: isep
+!
+        intent(in) :: bc
+        intent(out) :: bc1,bc2
+!
+        if (bc == '') then 
+          if (lroot) print*, 'Empty boundary condition in (x, y, or z)'
+          call stop_it('PARSE_BC_RADG')
+        endif
+        isep = index(bc,':')
+        if (isep > 0) then
+          bc1 = bc(1:isep-1)
+          bc2 = bc(isep+1:)
+        else
+          bc1 = bc(1:bclen)
+          bc2 = bc(1:bclen)
+        endif
+!
+      endsubroutine parse_bc_radg
 !***********************************************************************
       subroutine parse_name(iname,cname,cform,ctest,itest)
 !

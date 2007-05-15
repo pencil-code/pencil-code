@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.363 2007-04-19 10:51:33 bingert Exp $
+! ! $Id: cdata.f90,v 1.364 2007-05-15 18:16:07 wlyra Exp $
 
 module Cdata
 
@@ -114,6 +114,7 @@ module Cdata
   integer :: iyH=0,ihyper=0
   integer :: iecr=0,ismagorinsky
   integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0,ikapparho=0
+  integer :: iQrad2=0,ikapparho2=0
   integer :: iFrad=0,iFradx=0,iFrady=0,iFradz=0
   integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0, irhop=0
   integer :: nt=1000000,it1=10,it1d=impossible_int
