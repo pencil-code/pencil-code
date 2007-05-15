@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.344 2007-05-15 19:18:12 brandenb Exp $
+! $Id: hydro.f90,v 1.345 2007-05-15 19:33:41 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -288,7 +288,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.344 2007-05-15 19:18:12 brandenb Exp $")
+           "$Id: hydro.f90,v 1.345 2007-05-15 19:33:41 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2466,6 +2466,8 @@ module Hydro
 !
 !  Substract mean x-momentum over density from the x-velocity field.
 !  Useful to avoid unphysical winds in shearing box simulations.
+!  Note: this is possibly not useful when there is rotation, because
+!  then epicyclic motions don't usually grow catastrophically.
 !
 !  15-nov-06/tobi: coded
 !
