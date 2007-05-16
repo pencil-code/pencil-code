@@ -1,4 +1,4 @@
-! $Id: radiation_nongrey.f90,v 1.2 2007-05-14 22:04:15 wlyra Exp $
+! $Id: radiation_nongrey.f90,v 1.3 2007-05-16 16:16:34 wlyra Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -50,7 +50,15 @@ module Radiation
   type radslice
     real, dimension (nx,ny) :: xy2
   endtype radslice
-
+!
+! useful constant - solar luminosity
+!
+  double precision, parameter :: solar_luminosity_cgs=3.827d+33
+  double precision, parameter :: solar_radius_cgs=6.960d+10
+  double precision, parameter :: AU_cgs=1.496d+13
+  real :: solar_luminosity=impossible,solar_radius=impossible
+  real :: solar_flux,solar_flux_cgs
+!
   real, dimension (mx,my,mz) :: Srad,tau,Qrad,Qrad0,divF
   real, dimension (mx,my,mz,3) :: Frad
   type (Qbound), dimension (my,mz), target :: Qbc_yz
@@ -198,7 +206,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_nongrey.f90,v 1.2 2007-05-14 22:04:15 wlyra Exp $")
+           "$Id: radiation_nongrey.f90,v 1.3 2007-05-16 16:16:34 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -240,6 +248,7 @@ module Radiation
 !
       use Cdata, only: lroot,sigmaSB,c_light,pi,datadir
       use Cdata, only: dx,dy,dz
+      use Cdata, only: unit_system,unit_flux,unit_length
       use Sub, only: parse_bc_radg
       use Mpicomm, only: stop_it
 
@@ -349,6 +358,14 @@ module Radiation
         print*,'initialize_radiation: arad=',arad
         print*,'initialize_radiation: arad_normal=',arad_normal
         print*,'initialize_radiation: sigmaSB=',sigmaSB
+      endif
+!
+!  Calculate solar flux
+!
+      solar_flux_cgs=solar_luminosity_cgs/(4*pi*solar_radius_cgs**2)
+      if (unit_system=='cgs') then
+        solar_flux=solar_flux_cgs/unit_flux
+        solar_radius=solar_radius_cgs/unit_length
       endif
 !
 !  Calculate weights
@@ -1081,9 +1098,11 @@ module Radiation
 !  26-may-06/axel: added S+F and S-F to model interior more accurately
 !
       use Mpicomm, only: stop_it
+      use Cdata, only: x
 !
       real, dimension(my,mz), intent(out) :: Qrad0_yz
       real :: Irad_yz
+      real :: rad,Frad_bound
 !
 !  No incoming intensity
 !
@@ -1115,6 +1134,14 @@ module Radiation
         Qrad0_yz=-Srad(llstart-lrad,:,:)+Frad_boundary_ref/(2.*weightn(idir))
       endif
 !
+!  Set intensity equal to a pre-defined radially variable intensity
+!
+      if (bc_ray_z=='Fr') then
+        rad = x(llstart-lrad)
+        Frad_bound=solar_flux*(solar_radius/rad)**2
+        Qrad0_yz=-Srad(llstart-lrad,:,:)+Frad_bound/(2.*weightn(idir))
+      endif
+!
     endsubroutine radboundary_yz_set
 !***********************************************************************
     subroutine radboundary_zx_set(Qrad0_zx)
@@ -1124,10 +1151,13 @@ module Radiation
 !  6-jul-03/axel+tobi: coded
 !  26-may-06/axel: added S+F and S-F to model interior more accurately
 !
+      use Cdata, only: x
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,mz), intent(out) :: Qrad0_zx
       real :: Irad_zx
+      real, dimension(mx)  :: rad,Frad_bound
+      integer :: in
 !
 !  No incoming intensity
 !
@@ -1156,7 +1186,17 @@ module Radiation
 !  Set intensity equal to a pre-defined incoming intensity
 !
       if (bc_ray_z=='F') then
-         Qrad0_zx=-Srad(:,mmstart-mrad,:)+Frad_boundary_ref/(2.*weightn(idir))
+        Qrad0_zx=-Srad(:,mmstart-mrad,:)+Frad_boundary_ref/(2.*weightn(idir))
+      endif
+!
+!  Set intensity equal to a pre-defined radially variable incoming intensity
+!
+      if (bc_ray_z=='Fr') then
+        rad = x
+        Frad_bound=solar_flux*(solar_radius/rad)**2
+        do in=1,mz
+          Qrad0_zx(:,in)=-Srad(:,mmstart-mrad,in)+Frad_bound/(2.*weightn(idir))
+        enddo
       endif
 !
     endsubroutine radboundary_zx_set
@@ -1168,10 +1208,13 @@ module Radiation
 !  6-jul-03/axel+tobi: coded
 !  26-may-06/axel: added S+F and S-F to model interior more accurately
 !
+      use Cdata, only: x,unit_length
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my), intent(out) :: Qrad0_xy
       real :: Irad_xy
+      real, dimension(mx) :: rad,Frad_bound,angle_recipe,rau
+      integer :: im
 !
 !  No incoming intensity
 !
@@ -1211,6 +1254,18 @@ module Radiation
         Qrad0_xy=-Srad(:,:,nnstart-nrad)+Frad_boundary_ref/(2.*weightn(idir))
       endif
 !
+!  Set intensity equal to a pre-defined radially variable incoming intensity
+!
+      if (bc_ray_z=='Fr') then
+        rad = x
+        rau=rad*unit_length/AU_cgs
+        angle_recipe=0.025*rau**0.286
+        Frad_bound=solar_flux*(solar_radius/rad)**2*angle_recipe*.5
+        do im=1,my
+          Qrad0_xy(:,im)=-Srad(:,im,nnstart-nrad)+Frad_bound/(2.*weightn(idir))
+        enddo
+      endif
+!
     endsubroutine radboundary_xy_set
 !***********************************************************************
     subroutine radiative_cooling(f,df,p)
@@ -1244,6 +1299,7 @@ module Radiation
           call calc_rad_diffusion(f,df,p)
         endif
         cooling=divF(l1:l2,m,n)
+        !cooling=f(l1:l2,m,n,iQrad2)*f(l1:l2,m,n,ikapparho2) !just the 1st frequency (visible)
       endif
 !
 !  Add radiative cooling
@@ -1333,6 +1389,9 @@ module Radiation
       real, dimension(mx) :: lnTT
       real :: nu
       integer :: inu
+      
+      if (source_function_type(1)/='zero') &
+           call stop_it("source_function: thou shall not have cold gas emitting in visible wavelengths")
 
       select case (source_function_type(inu))
 
