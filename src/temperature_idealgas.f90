@@ -1,5 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.10 2007-04-08 10:13:35 ajohan Exp $
-
+! $Id: temperature_idealgas.f90,v 1.11 2007-05-16 15:34:06 dintrans Exp $
 !  This module can replace the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
 !  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
@@ -23,7 +22,6 @@
 ! PENCILS PROVIDED Ma2,uglnTT,fpres
 !
 !***************************************************************
-
 module Entropy
 
   use Cparam
@@ -44,10 +42,11 @@ module Entropy
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
   real :: center1_x=0., center1_y=0., center1_z=0.
   real :: r_bcz=0.
+  real :: Tbump,Kmin,Kmax
   integer, parameter :: nheatc_max=1
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
-  logical :: lheatc_Kconst=.false.,lheatc_Kprof=.false.
+  logical :: lheatc_Kconst=.false.,lheatc_Kprof=.false.,lheatc_Karctan=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lfreeze_lnTTint=.false.,lfreeze_lnTText=.false.
   character (len=labellen) :: iheatcond='nothing'
@@ -68,15 +67,18 @@ module Entropy
       initlnTT,radius_lnTT,ampl_lnTT,widthlnTT, &
       lnTT_left,lnTT_right,lnTT_const,TT_const, &
       kx_lnTT,ky_lnTT,kz_lnTT,center1_x,center1_y,center1_z, &
-      mpoly0,mpoly1,r_bcz
+      mpoly0,mpoly1,r_bcz, &
+      Fbot,Tbump,Kmin,Kmax
 
 ! run parameters
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
       heat_uniform,chi,iheatcond,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
       lheatc_chiconst_accurate,hcond0,lcalc_heat_cool,&
+      Tbump,Kmin,Kmax, &
       lfreeze_lnTTint,lfreeze_lnTText,widthlnTT,mpoly0,mpoly1, &
-      lhcond_global,lviscosity_heat
+      lhcond_global,lviscosity_heat, &
+      Fbot,Tbump,Kmin,Kmax
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
@@ -112,7 +114,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.10 2007-04-08 10:13:35 ajohan Exp $")
+           "$Id: temperature_idealgas.f90,v 1.11 2007-05-16 15:34:06 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -170,6 +172,7 @@ module Entropy
 !
       lheatc_Kconst= .false.
       lheatc_Kprof= .false.
+      lheatc_Karctan= .false.
       lheatc_chiconst = .false.
       lnothing = .false.
 !
@@ -187,6 +190,9 @@ module Entropy
           hcond1=(mpoly1+1.)/(mpoly0+1.)
           Fbot=gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
           call information('initialize_entropy',' heat conduction: K=K(r)')
+        case('K-arctan')
+          lheatc_Karctan=.true.         
+          call information('initialize_entropy',' heat conduction: arctan profile')
         case('chi-const')
           lheatc_chiconst=.true.
           call information('initialize_entropy',' heat conduction: constant chi')
@@ -268,6 +274,7 @@ module Entropy
       case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
       case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
       case('cylind_layers'); call cylind_layers(f)
+      case('rad_equil'); call rad_equil(f)
       case('bubble_hs')
 !         print*,'init_lnTT: put bubble in hydrostatic equilibrium: radius_lnTT,ampl_lnTT=',radius_lnTT,ampl_lnTT,center1_x,center1_y,center1_z
           call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
@@ -332,6 +339,14 @@ module Entropy
         lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_cp1)=.true.
       endif
+      if (lheatc_Karctan) then
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+        lpenc_requested(i_cp1)=.true.
+      endif
+
 !
       if (ladvection_temperature) lpenc_requested(i_uglnTT)=.true.
 !
@@ -496,6 +511,7 @@ module Entropy
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
       if (lheatc_Kprof)    call calc_heatcond(f,df,p)
+      if (lheatc_Karctan)  call calc_heatcond_arctan(df,p)
 !
 !  Need to add left-hand-side of the continuity equation (see manual)
 !  Check this
@@ -519,6 +535,66 @@ module Entropy
       endif
 !
     endsubroutine dss_dt
+!***********************************************************************
+    subroutine rad_equil(f)
+!
+! 16-mai-2007/tgastine+dintrans: compute the radiative and hydrostatic 
+! equilibria for a given radiative profile (here a hole for the moment)
+!
+      use Gravity, only: gravz
+      use Cdata
+      use EquationOfState, only: cs20,lnrho0,cs2top,gamma,gamma1,cs2bot
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (nz) :: temp,lnrho
+      type (pencil_case) :: p
+      real :: Rstar,arg,hcond,dtemp,dlnrho
+      real :: alp,sig,ecart
+      integer :: i
+!
+      hcond0=Kmax
+      Rstar=gamma1/gamma
+!
+!  set initial condition (first in terms of TT, and then in terms of ss)
+!
+      sig=7.
+      ecart=0.5
+      alp=(Kmax-Kmin)/(pi/2.+atan(sig*ecart**2))
+      print*,'sig, ecart, alp=',sig, ecart, alp
+      print*,'Kmin,Kmax,Fbot,Tbump=',Kmin,Kmax,Fbot,Tbump
+!
+      temp(n2)=cs20/gamma1
+      lnrho(n2)=lnrho0
+      f(:,:,n2,ilnTT)=alog(cs20/gamma1)
+      f(:,:,n2,ilnrho)=lnrho0
+      do i=n2-1,n1,-1
+        arg=sig*(temp(i+1)-Tbump-ecart)*(temp(i+1)-Tbump+ecart)
+        hcond=Kmax+alp*(-pi/2.+atan(arg))
+        dtemp=Fbot/hcond
+        dlnrho=(gravz/Rstar+Fbot/hcond)/temp(i+1)
+        temp(i)=temp(i+1)+dz*dtemp
+        lnrho(i)=lnrho(i+1)-dz*dlnrho
+        f(:,:,i,ilnTT)=alog(temp(i))
+        f(:,:,i,ilnrho)=lnrho(i)
+      enddo
+! initialize cs2bot by taking into account the new bottom value of temperature
+! note: cs2top is already defined in eos_init by assuming cs2top=cs20
+      cs2bot=gamma1*temp(n1)
+      print*,'cs2top, cs2bot=',cs2top,cs2bot
+!
+      if (lroot) then
+        print*,'--> write the initial setup in data/proc0/setup.dat'
+        open(unit=11,file=trim(directory)//'/setup.dat')
+        write(11,'(4a14)') 'z','rho','temp','hcond'
+        do i=n2,n1,-1
+          arg=sig*(temp(i)-Tbump-ecart)*(temp(i)-Tbump+ecart)
+          hcond=Kmax+alp*(-pi/2.+atan(arg))
+          write(11,'(4e14.5)') z(i),temp(i),exp(lnrho(i)),hcond
+        enddo
+        close(11)
+      endif
+!
+    endsubroutine rad_equil
 !***********************************************************************
     subroutine calc_heat_cool(f,df,p)
 
@@ -636,6 +712,57 @@ module Entropy
       endif
 
     endsubroutine calc_heatcond_constK
+!***********************************************************************
+    subroutine calc_heatcond_arctan(df,p)
+!
+! 16-mai-2007/tgastine+dintrans: radiative diffusion with an arctan
+!  profile for the conductivity
+!  calculate gamma/rho*cp*div(K T*grad lnTT)=
+!    gamma*K/rho*cp*(gradlnTT.gradlnTT + del2ln TT + gradlnTT.gradlnK)
+!
+      use Sub, only: max_mn_name,dot,del2,multsv,write_zprof
+      use EquationOfState, only: gamma
+
+      real, dimension(mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension(nx) :: arg,hcond,chiT,g1,g2,chix
+      real, dimension (nx,3) :: glnhcond=0.
+      real :: alp,sig,ecart
+!
+! todo: must be defined in the namelist (used by rad_equil and _arctan...)
+      sig=7.
+      ecart=0.5
+      alp=(Kmax-Kmin)/(pi/2.+atan(sig*ecart**2))
+!
+      arg=sig*(p%TT-Tbump-ecart)*(p%TT-Tbump+ecart)
+      hcond=Kmax+alp*(-pi/2.+atan(arg))
+      chiT=2.*p%TT/hcond*sig*alp*(p%TT-Tbump)/(1.+arg**2)  ! d(ln K)/dT
+!
+      glnhcond(:,3)=chiT*p%glnTT(:,3)
+      call dot(p%glnTT,p%glnTT,g1)
+      call dot(p%glnTT,glnhcond,g2)
+!
+!  Write out hcond z-profile (during first time step only)
+!
+      call write_zprof('hcond',hcond)
+      call write_zprof('glnhcond',glnhcond(:,3))
+      call write_zprof('K_T',chiT)
+!
+!  Add heat conduction to RHS of temperature equation
+!
+      chix=p%rho1*hcond*p%cp1
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g1+g2+p%del2lnTT)
+!
+!  check maximum diffusion from thermal diffusion
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
+      endif
+
+    endsubroutine calc_heatcond_arctan
 !***********************************************************************
     subroutine calc_heatcond(f,df,p)
 !
