@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.295 2007-05-15 08:38:17 dintrans Exp $
+### $Id: Makefile.src,v 1.296 2007-05-16 18:56:27 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -844,7 +844,7 @@ Makefile_inc:
 
 Makefile: Makefile.src
 	scripts/check-mkfile Makefile$(PC_META_TYPE).local Makefile.src
-	scripts/adapt-mkfile Makefile.src Makefile
+	env ADAPT_MKFILE=$(ADAPT_MKFILE) scripts/adapt-mkfile Makefile.src Makefile
 
 pacx-makefile: Makefile.src
 	scripts/acx-adapt-mkfile Makefile.src pacx-Makefile
@@ -992,7 +992,7 @@ nompicomm_.f90: nompicomm.f90
 
 EXECUTABLES=start$(PC_META_TYPE).x run$(PC_META_TYPE).x \
 	read_videofiles$(PC_META_TYPE).x read_vectorfiles$(PC_META_TYPE).x
-	
+
         # write_dummy_namelists$(PC_META_TYPE).x
 # The last few object files to compile. We need to compile _all_ object
 # files before linking, because FC=g95_quick_and_dirty will otherwise

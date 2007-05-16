@@ -10,7 +10,8 @@ default:
 	touch src/.build-history
 	echo $(USER)"@"`hostname` "("`date`")" >> src/.build-history
 	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ -f Makefile.src Makefile && \
+	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) \
+	      -f Makefile.src Makefile && \
 	  $(MAKE) FROM_PARENT=src/ \
 	)
 
