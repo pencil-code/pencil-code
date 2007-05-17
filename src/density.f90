@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.325 2007-05-12 07:23:10 brandenb Exp $
+! $Id: density.f90,v 1.326 2007-05-17 16:13:42 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -114,7 +114,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.325 2007-05-12 07:23:10 brandenb Exp $")
+           "$Id: density.f90,v 1.326 2007-05-17 16:13:42 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -376,6 +376,11 @@ module Density
       case('sinx_siny_sinz'); call sinx_siny_sinz(ampllnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho)
       case('corona'); call corona_init(f)
       case('gaussian3d'); call gaussian3d(ampllnrho,f,ilnrho,xx,yy,zz,radius_lnrho)
+      case('gaussian-z')
+        do n=n1,n2
+          f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
+              alog(exp(f(:,:,n,ilnrho))+ampllnrho*(exp(-z(n)**2/(2*radius_lnrho**2))))
+        enddo
       case('gaussian-noise')
         If (lnrho_left /= 0.) f(:,:,:,ilnrho)=lnrho_left
         call gaunoise(ampllnrho,f,ilnrho,ilnrho)
