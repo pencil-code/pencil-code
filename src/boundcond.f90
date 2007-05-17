@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.146 2007-05-12 07:23:09 brandenb Exp $
+! $Id: boundcond.f90,v 1.147 2007-05-17 13:54:57 dintrans Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -134,7 +134,7 @@ module Boundcond
                   endif
                 case ('c1')       ! constant temp.
                   if (j==iss)   call bc_ss_flux_x(f,topbot,FbotKbot)
-                  if (j==ilnTT) call bc_lnTT_flux(f,topbot,hcond0,hcond1,Fbot)
+                  if (j==ilnTT) call bc_lnTT_flux_x(f,topbot,hcond0,hcond1,Fbot)
                 case ('sT')       ! symmetric temp.
                   if (j==iss) call bc_ss_stemp_x(f,topbot)
                 case ('in')
@@ -381,6 +381,7 @@ module Boundcond
                 if (j==iss) call bc_ss_flux(f,topbot,hcond0,hcond1,Ftopbot,FtopbotK,chi, &
                                   lmultilayer,lheatc_chiconst)
                 if (j==iaa) call bc_aa_pot(f,topbot)
+                if (j==ilnTT) call bc_lnTT_flux_z(f,topbot,hcond0,Fbot)
               case ('pot')
                 if (j==iaa) call bc_aa_pot2(f,topbot)
               case ('pwd')
@@ -2266,16 +2267,14 @@ module Boundcond
 !
      endsubroutine uu_driver
 !***********************************************************************
-    subroutine bc_lnTT_flux(f,topbot,hcond0,hcond1,Fbot)
+    subroutine bc_lnTT_flux_x(f,topbot,hcond0,hcond1,Fbot)
 !
 !  constant flux boundary condition for temperature (called when bcx='c1')
 !  12-Mar-2007/dintrans: coded
 !
-!
       use Cdata
 !
       real, intent(in) :: hcond0, hcond1, Fbot
-
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: tmp_yz
@@ -2284,7 +2283,7 @@ module Boundcond
 !  Do the `c1' boundary condition (constant heat flux) for lnTT.
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-      if(headtt) print*,'bc_lnTT_flux: Fbot,hcond,dx=',Fbot,hcond0*hcond1,dx
+      if(headtt) print*,'bc_lnTT_flux_x: Fbot,hcond,dx=',Fbot,hcond0*hcond1,dx
 
       select case(topbot)
 !
@@ -2294,18 +2293,57 @@ module Boundcond
       case('bot')
         tmp_yz=-Fbot/(hcond0*hcond1)/exp(f(l1,:,:,ilnTT))
 !
-!  enforce dlnT/dz = - Fbot/(K*T)
+!  enforce dlnT/dx = - Fbot/(K*T)
 !
         do i=1,nghost
           f(l1-i,:,:,ilnTT)=f(l1+i,:,:,ilnTT)-2*i*dx*tmp_yz
         enddo
 
       case default
-        call fatal_error('bc_ss_flux','invalid argument')
+        call fatal_error('bc_lnTT_flux_x','invalid argument')
 
       endselect
 !
-    endsubroutine bc_lnTT_flux
+    endsubroutine bc_lnTT_flux_x
+!***********************************************************************
+    subroutine bc_lnTT_flux_z(f,topbot,hcond0,Fbot)
+!
+!  constant flux boundary condition for temperature (called when bcz='c1')
+!  12-May-2007/dintrans: coded
+!
+      use Cdata
+!
+      real, intent(in) :: hcond0, Fbot
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my) :: tmp_xy
+      integer :: i
+!
+!  Do the `c1' boundary condition (constant heat flux) for lnTT.
+!  check whether we want to do top or bottom (this is precessor dependent)
+!
+      if(headtt) print*,'bc_lnTT_flux_z: Fbot,hcond,dz=',Fbot,hcond0,dz
+
+      select case(topbot)
+!
+!  bottom boundary
+!  ===============
+!
+      case('bot')
+        tmp_xy=-Fbot/hcond0/exp(f(:,:,n1,ilnTT))
+!
+!  enforce dlnT/dz = - Fbot/(K*T)
+!
+        do i=1,nghost
+          f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)-2*i*dz*tmp_xy
+        enddo
+
+      case default
+        call fatal_error('bc_lnTT_flux_z','invalid argument')
+
+      endselect
+!
+    endsubroutine bc_lnTT_flux_z
 !***********************************************************************
     subroutine bc_ss_flux_x(f,topbot,FbotKbot)
 !

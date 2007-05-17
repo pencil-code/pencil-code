@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.11 2007-05-16 15:34:06 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.12 2007-05-17 13:54:57 dintrans Exp $
 !  This module can replace the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
 !  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
@@ -42,7 +42,7 @@ module Entropy
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
   real :: center1_x=0., center1_y=0., center1_z=0.
   real :: r_bcz=0.
-  real :: Tbump,Kmin,Kmax
+  real :: Tbump=0.,Kmin=0.,Kmax=0.
   integer, parameter :: nheatc_max=1
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
@@ -87,7 +87,6 @@ module Entropy
   integer :: idiag_dtchi=0,idiag_dtc=0
   integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0
  
-  
   contains
 
 !***********************************************************************
@@ -114,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.11 2007-05-16 15:34:06 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.12 2007-05-17 13:54:57 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -181,7 +180,8 @@ module Entropy
           lheatc_Kconst=.true.
           call information('initialize_entropy', &
           ' heat conduction: K=cst --> gamma*K/rho*cp*div(T*grad lnTT)')
-          Fbot=gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
+          if (initlnTT(1).ne.'rad_equil') &
+            Fbot=gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
         case('K-profile')
           lheatc_Kprof=.true.
 ! 
@@ -274,7 +274,13 @@ module Entropy
       case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
       case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
       case('cylind_layers'); call cylind_layers(f)
-      case('rad_equil'); call rad_equil(f)
+      case('rad_equil')
+          call rad_equil(f)
+          if (ampl_lnTT.ne.0.) then
+            print*,'add a bubble with:',ampl_lnTT,radius_lnTT,center1_x,center1_y,center1_z
+            call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
+            call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)
+          endif
       case('bubble_hs')
 !         print*,'init_lnTT: put bubble in hydrostatic equilibrium: radius_lnTT,ampl_lnTT=',radius_lnTT,ampl_lnTT,center1_x,center1_y,center1_z
           call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
@@ -541,27 +547,24 @@ module Entropy
 ! 16-mai-2007/tgastine+dintrans: compute the radiative and hydrostatic 
 ! equilibria for a given radiative profile (here a hole for the moment)
 !
-      use Gravity, only: gravz
       use Cdata
-      use EquationOfState, only: cs20,lnrho0,cs2top,gamma,gamma1,cs2bot
+      use Gravity, only: gravz
+      use EquationOfState, only: cs20,lnrho0,cs2top,cs2bot,gamma,gamma1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nz) :: temp,lnrho
+      real, dimension (mz) :: temp,lnrho
       type (pencil_case) :: p
-      real :: Rstar,arg,hcond,dtemp,dlnrho
+      real :: arg,hcond,dtemp,dlnrho
       real :: alp,sig,ecart
       integer :: i
 !
-      hcond0=Kmax
-      Rstar=gamma1/gamma
-!
-!  set initial condition (first in terms of TT, and then in terms of ss)
-!
-      sig=7.
-      ecart=0.5
+      sig=10.
+      ecart=0.1
       alp=(Kmax-Kmin)/(pi/2.+atan(sig*ecart**2))
       print*,'sig, ecart, alp=',sig, ecart, alp
-      print*,'Kmin,Kmax,Fbot,Tbump=',Kmin,Kmax,Fbot,Tbump
+      print*,'Kmin, Kmax, Fbot, Tbump=', Kmin, Kmax, Fbot, Tbump
+!
+! integrate from the top to the bottom
 !
       temp(n2)=cs20/gamma1
       lnrho(n2)=lnrho0
@@ -571,16 +574,16 @@ module Entropy
         arg=sig*(temp(i+1)-Tbump-ecart)*(temp(i+1)-Tbump+ecart)
         hcond=Kmax+alp*(-pi/2.+atan(arg))
         dtemp=Fbot/hcond
-        dlnrho=(gravz/Rstar+Fbot/hcond)/temp(i+1)
+        dlnrho=(-gamma/gamma1*gravz+dtemp)/temp(i+1)
         temp(i)=temp(i+1)+dz*dtemp
-        lnrho(i)=lnrho(i+1)-dz*dlnrho
+        lnrho(i)=lnrho(i+1)+dz*dlnrho
         f(:,:,i,ilnTT)=alog(temp(i))
         f(:,:,i,ilnrho)=lnrho(i)
       enddo
 ! initialize cs2bot by taking into account the new bottom value of temperature
 ! note: cs2top is already defined in eos_init by assuming cs2top=cs20
       cs2bot=gamma1*temp(n1)
-      print*,'cs2top, cs2bot=',cs2top,cs2bot
+      print*,'cs2top, cs2bot=', cs2top, cs2bot
 !
       if (lroot) then
         print*,'--> write the initial setup in data/proc0/setup.dat'
@@ -589,7 +592,7 @@ module Entropy
         do i=n2,n1,-1
           arg=sig*(temp(i)-Tbump-ecart)*(temp(i)-Tbump+ecart)
           hcond=Kmax+alp*(-pi/2.+atan(arg))
-          write(11,'(4e14.5)') z(i),temp(i),exp(lnrho(i)),hcond
+          write(11,'(4e14.5)') z(i),exp(lnrho(i)),temp(i),hcond
         enddo
         close(11)
       endif
@@ -730,8 +733,8 @@ module Entropy
       real :: alp,sig,ecart
 !
 ! todo: must be defined in the namelist (used by rad_equil and _arctan...)
-      sig=7.
-      ecart=0.5
+      sig=10.
+      ecart=0.1
       alp=(Kmax-Kmin)/(pi/2.+atan(sig*ecart**2))
 !
       arg=sig*(p%TT-Tbump-ecart)*(p%TT-Tbump+ecart)
