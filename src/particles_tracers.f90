@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.34 2007-02-28 07:11:46 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.35 2007-05-17 16:13:54 ajohan Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -10,7 +10,7 @@
 ! MAUX CONTRIBUTION 1
 ! CPARAM logical, parameter :: lparticles=.true.
 !
-! PENCILS PROVIDED rhop,epsd
+! PENCILS PROVIDED np,rhop,epsp
 !
 !***************************************************************
 module Particles
@@ -41,7 +41,8 @@ module Particles
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
-  integer :: idiag_nparmax=0
+  integer :: idiag_nparmax=0, idiag_npmax=0, idiag_npmin=0
+  integer :: idiag_npmz=0, idiag_rhopmz=0, idiag_epspmz=0
 
   contains
 
@@ -60,7 +61,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.34 2007-02-28 07:11:46 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.35 2007-05-17 16:13:54 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -281,6 +282,8 @@ module Particles
 !
 !  20-04-06/anders: coded
 !
+      lpenc_diagnos(i_np)=.true.
+!
     endsubroutine pencil_criteria_particles
 !***********************************************************************
     subroutine pencil_interdep_particles(lpencil_in)
@@ -292,7 +295,7 @@ module Particles
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (lpencil_in(i_epsd)) then
+      if (lpencil_in(i_epsp)) then
         lpencil_in(i_rho)=.true.
         lpencil_in(i_rhop)=.true.
         lcalc_np=.true.
@@ -309,10 +312,12 @@ module Particles
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+! np
+      if (lpencil(i_np)) p%np=f(l1:l2,m,n,inp)
 ! rhop
       if (lpencil(i_rhop)) p%rhop=rhop_tilde*f(l1:l2,m,n,inp)
-! epsd
-      if (lpencil(i_epsd)) p%epsd(:,1)=p%rhop/p%rho
+! epsp
+      if (lpencil(i_epsp)) p%epsp=p%rhop/p%rho
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
@@ -372,7 +377,18 @@ module Particles
         enddo
       endif
 !
-      if (NO_WARN) print*, df, p
+      if (ldiagnos) then
+        if (idiag_npmax/=0) call max_mn_name(p%np,idiag_npmax)
+        if (idiag_npmin/=0) call max_mn_name(-p%np,idiag_npmin,lneg=.true.)
+      endif
+!
+      if (l1ddiagnos) then
+        if (idiag_npmz/=0)   call xysum_mn_name_z(p%np,idiag_npmz)
+        if (idiag_rhopmz/=0) call xysum_mn_name_z(p%rhop,idiag_rhopmz)
+        if (idiag_epspmz/=0) call xysum_mn_name_z(p%epsp,idiag_epspmz)
+      endif
+!
+      if (NO_WARN) print*, df
 !
     endsubroutine dxxp_dt_pencil
 !***********************************************************************
@@ -509,7 +525,7 @@ module Particles
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname
+      integer :: iname, inamez
       logical :: lwr
 !
 !  Write information to index.pro
@@ -532,12 +548,14 @@ module Particles
       if (lreset) then
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
         idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0
-        idiag_nparmax=0; idiag_nmigmax=0
+        idiag_nparmax=0; idiag_nmigmax=0; idiag_npmax=0; idiag_npmin=0
+        idiag_npmz=0; idiag_rhopmz=0; idiag_epspmz=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
 !
       if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
+!
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'xpm',idiag_xpm)
         call parse_name(iname,cname(iname),cform(iname),'ypm',idiag_ypm)
@@ -546,7 +564,17 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'yp2m',idiag_yp2m)
         call parse_name(iname,cname(iname),cform(iname),'zp2m',idiag_zp2m)
         call parse_name(iname,cname(iname),cform(iname),'nparmax',idiag_nparmax)
+        call parse_name(iname,cname(iname),cform(iname),'npmax',idiag_npmax)
+        call parse_name(iname,cname(iname),cform(iname),'npmin',idiag_npmin)
         call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax)
+      enddo
+!
+!  check for those quantities for which we want z-averages
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'npmz',idiag_npmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhopmz',          idiag_rhopmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',          idiag_epspmz)
       enddo
 !
     endsubroutine rprint_particles
