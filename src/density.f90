@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.326 2007-05-17 16:13:42 ajohan Exp $
+! $Id: density.f90,v 1.327 2007-05-18 19:44:24 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -62,6 +62,7 @@ module Density
 
   integer :: iglobal_gg=0
   integer :: iglobal_rho=0
+  real :: threshold
 
   namelist /density_init_pars/ &
        ampllnrho,initlnrho,initlnrho2,widthlnrho,    &
@@ -72,7 +73,7 @@ module Density
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
        wdamp,plaw,lcontinuity_gas,lstratified,ptlaw, &
-       lsoftened,qgshear
+       lsoftened,qgshear,threshold
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
@@ -114,7 +115,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.326 2007-05-17 16:13:42 ajohan Exp $")
+           "$Id: density.f90,v 1.327 2007-05-18 19:44:24 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1627,9 +1628,9 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: grav_dummy
-      real, dimension (nx) :: pot,pottmp,tmp,rr,cs2,lnrhomid
-      real :: cp1,pot0_dummy
-
+      real, dimension (nx) :: pot,pottmp,tmp,rr_sph,rr,rr_cyl,r_smooth,cs2,lnrhomid
+      real :: cp1
+ 
       if (lroot) print*,'isothermal_density: local isothermal stratification'
       if (gamma/=1.0) then
         if ((.not. lentropy) .and. (.not. ltemperature)) &
@@ -1639,16 +1640,24 @@ module Density
       call get_cp1(cp1)
       do n=n1,n2
         do m=m1,m2
-          rr=sqrt(x(l1:l2)**2+y(m)**2)!+z(n)**2)
-          cs2=cs20/(rr/r_ref)**ptlaw
-          lnrhomid=lnrho0 - plaw*log(rr/r_ref)
-          call potential(x(l1:l2),y(m),z(n),POT=tmp,RMN=rr)
-          !this potential gives the whole gradient. 
-          !I want the function that partially derived in 
-          !z gives g0/r^3 * z. This is *NOT* -g0/r
-          pot=-tmp/rr**2 * .5*z(n)**2
-          tmp=-gamma*pot/cs2
-          f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + lnrhomid + tmp
+          rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
+          rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+          cs2=cs20/(rr_cyl/r_ref)**ptlaw
+          rr=rr_cyl/r_ref
+          r_smooth=sqrt(rr**2+r0_pot**2)
+          cs2=cs20/r_smooth**ptlaw         
+          lnrhomid=lnrho0-plaw*log(r_smooth)
+          call potential(x(l1:l2),y(m),z(n),POT=pot,RMN=rr_sph)
+!
+! This potential gives the whole gradient.
+! I want the function that partially derived in 
+! z gives g0/r^3 * z. This is *NOT* -g0/r
+! this second call takes care of normalizing it 
+! i.e., there should be no correction at midplane
+!
+          call potential(x(l1:l2),y(m),z(n),POT=pottmp,RMN=rr_cyl)
+          tmp=-gamma*(pot-pottmp)/cs2 
+          f(l1:l2,m,n,ilnrho) = max(lnrhomid + tmp,threshold)
           if (ltemperature) f(l1:l2,m,n,ilnTT)=log(cs2*cp1/gamma1)
         enddo
       enddo
