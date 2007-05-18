@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.135 2007-05-15 19:41:22 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.136 2007-05-18 19:15:42 wlyra Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -75,6 +75,7 @@ module Radiation
   integer :: nIsurf
   logical :: lperiodic_ray,lperiodic_ray_x,lperiodic_ray_y,lperiodic_ray_z
   character (len=labellen) :: source_function_type='LTE',opacity_type='Hminus'
+  character (len=labellen) :: angle_weight='constant'
   real :: tau_top=0.0,TT_top=0.0
   real :: tau_bot=0.0,TT_bot=0.0
   real :: kappa_cst=1.0
@@ -115,7 +116,7 @@ module Radiation
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lradflux, &
        Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus, &
-       scalefactor_Srad
+       scalefactor_Srad,angle_weight
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
@@ -126,7 +127,7 @@ module Radiation
        lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure, &
        Frad_boundary_ref,lrad_cool_diffus,lrad_pres_diffus, &
        cdtrad_thin,cdtrad_thick, &
-       scalefactor_Srad
+       scalefactor_Srad,angle_weight
 
   contains
 
@@ -180,7 +181,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.135 2007-05-15 19:41:22 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.136 2007-05-18 19:15:42 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -318,16 +319,84 @@ module Radiation
 !
 !  Calculate weights
 !
-      if (ndir>0) weight=4*pi/ndir
-!
-!  Calculate weights for weighed integrals involving one unit vector nhat
-!
-      weightn=weight
-      if (ndir==2) weightn=weightn/3.
+      call calc_angle_weights
 !
       if (lroot.and.ip<14) print*,'initialize_radiation: ndir =',ndir
 !
     endsubroutine initialize_radiation
+!***********************************************************************
+    subroutine calc_angle_weights
+! 
+!  This subroutine calculates the weights needed for the discrete version
+!  of the angular integration of the radiative transfer equation. By now
+!  the code was using only constant weights, which just works for very special
+!  cases. Using spherical harmonics just works for some special cases as well,
+!  but in a slightly broader range. 
+!
+!  18-may-07/wlad: coded
+!
+      use Cdata, only: dx,dy,dz,pi,lroot
+      use Mpicomm, only: stop_it
+!
+      real :: xyplane,yzplane,xzplane,room,xaxis
+      real :: yaxis,zaxis,aspect_ratio,mu2
+!
+      select case(angle_weight)
+!
+      case ('constant')
+        if (ndir>0) weight=4*pi/ndir
+        weightn=weight
+!
+!  Calculate weights for weighed integrals involving one unit vector nhat
+!
+        if (ndir==2) weightn=weightn/3.
+!
+      case ('spherical-harmonics')
+!
+!  Check if dx==dy and that dx/dz lies in the positive range
+!
+        if (dx/=dy) then
+          print*,'dx,dy=',dx,dy
+          call stop_it("initialize_radiation: weights not calculated for dx/dy != 1")
+        endif
+        aspect_ratio=dx/dz
+        if (aspect_ratio.lt.0.69.or.aspect_ratio.gt.sqrt(3.)) &
+             call stop_it("initialize_radiation: weights go negative for this dx/dz ratio")
+!
+!  Calculate the weights
+!
+        mu2=dx**2/(dx**2+dz**2)
+        xaxis=1/42.*(4.-1./mu2) ; yaxis=xaxis
+        zaxis=(21.-54.*mu2+34.*mu2**2)/(210.*(mu2-1)**2)
+        xyplane=2./105.*(4.-1./mu2)
+        yzplane=(5.-6.*mu2)/(420.*mu2*(mu2-1)**2) ; xzplane=yzplane
+        room=(2.-mu2)**3/(840.*mu2*(mu2-1)**2)
+!
+!  Allocate the weights on the appropriate rays
+!
+        do idir=1,ndir
+          !axes
+          if (dir(idir,1)/=0.and.dir(idir,2)==0.and.dir(idir,3)==0) weight(idir)=xaxis
+          if (dir(idir,1)==0.and.dir(idir,2)/=0.and.dir(idir,3)==0) weight(idir)=yaxis
+          if (dir(idir,1)==0.and.dir(idir,2)==0.and.dir(idir,3)/=0) weight(idir)=zaxis
+          !face diagonals
+          if (dir(idir,1)==0.and.dir(idir,2)/=0.and.dir(idir,3)/=0) weight(idir)=yzplane
+          if (dir(idir,1)/=0.and.dir(idir,2)==0.and.dir(idir,3)/=0) weight(idir)=xzplane
+          if (dir(idir,1)/=0.and.dir(idir,2)/=0.and.dir(idir,3)==0) weight(idir)=xyplane
+          !room diagonal
+          if (dir(idir,1)/=0.and.dir(idir,2)/=0.and.dir(idir,3)/=0) weight(idir)=room
+          if (lroot.and.ip<11) &
+               print*,'initialize_radiation: dir(idir,1:3),weight(idir) =',&
+               dir(idir,1:3),weight(idir)
+        enddo
+        weightn=weight
+!
+      case default
+        call stop_it('no such angle-weighting: '//&
+                     trim(angle_weight))
+      endselect
+!
+    endsubroutine calc_angle_weights
 !***********************************************************************
     subroutine radtransfer(f)
 !
@@ -1380,7 +1449,7 @@ module Radiation
         enddo
         enddo
         
-      case ('proplyd')
+      case ('dust-infrared')
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)

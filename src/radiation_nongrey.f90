@@ -1,4 +1,4 @@
-! $Id: radiation_nongrey.f90,v 1.3 2007-05-16 16:16:34 wlyra Exp $
+! $Id: radiation_nongrey.f90,v 1.4 2007-05-18 19:15:42 wlyra Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -91,6 +91,7 @@ module Radiation
   integer :: nIsurf
   logical :: lperiodic_ray,lperiodic_ray_x,lperiodic_ray_y,lperiodic_ray_z
   character (len=labellen),dimension(nnu) :: source_function_type='LTE',opacity_type='Planck'
+  character (len=labellen) :: angle_weight='constant'
   real :: tau_top=0.0,TT_top=0.0
   real :: tau_bot=0.0,TT_bot=0.0
   real :: kappa_cst=1.0
@@ -133,7 +134,7 @@ module Radiation
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lradflux, &
        Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus, &
-       scalefactor_Srad,nufreq
+       scalefactor_Srad,nufreq,angle_weight
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bcx_rad,bcy_rad,bcz_rad,lrad_debug,kappa_cst, &
@@ -144,7 +145,7 @@ module Radiation
        lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure, &
        Frad_boundary_ref,lrad_cool_diffus,lrad_pres_diffus, &
        cdtrad_thin,cdtrad_thick, &
-       scalefactor_Srad,nufreq
+       scalefactor_Srad,nufreq,angle_weight
 
   contains
 
@@ -156,7 +157,8 @@ module Radiation
 !  18-apr-07/wlad+heidar: apadted from radiation_ray
 !
       use Cdata, only: nvar,naux,aux_var,naux_com,aux_count,lroot,varname
-      use Cdata, only: iQrad,iQrad2,ikapparho,ikapparho2,iFrad,iFradx,iFrady,iFradz
+      use Cdata, only: iQrad,iQrad2,ikapparho,ikapparho2
+      use Cdata, only: iFrad,iFradx,iFrady,iFradz,iFrad2,iFradx2,iFrady2,iFradz2
       use Cdata, only: lradiation,lradiation_ray
       use Mpicomm, only: stop_it
 !
@@ -183,6 +185,12 @@ module Radiation
       iFradx = iFrad
       iFrady = iFrad+1
       iFradz = iFrad+2
+      
+      iFrad2 = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 3
+      iFradx2 = iFrad2
+      iFrady2 = iFrad2+1
+      iFradz2 = iFrad2+2
+
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_radiation: radiation naux = ', naux
@@ -191,6 +199,7 @@ module Radiation
         print*, 'ikapparho = ', ikapparho
         print*, 'ikapparho2 = ', ikapparho2
         print*, 'iFrad = ', iFrad
+        print*, 'iFrad2 = ', iFrad2
       endif
 !
 !  Put variable name in array
@@ -202,11 +211,14 @@ module Radiation
       varname(iFradx) = 'Fradx'
       varname(iFrady) = 'Frady'
       varname(iFradz) = 'Fradz'
+      varname(iFradx2) = 'Fradx2'
+      varname(iFrady2) = 'Frady2'
+      varname(iFradz2) = 'Fradz2'
 !
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_nongrey.f90,v 1.3 2007-05-16 16:16:34 wlyra Exp $")
+           "$Id: radiation_nongrey.f90,v 1.4 2007-05-18 19:15:42 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -229,12 +241,18 @@ module Radiation
       if (naux < maux) aux_var(aux_count)=',Frad $'
       if (naux == maux) aux_var(aux_count)=',Frad'
       aux_count=aux_count+3
+
+      if (naux < maux) aux_var(aux_count)=',Frad2 $'
+      if (naux == maux) aux_var(aux_count)=',Frad2'
+      aux_count=aux_count+3
+
       if (lroot) then
         write(15,*) 'Qrad = fltarr(mx,my,mz)*one'
         write(15,*) 'Qrad2 = fltarr(mx,my,mz)*one'
         write(15,*) 'kapparho = fltarr(mx,my,mz)*one'
         write(15,*) 'kapparho2 = fltarr(mx,my,mz)*one'
         write(15,*) 'Frad = fltarr(mx,my,mz,3)*one'
+        write(15,*) 'Frad2 = fltarr(mx,my,mz,3)*one'
       endif
 !
     endsubroutine register_radiation
@@ -289,6 +307,9 @@ module Radiation
 !  a face diagonal (2), or a room diagonal (3)
 !
         rad2=lrad**2+mrad**2+nrad**2
+        !if (rad2.eq.2) then
+        !  print*,lrad,mrad,nrad,rad2
+        !endif
 !
 !  Check whether the horizontal plane is fully periodic
 !  The all here refers to frequencies, not directions as
@@ -370,16 +391,72 @@ module Radiation
 !
 !  Calculate weights
 !
-      if (ndir>0) weight=4*pi/ndir
-!
-!  Calculate weights for weighed integrals involving one unit vector nhat
-!
-      weightn=weight
-      if (ndir==2) weightn=weightn/3.
+      call calc_angle_weights
 !
       if (lroot.and.ip<14) print*,'initialize_radiation: ndir =',ndir
 !
     endsubroutine initialize_radiation
+!***********************************************************************
+    subroutine calc_angle_weights
+!     
+      use Cdata, only: dx,dy,dz,pi,lroot
+      use Mpicomm, only: stop_it
+!
+      real :: xyplane,yzplane,xzplane,room,xaxis,yaxis,zaxis,aspect_ratio,mu2
+!
+      select case(angle_weight) 
+!
+      case ('constant') 
+        if (ndir>0) weight=4*pi/ndir
+        weightn=weight
+        if (ndir==2) weightn=weightn/3.
+!
+      case ('spherical-harmonics')
+!
+!  Check if dx==dy and that dx/dz lies in the positive range
+!
+        if (dx/=dy) then
+          print*,'dx,dy=',dx,dy
+          call stop_it("initialize_radiation: weights not calculated for dx/dy != 1")
+        endif
+        aspect_ratio=dx/dz
+        if (aspect_ratio.lt.0.69.or.aspect_ratio.gt.sqrt(3.)) &
+             call stop_it("initialize_radiation: weights go negative for this dx/dz ratio")
+!
+!  Calculate the weights
+!
+        mu2=dx**2/(dx**2+dz**2)
+        xaxis=1/42.*(4.-1./mu2) ; yaxis=xaxis
+        zaxis=(21.-54.*mu2+34.*mu2**2)/(210.*(mu2-1)**2)
+        xyplane=2./105.*(4.-1./mu2)  
+        yzplane=(5.-6.*mu2)/(420.*mu2*(mu2-1)**2) ; xzplane=yzplane
+        room=(2.-mu2)**3/(840.*mu2*(mu2-1)**2)
+!
+!  Allocate the weights on the appropriate rays
+!
+        do idir=1,ndir
+          !axes
+          if (dir(idir,1)/=0.and.dir(idir,2)==0.and.dir(idir,3)==0) weight(idir)=xaxis
+          if (dir(idir,1)==0.and.dir(idir,2)/=0.and.dir(idir,3)==0) weight(idir)=yaxis
+          if (dir(idir,1)==0.and.dir(idir,2)==0.and.dir(idir,3)/=0) weight(idir)=zaxis
+          !face diagonals
+          if (dir(idir,1)==0.and.dir(idir,2)/=0.and.dir(idir,3)/=0) weight(idir)=yzplane
+          if (dir(idir,1)/=0.and.dir(idir,2)==0.and.dir(idir,3)/=0) weight(idir)=xzplane
+          if (dir(idir,1)/=0.and.dir(idir,2)/=0.and.dir(idir,3)==0) weight(idir)=xyplane
+          !room diagonal
+          if (dir(idir,1)/=0.and.dir(idir,2)/=0.and.dir(idir,3)/=0) weight(idir)=room
+          if (lroot.and.ip<11) &
+               print*,'initialize_radiation: dir(idir,1:3),weight(idir) =',&
+               dir(idir,1:3),weight(idir)
+        enddo
+        weightn=weight
+!
+      case default
+        call stop_it('no such angle-weighting: '//&
+                     trim(angle_weight))
+      endselect
+!
+    endsubroutine calc_angle_weights
 !***********************************************************************
     subroutine radtransfer(f)
 !
@@ -391,7 +468,8 @@ module Radiation
 !
 !  18-apr-07/wlad+heidar: adpated from radiation_ray
 !
-      use Cdata, only: ldebug,headt,iQrad,ikapparho,iFrad,iFradx,iFradz
+      use Cdata, only: ldebug,headt,iQrad,ikapparho
+      use Cdata, only: iFrad,iFradx,iFradz,iFrad2,iFradx2,iFradz2
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: j,k,nnu,inu
@@ -408,7 +486,10 @@ module Radiation
 !
 !  Initialize (bolometric) radiative flux and cooling function
 !
-      if (lradflux) f(:,:,:,iFradx:iFradz)=0
+      if (lradflux) then 
+        f(:,:,:,iFradx:iFradz)=0
+        f(:,:,:,iFradx2:iFradz2)=0
+      endif
 !
 !  Initialize cooling function
 !
@@ -464,7 +545,8 @@ module Radiation
 !
         if (lradflux) then
           do j=1,3
-            k=iFrad+(j-1)
+            !which frequency?
+            k=iFrad+3*(inu-1)+(j-1)
             f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j)*(Qrad+Srad)
           enddo
         endif
@@ -1299,7 +1381,7 @@ module Radiation
           call calc_rad_diffusion(f,df,p)
         endif
         cooling=divF(l1:l2,m,n)
-        !cooling=f(l1:l2,m,n,iQrad2)*f(l1:l2,m,n,ikapparho2) !just the 1st frequency (visible)
+        !cooling=f(l1:l2,m,n,iQrad)*f(l1:l2,m,n,ikapparho) !just the 1st frequency (visible)
       endif
 !
 !  Add radiative cooling
@@ -1343,17 +1425,20 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: radpressure
-      integer :: j,k
+      integer :: j,k,iflux,ik,inu
 !
 !  radiative pressure force = kappa*Frad/c = (kappa*rho)*rho1*Frad/c
 !
       if (lradpressure) then
         call stop_it("radiative_pressure: not implemented for non-grey RT")
-        do j=1,3
-          k=iFrad+(j-1)
-          radpressure(:,j)=p%rho1*f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,k)/c_light
+        do inu=1,nnu 
+          do j=1,3
+            iflux=iFrad+(j-1)+3*(inu-1)
+            ik=ikapparho+inu-1
+            radpressure(:,j)=p%rho1*f(l1:l2,m,n,ik)*f(l1:l2,m,n,iflux)/c_light
+          enddo
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure
         enddo
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure
       endif
 !
 !  diagnostics
@@ -1386,12 +1471,12 @@ module Radiation
 
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       logical, save :: lfirst=.true.
-      real, dimension(mx) :: lnTT
-      real :: nu
-      integer :: inu
+      real, dimension(mx) :: lnTT,rr
+      real :: nu,width,rrp
+      integer :: inu,i
       
-      if (source_function_type(1)/='zero') &
-           call stop_it("source_function: thou shall not have cold gas emitting in visible wavelengths")
+      !if (source_function_type(1)/='zero') &
+      !     call stop_it("source_function: thou shall not have cold gas emitting in visible wavelengths")
 
       select case (source_function_type(inu))
 
@@ -1414,13 +1499,28 @@ module Radiation
         enddo
 
       case ('blob')
-        if (lfirst) then
-          Srad=Srad_const &
-              +amplSrad*spread(spread(exp(-(x/radius_Srad)**2),2,my),3,mz) &
-                       *spread(spread(exp(-(y/radius_Srad)**2),1,mx),3,mz) &
-                       *spread(spread(exp(-(z/radius_Srad)**2),1,mx),2,my)
-          lfirst=.false.
-        endif
+        !if (lfirst) then
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          !call eoscalc(f,mx,lnTT=lnTT)
+          !width=.05
+          do i=l1-radx,l2+radx
+          rrp=sqrt(x(i)**2+y(m)**2+z(n)**2)
+          if (rrp .le. 0.5) then
+            Srad(i,m,n)=98.!solar_flux*(solar_radius/rrp)**2
+          else
+            Srad(i,m,n)=0.0
+          endif
+        enddo
+          !Srad(i,m,n)=arad*57.**4 *(2*pi*width**2)**(-1.5) * exp(-.5*rr**2/width**2) 
+           !&
+              !+amplSrad*spread(spread(exp(-(x/radius_Srad)**2),2,my),3,mz) &
+              !         *spread(spread(exp(-(y/radius_Srad)**2),1,mx),3,mz) &
+              !         *spread(spread(exp(-(z/radius_Srad)**2),1,mx),2,my)
+          !lfirst=.false.
+      enddo
+        enddo
+        !endif
 
       case ('cos')
         if (lfirst) then
@@ -1784,6 +1884,10 @@ module Radiation
         write(3,*) 'iFradx=',iFradx
         write(3,*) 'iFrady=',iFrady
         write(3,*) 'iFradz=',iFradz
+        write(3,*) 'iFrad2=',iFrad2
+        write(3,*) 'iFradx2=',iFradx2
+        write(3,*) 'iFrady2=',iFrady2
+        write(3,*) 'iFradz2=',iFradz2
       endif
 !
       if (NO_WARN) print*,lreset  !(to keep compiler quiet)
