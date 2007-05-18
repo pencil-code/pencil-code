@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.296 2007-05-16 18:56:27 dobler Exp $
+### $Id: Makefile.src,v 1.297 2007-05-18 10:15:54 pkapyla Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -640,8 +640,8 @@ LD_FFTW2=
 ##
 ## Nordita MacBook
 ##
-#FC=g95
-#F77=$(FC)
+#FC=g95 #(normacbook1)
+#F77=$(FC) #(normacbook1)
 #FFLAGS= -I/usr/local/include #(normacbook1)
 #CFLAGS=-DFUNDERSC=2 #(normacbook1)
 #LD_MPI= -L/usr/local/include -llammpio -llamf77mpi -lmpi -llam -ldl #(normacbook1)
