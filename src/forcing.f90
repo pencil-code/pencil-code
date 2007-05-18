@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.102 2007-04-09 09:02:24 ajohan Exp $
+! $Id: forcing.f90,v 1.103 2007-05-18 13:33:39 pkapyla Exp $
 
 module Forcing
 
@@ -74,7 +74,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.102 2007-04-09 09:02:24 ajohan Exp $")
+           "$Id: forcing.f90,v 1.103 2007-05-18 13:33:39 pkapyla Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -500,7 +500,7 @@ module Forcing
 ! direction of forcing. The expression for the forcing amplitude used
 ! at the moment is:
 !
-!  f(i) = f0*[1. + epsilon((k dot fd)/(|k||fd|))^2*fd(i)/|fd|] 
+!  f(i)=f0*[1+epsilon(delta_ij*(k(i)*fd(j))/(|k||fd|))^2*fd(i)/|fd|] 
 !
 ! here f0 and fd are shorthand for force and forcing_direction,
 ! respectively, and epsilon=force_strength/force.
@@ -508,9 +508,9 @@ module Forcing
       if (force_strength/=0.) then
          call dot(force_direction,force_direction,fd2)
          fd=sqrt(fd2)
-         call dot(kk,force_direction,kkfd)
          do j=1,3
-            fda(:,j) = 1. + (force_strength/force)*(kkfd/(k*fd))**2 &
+            fda(:,j) = 1. + (force_strength/force) &
+                 *(kk(j)*force_direction(j)/(k*fd))**2 &
                  *force_direction(j)/fd
          end do
       else
