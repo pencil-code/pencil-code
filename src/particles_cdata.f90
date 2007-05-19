@@ -1,4 +1,4 @@
-! $Id: particles_cdata.f90,v 1.23 2007-04-08 09:41:41 ajohan Exp $
+! $Id: particles_cdata.f90,v 1.24 2007-05-19 20:24:37 ajohan Exp $
 !!
 !! Global particle variables
 !!
@@ -22,7 +22,7 @@ module Particles_cdata
   logical :: linterp_reality_check=.false., lmigration_redo=.false.
   logical :: lcalc_np=.false.
   logical :: lparticlemesh_cic=.false., lparticlemesh_tsc=.false.
-  logical :: lcartesian_mig=.true., lmigration_real_check=.false.
+  logical :: lcartesian_mig=.true., lmigration_real_check=.true.
   character (len=2*bclen+1) :: bcpx='p',bcpy='p',bcpz='p'
   character (len=2*bclen+1) :: bcspx='p',bcspy='p',bcspz='p'
 

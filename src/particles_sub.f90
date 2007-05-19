@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.108 2007-05-19 19:00:19 ajohan Exp $
+! $Id: particles_sub.f90,v 1.109 2007-05-19 20:24:37 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -18,7 +18,7 @@ module Particles_sub
   public :: interpolate_linear
   public :: interpolate_quadratic, interpolate_quadratic_spline
   public :: map_nearest_grid, map_xxp_grid, sort_particles_imn
-  public :: particle_pencil_index, find_closest_gridpoint
+  public :: particle_pencil_index
   public :: shepherd_neighbour
 
   contains
@@ -272,7 +272,12 @@ module Particles_sub
 !
       else
 !
-!  Cartesian boundaries: Boundary condition in the x-direction.
+!  Cartesian boundaries: Boundary condition in the x-direction. The physical
+!  domain is in the interval
+!
+!    x \in [x0,x1[
+!    y \in [y0,y1[
+!    z \in [z0,z1[
 !
       if (nxgrid/=1) then
         if (bcpx=='p') then
@@ -449,13 +454,13 @@ module Particles_sub
 !  Find y index of receiving processor.
           ipy_rec=ipy
           if (fp(k,iyp)>=y1_mig) then
-            iy0_rec=nint((fp(k,iyp)-y(m1))*dy1)+1
+            iy0_rec=nint((fp(k,iyp)-y(m1))*dy1+nygrid)-nygrid+1
             do while (iy0_rec>ny)
               ipy_rec=ipy_rec+1
               iy0_rec=iy0_rec-ny
             enddo
           else if (fp(k,iyp)<y0_mig) then
-            iy0_rec=nint((fp(k,iyp)-y(m1))*dy1)+1
+            iy0_rec=nint((fp(k,iyp)-y(m1))*dy1+nygrid)-nygrid+1
             do while (iy0_rec<1)
               ipy_rec=ipy_rec-1
               iy0_rec=iy0_rec+ny
@@ -464,13 +469,13 @@ module Particles_sub
 !  Find z index of receiving processor.
           ipz_rec=ipz
           if (fp(k,izp)>=z1_mig) then
-            iz0_rec=nint((fp(k,izp)-z(n1))*dz1)+1
+            iz0_rec=nint((fp(k,izp)-z(n1))*dz1+nzgrid)-nzgrid+1
             do while (iz0_rec>nz)
               ipz_rec=ipz_rec+1
               iz0_rec=iz0_rec-nz
             enddo
           else if (fp(k,izp)<z0_mig) then
-            iz0_rec=nint((fp(k,izp)-z(n1))*dz1)+1
+            iz0_rec=nint((fp(k,izp)-z(n1))*dz1+nzgrid)-nzgrid+1
             do while (iz0_rec<1)
               ipz_rec=ipz_rec-1
               iz0_rec=iz0_rec+nz
@@ -582,8 +587,8 @@ module Particles_sub
 !  Check that received particles are really at the right processor.
             if (lmigration_real_check) then
               do k=npar_loc+1,npar_loc+nmig(i,iproc)
-                if (fp(k,iyp)<y0_mig .or. fp(k,iyp)>y1_mig .or. &
-                    fp(k,izp)<z0_mig .or. fp(k,izp)>z1_mig ) then
+                if (fp(k,iyp)<y0_mig .or. fp(k,iyp)>=y1_mig .or. &
+                    fp(k,izp)<z0_mig .or. fp(k,izp)>=z1_mig ) then
                   print*, 'redist_particles_procs: received particle closer '//&
                       'to ghost point than to physical grid point!'
                   print*, 'redist_particles_procs: ipar, xxp=', &
@@ -1718,44 +1723,6 @@ module Particles_sub
       enddo
 !
     endsubroutine particle_pencil_index
-!***********************************************************************
-    subroutine find_closest_gridpoint(xxp,ix0,iy0,iz0)
-!
-!  Find index (ix0, iy0, iz0) of closest grid point to the point xxp.
-!
-!  WARNING: may not work if lperi is *not* set and the number of processors
-!           in a corresponding direction is larger than 2.
-!
-!  23-aug-05/anders: coded
-!
-      use Cdata
-      use Messages, only: fatal_error
-!
-      real, dimension(3) :: xxp
-      integer :: ix0, iy0, iz0
-!
-      real, save :: dx1, dy1, dz1
-      logical, save :: lfirstcall=.true.
-!
-      intent(in)  :: xxp
-      intent(out) :: ix0, iy0, iz0
-!
-      ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
-!
-      if (lfirstcall) then
-        if (.not. all(lequidist)) then
-          print*, 'find_closeset_gridpoint: only works for equidistant grid!'
-          call fatal_error('find_closest_gridpoint','')
-        endif
-        dx1=1/dx; dy1=1/dy; dz1=1/dz
-        lfirstcall=.false.
-      endif
-!
-      if (nxgrid/=1) ix0 = nint((xxp(1)-x(1))*dx1) + 1
-      if (nygrid/=1) iy0 = nint((xxp(2)-y(1))*dy1) + 1
-      if (nzgrid/=1) iz0 = nint((xxp(3)-z(1))*dz1) + 1
-!
-    endsubroutine find_closest_gridpoint
 !***********************************************************************
     subroutine shepherd_neighbour(f,fp,ineargrid,kshepherd,kneighbour)
 !
