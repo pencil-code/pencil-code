@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.107 2007-04-10 04:33:41 ajohan Exp $
+! $Id: particles_sub.f90,v 1.108 2007-05-19 19:00:19 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -449,13 +449,13 @@ module Particles_sub
 !  Find y index of receiving processor.
           ipy_rec=ipy
           if (fp(k,iyp)>=y1_mig) then
-            iy0_rec=nint((fp(k,iyp)-y(1))*dy1)+1-nghost
+            iy0_rec=nint((fp(k,iyp)-y(m1))*dy1)+1
             do while (iy0_rec>ny)
               ipy_rec=ipy_rec+1
               iy0_rec=iy0_rec-ny
             enddo
           else if (fp(k,iyp)<y0_mig) then
-            iy0_rec=nint((fp(k,iyp)-y(1))*dy1)+1-nghost
+            iy0_rec=nint((fp(k,iyp)-y(m1))*dy1)+1
             do while (iy0_rec<1)
               ipy_rec=ipy_rec-1
               iy0_rec=iy0_rec+ny
@@ -464,13 +464,13 @@ module Particles_sub
 !  Find z index of receiving processor.
           ipz_rec=ipz
           if (fp(k,izp)>=z1_mig) then
-            iz0_rec=nint((fp(k,izp)-z(1))*dz1)+1-nghost
+            iz0_rec=nint((fp(k,izp)-z(n1))*dz1)+1
             do while (iz0_rec>nz)
               ipz_rec=ipz_rec+1
               iz0_rec=iz0_rec-nz
             enddo
           else if (fp(k,izp)<z0_mig) then
-            iz0_rec=nint((fp(k,izp)-z(1))*dz1)+1-nghost
+            iz0_rec=nint((fp(k,izp)-z(n1))*dz1)+1
             do while (iz0_rec<1)
               ipz_rec=ipz_rec-1
               iz0_rec=iz0_rec+nz
