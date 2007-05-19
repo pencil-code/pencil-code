@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.57 2007-04-08 10:13:32 ajohan Exp $
+! $Id: general.f90,v 1.58 2007-05-19 05:21:11 dobler Exp $
 
 module General
 
@@ -327,7 +327,7 @@ module General
 ! with a Marsaglia shift sequence. Returns a uniform random deviate
 ! between 0.0 and 1.0 (exclusive of the endpoint values).
 ! Call with (INIT=ival) to initialize.
-! The period of this generator is supposed to be about 3.1× 10^18.
+! The period of this generator is supposed to be about 3.1×10^18.
 !
       implicit none
 !

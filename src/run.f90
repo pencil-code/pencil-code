@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.242 2007-04-27 11:12:56 dhruba Exp $
+! $Id: run.f90,v 1.243 2007-05-19 05:21:11 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -39,6 +39,9 @@
         use NeutralDensity,  only: init_lnrhon
         use Magnetic,        only: pert_aa, rescaling
         use Particles_main
+ 
+        use FArrayManager,   only: farray_clean_up
+        use SharedVariables, only: sharedvars_clean_up
 !
         implicit none
 
@@ -69,7 +72,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.242 2007-04-27 11:12:56 dhruba Exp $")
+             "$Id: run.f90,v 1.243 2007-05-19 05:21:11 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -609,4 +612,11 @@
         endif
         call mpifinalize
 !
+!
+!  Free any allocated memory
+!
+        call farray_clean_up()
+        call sharedvars_clean_up()
+!
       endprogram run
+

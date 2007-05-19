@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.16 2007-05-13 15:23:44 ajohan Exp $
+! $Id: farray.f90,v 1.17 2007-05-19 05:21:10 dobler Exp $
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  This includes handling different
@@ -32,6 +32,8 @@ module FArrayManager
 !
   public :: farray_acquire_scratch_area
   public :: farray_release_scratch_area
+!
+  public :: farray_clean_up
 !
 ! Types of variable that may be stored in the f-array
 !
@@ -307,11 +309,11 @@ module FArrayManager
       endselect
 !
       call new_item_atstart(thelist,new=new)
-      new%varname=varname
-      new%vartype=vartype
-      new%ncomponents=ncomponents
-      allocate(new%ivar(ncomponents),stat=memstat)
-      new%ivar(1)%p=>ivar
+      new%varname     = varname
+      new%vartype     = vartype
+      new%ncomponents = ncomponents
+      allocate(new%ivar(ncomponents))
+      new%ivar(1)%p => ivar
 
       select case (vartype)
         case (iFARRAY_TYPE_PDE)
@@ -487,9 +489,8 @@ module FArrayManager
 !***********************************************************************
     subroutine save_analysis_info(item)
 !
-! This routine processes an item/slot in the farray and sets/writes
-! any metadata required by internal or external analysis tools
-! eg. IDL, OpenDX...
+! Process an item/slot in the farray and set/write any metadata required
+! by internal or external analysis tools eg. IDL, OpenDX...
 !
       use Cdata, only: varname
       use General, only: chn
@@ -510,6 +511,7 @@ module FArrayManager
       else
         varname(item%ivar(1)%p) = item%varname
       endif
+!
     endsubroutine save_analysis_info
 !***********************************************************************
     subroutine farray_use_pde(varname,ivar,vector,ierr)
@@ -801,36 +803,67 @@ module FArrayManager
 !    endfunction farray_index_by_name
 !***********************************************************************
     subroutine free_list(list)
+!
+!  Free any memory allocated by list
+!
+!  18-may-2007/wolf: documented and added list%ivar deallocation
+!
       type (farray_contents_list), pointer :: list
       type (farray_contents_list), pointer :: next
 
       do while (associated(list))
-        next=>list%next
+        next => list%next
+        deallocate(list%ivar)
         deallocate(list)
-        list=>next
+        list => next
       enddo
       nullify(list)
+!
     endsubroutine free_list
 !***********************************************************************
     subroutine delete_item_from_list(item)
       type (farray_contents_list), pointer :: item
 
-      item%next%previous=>item%previous
-      item%previous%next=>item%next
+      item%next%previous => item%previous
+      item%previous%next => item%next
       deallocate(item)
       nullify(item)
     endsubroutine delete_item_from_list
 !***********************************************************************
     subroutine new_item_atstart(list,new)
+!
+!  Insert new item at beginning of list [like Perl's unshift(), or Lisp's
+!  (cons 'item list)]
+!
+!  18-may-2007/wolf: documented
+!
       type (farray_contents_list), pointer :: list
       type (farray_contents_list), optional, pointer :: new
       type (farray_contents_list), pointer :: new_
 
       allocate(new_)
-      new_%next=>list
+      new_%next => list
       nullify(new_%previous)
-      list=>new_
-      if (present(new)) new=>new_
+      list => new_
+      if (present(new)) new => new_
+!
     endsubroutine new_item_atstart
 !***********************************************************************
+    subroutine farray_clean_up()
+!
+!  Free any memory allocated for farrays, so G95 doesn't warn about still
+!  allocated memory.
+!
+!  18-may-2007/wolf: coded
+!
+      use Cdata, only: varname
+!
+      call free_list(thelist)
+      !
+      print*, varname
+      
+!
+    endsubroutine farray_clean_up
+!***********************************************************************
+
 endmodule FArrayManager

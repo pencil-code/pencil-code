@@ -1,4 +1,4 @@
-! $Id: shared_variables.f90,v 1.11 2006-11-30 09:03:36 dobler Exp $
+! $Id: shared_variables.f90,v 1.12 2007-05-19 05:21:11 dobler Exp $
 !
 !  This module is an interface to allow modules
 !  to register pointers to their internal variables so that
@@ -35,6 +35,7 @@ module SharedVariables
   public :: put_shared_variable
   public :: get_shared_variable
   public :: sharedvars_error_string
+  public :: sharedvars_clean_up
 !
   interface get_shared_variable
     module procedure get_variable_real0d
@@ -455,6 +456,16 @@ module SharedVariables
       endselect
 !
     endfunction sharedvars_error_string
+!***********************************************************************
+    subroutine sharedvars_clean_up()
+!
+!  Free any allocated memory, so G95 does not complain after the run
+!
+!  18-may-2007/wolf: coded
+!
+      call free_list(thelist)
+!
+    endsubroutine sharedvars_clean_up
 !***********************************************************************
 
 endmodule SharedVariables

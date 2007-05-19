@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.166 2007-02-28 16:21:17 wlyra Exp $
+! $Id: start.f90,v 1.167 2007-05-19 05:21:11 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -46,6 +46,9 @@
         use Radiation,       only: init_rad, radtransfer
         use Interstellar,    only: init_interstellar
         use Particles_main
+
+        use FArrayManager,   only: farray_clean_up
+        use SharedVariables, only: sharedvars_clean_up
 !
         implicit none
 
@@ -93,7 +96,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.166 2007-02-28 16:21:17 wlyra Exp $")
+             "$Id: start.f90,v 1.167 2007-05-19 05:21:11 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -397,4 +400,10 @@
         if (lroot) print*,'start.x has completed successfully'
         if (lroot) print* ! (finish with an empty line)
 !
+!  Free any allocated memory
+!
+        call farray_clean_up()
+        call sharedvars_clean_up()
+!
       endprogram
+
