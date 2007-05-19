@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.416 2007-05-15 01:35:26 theine Exp $
+! $Id: magnetic.f90,v 1.417 2007-05-19 07:53:05 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -235,7 +235,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.416 2007-05-15 01:35:26 theine Exp $")
+           "$Id: magnetic.f90,v 1.417 2007-05-19 07:53:05 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -595,7 +595,7 @@ module Magnetic
             f(l1:l2,m,n,ilnrho)=alog(1.0)-z(n)**2/(2*scaleH**2)
             rho=exp(f(l1:l2,m,n,ilnrho))
             f(l1:l2,m,n,iglobal_by_ext)= &
-                sqrt(2*mu0*1.0**2*beta_const*rho)
+                sqrt(2*mu0*1.0**2*rho/beta_const)
             f(l1:l2,m,n,iglobal_jx_ext)= &
                 sqrt(0.5*mu0*1.0**2*beta_const)*sqrt(rho)*z(n)/scaleH**2
           enddo; enddo
@@ -605,7 +605,7 @@ module Magnetic
           print*, 'init_aa: hydrostatic_magnetic: scaleH=', scaleH
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ilnrho) = rho0*exp(-0.5*(z(n)/scaleH)**2)
-            f(l1:l2,m,n,iax) = scaleH*sqrt(2*pi*rho0*cs20/beta_const) &
+            f(l1:l2,m,n,iax) = scaleH*sqrt(2*mu0*pi*rho0*cs20/beta_const) &
                               *erfunc(0.5*z(n)/scaleH)
           enddo; enddo
         case('hydrostatic_disk_sinx')
@@ -614,7 +614,7 @@ module Magnetic
           print*, 'init_aa: hydrostatic_magnetic: scaleH=', scaleH
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ilnrho) = exp(-0.5*(z(n)/scaleH)**2)
-            f(l1:l2,m,n,iax) = 2*scaleH*sqrt(2*pi*rho0*cs20/beta_const) &
+            f(l1:l2,m,n,iax) = 2*scaleH*sqrt(2*mu0*pi*rho0*cs20/beta_const) &
                               *sin(kx_aa(j)*x(l1:l2))*erfunc(0.5*z(n)/scaleH)
           enddo; enddo
 
