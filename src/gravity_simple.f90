@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.36 2007-04-22 12:03:56 theine Exp $
+! $Id: gravity_simple.f90,v 1.37 2007-05-19 08:19:28 ajohan Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -108,7 +108,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.36 2007-04-22 12:03:56 theine Exp $")
+           "$Id: gravity_simple.f90,v 1.37 2007-05-19 08:19:28 ajohan Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.
@@ -124,12 +124,15 @@ module Gravity
 !
 !  12-nov-04/anders: coded, copied init conds from grav_x, grav_y and grav_y.
 !
+      use SharedVariables
       use Sub, only: notanumber, cubic_step
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      logical              :: lstarting
-      real                 :: ztop
+      logical :: lstarting
+!
       real, dimension (mz) :: prof
+      real :: ztop
+      integer :: ierr
 !
 !  Sanity check
 !
@@ -308,6 +311,8 @@ module Gravity
       if (notanumber(gravz_zpencil)) then
         call fatal_error('initialize_gravity','found NaN or +/-Inf in gravz_zpencil')
       endif
+!
+      call put_shared_variable('nu_epicycle',nu_epicycle,ierr)
 !
       if (NO_WARN) print*,f
 !

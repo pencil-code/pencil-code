@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.417 2007-05-19 07:53:05 ajohan Exp $
+! $Id: magnetic.f90,v 1.418 2007-05-19 08:19:28 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -235,7 +235,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.417 2007-05-19 07:53:05 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.418 2007-05-19 08:19:28 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -495,6 +495,7 @@ module Magnetic
       use Gravity, only: gravz
       use Initcond
       use Mpicomm
+      use SharedVariables
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -503,7 +504,8 @@ module Magnetic
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact,rho
       real :: beq2, scaleH
-      integer :: j
+      real, pointer :: nu_epicycle
+      integer :: j, ierr
 !
       do j=1,ninit
 
@@ -600,20 +602,46 @@ module Magnetic
                 sqrt(0.5*mu0*1.0**2*beta_const)*sqrt(rho)*z(n)/scaleH**2
           enddo; enddo
         case('hydrostatic_disk')
+          call get_shared_variable('nu_epicycle',nu_epicycle,ierr)
+          if (ierr/=0) then
+            if (lroot) print*, 'init_aa: '// &
+                'there was a problem when getting nu_epicycle!'
+            call fatal_error('init_aa','')
+          endif
+          if (lroot) &
+            print*, 'init_aa: hydrostatic_disk: '// &
+                'fetched shared variable nu_epicycle=', nu_epicycle
           ! This assumes an isothermal equation of state
-          scaleH = (cs0/Omega)*sqrt(1+1/beta_const)
-          print*, 'init_aa: hydrostatic_magnetic: scaleH=', scaleH
+          scaleH = (cs0/nu_epicycle)*sqrt(1+1/beta_const)
+          print*, 'init_aa: hydrostatic_disk: scaleH=', scaleH
           do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ilnrho) = rho0*exp(-0.5*(z(n)/scaleH)**2)
+            if (ldensity_nolog) then
+              f(l1:l2,m,n,ilnrho) = rho0*exp(-0.5*(z(n)/scaleH)**2)
+            else
+              f(l1:l2,m,n,ilnrho) = alog(rho0)-0.5*(z(n)/scaleH)**2
+            endif
             f(l1:l2,m,n,iax) = scaleH*sqrt(2*mu0*pi*rho0*cs20/beta_const) &
                               *erfunc(0.5*z(n)/scaleH)
           enddo; enddo
         case('hydrostatic_disk_sinx')
+          call get_shared_variable('nu_epicycle',nu_epicycle,ierr)
+          if (ierr/=0) then
+            if (lroot) print*, 'init_aa: '// &
+                'there was a problem when getting nu_epicycle!'
+            call fatal_error('init_aa','')
+          endif
+          if (lroot) &
+            print*, 'init_aa: hydrostatic_disk_sinx: '// &
+                'fetched shared variable nu_epicycle=', nu_epicycle
           ! This assumes an isothermal equation of state
-          scaleH = (cs0/Omega)*sqrt(1+1/beta_const)
-          print*, 'init_aa: hydrostatic_magnetic: scaleH=', scaleH
+          scaleH = (cs0/nu_epicycle)*sqrt(1+1/beta_const)
+          print*, 'init_aa: hydrostatic_disk_sinx: scaleH=', scaleH
           do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ilnrho) = exp(-0.5*(z(n)/scaleH)**2)
+            if (ldensity_nolog) then
+              f(l1:l2,m,n,ilnrho) = rho0*exp(-0.5*(z(n)/scaleH)**2)
+            else
+              f(l1:l2,m,n,ilnrho) = alog(rho0)-0.5*(z(n)/scaleH)**2
+            endif
             f(l1:l2,m,n,iax) = 2*scaleH*sqrt(2*mu0*pi*rho0*cs20/beta_const) &
                               *sin(kx_aa(j)*x(l1:l2))*erfunc(0.5*z(n)/scaleH)
           enddo; enddo
