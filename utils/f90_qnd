@@ -11,11 +11,11 @@
 #   f90_qnd <f90-arguments>  # (i.e. drop-in replacement for f90 compiler)
 # For full documentation, run `perldoc f90_qnd'.
 
-# Copyright (C) 2006  Wolfgang Dobler
+# Copyright (C) 2006, 2007  Wolfgang Dobler
 #
 # This program is free software; you can redistribute and/or modify it
-# under the same conditions as Perl (see `perldoc perlgpl',
-# `perldoc perlartistic').
+# under the same conditions as Perl (see `perldoc perlgpl', `perldoc
+# perlartistic'), or under the GNU Public license version 2 or later.
 
 
 use strict;
@@ -24,10 +24,17 @@ use strict;
 my $md5_implementation = 'Digest::MD5';
 eval { require Digest::MD5 } or $md5_implementation = 'md5sum';
 
-my $debug = 1;                  # 0: be quiet
+my $debug = 3;                  # 0: be quiet
                                 # 1: be verbose
                                 # 2: dump all time stamps and md5 sums
+                                # 3: dump even the files
 my $debugfile = "./f90_qnd.log";
+my $logdir    = "./f90_qnd_log_dir";
+if ($debug > 2) {
+    system('mkdir', '-p', $logdir) == 0
+      or die "Couldn't create $logdir: $?\n";
+}
+
 my $time_immemorial = 1;        # Thu Jan 1 00:00:01 UCT 1970
 my $touch_only = 0;             # Compile by default
 
@@ -62,18 +69,25 @@ if (defined($ENV{F90_QND_F90})) {
     warn boldface("$cmdname: F90_QND_F90 is not set; defaulting to `$fc'\n");
 }
 
-## Compiler arguments
+# Compiler arguments
 @fcargs = @ARGV;
 # Fast-track: are we to touch, rather than compile?
 if ($ENV{F90_QND_TOUCHONLY}) {
     touch_files_and_exit(@fcargs);
 }
 
+# Split $fc at whitespace (to allow F90_QND_F90='g95 -std=f95' and such)
+my @rest;
+$fc =~ s/^\s*//;             # Strip leading whitespace (paranoia)
+($fc, @rest) = split(' ', $fc);
+unshift @fcargs, @rest;
+
+# Compiling or linking?
 if (grep /^-c$/, @fcargs) {
-    # Call of type $(FC) .. -c to produce .o and .mod files
+    # Call of type $(FC) .. -c to really compile
     # --> Do the nasty manipulations
 } else {
-    # No `-c' option
+    # No `-c' option: Linking
     print DEBUG "Assuming a linking call; not manipulating anything...\n"
       if ($debug);
     compile($fc, @fcargs);
@@ -268,6 +282,7 @@ sub get_md5_hash {
 # returns hash of MD5 sums of all files in list.
     my @files = @_;
     my %mod_hash;
+    my $md5;
 
     foreach my $file (@files) {
         local $/=undef;
@@ -276,7 +291,37 @@ sub get_md5_hash {
         my $data = <FILE>;
         close FILE;
         $data = erase_timestamp_from_mod($data,$file);
-        $mod_hash{$file} = md5_hash_hex($data);
+        $md5 = md5_hash_hex($data);
+        $mod_hash{$file} = $md5;
+
+        if ($debug > 2) {
+            #
+            # Store copy of mod file that produced Md5 sum, together with
+            # guess of the corresponding .f90 file.
+            #
+            # my ($sec,$min,$hour,$mday,$mon,$year) = localtime(time);
+            my ($sec,$min,$hour,$mday,$mon,$year)
+              = localtime(get_timestamp($file));
+            my $timestamp = "$year$mon$mday.$hour$min$sec";
+            my $fname = "${logdir}/${file}_${timestamp}_${md5}";
+            open(MODFILE, "> $fname") or die "Cannot open $fname for writing\n";
+            print MODFILE $data;
+            close MODFILE;
+
+            # OK, this one is really just a hack I am adapting to the
+            # situation (i.e. to the files I am interested in)
+            my $f90file = '';
+            if ($file eq 'farraymanager.mod') {
+                $f90file = 'farray.f90';
+            }
+            if ($f90file) {
+                # Append the same label as for the module, for easier
+                # identification
+                my $fname = "${logdir}/${f90file}_${timestamp}_${md5}";
+                system('cp', $f90file, $fname) == 0
+                  or warn "Couldn't copy $f90file to $fname: $?\n";
+            }
+        }
     }
 
     return %mod_hash;
@@ -373,7 +418,8 @@ sub get_ts_and_md5_for_mod {
     my @mod_files = <*.mod>;
     %$ts_ref  = get_ts_hash( @mod_files);
     %$md5_ref = get_md5_hash(@mod_files);
-    if ($debug>1) {
+
+    if ($debug > 1) {
         print DEBUG "$phase: ", Dumper($ts_ref);
         print DEBUG "$phase: ", Dumper($md5_ref);
     }
