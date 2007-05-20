@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.37 2007-05-19 08:19:28 ajohan Exp $
+! $Id: gravity_simple.f90,v 1.38 2007-05-20 18:42:42 theine Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -74,14 +74,14 @@ module Gravity
        z1,z2,zref,lnrho_bot,lnrho_top,ss_bot,ss_top, &
        lgravx_gas,lgravx_dust,lgravy_gas,lgravy_dust,lgravz_gas,lgravz_dust, &
        xinfty,yinfty,zinfty, &
-       reduced_top,lboussinesq,grav_profile
+       reduced_top,lboussinesq,grav_profile,n_pot
 
   namelist /grav_run_pars/ &
        gravx_profile,gravy_profile,gravz_profile,gravx,gravy,gravz, &
        xgrav,ygrav,zgrav,kx_gg,ky_gg,kz_gg,dgravx,nu_epicycle,pot_ratio, &
        lgravx_gas,lgravx_dust,lgravy_gas,lgravy_dust,lgravz_gas,lgravz_dust, &
        xinfty,yinfty,zinfty, &
-       zref,reduced_top,lboussinesq,grav_profile
+       zref,reduced_top,lboussinesq,grav_profile,n_pot
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
@@ -108,7 +108,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.37 2007-05-19 08:19:28 ajohan Exp $")
+           "$Id: gravity_simple.f90,v 1.38 2007-05-20 18:42:42 theine Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.
@@ -255,6 +255,14 @@ module Gravity
         if(lroot) print*,'initialize_gravity: linear z-grav, nu=', nu_epicycle
         gravz_zpencil = -nu_epicycle2*z
         potz_zpencil=0.5*nu_epicycle2*(z**2-zinfty**2)
+
+      case('linear_smoothed')
+        nu_epicycle2=nu_epicycle**2
+        if(lroot) print*,'initialize_gravity: linear z-grav, '// &
+                         'smoothed to zero at top/bottom, nu=', nu_epicycle
+        prof = 1. + (z/zref)**(2*n_pot)
+        gravz_zpencil = -nu_epicycle2*z/prof**(1./n_pot+1.)
+        potz_zpencil = 0.5*nu_epicycle2*z**2/prof**(1./n_pot)
 
       case('sinusoidal')
         if (lroot) print*,'initialize_gravity: sinusoidal z-grav, gravz=', gravz
@@ -490,6 +498,7 @@ module Gravity
       real, optional :: xpos,ypos,zpos,r
       real, optional :: pot0,grav
       real :: potx_xpoint,poty_ypoint,potz_zpoint
+      real :: prof
       integer :: i
 !
       potx_xpoint=0.
@@ -525,6 +534,9 @@ module Gravity
         potz_zpoint=-gravz*(zpos-zinfty)
       case('linear')
         potz_zpoint=0.5*(zpos**2-zinfty**2)*nu_epicycle**2
+      case('linear_smoothed')
+        prof = 1. + (zpos/zref)**(2*n_pot)
+        potz_zpoint = 0.5*(nu_epicycle*zpos)**2/prof**(1./n_pot)
       case default
         call fatal_error('potential_point', &
              'gravz_profile='//gravz_profile//' not implemented')
