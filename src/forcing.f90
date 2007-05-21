@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.103 2007-05-18 13:33:39 pkapyla Exp $
+! $Id: forcing.f90,v 1.104 2007-05-21 09:36:26 brandenb Exp $
 
 module Forcing
 
@@ -26,7 +26,8 @@ module Forcing
   real, dimension(mz) :: profz_ampl=1.,profz_hel=0. !(initialize profz_hel=1)
   integer :: kfountain=5,ifff,iffx,iffy,iffz
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
-  logical :: lmagnetic_forcing=.false.,lscale_kvector_tobox=.false.
+  logical :: lmagnetic_forcing=.false.,ltestfield_forcing=.false.
+  logical :: lscale_kvector_tobox=.false.
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
   character (len=labellen) :: iforce_profile='nothing'
@@ -44,7 +45,8 @@ module Forcing
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
        omega_ff, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
-       lmagnetic_forcing,max_force,dtforce,old_forcing_evector, &
+       lmagnetic_forcing,ltestfield_forcing, &
+       max_force,dtforce,old_forcing_evector, &
        iforce_profile,lscale_kvector_tobox, &
        force_direction, force_strength
 
@@ -74,7 +76,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.103 2007-05-18 13:33:39 pkapyla Exp $")
+           "$Id: forcing.f90,v 1.104 2007-05-21 09:36:26 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -320,6 +322,10 @@ module Forcing
       real :: norm,phi
       real :: fd,fd2,kkfd
 !
+!  additional stuff for test fields
+!
+      integer :: jtest
+!
       if (ifirst==0) then
         if (lroot) print*,'forcing_hel: opening k.dat'
         open(9,file='k.dat')
@@ -546,6 +552,13 @@ module Forcing
                   *real(cmplx(coef1(j),profx_hel*profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
                 f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+                if (ltestfield_forcing) then
+                  do jtest=1,12
+                    iaxtest=iaatest+3*(jtest-1)
+                    jf=j+iaxtest-1
+                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+                  enddo
+                endif
               endif
             enddo
           enddo
