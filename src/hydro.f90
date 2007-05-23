@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.346 2007-05-23 13:39:42 bingert Exp $
+! $Id: hydro.f90,v 1.347 2007-05-23 14:53:20 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -92,6 +92,7 @@ module Hydro
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
   logical :: lforcing_continuous=.false.,lembed=.false.
   logical :: lremove_mean_momenta=.false.
+  logical :: lremove_mean_flow=.true.
   logical :: lalways_use_gij_etc=.false.
   character (len=labellen) :: iforcing_continuous='ABC'
 !
@@ -100,7 +101,7 @@ module Hydro
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym,tau_damp_ruzm,tau_diffrot1,ampl_diffrot, &
-       xexp_diffrot,kx_diffrot,lremove_mean_momenta, &
+       xexp_diffrot,kx_diffrot,lremove_mean_momenta,lremove_mean_flow, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
@@ -288,7 +289,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.346 2007-05-23 13:39:42 bingert Exp $")
+           "$Id: hydro.f90,v 1.347 2007-05-23 14:53:20 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2520,8 +2521,62 @@ module Hydro
         enddo
         enddo
 
+      elseif (lremove_mean_flow) then
+        call remove_mean_flow(f)
+
       endif
 
     endsubroutine remove_mean_momenta
+!***********************************************************************
+    subroutine remove_mean_flow(f)
+!
+!  Substract mean x-flow over density from the x-velocity field.
+!  Useful to avoid unphysical winds in shearing box simulations.
+!  Note: this is possibly not useful when there is rotation, because
+!  then epicyclic motions don't usually grow catastrophically.
+!
+!  22-may-07/axel: adapted from remove_mean_momenta
+!
+      use Cdata, only: iux,iuz
+      use Mpicomm, only: mpiallreduce_sum
+
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+
+      real, dimension (nx) :: uu
+      real :: fac,fsum_tmp,fsum
+      real, dimension (iux:iuz) :: um
+      integer :: m,n,j
+
+      if (lremove_mean_flow) then
+
+        um = 0.0
+        fac = 1.0/nwgrid
+
+        do n = n1,n2
+        do m = m1,m2
+          do j=iux,iuz
+            uu = f(l1:l2,m,n,j)
+            um(j) = um(j) + fac*sum(uu)
+          enddo
+        enddo
+        enddo
+
+        do j=iux,iuz
+          fsum_tmp = um(j)
+          call mpiallreduce_sum(fsum_tmp,fsum)
+          um(j) = fsum
+        enddo
+
+        do n = n1,n2
+        do m = m1,m2
+          do j=iux,iuz
+            f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - um(j)
+          enddo
+        enddo
+        enddo
+
+      endif
+
+    endsubroutine remove_mean_flow
 !***********************************************************************
 endmodule Hydro
