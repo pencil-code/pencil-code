@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.35 2007-05-17 16:13:54 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.36 2007-05-23 07:53:21 ajohan Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -42,6 +42,7 @@ module Particles
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
   integer :: idiag_nparmax=0, idiag_npmax=0, idiag_npmin=0
+  integer :: idiag_npmx=0, idiag_rhopmx=0, idiag_epspmx=0
   integer :: idiag_npmz=0, idiag_rhopmz=0, idiag_epspmz=0
 
   contains
@@ -61,7 +62,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.35 2007-05-17 16:13:54 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.36 2007-05-23 07:53:21 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -383,6 +384,9 @@ module Particles
       endif
 !
       if (l1ddiagnos) then
+        if (idiag_npmx/=0)   call yzsum_mn_name_x(p%np,idiag_npmx)
+        if (idiag_rhopmx/=0) call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
+        if (idiag_epspmx/=0) call yzsum_mn_name_x(p%epsp,idiag_epspmx)
         if (idiag_npmz/=0)   call xysum_mn_name_z(p%np,idiag_npmz)
         if (idiag_rhopmz/=0) call xysum_mn_name_z(p%rhop,idiag_rhopmz)
         if (idiag_epspmz/=0) call xysum_mn_name_z(p%epsp,idiag_epspmz)
@@ -525,7 +529,7 @@ module Particles
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname, inamez
+      integer :: iname, inamex, inamez
       logical :: lwr
 !
 !  Write information to index.pro
@@ -549,6 +553,7 @@ module Particles
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
         idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0
         idiag_nparmax=0; idiag_nmigmax=0; idiag_npmax=0; idiag_npmin=0
+        idiag_npmx=0; idiag_rhopmx=0; idiag_epspmx=0
         idiag_npmz=0; idiag_rhopmz=0; idiag_epspmz=0
       endif
 !
@@ -567,6 +572,14 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'npmax',idiag_npmax)
         call parse_name(iname,cname(iname),cform(iname),'npmin',idiag_npmin)
         call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax)
+      enddo
+!
+!  check for those quantities for which we want x-averages
+!
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'npmx',idiag_npmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhopmx',          idiag_rhopmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'epspmx',          idiag_epspmx)
       enddo
 !
 !  check for those quantities for which we want z-averages
