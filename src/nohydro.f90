@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.68 2007-02-15 15:26:38 wlyra Exp $
+! $Id: nohydro.f90,v 1.69 2007-05-23 13:39:42 bingert Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -71,7 +71,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.68 2007-02-15 15:26:38 wlyra Exp $")
+           "$Id: nohydro.f90,v 1.69 2007-05-23 13:39:42 bingert Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -774,7 +774,7 @@ module Hydro
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'run through parse list'
+      if(lroot.and.ip<14) print*,'rprint_nohydro: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
         call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)

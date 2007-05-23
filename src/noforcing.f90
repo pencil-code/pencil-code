@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.21 2007-01-31 12:50:12 wlyra Exp $
+! $Id: noforcing.f90,v 1.22 2007-05-23 13:39:42 bingert Exp $
 
 module Forcing
 
@@ -40,7 +40,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.21 2007-01-31 12:50:12 wlyra Exp $")
+           "$Id: noforcing.f90,v 1.22 2007-05-23 13:39:42 bingert Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -144,7 +144,7 @@ module Forcing
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'run through parse list'
+      if(lroot.and.ip<14) print*,'rprint_noforcing: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
       enddo

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.345 2007-05-15 19:33:41 brandenb Exp $
+! $Id: hydro.f90,v 1.346 2007-05-23 13:39:42 bingert Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -288,7 +288,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.345 2007-05-15 19:33:41 brandenb Exp $")
+           "$Id: hydro.f90,v 1.346 2007-05-23 13:39:42 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2011,7 +2011,7 @@ module Hydro
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'run through parse list'
+      if(lroot.and.ip<14) print*,'rprint_hydro: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
         call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)

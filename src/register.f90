@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.208 2007-03-27 15:11:48 brandenb Exp $
+! $Id: register.f90,v 1.209 2007-05-23 13:39:42 bingert Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -885,7 +885,7 @@ module Register
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'run through parse list'
+      if(lroot.and.ip<14) print*,'rprint_register: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'t',idiag_t)
         call parse_name(iname,cname(iname),cform(iname),'it',idiag_it)

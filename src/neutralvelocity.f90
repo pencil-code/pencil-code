@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.8 2007-03-02 17:43:51 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.9 2007-05-23 13:39:42 bingert Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -128,7 +128,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.8 2007-03-02 17:43:51 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.9 2007-05-23 13:39:42 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -869,7 +869,7 @@ module NeutralVelocity
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'run through parse list'
+      if(lroot.and.ip<14) print*,'rprint_neutralvelocity: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'un2m',idiag_un2m)
         call parse_name(iname,cname(iname),cform(iname),'unm2',idiag_unm2)

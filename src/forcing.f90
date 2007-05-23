@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.104 2007-05-21 09:36:26 brandenb Exp $
+! $Id: forcing.f90,v 1.105 2007-05-23 13:39:42 bingert Exp $
 
 module Forcing
 
@@ -76,7 +76,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.104 2007-05-21 09:36:26 brandenb Exp $")
+           "$Id: forcing.f90,v 1.105 2007-05-23 13:39:42 bingert Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -2181,7 +2181,7 @@ module Forcing
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'run through parse list'
+      if(lroot.and.ip<14) print*,'rprint_forcing: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
         call parse_name(iname,cname(iname),cform(iname),'ufm',idiag_ufm)
