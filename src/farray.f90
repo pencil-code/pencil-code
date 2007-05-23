@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.17 2007-05-19 05:21:10 dobler Exp $
+! $Id: farray.f90,v 1.18 2007-05-23 17:50:59 dobler Exp $
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  This includes handling different
@@ -859,9 +859,6 @@ module FArrayManager
       use Cdata, only: varname
 !
       call free_list(thelist)
-      !
-      print*, varname
-      
 !
     endsubroutine farray_clean_up
 !***********************************************************************
