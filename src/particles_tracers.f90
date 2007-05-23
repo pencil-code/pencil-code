@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.36 2007-05-23 07:53:21 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.37 2007-05-23 10:23:29 ajohan Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -62,7 +62,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.36 2007-05-23 07:53:21 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.37 2007-05-23 10:23:29 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -375,6 +375,11 @@ module Particles
           if (nxgrid/=1) dfp(k,ixp) = dfp(k,ixp) + uu(1)
           if (nygrid/=1) dfp(k,iyp) = dfp(k,iyp) + uu(2)
           if (nzgrid/=1) dfp(k,izp) = dfp(k,izp) + uu(3)
+!
+!  With shear there is an extra term due to the background shear flow.
+!
+          if (lshear.and.nygrid/=1)&
+              dfp(k,iyp) = dfp(k,iyp) - qshear*Omega*fp(k,ixp)
         enddo
       endif
 !
