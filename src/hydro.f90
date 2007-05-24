@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.347 2007-05-23 14:53:20 brandenb Exp $
+! $Id: hydro.f90,v 1.348 2007-05-24 06:24:15 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -92,7 +92,7 @@ module Hydro
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
   logical :: lforcing_continuous=.false.,lembed=.false.
   logical :: lremove_mean_momenta=.false.
-  logical :: lremove_mean_flow=.true.
+  logical :: lremove_mean_flow=.false.
   logical :: lalways_use_gij_etc=.false.
   character (len=labellen) :: iforcing_continuous='ABC'
 !
@@ -289,7 +289,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.347 2007-05-23 14:53:20 brandenb Exp $")
+           "$Id: hydro.f90,v 1.348 2007-05-24 06:24:15 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
