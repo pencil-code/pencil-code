@@ -24,7 +24,7 @@ use strict;
 my $md5_implementation = 'Digest::MD5';
 eval { require Digest::MD5 } or $md5_implementation = 'md5sum';
 
-my $debug = 3;                  # 0: be quiet
+my $debug = 0;                  # 0: be quiet
                                 # 1: be verbose
                                 # 2: dump all time stamps and md5 sums
                                 # 3: dump even the files
@@ -310,10 +310,11 @@ sub get_md5_hash {
 
             # OK, this one is really just a hack I am adapting to the
             # situation (i.e. to the files I am interested in)
-            my $f90file = '';
-            if ($file eq 'farraymanager.mod') {
-                $f90file = 'farray.f90';
-            }
+            my %mod2f90 = (
+                           'farraymanager.mod' => 'farray.f90',
+                           'poisson.mod'       => 'poisson_multigrid.f90',
+                          );
+            my $f90file = $mod2f90{$file} || '';
             if ($f90file) {
                 # Append the same label as for the module, for easier
                 # identification
@@ -420,9 +421,37 @@ sub get_ts_and_md5_for_mod {
     %$md5_ref = get_md5_hash(@mod_files);
 
     if ($debug > 1) {
-        print DEBUG "$phase: ", Dumper($ts_ref);
-        print DEBUG "$phase: ", Dumper($md5_ref);
+        print DEBUG "$phase:\n", dump_ts_and_md5('  ', $ts_ref, $md5_ref);
     }
+}
+# ---------------------------------------------------------------------- #
+sub dump_ts_and_md5 {
+#
+# Dump info about all mod files in the form <file.mod> => timestamp md5sum
+#
+    my $prefix  = shift;
+    my $ts_ref  = shift;
+    my $md5_ref = shift;
+
+    # Get and sort all keys (union of all keys from ts amnd md5, but those
+    # should be identical anyway)
+    my @files = keys %{ {%$ts_ref, %$md5_ref} };
+    @files = sort @files;                  # print in alphabetical order
+
+    # Figure out length of longest file name
+    my $maxlen = 0;
+    map { length($_)>$maxlen and $maxlen=length($_) } @files;
+
+    # Print
+    my $output;
+    my $fn_fmt = '%-' . $maxlen . 's';
+    foreach my $file (@files) {
+        $output .=
+          sprintf "%s$fn_fmt => %10s %s\n",
+            $prefix, $file, $ts_ref->{$file}, $md5_ref->{$file};
+    }
+
+    return $output;
 }
 # ---------------------------------------------------------------------- #
 sub get_updated_files {
