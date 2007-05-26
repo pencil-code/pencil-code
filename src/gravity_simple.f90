@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.38 2007-05-20 18:42:42 theine Exp $
+! $Id: gravity_simple.f90,v 1.39 2007-05-26 06:37:49 ajohan Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -108,7 +108,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.38 2007-05-20 18:42:42 theine Exp $")
+           "$Id: gravity_simple.f90,v 1.39 2007-05-26 06:37:49 ajohan Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.
@@ -164,7 +164,7 @@ module Gravity
 !  for isothermal EOS, we have 0=-cs2*dlnrho+gravx
 !  pot_ratio gives the resulting ratio in the density.
 !
-      case('tanh')
+      case('tanh-pot')
         if (dgravx==0.) call fatal_error("initialize_gravity","dgravx=0 not OK")
         if (lroot) print*,'initialize_gravity: tanh x-grav, gravx=',gravx
         if (lroot) print*,'initialize_gravity: xgrav,dgravx=',xgrav,dgravx
@@ -235,6 +235,11 @@ module Gravity
         if (lroot) print*,'initialize_gravity: constant gravz=', gravz
         gravz_zpencil=gravz
         potz_zpencil=-gravz*(z-zinfty)
+
+      case('tanh')
+        if (lroot) print*,'initialize_gravity: tanh gravz=', gravz
+        gravz_zpencil=-gravz*tanh(z/zref)
+        potz_zpencil=gravz*zref*alog(cosh(z/zref))
 
       case('boussinesq')
         if (lroot) print*,'initialize_gravity: boussinesq gravz=', gravz
