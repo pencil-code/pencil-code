@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.421 2007-05-27 08:19:35 ajohan Exp $
+! $Id: magnetic.f90,v 1.422 2007-05-27 12:34:25 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -235,7 +235,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.421 2007-05-27 08:19:35 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.422 2007-05-27 12:34:25 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -383,7 +383,7 @@ module Magnetic
 !
       if (lrun) then
         if (lresi_eta_const.and.eta==0.0) &
-            call fatal_error('initialize_magnetic', &
+            call warning('initialize_magnetic', &
             'Resistivity coefficient eta is zero!')
         if (lresi_hyper2.and.eta_hyper2==0.0) &
             call fatal_error('initialize_magnetic', &
