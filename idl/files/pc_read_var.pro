@@ -57,11 +57,12 @@
 ;                                        ;; calculate vars.bb from aa
 ;       pc_read_var,obj=vars,variables=['bb'],/MAGIC,/ADDITIONAL
 ;                                        ;; get vars.bb, vars.uu, vars.aa, etc.
+;       pc_read_var,obj=vars,/bb         ;; shortcut for the above
 ;       pc_read_var,obj=vars,variables=['bb'],/MAGIC, /TRIMALL
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.48 2007-05-27 09:02:42 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.49 2007-05-27 20:41:42 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
