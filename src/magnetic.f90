@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.418 2007-05-19 08:19:28 ajohan Exp $
+! $Id: magnetic.f90,v 1.419 2007-05-27 08:11:08 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -235,7 +235,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.418 2007-05-19 08:19:28 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.419 2007-05-27 08:11:08 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -622,6 +622,19 @@ module Magnetic
             endif
             f(l1:l2,m,n,iax) = scaleH*sqrt(2*mu0*pi*rho0*cs20/beta_const) &
                               *erfunc(0.5*z(n)/scaleH)
+          enddo; enddo
+        case('hydrostatic_disk-tanh')
+! requires gravz_profile='tanh' and zref=2*scaleH to work!        
+          scaleH = cs20*(1+1/beta_const)/1.0
+          print*, 'init_aa: hydrostatic_disk-tanh: scaleH=', scaleH
+          do n=n1,n2; do m=m1,m2
+            if (ldensity_nolog) then
+              f(l1:l2,m,n,ilnrho) = rho0*exp(-2*alog(cosh(z(n)/(2*scaleH))))
+            else
+              f(l1:l2,m,n,ilnrho) = alog(rho0)-2*alog(cosh(z(n)/(2*scaleH)))
+            endif
+            f(l1:l2,m,n,iax) = sqrt(2*mu0*rho0*cs20/beta_const) * &
+                              4*scaleH*atan(tanh(z(n)/(4*scaleH)))
           enddo; enddo
         case('hydrostatic_disk_sinx')
           call get_shared_variable('nu_epicycle',nu_epicycle,ierr)
