@@ -61,21 +61,21 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.46 2007-03-12 15:06:00 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.47 2007-05-27 09:00:47 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
-pro pc_read_var, t=t,                                            $
-            object=object, varfile=varfile_, ASSOCIATE=ASSOCIATE, $
-            variables=variables,tags=tags, MAGIC=MAGIC,          $
-            TRIMXYZ=TRIMXYZ, TRIMALL=TRIMALL,                    $
-            nameobject=nameobject,                               $
-            dim=dim,param=param,                                 $
-            ivar=ivar,                                           $
-            datadir=datadir,proc=proc,ADDITIONAL=ADDITIONAL,     $
-            nxrange=nxrange,nyrange=nyrange,nzrange=nzrange,     $
-            STATS=STATS,NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP,   $
-            SWAP_ENDIAN=SWAP_ENDIAN,varcontent=varcontent,       $
+pro pc_read_var, t=t,                                             $
+            object=object, varfile=varfile_, associate=associate, $
+            variables=variables, tags=tags, magic=magic, bb=bb,   $
+            trimxyz=trimxyz, trimall=trimall,                     $
+            nameobject=nameobject,                                $
+            dim=dim,param=param,                                  $
+            ivar=ivar,                                            $
+            datadir=datadir,proc=proc,ADDITIONAL=ADDITIONAL,      $
+            nxrange=nxrange,nyrange=nyrange,nzrange=nzrange,      $
+            STATS=STATS,NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP,    $
+            SWAP_ENDIAN=SWAP_ENDIAN,varcontent=varcontent,        $
             scalar=scalar,run2D=run2D
 
 COMPILE_OPT IDL2,HIDDEN
@@ -96,7 +96,6 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Default data directory
 ;
-; default, datadir, 'data'
   IF (not keyword_set(datadir)) THEN datadir='data'
 ;
 ; Name and path of varfile to read
@@ -186,6 +185,14 @@ COMPILE_OPT IDL2,HIDDEN
   endif else begin
     default,variables,(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
   endelse
+;
+; Shortcut for getting magnetic field bb.
+;
+  if (bb) then begin
+    variables=[variables,'bb']
+    magic=1
+  endif
+;
   default,tags,variables
 ;
 ; Sanity check variables and tags
