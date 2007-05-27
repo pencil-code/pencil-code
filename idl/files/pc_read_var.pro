@@ -61,7 +61,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.47 2007-05-27 09:00:47 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.48 2007-05-27 09:02:42 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -188,6 +188,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Shortcut for getting magnetic field bb.
 ;
+  default, bb, 0
   if (bb) then begin
     variables=[variables,'bb']
     magic=1
