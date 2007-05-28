@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.69 2007-05-23 13:39:42 bingert Exp $
+! $Id: nohydro.f90,v 1.70 2007-05-28 23:44:15 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -71,7 +71,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.69 2007-05-23 13:39:42 bingert Exp $")
+           "$Id: nohydro.f90,v 1.70 2007-05-28 23:44:15 brandenb Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -204,7 +204,7 @@ module Hydro
       type (pencil_case) :: p
 !
       real, dimension(nx) :: kdotxwt,cos_kdotxwt,sin_kdotxwt
-      real :: kkx_aa,kky_aa,kkz_aa
+      real :: kkx_aa,kky_aa,kkz_aa, fac, ecost, esint
       integer :: modeN
 !
       intent(in) :: f
@@ -250,6 +250,19 @@ module Hydro
         p%uu(:,1)=-cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
         p%uu(:,2)=+sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
         p%uu(:,3)=+cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)
+! divu (check!)
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  Galloway-Proctor flow
+!
+      elseif (kinflow=='Galloway-Proctor') then
+        if (headtt) print*,'Galloway-Proctor flow; kx_aa,ky_aa=',kkx_aa,kky_aa
+        fac=sqrt(1.5)
+        ecost=eps_kinflow*cos(t)
+        esint=eps_kinflow*sin(t)
+        p%uu(:,1)=+fac*sin(kky_aa*y(m)    +esint)*kky_aa
+        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2)+ecost)*kkx_aa
+        p%uu(:,3)=-fac*(cos(kkx_aa*x(l1:l2)+ecost)+sin(kky_aa*y(m)+esint))
 ! divu (check!)
         if (lpencil(i_divu)) p%divu=0.
 !
@@ -338,6 +351,20 @@ module Hydro
                                      abs(p%uu(:,3))*dz_1(  n  )
       endif
       if (headtt.or.ldebug) print*, 'duu_dt: max(advec_uu) =', maxval(advec_uu)
+!
+!  Calculate maxima and rms values for diagnostic purposes
+!
+      if (ldiagnos) then
+        if (headtt.or.ldebug) print*,'duu_dt: diagnostics ...'
+!
+!  kinetic field components at one point (=pt)
+!
+        if (lroot.and.m==mpoint.and.n==npoint) then
+          if (idiag_uxpt/=0) call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
+          if (idiag_uypt/=0) call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
+          if (idiag_uzpt/=0) call save_name(p%uu(lpoint-nghost,3),idiag_uzpt)
+        endif
+      endif
 !
       call keep_compiler_quiet(f,df)
 !

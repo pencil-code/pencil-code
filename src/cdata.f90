@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.365 2007-05-15 18:28:31 brandenb Exp $
+! $Id: cdata.f90,v 1.366 2007-05-28 23:44:15 brandenb Exp $
 
 module Cdata
 
@@ -138,6 +138,7 @@ module Cdata
   character (len=labellen) ::fft_switch='fftpack'
   character (len=1) :: slice_position='p'
   character (len=40) :: kinflow=''
+  real :: eps_kinflow
 !
 ! Variables to count the occurance of derivative calls per timestep
 ! for optimisation purposes.  To use uncomment the array and

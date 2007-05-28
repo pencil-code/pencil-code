@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.243 2007-05-19 05:21:11 dobler Exp $
+! $Id: run.f90,v 1.244 2007-05-28 23:44:15 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -39,12 +39,10 @@
         use NeutralDensity,  only: init_lnrhon
         use Magnetic,        only: pert_aa, rescaling
         use Particles_main
- 
         use FArrayManager,   only: farray_clean_up
         use SharedVariables, only: sharedvars_clean_up
 !
         implicit none
-
 !
         real, dimension (mx,my,mz,mfarray) :: f
         real, dimension (mx,my,mz,mvar) :: df
@@ -72,7 +70,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.243 2007-05-19 05:21:11 dobler Exp $")
+             "$Id: run.f90,v 1.244 2007-05-28 23:44:15 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)

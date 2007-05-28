@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.271 2007-03-27 15:11:48 brandenb Exp $
+! $Id: param_io.f90,v 1.272 2007-05-28 23:44:15 brandenb Exp $
 
 module Param_IO
 
@@ -82,7 +82,7 @@ module Param_IO
        vel_spec,mag_spec,uxj_spec,vec_spec,ou_spec,ab_spec,fft_switch, &
        ro_spec,TT_spec,ss_spec,cc_spec,cr_spec,isaveglobal, &
        rhocc_pdf,cc_pdf,lncc_pdf,gcc_pdf,lngcc_pdf, &
-       kinflow,random_gen, &
+       kinflow,eps_kinflow,random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        lnowrite, &
        lwrite_yaverages,lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
