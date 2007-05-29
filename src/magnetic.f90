@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.423 2007-05-28 06:32:20 ajohan Exp $
+! $Id: magnetic.f90,v 1.424 2007-05-29 11:17:07 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -172,6 +172,7 @@ module Magnetic
   integer :: idiag_brms=0,idiag_bmax=0,idiag_jrms=0,idiag_jmax=0
   integer :: idiag_vArms=0,idiag_vAmax=0,idiag_dtb=0
   integer :: idiag_arms=0,idiag_amax=0,idiag_beta1m=0,idiag_beta1max=0
+  integer :: idiag_bxm=0,idiag_bym=0,idiag_bzm=0
   integer :: idiag_bx2m=0,idiag_by2m=0,idiag_bz2m=0
   integer :: idiag_bxbym=0,idiag_bxbzm=0,idiag_bybzm=0,idiag_djuidjbim=0
   integer :: idiag_bxbymz=0,idiag_bxbzmz=0,idiag_bybzmz=0,idiag_b2mz=0
@@ -235,7 +236,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.423 2007-05-28 06:32:20 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.424 2007-05-29 11:17:07 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1542,6 +1543,9 @@ module Magnetic
             call sum_mn_name(2*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
         if (idiag_abm/=0) call sum_mn_name(p%ab,idiag_abm)
         if (idiag_ubm/=0) call sum_mn_name(p%ub,idiag_ubm)
+        if (idiag_bxm/=0) call sum_mn_name(p%bbb(:,1),idiag_bxm)
+        if (idiag_bym/=0) call sum_mn_name(p%bbb(:,2),idiag_bym)
+        if (idiag_bzm/=0) call sum_mn_name(p%bbb(:,3),idiag_bzm)
         if (idiag_bx2m/=0) call sum_mn_name(p%bbb(:,1)**2,idiag_bx2m)
         if (idiag_by2m/=0) call sum_mn_name(p%bbb(:,2)**2,idiag_by2m)
         if (idiag_bz2m/=0) call sum_mn_name(p%bbb(:,3)**2,idiag_bz2m)
@@ -2294,8 +2298,9 @@ module Magnetic
         idiag_aybym2=0; idiag_exaym2=0; idiag_exjm2=0
         idiag_brms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0; idiag_vArms=0
         idiag_vAmax=0; idiag_dtb=0; idiag_arms=0; idiag_amax=0
-        idiag_beta1m=0; idiag_beta1max=0; idiag_bx2m=0
-        idiag_by2m=0; idiag_bz2m=0
+        idiag_beta1m=0; idiag_beta1max=0
+        idiag_bxm=0; idiag_bym=0; idiag_bzm=0
+        idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
         idiag_bxbymz=0; idiag_bxbzmz=0; idiag_bybzmz=0; idiag_b2mz=0
         idiag_bxbym=0; idiag_bxbzm=0; idiag_bybzm=0; idiag_djuidjbim=0
         idiag_bxmz=0; idiag_bymz=0; idiag_bzmz=0; idiag_bmx=0; idiag_bmy=0
@@ -2349,6 +2354,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),&
             'beta1max',idiag_beta1max)
         call parse_name(iname,cname(iname),cform(iname),'dtb',idiag_dtb)
+        call parse_name(iname,cname(iname),cform(iname),'bxm',idiag_bxm)
+        call parse_name(iname,cname(iname),cform(iname),'bym',idiag_bym)
+        call parse_name(iname,cname(iname),cform(iname),'bzm',idiag_bzm)
         call parse_name(iname,cname(iname),cform(iname),'bx2m',idiag_bx2m)
         call parse_name(iname,cname(iname),cform(iname),'by2m',idiag_by2m)
         call parse_name(iname,cname(iname),cform(iname),'bz2m',idiag_bz2m)
@@ -2484,6 +2492,9 @@ module Magnetic
         write(3,*) 'i_beta1m=',idiag_beta1m
         write(3,*) 'i_beta1max=',idiag_beta1max
         write(3,*) 'i_dtb=',idiag_dtb
+        write(3,*) 'i_bxm=',idiag_bxm
+        write(3,*) 'i_bym=',idiag_bym
+        write(3,*) 'i_bzm=',idiag_bzm
         write(3,*) 'i_bx2m=',idiag_bx2m
         write(3,*) 'i_by2m=',idiag_by2m
         write(3,*) 'i_bz2m=',idiag_bz2m
