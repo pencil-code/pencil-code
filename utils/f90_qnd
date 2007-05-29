@@ -391,9 +391,14 @@ sub erase_timestamp_from_mod {
         # Time stamp line is first line and looks like one of
         #   G95 module created on Wed Nov 29 18:27:08 2006 from random_nr.f90
         #   GFORTRAN module created from random_nr.f90 on Wed Nov 29 18:22:38 2006
-        $data =~ s{((?:G95|GFORTRAN) module created.*? on) .* (from|$)}
+        $data =~ s{^((?:G95|GFORTRAN) module created.*? on) .*( from|$)}
                   {$1 [removed timestamp] $2}m
                  or warn boldface("No time stamp found in <$file> ...\n");
+        # Note: recent gfortran version (currently I use 4.3-svn) also add
+        # an MD5 sum in the next line (which seems to include the time
+        # stamp somehow), so we need to erase that, too
+        $data =~ s{^MD5:[0-9a-f]+\s*}
+                  {[Removed MD5 sum] }m;
     } elsif ($fc_modtype =~ /^(ifort|ifc|hp)$/) { 
         # Eliminate time stamp from binary ifort (>=8) module file:
         # Bytes 45-48 represent Unix time, so we null them out:
@@ -650,8 +655,10 @@ We have tested B<f90_qnd> successfully with the following compilers:
    MIPSPro        7.4       f90           mips
    Sun            7.1       f95           sun
 
-In reality there are way fewer module types than indicated by
-this table, as g95=gfortran (text format, first line contains time stamp),
+In reality there are way fewer module types than indicated by this table,
+as g95=gfortran (text format, first line contains time stamp; with recent
+versions of gfortran [e.g. 4.3-svn], there is also an MD5 sum on the next
+line that changes with each recompilation),
 ifort=ifc=hp (binary, 4-byte Unix time stamp in bytes 45--48),
 generic=mips=sun ([binary,] no time stamp).
 
@@ -661,7 +668,7 @@ sums for comparison. The Pencil Code comes with the shell script
 C<utils/get-mod-info> to make it easier to extract the relevant
 information.
 
-See also L<http://www.theochem.uwa.edu.au/fortran/recompile/> for a
+See also L<http://www.theochem.uwa.edu.au/fortran/recompile/> for
 information on older compilers' .mod file format (and for other approaches
 to the `recompilation cascade problem').
 
