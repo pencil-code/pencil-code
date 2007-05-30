@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.38 2007-05-30 05:37:32 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.39 2007-05-30 06:52:47 ajohan Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -33,9 +33,10 @@ module Particles
   character (len=labellen) :: gravz_profile='zero'
 
   namelist /particles_init_pars/ &
-      initxxp, xp0, yp0, zp0, bcpx, bcpy, bcpz, eps_dtog, &
+      initxxp, xp0, yp0, zp0, bcpx, bcpy, bcpz, eps_dtog, tausp, &
       ldragforce_equi_global_eps, lquadratic_interpolation, &
-      lparticlemesh_cic, lparticlemesh_tsc, ltrace_dust
+      lparticlemesh_cic, lparticlemesh_tsc, ltrace_dust, &
+      gravz_profile, nu_epicycle
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, lquadratic_interpolation, &
@@ -64,7 +65,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.38 2007-05-30 05:37:32 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.39 2007-05-30 06:52:47 ajohan Exp $")
 !
 !  Indices for particle position.
 !
