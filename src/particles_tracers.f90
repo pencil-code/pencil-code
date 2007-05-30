@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.37 2007-05-23 10:23:29 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.38 2007-05-30 05:37:32 ajohan Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -24,11 +24,13 @@ module Particles
 
   include 'particles.h'
 
-  real :: xp0=0.0, yp0=0.0, zp0=0.0, eps_dtog=0.01
+  real :: xp0=0.0, yp0=0.0, zp0=0.0, eps_dtog=0.01, tausp=0.0
+  real :: nu_epicycle=0.0, nu_epicycle2=0.0
   logical :: ldragforce_equi_global_eps=.false.
   logical :: lquadratic_interpolation=.false.
   logical :: ltrace_dust=.false.
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
+  character (len=labellen) :: gravz_profile='zero'
 
   namelist /particles_init_pars/ &
       initxxp, xp0, yp0, zp0, bcpx, bcpy, bcpz, eps_dtog, &
@@ -62,7 +64,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.37 2007-05-23 10:23:29 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.38 2007-05-30 05:37:32 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -126,6 +128,13 @@ module Particles
       else
         if (lroot) print*, 'initialize_particles: '// &
             'mass density per particle rhop_tilde=', rhop_tilde
+      endif
+!
+!  Calculate nu_epicycle**2 for gravity.
+!
+      if (nu_epicycle/=0.0) then
+        gravz_profile='linear'
+        nu_epicycle2=nu_epicycle**2
       endif
 !
     endsubroutine initialize_particles
@@ -380,6 +389,21 @@ module Particles
 !
           if (lshear.and.nygrid/=1)&
               dfp(k,iyp) = dfp(k,iyp) - qshear*Omega*fp(k,ixp)
+!
+!  Vertical gravity in the short friction time approximation.
+!
+          select case (gravz_profile)
+
+            case ('zero')
+              if (headtt) &
+                  print*, 'dxxp_dt_pencil: No gravity in z-direction.'
+
+            case ('linear')
+              if (headtt) &
+                  print*, 'dxxp_dt_pencil: Linear gravity field in z-direction.'
+              dfp(k,izp)=dfp(k,izp) - tausp*nu_epicycle2*fp(k,izp)
+
+          endselect
         enddo
       endif
 !
