@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.148 2007-05-31 12:37:05 theine Exp $
+! $Id: boundcond.f90,v 1.149 2007-05-31 14:14:36 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -2424,7 +2424,11 @@ module Boundcond
 !
 !  Calculate 1/k^2, zero mean
 !
-      kappa = sqrt(kx**2 + ky**2)
+      if (lshear) then
+        kappa = sqrt((kx-deltay*ky/Lx)**2+ky**2)
+      else
+        kappa = sqrt(kx**2 + ky**2)
+      endif
 !
 !  Check whether we want to do top or bottom (this is precessor dependent)
 !
