@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.147 2007-05-17 13:54:57 dintrans Exp $
+! $Id: boundcond.f90,v 1.148 2007-05-31 12:37:05 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -386,6 +386,7 @@ module Boundcond
                 if (j==iaa) call bc_aa_pot2(f,topbot)
               case ('pwd')
                 if (j==iaa) call bc_aa_pot3(f,topbot)
+              case ('d2z'); call bc_del2zero(f,topbot,j)
               case ('cT')       ! constant temp.
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
                 if (j==iss)    call bc_ss_temp_z(f,topbot)
@@ -2396,5 +2397,105 @@ module Boundcond
       endselect
 !
     endsubroutine bc_ss_flux_x
+!***********************************************************************
+    subroutine bc_del2zero(f,topbot,j)
+!
+!  Pontential field boundary condition
+!
+!  11-oct-06/wolf: Adapted from Tobi's bc_aa_pot2
+!
+      use Cdata
+      use Fourier, only: fourier_transform_xy_parallel
+      use Mpicomm, only: communicate_bcz
+
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+      integer, intent (in) :: j
+
+      real, dimension (mx,my,nghost) :: ghost_zones
+      real, dimension (nx,ny) :: kx,ky,kappa,exp_fact
+      real, dimension (nx,ny) :: tmp_re,tmp_im
+      integer :: i
+!
+!  Get local wave numbers
+!
+      kx = spread(kx_fft                    ,2,ny)
+      ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
+!
+!  Calculate 1/k^2, zero mean
+!
+      kappa = sqrt(kx**2 + ky**2)
+!
+!  Check whether we want to do top or bottom (this is precessor dependent)
+!
+      select case(topbot)
+!
+!  Potential field condition at the bottom
+!
+      case('bot')
+
+        do i=1,nghost
+!
+! Calculate delta_z based on z(), not on dz to improve behavior for
+! non-equidistant grid (still not really correct, but could be OK)
+!
+          exp_fact = exp(-kappa*(z(n1+i)-z(n1-i)))
+!
+!  Determine potential field in ghost zones
+!
+          !  Fourier transforms of x- and y-components on the boundary
+          tmp_re = f(l1:l2,m1:m2,n1+i,j)
+          tmp_im = 0.0
+          call fourier_transform_xy_parallel(tmp_re,tmp_im)
+          tmp_re = tmp_re*exp_fact
+          tmp_im = tmp_im*exp_fact
+          ! Transform back
+          call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+          ghost_zones(l1:l2,m1:m2,i) = tmp_re
+
+        enddo
+!
+!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
+!
+        call communicate_bcz(ghost_zones)
+        do i=1,nghost; f(:,:,n1-i,j) = ghost_zones(:,:,i); enddo
+!
+!  Potential field condition at the top
+!
+      case('top')
+
+        do i=1,nghost
+!
+! Calculate delta_z based on z(), not on dz to improve behavior for
+! non-equidistant grid (still not really correct, but could be OK)
+!
+          exp_fact = exp(-kappa*(z(n2+i)-z(n2-i)))
+!
+!  Determine potential field in ghost zones
+!
+          !  Fourier transforms of x- and y-components on the boundary
+          tmp_re = f(l1:l2,m1:m2,n2-i,j)
+          tmp_im = 0.0
+          call fourier_transform_xy_parallel(tmp_re,tmp_im)
+          tmp_re = tmp_re*exp_fact
+          tmp_im = tmp_im*exp_fact
+          ! Transform back
+          call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+          ghost_zones(l1:l2,m1:m2,i) = tmp_re
+
+        enddo
+!
+!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
+!
+        call communicate_bcz(ghost_zones)
+        do i=1,nghost; f(:,:,n2+i,j) = ghost_zones(:,:,i); enddo
+
+      case default
+
+        if (lroot) print*,"bc_del2zero: invalid argument"
+
+      endselect
+
+    endsubroutine bc_del2zero
 !***********************************************************************
 endmodule Boundcond
