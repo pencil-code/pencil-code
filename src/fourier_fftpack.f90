@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.14 2007-01-23 18:24:32 dobler Exp $
+! $Id: fourier_fftpack.f90,v 1.15 2007-05-31 12:12:19 theine Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -877,6 +877,7 @@ module Fourier
       complex, dimension(nygrid) :: ay
       real, dimension(4*nxgrid+15) :: wsavex
       real, dimension(4*nygrid+15) :: wsavey
+      real, dimension(ny) :: deltay_x
       integer :: l,m,ibox
       logical :: lforward
 
@@ -890,7 +891,36 @@ module Fourier
         if (linv) lforward=.false.
       endif
 
+      if (lshear) then
+        deltay_x=-deltay*(x(m1+ipy*ny:m2+ipy*ny)-(x0+Lx/2))/Lx
+      endif
+
       if (lforward) then
+
+        if (nygrid>1) then
+!
+!  Transform y-direction.
+!
+          call transp_xy(a_re)
+          call transp_xy(a_im)
+
+          call cffti(nygrid,wsavey)
+
+          do ibox=0,nxgrid/nygrid-1
+            iy=ibox*nygrid
+            do l=1,ny
+              ay=cmplx(a_re(iy+1:iy+nygrid,l),a_im(iy+1:iy+nygrid,l))
+              call cfftf(nygrid,ay,wsavey)
+              if (lshear) ay = ay*exp(cmplx(0.,+ky_fft*deltay_x(l)))
+              a_re(iy+1:iy+nygrid,l)=real(ay)
+              a_im(iy+1:iy+nygrid,l)=aimag(ay)
+            enddo
+          enddo
+
+          call transp_xy(a_re)
+          call transp_xy(a_im)
+
+        endif
 
         if (nxgrid>1) then
 !
@@ -907,31 +937,22 @@ module Fourier
 
         endif
 
-        if (nygrid>1) then
-!
-!  Transform y-direction.
-!
-          call transp_xy(a_re)
-          call transp_xy(a_im)
+      else
 
-          call cffti(nygrid,wsavey)
+        if (nxgrid>1) then
+!
+!  Transform x-direction back.
+!
+          call cffti(nxgrid,wsavex)
 
-          do ibox=0,nxgrid/nygrid-1
-            iy=ibox*nygrid
-            do l=1,ny
-              ay=cmplx(a_re(iy+1:iy+nygrid,l),a_im(iy+1:iy+nygrid,l))
-              call cfftf(nygrid,ay,wsavey)
-              a_re(iy+1:iy+nygrid,l)=real(ay)
-              a_im(iy+1:iy+nygrid,l)=aimag(ay)
-            enddo
+          do m=1,ny
+            ax=cmplx(a_re(:,m),a_im(:,m))
+            call cfftb(nxgrid,ax,wsavex)
+            a_re(:,m)=real(ax)
+            a_im(:,m)=aimag(ax)
           enddo
 
-          call transp_xy(a_re)
-          call transp_xy(a_im)
-
         endif
-
-      else
 
         if (nygrid>1) then
 !
@@ -947,6 +968,7 @@ module Fourier
             do l=1,ny
               ay=cmplx(a_re(iy+1:iy+nygrid,l),a_im(iy+1:iy+nygrid,l))
               call cfftb(nygrid,ay,wsavey)
+              if (lshear) ay = ay*exp(cmplx(0.,-ky_fft*deltay_x(l)))
               a_re(iy+1:iy+nygrid,l)=real(ay)
               a_im(iy+1:iy+nygrid,l)=aimag(ay)
             enddo
@@ -954,21 +976,6 @@ module Fourier
 
           call transp_xy(a_re)
           call transp_xy(a_im)
-
-        endif
-
-        if (nxgrid>1) then
-!
-!  Transform x-direction back.
-!
-          call cffti(nxgrid,wsavex)
-
-          do m=1,ny
-            ax=cmplx(a_re(:,m),a_im(:,m))
-            call cfftb(nxgrid,ax,wsavex)
-            a_re(:,m)=real(ax)
-            a_im(:,m)=aimag(ax)
-          enddo
 
         endif
 
