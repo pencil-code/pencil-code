@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.39 2007-05-26 06:37:49 ajohan Exp $
+! $Id: gravity_simple.f90,v 1.40 2007-05-31 15:02:18 theine Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -21,7 +21,8 @@
 
 module Gravity
 
-  use Cdata
+  use Cdata, only: lgravx_gas,lgravy_gas,lgravz_gas
+  use Cdata, only: lgravx_dust,lgravy_dust,lgravz_dust
   use Cparam
   use Messages
 
@@ -108,7 +109,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.39 2007-05-26 06:37:49 ajohan Exp $")
+           "$Id: gravity_simple.f90,v 1.40 2007-05-31 15:02:18 theine Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.
@@ -124,6 +125,7 @@ module Gravity
 !
 !  12-nov-04/anders: coded, copied init conds from grav_x, grav_y and grav_y.
 !
+      use Cdata
       use SharedVariables
       use Sub, only: notanumber, cubic_step
 !
@@ -378,6 +380,8 @@ module Gravity
 !
 !  12-nov-04/anders: coded
 !
+      use Cdata, only: m,n
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -406,6 +410,8 @@ module Gravity
 !  12-nov-04/anders: coded
 !   5-dec-06/petri: added Boussinesq approximation
 !
+      use Cdata
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -474,6 +480,8 @@ module Gravity
 !
 !  13-nov-04/anders: coded
 !
+      use Cdata, only: m,n
+
       real, dimension (nx) :: pot
       real, optional :: ymn,zmn,pot0
       real, optional, dimension (nx) :: xmn,rmn
@@ -490,17 +498,17 @@ module Gravity
 !
     endsubroutine potential_penc
 !***********************************************************************
-    subroutine potential_point(xpos,ypos,zpos,r, pot,pot0, grav)
+    subroutine potential_point(x,y,z,r, pot,pot0, grav)
 !
 !  Calculates gravity potential in one point
 !
 !  13-nov-04/anders: coded
 !  24-oct-06bing: added constant gravity profiles
 !
-      use Cdata
+      use Cdata, only: lroot
 !
       real :: pot
-      real, optional :: xpos,ypos,zpos,r
+      real, optional :: x,y,z,r
       real, optional :: pot0,grav
       real :: potx_xpoint,poty_ypoint,potz_zpoint
       real :: prof
@@ -510,42 +518,48 @@ module Gravity
       poty_ypoint=0.
       potz_zpoint=0.
 !
-      select case (gravx_profile)
-      case('zero')
-        if (lroot) print*,'potential_point: no x-gravity'
-      case('const')
-        potx_xpoint=-gravx*(xpos-xinfty)
-      case('kepler')
-        potx_xpoint=-gravx/xpos
-      case default
-        call fatal_error('potential_point', &
-             'gravx_profile='//gravx_profile//' not implemented')
-      endselect
+      if (present(x)) then
+        select case (gravx_profile)
+        case('zero')
+          if (lroot) print*,'potential_point: no x-gravity'
+        case('const')
+          potx_xpoint=-gravx*(x-xinfty)
+        case('kepler')
+          potx_xpoint=-gravx/x
+        case default
+          call fatal_error('potential_point', &
+               'gravx_profile='//gravx_profile//' not implemented')
+        endselect
+      endif
 !
-      select case (gravy_profile)
-      case('zero')
-        if (lroot) print*,'potential_point: no y-gravity'
-      case('const')
-        poty_ypoint=-gravy*(ypos-yinfty)
-      case default
-        call fatal_error('potential_point', &
-             'gravy_profile='//gravy_profile//' not implemented')
-      endselect
+      if (present(y)) then
+        select case (gravy_profile)
+        case('zero')
+          if (lroot) print*,'potential_point: no y-gravity'
+        case('const')
+          poty_ypoint=-gravy*(y-yinfty)
+        case default
+          call fatal_error('potential_point', &
+               'gravy_profile='//gravy_profile//' not implemented')
+        endselect
+      endif
 !
-      select case (gravz_profile)
-      case('zero')
-        if (lroot) print*,'potential_point: no z-gravity'
-      case('const')
-        potz_zpoint=-gravz*(zpos-zinfty)
-      case('linear')
-        potz_zpoint=0.5*(zpos**2-zinfty**2)*nu_epicycle**2
-      case('linear_smoothed')
-        prof = 1. + (zpos/zref)**(2*n_pot)
-        potz_zpoint = 0.5*(nu_epicycle*zpos)**2/prof**(1./n_pot)
-      case default
-        call fatal_error('potential_point', &
-             'gravz_profile='//gravz_profile//' not implemented')
-      endselect
+      if (present(z)) then
+        select case (gravz_profile)
+        case('zero')
+          if (lroot) print*,'potential_point: no z-gravity'
+        case('const')
+          potz_zpoint=-gravz*(z-zinfty)
+        case('linear')
+          potz_zpoint=0.5*(z**2-zinfty**2)*nu_epicycle**2
+        case('linear_smoothed')
+          prof = 1. + (z/zref)**(2*n_pot)
+          potz_zpoint = 0.5*(nu_epicycle*z)**2/prof**(1./n_pot)
+        case default
+          call fatal_error('potential_point', &
+               'gravz_profile='//gravz_profile//' not implemented')
+        endselect
+      endif
 !
       pot = potx_xpoint + poty_ypoint + potz_zpoint
 !
@@ -640,6 +654,8 @@ module Gravity
 !
 !  12-jun-04/axel: adapted from grav_z
 !
+      use Cdata, only: igg,igx,igy,igz
+
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
