@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.153 2007-01-13 17:36:16 ajohan Exp $
+! $Id: nompicomm.f90,v 1.154 2007-05-31 12:45:08 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -1026,6 +1026,27 @@ module Mpicomm
       f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
 
     endsubroutine communicate_bc_aa_pot
+!***********************************************************************
+    subroutine communicate_bcz(ghost_zones)
+!
+!  Helper routine for bc_aa_pot in Magnetic.
+!  Needed due to Fourier transforms which only work on (l1:l2,m1:m2)
+!
+!   8-oct-2006/tobi: Coded
+!
+      real, dimension (mx,my,nghost), intent (inout) :: ghost_zones
+!
+!  Periodic boundaries in y
+!
+      ghost_zones(l1:l2,   1:m1-1,:) = ghost_zones(l1:l2,m2i:m2 ,:)
+      ghost_zones(l1:l2,m2+1:my  ,:) = ghost_zones(l1:l2, m1:m1i,:)
+!
+!  Periodic boundaries in x
+!
+      ghost_zones(   1:l1-1,:,:) = ghost_zones(l2i:l2 ,:,:)
+      ghost_zones(l2+1:mx  ,:,:) = ghost_zones( l1:l1i,:,:)
+
+    endsubroutine communicate_bcz
 !***********************************************************************
     subroutine communicate_stellar_surface(jxbr_z)
 !

@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.208 2007-03-06 22:03:57 dobler Exp $
+! $Id: mpicomm.f90,v 1.209 2007-05-31 12:45:08 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2380,6 +2380,59 @@ module Mpicomm
       f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
 
     endsubroutine communicate_bc_aa_pot
+!***********************************************************************
+    subroutine communicate_bcz(ghost_zones)
+!
+!  Helper routine for bc_aa_pot in Magnetic.
+!  Needed due to Fourier transforms which only work on (l1:l2,m1:m2)
+!
+!   8-oct-2006/tobi: Coded
+!
+      real, dimension (mx,my,nghost), intent (inout) :: ghost_zones
+
+      real, dimension (nx,nghost,nghost) :: lbufyo,ubufyo,lbufyi,ubufyi
+      integer :: nbufy
+!
+!  Periodic boundaries in y -- communicate along y if necessary
+!
+      if (nprocy>1) then
+
+        lbufyo = ghost_zones(l1:l2, m1:m1i,:)
+        ubufyo = ghost_zones(l1:l2,m2i:m2 ,:)
+
+        nbufy=nx*nghost**2
+
+        call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy, &
+                       MPI_COMM_WORLD,irecv_rq_fromuppy,ierr)
+        call MPI_IRECV(lbufyi,nbufy,MPI_REAL,ylneigh,touppy, &
+                       MPI_COMM_WORLD,irecv_rq_fromlowy,ierr)
+        call MPI_ISEND(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy, &
+                       MPI_COMM_WORLD,isend_rq_tolowy,ierr)
+        call MPI_ISEND(ubufyo,nbufy,MPI_REAL,yuneigh,touppy, &
+                       MPI_COMM_WORLD,isend_rq_touppy,ierr)
+
+        call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,ierr)
+        call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,ierr)
+
+        ghost_zones(l1:l2,   1:m1-1,:) = lbufyi
+        ghost_zones(l1:l2,m2+1:my  ,:) = ubufyi
+
+        call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,ierr)
+        call MPI_WAIT(isend_rq_touppy,isend_stat_tu,ierr)
+
+      else
+
+        ghost_zones(l1:l2,   1:m1-1,:) = ghost_zones(l1:l2,m2i:m2 ,:)
+        ghost_zones(l1:l2,m2+1:my  ,:) = ghost_zones(l1:l2, m1:m1i,:)
+
+      endif
+!
+!  Periodic boundaries in x
+!
+      ghost_zones(   1:l1-1,:,:) = ghost_zones(l2i:l2 ,:,:)
+      ghost_zones(l2+1:mx  ,:,:) = ghost_zones( l1:l1i,:,:)
+
+    endsubroutine communicate_bcz
 !***********************************************************************
     subroutine communicate_stellar_surface(jxb_z)
 !
