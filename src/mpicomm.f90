@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.209 2007-05-31 12:45:08 theine Exp $
+! $Id: mpicomm.f90,v 1.210 2007-06-01 10:09:46 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -881,12 +881,12 @@ module Mpicomm
 !  fill these corners with the right values, but this does not seem to be
 !  necessary.
 !
-      do i=1,nghost
-        f(1:l1-1 ,i   ,:,ivar1:ivar2)=f(1:l1-1 ,m1+nghost-i,:,ivar1:ivar2)
-        f(1:l1-1 ,m2+i,:,ivar1:ivar2)=f(1:l1-1 ,m2-i+1     ,:,ivar1:ivar2)
-        f(l2+1:mx,i   ,:,ivar1:ivar2)=f(l2+1:mx,m1+nghost-i,:,ivar1:ivar2)
-        f(l2+1:mx,m2+i,:,ivar1:ivar2)=f(l2+1:mx,m2-i+1     ,:,ivar1:ivar2)
-      enddo
+!      do i=1,nghost
+!        f(1:l1-1 ,i   ,:,ivar1:ivar2)=f(1:l1-1 ,m1+nghost-i,:,ivar1:ivar2)
+!        f(1:l1-1 ,m2+i,:,ivar1:ivar2)=f(1:l1-1 ,m2-i+1     ,:,ivar1:ivar2)
+!        f(l2+1:mx,i   ,:,ivar1:ivar2)=f(l2+1:mx,m1+nghost-i,:,ivar1:ivar2)
+!        f(l2+1:mx,m2+i,:,ivar1:ivar2)=f(l2+1:mx,m2-i+1     ,:,ivar1:ivar2)
+!      enddo
 !
 !  need to wait till buffer is empty before re-using it again
 !
