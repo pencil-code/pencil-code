@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.15 2007-05-31 12:12:19 theine Exp $
+! $Id: fourier_fftpack.f90,v 1.16 2007-06-01 12:08:08 theine Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -967,8 +967,8 @@ module Fourier
             iy=ibox*nygrid
             do l=1,ny
               ay=cmplx(a_re(iy+1:iy+nygrid,l),a_im(iy+1:iy+nygrid,l))
-              call cfftb(nygrid,ay,wsavey)
               if (lshear) ay = ay*exp(cmplx(0.,-ky_fft*deltay_x(l)))
+              call cfftb(nygrid,ay,wsavey)
               a_re(iy+1:iy+nygrid,l)=real(ay)
               a_im(iy+1:iy+nygrid,l)=aimag(ay)
             enddo
