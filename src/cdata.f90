@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.366 2007-05-28 23:44:15 brandenb Exp $
+! $Id: cdata.f90,v 1.367 2007-06-01 04:23:15 brandenb Exp $
 
 module Cdata
 
@@ -137,7 +137,11 @@ module Cdata
   character (len=labellen), dimension(3) :: grid_func='linear'
   character (len=labellen) ::fft_switch='fftpack'
   character (len=1) :: slice_position='p'
+!
+!  kinematic flows (computed by nohydro)
+!
   character (len=40) :: kinflow=''
+  logical :: lkinflow_as_aux
   real :: eps_kinflow
 !
 ! Variables to count the occurance of derivative calls per timestep

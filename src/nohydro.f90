@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.70 2007-05-28 23:44:15 brandenb Exp $
+! $Id: nohydro.f90,v 1.71 2007-06-01 04:23:15 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -71,7 +71,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.70 2007-05-28 23:44:15 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.71 2007-06-01 04:23:15 brandenb Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -82,7 +82,8 @@ module Hydro
 !
 !  24-nov-02/tony: coded
 !
-      use Cdata, only: kinflow
+      use Cdata
+      use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -94,6 +95,34 @@ module Hydro
 !  specific modes.
 !
         call random_isotropic_KS_setup_test
+      endif
+!
+!  Register an extra aux slot for uu if requested (so uu is written
+!  to snapshots and can be easily analyzed later). For this to work you
+!  must reserve enough auxiliary workspace by setting, for example,
+!     ! MAUX CONTRIBUTION 3
+!  in the beginning of your src/cparam.local file, *before* setting
+!  ncpus, nprocy, etc.
+!
+!  After a reload, we need to rewrite index.pro, but the auxiliary
+!  arrays are already allocated and must not be allocated again.
+!
+      if (lkinflow_as_aux) then
+        if (iuu==0) then
+          call farray_register_auxiliary('uu',iuu,vector=3)
+          iux=iuu
+          iuy=iuu+1
+          iuz=iuu+2
+        endif
+        if (iuu/=0.and.lroot) then
+          print*, 'initialize_velocity: iuu = ', iuu
+          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+          write(3,*) 'iuu=',iuu
+          write(3,*) 'iux=',iux
+          write(3,*) 'iuy=',iuy
+          write(3,*) 'iuz=',iuz
+          close(3)
+        endif
       endif
 !
       if (ip == 0) print*,f,lstarting  !(keep compiler quiet)
@@ -260,7 +289,7 @@ module Hydro
         fac=sqrt(1.5)
         ecost=eps_kinflow*cos(t)
         esint=eps_kinflow*sin(t)
-        p%uu(:,1)=+fac*sin(kky_aa*y(m)    +esint)*kky_aa
+        p%uu(:,1)=+fac*cos(kky_aa*y(m)    +esint)*kky_aa
         p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2)+ecost)*kkx_aa
         p%uu(:,3)=-fac*(cos(kkx_aa*x(l1:l2)+ecost)+sin(kky_aa*y(m)+esint))
 ! divu (check!)
@@ -336,6 +365,7 @@ module Hydro
 !
       use Cdata
       use Sub
+      use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -351,6 +381,12 @@ module Hydro
                                      abs(p%uu(:,3))*dz_1(  n  )
       endif
       if (headtt.or.ldebug) print*, 'duu_dt: max(advec_uu) =', maxval(advec_uu)
+!
+!  Store uu in auxiliary variable if requested.
+!  Just neccessary immediately before writing snapshots, but how would we
+!  know we are?
+!
+     if (lkinflow_as_aux) f(l1:l2,m,n,iux:iuz)=p%uu
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !

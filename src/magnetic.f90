@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.424 2007-05-29 11:17:07 ajohan Exp $
+! $Id: magnetic.f90,v 1.425 2007-06-01 04:23:15 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -236,7 +236,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.424 2007-05-29 11:17:07 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.425 2007-06-01 04:23:15 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1487,18 +1487,23 @@ module Magnetic
 !  ``va^2/dx^2'' and ``eta/dx^2'' for timestep
 !  in the diffusive timestep, we include possible contribution from
 !  meanfield_etat, which is however only invoked in mean field models
+!  Consider advective timestep only when lhydro=T.
 !
       if (lfirst.and.ldt) then
-        rho1_jxb=p%rho1
-        if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
-        if (va2max_jxb>0) then
-          rho1_jxb = rho1_jxb &
-                   * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+        if (lhydro) then
+          rho1_jxb=p%rho1
+          if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
+          if (va2max_jxb>0) then
+            rho1_jxb = rho1_jxb &
+                     * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+          endif
+          advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
+                     (p%bb(:,2)*dy_1(  m  ))**2+ &
+                     (p%bb(:,3)*dz_1(  n  ))**2)*mu01*rho1_jxb
         endif
-        advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
-                   (p%bb(:,2)*dy_1(  m  ))**2+ &
-                   (p%bb(:,3)*dz_1(  n  ))**2)*mu01*rho1_jxb
-
+!
+!  resistive time step considerations
+!
         if (lresi_hyper3_aniso) then
            diffus_eta=eta_aniso_hyper3(1)*dx_1(l1:l2)**6 + &
                 eta_aniso_hyper3(2)*dy_1(m)**6 + &
