@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.367 2007-06-01 04:23:15 brandenb Exp $
+! $Id: cdata.f90,v 1.368 2007-06-01 12:06:59 theine Exp $
 
 module Cdata
 
@@ -131,7 +131,7 @@ module Cdata
   integer :: mvar_io=0,dimensionality
   integer :: iinit
   integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0,ind=0,imd=0,imi=0
-  integer :: ilnrhon,iuun,iunx,iuny,iunz
+  integer :: ilnrhon=0,iuun=0,iunx=0,iuny=0,iunz=0
   logical, dimension(3) :: lperi,lshift_origin
   logical, dimension(3) :: lequidist=(/.true.,.true.,.true. /)
   character (len=labellen), dimension(3) :: grid_func='linear'
@@ -142,7 +142,7 @@ module Cdata
 !
   character (len=40) :: kinflow=''
   logical :: lkinflow_as_aux
-  real :: eps_kinflow
+  real :: eps_kinflow=0.
 !
 ! Variables to count the occurance of derivative calls per timestep
 ! for optimisation purposes.  To use uncomment the array and
