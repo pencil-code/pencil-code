@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.56 2007-05-15 19:18:12 brandenb Exp $
+! $Id: pscalar_nolog.f90,v 1.57 2007-06-02 16:00:46 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc.
@@ -65,7 +65,7 @@ module Pscalar
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rhoccm=0,idiag_ccmax=0,idiag_ccmin=0.,idiag_ccm=0
-  integer :: idiag_Qrhoccm=0,idiag_Qpsclm=0
+  integer :: idiag_Qrhoccm=0,idiag_Qpsclm=0,idiag_mcct=0
   integer :: idiag_ccmz=0,idiag_gcc5m=0,idiag_gcc10m=0
   integer :: idiag_ucm=0,idiag_uudcm=0,idiag_Cz2m=0,idiag_Cz4m=0,idiag_Crmsm=0
   integer :: idiag_uxcm=0,idiag_uycm=0,idiag_uzcm=0
@@ -111,7 +111,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.56 2007-05-15 19:18:12 brandenb Exp $")
+           "$Id: pscalar_nolog.f90,v 1.57 2007-06-02 16:00:46 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -484,6 +484,7 @@ module Pscalar
       if (ldiagnos) then
         if (idiag_Qpsclm/=0)  call sum_mn_name(bump,idiag_Qpsclm)
         if (idiag_Qrhoccm/=0) call sum_mn_name(bump*p%rho*p%cc,idiag_Qrhoccm)
+        if (idiag_mcct/=0)    call integrate_mn_name(p%rho*p%cc,idiag_mcct)
         if (idiag_rhoccm/=0)  call sum_mn_name(p%rho*p%cc,idiag_rhoccm)
         if (idiag_ccmax/=0)   call max_mn_name(p%cc,idiag_ccmax)
         if (idiag_ccmin/=0)   call max_mn_name(-p%cc,idiag_ccmin,lneg=.true.)
@@ -586,7 +587,7 @@ module Pscalar
 !
       if (lreset) then
         idiag_rhoccm=0; idiag_ccmax=0; idiag_ccmin=0.; idiag_ccm=0
-        idiag_Qrhoccm=0; idiag_Qpsclm=0
+        idiag_Qrhoccm=0; idiag_Qpsclm=0; idiag_mcct=0
         idiag_ccmz=0;
         idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0; idiag_Crmsm=0
         idiag_uxcm=0; idiag_uycm=0; idiag_uzcm=0
@@ -603,6 +604,7 @@ module Pscalar
         call parse_name(iname,cname(iname),cform(iname),'Qpsclm',idiag_Qpsclm)
         call parse_name(iname,cname(iname),cform(iname),'Qrhoccm',idiag_Qrhoccm)
         call parse_name(iname,cname(iname),cform(iname),'rhoccm',idiag_rhoccm)
+        call parse_name(iname,cname(iname),cform(iname),'mcct',idiag_mcct)
         call parse_name(iname,cname(iname),cform(iname),'ccmax',idiag_ccmax)
         call parse_name(iname,cname(iname),cform(iname),'ccmin',idiag_ccmin)
         call parse_name(iname,cname(iname),cform(iname),'ccm',idiag_ccm)
@@ -648,6 +650,7 @@ module Pscalar
         write(3,*) 'i_Qpsclm=',idiag_Qpsclm
         write(3,*) 'i_Qrhoccm=',idiag_Qrhoccm
         write(3,*) 'i_rhoccm=',idiag_rhoccm
+        write(3,*) 'i_mcct=',idiag_mcct
         write(3,*) 'i_ccmax=',idiag_ccmax
         write(3,*) 'i_ccmin=',idiag_ccmin
         write(3,*) 'i_ccm=',idiag_ccm
