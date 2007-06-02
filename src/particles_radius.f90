@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.22 2006-11-30 09:03:36 dobler Exp $
+! $Id: particles_radius.f90,v 1.23 2007-06-02 16:01:17 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -54,7 +54,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.22 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: particles_radius.f90,v 1.23 2007-06-02 16:01:17 ajohan Exp $")
 !
 !  Index for particle radius.
 !
@@ -198,7 +198,7 @@ module Particles_radius
 !
                 call get_nptilde(fp,k,np_tilde)
                 if (lpscalar_nolog) then
-                  df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
+                  df(ix0,m,n,icc) = df(ix0,m,n,icc) - &
                       np_tilde*pi*fp(k,iap)**2*deltavp*p%cc(ix0-nghost)
                 else
                   df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &

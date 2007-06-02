@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.22 2007-01-15 05:58:58 ajohan Exp $
+! $Id: particles_number.f90,v 1.23 2007-06-02 16:01:17 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -54,7 +54,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.22 2007-01-15 05:58:58 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.23 2007-06-02 16:01:17 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -227,7 +227,7 @@ module Particles_number
                     dfp(j,inptilde) = dfp(j,inptilde) - cdot
                     dfp(k,inptilde) = dfp(k,inptilde) - cdot
                     if (lpscalar_nolog) then
-                      df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
+                      df(l,m,n,icc) = df(l,m,n,icc) + &
                           p%rho1(l-nghost)*4/3.*pi*rhops* &
                           (fp(j,iap)**3+fp(k,iap)**3)*cdot
                     else
@@ -259,7 +259,7 @@ module Particles_number
                   cdot = sigma_jk*fp(k,inptilde)*fp(k,inptilde)*deltavp
                   dfp(k,inptilde) = dfp(k,inptilde) - cdot
                   if (lpscalar_nolog) then
-                    df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
+                    df(l,m,n,icc) = df(l,m,n,icc) + &
                         p%rho1(l-nghost)*4/3.*pi*rhops*fp(k,iap)**3*cdot
                   else
                     df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
