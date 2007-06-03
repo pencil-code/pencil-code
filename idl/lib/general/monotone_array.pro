@@ -1,5 +1,5 @@
 ;;
-;;  $Id: monotone_array.pro,v 1.6 2007-02-15 05:48:45 ajohan Exp $
+;;  $Id: monotone_array.pro,v 1.7 2007-06-03 08:45:18 ajohan Exp $
 ;;
 ;;  monotone_array - take array and return index of monotonous growth.
 ;;
@@ -27,7 +27,7 @@ for i=1L,n-1 do begin
       j=j+1
     endif else begin
 ;  Value lower than the previous - find out where the data point belongs.
-      for k=1,j do begin
+      for k=1L,j do begin
         if ( (array2[k-1] lt array[i]) and (array2[k] ge array[i]) ) then break
 ;  If nowhere found, then the point belongs at the first place of the array.
         if (k eq j) then begin
