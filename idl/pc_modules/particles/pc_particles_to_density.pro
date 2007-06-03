@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.21 2007-01-09 12:19:13 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.22 2007-06-03 08:46:20 ajohan Exp $
 ;
 ;  Convert positions of particles to a grid density field.
 ;
@@ -124,13 +124,26 @@ if (cic or tsc) then begin
     z=z2
     nz=mz
   endif
-endif
+endif else begin
+  nghost=0
+  mx=nx
+  l1=0 & l2=l1+nx-1
+  my=ny
+  m1=0 & m2=m1+ny-1
+  mz=nz+2*nghost
+  n1=0 & n2=n1+nz-1
+endelse
 ;
 ;  Define density and velocity dispersion arrays.
 ;
 np=fltarr(mx,my,mz)*one
 
-if (keyword_set(vprms)) then begin
+if (arg_present(vprms)) then begin
+  if (n_elements(vvp) eq 0) then begin
+    print, 'pc_particles_to_density: ERROR - '+ $
+        'vvp must be supplied to calculate vprms!'
+    return, 1
+  endif
   vvpm=fltarr(nx,ny,nz,3)*one
   if (lscalar_rms) then begin
     vprms=fltarr(nx,ny,nz)*one
@@ -173,7 +186,7 @@ case interpolation_scheme of
 ;
       np[ix,iy,iz]=np[ix,iy,iz]+1.0*one
 ;  Mean velocity (needed for velocity dispersion).
-      if (keyword_set(vprms)) then begin
+      if (arg_present(vprms)) then begin
         vvpm[ix,iy,iz,0]  = vvpm[ix,iy,iz,0] + vvp[k,0]
         if (lshear) then begin
           vvpm[ix,iy,iz,1]  = vvpm[ix,iy,iz,1]  +(vvp[k,1]-1.5*1.0*xxp[k,0])
@@ -197,7 +210,7 @@ case interpolation_scheme of
 ;
 ;  Calculate velocity dispersions.
 ;
-    if (keyword_set(vprms)) then begin
+    if (arg_present(vprms)) then begin
       ii=array_indices(np,where(np gt 1.0))
       ii3=intarr(n_elements(ii[0,*]))
 ;  Normalize sums to get average.
