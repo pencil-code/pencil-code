@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.313 2007-05-15 18:16:07 wlyra Exp $
+! $Id: sub.f90,v 1.314 2007-06-03 10:03:01 ajohan Exp $
 
 module Sub
 
@@ -22,7 +22,7 @@ module Sub
 
   public :: get_nseed
 
-  public :: grad, div, div_mn, curl, curli, curl_mn, div_other
+  public :: grad, grad5, div, div_mn, curl, curli, curl_mn, div_other
   public :: gij, g2ij, gij_etc
   public :: der_step
   public :: u_dot_grad
@@ -1538,6 +1538,28 @@ module Sub
       call der(f,tmp,3); g(:,3)=tmp
 !
     endsubroutine grad_other
+!***********************************************************************
+    subroutine grad5(f,k,g)
+!
+!  Calculate 5th order gradient of a scalar, get vector
+!  03-jun-07/anders: adapted
+!
+      use Cdata
+      use Deriv
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: g
+      real, dimension (nx) :: tmp
+      integer :: k
+!
+      intent(in) :: f,k
+      intent(out) :: g
+!
+      call der5(f,k,tmp,1); g(:,1)=tmp
+      call der5(f,k,tmp,2); g(:,2)=tmp
+      call der5(f,k,tmp,3); g(:,3)=tmp
+!
+    endsubroutine grad5
 !**********************************************************************
     subroutine div(f,k,g)
 !

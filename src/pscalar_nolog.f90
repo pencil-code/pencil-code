@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.57 2007-06-02 16:00:46 ajohan Exp $
+! $Id: pscalar_nolog.f90,v 1.58 2007-06-03 10:03:02 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc.
@@ -11,6 +11,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED cc,cc1,gcc,ugcc,gcc2,gcc1,del2cc,hcc
+! PENCILS PROVIDED del6cc,g5cc,g5ccglnrho
 !
 !***************************************************************
 
@@ -52,15 +53,14 @@ module Pscalar
        radius_lncc,epsilon_lncc,widthlncc
 
   ! run parameters
-  real :: pscalar_diff=0.,tensor_pscalar_diff=0.,soret_diff=0.
-  real :: rhoccm=0., cc2m=0., gcc2m=0.
+  real :: pscalar_diff=0., tensor_pscalar_diff=0., soret_diff=0.
+  real :: pscalar_diff_hyper3=0.0, rhoccm=0., cc2m=0., gcc2m=0.
   real :: pscalar_sink=0., Rpscalar_sink=0.5
   logical :: lpscalar_sink
 
   namelist /pscalar_run_pars/ &
        pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,soret_diff, &
-       reinitalize_lncc, &  !(keep old name)
-       reinitalize_cc, &
+       pscalar_diff_hyper3,reinitalize_lncc,reinitalize_cc, &
        lpscalar_sink,pscalar_sink,Rpscalar_sink
 
   ! other variables (needs to be consistent with reset list below)
@@ -111,7 +111,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.57 2007-06-02 16:00:46 ajohan Exp $")
+           "$Id: pscalar_nolog.f90,v 1.58 2007-06-03 10:03:02 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -308,6 +308,10 @@ module Pscalar
       enddo
       if (pscalar_diff/=0.) lpenc_requested(i_del2cc)=.true.
       if (tensor_pscalar_diff/=0.) lpenc_requested(i_hcc)=.true.
+      if (pscalar_diff_hyper3/=0.0) then
+        lpenc_requested(i_del6cc)=.true.
+        lpenc_requested(i_g5ccglnrho)=.true.
+      endif
 !
       lpenc_diagnos(i_cc)=.true.
       if (idiag_rhoccm/=0 .or. idiag_Cz2m/=0 .or. idiag_Cz4m/=0 .or. &
@@ -340,6 +344,10 @@ module Pscalar
       if (lpencil_in(i_ugcc)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_gcc)=.true.
+      endif
+      if (lpencil_in(i_g5ccglnrho)) then
+        lpencil_in(i_g5cc)=.true.
+        lpencil_in(i_glnrho)=.true.
       endif
       if (lpencil_in(i_gcc2)) lpencil_in(i_gcc)=.true.
       if (lpencil_in(i_gcc1)) lpencil_in(i_gcc2)=.true.
@@ -378,6 +386,14 @@ module Pscalar
       if (lpencil(i_del2cc)) call del2(f,icc,p%del2cc)
 ! hcc
       if (lpencil(i_hcc)) call g2ij(f,icc,p%hcc)
+! del6cc
+      if (lpencil(i_del6cc)) call del6(f,icc,p%del6cc)
+! g5cc
+      if (lpencil(i_g5cc)) call grad5(f,icc,p%g5cc)
+! g5cc
+      if (lpencil(i_g5ccglnrho)) then
+        call dot_mn(p%g5cc,p%glnrho,p%g5ccglnrho)
+      endif
 !
     endsubroutine calc_pencils_pscalar
 !***********************************************************************
@@ -441,6 +457,15 @@ module Pscalar
           call dot_mn(p%glnrho,p%gcc,diff_op)
           diff_op=diff_op+p%del2cc
           df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + pscalar_diff*diff_op
+        endif
+!
+!  hyperdiffusion operator
+!
+        if (pscalar_diff_hyper3/=0.) then
+          if (headtt) &
+              print*,'dlncc_dt: pscalar_diff_hyper3=', pscalar_diff_hyper3
+          df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + &
+              pscalar_diff_hyper3*(p%del6cc+p%g5ccglnrho)
         endif
 !
 !  Soret diffusion
