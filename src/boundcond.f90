@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.150 2007-05-31 15:29:55 theine Exp $
+! $Id: boundcond.f90,v 1.151 2007-06-04 13:23:31 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -35,6 +35,7 @@ module Boundcond
 !  10-oct-02/wolf: coded
 !
       use Cparam
+      use Cdata, only: bc_order
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -44,10 +45,20 @@ module Boundcond
       ivar1=1; ivar2=mcom
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
-!
-      call boundconds_x(f,ivar1,ivar2)      ! Do not change this order.
-      call boundconds_y(f,ivar1,ivar2)
-      call boundconds_z(f,ivar1,ivar2)
+
+      select case (bc_order)
+
+      case ('xyz')
+        call boundconds_x(f,ivar1,ivar2)
+        call boundconds_y(f,ivar1,ivar2)
+        call boundconds_z(f,ivar1,ivar2)
+
+      case ('zxy')
+        call boundconds_x(f,ivar1,ivar2)
+        call boundconds_y(f,ivar1,ivar2)
+        call boundconds_z(f,ivar1,ivar2)
+
+      endselect
 !
     endsubroutine boundconds
 !***********************************************************************
