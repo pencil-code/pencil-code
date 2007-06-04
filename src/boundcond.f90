@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.151 2007-06-04 13:23:31 theine Exp $
+! $Id: boundcond.f90,v 1.152 2007-06-04 16:00:47 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -54,9 +54,9 @@ module Boundcond
         call boundconds_z(f,ivar1,ivar2)
 
       case ('zxy')
+        call boundconds_z(f,ivar1,ivar2)
         call boundconds_x(f,ivar1,ivar2)
         call boundconds_y(f,ivar1,ivar2)
-        call boundconds_z(f,ivar1,ivar2)
 
       endselect
 !
@@ -398,6 +398,7 @@ module Boundcond
               case ('pwd')
                 if (j==iaa) call bc_aa_pot3(f,topbot)
               case ('d2z'); call bc_del2zero(f,topbot,j)
+              case ('hsd'); call bc_lnrho_hydrostatic_z_smooth(f,topbot)
               case ('cT')       ! constant temp.
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
                 if (j==iss)    call bc_ss_temp_z(f,topbot)
@@ -2152,11 +2153,9 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: a
 !
-      call boundconds_x(a)
       call initiate_isendrcv_bdry(a)
       call finalize_isendrcv_bdry(a)
-      call boundconds_y(a)
-      call boundconds_z(a)
+      call boundconds(a)
 !
     endsubroutine update_ghosts
 !***********************************************************************
@@ -2417,16 +2416,18 @@ module Boundcond
 !
       use Cdata
       use Fourier, only: fourier_transform_xy_parallel
-      use Mpicomm, only: communicate_bcz
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
       integer, intent (in) :: j
 
-      real, dimension (mx,my,nghost) :: ghost_zones
       real, dimension (nx,ny) :: kx,ky,kappa,exp_fact
       real, dimension (nx,ny) :: tmp_re,tmp_im
       integer :: i
+
+      if (bc_order/='zxy') then
+        call fatal_error("bc_del2zero","This BC requires bc_order=='zxy'")
+      endif
 !
 !  Get local wave numbers
 !
@@ -2466,14 +2467,9 @@ module Boundcond
           tmp_im = tmp_im*exp_fact
           ! Transform back
           call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
-          ghost_zones(l1:l2,m1:m2,i) = tmp_re
+          f(l1:l2,m1:m2,n1-i,j) = tmp_re
 
         enddo
-!
-!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
-!
-        call communicate_bcz(ghost_zones)
-        do i=1,nghost; f(:,:,n1-i,j) = ghost_zones(:,:,i); enddo
 !
 !  Potential field condition at the top
 !
@@ -2496,14 +2492,9 @@ module Boundcond
           tmp_im = tmp_im*exp_fact
           ! Transform back
           call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
-          ghost_zones(l1:l2,m1:m2,i) = tmp_re
+          f(l1:l2,m1:m2,n2+i,j) = tmp_re
 
         enddo
-!
-!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
-!
-        call communicate_bcz(ghost_zones)
-        do i=1,nghost; f(:,:,n2+i,j) = ghost_zones(:,:,i); enddo
 
       case default
 

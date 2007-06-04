@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.84 2007-05-12 07:23:10 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.85 2007-06-04 16:00:47 theine Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -109,7 +109,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.84 2007-05-12 07:23:10 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.85 2007-06-04 16:00:47 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -2227,5 +2227,124 @@ module EquationOfState
       endselect
 
     end subroutine bc_lnrho_hydrostatic_z
+!***********************************************************************
+    subroutine bc_lnrho_hydrostatic_z_smooth(f,topbot)
+!
+!  Pontential field boundary condition
+!
+!  11-oct-06/wolf: Adapted from Tobi's bc_aa_pot2
+!
+      use Cdata
+      use Fourier, only: fourier_transform_xy_parallel
+      use Gravity, only: potential
+
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+
+      real, dimension (mx,my,nghost) :: ghost_zones
+      real, dimension (nx,ny) :: kx,ky,kappa,exp_fact
+      real, dimension (nx,ny) :: tmp_re,tmp_im
+      real :: pot
+      integer :: i
+
+      if (bc_order/='zxy') then
+        call fatal_error("bc_lnrho_hydrostatic_z_smooth", &
+                         "This BC requires bc_order=='zxy'")
+      endif
+!
+!  Get local wave numbers
+!
+      kx = spread(kx_fft                    ,2,ny)
+      ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
+!
+!  Calculate 1/k^2, zero mean
+!
+      if (lshear) then
+        kappa = sqrt((kx+ky*deltay/Lx)**2+ky**2)
+      else
+        kappa = sqrt(kx**2 + ky**2)
+      endif
+!
+!  Check whether we want to do top or bottom (this is precessor dependent)
+!
+      select case(topbot)
+!
+!  Potential field condition at the bottom
+!
+      case('bot')
+
+        do i=1,nghost
+!
+! Calculate delta_z based on z(), not on dz to improve behavior for
+! non-equidistant grid (still not really correct, but could be OK)
+!
+          exp_fact = exp(-kappa*(z(n1+i)-z(n1-i)))
+!
+!  Determine potential field in ghost zones
+!
+          !  Fourier transforms of x- and y-components on the boundary
+          call potential(z=z(n1+i),pot=pot)
+          if (ldensity_nolog) then
+            tmp_re = f(l1:l2,m1:m2,n1+i,ilnrho)*exp(+pot/cs2bot)
+          else
+            tmp_re = f(l1:l2,m1:m2,n1+i,ilnrho) + pot/cs2bot
+          endif
+          tmp_im = 0.0
+          call fourier_transform_xy_parallel(tmp_re,tmp_im)
+          tmp_re = tmp_re*exp_fact
+          tmp_im = tmp_im*exp_fact
+          ! Transform back
+          call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+          call potential(z=z(n1-i),pot=pot)
+          if (ldensity_nolog) then
+            f(l1:l2,m1:m2,n1-i,ilnrho) = tmp_re*exp(-pot/cs2bot)
+          else
+            f(l1:l2,m1:m2,n1-i,ilnrho) = tmp_re - pot/cs2bot
+          endif
+
+        enddo
+!
+!  Potential field condition at the top
+!
+      case('top')
+
+        do i=1,nghost
+!
+! Calculate delta_z based on z(), not on dz to improve behavior for
+! non-equidistant grid (still not really correct, but could be OK)
+!
+          exp_fact = exp(-kappa*(z(n2+i)-z(n2-i)))
+!
+!  Determine potential field in ghost zones
+!
+          !  Fourier transforms of x- and y-components on the boundary
+          call potential(z=z(n2-i),pot=pot)
+          if (ldensity_nolog) then
+            tmp_re = f(l1:l2,m1:m2,n2-i,ilnrho)*exp(+pot/cs2top)
+          else
+            tmp_re = f(l1:l2,m1:m2,n2-i,ilnrho) + pot/cs2top
+          endif
+          tmp_im = 0.0
+          call fourier_transform_xy_parallel(tmp_re,tmp_im)
+          tmp_re = tmp_re*exp_fact
+          tmp_im = tmp_im*exp_fact
+          ! Transform back
+          call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+          call potential(z=z(n2+i),pot=pot)
+          if (ldensity_nolog) then
+            f(l1:l2,m1:m2,n2+i,ilnrho) = tmp_re*exp(-pot/cs2top)
+          else
+            f(l1:l2,m1:m2,n2+i,ilnrho) = tmp_re - pot/cs2top
+          endif
+
+        enddo
+
+      case default
+
+        if (lroot) print*,"bc_lnrho_hydrostatic_z_smooth: invalid argument"
+
+      endselect
+
+    endsubroutine bc_lnrho_hydrostatic_z_smooth
 !***********************************************************************
 endmodule EquationOfState

@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.155 2007-05-31 13:21:10 theine Exp $
+! $Id: nompicomm.f90,v 1.156 2007-06-04 16:00:48 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -1026,79 +1026,5 @@ module Mpicomm
       f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
 
     endsubroutine communicate_bc_aa_pot
-!***********************************************************************
-    subroutine communicate_bcz(ghost_zones)
-!
-!  Helper routine for bc_aa_pot in Magnetic.
-!  Needed due to Fourier transforms which only work on (l1:l2,m1:m2)
-!
-!   8-oct-2006/tobi: Coded
-!
-      use Cdata, only: lshear,deltay,dy
-
-      real, dimension (mx,my,nghost), intent (inout) :: ghost_zones
-
-      double precision :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
-      integer :: displs
-!
-!  Periodic boundaries in y
-!
-      ghost_zones(l1:l2,   1:m1-1,:) = ghost_zones(l1:l2,m2i:m2 ,:)
-      ghost_zones(l1:l2,m2+1:my  ,:) = ghost_zones(l1:l2, m1:m1i,:)
-!
-!  (Shearing-) periodic boundaries in x
-!
-      if (lshear.and.nygrid>1) then
-        deltay_dy=deltay/dy
-        displs=int(deltay_dy)
-        frak=deltay_dy-displs
-        c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
-        c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
-        c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
-        c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
-        c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
-        c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
-        ghost_zones(1:l1-1,:,:) = &
-             c1*cshift(ghost_zones(l2i:l2,:,:),-displs+2,2) &
-            +c2*cshift(ghost_zones(l2i:l2,:,:),-displs+1,2) &
-            +c3*cshift(ghost_zones(l2i:l2,:,:),-displs  ,2) &
-            +c4*cshift(ghost_zones(l2i:l2,:,:),-displs-1,2) &
-            +c5*cshift(ghost_zones(l2i:l2,:,:),-displs-2,2) &
-            +c6*cshift(ghost_zones(l2i:l2,:,:),-displs-3,2)
-        ghost_zones(l2+1:mx,:,:) = &
-             c1*cshift(ghost_zones(l1:l1i,:,:), displs-2,2) &
-            +c2*cshift(ghost_zones(l1:l1i,:,:), displs-1,2) &
-            +c3*cshift(ghost_zones(l1:l1i,:,:), displs  ,2) &
-            +c4*cshift(ghost_zones(l1:l1i,:,:), displs+1,2) &
-            +c5*cshift(ghost_zones(l1:l1i,:,:), displs+2,2) &
-            +c6*cshift(ghost_zones(l1:l1i,:,:), displs+3,2)
-      else
-        ghost_zones(   1:l1-1,:,:) = ghost_zones(l2i:l2 ,:,:)
-        ghost_zones(l2+1:mx  ,:,:) = ghost_zones( l1:l1i,:,:)
-      endif
-
-    endsubroutine communicate_bcz
-!***********************************************************************
-    subroutine communicate_stellar_surface(jxbr_z)
-!
-!  Helper routine for stellar_surface in EOS.
-!  Needed due to Fourier transforms which only work on (l1:l2,m1:m2)
-!
-!   8-oct-2006/tobi: Coded
-!
-      real, dimension (mx,my), intent (inout) :: jxbr_z
-
-!
-!  Periodic boundaries in y
-!
-      jxbr_z(l1:l2,   1:m1-1) = jxbr_z(l1:l2,m2i:m2 )
-      jxbr_z(l1:l2,m2+1:my  ) = jxbr_z(l1:l2, m1:m1i)
-!
-!  Periodic boundaries in x
-!
-      jxbr_z(   1:l1-1,:) = jxbr_z(l2i:l2 ,:)
-      jxbr_z(l2+1:mx  ,:) = jxbr_z( l1:l1i,:)
-
-    endsubroutine communicate_stellar_surface
 !***********************************************************************
 endmodule Mpicomm
