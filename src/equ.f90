@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.357 2007-05-02 14:07:53 dhruba Exp $
+! $Id: equ.f90,v 1.358 2007-06-04 12:18:46 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -414,7 +414,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.357 2007-05-02 14:07:53 dhruba Exp $")
+           "$Id: equ.f90,v 1.358 2007-06-04 12:18:46 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -435,6 +435,7 @@ module Equ
 !  This could in principle be avoided (but it not worth it now)
 !
       early_finalize=test_nonblocking.or.leos_ionization.or.lradiation_ray
+      early_finalize=early_finalize.or.ncpus==1
 !
 !  Apply global boundary conditions to particle positions and communiate
 !  migrating particles between the processors.
@@ -474,7 +475,7 @@ module Equ
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
 !
-      call boundconds_x(f)
+      if (.not.early_finalize) call boundconds_x(f)
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:
@@ -486,8 +487,7 @@ module Equ
       call initiate_isendrcv_bdry(f)
       if (early_finalize) then
         call finalize_isendrcv_bdry(f)
-        call boundconds_y(f)
-        call boundconds_z(f)
+        call boundconds(f)
       endif
 !
 !  set inverse timestep to zero before entering loop over m and n
