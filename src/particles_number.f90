@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.23 2007-06-02 16:01:17 ajohan Exp $
+! $Id: particles_number.f90,v 1.24 2007-06-05 09:03:52 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -54,7 +54,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.23 2007-06-02 16:01:17 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.24 2007-06-05 09:03:52 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -237,11 +237,11 @@ module Particles_number
                     endif
                   endif  ! fragmentation or coagulation
 !  Time-step contribution
-                  if (lfirst.and.ldt) then
-                    dt1_fragmentation(l-nghost) = dt1_fragmentation(l-nghost) +&
-                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops* &
-                        (fp(j,iap)**3+fp(k,iap)**3)*cdot
-                  endif
+!                  if (lfirst.and.ldt) then
+!                    dt1_fragmentation(l-nghost) = dt1_fragmentation(l-nghost) +&
+!                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops* &
+!                        (fp(j,iap)**3+fp(k,iap)**3)*cdot
+!                  endif
 !  Collision diagnostics.
                   if (ldiagnos) then
                     if (idiag_dvp22mwcdot/=0) &
