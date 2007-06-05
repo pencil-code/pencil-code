@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.67 2007-02-02 14:14:47 wlyra Exp $
+! $Id: pscalar.f90,v 1.68 2007-06-05 05:10:28 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -28,10 +28,10 @@ module Pscalar
   logical :: nopscalar=.false.
 
   ! input parameters
-  real, dimension(3) :: gradC0=(/0.,0.,0./)
-  real :: ampllncc=.1, widthlncc=.5, cc_min=0., lncc_min
-  real :: ampllncc2=0.,kx_lncc=1.,ky_lncc=1.,kz_lncc=1.,radius_lncc=0.
-  real :: epsilon_lncc=0., cc_const=0.
+  real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
+  real :: ampllncc=0.1, widthlncc=0.5, cc_min=0.0, lncc_min
+  real :: ampllncc2=0.0, kx_lncc=1.0, ky_lncc=1.0, kz_lncc=1.0, radius_lncc=0.0
+  real :: epsilon_lncc=0.0, cc_const=0.0
   logical :: lupw_lncc=.false.
 
   namelist /pscalar_init_pars/ &
@@ -39,20 +39,23 @@ module Pscalar
       radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const,lupw_lncc
 
   ! run parameters
-  real :: pscalar_diff=0.,tensor_pscalar_diff=0.
-  real :: rhoccm=0., cc2m=0., gcc2m=0.
+  real :: pscalar_diff=0.0, tensor_pscalar_diff=0.0
+  real :: rhoccm=0.0, cc2m=0.0, gcc2m=0.0
 
   namelist /pscalar_run_pars/ &
       pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,lupw_lncc
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_rhoccm=0,idiag_ccmax=0,idiag_ccmin=0.,idiag_lnccm=0
-  integer :: idiag_mcct=0, idiag_lnccmz=0,idiag_gcc5m=0,idiag_gcc10m=0
-  integer :: idiag_ucm=0,idiag_uudcm=0,idiag_Cz2m=0,idiag_Cz4m=0,idiag_Crmsm=0
-  integer :: idiag_cc1m=0,idiag_cc2m=0,idiag_cc3m=0,idiag_cc4m=0,idiag_cc5m=0
-  integer :: idiag_cc6m=0,idiag_cc7m=0,idiag_cc8m=0,idiag_cc9m=0,idiag_cc10m=0
-  integer :: idiag_gcc1m=0,idiag_gcc2m=0,idiag_gcc3m=0,idiag_gcc4m=0
-  integer :: idiag_gcc6m=0,idiag_gcc7m=0,idiag_gcc8m=0,idiag_gcc9m=0
+  integer :: idiag_rhoccm=0, idiag_ccmax=0, idiag_ccmin=0, idiag_lnccm=0
+  integer :: idiag_mcct=0, idiag_gcc5m=0, idiag_gcc10m=0
+  integer :: idiag_ucm=0, idiag_uudcm=0, idiag_Cz2m=0, idiag_Cz4m=0
+  integer :: idiag_cc1m=0, idiag_cc2m=0, idiag_cc3m=0, idiag_cc4m=0
+  integer :: idiag_cc5m=0, idiag_cc6m=0, idiag_cc7m=0, idiag_cc8m=0
+  integer :: idiag_cc9m=0, idiag_cc10m=0, idiag_Crmsm=0
+  integer :: idiag_gcc1m=0, idiag_gcc2m=0, idiag_gcc3m=0, idiag_gcc4m=0
+  integer :: idiag_gcc6m=0, idiag_gcc7m=0, idiag_gcc8m=0, idiag_gcc9m=0
+  integer :: idiag_lnccmz=0, idiag_lnccmy=0, idiag_lnccmx=0
+  integer :: idiag_ccmz=0, idiag_ccmy=0, idiag_ccmx=0
 
   contains
 
@@ -85,7 +88,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.67 2007-02-02 14:14:47 wlyra Exp $")
+           "$Id: pscalar.f90,v 1.68 2007-06-05 05:10:28 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -206,9 +209,12 @@ module Pscalar
           idiag_mcct/=0) lpenc_diagnos(i_cc)=.true.
       if (idiag_rhoccm/=0 .or. idiag_Cz2m/=0 .or. idiag_Cz4m/=0 .or. &
           idiag_Crmsm/=0 .or. idiag_mcct/=0) lpenc_diagnos(i_rho)=.true.
-      if (idiag_lnccmz/=0) lpenc_diagnos(i_lncc)=.true.
       if (idiag_ucm/=0 .or. idiag_uudcm/=0) lpenc_diagnos(i_uu)=.true.
       if (idiag_uudcm/=0) lpenc_diagnos(i_uglncc)=.true.
+      if (idiag_lnccmz/=0 .or. idiag_lnccmy/=0 .or. idiag_lnccmx/=0) &
+          lpenc_diagnos(i_lncc)=.true.
+      if (idiag_ccmz/=0 .or. idiag_ccmy/=0 .or. idiag_ccmx/=0) &
+          lpenc_diagnos(i_cc)=.true.
 !
     endsubroutine pencil_criteria_pscalar
 !***********************************************************************
@@ -346,6 +352,11 @@ module Pscalar
 !
       if (l1ddiagnos) then
          if (idiag_lnccmz/=0) call xysum_mn_name_z(p%lncc,idiag_lnccmz)
+         if (idiag_lnccmy/=0) call xzsum_mn_name_y(p%lncc,idiag_lnccmy)
+         if (idiag_lnccmx/=0) call yzsum_mn_name_x(p%lncc,idiag_lnccmx)
+         if (idiag_ccmz/=0)   call xysum_mn_name_z(p%cc,idiag_ccmz)
+         if (idiag_ccmy/=0)   call xzsum_mn_name_y(p%cc,idiag_ccmy)
+         if (idiag_ccmx/=0)   call yzsum_mn_name_x(p%cc,idiag_ccmx)
       endif
 !
     endsubroutine dlncc_dt
@@ -400,9 +411,11 @@ module Pscalar
 !
       use Sub
 !
-      integer :: iname,inamez
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+!
+      integer :: iname, inamez, inamey, inamex
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -412,8 +425,10 @@ module Pscalar
 !
       if (lreset) then
         idiag_rhoccm=0; idiag_ccmax=0; idiag_ccmin=0.; idiag_lnccm=0
-        idiag_lnccmz=0; idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0
+        idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0
         idiag_Crmsm=0; idiag_mcct=0
+        idiag_lnccmz=0; idiag_lnccmy=0; idiag_lnccmx=0
+        idiag_ccmz=0; idiag_ccmy=0; idiag_ccmx=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -434,8 +449,28 @@ module Pscalar
 !  check for those quantities for which we want xy-averages
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),&
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'lnccmz',idiag_lnccmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+            'ccmz',idiag_ccmz)
+      enddo
+!
+!  check for those quantities for which we want xz-averages
+!
+      do inamey=1,nnamey
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'lnccmy',idiag_lnccmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'ccmy',idiag_ccmy)
+      enddo
+!
+!  check for those quantities for which we want yz-averages
+!
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'lnccmx',idiag_lnccmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'ccmx',idiag_ccmx)
       enddo
 !
 !  write column where which passive scalar variable is stored
