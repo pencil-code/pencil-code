@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.190 2007-04-12 09:37:08 pkapyla Exp $
+# $Id: getconf.csh,v 1.191 2007-06-06 14:12:08 dhruba Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -215,6 +215,22 @@ else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
   if ($local_disc) then
     #setenv SCRATCH_DIR `cat $TMPDIR/scratch` 
     set remove_scratch_root = 1
+  endif
+else if ($hn =~ compute[0-9][0-9].maths.qmul.ac.uk) then
+  echo "QMUL Maths cluster - LONDON"
+  set mpirun = /home/dhruba/mpich/bin/mpirun
+  if ($?PBS_NODEFILE) then
+    echo "PBS job"
+    cat $PBS_NODEFILE >nodelist
+    set local_disc = 0
+    set one_local_disc = 0
+    set local_binary = 0
+  else
+    echo "Non-PBS, running on `hostname`"
+  endif
+  # lamboot with logging to file 
+  if ($local_disc) then
+    setenv SCRATCH_DIR "/var/tmp"
   endif
 
 else if ($hn =~ giga[0-9][0-9]) then
