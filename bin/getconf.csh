@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.191 2007-06-06 14:12:08 dhruba Exp $
+# $Id: getconf.csh,v 1.192 2007-06-08 06:34:52 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -850,6 +850,23 @@ else if ($hn =~ *.pdc.kth.se) then
 # set local_binary   = 0
 # setenv SSH rsh 
 # setenv SCP rcp
+
+else if ($hn =~ tun[a-z]*) then
+  echo "Tungsten cluster - NCSA"
+  if (! $?LSB_JOBID) then
+    echo 'NO LSB_JOBID -- ABORTING'
+    kill $$                     # full-featured suicide
+  endif
+  #setenv SCRATCH_DIR /cfs/scratch/batch/$LSB_JOBID
+  setenv SCRATCH_DIR /scratch/local/$LSB_JOBID
+  set mpirun    = "cmpirun"
+  set mpirunops = "-lsf"
+  set nprocpernode = 2
+  set local_disc     = 1
+  set one_local_disc = 0
+  set local_binary   = 0
+  setenv SSH ssh
+  setenv SCP scp
 
 else
   echo "Generic setup; hostname is <$hn>"
