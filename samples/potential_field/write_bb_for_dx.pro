@@ -18,7 +18,8 @@
 pc_potentialfield_exterior_z, aa, $
                               AAA=aa_expanded, ZZZ=z_expanded
 bb = curl(aa)
-dx_export, bb, X=x, Y=y, Z=z_expanded, T=t, LABELS='BB', GHOSTS=3
+dx_export, bb, X=x, Y=y, Z=z_expanded, T=t, $
+    BASENAME='bb', LABELS='BB', GHOSTS=3
 
 
 
