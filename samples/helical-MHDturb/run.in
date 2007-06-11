@@ -3,7 +3,7 @@
 !  run parameters for forced helical MHD turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.32 2006-06-26 21:43:04 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.33 2007-06-11 18:58:55 jonhagg Exp $',
   !nt=20000, it1=50, cdt=0.4, cdtv=0.3, isave=200, itorder=3 !(longer run)
   nt=10, it1=2, cdt=0.4, cdtv=0.3, isave=0, itorder=3 !(sample run)
   dsnap=50, dvid=1.0, ialive=1 !(for longer run)
@@ -12,6 +12,7 @@
   random_gen='min_std'
   random_gen='nr_f90'
   !lpencil_check=T !(checks for redundany of pencils)
+  comment_char='%'
 /
 &eos_run_pars
 /
