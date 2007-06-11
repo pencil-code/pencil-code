@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.91 2007-04-20 20:07:33 dobler Exp $
+! $Id: prints.f90,v 1.92 2007-06-11 18:41:49 allidf Exp $
 
 module Print
 
@@ -160,13 +160,13 @@ module Print
 !
         index_a=(index(line,'***') +  index(line,'???'))
         if (index_a > 0) then
-          line(1:1)='#'
+          line(1:1)=comment_char
         endif
 !
 !  append to diagnostics file
 !
         open(1,file=trim(datadir)//'/time_series.dat',position='append')
-        if (first) write(1,'("#",A)') trim(legend)
+        if (first) write(1,"('"//comment_char//"',a)") trim(legend)
         !write(1,trim(fform)) fname(1:nname)  ! write to `time_series.dat'
         !write(6,trim(fform)) fname(1:nname)  ! write to standard output
         write(1,'(a)') trim(line)

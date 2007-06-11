@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.274 2007-06-04 13:23:31 theine Exp $
+! $Id: param_io.f90,v 1.275 2007-06-11 18:41:49 allidf Exp $
 
 module Param_IO
 
@@ -88,6 +88,7 @@ module Param_IO
        lnowrite, &
        lwrite_yaverages,lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
        lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
+       comment_char, &
        ix,iy,iz,iz2,slice_position,zbot_slice,ztop_slice, &
        bcx,bcy,bcz,bc_order,r_int,r_ext,rp_int,rp_ext, &
        lfreeze_varsquare,lfreeze_varint,lfreeze_varext, &

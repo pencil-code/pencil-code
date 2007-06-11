@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.369 2007-06-04 13:23:31 theine Exp $
+! $Id: cdata.f90,v 1.370 2007-06-11 18:41:49 allidf Exp $
 
 module Cdata
 
@@ -135,7 +135,8 @@ module Cdata
   logical, dimension(3) :: lperi,lshift_origin
   logical, dimension(3) :: lequidist=(/.true.,.true.,.true. /)
   character (len=labellen), dimension(3) :: grid_func='linear'
-  character (len=labellen) ::fft_switch='fftpack'
+  character (len=labellen) :: fft_switch='fftpack'
+  character (len=1) :: comment_char='#'
   character (len=1) :: slice_position='p'
 !
 !  kinematic flows (computed by nohydro)
