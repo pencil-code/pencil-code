@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.298 2007-06-10 03:53:39 brandenb Exp $
+### $Id: Makefile.src,v 1.299 2007-06-11 20:01:33 boson9 Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -555,6 +555,16 @@ LD_FFTW2=
 #FFLAGS=-O2 #(sepeli)
 #CFLAGS=-DFUNDERSC=1 -O3 #(sepeli)
 #LD_MPI= #(sepeli)
+##
+##
+## Uppmax cluster - (Uppsala)
+## www.uppmax.uu.se/systems/ra
+#FC=mpif90 #(is[0-9]+)
+#CC=mpicc #(is[0-9]+)
+#FFLAGS=#(is[0-9]+)
+#CFLAGS=-DFUNDERSC=1 #(is[0-9]+)
+#LD_MPI=#(is[0-9]+)
+
 ##
 ##
 ## DCSC cluster - (Copenhagen, not Odense!)
