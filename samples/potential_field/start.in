@@ -2,7 +2,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.3 2006-10-15 05:44:25 dobler Exp $',
+  cvsid='$Id: start.in,v 1.4 2007-06-11 22:22:22 dobler Exp $',
   xyz0  = -3.14159, -3.14159, -0.5
   xyz1  =  3.14159,  3.14159,  0.5
   lperi =  T ,   T ,   F
@@ -31,6 +31,7 @@
 ! Note that, for nx=ny=nz=32, the Nyqist wave numbers are
 ! pi/dx = pi/dy = 16,  pi/dz = 97.4
 !
+  amplaa=1.e-5
 !  initaa='Ax=cosysinz', ky_aa= 1., kz_aa=3.6731944
 !  initaa='Ax=cosysinz', ky_aa= 1., kz_aa=9.6316846
 !  initaa='Ax=cosysinz', ky_aa= 1., kz_aa=15.834105
