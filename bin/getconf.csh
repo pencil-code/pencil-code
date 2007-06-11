@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.192 2007-06-08 06:34:52 dobler Exp $
+# $Id: getconf.csh,v 1.193 2007-06-11 18:20:57 jonhagg Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -71,7 +71,7 @@ if (! -e "NEVERLOCK") touch LOCK
 #set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile`
 set mpi = `fgrep -c 'mpicomm_init: MPICOMM neighbors' src/start.x`
 # Determine number of CPUS
-set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
+set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 echo "$ncpus CPUs"
 
 # Location of executables and other default settings; can be overwritten
