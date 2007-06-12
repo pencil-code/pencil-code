@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.21 2007-02-15 10:17:10 ajohan Exp $
+; $Id: pc_read_ts.pro,v 1.22 2007-06-12 13:02:09 brandenb Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2007-02-15 10:17:10 $
-;  $Revision: 1.21 $
+;  $Date: 2007-06-12 13:02:09 $
+;  $Revision: 1.22 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -26,7 +26,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Split header line into the individual variable names.
 ;
-  line = strmid(hline,strpos(hline,'#')+1)
+  line  = strmid(hline,strpos(hline,'#')+1)
+  line2 = strmid(hline,strpos(hline,'%')+1)
+  if strlen(line2) lt strlen(line) then line=line2
   labels = ['']
   ;
   ; strsplit() is not available in IDL prior to 5.3 (and str_sep() was
@@ -159,6 +161,8 @@ COMPILE_OPT IDL2,HIDDEN
       readf, file, line
       line = strtrim(line)
       hashpos = strpos(line,'#')
+      hashpos2 = strpos(line,'%')
+      if hashpos2 gt hashpos then hashpos=hashpos2
       ;; identify header line as / *#--/
     endrep until ((hashpos ge 0) and (strmid(line,hashpos+1,2) eq '--'))
     point_lun,-file,fileposition

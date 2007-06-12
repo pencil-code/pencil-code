@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;;  $Date: 2004-07-20 08:47:46 $
-;;;  $Revision: 1.7 $
+;;;  $Date: 2007-06-12 13:02:40 $
+;;;  $Revision: 1.8 $
 ;;;  Description:
 ;;;   Read time series data from data/time_series.dat into the
 ;;;   structure `ts' and plot urms(t) and brms(t) (if available).
@@ -18,7 +18,9 @@ function parse_tsheader, hline
 ;
 ;  Split header line into the individual variable names.
 ;
-  line = strmid(hline,strpos(hline,'#')+1)
+  line  = strmid(hline,strpos(hline,'#')+1)
+  line2 = strmid(hline,strpos(hline,'%')+1)
+  if strlen(line2) lt strlen(line) then line=line2 
   labels = ['']
   ;
   ; strsplit() is not available in IDL prior to 5.3 (and str_sep() was
@@ -69,7 +71,9 @@ line = ''
 repeat begin
   readf, 1, line
   line = strtrim(line)
-  hashpos = strpos(line,'#')
+  hashpos  = strpos(line,'#')
+  hashpos2 = strpos(line,'%')
+  if hashpos2 gt hashpos then hashpos=hashpos2 
   ;; identify header line as / *#--/
 endrep until ((hashpos ge 0) and (strmid(line,hashpos+1,2) eq '--'))
 labels = parse_tsheader(line)
