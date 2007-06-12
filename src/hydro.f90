@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.348 2007-05-24 06:24:15 ajohan Exp $
+! $Id: hydro.f90,v 1.349 2007-06-12 04:27:46 joishi Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -164,6 +164,9 @@ module Hydro
   integer :: idiag_uxmxy=0      ! DIAG_DOC: 
   integer :: idiag_uymxy=0      ! DIAG_DOC: 
   integer :: idiag_uzmxy=0      ! DIAG_DOC: 
+  integer :: idiag_uxmxz=0      ! DIAG_DOC: $\left< u_x \right>_{y}$
+  integer :: idiag_uymxz=0      ! DIAG_DOC: $\left< u_y \right>_{y}$
+  integer :: idiag_uzmxz=0      ! DIAG_DOC: $\left< u_z \right>_{y}$
   integer :: idiag_uxmx=0       ! DIAG_DOC: 
   integer :: idiag_uymx=0       ! DIAG_DOC: 
   integer :: idiag_uzmx=0       ! DIAG_DOC: 
@@ -289,7 +292,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.348 2007-05-24 06:24:15 ajohan Exp $")
+           "$Id: hydro.f90,v 1.349 2007-06-12 04:27:46 joishi Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1336,13 +1339,26 @@ module Hydro
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then
-        call phisum_mn_name_rz(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmphi)
-        call phisum_mn_name_rz(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmphi)
-        call phisum_mn_name_rz(p%uu(:,3),idiag_uzmphi)
-        call phisum_mn_name_rz(p%u2,idiag_u2mphi)
-        call phisum_mn_name_rz(p%oo(:,3),idiag_ozmphi)
+        if (idiag_urmphi/=0) &
+            call phisum_mn_name_rz(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmphi)
+        if (idiag_upmphi/=0) &
+            call phisum_mn_name_rz(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmphi)
+        if (idiag_uzmphi/=0) &
+            call phisum_mn_name_rz(p%uu(:,3),idiag_uzmphi)
+        if (idiag_u2mphi/=0) &
+            call phisum_mn_name_rz(p%u2,idiag_u2mphi)
+        if (idiag_ozmphi/=0) &
+            call phisum_mn_name_rz(p%oo(:,3),idiag_ozmphi)
         if (idiag_oumphi/=0) call phisum_mn_name_rz(p%ou,idiag_oumphi)
-        
+!
+! y-averages
+!
+        if (idiag_uxmxz/=0) &
+            call ysum_mn_name_xz(p%uu(:,1),idiag_uxmxz)
+        if (idiag_uymxz/=0) &
+            call ysum_mn_name_xz(p%uu(:,2),idiag_uymxz)
+        if (idiag_uzmxz/=0) &
+            call ysum_mn_name_xz(p%uu(:,3),idiag_uzmxz)
       endif
 !
     endsubroutine duu_dt
@@ -1890,7 +1906,7 @@ module Hydro
       use Cdata
       use Sub
 !
-      integer :: iname,inamez,inamey,inamex,ixy,irz,inamer
+      integer :: iname,inamez,inamey,inamex,ixy,ixz,irz,inamer
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -1961,6 +1977,9 @@ module Hydro
         idiag_uxfampm=0
         idiag_uyfampm=0
         idiag_uzfampm=0
+        idiag_uxmxz=0
+        idiag_uymxz=0
+        idiag_uzmxz=0
         !
         idiag_ruxm=0
         idiag_ruym=0
@@ -2154,6 +2173,14 @@ module Hydro
             'uyuzmx',idiag_uyuzmx)
       enddo
 !
+!  check for those quantities for which we want y-averages
+!
+      do ixz=1,nnamexz
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uxmxz',idiag_uxmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uymxz',idiag_uymxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uzmxz',idiag_uzmxz)
+      enddo
+!
 !  check for those quantities for which we want z-averages
 !
       do ixy=1,nnamexy
@@ -2253,6 +2280,9 @@ module Hydro
         write(3,*) 'i_uxmxy=',idiag_uxmxy
         write(3,*) 'i_uymxy=',idiag_uymxy
         write(3,*) 'i_uzmxy=',idiag_uzmxy
+        write(3,*) 'i_uxmxz=',idiag_uxmxz
+        write(3,*) 'i_uymxz=',idiag_uymxz
+        write(3,*) 'i_uzmxz=',idiag_uzmxz
         write(3,*) 'i_u2mz=',idiag_u2mz
         write(3,*) 'i_urmphi=',idiag_urmphi
         write(3,*) 'i_upmphi=',idiag_upmphi

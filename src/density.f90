@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.328 2007-06-01 12:09:18 theine Exp $
+! $Id: density.f90,v 1.329 2007-06-12 04:27:46 joishi Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -88,7 +88,7 @@ module Density
   integer :: idiag_rhomin=0,idiag_rhomax=0,idiag_uglnrhom=0
   integer :: idiag_lnrhomphi=0,idiag_rhomphi=0,idiag_dtd=0
   integer :: idiag_rhomz=0, idiag_rhomy=0, idiag_rhomx=0
-  integer :: idiag_rhomxy=0, idiag_rhomr=0
+  integer :: idiag_rhomxy=0, idiag_rhomxz=0, idiag_rhomr=0
   integer :: idiag_totmass=0
 
   contains
@@ -115,7 +115,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.328 2007-06-01 12:09:18 theine Exp $")
+           "$Id: density.f90,v 1.329 2007-06-12 04:27:46 joishi Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1065,7 +1065,8 @@ module Density
 !
       if (idiag_rhom/=0 .or. idiag_rhomz/=0 .or. idiag_rhomy/=0 .or. &
            idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rhomin/=0 .or. &
-           idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_totmass/=0) &
+           idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxy/=0 .or. &
+           idiag_totmass/=0) &
            lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
       if (idiag_uglnrhom/=0) lpenc_diagnos(i_uglnrho)=.true.
@@ -1378,8 +1379,9 @@ module Density
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then
-        call phisum_mn_name_rz(p%lnrho,idiag_lnrhomphi)
-        call phisum_mn_name_rz(p%rho,idiag_rhomphi)
+        if (idiag_lnrhomphi/=0) call phisum_mn_name_rz(p%lnrho,idiag_lnrhomphi)
+        if (idiag_rhomphi/=0)   call phisum_mn_name_rz(p%rho,idiag_rhomphi)
+        if (idiag_rhomxz/=0)    call ysum_mn_name_xz(p%rho,idiag_rhomxz)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -1468,7 +1470,7 @@ module Density
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname, inamex, inamey, inamez, inamexy, irz, inamer
+      integer :: iname, inamex, inamey, inamez, inamexy, inamexz, irz, inamer
       logical :: lwr
 !
       lwr = .false.
@@ -1483,6 +1485,7 @@ module Density
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0 
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0
+        idiag_rhomxz=0
         cdiffrho=0.
         diffrho=0.
       endif
@@ -1527,6 +1530,13 @@ module Density
 !
 !  check for those quantities for which we want z-averages
 !
+      do inamexz=1,nnamexz
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'rhomxz',idiag_rhomxz)
+      enddo
+
+!
+!  check for those quantities for which we want z-averages
+!
       do inamexy=1,nnamexy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhomxy',idiag_rhomxy)
       enddo
@@ -1551,6 +1561,7 @@ module Density
         write(3,*) 'i_rhomz=',idiag_rhomz
         write(3,*) 'i_rhomy=',idiag_rhomy
         write(3,*) 'i_rhomx=',idiag_rhomx
+        write(3,*) 'i_rhomxz=',idiag_rhomxz
         write(3,*) 'nname=',nname
         write(3,*) 'ilnrho=',ilnrho
         write(3,*) 'i_lnrhomphi=',idiag_lnrhomphi
