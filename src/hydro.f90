@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.349 2007-06-12 04:27:46 joishi Exp $
+! $Id: hydro.f90,v 1.350 2007-06-12 15:08:02 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -151,7 +151,8 @@ module Hydro
   integer :: idiag_uxuymx=0     ! DIAG_DOC: 
   integer :: idiag_uxuzmx=0     ! DIAG_DOC: 
   integer :: idiag_uyuzmx=0     ! DIAG_DOC: 
-  integer :: idiag_uxmz=0       ! DIAG_DOC: 
+  integer :: idiag_uxmz=0       ! DIAG_DOC: $\left< u_x \right>_{x,y}$
+                                ! DIAG_DOC:   \quad(horiz. averaged $x$ velocity)
   integer :: idiag_uymz=0       ! DIAG_DOC: 
   integer :: idiag_uzmz=0       ! DIAG_DOC: 
   integer :: idiag_umx=0        ! DIAG_DOC: 
@@ -292,7 +293,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.349 2007-06-12 04:27:46 joishi Exp $")
+           "$Id: hydro.f90,v 1.350 2007-06-12 15:08:02 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
