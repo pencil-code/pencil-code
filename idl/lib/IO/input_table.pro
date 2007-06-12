@@ -4,8 +4,8 @@
 
 ;;;
 ;;; Author:  wd (dobler@uni-sw.gwdg.de)
-;;; $Date: 2005-04-13 19:34:37 $
-;;; $Revision: 1.11 $
+;;; $Date: 2007-06-12 13:19:08 $
+;;; $Revision: 1.12 $
 ;;;
 ;;; 21/08/2003 - ajwm (A.J.Mee@ncl.ac.uk) 
 ;;;   Added STOP_AT and resume with FILEPOSITION behaviour to handle
@@ -64,6 +64,7 @@ function input_table, filename, $
     message, 'input_table: wrong number of arguments'
   endif
   if (n_elements(cchar)  eq 0) then cchar  = '#'
+  if (n_elements(cchar2) eq 0) then cchar2 = '%'
   if (n_elements(double) eq 0) then double = 0
   if (n_elements(verb)   eq 0) then verb   = 0
 
@@ -140,7 +141,7 @@ function input_table, filename, $
           endif
         endif
      endif
-     is_comm = (strmid(line,0,clen) eq cchar)
+     is_comm = (strmid(line,0,clen) eq cchar or strmid(line,0,clen) eq cchar2)
 
     if (not is_comm) then begin
       ;; If this is first data line, determine number of columns
