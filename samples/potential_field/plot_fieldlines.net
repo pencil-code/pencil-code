@@ -1,5 +1,5 @@
 //
-// time: Tue Jun 12 12:01:14 2007
+// time: Tue Jun 12 21:24:08 2007
 //
 // version: 3.2.0 (format), 4.4.0 (DX)
 //
@@ -9,7 +9,7 @@
 include "StreamlineBi.net"
 //
 // MODULE main
-// workspace: width = 624, height = 729
+// workspace: width = 668, height = 729
 // layout: snap = 0, width = 50, height = 50, align = NN
 //
 macro main(
@@ -29,16 +29,40 @@ main_Import_1_out_1 =
     main_Import_1_in_6
     ) [instance: 1, cache: 1];
     // 
-    // node Compute[1]: x = 409, y = 75, inputs = 1, label = Compute
-    // input[1]: defaulting = 0, visible = 0, type = 32, value = "20"
-    // expression: value = 20
+    // node Inquire[1]: x = 359, y = 62, inputs = 3, label = Inquire
+    // input[2]: defaulting = 0, visible = 1, type = 32, value = "grid counts"
+    // input[3]: defaulting = 0, visible = 1, type = 32, value = "positions"
+    //
+main_Inquire_1_out_1 = 
+    Inquire(
+    main_Import_1_out_1,
+    main_Inquire_1_in_2,
+    main_Inquire_1_in_3
+    ) [instance: 1, cache: 1];
+    // 
+    // node Compute[5]: x = 517, y = 64, inputs = 2, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "$0.z"
+    // expression: value = dims.z
+    // name[2]: value = dims
+    //
+main_Compute_5_out_1 = 
+    Compute(
+    main_Compute_5_in_1,
+    main_Inquire_1_out_1
+    ) [instance: 5, cache: 1];
+    // 
+    // node Compute[1]: x = 412, y = 156, inputs = 2, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "$0/3 - 1"
+    // expression: value = nz/3 - 1
+    // name[2]: value = nz
     //
 main_Compute_1_out_1 = 
     Compute(
-    main_Compute_1_in_1
+    main_Compute_1_in_1,
+    main_Compute_5_out_1
     ) [instance: 1, cache: 1];
     // 
-    // node Slab[1]: x = 382, y = 169, inputs = 4, label = Slab
+    // node Slab[1]: x = 385, y = 250, inputs = 4, label = Slab
     // input[2]: defaulting = 0, visible = 1, type = 32, value = "z"
     // input[4]: defaulting = 1, visible = 1, type = 1, value = NULL
     //
@@ -50,7 +74,7 @@ main_Slab_1_out_1 =
     main_Slab_1_in_4
     ) [instance: 1, cache: 1];
     // 
-    // node Compute[2]: x = 475, y = 324, inputs = 2, label = Compute
+    // node Compute[2]: x = 478, y = 405, inputs = 2, label = Compute
     // input[1]: defaulting = 0, visible = 0, type = 32, value = "$0.z"
     // expression: value = bb.z
     // name[2]: value = bb
@@ -61,16 +85,18 @@ main_Compute_2_out_1 =
     main_Slab_1_out_1
     ) [instance: 2, cache: 1];
     // 
-    // node Compute[4]: x = 544, y = 73, inputs = 1, label = Compute
-    // input[1]: defaulting = 0, visible = 0, type = 32, value = "10"
-    // expression: value = 10
+    // node Compute[4]: x = 563, y = 157, inputs = 2, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "2*$0/3"
+    // expression: value = 2*nz/3
+    // name[2]: value = nz
     //
 main_Compute_4_out_1 = 
     Compute(
-    main_Compute_4_in_1
+    main_Compute_4_in_1,
+    main_Compute_5_out_1
     ) [instance: 4, cache: 1];
     // 
-    // node Slab[2]: x = 526, y = 166, inputs = 4, label = Slab
+    // node Slab[2]: x = 529, y = 247, inputs = 4, label = Slab
     // input[2]: defaulting = 0, visible = 1, type = 32, value = "z"
     // input[4]: defaulting = 1, visible = 1, type = 1, value = NULL
     //
@@ -82,7 +108,7 @@ main_Slab_2_out_1 =
     main_Slab_2_in_4
     ) [instance: 2, cache: 1];
     // 
-    // node Compute[3]: x = 555, y = 324, inputs = 2, label = Compute
+    // node Compute[3]: x = 558, y = 405, inputs = 2, label = Compute
     // input[1]: defaulting = 0, visible = 0, type = 32, value = "$0.z"
     // expression: value = bb.z
     // name[2]: value = bb
@@ -93,7 +119,7 @@ main_Compute_3_out_1 =
     main_Slab_2_out_1
     ) [instance: 3, cache: 1];
     // 
-    // node Collect[4]: x = 519, y = 422, inputs = 2, label = Collect
+    // node Collect[4]: x = 522, y = 503, inputs = 2, label = Collect
     //
 main_Collect_4_out_1 = 
     Collect(
@@ -101,8 +127,8 @@ main_Collect_4_out_1 =
     main_Compute_3_out_1
     ) [instance: 4, cache: 1];
     // 
-    // node AutoColor[1]: x = 483, y = 511, inputs = 10, label = AutoColor
-    // input[2]: defaulting = 0, visible = 0, type = 5, value = 0.75
+    // node AutoColor[1]: x = 486, y = 592, inputs = 10, label = AutoColor
+    // input[2]: defaulting = 0, visible = 0, type = 5, value = 1.0
     //
 main_AutoColor_1_out_1,
 main_AutoColor_1_out_2 = 
@@ -146,7 +172,7 @@ main_Sample_3_out_1 =
     ) [instance: 3, cache: 1];
     // 
     // node StreamlineBi[1]: x = 209, y = 399, inputs = 7, label = StreamlineBi
-    // input[4]: defaulting = 0, visible = 1, type = 5, value = 50000.0
+    // input[4]: defaulting = 0, visible = 1, type = 5, value = 100000.0
     // input[7]: defaulting = 1, visible = 1, type = 29, value = 2
     //
 main_StreamlineBi_1_out_1 = 
@@ -171,25 +197,44 @@ main_Tube_1_out_1 =
     main_Tube_1_in_4
     ) [instance: 1, cache: 1];
     // 
+    // node Color[1]: x = 389, y = 462, inputs = 5, label = Color
+    // input[2]: defaulting = 0, visible = 1, type = 32, value = "black"
+    //
+main_Color_1_out_1 = 
+    Color(
+    main_Tube_1_out_1,
+    main_Color_1_in_2,
+    main_Color_1_in_3,
+    main_Color_1_in_4,
+    main_Color_1_in_5
+    ) [instance: 1, cache: 1];
+    // 
     // node Collect[1]: x = 326, y = 558, inputs = 3, label = Collect
     //
 main_Collect_1_out_1 = 
     Collect(
     main_ShowBox_1_out_1,
-    main_Tube_1_out_1,
+    main_Color_1_out_1,
     main_AutoColor_1_out_1
     ) [instance: 1, cache: 1];
+    // 
+    // node Echo[2]: x = 620, y = 44, inputs = 2, label = Echo
+    //
+    Echo(
+    main_Compute_4_out_1,
+    main_Echo_2_in_2
+    ) [instance: 2, cache: 1];
     // 
     // node Image[1]: x = 334, y = 667, inputs = 49, label = Image
     // input[1]: defaulting = 0, visible = 0, type = 67108863, value = "Image_1"
     // input[4]: defaulting = 0, visible = 0, type = 1, value = 1
-    // input[5]: defaulting = 0, visible = 0, type = 8, value = [-1.06096e-05 -0.785928 -1.18548]
-    // input[6]: defaulting = 0, visible = 0, type = 8, value = [10.5732 0.834442 0.659346]
-    // input[7]: defaulting = 1, visible = 0, type = 5, value = 7.90148
+    // input[5]: defaulting = 0, visible = 0, type = 8, value = [-1.0848e-05 -1.0848e-05 1.07288e-06]
+    // input[6]: defaulting = 0, visible = 0, type = 8, value = [20.0956 4.17937 3.97463]
+    // input[7]: defaulting = 1, visible = 0, type = 5, value = 8.72729
     // input[8]: defaulting = 0, visible = 0, type = 1, value = 760
-    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.637
-    // input[10]: defaulting = 0, visible = 0, type = 8, value = [-0.160229 -0.0750412 0.984223]
-    // input[11]: defaulting = 0, visible = 0, type = 5, value = 40.0
+    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.818
+    // input[10]: defaulting = 0, visible = 0, type = 8, value = [-0.190735 -0.0163145 0.981506]
+    // input[11]: defaulting = 0, visible = 0, type = 5, value = 23.5788
     // input[12]: defaulting = 0, visible = 0, type = 1, value = 1
     // input[14]: defaulting = 0, visible = 0, type = 1, value = 1
     // input[15]: defaulting = 1, visible = 0, type = 32, value = "none"
@@ -197,10 +242,12 @@ main_Collect_1_out_1 =
     // input[17]: defaulting = 1, visible = 0, type = 1, value = 1
     // input[18]: defaulting = 1, visible = 0, type = 1, value = 1
     // input[19]: defaulting = 0, visible = 0, type = 1, value = 0
-    // input[29]: defaulting = 1, visible = 0, type = 3, value = 0
+    // input[29]: defaulting = 0, visible = 0, type = 3, value = 1
+    // input[37]: defaulting = 0, visible = 0, type = 16777248, value = {"white", "grey5", "yellow", "white"}
+    // input[38]: defaulting = 0, visible = 0, type = 16777248, value = {"background","grid","ticks","labels"}
     // input[41]: defaulting = 0, visible = 0, type = 32, value = "rotate"
     // depth: value = 24
-    // window: position = (0.5075,0.4767), size = 0.4838x0.4383
+    // window: position = (0.3506,0.3483), size = 0.4838x0.5525
     // internal caching: 1
     //
 main_Image_1_out_1,
@@ -267,14 +314,19 @@ main_Import_1_in_4 = NULL;
 main_Import_1_in_5 = NULL;
 main_Import_1_in_6 = NULL;
 main_Import_1_out_1 = NULL;
-main_Compute_1_in_1 = "20";
+main_Inquire_1_in_2 = "grid counts";
+main_Inquire_1_in_3 = "positions";
+main_Inquire_1_out_1 = NULL;
+main_Compute_5_in_1 = "$0.z";
+main_Compute_5_out_1 = NULL;
+main_Compute_1_in_1 = "$0/3 - 1";
 main_Compute_1_out_1 = NULL;
 main_Slab_1_in_2 = "z";
 main_Slab_1_in_4 = NULL;
 main_Slab_1_out_1 = NULL;
 main_Compute_2_in_1 = "$0.z";
 main_Compute_2_out_1 = NULL;
-main_Compute_4_in_1 = "10";
+main_Compute_4_in_1 = "2*$0/3";
 main_Compute_4_out_1 = NULL;
 main_Slab_2_in_2 = "z";
 main_Slab_2_in_4 = NULL;
@@ -282,7 +334,7 @@ main_Slab_2_out_1 = NULL;
 main_Compute_3_in_1 = "$0.z";
 main_Compute_3_out_1 = NULL;
 main_Collect_4_out_1 = NULL;
-main_AutoColor_1_in_2 = 0.75;
+main_AutoColor_1_in_2 = 1.0;
 main_AutoColor_1_in_3 = NULL;
 main_AutoColor_1_in_4 = NULL;
 main_AutoColor_1_in_5 = NULL;
@@ -307,7 +359,7 @@ main_Integer_3_in_11 = NULL;
 main_Integer_3_out_1 = 260 ;
 main_Sample_3_out_1 = NULL;
 main_StreamlineBi_1_in_3 = NULL;
-main_StreamlineBi_1_in_4 = 50000.0;
+main_StreamlineBi_1_in_4 = 100000.0;
 main_StreamlineBi_1_in_5 = NULL;
 main_StreamlineBi_1_in_6 = NULL;
 main_StreamlineBi_1_in_7 = NULL;
@@ -316,7 +368,13 @@ main_Tube_1_in_2 = 0.02;
 main_Tube_1_in_3 = NULL;
 main_Tube_1_in_4 = NULL;
 main_Tube_1_out_1 = NULL;
+main_Color_1_in_2 = "black";
+main_Color_1_in_3 = NULL;
+main_Color_1_in_4 = NULL;
+main_Color_1_in_5 = NULL;
+main_Color_1_out_1 = NULL;
 main_Collect_1_out_1 = NULL;
+main_Echo_2_in_2 = NULL;
 macro Image(
         id,
         object,
@@ -632,13 +690,13 @@ macro Image(
 main_Image_1_in_1 = "Image_1";
 main_Image_1_in_3 = "X24,,";
 main_Image_1_in_4 = 1;
-main_Image_1_in_5 = [-1.06096e-05 -0.785928 -1.18548];
-main_Image_1_in_6 = [10.5732 0.834442 0.659346];
+main_Image_1_in_5 = [-1.0848e-05 -1.0848e-05 1.07288e-06];
+main_Image_1_in_6 = [20.0956 4.17937 3.97463];
 main_Image_1_in_7 = NULL;
 main_Image_1_in_8 = 760;
-main_Image_1_in_9 = 0.637;
-main_Image_1_in_10 = [-0.160229 -0.0750412 0.984223];
-main_Image_1_in_11 = 40.0;
+main_Image_1_in_9 = 0.818;
+main_Image_1_in_10 = [-0.190735 -0.0163145 0.981506];
+main_Image_1_in_11 = 23.5788;
 main_Image_1_in_12 = 1;
 main_Image_1_in_13 = NULL;
 main_Image_1_in_14 = 1;
@@ -655,7 +713,7 @@ main_Image_1_in_25 = NULL;
 main_Image_1_in_26 = NULL;
 main_Image_1_in_27 = NULL;
 main_Image_1_in_28 = NULL;
-main_Image_1_in_29 = NULL;
+main_Image_1_in_29 = 1;
 main_Image_1_in_30 = NULL;
 main_Image_1_in_31 = NULL;
 main_Image_1_in_32 = NULL;
@@ -663,8 +721,8 @@ main_Image_1_in_33 = NULL;
 main_Image_1_in_34 = NULL;
 main_Image_1_in_35 = NULL;
 main_Image_1_in_36 = NULL;
-main_Image_1_in_37 = NULL;
-main_Image_1_in_38 = NULL;
+main_Image_1_in_37 = {"white", "grey5", "yellow", "white"};
+main_Image_1_in_38 = {"background","grid","ticks","labels"};
 main_Image_1_in_39 = NULL;
 main_Image_1_in_40 = NULL;
 main_Image_1_in_41 = "rotate";
