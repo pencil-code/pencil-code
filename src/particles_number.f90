@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.24 2007-06-05 09:03:52 ajohan Exp $
+! $Id: particles_number.f90,v 1.25 2007-06-15 06:41:37 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -26,7 +26,7 @@ module Particles_number
   logical :: lfragmentation_par=.true.
   character (len=labellen), dimension(ninit) :: initnptilde='nothing'
 
-  integer :: idiag_nptm=0, idiag_dvp22m=0, idiag_dvp22mwcdot=0
+  integer :: idiag_nptm=0, idiag_dvp22m=0
   integer :: idiag_dtfragp=0
 
   namelist /particles_number_init_pars/ &
@@ -54,7 +54,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.24 2007-06-05 09:03:52 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.25 2007-06-15 06:41:37 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -159,8 +159,8 @@ module Particles_number
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx) :: dt1_fragmentation
-      real :: deltavp, sigma_jk, cdot
-      integer :: j, k, l
+      real :: deltavp, sigma_jk, cdot, deltavp_sum
+      integer :: j, k, l, ncoll
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, fp
@@ -182,6 +182,10 @@ module Particles_number
 !
         if (npar_imn(imn)/=0) then
           do l=l1,l2
+!  Need to count collisions for diagnostics.
+            if (ldiagnos) then
+              deltavp_sum=0.0; ncoll=0
+            endif
 !  Get index number of shepherd particle at grid point.
             k=kshepherd(l-nghost)
 !  Continue only if there is actually a shepherd particle.
@@ -242,11 +246,10 @@ module Particles_number
 !                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops* &
 !                        (fp(j,iap)**3+fp(k,iap)**3)*cdot
 !                  endif
-!  Collision diagnostics.
+!  Need to count collisions for diagnostics.
                   if (ldiagnos) then
-                    if (idiag_dvp22mwcdot/=0) &
-                        call sum_weighted_name((/deltavp/),(/cdot/), &
-                        idiag_dvp22mwcdot)
+                    deltavp_sum=deltavp_sum+deltavp
+                    ncoll=ncoll+1
                   endif
                 enddo
 !  Subgrid model of collisions within a superparticle.
@@ -265,6 +268,11 @@ module Particles_number
                     df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
                         p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops*fp(k,iap)**3*cdot
                   endif
+!  Need to count collisions for diagnostics.
+                  if (ldiagnos) then
+                    deltavp_sum=deltavp_sum+deltavp
+                    ncoll=ncoll+1
+                  endif
 !  Time-step contribution
                   if (lfirst.and.ldt) then
                     dt1_fragmentation(l-nghost) = dt1_fragmentation(l-nghost) +&
@@ -278,8 +286,11 @@ module Particles_number
             endif
 !
             if (ldiagnos) then
-              if (idiag_dvp22m/=0) call sum_par_name_nw((/deltavp/),idiag_dvp22m)
-            endif ! ldiagnos
+!  Average collision speed per particle, not per collision.
+              if (idiag_dvp22m/=0 .and. ncoll>=1) &
+                  call sum_weighted_name((/ deltavp_sum/ncoll /), &
+                                         (/ p%np(l-nghost) /),idiag_dvp22m)
+            endif
           enddo ! l1,l2
 !
           if (lfirst.and.ldt) then
@@ -412,7 +423,7 @@ module Particles_number
 !  Reset everything in case of reset
 !
       if (lreset) then
-        idiag_nptm=0; idiag_dvp22m=0; idiag_dvp22mwcdot=0
+        idiag_nptm=0; idiag_dvp22m=0
         idiag_dtfragp=0
       endif
 !
@@ -423,7 +434,6 @@ module Particles_number
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'nptm',idiag_nptm)
         call parse_name(iname,cname(iname),cform(iname),'dvp22m',idiag_dvp22m)
-        call parse_name(iname,cname(iname),cform(iname),'dvp22mwcdot',idiag_dvp22mwcdot)
         call parse_name(iname,cname(iname),cform(iname),'dtfragp',idiag_dtfragp)
       enddo
 !
