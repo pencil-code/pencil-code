@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.25 2007-06-15 06:41:37 ajohan Exp $
+! $Id: particles_number.f90,v 1.26 2007-06-15 06:51:14 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -54,7 +54,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.25 2007-06-15 06:41:37 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.26 2007-06-15 06:51:14 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -274,10 +274,10 @@ module Particles_number
                     ncoll=ncoll+1
                   endif
 !  Time-step contribution
-                  if (lfirst.and.ldt) then
-                    dt1_fragmentation(l-nghost) = dt1_fragmentation(l-nghost) +&
-                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops*fp(k,iap)**3*cdot
-                  endif
+!                  if (lfirst.and.ldt) then
+!                    dt1_fragmentation(l-nghost) = dt1_fragmentation(l-nghost) +&
+!                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops*fp(k,iap)**3*cdot
+!                  endif
                 endif  ! subgrid model
 !
                 k=kneighbour(k)
