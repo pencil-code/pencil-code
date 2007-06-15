@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.300 2007-06-15 04:23:49 joishi Exp $
+### $Id: Makefile.src,v 1.301 2007-06-15 04:27:23 joishi Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -614,10 +614,9 @@ LD_FFTW2=
 ## Power Macintosh
 ##
 #FC=g95
-#FC=gfortran
 #F77=$(FC)
 #FFLAGS=-O3
-#CFLAGS=-DFUNDERSC=1
+#CFLAGS=-DFUNDERSC=2
 #LD_MPI=
 #FC=xlf90 #(Nils)
 #F77=xlf  #(Nils)
