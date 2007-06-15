@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.23 2007-06-02 16:01:17 ajohan Exp $
+! $Id: particles_radius.f90,v 1.24 2007-06-15 06:42:55 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -35,7 +35,7 @@ module Particles_radius
       lsweepup_par, tstart_sweepup_par, cdtps
 
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
-  integer :: idiag_dvp12m=0, idiag_dvp12mwcdot=0, idiag_dtsweepp=0
+  integer :: idiag_dvp12m=0, idiag_dtsweepp=0
 
   contains
 
@@ -54,7 +54,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.23 2007-06-02 16:01:17 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.24 2007-06-15 06:42:55 ajohan Exp $")
 !
 !  Index for particle radius.
 !
@@ -130,8 +130,6 @@ module Particles_radius
       lpenc_requested(i_uu)=.true.
       lpenc_requested(i_rho)=.true.
       lpenc_requested(i_cc)=.true.
-!
-      if (idiag_dvp12mwcdot/=0) lpenc_diagnos(i_cc)=.true.
 !
     endsubroutine pencil_criteria_par_radius
 !***********************************************************************
@@ -215,10 +213,6 @@ module Particles_radius
 !
             if (ldiagnos) then
               if (idiag_dvp12m/=0) call sum_par_name((/deltavp/),idiag_dvp12m)
-              if (idiag_dvp12mwcdot/=0) &
-                  call sum_weighted_name((/deltavp/), &
-                  (/p%cc(ix0-nghost)*np_tilde*fp(k,iap)**2*deltavp/), &
-                  idiag_dvp12mwcdot)
             endif
           enddo
         endif
@@ -333,7 +327,7 @@ module Particles_radius
 !
       if (lreset) then
         idiag_apm=0; idiag_ap2m=0; idiag_apmin=0; idiag_apmax=0
-        idiag_dvp12m=0; idiag_dvp12mwcdot=0; idiag_dtsweepp=0
+        idiag_dvp12m=0; idiag_dtsweepp=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -346,7 +340,6 @@ module Particles_radius
         call parse_name(iname,cname(iname),cform(iname),'apmin',idiag_apmin)
         call parse_name(iname,cname(iname),cform(iname),'apmax',idiag_apmax)
         call parse_name(iname,cname(iname),cform(iname),'dvp12m',idiag_dvp12m)
-        call parse_name(iname,cname(iname),cform(iname),'dvp12mwcdot',idiag_dvp12mwcdot)
         call parse_name(iname,cname(iname),cform(iname),'dtsweepp',idiag_dtsweepp)
       enddo
 !
