@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.329 2007-06-12 04:27:46 joishi Exp $
+! $Id: density.f90,v 1.330 2007-06-15 04:23:49 joishi Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -115,7 +115,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.329 2007-06-12 04:27:46 joishi Exp $")
+           "$Id: density.f90,v 1.330 2007-06-15 04:23:49 joishi Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -759,6 +759,9 @@ module Density
         call information('init_lnrho',' cylind-poly')
         call cylind_poly(f)
 
+      case('compressive-shwave')
+        ! should be consistent with density 
+        f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
       case default
         !
         !  Catch unknown values

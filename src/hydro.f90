@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.350 2007-06-12 15:08:02 dobler Exp $
+! $Id: hydro.f90,v 1.351 2007-06-15 04:23:49 joishi Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -293,7 +293,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.350 2007-06-12 15:08:02 dobler Exp $")
+           "$Id: hydro.f90,v 1.351 2007-06-15 04:23:49 joishi Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -433,7 +433,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: r,p,tmp,xx,yy,zz,prof
-      real :: kabs,crit
+      real :: kabs,crit,eta_sigma
       integer :: j,i,l
 !
 !  inituu corresponds to different initializations of uu (called from start).
@@ -688,6 +688,15 @@ module Hydro
           f(:,:,:,iux) = -1/(2*Omega)*cs20*beta_glnrho_scaled(2)
           f(:,:,:,iuy) = 1/(2*Omega)*cs20*beta_glnrho_scaled(1)
 
+        case('compressive-shwave')
+! compressive (non-vortical) shear wave of Johnson & Gammie (2005a)
+          call coswave_phase(f,iux,ampl_ux,kx_uu,ky_uu,kz_uu,phase_ux)
+          call coswave_phase(f,iuy,ampl_uy,kx_uu,ky_uu,kz_uu,phase_uy)
+          eta_sigma = (2. - qshear)*Omega
+          do m=m1,m2; do n=n1,n2
+            f(l1:l2,m,n,ilnrho) = -kx_uu*ampl_uy*eta_sigma* & 
+                (cos(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) + sin(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)))
+          enddo; enddo
         case default
           !
           !  Catch unknown values
