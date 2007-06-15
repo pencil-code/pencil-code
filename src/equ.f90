@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.359 2007-06-04 13:23:31 theine Exp $
+! $Id: equ.f90,v 1.360 2007-06-15 06:39:44 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -414,7 +414,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.359 2007-06-04 13:23:31 theine Exp $")
+           "$Id: equ.f90,v 1.360 2007-06-15 06:39:44 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -1180,7 +1180,7 @@ f_loop:   do iv=1,mvar
       do i=1,mfarray
         call random_number_wrapper(f_other(:,:,:,i))
       enddo
-      fname=0.0
+      fname=0.0; fweight=0.0
       call initialize_pencils(p,penc0)
 !
 !  Calculate reference diagnostics with all diagnostic pencils on
@@ -1196,7 +1196,7 @@ f_loop:   do iv=1,mvar
         do i=1,mfarray
           call random_number_wrapper(f_other(:,:,:,i))
         enddo
-        fname=0.0
+        fname=0.0; fweight=0.0
         call initialize_pencils(p,penc0)
 !
 !  Calculate diagnostics with one pencil swapped
@@ -1250,6 +1250,8 @@ f_loop:   do iv=1,mvar
       lout=.false.
       lfirst=.false.
       df=0.0
+      fweight=0.0
+      fname=0.0
       deallocate(df_ref)
       deallocate(fname_ref)
       deallocate(f_other)
