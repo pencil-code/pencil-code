@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.425 2007-06-01 04:23:15 brandenb Exp $
+! $Id: magnetic.f90,v 1.426 2007-06-16 19:10:28 theine Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -195,6 +195,7 @@ module Magnetic
   integer :: idiag_jfm=0,idiag_brbpmr=0,idiag_vA2m=0
   integer :: idiag_b2mr=0,idiag_brmr=0,idiag_bpmr=0,idiag_bzmr=0
   integer :: idiag_armr=0,idiag_apmr=0,idiag_azmr=0
+  integer :: idiag_bxmx=0,idiag_bymy=0
 
   contains
 
@@ -236,7 +237,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.425 2007-06-01 04:23:15 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.426 2007-06-16 19:10:28 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1743,6 +1744,8 @@ module Magnetic
              call phizsum_mn_name_r(p%aa(:,1)*p%phix+p%aa(:,2)*p%phiy,idiag_apmr)
         if (idiag_azmr/=0)   &
              call phizsum_mn_name_r(p%aa(:,3),idiag_azmr)
+        if (idiag_bxmx/=0) call yzsum_mn_name_x(p%bb(:,1),idiag_bxmx)
+        if (idiag_bymy/=0) call xzsum_mn_name_y(p%bb(:,2),idiag_bymy)
 
 
       endif
@@ -2286,7 +2289,7 @@ module Magnetic
       use Cdata
       use Sub
 !
-      integer :: iname,inamez,ixy,ixz,irz,inamer
+      integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -2325,6 +2328,7 @@ module Magnetic
         idiag_jfm=0; idiag_brbpmr=0; idiag_va2m=0
         idiag_b2mr=0; idiag_brmr=0; idiag_bpmr=0; idiag_bzmr=0
         idiag_armr=0; idiag_apmr=0; idiag_azmr=0
+        idiag_bxmx=0; idiag_bymy=0
 !
       endif
 !
@@ -2407,6 +2411,12 @@ module Magnetic
 !
 !  check for those quantities for which we want xy-averages
 !
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bxmx',idiag_bxmx)
+      enddo
+      do inamey=1,nnamey
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'bymy',idiag_bymy)
+      enddo
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxmz',idiag_bxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bymz',idiag_bymz)
@@ -2562,6 +2572,8 @@ module Magnetic
         write(3,*) 'i_Bresrms=',idiag_Bresrms
         write(3,*) 'i_Rmrms=',idiag_Rmrms
         write(3,*) 'i_jfm=',idiag_jfm
+        write(3,*) 'i_bxmx=',idiag_bxmx
+        write(3,*) 'i_bymy=',idiag_bymy
         write(3,*) 'nname=',nname
         write(3,*) 'nnamexy=',nnamexy
         write(3,*) 'nnamexz=',nnamexz
