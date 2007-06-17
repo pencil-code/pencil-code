@@ -1,0 +1,14 @@
+#!/bin/csh
+#$Id: move-VAR-to-data1,v 1.1 2007-06-17 17:25:29 boson9 Exp $
+#
+#  Example:
+#     copy-var-to-var ../hydro256e
+#  Copies all var.dat files from current directory to var.dat in
+#  another run directory.
+#  Used for restarting in a different directory.
+
+set procdirs  =  `ls data | grep proc `
+foreach proc ($procdirs)
+  echo "mv data/$proc/VAR* data1/$proc"
+  mv data/$proc/VAR* data1/$proc
+end

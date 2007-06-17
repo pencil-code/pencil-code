@@ -1,0 +1,145 @@
+#!/bin/csh
+#
+#  $Id: mkdatadir_scratch,v 1.1 2007-06-17 17:25:29 boson9 Exp $
+#
+#  This script generates a link to a data directory
+#  with the same name as the current working directory
+#  but that is located on a data disk. The name of the
+#  desired data disk will be different and different
+#  machine, so you may need to add your particular
+#  machine name below
+#
+#  Note: to make user specific directory options, follow
+#  an example by searching for "$USER".
+#
+echo $cwd >! .tmp
+#
+#  in the following if block one can add more machines
+#  where workspace can be allocated.
+#
+set hn = `hostname`
+echo "we are on" $hn ", the new workspace will be"
+
+if ($hn =~ mhd*.st-and.ac.uk) then
+  set str='s/home/work2/g'
+else if ($hn =~ fend*.dcsc.ku.dk) then
+  set str='s/astro/gpfs1\/astro/g'
+else if (($hn =~ h05*) && ($USER =~ brandenb)) then
+  echo "special entry for Axel"
+  set str='s/afs\/pdc.kth.se\/home\/b/scratch/g'
+else if (($hn =~ fe*) && ($USER =~ brandenb)) then
+  echo "special entry for Axel"
+  set str='s/people\/disk2/wkspace3/g'
+else if ($hn =~ fe*) then
+  set str='s/people\/disk2/wkspace3/g'
+else if ($hn =~ node[0-9]*) then
+  set str='s/clx\/userhpe\/'$USER'/scratch\/'$USER'\/DATA/g'
+else if ($hn =~ sp[0-9]*) then
+  set str='s/sp4\/userhpe/scratch\/DATA/g'
+else if ($hn =~ ns0*) then
+  set str='s/home/data/g'
+else if ($hn =~ ns1*) then
+  set str='s/home/data/g'
+else if ($hn =~ sander*) then
+  set str='s/astro/scratch1\/astro/g'
+else if ($hn =~ nq*.nordita.dk) then
+  #set str='s/home/nq1\/data/g'
+  set str='s/home/data/g'
+else if ($hn =~ nl0) then
+  set str='s/home\/mattias\/pencil-code\/runs/var\/tmp/g'
+else if ($hn =~ nl3) then
+  set str='s/home/scr/g'
+else if (($hn =~ nl6)) then
+  set str='s/home/wkspace2/g'
+  #set str='s/brandenb/brandenb\/storage/g'
+else if (($hn =~ nl11) || ($hn =~ wormhole)) then
+  set str='s/home/home\/data/g'
+else if ($hn =~ tac*) then
+  set str='s/usr\/tac/scratch/g'
+else if ($hn =~ embla) then
+  set str='s/home\/u./work/g'
+else if (($hn =~ giga*) && ($USER =~ n7026413)) then
+  set str='s/home/addon\/space/g'
+else if ($hn =~ giga*) then
+  set str='s/home/work/g'
+else if (($hn =~ gridur) && ($USER =~ nilshau))then
+  echo "special entry for Nils Erland" 
+  echo $cwd/data >! .tmp
+  set str='s/home\/u./mnt\/mldwork2\/work2/g'
+else if ($hn =~ gridur) then
+  set str='s/home\/u./work/g'
+else if ($hn =~ nw17) then
+  set str='s/home/var\/tmp/g'
+else if ($hn =~ p690*) then
+  set str="s@\(/gpfs_wrk/[a-zA-Z0-9]*\)@\1/data@g"
+else if ($hn =~ sepeli*) then
+  set str="s@$WRKDIR@$WRKDIR/data@g"
+else if ($hn =~ nw*) then
+  set str='s/home/data/g'
+else if ($hn =~ fire) then
+  echo $cwd/data >! .tmp
+  set str='s/home\/parallab\/ntnu/work/g'
+else if ($hn =~ login*) then
+  echo $cwd/data >! .tmp
+  set str='s/home/disk\/global/g'
+else if ($hn =~ *.phys.ntnu.no) then
+  set str='s/home\/gudrun/work\/erland/g'
+else if (($hn =~ copson*) && ($USER =~ mee)) then
+  set str='s/raid3\/mee/home\/mee\/WORK_DIRECTORY\/data/g'
+else if (($hn =~ copson*) && ($USER =~ asnod)) then
+  set str='s/$/\/data/g'
+else if (($hn =~ copson*) && ($USER =~ n9405169)) then
+  set str='s/$/\/data/g'
+else if ($hn =~ linux*) then
+  set str='s/users\/physik\/physik/scratch/g'
+else if (($hn =~ obelix*) && ($USER =~ svart)) then
+  echo "special entry for Mike"
+  set str='s/home/b/g'
+else if ($hn =~ obelix*) then
+  set str='s/home/export\/obelix1/g'
+else if ($hn =~ psi24*) then
+  set str='s/afs\/ipp-garching\.mpg\.de\/home\/a/u/g'
+else if (($hn =~ rio* || $hn =~ pia*) && ($USER =~ ajohan)) then
+  set str='s/afs\/ipp\/home\/[a-z]/nfs\/mpia2/g'
+else if (($hn =~ rio* || $hn =~ pia*) && ($USER =~ wlyra)) then
+  set str='s/code/data/g'
+else if ($hn =~ ra*) then 
+  set str='s/code/data/g'
+else if ($hn =~ gwdu102) then
+  set str='s/\/usr\/users/\/home\/temp1/g'
+else if ($hn =~ lfc*) then
+  set str='s/\/home/\/nfs\/d12/g'
+else if ($hn =~ easymac) then
+  set str='s/Users/var\/tmp/g'
+else if ($hn =~ bob || $hn =~ doug || $hn =~ eh*) then
+  set str='s/home/mnt\/raid\/hoser1/g'
+else if ($hn =~ tpb* ) then
+  set str='s/home/\/cita\/d\/scratch-3month/g'
+else if ($hn =~ is*.uppmax.uu.se ) then
+  #mkdir data
+  #exit  # Don't link to /var/tmp or anywhere else
+  # Use this only when run is finished
+  set str='s/home/scratch/g'
+else
+  set str='s/home/var\/tmp/g'
+endif
+#
+sed -e "$str" .tmp >! .scr
+if ( -d data1 ) then
+  echo Moving present data directory to: `cat .scr`
+  #mkdir -p `cat .scr`
+  #rm -rf `cat .scr`
+  #mv data1 `cat .scr`
+else
+  echo Creating: `cat .scr`
+  mkdir -p `cat .scr`
+endif
+ln -s `cat .scr` data1
+#Tidy up temporary files
+rm -f .scr .tmp
+
+#For certain people who like it like that... Create a default .cvsignore file in the data directory
+if (($USER =~ mee) || ($USER =~ n7026413) || ($USER =~ hpeukue2)) then
+  ln -s $PENCIL_HOME/src/data.cvsignore data/.cvsignore
+endif
+
