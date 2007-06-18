@@ -3,7 +3,7 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.7 2006-10-28 19:20:02 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.8 2007-06-18 05:57:43 brandenb Exp $',
   ip=13,
   nt=20, it1=4, isave=500, itorder=3, ialive=1
   cdt=0.4, cdtv=0.3, dtmin=1e-6,
@@ -13,6 +13,7 @@
   random_gen='nr_f90',
   slice_position='e'
   lpencil_check=T
+  lbidiagonal_derij=F  !(uses the slightly more accurate formulation for derij)
 /
 !
 ! NB: relative to the original cp=2.5 sample, all entropies are now scaled
