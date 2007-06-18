@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.47 2007-06-04 16:00:47 theine Exp $
+! $Id: eos_ionization.f90,v 1.48 2007-06-18 17:12:13 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.47 2007-06-04 16:00:47 theine Exp $")
+           "$Id: eos_ionization.f90,v 1.48 2007-06-18 17:12:13 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1690,19 +1690,6 @@ module EquationOfState
       if (NO_WARN) print*,f,topbot
 !
     end subroutine bc_stellar_surface
-!***********************************************************************
-    subroutine bc_stellar_surface_2(f,topbot,df)
-!
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar), optional :: df
-!
-      call stop_it("bc_stellar_surface_2: NOT IMPLEMENTED IN EOS_IDEALGAS")
-      if (NO_WARN) print*,f,df,topbot
-!
-    end subroutine bc_stellar_surface_2
 !***********************************************************************
     subroutine bc_lnrho_hydrostatic_z(f,topbot)
 !
