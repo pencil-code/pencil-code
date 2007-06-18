@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.361 2007-04-29 13:31:38 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.362 2007-06-18 06:02:41 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2007-04-29 13:31:38 $ $,~ $ $Revision: 1.361 $ $}
+%\date{$ $Date: 2007-06-18 06:02:41 $ $,~ $ $Revision: 1.362 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2007-04-29 13:31:38 $ $,~ $ $Revision: 1.361 $ $}\\
+  \emph{$ $Date: 2007-06-18 06:02:41 $ $,~ $ $Revision: 1.362 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -5550,7 +5550,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2007-04-29 13:31:38 $ $,~ $ $Revision: 1.361 $ $}
+  \hfill\normalsize\rm$ $Date: 2007-06-18 06:02:41 $ $,~ $ $Revision: 1.362 $ $}
 
 \section{Timings}
 
@@ -6973,6 +6973,68 @@ free parameter $\alpha$:
 If $\alpha$ is large, this may affect the time step, but for
 $\alpha=1/60$, the stability requirement for the hyperdiffusive term
 should always be weaker than the advective Courant criterion.
+
+\subsection{The bidiagonal scheme for cross-derivatives}
+\index{Bidiagonal scheme}
+\label{Bidiagonal}
+
+[Wolfgang to describe the theory.]
+
+\begin{verbatim}
+      df=fac*( &
+                  270.*( f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k)  &
+                        +f(l1-1:l2-1,m-1,n,k)-f(l1+1:l2+1,m-1,n,k)) &
+                 - 27.*( f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k)  &
+                        +f(l1-2:l2-2,m-2,n,k)-f(l1+2:l2+2,m-2,n,k)) &
+                 +  2.*( f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k)  &
+                        +f(l1-3:l2-3,m-3,n,k)-f(l1+3:l2+3,m-3,n,k)) &
+             )
+\end{verbatim}
+
+Off-diagonal terms enter not only the diffusion terms through
+$\nab\nab\cdot\uv$ and $\nab\nab\cdot\Av$ terms, but also through
+the $\Jv=\nab\times\nab\times\Av$ operator.
+The general formula is $J_i=A_{j,ij}-A_{i,jj}$, so in 2-D in the
+$xy$-plane we have
+\begin{equation}
+J_x=A_{x,xx}+A_{y,xy}-A_{x,xx}-A_{x,yy}=A_{y,xy}-A_{x,yy}
+\end{equation}
+\begin{equation}
+J_y=A_{x,yx}+A_{y,yy}-A_{y,xx}-A_{y,yy}=A_{x,yx}-A_{y,xx}
+\end{equation}
+
+\begin{figure}[h!]\begin{center}
+\includegraphics[width=\columnwidth]{pcompbidiagonal}
+\end{center}\caption[]{
+Alfv\'en wave for $\Bv_0=(1,2,0)$ and $\kv=(1,2,0)$ after $t=2\pi$.
+The wave travels in the direction of $\kv$.
+The red symbolds are for the bidiagonal scheme.
+Already for $16^2$ mesh points there are no clear differences.
+For $8^2$ mesh points both schemes are equally imprecise regarding
+the phase error, but the amplitude error is still quite small
+(but this is mainly a property of the time stepping scheme).
+}\label{pcompbidiagonal}\end{figure}
+
+\begin{equation}
+\dot{u}_z=J_xB_{0y}-J_yB_{0x}
+\end{equation}
+\begin{equation}
+\dot{A}_x=-u_zB_{0y}
+\end{equation}
+\begin{equation}
+\dot{A}_y=+u_zB_{0x}
+\end{equation}
+Initial condition (as implemented in \texttt{subroutine alfven\_xy}:
+\begin{equation}
+u_z\sim\cos(k_xx+k_yy-\omega t)
+\end{equation}
+\begin{equation}
+A_x\sim+B_{0y}\sin(k_xx+k_yy-\omega t)/\omega
+\end{equation}
+\begin{equation}
+A_y\sim-B_{0x}\sin(k_xx+k_yy-\omega t)/\omega
+\end{equation}
+where $\omega=\kv\cdot\Bv_0$.
 
 \subsection{The 2N-scheme for time-stepping}
 \index{2N-scheme}
@@ -8929,7 +8991,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.361 2007-04-29 13:31:38 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.362 2007-06-18 06:02:41 brandenb Exp $ $}
 
 
 \end{document}
