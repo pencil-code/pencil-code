@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   emailfromcvs
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Started:   17-Feb-2004
-# CVS: $Id: emailfromcvs,v 1.6 2007-05-17 07:51:10 brandenb Exp $
+# CVS: $Id: emailfromcvs,v 1.7 2007-06-23 20:13:05 brandenb Exp $
 # Usage:
 #   emailfromcvs <cvs_user_id> <subject> <to_addr_1> [to_addr_2 ...]
 # Description:
@@ -53,7 +53,7 @@ my $mailprog = "/usr/sbin/sendmail -t";
 if ($debug) { $mailprog = "cat"};
 
 # try all of these until one is readable:
-my @cvsemailfiles = ("/vgnor/var/www/html/data/brandenb/pencil-code", "./axelcvsIRL");
+my @cvsemailfiles = ("/scrn/norast/brandenb/pencil-code/www/", "./axelcvsIRL");
 
 my $success;
 irlfile: foreach my $irlfile (@cvsemailfiles) {
