@@ -3,7 +3,7 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.34 2007-03-16 05:19:50 dobler Exp $',
+  cvsid='$Id: run.in,v 1.35 2007-06-23 20:52:33 brandenb Exp $',
   ip=14,
   nt=50, it1=5, isave=100, itorder=3, ialive=1
   cdt=0.4, 
@@ -18,6 +18,7 @@
   wfreeze_ext = 1e-8
   wborder_int=0.05
   wborder_ext=0.2
+  lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
 !  lrtime_phiavg=T
 /
 &eos_run_pars
