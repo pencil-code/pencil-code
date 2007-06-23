@@ -3,12 +3,13 @@
 !  run parameters for interlocked magnetic flux rings
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.23 2005-06-26 17:34:37 eos_merger_tony Exp $'
+  cvsid='$Id: run.in,v 1.24 2007-06-23 20:37:00 brandenb Exp $'
   nt=10, it1=2, cdt=0.4, cdtv=0.3, isave=50, itorder=3,
   tmax = 50.
   dsnap=50, dvid=0.6,
   ip=14
   lpencil_check=T
+  lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
   /
 &eos_run_pars
 /
