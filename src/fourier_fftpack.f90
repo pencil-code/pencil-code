@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.16 2007-06-01 12:08:08 theine Exp $
+! $Id: fourier_fftpack.f90,v 1.17 2007-06-25 09:55:16 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -860,7 +860,7 @@ module Fourier
 !
     endsubroutine fourier_transform_other_2
 !***********************************************************************
-    subroutine fourier_transform_xy_parallel(a_re,a_im,linv)
+    subroutine fourier_transform_xy_xy(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform of a 2-D array under MPI.
 !  nxgrid is restricted to be an integer multiple of nygrid.
@@ -882,7 +882,7 @@ module Fourier
       logical :: lforward
 
       if (mod(nxgrid,nygrid)/=0) then
-        call fatal_error('fourier_transform_xy_parallel', &
+        call fatal_error('fourier_transform_xy', &
                          'nxgrid needs to be an integer multiple of nygrid.')
       endif
 
@@ -891,9 +891,7 @@ module Fourier
         if (linv) lforward=.false.
       endif
 
-      if (lshear) then
-        deltay_x=-deltay*(x(m1+ipy*ny:m2+ipy*ny)-(x0+Lx/2))/Lx
-      endif
+      if (lshear) deltay_x=-deltay*(x(m1+ipy*ny:m2+ipy*ny)-(x0+Lx/2))/Lx
 
       if (lforward) then
 
@@ -988,6 +986,6 @@ module Fourier
         a_im=a_im/(nxgrid*nygrid)
       endif
 
-    endsubroutine fourier_transform_xy_parallel
+    endsubroutine fourier_transform_xy_xy
 !***********************************************************************
 endmodule Fourier

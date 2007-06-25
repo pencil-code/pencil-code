@@ -1,4 +1,4 @@
-! $Id: nofourier.f90,v 1.5 2006-12-20 13:10:50 ajohan Exp $
+! $Id: nofourier.f90,v 1.6 2007-06-25 09:55:16 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -134,18 +134,18 @@ module Fourier
 !
     endsubroutine fourier_transform_other_2
 !***********************************************************************
-    subroutine fourier_transform_xy_parallel(a_re,a_im,linv)
+    subroutine fourier_transform_xy_xy(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform of a 2-D array of arbitrary size.
 !
       real, dimension(nx,ny) :: a_re,a_im
       logical, optional :: linv
 !
-      call fatal_error('fourier_transform_other_2', &
+      call fatal_error('fourier_transform_xy_xy', &
           'this sub is not available in nofourier.f90!')
 !
       if (NO_WARN) print*, a_re, a_im, linv
 !
-    endsubroutine fourier_transform_xy_parallel
+    endsubroutine fourier_transform_xy_xy
 !***********************************************************************
 endmodule Fourier

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.427 2007-06-25 05:55:43 brandenb Exp $
+! $Id: magnetic.f90,v 1.428 2007-06-25 09:55:16 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -238,7 +238,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.427 2007-06-25 05:55:43 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.428 2007-06-25 09:55:16 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3479,7 +3479,7 @@ module Magnetic
 !
 !  11-oct-06/wolf: Adapted from Tobi's bc_aa_pot2
 !
-      use Fourier, only: fourier_transform_xy_parallel
+      use Fourier, only: fourier_transform_xy_xy
       use Mpicomm, only: communicate_bc_aa_pot
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -3528,7 +3528,7 @@ module Magnetic
           do i=iax,iaz
             tmp_re = f(l1:l2,m1:m2,n1+j,i)
             tmp_im = 0.0
-            call fourier_transform_xy_parallel(tmp_re,tmp_im)
+            call fourier_transform_xy_xy(tmp_re,tmp_im)
             aa_re(:,:,i) = tmp_re*exp_fact
             aa_im(:,:,i) = tmp_im*exp_fact
           enddo
@@ -3537,7 +3537,7 @@ module Magnetic
           do i=iax,iaz
             tmp_re = aa_re(:,:,i)
             tmp_im = aa_im(:,:,i)
-            call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+            call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
             f(l1:l2,m1:m2,n1-j,i) = tmp_re
           enddo
 
@@ -3565,7 +3565,7 @@ module Magnetic
           do i=iax,iaz
             tmp_re = f(l1:l2,m1:m2,n2-j,i)
             tmp_im = 0.0
-            call fourier_transform_xy_parallel(tmp_re,tmp_im)
+            call fourier_transform_xy_xy(tmp_re,tmp_im)
             aa_re(:,:,i) = tmp_re*exp_fact
             aa_im(:,:,i) = tmp_im*exp_fact
           enddo
@@ -3574,7 +3574,7 @@ module Magnetic
           do i=iax,iaz
             tmp_re = aa_re(:,:,i)
             tmp_im = aa_im(:,:,i)
-            call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+            call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
             f(l1:l2,m1:m2,n2+j,i) = tmp_re
           enddo
 
@@ -3598,7 +3598,7 @@ module Magnetic
 !
 !  10-oct-06/tobi: Coded
 !
-      use Fourier, only: fourier_transform_xy_parallel
+      use Fourier, only: fourier_transform_xy_xy
       use Mpicomm, only: communicate_bc_aa_pot
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -3637,7 +3637,7 @@ module Magnetic
         do i=iax,iaz
           tmp_re = f(l1:l2,m1:m2,n1,i)
           tmp_im = 0.0
-          call fourier_transform_xy_parallel(tmp_re,tmp_im)
+          call fourier_transform_xy_xy(tmp_re,tmp_im)
           aa_re(:,:,i) = tmp_re
           aa_im(:,:,i) = tmp_im
         enddo
@@ -3649,7 +3649,7 @@ module Magnetic
           do i=iax,iaz
             tmp_re = fac*aa_re(:,:,i)
             tmp_im = fac*aa_im(:,:,i)
-            call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+            call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
             f(l1:l2,m1:m2,n1-j,i) = tmp_re
           enddo
         enddo
@@ -3667,7 +3667,7 @@ module Magnetic
         do i=iax,iaz
           tmp_re = f(l1:l2,m1:m2,n2,i)
           tmp_im = 0.0
-          call fourier_transform_xy_parallel(tmp_re,tmp_im)
+          call fourier_transform_xy_xy(tmp_re,tmp_im)
           aa_re(:,:,i) = tmp_re
           aa_im(:,:,i) = tmp_im
         enddo
@@ -3679,7 +3679,7 @@ module Magnetic
           do i=iax,iaz
             tmp_re = fac*aa_re(:,:,i)
             tmp_im = fac*aa_im(:,:,i)
-            call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+            call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
             f(l1:l2,m1:m2,n2+j,i) = tmp_re
           enddo
         enddo
@@ -3790,8 +3790,8 @@ module Magnetic
 !
 !  Transform; real and imaginary parts
 !
-      call fourier_transform_xy_parallel(f2r,f2i)
-      call fourier_transform_xy_parallel(f3r,f3i)
+      call fourier_transform_xy_xy(f2r,f2i)
+      call fourier_transform_xy_xy(f3r,f3i)
 !
 !  define wave vector
 !
@@ -3818,7 +3818,7 @@ module Magnetic
 !
 !  Transform back
 !
-        call fourier_transform_xy_parallel(g1r,g1i,linv=.true.)
+        call fourier_transform_xy_xy(g1r,g1i,linv=.true.)
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !
@@ -3854,8 +3854,8 @@ module Magnetic
 !
 !  Transform
 !
-      call fourier_transform_xy_parallel(f2r,f2i)
-      call fourier_transform_xy_parallel(f3r,f3i)
+      call fourier_transform_xy_xy(f2r,f2i)
+      call fourier_transform_xy_xy(f3r,f3i)
 !
 !  define wave vector
 !
@@ -3887,7 +3887,7 @@ module Magnetic
 !
 !  Transform back
 !
-        call fourier_transform_xy_parallel(g1r,g1i,linv=.true.)
+        call fourier_transform_xy_xy(g1r,g1i,linv=.true.)
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !  but reverse sign if irev=+1 (if we are at the top)

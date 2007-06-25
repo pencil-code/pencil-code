@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.154 2007-06-25 06:21:20 brandenb Exp $
+! $Id: boundcond.f90,v 1.155 2007-06-25 09:55:15 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -2579,7 +2579,7 @@ module Boundcond
 !  11-oct-06/wolf: Adapted from Tobi's bc_aa_pot2
 !
       use Cdata
-      use Fourier, only: fourier_transform_xy_parallel
+      use Fourier, only: fourier_transform_xy_xy
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
@@ -2626,11 +2626,11 @@ module Boundcond
           !  Fourier transforms of x- and y-components on the boundary
           tmp_re = f(l1:l2,m1:m2,n1+i,j)
           tmp_im = 0.0
-          call fourier_transform_xy_parallel(tmp_re,tmp_im)
+          call fourier_transform_xy_xy(tmp_re,tmp_im)
           tmp_re = tmp_re*exp_fact
           tmp_im = tmp_im*exp_fact
           ! Transform back
-          call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+          call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
           f(l1:l2,m1:m2,n1-i,j) = tmp_re
 
         enddo
@@ -2651,11 +2651,11 @@ module Boundcond
           !  Fourier transforms of x- and y-components on the boundary
           tmp_re = f(l1:l2,m1:m2,n2-i,j)
           tmp_im = 0.0
-          call fourier_transform_xy_parallel(tmp_re,tmp_im)
+          call fourier_transform_xy_xy(tmp_re,tmp_im)
           tmp_re = tmp_re*exp_fact
           tmp_im = tmp_im*exp_fact
           ! Transform back
-          call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+          call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
           f(l1:l2,m1:m2,n2+i,j) = tmp_re
 
         enddo

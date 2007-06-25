@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.86 2007-06-18 17:12:13 theine Exp $
+! $Id: eos_idealgas.f90,v 1.87 2007-06-25 09:55:15 ajohan Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -109,7 +109,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.86 2007-06-18 17:12:13 theine Exp $')
+           '$Id: eos_idealgas.f90,v 1.87 2007-06-25 09:55:15 ajohan Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -2222,7 +2222,7 @@ module EquationOfState
 !  11-oct-06/wolf: Adapted from Tobi's bc_aa_pot2
 !
       use Cdata
-      use Fourier, only: fourier_transform_xy_parallel
+      use Fourier, only: fourier_transform_xy_xy, fourier_transform_other
       use Gravity, only: potential
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -2277,11 +2277,19 @@ module EquationOfState
             tmp_re = f(l1:l2,m1:m2,n1+i,ilnrho) + pot/cs2bot
           endif
           tmp_im = 0.0
-          call fourier_transform_xy_parallel(tmp_re,tmp_im)
+          if (nxgrid>1 .and. nygrid>1) then
+            call fourier_transform_xy_xy(tmp_re,tmp_im)
+          else
+            call fourier_transform_other(tmp_re,tmp_im)
+          endif
           tmp_re = tmp_re*exp_fact
           tmp_im = tmp_im*exp_fact
           ! Transform back
-          call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+          if (nxgrid>1 .and. nygrid>1) then
+            call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
+          else
+            call fourier_transform_other(tmp_re,tmp_im,linv=.true.)
+          endif
           call potential(z=z(n1-i),pot=pot)
           if (ldensity_nolog) then
             f(l1:l2,m1:m2,n1-i,ilnrho) = tmp_re*exp(-pot/cs2bot)
@@ -2312,11 +2320,19 @@ module EquationOfState
             tmp_re = f(l1:l2,m1:m2,n2-i,ilnrho) + pot/cs2top
           endif
           tmp_im = 0.0
-          call fourier_transform_xy_parallel(tmp_re,tmp_im)
+          if (nxgrid>1 .and. nygrid>1) then
+            call fourier_transform_xy_xy(tmp_re,tmp_im)
+          else
+            call fourier_transform_other(tmp_re,tmp_im)
+          endif
           tmp_re = tmp_re*exp_fact
           tmp_im = tmp_im*exp_fact
           ! Transform back
-          call fourier_transform_xy_parallel(tmp_re,tmp_im,linv=.true.)
+          if (nxgrid>1 .and. nygrid>1) then
+            call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
+          else
+            call fourier_transform_other(tmp_re,tmp_im,linv=.true.)
+          endif
           call potential(z=z(n2+i),pot=pot)
           if (ldensity_nolog) then
             f(l1:l2,m1:m2,n2+i,ilnrho) = tmp_re*exp(-pot/cs2top)
