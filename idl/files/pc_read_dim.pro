@@ -1,10 +1,10 @@
-; $Id: pc_read_dim.pro,v 1.19 2007-06-17 00:38:03 joishi Exp $
+; $Id: pc_read_dim.pro,v 1.20 2007-06-25 15:49:09 dintrans Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2007-06-17 00:38:03 $
-;  $Revision: 1.19 $
+;  $Date: 2007-06-25 15:49:09 $
+;  $Revision: 1.20 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -122,7 +122,8 @@ if (found gt 0) then begin
   IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' + filename + '...'
 
   openr,file,filename
-  if execute('readf,file,mx,my,mz,mvar,maux,mglobal',1,1) ne 1 then begin
+; if execute('readf,file,mx,my,mz,mvar,maux,mglobal',1,1) ne 1 then begin
+  if execute('readf,file,mx,my,mz,mvar,maux,mglobal') ne 1 then begin
 ; For backwards compatibility with dim.dat without mglobal.
     close, file
     openr,file,filename
