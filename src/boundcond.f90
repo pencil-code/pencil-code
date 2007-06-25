@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.153 2007-06-18 17:12:13 theine Exp $
+! $Id: boundcond.f90,v 1.154 2007-06-25 06:21:20 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -130,6 +130,8 @@ module Boundcond
                   call bc_per_x(f,topbot,j)
                 case ('s')        ! symmetry
                   call bc_sym_x(f,+1,topbot,j)
+                case ('ss')        ! symmetry
+                  call bc_symset_x(f,+1,topbot,j)
                 case ('a')        ! antisymmetry
                   call bc_sym_x(f,-1,topbot,j)
                 case ('a2')       ! antisymmetry relative to boundary value
@@ -166,6 +168,8 @@ module Boundcond
                   call bc_set_der_x(f,topbot,j,fbcx12(j))
                 case ('slo')      ! set boundary value
                   call bc_slope_x(f,fbcx12,topbot,j)
+                case ('dr0')      ! set boundary value
+                  call bc_dr0_x(f,fbcx12,topbot,j)
                 case ('ovr')      ! set boundary value
                   call bc_overshoot_x(f,fbcx12,topbot,j)
                 case ('ant')      ! set boundary value
@@ -258,6 +262,8 @@ module Boundcond
                 call bc_per_y(f,topbot,j)
               case ('s')        ! symmetry
                 call bc_sym_y(f,+1,topbot,j)
+              case ('ss')        ! symmetry
+                call bc_symset_y(f,+1,topbot,j)
               case ('a')        ! antisymmetry
                 call bc_sym_y(f,-1,topbot,j)
               case ('a2')       ! antisymmetry relative to boundary value
@@ -604,6 +610,54 @@ module Boundcond
 !
     endsubroutine bc_sym_x
 !***********************************************************************
+    subroutine bc_symset_x(f,sgn,topbot,j,rel,val)
+!
+!  Symmetry boundary conditions.
+!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
+!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
+!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  Don't combine rel=T and sgn=1, that wouldn't make much sense.
+!
+!  11-nov-02/wolf: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mcom), optional :: val
+      integer :: sgn,i,j
+      logical, optional :: rel
+      logical :: relative
+!
+      if (present(rel)) then; relative=rel; else; relative=.false.; endif
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
+        if (relative) then
+          do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
+        else
+          do i=1,nghost; f(l1-i,:,:,j)=              sgn*f(l1+i,:,:,j); enddo
+          f(l1,:,:,j)=(4.*f(l1+1,:,:,j)-f(l1+2,:,:,j))/3.
+        endif
+
+      case('top')               ! top boundary
+        if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
+        if (relative) then
+          do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
+        else
+          do i=1,nghost; f(l2+i,:,:,j)=              sgn*f(l2-i,:,:,j); enddo
+          f(l2,:,:,j)=(4.*f(l2-1,:,:,j)-f(l2-2,:,:,j))/3.
+        endif
+
+      case default
+        print*, "bc_symset_x: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_symset_x
+!***********************************************************************
     subroutine bc_slope_x(f,slope,topbot,j,rel,val)
 !
 !  Symmetry boundary conditions.
@@ -660,6 +714,69 @@ module Boundcond
       endselect
 !
     endsubroutine bc_slope_x
+!***********************************************************************
+    subroutine bc_dr0_x(f,slope,topbot,j,rel,val)
+!
+!  Symmetry boundary conditions.
+!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
+!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
+!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  Don't combine rel=T and sgn=1, that wouldn't make much sense.
+!
+!  25-feb-07/axel: adapted from bc_sym_x
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mcom), optional :: val
+      real, dimension (mcom) :: slope
+      integer :: i,j
+      logical, optional :: rel
+      logical :: relative
+!
+      if (present(rel)) then; relative=rel; else; relative=.false.; endif
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
+        if (relative) then
+          do i=1,nghost
+            f(l1-i,:,:,j)=2*f(l1,:,:,j)+slope(j)*f(l1+i,:,:,j)*x(l1+i)/x(l1-i)
+          enddo
+        else
+          f(l1,:,:,j)=(360.*x(l1+1)*f(l1+1,:,:,j)-450.*x(l1+2)*f(l1+2,:,:,j) &
+                      +400.*x(l1+3)*f(l1+3,:,:,j)-225.*x(l1+4)*f(l1+4,:,:,j) &
+                       +72.*x(l1+5)*f(l1+5,:,:,j)- 10.*x(l1+6)*f(l1+6,:,:,j) &
+                      )/(147.*x(l1))
+          do i=1,nghost
+            f(l1-i,:,:,j)=f(l1+i,:,:,j)+(2.*dx/x(l1))*i*f(l1,:,:,j)
+          enddo
+        endif
+
+      case('top')               ! top boundary
+        if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
+        if (relative) then
+          do i=1,nghost
+            f(l2+i,:,:,j)=2*f(l2,:,:,j)+slope(j)*f(l2-i,:,:,j)
+          enddo
+        else
+          f(l2,:,:,j)=(360.*x(l2-1)*f(l2-1,:,:,j)-450.*x(l2-2)*f(l2-2,:,:,j) &
+                      +400.*x(l2-3)*f(l2-3,:,:,j)-225.*x(l2-4)*f(l2-4,:,:,j) &
+                       +72.*x(l2-5)*f(l2-5,:,:,j)- 10.*x(l2-6)*f(l2-6,:,:,j) &
+                      )/(147.*x(l2))
+          do i=1,nghost
+            f(l2+i,:,:,j)=f(l2-i,:,:,j)-(2.*dx/x(l2))*i*f(l2,:,:,j)
+          enddo
+        endif
+
+      case default
+        print*, "bc_slope_x: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_dr0_x
 !***********************************************************************
     subroutine bc_overshoot_x(f,dist,topbot,j)
 !
@@ -849,6 +966,55 @@ module Boundcond
 !
     endsubroutine bc_sym_y
 !***********************************************************************
+    subroutine bc_symset_y(f,sgn,topbot,j,rel,val)
+!
+!  Symmetry boundary conditions.
+!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
+!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
+!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  Don't combine rel=T and sgn=1, that wouldn't make much sense.
+!
+!  11-nov-02/wolf: coded
+!  10-apr-05/axel: added val argument
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mcom), optional :: val
+      integer :: sgn,i,j
+      logical, optional :: rel
+      logical :: relative
+!
+      if (present(rel)) then; relative=rel; else; relative=.false.; endif
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        if (present(val)) f(l1:l2,m1,n1:n2,j)=val(j)
+        if (relative) then
+          do i=1,nghost; f(:,m1-i,:,j)=2*f(:,m1,:,j)+sgn*f(:,m1+i,:,j); enddo
+        else
+          do i=1,nghost; f(:,m1-i,:,j)=              sgn*f(:,m1+i,:,j); enddo
+          f(:,m1,:,j)=(4.*f(:,m1+1,:,j)-f(:,m1+2,:,j))/3.
+        endif
+
+      case('top')               ! top boundary
+        if (present(val)) f(l1:l2,m2,n1:n2,j)=val(j)
+        if (relative) then
+          do i=1,nghost; f(:,m2+i,:,j)=2*f(:,m2,:,j)+sgn*f(:,m2-i,:,j); enddo
+        else
+          do i=1,nghost; f(:,m2+i,:,j)=              sgn*f(:,m2-i,:,j); enddo
+          f(:,m2,:,j)=(4.*f(:,m2-1,:,j)-f(:,m2-2,:,j))/3.
+        endif
+
+      case default
+        print*, "bc_symset_y: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_symset_y
+!***********************************************************************
     subroutine bc_sym_z(f,sgn,topbot,j,rel,val)
 !
 !  Symmetry boundary conditions.
@@ -984,7 +1150,7 @@ module Boundcond
 
       case('top')               ! top boundary
         do i=1,nghost
-          f(l2+i,:,:,j)=f(l2-i,:,:,j)+2*i*dx*(val-f(l1,:,:,j)*r1_mn(nx))
+          f(l2+i,:,:,j)=f(l2-i,:,:,j)+2*i*dx*(val-f(l2,:,:,j)*r1_mn(nx))
         enddo
 
       case default
