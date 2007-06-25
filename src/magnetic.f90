@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.426 2007-06-16 19:10:28 theine Exp $
+! $Id: magnetic.f90,v 1.427 2007-06-25 05:55:43 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -49,7 +49,7 @@ module Magnetic
 !
   integer, parameter :: nresi_max=4
 !
-  real, dimension (ninit) :: amplaa=0.0,kx_aa=1.,ky_aa=1.,kz_aa=1.
+  real, dimension (ninit) :: amplaa=0.0,kx_aa=1.,ky_aa=1.,kz_aa=1., phasey_aa=0.
   character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
@@ -115,7 +115,7 @@ module Magnetic
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,x0aa,z0aa,widthaa, &
        by_left,by_right,bz_left,bz_right, &
-       initaa,amplaa,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
+       initaa,amplaa,kx_aa,ky_aa,kz_aa,phasey_aa,coefaa,coefbb, &
        inclaa,lpress_equil,lpress_equil_via_ss,mu_r, &
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa, &
@@ -136,10 +136,10 @@ module Magnetic
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
   logical :: lweyl_gauge=.false.
   logical :: lupw_aa=.false.
-  logical :: lforcing_continuous=.false.
+  logical :: lforcing_continuous_aa=.false.
   logical :: lelectron_inertia=.false.
   character (len=labellen) :: zdep_profile='fs'
-  character (len=labellen) :: iforcing_continuous='fixed_swirl'
+  character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
 
   namelist /magnetic_run_pars/ &
        eta,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
@@ -147,8 +147,9 @@ module Magnetic
        lmeanfield_noalpm,alpha_profile, &
        meanfield_etat, lohmic_heat, &
        height_eta,eta_out,tau_aa_exterior, &
-       kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
-       lforcing_continuous,iforcing_continuous,k1_ff,ampl_ff,swirl,radius, &
+       kx_aa,ky_aa,kz_aa,phasey_aa,ABC_A,ABC_B,ABC_C, &
+       lforcing_continuous_aa,iforcing_continuous_aa, &
+       k1_ff,ampl_ff,swirl,radius, &
        k1x_ff,k1y_ff,k1z_ff, &
        bthresh,bthresh_per_brms, &
        iresistivity,lweyl_gauge,lupw_aa, &
@@ -208,7 +209,7 @@ module Magnetic
 !  1-may-02/wolf: coded
 !
       use Cdata
-      use FArrayManager
+!??   use FArrayManager
       use Mpicomm
       use Sub
 !
@@ -237,7 +238,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.426 2007-06-16 19:10:28 theine Exp $")
+           "$Id: magnetic.f90,v 1.427 2007-06-25 05:55:43 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -538,6 +539,7 @@ module Magnetic
         case('hor-fluxlayer'); call hfluxlayer(amplaa(j),f,iaa,xx,yy,zz,z0aa,widthaa)
         case('ver-fluxlayer'); call vfluxlayer(amplaa(j),f,iaa,xx,yy,zz,x0aa,widthaa)
         case('mag-support'); call magsupport(amplaa(j),f,zz,gravz,cs0,rho0)
+        case('pattern-xy'); call vecpatternxy(amplaa(j),f,iaa)
         case('arcade-x'); call arcade_x(amplaa(j),f,iaa,xx,yy,zz,kx_aa(j),kz_aa(j))
         case('halfcos-Bx'); call halfcos_x(amplaa(j),f,iaa,xx,yy,zz)
         case('uniform-Bx'); call uniform_x(amplaa(j),f,iaa,xx,yy,zz)
@@ -546,16 +548,19 @@ module Magnetic
         case('uniform-Bphi'); call uniform_phi(amplaa(j),f,iaa,xx,yy,zz)
         case('Bz(x)', '3'); call vfield(amplaa(j),f,iaa,xx)
         case('vfield2'); call vfield2(amplaa(j),f,iaa,xx)
+        case('vecpatternxy'); call vecpatternxy(amplaa(j),f,iaa)
         case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
         case('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa,xx,yy,zz)
         case('sinxsinz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+        case('xsiny'); call x_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+        case('x1siny'); call x1_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,phasey_aa(j))
         case('sinxcosz'); call sinx_siny_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),kz_aa(j))
         case('sinycosz'); call cosx_siny_cosz(amplaa(j),f,iax,kx_aa(j),ky_aa(j),0.)
         case('cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
-          call cosy_sinz(amplaa(j),f,iay,ky_aa(j),kz_aa(j))
+        case('x3cosycosz'); call x3_cosy_cosz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
         case('Ax=cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
         case('magnetogram'); call mdi_init(f)
         case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
@@ -565,6 +570,7 @@ module Magnetic
         case('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,xx,kx_aa(j))
         case('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,yy,ky_aa(j),mu0)
         case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
+        case('Alfven-xy'); call alfven_xy(amplaa(j),f,iuu,iaa,xx,yy,kx_aa(j),ky_aa(j))
         case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,xx,yy,rmode)
         case('Alfven-zconst'); call alfven_zconst(f,xx,yy,zmode)
         case('Alfven-rz'); call alfven_rz(amplaa(j),f,xx,yy,rmode)
@@ -972,6 +978,9 @@ module Magnetic
         lpencil_in(i_aij)=.true.
         lpencil_in(i_uu)=.true.
       endif
+!XX
+!     if (lspherical_coords) lpencil_in(i_aa)=.true.
+!XX
       if (lpencil_in(i_ss12)) lpencil_in(i_sj)=.true.
 !  Pencils bij, del2a and graddiva come in a bundle.
 !     if ( lpencil_in(i_bij) .and. &
@@ -1479,7 +1488,7 @@ module Magnetic
 !
 !  add possibility of forcing that is not delta-correlated in time
 !
-      if (lforcing_continuous) call forcing_continuous(df,p)
+      if (lforcing_continuous_aa) call forcing_continuous(df,p)
 !
 !  possibility of relaxation of A in exterior region
 !
@@ -2221,17 +2230,17 @@ module Magnetic
 !
       if(ip<=6) print*,'forcing_continuous: ifirst=',ifirst
       if (ifirst==0) then
-        if (iforcing_continuous=='fixed_swirl') then
+        if (iforcing_continuous_aa=='fixed_swirl') then
           if (lroot) print*,'forcing_continuous: fixed_swirl; swirl=',swirl
           R2=radius**2
           R12=1./R2
           phix=exp(-R12*x**2)
           phiy=exp(-R12*y**2)
           phiz=exp(-R12*z**2)
-        elseif (iforcing_continuous=='cosxcosz') then
+        elseif (iforcing_continuous_aa=='cosxcosz') then
           cosx=cos(k1x_ff*x)
           cosz=cos(k1z_ff*z)
-        elseif (iforcing_continuous=='RobertsFlow') then
+        elseif (iforcing_continuous_aa=='RobertsFlow') then
           if (lroot) print*,'forcing_continuous: RobertsFlow'
           sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
           siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
@@ -2242,18 +2251,18 @@ module Magnetic
 !
 !  calculate forcing
 !
-      if (iforcing_continuous=='fixed_swirl') then
+      if (iforcing_continuous_aa=='fixed_swirl') then
         fact=ampl_ff
         phi=2.*R12*fact*phix(l1:l2)*phiy(m)*phiz(n)
         forcing_rhs(:,1)=(-swirl*y(m    )+2.*x(l1:l2)*z(n))*phi
         forcing_rhs(:,2)=(+swirl*x(l1:l2)+2.*y(m    )*z(n))*phi
         forcing_rhs(:,3)=(R2-x(l1:l2)**2-y(m)**2)*2.*R12*phi
-      elseif (iforcing_continuous=='cosxcosz') then
+      elseif (iforcing_continuous_aa=='cosxcosz') then
         fact=ampl_ff
         forcing_rhs(:,1)=0.
         forcing_rhs(:,2)=fact*cosx(l1:l2)*cosz(n)
         forcing_rhs(:,3)=0.
-      elseif (iforcing_continuous=='RobertsFlow') then
+      elseif (iforcing_continuous_aa=='RobertsFlow') then
         fact=ampl_ff
         forcing_rhs(:,1)=-fact*cosx(l1:l2)*siny(m)
         forcing_rhs(:,2)=+fact*sinx(l1:l2)*cosy(m)
@@ -2767,14 +2776,14 @@ module Magnetic
 !  ux = +sin(kx-ot), for B0x=1 and rho=1.
 !  Az = -cos(kx-ot), ie By = sin(kx-ot)
 !
-!  [wd dec-2006: This seems to be compressible. Is this a magnetosonic
-!   wave after all? Slow or fast?]
+!  Alfven and slow magnetosonic are the same here and both incompressible, and
+!  a fast magnetosonic (compressible) wave is also excited, but decoupled.
 !
-!  satisfies the equations
+!  satisfies the four equations
 !  dlnrho/dt = -ux'
 !  dux/dt = -cs2*(lnrho)'
-!  duy/dt = B0*By'  ==>  dux/dt = B0*Ay''
-!  dBy/dt = B0*uy'  ==>  dAy/dt = -B0*ux
+!  duy/dt = B0*By'  ==>  duy/dt = -B0*Az''
+!  dBy/dt = B0*uy'  ==>  dAz/dt = -B0*ux
 !
 !   8-nov-03/axel: coded
 !
@@ -2843,6 +2852,29 @@ module Magnetic
       f(:,:,:,iaa+1)=+ampl*sin(kz*zz)*sqrt(mu0)
 !
     endsubroutine alfven_z
+!***********************************************************************
+    subroutine alfven_xy(ampl,f,iuu,iaa,xx,yy,kx,ky)
+!
+!  Alfven wave propagating in the xy-direction; can be used in 2-d runs.
+!  uz = cos(kx*x+ky*y-ot), for B0=(1,1,0) and rho=1.
+!  Ax = sin(kx*x+ky*y-ot),
+!  Ay = sin(kx*x+ky*y-ot),
+!
+!  16-jun-07/axel: adapted from alfven_y
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz)         :: xx,yy
+      real                               :: ampl,kx,ky,mu0=1.,om
+      integer                            :: iuu,iaa
+!
+!  set ux, Ax, and Ay
+!
+      om=B_ext(1)*kx+B_ext(2)*ky
+      f(:,:,:,iuu+2)=+ampl*cos(kx*xx+ky*yy)
+      f(:,:,:,iaa+0)=+ampl*sin(kx*xx+ky*yy)*sqrt(mu0)/om*B_ext(2)
+      f(:,:,:,iaa+1)=-ampl*sin(kx*xx+ky*yy)*sqrt(mu0)/om*B_ext(1)
+!
+    endsubroutine alfven_xy
 !***********************************************************************
     subroutine alfven_rphi(B0,f,xx,yy,mode)
 !
