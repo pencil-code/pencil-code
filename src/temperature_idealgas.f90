@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.13 2007-06-25 14:32:30 bingert Exp $
+! $Id: temperature_idealgas.f90,v 1.14 2007-06-25 15:20:58 bingert Exp $
 !  This module can replace the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
 !  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.13 2007-06-25 14:32:30 bingert Exp $")
+           "$Id: temperature_idealgas.f90,v 1.14 2007-06-25 15:20:58 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -179,7 +179,7 @@ module Entropy
         case('K-const')
           lheatc_Kconst=.true.
           call information('initialize_entropy', &
-          ' heat conduction: K=cst --> gamma*K/rho*cp*div(T*grad lnTT)')
+          ' heat conduction: K=cst --> gamma*K/rho/TT/cp*div(T*grad lnTT)')
           if (initlnTT(1).ne.'rad_equil') &
             Fbot=gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
         case('K-profile')
@@ -685,8 +685,9 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond_constK(df,p)
 !
-!  calculate gamma*K/rho*cp*div(T*grad lnTT)= 
-!              gamma*K/rho*cp*(gradlnTT.gradlnTT + del2ln TT)
+! 
+!  calculate gamma*K/rho/TT/cp*div(T*grad lnTT)= 
+!            gamma*K/rho/cp*(gradlnTT.gradlnTT + del2ln TT)
 !
 !
       use Sub, only: max_mn_name,dot,del2,multsv
