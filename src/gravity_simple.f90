@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.40 2007-05-31 15:02:18 theine Exp $
+! $Id: gravity_simple.f90,v 1.41 2007-06-25 08:38:16 ajohan Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -109,7 +109,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.40 2007-05-31 15:02:18 theine Exp $")
+           "$Id: gravity_simple.f90,v 1.41 2007-06-25 08:38:16 ajohan Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.
@@ -555,6 +555,8 @@ module Gravity
         case('linear_smoothed')
           prof = 1. + (z/zref)**(2*n_pot)
           potz_zpoint = 0.5*(nu_epicycle*z)**2/prof**(1./n_pot)
+        case('tanh')
+          potz_zpoint=gravz*zref*alog(cosh(z/zref))
         case default
           call fatal_error('potential_point', &
                'gravz_profile='//gravz_profile//' not implemented')
