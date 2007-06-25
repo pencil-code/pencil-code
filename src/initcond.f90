@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.202 2007-04-07 23:54:47 wlyra Exp $
+! $Id: initcond.f90,v 1.203 2007-06-25 06:10:21 brandenb Exp $
 
 module Initcond
 
@@ -16,7 +16,7 @@ module Initcond
 
   private
 
-  public :: arcade_x
+  public :: arcade_x, vecpatternxy
   public :: soundwave,sinwave,sinwave_phase,coswave,coswave_phase,cos_cos_sin
   public :: gaunoise, posnoise
   public :: gaunoise_rprof
@@ -31,8 +31,9 @@ module Initcond
   public :: htube, htube2, hat, hat3d
   public :: wave_uu, wave, parabola
   public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
+  public :: x_siny_cosz, x1_siny_cosz
   public :: sinx_siny_sinz, cosx_siny_cosz, sinx_siny_cosz
-  public :: sin2x_sin2y_cosz, cosy_sinz
+  public :: sin2x_sin2y_cosz, cosy_sinz, x3_cosy_cosz
   public :: halfcos_x, magsupport, vfield
   public :: uniform_x, uniform_y, uniform_z, uniform_phi
   public :: vfluxlayer, hfluxlayer
@@ -142,7 +143,7 @@ module Initcond
 !  wavenumber k, helicity H=ampl (can be either sign)
 !
 !  sinx(kx*x)*sin(kz*z)
-!
+
       if (present(kx)) kx1=kx
       if (present(ky)) ky1=ky
       if (present(kz)) kz1=kz
@@ -157,6 +158,69 @@ module Initcond
       endif
 !
     endsubroutine sinx_siny_cosz
+!***********************************************************************
+    subroutine x_siny_cosz(ampl,f,i,kx,ky,kz)
+!
+!  sinusoidal wave, adapted from sinxsinz (that routine was already doing
+!  this, but under a different name)
+!
+!   2-dec-03/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+!
+!  wavenumber k, helicity H=ampl (can be either sign)
+!
+!  sinx(kx*x)*sin(kz*z)
+!
+      if (present(kx)) kx1=kx
+      if (present(ky)) ky1=ky
+      if (present(kz)) kz1=kz
+      if (ampl==0) then
+        if (lroot) print*,'x_siny_cosz: ampl=0'
+      else
+        if (lroot) write(*,wave_fmt1) 'x_siny_cosz: ampl,kx,ky,kz=', &
+                                      ampl,kx1,ky1,kz1
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(   (    x),2,my),3,mz)&
+                                   *spread(spread(sin(ky1*y),1,mx),3,mz)&
+                                   *spread(spread(cos(kz1*z),1,mx),2,my))
+      endif
+!
+    endsubroutine x_siny_cosz
+!***********************************************************************
+    subroutine x1_siny_cosz(ampl,f,i,kx,ky,kz,phasey)
+!
+!  sinusoidal wave, adapted from sinxsinz (that routine was already doing
+!  this, but under a different name)
+!
+!   2-dec-03/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,optional :: kx,ky,kz,phasey
+      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2., phasey1=0.
+!
+!  wavenumber k, helicity H=ampl (can be either sign)
+!
+!  sinx(kx*x)*sin(kz*z)
+!
+      if (present(kx)) kx1=kx
+      if (present(ky)) ky1=ky
+      if (present(kz)) kz1=kz
+      if (present(phasey)) phasey1=phasey
+      if (ampl==0) then
+        if (lroot) print*,'x1_siny_cosz: ampl=0'
+      else
+        if (lroot) write(*,wave_fmt1) 'x1_siny_cosz: ampl,kx,ky,kz=', &
+                                      ampl,kx1,ky1,kz1
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(   ( 1./x),2,my),3,mz)&
+                                   *spread(spread(sin(ky1*y+phasey1),1,mx),3,mz)&
+                                   *spread(spread(cos(kz1*z),1,mx),2,my))
+      endif
+!
+    endsubroutine x1_siny_cosz
 !***********************************************************************
     subroutine cosx_siny_cosz(ampl,f,i,kx,ky,kz)
 !
@@ -280,6 +344,29 @@ module Initcond
 !                                       *spread(spread(cos(kz1*z),1,mx),2,my)
 !
     endsubroutine cosy_sinz
+!***********************************************************************
+    subroutine x3_cosy_cosz(ampl,f,i,ky,kz)
+!
+!  special initial condition for producing toroidal field (ndynd decay test)
+!
+!   06-oct-06/axel: coded
+!   11-oct-06/wolf: modified to only set one component of aa
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,optional :: ky,kz
+      real :: ampl,ky1=1.,kz1=pi
+!
+!  wavenumber k
+!
+      if (present(ky)) ky1=ky
+      if (present(kz)) kz1=kz
+!
+      f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(x*(1.-x)*(x-.2),2,my),3,mz)&
+                                *spread(spread(cos(ky1*y),1,mx),3,mz)&
+                                *spread(spread(cos(kz1*z),1,mx),2,my)
+!
+    endsubroutine x3_cosy_cosz
 !***********************************************************************
     subroutine cosx_coscosy_cosz(ampl,f,i,kx,ky,kz)
 !
@@ -860,6 +947,30 @@ module Initcond
                                        *spread(spread(cos(k*y),1,mx),3,mz)
 !
     endsubroutine robertsflow
+!***********************************************************************
+    subroutine vecpatternxy(ampl,f,i)
+!
+!  Roberts Flow (as initial condition)
+!
+!   9-jun-05/axel: coded
+!
+      integer :: i,j
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,k=1.,kf,fac1
+!
+!  prepare coefficients
+!
+      kf=k*sqrt(2.)
+      fac1=sqrt(2.)*ampl*k/kf
+!
+!  U=(U/k)*[curl(phi*zz)/kf+curlcurl(phi*zz)/kf^2],
+!  where phi=sqrt(2)*cos(kx)*cos(ky)
+!
+      j=i+0; f(:,:,:,j)=f(:,:,:,j)-fac1*spread(spread(sin(k*y),1,mx),3,mz)
+!
+      j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac1*spread(spread(sin(k*x),2,my),3,mz)
+!
+    endsubroutine vecpatternxy
 !***********************************************************************
     subroutine soundwave(ampl,f,i,kx,ky,kz)
 !
