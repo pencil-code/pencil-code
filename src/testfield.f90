@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.28 2007-05-15 19:26:08 brandenb Exp $
+! $Id: testfield.f90,v 1.29 2007-06-25 06:32:23 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -9,6 +9,9 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+!!old MVAR CONTRIBUTION 36
+!
+!! MVAR CONTRIBUTION 18
 ! MVAR CONTRIBUTION 36
 ! MAUX CONTRIBUTION 0
 !
@@ -33,7 +36,8 @@ module Testfield
   logical :: xextent=.true.,zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
   integer :: itestfield=1
   real :: ktestfield=1.
-  integer, parameter :: ntestfield=36
+  integer, parameter :: njtest=12,ntestfield=3*njtest
+! integer, parameter :: njtest=6,ntestfield=3*njtest
 
   namelist /testfield_init_pars/ &
        B_ext,xextent,zextent,initaatest
@@ -110,7 +114,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.28 2007-05-15 19:26:08 brandenb Exp $")
+           "$Id: testfield.f90,v 1.29 2007-06-25 06:32:23 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -183,7 +187,7 @@ module Testfield
 !
       select case(initaatest)
 
-      case('zero', '0'); f(:,:,:,iaatest:iaatest+26)=0.
+      case('zero', '0'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
 
       case default
         !
@@ -294,12 +298,17 @@ module Testfield
 !
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
+!  Note: the same block of lines occurs again further down in the file.
 !
-      do jtest=1,12
+      do jtest=1,njtest
         if ((jtest>= 1.and.jtest<= 3)&
-        .or.(jtest>= 4.and.jtest<= 6.and.xextent)&
+        .or.(jtest>= 4.and.jtest<= 6.and.zextent)&
         .or.(jtest>=10.and.jtest<=12.and.xextent.and.(.not.lset_bbtest2))&
-        .or.(jtest>= 7.and.jtest<= 9.and.zextent)) then
+        .or.(jtest>= 7.and.jtest<= 9.and.xextent)) then
+!       if ((jtest>= 1.and.jtest<= 3)&
+!       .or.(jtest>= 4.and.jtest<= 6.and.xextent)&
+!       .or.(jtest>=10.and.jtest<=12.and.xextent.and.(.not.lset_bbtest2))&
+!       .or.(jtest>= 7.and.jtest<= 9.and.zextent)) then
           iaxtest=iaatest+3*(jtest-1)
           iaztest=iaxtest+2
           call del2v(f,iaxtest,del2Atest)
@@ -327,8 +336,6 @@ module Testfield
 !  subtract average emf
 !
             do j=1,3
-!             jfnamez=idiag_alp11z+3*(jtest-1)+(j-1)
-!             duxbtest(:,j)=uxbtest(:,j)-fnamez_copy(n-nghost,ipz+1,jfnamez)
               duxbtest(:,j)=uxbtest(:,j)-uxbtestm(n,j,jtest)
             enddo
 !
@@ -344,6 +351,8 @@ module Testfield
               call curl(f,iaxtest,btest)
               call cross_mn(p%uu,btest,uxbtest)
            endif
+!
+!  in the following block, we have already swapped the 4-6 entries with 7-9
 !
           if (ldiagnos) then  
             select case(jtest)
@@ -369,29 +378,29 @@ module Testfield
               if (idiag_alp23xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_alp23xz)
               if (idiag_alp33xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_alp33xz)
             case(4)
-              if (idiag_eta111xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta111xz)
-              if (idiag_eta211xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta211xz)
-              if (idiag_eta311xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta311xz)
-            case(5)
-              if (idiag_eta121xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta121xz)
-              if (idiag_eta221xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta221xz)
-              if (idiag_eta321xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta321xz)
-            case(6)
-              if (idiag_eta131xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta131xz)
-              if (idiag_eta231xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta231xz)
-              if (idiag_eta331xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta331xz)
-            case(7)
               if (idiag_eta113xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta113xz)
               if (idiag_eta213xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta213xz)
               if (idiag_eta313xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta313xz)
-            case(8)              
+            case(5)
               if (idiag_eta123xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta123xz)
               if (idiag_eta223xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta223xz)
               if (idiag_eta323xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta323xz)
-            case(9)
+            case(6)
               if (idiag_eta133xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta133xz)
               if (idiag_eta233xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta233xz)
               if (idiag_eta333xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta333xz)
+            case(7)
+              if (idiag_eta111xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta111xz)
+              if (idiag_eta211xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta211xz)
+              if (idiag_eta311xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta311xz)
+            case(8)              
+              if (idiag_eta121xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta121xz)
+              if (idiag_eta221xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta221xz)
+              if (idiag_eta321xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta321xz)
+            case(9)
+              if (idiag_eta131xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta131xz)
+              if (idiag_eta231xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta231xz)
+              if (idiag_eta331xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta331xz)
             case(10)
               if (idiag_alp11exz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_alp11exz)
               if (idiag_alp21exz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_alp21exz)
@@ -406,6 +415,8 @@ module Testfield
               if (idiag_alp33exz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_alp33exz)
             end select
           endif
+!
+!  in the following block, we have already swapped the 4-6 entries with 7-9
 !
           if (l1ddiagnos) then
             select case(jtest)
@@ -422,29 +433,29 @@ module Testfield
               if (idiag_alp23z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp23z)
               if (idiag_alp33z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp33z)
             case(4)
-              if (idiag_eta111z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta111z)
-              if (idiag_eta211z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta211z)
-              if (idiag_eta311z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta311z)
-            case(5)
-              if (idiag_eta121z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta121z)
-              if (idiag_eta221z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta221z)
-              if (idiag_eta321z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta321z)
-            case(6)
-              if (idiag_eta131z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta131z)
-              if (idiag_eta231z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta231z)
-              if (idiag_eta331z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta331z)
-            case(7)
               if (idiag_eta113z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta113z)
               if (idiag_eta213z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta213z)
               if (idiag_eta313z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta313z)
-            case(8)
+            case(5)
               if (idiag_eta123z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta123z)
               if (idiag_eta223z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta223z)
               if (idiag_eta323z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta323z)
-            case(9)
+            case(6)
               if (idiag_eta133z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta133z)
               if (idiag_eta233z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta233z)
               if (idiag_eta333z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta333z)
+            case(7)
+              if (idiag_eta111z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta111z)
+              if (idiag_eta211z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta211z)
+              if (idiag_eta311z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta311z)
+            case(8)
+              if (idiag_eta121z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta121z)
+              if (idiag_eta221z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta221z)
+              if (idiag_eta321z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta321z)
+            case(9)
+              if (idiag_eta131z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta131z)
+              if (idiag_eta231z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta231z)
+              if (idiag_eta331z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta331z)
             end select
           endif
         endif
@@ -479,14 +490,19 @@ module Testfield
       headtt_save=headtt
       fac=1./nxy
 !
-!  do each of the 12 test fields at a time
+!  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
+!  Note: the same block of lines occurs again further up in the file.
 !
-      do jtest=1,12
+      do jtest=1,njtest
         if ((jtest>= 1.and.jtest<= 3)&
-        .or.(jtest>= 4.and.jtest<= 6.and.xextent)&
+        .or.(jtest>= 4.and.jtest<= 6.and.zextent)&
         .or.(jtest>=10.and.jtest<=12.and.xextent.and.(.not.lset_bbtest2))&
-        .or.(jtest>= 7.and.jtest<= 9.and.zextent)) then
+        .or.(jtest>= 7.and.jtest<= 9.and.xextent)) then
+!       if ((jtest>= 1.and.jtest<= 3)&
+!       .or.(jtest>= 4.and.jtest<= 6.and.xextent)&
+!       .or.(jtest>=10.and.jtest<=12.and.xextent.and.(.not.lset_bbtest2))&
+!       .or.(jtest>= 7.and.jtest<= 9.and.zextent)) then
           iaxtest=iaatest+3*(jtest-1)
           iaztest=iaxtest+2
           if (lsoca) then
@@ -553,12 +569,12 @@ module Testfield
       case(1); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
       case(2); bbtest(:,1)=0.; bbtest(:,2)=sz; bbtest(:,3)=0.
       case(3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sz
-      case(4); bbtest(:,1)=cx; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(5); bbtest(:,1)=0.; bbtest(:,2)=cx; bbtest(:,3)=0.
-      case(6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx
-      case(7); bbtest(:,1)=cz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(8); bbtest(:,1)=0.; bbtest(:,2)=cz; bbtest(:,3)=0.
-      case(9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cz
+      case(4); bbtest(:,1)=cz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(5); bbtest(:,1)=0.; bbtest(:,2)=cz; bbtest(:,3)=0.
+      case(6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cz
+      case(7); bbtest(:,1)=cx; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(8); bbtest(:,1)=0.; bbtest(:,2)=cx; bbtest(:,3)=0.
+      case(9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx
       case(10); bbtest(:,1)=sx; bbtest(:,2)=0.; bbtest(:,3)=0.
       case(11); bbtest(:,1)=0.; bbtest(:,2)=sx; bbtest(:,3)=0.
       case(12); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx
@@ -597,12 +613,12 @@ module Testfield
       case(1); bbtest(:,1)=xz; bbtest(:,2)=0.; bbtest(:,3)=0.
       case(2); bbtest(:,1)=0.; bbtest(:,2)=xz; bbtest(:,3)=0.
       case(3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=xz
-      case(4); bbtest(:,1)=sx; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(5); bbtest(:,1)=0.; bbtest(:,2)=sx; bbtest(:,3)=0.
-      case(6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx
-      case(7); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(8); bbtest(:,1)=0.; bbtest(:,2)=sz; bbtest(:,3)=0.
-      case(9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sz
+      case(4); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(5); bbtest(:,1)=0.; bbtest(:,2)=sz; bbtest(:,3)=0.
+      case(6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sz
+      case(7); bbtest(:,1)=sx; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(8); bbtest(:,1)=0.; bbtest(:,2)=sx; bbtest(:,3)=0.
+      case(9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx
       case default; bbtest(:,:)=0.
       endselect
 !
@@ -635,12 +651,12 @@ module Testfield
       case(1); bbtest(:,1)=1.; bbtest(:,2)=0.; bbtest(:,3)=0.
       case(2); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
       case(3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=1.
-      case(4); bbtest(:,1)=xx; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(5); bbtest(:,1)=0.; bbtest(:,2)=xx; bbtest(:,3)=0.
-      case(6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=xx
-      case(7); bbtest(:,1)=zz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(8); bbtest(:,1)=0.; bbtest(:,2)=zz; bbtest(:,3)=0.
-      case(9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=zz
+      case(4); bbtest(:,1)=zz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(5); bbtest(:,1)=0.; bbtest(:,2)=zz; bbtest(:,3)=0.
+      case(6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=zz
+      case(7); bbtest(:,1)=xx; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(8); bbtest(:,1)=0.; bbtest(:,2)=xx; bbtest(:,3)=0.
+      case(9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=xx
       case default; bbtest(:,:)=0.
       endselect
 !
@@ -675,12 +691,12 @@ module Testfield
       case(1); bbtest(:,1)=1.; bbtest(:,2)=0.; bbtest(:,3)=0.
       case(2); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
       case(3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=1.
-      case(4); bbtest(:,1)=cx; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(5); bbtest(:,1)=0.; bbtest(:,2)=sx; bbtest(:,3)=0.
-      case(6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx
-      case(7); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(8); bbtest(:,1)=0.; bbtest(:,2)=sz; bbtest(:,3)=0.
-      case(9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cz
+      case(4); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(5); bbtest(:,1)=0.; bbtest(:,2)=sz; bbtest(:,3)=0.
+      case(6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cz
+      case(7); bbtest(:,1)=cx; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(8); bbtest(:,1)=0.; bbtest(:,2)=sx; bbtest(:,3)=0.
+      case(9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx
       case default; bbtest(:,:)=0.
       endselect
 !
