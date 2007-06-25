@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.351 2007-06-15 04:23:49 joishi Exp $
+! $Id: hydro.f90,v 1.352 2007-06-25 06:30:34 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -86,15 +86,15 @@ module Hydro
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_damp_ruzm=0.,tau_diffrot1=0.
   real :: ampl_diffrot=0.,Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
-  real :: k1_ff=1.,ampl_ff=1.,width_ff=1.
+  real :: k1_ff=1.,ampl_ff=1.,width_ff_uu=1.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
-  logical :: lforcing_continuous=.false.,lembed=.false.
+  logical :: lforcing_continuous_uu=.false.,lembed=.false.
   logical :: lremove_mean_momenta=.false.
   logical :: lremove_mean_flow=.false.
   logical :: lalways_use_gij_etc=.false.
-  character (len=labellen) :: iforcing_continuous='ABC'
+  character (len=labellen) :: iforcing_continuous_uu='ABC'
 !
 ! geodynamo
   namelist /hydro_run_pars/ &
@@ -105,7 +105,8 @@ module Hydro
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-       lforcing_continuous,lembed,iforcing_continuous,k1_ff,ampl_ff,width_ff, &
+       lforcing_continuous_uu,iforcing_continuous_uu, &
+       lembed,k1_ff,ampl_ff,width_ff_uu, &
        lprecession, omega_precession, lshear_rateofstrain, &
        lalways_use_gij_etc
 
@@ -293,7 +294,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.351 2007-06-15 04:23:49 joishi Exp $")
+           "$Id: hydro.f90,v 1.352 2007-06-25 06:30:34 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1105,7 +1106,7 @@ module Hydro
 !
 !  add possibility of forcing that is not delta-correlated in time
 !
-      if (lforcing_continuous) call forcing_continuous(df,p)
+      if (lforcing_continuous_uu) call forcing_continuous(df,p)
 !
 !  damp motions in some regions for some time spans if desired
 !
@@ -1823,29 +1824,29 @@ module Hydro
 !
       if(ip<=6) print*,'forcing_continuous: ifirst=',ifirst
       if (ifirst==0) then
-        if (iforcing_continuous=='ABC') then
+        if (iforcing_continuous_uu=='ABC') then
           if (lroot) print*,'forcing_continuous: ABC--calc sinx, cosx, etc'
           sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
           siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
           sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
-        elseif (iforcing_continuous=='RobertsFlow') then
+        elseif (iforcing_continuous_uu=='RobertsFlow') then
           if (lroot) print*,'forcing_continuous: Roberts Flow'
           sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
           siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
-        elseif (iforcing_continuous=='nocos') then
+        elseif (iforcing_continuous_uu=='nocos') then
           if (lroot) print*,'forcing_continuous: nocos flow'
           sinx=sin(k1_ff*x)
           siny=sin(k1_ff*y)
           sinz=sin(k1_ff*z)
-        elseif (iforcing_continuous=='TG') then
+        elseif (iforcing_continuous_uu=='TG') then
           if (lroot) print*,'forcing_continuous: TG'
           sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
           siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
           cosz=cos(k1_ff*z)
           if (lembed) then
-            embedx=.5+.5*tanh(x/width_ff)*tanh((pi-x)/width_ff)
-            embedy=.5+.5*tanh(y/width_ff)*tanh((pi-y)/width_ff)
-            embedz=.5+.5*tanh(z/width_ff)*tanh((pi-z)/width_ff)
+            embedx=.5+.5*tanh(x/width_ff_uu)*tanh((pi-x)/width_ff_uu)
+            embedy=.5+.5*tanh(y/width_ff_uu)*tanh((pi-y)/width_ff_uu)
+            embedz=.5+.5*tanh(z/width_ff_uu)*tanh((pi-z)/width_ff_uu)
             sinx=embedx*sinx; cosx=embedx*cosx
             siny=embedy*siny; cosy=embedy*cosy
             cosz=embedz*cosz
@@ -1857,22 +1858,22 @@ module Hydro
 !
 !  calculate forcing
 !
-      if (iforcing_continuous=='ABC') then
+      if (iforcing_continuous_uu=='ABC') then
         fact=ampl_ff/sqrt(3.)
         forcing_rhs(:,1)=fact*(sinz(n    )+cosy(m)    )
         forcing_rhs(:,2)=fact*(sinx(l1:l2)+cosz(n)    )
         forcing_rhs(:,3)=fact*(siny(m    )+cosx(l1:l2))
-      elseif (iforcing_continuous=='RobertsFlow') then
+      elseif (iforcing_continuous_uu=='RobertsFlow') then
         fact=ampl_ff
         forcing_rhs(:,1)=-fact*cosx(l1:l2)*siny(m)
         forcing_rhs(:,2)=+fact*sinx(l1:l2)*cosy(m)
         forcing_rhs(:,3)=+fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
-      elseif (iforcing_continuous=='nocos') then
+      elseif (iforcing_continuous_uu=='nocos') then
         fact=ampl_ff
         forcing_rhs(:,1)=fact*sinz(n)
         forcing_rhs(:,2)=fact*sinx(l1:l2)
         forcing_rhs(:,3)=fact*siny(m)
-      elseif (iforcing_continuous=='TG') then
+      elseif (iforcing_continuous_uu=='TG') then
         fact=2.*ampl_ff
         forcing_rhs(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
         forcing_rhs(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
