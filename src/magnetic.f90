@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.428 2007-06-25 09:55:16 ajohan Exp $
+! $Id: magnetic.f90,v 1.429 2007-06-25 13:27:13 theine Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -197,6 +197,7 @@ module Magnetic
   integer :: idiag_b2mr=0,idiag_brmr=0,idiag_bpmr=0,idiag_bzmr=0
   integer :: idiag_armr=0,idiag_apmr=0,idiag_azmr=0
   integer :: idiag_bxmx=0,idiag_bymy=0
+  integer :: idiag_mflux_x=0,idiag_mflux_y=0,idiag_mflux_z=0
 
   contains
 
@@ -238,7 +239,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.428 2007-06-25 09:55:16 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.429 2007-06-25 13:27:13 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1755,6 +1756,12 @@ module Magnetic
              call phizsum_mn_name_r(p%aa(:,3),idiag_azmr)
         if (idiag_bxmx/=0) call yzsum_mn_name_x(p%bb(:,1),idiag_bxmx)
         if (idiag_bymy/=0) call xzsum_mn_name_y(p%bb(:,2),idiag_bymy)
+        if (idiag_mflux_x/=0) &
+          call yzintegrate_mn_name_x(p%bb(:,1),idiag_mflux_x)
+        if (idiag_mflux_y/=0) &
+          call xzintegrate_mn_name_y(p%bb(:,2),idiag_mflux_y)
+        if (idiag_mflux_z/=0) &
+          call xyintegrate_mn_name_z(p%bb(:,3),idiag_mflux_z)
 
 
       endif
@@ -2338,6 +2345,7 @@ module Magnetic
         idiag_b2mr=0; idiag_brmr=0; idiag_bpmr=0; idiag_bzmr=0
         idiag_armr=0; idiag_apmr=0; idiag_azmr=0
         idiag_bxmx=0; idiag_bymy=0
+        idiag_mflux_x=0; idiag_mflux_y=0; idiag_mflux_z=0
 !
       endif
 !
@@ -2422,9 +2430,13 @@ module Magnetic
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'bxmx',idiag_bxmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+                        'mflux_x',idiag_mflux_x)
       enddo
       do inamey=1,nnamey
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'bymy',idiag_bymy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+                        'mflux_y',idiag_mflux_y)
       enddo
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxmz',idiag_bxmz)
@@ -2437,6 +2449,8 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxbzmz',idiag_bxbzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bybzmz',idiag_bybzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'b2mz',idiag_b2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+                        'mflux_z',idiag_mflux_z)
       enddo
 !
 !  check for those quantities for which we want y-averages
@@ -2583,6 +2597,9 @@ module Magnetic
         write(3,*) 'i_jfm=',idiag_jfm
         write(3,*) 'i_bxmx=',idiag_bxmx
         write(3,*) 'i_bymy=',idiag_bymy
+        write(3,*) 'i_mflux_x=',idiag_mflux_x
+        write(3,*) 'i_mflux_y=',idiag_mflux_y
+        write(3,*) 'i_mflux_z=',idiag_mflux_z
         write(3,*) 'nname=',nname
         write(3,*) 'nnamexy=',nnamexy
         write(3,*) 'nnamexz=',nnamexz

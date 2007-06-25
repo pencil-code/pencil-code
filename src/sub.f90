@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.314 2007-06-03 10:03:01 ajohan Exp $
+! $Id: sub.f90,v 1.315 2007-06-25 13:27:13 theine Exp $
 
 module Sub
 
@@ -53,6 +53,7 @@ module Sub
   public :: xysum_mn_name_z, xzsum_mn_name_y, yzsum_mn_name_x
   public :: phizsum_mn_name_r
   public :: ysum_mn_name_xz, zsum_mn_name_xy, phisum_mn_name_rz
+  public :: yzintegrate_mn_name_x,xzintegrate_mn_name_y,xyintegrate_mn_name_z
   public :: date_time_string
 
   public :: calc_phiavg_profile
@@ -620,6 +621,109 @@ module Sub
       fnamex(:,iname)=fnamex(:,iname)+a
 !
     endsubroutine yzsum_mn_name_x
+!***********************************************************************
+    subroutine xyintegrate_mn_name_z(a,iname)
+!
+!   Integrate over x and y. Apply trapezoidal rule properly in the case
+!   of non-periodic boundaries.
+!
+!   18-jun-07/tobi: adapted from xysum_mn_name_z
+!
+      use Cdata
+
+      real, dimension (nx) :: a
+      integer :: iname
+      real :: fac,suma
+!
+!  Initialize to zero, including other parts of the z-array
+!  which are later merged with an mpi reduce command.
+!
+      if (lfirstpoint) fnamez(:,:,iname) = 0.
+
+      fac = 1.
+
+      if ((m==m1.and.ipy==0).or.(m==m2.and.ipy==nprocy-1)) then
+        if (.not.lperi(2)) fac = .5*fac
+      endif
+
+      if (lperi(1)) then
+        suma = fac*sum(a)
+      else
+        suma = fac*(sum(a(2:nx-1))+.5*(a(1)+a(nx)))
+      endif
+!
+!  n starts with nghost+1=4, so the correct index is n-nghost
+!
+      fnamez(n-nghost,ipz+1,iname) = fnamez(n-nghost,ipz+1,iname) + suma
+
+    endsubroutine xyintegrate_mn_name_z
+!***********************************************************************
+    subroutine xzintegrate_mn_name_y(a,iname)
+!
+!   Integrate over x and z. Apply trapezoidal rule properly in the case
+!   of non-periodic boundaries.
+!
+!   18-jun-07/tobi: adapted from xzsum_mn_name_y
+!
+      use Cdata
+
+      real, dimension (nx) :: a
+      integer :: iname
+      real :: fac,suma
+!
+!  Initialize to zero, including other parts of the z-array
+!  which are later merged with an mpi reduce command.
+!
+      if (lfirstpoint) fnamey(:,:,iname) = 0.
+
+      fac = 1.
+
+      if ((n==n1.and.ipz==0).or.(n==n2.and.ipz==nprocz-1)) then
+        if (.not.lperi(3)) fac = .5*fac
+      endif
+
+      if (lperi(1)) then
+        suma = fac*sum(a)
+      else
+        suma = fac*(sum(a(2:nx-1))+.5*(a(1)+a(nx)))
+      endif
+!
+!  m starts with mghost+1=4, so the correct index is m-nghost
+!
+      fnamey(m-nghost,ipy+1,iname) = fnamey(m-nghost,ipy+1,iname) + suma
+
+    endsubroutine xzintegrate_mn_name_y
+!***********************************************************************
+    subroutine yzintegrate_mn_name_x(a,iname)
+!
+!   Integrate over y and z. Apply trapezoidal rule properly in the case
+!   of non-periodic boundaries.
+!
+!   18-jun-07/tobi: adapted from yzsum_mn_name_x
+!
+      use Cdata
+!
+      real, dimension (nx) :: a
+      integer :: iname
+      real :: fac
+!
+!  Initialize to zero.
+!
+      if (lfirstpoint) fnamex(:,iname) = 0.
+
+      fac = 1.
+
+      if ((m==m1.and.ipy==0).or.(m==m2.and.ipy==nprocy-1)) then
+        if (.not.lperi(2)) fac = .5*fac
+      endif
+
+      if ((n==n1.and.ipz==0).or.(n==n2.and.ipz==nprocz-1)) then
+        if (.not.lperi(3)) fac = .5*fac
+      endif
+
+      fnamex(:,iname) = fnamex(:,iname) + fac*a
+
+    endsubroutine yzintegrate_mn_name_x
 !***********************************************************************
     subroutine phizsum_mn_name_r(a,iname)
 !
