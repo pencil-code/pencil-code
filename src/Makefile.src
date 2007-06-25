@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.301 2007-06-15 04:27:23 joishi Exp $
+### $Id: Makefile.src,v 1.302 2007-06-25 14:50:22 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -564,7 +564,6 @@ LD_FFTW2=
 #FFLAGS=#(is[0-9]+)
 #CFLAGS=-DFUNDERSC=1 #(is[0-9]+)
 #LD_MPI=#(is[0-9]+)
-
 ##
 ##
 ## DCSC cluster - (Copenhagen, not Odense!)
@@ -652,11 +651,11 @@ LD_FFTW2=
 ## joishi's laptop
 ## 
 ##FC=gfortran #(ebisu)
-#FC=/usr/local/openmpi_gfortran/bin/mpif90
+#FC=/usr/local/openmpi_gfortran/bin/mpif90 #(ebisu)
 #FFLAGS=-O3 -frecord-marker=4 #(ebisu)
 ##CFLAGS=-DFUNDERSC=2 #(ebisu)
 ##CC=gcc #(ebisu)
-#CC=/usr/local/openmpi_gfortran/bin/mpicc
+#CC=/usr/local/openmpi_gfortran/bin/mpicc #(ebisu)
 ##
 ## Nordita MacBook
 ##
