@@ -1,9 +1,8 @@
-! $Id: sub.f90,v 1.315 2007-06-25 13:27:13 theine Exp $
+! $Id: sub.f90,v 1.316 2007-06-25 16:06:26 dhruba Exp $
 
 module Sub
 
   use Messages
-
   implicit none
 
   private
@@ -65,7 +64,6 @@ module Sub
 
   public :: tensor_diffusion_coef
 
-  public :: smooth_kernel, despike
 
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -371,6 +369,7 @@ module Sub
 !   1-apr-01/axel+wolf: coded
 !   4-may-02/axel: adapted for fname array
 !  23-jun-02/axel: allows for taking square root in the end
+!  20-jun-07/dhruba:adapted for spherical polar coordinate system
 !
 !  Note [24-may-2004, wd]:
 !    This routine should incorporate a test for iname /= 0, so instead of
@@ -384,15 +383,28 @@ module Sub
       use Cdata
 !
       real, dimension (nx) :: a
-      integer :: iname
+      integer :: iname,isum
       logical, optional :: lsqrt
 !
       if (iname /= 0) then
 !
         if (lfirstpoint) then
-          fname(iname)=sum(a)
+          if(lspherical_coords) then
+            fname(iname) = 0.
+            do isum=l1,l2
+              fname(iname) = fname(iname)+x(isum)*x(isum)*sinth(m)*a(isum)
+            enddo
+          else
+            fname(iname)=sum(a)
+          endif
         else
-          fname(iname)=fname(iname)+sum(a)
+          if(lspherical_coords) then
+          do isum=l1,l2
+            fname(iname) = fname(iname)+x(isum)*x(isum)*sinth(m)*a(isum)
+          enddo
+          else
+            fname(iname)=fname(iname)+sum(a)
+          endif
         endif
         !
         !  set corresponding entry in itype_name
@@ -454,13 +466,14 @@ module Sub
 !  monitor mass inflow/outflow and mass conservation
 !
 !   2-nov-05/wlad: adapted from sum_mn_name
+!  20-jun-07/dhruba: adapted for spherical polar coordinate system
 !
       use Cdata
 !
       real, dimension (nx) :: a,aux
       type (pencil_case) :: p
       real :: dv
-      integer :: iname,i
+      integer :: iname,i,isum
 !
       if (iname /= 0) then
 !
@@ -478,9 +491,24 @@ module Sub
          enddo
 !
          if (lfirstpoint) then
-            fname(iname)=sum(aux)*dv
+            if(lspherical_coords)then
+              fname(iname) = 0.
+              do isum=l1,l2
+                fname(iname)=fname(iname)+ & 
+                        x(isum)*x(isum)*sinth(m)*aux(isum)*dv
+              enddo
+            else
+              fname(iname)=sum(aux)*dv
+            endif
          else
-            fname(iname)=fname(iname)+sum(aux)*dv
+            if(lspherical_coords)then
+              do isum=l1,l2
+                fname(iname)=fname(iname)+ &  
+                      x(isum)*x(isum)*sinth(isum)*aux(isum)*dv
+              enddo
+            else
+              fname(iname)=fname(iname)+sum(aux)*dv
+            endif
          endif
 !
          itype_name(iname)=ilabel_sum_lim
@@ -562,7 +590,7 @@ module Sub
       use Cdata
 !
       real, dimension (nx) :: a
-      integer :: iname,n_nghost
+      integer :: iname,n_nghost,isum
 !
 !  Initialize to zero, including other parts of the z-array
 !  which are later merged with an mpi reduce command.
@@ -572,7 +600,14 @@ module Sub
 !  n starts with nghost+1=4, so the correct index is n-nghost
 !
       n_nghost=n-nghost
-      fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
+      if(lspherical_coords)then
+        do isum=l1,l2
+          fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
+                              x(isum)*x(isum)*sinth(m)*a(isum)
+        enddo
+      else
+        fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
+      endif
 !
     endsubroutine xysum_mn_name_z
 !***********************************************************************
@@ -916,16 +951,31 @@ module Sub
 !  Start from zero if lfirstpoint=.true.
 !
 !   17-dec-01/wolf: coded
+!   20-jun-07/dhruba:adapted for spherical polar coordinate system
 !
-      use Cdata, only: nx,lfirstpoint
+      use Cdata 
 !
       real, dimension (nx) :: a
       real :: res
+      integer :: isum
 !
       if (lfirstpoint) then
-        res=sum(a*1.D0)         ! sum at double precision to improve accuracy
+        if(lspherical_coords) then
+          res = 0.
+          do isum=l1,l2
+            res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
+          enddo
+        else
+          res=sum(a*1.D0)     ! sum at double precision to improve accuracy
+        endif
       else
-        res=res+sum(a*1.D0)
+        if(lspherical_coords) then
+          do isum=l1,l2
+            res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
+          enddo
+        else
+          res=res+sum(a*1.D0)
+        endif
       endif
 !
     endsubroutine mean_mn
@@ -937,15 +987,29 @@ module Sub
 !
 !   1-apr-01/axel+wolf: coded
 !
-      use Cdata, only: nx,lfirstpoint
+      use Cdata 
 !
       real, dimension (nx) :: a
       real :: res
+      integer :: isum
 !
       if (lfirstpoint) then
-        res=sum(a**2)
+        if(lspherical_coords) then
+          res = 0.
+          do isum=l1,l2
+            res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
+          enddo
+        else
+          res=sum(a**2)
+        endif
       else
-        res=res+sum(a**2)
+        if(lspherical_coords) then
+          do isum=l1,l2
+            res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
+          enddo
+        else
+          res=res+sum(a**2)
+        endif
       endif
 !
     endsubroutine rms_mn
@@ -958,15 +1022,29 @@ module Sub
 !
 !   1-apr-01/axel+wolf: coded
 !
-      use Cdata, only: nx,lfirstpoint
+      use Cdata 
 !
       real, dimension (nx) :: a2
       real :: res
+      integer :: isum
 !
       if (lfirstpoint) then
-        res=sum(a2)
+        if(lspherical_coords) then
+          res = 0.
+          do isum=l1,l2
+            res = res+x(isum)*x(isum)*sinth(m)*a2(isum)
+          enddo
+        else
+          res=sum(a2)
+        endif
       else
-        res=res+sum(a2)
+        if(lspherical_coords) then
+          do isum=l1,l2
+            res = res+x(isum)*x(isum)*sinth(m)*a2(isum)
+          enddo
+        else
+          res=res+sum(a2)
+        endif
       endif
 !
     endsubroutine rms2_mn
@@ -983,11 +1061,25 @@ module Sub
 !
       real, dimension (nx) :: a
       real :: res
+      integer :: isum
 !
       if (lfirstpoint) then
+        if(lspherical_coords) then
+          res = 0.
+          do isum=l1,l2
+            res = res+x(isum)*x(isum)*sinth(m)*a(isum)
+          enddo
+        else
         res=sum(a)
+        endif
       else
-        res=res+sum(a)
+        if(lspherical_coords) then
+          do isum=l1,l2
+            res = res+x(isum)*x(isum)*sinth(m)*a(isum)
+          enddo
+        else
+          res=res+sum(a)
+        endif
       endif
 !
     endsubroutine sum_mn

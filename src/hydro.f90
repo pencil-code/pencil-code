@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.352 2007-06-25 06:30:34 brandenb Exp $
+! $Id: hydro.f90,v 1.353 2007-06-25 16:06:21 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -294,7 +294,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.352 2007-06-25 06:30:34 brandenb Exp $")
+           "$Id: hydro.f90,v 1.353 2007-06-25 16:06:21 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1086,9 +1086,17 @@ module Hydro
 !
 !  ``uu/dx'' for timestep
 !
-      if (lfirst.and.ldt) advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                                   abs(p%uu(:,2))*dy_1(  m  )+ &
-                                   abs(p%uu(:,3))*dz_1(  n  )
+      if (lfirst.and.ldt) then 
+        if(lspherical_coords)then 
+          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+                   abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
+                   abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
+         else
+            advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+                     abs(p%uu(:,2))*dy_1(  m  )+ &
+                     abs(p%uu(:,3))*dz_1(  n  )
+          endif
+        endif
 !
 !WL: don't know if this is correct, but it's the only way I can make
 !    some 1D and 2D samples work when the non-existent direction has the
