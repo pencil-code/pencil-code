@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.19 2007-05-01 22:31:37 dobler Exp $
+! $Id: grid.f90,v 1.20 2007-06-25 06:14:43 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -98,6 +98,7 @@ module Grid
       if (lperi(1)) then
         dx=Lx/nxgrid
         x00=x0+.5*dx
+        if (lshift_origin(1)) x00=x0+dx
       else
         dx=Lx/(nxgrid-1)
         x00=x0
@@ -106,6 +107,7 @@ module Grid
       if (lperi(2)) then
         dy=Ly/nygrid
         y00=y0+.5*dy
+        if (lshift_origin(2)) y00=y0+dy
       else
         dy=Ly/(nygrid-1)
         y00=y0
@@ -114,6 +116,7 @@ module Grid
       if (lperi(3)) then
         dz=Lz/nzgrid
         z00=z0+.5*dz
+        if (lshift_origin(3)) z00=z0+dz
       else
         dz=Lz/(nzgrid-1)
         z00=z0
