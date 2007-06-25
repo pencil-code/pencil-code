@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.12 2007-05-17 13:54:57 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.13 2007-06-25 14:32:30 bingert Exp $
 !  This module can replace the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
 !  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.12 2007-05-17 13:54:57 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.13 2007-06-25 14:32:30 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -455,7 +455,7 @@ module Entropy
 !  calculate right hand side of entropy equation
 !  heat condution is currently disabled until old stuff,
 !  which in now in calc_heatcond, has been reinstalled.
-!  DlnTT/Dt = -gamma1*divu + gamma*TT1*RHS
+!  DlnTT/Dt = -gamma1*divu + gamma*cp1*rho1*TT1*RHS
 !
 !  13-dec-02/axel+tobi: adapted from entropy
 !
