@@ -1,5 +1,5 @@
 ;
-;  $Id: zder_6th_ghost.pro,v 1.11 2006-10-07 09:57:56 brandenb Exp $
+;  $Id: zder_6th_ghost.pro,v 1.12 2007-06-26 09:29:51 dintrans Exp $
 ;
 ;  First derivative d/dz
 ;  - 6th-order (7-point stencil)
@@ -21,6 +21,8 @@ function zder,f
 ;
   s=size(f) & d=make_array(size=s)
   nx=s[1] & ny=s[2] & nz=s[3]
+; 26-jun-2007/dintrans: 2-D case only means (x,z) for the moment
+  if (s[0] eq 2) then nz=s[2]
 ;
 ;  Check for degenerate case (no z-extension)
 ;
@@ -59,6 +61,14 @@ function zder,f
     endif else begin
       d[*,*,n1:n2,*]=0.
     endelse
+;
+  endif else if (s[0] eq 2) then begin
+    if (n2 gt n1) then begin
+      if (lequidist[2] eq 0) then dz2=spread(dz2,0,s[2])
+      d[*,n1:n2]=dz2*( +45.*(f[*,n1+1:n2+1]-f[*,n1-1:n2-1]) $
+                        -9.*(f[*,n1+2:n2+2]-f[*,n1-2:n2-2]) $
+                           +(f[*,n1+3:n2+3]-f[*,n1-3:n2-3]) )
+    endif else d[*,n1:n2]=0.
 ;
   endif else begin
     print, 'error: zder_6th_ghost not implemented for ', $

@@ -1,5 +1,5 @@
 ;
-;  $Id: xder_6th_ghost.pro,v 1.11 2006-10-07 09:57:56 brandenb Exp $
+;  $Id: xder_6th_ghost.pro,v 1.12 2007-06-26 09:29:51 dintrans Exp $
 ;
 ;  First derivative d/dx
 ;  - 6th-order
@@ -21,6 +21,8 @@ function xder,f
 ;
   s=size(f) & d=make_array(size=s)
   nx=s[1] & ny=s[2] & nz=s[3]
+; 26-jun-2007/dintrans: 2-D case only means (x,z) for the moment
+  if (s[0] eq 2) then nz=s[2]
 ;
 ;  Check for degenerate case (no x-extension)
 ;
@@ -46,6 +48,15 @@ function xder,f
     endif else begin
       d[l1:l2,*,*]=0.
     endelse
+;
+  endif else if (s[0] eq 2) then begin
+;
+    if (l2 gt l1) then begin
+      if (lequidist[0] eq 0) then dx2=spread(dx2,1,s[2])
+      d[l1:l2,*]=dx2*( +45.*(f[l1+1:l2+1,*]-f[l1-1:l2-1,*]) $
+                        -9.*(f[l1+2:l2+2,*]-f[l1-2:l2-2,*]) $
+                           +(f[l1+3:l2+3,*]-f[l1-3:l2-3,*]) )
+    endif else d[l1:l2,*]=0.
 ;
   endif else if (s[0] eq 4) then begin
 ;
