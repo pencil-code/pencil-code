@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.316 2007-06-25 16:06:26 dhruba Exp $
+! $Id: sub.f90,v 1.317 2007-06-26 05:29:55 brandenb Exp $
 
 module Sub
 
@@ -64,6 +64,7 @@ module Sub
 
   public :: tensor_diffusion_coef
 
+  public :: smooth_kernel, despike
 
   interface poly                ! Overload the `poly' function
     module procedure poly_0
