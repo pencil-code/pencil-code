@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.91 2007-03-06 22:33:46 dobler Exp $
+# CVS: $Id: run.csh,v 1.92 2007-06-26 08:06:46 dhruba Exp $
 
 #                       run.csh
 #                      ---------
@@ -247,4 +247,5 @@ exit ( $run_status | $run_status2 ) # propagate status of mpirun
 # qsub -l nodes=4:ppn=1,mem=500mb,cput=24:00:00 -q p-long run.csh
 # qsub -l ncpus=16,mem=1gb,cput=400:00:00 -q parallel run.csh
 # qsub -l nodes=128,walltime=10:00:00 -q workq run.csh
+# qsub -l nodes=1:ppn=4 run.csh
 # eval `env-setup lam`; qsub -v PATH -pe lam 8 -j y -o run.log run.csh

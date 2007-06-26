@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.193 2007-06-11 18:20:57 jonhagg Exp $
+# $Id: getconf.csh,v 1.194 2007-06-26 08:06:46 dhruba Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -218,13 +218,14 @@ else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
   endif
 else if ($hn =~ compute[0-9][0-9].maths.qmul.ac.uk) then
   echo "QMUL Maths cluster - LONDON"
-  set mpirun = /home/dhruba/mpich/bin/mpirun
   if ($?PBS_NODEFILE) then
     echo "PBS job"
-    cat $PBS_NODEFILE >nodelist
+    cat $PBS_NODEFILE >mylist
     set local_disc = 0
     set one_local_disc = 0
     set local_binary = 0
+    set mpirun = /home/dhruba/mpich/bin/mpirun 
+    set mpirunops = "-machinefile mylist"
   else
     echo "Non-PBS, running on `hostname`"
   endif
