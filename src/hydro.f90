@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.355 2007-06-27 12:46:55 dhruba Exp $
+! $Id: hydro.f90,v 1.356 2007-06-27 21:22:06 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -86,7 +86,7 @@ module Hydro
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_damp_ruzm=0.,tau_diffrot1=0.
   real :: ampl_diffrot=0.,Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
-  real :: k1_ff=1.,ampl_ff=1.,width_ff_uu=1.
+  real :: k1_ff=1.,ampl_ff=1.,width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
@@ -108,7 +108,7 @@ module Hydro
        borderuu, lfreeze_uint, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
        lforcing_continuous_uu,iforcing_continuous_uu, &
-       lembed,k1_ff,ampl_ff,width_ff_uu, &
+       lembed,k1_ff,ampl_ff,width_ff_uu,x1_ff_uu,x2_ff_uu, &
        lprecession, omega_precession, lshear_rateofstrain, &
        lalways_use_gij_etc
 
@@ -296,7 +296,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.355 2007-06-27 12:46:55 dhruba Exp $")
+           "$Id: hydro.f90,v 1.356 2007-06-27 21:22:06 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2639,8 +2639,7 @@ module Hydro
 
     endsubroutine remove_mean_flow
 !***********************************************************************
-!***********************************************************************
-    subroutine impose_profile_diffrot(f,df,tau_prof1,prof_amp)
+    subroutine impose_profile_diffrot(f,df,tau_prof1,amp)
 !
 !  add acoustic forcing function, using a set of precomputed wavevectors
 !  This forcing drives pressure waves
@@ -2649,11 +2648,17 @@ module Hydro
 !
       use Mpicomm
       use Cdata
+      use Sub, only: step
+
       real, dimension (mx,my,mz,mfarray) :: f,df
-      real :: tau_prof1,prof_amp
+      real, dimension (nx) :: prof_amp
+      real :: tau_prof1,amp
 !
+!   P31(theta)/sin(theta) = (3/2) * [1 - 5*cos(theta)^2 ]
+!
+      prof_amp=amp*step(x(l1:l2),x1_ff_uu,width_ff_uu)
       df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_prof1* &
-        (f(l1:l2,m,n,iuz)-prof_amp*(1-costh(m)*costh(m)/5.))
+        (f(l1:l2,m,n,iuz)-prof_amp*(1.5-7.5*costh(m)*costh(m)))
 !
     endsubroutine impose_profile_diffrot
 !************************************************************
