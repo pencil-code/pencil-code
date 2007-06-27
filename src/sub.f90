@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.317 2007-06-26 05:29:55 brandenb Exp $
+! $Id: sub.f90,v 1.318 2007-06-27 10:21:17 dhruba Exp $
 
 module Sub
 
@@ -1071,7 +1071,7 @@ module Sub
             res = res+x(isum)*x(isum)*sinth(m)*a(isum)
           enddo
         else
-        res=sum(a)
+          res=sum(a)
         endif
       else
         if(lspherical_coords) then

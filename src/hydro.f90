@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.353 2007-06-25 16:06:21 dhruba Exp $
+! $Id: hydro.f90,v 1.354 2007-06-27 10:21:16 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -95,12 +95,14 @@ module Hydro
   logical :: lremove_mean_flow=.false.
   logical :: lalways_use_gij_etc=.false.
   character (len=labellen) :: iforcing_continuous_uu='ABC'
+  character (len=labellen) :: uuprof='none'
 !
 ! geodynamo
   namelist /hydro_run_pars/ &
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym,tau_damp_ruzm,tau_diffrot1,ampl_diffrot, &
+       uuprof,&
        xexp_diffrot,kx_diffrot,lremove_mean_momenta,lremove_mean_flow, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, &
@@ -294,7 +296,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.353 2007-06-25 16:06:21 dhruba Exp $")
+           "$Id: hydro.f90,v 1.354 2007-06-27 10:21:16 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1128,17 +1130,26 @@ module Hydro
 !  15-aug-03/christer: Added amplitude (ampl_diffrot) below
 !   7-jun-03/axel: modified to turn off diffrot for x>0 (recycle use of rdampint)
 !
+! DHRUBA
       if (tau_diffrot1/=0) then
         if (wdamp/=0.) then
           pdamp=1.-step(x(l1:l2),rdampint,wdamp) ! outer damping profile
         else
           pdamp=1.
         endif
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1* &
-                          (f(l1:l2,m,n,iuy)-ampl_diffrot*&
-                          cos(kx_diffrot*x(l1:l2))**xexp_diffrot* &
-                          cos(z(n))*pdamp)
+        if(lspherical_coords) then
+          select case(uuprof)
+          case ('diffrot');  call impose_profile_diffrot(f,df,tau_diffrot1,ampl_diffrot)
+          case default; if(lroot) print*,'duu_dt: No such profile',trim(uuprof)
+          endselect
+        else 
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1* &
+            (f(l1:l2,m,n,iuy)-ampl_diffrot*&
+            cos(kx_diffrot*x(l1:l2))**xexp_diffrot* &
+            cos(z(n))*pdamp)
+        endif
       endif
+!DHRUBA
 !
 !  Possibility to damp mean x momentum, ruxm, to zero.
 !  This can be useful in situations where a mean flow is generated.
@@ -2628,4 +2639,22 @@ module Hydro
 
     endsubroutine remove_mean_flow
 !***********************************************************************
+!***********************************************************************
+    subroutine impose_profile_diffrot(f,df,tau_prof1,prof_amp)
+!
+!  add acoustic forcing function, using a set of precomputed wavevectors
+!  This forcing drives pressure waves
+!
+!  27-june-2007 dhruba: coded
+!
+      use Mpicomm
+      use Cdata
+      real, dimension (mx,my,mz,mfarray) :: f,df
+      real :: tau_prof1,prof_amp
+!
+      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_prof1* &
+        (f(l1:l2,m,n,iuz)-prof_amp*(1-sinth(m)*sinth(m)/5.))
+!
+    endsubroutine impose_profile_diffrot
+!************************************************************
 endmodule Hydro
