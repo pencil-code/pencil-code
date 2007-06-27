@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.354 2007-06-27 10:21:16 dhruba Exp $
+! $Id: hydro.f90,v 1.355 2007-06-27 12:46:55 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -296,7 +296,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.354 2007-06-27 10:21:16 dhruba Exp $")
+           "$Id: hydro.f90,v 1.355 2007-06-27 12:46:55 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2653,7 +2653,7 @@ module Hydro
       real :: tau_prof1,prof_amp
 !
       df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_prof1* &
-        (f(l1:l2,m,n,iuz)-prof_amp*(1-sinth(m)*sinth(m)/5.))
+        (f(l1:l2,m,n,iuz)-prof_amp*(1-costh(m)*costh(m)/5.))
 !
     endsubroutine impose_profile_diffrot
 !************************************************************
