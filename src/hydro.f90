@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.356 2007-06-27 21:22:06 brandenb Exp $
+! $Id: hydro.f90,v 1.357 2007-06-28 05:16:03 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -84,7 +84,8 @@ module Hydro
   real :: ruxm=0.,ruym=0.,ruzm=0.
   real :: tau_damp_ruxm1=0.,tau_damp_ruym1=0.,tau_damp_ruzm1=0.
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_damp_ruzm=0.,tau_diffrot1=0.
-  real :: ampl_diffrot=0.,Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.
+  real :: ampl1_diffrot=0.,ampl2_diffrot=0.
+  real :: Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   real :: k1_ff=1.,ampl_ff=1.,width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
   integer :: novec,novecmax=nx*ny*nz/4
@@ -101,8 +102,8 @@ module Hydro
   namelist /hydro_run_pars/ &
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
-       tau_damp_ruxm,tau_damp_ruym,tau_damp_ruzm,tau_diffrot1,ampl_diffrot, &
-       uuprof,&
+       tau_damp_ruxm,tau_damp_ruym,tau_damp_ruzm,tau_diffrot1, &
+       ampl1_diffrot,ampl2_diffrot,uuprof,&
        xexp_diffrot,kx_diffrot,lremove_mean_momenta,lremove_mean_flow, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, &
@@ -296,7 +297,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.356 2007-06-27 21:22:06 brandenb Exp $")
+           "$Id: hydro.f90,v 1.357 2007-06-28 05:16:03 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1001,7 +1002,8 @@ module Hydro
 !   7-jun-02/axel: incoporated from subroutine pde
 !  10-jun-02/axel+mattias: added Coriolis force
 !  23-jun-02/axel: glnrho and fvisc are now calculated in here
-!  17-jun-03/ulf:  ux2, uy2 and uz2 added as diagnostic quantities
+!  17-jun-03/ulf: ux2, uy2 and uz2 added as diagnostic quantities
+!  27-jun-07/dhruba: differential rotation as subroutine call
 !
       use Cdata
       use Sub
@@ -1127,10 +1129,9 @@ module Hydro
 !
 !  adding differential rotation via a frictional term
 !  (should later be moved to a separate routine)
-!  15-aug-03/christer: Added amplitude (ampl_diffrot) below
-!   7-jun-03/axel: modified to turn off diffrot for x>0 (recycle use of rdampint)
+!  15-aug-03/christer: Added amplitude (ampl1_diffrot) below
+!   7-jun-03/axel: turn off diffrot for x>0 (recycle use of rdampint)
 !
-! DHRUBA
       if (tau_diffrot1/=0) then
         if (wdamp/=0.) then
           pdamp=1.-step(x(l1:l2),rdampint,wdamp) ! outer damping profile
@@ -1139,17 +1140,16 @@ module Hydro
         endif
         if(lspherical_coords) then
           select case(uuprof)
-          case ('diffrot');  call impose_profile_diffrot(f,df,tau_diffrot1,ampl_diffrot)
+            case ('diffrot');  call impose_profile_diffrot(f,df)
           case default; if(lroot) print*,'duu_dt: No such profile',trim(uuprof)
           endselect
         else 
           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1* &
-            (f(l1:l2,m,n,iuy)-ampl_diffrot*&
+            (f(l1:l2,m,n,iuy)-ampl1_diffrot*&
             cos(kx_diffrot*x(l1:l2))**xexp_diffrot* &
             cos(z(n))*pdamp)
         endif
       endif
-!DHRUBA
 !
 !  Possibility to damp mean x momentum, ruxm, to zero.
 !  This can be useful in situations where a mean flow is generated.
@@ -2639,10 +2639,9 @@ module Hydro
 
     endsubroutine remove_mean_flow
 !***********************************************************************
-    subroutine impose_profile_diffrot(f,df,tau_prof1,amp)
+    subroutine impose_profile_diffrot(f,df)
 !
-!  add acoustic forcing function, using a set of precomputed wavevectors
-!  This forcing drives pressure waves
+!  forcing of differential rotation with a -(1/tau)*(u-uref) method
 !
 !  27-june-2007 dhruba: coded
 !
@@ -2650,15 +2649,20 @@ module Hydro
       use Cdata
       use Sub, only: step
 
-      real, dimension (mx,my,mz,mfarray) :: f,df
-      real, dimension (nx) :: prof_amp
-      real :: tau_prof1,amp
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: prof_amp1,prof_amp2
 !
-!   P31(theta)/sin(theta) = (3/2) * [1 - 5*cos(theta)^2 ]
+!  write differential rotation in terms of Gegenbauer polynomials
+!  Omega = Omega0 + Omega2*P31(costh)/sinth + Omega4*P51(costh)/sinth + ...
 !
-      prof_amp=amp*step(x(l1:l2),x1_ff_uu,width_ff_uu)
-      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_prof1* &
-        (f(l1:l2,m,n,iuz)-prof_amp*(1.5-7.5*costh(m)*costh(m)))
+      prof_amp1=ampl1_diffrot*step(x(l1:l2),x1_ff_uu,width_ff_uu)
+      prof_amp2=ampl2_diffrot*step(x(l1:l2),x2_ff_uu,width_ff_uu)
+!
+!  Note that P31(theta)/sin(theta) = (3/2) * [1 - 5*cos(theta)^2 ]
+!
+      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
+        -prof_amp1*(1.5-7.5*costh(m)*costh(m))+prof_amp2)
 !
     endsubroutine impose_profile_diffrot
 !************************************************************
