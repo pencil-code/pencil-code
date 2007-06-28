@@ -1,5 +1,5 @@
 ;;
-;; $Id: pc_read_video.pro,v 1.1 2007-06-28 06:28:33 ajohan Exp $
+;; $Id: pc_read_video.pro,v 1.2 2007-06-28 06:53:05 ajohan Exp $
 ;;
 ;; NAME:
 ;;      PC_READ_VIDEO
@@ -78,13 +78,12 @@ close, 1 & close, 2 & close, 3 & close, 4
 ;
 ; Build structure of all the variables.
 ;
-object = CREATE_STRUCT(name=field,['t','xy','xy2','xz','yz'], $
+object = create_struct(name=objectname,['t','xy','xy2','xz','yz'], $
     t, xy, xy2, xz, yz)
 ;
 ; If requested print a summary.
 ;
-fmt = '(A,4G15.6)'
-if keyword_set(PRINT) then begin
+if (keyword_set(print)) then begin
   print, 'field=''', field, ''', datadir=''', datadir, ''''
   print, 'min(t)  , max(t)   = ', min(t), ',', max(t)
   print, 'min(xy) , max(xy)  = ', min(xy), ', ', max(xy)
