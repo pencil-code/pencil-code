@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.357 2007-06-28 05:16:03 brandenb Exp $
+! $Id: hydro.f90,v 1.358 2007-06-28 09:30:17 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -96,14 +96,14 @@ module Hydro
   logical :: lremove_mean_flow=.false.
   logical :: lalways_use_gij_etc=.false.
   character (len=labellen) :: iforcing_continuous_uu='ABC'
-  character (len=labellen) :: uuprof='none'
+  character (len=labellen) :: prof_diffrot='diffrot'
 !
 ! geodynamo
   namelist /hydro_run_pars/ &
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym,tau_damp_ruzm,tau_diffrot1, &
-       ampl1_diffrot,ampl2_diffrot,uuprof,&
+       ampl1_diffrot,ampl2_diffrot,prof_diffrot, &
        xexp_diffrot,kx_diffrot,lremove_mean_momenta,lremove_mean_flow, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, &
@@ -297,7 +297,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.357 2007-06-28 05:16:03 brandenb Exp $")
+           "$Id: hydro.f90,v 1.358 2007-06-28 09:30:17 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1121,35 +1121,13 @@ module Hydro
       if (lforcing_continuous_uu) call forcing_continuous(df,p)
 !
 !  damp motions in some regions for some time spans if desired
+!  for geodynamo: addition of dampuint evaluation
 !
-! geodynamo
-! addition of dampuint evaluation
       if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) call udamping(f,df,p)
-! end geodynamo
 !
 !  adding differential rotation via a frictional term
-!  (should later be moved to a separate routine)
-!  15-aug-03/christer: Added amplitude (ampl1_diffrot) below
-!   7-jun-03/axel: turn off diffrot for x>0 (recycle use of rdampint)
 !
-      if (tau_diffrot1/=0) then
-        if (wdamp/=0.) then
-          pdamp=1.-step(x(l1:l2),rdampint,wdamp) ! outer damping profile
-        else
-          pdamp=1.
-        endif
-        if(lspherical_coords) then
-          select case(uuprof)
-            case ('diffrot');  call impose_profile_diffrot(f,df)
-          case default; if(lroot) print*,'duu_dt: No such profile',trim(uuprof)
-          endselect
-        else 
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1* &
-            (f(l1:l2,m,n,iuy)-ampl1_diffrot*&
-            cos(kx_diffrot*x(l1:l2))**xexp_diffrot* &
-            cos(z(n))*pdamp)
-        endif
-      endif
+      if (tau_diffrot1/=0) call impose_profile_diffrot(f,df)
 !
 !  Possibility to damp mean x momentum, ruxm, to zero.
 !  This can be useful in situations where a mean flow is generated.
@@ -2653,16 +2631,34 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: prof_amp1,prof_amp2
 !
+      select case(prof_diffrot)
+!
+!  diffrot profile from Brandenburg & Sandin (2004, A&A)
+!
+      case ('BS04')
+      if (wdamp/=0.) then
+        prof_amp1=ampl1_diffrot*(1.-step(x(l1:l2),rdampint,wdamp))
+      else
+        prof_amp1=ampl1_diffrot
+      endif
+      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
+        -prof_amp1*cos(kx_diffrot*x(l1:l2))**xexp_diffrot*cos(z(n)))
+!
 !  write differential rotation in terms of Gegenbauer polynomials
 !  Omega = Omega0 + Omega2*P31(costh)/sinth + Omega4*P51(costh)/sinth + ...
-!
-      prof_amp1=ampl1_diffrot*step(x(l1:l2),x1_ff_uu,width_ff_uu)
-      prof_amp2=ampl2_diffrot*step(x(l1:l2),x2_ff_uu,width_ff_uu)
-!
 !  Note that P31(theta)/sin(theta) = (3/2) * [1 - 5*cos(theta)^2 ]
 !
+      case ('solar_simple')
+      prof_amp1=ampl1_diffrot*step(x(l1:l2),x1_ff_uu,width_ff_uu)
+      prof_amp2=ampl2_diffrot*step(x(l1:l2),x2_ff_uu,width_ff_uu)
       df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
         -prof_amp1*(1.5-7.5*costh(m)*costh(m))+prof_amp2)
+!
+!  no profile matches
+!
+      case default
+          if(lroot) print*,'duu_dt: No such profile ',trim(prof_diffrot)
+      endselect
 !
     endsubroutine impose_profile_diffrot
 !************************************************************
