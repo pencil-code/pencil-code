@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.10 2006-12-14 07:45:23 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.11 2007-06-28 05:48:51 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -8,7 +8,7 @@
 pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, lplot=lplot, iplot=iplot, min=min, max=max, zoom=zoom, $
     xax=xax, yax=yax, xtitle=xtitle, ytitle=ytitle, title=title, $
-    lsubbox=lsubbox, rsubbox=rsubbox, noaxes=noaxes, $
+    lsubbox=lsubbox, rsubbox=rsubbox, subboxcolor=subboxcolor, noaxes=noaxes, $
     t_title=t_title, t_scale=t_scale, t_zero=t_zero, $
     position=position, fillwindow=fillwindow, tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
@@ -40,6 +40,7 @@ default, t_scale, 1.0
 default, t_zero, 0.0
 default, lsubbox, 0
 default, rsubbox, 5
+default, subboxcolor, 255
 default, fillwindow, 0
 default, tformat, '(f5.1)'
 default, it1, 10
@@ -169,7 +170,7 @@ while (not eof(file)) do begin
                 xax[imax[0]]-rsubbox], $
                [yax[imax[1]]-rsubbox,yax[imax[1]]-rsubbox, $
                 yax[imax[1]]+rsubbox,yax[imax[1]]+rsubbox, $
-                yax[imax[1]]-rsubbox]
+                yax[imax[1]]-rsubbox], color=subboxcolor
 ;;  Box crosses lower boundary.
         if (yax[imax[1]]-rsubbox lt y0) then begin
           oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
@@ -177,7 +178,7 @@ while (not eof(file)) do begin
                   xax[imax[0]]-rsubbox], $
                  [yax[imax[1]]+Ly-rsubbox,yax[imax[1]]+Ly-rsubbox, $
                   yax[imax[1]]+Ly+rsubbox,yax[imax[1]]+Ly+rsubbox, $
-                  yax[imax[1]]+Ly-rsubbox]
+                  yax[imax[1]]+Ly-rsubbox], color=subboxcolor
         endif
 ;;  Box crosses upper boundary.
         if (yax[imax[1]]+rsubbox gt y1) then begin
