@@ -1,4 +1,4 @@
-! $Id: shock_highorder.f90,v 1.2 2007-06-29 18:29:19 theine Exp $
+! $Id: shock_highorder.f90,v 1.3 2007-06-29 19:03:27 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -32,10 +32,10 @@ module Shock
 
   include 'shock.h'
 
-  real :: dummy=0.
+  integer :: ishock_max = 1
 
   ! run parameters
-  namelist /shock_run_pars/ dummy
+  namelist /shock_run_pars/ ishock_max
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_shockmax=0
@@ -75,7 +75,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_highorder.f90,v 1.2 2007-06-29 18:29:19 theine Exp $")
+           "$Id: shock_highorder.f90,v 1.3 2007-06-29 19:03:27 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -101,7 +101,8 @@ module Shock
 !
 !  20-nov-02/tony: coded
 !
-       use Cdata, only: ishock
+       use Cdata, only: ishock,lroot
+       use Messages, only: fatal_error
 
        real, dimension (mx,my,mz,mfarray) :: f
        logical, intent(in) :: lstarting
@@ -138,7 +139,7 @@ module Shock
         smooth_factor(:,+1:+3,:) = 0.
       endif
 
-      if (nygrid > 1) then
+      if (nzgrid > 1) then
         do k = -3,3
           smooth_factor(:,:,k) = smooth_factor(:,:,k)*weights(k)
         enddo
@@ -148,6 +149,16 @@ module Shock
       endif
 
       smooth_factor = smooth_factor/sum(smooth_factor)
+
+!
+!  Check that smooth order is within bounds
+!
+      if (lroot) then
+        if (ishock_max < 1.or.ishock_max > 3) then
+          call fatal_error('initialize_shock', &
+                           'ishock_max needs to be between 1 and 3.')
+        endif
+      endif
 
     endsubroutine initialize_shock
 !***********************************************************************
@@ -372,8 +383,12 @@ module Shock
       enddo
 
 !
-!  Take maximum over 3 grid cells
+!  Take maximum over a number of grid cells
 !
+      ni = merge(ishock_max,0,nxgrid > 1)
+      nj = merge(ishock_max,0,nygrid > 1)
+      nk = merge(ishock_max,0,nzgrid > 1)
+
       call boundconds_x(f,ishock,ishock)
       call initiate_isendrcv_bdry(f,ishock,ishock)
 
@@ -389,10 +404,6 @@ module Shock
           call boundconds_y(f,ishock,ishock)
           call boundconds_z(f,ishock,ishock)
         endif
-
-        ni = merge(3,0,nxgrid > 1)
-        nj = merge(3,0,nygrid > 1)
-        nk = merge(3,0,nzgrid > 1)
 
         penc = 0.
 
@@ -413,6 +424,10 @@ module Shock
 !
 !  Smooth with a Gaussian profile
 !
+      ni = merge(3,0,nxgrid > 1)
+      nj = merge(3,0,nygrid > 1)
+      nk = merge(3,0,nzgrid > 1)
+
       call boundconds_x(f,ishock,ishock)
       call initiate_isendrcv_bdry(f,ishock,ishock)
 
