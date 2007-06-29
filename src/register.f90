@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.209 2007-05-23 13:39:42 bingert Exp $
+! $Id: register.f90,v 1.210 2007-06-29 04:52:53 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -30,6 +30,7 @@ module Register
       use Mpicomm,         only: mpicomm_init,stop_it,stop_it_if_any
       use Sub
       use Param_IO,        only: get_datadir,get_snapdir
+      use Equ,             only: initialize_time_integrals
       use IO,              only: register_io
       use Global,          only: register_global
       use EquationOfState, only: register_eos
@@ -185,6 +186,7 @@ module Register
       use Viscosity,       only: initialize_viscosity
       use Special,         only: initialize_special
       use BorderProfiles,  only: initialize_border_profiles
+      use Equ,             only: initialize_time_integrals
 
       real, dimension(mx,my,mz,mfarray) :: f
       real :: sinth_min=1e-5 !(to avoid axis)
@@ -282,6 +284,11 @@ module Register
       call initialize_viscosity(lstarting)
       call initialize_special(f)
       call initialize_border_profiles()
+!
+!  initialize time integrals
+!  (leads to linker problem)
+!
+!---  call initialize_time_integrals(f)
 !
 ! Store the value of impossible for use in IDL
 !

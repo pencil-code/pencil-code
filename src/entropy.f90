@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.504 2007-06-25 15:51:34 dintrans Exp $
+! $Id: entropy.f90,v 1.505 2007-06-29 04:52:53 brandenb Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -116,6 +116,7 @@ module Entropy
       T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat, &
       r_bcz,luminosity,wheat,hcond0,tau_cool,TTref_cool,lhcond_global
+
   ! run parameters
   namelist /entropy_run_pars/ &
       hcond0,hcond1,hcond2,widthss,borderss, &
@@ -167,7 +168,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.504 2007-06-25 15:51:34 dintrans Exp $")
+           "$Id: entropy.f90,v 1.505 2007-06-29 04:52:53 brandenb Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************

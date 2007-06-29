@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.72 2007-06-01 17:35:05 dobler Exp $
+! $Id: nohydro.f90,v 1.73 2007-06-29 04:52:53 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -71,7 +71,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.72 2007-06-01 17:35:05 dobler Exp $")
+           "$Id: nohydro.f90,v 1.73 2007-06-29 04:52:53 brandenb Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -286,9 +286,9 @@ module Hydro
 !
       elseif (kinflow=='Galloway-Proctor') then
         if (headtt) print*,'Galloway-Proctor flow; kx_aa,ky_aa=',kkx_aa,kky_aa
-        fac=sqrt(1.5)
-        ecost=eps_kinflow*cos(t)
-        esint=eps_kinflow*sin(t)
+        fac=sqrt(1.5)*ampl_kinflow
+        ecost=eps_kinflow*cos(omega_kinflow*t)
+        esint=eps_kinflow*sin(omega_kinflow*t)
         p%uu(:,1)=+fac*cos(kky_aa*y(m)    +esint)*kky_aa
         p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2)+ecost)*kkx_aa
         p%uu(:,3)=-fac*(cos(kkx_aa*x(l1:l2)+ecost)+sin(kky_aa*y(m)+esint))

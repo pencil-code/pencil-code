@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.244 2007-05-28 23:44:15 brandenb Exp $
+! $Id: run.f90,v 1.245 2007-06-29 04:52:53 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -70,7 +70,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.244 2007-05-28 23:44:15 brandenb Exp $")
+             "$Id: run.f90,v 1.245 2007-06-29 04:52:53 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -457,9 +457,10 @@
             count = count + 1     !  reliable loop count even for premature exit
           endif
 !
-!  Update time averages
+!  Update time averages and time antegrals
 !
           if (ltavg) call update_timeavgs(f,dt)
+          if (ltime_integrals) call time_integrals(f)
 !
 !  Add forcing and/or do rescaling (if applicable)
 !

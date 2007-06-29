@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.360 2007-06-15 06:39:44 ajohan Exp $
+! $Id: equ.f90,v 1.361 2007-06-29 04:52:53 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -18,6 +18,7 @@ module Equ
 !
   public :: pde, debug_imn_arrays
   public :: initialize_pencils,pencil_consistency_check
+  public :: initialize_time_integrals, time_integrals
 !
   contains
 
@@ -174,6 +175,34 @@ module Equ
       endif
 !
     endsubroutine diagnostic
+!***********************************************************************
+    subroutine initialize_time_integrals(f)
+!
+!  Initialize time_integrals for full chunks
+!
+!  28-jun-07/axel+mreinhard: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      if (iuut/=0) f(:,:,:,iuxt:iuzt)=0.
+!
+    endsubroutine initialize_time_integrals
+!***********************************************************************
+    subroutine time_integrals(f)
+!
+!  Calculate time_integrals of full chunks
+!
+!  28-jun-07/axel+mreinhard: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      if (iuut/=0) f(:,:,:,iuxt:iuzt)=f(:,:,:,iuxt:iuzt)+dt*f(:,:,:,iux:iuz)
+!
+    endsubroutine time_integrals
 !***********************************************************************
     subroutine xyaverages_z()
 !
@@ -414,7 +443,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.360 2007-06-15 06:39:44 ajohan Exp $")
+           "$Id: equ.f90,v 1.361 2007-06-29 04:52:53 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.

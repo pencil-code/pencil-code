@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.370 2007-06-11 18:41:49 allidf Exp $
+! $Id: cdata.f90,v 1.371 2007-06-29 04:52:52 brandenb Exp $
 
 module Cdata
 
@@ -104,6 +104,7 @@ module Cdata
   integer :: nvar,naux,naux_com
   integer, target :: ilnrho=0
   integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0
+  integer :: iuut=0,iuxt=0,iuyt=0,iuzt=0
   integer :: igg=0,igx=0,igy=0,igz=0,ipotself=0
   integer :: iaa=0,iax=0,iay=0,iaz=0
   integer :: ifcr=0,ifcrx=0,ifcry=0,ifcrz=0
@@ -125,8 +126,8 @@ module Cdata
 !
 ! MPI related parameters
 !
-  integer :: ylneigh,zlneigh ! `lower' processor neighbours
-  integer :: yuneigh,zuneigh ! `upper' processor neighbours
+  integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
+  integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn ! (the 4 corners in yz-plane)
   integer :: mvar_io=0,dimensionality
   integer :: iinit
@@ -143,7 +144,7 @@ module Cdata
 !
   character (len=40) :: kinflow=''
   logical :: lkinflow_as_aux
-  real :: eps_kinflow=0.
+  real :: eps_kinflow=0., omega_kinflow=1., ampl_kinflow=1.
 !
 ! Variables to count the occurance of derivative calls per timestep
 ! for optimisation purposes.  To use uncomment the array and
@@ -235,6 +236,7 @@ module Cdata
   logical :: lwrite_phizaverages=.true.
   logical :: lwrite_yaverages=.true.,lwrite_zaverages=.true.,lwrite_phiaverages=.true.
   logical :: ldiagnos_need_zaverages=.false.
+  logical :: ltime_integrals=.false.
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
   logical :: lshear=.false.,lpscalar=.false.,lpscalar_nolog=.false.

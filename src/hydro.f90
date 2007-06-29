@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.358 2007-06-28 09:30:17 brandenb Exp $
+! $Id: hydro.f90,v 1.359 2007-06-29 04:52:53 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -66,6 +66,7 @@ module Hydro
   logical :: ladvection_velocity=.true.
   logical :: lprecession=.false.
   logical :: lshear_rateofstrain=.false.
+  logical :: luut_as_aux=.false.
 
   namelist /hydro_init_pars/ &
        ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
@@ -76,7 +77,8 @@ module Hydro
        kep_cutoff_pos_int, kep_cutoff_width_int, &
        u_out_kep, N_modes_uu, lcoriolis_force, lcentrifugal_force, &
        ladvection_velocity, &
-       lprecession, omega_precession
+       lprecession, omega_precession, &
+       luut_as_aux
 
   ! run parameters
   real :: tdamp=0.,dampu=0.,wdamp=0.
@@ -111,11 +113,13 @@ module Hydro
        lforcing_continuous_uu,iforcing_continuous_uu, &
        lembed,k1_ff,ampl_ff,width_ff_uu,x1_ff_uu,x2_ff_uu, &
        lprecession, omega_precession, lshear_rateofstrain, &
-       lalways_use_gij_etc
+       lalways_use_gij_etc, &
+       luut_as_aux
 
 ! end geodynamo
 
   ! other variables (needs to be consistent with reset list below)
+  integer :: idiag_u2tm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\uv(t') dt'\right>$
   integer :: idiag_u2m=0        ! DIAG_DOC: $\left<\uv^2\right>$
   integer :: idiag_um2=0        ! DIAG_DOC: 
   integer :: idiag_uxpt=0       ! DIAG_DOC: 
@@ -297,7 +301,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.358 2007-06-28 09:30:17 brandenb Exp $")
+           "$Id: hydro.f90,v 1.359 2007-06-29 04:52:53 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -327,7 +331,8 @@ module Hydro
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
 !
       use Mpicomm, only: stop_it
-      use CData,   only: r_int,r_ext,lfreeze_varint,lfreeze_varext,epsi,leos,iux,iuy,iuz
+      use CData,   only: r_int,r_ext,lfreeze_varint,lfreeze_varext,epsi,leos,iux,iuy,iuz,iuut,iuxt,iuyt,iuzt,lroot,datadir
+      use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -375,6 +380,34 @@ module Hydro
       if (nxgrid*nygrid*nzgrid==1) then
         ladvection_velocity=.false.
         print*, 'initialize_entropy: 0-D run, turned off advection of velocity'
+      endif
+!
+!  Register an extra aux slot for uut if requested. This is needed
+!  for calculating the correlation time from <u.intudt>. For this to work
+!  you must reserve enough auxiliary workspace by setting, for example,
+!     ! MAUX CONTRIBUTION 3
+!  in the beginning of your src/cparam.local file, *before* setting
+!  ncpus, nprocy, etc.
+!
+!  After a reload, we need to rewrite index.pro, but the auxiliary
+!  arrays are already allocated and must not be allocated again.
+!
+      if (luut_as_aux) then
+        if (iuut==0) then
+          call farray_register_auxiliary('uut',iuut,vector=3)
+          iuxt=iuut
+          iuyt=iuut+1
+          iuzt=iuut+2
+        endif
+        if (iuut/=0.and.lroot) then
+          print*, 'initialize_velocity: iuut = ', iuut
+          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+          write(3,*) 'iuut=',iuut
+          write(3,*) 'iuxt=',iuxt
+          write(3,*) 'iuyt=',iuyt
+          write(3,*) 'iuzt=',iuzt
+          close(3)
+        endif
       endif
 !
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
@@ -1015,7 +1048,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: pdamp,space_part_re,space_part_im
+      real, dimension (nx) :: pdamp,space_part_re,space_part_im,u2t
       real :: c2,s2,kx
       integer :: j
 !
@@ -1194,6 +1227,14 @@ module Hydro
         if (idiag_uymax/=0) call max_mn_name(p%uu(:,2),idiag_uymax)
         if (idiag_uzmax/=0) call max_mn_name(p%uu(:,3),idiag_uzmax)
         if (idiag_rumax/=0) call max_mn_name(p%u2*p%rho**2,idiag_rumax,lsqrt=.true.)
+!
+!  integrate velocity in time, to calculate correlation time later
+!
+        if (idiag_u2tm/=0) then
+          if (iuut==0) call stop_it("Cannot calculate u2tm if iuut==0")
+          call dot(p%uu,f(l1:l2,m,n,iuxt:iuzt),u2t)
+          call sum_mn_name(u2t,idiag_u2tm)
+        endif
         if (idiag_u2m/=0)     call sum_mn_name(p%u2,idiag_u2m)
         if (idiag_um2/=0)     call max_mn_name(p%u2,idiag_um2)
         if (idiag_divum/=0)   call sum_mn_name(p%divu,idiag_divum)
@@ -1925,6 +1966,7 @@ module Hydro
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
+        idiag_u2tm=0
         idiag_u2m=0
         idiag_um2=0
         idiag_uxpt=0
@@ -2043,6 +2085,7 @@ module Hydro
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
         call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)
+        call parse_name(iname,cname(iname),cform(iname),'u2tm',idiag_u2tm)
         call parse_name(iname,cname(iname),cform(iname),'u2m',idiag_u2m)
         call parse_name(iname,cname(iname),cform(iname),'um2',idiag_um2)
         call parse_name(iname,cname(iname),cform(iname),'o2m',idiag_o2m)
@@ -2226,6 +2269,7 @@ module Hydro
       if (lwr) then
         write(3,*) 'i_ekin=',idiag_ekin
         write(3,*) 'i_ekintot=',idiag_ekintot
+        write(3,*) 'i_u2tm=',idiag_u2tm
         write(3,*) 'i_u2m=',idiag_u2m
         write(3,*) 'i_um2=',idiag_um2
         write(3,*) 'i_o2m=',idiag_o2m

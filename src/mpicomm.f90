@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.211 2007-06-04 16:00:47 theine Exp $
+! $Id: mpicomm.f90,v 1.212 2007-06-29 04:52:53 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -51,7 +51,7 @@ module Mpicomm
 
   use Cparam
   use Cdata, only: iproc,ipx,ipy,ipz,root,lroot, &
-                   ylneigh,zlneigh,yuneigh,zuneigh, &
+                   xlneigh,ylneigh,zlneigh,xuneigh,yuneigh,zuneigh, &
                    llcorn,lucorn,uucorn,ulcorn, &
                    lemergency_brake
 
@@ -166,6 +166,7 @@ module Mpicomm
 
 !
 ! For f-array processor boundaries
+  real, dimension (my,nghost,nz,mcom) :: lbufxi,ubufxi,lbufxo,ubufxo
   real, dimension (mx,nghost,nz,mcom) :: lbufyi,ubufyi,lbufyo,ubufyo
   real, dimension (mx,ny,nghost,mcom) :: lbufzi,ubufzi,lbufzo,ubufzo
   real, dimension (mx,nghost,nghost,mcom) :: llbufi,lubufi,uubufi,ulbufi
@@ -178,7 +179,7 @@ module Mpicomm
 !
 !  mpi tags
 !
-  integer :: tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
+  integer :: tolowx=13,touppx=14,tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
   integer :: io_perm=20,io_succ=21
 !  mpi tags for radiation
@@ -193,6 +194,7 @@ module Mpicomm
 !
   integer :: MPI_COMM_ROW
 !
+  integer :: isend_rq_tolowx,isend_rq_touppx,irecv_rq_fromlowx,irecv_rq_fromuppx
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
   integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
   integer :: isend_rq_TOll,isend_rq_TOul,isend_rq_TOuu,isend_rq_TOlu  !(corners)
@@ -240,7 +242,7 @@ module Mpicomm
 !
       if (nprocx /= 1) &
            call stop_it('Inconsistency: nprocx > 1 not implemented')
-      if (nprocs /= nprocy*nprocz) then
+      if (nprocs /= nprocx*nprocy*nprocz) then
         if (lroot) then
           print*, 'Compiled with NCPUS = ', ncpus, &
           ', but running on ', nprocs, ' processors'
@@ -248,42 +250,50 @@ module Mpicomm
         call stop_it('Inconsistency 1')
       endif
 !
-      if ((nprocy*ny /= nygrid) .or. &
+!  preliminary additions for nprocx \= 1
+!  write the value of nprocx*nx at the end for compatibility reasons
+!
+      if ((nprocx*nx /= nxgrid) .or. &
+          (nprocy*ny /= nygrid) .or. &
           (nprocz*nz /= nzgrid)) then
         if (lroot) then
           write(0,'(A,2I4,A,2I4,A)') &
-               'nproc[y-z]*n[y-z] = (', &
-               nprocy*ny, nprocz*nz, &
-               ') /= n[yz]grid= (', &
+               'nproc[x-z]*n[x-z] = (', &
+               nprocy*ny, nprocz*nz, nprocx*nx, &
+               ') /= n[xyz]grid= (', &
                nygrid, nzgrid, ")"
         endif
         call stop_it('Inconsistency 2')
       endif
 !
+      if ((nx<nghost) .and. (nxgrid/=1)) &
+           call stop_it('Overlapping ghost zones in x-direction: reduce nprocx')
       if ((ny<nghost) .and. (nygrid/=1)) &
            call stop_it('Overlapping ghost zones in y-direction: reduce nprocy')
       if ((nz<nghost) .and. (nzgrid/=1)) &
            call stop_it('Overlapping ghost zones in z-direction: reduce nprocz')
 !
 !  position on the processor grid
-!  x is fastest direction, z slowest
+!  x is fastest direction, z slowest (this is the default)
 !
       if (lprocz_slowest) then
-        ipx = 0
-        ipy = modulo(iproc, nprocy)
-        ipz = iproc/(nprocy)
+        ipx = modulo(iproc, nprocx)
+        ipy = modulo(iproc/nprocx, nprocy)
+        ipz = iproc/(nprocx*nprocy)
        else
-        ipx = 0
-        ipy = iproc/(nprocz)
-        ipz = modulo(iproc, nprocz)
+        ipx = modulo(iproc, nprocx)
+        ipy = iproc/(nprocx*nprocy)
+        ipz = modulo(iproc/nprocx, nprocy)
        endif
 !
 !  set up `lower' and `upper' neighbours
 !
-      ylneigh = (ipz*nprocy+modulo(ipy-1,nprocy))
-      yuneigh = (ipz*nprocy+modulo(ipy+1,nprocy))
-      zlneigh = (modulo(ipz-1,nprocz)*nprocy+ipy)
-      zuneigh = (modulo(ipz+1,nprocz)*nprocy+ipy)
+      xlneigh = (ipz*nprocx*nprocy+ipy*nprocx+modulo(ipx-1,nprocx))
+      xuneigh = (ipz*nprocx*nprocy+ipy*nprocx+modulo(ipx+1,nprocx))
+      ylneigh = (ipz*nprocx*nprocy+modulo(ipy-1,nprocy)*nprocx+ipx)
+      yuneigh = (ipz*nprocx*nprocy+modulo(ipy+1,nprocy)*nprocx+ipx)
+      zlneigh = (modulo(ipz-1,nprocz)*nprocx*nprocy+ipy*nprocx+ipx)
+      zuneigh = (modulo(ipz+1,nprocz)*nprocx*nprocy+ipy*nprocx+ipx)
 !
 !  set the four corners in the yz-plane (in cyclic order)
 !
@@ -308,9 +318,9 @@ module Mpicomm
 !  should print (3,15,12,13,1,5,4,7) for iproc=0
 !
       if (ip<5) &
-           write(*,'(A,I4,"(",2I4,"): ",8I4)') &
+           write(*,'(A,I4,"(",3I4,"): ",8I4)') &
            'mpicomm_init: MPICOMM neighbors ', &
-           iproc,ipy,ipz, &
+           iproc,ipx,ipy,ipz, &
            ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
 !
 !  Define MPI communicator MPI_COMM_ROW that includes all processes
