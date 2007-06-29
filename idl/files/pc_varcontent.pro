@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.38 2007-06-01 04:26:26 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.39 2007-06-29 04:18:56 brandenb Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar,run2D=run2D
 COMPILE_OPT IDL2,HIDDEN
@@ -68,6 +68,7 @@ if (execute(res) ne 1) then $
 
 
 if (param.lwrite_aux ne 0) then totalvars=dim.mvar+dim.maux else totalvars=dim.mvar
+print,'TEST: totalvars,dim.mvar,dim.maux=',totalvars,dim.mvar,dim.maux
 
 ; Make an array of structures in which to store their descriptions
 ; index zero is kept as a dummy entry.
@@ -157,6 +158,14 @@ varcontent[ijj].idlinit    = INIT_3VECTOR
 varcontent[ijj].idlvarloc= 'jj_loc'
 varcontent[ijj].idlinitloc = INIT_3VECTOR_LOC
 varcontent[ijj].skip  = 2
+
+default,iuut,0
+varcontent[iuut].variable = 'Integrated velocity (uut)'
+varcontent[iuut].idlvar   = 'uut'
+varcontent[iuut].idlinit    = INIT_3VECTOR
+varcontent[iuut].idlvarloc= 'uut_loc'
+varcontent[iuut].idlinitloc = INIT_3VECTOR_LOC
+varcontent[iuut].skip  = 2
 
 default,iaatest,0
 varcontent[iaatest].variable = 'Testfield vector potential (aatest)'
