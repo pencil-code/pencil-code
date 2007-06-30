@@ -3,7 +3,7 @@
 !  Runtime parameters for shocktube problem
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2007-06-29 18:07:21 theine Exp $'
+  cvsid='$Id: run.in,v 1.2 2007-06-30 15:18:00 theine Exp $'
   nt=20000, it1=5, cdt=0.4, cdtv=0.4, isave=50, itorder=3,
   dsnap=20., dvid=.02,tmax=2.4,
   bcx = 'a','s','s','s','s','s'
@@ -21,7 +21,7 @@
 /
 &viscosity_run_pars
   ivisc='nu-const','nu-shock'
-  nu=0.002, nu_shock=10.
+  nu=0.002, nu_shock=4.
 /
 &shock_run_pars
 /
