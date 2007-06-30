@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.87 2007-06-25 09:55:15 ajohan Exp $
+! $Id: eos_idealgas.f90,v 1.88 2007-06-30 16:17:29 theine Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -109,7 +109,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.87 2007-06-25 09:55:15 ajohan Exp $')
+           '$Id: eos_idealgas.f90,v 1.88 2007-06-30 16:17:29 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -2169,6 +2169,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
       real :: dlnrhodz, dssdz
+      real :: potp,potm
       integer :: i
 
       select case (topbot)
@@ -2178,36 +2179,68 @@ module EquationOfState
 !
       case ('bot')
 
-        if (bcz1(iss)/='hs') then
-          call fatal_error("bc_lnrho_hydrostatic_z", &
-                           "This boundary condition for density is "// &
-                           "currently only correct for bcz1(iss)='hs'")
-        endif
+        if (lentropy) then
 
-        dlnrhodz = gamma*gravz/cs2bot
-        dssdz = -gamma1*gravz/cs2bot
-        do i=1,nghost
-          f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - 2*i*dz*dlnrhodz
-          f(:,:,n1-i,iss   ) = f(:,:,n1+i,iss   ) - 2*i*dz*dssdz
-        enddo
+          if (bcz1(iss)/='hs') then
+            call fatal_error("bc_lnrho_hydrostatic_z", &
+                             "This boundary condition for density is "// &
+                             "currently only correct for bcz1(iss)='hs'")
+          endif
+
+          dlnrhodz = gamma*gravz/cs2bot
+          dssdz = -gamma1*gravz/cs2bot
+          do i=1,nghost
+            f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - 2*i*dz*dlnrhodz
+            f(:,:,n1-i,iss   ) = f(:,:,n1+i,iss   ) - 2*i*dz*dssdz
+          enddo
+
+        else
+
+          do i=1,nghost
+            call potential(z=z(n1-i),pot=potm)
+            call potential(z=z(n1+i),pot=potp)
+            if (ldensity_nolog) then
+              f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho)*exp(-(potm-potp)/cs2bot)
+            else
+              f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - (potm-potp)/cs2bot
+            endif
+          enddo
+
+        endif
 
 !
 !  Top boundary
 !
       case ('top')
 
-        if (bcz2(iss)/='hs') then
-          call fatal_error("bc_lnrho_hydrostatic_z", &
-                           "This boundary condition for density is "//&
-                           "currently only correct for bcz2(iss)='s'")
-        endif
+        if (lentropy) then
 
-        dlnrhodz = gamma*gravz/cs2top
-        dssdz = -gamma1*gravz/cs2top
-        do i=1,nghost
-          f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + 2*i*dz*dlnrhodz
-          f(:,:,n2+i,iss   ) = f(:,:,n2-i,iss   ) + 2*i*dz*dssdz
-        enddo
+          if (bcz2(iss)/='hs') then
+            call fatal_error("bc_lnrho_hydrostatic_z", &
+                             "This boundary condition for density is "//&
+                             "currently only correct for bcz2(iss)='s'")
+          endif
+
+          dlnrhodz = gamma*gravz/cs2top
+          dssdz = -gamma1*gravz/cs2top
+          do i=1,nghost
+            f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + 2*i*dz*dlnrhodz
+            f(:,:,n2+i,iss   ) = f(:,:,n2-i,iss   ) + 2*i*dz*dssdz
+          enddo
+
+        else
+
+          do i=1,nghost
+            call potential(z=z(n2+i),pot=potp)
+            call potential(z=z(n2-i),pot=potm)
+            if (ldensity_nolog) then
+              f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho)*exp(-(potp-potm)/cs2top)
+            else
+              f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) - (potp-potm)/cs2top
+            endif
+          enddo
+
+        endif
 
       case default
 
