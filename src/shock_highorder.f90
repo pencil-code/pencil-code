@@ -1,4 +1,4 @@
-! $Id: shock_highorder.f90,v 1.3 2007-06-29 19:03:27 theine Exp $
+! $Id: shock_highorder.f90,v 1.4 2007-06-30 16:12:18 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -75,7 +75,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_highorder.f90,v 1.3 2007-06-29 19:03:27 theine Exp $")
+           "$Id: shock_highorder.f90,v 1.4 2007-06-30 16:12:18 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -304,10 +304,10 @@ module Shock
       use Cdata, only: m,n,ishock
       use Cdata, only: ldiagnos
       use Sub, only: grad,max_mn_name
-!
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!
+
       intent(in) :: f
       intent(inout) :: p
 
@@ -462,19 +462,6 @@ module Shock
 !  Scale by dxmax**2
 !
       f(:,:,:,ishock) = tmp*dxmax**2
-
-!
-!  Determine smoothed shock profile in the ghost zones
-!
-      call boundconds_x(f,ishock,ishock)
-      call initiate_isendrcv_bdry(f,ishock,ishock)
-
-!
-! This should better be done in calc_pencils_shock() when _necessary_
-!
-      call finalize_isendrcv_bdry(f,ishock,ishock)
-      call boundconds_y(f,ishock,ishock)
-      call boundconds_z(f,ishock,ishock)
 
     endsubroutine calc_shock_profile
 !!***********************************************************************
