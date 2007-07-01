@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.22 2007-03-28 18:10:27 dobler Exp $
+! $Id: selfgravity.f90,v 1.23 2007-07-01 16:10:05 wlyra Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -46,6 +46,8 @@ module Selfgravity
   integer :: idiag_gpoten=0, idiag_gpotenmxy=0
   integer :: idiag_gpotselfxm=0, idiag_gpotselfym=0, idiag_gpotselfzm=0
   integer :: idiag_gpotselfx2m=0, idiag_gpotselfy2m=0, idiag_gpotselfz2m=0
+  integer :: idiag_gxgym=0,idiag_gxgzm=0,idiag_gygzm=0
+  integer :: idiag_grgpm=0,idiag_grgzm=0,idiag_gpgzm=0
 
   contains
 
@@ -72,7 +74,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.22 2007-03-28 18:10:27 dobler Exp $")
+           "$Id: selfgravity.f90,v 1.23 2007-07-01 16:10:05 wlyra Exp $")
 !
 !  Put variable name in array
 !
@@ -159,6 +161,13 @@ module Selfgravity
       if (idiag_gpoten/=0 .or. idiag_gpotenmxy/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_potself)=.true.
+      endif
+!
+      if (idiag_grgpm/=0 .or. idiag_grgzm/=0 .or. idiag_gpgzm/=0) then 
+        lpenc_diagnos(i_pomx)=.true.
+        lpenc_diagnos(i_pomy)=.true.
+        lpenc_diagnos(i_phix)=.true.
+        lpenc_diagnos(i_phiy)=.true.
       endif
 !
     endsubroutine pencil_criteria_selfgravity
@@ -305,12 +314,46 @@ module Selfgravity
             call sum_mn_name(p%gpotself(:,2)**2,idiag_gpotselfy2m)
         if (idiag_gpotselfz2m/=0) &
             call sum_mn_name(p%gpotself(:,3)**2,idiag_gpotselfz2m)
+        if (idiag_gxgym/=0) & 
+             call sum_mn_name(p%gpotself(:,1)*p%gpotself(:,2),idiag_gxgym)
+        if (idiag_gxgzm/=0) &
+             call sum_mn_name(p%gpotself(:,1)*p%gpotself(:,3),idiag_gxgzm)
+        if (idiag_gygzm/=0) &
+             call sum_mn_name(p%gpotself(:,2)*p%gpotself(:,3),idiag_gygzm)
+        if (idiag_grgpm/=0 .or. idiag_grgzm/=0 .or. idiag_gpgzm/=0) &
+             call calc_cylgrav_stresses(p)
         if (idiag_gpotenmxy/=0) call zsum_mn_name_xy(p%potself*p%rho,idiag_gpotenmxy)
       endif
 !
       if (NO_WARN) print*, f, p !(keep compiler quiet)
 !
     endsubroutine duu_dt_selfgrav
+!***********************************************************************
+    subroutine calc_cylgrav_stresses(p)
+!
+!  Calculates cylindrical gravitational stresses in a cartesian box
+!
+!  01-jul-07/wlad: coded 
+! 
+      use Mpicomm, only: stop_it
+      use Sub, only: sum_mn_name
+!
+      real, dimension(nx) :: gpotr,gpotp,gpotz
+      type (pencil_case) :: p
+!
+      if (.not.lcylinder_in_a_box) &
+           call stop_it("calc_cylgrav_stresses: cylindrical stresses called "// &
+           "but you are not using lcylinder_in_a_box" )
+!
+      gpotr=p%gpotself(:,1)*p%pomx+p%gpotself(:,2)*p%pomy
+      gpotp=p%gpotself(:,1)*p%phix+p%gpotself(:,2)*p%phiy
+      gpotz=p%gpotself(:,3)
+!
+      if (idiag_grgpm/=0) call sum_mn_name(gpotr*gpotp,idiag_grgpm)
+      if (idiag_grgzm/=0) call sum_mn_name(gpotr*gpotz,idiag_grgzm)
+      if (idiag_gpgzm/=0) call sum_mn_name(gpotp*gpotz,idiag_gpgzm)
+!     
+    endsubroutine calc_cylgrav_stresses
 !***********************************************************************
     subroutine read_selfgravity_init_pars(unit,iostat)
 !
@@ -385,6 +428,8 @@ module Selfgravity
         idiag_gpoten=0; idiag_gpotenmxy=0
         idiag_gpotselfxm=0; idiag_gpotselfym=0; idiag_gpotselfzm=0
         idiag_gpotselfx2m=0; idiag_gpotselfy2m=0; idiag_gpotselfz2m=0
+        idiag_gxgym=0; idiag_gxgzm=0; idiag_gygzm=0
+        idiag_grgpm=0; idiag_grgzm=0; idiag_gpgzm=0
       endif
 !
       do iname=1,nname
@@ -401,6 +446,12 @@ module Selfgravity
             idiag_gpotselfy2m)
         call parse_name(iname,cname(iname),cform(iname),'gpotselfz2m', &
             idiag_gpotselfz2m)
+        call parse_name(iname,cname(iname),cform(iname),'gxgym',idiag_gxgym)
+        call parse_name(iname,cname(iname),cform(iname),'gxgzm',idiag_gxgzm)
+        call parse_name(iname,cname(iname),cform(iname),'gygzm',idiag_gygzm)
+        call parse_name(iname,cname(iname),cform(iname),'grgpm',idiag_grgpm)
+        call parse_name(iname,cname(iname),cform(iname),'grgzm',idiag_grgzm)
+        call parse_name(iname,cname(iname),cform(iname),'gpgzm',idiag_gpgzm)
       enddo
 !
 !  check for those quantities for which we want z-averages
