@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.26 2007-06-15 06:51:14 ajohan Exp $
+! $Id: particles_number.f90,v 1.27 2007-07-01 17:05:16 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -26,7 +26,7 @@ module Particles_number
   logical :: lfragmentation_par=.true.
   character (len=labellen), dimension(ninit) :: initnptilde='nothing'
 
-  integer :: idiag_nptm=0, idiag_dvp22m=0
+  integer :: idiag_nptm=0, idiag_dvp22mwnp=0, idiag_dvp22mwnp2=0
   integer :: idiag_dtfragp=0
 
   namelist /particles_number_init_pars/ &
@@ -54,7 +54,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.26 2007-06-15 06:51:14 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.27 2007-07-01 17:05:16 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -159,7 +159,7 @@ module Particles_number
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx) :: dt1_fragmentation
-      real :: deltavp, sigma_jk, cdot, deltavp_sum
+      real :: deltavp, sigma_jk, cdot, deltavp_sum, nptilde_sum, np2tilde_sum
       integer :: j, k, l, ncoll
       logical :: lheader, lfirstcall=.true.
 !
@@ -184,7 +184,7 @@ module Particles_number
           do l=l1,l2
 !  Need to count collisions for diagnostics.
             if (ldiagnos) then
-              deltavp_sum=0.0; ncoll=0
+              deltavp_sum=0.0; nptilde_sum=0; np2tilde_sum=0; ncoll=0
             endif
 !  Get index number of shepherd particle at grid point.
             k=kshepherd(l-nghost)
@@ -248,7 +248,9 @@ module Particles_number
 !                  endif
 !  Need to count collisions for diagnostics.
                   if (ldiagnos) then
-                    deltavp_sum=deltavp_sum+deltavp
+                    deltavp_sum =deltavp_sum +deltavp
+                    nptilde_sum =nptilde_sum +fp(j,inptilde)+fp(k,inptilde)
+                    np2tilde_sum=np2tilde_sum+fp(j,inptilde)*fp(k,inptilde)
                     ncoll=ncoll+1
                   endif
                 enddo
@@ -270,7 +272,9 @@ module Particles_number
                   endif
 !  Need to count collisions for diagnostics.
                   if (ldiagnos) then
-                    deltavp_sum=deltavp_sum+deltavp
+                    deltavp_sum =deltavp_sum +deltavp
+                    nptilde_sum =nptilde_sum +fp(k,inptilde)
+                    np2tilde_sum=np2tilde_sum+fp(k,inptilde)**2
                     ncoll=ncoll+1
                   endif
 !  Time-step contribution
@@ -286,10 +290,14 @@ module Particles_number
             endif
 !
             if (ldiagnos) then
-!  Average collision speed per particle, not per collision.
-              if (idiag_dvp22m/=0 .and. ncoll>=1) &
+!  Average collision speed per particle
+              if (idiag_dvp22mwnp/=0 .and. ncoll>=1) &
                   call sum_weighted_name((/ deltavp_sum/ncoll /), &
-                                         (/ p%np(l-nghost) /),idiag_dvp22m)
+                                         (/ nptilde_sum /),idiag_dvp22mwnp)
+!  Average collision speed per collision
+              if (idiag_dvp22mwnp2/=0 .and. ncoll>=1) &
+                  call sum_weighted_name((/ deltavp_sum/ncoll /), &
+                                         (/ np2tilde_sum /),idiag_dvp22mwnp2)
             endif
           enddo ! l1,l2
 !
@@ -423,7 +431,7 @@ module Particles_number
 !  Reset everything in case of reset
 !
       if (lreset) then
-        idiag_nptm=0; idiag_dvp22m=0
+        idiag_nptm=0; idiag_dvp22mwnp=0; idiag_dvp22mwnp2=0
         idiag_dtfragp=0
       endif
 !
@@ -433,7 +441,10 @@ module Particles_number
           print*, 'rprint_particles_number: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'nptm',idiag_nptm)
-        call parse_name(iname,cname(iname),cform(iname),'dvp22m',idiag_dvp22m)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'dvp22mwnp',idiag_dvp22mwnp)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'dvp22mwnp2',idiag_dvp22mwnp2)
         call parse_name(iname,cname(iname),cform(iname),'dtfragp',idiag_dtfragp)
       enddo
 !
