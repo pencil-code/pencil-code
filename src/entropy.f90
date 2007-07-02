@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.505 2007-06-29 04:52:53 brandenb Exp $
+! $Id: entropy.f90,v 1.506 2007-07-02 07:09:43 brandenb Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -100,7 +100,6 @@ module Entropy
   ! input parameters
   namelist /entropy_init_pars/ &
       initss,     &
-!TEST
       pertss,     &
       grads0,     &
       radius_ss,  &
@@ -168,7 +167,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.505 2007-06-29 04:52:53 brandenb Exp $")
+           "$Id: entropy.f90,v 1.506 2007-07-02 07:09:43 brandenb Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************

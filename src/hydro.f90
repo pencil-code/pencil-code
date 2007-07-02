@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.359 2007-06-29 04:52:53 brandenb Exp $
+! $Id: hydro.f90,v 1.360 2007-07-02 07:09:43 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -301,7 +301,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.359 2007-06-29 04:52:53 brandenb Exp $")
+           "$Id: hydro.f90,v 1.360 2007-07-02 07:09:43 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -546,6 +546,7 @@ module Hydro
         case('coswave-z'); call coswave(ampluu(j),f,iuz,kz=kz_uu)
         case('coswave-x-z'); call coswave(ampluu(j),f,iux,kz=kz_uu)
         case('coswave-z-x'); call coswave(ampluu(j),f,iuz,kx=kx_uu)
+        case('x1cosycosz'); call x1_cosy_cosz(ampluu(j),f,iuy,ky=ky_uu,kz=kz_uu)
         case('soundwave-x'); call soundwave(ampluu(j),f,iux,kx=kx_uu)
         case('soundwave-y'); call soundwave(ampluu(j),f,iuy,ky=ky_uu)
         case('soundwave-z'); call soundwave(ampluu(j),f,iuz,kz=kz_uu)
