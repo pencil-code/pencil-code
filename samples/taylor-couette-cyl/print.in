@@ -1,0 +1,8 @@
+it(i6)
+t(f8.3)
+dt(e9.2)
+ux2m(e9.2)
+uy2m(e9.2)
+uz2m(e9.2)
+umax(e9.2)
+rhom(e10.2)

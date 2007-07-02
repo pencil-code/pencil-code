@@ -1,0 +1,23 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for a 1-D isothermal wind problem
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2007-07-02 07:44:42 brandenb Exp $',
+  coord_system='cylindric'
+  lperi=F, T, T
+  xyz0=1.,0.00000,-2.
+  xyz1=2.,6.28319, 2.
+  bcx='a','set','a','a2'
+  fbcx1=0.,1.,0.,0.
+  fbcx2=0.,.0,.0,0.
+/
+&eos_init_pars
+  gamma=1., cs0=3.
+/
+&hydro_init_pars
+  inituu='x1cosycosz', ampluu=1., ky_uu=0., kz_uu=0.
+  urand=0.05
+/
+&density_init_pars
+/
