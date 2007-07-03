@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.194 2007-06-26 08:06:46 dhruba Exp $
+# $Id: getconf.csh,v 1.195 2007-07-03 12:34:15 theine Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -967,11 +967,9 @@ if ($local_disc) then
   else
     echo "Creating directory structure on local scratch disc(s)"
   endif
-  #set command = \'"if (! -e $SCRATCH_DIR ) mkdir -p $SCRATCH_DIR; cd $SCRATCH_DIR; mkdir -p $procdirs $subdirs"\'
+  set command = \'"if (! -e $SCRATCH_DIR ) mkdir -p $SCRATCH_DIR; cd $SCRATCH_DIR; mkdir -p $procdirs $subdirs"\'
   foreach host ($nodelist)
-    $SSH $host "if (! -e $SCRATCH_DIR ) mkdir -p $SCRATCH_DIR; cd $SCRATCH_DIR; mkdir -p $procdirs $subdirs" 
-    #TH: Not everybody uses csh!
-    #$SSH $host /bin/csh -c $command
+    $SSH $host /bin/csh -c $command
   end
 endif
 
