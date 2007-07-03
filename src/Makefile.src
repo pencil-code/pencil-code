@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.302 2007-06-25 14:50:22 brandenb Exp $
+### $Id: Makefile.src,v 1.303 2007-07-03 13:09:56 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -400,6 +400,15 @@ LD_FFTW2=
 #LD_MPI=-Nscampi #(login-1.monolith.nsc.liu.se)
 #LD_MPI=-L/opt/scali/lib -lfmpi -lmpi -lpthread #(login-1.monolith.nsc.liu.se)
 ##LIBMPISUFFIX=_#(login-1.monolith.nsc.liu.se)
+##
+## Axel on Sanssouci (ifc 7.1)
+##
+#FC=mpif90 #(sanssouci)
+#FFLAGS= -O3 #(sanssouci)
+#CC=mpicc #(sanssouci)
+#CFLAGS=-O3 -DFUNDERSC=1 #(sanssouci)
+#LD_MPI= #(sanssouci)
+#LIBMPISUFFIX=#(sanssouci)
 ##
 ## Axel's laptop (nl6, 2.0 GHz)
 ##

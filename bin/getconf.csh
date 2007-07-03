@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.195 2007-07-03 12:34:15 theine Exp $
+# $Id: getconf.csh,v 1.196 2007-07-03 13:09:40 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -851,6 +851,28 @@ else if ($hn =~ *.pdc.kth.se) then
 # set local_binary   = 0
 # setenv SSH rsh 
 # setenv SCP rcp
+
+else if ($hn =~ sans*) then
+  echo "Sanssouci cluster in Potsdam (AIP)"
+  if ($?PBS_NODEFILE) then
+    echo "PBS job"
+    cat $PBS_NODEFILE >mylist
+    set local_disc = 0
+    set one_local_disc = 0
+    set local_binary = 0
+    set mpirun = /opt/pgi/mpich-1.2.7/bin/mpirun
+    set mpirunops = "-machinefile mylist"
+  if ($mpi) echo "Use mpirun"
+  #
+  # use unique scratch directory name, just in case it wasn't cleaned up
+  #
+  if ($?PBS_JOBID) then
+    setenv SCRATCH_DIR /data1/$PBS_JOBID
+    echo "setenv SCRATCH_DIR /data1/$PBS_JOBID"
+  else
+    setenv SCRATCH_DIR /data1
+    echo "setenv SCRATCH_DIR /data1"
+  endif
 
 else if ($hn =~ tun[a-z]*) then
   echo "Tungsten cluster - NCSA"
