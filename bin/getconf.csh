@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.196 2007-07-03 13:09:40 brandenb Exp $
+# $Id: getconf.csh,v 1.197 2007-07-03 16:10:24 theine Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -862,6 +862,7 @@ else if ($hn =~ sans*) then
     set local_binary = 0
     set mpirun = /opt/pgi/mpich-1.2.7/bin/mpirun
     set mpirunops = "-machinefile mylist"
+  endif
   if ($mpi) echo "Use mpirun"
   #
   # use unique scratch directory name, just in case it wasn't cleaned up
