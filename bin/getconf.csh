@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.197 2007-07-03 16:10:24 theine Exp $
+# $Id: getconf.csh,v 1.198 2007-07-05 11:35:09 mgellert Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -856,23 +856,22 @@ else if ($hn =~ sans*) then
   echo "Sanssouci cluster in Potsdam (AIP)"
   if ($?PBS_NODEFILE) then
     echo "PBS job"
-    cat $PBS_NODEFILE >mylist
-    set local_disc = 0
-    set one_local_disc = 0
-    set local_binary = 0
-    set mpirun = /opt/pgi/mpich-1.2.7/bin/mpirun
-    set mpirunops = "-machinefile mylist"
   endif
-  if ($mpi) echo "Use mpirun"
+  cat $PBS_NODEFILE > nodes.sans
+  set local_disc = 1
+  set one_local_disc = 0
+  set local_binary = 0
+  set mpirun = mpirun # run script from /opt/env to set environement for mpi
+  set mpirunops = "-v -machinefile nodes.sans"
   #
-  # use unique scratch directory name, just in case it wasn't cleaned up
+  # use unique scratch directory name
   #
   if ($?PBS_JOBID) then
-    setenv SCRATCH_DIR /data1/$PBS_JOBID
-    echo "setenv SCRATCH_DIR /data1/$PBS_JOBID"
+    setenv SCRATCH_DIR /data1/$USER/$PBS_JOBID
+    echo "setenv SCRATCH_DIR /data1/$USER/$PBS_JOBID"
   else
-    setenv SCRATCH_DIR /data1
-    echo "setenv SCRATCH_DIR /data1"
+    setenv SCRATCH_DIR /data1/$USER/pencil
+    echo "setenv SCRATCH_DIR /data1/$USER/pencil"
   endif
 
 else if ($hn =~ tun[a-z]*) then
