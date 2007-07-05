@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.277 2007-07-05 12:19:01 wlyra Exp $
+! $Id: param_io.f90,v 1.278 2007-07-05 22:43:13 theine Exp $
 
 module Param_IO
 
@@ -66,7 +66,7 @@ module Param_IO
        lread_oldsnap,lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        lwrite_aux,pretend_lnTT, &
        lprocz_slowest, lcopysnapshots_exp, &
-       bcx,bcy,bcz,bc_order,r_int,r_ext,rp_int,rp_ext,r_ref,rsmooth, &
+       bcx,bcy,bcz,r_int,r_ext,rp_int,rp_ext,r_ref,rsmooth, &
        mu0,force_lower_bound,force_upper_bound, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2,fbcz1_1,fbcz1_2,fbcz2_1,fbcz2_2, &
        xyz_step,xi_step_frac,xi_step_width, &
@@ -92,7 +92,7 @@ module Param_IO
        lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        comment_char, &
        ix,iy,iz,iz2,slice_position,zbot_slice,ztop_slice, &
-       bcx,bcy,bcz,bc_order,r_int,r_ext,rp_int,rp_ext, &
+       bcx,bcy,bcz,r_int,r_ext,rp_int,rp_ext, &
        lfreeze_varsquare,lfreeze_varint,lfreeze_varext, &
        xfreeze_square,yfreeze_square,rfreeze_int,rfreeze_ext, &
        wfreeze,wfreeze_int,wfreeze_ext, &

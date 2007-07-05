@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.156 2007-07-05 20:02:18 theine Exp $
+! $Id: boundcond.f90,v 1.157 2007-07-05 22:43:13 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -35,7 +35,6 @@ module Boundcond
 !  10-oct-02/wolf: coded
 !
       use Cparam
-      use Cdata, only: bc_order
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -46,19 +45,9 @@ module Boundcond
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 
-      select case (bc_order)
-
-      case ('xyz')
-        call boundconds_x(f,ivar1,ivar2)
-        call boundconds_y(f,ivar1,ivar2)
-        call boundconds_z(f,ivar1,ivar2)
-
-      case ('zxy')
-        call boundconds_z(f,ivar1,ivar2)
-        call boundconds_x(f,ivar1,ivar2)
-        call boundconds_y(f,ivar1,ivar2)
-
-      endselect
+      call boundconds_x(f,ivar1,ivar2)
+      call boundconds_y(f,ivar1,ivar2)
+      call boundconds_z(f,ivar1,ivar2)
 !
     endsubroutine boundconds
 !***********************************************************************
@@ -2590,10 +2579,6 @@ module Boundcond
       real, dimension (nx,ny) :: kx,ky,kappa,exp_fact
       real, dimension (nx,ny) :: tmp_re,tmp_im
       integer :: i
-
-      if (bc_order/='zxy') then
-        call fatal_error("bc_del2zero","This BC requires bc_order=='zxy'")
-      endif
 !
 !  Get local wave numbers
 !

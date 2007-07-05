@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.89 2007-07-05 12:23:01 wlyra Exp $
+! $Id: eos_idealgas.f90,v 1.90 2007-07-05 22:43:13 theine Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.89 2007-07-05 12:23:01 wlyra Exp $')
+           '$Id: eos_idealgas.f90,v 1.90 2007-07-05 22:43:13 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -2177,9 +2177,12 @@ module EquationOfState
 !
       use Cdata
       use Gravity
+      use Sub, only: div
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
+      real, dimension (mx,my) :: cs2
+      real, dimension (nx) :: shock,divu
       real :: dlnrhodz, dssdz
       real :: potp,potm
       integer :: i
@@ -2211,10 +2214,23 @@ module EquationOfState
           do i=1,nghost
             call potential(z=z(n1-i),pot=potm)
             call potential(z=z(n1+i),pot=potp)
+            cs2 = cs2bot
+            if (.false.) then
+              ! Note: Since boundconds_x and boundconds_y are called first,
+              ! this doesn't set the corners properly. However, this is
+              ! not a problem since cross derivatives of density are never
+              ! needed.
+              n = n1+i
+              do m = m1,m2
+                shock = f(l1:l2,m,n,ishock)
+                call div(f,iuu,divu)
+                cs2(l1:l2,m) = cs2bot - shock*divu
+              enddo
+            endif
             if (ldensity_nolog) then
-              f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho)*exp(-(potm-potp)/cs2bot)
+              f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho)*exp(-(potm-potp)/cs2)
             else
-              f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - (potm-potp)/cs2bot
+              f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - (potm-potp)/cs2
             endif
           enddo
 
@@ -2245,10 +2261,24 @@ module EquationOfState
           do i=1,nghost
             call potential(z=z(n2+i),pot=potp)
             call potential(z=z(n2-i),pot=potm)
-            if (ldensity_nolog) then
-              f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho)*exp(-(potp-potm)/cs2top)
+            cs2 = cs2bot
+            if (.false.) then
+              ! Note: Since boundconds_x and boundconds_y are called first,
+              ! this doesn't set the corners properly. However, this is
+              ! not a problem since cross derivatives of density are never
+              ! needed.
+              n = n2-i
+              do m = m1,m2
+                shock = f(l1:l2,m,n,ishock)
+                call div(f,iuu,divu)
+                cs2(l1:l2,m) = cs2top - shock*divu
+              enddo
             else
-              f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) - (potp-potm)/cs2top
+            endif
+            if (ldensity_nolog) then
+              f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho)*exp(-(potp-potm)/cs2)
+            else
+              f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) - (potp-potm)/cs2
             endif
           enddo
 
@@ -2262,9 +2292,15 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_lnrho_hydrostatic_z_smooth(f,topbot)
 !
-!  Pontential field boundary condition
+!  Smooth out density perturbations with respect to hydrostatic
+!  stratification in Fourier space.
 !
-!  11-oct-06/wolf: Adapted from Tobi's bc_aa_pot2
+!  Note: Since boundconds_x and boundconds_y are called first,
+!  this doesn't set the corners properly. However, this is
+!  not a problem since cross derivatives of density are never
+!  needed.
+!
+!  05-jul-07/tobi: Adapted from bc_aa_pot3
 !
       use Cdata
       use Fourier, only: fourier_transform_xy_xy, fourier_transform_other
@@ -2279,10 +2315,6 @@ module EquationOfState
       real :: pot
       integer :: i
 
-      if (bc_order/='zxy') then
-        call fatal_error("bc_lnrho_hydrostatic_z_smooth", &
-                         "This BC requires bc_order=='zxy'")
-      endif
 !
 !  Get local wave numbers
 !

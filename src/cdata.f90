@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.372 2007-07-05 12:19:01 wlyra Exp $
+! $Id: cdata.f90,v 1.373 2007-07-05 22:43:13 theine Exp $
 
 module Cdata
 
@@ -301,7 +301,6 @@ module Cdata
   real, dimension(mcom) :: fbcx2=0.,fbcy2=0.,fbcz2=0., fbcz2_1=0., fbcz2_2=0.
 
   character (len=2*bclen+1), dimension(mcom) :: bcx='p',bcy='p',bcz='p'
-  character (len=3) :: bc_order='xyz'
   character (len=bclen), dimension(mcom) :: bcx1='',bcx2='', &
                                             bcy1='',bcy2='', &
                                             bcz1='',bcz2=''
