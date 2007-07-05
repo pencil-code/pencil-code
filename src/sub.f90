@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.318 2007-06-27 10:21:17 dhruba Exp $
+! $Id: sub.f90,v 1.319 2007-07-05 12:09:44 wlyra Exp $
 
 module Sub
 
@@ -53,7 +53,7 @@ module Sub
   public :: phizsum_mn_name_r
   public :: ysum_mn_name_xz, zsum_mn_name_xy, phisum_mn_name_rz
   public :: yzintegrate_mn_name_x,xzintegrate_mn_name_y,xyintegrate_mn_name_z
-  public :: date_time_string
+  public :: date_time_string,get_radial_distance
 
   public :: calc_phiavg_profile
 
@@ -5592,5 +5592,38 @@ nameloop: do
     erfunc_mn = 1.0 - dumerfc
 
     end function erfunc_mn
+!***********************************************************************
+    subroutine get_radial_distance(rr_mn)
+!
+!  Calculate distance for different coordinate systems, and the
+!  possibility of cylindrical (slab) gravity
+!
+!  15-mar-07/wlad : coded
+!
+      use Cdata
+!
+      real, dimension(nx),intent(out) :: rr_mn
+!
+      if (coord_system=='cartesian') then
+        if (lcylindrical_gravity) then
+          rr_mn=sqrt(x(l1:l2)**2+y(m)**2)+tini
+        else
+          rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)+tini
+        endif
+      elseif (coord_system=='cylindric') then
+        if (lcylindrical_gravity) then
+          rr_mn=x(l1:l2)+tini
+        else
+          rr_mn=sqrt(x(l1:l2)**2+z(n)**2)+tini
+        endif
+      elseif(coord_system=='spherical') then
+        if (lcylindrical_gravity) then
+          rr_mn=x(l1:l2)*sqrt(1-cos(y(m)**2))
+        else
+          rr_mn=x(l1:l2)
+        endif
+      endif
+!
+    endsubroutine get_radial_distance
 !***********************************************************************
 endmodule Sub

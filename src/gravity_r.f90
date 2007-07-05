@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.15 2007-04-21 19:21:02 theine Exp $
+! $Id: gravity_r.f90,v 1.16 2007-07-05 12:09:44 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -50,16 +50,16 @@ module Gravity
   ! variables for compatibility with grav_z (used by Entropy and Density):
   real :: z1,z2,zref,zgrav,gravz,zinfty
   character (len=labellen) :: grav_profile='const'
-  logical :: lnumerical_equilibrium=.false.,lstratified=.false.
-  logical :: lcylindrical_gravity=.false.,lgravity_gas=.true.
+  logical :: lnumerical_equilibrium=.false.
+  logical :: lgravity_gas=.true.
 
   integer :: iglobal_gg=0
 
   namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-       lcylindrical_gravity,lstratified,qgshear,lgravity_gas
+       qgshear,lgravity_gas
 
   namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-       lcylindrical_gravity,lstratified,qgshear,lgravity_gas
+       qgshear,lgravity_gas
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
@@ -85,7 +85,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.15 2007-04-21 19:21:02 theine Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.16 2007-07-05 12:09:44 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -104,7 +104,7 @@ module Gravity
 !  22-nov-02/tony: renamed
 !
       use Cdata
-      use Sub, only: poly, step
+      use Sub, only: poly, step, get_radial_distance
       use Mpicomm
       use FArrayManager
 !
@@ -204,7 +204,7 @@ module Gravity
 !
 !  initialize gg, so we can later retrieve gravity via get_global
 !
-      if (lnumerical_equilibrium.or.lstratified) then
+      if (lnumerical_equilibrium) then
 ! 
         if (lroot) then
           print*,'inititialize_gravity: numerical exact equilibrium -- gravity'
@@ -408,6 +408,9 @@ module Gravity
         pot = -g0*(rr**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
         if (present(pot0)) pot0=-g0/r0_pot
 
+      case ('no-smooth')
+        pot=-g0/rr
+
       case default
         pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rr) &
                 / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rr)
@@ -493,6 +496,9 @@ module Gravity
         pot=-g0*(rad**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
         if (present(pot0)) pot0=-g0/r0_pot
 
+      case ('no-smooth')
+        pot=-g0/r
+
       case default
         pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rad) &
                 / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rad)
@@ -520,39 +526,6 @@ module Gravity
       if (NO_WARN) print *,gg(1,1)
 
     endsubroutine acceleration_penc
-!***********************************************************************
-    subroutine get_radial_distance(rr_mn)
-!
-!  Calculate distance for different coordinate systems, and the
-!  possibility of cylindrical (slab) gravity
-!
-!  15-mar-07/wlad : coded
-!
-      use Cdata
-!
-      real, dimension(nx),intent(out) :: rr_mn
-!
-      if (coord_system=='cartesian') then
-        if (lcylindrical_gravity) then
-          rr_mn=sqrt(x(l1:l2)**2+y(m)**2)+tini
-        else
-          rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)+tini
-        endif
-      elseif (coord_system=='cylindric') then
-        if (lcylindrical_gravity) then
-          rr_mn=x(l1:l2)+tini
-        else
-          rr_mn=sqrt(x(l1:l2)**2+z(n)**2)+tini
-        endif
-      elseif(coord_system=='spherical') then
-        if (lcylindrical_gravity) then
-          rr_mn=x(l1:l2)*sqrt(1-cos(y(m)**2))
-        else
-          rr_mn=x(l1:l2)
-        endif
-      endif
-!
-    endsubroutine get_radial_distance
 !***********************************************************************
     subroutine get_gravity_field(g_r,rr_mn,gg_mn)
 !
