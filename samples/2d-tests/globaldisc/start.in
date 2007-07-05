@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.30 2007-04-11 00:31:55 wlyra Exp $',
+  cvsid='$Id: start.in,v 1.31 2007-07-05 12:48:56 wlyra Exp $',
   ip=6,                        ! debugging parameter
   xyz0  = -2.6,-2.6,-0.26,       ! first corner of box
   xyz1  =  2.6, 2.6, 0.26,       ! second corner of box
@@ -18,18 +18,26 @@
   r_ext=2.5,                   ! radius of exterior spherical boundary
   lcylinder_in_a_box=T
   llocal_iso=T
+  lcylindrical_gravity=T
 /
 &eos_init_pars
   cs0=0.05 
   rho0 = 1.
+  ptlaw=1.
+  gamma=1.
 /
 &hydro_init_pars
+  inituu='global-shear'
 /
 &density_init_pars
-  initlnrho='globaldisc' 
+  initlnrho='local-isothermal' 
   lnrho_const=0.  
   ldensity_nolog=T
-  ptlaw=1, plaw=0
+  plaw=0.
+/
+&grav_init_pars
+ ipotential='no-smooth'
+ g0=1.
 /
 &special_init_pars
 /
@@ -43,6 +51,6 @@
   pmass=1e-4, 1.
   position=-1., 0.
   r_smooth=0.03,0.0
-  lcylindrical_gravity=F,T
+  lcylindrical_gravity_nbody=T,T
 /
 
