@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.48 2007-06-18 17:12:13 theine Exp $
+! $Id: eos_ionization.f90,v 1.49 2007-07-05 12:23:01 wlyra Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -65,7 +65,7 @@ module EquationOfState
 !ajwm  can't use impossible else it breaks reading param.nml
 !ajwm  SHOULDN'T BE HERE... But can wait till fully unwrapped
   real :: cs0=impossible, rho0=impossible, cp=impossible
-  real :: cs20=impossible, lnrho0=impossible
+  real :: cs20=impossible, lnrho0=impossible, ptlaw=impossible
   logical :: lcalc_cp = .false.
   real :: gamma=impossible, gamma1=impossible,gamma11=impossible
   real :: cs2bot=impossible, cs2top=impossible
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.48 2007-06-18 17:12:13 theine Exp $")
+           "$Id: eos_ionization.f90,v 1.49 2007-07-05 12:23:01 wlyra Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -536,6 +536,18 @@ module EquationOfState
       cp1_=impossible
 !
     end subroutine get_cp1
+!***********************************************************************
+    subroutine get_ptlaw(ptlaw_)
+!
+!  04-jul-07/wlad: return the value of ptlaw to outside modules
+!                  ptlaw is temperature gradient in accretion disks
+!
+      real, intent(out) :: ptlaw_
+!
+      call fatal_error('get_ptlaw','SHOULD NOT BE CALLED WITH eos_ionization')
+      ptlaw_=impossible
+!
+    end subroutine get_ptlaw
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !

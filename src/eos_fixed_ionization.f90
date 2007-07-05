@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.34 2007-06-18 17:12:13 theine Exp $
+! $Id: eos_fixed_ionization.f90,v 1.35 2007-07-05 12:23:01 wlyra Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -67,7 +67,7 @@ module EquationOfState
   logical :: lcalc_cp = .false.
   real :: gamma=5./3., gamma1,gamma11, nabla_ad
   !real :: cp=impossible, cp1=impossible
-  real :: cp1=impossible
+  real :: cp1=impossible, ptlaw=impossible
 !ajwm  can't use impossible else it breaks reading param.nml
   real :: cs2bot=1., cs2top=1.
   real :: cs2cool=0.
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.34 2007-06-18 17:12:13 theine Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.35 2007-07-05 12:23:01 wlyra Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -501,6 +501,18 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       cp1_=impossible
 !
     end subroutine get_cp1
+!***********************************************************************
+    subroutine get_ptlaw(ptlaw_)
+!
+!  04-jul-07/wlad: return the value of ptlaw to outside modules
+!                  ptlaw is temperature gradient in accretion disks
+!
+      real, intent(out) :: ptlaw_
+!
+      call fatal_error('get_ptlaw','SHOULD NOT BE CALLED WITH eos_fixed_ion...')
+      ptlaw_=impossible
+!
+    end subroutine get_ptlaw
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !

@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.55 2007-06-18 17:12:13 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.56 2007-07-05 12:23:01 wlyra Exp $
 
 !  Dummy routine for ideal gas
 
@@ -70,7 +70,7 @@ module EquationOfState
 !  real :: gamma=impossible, gamma1=impossible, gamma11=impossible
   real :: gamma=5./3., gamma1=impossible, gamma11=impossible
   real :: cs2bot=impossible, cs2top=impossible
-  real :: cs2cool=impossible
+  real :: cs2cool=impossible, ptlaw=impossible
   real :: mpoly=impossible, mpoly0=impossible
   real :: mpoly1=impossible, mpoly2=impossible
   integer :: isothtop=0
@@ -129,7 +129,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.55 2007-06-18 17:12:13 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.56 2007-07-05 12:23:01 wlyra Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -533,6 +533,18 @@ module EquationOfState
       cp1_=impossible
 !
     end subroutine get_cp1
+!***********************************************************************
+    subroutine get_ptlaw(ptlaw_)
+!
+!  04-jul-07/wlad: return the value of ptlaw to outside modules
+!                  ptlaw is temperature gradient in accretion disks
+!
+      real, intent(out) :: ptlaw_
+!
+      call fatal_error('get_ptlaw',"SHOULDN'T BE CALLED WITH eos_temperature_...")
+      ptlaw_=impossible
+!
+    end subroutine get_ptlaw
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !

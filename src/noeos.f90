@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.33 2007-06-18 17:12:13 theine Exp $
+! $Id: noeos.f90,v 1.34 2007-07-05 12:23:01 wlyra Exp $
 
 !  Dummy routine for ideal gas
 
@@ -53,7 +53,7 @@ module EquationOfState
   logical :: lcalc_cp=.false.
   real :: gamma=5./3., gamma1=2./3.,gamma11=3./5.
   real :: cs2bot=1., cs2top=1.
-  real :: cs2cool=0.
+  real :: cs2cool=0.,ptlaw=impossible
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   integer :: isothtop=1
   real, dimension (3) :: beta_glnrho_global=0.0,beta_glnrho_scaled=0.0
@@ -80,7 +80,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.33 2007-06-18 17:12:13 theine Exp $')
+           '$Id: noeos.f90,v 1.34 2007-07-05 12:23:01 wlyra Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -214,6 +214,17 @@ module EquationOfState
       cp1_=impossible
 !
     end subroutine get_cp1
+!***********************************************************************
+    subroutine get_ptlaw(ptlaw_)
+!
+!  04-jul-07/wlad: return the value of ptlaw to outside modules
+!                  ptlaw is temperature gradient in accretion disks
+!
+      real, intent(out) :: ptlaw_
+!
+      ptlaw_=impossible
+!
+    end subroutine get_ptlaw
 !***********************************************************************
     subroutine isothermal_density_ion(pot,tmp)
 !

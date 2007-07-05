@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.88 2007-06-30 16:17:29 theine Exp $
+! $Id: eos_idealgas.f90,v 1.89 2007-07-05 12:23:01 wlyra Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -58,6 +58,7 @@ module EquationOfState
 
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
+  real :: ptlaw=3./4.
   real :: gamma=5./3.
   real :: Rgas_cgs=0., Rgas, error_cp=1e-6
   real :: gamma1    !(=gamma-1)
@@ -76,10 +77,10 @@ module EquationOfState
   logical :: leos_localisothermal=.false.
 
   ! input parameters
-  namelist /eos_init_pars/ xHe, mu, cp, cs0, rho0, gamma, error_cp
+  namelist /eos_init_pars/ xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw
 
   ! run parameters
-  namelist /eos_run_pars/  xHe, mu, cp, cs0, rho0, gamma, error_cp
+  namelist /eos_run_pars/  xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw
 
   contains
 
@@ -109,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.88 2007-06-30 16:17:29 theine Exp $')
+           '$Id: eos_idealgas.f90,v 1.89 2007-07-05 12:23:01 wlyra Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -699,6 +700,17 @@ module EquationOfState
       cp1_=cp1
 !
     end subroutine get_cp1
+!***********************************************************************
+    subroutine get_ptlaw(ptlaw_)
+!
+!  04-jul-07/wlad: return the value of ptlaw to outside modules
+!                  ptlaw is temperature gradient in accretion disks
+!
+      real, intent(out) :: ptlaw_
+!
+      ptlaw_=ptlaw
+!
+    end subroutine get_ptlaw
 !***********************************************************************
     subroutine isothermal_density_ion(pot,tmp)
 !
