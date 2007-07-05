@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.155 2007-06-25 09:55:15 ajohan Exp $
+! $Id: boundcond.f90,v 1.156 2007-07-05 20:02:18 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -2317,9 +2317,11 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: a
 !
+      call boundconds_x(a)
       call initiate_isendrcv_bdry(a)
       call finalize_isendrcv_bdry(a)
-      call boundconds(a)
+      call boundconds_y(a)
+      call boundconds_z(a)
 !
     endsubroutine update_ghosts
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.361 2007-06-29 04:52:53 brandenb Exp $
+! $Id: equ.f90,v 1.362 2007-07-05 20:02:18 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -443,7 +443,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.361 2007-06-29 04:52:53 brandenb Exp $")
+           "$Id: equ.f90,v 1.362 2007-07-05 20:02:18 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -504,7 +504,7 @@ module Equ
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
 !
-      if (.not.early_finalize) call boundconds_x(f)
+      call boundconds_x(f)
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:
@@ -516,7 +516,8 @@ module Equ
       call initiate_isendrcv_bdry(f)
       if (early_finalize) then
         call finalize_isendrcv_bdry(f)
-        call boundconds(f)
+        call boundconds_y(f)
+        call boundconds_z(f)
       endif
 !
 !  set inverse timestep to zero before entering loop over m and n
