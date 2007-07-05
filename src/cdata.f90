@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.371 2007-06-29 04:52:52 brandenb Exp $
+! $Id: cdata.f90,v 1.372 2007-07-05 12:19:01 wlyra Exp $
 
 module Cdata
 
@@ -51,7 +51,7 @@ module Cdata
   real :: dsnap=100.,d2davg=100.,dvid=0.,dtmin=1.e-6,dtmax=1E37,dspec=impossible
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: rp_int=-impossible,rp_ext=-impossible
-  real :: r_ref=0.
+  real :: r_ref=0.,rsmooth=0.
 
 ! parameter for freezing
   real :: xfreeze_square=impossible,yfreeze_square=impossible
@@ -331,6 +331,7 @@ module Cdata
   logical :: lreinit=.false.
   logical :: lpencil_check=.false., lpencil_init=.false.
   logical :: lpencil_check_diagnos_opti=.false.
+  logical :: lcylindrical_gravity=.false.
   integer :: nreinit=0
   character (len=5), dimension(10) :: reinit_vars=''
   real :: b_ell=1., rbound=1.

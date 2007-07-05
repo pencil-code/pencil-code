@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.276 2007-06-29 04:52:53 brandenb Exp $
+! $Id: param_io.f90,v 1.277 2007-07-05 12:19:01 wlyra Exp $
 
 module Param_IO
 
@@ -66,13 +66,14 @@ module Param_IO
        lread_oldsnap,lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        lwrite_aux,pretend_lnTT, &
        lprocz_slowest, lcopysnapshots_exp, &
-       bcx,bcy,bcz,bc_order,r_int,r_ext,rp_int,rp_ext,r_ref, &
+       bcx,bcy,bcz,bc_order,r_int,r_ext,rp_int,rp_ext,r_ref,rsmooth, &
        mu0,force_lower_bound,force_upper_bound, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2,fbcz1_1,fbcz1_2,fbcz2_1,fbcz2_2, &
        xyz_step,xi_step_frac,xi_step_width, &
 !AB/15-Mar-07: the lcylindrical is kept to produce a warning: outdated
        lcylindrical, &
-       lcylinder_in_a_box,lsphere_in_a_box,llocal_iso,init_loops,lwrite_2d
+       lcylinder_in_a_box,lsphere_in_a_box,llocal_iso,init_loops,lwrite_2d,&
+       lcylindrical_gravity
  !      lextrapolate_bot_density,ltop_velocity_kep,laccelerat_zone, &
  !      ldecelerat_zone,lsurface_zone,lnstar_entropy,lnstar_T_const,lnstar_1D, T_disc
   namelist /run_pars/ &
