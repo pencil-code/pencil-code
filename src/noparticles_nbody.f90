@@ -1,4 +1,4 @@
-! $Id: noparticles_nbody.f90,v 1.8 2006-11-30 09:03:36 dobler Exp $
+! $Id: noparticles_nbody.f90,v 1.9 2007-07-05 12:13:03 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -162,12 +162,14 @@ module Particles_nbody
       if (NO_WARN) print*,unit
     endsubroutine write_particles_nbody_run_pars
 !***********************************************************************
+    subroutine get_totalmass(tmass)
+      real :: tmass
+      if (NO_WARN) print*,tmass
+    endsubroutine get_totalmass
+!***********************************************************************
     subroutine share_sinkparticles(fp)
-!
       real, dimension(mpar_loc,mpvar) :: fp
-!
       if (NO_WARN) print*, fp
-!
     endsubroutine share_sinkparticles
 !************************************************************************
     subroutine rprint_particles_nbody(lreset,lwrite)

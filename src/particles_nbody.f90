@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.38 2007-04-08 10:13:33 ajohan Exp $
+! $Id: particles_nbody.f90,v 1.39 2007-07-05 12:13:03 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -25,24 +25,24 @@ module Particles_nbody
   real, dimension(nspar) :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
   real, dimension(nspar) :: pmass=1.,position,r_smooth,pmass1
-  real :: delta_vsp0=1.0,disc_mass=0., g0=1.,totmass,totmass1
+  real :: delta_vsp0=1.0,totmass,totmass1
   character (len=labellen) :: initxxsp='origin', initvvsp='nothing'
   logical :: lcalc_orbit=.true.,lmigrate=.false.
   logical :: lreset_cm=.false.,lnogravz_star=.false.,lexclude_frozen=.true.
-  logical, dimension(nspar) :: lcylindrical_gravity=.false.
+  logical, dimension(nspar) :: lcylindrical_gravity_nbody=.false.
   logical, dimension(nspar) :: lfollow_particle=.false.
   real :: GNewton=impossible
 
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
-       bcspx, bcspy, bcspz, pmass, r_smooth, position, lcylindrical_gravity, &
-       lexclude_frozen, disc_mass, GNewton
+       bcspx, bcspy, bcspz, pmass, r_smooth, position, &
+       lcylindrical_gravity_nbody, lexclude_frozen, GNewton
 
 
   namelist /particles_nbody_run_pars/ &
        bcspx, bcspy, bcspz, dsnap_par_minor, linterp_reality_check, &
        lcalc_orbit,lreset_cm,lnogravz_star,lfollow_particle,  &
-       lmigrate, lexclude_frozen, disc_mass, GNewton
+       lmigrate, lexclude_frozen, GNewton
 
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -66,7 +66,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.38 2007-04-08 10:13:33 ajohan Exp $")
+           "$Id: particles_nbody.f90,v 1.39 2007-07-05 12:13:03 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -83,6 +83,8 @@ module Particles_nbody
 !  parameters.
 !
 !  27-aug-06/wlad: adapted
+!
+      use Mpicomm,only:stop_it
 !
       integer :: k
       logical :: lstarting
@@ -102,6 +104,24 @@ module Particles_nbody
 !
       totmass=sum(pmass)
       totmass1=1./totmass
+!
+! check for consistency between the cylindrical gravities switches
+! from cdata and the one from nbody
+!
+      if (((lcylindrical_gravity).and.&
+        (.not.lcylindrical_gravity_nbody(nspar))).or.&
+             (.not.lcylindrical_gravity).and.&
+             (lcylindrical_gravity_nbody(nspar))) then 
+        call stop_it("initialize_particles_nbody: inconsitency "//&
+             "between lcylindrical_gravity from cdata and the "//&
+             "one from nbody")
+      endif
+!
+      if (rsmooth.ne.r_smooth(nspar)) then 
+        call stop_it("initialize_particles_nbody: inconsitency "//&
+             "between rsmooth from cdata and the "//&
+             "one from nbody")
+      endif
 !
     endsubroutine initialize_particles_nbody
 !***********************************************************************
@@ -372,7 +392,7 @@ module Particles_nbody
 !
 ! Check which particle has cylindrical gravity switched on
 !
-            if (lcylindrical_gravity(ks)) then
+            if (lcylindrical_gravity_nbody(ks)) then
                rrp = rpcyl_mn(:,ks)
             else
                rrp = rp_mn(:,ks)
@@ -795,6 +815,16 @@ module Particles_nbody
       endif
 !
     endsubroutine share_sinkparticles
+!***********************************************************************
+    subroutine get_totalmass(tmass)
+!
+! called from global_shear to set the initial keplerian field
+!
+      real :: tmass
+!
+      tmass=sum(pmass)
+!   
+    endsubroutine get_totalmass
 !***********************************************************************
     subroutine calc_torque(p,dist,ks)
 !

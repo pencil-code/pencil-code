@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.330 2007-06-15 04:23:49 joishi Exp $
+! $Id: density.f90,v 1.331 2007-07-05 12:13:02 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -25,7 +25,8 @@ module Density
   use Messages
   use EquationOfState, only: cs0,cs20,lnrho0,rho0, &
                              gamma,gamma1,cs2top,cs2bot, &
-                             mpoly,beta_glnrho_global,get_cp1
+                             mpoly,beta_glnrho_global,&
+                             get_cp1,get_ptlaw
 
   use Special
 
@@ -43,7 +44,7 @@ module Density
   real :: xblob=0., yblob=0., zblob=0.
   real :: co1_ss=0.,co2_ss=0.,Sigma1=150.
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
-  real :: wdamp=0.,plaw=0,ptlaw=2.,qgshear=1.5
+  real :: wdamp=0.,plaw=0
   real, dimension(3) :: diffrho_hyper3_aniso=0.
   integer, parameter :: ndiff_max=4
   logical :: lmass_source=.false.,lcontinuity_gas=.true.
@@ -51,7 +52,7 @@ module Density
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_aniso=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
-  logical :: lstratified=.false.,lsoftened=.false.
+  logical :: lsoftened=.false.
 
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
@@ -62,7 +63,6 @@ module Density
 
   integer :: iglobal_gg=0
   integer :: iglobal_rho=0
-  real :: threshold=0.
 
   namelist /density_init_pars/ &
        ampllnrho,initlnrho,initlnrho2,widthlnrho,    &
@@ -72,8 +72,7 @@ module Density
        mpoly,strati_type,beta_glnrho_global,         &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
-       wdamp,plaw,lcontinuity_gas,lstratified,ptlaw, &
-       lsoftened,qgshear,threshold
+       wdamp,plaw,lcontinuity_gas,lsoftened
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
@@ -115,7 +114,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.330 2007-06-15 04:23:49 joishi Exp $")
+           "$Id: density.f90,v 1.331 2007-07-05 12:13:02 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -240,7 +239,7 @@ module Density
           call select_eos_variable('lnrho',ilnrho)
         endif
 !
-        if (lstratified .or. lnumerical_equilibrium) then
+        if (lnumerical_equilibrium) then
            if (lroot) print*,'initializing global gravity in density'
            call farray_register_global('gg',iglobal_gg,vector=3)
         endif
@@ -689,17 +688,6 @@ module Density
       !
         call information('init_lnrho','kws hydrostatic in spherical shell and exterior')
         call shell_lnrho(f)
-        
-      case('globaldisc')
-!minimum mass solar nebula
-        if (lroot)  print*,'init_lnrho: initialize initial condition for Keplerian global disc'
-        if     (coord_system=='cartesian') then
-           call power_law(f,iglobal_gg,plaw,ptlaw,lstratified,lsoftened,qgshear)
-        elseif (coord_system=='cylindric') then
-           call power_law_cyl(f,iglobal_gg,plaw,ptlaw,lstratified,qgshear)
-        else
-           call stop_it("globaldisc not implemented for spherical coord")
-        endif
 
      case ('step_xz')
         call fatal_error('init_lnrho','neutron_star initial condition is now in the special/neutron_star.f90 code')
@@ -1638,46 +1626,70 @@ module Density
 !
 !  18-apr-07/wlad : coded
 !
-      use Gravity
+      use Gravity,only:potential
+      use FArrayManager
+      use Mpicomm
+      use Initcond,only:set_thermodynamical_quantities
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: grav_dummy
-      real, dimension (nx) :: pot,pottmp,tmp,rr_sph,rr,rr_cyl,r_smooth,cs2,lnrhomid
-      real :: cp1
- 
-      if (lroot) print*,'isothermal_density: local isothermal stratification'
-      if (gamma/=1.0) then
-        if ((.not. lentropy) .and. (.not. ltemperature)) &
-          call fatal_error('local_isothermal_density','for gamma/=1.0, you need entropy or temperature!');
-      endif
+      real, dimension (nx) :: pot,tmp1,tmp2,corr
+      real, dimension (nx) :: rr_sph,rr,rr_cyl,lnrhomid
+      real                 :: ptlaw,g0_
+      integer, pointer     :: iglobal_cs2,iglobal_glnTT
+      integer              :: i
+      logical              :: lheader
 !
-      call get_cp1(cp1)
+      if (lroot) print*,'isothermal_density: local isothermal stratification'
+      if (lroot) print*,'Radial stratification with power law=',plaw
+!
+      call get_ptlaw(ptlaw)
+      call set_thermodynamical_quantities(f,iglobal_cs2,iglobal_glnTT,ptlaw)
+!
       do n=n1,n2
         do m=m1,m2
+          lheader=lroot.and.(m==m1).and.(n==n1)
           rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
           rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-          cs2=cs20/(rr_cyl/r_ref)**ptlaw
-          rr=rr_cyl/r_ref
-          r_smooth=sqrt(rr**2+r0_pot**2)
-          cs2=cs20/r_smooth**ptlaw         
-          lnrhomid=lnrho0-plaw*log(r_smooth)
-          call potential(x(l1:l2),y(m),z(n),POT=pot,RMN=rr_sph)
+          lnrhomid=log(rho0)-plaw*log(rr_cyl)
+          if (.not.lcylindrical_gravity) then 
+            if (lheader) &
+                 print*,'Adding vertical stratification with scale height h/r=',cs0
 !
-! This potential gives the whole gradient.
+! The subroutine potential yields the whole gradient.
 ! I want the function that partially derived in 
 ! z gives g0/r^3 * z. This is *NOT* -g0/r
 ! this second call takes care of normalizing it 
 ! i.e., there should be no correction at midplane
 !
-          call potential(x(l1:l2),y(m),z(n),POT=pottmp,RMN=rr_cyl)
-          tmp=-gamma*(pot-pottmp)/cs2 
-          f(l1:l2,m,n,ilnrho) = max(lnrhomid + tmp,threshold)
-          if (ltemperature) f(l1:l2,m,n,ilnTT)=log(cs2*cp1/gamma1)
+            call potential(x(l1:l2),y(m),z(n),POT=tmp1,RMN=rr_sph)
+            call potential(x(l1:l2),y(m),z(n),POT=tmp2,RMN=rr_cyl)
+!
+            pot=-gamma*(tmp1-tmp2)/f(l1:l2,m,n,iglobal_cs2)
+          else 
+            pot=0.
+          endif
+          f(l1:l2,m,n,ilnrho) = lnrhomid+pot
+!
+! correct for pressure gradient
+!
+          corr=cs20*(ptlaw+plaw)/(rr_cyl**2+rsmooth**2)**(1+ptlaw/2.)
+          if (ltemperature) corr=corr/gamma
+!tmp1 is the original keplerian velocity           
+          tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
+          tmp2=tmp1 - corr
+          do i=1,nx
+            if (tmp2(i).lt.0.) then
+              print*,'local_isothermal_density: the disk '
+              print*,'is too hot at x,y,z=',x(i+l1-1),y(m),z(n)
+              call stop_it("")
+            endif
+          enddo
+!
+          f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
+          f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
+!
         enddo
       enddo
-!
-      cs2bot=cs20
-      cs2top=cs20
 !
     endsubroutine local_isothermal_density
 !***********************************************************************

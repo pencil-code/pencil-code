@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.360 2007-07-02 07:09:43 brandenb Exp $
+! $Id: hydro.f90,v 1.361 2007-07-05 12:13:03 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -301,7 +301,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.360 2007-07-02 07:09:43 brandenb Exp $")
+           "$Id: hydro.f90,v 1.361 2007-07-05 12:13:03 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -506,6 +506,7 @@ module Hydro
         case('cos-cos-sin-uz'); call cos_cos_sin(ampluu(j),f,iuz,xx,yy,zz)
         case('tor_pert'); call tor_pert(ampluu(j),f,iux,xx,yy,zz)
         case('diffrot'); call diffrot(ampluu(j),f,iuy,xx,yy,zz)
+        case('global-shear'); call global_shear(f)
         case('olddiffrot'); call olddiffrot(ampluu(j),f,iuy,xx,yy,zz)
         case('sinwave-phase')
           call sinwave_phase(f,iux,ampl_ux,kx_uu,ky_uu,kz_uu,phase_ux)
@@ -1514,8 +1515,8 @@ module Hydro
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
-      real, dimension(nx) :: OO,tmp
-      real :: plaw=0.0,ptlaw=1.
+      real, dimension(nx) :: OO,tmp,corrhydro,corrmag
+      real :: plaw=0.0,ptlaw=2.
       integer :: ju,j
 !
 ! these tmps and where's are needed because these square roots
@@ -1536,6 +1537,14 @@ module Hydro
          f_target(:,1) = -y(  m  )*OO
          f_target(:,2) =  x(l1:l2)*OO
          f_target(:,3) =  0.
+      case('globaldisc-mhs')
+        corrhydro=ptlaw*cs20*p%rcyl_mn1**(ptlaw+2) 
+        corrmag=1.5*(Lxyz(3)/(8*pi))**2*p%rcyl_mn1**5
+        tmp = max(g0*p%rcyl_mn**(-2*qgshear) - corrhydro - corrmag,0.)
+        OO = sqrt(tmp)
+        f_target(:,1) = -y(  m  )*OO
+        f_target(:,2) =  x(l1:l2)*OO
+        f_target(:,3) =  0.
       case('globaldisc-strat')
          tmp = g0*(p%r_mn**(-3) - cs20*p%rcyl_mn**(-4))
          !this is wrong!
