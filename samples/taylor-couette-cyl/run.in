@@ -3,10 +3,10 @@
 !  run parameters for kinematic dynamo run with Glen Roberts flow
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2007-07-02 07:44:42 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.2 2007-07-06 17:00:38 brandenb Exp $',
   nt=101, it1=10, cdt=.4, cdtv=.25, isave=10, itorder=3, ialive=1
   dsnap=50, dvid=0.5
-  !lpencil_check=T
+  lpencil_check=T
 /
 &eos_run_pars
 /
