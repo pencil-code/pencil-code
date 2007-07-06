@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.361 2007-07-05 12:13:03 wlyra Exp $
+! $Id: hydro.f90,v 1.362 2007-07-06 10:35:48 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -301,7 +301,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.361 2007-07-05 12:13:03 wlyra Exp $")
+           "$Id: hydro.f90,v 1.362 2007-07-06 10:35:48 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1507,36 +1507,54 @@ module Hydro
 !  28-jul-06/wlad: coded
 !
       use Cdata
-      use BorderProfiles, only: border_driving
-      use EquationOfState, only: cs0,cs20
-      use Gravity, only:g0,qgshear,r0_pot 
+      use BorderProfiles,  only: border_driving
+      use EquationOfState, only: cs0,cs20,get_ptlaw
+      use Density,         only: get_plaw
+      use Gravity,         only: g0,qgshear
+      use Particles_nbody, only: get_totalmass
+      use Sub,             only: power_law
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
-      real, dimension(nx) :: OO,tmp,corrhydro,corrmag
-      real :: plaw=0.0,ptlaw=2.
+      real, dimension(nx) :: OO,tmp,corr,corrhydro,corrmag
+      real    :: ptlaw,plaw,g0_
       integer :: ju,j
 !
 ! these tmps and where's are needed because these square roots
 ! go negative in the frozen inner disc if the sound speed is big enough
 ! (like a corona, no hydrostatic equilibrium)
 !
-
       select case(borderuu)
       case('zero','0')
-         f_target=0.
+        f_target=0.
       case('constant')
-         do j=1,3
-            f_target(:,j) = uu_const(j)
-         enddo
-      case('globaldisc')
-         tmp = max(g0*p%rcyl_mn**(-2*qgshear) - ptlaw*cs20/p%rcyl_mn**(ptlaw+2),0.)
-         OO = sqrt(tmp)
-         f_target(:,1) = -y(  m  )*OO
-         f_target(:,2) =  x(l1:l2)*OO
-         f_target(:,3) =  0.
+        do j=1,3
+          f_target(:,j) = uu_const(j)
+        enddo
+      case('global-shear')
+        !get g0
+        if (lgrav) then 
+          g0_=g0
+        elseif (lparticles_nbody) then
+          call get_totalmass(g0_)
+        else 
+          call stop_it("set_border_hydro: can't get g0")
+        endif
+        !get the exponents for density and cs2 - could actually call cs2.... or the fpres itself...
+        call get_ptlaw(ptlaw);call get_plaw(plaw)
+        call power_law(g0_,p%rcyl_mn,2*qgshear,tmp)
+        !minimize calculations if no smoothing is used
+        if (rsmooth/=0) then 
+          corr=cs20*(ptlaw+plaw)*(p%rcyl_mn**2+rsmooth**2)**(-1-.5*ptlaw)
+        else
+          corr=cs20*(ptlaw+plaw)* p%rcyl_mn1**(ptlaw+2)
+        endif
+        OO=sqrt(tmp - corr)
+        f_target(:,1) = -y(  m  )*OO
+        f_target(:,2) =  x(l1:l2)*OO
+        f_target(:,3) =  0.
       case('globaldisc-mhs')
         corrhydro=ptlaw*cs20*p%rcyl_mn1**(ptlaw+2) 
         corrmag=1.5*(Lxyz(3)/(8*pi))**2*p%rcyl_mn1**5

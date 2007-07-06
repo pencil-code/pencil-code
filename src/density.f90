@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.331 2007-07-05 12:13:02 wlyra Exp $
+! $Id: density.f90,v 1.332 2007-07-06 10:35:48 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -114,7 +114,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.331 2007-07-05 12:13:02 wlyra Exp $")
+           "$Id: density.f90,v 1.332 2007-07-06 10:35:48 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1409,39 +1409,63 @@ module Density
 !
 !  28-jul-06/wlad: coded
 !
-      use BorderProfiles, only: border_driving
+      use BorderProfiles,  only: border_driving
       use EquationOfState, only: cs0,cs20
+      use Sub,             only: power_law
+      use Mpicomm,         only: stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx) :: f_target,OO_sph,OO_cyl,cs,theta
-      real :: r0_pot=0.1
-      integer :: i
+      real, dimension(nx) :: f_target!,OO_sph,OO_cyl,cs,theta
+      type (pencil_case)  :: p
+      integer            :: i
 !
       select case(borderlnrho)
 !
       case('zero','0')
-         f_target=0.
+        if (plaw.ne.0) call stop_it("borderlnrho: density is not flat but "//&
+             "you are calling zero border")
+        if (ldensity_nolog) then  
+          f_target=0.
+        else
+          f_target=1.
+        endif
       case('constant')
-         f_target=lnrho_const
+        if (plaw.ne.0) call stop_it("borderlnrho: density is not flat but "//&
+             "you are calling constant border")
+        if (ldensity_nolog) then 
+          f_target=rho_const
+        else
+          f_target=lnrho_const
+        endif
+      case('power-law')
+        if (plaw.eq.0) call stop_it("borderlnrho: no need to call a power-"//&
+             "law border for a flat density profile")
+        if (ldensity_nolog) then
+          call power_law(rho_const,p%rcyl_mn,plaw,f_target)
+!          f_target=rho_const*p%rcyl_mn1**(plaw)
+        else
+          f_target=lnrho_const - plaw*log(p%rcyl_mn)
+        endif
       case('stratification')
          !OO_sph = sqrt((r_mn**2 + r0_pot**2)**(-1.5))
          !OO_cyl = sqrt((rcyl_mn**2 + r0_pot**2)**(-1.5))
          !cs = OO_cyl*rcyl_mn*cs0
          !f_target=lnrho_const - 0.5*(theta/cs0)**2
-         f_target=(p%rcyl_mn-p%r_mn)/(cs20*p%r_mn)
+        if (ldensity_nolog) then
+          f_target=exp((p%rcyl_mn-p%r_mn)/(cs20*p%r_mn))
+        else
+          f_target=(p%rcyl_mn-p%r_mn)/(cs20*p%r_mn)
+        endif
       case('nothing')
-         if (lroot.and.ip<=5) &
-              print*,"set_border_lnrho: borderlnrho='nothing'"
+        if (lroot.and.ip<=5) &
+             print*,"set_border_lnrho: borderlnrho='nothing'"
       case default
-         write(unit=errormsg,fmt=*) &
-              'set_border_lnrho: No such value for borderlnrho: ', &
-              trim(borderlnrho)
-         call fatal_error('set_border_lnrho',errormsg)
+        write(unit=errormsg,fmt=*) &
+             'set_border_lnrho: No such value for borderlnrho: ', &
+             trim(borderlnrho)
+        call fatal_error('set_border_lnrho',errormsg)
       endselect
-!
-      if (ldensity_nolog) f_target=exp(f_target)
 !
       if (borderlnrho /= 'nothing') then
         call border_driving(f,df,p,f_target,ilnrho)
@@ -1857,7 +1881,14 @@ module Density
 !     df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+f(l1:l2,m,n,iuy)*fext
 !
     endsubroutine mass_source
-
+!***********************************************************************
+    subroutine get_plaw(plaw_)
+!
+      real :: plaw_
+!
+      plaw_=plaw
+!
+    endsubroutine get_plaw
 !***********************************************************************
     subroutine cylind_poly(f)
 !
