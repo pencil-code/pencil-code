@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.205 2007-07-05 12:13:02 wlyra Exp $
+! $Id: initcond.f90,v 1.206 2007-07-06 10:35:09 wlyra Exp $
 
 module Initcond
 
@@ -40,8 +40,7 @@ module Initcond
   public :: vfield2
   public :: hawley_etal99a
   public :: robertsflow
-  public :: power_law,global_shear
-  public :: set_thermodynamical_quantities
+  public :: global_shear,set_thermodynamical_quantities
   public :: const_lou
   public :: corona_init,mdi_init
 
@@ -2755,20 +2754,6 @@ module Initcond
 !
     endsubroutine random_isotropic_KS
 !**********************************************************
-    subroutine power_law(const,dist,plaw_,output)
-!
-! General distance power law initial conditions
-!
-! 24-feb-05/wlad: coded
-!  4-jul-07/wlad: generalized for any power law case
-!
-      real, dimension(nx) :: dist,output
-      real :: const,plaw_
-!
-      output = const/(dist**2+rsmooth**2)**(plaw_/2.)
-!
-    endsubroutine power_law
-!*************************************************************
     subroutine global_shear(f)
 !
 ! Initial shear in a global disk, as specified by the
@@ -2782,7 +2767,7 @@ module Initcond
 !
       use Gravity, only:g0,qgshear,r0_pot,n_pot
       use Particles_nbody, only: get_totalmass
-      use Sub, only: get_radial_distance
+      use Sub, only: get_radial_distance,power_law
       use Cdata
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -2824,6 +2809,7 @@ module Initcond
       use Mpicomm
       use EquationOfState, only: gamma,gamma1,get_cp1,&
                                  cs20,cs2bot,cs2top
+      use Sub,             only: power_law
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rr_cyl,cs2

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.319 2007-07-05 12:09:44 wlyra Exp $
+! $Id: sub.f90,v 1.320 2007-07-06 10:35:09 wlyra Exp $
 
 module Sub
 
@@ -53,7 +53,7 @@ module Sub
   public :: phizsum_mn_name_r
   public :: ysum_mn_name_xz, zsum_mn_name_xy, phisum_mn_name_rz
   public :: yzintegrate_mn_name_x,xzintegrate_mn_name_y,xyintegrate_mn_name_z
-  public :: date_time_string,get_radial_distance
+  public :: date_time_string,get_radial_distance,power_law
 
   public :: calc_phiavg_profile
 
@@ -5592,6 +5592,26 @@ nameloop: do
     erfunc_mn = 1.0 - dumerfc
 
     end function erfunc_mn
+!***********************************************************************
+    subroutine power_law(const,dist,plaw_,output)
+!
+! General distance power law initial conditions
+!
+! 24-feb-05/wlad: coded
+!  4-jul-07/wlad: generalized for any power law case
+!
+      use Cdata, only: nx,rsmooth
+
+      real, dimension(nx) :: dist,output
+      real :: const,plaw_
+!
+      if (rsmooth.eq.0.) then
+        output = const*dist**(-plaw_)
+      else
+        output = const*(dist**2+rsmooth**2)**(-.5*plaw_)
+      endif
+!
+    endsubroutine power_law
 !***********************************************************************
     subroutine get_radial_distance(rr_mn)
 !
