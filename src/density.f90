@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.332 2007-07-06 10:35:48 wlyra Exp $
+! $Id: density.f90,v 1.333 2007-07-06 11:47:54 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -114,7 +114,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.332 2007-07-06 10:35:48 wlyra Exp $")
+           "$Id: density.f90,v 1.333 2007-07-06 11:47:54 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1114,6 +1114,7 @@ module Density
 !  19-11-04/anders: coded
 !
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1160,12 +1161,16 @@ module Density
         if (ldensity_nolog) then
           call dot(p%uu,p%glnrho,p%uglnrho)
         else
+          if (lupw_rho) call stop_it("calc_pencils_density: you switched "//&
+               "lupw_rho instead of lupw_lnrho")
           call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
         endif
       endif
 ! ugrho
       if (lpencil(i_ugrho)) then
         if (ldensity_nolog) then
+          if (lupw_lnrho) call stop_it("calc_pencils_density: you switched "//&
+               "lupw_lnrho instead of lupw_rho")
           call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
         else
           call dot(p%uu,p%grho,p%ugrho)
