@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.363 2007-07-06 11:28:43 wlyra Exp $
+! $Id: hydro.f90,v 1.364 2007-07-06 16:59:37 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -301,7 +301,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.363 2007-07-06 11:28:43 wlyra Exp $")
+           "$Id: hydro.f90,v 1.364 2007-07-06 16:59:37 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -980,11 +980,13 @@ module Hydro
       if (lpencil(i_u1u32)) p%u1u32=p%uu(:,1)*p%uij(:,3,2)
       if (lpencil(i_u2u13)) p%u2u13=p%uu(:,2)*p%uij(:,1,3)
 !
-! del4u
+! del4u and del6u
+!
       if (lpencil(i_del4u)) call del4v(f,iuu,p%del4u)
-! del6u
       if (lpencil(i_del6u)) call del6v(f,iuu,p%del6u)
+!
 ! del6u_bulk
+!
       if (lpencil(i_del6u_bulk)) then
         call der6(f,iux,tmp,1)
         p%del6u_bulk(:,1)=tmp

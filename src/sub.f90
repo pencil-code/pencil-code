@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.320 2007-07-06 10:35:09 wlyra Exp $
+! $Id: sub.f90,v 1.321 2007-07-06 16:59:37 brandenb Exp $
 
 module Sub
 
@@ -2256,8 +2256,11 @@ module Sub
         del4f(:,i)=tmp
       enddo
 !
-      if (lcylindrical_coords.or.lspherical_coords) &
-           call stop_it("del2vi_etc not implemented for non-cartesian coordinates")
+!  Exit if this is requested for non-cartesian runs,
+!  unless lpencil_check=T
+! 
+      if (.not.lpencil_check.and.(lcylindrical_coords.or.lspherical_coords)) &
+           call stop_it("del4v not implemented for non-cartesian coordinates")
 !
     endsubroutine del4v
 !***********************************************************************
@@ -2286,8 +2289,11 @@ module Sub
         del6f(:,i)=tmp
       enddo
 !
-      if (lcylindrical_coords.or.lspherical_coords) &
-           call stop_it("del2vi_etc not implemented for non-cartesian coordinates")
+!  Exit if this is requested for non-cartesian runs,
+!  unless lpencil_check=T
+! 
+      if (.not.lpencil_check.and.(lcylindrical_coords.or.lspherical_coords)) &
+           call stop_it("del6vi_etc not implemented for non-cartesian coordinates")
 !
     endsubroutine del6v
 !***********************************************************************
@@ -2506,7 +2512,10 @@ module Sub
       call der4(f,k,d4fdz,3)
       del4f = d4fdx + d4fdy + d4fdz
 !
-      if (lcylindrical_coords.or.lspherical_coords) &
+!  Exit if this is requested for non-cartesian runs,
+!  unless lpencil_check=T
+! 
+      if (.not.lpencil_check.and.(lcylindrical_coords.or.lspherical_coords)) &
            call stop_it("del4 not implemented for non-cartesian coordinates")
 !
     endsubroutine del4
@@ -2545,7 +2554,10 @@ module Sub
          del6f = d6fdx + d6fdy + d6fdz
       endif
 !
-      if (lspherical_coords) &
+!  Exit if this is requested for lspherical_coords run,
+!  unless lpencil_check=T
+! 
+      if (.not.lpencil_check.and.lspherical_coords) &
            call stop_it("del6 not implemented for spherical coordinates")
 !
     endsubroutine del6
@@ -2572,6 +2584,8 @@ module Sub
       call der6_other(f,d6fdz,3)
       del6f = d6fdx + d6fdy + d6fdz
 !
+!  Exit if this is requested for non-cartesian runs
+! 
       if (lcylindrical_coords.or.lspherical_coords) &
         call stop_it("del6_other not implemented for non-cartesian coordinates")
 !
@@ -2601,6 +2615,8 @@ module Sub
       call der6(f,k,d6fdz,3,IGNOREDX=.true.)
       del6f = d6fdx + d6fdy + d6fdz
 !
+!  Exit if this is requested for non-cartesian runs
+! 
       if (lcylindrical_coords.or.lspherical_coords) &
         call stop_it("del2_nodx not implemented for non-cartesian coordinates")
 !
@@ -2631,6 +2647,8 @@ module Sub
       call der6(f,k,d6fdz,3)
       del6f = vec(1)*d6fdx + vec(2)*d6fdy + vec(3)*d6fdz
 !
+!  Exit if this is requested for non-cartesian runs
+! 
       if (lcylindrical_coords.or.lspherical_coords) &
         call stop_it("del6fj not implemented for non-cartesian coordinates")
 !
@@ -2663,6 +2681,8 @@ module Sub
         del6f(:,i)=tmp
       enddo
 !
+!  Exit if this is requested for non-cartesian runs
+! 
       if (lcylindrical_coords.or.lspherical_coords) &
         call stop_it("del2fjv not implemented for non-cartesian coordinates")
 !
