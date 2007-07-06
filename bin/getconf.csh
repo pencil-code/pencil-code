@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.198 2007-07-05 11:35:09 mgellert Exp $
+# $Id: getconf.csh,v 1.199 2007-07-06 17:21:07 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -856,13 +856,15 @@ else if ($hn =~ sans*) then
   echo "Sanssouci cluster in Potsdam (AIP)"
   if ($?PBS_NODEFILE) then
     echo "PBS job"
+    cat $PBS_NODEFILE > nodes.sans
+    set local_disc = 1
+    set one_local_disc = 0
+    set local_binary = 0
+    set mpirun = mpirun # run script from /opt/env to set environement for mpi
+    set mpirunops = "-v -machinefile nodes.sans"
+  else
+    echo "Non-PBS, running on `hostname`"
   endif
-  cat $PBS_NODEFILE > nodes.sans
-  set local_disc = 1
-  set one_local_disc = 0
-  set local_binary = 0
-  set mpirun = mpirun # run script from /opt/env to set environement for mpi
-  set mpirunops = "-v -machinefile nodes.sans"
   #
   # use unique scratch directory name
   #
