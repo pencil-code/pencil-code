@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.362 2007-07-06 10:35:48 wlyra Exp $
+! $Id: hydro.f90,v 1.363 2007-07-06 11:28:43 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -301,7 +301,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.362 2007-07-06 10:35:48 wlyra Exp $")
+           "$Id: hydro.f90,v 1.363 2007-07-06 11:28:43 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1513,6 +1513,7 @@ module Hydro
       use Gravity,         only: g0,qgshear
       use Particles_nbody, only: get_totalmass
       use Sub,             only: power_law
+      use Mpicomm,         only: stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
