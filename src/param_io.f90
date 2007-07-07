@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.278 2007-07-05 22:43:13 theine Exp $
+! $Id: param_io.f90,v 1.279 2007-07-07 08:26:22 brandenb Exp $
 
 module Param_IO
 
@@ -926,17 +926,22 @@ module Param_IO
            leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
            leos,leos_temperature_ionization,lneutralvelocity,lneutraldensity
 !
-!  Write this file from each processor; needed for pacx-MPI (grid-style
-!  computations across different platforms), where the data/ directories
-!  are different for the different computers involved.
-!    Need to do this in a cleverer way if it implies performance
-!  penalties, but this is not likely, since the file written is quite
-!  small.
-!      if (lroot) then
-        open(1,FILE=trim(datadir)//'/param.nml',DELIM='apostrophe' )
-
-        write(1,NML=init_pars             )
-
+!  Write the param.nml file only from root processor.
+!  However, for pacx-MPI (grid-style computations across different platforms)
+!  we'd need this on each site separately (not done yet).
+!  (In that case we'd need to identify separate master-like processors
+!  one at each site.)
+!
+      if (lroot) then
+        open(1,FILE=trim(datadir)//'/param.nml',DELIM='apostrophe', &
+               STATUS='unknown')
+!
+!  Write init_pars
+!
+        write(1,NML=init_pars)
+!
+!  write each namelist separately.
+!
         call write_eos_init_pars(1)
         call write_hydro_init_pars(1)
         call write_density_init_pars(1)
@@ -964,11 +969,11 @@ module Param_IO
         ! The following parameters need to be communicated to IDL
         write(1,NML=lphysics              )
         close(1)
-!      endif
+      endif
 !
-       if (NO_WARN) print*, lhydro, ldensity, lentropy, lmagnetic, ltestfield, &
-                            lpscalar, lradiation, lcosmicray, lcosmicrayflux, &
-                            linterstellar, lshock
+      if (NO_WARN) print*, lhydro, ldensity, lentropy, lmagnetic, ltestfield, &
+                           lpscalar, lradiation, lcosmicray, lcosmicrayflux, &
+                           linterstellar, lshock
 !
     endsubroutine wparam
 !***********************************************************************
