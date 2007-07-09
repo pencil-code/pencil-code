@@ -1,5 +1,5 @@
 ;;
-;;  $Id: pc_is_vectorfield.pro,v 1.2 2005-08-28 13:07:39 ajohan Exp $
+;;  $Id: pc_is_vectorfield.pro,v 1.3 2007-07-09 06:16:53 ajohan Exp $
 ;;
 function pc_is_vectorfield, variable, $
     subscripts=subscripts, dim=dim, $
@@ -41,7 +41,8 @@ COMPILE_OPT IDL2,HIDDEN
     endelse
   endif
 
-  if (result eq 0) then undefine, subscripts
+  if ( (result eq 0) and (n_elements(subscripts) ne 0) ) then $
+      undefine, subscripts
   
   return, result
 
