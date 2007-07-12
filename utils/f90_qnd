@@ -24,7 +24,8 @@ use strict;
 my $md5_implementation = 'Digest::MD5';
 eval { require Digest::MD5 } or $md5_implementation = 'md5sum';
 
-my $debug = 0;                  # 0: be quiet
+my $debug = $ENV{F90_QND_DEBUGLEVEL} || 0;
+                                # 0: be quiet
                                 # 1: be verbose
                                 # 2: dump all time stamps and md5 sums
                                 # 3: dump even the files
@@ -637,6 +638,11 @@ When backdating object files, B<f90_qnd> will backdate executables so they
 will get re-linked. An executable in this sense is any file whose name
 matches the Perl regular expression B<F90_QND_EXEC_RE>. The default is
 `\.x$'.
+
+=item F90_QND_DEBUGLEVEL
+
+Set to 1, 2, or 3 to get increasingly more detailed debugging information
+written to the file I<f90_qnd.log> and the directory I<f90_qnd_log_dir>.
 
 =back
 
