@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.157 2007-07-05 22:43:13 theine Exp $
+! $Id: boundcond.f90,v 1.158 2007-07-12 18:12:18 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -601,6 +601,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_symset_x(f,sgn,topbot,j,rel,val)
 !
+! FIXME: Get documentation right
+!
 !  Symmetry boundary conditions.
 !  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
 !  (f,+1,topbot,j)            --> symmetry                 (f' =0)
@@ -648,6 +650,8 @@ module Boundcond
     endsubroutine bc_symset_x
 !***********************************************************************
     subroutine bc_slope_x(f,slope,topbot,j,rel,val)
+!
+! FIXME: This documentation is almost certainly wrong
 !
 !  Symmetry boundary conditions.
 !  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
@@ -706,6 +710,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_dr0_x(f,slope,topbot,j,rel,val)
 !
+! FIXME: This documentation is almost certainly wrong
+!
 !  Symmetry boundary conditions.
 !  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
 !  (f,+1,topbot,j)            --> symmetry                 (f' =0)
@@ -721,6 +727,9 @@ module Boundcond
       real, dimension (mcom), optional :: val
       real, dimension (mcom) :: slope
       integer :: i,j
+      ! Abbreviations to keep compiler from complaining in 1-d or 2-d:
+      integer :: l1_4=l1+4, l1_5=l1+5, l1_6=l1+6
+      integer :: l2_4=l2-4, l2_5=l2-5, l2_6=l2-6
       logical, optional :: rel
       logical :: relative
 !
@@ -736,8 +745,8 @@ module Boundcond
           enddo
         else
           f(l1,:,:,j)=(360.*x(l1+1)*f(l1+1,:,:,j)-450.*x(l1+2)*f(l1+2,:,:,j) &
-                      +400.*x(l1+3)*f(l1+3,:,:,j)-225.*x(l1+4)*f(l1+4,:,:,j) &
-                       +72.*x(l1+5)*f(l1+5,:,:,j)- 10.*x(l1+6)*f(l1+6,:,:,j) &
+                      +400.*x(l1+3)*f(l1+3,:,:,j)-225.*x(l1_4)*f(l1_4,:,:,j) &
+                       +72.*x(l1_5)*f(l1_5,:,:,j)- 10.*x(l1_6)*f(l1_6,:,:,j) &
                       )/(147.*x(l1))
           do i=1,nghost
             f(l1-i,:,:,j)=f(l1+i,:,:,j)+(2.*dx/x(l1))*i*f(l1,:,:,j)
@@ -752,8 +761,8 @@ module Boundcond
           enddo
         else
           f(l2,:,:,j)=(360.*x(l2-1)*f(l2-1,:,:,j)-450.*x(l2-2)*f(l2-2,:,:,j) &
-                      +400.*x(l2-3)*f(l2-3,:,:,j)-225.*x(l2-4)*f(l2-4,:,:,j) &
-                       +72.*x(l2-5)*f(l2-5,:,:,j)- 10.*x(l2-6)*f(l2-6,:,:,j) &
+                      +400.*x(l2-3)*f(l2-3,:,:,j)-225.*x(l2_4)*f(l2_4,:,:,j) &
+                       +72.*x(l2_5)*f(l2_5,:,:,j)- 10.*x(l2_6)*f(l2_6,:,:,j) &
                       )/(147.*x(l2))
           do i=1,nghost
             f(l2+i,:,:,j)=f(l2-i,:,:,j)-(2.*dx/x(l2))*i*f(l2,:,:,j)
@@ -850,6 +859,8 @@ module Boundcond
     endsubroutine bc_overshoot_z
 !***********************************************************************
     subroutine bc_antis_x(f,slope,topbot,j,rel,val)
+!
+! FIXME: Get documentation right
 !
 !  Symmetry boundary conditions.
 !  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
@@ -956,6 +967,8 @@ module Boundcond
     endsubroutine bc_sym_y
 !***********************************************************************
     subroutine bc_symset_y(f,sgn,topbot,j,rel,val)
+!
+! FIXME: Get documentation right
 !
 !  Symmetry boundary conditions.
 !  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
@@ -1085,9 +1098,9 @@ module Boundcond
 !***********************************************************************
     subroutine bc_fix_x(f,topbot,j,val)
 !
-!  Sets the value of f , particularly : 
-! A_{\alpha}= <val>
-!on the boundary to a given value
+!  Sets the value of f, particularly: 
+!    A_{\alpha}= <val>
+!  on the boundary to a given value
 !
 !  27-apr-2007/dhruba: coded
 !
@@ -1115,9 +1128,9 @@ module Boundcond
 !***********************************************************************
     subroutine bc_set_spder_x(f,topbot,j,val)
 !
-!  Sets the derivative, particularly : 
-!d(rA_{\alpha})/dr = <val>
-!on the boundary to a given value
+!  Sets the derivative, particularly: 
+!    d(rA_{\alpha})/dr = <val>
+!  on the boundary to a given value
 !
 !  27-apr-2007/dhruba: coded
 !
