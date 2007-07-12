@@ -16,9 +16,9 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # line 17
 
 # Name:   adapt-mkfile
-# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2007-05-16 18:56:27 $
-# $Revision: 1.4 $
+# Author: wd (Wolfgangi [.] Dobler [at] kis.uni-freiburg.de)
+# $Date: 2007-07-12 17:55:38 $
+# $Revision: 1.5 $
 # Description:
 #   Transform a makefile with machine-dependent information into one that
 #   is adapted to the machine we're running on.
@@ -71,8 +71,8 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { die $usage; }
 my $doll='\$';                  # Need this to trick CVS
 if ($opts{'v'} || $opts{'version'}) {
-    my $rev = '$Revision: 1.4 $';
-    my $date = '$Date: 2007-05-16 18:56:27 $';
+    my $rev = '$Revision: 1.5 $';
+    my $date = '$Date: 2007-07-12 17:55:38 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     die "$cmdname version $rev ($date)\n";
@@ -296,7 +296,7 @@ above forms of the file names (suffix C<.incl>) are recommended.
 
 =head1 AUTHOR
 
-Wolfgang Dobler  <Wolfgang.Dobler@kis.uni-freiburg.de>
+Wolfgang Dobler  <Wolfgang [.] Dobler [at] kis.uni-freiburg.de>
 
 =head1 SEE ALSO
 
