@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.304 2007-07-05 11:08:09 brandenb Exp $
+### $Id: Makefile.src,v 1.305 2007-07-16 21:52:10 wlyra Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -492,14 +492,16 @@ LD_FFTW2=
 #LIBMPISUFFIX=_#(starlink)
 #MAKEOPTS=-j 3 #(starlink)
 #
-## Hades -- Wlad's laptop
+## Hades & Triton -- Wlad's laptops
 ##
-#FC=ifort #(hades)
-#MPI_HOME=/home/wlyra/test/lib #(hades)
-#MPI_LDLIBS= -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(hades)
-#FFLAGS=-I/usr/include/mpi -O3 #(hades)
-#LIBMPISUFFIX=_#(hades)
-#LD_MPI=-L$(MPI_HOME) -pthread $(MPI_LDLIBS) #(hades)
+#FC =/opt/intel/fc/10.0.023/bin/ifort #(hades|triton)
+#F77=$(FC)
+#CC = gcc
+#FC_HOME=/opt/intel/fc/10.0.023 #(hades|triton)
+#MPI_HOME=/usr/local#(hades|triton)
+#FFLAGS=-O3 -I$(MPI_HOME)/include #(hades|triton)
+#MPI_LDLIBS= -llammpi++ -llammpio -llamf77mpi -lmpi -llam #(hades|triton)
+#LD_MPI=-L$(MPI_HOME)/lib -pthread $(MPI_LDLIBS) #(hades|triton)
 ##
 ## Andrew's Laptop (wkfg)
 ##
