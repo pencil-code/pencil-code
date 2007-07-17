@@ -10,8 +10,8 @@ function pc_unshear,f,t
   pc_read_grid,obj=grid,/quiet
   pc_read_dim,obj=dim,/quiet
   
-  deltay = -param.Sshear*grid.x*t
-  deltay = deltay - floor(deltay/grid.Ly)*grid.Ly
+  tshear = 1./abs(param.Sshear)
+  deltay = -param.Sshear*grid.x*(t - floor(t/tshear)*tshear)
   
   deltay_dy = deltay/grid.dy
   displs = floor(deltay_dy)
