@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.305 2007-07-16 21:52:10 wlyra Exp $
+### $Id: Makefile.src,v 1.306 2007-07-17 12:37:38 pkapyla Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -566,6 +566,16 @@ LD_FFTW2=
 #FFLAGS=-O2 #(sepeli)
 #CFLAGS=-DFUNDERSC=1 -O3 #(sepeli)
 #LD_MPI= #(sepeli)
+##
+##
+## CSC cluster Murska - (Espoo, Finland)
+## www.csc.fi
+#FC=mpif90 #(c[0-9][0-9]*)
+#F90=$(FC) #(c[0-9][0-9]*)
+#CC=mpicc #(c[0-9][0-9]*)
+#FFLAGS=-O2 #(c[0-9][0-9]*)
+#CFLAGS=-DFUNDERSC=1 -O3 #(c[0-9][0-9]*)
+#LD_MPI= #(c[0-9][0-9]*)
 ##
 ##
 ## Uppmax cluster - (Uppsala)
