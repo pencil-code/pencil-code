@@ -26,7 +26,7 @@ function pc_unshear,f,t
   
   g = f
   for l = 0,dim.mx-1 do begin
-    g[l,dim.m1:dim.m2,*] = $
+    g[l,dim.m1:dim.m2,*,*] = $
         c1[l]*shift(reform(f[l,dim.m1:dim.m2,*,*]),displs[l]-2) $
       + c2[l]*shift(reform(f[l,dim.m1:dim.m2,*,*]),displs[l]-1) $
       + c3[l]*shift(reform(f[l,dim.m1:dim.m2,*,*]),displs[l]  ) $
