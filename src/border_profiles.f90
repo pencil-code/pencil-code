@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.14 2007-04-10 16:54:16 wlyra Exp $
+! $Id: border_profiles.f90,v 1.15 2007-07-23 11:44:07 wlyra Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -119,18 +119,27 @@ module BorderProfiles
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension(nx) :: f_target,pborder,drive_time
-      integer :: j
+      real, dimension(nx) :: f_target
+      real :: pborder,drive_time
+      integer :: i,j
 !
-      call get_drive_time(p,drive_time)
-      call get_border(p,pborder)
-!
-      df(l1:l2,m,n,j) = df(l1:l2,m,n,j) &
-           - (f(l1:l2,m,n,j) - f_target)*pborder/drive_time
+      do i=1,nx
+        if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
+             ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
+!        
+          call get_drive_time(p,drive_time,i)
+          call get_border(p,pborder,i)
+        
+          df(i+l1-1,m,n,j) = df(i+l1-1,m,n,j) &
+               - (f(i+l1-1,m,n,j) - f_target(i))*pborder/drive_time
+        endif
+      !else do nothing
+      !df(l1:l2,m,n,j) = df(l1:l2,m,n,j) 
+      enddo
 !
     endsubroutine border_driving
 !***********************************************************************
-    subroutine get_border(p,pborder)
+    subroutine get_border(p,pborder,i)
 !
 ! Apply a step function that smoothly goes from zero to one on both sides.
 ! In practice, means that the driving takes place
@@ -143,17 +152,17 @@ module BorderProfiles
 !
       use Sub, only: cubic_step
 !
-      real, dimension(nx),intent(out) :: pborder
+      real, intent(out) :: pborder
       type (pencil_case) :: p
-      real, dimension(nx) :: rlim_mn
+      real :: rlim_mn
       integer :: i
 !
       if (lcylinder_in_a_box) then
-         rlim_mn = p%rcyl_mn
+         rlim_mn = p%rcyl_mn(i)
       elseif (lsphere_in_a_box) then
-         rlim_mn = p%r_mn
+         rlim_mn = p%r_mn(i)
       else
-         rlim_mn = p%x_mn
+         rlim_mn = p%x_mn(i)
       endif
 !
 ! cint = 1-step_int , cext = step_ext
@@ -164,7 +173,7 @@ module BorderProfiles
 !
     endsubroutine get_border
 !***********************************************************************
-    subroutine get_drive_time(p,drive_time)
+    subroutine get_drive_time(p,drive_time,i)
 !
 ! This is problem-dependent, since the driving should occur in the
 ! typical time-scale of the problem. Currently, only the keplerian
@@ -174,10 +183,11 @@ module BorderProfiles
 !
       use Gravity, only:qgshear
 !
-      real, dimension(nx),intent(out) :: drive_time
+      real, intent(out) :: drive_time
       type (pencil_case) :: p
+      integer :: i
 !
-      drive_time = 2*pi*(p%rcyl_mn)**(qgshear)
+      drive_time = 2*pi*p%rcyl_mn(i)**qgshear
 !
     endsubroutine get_drive_time
 !***********************************************************************
