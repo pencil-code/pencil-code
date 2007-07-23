@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.364 2007-07-06 16:59:37 brandenb Exp $
+! $Id: hydro.f90,v 1.365 2007-07-23 11:45:38 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -301,7 +301,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.364 2007-07-06 16:59:37 brandenb Exp $")
+           "$Id: hydro.f90,v 1.365 2007-07-23 11:45:38 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -790,6 +790,11 @@ module Hydro
       if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) then
         lpenc_requested(i_r_mn)=.true.
         if (lcylinder_in_a_box) lpenc_requested(i_rcyl_mn)=.true.
+      endif
+!
+      if (borderuu=='global-shear') then 
+        lpenc_requested(i_rcyl_mn)=.true.
+        lpenc_requested(i_rcyl_mn1)=.true.
       endif
 !
 !  1/rho needed for correcting the damping term
@@ -1503,7 +1508,7 @@ module Hydro
 !***********************************************************************
     subroutine set_border_hydro(f,df,p)
 !
-!  Calculates the driving term for the border profile
+!  Calculates the driving term for the border5B profile
 !  of the uu variable.
 !
 !  28-jul-06/wlad: coded
@@ -1521,9 +1526,9 @@ module Hydro
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
-      real, dimension(nx) :: OO,tmp,corr,corrhydro,corrmag
-      real    :: ptlaw,plaw,g0_
-      integer :: ju,j
+      real    :: ptlaw,plaw,g0_,B0
+      real :: tmp,OO,corr,corrmag
+      integer :: ju,j,i
 !
 ! these tmps and where's are needed because these square roots
 ! go negative in the frozen inner disc if the sound speed is big enough
@@ -1545,43 +1550,65 @@ module Hydro
         else 
           call stop_it("set_border_hydro: can't get g0")
         endif
-        !get the exponents for density and cs2 - could actually call cs2.... or the fpres itself...
+        !get the exponents for density and cs2
         call get_ptlaw(ptlaw);call get_plaw(plaw)
-        call power_law(g0_,p%rcyl_mn,2*qgshear,tmp)
-        !minimize calculations if no smoothing is used
-        if (rsmooth/=0) then 
-          corr=cs20*(ptlaw+plaw)*(p%rcyl_mn**2+rsmooth**2)**(-1-.5*ptlaw)
-        else
-          corr=cs20*(ptlaw+plaw)* p%rcyl_mn1**(ptlaw+2)
+        !no need to do the whole nx array. the border is all we need
+        do i=1,nx
+          if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
+               ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
+            call power_law(g0_,p%rcyl_mn(i),2*qgshear,tmp)
+            !minimize use of exponentials if no smoothing is used
+            if (rsmooth.ne.0.) then 
+              corr=cs20*(ptlaw+plaw)*(p%rcyl_mn(i)**2+rsmooth**2)**(-1-.5*ptlaw)
+            else
+              corr=cs20*(ptlaw+plaw)* p%rcyl_mn1(i)**(ptlaw+2)
+            endif
+            OO=sqrt(max(tmp - corr,0.))
+            f_target(i,1) = -y(   m  )*OO
+            f_target(i,2) =  x(i+l1-1)*OO
+            f_target(i,3) =  0.
+          else
+            f_target(i,1:3)=0.
+          endif
+        enddo
+
+      case('global-shear-mhs')
+        !get g0
+        if (lgrav) then 
+          g0_=g0
+        elseif (lparticles_nbody) then
+          call get_totalmass(g0_)
+        else 
+          call stop_it("set_border_hydro: can't get g0")
         endif
-        OO=sqrt(tmp - corr)
-        f_target(:,1) = -y(  m  )*OO
-        f_target(:,2) =  x(l1:l2)*OO
-        f_target(:,3) =  0.
-      case('globaldisc-mhs')
-        corrhydro=ptlaw*cs20*p%rcyl_mn1**(ptlaw+2) 
-        corrmag=1.5*(Lxyz(3)/(8*pi))**2*p%rcyl_mn1**5
-        tmp = max(g0*p%rcyl_mn**(-2*qgshear) - corrhydro - corrmag,0.)
-        OO = sqrt(tmp)
-        f_target(:,1) = -y(  m  )*OO
-        f_target(:,2) =  x(l1:l2)*OO
-        f_target(:,3) =  0.
-      case('globaldisc-strat')
-         tmp = g0*(p%r_mn**(-3) - cs20*p%rcyl_mn**(-4))
-         !this is wrong!
-         where (tmp.ge.0)
-            OO=sqrt(tmp)
-         elsewhere
-            OO=0.
-         endwhere
-         f_target(:,1) = -y(  m  )*OO
-         f_target(:,2) =  x(l1:l2)*OO
-         f_target(:,3) =  0.
-      !case('initial-condition')
-      !   f_target=f(l1:l2,mcount,ncount,iux:iuz)
+        !get the exponents for density and cs2
+        call get_ptlaw(ptlaw);call get_plaw(plaw)
+        B0=Lxyz(3)/(32*pi)
+        !no need to do the whole nx array. the border is all we need
+        do i=1,nx
+          if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
+               ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
+            call power_law(g0_,p%rcyl_mn(i),2*qgshear,tmp)
+            !minimize use of exponentials if no smoothing is used
+            if (rsmooth.ne.0.) then 
+              corr=cs20*(ptlaw+plaw)*(p%rcyl_mn(i)**2+rsmooth**2)**(-1-.5*ptlaw)
+            else
+              corr=cs20*(ptlaw+plaw)* p%rcyl_mn1(i)**(ptlaw+2)
+            endif
+            corrmag=B0**2*qgshear*p%rcyl_mn1(i)**(2+2*qgshear) 
+            OO=sqrt(max(tmp-corr-corrmag,0.))
+            f_target(i,1) = -y(   m  )*OO
+            f_target(i,2) =  x(i+l1-1)*OO
+            f_target(i,3) =  0.
+          else
+            f_target(i,1:3)=0.
+          endif
+        enddo
+
       case('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_hydro: borderuu='nothing'"
+
       case default
          write(unit=errormsg,fmt=*) &
               'set_border_hydro: No such value for borderuu: ', &
