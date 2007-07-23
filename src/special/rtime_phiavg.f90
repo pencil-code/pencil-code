@@ -1,4 +1,4 @@
-! $Id: rtime_phiavg.f90,v 1.10 2007-07-05 12:27:29 wlyra Exp $
+! $Id: rtime_phiavg.f90,v 1.11 2007-07-23 11:59:50 wlyra Exp $
 !
 !  This module calculates a number of outputs and removes a mean
 !  (phi-averaged) emf from the simulations with net vertical fields
@@ -62,13 +62,14 @@ module Special
   integer, dimension(nrcylrun) :: k_tmp
 !
   real, dimension (nrcylrun,3) :: bavg_coarse,uavg_coarse
-  real, dimension (nrcylrun) :: rhoavg_coarse,rcyl_coarse
+  real, dimension (nrcylrun) :: rcyl_coarse,rhoavg_coarse
   real, dimension (nx,3) :: bavg,uavg
   real, dimension (nx) :: rhoavg
   real :: drc,r1,r2,B_ext=0.,rt_int=0.,rt_ext=impossible
   logical :: llarge_scale_Bz=.false.
-  integer :: dummy=0
+  integer :: dummy=0,nd
   logical :: laverage_smooth=.true.,lmedian_smooth=.false.
+  logical :: lcalc_density_pars=.true.
 !
 !  start parameters
 !
@@ -77,7 +78,8 @@ module Special
 !   run parameters
 !
   namelist /special_run_pars/ &
-       B_ext,llarge_scale_Bz,rt_int,rt_ext,laverage_smooth,lmedian_smooth
+       B_ext,llarge_scale_Bz,rt_int,rt_ext,laverage_smooth,lmedian_smooth,&
+       lcalc_density_pars
 !
 ! Keep some over used pencils
 !
@@ -147,11 +149,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.10 2007-07-05 12:27:29 wlyra Exp $
+!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.11 2007-07-23 11:59:50 wlyra Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: rtime_phiavg.f90,v 1.10 2007-07-05 12:27:29 wlyra Exp $")
+           "$Id: rtime_phiavg.f90,v 1.11 2007-07-23 11:59:50 wlyra Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -201,6 +203,9 @@ module Special
         rloop_ext = rt_int +  ir   *drc
         rcyl_coarse(ir)= 0.5*(rloop_int + rloop_ext)
       enddo
+!  dimensions
+      nd=3
+      if (nzgrid==1) nd=2
 !
       if(NO_WARN) print*,f  !(keep compiler quiet)
 !
@@ -466,19 +471,14 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension(nrcylrun) :: s_rho,rho_sum,ktot1
-      real, dimension(nrcylrun,3) :: s_u,s_b,u_sum,b_sum
-      real, dimension(nx,3) :: uuf,bbf
-      integer, dimension(nrcylrun) :: k,ktot
-      integer :: i,j,ir
+      integer :: i,j
       logical :: err
-      real :: rloop_int,rloop_ext
 !
 ! expand it onto the pencil with spline interpolation
 !
-      if (ldensity) &
+      if (lcalc_density_pars) & 
            call spline(rcyl_coarse,rhoavg_coarse,p%rcyl_mn,rhoavg,nrcylrun,nx,err)
-      do j=1,3
+      do j=1,nd
         if (lhydro) &
              call spline(rcyl_coarse,uavg_coarse(:,j),p%rcyl_mn,uavg(:,j),nrcylrun,nx,err)
         if (lmagnetic) &
@@ -489,7 +489,7 @@ module Special
 !
       do i=1,nx
         if ((p%rcyl_mn(i).lt.rcyl_coarse(1)).or.(p%rcyl_mn(i).gt.rcyl_coarse(nrcylrun))) then
-          if (ldensity) rhoavg(i) = p%rho(i)
+          if (lcalc_density_pars) rhoavg(i) = p%rho(i)
           if (lhydro) then
             uavg(i,1)=p%uu(i,1)*p%pomx(i)+p%uu(i,2)*p%pomy(i)
             uavg(i,2)=p%uu(i,1)*p%phix(i)+p%uu(i,2)*p%phiy(i)
@@ -512,7 +512,6 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      real, dimension (nx) :: rhoavg_ep,drive_time,pborder
 !
       if (NO_WARN) print*,df,p
 !
@@ -705,11 +704,11 @@ module Special
       use Sub
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(nrcylrun) :: s_rho,rho_sum,ktot1
+      real, dimension(nrcylrun) :: ktot1,s_rho,rho_sum
       real, dimension(nrcylrun,3) :: s_u,s_b,u_sum,b_sum
       real, dimension(nx,3) :: uuf,bbf,pbb
       integer, dimension(nrcylrun) :: k,ktot
-      real, dimension(nx) :: prho,prcyl_mn,prcyl_mn1,sin,cos,puu1,puu2,puu3
+      real, dimension(nx) :: prcyl_mn,prcyl_mn1,sin,cos,puu1,puu2,puu3,prho
       real, dimension(nx) :: pbb1,pbb2,pbb3
       integer :: i,j,ir
       logical :: err,lfp,llp
@@ -719,21 +718,22 @@ module Special
       integer :: i0,ll
       real, dimension(nx) :: rr
 !
-      if (lmagnetic) bavg_coarse=0.
-      if (lhydro)    uavg_coarse=0
-      if (ldensity)  rhoavg_coarse=0.
+      if (lmagnetic)             bavg_coarse=0.
+      if (lhydro)                uavg_coarse=0
+      if (lcalc_density_pars)  rhoavg_coarse=0.
 !
       do m=m1,m2
         do n=n1,n2
 !           
           lfp=((m==m1).and.(n==n1))
           llp=((m==m2).and.(n==n2))
-          k=0;s_rho=0;s_u=0;s_b=0
+          k=0;s_u=0;s_b=0;s_rho=0
 !
           prcyl_mn=max(sqrt(x(l1:l2)**2+y(m)**2),tini)
-          if (ldensity) prho=f(l1:l2,m,n,ilnrho)
           prcyl_mn1=1./prcyl_mn
           sin=y(m)*prcyl_mn1 ; cos= x(l1:l2)*prcyl_mn1
+!
+          if (lcalc_density_pars) prho=f(l1:l2,m,n,ilnrho)
           if (lhydro) then
             puu1=f(l1:l2,m,n,iux);puu2=f(l1:l2,m,n,iuy);puu3=f(l1:l2,m,n,iuz)
             uuf(:,1)=  puu1*cos+puu2*sin
@@ -755,10 +755,10 @@ module Special
             do i=1,nx
               if ((prcyl_mn(i).le.rloop_ext).and.(prcyl_mn(i).ge.rloop_int)) then
                 k(ir)=k(ir)+1
-                if (ldensity)    s_rho(ir) = s_rho(ir) + prho(i)
-                do j=1,3
-                  if (lhydro)    s_u(ir,j) = s_u(ir,j) + uuf(i,j)
-                  if (lmagnetic) s_b(ir,j) = s_b(ir,j) + bbf(i,j)
+                if (lcalc_density_pars) s_rho(ir) = s_rho(ir) + prho(i)
+                do j=1,nd
+                  if (lhydro)           s_u(ir,j) = s_u(ir,j) + uuf(i,j)
+                  if (lmagnetic)        s_b(ir,j) = s_b(ir,j) + bbf(i,j)
                 enddo
               endif
             enddo
@@ -766,38 +766,38 @@ module Special
 !
           if (lfp) then
             k_tmp=k
-            if (ldensity)  rho_tmp = s_rho
-            if (lhydro)    u_tmp=s_u
-            if (lmagnetic) b_tmp=s_b
+            if (lcalc_density_pars) rho_tmp=s_rho
+            if (lhydro)               u_tmp=s_u
+            if (lmagnetic)            b_tmp=s_b
           else
             k_tmp = k_tmp + k
-            if (ldensity)  rho_tmp = rho_tmp+s_rho
-            if (lhydro)    u_tmp=u_tmp+s_u
-            if (lmagnetic) b_tmp=b_tmp+s_b
+            if (lcalc_density_pars) rho_tmp = rho_tmp+s_rho
+            if (lhydro)             u_tmp   =   u_tmp+s_u
+            if (lmagnetic)          b_tmp   =   b_tmp+s_b
           endif
 !
           if (llp) then
             call mpireduce_sum_int(k_tmp,ktot,nrcylrun)
-            if (ldensity)    call mpireduce_sum(rho_tmp,rho_sum,nrcylrun)
-            do j=1,3
-              if (lhydro)    call mpireduce_sum(u_tmp(:,j),u_sum(:,j),nrcylrun)
-              if (lmagnetic) call mpireduce_sum(b_tmp(:,j),b_sum(:,j),nrcylrun)
+            if (lcalc_density_pars) call mpireduce_sum(rho_tmp,   rho_sum     ,nrcylrun)
+            do j=1,nd
+              if (lhydro)           call mpireduce_sum(  u_tmp(:,j),u_sum(:,j),nrcylrun)
+              if (lmagnetic)        call mpireduce_sum(  b_tmp(:,j),b_sum(:,j),nrcylrun)
             enddo
 !
             call mpibcast_int(ktot,nrcylrun)
-            if (ldensity)    call mpibcast_real(rho_sum,nrcylrun)
-            do j=1,3
-              if (lhydro)    call mpibcast_real(u_sum(:,j),nrcylrun)
-              if (lmagnetic) call mpibcast_real(b_sum(:,j),nrcylrun)
+            if (lcalc_density_pars) call mpibcast_real(rho_sum     ,nrcylrun)
+            do j=1,nd
+              if (lhydro)           call mpibcast_real(  u_sum(:,j),nrcylrun)
+              if (lmagnetic)        call mpibcast_real(  b_sum(:,j),nrcylrun)
             enddo
 !
             if (any(ktot == 0)) &
                  call error("set_new_average","ktot=0")
             ktot1=1./ktot
-            if (ldensity)    rhoavg_coarse=rho_sum*ktot1
-            do j=1,3
-              if (lhydro)    uavg_coarse(:,j)=u_sum(:,j)*ktot1
-              if (lmagnetic) bavg_coarse(:,j)=b_sum(:,j)*ktot1
+            if (lcalc_density_pars) rhoavg_coarse   =rho_sum     *ktot1
+            do j=1,nd
+              if (lhydro)           uavg_coarse(:,j)=  u_sum(:,j)*ktot1
+              if (lmagnetic)        bavg_coarse(:,j)=  b_sum(:,j)*ktot1
             enddo
           endif
 !
