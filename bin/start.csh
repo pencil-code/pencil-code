@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.69 2007-03-06 22:33:46 dobler Exp $
+# CVS: $Id: start.csh,v 1.70 2007-07-23 12:21:15 dhruba Exp $
 
 #                       start.csh
 #                      -----------
@@ -31,8 +31,8 @@ endif
 
 # Common setup for start.csh, run.csh, start_run.csh:
 # Determine whether this is MPI, how many CPUS etc.
+pwd
 source getconf.csh
-
 #
 #  If we don't have a data subdirectory: stop here (it is too easy to
 #  continue with an NFS directory until you fill everything up).
@@ -142,6 +142,13 @@ if ($local_disc) then
   endif
 endif
 
+# Shut down mpd if we have started it 
+if($booted_mpd)then
+ echo "shutting down mpd .. "
+ mpdallexit
+ echo "..done"
+else
+endif
 # remove LOCK file
 if (-e "LOCK") rm -f LOCK
 
@@ -155,6 +162,7 @@ else
 endif
 
 exit ( $start_status | $start_status2 )        # propagate status of mpirun
+
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x

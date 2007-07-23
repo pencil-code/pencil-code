@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.92 2007-06-26 08:06:46 dhruba Exp $
+# CVS: $Id: run.csh,v 1.93 2007-07-23 12:21:33 dhruba Exp $
 
 #                       run.csh
 #                      ---------
@@ -222,6 +222,14 @@ endif
 
 # Shut down lam if we have started it
 if ($booted_lam) lamhalt
+
+# Shut down mpd if we have started it 
+if($booted_mpd) then 
+ echo "Shuttind down mpd .."
+ mpdallexit
+ echo "..done"
+else
+endif
 
 # remove LOCK file
 if (-e "LOCK") rm -f LOCK
