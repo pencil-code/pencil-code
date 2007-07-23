@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.199 2007-07-06 17:21:07 brandenb Exp $
+# $Id: getconf.csh,v 1.200 2007-07-23 10:41:15 dhruba Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -125,6 +125,7 @@ set mpirunops2 = ''  # options after -np $ncpus
 set masterhost = ''
 if ($?PBS_O_HOST) then
   if ($PBS_O_HOST =~ obelix*) set masterhost = 'obelix'
+  if ($PBS_O_HOST =~ hyades*) set masterhost = hyades
 endif
 if ($?PBS_JOBID) then
   if ($PBS_JOBID =~ *.obelix*) set masterhost = 'obelix'
@@ -216,24 +217,52 @@ else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
     #setenv SCRATCH_DIR `cat $TMPDIR/scratch` 
     set remove_scratch_root = 1
   endif
+#----------For qmul clusters ----------
 else if ($hn =~ compute[0-9][0-9].maths.qmul.ac.uk) then
-  echo "QMUL Maths cluster - LONDON"
-  if ($?PBS_NODEFILE) then
-    echo "PBS job"
-    cat $PBS_NODEFILE >mylist
-    set local_disc = 0
-    set one_local_disc = 0
-    set local_binary = 0
-    set mpirun = /home/dhruba/mpich/bin/mpirun 
-    set mpirunops = "-machinefile mylist"
-  else
-    echo "Non-PBS, running on `hostname`"
-  endif
-  # lamboot with logging to file 
-  if ($local_disc) then
-    setenv SCRATCH_DIR "/var/tmp"
-  endif
-
+         if ($masterhost =~ hyades*) then
+           echo "QMUL Maths cluster (hyades) - LONDON"
+           echo "******************************"
+           echo "Always use  multiple of 4 no. of processors .."
+           echo "..for multiprecossor jobs. "
+           echo " ******************************"
+           /opt/mpich2/bin/mpdallexit
+           if ($?PBS_NODEFILE) then
+             echo "PBS job"
+             cat $PBS_NODEFILE >mpd.hosts
+             set local_disc = 0
+             set one_local_disc = 0
+             set local_binary = 0
+             set mpirun = /opt/mpich2/bin/mpiexec
+             echo "starting mpd demon .."
+             if ($ncpus =~ 1) then
+               /opt/mpich2/bin/mpdboot -n $ncpus -f mpd.hosts
+             else
+               set myprocpernode = 4
+               set mynodes = `expr $ncpus / $myprocpernode `
+               echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
+               /opt/mpich2/bin/mpdboot -n $mynodes --ncpus=4 -f mpd.hosts
+               mpdtrace | perl -ne ' $_ =~ s/\n/:4\n/g, print "$_"' >nodes.proc
+               set mpirunops = "-machinefile nodes.proc"
+             endif
+             echo "..done"
+           else
+             echo "Non-PBS, running on `hostname`"
+           endif
+         else 
+           echo "QMUL Maths cluster (cluster) - LONDON"
+           if ($?PBS_NODEFILE) then
+             echo "PBS job"
+             cat $PBS_NODEFILE >mpi.hosts
+             set local_disc = 0
+             set one_local_disc = 0
+             set local_binary = 0
+             set mpirun = /home/dhruba/mpich/bin/mpirun 
+             set mpirunops = "-machinefile mpi.hosts"
+           else 
+             echo "Non-PBS, running on `hostname`"
+           endif
+         endif
+#------------------------------------------------
 else if ($hn =~ giga[0-9][0-9]) then
   echo "Nordita cluster - Copenhagen"
   if ($?PBS_NODEFILE) then
