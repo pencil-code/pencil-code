@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.49 2007-07-05 12:23:01 wlyra Exp $
+! $Id: eos_ionization.f90,v 1.50 2007-07-23 17:04:00 wlyra Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.49 2007-07-05 12:23:01 wlyra Exp $")
+           "$Id: eos_ionization.f90,v 1.50 2007-07-23 17:04:00 wlyra Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1704,27 +1704,35 @@ module EquationOfState
     end subroutine bc_stellar_surface
 !***********************************************************************
     subroutine bc_lnrho_hydrostatic_z(f,topbot)
-!
       use Mpicomm, only: stop_it
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-!
       call stop_it("bc_lnrho_hydrostatic_z: NOT IMPLEMENTED IN EOS_IONIZATION")
       if (NO_WARN) print*,f,topbot
-!
     end subroutine bc_lnrho_hydrostatic_z
 !***********************************************************************
     subroutine bc_lnrho_hydrostatic_z_smooth(f,topbot)
-!
       use Mpicomm, only: stop_it
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-!
       call stop_it("bc_lnrho_hydrostatic_z_smooth: NOT IMPLEMENTED IN EOS_IONIZATION")
       if (NO_WARN) print*,f,topbot
-!
     end subroutine bc_lnrho_hydrostatic_z_smooth
+!***********************************************************************
+    subroutine bc_lnrho_hydrostatic_z_global(f,topbot)
+      use Mpicomm, only: stop_it
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      call stop_it("bc_lnrho_hydrostatic_z_global: NOT IMPLEMENTED IN EOS_IONIZATION")
+      if (NO_WARN) print*,f,topbot
+    end subroutine bc_lnrho_hydrostatic_z_global
+!***********************************************************************
+    subroutine bc_lnrho_hydrostatic_z_smooth_global(f,topbot)
+      use Mpicomm, only: stop_it
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      call stop_it("bc_lnrho_hydrostatic_z_smooth_global: NOT IMPLEMENTED IN EOS_IONIZATION")
+      if (NO_WARN) print*,f,topbot
+    end subroutine bc_lnrho_hydrostatic_z_smooth_global
 !***********************************************************************
 endmodule EquationOfState

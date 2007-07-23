@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.90 2007-07-05 22:43:13 theine Exp $
+! $Id: eos_idealgas.f90,v 1.91 2007-07-23 17:03:59 wlyra Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.90 2007-07-05 22:43:13 theine Exp $')
+           '$Id: eos_idealgas.f90,v 1.91 2007-07-23 17:03:59 wlyra Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -2426,5 +2426,269 @@ module EquationOfState
       endselect
 
     endsubroutine bc_lnrho_hydrostatic_z_smooth
+!***********************************************************************
+    subroutine bc_lnrho_hydrostatic_z_smooth_global(f,topbot)
+!
+!  Pontential field boundary condition
+!
+!  02-jul-07/wlad: Adapted from Tobi's bc_aa_pot2
+!
+      use Cdata
+      use Fourier, only: fourier_transform_xy_xy, fourier_transform_other
+      use Gravity, only: potential
+
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+
+      real, dimension (mx,my,nghost) :: ghost_zones
+      real, dimension (nx,ny) :: kx,ky,kappa,exp_fact
+      real, dimension (nx,ny) :: tmp_re,tmp_im
+      real, dimension (nx) :: pot,rr_cyl,rr_sph,cs2,tmp1,tmp2
+      integer :: i,mm_noghost
+!
+!  Get local wave numbers
+!
+      kx = spread(kx_fft                    ,2,ny)
+      ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
+!
+!  Calculate 1/k^2, zero mean
+!
+      if (lshear) then
+        kappa = sqrt((kx+ky*deltay/Lx)**2+ky**2)
+      else
+        kappa = sqrt(kx**2 + ky**2)
+      endif
+!
+!  Check whether we want to do top or bottom (this is processor dependent)
+!
+      select case(topbot)
+!
+!  Potential field condition at the bottom
+!
+      case('bot')
+
+        do i=1,nghost
+!
+! Calculate delta_z based on z(), not on dz to improve behavior for
+! non-equidistant grid (still not really correct, but could be OK)
+!
+          exp_fact = exp(-kappa*(z(n1+i)-z(n1-i)))
+         
+          do m=m1,m2
+            mm_noghost=m-m1+1
+            rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
+            rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n1+i)**2)
+            cs2=cs20*rr_cyl**(-ptlaw)
+!
+!  Determine potential field in ghost zones
+!
+          !  Fourier transforms of x- and y-components on the boundary
+            call potential(x(l1:l2),y(m),z(n1+i),POT=tmp1,RMN=rr_sph)
+            call potential(x(l1:l2),y(m),z(n1+i),POT=tmp2,RMN=rr_cyl)
+            pot=tmp1-tmp2
+          !call potential(z=z(n1+i),pot=pot)
+            
+            if (ldensity_nolog) then
+              tmp_re(:,mm_noghost) = f(l1:l2,m,n1+i,ilnrho)*exp(+pot/cs2)
+            else
+              tmp_re(:,mm_noghost) = f(l1:l2,m,n1+i,ilnrho) + pot/cs2
+            endif
+          enddo
+
+          tmp_im = 0.0
+          if (nxgrid>1 .and. nygrid>1) then
+            call fourier_transform_xy_xy(tmp_re,tmp_im)
+          else
+            call fourier_transform_other(tmp_re,tmp_im)
+          endif
+          tmp_re = tmp_re*exp_fact
+          tmp_im = tmp_im*exp_fact
+          ! Transform back
+          if (nxgrid>1 .and. nygrid>1) then
+            call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
+          else
+            call fourier_transform_other(tmp_re,tmp_im,linv=.true.)
+          endif
+
+          do m=m1,m2
+            mm_noghost=m-m1+1
+!          call potential(z=z(n1-i),pot=pot)
+            rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
+            rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n1-i)**2)
+            call potential(x(l1:l2),y(m),z(n1-i),POT=tmp1,RMN=rr_sph)
+            call potential(x(l1:l2),y(m),z(n1-i),POT=tmp2,RMN=rr_cyl)
+            pot=tmp1-tmp2
+            cs2=cs20*rr_cyl**(-ptlaw)
+
+            if (ldensity_nolog) then
+              f(l1:l2,m,n1-i,ilnrho) = tmp_re(:,mm_noghost)*exp(-pot/cs2)
+            else
+              f(l1:l2,m,n1-i,ilnrho) = tmp_re(:,mm_noghost) - pot/cs2
+            endif
+          enddo
+
+        enddo
+!
+!  Potential field condition at the top
+!
+      case('top')
+
+        do i=1,nghost
+!
+! Calculate delta_z based on z(), not on dz to improve behavior for
+! non-equidistant grid (still not really correct, but could be OK)
+!
+          exp_fact = exp(-kappa*(z(n2+i)-z(n2-i)))
+!
+!  Determine potential field in ghost zones
+!
+          !  Fourier transforms of x- and y-components on the boundary
+!          call potential(z=z(n2-i),pot=pot)
+          do m=m1,m2
+            mm_noghost=m-m1+1
+            rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
+            rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n2-i)**2)
+            call potential(x(l1:l2),y(m),z(n2-i),POT=tmp1,RMN=rr_sph)
+            call potential(x(l1:l2),y(m),z(n2-i),POT=tmp2,RMN=rr_cyl)
+            pot=tmp1-tmp2
+            cs2=cs20*rr_cyl**(-ptlaw)
+
+            if (ldensity_nolog) then
+              tmp_re(:,mm_noghost) = f(l1:l2,m,n2-i,ilnrho)*exp(+pot/cs2)
+            else
+              tmp_re(:,mm_noghost) = f(l1:l2,m,n2-i,ilnrho) + pot/cs2
+            endif
+          enddo
+          tmp_im = 0.0
+          if (nxgrid>1 .and. nygrid>1) then
+            call fourier_transform_xy_xy(tmp_re,tmp_im)
+          else
+            call fourier_transform_other(tmp_re,tmp_im)
+          endif
+          tmp_re = tmp_re*exp_fact
+          tmp_im = tmp_im*exp_fact
+          ! Transform back
+          if (nxgrid>1 .and. nygrid>1) then
+            call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
+          else
+            call fourier_transform_other(tmp_re,tmp_im,linv=.true.)
+          endif
+
+          do m=m1,m2
+            mm_noghost=m-m1+1
+            rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
+            rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n2+i)**2)
+            call potential(x(l1:l2),y(m),z(n2+i),POT=tmp1,RMN=rr_sph)
+            call potential(x(l1:l2),y(m),z(n2+i),POT=tmp2,RMN=rr_cyl)
+            pot=tmp1-tmp2
+            cs2=cs20*rr_cyl**(-ptlaw)
+
+!          call potential(z=z(n2+i),pot=pot)
+            if (ldensity_nolog) then
+              f(l1:l2,m,n2+i,ilnrho) = tmp_re(:,mm_noghost)*exp(-pot/cs2)
+            else
+              f(l1:l2,m,n2+i,ilnrho) = tmp_re(:,mm_noghost) - pot/cs2
+            endif
+          enddo
+        enddo
+        
+      case default
+
+        if (lroot) print*,"bc_lnrho_hydrostatic_z_smooth: invalid argument"
+
+      endselect
+
+    endsubroutine bc_lnrho_hydrostatic_z_smooth_global
+!***********************************************************************
+    subroutine bc_lnrho_hydrostatic_z_global(f,topbot)
+!
+!  Boundary condition for density *and* entropy.
+!
+!  This sets
+!    \partial_{z} \ln\rho
+!  such that
+!    \partial_{z} p = \rho g_{z},
+!  i.e. it enforces hydrostatic equlibrium at the boundary.
+!
+!  Currently this is only correct if
+!    \partial_{z} lnT = 0
+!  at the boundary.
+!
+!
+!  12-Jul-2006/dintrans: coded
+!  18-Jul-2007/wlad: adapted for varying temperature (global)
+!
+      use Cdata
+      use Gravity
+
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (nx) :: potm,potp,tmp1,tmp2,rr_cyl,rr_sph,cs2
+      character (len=3), intent (in) :: topbot
+      real :: dlnrhodz, dssdz
+!      real :: potp,potm
+      integer :: i
+      
+      select case (topbot)
+!
+!  Bottom boundary
+!
+      case ('bot')
+!
+        do i=1,nghost
+          do m=m1,m2 
+            rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
+            rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n1-i)**2)
+!
+            !call the arrays with potentials
+            call potential(x(l1:l2),y(m),z(n1-i),POT=tmp1,RMN=rr_sph)
+            call potential(x(l1:l2),y(m),z(n1-i),POT=tmp2,RMN=rr_cyl)
+            potm=tmp1-tmp2
+!
+            rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n1+i)**2)
+            call potential(x(l1:l2),y(m),z(n1+i),POT=tmp1,RMN=rr_sph)
+            call potential(x(l1:l2),y(m),z(n1+i),POT=tmp2,RMN=rr_cyl)
+            potp=tmp1-tmp2
+!
+            cs2=cs20*rr_cyl**(-ptlaw)
+            if (ldensity_nolog) then
+              f(l1:l2,m,n1-i,ilnrho) = f(l1:l2,m,n1+i,ilnrho)*exp((potm-potp)/cs2)
+            else
+              f(l1:l2,m,n1-i,ilnrho) = f(l1:l2,m,n1+i,ilnrho) + (potm-potp)/cs2
+            endif
+          enddo
+        enddo
+!
+!  Top boundary
+!
+      case ('top')
+!
+        do i=1,nghost
+          do m=m1,m2 
+            rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
+            rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n2-i)**2)
+!            
+            !call the arrays with potentials
+            call potential(x(l1:l2),y(m),z(n2-i),POT=tmp1,RMN=rr_sph)
+            call potential(x(l1:l2),y(m),z(n2-i),POT=tmp2,RMN=rr_cyl)
+            potm=tmp1-tmp2
+!            
+            rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n2+i)**2)
+            call potential(x(l1:l2),y(m),z(n2+i),POT=tmp1,RMN=rr_sph)
+            call potential(x(l1:l2),y(m),z(n2+i),POT=tmp2,RMN=rr_cyl)
+            potp=tmp1-tmp2
+!
+            cs2=cs20*rr_cyl**(-ptlaw)
+            if (ldensity_nolog) then
+              f(l1:l2,m,n2+i,ilnrho) = f(l1:l2,m,n2-i,ilnrho)*exp(-(potp-potm)/cs2)
+            else
+              f(l1:l2,m,n2+i,ilnrho) = f(l1:l2,m,n2-i,ilnrho) - (potp-potm)/cs2
+            endif
+          enddo
+        enddo
+      case default
+!        
+      endselect
+!
+    end subroutine bc_lnrho_hydrostatic_z_global
 !***********************************************************************
 endmodule EquationOfState

@@ -31,6 +31,7 @@
   public :: bc_lnrho_temp_z,bc_lnrho_pressure_z
   public :: bc_stellar_surface
   public :: bc_lnrho_hydrostatic_z,bc_lnrho_hydrostatic_z_smooth
+  public :: bc_lnrho_hydrostatic_z_global,bc_lnrho_hydrostatic_z_smooth_global
 ! Initial conditions
   public :: isothermal_entropy,isothermal_lnrho_ss
 
