@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.363 2007-07-05 22:43:13 theine Exp $
+! $Id: equ.f90,v 1.364 2007-07-23 11:37:44 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -435,7 +435,7 @@ module Equ
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: maxadvec,maxdiffus,pfreeze,pfreeze_int,pfreeze_ext
-      integer :: iv
+      integer :: i,iv
 !
 !  print statements when they are first executed
 !
@@ -443,7 +443,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.363 2007-07-05 22:43:13 theine Exp $")
+           "$Id: equ.f90,v 1.364 2007-07-23 11:37:44 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -752,30 +752,53 @@ module Equ
           if (headtt) &
               print*, 'pde: freezing variables for r < ', rfreeze_int, &
                   ' : ', lfreeze_varint
-          if (lcylinder_in_a_box) then
-            pfreeze_int = &
-                quintic_step(p%rcyl_mn,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
+          if (.not.lborder_profiles) then
+!  there is not much sense in using both border driving and smoothed freezing 
+            if (lcylinder_in_a_box) then
+              pfreeze_int = &
+                   quintic_step(p%rcyl_mn,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
+            else
+              pfreeze_int = &
+                   quintic_step(p%r_mn   ,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
+            endif
           else
-            pfreeze_int = &
-                quintic_step(p%r_mn   ,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
+            do i=1,nx
+!  this saves a lot of time by skipping the (very) frequent call to quintic_step
+              if (p%rcyl_mn(i).le.rfreeze_int) then
+                pfreeze_int(i)=0.
+              else
+                pfreeze_int(i)=1.
+              endif
+            enddo
           endif
 !
           do iv=1,nvar
             if (lfreeze_varint(iv)) &
                  df(l1:l2,m,n,iv) = pfreeze_int*df(l1:l2,m,n,iv)
           enddo
+!            
         endif
 
         if (any(lfreeze_varext)) then
           if (headtt) &
               print*, 'pde: freezing variables for r > ', rfreeze_ext, &
                   ' : ', lfreeze_varext
-          if (lcylinder_in_a_box) then
-            pfreeze_ext = &
-                1-quintic_step(p%rcyl_mn,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
+          if (.not.lborder_profiles) then
+            if (lcylinder_in_a_box) then
+              pfreeze_ext = &
+                   1-quintic_step(p%rcyl_mn,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
+            else
+              pfreeze_ext = &
+                   1-quintic_step(p%r_mn   ,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
+            endif
           else
-            pfreeze_ext = &
-                1-quintic_step(p%r_mn   ,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
+            do i=1,nx
+              if (p%rcyl_mn(i).gt.rfreeze_ext) then
+                pfreeze_ext(i)=0.
+              else
+                pfreeze_ext(i)=1.
+              endif
+            enddo
           endif
 !
           do iv=1,nvar
