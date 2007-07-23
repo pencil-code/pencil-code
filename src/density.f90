@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.333 2007-07-06 11:47:54 wlyra Exp $
+! $Id: density.f90,v 1.334 2007-07-23 16:52:49 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -114,7 +114,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.333 2007-07-06 11:47:54 wlyra Exp $")
+           "$Id: density.f90,v 1.334 2007-07-23 16:52:49 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1708,15 +1708,21 @@ module Density
           tmp2=tmp1 - corr
           do i=1,nx
             if (tmp2(i).lt.0.) then
-              print*,'local_isothermal_density: the disk '
-              print*,'is too hot at x,y,z=',x(i+l1-1),y(m),z(n)
-              call stop_it("")
+              if (rr_cyl(i) .lt. r_int) then
+                !it's inside the frozen zone, so 
+                !just set tmp2 to zero and emit a warning
+                tmp2(i)=0.
+                if (ip<10) call warning('local_isothermal_density',&
+                     'the disk is too hot inside the frozen zone')
+              else
+                print*,'local_isothermal_density: the disk '
+                print*,'is too hot at x,y,z=',x(i+l1-1),y(m),z(n)
+                call stop_it("")
+              endif
             endif
           enddo
-!
           f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
           f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
-!
         enddo
       enddo
 !
