@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.200 2007-07-23 10:41:15 dhruba Exp $
+# $Id: getconf.csh,v 1.201 2007-07-23 16:18:24 wlyra Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -921,6 +921,15 @@ else if ($hn =~ tun[a-z]*) then
   set local_binary   = 0
   setenv SSH ssh
   setenv SCP scp
+
+else if ($hn =~ is*.uppmax.uu.se) then 
+  echo "Isis cluster at Uppmax, Uppsala"
+#set the library paths
+  if (  $?LD_LIBRARY_PATH) then
+    setenv LD_LIBRARY_PATH  /opt/openmpi/1.2pgi/lib:/sw/openmpi/1.1/pgi/comp/openmpi-1.1.3/orte/.libs/:/sw/openmpi/1.1/pgi/install/lib:${LD_LIBRARY_PATH}
+  else
+    setenv LD_LIBRARY_PATH  /opt/openmpi/1.2pgi/lib:/sw/openmpi/1.1/pgi/comp/openmpi-1.1.3/orte/.libs/:/sw/openmpi/1.1/pgi/install/lib  
+  endif
 
 else
   echo "Generic setup; hostname is <$hn>"

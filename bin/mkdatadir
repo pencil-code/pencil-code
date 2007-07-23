@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.57 2007-06-12 20:11:03 boson10 Exp $
+#  $Id: mkdatadir,v 1.58 2007-07-23 16:18:24 wlyra Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -103,8 +103,8 @@ else if (($hn =~ rio* || $hn =~ pia*) && ($USER =~ ajohan)) then
   set str='s/afs\/ipp\/home\/[a-z]/nfs\/mpia2/g'
 else if (($hn =~ rio* || $hn =~ pia*) && ($USER =~ wlyra)) then
   set str='s/code/data/g'
-else if ($hn =~ ra*) then 
-  set str='s/code/data/g'
+else if ($hn =~ *.uppmax.uu.se) then 
+  set str='s/home/glob/g'
 else if ($hn =~ gwdu102) then
   set str='s/\/usr\/users/\/home\/temp1/g'
 else if ($hn =~ lfc*) then
@@ -115,9 +115,6 @@ else if ($hn =~ bob || $hn =~ doug || $hn =~ eh*) then
   set str='s/home/mnt\/raid\/hoser1/g'
 else if ($hn =~ tpb* ) then
   set str='s/home/\/cita\/d\/scratch-3month/g'
-else if ($hn =~ is*.uppmax.uu.se ) then
-  mkdir data
-  exit  # Don't link to /var/tmp or anywhere else
 else
   set str='s/home/var\/tmp/g'
 endif
