@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.321 2007-07-06 16:59:37 brandenb Exp $
+! $Id: sub.f90,v 1.322 2007-07-23 11:35:03 wlyra Exp $
 
 module Sub
 
@@ -214,6 +214,12 @@ module Sub
     module procedure sine_step_mn
     module procedure sine_step_global
   endinterface
+
+  interface power_law
+     module procedure power_law_pt
+     module procedure power_law_mn
+  endinterface
+
 !
 !  extended intrinsic operators to do some scalar/vector pencil arithmetic
 !  Tobi: Array valued functions do seem to be slower than subroutines,
@@ -5613,7 +5619,7 @@ nameloop: do
 
     end function erfunc_mn
 !***********************************************************************
-    subroutine power_law(const,dist,plaw_,output)
+    subroutine power_law_mn(const,dist,plaw_,output)
 !
 ! General distance power law initial conditions
 !
@@ -5631,7 +5637,27 @@ nameloop: do
         output = const*(dist**2+rsmooth**2)**(-.5*plaw_)
       endif
 !
-    endsubroutine power_law
+    endsubroutine power_law_mn
+!***********************************************************************
+    subroutine power_law_pt(const,dist,plaw_,output)
+!
+! General distance power law initial conditions
+!
+! 24-feb-05/wlad: coded
+!  4-jul-07/wlad: generalized for any power law case
+!
+      use Cdata, only: nx,rsmooth
+
+      real :: dist,output
+      real :: const,plaw_
+!
+      if (rsmooth.eq.0.) then
+        output = const*dist**(-plaw_)
+      else
+        output = const*(dist**2+rsmooth**2)**(-.5*plaw_)
+      endif
+!
+    endsubroutine power_law_pt
 !***********************************************************************
     subroutine get_radial_distance(rr_mn)
 !
