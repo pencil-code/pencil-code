@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.58 2007-05-19 05:21:11 dobler Exp $
+! $Id: general.f90,v 1.59 2007-07-23 11:33:31 wlyra Exp $
 
 module General
 
@@ -772,7 +772,7 @@ module General
       real, dimension(size(b)) :: gam
       logical, intent(out), optional :: err
       integer :: n,j
-      real :: bet,bet1
+      real :: bet
 
       if (present(err)) err=.false.
       n=size(b)
@@ -783,18 +783,16 @@ module General
          return
       endif
 
-      bet1=1/bet
-
-      u(1)=r(1)*bet1
+      u(1)=r(1)/bet
       do j=2,n
-         gam(j)=c(j-1)*bet1
+         gam(j)=c(j-1)/bet
          bet=b(j)-a(j-1)*gam(j)
          if (bet.eq.0.) then
             print*,'tridag: Error at code stage 2'
             if (present(err)) err=.true.
             return
          endif
-         u(j)=(r(j)-a(j-1)*u(j-1))*bet1
+         u(j)=(r(j)-a(j-1)*u(j-1))/bet
       end do
       do j=n-1,1,-1
          u(j)=u(j)-gam(j+1)*u(j+1)
