@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.70 2007-07-23 12:21:15 dhruba Exp $
+# CVS: $Id: start.csh,v 1.71 2007-07-24 03:44:12 brandenb Exp $
 
 #                       start.csh
 #                      -----------
@@ -143,12 +143,16 @@ if ($local_disc) then
 endif
 
 # Shut down mpd if we have started it 
-if($booted_mpd)then
- echo "shutting down mpd .. "
- mpdallexit
- echo "..done"
-else
+if ($?booted_mpd) then
+  if ($booted_mpd) then
+    echo "Shuttind down mpd .."
+    mpdallexit
+    echo "..done"
+  else
+    echo "Not shuttind down mpd .."
+  endif
 endif
+
 # remove LOCK file
 if (-e "LOCK") rm -f LOCK
 
