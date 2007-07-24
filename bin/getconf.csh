@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.201 2007-07-23 16:18:24 wlyra Exp $
+# $Id: getconf.csh,v 1.202 2007-07-24 10:42:39 dhruba Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -125,7 +125,7 @@ set mpirunops2 = ''  # options after -np $ncpus
 set masterhost = ''
 if ($?PBS_O_HOST) then
   if ($PBS_O_HOST =~ obelix*) set masterhost = 'obelix'
-  if ($PBS_O_HOST =~ hyades*) set masterhost = hyades
+  if ($PBS_O_HOST =~ hyades*) set masterhost = 'hyades'
 endif
 if ($?PBS_JOBID) then
   if ($PBS_JOBID =~ *.obelix*) set masterhost = 'obelix'
@@ -179,19 +179,19 @@ else if ($hn =~ hamlet) then
 else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
   echo "Newcastle e-Science Cluster"
   if ($?PBS_JOBID) then
-  set mpirun = mpiexec
-  set mpirunops = 
-  #set mpirun = mpirun
-  #set mpirunops = "-machinefile $PBS_NODEFILE -O -ssi rpi tcp -s n0 -x LD_ASSUME_KERNEL=2.4.1" #Fix bug in Redhat 9
-  #set mpirunops = "-machinefile $PBS_NODEFILE" 
+    set mpirun = mpiexec
+    set mpirunops = 
+    #set mpirun = mpirun
+    #set mpirunops = "-machinefile $PBS_NODEFILE -O -ssi rpi tcp -s n0 -x LD_ASSUME_KERNEL=2.4.1" #Fix bug in Redhat 9
+    #set mpirunops = "-machinefile $PBS_NODEFILE" 
     set one_local_disc = 0
     set local_binary = 0
     #setenv SCRATCH_DIR /work/$PBS_JOBID 
-#    echo "SGE job"
-#    set local_disc = 1
-#    set one_local_disc = 0
-#    set local_binary = 0
-#
+    #echo "SGE job"
+    #    set local_disc = 1
+    #    set one_local_disc = 0
+    #    set local_binary = 0
+    #
 #  #  cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc > hostfile
 #  #  set nodelist = `cat hostfile`
 #
@@ -218,14 +218,13 @@ else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
     set remove_scratch_root = 1
   endif
 #----------For qmul clusters ----------
-else if ($hn =~ compute[0-9][0-9].maths.qmul.ac.uk) then
+else if ($hn =~ *.maths.qmul.ac.uk) then
          if ($masterhost =~ hyades*) then
            echo "QMUL Maths cluster (hyades) - LONDON"
            echo "******************************"
            echo "Always use  multiple of 4 no. of processors .."
            echo "..for multiprecossor jobs. "
            echo " ******************************"
-           /opt/mpich2/bin/mpdallexit
            if ($?PBS_NODEFILE) then
              echo "PBS job"
              cat $PBS_NODEFILE >mpd.hosts
@@ -236,11 +235,13 @@ else if ($hn =~ compute[0-9][0-9].maths.qmul.ac.uk) then
              echo "starting mpd demon .."
              if ($ncpus =~ 1) then
                /opt/mpich2/bin/mpdboot -n $ncpus -f mpd.hosts
+               set booted_mpd = 1
              else
                set myprocpernode = 4
                set mynodes = `expr $ncpus / $myprocpernode `
                echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
                /opt/mpich2/bin/mpdboot -n $mynodes --ncpus=4 -f mpd.hosts
+               set booted_mpd = 1
                mpdtrace | perl -ne ' $_ =~ s/\n/:4\n/g, print "$_"' >nodes.proc
                set mpirunops = "-machinefile nodes.proc"
              endif
