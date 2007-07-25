@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.14 2007-06-25 15:20:58 bingert Exp $
+! $Id: temperature_idealgas.f90,v 1.15 2007-07-25 07:32:02 bingert Exp $
 !  This module can replace the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
 !  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.14 2007-06-25 15:20:58 bingert Exp $")
+           "$Id: temperature_idealgas.f90,v 1.15 2007-07-25 07:32:02 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -178,7 +178,7 @@ module Entropy
       select case (iheatcond)
         case('K-const')
           lheatc_Kconst=.true.
-          call information('initialize_entropy', &
+          if (lroot) call information('initialize_entropy', &
           ' heat conduction: K=cst --> gamma*K/rho/TT/cp*div(T*grad lnTT)')
           if (initlnTT(1).ne.'rad_equil') &
             Fbot=gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
@@ -189,13 +189,13 @@ module Entropy
 !
           hcond1=(mpoly1+1.)/(mpoly0+1.)
           Fbot=gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
-          call information('initialize_entropy',' heat conduction: K=K(r)')
+          if (lroot) call information('initialize_entropy',' heat conduction: K=K(r)')
         case('K-arctan')
           lheatc_Karctan=.true.         
-          call information('initialize_entropy',' heat conduction: arctan profile')
+          if (lroot) call information('initialize_entropy',' heat conduction: arctan profile')
         case('chi-const')
           lheatc_chiconst=.true.
-          call information('initialize_entropy',' heat conduction: constant chi')
+          if (lroot) call information('initialize_entropy',' heat conduction: constant chi')
         case ('nothing')
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
