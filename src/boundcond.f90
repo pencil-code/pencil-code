@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.159 2007-07-23 17:03:59 wlyra Exp $
+! $Id: boundcond.f90,v 1.160 2007-07-26 11:08:49 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -393,11 +393,11 @@ module Boundcond
               case ('pwd')
                 if (j==iaa) call bc_aa_pot3(f,topbot)
               case ('d2z'); call bc_del2zero(f,topbot,j)
-              case ('hsd')
-                if (lcylinder_in_a_box) then !non local
-                  call bc_lnrho_hydrostatic_z_smooth_global(f,topbot)
+              case ('hds')
+                if (llocal_iso) then 
+                  call bc_lnrho_hdss_z_liso(f,topbot)
                 else
-                  call bc_lnrho_hydrostatic_z_smooth(f,topbot)
+                  call bc_lnrho_hdss_z_iso(f,topbot)
                 endif
               case ('cT')       ! constant temp.
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
@@ -410,11 +410,11 @@ module Boundcond
               case ('cT2')       ! constant temp. (keep lnrho)
                 if (j==iss)   call bc_ss_temp2_z(f,topbot)
               case ('hs')       ! hydrostatic equilibrium
-                if (lcylinder_in_a_box) then !non local
-                  if (j==ilnrho) call bc_lnrho_hydrostatic_z_global(f,topbot)
+                if (llocal_iso) then !non local
+                  if (j==ilnrho) call bc_lnrho_hds_z_liso(f,topbot)
 !                 if (j==iss)    call bc_lnrho_hydrostatic_z(f,topbot)
                 else
-                  if (j==ilnrho) call bc_lnrho_hydrostatic_z(f,topbot)
+                  if (j==ilnrho) call bc_lnrho_hds_z_iso(f,topbot)
 !                 if (j==iss)    call bc_lnrho_hydrostatic_z(f,topbot)
                 endif
               case ('cp')       ! constant pressure

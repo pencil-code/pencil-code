@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.36 2007-07-23 17:03:59 wlyra Exp $
+! $Id: eos_fixed_ionization.f90,v 1.37 2007-07-26 11:08:50 wlyra Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.36 2007-07-23 17:03:59 wlyra Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.37 2007-07-26 11:08:50 wlyra Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1196,36 +1196,37 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     end subroutine bc_stellar_surface
 !***********************************************************************
-    subroutine bc_lnrho_hydrostatic_z(f,topbot)
+    subroutine bc_lnrho_hds_z_iso(f,topbot)
       use Mpicomm, only: stop_it
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      call stop_it("bc_lnrho_hydrostatic_z: NOT IMPLEMENTED IN EOS_FIXED")
+      call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED IN NOEOS")
       if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hydrostatic_z
+    end subroutine bc_lnrho_hds_z_iso
 !***********************************************************************
-    subroutine bc_lnrho_hydrostatic_z_smooth(f,topbot)
+    subroutine bc_lnrho_hds_z_liso(f,topbot)
       use Mpicomm, only: stop_it
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      call stop_it("bc_lnrho_hydrostatic_z_smooth: NOT IMPLEMENTED IN EOS_FIXED")
+      call stop_it("bc_lnrho_hds_z_liso: NOT IMPLEMENTED IN NOEOS")
       if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hydrostatic_z_smooth
+    end subroutine bc_lnrho_hds_z_liso
 !***********************************************************************
-    subroutine bc_lnrho_hydrostatic_z_global(f,topbot)
+    subroutine bc_lnrho_hdss_z_iso(f,topbot)
       use Mpicomm, only: stop_it
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      call stop_it("bc_lnrho_hydrostatic_z_global: NOT IMPLEMENTED IN EOS_FIXED")
+      call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED IN NOEOS")
       if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hydrostatic_z_global
+    end subroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
-    subroutine bc_lnrho_hydrostatic_z_smooth_global(f,topbot)
+    subroutine bc_lnrho_hdss_z_liso(f,topbot)
       use Mpicomm, only: stop_it
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      call stop_it("bc_lnrho_hydrostatic_z_smooth_global: NOT IMPLEMENTED IN EOS_FIXED")
+      call stop_it("bc_lnrho_hdss_z_liso: NOT IMPLEMENTED IN NOEOS")
       if (NO_WARN) print*,f,topbot
-    end subroutine bc_lnrho_hydrostatic_z_smooth_global
+    end subroutine bc_lnrho_hdss_z_liso
 !***********************************************************************
 endmodule EquationOfState
+

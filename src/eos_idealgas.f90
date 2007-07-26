@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.91 2007-07-23 17:03:59 wlyra Exp $
+! $Id: eos_idealgas.f90,v 1.92 2007-07-26 11:08:50 wlyra Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.91 2007-07-23 17:03:59 wlyra Exp $')
+           '$Id: eos_idealgas.f90,v 1.92 2007-07-26 11:08:50 wlyra Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -2158,7 +2158,7 @@ module EquationOfState
 !
     end subroutine bc_stellar_surface
 !***********************************************************************
-    subroutine bc_lnrho_hydrostatic_z(f,topbot)
+    subroutine bc_lnrho_hds_z_iso(f,topbot)
 !
 !  Boundary condition for density *and* entropy.
 !
@@ -2288,9 +2288,9 @@ module EquationOfState
 
       endselect
 
-    end subroutine bc_lnrho_hydrostatic_z
+    end subroutine bc_lnrho_hds_z_iso
 !***********************************************************************
-    subroutine bc_lnrho_hydrostatic_z_smooth(f,topbot)
+    subroutine bc_lnrho_hdss_z_iso(f,topbot)
 !
 !  Smooth out density perturbations with respect to hydrostatic
 !  stratification in Fourier space.
@@ -2425,13 +2425,15 @@ module EquationOfState
 
       endselect
 
-    endsubroutine bc_lnrho_hydrostatic_z_smooth
+    endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
-    subroutine bc_lnrho_hydrostatic_z_smooth_global(f,topbot)
+    subroutine bc_lnrho_hdss_z_liso(f,topbot)
 !
 !  Pontential field boundary condition
 !
 !  02-jul-07/wlad: Adapted from Tobi's bc_aa_pot2
+!  Does the same thing as bc_lnrho_hdss_z_iso, but for a local isothermal
+!  equation of state (as opposed to strictly isothermal).
 !
       use Cdata
       use Fourier, only: fourier_transform_xy_xy, fourier_transform_other
@@ -2598,11 +2600,11 @@ module EquationOfState
 
       endselect
 
-    endsubroutine bc_lnrho_hydrostatic_z_smooth_global
+    endsubroutine bc_lnrho_hdss_z_liso
 !***********************************************************************
-    subroutine bc_lnrho_hydrostatic_z_global(f,topbot)
+    subroutine bc_lnrho_hds_z_liso(f,topbot)
 !
-!  Boundary condition for density *and* entropy.
+!  Boundary condition for density
 !
 !  This sets
 !    \partial_{z} \ln\rho
@@ -2616,7 +2618,7 @@ module EquationOfState
 !
 !
 !  12-Jul-2006/dintrans: coded
-!  18-Jul-2007/wlad: adapted for varying temperature (global)
+!  18-Jul-2007/wlad: adapted for local isothermal equation of state
 !
       use Cdata
       use Gravity
@@ -2625,7 +2627,6 @@ module EquationOfState
       real, dimension (nx) :: potm,potp,tmp1,tmp2,rr_cyl,rr_sph,cs2
       character (len=3), intent (in) :: topbot
       real :: dlnrhodz, dssdz
-!      real :: potp,potm
       integer :: i
       
       select case (topbot)
@@ -2689,6 +2690,6 @@ module EquationOfState
 !        
       endselect
 !
-    end subroutine bc_lnrho_hydrostatic_z_global
+    end subroutine bc_lnrho_hds_z_liso
 !***********************************************************************
 endmodule EquationOfState
