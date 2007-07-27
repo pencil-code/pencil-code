@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_velocity.pro,v 1.5 2007-01-16 06:14:39 ajohan Exp $
+;  $Id: pc_particles_to_velocity.pro,v 1.6 2007-07-27 09:25:04 ajohan Exp $
 ;
 ;  Convert positions and velocities of particles to a grid velocity field.
 ;
@@ -298,7 +298,7 @@ endif
 ;
 for iz=0,nz-1 do begin & for iy=0,ny-1 do begin & for ix=0,nx-1 do begin
   if (rhop[ix,iy,iz] ne 0.0) then $
-      ww[ix,iy,iz,*]=ww[ix,iy,iz,*]/rhop[ix,iy,iz,*]
+      ww[ix,iy,iz,*]=ww[ix,iy,iz,*]/rhop[ix,iy,iz]
 endfor & endfor & endfor
 ;
 ;  Purge missing directions from ww before returning it.
