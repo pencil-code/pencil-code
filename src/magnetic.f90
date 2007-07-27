@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.431 2007-07-23 11:45:38 wlyra Exp $
+! $Id: magnetic.f90,v 1.432 2007-07-27 12:23:57 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -239,7 +239,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.431 2007-07-23 11:45:38 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.432 2007-07-27 12:23:57 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2944,7 +2944,7 @@ module Magnetic
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz)         :: xx,yy,rrcyl,Aphi
-      real, dimension(nx)               :: rcyl,corr,tmp1,tmp2
+      real, dimension(nx)               :: prcylmn,corr,tmp1,tmp2
       real                              :: B0,mode
       integer                           :: i
 !
@@ -2960,14 +2960,14 @@ module Magnetic
 !  pm=1/2 * grad(B^2) ; the extra 1/r is from the centrifugal term
       do m=m1,m2
         do n=n1,n2
-          rcyl=rrcyl(l1:l2,m,n)
-          corr=B0**2*qgshear/(rcyl**2+rsmooth**2)**(1+qgshear)
+          prcylmn=rrcyl(l1:l2,m,n)
+          corr=B0**2*qgshear/(prcylmn**2+rsmooth**2)**(1+qgshear)
           !tmp1 is the original keplerian velocity
-          tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rcyl**2
+          tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/prcylmn**2
           tmp2=tmp1 - corr
           do i=1,nx
             if (tmp2(i).lt.0.) then
-              if (rcyl(i) .lt. r_int) then
+              if (prcylmn(i) .lt. r_int) then
                 !it's inside the frozen zone, so
                 !just set tmp2 to zero and emit a warning
                 tmp2(i)=0.
