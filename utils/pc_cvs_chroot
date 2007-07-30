@@ -24,7 +24,7 @@ newroot=$2
 
 count_files="0"
 echo "Replacing $oldroot with $newroot"
-find $tree -name Root -print0 |  xargs -0 grep -l "$oldroot" | while read f; do
+find $tree -name Root -print0 -follow |  xargs -0 grep -l "$oldroot" | while read f; do
 #find $tree -name Root |  while read f; do
     case $f in
     */CVS/Root)
