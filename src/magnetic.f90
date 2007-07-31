@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.432 2007-07-27 12:23:57 wlyra Exp $
+! $Id: magnetic.f90,v 1.433 2007-07-31 09:22:41 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -239,7 +239,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.432 2007-07-27 12:23:57 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.433 2007-07-31 09:22:41 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -601,10 +601,15 @@ module Magnetic
           f(:,:,:,iaz) = amplaa(j)/kx_aa(j)*cos(kx_aa(j)*xx)
         case('geo-benchmark-case1','geo-benchmark-case2'); call geo_benchmark_B(f)
         case('hydrostatic_magnetic')
-          scaleH=1.0*sqrt(1+1/beta_const)
+          call get_shared_variable('nu_epicycle',nu_epicycle,ierr)
+          scaleH = (cs0/nu_epicycle)*sqrt(1+1/beta_const)
           print*, 'init_aa: hydrostatic_magnetic: scaleH=', scaleH
           do m=m1,m2; do n=n1,n2
-            f(l1:l2,m,n,ilnrho)=alog(1.0)-z(n)**2/(2*scaleH**2)
+            if (ldensity_nolog) then
+              f(l1:l2,m,n,ilnrho) = rho0*exp(-0.5*(z(n)/scaleH)**2)
+            else
+              f(l1:l2,m,n,ilnrho) = alog(rho0)-0.5*(z(n)/scaleH)**2
+            endif
             rho=exp(f(l1:l2,m,n,ilnrho))
             f(l1:l2,m,n,iglobal_by_ext)= &
                 sqrt(2*mu0*1.0**2*rho/beta_const)
