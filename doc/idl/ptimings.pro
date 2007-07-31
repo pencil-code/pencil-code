@@ -1,4 +1,4 @@
-; $Id: ptimings.pro,v 1.5 2007-07-30 19:45:26 brandenb Exp $
+; $Id: ptimings.pro,v 1.6 2007-07-31 07:45:45 brandenb Exp $
 ;
 red = 122
 blue = 55
@@ -22,6 +22,7 @@ d=rtable('horseshoe_giga2.dat',2,head=1)
 e=rtable('pdc_06.dat',2,head=1)
 e2=rtable('lenngren_06.dat',2,head=1)
 f=rtable('steno_06.dat',2,head=1)
+f=rtable('louhi07.dat',2,head=1)
 g=rtable('spherical.dat',2,head=1)
 n1=reform(a(0,*)) & t1=reform(a(1,*))
 n2=reform(b(0,*)) & t2=reform(b(1,*))
@@ -39,7 +40,7 @@ sym = texsyms()
 !x.title='# of procs'
 !y.title=sym.mu+'!6s/step/point'
 !x.range=[.8,600]
-!y.range=fact*[.01,15]
+!y.range=fact*[.005,15]
 !x.style=3
 !y.style=3
 
@@ -50,7 +51,7 @@ oplot,   n4, fact*t4, PSYM=-7,li=3, COLOR=blue
 oplot,   n5, fact*t5, PSYM=-4,li=0, COLOR=fg
 oplot,   n5b, fact*t5b, PSYM=-4,li=0, COLOR=fg
 oplot,   n6, fact*t6, PSYM=-5,li=2, COLOR=red
-oplot,   n7, fact*t7, PSYM=-5,li=2, COLOR=blue
+;oplot,   n7, fact*t7, PSYM=-5,li=2, COLOR=blue
 ;
 !p.charsize=.9
 esrg_legend, ['!6Origin3000!X', '!6Horseshoe!X', '!6KIS cluster!X', 'GigaBits!X', '!6Steno', '!6Luci/Lenn','!6spherical'], $
