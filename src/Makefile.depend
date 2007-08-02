@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.64 2007-06-29 18:06:28 theine Exp $
+### $Id: Makefile.depend,v 1.65 2007-08-02 13:02:48 dhruba Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -96,6 +96,8 @@ POWER_OBJ=$(POWER)$(PC_META_TYPE).o
 POWER_SRC=$(POWER).f90
 DEBUG_OBJ=$(DEBUG)$(PC_META_TYPE).o
 DEBUG_SRC=$(DEBUG).f90
+GSL_OBJ=$(GSL).o
+GSL_SRC=$(GSL).c
 CHIRAL_OBJ=$(CHIRAL)$(PC_META_TYPE).o
 CHIRAL_SRC=$(CHIRAL).f90
 FORCING_OBJ=$(FORCING)$(PC_META_TYPE).o
@@ -147,7 +149,12 @@ nodebug$(PC_META_TYPE).o:            nodebug.f90 $(CDATA_OBJ) $(MPICOMM_FIX)$(PC
 $(DEBUG_OBJ):                        debug_c.c Makefile.src Makefile.local
 #$(TIMEAVG)$(PC_META_TYPE).o:        ctimeavg.local
 #axeltest $(INITCOND_SPEC)$(PC_META_TYPE).o:$(INITCOND_SPEC).f90
-
+nogsl.o: nogsl.c
+	$(CC) -c nogsl.c
+gsl_wrapper.o: gsl_wrapper.c
+	$(CC) -c gsl_wrapper.c
+gsl_wrapper_r8.o: gsl_wrapper_r8.c
+	$(CC) -c gsl_wrapper_r8.c 
 ## ---------------------------------------------------------------------- #
 ## Automatically generatable dependencies
 ## ---------------------------------------------------------------------- #

@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.308 2007-07-23 16:15:31 wlyra Exp $
+### $Id: Makefile.src,v 1.309 2007-08-02 13:02:48 dhruba Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -17,6 +17,7 @@ IO             =   io_dist
 FOURIER        = nofourier
 POWER          = nopower_spectrum
 DEBUG          =   debug_c
+GSL            =  nogsl
 
 HYDRO          = nohydro
 VISCOSITY      =   viscosity
@@ -673,10 +674,11 @@ LD_FFTW2=
 ##
 ## Dhruba's laptop 
 ##
-#FC=g95 # (lilabati)
+#FC=g95 -fno-second-underscore # (lilabati)
 #F77=$(FC) #(lilabati)
-#FFLAGS=-O3 #(lilabati)
+#FFLAGS=-O3 -L/Users/dhruba/lib/lib/ #(lilabati)
 #CC=gcc #(lilabati)
+#CFLAGS=-O3 -DFUNDERSC=1 #(lilabati)
 ##
 ## joishi's laptop
 ## 
@@ -787,6 +789,14 @@ endif
 #  FFLAGS_FOURIER=$(FFLAGS_FFTW3)
 #  LD_FOURIER=$(LD_FFTW3)
 #endif
+## For gsl library 
+ifeq ($(GSL),gsl_wrapper)
+  LD_GSL=  -lgsl -lgslcblas
+endif
+ifeq ($(GSL),gsl_wrapper_r8)
+  LD_GSL=  -lgsl -lgslcblas
+endif
+
 
 
 
@@ -821,11 +831,11 @@ comm_deps=$(technical) sub$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o snapshot$(PC_
 #
 start_deps_f90=$(comm_deps)
 #
-start_deps=$(start_deps_f90) $(DEBUG)$(PC_META_TYPE).o
+start_deps=$(start_deps_f90) $(DEBUG)$(PC_META_TYPE).o $(GSL).o
 #
 run_deps_f90=$(comm_deps) equ$(PC_META_TYPE).o $(TIMESTEP)$(PC_META_TYPE).o
 #
-run_deps=$(run_deps_f90) $(DEBUG)$(PC_META_TYPE).o
+run_deps=$(run_deps_f90) $(DEBUG)$(PC_META_TYPE).o $(GSL).o
 #
 shock_finder_deps=cparam$(PC_META_TYPE).o
 #
@@ -836,8 +846,6 @@ run_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 ghostfold_$(MP
 start=start$(PC_META_TYPE).o $(start_deps)
 #
 run=run$(PC_META_TYPE).o $(run_deps)
-#
-optest=$(start_deps) equ$(PC_META_TYPE).o optest.o
 #
 shock_finder=$(SHOCK_FINDER)$(PC_META_TYPE).o $(shock_finder_deps)
 #merge_tony var2ascii_deps=cparam$(PC_META_TYPE).o
@@ -1078,10 +1086,10 @@ debug:
 
 
 start$(PC_META_TYPE).x: $(start) Makefile$(PC_META_TYPE).local
-	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start$(PC_META_TYPE).x
+	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start$(PC_META_TYPE).x
 
 run$(PC_META_TYPE).x: $(run) Makefile$(PC_META_TYPE).local
-	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run$(PC_META_TYPE).x
+	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run$(PC_META_TYPE).x
 
 runfast$(PC_META_TYPE).x: $(run_fast_deps) Makefile$(PC_META_TYPE).local
 	$(FC) -o runfast$(PC_META_TYPE).x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(run_fast_deps) $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) $(LIBSIG)

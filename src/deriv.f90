@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.49 2007-04-05 22:25:38 wlyra Exp $
+! $Id: deriv.f90,v 1.50 2007-08-02 13:02:48 dhruba Exp $
 
 module Deriv
 
@@ -24,6 +24,16 @@ module Deriv
   interface der                 ! Overload the der function
     module procedure der_main   ! derivative of an 'mvar' variable
     module procedure der_other  ! derivative of another field
+  endinterface
+!
+  interface der2                 ! Overload the der function
+    module procedure der2_main   ! derivative of an 'mvar' variable
+    module procedure der2_other  ! derivative of another field
+  endinterface
+!
+  interface derij                 ! Overload the der function
+    module procedure derij_main   ! derivative of an 'mvar' variable
+    module procedure derij_other  ! derivative of another field
   endinterface
 
   contains
@@ -143,7 +153,7 @@ module Deriv
 !
     endsubroutine der_other
 !***********************************************************************
-    subroutine der2(f,k,df2,j)
+    subroutine der2_main(f,k,df2,j)
 !
 !  calculate 2nd derivative d^2f_k/dx_j^2
 !  accurate to 6th order, explicit, periodic
@@ -210,7 +220,76 @@ module Deriv
       endif
 
 !
-    endsubroutine der2
+    endsubroutine der2_main
+!***********************************************************************
+    subroutine der2_other(psif,df2,j)
+!
+!  calculate 2nd derivative d^2f/dx_j^2 (of scalar f)
+!  accurate to 6th order, explicit, periodic
+!  replace cshifts by explicit construction -> x6.5 faster!
+!   1-oct-97/axel: coded
+!   1-apr-01/axel+wolf: pencil formulation
+!  25-jun-04/tobi+wolf: adapted for non-equidistant grids
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz) :: psif
+      real, dimension (nx) :: df2,fac,df
+      integer :: j,k
+!
+!debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
+!debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
+!
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          fac=(1./180)*dx_1(l1:l2)**2
+          df2=fac*(-490.0*psif(l1:l2,m,n) &
+                   +270.0*(psif(l1+1:l2+1,m,n)+psif(l1-1:l2-1,m,n)) &
+                   - 27.0*(psif(l1+2:l2+2,m,n)+psif(l1-2:l2-2,m,n)) &
+                   +  2.0*(psif(l1+3:l2+3,m,n)+psif(l1-3:l2-3,m,n)))
+          if (.not.lequidist(j)) then
+            call der(psif,df,j)
+            df2=df2+dx_tilde(l1:l2)*df
+          endif
+        else
+          df2=0.
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          fac=(1./180)*dy_1(m)**2
+          df2=fac*(-490.0*psif(l1:l2,m,n) &
+                   +270.0*(psif(l1:l2,m+1,n)+psif(l1:l2,m-1,n)) &
+                   - 27.0*(psif(l1:l2,m+2,n)+psif(l1:l2,m-2,n)) &
+                   +  2.0*(psif(l1:l2,m+3,n)+psif(l1:l2,m-3,n)))
+          if (lspherical_coords)     df2=df2*r2_mn
+          if (lcylindrical_coords)   df2=df2*rcyl_mn2
+          if (.not.lequidist(j)) then
+            call der(psif,df,j)
+            df2=df2+dy_tilde(m)*df
+          endif
+        else
+          df2=0.
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          fac=(1./180)*dz_1(n)**2
+          df2=fac*(-490.0*psif(l1:l2,m,n) &
+                   +270.0*(psif(l1:l2,m,n+1)+psif(l1:l2,m,n-1)) &
+                   - 27.0*(psif(l1:l2,m,n+2)+psif(l1:l2,m,n-2)) &
+                   +  2.0*(psif(l1:l2,m,n+3)+psif(l1:l2,m,n-3)))
+          if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
+          if (.not.lequidist(j)) then
+            call der(psif,df,j)
+            df2=df2+dz_tilde(n)*df
+          endif
+        else
+          df2=0.
+        endif
+      endif
+
+!
+    endsubroutine der2_other
 !***********************************************************************
     subroutine der3(f,k,df,j,ignoredx)
 !
@@ -657,7 +736,7 @@ module Deriv
 !
     endsubroutine der6_other
 !***********************************************************************
-    subroutine derij(f,k,df,i,j)
+    subroutine derij_main(f,k,df,i,j)
 !
 !  calculate 2nd derivative with respect to two different directions
 !  input: scalar, output: scalar
@@ -839,7 +918,191 @@ module Deriv
         if ((i==3.and.j==2)) df=df*rcyl_mn1
       endif
 !
-    endsubroutine derij
+    endsubroutine derij_main
+!***********************************************************************
+    subroutine derij_other(psif,df,i,j)
+!
+!  calculate 2nd derivative with respect to two different directions
+!  input: scalar, output: scalar
+!  accurate to 6th order, explicit, periodic
+!   8-sep-01/axel: coded
+!  25-jun-04/tobi+wolf: adapted for non-equidistant grids
+!  14-nov-06/wolf: implemented bidiagonal scheme
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz) :: psif
+      real, dimension (nx) :: df,fac
+      integer :: i,j,k
+!
+!debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
+!debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
+!
+      if (lbidiagonal_derij) then
+        !
+        ! Use bidiagonal mixed-derivative operator, i.e.
+        ! employ only the three neighbouring points on each of the four
+        ! half-diagonals. This gives 6th-order mixed derivatives as the
+        ! version below, but involves just 12 points instead of 36.
+        !
+        if ((i==1.and.j==2).or.(i==2.and.j==1)) then
+          if (nxgrid/=1.and.nygrid/=1) then
+            fac=(1./720.)*dx_1(l1:l2)*dy_1(m)
+            df=fac*( &
+                        270.*( psif(l1+1:l2+1,m+1,n)-psif(l1-1:l2-1,m+1,n)  &
+                              +psif(l1-1:l2-1,m-1,n)-psif(l1+1:l2+1,m-1,n)) &
+                       - 27.*( psif(l1+2:l2+2,m+2,n)-psif(l1-2:l2-2,m+2,n)  &
+                              +psif(l1-2:l2-2,m-2,n)-psif(l1+2:l2+2,m-2,n)) &
+                       +  2.*( psif(l1+3:l2+3,m+3,n)-psif(l1-3:l2-3,m+3,n)  &
+                              +psif(l1-3:l2-3,m-3,n)-psif(l1+3:l2+3,m-3,n)) &
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in x- or y-direction'
+          endif
+        elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
+          if (nygrid/=1.and.nzgrid/=1) then
+            fac=(1./720.)*dy_1(m)*dz_1(n)
+            df=fac*( &
+                        270.*( psif(l1:l2,m+1,n+1)-psif(l1:l2,m+1,n-1)  &
+                              +psif(l1:l2,m-1,n-1)-psif(l1:l2,m-1,n+1)) &
+                       - 27.*( psif(l1:l2,m+2,n+2)-psif(l1:l2,m+2,n-2)  &
+                              +psif(l1:l2,m-2,n-2)-psif(l1:l2,m-2,n+2)) &
+                       +  2.*( psif(l1:l2,m+3,n+3)-psif(l1:l2,m+3,n-3)  &
+                              +psif(l1:l2,m-3,n-3)-psif(l1:l2,m-3,n+3)) &
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in y- or z-direction'
+          endif
+        elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
+          if (nzgrid/=1.and.nxgrid/=1) then
+            fac=(1./720.)*dz_1(n)*dx_1(l1:l2)
+            df=fac*( &
+                        270.*( psif(l1+1:l2+1,m,n+1)-psif(l1-1:l2-1,m,n+1)  &
+                              +psif(l1-1:l2-1,m,n-1)-psif(l1+1:l2+1,m,n-1)) &
+                       - 27.*( psif(l1+2:l2+2,m,n+2)-psif(l1-2:l2-2,m,n+2)  &
+                              +psif(l1-2:l2-2,m,n-2)-psif(l1+2:l2+2,m,n-2)) &
+                       +  2.*( psif(l1+3:l2+3,m,n+3)-psif(l1-3:l2-3,m,n+3)  &
+                              +psif(l1-3:l2-3,m,n-3)-psif(l1+3:l2+3,m,n-3)) &
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
+          endif
+        endif
+
+      else                      ! not using bidiagonal mixed derivatives
+        !
+        ! This is the old, straight-forward scheme
+        !
+        if ((i==1.and.j==2).or.(i==2.and.j==1)) then
+          if (nxgrid/=1.and.nygrid/=1) then
+            fac=(1./60.**2)*dx_1(l1:l2)*dy_1(m)
+            df=fac*( &
+              45.*((45.*(psif(l1+1:l2+1,m+1,n)-psif(l1-1:l2-1,m+1,n))  &
+                    -9.*(psif(l1+2:l2+2,m+1,n)-psif(l1-2:l2-2,m+1,n))  &
+                       +(psif(l1+3:l2+3,m+1,n)-psif(l1-3:l2-3,m+1,n))) &
+                  -(45.*(psif(l1+1:l2+1,m-1,n)-psif(l1-1:l2-1,m-1,n))  &
+                    -9.*(psif(l1+2:l2+2,m-1,n)-psif(l1-2:l2-2,m-1,n))  &
+                       +(psif(l1+3:l2+3,m-1,n)-psif(l1-3:l2-3,m-1,n))))&
+              -9.*((45.*(psif(l1+1:l2+1,m+2,n)-psif(l1-1:l2-1,m+2,n))  &
+                    -9.*(psif(l1+2:l2+2,m+2,n)-psif(l1-2:l2-2,m+2,n))  &
+                       +(psif(l1+3:l2+3,m+2,n)-psif(l1-3:l2-3,m+2,n))) &
+                  -(45.*(psif(l1+1:l2+1,m-2,n)-psif(l1-1:l2-1,m-2,n))  &
+                    -9.*(psif(l1+2:l2+2,m-2,n)-psif(l1-2:l2-2,m-2,n))  &
+                       +(psif(l1+3:l2+3,m-2,n)-psif(l1-3:l2-3,m-2,n))))&
+                 +((45.*(psif(l1+1:l2+1,m+3,n)-psif(l1-1:l2-1,m+3,n))  &
+                    -9.*(psif(l1+2:l2+2,m+3,n)-psif(l1-2:l2-2,m+3,n))  &
+                       +(psif(l1+3:l2+3,m+3,n)-psif(l1-3:l2-3,m+3,n))) &
+                  -(45.*(psif(l1+1:l2+1,m-3,n)-psif(l1-1:l2-1,m-3,n))  &
+                    -9.*(psif(l1+2:l2+2,m-3,n)-psif(l1-2:l2-2,m-3,n))  &
+                       +(psif(l1+3:l2+3,m-3,n)-psif(l1-3:l2-3,m-3,n))))&
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in x- or y-direction'
+          endif
+        elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
+          if (nygrid/=1.and.nzgrid/=1) then
+            fac=(1./60.**2)*dy_1(m)*dz_1(n)
+            df=fac*( &
+              45.*((45.*(psif(l1:l2,m+1,n+1)-psif(l1:l2,m-1,n+1))  &
+                    -9.*(psif(l1:l2,m+2,n+1)-psif(l1:l2,m-2,n+1))  &
+                       +(psif(l1:l2,m+3,n+1)-psif(l1:l2,m-3,n+1))) &
+                  -(45.*(psif(l1:l2,m+1,n-1)-psif(l1:l2,m-1,n-1))  &
+                    -9.*(psif(l1:l2,m+2,n-1)-psif(l1:l2,m-2,n-1))  &
+                       +(psif(l1:l2,m+3,n-1)-psif(l1:l2,m-3,n-1))))&
+              -9.*((45.*(psif(l1:l2,m+1,n+2)-psif(l1:l2,m-1,n+2))  &
+                    -9.*(psif(l1:l2,m+2,n+2)-psif(l1:l2,m-2,n+2))  &
+                       +(psif(l1:l2,m+3,n+2)-psif(l1:l2,m-3,n+2))) &
+                  -(45.*(psif(l1:l2,m+1,n-2)-psif(l1:l2,m-1,n-2))  &
+                    -9.*(psif(l1:l2,m+2,n-2)-psif(l1:l2,m-2,n-2))  &
+                       +(psif(l1:l2,m+3,n-2)-psif(l1:l2,m-3,n-2))))&
+                 +((45.*(psif(l1:l2,m+1,n+3)-psif(l1:l2,m-1,n+3))  &
+                    -9.*(psif(l1:l2,m+2,n+3)-psif(l1:l2,m-2,n+3))  &
+                       +(psif(l1:l2,m+3,n+3)-psif(l1:l2,m-3,n+3))) &
+                  -(45.*(psif(l1:l2,m+1,n-3)-psif(l1:l2,m-1,n-3))  &
+                    -9.*(psif(l1:l2,m+2,n-3)-psif(l1:l2,m-2,n-3))  &
+                       +(psif(l1:l2,m+3,n-3)-psif(l1:l2,m-3,n-3))))&
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in y- or z-direction'
+          endif
+        elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
+          if (nzgrid/=1.and.nxgrid/=1) then
+            fac=(1./60.**2)*dz_1(n)*dx_1(l1:l2)
+            df=fac*( &
+              45.*((45.*(psif(l1+1:l2+1,m,n+1)-psif(l1-1:l2-1,m,n+1))  &
+                    -9.*(psif(l1+2:l2+2,m,n+1)-psif(l1-2:l2-2,m,n+1))  &
+                       +(psif(l1+3:l2+3,m,n+1)-psif(l1-3:l2-3,m,n+1))) &
+                  -(45.*(psif(l1+1:l2+1,m,n-1)-psif(l1-1:l2-1,m,n-1))  &
+                    -9.*(psif(l1+2:l2+2,m,n-1)-psif(l1-2:l2-2,m,n-1))  &
+                       +(psif(l1+3:l2+3,m,n-1)-psif(l1-3:l2-3,m,n-1))))&
+              -9.*((45.*(psif(l1+1:l2+1,m,n+2)-psif(l1-1:l2-1,m,n+2))  &
+                    -9.*(psif(l1+2:l2+2,m,n+2)-psif(l1-2:l2-2,m,n+2))  &
+                       +(psif(l1+3:l2+3,m,n+2)-psif(l1-3:l2-3,m,n+2))) &
+                  -(45.*(psif(l1+1:l2+1,m,n-2)-psif(l1-1:l2-1,m,n-2))  &
+                    -9.*(psif(l1+2:l2+2,m,n-2)-psif(l1-2:l2-2,m,n-2))  &
+                       +(psif(l1+3:l2+3,m,n-2)-psif(l1-3:l2-3,m,n-2))))&
+                 +((45.*(psif(l1+1:l2+1,m,n+3)-psif(l1-1:l2-1,m,n+3))  &
+                    -9.*(psif(l1+2:l2+2,m,n+3)-psif(l1-2:l2-2,m,n+3))  &
+                       +(psif(l1+3:l2+3,m,n+3)-psif(l1-3:l2-3,m,n+3))) &
+                  -(45.*(psif(l1+1:l2+1,m,n-3)-psif(l1-1:l2-1,m,n-3))  &
+                    -9.*(psif(l1+2:l2+2,m,n-3)-psif(l1-2:l2-2,m,n-3))  &
+                       +(psif(l1+3:l2+3,m,n-3)-psif(l1-3:l2-3,m,n-3))))&
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
+          endif
+        endif
+!
+      endif                     ! bidiagonal derij
+!
+!  Spherical polars. The comments about "minus extra terms" refer to the
+!  presence of extra terms that are being evaluated later in gij_etc.
+!
+      if (lspherical_coords) then
+        if ((i==1.and.j==2)) df=df*r1_mn
+        if ((i==2.and.j==1)) df=df*r1_mn !(minus extra terms)
+        if ((i==1.and.j==3)) df=df*r1_mn*sin1th(m)
+        if ((i==3.and.j==1)) df=df*r1_mn*sin1th(m) !(minus extra terms)
+        if ((i==2.and.j==3)) df=df*r2_mn*sin1th(m)
+        if ((i==3.and.j==2)) df=df*r2_mn*sin1th(m) !(minus extra terms)
+      endif
+!
+      if (lcylindrical_coords) then
+        if ((i==1.and.j==2)) df=df*rcyl_mn1
+        if ((i==2.and.j==1)) df=df*rcyl_mn1
+        if ((i==1.and.j==3)) df=df
+        if ((i==3.and.j==1)) df=df
+        if ((i==2.and.j==3)) df=df*rcyl_mn1
+        if ((i==3.and.j==2)) df=df*rcyl_mn1
+      endif
+!
+    endsubroutine derij_other
 !***********************************************************************
     subroutine der5i1j(f,k,df,i,j)
 !

@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.105 2007-05-23 13:39:42 bingert Exp $
+! $Id: forcing.f90,v 1.106 2007-08-02 13:02:48 dhruba Exp $
 
 module Forcing
 
@@ -31,7 +31,10 @@ module Forcing
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
   character (len=labellen) :: iforce_profile='nothing'
-
+  integer :: Legendrel
+  real ::  Bessel_alpha
+!! for helical forcing in spherical polar coordinate system
+  real, allocatable, dimension(:,:,:) :: psif
 ! Persistent stuff
   real :: tsforce=-10.
   real, dimension (3) :: location
@@ -48,7 +51,8 @@ module Forcing
        lmagnetic_forcing,ltestfield_forcing, &
        max_force,dtforce,old_forcing_evector, &
        iforce_profile,lscale_kvector_tobox, &
-       force_direction, force_strength
+       force_direction, force_strength, &
+       Legendrel,Bessel_alpha
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
@@ -76,7 +80,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.105 2007-05-23 13:39:42 bingert Exp $")
+           "$Id: forcing.f90,v 1.106 2007-08-02 13:02:48 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -182,6 +186,7 @@ module Forcing
         case ('blobs');         call forcing_blobs(f)
         case ('gaussianpot');   call forcing_gaussianpot(f)
         case ('hel_smooth');    call forcing_hel_smooth(f)
+        case ('hel_sp');        call forcing_hel_sp(f)
         case default; if(lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
         endselect
 !
@@ -619,6 +624,94 @@ module Forcing
       if (ip.le.9) print*,'forcing_hel: forcing OK'
 !
     endsubroutine forcing_hel
+!***********************************************************************
+    subroutine forcing_hel_sp(f)
+!
+!  Add helical forcing function in spherical polar coordinate system. 
+!  25-jul-07/dhruba: adapted from forcing_hel
+!
+      use Mpicomm
+      use Cdata
+      use General
+      use Sub
+      use EquationOfState, only: cs0
+      use Hydro
+!
+      real :: phase,ffnorm,irufm
+      integer, save :: ifirst
+      real, dimension(3) :: ee
+      real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
+      real, dimension(nx,3,3) :: psi_ij,Tij
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer ::l,ell,emm,iread,j,jf
+      real :: a_ell,psi_ell_m,anum,adenom,jlm,ylm,rphase,ffactor,alphar
+      real :: rz, Plmreal, Plmimag 
+!
+      if (ifirst==0) then
+        if (lroot) print*,'Helical forcing in spherical polar coordinate'
+        if (lroot) print*,'allocating fext ..'
+        allocate(psif(mx,my,mz))
+        if (lroot) print*, '..done'
+! Now calculate the "potential" for the helical forcing. The expression
+! is taken from Chandrasekhar and Kendall.
+! Now construct the force 
+! first get a set of ran_ell_m
+        psif = 0.
+        do n=n1,n2
+            do m=m1,m2
+              do l=l1,l2
+                do emm=-Legendrel,Legendrel
+                  call sp_bessely_l(anum,ell,Bessel_alpha*x(l1))
+                  call sp_besselj_l(adenom,ell,Bessel_alpha*x(l1))
+                  a_ell = -anum/adenom
+                  alphar = Bessel_alpha*x(l)
+                  call sp_besselj_l(jlm,Legendrel,alphar)
+                  call sp_bessely_l(ylm,Legendrel,alphar)
+                  call sp_harm_real(Plmreal,Legendrel,emm,y(m),z(n))
+                  call sp_harm_imag(Plmimag,Legendrel,emm,y(m),z(n))
+                  call random_number_wrapper(rphase)
+                  rphase = PI*rphase
+                  psi_ell_m = (a_ell*jlm+ylm)*& 
+                    (Plmreal*cos(rphase)-Plmimag*sin(rphase)) 
+                  psif(l,m,n) = psif(l,m,n)+psi_ell_m
+                enddo
+              enddo
+            enddo
+          enddo
+        ifirst = ifirst+1
+      else
+      endif
+! ----- Now calculate the force from the potential and add this to
+! velocity
+! get a random unit vector with three components ee_r, ee_theta, ee_phi
+   
+      call random_number_wrapper(rz)
+      ee(3) = rz
+      call random_number_wrapper(rphase)
+      rphase = PI*rphase
+      ee(1) = (1-rz*rz)*cos(rphase)
+      ee(2) = (1-rz*rz)*sin(rphase)
+      ffactor = 1.e-3
+      do n=n1,n2
+        do m=m1,m2
+          psi(:,1) = psif(l1:l2,m,n)*ee(1)
+          psi(:,2) = psif(l1:l2,m,n)*ee(2)
+          psi(:,3) = psif(l1:l2,m,n)*ee(3)
+          call gij_psi(psif,ee,psi_ij)
+          call curl_mn(psi_ij,capitalT,psi)
+          call gij_psi_etc(psif,ee,psi,psi_ij,Tij)
+          call curl_mn(Tij,capitalS,capitalT)
+          capitalS = (1./Bessel_alpha)*capitalS
+          capitalH = capitalT + capitalS
+          do j=1,3
+            jf = iuu+j-1
+            f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ ffactor*capitalH(:,j)
+          enddo
+        enddo
+      enddo
+
+      
+    endsubroutine forcing_hel_sp
 !***********************************************************************
     subroutine forcing_GP(f)
 !

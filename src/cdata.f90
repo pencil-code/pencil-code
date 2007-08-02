@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.373 2007-07-05 22:43:13 theine Exp $
+! $Id: cdata.f90,v 1.374 2007-08-02 13:02:48 dhruba Exp $
 
 module Cdata
 
@@ -336,5 +336,4 @@ module Cdata
   real :: b_ell=1., rbound=1.
 
   logical :: lfold_df=.false.
-
 endmodule Cdata

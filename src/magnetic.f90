@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.433 2007-07-31 09:22:41 ajohan Exp $
+! $Id: magnetic.f90,v 1.434 2007-08-02 13:02:48 dhruba Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -239,7 +239,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.433 2007-07-31 09:22:41 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.434 2007-08-02 13:02:48 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -558,7 +558,6 @@ module Magnetic
         case('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case('xsiny'); call x_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case('x1siny'); call x1_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,phasey_aa(j))
-        case('lnxcosycosz'); call lnx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),kz_aa(j))
         case('sinxcosz'); call sinx_siny_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),kz_aa(j))
         case('sinycosz'); call cosx_siny_cosz(amplaa(j),f,iax,kx_aa(j),ky_aa(j),0.)
         case('cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
@@ -601,15 +600,10 @@ module Magnetic
           f(:,:,:,iaz) = amplaa(j)/kx_aa(j)*cos(kx_aa(j)*xx)
         case('geo-benchmark-case1','geo-benchmark-case2'); call geo_benchmark_B(f)
         case('hydrostatic_magnetic')
-          call get_shared_variable('nu_epicycle',nu_epicycle,ierr)
-          scaleH = (cs0/nu_epicycle)*sqrt(1+1/beta_const)
+          scaleH=1.0*sqrt(1+1/beta_const)
           print*, 'init_aa: hydrostatic_magnetic: scaleH=', scaleH
           do m=m1,m2; do n=n1,n2
-            if (ldensity_nolog) then
-              f(l1:l2,m,n,ilnrho) = rho0*exp(-0.5*(z(n)/scaleH)**2)
-            else
-              f(l1:l2,m,n,ilnrho) = alog(rho0)-0.5*(z(n)/scaleH)**2
-            endif
+            f(l1:l2,m,n,ilnrho)=alog(1.0)-z(n)**2/(2*scaleH**2)
             rho=exp(f(l1:l2,m,n,ilnrho))
             f(l1:l2,m,n,iglobal_by_ext)= &
                 sqrt(2*mu0*1.0**2*rho/beta_const)
@@ -1894,59 +1888,51 @@ module Magnetic
       use Cdata
       use BorderProfiles, only: border_driving
       use Mpicomm, only: stop_it
-      use Gravity, only: qgshear
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
       real, dimension(nx) :: Aphi
-      real :: kr,kr1,B0,Aphip
-      integer :: ju,j,i
+      real :: kr,kr1
+      integer :: ju,j
 !
       select case(borderaa)
       case('zero','0')
-        f_target=0.
+         f_target=0.
       case('toroidal')
-        kr = 2*pi*rmode/(r_ext-r_int)
-        kr1 = 1./kr
-        f_target(:,1) = 0.
-        f_target(:,2) = 0.
-        f_target(:,3) = -amplaa(1)*kr1*sin(kr*(p%rcyl_mn-r_int))
+         kr = 2*pi*rmode/(r_ext-r_int)
+         kr1 = 1./kr
+         f_target(:,1) = 0.
+         f_target(:,2) = 0.
+         f_target(:,3) = -amplaa(1)*kr1*sin(kr*(p%rcyl_mn-r_int))
       case('Alfven-rz')
-        kr = 2*pi*rmode/(r_ext-r_int)
-        kr1 = 1./kr
-        Aphi =  amplaa(1)*kr1 * sin(kr*(p%rcyl_mn-r_int)) + &
-             amplaa(1)*kr1**2*p%rcyl_mn1*cos(kr*(p%rcyl_mn-r_int))
+         kr = 2*pi*rmode/(r_ext-r_int)
+         kr1 = 1./kr
+         Aphi =  amplaa(1)*kr1 * sin(kr*(p%rcyl_mn-r_int)) + &
+              amplaa(1)*kr1**2*p%rcyl_mn1*cos(kr*(p%rcyl_mn-r_int))
 !
-        f_target(:,1) = Aphi * (-y(  m  )*p%rcyl_mn1)
-        f_target(:,2) = Aphi * ( x(l1:l2)*p%rcyl_mn1)
-        f_target(:,3) = 0.
+         f_target(:,1) = Aphi * (-y(  m  )*p%rcyl_mn1)
+         f_target(:,2) = Aphi * ( x(l1:l2)*p%rcyl_mn1)
+         f_target(:,3) = 0.
       case('Alfven-zconst')
-        B0=Lxyz(3)/((2*zmode*pi)*(2-qgshear))
-        do i=1,nx
-          if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
-               ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
-            if (rsmooth.eq.0.) then 
-              Aphip=B0*p%rcyl_mn(i)**(1-qgshear)
-            else
-              Aphip=B0*p%rcyl_mn1(i)*(p%rcyl_mn(i)**2+rsmooth**2)**(1-qgshear/2.)
-            endif
-            f_target(i,1) = Aphip * (-y(   m  )*p%rcyl_mn1(i))
-            f_target(i,2) = Aphip * ( x(i+l1-1)*p%rcyl_mn1(i))
-            f_target(i,3) = 0.
-          else 
-            f_target(i,1:3)=0.
-          endif
-        enddo
+         !kr = 2*pi*rmode/(r_ext-r_int)
+         !kr1 = 1./kr
+         Aphi = Lxyz(3)/(4*pi)*sqrt(p%rcyl_mn1)
+! amplaa(1)*kr1 * sin(kr*(p%rcyl_mn-r_int)) + &
+!              amplaa(1)*kr1**2*p%rcyl_mn1*cos(kr*(p%rcyl_mn-r_int))
+!                                                                                                                                                 
+         f_target(:,1) = Aphi * (-y(  m  )*p%rcyl_mn1)
+         f_target(:,2) = Aphi * ( x(l1:l2)*p%rcyl_mn1)
+         f_target(:,3) = 0.
       case('nothing')
-        if (lroot.and.ip<=5) &
-             print*,"set_border_magnetic: borderaa='nothing'"
+         if (lroot.and.ip<=5) &
+              print*,"set_border_magnetic: borderaa='nothing'"
       case default
-        write(unit=errormsg,fmt=*) &
-             'set_border_magnetic: No such value for borderaa: ', &
-             trim(borderaa)
-        call fatal_error('set_border_magnetic',errormsg)
+         write(unit=errormsg,fmt=*) &
+              'set_border_magnetic: No such value for borderaa: ', &
+              trim(borderaa)
+         call fatal_error('set_border_magnetic',errormsg)
       endselect
 !
       if (borderaa /= 'nothing') then
@@ -2934,7 +2920,7 @@ module Magnetic
 !  Radially variable field pointing in the z direction
 !  4 Balbus Hawley wavelengths in the vertical direction
 !
-!  Bz=Lz/(8pi)*Omega      ==> Aphi = Lz/(8pi) (Omega*r)/(2-q)
+!  Bz=Lz/(8pi)*Omega      ==> Aphi = Lz/(8pi) Omega*r/(2-q)
 !
 !  The smoothed case should be general, since it reduces 
 !  to the non-smoothed for r0_pot=0.
@@ -2944,51 +2930,18 @@ module Magnetic
 !  04-oct-06/wlad: coded
 !
       use Cdata
-      use Gravity,only: qgshear
-      use Mpicomm,only: stop_it
+      use Gravity, only: qgshear,r0_pot
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz)         :: xx,yy,rrcyl,Aphi
-      real, dimension(nx)               :: prcylmn,corr,tmp1,tmp2
-      real                              :: B0,mode
-      integer                           :: i
+      real, dimension(mx,my,mz) :: xx,yy,rrcyl,Aphi
+      real :: B0,mode
 !
       B0=Lxyz(3)/(2*mode*pi)
       rrcyl=sqrt(xx**2+yy**2)
-      Aphi=B0/(rrcyl*(2-qgshear))*(rrcyl**2+rsmooth**2)**(1-qgshear/2.)
+      Aphi=B0/(rrcyl*(2-qgshear))*(rrcyl**2+r0_pot**2)**(1-qgshear/2.)
 !
       f(:,:,:,iax) =  -Aphi*yy/rrcyl
       f(:,:,:,iay) =   Aphi*xx/rrcyl
-!
-!  The field is not force-free. Correct the velocity for magnetic pressure
-!
-!  pm=1/2 * grad(B^2) ; the extra 1/r is from the centrifugal term
-      do m=m1,m2
-        do n=n1,n2
-          prcylmn=rrcyl(l1:l2,m,n)
-          corr=B0**2*qgshear/(prcylmn**2+rsmooth**2)**(1+qgshear)
-          !tmp1 is the original keplerian velocity
-          tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/prcylmn**2
-          tmp2=tmp1 - corr
-          do i=1,nx
-            if (tmp2(i).lt.0.) then
-              if (prcylmn(i) .lt. r_int) then
-                !it's inside the frozen zone, so
-                !just set tmp2 to zero and emit a warning
-                tmp2(i)=0.
-                call warning('alfven_zconst','the magnetic '//&
-                     'pressure is too great inside the frozen zone')
-              else
-                print*,'alfven_zconst','the magnetic pressure'
-                print*,'is too great at x,y,z=',x(i+l1-1),y(m),z(n)
-                call stop_it("")
-              endif
-            endif
-          enddo
-          f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
-          f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
-        enddo
-      enddo
 !
     endsubroutine alfven_zconst
 !***********************************************************************
