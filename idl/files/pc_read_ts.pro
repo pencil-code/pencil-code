@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.23 2007-08-03 09:53:26 ajohan Exp $
+; $Id: pc_read_ts.pro,v 1.24 2007-08-03 13:32:52 ajohan Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2007-08-03 09:53:26 $
-;  $Revision: 1.23 $
+;  $Date: 2007-08-03 13:32:52 $
+;  $Revision: 1.24 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -72,7 +72,7 @@ pro pc_read_ts, $
                 PRINT=PRINT, QUIET=QUIET, HELP=HELP, VERBOSE=VERBOSE, $
                 N=n, IT=it, T=t, DT=dt, DTC=dtc, URMS=urms, $
                 EKIN=ekin, ETH=eth, RHOM=rhom, SSM=ssm, TRIMFIRST=TRIMFIRST,  $
-                MOVINGAVERAGE=MOVINGAVERAGE, monotone=monotone
+                MOVINGAVERAGE=MOVINGAVERAGE, monotone=monotone, njump=njump
 COMPILE_OPT IDL2,HIDDEN
 
 ; If no meaningful parameters are given show some help!
@@ -97,6 +97,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, "           Default is 'data'                                     "
     print, "           NB. if filename contains any / characters, datadir     "
     print, "               be ignored.                                        "
+    print, "    njump: return time series data every njump lines     [integer]"
     print, "                                                                  "
     print, "        n: number of entries (valid - not commented out) [integer]"
     print, "       it: array of time step numbers                  [float(it)]"
@@ -114,6 +115,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, ""
     print, "  /DOUBLE: instruction to read all values as double precision    "
     print, "   /PRINT: instruction to print all variables to standard output "
+    print, "/MONOTONE: trim data so that time is monotonously increasing"
     print, "   /QUIET: instruction not to print any 'helpful' information    "
     print, "    /HELP: display this usage information, and exit              "
     return
@@ -124,6 +126,7 @@ COMPILE_OPT IDL2,HIDDEN
   if (not keyword_set(datadir)) then datadir=pc_get_datadir()
   default, filename, 'time_series.dat'
   default, monotone, 0
+  default, njump, 1
   default, MOVINGAVERAGE,0
 
   if (strpos(filename,'/') eq -1) then begin
@@ -275,8 +278,9 @@ COMPILE_OPT IDL2,HIDDEN
       stop
     endif
     ii=monotone_array(reform(full_data[itt,*]))
+    ii=njump*ii[lindgen(n_elements(ii)/njump)]
   endif else begin
-    ii=lindgen(n_elements(full_data[0,*]))
+    ii=njump*lindgen(n_elements(full_data[0,*])/njump)
   endelse
 ;
 ;  assemble the data
