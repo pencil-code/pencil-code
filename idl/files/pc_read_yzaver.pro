@@ -1,4 +1,4 @@
-;; $Id: pc_read_yzaver.pro,v 1.5 2007-02-18 09:13:42 ajohan Exp $
+;; $Id: pc_read_yzaver.pro,v 1.6 2007-08-03 09:53:26 ajohan Exp $
 ;;
 ;;   Read yz-averages from file
 ;;
@@ -9,7 +9,7 @@ COMMON pc_precision, zero, one
 ;;
 ;;  Default data directory.
 ;;
-default, datadir, './data'
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default, varfile, 'yzaverages.dat'
 default, monotone, 0
 default, quiet, 0

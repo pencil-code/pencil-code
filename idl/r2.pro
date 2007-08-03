@@ -1,4 +1,4 @@
-; $Id: r2.pro,v 1.5 2006-08-26 16:40:01 mee Exp $
+; $Id: r2.pro,v 1.6 2007-08-03 09:53:26 ajohan Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r2.pro,v 1.5 2006-08-26 16:40:01 mee Exp $
+;;; $Id: r2.pro,v 1.6 2007-08-03 09:53:26 ajohan Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -21,7 +21,7 @@ if ((n_elements(started) le 0) or (n_elements(read_all) gt 0)) then begin
 endif
 undefine, read_all
 ;
-default, datadir, 'data'
+if (n_elements(datadir) eq 0) then datadir=pc_get_datadir()
 default, varfile, 'var.dat'
 ;
 ;  Read data

@@ -1,5 +1,5 @@
 ;
-; $Id: pc_read_pdim.pro,v 1.2 2005-01-11 10:36:16 ajohan Exp $
+; $Id: pc_read_pdim.pro,v 1.3 2007-08-03 09:53:26 ajohan Exp $
 ;
 ;   Read particle dimension data.
 ;
@@ -9,7 +9,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Default data directory
 ;
-default,datadir,'data'
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;
 ; Initialize / set default returns for ALL variables
 ;

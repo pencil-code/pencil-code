@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent_global.pro,v 1.1 2007-05-13 15:20:46 ajohan Exp $
+;  $Id: pc_varcontent_global.pro,v 1.2 2007-08-03 09:53:27 ajohan Exp $
 FUNCTION pc_varcontent_global,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar,run2D=run2D
 COMPILE_OPT IDL2,HIDDEN
@@ -10,7 +10,7 @@ if (n_elements(dim) eq 0) then pc_read_dim,obj=dim,datadir=datadir,quiet=quiet
 if (n_elements(param) eq 0) then pc_read_param,obj=param,datadir=datadir, $
     dim=dim,quiet=quiet
 
-default,datadir,'data'
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 cmd = 'perl -000 -ne '+"'"+'s/[ \t]+/ /g; print join(" & ",split(/\n/,$_)),"\n"'+"' "+datadir+'/index.pro'
 spawn, cmd, result
 res = flatten_strings(result) 

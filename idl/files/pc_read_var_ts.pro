@@ -1,10 +1,10 @@
-; $Id: pc_read_var_ts.pro,v 1.4 2006-06-02 19:10:17 joishi Exp $
+; $Id: pc_read_var_ts.pro,v 1.5 2007-08-03 09:53:26 ajohan Exp $
 ;
 ;   Get time series for various parameters from data snapshots
 ;
 ;  Author: Anders Johansen (ajohan@astro.ku.dk)
-;  $Date: 2006-06-02 19:10:17 $
-;  $Revision: 1.4 $
+;  $Date: 2007-08-03 09:53:26 $
+;  $Revision: 1.5 $
 ;
 ;  10-oct-03/anders: coded (coding layout adapted from Tony)
 ;  13-oct-03/anders: renamed from pc_get_ts.pro
@@ -45,7 +45,7 @@ COMPILE_OPT IDL2,HIDDEN
   ENDIF
 ; Default data directory
 
-default,datadir,'data'
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default,proc,0
 default,snap_start,0
 default,snap_end,0

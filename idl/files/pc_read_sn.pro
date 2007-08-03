@@ -1,10 +1,10 @@
-; $Id: pc_read_sn.pro,v 1.3 2004-05-05 17:17:22 mee Exp $
+; $Id: pc_read_sn.pro,v 1.4 2007-08-03 09:53:26 ajohan Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2004-05-05 17:17:22 $
-;  $Revision: 1.3 $
+;  $Date: 2007-08-03 09:53:26 $
+;  $Revision: 1.4 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -97,7 +97,7 @@ COMPILE_OPT IDL2,HIDDEN
 
 ; Default data directory
 
-default, datadir, 'data'
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default, filename, 'sn_series.dat'
 ;
 ; Initialize / set default returns for ALL variables

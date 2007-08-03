@@ -25,8 +25,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Default data directory
 ;
-; default, datadir, 'data'
-  IF (not keyword_set(datadir)) THEN datadir='data'
+  IF (not keyword_set(datadir)) THEN datadir=pc_get_datadir()
 ;
 ; Name and path of varfile to read
 ;

@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;;  $Date: 2007-06-12 13:02:40 $
-;;;  $Revision: 1.8 $
+;;;  $Date: 2007-08-03 09:53:26 $
+;;;  $Revision: 1.9 $
 ;;;  Description:
 ;;;   Read time series data from data/time_series.dat into the
 ;;;   structure `ts' and plot urms(t) and brms(t) (if available).
@@ -60,7 +60,7 @@ end
 ;
 ;  Set path and file names if necessary
 ;
-default, datatopdir, 'data'
+if (n_elements(datatopdir) eq 0) then datatopdir=pc_get_datadir()
 default, tsfile, datatopdir+'/time_series.dat'
 ;
 ;  read header

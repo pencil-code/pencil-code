@@ -1,10 +1,10 @@
-; $Id: pc_read_zprof.pro,v 1.2 2006-08-25 16:46:17 dintrans Exp $
+; $Id: pc_read_zprof.pro,v 1.3 2007-08-03 09:53:27 ajohan Exp $
 ;
 ;  read zprofile file
 ;
 function pc_read_zprof, varname , datadir=datadir, debug=debug
 ;
-IF (not keyword_set(datadir)) THEN datadir='data'
+IF (not keyword_set(datadir)) THEN datadir=pc_get_datadir()
 ;
 ;  read expected dimension and processor number
 ;

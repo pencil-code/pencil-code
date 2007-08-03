@@ -1,4 +1,4 @@
-;; $Id: pc_read_yaver.pro,v 1.2 2007-02-04 21:19:19 brandenb Exp $
+;; $Id: pc_read_yaver.pro,v 1.3 2007-08-03 09:53:26 ajohan Exp $
 ;;
 ;;   Read y-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -20,7 +20,7 @@ COMMON pc_precision, zero, one
 ;;
 ;;  Default values.
 ;;
-default, datadir, './data'
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default, varfile, 'yaverages.dat'
 default, nit, 0
 default, lplot, 0 ;(changed default to 0/axel)

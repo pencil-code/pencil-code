@@ -9,7 +9,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,TRUEPNG=png_truecolor,tmin=tmin,$
                nsmooth=nsmooth, textsize=textsize, $
                _extra=_extra
 ;
-; $Id: rvid_plane.pro,v 1.29 2006-11-17 01:11:08 wlyra Exp $
+; $Id: rvid_plane.pro,v 1.30 2007-08-03 09:53:26 ajohan Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -33,7 +33,7 @@ default,extension,'xz'
 default,amax,.05
 default,amin,-amax
 default,field,'lnrho'
-default,datadir,'data'
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default,nrepeat,0
 default,njump,0
 default,tmin,0.
@@ -56,7 +56,7 @@ default,textsize,1.0
 if (keyword_set(png_truecolor)) then png=1
 ; Construct location of slice_var.plane files 
 ;
-default, datatopdir, 'data'
+default, datatopdir, datadir
 ;  by default, look in data/, assuming we have run read_videofiles.x before:
 ;datadir = 'data'
 if (n_elements(proc) le 0) then begin

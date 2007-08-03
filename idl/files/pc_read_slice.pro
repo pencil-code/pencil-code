@@ -1,10 +1,10 @@
-; $Id: pc_read_slice.pro,v 1.6 2004-05-11 18:03:28 mcmillan Exp $
+; $Id: pc_read_slice.pro,v 1.7 2007-08-03 09:53:26 ajohan Exp $
 ;
 ;   Read slice files
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-11 18:03:28 $
-;  $Revision: 1.6 $
+;  $Date: 2007-08-03 09:53:26 $
+;  $Revision: 1.7 $
 ;
 ;  28-nov-02/tony: coded 
 ;
@@ -55,7 +55,7 @@ COMPILE_OPT IDL2,HIDDEN
 
 ; Default data directory
 
-default, datadir, 'data'
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 
 ; Get necessary dimensions, inheriting QUIET
 pc_read_dim,mx=mx,my=my,mz=mz,datadir=datadir,proc=proc,QUIET=QUIET 

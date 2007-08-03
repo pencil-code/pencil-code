@@ -1,11 +1,11 @@
-; $Id: rzaver.pro,v 1.5 2005-06-08 04:30:03 brandenb Exp $
+; $Id: rzaver.pro,v 1.6 2007-08-03 09:53:26 ajohan Exp $
 ;
 ;  reads the zaver.dat file
 ;  need to supply nprocy by hand...
 ;
 t=0.
 @data/index
-default, datatopdir, 'data'
+if (n_elements(datatopdir) eq 0) then datatopdir=pc_get_datadir()
 default, dimfile, 'dim.dat'
 ;
 mx=0L & my=0L & mz=0L & nvar=0L & naux=0L

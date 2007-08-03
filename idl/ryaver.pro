@@ -1,11 +1,11 @@
-; $Id: ryaver.pro,v 1.3 2005-06-12 10:52:24 brandenb Exp $
+; $Id: ryaver.pro,v 1.4 2007-08-03 09:53:26 ajohan Exp $
 ;
 ;  reads the yaver.dat file, puts the result into fmxz array
 ;  this routine keeps only the last time
 ;
 t=0.
 @data/index
-default, datatopdir, 'data'
+if (n_elements(datatopdir) eq 0) then datatopdir=pc_get_datadir()
 default, dimfile, 'dim.dat'
 ;
 mx=0L & my=0L & mz=0L & nvar=0L & naux=0L

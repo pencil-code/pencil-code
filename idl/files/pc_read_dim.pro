@@ -1,10 +1,10 @@
-; $Id: pc_read_dim.pro,v 1.20 2007-06-25 15:49:09 dintrans Exp $
+; $Id: pc_read_dim.pro,v 1.21 2007-08-03 09:53:26 ajohan Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2007-06-25 15:49:09 $
-;  $Revision: 1.20 $
+;  $Date: 2007-08-03 09:53:26 $
+;  $Revision: 1.21 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -80,8 +80,7 @@ COMPILE_OPT IDL2,HIDDEN
   ENDIF
 
 ; Default data directory
-default,datadir,'data'
-
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;
 ; Initialize / set default returns for ALL variables
 ;

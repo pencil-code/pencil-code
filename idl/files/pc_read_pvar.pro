@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.24 2006-11-11 15:10:45 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.25 2007-08-03 09:53:26 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -9,7 +9,7 @@ COMMON pc_precision, zero, one
 ;
 ;  Defaults.
 ;
-default, datadir, 'data'
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default, quiet, 0
 default, qquiet, 0
 
@@ -53,7 +53,7 @@ xloc=fltarr(procdim.mx)*one & yloc=fltarr(procdim.my)*one & zloc=fltarr(procdim.
 ;
 ;  Read variable indices from index.pro
 ;
-default,datadir,'data'
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 cmd = 'perl -000 -ne '+"'"+'s/[ \t]+/ /g; print join(" & ",split(/\n/,$_)),     "\n"'+"' "+datadir+'/index.pro'
 spawn, cmd, result
 res = flatten_strings(result)

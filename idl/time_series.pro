@@ -1,4 +1,4 @@
-;  $Id: time_series.pro,v 1.28 2007-06-23 16:57:59 brandenb Exp $
+;  $Id: time_series.pro,v 1.29 2007-08-03 09:53:26 ajohan Exp $
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
@@ -8,7 +8,7 @@ print,'nname=',nname
 ;
 ;  set datatopdir to default value
 ;
-default, datatopdir, 'data'
+if (n_elements(datatopdir) eq 0) then datatopdir=pc_get_datadir()
 filen=datatopdir+'/time_series.dat'
 ;
 ;  fileposition

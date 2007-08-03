@@ -1,4 +1,4 @@
-;; $Id: pc_read_xyaver.pro,v 1.7 2007-02-15 09:57:06 ajohan Exp $
+;; $Id: pc_read_xyaver.pro,v 1.8 2007-08-03 09:53:26 ajohan Exp $
 ;;
 ;;   Read xy-averages from file
 ;;
@@ -9,7 +9,7 @@ COMMON pc_precision, zero, one
 ;;
 ;;  Default data directory.
 ;;
-default, datadir, './data'
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default, varfile, 'xyaverages.dat'
 default, monotone, 0
 default, quiet, 0

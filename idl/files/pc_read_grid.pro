@@ -1,10 +1,10 @@
-; $Id: pc_read_grid.pro,v 1.14 2006-06-02 19:10:17 joishi Exp $
+; $Id: pc_read_grid.pro,v 1.15 2007-08-03 09:53:26 ajohan Exp $
 ;
 ;   Read grid.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2006-06-02 19:10:17 $
-;  $Revision: 1.14 $
+;  $Date: 2007-08-03 09:53:26 $
+;  $Revision: 1.15 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -41,7 +41,7 @@ COMPILE_OPT IDL2,HIDDEN
 
 ; Default data directory
 
-default, datadir, 'data'
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 
 ; Get necessary dimensions, inheriting QUIET
 if n_elements(dim) eq 0 then  $

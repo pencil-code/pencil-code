@@ -38,7 +38,7 @@ IF (keyword_set(HELP)) THEN BEGIN
   doc_library,'pc_read_penciled'
   return
 ENDIF
-IF (not keyword_set(datadir)) THEN datadir='./data'
+IF (not keyword_set(datadir)) THEN datadir=pc_get_datadir()
 ;
 ; - assume by default that we want to read a scalar
 if (n_elements(vec) eq 0)   then vec=0

@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start_ez.pro,v 1.7 2005-10-24 02:12:21 dobler Exp $
+;;; $Id: start_ez.pro,v 1.8 2007-08-03 09:53:26 ajohan Exp $
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;
@@ -17,7 +17,7 @@ common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 @zder2_6th_ghost
 ;
 default, proc, 0
-default, datatopdir, 'data'
+if (n_elements(datatopdir) eq 0) then datatopdir=pc_get_datadir()
 default, datafile, 'var.dat'
 datadir=datatopdir+'/proc'+str(proc)
 ;

@@ -1,4 +1,4 @@
-;; $Id: pc_read_const.pro,v 1.4 2006-08-25 16:46:16 dintrans Exp $
+;; $Id: pc_read_const.pro,v 1.5 2007-08-03 09:53:26 ajohan Exp $
 ;;
 ;;  Read Pencil Code constants from a file.
 ;;
@@ -13,8 +13,7 @@ COMMON pc_precision, zero, one
 ;;
 ;;  Default data directory.
 ;;
-;default, datadir, './data'
-IF (not keyword_set(datadir)) THEN datadir='data'
+IF (not keyword_set(datadir)) THEN datadir=pc_get_datadir()
 default, varfile, 'pc_constants.pro'
 default, quiet, 0
 fullvarfile=datadir+'/'+varfile

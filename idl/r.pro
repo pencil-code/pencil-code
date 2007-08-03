@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.59 2005-05-18 01:06:35 dobler Exp $
+; $Id: r.pro,v 1.60 2007-08-03 09:53:26 ajohan Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.59 2005-05-18 01:06:35 dobler Exp $
+;;; $Id: r.pro,v 1.60 2007-08-03 09:53:26 ajohan Exp $
 
 function param2
 COMPILE_OPT HIDDEN 
@@ -22,10 +22,8 @@ if ((n_elements(started) le 0) or (n_elements(read_all) gt 0)) then begin
 endif
 undefine, read_all
 ;
-default, datadir, 'data'
+if (n_elements(datatopdir) eq 0) then datatopdir=pc_get_datadir()
 default, varfile, 'var.dat'
-;
-
 ;
 ;  Read startup parameters
 ;

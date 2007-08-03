@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.76 2007-02-16 21:23:19 dobler Exp $
+;;; $Id: start.pro,v 1.77 2007-08-03 09:53:26 ajohan Exp $
 
 function param
   COMPILE_OPT IDL2,HIDDEN 
@@ -43,7 +43,7 @@ common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
 ;;       5: don't print anything (to the extent this is possible)
 default, quiet, 0
 default, proc, 0
-default, datatopdir, 'data'
+if (n_elements(datatopdir) eq 0) then datatopdir=pc_get_datadir()
 default, varfile, 'var.dat'
 default, dimfile, 'dim.dat'
 datadir = datatopdir+'/proc'+str(proc)

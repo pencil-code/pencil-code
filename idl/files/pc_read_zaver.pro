@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.11 2007-06-28 05:48:51 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.12 2007-08-03 09:53:26 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -18,7 +18,7 @@ COMMON pc_precision, zero, one
 ;;
 ;;  Default values.
 ;;
-default, datadir, './data'
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default, varfile, 'zaverages.dat'
 default, nit, 0
 default, lplot, 1

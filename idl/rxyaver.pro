@@ -1,11 +1,11 @@
-; $Id: rxyaver.pro,v 1.13 2005-07-17 19:56:56 brandenb Exp $
+; $Id: rxyaver.pro,v 1.14 2007-08-03 09:53:26 ajohan Exp $
 ;
 ;  reads xyaver.dat file
 ;  read first global array sizes
 ;
 t=0.
 @data/index
-default, datatopdir, 'data'
+if (n_elements(datatopdir) eq 0) then datatopdir=pc_get_datadir()
 default, dimfile, 'dim.dat'
 ;
 mx=0L & my=0L & mz=0L & nvar=0L & naux=0L

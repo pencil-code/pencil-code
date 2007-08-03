@@ -1,5 +1,5 @@
 ;;
-;; $Id: pc_read_video.pro,v 1.2 2007-06-28 06:53:05 ajohan Exp $
+;; $Id: pc_read_video.pro,v 1.3 2007-08-03 09:53:26 ajohan Exp $
 ;;
 ;; NAME:
 ;;      PC_READ_VIDEO
@@ -19,7 +19,7 @@ COMMON pc_precision, zero, one
 ;
 default, print, 1
 default, field, 'lnrho'
-default, datadir, 'data'
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default, nt, 100
 ;
 ; Read dimensions and set precision.

@@ -1,4 +1,4 @@
-;; $Id: pc_read_phizaver.pro,v 1.2 2007-02-15 09:57:06 ajohan Exp $
+;; $Id: pc_read_phizaver.pro,v 1.3 2007-08-03 09:53:26 ajohan Exp $
 ;;
 ;;   Read phiz-averages from file
 ;;
@@ -9,7 +9,7 @@ COMMON pc_precision, zero, one
 ;;
 ;;  Default data directory.
 ;;
-default, datadir, './data'
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default, varfile, 'phizaverages.dat'
 default, monotone, 0
 default, quiet, 0

@@ -62,7 +62,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.49 2007-05-27 20:41:42 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.50 2007-08-03 09:53:26 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -97,7 +97,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Default data directory
 ;
-  IF (not keyword_set(datadir)) THEN datadir='data'
+  IF (not keyword_set(datadir)) THEN datadir=pc_get_datadir()
 ;
 ; Name and path of varfile to read
 ;
