@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.65 2007-08-02 13:02:48 dhruba Exp $
+### $Id: Makefile.depend,v 1.66 2007-08-03 05:20:37 ajohan Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -150,11 +150,11 @@ $(DEBUG_OBJ):                        debug_c.c Makefile.src Makefile.local
 #$(TIMEAVG)$(PC_META_TYPE).o:        ctimeavg.local
 #axeltest $(INITCOND_SPEC)$(PC_META_TYPE).o:$(INITCOND_SPEC).f90
 nogsl.o: nogsl.c
-	$(CC) -c nogsl.c
+	$(CC) $(CFLAGS) -c nogsl.c
 gsl_wrapper.o: gsl_wrapper.c
-	$(CC) -c gsl_wrapper.c
+	$(CC) $(CFLAGS) -c gsl_wrapper.c
 gsl_wrapper_r8.o: gsl_wrapper_r8.c
-	$(CC) -c gsl_wrapper_r8.c 
+	$(CC) $(CFLAGS) -c gsl_wrapper_r8.c 
 ## ---------------------------------------------------------------------- #
 ## Automatically generatable dependencies
 ## ---------------------------------------------------------------------- #
