@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.434 2007-08-02 13:02:48 dhruba Exp $
+! $Id: magnetic.f90,v 1.435 2007-08-03 13:30:09 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -239,7 +239,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.434 2007-08-02 13:02:48 dhruba Exp $")
+           "$Id: magnetic.f90,v 1.435 2007-08-03 13:30:09 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -603,8 +603,13 @@ module Magnetic
           scaleH=1.0*sqrt(1+1/beta_const)
           print*, 'init_aa: hydrostatic_magnetic: scaleH=', scaleH
           do m=m1,m2; do n=n1,n2
-            f(l1:l2,m,n,ilnrho)=alog(1.0)-z(n)**2/(2*scaleH**2)
-            rho=exp(f(l1:l2,m,n,ilnrho))
+            if (ldensity_nolog) then
+              f(l1:l2,m,n,ilnrho) = rho0*exp(-0.5*(z(n)/scaleH)**2)
+              rho=f(l1:l2,m,n,ilnrho)
+            else
+              f(l1:l2,m,n,ilnrho) = alog(rho0)-0.5*(z(n)/scaleH)**2
+              rho=exp(f(l1:l2,m,n,ilnrho))
+            endif
             f(l1:l2,m,n,iglobal_by_ext)= &
                 sqrt(2*mu0*1.0**2*rho/beta_const)
             f(l1:l2,m,n,iglobal_jx_ext)= &
