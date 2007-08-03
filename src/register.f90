@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.210 2007-06-29 04:52:53 brandenb Exp $
+! $Id: register.f90,v 1.211 2007-08-03 09:48:31 ajohan Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -63,6 +63,11 @@ module Register
 !
       call mpicomm_init
 !
+!  overwrite datadir from datadir.in, if that exists
+!
+      call get_datadir(datadir)
+      call get_snapdir(datadir_snap)
+!
 !  Set up the ordering of the pencils.
 !
       call setup_mm_nn
@@ -77,6 +82,7 @@ module Register
 !
       ioerr = .true.            ! will be overridden unless we go 911
       if (lroot) then
+        print*, trim(datadir)//'/def_var.pro'
         open(15,FILE=trim(datadir)//'/def_var.pro',ERR=911)
         open(4,FILE=trim(datadir)//'/variables.pro',ERR=911)
         write(4,*) 'close,1'
@@ -130,17 +136,12 @@ module Register
 !
       if (lroot) headt=.true.
 !
-!  overwrite datadir from datadir.in, if that exists
-!
-      call get_datadir(datadir)
-      call get_snapdir(datadir_snap)
-!
 !  Something went wrong. Catches cases that would make mpich 1.x hang,
 !  provided that this is the first attempt to write a file
 !
 
 911   call stop_it_if_any(ioerr, &
-          "Cannot open data/def_var.pro for writing" // &
+          "Cannot open "//datadir//"/def_var.pro for writing" // &
           " -- is data/ visible from root node?")
 !
     endsubroutine register_modules

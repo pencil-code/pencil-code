@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.280 2007-07-28 00:03:24 wlyra Exp $
+! $Id: param_io.f90,v 1.281 2007-08-03 09:48:31 ajohan Exp $
 
 module Param_IO
 
@@ -122,17 +122,29 @@ module Param_IO
 !   2-oct-02/wolf: coded
 !  25-oct-02/axel: default is taken from cdata.f90 where it's defined
 !
+      use Mpicomm
+!
       character (len=*) :: dir
       logical :: exist
 !
-!  check for existence of datadir.in
+!  let root processor check for existence of datadir.in
 !
-      inquire(FILE='datadir.in',EXIST=exist)
-      if (exist) then
-        open(1,FILE='datadir.in',FORM='formatted')
-        read(1,*) dir
-        close(1)
+      if (lroot) then
+        inquire(FILE='datadir.in',EXIST=exist)
+        if (exist) then
+          open(1,FILE='datadir.in',FORM='formatted')
+          read(1,'(A)') dir
+          close(1)
+        endif
       endif
+!
+!  tell other processors whether we need to communicate dir (i.e. datadir)
+!
+      call mpibcast_logical(exist, 1)
+!
+!  let root processor communicate dir (i.e. datadir) to all other processors
+!
+      if (exist) call mpibcast_char(dir, len(dir))
 !
     endsubroutine get_datadir
 !***********************************************************************
