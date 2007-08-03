@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.22 2007-06-03 08:46:20 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.23 2007-08-03 13:33:49 ajohan Exp $
 ;
 ;  Convert positions of particles to a grid density field.
 ;
@@ -8,7 +8,7 @@
 function pc_particles_to_density, xxp, x, y, z, $
     cic=cic, tsc=tsc, fine=fine, normalize=normalize, $
     datadir=datadir, vvp=vvp, vprms=vprms, lscalar_rms=lscalar_rms, $
-    lshear=lshear, quiet=quiet
+    quiet=quiet
 
 COMMON pc_precision, zero, one
 ;
@@ -17,7 +17,6 @@ COMMON pc_precision, zero, one
 default, cic, 0
 default, tsc, 0
 default, lscalar_rms, 0
-default, lshear, 0
 default, quiet, 0
 default, normalize, 0
 ;
@@ -188,22 +187,13 @@ case interpolation_scheme of
 ;  Mean velocity (needed for velocity dispersion).
       if (arg_present(vprms)) then begin
         vvpm[ix,iy,iz,0]  = vvpm[ix,iy,iz,0] + vvp[k,0]
-        if (lshear) then begin
-          vvpm[ix,iy,iz,1]  = vvpm[ix,iy,iz,1]  +(vvp[k,1]-1.5*1.0*xxp[k,0])
-        endif else begin
-          vvpm[ix,iy,iz,1]  = vvpm[ix,iy,iz,1]  + vvp[k,1]
-        endelse
-        vvpm[ix,iy,iz,2]  = vvpm[ix,iy,iz,2]  + vvp[k,2]
-        if (not lscalar_rms) then begin
+        vvpm[ix,iy,iz,1]  = vvpm[ix,iy,iz,1] + vvp[k,1]
+        vvpm[ix,iy,iz,2]  = vvpm[ix,iy,iz,2] + vvp[k,2]
+;        if (not lscalar_rms) then begin
           vvp2m[ix,iy,iz,0] = vvp2m[ix,iy,iz,0] + vvp[k,0]^2
-          if (lshear) then begin
-            vvp2m[ix,iy,iz,1] = $
-                vvp2m[ix,iy,iz,1] +(vvp[k,1]-1.5*1.0*xxp[k, 0])^2
-          endif else begin
-            vvp2m[ix,iy,iz,1] = vvp2m[ix,iy,iz,1] + vvp[k,1]
-          endelse
+          vvp2m[ix,iy,iz,1] = vvp2m[ix,iy,iz,1] + vvp[k,1]^2
           vvp2m[ix,iy,iz,2] = vvp2m[ix,iy,iz,2] + vvp[k,2]^2
-        endif
+;        endif
       endif
 ;
     endfor ; loop over particles
@@ -218,26 +208,26 @@ case interpolation_scheme of
         ii3[*]=j
         vvpm[ii[0,*],ii[1,*],ii[2,*],ii3] = $
             vvpm[ii[0,*],ii[1,*],ii[2,*],ii3]/np[ii[0,*],ii[1,*],ii[2,*]]
-        if (not lscalar_rms) then $
+;        if (not lscalar_rms) then $
             vvp2m[ii[0,*],ii[1,*],ii[2,*],ii3] = $
             vvp2m[ii[0,*],ii[1,*],ii[2,*],ii3]/np[ii[0,*],ii[1,*],ii[2,*]]
       endfor
 ;  Scalar velocity dispersion.
-      if (lscalar_rms) then begin
-        for k=0L,npar-1 do begin
-          ix=ineargrid[k,0] & iy=ineargrid[k,1] & iz=ineargrid[k,2]
-          vprms[ix,iy,iz]=vprms[ix,iy,iz]+ $
-              total((vvp[k,*]-vvpm[ix,iy,iz,*])^2,2)
-        endfor
-        ii=where(np gt 1.0)
-        vprms[ii] = sqrt(vprms[ii]/np[ii])
-      endif else begin
+;      if (lscalar_rms) then begin
+;        for k=0L,npar-1 do begin
+;          ix=ineargrid[k,0] & iy=ineargrid[k,1] & iz=ineargrid[k,2]
+;          vprms[ix,iy,iz]=vprms[ix,iy,iz]+ $
+;              total((vvp[k,*]-vvpm[ix,iy,iz,*])^2,2)
+;        endfor
+;        ii=where(np gt 1.0)
+;        vprms[ii] = sqrt(vprms[ii]/np[ii])
+;      endif else begin
 ;  Vector velocity dispersion.
         vprms=vvp2m-vvpm^2
-        i0=where(vprms lt 0.0)
-        if (i0[0] ne -1) then vprms[i0]=0.0
+;        i0=where(vprms lt 0.0)
+;        if (i0[0] ne -1) then vprms[i0]=0.0
         vprms=sqrt(vprms)
-      endelse
+;      endelse
     endif
 ;
   end ; 'ngp'
