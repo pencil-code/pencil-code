@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.107 2007-08-03 10:32:07 dhruba Exp $
+! $Id: forcing.f90,v 1.108 2007-08-03 15:35:41 dhruba Exp $
 
 module Forcing
 
@@ -80,7 +80,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.107 2007-08-03 10:32:07 dhruba Exp $")
+           "$Id: forcing.f90,v 1.108 2007-08-03 15:35:41 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -644,7 +644,7 @@ module Forcing
       real, dimension(nx,3,3) :: psi_ij,Tij
       real, dimension (mx,my,mz,mfarray) :: f
       integer ::l,emm,iread,j,jf
-      real :: a_ell,psi_ell_m,anum,adenom,jlm,ylm,rphase,ffactor,alphar
+      real :: a_ell,psi_ell_m,anum,adenom,jlm,ylm,rphase,fnorm,alphar
       real :: rz, Plmreal, Plmimag 
 !
       if (ifirst==0) then
@@ -692,7 +692,8 @@ module Forcing
       rphase = PI*rphase
       ee(1) = (1-rz*rz)*cos(rphase)
       ee(2) = (1-rz*rz)*sin(rphase)
-      ffactor = 1.e-3
+      fnorm = cs0*sqrt(Bessel_alpha*cs0)
+      write(*,*) 'dhruba:',fnorm*sqrt(dt),dt
       do n=n1,n2
         do m=m1,m2
           psi(:,1) = psif(l1:l2,m,n)*ee(1)
@@ -706,7 +707,8 @@ module Forcing
           capitalH = capitalT + capitalS
           do j=1,3
             jf = iuu+j-1
-            f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ ffactor*capitalH(:,j)
+! stochastic euler scheme of integration 
+            f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ fnorm*capitalH(:,j)*sqrt(dt)
           enddo
         enddo
       enddo
