@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.323 2007-08-02 13:02:48 dhruba Exp $
+! $Id: sub.f90,v 1.324 2007-08-03 20:08:57 dobler Exp $
 
 module Sub
 
@@ -1705,6 +1705,7 @@ module Sub
 !
       use Cdata
       use Deriv
+      use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz) :: psif
       real, dimension(3) :: ee
@@ -1716,6 +1717,10 @@ module Sub
       intent(in) :: psif
       intent(out) :: g
 !
+! [wd 03-aug-2007:] abort until use of uninitialized valu gets fixed
+!
+k=17
+call fatal_error("gij_psi", "k is used, but not set")
       k1=k-1
       do i=1,3
         do j=1,3
