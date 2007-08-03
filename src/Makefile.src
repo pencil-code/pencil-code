@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.309 2007-08-02 13:02:48 dhruba Exp $
+### $Id: Makefile.src,v 1.310 2007-08-03 10:32:07 dhruba Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -17,7 +17,7 @@ IO             =   io_dist
 FOURIER        = nofourier
 POWER          = nopower_spectrum
 DEBUG          =   debug_c
-GSL            =  nogsl
+GSL            = nogsl
 
 HYDRO          = nohydro
 VISCOSITY      =   viscosity

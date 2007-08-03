@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.106 2007-08-02 13:02:48 dhruba Exp $
+! $Id: forcing.f90,v 1.107 2007-08-03 10:32:07 dhruba Exp $
 
 module Forcing
 
@@ -80,7 +80,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.106 2007-08-02 13:02:48 dhruba Exp $")
+           "$Id: forcing.f90,v 1.107 2007-08-03 10:32:07 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -643,7 +643,7 @@ module Forcing
       real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
       real, dimension(nx,3,3) :: psi_ij,Tij
       real, dimension (mx,my,mz,mfarray) :: f
-      integer ::l,ell,emm,iread,j,jf
+      integer ::l,emm,iread,j,jf
       real :: a_ell,psi_ell_m,anum,adenom,jlm,ylm,rphase,ffactor,alphar
       real :: rz, Plmreal, Plmimag 
 !
@@ -661,8 +661,8 @@ module Forcing
             do m=m1,m2
               do l=l1,l2
                 do emm=-Legendrel,Legendrel
-                  call sp_bessely_l(anum,ell,Bessel_alpha*x(l1))
-                  call sp_besselj_l(adenom,ell,Bessel_alpha*x(l1))
+                  call sp_bessely_l(anum,Legendrel,Bessel_alpha*x(l1))
+                  call sp_besselj_l(adenom,Legendrel,Bessel_alpha*x(l1))
                   a_ell = -anum/adenom
                   alphar = Bessel_alpha*x(l)
                   call sp_besselj_l(jlm,Legendrel,alphar)
@@ -679,6 +679,7 @@ module Forcing
             enddo
           enddo
         ifirst = ifirst+1
+        write(*,*) 'dhruba: first time in hel_sp'
       else
       endif
 ! ----- Now calculate the force from the potential and add this to
