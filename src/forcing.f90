@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.108 2007-08-03 15:35:41 dhruba Exp $
+! $Id: forcing.f90,v 1.109 2007-08-06 07:00:26 brandenb Exp $
 
 module Forcing
 
@@ -80,7 +80,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.108 2007-08-03 15:35:41 dhruba Exp $")
+           "$Id: forcing.f90,v 1.109 2007-08-06 07:00:26 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -636,6 +636,7 @@ module Forcing
       use Sub
       use EquationOfState, only: cs0
       use Hydro
+      use SpecialFunctions
 !
       real :: phase,ffnorm,irufm
       integer, save :: ifirst
