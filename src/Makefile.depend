@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.66 2007-08-03 05:20:37 ajohan Exp $
+### $Id: Makefile.depend,v 1.67 2007-08-06 21:06:37 dobler Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -218,7 +218,7 @@ $(MPICOMM_OBJ):         mpicomm.h         $(MPICOMM_SRC)         $(CDATA_OBJ)
 $(GLOBAL_OBJ):          global.h          $(GLOBAL_SRC)          $(COMMON_DEPS) $(IO_OBJ)
 $(VISCOSITY_OBJ):       viscosity.h       $(VISCOSITY_SRC)       $(CDATA_OBJ)   $(CPARAM_OBJ) $(SUB_OBJ) $(DENSITY_OBJ) $(INTERSTELLAR_OBJ)
 $(SHEAR_OBJ):           shear.h           $(SHEAR_SRC)           $(COMMON_DEPS) $(CPARAM_OBJ) $(HYDRO_OBJ)
-$(GRAVITY_OBJ):         gravity.h         $(GRAVITY_SRC)         $(COMMON_DEPS) $(GLOBAL_OBJ)
+$(GRAVITY_OBJ):         gravity.h         $(GRAVITY_SRC)         $(COMMON_DEPS) $(GLOBAL_OBJ) $(SHARED_VARIABLES_OBJ)
 $(SELFGRAVITY_OBJ):     selfgravity.h     $(SELFGRAVITY_SRC)     $(CDATA_OBJ)   $(SUB_OBJ) $(POISSON_OBJ) $(PARTICLES_MAIN_OBJ) $(SHARED_VARIABLES_OBJ)
 $(POISSON_OBJ):         poisson.h         $(POISSON_SRC)         $(CDATA_OBJ)   $(FOURIER_OBJ) $(SUB_OBJ)
 $(FORCING_OBJ):         forcing.h         $(FORCING_SRC)         $(COMMON_DEPS) $(HYDRO_OBJ)
@@ -237,7 +237,7 @@ $(NEUTRALVELOCITY_OBJ): neutralvelocity.h $(NEUTRALVELOCITY_SRC) $(COMMON_DEPS) 
 $(NEUTRALDENSITY_OBJ):  neutraldensity.h  $(NEUTRALDENSITY_SRC)  $(COMMON_DEPS) $(INITCOND_OBJ) $(NEUTRALVELOCITY_OBJ)
 $(TESTFIELD_OBJ):       testfield.h       $(TESTFIELD_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(IO_OBJ) $(HYDRO_OBJ) $(DENSITY_OBJ)
 $(INTERSTELLAR_OBJ):    interstellar.h    $(INTERSTELLAR_SRC)    $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(EOS_OBJ)
-$(EOS_OBJ):             eos.h             $(EOS_SRC)             $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(GRAVITY_OBJ)
+$(EOS_OBJ):             eos.h             $(EOS_SRC)             $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(GRAVITY_OBJ) $(FOURIER_OBJ)
 $(IO_OBJ):              io.h              $(IO_SRC)              $(COMMON_DEPS) $(GENERAL_OBJ) $(SUB_OBJ)
 $(TIMEAVG_OBJ):         timeavg.h         $(TIMEAVG_SRC)         $(COMMON_DEPS) $(IO_OBJ)
 $(POWER_OBJ):           power_spectrum.h  $(POWER_SRC)           $(COMMON_DEPS) $(GENERAL_OBJ) $(FOURIER_OBJ)
