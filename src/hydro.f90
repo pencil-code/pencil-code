@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.365 2007-07-23 11:45:38 wlyra Exp $
+! $Id: hydro.f90,v 1.366 2007-08-07 08:04:31 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -98,20 +98,22 @@ module Hydro
   logical :: lremove_mean_flow=.false.
   logical :: lalways_use_gij_etc=.false.
   character (len=labellen) :: iforcing_continuous_uu='ABC'
-  character (len=labellen) :: prof_diffrot='diffrot'
+  character (len=labellen) :: uuprof='nothing'
+  real :: utop,ubot
 !
 ! geodynamo
   namelist /hydro_run_pars/ &
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym,tau_damp_ruzm,tau_diffrot1, &
-       ampl1_diffrot,ampl2_diffrot,prof_diffrot, &
+       ampl1_diffrot,ampl2_diffrot,uuprof, &
        xexp_diffrot,kx_diffrot,lremove_mean_momenta,lremove_mean_flow, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
        lforcing_continuous_uu,iforcing_continuous_uu, &
        lembed,k1_ff,ampl_ff,width_ff_uu,x1_ff_uu,x2_ff_uu, &
+       utop,ubot, & 
        lprecession, omega_precession, lshear_rateofstrain, &
        lalways_use_gij_etc, &
        luut_as_aux
@@ -301,7 +303,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.365 2007-07-23 11:45:38 wlyra Exp $")
+           "$Id: hydro.f90,v 1.366 2007-08-07 08:04:31 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1169,7 +1171,7 @@ module Hydro
 !
 !  adding differential rotation via a frictional term
 !
-      if (tau_diffrot1/=0) call impose_profile_diffrot(f,df)
+      if (tau_diffrot1/=0) call impose_profile_diffrot(f,df,uuprof)
 !
 !  Possibility to damp mean x momentum, ruxm, to zero.
 !  This can be useful in situations where a mean flow is generated.
@@ -2719,7 +2721,7 @@ module Hydro
 
     endsubroutine remove_mean_flow
 !***********************************************************************
-    subroutine impose_profile_diffrot(f,df)
+    subroutine impose_profile_diffrot(f,df,prof_diffrot)
 !
 !  forcing of differential rotation with a -(1/tau)*(u-uref) method
 !
@@ -2728,10 +2730,11 @@ module Hydro
       use Mpicomm
       use Cdata
       use Sub, only: step
-
+      real :: slope
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: prof_amp1,prof_amp2
+      character (len=labellen) :: prof_diffrot 
 !
       select case(prof_diffrot)
 !
@@ -2755,6 +2758,12 @@ module Hydro
       prof_amp2=ampl2_diffrot*step(x(l1:l2),x2_ff_uu,width_ff_uu)
       df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
         -prof_amp1*(1.5-7.5*costh(m)*costh(m))+prof_amp2)
+
+      case('radial_uniform_shear')
+       slope = (utop - ubot)/(x(l2)-x(l1))
+       prof_amp1=  slope*x(l1:l2)+(ubot*x(l2)- utop*x(l1))/(x(l2)-x(l1)) 
+       df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
+             - prof_amp1)
 !
 !  no profile matches
 !
