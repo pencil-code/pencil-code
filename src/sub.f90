@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.324 2007-08-03 20:08:57 dobler Exp $
+! $Id: sub.f90,v 1.325 2007-08-08 11:11:35 dhruba Exp $
 
 module Sub
 
@@ -1712,16 +1712,11 @@ module Sub
       real, dimension(nx,3) :: pp
       real, dimension (nx,3,3) :: g
       real, dimension (nx) :: tmp
-      integer :: i,j,k,k1,nder
+      integer :: i,j
 !
       intent(in) :: psif
       intent(out) :: g
 !
-! [wd 03-aug-2007:] abort until use of uninitialized valu gets fixed
-!
-k=17
-call fatal_error("gij_psi", "k is used, but not set")
-      k1=k-1
       do i=1,3
         do j=1,3
             call der(psif*ee(i),tmp,j)

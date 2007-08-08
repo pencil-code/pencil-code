@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.20 2007-06-25 06:14:43 brandenb Exp $
+! $Id: grid.f90,v 1.21 2007-08-08 11:11:34 dhruba Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -122,6 +122,7 @@ module Grid
         z00=z0
         if (lshift_origin(3)) z00=z0+.5*dz
       endif
+
 
       do i=1,mx; xi1(i)=i-nghost-1+ipx*nx; enddo
       do i=1,my; xi2(i)=i-nghost-1+ipy*ny; enddo

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.435 2007-08-03 13:30:09 ajohan Exp $
+! $Id: magnetic.f90,v 1.436 2007-08-08 11:11:34 dhruba Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -198,6 +198,7 @@ module Magnetic
   integer :: idiag_armr=0,idiag_apmr=0,idiag_azmr=0
   integer :: idiag_bxmx=0,idiag_bymy=0
   integer :: idiag_mflux_x=0,idiag_mflux_y=0,idiag_mflux_z=0
+  integer :: idiag_bmxy_rms=0
 
   contains
 
@@ -239,7 +240,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.435 2007-08-03 13:30:09 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.436 2007-08-08 11:11:34 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2351,6 +2352,7 @@ module Magnetic
         idiag_armr=0; idiag_apmr=0; idiag_azmr=0
         idiag_bxmx=0; idiag_bymy=0
         idiag_mflux_x=0; idiag_mflux_y=0; idiag_mflux_z=0
+        idiag_bmxy_rms=0
 !
       endif
 !
@@ -2423,6 +2425,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'Bresrms',idiag_Bresrms)
         call parse_name(iname,cname(iname),cform(iname),'Rmrms',idiag_Rmrms)
         call parse_name(iname,cname(iname),cform(iname),'jfm',idiag_jfm)
+        call parse_name(iname,cname(iname),cform(iname),'bmxy_rms',idiag_bmxy_rms)
 !
       enddo
 !
@@ -2613,6 +2616,7 @@ module Magnetic
         write(3,*) 'iax=',iax
         write(3,*) 'iay=',iay
         write(3,*) 'iaz=',iaz
+        write(3,*) 'idiag_bmxy_rms',idiag_bmxy_rms
       endif
 !
     endsubroutine rprint_magnetic
@@ -2708,7 +2712,7 @@ module Magnetic
       logical,save :: first=.true.
       real, dimension(nx) :: bymx,bzmx
       real, dimension(ny,nprocy) :: bxmy,bzmy
-      real :: bmx,bmy,bmz
+      real :: bmx,bmy,bmz,bxmxy,bymxy,bzmxy,bmxy_rms
       integer :: l,j
 !
 !  For vector output (of bb vectors) we need brms
@@ -2725,7 +2729,7 @@ module Magnetic
 
       if (.not.lroot) return
 !
-!  Magnetic energy in vertically averaged field
+!  Magnetic energy in vertically averaged field!
 !  The bymxy and bzmxy must have been calculated,
 !  so they are present on the root processor.
 !
@@ -2746,7 +2750,6 @@ module Magnetic
         endif
         call save_name(bmx,idiag_bmx)
       endif
-!
 !  similarly for bmy
 !
       if (idiag_bmy/=0) then
@@ -2788,7 +2791,33 @@ module Magnetic
         endif
         call save_name(bmz,idiag_bmz)
       endif
+!! Magnetic energy in z averaged field 
+!  The bxmxy, bymxy and bzmxy must have been calculated,
+!  so they are present on the root processor.
 !
+      if (idiag_bmxy_rms/=0) then
+        if (idiag_bxmxy==0.or.idiag_bymxy==0.or.idiag_bzmxy==0) then
+          if (first) print*,"calc_mfield:                  WARNING"
+          if (first) print*, &
+                  "calc_mfield: NOTE: to get bmxy_rms, bymxy and bzmxy must also be set in zaver"
+          if (first) print*, &
+                  "calc_mfield:       We proceed, but you'll get bmxy_rms=0"
+          bmxy_rms=0.
+        else
+          bmxy_rms=0.
+          do l=1,nx
+            do m=1,ny
+              bxmxy=sum(fnamexy(l,m,:,idiag_bxmxy))/nprocy
+              bymxy=sum(fnamexy(l,m,:,idiag_bymxy))/nprocy
+              bzmxy=sum(fnamexy(l,m,:,idiag_bzmxy))/nprocy
+              bmxy_rms = bmxy_rms+bxmxy**2+bymxy**2+bzmxy**2
+            enddo
+          enddo
+          bmxy_rms = bmxy_rms/(nx*ny)
+        endif
+        call save_name(bmxy_rms,idiag_bmxy_rms)
+      endif
+
       first = .false.
     endsubroutine calc_mfield
 !***********************************************************************
