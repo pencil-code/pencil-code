@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.207 2007-07-06 16:59:37 brandenb Exp $
+! $Id: initcond.f90,v 1.208 2007-08-09 07:26:34 dobler Exp $
 
 module Initcond
 
@@ -2241,6 +2241,9 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl
 !
+      intent(in)    :: ampl,i1,i2
+      intent(inout) :: f
+!
 !  set gaussian random noise vector
 !
       if (ampl==0) then
@@ -2275,6 +2278,9 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl
 !
+      intent(in)    :: ampl,i
+      intent(inout) :: f
+!
 !  set gaussian random noise vector
 !
       if (ampl==0) then
@@ -2306,6 +2312,9 @@ module Initcond
       real, dimension (mx,my,mz) :: r,p,tmp,ampl
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      intent(in)    :: ampl,i1,i2
+      intent(inout) :: f
+!
       if ((ip<=8).and.lroot) print*,'GAUNOISE_PROF_VECT: i1,i2=',i1,i2
       do i=i1,i2
         if (modulo(i-i1,2)==0) then
@@ -2332,6 +2341,9 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
+      intent(in)    :: ampl,i
+      intent(inout) :: f
+!
       if ((ip<=8).and.lroot) print*,'GAUNOISE_PROF_SCAL: i=',i
       call gaunoise_prof_vect(ampl,f,i,i)
 !
@@ -2352,7 +2364,7 @@ module Initcond
       real :: ampl,dr
       integer :: i1,i2
 !
-      intent(in) :: ampl,rr,i1,i2
+      intent(in)  :: ampl,rr,i1,i2
       intent(out) :: prof,f
 !
 !  set up profile
@@ -2382,12 +2394,11 @@ module Initcond
       real :: ampl
       integer :: i
 !
-      !intent(in) :: ampl,rr,i
-      !intent(out) :: prof,f
+      intent(in) :: ampl,rr,i
+      intent(out) :: prof,f
 !
-      !call gaunoise_rprof_vect(ampl,rr,prof,f,i,i)
+      call gaunoise_rprof_vect(ampl,rr,prof,f,i,i)
 !
-    if (NO_WARN) print*,ampl,rr,prof,f,i !(to keep compiler quiet)
     endsubroutine gaunoise_rprof_scal
 !***********************************************************************
     subroutine trilinear(ampl,f,ivar,xx,yy,zz)
