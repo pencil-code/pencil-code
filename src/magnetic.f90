@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.437 2007-08-09 11:09:15 dhruba Exp $
+! $Id: magnetic.f90,v 1.438 2007-08-09 11:14:16 dhruba Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -240,7 +240,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.437 2007-08-09 11:09:15 dhruba Exp $")
+           "$Id: magnetic.f90,v 1.438 2007-08-09 11:14:16 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2799,7 +2799,7 @@ module Magnetic
         if (idiag_bxmxy==0.or.idiag_bymxy==0.or.idiag_bzmxy==0) then
           if (first) print*,"calc_mfield:                  WARNING"
           if (first) print*, &
-                  "calc_mfield: NOTE: to get bmxy_rms, bymxy and bzmxy must also be set in zaver"
+                  "calc_mfield: NOTE: to get bmxy_rms, bxmxy, bymxy and bzmxy must also be set in zaver"
           if (first) print*, &
                   "calc_mfield:       We proceed, but you'll get bmxy_rms=0"
           bmxy_rms=0.

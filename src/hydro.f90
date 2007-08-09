@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.366 2007-08-07 08:04:31 dhruba Exp $
+! $Id: hydro.f90,v 1.367 2007-08-09 11:14:16 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -99,7 +99,7 @@ module Hydro
   logical :: lalways_use_gij_etc=.false.
   character (len=labellen) :: iforcing_continuous_uu='ABC'
   character (len=labellen) :: uuprof='nothing'
-  real :: utop,ubot
+  real :: utop=0.,ubot=0.,omega_out=0.,omega_in=0.
 !
 ! geodynamo
   namelist /hydro_run_pars/ &
@@ -113,7 +113,7 @@ module Hydro
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
        lforcing_continuous_uu,iforcing_continuous_uu, &
        lembed,k1_ff,ampl_ff,width_ff_uu,x1_ff_uu,x2_ff_uu, &
-       utop,ubot, & 
+       utop,ubot,omega_out,omega_in, & 
        lprecession, omega_precession, lshear_rateofstrain, &
        lalways_use_gij_etc, &
        luut_as_aux
@@ -303,7 +303,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.366 2007-08-07 08:04:31 dhruba Exp $")
+           "$Id: hydro.f90,v 1.367 2007-08-09 11:14:16 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2730,7 +2730,7 @@ module Hydro
       use Mpicomm
       use Cdata
       use Sub, only: step
-      real :: slope
+      real :: slope,uinn,uext
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: prof_amp1,prof_amp2
@@ -2760,8 +2760,10 @@ module Hydro
         -prof_amp1*(1.5-7.5*costh(m)*costh(m))+prof_amp2)
 
       case('radial_uniform_shear')
-       slope = (utop - ubot)/(x(l2)-x(l1))
-       prof_amp1=  slope*x(l1:l2)+(ubot*x(l2)- utop*x(l1))/(x(l2)-x(l1)) 
+       uinn = omega_in*x(l1)
+       uext = omega_out*x(l2)
+       slope = (uext - uinn)/(x(l2)-x(l1))
+       prof_amp1=  slope*x(l1:l2)+(uinn*x(l2)- uext*x(l1))/(x(l2)-x(l1)) 
        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
              - prof_amp1)
 !
