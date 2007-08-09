@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.68 2007-08-09 08:46:14 dobler Exp $
+### $Id: Makefile.depend,v 1.69 2007-08-09 09:24:14 dobler Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -242,7 +242,7 @@ $(IO_OBJ):              io.h              $(IO_SRC)              $(COMMON_DEPS) 
 $(TIMEAVG_OBJ):         timeavg.h         $(TIMEAVG_SRC)         $(COMMON_DEPS) $(IO_OBJ)
 $(POWER_OBJ):           power_spectrum.h  $(POWER_SRC)           $(COMMON_DEPS) $(GENERAL_OBJ) $(FOURIER_OBJ)
 $(STRUCT_FUNC_OBJ):     struct_func.h     $(STRUCT_FUNC_SRC)     $(COMMON_DEPS) $(GENERAL_OBJ)
-$(SPECIAL_OBJ):         special.h         $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(GLOBAL_OBJ)
+$(SPECIAL_OBJ):         special.h         $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_SPEC_OBJ) $(GLOBAL_OBJ)
 
 #
 #  Particle modules
