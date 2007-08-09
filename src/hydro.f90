@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.367 2007-08-09 11:14:16 dhruba Exp $
+! $Id: hydro.f90,v 1.368 2007-08-09 11:28:24 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -303,7 +303,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.367 2007-08-09 11:14:16 dhruba Exp $")
+           "$Id: hydro.f90,v 1.368 2007-08-09 11:28:24 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2758,7 +2758,10 @@ module Hydro
       prof_amp2=ampl2_diffrot*step(x(l1:l2),x2_ff_uu,width_ff_uu)
       df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
         -prof_amp1*(1.5-7.5*costh(m)*costh(m))+prof_amp2)
-
+!
+!  radial_uniform_shear
+!  uphi = slope*x + uoffset
+!
       case('radial_uniform_shear')
        uinn = omega_in*x(l1)
        uext = omega_out*x(l2)
