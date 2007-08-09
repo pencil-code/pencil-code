@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.312 2007-08-06 14:12:32 dhruba Exp $
+### $Id: Makefile.src,v 1.313 2007-08-09 07:39:13 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -641,6 +641,15 @@ LD_FFTW2=
 #CFLAGS=-DFUNDERSC=1 -O3 #(louhi)
 #LD_MPI= #(louhi)
 ##
+## Wolfgang's laptop frenesi (g95 + Open MPI, August 2007)
+##
+#FC=g95 -fno-second-underscore -std=f95 #(frenesi)
+#FFLAGS=-O3 #(frenesi)
+#FFLAGS_SLOPPY=$(FFLAGS) -Wno=154,155 #(frenesi)
+#CC=gcc #(frenesi)
+#CFLAGS=-O3 -DFUNDERSC=1 #(frenesi)
+#LD_MPI=-pthread -I/usr/lib -lmpi_f90 -lmpi -lorte -lopal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl
+#LIBMPISUFFIX=_#(frenesi)
 
 ## Darwin:
 ## Power Macintosh
