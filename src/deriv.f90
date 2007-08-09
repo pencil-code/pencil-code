@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.50 2007-08-02 13:02:48 dhruba Exp $
+! $Id: deriv.f90,v 1.51 2007-08-09 07:38:30 dobler Exp $
 
 module Deriv
 
@@ -1325,6 +1325,9 @@ module Deriv
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: df
       integer :: j,k,l
+!
+      intent(in)  :: f,uu,k,j
+      intent(out) :: df
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der_upwind1st,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der_upwind1st,j,1) + 1 !DERCOUNT
