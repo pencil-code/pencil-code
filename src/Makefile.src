@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.313 2007-08-09 07:39:13 dobler Exp $
+### $Id: Makefile.src,v 1.314 2007-08-10 05:17:27 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -648,9 +648,9 @@ LD_FFTW2=
 #FFLAGS_SLOPPY=$(FFLAGS) -Wno=154,155 #(frenesi)
 #CC=gcc #(frenesi)
 #CFLAGS=-O3 -DFUNDERSC=1 #(frenesi)
-#LD_MPI=-pthread -I/usr/lib -lmpi_f90 -lmpi -lorte -lopal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl
+#LD_MPI=-pthread -I/usr/lib -lmpi_f90 -lmpi -lorte -lopal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(frenesi)
 #LIBMPISUFFIX=_#(frenesi)
-
+##
 ## Darwin:
 ## Power Macintosh
 ##
