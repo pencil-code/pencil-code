@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.314 2007-08-10 05:17:27 brandenb Exp $
+### $Id: Makefile.src,v 1.315 2007-08-10 06:13:59 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -415,10 +415,10 @@ LD_FFTW2=
 ##
 ## Axel's laptop (nl6, 2.0 GHz)
 ##
-#FC=g95 -fsecond-underscore#(nl6)
-#FFLAGS=-O4 #(nl6)
-#LD_MPI=#(nl6)
-#CFLAGS=-DFUNDERSC=2 #(nl6)
+##FC=g95 -fsecond-underscore#(nl6)
+##FFLAGS=-O4 #(nl6)
+##LD_MPI=#(nl6)
+##CFLAGS=-DFUNDERSC=2 #(nl6)
 ##
 #FC=ifort #(nl6)
 #FFLAGS=-O3 -I/usr/include/lam #(nl6)
@@ -498,8 +498,8 @@ LD_FFTW2=
 ## Hades & Triton -- Wlad's laptops
 ##
 #FC =/opt/intel/fc/10.0.023/bin/ifort #(hades|triton)
-#F77=$(FC)
-#CC = gcc
+#F77=$(FC) #(hades|triton)
+#CC = gcc #(hades|triton)
 #FC_HOME=/opt/intel/fc/10.0.023 #(hades|triton)
 #MPI_HOME=/usr/local#(hades|triton)
 #FFLAGS=-O3 -I$(MPI_HOME)/include #(hades|triton)
@@ -556,6 +556,7 @@ LD_FFTW2=
 ##
 ## CSC cluster - (Espoo, Finland)
 ## www.csc.fi
+##
 #FC=mpif90 #(sepeli)
 #F90=$(FC) #(sepeli)
 #CC=mpicc #(sepeli)
@@ -565,6 +566,7 @@ LD_FFTW2=
 ##
 ## CSC cluster Murska - (Espoo, Finland)
 ## www.csc.fi
+##
 #FC=mpif90 #(c[0-9][0-9]*)
 #F90=$(FC) #(c[0-9][0-9]*)
 #CC=mpicc #(c[0-9][0-9]*)
@@ -572,9 +574,9 @@ LD_FFTW2=
 #CFLAGS=-DFUNDERSC=1 -O3 #(c[0-9][0-9]*)
 #LD_MPI= #(c[0-9][0-9]*)
 ##
-##
 ## Uppmax cluster - (Uppsala)
 ## www.uppmax.uu.se/systems/ra
+##
 #FC=/opt/openmpi/1.2pgi/bin/mpif90   #(is[0-9]+)
 #CC=mpicc    #(is[0-9]+)
 #FFLAGS=-O3  #(is[0-9]+)
@@ -583,7 +585,7 @@ LD_FFTW2=
 #LD_MPI=-I$(MPI_HOME)/include -L$(MPI_HOME)/lib -lmpi -lmpi_f90 #(is[0-9]+)
 ##
 ## RA cluster at uppmax 
-#### www.uppmax.uu.se/systems/ra/ra-cluster
+## www.uppmax.uu.se/systems/ra/ra-cluster
 ##
 #FC=mpif90 #(ra[1-99]*)
 #CC=mpicc  #(ra[1-99]*)
@@ -616,20 +618,19 @@ LD_FFTW2=
 #FFLAGS=-O3 #(soleil)
 #LD_MPI= -lmpi #(soleil)
 ##
-##Dhruba on maths.qmul cluster
+## Dhruba on maths.qmul cluster
 ##
 #FC=/home/dhruba/mpich/bin/mpif90 -f90=/home/dhruba/bin/g95 -fno-second-underscore  #(cluster.maths.qmul.ac.uk)
 #FFLAGS= -I/home/dhruba/mpich/include/ #(cluster.maths.qmul.ac.uk)
 #CC=/home/dhruba/mpich/bin/mpicc #(cluster.maths.qmul.ac.uk)
 #LD_MPI = -lmpich #(cluster.maths.qmul.ac.uk) 
 ##
-##Dhruba on hyades.qmul cluster
+## Dhruba on hyades.qmul cluster
 ##
 #FC=/home/dhruba/mpich2/bin/mpif90 -f90=/home/dhruba/bin/g95 -fno-second-underscore #(hyades.maths.qmul.ac.uk)
 #FFLAGS= -I/home/dhruba/mpich2/include/ #(hyades.maths.qmul.ac.uk)
 #CC=/home/dhruba/mpich2/bin/mpicc #(hyades.maths.qmul.ac.uk)
 #LD_MPI = -L/home/dhruba/mpich2/lib/ -lmpich #(hyades.maths.qmul.ac.uk) 
-##
 ##
 ## CrayXT4 - (Espoo, Finland)
 ## 1012 Dual-core 2.6GHz Opterons
@@ -650,6 +651,7 @@ LD_FFTW2=
 #CFLAGS=-O3 -DFUNDERSC=1 #(frenesi)
 #LD_MPI=-pthread -I/usr/lib -lmpi_f90 -lmpi -lorte -lopal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(frenesi)
 #LIBMPISUFFIX=_#(frenesi)
+
 ##
 ## Darwin:
 ## Power Macintosh
