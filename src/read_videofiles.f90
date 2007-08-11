@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.24 2007-08-11 10:04:51 brandenb Exp $
+! $Id: read_videofiles.f90,v 1.25 2007-08-11 14:32:25 reza Exp $
 
 !***********************************************************************
       program rvid_box
@@ -116,7 +116,8 @@ print*,'ipz_top,ipz_bottom=',ipz_top,ipz_bottom
 !
       ipz=ipz_top
       do ipy=0,nprocy-1
-        iproc=ipy+nprocy*ipz
+      do ipx=0,nprocx-1
+        iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
         call chn(iproc,chproc,'rvid_box: top xy')
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.Xy')
@@ -134,6 +135,7 @@ print*,'ipz_top,ipz_bottom=',ipz_top,ipz_bottom
         if(eof) goto 999
         xy2(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy2_loc
       enddo
+      enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err
       if(.not.err_timestep) then
@@ -148,7 +150,8 @@ print*,'ipz_top,ipz_bottom=',ipz_top,ipz_bottom
 !
       ipz=ipz_bottom
       do ipy=0,nprocy-1
-        iproc=ipy+nprocy*ipz
+      do ipx=0,nprocx-1
+        iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
         call chn(iproc,chproc,'rvid_box: bottom xy')
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.xy')
@@ -166,6 +169,7 @@ print*,'ipz_top,ipz_bottom=',ipz_top,ipz_bottom
         if(eof) goto 999
         xy(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy_loc
       enddo
+      enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err_timestep.or.err
       if(.not.err_timestep) then
@@ -180,7 +184,8 @@ print*,'ipz_top,ipz_bottom=',ipz_top,ipz_bottom
 !
       ipy=ipy_front
       do ipz=0,nprocz-1
-        iproc=ipy+nprocy*ipz
+      do ipx=0,nprocx-1
+        iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
         call chn(iproc,chproc,'rvid_box: front xz')
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.xz')
@@ -198,6 +203,7 @@ print*,'ipz_top,ipz_bottom=',ipz_top,ipz_bottom
         if(eof) goto 999
         xz(1+ipx*nx:nx+ipx*nx,1+ipz*nz:nz+ipz*nz)=xz_loc
       enddo
+      enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err_timestep.or.err
       if(.not.err_timestep) then
@@ -208,11 +214,12 @@ print*,'ipz_top,ipz_bottom=',ipz_top,ipz_bottom
       endif
 !
 !  Left side yz-plane:
-!  need data where ipx=0 (doesn't matter: we have always nprocx=1)
+!  need data where ipx=0
 !
+      ipx=0
       do ipz=0,nprocz-1
       do ipy=0,nprocy-1
-        iproc=ipy+nprocy*ipz
+        iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
         call chn(iproc,chproc,'rvid_box: left yz')
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.yz')
