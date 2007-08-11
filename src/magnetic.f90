@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.440 2007-08-11 08:11:56 brandenb Exp $
+! $Id: magnetic.f90,v 1.441 2007-08-11 21:03:52 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -240,7 +240,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.440 2007-08-11 08:11:56 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.441 2007-08-11 21:03:52 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -573,6 +573,7 @@ module Magnetic
         case('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,yy,ky_aa(j),mu0)
         case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
         case('Alfven-xy'); call alfven_xy(amplaa(j),f,iuu,iaa,xx,yy,kx_aa(j),ky_aa(j))
+        case('Alfven-xz'); call alfven_xz(amplaa(j),f,iuu,iaa,xx,zz,kx_aa(j),kz_aa(j))
         case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,xx,yy,rmode)
         case('Alfven-zconst'); call alfven_zconst(f,xx,yy,zmode)
         case('Alfven-rz'); call alfven_rz(amplaa(j),f,xx,yy,rmode)
@@ -2927,6 +2928,29 @@ module Magnetic
       f(:,:,:,iaa+1)=-ampl*sin(kx*xx+ky*yy)*sqrt(mu0)/om*B_ext(1)
 !
     endsubroutine alfven_xy
+!***********************************************************************
+    subroutine alfven_xz(ampl,f,iuu,iaa,xx,zz,kx,kz)
+!
+!  Alfven wave propagating in the xz-direction; can be used in 2-d runs.
+!  uz = cos(kx*x+kz*z-ot), for B0=(1,1,0) and rho=1.
+!  Ax = sin(kx*x+kz*z-ot),
+!  Az = sin(kx*x+kz*z-ot),
+!
+!  16-jun-07/axel: adapted from alfven_xy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz)         :: xx,zz
+      real                               :: ampl,kx,kz,mu0=1.,om
+      integer                            :: iuu,iaa
+!
+!  set ux, Ax, and Az
+!
+      om=B_ext(1)*kx+B_ext(3)*kz
+      f(:,:,:,iuu+2)=+ampl*cos(kx*xx+kz*zz)
+      f(:,:,:,iaa+0)=+ampl*sin(kx*xx+kz*zz)*sqrt(mu0)/om*B_ext(2)
+      f(:,:,:,iaa+2)=-ampl*sin(kx*xx+kz*zz)*sqrt(mu0)/om*B_ext(1)
+!
+    endsubroutine alfven_xz
 !***********************************************************************
     subroutine alfven_rphi(B0,f,xx,yy,mode)
 !

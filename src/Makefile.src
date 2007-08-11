@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.315 2007-08-10 06:13:59 brandenb Exp $
+### $Id: Makefile.src,v 1.316 2007-08-11 21:03:52 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -416,6 +416,7 @@ LD_FFTW2=
 ## Axel's laptop (nl6, 2.0 GHz)
 ##
 ##FC=g95 -fsecond-underscore#(nl6)
+##FC=g95 -fsecond-underscore -freal=nan -finteger=-2147483648 -fbounds-check #(nl6)
 ##FFLAGS=-O4 #(nl6)
 ##LD_MPI=#(nl6)
 ##CFLAGS=-DFUNDERSC=2 #(nl6)

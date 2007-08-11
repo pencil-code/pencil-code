@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.168 2007-06-25 05:49:14 brandenb Exp $
+! $Id: start.f90,v 1.169 2007-08-11 21:03:52 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -96,7 +96,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.168 2007-06-25 05:49:14 brandenb Exp $")
+             "$Id: start.f90,v 1.169 2007-08-11 21:03:52 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -197,18 +197,6 @@
             call stop_it('for lperi(2)=F: must have nygrid>1')
         if (.not.lperi(3).and.nzgrid<2) &
             call stop_it('for lperi(3)=F: must have nzgrid>1')
-!
-!AB: Even for a periodic mesh it makes sense to shift the origin
-!AB: if one wants to include the zero point for example.
-!AB: This is useful for resolution tests where one wants to
-!AB: include the same points. So I commented this out.
-!
-!       if (lperi(1).and.lshift_origin(1)) &
-!           call stop_it('for lperi(1)=T: must have lshift_origin(1)=F')
-!       if (lperi(2).and.lshift_origin(2)) &
-!           call stop_it('for lperi(2)=T: must have lshift_origin(2)=F')
-!       if (lperi(3).and.lshift_origin(3)) &
-!           call stop_it('for lperi(3)=T: must have lshift_origin(3)=F')
 !
 !  Initialise random number generator in processor-dependent fashion for
 !  random initial data.

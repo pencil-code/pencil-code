@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.213 2007-08-11 06:39:53 brandenb Exp $
+! $Id: mpicomm.f90,v 1.214 2007-08-11 21:03:52 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -163,9 +163,9 @@ module Mpicomm
   endinterface
 
   include 'mpif.h'
-
 !
 ! For f-array processor boundaries
+!
   real, dimension (nghost,ny,nz,mcom) :: lbufxi,ubufxi,lbufxo,ubufxo
   real, dimension (mx,nghost,nz,mcom) :: lbufyi,ubufyi,lbufyo,ubufyo
   real, dimension (mx,ny,nghost,mcom) :: lbufzi,ubufzi,lbufzo,ubufzo
@@ -182,9 +182,11 @@ module Mpicomm
   integer :: tolowx=13,touppx=14,tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
   integer :: io_perm=20,io_succ=21
+!
 !  mpi tags for radiation
 !  the values for those have to differ by a number greater than maxdir=190
 !  in order to have unique tags for each boundary and each direction
+!
   integer, parameter :: Qtag_zx=300,Qtag_xy=350
   integer, parameter :: tautag_zx=400,tautag_xy=450
   integer, parameter :: Qtag_peri_zx=1000,Qtag_peri_xy=2000
@@ -241,8 +243,7 @@ module Mpicomm
 !  consistency checks
 !
       if (nprocx /= 1) then
-        if (lroot) print*,'Warning: nprocx > 1 not yet tested'
-        !call stop_it('Inconsistency: nprocx > 1 not implemented')
+        if (lroot) print*,'WARNING: nprocx > 1 is not yet well tested'
       endif
 !
 !  check total number of processors
@@ -270,6 +271,8 @@ module Mpicomm
         endif
         call stop_it('Inconsistency 2')
       endif
+!
+!  avoid overlapping ghost zones
 !
       if ((nx<nghost) .and. (nxgrid/=1)) &
            call stop_it('Overlapping ghost zones in x-direction: reduce nprocx')
@@ -302,10 +305,10 @@ module Mpicomm
 !
 !  set the four corners in the yz-plane (in cyclic order)
 !
-      llcorn=modulo(ipy-1,nprocy)+modulo(ipz-1,nprocz)*nprocy
-      ulcorn=modulo(ipy+1,nprocy)+modulo(ipz-1,nprocz)*nprocy
-      uucorn=modulo(ipy+1,nprocy)+modulo(ipz+1,nprocz)*nprocy
-      lucorn=modulo(ipy-1,nprocy)+modulo(ipz+1,nprocz)*nprocy
+      llcorn=ipx+(modulo(ipy-1,nprocy)+modulo(ipz-1,nprocz)*nprocy)*nprocx
+      ulcorn=ipx+(modulo(ipy+1,nprocy)+modulo(ipz-1,nprocz)*nprocy)*nprocx
+      uucorn=ipx+(modulo(ipy+1,nprocy)+modulo(ipz+1,nprocz)*nprocy)*nprocx
+      lucorn=ipx+(modulo(ipy-1,nprocy)+modulo(ipz+1,nprocz)*nprocy)*nprocx
 !
 !  this value is not yet the one read in, but the one initialized in cparam.f90
 !
@@ -322,11 +325,13 @@ module Mpicomm
 !  15 | 12  13  14  15 | 12
 !  should print (3,15,12,13,1,5,4,7) for iproc=0
 !
-      if (ip<5) &
-           write(*,'(A,I4,"(",3I4,"): ",8I4)') &
-           'mpicomm_init: MPICOMM neighbors ', &
-           iproc,ipx,ipy,ipz, &
-           ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
+!  print processor numbers and those of their neighbors
+!  NOTE: the ip print parameter has not yet been read at this point.
+!
+      write(0,'(A,I4,"(",3I4,"): ",8I4)') &
+        'mpicomm_init: MPICOMM neighbors ', &
+        iproc,ipx,ipy,ipz, &
+        ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
 !
 !  Define MPI communicator MPI_COMM_ROW that includes all processes
 !  sharing the same value of ipz. The rank within MPI_COMM_WORLD is

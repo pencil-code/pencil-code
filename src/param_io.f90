@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.281 2007-08-03 09:48:31 ajohan Exp $
+! $Id: param_io.f90,v 1.282 2007-08-11 21:03:52 brandenb Exp $
 
 module Param_IO
 
@@ -342,6 +342,7 @@ module Param_IO
         print*, 'bcx1,bcx2= ', bcx1," : ",bcx2
         print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
         print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
+        print*, 'lperi= ', lperi
       endif
       call check_consistency_of_lperi('read_startpars')
 !
