@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.93 2007-08-11 06:39:52 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.94 2007-08-11 08:38:47 bingert Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.93 2007-08-11 06:39:52 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.94 2007-08-11 08:38:47 bingert Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -2246,7 +2246,7 @@ module EquationOfState
           if (bcz2(iss)/='hs') then
             call fatal_error("bc_lnrho_hydrostatic_z", &
                              "This boundary condition for density is "//&
-                             "currently only correct for bcz2(iss)='s'")
+                             "currently only correct for bcz2(iss)='hs'")
           endif
 
           dlnrhodz = gamma*gravz/cs2top
