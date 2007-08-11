@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.439 2007-08-10 07:28:24 dhruba Exp $
+! $Id: magnetic.f90,v 1.440 2007-08-11 08:11:56 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -240,7 +240,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.439 2007-08-10 07:28:24 dhruba Exp $")
+           "$Id: magnetic.f90,v 1.440 2007-08-11 08:11:56 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3546,7 +3546,7 @@ module Magnetic
 !
 !  Get local wave numbers
 !
-      kx = spread(kx_fft                    ,2,ny)
+      kx = spread(kx_fft(ipx*nx+1:ipx*nx+nx),2,ny)
       ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
 !
 !  Calculate 1/k^2, zero mean
@@ -3664,7 +3664,7 @@ module Magnetic
 !
 !  Get local wave numbers
 !
-      kx = spread(kx_fft                    ,2,ny)
+      kx = spread(kx_fft(ipx*nx+1:ipx*nx+nx),2,ny)
       ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
 !
 !  Calculate 1/k^2, zero mean
