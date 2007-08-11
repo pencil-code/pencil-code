@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.161 2007-08-11 06:39:52 brandenb Exp $
+! $Id: boundcond.f90,v 1.162 2007-08-11 10:04:51 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -2340,10 +2340,11 @@ module Boundcond
 !***********************************************************************
      subroutine uu_driver(f)
 !
-!    Simulated velocity field used as photospherec motions
-!    Use of velocity field produced by Boris Gudiksen
+!  Simulated velocity field used as photospherec motions
+!  Use of velocity field produced by Boris Gudiksen
 !
-!    27-mai-04/bing:coded
+!  27-mai-04/bing: coded
+!  11-aug-06/axel: make it compile with nprocx>0, renamed quenching -> quen
 !
        use Cdata
        use EquationOfState, only : gamma,gamma1,cs20,lnrho0
@@ -2351,7 +2352,7 @@ module Boundcond
        real, dimension (mx,my,mz,mfarray) :: f
        real, dimension (nxgrid,nygrid),save :: uxl,uxr,uyl,uyr
        real, dimension (nxgrid,nygrid) :: uxd,uyd
-       real, dimension (nx,ny) :: quenching,pp,betaq,fac
+       real, dimension (nx,ny) :: quen,pp,betaq,fac
        real, dimension (nx,ny) :: bbz,bb2
        integer :: lend,iostat=0,i=0,j
        real,save :: tl=0.,tr=0.,delta_t=0.
@@ -2446,13 +2447,13 @@ module Boundcond
           betaq = pp * sqrt(tini)
        endwhere
 !
-       quenching = (1.+betaq**2)/(3. +betaq**2)
+       quen=(1.+betaq**2)/(3.+betaq**2)
 !
 !   Fill the ghost cells and the bottom layer with velocity field
 !
        do j=1,n1
-          f(l1:l2,m1:m2,j,iux) =  uxd(:,ipy*ny+1:(ipy+1)*ny) *quenching
-          f(l1:l2,m1:m2,j,iuy) =  uyd(:,ipy*ny+1:(ipy+1)*ny) *quenching
+         f(l1:l2,m1:m2,j,iux)=uxd(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)*quen
+         f(l1:l2,m1:m2,j,iuy)=uyd(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)*quen
        enddo
 !
      endsubroutine uu_driver

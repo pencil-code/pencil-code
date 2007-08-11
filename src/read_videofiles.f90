@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.23 2007-01-21 07:27:04 brandenb Exp $
+! $Id: read_videofiles.f90,v 1.24 2007-08-11 10:04:51 brandenb Exp $
 
 !***********************************************************************
       program rvid_box
@@ -23,7 +23,7 @@
       real, dimension (nx,nz) :: xz_loc
       real, dimension (ny,nz) :: yz_loc
 !
-      integer :: ipy,ipz,iproc,it,nt=999999,ipz_top,ipz_bottom,ipy_front
+      integer :: ipx,ipy,ipz,iproc,it,nt=999999,ipz_top,ipz_bottom,ipy_front
       integer :: lun,lun1=1,lun2=2,lun3=3,lun4=4
       integer :: itdebug=2
       logical :: eof=.false.,slice_position_ok=.false.
@@ -132,7 +132,7 @@ print*,'ipz_top,ipz_bottom=',ipz_top,ipz_bottom
         min_xy2_loc=min(min_xy2_loc,minval(xy2_loc))
         max_xy2_loc=max(max_xy2_loc,maxval(xy2_loc))
         if(eof) goto 999
-        xy2(:,1+ipy*ny:ny+ipy*ny)=xy2_loc
+        xy2(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy2_loc
       enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err
@@ -164,7 +164,7 @@ print*,'ipz_top,ipz_bottom=',ipz_top,ipz_bottom
         min_xy_loc=min(min_xy_loc,minval(xy_loc))
         max_xy_loc=max(max_xy_loc,maxval(xy_loc))
         if(eof) goto 999
-        xy(:,1+ipy*ny:ny+ipy*ny)=xy_loc
+        xy(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy_loc
       enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err_timestep.or.err
@@ -196,7 +196,7 @@ print*,'ipz_top,ipz_bottom=',ipz_top,ipz_bottom
         min_xz_loc=min(min_xz_loc,minval(xz_loc))
         max_xz_loc=max(max_xz_loc,maxval(xz_loc))
         if(eof) goto 999
-        xz(:,1+ipz*nz:nz+ipz*nz)=xz_loc
+        xz(1+ipx*nx:nx+ipx*nx,1+ipz*nz:nz+ipz*nz)=xz_loc
       enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err_timestep.or.err

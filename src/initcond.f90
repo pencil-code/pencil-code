@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.209 2007-08-11 06:39:52 brandenb Exp $
+! $Id: initcond.f90,v 1.210 2007-08-11 10:04:51 brandenb Exp $
 
 module Initcond
 
@@ -3076,9 +3076,9 @@ module Initcond
          !
          call fourier_transform_other(Ay_r,Ay_i,linv=.true.)
          !
-         f(l1:l2,m1:m2,i,iax) = Ax_r(:,ipy*ny+1:(ipy+1)*ny+1)
-         f(l1:l2,m1:m2,i,iay) = Ay_r(:,ipy*ny+1:(ipy+1)*ny+1)
-         f(l1:l2,m1:m2,i,iaz) = 0.
+         f(l1:l2,m1:m2,i,iax)=Ax_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
+         f(l1:l2,m1:m2,i,iay)=Ay_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
+         f(l1:l2,m1:m2,i,iaz)=0.
       enddo
 
     endsubroutine mdi_init
