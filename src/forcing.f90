@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.110 2007-08-06 14:12:32 dhruba Exp $
+! $Id: forcing.f90,v 1.111 2007-08-11 15:53:13 dhruba Exp $
 
 module Forcing
 
@@ -27,6 +27,7 @@ module Forcing
   integer :: kfountain=5,ifff,iffx,iffy,iffz
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
   logical :: lmagnetic_forcing=.false.,ltestfield_forcing=.false.
+  logical :: lhelical_test=.false.
   logical :: lscale_kvector_tobox=.false.
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
@@ -52,7 +53,7 @@ module Forcing
        max_force,dtforce,old_forcing_evector, &
        iforce_profile,lscale_kvector_tobox, &
        force_direction, force_strength, &
-       Legendrel,Bessel_alpha
+       Legendrel,Bessel_alpha,lhelical_test
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
@@ -80,7 +81,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.110 2007-08-06 14:12:32 dhruba Exp $")
+           "$Id: forcing.f90,v 1.111 2007-08-11 15:53:13 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -556,7 +557,11 @@ module Forcing
                 forcing_rhs(:,j)=rho1*profx_ampl*profz_ampl(n)*force_ampl &
                   *real(cmplx(coef1(j),profx_hel*profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
-                f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+                  if(lhelical_test) then
+                    f(l1:l2,m,n,jf)=forcing_rhs(:,j)
+                  else
+                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+                  endif
                 if (ltestfield_forcing) then
                   do jtest=1,12
                     iaxtest=iaatest+3*(jtest-1)

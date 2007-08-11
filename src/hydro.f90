@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.368 2007-08-09 11:28:24 brandenb Exp $
+! $Id: hydro.f90,v 1.369 2007-08-11 15:53:13 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -303,7 +303,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.368 2007-08-09 11:28:24 brandenb Exp $")
+           "$Id: hydro.f90,v 1.369 2007-08-11 15:53:13 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -978,7 +978,7 @@ module Hydro
         if (headtt.and.lupw_uu) then
           print *,'calc_pencils_hydro: upwinding advection term. '//&
                   'Not well tested; use at own risk!'; endif
-        call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
+	call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
       endif
 !
 ! u3u21, u1u32, u2u13
