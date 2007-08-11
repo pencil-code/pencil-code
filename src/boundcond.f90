@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.160 2007-07-26 11:08:49 wlyra Exp $
+! $Id: boundcond.f90,v 1.161 2007-08-11 06:39:52 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -61,6 +61,7 @@ module Boundcond
 !
 !   8-jul-02/axel: split up into different routines for x,y and z directions
 !  11-nov-02/wolf: unified bot/top, now handled by loop
+!  15-dec-06/wolf: Replaced "if (bcx1(1)=='she') then" by "any" command
 !
       use Cdata
       use Entropy
@@ -92,11 +93,11 @@ module Boundcond
 !  Boundary conditions in x.
 !
       case default
-        ! [wd dec-06:] Replaced
-        !   if (bcx1(1)=='she') then
-        ! with the following construct to keep compiler from complaining if
-        ! we have no variables (and boundconds) at all (samples/no-modules):
         one = min(1,mcom)
+!
+!  Use the following construct to keep compiler from complaining if
+!  we have no variables (and boundconds) at all (samples/no-modules):
+!
         if (any(bcx1(1:one)=='she')) then
           if (ip<12.and.headtt) print*, &
                'boundconds_x: use shearing sheet boundary condition'
@@ -2605,7 +2606,7 @@ module Boundcond
 !
 !  Get local wave numbers
 !
-      kx = spread(kx_fft                    ,2,ny)
+      kx = spread(kx_fft(ipx*nx+1:ipx*nx+nx),2,ny)
       ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
 !
 !  Calculate 1/k^2, zero mean

@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.208 2007-08-09 07:26:34 dobler Exp $
+! $Id: initcond.f90,v 1.209 2007-08-11 06:39:52 brandenb Exp $
 
 module Initcond
 
@@ -3011,12 +3011,12 @@ module Initcond
       use Sub
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx,nygrid) :: kx,ky,k2
+      real, dimension(nxgrid,nygrid) :: kx,ky,k2
 
-      real, dimension(nx,nygrid) :: Bz0,Bz0_i,Bz0_r
-      real, dimension(nx,nygrid) :: Ax_r,Ax_i,Ay_r,Ay_i
+      real, dimension(nxgrid,nygrid) :: Bz0,Bz0_i,Bz0_r
+      real, dimension(nxgrid,nygrid) :: Ax_r,Ax_i,Ay_r,Ay_i
 
-      real, dimension(nx) :: kxp
+      real, dimension(nxgrid) :: kxp
       real, dimension(nygrid) :: kyp
 
       real :: mu0_SI,u_b

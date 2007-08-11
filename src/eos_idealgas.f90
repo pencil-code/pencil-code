@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.92 2007-07-26 11:08:50 wlyra Exp $
+! $Id: eos_idealgas.f90,v 1.93 2007-08-11 06:39:52 brandenb Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.92 2007-07-26 11:08:50 wlyra Exp $')
+           '$Id: eos_idealgas.f90,v 1.93 2007-08-11 06:39:52 brandenb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -2314,11 +2314,10 @@ module EquationOfState
       real, dimension (nx,ny) :: tmp_re,tmp_im
       real :: pot
       integer :: i
-
 !
 !  Get local wave numbers
 !
-      kx = spread(kx_fft                    ,2,ny)
+      kx = spread(kx_fft(ipx*nx+1:ipx*nx+nx),2,ny)
       ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
 !
 !  Calculate 1/k^2, zero mean
@@ -2450,7 +2449,7 @@ module EquationOfState
 !
 !  Get local wave numbers
 !
-      kx = spread(kx_fft                    ,2,ny)
+      kx = spread(kx_fft(ipx*nx+1:ipx*nx+nx),2,ny)
       ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
 !
 !  Calculate 1/k^2, zero mean

@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.212 2007-06-29 04:52:53 brandenb Exp $
+! $Id: mpicomm.f90,v 1.213 2007-08-11 06:39:53 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -166,7 +166,7 @@ module Mpicomm
 
 !
 ! For f-array processor boundaries
-  real, dimension (my,nghost,nz,mcom) :: lbufxi,ubufxi,lbufxo,ubufxo
+  real, dimension (nghost,ny,nz,mcom) :: lbufxi,ubufxi,lbufxo,ubufxo
   real, dimension (mx,nghost,nz,mcom) :: lbufyi,ubufyi,lbufyo,ubufyo
   real, dimension (mx,ny,nghost,mcom) :: lbufzi,ubufzi,lbufzo,ubufzo
   real, dimension (mx,nghost,nghost,mcom) :: llbufi,lubufi,uubufi,ulbufi
@@ -240,8 +240,13 @@ module Mpicomm
 !
 !  consistency checks
 !
-      if (nprocx /= 1) &
-           call stop_it('Inconsistency: nprocx > 1 not implemented')
+      if (nprocx /= 1) then
+        if (lroot) print*,'Warning: nprocx > 1 not yet tested'
+        !call stop_it('Inconsistency: nprocx > 1 not implemented')
+      endif
+!
+!  check total number of processors
+!
       if (nprocs /= nprocx*nprocy*nprocz) then
         if (lroot) then
           print*, 'Compiled with NCPUS = ', ncpus, &
@@ -257,11 +262,11 @@ module Mpicomm
           (nprocy*ny /= nygrid) .or. &
           (nprocz*nz /= nzgrid)) then
         if (lroot) then
-          write(0,'(A,2I4,A,2I4,A)') &
+          write(6,'(A,3I4,A,3I4,A)') &
                'nproc[x-z]*n[x-z] = (', &
                nprocy*ny, nprocz*nz, nprocx*nx, &
                ') /= n[xyz]grid= (', &
-               nygrid, nzgrid, ")"
+               nygrid, nzgrid, nxgrid, ")"
         endif
         call stop_it('Inconsistency 2')
       endif
@@ -338,19 +343,32 @@ module Mpicomm
 !  leftneigh and rghtneigh are initialized by mpicomm_init
 !
 !  21-may-02/axel: communication of corners added
+!  11-aug-07/axel: communication in the x-direction added
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      integer :: ivar1, ivar2, nbufy, nbufz, nbufyz
+      integer :: ivar1, ivar2, nbufx, nbufy, nbufz, nbufyz
 !
       ivar1=1; ivar2=mcom
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-!  So far no distribution over x
+!  Periodic boundary conditions in x
 !
-      !(We may never do this after having seen all the trouble involved!!)
+      if (nprocx>1) then
+        lbufxo(:,:,:,ivar1:ivar2)=f(l1:l1i,m1:m2,n1:n2,ivar1:ivar2) !!(lower x-zone)
+        ubufxo(:,:,:,ivar1:ivar2)=f(l2i:l2,m1:m2,n1:n2,ivar1:ivar2) !!(upper x-zone)
+        nbufx=ny*nz*nghost*(ivar2-ivar1+1)
+        call MPI_IRECV(ubufxi(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
+            xuneigh,tolowx,MPI_COMM_WORLD,irecv_rq_fromuppx,ierr)
+        call MPI_IRECV(lbufxi(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
+            xlneigh,touppx,MPI_COMM_WORLD,irecv_rq_fromlowx,ierr)
+        call MPI_ISEND(lbufxo(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
+            xlneigh,tolowx,MPI_COMM_WORLD,isend_rq_tolowx,ierr)
+        call MPI_ISEND(ubufxo(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
+            xuneigh,touppx,MPI_COMM_WORLD,isend_rq_touppx,ierr)
+      endif
 !
 !  Periodic boundary conditions in y
 !
@@ -385,6 +403,7 @@ module Mpicomm
       endif
 !
 !  The four corners (in counter-clockwise order)
+!  (NOTE: the case nprocx>1 is not yet considered here!)
 !
       if (nprocy>1.and.nprocz>1) then
         llbufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n1i,ivar1:ivar2)
@@ -420,7 +439,7 @@ module Mpicomm
 !***********************************************************************
     subroutine finalize_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
 !
-      use Cdata, only: bcy1,bcy2,bcz1,bcz2
+      use Cdata, only: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
 !
 !  Make sure the communications initiated with initiate_isendrcv_bdry are
 !  finished and insert the just received boundary values.
@@ -441,6 +460,23 @@ module Mpicomm
 !  1. wait until data received
 !  2. set ghost zones
 !  3. wait until send completed, will be overwritten in next time step
+!
+!  Communication in x (includes periodic bc)
+!
+      if (nprocx>1) then
+        call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,ierr)
+        call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,ierr)
+        do j=ivar1,ivar2
+          if (ipx/=0 .or. bcx1(j)=='p') then
+            f( 1:l1-1,m1:m2,n1:n2,j)=lbufxi(:,:,:,j)  !!(set lower buffer)
+          endif
+          if (ipx/=nprocx-1 .or. bcx2(j)=='p') then
+            f(l2+1:mx,m1:m2,n1:n2,j)=ubufxi(:,:,:,j)  !!(set upper buffer)
+          endif
+        enddo
+        call MPI_WAIT(isend_rq_tolowx,isend_stat_tl,ierr)
+        call MPI_WAIT(isend_rq_touppx,isend_stat_tu,ierr)
+      endif
 !
 !  Communication in y (includes periodic bc)
 !
@@ -532,15 +568,27 @@ module Mpicomm
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      integer :: ivar1, ivar2, nbufy, nbufz, nbufyz
+      integer :: ivar1, ivar2, nbufx, nbufy, nbufz, nbufyz
 !
       ivar1=1; ivar2=mcom
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-!  So far no distribution over x
+!  Periodic boundary conditions in x
 !
-      !(We may never do this after having seen all the trouble involved!!)
+      if (nprocx>1) then
+        lbufxo(:,:,:,1:ivar2-ivar1+1)=f( 1:l1-1,m1:m2,n1:n2,ivar1:ivar2) !!(lower x-zone)
+        ubufxo(:,:,:,1:ivar2-ivar1+1)=f(l2+1:mx,m1:m2,n1:n2,ivar1:ivar2) !!(upper x-zone)
+        nbufx=ny*nz*nghost*(ivar2-ivar1+1)
+        call MPI_IRECV(ubufxi,nbufx,MPI_REAL,xuneigh,tolowx,MPI_COMM_WORLD, &
+            irecv_rq_fromuppx,ierr)
+        call MPI_IRECV(lbufxi,nbufx,MPI_REAL,xlneigh,touppx,MPI_COMM_WORLD, &
+            irecv_rq_fromlowx,ierr)
+        call MPI_ISEND(lbufxo,nbufx,MPI_REAL,xlneigh,tolowx,MPI_COMM_WORLD, &
+            isend_rq_tolowx,ierr)
+        call MPI_ISEND(ubufxo,nbufx,MPI_REAL,xuneigh,touppx,MPI_COMM_WORLD, &
+            isend_rq_touppx,ierr)
+      endif
 !
 !  Periodic boundary conditions in y
 !
@@ -610,7 +658,7 @@ module Mpicomm
 !***********************************************************************
     subroutine finalize_isendrcv_shockbdry(f,ivar1_opt,ivar2_opt)
 !
-      use Cdata, only: bcy1,bcy2,bcz1,bcz2
+      use Cdata, only: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
 !
 !  Make sure the communications initiated with initiate_isendrcv_bdry are
 !  finished and insert the just received boundary values.
@@ -631,6 +679,23 @@ module Mpicomm
 !  1. wait until data received
 !  2. set ghost zones
 !  3. wait until send completed, will be overwritten in next time step
+!
+!  Communication in x (includes periodic bc)
+!
+      if (nprocx>1) then
+        call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,ierr)
+        call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,ierr)
+        do j=ivar1,ivar2
+          if (ipx/=0 .or. bcx1(j)=='p') then
+            f(l1:l1i,m1:m2,n1:n2,j)=f(l1:l1i,m1:m2,n1:n2,j)+lbufxi(:,:,:,j-ivar1+1)  !!(set lower buffer)
+          endif
+          if (ipx/=nprocx-1 .or. bcx2(j)=='p') then
+            f(l2i:l2,m1:m2,n1:n2,j)=f(l2i:l2,m1:m2,n1:n2,j)+ubufxi(:,:,:,j-ivar1+1)  !!(set upper buffer)
+          endif
+        enddo
+        call MPI_WAIT(isend_rq_tolowx,isend_stat_tl,ierr)
+        call MPI_WAIT(isend_rq_touppx,isend_stat_tu,ierr)
+      endif
 !
 !  Communication in y (includes periodic bc)
 !

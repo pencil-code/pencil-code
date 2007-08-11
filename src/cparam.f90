@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.61 2007-02-15 16:39:36 wlyra Exp $
+! $Id: cparam.f90,v 1.62 2007-08-11 06:39:52 brandenb Exp $
 
 module Cparam
 
@@ -17,7 +17,7 @@ module Cparam
   include 'cparam.local'
 
 ! Need this kinda urgently!!
-  integer, parameter :: nx=nxgrid,ny=nygrid/nprocy,nz=nzgrid/nprocz
+  integer, parameter :: nx=nxgrid/nprocx,ny=nygrid/nprocy,nz=nzgrid/nprocz
 
   include 'cparam.inc'
 
