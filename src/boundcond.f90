@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.163 2007-08-12 11:05:51 ajohan Exp $
+! $Id: boundcond.f90,v 1.164 2007-08-12 13:29:37 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -2694,7 +2694,7 @@ module Boundcond
 !
 !  12-aug-2007/anders: implemented
 !
-      use Cdata
+      use Cdata, only: mx, my, mz, mfarray, n1, n2, nghost
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
