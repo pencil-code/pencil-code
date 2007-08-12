@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.334 2007-07-23 16:52:49 wlyra Exp $
+! $Id: density.f90,v 1.335 2007-08-12 20:21:59 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -52,7 +52,7 @@ module Density
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_aniso=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
-  logical :: lsoftened=.false.
+  logical :: lfreeze_lnrhosqu=.false.
 
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
@@ -72,7 +72,7 @@ module Density
        mpoly,strati_type,beta_glnrho_global,         &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
-       wdamp,plaw,lcontinuity_gas,lsoftened
+       wdamp,plaw,lcontinuity_gas
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
@@ -80,7 +80,7 @@ module Density
        lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
        wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,         &
        lnrho_const,plaw,lcontinuity_gas,borderlnrho,    &
-       diffrho_hyper3_aniso
+       diffrho_hyper3_aniso,lfreeze_lnrhosqu
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
@@ -114,7 +114,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.334 2007-07-23 16:52:49 wlyra Exp $")
+           "$Id: density.f90,v 1.335 2007-08-12 20:21:59 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -131,7 +131,7 @@ module Density
 !
 !
 
-      use CData, only: lfreeze_varext,lfreeze_varint,lreloading,ilnrho
+      use CData, only: lfreeze_varext,lfreeze_varint,lreloading,ilnrho,lfreeze_varsquare
       use FArrayManager
       use EquationOfState, only: select_eos_variable
       use Gravity, only: lnumerical_equilibrium
@@ -228,8 +228,9 @@ module Density
         call farray_register_global('rho',iglobal_rho)
       endif
 !
-      if (lfreeze_lnrhoint) lfreeze_varint(ilnrho) = .true.
-      if (lfreeze_lnrhoext) lfreeze_varext(ilnrho) = .true.
+      if (lfreeze_lnrhoint) lfreeze_varint(ilnrho)    = .true.
+      if (lfreeze_lnrhoext) lfreeze_varext(ilnrho)    = .true.
+      if (lfreeze_lnrhosqu) lfreeze_varsquare(ilnrho) = .true.
 !
 ! Tell the equation of state that we're here and what f variable we use
 !
@@ -1050,6 +1051,10 @@ module Density
       if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
 !
       if (lmass_source) lpenc_requested(i_rcyl_mn)=.true.
+      if (borderlnrho=='stratification') then 
+        lpenc_requested(i_cs2)=.true.
+        lpenc_requested(i_r_mn)=.true.
+      endif
 !
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
@@ -1061,7 +1066,6 @@ module Density
            lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
       if (idiag_uglnrhom/=0) lpenc_diagnos(i_uglnrho)=.true.
-
 !
     endsubroutine pencil_criteria_density
 !***********************************************************************
@@ -1418,15 +1422,18 @@ module Density
       use EquationOfState, only: cs0,cs20
       use Sub,             only: power_law
       use Mpicomm,         only: stop_it
+      use Gravity,         only: potential
+      use FArrayManager
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx) :: f_target!,OO_sph,OO_cyl,cs,theta
+      real, dimension(nx) :: f_target!,lnrhomid,pot,tmp1,tmp2
+      real :: lnrhomid,pot,tmp1,tmp2
       type (pencil_case)  :: p
       integer            :: i
-!
+
       select case(borderlnrho)
-!
+
       case('zero','0')
         if (plaw.ne.0) call stop_it("borderlnrho: density is not flat but "//&
              "you are calling zero border")
@@ -1453,16 +1460,24 @@ module Density
           f_target=lnrho_const - plaw*log(p%rcyl_mn)
         endif
       case('stratification')
-         !OO_sph = sqrt((r_mn**2 + r0_pot**2)**(-1.5))
-         !OO_cyl = sqrt((rcyl_mn**2 + r0_pot**2)**(-1.5))
-         !cs = OO_cyl*rcyl_mn*cs0
-         !f_target=lnrho_const - 0.5*(theta/cs0)**2
-        if (ldensity_nolog) then
-          f_target=exp((p%rcyl_mn-p%r_mn)/(cs20*p%r_mn))
-        else
-          f_target=(p%rcyl_mn-p%r_mn)/(cs20*p%r_mn)
-        endif
-      case('nothing')
+
+        do i=1,nx
+          if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
+               ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
+            
+            lnrhomid=log(rho0) - plaw*log(p%rcyl_mn(i))
+            call potential(R=p%r_mn(i),POT=tmp1)
+            call potential(R=p%rcyl_mn(i),POT=tmp2)
+            pot=-gamma*(tmp1-tmp2)/p%cs2(i)
+
+            f_target(i)=lnrhomid+pot
+
+            if (ldensity_nolog) &
+                 f_target(i)=exp(f_target(i))
+          endif
+        enddo
+
+     case('nothing')
         if (lroot.and.ip<=5) &
              print*,"set_border_lnrho: borderlnrho='nothing'"
       case default
@@ -1655,18 +1670,20 @@ module Density
 !
 !  18-apr-07/wlad : coded
 !
-      use Gravity,only:potential
       use FArrayManager
       use Mpicomm
       use Initcond,only:set_thermodynamical_quantities
+      use Gravity, only:potential
+      use Sub,     only:power_law,grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: pot,tmp1,tmp2,corr
-      real, dimension (nx) :: rr_sph,rr,rr_cyl,lnrhomid
-      real                 :: ptlaw,g0_
-      integer, pointer     :: iglobal_cs2,iglobal_glnTT
-      integer              :: i
-      logical              :: lheader
+      real, dimension (nx,3) :: glnrho
+      real, dimension (nx)   :: pot,tmp1,tmp2,corr,gslnrho
+      real, dimension (nx)   :: rr_sph,rr,rr_cyl,lnrhomid
+      real                   :: ptlaw,g0_
+      integer, pointer       :: iglobal_cs2,iglobal_glnTT
+      integer                :: i
+      logical                :: lheader
 !
       if (lroot) print*,'isothermal_density: local isothermal stratification'
       if (lroot) print*,'Radial stratification with power law=',plaw
@@ -1679,44 +1696,60 @@ module Density
           lheader=lroot.and.(m==m1).and.(n==n1)
           rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
           rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-          lnrhomid=log(rho0)-plaw*log(rr_cyl)
+          !lnrhomid=log(rho0)-plaw*log(rr_cyl)
+          lnrhomid=log(rho0)-.5*plaw*log(rr_cyl**2+rsmooth**2)
           if (.not.lcylindrical_gravity) then 
             if (lheader) &
                  print*,'Adding vertical stratification with scale height h/r=',cs0
 !
-! The subroutine potential yields the whole gradient.
-! I want the function that partially derived in 
-! z gives g0/r^3 * z. This is *NOT* -g0/r
-! this second call takes care of normalizing it 
-! i.e., there should be no correction at midplane
+!  The subroutine "potential" yields the whole gradient.
+!  I want the function that partially derived in 
+!  z gives g0/r^3 * z. This is NOT -g0/r
+!  The second call takes care of normalizing it 
+!  i.e., there should be no correction at midplane
 !
             call potential(x(l1:l2),y(m),z(n),POT=tmp1,RMN=rr_sph)
             call potential(x(l1:l2),y(m),z(n),POT=tmp2,RMN=rr_cyl)
 !
-            pot=-gamma*(tmp1-tmp2)/f(l1:l2,m,n,iglobal_cs2)
+            pot=-(tmp1-tmp2)/f(l1:l2,m,n,iglobal_cs2)
+            if (ltemperature) pot=gamma*pot
           else 
             pot=0.
           endif
           f(l1:l2,m,n,ilnrho) = lnrhomid+pot
+        enddo
+      enddo
+! 
+!  Correct for density gradient term in the centrifugal force. The
+!  temperature gradient was already corrected for when setting the
+!  thermodynamical quantities.   
+! 
+!  Had to split in two loops because I need the (log)density to 
+!  be fully coded before taking its gradient in y or z
+!      
+      do m=m1,m2
+        do n=n1,n2
 !
-! correct for pressure gradient
-!
-          corr=cs20*(ptlaw+plaw)/(rr_cyl**2+rsmooth**2)**(1+ptlaw/2.)
+          call grad(f,ilnrho,glnrho)
+          rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
+          !gs= gx*cos + gy*sin
+          gslnrho=(glnrho(:,1)*x(l1:l2) + glnrho(:,2)*y(m))/rr_cyl
+          corr=gslnrho*f(l1:l2,m,n,iglobal_cs2)  
           if (ltemperature) corr=corr/gamma
-!tmp1 is the original keplerian velocity           
+!
           tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
-          tmp2=tmp1 - corr
+          tmp2=tmp1 + corr/rr_cyl
           do i=1,nx
             if (tmp2(i).lt.0.) then
               if (rr_cyl(i) .lt. r_int) then
                 !it's inside the frozen zone, so 
                 !just set tmp2 to zero and emit a warning
                 tmp2(i)=0.
-                if (ip<10) call warning('local_isothermal_density',&
-                     'the disk is too hot inside the frozen zone')
+                if (ip<=10) call warning('local_isothermal_density',&
+                     'the density gradient is too steep inside the frozen zone')
               else
-                print*,'local_isothermal_density: the disk '
-                print*,'is too hot at x,y,z=',x(i+l1-1),y(m),z(n)
+                print*,'local_isothermal_density: the density gradient '
+                print*,'is too steep at x,y,z=',x(i+l1-1),y(m),z(n)
                 call stop_it("")
               endif
             endif

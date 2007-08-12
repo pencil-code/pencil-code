@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.210 2007-08-11 10:04:51 brandenb Exp $
+! $Id: initcond.f90,v 1.211 2007-08-12 20:21:59 wlyra Exp $
 
 module Initcond
 
@@ -2819,7 +2819,7 @@ module Initcond
            ' with angular velocity profile falling',&
            ' as 1/r^(',qgshear,')' 
 !
-      if (rsmooth.ne.0.) then 
+      if ((rsmooth.ne.0.).or.(r0_pot.ne.0)) then 
         if (rsmooth.ne.r0_pot) &
              call stop_it("rsmooth and r0_pot must be equal")
         if (n_pot/=2) &
@@ -2844,17 +2844,19 @@ module Initcond
     endsubroutine global_shear
 !*************************************************************
     subroutine set_thermodynamical_quantities(f,iglobal_cs2,iglobal_glnTT,ptlaw)
-      
+
       use FArrayManager
       use Mpicomm
       use EquationOfState, only: gamma,gamma1,get_cp1,&
                                  cs20,cs2bot,cs2top
       use Sub,             only: power_law
+      use Messages       , only: warning
 
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: rr_cyl,cs2
+      real, dimension(nx) :: rr_cyl,cs2,tmp1,tmp2,gslnTT,corr
       real :: cp1,ptlaw
       integer, pointer :: iglobal_cs2,iglobal_glnTT
+      integer :: i
 !
       if (ltemperature.and.llocal_iso) then
         print*,'You are using temperature, but llocal_iso is switched on in'
@@ -2877,22 +2879,22 @@ module Initcond
 !
       do m=m1,m2
         do n=n1,n2
-          if (llocal_iso) then
           rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
           call power_law(cs20,rr_cyl,ptlaw,cs2)
           if (llocal_iso) then
             call farray_use_global('cs2',iglobal_cs2)
             f(l1:l2,m,n,iglobal_cs2)= cs2
             call farray_use_global('glnTT',iglobal_glnTT)
-            f(l1:l2,m,n,iglobal_glnTT  )=-ptlaw*x(l1:l2)/(rr_cyl**2+rsmooth**2)
-            f(l1:l2,m,n,iglobal_glnTT+1)=-ptlaw*  y(m)  /(rr_cyl**2+rsmooth**2)
+            gslnTT=-ptlaw/(rr_cyl**2+rsmooth**2)*rr_cyl
+            f(l1:l2,m,n,iglobal_glnTT  )=gslnTT*x(l1:l2)/rr_cyl
+            f(l1:l2,m,n,iglobal_glnTT+1)=gslnTT*y(  m  )/rr_cyl
             f(l1:l2,m,n,iglobal_glnTT+2)=0.
-          endif
 !
 !  else do it as temperature
 !
           elseif (ltemperature) then
             f(l1:l2,m,n,ilnTT)=log(cs2*cp1/gamma1)
+            !gslnTT=??
           else
             print*,"No thermodynamical variable. Choose if you want a "
             print*,"local thermodynamical approximation (switch llocal_iso=T in"
@@ -2900,6 +2902,31 @@ module Initcond
             print*,"you want to compute the temperature directly and evolve it."
             call stop_it("")
           endif
+!
+!  correct for temperature gradient term in the centrifugal force
+!  the density gradient term will be corrected in density
+!
+          corr=gslnTT*cs2
+          if (ltemperature) corr=corr/gamma
+          tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
+          tmp2=tmp1 + corr/rr_cyl
+          do i=1,nx
+            if (tmp2(i).lt.0.) then
+              if (rr_cyl(i) .lt. r_int) then
+                !it's inside the frozen zone, so                                                  
+                !just set tmp2 to zero and emit a warning                                         
+                tmp2(i)=0.
+                if (ip<=10) call warning('set_thermodynamical_quantities',&
+                     'the disk is too hot inside the frozen zone')
+              else
+                print*,'set_thermodynamical_quantities '
+                print*,'the disk is too hot at x,y,z=',x(i+l1-1),y(m),z(n)
+                call stop_it("")
+              endif
+            endif
+          enddo
+          f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
+          f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
         enddo
       enddo
 !
