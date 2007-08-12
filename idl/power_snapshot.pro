@@ -3,9 +3,11 @@
 ;
 pro power_snapshot, gg=gg, g_x=g_x, g_y=g_y, g_z=g_z, $
                     plot=plot,doubleprec=doubleprec,  $
-                    ps=ps, filename=filename
+                    ps=ps, filename=filename, nolegend=nolegend
 
 default, plot, 1
+default, nolegend, 0
+
 zero=0.
 if keyword_set(doubleprec) then begin
   zero=0.D0
@@ -105,7 +107,7 @@ if (plot) then begin
   if (ny gt 1) then oplot, g_y, linestyle=linestyles[1]
   if (nz gt 1) then oplot, g_z, linestyle=linestyles[2]
 ;  legend, ['k!Dx!N','k!Dy!N','k!Dz!N'], linestyle=linestyles, /bottom
-  legend, ['1','2','3'], linestyle=linestyles, /bottom
+  if (not nolegend) then legend, ['1','2','3'], linestyle=linestyles, /bottom
 
   if (ps) then begin
     device, /close
