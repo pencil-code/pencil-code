@@ -1,4 +1,4 @@
-! $Id: messages.f90,v 1.10 2006-11-30 09:03:35 dobler Exp $
+! $Id: messages.f90,v 1.11 2007-08-12 13:06:28 ajohan Exp $
 !
 !  This module takes care of messages.
 !
@@ -224,40 +224,41 @@ module Messages
 !  25-jun-02/wolf: coded
 !
       character (len=*) :: cvsid
+!
       character (len=20) :: rcsfile, revision, author, date
       character (len=200) :: fmt
       character (len=20) :: tmp1,tmp2,tmp3,tmp4
       integer :: ir0,ir1,iv0,iv1,id0,id2,ia0,ia1
       integer :: rw=18, vw=12, aw=10, dw=19 ! width of individual fields
-
-      !
-      !  rcs file name
-      !
+      logical, save :: lfirstcall=.true.
+!
+!  rcs file name
+!
       ir0 = index(cvsid, ":") + 2
       ir1 = ir0 + index(cvsid(ir0+1:), ",") - 1
       rcsfile = cvsid(ir0:ir1)
-      !
-      !  version number
-      !
+!
+!  Version number
+!
       iv0 = ir1 + 4
       iv1 = iv0 + index(cvsid(iv0+1:), " ") - 1
       revision = cvsid(iv0:iv1)
-      !
-      !  date
-      !
+!
+!  Date
+!
       id0 = iv1 + 2             ! first char of date
       ! id1 = iv1 + 12            ! position of space
       id2 = iv1 + 20            ! last char of time
       date = cvsid(id0:id2)
-      !
-      !  author
-      !
+!
+!  Author
+!
       ia0 = id2 + 2
       ia1 = ia0 + index(cvsid(ia0+1:), " ") - 1
       author = cvsid(ia0:ia1)
-      !
-      !  constuct format
-      !
+!
+!  Construct format
+!
       write(tmp1,*) rw
       write(tmp2,*) 6+rw
       write(tmp3,*) 6+rw+4+vw
@@ -268,11 +269,23 @@ module Messages
            // ', " v. ", A, T' // trim(adjustl(tmp3)) &
            // ', " (", A, T' // trim(adjustl(tmp4)) &
            // ', ") ", A)'
-      !
-      !  write string
-      !
+!
+!  Write string to screen and to 'cvsid.dat' file.
+!
+      if (lfirstcall) then
+        open(1, file=trim(datadir)//'/cvsid.dat', status='replace')
+        lfirstcall=.false.
+      else
+        open(1, file=trim(datadir)//'/cvsid.dat', status='old', position='append')
+      endif
+!
       if (index(cvsid, "$") == 1) then ! starts with `$' --> CVS line
         write(*,fmt) "CVS: ", &
+             trim(rcsfile), &
+             revision(1:vw), &
+             author(1:aw), &
+             date(1:dw)
+        write(1,fmt) "CVS: ", &
              trim(rcsfile), &
              revision(1:vw), &
              author(1:aw), &
@@ -283,9 +296,16 @@ module Messages
              '', &
              '', &
              cvsid(1:dw)
+        write(1,fmt) "CVS: ", &
+             '???????', &
+             '', &
+             '', &
+             cvsid(1:dw)
       endif
       !write(*,'(A)') '123456789|123456789|123456789|123456789|123456789|12345'
       !write(*,'(A)') '         1         2         3         4         5'
+!
+      close(1)
 !
     endsubroutine cvs_id_1
 !***********************************************************************
