@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.162 2007-08-11 10:04:51 brandenb Exp $
+! $Id: boundcond.f90,v 1.163 2007-08-12 11:05:51 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -460,6 +460,8 @@ module Boundcond
                 call bc_set_der_z(f,topbot,j,fbcz12(j))
               case ('ovr')      ! set boundary value
                 call bc_overshoot_z(f,fbcz12,topbot,j)
+              case ('out')      ! allow outflow, but no inflow
+                call bc_outflow_z(f,topbot,j)
               case ('nil')      ! do nothing; assume that everything is set
               case default
                 bc%bcname=bc12(j)
@@ -2679,5 +2681,64 @@ module Boundcond
       endselect
 
     endsubroutine bc_del2zero
+!***********************************************************************
+    subroutine bc_outflow_z(f,topbot,j)
+!
+!  Outflow boundary conditions.
+!
+!  If velocity vector points out of the box, the velocity is extrapolated as
+!  assymetric 'a2'.
+!
+!  For inwards pointing velocity vector, the velocity is extrapolated as
+!  asymmetric 'a'.
+!
+!  12-aug-2007/anders: implemented
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+!
+      integer :: i, ix, iy
+!
+      select case(topbot)
+!
+!  Bottom boundary.
+!
+      case('bot')
+!        do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)-f(:,:,n1+i,j); enddo
+        do iy=1,my; do ix=1,mx
+          if (f(ix,iy,n1,j)<=0.0) then  ! assymetric around boundary value
+            do i=1,nghost; f(ix,iy,n1-i,j)=2*f(ix,iy,n1,j)-f(ix,iy,n1+i,j); enddo
+          else                      ! zero, suppressing inflow
+            do i=1,nghost; f(ix,iy,n1-i,j)=-f(ix,iy,n1+i,j); enddo
+            f(ix,iy,n1,j) = 0.0
+!            f(ix,iy,0:n1-1,j)=0.0
+          endif
+        enddo; enddo
+!
+!  Top boundary.
+!
+      case('top')
+!        do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)-f(:,:,n2-i,j); enddo
+        do iy=1,my; do ix=1,mx
+          if (f(ix,iy,n2,j)>=0.0) then
+            do i=1,nghost; f(ix,iy,n2+i,j)=2*f(ix,iy,n2,j)-f(ix,iy,n2-i,j); enddo
+          else
+            do i=1,nghost; f(ix,iy,n2+i,j)=-f(ix,iy,n2-i,j); enddo
+            f(ix,iy,n2,j) = 0.0
+!            f(ix,iy,n2+1:mz,j)=0.0
+          endif
+        enddo; enddo
+!
+!  Default.
+!
+      case default
+        print*, "bc_outflow_z: ", topbot, " should be `top' or `bot'"
+!
+      endselect
+!
+    endsubroutine bc_outflow_z
 !***********************************************************************
 endmodule Boundcond
