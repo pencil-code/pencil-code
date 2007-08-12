@@ -8,6 +8,9 @@
 @xder2_6th_ghost
 @yder2_6th_ghost
 @zder2_6th_ghost
+@xder6_6th_ghost
+@yder6_6th_ghost
+@zder6_6th_ghost
 ;
 ;  The following avoids a mysterious bug when using esrg_legend later
 ;  (box size was wrong, because lenstr(['a','b']) would be wrong,
