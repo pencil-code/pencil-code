@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.371 2007-08-13 10:21:46 dobler Exp $
+! $Id: hydro.f90,v 1.372 2007-08-13 17:41:11 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -24,6 +24,7 @@ module Hydro
   use Cdata , only: Omega, theta, huge1
   use Viscosity
   use Messages
+! Dhruba 
 
   implicit none
 
@@ -31,6 +32,8 @@ module Hydro
 !
 ! Slice precalculation buffers
 !
+! Dhruba
+  integer :: l
   real, target, dimension (nx,ny,3) :: oo_xy
   real, target, dimension (nx,ny,3) :: oo_xy2
   real, target, dimension (nx,nz,3) :: oo_xz
@@ -67,7 +70,9 @@ module Hydro
   logical :: lprecession=.false.
   logical :: lshear_rateofstrain=.false.
   logical :: luut_as_aux=.false.
-
+! Dhruba
+  real :: outest
+  logical :: loutest
   namelist /hydro_init_pars/ &
        ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
        inituu, widthuu, radiusuu, urand, &
@@ -115,7 +120,11 @@ module Hydro
        utop,ubot,omega_out,omega_in, & 
        lprecession, omega_precession, lshear_rateofstrain, &
        lalways_use_gij_etc, &
+<<<<<<< hydro.f90
+       luut_as_aux,loutest
+=======
        luut_as_aux,velocity_ceiling
+>>>>>>> 1.371
 
 ! end geodynamo
 
@@ -305,7 +314,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.371 2007-08-13 10:21:46 dobler Exp $")
+           "$Id: hydro.f90,v 1.372 2007-08-13 17:41:11 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -918,6 +927,8 @@ module Hydro
       use Cdata
       use Deriv
       use Sub
+!Dhruba
+use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -981,6 +992,18 @@ module Hydro
       if (lpencil(i_o2)) call dot2_mn(p%oo,p%o2)
 ! ou
       if (lpencil(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
+! Dhruba
+      if(loutest)then
+      do l=1,nx
+         outest = p%uu(l,1)*p%oo(l,1)+p%uu(l,2)*p%oo(l,2)+p%uu(l,3)*p%oo(l,3)
+         if(outest.lt.0.)then
+           write(*,*) l,m,n,outest
+           write(*,*)'WARNING : hydro:ou has different sign than relhel'
+         else
+         endif
+       enddo
+      else
+      endif 
 ! ugu
       if (lpencil(i_ugu)) then
         if (headtt.and.lupw_uu) then
