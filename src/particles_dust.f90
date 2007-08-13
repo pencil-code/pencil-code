@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.186 2007-04-08 09:41:41 ajohan Exp $
+! $Id: particles_dust.f90,v 1.187 2007-08-13 17:57:47 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -128,7 +128,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.186 2007-04-08 09:41:41 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.187 2007-08-13 17:57:47 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1623,7 +1623,6 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhoprms/=0) call sum_mn_name(p%rhop**2,idiag_rhoprms,lsqrt=.true.)
         if (idiag_rhopmax/=0) call max_mn_name(p%rhop,idiag_rhopmax)
         if (idiag_rhopmin/=0) call max_mn_name(-p%rhop,idiag_rhopmin,lneg=.true.)
-        if (idiag_rhopmxy/=0) call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
         if (idiag_dedragp/=0) call sum_mn_name(drag_heat,idiag_dedragp)
       endif
 !
@@ -1645,7 +1644,8 @@ k_loop:   do while (.not. (k>npar_loc))
       endif
 !
       if (l2davgfirst) then
-         call phisum_mn_name_rz(p%rhop,idiag_rhopmphi)
+        if (idiag_rhopmphi/=0) call phisum_mn_name_rz(p%rhop,idiag_rhopmphi)
+        if (idiag_rhopmxy/=0)  call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
       endif
 !
     endsubroutine dvvp_dt_pencil

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.373 2007-08-13 17:45:46 dhruba Exp $
+! $Id: hydro.f90,v 1.374 2007-08-13 17:57:47 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -311,7 +311,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.373 2007-08-13 17:45:46 dhruba Exp $")
+           "$Id: hydro.f90,v 1.374 2007-08-13 17:57:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1305,12 +1305,6 @@ use Mpicomm, only: stop_it
           if (idiag_uypt/=0) call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
           if (idiag_uzpt/=0) call save_name(p%uu(lpoint-nghost,3),idiag_uzpt)
         endif
-!
-!  this doesn't need to be as frequent (check later)
-!
-        if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
-        if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
-        if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
         if (idiag_u2mz/=0)  call zsum_mn_name_xy(p%u2,idiag_u2mz)
 !
 !  mean momenta
@@ -1438,15 +1432,15 @@ use Mpicomm, only: stop_it
         if (idiag_ozmphi/=0) &
             call phisum_mn_name_rz(p%oo(:,3),idiag_ozmphi)
         if (idiag_oumphi/=0) call phisum_mn_name_rz(p%ou,idiag_oumphi)
-!
-! y-averages
-!
         if (idiag_uxmxz/=0) &
             call ysum_mn_name_xz(p%uu(:,1),idiag_uxmxz)
         if (idiag_uymxz/=0) &
             call ysum_mn_name_xz(p%uu(:,2),idiag_uymxz)
         if (idiag_uzmxz/=0) &
             call ysum_mn_name_xz(p%uu(:,3),idiag_uzmxz)
+        if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
+        if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
+        if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
       endif
 !
     endsubroutine duu_dt

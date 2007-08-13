@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.507 2007-08-13 10:21:46 dobler Exp $
+! $Id: entropy.f90,v 1.508 2007-08-13 17:57:47 ajohan Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -207,7 +207,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.507 2007-08-13 10:21:46 dobler Exp $")
+           "$Id: entropy.f90,v 1.508 2007-08-13 17:57:47 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1966,8 +1966,6 @@ module Entropy
         if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma11,idiag_TTp,p)
       endif
 !
-!  1d-averages. Happens at every it1d timesteps, NOT at every it1
-!
       if (l1ddiagnos) then
         if (idiag_fconvz/=0) &
             call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
@@ -1977,9 +1975,12 @@ module Entropy
         if (idiag_TTmx/=0)  call yzsum_mn_name_x(p%TT,idiag_TTmz)
         if (idiag_TTmy/=0)  call xzsum_mn_name_y(p%TT,idiag_TTmy)
         if (idiag_TTmz/=0)  call xysum_mn_name_z(p%TT,idiag_TTmz)
-        if (idiag_TTmxy/=0) call zsum_mn_name_xy(p%TT,idiag_TTmxy)
         if (idiag_ssmr/=0)  call phizsum_mn_name_r(p%ss,idiag_ssmr)
         if (idiag_TTmr/=0)  call phizsum_mn_name_r(p%TT,idiag_TTmr)
+      endif
+!
+      if (l2davgfirst) then
+        if (idiag_TTmxy/=0) call zsum_mn_name_xy(p%TT,idiag_TTmxy)
       endif
 !
     endsubroutine dss_dt
