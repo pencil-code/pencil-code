@@ -1,4 +1,4 @@
-; $Id: ptimings.pro,v 1.7 2007-08-13 17:06:49 bingert Exp $
+; $Id: ptimings.pro,v 1.8 2007-08-13 17:11:58 bingert Exp $
 ;
 red = 122
 blue = 55
@@ -66,4 +66,6 @@ restore_state
 print,'import ptimings.jpg'
 print,'scp2 ptimings.jpg $scr/ccp2001'
 ;
+if !d.name eq 'PS' then device,/close
+
 end
