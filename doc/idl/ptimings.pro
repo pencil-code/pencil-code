@@ -1,4 +1,4 @@
-; $Id: ptimings.pro,v 1.6 2007-07-31 07:45:45 brandenb Exp $
+; $Id: ptimings.pro,v 1.7 2007-08-13 17:06:49 bingert Exp $
 ;
 red = 122
 blue = 55
@@ -16,7 +16,7 @@ end
 fact=1.
 a=rtable('timings.dat',2,head=1)
 b=rtable('horseshoe.dat',2,head=1)
-c=rtable('kabul.dat',2,head=1)
+c=rtable('damaskus.dat',2,head=1)
 d=rtable('horseshoe_mega.dat',2,head=1)
 d=rtable('horseshoe_giga2.dat',2,head=1)
 e=rtable('pdc_06.dat',2,head=1)
