@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.51 2007-08-13 05:51:55 ajohan Exp $
+! $Id: nodensity.f90,v 1.52 2007-08-13 15:22:45 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -16,6 +16,7 @@
 module Density
 
   use Cparam
+  use Sub, only: keep_compiler_quiet
   use Messages
   use EquationOfState, only: cs0,cs20,lnrho0,rho0, &
                              gamma,gamma1,cs2top,cs2bot
@@ -56,7 +57,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.51 2007-08-13 05:51:55 ajohan Exp $")
+           "$Id: nodensity.f90,v 1.52 2007-08-13 15:22:45 dobler Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -78,7 +79,9 @@ module Density
 !
       call select_eos_variable('lnrho',-1)
 !
-      if (ip == 0) print*,f,lstarting ! keep compiler quiet
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
+!
     endsubroutine initialize_density
 !***********************************************************************
     subroutine init_lnrho(f,xx,yy,zz)
@@ -93,7 +96,9 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if(NO_WARN) print*,f,xx,yy,zz !(prevent compiler warnings)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(xx,yy,zz)
+!
     endsubroutine init_lnrho
 !***********************************************************************
     subroutine pencil_criteria_density()
@@ -112,7 +117,7 @@ module Density
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if(NO_WARN) print*,lpencil_in(1)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_density
 !***********************************************************************
@@ -151,7 +156,7 @@ module Density
 ! uij5glnrho
       if (lpencil(i_uij5glnrho)) p%uij5glnrho=0.
 !
-      if (NO_WARN) print*, f
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_density
 !***********************************************************************
@@ -167,7 +172,8 @@ module Density
 !
       intent(in) :: f,df,p
 !
-      if(NO_WARN) print*,f,df,p
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine dlnrho_dt
 !***********************************************************************
@@ -176,15 +182,15 @@ module Density
       integer, intent(inout), optional :: iostat
 
       if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+      call keep_compiler_quiet(unit)
+!
     endsubroutine read_density_init_pars
 !***********************************************************************
     subroutine write_density_init_pars(unit)
       integer, intent(in) :: unit
 
-      if (NO_WARN) print*,unit
-
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_density_init_pars
 !***********************************************************************
     subroutine read_density_run_pars(unit,iostat)
@@ -192,14 +198,15 @@ module Density
       integer, intent(inout), optional :: iostat
 
       if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-
+      call keep_compiler_quiet(unit)
+!
     endsubroutine read_density_run_pars
 !***********************************************************************
     subroutine write_density_run_pars(unit)
       integer, intent(in) :: unit
 
-      if (NO_WARN) print*,unit
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_density_run_pars
 !***********************************************************************
     subroutine get_plaw(plaw_)
@@ -249,7 +256,7 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
-      if (NO_WARN) print*, f(1,1,1,1)
+      call keep_compiler_quiet(f)
 !
     endsubroutine impose_density_floor
 !***********************************************************************
