@@ -7,8 +7,19 @@
 \toprule
   \multicolumn{1}{c}{\emph{Variable}} & {\emph{Meaning}} \\
 \midrule
+  \multicolumn{2}{c}{Module \file{cdata.f90}} \\
+\midrule
+  \var{it}        & number of time step
+                    \quad(since beginning of job only) \\
+  \var{t}         & time $t$ \quad(since start.csh) \\
+  \var{dt}        & time step $\delta t$ \\
+  \var{walltime}  & wall clock time since start of
+                    run.x, in seconds \\
+\midrule
   \multicolumn{2}{c}{Module \file{hydro.f90}} \\
 \midrule
+  \var{u2tm}      & $\left<\uv(t)\cdot\int_0^t\uv(t')
+                    dt'\right>$ \\
   \var{u2m}       & $\left<\uv^2\right>$ \\
   \var{urms}      & $\left<\uv^2\right>^{1/2}$ \\
   \var{umax}      & $\max(|\uv|)$ \\
@@ -16,6 +27,12 @@
   \var{uxmax}     & $\max(|u_x|)$ \\
   \var{uymax}     & $\max(|u_y|)$ \\
   \var{uzmax}     & $\max(|u_z|)$ \\
+  \var{uxmz}      & $\left< u_x \right>_{x,y}$
+                    \quad(horiz. averaged $x$
+                    velocity) \\
+  \var{uxmxz}     & $\left< u_x \right>_{y}$ \\
+  \var{uymxz}     & $\left< u_y \right>_{y}$ \\
+  \var{uzmxz}     & $\left< u_z \right>_{y}$ \\
   \var{ruxm}      & $\left<\varrho u_x\right>$
                     \quad(mean $x$-momentum density) \\
   \var{ruym}      & $\left<\varrho u_y\right>$
@@ -26,6 +43,11 @@
                     \quad(maximum modulus of momentum) \\
   \var{ruxuym}    & $\left<\varrho u_x u_y\right>$
                     \quad(mean Reynold's stress) \\
+  \var{dtu}       & $\delta t/[c_{\delta t}\,\delta x
+                    /\max|\mathbf{u}|]$
+                    \quad(time step relative to
+                    advective time step;
+                    see \S~\ref{time-step}) \\
   \var{oum}       & $\left<\boldsymbol{\omega}
                     \cdot\uv\right>$ \\
   \var{o2m}       & $\left<\boldsymbol{\omega}^2\right>
@@ -43,6 +65,92 @@
                     \quad(rms Mach number) \\
   \var{Mamax}     & $\max |\uv|/\cs$
                     \quad(maximum Mach number) \\
+  \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
+  \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{density.f90}} \\
+\midrule
+  \var{rhom}      & $\left<\varrho\right>$
+                    \quad(mean density) \\
+\midrule
+  \multicolumn{2}{c}{Module \file{entropy.f90}} \\
+\midrule
+  \var{dtc}       & $\delta t/[c_{\delta t}\,\delta_x
+                    /\max c_{\rm s}]$
+                    \quad(time step relative to
+                    acoustic time step;
+                    see \S~\ref{time-step}) \\
+  \var{eth}       & $\left<\varrho e\right>$
+                    \quad(mean thermal
+                    [=internal] energy).
+                    [Shouldn't this be
+                    \texttt{ethm} then?] \\
+  \var{ssm}       & $\left<s/c_p\right>$
+                    \quad(mean entropy) \\
+  \var{ethtot}    & $\int_V\varrho e\,dV$
+                    \quad(total thermal
+                    [=internal] energy) \\
+  \var{dtchi}     & $\delta t / [c_{\delta t,{\rm v}}\,
+                    \delta x^2/\chi_{\rm max}]$
+                    \quad(time step relative to time
+                    step based on heat conductivity;
+                    see \S~\ref{time-step}) \\
+\midrule
+  \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
+\midrule
+  \var{b2m}       & $\left<\Bv^2\right>$ \\
+  \var{bm2}       & $\max(\Bv^2)$ \\
+  \var{j2m}       & $\left<\jv^2\right>$ \\
+  \var{jm2}       & $\max(\jv^2)$ \\
+  \var{abm}       & $\left<\Av\cdot\Bv\right>$ \\
+  \var{jbm}       & $\left<\jv\cdot\Bv\right>$ \\
+  \var{epsM}      & $\left<2\eta\mu_0\jv^2\right>$ \\
+  \var{brms}      & $\left<\Bv^2\right>^{1/2}$ \\
+  \var{bmax}      & $\max(|\Bv|)$ \\
+  \var{jrms}      & $\left<\jv^2\right>^{1/2}$ \\
+  \var{jmax}      & $\max(|\jv|)$ \\
+  \var{vArms}     & $\left<\Bv^2/\varrho\right>^{1/2}$ \\
+  \var{vAmax}     & $\max(\Bv^2/\varrho)^{1/2}$ \\
+  \var{dtb}       & $\delta t / [c_{\delta t}\,\delta x
+                    /v_{\rm A,max}]$
+                    \quad(time step relative to
+                    Alfv{\'e}n time step;
+                    see \S~\ref{time-step}) \\
+  \var{dteta}     & $\delta t/[c_{\delta t,{\rm v}}\,
+                    \delta x^2/\eta_{\rm max}]$
+                    \quad(time step relative to
+                    resistive time step;
+                    see \S~\ref{time-step}) \\
+  \var{beta1m}    & $\left<\Bv^2/(2\mu_0 p)\right>$
+                    \quad(mean inverse plasma beta) \\
+  \var{beta1max}  & $\max[\Bv^2/(2\mu_0 p)]$
+                    \quad(maximum inverse plasma beta) \\
+  \var{bmx}       & $\left<\left<\Bv\right>_{yz}^2
+                    \right>^{1/2}$
+                    \quad(energy of $yz$-averaged
+                    mean field) \\
+  \var{bmy}       & $\left<\left<\Bv\right>_{xz}^2
+                    \right>^{1/2}$
+                    \quad(energy of $xz$-averaged
+                    mean field) \\
+  \var{bmz}       & $\left<\left<\Bv\right>_{xy}^2
+                    \right>^{1/2}$
+                    \quad(energy of $xy$-averaged
+                    mean field) \\
+\midrule
+  \multicolumn{2}{c}{Module \file{pscalar.f90}} \\
+\midrule
+  \var{rhoccm}    & $\left<\varrho c\right>$ \\
+  \var{ccmax}     & $\max(c)$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{viscosity.f90}} \\
+\midrule
+  \var{epsK}      & $\left<2\nu\varrho\Strain^2\right>$ \\
+  \var{dtnu}      & $\delta t/[c_{\delta t,{\rm v}}\,
+                    \delta x^2/\nu_{\rm max}]$
+                    \quad(time step relative to
+                    viscous time step;
+                    see \S~\ref{time-step}) \\
 %
 \bottomrule
 \end{longtable}
