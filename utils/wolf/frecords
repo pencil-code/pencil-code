@@ -1,0 +1,286 @@
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w 
+# line 17
+
+# Name:   o-to-data
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   27-Nov-2003
+# Description:
+#   Summarize the individual records in a Fortran unformatted file.
+# Usage:
+#   frecords [-hdriv] <file>
+# Options:
+#   -h,    --help      This help
+#   -d,    --double    Assume double precision data
+#   -r<N>, --recordmarker=<N>
+#                      Set length of record marker (see e.g. gfortran's
+#                      -frecord-marker option)
+#   -i,    --int       Print data as int, too (default is just real)
+#   -I,    --int-only  Print data only as int (default is just real)
+#   -b,    --brief     Print only length of each record (no real + no int data)
+#   -v,    --version   Print version number
+
+use strict;
+
+use Getopt::Long;
+# Allow for `-Plp' as equivalent to `-P lp' etc:
+Getopt::Long::config("bundling");
+
+my (%opts);			# Variables written by GetOptions
+my $debug=0;			# Activate with (undocumented) `--debug' option
+
+## Process command line
+GetOptions(\%opts,
+	   qw( -h   --help
+	            --debug
+               -d   --double
+               -r=i --recordmarker=i
+	       -i   --int
+	       -I   --int-only
+	       -b   --brief
+	       -q   --quiet
+               -v   --version )
+          );
+
+if ($opts{'debug'}) { $debug = 1 } else { $debug = 0 }
+if ($debug) {
+    printopts(\%opts);
+    print "\@ARGV = `@ARGV'\n";
+}
+
+if ($opts{'h'} || $opts{'help'}   ) { die usage();   }
+if ($opts{'v'} || $opts{'version'}) { die version(); }
+
+my $quiet   = ($opts{'q'} || $opts{'quiet'}        || '');
+my $double  = ($opts{'d'} || $opts{'double'}       || '');
+my $nmarker = ($opts{'r'} || $opts{'recordmarker'} || 4);
+
+my $print_real = 1;
+my $print_int  = 0; #  print only real by default
+if ($opts{'i'} || $opts{'int'}     ) { $print_int=1                };
+if ($opts{'I'} || $opts{'int-only'}) { $print_int=1; $print_real=0 };
+if ($opts{'b'} || $opts{'brief'} )   { $print_real = $print_int = 0 };
+
+##
+my ($bytes,$ffmt,$ifmt,$nn1,$nn2,$N,$swap);
+if ($double) {
+    $bytes = 8;
+    $ffmt = "d";
+    $ifmt = "l";
+} else {
+    $bytes = 4;
+    $ffmt = "f";
+    $ifmt = "i";
+}
+print "\$bytes = $bytes, \$ffmt = $ffmt, \$ifmt = $ifmt\n" if ($debug);
+
+## Figure out how to print \times
+
+# Contrary to what I'd have expected, we seem to be able to print in utf8
+# mode even in an xterm with LC_CTYPE set to latin1. Possibly this is
+# because the X server is running with a utf-8 locale?
+# Let us stick to utf-8 only for the time being:
+my $times     = 'x';
+#my $lc_ctype = $ENV{LC_CTYPE} || $ENV{LC_ALL} || $ENV{LANG};
+#if (defined($lc_ctype)) {
+#    if ($ENV{LC_ALL} =~ /utf-?8/i) {
+        $times = "\x{00D7}";
+        binmode(STDOUT, ':utf8');
+#    }
+#}
+
+## Process files
+file: foreach my $file (@ARGV) {
+    if (!open(INPUT,"<$file")) {
+        print STDERR "Can't open input file $file\n";
+        next;
+    }
+    print "$file:";
+    # The first four bytes contain the size of the record
+    read INPUT, $nn1, $nmarker;
+    $N = unpack("I",$nn1);      # Interpret $N as a $nmarker-byte integer
+    if (!defined($N) || $N == 0) {
+	print STDERR "$file:\t  (corrupt)\n";
+	next file;
+    }
+    # Skip $N bytes and check record end for consistency:
+    if (seek(INPUT,$N+$nmarker,0) && read(INPUT,$nn2,$nmarker)
+                                  && ($nn2 eq $nn1)) {
+	$swap=0;
+    } else {
+	$N = unpack("I",reverse($nn1)); # Try same for swapped byte order
+	if (seek(INPUT,$N+$nmarker,0) && read(INPUT,$nn2,$nmarker)
+                                      && ($nn2 eq $nn1)) {
+	    $swap=1;
+	} else {
+	    printf(STDERR "\$nn1=%x, \$nn2=%x, \$N=$N\n",
+		   $nn1, $nn2, $N) if ($debug);
+	    print "$file:\t  (Corrupt )\n";
+	    next file;
+	}
+    }
+    if ($swap) { print "  swapped byte order;"; }
+    if ($double) {
+	print " double;";
+    } else {
+	print " real;";
+    }
+    print "\n";
+
+    ## Summarize all records
+    my ($realfmt,$intfmt);
+    if ($double) { $realfmt='%22.9g' } else { $realfmt='%11.5g ' };
+    if ($double) { $intfmt='%22d'    } else { $intfmt='%11d '    };
+    #
+    my ($pos0,$recnum) = (0,1);
+
+    # Loop over records:
+    do {
+	print STDERR "--------------------------------\n" if ($debug);
+	print STDERR "\$pos0 = $pos0\n" if ($debug);
+	unless (seek(INPUT,$pos0,0) && read(INPUT,$nn1,$bytes)) {
+	    print STDERR "Can't read at position $pos0\n";
+	    next file;
+	}
+	$N = unpack_swap("I",$nn1,$swap); # record length
+	print "\$N = $N\n" if ($debug);
+	my $Ndata = $N/$bytes;
+	# Read first and last two numbers in given record:
+	my (@nf,@ni);
+	my ($i,$pos);
+        number: foreach $i (1..4) {
+	    last number if ($i > $Ndata);
+	    if ($i==1) {
+		$pos = $pos0 + $nmarker;
+	    } elsif ($i==3) {
+		if ($Ndata>3) {
+		    $pos = $pos0 + $N + $nmarker - 2*$bytes ;
+		} else {
+		    $pos = $pos0 + $N + $nmarker - $bytes ; # only 3 items in record
+		}
+	    } else {
+		$pos = $pos + $bytes;
+	    }
+	    printf STDERR "Loop: \$pos = $pos\n" if ($debug);
+	    unless (seek(INPUT,$pos,0) && read(INPUT,$nn1,$bytes)) {
+		print STDERR "Can't read $pos\n";
+		next file;
+	    }
+	    my $n1 = unpack_swap("$ffmt",$nn1,$swap);
+	    if (defined($n1)) { push @nf, $n1 } else { warn "Can't unpack \n" };
+	    my $n2 = unpack_swap("$ifmt",$nn1,$swap);
+	    if (defined($n2)) { push @ni, $n2 } else { warn "Can't unpack \n" };
+	}
+	# Summarize current record:
+	printf("%2d: %d = %d${times}${bytes}bytes\n",$recnum, $N, $Ndata);
+	print_data($realfmt,\@nf,$Ndata) if ($print_real);
+	print_data($intfmt ,\@ni,$Ndata) if ($print_int);
+
+	# Step to next record
+	$pos0 = $pos0 + $N + 2*$nmarker;
+	$recnum++;
+	seek(INPUT,$nmarker,1);	# move $nmarker bytes on, so we can detect eof
+	if ($debug) {
+	    print STDERR 'Current position: ',
+	                 tell(INPUT),
+                         ", next record starts at \$pos0=$pos0\n";
+	}
+    } until (eof(INPUT));
+}
+
+
+
+
+# ---------------------------------------------------------------------- #
+sub unpack_swap {
+# Unpack with local or swapped byte order.
+    my $fmt  = shift;
+    my $nn   = shift;
+    my $swap = shift;
+    my $n;
+    if ($swap) {
+	$n = unpack($fmt,reverse($nn));
+    } else {
+	$n = unpack($fmt,$nn);
+    }
+    $n;
+}
+# ---------------------------------------------------------------------- #
+sub print_data {
+# Print up to four data items in the given format
+    my $fmt = shift;
+    my $dataref = shift;
+    my @data = @$dataref;
+    my $ntot = shift;
+
+    print "\@data = <@data>\n" if ($debug);
+
+    my $dots = ($ntot > 4);	# Print dots only if > 4 items
+    my $format = "   ";
+    foreach my $i (1..@data) {
+	$format .= " $fmt";
+	if ($i == 2) {
+	    if ($dots) {
+		$format .= ' ...';
+	    } else {
+		$format .= '    '; # keep short records aligned
+	    }
+	}
+    }
+    print STDERR "\$format=<$format>\n" if ($debug);
+    printf("$format\n", @data);
+
+}
+# ---------------------------------------------------------------------- #
+sub printopts {
+# Print command line options.
+    my $optsref = shift;
+    my %opts = %$optsref;
+    foreach my $opt (keys(%opts)) {
+	print STDERR "\$opts{$opt} = `$opts{$opt}'\n";
+    }
+}
+# ---------------------------------------------------------------------- #
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+	# Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^\s*\#\s*(Description|Usage):/m;
+        # Drop `Author:', etc:
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+    $_ or "<No usage information found>\n";
+}
+# ---------------------------------------------------------------------- #
+sub version {
+# Return CVS data and version info.
+    my $doll='\$';		# Need this to trick CVS
+    my $cmdname = (split('/', $0))[-1];
+    my $rev = '$Revision: 1.1 $';
+    my $date = '$Date: 2007-08-13 13:55:23 $';
+    $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
+    $date =~ s/${doll}Date:\s*(\S+).*/$1/;
+    "$cmdname version $rev ($date)\n";
+}
+# ---------------------------------------------------------------------- #
+
+# End of file frecords
