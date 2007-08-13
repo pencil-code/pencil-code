@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.9 2007-05-23 13:39:42 bingert Exp $
+! $Id: neutralvelocity.f90,v 1.10 2007-08-13 21:26:50 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -128,7 +128,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.9 2007-05-23 13:39:42 bingert Exp $")
+           "$Id: neutralvelocity.f90,v 1.10 2007-08-13 21:26:50 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -619,10 +619,6 @@ module NeutralVelocity
 !
 !  this doesn't need to be as frequent (check later)
 !
-        if (idiag_unxmxy/=0) call zsum_mn_name_xy(p%uun(:,1),idiag_unxmxy)
-        if (idiag_unymxy/=0) call zsum_mn_name_xy(p%uun(:,2),idiag_unymxy)
-        if (idiag_unzmxy/=0) call zsum_mn_name_xy(p%uun(:,3),idiag_unzmxy)
-        if (idiag_un2mz/=0)  call zsum_mn_name_xy(p%un2,idiag_un2mz)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -675,6 +671,10 @@ module NeutralVelocity
         call phisum_mn_name_rz(p%uun(:,1)*p%phix+p%uun(:,2)*p%phiy,idiag_unpmphi)
         call phisum_mn_name_rz(p%uun(:,3),idiag_unzmphi)
         call phisum_mn_name_rz(p%un2,idiag_un2mphi)
+        if (idiag_unxmxy/=0) call zsum_mn_name_xy(p%uun(:,1),idiag_unxmxy)
+        if (idiag_unymxy/=0) call zsum_mn_name_xy(p%uun(:,2),idiag_unymxy)
+        if (idiag_unzmxy/=0) call zsum_mn_name_xy(p%uun(:,3),idiag_unzmxy)
+        if (idiag_un2mz/=0)  call zsum_mn_name_xy(p%un2,idiag_un2mz)
       endif
 !
     endsubroutine duun_dt

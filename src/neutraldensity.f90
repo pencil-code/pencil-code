@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.6 2007-04-08 10:13:33 ajohan Exp $
+! $Id: neutraldensity.f90,v 1.7 2007-08-13 21:26:50 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -103,7 +103,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.6 2007-04-08 10:13:33 ajohan Exp $")
+           "$Id: neutraldensity.f90,v 1.7 2007-08-13 21:26:50 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -702,6 +702,7 @@ module NeutralDensity
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then
+        if (idiag_rhonmxy/=0)    call zsum_mn_name_xy(p%rhon,idiag_rhonmxy)
         call phisum_mn_name_rz(p%lnrhon,idiag_lnrhonmphi)
         call phisum_mn_name_rz(p%rhon,idiag_rhonmphi)
       endif
@@ -728,7 +729,6 @@ module NeutralDensity
         if (idiag_unglnrhonm/=0) call sum_mn_name(p%unglnrhon,idiag_unglnrhonm)
         if (idiag_dtnd/=0) &
             call max_mn_name(diffus_diffrhon/cdtv,idiag_dtnd,l_dt=.true.)
-        if (idiag_rhonmxy/=0)    call zsum_mn_name_xy(p%rhon,idiag_rhonmxy)
       endif
 !
     endsubroutine dlnrhon_dt

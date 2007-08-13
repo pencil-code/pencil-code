@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.23 2007-07-01 16:10:05 wlyra Exp $
+! $Id: selfgravity.f90,v 1.24 2007-08-13 21:26:50 wlyra Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -74,7 +74,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.23 2007-07-01 16:10:05 wlyra Exp $")
+           "$Id: selfgravity.f90,v 1.24 2007-08-13 21:26:50 wlyra Exp $")
 !
 !  Put variable name in array
 !
@@ -322,6 +322,9 @@ module Selfgravity
              call sum_mn_name(p%gpotself(:,2)*p%gpotself(:,3),idiag_gygzm)
         if (idiag_grgpm/=0 .or. idiag_grgzm/=0 .or. idiag_gpgzm/=0) &
              call calc_cylgrav_stresses(p)
+      endif
+!
+      if (l2davgfirst) then
         if (idiag_gpotenmxy/=0) call zsum_mn_name_xy(p%potself*p%rho,idiag_gpotenmxy)
       endif
 !
