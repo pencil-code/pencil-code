@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.337 2007-08-13 10:21:46 dobler Exp $
+! $Id: density.f90,v 1.338 2007-08-13 17:52:43 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -125,7 +125,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.337 2007-08-13 10:21:46 dobler Exp $")
+           "$Id: density.f90,v 1.338 2007-08-13 17:52:43 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1393,6 +1393,7 @@ module Density
         if (idiag_lnrhomphi/=0) call phisum_mn_name_rz(p%lnrho,idiag_lnrhomphi)
         if (idiag_rhomphi/=0)   call phisum_mn_name_rz(p%rho,idiag_rhomphi)
         if (idiag_rhomxz/=0)    call ysum_mn_name_xz(p%rho,idiag_rhomxz)
+        if (idiag_rhomxy/=0)    call zsum_mn_name_xy(p%rho,idiag_rhomxy)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -1417,7 +1418,6 @@ module Density
         if (idiag_uglnrhom/=0) call sum_mn_name(p%uglnrho,idiag_uglnrhom)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
-        if (idiag_rhomxy/=0)    call zsum_mn_name_xy(p%rho,idiag_rhomxy)
       endif
 !
     endsubroutine dlnrho_dt
