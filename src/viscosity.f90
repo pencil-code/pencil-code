@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.68 2007-03-30 23:50:32 dobler Exp $
+! $Id: viscosity.f90,v 1.69 2007-08-13 10:21:46 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -63,10 +63,17 @@ module Viscosity
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_epsK=0  ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
-  integer :: idiag_epsK2=0,idiag_epsK_LES=0
-  integer :: idiag_dtnu=0
-  integer :: idiag_meshRemax=0
-  integer :: idiag_nuD2uxbxm=0, idiag_nuD2uxbym=0, idiag_nuD2uxbzm=0
+  integer :: idiag_epsK2=0      ! DIAG_DOC:
+  integer :: idiag_epsK_LES=0   ! DIAG_DOC:
+  integer :: idiag_dtnu=0       ! DIAG_DOC: $\delta t/[c_{\delta t,{\rm v}}\, 
+                                ! DIAG_DOC:   \delta x^2/\nu_{\rm max}]$
+                                ! DIAG_DOC:   \quad(time step relative to
+                                ! DIAG_DOC:   viscous time step;
+                                ! DIAG_DOC:  see \S~\ref{time-step})
+  integer :: idiag_meshRemax=0  ! DIAG_DOC:
+  integer :: idiag_nuD2uxbxm=0  ! DIAG_DOC:
+  integer :: idiag_nuD2uxbym=0  ! DIAG_DOC:
+  integer :: idiag_nuD2uxbzm=0  ! DIAG_DOC:
 
   contains
 
@@ -91,7 +98,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.68 2007-03-30 23:50:32 dobler Exp $")
+           "$Id: viscosity.f90,v 1.69 2007-08-13 10:21:46 dobler Exp $")
 
       ivisc(1)='nu-const'
 !

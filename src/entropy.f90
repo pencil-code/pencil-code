@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.506 2007-07-02 07:09:43 brandenb Exp $
+! $Id: entropy.f90,v 1.507 2007-08-13 10:21:46 dobler Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -133,14 +133,54 @@ module Entropy
       lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global, &
       tau_cool,TTref_cool
 
-  ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
-  integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0,idiag_pdivum=0,idiag_heatm=0
-  integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
-  integer :: idiag_yHm=0,idiag_yHmax=0,idiag_TTm=0,idiag_TTmax=0,idiag_TTmin=0
-  integer :: idiag_fconvz=0,idiag_dcoolz=0,idiag_fradz=0,idiag_fturbz=0
-  integer :: idiag_ssmx=0,idiag_ssmy=0,idiag_ssmz=0,idiag_TTp=0,idiag_ssmr=0
-  integer :: idiag_TTmx=0,idiag_TTmy=0,idiag_TTmz=0,idiag_TTmxy=0,idiag_TTmr=0
+  ! diagnostic variables (need to be consistent with reset list below)
+  integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
+                                ! DIAG_DOC:   /\max c_{\rm s}]$
+                                ! DIAG_DOC:   \quad(time step relative to 
+                                ! DIAG_DOC:   acoustic time step;
+                                ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_eth=0        ! DIAG_DOC: $\left<\varrho e\right>$
+                                ! DIAG_DOC:   \quad(mean thermal
+                                ! DIAG_DOC:   [=internal] energy).
+                                ! DIAG_DOC:   [Shouldn't this be
+                                ! DIAG_DOC:   \texttt{ethm} then?]
+  integer :: idiag_ethdivum=0   ! DIAG_DOC:
+  integer :: idiag_ssm=0        ! DIAG_DOC: $\left<s/c_p\right>$
+                                ! DIAG_DOC:   \quad(mean entropy)
+  integer :: idiag_eem=0        ! DIAG_DOC:
+  integer :: idiag_ppm=0        ! DIAG_DOC:
+  integer :: idiag_csm=0        ! DIAG_DOC:
+  integer :: idiag_pdivum=0     ! DIAG_DOC:
+  integer :: idiag_heatm=0      ! DIAG_DOC:
+  integer :: idiag_ugradpm=0    ! DIAG_DOC:
+  integer :: idiag_ethtot=0     ! DIAG_DOC: $\int_V\varrho e\,dV$
+                                ! DIAG_DOC:   \quad(total thermal
+                                ! DIAG_DOC:   [=internal] energy)
+  integer :: idiag_dtchi=0      ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm v}}\,
+                                ! DIAG_DOC:   \delta x^2/\chi_{\rm max}]$
+                                ! DIAG_DOC:   \quad(time step relative to time
+                                ! DIAG_DOC:   step based on heat conductivity;
+                                ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_ssmphi=0     ! DIAG_DOC:
+  integer :: idiag_yHm=0        ! DIAG_DOC:
+  integer :: idiag_yHmax=0      ! DIAG_DOC:
+  integer :: idiag_TTm=0        ! DIAG_DOC:
+  integer :: idiag_TTmax=0      ! DIAG_DOC:
+  integer :: idiag_TTmin=0      ! DIAG_DOC:
+  integer :: idiag_fconvz=0     ! DIAG_DOC:
+  integer :: idiag_dcoolz=0     ! DIAG_DOC:
+  integer :: idiag_fradz=0      ! DIAG_DOC:
+  integer :: idiag_fturbz=0     ! DIAG_DOC:
+  integer :: idiag_ssmx=0       ! DIAG_DOC:
+  integer :: idiag_ssmy=0       ! DIAG_DOC:
+  integer :: idiag_ssmz=0       ! DIAG_DOC:
+  integer :: idiag_TTp=0        ! DIAG_DOC:
+  integer :: idiag_ssmr=0       ! DIAG_DOC:
+  integer :: idiag_TTmx=0       ! DIAG_DOC:
+  integer :: idiag_TTmy=0       ! DIAG_DOC:
+  integer :: idiag_TTmz=0       ! DIAG_DOC:
+  integer :: idiag_TTmxy=0      ! DIAG_DOC:
+  integer :: idiag_TTmr=0       ! DIAG_DOC:
 
   contains
 
@@ -167,7 +207,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.506 2007-07-02 07:09:43 brandenb Exp $")
+           "$Id: entropy.f90,v 1.507 2007-08-13 10:21:46 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************

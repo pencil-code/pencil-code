@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.374 2007-08-02 13:02:48 dhruba Exp $
+! $Id: cdata.f90,v 1.375 2007-08-13 10:21:45 dobler Exp $
 
 module Cdata
 
@@ -195,12 +195,21 @@ module Cdata
   character (LEN=30) :: cnamer(mnamer),cformr(mnamer)
   character (LEN=30) :: cnamerz(mnamerz),cformrz(mnamerz)
 
-! other variables (needs to be consistent with reset list in register.90)
-  integer :: idiag_t=0,idiag_it=0,idiag_dt=0
-  integer :: idiag_walltime=0,idiag_timeperstep=0
-  integer :: idiag_rcylmphi=0,idiag_phimphi=0,idiag_zmphi=0,idiag_rmphi=0
-  integer :: idiag_dtv=0,idiag_dtdiffus=0
-  integer :: idiag_nu_LES=0
+! diagnostic variables (needs to be consistent with reset list in register.90)
+  integer :: idiag_it=0         ! DIAG_DOC: number of time step
+                                ! DIAG_DOC:   \quad(since beginning of job only)
+  integer :: idiag_t=0          ! DIAG_DOC: time $t$ \quad(since start.csh)
+  integer :: idiag_dt=0         ! DIAG_DOC: time step $\delta t$
+  integer :: idiag_walltime=0   ! DIAG_DOC: wall clock time since start of
+                                ! DIAG_DOC:   run.x, in seconds
+  integer :: idiag_timeperstep=0 ! DIAG_DOC:
+  integer :: idiag_rcylmphi=0   ! DIAG_DOC:
+  integer :: idiag_phimphi=0    ! DIAG_DOC:
+  integer :: idiag_zmphi=0      ! DIAG_DOC:
+  integer :: idiag_rmphi=0      ! DIAG_DOC:
+  integer :: idiag_dtv=0        ! DIAG_DOC:
+  integer :: idiag_dtdiffus=0   ! DIAG_DOC:
+  integer :: idiag_nu_LES=0     ! DIAG_DOC:
 !
 !  initialization of various switches; actual settings depends on the
 !  modules that are linked in (see Makefile.local) and can, in some cases,

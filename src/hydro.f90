@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.370 2007-08-13 05:51:55 ajohan Exp $
+! $Id: hydro.f90,v 1.371 2007-08-13 10:21:46 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -119,8 +119,9 @@ module Hydro
 
 ! end geodynamo
 
-  ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_u2tm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\uv(t') dt'\right>$
+  ! diagnostic variables (need to be consistent with reset list below)
+  integer :: idiag_u2tm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\uv(t')
+                                ! DIAG_DOC:   dt'\right>$
   integer :: idiag_u2m=0        ! DIAG_DOC: $\left<\uv^2\right>$
   integer :: idiag_um2=0        ! DIAG_DOC: 
   integer :: idiag_uxpt=0       ! DIAG_DOC: 
@@ -161,7 +162,8 @@ module Hydro
   integer :: idiag_uxuzmx=0     ! DIAG_DOC: 
   integer :: idiag_uyuzmx=0     ! DIAG_DOC: 
   integer :: idiag_uxmz=0       ! DIAG_DOC: $\left< u_x \right>_{x,y}$
-                                ! DIAG_DOC:   \quad(horiz. averaged $x$ velocity)
+                                ! DIAG_DOC:   \quad(horiz. averaged $x$
+                                ! DIAG_DOC:   velocity)
   integer :: idiag_uymz=0       ! DIAG_DOC: 
   integer :: idiag_uzmz=0       ! DIAG_DOC: 
   integer :: idiag_umx=0        ! DIAG_DOC: 
@@ -202,8 +204,7 @@ module Hydro
   integer :: idiag_uzfampm=0    ! DIAG_DOC: 
   integer :: idiag_uxfampim=0   ! DIAG_DOC: 
   integer :: idiag_uyfampim=0   ! DIAG_DOC: 
-  integer :: idiag_uzfampim=0   ! DIAG_DOC: 
-  !
+  integer :: idiag_uzfampim=0   ! DIAG_DOC:
   integer :: idiag_ruxm=0       ! DIAG_DOC: $\left<\varrho u_x\right>$
                                 ! DIAG_DOC:   \quad(mean $x$-momentum density)
   integer :: idiag_ruym=0       ! DIAG_DOC: $\left<\varrho u_y\right>$
@@ -215,10 +216,12 @@ module Hydro
   integer :: idiag_ruxuym=0     ! DIAG_DOC: $\left<\varrho u_x u_y\right>$
                                 ! DIAG_DOC:   \quad(mean Reynold's stress)
   integer :: idiag_ruxuymz=0    ! DIAG_DOC:
-  integer :: idiag_rufm=0       ! DIAG_DOC: 
-  !
-  integer :: idiag_dtu=0        ! DIAG_DOC: 
-  !
+  integer :: idiag_rufm=0       ! DIAG_DOC:
+  integer :: idiag_dtu=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta x
+                                ! DIAG_DOC:  /\max|\mathbf{u}|]$
+                                ! DIAG_DOC:  \quad(time step relative to
+                                ! DIAG_DOC:   advective time step;
+                                ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_oum=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}
                                 ! DIAG_DOC:   \cdot\uv\right>$
   integer :: idiag_o2m=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}^2\right>
@@ -251,8 +254,8 @@ module Hydro
   integer :: idiag_fextm=0      ! DIAG_DOC: 
   integer :: idiag_duxdzma=0    ! DIAG_DOC: 
   integer :: idiag_duydzma=0    ! DIAG_DOC: 
-  integer :: idiag_ekin=0       ! DIAG_DOC: 
-  integer :: idiag_ekintot=0    ! DIAG_DOC: 
+  integer :: idiag_ekin=0       ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2\right>$
+  integer :: idiag_ekintot=0    ! DIAG_DOC: $\int_V{1\over2}\varrho\uv^2\, dV$
   integer :: idiag_ekinz=0      ! DIAG_DOC: 
   integer :: idiag_totangmom=0  ! DIAG_DOC: 
   integer :: idiag_fmassz=0     ! DIAG_DOC: 
@@ -302,7 +305,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.370 2007-08-13 05:51:55 ajohan Exp $")
+           "$Id: hydro.f90,v 1.371 2007-08-13 10:21:46 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

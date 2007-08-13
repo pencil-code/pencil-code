@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.363 2007-07-03 09:52:12 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.364 2007-08-13 10:21:45 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2007-07-03 09:52:12 $ $,~ $ $Revision: 1.363 $ $}
+%\date{$ $Date: 2007-08-13 10:21:45 $ $,~ $ $Revision: 1.364 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2007-07-03 09:52:12 $ $,~ $ $Revision: 1.363 $ $}\\
+  \emph{$ $Date: 2007-08-13 10:21:45 $ $,~ $ $Revision: 1.364 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -5550,7 +5550,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2007-07-03 09:52:12 $ $,~ $ $Revision: 1.363 $ $}
+  \hfill\normalsize\rm$ $Date: 2007-08-13 10:21:45 $ $,~ $ $Revision: 1.364 $ $}
 
 \section{Timings}
 
@@ -7514,7 +7514,7 @@ modules.
 \label{S-all-init-params}
 
 The following table lists all (at the time of writing, September 2002)
-namelists used in \file{run.in}, with the corresponding parameters
+namelists used in \file{start.in}, with the corresponding parameters
 and their default values (in square brackets).
 Any variable referred to as a \dfn{flag} can be set to any nonzero value
 to switch the corresponding feature on.
@@ -8392,123 +8392,12 @@ the latest set of parameters, you need to look at the code.
 {List of parameters for \file{print.in}}
 \label{S-print.in-params}
 
-The following table lists all (at the time of writing, September 2002)
-possible inputs to the file \file{print.in}.
-
-%\input{diag-table.tex}
+The following table lists all possible inputs to the file \file{print.in}
+that are documented.
 
 % ---------------------------------------------------------------------- %
-\begin{longtable}{lp{0.7\textwidth}}
-\toprule
-  \multicolumn{1}{c}{\emph{Variable}} & {\emph{Meaning}} \\
-\midrule
-  \multicolumn{2}{c}{Module \file{prints.f90}} \\
-\midrule
-  \var{it}    & number of time step \quad(since beginning of job only)\\
-  \var{t}     & $t$ \quad(since start.csh)\\
-  \var{dt}    & $\delta t$ \\
-  \var{dtc}   & time step relative to acoustic time step
-                $\delta t/[c_{\delta t}\,\delta_x /\max c_{\rm s}]$ \\
-  \var{dtu}   & time step relative to advective time step
-                $\delta t/[c_{\delta t}\,\delta x/\max|\mathbf{u}|]$
-                (see \S~\ref{time-step})\\
-  \var{dtb}   & time step relative to Alfv{\'e}n time step
-                $\delta t / [c_{\delta t}\,\delta x/v_{\rm A,max}]$
-                (see \S~\ref{time-step})\\
-  \var{dteta} & time step relative to resistive time step
-                $\delta t/[c_{\delta t,{\rm v}}\,
-                 \delta x^2/\eta_{\rm max}]$
-                (see \S~\ref{time-step})\\
-  \var{dtchi} & time step relative to time step based on heat conductivity
-                $\delta t / [c_{\delta t,{\rm v}}\,
-                 \delta x^2/\chi_{\rm max}]$
-                (see \S~\ref{time-step})\\
-  \var{dtnu}  & time step relative to viscous time step
-                $\delta t/[c_{\delta t,{\rm v}}\,
-                 \delta x^2/\nu_{\rm max}]$
-                (see \S~\ref{time-step})\\
-  \var{walltime} & wall clock time since run.x started in seconds \\
-%
-\midrule
-  \multicolumn{2}{c}{Module \file{hydro.f90}} \\
-\midrule
-  \var{u2m}   & $\left<\uv^2\right>$ \\
-  \var{urms}  & $\left<\uv^2\right>^{1/2}$ \\
-  \var{umax}  & $\max(|\uv|)$ \\
-  \var{uzrms} & $\left<u_z^2\right>^{1/2}$ \\
-  \var{uzmax} & $\max(|u_z|)$ \\
-  \var{o2m}   & $\left<\boldsymbol{\omega}^2\right>
-                 \equiv \left<(\curl\uv)^2\right>$ \\
-  \var{orms}  & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
-  \var{omax}  & $\max(|\boldsymbol{\omega}|)$ \\
-  \var{ox2m}  & $\left<\omega_x^2\right>$ \\
-  \var{oy2m}  & $\left<\omega_y^2\right>$ \\
-  \var{oz2m}  & $\left<\omega_z^2\right>$ \\
-  \var{oxoym} & $\left<\omega_x\omega_y\right>$ \\
-  \var{oxozm} & $\left<\omega_x\omega_z\right>$ \\
-  \var{oyozm} & $\left<\omega_y\omega_z\right>$ \\
-  \var{oum}   & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
-  \var{epsK}  & $\left<2\nu\varrho\Strain^2\right>$ \\
-  \var{ruxm}  & $\left<\varrho u_x\right>$ \quad(mean $x$-momentum) \\
-  \var{ruym}  & $\left<\varrho u_y\right>$ \quad(mean $y$-momentum) \\
-  \var{ruzm}  & $\left<\varrho u_z\right>$ \quad(mean $z$-momentum) \\
-  \var{rumax} & $\max(\varrho \uv)$ \quad(maximum modulus of momentum) \\
-%
-\midrule
-  \multicolumn{2}{c}{Module \file{density.f90}} \\
-\midrule
-  \var{rhom}    & $\left<\varrho\right>$ \\
-  \var{ekin}    & $\left<{1\over2}\varrho\uv^2\right>$ \\
-  \var{ekintot} & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
-%
-\midrule
-  \multicolumn{2}{c}{Module \file{entropy.f90}} \\
-\midrule
-  \var{eth} & $\left<\varrho e\right>$ \\
-  \var{ethtot} & $\int_V\varrho e\,dV$ \\
-  \var{ssm} & $\left<s/c_p\right>$ \\
-%
-\midrule
-  \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
-\midrule
-  \var{b2m} & $\left<\Bv^2\right>$ \\
-  \var{brms} & $\left<\Bv^2\right>^{1/2}$ \\
-  \var{b2m} & $\max(\Bv^2)$ \\
-  \var{bmax} & $\max(|\Bv|)$ \\
-  \var{j2m} & $\left<\jv^2\right>$ \\
-  \var{jrms} & $\left<\jv^2\right>^{1/2}$ \\
-  \var{jm2} & $\max(\jv^2)$ \\
-  \var{jmax} & $\max(|\jv|)$ \\
-  \var{abm} & $\left<\Av\cdot\Bv\right>$ \\
-  \var{jbm} & $\left<\jv\cdot\Bv\right>$ \\
-  \var{vArms} & $\left<\Bv^2/\varrho\right>^{1/2}$ \\
-  \var{vAmax} & $\max(\Bv^2/\varrho)^{1/2}$ \\
-  \var{beta1m} & $\left<\Bv^2/(2\mu_0 p)\right>$ \quad(mean inverse plasma beta)\\
-  \var{beta1max} & $\max[\Bv^2/(2\mu_0 p)]$ \quad(maximum inverse plasma beta)\\
-  \var{epsM} & $\left<2\eta\mu_0\jv^2\right>$ \\
-  \var{bmx} & $\left<\left<\Bv\right>_{yz}^2\right>^{1/2}$ \quad(energy of $yz$-averaged mean field) \\
-  \var{bmy} & $\left<\left<\Bv\right>_{xz}^2\right>^{1/2}$ \quad(energy of $xz$-averaged mean field) \\
-  \var{bmz} & $\left<\left<\Bv\right>_{xy}^2\right>^{1/2}$ \quad(energy of $xy$-averaged mean field) \\
-%
-\midrule
-  \multicolumn{2}{c}{Module \file{pscalar.f90}} \\
-\midrule
-  \var{rhoccm} & $\left<\varrho c\right>$ \\
-  \var{ccmax} & $\max(c)$ \\
-%
-\midrule
-  \multicolumn{2}{c}{Module \file{equ.f90}} \\
-\midrule
-  \var{rhom} & $\left<\varrho\right>$ \quad(mass per volume)\\
-  \var{eth} & $\left<\varrho e\right>$ \quad(thermal energy per volume)\\
-  \var{ekin} & $\left<{1\over2}\varrho\uv^2\right>$ \quad(kinetic energy per volume)\\
-  \var{Marms} & $\left<\uv^2/c_{\rm s}^2\right>^{1/2}$ \quad(rms Mach number)\\
-  \var{Mamax} & $\max(Ma)$ \quad(maximum Mach number)\\
-%
-\bottomrule
-\end{longtable}
+\input{diag-table.tex}
 % ---------------------------------------------------------------------- %
-
 
 
 \subsection[Parameters for \File{video.in}]%
@@ -8991,7 +8880,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.363 2007-07-03 09:52:12 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.364 2007-08-13 10:21:45 dobler Exp $ $}
 
 
 \end{document}

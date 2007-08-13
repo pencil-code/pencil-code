@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.68 2007-06-05 05:10:28 ajohan Exp $
+! $Id: pscalar.f90,v 1.69 2007-08-13 10:21:46 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -45,17 +45,43 @@ module Pscalar
   namelist /pscalar_run_pars/ &
       pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,lupw_lncc
 
-  ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_rhoccm=0, idiag_ccmax=0, idiag_ccmin=0, idiag_lnccm=0
-  integer :: idiag_mcct=0, idiag_gcc5m=0, idiag_gcc10m=0
-  integer :: idiag_ucm=0, idiag_uudcm=0, idiag_Cz2m=0, idiag_Cz4m=0
-  integer :: idiag_cc1m=0, idiag_cc2m=0, idiag_cc3m=0, idiag_cc4m=0
-  integer :: idiag_cc5m=0, idiag_cc6m=0, idiag_cc7m=0, idiag_cc8m=0
-  integer :: idiag_cc9m=0, idiag_cc10m=0, idiag_Crmsm=0
-  integer :: idiag_gcc1m=0, idiag_gcc2m=0, idiag_gcc3m=0, idiag_gcc4m=0
-  integer :: idiag_gcc6m=0, idiag_gcc7m=0, idiag_gcc8m=0, idiag_gcc9m=0
-  integer :: idiag_lnccmz=0, idiag_lnccmy=0, idiag_lnccmx=0
-  integer :: idiag_ccmz=0, idiag_ccmy=0, idiag_ccmx=0
+  ! diagnostic variables (need to be consistent with reset list below)
+  integer :: idiag_rhoccm=0     ! DIAG_DOC: $\left<\varrho c\right>$
+  integer :: idiag_ccmax=0      ! DIAG_DOC: $\max(c)$
+  integer :: idiag_ccmin=0      ! DIAG_DOC:
+  integer :: idiag_lnccm=0      ! DIAG_DOC:
+  integer :: idiag_mcct=0       ! DIAG_DOC:
+  integer :: idiag_gcc5m=0      ! DIAG_DOC:
+  integer :: idiag_gcc10m=0     ! DIAG_DOC:
+  integer :: idiag_ucm=0        ! DIAG_DOC:
+  integer :: idiag_uudcm=0      ! DIAG_DOC:
+  integer :: idiag_Cz2m=0       ! DIAG_DOC:
+  integer :: idiag_Cz4m=0       ! DIAG_DOC:
+  integer :: idiag_cc1m=0       ! DIAG_DOC:
+  integer :: idiag_cc2m=0       ! DIAG_DOC:
+  integer :: idiag_cc3m=0       ! DIAG_DOC:
+  integer :: idiag_cc4m=0       ! DIAG_DOC:
+  integer :: idiag_cc5m=0       ! DIAG_DOC:
+  integer :: idiag_cc6m=0       ! DIAG_DOC:
+  integer :: idiag_cc7m=0       ! DIAG_DOC:
+  integer :: idiag_cc8m=0       ! DIAG_DOC:
+  integer :: idiag_cc9m=0       ! DIAG_DOC:
+  integer :: idiag_cc10m=0      ! DIAG_DOC:
+  integer :: idiag_Crmsm=0      ! DIAG_DOC:
+  integer :: idiag_gcc1m=0      ! DIAG_DOC:
+  integer :: idiag_gcc2m=0      ! DIAG_DOC:
+  integer :: idiag_gcc3m=0      ! DIAG_DOC:
+  integer :: idiag_gcc4m=0      ! DIAG_DOC:
+  integer :: idiag_gcc6m=0      ! DIAG_DOC:
+  integer :: idiag_gcc7m=0      ! DIAG_DOC:
+  integer :: idiag_gcc8m=0      ! DIAG_DOC:
+  integer :: idiag_gcc9m=0      ! DIAG_DOC:
+  integer :: idiag_lnccmz=0     ! DIAG_DOC:
+  integer :: idiag_lnccmy=0     ! DIAG_DOC:
+  integer :: idiag_lnccmx=0     ! DIAG_DOC:
+  integer :: idiag_ccmz=0       ! DIAG_DOC:
+  integer :: idiag_ccmy=0       ! DIAG_DOC:
+  integer :: idiag_ccmx=0       ! DIAG_DOC:
 
   contains
 
@@ -88,7 +114,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.68 2007-06-05 05:10:28 ajohan Exp $")
+           "$Id: pscalar.f90,v 1.69 2007-08-13 10:21:46 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

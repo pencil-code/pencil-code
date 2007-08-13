@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.336 2007-08-13 05:51:55 ajohan Exp $
+! $Id: density.f90,v 1.337 2007-08-13 10:21:46 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -82,13 +82,24 @@ module Density
        lnrho_const,plaw,lcontinuity_gas,borderlnrho,    &
        diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor
 
-  ! diagnostic variables (needs to be consistent with reset list below)
-  integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
-  integer :: idiag_rhomin=0,idiag_rhomax=0,idiag_uglnrhom=0
-  integer :: idiag_lnrhomphi=0,idiag_rhomphi=0,idiag_dtd=0
-  integer :: idiag_rhomz=0, idiag_rhomy=0, idiag_rhomx=0
-  integer :: idiag_rhomxy=0, idiag_rhomxz=0, idiag_rhomr=0
-  integer :: idiag_totmass=0
+  ! diagnostic variables (need to be consistent with reset list below)
+  integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
+                                ! DIAG_DOC:   \quad(mean density)
+  integer :: idiag_rho2m=0      ! DIAG_DOC:
+  integer :: idiag_lnrho2m=0    ! DIAG_DOC:
+  integer :: idiag_rhomin=0     ! DIAG_DOC:
+  integer :: idiag_rhomax=0     ! DIAG_DOC:
+  integer :: idiag_uglnrhom=0   ! DIAG_DOC:
+  integer :: idiag_lnrhomphi=0  ! DIAG_DOC:
+  integer :: idiag_rhomphi=0    ! DIAG_DOC:
+  integer :: idiag_dtd=0        ! DIAG_DOC:
+  integer :: idiag_rhomz=0      ! DIAG_DOC:
+  integer :: idiag_rhomy=0      ! DIAG_DOC:
+  integer :: idiag_rhomx=0      ! DIAG_DOC:
+  integer :: idiag_rhomxy=0     ! DIAG_DOC:
+  integer :: idiag_rhomxz=0     ! DIAG_DOC:
+  integer :: idiag_rhomr=0      ! DIAG_DOC:
+  integer :: idiag_totmass=0    ! DIAG_DOC:
 
   contains
 
@@ -114,7 +125,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.336 2007-08-13 05:51:55 ajohan Exp $")
+           "$Id: density.f90,v 1.337 2007-08-13 10:21:46 dobler Exp $")
 !
     endsubroutine register_density
 !***********************************************************************

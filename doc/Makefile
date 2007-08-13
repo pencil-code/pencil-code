@@ -45,7 +45,7 @@ all:  manual.pdf manual.dvi manual.ps.gz
 pdffigs:
 	cd figs; make pdf
 
-manual_dvi: manual.tex diag_table.tex
+manual_dvi: manual.tex diag-table.tex
 	@TEXINPUTS="./texinputs:${TEXINPUTS}"; \
 	export TEXINPUTS; \
 	echo "TEXINPUTS=$${TEXINPUTS}"; \
@@ -77,8 +77,8 @@ manual.ps: driver_ps2pdf manual_dvi
 manual.ps.gz: manual.ps
 	gzip -f manual.ps
 
-diag_table.tex:
-	./extract-diag-doc
+diag-table.tex:
+	./extract-diag-doc -o diag-table.tex
 
 driver_:
 	@printf "%s\n" \

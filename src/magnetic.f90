@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.441 2007-08-11 21:03:52 brandenb Exp $
+! $Id: magnetic.f90,v 1.442 2007-08-13 10:21:46 dobler Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -165,40 +165,131 @@ module Magnetic
        lelectron_inertia,inertial_length, &
        lbb_as_aux,ljj_as_aux
 
-  ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0
-  integer :: idiag_abm=0,idiag_jbm=0,idiag_ubm=0,idiag_epsM=0
-  integer :: idiag_bxpt=0,idiag_bypt=0,idiag_bzpt=0,idiag_epsM_LES=0
-  integer :: idiag_aybym2=0,idiag_exaym2=0,idiag_exjm2=0
-  integer :: idiag_brms=0,idiag_bmax=0,idiag_jrms=0,idiag_jmax=0
-  integer :: idiag_vArms=0,idiag_vAmax=0,idiag_dtb=0
-  integer :: idiag_arms=0,idiag_amax=0,idiag_beta1m=0,idiag_beta1max=0
-  integer :: idiag_bxm=0,idiag_bym=0,idiag_bzm=0
-  integer :: idiag_bx2m=0,idiag_by2m=0,idiag_bz2m=0
-  integer :: idiag_bxbym=0,idiag_bxbzm=0,idiag_bybzm=0,idiag_djuidjbim=0
-  integer :: idiag_bxbymz=0,idiag_bxbzmz=0,idiag_bybzmz=0,idiag_b2mz=0
-  integer :: idiag_bxmz=0,idiag_bymz=0,idiag_bzmz=0,idiag_bmx=0
-  integer :: idiag_bx2mz=0,idiag_by2mz=0,idiag_bz2mz=0
-  integer :: idiag_bmy=0,idiag_bmz=0
-  integer :: idiag_bxmxy=0,idiag_bymxy=0,idiag_bzmxy=0
-  integer :: idiag_bxmxz=0,idiag_bymxz=0,idiag_bzmxz=0
-  integer :: idiag_uxbm=0,idiag_oxuxbm=0,idiag_jxbxbm=0,idiag_gpxbm=0
-  integer :: idiag_uxDxuxbm=0,idiag_jbmphi=0,idiag_dteta=0
-  integer :: idiag_b3b21m=0,idiag_b1b32m=0,idiag_b2b13m=0
-  integer :: idiag_EMFdotBm=0
-  integer :: idiag_udotxbm=0,idiag_uxbdotm=0
-  integer :: idiag_uxbmx=0,idiag_uxbmy=0,idiag_uxbmz=0,idiag_uxjm=0
-  integer :: idiag_brmphi=0,idiag_bpmphi=0,idiag_bzmphi=0,idiag_b2mphi=0
-  integer :: idiag_uxbrmphi=0,idiag_uxbpmphi=0,idiag_uxbzmphi=0,idiag_ujxbm=0
-  integer :: idiag_jxbrmphi=0,idiag_jxbpmphi=0,idiag_jxbzmphi=0
-  integer :: idiag_armphi=0,idiag_apmphi=0,idiag_azmphi=0
-  integer :: idiag_uxBrms=0,idiag_Bresrms=0,idiag_Rmrms=0
-  integer :: idiag_jfm=0,idiag_brbpmr=0,idiag_vA2m=0
-  integer :: idiag_b2mr=0,idiag_brmr=0,idiag_bpmr=0,idiag_bzmr=0
-  integer :: idiag_armr=0,idiag_apmr=0,idiag_azmr=0
-  integer :: idiag_bxmx=0,idiag_bymy=0
-  integer :: idiag_mflux_x=0,idiag_mflux_y=0,idiag_mflux_z=0
-  integer :: idiag_bmxy_rms=0
+  ! diagnostic variables (need to be consistent with reset list below)
+  integer :: idiag_b2m=0        ! DIAG_DOC: $\left<\Bv^2\right>$
+  integer :: idiag_bm2=0        ! DIAG_DOC: $\max(\Bv^2)$
+  integer :: idiag_j2m=0        ! DIAG_DOC: $\left<\jv^2\right>$
+  integer :: idiag_jm2=0        ! DIAG_DOC: $\max(\jv^2)$
+  integer :: idiag_abm=0        ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
+  integer :: idiag_jbm=0        ! DIAG_DOC: $\left<\jv\cdot\Bv\right>$
+  integer :: idiag_ubm=0        ! DIAG_DOC:
+  integer :: idiag_epsM=0       ! DIAG_DOC: $\left<2\eta\mu_0\jv^2\right>$
+  integer :: idiag_bxpt=0       ! DIAG_DOC:
+  integer :: idiag_bypt=0       ! DIAG_DOC:
+  integer :: idiag_bzpt=0       ! DIAG_DOC:
+  integer :: idiag_epsM_LES=0   ! DIAG_DOC:
+  integer :: idiag_aybym2=0     ! DIAG_DOC:
+  integer :: idiag_exaym2=0     ! DIAG_DOC:
+  integer :: idiag_exjm2=0      ! DIAG_DOC:
+  integer :: idiag_brms=0       ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$
+  integer :: idiag_bmax=0       ! DIAG_DOC: $\max(|\Bv|)$
+  integer :: idiag_jrms=0       ! DIAG_DOC: $\left<\jv^2\right>^{1/2}$
+  integer :: idiag_jmax=0       ! DIAG_DOC: $\max(|\jv|)$
+  integer :: idiag_vArms=0      ! DIAG_DOC: $\left<\Bv^2/\varrho\right>^{1/2}$
+  integer :: idiag_vAmax=0      ! DIAG_DOC: $\max(\Bv^2/\varrho)^{1/2}$
+  integer :: idiag_dtb=0        ! DIAG_DOC: $\delta t / [c_{\delta t}\,\delta x
+                                ! DIAG_DOC:   /v_{\rm A,max}]$
+                                ! DIAG_DOC:   \quad(time step relative to
+                                ! DIAG_DOC:   Alfv{\'e}n time step;
+                                ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_dteta=0      ! DIAG_DOC: $\delta t/[c_{\delta t,{\rm v}}\,
+                                ! DIAG_DOC:   \delta x^2/\eta_{\rm max}]$
+                                ! DIAG_DOC:   \quad(time step relative to
+                                ! DIAG_DOC:   resistive time step;
+                                ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_arms=0       ! DIAG_DOC:
+  integer :: idiag_amax=0       ! DIAG_DOC:
+  integer :: idiag_beta1m=0     ! DIAG_DOC: $\left<\Bv^2/(2\mu_0 p)\right>$
+                                ! DIAG_DOC:   \quad(mean inverse plasma beta)
+  integer :: idiag_beta1max=0   ! DIAG_DOC: $\max[\Bv^2/(2\mu_0 p)]$
+                                ! DIAG_DOC:   \quad(maximum inverse plasma beta)
+  integer :: idiag_bxm=0        ! DIAG_DOC:
+  integer :: idiag_bym=0        ! DIAG_DOC:
+  integer :: idiag_bzm=0        ! DIAG_DOC:
+  integer :: idiag_bx2m=0       ! DIAG_DOC:
+  integer :: idiag_by2m=0       ! DIAG_DOC:
+  integer :: idiag_bz2m=0       ! DIAG_DOC:
+  integer :: idiag_bxbym=0      ! DIAG_DOC:
+  integer :: idiag_bxbzm=0      ! DIAG_DOC:
+  integer :: idiag_bybzm=0      ! DIAG_DOC:
+  integer :: idiag_djuidjbim=0  ! DIAG_DOC:
+  integer :: idiag_bxbymz=0     ! DIAG_DOC:
+  integer :: idiag_bxbzmz=0     ! DIAG_DOC:
+  integer :: idiag_bybzmz=0     ! DIAG_DOC:
+  integer :: idiag_b2mz=0       ! DIAG_DOC:
+  integer :: idiag_bxmz=0       ! DIAG_DOC:
+  integer :: idiag_bymz=0       ! DIAG_DOC:
+  integer :: idiag_bzmz=0       ! DIAG_DOC:
+  integer :: idiag_bmx=0        ! DIAG_DOC: $\left<\left<\Bv\right>_{yz}^2
+                                ! DIAG_DOC:   \right>^{1/2}$
+                                ! DIAG_DOC:   \quad(energy of $yz$-averaged
+                                ! DIAG_DOC:   mean field)
+  integer :: idiag_bmy=0        ! DIAG_DOC: $\left<\left<\Bv\right>_{xz}^2
+                                ! DIAG_DOC:   \right>^{1/2}$
+                                ! DIAG_DOC:   \quad(energy of $xz$-averaged
+                                ! DIAG_DOC:   mean field)
+  integer :: idiag_bmz=0        ! DIAG_DOC: $\left<\left<\Bv\right>_{xy}^2
+                                ! DIAG_DOC:   \right>^{1/2}$
+                                ! DIAG_DOC:   \quad(energy of $xy$-averaged
+                                ! DIAG_DOC:   mean field)
+  integer :: idiag_bx2mz=0      ! DIAG_DOC:
+  integer :: idiag_by2mz=0      ! DIAG_DOC:
+  integer :: idiag_bz2mz=0      ! DIAG_DOC:
+  integer :: idiag_bxmxy=0      ! DIAG_DOC:
+  integer :: idiag_bymxy=0      ! DIAG_DOC:
+  integer :: idiag_bzmxy=0      ! DIAG_DOC:
+  integer :: idiag_bxmxz=0      ! DIAG_DOC:
+  integer :: idiag_bymxz=0      ! DIAG_DOC:
+  integer :: idiag_bzmxz=0      ! DIAG_DOC:
+  integer :: idiag_uxbm=0       ! DIAG_DOC:
+  integer :: idiag_oxuxbm=0     ! DIAG_DOC:
+  integer :: idiag_jxbxbm=0     ! DIAG_DOC:
+  integer :: idiag_gpxbm=0      ! DIAG_DOC:
+  integer :: idiag_uxDxuxbm=0   ! DIAG_DOC:
+  integer :: idiag_jbmphi=0     ! DIAG_DOC:
+  integer :: idiag_b3b21m=0     ! DIAG_DOC:
+  integer :: idiag_b1b32m=0     ! DIAG_DOC:
+  integer :: idiag_b2b13m=0     ! DIAG_DOC:
+  integer :: idiag_EMFdotBm=0   ! DIAG_DOC:
+  integer :: idiag_udotxbm=0    ! DIAG_DOC:
+  integer :: idiag_uxbdotm=0    ! DIAG_DOC:
+  integer :: idiag_uxbmx=0      ! DIAG_DOC:
+  integer :: idiag_uxbmy=0      ! DIAG_DOC:
+  integer :: idiag_uxbmz=0      ! DIAG_DOC:
+  integer :: idiag_uxjm=0       ! DIAG_DOC:
+  integer :: idiag_brmphi=0     ! DIAG_DOC:
+  integer :: idiag_bpmphi=0     ! DIAG_DOC:
+  integer :: idiag_bzmphi=0     ! DIAG_DOC:
+  integer :: idiag_b2mphi=0     ! DIAG_DOC:
+  integer :: idiag_uxbrmphi=0   ! DIAG_DOC:
+  integer :: idiag_uxbpmphi=0   ! DIAG_DOC:
+  integer :: idiag_uxbzmphi=0   ! DIAG_DOC:
+  integer :: idiag_ujxbm=0      ! DIAG_DOC:
+  integer :: idiag_jxbrmphi=0   ! DIAG_DOC:
+  integer :: idiag_jxbpmphi=0   ! DIAG_DOC:
+  integer :: idiag_jxbzmphi=0   ! DIAG_DOC:
+  integer :: idiag_armphi=0     ! DIAG_DOC:
+  integer :: idiag_apmphi=0     ! DIAG_DOC:
+  integer :: idiag_azmphi=0     ! DIAG_DOC:
+  integer :: idiag_uxBrms=0     ! DIAG_DOC:
+  integer :: idiag_Bresrms=0    ! DIAG_DOC:
+  integer :: idiag_Rmrms=0      ! DIAG_DOC:
+  integer :: idiag_jfm=0        ! DIAG_DOC:
+  integer :: idiag_brbpmr=0     ! DIAG_DOC:
+  integer :: idiag_vA2m=0       ! DIAG_DOC:
+  integer :: idiag_b2mr=0       ! DIAG_DOC:
+  integer :: idiag_brmr=0       ! DIAG_DOC:
+  integer :: idiag_bpmr=0       ! DIAG_DOC:
+  integer :: idiag_bzmr=0       ! DIAG_DOC:
+  integer :: idiag_armr=0       ! DIAG_DOC:
+  integer :: idiag_apmr=0       ! DIAG_DOC:
+  integer :: idiag_azmr=0       ! DIAG_DOC:
+  integer :: idiag_bxmx=0       ! DIAG_DOC:
+  integer :: idiag_bymy=0       ! DIAG_DOC:
+  integer :: idiag_mflux_x=0    ! DIAG_DOC:
+  integer :: idiag_mflux_y=0    ! DIAG_DOC:
+  integer :: idiag_mflux_z=0    ! DIAG_DOC:
+  integer :: idiag_bmxy_rms=0   ! DIAG_DOC:
 
   contains
 
@@ -240,7 +331,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.441 2007-08-11 21:03:52 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.442 2007-08-13 10:21:46 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

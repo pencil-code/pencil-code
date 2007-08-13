@@ -41,36 +41,46 @@ use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
 Getopt::Long::config("bundling");
 
-my (%opts);			# Options hash for GetOptions
-my $doll='\$';			# Need this to trick CVS
+my (%opts);                     # Options hash for GetOptions
+my $doll='\$';                  # Need this to trick CVS
 
 ## Process command line
 GetOptions(\%opts,
-	   qw( -h   --help
-	            --debug
-	       -q   --quiet
-               -v   --version ));
+           qw( -h    --help
+                     --debug
+               -o=s  --output=s
+               -q    --quiet
+               -v    --version ));
 
 my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
 if ($debug) {
     printopts(\%opts);
-    print "\@ARGV = `@ARGV'\n";
+    print STDERR "\@ARGV = `@ARGV'\n";
 }
 
 if ($opts{'h'} || $opts{'help'})    { die usage();   }
 if ($opts{'v'} || $opts{'version'}) { die version(); }
 
-my $quiet = ($opts{'q'} || $opts{'quiet'} || '');
+my $quiet = ($opts{'q'} || $opts{'quiet'}  || '' );
+my $file  = ($opts{'o'} || $opts{'output'} || '-');
 
 my $srcdir    = "$ENV{PENCIL_HOME}/src";
-my $marker_re = '!\s+DIAG_DOC:';
-my $file      = 'diag-table.tex';
 
-# Todo: should have a list of module files in preferred order and then add
-# any other .f90 file to end of list
-my @module_files = qw( hydro.f90 );
+my $marker_re = '!\s+DIAG_DOC:';
+
+my (@module_files, $all_src);
+
+if (@ARGV) {                    # explicit source files given
+    @module_files = @ARGV;
+    $all_src = 0;
+} else {
+    # Process all src/*.f90 files
+    @module_files = <$srcdir/*.f90>;
+    $all_src = 1;
+}
 
 my $docref = get_all_docs_from(@module_files);
+
 $docref = filter_doc($docref);
 write_latex_doc($file,$docref);
 
@@ -87,7 +97,8 @@ sub get_all_docs_from {
 
     foreach my $module (@module_files) {
         my @localdoc = get_docs_from_file($module);
-        $doc{$module} = \@localdoc;
+        (my $file = $module) =~ s{.*/}{}; # remove path
+        $doc{$file} = \@localdoc if (@localdoc);
     }
 
     return \%doc;
@@ -99,14 +110,14 @@ sub get_docs_from_file {
     my $module = shift;
 
     my @localdoc;
-    my $file  = "$srcdir/$module";
+    my $file  = $module;
     my $count = 0;
 
-    unless (open(MODULE, "< $file")) {
+   unless (open(MODULE, "< $file")) {
         warn "Cannot open $file for reading: $!\n";
-        return '';
+        return ();
     }
-    print "$module:\n";
+    print STDERR "$module:\n" unless ($quiet);
     LINE: while(defined(my $line = <MODULE>)) {
         next unless $line =~ /$marker_re/;
         my ($var,$misc,$docstring) = ('', '', '');
@@ -134,13 +145,12 @@ sub get_docs_from_file {
                 or next LINE; # nothing to append to
             push @localdoc, [$var1, "$latex1\n  $latex"];
         }
-
     }
 
     if ($count) {
-        # print "Found documentation for $count diagnostic variables\n";
+        # print STDERR "Found documentation for $count diagnostic variables\n";
     } else {
-        print "Hmm, no documentation found in $file\n";
+        print STDERR "Hmm, no documentation found in $file\n" unless ($quiet);
     }
 
     return @localdoc;
@@ -168,8 +178,10 @@ sub filter_doc {
     }
 
     # Give statistical feedback
-    print "  (doc, undoc, tot) = ($nonempty, $empty, ",
-      $nonempty+$empty, ")\n";
+    unless ($quiet) {
+        print STDERR "  (doc, undoc, tot) = ($nonempty, $empty, ",
+          $nonempty+$empty, ")\n";
+    }
 
     return \%newdoc;
 }
@@ -188,18 +200,23 @@ sub write_latex_doc {
         "% ---------------------------------------------------------------- %\n"
       . "\\begin{longtable}{lp{0.7\\textwidth}}\n"
       . "\\toprule\n"
-      . "  \\multicolumn{1}{c}{\\emph{Variable}} \& {\\emph{Meaning}} \\\\\n"
-      . "\\midrule\n";
+      . "  \\multicolumn{1}{c}{\\emph{Variable}} \& {\\emph{Meaning}} \\\\\n";
 
     my @files = keys %$docref;
-    @files = sort { compare_modulenames_for_sorting($a)
-                    <=> compare_modulenames_for_sorting($b)
-                  } @files;
+
+    # Sort file names in pre-defined order, unless they were explicitly
+    # given
+    if ($all_src) {
+        @files = sort { compare_modulenames_for_sorting($a)
+                          <=> compare_modulenames_for_sorting($b)
+                      } @files;
+    }
 
     foreach my $module (@files) {
         # Header
         print LATEX
-            "  \\multicolumn{2}{c}{Module \\file{$module}} \\\\\n"
+            "\\midrule\n"
+          . "  \\multicolumn{2}{c}{Module \\file{$module}} \\\\\n"
           . "\\midrule\n";
 
         # Loop through variables
@@ -229,9 +246,11 @@ sub compare_modulenames_for_sorting {
 # defined by the author of this script) before more boring ones
     my $module = shift;
 
+    (my $short = $module) =~ s/\.f90$//; # remove suffix
+
     my %mapping =
       (
-       'prints'   => 1,
+       'cdata'    => 2,
        'hydro'    => 2,
        'magnetic' => 3,
        'density'  => 4,
@@ -242,7 +261,6 @@ sub compare_modulenames_for_sorting {
       );
     my $infty = 100000;         # or will we get more modules...?
 
-    (my $short = $module) =~ s/\.f90$//; # remove suffix
 
     return $mapping{$short} || $infty;
 }
@@ -252,7 +270,7 @@ sub printopts {
     my $optsref = shift;
     my %opts = %$optsref;
     foreach my $opt (keys(%opts)) {
-	print STDERR "\$opts{$opt} = `$opts{$opt}'\n";
+        print STDERR "\$opts{$opt} = `$opts{$opt}'\n";
     }
 }
 # ---------------------------------------------------------------------- #
@@ -262,7 +280,7 @@ sub usage {
     local $/ = '';              # Read paragraphs
     open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
     while (<FILE>) {
-	# Paragraph _must_ contain `Description:' or `Usage:'
+        # Paragraph _must_ contain `Description:' or `Usage:'
         next unless /^\s*\#\s*(Description|Usage):/m;
         # Drop `Author:', etc. (anything before `Description:' or `Usage:')
         s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
@@ -275,10 +293,10 @@ sub usage {
 # ---------------------------------------------------------------------- #
 sub version {
 # Return CVS data and version info.
-    my $doll='\$';		# Need this to trick CVS
+    my $doll='\$';              # Need this to trick CVS
     my $cmdname = (split('/', $0))[-1];
-    my $rev = '$Revision: 1.1 $';
-    my $date = '$Date: 2007-03-30 23:50:32 $';
+    my $rev = '$Revision: 1.2 $';
+    my $date = '$Date: 2007-08-13 10:21:45 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     "$cmdname version $rev ($date)\n";
