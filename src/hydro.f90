@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.372 2007-08-13 17:41:11 dhruba Exp $
+! $Id: hydro.f90,v 1.373 2007-08-13 17:45:46 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -120,11 +120,8 @@ module Hydro
        utop,ubot,omega_out,omega_in, & 
        lprecession, omega_precession, lshear_rateofstrain, &
        lalways_use_gij_etc, &
-<<<<<<< hydro.f90
-       luut_as_aux,loutest
-=======
-       luut_as_aux,velocity_ceiling
->>>>>>> 1.371
+       luut_as_aux,loutest, &
+       velocity_ceiling
 
 ! end geodynamo
 
@@ -314,7 +311,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.372 2007-08-13 17:41:11 dhruba Exp $")
+           "$Id: hydro.f90,v 1.373 2007-08-13 17:45:46 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
