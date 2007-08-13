@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.369 2007-08-11 15:53:13 dhruba Exp $
+! $Id: hydro.f90,v 1.370 2007-08-13 05:51:55 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -60,7 +60,7 @@ module Hydro
   complex, dimension(3) :: coefuu=(/0.,0.,0./)
   real :: kep_cutoff_pos_ext= huge1,kep_cutoff_width_ext=0.0
   real :: kep_cutoff_pos_int=-huge1,kep_cutoff_width_int=0.0
-  real :: u_out_kep=0.0
+  real :: u_out_kep=0.0, velocity_ceiling=-1.0
   integer :: N_modes_uu=0
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: ladvection_velocity=.true.
@@ -76,9 +76,8 @@ module Hydro
        kep_cutoff_pos_ext, kep_cutoff_width_ext, &
        kep_cutoff_pos_int, kep_cutoff_width_int, &
        u_out_kep, N_modes_uu, lcoriolis_force, lcentrifugal_force, &
-       ladvection_velocity, &
-       lprecession, omega_precession, &
-       luut_as_aux
+       ladvection_velocity,lprecession, omega_precession, &
+       luut_as_aux, velocity_ceiling
 
   ! run parameters
   real :: tdamp=0.,dampu=0.,wdamp=0.
@@ -90,6 +89,7 @@ module Hydro
   real :: Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   real :: k1_ff=1.,ampl_ff=1.,width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
+  real :: utop=0.,ubot=0.,omega_out=0.,omega_in=0.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
@@ -99,7 +99,6 @@ module Hydro
   logical :: lalways_use_gij_etc=.false.
   character (len=labellen) :: iforcing_continuous_uu='ABC'
   character (len=labellen) :: uuprof='nothing'
-  real :: utop=0.,ubot=0.,omega_out=0.,omega_in=0.
 !
 ! geodynamo
   namelist /hydro_run_pars/ &
@@ -116,7 +115,7 @@ module Hydro
        utop,ubot,omega_out,omega_in, & 
        lprecession, omega_precession, lshear_rateofstrain, &
        lalways_use_gij_etc, &
-       luut_as_aux
+       luut_as_aux,velocity_ceiling
 
 ! end geodynamo
 
@@ -303,7 +302,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.369 2007-08-11 15:53:13 dhruba Exp $")
+           "$Id: hydro.f90,v 1.370 2007-08-13 05:51:55 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -614,6 +613,12 @@ module Hydro
           if (lroot) print*,'init_uu: circular Alfven wave -> x'
           f(:,:,:,iuy) = f(:,:,:,iuy) + ampluu(j)*sin(kx_uu*xx)
           f(:,:,:,iuz) = f(:,:,:,iuz) + ampluu(j)*cos(kx_uu*xx)
+
+        case ('coszsiny-uz')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)- &
+                ampluu(j)*cos(pi*z(n)/Lxyz(3))*sin(2*pi*y(m)/Lxyz(2))
+          enddo; enddo
 
         case('linear-shear')
 !
@@ -2777,5 +2782,25 @@ module Hydro
       endselect
 !
     endsubroutine impose_profile_diffrot
-!************************************************************
+!***********************************************************************
+    subroutine impose_velocity_ceiling(f)
+!
+!  Impose a maximum velocity by setting all higher velocities to the maximum
+!  value (velocity_ceiling). Useful for debugging purposes.
+!
+!  13-aug-2007/anders: implemented.
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      if (velocity_ceiling>0.0) then
+        where (f(:,:,:,iux:iuz)> velocity_ceiling) &
+            f(:,:,:,iux:iuz)= velocity_ceiling
+        where (f(:,:,:,iux:iuz)<-velocity_ceiling) &
+            f(:,:,:,iux:iuz)=-velocity_ceiling
+      endif
+!
+    endsubroutine impose_velocity_ceiling
+!***********************************************************************
 endmodule Hydro

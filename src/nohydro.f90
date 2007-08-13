@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.73 2007-06-29 04:52:53 brandenb Exp $
+! $Id: nohydro.f90,v 1.74 2007-08-13 05:51:55 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -71,7 +71,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.73 2007-06-29 04:52:53 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.74 2007-08-13 05:51:55 ajohan Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -965,5 +965,14 @@ module Hydro
 
     endsubroutine remove_mean_momenta
 !***********************************************************************
-
+    subroutine impose_velocity_ceiling(f)
+!
+!  13-aug-2007/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      if (NO_WARN) print*, f(1,1,1,1)
+!
+    endsubroutine impose_velocity_ceiling
+!***********************************************************************
 endmodule Hydro

@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.50 2007-07-06 10:35:48 wlyra Exp $
+! $Id: nodensity.f90,v 1.51 2007-08-13 05:51:55 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -56,7 +56,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.50 2007-07-06 10:35:48 wlyra Exp $")
+           "$Id: nodensity.f90,v 1.51 2007-08-13 05:51:55 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -242,5 +242,15 @@ module Density
       endif
 !
     endsubroutine rprint_density
+!***********************************************************************
+    subroutine impose_density_floor(f)
+!
+!  13-aug-2007/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      if (NO_WARN) print*, f(1,1,1,1)
+!
+    endsubroutine impose_density_floor
 !***********************************************************************
 endmodule Density

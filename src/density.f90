@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.335 2007-08-12 20:21:59 wlyra Exp $
+! $Id: density.f90,v 1.336 2007-08-13 05:51:55 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -44,7 +44,7 @@ module Density
   real :: xblob=0., yblob=0., zblob=0.
   real :: co1_ss=0.,co2_ss=0.,Sigma1=150.
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
-  real :: wdamp=0.,plaw=0
+  real :: wdamp=0.,plaw=0, density_floor=-1.0
   real, dimension(3) :: diffrho_hyper3_aniso=0.
   integer, parameter :: ndiff_max=4
   logical :: lmass_source=.false.,lcontinuity_gas=.true.
@@ -72,7 +72,7 @@ module Density
        mpoly,strati_type,beta_glnrho_global,         &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
-       wdamp,plaw,lcontinuity_gas
+       wdamp,plaw,lcontinuity_gas,density_floor
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
@@ -80,7 +80,7 @@ module Density
        lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
        wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,         &
        lnrho_const,plaw,lcontinuity_gas,borderlnrho,    &
-       diffrho_hyper3_aniso,lfreeze_lnrhosqu
+       diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
@@ -114,7 +114,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.335 2007-08-12 20:21:59 wlyra Exp $")
+           "$Id: density.f90,v 1.336 2007-08-13 05:51:55 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1973,5 +1973,36 @@ module Density
       enddo
 !
     endsubroutine cylind_poly
+!***********************************************************************
+    subroutine impose_density_floor(f)
+!
+!  Impose a minimum density by setting all lower densities to the minimum
+!  value (density_floor). Useful for debugging purposes.
+!
+!  13-aug-2007/anders: implemented.
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      real :: density_floor_log
+      logical, save :: lfirstcall=.true.
+!
+      if (lfirstcall) then
+        density_floor_log=alog(density_floor)
+        lfirstcall=.false.
+      endif
+!
+      if (density_floor>0.0) then
+        if (ldensity_nolog) then
+          where (f(:,:,:,ilnrho)<density_floor) &
+              f(:,:,:,ilnrho)=density_floor
+        else
+          where (f(:,:,:,ilnrho)<density_floor_log) &
+              f(:,:,:,ilnrho)=density_floor_log
+        endif
+      endif
+!
+    endsubroutine impose_density_floor
 !***********************************************************************
 endmodule Density

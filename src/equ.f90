@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.364 2007-07-23 11:37:44 wlyra Exp $
+! $Id: equ.f90,v 1.365 2007-08-13 05:51:55 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -443,7 +443,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.364 2007-07-23 11:37:44 wlyra Exp $")
+           "$Id: equ.f90,v 1.365 2007-08-13 05:51:55 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -464,6 +464,11 @@ module Equ
 !  This could in principle be avoided (but it not worth it now)
 !
       early_finalize=test_nonblocking.or.leos_ionization.or.lradiation_ray
+!
+!  For debugging purposes impose minimum or maximum value on certain variables.
+!
+      call impose_density_floor(f)
+      call impose_velocity_ceiling(f)
 !
 !  Apply global boundary conditions to particle positions and communiate
 !  migrating particles between the processors.

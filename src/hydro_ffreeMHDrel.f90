@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.28 2007-01-31 12:50:12 wlyra Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.29 2007-08-13 05:51:55 ajohan Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -96,7 +96,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.28 2007-01-31 12:50:12 wlyra Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.29 2007-08-13 05:51:55 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -700,5 +700,14 @@ module Hydro
       first = .false.
     endsubroutine calc_mflow
 !***********************************************************************
-
+    subroutine impose_velocity_ceiling(f)
+!
+!  13-aug-2007/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      if (NO_WARN) print*, f(1,1,1,1)
+!
+    endsubroutine impose_velocity_ceiling
+!***********************************************************************
 endmodule Hydro
