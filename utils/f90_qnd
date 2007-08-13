@@ -336,11 +336,11 @@ sub md5_hash_hex {
     my $data = shift;
 
     if ($md5_implementation eq 'Digest::MD5') {
-	return Digest::MD5::md5_hex($data);
+        return Digest::MD5::md5_hex($data);
     } elsif ($md5_implementation eq 'md5sum') {
-	return md5_hash_hex_system($data);
+        return md5_hash_hex_system($data);
     } else {
-	die "No working MD5 implementation, tried Digest::MD5 and `md5sum'\n";
+        die "No working MD5 implementation, tried Digest::MD5 and `md5sum'\n";
     }
 }
 # ---------------------------------------------------------------------- #
@@ -353,7 +353,7 @@ sub md5_hash_hex_system {
 
     my $md5;
 
-    print DEBUG "Piping data to `md5sum'\n";
+    print DEBUG "Piping data to `md5sum'\n" if ($debug);
     my $pid = IPC::Open2::open2(\*MD5SUM, \*DATA, "md5sum");
 
     # Need to fork, so we can write and read to/from the same pipe without
