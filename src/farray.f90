@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.18 2007-05-23 17:50:59 dobler Exp $
+! $Id: farray.f90,v 1.19 2007-08-14 01:14:21 dobler Exp $
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  This includes handling different
@@ -336,19 +336,19 @@ module FArrayManager
     endsubroutine farray_register_variable
 !***********************************************************************
     subroutine farray_acquire_scratch_area(varname,ivar,vector,ierr)
+!
       character (len=*) :: varname
       integer           :: ivar
       integer           :: vartype, i
       type (farray_contents_list), pointer :: item, new
-      integer :: ncomponents
+      integer           :: ncomponents
       integer, optional :: ierr
       integer, optional :: vector
-      integer :: memstat, consecutive_free, iscratch
-      !
+      integer           :: memstat, consecutive_free, iscratch
+!
       intent(in)  :: varname,vector
       intent(out) :: ivar,ierr
 !
-
       ncomponents=1
       if (present(ierr)) ierr=0
       if (present(vector)) ncomponents=vector
@@ -840,7 +840,7 @@ module FArrayManager
       type (farray_contents_list), pointer :: list
       type (farray_contents_list), optional, pointer :: new
       type (farray_contents_list), pointer :: new_
-
+!
       allocate(new_)
       new_%next => list
       nullify(new_%previous)

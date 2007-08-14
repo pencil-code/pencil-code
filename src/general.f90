@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.59 2007-07-23 11:33:31 wlyra Exp $
+! $Id: general.f90,v 1.60 2007-08-14 01:14:21 dobler Exp $
 
 module General
 
@@ -190,6 +190,8 @@ module General
       real :: a
       real, dimension(1) :: b
 !
+      intent(out) :: a
+!
 !     b = a                     ! not needed unless numbers are non-Markovian
 !
       call random_number_wrapper(b)
@@ -206,6 +208,8 @@ module General
 !
       real, dimension(:) :: a
       integer :: i
+!
+      intent(out) :: a
 !
       select case(random_gen)
 !
@@ -236,6 +240,8 @@ module General
 !
       real, dimension(:,:,:) :: a
       integer :: i,j,k
+!
+      intent(out) :: a
 !
       select case(random_gen)
 !

@@ -1,4 +1,4 @@
-! $Id: nogravity.f90,v 1.8 2007-04-21 19:21:02 theine Exp $
+! $Id: nogravity.f90,v 1.9 2007-08-14 01:14:21 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -72,7 +72,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nogravity.f90,v 1.8 2007-04-21 19:21:02 theine Exp $")
+           "$Id: nogravity.f90,v 1.9 2007-08-14 01:14:21 dobler Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -211,6 +211,9 @@ module Gravity
       real, dimension (mx,my,mz) :: xx,yy,zz,pot
       real, optional :: pot0
 !
+      intent(in ) :: xx,yy,zz
+      intent(out) :: pot,pot0
+!
       if (lroot) print*,'potential: note, GRAV=nograv is not OK'
       pot = 0.
       pot0 = 0.
@@ -232,8 +235,8 @@ module Gravity
       real, optional, dimension (nx,3) :: grav
 !
       intent(in) :: xmn,ymn,zmn,rmn
-      intent(out) :: pot
-
+      intent(out) :: pot,pot0
+!
       if (lroot) print*,'potential: note, GRAV=nograv is not OK'
       pot = 0.
       if (present(pot0)) pot0 = 0.
@@ -254,7 +257,12 @@ module Gravity
       real, optional :: x,y,z,r
       real, optional :: pot0,grav
 !
+      intent(in)  :: x,y,z,r
+      intent(out) :: pot
+!
       call stop_it("nograv: potential_point not implemented")
+!
+      pot = 0.
 !
       if (NO_WARN) print*,x,y,z,r,pot,pot0,grav     !(to keep compiler quiet)
 !

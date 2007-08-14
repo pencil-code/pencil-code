@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.325 2007-08-08 11:11:35 dhruba Exp $
+! $Id: sub.f90,v 1.326 2007-08-14 01:14:21 dobler Exp $
 
 module Sub
 
@@ -1807,6 +1807,9 @@ module Sub
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: g, tmp
       integer :: k,k1
+!
+      intent(in)  :: f,k
+      intent(out) :: g
 !
       k1=k-1
 !
@@ -5199,6 +5202,8 @@ nameloop: do
 !
       use Mpicomm, only: stop_it
 !
+      intent (out) :: date
+!
       character (len=*) :: date
       integer, dimension(8) :: values
       character (len=3), dimension(12) :: month = &
@@ -5787,6 +5792,9 @@ nameloop: do
       real, dimension(nx) :: dist,output
       real :: const,plaw_
 !
+      intent(in)  :: const,dist,plaw_
+      intent(out) :: output
+!
       if (rsmooth.eq.0.) then
         output = const*dist**(-plaw_)
       else
@@ -5806,6 +5814,9 @@ nameloop: do
 
       real :: dist,output
       real :: const,plaw_
+!
+      intent(in)  :: const,dist,plaw_
+      intent(out) :: output
 !
       if (rsmooth.eq.0.) then
         output = const*dist**(-plaw_)

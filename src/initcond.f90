@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.211 2007-08-12 20:21:59 wlyra Exp $
+! $Id: initcond.f90,v 1.212 2007-08-14 01:14:21 dobler Exp $
 
 module Initcond
 
@@ -2857,6 +2857,9 @@ module Initcond
       real :: cp1,ptlaw
       integer, pointer :: iglobal_cs2,iglobal_glnTT
       integer :: i
+!
+      intent(in)  :: ptlaw
+      intent(out) :: f
 !
       if (ltemperature.and.llocal_iso) then
         print*,'You are using temperature, but llocal_iso is switched on in'

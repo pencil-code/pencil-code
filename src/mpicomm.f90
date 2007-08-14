@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.214 2007-08-11 21:03:52 brandenb Exp $
+! $Id: mpicomm.f90,v 1.215 2007-08-14 01:14:21 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1185,6 +1185,8 @@ module Mpicomm
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
+      intent(out) :: bcast_array
+!
       call MPI_RECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
           tag_id, MPI_COMM_WORLD, stat, ierr)
 !
@@ -1201,6 +1203,8 @@ module Mpicomm
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
+      intent(out) :: bcast_array
+!
       call MPI_RECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
           tag_id, MPI_COMM_WORLD, stat, ierr)
 !
@@ -1216,6 +1220,8 @@ module Mpicomm
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
       integer :: proc_src, tag_id, nbcast
       integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      intent(out) :: bcast_array
 !
      nbcast=nbcast_array(1)*nbcast_array(2)
 !
@@ -1236,6 +1242,8 @@ module Mpicomm
       integer :: proc_src, tag_id, nbcast
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
+      intent(out) :: bcast_array
+!
      nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)
 !
       call MPI_RECV(bcast_array, nbcast, MPI_REAL, proc_src, &
@@ -1254,6 +1262,8 @@ module Mpicomm
                       nbcast_array(3),nbcast_array(4)) :: bcast_array
       integer :: proc_src, tag_id, nbcast
       integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      intent(out) :: bcast_array
 !
       nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)*nbcast_array(4)
 !
@@ -1731,6 +1741,9 @@ module Mpicomm
 !
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp,fsum
+!
+      intent(in)  :: fsum_tmp,nreduce
+      intent(out) :: fsum
 !
 !  calculate total sum for each array element and return to root
 !  Unlike for MPI_MAX, for MPI_SUM cannot handle nprocs=1 correctly!
