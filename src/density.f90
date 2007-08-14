@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.338 2007-08-13 17:52:43 ajohan Exp $
+! $Id: density.f90,v 1.339 2007-08-14 01:08:53 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -125,7 +125,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.338 2007-08-13 17:52:43 ajohan Exp $")
+           "$Id: density.f90,v 1.339 2007-08-14 01:08:53 dobler Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -858,6 +858,10 @@ module Density
       real, dimension (mz) :: stp
       real :: mpoly,zint,zbot,zblend,beta1,cs2int,lnrhoint
       integer :: isoth
+!
+      intent(in)    :: mpoly,zz,zint,zbot,zblend,isoth
+      intent(out)   :: f,tmp
+      intent(inout) :: cs2int,lnrhoint
 !
       ! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
       if (isoth /= 0) then ! isothermal layer
@@ -1999,12 +2003,12 @@ module Density
       real :: density_floor_log
       logical, save :: lfirstcall=.true.
 !
-      if (lfirstcall) then
-        density_floor_log=alog(density_floor)
-        lfirstcall=.false.
-      endif
+      if (density_floor>0.) then
+        if (lfirstcall) then
+          density_floor_log=alog(density_floor)
+          lfirstcall=.false.
+        endif
 !
-      if (density_floor>0.0) then
         if (ldensity_nolog) then
           where (f(:,:,:,ilnrho)<density_floor) &
               f(:,:,:,ilnrho)=density_floor
