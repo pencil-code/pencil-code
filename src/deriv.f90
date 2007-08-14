@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.51 2007-08-09 07:38:30 dobler Exp $
+! $Id: deriv.f90,v 1.52 2007-08-14 00:17:13 dobler Exp $
 
 module Deriv
 
@@ -55,6 +55,9 @@ module Deriv
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
+!
+      intent(in)  :: f,k,j
+      intent(out) :: df
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der,j,1) = & !DERCOUNT
 !debug                            der_call_count(k,icount_der,j,1)+1 !DERCOUNT
@@ -113,6 +116,9 @@ module Deriv
       real, dimension (nx) :: df,fac
       integer :: j
 !
+      intent(in)  :: f,j
+      intent(out) :: df
+!
 !debug      if (loptimise_ders) der_call_count(1,icount_der_other,j,1) = &
 !debug                          der_call_count(1,icount_der_other,j,1) + 1
 !
@@ -168,6 +174,9 @@ module Deriv
       real, dimension (nx) :: df2,fac,df
       integer :: j,k
 !
+      intent(in)  :: f,k,j
+      intent(out) :: df2
+!
 !debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
 !
@@ -222,7 +231,7 @@ module Deriv
 !
     endsubroutine der2_main
 !***********************************************************************
-    subroutine der2_other(psif,df2,j)
+    subroutine der2_other(f,df2,j)
 !
 !  calculate 2nd derivative d^2f/dx_j^2 (of scalar f)
 !  accurate to 6th order, explicit, periodic
@@ -233,9 +242,12 @@ module Deriv
 !
       use Cdata
 !
-      real, dimension (mx,my,mz) :: psif
+      real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df2,fac,df
       integer :: j,k
+!
+      intent(in)  :: f,j
+      intent(out) :: df2
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
@@ -244,12 +256,12 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           fac=(1./180)*dx_1(l1:l2)**2
-          df2=fac*(-490.0*psif(l1:l2,m,n) &
-                   +270.0*(psif(l1+1:l2+1,m,n)+psif(l1-1:l2-1,m,n)) &
-                   - 27.0*(psif(l1+2:l2+2,m,n)+psif(l1-2:l2-2,m,n)) &
-                   +  2.0*(psif(l1+3:l2+3,m,n)+psif(l1-3:l2-3,m,n)))
+          df2=fac*(-490.0*f(l1:l2,m,n) &
+                   +270.0*(f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) &
+                   - 27.0*(f(l1+2:l2+2,m,n)+f(l1-2:l2-2,m,n)) &
+                   +  2.0*(f(l1+3:l2+3,m,n)+f(l1-3:l2-3,m,n)))
           if (.not.lequidist(j)) then
-            call der(psif,df,j)
+            call der(f,df,j)
             df2=df2+dx_tilde(l1:l2)*df
           endif
         else
@@ -258,14 +270,14 @@ module Deriv
       elseif (j==2) then
         if (nygrid/=1) then
           fac=(1./180)*dy_1(m)**2
-          df2=fac*(-490.0*psif(l1:l2,m,n) &
-                   +270.0*(psif(l1:l2,m+1,n)+psif(l1:l2,m-1,n)) &
-                   - 27.0*(psif(l1:l2,m+2,n)+psif(l1:l2,m-2,n)) &
-                   +  2.0*(psif(l1:l2,m+3,n)+psif(l1:l2,m-3,n)))
+          df2=fac*(-490.0*f(l1:l2,m,n) &
+                   +270.0*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
+                   - 27.0*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
+                   +  2.0*(f(l1:l2,m+3,n)+f(l1:l2,m-3,n)))
           if (lspherical_coords)     df2=df2*r2_mn
           if (lcylindrical_coords)   df2=df2*rcyl_mn2
           if (.not.lequidist(j)) then
-            call der(psif,df,j)
+            call der(f,df,j)
             df2=df2+dy_tilde(m)*df
           endif
         else
@@ -274,13 +286,13 @@ module Deriv
       elseif (j==3) then
         if (nzgrid/=1) then
           fac=(1./180)*dz_1(n)**2
-          df2=fac*(-490.0*psif(l1:l2,m,n) &
-                   +270.0*(psif(l1:l2,m,n+1)+psif(l1:l2,m,n-1)) &
-                   - 27.0*(psif(l1:l2,m,n+2)+psif(l1:l2,m,n-2)) &
-                   +  2.0*(psif(l1:l2,m,n+3)+psif(l1:l2,m,n-3)))
+          df2=fac*(-490.0*f(l1:l2,m,n) &
+                   +270.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
+                   - 27.0*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
+                   +  2.0*(f(l1:l2,m,n+3)+f(l1:l2,m,n-3)))
           if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
           if (.not.lequidist(j)) then
-            call der(psif,df,j)
+            call der(f,df,j)
             df2=df2+dz_tilde(n)*df
           endif
         else
@@ -920,7 +932,7 @@ module Deriv
 !
     endsubroutine derij_main
 !***********************************************************************
-    subroutine derij_other(psif,df,i,j)
+    subroutine derij_other(f,df,i,j)
 !
 !  calculate 2nd derivative with respect to two different directions
 !  input: scalar, output: scalar
@@ -931,7 +943,7 @@ module Deriv
 !
       use Cdata
 !
-      real, dimension (mx,my,mz) :: psif
+      real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
 !
@@ -949,12 +961,12 @@ module Deriv
           if (nxgrid/=1.and.nygrid/=1) then
             fac=(1./720.)*dx_1(l1:l2)*dy_1(m)
             df=fac*( &
-                        270.*( psif(l1+1:l2+1,m+1,n)-psif(l1-1:l2-1,m+1,n)  &
-                              +psif(l1-1:l2-1,m-1,n)-psif(l1+1:l2+1,m-1,n)) &
-                       - 27.*( psif(l1+2:l2+2,m+2,n)-psif(l1-2:l2-2,m+2,n)  &
-                              +psif(l1-2:l2-2,m-2,n)-psif(l1+2:l2+2,m-2,n)) &
-                       +  2.*( psif(l1+3:l2+3,m+3,n)-psif(l1-3:l2-3,m+3,n)  &
-                              +psif(l1-3:l2-3,m-3,n)-psif(l1+3:l2+3,m-3,n)) &
+                        270.*( f(l1+1:l2+1,m+1,n)-f(l1-1:l2-1,m+1,n)  &
+                              +f(l1-1:l2-1,m-1,n)-f(l1+1:l2+1,m-1,n)) &
+                       - 27.*( f(l1+2:l2+2,m+2,n)-f(l1-2:l2-2,m+2,n)  &
+                              +f(l1-2:l2-2,m-2,n)-f(l1+2:l2+2,m-2,n)) &
+                       +  2.*( f(l1+3:l2+3,m+3,n)-f(l1-3:l2-3,m+3,n)  &
+                              +f(l1-3:l2-3,m-3,n)-f(l1+3:l2+3,m-3,n)) &
                    )
           else
             df=0.
@@ -964,12 +976,12 @@ module Deriv
           if (nygrid/=1.and.nzgrid/=1) then
             fac=(1./720.)*dy_1(m)*dz_1(n)
             df=fac*( &
-                        270.*( psif(l1:l2,m+1,n+1)-psif(l1:l2,m+1,n-1)  &
-                              +psif(l1:l2,m-1,n-1)-psif(l1:l2,m-1,n+1)) &
-                       - 27.*( psif(l1:l2,m+2,n+2)-psif(l1:l2,m+2,n-2)  &
-                              +psif(l1:l2,m-2,n-2)-psif(l1:l2,m-2,n+2)) &
-                       +  2.*( psif(l1:l2,m+3,n+3)-psif(l1:l2,m+3,n-3)  &
-                              +psif(l1:l2,m-3,n-3)-psif(l1:l2,m-3,n+3)) &
+                        270.*( f(l1:l2,m+1,n+1)-f(l1:l2,m+1,n-1)  &
+                              +f(l1:l2,m-1,n-1)-f(l1:l2,m-1,n+1)) &
+                       - 27.*( f(l1:l2,m+2,n+2)-f(l1:l2,m+2,n-2)  &
+                              +f(l1:l2,m-2,n-2)-f(l1:l2,m-2,n+2)) &
+                       +  2.*( f(l1:l2,m+3,n+3)-f(l1:l2,m+3,n-3)  &
+                              +f(l1:l2,m-3,n-3)-f(l1:l2,m-3,n+3)) &
                    )
           else
             df=0.
@@ -979,12 +991,12 @@ module Deriv
           if (nzgrid/=1.and.nxgrid/=1) then
             fac=(1./720.)*dz_1(n)*dx_1(l1:l2)
             df=fac*( &
-                        270.*( psif(l1+1:l2+1,m,n+1)-psif(l1-1:l2-1,m,n+1)  &
-                              +psif(l1-1:l2-1,m,n-1)-psif(l1+1:l2+1,m,n-1)) &
-                       - 27.*( psif(l1+2:l2+2,m,n+2)-psif(l1-2:l2-2,m,n+2)  &
-                              +psif(l1-2:l2-2,m,n-2)-psif(l1+2:l2+2,m,n-2)) &
-                       +  2.*( psif(l1+3:l2+3,m,n+3)-psif(l1-3:l2-3,m,n+3)  &
-                              +psif(l1-3:l2-3,m,n-3)-psif(l1+3:l2+3,m,n-3)) &
+                        270.*( f(l1+1:l2+1,m,n+1)-f(l1-1:l2-1,m,n+1)  &
+                              +f(l1-1:l2-1,m,n-1)-f(l1+1:l2+1,m,n-1)) &
+                       - 27.*( f(l1+2:l2+2,m,n+2)-f(l1-2:l2-2,m,n+2)  &
+                              +f(l1-2:l2-2,m,n-2)-f(l1+2:l2+2,m,n-2)) &
+                       +  2.*( f(l1+3:l2+3,m,n+3)-f(l1-3:l2-3,m,n+3)  &
+                              +f(l1-3:l2-3,m,n-3)-f(l1+3:l2+3,m,n-3)) &
                    )
           else
             df=0.
@@ -1000,24 +1012,24 @@ module Deriv
           if (nxgrid/=1.and.nygrid/=1) then
             fac=(1./60.**2)*dx_1(l1:l2)*dy_1(m)
             df=fac*( &
-              45.*((45.*(psif(l1+1:l2+1,m+1,n)-psif(l1-1:l2-1,m+1,n))  &
-                    -9.*(psif(l1+2:l2+2,m+1,n)-psif(l1-2:l2-2,m+1,n))  &
-                       +(psif(l1+3:l2+3,m+1,n)-psif(l1-3:l2-3,m+1,n))) &
-                  -(45.*(psif(l1+1:l2+1,m-1,n)-psif(l1-1:l2-1,m-1,n))  &
-                    -9.*(psif(l1+2:l2+2,m-1,n)-psif(l1-2:l2-2,m-1,n))  &
-                       +(psif(l1+3:l2+3,m-1,n)-psif(l1-3:l2-3,m-1,n))))&
-              -9.*((45.*(psif(l1+1:l2+1,m+2,n)-psif(l1-1:l2-1,m+2,n))  &
-                    -9.*(psif(l1+2:l2+2,m+2,n)-psif(l1-2:l2-2,m+2,n))  &
-                       +(psif(l1+3:l2+3,m+2,n)-psif(l1-3:l2-3,m+2,n))) &
-                  -(45.*(psif(l1+1:l2+1,m-2,n)-psif(l1-1:l2-1,m-2,n))  &
-                    -9.*(psif(l1+2:l2+2,m-2,n)-psif(l1-2:l2-2,m-2,n))  &
-                       +(psif(l1+3:l2+3,m-2,n)-psif(l1-3:l2-3,m-2,n))))&
-                 +((45.*(psif(l1+1:l2+1,m+3,n)-psif(l1-1:l2-1,m+3,n))  &
-                    -9.*(psif(l1+2:l2+2,m+3,n)-psif(l1-2:l2-2,m+3,n))  &
-                       +(psif(l1+3:l2+3,m+3,n)-psif(l1-3:l2-3,m+3,n))) &
-                  -(45.*(psif(l1+1:l2+1,m-3,n)-psif(l1-1:l2-1,m-3,n))  &
-                    -9.*(psif(l1+2:l2+2,m-3,n)-psif(l1-2:l2-2,m-3,n))  &
-                       +(psif(l1+3:l2+3,m-3,n)-psif(l1-3:l2-3,m-3,n))))&
+              45.*((45.*(f(l1+1:l2+1,m+1,n)-f(l1-1:l2-1,m+1,n))  &
+                    -9.*(f(l1+2:l2+2,m+1,n)-f(l1-2:l2-2,m+1,n))  &
+                       +(f(l1+3:l2+3,m+1,n)-f(l1-3:l2-3,m+1,n))) &
+                  -(45.*(f(l1+1:l2+1,m-1,n)-f(l1-1:l2-1,m-1,n))  &
+                    -9.*(f(l1+2:l2+2,m-1,n)-f(l1-2:l2-2,m-1,n))  &
+                       +(f(l1+3:l2+3,m-1,n)-f(l1-3:l2-3,m-1,n))))&
+              -9.*((45.*(f(l1+1:l2+1,m+2,n)-f(l1-1:l2-1,m+2,n))  &
+                    -9.*(f(l1+2:l2+2,m+2,n)-f(l1-2:l2-2,m+2,n))  &
+                       +(f(l1+3:l2+3,m+2,n)-f(l1-3:l2-3,m+2,n))) &
+                  -(45.*(f(l1+1:l2+1,m-2,n)-f(l1-1:l2-1,m-2,n))  &
+                    -9.*(f(l1+2:l2+2,m-2,n)-f(l1-2:l2-2,m-2,n))  &
+                       +(f(l1+3:l2+3,m-2,n)-f(l1-3:l2-3,m-2,n))))&
+                 +((45.*(f(l1+1:l2+1,m+3,n)-f(l1-1:l2-1,m+3,n))  &
+                    -9.*(f(l1+2:l2+2,m+3,n)-f(l1-2:l2-2,m+3,n))  &
+                       +(f(l1+3:l2+3,m+3,n)-f(l1-3:l2-3,m+3,n))) &
+                  -(45.*(f(l1+1:l2+1,m-3,n)-f(l1-1:l2-1,m-3,n))  &
+                    -9.*(f(l1+2:l2+2,m-3,n)-f(l1-2:l2-2,m-3,n))  &
+                       +(f(l1+3:l2+3,m-3,n)-f(l1-3:l2-3,m-3,n))))&
                    )
           else
             df=0.
@@ -1027,24 +1039,24 @@ module Deriv
           if (nygrid/=1.and.nzgrid/=1) then
             fac=(1./60.**2)*dy_1(m)*dz_1(n)
             df=fac*( &
-              45.*((45.*(psif(l1:l2,m+1,n+1)-psif(l1:l2,m-1,n+1))  &
-                    -9.*(psif(l1:l2,m+2,n+1)-psif(l1:l2,m-2,n+1))  &
-                       +(psif(l1:l2,m+3,n+1)-psif(l1:l2,m-3,n+1))) &
-                  -(45.*(psif(l1:l2,m+1,n-1)-psif(l1:l2,m-1,n-1))  &
-                    -9.*(psif(l1:l2,m+2,n-1)-psif(l1:l2,m-2,n-1))  &
-                       +(psif(l1:l2,m+3,n-1)-psif(l1:l2,m-3,n-1))))&
-              -9.*((45.*(psif(l1:l2,m+1,n+2)-psif(l1:l2,m-1,n+2))  &
-                    -9.*(psif(l1:l2,m+2,n+2)-psif(l1:l2,m-2,n+2))  &
-                       +(psif(l1:l2,m+3,n+2)-psif(l1:l2,m-3,n+2))) &
-                  -(45.*(psif(l1:l2,m+1,n-2)-psif(l1:l2,m-1,n-2))  &
-                    -9.*(psif(l1:l2,m+2,n-2)-psif(l1:l2,m-2,n-2))  &
-                       +(psif(l1:l2,m+3,n-2)-psif(l1:l2,m-3,n-2))))&
-                 +((45.*(psif(l1:l2,m+1,n+3)-psif(l1:l2,m-1,n+3))  &
-                    -9.*(psif(l1:l2,m+2,n+3)-psif(l1:l2,m-2,n+3))  &
-                       +(psif(l1:l2,m+3,n+3)-psif(l1:l2,m-3,n+3))) &
-                  -(45.*(psif(l1:l2,m+1,n-3)-psif(l1:l2,m-1,n-3))  &
-                    -9.*(psif(l1:l2,m+2,n-3)-psif(l1:l2,m-2,n-3))  &
-                       +(psif(l1:l2,m+3,n-3)-psif(l1:l2,m-3,n-3))))&
+              45.*((45.*(f(l1:l2,m+1,n+1)-f(l1:l2,m-1,n+1))  &
+                    -9.*(f(l1:l2,m+2,n+1)-f(l1:l2,m-2,n+1))  &
+                       +(f(l1:l2,m+3,n+1)-f(l1:l2,m-3,n+1))) &
+                  -(45.*(f(l1:l2,m+1,n-1)-f(l1:l2,m-1,n-1))  &
+                    -9.*(f(l1:l2,m+2,n-1)-f(l1:l2,m-2,n-1))  &
+                       +(f(l1:l2,m+3,n-1)-f(l1:l2,m-3,n-1))))&
+              -9.*((45.*(f(l1:l2,m+1,n+2)-f(l1:l2,m-1,n+2))  &
+                    -9.*(f(l1:l2,m+2,n+2)-f(l1:l2,m-2,n+2))  &
+                       +(f(l1:l2,m+3,n+2)-f(l1:l2,m-3,n+2))) &
+                  -(45.*(f(l1:l2,m+1,n-2)-f(l1:l2,m-1,n-2))  &
+                    -9.*(f(l1:l2,m+2,n-2)-f(l1:l2,m-2,n-2))  &
+                       +(f(l1:l2,m+3,n-2)-f(l1:l2,m-3,n-2))))&
+                 +((45.*(f(l1:l2,m+1,n+3)-f(l1:l2,m-1,n+3))  &
+                    -9.*(f(l1:l2,m+2,n+3)-f(l1:l2,m-2,n+3))  &
+                       +(f(l1:l2,m+3,n+3)-f(l1:l2,m-3,n+3))) &
+                  -(45.*(f(l1:l2,m+1,n-3)-f(l1:l2,m-1,n-3))  &
+                    -9.*(f(l1:l2,m+2,n-3)-f(l1:l2,m-2,n-3))  &
+                       +(f(l1:l2,m+3,n-3)-f(l1:l2,m-3,n-3))))&
                    )
           else
             df=0.
@@ -1054,24 +1066,24 @@ module Deriv
           if (nzgrid/=1.and.nxgrid/=1) then
             fac=(1./60.**2)*dz_1(n)*dx_1(l1:l2)
             df=fac*( &
-              45.*((45.*(psif(l1+1:l2+1,m,n+1)-psif(l1-1:l2-1,m,n+1))  &
-                    -9.*(psif(l1+2:l2+2,m,n+1)-psif(l1-2:l2-2,m,n+1))  &
-                       +(psif(l1+3:l2+3,m,n+1)-psif(l1-3:l2-3,m,n+1))) &
-                  -(45.*(psif(l1+1:l2+1,m,n-1)-psif(l1-1:l2-1,m,n-1))  &
-                    -9.*(psif(l1+2:l2+2,m,n-1)-psif(l1-2:l2-2,m,n-1))  &
-                       +(psif(l1+3:l2+3,m,n-1)-psif(l1-3:l2-3,m,n-1))))&
-              -9.*((45.*(psif(l1+1:l2+1,m,n+2)-psif(l1-1:l2-1,m,n+2))  &
-                    -9.*(psif(l1+2:l2+2,m,n+2)-psif(l1-2:l2-2,m,n+2))  &
-                       +(psif(l1+3:l2+3,m,n+2)-psif(l1-3:l2-3,m,n+2))) &
-                  -(45.*(psif(l1+1:l2+1,m,n-2)-psif(l1-1:l2-1,m,n-2))  &
-                    -9.*(psif(l1+2:l2+2,m,n-2)-psif(l1-2:l2-2,m,n-2))  &
-                       +(psif(l1+3:l2+3,m,n-2)-psif(l1-3:l2-3,m,n-2))))&
-                 +((45.*(psif(l1+1:l2+1,m,n+3)-psif(l1-1:l2-1,m,n+3))  &
-                    -9.*(psif(l1+2:l2+2,m,n+3)-psif(l1-2:l2-2,m,n+3))  &
-                       +(psif(l1+3:l2+3,m,n+3)-psif(l1-3:l2-3,m,n+3))) &
-                  -(45.*(psif(l1+1:l2+1,m,n-3)-psif(l1-1:l2-1,m,n-3))  &
-                    -9.*(psif(l1+2:l2+2,m,n-3)-psif(l1-2:l2-2,m,n-3))  &
-                       +(psif(l1+3:l2+3,m,n-3)-psif(l1-3:l2-3,m,n-3))))&
+              45.*((45.*(f(l1+1:l2+1,m,n+1)-f(l1-1:l2-1,m,n+1))  &
+                    -9.*(f(l1+2:l2+2,m,n+1)-f(l1-2:l2-2,m,n+1))  &
+                       +(f(l1+3:l2+3,m,n+1)-f(l1-3:l2-3,m,n+1))) &
+                  -(45.*(f(l1+1:l2+1,m,n-1)-f(l1-1:l2-1,m,n-1))  &
+                    -9.*(f(l1+2:l2+2,m,n-1)-f(l1-2:l2-2,m,n-1))  &
+                       +(f(l1+3:l2+3,m,n-1)-f(l1-3:l2-3,m,n-1))))&
+              -9.*((45.*(f(l1+1:l2+1,m,n+2)-f(l1-1:l2-1,m,n+2))  &
+                    -9.*(f(l1+2:l2+2,m,n+2)-f(l1-2:l2-2,m,n+2))  &
+                       +(f(l1+3:l2+3,m,n+2)-f(l1-3:l2-3,m,n+2))) &
+                  -(45.*(f(l1+1:l2+1,m,n-2)-f(l1-1:l2-1,m,n-2))  &
+                    -9.*(f(l1+2:l2+2,m,n-2)-f(l1-2:l2-2,m,n-2))  &
+                       +(f(l1+3:l2+3,m,n-2)-f(l1-3:l2-3,m,n-2))))&
+                 +((45.*(f(l1+1:l2+1,m,n+3)-f(l1-1:l2-1,m,n+3))  &
+                    -9.*(f(l1+2:l2+2,m,n+3)-f(l1-2:l2-2,m,n+3))  &
+                       +(f(l1+3:l2+3,m,n+3)-f(l1-3:l2-3,m,n+3))) &
+                  -(45.*(f(l1+1:l2+1,m,n-3)-f(l1-1:l2-1,m,n-3))  &
+                    -9.*(f(l1+2:l2+2,m,n-3)-f(l1-2:l2-2,m,n-3))  &
+                       +(f(l1+3:l2+3,m,n-3)-f(l1-3:l2-3,m,n-3))))&
                    )
           else
             df=0.
