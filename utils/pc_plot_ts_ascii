@@ -43,18 +43,20 @@ if ($i2 eq 0) {print "ERROR: Could not find variable \"$var2\" in variable list 
 #
 #  Find min and max of variable to be plotted.
 #
-$max=-1e19;
-$min= 1e19;
+$max=-1e9;
+$min= 1e9;
 
 foreach $line (@ts) {
-  $line=~ s/ +/ /g;
-  $line=~ s/ $//g;
-  $line=~ s/^ //g;
-  $line=~ s/\n//g;
-  @entries=split(/ /, $line);
+  if (not $line=~ /#/) {  # Ignore header lines.
+    $line=~ s/ +/ /g;
+    $line=~ s/ $//g;
+    $line=~ s/^ //g;
+    $line=~ s/\n//g;
+    @entries=split(/ /, $line);
  
-  $max = $entries[$i2] > $max ? $entries[$i2] : $max; 
-  $min = $entries[$i2] < $min ? $entries[$i2] : $min; 
+    $max = $entries[$i2] > $max ? $entries[$i2] : $max; 
+    $min = $entries[$i2] < $min ? $entries[$i2] : $min;
+    }
   }
 #
 #  Round min and max to nearest significant digit.
