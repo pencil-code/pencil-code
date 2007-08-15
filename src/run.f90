@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.245 2007-06-29 04:52:53 brandenb Exp $
+! $Id: run.f90,v 1.246 2007-08-15 10:44:00 bingert Exp $
 !
 !***********************************************************************
       program run
@@ -70,7 +70,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.245 2007-06-29 04:52:53 brandenb Exp $")
+             "$Id: run.f90,v 1.246 2007-08-15 10:44:00 bingert Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -192,14 +192,12 @@
         if (ip<=6.and.lroot) print*,'reading grid coordinates'
         call rgrid(trim(directory)//'/grid.dat')
 !
-!------This can perhaps now be removed. Please check----------
-!  The following is only kept for backwards compatibility with
-!  an old grid.dat.
+!  The following is here to avoid division in sub.f90 for diagnostic
+!  outputs of integrated values in the non equidistant case
 !
-!       if (lequidist(1)) dx_1=1./dx
-!       if (lequidist(2)) dy_1=1./dy
-!       if (lequidist(3)) dz_1=1./dz
-!^^^^^-This can perhaps now be removed. Please check-^^^^^^^^^
+       if (.not. lequidist(1)) xprim=1./dx_1
+       if (.not. lequidist(2)) yprim=1./dy_1
+       if (.not. lequidist(3)) zprim=1./dz_1
 !
 !  Determine slice positions and whether slices are to be written on this
 !  processor. This can only be done after the grid has been established.
