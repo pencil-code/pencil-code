@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.444 2007-08-15 13:24:28 brandenb Exp $
+! $Id: magnetic.f90,v 1.445 2007-08-15 16:17:59 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -330,7 +330,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.444 2007-08-15 13:24:28 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.445 2007-08-15 16:17:59 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1189,9 +1189,13 @@ module Magnetic
 !  bij, del2a, graddiva
 !  For non-cartesian coordinates jj is always required for del2a=graddiva-jj
 !
-      if (lpencil(i_bij) .or. lpencil(i_del2a) .or. lpencil(i_graddiva)) then
+      if (lpencil(i_bij) .or. lpencil(i_del2a) .or. lpencil(i_graddiva) .or. &
+          lpencil(i_jj) ) then
         if (lcartesian_coords) then
           call gij_etc(f,iaa,p%aa,p%aij,p%bij,p%del2a,p%graddiva)
+          if (.not. lpencil(i_bij)) p%bij=0.0      ! Avoid warnings from pencil
+          if (.not. lpencil(i_del2A)) p%del2A=0.0  ! consistency check...
+          if (.not. lpencil(i_graddiva)) p%graddiva=0.0
           if (lpencil(i_jj)) call curl_mn(p%bij,p%jj,p%bb)
         else
           call gij_etc(f,iaa,p%aa,p%aij,p%bij,GRADDIV=p%graddiva)
