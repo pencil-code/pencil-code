@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.164 2007-08-12 13:29:37 ajohan Exp $
+! $Id: boundcond.f90,v 1.165 2007-08-15 07:08:31 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -368,6 +368,8 @@ module Boundcond
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',k,'(',j,')=',bc12(j)
             if (ipz==ip_ok) then
               select case(bc12(j))
+              case ('0')        ! zero value
+                call bc_zero_z(f,topbot,j)
               case ('p')        ! periodic
                 call bc_per_z(f,topbot,j)
               case ('s')        ! symmetry
@@ -2681,6 +2683,39 @@ module Boundcond
       endselect
 
     endsubroutine bc_del2zero
+!***********************************************************************
+    subroutine bc_zero_z(f,topbot,j)
+!
+!  Zero value in the ghost zones.
+!
+!  13-aug-2007/anders: implemented
+!
+      use Cdata, only: mx, my, mz, mfarray, n1, n2, nghost
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+!
+      select case(topbot)
+!
+!  Bottom boundary.
+!
+      case('bot')
+        f(:,:,0:n1-1,j)=0.0
+!
+!  Top boundary.
+!
+      case('top')
+        f(:,:,n2+1:mz,j)=0.0
+!
+!  Default.
+!
+      case default
+        print*, "bc_zero_z: ", topbot, " should be `top' or `bot'"
+!
+      endselect
+!
+    endsubroutine bc_zero_z
 !***********************************************************************
     subroutine bc_outflow_z(f,topbot,j)
 !
