@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.367 2007-08-15 13:43:33 bingert Exp $
+! $Id: equ.f90,v 1.368 2007-08-15 21:04:31 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -443,7 +443,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.367 2007-08-15 13:43:33 bingert Exp $")
+           "$Id: equ.f90,v 1.368 2007-08-15 21:04:31 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -464,6 +464,12 @@ module Equ
 !  This could in principle be avoided (but it not worth it now)
 !
       early_finalize=test_nonblocking.or.leos_ionization.or.lradiation_ray
+!
+!  Write crash snapshots to the hard disc if the time-step is very low.
+!  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
+!  this to be done.
+!
+      if (crash_file_dtmin_factor > 0.0) call output_crash_files(f)      
 !
 !  For debugging purposes impose minimum or maximum value on certain variables.
 !
@@ -1094,6 +1100,39 @@ module Equ
       close(1)
 !
     endsubroutine debug_imn_arrays
+!***********************************************************************
+    subroutine output_crash_files(f)
+!
+!  Write crash snapshots when time-step is low.
+!
+!  15-aug-2007/anders: coded
+!
+      use Snapshot
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      integer, save :: icrash=0
+      character (len=10) :: filename
+      character (len=1) :: icrash_string
+!
+      if (dt <= crash_file_dtmin_factor*dtmin) then
+        write(icrash_string, fmt='(i1)') icrash
+        filename='crash'//icrash_string//'.dat'
+        call wsnap(trim(directory_snap)//'/'//filename,f,mvar_io,.false.)
+        if (lroot) then
+          print*, 'Time-step is very low - writing '//trim(filename)
+          print*, '(it, itsub=', it, itsub, ')'
+          print*, '(t, dt=', t, dt, ')'
+        endif
+!
+!  Next crash index, cycling from 0-9 to avoid excessive writing of
+!  snapshots to the hard disc.
+!        
+        icrash=icrash+1
+        icrash=mod(icrash,10)
+      endif
+!
+    endsubroutine output_crash_files
 !***********************************************************************
     subroutine pencil_consistency_check(f,df,p)
 !

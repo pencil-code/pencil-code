@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.375 2007-08-13 10:21:45 dobler Exp $
+! $Id: cdata.f90,v 1.376 2007-08-15 21:04:31 ajohan Exp $
 
 module Cdata
 
@@ -329,6 +329,7 @@ module Cdata
 ! run parameters
   real :: tmax=1e33,awig=1.
   real :: max_walltime=0.0  ! in seconds
+  real :: crash_file_dtmin_factor=-1.0
   integer :: isave=100,iwig=0,ialive=0,nfilter=0,isaveglobal=0
   logical :: lrmwig_rho=.false.,lrmwig_full=.false.,lrmwig_xyaverage=.false.
   logical :: lread_oldsnap=.false., lread_oldsnap_nomag=.false., lread_oldsnap_nopscalar=.false.

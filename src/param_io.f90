@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.282 2007-08-11 21:03:52 brandenb Exp $
+! $Id: param_io.f90,v 1.283 2007-08-15 21:04:31 ajohan Exp $
 
 module Param_IO
 
@@ -111,7 +111,8 @@ module Param_IO
        lrescaling, lcylinder_in_a_box, lsphere_in_a_box,&
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
-       lbidiagonal_derij,lisotropic_advection
+       lbidiagonal_derij,lisotropic_advection, &
+       crash_file_dtmin_factor
   contains
 
 !***********************************************************************
