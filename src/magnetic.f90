@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.443 2007-08-13 17:57:47 ajohan Exp $
+! $Id: magnetic.f90,v 1.444 2007-08-15 13:24:28 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -302,7 +302,6 @@ module Magnetic
 !  1-may-02/wolf: coded
 !
       use Cdata
-!??   use FArrayManager
       use Mpicomm
       use Sub
 !
@@ -331,7 +330,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.443 2007-08-13 17:57:47 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.444 2007-08-15 13:24:28 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1645,7 +1644,7 @@ module Magnetic
 !  Calculate diagnostic quantities
 !
       if (ldiagnos) then
-
+ 
         if (idiag_beta1m/=0) call sum_mn_name(p%beta,idiag_beta1m)
         if (idiag_beta1max/=0) call max_mn_name(p%beta,idiag_beta1max)
 
@@ -1810,7 +1809,6 @@ module Magnetic
 !  diagnostic output for mean field dynamos
 !
         if (idiag_EMFdotBm/=0) call sum_mn_name(p%mf_EMFdotB,idiag_EMFdotBm)
-!
       endif ! endif (ldiagnos)
 !                                                                               
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1               
@@ -1851,8 +1849,6 @@ module Magnetic
           call xzintegrate_mn_name_y(p%bb(:,2),idiag_mflux_y)
         if (idiag_mflux_z/=0) &
           call xyintegrate_mn_name_z(p%bb(:,3),idiag_mflux_z)
-
-
       endif
 !
 !  phi-averages
@@ -1885,7 +1881,17 @@ module Magnetic
         if (idiag_bxmxz/=0) call ysum_mn_name_xz(p%bb(:,1),idiag_bxmxz)
         if (idiag_bymxz/=0) call ysum_mn_name_xz(p%bb(:,2),idiag_bymxz)
         if (idiag_bzmxz/=0) call ysum_mn_name_xz(p%bb(:,3),idiag_bzmxz)
-     endif
+      else
+!
+!  idiag_bxmxy and idiag_bymxy also need to be calculated when
+!  ldiagnos and idiag_bmx and/or idiag_bmy, so
+!
+        if (ldiagnos.and.(idiag_bmx.or.idiag_bmy)) then
+          if (idiag_bxmxy/=0) call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
+          if (idiag_bymxy/=0) call zsum_mn_name_xy(p%bb(:,2),idiag_bymxy)
+          if (idiag_bzmxy/=0) call zsum_mn_name_xy(p%bb(:,3),idiag_bzmxy)
+        endif
+      endif
 !
 !  debug output
 !
@@ -2880,7 +2886,8 @@ module Magnetic
         endif
         call save_name(bmz,idiag_bmz)
       endif
-!! Magnetic energy in z averaged field 
+!
+!  Magnetic energy in z averaged field 
 !  The bxmxy, bymxy and bzmxy must have been calculated,
 !  so they are present on the root processor.
 !
