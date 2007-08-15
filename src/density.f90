@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.339 2007-08-14 01:08:53 dobler Exp $
+! $Id: density.f90,v 1.340 2007-08-15 11:45:04 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -125,7 +125,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.339 2007-08-14 01:08:53 dobler Exp $")
+           "$Id: density.f90,v 1.340 2007-08-15 11:45:04 brandenb Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1076,7 +1076,7 @@ module Density
 !
       if (idiag_rhom/=0 .or. idiag_rhomz/=0 .or. idiag_rhomy/=0 .or. &
            idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rhomin/=0 .or. &
-           idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxy/=0 .or. &
+           idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
            idiag_totmass/=0) &
            lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
@@ -1583,7 +1583,6 @@ module Density
       do inamexz=1,nnamexz
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'rhomxz',idiag_rhomxz)
       enddo
-
 !
 !  check for those quantities for which we want z-averages
 !
@@ -1611,6 +1610,7 @@ module Density
         write(3,*) 'i_rhomz=',idiag_rhomz
         write(3,*) 'i_rhomy=',idiag_rhomy
         write(3,*) 'i_rhomx=',idiag_rhomx
+        write(3,*) 'i_rhomxy=',idiag_rhomxy
         write(3,*) 'i_rhomxz=',idiag_rhomxz
         write(3,*) 'nname=',nname
         write(3,*) 'ilnrho=',ilnrho
