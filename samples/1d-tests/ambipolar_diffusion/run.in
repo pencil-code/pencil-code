@@ -1,0 +1,35 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters!
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2007-08-15 16:48:32 wlyra Exp $',
+  nt=100, it1=5, isave=100, itorder=3, ialive=1
+  dsnap=1.0
+  cdt=0.4,
+  cdtv=0.3, 
+  dtmin=1e-6,
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  lupw_rho=T
+/
+&magnetic_run_pars
+  eta=1e-3
+/
+&neutralvelocity_run_pars 
+  iviscn='nun-const'
+  nun=1e-4
+  csn0=1.
+  lpressuregradient=T
+/
+&neutraldensity_run_pars  
+  lupw_rhon=T
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=1e-4
+/

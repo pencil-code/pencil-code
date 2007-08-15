@@ -1,0 +1,41 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2007-08-15 16:48:32 wlyra Exp $',
+  ip=10,                        ! debugging parameter
+  xyz0  =  0,0,0,       ! first corner of box
+  xyz1  =  1,1,1,       ! second corner of box
+  lperi = T  , T  , F,         ! periodic direction?
+  bcz = 's','s','set:a2','a2:set','s','s:der','s','s','s','set:a2','a2:set'
+  fbcz2= 0., 0.,      0.,    1e-1, 0.,    -1., 0., 0., 0.,      0., 10
+  lwrite_ic=T
+/
+&eos_init_pars
+  cs0=1.
+  gamma=1.
+/
+&hydro_init_pars
+/
+&density_init_pars
+  initlnrho='const_rho' 
+  rho_const=0.1  
+  ldensity_nolog=T
+/
+&magnetic_init_pars
+  initaa='linear-zx'
+  amplaa=1.0
+/
+&neutralvelocity_init_pars
+  zeta=0.1
+  alpha=100
+  colldrag=10
+/
+&neutraldensity_init_pars
+  lneutraldensity_nolog=T
+  initlnrhon='const_rhon'
+  rhon_const=10
+  zeta=0.1
+  alpha=100
+/
