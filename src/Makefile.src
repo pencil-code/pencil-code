@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.320 2007-08-15 11:56:18 dobler Exp $
+### $Id: Makefile.src,v 1.321 2007-08-15 19:26:24 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -1216,7 +1216,6 @@ distclean: cleanall
 ## ---------------------------------------------------------------------- #
 
 nograv.o:
-	echo "Hej"
 
 read_videofiles$(PC_META_TYPE).x: $(read_videofiles)
 	$(LD) $(LDFLAGS) $(read_videofiles) $(LD_MPI) -o read_videofiles$(PC_META_TYPE).x
