@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.366 2007-08-15 07:08:56 ajohan Exp $
+! $Id: equ.f90,v 1.367 2007-08-15 13:43:33 bingert Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -443,7 +443,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.366 2007-08-15 07:08:56 ajohan Exp $")
+           "$Id: equ.f90,v 1.367 2007-08-15 13:43:33 bingert Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -469,10 +469,6 @@ module Equ
 !
       call impose_density_floor(f)
       call impose_velocity_ceiling(f)
-!
-!
-!
-      call write_crash_files(f)
 !
 !  Apply global boundary conditions to particle positions and communiate
 !  migrating particles between the processors.
@@ -1327,28 +1323,4 @@ f_loop:   do iv=1,mvar
 !
     endsubroutine pencil_consistency_check
 !***********************************************************************
-    subroutine write_crash_files(f)
-!
-!
-!
-      use General
-      use Snapshot
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      character (len=5) :: icrash_string
-      integer :: ncrash_files=10
-      integer, save :: icrash=0
-!
-      if (dt <= 10*dtmin) then
-        call chn(icrash,icrash_string)
-        call wsnap(trim(directory_snap)//'/crash'//icrash_string//'.dat',f,mvar_io,ENUM=.false.)
-        if (lroot) print*, 'Time-step is low - writing crash data.'
-        icrash=icrash+1
-        icrash=mod(icrash,ncrash_files)
-      endif
-!
-    endsubroutine write_crash_files
-!***********************************************************************
-
 endmodule Equ
