@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.445 2007-08-15 16:17:59 ajohan Exp $
+! $Id: magnetic.f90,v 1.446 2007-08-15 22:59:06 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -330,7 +330,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.445 2007-08-15 16:17:59 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.446 2007-08-15 22:59:06 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -658,7 +658,7 @@ module Magnetic
         case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case('crazy', '5'); call crazy(amplaa(j),f,iaa)
         case('sinwave-x'); call sinwave(amplaa(j),f,iaa,kx=kx_aa(j))
-        case('linear-zx'); f(:,:,:,iay)=-amplaa(j)*zz**2/Lxyz(3)
+        case('linear-zx'); f(:,:,:,iay)=-.5*amplaa(j)*zz**2/Lxyz(3)
         case('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,xx,kx_aa(j))
         case('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,yy,ky_aa(j),mu0)
         case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
@@ -955,6 +955,8 @@ module Magnetic
 !  pencils for meanfield dynamo diagnostics
 !
       if (idiag_EMFdotBm/=0) lpenc_diagnos(i_mf_EMFdotB)=.true.
+!
+      if (lisotropic_advection) lpenc_requested(i_va2)=.true.
 !
     endsubroutine pencil_criteria_magnetic
 !***********************************************************************
@@ -1609,10 +1611,34 @@ module Magnetic
             rho1_jxb = rho1_jxb &
                      * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
           endif
-          advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
-                     (p%bb(:,2)*dy_1(  m  ))**2+ &
-                     (p%bb(:,3)*dz_1(  n  ))**2)*mu01*rho1_jxb
+          if (lspherical_coords) then 
+            advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
+                       (p%bb(:,2)*dy_1(  m  )*r1_mn)**2+ &
+                       (p%bb(:,3)*dz_1(  n  )*r1_mn*sin1th(m))**2)*mu01*rho1_jxb
+          elseif (lcylindrical_coords) then 
+            advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
+                       (p%bb(:,2)*dy_1(  m  )*rcyl_mn1)**2+ &
+                       (p%bb(:,3)*dz_1(  n  ))**2)*mu01*rho1_jxb
+          else
+            advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
+                       (p%bb(:,2)*dy_1(  m  ))**2+ &
+                       (p%bb(:,3)*dz_1(  n  ))**2)*mu01*rho1_jxb
         endif
+      endif
+!
+!WL: don't know if this is correct, but it's the only way I can make
+!    some 1D and 2D samples work when the non-existent direction has the
+!    largest velocity (like a 2D rz slice of a Keplerian disk that rotates
+!    on the phi direction)
+!    Please check
+!
+        if (lisotropic_advection) then
+          if (lfirst.and.ldt) then
+            if ((nxgrid==1).or.(nygrid==1).or.(nzgrid==1)) &
+                 advec_va2=sqrt(p%va2*dxyz_2)
+          endif
+        endif
+
 !
 !  resistive time step considerations
 !
