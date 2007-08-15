@@ -1,0 +1,80 @@
+#!/usr/bin/perl
+#
+#  Make ascii plot of Pencil Code time series data.
+#
+#  Usage: pc_plot_ts_ascii var1 var2
+#  Here var1 and var2 are the x and y variable to be plotted.
+#
+#  Example: pc_plot_ts_ascii t rhomax
+#
+use POSIX qw(ceil floor);
+
+$var1=$ARGV[0];
+$var2=$ARGV[1];
+#
+#  Read header and data from time series.
+#
+open TS, "data/time_series.dat";
+  $header=<TS>;
+  @ts=<TS>;
+close TS;
+#
+#  Prepare header with single spaces as separators between entries.
+#
+$header=~ s/#//g;
+$header=~ s/\n//g;
+$header=~ s/-+/ /g;
+$header=~ s/ $//g;
+$header=~ s/^ //g;
+
+@header=split(/ /, $header);
+#
+#  Find positions of plot variables in header.
+#
+$i1=0; $i2=0;
+
+for ($i=0; $i<$#header+1; $i++) {
+  if ($var1 eq $header[$i]) {$i1=$i;}
+  if ($var2 eq $header[$i]) {$i2=$i;}
+  }
+
+if ($i1 eq 0) {print "ERROR: Could not find variable \"$var1\" in variable list [$header]\n"; die;}
+if ($i2 eq 0) {print "ERROR: Could not find variable \"$var2\" in variable list $header \n"; die;}
+#
+#  Find min and max of variable to be plotted.
+#
+$max=-1e19;
+$min= 1e19;
+
+foreach $line (@ts) {
+  $line=~ s/ +/ /g;
+  $line=~ s/ $//g;
+  $line=~ s/^ //g;
+  $line=~ s/\n//g;
+  @entries=split(/ /, $line);
+ 
+  $max = $entries[$i2] > $max ? $entries[$i2] : $max; 
+  $min = $entries[$i2] < $min ? $entries[$i2] : $min; 
+  }
+#
+#  Round min and max to nearest significant digit.
+#
+$logmax = floor(log(abs($max)) / log(10.0));
+$logmin = floor(log(abs($min)) / log(10.0));
+
+$min = floor($min/10**$logmin)*10**$logmin;
+$max = ceil($max/10**$logmax)*10**$logmax;
+#
+#  Make sure that min is not equal to max.
+#
+if ($max eq $min) {$min=$min/1.5; $max=$max*1.5;}
+#
+#  Construct gnuplot command.
+#
+$i1=$i1+1; $i2=$i2+1;
+$command="echo \"set terminal dumb; set yrange [$min:$max]; plot 'data/time_series.dat' using $i1:$i2\" | gnuplot\n";
+#
+#  Print command to screen and execute.
+#
+print $command;
+system($command);
