@@ -1,4 +1,4 @@
-! $Id: messages.f90,v 1.11 2007-08-12 13:06:28 ajohan Exp $
+! $Id: messages.f90,v 1.12 2007-08-16 21:59:29 dobler Exp $
 !
 !  This module takes care of messages.
 !
@@ -70,9 +70,10 @@ module Messages
 !
     endsubroutine initialize_messages
 !***********************************************************************
-    subroutine not_implemented(location)
+    subroutine not_implemented(location,message)
 !
-      character(len=*) :: location
+      character(len=*)           :: location
+      character(len=*), optional :: message
 !
       if (.not.llife_support) then
         errors=errors+1
@@ -80,9 +81,12 @@ module Messages
         call terminal_highlight_error()
         write (*,'(A18)',ADVANCE='NO') "NOT IMPLEMENTED: "
         call terminal_defaultcolor()
-        write (*,*) &
-            "Attempted to use a routine that is not capable of handling the "
-        write (*,*) "current parameters at the location '"//trim(location)//"'"
+        if (present(message)) then
+          write(*,*) trim(location) // ":" // trim(message)
+        else
+          write(*,*) trim(location) // ":" // &
+              "Some feature waits to get implemented -- by you?"
+        endif
 !
         if (ldie_onfatalerror) call die_gracefully
 !
@@ -101,7 +105,7 @@ module Messages
         call terminal_highlight_fatal_error()
         write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
         call terminal_defaultcolor()
-        write (*,*) trim(message)//" occurred at "//trim(location)
+        write (*,*) trim(location) // ":" // trim(message)
 !
         if (ldie_onfatalerror) call die_gracefully
 !
@@ -125,7 +129,7 @@ module Messages
         call terminal_highlight_fatal_error()
         write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
         call terminal_defaultcolor()
-        write (*,*) trim(message)//" occurred at "//trim(location)
+        write (*,*) trim(location) // ":" // trim(message)
 !
       endif
 !
@@ -168,7 +172,7 @@ module Messages
         call terminal_highlight_error()
         write (*,'(A7)',ADVANCE='NO') "ERROR: "
         call terminal_defaultcolor()
-        write (*,*) trim(message)//" occurred at "//trim(location)
+        write (*,*) trim(location) // ":" // trim(message)
 !
         if (ldie_onerror) call die_gracefully
 !
@@ -189,7 +193,7 @@ module Messages
         call terminal_highlight_warning()
         write (*,'(A9)',ADVANCE='NO') "WARNING:"
         call terminal_defaultcolor()
-        write (*,*) trim(message)//" occurred at "//trim(location)
+        write (*,*) trim(location) // ":" // trim(message)
 !
         if (ldie_onwarning) call die_gracefully
 !
@@ -213,7 +217,7 @@ module Messages
 !
       if (present(level)) level_=level
 !
-      if (ip<=level_) write (*,*) trim(location)//":"//trim(message)
+      if (ip<=level_) write (*,*) trim(location) // ":" // trim(message)
 !
     endsubroutine information
 !***********************************************************************
