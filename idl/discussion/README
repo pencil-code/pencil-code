@@ -1,0 +1,12 @@
+files  -->  read 
+write  (an extra directory)
+plot
+
+sample_specific
+
+calc/
+    /derivatives
+    /module_specific/
+                    /particles
+
+obsolete/
