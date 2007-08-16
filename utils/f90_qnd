@@ -400,10 +400,12 @@ sub erase_timestamp_from_mod {
         # stamp somehow), so we need to erase that, too
         $data =~ s{^MD5:[0-9a-f]+\s*}
                   {[Removed MD5 sum] }m;
-    } elsif ($fc_modtype =~ /^(ifort|ifc|hp)$/) { 
-        # Eliminate time stamp from binary ifort (>=8) module file:
-        # Bytes 45-48 represent Unix time, so we null them out:
-        substr($data,44,4) = "\0\0\0\0";
+    } elsif ($fc_modtype =~ /^(ifort|ifc|hp)$/) {
+        # Eliminate time stamp from binary ifort (>=8) module file: Bytes
+        # 49-52 represent Unix time, so we null them out [NB: Apparently
+        # this was 45-48 with older compiler versions, but I cannot
+        # (easily) check]:
+        substr($data,48,4) = "\0\0\0\0";
         # Exactly same thing for HP Fortran Compiler V5.5A (Tru64/OSF1).
     } elsif ($fc_modtype =~ /^(generic|mips|sun)$/) {
         # No time stamp to remove.
@@ -563,7 +565,6 @@ __END__
 B<f90_qnd> - Fast re-compilation of modular F90 codes through foul play
 with mtimes
 
-
 =head1 SYNOPSIS
 
    export F90_QND_F90=g95
@@ -679,6 +680,41 @@ information on older compilers' .mod file format (and for other approaches
 to the `recompilation cascade problem').
 
 
+=head2 NOTES ON INDIVIDUAL COMPILERS
+
+=over 4
+
+=item 1.
+
+Apparently, versions of ifort before 9.1 put the time stamp in bytes
+45-48, while 9.1 has it in 49-52, which is what B<f90_qnd> currently masks
+out if F90_QND_MODTYPE=ifort.
+If somebody can confirm this, I will mask out all 8 bytes in question.
+
+=item 2.
+
+Right now (July 2007), gfortran changes the .mod file even when changing
+one or a few lines not related to the module interface.
+Since this happens even when adding a debug print* statement, this may
+render B<f90_qnd> pretty useless with gfortran (or the other way
+around...).
+
+g95 had the same issue, but this is fixed since ~ May 2007.
+
+See L<http://gcc.gnu.org/bugzilla/show_bug.cgi?id=32147> .
+
+=item 3.
+
+Ifort has a similar problem, e.g. after adding a (subroutine-local)
+variable, I found that ifort 9.1 changed two bytes in the .mod files,
+althought the module interface should not have been changed.
+
+This seems to not occur with simpler changes like adding a print* debug
+statement.
+
+=back
+
+
 =head1 NOTES
 
 =over 4
@@ -700,7 +736,7 @@ called for linking, and no time stamps are manipulated.
 
 =head1 AUTHOR
 
-Wolfgang Dobler <Wolfgang.Dobler AT ucalgary DOT ca>
+Wolfgang Dobler <Wolfgang [.] Dobler [at] kis.uni-freiburg.de>
 
 
 =head1 COPYRIGHT
@@ -713,4 +749,4 @@ under the same conditions as Perl (see L<perlgpl> and L<perlartistic>).
 =cut
 
 
-#  End of file f90_qnd
+# End of file f90_qnd
