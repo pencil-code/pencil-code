@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.167 2007-08-16 12:10:11 dobler Exp $
+! $Id: boundcond.f90,v 1.168 2007-08-16 13:06:25 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -555,9 +555,12 @@ module Boundcond
               case ('ovr')
                 ! BCZ_DOC: set boundary value
                 call bc_overshoot_z(f,fbcz12,topbot,j)
-              case ('out')
-                ! BCZ_DOC: allow outflow, but no inflow
+              case ('ouf')
+                ! BCZ_DOC: allow outflow, but no inflow (experimental)
                 call bc_outflow_z(f,topbot,j)
+              case ('cop')
+                ! BCZ_DOC: copy value of last physical point to all ghost cells
+                call bc_copy_z(f,topbot,j)
               case ('nil')
                 ! do nothing; assume that everything is set
               case default
@@ -2837,28 +2840,22 @@ module Boundcond
 !  Bottom boundary.
 !
       case('bot')
-!        do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)-f(:,:,n1+i,j); enddo
         do iy=1,my; do ix=1,mx
           if (f(ix,iy,n1,j)<=0.0) then  ! assymetric around boundary value
-            do i=1,nghost; f(ix,iy,n1-i,j)=2*f(ix,iy,n1,j)-f(ix,iy,n1+i,j); enddo
+            do i=1,nghost; f(ix,iy,n1-i,j)=f(ix,iy,n1,j); enddo
           else                      ! zero, suppressing inflow
-            do i=1,nghost; f(ix,iy,n1-i,j)=-f(ix,iy,n1+i,j); enddo
-            f(ix,iy,n1,j) = 0.0
-!            f(ix,iy,0:n1-1,j)=0.0
+            do i=1,nghost; f(ix,iy,n1-i,j)=0.0; enddo
           endif
         enddo; enddo
 !
 !  Top boundary.
 !
       case('top')
-!        do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)-f(:,:,n2-i,j); enddo
         do iy=1,my; do ix=1,mx
           if (f(ix,iy,n2,j)>=0.0) then
-            do i=1,nghost; f(ix,iy,n2+i,j)=2*f(ix,iy,n2,j)-f(ix,iy,n2-i,j); enddo
+            do i=1,nghost; f(ix,iy,n2+i,j)=f(ix,iy,n2,j); enddo
           else
-            do i=1,nghost; f(ix,iy,n2+i,j)=-f(ix,iy,n2-i,j); enddo
-            f(ix,iy,n2,j) = 0.0
-!            f(ix,iy,n2+1:mz,j)=0.0
+            do i=1,nghost; f(ix,iy,n2+i,j)=0.0; enddo
           endif
         enddo; enddo
 !
@@ -2870,5 +2867,40 @@ module Boundcond
       endselect
 !
     endsubroutine bc_outflow_z
+!***********************************************************************
+    subroutine bc_copy_z(f,topbot,j)
+!
+!  Copy value in last grid point to all ghost cells.
+!
+!  15-aug-2007/anders: implemented
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+!
+      integer :: i
+!
+      select case(topbot)
+!
+!  Bottom boundary.
+!
+      case('bot')
+        do i=1,nghost; f(:,:,n1-i,j)=f(:,:,n1,j); enddo
+!
+!  Top boundary.
+!
+      case('top')
+        do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2,j); enddo
+!
+!  Default.
+!
+      case default
+        print*, "bc_copy_z: ", topbot, " should be `top' or `bot'"
+!
+      endselect
+!
+    endsubroutine bc_copy_z
 !***********************************************************************
 endmodule Boundcond
