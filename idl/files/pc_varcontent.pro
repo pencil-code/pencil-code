@@ -1,11 +1,13 @@
-;  $Id: pc_varcontent.pro,v 1.40 2007-08-03 09:53:27 ajohan Exp $
+;  $Id: pc_varcontent.pro,v 1.41 2007-08-16 16:32:13 dintrans Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar,run2D=run2D
 COMPILE_OPT IDL2,HIDDEN
 ;
 ;
 ;
+default,iecr,0
 default,ifcr,0
+default,igg,0
 
 ishock=0
 ishock_perp=0
