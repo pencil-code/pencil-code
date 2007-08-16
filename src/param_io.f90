@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.283 2007-08-15 21:04:31 ajohan Exp $
+! $Id: param_io.f90,v 1.284 2007-08-16 22:06:45 dobler Exp $
 
 module Param_IO
 
@@ -70,12 +70,14 @@ module Param_IO
        mu0,force_lower_bound,force_upper_bound, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2,fbcz1_1,fbcz1_2,fbcz2_1,fbcz2_2, &
        xyz_step,xi_step_frac,xi_step_width, &
+       niter_poisson, &
 !AB/15-Mar-07: the lcylindrical is kept to produce a warning: outdated
        lcylindrical, &
        lcylinder_in_a_box,lsphere_in_a_box,llocal_iso,init_loops,lwrite_2d,&
        lcylindrical_gravity,border_frac,border_frac_x,border_frac_y,border_frac_z
  !      lextrapolate_bot_density,ltop_velocity_kep,laccelerat_zone, &
- !      ldecelerat_zone,lsurface_zone,lnstar_entropy,lnstar_T_const,lnstar_1D, T_disc
+ !      ldecelerat_zone,lsurface_zone,lnstar_entropy,lnstar_T_const, &
+ !      lnstar_1D,T_disc
   namelist /run_pars/ &
        cvsid,ip,nt,it1,it1d,dt,cdt,ddt,cdtv,cdts,cdtr,isave,itorder, &
        dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, max_walltime, &
@@ -112,7 +114,7 @@ module Param_IO
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
        lbidiagonal_derij,lisotropic_advection, &
-       crash_file_dtmin_factor
+       crash_file_dtmin_factor,niter_poisson
   contains
 
 !***********************************************************************

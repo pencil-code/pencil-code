@@ -1,4 +1,4 @@
-! $Id: nopoisson.f90,v 1.9 2007-03-28 18:10:27 dobler Exp $
+! $Id: nopoisson.f90,v 1.10 2007-08-16 22:06:45 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -24,7 +24,7 @@ module Poisson
   contains
 
 !***********************************************************************
-    subroutine inverse_laplacian_fft(phi,kmax,c)
+    subroutine inverse_laplacian(phi,kmax,c)
 !
 !  Solve the Poisson equation by Fourier transforming on a periodic grid.
 !
@@ -35,21 +35,7 @@ module Poisson
 !
       if (NO_WARN) print*, phi, kmax
 !
-    endsubroutine inverse_laplacian_fft
-!***********************************************************************
-    subroutine inverse_laplacian_semispectral(phi,c)
-!
-!  Solve the Poisson equation by Fourier transforming in the xy-plane and
-!  solving the discrete matrix equation in the z-direction.
-!
-!  20-dec-2006/anders: dummy
-!
-      real, dimension (nx,ny,nz) :: phi
-      real, optional             :: c
-!
-      if (NO_WARN) print*, phi
-!
-    endsubroutine inverse_laplacian_semispectral
+    endsubroutine inverse_laplacian
 !***********************************************************************
 
 endmodule Poisson

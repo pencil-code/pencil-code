@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.376 2007-08-15 21:04:31 ajohan Exp $
+! $Id: cdata.f90,v 1.377 2007-08-16 22:06:44 dobler Exp $
 
 module Cdata
 
@@ -18,7 +18,9 @@ module Cdata
   real, dimension (nzgrid) :: kz_fft
   real :: kx_ny,ky_ny,kz_ny
 
+!
 ! coordinate system (alternatives: spherical, cylindric)
+!
   character (len=9) :: coord_system='cartesian'
   logical :: lsphere_in_a_box=.false.,lcylinder_in_a_box=.false.
   logical :: lspherical_coords=.false.,lcylindrical_coords=.false.
@@ -26,7 +28,10 @@ module Cdata
   real, dimension (nx) :: r1_mn,r2_mn
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth
   real, dimension (nx) :: rcyl_mn,rcyl_mn1,rcyl_mn2
+
+!
 ! timestep related:
+!
   real, dimension (nx) :: advec_uu,advec_shear,advec_hall,advec_csn2
   real, dimension (nx) :: advec_cs2,advec_va2,advec_crad2,advec_uud,advec_uun
   real, dimension (nx) :: diffus_pscalar
@@ -53,7 +58,9 @@ module Cdata
   real :: rp_int=-impossible,rp_ext=-impossible
   real :: r_ref=0.,rsmooth=0.
 
-! parameter for freezing
+!
+! parameters for freezing
+!
   real :: xfreeze_square=impossible,yfreeze_square=impossible
   real :: rfreeze_int=-impossible,rfreeze_ext=-impossible
   real :: wfreeze=0.,wfreeze_int=0.,wfreeze_ext=0.
@@ -66,30 +73,34 @@ module Cdata
   real, dimension(3) :: border_frac=0.0
   real, dimension(2) :: border_frac_x=0.0,border_frac_y=0.0,border_frac_z=0.0
 
+!
 ! units (need to be in double precision)
+!
   character (len=3) :: unit_system='cgs'
   double precision :: unit_length=impossible,unit_velocity=impossible
   double precision :: unit_density=impossible,unit_temperature=impossible
 ! Derived units
   double precision :: unit_mass,unit_energy,unit_time,unit_flux
-
   double precision :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
                       chiH,chiH_,sigmaH_,sigmaSB,kappa_es
   double precision :: c_light=impossible,G_Newton=impossible,hbar=impossible
-
 ! magnetic permeability
   real :: mu0=1., mu01=0.
 
+!
 ! shock viscosity parameters
+!
   real :: cmu,cnu2
   real :: tdiagnos,t1ddiagnos,t2davgfirst
   real :: o2m,om2,oum,epsK_hyper
   real :: UUmax=0.
   real :: x0,y0,z0,Lx,Ly,Lz
   real :: grads0=0.   ! (1/c_p)ds/dz
-! Rotation parameters (set by Hydro)
+
+!
+! Rotation + shear parameters (set by Hydro)
+!
   real :: Omega=0., theta=0.
-! Shear parameters (set by Hydro)
   real :: qshear=0.,Sshear=impossible
   real :: deltay=0. !(for shear; also used in forcing and output)
 !
@@ -167,7 +178,7 @@ module Cdata
   integer, dimension (my,mz) :: imn_array
   logical :: lprocz_slowest=.true.
 !
-!  in this section are all the things related to printing
+!  variables related to printing diagnostic output
 !
   integer :: nname=0,nnamev=0,nnamexy=0,nnamexz=0,nnamerz=0
   integer :: nnamez=0,nnamey=0,nnamex=0,nnamer=0
@@ -222,7 +233,7 @@ module Cdata
 !   (at the next call to check_emergency_break)
 !
   logical :: lemergency_brake=.false.
-!
+
 !
 ! Module flags
 !
@@ -273,9 +284,12 @@ module Cdata
   logical :: lbidiagonal_derij=.false.
   logical :: lisotropic_advection=.false.
 
-! Constant 'parameters' cannot occur in namelists, so inorder to get the now constant module
-! logicals into the lphysics name list... We have some proxies that are used to initialise
-! private local variables called lhydro etc, in the lphysics namelist!
+!
+! Constant 'parameters' cannot occur in namelists, so in order to get the
+! now constant module logicals into the lphysics name list...
+! We have some proxies that are used to initialise private local variables
+! called lhydro etc, in the lphysics namelist!
+!
   logical, parameter :: lhydro_var=lhydro
   logical, parameter :: ldensity_var=ldensity
   logical, parameter :: lentropy_var=lentropy
@@ -305,7 +319,9 @@ module Cdata
   logical, dimension(mcom) :: lfreeze_varsquare=.false.
   logical, dimension(mcom) :: lfreeze_varint=.false.,lfreeze_varext=.false.
 
+!
 ! possibility to set boundary values
+!
   real, dimension(mcom) :: fbcx1=0.,fbcy1=0.,fbcz1=0., fbcz1_1=0., fbcz1_2=0.
   real, dimension(mcom) :: fbcx2=0.,fbcy2=0.,fbcz2=0., fbcz2_1=0., fbcz2_2=0.
 
@@ -320,13 +336,22 @@ module Cdata
   character (len=120) :: directory='',datadir_snap='',directory_snap=''
   character (len=120) :: cvsid='[No CVS Id given]'
 
+!
 ! A buffer in which to construct an error message
+!
   character (len=255) :: errormsg
 
   character (len=10), dimension(maux) :: aux_var
   integer :: aux_count=1
 
+!
+! number of iterations for multigrid solver
+!
+   integer :: niter_poisson=30
+
+!
 ! run parameters
+!
   real :: tmax=1e33,awig=1.
   real :: max_walltime=0.0  ! in seconds
   real :: crash_file_dtmin_factor=-1.0

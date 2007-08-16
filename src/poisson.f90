@@ -1,9 +1,10 @@
-! $Id: poisson.f90,v 1.22 2007-03-28 18:10:27 dobler Exp $
+! $Id: poisson.f90,v 1.23 2007-08-16 22:06:45 dobler Exp $
 
 !
 !  This module solves the Poisson equation
-!    (d^2/dx^2 + d^2/dy^2 + d^2/dz^2 - c) f = RHS(x,y,z)
-!  for the function f(x,y,z).
+!    (d^2/dx^2 + d^2/dy^2 + d^2/dz^2 - h) f = RHS(x,y,z)
+!  [which for h/=0 could also be called inhomogenous nonuniform Helmholtz
+!  equation] for the function f(x,y,z).
 !
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -31,7 +32,55 @@ module Poisson
   contains
 
 !***********************************************************************
-    subroutine inverse_laplacian_fft(phi,kmax,c)
+    subroutine inverse_laplacian(phi,kmax,h)
+!
+!  Dispatch solving the Poisson equation to inverse_laplacian_fft
+!  or inverse_laplacian_semispectral, based on the boundary conditions
+!
+!  17-jul-2007/wolf: coded wrapper
+!
+      real, dimension (nx,ny,nz) :: phi
+      real, optional             :: kmax,h
+      real                       :: kmax1
+!
+      intent(in)    :: kmax, h
+      intent(inout) :: phi
+!
+!  Always specify kmax in order to save some if statements below
+!  [feel free to change this if you think this has performance issues]
+!
+      if (present(kmax)) then
+        kmax1 = huge1
+      else
+        kmax1 = kmax
+      endif
+
+      if (all(lperi)) then
+        if (present(h)) then
+          call inverse_laplacian(phi,kmax1,h)
+        else
+          call inverse_laplacian(phi,kmax1)
+        endif
+
+      elseif (lperi(1) .and. lperi(2) .and. .not. lperi(3)) then
+
+        if (present(h)) then
+          call inverse_laplacian(phi,kmax1,h)
+        else
+          call inverse_laplacian(phi,kmax1)
+        endif
+
+      else
+
+        write(0,*) "Don't know how to handle lperi = ", lperi
+        call not_implemented("inverse_laplacian", &
+            "Arbitrary lperi not implemented")
+
+      endif
+!
+    endsubroutine inverse_laplacian
+!***********************************************************************
+    subroutine inverse_laplacian_fft(phi,kmax,h)
 !
 !  Solve the Poisson equation by Fourier transforming on a periodic grid.
 !  This method works both with and without shear.
@@ -39,7 +88,7 @@ module Poisson
 !  15-may-2006/anders+jeff: coded
 !
       real, dimension (nx,ny,nz) :: phi
-      real, optional             :: kmax,c
+      real, optional             :: kmax,h
 !
       real, dimension (nx,ny,nz) :: b1
       real :: k2
@@ -48,7 +97,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.22 2007-03-28 18:10:27 dobler Exp $")
+        "$Id: poisson.f90,v 1.23 2007-08-16 22:06:45 dobler Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -92,7 +141,7 @@ module Poisson
           else
             k2 = kx_fft(ikx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
           endif
-          if (present(c)) k2 = k2+c
+          if (present(h)) k2 = k2+h
 !
 !  Solution of Poisson equation.
 !
@@ -119,7 +168,7 @@ module Poisson
 !
     endsubroutine inverse_laplacian_fft
 !***********************************************************************
-    subroutine inverse_laplacian_semispectral(phi,c)
+    subroutine inverse_laplacian_semispectral(phi,h)
 !
 !  Solve the Poisson equation by Fourier transforming in the xy-plane and
 !  solving the discrete matrix equation in the z-direction.
@@ -130,7 +179,7 @@ module Poisson
       use Mpicomm, only: transp_xz, transp_zx
 !
       real, dimension (nx,ny,nz) :: phi
-      real, optional             :: c
+      real, optional             :: h
 !
       real, dimension (nx,ny,nz) :: b1
       real, dimension (nzgrid,nx/nprocz) :: rhst, b1t
@@ -142,7 +191,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.22 2007-03-28 18:10:27 dobler Exp $")
+        "$Id: poisson.f90,v 1.23 2007-08-16 22:06:45 dobler Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -162,7 +211,7 @@ module Poisson
         c_tri(:)=1.0/dz**2
         do ikx=1,nxgrid/nprocz
           k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
-          if (present(c)) k2 = k2 + c
+          if (present(h)) k2 = k2 + h
           b_tri=-2.0/dz**2-k2
 !
           if (k2==0.0) then
@@ -190,7 +239,7 @@ module Poisson
         c_tri(:)=1.0/dz**2
         do ikx=1,nxgrid/nprocz
           k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
-          if (present(c)) k2 = k2 + c
+          if (present(h)) k2 = k2 + h
           b_tri=-2.0/dz**2-k2
 !
           if (k2==0.0) then
