@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.166 2007-08-16 12:08:47 dobler Exp $
+! $Id: boundcond.f90,v 1.167 2007-08-16 12:10:11 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -2796,7 +2796,7 @@ module Boundcond
 !  Bottom boundary.
 !
       case('bot')
-        f(:,:,0:n1-1,j)=0.0
+        f(:,:,1:n1-1,j)=0.0
 !
 !  Top boundary.
 !
