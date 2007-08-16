@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.446 2007-08-15 22:59:06 wlyra Exp $
+! $Id: magnetic.f90,v 1.447 2007-08-16 13:33:16 dobler Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -330,7 +330,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.446 2007-08-15 22:59:06 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.447 2007-08-16 13:33:16 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1916,7 +1916,7 @@ module Magnetic
 !  idiag_bxmxy and idiag_bymxy also need to be calculated when
 !  ldiagnos and idiag_bmx and/or idiag_bmy, so
 !
-        if (ldiagnos.and.(idiag_bmx.or.idiag_bmy)) then
+        if (ldiagnos .and. (idiag_bmx/=0 .or. idiag_bmy/=0)) then
           if (idiag_bxmxy/=0) call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
           if (idiag_bymxy/=0) call zsum_mn_name_xy(p%bb(:,2),idiag_bymxy)
           if (idiag_bzmxy/=0) call zsum_mn_name_xy(p%bb(:,3),idiag_bzmxy)
