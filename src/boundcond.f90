@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.165 2007-08-15 07:08:31 ajohan Exp $
+! $Id: boundcond.f90,v 1.166 2007-08-16 12:08:47 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -116,63 +116,95 @@ module Boundcond
               if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcx',k,'(',j,')=',bc12(j)
               if (ipx==ip_ok) then
                 select case(bc12(j))
-                case ('p')        ! periodic
+                case ('p')
+                  ! BCX_DOC: periodic
                   call bc_per_x(f,topbot,j)
-                case ('s')        ! symmetry
+                case ('s')
+                  ! BCX_DOC: symmetry, $f_{N+i}=f_{N-i}$;
+                  ! BCX_DOC: implies $f'(x_N)=f'''(x_0)=0$
                   call bc_sym_x(f,+1,topbot,j)
-                case ('ss')        ! symmetry
+                case ('ss')
+                  ! BCX_DOC: symmetry [???]
                   call bc_symset_x(f,+1,topbot,j)
-                case ('a')        ! antisymmetry
+                case ('a')
+                  ! BCX_DOC: antisymmetry, $f_{N+i}=-f_{N-i}$;
+                  ! BCX_DOC: implies $f(x_N)=f''(x_0)=0$
                   call bc_sym_x(f,-1,topbot,j)
-                case ('a2')       ! antisymmetry relative to boundary value
+                case ('a2')
+                  ! BCX_DOC: antisymmetry relative to boundary value,
+                  ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
+                  ! BCX_DOC: implies $f''(x_0)=0$
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
-                case ('v')        ! vanishing third derivative
+                case ('v')
+                  ! BCX_DOC: vanishing third derivative
                   call bc_van_x(f,topbot,j)
-                case ('cT')       ! constant temp.
+                case ('cT')
+                  ! BCX_DOC: constant temperature (implemented as
+                  ! BCX_DOC: condition for enropy $s$ or temperature $T$) 
                   if (j==iss) call bc_ss_temp_x(f,topbot)
                   if (j==ilnTT)  then
                     force_lower_bound='cT'
                     force_upper_bound='cT'
                     call bc_force_x(f,-1,topbot,j)
                   endif
-                case ('c1')       ! constant temp.
+                case ('c1')
+                  ! BCX_DOC: constant temperature (or maybe rather constant
+                  ! BCX_DOC: conductive flux??)
                   if (j==iss)   call bc_ss_flux_x(f,topbot,FbotKbot)
                   if (j==ilnTT) call bc_lnTT_flux_x(f,topbot,hcond0,hcond1,Fbot)
-                case ('sT')       ! symmetric temp.
+                case ('sT')
+                  ! BCX_DOC: symmetric temperature, $T_{N-i}=T_{N+i}$;
+                  ! BCX_DOC: implies $T'(x_N)=T'''(x_0)=0$
                   if (j==iss) call bc_ss_stemp_x(f,topbot)
                 case ('in')
+                  ! BCX_DOC: inflow [Need details!]
                   if (j==ie) call bc_ee_inflow_x(f,topbot)
                 case ('out')
+                  ! BCX_DOC: outflow [Need details!]
                   if (j==ie) call bc_ee_outflow_x(f,topbot)
                 case ('db')
+                  ! BCX_DOC:
                   call bc_db_x(f,topbot,j)
-                case ('f')        ! freeze value
-                  ! tell other modules not to change boundary value
+                case ('f')
+                  ! BCX_DOC: ``freeze'' value, i.e. maintain initial
+                  !  value at boundary
                   call bc_freeze_var_x(topbot,j)
                   call bc_sym_x(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
-                case ('1')        ! f=1 (for debugging)
+                case ('1')
+                  ! BCX_DOC: $f=1$ (for debugging)
                   call bc_one_x(f,topbot,j)
-                case ('set')      ! set boundary value
+                case ('set')
+                  ! BCX_DOC: set boundary value to |fbcx12|
                   call bc_sym_x(f,-1,topbot,j,REL=.true.,val=fbcx12)
-                case ('der')      ! set derivative on the boundary
+                case ('der')
+                  ! BCX_DOC: set derivative on boundary to |fbcx12|
                   call bc_set_der_x(f,topbot,j,fbcx12(j))
-                case ('slo')      ! set boundary value
+                case ('slo')
+                  ! BCX_DOC: set boundary value [really??]
                   call bc_slope_x(f,fbcx12,topbot,j)
-                case ('dr0')      ! set boundary value
+                case ('dr0')
+                  ! BCX_DOC: set boundary value [really??]
                   call bc_dr0_x(f,fbcx12,topbot,j)
-                case ('ovr')      ! set boundary value
+                case ('ovr')
+                  ! BCX_DOC: set boundary value [really??]
                   call bc_overshoot_x(f,fbcx12,topbot,j)
-                case ('ant')      ! set boundary value
+                case ('ant')
+                  ! BCX_DOC: set boundary value [really??]
                   call bc_antis_x(f,fbcx12,topbot,j)
-                case ('e1')       ! extrapolation
+                case ('e1')
+                  ! BCX_DOC: extrapolation [describe]
                   call bcx_extrap_2_1(f,topbot,j)
-                case ('e2')       ! extrapolation
+                case ('e2')
+                  ! BCX_DOC: extrapolation [describe]
                   call bcx_extrap_2_2(f,topbot,j)
-                case ('spd')      ! set derivative on the boundary
+                case ('spd')
+                  ! BCX_DOC: set derivative on the boundary [really??]
                   call bc_set_spder_x(f,topbot,j,fbcx12(j))
-                case ('fix')      ! set boundary value
+                case ('fix')
+                  ! BCX_DOC: set boundary value [really??]
                   call bc_fix_x(f,topbot,j,fbcx12(j))
-                case ('')         ! do nothing; assume that everything is set
+                case ('')
+                  ! BCX_DOC: do nothing; assume that everything is set
                 case default
                   bc%bcname=bc12(j)
                   bc%ivar=j
@@ -248,37 +280,53 @@ module Boundcond
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',k,'(',j,')=',bc12(j)
             if (ipy==ip_ok) then
               select case(bc12(j))
-              case ('p')        ! periodic
+              case ('p')
+                ! BCY_DOC: periodic
                 call bc_per_y(f,topbot,j)
-              case ('s')        ! symmetry
+              case ('s')
+                ! BCY_DOC: symmetry symmetry, $f_{N+i}=f_{N-i}$;
+                  ! BCX_DOC: implies $f'(y_N)=f'''(y_0)=0$
                 call bc_sym_y(f,+1,topbot,j)
-              case ('ss')        ! symmetry
+              case ('ss')
+                ! BCY_DOC: symmetry [???]
                 call bc_symset_y(f,+1,topbot,j)
-              case ('a')        ! antisymmetry
+              case ('a')
+                ! BCY_DOC: antisymmetry
                 call bc_sym_y(f,-1,topbot,j)
-              case ('a2')       ! antisymmetry relative to boundary value
+              case ('a2')
+                ! BCY_DOC: antisymmetry relative to boundary value
                 call bc_sym_y(f,-1,topbot,j,REL=.true.)
-              case ('v')        ! vanishing third derivative
+              case ('v')
+                ! BCY_DOC: vanishing third derivative
                 call bc_van_y(f,topbot,j)
-              case ('cT')       ! constant temp.
+              case ('cT')
+                ! BCY_DOC: constant temp.
                 if (j==iss) call bc_ss_temp_y(f,topbot)
-              case ('sT')       ! symmetric temp.
+              case ('sT')
+                ! BCY_DOC: symmetric temp.
                 if (j==iss) call bc_ss_stemp_y(f,topbot)
-              case ('f')        ! freeze value
+              case ('f')
+                ! BCY_DOC: freeze value
                 ! tell other modules not to change boundary value
                 call bc_freeze_var_y(topbot,j)
                 call bc_sym_y(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
-              case ('1')        ! f=1 (for debugging)
+              case ('1')
+                ! BCY_DOC: f=1 (for debugging)
                 call bc_one_y(f,topbot,j)
-              case ('set')      ! set boundary value
+              case ('set')
+                ! BCY_DOC: set boundary value
                 call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy12)
-              case ('e1')       ! extrapolation
+              case ('e1')
+                ! BCY_DOC: extrapolation
                 call bcy_extrap_2_1(f,topbot,j)
-              case ('e2')       ! extrapolation
+              case ('e2')
+                ! BCY_DOC: extrapolation
                 call bcy_extrap_2_2(f,topbot,j)
-              case ('der')      ! set derivative on the boundary
+              case ('der')
+                ! BCY_DOC: set derivative on the boundary
                 call bc_set_der_y(f,topbot,j,fbcy12(j))
-              case ('')         ! do nothing; assume that everything is set
+              case ('')
+                ! do nothing; assume that everything is set
               case default
                 bc%bcname=bc12(j)
                 bc%ivar=j
@@ -368,41 +416,58 @@ module Boundcond
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',k,'(',j,')=',bc12(j)
             if (ipz==ip_ok) then
               select case(bc12(j))
-              case ('0')        ! zero value
+              case ('0')
+                ! BCZ_DOC: zero value
                 call bc_zero_z(f,topbot,j)
-              case ('p')        ! periodic
+              case ('p')
+                ! BCZ_DOC: periodic
                 call bc_per_z(f,topbot,j)
-              case ('s')        ! symmetry
+              case ('s')
+                ! BCZ_DOC: symmetry
                 call bc_sym_z(f,+1,topbot,j)
-              case ('a')        ! antisymmetry
+              case ('a')
+                ! BCZ_DOC: antisymmetry
                 call bc_sym_z(f,-1,topbot,j)
-              case ('a2')       ! antisymmetry relative to boundary value
+              case ('a2')
+                ! BCZ_DOC: antisymmetry relative to boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.)
-              case ('a3')       ! a2 - wiggles
+              case ('a3')
+                ! BCZ_DOC: a2 - wiggles
                 call bc_asym3(f,topbot,j)
-              case ('v')        ! vanishing third derivative
+              case ('v')
+                ! BCZ_DOC: vanishing third derivative
                 call bc_van_z(f,topbot,j)
-              case ('v3')       ! vanishing third derivative
+              case ('v3')
+                ! BCZ_DOC: vanishing third derivative
                 call bc_van3rd_z(f,topbot,j)
-              case ('1s')       ! one-sided
+              case ('1s')
+                ! BCZ_DOC: one-sided
                 call bc_onesided_z(f,topbot,j)
-              case ('c1')       ! complex
+              case ('c1')
+                ! BCZ_DOC: complex
                 if (j==iss) call bc_ss_flux(f,topbot,hcond0,hcond1,Ftopbot,FtopbotK,chi, &
                                   lmultilayer,lheatc_chiconst)
                 if (j==iaa) call bc_aa_pot(f,topbot)
                 if (j==ilnTT) call bc_lnTT_flux_z(f,topbot,hcond0,Fbot)
               case ('pot')
+                ! BCZ_DOC: 
                 if (j==iaa) call bc_aa_pot2(f,topbot)
               case ('pwd')
+                ! BCZ_DOC: 
                 if (j==iaa) call bc_aa_pot3(f,topbot)
-              case ('d2z'); call bc_del2zero(f,topbot,j)
+              case ('d2z')
+                ! BCZ_DOC: 
+                call bc_del2zero(f,topbot,j)
               case ('hds')
+                ! BCZ_DOC: 
                 if (llocal_iso) then 
                   call bc_lnrho_hdss_z_liso(f,topbot)
                 else
                   call bc_lnrho_hdss_z_iso(f,topbot)
                 endif
-              case ('cT')       ! constant temp.
+              case ('cT')
+                ! BCZ_DOC: constant temp.
+                ! BCZ_DOC: 
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
                 if (j==iss)    call bc_ss_temp_z(f,topbot)
                 if (j==ilnTT)  then
@@ -410,9 +475,13 @@ module Boundcond
                   force_upper_bound='cT'
                   call bc_force_z(f,-1,topbot,j)
                 endif
-              case ('cT2')       ! constant temp. (keep lnrho)
+              case ('cT2')
+                ! BCZ_DOC: constant temp. (keep lnrho)
+                ! BCZ_DOC: 
                 if (j==iss)   call bc_ss_temp2_z(f,topbot)
-              case ('hs')       ! hydrostatic equilibrium
+              case ('hs')
+                ! BCZ_DOC: hydrostatic equilibrium
+                ! BCZ_DOC: 
                 if (llocal_iso) then !non local
                   if (j==ilnrho) call bc_lnrho_hds_z_liso(f,topbot)
 !                 if (j==iss)    call bc_lnrho_hydrostatic_z(f,topbot)
@@ -420,51 +489,77 @@ module Boundcond
                   if (j==ilnrho) call bc_lnrho_hds_z_iso(f,topbot)
 !                 if (j==iss)    call bc_lnrho_hydrostatic_z(f,topbot)
                 endif
-              case ('cp')       ! constant pressure
+              case ('cp')
+                ! BCZ_DOC: constant pressure
+                ! BCZ_DOC: 
                 if (j==ilnrho) call bc_lnrho_pressure_z(f,topbot)
-              case ('sT')       ! symmetric temp.
+              case ('sT')
+                ! BCZ_DOC: symmetric temp.
+                ! BCZ_DOC: 
                 if (j==iss) call bc_ss_stemp_z(f,topbot)
-              case ('c2')       ! complex
+              case ('c2')
+                ! BCZ_DOC: complex
+                ! BCZ_DOC: 
                 if (j==iss) call bc_ss_temp_old(f,topbot)
-              case ('db')       ! complex
+              case ('db')
+                ! BCZ_DOC: complex
+                ! BCZ_DOC: 
                 call bc_db_z(f,topbot,j)
-              case ('ce')       ! complex
+              case ('ce')
+                ! BCZ_DOC: complex
+                ! BCZ_DOC: 
                 if (j==iss) call bc_ss_energy(f,topbot)
-              case ('e1')       ! extrapolation
+              case ('e1')
+                ! BCZ_DOC: extrapolation
                 call bc_extrap_2_1(f,topbot,j)
-              case ('e2')       ! extrapolation
+              case ('e2')
+                ! BCZ_DOC: extrapolation
                 call bc_extrap_2_2(f,topbot,j)
-              case ('b1')       ! extrapolation with zero value (improved 'a')
+              case ('b1')
+                ! BCZ_DOC: extrapolation with zero value (improved 'a')
                 call bc_extrap0_2_0(f,topbot,j)
-              case ('b2')       ! extrapolation with zero value (improved 'a')
+              case ('b2')
+                ! BCZ_DOC: extrapolation with zero value (improved 'a')
                 call bc_extrap0_2_1(f,topbot,j)
-              case ('b3')       ! extrapolation with zero value (improved 'a')
+              case ('b3')
+                ! BCZ_DOC: extrapolation with zero value (improved 'a')
                 call bc_extrap0_2_2(f,topbot,j)
-              case ('f')        ! freeze value
+              case ('f')
+                ! BCZ_DOC: freeze value
                 ! tell other modules not to change boundary value
                 call bc_freeze_var_z(topbot,j)
                 call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
-              case ('fB')       ! frozen-in B-field
+              case ('fB')
+                ! BCZ_DOC: frozen-in B-field
                 ! tell other modules not to change boundary value
                 call bc_frozen_in_bb(topbot,j)
                 call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
-              case ('g')        ! set to given value(s) or function
+              case ('g')
+                ! BCZ_DOC: set to given value(s) or function
                  call bc_force_z(f,-1,topbot,j)
               case ('gs')
+                ! BCZ_DOC: 
                  call bc_force_z(f,+1,topbot,j)
-              case ('1')        ! f=1 (for debugging)
+              case ('1')
+                ! BCZ_DOC: f=1 (for debugging)
                 call bc_one_z(f,topbot,j)
-              case ('StS') ! solar surface boundary conditions
+              case ('StS')
+                ! BCZ_DOC: solar surface boundary conditions
                 if (j==ilnrho) call bc_stellar_surface(f,topbot)
-              case ('set')      ! set boundary value
+              case ('set')
+                ! BCZ_DOC: set boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
-              case ('der')      ! set derivative on the boundary
+              case ('der')
+                ! BCZ_DOC: set derivative on the boundary
                 call bc_set_der_z(f,topbot,j,fbcz12(j))
-              case ('ovr')      ! set boundary value
+              case ('ovr')
+                ! BCZ_DOC: set boundary value
                 call bc_overshoot_z(f,fbcz12,topbot,j)
-              case ('out')      ! allow outflow, but no inflow
+              case ('out')
+                ! BCZ_DOC: allow outflow, but no inflow
                 call bc_outflow_z(f,topbot,j)
-              case ('nil')      ! do nothing; assume that everything is set
+              case ('nil')
+                ! do nothing; assume that everything is set
               case default
                 bc%bcname=bc12(j)
                 bc%ivar=j
