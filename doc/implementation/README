@@ -1,0 +1,6 @@
+${PENCIL_HOME}/doc/implementation/
+$Id: README,v 1.1 2007-08-16 22:25:56 dobler Exp $
+
+This directory contatins implementation notes for special solvers and
+algorithms.
+For more general implementation notes, see the manual (or the source code ;-)
