@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
-;;;  $Date: 2005-04-14 23:55:11 $
-;;;  $Revision: 1.8 $
+;;;  $Date: 2007-08-16 23:22:43 $
+;;;  $Revision: 1.9 $
 ;;;  Description:
 ;;;    Scatter-plot data, but bin them first in order to reduce the
 ;;;    size of thusly created PostScript files. For 60^3 data points,
@@ -201,9 +201,16 @@ if (scatter ne 0) then begin    ; scatter plot
   yy = spread(indgen(NMy),[0],[NMx])
   goodm = where(map ne 0)
   ;
-  oplot, xbin[xx[goodm]], ybin[yy[goodm]], $
-      PSYM=psym, SYMSIZE=symsize, COLOR=color, $
-      _EXTRA=extra
+  if (goodm[0] ge 0) then begin
+    oplot, xbin[xx[goodm]], ybin[yy[goodm]], $
+           PSYM=psym, SYMSIZE=symsize, COLOR=color, $
+           _EXTRA=extra
+  endif else begin
+    message, /INFO, 'No valid points in domain' $
+             + '[' + wdtrim(xr[0]) + ', '+ wdtrim(xr[1]) +']'$
+             + ' x ' $
+             + '[' + wdtrim(yr[0]) + ', '+ wdtrim(yr[1]) +']'
+  endelse
 
 endif else begin
   if (invert ne 0) then begin
