@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.322 2007-08-16 16:53:25 kandu Exp $
+### $Id: Makefile.src,v 1.323 2007-08-16 17:29:55 dintrans Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -694,11 +694,10 @@ LD_FFTW2=
 ##
 ## Petri's laptop (MacBook Pro)
 ##
-#FC=ifort #(Chandrasekhar|ulysse)
+#FC=ifort #(Chandrasekhar)
 #FFLAGS= -I/usr/local/include -O3 -stand f90 -assume no2underscores -vec-report0 #(Chandrasekhar)
-#CFLAGS=-DFUNDERSC=1 #(Chandrasekhar|ulysse)
+#CFLAGS=-DFUNDERSC=1 #(Chandrasekhar)
 #LD_MPI= -L/usr/local/include -llammpio -llamf77mpi -lmpi -llam -ldl #(Chandrasekhar)
-#FFLAGS=-O0 #(ulysse)
 ##
 ## Dhruba's laptop 
 ##
@@ -724,6 +723,13 @@ LD_FFTW2=
 #FFLAGS= -I/usr/local/include #(normacbook1)
 #CFLAGS=-DFUNDERSC=2 #(normacbook1)
 #LD_MPI= -L/usr/local/include -llammpio -llamf77mpi -lmpi -llam -ldl #(normacbook1)
+##
+## Boris' MacBook Pro
+##
+#FC=ifort #(ulysse)
+#FFLAGS= -I/usr/local/lam/include -O3 -stand f90 -assume no2underscores -vec-report0 #(ulysse)
+#CFLAGS=-DFUNDERSC=1 #(Chandrasekhar|ulysse)
+#LD_MPI= -L/usr/local/lam/lib -llammpio -llamf77mpi -lmpi -llam -ldl #(ulysse)
 ##
 
 ## SunOS:
