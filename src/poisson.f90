@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.23 2007-08-16 22:06:45 dobler Exp $
+! $Id: poisson.f90,v 1.24 2007-08-16 23:19:23 dobler Exp $
 
 !
 !  This module solves the Poisson equation
@@ -56,6 +56,7 @@ module Poisson
       endif
 
       if (all(lperi)) then
+        !
         if (present(h)) then
           call inverse_laplacian(phi,kmax1,h)
         else
@@ -63,7 +64,7 @@ module Poisson
         endif
 
       elseif (lperi(1) .and. lperi(2) .and. .not. lperi(3)) then
-
+        !
         if (present(h)) then
           call inverse_laplacian(phi,kmax1,h)
         else
@@ -71,7 +72,7 @@ module Poisson
         endif
 
       else
-
+        !
         write(0,*) "Don't know how to handle lperi = ", lperi
         call not_implemented("inverse_laplacian", &
             "Arbitrary lperi not implemented")
@@ -97,7 +98,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.23 2007-08-16 22:06:45 dobler Exp $")
+        "$Id: poisson.f90,v 1.24 2007-08-16 23:19:23 dobler Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -191,7 +192,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.23 2007-08-16 22:06:45 dobler Exp $")
+        "$Id: poisson.f90,v 1.24 2007-08-16 23:19:23 dobler Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !

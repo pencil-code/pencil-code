@@ -1,4 +1,4 @@
-! $Id: poisson_multigrid.f90,v 1.1 2007-08-16 22:06:45 dobler Exp $
+! $Id: poisson_multigrid.f90,v 1.2 2007-08-16 23:19:23 dobler Exp $
 
 !
 !  This module solves the Poisson equation
@@ -52,7 +52,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson_multigrid.f90,v 1.1 2007-08-16 22:06:45 dobler Exp $")
+        "$Id: poisson_multigrid.f90,v 1.2 2007-08-16 23:19:23 dobler Exp $")
 !
       if (present(kmax)) then
         call warning("inverse_laplacian", &
@@ -79,55 +79,55 @@ module Poisson
       enddo
 !
     endsubroutine inverse_laplacian
-!***********************************************************************
-    subroutine inverse_curl2(phi, h, kmax)
-!
-!  Solve the elliptic equation
-!    (-\curl\curl - h) f = rhs
-!  using a  multigrid approach.
-!  On entry, phi is rhs, on exit phi contains the solution f.
-!
-!  17-jul-2007/wolf: adapted from inverse_laplacian
-!
-      real, dimension(nx,ny,nz,3)           :: phi,rhs
-      real, dimension(nx,ny,nz,3), optional :: h
-      real, optional                        :: kmax
-      real, dimension(3)                    :: dxyz
-      integer                               :: iter
-!
-      intent(in)    :: h, kmax
-      intent(inout) :: phi
-!
-!  identify version
-!
-      if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson_multigrid.f90,v 1.1 2007-08-16 22:06:45 dobler Exp $")
-!
-      if (present(kmax)) then
-        call warning("inverse_curl2", &
-            "kmax ignored by multigrid solver")
-      endif
-!
-      if (lshear) then
-        call fatal_error("inverse_curl2", &
-            "Never thought of shear in poisson_multigrid")
-      endif
-!
-      rhs = phi
-      dxyz = (/ dx, dy, dz /)
-      do iter=1,niter_poisson
-        if (lroot .and. ip<=12) then
-          if (mod(iter,10) == 0) &
-              write(*,'(A,I4,"/",I4)') 'Iteration ', iter, niter_poisson 
-        endif
-        if (present(h)) then
-          call v_cycle(phi,rhs,dxyz,h)
-        else
-          call v_cycle(phi,rhs,dxyz)
-        endif
-      enddo
-!
-    endsubroutine inverse_curl2
+! !***********************************************************************
+!     subroutine inverse_curl2(phi, h, kmax)
+! !
+! !  Solve the elliptic equation
+! !    (-\curl\curl - h) f = rhs
+! !  using a  multigrid approach.
+! !  On entry, phi is rhs, on exit phi contains the solution f.
+! !
+! !  17-jul-2007/wolf: adapted from inverse_laplacian
+! !
+!       real, dimension(nx,ny,nz,3)           :: phi,rhs
+!       real, dimension(nx,ny,nz,3), optional :: h
+!       real, optional                        :: kmax
+!       real, dimension(3)                    :: dxyz
+!       integer                               :: iter
+! !
+!       intent(in)    :: h, kmax
+!       intent(inout) :: phi
+! !
+! !  identify version
+! !
+!       if (lroot .and. ip<10) call cvs_id( &
+!         "$Id: poisson_multigrid.f90,v 1.2 2007-08-16 23:19:23 dobler Exp $")
+! !
+!       if (present(kmax)) then
+!         call warning("inverse_curl2", &
+!             "kmax ignored by multigrid solver")
+!       endif
+! !
+!       if (lshear) then
+!         call fatal_error("inverse_curl2", &
+!             "Never thought of shear in poisson_multigrid")
+!       endif
+! !
+!       rhs = phi
+!       dxyz = (/ dx, dy, dz /)
+!       do iter=1,niter_poisson
+!         if (lroot .and. ip<=12) then
+!           if (mod(iter,10) == 0) &
+!               write(*,'(A,I4,"/",I4)') 'Iteration ', iter, niter_poisson 
+!         endif
+!         if (present(h)) then
+!           call v_cycle_c2(phi,rhs,dxyz,h)
+!         else
+!           call v_cycle_c2(phi,rhs,dxyz)
+!         endif
+!       enddo
+! !
+!     endsubroutine inverse_curl2
 !***********************************************************************
     recursive subroutine v_cycle(f, rhs, dxyz, h)
 !
