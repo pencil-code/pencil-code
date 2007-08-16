@@ -1,0 +1,29 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+
+&init_pars
+  ip = 12
+  niter_poisson = 100
+  xyz0  = -1,-1,-1,             ! first corner of box
+  xyz1  =  1, 1, 1,             ! second corner of box
+  lperi =  F, F, F,             ! periodic direction?
+  !     lnrho
+  bcx = 'a'
+  bcy = 'a'
+  bcz = 'a'
+  !
+  lwrite_aux=T                  ! write out gravity potential
+/
+&eos_init_pars
+/
+&hydro_init_pars
+/
+&density_init_pars
+  initlnrho='blob',
+  ampllnrho=1.,
+  radius_lnrho=0.05,
+/
+&selfgrav_init_pars
+/

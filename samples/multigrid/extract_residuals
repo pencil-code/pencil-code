@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Name:   extract_residuals
+# Author: wd (Wolfgang.Dobler@ucalgary.ca)
+# Date:   29-May-2007
+# Description:
+#   Extract residual errors on different levels as fucntion of iteration
+#   (number for plotting in IDL).
+# Usage:
+#   start.csh > & start.log
+#   extract_residuals start.log
+
+file=$1
+
+for level in 2 4 8 16 32 64; do
+  grep " ${level}: " $file \
+      | sed -e 's/.*://' -e 's/,//g' -e 's/\s*[TF]\s*$//' > ${level}.ascii
+done
+
+# End of file extract_residuals
