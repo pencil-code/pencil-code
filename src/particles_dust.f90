@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.187 2007-08-13 17:57:47 ajohan Exp $
+! $Id: particles_dust.f90,v 1.188 2007-08-17 10:31:33 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -95,7 +95,7 @@ module Particles
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
-      lmigration_real_check
+      lmigration_real_check,lcartesian_mig
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -128,7 +128,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.187 2007-08-13 17:57:47 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.188 2007-08-17 10:31:33 wlyra Exp $")
 !
 !  Indices for particle position.
 !
