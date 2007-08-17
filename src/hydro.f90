@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.375 2007-08-15 22:56:24 wlyra Exp $
+! $Id: hydro.f90,v 1.376 2007-08-17 08:56:38 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -311,7 +311,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.375 2007-08-15 22:56:24 wlyra Exp $")
+           "$Id: hydro.f90,v 1.376 2007-08-17 08:56:38 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -993,7 +993,7 @@ use Mpicomm, only: stop_it
       if(loutest)then
       do l=1,nx
          outest = p%uu(l,1)*p%oo(l,1)+p%uu(l,2)*p%oo(l,2)+p%uu(l,3)*p%oo(l,3)
-         if(outest.lt.0.)then
+         if(outest.lt.(-1.0e-8))then
            write(*,*) l,m,n,outest
            write(*,*)'WARNING : hydro:ou has different sign than relhel'
          else
