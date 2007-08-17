@@ -3,9 +3,9 @@
 !  Run parameters for MRI turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.6 2006-08-07 16:09:32 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.7 2007-08-17 08:53:08 ajohan Exp $',
   nt=100, it1=10, cdt=0.4, cdtv=0.80, isave=100, itorder=3,
-  dsnap=10., dtmin=1e-6
+  dsnap=6.2831853, dtmin=1.0e-6
   lpencil_check=T
 /
 &eos_run_pars
@@ -13,23 +13,21 @@
 &hydro_run_pars
 /
 &density_run_pars
-  diffrho_hyper3=7e-7, idiff='hyper3'
-/
-&grav_run_pars
-  lgravx_dust=T, lgravx_gas=F, gravx=1000.
+  diffrho_hyper3=6.0e-10, idiff='hyper3'
 /
 &magnetic_run_pars
-  eta_hyper3=7e-7, iresistivity='hyper3'
+  eta_hyper3=6.0e-10, iresistivity='hyper3'
 /
 &dustvelocity_run_pars
-  tausd=7e-7, ldustvelocity_shorttausd=T, ldragforce_dust=T, ldragforce_gas=F
+  tausd=1.0e-6, ldustvelocity_shorttausd=T
+  ldragforce_dust=T, ldragforce_gas=F
 /
 &dustdensity_run_pars
-  diffnd_hyper3=7e-7, idiffd='hyper3'
+  diffnd_hyper3=6.0e-10, idiffd='hyper3'
 /
 &shear_run_pars
   qshear=1.5
 /
 &viscosity_run_pars
-  nu_hyper3=7e-7, ivisc='hyper3_rho_nu-const'
+  nu_hyper3=6.0e-10, ivisc='hyper3_rho_nu-const_symm'
 /
