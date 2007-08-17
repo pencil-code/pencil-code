@@ -1,12 +1,12 @@
 Directory:
     ${PENCIL_HOME}/samples/conv-slab-noequi
 CVS-Id:
-    $Id: README,v 1.3 2007-08-17 09:23:16 ajohan Exp $
+    $Id: README,v 1.4 2007-08-17 09:41:06 bingert Exp $
 Maintainer:
     Wolfgang <nobody[at]nowhere.net>
-    Sven
+    Sven Bingert <mail@bingert.com>
 Added:
-    00-Mon-200?
+    27-Jun-2005
 Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 Recommended resolution:
