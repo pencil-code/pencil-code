@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.168 2007-08-16 13:06:25 ajohan Exp $
+! $Id: boundcond.f90,v 1.169 2007-08-17 08:55:11 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -169,7 +169,8 @@ module Boundcond
                   ! BCX_DOC: ``freeze'' value, i.e. maintain initial
                   !  value at boundary
                   call bc_freeze_var_x(topbot,j)
-                  call bc_sym_x(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+                  call bc_sym_x(f,-1,topbot,j,REL=.true.) 
+                  ! antisymm wrt boundary
                 case ('1')
                   ! BCX_DOC: $f=1$ (for debugging)
                   call bc_one_x(f,topbot,j)
@@ -180,13 +181,14 @@ module Boundcond
                   ! BCX_DOC: set derivative on boundary to |fbcx12|
                   call bc_set_der_x(f,topbot,j,fbcx12(j))
                 case ('slo')
-                  ! BCX_DOC: set boundary value [really??]
+                  ! BCX_DOC: set slope at the boundary = fbcx12
                   call bc_slope_x(f,fbcx12,topbot,j)
                 case ('dr0')
                   ! BCX_DOC: set boundary value [really??]
                   call bc_dr0_x(f,fbcx12,topbot,j)
                 case ('ovr')
-                  ! BCX_DOC: set boundary value [really??]
+                  ! BCX_DOC: overshoot boundary condition
+                  ! BCX_DOC:  ie (d/dx-1/dist) f = 0. 
                   call bc_overshoot_x(f,fbcx12,topbot,j)
                 case ('ant')
                   ! BCX_DOC: set boundary value [really??]
@@ -203,6 +205,9 @@ module Boundcond
                 case ('fix')
                   ! BCX_DOC: set boundary value [really??]
                   call bc_fix_x(f,topbot,j,fbcx12(j))
+                case ('ouf')
+                  ! BCX_DOC: allow outflow, but no inflow (experimental)
+                  call bc_outflow_x(f,topbot,j)
                 case ('')
                   ! BCX_DOC: do nothing; assume that everything is set
                 case default
@@ -2814,6 +2819,60 @@ module Boundcond
       endselect
 !
     endsubroutine bc_zero_z
+!***********************************************************************
+    subroutine bc_outflow_x(f,topbot,j)
+!
+!  Outflow boundary conditions.
+!
+!  If velocity vector points out of the box, the velocity is extrapolated as
+!  assymetric 'a2'.
+!
+!  For inwards pointing velocity vector, the velocity is extrapolated as
+!  asymmetric 'a'.
+!
+!  12-aug-2007/anders: implemented
+!
+      use Cdata, only: mx, my, mz, mfarray, l1, l2, nghost
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+!
+      integer :: i, iz, iy
+!
+      select case(topbot)
+!
+!  Bottom boundary.
+!
+      case('bot')
+        do iz=1,mz; do iy=1,my; 
+          if (f(l1,iy,iz,j)<=0.0) then  ! assymetric around boundary value
+            do i=1,nghost; f(l1-i,iy,iz,j)=f(l1,iy,iz,j); enddo
+          else                      ! zero, suppressing inflow
+            do i=1,nghost; f(l1-i,iy,iz,j)=0.0; enddo
+          endif
+        enddo; enddo
+!
+!  Top boundary.
+!
+      case('top')
+        do iz=1,mz;do iy=1,my; 
+          if (f(l2,iy,iz,j)>=0.0) then
+            do i=1,nghost; f(l2+i,iy,iz,j)=f(l2,iy,iz,j); enddo
+          else
+            do i=1,nghost; f(l2+i,iy,iz,j)=0.0; enddo
+          endif
+        enddo; enddo
+!
+!  Default.
+!
+      case default
+        print*, "bc_outflow_z: ", topbot, " should be `top' or `bot'"
+!
+      endselect
+!
+    endsubroutine bc_outflow_x
+
 !***********************************************************************
     subroutine bc_outflow_z(f,topbot,j)
 !
