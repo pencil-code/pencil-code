@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.377 2007-08-17 16:44:28 wlyra Exp $
+! $Id: hydro.f90,v 1.378 2007-08-17 17:11:28 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -311,7 +311,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.377 2007-08-17 16:44:28 wlyra Exp $")
+           "$Id: hydro.f90,v 1.378 2007-08-17 17:11:28 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -800,8 +800,6 @@ module Hydro
       if (ladvection_velocity) lpenc_requested(i_ugu)=.true.
       if (lprecession) lpenc_requested(i_rr)=.true.
       if (ldt) lpenc_requested(i_uu)=.true.
-!
-      if (lspecial) lpenc_requested(i_u2)=.true.
 !
       if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) then
         lpenc_requested(i_r_mn)=.true.
