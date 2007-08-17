@@ -1,0 +1,38 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2007-08-17 16:09:14 wlyra Exp $',
+  ip=10,                        ! debugging parameter
+  xyz0  =  0.2,-3.1415,-0.26,       ! first corner of box
+  xyz1  =  2.7, 3.1415, 0.26,       ! second corner of box
+
+  lperi = F  , T  , T,         ! periodic direction?
+
+  bcx = 'f','f','f','f'!,'s','s','a','s'
+
+  llocal_iso=T
+  lwrite_ic=T
+  coord_system='cylindrical'
+  lcylindrical_gravity=T
+/
+&eos_init_pars
+  cs0  = 0.05 
+  rho0 = 1.
+  ptlaw= 1.
+  gamma= 1.
+/
+&hydro_init_pars
+  inituu='global-shear'
+/
+&density_init_pars
+  initlnrho='local-isothermal'
+  lnrho_const=0.  
+  ldensity_nolog=T
+  plaw=0
+/
+&grav_init_pars
+  ipotential='no-smooth'
+  g0=1.
+/
