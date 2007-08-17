@@ -42,6 +42,28 @@
 \usepackage{makeidx}
 \usepackage[bookmarksopen=true,bookmarksopenlevel=2]{hyperref} % should come late/last
 
+\ifpdf
+  \usepackage{pdfpages}
+\else
+  \newcommand{\includepdf}[2][]{%
+%     \fbox{%
+%       \vfill\\%
+%       \centerline{#2}%
+%       \vfill\\%
+%       }%
+    \centerline{%
+      \fbox{%
+        \parbox[c][0.5\textheight]{0.5\textwidth}{%
+          \vspace*{\stretch{1}}%
+          \hfill Include file \path{#2}\hfill\mbox{}%
+          \vspace*{\stretch{2}}%
+        }%
+      }%
+    }%
+  }%
+  \fi
+
+
 \frenchspacing
 \sloppy
 %%% Multiple, three-column indexes
@@ -92,7 +114,34 @@
 }
 \makeatother
 
+%% Matrices and tensors
+\newcommand{\matx}[1]{\mbox{\boldmath${\cal #1}$\unboldmath}}
+\newcommand{\tensor}[1]{\matx{#1}}
+
 %% Math macros
+\newcommand{\Av}      {\mathbf{A}}
+
+\newcommand{\Bv}      {\mathbf{B}}
+
+\newcommand{\Ev}      {\mathbf{E}}
+
+\newcommand{\fv}      {\mathbf{f}}
+
+\newcommand{\gv}      {\mathbf{g}}
+
+\newcommand{\jv}      {\mathbf{j}}
+
+\newcommand{\Laplace} { \mathop{\Delta}\nolimits}
+
+\newcommand{\mtildei} {\widetilde{m}_{\rm i}}
+
+\newcommand{\uv}      {\mathbf{u}}
+\newcommand{\uve}     {\uv_{\rm e}}
+\newcommand{\uvi}     {\uv_{\rm i}}
+
+\newcommand{\vv}      {\mathbf{v}}
+\newcommand{\vve}     {\vv_{\rm e}}
+
 \newcommand{\xv}{\mathbf{x}}
 
 
@@ -357,16 +406,284 @@ where
 
 
 %%%%%%%%
+\section{Inverse Laplacian}
+%%%%%%%%
+
+[As discussed above]
+
+
+%%%%%%%%
+\section{Inverse curl\,curl}
+%%%%%%%%
+
+The equations of inertial MHD (i.e. ``MHD'' including electron inertia)
+are
+\begin{eqnarray}
+  \dfrac{D\ln\varrho}{Dt}
+  &=& - \nabla\cdot\uv \; , \\[1.5ex]
+  %
+  \dfrac{D\uv}{Dt}
+  &=& - \dfrac{m_{\rm e}}
+              {\mtildei}
+        (\vve\cdot\nabla)\vve
+      - \dfrac{\nabla P_{\rm e}}
+              {\varrho}
+      + \dfrac{\jv \times \Bv}
+              {\varrho} \; , \\[1.5ex]
+  %
+  \left[ 1 +\lambda_{\rm e}^2 \nabla\times (\nabla\times)
+  \right] \;
+  \dfrac{\partial \Av}{\partial t}
+  &=& \Bigl[ \uv\times\Bv
+             - \eta\mu_0\jv
+             - \Ev_{\rm Hall+\mathit{P}_e} \nonumber \\
+  & &        \quad{}
+             - \mu_0 \lambda_{\rm e}^2\, \nabla\cdot(\uv\jv {+} \jv\uv)
+             + \dfrac{m_{\rm e}}{e} (\vve\cdot\nabla)\vve
+             - \nabla\psi
+      \biggr] \; ,
+\end{eqnarray}
+%
+where
+
+\emph{(link to hydro:)}
+\begin{eqnarray}
+  n                &=& n_{\rm e} \; , \\
+  \varrho          &=& \mtildei n \; , \\
+  \mtildei         &=& \dfrac{m_{\rm i}}{Z} \; , \\
+  \varrho\uv       &=& n ( \mtildei \uvi + m_{\rm e} \uve ) \; , \\
+  \uv              &=& \uvi + \dfrac{m_{\rm e}}{\mtildei} \uve \; , \\
+  \vve             &=& \uv_{\rm e} - \uv_{\rm i}
+                       \ = \ \dfrac{\jv}{en} \; .
+\end{eqnarray}
+
+\emph{(magnetic field, etc:)}
+\begin{eqnarray}
+  \jv              &=& - e n \uve \; , \\
+  \Bv              &=& \nabla\times\Av \; , \\
+  \mu_0 \jv        &=& \nabla\times\Bv \; , \\
+  \nabla\cdot(\uv\jv {+} \jv\uv)
+                   &=& (\uv\cdot\nabla)\jv
+                       + (\jv\cdot\nabla)\uv
+                       + \jv(\nabla\cdot\uv)\; , \\
+  (\uv\cdot\nabla)\jv
+                   &=& \dfrac{1}{\mu_0} \uv\cdot \tensor{D} \; , \\
+  %
+  \Ev_{\rm Hall}   &=& \dfrac{\jv\times\Bv}{n e c} \; , \\
+  \Ev_{p_{\rm e}}  &=& - \dfrac{\nabla P_{\rm e}}{n e c} \; , \\
+  \Ev_{\rm inertia}
+  &=&  \mu_0 \lambda_{\rm e}^2
+      \left[
+        \partial_t \jv
+        + \nabla\cdot(\uv \jv + \jv \uv)
+      \right] \; , \\
+  %
+  (\tensor{D})_{ik}
+                   &=& \partial_i\partial_k\, \partial_l A_l
+                       + \partial_i \partial_l^2 A_k \; . \\ 
+\end{eqnarray}
+
+
+
+%%%%%%%%%%%
+\subsection{The elliptic operator}
+
+At every time step, we need to invert the elliptic operator
+\begin{equation}
+  \mathcal{L}
+  \equiv 1 +\lambda_{\rm e}^2 \nabla\times (\nabla\times)
+  = 1 - \lambda_{\rm e}^2 \widetilde{\Laplace} \; ,
+\end{equation}
+where
+\begin{equation}
+   \widetilde{\Laplace}
+   \equiv -\nabla\times (\nabla\times)
+   = \Laplace - \nabla (\nabla \cdot)
+\end{equation}
+is another elliptic operator, closely related to the Laplacian.
+
+Note that we cannot replace $\widetilde{\Laplace}$ with $\Laplace$ under
+the pretext of gauge invariance, because we cannot add an arbitrary
+gradient to $\Av$ any more -- we can only add it to the right-hand side of
+Eq.~(\ref{Eq-Alfven-Induction-Av})\footnote{Of course we still have the
+  freedom to add a time-independent gradient to $\Av$, but with
+  $\lambda_{\rm e}$ being a function of time, this does not help.}
+
+In component notation, we have
+\begin{equation}
+  \widetilde{\Laplace} \fv
+  \equiv \widetilde{\Laplace}_{ik} f_k
+\end{equation}
+with
+\begin{equation}
+  \widetilde{\Laplace}_{ik} = \delta_{ik} \partial_j^2
+  - \partial_i \partial_k
+\end{equation}
+
+In matrix notation,
+\begin{equation}
+  \widetilde{\Laplace}
+  =
+  \begin{pmatrix}
+    \partial_y^2{+}\partial_z^2 & -\partial_x \partial_y      & -\partial_x \partial_z \\
+    -\partial_x \partial_y      & \partial_x^2{+}\partial_z^2 & -\partial_y \partial_z \\
+    -\partial_x \partial_z      & -\partial_y \partial_z      & \partial_x^2{+}\partial_y^2
+  \end{pmatrix}
+\end{equation}
+
+
+%%%
+\subsection{Discretization}
+
+To invert $\mathcal{L}$, we need to find a vector function $\fv$ that
+satisfies
+\begin{equation}
+  (1 - \lambda_{\rm e}^2 \widetilde{\Laplace})^{-1} \gv = \fv \; .
+\end{equation}
+Thus $(1- \lambda_{\rm e}^2 \widetilde{\Laplace}) \fv = \gv$, or
+\begin{equation}
+  \label{Eq-Alfven-generalized-Laplace}
+  (\widetilde{\Laplace} - h) \fv = \tilde{\gv} \; ,
+\end{equation}
+with
+\begin{equation}
+  \tilde{\gv} = -\dfrac{1}{\lambda_{\rm e}^2} \gv \; \qquad
+  h = \dfrac{1}{\lambda_{\rm e}^2} \; .
+\end{equation}
+
+Discretizing the first component equation of
+Eq.~(\ref{Eq-Alfven-generalized-Laplace}), we get
+\begin{eqnarray}
+  \dfrac{\sum\limits_{\pm}
+           f^{x}_{i,j\pm1,k} - 2 f^{x}_{i,j,k}}
+        {\delta y^2}
+  +
+  \dfrac{\sum\limits_{\pm}
+           f^{x}_{i,j,k\pm1} - 2 f^{x}_{i,j,k}}
+        {\delta z^2}
+  \hspace*{7em}
+  \nonumber \\[1ex]
+  {}
+  -
+  \dfrac{\sum\limits_{\pm,\pm'}
+           (\pm) (\pm') f^{y}_{i\pm1,j\pm'1,k}}
+        {4\,\delta x\,\delta y}
+  -
+  \dfrac{\sum\limits_{\pm,\pm'}
+           (\pm) (\pm') f^{z}_{i\pm1,j,k\pm'1}}
+        {4\,\delta x\,\delta z}
+  - h_{i,j,k} f^{x}_{i,j,k}
+  &=& \tilde{g}^{x}_{i,j,k} \; . 
+\end{eqnarray}
+
+Isolating $f^{x}_{i,j,k}$, we get\footnote{
+  Compare this to the iteration
+  \begin{equation}
+    f_{ijk}
+    = \dfrac{\dfrac{\sum\limits_{\pm}
+                      f_{i\pm1,j,k}}
+                   {\delta x^2}
+             +
+             \dfrac{\sum\limits_{\pm}
+                      f_{i,j\pm1,k}}
+                   {\delta x^2}
+             +
+             \dfrac{\sum\limits_{\pm}
+                      f_{i,j,k\pm1}}
+                   {\delta x^2}
+             - g_{ijk}
+            }
+            {\dfrac{2}{\delta x^2}
+             + \dfrac{2}{\delta y^2}
+             + \dfrac{2}{\delta z^2}
+             + h_{ijk}
+            }
+  \end{equation}
+  obtained for the scalar Laplace (or rather inhomogeneous Helmholtz)
+  equation
+  \begin{equation}
+    (\Laplace - h) f = g \; .
+  \end{equation}
+}
+\begin{eqnarray}
+  f^{x}_{i,j,k}
+  &=& \dfrac{\dfrac{\sum\limits_{\pm}
+                      f^{x}_{i,j\pm1,k}}
+                   {\delta y^2}
+             +
+             \dfrac{\sum\limits_{\pm}
+                      f^{x}_{i,j,k+\sigma}}
+                   {\delta z^2}
+             -
+             \dfrac{\sum\limits_{\pm,\pm'}
+                      (\pm) (\pm') f^{y}_{i\pm1,j\pm'1,k}}
+                   {4\,\delta x\,\delta y}
+             -
+             \dfrac{\sum\limits_{\pm,\pm'}
+                      (\pm) (\pm') f^{z}_{i\pm1,j,k\pm'1}}
+                   {4\,\delta x\,\delta z}
+             - \tilde{g}^{x}_{i,j,k}
+            }
+            {\dfrac{2}{\delta y^2} + \dfrac{2}{\delta z^2} + h_{i,j,k}} \; ,
+\end{eqnarray}
+and similarly
+\begin{eqnarray}
+  f^{y}_{i,j,k}
+  &=& \dfrac{\dfrac{\sum\limits_{\pm}
+                      f^{y}_{i\pm1,j,k}}
+                   {\delta x^2}
+             +
+             \dfrac{\sum\limits_{\pm}
+                      f^{y}_{i,j,k\pm1}}
+                   {\delta z^2}
+             -
+             \dfrac{\sum\limits_{\pm,\pm'}
+                      (\pm) (\pm') f^{x}_{i\pm1,j\pm'1,k}}
+                   {4\,\delta x\,\delta y}
+             -
+             \dfrac{\sum\limits_{\pm,\pm'}
+                      (\pm) (\pm') f^{z}_{i,j\pm1,k\pm'1}}
+                   {4\,\delta y\,\delta z}
+             - \tilde{g}^{y}_{i,j,k}
+            }
+            {\dfrac{2}{\delta x^2} + \dfrac{2}{\delta z^2} + h_{i,j,k}} \; ,
+\end{eqnarray}
+and
+\begin{eqnarray}
+  f^{z}_{i,j,k}
+  &=& \dfrac{\dfrac{\sum\limits_{\pm}
+                      f^{z}_{i\pm1,j,k}}
+                   {\delta x^2}
+             +
+             \dfrac{\sum\limits_{\pm}
+                      f^{z}_{i,j\pm1,k}}
+                   {\delta y^2}
+             -
+             \dfrac{\sum\limits_{\pm,\pm'}
+                      (\pm) (\pm') f^{x}_{i\pm1,j\pm'1,k}}
+                   {4\,\delta x\,\delta z}
+             -
+             \dfrac{\sum\limits_{\pm,\pm'}
+                      (\pm) (\pm') f^{y}_{i\pm1,j,k\pm'1}}
+                   {4\,\delta y\,\delta z}
+             - \tilde{g}^{z}_{i,j,k}
+            }
+            {\dfrac{2}{\delta x^2} + \dfrac{2}{\delta y^2} + h_{i,j,k}} \; .
+\end{eqnarray}
+
+This equations can be used to iteratively invert $\widetilde{\Delta}$,
+which naturally lends itself as the soothing process of a multigrid
+method.
+
+
+
+
+%%%%%%%%
 \subsection{Memory management}
 
 
 %%%%%%%%
 \section{To Do}
-%%%%%%%%
-
-
-%%%%%%%%
-\section{Literature}
 %%%%%%%%
 
 
@@ -387,8 +704,23 @@ where
 \item Full multigrid cycle, W cycles, \ldots
 \end{itemize}
 
+%%%%%%%%%
+\appendix
+
+%%%%%%%%
+\section{Literature}
+%%%%%%%%
+
 
 \printindex
+
+%%%%%%%%%
+
+\section*{An excerpt from my lecture notes}
+
+See \url{http://www.capca.ucalgary.ca/~wdobler/teaching/phys535/notes2.pdf}
+
+\includepdf[pages=-,scale=0.9,frame,pagecommand={}]{lecture_notes.pdf}
 
 \end{document}
 
