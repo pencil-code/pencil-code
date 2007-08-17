@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.170 2007-08-17 09:03:25 ajohan Exp $
+! $Id: boundcond.f90,v 1.171 2007-08-17 10:18:05 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -464,7 +464,8 @@ module Boundcond
                 ! BCZ_DOC: 
                 call bc_del2zero(f,topbot,j)
               case ('hds')
-                ! BCZ_DOC: 
+                ! BCZ_DOC: hydrostatic equilibrium with 
+                !          a high-frequency filter
                 if (llocal_iso) then 
                   call bc_lnrho_hdss_z_liso(f,topbot)
                 else
@@ -486,7 +487,6 @@ module Boundcond
                 if (j==iss)   call bc_ss_temp2_z(f,topbot)
               case ('hs')
                 ! BCZ_DOC: hydrostatic equilibrium
-                ! BCZ_DOC: 
                 if (llocal_iso) then !non local
                   if (j==ilnrho) call bc_lnrho_hds_z_liso(f,topbot)
 !                 if (j==iss)    call bc_lnrho_hydrostatic_z(f,topbot)
