@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.447 2007-08-16 13:33:16 dobler Exp $
+! $Id: magnetic.f90,v 1.448 2007-08-17 08:59:18 dhruba Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -289,8 +289,9 @@ module Magnetic
   integer :: idiag_mflux_x=0    ! DIAG_DOC:
   integer :: idiag_mflux_y=0    ! DIAG_DOC:
   integer :: idiag_mflux_z=0    ! DIAG_DOC:
-  integer :: idiag_bmxy_rms=0   ! DIAG_DOC:
-
+  integer :: idiag_bmxy_rms=0   ! DIAG_DOC: $\sqrt{[\left<b_x\right>_z(x,y)]^2 + 
+                                ! DIAG_DOC: [\left<b_x\right>_z(x,y)]^2 +
+                                ! DIAG_DOC: [\left<b_x>_z(x,y)\right>]^2} $ 
   contains
 
 !***********************************************************************
@@ -330,7 +331,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.447 2007-08-16 13:33:16 dobler Exp $")
+           "$Id: magnetic.f90,v 1.448 2007-08-17 08:59:18 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
