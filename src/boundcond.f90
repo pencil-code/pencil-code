@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.169 2007-08-17 08:55:11 dhruba Exp $
+! $Id: boundcond.f90,v 1.170 2007-08-17 09:03:25 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -2824,11 +2824,11 @@ module Boundcond
 !
 !  Outflow boundary conditions.
 !
-!  If velocity vector points out of the box, the velocity is extrapolated as
-!  assymetric 'a2'.
+!  If velocity vector points out of the box, the velocity in the
+!  ghost cells is copied from the last grid point.
 !
-!  For inwards pointing velocity vector, the velocity is extrapolated as
-!  asymmetric 'a'.
+!  For inwards pointing velocity vector, the velocity is set to zero
+!  in the ghost cells.
 !
 !  12-aug-2007/anders: implemented
 !
@@ -2846,9 +2846,9 @@ module Boundcond
 !
       case('bot')
         do iz=1,mz; do iy=1,my; 
-          if (f(l1,iy,iz,j)<=0.0) then  ! assymetric around boundary value
+          if (f(l1,iy,iz,j)<=0.0) then  ! simply copy to ghost cells
             do i=1,nghost; f(l1-i,iy,iz,j)=f(l1,iy,iz,j); enddo
-          else                      ! zero, suppressing inflow
+          else                          ! zero, suppressing inflow
             do i=1,nghost; f(l1-i,iy,iz,j)=0.0; enddo
           endif
         enddo; enddo
@@ -2872,17 +2872,16 @@ module Boundcond
       endselect
 !
     endsubroutine bc_outflow_x
-
 !***********************************************************************
     subroutine bc_outflow_z(f,topbot,j)
 !
 !  Outflow boundary conditions.
 !
-!  If velocity vector points out of the box, the velocity is extrapolated as
-!  assymetric 'a2'.
+!  If velocity vector points out of the box, the velocity in the
+!  ghost cells is copied from the last grid point.
 !
-!  For inwards pointing velocity vector, the velocity is extrapolated as
-!  asymmetric 'a'.
+!  For inwards pointing velocity vector, the velocity is set to zero
+!  in the ghost cells.
 !
 !  12-aug-2007/anders: implemented
 !
@@ -2900,9 +2899,9 @@ module Boundcond
 !
       case('bot')
         do iy=1,my; do ix=1,mx
-          if (f(ix,iy,n1,j)<=0.0) then  ! assymetric around boundary value
+          if (f(ix,iy,n1,j)<=0.0) then  ! simply copy to ghost cells
             do i=1,nghost; f(ix,iy,n1-i,j)=f(ix,iy,n1,j); enddo
-          else                      ! zero, suppressing inflow
+          else                          ! zero, suppressing inflow
             do i=1,nghost; f(ix,iy,n1-i,j)=0.0; enddo
           endif
         enddo; enddo
