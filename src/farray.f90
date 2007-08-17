@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.19 2007-08-14 01:14:21 dobler Exp $
+! $Id: farray.f90,v 1.20 2007-08-17 01:58:57 dobler Exp $
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  This includes handling different
@@ -58,7 +58,7 @@ module FArrayManager
 !
   type pp
     integer, pointer :: p
-  end type pp
+  endtype pp
 !
 ! Store pointers to variables in a general linked
 ! list structure.  Shame we can't have (void *) pointers.

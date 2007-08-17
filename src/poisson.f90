@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.24 2007-08-16 23:19:23 dobler Exp $
+! $Id: poisson.f90,v 1.25 2007-08-17 01:58:58 dobler Exp $
 
 !
 !  This module solves the Poisson equation
@@ -32,7 +32,7 @@ module Poisson
   contains
 
 !***********************************************************************
-    subroutine inverse_laplacian(phi,kmax,h)
+    subroutine inverse_laplacian(phi,h,kmax)
 !
 !  Dispatch solving the Poisson equation to inverse_laplacian_fft
 !  or inverse_laplacian_semispectral, based on the boundary conditions
@@ -58,17 +58,17 @@ module Poisson
       if (all(lperi)) then
         !
         if (present(h)) then
-          call inverse_laplacian(phi,kmax1,h)
+          call inverse_laplacian_fft(phi,h,kmax1)
         else
-          call inverse_laplacian(phi,kmax1)
+          call inverse_laplacian_fft(phi,KMAX=kmax1)
         endif
 
       elseif (lperi(1) .and. lperi(2) .and. .not. lperi(3)) then
         !
         if (present(h)) then
-          call inverse_laplacian(phi,kmax1,h)
+          call inverse_laplacian_semispectral(phi,h)
         else
-          call inverse_laplacian(phi,kmax1)
+          call inverse_laplacian_semispectral(phi)
         endif
 
       else
@@ -81,7 +81,7 @@ module Poisson
 !
     endsubroutine inverse_laplacian
 !***********************************************************************
-    subroutine inverse_laplacian_fft(phi,kmax,h)
+    subroutine inverse_laplacian_fft(phi,h,kmax)
 !
 !  Solve the Poisson equation by Fourier transforming on a periodic grid.
 !  This method works both with and without shear.
@@ -98,7 +98,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.24 2007-08-16 23:19:23 dobler Exp $")
+        "$Id: poisson.f90,v 1.25 2007-08-17 01:58:58 dobler Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -192,7 +192,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.24 2007-08-16 23:19:23 dobler Exp $")
+        "$Id: poisson.f90,v 1.25 2007-08-17 01:58:58 dobler Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !

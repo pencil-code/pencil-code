@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.369 2007-08-16 22:06:45 dobler Exp $
+! $Id: equ.f90,v 1.370 2007-08-17 01:58:57 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -443,7 +443,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.369 2007-08-16 22:06:45 dobler Exp $")
+           "$Id: equ.f90,v 1.370 2007-08-17 01:58:57 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -1018,7 +1018,7 @@ module Equ
 !
 !      if (lelectron_inertia .and. inertial_length/=0.) then
 !        do iv = iax,iaz
-!          call inverse_laplacian_semispectral(df(:,:,:,iv), C=linertial_2)
+!          call inverse_laplacian_semispectral(df(:,:,:,iv), H=linertial_2)
 !        enddo
 !        df(:,:,:,iax:iaz) = -df(:,:,:,iax:iaz) * linertial_2
 !      endif
