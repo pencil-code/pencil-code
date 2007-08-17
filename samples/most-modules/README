@@ -1,7 +1,7 @@
 Directory:
     ${PENCIL_HOME}/samples/most-modules
 CVS-Id:
-    $ID: $
+    $Id: README,v 1.3 2007-08-17 04:29:19 brandenb Exp $
 Maintainer:
     Wolfgang Dobler <wdobler[at]ucalgary.ca>
 Added:
@@ -11,6 +11,22 @@ Status:
 Recommended resolution:
     128x128x128 (nu=eta=1.3e-3)
 Comments:
-    Comments can start on this line,
-    and continue later, as long as they are indented.
+    Use as many physics modules as possible; together with samples/no-modules,
+    this constitutes the minimal set of auto-tests.
+
+    The ultimate auto-test: Evolves chiral passive scalars with the occasional
+    supernova explosion in the planetary dust, and of course all of this with
+    mean-field MHD, radiative transfer and self-gravity.
+    It took some time to tune this such that it passes one Euler step at
+    dt=1e-20. A time step of 1e-19 is already way too large...
+
+    This now works, but with lots of smaller changes to the code that will get
+    checked in next. Expect the next ~ 10 commits to contain questions like
+    `Anders, is this OK?', `Tony, please check', etc.
+
+    This test complements the no-modules test, but the two don't cover all
+    modules we have. The next thing to do is to create a coverage report and
+    check which important .f90 files are still missing. Then we can add
+    `some-modules-1' and maybe `some-modules-2' to have a close-to-complete
+    set of four tests.
 
