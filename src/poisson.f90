@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.25 2007-08-17 01:58:58 dobler Exp $
+! $Id: poisson.f90,v 1.26 2007-08-17 18:32:42 dobler Exp $
 
 !
 !  This module solves the Poisson equation
@@ -50,9 +50,9 @@ module Poisson
 !  [feel free to change this if you think this has performance issues]
 !
       if (present(kmax)) then
-        kmax1 = huge1
-      else
         kmax1 = kmax
+      else
+        kmax1 = huge1
       endif
 
       if (all(lperi)) then
@@ -98,7 +98,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.25 2007-08-17 01:58:58 dobler Exp $")
+        "$Id: poisson.f90,v 1.26 2007-08-17 18:32:42 dobler Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -192,7 +192,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.25 2007-08-17 01:58:58 dobler Exp $")
+        "$Id: poisson.f90,v 1.26 2007-08-17 18:32:42 dobler Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
