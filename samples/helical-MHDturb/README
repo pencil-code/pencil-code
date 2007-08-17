@@ -1,16 +1,24 @@
 Directory:
     ${PENCIL_HOME}/samples/helical-MHDturb
 CVS-Id:
-    $ID: $
+    $Id: README,v 1.3 2007-08-17 04:02:43 brandenb Exp $
 Maintainer:
-    Unfortunately nobody <nobody[at]nowhere.net>
+    Axel Brandenburg <brandenb@nordita.dk>
 Added:
-    00-Mon-200?
+    08-Jun-2002
 Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 Recommended resolution:
-    128x128x128 (nu=eta=1.3e-3)
+    32x32x32 for nu=eta=5e-3 is fine. For comparison with higher
+    resolution runs see Brandenburg (2001, ApJ 550, 824), except that
+    there a forcing wavenumber of kf=5 was used. The forcing function
+    works with preselected wavevectors that were computed with:
+    ${PENCIL_HOME}/samples/helical-MHDturb/idl/generate_kvectors.pro
 Comments:
-    Comments can start on this line,
-    and continue later, as long as they are indented.
-
+    This is a helical MHD turbulence run. After about 600 time units
+    a large scale magnetic field develops from an initially random
+    magnetic field (if initaa=0 is set).
+References:
+    Brandenburg, A.: 2001, ``The inverse cascade and nonlinear
+    alpha-effect in simulations of isotropic helical hydromagnetic
+    turbulence,'' Astrophys. J. 550, 824-840
