@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.70 2007-08-15 21:04:31 ajohan Exp $
+### $Id: Makefile.depend,v 1.71 2007-08-17 03:31:50 dobler Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -227,12 +227,12 @@ $(MAGNETIC_OBJ):        magnetic.h        $(MAGNETIC_SRC)        $(COMMON_DEPS) 
 $(HYDRO_OBJ):           hydro.h           $(HYDRO_SRC)           $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROF_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(VISCOSITY_OBJ) $(DENSITY_OBJ) $(MAGNETIC_OBJ) $(COSMICRAY_OBJ)
 $(DENSITY_OBJ):         density.h         $(DENSITY_SRC)         $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROF_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(IO_OBJ) $(EOS_OBJ) $(SELFGRAVITY_OBJ)
 $(RADIATION_OBJ):       radiation.h       $(RADIATION_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(DENSITY_OBJ) $(EOS_OBJ)
-$(COSMICRAY_OBJ):       cosmicray.h       $(COSMICRAY_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ)
-$(COSMICRAYFLUX_OBJ):   cosmicrayflux.h   $(COSMICRAYFLUX_SRC)   $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(COSMICRAY_OBJ)
+$(COSMICRAY_OBJ):       cosmicray.h       $(COSMICRAY_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(DENSITY_OBJ)
+$(COSMICRAYFLUX_OBJ):   cosmicrayflux.h   $(COSMICRAYFLUX_SRC)   $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(COSMICRAY_OBJ) slices.o
 $(PSCALAR_OBJ):         pscalar.h         $(PSCALAR_SRC)         $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(DENSITY_OBJ)
 $(CHIRAL_OBJ):          chiral.h          $(CHIRAL_SRC)          $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(DENSITY_OBJ)
 $(DUSTVELOCITY_OBJ):    dustvelocity.h    $(DUSTVELOCITY_SRC)    $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(GENERAL_OBJ) $(EOS_OBJ) $(HYDRO_OBJ) $(PSCALAR_OBJ) $(GRAVITY_OBJ)
-$(DUSTDENSITY_OBJ):     dustdensity.h     $(DUSTDENSITY_SRC)     $(COMMON_DEPS) $(INITCOND_OBJ) $(DUSTVELOCITY_OBJ)
+$(DUSTDENSITY_OBJ):     dustdensity.h     $(DUSTDENSITY_SRC)     $(COMMON_DEPS) $(INITCOND_OBJ) $(DUSTVELOCITY_OBJ) slices.o
 $(NEUTRALVELOCITY_OBJ): neutralvelocity.h $(NEUTRALVELOCITY_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(GENERAL_OBJ) $(HYDRO_OBJ) $(GRAVITY_OBJ)
 $(NEUTRALDENSITY_OBJ):  neutraldensity.h  $(NEUTRALDENSITY_SRC)  $(COMMON_DEPS) $(INITCOND_OBJ) $(NEUTRALVELOCITY_OBJ)
 $(TESTFIELD_OBJ):       testfield.h       $(TESTFIELD_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(IO_OBJ) $(HYDRO_OBJ) $(DENSITY_OBJ)
@@ -242,7 +242,7 @@ $(IO_OBJ):              io.h              $(IO_SRC)              $(COMMON_DEPS) 
 $(TIMEAVG_OBJ):         timeavg.h         $(TIMEAVG_SRC)         $(COMMON_DEPS) $(IO_OBJ)
 $(POWER_OBJ):           power_spectrum.h  $(POWER_SRC)           $(COMMON_DEPS) $(GENERAL_OBJ) $(FOURIER_OBJ)
 $(STRUCT_FUNC_OBJ):     struct_func.h     $(STRUCT_FUNC_SRC)     $(COMMON_DEPS) $(GENERAL_OBJ)
-$(SPECIAL_OBJ):         special.h         $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_SPEC_OBJ) $(GLOBAL_OBJ)
+$(SPECIAL_OBJ):         special.h         $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_SPEC_OBJ) $(GLOBAL_OBJ) $(INITCOND_OBJ)
 
 #
 #  Particle modules
@@ -250,7 +250,7 @@ $(SPECIAL_OBJ):         special.h         $(SPECIAL_SRC) special_dummies.inc $(C
 $(PARTICLES_CDATA_OBJ):  particles_cdata.f90 $(CDATA_OBJ)
 $(PARTICLES_MAIN_OBJ):   particles_main.h             $(PARTICLES_OBJ) $(PARTICLES_SUB_OBJ) $(PARTICLES_NUMBER_OBJ) $(PARTICLES_RADIUS_OBJ) $(PARTICLES_SELFGRAVITY_OBJ) $(PARTICLES_NBODY_OBJ) $(CDATA_OBJ)
 $(PARTICLES_SUB_OBJ):                                 $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_SRC) $(CDATA_OBJ) $(GHOSTFOLD_OBJ) $(GLOBAL_OBJ) $(MESSAGES_OBJ)
-$(PARTICLES_OBJ):        particles.h                  $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ) $(PARTICLES_NUMBER_OBJ) $(COMMON_DEPS) $(GLOBAL_OBJ) $(POWER_OBJ)
+$(PARTICLES_OBJ):        particles.h                  $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ) $(PARTICLES_NUMBER_OBJ) $(COMMON_DEPS) $(GLOBAL_OBJ) $(EOS_OBJ) $(POWER_OBJ)
 $(PARTICLES_NUMBER_OBJ): particles_number.h           $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
 $(PARTICLES_SELFGRAVITY_OBJ): particles_selfgravity.h $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
 $(PARTICLES_NBODY_OBJ): particles_nbody.h             $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
