@@ -1,16 +1,20 @@
 Directory:
     ${PENCIL_HOME}/samples/testfield
 CVS-Id:
-    $ID: $
+    $Id: README,v 1.3 2007-08-17 04:16:56 brandenb Exp $
 Maintainer:
-    Unfortunately nobody <nobody[at]nowhere.net>
+    Axel Brandenburg <brandenb@nordita.dk>
 Added:
-    00-Mon-200?
+    26-Jun-2005
 Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 Recommended resolution:
-    128x128x128 (nu=eta=1.3e-3)
+    32x32x32 with etatest=5e-2 works fine.
 Comments:
-    Comments can start on this line,
-    and continue later, as long as they are indented.
-
+    This procedure allows the full alpha and eta tensors to be calculated.
+    Different test fields can be used. Note however that the result is
+    in general wavenumber dependent. The present examples is for the
+    Roberts flow.
+References:
+    Brandenburg, A.: 2005, ``Turbulence and its parametrization in
+    accretion discs,'' Astron. Nachr. 326, 787-797
