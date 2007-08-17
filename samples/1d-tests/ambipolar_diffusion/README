@@ -1,0 +1,16 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/ambipolar_diffusion
+CVS-Id:
+    $ID: $
+Maintainer:
+    Wladimir Lyra <wlyra@astro.uu.se>
+Added:
+    2007-aug-17
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    1x1x1024 (nu=eta=1e-4, lupw_rho=T,lupw_rhon=T)
+Comments:
+    Ambipolar diffusion setup published in Brandenburg & Zweibel 1995
+
+
