@@ -1,4 +1,4 @@
-! $Id: rtime_phiavg.f90,v 1.11 2007-07-23 11:59:50 wlyra Exp $
+! $Id: rtime_phiavg.f90,v 1.12 2007-08-17 17:13:27 wlyra Exp $
 !
 !  This module calculates a number of outputs and removes a mean
 !  (phi-averaged) emf from the simulations with net vertical fields
@@ -149,11 +149,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.11 2007-07-23 11:59:50 wlyra Exp $
+!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.12 2007-08-17 17:13:27 wlyra Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: rtime_phiavg.f90,v 1.11 2007-07-23 11:59:50 wlyra Exp $")
+           "$Id: rtime_phiavg.f90,v 1.12 2007-08-17 17:13:27 wlyra Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -252,15 +252,15 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      lpenc_requested(i_rho)=.true.
-      lpenc_requested(i_uu)=.true.
-      lpenc_requested(i_bb)=.true.
+      if (lcalc_density_pars) lpenc_requested(i_rho)=.true.
+      if (lhydro)             lpenc_requested(i_uu)=.true.
+      if (lmagnetic)          lpenc_requested(i_bb)=.true.
       lpenc_requested(i_rcyl_mn)=.true.
       if (lmagnetic.or.lhydro) then
-        lpenc_requested(i_phix)=.true.
-        lpenc_requested(i_phiy)=.true.
-        lpenc_requested(i_pomx)=.true.
-        lpenc_requested(i_pomy)=.true.
+        lpenc_diagnos(i_phix)=.true.
+        lpenc_diagnos(i_phiy)=.true.
+        lpenc_diagnos(i_pomx)=.true.
+        lpenc_diagnos(i_pomy)=.true.
       endif
 !      
       if (llarge_scale_Bz) lpenc_requested(i_uxb)=.true.
