@@ -1,0 +1,65 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters!
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2007-08-17 10:10:08 wlyra Exp $',
+  ip=14,
+  nt=10, it1=1, it1d=100, isave=500, itorder=3, ialive=1
+  cdt=0.4, 
+  cdtv=0.4, 
+  dtmin=1e-6,
+  dsnap=1.0, dvid=0.25, d2davg=1.0
+  slice_position='m'
+  wfreeze_ext = 0.2
+  wborder_int= 0.05
+  wborder_ext= 0.2
+  fshift_int = 1
+  fshift_ext = -1
+  lbidiagonal_derij=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lfreeze_uint=T,lfreeze_uext=T
+  borderuu='global-shear-mhs'
+/
+&density_run_pars
+  lfreeze_lnrhoint=T
+  lfreeze_lnrhoext=T
+  idiff='hyper3_aniso','shock'
+  diffrho_hyper3_aniso=5e-12,5e-12,3e-13
+  diffrho_shock=5.0
+  borderlnrho='constant'
+/
+&grav_run_pars
+  ipotential='no-smooth'
+  g0=1.
+/
+&magnetic_run_pars
+  iresistivity='hyper3-aniso','shock'
+  eta_aniso_hyper3=5e-12,5e-12,3e-13
+  lfreeze_aint=T
+  lfreeze_aext=T
+  eta_shock=5.0
+  borderaa='Alfven-zconst'
+/
+&viscosity_run_pars
+  ivisc='hyper3_nu-const_aniso','nu-shock'
+  nu_aniso_hyper3=5e-12,5e-12,3e-13
+  nu_shock=5.0
+/
+&special_run_pars
+  llarge_scale_Bz=T
+/
+&particles_run_pars
+  ldragforce_dust_par=T, ldragforce_gas_par=F
+  lmigration_redo=T
+  gravr_profile='no-smooth'
+  lparticlemesh_tsc=T
+  lcartesian_mig=F
+/
+&shock_run_pars
+  lshock_first=T
+  lshock_max5=T
+/
