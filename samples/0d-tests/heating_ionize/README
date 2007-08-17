@@ -1,16 +1,23 @@
 Directory:
     ${PENCIL_HOME}/samples/0d-tests/heating_ionize
 CVS-Id:
-    $ID: $
+    $Id: README,v 1.5 2007-08-17 04:55:39 brandenb Exp $
 Maintainer:
-    Unfortunately nobody <nobody[at]nowhere.net>
+    Tobias Heinemann <T.Heinemann@damtp.cam.ac.uk>
+    Axel Brandenburg <brandenb@nordita.dk>
 Added:
-    00-Mon-200?
+    23-Apr-2004
 Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 Recommended resolution:
-    128x128x128 (nu=eta=1.3e-3)
+    1x1x1
 Comments:
-    Comments can start on this line,
-    and continue later, as long as they are indented.
-
+    In this test we solve an ODE with the Pencil Code (hence 0-D).
+        rho T ds/dt = heat_uniform
+    We have variable degree of hydrogen ionization, but Helium stays neutral.
+    Our units are [rho]=1e-6 g/cm^3, [u]=km/s, [x]=Mm, [T]=K.
+    idl.png shows the resulting temperature as a function of thermal energy.
+    This result is plotted using plot_result.csh
+    In order for the run not to last too long on slow machines, we have
+    changed the file run.in to run longer and fewer time steps. The original
+    file used for making the figure is still available as "run.in-fig.pTTss".
