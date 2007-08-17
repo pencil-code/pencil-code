@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.92 2007-06-11 18:41:49 allidf Exp $
+! $Id: prints.f90,v 1.93 2007-08-17 17:06:27 theine Exp $
 
 module Print
 
@@ -380,6 +380,7 @@ module Print
 !
       character (len=4) :: ch
 !
+print *,'dim = ',size(fnamexy,1),size(fnamexy,2),size(fnamexy,3),size(fnamexy,4)
       if (lroot.and.nnamexy>0) then
         open(1, file=trim(datadir)//'/zaverages.dat', form='unformatted', &
             position='append')

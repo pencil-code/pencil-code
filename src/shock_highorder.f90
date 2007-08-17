@@ -1,4 +1,4 @@
-! $Id: shock_highorder.f90,v 1.4 2007-06-30 16:12:18 theine Exp $
+! $Id: shock_highorder.f90,v 1.5 2007-08-17 17:06:27 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -33,9 +33,10 @@ module Shock
   include 'shock.h'
 
   integer :: ishock_max = 1
+  logical :: lgaussian_smooth = .false.
 
   ! run parameters
-  namelist /shock_run_pars/ ishock_max
+  namelist /shock_run_pars/ ishock_max,lgaussian_smooth
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_shockmax=0
@@ -75,7 +76,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_highorder.f90,v 1.4 2007-06-30 16:12:18 theine Exp $")
+           "$Id: shock_highorder.f90,v 1.5 2007-08-17 17:06:27 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -119,7 +120,11 @@ module Shock
 !
       smooth_factor = 1.
 
-      weights = (/1.,9.,45.,70.,45.,9.,1./)
+      if (lgaussian_smooth) then
+        weights = (/1.,9.,45.,70.,45.,9.,1./)
+      else
+        weights = (/1.,6.,15.,20.,15.,6.,1./)
+      endif
 
       if (nxgrid > 1) then
         do i = -3,3
