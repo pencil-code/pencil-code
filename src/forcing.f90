@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.111 2007-08-11 15:53:13 dhruba Exp $
+! $Id: forcing.f90,v 1.112 2007-08-17 08:58:42 dhruba Exp $
 
 module Forcing
 
@@ -81,7 +81,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.111 2007-08-11 15:53:13 dhruba Exp $")
+           "$Id: forcing.f90,v 1.112 2007-08-17 08:58:42 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -321,7 +321,7 @@ module Forcing
       integer, parameter :: mk=3000
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst=0,nk
-      integer :: ik,j,jf
+      integer :: ik,j,jf,l
       real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
       real, dimension(3) :: e1,e2,ee,kk
@@ -558,7 +558,9 @@ module Forcing
                   *real(cmplx(coef1(j),profx_hel*profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
                   if(lhelical_test) then
-                    f(l1:l2,m,n,jf)=forcing_rhs(:,j)
+                    !f(l1:l2,m,n,jf)=forcing_rhs(:,j)
+                     f(l1:l2,m,n,jf) = 1.
+                     f(l1:l2,m,n,4) = 1.
                   else
                     f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
                   endif
@@ -583,7 +585,11 @@ module Forcing
               coef1(2)=cmplx(k*key,sig*kkey)
               coef1(3)=cmplx(k*kez,sig*kkez)
               do m=m1,m2
-                radius = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+                if(lspherical_coords)then
+                  radius = x(l)
+                else
+                  radius = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+                endif
                 tmpx = 0.5*(1.-tanh((radius-r_ff)/width_ff))
                 f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+rho1*real( &
                   cmplx(coef1(j),coef2(j))*tmpx*fx(l1:l2)*fy(m)*fz(n))
