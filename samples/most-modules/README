@@ -1,5 +1,16 @@
-                     samples/most-modules
-                     --------------------
+Directory:
+    ${PENCIL_HOME}/samples/most-modules
+CVS-Id:
+    $ID: $
+Maintainer:
+    Wolfgang Dobler <wdobler[at]ucalgary.ca>
+Added:
+    13-Jan-2007
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    128x128x128 (nu=eta=1.3e-3)
+Comments:
+    Comments can start on this line,
+    and continue later, as long as they are indented.
 
-Use as many physics modules as possible; together with samples/no-modules,
-this constitutes the minimal set of auto-tests.

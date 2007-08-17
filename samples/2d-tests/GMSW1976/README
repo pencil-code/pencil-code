@@ -1,62 +1,68 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/GMSW1976
+CVS-Id:
+    $ID: $
+Maintainer:
+    Wolfgang Dobler <wdobler[at]ucalgary.ca>
+Added:
+    13-Apr-2004
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    128x128x128 (nu=eta=1.3e-3)
+Comments:
+    Reproduce critical Rayleigh number for density ratio
 
-                                 GMSW1976
-                                 --------
+        Z+1 = rho_bot/rho_top=11.
 
-Reproduce critical Rayleigh number for density ratio
+    and m=1. Assume dynamical viscosity mu=rho*nu and heat conductivity K to
+    be constant.
 
-    Z+1 = rho_bot/rho_top=11.
+    For these values, Gough et al. find a critical Rayleigh number Ra_crit and
+    critical wave number k_crit of
 
-and m=1. Assume dynamical viscosity mu=rho*nu and heat conductivity K to
-be constant.
+        Ra_crit = 1189,   k_crit*Lz = 2.42 ,
 
-For these values, Gough et al. find a critical Rayleigh number Ra_crit and
-critical wave number k_crit of
+    where Ra is defined as
 
-    Ra_crit = 1189,   k_crit*Lz = 2.42 ,
+              [dT/dz - (dT/dz)_ad)]*g*Lz^4
+        Ra = ------------------------------  ,
+                      T*nu*chi
 
-where Ra is defined as
+                  K
+        chi = ---------  ,
+               c_p*rho
 
-          [dT/dz - (dT/dz)_ad)]*g*Lz^4
-    Ra = ------------------------------  ,
-                  T*nu*chi
+    with respect to the values in the mid-layer (z=-0.6 in
+    our box which ranges from -1.1 to -0.1).
 
-              K
-    chi = ---------  ,
-           c_p*rho
+    The setup in this directory is such that the lowest horizontal mode
+    corresponds to the above value of the critical wave number, and the values
+    of nu and Kbot correspond to a Rayleigh number Ra = 1189.28 .
 
-with respect to the values in the mid-layer (z=-0.6 in
-our box which ranges from -1.1 to -0.1).
+    At resolution nx×nz=20×201, we find Ra_crit ~ 1189.2 ;
+    at            nx×nz=20×101,         Ra_crit ~ 1168.6 ;
+    at            nx×nz=20× 51,         Ra_crit ~ 1130.1 .
 
-The setup in this directory is such that the lowest horizontal mode
-corresponds to the above value of the critical wave number, and the values
-of nu and Kbot correspond to a Rayleigh number Ra = 1189.28 .
+    Note that we don't need more points in x, since the individual Fourier
+    modes evolve independently as long as the perturbations are small (and the
+    governing equations for perturbations are linear).
 
-At resolution nx×nz=20×201, we find Ra_crit ~ 1189.2 ;
-at            nx×nz=20×101,         Ra_crit ~ 1168.6 ;
-at            nx×nz=20× 51,         Ra_crit ~ 1130.1 .
+    For diagnostics, use the IDL command sequence
+      IDL>  .r ts
+      IDL>  plot, ts.t, ts.uzrms   ; plot rms of vertical velocity over time
+      IDL>  plot, ts.t, deriv(ts.t,alog(ts.uzrms))  ; plot growth rate
+    for time series, and
+      IDL>  .r start
+      IDL>  .r r
+      IDL>  .r thermo
+      IDL>  .r pvert        ; vertical profiles
+      IDL>  .r plot_uu+ss   ; visualize velocity and entropy
+      IDL>  .r Ra           ; print Rayleigh number
+    for looking at the latest snapshot.
+      
 
-Note that we don't need more points in x, since the individual Fourier
-modes evolve independently as long as the perturbations are small (and the
-governing equations for perturbations are linear).
-
-For diagnostics, use the IDL command sequence
-  IDL>  .r ts
-  IDL>  plot, ts.t, ts.uzrms   ; plot rms of vertical velocity over time
-  IDL>  plot, ts.t, deriv(ts.t,alog(ts.uzrms))  ; plot growth rate
-for time series, and
-  IDL>  .r start
-  IDL>  .r r
-  IDL>  .r thermo
-  IDL>  .r pvert        ; vertical profiles
-  IDL>  .r plot_uu+ss   ; visualize velocity and entropy
-  IDL>  .r Ra           ; print Rayleigh number
-for looking at the latest snapshot.
-  
-
-
-Reference:
-  D. O. Gough, D. R. Moore, E. A. Spiegel, and N. O. Weiss:
-  "Convective instability in a compressible atmosphere. II."
-  Ap.J. 206, 536--542 (1976).
-
-[Created 13-Apr-2004]
+    Reference:
+      D. O. Gough, D. R. Moore, E. A. Spiegel, and N. O. Weiss:
+      "Convective instability in a compressible atmosphere. II."
+      Ap.J. 206, 536--542 (1976).

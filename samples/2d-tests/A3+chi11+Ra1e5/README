@@ -1,14 +1,25 @@
-$Id: README,v 1.2 2003-11-10 09:31:41 brandenb Exp $
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/A3+chi11+Ra1e5
+CVS-Id:
+    $ID: $
+Maintainer:
+    Unfortunately nobody <nobody[at]nowhere.net>
+Added:
+    00-Mon-200?
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    128x128x128 (nu=eta=1.3e-3)
+Comments:
+    Trying to reproduce: Table 2, column 1, of BNPST90
 
-Trying to reproduce: Table 2, column 1, of BNPST90
+    Aspect ratio 3, density contrast 11.
+    Stratification: cs0=0.2887, rho0=1
+    Resolution: 150 x 51 (in the x and z directions).
+    Ra=1e5, Fbot=0.001375, nu=K=0.0011
+    typical timestep: 8.7e-3.
 
-Aspect ratio 3, density contrast 11.
-Stratification: cs0=0.2887, rho0=1
-Resolution: 150 x 51 (in the x and z directions).
-Ra=1e5, Fbot=0.001375, nu=K=0.0011
-typical timestep: 8.7e-3.
-
-The actual run has been done in directory:
-pencil-code/runs/slab_conv/Hurlburt84-Ra1e5
-The run never became steady: the downdrafts keep
-sweeping back and forth.
+    The actual run has been done in directory:
+    pencil-code/runs/slab_conv/Hurlburt84-Ra1e5.
+    The run never became steady: the downdrafts keep sweeping back and
+    forth.
