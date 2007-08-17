@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2007-08-15 16:48:32 wlyra Exp $',
+  cvsid='$Id: start.in,v 1.2 2007-08-17 13:09:16 wlyra Exp $',
   ip=10,                        ! debugging parameter
   xyz0  =  0,0,0,       ! first corner of box
   xyz1  =  1,1,1,       ! second corner of box
@@ -28,8 +28,6 @@
   amplaa=1.0
 /
 &neutralvelocity_init_pars
-  zeta=0.1
-  alpha=100
   colldrag=10
 /
 &neutraldensity_init_pars
