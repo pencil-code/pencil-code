@@ -1,4 +1,4 @@
-! $Id: noneutraldensity.f90,v 1.2 2007-02-28 16:21:17 wlyra Exp $
+! $Id: noneutraldensity.f90,v 1.3 2007-08-17 13:08:31 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhon_dt and init_lnrhon, among other auxiliary routines.
@@ -55,7 +55,7 @@ module Neutraldensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: noneutraldensity.f90,v 1.2 2007-02-28 16:21:17 wlyra Exp $")
+           "$Id: noneutraldensity.f90,v 1.3 2007-08-17 13:08:31 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -133,6 +133,14 @@ module Neutraldensity
       if(NO_WARN) print*,f,df,p !(keep compiler quiet)
 !
     endsubroutine dlnrhon_dt
+!***********************************************************************
+    subroutine get_recombine_and_ionize_coeff(alpha_,zeta_)
+
+      real :: alpha_,zeta_
+!
+      if (NO_WARN) print*,alpha_,zeta_
+!
+    endsubroutine get_recombine_and_ionize_coeff
 !***********************************************************************
     subroutine read_neutraldensity_init_pars(unit,iostat)
       integer, intent(in) :: unit

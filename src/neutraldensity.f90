@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.7 2007-08-13 21:26:50 wlyra Exp $
+! $Id: neutraldensity.f90,v 1.8 2007-08-17 13:08:31 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -67,7 +67,7 @@ module NeutralDensity
        lnrhon_int,lnrhon_ext, &
        lfreeze_lnrhonint,lfreeze_lnrhonext,         &
        lnrhon_const,lcontinuity_neutral,borderlnrhon,    &
-       diffrhon_hyper3_aniso, alpha, zeta
+       diffrhon_hyper3_aniso,alpha,zeta
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhonm=0,idiag_rhon2m=0,idiag_lnrhon2m=0
@@ -103,7 +103,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.7 2007-08-13 21:26:50 wlyra Exp $")
+           "$Id: neutraldensity.f90,v 1.8 2007-08-17 13:08:31 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -360,7 +360,7 @@ module NeutralDensity
 !***********************************************************************
     subroutine pencil_criteria_neutraldensity()
 !
-!  All pencil5Bs that the Density module depends on are specified here.
+!  All pencils that the Density module depends on are specified here.
 !
 !  19-11-04/anders: coded
 !
@@ -732,6 +732,14 @@ module NeutralDensity
       endif
 !
     endsubroutine dlnrhon_dt
+!***********************************************************************
+    subroutine get_recombine_and_ionize_coeff(alpha_,zeta_)
+!
+      real :: alpha_,zeta_
+!
+      alpha_=alpha;zeta_=zeta
+!
+    endsubroutine get_recombine_and_ionize_coeff
 !***********************************************************************
     subroutine set_border_neutraldensity(f,df,p)
 !

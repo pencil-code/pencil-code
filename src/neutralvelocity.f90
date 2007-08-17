@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.10 2007-08-13 21:26:50 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.11 2007-08-17 13:08:31 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -39,7 +39,7 @@ module NeutralVelocity
   logical :: ladvection_velocity=.true.,lpressuregradient=.true.
 !collisional drag,ionization,recombination
   logical :: lviscneutral=.true.
-  real :: colldrag,zeta,alpha
+  real :: colldrag,alpha,zeta
   real :: nun=0.,csn0,csn20,nun_hyper3=0.
   real, dimension (nx,3,3) :: unij5
 
@@ -48,7 +48,7 @@ module NeutralVelocity
   namelist /neutralvelocity_init_pars/ &
        ampluun, ampl_unx, ampl_uny, ampl_unz, &
        inituun, uun_const, Omega, lcoriolis_force, lcentrifugal_force, &
-       ladvection_velocity,zeta,alpha,colldrag,csn0,kx_uun,ky_uun,kz_uun
+       ladvection_velocity,colldrag,csn0,kx_uun,ky_uun,kz_uun
 
   ! run parameters
   logical :: lupw_uun=.false.
@@ -58,7 +58,7 @@ module NeutralVelocity
        Omega,theta, lupw_uun, &
        borderuun, lfreeze_unint, lpressuregradient, &
        lfreeze_unext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-       colldrag,zeta,alpha,nun,lviscneutral,iviscn,nun,csn0,nun_hyper3
+       colldrag,nun,lviscneutral,iviscn,nun,csn0,nun_hyper3
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_un2m=0,idiag_unm2=0
@@ -128,7 +128,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.10 2007-08-13 21:26:50 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.11 2007-08-17 13:08:31 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -157,8 +157,14 @@ module NeutralVelocity
 !  24-nov-02/tony: coded
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
 !
-      use Mpicomm, only: stop_it
       use CData
+      use Mpicomm,        only: stop_it
+      use NeutralDensity, only: get_recombine_and_ionize_coeff 
+!
+! Get the recombination (alpha) and ionization (zeta) coefficients
+! from the neutral density modules      
+!      
+      call get_recombine_and_ionize_coeff(alpha,zeta)
 !
 ! Check any module dependencies
 !

@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.71 2007-08-17 03:31:50 dobler Exp $
+### $Id: Makefile.depend,v 1.72 2007-08-17 13:08:31 wlyra Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -233,8 +233,8 @@ $(PSCALAR_OBJ):         pscalar.h         $(PSCALAR_SRC)         $(COMMON_DEPS) 
 $(CHIRAL_OBJ):          chiral.h          $(CHIRAL_SRC)          $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(DENSITY_OBJ)
 $(DUSTVELOCITY_OBJ):    dustvelocity.h    $(DUSTVELOCITY_SRC)    $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(GENERAL_OBJ) $(EOS_OBJ) $(HYDRO_OBJ) $(PSCALAR_OBJ) $(GRAVITY_OBJ)
 $(DUSTDENSITY_OBJ):     dustdensity.h     $(DUSTDENSITY_SRC)     $(COMMON_DEPS) $(INITCOND_OBJ) $(DUSTVELOCITY_OBJ) slices.o
-$(NEUTRALVELOCITY_OBJ): neutralvelocity.h $(NEUTRALVELOCITY_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(GENERAL_OBJ) $(HYDRO_OBJ) $(GRAVITY_OBJ)
-$(NEUTRALDENSITY_OBJ):  neutraldensity.h  $(NEUTRALDENSITY_SRC)  $(COMMON_DEPS) $(INITCOND_OBJ) $(NEUTRALVELOCITY_OBJ)
+$(NEUTRALDENSITY_OBJ):  neutraldensity.h  $(NEUTRALDENSITY_SRC)  $(COMMON_DEPS) $(INITCOND_OBJ) 
+$(NEUTRALVELOCITY_OBJ): neutralvelocity.h $(NEUTRALVELOCITY_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(GENERAL_OBJ) $(HYDRO_OBJ) $(GRAVITY_OBJ) $(NEUTRALDENSITY_OBJ)
 $(TESTFIELD_OBJ):       testfield.h       $(TESTFIELD_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(IO_OBJ) $(HYDRO_OBJ) $(DENSITY_OBJ)
 $(INTERSTELLAR_OBJ):    interstellar.h    $(INTERSTELLAR_SRC)    $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(EOS_OBJ)
 $(EOS_OBJ):             eos.h             $(EOS_SRC)             $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(GRAVITY_OBJ) $(FOURIER_OBJ)
