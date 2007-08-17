@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.326 2007-08-14 01:14:21 dobler Exp $
+! $Id: sub.f90,v 1.327 2007-08-17 08:57:19 dhruba Exp $
 
 module Sub
 
@@ -611,7 +611,7 @@ module Sub
       if(lspherical_coords)then
         do isum=l1,l2
           fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
-                              x(isum)*x(isum)*sinth(m)*a(isum)
+                              x(isum)*a(isum)
         enddo
       else
         fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
@@ -630,7 +630,7 @@ module Sub
       use Cdata
 !
       real, dimension (nx) :: a
-      integer :: iname,m_nghost
+      integer :: iname,m_nghost,isum
 !
 !  Initialize to zero, including other parts of the z-array
 !  which are later merged with an mpi reduce command.
@@ -640,7 +640,14 @@ module Sub
 !  m starts with mghost+1=4, so the correct index is m-nghost
 !
       m_nghost=m-nghost
-      fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+sum(a)
+      if(lspherical_coords)then
+        do isum=l1,l2
+          fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
+                              x(isum)*sinth(m)*a(isum)
+        enddo
+      else
+        fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+sum(a)
+      endif
 !
     endsubroutine xzsum_mn_name_y
 !***********************************************************************
@@ -655,13 +662,19 @@ module Sub
       use Cdata
 !
       real, dimension (nx) :: a
-      integer :: iname
+      integer :: iname,isum
 !
 !  Initialize to zero.
 !
       if (lfirstpoint) fnamex(:,iname)=0.
 !
-      fnamex(:,iname)=fnamex(:,iname)+a
+      if(lspherical_coords)then
+        do isum=l1,l2
+          fnamex(isum,iname)=fnamex(isum,iname)+x(isum)*x(isum)*sinth(m)*a(isum)
+        enddo
+      else
+        fnamex(:,iname)=fnamex(:,iname)+a
+      endif
 !
     endsubroutine yzsum_mn_name_x
 !***********************************************************************
@@ -829,7 +842,11 @@ module Sub
 !  keep full x-dependence
 !
       n_nghost=n-nghost
-      fnamexz(:,n_nghost,ipz+1,iname)=fnamexz(:,n_nghost,ipz+1,iname)+a
+      if(lspherical_coords)then
+        fnamexz(:,n_nghost,ipz+1,iname) = fnamexz(:,n_nghost,ipz+1,iname)+a*y(m)
+      else
+        fnamexz(:,n_nghost,ipz+1,iname)=fnamexz(:,n_nghost,ipz+1,iname)+a
+      endif
 !
     endsubroutine ysum_mn_name_xz
 !***********************************************************************
