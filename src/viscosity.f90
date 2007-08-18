@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.70 2007-08-14 01:14:21 dobler Exp $
+! $Id: viscosity.f90,v 1.71 2007-08-18 23:43:37 bingert Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -98,7 +98,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.70 2007-08-14 01:14:21 dobler Exp $")
+           "$Id: viscosity.f90,v 1.71 2007-08-18 23:43:37 bingert Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -842,8 +842,13 @@ module Viscosity
 !  Add viscous heat (which has units of energy/mass) to the RHS
 !  of the entropy...
 !
-      if (lentropy) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) +  p%TT1*p%visc_heat
-!
+      if (lentropy) then
+         if (pretend_lnTT) then
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*p%TT1*p%visc_heat
+         else
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%visc_heat
+         endif
+      endif
 !  ... or temperature equation.
 !
       if (ltemperature) &

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.508 2007-08-13 17:57:47 ajohan Exp $
+! $Id: entropy.f90,v 1.509 2007-08-18 23:43:37 bingert Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ugss,Ma2,fpres
+! PENCILS PROVIDED ugss,Ma2,fpres,uglnTT
 !
 !***************************************************************
 module Entropy
@@ -207,7 +207,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.508 2007-08-13 17:57:47 ajohan Exp $")
+           "$Id: entropy.f90,v 1.509 2007-08-18 23:43:37 bingert Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1602,7 +1602,11 @@ module Entropy
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_TT1)=.true.
       endif
-      if (pretend_lnTT) lpenc_requested(i_divu)=.true.
+      if (pretend_lnTT) then
+         lpenc_requested(i_uglnTT)=.true.
+         lpenc_requested(i_divu)=.true.
+         lpenc_requested(i_cv1)=.true.
+      endif
       if (lgravr) lpenc_requested(i_r_mn)=.true.
       if (lheatc_simple) then
         lpenc_requested(i_rho1)=.true.
@@ -1736,6 +1740,10 @@ module Entropy
         lpencil_in(i_uu)=.true.
         lpencil_in(i_gss)=.true.
       endif
+      if (lpencil_in(i_uglnTT)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_glnTT)=.true.
+      endif
       if (lpencil_in(i_Ma2)) then
         lpencil_in(i_u2)=.true.
         lpencil_in(i_cs2)=.true.
@@ -1775,6 +1783,9 @@ module Entropy
 ! ugss
       if (lpencil(i_ugss)) &
           call u_dot_grad(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
+! for pretend_lnTT
+      if (lpencil(i_uglnTT)) &
+          call u_dot_grad(f,iss,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_ss)
 ! fpres
       if (lpencil(i_fpres)) then
         if (leos_idealgas) then
@@ -1867,12 +1878,20 @@ module Entropy
       endif
 !
 !  Advection of entropy.
-!
-      if (ladvection_entropy) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
+      !
+      if (ladvection_entropy) then
+         if (pretend_lnTT) then 
 !
 !  If pretend_lnTT=.true., we pretend that ss is actually lnTT
 !
-      if (pretend_lnTT) df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-p%divu*p%ss
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma1-p%uglnTT
+         else
+!
+!  regular case with entropy
+!
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
+         endif
+      endif
 !
 !  Calculate viscous contribution to entropy
 !
@@ -2275,7 +2294,12 @@ module Entropy
       ! NB: chix = K/(cp rho) is needed for diffus_chi calculation
       chix = p%rho1*hcond*p%cp1
       call dot(p%glnTT,p%glnTT,g2)
-      thdiff = p%rho1*hcond * (p%del2lnTT + g2)
+      !
+      if (pretend_lnTT) then
+         thdiff = hcond * (p%del2lnTT + g2)
+      else
+         thdiff = p%rho1*hcond * (p%del2lnTT + g2)
+      endif
 !
 !  add heat conduction to entropy equation
 !
