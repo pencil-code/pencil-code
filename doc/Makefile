@@ -61,15 +61,15 @@ manual_dvi: manual.tex diag-table.tex
 manual.dvi: driver_dvi manual_dvi
 	@true  # dummy cmd, so make won't apply generic rule at end
 
-manual.pdf: driver_ manual_dvi		# don't use driver_dvipdfm...
-	dvipdfm -p a4 manual.dvi
-
-# If dvipdfm does not work well for you, use this instead:
-#manual.pdf: driver_ps2pdf manual.ps
-#	$(PS2PDF) manual.ps
-
-manual_pdf:driver_ps2pdf manual.ps
+# By now (Aug 2007), on Ubuntu and RedHat the route through .ps seems to
+# be the only way to get hyperlinks.
+manual.pdf:driver_ps2pdf manual.ps
 	$(PS2PDF) manual.ps
+
+# This is what we used previously: dvipdfm (works fine on Gentoo, but
+# probably not much else)
+manual_pdf: driver_ manual_dvi		# don't use driver_dvipdfm...
+	dvipdfm -p a4 manual.dvi
 
 manual.ps: driver_ps2pdf manual_dvi
 	$(DVIPS) manual -o manual.ps
