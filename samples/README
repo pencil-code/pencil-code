@@ -1,0 +1,43 @@
+#$Id: README,v 1.2 2007-08-18 06:22:49 brandenb Exp $
+#
+#  list of README file with maintainer names, produced using
+#  (grep -A4 Maintainer */{,*/}README | grep "<"; echo "") >> README 
+#
+
+backwards-compatible/README-    Axel Brandenburg <brandenb@nordita.dk>
+chiral-diffusion/README-    Axel Brandenburg <brandenb@nordita.dk>
+conv-slab-noequi/README-    Wolfgang <nobody[at]nowhere.net>
+conv-slab-noequi/README-    Sven Bingert <mail@bingert.com>
+conv-slab/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
+cosmicray/README-    Andrew Snodin <Andrew.Snodin@newcastle.ac.uk>
+dust_turb_globaldisk/README-    Wladimir Lyra <wlyra@astro.uu.se>
+dust-vortex/README-    Anders <nobody[at]nowhere.net>
+forced-boundary/README-    Sven <nobody[at]nowhere.net>
+geodynamo/README-    Graeme Sarson <G.R.Sarson@newcastle.ac.uk>
+helical-MHDturb/README-    Axel Brandenburg <brandenb@nordita.dk>
+hexagon/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
+interlocked-fluxrings/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
+interstellar/README-    Tony Mee <A.J.Mee@ncl.ac.uk>
+interstellar/README-    Axel Brandenburg <brandenb@nordita.dk>
+kin-dynamo/README-    Axel Brandenburg <brandenb@nordita.dk>
+mdwarf/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
+meissner/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
+most-modules/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
+MRI-turbulence_hyper/README-    Anders Johansen <johansen@mpia.de>
+no-modules/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
+random_uu_particles/README-    Anders <nobody[at]nowhere.net>
+sound-spherical-noequi/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
+testfield/README-    Axel Brandenburg <brandenb@nordita.dk>
+0d-tests/heating_ionize/README-    Tobias Heinemann <T.Heinemann@damtp.cam.ac.uk>
+0d-tests/heating_ionize/README-    Axel Brandenburg <brandenb@nordita.dk>
+1d-tests/ambipolar_diffusion/README-    Wladimir Lyra <wlyra@astro.uu.se>
+1d-tests/sod_10/README-    Axel Brandenburg <brandenb@nordita.dk>
+1d-tests/solar-atmosphere/README-    Tobi <nobody[at]nowhere.net>
+2d-tests/A3+chi11+Ra1e5/README-    Wolfgang Dobler <Wolfgang.Dobler@ucalgary.ca>
+2d-tests/A3+chi11+Ra1e5/README-    Axel Brandenburg <brandenb@nordita.dk>
+2d-tests/cylindrical_gdisk/README-    Wladimir Lyra <wlyra@astro.uu.se>
+2d-tests/globaldisc/README-    Wladimir Lyra <wlyra@astro.uu.se>
+2d-tests/GMSW1976/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
+2d-tests/Kelvin-Helmholtz-disc/README-    Anders <nobody[at]nowhere.net>
+2d-tests/selfgravitating-shearwave/README-    Anders <nobody[at]nowhere.net>
+
