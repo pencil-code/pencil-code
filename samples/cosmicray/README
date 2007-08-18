@@ -1,16 +1,18 @@
 Directory:
     ${PENCIL_HOME}/samples/cosmicray
 CVS-Id:
-    $Id: README,v 1.3 2007-08-17 09:23:16 ajohan Exp $
+    $Id: README,v 1.4 2007-08-18 04:33:04 brandenb Exp $
 Maintainer:
-    Andrew Snoddin <nobody[at]nowhere.net>
+    Andrew Snodin <Andrew.Snodin@newcastle.ac.uk>
 Added:
-    00-Mon-200?
+    09-Oct-2003
 Status:
-    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+    working since Oct 2003
 Recommended resolution:
-    128x128x128 (nu=eta=1.3e-3)
+    need to have suitable resolution
 Comments:
-    Comments can start on this line,
-    and continue later, as long as they are indented.
-
+    This is just a 1-D test. Precedure works in 1, 2, and 3 dimensions
+Reference:
+    Snodin, A. P., Brandenburg, A., Mee, A. J., & Shukurov, A.: 2006,
+    ``Simulating field-aligned diffusion of a cosmic ray gas,'' Monthly
+    Notices Roy. Astron. Soc. 373, 643-652
