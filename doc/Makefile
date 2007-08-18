@@ -38,7 +38,7 @@ MAY_HAVE_CHANGED='may have changed. Rerun to get'
 
 # ------------------
 
-default: manual.dvi
+default: manual.pdf
 
 all:  manual.pdf manual.dvi manual.ps.gz
 
@@ -63,7 +63,7 @@ manual.dvi: driver_dvi manual_dvi
 
 # By now (Aug 2007), on Ubuntu and RedHat the route through .ps seems to
 # be the only way to get hyperlinks.
-manual.pdf:driver_ps2pdf manual.ps
+manual.pdf: driver_ps2pdf manual.ps
 	$(PS2PDF) manual.ps
 
 # This is what we used previously: dvipdfm (works fine on Gentoo, but
