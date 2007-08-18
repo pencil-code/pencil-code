@@ -4,14 +4,14 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.3 2005-06-26 17:34:28 eos_merger_tony Exp $',
-  nt=1000000, it1=100, isave=100, itorder=3,
-  cdt=0.4, cdtv=0.2, dtmin=1e-6,
-  dsnap=20., dvid=2.0,
+  cvsid='$Id: run.in,v 1.4 2007-08-18 05:57:26 brandenb Exp $',
+  nt=1000, it1=100, isave=100, itorder=3
+  cdt=0.4, cdtv=0.2, dtmin=1e-6
+  dsnap=20., dvid=2.0
+/
+&eos_run_pars
 /
 &hydro_run_pars
-  ivisc='rho_nu-const',
-  nu=.0011
 /
 &density_run_pars
   lupw_lnrho=T
@@ -19,7 +19,11 @@
 &grav_run_pars
 /
 &entropy_run_pars
-  Fbot=.001375, lcalc_heatcond_simple=.true., lmultilayer=.false.
-  Kbot=.0011, lcalc_heatcond_constchi=.false.
+  iheatcond='K-const', hcond0=.0011
+  lmultilayer=.false.
   lupw_ss=T
+/
+&viscosity_run_pars
+  ivisc='rho_nu-const',
+  nu=.0011
 /

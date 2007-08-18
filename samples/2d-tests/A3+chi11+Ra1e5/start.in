@@ -4,18 +4,21 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.4 2006-08-07 10:46:59 ajohan Exp $',
-  ip=15,			! debugging parameter
-  xyz0  = -1.5, -1.5, -1.10,	! first corner of box
-  xyz1  =  1.5,  1.5, -0.10,	! second corner of box
-  lperi = T , T , F,		! periodic direction?
+  cvsid='$Id: start.in,v 1.5 2007-08-18 05:57:26 brandenb Exp $',
+  ip=15,                        ! debugging parameter
+  xyz0  = -1.5, -1.5, -1.10,    ! first corner of box
+  xyz1  =  1.5,  1.5, -0.10,    ! second corner of box
+  lperi = T , T , F,            ! periodic direction?
   bcz = 's','s','a','a2','c1:c2'
+/
+&eos_init_pars
+  cs0=0.2887, rho0=1.
 /
 &hydro_init_pars
   inituu='gaussian-noise', ampluu=1e-2
 /
 &density_init_pars
-  initlnrho='polytropic_simple', mpoly=1.0, cs0=0.2887, rho0=1.
+  initlnrho='polytropic_simple', mpoly=1.0
 /
 &grav_init_pars
   gravz_profile='const', gravz=-1.,

@@ -1,16 +1,16 @@
 Directory:
     ${PENCIL_HOME}/samples/2d-tests/A3+chi11+Ra1e5
 CVS-Id:
-    $Id: README,v 1.5 2007-08-17 09:23:14 ajohan Exp $
+    $Id: README,v 1.6 2007-08-18 05:57:26 brandenb Exp $
 Maintainer:
-    Wolfgang <nobody[at]nowhere.net>
-    Axel
+    Wolfgang Dobler <Wolfgang.Dobler@ucalgary.ca>
+    Axel Brandenburg <brandenb@nordita.dk>
 Added:
-    00-Mon-200?
+    09-Nov-2003
 Status:
-    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+    unclear
 Recommended resolution:
-    128x128x128 (nu=eta=1.3e-3)
+    150x51 with nu=.0011 and Kbot=.0011
 Comments:
     Trying to reproduce: Table 2, column 1, of BNPST90
 
