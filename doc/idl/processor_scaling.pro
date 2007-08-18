@@ -4,6 +4,7 @@ if !d.name eq 'PS' then begin
 end
 ;
 ;  mv idl.ps ../figs/processor_scaling.ps
+;  convert ../figs/processor_scaling.ps ~/shared/My\ Pictures/Figures/Pencil/processor_scaling.png
 ;
 Nx=1.
 Ny=256.
