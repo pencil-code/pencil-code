@@ -208,7 +208,7 @@ end
 ; ---------------------------------------------------------------------- ;
 
 niter = 15
-Nx = 33                          ; typically 2^k+1 or 2^k
+Nx = 34                          ; typically 2^k+1 or 2^k
 
 x = linspace(0.D,1.,Nx)
 dx = x[1]-x[0]
@@ -246,12 +246,10 @@ for i=0,niter-1 do begin
 endfor
 
 ophline, 0.204050
-if (not running_gdl_p()) then begin
   esrg_legend, labels[1:*], $
                COLOR=colors[1:*], $
                /BOX, POS=[0.45, 0.1, 0.7, 0.4], $
                XSTRETCH=0.5
-endif
 
 
 end

@@ -438,12 +438,10 @@ endfor
 
 
 ophline, [0.315802, 0.246309, 0.4223]
-if (not running_gdl_p()) then begin
   esrg_legend, labels[1:*], $
                COLOR=colors[1:*], $
                /BOX, POS=[0.45, 0.1, 0.7, 0.4], $
                XSTRETCH=0.5
-endif
 
 
 restore_state
