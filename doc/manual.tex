@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.364 2007-08-13 10:21:45 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.365 2007-08-18 08:42:41 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2007-08-13 10:21:45 $ $,~ $ $Revision: 1.364 $ $}
+%\date{$ $Date: 2007-08-18 08:42:41 $ $,~ $ $Revision: 1.365 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2007-08-13 10:21:45 $ $,~ $ $Revision: 1.364 $ $}\\
+  \emph{$ $Date: 2007-08-18 08:42:41 $ $,~ $ $Revision: 1.365 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -459,6 +459,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
   torkel & \htmladdnormallink{Ulf Torkelsson}{http://fy.chalmers.se/~torkel/} & Chalmers University\\
   theine & \htmladdnormallink{Tobias (Tobi) Heinemann}{http://www.nordita.dk/~theine/} & Nordita and University of Copenhagen\\
   tarek & \htmladdnormallink{Tarek A. Yousef}{http://www.pvv.ntnu.no/~tarek/} & University of Trondheim\\
+  steveb & \htmladdnormallink{Steve Berukoff}{http://www.physics.ucla.edu/~steveb/} & UCLA \\
   snod & \htmladdnormallink{Andrew Snodin}{http://www.ncl.ac.uk/math/postgrad/postgrads.htm} & University of Newcastle\\
   pkapyla & \htmladdnormallink{Petri K\"apyl\"a}{http://cc.oulu.fi/~pkapyla/} & Oulu University and Kiepenheuer Institute\\
   nils & \htmladdnormallink{Nils Erland L. Haugen}{http://www.phys.ntnu.no/~nilshau/index2.html} & University of Trondheim\\
@@ -469,10 +470,10 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
   mcmillan & \htmladdnormallink{David McMillan}{http://brunhes.eas.yorku.ca/dave/CV/} & York University, Toronto\\
   mattias & \htmladdnormallink{Mattias Christensson}{http://www.nordita.dk/~mattias/} & formerly at Nordita\\
   karlsson & \htmladdnormallink{Torgny Karlsson}{http://www.nordita.dk/people/people.php?variant=single\&cn=Torgny+Karlsson} & Nordita\\
+  dhruba & \htmladdnormallink{ Dhrubaditya Mitra}{http://www.maths.qmul.ac.uk/~dhruba/} & Queen Mary College\\
   dorch & \htmladdnormallink{Bertil Dorch}{http://www.astro.ku.dk/~dorch/} & University of Copenhagen\\
   dobler & \htmladdnormallink{Wolfgang Dobler}{http://www.kis.uni-freiburg.de/~dobler/} & University of Calgary\\
-  dintrans & \htmladdnormallink{Boris
-Dintrans}{http://www.ast.obs-mip.fr/dintrans} &  Observatoire Midi-Pyr\'en\'ees, Toulouse\\
+  dintrans & \htmladdnormallink{Boris Dintrans}{http://www.ast.obs-mip.fr/dintrans} &  Observatoire Midi-Pyr\'en\'ees, Toulouse\\
   christer & \htmladdnormallink{Christer Sandin}{http://www.astro.uu.se/~christer/CS_index.html} & University of Uppsala\\
   brandenb & \htmladdnormallink{Axel Brandenburg}{http://www.nordita.dk/~brandenb/} & Nordita\\
   bing & \htmladdnormallink{Sven Bingert}{http://www.kis.uni-freiburg.de/~peter/corona/} & Kiepenheuer Institute\\
@@ -3334,7 +3335,7 @@ However, for finite difference codes some communication is required,
 and the amount of communication depends depends on spatial order of the
 scheme, $Q$.
 The {\sc Pencil Code} works by default with sixth order finite differences,
-so $Q=6$, i.e.\ one needs 6 ghostzones, 3 on each end of the mesh.
+so $Q=6$, i.e.\ one needs 6 ghost zones, 3 on each end of the mesh.
 With $Q\neq0$ the number of points per processor is
 \begin{equation}
 {N_w^{\rm(eff)}\over P_w}=
@@ -5074,6 +5075,158 @@ The answer is yes; just go to:
 \index{Programming style}
 \index{Style}
 
+The {\sc Pencil Code} has expanded approximately linearly in the number of
+lines of code and the number of subroutines (Fig.~\ref{pfile-size}).
+The increase in the functionality of the code is documented by the
+rise in the number of sample problems (Fig.~\ref{pfile-size}).
+In order to keep the development of the code going, it it important
+that the users are able to understand and modify the code.
+In this section we explain first how to orient yourself in the code
+and to understand what is in it, and then to modify it according to
+your needs.
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[htb]
+  \centering
+  \includegraphics%
+    [width=.6\textwidth,keepaspectratio]%
+    {pfile-size}
+  \caption{Number of lines of code and the number of subroutines
+  since the end of 2001. The glitch in the Summer of 2005 was the
+  moment when the developments on the side branch (eos branch) were
+  merged with the main trunk of the code. Note the approximately
+  linear scaling with time.}
+  \label{pfile-size}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[htb]
+  \centering
+  \includegraphics%
+    [width=.6\textwidth,keepaspectratio]%
+    {pauto-tests}
+  \caption{Number of tests in the sample directory that are
+  used in the nightly auto tests. Note again the approximately
+  linear scaling with time.}
+  \label{pauto-tests}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+\section{Understanding the code}
+
+Understanding the code means looking through the code.
+This is not normally done by just printing out the entire code,
+but by searching your way through the code in order to address
+your questions.
+The general concept will be illustrated here with an example.
+
+\subsection{Example: how is the continuity equation being solved?}
+
+All the physics modules are solved in the routine \code{pde}, which
+is located in the file and module \file{Equ}.
+Somewhere in the \code{pde} subroutine you find the line
+\begin{verbatim}
+        call dlnrho_dt(f,df,p)
+\end{verbatim}
+This means that here the part belonging to $\partial\ln\rho/\partial t$
+is being assembled.
+Using the \cmd{grep} command you will find that this routine is located
+in the module \code{density}, so look in there and try to understand
+the pieces in this routine.
+We quickly arrive at the following piece of code,
+\begin{verbatim}
+!
+!  continuity equation
+!
+      if (lcontinuity_gas) then
+        if (ldensity_nolog) then
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%ugrho - p%rho*p%divu
+        else
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
+        endif
+      endif
+\end{verbatim}
+where, depending on some logicals that tell you whether the continuity
+equation should indeed be solved and whether we do indeed want to
+solve for the logarithmic density and not the actual density,
+the correct right hand side is being assembled.
+Note that all these routines always only \emph{add} to the existing
+\code{df(l1:l2,m,n,ilnrho)} array and never reset it.
+Resetting is only done by the timestepping routine.
+Next, the pieces \code{p\%ugrho} and \code{p\%rho*p\%divu} are being
+subtracted.
+These are \emph{pencils}, which are organized in the \emph{structure}
+with the name \code{p}.
+In the subroutine \code{pencil_criteria_density} you find under which
+conditions these pencils are requested.
+Using \cmd{grep}, you also find where they are calculated.
+For example \code{p\%ugrho} is calculated in \file{density.f90}; see
+\begin{verbatim}
+          call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
+\end{verbatim}
+So this is a special subroutine to calculate the $\uv\cdot\nabla$ operator,
+where there is the possibility of upwinding, but this is \emph{not}
+the default.
+The piece \code{divu} is calculated in \file{hydro.f90} in the line
+\begin{verbatim}
+!
+!  calculate uij and divu, if requested
+!
+      if (lpencil(i_uij)) call gij(f,iuu,p%uij,1)
+      if (lpencil(i_divu)) call div_mn(p%uij,p%divu,p%uu)
+\end{verbatim}
+Note that the divergence calculation uses the velocity gradient
+matrix as input, so no new derivatives are recalculated.
+Again, using \cmd{grep}, you will find that this calculation and
+many other ones happen in the module and file \file{sub.f90}.
+The various derivatives that enter here have been calculated using
+the $\code{gij}$ routine, which calls the \code{der} routine, e.g.\ like so
+\begin{verbatim}
+      k1=k-1
+      do i=1,3
+        do j=1,3
+          if (nder == 1) then
+            call der(f,k1+i,tmp,j)
+\end{verbatim}
+For all further details you just have to follow the trail.
+So if you want to know how the derivatives are calculated,
+you have to look in \code{deriv.f90}, and only here is it
+where the indices of the \code{f} array are being addressed.
+
+If you are interested in magnetic fields, you have to look
+in the \file{magnetic.f90} file. The right hand side of
+the equation is assembled in the routine
+\begin{verbatim}
+!***********************************************************************
+    subroutine daa_dt(f,df,p)
+!
+!  magnetic field evolution
+!
+!  calculate dA/dt=uxB+3/2 Omega_0 A_y x_dir -eta mu_0 J
+!  for mean field calculations one can also add dA/dt=...+alpha*bb+delta*WXJ
+!  add jxb/rho to momentum equation
+!  add eta mu_0 j2/rho to entropy equation
+!
+\end{verbatim}
+where the header tells you already a little bit of what comes below.
+It is also here where ohmic heating effects and other possible effects
+on other equations are included, e.g.\
+\begin{verbatim}
+!
+!  add eta mu_0 j2/rho to entropy or temperature equation
+!
+      if (lentropy .and. lohmic_heat) then
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
+                          + etatotal*mu0*p%j2*p%rho1*p%TT1
+      endif
+\end{verbatim}
+
+We leave it with this and encourage the user to do similar
+inspection work on an number of other examples.
+If you think you find an error, file a ticket with the
+\cmd{trac} bug tracker. You can of course also repair it!
+
 \section{Adapting the code}
 \subsection{The Pencil Code coding standard}
 As with any code longer than a few lines the appearance and layout
@@ -5550,7 +5703,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2007-08-13 10:21:45 $ $,~ $ $Revision: 1.364 $ $}
+  \hfill\normalsize\rm$ $Date: 2007-08-18 08:42:41 $ $,~ $ $Revision: 1.365 $ $}
 
 \section{Timings}
 
@@ -5707,6 +5860,7 @@ where \code{nw=nx*ny*nz}.
   32 & Steno & 0.081& $256^3$ &nomag/entro/cool& 4x8 & 20-jun-06 & AB \\
   32 & Steno & 0.085& $256^3$ &nomag/entro/cool/sh& 4x8 & 20-jun-06 & AB \\
   32 & Steno & 0.235& $512^2\times256$ &mag/entro& 4x8 &  9-jul-06 & AB \\
+  32 & Sanss & 0.273& $128\times256^2$ &nomag& 4x8 &  3-jul-07 & AB \\
   64 & fe1   & 0.24 & $256^3$ & magn/noentro &  8x8   &  2-sep-02 & AB \\
   64 & giga  & 0.11 & $256^3$ &nomag/noentro&  4x16  & 29-apr-03 & AB \\
   64 & giga  & 0.23 & $256^3$ &nomag/noentro/hyp&4x16& 8-dec-03& AB \\
@@ -7008,7 +7162,7 @@ J_y=A_{x,yx}+A_{y,yy}-A_{y,xx}-A_{y,yy}=A_{x,yx}-A_{y,xx}
 \end{center}\caption[]{
 Alfv\'en wave for $\Bv_0=(1,2,0)$ and $\kv=(1,2,0)$ after $t=2\pi$.
 The wave travels in the direction of $\kv$.
-The red symbolds are for the bidiagonal scheme.
+The red symbols are for the bidiagonal scheme.
 Already for $16^2$ mesh points there are no clear differences.
 For $8^2$ mesh points both schemes are equally imprecise regarding
 the phase error, but the amplitude error is still quite small
@@ -8880,7 +9034,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.364 2007-08-13 10:21:45 dobler Exp $ $}
+$ $Id: manual.tex,v 1.365 2007-08-18 08:42:41 brandenb Exp $ $}
 
 
 \end{document}
