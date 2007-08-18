@@ -1,7 +1,7 @@
 Directory:
     ${PENCIL_HOME}/samples/2d-tests/A3+chi11+Ra1e5
 CVS-Id:
-    $Id: README,v 1.6 2007-08-18 05:57:26 brandenb Exp $
+    $Id: README,v 1.7 2007-08-18 06:28:06 brandenb Exp $
 Maintainer:
     Wolfgang Dobler <Wolfgang.Dobler@ucalgary.ca>
     Axel Brandenburg <brandenb@nordita.dk>
@@ -13,14 +13,12 @@ Recommended resolution:
     150x51 with nu=.0011 and Kbot=.0011
 Comments:
     Trying to reproduce: Table 2, column 1, of BNPST90
-
     Aspect ratio 3, density contrast 11.
     Stratification: cs0=0.2887, rho0=1
     Resolution: 150 x 51 (in the x and z directions).
     Ra=1e5, Fbot=0.001375, nu=K=0.0011
     typical timestep: 8.7e-3.
-
-    The actual run has been done in directory:
+    The run has been done originally in the directory:
     pencil-code/runs/slab_conv/Hurlburt84-Ra1e5.
     The run never became steady: the downdrafts keep sweeping back and
-    forth.
+    forth. It is unclear whether this is correct.

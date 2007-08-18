@@ -4,7 +4,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.5 2007-08-18 05:57:26 brandenb Exp $',
+  cvsid='$Id: start.in,v 1.6 2007-08-18 06:28:06 brandenb Exp $',
   ip=15,                        ! debugging parameter
   xyz0  = -1.5, -1.5, -1.10,    ! first corner of box
   xyz1  =  1.5,  1.5, -0.10,    ! second corner of box
@@ -21,10 +21,10 @@
   initlnrho='polytropic_simple', mpoly=1.0
 /
 &grav_init_pars
-  gravz_profile='const', gravz=-1.,
-  zref=-0.10,
+  gravz_profile='const', gravz=-1.
+  zref=-0.10
   z1=-1.10, z2=-0.10            ! for pvert.pro
 /
 &entropy_init_pars
-  mpoly0=1.                     ! for pvert.pro
+  mpoly0=1.
 /
