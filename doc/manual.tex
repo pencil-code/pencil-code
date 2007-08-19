@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.366 2007-08-19 08:55:28 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.367 2007-08-19 10:03:32 bingert Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2007-08-19 08:55:28 $ $,~ $ $Revision: 1.366 $ $}
+%\date{$ $Date: 2007-08-19 10:03:32 $ $,~ $ $Revision: 1.367 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2007-08-19 08:55:28 $ $,~ $ $Revision: 1.366 $ $}\\
+  \emph{$ $Date: 2007-08-19 10:03:32 $ $,~ $ $Revision: 1.367 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3849,7 +3849,7 @@ entropy gradient determines convective (in)stability, the
 \emph{Rayleigh number} is proportional to the entropy gradient
 of the associated hydrostatic reference solution, etc.
 The equation solved is
-\begin{equation}
+\begin{equation} \label{entropy-eq}
   \varrho T\frac{Ds}{Dt}
    =  \Heat - \Cool
       + \Div(K\grad T)
@@ -3927,6 +3927,21 @@ u_{i,j}\tau_{ij}&=&\frac{1}{2}(u_{i,j}+u_{j,i})(2\nu\rho{\sf S}_{ij})\\
 \end{eqnarray}
 which is positive definite.
 
+\subsubsection{Alternative describtion}
+\index{pretend_lnTT}
+By setting \emph{pretend_lnTT=T} the temperature is used instead of the
+entropy. 
+
+With this choice the entropy equation
+\begin{equation}
+  \frac{\partial s}{\partial t} = \frac{1}{\rho T}\mathbf{RHS} - \uv\grad s \nonumber
+\end{equation}
+is replaced by
+\begin{equation}
+\frac{\partial\ln T}{\partial t} =\frac{1}{c_v\rho T}\mathbf{RHS}
+            -\left(\gamma-1\right) \Div \uv - \uv\cdot \grad \ln T \nonumber
+\end{equation}
+where $\mathbf{RHS}$ is the right hand side of equation (\ref{entropy-eq}). 
 
 % ---------------------------------------------------------------------- %
 
@@ -5723,7 +5738,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2007-08-19 08:55:28 $ $,~ $ $Revision: 1.366 $ $}
+  \hfill\normalsize\rm$ $Date: 2007-08-19 10:03:32 $ $,~ $ $Revision: 1.367 $ $}
 
 \section{Timings}
 
@@ -7818,7 +7833,10 @@ double precision, $\varepsilon\approx10^{-15}$.
   \var{bcz} [(\code{'p'}, \code{'p'}, \ldots)]
                & boundary conditions. See Sect.~\ref{boundconds} for a
                  discussion of where and how to set these. \\
-
+  \var{pretend_lnTT} [\code{F}]
+                & \index{pretend_lnTT} 
+		selects $\ln T$ as fundamental thermodynamic variable
+		in the entropy module \\ 
                  \\
 %
 \midrule
@@ -9054,7 +9072,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.366 2007-08-19 08:55:28 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.367 2007-08-19 10:03:32 bingert Exp $ $}
 
 
 \end{document}
