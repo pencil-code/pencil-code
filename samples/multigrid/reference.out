@@ -1,0 +1,727 @@
+/wkspace3/TMPDIR/samples/multigrid
+1 CPUs
+Linux nl6 2.6.10-6-686 #1 Fri Sep 15 12:58:24 UTC 2006 i686 GNU/Linux
+Setting nodelist to (nl6)
+1 nodes, 1 CPU(s) per node
+Generic setup; hostname is <nl6>
+Non-MPI version
+datadir = data
+Setting nodelist to node nl6
+$mpi            =  <0>
+$ncpus          =  <1>
+$npops          =  <>
+$local_disc     =  <0>
+$one_local_disc =  <1>
+$remote_top   	=  <0>
+$local_binary 	=  <0>
+$datadir      	=  <data>
+$SCRATCH_DIR  	=  </scratch/pencil-14025>
+$hn           	=  <nl6>
+$masterhost	=  <>
+$mpirun       	=  <>
+$mpirunops    	=  <>
+$mpirunops2   	=  <>
+$x_ops        	=  <>
+$NODELIST     	=  <nl6>
+$SSH          	=  <ssh>
+$SCP          	=  <scp>
+$PARENT_PID   	=  <14025>
+$copysnapshots  =  <copy-snapshots>
+$particles      =  <0>
+Sun Aug 19 08:08:39 CEST 2007
+    src/start.x 
+ get_snapdir: dir=
+ data/def_var.pro
+CVS: io_dist.f90        v. 1.93         (wlyra     ) 2006/11/17 07:03:41
+CVS: eos_idealgas.f90   v. 1.94         (bingert   ) 2007/08/11 08:38:47
+CVS: noshock.f90        v. 1.10         (dobler    ) 2006/11/30 09:03:36
+CVS: noviscosity.f90    v. 1.10         (dobler    ) 2007/01/05 20:08:58
+CVS: hydro.f90          v. 1.378        (wlyra     ) 2007/08/17 17:11:28
+CVS: nogravity.f90      v. 1.9          (dobler    ) 2007/08/14 01:14:21
+CVS: selfgravity.f90    v. 1.25         (dobler    ) 2007/08/16 23:19:23
+CVS: density.f90        v. 1.340        (brandenb  ) 2007/08/15 11:45:04
+CVS: noforcing.f90      v. 1.22         (bingert   ) 2007/05/23 13:39:42
+CVS: noentropy.f90      v. 1.98         (wlyra     ) 2007/03/01 02:53:34
+CVS: nomagnetic.f90     v. 1.84         (brandenb  ) 2007/08/11 06:39:53
+CVS: noradiation.f90    v. 1.35         (dobler    ) 2006/11/30 09:03:36
+CVS: nopscalar.f90      v. 1.25         (wlyra     ) 2007/01/31 12:50:12
+CVS: nochiral.f90       v. 1.10         (wlyra     ) 2007/01/31 12:50:12
+CVS: nodustvelocity.f90 v. 1.32         (wlyra     ) 2007/01/31 12:50:12
+CVS: nodustdensity.f90  v. 1.32         (wlyra     ) 2007/01/31 12:50:12
+CVS: noneutralvelocity. v. 1.2          (wlyra     ) 2007/02/28 16:21:17
+CVS: noneutraldensity.f v. 1.3          (wlyra     ) 2007/08/17 13:08:31
+CVS: nocosmicray.f90    v. 1.15         (wlyra     ) 2007/01/31 12:50:12
+CVS: nocosmicrayflux.f9 v. 1.6          (dobler    ) 2006/11/30 09:03:35
+CVS: nointerstellar.f90 v. 1.32         (wlyra     ) 2007/01/31 12:50:12
+CVS: noshear.f90        v. 1.13         (dobler    ) 2006/11/30 09:03:36
+CVS: nospecial.f90      v. 1.27         (brandenb  ) 2007/02/26 21:44:21
+CVS: start.f90          v. 1.169        (brandenb  ) 2007/08/11 21:03:52
+CVS: ???????            v.              (          ) [No CVS Id given]  
+ bcx1,bcx2= a  p  p  p  p   : a  p  p  p  p  
+ bcy1,bcy2= a  p  p  p  p   : a  p  p  p  p  
+ bcz1,bcz2= a  p  p  p  p   : a  p  p  p  p  
+ lperi=  F F F
+
+ warning_lperi: inconsistency, j= 1 , lperi(j)= F
+ bc=a      p      p      p      
+ any(bc=='p'.or. bc=='she'), .not.lperi(j) =  T T
+ any(bcx/='p'.and.bcx/='she'), lperi(j) =  T T
+
+ warning_lperi: inconsistency, j= 2 , lperi(j)= F
+ bc=a      p      p      p      
+ any(bc=='p'.or. bc=='she'), .not.lperi(j) =  T T
+ any(bcx/='p'.and.bcx/='she'), lperi(j) =  T T
+
+ warning_lperi: inconsistency, j= 3 , lperi(j)= F
+ bc=a      p      p      p      
+ any(bc=='p'.or. bc=='she'), .not.lperi(j) =  T T
+ any(bcx/='p'.and.bcx/='she'), lperi(j) =  T T
+ [bad BCs in start.in only affects post-processing of start data, not the run]
+ Reading print formats from print.in
+ rprint_list: nname= 1
+ rprint_list: ix,iy,iz,iz2= -1 -1 -1 -1
+ rprint_list: nnamev= 0
+ rprint_list: nnamez= 0
+ rprint_list: nnamex= 0
+ rprint_list: nnamex= 0
+ rprint_list: nnamer= 0
+ rprint_list: nnamexz= 0
+ rprint_list: nnamexy= 0
+ rprint_list: nnamerz= 0
+ rprint_register: run through parse list
+ rprint_hydro: run through parse list
+ rprint_density: run through parse list
+ rprint_noforcing: run through parse list
+ nxgrid,nygrid,nzgrid= 32 32 32
+ units_general: unit_velocity= 1.
+ units_general: unit_density= 1.
+ units_general: unit_length= 1.
+ initialize_eos: unit_temperature= 4.810888382008592E-9
+ initialize_eos: cp,lnTT0,cs0= 1. 0.4054652 1.
+ diffusion: nothing
+ select_eos_variable: Using lnrho and ss
+ (x,y,z)(point)= -0.032258064 -0.032258064 -0.032258064
+ (x,y,z)(point2)= -0.6774193 -0.6774193 -0.6774193
+ timestep based on CFL cond; cdt= 0.4
+
+ init_uu: nothing
+ blob: variable i,ampl= 4 1.
+ init_lnrho: initlnrho(1) = blob
+ init_lnrho: cs2bot,cs2top= 1. 1.
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: ,  -233.    ,   69.1    ,   4.20     F
+nxyz(1), residual (min,max,rms), pres(h):   16: ,  -1.02    ,   7.19    ,  0.877     F
+nxyz(1), residual (min,max,rms), pres(h):    8: ,  -1.10    ,   0.00    ,  0.650     F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,   1.00    ,  0.354     F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: ,  -301.    ,   29.1    ,   58.1     F
+nxyz(1), residual (min,max,rms), pres(h):   16: ,  -1.10    ,   152.    ,   32.0     F
+nxyz(1), residual (min,max,rms), pres(h):    8: ,  -36.2    ,   0.00    ,   10.3     F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,   6.66    ,   2.33     F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: ,  -142.    ,   15.9    ,   29.1     F
+nxyz(1), residual (min,max,rms), pres(h):   16: ,  -7.42    ,   61.7    ,   15.6     F
+nxyz(1), residual (min,max,rms), pres(h):    8: ,  -19.3    ,   1.42    ,   5.66     F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,   3.78    ,   1.30     F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: ,  -70.0    ,   16.8    ,   14.7     F
+nxyz(1), residual (min,max,rms), pres(h):   16: ,  -6.05    ,   30.2    ,   7.81     F
+nxyz(1), residual (min,max,rms), pres(h):    8: ,  -9.56    ,   1.40    ,   3.05     F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,   2.11    ,  0.715     F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: ,  -34.9    ,   8.00    ,   7.45     F
+nxyz(1), residual (min,max,rms), pres(h):   16: ,  -3.70    ,   15.0    ,   3.97     F
+nxyz(1), residual (min,max,rms), pres(h):    8: ,  -5.00    ,   1.04    ,   1.63     F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,   1.19    ,  0.387     F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: ,  -17.4    ,   4.83    ,   3.79     F
+nxyz(1), residual (min,max,rms), pres(h):   16: ,  -1.99    ,   7.61    ,   2.03     F
+nxyz(1), residual (min,max,rms), pres(h):    8: ,  -2.66    ,  0.861    ,  0.872     F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  0.669    ,  0.207     F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: ,  -8.75    ,   3.07    ,   1.94     F
+nxyz(1), residual (min,max,rms), pres(h):   16: ,  -1.28    ,   3.89    ,   1.05     F
+nxyz(1), residual (min,max,rms), pres(h):    8: ,  -1.44    ,  0.645    ,  0.467     F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  0.370    ,  0.110     F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: ,  -4.41    ,   1.85    ,  0.996     F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -0.815    ,   2.00    ,  0.545     F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -0.786    ,  0.451    ,  0.251     F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  0.202    ,  5.835E-02 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: ,  -2.23    ,   1.08    ,  0.514     F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -0.523    ,   1.04    ,  0.284     F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -0.434    ,  0.301    ,  0.135     F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  0.109    ,  3.067E-02 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+Iteration   10/ 100
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: ,  -1.14    ,  0.611    ,  0.266     F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -0.325    ,  0.539    ,  0.149     F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -0.242    ,  0.193    ,  7.232E-02 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  5.742E-02,  1.604E-02 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -0.591    ,  0.335    ,  0.138     F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -0.206    ,  0.282    ,  7.872E-02 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -0.136    ,  0.120    ,  3.890E-02 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  2.975E-02,  8.339E-03 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -0.309    ,  0.177    ,  7.200E-02 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -0.128    ,  0.149    ,  4.165E-02 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -7.686E-02,  7.296E-02,  2.092E-02 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.509E-02,  4.316E-03 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -0.162    ,  9.629E-02,  3.763E-02 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -7.657E-02,  7.875E-02,  2.209E-02 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -4.354E-02,  4.328E-02,  1.124E-02 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  7.487E-03,  2.224E-03 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -8.544E-02,  5.562E-02,  1.972E-02 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -4.468E-02,  4.193E-02,  1.174E-02 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.469E-02,  2.516E-02,  6.031E-03 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  3.824E-03,  1.142E-03 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -4.520E-02,  3.165E-02,  1.035E-02 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.550E-02,  2.244E-02,  6.247E-03 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -1.399E-02,  1.435E-02,  3.228E-03 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.985E-03,  5.850E-04 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -2.400E-02,  1.777E-02,  5.442E-03 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -1.429E-02,  1.207E-02,  3.324E-03 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -7.912E-03,  8.046E-03,  1.723E-03 F
+nxyz(1), residual (min,max,rms), pres(h):    4: , -6.221E-05,  1.019E-03,  2.993E-04 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -1.279E-02,  9.915E-03,  2.864E-03 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -7.882E-03,  6.526E-03,  1.767E-03 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -4.458E-03,  4.437E-03,  9.163E-04 F
+nxyz(1), residual (min,max,rms), pres(h):    4: , -1.071E-04,  5.163E-04,  1.531E-04 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -6.834E-03,  5.465E-03,  1.508E-03 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -4.289E-03,  3.568E-03,  9.383E-04 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.499E-03,  2.409E-03,  4.853E-04 F
+nxyz(1), residual (min,max,rms), pres(h):    4: , -9.288E-05,  2.576E-04,  7.831E-05 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.663E-03,  2.980E-03,  7.943E-04 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.308E-03,  1.950E-03,  4.973E-04 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -1.393E-03,  1.288E-03,  2.558E-04 F
+nxyz(1), residual (min,max,rms), pres(h):    4: , -6.613E-05,  1.263E-04,  4.010E-05 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+Iteration   20/ 100
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -1.967E-03,  1.595E-03,  4.182E-04 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -1.230E-03,  1.069E-03,  2.630E-04 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -7.714E-04,  6.794E-04,  1.342E-04 F
+nxyz(1), residual (min,max,rms), pres(h):    4: , -4.243E-05,  6.798E-05,  2.053E-05 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -1.061E-03,  8.643E-04,  2.201E-04 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -6.489E-04,  5.867E-04,  1.387E-04 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -4.240E-04,  3.534E-04,  7.001E-05 F
+nxyz(1), residual (min,max,rms), pres(h):    4: , -2.539E-05,  3.652E-05,  1.050E-05 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -5.747E-04,  4.776E-04,  1.157E-04 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -3.423E-04,  3.212E-04,  7.293E-05 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.311E-04,  1.814E-04,  3.631E-05 F
+nxyz(1), residual (min,max,rms), pres(h):    4: , -1.454E-05,  1.952E-05,  5.366E-06 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.105E-04,  2.377E-04,  6.098E-05 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -1.774E-04,  1.754E-04,  3.825E-05 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -1.249E-04,  9.165E-05,  1.873E-05 F
+nxyz(1), residual (min,max,rms), pres(h):    4: , -7.866E-06,  1.036E-05,  2.731E-06 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -1.686E-04,  1.590E-04,  3.237E-05 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -9.511E-05,  9.537E-05,  2.002E-05 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -6.695E-05,  4.616E-05,  9.616E-06 F
+nxyz(1), residual (min,max,rms), pres(h):    4: , -4.136E-06,  5.464E-06,  1.382E-06 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -9.155E-05,  7.057E-05,  1.758E-05 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -4.797E-05,  5.172E-05,  1.046E-05 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -3.543E-05,  2.297E-05,  4.904E-06 F
+nxyz(1), residual (min,max,rms), pres(h):    4: , -2.089E-06,  2.857E-06,  7.016E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -4.941E-05,  5.019E-05,  1.036E-05 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.478E-05,  2.815E-05,  5.459E-06 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -1.868E-05,  1.117E-05,  2.491E-06 F
+nxyz(1), residual (min,max,rms), pres(h):    4: , -1.016E-06,  1.478E-06,  3.520E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -4.035E-05,  4.196E-05,  7.241E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -1.457E-05,  1.541E-05,  2.883E-06 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -9.673E-06,  5.415E-06,  1.270E-06 F
+nxyz(1), residual (min,max,rms), pres(h):    4: , -3.883E-07,  7.700E-07,  1.738E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -4.041E-05,  3.839E-05,  6.066E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -8.164E-06,  8.293E-06,  1.547E-06 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -5.024E-06,  2.725E-06,  6.323E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    4: , -2.226E-07,  4.099E-07,  8.946E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  3.839E-05,  5.726E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -4.085E-06,  4.498E-06,  9.127E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.618E-06,  1.094E-06,  3.468E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  2.682E-07,  5.758E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+Iteration   30/ 100
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  3.481E-05,  5.514E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -3.666E-06,  3.499E-06,  6.406E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -1.380E-06,  7.244E-07,  1.925E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.680E-07,  3.870E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.320E-05,  3.481E-05,  5.473E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.933E-06,  2.920E-06,  5.352E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -7.650E-07,  4.577E-07,  1.361E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.623E-07,  4.244E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  2.766E-05,  5.423E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.882E-06,  2.829E-06,  5.064E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -4.160E-07,  2.029E-07,  9.128E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  9.638E-08,  2.601E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.401E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.294E-06,  2.714E-06,  4.746E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.579E-07,  5.687E-08,  7.538E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.050E-07,  3.278E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  3.123E-05,  5.326E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.068E-06,  2.793E-06,  4.633E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.957E-07,  1.472E-07,  7.434E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.011E-07,  3.048E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.320E-05,  3.481E-05,  5.301E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.335E-06,  2.865E-06,  4.710E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.446E-07,  9.236E-08,  7.482E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.371E-07,  3.266E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  2.766E-05,  5.326E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.934E-06,  2.671E-06,  4.632E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.810E-07,  1.224E-07,  7.308E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.167E-07,  3.048E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  3.123E-05,  5.298E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.328E-06,  2.942E-06,  4.771E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.581E-07,  7.346E-08,  7.669E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.323E-07,  3.477E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  3.123E-05,  5.341E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.245E-06,  2.957E-06,  4.652E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.477E-07,  1.011E-07,  6.690E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  9.673E-08,  2.734E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.314E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.768E-06,  2.200E-06,  4.737E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -3.097E-07,  4.682E-08,  8.094E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.427E-07,  3.679E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+Iteration   40/ 100
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -2.968E-05,  3.123E-05,  5.368E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.235E-06,  2.577E-06,  4.728E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.244E-07,  1.679E-07,  6.372E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  7.739E-08,  2.367E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.364E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.325E-06,  2.694E-06,  4.679E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.948E-07,  6.365E-08,  7.941E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.234E-07,  3.706E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.320E-05,  2.766E-05,  5.316E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.324E-06,  2.714E-06,  4.658E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.629E-07,  1.166E-07,  6.665E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.005E-07,  2.633E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.684E-05,  3.481E-05,  5.318E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.228E-06,  2.149E-06,  4.659E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.306E-07,  8.611E-08,  7.306E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.107E-07,  3.525E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.320E-05,  2.766E-05,  5.316E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.528E-06,  2.518E-06,  4.619E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.626E-07,  6.979E-08,  6.827E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  9.760E-08,  2.770E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  2.766E-05,  5.269E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.208E-06,  2.283E-06,  4.579E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.756E-07,  7.558E-08,  7.233E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.091E-07,  3.421E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  2.766E-05,  5.267E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -1.963E-06,  2.536E-06,  4.512E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.881E-07,  6.011E-08,  6.854E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  9.141E-08,  2.776E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.123E-05,  5.255E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.401E-06,  2.361E-06,  4.619E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.460E-07,  1.070E-07,  7.453E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.103E-07,  3.384E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  2.766E-05,  5.291E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -1.989E-06,  2.585E-06,  4.552E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.616E-07,  9.236E-08,  6.796E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.083E-07,  2.852E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.272E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.388E-06,  2.239E-06,  4.577E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.890E-07,  8.231E-08,  7.544E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.338E-07,  3.472E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+Iteration   50/ 100
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  3.123E-05,  5.313E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.181E-06,  2.725E-06,  4.584E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.522E-07,  1.272E-07,  6.589E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.048E-07,  2.694E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.296E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.277E-06,  2.498E-06,  4.614E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.529E-07,  6.667E-08,  7.575E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.167E-07,  3.469E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  2.766E-05,  5.269E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.316E-06,  2.315E-06,  4.528E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.623E-07,  1.335E-07,  6.687E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.067E-07,  2.769E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.299E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.241E-06,  2.977E-06,  4.552E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -3.028E-07,  1.001E-07,  7.529E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.358E-07,  3.521E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  2.766E-05,  5.257E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -1.946E-06,  2.557E-06,  4.486E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.475E-07,  7.452E-08,  6.316E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  9.211E-08,  2.605E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.315E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.302E-06,  2.348E-06,  4.596E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.936E-07,  4.019E-08,  7.908E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.318E-07,  3.662E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  2.766E-05,  5.280E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.359E-06,  2.715E-06,  4.573E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.571E-07,  1.166E-07,  6.413E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  8.152E-08,  2.509E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.327E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.488E-06,  2.089E-06,  4.578E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.644E-07,  3.263E-08,  7.813E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.201E-07,  3.696E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  3.123E-05,  5.328E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.143E-06,  2.738E-06,  4.587E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.498E-07,  1.372E-07,  6.438E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  8.243E-08,  2.422E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.345E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.284E-06,  2.785E-06,  4.617E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -3.238E-07,  5.545E-08,  7.844E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.329E-07,  3.721E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+Iteration   60/ 100
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  2.766E-05,  5.336E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.281E-06,  2.783E-06,  4.599E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.488E-07,  8.153E-08,  6.174E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  8.647E-08,  2.564E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.123E-05,  5.312E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.311E-06,  2.615E-06,  4.577E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.502E-07,  4.852E-08,  7.563E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.230E-07,  3.557E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  2.766E-05,  5.272E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -1.873E-06,  2.413E-06,  4.534E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.252E-07,  6.687E-08,  6.282E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  9.191E-08,  2.710E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -2.968E-05,  3.076E-05,  5.251E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.927E-06,  2.612E-06,  4.712E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.875E-07,  7.942E-08,  7.847E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.318E-07,  3.633E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  2.766E-05,  5.323E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.296E-06,  2.540E-06,  4.554E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.567E-07,  9.221E-08,  6.562E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.070E-07,  2.654E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.328E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.168E-06,  2.543E-06,  4.603E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -3.148E-07,  5.075E-08,  7.693E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.304E-07,  3.654E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.123E-05,  5.306E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.248E-06,  2.539E-06,  4.646E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.540E-07,  1.143E-07,  6.328E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  9.277E-08,  2.337E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.320E-05,  3.481E-05,  5.330E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.373E-06,  2.424E-06,  4.615E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.851E-07,  9.598E-08,  8.133E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.242E-07,  3.763E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  3.123E-05,  5.331E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.028E-06,  2.483E-06,  4.493E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.553E-07,  7.456E-08,  6.401E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  8.661E-08,  2.569E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.320E-05,  3.481E-05,  5.314E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.333E-06,  3.624E-06,  4.675E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -3.354E-07,  5.018E-08,  7.921E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.365E-07,  3.796E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+Iteration   70/ 100
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  2.766E-05,  5.316E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.276E-06,  2.611E-06,  4.740E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.412E-07,  1.335E-07,  6.091E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  7.882E-08,  2.198E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -2.968E-05,  3.481E-05,  5.416E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.912E-06,  2.402E-06,  4.803E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -3.029E-07,  6.971E-08,  8.221E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.301E-07,  3.842E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  3.123E-05,  5.337E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.570E-06,  2.728E-06,  4.691E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.568E-07,  1.735E-07,  6.638E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  9.382E-08,  2.529E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.313E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.351E-06,  2.061E-06,  4.611E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.509E-07,  5.716E-08,  7.814E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.211E-07,  3.698E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  2.766E-05,  5.341E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.594E-06,  2.571E-06,  4.577E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.443E-07,  8.404E-08,  6.649E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  9.152E-08,  2.629E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.123E-05,  5.340E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.371E-06,  2.511E-06,  4.678E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -3.185E-07,  2.678E-08,  7.696E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.342E-07,  3.632E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  2.766E-05,  5.344E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.099E-06,  2.520E-06,  4.563E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.539E-07,  1.171E-07,  6.279E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  8.653E-08,  2.471E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.301E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.304E-06,  2.113E-06,  4.489E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.541E-07,  7.098E-08,  7.679E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.206E-07,  3.663E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.123E-05,  5.323E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.401E-06,  2.450E-06,  4.470E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.828E-07,  7.167E-08,  6.524E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  9.884E-08,  2.664E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.123E-05,  5.292E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.290E-06,  2.248E-06,  4.579E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.740E-07,  1.035E-07,  7.882E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.309E-07,  3.734E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+Iteration   80/ 100
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  2.766E-05,  5.348E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.455E-06,  2.528E-06,  4.624E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.415E-07,  1.100E-07,  6.224E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  8.988E-08,  2.436E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.338E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.719E-06,  2.420E-06,  4.664E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -3.336E-07,  6.010E-08,  7.941E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.166E-07,  3.685E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  2.766E-05,  5.338E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.274E-06,  2.432E-06,  4.541E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.380E-07,  6.463E-08,  6.193E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  8.362E-08,  2.470E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -2.968E-05,  3.481E-05,  5.311E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.187E-06,  2.164E-06,  4.528E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.712E-07,  4.045E-08,  7.847E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.327E-07,  3.799E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.147E-05,  2.766E-05,  5.340E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.307E-06,  2.500E-06,  4.551E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.520E-07,  1.193E-07,  6.219E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  9.003E-08,  2.362E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.357E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.330E-06,  2.445E-06,  4.729E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.901E-07,  4.798E-08,  7.732E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.150E-07,  3.590E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -4.035E-05,  3.123E-05,  5.354E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.609E-06,  2.534E-06,  4.598E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.488E-07,  6.788E-08,  6.219E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  8.599E-08,  2.617E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  3.123E-05,  5.299E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.502E-06,  2.940E-06,  4.594E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -3.867E-07,  1.222E-07,  7.837E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.312E-07,  3.755E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.123E-05,  5.365E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.079E-06,  2.517E-06,  4.545E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.602E-07,  5.786E-08,  6.268E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  8.411E-08,  2.512E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.321E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.291E-06,  2.734E-06,  4.565E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.320E-07,  4.549E-08,  7.366E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.070E-07,  3.498E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+Iteration   90/ 100
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  2.766E-05,  5.295E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.437E-06,  2.412E-06,  4.603E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.624E-07,  7.259E-08,  6.609E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.063E-07,  2.819E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.684E-05,  3.123E-05,  5.349E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.368E-06,  2.637E-06,  4.592E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.604E-07,  9.198E-08,  7.586E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.251E-07,  3.550E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  2.766E-05,  5.272E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -1.856E-06,  2.490E-06,  4.520E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.487E-07,  7.408E-08,  6.541E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  8.701E-08,  2.665E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.684E-05,  3.123E-05,  5.287E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.242E-06,  2.065E-06,  4.567E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.397E-07,  1.032E-07,  7.768E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.184E-07,  3.664E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.123E-05,  5.317E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.294E-06,  2.729E-06,  4.656E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.448E-07,  1.074E-07,  6.135E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  7.679E-08,  2.278E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  3.481E-05,  5.323E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.344E-06,  2.429E-06,  4.718E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -3.229E-07,  2.943E-08,  8.291E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.368E-07,  3.919E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.147E-05,  2.766E-05,  5.341E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.083E-06,  2.770E-06,  4.626E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.363E-07,  1.234E-07,  6.171E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  7.835E-08,  2.364E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  3.481E-05,  5.328E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.387E-06,  3.056E-06,  4.617E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.717E-07,  4.427E-08,  7.759E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.207E-07,  3.729E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.326E-05,  2.766E-05,  5.337E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.237E-06,  2.388E-06,  4.511E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.471E-07,  1.485E-07,  6.294E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  8.846E-08,  2.474E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -2.968E-05,  3.481E-05,  5.306E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.230E-06,  2.504E-06,  4.612E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -3.079E-07,  4.026E-08,  8.021E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  1.365E-07,  3.839E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+Iteration  100/ 100
+ ------------------------------
+nxyz(1), residual (min,max,rms), pres(h):   32: , -3.678E-05,  2.766E-05,  5.338E-06 F
+nxyz(1), residual (min,max,rms), pres(h):   16: , -2.827E-06,  2.508E-06,  4.598E-07 F
+nxyz(1), residual (min,max,rms), pres(h):    8: , -2.445E-07,  1.292E-07,  6.354E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    4: ,   0.00    ,  8.007E-08,  2.368E-08 F
+nxyz(1), residual (min,max,rms), pres(h):    2: ,   0.00    ,   0.00    ,   0.00     F
+ write_pencil_info: iproc= 0
+
+ start.x has completed successfully
+
+6.870u 0.711s 0:08.15 93.0%	0+0k 0+0io 0pf+0w
+
+Sun Aug 19 08:08:47 CEST 2007

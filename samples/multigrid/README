@@ -1,0 +1,19 @@
+Directory:
+    ${PENCIL_HOME}/samples/multigrid
+CVS-Id:
+    $Id: README,v 1.1 2007-08-19 06:12:40 brandenb Exp $
+Maintainer:
+    Wolfgang Dobler <wdobler[at]ucalgary.ca>
+Added:
+    04-Aug-2003
+Status:
+    has been working since August 2007
+Recommended resolution:
+    no constraints
+Comments:
+    This is to test the multigrid solver.
+    It works only on one processor.
+    No time evolution is needed, so only start.in exists here.
+    A sample output is in the file reference.out
+References:
+    Numerical recipes
