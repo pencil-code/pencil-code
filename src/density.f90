@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.340 2007-08-15 11:45:04 brandenb Exp $
+! $Id: density.f90,v 1.341 2007-08-19 17:33:33 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -125,7 +125,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.340 2007-08-15 11:45:04 brandenb Exp $")
+           "$Id: density.f90,v 1.341 2007-08-19 17:33:33 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1689,7 +1689,7 @@ module Density
       use Mpicomm
       use Initcond,only:set_thermodynamical_quantities
       use Gravity, only:potential
-      use Sub,     only:power_law,grad
+      use Sub,     only:power_law,grad,get_radial_distance
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: glnrho
@@ -1709,8 +1709,15 @@ module Density
       do n=n1,n2
         do m=m1,m2
           lheader=lroot.and.(m==m1).and.(n==n1)
-          rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
-          rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+          call get_radial_distance(rr)
+          if (lcartesian_coords) then 
+            rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
+            rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+          elseif (lcylindrical_coords) then
+            rr_cyl=rr
+            rr_sph=sqrt(rr**2+z(n)**2)
+          endif
+
           !lnrhomid=log(rho0)-plaw*log(rr_cyl)
           lnrhomid=log(rho0)-.5*plaw*log(rr_cyl**2+rsmooth**2)
           if (.not.lcylindrical_gravity) then 
@@ -1723,6 +1730,8 @@ module Density
 !  The second call takes care of normalizing it 
 !  i.e., there should be no correction at midplane
 !
+            if (.not.lcartesian_coords) &
+                 call stop_it("fix the potential for cylindrical coords")
             call potential(x(l1:l2),y(m),z(n),POT=tmp1,RMN=rr_sph)
             call potential(x(l1:l2),y(m),z(n),POT=tmp2,RMN=rr_cyl)
 !
@@ -1746,14 +1755,31 @@ module Density
         do n=n1,n2
 !
           call grad(f,ilnrho,glnrho)
-          rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
+          call get_radial_distance(rr)
+          if (lcartesian_coords) then 
+            rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
+            rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+          elseif (lcylindrical_coords) then
+            rr_cyl=rr
+            rr_sph=sqrt(rr**2+z(n)**2)
+          endif
           !gs= gx*cos + gy*sin
-          gslnrho=(glnrho(:,1)*x(l1:l2) + glnrho(:,2)*y(m))/rr_cyl
+          if (lcartesian_coords) then
+            gslnrho=(glnrho(:,1)*x(l1:l2) + glnrho(:,2)*y(m))/rr_cyl
+          else
+            gslnrho=glnrho(:,1)
+          endif
           corr=gslnrho*f(l1:l2,m,n,iglobal_cs2)  
           if (ltemperature) corr=corr/gamma
 !
-          tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
+          if (lcartesian_coords) then
+            tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
+          elseif (lcylindrical_coords) then
+            tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
+          endif
+!
           tmp2=tmp1 + corr/rr_cyl
+!            
           do i=1,nx
             if (tmp2(i).lt.0.) then
               if (rr_cyl(i) .lt. r_int) then
@@ -1769,8 +1795,12 @@ module Density
               endif
             endif
           enddo
-          f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
-          f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
+          if (lcartesian_coords) then
+            f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
+            f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
+          elseif (lcylindrical_coords) then
+            f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
+          endif
         enddo
       enddo
 !

@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.212 2007-08-14 01:14:21 dobler Exp $
+! $Id: initcond.f90,v 1.213 2007-08-19 17:33:33 wlyra Exp $
 
 module Initcond
 
@@ -2835,9 +2835,16 @@ module Initcond
           call get_radial_distance(rr)
           call power_law(sqrt(g0_),rr,qgshear,OO)
 !
-          f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*OO
-          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*OO
-          f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
+          if (lcartesian_coords) then
+            f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*OO
+            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*OO
+            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
+          elseif (lcylindrical_coords) then
+            f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
+            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + OO*rr
+            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
+          endif
+
         enddo
       enddo
 !
@@ -2882,16 +2889,28 @@ module Initcond
 !
       do m=m1,m2
         do n=n1,n2
-          rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
+          if (lcartesian_coords) then 
+            rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
+          elseif (lcylindrical_coords) then 
+            rr_cyl=x(l1:l2)
+          elseif (lspherical_coords) then
+            call stop_it("set_thermo: not implemented for spher. coords.")
+          endif
           call power_law(cs20,rr_cyl,ptlaw,cs2)
           if (llocal_iso) then
             call farray_use_global('cs2',iglobal_cs2)
             f(l1:l2,m,n,iglobal_cs2)= cs2
             call farray_use_global('glnTT',iglobal_glnTT)
             gslnTT=-ptlaw/(rr_cyl**2+rsmooth**2)*rr_cyl
-            f(l1:l2,m,n,iglobal_glnTT  )=gslnTT*x(l1:l2)/rr_cyl
-            f(l1:l2,m,n,iglobal_glnTT+1)=gslnTT*y(  m  )/rr_cyl
-            f(l1:l2,m,n,iglobal_glnTT+2)=0.
+            if (lcartesian_coords) then
+              f(l1:l2,m,n,iglobal_glnTT  )=gslnTT*x(l1:l2)/rr_cyl
+              f(l1:l2,m,n,iglobal_glnTT+1)=gslnTT*y(  m  )/rr_cyl
+              f(l1:l2,m,n,iglobal_glnTT+2)=0.
+            elseif (lcylindrical_coords) then
+              f(l1:l2,m,n,iglobal_glnTT  )=gslnTT
+              f(l1:l2,m,n,iglobal_glnTT+1)=0.
+              f(l1:l2,m,n,iglobal_glnTT+2)=0.
+            endif
 !
 !  else do it as temperature
 !
@@ -2911,7 +2930,11 @@ module Initcond
 !
           corr=gslnTT*cs2
           if (ltemperature) corr=corr/gamma
-          tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
+          if (lcartesian_coords) then
+            tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
+          elseif (lcylindrical_coords) then
+            tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
+          endif
           tmp2=tmp1 + corr/rr_cyl
           do i=1,nx
             if (tmp2(i).lt.0.) then
@@ -2928,8 +2951,12 @@ module Initcond
               endif
             endif
           enddo
-          f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
-          f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
+          if (lcartesian_coords) then
+            f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
+            f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
+          elseif (lcylindrical_coords) then
+            f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
+          endif
         enddo
       enddo
 !
