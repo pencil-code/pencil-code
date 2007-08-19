@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.39 2007-07-05 12:13:03 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.40 2007-08-19 23:20:36 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -66,7 +66,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.39 2007-07-05 12:13:03 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.40 2007-08-19 23:20:36 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -383,12 +383,8 @@ module Particles_nbody
 !
 ! Spherical and cylindrical distances
 !
-            rp_mn(:,ks) = &
-                 sqrt((x(l1:l2)-fsp(ks,ixp))**2 + (y(m)-fsp(ks,iyp))**2  &
-                 + (z(n)-fsp(ks,izp))**2) + tini
-!
-            rpcyl_mn(:,ks) = &
-                 sqrt((x(l1:l2)-fsp(ks,ixp))**2 + (y(m)-fsp(ks,iyp))**2) + tini
+           call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
+                X00=fsp(ks,ixp),Y00=fsp(ks,iyp),Z00=fsp(ks,izp))
 !
 ! Check which particle has cylindrical gravity switched on
 !
@@ -401,10 +397,7 @@ module Particles_nbody
 ! Gravity field from the particle ks
 !
             grav_particle =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
-!
-            ggp(:,1) = (x(l1:l2)-fsp(ks,ixp))*grav_particle
-            ggp(:,2) = (y(  m  )-fsp(ks,iyp))*grav_particle
-            ggp(:,3) = (z(  n  )-fsp(ks,izp))*grav_particle
+            call get_gravity_field_nbody(grav_particle,ggp,ks)
 !
             if ((ks==nspar).and.lnogravz_star) &
                  ggp(:,3) = 0.
@@ -671,6 +664,10 @@ module Particles_nbody
       if (headtt) &
            print*,'Adding gas gravity to particles'
 !
+      if (coord_system/="cartesian") &
+           call stop_it("particles_nbody: gas gravity not yet "//&
+           "implemented for curvilinear coordinates.")
+!
       if (nzgrid==1) then
          dv=dx*dy
       else
@@ -825,6 +822,34 @@ module Particles_nbody
       tmass=sum(pmass)
 !   
     endsubroutine get_totalmass
+!***********************************************************************
+    subroutine get_gravity_field_nbody(grr,gg,ks)
+
+      use Cdata,only: coord_system,x,y,z,l1,l2,&
+                      m,n,nx,lcylindrical_gravity
+      use Mpicomm,only:stop_it
+!                                                                                                                                                         
+      real, dimension(nx),intent(in) :: grr
+      real, dimension(nx,3),intent(out) :: gg
+      real :: x0,y0,z0
+      integer :: ks
+!
+      x0=fsp(ks,ixp);y0=fsp(ks,iyp);z0=fsp(ks,izp)
+!
+      if (coord_system=='cartesian') then
+        gg(:,1) = (x(l1:l2)-x0)*grr
+        gg(:,2) = (y(  m  )-y0)*grr
+        gg(:,3) = (z(  n  )-z0)*grr
+      elseif (coord_system=='cylindric') then
+        gg(:,1) = (x(l1:l2) - x0*cos(y(m)-y0))*grr
+        gg(:,2) =             x0*sin(y(m)-y0) *grr
+        gg(:,3) = (z(n)-z0)                   *grr
+      elseif (coord_system=='spherical') then
+        call stop_it("get_gravity_field_nbody: off-center gravity"//&
+             " field not yet implemented for spherical polars")
+      endif
+!
+    endsubroutine get_gravity_field_nbody
 !***********************************************************************
     subroutine calc_torque(p,dist,ks)
 !

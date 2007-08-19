@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.16 2007-07-05 12:09:44 wlyra Exp $
+! $Id: gravity_r.f90,v 1.17 2007-08-19 23:20:36 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -85,7 +85,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.16 2007-07-05 12:09:44 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.17 2007-08-19 23:20:36 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -110,7 +110,7 @@ module Gravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: gg_mn=0.
-      real, dimension (nx)   :: g_r,rr_mn
+      real, dimension (nx)   :: g_r,rr_mn,rr_sph,rr_cyl
       logical       :: lstarting
       logical, save :: first=.true.
       logical       :: lpade=.true. ! set to false for 1/r potential
@@ -220,7 +220,15 @@ module Gravity
 !
 !  rr_mn differs from system used
 !
-          call get_radial_distance(rr_mn)
+          call get_radial_distance(rr_sph,rr_cyl)
+!
+!  choose between spherical and cylindrical gravity
+!
+          if (lcylindrical_gravity) then 
+            rr_mn=rr_cyl
+          else
+            rr_mn=rr_sph
+          endif
 !
           if (lpade) then
 
@@ -248,7 +256,7 @@ module Gravity
             endif
           endif
 !
-          call get_gravity_field(g_r,rr_mn,gg_mn)
+          call get_gravity_field(g_r,gg_mn,rr_mn)
 !
           f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
 !
@@ -527,7 +535,7 @@ module Gravity
 
     endsubroutine acceleration_penc
 !***********************************************************************
-    subroutine get_gravity_field(g_r,rr_mn,gg_mn)
+    subroutine get_gravity_field(g_r,gg_mn,rr_mn)
 !
 !  Calculate gravity field for different coordinate systems
 !
@@ -546,7 +554,7 @@ module Gravity
       elseif (coord_system=='cylindric') then
         gg_mn(:,1) = x(l1:l2)/rr_mn*g_r
         gg_mn(:,2) = 0.
-        gg_mn(:,3) =    z(n)/rr_mn*g_r
+        gg_mn(:,3) = z(  n  )/rr_mn*g_r
         if (lcylindrical_gravity) gg_mn(:,3)=0.
       elseif (coord_system=='spherical') then
         gg_mn(:,2)=0.

@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.213 2007-08-19 17:33:33 wlyra Exp $
+! $Id: initcond.f90,v 1.214 2007-08-19 23:20:36 wlyra Exp $
 
 module Initcond
 
@@ -2832,8 +2832,8 @@ module Initcond
       do m=m1,m2
         do n=n1,n2
 !
-          call get_radial_distance(rr)
-          call power_law(sqrt(g0_),rr,qgshear,OO)
+          call get_radial_distance(rr_sph,rr_cyl)
+          call power_law(sqrt(g0_),rr_cyl,qgshear,OO)
 !
           if (lcartesian_coords) then
             f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*OO
@@ -2841,7 +2841,7 @@ module Initcond
             f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
           elseif (lcylindrical_coords) then
             f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
-            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + OO*rr
+            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + OO*rr_cyl
             f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
           endif
 
@@ -2856,11 +2856,11 @@ module Initcond
       use Mpicomm
       use EquationOfState, only: gamma,gamma1,get_cp1,&
                                  cs20,cs2bot,cs2top
-      use Sub,             only: power_law
+      use Sub,             only: power_law,get_radial_distance
       use Messages       , only: warning
 
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: rr_cyl,cs2,tmp1,tmp2,gslnTT,corr
+      real, dimension(nx) :: rr_sph,rr_cyl,cs2,tmp1,tmp2,gslnTT,corr
       real :: cp1,ptlaw
       integer, pointer :: iglobal_cs2,iglobal_glnTT
       integer :: i
@@ -2889,13 +2889,7 @@ module Initcond
 !
       do m=m1,m2
         do n=n1,n2
-          if (lcartesian_coords) then 
-            rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
-          elseif (lcylindrical_coords) then 
-            rr_cyl=x(l1:l2)
-          elseif (lspherical_coords) then
-            call stop_it("set_thermo: not implemented for spher. coords.")
-          endif
+          call get_radial_distance(rr_sph,rr_cyl)
           call power_law(cs20,rr_cyl,ptlaw,cs2)
           if (llocal_iso) then
             call farray_use_global('cs2',iglobal_cs2)

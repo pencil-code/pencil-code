@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.327 2007-08-17 08:57:19 dhruba Exp $
+! $Id: sub.f90,v 1.328 2007-08-19 23:20:36 wlyra Exp $
 
 module Sub
 
@@ -5843,34 +5843,51 @@ nameloop: do
 !
     endsubroutine power_law_pt
 !***********************************************************************
-    subroutine get_radial_distance(rr_mn)
+    subroutine get_radial_distance(rrmn,rcylmn,x00,y00,z00)
 !
-!  Calculate distance for different coordinate systems, and the
-!  possibility of cylindrical (slab) gravity
+!  Calculate distance and its cylindrical projection for different
+!  coordinate systems
+!
 !
 !  15-mar-07/wlad : coded
 !
-      use Cdata
+      use Cdata,only: coord_system,x,y,z,tini,l1,l2,m,n,nx
 !
-      real, dimension(nx),intent(out) :: rr_mn
+      real, dimension(nx),intent(out) :: rrmn,rcylmn
+      real, intent(in), optional :: x00,y00,z00
+      real :: x0,y0,z0
+      integer :: tmp
+      logical :: lorigin
 !
-      if (coord_system=='cartesian') then
-        if (lcylindrical_gravity) then
-          rr_mn=sqrt(x(l1:l2)**2+y(m)**2)+tini
-        else
-          rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)+tini
+      tmp=0 ; lorigin=.false.
+      if (present(x00)) then;x0=x00;tmp=tmp+1;else;x0=0.;endif
+      if (present(y00)) then;y0=y00;tmp=tmp+1;else;y0=0.;endif
+      if (present(z00)) then;z0=z00;tmp=tmp+1;else;z0=0.;endif
+      if (tmp==0) lorigin=.true.
+!
+      if (lorigin) then
+        if (coord_system=='cartesian') then
+          rcylmn=sqrt(x(l1:l2)**2+y(m)**2)         +tini
+          rrmn  =sqrt(  rcylmn**2+         z(n)**2)
+        elseif (coord_system=='cylindric') then
+          rcylmn=     x(l1:l2)            +tini
+          rrmn  =sqrt(  rcylmn**2+z(n)**2)+tini
+        elseif(coord_system=='spherical') then
+          rcylmn=     x(l1:l2)*sin(y(m))
+          rrmn  =     x(l1:l2)
         endif
-      elseif (coord_system=='cylindric') then
-        if (lcylindrical_gravity) then
-          rr_mn=x(l1:l2)+tini
-        else
-          rr_mn=sqrt(x(l1:l2)**2+z(n)**2)+tini
-        endif
-      elseif(coord_system=='spherical') then
-        if (lcylindrical_gravity) then
-          rr_mn=x(l1:l2)*sqrt(1-cos(y(m)**2))
-        else
-          rr_mn=x(l1:l2)
+      else
+        if (coord_system=='cartesian') then
+          rcylmn=sqrt((x(l1:l2)-x0)**2+(y(m)-y0)**2)+tini
+          rrmn  =sqrt(       rcylmn**2+(z(n)-z0)**2)+tini 
+        elseif (coord_system=='cylindric') then
+          rcylmn=x(l1:l2)**2+x0**2 - 2*x(l1:l2)*x0*cos(y(m)-y0)+tini
+          rrmn  =sqrt(rcylmn**2+(z(n)-z0)**2)
+        elseif(coord_system=='spherical') then
+          rcylmn=(x(l1:l2)*sin(y(m)))**2 + (x0*sin(y0))**2 - &
+               2*x(l1:l2)*x0*cos(y(m))*cos(y0)
+          rrmn  =x(l1:l2)**2 + x0**2 - 2*x(l1:l2)*x0*&
+               (cos(y(m))*cos(y0)+sin(y(m))*sin(y0)*cos(z(n)-z0))
         endif
       endif
 !
