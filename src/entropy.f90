@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.509 2007-08-18 23:43:37 bingert Exp $
+! $Id: entropy.f90,v 1.510 2007-08-19 22:55:00 bingert Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -207,7 +207,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.509 2007-08-18 23:43:37 bingert Exp $")
+           "$Id: entropy.f90,v 1.510 2007-08-19 22:55:00 bingert Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1606,6 +1606,7 @@ module Entropy
          lpenc_requested(i_uglnTT)=.true.
          lpenc_requested(i_divu)=.true.
          lpenc_requested(i_cv1)=.true.
+         lpenc_requested(i_cp1)=.true.
       endif
       if (lgravr) lpenc_requested(i_r_mn)=.true.
       if (lheatc_simple) then
@@ -1884,7 +1885,7 @@ module Entropy
 !
 !  If pretend_lnTT=.true., we pretend that ss is actually lnTT
 !
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma1-p%uglnTT
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - (p%divu*gamma1 + p%uglnTT)*gamma11*p%cp
          else
 !
 !  regular case with entropy
@@ -1944,6 +1945,10 @@ module Entropy
 !  In that case you'd need to provide your own "special" routine.
 !
       if (lspecial) call special_calc_entropy(f,df,p)
+!
+!  if pretend_lnTT=T and df(:,:,:,iss) is not changed anymore afterwards
+!
+      if (pretend_lnTT) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)*p%cv1
 !
 !  Apply border profile
 !
@@ -2294,12 +2299,8 @@ module Entropy
       ! NB: chix = K/(cp rho) is needed for diffus_chi calculation
       chix = p%rho1*hcond*p%cp1
       call dot(p%glnTT,p%glnTT,g2)
+      thdiff = p%rho1*hcond * (p%del2lnTT + g2)
       !
-      if (pretend_lnTT) then
-         thdiff = hcond * (p%del2lnTT + g2)
-      else
-         thdiff = p%rho1*hcond * (p%del2lnTT + g2)
-      endif
 !
 !  add heat conduction to entropy equation
 !
