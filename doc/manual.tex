@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.365 2007-08-18 08:42:41 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.366 2007-08-19 08:55:28 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2007-08-18 08:42:41 $ $,~ $ $Revision: 1.365 $ $}
+%\date{$ $Date: 2007-08-19 08:55:28 $ $,~ $ $Revision: 1.366 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2007-08-18 08:42:41 $ $,~ $ $Revision: 1.365 $ $}\\
+  \emph{$ $Date: 2007-08-19 08:55:28 $ $,~ $ $Revision: 1.366 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3696,6 +3696,24 @@ follows (see the subroutine \code{redist_particles_procs} in
       \code{nprocz}) to avoid this problem.
 \end{enumerate}
 
+% ---------------------------------------------------------------------- %
+
+\subsection{Non-cartesian coordinate systems}
+
+Since the spring of 2007 spherical and cylindrical polar coordinates
+have been implemented, although this development is not yet completed.
+Spherical coordinates are invoked by adding the following line
+in the file \file{start.in}
+\begin{verbatim}
+&init_pars
+  coord_system='spherical_coords'
+\end{verbatim}
+Another possibility is to put \code{cylindrical_coords} instead.
+In practice, the names $(x,y,z)$ are still used, but they refer then
+to $(r,\theta,\phi)$ or $(r,\phi,z)$ instead.
+
+Bug reports, corrections, and improvements on these are appreciated.
+
 % ====================================================================== %
 
 \section{The Equations}
@@ -5078,9 +5096,9 @@ The answer is yes; just go to:
 The {\sc Pencil Code} has expanded approximately linearly in the number of
 lines of code and the number of subroutines (Fig.~\ref{pfile-size}).
 The increase in the functionality of the code is documented by the
-rise in the number of sample problems (Fig.~\ref{pfile-size}).
+rise in the number of sample problems (Fig.~\ref{pauto-tests}).
 In order to keep the development of the code going, it it important
-that the users are able to understand and modify the code.
+that the users are able to understand and modify (program!) the code.
 In this section we explain first how to orient yourself in the code
 and to understand what is in it, and then to modify it according to
 your needs.
@@ -5092,7 +5110,7 @@ your needs.
     [width=.6\textwidth,keepaspectratio]%
     {pfile-size}
   \caption{Number of lines of code and the number of subroutines
-  since the end of 2001. The glitch in the Summer of 2005 was the
+  since the end of 2001. The jump in the Summer of 2005 was the
   moment when the developments on the side branch (eos branch) were
   merged with the main trunk of the code. Note the approximately
   linear scaling with time.}
@@ -5134,7 +5152,7 @@ is being assembled.
 Using the \cmd{grep} command you will find that this routine is located
 in the module \code{density}, so look in there and try to understand
 the pieces in this routine.
-We quickly arrive at the following piece of code,
+We quickly arrive at the following crucial part of code,
 \begin{verbatim}
 !
 !  continuity equation
@@ -5148,24 +5166,26 @@ We quickly arrive at the following piece of code,
       endif
 \end{verbatim}
 where, depending on some logicals that tell you whether the continuity
-equation should indeed be solved and whether we do indeed want to
+equation should indeed be solved and whether we do want to
 solve for the logarithmic density and not the actual density,
 the correct right hand side is being assembled.
 Note that all these routines always only \emph{add} to the existing
 \code{df(l1:l2,m,n,ilnrho)} array and never reset it.
-Resetting is only done by the timestepping routine.
-Next, the pieces \code{p\%ugrho} and \code{p\%rho*p\%divu} are being
+Resetting \code{df} is only done by the timestepping routine.
+Next, the pieces \code{p\%uglnrho} and \code{p\%divu} are being
 subtracted.
-These are \emph{pencils}, which are organized in the \emph{structure}
+These are \emph{pencils} that are organized in the \emph{structure}
 with the name \code{p}.
+The meaning of their names is obvious: \code{uglnrho} refers to
+$\uv\cdot\nabla\ln\rho$ and \code{divu} refers to $\nabla\cdot\uv$.
 In the subroutine \code{pencil_criteria_density} you find under which
 conditions these pencils are requested.
 Using \cmd{grep}, you also find where they are calculated.
-For example \code{p\%ugrho} is calculated in \file{density.f90}; see
+For example \code{p\%uglnrho} is calculated in \file{density.f90}; see
 \begin{verbatim}
-          call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
+          call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
 \end{verbatim}
-So this is a special subroutine to calculate the $\uv\cdot\nabla$ operator,
+So this is a call to a subroutine that calculates the $\uv\cdot\nabla$ operator,
 where there is the possibility of upwinding, but this is \emph{not}
 the default.
 The piece \code{divu} is calculated in \file{hydro.f90} in the line
@@ -5181,7 +5201,7 @@ matrix as input, so no new derivatives are recalculated.
 Again, using \cmd{grep}, you will find that this calculation and
 many other ones happen in the module and file \file{sub.f90}.
 The various derivatives that enter here have been calculated using
-the $\code{gij}$ routine, which calls the \code{der} routine, e.g.\ like so
+the $\code{gij}$ routine, which calls the \code{der} routine, e.g., like so
 \begin{verbatim}
       k1=k-1
       do i=1,3
@@ -5195,7 +5215,7 @@ you have to look in \code{deriv.f90}, and only here is it
 where the indices of the \code{f} array are being addressed.
 
 If you are interested in magnetic fields, you have to look
-in the \file{magnetic.f90} file. The right hand side of
+in the file \file{magnetic.f90}. The right hand side of
 the equation is assembled in the routine
 \begin{verbatim}
 !***********************************************************************
@@ -5222,8 +5242,8 @@ on other equations are included, e.g.\
       endif
 \end{verbatim}
 
-We leave it with this and encourage the user to do similar
-inspection work on an number of other examples.
+We leave it at this and encourage the user to do similar
+inspection work on a number of other examples.
 If you think you find an error, file a ticket with the
 \cmd{trac} bug tracker. You can of course also repair it!
 
@@ -5703,7 +5723,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2007-08-18 08:42:41 $ $,~ $ $Revision: 1.365 $ $}
+  \hfill\normalsize\rm$ $Date: 2007-08-19 08:55:28 $ $,~ $ $Revision: 1.366 $ $}
 
 \section{Timings}
 
@@ -9034,7 +9054,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.365 2007-08-18 08:42:41 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.366 2007-08-19 08:55:28 brandenb Exp $ $}
 
 
 \end{document}
