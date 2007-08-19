@@ -1,7 +1,7 @@
 Directory:
     ${PENCIL_HOME}/samples/dust_turb_globaldisk
 CVS-Id:
-    $Id: README,v 1.1 2007-08-17 12:20:36 wlyra Exp $
+    $Id: README,v 1.2 2007-08-19 22:43:10 wlyra Exp $
 Maintainer:
     Wladimir Lyra <wlyra@astro.uu.se>
 Added:
@@ -13,5 +13,11 @@ Recommended resolution:
     if 1 million particles, npar_loc=250000
 Comments:
     MRI-active globaldisk in cartesian coordinates with dust particles
-    Used in Lyra et al. 2007 	 
+    Used in Lyra et al. 2007	
 
+    When using it for production runs, remember to change format "F" to "E" 
+    in the stresses. The initial stresses are too near machine precision to 
+    figure in the auto-test, hence the "F" format and the absense of the 
+    Maxwell stress brbpm in the print.in of this sample.		 	 
+   	
+	
