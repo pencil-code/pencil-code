@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.379 2007-08-20 06:28:20 brandenb Exp $
+! $Id: hydro.f90,v 1.380 2007-08-20 11:37:13 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -197,11 +197,7 @@ module Hydro
   integer :: idiag_upmphi=0     ! DIAG_DOC: 
   integer :: idiag_uzmphi=0     ! DIAG_DOC: 
   integer :: idiag_u2mphi=0     ! DIAG_DOC: 
-  integer :: idiag_ur2m=0       ! DIAG_DOC: 
-  integer :: idiag_up2m=0       ! DIAG_DOC: 
-  integer :: idiag_uzz2m=0      ! DIAG_DOC: 
   integer :: idiag_u2mr=0       ! DIAG_DOC: 
-  integer :: idiag_urupmr=0     ! DIAG_DOC: 
   integer :: idiag_urmr=0       ! DIAG_DOC: 
   integer :: idiag_upmr=0       ! DIAG_DOC: 
   integer :: idiag_uzmr=0       ! DIAG_DOC: 
@@ -311,7 +307,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.379 2007-08-20 06:28:20 brandenb Exp $")
+           "$Id: hydro.f90,v 1.380 2007-08-20 11:37:13 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -854,12 +850,12 @@ module Hydro
 
       if (idiag_totangmom/=0 ) lpenc_diagnos(i_rcyl_mn)=.true.
 
-      if (idiag_urmr/=0 .or. idiag_urupmr/=0 .or. idiag_ormr/=0) then
+      if (idiag_urmr/=0 .or.  idiag_ormr/=0) then
         lpenc_diagnos(i_pomx)=.true.
         lpenc_diagnos(i_pomy)=.true.
       endif
 
-      if (idiag_upmr/=0 .or. idiag_urupmr/=0) then
+      if (idiag_upmr/=0 .or. idiag_opmr/=0) then
         lpenc_diagnos(i_phix)=.true.
         lpenc_diagnos(i_phiy)=.true.
       endif
@@ -2114,7 +2110,6 @@ use Mpicomm, only: stop_it
         idiag_uxuymy=0
         idiag_uxuzmy=0
         idiag_uyuzmy=0
-        idiag_urupmr=0
         idiag_u2mr=0
         idiag_urmr=0
         idiag_upmr=0
@@ -2356,7 +2351,6 @@ use Mpicomm, only: stop_it
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'opmr',  idiag_opmr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'ozmr',  idiag_ozmr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'u2mr',  idiag_u2mr)
-        call parse_name(inamer,cnamer(inamer),cformr(inamer),'urupmr',idiag_urupmr)
       enddo
 !
 !  write column where which hydro variable is stored
@@ -2444,7 +2438,6 @@ use Mpicomm, only: stop_it
         write(3,*) 'i_opmr=',idiag_opmr
         write(3,*) 'i_ozmr=',idiag_ozmr
         write(3,*) 'i_u2mr=',idiag_u2mr
-        write(3,*) 'i_urupmr=',idiag_urupmr
         write(3,*) 'i_fintm=',idiag_fintm
         write(3,*) 'i_fextm=',idiag_fextm
         write(3,*) 'i_duxdzma=',idiag_duxdzma
