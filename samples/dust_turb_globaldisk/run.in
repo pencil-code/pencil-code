@@ -3,7 +3,7 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2007-08-17 10:10:08 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.2 2007-08-20 11:45:34 wlyra Exp $',
   ip=14,
   nt=10, it1=1, it1d=100, isave=500, itorder=3, ialive=1
   cdt=0.4, 
@@ -17,6 +17,7 @@
   fshift_int = 1
   fshift_ext = -1
   lbidiagonal_derij=F
+  lpencil_check=T
 /
 &eos_run_pars
 /
