@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.325 2007-08-17 09:46:48 dhruba Exp $
+### $Id: Makefile.src,v 1.326 2007-08-20 06:28:20 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -417,12 +417,15 @@ LD_FFTW2=
 ## Axel's laptop (nl6, 2.0 GHz)
 ##
 ##FC=g95 -fsecond-underscore#(nl6)
-##FC=g95 -fsecond-underscore -freal=nan -finteger=-2147483648 -fbounds-check #(nl6)
+##FC=g95 -fno-second-underscore -freal=nan -finteger=-2147483648 -fbounds-check #(nl6)
 ##FFLAGS=-O4 #(nl6)
 ##LD_MPI=#(nl6)
-##CFLAGS=-DFUNDERSC=2 #(nl6)
+##CFLAGS=-DFUNDERSC=1 #(nl6)
+##
+##  the -CB options checks for out of bounds arrays
 ##
 #FC=ifort #(nl6)
+#FFLAGS=-O3 -I/usr/include/lam -CB #(nl6)
 #FFLAGS=-O3 -I/usr/include/lam #(nl6)
 #LD_MPI=-I/usr/include/lam -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
 #LIBMPISUFFIX=_#(nl6)

@@ -1,7 +1,4 @@
-! $Id: radiation_ray.f90,v 1.136 2007-05-18 19:15:42 wlyra Exp $
-
-!!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
-!!!  or it may be combined with radiation_ray.
+! $Id: radiation_ray.f90,v 1.137 2007-08-20 06:28:21 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -78,7 +75,7 @@ module Radiation
   character (len=labellen) :: angle_weight='constant'
   real :: tau_top=0.0,TT_top=0.0
   real :: tau_bot=0.0,TT_bot=0.0
-  real :: kappa_cst=1.0
+  real :: kappa_cst=1.0, kapparho_cst=1.0
   real :: Srad_const=1.0,amplSrad=1.0,radius_Srad=1.0
   real :: kx_Srad=0.0,ky_Srad=0.0,kz_Srad=0.0
   real :: kapparho_const=1.0,amplkapparho=1.0,radius_kapparho=1.0
@@ -110,7 +107,7 @@ module Radiation
   integer :: idiag_dtchi=0,idiag_dtrad=0
 
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
+       radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst,kapparho_cst, &
        TT_top,TT_bot,tau_top,tau_bot,source_function_type,opacity_type, &
        Srad_const,amplSrad,radius_Srad, &
        kapparho_const,amplkapparho,radius_kapparho, &
@@ -181,7 +178,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.136 2007-05-18 19:15:42 wlyra Exp $")
+           "$Id: radiation_ray.f90,v 1.137 2007-08-20 06:28:21 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -309,9 +306,18 @@ module Radiation
 !  so S = arad*TT^4 = (c/4pi)*arad_normal*TT^4, so
 !  arad_normal = 4pi/c*arad
 !
-      arad=SigmaSB/pi
-      if (lroot) then
+      if (source_function_type=='LTE') then
+        arad=SigmaSB/pi
         arad_normal=4.*SigmaSB/c_light
+      else
+        arad=0.
+        arad_normal=0.
+      endif
+!
+!  debug output
+!  NOTE: arad is only used when S=(c/4pi)*aT^4=(sigmaSB/pi)*T^4
+!
+      if (lroot.and.ip<9) then
         print*,'initialize_radiation: arad=',arad
         print*,'initialize_radiation: arad_normal=',arad_normal
         print*,'initialize_radiation: sigmaSB=',sigmaSB
@@ -1066,8 +1072,8 @@ module Radiation
       do n=nnstart,nnstop,nsign
       do m=mmstart,mmstop,msign
       do l=llstart,llstop,lsign
-          Qrad0(l,m,n)=Qrad0(l-lrad,m-mrad,n-nrad)
-          Qrad(l,m,n)=Qrad(l,m,n)+Qrad0(l,m,n)*exp(-tau(l,m,n))
+        Qrad0(l,m,n)=Qrad0(l-lrad,m-mrad,n-nrad)
+        Qrad(l,m,n)=Qrad(l,m,n)+Qrad0(l,m,n)*exp(-tau(l,m,n))
       enddo
       enddo
       enddo
@@ -1088,7 +1094,7 @@ module Radiation
 !
 !  Sets the physical boundary condition on yz plane
 !
-!  6-jul-03/axel+tobi: coded
+!   6-jul-03/axel+tobi: coded
 !  26-may-06/axel: added S+F and S-F to model interior more accurately
 !
       use Mpicomm, only: stop_it
@@ -1100,6 +1106,12 @@ module Radiation
 !
       if (bc_ray_z=='0') then
         Qrad0_yz=-Srad(llstart-lrad,:,:)
+      endif
+!
+!  Set intensity equal to unity (as a numerical experiment for now)
+!
+      if (bc_ray_z=='1') then
+        Qrad0_yz=1.-Srad(llstart-lrad,:,:)
       endif
 !
 !  Set intensity equal to source function
@@ -1146,6 +1158,12 @@ module Radiation
         Qrad0_zx=-Srad(:,mmstart-mrad,:)
       endif
 !
+!  Set intensity equal to unity (as a numerical experiment for now)
+!
+      if (bc_ray_z=='1') then
+        Qrad0_zx=1.-Srad(:,mmstart-mrad,:)
+      endif
+!
 !  Set intensity equal to source function
 !
       if (bc_ray_z=='S') then
@@ -1188,6 +1206,12 @@ module Radiation
 !
       if (bc_ray_z=='0') then
         Qrad0_xy=-Srad(:,:,nnstart-nrad)
+      endif
+!
+!  Set intensity equal to unity (as a numerical experiment for now)
+!
+      if (bc_ray_z=='1') then
+        Qrad0_xy=1.-Srad(:,:,nnstart-nrad)
       endif
 !
 !  incoming intensity from a layer of constant temperature TT_top
@@ -1370,6 +1394,9 @@ module Radiation
           lfirst=.false.
         endif
 
+      case ('nothing')
+          Srad=0.
+
       case default
         call stop_it('no such source function type: '//&
                      trim(source_function_type))
@@ -1426,6 +1453,13 @@ module Radiation
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho)
           f(:,m,n,ikapparho)=kappa_cst*exp(lnrho)
+        enddo
+        enddo
+
+      case ('kapparho_cst')
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          f(:,m,n,ikapparho)=kapparho_cst
         enddo
         enddo
 

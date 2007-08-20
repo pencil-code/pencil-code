@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.378 2007-08-17 17:11:28 wlyra Exp $
+! $Id: hydro.f90,v 1.379 2007-08-20 06:28:20 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -311,7 +311,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.378 2007-08-17 17:11:28 wlyra Exp $")
+           "$Id: hydro.f90,v 1.379 2007-08-20 06:28:20 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -886,6 +886,8 @@ module Hydro
 !
       if (lpencil_in(i_u2)) lpencil_in(i_uu)=.true.
       if (lpencil_in(i_divu)) lpencil_in(i_uij)=.true.
+      if (lalways_use_gij_etc.and..not.lcartesian_coords) &
+        lpencil_in(i_oo)=.true.
       if (lpencil_in(i_sij)) then
         lpencil_in(i_uij)=.true.
         lpencil_in(i_divu)=.true.
@@ -938,11 +940,14 @@ use Mpicomm, only: stop_it
       if (lpencil(i_u2)) then
         call dot2_mn(p%uu,p%u2)
       endif
-! uij
+!
+!  calculate uij and divu, if requested
+!
       if (lpencil(i_uij)) call gij(f,iuu,p%uij,1)
-! divu
       if (lpencil(i_divu)) call div_mn(p%uij,p%divu,p%uu)
-! sij
+!
+!  calculate the strain tensor sij, if requested
+!
       if (lpencil(i_sij)) then
         do j=1,3
           do i=1,3
@@ -1003,7 +1008,7 @@ use Mpicomm, only: stop_it
         if (headtt.and.lupw_uu) then
           print *,'calc_pencils_hydro: upwinding advection term. '//&
                   'Not well tested; use at own risk!'; endif
-	call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
+          call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
       endif
 !
 ! u3u21, u1u32, u2u13
@@ -1035,7 +1040,12 @@ use Mpicomm, only: stop_it
         if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
         call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
         call curl_mn(p%oij,p%qq,p%oo)
-        p%del2u=p%graddivu-p%qq
+        if (lpencil(i_del2u)) p%del2u=p%graddivu-p%qq
+!
+!   Avoid warnings from pencil consistency check...
+!
+        if (.not. lpencil(i_uij)) p%uij=0.0
+        if (.not. lpencil(i_graddivu)) p%graddivu=0.0
       else
         if (lpencil(i_del2u)) then
           if (lpencil(i_graddivu)) then
@@ -1047,7 +1057,9 @@ use Mpicomm, only: stop_it
         endif
          if (lpencil(i_graddivu)) call del2v_etc(f,iuu,GRADDIV=p%graddivu)
       endif
+!
 ! grad5divu
+!
       if (lpencil(i_grad5divu)) then
         do i=1,3
           tmp=0.0

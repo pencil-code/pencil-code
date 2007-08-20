@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.36 2007-07-26 11:08:50 wlyra Exp $
+! $Id: noeos.f90,v 1.37 2007-08-20 06:28:20 brandenb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -9,7 +9,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1tilde,glnTT,TT,TT1
+! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1,cp1tilde,glnTT,TT,TT1
 ! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT
 !
 !***************************************************************
@@ -80,7 +80,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.36 2007-07-26 11:08:50 wlyra Exp $')
+           '$Id: noeos.f90,v 1.37 2007-08-20 06:28:20 brandenb Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -173,6 +173,8 @@ module EquationOfState
 !
       intent(in) :: f
       intent(inout) :: p
+!
+      if (lpencil(i_cp1)) p%cp1=0.
 !
       if (NO_WARN) print*,f,p
 !
@@ -343,20 +345,27 @@ module EquationOfState
 
     end subroutine eosperturb
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,yH,lnTT,ee,pp,kapparho)
+    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,mu1,lnTT,ee,pp,kapparho)
 !
 !   Calculate thermodynamical quantities
 !
 !   02-apr-04/tony: implemented dummy
 !
+      use Mpicomm, only: stop_it
+
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(out), optional :: yH,lnTT,ee,pp,kapparho
+      real, dimension(psize), intent(out), optional :: lnrho,ss
+      real, dimension(psize), intent(out), optional :: yH,lnTT,mu1
+      real, dimension(psize), intent(out), optional :: ee,pp,kapparho
 !
-      call fatal_error('temperature_gradient','SHOULD NOT BE CALLED WITH NOEOS')
-
-      lnTT=0.
+      call fatal_error('eoscalc_farray','SHOULD NOT BE CALLED WITH NOEOS')
+!
+      lnrho=0.
+      ss=0.
       yH=0.
+      mu1=0.
+      lnTT=0.
       ee=0.
       pp=0.
       kapparho=0.

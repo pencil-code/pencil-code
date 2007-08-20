@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.213 2007-08-17 13:08:31 wlyra Exp $
+! $Id: register.f90,v 1.214 2007-08-20 06:28:21 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -325,7 +325,8 @@ module Register
         lcartesian_coords=.false.
         lspherical_coords=.true.
         lcylindrical_coords=.false.
-!! An attempt to work with full sphere 
+!
+! An attempt to work with full sphere 
 !  calculate 1/r
 !
         if (x(l1)==0.) then

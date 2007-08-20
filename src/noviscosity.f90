@@ -1,4 +1,4 @@
-! $Id: noviscosity.f90,v 1.10 2007-01-05 20:08:58 dobler Exp $
+! $Id: noviscosity.f90,v 1.11 2007-08-20 06:28:21 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -12,7 +12,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED gshock,shock
+! PENCILS PROVIDED gshock,shock, visc_heat
 !
 !***************************************************************
 
@@ -61,7 +61,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noviscosity.f90,v 1.10 2007-01-05 20:08:58 dobler Exp $")
+           "$Id: noviscosity.f90,v 1.11 2007-08-20 06:28:21 brandenb Exp $")
 
     endsubroutine register_viscosity
 !***********************************************************************
@@ -153,10 +153,12 @@ module Viscosity
 !
       intent(in) :: f
       intent(inout) :: p
-! shock
+!
+!  define shock, gshock, visc_heat
+!
       if (lpencil(i_shock)) p%shock=0.
-! gshock
       if (lpencil(i_gshock)) p%gshock=0.
+      if (lpencil(i_visc_heat)) p%visc_heat=0.
 !
       if (NO_WARN) print*, f
 !
