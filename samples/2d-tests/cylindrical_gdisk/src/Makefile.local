@@ -16,3 +16,5 @@ PSCALAR   = nopscalar
 GRAVITY   =   gravity_r
 FORCING   = noforcing
 SHEAR     = noshear
+
+REAL_PRECISION=double

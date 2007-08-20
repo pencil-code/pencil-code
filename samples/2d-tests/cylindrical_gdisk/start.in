@@ -3,14 +3,14 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2007-08-17 16:09:14 wlyra Exp $',
+  cvsid='$Id: start.in,v 1.2 2007-08-20 01:02:11 wlyra Exp $',
   ip=10,                        ! debugging parameter
   xyz0  =  0.2,-3.1415,-0.26,       ! first corner of box
   xyz1  =  2.7, 3.1415, 0.26,       ! second corner of box
 
   lperi = F  , T  , T,         ! periodic direction?
 
-  bcx = 'f','f','f','f'!,'s','s','a','s'
+  bcx = 'a','s','s','a2'
 
   llocal_iso=T
   lwrite_ic=T
