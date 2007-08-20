@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.202 2007-07-24 10:42:39 dhruba Exp $
+# $Id: getconf.csh,v 1.203 2007-08-20 22:28:26 dhruba Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -263,6 +263,20 @@ else if ($hn =~ *.maths.qmul.ac.uk) then
              echo "Non-PBS, running on `hostname`"
            endif
          endif
+# For North-West Grid UK
+else if ($hn =~ man2*) then
+       echo "Manchester Grid - NW-grid"
+       set local_disc = 0
+       set one_local_disc = 0
+       set local_binary = 0
+       set mpirun = mpisub 
+       set myprocpernode = 2
+       set mpisub_myproc = "x2"
+       set mynodes = `expr $ncpus / $myprocpernode `
+       echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
+       set npops  = "$mynodes$mpisub_myproc"
+       echo $npops
+     endif
 #------------------------------------------------
 else if ($hn =~ giga[0-9][0-9]) then
   echo "Nordita cluster - Copenhagen"
@@ -955,7 +969,7 @@ if ($mpi) then
   else if ($mpirun =~ *poe*) then
     set nprocpernode = 1
     set x_ops = "$mpirunops -procs $ncpus"
-    set mpirunops =
+    set mpirunops = ""
     set npops = ""
   else
     echo "getconf.csh: No clue how to tell $mpirun to use $ncpus nodes"
