@@ -32,7 +32,7 @@
 %\usepackage[bf,sf,small,nonindentfirst]{titlesec}
 %\newcommand{\sectionbreak}{\clearpage}
 %\titleformat{\subsubsection}{\normalfont\itshape}{\thesubsubsection}{.5em}{}
-%\titlespacing{\subsubsection}{0pt}{*1}{*-1}
+%\titlespacing{\subsubsection}{0pt}{*1{*-1}
 
 %\usepackage{graphicx}
 \usepackage{multicol}
@@ -114,6 +114,13 @@
 }
 \makeatother
 
+%% Layout macros
+\newcommand{\righteqn}[1]{\llap{$\displaystyle #1$}}
+\newcommand{\centereqn}[1]{\clap{$\displaystyle #1$}}
+% Like \rlap, \llap, but centered
+% (http://math.arizona.edu/~aprl/publications/mathclap/perlis_mathclap_24Jun2003.pdf)
+\newcommand{\clap}[1]{\hbox to 0pt{\hss#1\hss}}
+
 %% Matrices and tensors
 \newcommand{\matx}[1]{\mbox{\boldmath${\cal #1}$\unboldmath}}
 \newcommand{\tensor}[1]{\matx{#1}}
@@ -157,19 +164,51 @@
 
 \tableofcontents
 
+
 %%%%%%%%
-\section{Glossary}
+\section{Introduction}
 %%%%%%%%
+
+The main purpose of this set of notes is to document the
+implementation of multigrid solvers in the Pencil Code.
+At the same time, I use it as a reference for the many confusing terms, a
+pointer to literature, and as a place for ideas and things that have not
+been implemented so far.
+
+
+%%%%%%%%
+\section{Glossary and more}
+%%%%%%%%
+
+To me, one of the most difficult aspects of multigrid methods is the
+jargon that is used in the literature.
+For some straight-forward concepts and operations, there are several
+opaque synonyms, which makes my mind spin, precess, and nutate at the same
+time.
+\footnote{
+  I admit to adding yet my own jargon here by introducing the terms
+  ``coarse-graining'' and ``fine-graining''.
+  But I think \emph{coarse-graining} is a way more intuitive term than
+  \emph{restricting}, \emph{relaxing} [???], etc.}
+
+So, as a reference for myself and others in the same situation, we start
+this document (after a very superficial outline of the multigrid
+methodology) with a glossary that will also introduce all relevant
+concepts of multigrid.
+
+
+%%%%%%%%%%%
+\subsection{A bird's view of multigrid}
 
 A multigrid solver for an elliptic PDE includes the following steps:
 \begin{enumerate}
 \item Apply one or more Gauss--Seidel (or weighted Jacobi) iterations to
   solve the discretized equations (converges quickly on the smallest
   scales).
-\item Calculate the residual (measures to what extent the current
-  approximation does not satisfy the equations ans should thus decrease in
+\item Calculate the residual (which measures to what extent the current
+  approximation does not satisfy the equations and should thus decrease in
   the process).
-\item Coarse-grain operator and residual to construct a coarse-grained
+\item Coarse-grain the operator and residual to construct a coarse-grained
   equation for the correction to the current approximation.
 \item Apply multigrid on the coarser grid (the algorithm is recursive).
 \item Fine-grain the correction and apply it on the finer grid.
@@ -177,41 +216,49 @@ A multigrid solver for an elliptic PDE includes the following steps:
   recursion.
 \end{enumerate}
 
-Since the multigrid literature uses a specific jargon, with sometimes
-several opaque synonyms for straight-forward concepts, we start with a
-glossary of terms here.\footnote{
-  I admit to adding yet my own jargon here by introducing the terms
-  ``coarse-graining'' and ``fine-graining''.
-  But I think \emph{coarse-graining} is a way more intuitive term than
-  \emph{restricting}.}
 
-To be somewhat specific, let us consider the inhomogeneous Helmholtz
-equation
+To be somewhat specific, let us consider the inhomogeneous nonuniform
+Helmholtz equation (or generalized Poisson equation)
 \begin{equation}
-  [\Delta - g(\xv)] f(\xv) = h(\xv) \; ,
+  [\Delta - h(\xv)] f(\xv) = g(\xv) \; ,
 \end{equation}
 which can be discretized as
-\begin{equation}
+\begin{eqnarray}
+  &&\centereqn{
+      \dfrac{f_{i{-}1,j,k} - 2 f_{ijk} + f_{i{+}1,j,k}}{\delta x^2}
+      + \dfrac{f_{i,j{-}1,k} - 2 f_{ijk} + f_{i,j{+}1,k}}{\delta y^2}
+      + \dfrac{f_{i,j,k{-}1} - 2 f_{ijk} + f_{i,j,k{+}1}}{\delta z^2}
+    }
+  \nonumber \\
+  &&
   \label{Eq-elliptic-discrete}
-  \dfrac{f_{i{+}1,j,k} - 2 f_{ijk} + f_{i{+}1,j,k}}{\delta x^2}
-  + \dfrac{f_{i,j{+}1,k} - 2 f_{ijk} + f_{i,j{+}1,k}}{\delta y^2}
-  + \dfrac{f_{i,j,k{+}1} - 2 f_{ijk} + f_{i,j,k{+}1}}{\delta z^2}
-  - g_{ijk} f_{ijk}
-  = h_{ijk} \; .
-\end{equation}
+  {} - h_{ijk} f_{ijk}
+  = g_{ijk} \; .
+\end{eqnarray}
 
 Equation~(\ref{Eq-elliptic-discrete}) can be solved for $f_{ijk}$ to give
 \begin{equation}
   \label{Eq-discrete-explicit}
-  f_{ijk} = \mathcal{L}_{ijk} f \; , 
+  f_{ijk} = \mathcal{L}_{ijk} f \; ,
 \end{equation}
-where
+with the linear operator
 \begin{equation}
   \mathcal{L}_{ijk} f
-  = \dfrac{???}
-          {???} \; .
+  = \dfrac{\dfrac{f_{i{-}1,j,k} + f_{i{+}1,j,k}}{\delta x^2}
+           + \dfrac{f_{i,j{-}1,k} + f_{i,j{+}1,k}}{\delta y^2}
+           + \dfrac{f_{i,j,k{-}1} + f_{i,j,k{+}1}}{\delta y^2}
+           - g_{ijk}
+          }
+          {\dfrac{2}{\delta x^2}
+           + \dfrac{2}{\delta y^2}
+           + \dfrac{2}{\delta z^2}
+           + h_{ijk}
+          } \; .
 \end{equation}
 
+
+%%%%%%%%%%%
+\subsection{Glossary}
 
 \begin{description}
 
@@ -239,7 +286,7 @@ where
   \index{Gauss--Seidel!red-black}
   A variant of Gauss--Seidel where the grid is divided into two (or more)
   ``colours'', based on whether $i+j+k \mod 2$ is $0$ or $1$ (think of a
-  Go board or checkerboard).
+  Go board or chequerboard).
 
   May be cargo cult, as I haven't seen clear evidence in the literature
   that this is more efficient than plain Gauss--Seidel.
@@ -286,8 +333,10 @@ where
 
 \item[Restricting:] Same as \emph{coarse-graining}
   \index{restricting}
+
 \item[Coarse-graining:]
   \index{coarse-graining}
+  \hypertarget{coarse-graining}
   Mapping values from the given grid to the next coarser one. For
   face-centred multigrid, the coarser grid consists of points that are
   also on the finer grid,
@@ -295,7 +344,7 @@ where
     \tilde{x}_i = x_{2i}
   \end{equation}
 
-  Mathematically, coarse-graining needs to strongly damp any wave numbers
+  Mathematically, coarse-graining needs to strongly damp any wavenumbers
   between the coarser-grid Nyquist wavenumber
   $\tilde{k}_{\rm Ny}=k_{\rm Ny}/2$ and the fine-grid Nyquist wavenumber
   $k_{\rm Ny}$, because those will otherwise get aliased as spurious
@@ -313,9 +362,11 @@ where
   coarse grid points leads to faster convergence.
 
 \item[Fully weighted restriction:]
+  \hypertarget{fully-weighted}
   \index{fully weighted restriction}
   A popular coarse-graining filter:
   \begin{equation}
+    \label{Eq-fully-weighted}
     \tilde{f}_{i}
     = \dfrac{f_{2i-1} + 2 f_{2i} + f_{2i+1}}
             {4}
@@ -324,10 +375,11 @@ where
   Fully weighted restriction completely filters out $k_{\rm Ny}$ and damps
   $\tilde{k}_{\rm Ny}=k_{\rm Ny}/2$ by a factor $1/2$:
 
-  [sketch]
+  \centerline{\includegraphics[width=0.6\textwidth]{fully_weighted}}
 
 \item[Refining:] Same as \emph{fine-graining}
   \index{refining}
+
 \item[Fine-graining:]
   \index{fine-graining}
   Interpolation of values (typically the correction to the current
@@ -347,15 +399,49 @@ where
   Damping the large-scale errors by going to the coarser grid (and
   recursively higher up) and smoothing there.
 
-\item[Cell-centred multigrid:]
+\item[Vertex-centred vs. cell-centred multigrid:]
+  Classical discussions of multigrid restriction
+  (=\hyperlink{coarse-graining}{coarse-graining}), and in particular of
+  \hyperlink{fully-weighted}{fully weighted restriction}
+  assume that every point of the coarse grid is also a point of all finer
+  grids (``vertex-centered multigrid'').
+  For the Pencil Code, this condition holds for a periodic grid, but not
+  if we have boundaries (which implies ``cell-centered multigrid'')
 
-\item[Face (edge?)-centred multigrid:]
+  \addvspace{1\baselineskip}
+  \centerline{\includegraphics[width=0.8\textwidth]{vertex-cell-centered}}
+
+  To deal with this, the current (August 2007) implementation first
+  smoothes using Eq.~(\ref{Eq-fully-weighted}) on the original (finer)
+  grid, and then interpolates that smoothed (i.e.~low-pass filtered)
+  version to the coarser grid points using tri-linear interpolation.
+
+  \bigskip
+
+  Suggestion by Chao-Chin Yang: Instead of insisting that the coarser-grid
+  boundary points are identical with the main-grid ones, we could use
+  coarser grids like this:
+
+  \addvspace{1\baselineskip}
+  \centerline{\includegraphics[width=0.8\textwidth]{vertex-cell-centered2}}
+
+  (The left is Chao-Chin's suggestion, the right is yet another option).
+
+  Advantage of the currently implemented scheme: will also work for $N_x =
+  390$.
+  Disadvantage: currently uses significantly more memory (the
+  fully-weighted field is stored on the finest grid).
+  Could be improved by `chunking', i.e.~doing the ffully-weighted
+  restriction only on a data sub-cube that then gets recycled.
+  It might also be possible to directly formulate an expression for the
+  result of full weighting and interpolating together.
 
 \item[Trilinear interpolation:]
   \index{trilinear interpolation}
   [Formula\ldots]
 
 \item[Adaptive multigrid:]
+
 \item[Algebraic multigrid:]
 
 \item[Semi-coarsening:]
@@ -393,11 +479,6 @@ where
   \index{FMG cycle}
 \item[Variational property:]
 \end{description}
-
-
-%%%%%%%%
-\section{Introduction}
-%%%%%%%%
 
 
 %%%%%%%%
@@ -586,11 +667,11 @@ Isolating $f^{x}_{i,j,k}$, we get\footnote{
              +
              \dfrac{\sum\limits_{\pm}
                       f_{i,j\pm1,k}}
-                   {\delta x^2}
+                   {\delta y^2}
              +
              \dfrac{\sum\limits_{\pm}
                       f_{i,j,k\pm1}}
-                   {\delta x^2}
+                   {\delta z^2}
              - g_{ijk}
             }
             {\dfrac{2}{\delta x^2}
@@ -733,4 +814,5 @@ See \url{http://www.capca.ucalgary.ca/~wdobler/teaching/phys535/notes2.pdf}
 %% Local IspellDict: canadian
 %% End:
 
-% LocalWords:  ifpdf pdftex dvips
+% LocalWords:  ifpdf pdftex dvips multigrid PDE Seidel ijk endfor Ny wavenumber
+% LocalWords:  wavenumbers FMG MHD Dt ik Eq pagecommand pdf

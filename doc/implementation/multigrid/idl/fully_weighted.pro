@@ -15,7 +15,7 @@ syms = texsyms()
 
 save_state
 
-if (!p.charsize eq 0) then !p.charsize=1
+!p.charsize=1.4
 
 plot, kappa, (1+cos(kappa)) / 2., $
       XSTYLE=1, $
