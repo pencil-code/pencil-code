@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.326 2007-08-20 06:28:20 brandenb Exp $
+### $Id: Makefile.src,v 1.327 2007-08-20 15:51:15 dhruba Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -647,6 +647,12 @@ LD_FFTW2=
 #CC=/home/dhruba/mpich2/bin/mpicc #(hyades.maths.qmul.ac.uk)
 #LD_MPI = -L/home/dhruba/mpich2/lib/ -lmpich #(hyades.maths.qmul.ac.uk) 
 ##
+## Dhruba at liverpool, lancaster, manchester 
+## 
+#FC = pgf90 #(lv1)
+#FFLAGS = #(lv1)
+#CC = pgcc #(lv1)
+##
 ## Dhruba's Desktop (starpc37) 
 ##
 #FC=g95 -fno-second-underscore   # (starpc37.maths.qmul.ac.uk)
@@ -656,6 +662,7 @@ LD_FFTW2=
 #CFLAGS=-O3 -DFUNDERSC=1  #(starpc37)
 ##
 ##
+>>>>>>> 1.326
 ## CrayXT4 - (Espoo, Finland)
 ## 1012 Dual-core 2.6GHz Opterons
 ##
