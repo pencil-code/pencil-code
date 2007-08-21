@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.380 2007-08-20 11:37:13 wlyra Exp $
+! $Id: hydro.f90,v 1.381 2007-08-21 20:13:15 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -307,7 +307,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.380 2007-08-20 11:37:13 wlyra Exp $")
+           "$Id: hydro.f90,v 1.381 2007-08-21 20:13:15 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -513,6 +513,7 @@ module Hydro
         case('tor_pert'); call tor_pert(ampluu(j),f,iux,xx,yy,zz)
         case('diffrot'); call diffrot(ampluu(j),f,iuy,xx,yy,zz)
         case('global-shear'); call global_shear(f)
+        case('dark-matter'); call dark_matter_halo(f)
         case('olddiffrot'); call olddiffrot(ampluu(j),f,iuy,xx,yy,zz)
         case('sinwave-phase')
           call sinwave_phase(f,iux,ampl_ux,kx_uu,ky_uu,kz_uu,phase_ux)
