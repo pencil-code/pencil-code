@@ -1,4 +1,4 @@
-! $Id: messages.f90,v 1.12 2007-08-16 21:59:29 dobler Exp $
+! $Id: messages.f90,v 1.13 2007-08-21 04:51:43 ajohan Exp $
 !
 !  This module takes care of messages.
 !
@@ -193,7 +193,7 @@ module Messages
         call terminal_highlight_warning()
         write (*,'(A9)',ADVANCE='NO') "WARNING:"
         call terminal_defaultcolor()
-        write (*,*) trim(location) // ":" // trim(message)
+        write (*,*) trim(location) // ": " // trim(message)
 !
         if (ldie_onwarning) call die_gracefully
 !
@@ -217,7 +217,7 @@ module Messages
 !
       if (present(level)) level_=level
 !
-      if (ip<=level_) write (*,*) trim(location) // ":" // trim(message)
+      if (ip<=level_) write (*,*) trim(location) // ": " // trim(message)
 !
     endsubroutine information
 !***********************************************************************
@@ -339,7 +339,8 @@ module Messages
 !  30-jun-05/tony: coded
 !
       llife_support=.false.
-      call warning('life_support_off','death on error restored')
+      call information('life_support_off', &
+                       'the code will again die in case of a fatal error')
 !
     endsubroutine life_support_off
 !***********************************************************************
@@ -349,8 +350,9 @@ module Messages
 !
 !  30-jun-05/tony: coded
 !
+      call warning('life_support_on', &
+                   'the code will *not* die in case of a fatal error')
       llife_support=.true.
-      call warning('life_support_on','death on error has been suspended')
 !
     endsubroutine life_support_on
 !***********************************************************************
