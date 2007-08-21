@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.246 2007-08-15 10:44:00 bingert Exp $
+! $Id: run.f90,v 1.247 2007-08-21 04:34:10 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -70,7 +70,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.246 2007-08-15 10:44:00 bingert Exp $")
+             "$Id: run.f90,v 1.247 2007-08-21 04:34:10 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -269,13 +269,8 @@
         if (dspec/=impossible) call powersnap(f)
 !
 !  Initialize pencils in the pencil_case...
-!  wd: This has nothing to do with pencil_consistency_check, right? So we
-!   probably want to initialize to zero, rather than penc0
 !
-        if (lpencil_init) then
-!          call initialize_pencils(p,penc0)
-          call initialize_pencils(p,0.)
-        endif
+        if (lpencil_init) call initialize_pencils(p,0.0)
 !
 !  Perform pencil_case consistency check if requested
 !
@@ -445,8 +440,6 @@
           if (lout)   lpencil=lpencil .or. lpenc_diagnos
           if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
           if (lvid)   lpencil=lpencil .or. lpenc_video
-!! For debugging missing pencils
-!!      lpencil = .true.
 !
 !  Time advance
 !
