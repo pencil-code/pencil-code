@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.343 2007-08-20 11:40:15 wlyra Exp $
+! $Id: density.f90,v 1.344 2007-08-21 20:03:28 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -125,7 +125,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.343 2007-08-20 11:40:15 wlyra Exp $")
+           "$Id: density.f90,v 1.344 2007-08-21 20:03:28 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -366,7 +366,8 @@ module Density
       case('mode'); call modes(ampllnrho,coeflnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho,xx,yy,zz)
       case('blob'); call blob(ampllnrho,f,ilnrho,radius_lnrho,xblob,yblob,zblob)
       case('isothermal'); call isothermal_density(f)
-      case('local-isothermal'); call local_isothermal_density(f)  
+      case('local-isothermal'); call local_isothermal_density(f)
+      case('galactic-disk'); call exponential_fall(f)
       case('stratification'); call stratification(f,strati_type)
       case('polytropic_simple'); call polytropic_simple(f)
       case('hydrostatic-z', '1'); print*, &
@@ -388,6 +389,9 @@ module Density
       case('sinx_siny_sinz'); call sinx_siny_sinz(ampllnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho)
       case('corona'); call corona_init(f)
       case('gaussian3d'); call gaussian3d(ampllnrho,f,ilnrho,xx,yy,zz,radius_lnrho)
+
+
+
       case('gaussian-z')
         do n=n1,n2
           f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
@@ -1689,11 +1693,10 @@ module Density
       use Mpicomm
       use Initcond,only:set_thermodynamical_quantities
       use Gravity, only:potential
-      use Sub,     only:power_law,grad,get_radial_distance
+      use Sub,     only:get_radial_distance
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: glnrho
-      real, dimension (nx)   :: pot,tmp1,tmp2,corr,gslnrho
+      real, dimension (nx)   :: pot,tmp1,tmp2
       real, dimension (nx)   :: rr_sph,rr,rr_cyl,lnrhomid
       real                   :: ptlaw,g0_
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
@@ -1735,16 +1738,41 @@ module Density
             pot=0.
           endif
           f(l1:l2,m,n,ilnrho) = lnrhomid+pot
+          tmp1=f(l1:l2,m,n,iglobal_cs2)
+          if (lheader) print*,'correct in here, iglobal_cs2=',iglobal_cs2
         enddo
       enddo
+!
+! Correct the velocities by this density gradient
+!
+      call correct_density_gradient(f)!,iglobal_cs2)
+!
+    endsubroutine local_isothermal_density
+!***********************************************************************
+    subroutine correct_density_gradient(f)!,iglobal_cs2)
 ! 
-!  Correct for density gradient term in the centrifugal force. The
-!  temperature gradient was already corrected for when setting the
-!  thermodynamical quantities.   
-! 
-!  Had to split in two loops because I need the (log)density to 
-!  be fully coded before taking its gradient in y or z
-!      
+! Correct for density gradient term in the centrifugal force. The
+! temperature gradient was already corrected for when setting the
+! thermodynamical quantities.   
+!
+! 21-aug-07/wlad : coded
+!
+      use FArrayManager
+      use Mpicomm,only: stop_it
+      use Sub,    only: get_radial_distance,grad
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: glnrho
+      real, dimension (nx)   :: rr_cyl,rr_sph
+      real, dimension (nx)   :: tmp1,tmp2,corr,gslnrho
+      integer,pointer        :: iglobal_cs2
+      integer                :: i
+!
+      if (lroot) print*,'Correcting density gradient on the '//&
+           'centrifugal force'
+!
+      call farray_use_global('cs2',iglobal_cs2)
+!
       do m=m1,m2
         do n=n1,n2
 !
@@ -1756,7 +1784,7 @@ module Density
           else
             gslnrho=glnrho(:,1)
           endif
-          corr=gslnrho*f(l1:l2,m,n,iglobal_cs2)  
+          corr=gslnrho*f(l1:l2,m,n,iglobal_cs2)
           if (ltemperature) corr=corr/gamma
 !
           if (lcartesian_coords) then
@@ -1773,11 +1801,15 @@ module Density
                 !it's inside the frozen zone, so 
                 !just set tmp2 to zero and emit a warning
                 tmp2(i)=0.
-                if (ip<=10) call warning('local_isothermal_density',&
-                     'the density gradient is too steep inside the frozen zone')
+                if (ip<=10) &
+                     call warning('correct_density_gradient','Cannot '//&
+                     'have centrifugal equilibrium in the inner '//&
+                     'domain. The pressure gradient is too steep.')
               else
-                print*,'local_isothermal_density: the density gradient '
-                print*,'is too steep at x,y,z=',x(i+l1-1),y(m),z(n)
+                print*,'correct_pressure_gradient: ',&
+                       'cannot have centrifugal equilibrium in the inner ',&
+                       'domain. The pressure gradient is too steep at ',&
+                       'x,y,z=',x(i+l1-1),y(m),z(n)
                 call stop_it("")
               endif
             endif
@@ -1791,8 +1823,38 @@ module Density
         enddo
       enddo
 !
-    endsubroutine local_isothermal_density
+    endsubroutine correct_density_gradient
 !***********************************************************************
+    subroutine exponential_fall(f)
+!
+! Exponentially falling radial density profile
+!
+      use Sub, only: get_radial_distance
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx) :: rr_sph,rr_cyl
+      logical :: lheader
+!
+      if (lroot) print*,'setting exponential falling '//&
+           'density with e-fold=',r_ref
+!
+      do m=m1,m2
+      do n=n1,n2
+        lheader=lroot.and.(m==m1).and.(n==n1)
+        call get_radial_distance(rr_sph,rr_cyl)
+        f(l1:l2,m,n,ilnrho) = lnrho0 - rr_cyl/r_ref
+        !call correct_density_gradient(f)
+
+        !!correct pressure gradient
+        !tmp1=(f(:,:,:,iuy)/xx)**2
+        !corr=cs20/rd
+        !tmp2=tmp1 - corr/xx
+        !!f(:,:,:,iuy)= sqrt(tmp2)*xx
+      enddo
+      enddo
+!
+    endsubroutine exponential_fall
+!**********************************************************************
     subroutine polytropic_simple(f)
 !
 !  Polytropic stratification (for lnrho and ss)
