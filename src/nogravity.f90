@@ -1,4 +1,4 @@
-! $Id: nogravity.f90,v 1.9 2007-08-14 01:14:21 dobler Exp $
+! $Id: nogravity.f90,v 1.10 2007-08-21 20:08:41 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -32,6 +32,7 @@ module Gravity
 
   interface acceleration
     module procedure acceleration_penc
+    module procedure acceleration_penc_1D
   endinterface
 
   real, dimension(nx) :: gravx_pencil=0.,gravy_pencil=0.,gravz_pencil=0.
@@ -72,7 +73,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nogravity.f90,v 1.9 2007-08-14 01:14:21 dobler Exp $")
+           "$Id: nogravity.f90,v 1.10 2007-08-21 20:08:41 wlyra Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -285,6 +286,24 @@ module Gravity
       if (NO_WARN) gg=0.
 !
     endsubroutine acceleration_penc
+!***********************************************************************
+    subroutine acceleration_penc_1D(gr)
+!
+!  Calculates gravitational acceleration on a pencil
+!
+!  21-apr-07/tobi: adapted from potential_penc
+!
+      use Messages, only: fatal_error
+
+      real, dimension (nx), intent (out) :: gr
+!
+!  Calculate acceleration from master pencils defined in initialize_gravity
+!
+      call fatal_error("acceleration_penc_1D","Not implemented")
+
+      if (NO_WARN) gr=0.
+!
+    endsubroutine acceleration_penc_1D
 !***********************************************************************
     subroutine rprint_gravity(lreset,lwrite)
 !

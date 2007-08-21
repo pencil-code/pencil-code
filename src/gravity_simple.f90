@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.41 2007-06-25 08:38:16 ajohan Exp $
+! $Id: gravity_simple.f90,v 1.42 2007-08-21 20:08:41 wlyra Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -38,6 +38,7 @@ module Gravity
 
   interface acceleration
     module procedure acceleration_penc
+    module procedure acceleration_penc_1D
   endinterface
 !
 !  Parameters used throughout entire module
@@ -109,7 +110,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.41 2007-06-25 08:38:16 ajohan Exp $")
+           "$Id: gravity_simple.f90,v 1.42 2007-08-21 20:08:41 wlyra Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.
@@ -596,6 +597,24 @@ module Gravity
       gg(:,3) = gravz_zpencil(n)
 !
     endsubroutine acceleration_penc
+!***********************************************************************
+    subroutine acceleration_penc_1D(gr)
+!
+!  Calculates gravitational acceleration on a pencil
+!
+!  21-apr-07/tobi: adapted from potential_penc
+!
+      use Messages, only: fatal_error
+
+      real, dimension (nx), intent (out) :: gr
+!
+!  Calculate acceleration from master pencils defined in initialize_gravity
+!
+      call fatal_error("acceleration_penc_1D","Not implemented")
+
+      if (NO_WARN) gr=0.
+!
+    endsubroutine acceleration_penc_1D
 !***********************************************************************
     subroutine read_gravity_init_pars(unit,iostat)
 !
