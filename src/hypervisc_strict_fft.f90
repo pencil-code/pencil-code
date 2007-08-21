@@ -1,4 +1,4 @@
-! $Id: hypervisc_strict_fft.f90,v 1.1 2007-08-21 10:28:08 ajohan Exp $
+! $Id: hypervisc_strict_fft.f90,v 1.2 2007-08-21 12:41:19 ajohan Exp $
 
 !
 !  This module applies a sixth order hyperviscosity to the equation
@@ -47,7 +47,7 @@ module Hypervisc_strict
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: hypervisc_strict_fft.f90,v 1.1 2007-08-21 10:28:08 ajohan Exp $")
+           "$Id: hypervisc_strict_fft.f90,v 1.2 2007-08-21 12:41:19 ajohan Exp $")
 !
 !  Set indices for auxiliary variables
 ! 
@@ -88,7 +88,7 @@ module Hypervisc_strict
 !  Identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: hypervisc_strict_fft.f90,v 1.1 2007-08-21 10:28:08 ajohan Exp $")
+        "$Id: hypervisc_strict_fft.f90,v 1.2 2007-08-21 12:41:19 ajohan Exp $")
 !
 !  Derivatives are taken in k-space due to the complicated cross terms.
 !
@@ -132,29 +132,29 @@ module Hypervisc_strict
 !
 !  del2(del2(del2(u)))
 !
-        del2del2del2=-(kx**6+ky**6+kz**6)
+        del2del2del2=-(kx**2+ky**2+kz**2)**3
 !
-        duxhat_re(ikx,iky,ikz)=del2del2del2*uxhat_re(ikx,iky,ikz)
-        duxhat_im(ikx,iky,ikz)=del2del2del2*uxhat_im(ikx,iky,ikz)
-        duyhat_re(ikx,iky,ikz)=del2del2del2*uyhat_re(ikx,iky,ikz)
-        duyhat_im(ikx,iky,ikz)=del2del2del2*uyhat_im(ikx,iky,ikz)
-        duzhat_re(ikx,iky,ikz)=del2del2del2*uzhat_re(ikx,iky,ikz)
-        duzhat_im(ikx,iky,ikz)=del2del2del2*uzhat_im(ikx,iky,ikz)
+        duxhat_re(ikz,iky,ikx)=del2del2del2*uxhat_re(ikz,iky,ikx)
+        duxhat_im(ikz,iky,ikx)=del2del2del2*uxhat_im(ikz,iky,ikx)
+        duyhat_re(ikz,iky,ikx)=del2del2del2*uyhat_re(ikz,iky,ikx)
+        duyhat_im(ikz,iky,ikx)=del2del2del2*uyhat_im(ikz,iky,ikx)
+        duzhat_re(ikz,iky,ikx)=del2del2del2*uzhat_re(ikz,iky,ikx)
+        duzhat_im(ikz,iky,ikx)=del2del2del2*uzhat_im(ikz,iky,ikx)
 !
 !  del2(del2(grad(div(u))))
 !
         del2del2divu=-1/3.* & ! i*1/3*del2(del2(divu)) operator
             (kx**2+ky**2+kz**2)**2* &
-            (kx*cmplx(uxhat_re(ikx,iky,ikz),uxhat_im(ikx,iky,ikz)) + &
-             ky*cmplx(uyhat_re(ikx,iky,ikz),uyhat_im(ikx,iky,ikz)) + &
-             kz*cmplx(uzhat_re(ikx,iky,ikz),uzhat_im(ikx,iky,ikz)) )
+            (kx*cmplx(uxhat_re(ikz,iky,ikx),uxhat_im(ikz,iky,ikx)) + &
+             ky*cmplx(uyhat_re(ikz,iky,ikx),uyhat_im(ikz,iky,ikx)) + &
+             kz*cmplx(uzhat_re(ikz,iky,ikx),uzhat_im(ikz,iky,ikx)) )
 
-        duxhat_re(ikx,iky,ikz)=duxhat_re(ikx,iky,ikz) +  real(kx*del2del2divu)
-        duxhat_im(ikx,iky,ikz)=duxhat_im(ikx,iky,ikz) + aimag(kx*del2del2divu)
-        duyhat_re(ikx,iky,ikz)=duyhat_re(ikx,iky,ikz) +  real(ky*del2del2divu)
-        duyhat_im(ikx,iky,ikz)=duyhat_im(ikx,iky,ikz) + aimag(ky*del2del2divu)
-        duzhat_re(ikx,iky,ikz)=duzhat_re(ikx,iky,ikz) +  real(kz*del2del2divu)
-        duzhat_im(ikx,iky,ikz)=duzhat_im(ikx,iky,ikz) + aimag(kz*del2del2divu)
+        duxhat_re(ikz,iky,ikx)=duxhat_re(ikz,iky,ikx) +  real(kx*del2del2divu)
+        duxhat_im(ikz,iky,ikx)=duxhat_im(ikz,iky,ikx) + aimag(kx*del2del2divu)
+        duyhat_re(ikz,iky,ikx)=duyhat_re(ikz,iky,ikx) +  real(ky*del2del2divu)
+        duyhat_im(ikz,iky,ikx)=duyhat_im(ikz,iky,ikx) + aimag(ky*del2del2divu)
+        duzhat_re(ikz,iky,ikx)=duzhat_re(ikz,iky,ikx) +  real(kz*del2del2divu)
+        duzhat_im(ikz,iky,ikx)=duzhat_im(ikz,iky,ikx) + aimag(kz*del2del2divu)
 !        print'(3f8.1,2e15.5)', kx, ky, kz, duxhat_re(ikx,iky,ikz), duxhat_im(ikx,iky,ikz)
 !
       enddo; enddo; enddo
