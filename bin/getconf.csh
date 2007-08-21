@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.204 2007-08-21 13:02:52 dhruba Exp $
+# $Id: getconf.csh,v 1.205 2007-08-21 13:10:01 dhruba Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -21,7 +21,6 @@ if ($?PENCIL_HOME) setenv PATH ${PATH}:${PENCIL_HOME}/bin
 
 # Save working directory for other scripts we call
 setenv PENCIL_WORKDIR `pwd`
-
 newdir:
 # Prevent code from running twice (and removing files by accident)
 if (-e "LOCK") then
@@ -117,7 +116,6 @@ set hn = `uname -n`
 if ($mpi) echo "Running under MPI"
 set mpirunops  = ''  # options before -np $ncpus
 set mpirunops2 = ''  # options after -np $ncpus
-
 # Try to reconstruct submit host (to distinguish between the different
 # clusters that have nodes called `node7', etc). Possibly, $masterhost and
 # $masternode could be merged, but in fact these might be different host
@@ -264,6 +262,17 @@ else if ($hn =~ *.maths.qmul.ac.uk) then
            endif
          endif
 # For North-West Grid UK
+else if ($hn =~ lv1*) then
+       echo "Liverpool Grid - NW-grid"
+       set local_disc = 0
+       set one_local_disc = 0
+       set local_binary = 0
+       set mpirun = mpisub 
+       set myprocpernode = 4
+       set mpisub_myproc = "x4"
+       set mynodes = `expr $ncpus / $myprocpernode `
+       echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
+       set npops  = "$mynodes$mpisub_myproc"
 else if ($hn =~ penumbra*) then
        echo "Lancaster Grid - NW-grid"
        set local_disc = 0
@@ -275,7 +284,6 @@ else if ($hn =~ penumbra*) then
        set mynodes = `expr $ncpus / $myprocpernode `
        echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
        set npops  = "$mynodes$mpisub_myproc"
-     endif
 else if ($hn =~ man2*) then
        echo "Manchester Grid - NW-grid"
        set local_disc = 0
@@ -287,8 +295,7 @@ else if ($hn =~ man2*) then
        set mynodes = `expr $ncpus / $myprocpernode `
        echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
        set npops  = "$mynodes$mpisub_myproc"
-       echo $npops
-     endif
+
 #------------------------------------------------
 else if ($hn =~ giga[0-9][0-9]) then
   echo "Nordita cluster - Copenhagen"
@@ -579,7 +586,7 @@ else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
     set mpirun = ''
   endif
 
-else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
+ else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
   echo "Copson Cluster - St. Andrews"
   if ($?PE) then                            # Are we running under SGE?   
     if ($PE =~ gm-test) then                    # Using Myrinet?
@@ -640,6 +647,68 @@ else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
       set mpirunops = "-local -machinefile hostfile"
      set local_disc=0
   endif
+# Commented by DHRUBA as different configuration seems to be workin in Liverpool grid
+# else if (($hn =~ lv1*.nw-grid.ac.uk) || ($hn =~ lv1*.st-and.ac.uk)) then
+#  echo "Liverpool Grid"
+#  if ($?PE) then                            # Are we running under SGE?   
+#    if ($PE =~ gm-test) then                    # Using Myrinet?
+#      setenv SSH /usr/bin/rsh
+#      setenv SCP /usr/bin/rcp
+#      cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc > hostfile
+#      set mpirun = /usr/local/mpich-gm_INTEL/bin/mpirun 
+#      echo "Setting mpirun... $mpirun"
+#      set mpirunops = "-local -machinefile $TMPDIR/machines"
+#      setenv SCRATCH_DIR `cat $TMPDIR/scratch`
+#      set local_disc=1     
+#      set one_local_disc=0
+#      set nprocpernode=2
+#      # Hack to give common scratch space path on each node
+#      #foreach host ($nodelist)
+#      #   $SSH $host "rm -rf $SCRATCH_DIR; ln -s ${dollar}TMPDIR $SCRATCH_DIR; ls -lR /tmp/pencil*" 
+#      #end
+#      echo '--------------- MPI_HOSTFILE ----------------'
+#      cat hostfile 
+#      echo '----------- MPI_HOSTFILE - END --------------'
+#    else if ($PE =~ gm) then                    # Using Myrinet?
+#      #setenv SSH ssh
+#      #setenv SCP scp
+#      setenv SSH /usr/bin/rsh
+#      setenv SCP /usr/bin/rcp
+##      setenv MPIHOME /usr/local/mpich-gm-1.2.6..14/pgi-intel-7.1/bin
+##      setenv PATH ${SGE_O_PATH}:${PATH} 
+#      set mpirun = /usr/local/mpi_wrappers/mpirun
+##${MPIHOME}/mpirun
+#      set mpirunops = "-local -machinefile $TMPDIR/machines"
+#
+#      setenv SCRATCH_DIR `cat $TMPDIR/scratch`
+#      set local_disc=1     
+#      set one_local_disc=0
+#      set nprocpernode=2
+#      echo '--------------- MPI_HOSTFILE ----------------'
+#      cat $TMPDIR/machines
+#      cat $TMPDIR/machines >! hostfile
+#      echo '----------- MPI_HOSTFILE - END --------------'
+#      env | sort >! env.run
+#    else if ($PE =~ score) then             # Using SCore?
+#      #set mpirunops = "-wait -F $HOME/.score/ndfile.$JOB_ID -e /tmp/scrun.$JOB_ID"
+#      #echo '--------------- PE_HOSTFILE ----------------'
+#      #cat $PE_HOSTFILE
+#      #echo '----------- PE_HOSTFILE - END --------------'
+#      set mpirunops = "-wait -F $PE_HOSTFILE -e $TMPDIR/scrun.$JOB_ID"
+#      set mpirun = /opt/score/bin/scout 
+#      echo "Setting mpirun... $mpirun"
+#      #setenv SCRATCH_DIR /scratch/$JOB_ID
+#      setenv SCRATCH_DIR $TMPDIR
+#      set local_disc=1
+#      set one_local_disc=0
+#    endif
+#  else
+#      echo $hn >! hostfile
+#      set mpirun = /usr/local/mpich-gm_INTEL/bin/mpirun 
+#      echo "Setting mpirun... $mpirun"
+#      set mpirunops = "-local -machinefile hostfile"
+#     set local_disc=0
+#  endif
 
 else if ($hn =~ obelix || \
           ($hn =~ node[0-9][0-9] && $masterhost =~ obelix)) then
