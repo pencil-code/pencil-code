@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.328 2007-08-20 16:00:17 dhruba Exp $
+### $Id: Makefile.src,v 1.329 2007-08-21 09:01:09 dhruba Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -647,11 +647,11 @@ LD_FFTW2=
 #CC=/home/dhruba/mpich2/bin/mpicc #(hyades.maths.qmul.ac.uk)
 #LD_MPI = -L/home/dhruba/mpich2/lib/ -lmpich #(hyades.maths.qmul.ac.uk) 
 ##
-## Dhruba at liverpool, lancaster, manchester 
+## Dhruba at manchester, lancaster, liverpool
 ## 
-#FC = pgf90 #(lv1)
-#FFLAGS = #(lv1)
-#CC = pgcc #(lv1)
+#FC = pgf90 #(man2|penumbra|lv1)
+#FFLAGS = #(man2|penumbra|lv1)
+#CC = pgcc #(man2|penumbra|lv1)
 ##
 ## Dhruba's Desktop (starpc37) 
 ##
