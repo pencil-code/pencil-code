@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.203 2007-08-20 22:28:26 dhruba Exp $
+# $Id: getconf.csh,v 1.204 2007-08-21 13:02:52 dhruba Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -264,6 +264,18 @@ else if ($hn =~ *.maths.qmul.ac.uk) then
            endif
          endif
 # For North-West Grid UK
+else if ($hn =~ penumbra*) then
+       echo "Lancaster Grid - NW-grid"
+       set local_disc = 0
+       set one_local_disc = 0
+       set local_binary = 0
+       set mpirun = mpisub 
+       set myprocpernode = 2
+       set mpisub_myproc = "x2"
+       set mynodes = `expr $ncpus / $myprocpernode `
+       echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
+       set npops  = "$mynodes$mpisub_myproc"
+     endif
 else if ($hn =~ man2*) then
        echo "Manchester Grid - NW-grid"
        set local_disc = 0
