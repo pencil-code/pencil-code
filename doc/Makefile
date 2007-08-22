@@ -78,7 +78,7 @@ manual.ps.gz: manual.ps
 	gzip -f manual.ps
 
 diag-table.tex:
-	./extract-diag-doc -o diag-table.tex
+	./extract-diag-doc -q -o diag-table.tex
 
 driver_:
 	@printf "%s\n" \
