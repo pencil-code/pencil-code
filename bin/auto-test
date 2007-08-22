@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.94 2007-08-17 16:10:05 wlyra Exp $
+# CVS: $Id: auto-test,v 1.95 2007-08-22 13:27:28 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -97,6 +97,7 @@ my $headerpat   = '^-*\s*(-+\s*[A-Za-z0-9_]+)+-*\s*$'; # regexp for header line
 my $noheader    = "Couldn't find header line";
 my $cfloat = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # regexp
                                                                # for C float
+my $ieee_float = "(?:$cfloat|[+-]?(?:NaN|Inf))"; # C float | ±NaN | ±Inf
 my $res;
 my ($t_comp,$t_start,$t_run,$t_res) = (1,1,1,1); # test everything by default
 my (%opts);			# variables written by GetOptions
@@ -121,6 +122,7 @@ Options:
   -C,  --clean             \tClean up (make cleann) before compiling
   -c,  --compile-only      \tTest compilation only
   -n,  --norun             \tTest compilation and starting only
+  -f,  --results-from-file \tDon't run, read results from data/timeseries.dat
   -r,  --reload            \tKeep reloading parameters (using KEEP_RELOADING)
   -l,  --list              \tList test directories (don't run any tests)
   -L,  --list-all          \tList test dirs including those lacking reference.out
@@ -155,37 +157,41 @@ eval {
     Getopt::Long::config("bundling"); # makes single-letter options case-sensitive
 };
 GetOptions(\%opts,
-	   qw( -h   --help
-	       -v   --version
-	            --debug
-	       -C   --clean
-	       -c   --compile-only
-	       -n   --norun
+           qw( -h   --help
+               -v   --version
+                    --debug
+               -C   --clean
+               -c   --compile-only
+               -n   --norun
+               -f   --results-from-file
                -r   --reload
-	       -l   --list
-	       -L   --list-all
-	       -t   --time
-	       -i=s --infofile=s
-	       -D=s --pencil-home=s
-	       -N=s --nice=s
-	       -j=n --jobs=n
-	       -d   --datadir
-	       -s   --short
-	       -p=s --postproc=s
+               -l   --list
+               -L   --list-all
+               -t   --time
+               -i=s --infofile=s
+               -D=s --pencil-home=s
+               -N=s --nice=s
+               -j=n --jobs=n
+               -d   --datadir
+               -s   --short
+               -p=s --postproc=s
                -a   --all-dirs
                     --rsh=s
                     --nodelist=s
-	            --no-summary
-	            --nolock      --no-lock
-	       )) or $help=1, die "$!\n";
+                    --no-summary
+                    --nolock      --no-lock
+               )) or $help=1, die "$!\n";
 
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.94 2007-08-17 16:10:05 wlyra Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.95 2007-08-22 13:27:28 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
+my $res_from_file = ($opts{'f'} || $opts{'res_from_file'} || 0 );
+if ($res_from_file) { $t_comp=$t_start=$t_run=0 };
+
 my $debug       = (              $opts{'debug'}       || 0    );
 my $clean       = ($opts{'C'} || $opts{'clean'}       || 0    );
 my $reload      = ($opts{'r'} || $opts{'reload'}      || 0    );
@@ -204,7 +210,8 @@ my $deep        = ($opts{'a'} || $opts{'all-dirs'}    || 0    );
 my $rsh         = (              $opts{'rsh'}         || 'ssh');
 my $nodelist    = (              $opts{'nodelist'}    || 0    );
 my $nosummary   = (              $opts{'no-summary'}  || 0    );
-my $nolock      = (              $opts{'nolock'}      ||$opts{'no-lock'} || 0 );
+my $nolock      = (              $opts{'nolock'}      || $opts{'no-lock'}
+                                 || 0 );
 
 my @exit_status=('setting up directory',
                  'cleaning up',
@@ -241,7 +248,7 @@ if ($debug) {
 # compiling and starting
 $t_start &&= $t_comp;
 $t_run   &&= $t_start;
-$t_res   &&= $t_run;
+$t_res   &&= ($t_run || $res_from_file);
 
 # Check for lock file and write one
 handle_lock_file() or exit(LOCK_FAILED) unless ($list_only);
@@ -634,10 +641,21 @@ sub test_results {
 
     if ($t_res) {
 	my ($rdmsg,$diagn);
-	print "    Validating results.. ";
+        print "    Validating results.. ";
         printf "$indi_fmt ", '';
-	my @output = split(/[\n\r]+/,$res);
+
+	my @output;
+        if ($res_from_file) {
+            @output = read_lines('data/time_series.dat', $rdmsg);
+	    if ($rdmsg) {
+                my_ok(0,1,"[$rdmsg]",$dir,"results");
+                return;
+            }
+        } else {
+            @output = split(/[\n\r]+/,$res);
+        }
 	my_ok(0,0,"",$dir,"results","quiet");
+
 	my @foutput = extract_results(\@output); # filtered output
 	if ($foutput[0] ne "$noheader") {
 	    my @ref_output = read_lines($reference_out,$rdmsg);
@@ -675,7 +693,7 @@ sub extract_results {
 	    $ncols = @labels;
 	} else {
 	    # After header line
-	    next unless ($line =~ /^(\s+$cfloat){$ncols}\s*$/);
+	    next unless ($line =~ /^(\s+$ieee_float){$ncols}\s*$/i);
 	    push @results, $line;
 	}
     }
@@ -749,14 +767,15 @@ sub compare_lines_fuzzily {
     } else {			  #  diagnostic lines --> fuzzy comparison
 	my @x = split(/\s+/,$xline);
 	my @y = split(/\s+/,$yline);
-	@x = grep(/[0-9]/, @x);	# weed out empty entries
-	@y = grep(/[0-9]/, @y);
+	@x = grep(/([0-9]|NaN|Inf)/i, @x);	# weed out empty entries
+	@y = grep(/([0-9]|NaN|Inf)/i, @y);
 
 	return 0 unless ($#x == $#y); # lengths must match
 	foreach my $i (0..$#x) {
 	    my ($x,$y) = ($x[$i], $y[$i]);
 	    $equal = 0 unless (compare_numbers_fuzzily($x,$y));
-            print STDERR "\$equal = $equal\n" if ($debug);
+            print STDERR "compare_lines_fuzzily: \$equal = $equal for <$x>, <$y>\n"
+              if ($debug);
 	}
     }
 
@@ -771,6 +790,12 @@ sub compare_numbers_fuzzily {
 
     my $debug = 0;
 
+
+    # Short-circuit NaN/Inf -- they will be taken care of as they will make
+    # any comparison fail
+    return 1 if (   ($x =~ /^([+-]?(NaN|Inf))$/i)
+                 || ($y =~ /^([+-]?(NaN|Inf))$/i) );
+
     # Regexp for general float, groups into pre-exponent and
     # post-exponent part
     my $numeric = '((?:[+-]?)(?=\d|\.\d)\d*(?:\.\d*)?)((?:[EeDd](?:[+-]?\d+))?)';
@@ -784,8 +809,8 @@ sub compare_numbers_fuzzily {
 
     # Are $x, $y really numeric?
     unless(defined($x1) && defined($y1)) {
-	warn "Not a numerical value: <$x> or <$y>\n";
-	return 0;
+        warn "Not a numerical value: <$x> or <$y>\n";
+        return 0;
     }
 
     # Short-circuit identical numbers (so Perl's rounding errors to double
@@ -885,34 +910,36 @@ sub test_rundir {
     $t_global{'compile'} += ($t1-$t0);
 
     # 2. Ensure we have a data directory and test starting...
-    return unless ($t_start);	# no need for a data directory unless we start
-				# the code
-    if (! -d 'data') {
-      if (!$datadir) {
-        if (-l 'data') {
-          print "        data is file or empty link;\n"
-          . "        removing and generating data -> $tmpdir\n";
-          system("rm", "data");
-          }
-       else {
-         print "        No data directory; generating data -> $tmpdir\n";
-         }
-      system("mkdir -p $tmpdir; ln -s $tmpdir data");
-      $created_datadir = 1;
-      }
-      else {
-        if (-l 'data') {
-          print "        data is file or empty link;\n"
-          . "        removing and generating data directory \n";
-          system("rm", "data");
-          }
-        else {
-          print "        No data directory; generating data directory\n";}
-        system("mkdir -p data");
-      }
+    if ($t_start) {         # no need for a data directory unless we start
+                            # the code
+        if (! -d 'data') {
+            if (!$datadir) {
+                if (-l 'data') {
+                    print "        data is file or empty link;\n"
+                          . "        removing and generating data -> $tmpdir\n";
+                    system("rm", "data");
+                }
+                else {
+                    print "        No data directory; generating data -> $tmpdir\n";
+                }
+                system("mkdir -p $tmpdir; ln -s $tmpdir data");
+                $created_datadir = 1;
+            }
+            else {
+                if (-l 'data') {
+                    print "        data is file or empty link;\n"
+                      . "        removing and generating data directory \n";
+                    system("rm", "data");
+                }
+                else {
+                    print "        No data directory; generating data directory\n";}
+                system("mkdir -p data");
+            }
+        }
+        test_start($dir,$t1);
+        goto cleanup if ($test_status);
     }
-    test_start($dir,$t1);
-    goto cleanup if ($test_status);
+
     # 3 ..and running (we only get here if compiling and starting was OK)
     my $t2 = time();
     test_run($dir,$t2);
@@ -1084,7 +1111,7 @@ END {
 
             my $t1_global = time(); # end time
             print "Total wall-clock time:            ",
-              s_to_hms($t1_global-$t0_global, 7),
+                     s_to_hms(time_diff($t0_global,$t1_global), 7),
               " = ", s_to_hms($t_global{'compile'}),
               " + ", s_to_hms($t_global{'start+run'}),
               "\n";
