@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.284 2007-08-16 22:06:45 dobler Exp $
+! $Id: param_io.f90,v 1.285 2007-08-22 12:47:09 ajohan Exp $
 
 module Param_IO
 
@@ -1085,27 +1085,27 @@ module Param_IO
      integer :: i
 !
      if (lroot) then
-     print*,'write_pencil_info: iproc=',iproc
-     open(1,FILE=trim(datadir)//'/pencils.list')
-     write(1,*) 'Pencils requested:'
-     do i=1,npencils
-       if (lpenc_requested(i)) write(1,*) i, pencil_names(i)
-     enddo
-     write(1,*) ''
-     write(1,*) 'Pencils requested for diagnostics:'
-     do i=1,npencils
-       if (lpenc_diagnos(i)) write(1,*) i, pencil_names(i)
-     enddo
-     write(1,*) ''
-     write(1,*) 'Pencils requested for 2-D diagnostics:'
-     do i=1,npencils
-       if (lpenc_diagnos2d(i)) write(1,*) i, pencil_names(i)
-     enddo
-     write(1,*) ''
-     write(1,*) 'Pencils requested video output'
-     do i=1,npencils
-       if (lpenc_video(i)) write(1,*) i, pencil_names(i)
-     enddo
+       open(1,FILE=trim(datadir)//'/pencils.list')
+       write(1,*) 'Pencils requested:'
+       do i=1,npencils
+         if (lpenc_requested(i)) write(1,*) i, pencil_names(i)
+       enddo
+       write(1,*) ''
+       write(1,*) 'Pencils requested for diagnostics:'
+       do i=1,npencils
+         if (lpenc_diagnos(i)) write(1,*) i, pencil_names(i)
+       enddo
+       write(1,*) ''
+       write(1,*) 'Pencils requested for 2-D diagnostics:'
+       do i=1,npencils
+         if (lpenc_diagnos2d(i)) write(1,*) i, pencil_names(i)
+       enddo
+       write(1,*) ''
+       write(1,*) 'Pencils requested video output'
+       do i=1,npencils
+         if (lpenc_video(i)) write(1,*) i, pencil_names(i)
+       enddo
+       print*, 'write_pencil_info: pencil information written to the file pencils.list'
      endif
 !
    endsubroutine write_pencil_info
