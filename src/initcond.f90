@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.215 2007-08-21 20:13:15 wlyra Exp $
+! $Id: initcond.f90,v 1.216 2007-08-22 11:52:58 brandenb Exp $
 
 module Initcond
 
@@ -19,7 +19,7 @@ module Initcond
   public :: soundwave,sinwave,sinwave_phase,coswave,coswave_phase,cos_cos_sin
   public :: gaunoise, posnoise
   public :: gaunoise_rprof
-  public :: gaussian, gaussian3d, beltrami, tor_pert
+  public :: gaussian, gaussian3d, beltrami, rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification
   public :: modes, modev, modeb, crazy
   public :: trilinear, baroclinic
@@ -1009,6 +1009,32 @@ module Initcond
       endif
 !
     endsubroutine beltrami
+!***********************************************************************
+    subroutine rolls(ampl,f,i,kx,kz)
+!
+!  convection rolls (as initial condition)
+!
+!  21-aug-07/axel: coded
+!
+      integer :: i,j
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,kx,kz,zbot
+!
+!  check input parameters
+!
+      zbot=xyz0(3)
+      if (lroot) print*,'rolls: i,kx,kz,zbot=',i,kx,kz,zbot
+!
+!  set stream function psi=sin(kx*x)*sin(kz*(z-zbot))
+!
+      j=i
+      f(:,:,:,j)=f(:,:,:,j)-ampl*kz*spread(spread(sin(kx*x       ),2,my),3,mz)&
+                                   *spread(spread(cos(kz*(z-zbot)),1,mx),2,my)
+      j=i+2
+      f(:,:,:,j)=f(:,:,:,j)+ampl*kx*spread(spread(cos(kx*x       ),2,my),3,mz)&
+                                   *spread(spread(sin(kz*(z-zbot)),1,mx),2,my)
+!
+    endsubroutine rolls
 !***********************************************************************
     subroutine robertsflow(ampl,f,i)
 !

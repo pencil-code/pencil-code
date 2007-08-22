@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.72 2007-08-19 22:55:00 bingert Exp $
+! $Id: viscosity.f90,v 1.73 2007-08-22 11:52:58 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -98,7 +98,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.72 2007-08-19 22:55:00 bingert Exp $")
+           "$Id: viscosity.f90,v 1.73 2007-08-22 11:52:58 brandenb Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -447,8 +447,9 @@ module Viscosity
       logical, dimension (npencils) :: lpencil_in
 !
       if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
-
-      if (lpencil_in(i_visc_heat)) lpencil_in(i_rho)=.true.
+!
+!AB: I think the following is not correct!
+!     if (lpencil_in(i_visc_heat)) lpencil_in(i_rho)=.true.
 !
     endsubroutine pencil_interdep_viscosity
 !***********************************************************************

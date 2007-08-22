@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.381 2007-08-21 20:13:15 wlyra Exp $
+! $Id: hydro.f90,v 1.382 2007-08-22 11:52:58 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -91,7 +91,7 @@ module Hydro
   real :: tau_damp_ruxm1=0.,tau_damp_ruym1=0.,tau_damp_ruzm1=0.
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_damp_ruzm=0.,tau_diffrot1=0.
   real :: ampl1_diffrot=0.,ampl2_diffrot=0.
-  real :: Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.
+  real :: Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.,kz_diffrot=0.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   real :: k1_ff=1.,ampl_ff=1.,width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
   real :: utop=0.,ubot=0.,omega_out=0.,omega_in=0.
@@ -111,7 +111,8 @@ module Hydro
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym,tau_damp_ruzm,tau_diffrot1, &
        ampl1_diffrot,ampl2_diffrot,uuprof, &
-       xexp_diffrot,kx_diffrot,lremove_mean_momenta,lremove_mean_flow, &
+       xexp_diffrot,kx_diffrot,kz_diffrot, &
+       lremove_mean_momenta,lremove_mean_flow, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
@@ -307,7 +308,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.381 2007-08-21 20:13:15 wlyra Exp $")
+           "$Id: hydro.f90,v 1.382 2007-08-22 11:52:58 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -506,6 +507,7 @@ module Hydro
         case('Beltrami-x'); call beltrami(ampluu(j),f,iuu,kx=kx_uu)
         case('Beltrami-y'); call beltrami(ampluu(j),f,iuu,ky=ky_uu)
         case('Beltrami-z'); call beltrami(ampluu(j),f,iuu,kz=kz_uu)
+        case('rolls'); call rolls(ampluu(j),f,iuu,kx_uu,kz_uu)
         case('trilinear-x'); call trilinear(ampluu(j),f,iux,xx,yy,zz)
         case('trilinear-y'); call trilinear(ampluu(j),f,iuy,xx,yy,zz)
         case('trilinear-z'); call trilinear(ampluu(j),f,iuz,xx,yy,zz)
@@ -2759,7 +2761,7 @@ use Mpicomm, only: stop_it
       use Mpicomm
       use Cdata
       use Sub, only: step
-      real :: slope,uinn,uext
+      real :: slope,uinn,uext,zbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: prof_amp1,prof_amp2
@@ -2777,6 +2779,20 @@ use Mpicomm, only: stop_it
       endif
       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
         -prof_amp1*cos(kx_diffrot*x(l1:l2))**xexp_diffrot*cos(z(n)))
+!
+!  vertical shear profile
+!
+      case ('vertical_shear')
+      zbot=xyz0(3)
+      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+        -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
+!
+!  vertical shear profile
+!
+      case ('vertical_shear_x')
+      zbot=xyz0(3)
+      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
+        -tau_diffrot1*(f(l1:l2,m,n,iux)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
 !
 !  write differential rotation in terms of Gegenbauer polynomials
 !  Omega = Omega0 + Omega2*P31(costh)/sinth + Omega4*P51(costh)/sinth + ...

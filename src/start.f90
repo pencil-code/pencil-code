@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.169 2007-08-11 21:03:52 brandenb Exp $
+! $Id: start.f90,v 1.170 2007-08-22 11:52:58 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -96,7 +96,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.169 2007-08-11 21:03:52 brandenb Exp $")
+             "$Id: start.f90,v 1.170 2007-08-22 11:52:58 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -267,11 +267,8 @@
 !
         if (lread_oldsnap) then
           call rsnap(trim(directory_snap)//'/var.dat',f, mvar)
-!
-!  default: everything zero
-!
         else
-          f = 0.
+          f=0.
         endif
 !
 !  the following init routines do then only need to add to f.

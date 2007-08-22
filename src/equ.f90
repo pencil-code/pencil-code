@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.370 2007-08-17 01:58:57 dobler Exp $
+! $Id: equ.f90,v 1.371 2007-08-22 11:52:57 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -443,7 +443,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.370 2007-08-17 01:58:57 dobler Exp $")
+           "$Id: equ.f90,v 1.371 2007-08-22 11:52:57 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -1173,11 +1173,11 @@ module Equ
       integer :: mem_stat1, mem_stat2, mem_stat3
 !
       if (lroot) print*, &
-          'pencil_consistency_check: checking the pencil case'
+          'pencil_consistency_check: checking pencil case (takes some time)'
 !
 ! Prevent code from dying due to any errors...
 !
-      call life_support_on
+      call life_support_on('needed for pencil consistency check')
 !
 !  Allocate memory for alternative df, fname
 !
@@ -1357,7 +1357,7 @@ f_loop:   do iv=1,mvar
 !
 !  Return the code to its former mortal state
 !
-      call life_support_off
+      call life_support_off('end of pencil consistency check/')
 !
       if (ldie) call fatal_error('pencil_consistency_check','DYING')
 !

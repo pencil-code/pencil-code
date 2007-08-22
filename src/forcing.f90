@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.112 2007-08-17 08:58:42 dhruba Exp $
+! $Id: forcing.f90,v 1.113 2007-08-22 11:52:57 brandenb Exp $
 
 module Forcing
 
@@ -81,7 +81,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.112 2007-08-17 08:58:42 dhruba Exp $")
+           "$Id: forcing.f90,v 1.113 2007-08-22 11:52:57 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -586,7 +586,7 @@ module Forcing
               coef1(3)=cmplx(k*kez,sig*kkez)
               do m=m1,m2
                 if(lspherical_coords)then
-                  radius = x(l)
+                  radius = x(l1:l2)
                 else
                   radius = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
                 endif

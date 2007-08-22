@@ -1,4 +1,4 @@
-! $Id: messages.f90,v 1.13 2007-08-21 04:51:43 ajohan Exp $
+! $Id: messages.f90,v 1.14 2007-08-22 11:52:58 brandenb Exp $
 !
 !  This module takes care of messages.
 !
@@ -82,9 +82,9 @@ module Messages
         write (*,'(A18)',ADVANCE='NO') "NOT IMPLEMENTED: "
         call terminal_defaultcolor()
         if (present(message)) then
-          write(*,*) trim(location) // ":" // trim(message)
+          write(*,*) trim(location) // ": " // trim(message)
         else
-          write(*,*) trim(location) // ":" // &
+          write(*,*) trim(location) // ": " // &
               "Some feature waits to get implemented -- by you?"
         endif
 !
@@ -332,26 +332,30 @@ module Messages
 !
     endsubroutine cvs_id_3
 !***********************************************************************
-    subroutine life_support_off
+    subroutine life_support_off(message)
 !
 !  Allow code to die on errors
 !
 !  30-jun-05/tony: coded
 !
+      character(len=*) :: message
+!
+!  set llife_support
+!
       llife_support=.false.
-      call information('life_support_off', &
-                       'the code will again die in case of a fatal error')
+      call information('life_support_off',message,level=12)
 !
     endsubroutine life_support_off
 !***********************************************************************
-    subroutine life_support_on
+    subroutine life_support_on(message)
 !
 !  Prevent the code from dying on errors
 !
 !  30-jun-05/tony: coded
 !
-      call warning('life_support_on', &
-                   'the code will *not* die in case of a fatal error')
+      character(len=*) :: message
+!
+      call information('life_support_on',message,level=12)
       llife_support=.true.
 !
     endsubroutine life_support_on
