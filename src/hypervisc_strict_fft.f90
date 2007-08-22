@@ -1,13 +1,16 @@
-! $Id: hypervisc_strict_fft.f90,v 1.6 2007-08-22 16:04:28 ajohan Exp $
+! $Id: hypervisc_strict_fft.f90,v 1.7 2007-08-22 17:00:12 ajohan Exp $
 
 !
 !  This module applies a sixth order hyperviscosity to the equation
-!  of motion (following Haugen & Brandenburg 2004).
+!  of motion (following Haugen & Brandenburg 2004). This hyperviscosity
+!  ensures that the energy dissipation rate is positive define everywhere.
 !
 !  The rate of strain tensor
 !    S^(3) = (-nab^2)^2*S
 !  is a high order generalisation of the first order operator
 !    2*S_ij = u_i,j + u_j,i - 2/3*delta_ij*div(u)
+!
+!  Derivatives are taken in Fourier space.
 !
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -49,7 +52,7 @@ module Hypervisc_strict
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: hypervisc_strict_fft.f90,v 1.6 2007-08-22 16:04:28 ajohan Exp $")
+           "$Id: hypervisc_strict_fft.f90,v 1.7 2007-08-22 17:00:12 ajohan Exp $")
 !
 !  Set indices for auxiliary variables
 ! 
@@ -92,7 +95,7 @@ module Hypervisc_strict
 !  Identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: hypervisc_strict_fft.f90,v 1.6 2007-08-22 16:04:28 ajohan Exp $")
+        "$Id: hypervisc_strict_fft.f90,v 1.7 2007-08-22 17:00:12 ajohan Exp $")
 !
 !  Derivatives are taken in k-space due to the complicated cross terms.
 !
