@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.368 2007-08-19 15:24:50 kandu Exp $
+%%  CVS: $Id: manual.tex,v 1.369 2007-08-22 05:23:36 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2007-08-19 15:24:50 $ $,~ $ $Revision: 1.368 $ $}
+%\date{$ $Date: 2007-08-22 05:23:36 $ $,~ $ $Revision: 1.369 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2007-08-19 15:24:50 $ $,~ $ $Revision: 1.368 $ $}\\
+  \emph{$ $Date: 2007-08-22 05:23:36 $ $,~ $ $Revision: 1.369 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -457,12 +457,12 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
   weezy & \htmladdnormallink{S. Louise Wilkin}{http://www.mas.ncl.ac.uk/~n9405169/} & University of Newcastle\\
   vpariev & \htmladdnormallink{Vladimir Pariev}{http://www.pas.rochester.edu/~vpariev/} & University of Rochester\\
   torkel & \htmladdnormallink{Ulf Torkelsson}{http://fy.chalmers.se/~torkel/} & Chalmers University\\
-  theine & \htmladdnormallink{Tobias (Tobi) Heinemann}{http://www.nordita.dk/~theine/} & Nordita and University of Copenhagen\\
-  tarek & \htmladdnormallink{Tarek A. Yousef}{http://www.pvv.ntnu.no/~tarek/} & University of Trondheim\\
+  theine & \htmladdnormallink{Tobias (Tobi) Heinemann}{http://www.damtp.cam.ac.uk/user/theine/} & Cambridge University \\
+  tarek & \htmladdnormallink{Tarek A. Yousef}{http://www.pvv.org/~tarek/} & University of Trondheim\\
   steveb & \htmladdnormallink{Steve Berukoff}{http://www.physics.ucla.edu/~steveb/} & UCLA \\
   snod & \htmladdnormallink{Andrew Snodin}{http://www.ncl.ac.uk/math/postgrad/postgrads.htm} & University of Newcastle\\
   pkapyla & \htmladdnormallink{Petri K\"apyl\"a}{http://cc.oulu.fi/~pkapyla/} & Oulu University and Kiepenheuer Institute\\
-  nils & \htmladdnormallink{Nils Erland L. Haugen}{http://www.phys.ntnu.no/~nilshau/index2.html} & University of Trondheim\\
+  nils & \htmladdnormallink{Nils Erland L.\ Haugen}{http://www.phys.ntnu.no/~nilshau/index2.html} & University of Trondheim\\
   ngrs & \htmladdnormallink{Graeme R. Sarson}{http://www.mas.ncl.ac.uk/~ngrs/home.html} & University of Newcastle\\
   nbabkovs & \htmladdnormallink{Natalia Babkovskaia}{http://www.nordita.dk/~nbabkovs/} & Nordita\\
   mkorpi  & \htmladdnormallink{Maarit J.\ Korpi}{http://www.helsinki.fi/~mkorpi/} & University of Helsinki\\
@@ -1409,9 +1409,8 @@ Fig.~\ref{Fig-Structure}.
 Under \file[pencil-code/]{pencil-code}, there are currently the following
 files and directories:
 \begin{verbatim}
-  CVS/      bin/    bugs/           doc/
-  dx/       idl/    samples/        src/
-  README    TODO    sourceme.csh    sourceme.sh
+bin/   config/  doc/  idl/  license/  perl/   samples/      sourceme.sh  utils/
+bugs/  CVS/     dx/   lib/  misc/     README  sourceme.csh  src/         www/
 \end{verbatim}
 
 Almost all of the source code is contained in the directory \file{src/},
@@ -2575,8 +2574,8 @@ The run parameters for \file{samples/helical-MHDturb} are
 \begin{alltt}
   &run_pars
     cvsid='\${}Id:\$',                 \textsl{! identify version of start.in}
-    nt=10, it1=2, cdt=0.4, cdtv=0.80, isave=10, itorder=3,
-    dsnap=50, dvid=0.5,
+    nt=10, it1=2, cdt=0.4, cdtv=0.80, isave=10, itorder=3
+    dsnap=50, dvid=0.5
     random_gen='nr_f90'
   /
   &hydro_run_pars
@@ -2584,10 +2583,10 @@ The run parameters for \file{samples/helical-MHDturb} are
   &density_run_pars
   /
   &forcing_run_pars
-    iforce='helical', force=0.07, relhel=1.,
+    iforce='helical', force=0.07, relhel=1.
   /
   &magnetic_run_pars
-    eta=5e-3,
+    eta=5e-3
   /
   &viscosity_run_pars
     nu=5e-3
@@ -2735,9 +2734,12 @@ synonym for \code{unit_system='babylonian cubits'}.
 % ---------------------------------------------------------------------- %
 
 \subsection{Minimum amount of viscosity}
+\index{Viscosity}
+\index{Shock viscosity}
 \label{viscosity}
 
-We emphasize that the code works with constant diffusion coefficients
+We emphasize that, by default,
+the code works with constant diffusion coefficients
 (viscosity $\nu$, thermal diffusivity $\chi$, magnetic diffusivity $\eta$,
 or passive scalar diffusivity ${\cal D}$).
 If any of these numbers is too small, you would need to have more
@@ -2750,15 +2752,22 @@ mesh Reynolds number based on the maximum velocity,
 \end{equation}
 which should not exceed a certain value which can be problem-dependent.
 Often the largest possible value of $\mbox{Re}_{\rm mesh}$ is around 5.
-Similarly there exist mesh Peclet and mesh magnetic Reynolds numbers that
+Similarly there exist mesh P\'eclet and mesh magnetic Reynolds numbers that
 should not be too small.
-%ajwm - not sure what to write here about the shock viscosity
 
 Note that in some cases, `wiggles' in $\ln\varrho$ will develop despite
 sufficiently large diffusion coefficients, essentially because the
 continuity equation contains no dissipative term.
 For convection runs (but not only for these), we have found that this can
 often be prevented by \name[Upwinding]{upwinding}, see Sec.~\ref{S-upwind}.
+
+If the Mach number of the code approaches unity, i.e.\ if the rms velocity
+becomes comparable with the speed of sound, shocks may form.
+In such a case the mesh Reynolds number should be smaller.
+In order to avoid excessive viscosity in the unshocked regions,
+one can use the so-called shock viscosity (Sect.~\ref{ShockViscosity})
+to concentrate the effects of a low mesh Reynolds number to only those
+areas where it is necessary.
 
 % ---------------------------------------------------------------------- %
 
@@ -2824,6 +2833,9 @@ This is an example of a hyperviscous turbulence simulations with
 $512^3$ meshpoints and a third order hyperviscosity of
 $\nu_3=5\times10^{-12}$.
 }\label{Ftimestepoverviscous}\end{figure}
+
+Timestepping is accomplished using the Runge-Kutta 2N scheme.
+Regarding details of this scheme see Sect.~\ref{S-2N-scheme}.
 
 % ---------------------------------------------------------------------- %
 
@@ -3927,7 +3939,7 @@ u_{i,j}\tau_{ij}&=&\frac{1}{2}(u_{i,j}+u_{j,i})(2\nu\rho{\sf S}_{ij})\\
 \end{eqnarray}
 which is positive definite.
 
-\subsubsection{Alternative describtion}
+\subsubsection{Alternative description}
 \index{pretend_lnTT}
 By setting \emph{pretend_lnTT=T} the temperature is used instead of the
 entropy. 
@@ -3977,6 +3989,7 @@ bulk viscosity.
 
 \subsubsection{Shock Viscosity}
 \index{Shock viscosity}
+\label{ShockViscosity}
 
 Shock viscosity, as it is used here and also in the Stagger Code of {\AA}ke Nordlund,
 is proportional to positive flow convergence, maximum over
@@ -5265,7 +5278,7 @@ If you think you find an error, file a ticket with the
 \section{Adapting the code}
 \subsection{The Pencil Code coding standard}
 As with any code longer than a few lines the appearance and layout
-of the source code is of the utmost importance.  Well layed out
+of the source code is of the utmost importance.  Well laid out
 code is more easy to read and understand and as such is less prone 
 to errors.
 
@@ -5426,29 +5439,62 @@ rather big file \file[zaverages.dat]{data/zaverages.dat}.
 
 
 % ---------------------------------------------------------------------- %
-\subsection{The f array}
+\subsection{The f-array}
 \label{f-array}
+\index{f-array}
 The `f' array is the largest array in the Pencil Code and its primary role
-is to store the current state of the timestepped PDE variables.  The f array
-and its slightly smaller counter part (the df array; see below)
+is to store the current state of the timestepped PDE variables.  The f-array
+and its slightly smaller counter part (the df-array; see below)
 are the only full size 3D arrays in
-the code.  The f array is of type real but PDEs for a complex variable may 
-be solved by using two slots in the f array.  The actual size of the f array
+the code.  The f-array is of type real but PDEs for a complex variable may 
+be solved by using two slots in the f-array.  The actual size of the f-array
 is $\rm{mx}\times\rm{my}\times\rm{mz}\times\rm{mfarray}$. Here, 
 $\rm{mfarray}=\rm{mvar}+\rm{maux}+\rm{mglobal}+\rm{mscratch}$
 where $\rm{mvar}$ refers to the number of real PDE variables.
-%% WORK IN PROGRESS 
 
-\subsection{The df array}
+As an example, we describe here how to put the time-integrated
+velocity, \var{uut}, into the f-array (see \file{hydro.f90}).
+If this is to be invoked, there must be the following call somewhere
+in the code:
+\begin{verbatim}
+          call farray_register_auxiliary('uut',iuut,vector=3)
+\end{verbatim}
+Here, \var{iuut} is the index of the variable \var{uut} in the f-array.
+Of course, this requires that \var{maux} is increased by 3, but in order
+to do this for a particular run only one must write a corresponding
+entry in the \file{cparam.local} file,
+\begin{verbatim}
+!                       -*-f90-*-    (for Emacs)
+!  cparam.local
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! MAUX CONTRIBUTION 3
+!
+!***************************************************************************
+!  Local settings concerning grid size and number of CPUs.
+!  This file is included by cparam.f90
+!
+integer, parameter :: ncpus=1,nprocy=1,nprocz=ncpus/nprocy,nprocx=1
+integer, parameter :: nxgrid=16,nygrid=nxgrid,nzgrid=nxgrid
+\end{verbatim}
+This way such a change does not affect the memory usage for other
+applications where this addition to \file{cparam.local} is not made.
+In order to output this part of the f-array, one must write
+\code{lwrite_aux=T} in the \code{init_pars} of \file{start.in}.
+
+\subsection{The df-array}
 \label{df-array}
 The `df' array is the second largest chunk of data in the Pencil Code.
 By using a 2N storage scheme (see \ref{S-2N-scheme}) after 
 Williamson \cite{2Nstorage} the code only needs one more storage
 area for each timestepped variable on top of the current state stored in
-the f-array.  As such, and in contrast to the f array, the df array is of size
-$\rm{mx}\times\rm{my}\times\rm{mz}\times\rm{mvar}$.  Like the df array it is
+the f-array.  As such, and in contrast to the f-array, the df-array is of size
+$\rm{mx}\times\rm{my}\times\rm{mz}\times\rm{mvar}$.  Like the df-array it is
 of type real.  In fact the ghost zones
-of df are not required or calculated but having f and df arrays of the same
+of df are not required or calculated but having f- and df-arrays of the same
 size make the coding more transparent.  For $\rm{mx}$, $\rm{my}$ and
 $\rm{mz}$ large the wasted storage becomes negligible.
 
@@ -5738,7 +5784,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2007-08-19 15:24:50 $ $,~ $ $Revision: 1.368 $ $}
+  \hfill\normalsize\rm$ $Date: 2007-08-22 05:23:36 $ $,~ $ $Revision: 1.369 $ $}
 
 \section{Timings}
 
@@ -7229,6 +7275,8 @@ where $\omega=\kv\cdot\Bv_0$.
 
 \subsection{The 2N-scheme for time-stepping}
 \index{2N-scheme}
+\index{Time step}
+\index{Runge-Kutta}
 \label{S-2N-scheme}
 
 For time stepping, higher-order schemes are necessary in order to reduce
@@ -7273,10 +7321,6 @@ for linear equations, so we
 have to have two more conditions. One possibility is to choose the
 fractional times at which the right hand side is evaluated, for
 example $(0,1/3,2/3)$ or even $(0,1/2,1)$.
-%wd: Don't see the point of the following: 
-% In the latter case the right hand
-% side is evaluated twice at the same time. It is therefore some sort of
-% predictor-corrector scheme.
 Yet another possibility is to require that
 inhomogeneous equations of the form $\dot{u}=t^n$ with $n=1$ and 2 are
 solved exactly.
@@ -9074,7 +9118,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.368 2007-08-19 15:24:50 kandu Exp $ $}
+$ $Id: manual.tex,v 1.369 2007-08-22 05:23:36 brandenb Exp $ $}
 
 
 \end{document}
