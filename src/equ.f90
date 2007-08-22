@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.372 2007-08-22 13:47:24 ajohan Exp $
+! $Id: equ.f90,v 1.373 2007-08-22 17:14:48 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -444,7 +444,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.372 2007-08-22 13:47:24 ajohan Exp $")
+           "$Id: equ.f90,v 1.373 2007-08-22 17:14:48 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -464,7 +464,8 @@ module Equ
 !  when radiation transfer of global ionization is calculatearsd.
 !  This could in principle be avoided (but it not worth it now)
 !
-      early_finalize=test_nonblocking.or.leos_ionization.or.lradiation_ray
+      early_finalize=test_nonblocking.or.leos_ionization.or.lradiation_ray.or. &
+                     lhyperviscosity_strict
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
@@ -476,11 +477,6 @@ module Equ
 !
       call impose_density_floor(f)
       call impose_velocity_ceiling(f)
-!
-!  For sixth order momentum-conserving, symmetric hyperviscosity with positive
-!  definite heating rate we need to precalculate the viscosity term.
-!
-      if (lhyperviscosity_strict) call hyperviscosity_strict(f,iuu)
 !
 !  Apply global boundary conditions to particle positions and communiate
 !  migrating particles between the processors.
@@ -535,6 +531,11 @@ module Equ
         call boundconds_y(f)
         call boundconds_z(f)
       endif
+!
+!  For sixth order momentum-conserving, symmetric hyperviscosity with positive
+!  definite heating rate we need to precalculate the viscosity term.
+!
+      if (lhyperviscosity_strict) call hyperviscosity_strict(f,iuu)
 !
 !  set inverse timestep to zero before entering loop over m and n
 !
