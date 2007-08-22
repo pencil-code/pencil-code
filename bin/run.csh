@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.94 2007-07-24 03:44:12 brandenb Exp $
+# CVS: $Id: run.csh,v 1.95 2007-08-22 18:54:30 dhruba Exp $
 
 #                       run.csh
 #                      ---------
@@ -224,14 +224,11 @@ endif
 if ($booted_lam) lamhalt
 
 # Shut down mpd if we have started it 
-if ($?booted_mpd) then
-  if ($booted_mpd) then 
-    echo "Shuttind down mpd .."
-    mpdallexit
-    echo "..done"
-  else
-    echo "Not shuttind down mpd .."
-  endif
+if($?booted_mpd) then 
+ echo "Shutting down mpd .."
+ mpdallexit
+ echo "..done"
+else
 endif
 
 # remove LOCK file
@@ -244,9 +241,30 @@ if (-e 'ERROR') then
   set run_status2 = 16
 else
   set run_status2 = 0
+  if(-e "RESUBMIT") then
+    if($hn =~ compute[0-9][0-9].maths.qmul.ac.uk) then
+      if(-e "rs") rm -f rs
+      echo $hn, $ncpus, $resubop
+      echo $masterhost
+      echo "/opt/pbs/bin/qsub -d $PBS_O_WORKDIR $resubop" > rs
+      chmod +x rs
+      if(-e "resubmit.log") then
+        ssh -t $masterhost $PBS_O_WORKDIR/rs >> $PBS_O_WORKDIR/resubmit.log
+        date >>resubmit.log
+        echo "=====================" >> resubmit.log
+      else
+        ssh -t $masterhost $PBS_O_WORKDIR/rs > $PBS_O_WORKDIR/resubmit.log
+        date >>resubmit.log 
+        echo "=====================" >> resubmit.log
+      endif
+    else
+      echo "no resubmission script written for this machine !" >resubmit.log
+  else
+  endif
 endif
 
 exit ( $run_status | $run_status2 ) # propagate status of mpirun
+
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h -o run.`timestr` -e run.`timestr` run.csh

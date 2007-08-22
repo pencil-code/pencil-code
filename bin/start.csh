@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.71 2007-07-24 03:44:12 brandenb Exp $
+# CVS: $Id: start.csh,v 1.72 2007-08-22 18:54:30 dhruba Exp $
 
 #                       start.csh
 #                      -----------
@@ -143,14 +143,11 @@ if ($local_disc) then
 endif
 
 # Shut down mpd if we have started it 
-if ($?booted_mpd) then
-  if ($booted_mpd) then
-    echo "Shuttind down mpd .."
-    mpdallexit
-    echo "..done"
-  else
-    echo "Not shuttind down mpd .."
-  endif
+if($?booted_mpd)then
+ echo "shutting down mpd .. "
+ mpdallexit
+ echo "..done"
+else
 endif
 
 # remove LOCK file
@@ -164,6 +161,9 @@ if (-e 'ERROR') then
 else
   set start_status2 = 0
 endif
+
+rm -f resubmit.log
+rm -f rs
 
 exit ( $start_status | $start_status2 )        # propagate status of mpirun
 

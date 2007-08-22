@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.205 2007-08-21 13:10:01 dhruba Exp $
+# $Id: getconf.csh,v 1.206 2007-08-22 18:54:30 dhruba Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -251,12 +251,18 @@ else if ($hn =~ *.maths.qmul.ac.uk) then
            echo "QMUL Maths cluster (cluster) - LONDON"
            if ($?PBS_NODEFILE) then
              echo "PBS job"
+             set masterhost = cluster.maths.qmul.ac.uk
              cat $PBS_NODEFILE >mpi.hosts
              set local_disc = 0
              set one_local_disc = 0
              set local_binary = 0
              set mpirun = /home/dhruba/mpich/bin/mpirun 
              set mpirunops = "-machinefile mpi.hosts"
+             set myprocpernode = 4
+             set mynodes = `expr $ncpus / $myprocpernode `
+             set resubop1 = "-lnodes=$mynodes"
+             set resubop2 = ":ppn=4 run.csh"
+             set resubop = "$resubop1$resubop2" 
            else 
              echo "Non-PBS, running on `hostname`"
            endif
