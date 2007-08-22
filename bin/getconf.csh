@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.206 2007-08-22 18:54:30 dhruba Exp $
+# $Id: getconf.csh,v 1.207 2007-08-22 21:47:59 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -301,6 +301,24 @@ else if ($hn =~ man2*) then
        set mynodes = `expr $ncpus / $myprocpernode `
        echo "dhruba: $mynodes nodes, $myprocpernode CPU(s) per node"
        set npops  = "$mynodes$mpisub_myproc"
+
+#------------------------------------------------
+else if ($hn =~ ice[0-9]*_[0-9]*) then
+  echo "Glacier in Vancouver"
+  if ($mpi) then
+    echo "Using MPICH"
+    set mpirunops = "-machinefile $PBS_NODEFILE"
+    set mpirun = "echo No clue where mpich's mpirun could be; false"
+    set start_x=$PBS_O_WORKDIR/src/start.x
+    set run_x=$PBS_O_WORKDIR/src/run.x
+    #
+    setenv SCRATCH_DIR /scratch
+    set remote_top     = 1
+  else # (no MPI)
+    echo "Batch job: non-MPI single processor run"
+    set mpirunops = ''
+    set mpirun = ''
+  endif
 
 #------------------------------------------------
 else if ($hn =~ giga[0-9][0-9]) then
