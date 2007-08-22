@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.214 2007-08-20 06:28:21 brandenb Exp $
+! $Id: register.f90,v 1.215 2007-08-22 13:47:24 ajohan Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -26,36 +26,37 @@ module Register
 !  6-nov-01/wolf: coded
 !
       use Cdata
-      use General,         only: setup_mm_nn
-      use Mpicomm,         only: mpicomm_init,stop_it,stop_it_if_any
+      use General,          only: setup_mm_nn
+      use Mpicomm,          only: mpicomm_init,stop_it,stop_it_if_any
       use Sub
-      use Param_IO,        only: get_datadir,get_snapdir
-      use Equ,             only: initialize_time_integrals
-      use IO,              only: register_io
-      use Global,          only: register_global
-      use EquationOfState, only: register_eos
-      use Shock,           only: register_shock
-      use Gravity,         only: register_gravity
-      use Selfgravity,     only: register_selfgravity
-      use Hydro,           only: register_hydro
-      use Density,         only: register_density
-      use Forcing,         only: register_forcing
-      use Entropy,         only: register_entropy
-      use Magnetic,        only: register_magnetic
-      use Testfield,       only: register_testfield
-      use Radiation,       only: register_radiation
-      use Pscalar,         only: register_pscalar
-      use Chiral,          only: register_chiral
-      use Dustdensity,     only: register_dustdensity
-      use Dustvelocity,    only: register_dustvelocity
-      use NeutralDensity,  only: register_neutraldensity
-      use NeutralVelocity, only: register_neutralvelocity
-      use Cosmicray,       only: register_cosmicray
-      use CosmicrayFlux,   only: register_cosmicrayflux
-      use Interstellar,    only: register_interstellar
-      use Shear,           only: register_shear
-      use Viscosity,       only: register_viscosity
-      use Special,         only: register_special
+      use Param_IO,         only: get_datadir,get_snapdir
+      use Equ,              only: initialize_time_integrals
+      use IO,               only: register_io
+      use Global,           only: register_global
+      use EquationOfState,  only: register_eos
+      use Shock,            only: register_shock
+      use Gravity,          only: register_gravity
+      use Selfgravity,      only: register_selfgravity
+      use Hydro,            only: register_hydro
+      use Density,          only: register_density
+      use Forcing,          only: register_forcing
+      use Entropy,          only: register_entropy
+      use Magnetic,         only: register_magnetic
+      use Testfield,        only: register_testfield
+      use Radiation,        only: register_radiation
+      use Pscalar,          only: register_pscalar
+      use Chiral,           only: register_chiral
+      use Dustdensity,      only: register_dustdensity
+      use Dustvelocity,     only: register_dustvelocity
+      use NeutralDensity,   only: register_neutraldensity
+      use NeutralVelocity,  only: register_neutralvelocity
+      use Cosmicray,        only: register_cosmicray
+      use CosmicrayFlux,    only: register_cosmicrayflux
+      use Interstellar,     only: register_interstellar
+      use Shear,            only: register_shear
+      use Viscosity,        only: register_viscosity
+      use Hypervisc_strict, only: register_hypervisc_strict
+      use Special,          only: register_special
 !
       logical :: ioerr
 !
@@ -96,6 +97,7 @@ module Register
       call register_eos
       call register_shock
       call register_viscosity
+      call register_hypervisc_strict
       call register_hydro
       call register_gravity
       call register_selfgravity
@@ -469,8 +471,8 @@ module Register
 !
       integer :: i
 !
-      if (lroot) print*, 'choose_pencils: Finding out which pencils '// &
-          'are needed for the pencil_case'
+      if (lroot) print*, 'choose_pencils: finding out which pencils '// &
+          'are needed for the pencil case'
 !
 !  Must set all pencil arrays to false in case of reload or reinit
 !

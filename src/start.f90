@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.170 2007-08-22 11:52:58 brandenb Exp $
+! $Id: start.f90,v 1.171 2007-08-22 13:47:24 ajohan Exp $
 !
 !***********************************************************************
       program start
@@ -46,6 +46,7 @@
         use Radiation,       only: init_rad, radtransfer
         use Interstellar,    only: init_interstellar
         use Particles_main
+        use Hypervisc_strict
 
         use FArrayManager,   only: farray_clean_up
         use SharedVariables, only: sharedvars_clean_up
@@ -96,7 +97,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.170 2007-08-22 11:52:58 brandenb Exp $")
+             "$Id: start.f90,v 1.171 2007-08-22 13:47:24 ajohan Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -329,6 +330,11 @@
 !  Calculate the potential of the self-gravity (mostly for debugging).
 !
         call calc_selfpotential(f)
+!
+!  For sixth order momentum-conserving, symmetric hyperviscosity with positive
+!  definite heating rate we need to precalculate the viscosity term.
+!
+      if (lhyperviscosity_strict) call hyperviscosity_strict(f,iuu)
 !
 !  Set random seed independent of processor
 !

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.371 2007-08-22 11:52:57 brandenb Exp $
+! $Id: equ.f90,v 1.372 2007-08-22 13:47:24 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -427,6 +427,7 @@ module Equ
       use Shock, only: calc_pencils_shock, calc_shock_profile, calc_shock_profile_simple
       use Viscosity, only: calc_viscosity, calc_pencils_viscosity, &
                            lvisc_first, idiag_epsK
+      use Hypervisc_strict
       use Interstellar, only: interstellar_before_boundary
       use Particles_main
 !
@@ -443,7 +444,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.371 2007-08-22 11:52:57 brandenb Exp $")
+           "$Id: equ.f90,v 1.372 2007-08-22 13:47:24 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -475,6 +476,11 @@ module Equ
 !
       call impose_density_floor(f)
       call impose_velocity_ceiling(f)
+!
+!  For sixth order momentum-conserving, symmetric hyperviscosity with positive
+!  definite heating rate we need to precalculate the viscosity term.
+!
+      if (lhyperviscosity_strict) call hyperviscosity_strict(f,iuu)
 !
 !  Apply global boundary conditions to particle positions and communiate
 !  migrating particles between the processors.

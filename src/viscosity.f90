@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.73 2007-08-22 11:52:58 brandenb Exp $
+! $Id: viscosity.f90,v 1.74 2007-08-22 13:47:25 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -43,6 +43,7 @@ module Viscosity
   logical :: lvisc_hyper2_simplified=.false.
   logical :: lvisc_hyper3_simplified=.false.
   logical :: lvisc_hyper3_rho_nu_const=.false.
+  logical :: lvisc_hyper3_mu_const_strict=.false.
   logical :: lvisc_hyper3_rho_nu_const_symm=.false.
   logical :: lvisc_hyper3_rho_nu_const_aniso=.false.
   logical :: lvisc_hyper3_nu_const_aniso=.false.
@@ -62,6 +63,9 @@ module Viscosity
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,widthnu
 
   ! other variables (needs to be consistent with reset list below)
+  integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
+  integer :: idiag_fviscmin=0   ! DIAG_DOC: Min value of viscous acceleration
+  integer :: idiag_fviscmax=0   ! DIAG_DOC: Max value of viscous acceleration
   integer :: idiag_epsK=0  ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
   integer :: idiag_epsK2=0      ! DIAG_DOC:
   integer :: idiag_epsK_LES=0   ! DIAG_DOC:
@@ -98,7 +102,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.73 2007-08-22 11:52:58 brandenb Exp $")
+           "$Id: viscosity.f90,v 1.74 2007-08-22 13:47:25 ajohan Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -126,6 +130,7 @@ module Viscosity
       lvisc_hyper3_simplified=.false.
       lvisc_hyper3_rho_nu_const=.false.
       lvisc_hyper3_rho_nu_const_symm=.false.
+      lvisc_hyper3_mu_const_strict=.false.
       lvisc_hyper3_rho_nu_const_aniso=.false.
       lvisc_hyper3_nu_const_aniso=.false.
       lvisc_hyper3_rho_nu_const_bulk=.false.
@@ -168,6 +173,10 @@ module Viscosity
        case ('hyper3_rho_nu-const_symm')
           if (lroot) print*,'viscous force(i): nu_hyper/rho*(del6ui+der5(divu,i))'
           lvisc_hyper3_rho_nu_const_symm=.true.
+       case ('hyper3_mu-const_strict')
+          if (lroot) print*, 'viscous force(i): '// &
+              'nu_hyper/rho*(del2(del2(del2(u)))+del2(del2(grad(divu))))'
+          lvisc_hyper3_mu_const_strict=.true.
        case ('hyper3_rho_nu-const_aniso')
           if (lroot) print*,&
                'viscous force(i): 1/rho*(nu.del6)ui'
@@ -218,7 +227,8 @@ module Viscosity
             'Viscosity coefficient nu_hyper2 is zero!')
         if ( (lvisc_hyper3_simplified.or.lvisc_hyper3_rho_nu_const.or. &
               lvisc_hyper3_rho_nu_const_bulk.or.lvisc_hyper3_nu_const.or. &
-              lvisc_hyper3_rho_nu_const_symm).and. &
+              lvisc_hyper3_rho_nu_const_symm.or. &
+              lvisc_hyper3_mu_const_strict).and. &
               nu_hyper3==0.0 ) &
             call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_hyper3 is zero!')
@@ -324,6 +334,9 @@ module Viscosity
 !
       if(lroot.and.ip<14) print*,'rprint_viscosity: run through parse list'
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'fviscm',idiag_fviscm)
+        call parse_name(iname,cname(iname),cform(iname),'fviscmin',idiag_fviscmin)
+        call parse_name(iname,cname(iname),cform(iname),'fviscmax',idiag_fviscmax)
         call parse_name(iname,cname(iname),cform(iname),'dtnu',idiag_dtnu)
         call parse_name(iname,cname(iname),cform(iname),'nu_LES',idiag_nu_LES)
         call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
@@ -395,7 +408,8 @@ module Viscosity
           lvisc_hyper3_rho_nu_const_bulk .or. &
           lvisc_hyper3_rho_nu_const_aniso .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
-          lvisc_hyper3_rho_nu_const_symm) lpenc_requested(i_rho1)=.true.
+          lvisc_hyper3_rho_nu_const_symm .or. &
+          lvisc_hyper3_mu_const_strict) lpenc_requested(i_rho1)=.true.
 
       if (lvisc_nu_const .or. lvisc_nu_prof .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified)  &
@@ -655,6 +669,27 @@ module Viscosity
             p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
       endif
 !
+      if (lvisc_hyper3_mu_const_strict) then
+!
+!  Viscous force:
+!      du/dt = mu/rho*{del2(del2(del2(u))) + 1/3*del2(del2(grad(div(u))
+!  This viscosity type requires HYPERVISC_STRICT =  hypervisc_strict_fft in
+!  your Makefile.local.
+!
+        murho1=nu_hyper3*p%rho1  ! (=mu_hyper3/rho)
+        do i=1,3
+          p%fvisc(:,i)=p%fvisc(:,i)+murho1*f(l1:l2,m,n,ihyper-1+i)
+        enddo
+        if (lpencil(i_visc_heat)) then  ! Should be eps=2*mu*{del2[del2(S)]}^2
+          if (headtt) then              ! (see Haugen & Brandenburg 2004)
+            call warning('calc_pencils_viscosity', 'viscous heating term '// &
+              'is not implemented for lvisc_hyper3_mu_const_strict')
+          endif
+        endif
+        if (lfirst.and.ldt) &
+            p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
+      endif
+!
       if (lvisc_hyper3_rho_nu_const_aniso) then
 !
 !  viscous force: f_i = mu_i/rho*del6u
@@ -885,6 +920,9 @@ module Viscosity
 !  Diagnostic output
 !
       if (ldiagnos) then
+        if (idiag_fviscm/=0)   call sum_mn_name(p%fvisc,idiag_fviscm)
+        if (idiag_fviscmin/=0) call max_mn_name(-p%fvisc,idiag_fviscmin,lneg=.true.)
+        if (idiag_fviscmax/=0) call max_mn_name(p%fvisc,idiag_fviscmax)
         if (lvisc_smag_simplified) then
           if (ldensity) then
             nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
