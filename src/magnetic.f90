@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.448 2007-08-17 08:59:18 dhruba Exp $
+! $Id: magnetic.f90,v 1.449 2007-08-22 05:49:35 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -172,11 +172,11 @@ module Magnetic
   integer :: idiag_jm2=0        ! DIAG_DOC: $\max(\jv^2)$
   integer :: idiag_abm=0        ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
   integer :: idiag_jbm=0        ! DIAG_DOC: $\left<\jv\cdot\Bv\right>$
-  integer :: idiag_ubm=0        ! DIAG_DOC:
+  integer :: idiag_ubm=0        ! DIAG_DOC: $\left<\uv\cdot\Bv\right>$
   integer :: idiag_epsM=0       ! DIAG_DOC: $\left<2\eta\mu_0\jv^2\right>$
-  integer :: idiag_bxpt=0       ! DIAG_DOC:
-  integer :: idiag_bypt=0       ! DIAG_DOC:
-  integer :: idiag_bzpt=0       ! DIAG_DOC:
+  integer :: idiag_bxpt=0       ! DIAG_DOC: $B_x(x_0,y_0,z_0,t)$
+  integer :: idiag_bypt=0       ! DIAG_DOC: $B_y(x_0,y_0,z_0,t)$
+  integer :: idiag_bzpt=0       ! DIAG_DOC: $B_z(x_0,y_0,z_0,t)$
   integer :: idiag_epsM_LES=0   ! DIAG_DOC:
   integer :: idiag_aybym2=0     ! DIAG_DOC:
   integer :: idiag_exaym2=0     ! DIAG_DOC:
@@ -331,7 +331,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.448 2007-08-17 08:59:18 dhruba Exp $")
+           "$Id: magnetic.f90,v 1.449 2007-08-22 05:49:35 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
