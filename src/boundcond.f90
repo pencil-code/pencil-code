@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.171 2007-08-17 10:18:05 wlyra Exp $
+! $Id: boundcond.f90,v 1.172 2007-08-22 13:29:09 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -205,6 +205,14 @@ module Boundcond
                 case ('fix')
                   ! BCX_DOC: set boundary value [really??]
                   call bc_fix_x(f,topbot,j,fbcx12(j))
+                case('cfb')
+                  ! BCZ_DOC: radial centrifugal balance 
+                  if (lcylindrical_coords) then
+                    call bc_lnrho_cfb_r_iso(f,topbot,j)
+                  else
+                    print*,'not implemented for other than cylindrical'
+                    stop
+                  endif
                 case ('ouf')
                   ! BCX_DOC: allow outflow, but no inflow (experimental)
                   call bc_outflow_x(f,topbot,j)

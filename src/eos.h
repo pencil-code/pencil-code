@@ -32,6 +32,7 @@
   public :: bc_stellar_surface
   public :: bc_lnrho_hds_z_iso,bc_lnrho_hdss_z_iso
   public :: bc_lnrho_hds_z_liso,bc_lnrho_hdss_z_liso
+  public :: bc_lnrho_cfb_r_iso
 ! Initial conditions
   public :: isothermal_entropy,isothermal_lnrho_ss
 

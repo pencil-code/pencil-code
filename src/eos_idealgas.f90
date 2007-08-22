@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.94 2007-08-11 08:38:47 bingert Exp $
+! $Id: eos_idealgas.f90,v 1.95 2007-08-22 13:29:09 wlyra Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.94 2007-08-11 08:38:47 bingert Exp $')
+           '$Id: eos_idealgas.f90,v 1.95 2007-08-22 13:29:09 wlyra Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -2157,6 +2157,103 @@ module EquationOfState
       if (NO_WARN) print*,f,topbot
 !
     end subroutine bc_stellar_surface
+!***********************************************************************
+    subroutine bc_lnrho_cfb_r_iso(f,topbot,j)
+!
+!  Boundary condition for radial centrifugal balance
+!
+!  This sets
+!    \partial_{r} \ln\rho
+!  such that
+!    \partial_{r} p = uphi**2/rad - \partial_{r} Phi
+!  where Phi is the gravitational potential
+!
+!  i.e. it enforces centrifugal balance at the boundary.
+!
+!  As it is, works only for isobaric, isothermal and cylindrical coordinates
+!
+!  21-aug-2006/wlad: coded
+!
+      use Cdata
+      use Gravity
+      use Sub, only: div
+
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+      real, dimension (my,mz) :: cs2,gravterm,centterm,uphi
+      real :: dlnrhodz, dssdz
+      real :: potp,potm,rad,step
+      integer :: i,j
+
+      select case (topbot)
+
+!
+!  Bottom boundary
+!
+      case ('bot')
+        do i=1,nghost
+
+          cs2 = cs20
+          call potential(R=x(l1-i),pot=potm)
+          call potential(R=x(l1+i),pot=potp)
+
+          gravterm= -(potm-potp)/cs2
+
+          step=-2*i*dx
+          rad=x(l1-i)
+          uphi=f(l1-i,:,:,iuy)
+
+          centterm= uphi**2 * step/(rad*cs2)
+          
+          
+          if (ldensity_nolog) then
+            f(l1-i,:,:,ilnrho)=f(l1+i,:,:,ilnrho)*exp(gravterm + centterm)
+          else  
+            f(l1-i,:,:,ilnrho)=f(l1+i,:,:,ilnrho) + gravterm + centterm
+          endif
+          
+          !print*,'potentials',potm,potp,-(potm-potp)
+          !print*,'centrifugal',f(l1-i,mpoint,npoint,iuy)**2 *step/rad
+          !stop
+
+        enddo
+
+!
+!  Top boundary
+!
+      case ('top')
+        do i=1,nghost
+
+          cs2 = cs20
+          call potential(R=x(l2+i),pot=potp)
+          call potential(R=x(l2-i),pot=potm)
+ 
+          gravterm= -(potp-potm)/cs2
+
+          step=2*i*dx
+          rad=x(l2+i)
+          uphi=f(l2+i,:,:,iuy)
+
+          centterm= uphi**2 * step/(rad*cs2)
+          
+          if (ldensity_nolog) then
+            f(l2+i,:,:,ilnrho) = f(l2-i,:,:,ilnrho)*exp(gravterm + centterm)
+          else
+            f(l2+i,:,:,ilnrho) = f(l2-i,:,:,ilnrho) + gravterm + centterm
+          endif
+
+          !if (i==nghost) then
+          !  print*,'potentials',potp,potm,-potp+potm,-(potp-potm)
+          !  print*,'centrifugal',f(l2+i,mpoint,npoint,iuy)**2 *step/rad
+          !  stop
+          !endif
+        enddo
+            
+      case default
+
+      endselect
+
+    end subroutine bc_lnrho_cfb_r_iso
 !***********************************************************************
     subroutine bc_lnrho_hds_z_iso(f,topbot)
 !
