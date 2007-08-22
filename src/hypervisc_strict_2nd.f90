@@ -1,4 +1,4 @@
-! $Id: hypervisc_strict_2nd.f90,v 1.3 2007-08-22 17:01:32 ajohan Exp $
+! $Id: hypervisc_strict_2nd.f90,v 1.4 2007-08-22 17:09:22 ajohan Exp $
 
 !
 !  This module applies a sixth order hyperviscosity to the equation
@@ -53,7 +53,7 @@ module Hypervisc_strict
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: hypervisc_strict_2nd.f90,v 1.3 2007-08-22 17:01:32 ajohan Exp $")
+           "$Id: hypervisc_strict_2nd.f90,v 1.4 2007-08-22 17:09:22 ajohan Exp $")
 !
 !  Set indices for auxiliary variables
 ! 
@@ -176,44 +176,20 @@ module Hypervisc_strict
 !
       if (nxgrid/=1) then
          fac=1./(2.*dx)
-         df(1     ,:,:) =        df(1    ,:,:) &
-                          + (  4.*f(2,:,:,iux) &
-                              -3.*f(1,:,:,iux) &
-                              -   f(3,:,:,iux) ) * fac
          df(2:mx-1,:,:) =     df(2:mx-1,:,:) &
                            + ( f(3:mx,:,:,iux)-f(1:mx-2,:,:,iux) ) *fac
-         df(mx    ,:,:) =        df(mx    ,:,:) &
-                          + (  3.*f(mx  ,:,:,iux) &
-                              -4.*f(mx-1,:,:,iux) &
-                              +   f(mx-2,:,:,iux))*fac
       endif
 !
       if (nygrid/=1) then
          fac=1./(2.*dy)
-         df(:,1     ,:) =       df(:,1     ,:) &
-                          + ( 4.*f(:,2,:,iuy) &
-                             -3.*f(:,1,:,iuy) &
-                             -   f(:,3,:,iuy) )*fac
          df(:,2:my-1,:) =    df(:,2:my-1,:) &  
                           + ( f(:,3:my,:,iuy)-f(:,1:my-2,:,iuy) )*fac
-         df(:,my    ,:) =       df(:,my    ,:) &
-                          + (  3.*f(:,my  ,:,iuy) &
-                              -4.*f(:,my-1,:,iuy) &
-                              +   f(:,my-2,:,iuy) )*fac
       endif
 !
       if (nzgrid/=1) then
          fac=1./(2.*dz)
-         df(:,:,1     ) =       df(:,:,1     ) &
-                          + (  4.*f(:,:,2,iuz) &
-                              -3.*f(:,:,1,iuz) &
-                              -   f(:,:,3,iuz))*fac
          df(:,:,2:mz-1) = df(:,:,2:mz-1) &
                           + (f(:,:,3:mz,iuz)-f(:,:,1:mz-2,iuz))*fac
-         df(:,:,mz    ) =        df(:,:,mz    ) &
-                          + (  3.*f(:,:,mz  ,iuz) &
-                              -4.*f(:,:,mz-1,iuz) &
-                              +   f(:,:,mz-2,iuz))*fac
       endif
 !      
     endsubroutine divu_2nd
@@ -364,45 +340,21 @@ module Hypervisc_strict
       der2f=0.
 !
       if (j==1 .and. nxgrid/=1) then
-        der2f(1     ,:,:) = (+2.*f(1,:,:,i) &
-                             -5.*f(2,:,:,i) &
-                             +4.*f(3,:,:,i) &
-                             -1.*f(4,:,:,i) ) / (dx**2) 
         der2f(2:mx-1,:,:) = (+1.*f(1:mx-2,:,:,i) &
                              -2.*f(2:mx-1,:,:,i) &
                              +1.*f(3:mx  ,:,:,i) ) / (dx**2) 
-        der2f(mx    ,:,:) = (+2.*f(mx  ,:,:,i) &
-                             -5.*f(mx-1,:,:,i) &
-                             +4.*f(mx-2,:,:,i) &
-                             -1.*f(mx-3,:,:,i) ) / (dx**2) 
       endif
 !
      if (j==2 .and. nygrid/=1) then
-        der2f(:,1     ,:) = (+2.*f(:,1,:,i) &
-                             -5.*f(:,2,:,i) &
-                             +4.*f(:,3,:,i) &
-                             -1.*f(:,4,:,i) ) / (dy**2) 
         der2f(:,2:my-1,:) = (+1.*f(:,1:my-2,:,i) &
                              -2.*f(:,2:my-1,:,i) &
                              +1.*f(:,3:my  ,:,i) ) / (dy**2) 
-        der2f(:,my    ,:) = (+2.*f(:,my  ,:,i) &
-                             -5.*f(:,my-1,:,i) &
-                             +4.*f(:,my-2,:,i) &
-                             -1.*f(:,my-3,:,i) ) / (dy**2) 
       endif
 !
      if (j==3 .and. nzgrid/=1) then
-        der2f(:,:,1     ) = (+2.*f(:,:,1,i) &
-                             -5.*f(:,:,2,i) &
-                             +4.*f(:,:,3,i) &
-                             -1.*f(:,:,4,i) ) / (dz**2) 
         der2f(:,:,2:mz-1) = (+1.*f(:,:,1:mz-2,i) &
                              -2.*f(:,:,2:mz-1,i) &
                              +1.*f(:,:,3:mz  ,i) ) / (dz**2) 
-        der2f(:,:,mz    ) = (+2.*f(:,:,mz  ,i) &
-                             -5.*f(:,:,mz-1,i) &
-                             +4.*f(:,:,mz-2,i) &
-                             -1.*f(:,:,mz-3,i) ) / (dz**2) 
       endif
 !
     endsubroutine der2_2nd
@@ -425,45 +377,21 @@ module Hypervisc_strict
       der2f=0.
 !
       if (j==1 .and. nxgrid/=1) then
-        der2f(1     ,:,:) = (+2.*f(1,:,:) &
-                             -5.*f(2,:,:) &
-                             +4.*f(3,:,:) &
-                             -1.*f(4,:,:) ) / (dx**2) 
         der2f(2:mx-1,:,:) = (+1.*f(1:mx-2,:,:) &
                              -2.*f(2:mx-1,:,:) &
                              +1.*f(3:mx  ,:,:) ) / (dx**2) 
-        der2f(mx    ,:,:) = (+2.*f(mx  ,:,:) &
-                             -5.*f(mx-1,:,:) &
-                             +4.*f(mx-2,:,:) &
-                             -1.*f(mx-3,:,:) ) / (dx**2) 
       endif
 !
      if (j==2 .and. nygrid/=1) then
-        der2f(:,1     ,:) = (+2.*f(:,1,:) &
-                             -5.*f(:,2,:) &
-                             +4.*f(:,3,:) &
-                             -1.*f(:,4,:) ) / (dy**2) 
         der2f(:,2:my-1,:) = (+1.*f(:,1:my-2,:) &
                              -2.*f(:,2:my-1,:) &
                              +1.*f(:,3:my  ,:) ) / (dy**2) 
-        der2f(:,my    ,:) = (+2.*f(:,my  ,:) &
-                             -5.*f(:,my-1,:) &
-                             +4.*f(:,my-2,:) &
-                             -1.*f(:,my-3,:) ) / (dy**2) 
       endif
 !
      if (j==3 .and. nzgrid/=1) then
-        der2f(:,:,1     ) = (+2.*f(:,:,1) &
-                             -5.*f(:,:,2) &
-                             +4.*f(:,:,3) &
-                             -1.*f(:,:,4) ) / (dz**2) 
         der2f(:,:,2:mz-1) = (+1.*f(:,:,1:mz-2) &
                              -2.*f(:,:,2:mz-1) &
                              +1.*f(:,:,3:mz  ) ) / (dz**2) 
-        der2f(:,:,mz    ) = (+2.*f(:,:,mz  ) &
-                             -5.*f(:,:,mz-1) &
-                             +4.*f(:,:,mz-2) &
-                             -1.*f(:,:,mz-3) ) / (dz**2) 
       endif
 !
     endsubroutine der2_2nd_nof
