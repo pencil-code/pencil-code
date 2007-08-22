@@ -47,6 +47,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 
 use strict;
 BEGIN {
+    # Make sure ${PENCIL_HOME}/lib/perl is in the Perl path
     if (-d "$ENV{PENCIL_HOME}/lib/perl") {
         unshift @INC, "$ENV{PENCIL_HOME}/lib/perl";
     } else {
@@ -192,8 +193,8 @@ sub version {
 # Return CVS data and version info.
     my $doll='\$';              # Need this to trick CVS
     my $cmdname = (split('/', $0))[-1];
-    my $rev = '$Revision: 1.33 $';
-    my $date = '$Date: 2007-08-13 11:44:48 $';
+    my $rev = '$Revision: 1.34 $';
+    my $date = '$Date: 2007-08-22 16:00:13 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     "$cmdname version $rev ($date)\n";
