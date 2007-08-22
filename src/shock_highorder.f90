@@ -1,4 +1,4 @@
-! $Id: shock_highorder.f90,v 1.5 2007-08-17 17:06:27 theine Exp $
+! $Id: shock_highorder.f90,v 1.6 2007-08-22 18:59:04 dhruba Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -76,7 +76,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_highorder.f90,v 1.5 2007-08-17 17:06:27 theine Exp $")
+           "$Id: shock_highorder.f90,v 1.6 2007-08-22 18:59:04 dhruba Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -338,6 +338,10 @@ module Shock
       use Cdata, only: m,n,mm,nn,necessary
       use Cdata, only: iux,iuy,iuz,ishock
       use Cdata, only: dxmax
+! For spherical polar coordinate system 
+      use Cdata, only: r1_mn,cotth,lspherical_coords
+! For cylindrical coordinate system
+      use Cdata, only: rcyl_mn1,lcylindrical_coords
       use Boundcond, only: boundconds_x,boundconds_y,boundconds_z
       use Mpicomm, only: initiate_isendrcv_bdry,finalize_isendrcv_bdry
       use Deriv, only: der
@@ -377,6 +381,7 @@ module Shock
 
         if (nygrid > 1) then
           call der(f,iuy,penc,2)
+         
           f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + max(0.,-penc)
         endif
 
@@ -384,7 +389,14 @@ module Shock
           call der(f,iuz,penc,3)
           f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + max(0.,-penc)
         endif
-
+        if(lspherical_coords) then
+          penc= r1_mn*f(l1:l2,m,n,iux) + r1_mn*cotth(m)*f(l1:l2,m,n,iuy)
+          f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + max(0.,-penc)
+        endif
+        if(lcylindrical_coords) then
+          penc= r1_mn*f(l1:l2,m,n,iux) 
+          f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + max(0.,-penc)
+        endif
       enddo
 
 !
