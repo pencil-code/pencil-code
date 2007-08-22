@@ -1,4 +1,4 @@
-! $Id: hypervisc_strict_fft.f90,v 1.5 2007-08-22 15:22:31 ajohan Exp $
+! $Id: hypervisc_strict_fft.f90,v 1.6 2007-08-22 16:04:28 ajohan Exp $
 
 !
 !  This module applies a sixth order hyperviscosity to the equation
@@ -30,6 +30,8 @@ module Hypervisc_strict
 
   implicit none
 
+  include 'hypervisc_strict.h'
+
   contains
 
 !***********************************************************************
@@ -47,7 +49,7 @@ module Hypervisc_strict
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: hypervisc_strict_fft.f90,v 1.5 2007-08-22 15:22:31 ajohan Exp $")
+           "$Id: hypervisc_strict_fft.f90,v 1.6 2007-08-22 16:04:28 ajohan Exp $")
 !
 !  Set indices for auxiliary variables
 ! 
@@ -90,7 +92,7 @@ module Hypervisc_strict
 !  Identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: hypervisc_strict_fft.f90,v 1.5 2007-08-22 15:22:31 ajohan Exp $")
+        "$Id: hypervisc_strict_fft.f90,v 1.6 2007-08-22 16:04:28 ajohan Exp $")
 !
 !  Derivatives are taken in k-space due to the complicated cross terms.
 !
