@@ -36,6 +36,14 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # under the same conditions as Perl or under the GPL versions 2 or later.
 
 use strict;
+BEGIN {
+    # Make sure ${PENCIL_HOME}/lib/perl is in the Perl path
+    if (-d "$ENV{PENCIL_HOME}/lib/perl") {
+        unshift @INC, "$ENV{PENCIL_HOME}/lib/perl";
+    } else {
+        if ($0 =~ m!(.*[/\\])!) { unshift @INC, "$1../lib/perl"; }
+    }
+}
 
 eval "use Pencil::DocExtractor";
 if ($@) {             # Error loading DocExtractor.pm -- give useful advice
@@ -148,8 +156,8 @@ sub version {
 # Return CVS data and version info.
     my $doll='\$';              # Need this to trick CVS
     my $cmdname = (split('/', $0))[-1];
-    my $rev = '$Revision: 1.3 $';
-    my $date = '$Date: 2007-08-22 15:56:46 $';
+    my $rev = '$Revision: 1.4 $';
+    my $date = '$Date: 2007-08-22 15:59:28 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     "$cmdname version $rev ($date)\n";
