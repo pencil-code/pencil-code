@@ -1,7 +1,17 @@
-! $Id: hypervisc_strict_2nd.f90,v 1.1 2007-08-22 16:03:41 ajohan Exp $
+! $Id: hypervisc_strict_2nd.f90,v 1.2 2007-08-22 16:19:06 ajohan Exp $
 
-!  This modules implements viscous heating and diffusion terms
-!  here for third order hyper viscosity 
+!
+!  This module applies a sixth order hyperviscosity to the equation
+!  of motion (following Haugen & Brandenburg 2004). This hyperviscosity
+!  ensures that the energy dissipation rate is positive define everywhere.
+!
+!  The rate of strain tensor
+!    S^(3) = (-nab^2)^2*S
+!  is a high order generalisation of the first order operator
+!    2*S_ij = u_i,j + u_j,i - 2/3*delta_ij*div(u)
+!
+!  Derivatives are taken to second order in space.
+!
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -25,73 +35,43 @@ module Hypervisc_strict
 
   include 'hypervisc_strict.h'
 
-  character (len=labellen) :: ivisc='hyper3'
-  real :: maxeffectivenu,nu_hyper3, nu_mol=0.0
-  logical :: lvisc_first=.false.
-
-  ! input parameters
-  !namelist /viscosity_init_pars/ dummy
-
-  ! run parameters
-  namelist /viscosity_run_pars/ nu_hyper3, lvisc_first,ivisc
- 
-  ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_epsK2=0
-
-  ! Not implemented but needed for bodged implementation in hydro
-  integer :: idiag_epsK=0
-
   contains
 
 !***********************************************************************
     subroutine register_hypervisc_strict()
 !
+!  Set up indices for hyperviscosity auxiliary slots.
+!
 !  19-nov-02/tony: coded
 !  24-nov-03/nils: adapted from visc_shock
 !
-      use Cdata
-      use Mpicomm
-      use Sub
+      use Mpicomm, only: stop_it
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_viscosity called twice')
+      if (.not. first) call stop_it('register_particles: called twice')
       first = .false.
 !
-      lvisc_hyper = .true.
-!
-      ihyper = mvar + naux + 1 + (maux_com - naux_com)
-      naux = naux + 3
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_viscosity: hyper viscosity nvar = ', nvar
-        print*, 'ihyper = ', ihyper
-      endif
-!
-!  identify version number
-!
       if (lroot) call cvs_id( &
-           "$Id: hypervisc_strict_2nd.f90,v 1.1 2007-08-22 16:03:41 ajohan Exp $")
+           "$Id: hypervisc_strict_2nd.f90,v 1.2 2007-08-22 16:19:06 ajohan Exp $")
 !
-! Check we aren't registering too many auxiliary variables
+!  Set indices for auxiliary variables
+! 
+      ihyper = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 3
+!
+!  Check that we aren't registering too many auxilary variables
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_viscosity: naux > maux')
+            call stop_it('register_particles: naux > maux')
       endif
-!
-!  Writing files for use with IDL
-!
-      if (naux < maux) aux_var(aux_count)=',hyper $'
-      if (naux == maux) aux_var(aux_count)=',hyper'
-      aux_count=aux_count+3
-      if (lroot) write(15,*) 'hyper = fltarr(mx,my,mz)*one'
-!
+! 
     endsubroutine register_hypervisc_strict
 !***********************************************************************
     subroutine hyperviscosity_strict(f,k)
 !
-!  calculate viscous heating term for right hand side of entropy equation
+!  Apply momentum-conserving, symmetric, sixth order hyperviscosity with
+!  positive define heating rate (see Haugen & Brandenburg 2004).
 !
 !  24-nov-03/nils: coded
 !
@@ -110,21 +90,12 @@ module Hypervisc_strict
 !
 !  calculate grad4 grad div u
 !
-!      if (ivisc == 'hyper3' .or. ivisc == 'hyper3.1') then
-        call divgrad_2nd(f,tmp,iux)
-        f(:,:,:,ihyper:ihyper+2)=tmp
-        call del2v_2nd(f,tmp,ihyper)
-        f(:,:,:,ihyper:ihyper+2)=tmp
-        call del2v_2nd(f,tmp,ihyper)
-        f(:,:,:,ihyper:ihyper+2)=tmp
-!      elseif (ivisc == 'hyper2') then
-!        call divgrad_2nd(f,tmp,iux)
-!        f(:,:,:,ihyper:ihyper+2)=tmp
-!        call del2v_2nd(f,tmp,ihyper)
-!        f(:,:,:,ihyper:ihyper+2)=tmp
-!      else
-!        call stop_it('calc_viscosity: no such ivisc')          
-!      endif
+      call graddivu_2nd(f,tmp,iux)
+      f(:,:,:,ihyper:ihyper+2)=tmp
+      call del2v_2nd(f,tmp,ihyper)
+      f(:,:,:,ihyper:ihyper+2)=tmp
+      call del2v_2nd(f,tmp,ihyper)
+      f(:,:,:,ihyper:ihyper+2)=tmp
 
       f(:,:,:,ihyper:ihyper+2)=f(:,:,:,ihyper:ihyper+2)/3.
       do n=n1,n2; do m=m1,m2
@@ -164,7 +135,7 @@ module Hypervisc_strict
 !  add diagonal terms
 !
 !          tmp(:,:,:,1)=0
-!          call shock_divu(f,tmp(:,:,:,1))                     ! divu
+!          call divu_2nd(f,tmp(:,:,:,1))                     ! divu
 !          call del2_2nd_nof(tmp(:,:,:,1),tmp(:,:,:,3))        ! del2(divu)
 !          do i=1,3
 !            call der_2nd_nof(f(:,:,:,iux+i-1),tmp(:,:,:,1),i) ! uii
@@ -176,16 +147,12 @@ module Hypervisc_strict
 !        endif
 !      endif
 !
-!  max effective nu is the max of shock viscosity and the ordinary viscosity
-!
-      !maxeffectivenu = maxval(f(:,:,:,ihyper))*nu_hyper3
-!
     endsubroutine hyperviscosity_strict
 !***********************************************************************
-    subroutine shock_divu(f,df)
+    subroutine divu_2nd(f,df)
 !
-!  calculate divergence of a vector U, get scalar
-!  accurate to 2nd order, explicit,  centred an left and right biased 
+!  Calculate divergence of a vector u, get scalar.
+!  Accurate to 2nd order.
 !
 !  23-nov-02/tony: coded
 !
@@ -240,7 +207,7 @@ module Hypervisc_strict
                              +    f(:,:,mz-2,iuz))*fac
       endif
 !      
-    endsubroutine shock_divu
+    endsubroutine divu_2nd
 !***********************************************************************
 !    subroutine calc_viscous_force(f,df,p)
 !
@@ -402,7 +369,8 @@ module Hypervisc_strict
 !***********************************************************************
     subroutine del2_2nd(f,del2f,k)
 !
-!  calculate del2 of a scalar, get scalar
+!  Calculate del2 of a scalar, get scalar.
+!
 !  24-nov-03/nils: adapted from del2
 !
       use Cdata
@@ -426,8 +394,9 @@ module Hypervisc_strict
 !***********************************************************************
     subroutine del2_2nd_nof(f,del2f)
 !
-!  calculate del2 of a scalar, get scalar
-!  same as del2_2nd but for the case where f is a scalar
+!  Calculate del2 of a scalar, get scalar.
+!  Same as del2_2nd but for the case where f is a scalar
+!
 !  24-nov-03/nils: adapted from del2_2nd
 !
       use Cdata
@@ -449,6 +418,9 @@ module Hypervisc_strict
     endsubroutine del2_2nd_nof
 !***********************************************************************
     subroutine der2_2nd(f,der2f,i,j)
+!
+!  Calculate the second derivative of f using a second order spatial
+!  scheme.
 !
 !  24-nov-03/nils: coded
 !
@@ -585,52 +557,61 @@ module Hypervisc_strict
 !
     endsubroutine der2_2nd_nof
 !***********************************************************************
-    subroutine divgrad_2nd(f,divgradf,k)
+    subroutine graddivu_2nd(f,graddivuf,k)
 !
-!  24-nov-03/nils: coded (should be called graddiv)
+!  Calculate the gradient of the divergence of a vector using a second
+!  order spatial scheme.
+!
+!  24-nov-03/nils: coded
 !
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,3) :: divgradf
+      real, dimension (mx,my,mz,3) :: graddivuf
       real, dimension (mx,my,mz) :: tmp,tmp2
       integer :: k,k1
 !
       intent (in) :: f, k
-      intent (out) :: divgradf
+      intent (out) :: graddivuf
 !
-      divgradf=0.
+      graddivuf=0.
 !
       k1=k-1
 !
+!  d/dx(div(u))
+!
       call der2_2nd(f,tmp,k1+1,1)
-      divgradf(:,:,:,1)=tmp
+      graddivuf(:,:,:,1)=tmp
       call der_2nd_nof(f(:,:,:,k1+2),tmp,1)
       call der_2nd_nof(tmp,tmp2,2)
-      divgradf(:,:,:,1)=divgradf(:,:,:,1)+tmp2
+      graddivuf(:,:,:,1)=graddivuf(:,:,:,1)+tmp2
       call der_2nd_nof(f(:,:,:,k1+3),tmp,1)
       call der_2nd_nof(tmp,tmp2,3)
-      divgradf(:,:,:,1)=divgradf(:,:,:,1)+tmp2
+      graddivuf(:,:,:,1)=graddivuf(:,:,:,1)+tmp2
+!
+!  d/dy(div(u))
 !
       call der2_2nd(f,tmp,k1+2,2)
-      divgradf(:,:,:,2)=tmp
+      graddivuf(:,:,:,2)=tmp
       call der_2nd_nof(f(:,:,:,k1+1),tmp,1)
       call der_2nd_nof(tmp,tmp2,2)
-      divgradf(:,:,:,2)=divgradf(:,:,:,2)+tmp2
+      graddivuf(:,:,:,2)=graddivuf(:,:,:,2)+tmp2
       call der_2nd_nof(f(:,:,:,k1+3),tmp,2)
       call der_2nd_nof(tmp,tmp2,3)
-      divgradf(:,:,:,2)=divgradf(:,:,:,2)+tmp2
+      graddivuf(:,:,:,2)=graddivuf(:,:,:,2)+tmp2
+!
+!  d/dz(div(u))
 !
       call der2_2nd(f,tmp,k1+3,3)
-      divgradf(:,:,:,3)=tmp
+      graddivuf(:,:,:,3)=tmp
       call der_2nd_nof(f(:,:,:,k1+1),tmp,1)
       call der_2nd_nof(tmp,tmp2,3)
-      divgradf(:,:,:,3)=divgradf(:,:,:,3)+tmp2
+      graddivuf(:,:,:,3)=graddivuf(:,:,:,3)+tmp2
       call der_2nd_nof(f(:,:,:,k1+2),tmp,2)
       call der_2nd_nof(tmp,tmp2,3)
-      divgradf(:,:,:,3)=divgradf(:,:,:,3)+tmp2
+      graddivuf(:,:,:,3)=graddivuf(:,:,:,3)+tmp2
 !
-    endsubroutine divgrad_2nd
+    endsubroutine graddivu_2nd
 !***********************************************************************
 
 endmodule Hypervisc_strict
