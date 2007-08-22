@@ -1,4 +1,4 @@
-! $Id: hypervisc_strict_2nd.f90,v 1.2 2007-08-22 16:19:06 ajohan Exp $
+! $Id: hypervisc_strict_2nd.f90,v 1.3 2007-08-22 17:01:32 ajohan Exp $
 
 !
 !  This module applies a sixth order hyperviscosity to the equation
@@ -10,7 +10,7 @@
 !  is a high order generalisation of the first order operator
 !    2*S_ij = u_i,j + u_j,i - 2/3*delta_ij*div(u)
 !
-!  Derivatives are taken to second order in space.
+!  Spatial derivatives are accurate to second order.
 !
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -53,7 +53,7 @@ module Hypervisc_strict
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: hypervisc_strict_2nd.f90,v 1.2 2007-08-22 16:19:06 ajohan Exp $")
+           "$Id: hypervisc_strict_2nd.f90,v 1.3 2007-08-22 17:01:32 ajohan Exp $")
 !
 !  Set indices for auxiliary variables
 ! 
@@ -73,6 +73,9 @@ module Hypervisc_strict
 !  Apply momentum-conserving, symmetric, sixth order hyperviscosity with
 !  positive define heating rate (see Haugen & Brandenburg 2004).
 !
+!  To avoid communicating ghost zones after each operator, we use
+!  derivatives that are second order in space.
+!
 !  24-nov-03/nils: coded
 !
       use Cdata, only: lfirst
@@ -83,25 +86,32 @@ module Hypervisc_strict
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: k
 !
-      real, dimension (mx,my,mz,3) :: tmp
+      real, dimension (mx,my,mz,3) :: tmp, tmp2
       real, dimension (nx,ny,nz) :: sij2
       real, dimension (nx,3) :: del6u
       integer :: i,j
 !
-!  calculate grad4 grad div u
+!  Calculate del2(del2(del2(u))), accurate to second order.
 !
-      call graddivu_2nd(f,tmp,iux)
+      call del2v_2nd(f,tmp,iux)
       f(:,:,:,ihyper:ihyper+2)=tmp
       call del2v_2nd(f,tmp,ihyper)
       f(:,:,:,ihyper:ihyper+2)=tmp
       call del2v_2nd(f,tmp,ihyper)
-      f(:,:,:,ihyper:ihyper+2)=tmp
-
-      f(:,:,:,ihyper:ihyper+2)=f(:,:,:,ihyper:ihyper+2)/3.
-      do n=n1,n2; do m=m1,m2
-        call del6v(f,iuu,del6u)
-        f(l1:l2,m,n,ihyper:ihyper+2)=f(l1:l2,m,n,ihyper:ihyper+2)+del6u
-      enddo; enddo
+!
+!  Calculate del2(del2(grad(div(u)))), accurate to second order.
+!  Probably gives zero derivative at the Nyquist scale, but the del2^3
+!  term above gives dissipation at this scale.
+!
+      call graddivu_2nd(f,tmp2,iux)
+      f(:,:,:,ihyper:ihyper+2)=tmp2
+      call del2v_2nd(f,tmp2,ihyper)
+      f(:,:,:,ihyper:ihyper+2)=tmp2
+      call del2v_2nd(f,tmp2,ihyper)
+!
+!  Add the two terms.
+!
+      f(:,:,:,ihyper:ihyper+2)=tmp+tmp2/3.
 !
 ! find heating term (yet it only works for ivisc='hyper3')
 ! the heating term is d/dt(0.5*rho*u^2) = -2*mu3*( S^(2) )^2
@@ -163,133 +173,50 @@ module Hypervisc_strict
       real :: fac
 !
       df=0.
-
-
+!
       if (nxgrid/=1) then
          fac=1./(2.*dx)
-         df(1     ,:,:) =  df(1    ,:,:) &
-                           + (  4.*f(2,:,:,iux) &
-                              - 3.*f(1,:,:,iux) &
-                              -    f(3,:,:,iux))*fac
-         df(2:mx-1,:,:) =  df(2:mx-1,:,:) &
+         df(1     ,:,:) =        df(1    ,:,:) &
+                          + (  4.*f(2,:,:,iux) &
+                              -3.*f(1,:,:,iux) &
+                              -   f(3,:,:,iux) ) * fac
+         df(2:mx-1,:,:) =     df(2:mx-1,:,:) &
                            + ( f(3:mx,:,:,iux)-f(1:mx-2,:,:,iux) ) *fac
-         df(mx    ,:,:) =  df(mx    ,:,:) &
-                           + (  3.*f(mx  ,:,:,iux) &
-                              - 4.*f(mx-1,:,:,iux) &
-                              +    f(mx-2,:,:,iux))*fac
+         df(mx    ,:,:) =        df(mx    ,:,:) &
+                          + (  3.*f(mx  ,:,:,iux) &
+                              -4.*f(mx-1,:,:,iux) &
+                              +   f(mx-2,:,:,iux))*fac
       endif
-
+!
       if (nygrid/=1) then
          fac=1./(2.*dy)
-         df(:,1     ,:) = df(:,1     ,:) &
-                          + (  4.*f(:,2,:,iuy) &
-                             - 3.*f(:,1,:,iuy) &
-                             -    f(:,3,:,iuy))*fac
-         df(:,2:my-1,:) = df(:,2:my-1,:) &  
-                          + (f(:,3:my,:,iuy)-f(:,1:my-2,:,iuy))*fac
-         df(:,my    ,:) = df(:,my    ,:) &
+         df(:,1     ,:) =       df(:,1     ,:) &
+                          + ( 4.*f(:,2,:,iuy) &
+                             -3.*f(:,1,:,iuy) &
+                             -   f(:,3,:,iuy) )*fac
+         df(:,2:my-1,:) =    df(:,2:my-1,:) &  
+                          + ( f(:,3:my,:,iuy)-f(:,1:my-2,:,iuy) )*fac
+         df(:,my    ,:) =       df(:,my    ,:) &
                           + (  3.*f(:,my  ,:,iuy) &
-                             - 4.*f(:,my-1,:,iuy) &
-                             +    f(:,my-2,:,iuy))*fac
+                              -4.*f(:,my-1,:,iuy) &
+                              +   f(:,my-2,:,iuy) )*fac
       endif
-
+!
       if (nzgrid/=1) then
          fac=1./(2.*dz)
-         df(:,:,1     ) = df(:,:,1     ) &
+         df(:,:,1     ) =       df(:,:,1     ) &
                           + (  4.*f(:,:,2,iuz) &
-                             - 3.*f(:,:,1,iuz) &
-                             -    f(:,:,3,iuz))*fac
+                              -3.*f(:,:,1,iuz) &
+                              -   f(:,:,3,iuz))*fac
          df(:,:,2:mz-1) = df(:,:,2:mz-1) &
                           + (f(:,:,3:mz,iuz)-f(:,:,1:mz-2,iuz))*fac
-         df(:,:,mz    ) = df(:,:,mz    ) &
+         df(:,:,mz    ) =        df(:,:,mz    ) &
                           + (  3.*f(:,:,mz  ,iuz) &
-                             - 4.*f(:,:,mz-1,iuz) &
-                             +    f(:,:,mz-2,iuz))*fac
+                              -4.*f(:,:,mz-1,iuz) &
+                              +   f(:,:,mz-2,iuz))*fac
       endif
 !      
     endsubroutine divu_2nd
-!***********************************************************************
-!    subroutine calc_viscous_force(f,df,p)
-!
-!  calculate viscous force term for right hand side of  equation
-!
-!  24-nov-03/nils: coded
-!
-!
-!      use Cdata
-!      use Mpicomm
-!      use Sub
-!
-!      real, dimension (mx,my,mz,mfarray) :: f
-!      real, dimension (mx,my,mz,mvar) :: df
-!      real, dimension (nx) :: nu_smag
-!      real, dimension (nx,3) :: nuD2uxb
-!      type (pencil_case) :: p
-!
-!      real, dimension (nx,3) :: hyper
-!      real, dimension (nx) :: murho1, ufvisc, rufvisc
-!      integer :: i
-!
-!      intent (in) :: p
-!      intent (inout) :: df
-!
-!      if (nu_hyper3 /= 0.) then
-!        if (ivisc == 'hyper3') then
-          !  viscous force:nu_hyper3*(del6u+del4*graddivu/3)
-          !  (Assuming rho*nu_hyper3=const)
-!          hyper=f(l1:l2,m,n,ihyper:ihyper+2)/3.
-!          if (headtt) print*,'viscous force: nu_hyper3*(del6u+del4*graddivu/3)'
-!          p%fvisc=nu_hyper3*(p%del6u+hyper)
-!          diffus_nu=max(diffus_nu,nu_hyper3*dxyz_2)
-!          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fvisc
-!        elseif (ivisc == 'hyper3.1') then
-          !  viscous force:nu_hyper3*(del6u+del4*graddivu/3)
-          !  (Assuming rho*nu_hyper3=const, so nu_hyper3->nu_hyper3/rho)
-!          hyper=f(l1:l2,m,n,ihyper:ihyper+2)/3.
-!          if (headtt) print*,'viscous force: nu_hyper3*(del6u+del4*graddivu/3)'
-!          murho1=nu_hyper3*p%rho1
-!          do i=1,3
-!            p%fvisc(:,i)=murho1*(p%del6u(:,i)+hyper(:,i))
-!          enddo
-!          diffus_nu=max(diffus_nu,nu_hyper3*dxyz_2)
-!          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fvisc
-!        elseif (ivisc == 'hyper2') then
-          !  viscous force:nu_hyper3*(del4u+del2*graddivu/3)
-          !  (Assuming rho*nu_hyper3=const)
-!          hyper=f(l1:l2,m,n,ihyper:ihyper+2)/3.
-!          if (headtt) print*,'viscous force: nu_hyper3*(del4u+del2*graddivu/3)'
-!          p%fvisc=nu_hyper3*(p%del4u+hyper)
-!          diffus_nu=max(diffus_nu,nu_hyper3*dxyz_2)
-!          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fvisc
-!        else
-!          call stop_it('calc_viscous_force: no such ivisc')  
-!        endif
-!      else ! (nu_hyper3=0)
-!        if (headtt.and.lroot) print*,'no viscous force: (nu_hyper3=0)'
-!      endif
-!
-! Code to double-check epsK
-!
-!      if (ldiagnos) then
-!        if (idiag_epsK2/=0) then
-!          call dot(f(l1:l2,m,n,iux:iuz),p%fvisc,ufvisc)
-!          rufvisc=ufvisc*p%rho
-!          call sum_mn_name(-rufvisc,idiag_epsK2)
-!        endif
-        !  mean heating term
-!        if ((idiag_epsK/=0) .or. (idiag_epsK_LES/=0)) call multm2_mn(sij,sij2)
-!        if ((idiag_epsK_LES/=0) .and. (ivisc .eq. 'smagorinsky_simplified')) &
-        !ajwm nu_smag should already be calculated!
-!            call sum_mn_name(2*nu_smag* &
-!                              exp(f(l1:l2,m,n,ilnrho))*sij2,idiag_epsK_LES)
-!        if (idiag_epsK/=0) then
-!           call sum_mn_name(2*nu_hyper3*exp(f(l1:l2,m,n,ilnrho))*sij2,idiag_epsK)
-!        endif
-!      endif
-!
-!      if(NO_WARN) print*,divu,shock,gshock !(to keep compiler quiet)
-!        
-!    end subroutine calc_viscous_force
 !***********************************************************************
     subroutine der_2nd_nof(var,tmp,j)
 !
@@ -307,36 +234,36 @@ module Hypervisc_strict
       tmp=0.
 
       if (j==1 .and. nxgrid/=1) then
-          tmp(     1,:,:) = (- 3.*var(1,:,:) &
-                            + 4.*var(2,:,:) &
-                            - 1.*var(3,:,:))/(2.*dx) 
-          tmp(2:mx-1,:,:) = (- 1.*var(1:mx-2,:,:) &
-                            + 1.*var(3:mx  ,:,:))/(2.*dx) 
-          tmp(    mx,:,:) = (+ 1.*var(mx-2,:,:) &
-                            - 4.*var(mx-1,:,:) &
-                            + 3.*var(mx  ,:,:))/(2.*dx) 
+          tmp(     1,:,:) = (-3.*var(1,:,:) &
+                             +4.*var(2,:,:) &
+                             -1.*var(3,:,:))/(2.*dx) 
+          tmp(2:mx-1,:,:) = (-1.*var(1:mx-2,:,:) &
+                             +1.*var(3:mx  ,:,:))/(2.*dx) 
+          tmp(    mx,:,:) = (+1.*var(mx-2,:,:) &
+                             -4.*var(mx-1,:,:) &
+                             +3.*var(mx  ,:,:))/(2.*dx) 
       endif
 !
       if (j==2 .and. nygrid/=1) then
-          tmp(:,     1,:) = (- 3.*var(:,1,:) &
-                            + 4.*var(:,2,:) &
-                            - 1.*var(:,3,:))/(2.*dy) 
-          tmp(:,2:my-1,:) = (- 1.*var(:,1:my-2,:) &
-                            + 1.*var(:,3:my  ,:))/(2.*dy) 
-          tmp(:,    my,:) = (+ 1.*var(:,my-2,:) &
-                            - 4.*var(:,my-1,:) &
-                            + 3.*var(:,my  ,:))/(2.*dy) 
+          tmp(:,     1,:) = (-3.*var(:,1,:) &
+                             +4.*var(:,2,:) &
+                             -1.*var(:,3,:))/(2.*dy) 
+          tmp(:,2:my-1,:) = (-1.*var(:,1:my-2,:) &
+                             +1.*var(:,3:my  ,:))/(2.*dy) 
+          tmp(:,    my,:) = (+1.*var(:,my-2,:) &
+                             -4.*var(:,my-1,:) &
+                             +3.*var(:,my  ,:))/(2.*dy) 
       endif
 !
       if (j==3 .and. nzgrid/=1) then
-          tmp(:,:,     1) = (- 3.*var(:,:,1) &
-                            + 4.*var(:,:,2) &
-                            - 1.*var(:,:,3))/(2.*dz) 
-          tmp(:,:,2:mz-1) = (- 1.*var(:,:,1:mz-2) &
-                            + 1.*var(:,:,3:mz  ))/(2.*dz) 
-          tmp(:,:,    mz) = (+ 1.*var(:,:,mz-2) &
-                            - 4.*var(:,:,mz-1) &
-                            + 3.*var(:,:,mz  ))/(2.*dz) 
+          tmp(:,:,     1) = (-3.*var(:,:,1) &
+                             +4.*var(:,:,2) &
+                             -1.*var(:,:,3))/(2.*dz) 
+          tmp(:,:,2:mz-1) = (-1.*var(:,:,1:mz-2) &
+                             +1.*var(:,:,3:mz  ))/(2.*dz) 
+          tmp(:,:,    mz) = (+1.*var(:,:,mz-2) &
+                             -4.*var(:,:,mz-1) &
+                             +3.*var(:,:,mz  ))/(2.*dz) 
       endif
 !
     end subroutine der_2nd_nof
@@ -370,6 +297,7 @@ module Hypervisc_strict
     subroutine del2_2nd(f,del2f,k)
 !
 !  Calculate del2 of a scalar, get scalar.
+!  Accurate to second order.
 !
 !  24-nov-03/nils: adapted from del2
 !
@@ -419,8 +347,8 @@ module Hypervisc_strict
 !***********************************************************************
     subroutine der2_2nd(f,der2f,i,j)
 !
-!  Calculate the second derivative of f using a second order spatial
-!  scheme.
+!  Calculate the second derivative of f.
+!  Accurate to second order.
 !
 !  24-nov-03/nils: coded
 !
@@ -436,62 +364,54 @@ module Hypervisc_strict
       der2f=0.
 !
       if (j==1 .and. nxgrid/=1) then
-        der2f(1     ,:,:) =    (+ 2.*f(1,:,:,i) &
-                               - 5.*f(2,:,:,i) &
-                               + 4.*f(3,:,:,i) &
-                               - 1.*f(4,:,:,i) ) &
-                               / (dx**2) 
-        der2f(2:mx-1,:,:) =    (+ 1.*f(1:mx-2,:,:,i) &
-                               - 2.*f(2:mx-1,:,:,i) &
-                               + 1.*f(3:mx  ,:,:,i) ) &
-                               / (dx**2) 
-        der2f(mx    ,:,:) =    (+ 2.*f(mx  ,:,:,i) &
-                               - 5.*f(mx-1,:,:,i) &
-                               + 4.*f(mx-2,:,:,i) &
-                               - 1.*f(mx-3,:,:,i) ) &
-                               / (dx**2) 
+        der2f(1     ,:,:) = (+2.*f(1,:,:,i) &
+                             -5.*f(2,:,:,i) &
+                             +4.*f(3,:,:,i) &
+                             -1.*f(4,:,:,i) ) / (dx**2) 
+        der2f(2:mx-1,:,:) = (+1.*f(1:mx-2,:,:,i) &
+                             -2.*f(2:mx-1,:,:,i) &
+                             +1.*f(3:mx  ,:,:,i) ) / (dx**2) 
+        der2f(mx    ,:,:) = (+2.*f(mx  ,:,:,i) &
+                             -5.*f(mx-1,:,:,i) &
+                             +4.*f(mx-2,:,:,i) &
+                             -1.*f(mx-3,:,:,i) ) / (dx**2) 
       endif
 !
      if (j==2 .and. nygrid/=1) then
-        der2f(:,1     ,:) =    (+ 2.*f(:,1,:,i) &
-                               - 5.*f(:,2,:,i) &
-                               + 4.*f(:,3,:,i) &
-                               - 1.*f(:,4,:,i) ) &
-                               / (dy**2) 
-        der2f(:,2:my-1,:) =    (+ 1.*f(:,1:my-2,:,i) &
-                               - 2.*f(:,2:my-1,:,i) &
-                               + 1.*f(:,3:my  ,:,i) ) &
-                               / (dy**2) 
-        der2f(:,my    ,:) =    (+ 2.*f(:,my  ,:,i) &
-                               - 5.*f(:,my-1,:,i) &
-                               + 4.*f(:,my-2,:,i) &
-                               - 1.*f(:,my-3,:,i) ) &
-                               / (dy**2) 
+        der2f(:,1     ,:) = (+2.*f(:,1,:,i) &
+                             -5.*f(:,2,:,i) &
+                             +4.*f(:,3,:,i) &
+                             -1.*f(:,4,:,i) ) / (dy**2) 
+        der2f(:,2:my-1,:) = (+1.*f(:,1:my-2,:,i) &
+                             -2.*f(:,2:my-1,:,i) &
+                             +1.*f(:,3:my  ,:,i) ) / (dy**2) 
+        der2f(:,my    ,:) = (+2.*f(:,my  ,:,i) &
+                             -5.*f(:,my-1,:,i) &
+                             +4.*f(:,my-2,:,i) &
+                             -1.*f(:,my-3,:,i) ) / (dy**2) 
       endif
 !
      if (j==3 .and. nzgrid/=1) then
-        der2f(:,:,1     ) =    (+ 2.*f(:,:,1,i) &
-                               - 5.*f(:,:,2,i) &
-                               + 4.*f(:,:,3,i) &
-                               - 1.*f(:,:,4,i) ) &
-                               / (dz**2) 
-        der2f(:,:,2:mz-1) =    (+ 1.*f(:,:,1:mz-2,i) &
-                               - 2.*f(:,:,2:mz-1,i) &
-                               + 1.*f(:,:,3:mz  ,i) ) &
-                               / (dz**2) 
-        der2f(:,:,mz    ) =    (+ 2.*f(:,:,mz  ,i) &
-                               - 5.*f(:,:,mz-1,i) &
-                               + 4.*f(:,:,mz-2,i) &
-                               - 1.*f(:,:,mz-3,i) ) &
-                               / (dz**2) 
+        der2f(:,:,1     ) = (+2.*f(:,:,1,i) &
+                             -5.*f(:,:,2,i) &
+                             +4.*f(:,:,3,i) &
+                             -1.*f(:,:,4,i) ) / (dz**2) 
+        der2f(:,:,2:mz-1) = (+1.*f(:,:,1:mz-2,i) &
+                             -2.*f(:,:,2:mz-1,i) &
+                             +1.*f(:,:,3:mz  ,i) ) / (dz**2) 
+        der2f(:,:,mz    ) = (+2.*f(:,:,mz  ,i) &
+                             -5.*f(:,:,mz-1,i) &
+                             +4.*f(:,:,mz-2,i) &
+                             -1.*f(:,:,mz-3,i) ) / (dz**2) 
       endif
 !
     endsubroutine der2_2nd
 !***********************************************************************
     subroutine der2_2nd_nof(f,der2f,j)
 !
+!  Same as der2_2nd but for the case where f is a scalar.
+!
 !  07-jan-04/nils: adapted from der2_2nd
-!  same as der2_2nd but for the case where f is a scalar
 !
       use Cdata
 !
@@ -505,62 +425,53 @@ module Hypervisc_strict
       der2f=0.
 !
       if (j==1 .and. nxgrid/=1) then
-        der2f(1     ,:,:) =    (+ 2.*f(1,:,:) &
-                               - 5.*f(2,:,:) &
-                               + 4.*f(3,:,:) &
-                               - 1.*f(4,:,:) ) &
-                               / (dx**2) 
-        der2f(2:mx-1,:,:) =    (+ 1.*f(1:mx-2,:,:) &
-                               - 2.*f(2:mx-1,:,:) &
-                               + 1.*f(3:mx  ,:,:) ) &
-                               / (dx**2) 
-        der2f(mx    ,:,:) =    (+ 2.*f(mx  ,:,:) &
-                               - 5.*f(mx-1,:,:) &
-                               + 4.*f(mx-2,:,:) &
-                               - 1.*f(mx-3,:,:) ) &
-                               / (dx**2) 
+        der2f(1     ,:,:) = (+2.*f(1,:,:) &
+                             -5.*f(2,:,:) &
+                             +4.*f(3,:,:) &
+                             -1.*f(4,:,:) ) / (dx**2) 
+        der2f(2:mx-1,:,:) = (+1.*f(1:mx-2,:,:) &
+                             -2.*f(2:mx-1,:,:) &
+                             +1.*f(3:mx  ,:,:) ) / (dx**2) 
+        der2f(mx    ,:,:) = (+2.*f(mx  ,:,:) &
+                             -5.*f(mx-1,:,:) &
+                             +4.*f(mx-2,:,:) &
+                             -1.*f(mx-3,:,:) ) / (dx**2) 
       endif
 !
      if (j==2 .and. nygrid/=1) then
-        der2f(:,1     ,:) =    (+ 2.*f(:,1,:) &
-                               - 5.*f(:,2,:) &
-                               + 4.*f(:,3,:) &
-                               - 1.*f(:,4,:) ) &
-                               / (dy**2) 
-        der2f(:,2:my-1,:) =    (+ 1.*f(:,1:my-2,:) &
-                               - 2.*f(:,2:my-1,:) &
-                               + 1.*f(:,3:my  ,:) ) &
-                               / (dy**2) 
-        der2f(:,my    ,:) =    (+ 2.*f(:,my  ,:) &
-                               - 5.*f(:,my-1,:) &
-                               + 4.*f(:,my-2,:) &
-                               - 1.*f(:,my-3,:) ) &
-                               / (dy**2) 
+        der2f(:,1     ,:) = (+2.*f(:,1,:) &
+                             -5.*f(:,2,:) &
+                             +4.*f(:,3,:) &
+                             -1.*f(:,4,:) ) / (dy**2) 
+        der2f(:,2:my-1,:) = (+1.*f(:,1:my-2,:) &
+                             -2.*f(:,2:my-1,:) &
+                             +1.*f(:,3:my  ,:) ) / (dy**2) 
+        der2f(:,my    ,:) = (+2.*f(:,my  ,:) &
+                             -5.*f(:,my-1,:) &
+                             +4.*f(:,my-2,:) &
+                             -1.*f(:,my-3,:) ) / (dy**2) 
       endif
 !
      if (j==3 .and. nzgrid/=1) then
-        der2f(:,:,1     ) =    (+ 2.*f(:,:,1) &
-                               - 5.*f(:,:,2) &
-                               + 4.*f(:,:,3) &
-                               - 1.*f(:,:,4) ) &
-                               / (dz**2) 
-        der2f(:,:,2:mz-1) =    (+ 1.*f(:,:,1:mz-2) &
-                               - 2.*f(:,:,2:mz-1) &
-                               + 1.*f(:,:,3:mz  ) ) &
-                               / (dz**2) 
-        der2f(:,:,mz    ) =    (+ 2.*f(:,:,mz  ) &
-                               - 5.*f(:,:,mz-1) &
-                               + 4.*f(:,:,mz-2) &
-                               - 1.*f(:,:,mz-3) ) &
-                               / (dz**2) 
+        der2f(:,:,1     ) = (+2.*f(:,:,1) &
+                             -5.*f(:,:,2) &
+                             +4.*f(:,:,3) &
+                             -1.*f(:,:,4) ) / (dz**2) 
+        der2f(:,:,2:mz-1) = (+1.*f(:,:,1:mz-2) &
+                             -2.*f(:,:,2:mz-1) &
+                             +1.*f(:,:,3:mz  ) ) / (dz**2) 
+        der2f(:,:,mz    ) = (+2.*f(:,:,mz  ) &
+                             -5.*f(:,:,mz-1) &
+                             +4.*f(:,:,mz-2) &
+                             -1.*f(:,:,mz-3) ) / (dz**2) 
       endif
 !
     endsubroutine der2_2nd_nof
 !***********************************************************************
     subroutine graddivu_2nd(f,graddivuf,k)
 !
-!  Calculate the gradient of the divergence of a vector using a second
-!  order spatial scheme.
+!  Calculate the gradient of the divergence of a vector.
+!  Accurate to second order.
 !
 !  24-nov-03/nils: coded
 !
