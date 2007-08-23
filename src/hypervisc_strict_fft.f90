@@ -1,4 +1,4 @@
-! $Id: hypervisc_strict_fft.f90,v 1.9 2007-08-23 22:53:42 wlyra Exp $
+! $Id: hypervisc_strict_fft.f90,v 1.10 2007-08-23 22:55:58 wlyra Exp $
 
 !
 !  This module applies a sixth order hyperviscosity to the equation
@@ -52,7 +52,7 @@ module Hypervisc_strict
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: hypervisc_strict_fft.f90,v 1.9 2007-08-23 22:53:42 wlyra Exp $")
+           "$Id: hypervisc_strict_fft.f90,v 1.10 2007-08-23 22:55:58 wlyra Exp $")
 !
 !  Set indices for auxiliary variables
 ! 
@@ -94,7 +94,7 @@ module Hypervisc_strict
 !  Identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: hypervisc_strict_fft.f90,v 1.9 2007-08-23 22:53:42 wlyra Exp $")
+        "$Id: hypervisc_strict_fft.f90,v 1.10 2007-08-23 22:55:58 wlyra Exp $")
 !
 !  Derivatives are taken in k-space due to the complicated cross terms.
 !
@@ -115,7 +115,7 @@ module Hypervisc_strict
         call fourier_transform(uzhat_re,uzhat_im)
       endif
 !
-!  Construct hyperviscious acceleration
+!  Construct hyperviscous acceleration
 !
 !    f_visc = mu3/rho*(del2(del2(del2(u)))+1/3*del2(del2(grad(div(u))))
 !
@@ -275,7 +275,7 @@ module Hypervisc_strict
       endif
 !
 !  The imaginary part of the functions should be zero once transformed
-!  back to real space, sine the differential operators preserve
+!  back to real space, since the differential operators preserve
 !  complex conjugarity of the scales (kx,ky,kz) and (-kx,-ky,-kz)
 !
       if (ip<=10) then
