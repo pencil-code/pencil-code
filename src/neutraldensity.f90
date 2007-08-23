@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.8 2007-08-17 13:08:31 wlyra Exp $
+! $Id: neutraldensity.f90,v 1.9 2007-08-23 13:50:46 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -103,7 +103,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.8 2007-08-17 13:08:31 wlyra Exp $")
+           "$Id: neutraldensity.f90,v 1.9 2007-08-23 13:50:46 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -279,8 +279,8 @@ module NeutralDensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
-      real :: lnrhonint,cs2int,pot0,lnrhon_left,lnrhon_right
-      real :: pot_ext,lnrhon_ext,cs2_ext,tmp1,k_j2
+      real :: lnrhonint,cs2int,pot0
+      real :: pot_ext,cs2_ext,tmp1,k_j2
       real :: zbot,ztop,haut,TT
       real, dimension (nx) :: r_mn,lnrhon,lnTT,ss
       logical :: lnothing
