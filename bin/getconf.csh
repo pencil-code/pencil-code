@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.209 2007-08-23 11:08:15 dhruba Exp $
+# $Id: getconf.csh,v 1.210 2007-08-23 22:27:11 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -121,11 +121,11 @@ set mpirunops2 = ''  # options after -np $ncpus
 # names
 set masterhost = ''
 if ($?PBS_O_HOST) then
-  if ($PBS_O_HOST =~ obelix*) set masterhost = 'obelix'
-  if ($PBS_O_HOST =~ hyades*) set masterhost = 'hyades'
+  if ("$PBS_O_HOST" =~ obelix*) set masterhost = 'obelix'
+  if ("$PBS_O_HOST" =~ hyades*) set masterhost = 'hyades'
 endif
 if ($?PBS_JOBID) then
-  if ($PBS_JOBID =~ *.obelix*) set masterhost = 'obelix'
+  if ("$PBS_JOBID" =~ *.obelix*) set masterhost = 'obelix'
 endif
 
 # Resubmission options for most machines are not written. This is
@@ -321,7 +321,7 @@ else if ($hn =~ ice[0-9]*_[0-9]*) then
   if ($mpi) then
     echo "Using MPICH"
     set mpirunops = "-machinefile $PBS_NODEFILE"
-    set mpirun = "echo No clue where mpich's mpirun could be; false"
+    set mpirun = mpirun
     set start_x=$PBS_O_WORKDIR/src/start.x
     set run_x=$PBS_O_WORKDIR/src/run.x
     #
@@ -1082,23 +1082,23 @@ endif
 ## MPI specific setup
 if ($mpi) then
   # Some mpiruns need special options
-  if ($mpirun =~ *mpirun*) then
+  if ("$mpirun" =~ *mpirun*) then
     set npops = "-np $ncpus"
-  else if ($mpirun =~ *mpiexec*) then
+  else if ("$mpirun" =~ *mpiexec*) then
     set npops = "-n $ncpus"
-  else if ($mpirun =~ *mpimon*) then
+  else if ("$mpirun" =~ *mpimon*) then
     set npops = "-stdin all -inherit_limits"
     set x_ops = "-- $mpi_suffix"
-  else if ($mpirun =~ *scout*) then
+  else if ("$mpirun" =~ *scout*) then
     set nnode = `expr $NSLOTS - 1`
     set nprocpernode = `expr $ncpus / $nnode` 
     set npops = "-nodes=${nnode}x${nprocpernode}"
-  else if ($mpirun =~ *poe*) then
+  else if ("$mpirun" =~ *poe*) then
     set nprocpernode = 1
     set x_ops = "$mpirunops -procs $ncpus"
     set mpirunops = ""
     set npops = ""
-  else if ($mpirun =~ *nuripm*) then
+  else if ("$mpirun" =~ *nuripm*) then
     set mpirun = 'mpirun'
     set npops = ""
   else
