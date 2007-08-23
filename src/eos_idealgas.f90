@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.95 2007-08-22 13:29:09 wlyra Exp $
+! $Id: eos_idealgas.f90,v 1.96 2007-08-23 15:05:19 wlyra Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.95 2007-08-22 13:29:09 wlyra Exp $')
+           '$Id: eos_idealgas.f90,v 1.96 2007-08-23 15:05:19 wlyra Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -623,15 +623,15 @@ module EquationOfState
           if (lpencil(i_pp)) p%pp=gamma11*p%rho*cs20
         elseif (leos_localisothermal) then
           if (lpencil(i_cs2)) p%cs2=f(l1:l2,m,n,iglobal_cs2)
-          if (lpencil(i_lnTT)) p%lnTT=log(p%cs2*cp1/gamma1)
+          if (lpencil(i_lnTT)) call fatal_error("calc_pencils_eos","temperature not needed for localisothermal")
           if (lpencil(i_glnTT)) p%glnTT=f(l1:l2,m,n,iglobal_glnTT:iglobal_glnTT+2)
           if (lpencil(i_hlnTT)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal")
           if (lpencil(i_del2lnTT)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal")
-          if (lpencil(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma1*(p%lnrho-lnrho0))
+          if (lpencil(i_ss)) call fatal_error("calc_pencils_eos","entropy not needed for localisothermal")
           if (lpencil(i_del2ss)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal")
-          if (lpencil(i_gss)) p%gss=cv*(p%glnTT-gamma1*p%glnrho)
+          if (lpencil(i_gss)) call fatal_error("calc_pencils_eos","entropy gradient not needed for localisothermal")
           if (lpencil(i_hss)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal")
-          if (lpencil(i_pp)) p%pp=gamma11*p%rho*p%cs2
+          if (lpencil(i_pp)) p%pp=p%rho*p%cs2
         else
           call fatal_error("calc_pencils_eos","Full equation of state not implemented for ilnrho_cs2")
         endif
