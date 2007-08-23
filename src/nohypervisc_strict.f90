@@ -1,4 +1,4 @@
-! $Id: nohypervisc_strict.f90,v 1.1 2007-08-21 10:28:08 ajohan Exp $
+! $Id: nohypervisc_strict.f90,v 1.2 2007-08-23 02:43:58 brandenb Exp $
 
 !
 !  This module applies a sixth order hyperviscosity to the equation
@@ -54,7 +54,7 @@ module Hypervisc_strict
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
-      if (NO_WARN) print*, f(1,1,1,1), j
+      if (NO_WARN) print*,f,j !(keep compiler quiet)
 !
     endsubroutine hyperviscosity_strict
 !***********************************************************************
