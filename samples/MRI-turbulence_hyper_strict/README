@@ -1,0 +1,16 @@
+Directory:
+    ${PENCIL_HOME}/samples/MRI-turbulence_hyper_strict
+CVS-Id:
+    $Id: README,v 1.1 2007-08-23 12:18:01 ajohan Exp $
+Maintainer:
+    Anders Johansen <johansen@mpia.de>
+Added:
+    23.08.2007
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    128x128x128 (diffrho_hyper3=eta_hyper3=diffnd_hyper3=nu_hyper3=5.0e-13)
+Comments:
+    This sample uses a stricter version of hyperviscosity and hyperresistivity
+    than ${PENCIL_HOME}/samples/MRI-turbulence_hyper, with positive definite
+    kinetic energy dissipation.
