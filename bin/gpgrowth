@@ -1,5 +1,5 @@
 #!/bin/sh
-# CVS: $Id: gpgrowth,v 1.8 2005-06-26 17:34:16 eos_merger_tony Exp $
+# CVS: $Id: gpgrowth,v 1.9 2007-08-23 20:45:32 dobler Exp $
 # -*-perl-*-
 #
 # Name:   gpgrowth
@@ -41,6 +41,7 @@ my $gpscript = 'data/gplot.tmp';
 my ($rows,$cols) = get_tty_rc(); # get terminal size
 $rows--;
 my $term = "dumb $cols $rows";	# only default value
+my $plotstyle ='';
 my $gpsetup;
 my $count = 0;
 my @cols = (5,6);
@@ -56,22 +57,22 @@ my (%opts);     # Variables written by GetOptions
 my $cmdname = (split('/', $0))[-1];
 my $usage = "Usage:  $cmdname [options] [file]
 Options:
-  -h, --help             \tShow usage overview
-      --x11              \tPlot to X11 canvas window;
-                         \tdefault is Ascii terminal, like with `-a 79 30'
-      --tek              \tPlot to tektronix window (assumes you run
-                         \tan xterm)
+  -h, --help               Show usage overview
+      --x11                Plot to X11 canvas window;
+                           default is Ascii terminal, like with `-a 79 30'
+      --tek                Plot to tektronix window (assumes you run
+                           an xterm)
   -a <width>x<height>
-      --ascii=<w>x<h>    \tPlot in Ascii mode, with specified width and
-                         \theight
-  -l, --lin              \tLinear plot (default: semilogarithmic)
+      --ascii=<w>x<h>      Plot in Ascii mode, with specified width and
+                           height
+  -l, --lin                Linear plot (default: semilogarithmic)
   -x <x0>:<x1>
-      --xrange=<x0>:<x1> \tSpecify x axis range to plot
+      --xrange=<x0>:<x1>   Specify x axis range to plot
   -y <x0>:<x1>
-      --yrange=<y0>:<y1> \tSpecify y axis range to plot
+      --yrange=<y0>:<y1>   Specify y axis range to plot
   -v n1[,n2]
-      --var=n1[,n2]      \tSpecify column number(s) for variable(s) to plot
-                         \t(default: @cols)
+      --var=n1[,n2]        Specify column number(s) for variable(s) to plot
+                           (default: @cols)
 Purpose:
   Plot B_max, B_rms (or other variables) from FILE (default:
   try <@ts_files> in order)
@@ -93,8 +94,13 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { die $usage; }
 
 # Process terminal-related arguments
-if ($opts{'tek'}) { $term = "tek40xx";}
-if ($opts{'x11'}) { $term = "X11";}
+if ($opts{'tek'}) {
+    $term = "tek40xx";
+    $plotstyle = ' with lines';
+} elsif ($opts{'x11'}) {
+    $term = "X11";
+}
+
 $geom = ($opts{'a'} || $opts{'ascii'} || '');
 if ($geom) {
     $geom =~ s/x/ /;
@@ -123,18 +129,21 @@ $gpsetup = "#set linestyle 1
 set $linlog y
 set zero 1e-30
 set xlabel 't'
-#set ylabel 'B_max, B_rms'";
+#set ylabel 'B_max, B_rms'
+";
+
 
 # Build gnuplot commands
 $plotcmd = "plot [$xr] [$yr] ";
 foreach $i (0..$#cols) {
-    $plotcmd .= "'$tmpfile' using 2:$cols[$i] title '$title[$i]'";
+    $plotcmd .= "'$tmpfile' using 2:$cols[$i] title '$title[$i]'"
+                . $plotstyle;
     if ($i < $#cols) {
 	$plotcmd .= ", ";
-    } else {
-	$plotcmd .= "\n";
     }
 }
+
+$plotcmd .= "\n";   # end of plot command
 
 if (@ARGV) { unshift @ts_files, @ARGV }; # try user-provided file(s) first
 
