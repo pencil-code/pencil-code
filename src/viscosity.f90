@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.75 2007-08-23 12:02:41 ajohan Exp $
+! $Id: viscosity.f90,v 1.76 2007-08-23 21:09:17 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -102,7 +102,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.75 2007-08-23 12:02:41 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.76 2007-08-23 21:09:17 wlyra Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -176,6 +176,9 @@ module Viscosity
        case ('hyper3_mu-const_strict')
           if (lroot) print*, 'viscous force(i): '// &
               'nu_hyper/rho*(del2(del2(del2(u)))+del2(del2(grad(divu))))'
+          if (.not.lhyperviscosity_strict) &
+               call stop_it("initialize_viscosity: This viscosity type"//&
+               " cannot be used with HYPERVISC_STRICT=nohypervisc_strict")
           lvisc_hyper3_mu_const_strict=.true.
        case ('hyper3_rho_nu-const_aniso')
           if (lroot) print*,&
