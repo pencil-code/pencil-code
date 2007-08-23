@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.96 2007-08-23 11:08:15 dhruba Exp $
+# CVS: $Id: run.csh,v 1.97 2007-08-23 11:14:02 dhruba Exp $
 
 #                       run.csh
 #                      ---------
@@ -224,10 +224,11 @@ endif
 if ($booted_lam) lamhalt
 
 # Shut down mpd if we have started it 
-if($?booted_mpd) then 
- echo "Shutting down mpd .."
- mpdallexit
- echo "..done"
+<<<<<<< run.csh
+if ($?booted_mpd) then
+  echo "Shutting down mpd .."
+  mpdallexit
+  echo "..done"
 else
 endif
 
