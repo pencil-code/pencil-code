@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.58 2007-07-26 11:08:50 wlyra Exp $
+! $Id: eos_temperature_ionization.f90,v 1.59 2007-08-23 02:13:47 wlyra Exp $
 
 !  Dummy routine for ideal gas
 
@@ -129,7 +129,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.58 2007-07-26 11:08:50 wlyra Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.59 2007-08-23 02:13:47 wlyra Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1863,6 +1863,15 @@ module EquationOfState
       endselect
 
     end subroutine bc_stellar_surface
+!***********************************************************************
+    subroutine bc_lnrho_cfb_r_iso(f,topbot,j)
+      use Mpicomm, only: stop_it
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+      call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED IN NOEOS")
+      if (NO_WARN) print*,f,topbot,j
+    end subroutine bc_lnrho_cfb_r_iso
 !***********************************************************************
     subroutine bc_lnrho_hds_z_iso(f,topbot)
       use Mpicomm, only: stop_it
