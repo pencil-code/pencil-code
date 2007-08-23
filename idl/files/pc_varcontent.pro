@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.42 2007-08-23 10:38:20 ajohan Exp $
+;  $Id: pc_varcontent.pro,v 1.43 2007-08-23 12:03:13 ajohan Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar,run2D=run2D
 COMPILE_OPT IDL2,HIDDEN
@@ -465,12 +465,20 @@ if (param.lwrite_aux ne 0) then begin
   varcontent[ivisc_heat].idlvarloc = 'visc_heat_loc'
 
   default, ihyper, 0
-  varcontent[ihyper].variable   = 'Hyper viscosity (hyp)'
-  varcontent[ihyper].idlvar     = 'hyp'
+  varcontent[ihyper].variable   = 'Hyperviscosity (hyv)'
+  varcontent[ihyper].idlvar     = 'hyv'
   varcontent[ihyper].idlinit    = INIT_3VECTOR
-  varcontent[ihyper].idlvarloc  = 'hyp_loc'
+  varcontent[ihyper].idlvarloc  = 'hyv_loc'
   varcontent[ihyper].idlinitloc = INIT_3VECTOR_LOC
   varcontent[ihyper].skip       = 2
+
+  default, ihypres, 0
+  varcontent[ihypres].variable   = 'Hyperresistivity (hyr)'
+  varcontent[ihypres].idlvar     = 'hyr'
+  varcontent[ihypres].idlinit    = INIT_3VECTOR
+  varcontent[ihypres].idlvarloc  = 'hyr_loc'
+  varcontent[ihypres].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[ihypres].skip       = 2
 endif
 
 if keyword_set(scalar) then begin
