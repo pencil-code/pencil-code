@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.215 2007-08-22 13:47:24 ajohan Exp $
+! $Id: register.f90,v 1.216 2007-08-23 12:02:41 ajohan Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -56,6 +56,7 @@ module Register
       use Shear,            only: register_shear
       use Viscosity,        only: register_viscosity
       use Hypervisc_strict, only: register_hypervisc_strict
+      use Hyperresi_strict, only: register_hyperresi_strict
       use Special,          only: register_special
 !
       logical :: ioerr
@@ -97,7 +98,6 @@ module Register
       call register_eos
       call register_shock
       call register_viscosity
-      call register_hypervisc_strict
       call register_hydro
       call register_gravity
       call register_selfgravity
@@ -117,6 +117,8 @@ module Register
       call register_cosmicrayflux
       call register_interstellar
       call register_shear
+      call register_hypervisc_strict
+      call register_hyperresi_strict
       call register_special
 !
 !  Writing files for use with IDL

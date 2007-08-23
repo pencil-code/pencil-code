@@ -1,4 +1,4 @@
-! $Id: hypervisc_strict_fft.f90,v 1.7 2007-08-22 17:00:12 ajohan Exp $
+! $Id: hypervisc_strict_fft.f90,v 1.8 2007-08-23 12:02:41 ajohan Exp $
 
 !
 !  This module applies a sixth order hyperviscosity to the equation
@@ -48,26 +48,26 @@ module Hypervisc_strict
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_particles: called twice')
+      if (.not. first) call stop_it('register_hypervisc_strict: called twice')
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: hypervisc_strict_fft.f90,v 1.7 2007-08-22 17:00:12 ajohan Exp $")
+           "$Id: hypervisc_strict_fft.f90,v 1.8 2007-08-23 12:02:41 ajohan Exp $")
 !
 !  Set indices for auxiliary variables
 ! 
-      ihyper = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 3
+      ihypvis = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 3
 !
 !  Check that we aren't registering too many auxilary variables
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-            call stop_it('register_particles: naux > maux')
+            call stop_it('register_hypervisc_strict: naux > maux')
       endif
 ! 
     endsubroutine register_hypervisc_strict
 !***********************************************************************
-    subroutine hyperviscosity_strict(f,j)
+    subroutine hyperviscosity_strict(f)
 !
 !  Apply momentum-conserving, symmetric, sixth order hyperviscosity with
 !  positive define heating rate (see Haugen & Brandenburg 2004).
@@ -78,7 +78,6 @@ module Hypervisc_strict
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: j
 !
       real, dimension (nx,ny,nz) :: uxhat_re, uxhat_im
       real, dimension (nx,ny,nz) :: uyhat_re, uyhat_im
@@ -95,15 +94,15 @@ module Hypervisc_strict
 !  Identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: hypervisc_strict_fft.f90,v 1.7 2007-08-22 17:00:12 ajohan Exp $")
+        "$Id: hypervisc_strict_fft.f90,v 1.8 2007-08-23 12:02:41 ajohan Exp $")
 !
 !  Derivatives are taken in k-space due to the complicated cross terms.
 !
-      uxhat_re=f(l1:l2,m1:m2,n1:n2,j  )
+      uxhat_re=f(l1:l2,m1:m2,n1:n2,iuu  )
       uxhat_im=0.0
-      uyhat_re=f(l1:l2,m1:m2,n1:n2,j+1)
+      uyhat_re=f(l1:l2,m1:m2,n1:n2,iuu+1)
       uyhat_im=0.0
-      uzhat_re=f(l1:l2,m1:m2,n1:n2,j+2)
+      uzhat_re=f(l1:l2,m1:m2,n1:n2,iuu+2)
       uzhat_im=0.0
 !
       if (lshear) then
@@ -225,18 +224,18 @@ module Hypervisc_strict
 !
       if (lshear) then
         call fourier_transform_shear(duxhat_re,duxhat_im,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,ihyper)=duxhat_re
+        f(l1:l2,m1:m2,n1:n2,ihypvis)=duxhat_re
         call fourier_transform_shear(duyhat_re,duyhat_im,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,ihyper+1)=duyhat_re
+        f(l1:l2,m1:m2,n1:n2,ihypvis+1)=duyhat_re
         call fourier_transform_shear(duzhat_re,duzhat_im,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,ihyper+2)=duzhat_re
+        f(l1:l2,m1:m2,n1:n2,ihypvis+2)=duzhat_re
       else
         call fourier_transform(duxhat_re,duxhat_im,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,ihyper)=duxhat_re
+        f(l1:l2,m1:m2,n1:n2,ihypvis)=duxhat_re
         call fourier_transform(duyhat_re,duyhat_im,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,ihyper+1)=duyhat_re
+        f(l1:l2,m1:m2,n1:n2,ihypvis+1)=duyhat_re
         call fourier_transform(duzhat_re,duzhat_im,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,ihyper+2)=duzhat_re
+        f(l1:l2,m1:m2,n1:n2,ihypvis+2)=duzhat_re
       endif
 !
 !  The imaginary part of the functions should be zero once transformed

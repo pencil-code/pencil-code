@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.449 2007-08-22 05:49:35 brandenb Exp $
+! $Id: magnetic.f90,v 1.450 2007-08-23 12:02:41 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -91,6 +91,7 @@ module Magnetic
   logical :: lresi_etaSS=.false.
   logical :: lresi_hyper2=.false.
   logical :: lresi_hyper3=.false.
+  logical :: lresi_hyper3_strict=.false.
   logical :: lresi_zdep=.false.
   logical :: lresi_hyper3_aniso=.false.
   logical :: lresi_eta_shock=.false.
@@ -331,7 +332,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.449 2007-08-22 05:49:35 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.450 2007-08-23 12:02:41 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -417,6 +418,7 @@ module Magnetic
       lresi_eta_const=.false.
       lresi_hyper2=.false.
       lresi_hyper3=.false.
+      lresi_hyper3_strict=.false.
       lresi_hyper3_aniso=.false.
       lresi_eta_shock=.false.
       lresi_eta_shock_perp=.false.
@@ -437,6 +439,9 @@ module Magnetic
         case('hyper3')
           if (lroot) print*, 'resistivity: hyper3'
           lresi_hyper3=.true.
+        case('hyper3_strict')
+          if (lroot) print*, 'resistivity: strict hyper3 with positive definite heating rate'
+          lresi_hyper3_strict=.true.
         case('zdep')
           if (lroot) print*, 'resistivity: z-dependent'
           lresi_zdep=.true.
@@ -485,6 +490,9 @@ module Magnetic
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper2 is zero!')
         if (lresi_hyper3.and.eta_hyper3==0.0) &
+            call fatal_error('initialize_magnetic', &
+            'Resistivity coefficient eta_hyper3 is zero!')
+        if (lresi_hyper3_strict.and.eta_hyper3==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper3 is zero!')
         if ( (lresi_hyper3_aniso) .and.  &
@@ -1339,12 +1347,12 @@ module Magnetic
 !  18-jun-04/axel: Hall term added
 !
       use Cdata
-      use Sub
       use Deriv, only: der6
-      use IO, only: output_pencil
-      use Special, only: special_calc_magnetic
-      use Mpicomm, only: stop_it
       use EquationOfState, only: eoscalc,gamma1
+      use Io, only: output_pencil
+      use Mpicomm, only: stop_it
+      use Special, only: special_calc_magnetic
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1423,6 +1431,10 @@ module Magnetic
 !
       if (lresi_hyper3) then
         fres=fres+eta_hyper3*p%del6a
+      endif
+!
+      if (lresi_hyper3_strict) then
+        fres=fres+eta_hyper3*f(l1:l2,m,n,ihypres:ihypres+2)
       endif
 !
       if (lresi_zdep) then 
@@ -2742,6 +2754,7 @@ module Magnetic
         write(3,*) 'iax=',iax
         write(3,*) 'iay=',iay
         write(3,*) 'iaz=',iaz
+        write(3,*) 'ihypres=',ihypres
         write(3,*) 'i_bmxy_rms=',idiag_bmxy_rms
       endif
 !

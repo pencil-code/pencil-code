@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.373 2007-08-22 17:14:48 ajohan Exp $
+! $Id: equ.f90,v 1.374 2007-08-23 12:02:41 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -427,7 +427,8 @@ module Equ
       use Shock, only: calc_pencils_shock, calc_shock_profile, calc_shock_profile_simple
       use Viscosity, only: calc_viscosity, calc_pencils_viscosity, &
                            lvisc_first, idiag_epsK
-      use Hypervisc_strict
+      use Hypervisc_strict, only: hyperviscosity_strict
+      use Hyperresi_strict, only: hyperresistivity_strict
       use Interstellar, only: interstellar_before_boundary
       use Particles_main
 !
@@ -444,7 +445,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.373 2007-08-22 17:14:48 ajohan Exp $")
+           "$Id: equ.f90,v 1.374 2007-08-23 12:02:41 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -465,7 +466,7 @@ module Equ
 !  This could in principle be avoided (but it not worth it now)
 !
       early_finalize=test_nonblocking.or.leos_ionization.or.lradiation_ray.or. &
-                     lhyperviscosity_strict
+                     lhyperviscosity_strict.or.lhyperresistivity_strict
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
@@ -533,9 +534,12 @@ module Equ
       endif
 !
 !  For sixth order momentum-conserving, symmetric hyperviscosity with positive
-!  definite heating rate we need to precalculate the viscosity term.
+!  definite heating rate we need to precalculate the viscosity term. The 
+!  restivitity term for sixth order hyperresistivity with positive definite
+!  heating rate must also be precalculated.
 !
-      if (lhyperviscosity_strict) call hyperviscosity_strict(f,iuu)
+      if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
+      if (lhyperresistivity_strict) call hyperresistivity_strict(f)
 !
 !  set inverse timestep to zero before entering loop over m and n
 !
@@ -553,9 +557,9 @@ module Equ
       if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
       if (lradiation_ray)  call radtransfer(f)
       if (lshock) call calc_shock_profile_simple(f)
-      if (lvisc_hyper.or.lvisc_smagorinsky) then
-        if (.not.lvisc_first.or.lfirst) call calc_viscosity(f)
-      endif
+!      if (lvisc_hyper.or.lvisc_smagorinsky) then
+!        if (.not.lvisc_first.or.lfirst) call calc_viscosity(f)
+!      endif
 !
 !  Calculate averages, currently only required for certain settings
 !  in hydro of the testfield procedure (only when lsoca=.false.)

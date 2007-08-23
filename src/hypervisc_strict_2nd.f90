@@ -1,4 +1,4 @@
-! $Id: hypervisc_strict_2nd.f90,v 1.4 2007-08-22 17:09:22 ajohan Exp $
+! $Id: hypervisc_strict_2nd.f90,v 1.5 2007-08-23 12:02:41 ajohan Exp $
 
 !
 !  This module applies a sixth order hyperviscosity to the equation
@@ -49,29 +49,29 @@ module Hypervisc_strict
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_particles: called twice')
+      if (.not. first) call stop_it('register_hypervisc_strict: called twice')
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: hypervisc_strict_2nd.f90,v 1.4 2007-08-22 17:09:22 ajohan Exp $")
+           "$Id: hypervisc_strict_2nd.f90,v 1.5 2007-08-23 12:02:41 ajohan Exp $")
 !
 !  Set indices for auxiliary variables
 ! 
-      ihyper = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 3
+      ihypvis = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 3
 !
 !  Check that we aren't registering too many auxilary variables
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-            call stop_it('register_particles: naux > maux')
+            call stop_it('register_hypervisc_strict: naux > maux')
       endif
 ! 
     endsubroutine register_hypervisc_strict
 !***********************************************************************
-    subroutine hyperviscosity_strict(f,k)
+    subroutine hyperviscosity_strict(f)
 !
 !  Apply momentum-conserving, symmetric, sixth order hyperviscosity with
-!  positive define heating rate (see Haugen & Brandenburg 2004).
+!  positive definite heating rate (see Haugen & Brandenburg 2004).
 !
 !  To avoid communicating ghost zones after each operator, we use
 !  derivatives that are second order in space.
@@ -84,34 +84,32 @@ module Hypervisc_strict
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: k
 !
       real, dimension (mx,my,mz,3) :: tmp, tmp2
-      real, dimension (nx,ny,nz) :: sij2
-      real, dimension (nx,3) :: del6u
-      integer :: i,j
+!      real, dimension (nx,ny,nz) :: sij2
+!      integer :: i,j
 !
 !  Calculate del2(del2(del2(u))), accurate to second order.
 !
       call del2v_2nd(f,tmp,iux)
-      f(:,:,:,ihyper:ihyper+2)=tmp
-      call del2v_2nd(f,tmp,ihyper)
-      f(:,:,:,ihyper:ihyper+2)=tmp
-      call del2v_2nd(f,tmp,ihyper)
+      f(:,:,:,ihypvis:ihypvis+2)=tmp
+      call del2v_2nd(f,tmp,ihypvis)
+      f(:,:,:,ihypvis:ihypvis+2)=tmp
+      call del2v_2nd(f,tmp,ihypvis)
 !
 !  Calculate del2(del2(grad(div(u)))), accurate to second order.
 !  Probably gives zero derivative at the Nyquist scale, but the del2^3
 !  term above gives dissipation at this scale.
 !
       call graddivu_2nd(f,tmp2,iux)
-      f(:,:,:,ihyper:ihyper+2)=tmp2
-      call del2v_2nd(f,tmp2,ihyper)
-      f(:,:,:,ihyper:ihyper+2)=tmp2
-      call del2v_2nd(f,tmp2,ihyper)
+      f(:,:,:,ihypvis:ihypvis+2)=tmp2
+      call del2v_2nd(f,tmp2,ihypvis)
+      f(:,:,:,ihypvis:ihypvis+2)=tmp2
+      call del2v_2nd(f,tmp2,ihypvis)
 !
 !  Add the two terms.
 !
-      f(:,:,:,ihyper:ihyper+2)=tmp+tmp2/3.
+      f(:,:,:,ihypvis:ihypvis+2)=tmp+tmp2/3.
 !
 ! find heating term (yet it only works for ivisc='hyper3')
 ! the heating term is d/dt(0.5*rho*u^2) = -2*mu3*( S^(2) )^2
@@ -245,13 +243,15 @@ module Hypervisc_strict
     end subroutine der_2nd_nof
 !***********************************************************************
     subroutine del2v_2nd(f,del2f,k)
+!   
+!  Calculate Laplacian of a vector, accurate to second order.
 !
 !  24-nov-03/nils: adapted from del2v
 !
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,3) :: del2f
+      real, dimension (mx,my,mz,3) :: del2f 
       real, dimension (mx,my,mz) :: tmp
       integer :: i,k,k1
 !
@@ -260,7 +260,7 @@ module Hypervisc_strict
 !
       del2f=0.
 !
-!  do the del2 diffusion operator
+!  Apply Laplacian to each vector component individually.
 !
       k1=k-1
       do i=1,3
@@ -268,7 +268,7 @@ module Hypervisc_strict
         del2f(:,:,:,i)=tmp
       enddo
 !
-    end subroutine del2v_2nd
+    endsubroutine del2v_2nd
 !***********************************************************************
     subroutine del2_2nd(f,del2f,k)
 !
@@ -298,8 +298,7 @@ module Hypervisc_strict
 !***********************************************************************
     subroutine del2_2nd_nof(f,del2f)
 !
-!  Calculate del2 of a scalar, get scalar.
-!  Same as del2_2nd but for the case where f is a scalar
+!  Calculate Laplacian of a scalar, get scalar.
 !
 !  24-nov-03/nils: adapted from del2_2nd
 !
@@ -361,7 +360,8 @@ module Hypervisc_strict
 !***********************************************************************
     subroutine der2_2nd_nof(f,der2f,j)
 !
-!  Same as der2_2nd but for the case where f is a scalar.
+!  Calculate the second derivative of f.
+!  Accurate to second order.
 !
 !  07-jan-04/nils: adapted from der2_2nd
 !

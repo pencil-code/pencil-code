@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.171 2007-08-22 13:47:24 ajohan Exp $
+! $Id: start.f90,v 1.172 2007-08-23 12:02:41 ajohan Exp $
 !
 !***********************************************************************
       program start
@@ -46,7 +46,8 @@
         use Radiation,       only: init_rad, radtransfer
         use Interstellar,    only: init_interstellar
         use Particles_main
-        use Hypervisc_strict
+        use Hypervisc_strict, only: hyperviscosity_strict
+        use Hyperresi_strict, only: hyperresistivity_strict
 
         use FArrayManager,   only: farray_clean_up
         use SharedVariables, only: sharedvars_clean_up
@@ -97,7 +98,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.171 2007-08-22 13:47:24 ajohan Exp $")
+             "$Id: start.f90,v 1.172 2007-08-23 12:02:41 ajohan Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -332,9 +333,12 @@
         call calc_selfpotential(f)
 !
 !  For sixth order momentum-conserving, symmetric hyperviscosity with positive
-!  definite heating rate we need to precalculate the viscosity term.
+!  definite heating rate we need to precalculate the viscosity term. The 
+!  restivitity term for sixth order hyperresistivity with positive definite
+!  heating rate must also be precalculated.
 !
-      if (lhyperviscosity_strict) call hyperviscosity_strict(f,iuu)
+      if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
+      if (lhyperresistivity_strict) call hyperresistivity_strict(f)
 !
 !  Set random seed independent of processor
 !

@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.74 2007-08-22 13:47:25 ajohan Exp $
+! $Id: viscosity.f90,v 1.75 2007-08-23 12:02:41 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -102,7 +102,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.74 2007-08-22 13:47:25 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.75 2007-08-23 12:02:41 ajohan Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -360,7 +360,7 @@ module Viscosity
           write(3,*) 'i_nuD2uxbxm=',idiag_nuD2uxbxm
           write(3,*) 'i_nuD2uxbym=',idiag_nuD2uxbym
           write(3,*) 'i_nuD2uxbzm=',idiag_nuD2uxbzm
-          write(3,*) 'ihyper=',ihyper
+          write(3,*) 'ihypvis=',ihypvis
           write(3,*) 'itest=',0
         endif
       endif
@@ -678,7 +678,7 @@ module Viscosity
 !
         murho1=nu_hyper3*p%rho1  ! (=mu_hyper3/rho)
         do i=1,3
-          p%fvisc(:,i)=p%fvisc(:,i)+murho1*f(l1:l2,m,n,ihyper-1+i)
+          p%fvisc(:,i)=p%fvisc(:,i)+murho1*f(l1:l2,m,n,ihypvis-1+i)
         enddo
         if (lpencil(i_visc_heat)) then  ! Should be eps=2*mu*{del2[del2(S)]}^2
           if (headtt) then              ! (see Haugen & Brandenburg 2004)

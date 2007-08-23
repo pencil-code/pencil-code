@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.73 2007-08-22 13:47:24 ajohan Exp $
+### $Id: Makefile.depend,v 1.74 2007-08-23 12:02:41 ajohan Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -56,6 +56,8 @@ VISCOSITY_OBJ=$(VISCOSITY)$(PC_META_TYPE).o
 VISCOSITY_SRC=$(VISCOSITY).f90
 HYPERVISC_STRICT_OBJ=$(HYPERVISC_STRICT)$(PC_META_TYPE).o
 HYPERVISC_STRICT_SRC=$(HYPERVISC_STRICT).f90
+HYPERRESI_STRICT_OBJ=$(HYPERRESI_STRICT)$(PC_META_TYPE).o
+HYPERRESI_STRICT_SRC=$(HYPERRESI_STRICT).f90
 HYDRO_OBJ=$(HYDRO)$(PC_META_TYPE).o
 HYDRO_SRC=$(HYDRO).f90
 ENTROPY_OBJ=$(ENTROPY)$(PC_META_TYPE).o
@@ -218,8 +220,7 @@ COMMON_DEPS=$(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(MESSAGES_OBJ)
 
 $(MPICOMM_OBJ):         mpicomm.h         $(MPICOMM_SRC)         $(CDATA_OBJ)
 $(GLOBAL_OBJ):          global.h          $(GLOBAL_SRC)          $(COMMON_DEPS) $(IO_OBJ)
-$(VISCOSITY_OBJ):       viscosity.h       $(VISCOSITY_SRC)       $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(DENSITY_OBJ) $(INTERSTELLAR_OBJ) $(HYPERVISC_STRICT_OBJ)
-$(HYPERVISC_STRICT_OBJ):       hypervisc_strict.h $(HYPERVISC_STRICT_SRC)       $(CDATA_OBJ)   $(CPARAM_OBJ) $(FOURIER_OBJ)
+$(VISCOSITY_OBJ):       viscosity.h       $(VISCOSITY_SRC)       $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(DENSITY_OBJ) $(INTERSTELLAR_OBJ) 
 $(SHEAR_OBJ):           shear.h           $(SHEAR_SRC)           $(COMMON_DEPS) $(CPARAM_OBJ) $(HYDRO_OBJ)
 $(GRAVITY_OBJ):         gravity.h         $(GRAVITY_SRC)         $(COMMON_DEPS) $(GLOBAL_OBJ) $(SHARED_VARIABLES_OBJ)
 $(SELFGRAVITY_OBJ):     selfgravity.h     $(SELFGRAVITY_SRC)     $(CDATA_OBJ)   $(SUB_OBJ) $(POISSON_OBJ) $(PARTICLES_MAIN_OBJ) $(SHARED_VARIABLES_OBJ)
@@ -240,6 +241,8 @@ $(NEUTRALDENSITY_OBJ):  neutraldensity.h  $(NEUTRALDENSITY_SRC)  $(COMMON_DEPS) 
 $(NEUTRALVELOCITY_OBJ): neutralvelocity.h $(NEUTRALVELOCITY_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(GENERAL_OBJ) $(HYDRO_OBJ) $(GRAVITY_OBJ) $(NEUTRALDENSITY_OBJ)
 $(TESTFIELD_OBJ):       testfield.h       $(TESTFIELD_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(IO_OBJ) $(HYDRO_OBJ) $(DENSITY_OBJ)
 $(INTERSTELLAR_OBJ):    interstellar.h    $(INTERSTELLAR_SRC)    $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(EOS_OBJ)
+$(HYPERVISC_STRICT_OBJ):       hypervisc_strict.h $(HYPERVISC_STRICT_SRC)       $(CDATA_OBJ)   $(CPARAM_OBJ) $(FOURIER_OBJ)
+$(HYPERRESI_STRICT_OBJ):       hyperresi_strict.h $(HYPERRESI_STRICT_SRC)       $(CDATA_OBJ)   $(CPARAM_OBJ) $(FOURIER_OBJ)
 $(EOS_OBJ):             eos.h             $(EOS_SRC)             $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(GRAVITY_OBJ) $(FOURIER_OBJ)
 $(IO_OBJ):              io.h              $(IO_SRC)              $(COMMON_DEPS) $(GENERAL_OBJ) $(SUB_OBJ)
 $(TIMEAVG_OBJ):         timeavg.h         $(TIMEAVG_SRC)         $(COMMON_DEPS) $(IO_OBJ)
