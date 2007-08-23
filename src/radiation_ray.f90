@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.137 2007-08-20 06:28:21 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.138 2007-08-23 09:00:59 mvaisala Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -178,7 +178,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.137 2007-08-20 06:28:21 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.138 2007-08-23 09:00:59 mvaisala Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1419,13 +1419,13 @@ module Radiation
 !  03-apr-04/tobi: coded
 !
       use Cdata, only: ilnrho,x,y,z,m,n,Lx,Ly,Lz,dx,dy,dz,pi,directory_snap
-      use Cdata, only: kappa_es,ikapparho
+      use Cdata, only: kappa_es,ikapparho, m_H, sigmaH_
       use EquationOfState, only: eoscalc
       use Mpicomm, only: stop_it
       use IO, only: output
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx) :: tmp,lnrho,lnTT
+      real, dimension(mx) :: tmp,lnrho,lnTT,yH
       real :: kappa0, kappa0_cgs,k1,k2
       logical, save :: lfirst=.true.
       integer :: i
@@ -1520,6 +1520,16 @@ module Radiation
           lfirst=.false.
         endif
 
+      case ('rad_ionization') !! as in Miao et al. 2006
+      ! TODO: The code still needs to be able to calculate the right 
+      ! ionization fraction for this. This does not work right without it, 
+      ! but does no harm either to anyone else. - mvaisala
+        do n= n1-radz, n2+radz
+        do m= m1-rady, m2+rady
+          call eoscalc(f,mx,lnrho=lnrho,yH=yH)
+          f(:,m,n,ikapparho)= sigmaH_*(1 - yH)*exp(2*lnrho+log(m_H))
+        enddo
+        enddo
 
       case default
         call stop_it('no such opacity type: '//trim(opacity_type))
