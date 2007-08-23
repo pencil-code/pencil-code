@@ -1,14 +1,9 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.333 2007-08-23 17:27:13 steveb Exp $
+### $Id: Makefile.src,v 1.334 2007-08-23 18:20:56 steveb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
 ## which should be present in each local to run directory.
-
-LIBSIG=
-LDONLYFLAGS=
-LD_MPI=-lmpi
-DEBUGFLAGS=-g
 
 MPICOMM        =   mpicomm
 GLOBAL         = noglobal
@@ -686,14 +681,13 @@ LD_FFTW2=
 #LIBMPISUFFIX=_#(frenesi)
 ##
 ## Steve's test cluster
-#FC=g95 -fno-second-underscore #(master.berukoff.com)
-#F77=$(FC) #(master.berukoff.com)
-#F90FLAGS=-O3 -m64 -march=opteron -I/usr/local/include -L/usr/lib -L/usr/local/lib -I/usr/include #(master.berukoff.com)
-#FFLAGS=
+#FC=g95 #(master.berukoff.com)
+#FFLAGS=-O3 -m64 -march=opteron -I/usr/local/include -L/usr/lib -L/usr/local/lib -I/usr/include -fno-second-underscore #(master.berukoff.com)
 #LDFLAGS=-m64 -m64 -march=opteron #(master.berukoff.com)
 #LD_MPI=-lmpich -lfmpich -lpthread #(master.berukoff.com)
+#CC=gcc #(master.berukoff.com)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall -march=opteron #(master.berukoff.com)
-##
+
 ## Darwin:
 ## Power Macintosh
 #FC=g95
@@ -756,12 +750,15 @@ LD_FFTW2=
 #CFLAGS=-DFUNDERSC=1 #(Chandrasekhar|ulysse)
 #LD_MPI= -L/usr/local/lam/lib -llammpio -llamf77mpi -lmpi -llam -ldl #(ulysse)
 ##
-## SJB
+## Steve's MacBook Pro
 ##
 #FC=g95 #(mac)
-#F77=$(FC) #(mac)
 #FFLAGS=-O3 -fno-second-underscore -I/usr/local/include -L/usr/local/lib -ftrace=full #(mac)
+#CC=gcc #(mac)
+#CFLAGS=-O3 -DFUNDERSC=1 #(mac)
+#LD_MPI= -L/usr/local/lib -lmpich -lpmpich #(mac)
 
+##
 ## SunOS:
 ## Solaris
 #CC=mpcc #(corona[1-2])
