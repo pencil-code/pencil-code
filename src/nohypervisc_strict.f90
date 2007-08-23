@@ -1,4 +1,4 @@
-! $Id: nohypervisc_strict.f90,v 1.3 2007-08-23 12:02:41 ajohan Exp $
+! $Id: nohypervisc_strict.f90,v 1.4 2007-08-23 21:05:41 wlyra Exp $
 
 !
 !  This module applies a sixth order hyperviscosity to the equation
@@ -9,7 +9,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lhyperviscosity_strict=.true.
+! CPARAM logical, parameter :: lhyperviscosity_strict=.false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
