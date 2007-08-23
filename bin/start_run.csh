@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start_run.csh,v 1.43 2007-03-06 22:33:46 dobler Exp $
+# CVS: $Id: start_run.csh,v 1.44 2007-08-23 22:31:04 dobler Exp $
 
 #                       start_run.csh
 #                      ---------------
@@ -190,7 +190,7 @@ date
 
 # Not sure it makes any sense to continue after mpirun had an error:
 if ($start_status) then
-  echo "Error status $status found -- aborting"
+  echo "Error status $start_status found -- aborting"
   exit $start_status
 endif
 
