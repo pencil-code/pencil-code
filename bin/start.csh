@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.72 2007-08-22 18:54:30 dhruba Exp $
+# CVS: $Id: start.csh,v 1.73 2007-08-23 11:15:30 dhruba Exp $
 
 #                       start.csh
 #                      -----------
@@ -143,10 +143,10 @@ if ($local_disc) then
 endif
 
 # Shut down mpd if we have started it 
-if($?booted_mpd)then
- echo "shutting down mpd .. "
- mpdallexit
- echo "..done"
+if ($?booted_mpd) then
+  echo "Shutting down mpd .."
+  mpdallexit
+  echo "..done"
 else
 endif
 
