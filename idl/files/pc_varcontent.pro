@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.43 2007-08-23 12:03:13 ajohan Exp $
+;  $Id: pc_varcontent.pro,v 1.44 2007-08-23 21:22:45 wlyra Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar,run2D=run2D
 COMPILE_OPT IDL2,HIDDEN
@@ -36,8 +36,12 @@ res = flatten_strings(result)
 ;openr,indexfile,datadir+'/index.pro'
 ;repeat begin
 ;readf,indexfile,res
-if (execute(res) ne 1) then $
+stuff=strsplit(res,'&',/extract)
+nstuff=n_elements(stuff)
+for i=0,nstuff-1 do begin
+    if (execute(stuff[i]) ne 1) then $
     message, 'There was a problem with index.pro', /INFO
+endfor
 ;endrep until eof(indexfile)
 
 ;close,indexfile
@@ -464,13 +468,13 @@ if (param.lwrite_aux ne 0) then begin
   varcontent[ivisc_heat].idlinit   = INIT_SCALAR
   varcontent[ivisc_heat].idlvarloc = 'visc_heat_loc'
 
-  default, ihyper, 0
-  varcontent[ihyper].variable   = 'Hyperviscosity (hyv)'
-  varcontent[ihyper].idlvar     = 'hyv'
-  varcontent[ihyper].idlinit    = INIT_3VECTOR
-  varcontent[ihyper].idlvarloc  = 'hyv_loc'
-  varcontent[ihyper].idlinitloc = INIT_3VECTOR_LOC
-  varcontent[ihyper].skip       = 2
+  default, ihypvis, 0
+  varcontent[ihypvis].variable   = 'Hyperviscosity (hyv)'
+  varcontent[ihypvis].idlvar     = 'hyv'
+  varcontent[ihypvis].idlinit    = INIT_3VECTOR
+  varcontent[ihypvis].idlvarloc  = 'hyv_loc'
+  varcontent[ihypvis].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[ihypvis].skip       = 2
 
   default, ihypres, 0
   varcontent[ihypres].variable   = 'Hyperresistivity (hyr)'
