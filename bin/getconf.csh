@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.207 2007-08-22 21:47:59 dobler Exp $
+# $Id: getconf.csh,v 1.208 2007-08-23 09:41:45 pkapyla Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -470,6 +470,15 @@ else if ($hn =~ louhi-login*) then
   set mpirunops = ''
   set mpirun = 'yod'
   set npops = "-sz $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set local_binary = 0
+
+else if ($hn =~ c[0-9][0-9][0-9]) then
+  echo "Murska - CSC, Espoo, Finland"
+  set mpirunops = '-srun'
+  set mpirun = 'nuripm'
+  set npops = ''
   set local_disc = 0
   set one_local_disc = 0
   set local_binary = 0
@@ -1075,6 +1084,9 @@ if ($mpi) then
     set nprocpernode = 1
     set x_ops = "$mpirunops -procs $ncpus"
     set mpirunops = ""
+    set npops = ""
+  else if ($mpirun =~ *nuripm*) then
+    set mpirun = 'mpirun'
     set npops = ""
   else
     echo "getconf.csh: No clue how to tell $mpirun to use $ncpus nodes"
