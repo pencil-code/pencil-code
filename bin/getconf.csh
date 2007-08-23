@@ -3,12 +3,11 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.208 2007-08-23 09:41:45 pkapyla Exp $
+# $Id: getconf.csh,v 1.209 2007-08-23 11:08:15 dhruba Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
 #  other setup needed by both start.csh and run.csh.
-
 set debug = 1
 # set verbose
 # set echo
@@ -129,6 +128,11 @@ if ($?PBS_JOBID) then
   if ($PBS_JOBID =~ *.obelix*) set masterhost = 'obelix'
 endif
 
+# Resubmission options for most machines are not written. This is
+# "echoed" by the default option
+set resub = "resubmission script for this machine is not written!"
+set resubop = ""
+set run_resub = "cat rs"
 # Get list of nodes; filters lines such that it would also handle
 # machines.XXX files or lam-bhost.der, although this is hardly necessary.
 if ($?PBS_NODEFILE) then
@@ -244,6 +248,12 @@ else if ($hn =~ *.maths.qmul.ac.uk) then
                set mpirunops = "-machinefile nodes.proc"
              endif
              echo "..done"
+# setting up variables for resubmission
+             set resub = "/opt/pbs/bin/qsub -d $PENCIL_WORKDIR"
+             set resubop1 = "-lnodes=$mynodes"
+             set resubop2 = ":ppn=4 run.csh"
+             set resubop = "$resubop1$resubop2" 
+             set run_resub = "ssh -t $masterhost $PENCIL_WORKDIR/rs >> $PBS_O_WORKDIR/resubmit.log"
            else
              echo "Non-PBS, running on `hostname`"
            endif
@@ -260,9 +270,12 @@ else if ($hn =~ *.maths.qmul.ac.uk) then
              set mpirunops = "-machinefile mpi.hosts"
              set myprocpernode = 4
              set mynodes = `expr $ncpus / $myprocpernode `
+# setting up variables for resubmission
+             set resub = "/opt/pbs/bin/qsub -d $PENCIL_WORKDIR"
              set resubop1 = "-lnodes=$mynodes"
              set resubop2 = ":ppn=4 run.csh"
              set resubop = "$resubop1$resubop2" 
+             set run_resub = "ssh -t $masterhost $PENCIL_WORKDIR/rs >> $PBS_O_WORKDIR/resubmit.log"
            else 
              echo "Non-PBS, running on `hostname`"
            endif

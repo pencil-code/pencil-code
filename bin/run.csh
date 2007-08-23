@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.95 2007-08-22 18:54:30 dhruba Exp $
+# CVS: $Id: run.csh,v 1.96 2007-08-23 11:08:15 dhruba Exp $
 
 #                       run.csh
 #                      ---------
@@ -242,23 +242,19 @@ if (-e 'ERROR') then
 else
   set run_status2 = 0
   if(-e "RESUBMIT") then
-    if($hn =~ compute[0-9][0-9].maths.qmul.ac.uk) then
-      if(-e "rs") rm -f rs
-      echo $hn, $ncpus, $resubop
-      echo $masterhost
-      echo "/opt/pbs/bin/qsub -d $PBS_O_WORKDIR $resubop" > rs
-      chmod +x rs
-      if(-e "resubmit.log") then
-        ssh -t $masterhost $PBS_O_WORKDIR/rs >> $PBS_O_WORKDIR/resubmit.log
-        date >>resubmit.log
-        echo "=====================" >> resubmit.log
-      else
-        ssh -t $masterhost $PBS_O_WORKDIR/rs > $PBS_O_WORKDIR/resubmit.log
-        date >>resubmit.log 
-        echo "=====================" >> resubmit.log
-      endif
+    if(-e "rs") rm -f rs
+    echo "Resubmitting from node:$hn to masternode $masterhost"
+    echo "$resub $resubop" > rs
+    chmod +x rs
+    if(-e "resubmit.log") then
+      $run_resub >>resubmit.log
+      date >>resubmit.log
+      echo "=====================" >> resubmit.log
     else
-      echo "no resubmission script written for this machine !" >resubmit.log
+      $run_resub >resubmit.log
+      date >>resubmit.log 
+      echo "=====================" >> resubmit.log
+    endif
   else
   endif
 endif
