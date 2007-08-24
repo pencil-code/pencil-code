@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.247 2007-08-21 04:34:10 ajohan Exp $
+! $Id: run.f90,v 1.248 2007-08-24 01:35:50 dhruba Exp $
 !
 !***********************************************************************
       program run
@@ -49,7 +49,7 @@
         type (pencil_case) :: p
         double precision :: time1,time2
         integer :: count, ierr
-        logical :: stop=.false.,timeover=.false.
+        logical :: stop=.false.,timeover=.false.,resubmit=.false.
         logical :: lreinit_file=.false., exist=.false.
         logical :: lreload_file=.false., lreload_always_file=.false.
         real :: wall_clock_time=0., time_per_step=0.
@@ -70,7 +70,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.247 2007-08-21 04:34:10 ajohan Exp $")
+             "$Id: run.f90,v 1.248 2007-08-24 01:35:50 dhruba Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -311,6 +311,12 @@
                 if (stop) print*, "done: found STOP file"
                 if (t>tmax) print*, "done: t > tmax"
                 call remove_file("STOP")
+                inquire(FILE="RESUBMIT", EXIST=resubmit)
+                if(resubmit) then 
+                  print*, "Cannot be resubmitted"
+                  call remove_file("RESUBMIT")
+                else
+                endif
               endif
               exit Time_loop
             endif
