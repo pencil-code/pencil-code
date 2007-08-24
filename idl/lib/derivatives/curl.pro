@@ -29,9 +29,7 @@ common cdat,x
  w=make_array(size=size(f),/nozero)
  pc_read_param,obj=par
  if (par.coord_system eq 'cylindric') then begin
-     tmp=size(f)
-     my=tmp[2]
-     mz=tmp[3]
+     tmp=size(f) &  my=tmp[2] &  mz=tmp[3]
      xx=spread(x,[1,2],[my,mz])
      w[*,*,*,0]=curlrad(f,xx)
      w[*,*,*,1]=curlphi(f,xx)
