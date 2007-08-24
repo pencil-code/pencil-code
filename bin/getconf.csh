@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.210 2007-08-23 22:27:11 dobler Exp $
+# $Id: getconf.csh,v 1.211 2007-08-24 17:56:40 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -163,8 +163,10 @@ set nnodes = $#nodelist
 set nprocpernode = `expr $ncpus / $nnodes`
 echo "$nnodes nodes, $nprocpernode CPU(s) per node"
 
+
 ## ------------------------------
 ## Choose machine specific settings
+## ------------------------------
 
 if ($hn =~ mhd*.st-and.ac.uk) then
   echo "MHD machine - St Andrews "
@@ -194,14 +196,6 @@ else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
     #    set one_local_disc = 0
     #    set local_binary = 0
     #
-#  #  cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc > hostfile
-#  #  set nodelist = `cat hostfile`
-#
-#    if ($PE =~ mpi2) then
-#      set nprocpernode = 2
-#    else if ($PE =~ mpi) then
-#      set nprocpernode = 4
-#    endif
   else
     echo "Non-SGE, running on `hostname`"
     if ( -e MANUALMPI ) then
@@ -212,9 +206,6 @@ else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
       setenv JOB_ID MANUALMPI
     endif
   endif
-#  set mpirun = mpirun
-#  set mpirunops = "-O -ssi rpi tcp -s n0 -x LD_ASSUME_KERNEL=2.4.1" #Fix bug in Redhat 9
-#  set local_disc = 1
   if ($local_disc) then
     #setenv SCRATCH_DIR `cat $TMPDIR/scratch` 
     set remove_scratch_root = 1
@@ -248,7 +239,7 @@ else if ($hn =~ *.maths.qmul.ac.uk) then
                set mpirunops = "-machinefile nodes.proc"
              endif
              echo "..done"
-# setting up variables for resubmission
+             # variables for automatic resubmission
              set resub = "/opt/pbs/bin/qsub -d $PENCIL_WORKDIR"
              set resubop1 = "-lnodes=$mynodes"
              set resubop2 = ":ppn=4 run.csh"
@@ -270,7 +261,7 @@ else if ($hn =~ *.maths.qmul.ac.uk) then
              set mpirunops = "-machinefile mpi.hosts"
              set myprocpernode = 4
              set mynodes = `expr $ncpus / $myprocpernode `
-# setting up variables for resubmission
+             # variables for automatic resubmission
              set resub = "/opt/pbs/bin/qsub -d $PENCIL_WORKDIR"
              set resubop1 = "-lnodes=$mynodes"
              set resubop2 = ":ppn=4 run.csh"
@@ -320,10 +311,8 @@ else if ($hn =~ ice[0-9]*_[0-9]*) then
   echo "Glacier in Vancouver"
   if ($mpi) then
     echo "Using MPICH"
+    set mpirun = /global/software/pgi-6.1.4/linux86/6.1/bin/mpirun
     set mpirunops = "-machinefile $PBS_NODEFILE"
-    set mpirun = mpirun
-    set start_x=$PBS_O_WORKDIR/src/start.x
-    set run_x=$PBS_O_WORKDIR/src/run.x
     #
     setenv SCRATCH_DIR /scratch
     set remote_top     = 1
@@ -332,6 +321,8 @@ else if ($hn =~ ice[0-9]*_[0-9]*) then
     set mpirunops = ''
     set mpirun = ''
   endif
+  setenv SSH /usr/bin/ssh
+  setenv SCP /usr/bin/scp
 
 #------------------------------------------------
 else if ($hn =~ giga[0-9][0-9]) then
