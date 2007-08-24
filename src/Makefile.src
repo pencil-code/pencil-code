@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.336 2007-08-24 17:56:40 dobler Exp $
+### $Id: Makefile.src,v 1.337 2007-08-24 18:07:43 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -1114,8 +1114,6 @@ ghostfold_mpicomm_double.f90: ghostfold_mpicomm.f90
 	ln -s ghostfold_mpicomm.f90 ghostfold_mpicomm_double.f90
 mpicomm_.f90: mpicomm.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm.f90 > mpicomm_.f90
-ghostfold_mpicomm_.f90: ghostfold_mpicomm.f90
-	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' ghostfold_mpicomm.f90 > ghostfold_mpicomm_.f90
 mpicomm_double_.f90: mpicomm_double.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm_double.f90 > mpicomm_double_.f90
 nompicomm_.f90: nompicomm.f90
