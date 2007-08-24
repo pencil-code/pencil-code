@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.172 2007-08-22 13:29:09 wlyra Exp $
+! $Id: boundcond.f90,v 1.173 2007-08-24 00:49:03 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -200,8 +200,15 @@ module Boundcond
                   ! BCX_DOC: extrapolation [describe]
                   call bcx_extrap_2_2(f,topbot,j)
                 case ('spd')
-                  ! BCX_DOC: set derivative on the boundary [really??]
+                  ! BCX_DOC: Only for spherical polar coordinate system, 
+                  ! BCX_DOC:  sets  d(rA_{\alpha})/dr = fbcx12(j)
                   call bc_set_spder_x(f,topbot,j,fbcx12(j))
+                  ! BCX_DOC: "stress-free" boundary condition for spherical coordinate system. 
+                  ! BCX_DOC: $d_r(u_{\theta}) = u_{\theta}/r$  with $u_r = 0$ sets $S_{r \theta}$
+                  ! BCX_DOC: component of the strain matrix to be zero in spherical coordinate  
+                  ! BCX_DOC: system. This subroutine sets only the first part of this boundary
+                  ! BCX_DOC:  condition for 'j'-th component of f. 
+                  call bc_set_sfree_x(f,topbot,j)
                 case ('fix')
                   ! BCX_DOC: set boundary value [really??]
                   call bc_fix_x(f,topbot,j,fbcx12(j))
@@ -1269,13 +1276,12 @@ module Boundcond
       real, intent (in) :: val
       integer :: i
 
-      select case(topbot)
-
-      case('bot')               ! bottom boundary
+      if(lspherical_coords)then
+        select case(topbot)
+        case('bot')               ! bottom boundary
         do i=1,nghost
           f(l1-i,:,:,j)=f(l1+i,:,:,j)-2*i*dx*(val-f(l1,:,:,j)*r1_mn(1))
         enddo
-
       case('top')               ! top boundary
         do i=1,nghost
           f(l2+i,:,:,j)=f(l2-i,:,:,j)+2*i*dx*(val-f(l2,:,:,j)*r1_mn(nx))
@@ -1285,8 +1291,47 @@ module Boundcond
         call warning('bc_set_spder_x',topbot//" should be `top' or `bot'")
 
       endselect
+    else
+      call stop_it('Boundary condition spder is valid only in spherical coordinate system')
+    endif
 !
     endsubroutine bc_set_spder_x
+!***********************************************************************
+    subroutine bc_set_sfree_x(f,topbot,j)
+! "stress-free" boundary condition for spherical coordinate system. 
+! d_r(u_{\theta}) = u_{\theta}/r  with u_r = 0 sets S_{r \theta}
+! component of the strain matrix to be zero in spherical coordinate system. 
+! This subroutine sets only the first part of this boundary condition for 'j'-th
+! component of f. 
+!
+!  25-Aug-2007/dhruba: coded
+!
+      use Cdata
+!
+      character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer, intent (in) :: j
+
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+! The coding assumes we are using 6-th order centered finite difference for our
+! derivatives. 
+        f(l1-1,:,:,j)= f(l1+1,:,:,j) -  60.*f(l1,:,:,j)*dx/(45.*x(l1))
+        f(l1-2,:,:,j)= f(l1+2,:,:,j) -  60.*f(l1,:,:,j)*dx/(9.*x(l1))
+        f(l1-3,:,:,j)= f(l1+3,:,:,j) -  60.*f(l1,:,:,j)*dx/(x(l1))
+      case('top')               ! top boundary
+        f(l2+1,:,:,j)= f(l2-1,:,:,j) +  60.*f(l1,:,:,j)*dx/(45.*x(l2))
+        f(l2+2,:,:,j)= f(l2-2,:,:,j) +  60.*f(l1,:,:,j)*dx/(9.*x(l2))
+        f(l2+3,:,:,j)= f(l2-3,:,:,j) +  60.*f(l1,:,:,j)*dx/(x(l2))
+
+      case default
+        call warning('bc_set_sfree_x',topbot//" should be `top' or `bot'")
+
+      endselect
+!
+    endsubroutine bc_set_sfree_x
 !***********************************************************************
     subroutine bc_set_der_y(f,topbot,j,val)
 !
