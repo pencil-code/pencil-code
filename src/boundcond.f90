@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.173 2007-08-24 00:49:03 dhruba Exp $
+! $Id: boundcond.f90,v 1.174 2007-08-24 01:37:10 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -208,6 +208,7 @@ module Boundcond
                   ! BCX_DOC: component of the strain matrix to be zero in spherical coordinate  
                   ! BCX_DOC: system. This subroutine sets only the first part of this boundary
                   ! BCX_DOC:  condition for 'j'-th component of f. 
+                case('sfr')
                   call bc_set_sfree_x(f,topbot,j)
                 case ('fix')
                   ! BCX_DOC: set boundary value [really??]
