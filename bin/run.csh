@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.98 2007-08-23 22:06:16 dobler Exp $
+# CVS: $Id: run.csh,v 1.99 2007-08-24 00:25:31 dhruba Exp $
 
 #                       run.csh
 #                      ---------
@@ -224,8 +224,6 @@ endif
 if ($booted_lam) lamhalt
 
 # Shut down mpd if we have started it 
-# [wd/32-aug-2007:] Dhruba, could you sort this out?
-## <<<<<<< run.csh
 if ($?booted_mpd) then
   echo "Shutting down mpd .."
   mpdallexit
