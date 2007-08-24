@@ -26,7 +26,7 @@
 ;;;      needed) than for the cell-centred case with one point less.
 ;;;    - For cell-centred multigrid, spline interpolation leads to
 ;;;      slightly improved convergence compared to linear interpolation.
-;;;      Quadratic or `least-squares quadratic' interpolation don;t
+;;;      Quadratic or `least-squares quadratic' interpolation don't
 ;;;      improve things at all.
 
 @restrict
