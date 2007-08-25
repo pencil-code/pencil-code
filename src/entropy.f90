@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.511 2007-08-25 07:43:17 bingert Exp $
+! $Id: entropy.f90,v 1.512 2007-08-25 10:55:58 brandenb Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -207,7 +207,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.511 2007-08-25 07:43:17 bingert Exp $")
+           "$Id: entropy.f90,v 1.512 2007-08-25 10:55:58 brandenb Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -216,6 +216,7 @@ module Entropy
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  21-jul-2002/wolf: coded
+!   4-mai-2006/boris: hcond0 given by mixinglength_flux in the MLT case
 !
       use Cdata
       use FArrayManager
@@ -265,7 +266,9 @@ module Entropy
         else                    ! Kbot = possible
           hcond0 = Kbot
         endif
-!   04-mai-2006/boris: hcond0 given by mixinglength_flux in the MLT case
+!
+!  hcond0 is given by mixinglength_flux in the MLT case
+!
         if (mixinglength_flux /= 0.) then
           hcond0=-mixinglength_flux/(gamma/(gamma-1.)*gravz/(mpoly0+1.))
           Kbot=hcond0
@@ -345,7 +348,7 @@ module Entropy
 !
         else
           !
-          !  Wolfgang, in future we should define chiz=chi(z) or Kz=K(z) here.
+          !  NOTE: in future we should define chiz=chi(z) or Kz=K(z) here.
           !  calculate hcond and FbotKbot=Fbot/K
           !  (K=hcond is radiative conductivity)
           !
@@ -619,10 +622,6 @@ module Entropy
 !
       intent(in) :: xx,yy,zz
       intent(inout) :: f
-!
-!mee Rather initialise everything as if entropy then convert it all at the end!
-!mee      if (pretend_lnTT) f(:,:,:,iss)=f(:,:,:,iss)+(f(:,:,:,ilnrho)*gamma1-log(gamma1))/gamma
-
 !
 ! If pretend_lnTT is set then turn it off so that initial conditions are
 ! correctly generated in terms of entropy, but then restore it later
@@ -1807,7 +1806,8 @@ module Entropy
 !**********************************************************************
     subroutine dss_dt(f,df,p)
 !
-!  Calculate right hand side of entropy equation.
+!  Calculate right hand side of entropy equation,
+!  ds/dt = -u.grads + [H-C + div(K*gradT) + mu0*eta*J^2 + ...]
 !
 !  17-sep-01/axel: coded
 !   9-jun-02/axel: pressure gradient added to du/dt already here
@@ -1846,7 +1846,6 @@ module Entropy
 !  .false. allows suppressing pressure term for test purposes)
 !
       if (lhydro) then
-!
         if (lpressuregradient_gas) then
           do j=1,3
             ju=j+iuu-1
@@ -1879,17 +1878,19 @@ module Entropy
       endif
 !
 !  Advection of entropy.
-      !
-      if (ladvection_entropy) then
-         if (pretend_lnTT) then 
-!
+!  If pretend_lnTT=.true., we pretend that ss is actually cv*lnTT
+!  Otherwise, in the regular case with entropy, s is the dimensional
+!  specific entropy, i.e. it is not divided by cp.
+!  NOTE: in the entropy module is it lnTT that is advanced, so
+!  there are additional cv1 terms on the right hand side.
 !  If pretend_lnTT=.true., we pretend that ss is actually lnTT
 !
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma1 - p%uglnTT
+      if (ladvection_entropy) then
+         if (pretend_lnTT) then
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma1-p%uglnTT
+            !df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - (p%divu*gamma1 + p%uglnTT)*gamma11*p%cp
+            !df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma1 - p%uglnTT
          else
-!
-!  regular case with entropy
-!
             df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
          endif
       endif
@@ -1916,7 +1917,6 @@ module Entropy
         vKpara(:) = Kgpara
         vKperp(:) = Kgperp
         call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
-        if (pretend_lnTT) rhs=rhs*gamma
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs*p%rho1
         if (lfirst.and.ldt) then
            diffus_chi=max(diffus_chi,gamma*Kgpara*exp(-p%lnrho)/p%cp*dxyz_2)           
@@ -1951,7 +1951,7 @@ module Entropy
 !
       if (lborder_profiles) call set_border_entropy(f,df,p)
 !
-!  Phi-averages.
+!  Phi-averages
 !
       if (l2davgfirst) then
         call phisum_mn_name_rz(p%ss,idiag_ssmphi)
@@ -2075,18 +2075,6 @@ module Entropy
 !  Note: these routines require revision when ionization turned on
 !  The variable g2 is reused to calculate glnP.gss a few lines below.
 !
-!AB: keep the following lines for the record, but they aren't
-!AB: correct for general values of cp.
-!
-!     glnT = gamma*p%gss + gamma1*p%glnrho
-!     glnP = gamma*p%gss + gamma*p%glnrho
-!     call dot(glnP,glnT,g2)
-!     thdiff = chi * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
-!     if (chi_t/=0.) then
-!       call dot(glnP,p%gss,g2)
-!       thdiff = thdiff + chi_t*(p%del2ss+g2)
-!     endif
-!
 !  diffusion of the form:
 !  rho*T*Ds/Dt = ... + nab.(rho*cp*chi*gradT)
 !        Ds/Dt = ... + cp*chi*[del2lnTT+(glnrho+glnTT).glnTT]
@@ -2112,8 +2100,6 @@ module Entropy
           thdiff=thdiff+chi_t*(p%del2ss+g2)
         endif
       endif
-!
-      if (pretend_lnTT) thdiff=thdiff*gamma
 !
 !  add heat conduction to entropy equation
 !
@@ -2160,8 +2146,6 @@ module Entropy
 !  Heat conduction
 !
       thdiff = chi_hyper3 * p%del6ss
-!
-      if (pretend_lnTT) thdiff=thdiff*gamma
 !
 !  add heat conduction to entropy equation
 !
@@ -2300,9 +2284,12 @@ module Entropy
       ! NB: chix = K/(cp rho) is needed for diffus_chi calculation
       chix = p%rho1*hcond*p%cp1
       call dot(p%glnTT,p%glnTT,g2)
-      thdiff = p%rho1*hcond * (p%del2lnTT + g2)
       !
-      id (pretend_lnTT) thdiff=thdiff*gamma
+      if (pretend_lnTT) then
+         thdiff = hcond * (p%del2lnTT + g2)
+      else
+         thdiff = p%rho1*hcond * (p%del2lnTT + g2)
+      endif
 !
 !  add heat conduction to entropy equation
 !
@@ -2387,8 +2374,6 @@ module Entropy
       endif
 !
       thdiff = thdiff*exp(-p%lnrho-p%lnTT)
-!
-      if (pretend_lnTT) thdiff=thidff*gamma
 !
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + thdiff
 !
@@ -2522,23 +2507,16 @@ module Entropy
             call gradlogchit_profile(glchit_prof)
           endif
         endif
-        !
-        ! NB: the following left in for the record, but the version below,
-        !     using del2lnTT & glnTT, is simpler
-        !
-        !chix = p%rho1*hcond*p%cp1
-        !glnT = gamma*p%gss*spread(p%cp1,2,3) + gamma1*p%glnrho        ! grad ln(T)
-        !glnThcond = glnT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
-        !call dot(glnT,glnThcond,g2)
-        !thdiff = p%rho1*hcond * (gamma*p%del2ss*p%cp1 + gamma1*p%del2lnrho + g2)
-
-        !  diffusion of the form:
-        !  rho*T*Ds/Dt = ... + nab.(K*gradT)
-        !        Ds/Dt = ... + K/rho*[del2lnTT+(glnTT+glnhcond).glnTT]
-        !
-        ! NB: chix = K/(cp rho) is needed for diffus_chi calculation
+!
+!  diffusion of the form:
+!  rho*T*Ds/Dt = ... + nab.(K*gradT)
+!        Ds/Dt = ... + K/rho*[del2lnTT+(glnTT+glnhcond).glnTT]
+!
+!  where chix = K/(cp rho) is needed for diffus_chi calculation
+!
         chix = p%rho1*hcond*p%cp1
-        glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+!--     glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+        glnThcond = p%glnTT + glhc*spread(1./hcond,2,3)    ! grad ln(T*hcond)
         call dot(p%glnTT,glnThcond,g2)
         thdiff = p%rho1*hcond * (p%del2lnTT + g2)
       endif  ! hcond0/=0
@@ -2564,13 +2542,10 @@ module Entropy
             call warning('calc_heatcond',"hcond0 and chi_t combined don't seem to make sense")
           endif
         endif
-        ! NB: the cp factor was previously omitted in the following calculation
-        !     of glnP (=glnrho+glnTT) -- but we might as well use glnTT
-        !     directly now, since that pencil is now calculated.
-        !glnP=gamma*(p%gss/cp+p%glnrho)
-        !call dot(glnP+glchit_prof,p%gss,g2)
+!
+!  ... + div(rho*T*chi*grads) = ... + chi*[del2s + (glnrho+glnTT+glnchi).grads]
+!
         call dot(p%glnrho+p%glnTT+glchit_prof,p%gss,g2)
-        !thdiff=thdiff+chi_t*(p%del2ss+g2)
         thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
       endif
 !
@@ -2605,6 +2580,11 @@ module Entropy
         call output_pencil(trim(directory)//'/hcond.dat',hcond,1)
         call output_pencil(trim(directory)//'/glhc.dat',glhc,3)
       endif
+!
+!  At the end of this routine, add all contribution to
+!  thermal diffusion on the rhs of the entropy equation,
+!  so Ds/Dt = ... + thdiff = ... + (...)/(rho*T)
+!
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !
       if (headtt) print*,'calc_heatcond: added thdiff'

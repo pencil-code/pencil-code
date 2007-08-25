@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.76 2007-08-23 21:09:17 wlyra Exp $
+! $Id: viscosity.f90,v 1.77 2007-08-25 10:55:58 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -102,7 +102,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.76 2007-08-23 21:09:17 wlyra Exp $")
+           "$Id: viscosity.f90,v 1.77 2007-08-25 10:55:58 brandenb Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -464,9 +464,6 @@ module Viscosity
       logical, dimension (npencils) :: lpencil_in
 !
       if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
-!
-!AB: I think the following is not correct!
-!     if (lpencil_in(i_visc_heat)) lpencil_in(i_rho)=.true.
 !
     endsubroutine pencil_interdep_viscosity
 !***********************************************************************
@@ -879,14 +876,21 @@ module Viscosity
       real, dimension (nx) :: Hmax
 !
 !  Add viscous heat (which has units of energy/mass) to the RHS
-!  of the entropy...
+!  of the entropy (both with and without pretend_lnTT), or of
+!  the temperature equation. Divide by cv if pretend_lnTT.
 !
-      if (lentropy) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%visc_heat
+      if (lentropy) then
+         if (pretend_lnTT) then
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*p%TT1*p%visc_heat
+         else
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%visc_heat
+         endif
+      else if (ltemperature) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%visc_heat
+      endif
 !
-!  ... or temperature equation.
-!
-      if (ltemperature) &
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%visc_heat
+!  calculate maximum heating (for time step constraint), so it is
+!  only done on the first of the 3 substeps.
 !
       if (lfirst .and. ldt) Hmax=Hmax+p%visc_heat
 !

@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.96 2007-08-23 15:05:19 wlyra Exp $
+! $Id: eos_idealgas.f90,v 1.97 2007-08-25 10:55:58 brandenb Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.96 2007-08-23 15:05:19 wlyra Exp $')
+           '$Id: eos_idealgas.f90,v 1.97 2007-08-25 10:55:58 brandenb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -250,7 +250,7 @@ module EquationOfState
 !*******************************************************************
     subroutine select_eos_variable(variable,findex)
 !
-!  Calculate average particle mass in the gas relative to
+!  Select eos variable
 !
 !   02-apr-06/tony: implemented
 !
@@ -593,6 +593,7 @@ module EquationOfState
           if (lpencil(i_hlnTT)) call g2ij(f,ieosvar2,p%hlnTT)
           if (lpencil(i_del2lnTT)) call del2(f,ieosvar2,p%del2lnTT)
           if (lpencil(i_cs2)) p%cs2=cp*exp(p%lnTT)*gamma1
+!
         endif
         if (lpencil(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma1*(p%lnrho-lnrho0))
         if (lpencil(i_pp)) p%pp=(cp-cv)*exp(p%lnTT+p%lnrho)
