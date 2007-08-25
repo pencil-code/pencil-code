@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.338 2007-08-24 20:25:18 steveb Exp $
+### $Id: Makefile.src,v 1.339 2007-08-25 14:20:11 wlyra Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -498,16 +498,18 @@ LD_FFTW2=
 #LIBMPISUFFIX=_#(starlink)
 #MAKEOPTS=-j 3 #(starlink)
 #
-## Hades & Triton -- Wlad's laptops
-##
-#FC =/opt/intel/fc/10.0.023/bin/ifort #(hades|triton)
-#F77=$(FC) #(hades|triton)
-#CC = gcc #(hades|triton)
-#FC_HOME=/opt/intel/fc/10.0.023 #(hades|triton)
-#MPI_HOME=/usr/local#(hades|triton)
-#FFLAGS=-O3 -I$(MPI_HOME)/include #(hades|triton)
-#MPI_LDLIBS= -llammpi++ -llammpio -llamf77mpi -lmpi -llam #(hades|triton)
-#LD_MPI=-L$(MPI_HOME)/lib -pthread $(MPI_LDLIBS) #(hades|triton)
+##   Charon & Triton - Wlad's laptops
+## + Titan             - Wlad's stationary
+#
+#FC =/opt/intel/fc/10.0.023/bin/ifort #(charon|triton)
+#FC =/usr/bin/gfortran #(titan)
+#F77=$(FC) #(charon|triton|titan)
+#CC = gcc #(charon|triton|titan)
+#MPI_HOME=/usr/local#(charon|triton|titan)
+#FFLAGS=-O3 -I$(MPI_HOME)/include #(charon|triton|titan)
+#MPI_LDLIBS= -llammpi++ -llammpio -llamf77mpi -lmpi -llam #(charon|triton|titan)
+#LD_MPI=-L$(MPI_HOME)/lib -pthread $(MPI_LDLIBS) #(charon|triton|titan)
+#
 ##
 ## Andrew's Laptop (wkfg)
 ##
