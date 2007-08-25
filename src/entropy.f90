@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.510 2007-08-19 22:55:00 bingert Exp $
+! $Id: entropy.f90,v 1.511 2007-08-25 07:43:17 bingert Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -207,7 +207,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.510 2007-08-19 22:55:00 bingert Exp $")
+           "$Id: entropy.f90,v 1.511 2007-08-25 07:43:17 bingert Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1885,7 +1885,7 @@ module Entropy
 !
 !  If pretend_lnTT=.true., we pretend that ss is actually lnTT
 !
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - (p%divu*gamma1 + p%uglnTT)*gamma11*p%cp
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma1 - p%uglnTT
          else
 !
 !  regular case with entropy
@@ -1916,6 +1916,7 @@ module Entropy
         vKpara(:) = Kgpara
         vKperp(:) = Kgperp
         call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
+        if (pretend_lnTT) rhs=rhs*gamma
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs*p%rho1
         if (lfirst.and.ldt) then
            diffus_chi=max(diffus_chi,gamma*Kgpara*exp(-p%lnrho)/p%cp*dxyz_2)           
@@ -1945,10 +1946,6 @@ module Entropy
 !  In that case you'd need to provide your own "special" routine.
 !
       if (lspecial) call special_calc_entropy(f,df,p)
-!
-!  if pretend_lnTT=T and df(:,:,:,iss) is not changed anymore afterwards
-!
-      if (pretend_lnTT) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)*p%cv1
 !
 !  Apply border profile
 !
@@ -2116,6 +2113,8 @@ module Entropy
         endif
       endif
 !
+      if (pretend_lnTT) thdiff=thdiff*gamma
+!
 !  add heat conduction to entropy equation
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
@@ -2161,6 +2160,8 @@ module Entropy
 !  Heat conduction
 !
       thdiff = chi_hyper3 * p%del6ss
+!
+      if (pretend_lnTT) thdiff=thdiff*gamma
 !
 !  add heat conduction to entropy equation
 !
@@ -2301,6 +2302,7 @@ module Entropy
       call dot(p%glnTT,p%glnTT,g2)
       thdiff = p%rho1*hcond * (p%del2lnTT + g2)
       !
+      id (pretend_lnTT) thdiff=thdiff*gamma
 !
 !  add heat conduction to entropy equation
 !
@@ -2344,8 +2346,6 @@ module Entropy
       intent(in) :: p
       intent(out) :: df
 !
-      if (pretend_lnTT) call fatal_error("calc_heatcond_spitzer","not implemented when pretend_lnTT = T")
-!
 !     Calculate variable diffusion coefficients along pencils
 !
       call dot2_mn(p%bb,bb2)
@@ -2387,6 +2387,8 @@ module Entropy
       endif
 !
       thdiff = thdiff*exp(-p%lnrho-p%lnTT)
+!
+      if (pretend_lnTT) thdiff=thidff*gamma
 !
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + thdiff
 !
