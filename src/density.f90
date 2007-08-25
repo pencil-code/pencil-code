@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.344 2007-08-21 20:03:28 wlyra Exp $
+! $Id: density.f90,v 1.345 2007-08-25 17:55:46 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -45,6 +45,7 @@ module Density
   real :: co1_ss=0.,co2_ss=0.,Sigma1=150.
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
   real :: wdamp=0.,plaw=0, density_floor=-1.0
+  real :: mass_source_Mdot=0.,mass_source_sigma=0.
   real, dimension(3) :: diffrho_hyper3_aniso=0.
   integer, parameter :: ndiff_max=4
   logical :: lmass_source=.false.,lcontinuity_gas=.true.
@@ -58,6 +59,7 @@ module Density
   character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
   character (len=labellen) :: borderlnrho='nothing'
+  character (len=labellen) :: mass_source_profile='cylindric'
   character (len=5) :: iinit_str
   complex :: coeflnrho=0.
 
@@ -77,6 +79,7 @@ module Density
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
        cs2bot,cs2top,lupw_lnrho,lupw_rho,idiff,lmass_source,     &
+       mass_source_profile, mass_source_Mdot, mass_source_sigma, &
        lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
        wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,         &
        lnrho_const,plaw,lcontinuity_gas,borderlnrho,    &
@@ -125,7 +128,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.344 2007-08-21 20:03:28 wlyra Exp $")
+           "$Id: density.f90,v 1.345 2007-08-25 17:55:46 brandenb Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1069,7 +1072,11 @@ module Density
       if (ldiff_hyper3.and..not.ldensity_nolog) lpenc_requested(i_rho)=.true.
       if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
 !
-      if (lmass_source) lpenc_requested(i_rcyl_mn)=.true.
+      if (lmass_source) then
+        if (mass_source_profile=='bump') lpenc_requested(i_r_mn)=.true.
+        if (mass_source_profile=='cylindric') lpenc_requested(i_rcyl_mn)=.true.
+      endif
+!
       if (borderlnrho=='stratification') then 
         lpenc_requested(i_cs2)=.true.
         lpenc_requested(i_r_mn)=.true.
@@ -2000,23 +2007,30 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: fint,fext,pdamp
+      real, dimension(nx) :: fint,fext,pdamp,fprofile,fnorm
 !
       if(ldebug) print*,'mass_source: cs20,cs0=',cs20,cs0
 !
+!  choose between different possibilities
+!
+      if (mass_source_profile=='bump') then
+        fnorm=(2.*pi*mass_source_sigma**2)**1.5
+        fprofile=exp(-.5*(p%r_mn/mass_source_sigma)**2)/fnorm
+        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+mass_source_Mdot*fprofile
+      elseif (mass_source_profile=='cylindric') then
+!
 !  cylindrical profile for inner cylinder
 !
-      pdamp=1-step(p%rcyl_mn,r_int,wdamp) ! inner damping profile
-      fint=-damplnrho_int*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_int)
-      df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+fint
+        pdamp=1-step(p%rcyl_mn,r_int,wdamp) ! inner damping profile
+        fint=-damplnrho_int*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_int)
+        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+fint
 !
 !  cylindrical profile for outer cylinder
 !
-      pdamp=step(p%rcyl_mn,r_ext,wdamp) ! outer damping profile
-      fext=-damplnrho_ext*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_ext)
-      df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+fext
-!     df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+f(l1:l2,m,n,iux)*fext
-!     df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+f(l1:l2,m,n,iuy)*fext
+        pdamp=step(p%rcyl_mn,r_ext,wdamp) ! outer damping profile
+        fext=-damplnrho_ext*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_ext)
+        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+fext
+      endif
 !
     endsubroutine mass_source
 !***********************************************************************

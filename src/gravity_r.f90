@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.19 2007-08-21 20:08:41 wlyra Exp $
+! $Id: gravity_r.f90,v 1.20 2007-08-25 17:55:46 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -86,7 +86,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.19 2007-08-21 20:08:41 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.20 2007-08-25 17:55:46 brandenb Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -263,7 +263,10 @@ module Gravity
                   elseif (ipotential(j) .eq. 'dark-matter-halo') then
                     g_r=-g0*(1-r_ref/rr_mn*atan2(rr_mn,r_ref))/rr_mn
                   else
-                    ! smoothed 1/r potential in a spherical shell
+!
+!  smoothed 1/r potential in a spherical shell
+!  r0_pot is the smoothing radius, and n_pot the smoothing exponent
+!
                     g_r=-g0*rr_mn**(n_pot-1) &
                          *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
                   endif
