@@ -1,4 +1,4 @@
-$Id: README,v 1.9 2007-08-26 05:26:01 brandenb Exp $
+$Id: README,v 1.10 2007-08-26 16:46:21 dobler Exp $
 
 In manual.tex we try to keep a reasonably up-to-date description of the code.
 For latex installations that don't have some of the less frequent style files,
@@ -9,8 +9,8 @@ your TeX path.
 Note that you need to make sure a sufficiently recent version of
 index.sty is first in your TEXINPUTS. The Makefile takes care of this.
 
-If you cannot compile the the text locally, and you just need the
-pdf file of the latest version on the web, just say
+If you cannot compile the text locally, you can get the
+pdf file of the latest version with
    wget http://www.nordita.org/software/pencil-code/doc/manual.pdf
 
 -------------------------------------------------------------------------------
