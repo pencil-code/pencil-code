@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.20 2007-08-25 17:55:46 brandenb Exp $
+! $Id: gravity_r.f90,v 1.21 2007-08-26 20:12:03 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -86,7 +86,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.20 2007-08-25 17:55:46 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.21 2007-08-26 20:12:03 dobler Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -274,8 +274,7 @@ module Gravity
           !
                 call get_gravity_field(g_r,gg_mn,rr_mn)
 !
-                f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=&
-                     f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)+gg_mn
+                f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) = gg_mn
 !
               enddo
             enddo
