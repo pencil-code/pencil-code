@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.11 2007-08-17 13:08:31 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.12 2007-08-26 23:33:07 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -40,7 +40,7 @@ module NeutralVelocity
 !collisional drag,ionization,recombination
   logical :: lviscneutral=.true.
   real :: colldrag,alpha,zeta
-  real :: nun=0.,csn0,csn20,nun_hyper3=0.
+  real :: nun=0.,csn0=0.,csn20,nun_hyper3=0.
   real, dimension (nx,3,3) :: unij5
 
   character (len=labellen),dimension(ninit) :: iviscn=''
@@ -128,7 +128,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.11 2007-08-17 13:08:31 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.12 2007-08-26 23:33:07 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
