@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.175 2007-08-26 20:19:07 dhruba Exp $
+! $Id: boundcond.f90,v 1.176 2007-08-26 20:38:23 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -203,13 +203,14 @@ module Boundcond
                   ! BCX_DOC: Only for spherical polar coordinate system, 
                   ! BCX_DOC:  sets  d(rA_{\alpha})/dr = fbcx12(j)
                   call bc_set_spder_x(f,topbot,j,fbcx12(j))
+                case('sfr')
                   ! BCX_DOC: "stress-free" boundary condition for spherical coordinate system. 
                   ! BCX_DOC: $d_r(u_{\theta}) = u_{\theta}/r$  with $u_r = 0$ sets $S_{r \theta}$
                   ! BCX_DOC: component of the strain matrix to be zero in spherical coordinate  
                   ! BCX_DOC: system. This subroutine sets only the first part of this boundary
                   ! BCX_DOC:  condition for 'j'-th component of f. 
-                case('sfr')
                   call bc_set_sfree_x(f,topbot,j)
+                case('pfc')
                   !BCX_DOC: In spherical polar coordinate system,
                   !BCX_DOC: at a radial boundary set : $A_{\theta} = 0$ and 
                   !BCX_DOC: $A_{phi} = 0$, and demand $div A = 0$ gives the 
@@ -218,7 +219,6 @@ module Boundcond
                   !BCX_DOC: component of f. As this is related to setting the
                   !BCX_DOC: perfect conducting boundary condition we call 
                   !BCX_DOC: this "pfc".  
-                case('pfc')
                   call bc_set_pfc_x(f,topbot,j)
                  case ('fix')
                   ! BCX_DOC: set boundary value [really??]
@@ -1309,12 +1309,14 @@ module Boundcond
     endsubroutine bc_set_spder_x
 ! **********************************************************************
     subroutine bc_set_pfc_x(f,topbot,j)
+!
 ! In spherical polar coordinate system,
 ! at a radial boundary set : $A_{\theta} = 0$ and $A_{phi} = 0$,
 ! and demand $div A = 0$ gives the condition on $A_r$ to be
 ! $d/dr( A_r) + 2/r = 0$ . This subroutine sets this condition of
 ! $j$ the component of f. As this is related to setting the
 ! perfect conducting boundary condition we call this "pfc". 
+!
 !  25-Aug-2007/dhruba: coded
 !
       use Cdata
