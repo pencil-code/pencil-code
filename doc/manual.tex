@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.370 2007-08-25 07:43:17 bingert Exp $
+%%  CVS: $Id: manual.tex,v 1.371 2007-08-26 04:51:32 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2007-08-25 07:43:17 $ $,~ $ $Revision: 1.370 $ $}
+%\date{$ $Date: 2007-08-26 04:51:32 $ $,~ $ $Revision: 1.371 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2007-08-25 07:43:17 $ $,~ $ $Revision: 1.370 $ $}\\
+  \emph{$ $Date: 2007-08-26 04:51:32 $ $,~ $ $Revision: 1.371 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3875,20 +3875,21 @@ $K$ is the radiative (thermal) conductivity,
 $\Strain$ is the traceless rate-of-strain tensor and $\zeta$ describes
 some bulk viscosity.
 
-The heat conduction term can be written in the form
+In the entropy module we solve for the specific entropy, $s$.
+The heat conduction term on the right hand side can be written in the form
 \begin{eqnarray}
 \lefteqn{\frac{\Div(K\grad T)}
-              {\varrho c_p T}} \\
+              {\varrho T}} \\
 %
   &=&
-  \chi\Bigl[
+  c_p\chi\Bigl[
         \Laplace\ln T
         + \grad\ln T \cdot \grad(\ln T{+}\ln\chi{+}\ln\varrho)
       \Bigr] \\
 %
   &=&
-  \chi \left[ \gamma\Laplace s/c_p + (\gamma{-}1)\Laplace\ln\varrho \right] \nonumber\\
-  & &   + \chi \left[ \gamma\grad s/c_p
+  c_p\chi \left[ \gamma\Laplace s/c_p + (\gamma{-}1)\Laplace\ln\varrho \right] \nonumber\\
+  & &   + c_p\chi \left[ \gamma\grad s/c_p
                       + (\gamma{-}1)\grad\ln\varrho \right]
           \cdot\left[ \gamma\left(\grad s/c_p + \grad\ln\varrho\right)
                       + \grad\ln\chi \right] \; ,
@@ -3941,17 +3942,23 @@ which is positive definite.
 
 \subsubsection{Alternative description}
 \index{pretend_lnTT}
-By setting \emph{pretend_lnTT=T} the temperature is used instead of the
-entropy. 
 
-With this choice the entropy equation
+By setting \code{pretend_lnTT=T} the logarithmic temperature is used
+instead of the entropy.
+This has computational advantages when heat conduction
+(proportional to $K\grad T$) is important.
+Another alternative is to use another module, i.e.\ set
+\code{ENTROPY=temperature_idealgas} in \file{Makefile.local}.
+
+When \code{pretend_lnTT=T} is set, the entropy equation
 \begin{equation}
-  \frac{\partial s/c_p}{\partial t} = \frac{1}{c_p\rho T }\mathbf{RHS} - \uv\grad s \nonumber
+  \frac{\partial s}{\partial t} = -\uv\cdot\grad s
+  +\frac{1}{\rho T }\mathbf{RHS} 
 \end{equation}
 is replaced by
 \begin{equation}
-\frac{\partial\ln T}{\partial t} =\frac{\gamma}{c_p\rho T}\mathbf{RHS}
-            -\left(\gamma-1\right) \Div \uv - \uv\cdot \grad \ln T \nonumber
+\frac{\partial\ln T}{\partial t} = -\uv\cdot\grad \ln T
+  +\frac{1}{\rho c_v T}\mathbf{RHS} -\left(\gamma-1\right) \Div \uv
 \end{equation}
 where $\mathbf{RHS}$ is the right hand side of equation (\ref{entropy-eq}). 
 
@@ -5784,7 +5791,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2007-08-25 07:43:17 $ $,~ $ $Revision: 1.370 $ $}
+  \hfill\normalsize\rm$ $Date: 2007-08-26 04:51:32 $ $,~ $ $Revision: 1.371 $ $}
 
 \section{Timings}
 
@@ -9118,7 +9125,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.370 2007-08-25 07:43:17 bingert Exp $ $}
+$ $Id: manual.tex,v 1.371 2007-08-26 04:51:32 brandenb Exp $ $}
 
 
 \end{document}
