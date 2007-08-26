@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.174 2007-08-24 01:37:10 dhruba Exp $
+! $Id: boundcond.f90,v 1.175 2007-08-26 20:19:07 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -210,7 +210,17 @@ module Boundcond
                   ! BCX_DOC:  condition for 'j'-th component of f. 
                 case('sfr')
                   call bc_set_sfree_x(f,topbot,j)
-                case ('fix')
+                  !BCX_DOC: In spherical polar coordinate system,
+                  !BCX_DOC: at a radial boundary set : $A_{\theta} = 0$ and 
+                  !BCX_DOC: $A_{phi} = 0$, and demand $div A = 0$ gives the 
+                  !BCX_DOC: condition on $A_r$ to be  $d/dr( A_r) + 2/r = 0$ . 
+                  !BCX_DOC: This subroutine sets this condition of  $j$ the 
+                  !BCX_DOC: component of f. As this is related to setting the
+                  !BCX_DOC: perfect conducting boundary condition we call 
+                  !BCX_DOC: this "pfc".  
+                case('pfc')
+                  call bc_set_pfc_x(f,topbot,j)
+                 case ('fix')
                   ! BCX_DOC: set boundary value [really??]
                   call bc_fix_x(f,topbot,j,fbcx12(j))
                 case('cfb')
@@ -1297,6 +1307,42 @@ module Boundcond
     endif
 !
     endsubroutine bc_set_spder_x
+! **********************************************************************
+    subroutine bc_set_pfc_x(f,topbot,j)
+! In spherical polar coordinate system,
+! at a radial boundary set : $A_{\theta} = 0$ and $A_{phi} = 0$,
+! and demand $div A = 0$ gives the condition on $A_r$ to be
+! $d/dr( A_r) + 2/r = 0$ . This subroutine sets this condition of
+! $j$ the component of f. As this is related to setting the
+! perfect conducting boundary condition we call this "pfc". 
+!  25-Aug-2007/dhruba: coded
+!
+      use Cdata
+!
+      character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer, intent (in) :: j
+
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+! The coding assumes we are using 6-th order centered finite difference for our
+! derivatives. 
+        f(l1-1,:,:,j)= f(l1+1,:,:,j) +  2.*60.*dx/(45.*x(l1))
+        f(l1-2,:,:,j)= f(l1+2,:,:,j) +  2.*60.*dx/(9.*x(l1))
+        f(l1-3,:,:,j)= f(l1+3,:,:,j) +  2.*60.*dx/(x(l1))
+      case('top')               ! top boundary
+        f(l2+1,:,:,j)= f(l2-1,:,:,j) -  2.*60.*dx/(45.*x(l2))
+        f(l2+2,:,:,j)= f(l2-2,:,:,j) -  2.*60.*dx/(9.*x(l2))
+        f(l2+3,:,:,j)= f(l2-3,:,:,j) -  2.*60.*dx/(x(l2))
+
+      case default
+        call warning('bc_set_pfc_x',topbot//" should be `top' or `bot'")
+
+      endselect
+!
+    endsubroutine bc_set_pfc_x
 !***********************************************************************
     subroutine bc_set_sfree_x(f,topbot,j)
 ! "stress-free" boundary condition for spherical coordinate system. 
