@@ -1,4 +1,4 @@
-! $Id: testfield_xz.f90,v 1.1 2007-08-25 19:08:46 brandenb Exp $
+! $Id: testfield_xz.f90,v 1.2 2007-08-26 14:43:06 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -45,30 +45,8 @@ module Testfield
        lset_bbtest2,etatest,itestfield,ktestfield
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_alp11=0,idiag_alp21=0,idiag_alp31=0
-  integer :: idiag_alp12=0,idiag_alp22=0,idiag_alp32=0
-  integer :: idiag_alp13=0,idiag_alp23=0,idiag_alp33=0
-  integer :: idiag_alp11z=0,idiag_alp21z=0,idiag_alp31z=0
-  integer :: idiag_alp12z=0,idiag_alp22z=0,idiag_alp32z=0
-  integer :: idiag_alp13z=0,idiag_alp23z=0,idiag_alp33z=0
-  integer :: idiag_eta111z=0,idiag_eta211z=0,idiag_eta311z=0
-  integer :: idiag_eta121z=0,idiag_eta221z=0,idiag_eta321z=0
-  integer :: idiag_eta131z=0,idiag_eta231z=0,idiag_eta331z=0
-  integer :: idiag_eta113z=0,idiag_eta213z=0,idiag_eta313z=0
-  integer :: idiag_eta123z=0,idiag_eta223z=0,idiag_eta323z=0
-  integer :: idiag_eta133z=0,idiag_eta233z=0,idiag_eta333z=0
-  integer :: idiag_alp11xz=0,idiag_alp21xz=0,idiag_alp31xz=0
-  integer :: idiag_alp12xz=0,idiag_alp22xz=0,idiag_alp32xz=0
-  integer :: idiag_alp13xz=0,idiag_alp23xz=0,idiag_alp33xz=0
-  integer :: idiag_eta111xz=0,idiag_eta211xz=0,idiag_eta311xz=0
-  integer :: idiag_eta121xz=0,idiag_eta221xz=0,idiag_eta321xz=0
-  integer :: idiag_eta131xz=0,idiag_eta231xz=0,idiag_eta331xz=0
-  integer :: idiag_eta113xz=0,idiag_eta213xz=0,idiag_eta313xz=0
-  integer :: idiag_eta123xz=0,idiag_eta223xz=0,idiag_eta323xz=0
-  integer :: idiag_eta133xz=0,idiag_eta233xz=0,idiag_eta333xz=0
-  integer :: idiag_alp11exz=0,idiag_alp21exz=0,idiag_alp31exz=0
-  integer :: idiag_alp12exz=0,idiag_alp22exz=0,idiag_alp32exz=0
-  integer :: idiag_alp13exz=0,idiag_alp23exz=0,idiag_alp33exz=0
+  integer :: idiag_E111z=0,idiag_E211z=0,idiag_E311z=0
+  integer :: idiag_E121z=0,idiag_E221z=0,idiag_E321z=0
 
   real, dimension (mz,3,ntestfield/3) :: uxbtestm
 
@@ -110,7 +88,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_xz.f90,v 1.1 2007-08-25 19:08:46 brandenb Exp $")
+           "$Id: testfield_xz.f90,v 1.2 2007-08-26 14:43:06 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -340,13 +318,13 @@ module Testfield
         if (ldiagnos) then  
           select case(jtest)
           case(1)
-            if (idiag_alp11z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp11z)
-            if (idiag_alp21z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp21z)
-            if (idiag_alp31z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp31z)
+            if (idiag_E111z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_E111z)
+            if (idiag_E211z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_E211z)
+            if (idiag_E311z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_E311z)
           case(2)
-            if (idiag_alp12z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp12z)
-            if (idiag_alp22z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp22z)
-            if (idiag_alp32z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp32z)
+            if (idiag_E121z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_E121z)
+            if (idiag_E221z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_E221z)
+            if (idiag_E321z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_E321z)
           end select
         endif
 !
@@ -473,30 +451,30 @@ module Testfield
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_alp11z=0; idiag_alp21z=0; idiag_alp31z=0
-        idiag_alp12z=0; idiag_alp22z=0; idiag_alp32z=0
+        idiag_E111z=0; idiag_E211z=0; idiag_E311z=0
+        idiag_E121z=0; idiag_E221z=0; idiag_E321z=0
       endif
 !
 !  check for those quantities for which we want xy-averages
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp11z',idiag_alp11z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp21z',idiag_alp21z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp31z',idiag_alp31z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp12z',idiag_alp12z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp22z',idiag_alp22z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp32z',idiag_alp32z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E111z',idiag_E111z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E211z',idiag_E211z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E311z',idiag_E311z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E121z',idiag_E121z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E221z',idiag_E221z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E321z',idiag_E321z)
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        write(3,*) 'idiag_alp11z=',idiag_alp11z
-        write(3,*) 'idiag_alp21z=',idiag_alp21z
-        write(3,*) 'idiag_alp31z=',idiag_alp31z
-        write(3,*) 'idiag_alp12z=',idiag_alp12z
-        write(3,*) 'idiag_alp22z=',idiag_alp22z
-        write(3,*) 'idiag_alp32z=',idiag_alp32z
+        write(3,*) 'idiag_E111z=',idiag_E111z
+        write(3,*) 'idiag_E211z=',idiag_E211z
+        write(3,*) 'idiag_E311z=',idiag_E311z
+        write(3,*) 'idiag_E121z=',idiag_E121z
+        write(3,*) 'idiag_E221z=',idiag_E221z
+        write(3,*) 'idiag_E321z=',idiag_E321z
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'nnamez=',nnamez
         write(3,*) 'nnamexy=',nnamexy
