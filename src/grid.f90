@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.21 2007-08-08 11:11:34 dhruba Exp $
+! $Id: grid.f90,v 1.22 2007-08-27 14:37:52 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -387,6 +387,7 @@ module Grid
 !
       use Cparam
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -394,30 +395,55 @@ module Grid
       intent(in) :: f
       intent(inout) :: p
 !
-      if (lpencil(i_x_mn)) p%x_mn = x(l1:l2)
-      if (lpencil(i_y_mn)) p%y_mn = spread(y(m),1,nx)
-      if (lpencil(i_z_mn)) p%z_mn = spread(z(n),1,nx)
-      if (lpencil(i_r_mn)) p%r_mn = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+      if (lcartesian_coords) then
+        if (lpencil(i_x_mn))    p%x_mn    = x(l1:l2)
+        if (lpencil(i_y_mn))    p%y_mn    = spread(y(m),1,nx)
+        if (lpencil(i_z_mn))    p%z_mn    = spread(z(n),1,nx)
+        if (lpencil(i_r_mn))    p%r_mn    = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+        if (lpencil(i_rcyl_mn)) p%rcyl_mn = sqrt(x(l1:l2)**2+y(m)**2)
+        if (lpencil(i_phi_mn))  p%phi_mn  = atan2(p%y_mn,x(l1:l2))
+      elseif (lcylindrical_coords) then
+        if (lpencil(i_x_mn))    p%x_mn    = x(l1:l2)*cos(y(m))
+        if (lpencil(i_y_mn))    p%y_mn    = x(l1:l2)*sin(y(m))
+        if (lpencil(i_z_mn))    p%z_mn    = spread(z(n),1,nx)
+        if (lpencil(i_r_mn))    p%r_mn    = sqrt(x(l1:l2)**2+z(n)**2)
+        if (lpencil(i_rcyl_mn)) p%rcyl_mn = x(l1:l2)
+        if (lpencil(i_phi_mn))  p%phi_mn  = spread(y(m),1,nx)
+      elseif (lspherical_coords) then
+        if (lpencil(i_x_mn))    p%x_mn    = x(l1:l2)*sin(z(n))*cos(y(m))
+        if (lpencil(i_y_mn))    p%y_mn    = x(l1:l2)*sin(z(n))*sin(y(m))
+        if (lpencil(i_z_mn))    p%z_mn    = x(l1:l2)*cos(z(n))
+        if (lpencil(i_r_mn))    p%r_mn    = x(l1:l2)
+        if (lpencil(i_rcyl_mn)) p%rcyl_mn = x(l1:l2)*sin(z(n))
+        if (lpencil(i_phi_mn))  p%phi_mn  = atan2(p%y_mn,p%x_mn)
+      endif
 !
 !  set position vector
 !
       if (lpencil(i_rr)) then
-        p%rr(:,1)=p%x_mn
-        p%rr(:,2)=p%y_mn
-        p%rr(:,3)=p%z_mn
+        if (lcartesian_coords) then
+          p%rr(:,1)=p%x_mn
+          p%rr(:,2)=p%y_mn
+          p%rr(:,3)=p%z_mn
+         else
+           call stop_it("position vector not implemented for"//&
+                " non-cartesian coordinates")
+         endif
       endif
 !
 !  evr is the radial unit vector
 !
       if (lpencil(i_evr)) then
-        p%evr(:,1) = p%x_mn
-        p%evr(:,2) = p%y_mn
-        p%evr(:,3) = p%z_mn
-        p%evr = p%evr / spread(p%r_mn+tini,2,3)
+        if (lcartesian_coords) then
+          p%evr(:,1) = p%x_mn
+          p%evr(:,2) = p%y_mn
+          p%evr(:,3) = p%z_mn
+          p%evr = p%evr / spread(p%r_mn+tini,2,3)
+        else
+          call stop_it("position vector not implemented for"//&
+               "non-cartesian coordinates")
+        endif
       endif
-!
-      if (lpencil(i_rcyl_mn)) p%rcyl_mn = sqrt(x(l1:l2)**2+y(m)**2)
-      if (lpencil(i_phi_mn))  p%phi_mn  = atan2(p%y_mn,x(l1:l2))
 !
 !  pomega and 1/pomega
 !
@@ -425,14 +451,14 @@ module Grid
 !
 !  pomega unit vector
 !
-      if (lpencil(i_pomx)) p%pomx= x(l1:l2)*p%rcyl_mn1
-      if (lpencil(i_pomy)) p%pomy= y(m)*p%rcyl_mn1
+      if (lpencil(i_pomx)) p%pomx= p%x_mn*p%rcyl_mn1
+      if (lpencil(i_pomy)) p%pomy= p%y_mn*p%rcyl_mn1
 !
 !  phi unit vector
 !
 !ajwm Are phi[xy] really needed if they are simply [+-]pom[xy]?
-      if (lpencil(i_phix)) p%phix=-y(m)*p%rcyl_mn1
-      if (lpencil(i_phiy)) p%phiy= x(l1:l2)*p%rcyl_mn1
+      if (lpencil(i_phix)) p%phix=-p%y_mn*p%rcyl_mn1
+      if (lpencil(i_phiy)) p%phiy= p%x_mn*p%rcyl_mn1
 !
       if(NO_WARN) print*,f   !(keep compiler quiet)
 !
