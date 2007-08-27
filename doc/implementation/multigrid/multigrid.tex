@@ -46,11 +46,6 @@
   \usepackage{pdfpages}
 \else
   \newcommand{\includepdf}[2][]{%
-%     \fbox{%
-%       \vfill\\%
-%       \centerline{#2}%
-%       \vfill\\%
-%       }%
     \centerline{%
       \fbox{%
         \parbox[c][0.5\textheight]{0.5\textwidth}{%
@@ -61,7 +56,7 @@
       }%
     }%
   }%
-  \fi
+\fi
 
 
 \frenchspacing
@@ -362,8 +357,8 @@ with the linear operator
   coarse grid points leads to faster convergence.
 
 \item[Fully weighted restriction:]
-  \hypertarget{fully-weighted}
   \index{fully weighted restriction}
+  \hypertarget{fully-weighted}
   A popular coarse-graining filter:
   \begin{equation}
     \label{Eq-fully-weighted}
