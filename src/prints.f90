@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.94 2007-08-17 17:08:16 theine Exp $
+! $Id: prints.f90,v 1.95 2007-08-27 20:43:40 brandenb Exp $
 
 module Print
 
@@ -100,11 +100,14 @@ module Print
         if (idiag_dt/=0)  call save_name(dt,idiag_dt)
         if (idiag_it/=0)  call save_name(1.*(it-1),idiag_it)
       endif
-
+!
+!  calculate mean fields
+!
       if (lmagnetic) call calc_mfield
       if (lhydro)    call calc_mflow
       if (lpscalar)  call calc_mpscalar
-
+!--   if (testfield) call calc_mtestfield
+!
       if (lroot) then
 !
 !  whenever itype_name=ilabel_max_dt, scale result by dt (for printing
