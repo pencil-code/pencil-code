@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.450 2007-08-23 12:02:41 ajohan Exp $
+! $Id: magnetic.f90,v 1.451 2007-08-27 19:57:33 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -332,7 +332,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.450 2007-08-23 12:02:41 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.451 2007-08-27 19:57:33 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -896,8 +896,15 @@ module Magnetic
         lpenc_requested(i_j2)=.true.
       endif
 
-      if (borderaa=='Alfven-rz')     lpenc_requested(i_rcyl_mn1)=.true.
-      if (borderaa=='Alfven-zconst') lpenc_requested(i_rcyl_mn1)=.true.
+      if ((borderaa=='Alfven-rz').or.(borderaa=='Alfven-zconst')) then
+        lpenc_requested(i_rcyl_mn) =.true.
+        lpenc_requested(i_rcyl_mn1)=.true.
+        lpenc_requested(i_phix)    =.true.
+        lpenc_requested(i_phiy)    =.true.
+      endif
+
+      if (borderaa=='toroidal') &
+           lpenc_requested(i_rcyl_mn) =.true.
 
       if (lentropy .or. ltemperature .or. ldt) lpenc_requested(i_rho1)=.true.
       if (lentropy .or. ltemperature) lpenc_requested(i_TT1)=.true.
@@ -2037,41 +2044,58 @@ module Magnetic
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
-      real, dimension(nx) :: Aphi
-      real :: kr,kr1
-      integer :: ju,j
+      real :: kr,kr1,Aphi
+      integer :: ju,j,i
 !
       select case(borderaa)
+!
       case('zero','0')
          f_target=0.
+!
       case('toroidal')
-         kr = 2*pi*rmode/(r_ext-r_int)
-         kr1 = 1./kr
-         f_target(:,1) = 0.
-         f_target(:,2) = 0.
-         f_target(:,3) = -amplaa(1)*kr1*sin(kr*(p%rcyl_mn-r_int))
+        kr = 2*pi*rmode/(r_ext-r_int)
+        kr1 = 1./kr
+        do i=1,nx
+          if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
+               ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
+            f_target(i,1) = 0.
+            f_target(i,2) = 0.
+            f_target(i,3) = -amplaa(1)*kr1*sin(kr*(p%rcyl_mn(i)-r_int))
+          endif
+        enddo
+!
       case('Alfven-rz')
          kr = 2*pi*rmode/(r_ext-r_int)
          kr1 = 1./kr
-         Aphi =  amplaa(1)*kr1 * sin(kr*(p%rcyl_mn-r_int)) + &
-              amplaa(1)*kr1**2*p%rcyl_mn1*cos(kr*(p%rcyl_mn-r_int))
+         do i=1,nx
+           if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
+                ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
 !
-         f_target(:,1) = Aphi * (-y(  m  )*p%rcyl_mn1)
-         f_target(:,2) = Aphi * ( x(l1:l2)*p%rcyl_mn1)
-         f_target(:,3) = 0.
+             Aphi =  amplaa(1)*kr1 * sin(kr*(p%rcyl_mn(i)-r_int)) + &
+                  amplaa(1)*kr1**2*p%rcyl_mn1(i)*cos(kr*(p%rcyl_mn(i)-r_int))
+!
+             f_target(:,1) = Aphi * p%phix(i)
+             f_target(:,2) = Aphi * p%phiy(i)
+             f_target(:,3) = 0.
+           endif
+         enddo
+!
       case('Alfven-zconst')
-         !kr = 2*pi*rmode/(r_ext-r_int)
-         !kr1 = 1./kr
-         Aphi = Lxyz(3)/(4*pi)*sqrt(p%rcyl_mn1)
-! amplaa(1)*kr1 * sin(kr*(p%rcyl_mn-r_int)) + &
-!              amplaa(1)*kr1**2*p%rcyl_mn1*cos(kr*(p%rcyl_mn-r_int))
-!                                                                                                                                                 
-         f_target(:,1) = Aphi * (-y(  m  )*p%rcyl_mn1)
-         f_target(:,2) = Aphi * ( x(l1:l2)*p%rcyl_mn1)
-         f_target(:,3) = 0.
+        do i=1,nx
+          if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
+               ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
+!
+            Aphi = Lxyz(3)/(4*pi)*sqrt(p%rcyl_mn1(i))
+            f_target(:,1) = Aphi * p%phix(i)
+            f_target(:,2) = Aphi * p%phiy(i)
+            f_target(:,3) = 0.
+          endif
+        enddo
+!
       case('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_magnetic: borderaa='nothing'"
+!
       case default
          write(unit=errormsg,fmt=*) &
               'set_border_magnetic: No such value for borderaa: ', &

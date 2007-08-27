@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.382 2007-08-22 11:52:58 brandenb Exp $
+! $Id: hydro.f90,v 1.383 2007-08-27 19:57:34 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -308,7 +308,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.382 2007-08-22 11:52:58 brandenb Exp $")
+           "$Id: hydro.f90,v 1.383 2007-08-27 19:57:34 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -805,9 +805,12 @@ module Hydro
         if (lcylinder_in_a_box) lpenc_requested(i_rcyl_mn)=.true.
       endif
 !
-      if (borderuu=='global-shear') then 
-        lpenc_requested(i_rcyl_mn)=.true.
-        lpenc_requested(i_rcyl_mn1)=.true.
+      if ( borderuu=='global-shear'      .or. &
+           borderuu=='global-shear-mhs') then
+        lpenc_requested(i_rcyl_mn)     =.true.
+        lpenc_requested(i_rcyl_mn1)    =.true.
+        lpenc_requested(i_phix)        =.true.
+        lpenc_requested(i_phiy)        =.true.
       endif
 !
 !  1/rho needed for correcting the damping term
@@ -1600,14 +1603,12 @@ use Mpicomm, only: stop_it
               corr=cs20*(ptlaw+plaw)* p%rcyl_mn1(i)**(ptlaw+2)
             endif
             OO=sqrt(max(tmp - corr,0.))
-            f_target(i,1) = -y(   m  )*OO
-            f_target(i,2) =  x(i+l1-1)*OO
-            f_target(i,3) =  0.
-          else
-            f_target(i,1:3)=0.
+            f_target(i,1) = OO*p%phix(i)*p%rcyl_mn(i)
+            f_target(i,2) = OO*p%phiy(i)*p%rcyl_mn(i)
+            f_target(i,3) = 0.
           endif
         enddo
-
+!
       case('global-shear-mhs')
         !get g0
         if (lgrav) then 
@@ -1633,11 +1634,9 @@ use Mpicomm, only: stop_it
             endif
             corrmag=B0**2*qgshear*p%rcyl_mn1(i)**(2+2*qgshear) 
             OO=sqrt(max(tmp-corr-corrmag,0.))
-            f_target(i,1) = -y(   m  )*OO
-            f_target(i,2) =  x(i+l1-1)*OO
-            f_target(i,3) =  0.
-          else
-            f_target(i,1:3)=0.
+            f_target(i,1) = OO*p%phix(i)*p%rcyl_mn(i)
+            f_target(i,2) = OO*p%phiy(i)*p%rcyl_mn(i)
+            f_target(i,3) = 0.
           endif
         enddo
 

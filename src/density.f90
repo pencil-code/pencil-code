@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.345 2007-08-25 17:55:46 brandenb Exp $
+! $Id: density.f90,v 1.346 2007-08-27 19:57:33 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -128,7 +128,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.345 2007-08-25 17:55:46 brandenb Exp $")
+           "$Id: density.f90,v 1.346 2007-08-27 19:57:33 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1080,7 +1080,10 @@ module Density
       if (borderlnrho=='stratification') then 
         lpenc_requested(i_cs2)=.true.
         lpenc_requested(i_r_mn)=.true.
+        lpenc_requested(i_rcyl_mn)=.true.
       endif
+!
+      if (borderlnrho=='power-law') lpenc_requested(i_rcyl_mn)=.true.
 !
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
@@ -1468,6 +1471,7 @@ module Density
         else
           f_target=1.
         endif
+!
       case('constant')
         if (plaw.ne.0) call stop_it("borderlnrho: density is not flat but "//&
              "you are calling constant border")
@@ -1476,36 +1480,45 @@ module Density
         else
           f_target=lnrho_const
         endif
+!
       case('power-law')
         if (plaw.eq.0) call stop_it("borderlnrho: no need to call a power-"//&
              "law border for a flat density profile")
-        if (ldensity_nolog) then
-          call power_law(rho_const,p%rcyl_mn,plaw,f_target)
-!          f_target=rho_const*p%rcyl_mn1**(plaw)
-        else
-          f_target=lnrho_const - plaw*log(p%rcyl_mn)
-        endif
-      case('stratification')
-
         do i=1,nx
           if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
                ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
-            
+!
+            if (ldensity_nolog) then
+              call power_law(rho_const,p%rcyl_mn(i),plaw,f_target(i))
+!             f_target=rho_const*p%rcyl_mn1**(plaw)
+            else
+              f_target(i)=lnrho_const - plaw*log(p%rcyl_mn(i))
+            endif
+!
+          endif
+        enddo
+!
+      case('stratification')
+        do i=1,nx
+          if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
+               ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
+!            
             lnrhomid=log(rho0) - plaw*log(p%rcyl_mn(i))
             call potential(R=p%r_mn(i),POT=tmp1)
             call potential(R=p%rcyl_mn(i),POT=tmp2)
             pot=-gamma*(tmp1-tmp2)/p%cs2(i)
-
+!
             f_target(i)=lnrhomid+pot
-
+!
             if (ldensity_nolog) &
                  f_target(i)=exp(f_target(i))
           endif
         enddo
-
+!
      case('nothing')
         if (lroot.and.ip<=5) &
              print*,"set_border_lnrho: borderlnrho='nothing'"
+!
       case default
         write(unit=errormsg,fmt=*) &
              'set_border_lnrho: No such value for borderlnrho: ', &
@@ -1734,10 +1747,8 @@ module Density
 !  The second call takes care of normalizing it 
 !  i.e., there should be no correction at midplane
 !
-            if (.not.lcartesian_coords) &
-                 call stop_it("fix the potential for cylindrical coords")
-            call potential(x(l1:l2),y(m),z(n),POT=tmp1,RMN=rr_sph)
-            call potential(x(l1:l2),y(m),z(n),POT=tmp2,RMN=rr_cyl)
+            call potential(POT=tmp1,RMN=rr_sph)
+            call potential(POT=tmp2,RMN=rr_cyl)
 !
             pot=-(tmp1-tmp2)/f(l1:l2,m,n,iglobal_cs2)
             if (ltemperature) pot=gamma*pot
@@ -1746,17 +1757,16 @@ module Density
           endif
           f(l1:l2,m,n,ilnrho) = lnrhomid+pot
           tmp1=f(l1:l2,m,n,iglobal_cs2)
-          if (lheader) print*,'correct in here, iglobal_cs2=',iglobal_cs2
         enddo
       enddo
 !
 ! Correct the velocities by this density gradient
 !
-      call correct_density_gradient(f)!,iglobal_cs2)
+      call correct_density_gradient(f)
 !
     endsubroutine local_isothermal_density
 !***********************************************************************
-    subroutine correct_density_gradient(f)!,iglobal_cs2)
+    subroutine correct_density_gradient(f)
 ! 
 ! Correct for density gradient term in the centrifugal force. The
 ! temperature gradient was already corrected for when setting the
@@ -1801,7 +1811,7 @@ module Density
           endif
 !
           tmp2=tmp1 + corr/rr_cyl
-!            
+!
           do i=1,nx
             if (tmp2(i).lt.0.) then
               if (rr_cyl(i) .lt. r_int) then
@@ -1817,7 +1827,6 @@ module Density
                        'cannot have centrifugal equilibrium in the inner ',&
                        'domain. The pressure gradient is too steep at ',&
                        'x,y,z=',x(i+l1-1),y(m),z(n)
-                call stop_it("")
               endif
             endif
           enddo

@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.22 2007-08-27 14:37:52 wlyra Exp $
+! $Id: grid.f90,v 1.23 2007-08-27 19:57:33 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -352,29 +352,32 @@ module Grid
 !
 !  15-nov-06/tony: coded
 !
+      use Cdata,only:lcartesian_coords,lspherical_coords
+!
       logical, dimension(npencils) :: lpencil_in
 !
       if (lpencil_in(i_rcyl_mn1)) lpencil_in(i_rcyl_mn)=.true.
-      if (lpencil_in(i_rr)) then
-        lpencil_in(i_x_mn)=.true.
-        lpencil_in(i_y_mn)=.true.
-        lpencil_in(i_z_mn)=.true.
-      endif
-      if (lpencil_in(i_evr)) then
-        lpencil_in(i_x_mn)=.true.
-        lpencil_in(i_y_mn)=.true.
-        lpencil_in(i_z_mn)=.true.
-        lpencil_in(i_r_mn)=.true.
-      endif
-      if (lpencil_in(i_phi_mn)) then
-        lpencil_in(i_y_mn)=.true.
-      endif
+      if (lpencil_in(i_evr)) lpencil_in(i_r_mn)=.true.
       if (  lpencil_in(i_pomx) &
        .or. lpencil_in(i_pomy) &
        .or. lpencil_in(i_phix) &
        .or. lpencil_in(i_phiy)) then
-        lpencil_in(i_rcyl_mn1)=.true.
+        if (lcartesian_coords) then
+          lpencil_in(i_rcyl_mn1)=.true.
+        endif  
       endif
+      if (lspherical_coords.and.lpencil_in(i_phi_mn)) then
+        lpencil_in(i_x_mn)=.true.
+        lpencil_in(i_y_mn)=.true.
+      endif
+!
+      if (lpencil_in(i_rr).or.lpencil_in(i_evr)) then
+        lpencil_in(i_x_mn)=.true.
+        lpencil_in(i_y_mn)=.true.
+        lpencil_in(i_z_mn)=.true.
+        if (lpencil_in(i_evr)) lpencil_in(i_r_mn)=.true.
+      endif
+
 !
     endsubroutine pencil_interdep_grid
 !***********************************************************************
@@ -396,26 +399,48 @@ module Grid
       intent(inout) :: p
 !
       if (lcartesian_coords) then
-        if (lpencil(i_x_mn))    p%x_mn    = x(l1:l2)
-        if (lpencil(i_y_mn))    p%y_mn    = spread(y(m),1,nx)
-        if (lpencil(i_z_mn))    p%z_mn    = spread(z(n),1,nx)
-        if (lpencil(i_r_mn))    p%r_mn    = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-        if (lpencil(i_rcyl_mn)) p%rcyl_mn = sqrt(x(l1:l2)**2+y(m)**2)
-        if (lpencil(i_phi_mn))  p%phi_mn  = atan2(p%y_mn,x(l1:l2))
+!coordinates vectors
+        if (lpencil(i_x_mn))     p%x_mn    = x(l1:l2)
+        if (lpencil(i_y_mn))     p%y_mn    = spread(y(m),1,nx)
+        if (lpencil(i_z_mn))     p%z_mn    = spread(z(n),1,nx)
+!spherical distance  
+        if (lpencil(i_r_mn))     p%r_mn    = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+!cylindrical distance (pomega)
+        if (lpencil(i_rcyl_mn))  p%rcyl_mn = sqrt(x(l1:l2)**2+y(m)**2)
+!azimuthal angle (phi)
+        if (lpencil(i_phi_mn))   p%phi_mn  = atan2(y(m),x(l1:l2))
+!inverse cylindrical distance 1/pomega
+        if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
+!pomega unit vectors
+        if (lpencil(i_pomx))     p%pomx    = x(l1:l2)*p%rcyl_mn1
+        if (lpencil(i_pomy))     p%pomy    = y(  m  )*p%rcyl_mn1
+!phi unit vectors
+        if (lpencil(i_phix))     p%phix    =-y(  m  )*p%rcyl_mn1
+        if (lpencil(i_phiy))     p%phiy    = x(l1:l2)*p%rcyl_mn1
+!
       elseif (lcylindrical_coords) then
-        if (lpencil(i_x_mn))    p%x_mn    = x(l1:l2)*cos(y(m))
-        if (lpencil(i_y_mn))    p%y_mn    = x(l1:l2)*sin(y(m))
-        if (lpencil(i_z_mn))    p%z_mn    = spread(z(n),1,nx)
-        if (lpencil(i_r_mn))    p%r_mn    = sqrt(x(l1:l2)**2+z(n)**2)
-        if (lpencil(i_rcyl_mn)) p%rcyl_mn = x(l1:l2)
-        if (lpencil(i_phi_mn))  p%phi_mn  = spread(y(m),1,nx)
+        if (lpencil(i_x_mn))     p%x_mn    = x(l1:l2)*cos(y(m))
+        if (lpencil(i_y_mn))     p%y_mn    = x(l1:l2)*sin(y(m))
+        if (lpencil(i_z_mn))     p%z_mn    = spread(z(n),1,nx)
+        if (lpencil(i_r_mn))     p%r_mn    = sqrt(x(l1:l2)**2+z(n)**2)
+        if (lpencil(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)
+        if (lpencil(i_phi_mn))   p%phi_mn  = spread(y(m),1,nx)
+        if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
+        if (lpencil(i_pomx))     p%pomx    = 1.
+        if (lpencil(i_pomy))     p%pomy    = 0.
+        if (lpencil(i_phix))     p%phix    = 0.
+        if (lpencil(i_phiy))     p%phiy    = 1.
       elseif (lspherical_coords) then
-        if (lpencil(i_x_mn))    p%x_mn    = x(l1:l2)*sin(z(n))*cos(y(m))
-        if (lpencil(i_y_mn))    p%y_mn    = x(l1:l2)*sin(z(n))*sin(y(m))
-        if (lpencil(i_z_mn))    p%z_mn    = x(l1:l2)*cos(z(n))
-        if (lpencil(i_r_mn))    p%r_mn    = x(l1:l2)
-        if (lpencil(i_rcyl_mn)) p%rcyl_mn = x(l1:l2)*sin(z(n))
-        if (lpencil(i_phi_mn))  p%phi_mn  = atan2(p%y_mn,p%x_mn)
+        if (lpencil(i_x_mn))     p%x_mn    = x(l1:l2)*sin(z(n))*cos(y(m))
+        if (lpencil(i_y_mn))     p%y_mn    = x(l1:l2)*sin(z(n))*sin(y(m))
+        if (lpencil(i_z_mn))     p%z_mn    = x(l1:l2)*cos(z(n))
+        if (lpencil(i_r_mn))     p%r_mn    = x(l1:l2)
+        if (lpencil(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)*sin(z(n))
+        if (lpencil(i_phi_mn))   p%phi_mn  = atan2(p%y_mn,p%x_mn)
+        if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
+        if (lpencil(i_pomx).or.lpencil(i_pomy).or.&
+            lpencil(i_phix).or.lpencil(i_phiy)) &
+            call stop_it("pomx, pomy, phix and phix not implemented for spherical polars")
       endif
 !
 !  set position vector
@@ -444,21 +469,6 @@ module Grid
                "non-cartesian coordinates")
         endif
       endif
-!
-!  pomega and 1/pomega
-!
-      if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
-!
-!  pomega unit vector
-!
-      if (lpencil(i_pomx)) p%pomx= p%x_mn*p%rcyl_mn1
-      if (lpencil(i_pomy)) p%pomy= p%y_mn*p%rcyl_mn1
-!
-!  phi unit vector
-!
-!ajwm Are phi[xy] really needed if they are simply [+-]pom[xy]?
-      if (lpencil(i_phix)) p%phix=-p%y_mn*p%rcyl_mn1
-      if (lpencil(i_phiy)) p%phiy= p%x_mn*p%rcyl_mn1
 !
       if(NO_WARN) print*,f   !(keep compiler quiet)
 !
