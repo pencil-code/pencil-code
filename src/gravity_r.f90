@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.22 2007-08-27 09:45:53 dobler Exp $
+! $Id: gravity_r.f90,v 1.23 2007-08-27 20:21:59 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -86,7 +86,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.22 2007-08-27 09:45:53 dobler Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.23 2007-08-27 20:21:59 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -419,8 +419,9 @@ module Gravity
 !
 !  16-jul-02/wolf: coded
 !
-      use Cdata, only: mx,my,mz,dx
-      use Sub, only: poly
+      use Cdata,   only: mx,my,mz,dx,coord_system,lcylindrical_gravity
+      use Sub,     only: poly
+      use Mpicomm, only: stop_it 
 
       real, dimension (mx,my,mz) :: xx,yy,zz, pot
       real, optional :: pot0           ! potential at r=0
@@ -428,30 +429,40 @@ module Gravity
       real, dimension (mx,my,mz) :: rr
       integer :: j
 !
+      if (lcylindrical_gravity) &
+           call stop_it("gravity_r: potential global not implemented "//&
+           "for cylindrical gravity approximation")
+!
 !  remove this if you are sure rr is already calculated elsewhere
 !
-      rr=sqrt(xx**2+yy**2+zz**2)
-
+      if     (coord_system=='cartesian') then
+        rr=sqrt(xx**2+yy**2+zz**2)
+      elseif (coord_system=='cylindric') then
+        rr=sqrt(xx**2+zz**2)
+      elseif (coord_system=='spherical') then
+        rr=xx
+      endif
+!
       pot=0.
       if (present(pot0)) pot0=0.
       do j=1,ninit
-      select case (ipotential(j))
-
-      case ('geo-kws','smoothed-newton')
-        pot = pot -g0*(rr**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
-        if (present(pot0)) pot0=pot0-g0/r0_pot
-
-      case ('no-smooth')
-        pot = pot -g0/rr
-
-      case default
-        pot = pot - poly((/cpot(1,j), 0., cpot(2,j), cpot(3,j)/), rr) &
-              / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rr)
-        if (present(pot0)) pot0 = pot0-cpot(1,j)
-
-      endselect
+        select case (ipotential(j))
+!
+        case ('geo-kws','smoothed-newton')
+          pot = pot -g0*(rr**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+          if (present(pot0)) pot0=pot0-g0/r0_pot
+!
+        case ('no-smooth')
+          pot = pot -g0/rr
+!
+        case default
+          pot = pot - poly((/cpot(1,j), 0., cpot(2,j), cpot(3,j)/), rr) &
+               / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rr)
+          if (present(pot0)) pot0 = pot0-cpot(1,j)
+!
+        endselect
       enddo
-
+!
     endsubroutine potential_global
 !***********************************************************************
     subroutine potential_penc(xmn,ymn,zmn,pot,pot0,grav,rmn)
@@ -460,8 +471,8 @@ module Gravity
 !
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: nx,dx
-      use Sub, only: poly
+      use Cdata,   only: nx,dx,lcartesian_coords
+      use Sub,     only: poly
       use Mpicomm, only: stop_it
 
       real, dimension (nx) :: rad, pot
@@ -474,35 +485,41 @@ module Gravity
         rad = rmn
       else
         if (present(xmn) .and. present(ymn) .and. present(zmn)) then
+!
+          if (.not.lcartesian_coords) &
+               call stop_it("gravity_r: potential_penc with xmn,ymn,zmn is "//&
+               "not yet implemented for non-cartesiand coordinates. Fix the call "//&
+               "to  use radial distance instead")
+!
           rad = sqrt(xmn**2+ymn**2+zmn**2)
         else
           call stop_it("POTENTIAL_PENC: Need to specify either x,y,z or r.")
         endif
       endif
-      
+!      
       pot=0.
       if (present(pot0)) pot0=0.
       do j=1,ninit
-      select case (ipotential(j))
-
-      case ('geo-kws','smoothed-newton')
-        pot=pot-g0*(rmn**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
-        if (present(pot0)) pot0=pot0-g0/r0_pot
-
-      case ('no-smooth')
-        pot=pot-g0/rmn
-
-      case default
-        pot = pot - poly((/cpot(1,j), 0., cpot(2,j), cpot(3,j)/), rad) &
-             / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rad)
-        if (present(pot0)) pot0=pot0-cpot(1,j)
-
-      endselect
+        select case (ipotential(j))
+!
+        case ('geo-kws','smoothed-newton')
+          pot=pot-g0*(rmn**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+          if (present(pot0)) pot0=pot0-g0/r0_pot
+!
+        case ('no-smooth')
+          pot=pot-g0/rmn
+!
+        case default
+          pot = pot - poly((/cpot(1,j), 0., cpot(2,j), cpot(3,j)/), rad) &
+               / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rad)
+          if (present(pot0)) pot0=pot0-cpot(1,j)
+!
+        endselect
       enddo
-
+!
       if (present(grav)) call stop_it("POTENTIAL_PENC: Argument grav"//&
                                       "not implemented")
-
+!
     endsubroutine potential_penc
 !***********************************************************************
     subroutine potential_point(x,y,z,r, pot,pot0, grav)
@@ -511,8 +528,8 @@ module Gravity
 !
 !  20-dec-03/wolf: coded
 !
-      use Cdata, only: dx
-      use Sub, only: poly
+      use Cdata,   only: dx,lcartesian_coords
+      use Sub,     only: poly
       use Mpicomm, only: stop_it
 
       real :: pot,rad
@@ -524,37 +541,41 @@ module Gravity
         rad = r
       else
         if (present(x) .and. present(y) .and. present(z)) then
+!
+          if (.not.lcartesian_coords) &
+               call stop_it("gravity_r: potential_point with x,y,z is "//&
+               "not yet implemented for non-cartesiand coordinates. Fix the call "//&
+               "to  use radial distance instead")
+!          
           rad = sqrt(x**2+y**2+z**2)
         else
           call stop_it("Need to specify either x,y,z or r in potential_point()")
         endif
       endif
-
+!
       pot=0.
       if (present(pot0)) pot0=0.
       do j=1,ninit
-      select case (ipotential(j))
-
-      case ('geo-kws','smoothed-newton')
-        pot=pot-g0*(rad**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
-        if (present(pot0)) pot0=pot0-g0/r0_pot
-
-      case ('no-smooth')
-        pot=pot-g0/r
-
-      case default
-        pot = pot- poly((/cpot(1,j), 0., cpot(2,j), cpot(3,j)/), rad) &
-             / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rad)
-        if (present(pot0)) pot0=pot0-cpot(1,j)
-
-      endselect
+        select case (ipotential(j))
+!
+        case ('geo-kws','smoothed-newton')
+          pot=pot-g0*(rad**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+          if (present(pot0)) pot0=pot0-g0/r0_pot
+!
+        case ('no-smooth')
+          pot=pot-g0/r
+!
+        case default
+          pot = pot- poly((/cpot(1,j), 0., cpot(2,j), cpot(3,j)/), rad) &
+               / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rad)
+          if (present(pot0)) pot0=pot0-cpot(1,j)
+!
+        endselect
       enddo
-
+!
       if (present(grav)) call stop_it("POTENTIAL_PENC: Argument grav"//&
                                       "not implemented")
-
-      
-
+!
     endsubroutine potential_point
 !***********************************************************************
     subroutine acceleration_penc(gg)
@@ -587,7 +608,7 @@ module Gravity
       use Cdata,  only: nx,r_ref,lcylindrical_gravity,lroot
       use Mpicomm,only: stop_it
       use Sub,    only: get_radial_distance
-     
+!     
       real, dimension (nx) :: g_r,rr_mn,rr_sph,rr_cyl
       integer :: j
 !
@@ -627,9 +648,9 @@ module Gravity
 !              
         endselect
       enddo
-
+!
       if (NO_WARN) print *,g_r
-
+!
     endsubroutine acceleration_penc_1D
 !***********************************************************************
     subroutine get_gravity_field(gr,gg_mn,rr_mn)
@@ -681,7 +702,6 @@ module Gravity
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !  idl needs this even if everything is zero
