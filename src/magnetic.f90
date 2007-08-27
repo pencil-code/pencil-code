@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.451 2007-08-27 19:57:33 wlyra Exp $
+! $Id: magnetic.f90,v 1.452 2007-08-27 21:25:43 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -332,7 +332,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.451 2007-08-27 19:57:33 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.452 2007-08-27 21:25:43 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2053,6 +2053,8 @@ module Magnetic
          f_target=0.
 !
       case('toroidal')
+        if (initaa=='uniform-Bphi') call stop_it("borderaa: this border profile "//&
+             "is to be used with alfven_rphi (sinusoidal azimuthal wave) only")
         kr = 2*pi*rmode/(r_ext-r_int)
         kr1 = 1./kr
         do i=1,nx
@@ -2081,11 +2083,18 @@ module Magnetic
          enddo
 !
       case('Alfven-zconst')
+        B0=Lxyz(3)/(2*zmode*pi)
         do i=1,nx
           if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
                ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
+!            
+            if ((qgshear.eq.1.5).and.(rsmooth.eq.0.)) then
+              !default unsmoothed keplerian
+              Aphi=2*B0*sqrt(p%rcyl_mn1(i))
+            else
+              Aphi=B0/(p%rrcyl(i)*(2-qgshear))*(p%rrcyl(i)**2+r0_pot**2)**(1-qgshear/2.)
+            endif
 !
-            Aphi = Lxyz(3)/(4*pi)*sqrt(p%rcyl_mn1(i))
             f_target(:,1) = Aphi * p%phix(i)
             f_target(:,2) = Aphi * p%phiy(i)
             f_target(:,3) = 0.
