@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.21 2007-08-26 20:12:03 dobler Exp $
+! $Id: gravity_r.f90,v 1.22 2007-08-27 09:45:53 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -86,7 +86,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.21 2007-08-26 20:12:03 dobler Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.22 2007-08-27 09:45:53 dobler Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -135,9 +135,12 @@ module Gravity
 !
         else
 !
-!  initialize gg, so we can later retrieve gravity via get_global
+!  Initialize gg, so we can later retrieve gravity via get_global.
+!  Ensure the reserved array slots are initialized to zero, so we can add
+!  ninit different gravity fields. 
 !
           call farray_register_global('gg',iglobal_gg,vector=3)
+          f(l1:l2,m1:m2,n1:n2,iglobal_gg:iglobal_gg+2) = 0.
 !
           do j=1,ninit
 !
@@ -271,10 +274,10 @@ module Gravity
                          *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
                   endif
                 endif
-          !
-                call get_gravity_field(g_r,gg_mn,rr_mn)
 !
-                f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) = gg_mn
+                call get_gravity_field(g_r,gg_mn,rr_mn)
+                f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) = & 
+                    f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) + gg_mn
 !
               enddo
             enddo
