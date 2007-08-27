@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.211 2007-08-24 17:56:40 dobler Exp $
+# $Id: getconf.csh,v 1.212 2007-08-27 16:47:21 pkapyla Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -471,6 +471,11 @@ else if ($hn =~ compute-*.local) then
 
 else if ($hn =~ louhi-login*) then
   echo "Louhi - CSC, Espoo, Finland"
+  if ( $?PBS_JOBID ) then 
+    echo "Running job: $PBS_JOBID"
+    touch $PBS_O_WORKDIR/data/jobid.dat
+    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
+  endif
   set mpirunops = ''
   set mpirun = 'yod'
   set npops = "-sz $ncpus"
@@ -1089,6 +1094,9 @@ if ($mpi) then
     set x_ops = "$mpirunops -procs $ncpus"
     set mpirunops = ""
     set npops = ""
+  else if ("$mpirun" =~ *yod*) then
+    set mpirun = 'yod'
+    set npops = "-sz $ncpus"
   else if ("$mpirun" =~ *nuripm*) then
     set mpirun = 'mpirun'
     set npops = ""
