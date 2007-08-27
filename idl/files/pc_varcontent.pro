@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.44 2007-08-23 21:22:45 wlyra Exp $
+;  $Id: pc_varcontent.pro,v 1.45 2007-08-27 20:50:10 brandenb Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar,run2D=run2D
 COMPILE_OPT IDL2,HIDDEN
@@ -7,7 +7,6 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 default,iecr,0
 default,ifcr,0
-default,igg,0
 
 ishock=0
 ishock_perp=0
@@ -359,6 +358,7 @@ if (dustcount gt 0L) then begin
   endelse
 endif
 
+default,igg,0
 varcontent[igg].variable = 'Gravitational acceleration (gg)'
 varcontent[igg].idlvar   = 'gg'
 varcontent[igg].idlinit    = INIT_3VECTOR
@@ -366,8 +366,8 @@ varcontent[igg].idlvarloc= 'gg_loc'
 varcontent[igg].idlinitloc = INIT_3VECTOR_LOC
 varcontent[igg].skip     = 2
 
-
 ; Special condition as can be maux or mvar variable
+default,ilnTT,0
 if ((ilnTT le dim.mvar) or (param.lwrite_aux ne 0)) then begin
     varcontent[ilnTT].variable   = 'Log temperature (lnTT)'
     varcontent[ilnTT].idlvar     = 'lnTT'
