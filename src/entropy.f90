@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.512 2007-08-25 10:55:58 brandenb Exp $
+! $Id: entropy.f90,v 1.513 2007-08-27 09:13:46 bingert Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -207,7 +207,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.512 2007-08-25 10:55:58 brandenb Exp $")
+           "$Id: entropy.f90,v 1.513 2007-08-27 09:13:46 bingert Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1883,7 +1883,6 @@ module Entropy
 !  specific entropy, i.e. it is not divided by cp.
 !  NOTE: in the entropy module is it lnTT that is advanced, so
 !  there are additional cv1 terms on the right hand side.
-!  If pretend_lnTT=.true., we pretend that ss is actually lnTT
 !
       if (ladvection_entropy) then
          if (pretend_lnTT) then
