@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.176 2007-08-26 20:38:23 dobler Exp $
+! $Id: boundcond.f90,v 1.177 2007-08-28 16:38:48 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -2969,7 +2969,7 @@ module Boundcond
 !  Default.
 !
       case default
-        print*, "bc_outflow_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_outflow_x: ", topbot, " should be `top' or `bot'"
 !
       endselect
 !
