@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.328 2007-08-19 23:20:36 wlyra Exp $
+! $Id: sub.f90,v 1.329 2007-08-28 20:16:39 dintrans Exp $
 
 module Sub
 
@@ -3002,7 +3002,12 @@ module Sub
         call der6(f,k,del6f,1,UPWIND=.true.)
         ugradf = ugradf - abs(uu(:,1))*del6f
         call der6(f,k,del6f,2,UPWIND=.true.)
-        ugradf = ugradf - abs(uu(:,2))*del6f
+! 28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
+        if (lcylindrical_coords) then
+          ugradf = ugradf - rcyl_mn1*abs(uu(:,2))*del6f
+        else
+          ugradf = ugradf - abs(uu(:,2))*del6f
+        endif
         call der6(f,k,del6f,3,UPWIND=.true.)
         ugradf = ugradf - abs(uu(:,3))*del6f
       endif; endif
