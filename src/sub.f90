@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.329 2007-08-28 20:16:39 dintrans Exp $
+! $Id: sub.f90,v 1.330 2007-08-28 23:58:54 wlyra Exp $
 
 module Sub
 
@@ -5809,9 +5809,9 @@ nameloop: do
 ! 24-feb-05/wlad: coded
 !  4-jul-07/wlad: generalized for any power law case
 !
-      use Cdata, only: nx,rsmooth
+      use Cdata, only: rsmooth
 
-      real, dimension(nx) :: dist,output
+      real, dimension(:) :: dist,output
       real :: const,plaw_
 !
       intent(in)  :: const,dist,plaw_
@@ -5848,51 +5848,72 @@ nameloop: do
 !
     endsubroutine power_law_pt
 !***********************************************************************
-    subroutine get_radial_distance(rrmn,rcylmn,x00,y00,z00)
+    subroutine get_radial_distance(rrmn,rcylmn,e1_,e2_,e3_)
 !
 !  Calculate distance and its cylindrical projection for different
-!  coordinate systems
+!  coordinate systems. 
 !
+!  e1, e2, and e3 are the positions in the respective coordinate systems
 !
 !  15-mar-07/wlad : coded
 !
-      use Cdata,only: coord_system,x,y,z,tini,l1,l2,m,n,nx
+      use Cdata,only: coord_system,x,y,z,tini,l1,l2,m,n,nx,mx
+      use Mpicomm,only: stop_it 
 !
-      real, dimension(nx),intent(out) :: rrmn,rcylmn
-      real, intent(in), optional :: x00,y00,z00
-      real :: x0,y0,z0
+      real, dimension(:),intent(out) :: rrmn,rcylmn
+      real, dimension(size(rrmn,1)) :: xc
+      real, intent(in), optional :: e1_,e2_,e3_
+      real :: e1,e2,e3
       integer :: tmp
       logical :: lorigin
 !
+!  Check if we are dealing with distance from the origin
+!
       tmp=0 ; lorigin=.false.
-      if (present(x00)) then;x0=x00;tmp=tmp+1;else;x0=0.;endif
-      if (present(y00)) then;y0=y00;tmp=tmp+1;else;y0=0.;endif
-      if (present(z00)) then;z0=z00;tmp=tmp+1;else;z0=0.;endif
+      if (present(e1_)) then;e1=e1_;tmp=tmp+1;else;e1=0.;endif
+      if (present(e2_)) then;e2=e2_;tmp=tmp+1;else;e2=0.;endif
+      if (present(e3_)) then;e3=e3_;tmp=tmp+1;else;e3=0.;endif
       if (tmp==0) lorigin=.true.
+!
+!  Check if this array has size nx or mx
+!
+      select case (size(rrmn))
+      case (mx)
+        xc=x
+      case (nx)
+        xc=x(l1:l2)
+      case default
+        print*,'get_radial_distance: '//&
+             'the array has dimension=',size(rrmn),' is that correct?'
+        call stop_it('')
+      endselect
+!
+!  Calculate the coordinate-free distance relative to the
+!  position (e1,e2,e3)
 !
       if (lorigin) then
         if (coord_system=='cartesian') then
-          rcylmn=sqrt(x(l1:l2)**2+y(m)**2)         +tini
+          rcylmn=sqrt(xc**2+y(m)**2)         +tini
           rrmn  =sqrt(  rcylmn**2+         z(n)**2)
         elseif (coord_system=='cylindric') then
-          rcylmn=     x(l1:l2)            +tini
+          rcylmn=     xc            +tini
           rrmn  =sqrt(  rcylmn**2+z(n)**2)+tini
         elseif(coord_system=='spherical') then
-          rcylmn=     x(l1:l2)*sin(y(m))
-          rrmn  =     x(l1:l2)
+          rcylmn=     xc*sin(y(m))
+          rrmn  =     xc
         endif
       else
         if (coord_system=='cartesian') then
-          rcylmn=sqrt((x(l1:l2)-x0)**2+(y(m)-y0)**2)+tini
-          rrmn  =sqrt(       rcylmn**2+(z(n)-z0)**2)+tini 
+          rcylmn=sqrt((xc-e1)**2+(y(m)-e2)**2)+tini
+          rrmn  =sqrt(       rcylmn**2+(z(n)-e3)**2)+tini 
         elseif (coord_system=='cylindric') then
-          rcylmn=x(l1:l2)**2+x0**2 - 2*x(l1:l2)*x0*cos(y(m)-y0)+tini
-          rrmn  =sqrt(rcylmn**2+(z(n)-z0)**2)
+          rcylmn=xc**2+e1**2 - 2*xc*e1*cos(y(m)-e2)+tini
+          rrmn  =sqrt(rcylmn**2+(z(n)-e3)**2)
         elseif(coord_system=='spherical') then
-          rcylmn=(x(l1:l2)*sin(y(m)))**2 + (x0*sin(y0))**2 - &
-               2*x(l1:l2)*x0*cos(y(m))*cos(y0)
-          rrmn  =x(l1:l2)**2 + x0**2 - 2*x(l1:l2)*x0*&
-               (cos(y(m))*cos(y0)+sin(y(m))*sin(y0)*cos(z(n)-z0))
+          rcylmn=(xc*sin(y(m)))**2 + (e1*sin(e2))**2 - &
+               2*xc*e1*cos(y(m))*cos(e2)
+          rrmn  =xc**2 + e1**2 - 2*xc*e1*&
+               (cos(y(m))*cos(e2)+sin(y(m))*sin(e2)*cos(z(n)-e3))
         endif
       endif
 !
