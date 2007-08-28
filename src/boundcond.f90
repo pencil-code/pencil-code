@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.177 2007-08-28 16:38:48 dhruba Exp $
+! $Id: boundcond.f90,v 1.178 2007-08-28 17:07:16 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -215,7 +215,7 @@ module Boundcond
                   !BCX_DOC: at a radial boundary set : $A_{\theta} = 0$ and 
                   !BCX_DOC: $A_{phi} = 0$, and demand $div A = 0$ gives the 
                   !BCX_DOC: condition on $A_r$ to be  $d/dr( A_r) + 2/r = 0$ . 
-                  !BCX_DOC: This subroutine sets this condition of  $j$ the 
+                  !BCX_DOC: This subroutine sets this condition on  $j$-th 
                   !BCX_DOC: component of f. As this is related to setting the
                   !BCX_DOC: perfect conducting boundary condition we call 
                   !BCX_DOC: this "pfc".  
