@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.347 2007-08-28 01:08:12 wlyra Exp $
+! $Id: density.f90,v 1.348 2007-08-28 23:59:42 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -129,7 +129,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.347 2007-08-28 01:08:12 wlyra Exp $")
+           "$Id: density.f90,v 1.348 2007-08-28 23:59:42 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1726,8 +1726,8 @@ module Density
       use Sub,     only:get_radial_distance
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx)   :: pot,tmp1,tmp2
-      real, dimension (nx)   :: rr_sph,rr,rr_cyl,lnrhomid
+      real, dimension (mx)   :: pot,tmp1,tmp2
+      real, dimension (mx)   :: rr_sph,rr,rr_cyl,lnrhomid!,cs2
       real                   :: ptlaw
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: i
@@ -1742,9 +1742,9 @@ module Density
       if (lspherical_coords) call stop_it("local_isothermal_density: "//&
            "not implemented for spherical polar coordinates")
 !
-      do n=n1,n2
-        do m=m1,m2
-          lheader=lroot.and.(m==m1).and.(n==n1)
+      do n=1,mz
+        do m=1,my
+          lheader=lroot.and.(m==1).and.(n==1)
           call get_radial_distance(rr_sph,rr_cyl)
           lnrhomid=log(rho0)-.5*plaw*log(rr_cyl**2+rsmooth**2)
           if (.not.lcylindrical_gravity) then 
@@ -1760,13 +1760,12 @@ module Density
             call potential(POT=tmp1,RMN=rr_sph)
             call potential(POT=tmp2,RMN=rr_cyl)
 !
-            pot=-(tmp1-tmp2)/f(l1:l2,m,n,iglobal_cs2)
+            pot=-(tmp1-tmp2)/f(:,m,n,iglobal_cs2)
             if (ltemperature) pot=gamma*pot
           else 
             pot=0.
           endif
-          f(l1:l2,m,n,ilnrho) = lnrhomid+pot
-          tmp1=f(l1:l2,m,n,iglobal_cs2)
+          f(:,m,n,ilnrho) = lnrhomid+pot
         enddo
       enddo
 !
@@ -1803,8 +1802,8 @@ module Density
       do m=m1,m2
         do n=n1,n2
 !
-          call grad(f,ilnrho,glnrho)
           call get_radial_distance(rr_sph,rr_cyl)
+          call grad(f,ilnrho,glnrho)
           !!gs= gx*cos + gy*sin
           if (lcartesian_coords) then
             gslnrho=(glnrho(:,1)*x(l1:l2) + glnrho(:,2)*y(m))/rr_cyl
@@ -1833,7 +1832,7 @@ module Density
                      'have centrifugal equilibrium in the inner '//&
                      'domain. The pressure gradient is too steep.')
               else
-                print*,'correct_pressure_gradient: ',&
+                print*,'correct_density_gradient: ',&
                        'cannot have centrifugal equilibrium in the inner ',&
                        'domain. The pressure gradient is too steep at ',&
                        'x,y,z=',x(i+l1-1),y(m),z(n)

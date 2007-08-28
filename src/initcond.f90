@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.217 2007-08-28 01:08:12 wlyra Exp $
+! $Id: initcond.f90,v 1.218 2007-08-28 23:59:42 wlyra Exp $
 
 module Initcond
 
@@ -2838,7 +2838,7 @@ module Initcond
       use Cdata
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: rr,rr_cyl,rr_sph,OO,g_r
+      real, dimension(mx) :: rr_cyl,rr_sph,OO,g_r
       real :: g0_
 !
       if (lroot) &
@@ -2855,8 +2855,8 @@ module Initcond
              call stop_it("don't you dare using less smoothing than n_pot=2")
       endif
 !
-      do m=m1,m2
-        do n=n1,n2
+      do m=1,my
+        do n=1,mz
 !
           call get_radial_distance(rr_sph,rr_cyl)
 !
@@ -2865,17 +2865,17 @@ module Initcond
             call power_law(sqrt(g0_),rr_cyl,qgshear,OO)
           elseif (lgravr) then
             call acceleration(g_r)
-            OO=sqrt(-g_r/rr_cyl)
+            OO=sqrt(abs(g_r)/rr_cyl)
           endif
 !
           if (lcartesian_coords) then
-            f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*OO
-            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*OO
-            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
+            f(:,m,n,iux) = f(:,m,n,iux) - y(m)*OO
+            f(:,m,n,iuy) = f(:,m,n,iuy) + x   *OO
+            f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
           elseif (lcylindrical_coords) then
-            f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
-            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + OO*rr_cyl
-            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
+            f(:,m,n,iux) = f(:,m,n,iux) + 0.
+            f(:,m,n,iuy) = f(:,m,n,iuy) + OO*rr_cyl
+            f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
           endif
 !
         enddo
@@ -2946,7 +2946,8 @@ module Initcond
       use Messages       , only: warning
 
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: rr_sph,rr_cyl,cs2,tmp1,tmp2,gslnTT,corr
+      real, dimension(mx) :: rr_sph,rr_cyl,cs2
+      real, dimension(mx) :: tmp1,tmp2,gslnTT,corr
       real :: cp1,ptlaw
       integer, pointer :: iglobal_cs2,iglobal_glnTT
       integer :: i
@@ -2975,27 +2976,27 @@ module Initcond
 !
       call get_cp1(cp1)
 !
-      do m=m1,m2
-        do n=n1,n2
+      do m=1,my
+        do n=1,mz
           call get_radial_distance(rr_sph,rr_cyl)
           call power_law(cs20,rr_cyl,ptlaw,cs2)
           if (llocal_iso) then
-            f(l1:l2,m,n,iglobal_cs2)= cs2
+            f(:,m,n,iglobal_cs2)= cs2
             gslnTT=-ptlaw/(rr_cyl**2+rsmooth**2)*rr_cyl
             if (lcartesian_coords) then
-              f(l1:l2,m,n,iglobal_glnTT  )=gslnTT*x(l1:l2)/rr_cyl
-              f(l1:l2,m,n,iglobal_glnTT+1)=gslnTT*y(  m  )/rr_cyl
-              f(l1:l2,m,n,iglobal_glnTT+2)=0.
+              f(:,m,n,iglobal_glnTT  )=gslnTT*x   /rr_cyl
+              f(:,m,n,iglobal_glnTT+1)=gslnTT*y(m)/rr_cyl
+              f(:,m,n,iglobal_glnTT+2)=0.
             elseif (lcylindrical_coords) then
-              f(l1:l2,m,n,iglobal_glnTT  )=gslnTT
-              f(l1:l2,m,n,iglobal_glnTT+1)=0.
-              f(l1:l2,m,n,iglobal_glnTT+2)=0.
+              f(:,m,n,iglobal_glnTT  )=gslnTT
+              f(:,m,n,iglobal_glnTT+1)=0.
+              f(:,m,n,iglobal_glnTT+2)=0.
             endif
 !
 !  else do it as temperature
 !
           elseif (ltemperature) then
-            f(l1:l2,m,n,ilnTT)=log(cs2*cp1/gamma1)
+            f(:,m,n,ilnTT)=log(cs2*cp1/gamma1)
             !gslnTT=??
           else
             print*,"No thermodynamical variable. Choose if you want a "
@@ -3011,31 +3012,32 @@ module Initcond
           corr=gslnTT*cs2
           if (ltemperature) corr=corr/gamma
           if (lcartesian_coords) then
-            tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
+            tmp1=(f(:,m,n,iux)**2+f(:,m,n,iuy)**2)/rr_cyl**2
           elseif (lcylindrical_coords) then
-            tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
+            tmp1=(f(:,m,n,iuy)/rr_cyl)**2
           endif
           tmp2=tmp1 + corr/rr_cyl
-          do i=1,nx
+!
+          do i=1,mx
             if (tmp2(i).lt.0.) then
               if (rr_cyl(i) .lt. r_int) then
-                !it's inside the frozen zone, so                                                  
-                !just set tmp2 to zero and emit a warning                                         
+                !it's inside the frozen zone, so
+                !just set tmp2 to zero and emit a warning
                 tmp2(i)=0.
                 if (ip<=10) call warning('set_thermodynamical_quantities',&
                      'the disk is too hot inside the frozen zone')
               else
                 print*,'set_thermodynamical_quantities '
-                print*,'the disk is too hot at x,y,z=',x(i+l1-1),y(m),z(n)
+                print*,'the disk is too hot at x,y,z=',x(i),y(m),z(n)
                 call stop_it("")
               endif
             endif
           enddo
           if (lcartesian_coords) then
-            f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
-            f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
+            f(:,m,n,iux)=-sqrt(tmp2)*y(m)
+            f(:,m,n,iuy)= sqrt(tmp2)*x
           elseif (lcylindrical_coords) then
-            f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
+            f(:,m,n,iuy)= sqrt(tmp2)*rr_cyl
           endif
         enddo
       enddo

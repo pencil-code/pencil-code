@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.40 2007-08-19 23:20:36 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.41 2007-08-28 23:59:42 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -66,7 +66,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.40 2007-08-19 23:20:36 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.41 2007-08-28 23:59:42 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -384,7 +384,7 @@ module Particles_nbody
 ! Spherical and cylindrical distances
 !
            call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
-                X00=fsp(ks,ixp),Y00=fsp(ks,iyp),Z00=fsp(ks,izp))
+                E1_=fsp(ks,ixp),E2_=fsp(ks,iyp),E3_=fsp(ks,izp))
 !
 ! Check which particle has cylindrical gravity switched on
 !
