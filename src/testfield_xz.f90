@@ -1,4 +1,4 @@
-! $Id: testfield_xz.f90,v 1.2 2007-08-26 14:43:06 brandenb Exp $
+! $Id: testfield_xz.f90,v 1.3 2007-08-28 19:25:28 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -45,8 +45,18 @@ module Testfield
        lset_bbtest2,etatest,itestfield,ktestfield
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_E111z=0,idiag_E211z=0,idiag_E311z=0
-  integer :: idiag_E121z=0,idiag_E221z=0,idiag_E321z=0
+  integer :: idiag_E111z=0      ! DIAG_DOC: ${\cal E}_1^{11}$
+  integer :: idiag_E211z=0      ! DIAG_DOC: ${\cal E}_2^{11}$
+  integer :: idiag_E311z=0      ! DIAG_DOC: ${\cal E}_3^{11}$
+  integer :: idiag_E121z=0      ! DIAG_DOC: ${\cal E}_1^{21}$
+  integer :: idiag_E221z=0      ! DIAG_DOC: ${\cal E}_2^{21}$
+  integer :: idiag_E321z=0      ! DIAG_DOC: ${\cal E}_3^{21}$
+  integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
+  integer :: idiag_alp21=0      ! DIAG_DOC: $\alpha_{21}$
+  integer :: idiag_eta11=0      ! DIAG_DOC: $\eta_{113}k$
+  integer :: idiag_eta21=0      ! DIAG_DOC: $\eta_{213}k$
+  integer :: idiag_b11rms=0     ! DIAG_DOC: $\left<b_{11}^2\right>$
+  integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>$
 
   real, dimension (mz,3,ntestfield/3) :: uxbtestm
 
@@ -88,7 +98,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_xz.f90,v 1.2 2007-08-26 14:43:06 brandenb Exp $")
+           "$Id: testfield_xz.f90,v 1.3 2007-08-28 19:25:28 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -253,8 +263,13 @@ module Testfield
       type (pencil_case) :: p
 
       real, dimension (nx,3) :: bb,aa,uxB,bbtest,btest,uxbtest,duxbtest
+      real, dimension (nx,3,njtest) :: Eipq,bpq
       real, dimension (nx,3) :: del2Atest
+      real, dimension (nx) :: bpq2
+      real, dimension(mz), save :: cz,sz
       integer :: jtest,jfnamez,j
+      logical,save :: first=.true.
+
 !
       intent(in)     :: f,p
       intent(inout)  :: df
@@ -312,23 +327,47 @@ module Testfield
           call curl(f,iaxtest,btest)
           call cross_mn(p%uu,btest,uxbtest)
         endif
+        bpq(:,:,jtest)=btest
+        Eipq(:,:,jtest)=uxbtest
+      enddo
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9
 !
-        if (ldiagnos) then  
-          select case(jtest)
-          case(1)
-            if (idiag_E111z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_E111z)
-            if (idiag_E211z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_E211z)
-            if (idiag_E311z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_E311z)
-          case(2)
-            if (idiag_E121z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_E121z)
-            if (idiag_E221z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_E221z)
-            if (idiag_E321z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_E321z)
-          end select
+      if (ldiagnos) then  
+        if (first) then
+          cz=cos(z)
+          sz=sin(z)
+        endif
+        first=.false.
+!
+        if (idiag_E111z/=0) call xysum_mn_name_z(Eipq(:,1,1),idiag_E111z)
+        if (idiag_E211z/=0) call xysum_mn_name_z(Eipq(:,2,1),idiag_E211z)
+        if (idiag_E311z/=0) call xysum_mn_name_z(Eipq(:,3,1),idiag_E311z)
+        if (idiag_E121z/=0) call xysum_mn_name_z(Eipq(:,1,2),idiag_E121z)
+        if (idiag_E221z/=0) call xysum_mn_name_z(Eipq(:,2,2),idiag_E221z)
+        if (idiag_E321z/=0) call xysum_mn_name_z(Eipq(:,3,2),idiag_E321z)
+!
+!  alpha and eta
+!
+        if (idiag_alp11/=0) call sum_mn_name(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2),idiag_alp11)
+        if (idiag_alp21/=0) call sum_mn_name(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2),idiag_alp21)
+        if (idiag_eta11/=0) call sum_mn_name(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2),idiag_eta11)
+        if (idiag_eta21/=0) call sum_mn_name(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2),idiag_eta21)
+!
+!  rms values of small scales fields bpq in response to the test fields Bpq
+!
+        if (idiag_b11rms/=0) then
+          call dot2(bpq(:,:,1),bpq2)
+          call sum_mn_name(bpq2,idiag_b11rms,lsqrt=.true.)
         endif
 !
-      enddo
+        if (idiag_b21rms/=0) then
+          call dot2(bpq(:,:,2),bpq2)
+          call sum_mn_name(bpq2,idiag_b21rms,lsqrt=.true.)
+        endif
+!
+      endif
+!
 !
     endsubroutine daatest_dt
 !***********************************************************************
@@ -424,8 +463,8 @@ module Testfield
 !  set bbtest for each of the 9 cases
 !
       select case(jtest)
-      case(1); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(2); bbtest(:,1)=cz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(1); bbtest(:,1)=cz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(2); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
       case default; bbtest(:,:)=0.
       endselect
 !
@@ -453,7 +492,21 @@ module Testfield
       if (lreset) then
         idiag_E111z=0; idiag_E211z=0; idiag_E311z=0
         idiag_E121z=0; idiag_E221z=0; idiag_E321z=0
+        idiag_alp11=0; idiag_alp21=0
+        idiag_eta11=0; idiag_eta21=0
+        idiag_b11rms=0; idiag_b21rms=0
       endif
+!
+!  check for those quantities that we want to evaluate online
+! 
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'alp11',idiag_alp11)
+        call parse_name(iname,cname(iname),cform(iname),'alp21',idiag_alp21)
+        call parse_name(iname,cname(iname),cform(iname),'eta11',idiag_eta11)
+        call parse_name(iname,cname(iname),cform(iname),'eta21',idiag_eta21)
+        call parse_name(iname,cname(iname),cform(iname),'b11rms',idiag_b11rms)
+        call parse_name(iname,cname(iname),cform(iname),'b21rms',idiag_b21rms)
+      enddo
 !
 !  check for those quantities for which we want xy-averages
 !
@@ -469,6 +522,12 @@ module Testfield
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
+        write(3,*) 'idiag_alp11=',idiag_alp11
+        write(3,*) 'idiag_alp21=',idiag_alp21
+        write(3,*) 'idiag_eta11=',idiag_eta11
+        write(3,*) 'idiag_eta21=',idiag_eta21
+        write(3,*) 'idiag_b11rms=',idiag_b11rms
+        write(3,*) 'idiag_b21rms=',idiag_b21rms
         write(3,*) 'idiag_E111z=',idiag_E111z
         write(3,*) 'idiag_E211z=',idiag_E211z
         write(3,*) 'idiag_E311z=',idiag_E311z

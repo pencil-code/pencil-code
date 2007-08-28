@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.95 2007-08-27 20:43:40 brandenb Exp $
+! $Id: prints.f90,v 1.96 2007-08-28 19:25:28 brandenb Exp $
 
 module Print
 
@@ -103,10 +103,9 @@ module Print
 !
 !  calculate mean fields
 !
-      if (lmagnetic) call calc_mfield
-      if (lhydro)    call calc_mflow
-      if (lpscalar)  call calc_mpscalar
-!--   if (testfield) call calc_mtestfield
+      if (lmagnetic)  call calc_mfield
+      if (lhydro)     call calc_mflow
+      if (lpscalar)   call calc_mpscalar
 !
       if (lroot) then
 !

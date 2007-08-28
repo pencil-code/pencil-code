@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.23 2007-08-27 19:57:33 wlyra Exp $
+! $Id: grid.f90,v 1.24 2007-08-28 19:25:28 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -52,7 +52,6 @@ module Grid
 !  Currently, the only non-equidistant grid-function is sinh. Its inflection
 !  point in each direction is specified by xyz_star.
 !  (Suggestions for a better name than ``xyz_star'' are welcome.)
-!
 !
 !  25-jun-04/tobi+wolf: coded
 !
@@ -122,8 +121,9 @@ module Grid
         z00=z0
         if (lshift_origin(3)) z00=z0+.5*dz
       endif
-
-
+!
+!  produce index arrays xi1, xi2, and xi3
+!
       do i=1,mx; xi1(i)=i-nghost-1+ipx*nx; enddo
       do i=1,my; xi2(i)=i-nghost-1+ipy*ny; enddo
       do i=1,mz; xi3(i)=i-nghost-1+ipz*nz; enddo
@@ -278,7 +278,7 @@ module Grid
           z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
           zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
-
+!
         case ('step-linear')
 
           xi_step(3,1)=xi_step_frac(3,1)*(nzgrid-1.0)

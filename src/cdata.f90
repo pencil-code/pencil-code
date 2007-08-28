@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.378 2007-08-23 12:02:41 ajohan Exp $
+! $Id: cdata.f90,v 1.379 2007-08-28 19:25:28 brandenb Exp $
 
 module Cdata
 
@@ -135,7 +135,7 @@ module Cdata
   integer :: icc=0,ilncc=0,ialpm=0
   integer :: iproc,ipx,ipy,ipz,root=0
 !
-! MPI related parameters
+! parameters related to message passing
 !
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
