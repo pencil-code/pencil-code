@@ -8,6 +8,6 @@
   public :: init_lnrho, dlnrho_dt, impose_density_floor
 
   public :: pencil_criteria_density, pencil_interdep_density
-  public :: calc_pencils_density,get_plaw
+  public :: calc_pencils_density
   public :: ldensity_nolog
 

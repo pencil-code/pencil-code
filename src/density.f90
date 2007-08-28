@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.346 2007-08-27 19:57:33 wlyra Exp $
+! $Id: density.f90,v 1.347 2007-08-28 01:08:12 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -44,9 +44,10 @@ module Density
   real :: xblob=0., yblob=0., zblob=0.
   real :: co1_ss=0.,co2_ss=0.,Sigma1=150.
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
-  real :: wdamp=0.,plaw=0, density_floor=-1.0
+  real :: wdamp=0.,density_floor=-1.0
   real :: mass_source_Mdot=0.,mass_source_sigma=0.
   real, dimension(3) :: diffrho_hyper3_aniso=0.
+  real, target :: plaw=0.0
   integer, parameter :: ndiff_max=4
   logical :: lmass_source=.false.,lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
@@ -128,7 +129,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.346 2007-08-27 19:57:33 wlyra Exp $")
+           "$Id: density.f90,v 1.347 2007-08-28 01:08:12 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -145,15 +146,18 @@ module Density
 !
 !
 
-      use CData, only: lfreeze_varext,lfreeze_varint,lreloading,ilnrho,lfreeze_varsquare
+      use CData, only: lfreeze_varext,lfreeze_varint,lreloading,&
+                       ilnrho,lfreeze_varsquare,llocal_iso
       use FArrayManager
       use EquationOfState, only: select_eos_variable
       use Gravity, only: lnumerical_equilibrium
+      use Mpicomm
+      use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      integer :: i
+      integer :: i,ierr
       logical :: lnothing
 !
 !  initialize cs2cool to cs20
@@ -257,6 +261,12 @@ module Density
         if (lnumerical_equilibrium) then
            if (lroot) print*,'initializing global gravity in density'
            call farray_register_global('gg',iglobal_gg,vector=3)
+        endif
+
+        if (llocal_iso) then
+          call put_shared_variable('plaw',plaw,ierr)
+          if (ierr/=0) call stop_it("local_isothermal_density: "//&
+               "there was a problem when sharing plaw")
         endif
 !
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
@@ -1710,7 +1720,7 @@ module Density
 !  18-apr-07/wlad : coded
 !
       use FArrayManager
-      use Mpicomm
+      use Mpicomm, only:stop_it 
       use Initcond,only:set_thermodynamical_quantities
       use Gravity, only:potential
       use Sub,     only:get_radial_distance
@@ -1718,12 +1728,12 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx)   :: pot,tmp1,tmp2
       real, dimension (nx)   :: rr_sph,rr,rr_cyl,lnrhomid
-      real                   :: ptlaw,g0_
+      real                   :: ptlaw
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: i
       logical                :: lheader
 !
-      if (lroot) print*,'isothermal_density: local isothermal stratification'
+      if (lroot) print*,'local isothermal_density: local isothermal stratification'
       if (lroot) print*,'Radial stratification with power law=',plaw
 !
       call get_ptlaw(ptlaw)
@@ -2042,14 +2052,6 @@ module Density
       endif
 !
     endsubroutine mass_source
-!***********************************************************************
-    subroutine get_plaw(plaw_)
-!
-      real :: plaw_
-!
-      plaw_=plaw
-!
-    endsubroutine get_plaw
 !***********************************************************************
     subroutine cylind_poly(f)
 !

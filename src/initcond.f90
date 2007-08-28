@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.216 2007-08-22 11:52:58 brandenb Exp $
+! $Id: initcond.f90,v 1.217 2007-08-28 01:08:12 wlyra Exp $
 
 module Initcond
 
@@ -2846,7 +2846,7 @@ module Initcond
            ' with angular velocity profile falling',&
            ' as 1/r^(',qgshear,')' 
 !
-      g0_=g0
+      if (lgravr) g0_=g0
 !
       if ((rsmooth.ne.0.).or.(r0_pot.ne.0)) then 
         if (rsmooth.ne.r0_pot) &

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.383 2007-08-27 19:57:34 wlyra Exp $
+! $Id: hydro.f90,v 1.384 2007-08-28 01:08:12 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -33,6 +33,7 @@ module Hydro
 ! Slice precalculation buffers
 !
 ! Dhruba
+
   integer :: l
   real, target, dimension (nx,ny,3) :: oo_xy
   real, target, dimension (nx,ny,3) :: oo_xy2
@@ -308,7 +309,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.383 2007-08-27 19:57:34 wlyra Exp $")
+           "$Id: hydro.f90,v 1.384 2007-08-28 01:08:12 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -340,9 +341,11 @@ module Hydro
       use Mpicomm, only: stop_it
       use CData,   only: r_int,r_ext,lfreeze_varint,lfreeze_varext,epsi,leos,iux,iuy,iuz,iuut,iuxt,iuyt,iuzt,lroot,datadir
       use FArrayManager
+      use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
+      integer :: ierr
 !
 ! Check any module dependencies
 !
@@ -1555,19 +1558,20 @@ use Mpicomm, only: stop_it
       use Cdata
       use BorderProfiles,  only: border_driving
       use EquationOfState, only: cs0,cs20,get_ptlaw
-      use Density,         only: get_plaw
-      use Gravity,         only: g0,qgshear
       use Particles_nbody, only: get_totalmass
+      use Gravity,         only: g0,qgshear
       use Sub,             only: power_law
       use Mpicomm,         only: stop_it
+      use SharedVariables
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
-      real    :: ptlaw,plaw,g0_,B0
+      real    :: ptlaw,g0_,B0
       real :: tmp,OO,corr,corrmag
-      integer :: ju,j,i
+      integer :: ju,j,i,ierr
+      real, pointer :: zmode,plaw
 !
 ! these tmps and where's are needed because these square roots
 ! go negative in the frozen inner disc if the sound speed is big enough
@@ -1590,8 +1594,11 @@ use Mpicomm, only: stop_it
           call stop_it("set_border_hydro: can't get g0")
         endif
         !get the exponents for density and cs2
-        call get_ptlaw(ptlaw);call get_plaw(plaw)
-        !no need to do the whole nx array. the border is all we need
+        call get_ptlaw(ptlaw)
+        call get_shared_variable('plaw',plaw,ierr)
+        if (ierr/=0) call stop_it("borderuu: "//&
+             "there was a problem when getting plaw")
+          !no need to do the whole nx array. the border is all we need
         do i=1,nx
           if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
                ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
@@ -1619,8 +1626,14 @@ use Mpicomm, only: stop_it
           call stop_it("set_border_hydro: can't get g0")
         endif
         !get the exponents for density and cs2
-        call get_ptlaw(ptlaw);call get_plaw(plaw)
-        B0=Lxyz(3)/(32*pi)
+        call get_ptlaw(ptlaw)
+        call get_shared_variable('plaw',plaw,ierr)
+        if (ierr/=0) call stop_it("borderuu: "//&
+               "there was a problem when getting plaw")
+        call get_shared_variable('zmode',zmode,ierr)
+        if (ierr/=0) call stop_it("borderuu: "//&
+             "there was a problem when getting zmode")
+        B0=Lxyz(3)/(2*zmode*pi)
         !no need to do the whole nx array. the border is all we need
         do i=1,nx
           if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
