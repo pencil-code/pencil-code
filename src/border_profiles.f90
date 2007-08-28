@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.16 2007-08-19 17:33:33 wlyra Exp $
+! $Id: border_profiles.f90,v 1.17 2007-08-28 14:34:50 wlyra Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -157,9 +157,9 @@ module BorderProfiles
       real :: rlim_mn
       integer :: i
 !
-      if (lcylinder_in_a_box) then
+      if (lcylinder_in_a_box.or.lcylindrical_coords) then
          rlim_mn = p%rcyl_mn(i)
-      elseif (lsphere_in_a_box) then
+      elseif (lsphere_in_a_box.or.lspherical_coords) then
          rlim_mn = p%r_mn(i)
       else
          rlim_mn = p%x_mn(i)

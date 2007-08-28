@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.25 2007-08-16 23:19:23 dobler Exp $
+! $Id: selfgravity.f90,v 1.26 2007-08-28 14:34:51 wlyra Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -74,7 +74,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.25 2007-08-16 23:19:23 dobler Exp $")
+           "$Id: selfgravity.f90,v 1.26 2007-08-28 14:34:51 wlyra Exp $")
 !
 !  Put variable name in array
 !
@@ -339,10 +339,6 @@ module Selfgravity
 !
       real, dimension(nx) :: gpotr,gpotp,gpotz
       type (pencil_case) :: p
-!
-      if (.not.lcylinder_in_a_box) &
-           call stop_it("calc_cylgrav_stresses: cylindrical stresses called "// &
-           "but you are not using lcylinder_in_a_box" )
 !
       gpotr=p%gpotself(:,1)*p%pomx+p%gpotself(:,2)*p%pomy
       gpotp=p%gpotself(:,1)*p%phix+p%gpotself(:,2)*p%phiy
