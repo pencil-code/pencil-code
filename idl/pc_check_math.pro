@@ -1,4 +1,10 @@
+;$Id: pc_check_math.pro,v 1.2 2007-08-28 04:16:55 brandenb Exp $
 pro pc_check_math,location=location
+;
+;  date: 2005/12/14 11:56:20;  author: mee;  state: Exp;
+;  Routine to allow regular checking of the floating point error status
+;  and optionally give the location where the error was trapped.
+;
 ;Create a string array of error names.  
 ERRS = ['Integer divided by zero', $
         'Integer overflow', $
