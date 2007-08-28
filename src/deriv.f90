@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.52 2007-08-14 00:17:13 dobler Exp $
+! $Id: deriv.f90,v 1.53 2007-08-28 16:44:44 dhruba Exp $
 
 module Deriv
 
@@ -592,11 +592,12 @@ module Deriv
         upwnd = .false.
         if (.not. lequidist(j)) then
           call fatal_error('der6','NOT IMPLEMENTED for no equidistant grid')
-        endif
+       endif
+       if (lspherical_coords) &
+            call fatal_error('der6','NOT IMPLEMENTED for spherical coordinates')
       endif
 !
-      if (lspherical_coords) &
-           call fatal_error('der6','NOT IMPLEMENTED for spherical coordinates')
+     
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -628,6 +629,7 @@ module Deriv
                   -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
                   +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
           if (lcylindrical_coords)   df=df*rcyl_mn1**6
+          if (lspherical_coords) df = df*r1_mn**6
         else
           df=0.
         endif
@@ -644,6 +646,7 @@ module Deriv
                   + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
                   -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
                   +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+          if (lspherical_coords) df = df*(r1_mn*sin1th(m))**6
         else
           df=0.
         endif
