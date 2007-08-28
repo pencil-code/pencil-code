@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.452 2007-08-27 21:25:43 wlyra Exp $
+! $Id: magnetic.f90,v 1.453 2007-08-28 01:07:12 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -60,6 +60,7 @@ module Magnetic
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real, dimension(nx,3) :: uxbb !(temporary)
+  real, target :: zmode=1. !(temporary)
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
   real :: radius=.1,epsilonaa=1e-2,widthaa=.5,x0aa=0.,z0aa=0.
@@ -74,7 +75,7 @@ module Magnetic
   real :: rescale_aa=1.
   real :: ampl_B0=0.,D_smag=0.17,B_ext21,B_ext11
   real :: Omega_ampl=0.
-  real :: rmode=1.,zmode=1.,rm_int=0.,rm_ext=0.
+  real :: rmode=1.,rm_int=0.,rm_ext=0.
   real :: nu_ni=0.,nu_ni1,hall_term=0.
   real :: alpha_effect=0.,alpha_quenching=0.,delta_effect=0.,meanfield_etat=0.
   real :: displacement_gun=0.
@@ -332,7 +333,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.452 2007-08-27 21:25:43 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.453 2007-08-28 01:07:12 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -363,10 +364,11 @@ module Magnetic
       use Cdata
       use Messages, only: fatal_error
       use FArrayManager
+      use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
-      integer :: i
+      integer :: i,ierr
 !
 !  Precalculate 1/mu (moved here from register.f90)
 !
@@ -580,6 +582,12 @@ module Magnetic
         call farray_register_global('iglobal_jx_ext',iglobal_jx_ext)
       endif
 !
+      if (any(initaa=='Alfven-zconst')) then    
+        call put_shared_variable('zmode',zmode,ierr)
+        if (ierr/=0) call fatal_error('initialize_magnetic',&
+             'there was a problem when sharing zmode')
+      endif
+!
       if (NO_WARN) print*, lstarting
 !
     endsubroutine initialize_magnetic
@@ -674,7 +682,7 @@ module Magnetic
         case('Alfven-xy'); call alfven_xy(amplaa(j),f,iuu,iaa,xx,yy,kx_aa(j),ky_aa(j))
         case('Alfven-xz'); call alfven_xz(amplaa(j),f,iuu,iaa,xx,zz,kx_aa(j),kz_aa(j))
         case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,xx,yy,rmode)
-        case('Alfven-zconst'); call alfven_zconst(f,xx,yy,zmode)
+        case('Alfven-zconst'); call alfven_zconst(f,xx,yy)
         case('Alfven-rz'); call alfven_rz(amplaa(j),f,xx,yy,rmode)
         case('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
         case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
@@ -2039,12 +2047,13 @@ module Magnetic
       use Cdata
       use BorderProfiles, only: border_driving
       use Mpicomm, only: stop_it
+      use Gravity, only: qgshear
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
-      real :: kr,kr1,Aphi
+      real :: kr,kr1,Aphi,B0
       integer :: ju,j,i
 !
       select case(borderaa)
@@ -2053,7 +2062,8 @@ module Magnetic
          f_target=0.
 !
       case('toroidal')
-        if (initaa=='uniform-Bphi') call stop_it("borderaa: this border profile "//&
+        if (any(initaa=='uniform-Bphi')) &
+             call stop_it("borderaa: this border profile "//&
              "is to be used with alfven_rphi (sinusoidal azimuthal wave) only")
         kr = 2*pi*rmode/(r_ext-r_int)
         kr1 = 1./kr
@@ -2092,7 +2102,7 @@ module Magnetic
               !default unsmoothed keplerian
               Aphi=2*B0*sqrt(p%rcyl_mn1(i))
             else
-              Aphi=B0/(p%rrcyl(i)*(2-qgshear))*(p%rrcyl(i)**2+r0_pot**2)**(1-qgshear/2.)
+              Aphi=B0/(p%rcyl_mn(i)*(2-qgshear))*(p%rcyl_mn(i)**2+rsmooth**2)**(1-qgshear/2.)
             endif
 !
             f_target(:,1) = Aphi * p%phix(i)
@@ -3146,7 +3156,7 @@ module Magnetic
 !
     endsubroutine alfven_rphi
 !***********************************************************************
-    subroutine alfven_zconst(f,xx,yy,mode)
+    subroutine alfven_zconst(f,xx,yy)
 !
 !  Radially variable field pointing in the z direction
 !  4 Balbus Hawley wavelengths in the vertical direction
@@ -3165,9 +3175,9 @@ module Magnetic
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz) :: xx,yy,rrcyl,Aphi
-      real :: B0,mode
+      real :: B0
 !
-      B0=Lxyz(3)/(2*mode*pi)
+      B0=Lxyz(3)/(2*zmode*pi)
       rrcyl=sqrt(xx**2+yy**2)
       Aphi=B0/(rrcyl*(2-qgshear))*(rrcyl**2+r0_pot**2)**(1-qgshear/2.)
 !
