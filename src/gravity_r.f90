@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.24 2007-08-28 23:58:54 wlyra Exp $
+! $Id: gravity_r.f90,v 1.25 2007-08-29 12:42:03 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -26,7 +26,6 @@ module Gravity
   interface potential
     module procedure potential_global
     module procedure potential_penc
-    module procedure potential_penc_mx
     module procedure potential_point
   endinterface
 
@@ -87,7 +86,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.24 2007-08-28 23:58:54 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.25 2007-08-29 12:42:03 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -471,15 +470,18 @@ module Gravity
 !  Gravity potential along one pencil
 !
 !  21-jan-02/wolf: coded
+!  29-aug-07/wlad: allow arrays of arbitrary dimension
 !
       use Cdata,   only: nx,dx,lcartesian_coords
       use Sub,     only: poly
       use Mpicomm, only: stop_it
 
-      real, dimension (nx) :: rad, pot
+
+      real, dimension (:) :: pot
+      real, dimension (size(pot)) :: rad
       real, optional :: ymn,zmn,pot0
-      real, optional, dimension (nx) :: xmn,rmn
-      real, optional, dimension (nx,3) :: grav
+      real, optional, dimension (size(pot)) :: xmn,rmn
+      real, optional, dimension (size(pot),3) :: grav
       integer :: j
 
       if (present(rmn)) then
@@ -522,63 +524,6 @@ module Gravity
                                       "not implemented")
 !
     endsubroutine potential_penc
-!***********************************************************************
-    subroutine potential_penc_mx(xmn,ymn,zmn,pot,pot0,grav,rmn)
-!
-!  Gravity potential along one pencil
-!
-!  21-jan-02/wolf: coded
-!
-      use Cdata,   only: nx,dx,lcartesian_coords
-      use Sub,     only: poly
-      use Mpicomm, only: stop_it
-
-      real, dimension (mx) :: rad, pot
-      real, optional :: ymn,zmn,pot0
-      real, optional, dimension (mx) :: xmn,rmn
-      real, optional, dimension (mx,3) :: grav
-      integer :: j
-
-      if (present(rmn)) then
-        rad = rmn
-      else
-        if (present(xmn) .and. present(ymn) .and. present(zmn)) then
-!
-          if (.not.lcartesian_coords) &
-               call stop_it("gravity_r: potential_penc with xmn,ymn,zmn is "//&
-               "not yet implemented for non-cartesiand coordinates. Fix the call "//&
-               "to  use radial distance instead")
-!
-          rad = sqrt(xmn**2+ymn**2+zmn**2)
-        else
-          call stop_it("POTENTIAL_PENC: Need to specify either x,y,z or r.")
-        endif
-      endif
-!      
-      pot=0.
-      if (present(pot0)) pot0=0.
-      do j=1,ninit
-        select case (ipotential(j))
-!
-        case ('geo-kws','smoothed-newton')
-          pot=pot-g0*(rmn**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
-          if (present(pot0)) pot0=pot0-g0/r0_pot
-!
-        case ('no-smooth')
-          pot=pot-g0/rmn
-!
-        case default
-          pot = pot - poly((/cpot(1,j), 0., cpot(2,j), cpot(3,j)/), rad) &
-               / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rad)
-          if (present(pot0)) pot0=pot0-cpot(1,j)
-!
-        endselect
-      enddo
-!
-      if (present(grav)) call stop_it("POTENTIAL_PENC: Argument grav"//&
-                                      "not implemented")
-!
-    endsubroutine potential_penc_mx
 !***********************************************************************
     subroutine potential_point(x,y,z,r, pot,pot0, grav)
 !
