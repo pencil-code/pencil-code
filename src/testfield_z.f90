@@ -1,4 +1,4 @@
-! $Id: testfield_xz.f90,v 1.4 2007-08-29 18:25:15 brandenb Exp $
+! $Id: testfield_z.f90,v 1.1 2007-08-29 18:25:15 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -9,7 +9,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MVAR CONTRIBUTION 6
+! MVAR CONTRIBUTION 12
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
@@ -29,11 +29,11 @@ module Testfield
   real, dimension(3) :: B_ext=(/0.,0.,0./)
   real, dimension (nx,3) :: bbb
   real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
+  integer, parameter :: njtest=4,ntestfield=3*njtest
   logical :: reinitalize_aatest=.false.
   logical :: zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
-  character (len=labellen) :: itestfield='B11-B21'
+  character (len=labellen) :: itestfield='B11-B22'
   real :: ktestfield=1.
-  integer, parameter :: njtest=2,ntestfield=3*njtest
 
   namelist /testfield_init_pars/ &
        B_ext,zextent,initaatest
@@ -45,18 +45,30 @@ module Testfield
        lset_bbtest2,etatest,itestfield,ktestfield
 
   ! other variables (needs to be consistent with reset list below)
+  integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
+  integer :: idiag_alp21=0      ! DIAG_DOC: $\alpha_{21}$
+  integer :: idiag_alp12=0      ! DIAG_DOC: $\alpha_{12}$
+  integer :: idiag_alp22=0      ! DIAG_DOC: $\alpha_{22}$
+  integer :: idiag_eta11=0      ! DIAG_DOC: $\eta_{113}k$
+  integer :: idiag_eta21=0      ! DIAG_DOC: $\eta_{213}k$
+  integer :: idiag_eta12=0      ! DIAG_DOC: $\eta_{123}k$
+  integer :: idiag_eta22=0      ! DIAG_DOC: $\eta_{223}k$
+  integer :: idiag_b11rms=0     ! DIAG_DOC: $\left<b_{11}^2\right>$
+  integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>$
+  integer :: idiag_b12rms=0     ! DIAG_DOC: $\left<b_{12}^2\right>$
+  integer :: idiag_b22rms=0     ! DIAG_DOC: $\left<b_{22}^2\right>$
   integer :: idiag_E111z=0      ! DIAG_DOC: ${\cal E}_1^{11}$
   integer :: idiag_E211z=0      ! DIAG_DOC: ${\cal E}_2^{11}$
   integer :: idiag_E311z=0      ! DIAG_DOC: ${\cal E}_3^{11}$
   integer :: idiag_E121z=0      ! DIAG_DOC: ${\cal E}_1^{21}$
   integer :: idiag_E221z=0      ! DIAG_DOC: ${\cal E}_2^{21}$
   integer :: idiag_E321z=0      ! DIAG_DOC: ${\cal E}_3^{21}$
-  integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
-  integer :: idiag_alp21=0      ! DIAG_DOC: $\alpha_{21}$
-  integer :: idiag_eta11=0      ! DIAG_DOC: $\eta_{113}k$
-  integer :: idiag_eta21=0      ! DIAG_DOC: $\eta_{213}k$
-  integer :: idiag_b11rms=0     ! DIAG_DOC: $\left<b_{11}^2\right>$
-  integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>$
+  integer :: idiag_E112z=0      ! DIAG_DOC: ${\cal E}_1^{12}$
+  integer :: idiag_E212z=0      ! DIAG_DOC: ${\cal E}_2^{12}$
+  integer :: idiag_E312z=0      ! DIAG_DOC: ${\cal E}_3^{12}$
+  integer :: idiag_E122z=0      ! DIAG_DOC: ${\cal E}_1^{22}$
+  integer :: idiag_E222z=0      ! DIAG_DOC: ${\cal E}_2^{22}$
+  integer :: idiag_E322z=0      ! DIAG_DOC: ${\cal E}_3^{22}$
 
   real, dimension (mz,3,ntestfield/3) :: uxbtestm
 
@@ -98,7 +110,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_xz.f90,v 1.4 2007-08-29 18:25:15 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.1 2007-08-29 18:25:15 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -250,9 +262,9 @@ module Testfield
     subroutine daatest_dt(f,df,p)
 !
 !  testfield evolution
-!  calculate da^(pq)/dt=uxB^(pq)+eta*del2A^(pq), where p=1,2 and q=1
+!  calculate da^(pq)/dt=uxB^(pq)+eta*del2A^(pq), where p,q=1,2
 !
-!   3-jun-05/axel: coded
+!  28-aug-07/axel: adapted from testfield_xz.f90
 !
       use Cdata
       use Sub
@@ -269,7 +281,6 @@ module Testfield
       real, dimension(mz), save :: cz,sz
       integer :: jtest,jfnamez,j
       logical,save :: first=.true.
-
 !
       intent(in)     :: f,p
       intent(inout)  :: df
@@ -292,7 +303,7 @@ module Testfield
         iaztest=iaxtest+2
         call del2v(f,iaxtest,del2Atest)
         select case(itestfield)
-          case('B11-B21'); call set_bbtest(bbtest,jtest,ktestfield)
+          case('B11-B22'); call set_bbtest(bbtest,jtest,ktestfield)
         endselect
 !
 !  add an external field, if present
@@ -347,12 +358,24 @@ module Testfield
         if (idiag_E221z/=0) call xysum_mn_name_z(Eipq(:,2,2),idiag_E221z)
         if (idiag_E321z/=0) call xysum_mn_name_z(Eipq(:,3,2),idiag_E321z)
 !
+        if (idiag_E112z/=0) call xysum_mn_name_z(Eipq(:,1,3),idiag_E112z)
+        if (idiag_E212z/=0) call xysum_mn_name_z(Eipq(:,2,3),idiag_E212z)
+        if (idiag_E312z/=0) call xysum_mn_name_z(Eipq(:,3,3),idiag_E312z)
+        if (idiag_E122z/=0) call xysum_mn_name_z(Eipq(:,1,4),idiag_E122z)
+        if (idiag_E222z/=0) call xysum_mn_name_z(Eipq(:,2,4),idiag_E222z)
+        if (idiag_E322z/=0) call xysum_mn_name_z(Eipq(:,3,4),idiag_E322z)
+!
 !  alpha and eta
 !
         if (idiag_alp11/=0) call sum_mn_name(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2),idiag_alp11)
         if (idiag_alp21/=0) call sum_mn_name(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2),idiag_alp21)
         if (idiag_eta11/=0) call sum_mn_name(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2),idiag_eta11)
         if (idiag_eta21/=0) call sum_mn_name(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2),idiag_eta21)
+!
+        if (idiag_alp12/=0) call sum_mn_name(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4),idiag_alp12)
+        if (idiag_alp22/=0) call sum_mn_name(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4),idiag_alp22)
+        if (idiag_eta12/=0) call sum_mn_name(-sz(n)*Eipq(:,1,3)+cz(n)*Eipq(:,1,4),idiag_eta12)
+        if (idiag_eta22/=0) call sum_mn_name(-sz(n)*Eipq(:,2,3)+cz(n)*Eipq(:,2,4),idiag_eta22)
 !
 !  rms values of small scales fields bpq in response to the test fields Bpq
 !
@@ -366,8 +389,17 @@ module Testfield
           call sum_mn_name(bpq2,idiag_b21rms,lsqrt=.true.)
         endif
 !
-      endif
+        if (idiag_b12rms/=0) then
+          call dot2(bpq(:,:,3),bpq2)
+          call sum_mn_name(bpq2,idiag_b12rms,lsqrt=.true.)
+        endif
 !
+        if (idiag_b22rms/=0) then
+          call dot2(bpq(:,:,4),bpq2)
+          call sum_mn_name(bpq2,idiag_b22rms,lsqrt=.true.)
+        endif
+!
+      endif
 !
     endsubroutine daatest_dt
 !***********************************************************************
@@ -465,6 +497,8 @@ module Testfield
       select case(jtest)
       case(1); bbtest(:,1)=cz; bbtest(:,2)=0.; bbtest(:,3)=0.
       case(2); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(3); bbtest(:,1)=0.; bbtest(:,2)=cz; bbtest(:,3)=0.
+      case(4); bbtest(:,1)=0.; bbtest(:,2)=sz; bbtest(:,3)=0.
       case default; bbtest(:,:)=0.
       endselect
 !
@@ -492,9 +526,9 @@ module Testfield
       if (lreset) then
         idiag_E111z=0; idiag_E211z=0; idiag_E311z=0
         idiag_E121z=0; idiag_E221z=0; idiag_E321z=0
-        idiag_alp11=0; idiag_alp21=0
-        idiag_eta11=0; idiag_eta21=0
-        idiag_b11rms=0; idiag_b21rms=0
+        idiag_alp11=0; idiag_alp21=0; idiag_alp12=0; idiag_alp22=0
+        idiag_eta11=0; idiag_eta21=0; idiag_eta12=0; idiag_eta22=0
+        idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -502,10 +536,16 @@ module Testfield
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'alp11',idiag_alp11)
         call parse_name(iname,cname(iname),cform(iname),'alp21',idiag_alp21)
+        call parse_name(iname,cname(iname),cform(iname),'alp12',idiag_alp12)
+        call parse_name(iname,cname(iname),cform(iname),'alp22',idiag_alp22)
         call parse_name(iname,cname(iname),cform(iname),'eta11',idiag_eta11)
         call parse_name(iname,cname(iname),cform(iname),'eta21',idiag_eta21)
+        call parse_name(iname,cname(iname),cform(iname),'eta12',idiag_eta12)
+        call parse_name(iname,cname(iname),cform(iname),'eta22',idiag_eta22)
         call parse_name(iname,cname(iname),cform(iname),'b11rms',idiag_b11rms)
         call parse_name(iname,cname(iname),cform(iname),'b21rms',idiag_b21rms)
+        call parse_name(iname,cname(iname),cform(iname),'b12rms',idiag_b12rms)
+        call parse_name(iname,cname(iname),cform(iname),'b22rms',idiag_b22rms)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -517,6 +557,12 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E121z',idiag_E121z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E221z',idiag_E221z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E321z',idiag_E321z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E112z',idiag_E112z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E212z',idiag_E212z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E312z',idiag_E312z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E122z',idiag_E122z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E222z',idiag_E222z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E322z',idiag_E322z)
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
@@ -524,16 +570,26 @@ module Testfield
       if (lwr) then
         write(3,*) 'idiag_alp11=',idiag_alp11
         write(3,*) 'idiag_alp21=',idiag_alp21
+        write(3,*) 'idiag_alp12=',idiag_alp12
+        write(3,*) 'idiag_alp22=',idiag_alp22
         write(3,*) 'idiag_eta11=',idiag_eta11
         write(3,*) 'idiag_eta21=',idiag_eta21
+        write(3,*) 'idiag_eta12=',idiag_eta12
+        write(3,*) 'idiag_eta22=',idiag_eta22
         write(3,*) 'idiag_b11rms=',idiag_b11rms
         write(3,*) 'idiag_b21rms=',idiag_b21rms
+        write(3,*) 'idiag_b12rms=',idiag_b12rms
+        write(3,*) 'idiag_b22rms=',idiag_b22rms
         write(3,*) 'idiag_E111z=',idiag_E111z
         write(3,*) 'idiag_E211z=',idiag_E211z
         write(3,*) 'idiag_E311z=',idiag_E311z
         write(3,*) 'idiag_E121z=',idiag_E121z
-        write(3,*) 'idiag_E221z=',idiag_E221z
-        write(3,*) 'idiag_E321z=',idiag_E321z
+        write(3,*) 'idiag_E112z=',idiag_E112z
+        write(3,*) 'idiag_E212z=',idiag_E212z
+        write(3,*) 'idiag_E312z=',idiag_E312z
+        write(3,*) 'idiag_E122z=',idiag_E122z
+        write(3,*) 'idiag_E222z=',idiag_E222z
+        write(3,*) 'idiag_E322z=',idiag_E322z
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'nnamez=',nnamez
         write(3,*) 'nnamexy=',nnamexy
