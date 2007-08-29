@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.379 2007-08-28 19:25:28 brandenb Exp $
+! $Id: cdata.f90,v 1.380 2007-08-29 04:43:08 brandenb Exp $
 
 module Cdata
 
@@ -281,7 +281,7 @@ module Cdata
   logical :: save_lastsnap=.true.
   logical :: lcopysnapshots_exp=.false.
   logical :: lwrite_2d=.false.
-  logical :: lbidiagonal_derij=.false.
+  logical :: lbidiagonal_derij=.true.
   logical :: lisotropic_advection=.false.
 
 !
