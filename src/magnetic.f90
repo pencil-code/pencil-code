@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.453 2007-08-28 01:07:12 wlyra Exp $
+! $Id: magnetic.f90,v 1.454 2007-08-29 11:21:21 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -208,10 +208,14 @@ module Magnetic
   integer :: idiag_bxm=0        ! DIAG_DOC:
   integer :: idiag_bym=0        ! DIAG_DOC:
   integer :: idiag_bzm=0        ! DIAG_DOC:
-  integer :: idiag_bx2m=0       ! DIAG_DOC:
-  integer :: idiag_by2m=0       ! DIAG_DOC:
-  integer :: idiag_bz2m=0       ! DIAG_DOC:
-  integer :: idiag_bxbym=0      ! DIAG_DOC:
+  integer :: idiag_bx2m=0       ! DIAG_DOC: $\left<B_x^2\right>$
+  integer :: idiag_by2m=0       ! DIAG_DOC: $\left<B_y^2\right>$
+  integer :: idiag_bz2m=0       ! DIAG_DOC: $\left<B_z^2\right>$
+  integer :: idiag_bx2mx=0      ! DIAG_DOC: $\left<B_x^2\right>_{yz}$
+  integer :: idiag_by2mx=0      ! DIAG_DOC: $\left<B_y^2\right>_{yz}$
+  integer :: idiag_bz2mx=0      ! DIAG_DOC: $\left<B_z^2\right>_{yz}$
+  integer :: idiag_bxbym=0      ! DIAG_DOC: $\left<B_x B_y\right>$
+  integer :: idiag_bxbymx=0     ! DIAG_DOC: $\left<B_x B_y\right>_{yz}$
   integer :: idiag_bxbzm=0      ! DIAG_DOC:
   integer :: idiag_bybzm=0      ! DIAG_DOC:
   integer :: idiag_djuidjbim=0  ! DIAG_DOC:
@@ -333,7 +337,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.453 2007-08-28 01:07:12 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.454 2007-08-29 11:21:21 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1872,6 +1876,13 @@ module Magnetic
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1               
 !             
       if (l1ddiagnos .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
+        if (idiag_bxmx/=0)   call yzsum_mn_name_x(p%bb(:,1),idiag_bxmx)
+        if (idiag_bx2mx/=0)  call yzsum_mn_name_x(p%bb(:,1)**2,idiag_bx2mx)
+        if (idiag_by2mx/=0)  call yzsum_mn_name_x(p%bb(:,2)**2,idiag_by2mx)
+        if (idiag_bz2mx/=0)  call yzsum_mn_name_x(p%bb(:,3)**2,idiag_bz2mx)
+        if (idiag_bxbymx/=0) &
+            call yzsum_mn_name_x(p%bbb(:,1)*p%bbb(:,2),idiag_bxbymx)
+        if (idiag_bymy/=0)   call xzsum_mn_name_y(p%bb(:,2),idiag_bymy)
         if (idiag_bxmz/=0)   call xysum_mn_name_z(p%bb(:,1),idiag_bxmz)
         if (idiag_bymz/=0)   call xysum_mn_name_z(p%bb(:,2),idiag_bymz)
         if (idiag_bzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_bzmz)
@@ -1885,7 +1896,6 @@ module Magnetic
         if (idiag_bybzmz/=0) &
             call xysum_mn_name_z(p%bbb(:,2)*p%bbb(:,3),idiag_bybzmz)
         if (idiag_b2mz/=0)   call xysum_mn_name_z(p%b2,idiag_b2mz)
-!  phi-z averages
         if (idiag_b2mr/=0)   call phizsum_mn_name_r(p%b2,idiag_b2mr)
         if (idiag_brmr/=0)   &
              call phizsum_mn_name_r(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmr)
@@ -1899,8 +1909,6 @@ module Magnetic
              call phizsum_mn_name_r(p%aa(:,1)*p%phix+p%aa(:,2)*p%phiy,idiag_apmr)
         if (idiag_azmr/=0)   &
              call phizsum_mn_name_r(p%aa(:,3),idiag_azmr)
-        if (idiag_bxmx/=0) call yzsum_mn_name_x(p%bb(:,1),idiag_bxmx)
-        if (idiag_bymy/=0) call xzsum_mn_name_y(p%bb(:,2),idiag_bymy)
         if (idiag_mflux_x/=0) &
           call yzintegrate_mn_name_x(p%bb(:,1),idiag_mflux_x)
         if (idiag_mflux_y/=0) &
