@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.212 2007-08-27 16:47:21 pkapyla Exp $
+# $Id: getconf.csh,v 1.213 2007-08-29 13:52:33 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -481,6 +481,7 @@ else if ($hn =~ louhi-login*) then
   set npops = "-sz $ncpus"
   set local_disc = 0
   set one_local_disc = 0
+  set remote_top     = 1
   set local_binary = 0
 
 else if ($hn =~ c[0-9][0-9][0-9]) then
