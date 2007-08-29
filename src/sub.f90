@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.330 2007-08-28 23:58:54 wlyra Exp $
+! $Id: sub.f90,v 1.331 2007-08-29 14:17:53 dhruba Exp $
 
 module Sub
 
@@ -2978,6 +2978,8 @@ module Sub
 !***********************************************************************
     subroutine u_dot_grad_scl(f,k,gradf,uu,ugradf,upwind)
 !
+! 28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
+! 29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates. 
 !  Do advection-type term u.grad f_k.
 !  Assumes gradf to be known, but takes f and k as arguments to be able
 !  to calculate upwind correction
@@ -3002,14 +3004,22 @@ module Sub
         call der6(f,k,del6f,1,UPWIND=.true.)
         ugradf = ugradf - abs(uu(:,1))*del6f
         call der6(f,k,del6f,2,UPWIND=.true.)
-! 28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
-        if (lcylindrical_coords) then
-          ugradf = ugradf - rcyl_mn1*abs(uu(:,2))*del6f
+        if(lcartesian_coords) then
+           ugradf = ugradf - abs(uu(:,2))*del6f
         else
-          ugradf = ugradf - abs(uu(:,2))*del6f
+           if (lcylindrical_coords) &
+              ugradf = ugradf - rcyl_mn1*abs(uu(:,2))*del6f
+           if (lspherical_coords) &
+              ugradf = ugradf - r1_mn*abs(uu(:,2))*del6f
         endif
         call der6(f,k,del6f,3,UPWIND=.true.)
-        ugradf = ugradf - abs(uu(:,3))*del6f
+        if((lcartesian_coords).or.(lcylindrical_coords)) then
+           ugradf = ugradf - abs(uu(:,3))*del6f
+        else
+           if (lspherical_coords) &
+                ugradf = ugradf - r1_mn*sin1th(m)*abs(uu(:,2))*del6f
+        endif
+        
       endif; endif
 !
     endsubroutine u_dot_grad_scl
