@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.15 2007-07-25 07:32:02 bingert Exp $
+! $Id: temperature_idealgas.f90,v 1.16 2007-08-29 15:32:39 dintrans Exp $
 !  This module can replace the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
 !  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.15 2007-07-25 07:32:02 bingert Exp $")
+           "$Id: temperature_idealgas.f90,v 1.16 2007-08-29 15:32:39 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -273,7 +273,6 @@ module Entropy
       case('zero', '0'); f(:,:,:,ilnTT) = 0.
       case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
       case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
-      case('cylind_layers'); call cylind_layers(f)
       case('rad_equil')
           call rad_equil(f)
           if (ampl_lnTT.ne.0.) then
@@ -925,59 +924,5 @@ module Entropy
       endif
 !
     endsubroutine rprint_entropy
-!***********************************************************************
-    subroutine cylind_layers(f)
-!
-!  initialise lnTT in a cylindrical ring using 2 superposed polytropic layers
-!
-!  12-mar-07/dintrans: coded
-!
-      use Gravity, only: g0
-      use EquationOfState, only: lnrho0,cs20,gamma,gamma1, &
-                                 cs2top,cs2bot,get_cp1
-
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: TT
-      real :: beta0,beta1,TT_bcz,TT_ext,TT_int
-      real :: cp1,lnrho_int,lnrho_bcz
-!
-      if (headtt) print*,'r_bcz in cylind_layers.f90=',r_bcz
-!
-!  beta is the temperature gradient
-!  beta = -(g/cp) 1./[(1-1/gamma)*(m+1)]
-!
-      call get_cp1(cp1)
-      beta0=-cp1*g0/(mpoly0+1)*gamma/gamma1
-      beta1=-cp1*g0/(mpoly1+1)*gamma/gamma1
-      TT_ext=cs20/gamma1
-      TT_bcz=TT_ext+beta0*(r_bcz-r_ext)
-      TT_int=TT_bcz+beta1*(r_int-r_bcz)
-      cs2top=cs20
-      cs2bot=gamma1*TT_int
-      lnrho_bcz=lnrho0+mpoly0*log(TT_bcz)-mpoly0*log(TT_ext)
-!
-      do imn=1,ny*nz
-        n=nn(imn)
-        m=mm(imn)
-!
-!  convective layer
-!
-        where (rcyl_mn <= r_ext .AND. rcyl_mn > r_bcz)
-          TT=TT_ext+beta0*(rcyl_mn-r_ext)
-          f(l1:l2,m,n,ilnrho)=lnrho0+mpoly0*log(TT)-mpoly0*log(TT_ext)
-          f(l1:l2,m,n,ilnTT)=log(TT)
-        endwhere
-!
-!  radiative layer
-!
-        where (rcyl_mn <= r_bcz)
-          TT=TT_bcz+beta1*(rcyl_mn-r_bcz)
-          f(l1:l2,m,n,ilnrho)=lnrho_bcz+mpoly1*log(TT)-mpoly1*log(TT_bcz)
-          f(l1:l2,m,n,ilnTT)=log(TT)
-        endwhere
-!
-      enddo
-!
-    endsubroutine cylind_layers
 !***********************************************************************
 endmodule Entropy
