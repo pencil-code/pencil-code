@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.45 2007-08-27 20:50:10 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.46 2007-08-29 17:23:53 brandenb Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar,run2D=run2D
 COMPILE_OPT IDL2,HIDDEN
@@ -173,12 +173,18 @@ varcontent[iuut].idlinitloc = INIT_3VECTOR_LOC
 varcontent[iuut].skip  = 2
 
 default,iaatest,0
+;varcontent[iaatest].variable = 'Testfield vector potential (aatest)'
+;varcontent[iaatest].idlvar   = 'aatest'
+;varcontent[iaatest].idlinit    = 'fltarr(mx,my,mz,4*9)*one'
+;varcontent[iaatest].idlvarloc= 'aatest_loc'
+;varcontent[iaatest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,3*9)*one'
+;varcontent[iaatest].skip  = 26+9
 varcontent[iaatest].variable = 'Testfield vector potential (aatest)'
 varcontent[iaatest].idlvar   = 'aatest'
-varcontent[iaatest].idlinit    = 'fltarr(mx,my,mz,4*9)*one'
+varcontent[iaatest].idlinit    = 'fltarr(mx,my,mz,6)*one'
 varcontent[iaatest].idlvarloc= 'aatest_loc'
-varcontent[iaatest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,3*9)*one'
-varcontent[iaatest].skip  = 26+9
+varcontent[iaatest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,6)*one'
+varcontent[iaatest].skip  = 5
 
 default,iuun,0
 varcontent[iuun].variable   = 'Velocity of neutrals (uun)'
