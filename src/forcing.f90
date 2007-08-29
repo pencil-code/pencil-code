@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.113 2007-08-22 11:52:57 brandenb Exp $
+! $Id: forcing.f90,v 1.114 2007-08-29 14:19:43 dhruba Exp $
 
 module Forcing
 
@@ -18,7 +18,7 @@ module Forcing
   real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
   real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.,work_ff=0.
   real :: omega_ff=1.
-  real :: tforce_stop=impossible
+  real :: tforce_stop=impossible,tforce_start=0.
   real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=impossible
   real :: dtforce=0., force_strength=0.
   real, dimension(3) :: force_direction=(/0.,0.,0./)
@@ -44,6 +44,7 @@ module Forcing
   namelist /forcing_init_pars/ dummy
 
   namelist /forcing_run_pars/ &
+       tforce_start,&
        iforce,force,relhel,height_ff,r_ff,width_ff, &
        iforce2,force2,kfountain,fountain,tforce_stop, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
@@ -81,7 +82,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.113 2007-08-22 11:52:57 brandenb Exp $")
+           "$Id: forcing.f90,v 1.114 2007-08-29 14:19:43 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -165,7 +166,7 @@ module Forcing
 !  This can be useful for producing good initial conditions
 !  for turbulent decay experiments.
 !
-      if (t>tforce_stop) then
+      if ((t>tforce_stop) .or.(t<tforce_start))then
         if (headtt.or.ldebug) print*,'addforce: t>tforce_stop; no forcing'
       else
         if (headtt.or.ldebug) print*,'addforce: addforce started'
