@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.454 2007-08-29 11:21:21 ajohan Exp $
+! $Id: magnetic.f90,v 1.455 2007-08-29 13:04:41 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -291,6 +291,8 @@ module Magnetic
   integer :: idiag_apmr=0       ! DIAG_DOC:
   integer :: idiag_azmr=0       ! DIAG_DOC:
   integer :: idiag_bxmx=0       ! DIAG_DOC:
+  integer :: idiag_bymx=0       ! DIAG_DOC:
+  integer :: idiag_bzmx=0       ! DIAG_DOC:
   integer :: idiag_bymy=0       ! DIAG_DOC:
   integer :: idiag_mflux_x=0    ! DIAG_DOC:
   integer :: idiag_mflux_y=0    ! DIAG_DOC:
@@ -337,7 +339,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.454 2007-08-29 11:21:21 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.455 2007-08-29 13:04:41 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1877,6 +1879,8 @@ module Magnetic
 !             
       if (l1ddiagnos .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
         if (idiag_bxmx/=0)   call yzsum_mn_name_x(p%bb(:,1),idiag_bxmx)
+        if (idiag_bymx/=0)   call yzsum_mn_name_x(p%bb(:,2),idiag_bymx)
+        if (idiag_bzmx/=0)   call yzsum_mn_name_x(p%bb(:,3),idiag_bzmx)
         if (idiag_bx2mx/=0)  call yzsum_mn_name_x(p%bb(:,1)**2,idiag_bx2mx)
         if (idiag_by2mx/=0)  call yzsum_mn_name_x(p%bb(:,2)**2,idiag_by2mx)
         if (idiag_bz2mx/=0)  call yzsum_mn_name_x(p%bb(:,3)**2,idiag_bz2mx)
@@ -2539,7 +2543,7 @@ module Magnetic
         idiag_jfm=0; idiag_brbpmr=0; idiag_va2m=0
         idiag_b2mr=0; idiag_brmr=0; idiag_bpmr=0; idiag_bzmr=0
         idiag_armr=0; idiag_apmr=0; idiag_azmr=0
-        idiag_bxmx=0; idiag_bymy=0
+        idiag_bxmx=0; idiag_bymx=0; idiag_bzmx=0; idiag_bymy=0
         idiag_mflux_x=0; idiag_mflux_y=0; idiag_mflux_z=0
         idiag_bmxy_rms=0
 !
@@ -2627,6 +2631,12 @@ module Magnetic
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'bxmx',idiag_bxmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bymx',idiag_bymx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bzmx',idiag_bzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bx2mx',idiag_bx2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'by2mx',idiag_by2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bz2mx',idiag_bz2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bxbymx',idiag_bxbymx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex), &
                         'mflux_x',idiag_mflux_x)
       enddo
