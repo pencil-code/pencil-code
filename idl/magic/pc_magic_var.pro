@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.22 2007-03-14 09:51:00 dintrans Exp $
+; $Id: pc_magic_var.pro,v 1.23 2007-08-29 22:19:39 dintrans Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2007-03-14 09:51:00 $
-;  $Revision: 1.22 $
+;  $Date: 2007-08-29 22:19:39 $
+;  $Revision: 1.23 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -185,7 +185,7 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
       if (lionization and not lionization_fixed) then begin
         message,"Thermodynamic combination not implemented yet: /ss from lnrho and lnTT with lionization"
       endif else begin
-        variables[iv]='pc_eoscalc(lnrho,lnTT,/ss,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
+;       variables[iv]='pc_eoscalc(lnrho,lnTT,/ss,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
       endelse
 
     ; Pressure
