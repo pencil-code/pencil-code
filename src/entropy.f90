@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.514 2007-08-29 18:11:36 dintrans Exp $
+! $Id: entropy.f90,v 1.515 2007-08-29 21:19:09 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -207,7 +207,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.514 2007-08-29 18:11:36 dintrans Exp $")
+           "$Id: entropy.f90,v 1.515 2007-08-29 21:19:09 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -436,6 +436,7 @@ module Entropy
 
         case('cylind_layers')
           if (bcx1(iss)=='c1') FbotKbot=gamma/gamma1/(mpoly1+1.)
+          cs2cool=cs2top
 
       endselect
 !
@@ -1683,7 +1684,11 @@ module Entropy
       endif
       if (lheatc_hyper3ss) lpenc_requested(i_del6ss)=.true.
       if (cooltype=='shell') then
-        lpenc_requested(i_r_mn)=.true.
+        if (lcylindrical_coords) then
+          lpenc_requested(i_rcyl_mn)=.true.
+        else
+          lpenc_requested(i_r_mn)=.true.
+        endif
         if (deltaT_poleq/=0.) then
           lpenc_requested(i_z_mn)=.true.
           lpenc_requested(i_rcyl_mn)=.true.
@@ -2632,7 +2637,7 @@ module Entropy
 !
 !  Vertical gravity determines some heat/cool models.
 !
-      if (headtt) print*, 'calc_heat_cool: lgravz=', lgravz
+      if (headtt) print*, 'calc_heat_cool: lgravz, lgravr=', lgravz, lgravr
 !
 !  Define bottom and top height.
 !
@@ -2701,7 +2706,7 @@ module Entropy
           call output_pencil(trim(directory)//'/heat.dat',heat,1)
 !  surface cooling; entropy or temperature
 !  cooling profile; maximum = 1
-!        prof = 0.5*(1+tanh((r_mn-1.)/wcool))
+!       prof = 0.5*(1+tanh((r_mn-1.)/wcool))
         if (rcool==0.) rcool=r_ext
         prof = step(p%r_mn,rcool,wcool)
 !
@@ -2736,10 +2741,15 @@ module Entropy
             prof = 1 - step(p%r_mn,r_int,wcool)  ! inner heating/cooling step
             heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
           else
-            prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
-            heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
-            prof = 1 - step(p%r_mn,r_int,wcool)  ! inner heating/cooling step
-            heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
+            if (lcylindrical_coords) then
+              prof = step(p%rcyl_mn,rcool,wcool)  ! outer heating/cooling step
+              heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+            else
+              prof = step(p%r_mn,r_ext,wcool)     ! outer heating/cooling step
+              heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
+              prof = 1 - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
+              heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
+            endif
           endif
 !
         case default
