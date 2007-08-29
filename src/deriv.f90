@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.53 2007-08-28 16:44:44 dhruba Exp $
+! $Id: deriv.f90,v 1.54 2007-08-29 14:17:08 dhruba Exp $
 
 module Deriv
 
@@ -596,8 +596,7 @@ module Deriv
        if (lspherical_coords) &
             call fatal_error('der6','NOT IMPLEMENTED for spherical coordinates')
       endif
-!
-     
+!     
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -628,9 +627,7 @@ module Deriv
                   + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
                   -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
                   +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
-          if (lcylindrical_coords)   df=df*rcyl_mn1**6
-          if (lspherical_coords) df = df*r1_mn**6
-        else
+         else
           df=0.
         endif
       elseif (j==3) then
@@ -646,8 +643,7 @@ module Deriv
                   + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
                   -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
                   +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
-          if (lspherical_coords) df = df*(r1_mn*sin1th(m))**6
-        else
+         else
           df=0.
         endif
       endif
