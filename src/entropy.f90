@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.513 2007-08-27 09:13:46 bingert Exp $
+! $Id: entropy.f90,v 1.514 2007-08-29 18:11:36 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -207,7 +207,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.513 2007-08-27 09:13:46 bingert Exp $")
+           "$Id: entropy.f90,v 1.514 2007-08-29 18:11:36 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -872,6 +872,11 @@ module Entropy
 
         case ('cylind_layers')
           call cylind_layers(f)
+          if (ampl_ss.ne.0.) then
+            print*,'init_ss: also put an entropy bubble in hydrostatic equilibrium: radius_ss,ampl_ss=',radius_ss,ampl_ss
+            call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
+            call blob(-ampl_ss,f,ilnrho,radius_ss,center1_x,center1_y,center1_z)
+          endif
 
         case ('polytropic_simple')
           !
