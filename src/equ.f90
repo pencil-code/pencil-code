@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.374 2007-08-23 12:02:41 ajohan Exp $
+! $Id: equ.f90,v 1.375 2007-08-29 23:33:24 dintrans Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -445,7 +445,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.374 2007-08-23 12:02:41 ajohan Exp $")
+           "$Id: equ.f90,v 1.375 2007-08-29 23:33:24 dintrans Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -616,6 +616,10 @@ module Equ
               (r1_mn*dy_1(m))**4+(r1_mn*sin1th(m)*dz_1(n))**4
             dxyz_6 = dx_1(l1:l2)**6+ & 
               (r1_mn*dy_1(m))**6+(r1_mn*sin1th(m)*dz_1(n))**6
+          else if (lcylindrical_coords) then
+            dxyz_2 = dx_1(l1:l2)**2+(rcyl_mn1*dy_1(m))**2+dz_1(n)**2
+            dxyz_4 = dx_1(l1:l2)**4+(rcyl_mn1*dy_1(m))**4+dz_1(n)**4
+            dxyz_6 = dx_1(l1:l2)**6+(rcyl_mn1*dy_1(m))**6+dz_1(n)**6
           else
             dxyz_2 = dx_1(l1:l2)**2+dy_1(m)**2+dz_1(n)**2
             dxyz_4 = dx_1(l1:l2)**4+dy_1(m)**4+dz_1(n)**4
