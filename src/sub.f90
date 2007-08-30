@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.332 2007-08-30 01:00:22 dintrans Exp $
+! $Id: sub.f90,v 1.333 2007-08-30 10:51:38 wlyra Exp $
 
 module Sub
 
@@ -402,14 +402,23 @@ module Sub
             do isum=l1,l2
               fname(iname) = fname(iname)+x(isum)*x(isum)*sinth(m)*a(isum)
             enddo
+          elseif (lcylindrical_coords) then
+            fname(iname) = 0.
+            do isum=l1,l2
+              fname(iname) = fname(iname)+x(isum)*a(isum)
+            enddo
           else
             fname(iname)=sum(a)
           endif
         else
           if(lspherical_coords) then
-          do isum=l1,l2
-            fname(iname) = fname(iname)+x(isum)*x(isum)*sinth(m)*a(isum)
-          enddo
+            do isum=l1,l2
+              fname(iname) = fname(iname)+x(isum)*x(isum)*sinth(m)*a(isum)
+            enddo
+          elseif (lcylindrical_coords) then
+            do isum=l1,l2
+              fname(iname) = fname(iname)+x(isum)*a(isum)
+            enddo
           else
             fname(iname)=fname(iname)+sum(a)
           endif
@@ -470,20 +479,28 @@ module Sub
 !
 !  Successively calculate integral of a, which is supplied at each call.
 !  Just takes values between r_int < r < r_ext
-!  The purpose is to compute the total mass at each timestep to
-!  monitor mass inflow/outflow and mass conservation
+!  The purpose is to compute quantities just inside a cylinder or sphere
 !
 !   2-nov-05/wlad: adapted from sum_mn_name
-!  20-jun-07/dhruba: adapted for spherical polar coordinate system
 !
       use Cdata
 !
-      real, dimension (nx) :: a,aux
+      real, dimension (nx) :: a,aux,rlim
       type (pencil_case) :: p
       real :: dv
       integer :: iname,i,isum
 !
       if (iname /= 0) then
+!
+        if (lcylinder_in_a_box) then
+          rlim=p%rcyl_mn
+        elseif (lsphere_in_a_box) then
+          rlim=p%r_mn
+        else
+          call warning("sum_lim_mn_name","no reason to call it if you are "//&
+               "not using a cylinder or a sphere embedded in a "//&
+               "Cartesian grid") 
+        endif
 !
          dv=1.
          if (nxgrid/=1) dv=dv*dx
@@ -491,7 +508,7 @@ module Sub
          if (nzgrid/=1) dv=dv*dz
 !
          do i=1,nx
-            if ((p%rcyl_mn(i) .le. r_ext).and.(p%rcyl_mn(i) .ge. r_int)) then
+            if ((rlim(i) .le. r_ext).and.(rlim(i) .ge. r_int)) then
                aux(i) = a(i)
             else
                aux(i) = 0.
@@ -617,6 +634,9 @@ module Sub
         fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
       endif
 !
+      if (lcylindrical_coords) &
+           call fatal_error('xysum_mn_name_z','not implemented for cylindrical')
+!
     endsubroutine xysum_mn_name_z
 !***********************************************************************
     subroutine xzsum_mn_name_y(a,iname)
@@ -649,6 +669,9 @@ module Sub
         fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+sum(a)
       endif
 !
+      if (lcylindrical_coords) &
+           call fatal_error('xzsum_mn_name_y','not implemented for cylindrical')
+!
     endsubroutine xzsum_mn_name_y
 !***********************************************************************
     subroutine yzsum_mn_name_x(a,iname)
@@ -675,6 +698,9 @@ module Sub
       else
         fnamex(:,iname)=fnamex(:,iname)+a
       endif
+!
+      if (lcylindrical_coords) &
+           call fatal_error('yzsum_mn_name_x','not implemented for cylindrical')
 !
     endsubroutine yzsum_mn_name_x
 !***********************************************************************
@@ -848,6 +874,9 @@ module Sub
         fnamexz(:,n_nghost,ipz+1,iname)=fnamexz(:,n_nghost,ipz+1,iname)+a
       endif
 !
+      if (lcylindrical_coords) &
+           call fatal_error('ysum_mn_name_xz','not implemented for cylindrical')
+!
     endsubroutine ysum_mn_name_xz
 !***********************************************************************
     subroutine zsum_mn_name_xy(a,iname)
@@ -1003,6 +1032,9 @@ module Sub
         endif
       endif
 !
+      if (lcylindrical_coords) &
+           call fatal_error('mean_mn','not implemented for cylindrical')
+!
     endsubroutine mean_mn
 !***********************************************************************
     subroutine rms_mn(a,res)
@@ -1036,6 +1068,9 @@ module Sub
           res=res+sum(a**2)
         endif
       endif
+!
+      if (lcylindrical_coords) &
+           call fatal_error('rms_mn','not implemented for cylindrical')
 !
     endsubroutine rms_mn
 !***********************************************************************
@@ -1072,6 +1107,9 @@ module Sub
         endif
       endif
 !
+      if (lcylindrical_coords) &
+           call fatal_error('rms2_mn','not implemented for cylindrical')
+!
     endsubroutine rms2_mn
 !***********************************************************************
     subroutine sum_mn(a,res)
@@ -1106,6 +1144,9 @@ module Sub
           res=res+sum(a)
         endif
       endif
+!
+      if (lcylindrical_coords) &
+           call fatal_error('sum_mn','not implemented for cylindrical')
 !
     endsubroutine sum_mn
 !***********************************************************************
@@ -2719,28 +2760,16 @@ module Sub
       real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
       integer :: k
 !
-      if (lcylindrical_coords) then
-!
-!  wd-15-mar-2007: temporarily commented out, as this does not compile:
-!                  the first argument of del2 is a 4-d array, the last
-!                  one is 1-d.
-!
-!         call del2(f,k,tmp)
-!         call del2(tmp,k,tmp2)
-!         call del2(tmp2,k,del6f)
-         del6f = 0.
-      else
-         call der6(f,k,d6fdx,1)
-         call der6(f,k,d6fdy,2)
-         call der6(f,k,d6fdz,3)
-         del6f = d6fdx + d6fdy + d6fdz
-      endif
+      call der6(f,k,d6fdx,1)
+      call der6(f,k,d6fdy,2)
+      call der6(f,k,d6fdz,3)
+      del6f = d6fdx + d6fdy + d6fdz
 !
 !  Exit if this is requested for lspherical_coords run,
 !  unless lpencil_check=T
 ! 
-      if (.not.lpencil_check.and.lspherical_coords) &
-           call stop_it("del6 not implemented for spherical coordinates")
+      if (.not.lpencil_check.and.(lspherical_coords.or.lcylindrical_coords)) &
+           call stop_it("del6 not implemented for non-cartesian coordinates")
 !
     endsubroutine del6
 !***********************************************************************
