@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.331 2007-08-29 14:17:53 dhruba Exp $
+! $Id: sub.f90,v 1.332 2007-08-30 01:00:22 dintrans Exp $
 
 module Sub
 
@@ -2076,9 +2076,9 @@ module Sub
       if (lcylindrical_coords) then
          !del2 already contains the extra term 1/r*d(uk)/dt
          call der(f,k1+2,tmp,2)
-         del2f(:,1)=del2f(:,1) -(2*tmp+f(l1:l2,m,n,k1+1))*rcyl_mn1**2
+         del2f(:,1)=del2f(:,1) -(2*tmp+f(l1:l2,m,n,k1+1))*rcyl_mn2
          call der(f,k1+1,tmp,2)
-         del2f(:,2)=del2f(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn1**2
+         del2f(:,2)=del2f(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn2
       endif
 !
       if (lspherical_coords.and.present(fij).and.present(pff)) then
@@ -2173,12 +2173,12 @@ module Sub
         if (lcylindrical_coords) then 
           !r-component
           call der(f,k1+2,tmp,2)
-          del2(:,1)=del2(:,1) -(2*tmp+f(l1:l2,m,n,k1+1))*rcyl_mn1**2
+          del2(:,1)=del2(:,1) -(2*tmp+f(l1:l2,m,n,k1+1))*rcyl_mn2
           call der(f,k1+1,tmp,1)
           del2(:,1)=del2(:,1) + tmp*rcyl_mn1
           !phi-component
           call der(f,k1+1,tmp,2)
-          del2(:,2)=del2(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn1**2
+          del2(:,2)=del2(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn2
           call der(f,k1+2,tmp,1)
           del2(:,2)=del2(:,2) + tmp*rcyl_mn1
           !z-component
