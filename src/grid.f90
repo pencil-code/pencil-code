@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.24 2007-08-28 19:25:28 brandenb Exp $
+! $Id: grid.f90,v 1.25 2007-08-30 17:24:59 dhruba Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -55,10 +55,11 @@ module Grid
 !
 !  25-jun-04/tobi+wolf: coded
 !
+      use Cdata, only:lcartesian_coords,lcylindrical_coords,lspherical_coords
       use Cdata, only: nx,ny,nz
       use Cdata, only: mx,my,mz
       use Cdata, only: Lx,Ly,Lz
-      use Cdata, only: dx_1,dy_1,dz_1
+      use Cdata, only: dx_1,dy_1,dz_1,sinth
       use Cdata, only: xprim,yprim,zprim
       use Cdata, only: dx_tilde,dy_tilde,dz_tilde
       use Cdata, only: dxmin, dxmax
@@ -245,6 +246,10 @@ module Grid
 
         endselect
 
+! Added parts for spherical coordinates and cylindrical coordinates. 
+! From now on dy = d\theta but dy_1 = 1/rd\theta and similarly for \phi.
+! corresponding r and rsin\theta factors for equ.f90 (where CFL timesteps
+! are estimated) are removed.
         dy_1=1./yprim
         dy_tilde=-yprim2/yprim**2
       endif
@@ -316,7 +321,11 @@ module Grid
       !
       if (lequidist(2) .or. nygrid <= 1) then
         dxmin_y = dy
+        if(lspherical_coords) dxmin_y = dy*minval(x(l1:l2))
+        if(lcylindrical_coords) dxmin_y = dy*minval(x(l1:l2))
         dxmax_y = dy
+        if(lspherical_coords) dxmax_y = dy*maxval(x(l1:l2))
+        if(lcylindrical_coords) dxmax_y = dy*maxval(x(l1:l2))
       else
         dxmin_y = minval(yprim(m1:m2))
         dxmax_y = maxval(yprim(m1:m2))
@@ -325,6 +334,8 @@ module Grid
       if (lequidist(3) .or. nzgrid <= 1) then
         dxmin_z = dz
         dxmax_z = dz
+        if(lspherical_coords) dxmin_z = dz*minval(x(l1:l2))*minval(sinth(m1:m2))
+        if(lspherical_coords) dxmin_z = dz*maxval(x(l1:l2))*maxval(sinth(m1:m2))
       else
         dxmin_z = minval(zprim(n1:n2))
         dxmax_z = maxval(zprim(n1:n2))
@@ -436,7 +447,7 @@ module Grid
         if (lpencil(i_z_mn))     p%z_mn    = x(l1:l2)*cos(z(n))
         if (lpencil(i_r_mn))     p%r_mn    = x(l1:l2)
         if (lpencil(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)*sin(z(n))
-        if (lpencil(i_phi_mn))   p%phi_mn  = atan2(p%y_mn,p%x_mn)
+        if (lpencil(i_phi_mn))   p%phi_mn  = spread(z(n),1,nx) 
         if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
         if (lpencil(i_pomx).or.lpencil(i_pomy).or.&
             lpencil(i_phix).or.lpencil(i_phiy)) &

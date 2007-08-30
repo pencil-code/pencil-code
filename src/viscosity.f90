@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.77 2007-08-25 10:55:58 brandenb Exp $
+! $Id: viscosity.f90,v 1.78 2007-08-30 17:24:59 dhruba Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -102,7 +102,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.77 2007-08-25 10:55:58 brandenb Exp $")
+           "$Id: viscosity.f90,v 1.78 2007-08-30 17:24:59 dhruba Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -473,7 +473,6 @@ module Viscosity
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  20-11-04/anders: coded
-!  21-02007/dhruba: spherical polar coordinate system ('simplified' viscosity) 
 !
       use Cdata
       use Sub
@@ -509,30 +508,6 @@ module Viscosity
           endif
         endif
 !
-! for spherical polar coordinate system, 
-!
-!!        if (lspherical) then
-!!        if (lspherical_coords) then
-! DM : I have moved the calculation of Laplacian to the del2v subroutine
-! for r component (factors of line elements are taken care of inside p%uij
-!!          p%fvisc(:,1)=p%fvisc(:,1)+&
-!!              nu*r1_mn*(2.*(p%uij(:,1,1)-p%uij(:,2,2)-p%uij(:,3,3) &
-!!                           -r1_mn*p%uu(:,1)-cotth(m)*r1_mn*p%uu(:,2) ) &
-!!                      +cotth(m)*p%uij(:,1,2) )
-! for theta component
-!!          p%fvisc(:,2)=p%fvisc(:,2)+&
-!!               nu*r1_mn*(2.*(p%uij(:,2,1)-cotth(m)*p%uij(:,3,3)&
-!!                             +p%uij(:,1,2) )&
-!!                         +cotth(m)*p%uij(:,2,2)-sin1th(m)*sin1th(m)*p%uu(:,2) )
-! for phi component  
-!!          p%fvisc(:,3)=p%fvisc(:,3)+&
-!!               nu*r1_mn*(2.*(p%uij(:,3,1)+p%uij(:,1,3)&
-!!                             +cotth(m)*p%uij(:,2,3) ) &
-!!                         +cotth(m)*p%uij(:,3,2)-sin1th(m)*p%uu(:,3) )
-!AB: commented this out for the time being
-!write(*,*) p%fvisc(:,2)
-!!        endif
-! spherical polar coordinate system end 
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu
       endif
 !
