@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.60 2007-08-24 17:56:40 dobler Exp $
+#  $Id: mkdatadir,v 1.61 2007-08-30 18:08:49 sur Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -119,22 +119,35 @@ else if ($hn =~ tpb* ) then
 else if ($hn =~ nunatak* ) then
   set str='s/\/global\/home/\/global\/scratch/g'
 else
-  set str='s/home/var\/tmp/g'
+  #set str='s/home/var\/tmp/g'
+  set str=''
 endif
 #
-sed -e "$str" .tmp >! .scr
-if ( -d data ) then
-  echo Moving present data directory to: `cat .scr`
-  mkdir -p `cat .scr`
-  rm -rf `cat .scr`
-  mv data `cat .scr`
+if ($str == '') then
+  #
+  #  alternatively, make a local directory in run directory
+  #
+  if ($hn =~ n0) then
+    mkdir data
+  endif
 else
-  echo Creating: `cat .scr`
-  mkdir -p `cat .scr`
+  #
+  #  make and link to scatch disk
+  #
+  sed -e "$str" .tmp >! .scr
+  if ( -d data ) then
+    echo Moving present data directory to: `cat .scr`
+    mkdir -p `cat .scr`
+    rm -rf `cat .scr`
+    mv data `cat .scr`
+  else
+    echo Creating: `cat .scr`
+    mkdir -p `cat .scr`
+  endif
+  ln -s `cat .scr` data
+  #Tidy up temporary files
+  rm -f .scr .tmp
 endif
-ln -s `cat .scr` data
-#Tidy up temporary files
-rm -f .scr .tmp
 
 #For certain people who like it like that... Create a default .cvsignore file in the data directory
 if (($USER =~ mee) || ($USER =~ n7026413) || ($USER =~ hpeukue2)) then
