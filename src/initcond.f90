@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.218 2007-08-28 23:59:42 wlyra Exp $
+! $Id: initcond.f90,v 1.219 2007-08-30 13:27:45 wlyra Exp $
 
 module Initcond
 
@@ -2865,7 +2865,7 @@ module Initcond
             call power_law(sqrt(g0_),rr_cyl,qgshear,OO)
           elseif (lgravr) then
             call acceleration(g_r)
-            OO=sqrt(abs(g_r)/rr_cyl)
+            OO=sqrt(abs(g_r)/max(rr_cyl,tini))
           endif
 !
           if (lcartesian_coords) then
