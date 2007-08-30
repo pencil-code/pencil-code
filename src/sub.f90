@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.334 2007-08-30 11:12:45 wlyra Exp $
+! $Id: sub.f90,v 1.335 2007-08-30 13:49:03 wlyra Exp $
 
 module Sub
 
@@ -689,7 +689,7 @@ module Sub
         do isum=l1,l2
           fnamex(isum,iname)=fnamex(isum,iname)+x(isum)*x(isum)*sinth(m)*a(isum)
         enddo
-      elseif (lcylindrical_coords)
+      elseif (lcylindrical_coords) then
         do isum=l1,l2
           fnamex(isum,iname)=fnamex(isum,iname)+x(isum)*a(isum)
         enddo
