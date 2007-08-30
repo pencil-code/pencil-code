@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.333 2007-08-30 10:51:38 wlyra Exp $
+! $Id: sub.f90,v 1.334 2007-08-30 11:12:45 wlyra Exp $
 
 module Sub
 
@@ -625,7 +625,7 @@ module Sub
 !  n starts with nghost+1=4, so the correct index is n-nghost
 !
       n_nghost=n-nghost
-      if(lspherical_coords)then
+      if(lspherical_coords.or.lcylindrical_coords)then
         do isum=l1,l2
           fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
                               x(isum)*a(isum)
@@ -633,9 +633,6 @@ module Sub
       else
         fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
       endif
-!
-      if (lcylindrical_coords) &
-           call fatal_error('xysum_mn_name_z','not implemented for cylindrical')
 !
     endsubroutine xysum_mn_name_z
 !***********************************************************************
@@ -665,12 +662,9 @@ module Sub
           fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
                               x(isum)*sinth(m)*a(isum)
         enddo
-      else
+      else ! also correct for cylindrical
         fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+sum(a)
       endif
-!
-      if (lcylindrical_coords) &
-           call fatal_error('xzsum_mn_name_y','not implemented for cylindrical')
 !
     endsubroutine xzsum_mn_name_y
 !***********************************************************************
@@ -695,12 +689,13 @@ module Sub
         do isum=l1,l2
           fnamex(isum,iname)=fnamex(isum,iname)+x(isum)*x(isum)*sinth(m)*a(isum)
         enddo
+      elseif (lcylindrical_coords)
+        do isum=l1,l2
+          fnamex(isum,iname)=fnamex(isum,iname)+x(isum)*a(isum)
+        enddo
       else
         fnamex(:,iname)=fnamex(:,iname)+a
       endif
-!
-      if (lcylindrical_coords) &
-           call fatal_error('yzsum_mn_name_x','not implemented for cylindrical')
 !
     endsubroutine yzsum_mn_name_x
 !***********************************************************************
@@ -868,7 +863,7 @@ module Sub
 !  keep full x-dependence
 !
       n_nghost=n-nghost
-      if(lspherical_coords)then
+      if(lspherical_coords)then  !WL:is this correct for spherical??
         fnamexz(:,n_nghost,ipz+1,iname) = fnamexz(:,n_nghost,ipz+1,iname)+a*y(m)
       else
         fnamexz(:,n_nghost,ipz+1,iname)=fnamexz(:,n_nghost,ipz+1,iname)+a
