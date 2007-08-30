@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.121 2007-04-08 10:13:29 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.122 2007-08-30 05:28:55 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -137,7 +137,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.121 2007-04-08 10:13:29 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.122 2007-08-30 05:28:55 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -706,7 +706,7 @@ module Dustvelocity
       lpenc_requested(i_uud)=.true.
       if (ladvection_dust) lpenc_requested(i_udgud)=.true.
       if (ldustvelocity_shorttausd) then
-        lpenc_requested(i_gg)=.true.
+        if (lgrav) lpenc_requested(i_gg)=.true.
         lpenc_requested(i_cs2)=.true.
         lpenc_requested(i_jxbr)=.true.
         lpenc_requested(i_glnrho)=.true.
@@ -900,7 +900,11 @@ module Dustvelocity
         if (headtt) print*, 'duud_dt: Short stopping time approximation'
         do k=1,ndustspec
           do j=1,3
-            AA_sfta(:,j)=p%gg(:,j)
+            if (lgrav) then
+              AA_sfta(:,j)=p%gg(:,j)
+            else
+              AA_sfta(:,j)=0.0
+            endif
           enddo
           if (ldensity) then
             do j=1,3; AA_sfta(:,j)=AA_sfta(:,j)+p%cs2(:)*p%glnrho(:,j); enddo
