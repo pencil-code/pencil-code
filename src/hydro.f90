@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.384 2007-08-28 01:08:12 wlyra Exp $
+! $Id: hydro.f90,v 1.385 2007-08-30 09:58:24 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -309,7 +309,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.384 2007-08-28 01:08:12 wlyra Exp $")
+           "$Id: hydro.f90,v 1.385 2007-08-30 09:58:24 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1129,6 +1129,9 @@ use Mpicomm, only: stop_it
 !  (theta,phi,r) i.e. (south,east,up), in spherical polar coordinates
 !
       if (Omega/=0.) then
+        if (lcylindrical_coords) &
+             call fatal_error("duu_dt","Coriolis force"//&
+             "NOT IMPLEMENTED for cylindrical coordinates")
         if (lspherical_coords) then
           call coriolis_spherical(f,df,p)
         elseif (lprecession) then
