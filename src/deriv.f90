@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.54 2007-08-29 14:17:08 dhruba Exp $
+! $Id: deriv.f90,v 1.55 2007-08-30 09:01:09 wlyra Exp $
 
 module Deriv
 
@@ -627,6 +627,7 @@ module Deriv
                   + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
                   -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
                   +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          if (lcylindrical_coords)   df=df*rcyl_mn1**6
          else
           df=0.
         endif
