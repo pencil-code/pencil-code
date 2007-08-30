@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.515 2007-08-29 21:19:09 dintrans Exp $
+! $Id: entropy.f90,v 1.516 2007-08-30 06:05:09 ajohan Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -207,7 +207,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.515 2007-08-29 21:19:09 dintrans Exp $")
+           "$Id: entropy.f90,v 1.516 2007-08-30 06:05:09 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1582,7 +1582,8 @@ module Entropy
       use Cdata
       use EquationOfState, only: beta_glnrho_scaled
 !
-      lpenc_requested(i_cp1)=.true.
+      if (lheatc_simple .or. lheatc_chiconst .or. lheatc_Kconst .or. &
+          tau_cor>0) lpenc_requested(i_cp1)=.true.
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
       if (ladvection_entropy) lpenc_requested(i_ugss)=.true.
@@ -1761,11 +1762,11 @@ module Entropy
       if (lpencil_in(i_fpres)) then
         lpencil_in(i_cs2)=.true.
         lpencil_in(i_glnrho)=.true.
-        lpencil_in(i_gss)=.true.
         if (leos_idealgas) then
           lpencil_in(i_glnTT)=.true.
         else
-          lpencil_in(i_cp1)=.true.
+          lpencil_in(i_cp1tilde)=.true.
+          lpencil_in(i_gss)=.true.
         endif
       endif
 !
