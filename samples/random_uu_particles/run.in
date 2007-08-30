@@ -3,10 +3,11 @@
 !  velocity field.
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.8 2007-01-28 14:54:09 ajohan Exp $',
+  cvsid='$Id: run.in,v 1.9 2007-08-30 05:12:40 brandenb Exp $',
   nt=50, it1=10, cdt=0.4, cdtv=0.80, isave=100, itorder=3
   dsnap=10.0, dvid=0.5, ip=20
-  lpencil_check=F
+  lbidiagonal_derij=F
+  lpencil_check=T
   dt=1.0e-3
 /
 &eos_run_pars
