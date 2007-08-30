@@ -1,4 +1,4 @@
-! $Id: shock_highorder.f90,v 1.6 2007-08-22 18:59:04 dhruba Exp $
+! $Id: shock_highorder.f90,v 1.7 2007-08-30 10:20:25 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -76,7 +76,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_highorder.f90,v 1.6 2007-08-22 18:59:04 dhruba Exp $")
+           "$Id: shock_highorder.f90,v 1.7 2007-08-30 10:20:25 wlyra Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -394,7 +394,7 @@ module Shock
           f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + max(0.,-penc)
         endif
         if(lcylindrical_coords) then
-          penc= r1_mn*f(l1:l2,m,n,iux) 
+          penc= rcyl_mn1*f(l1:l2,m,n,iux) 
           f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + max(0.,-penc)
         endif
       enddo
