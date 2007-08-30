@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.17 2007-08-28 14:34:50 wlyra Exp $
+! $Id: border_profiles.f90,v 1.18 2007-08-30 10:03:23 wlyra Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -107,7 +107,13 @@ module BorderProfiles
 !
       use Cdata
 !
-      if (lspherical_coords) lpenc_requested(i_x_mn)=.true.
+      if (lcylindrical_coords.or.lcylinder_in_a_box) then
+        lpenc_requested(i_rcyl_mn)=.true.
+      elseif (lspherical_coords.or.lsphere_in_a_box) then
+        lpenc_requested(i_r_mn)=.true.
+      else
+        lpenc_requested(i_x_mn)=.true.
+      endif
 !
     endsubroutine pencil_criteria_borderprofiles
 !***********************************************************************
