@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.12 2007-08-26 23:33:07 dobler Exp $
+! $Id: neutralvelocity.f90,v 1.13 2007-08-30 10:14:19 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -19,7 +19,7 @@ module NeutralVelocity
 !  Note that Omega is already defined in cdata.
 
   use Cparam
-  use Cdata , only: Omega, theta
+  use Cdata 
   use Viscosity
   use Messages
 
@@ -104,6 +104,9 @@ module NeutralVelocity
       if (.not. first) call stop_it('register_neutralvelocity called twice')
       first = .false.
 !
+      if (.not.lcartesian_coords) call fatal_error('register_neutralvelocity','non cartesian '//&
+           'not yet implemented in the neutrals module')
+!
 !  indices to access uu
 !
       iuun = nvar+1
@@ -128,7 +131,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.12 2007-08-26 23:33:07 dobler Exp $")
+           "$Id: neutralvelocity.f90,v 1.13 2007-08-30 10:14:19 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

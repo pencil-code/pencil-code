@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.9 2007-08-23 13:50:46 wlyra Exp $
+! $Id: neutraldensity.f90,v 1.10 2007-08-30 10:14:19 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -95,7 +95,10 @@ module NeutralDensity
 !
       if (.not. first) call fatal_error('register_neutraldensity','module registration called twice')
       first = .false.
-
+!
+      if (.not.lcartesian_coords) call fatal_error('register_neutraldensity','non cartesian '//&
+           'not yet implemented in the neutrals module')
+!
       call farray_register_pde('lnrhon',ilnrhon)
 !      
       lneutraldensity=.true.
@@ -103,7 +106,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.9 2007-08-23 13:50:46 wlyra Exp $")
+           "$Id: neutraldensity.f90,v 1.10 2007-08-30 10:14:19 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
