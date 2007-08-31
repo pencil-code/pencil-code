@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.337 2007-08-31 11:22:28 wlyra Exp $
+! $Id: sub.f90,v 1.338 2007-08-31 12:08:54 wlyra Exp $
 
 module Sub
 
@@ -863,14 +863,11 @@ module Sub
 !  keep full x-dependence
 !
       n_nghost=n-nghost
-      if(lspherical_coords)then
+      if(lspherical_coords.or.lcylindrical_coords)then
         fnamexz(:,n_nghost,ipz+1,iname) = fnamexz(:,n_nghost,ipz+1,iname)+a*x(l1:l2)
       else
         fnamexz(:,n_nghost,ipz+1,iname)=fnamexz(:,n_nghost,ipz+1,iname)+a
       endif
-!
-      if (lcylindrical_coords) &
-           call fatal_error('ysum_mn_name_xz','not implemented for cylindrical')
 !
     endsubroutine ysum_mn_name_xz
 !***********************************************************************
@@ -921,6 +918,11 @@ module Sub
         r0 = rcyl(ir)
         phiavg_profile(ir,:) = exp(-0.5*((p%rcyl_mn-r0)/width)**4)
       enddo
+!
+      if (.not.(lcylinder_in_a_box.or.lsphere_in_a_box)) &
+           call warning("calc_phiavg_profile","no reason to call it if you are "//&
+           "not using a cylinder or a sphere embedded in a "//&
+           "Cartesian grid") 
 !
     endsubroutine calc_phiavg_profile
 !***********************************************************************
