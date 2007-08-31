@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.219 2007-08-30 13:27:45 wlyra Exp $
+! $Id: initcond.f90,v 1.220 2007-08-31 13:42:28 wlyra Exp $
 
 module Initcond
 
@@ -2865,7 +2865,11 @@ module Initcond
             call power_law(sqrt(g0_),rr_cyl,qgshear,OO)
           elseif (lgravr) then
             call acceleration(g_r)
-            OO=sqrt(abs(g_r)/max(rr_cyl,tini))
+            if (any(g_r .gt. 0.)) then
+              call stop_it("global_shear: gravity is directed outwards")
+            else
+              OO=sqrt(-g_r/max(rr_cyl,tini))
+            endif
           endif
 !
           if (lcartesian_coords) then
