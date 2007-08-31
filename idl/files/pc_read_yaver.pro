@@ -1,4 +1,4 @@
-;; $Id: pc_read_yaver.pro,v 1.3 2007-08-03 09:53:26 ajohan Exp $
+;; $Id: pc_read_yaver.pro,v 1.4 2007-08-31 07:16:04 ajohan Exp $
 ;;
 ;;   Read y-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -23,7 +23,7 @@ COMMON pc_precision, zero, one
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default, varfile, 'yaverages.dat'
 default, nit, 0
-default, lplot, 0 ;(changed default to 0/axel)
+default, lplot, 0
 default, iplot, 0
 default, zoom, 1
 default, min, 0.0
@@ -96,7 +96,6 @@ endif
 ;;  Variables to put single time snapshot in.
 ;;
 array=fltarr(nx,nz,nvar)*one
-help,array
 t  =0.0*one
 ;;
 ;;  Prepare for read
@@ -125,7 +124,7 @@ endif
 ;;
 it=0 & itimg=0
 lwindow_opened=0
-while (not eof(file)) do begin
+while ( (not eof(file)) and (nit eq 0 or it lt nit) ) do begin
 
   readu, file, t
   if ( (t ge tmin) and (it mod njump eq 0) ) then begin
@@ -264,7 +263,7 @@ nt=it
 if (nit ne 0) then begin
   makeobject="object = CREATE_STRUCT(name=objectname,['t'," + $
       arraytostring(varnames,QUOTE="'",/noleader) + "]," + $
-      "tt,"+arraytostring(varnames,/noleader) + ")"
+      "tt[0:it-1],"+arraytostring(varnames+'[*,*,0:it-1]',/noleader) + ")"
 ;
   if (execute(makeobject) ne 1) then begin
     message, 'ERROR Evaluating variables: ' + makeobject, /INFO
