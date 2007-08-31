@@ -1,4 +1,4 @@
-! $Id: shock_highorder.f90,v 1.10 2007-08-31 11:25:23 wlyra Exp $
+! $Id: shock_highorder.f90,v 1.11 2007-08-31 11:30:46 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -76,7 +76,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_highorder.f90,v 1.10 2007-08-31 11:25:23 wlyra Exp $")
+           "$Id: shock_highorder.f90,v 1.11 2007-08-31 11:30:46 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -368,11 +368,9 @@ module Shock
           call boundconds_z(f,iuz,iuz)
         endif
 
-        f(l1:l2,m,n,ishock) = 0.
-
         call div(f,iuu,penc)
 
-        f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + max(0.,-penc)
+        f(l1:l2,m,n,ishock) = max(0.,-penc)
 
       enddo
 
