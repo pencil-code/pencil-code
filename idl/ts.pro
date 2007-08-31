@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;;  $Date: 2007-08-03 09:53:26 $
-;;;  $Revision: 1.9 $
+;;;  $Date: 2007-08-31 01:44:25 $
+;;;  $Revision: 1.10 $
 ;;;  Description:
 ;;;   Read time series data from data/time_series.dat into the
 ;;;   structure `ts' and plot urms(t) and brms(t) (if available).
@@ -141,5 +141,6 @@ endif else begin
 endelse
 
 
+close,1
 end
 ; End of file ts.pro
