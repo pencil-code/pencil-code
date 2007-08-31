@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.516 2007-08-30 06:05:09 ajohan Exp $
+! $Id: entropy.f90,v 1.517 2007-08-31 01:42:47 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -207,7 +207,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.516 2007-08-30 06:05:09 ajohan Exp $")
+           "$Id: entropy.f90,v 1.517 2007-08-31 01:42:47 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -406,16 +406,21 @@ module Entropy
 !
 !  temperatures at shell boundaries
 !
-          TT_ext=T0
           if (initss(1) .eq. 'shell_layers') then
-!           lmultilayer=.true.  ! this is the default...
+!           lmultilayer=.true.   ! this is the default...
             if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
-            beta0=-g0/(mpoly0+1)*gamma/gamma1
-            beta1=-g0/(mpoly1+1)*gamma/gamma1
+            call get_cp1(cp1)
+            beta0=-cp1*g0/(mpoly0+1)*gamma/gamma1
+            beta1=-cp1*g0/(mpoly1+1)*gamma/gamma1
+            T0=cs20/gamma1       ! T0 defined from cs20
+            TT_ext=T0
             TT_crit=TT_ext+beta0*(r_bcz-r_ext)
             TT_int=TT_crit+beta1*(r_int-r_bcz)
+            cs2top=cs20
+            cs2bot=gamma1*TT_int
           else
             lmultilayer=.false.  ! to ensure that hcond=cte
+            TT_ext=T0            ! T0 defined in start.in for geodynamo
             TT_int=TT_ext*(1.+beta1*(r_ext/r_int-1.))
           endif
           if (lroot) then
@@ -431,11 +436,14 @@ module Entropy
         case('star_heat')
           if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
           if (lroot) print*,'initialize_entropy: set cs2cool=cs20'
-          cs2cool=cs0**2
+          cs2cool=cs20
           call star_heat_grav(f)   ! crush the profile done by gravity_r
 
         case('cylind_layers')
-          if (bcx1(iss)=='c1') FbotKbot=gamma/gamma1/(mpoly1+1.)
+          if (bcx1(iss)=='c1') then
+            Fbot=gamma/gamma1*hcond0*g0/(mpoly0+1)
+            FbotKbot=gamma/gamma1*g0/(mpoly0+1)
+          endif
           cs2cool=cs2top
 
       endselect
@@ -3370,21 +3378,22 @@ module Entropy
 !  09-aug-06/dintrans: coded
 !
       use Gravity, only: g0
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly0, mpoly1, lnrho0
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly0, &
+                                 mpoly1, lnrho0, get_cp1
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,r_mn
-      real :: beta0,beta1,TT_crit
+      real :: beta0,beta1,TT_crit,cp1
       real :: lnrho_int,lnrho_ext,lnrho_crit
 
       if (headtt) print*,'r_bcz in entropy.f90=',r_bcz
 !
 !  beta is the temperature gradient
-!  1/beta = -(g/cp) 1./[(1-1/gamma)*(m+1)]
-!  AB: Boris, did you ignore cp below?
+!  1/beta = -(g/cp) /[(1-1/gamma)*(m+1)]
 !
-      beta0=-g0/(mpoly0+1)*gamma/gamma1
-      beta1=-g0/(mpoly1+1)*gamma/gamma1
+      call get_cp1(cp1)
+      beta0=-cp1*g0/(mpoly0+1)*gamma/gamma1
+      beta1=-cp1*g0/(mpoly1+1)*gamma/gamma1
       TT_crit=TT_ext+beta0*(r_bcz-r_ext)
       lnrho_ext=lnrho0
       lnrho_crit=lnrho0+ &
