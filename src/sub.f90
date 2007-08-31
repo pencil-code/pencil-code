@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.338 2007-08-31 12:08:54 wlyra Exp $
+! $Id: sub.f90,v 1.339 2007-08-31 12:52:49 wlyra Exp $
 
 module Sub
 
@@ -378,6 +378,7 @@ module Sub
 !   4-may-02/axel: adapted for fname array
 !  23-jun-02/axel: allows for taking square root in the end
 !  20-jun-07/dhruba:adapted for spherical polar coordinate system
+!  30-aug-07/wlad: adapted for cylindrical coordinates
 !
 !  Note [24-may-2004, wd]:
 !    This routine should incorporate a test for iname /= 0, so instead of
@@ -1854,6 +1855,7 @@ module Sub
 !  calculate divergence of vector, get scalar
 !  13-dec-01/nils: coded
 !  16-jul-02/nils: adapted from pencil_mpi
+!  31-aug-07/wlad: adapted for cylindrical and spherical coords
 !
       use Cdata
       use Deriv
@@ -1915,6 +1917,7 @@ module Sub
 !  calculate divergence from derivative matrix
 !  18-sep-04/axel: coded
 !  21-feb-07/axel: corrected spherical coordinates
+!  14-mar-07/wlad: added cylindrical coordinates 
 !
       use Cdata
 !
@@ -1944,6 +1947,7 @@ module Sub
 !  calculate curl from derivative matrix
 !  21-jul-03/axel: coded
 !  21-feb-07/axel: corrected spherical coordinates
+!  14-mar-07/wlad: added cylindrical coordinates 
 !
       use Cdata
 !
@@ -1976,6 +1980,7 @@ module Sub
 !  10-sep-01/axel: adapted for cache efficiency
 !  11-sep-04/axel: began adding spherical coordinates
 !  21-feb-07/axel: corrected spherical coordinates
+!  14-mar-07/wlad: added cylindrical coordinates 
 !
       use Cdata
       use Deriv
@@ -2063,6 +2068,7 @@ module Sub
 !
 !  calculate del2 of a scalar, get scalar
 !  12-sep-97/axel: coded
+!   7-mar-07/wlad: added cylindrical coordinates 
 !
       use Cdata
       use Deriv
@@ -2098,6 +2104,7 @@ module Sub
 !
 !  calculate del2 of a vector, get vector
 !  28-oct-97/axel: coded
+!  15-mar-07/wlad: added cylindrical coordinates 
 !
       use Cdata
       use Deriv,only:der
@@ -2158,6 +2165,7 @@ module Sub
 !  does not speed up the code on Mephisto @ 32x32x64.
 !
 !  12-sep-01/axel: coded
+!  15-mar-07/wlad: added cylindrical coordinates 
 !
       use Cdata
       use Deriv
@@ -2408,6 +2416,7 @@ module Sub
 !  21-jul-03/axel: coded
 !  26-jul-05/tobi: do not calculate both d^2 A/(dx dy) and d^2 A/(dy dx)
 !  23-feb-07/axel: added spherical coordinates
+!   7-mar-07/wlad: added cylindrical coordinates 
 !
       use Cdata
       use Deriv
@@ -2755,7 +2764,7 @@ module Sub
 !  calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
 !  than del2^3) of a scalar for hyperdiffusion
 !  8-jul-02/wolf: coded
-! 15-mar-07/wlad: implemented cylindrical coordinates as del2^3 
+!
       use Cdata
       use Deriv
       use Mpicomm, only:stop_it
@@ -2913,7 +2922,7 @@ module Sub
 !  not for general u.gradA
 !
 !  21-feb-07/axel+dhruba: added spherical coordinates
-!
+!  12-mar-07/wlad: added cylindrical coordinates
       use Cdata
 !
       intent(in) :: f,k,gradf,uu,upwind
@@ -2966,6 +2975,7 @@ module Sub
 !  not for general u.gradA
 !
 !  21-feb-07/axel+dhruba: added spherical coordinates
+!   7-mar-07/wlad: added cylindrical coordinates
 !
       use Cdata
 !

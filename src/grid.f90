@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.25 2007-08-30 17:24:59 dhruba Exp $
+! $Id: grid.f90,v 1.26 2007-08-31 12:52:49 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -398,6 +398,7 @@ module Grid
 !  Most basic pencils should come first, as others may depend on them.
 !
 !   15-nov-06/tony: coded
+!   27-aug-07/wlad: generalized for cyl. and sph. coordinates
 !
       use Cparam
       use Cdata
