@@ -1,4 +1,4 @@
-! $Id: shock_highorder.f90,v 1.11 2007-08-31 11:30:46 theine Exp $
+! $Id: shock_highorder.f90,v 1.12 2007-08-31 12:08:29 dhruba Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -76,7 +76,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_highorder.f90,v 1.11 2007-08-31 11:30:46 theine Exp $")
+           "$Id: shock_highorder.f90,v 1.12 2007-08-31 12:08:29 dhruba Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -340,11 +340,13 @@ module Shock
       use Cdata, only: dxmax
       use Boundcond, only: boundconds_x,boundconds_y,boundconds_z
       use Mpicomm, only: initiate_isendrcv_bdry,finalize_isendrcv_bdry
-      use sub, only: div
+      use sub, only: gij,div_mn
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 
       real, dimension (mx,my,mz) :: tmp
+      real, dimension(nx,3,3) :: uij_tmp
+      real, dimension(nx,3) :: uu_tmp
       real, dimension (nx) :: penc
       integer :: imn
       integer :: i,j,k
@@ -367,8 +369,11 @@ module Shock
           call boundconds_y(f,iuy,iuy)
           call boundconds_z(f,iuz,iuz)
         endif
-
-        call div(f,iuu,penc)
+! The following will calculate div u for any coordinate system. 
+        uu_tmp = f(l1:l2,m,n,iux:iuz)
+        call gij(f,iuu,uij_tmp,1)
+        call div_mn(uij_tmp,penc,p%uu)
+!        call div(f,iuu,penc)
 
         f(l1:l2,m,n,ishock) = max(0.,-penc)
 
