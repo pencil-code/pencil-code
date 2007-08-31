@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.10 2007-08-30 10:14:19 wlyra Exp $
+! $Id: neutraldensity.f90,v 1.11 2007-08-31 13:03:30 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -85,7 +85,7 @@ module NeutralDensity
 !  Initialise variables which should know that we solve the
 !  compressible hydro equations: ilnrhon; increase nvar accordingly.
 !
-!  28-feb-07/axel: adapted from density
+!  28-feb-07/wlad: adapted from density
 !
       use Sub
       use FArrayManager
@@ -106,7 +106,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.10 2007-08-30 10:14:19 wlyra Exp $")
+           "$Id: neutraldensity.f90,v 1.11 2007-08-31 13:03:30 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -118,8 +118,7 @@ module NeutralDensity
 !  For compatibility with other applications, we keep the possibility
 !  of giving diffrhon units of dxmin*cs0, but cs0 is not well defined general
 !
-!  24-nov-02/tony: coded
-!  31-aug-03/axel: normally, diffrhon should be given in absolute units
+!  28-feb-07/wlad: adapted
 !
 !
       use CData, only: lfreeze_varext,lfreeze_varint,lreloading,ilnrhon
@@ -265,9 +264,7 @@ module NeutralDensity
 !
 !  initialise lnrhon; called from start.f90
 !
-!  7-nov-01/wolf: coded
-! 28-jun-02/axel: added isothermal
-! 15-oct-03/dave: added spherical shell (kws)
+!  28-feb-07/wlad: adapted
 !
       use General, only: chn,complex_phase
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential, &
@@ -363,9 +360,9 @@ module NeutralDensity
 !***********************************************************************
     subroutine pencil_criteria_neutraldensity()
 !
-!  All pencils that the Density module depends on are specified here.
+!  All pencils that the NeutralDensity module depends on are specified here.
 !
-!  19-11-04/anders: coded
+!  28-feb-07/wlad: adapted
 !
       use Cdata
 !
@@ -419,9 +416,10 @@ module NeutralDensity
 !***********************************************************************
     subroutine pencil_interdep_neutraldensity(lpencil_in)
 !
-!  Interdependency among pencils from the Density module is specified here.
+!  Interdependency among pencils from the NeutralDensity module is 
+!    specified here.
 !
-!  19-11-04/anders: coded
+!  28-feb-07/wlad: adapted
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -456,10 +454,10 @@ module NeutralDensity
 !***********************************************************************
     subroutine calc_pencils_neutraldensity(f,p)
 !
-!  Calculate Density pencils.
+!  Calculate NeutralDensity pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!  19-11-04/anders: coded
+!  28-feb-07/wlad: adapted
 !
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij
 !
@@ -585,7 +583,7 @@ module NeutralDensity
 !  continuity equation
 !  calculate dlnrhon/dt = - un.gradlnrhon - divun
 !
-!   7-jun-02/axel: incoporated from subroutine pde
+!  28-feb-07/wlad: adapted
 !
       use Mpicomm, only: stop_it
       use Sub
@@ -795,8 +793,7 @@ module NeutralDensity
 !
 !  reads and registers print parameters relevant for compressible part
 !
-!   3-may-02/axel: coded
-!  27-may-02/axel: added possibility to reset list
+!  28-feb-07/wlad: adapted
 !
       use Sub
 !

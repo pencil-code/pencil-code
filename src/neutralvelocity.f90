@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.13 2007-08-30 10:14:19 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.14 2007-08-31 13:03:30 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -93,7 +93,7 @@ module NeutralVelocity
 !  Initialise variables which should know that we solve the neutralvelocity
 !  equations: iuun, etc; increase nvar accordingly.
 !
-!  6-nov-01/wolf: coded
+!  28-feb-07/wlad: adapted
 !
       use Cdata
       use Mpicomm, only: stop_it
@@ -131,7 +131,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.13 2007-08-30 10:14:19 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.14 2007-08-31 13:03:30 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -157,8 +157,7 @@ module NeutralVelocity
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  24-nov-02/tony: coded
-!  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
+!  28-feb-07/wlad: adapted
 !
       use CData
       use Mpicomm,        only: stop_it
@@ -240,11 +239,9 @@ module NeutralVelocity
 !***********************************************************************
     subroutine init_uun(f,xx,yy,zz)
 !
-!  initialise uu and lnrho; called from start.f90
-!  Should be located in the Neutralvelocity module, if there was one.
+!  initialise uun and lnrhon; called from start.f90
 !
-!  07-nov-01/wolf: coded
-!  24-nov-02/tony: renamed for consistance (i.e. init_[variable name])
+!  28-feb-07/wlad: adapted
 !
       use Cdata
       use EquationOfState, only: cs20, gamma
@@ -304,7 +301,7 @@ module NeutralVelocity
 !
 !  All pencils that the Neutralvelocity module depends on are specified here.
 !
-!  20-11-04/anders: coded
+!  28-feb-07/wlad: adapted
 !
       use Cdata
 !
@@ -352,9 +349,10 @@ module NeutralVelocity
 !***********************************************************************
     subroutine pencil_interdep_neutralvelocity(lpencil_in)
 !
-!  Interdependency among pencils from the Neutralvelocity module is specified here.
+!  Interdependency among pencils from the Neutralvelocity module 
+!   is specified here.
 !
-!  20-11-04/anders: coded
+!  28-feb-07/wlad: adapted
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -383,7 +381,7 @@ module NeutralVelocity
 !  Calculate Neutralvelocity pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!   08-nov-04/tony: coded
+!  28-feb-07/wlad: adapted
 !
       use Cdata
       use Deriv
@@ -449,12 +447,9 @@ module NeutralVelocity
     subroutine duun_dt(f,df,p)
 !
 !  velocity evolution
-!  calculate du/dt = - u.gradu - 2Omega x u + Fpres + grav + Fvisc
+!  calculate dun/dt = - un.gradun - 2Omega x un + Fpres + grav + Fvisc
 !
-!   7-jun-02/axel: incoporated from subroutine pde
-!  10-jun-02/axel+mattias: added Coriolis force
-!  23-jun-02/axel: glnrho and fvisc are now calculated in here
-!  17-jun-03/ulf:  unx2, uny2 and unz2 added as diagnostic quantities
+!  28-feb-07/wlad: adapted
 !
       use Cdata
       use Sub
@@ -759,6 +754,10 @@ module NeutralVelocity
 !***********************************************************************
     subroutine calc_viscous_force_neutral(df,p)
 !
+!  DOCUMENT ME!!
+!
+!  28-feb-07/wlad: coded
+!
       use Cdata
       use Mpicomm
       use Sub
@@ -786,7 +785,7 @@ module NeutralVelocity
             if (headtt) print*,'Viscous force (neutral):  mu/rhon*(del2un+graddivun/3)'
             murho1=nun*p%rhon1  !(=mu/rhon)
             do i=1,3
-               fvisc(:,i)=fvisc(:,i)+murho1*(p%del2un(:,i)+0.333333*p%graddivun(:,i))
+               fvisc(:,i)=fvisc(:,i)+murho1*(p%del2un(:,i)+1./3.*p%graddivun(:,i))
             enddo
             !if (lpencil(i_visc_heat)) visc_heat=visc_heat + 2*nun*p%snij2*p%rhon1
             if (lfirst.and.ldt) diffus_nun=diffus_nun+murho1*dxyz_2
@@ -799,9 +798,9 @@ module NeutralVelocity
             if (headtt) &
                  print*,'Viscous force (neutral): nun*(del2un+graddivun/3+2Sn.glnrhon)'
             if(lneutraldensity) then
-               fvisc=fvisc+2*nun*p%snglnrhon+nun*(p%del2un+0.333333*p%graddivun)
+               fvisc=fvisc+2*nun*p%snglnrhon+nun*(p%del2un+1./3.*p%graddivun)
             else
-               fvisc=fvisc+nun*(p%del2un+0.333333*p%graddivun)
+               fvisc=fvisc+nun*(p%del2un+1./3.*p%graddivun)
             endif
         
         !if (lpencil(i_visc_heat)) visc_heat=visc_heat + 2*nun*p%snij2
@@ -840,8 +839,7 @@ module NeutralVelocity
 !
 !  reads and registers print parameters relevant for neutralvelocity part
 !
-!   3-may-02/axel: coded
-!  27-may-02/axel: added possibility to reset list
+!  28-feb-07/wlad: adapted
 !
       use Cdata
       use Sub
