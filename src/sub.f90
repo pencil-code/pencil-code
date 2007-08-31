@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.335 2007-08-30 13:49:03 wlyra Exp $
+! $Id: sub.f90,v 1.336 2007-08-31 08:49:15 dhruba Exp $
 
 module Sub
 
@@ -863,8 +863,8 @@ module Sub
 !  keep full x-dependence
 !
       n_nghost=n-nghost
-      if(lspherical_coords)then  !WL:is this correct for spherical??
-        fnamexz(:,n_nghost,ipz+1,iname) = fnamexz(:,n_nghost,ipz+1,iname)+a*y(m)
+      if(lspherical_coords)then
+        fnamexz(:,n_nghost,ipz+1,iname) = fnamexz(:,n_nghost,ipz+1,iname)+a*x(l1:l2)
       else
         fnamexz(:,n_nghost,ipz+1,iname)=fnamexz(:,n_nghost,ipz+1,iname)+a
       endif
