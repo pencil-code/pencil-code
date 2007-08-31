@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.455 2007-08-29 13:04:41 ajohan Exp $
+! $Id: magnetic.f90,v 1.456 2007-08-31 16:11:35 dhruba Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -339,7 +339,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.455 2007-08-29 13:04:41 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.456 2007-08-31 16:11:35 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1955,8 +1955,10 @@ module Magnetic
 !
 !  idiag_bxmxy and idiag_bymxy also need to be calculated when
 !  ldiagnos and idiag_bmx and/or idiag_bmy, so
-!
-        if (ldiagnos .and. (idiag_bmx/=0 .or. idiag_bmy/=0)) then
+! We may need to calculate bxmxy without calculating bmx. The following 
+! if condition was messing up calculation of bmxy_rms
+!        if (ldiagnos .and. (idiag_bmx/=0 .or. idiag_bmy/=0)) then
+        if(ldiagnos) then
           if (idiag_bxmxy/=0) call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
           if (idiag_bymxy/=0) call zsum_mn_name_xy(p%bb(:,2),idiag_bymxy)
           if (idiag_bzmxy/=0) call zsum_mn_name_xy(p%bb(:,3),idiag_bzmxy)
@@ -3012,6 +3014,7 @@ module Magnetic
               bymxy=sum(fnamexy(l,m,:,idiag_bymxy))/nprocy
               bzmxy=sum(fnamexy(l,m,:,idiag_bzmxy))/nprocy
               bmxy_rms = bmxy_rms+bxmxy**2+bymxy**2+bzmxy**2
+!              write(*,*) fnamexy(l,m,1,idiag_bxmxy), fnamexy(l,m,1,idiag_bzmxy), fnamexy(l,m,1,idiag_bzmxy)
             enddo
           enddo
           bmxy_rms = bmxy_rms/(nx*ny)
