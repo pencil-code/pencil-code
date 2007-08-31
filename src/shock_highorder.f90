@@ -1,4 +1,4 @@
-! $Id: shock_highorder.f90,v 1.8 2007-08-30 17:24:59 dhruba Exp $
+! $Id: shock_highorder.f90,v 1.9 2007-08-31 10:58:27 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -76,7 +76,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_highorder.f90,v 1.8 2007-08-30 17:24:59 dhruba Exp $")
+           "$Id: shock_highorder.f90,v 1.9 2007-08-31 10:58:27 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -336,7 +336,7 @@ module Shock
 !  23-nov-02/tony: coded
 !
       use Cdata, only: m,n,mm,nn,necessary
-      use Cdata, only: iux,iuy,iuz,ishock
+      use Cdata, only: iuu,iux,iuy,iuz,ishock
       use Cdata, only: dxmax
 ! For spherical polar coordinate system 
       use Cdata, only: r1_mn,cotth,lspherical_coords
@@ -344,7 +344,7 @@ module Shock
       use Cdata, only: rcyl_mn1,lcylindrical_coords
       use Boundcond, only: boundconds_x,boundconds_y,boundconds_z
       use Mpicomm, only: initiate_isendrcv_bdry,finalize_isendrcv_bdry
-      use Deriv, only: der
+      use sub, only: div
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 
@@ -374,29 +374,20 @@ module Shock
 
         f(l1:l2,m,n,ishock) = 0.
 
-        if (nxgrid > 1) then
-          call der(f,iux,penc,1)
-          f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + max(0.,-penc)
-        endif
+        call div(f,iuu,penc)
 
-        if (nygrid > 1) then
-          call der(f,iuy,penc,2)
-         
-          f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + max(0.,-penc)
-        endif
+        f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + max(0.,-penc)
 
-        if (nzgrid > 1) then
-          call der(f,iuz,penc,3)
-          f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + max(0.,-penc)
-        endif
         if(lspherical_coords) then
           penc= 2.*r1_mn*f(l1:l2,m,n,iux) + r1_mn*cotth(m)*f(l1:l2,m,n,iuy)
           f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + max(0.,-penc)
         endif
+
         if(lcylindrical_coords) then
           penc= rcyl_mn1*f(l1:l2,m,n,iux) 
           f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + max(0.,-penc)
         endif
+
       enddo
 
 !
