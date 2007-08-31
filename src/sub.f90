@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.336 2007-08-31 08:49:15 dhruba Exp $
+! $Id: sub.f90,v 1.337 2007-08-31 11:22:28 wlyra Exp $
 
 module Sub
 
@@ -1873,8 +1873,13 @@ module Sub
       call der(f,k1+3,tmp,3)
       g=g+tmp
 !
-      if (lcylindrical_coords.or.lspherical_coords) &
-        call stop_it("div not implemented for non-cartesian coordinates")
+      if (lspherical_coords) then
+        g=g+2.*r1_mn*f(l1:l2,m,n,k1+1)+r1_mn*cotth(m)*f(l1:l2,m,n,k1+2)
+      endif
+!
+      if (lcylindrical_coords) then
+        g=g+rcyl_mn1*f(l1:l2,m,n,k1+1)
+      endif
 !
     end subroutine div
 !***********************************************************************
@@ -1893,8 +1898,13 @@ module Sub
       call der(f(:,:,:,3),tmp,3)
       g=g+tmp
 !
-      if (lcylindrical_coords.or.lspherical_coords) &
-        call stop_it("div_other not implemented for non-cartesian coordinates")
+      if (lspherical_coords) then
+        g=g+2.*r1_mn*f(l1:l2,m,n,1)+r1_mn*cotth(m)*f(l1:l2,m,n,2)
+      endif
+!
+      if (lcylindrical_coords) then
+        g=g+rcyl_mn1*f(l1:l2,m,n,1)
+      endif
 !
     end subroutine div_other
 !***********************************************************************
