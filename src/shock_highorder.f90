@@ -1,4 +1,4 @@
-! $Id: shock_highorder.f90,v 1.12 2007-08-31 12:08:29 dhruba Exp $
+! $Id: shock_highorder.f90,v 1.13 2007-08-31 12:15:22 dhruba Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -76,7 +76,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_highorder.f90,v 1.12 2007-08-31 12:08:29 dhruba Exp $")
+           "$Id: shock_highorder.f90,v 1.13 2007-08-31 12:15:22 dhruba Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -372,7 +372,7 @@ module Shock
 ! The following will calculate div u for any coordinate system. 
         uu_tmp = f(l1:l2,m,n,iux:iuz)
         call gij(f,iuu,uij_tmp,1)
-        call div_mn(uij_tmp,penc,p%uu)
+        call div_mn(uij_tmp,penc,uu_tmp)
 !        call div(f,iuu,penc)
 
         f(l1:l2,m,n,ishock) = max(0.,-penc)
