@@ -1,3 +1,5 @@
+! $Id: nodebug.f90,v 1.5 2007-09-01 06:43:43 brandenb Exp $
+
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   nodebug.f90   !!!
 !!!!!!!!!!!!!!!!!!!!!!!
@@ -8,9 +10,11 @@
 !!!  Description:
 !!!   Two dummy debugging routines (in case the C stuff doesn't work).
 
+!***********************************************************************
 subroutine output_penciled_vect_c(filename,pencil,&
                                   ndim,i,iy,iz,t, &
                                   nx,ny,nz,nghost,fnlen)
+  use Cparam, only: NO_WARN
   use Cdata, only: ip,mx,headt,imn
 
   real,dimension(mx,*) :: pencil
@@ -24,13 +28,13 @@ subroutine output_penciled_vect_c(filename,pencil,&
 
   ! to keep compiler quiet...
   if(NO_WARN) print*,pencil(1,1),ndim,i,iy,iz,t,nx,ny,nz,nghost,fnlen
+!
 endsubroutine output_penciled_vect_c
-
 !***********************************************************************
-
 subroutine output_penciled_scal_c(filename,pencil,&
                                   ndim,i,iy,iz,t, &
                                   nx,ny,nz,nghost,fnlen)
+  use Cparam, only: NO_WARN
   use Cdata, only: ip,mx,headt,imn
 
   real,dimension(mx) :: pencil

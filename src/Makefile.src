@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.342 2007-08-29 18:11:36 dintrans Exp $
+### $Id: Makefile.src,v 1.343 2007-09-01 06:43:43 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -11,7 +11,7 @@ GRID           =   grid
 IO             =   io_dist
 FOURIER        = nofourier
 POWER          = nopower_spectrum
-DEBUG          =   debug_c
+DEBUG          = nodebug
 GSL            = nogsl
 
 HYDRO          = nohydro
