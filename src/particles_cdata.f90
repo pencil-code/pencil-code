@@ -1,4 +1,4 @@
-! $Id: particles_cdata.f90,v 1.25 2007-05-20 18:48:15 theine Exp $
+! $Id: particles_cdata.f90,v 1.26 2007-09-02 20:12:49 wlyra Exp $
 !!
 !! Global particle variables
 !!
@@ -24,7 +24,6 @@ module Particles_cdata
   logical :: lparticlemesh_cic=.false., lparticlemesh_tsc=.false.
   logical :: lcartesian_mig=.true., lmigration_real_check=.true.
   character (len=2*bclen+1) :: bcpx='p',bcpy='p',bcpz='p'
-  character (len=2*bclen+1) :: bcspx='p',bcspy='p',bcspz='p'
 
   integer, dimension (nx) :: kshepherd
   integer, allocatable, dimension (:) :: kneighbour
