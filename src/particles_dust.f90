@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.188 2007-08-17 10:31:33 wlyra Exp $
+! $Id: particles_dust.f90,v 1.189 2007-09-02 20:13:55 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -128,7 +128,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.188 2007-08-17 10:31:33 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.189 2007-09-02 20:13:55 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -821,6 +821,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           if (lroot) then
             print*,'init_particles: Keplerian velocities assuming GM=1'
+            if (.not.lcartesian_coords) call stop_it("Keplerian particle "//&
+                 "initial condition: not implemented for curvilinear coordinates")
           endif
           do k=1,npar_loc
             rad=sqrt(fp(k,ixp)**2 + fp(k,iyp)**2 + fp(k,izp)**2)
