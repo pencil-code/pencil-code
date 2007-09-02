@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.110 2007-05-23 07:53:59 ajohan Exp $
+! $Id: particles_sub.f90,v 1.111 2007-09-02 20:16:51 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -310,6 +310,9 @@ module Particles_sub
               endif
             endif
           enddo
+        elseif (bcpx=='out') then
+          !let particles be out of the box, why not?
+          !do nothing, the particle is happy
         else
           print*, 'boundconds_particles: No such boundary condition bcpx=', bcpx
           call stop_it('boundconds_particles')
