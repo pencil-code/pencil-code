@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.220 2007-08-31 13:42:28 wlyra Exp $
+! $Id: initcond.f90,v 1.221 2007-09-02 10:56:42 wlyra Exp $
 
 module Initcond
 
@@ -2955,6 +2955,7 @@ module Initcond
       real :: cp1,ptlaw
       integer, pointer :: iglobal_cs2,iglobal_glnTT
       integer :: i
+      logical :: lheader
 !
       intent(in)  :: ptlaw
       intent(out) :: f
@@ -2982,6 +2983,7 @@ module Initcond
 !
       do m=1,my
         do n=1,mz
+          lheader=((m==1).and.(n==1).and.lroot)
           call get_radial_distance(rr_sph,rr_cyl)
           call power_law(cs20,rr_cyl,ptlaw,cs2)
           if (llocal_iso) then
@@ -3028,7 +3030,8 @@ module Initcond
                 !it's inside the frozen zone, so
                 !just set tmp2 to zero and emit a warning
                 tmp2(i)=0.
-                if (ip<=10) call warning('set_thermodynamical_quantities',&
+                if ((ip<=10).and.lheader) &
+                     call warning('set_thermodynamical_quantities',&
                      'the disk is too hot inside the frozen zone')
               else
                 print*,'set_thermodynamical_quantities '

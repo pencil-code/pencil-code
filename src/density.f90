@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.348 2007-08-28 23:59:42 wlyra Exp $
+! $Id: density.f90,v 1.349 2007-09-02 10:56:42 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -129,7 +129,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.348 2007-08-28 23:59:42 wlyra Exp $")
+           "$Id: density.f90,v 1.349 2007-09-02 10:56:42 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1793,6 +1793,7 @@ module Density
       real, dimension (nx)   :: tmp1,tmp2,corr,gslnrho
       integer,pointer        :: iglobal_cs2
       integer                :: i
+      logical                :: lheader
 !
       if (lroot) print*,'Correcting density gradient on the '//&
            'centrifugal force'
@@ -1801,6 +1802,7 @@ module Density
 !
       do m=m1,m2
         do n=n1,n2
+          lheader=((m==1).and.(n==1).and.lroot)
 !
           call get_radial_distance(rr_sph,rr_cyl)
           call grad(f,ilnrho,glnrho)
@@ -1827,7 +1829,7 @@ module Density
                 !it's inside the frozen zone, so 
                 !just set tmp2 to zero and emit a warning
                 tmp2(i)=0.
-                if (ip<=10) &
+                if ((ip<=10).and.lheader) &
                      call warning('correct_density_gradient','Cannot '//&
                      'have centrifugal equilibrium in the inner '//&
                      'domain. The pressure gradient is too steep.')
