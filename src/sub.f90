@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.340 2007-09-02 17:14:57 brandenb Exp $
+! $Id: sub.f90,v 1.341 2007-09-02 20:13:14 wlyra Exp $
 
 module Sub
 
@@ -5949,27 +5949,27 @@ nameloop: do
 !
       if (lorigin) then
         if (coord_system=='cartesian') then
-          rcylmn=sqrt(xc**2+y(m)**2)         +tini
-          rrmn  =sqrt(  rcylmn**2+         z(n)**2)
+          rcylmn=sqrt(xc**2+y(m)**2)+tini
+          rrmn  =sqrt(    rcylmn**2 +z(n)**2)
         elseif (coord_system=='cylindric') then
-          rcylmn=     xc            +tini
-          rrmn  =sqrt(  rcylmn**2+z(n)**2)+tini
+          rcylmn= xc                      +tini
+          rrmn  =sqrt(  rcylmn**2+z(n)**2)
         elseif(coord_system=='spherical') then
-          rcylmn=     xc*sin(y(m))
-          rrmn  =     xc
+          rcylmn=     xc*sin(y(m))+tini
+          rrmn  =     xc          +tini
         endif
       else
         if (coord_system=='cartesian') then
           rcylmn=sqrt((xc-e1)**2+(y(m)-e2)**2)+tini
-          rrmn  =sqrt(       rcylmn**2+(z(n)-e3)**2)+tini 
+          rrmn  =sqrt(       rcylmn**2+(z(n)-e3)**2)
         elseif (coord_system=='cylindric') then
-          rcylmn=xc**2+e1**2 - 2*xc*e1*cos(y(m)-e2)+tini
+          rcylmn=sqrt(xc**2+e1**2 - 2*xc*e1*cos(y(m)-e2))+tini
           rrmn  =sqrt(rcylmn**2+(z(n)-e3)**2)
         elseif(coord_system=='spherical') then
-          rcylmn=(xc*sin(y(m)))**2 + (e1*sin(e2))**2 - &
-               2*xc*e1*cos(y(m))*cos(e2)
-          rrmn  =xc**2 + e1**2 - 2*xc*e1*&
-               (cos(y(m))*cos(e2)+sin(y(m))*sin(e2)*cos(z(n)-e3))
+          rcylmn=sqrt((xc*sin(y(m)))**2 + (e1*sin(e2))**2 - &
+               2*xc*e1*cos(y(m))*cos(e2))+tini
+          rrmn  =sqrt(xc**2 + e1**2 - 2*xc*e1*&
+               (cos(y(m))*cos(e2)+sin(y(m))*sin(e2)*cos(z(n)-e3)))+tini
         endif
       endif
 !
