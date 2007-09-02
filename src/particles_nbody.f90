@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.41 2007-08-28 23:59:42 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.42 2007-09-02 20:21:51 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -35,14 +35,13 @@ module Particles_nbody
 
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
-       bcspx, bcspy, bcspz, pmass, r_smooth, position, &
-       lcylindrical_gravity_nbody, lexclude_frozen, GNewton
+       pmass, r_smooth, position, lcylindrical_gravity_nbody, &
+       lexclude_frozen, GNewton
 
 
   namelist /particles_nbody_run_pars/ &
-       bcspx, bcspy, bcspz, dsnap_par_minor, linterp_reality_check, &
-       lcalc_orbit,lreset_cm,lnogravz_star,lfollow_particle,  &
-       lmigrate, lexclude_frozen, GNewton
+       dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
+       lnogravz_star,lfollow_particle, lmigrate, lexclude_frozen, GNewton
 
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -66,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.41 2007-08-28 23:59:42 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.42 2007-09-02 20:21:51 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -183,7 +182,7 @@ module Particles_nbody
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
-      real, dimension(nspar) :: kep_vel,velocity
+      real, dimension(nspar) :: ang_vel,kep_vel,velocity
       real :: aux,aux2
       integer :: k,ks
 
@@ -196,79 +195,84 @@ module Particles_nbody
 
       case ('origin')
         if (lroot) then
-           print*, 'init_particles_nbody: All sink particles at origin'
-           fp(1:nspar,ixp:izp)=0.
+          print*, 'init_particles_nbody: All sink particles at origin'
+          fp(1:nspar,ixp:izp)=0.
         endif
-
+!
       case('constant')
-         if (lroot) then
-            print*, 'init_particles_nbody: All sink particles at x,y,z=', xsp0, ysp0, zsp0
-            fp(1:nspar,ixp)=xsp0
-            fp(1:nspar,iyp)=ysp0
-            fp(1:nspar,izp)=zsp0
-         endif
-
+        if (lroot) then
+          print*, 'init_particles_nbody: All sink particles at x,y,z=', xsp0, ysp0, zsp0
+          fp(1:nspar,ixp)=xsp0
+          fp(1:nspar,iyp)=ysp0
+          fp(1:nspar,izp)=zsp0
+        endif
+!
       case ('fixed-cm')
 !
-! Ok, I have the masses and the positions of all sinks except the last, which will
-! have a position determined to fix the center of mass on the center of the grid
+! Ok, I have the masses and the positions of all sinks except the last, 
+! which will have a position determined to fix the center of mass on 
+! the center of the grid
 !
-         if (lroot) then
-            print*,'fixed-cm: redefining the mass of the last sink particle'
-            print*,'fixed-cm: it assumes that the sum of the mass of the particles is always g0'
-         endif
+        if (lroot) then
+          print*,'fixed-cm: redefining the mass of the last sink particle'
+          print*,'fixed-cm: it assumes that the sum of the mass'//&
+               ' of the particles is always g0'
+        endif
 !
-         aux = 0. ; aux2=0.
+        aux = 0. ; aux2=0.
 !
-         do ks=1,nspar-1
+        do ks=1,nspar-1
           !  aux  = aux  + pmass(ks)
-            aux2 = aux2 + pmass(ks)*position(ks)
-            !if (aux .ge. 1.) then
-            !     print*,"particles_nbody,init_particles. The mass of one (or more) of the particles is too big!"
-            !     print*,"the masses should never be bigger than g0. Please scale your assemble so that the combined"
-            !     print*,"mass of the (n-1) particles is less than that. The mass of the last particle in the pmass array"
-            !     print*,"will be reassigned to ensure that the total mass is g0"
-            !     call stop_it(" ")
-            !  endif
-         enddo
+          aux2 = aux2 + pmass(ks)*position(ks)
+          !if (aux .ge. 1.) then
+            !print*,"particles_nbody,init_particles. The mass of one"//& 
+            !     " (or more) of the particles is too big!"
+            !print*,"the masses should never be bigger than g0. Please"//&
+            !     " scale your assemble so that the combined"
+            !print*,"mass of the (n-1) particles is less than that. The"//&
+            !     " mass of the last particle in the pmass array"
+            !print*,"will be reassigned to ensure that the total mass is g0"
+            !call stop_it(" ")
+          !endif
+        enddo
 !
-         !pmass(nspar)    =  1. - aux
-         position(nspar) = -1. * aux2 / pmass(nspar)
+        !pmass(nspar)    =  1. - aux
+        position(nspar) = -1. * aux2 / pmass(nspar)
 !
-         print*,'pmass = ',pmass
-         print*,'position =',position
+        print*,'pmass = ',pmass
+        print*,'position =',position
 !
 ! Loop through ipar to allocate the sink particles
 !
-         do k=1,npar_loc
-            if (ipar(k) <= nspar) then
+        do k=1,npar_loc
+          if (ipar(k) <= nspar) then
 !
-               print*,&
-                    'initparticles_nbody. Slot for sink particle ',ipar(k),&
-                    ' was at fp position ',k,&
-                    ' at processor ',iproc
+            print*,&
+                 'initparticles_nbody. Slot for sink particle ',ipar(k),&
+                 ' was at fp position ',k,&
+                 ' at processor ',iproc
 !
-               fp(k,ixp)=position(ipar(k))
-               fp(k,iyp)=0.
-               fp(k,izp)=0.
+            fp(k,ixp)=position(ipar(k))
+            fp(k,iyp)=0.
+            fp(k,izp)=0.
 !
 ! Correct for non-existing dimensions (not really needed, I think)
 !
-               if (nxgrid==1) fp(k,ixp)=x(nghost+1)
-               if (nygrid==1) fp(k,iyp)=y(nghost+1)
-               if (nzgrid==1) fp(k,izp)=z(nghost+1)
+            if (nxgrid==1) fp(k,ixp)=x(nghost+1)
+            if (nygrid==1) fp(k,iyp)=y(nghost+1)
+            if (nzgrid==1) fp(k,izp)=z(nghost+1)
 !
-               print*,&
-                    'initparticles_nbody. Sink particle ',ipar(k),&
-                    ' located at ixp=',fp(k,ixp)
-            endif
-         enddo
-
+            print*,&
+                 'initparticles_nbody. Sink particle ',ipar(k),&
+                 ' located at ixp=',fp(k,ixp)
+          endif
+        enddo
+!
       case default
-        if (lroot) print*, 'init_particles: No such such value for initxxsp: ', &
-            trim(initxxsp)
+        if (lroot) print*,"init_particles: No such such value for"//&
+             " initxxsp: ",trim(initxxsp)
         call stop_it("")
-
+!
       endselect
 !
 !  Redistribute particles among processors (now that positions are determined).
@@ -283,28 +287,35 @@ module Particles_nbody
         if (lroot) print*, 'init_particles: No particle velocity set'
       case ('zero')
         if (lroot) then
-           print*, 'init_particles: Zero particle velocity'
-           fp(1:nspar,ivpx:ivpz)=0.
+          print*, 'init_particles: Zero particle velocity'
+          fp(1:nspar,ivpx:ivpz)=0.
         endif
-
+!
       case ('constant')
          if (lroot) then
-            print*, 'init_particles: Constant particle velocity'
-            print*, 'init_particles: vspx0, vspy0, vspz0=', vspx0, vspy0, vspz0
-            fp(1:nspar,ivpx)=vspx0
-            fp(1:nspar,ivpy)=vspy0
-            fp(1:nspar,ivpz)=vspz0
+           print*, 'init_particles: Constant particle velocity'
+           print*, 'init_particles: vspx0, vspy0, vspz0=', vspx0, vspy0, vspz0
+           fp(1:nspar,ivpx)=vspx0
+           fp(1:nspar,ivpy)=vspy0
+           fp(1:nspar,ivpz)=vspz0
          endif
-
+!
       case ('fixed-cm')
 !
 ! Keplerian velocities for the planets
 !
          aux=0.
          do ks=1,nspar-1
-            kep_vel(ks) = abs(GNewton*totmass/position(ks))**(0.5)
-            velocity(ks) = sign(1.,position(ks))* (kep_vel(ks))
-            aux = aux - pmass(ks)*velocity(ks)
+           ang_vel(ks) = sqrt(GNewton*totmass/abs(position(ks))**3)
+           kep_vel(ks) = ang_vel(ks)*abs(position(ks))
+           if (lcartesian_coords) then !work with linear azimuthal velocity
+             velocity(ks) = sign(1.,position(ks))* (kep_vel(ks))
+           elseif (lcylindrical_coords) then ! work with angular velocity
+             velocity(ks) = sign(1.,position(ks))* (ang_vel(ks))
+           else
+             call stop_it("fixed-cm: not implemented for spherical coords")
+           endif
+             aux = aux - pmass(ks)*velocity(ks)
          enddo
 !
 ! The last one (star) fixes the CM also with velocity zero
@@ -314,35 +325,35 @@ module Particles_nbody
 ! Loop through ipar to allocate the sink particles
 !
          do k=1,npar_loc
-            if (ipar(k)<=nspar) then
-               print*,&
-                    'initparticles_nbody. Slot for sink particle ',ipar(k),&
-                    ' was at fp position ',k,&
-                    ' at processor ',iproc
+           if (ipar(k)<=nspar) then
+             print*,&
+                  'initparticles_nbody. Slot for sink particle ',ipar(k),&
+                  ' was at fp position ',k,&
+                  ' at processor ',iproc
 !
-               fp(k,ivpx) = 0.
-               fp(k,ivpy) = velocity(ipar(k))
-               fp(k,ivpz) = 0.
+             fp(k,ivpx) = 0.
+             fp(k,ivpy) = velocity(ipar(k))
+             fp(k,ivpz) = 0.
 !
-               print*,'initparticles_nbody. Sink particle ',ipar(k),&
-                    ' has velocity y=',fp(k,ivpy)
+             print*,'initparticles_nbody. Sink particle ',ipar(k),&
+                  ' has velocity y=',fp(k,ivpy)
 !
-            endif
+           endif
          enddo
 !
       case default
-         if (lroot) print*, 'init_particles: No such such value for initvvsp: ', &
-                       trim(initvvsp)
+        if (lroot) print*, "init_particles: No such such value for"//&
+             "initvvsp: ",trim(initvvsp)
         call stop_it("")
-
+!
       endselect
 !
     endsubroutine init_particles_nbody
 !***********************************************************************
     subroutine dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
 !
-! Add gravity from the particles to the gas
-! and the backreaction from the gas onto the particles
+!  Add gravity from the particles to the gas
+!  and the backreaction from the gas onto the particles
 !
 !  07-sep-06/wlad: coded
 !
@@ -366,80 +377,85 @@ module Particles_nbody
 ! Output the positions of all particles
 !
       if (lhydro) then
-         if (headtt) then
-            print*,'dvvp_dt_nbody_pencil: Add particles gravity to the gas'
-            if (nxgrid/=1) print*,'dvvp_dt_nbody_pencil: Particles located at fsp(x)=',fsp(:,ixp)
-            if (nygrid/=1) print*,'dvvp_dt_nbody_pencil: Particles located at fsp(y)=',fsp(:,iyp)
-            if (nzgrid/=1) print*,'dvvp_dt_nbody_pencil: Particles located at fsp(z)=',fsp(:,izp)
-         endif
+        if (headtt) then
+          print*,'dvvp_dt_nbody_pencil: Add particles gravity to the gas'
+          if (nxgrid/=1) print*,'dvvp_dt_nbody_pencil: Particles '//&
+               'located at fsp(x)=',fsp(:,ixp)
+          if (nygrid/=1) print*,'dvvp_dt_nbody_pencil: Particles '//&
+               'located at fsp(y)=',fsp(:,iyp)
+          if (nzgrid/=1) print*,'dvvp_dt_nbody_pencil: Particles '//&
+               'located at fsp(z)=',fsp(:,izp)
+        endif
 !
 ! Initialize tmp for potential energy
 !
-         if (idiag_totenergy/=0) pot_energy=0.
+        if (idiag_totenergy/=0) pot_energy=0.
 !
 ! Calculate gas-particles distances
 !
-         do ks=1,nspar
+        do ks=1,nspar
 !
 ! Spherical and cylindrical distances
 !
-           call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
-                E1_=fsp(ks,ixp),E2_=fsp(ks,iyp),E3_=fsp(ks,izp))
+          call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
+               E1_=fsp(ks,ixp),E2_=fsp(ks,iyp),E3_=fsp(ks,izp))
 !
 ! Check which particle has cylindrical gravity switched on
 !
-            if (lcylindrical_gravity_nbody(ks)) then
-               rrp = rpcyl_mn(:,ks)
-            else
-               rrp = rp_mn(:,ks)
-            endif
+          if (lcylindrical_gravity_nbody(ks)) then
+            rrp = rpcyl_mn(:,ks)
+          else
+            rrp = rp_mn(:,ks)
+          endif
 !
 ! Gravity field from the particle ks
 !
-            grav_particle =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
-            call get_gravity_field_nbody(grav_particle,ggp,ks)
+          grav_particle =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
+          call get_gravity_field_nbody(grav_particle,ggp,ks)
 !
-            if ((ks==nspar).and.lnogravz_star) &
-                 ggp(:,3) = 0.
+          if ((ks==nspar).and.lnogravz_star) &
+               ggp(:,3) = 0.
 !
 ! Add this acceleration to the gas
 !
-            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggp
+          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggp
 !
 ! Backreaction of the gas onto the particles
 !
-            if (lmigrate) then
+          if (lmigrate) then
 !
 ! Get the acceleration particle ks suffers due to gas gravity
 !
-               xxpar = fsp(ks,ixp:izp)
-               call gas_gravity(p,rrp,xxpar,accg,r_smooth(ks))
+            xxpar = fsp(ks,ixp:izp)
+            call gas_gravity(p,rrp,xxpar,accg,r_smooth(ks))
 !
 ! Add it to its dfp
 !
-               do k=1,npar_loc
-                  if (ipar(k)==ks) &
-                       dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accg(1:3)
-               enddo
-            endif
+            do k=1,npar_loc
+              if (ipar(k)==ks) &
+                   dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accg(1:3)
+            enddo
+          endif
 !
 ! Calculate torques for output, if needed
 !
-            if (ldiagnos) then
-               if ((idiag_torqext(ks)/=0).or.(idiag_torqint(ks)/=0)) &
-                    call calc_torque(p,rpcyl_mn(:,ks),ks)
+          if (ldiagnos) then
+            if ((idiag_torqext(ks)/=0).or.(idiag_torqint(ks)/=0)) &
+                 call calc_torque(p,rpcyl_mn(:,ks),ks)
 !
 ! Total energy
 !
-               if (idiag_totenergy/=0) then
-                  !potential energy
-                  pot_energy = pot_energy - &
-                       GNewton*pmass(ks)*(rpcyl_mn(:,ks)**2+r_smooth(ks)**2)**(-0.5)
-                  if (ks==nspar) &
-                       call sum_lim_mn_name(p%rho*0.5*p%u2 + pot_energy,idiag_totenergy,p)
-               endif
+            if (idiag_totenergy/=0) then
+              !potential energy
+              pot_energy = pot_energy - &
+                   GNewton*pmass(ks)*&
+                   (rpcyl_mn(:,ks)**2+r_smooth(ks)**2)**(-0.5)
+              if (ks==nspar) &
+                   call sum_lim_mn_name(p%rho*0.5*p%u2 + pot_energy,&
+                   idiag_totenergy,p)
             endif
-         enddo
+          endif
+        enddo
 !
       endif
 !
@@ -462,7 +478,9 @@ module Particles_nbody
     subroutine dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of sink particles velocities due to
-!  particle-particle interaction only
+!  particle-particle interaction only. 
+!
+!  Coriolis and shear already added in particles_dust
 !
 !  27-aug-06/wlad: coded
 !
@@ -482,6 +500,8 @@ module Particles_nbody
       integer :: i, k, ks, ki, kj, j, jp, jx
       logical :: lheader, lfirstcall=.true.
 !
+      real :: e1,e2,e3,e10,e20,e30,ev1,ev2,ev3
+!
       intent (in) ::     f,  fp,  ineargrid
       intent (inout) :: df, dfp
 !
@@ -493,79 +513,92 @@ module Particles_nbody
 !
       if (lheader) print*,'dvvp_dt_nbody: Calculate dvvp_dt_nbody'
 !
-!  Add Coriolis force from rotating coordinate frame.
 !
-      if (Omega/=0.) then
-         if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
-         Omega2=2*Omega
-         dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
-         dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
-!
-!  With shear there is an extra term due to the background shear flow.
-!
-         if (lshear) dfp(1:npar_loc,ivpy) = &
-              dfp(1:npar_loc,ivpy) + qshear*Omega*fp(1:npar_loc,ivpx)
-      endif
-!
-! Evolve the position of the sink particles due to their mutual gravity
+!  Evolve the position of the sink particles due to their mutual gravity
 !
       do ks=1,nspar
 !
-! Calculate in the root only, then broadcast
+!  Calculate in the root only, then broadcast
 !
-         if (lroot) then
-            acc(ks,:) = 0.
-            do kj=1,nspar
-               if (kj/=ks) then
+        if (lroot) then
+          acc(ks,:) = 0.
+          do kj=1,nspar
+            if (kj/=ks) then
+!
+              e1=fsp(ks,ixp);e10=fsp(kj,ixp)
+              e2=fsp(ks,iyp);e20=fsp(kj,iyp)
+              e3=fsp(ks,izp);e30=fsp(kj,izp)
+!
+!  Get the distances in each ortogonal component. 
+!  These are NOT (x,y,z) for all.
+!  For cartesian it is (x,y,z), for cylindrical (s,phi,z)
+!  for spherical (r,theta,phi)
+! 
+              if (lcartesian_coords) then
+                ev1 = e1 - e10  
+                ev2 = e2 - e20  
+                ev3 = e3 - e30  
+              elseif (lcylindrical_coords) then
+                ev1 = e1 - e10*cos(e2-e20)  
+                ev2 = e10*sin(e2-e20)       
+                ev3 = e3 - e30              
+              elseif (lspherical_coords) then
+                call stop_it("dvvp_dt_nbody: not yet implemented for "//&
+                     " spherical polars")
+              endif
 !
 !  Particles relative distance from each other
 !
-!  axr = fsp(ks,ixp) - fsp(kj,ixp)
-!
-!  r_ij = sqrt(axr**2 + ayr**2 + azr**2)
+!  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
 !  invr3_ij = r_ij**(-3)
 !
-                  invr3_ij = (  (fsp(ks,ixp) - fsp(kj,ixp))**2           &
-                       +        (fsp(ks,iyp) - fsp(kj,iyp))**2           &
-                       +        (fsp(ks,izp) - fsp(kj,izp))**2  )**(-1.5)
+              invr3_ij = (ev1**2 + ev2**2 + ev3**2)**(-1.5)
 !
-!  Gravitational acceleration
+!  Gravitational acceleration: g=g0/|r-r0|^3 (r-r0)
 !
-                  acc(ks,1) = acc(ks,1) - GNewton*pmass(kj)*invr3_ij*(fsp(ks,ixp) - fsp(kj,ixp))
-                  acc(ks,2) = acc(ks,2) - GNewton*pmass(kj)*invr3_ij*(fsp(ks,iyp) - fsp(kj,iyp))
-                  acc(ks,3) = acc(ks,3) - GNewton*pmass(kj)*invr3_ij*(fsp(ks,izp) - fsp(kj,izp))
+              acc(ks,1) = acc(ks,1) - GNewton*pmass(kj)*invr3_ij*ev1
+              acc(ks,2) = acc(ks,2) - GNewton*pmass(kj)*invr3_ij*ev2
+              acc(ks,3) = acc(ks,3) - GNewton*pmass(kj)*invr3_ij*ev3
 !
-               endif
-            enddo
-         endif
+            endif
+          enddo
+        endif
 !
 !  Broadcast particle acceleration
 !
-         call mpibcast_real(acc(ks,:),3)
+        call mpibcast_real(acc(ks,:),3)
 !
 !  Put it back on the dfp array on this processor
 !
-         do k=1,npar_loc
-            if (ipar(k)==ks) &
-                 dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + acc(ks,1:3)
-         enddo
+        do k=1,npar_loc
+          if (ipar(k)==ks) then
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + acc(ks,1:3)
+            if (lcylindrical_coords) then
+              dfp(k,ivpx) = dfp(k,ivpx) + fsp(ks,ivpy)**2*fsp(ks,ixp)
+              dfp(k,ivpy) = dfp(k,ivpy) - 2*fp(k,ivpx)*fp(k,ivpy)/fp(k,ixp)
+            elseif (lspherical_coords) then
+              call stop_it("dvvp_dt_nbody: not yet implemented for "//&
+                   " spherical polars")
+            endif
+          endif
+        enddo
 !
 !  Position and velocity diagnostics (per sink particle)
 !
-         if (ldiagnos) then
-            if (lfollow_particle(ks)) then
-               do j=1,3
-                  jx=j+ixp-1 ; jp=j+ivpx-1
-                  xxspar(1:npar_loc,ks,j) = fsp(ks,jx)
-                  vvspar(1:npar_loc,ks,j) = fsp(ks,jp)
+        if (ldiagnos) then
+          if (lfollow_particle(ks)) then
+            do j=1,3
+              jx=j+ixp-1 ; jp=j+ivpx-1
+              xxspar(1:npar_loc,ks,j) = fsp(ks,jx)
+              vvspar(1:npar_loc,ks,j) = fsp(ks,jp)
 !
-                  if (idiag_xxspar(ks,j)/=0) &
-                       call sum_par_name(xxspar(1:npar_loc,ks,j),idiag_xxspar(ks,j))
-                  if (idiag_vvspar(ks,j)/=0) &
-                       call sum_par_name(vvspar(1:npar_loc,ks,j),idiag_vvspar(ks,j))
-               enddo
-            endif
-         endif
+              if (idiag_xxspar(ks,j)/=0) &
+                   call sum_par_name(xxspar(1:npar_loc,ks,j),idiag_xxspar(ks,j))
+              if (idiag_vvspar(ks,j)/=0) &
+                   call sum_par_name(vvspar(1:npar_loc,ks,j),idiag_vvspar(ks,j))
+            enddo
+          endif
+        endif
 !
       enddo
 !
@@ -637,8 +670,8 @@ module Particles_nbody
       vcm(3) = sum(pmass*fsp(:,ivpz))
 !
       do k=1,npar_loc
-         if (ipar(k)<=nspar) &
-              dfp(k,ixp:izp) = dfp(k,ixp:izp) - vcm*totmass1
+        if (ipar(k)<=nspar) &
+             dfp(k,ixp:izp) = dfp(k,ixp:izp) - vcm*totmass1
       enddo
 !
     endsubroutine reset_center_of_mass
@@ -664,17 +697,17 @@ module Particles_nbody
       if (headtt) &
            print*,'Adding gas gravity to particles'
 !
-      if (coord_system/="cartesian") &
+      if (.not.lcartesian_coords) &
            call stop_it("particles_nbody: gas gravity not yet "//&
            "implemented for curvilinear coordinates.")
 !
       if (nzgrid==1) then
-         dv=dx*dy
+        dv=dx*dy
       else
-         dv=dx*dy*dz
+        dv=dx*dy*dz
       endif
 !
-! The gravity of every single gas particle - should exclude inner and outer radii...
+! The gravity of every single gas cell - should exclude inner and outer radii...
 !
 ! grav_gas = G*(rho*dv)*mass*r*(r**2 + r0**2)**(-1.5)
 ! gx = grav_gas * r\hat dot x\hat
@@ -682,22 +715,22 @@ module Particles_nbody
 !
       grav_gas = GNewton*p%rho*dv*(rrp**2 + rp0**2)**(-1.5)
 !
-! Everything outside the accretion radius of the particle should not exert gravity
+! Everything inside the accretion radius of the particle shouldn't exert gravity
 !
       where (rrp.le.rp0)
-         grav_gas = 0
+        grav_gas = 0
       endwhere
 !
       if (lexclude_frozen) then
-         if (lcylinder_in_a_box) then
-            where ((p%rcyl_mn.le.r_int).or.(p%rcyl_mn.ge.r_ext))
-               grav_gas = 0
-            endwhere
-         else
-            where ((p%r_mn.le.r_int).or.(p%r_mn.ge.r_ext))
-               grav_gas = 0
-            endwhere
-         endif
+        if (lcylinder_in_a_box) then
+          where ((p%rcyl_mn.le.r_int).or.(p%rcyl_mn.ge.r_ext))
+            grav_gas = 0
+          endwhere
+        else
+          where ((p%r_mn.le.r_int).or.(p%r_mn.ge.r_ext))
+            grav_gas = 0
+          endwhere
+        endif
       endif
 !
 ! Sum the accelerations on this processor
@@ -706,8 +739,8 @@ module Particles_nbody
       xxgas(:,1) = x(l1:l2) ; xxgas(:,2) = y(m) ; xxgas(:,3) = z(n)
 !
       do j=1,3
-         sum_loc(j) = sum(grav_gas * (xxgas(:,j) - xxpar(j)))
-         call mpireduce_sum_scl(sum_loc(j),accg(j))
+        sum_loc(j) = sum(grav_gas * (xxgas(:,j) - xxpar(j)))
+        call mpireduce_sum_scl(sum_loc(j),accg(j))
       enddo
 !
 !  Broadcast particle acceleration
@@ -727,6 +760,8 @@ module Particles_nbody
 ! The root processor receives all the logicals, and if
 ! they are true, then receives the value, broadcasting it
 !
+! 07-sep-06/wlad: coded
+!
       use Mpicomm
 !
       real, dimension(mpar_loc,mpvar) :: fp
@@ -737,77 +772,78 @@ module Particles_nbody
 !
 ! Loop through the sink particles
 !
-         do ks=1,nspar
+        do ks=1,nspar
 !
 ! Set the logical to false initially
 !
-            lsink(ks)=.false.
+          lsink(ks)=.false.
 !
 ! Loop through the particles on this processor
 !
-            do k=1,npar_loc
-               if (ks==ipar(k)) then
+          do k=1,npar_loc
+            if (ks==ipar(k)) then
 !
 ! A sink was found here. Turn the logical true and copy fp to fsp
 !
-                  lsink(ks) = .true.
-                  fsp(ks,:) = fp(k,:)
+              lsink(ks) = .true.
+              fsp(ks,:) = fp(k,:)
 !
 ! Send it to root. As there will be just nspar calls to
 ! mpisend, the tag can be ipar itself
 !
-                  call mpisend_real(fsp(ks,:),mpvar,root,ks)
-                  if (ip<=6) print*,'logical for particle ',ks,&
-                       ' set to true on processor ',iproc, &
-                       ' with tag=',ks
-               endif
-            enddo
+              call mpisend_real(fsp(ks,:),mpvar,root,ks)
+              if (ip<=6) print*,'logical for particle ',ks,&
+                   ' set to true on processor ',iproc, &
+                   ' with tag=',ks
+            endif
+          enddo
 !
 ! Send the logicals from each processor. As all processors send nspar calls,
 ! the tags are now in base nspar. It assures that two logicals will not have
 ! the same tag.
 !
-            if (.not.lroot) then
-               tagsend = nspar*iproc + ks
-               call mpisend_logical(lsink(ks),1,root,tagsend)
-            else
+          if (.not.lroot) then
+            tagsend = nspar*iproc + ks
+            call mpisend_logical(lsink(ks),1,root,tagsend)
+          else
 !
 ! The root receives all logicals. Same tag.
 !
-               do j=1,ncpus-1
-                  tagrecv = nspar*j + ks
-                  call mpirecv_logical(lsink(ks),1,j,tagrecv)
+            do j=1,ncpus-1
+              tagrecv = nspar*j + ks
+              call mpirecv_logical(lsink(ks),1,j,tagrecv)
 !
 ! Test the received logicals
 !
-                  if (lsink(ks)) then
+              if (lsink(ks)) then
 !
 ! Found a sink particle. Get the value of fsp
 !
-                     call mpirecv_real(fsp(ks,:),mpvar,j,ks)
-                     if (ip<=6) print*,'logical for particle ',ks,&
-                          ' is true on processor ',j, &
-                          ' with tag=',ks,' on root'
-                  endif
-               enddo
-            endif
+                call mpirecv_real(fsp(ks,:),mpvar,j,ks)
+                if (ip<=6) print*,'logical for particle ',ks,&
+                     ' is true on processor ',j, &
+                     ' with tag=',ks,' on root'
+              endif
+            enddo
+          endif
 !
 ! Broadcast the received fsp
 !
-            call mpibcast_real(fsp(ks,:),mpvar)
+          call mpibcast_real(fsp(ks,:),mpvar)
 !
 ! Print the result in all processors
 !
-            if (ip<=8)  print*,'share_sinkparticles: finished loop. sink particles in proc ',iproc,&
-                 ' are fsp(ks,:)=',fsp(ks,:)
-         enddo
+          if (ip<=8)  print*,'share_sinkparticles: finished loop. '//&
+               'sink particles in proc ',iproc,&
+               ' are fsp(ks,:)=',fsp(ks,:)
+        enddo
       else
 !
 ! Non-parallel. Just copy fp to fsp
 !
-         do k=1,npar_loc
-            if (ipar(k)<=nspar) fsp(ipar(k),:) = fp(k,:)
-         enddo
+        do k=1,npar_loc
+          if (ipar(k)<=nspar) fsp(ipar(k),:) = fp(k,:)
+        enddo
 !
       endif
 !
@@ -828,7 +864,7 @@ module Particles_nbody
       use Cdata,only: coord_system,x,y,z,l1,l2,&
                       m,n,nx,lcylindrical_gravity
       use Mpicomm,only:stop_it
-!                                                                                                                                                         
+!
       real, dimension(nx),intent(in) :: grr
       real, dimension(nx,3),intent(out) :: gg
       real :: x0,y0,z0
@@ -853,8 +889,9 @@ module Particles_nbody
 !***********************************************************************
     subroutine calc_torque(p,dist,ks)
 !
-! Output torque diagnostic for sink particle ks
-! 05-nov-05/wlad : coded
+!  Output torque diagnostic for sink particle ks
+!
+!  05-nov-05/wlad : coded
 !
       use Sub
       use Mpicomm, only: stop_it
@@ -865,7 +902,10 @@ module Particles_nbody
       real :: rr,w2,smap,hills
       integer :: ks,i
 !
-
+      if (.not.lcartesian_coords) &
+           call stop_it("particles_nbody: calc_torque not yet "//&
+           "implemented for curvilinear coordinates.")
+!
       if (ks==nspar) &
            call stop_it("Nonsense to calculate torques for the star")
 
@@ -885,17 +925,17 @@ module Particles_nbody
 !
 ! Exclude material from inside the Roche Lobe
 !
-         if (dist(i).ge.hills) then
+        if (dist(i).ge.hills) then
 !
 ! External torque
 !
-            if (p%rcyl_mn(i).ge.rr) torqext(i) = torque(i)
+          if (p%rcyl_mn(i).ge.rr) torqext(i) = torque(i)
 !
 ! Internal torque
 !
-            if (p%rcyl_mn(i).le.rr) torqint(i) = torque(i)
+          if (p%rcyl_mn(i).le.rr) torqint(i) = torque(i)
 !
-         endif
+        endif
 !
       enddo
 !
@@ -929,9 +969,9 @@ module Particles_nbody
 !  Reset everything in case of reset
 !
       if (lreset) then
-         idiag_xxspar=0;idiag_vvspar=0
-         idiag_torqint=0;idiag_torqext=0
-         idiag_totenergy=0;idiag_totangmom=0
+        idiag_xxspar=0;idiag_vvspar=0
+        idiag_torqint=0;idiag_torqext=0
+        idiag_totenergy=0;idiag_totangmom=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -940,52 +980,53 @@ module Particles_nbody
 !
 !  Now check diagnostics for specific particles
 !
-     do ks=1,nspar
+      do ks=1,nspar
         call chn(ks,sks)
         do j=1,3
-           if (j==1) str='x';if (j==2) str='y';if (j==3)  str='z'
-           do iname=1,nname
-              call parse_name(iname,cname(iname),cform(iname),&
-                   trim(str)//'par'//trim(sks),idiag_xxspar(ks,j))
-              call parse_name(iname,cname(iname),cform(iname),&
-                   'v'//trim(str)//'par'//trim(sks),idiag_vvspar(ks,j))
-           enddo
+          if (j==1) str='x';if (j==2) str='y';if (j==3)  str='z'
+          do iname=1,nname
+            call parse_name(iname,cname(iname),cform(iname),&
+                 trim(str)//'par'//trim(sks),idiag_xxspar(ks,j))
+            call parse_name(iname,cname(iname),cform(iname),&
+                 'v'//trim(str)//'par'//trim(sks),idiag_vvspar(ks,j))
+          enddo
 !
 !  Run through parse list again
 !
-           if (lwr) then
-              write(3,*) ' i_'//trim(str)//'par'//trim(sks)//'=',idiag_xxspar(ks,j)
-              write(3,*) 'i_v'//trim(str)//'par'//trim(sks)//'=',idiag_vvspar(ks,j)
-
-           endif
+          if (lwr) then
+            write(3,*) ' i_'//trim(str)//'par'//trim(sks)//'=',&
+                 idiag_xxspar(ks,j)
+            write(3,*) 'i_v'//trim(str)//'par'//trim(sks)//'=',&
+                 idiag_vvspar(ks,j)
+          endif
 !
         enddo
 !
         do iname=1,nname
-           call parse_name(iname,cname(iname),cform(iname),&
-              'torqint_'//trim(sks),idiag_torqint(ks))
-           call parse_name(iname,cname(iname),cform(iname),&
-              'torqext_'//trim(sks),idiag_torqext(ks))
+          call parse_name(iname,cname(iname),cform(iname),&
+               'torqint_'//trim(sks),idiag_torqint(ks))
+          call parse_name(iname,cname(iname),cform(iname),&
+               'torqext_'//trim(sks),idiag_torqext(ks))
         enddo
 !
         if (lwr) then
-           write(3,*) 'i_torqint_'//trim(sks)//'=',idiag_torqint(ks)
-           write(3,*) 'i_torqext_'//trim(sks)//'=',idiag_torqext(ks)
+          write(3,*) 'i_torqint_'//trim(sks)//'=',idiag_torqint(ks)
+          write(3,*) 'i_torqext_'//trim(sks)//'=',idiag_torqext(ks)
         endif
-     enddo
+      enddo
 !
-     do iname=1,nname
+      do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),&
              'totenergy',idiag_totenergy)
         call parse_name(iname,cname(iname),cform(iname),&
              'totangmom',idiag_totangmom)
-     enddo
+      enddo
 !
      if (lwr) then
-        write(3,*) 'i_totenergy=',idiag_totenergy
-        write(3,*) 'i_totangmom=',idiag_totangmom
+       write(3,*) 'i_totenergy=',idiag_totenergy
+       write(3,*) 'i_totangmom=',idiag_totangmom
      endif
 !
-    endsubroutine rprint_particles_nbody
+   endsubroutine rprint_particles_nbody
 !***********************************************************************
-  endmodule Particles_nbody
+ endmodule Particles_nbody
