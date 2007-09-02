@@ -1,4 +1,4 @@
-! $Id: testfield_xz.f90,v 1.4 2007-08-29 18:25:15 brandenb Exp $
+! $Id: testfield_xz.f90,v 1.5 2007-09-02 17:14:57 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -98,7 +98,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_xz.f90,v 1.4 2007-08-29 18:25:15 brandenb Exp $")
+           "$Id: testfield_xz.f90,v 1.5 2007-09-02 17:14:57 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -249,8 +249,10 @@ module Testfield
 !***********************************************************************
     subroutine daatest_dt(f,df,p)
 !
-!  testfield evolution
-!  calculate da^(pq)/dt=uxB^(pq)+eta*del2A^(pq), where p=1,2 and q=1
+!  testfield evolution:
+!
+!  calculate da^(pq)/dt=Uxb^(pq)+uxB^(pq)+uxb-<uxb>+eta*del2A^(pq),
+!    where p=1,2 and q=1
 !
 !   3-jun-05/axel: coded
 !

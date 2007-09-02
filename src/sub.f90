@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.339 2007-08-31 12:52:49 wlyra Exp $
+! $Id: sub.f90,v 1.340 2007-09-02 17:14:57 brandenb Exp $
 
 module Sub
 
@@ -368,7 +368,7 @@ module Sub
 !
     endsubroutine max_mn_name
 !***********************************************************************
-    subroutine sum_mn_name(a,iname,lsqrt)
+    subroutine sum_mn_name(a,iname,lsqrt,lint)
 !
 !  successively calculate sum of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true.
@@ -377,7 +377,7 @@ module Sub
 !   1-apr-01/axel+wolf: coded
 !   4-may-02/axel: adapted for fname array
 !  23-jun-02/axel: allows for taking square root in the end
-!  20-jun-07/dhruba:adapted for spherical polar coordinate system
+!  20-jun-07/dhruba: adapted for spherical polar coordinate system
 !  30-aug-07/wlad: adapted for cylindrical coordinates
 !
 !  Note [24-may-2004, wd]:
@@ -393,16 +393,13 @@ module Sub
 !
       real, dimension (nx) :: a
       integer :: iname,isum
-      logical, optional :: lsqrt
+      logical, optional :: lsqrt, lint
 !
       if (iname /= 0) then
 !
         if (lfirstpoint) then
-          if(lspherical_coords) then
-            fname(iname) = 0.
-            do isum=l1,l2
-              fname(iname) = fname(iname)+x(isum)*x(isum)*sinth(m)*a(isum)
-            enddo
+          if (lspherical_coords) then
+            fname(iname)=sum(r2_weight*sinth_weight(m)*a)
           elseif (lcylindrical_coords) then
             fname(iname) = 0.
             do isum=l1,l2
@@ -413,9 +410,7 @@ module Sub
           endif
         else
           if(lspherical_coords) then
-            do isum=l1,l2
-              fname(iname) = fname(iname)+x(isum)*x(isum)*sinth(m)*a(isum)
-            enddo
+            fname(iname)=fname(iname)+sum(r2_weight*sinth_weight(m)*a)
           elseif (lcylindrical_coords) then
             do isum=l1,l2
               fname(iname) = fname(iname)+x(isum)*a(isum)
@@ -429,6 +424,8 @@ module Sub
         !
         if (present(lsqrt)) then
           itype_name(iname)=ilabel_sum_sqrt
+        elseif (present(lint)) then
+          itype_name(iname)=ilabel_integrate
         else
           itype_name(iname)=ilabel_sum
         endif
@@ -576,6 +573,9 @@ module Sub
 !  to get the integral.  This differs from sum_mn_name by the
 !  setting of ilabel_integrate and hence in the behaviour in the final
 !  step.
+!
+!  Note, for regular integration (uniform meshes) it is better
+!  to use the usual sum_mn_name routine with lint=.true.
 !
 !   30-may-03/tony: adapted from sum_mn_name
 !   13-nov-06/tony: modified to handle stretched mesh

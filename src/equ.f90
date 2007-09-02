@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.375 2007-08-29 23:33:24 dintrans Exp $
+! $Id: equ.f90,v 1.376 2007-09-02 17:14:56 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -53,6 +53,7 @@ module Equ
     subroutine diagnostic
 !
 !  calculate diagnostic quantities
+!
 !   2-sep-01/axel: coded
 !  14-aug-03/axel: began adding surface integrals
 !
@@ -64,6 +65,27 @@ module Equ
       real :: dv,vol
       integer :: iname,imax_count,isum_count,nmax_count,nsum_count
       logical :: lweight_comm
+      logical, save :: first=.true.
+      real, save :: dVol_rel1
+      real :: intdr_rel,intdtheta_rel,intdphi_rel
+!
+!  calculate relative volume integral
+!
+      if (first) then
+        if (lspherical_coords) then
+          intdr_rel     =      (xyz1(1)**3-    xyz0(1)**3)/(3.*dx)
+          intdtheta_rel = -(cos(xyz1(2))  -cos(xyz0(2)))/dy
+          intdphi_rel   =      (xyz1(3)   -    xyz0(3)) /dz
+          dVol_rel1=1./(intdr_rel*intdtheta_rel*intdphi_rel)
+        elseif (lcylindrical_coords) then
+          dVol_rel1=1. !(similar as above needs to be done!)
+        else
+          dVol_rel1=1./float(nw*ncpus)
+        endif
+        first=.false.
+        if (lroot.and.ip<=10) print*,'dVol_rel1=',dVol_rel1
+        if (lroot) print*,'Volume=',dx*dy*dz/dVol_rel1
+      endif
 !
 !  go through all print names, and sort into communicators
 !  corresponding to their type
@@ -125,10 +147,10 @@ module Equ
              isum_count=isum_count+1
 
              if (itype_name(iname)==ilabel_sum)            &
-                 fname(iname)=fsum(isum_count)/(nw*ncpus)
+                 fname(iname)=fsum(isum_count)*dVol_rel1
 
              if (itype_name(iname)==ilabel_sum_sqrt)       &
-                 fname(iname)=sqrt(fsum(isum_count)/(nw*ncpus))
+                 fname(iname)=sqrt(fsum(isum_count)*dVol_rel1)
 
              if (itype_name(iname)==ilabel_sum_par)        &
                  fname(iname)=fsum(isum_count)/npar
@@ -445,7 +467,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.375 2007-08-29 23:33:24 dintrans Exp $")
+           "$Id: equ.f90,v 1.376 2007-09-02 17:14:56 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -609,7 +631,7 @@ module Equ
         if (old_cdtv) then
           dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m)**2,dz_1(n)**2)
         else
-          if(lspherical_coords) then
+          if (lspherical_coords) then
             dxyz_2 = dx_1(l1:l2)**2+ & 
               (r1_mn*dy_1(m))**2+(r1_mn*sin1th(m)*dz_1(n))**2
             dxyz_4 = dx_1(l1:l2)**4+ &

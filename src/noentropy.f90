@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.98 2007-03-01 02:53:34 wlyra Exp $
+! $Id: noentropy.f90,v 1.99 2007-09-02 17:14:57 brandenb Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -33,7 +33,13 @@ module Entropy
   logical :: lheatc_chiconst=.false.
 
 ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_dtc=0,idiag_ssm=0,idiag_ugradpm=0
+  integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
+                                ! DIAG_DOC:   /\max c_{\rm s}]$
+                                ! DIAG_DOC:   \quad(time step relative to 
+                                ! DIAG_DOC:   acoustic time step;
+                                ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_ssm=0
+  integer :: idiag_ugradpm=0
   integer :: idiag_thermalpressure=0
 
   contains
@@ -55,7 +61,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.98 2007-03-01 02:53:34 wlyra Exp $")
+           "$Id: noentropy.f90,v 1.99 2007-09-02 17:14:57 brandenb Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************

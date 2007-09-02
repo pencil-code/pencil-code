@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.59 2007-06-05 05:10:28 ajohan Exp $
+! $Id: pscalar_nolog.f90,v 1.60 2007-09-02 17:14:57 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc.
@@ -113,7 +113,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.59 2007-06-05 05:10:28 ajohan Exp $")
+           "$Id: pscalar_nolog.f90,v 1.60 2007-09-02 17:14:57 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -290,7 +290,7 @@ module Pscalar
 !
 !  All pencils that the Pscalar module depends on are specified here.
 !
-!  20-11-04/anders: coded
+!  20-nov-04/anders: coded
 !
       integer :: i
 !

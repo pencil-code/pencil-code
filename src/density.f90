@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.349 2007-09-02 10:56:42 wlyra Exp $
+! $Id: density.f90,v 1.350 2007-09-02 17:14:56 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -129,7 +129,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.349 2007-09-02 10:56:42 wlyra Exp $")
+           "$Id: density.f90,v 1.350 2007-09-02 17:14:56 brandenb Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1437,7 +1437,7 @@ module Density
 !
       if (ldiagnos) then
         if (idiag_rhom/=0)     call sum_mn_name(p%rho,idiag_rhom)
-        if (idiag_totmass/=0)  call integrate_mn_name(p%rho,idiag_totmass)
+        if (idiag_totmass/=0)  call sum_mn_name(p%rho,idiag_totmass,lint=.true.)
         if (idiag_rhomin/=0) &
             call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)
         if (idiag_rhomax/=0)   call max_mn_name(p%rho,idiag_rhomax)

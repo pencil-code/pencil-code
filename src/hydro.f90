@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.385 2007-08-30 09:58:24 wlyra Exp $
+! $Id: hydro.f90,v 1.386 2007-09-02 17:14:57 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -145,12 +145,12 @@ module Hydro
   integer :: idiag_uxm=0        ! DIAG_DOC: 
   integer :: idiag_uym=0        ! DIAG_DOC: 
   integer :: idiag_uzm=0        ! DIAG_DOC: 
-  integer :: idiag_ux2m=0       ! DIAG_DOC: 
-  integer :: idiag_uy2m=0       ! DIAG_DOC: 
-  integer :: idiag_uz2m=0       ! DIAG_DOC: 
-  integer :: idiag_ux2mx=0      ! DIAG_DOC: 
-  integer :: idiag_uy2mx=0      ! DIAG_DOC: 
-  integer :: idiag_uz2mx=0      ! DIAG_DOC: 
+  integer :: idiag_ux2m=0       ! DIAG_DOC: $\left<u_x^2\right>$
+  integer :: idiag_uy2m=0       ! DIAG_DOC: $\left<u_y^2\right>$
+  integer :: idiag_uz2m=0       ! DIAG_DOC: $\left<u_z^2\right>$
+  integer :: idiag_ux2mx=0      ! DIAG_DOC: $\left<u_x^2\right>_{yz}$
+  integer :: idiag_uy2mx=0      ! DIAG_DOC: $\left<u_y^2\right>_{yz}$
+  integer :: idiag_uz2mx=0      ! DIAG_DOC: $\left<u_z^2\right>_{yz}$
   integer :: idiag_ux2my=0      ! DIAG_DOC: 
   integer :: idiag_uy2my=0      ! DIAG_DOC: 
   integer :: idiag_uz2my=0      ! DIAG_DOC: 
@@ -309,7 +309,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.385 2007-08-30 09:58:24 wlyra Exp $")
+           "$Id: hydro.f90,v 1.386 2007-09-02 17:14:57 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

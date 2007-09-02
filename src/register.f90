@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.216 2007-08-23 12:02:41 ajohan Exp $
+! $Id: register.f90,v 1.217 2007-09-02 17:14:57 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -361,6 +361,17 @@ module Register
 !  calculate cot(theta)
 !
         cotth=cos(y)*sin1th
+!
+!  weighted coordinates for integration purposes
+!  Need to modify for 2-D and 1-D cases!
+!
+        r2_weight=x(l1:l2)**2
+        if (ipx==0       ) r2_weight( 1)=.5*r2_weight( 1)
+        if (ipx==nprocx-1) r2_weight(nx)=.5*r2_weight(nx)
+!
+        sinth_weight=sinth
+        if (ipy==0       ) sinth_weight(m1)=.5*sinth_weight(m1)
+        if (ipy==nprocy-1) sinth_weight(m2)=.5*sinth_weight(m2)
 !
 !  end of coord_system=='cylindrical_coords' query
 !  Introduce new names (cylindrical_coords), in addition to the old ones.

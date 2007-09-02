@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.26 2007-08-31 12:52:49 wlyra Exp $
+! $Id: grid.f90,v 1.27 2007-09-02 17:14:57 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -477,8 +477,8 @@ module Grid
           p%evr(:,3) = p%z_mn
           p%evr = p%evr / spread(p%r_mn+tini,2,3)
         else
-          call stop_it("position vector not implemented for"//&
-               "non-cartesian coordinates")
+          call stop_it("radial unit vector not implemented for"//&
+               " non-cartesian coordinates")
         endif
       endif
 !
