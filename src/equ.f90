@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.376 2007-09-02 17:14:56 brandenb Exp $
+! $Id: equ.f90,v 1.377 2007-09-02 18:14:29 reza Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -80,7 +80,7 @@ module Equ
         elseif (lcylindrical_coords) then
           dVol_rel1=1. !(similar as above needs to be done!)
         else
-          dVol_rel1=1./float(nw*ncpus)
+          dVol_rel1=1./(nw*ncpus)
         endif
         first=.false.
         if (lroot.and.ip<=10) print*,'dVol_rel1=',dVol_rel1
@@ -467,7 +467,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.376 2007-09-02 17:14:56 brandenb Exp $")
+           "$Id: equ.f90,v 1.377 2007-09-02 18:14:29 reza Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
