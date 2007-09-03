@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.222 2007-09-03 09:40:50 bingert Exp $
+! $Id: initcond.f90,v 1.223 2007-09-03 12:13:45 reza Exp $
 
 module Initcond
 
@@ -3081,8 +3081,7 @@ module Initcond
       ! temperature given as function lnT(z) in SI units
       ! [T] = K   &   [z] = Mm   & [rho] = kg/m^3
       !
-      if (pretend_lnTT) print*,'corona_init: not implemented for &
-           pretend_lnTT = T'
+      if (pretend_lnTT) print*,'corona_init: not implemented for pretend_lnTT=T'
       !      
       inquire(IOLENGTH=lend) tmp
       open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
