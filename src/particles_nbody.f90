@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.42 2007-09-02 20:21:51 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.43 2007-09-03 10:45:38 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.42 2007-09-02 20:21:51 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.43 2007-09-03 10:45:38 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -497,7 +497,7 @@ module Particles_nbody
       real, dimension (npar_loc,nspar,3) :: xxspar,vvspar
 !
       real :: Omega2,invr3_ij
-      integer :: i, k, ks, ki, kj, j, jp, jx
+      integer :: i, k, ks, ki, kj, j, jvel, jpos
       logical :: lheader, lfirstcall=.true.
 !
       real :: e1,e2,e3,e10,e20,e30,ev1,ev2,ev3
@@ -588,9 +588,9 @@ module Particles_nbody
         if (ldiagnos) then
           if (lfollow_particle(ks)) then
             do j=1,3
-              jx=j+ixp-1 ; jp=j+ivpx-1
-              xxspar(1:npar_loc,ks,j) = fsp(ks,jx)
-              vvspar(1:npar_loc,ks,j) = fsp(ks,jp)
+              jpos=j+ixp-1 ; jvel=j+ivpx-1
+              xxspar(1:npar_loc,ks,j) = fsp(ks,jpos)
+              vvspar(1:npar_loc,ks,j) = fsp(ks,jvel)
 !
               if (idiag_xxspar(ks,j)/=0) &
                    call sum_par_name(xxspar(1:npar_loc,ks,j),idiag_xxspar(ks,j))
@@ -661,13 +661,24 @@ module Particles_nbody
 !
 !  27-aug-06/wlad: coded
 !
+      use Mpicomm,only:stop_it
+!
       real, dimension(mpar_loc,mpvar),intent(inout) :: dfp
       real, dimension(3) :: vcm
       integer :: k
 !
-      vcm(1) = sum(pmass*fsp(:,ivpx))
-      vcm(2) = sum(pmass*fsp(:,ivpy))
-      vcm(3) = sum(pmass*fsp(:,ivpz))
+      if (lcartesian_coords) then
+        vcm(1) = sum(pmass*fsp(:,ivpx))
+        vcm(2) = sum(pmass*fsp(:,ivpy))
+        vcm(3) = sum(pmass*fsp(:,ivpz))
+      elseif (lcylindrical_coords) then
+        vcm(1) = sum(pmass*fsp(:,ivpx))
+        vcm(2) = sum(pmass*fsp(:,ivpy)*fsp(:,ixp)) !ivpy is angular velocity in this case
+        vcm(3) = sum(pmass*fsp(:,ivpz))
+      elseif (lspherical_coords) then
+        call stop_it("reset_center_of_mass: not implemented for"//&
+             " spherical polars")
+      endif
 !
       do k=1,npar_loc
         if (ipar(k)<=nspar) &
