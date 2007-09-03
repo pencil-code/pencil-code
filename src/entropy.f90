@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.517 2007-08-31 01:42:47 dintrans Exp $
+! $Id: entropy.f90,v 1.518 2007-09-03 21:00:03 bingert Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -207,7 +207,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.517 2007-08-31 01:42:47 dintrans Exp $")
+           "$Id: entropy.f90,v 1.518 2007-09-03 21:00:03 bingert Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1897,7 +1897,7 @@ module Entropy
       endif
 !
 !  Advection of entropy.
-!  If pretend_lnTT=.true., we pretend that ss is actually cv*lnTT
+!  If pretend_lnTT=.true., we pretend that ss is actually lnTT
 !  Otherwise, in the regular case with entropy, s is the dimensional
 !  specific entropy, i.e. it is not divided by cp.
 !  NOTE: in the entropy module is it lnTT that is advanced, so
@@ -2304,7 +2304,7 @@ module Entropy
       call dot(p%glnTT,p%glnTT,g2)
       !
       if (pretend_lnTT) then
-         thdiff = hcond * (p%del2lnTT + g2)
+         thdiff = gamma*chix * (p%del2lnTT + g2)
       else
          thdiff = p%rho1*hcond * (p%del2lnTT + g2)
       endif
