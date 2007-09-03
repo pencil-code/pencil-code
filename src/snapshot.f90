@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.22 2007-05-14 12:08:14 dintrans Exp $
+! $Id: snapshot.f90,v 1.23 2007-09-03 12:43:14 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -43,15 +43,17 @@ contains
 !  the dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90
 !
-      integer :: msnap
+      character (len=*) :: chsnap, flist
       real, dimension (mx,my,mz,msnap) :: a
-      character (len=5) :: ch
-      character (len=fnlen) :: file
-      character (len=*) :: chsnap,flist
-      logical :: lsnap,enum
-      integer, save :: ifirst=0,nsnap
+      integer :: msnap
+      logical :: enum, bcs
+      optional :: flist, enum
+!
       real, save :: tsnap
-      optional :: flist
+      integer, save :: ifirst=0,nsnap
+      logical :: lsnap
+      character (len=fnlen) :: file
+      character (len=5) :: ch
 !
 !  Output snapshot with label in 'tsnap' time intervals
 !  file keeps the information about number and time of last snapshot
@@ -73,7 +75,7 @@ contains
         call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch,ENUM=.true.)
         if (lsnap) then
           call update_ghosts(a)
-          call update_auxiliaries(a)
+          if (msnap==mfarray) call update_auxiliaries(a)
           call output_snap(chsnap//ch,a,msnap)
           if(ip<=10.and.lroot) print*,'wsnap: written snapshot ',chsnap//ch
           if (present(flist)) call log_filename_to_file(chsnap//ch,flist)
@@ -84,7 +86,7 @@ contains
 !  write snapshot without label (typically, var.dat)
 !
         call update_ghosts(a)
-        call update_auxiliaries(a)
+        if (msnap==mfarray) call update_auxiliaries(a) ! Not if e.g. dvar.dat.
         call output_snap(chsnap,a,msnap)
         if (present(flist)) call log_filename_to_file(chsnap,flist)
       endif
