@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.178 2007-08-28 17:07:16 dhruba Exp $
+! $Id: boundcond.f90,v 1.179 2007-09-03 10:19:18 bingert Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -2556,7 +2556,7 @@ module Boundcond
 !  11-aug-06/axel: make it compile with nprocx>0, renamed quenching -> quen
 !
        use Cdata
-       use EquationOfState, only : gamma,gamma1,cs20,lnrho0
+       use EquationOfState, only : gamma,gamma1,gamma11,cs20,lnrho0
 
        real, dimension (mx,my,mz,mfarray) :: f
        real, dimension (nxgrid,nygrid),save :: uxl,uxr,uyl,uyr
@@ -2645,8 +2645,12 @@ module Boundcond
        bb2 = bbz*bbz
        bb2 = bb2/(2*mu0)*300.
 !
-       pp = gamma* (f(l1:l2,m1:m2,n1,iss)+f(l1:l2,m1:m2,n1,ilnrho))-gamma1*lnrho0
-       pp = exp(pp) * cs20/gamma
+       if (ltemperature) pp = gamma1*gamma11*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnTT))
+!
+       if (lentropy) then
+          pp = gamma* (f(l1:l2,m1:m2,n1,iss)+f(l1:l2,m1:m2,n1,ilnrho))-gamma1*lnrho0
+          pp = exp(pp) * cs20*gamma11
+       endif
 !
 !   limit plasma beta
 !
