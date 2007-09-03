@@ -1,4 +1,4 @@
-! $Id: testfield_xz.f90,v 1.5 2007-09-02 17:14:57 brandenb Exp $
+! $Id: testfield_xz.f90,v 1.6 2007-09-03 14:55:14 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -98,7 +98,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_xz.f90,v 1.5 2007-09-02 17:14:57 brandenb Exp $")
+           "$Id: testfield_xz.f90,v 1.6 2007-09-03 14:55:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -332,6 +332,13 @@ module Testfield
         bpq(:,:,jtest)=btest
         Eipq(:,:,jtest)=uxbtest
       enddo
+!
+!  diffusive time step, just take the max of diffus_eta (if existent)
+!  and whatever is calculated here
+!
+      if (lfirst.and.ldt) then
+        diffus_eta=max(diffus_eta,etatest*dxyz_2)
+      endif
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9
 !
