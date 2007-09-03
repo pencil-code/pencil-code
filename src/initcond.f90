@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.221 2007-09-02 10:56:42 wlyra Exp $
+! $Id: initcond.f90,v 1.222 2007-09-03 09:40:50 bingert Exp $
 
 module Initcond
 
@@ -3081,6 +3081,9 @@ module Initcond
       ! temperature given as function lnT(z) in SI units
       ! [T] = K   &   [z] = Mm   & [rho] = kg/m^3
       !
+      if (pretend_lnTT) print*,'corona_init: not implemented for &
+           pretend_lnTT = T'
+      !      
       inquire(IOLENGTH=lend) tmp
       open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
       read (10) b_lnT
@@ -3106,8 +3109,12 @@ module Initcond
                tmp =  (b_lnT(i)*(b_z(i+1) - z(j)) +   &
                     b_lnT(i+1)*(z(j)-b_z(i)) ) / (b_z(i+1)-b_z(i))
                !
-               f(:,:,j,iss) = (alog(gamma1/cs20)+tmp- &
-                    gamma1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
+               if (ltemperature) then
+                  f(:,:,j,ilnTT) = tmp
+               else
+                  f(:,:,j,iss) = (alog(gamma1/cs20)+tmp- &
+                       gamma1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
+               endif
                exit
             endif
          enddo
@@ -3116,8 +3123,12 @@ module Initcond
             !
             tmp =  b_lnT(150)
             !
-            f(:,:,j,iss) = (alog(gamma1/cs20)+tmp- &
-                 gamma1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
+            if (ltemperature) then
+               f(:,:,j,ilnTT) = tmp
+            else
+               f(:,:,j,iss) = (alog(gamma1/cs20)+tmp- &
+                    gamma1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
+            endif
          endif
       enddo
       !
