@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.11 2007-08-31 13:03:30 wlyra Exp $
+! $Id: neutraldensity.f90,v 1.12 2007-09-03 09:57:55 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -106,7 +106,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.11 2007-08-31 13:03:30 wlyra Exp $")
+           "$Id: neutraldensity.f90,v 1.12 2007-09-03 09:57:55 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -606,7 +606,7 @@ module NeutralDensity
 !
       if (lcontinuity_neutral) then
         if (lneutraldensity_nolog) then
-          df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%ungrhon - p%rhon*p%divun
+          df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%ungrhon   - p%rhon*p%divun
         else
           df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%unglnrhon - p%divun
         endif
@@ -615,8 +615,8 @@ module NeutralDensity
 !  Ionization and recombination
 !
       if (lneutraldensity_nolog) then
-         df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - zeta*p%rhon + alpha*p%rho**2
-         df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + zeta*p%rhon - alpha*p%rho**2
+         df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - zeta*p%rhon        + alpha*p%rho**2
+         df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + zeta*p%rhon        - alpha*p%rho**2
       else
          df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - zeta               + alpha*p%rho**2*p%rhon1
          df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + zeta*p%rhon*p%rho1 - alpha*p%rho
