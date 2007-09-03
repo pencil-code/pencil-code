@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.30 2007-02-26 07:06:38 dobler Exp $
+! $Id: shock.f90,v 1.31 2007-09-03 12:41:03 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -112,7 +112,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.30 2007-02-26 07:06:38 dobler Exp $")
+           "$Id: shock.f90,v 1.31 2007-09-03 12:41:03 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -453,9 +453,9 @@ module Shock
 !! CALCULATE shock in REAL boundary locations... and neighbours!
 !!!
 
-         do n=n1,n2; do m=m1,m2
-           f(l1:l2,m,n,ishock)=max(f(l1:l2,m,n,ishock),0.)
-         enddo; enddo
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ishock)=max(f(l1:l2,m,n,ishock),0.)
+          enddo; enddo
 !        call scale_and_chop_internalboundary(f)
          !f(:,:,:,ishock) = tmp * dxmin**2
         elseif (lgauss_integral_comm_uu) then
