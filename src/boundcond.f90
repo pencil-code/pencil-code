@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.179 2007-09-03 10:19:18 bingert Exp $
+! $Id: boundcond.f90,v 1.180 2007-09-03 21:55:17 bingert Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -501,7 +501,15 @@ module Boundcond
                 ! BCZ_DOC: constant temp.
                 ! BCZ_DOC: 
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
-                if (j==iss)    call bc_ss_temp_z(f,topbot)
+                if (j==iss) then
+                   if (pretend_lnTT) then
+                      force_lower_bound='cT'
+                      force_upper_bound='cT'
+                      call bc_force_z(f,-1,topbot,j)                      
+                   else
+                      call bc_ss_temp_z(f,topbot)
+                   endif
+                endif
                 if (j==ilnTT)  then
                   force_lower_bound='cT'
                   force_upper_bound='cT'
@@ -2147,7 +2155,7 @@ module Boundcond
          case ('kepler')
             call bc_force_kepler(f,n1,j)
          case ('cT')
-            f(:,:,n1,ilnTT) = log(cs2bot/gamma1)
+            f(:,:,n1,j) = log(cs2bot/gamma1)
          case default
             if (lroot) print*, "No such value for force_lower_bound: <", &
                  trim(force_lower_bound),">"
@@ -2171,7 +2179,7 @@ module Boundcond
          case ('kepler')
             call bc_force_kepler(f,n2,j)
          case ('cT')
-            f(:,:,n2,ilnTT) = log(cs2top/gamma1)
+            f(:,:,n2,j) = log(cs2top/gamma1)
          case default
             if (lroot) print*, "No such value for force_upper_bound: <", &
                  trim(force_upper_bound),">"
@@ -2648,8 +2656,12 @@ module Boundcond
        if (ltemperature) pp = gamma1*gamma11*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnTT))
 !
        if (lentropy) then
-          pp = gamma* (f(l1:l2,m1:m2,n1,iss)+f(l1:l2,m1:m2,n1,ilnrho))-gamma1*lnrho0
-          pp = exp(pp) * cs20*gamma11
+          if (pretend_lnTT) then
+             pp = gamma1*gamma11*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,iss))
+          else
+             pp = gamma* (f(l1:l2,m1:m2,n1,iss)+f(l1:l2,m1:m2,n1,ilnrho))-gamma1*lnrho0
+             pp = exp(pp) * cs20*gamma11
+          endif
        endif
 !
 !   limit plasma beta

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.456 2007-08-31 16:11:35 dhruba Exp $
+! $Id: magnetic.f90,v 1.457 2007-09-03 21:55:16 bingert Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -339,7 +339,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.456 2007-08-31 16:11:35 dhruba Exp $")
+           "$Id: magnetic.f90,v 1.457 2007-09-03 21:55:16 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1528,8 +1528,13 @@ module Magnetic
 !  add eta mu_0 j2/rho to entropy or temperature equation
 !
       if (lentropy .and. lohmic_heat) then
-        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
-                          + etatotal*mu0*p%j2*p%rho1*p%TT1
+         if (pretend_lnTT) then
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
+                 + p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
+         else
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
+                 + etatotal*mu0*p%j2*p%rho1*p%TT1
+         endif
       endif
 
       if (ltemperature .and. lohmic_heat) then
