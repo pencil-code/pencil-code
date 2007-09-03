@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.26 2007-08-31 12:52:49 wlyra Exp $
+! $Id: gravity_r.f90,v 1.27 2007-09-03 09:53:47 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -86,7 +86,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.26 2007-08-31 12:52:49 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.27 2007-09-03 09:53:47 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -609,7 +609,7 @@ module Gravity
 !
 !  21-aug-07/wlad: coded
 !
-      use Cdata,  only: nx,r_ref,lcylindrical_gravity,lroot
+      use Cdata,  only: r_ref,lcylindrical_gravity,lroot
       use Mpicomm,only: stop_it
       use Sub,    only: get_radial_distance
 !     
