@@ -7,7 +7,7 @@ GLOBAL    = noglobal
 
 HYDRO     =   hydro
 DENSITY   =   density
-ENTROPY   =   entropy
+ENTROPY   =   temperature_idealgas
 MAGNETIC  =   magnetic
 RADIATION = noradiation
 
