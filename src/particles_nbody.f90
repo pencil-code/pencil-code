@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.43 2007-09-03 10:45:38 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.44 2007-09-03 16:05:04 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -27,7 +27,7 @@ module Particles_nbody
   real, dimension(nspar) :: pmass=1.,position,r_smooth,pmass1
   real :: delta_vsp0=1.0,totmass,totmass1
   character (len=labellen) :: initxxsp='origin', initvvsp='nothing'
-  logical :: lcalc_orbit=.true.,lmigrate=.false.
+  logical :: lcalc_orbit=.true.,lmigrate=.false.,lnorm=.true.
   logical :: lreset_cm=.false.,lnogravz_star=.false.,lexclude_frozen=.true.
   logical, dimension(nspar) :: lcylindrical_gravity_nbody=.false.
   logical, dimension(nspar) :: lfollow_particle=.false.
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.43 2007-09-03 10:45:38 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.44 2007-09-03 16:05:04 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -182,8 +182,8 @@ module Particles_nbody
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
-      real, dimension(nspar) :: ang_vel,kep_vel,velocity
-      real :: aux,aux2
+      real, dimension(nspar) :: ang_vel,kep_vel,velocity,sma
+      real :: aux,aux2,rr,fac,parc
       integer :: k,ks
 
       intent (in) :: f
@@ -219,27 +219,31 @@ module Particles_nbody
                ' of the particles is always g0'
         endif
 !
-        aux = 0. ; aux2=0.
+        aux = 0.;parc=0
+        do ks=1,nspar-1 
+          sma(ks)=abs(position(ks))
+          aux=aux+pmass(ks)
+          parc = parc - sma(ks)*pmass(ks)
+        enddo
+        pmass(nspar)=1.- aux;pmass1=1./pmass;totmass=1.;totmass1=1.
+        parc = parc*totmass1
+        if (aux .ge. 1.) &
+             call stop_it("particles_nbody,init_particles. The mass of one "//& 
+             "(or more) of the particles is too big! The masses should "//&
+             "never be bigger than g0. Please scale your assemble so that "//&
+             "the combined mass of the (n-1) particles is less than that. "//&
+             "The mass of the last particle in the pmass array will be "//&
+             "reassigned to ensure that the total mass is g0")
 !
-        do ks=1,nspar-1
-          !  aux  = aux  + pmass(ks)
-          aux2 = aux2 + pmass(ks)*position(ks)
-          !if (aux .ge. 1.) then
-            !print*,"particles_nbody,init_particles. The mass of one"//& 
-            !     " (or more) of the particles is too big!"
-            !print*,"the masses should never be bigger than g0. Please"//&
-            !     " scale your assemble so that the combined"
-            !print*,"mass of the (n-1) particles is less than that. The"//&
-            !     " mass of the last particle in the pmass array"
-            !print*,"will be reassigned to ensure that the total mass is g0"
-            !call stop_it(" ")
-          !endif
+        do ks=1,nspar-1 
+          position(ks)=sign(1.,position(ks))* (sma(ks) + parc)
         enddo
 !
-        !pmass(nspar)    =  1. - aux
-        position(nspar) = -1. * aux2 / pmass(nspar)
+! The last one (star) fixes the CM at Rcm=zero
 !
-        print*,'pmass = ',pmass
+        position(nspar)=parc
+!
+        print*,'pmass =',pmass
         print*,'position =',position
 !
 ! Loop through ipar to allocate the sink particles
@@ -304,23 +308,19 @@ module Particles_nbody
 !
 ! Keplerian velocities for the planets
 !
-         aux=0.
-         do ks=1,nspar-1
-           ang_vel(ks) = sqrt(GNewton*totmass/abs(position(ks))**3)
-           kep_vel(ks) = ang_vel(ks)*abs(position(ks))
-           if (lcartesian_coords) then !work with linear azimuthal velocity
-             velocity(ks) = sign(1.,position(ks))* (kep_vel(ks))
-           elseif (lcylindrical_coords) then ! work with angular velocity
-             velocity(ks) = sign(1.,position(ks))* (ang_vel(ks))
-           else
-             call stop_it("fixed-cm: not implemented for spherical coords")
-           endif
-             aux = aux - pmass(ks)*velocity(ks)
-         enddo
+        parc=0.
+        do ks=1,nspar-1 
+          kep_vel(ks)=sqrt(1./sma(ks)) !circular velocity
+          parc = parc - kep_vel(ks)*pmass(ks)
+        enddo
+        parc = parc*totmass
+        do ks=1,nspar-1 
+          velocity(ks) = sign(1.,position(ks))*(kep_vel(ks) + parc)
+        enddo
 !
 ! The last one (star) fixes the CM also with velocity zero
 !
-         velocity(nspar) = aux / pmass(nspar)
+        velocity(nspar)=parc
 !
 ! Loop through ipar to allocate the sink particles
 !
@@ -681,8 +681,9 @@ module Particles_nbody
       endif
 !
       do k=1,npar_loc
-        if (ipar(k)<=nspar) &
-             dfp(k,ixp:izp) = dfp(k,ixp:izp) - vcm*totmass1
+        if (ipar(k)<=nspar) then
+          dfp(k,ixp:izp) = dfp(k,ixp:izp) - vcm*totmass1
+        endif
       enddo
 !
     endsubroutine reset_center_of_mass
@@ -866,7 +867,11 @@ module Particles_nbody
 !
       real :: tmass
 !
-      tmass=sum(pmass)
+      if (lnorm) then 
+        tmass=1.
+      else
+        tmass=sum(pmass)
+      endif
 !   
     endsubroutine get_totalmass
 !***********************************************************************
