@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.27 2007-09-02 17:14:57 brandenb Exp $
+! $Id: grid.f90,v 1.28 2007-09-03 05:05:05 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -69,7 +69,7 @@ module Grid
       use Cdata, only: nghost,coeff_grid,grid_func
       use Cdata, only: xyz_step,xi_step_frac,xi_step_width
       use Cdata, only: lperi,lshift_origin,xyz_star,lequidist
-      use Mpicomm, only: stop_it
+      use Messages
 
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
@@ -151,7 +151,7 @@ module Grid
         ! Test whether grid function is valid
         call grid_profile(dummy,grid_func(1),dummy,err=err)
         if (err) call &
-             stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(1))
+            fatal_error('construct_grid','unknown grid_func '//grid_func(1))
 
         select case (grid_func(1))
 
@@ -186,8 +186,8 @@ module Grid
           xprim = g1der1
           xprim2= g1der2
         case default
-          call fatal_error("construct_grid", &
-                           "No such x grid function - "//grid_func(1))
+          call fatal_error('construct_grid', &
+                           'No such x grid function - '//grid_func(1))
         endselect
 
         dx_1=1./xprim
@@ -207,7 +207,7 @@ module Grid
         ! Test whether grid function is valid
         call grid_profile(dummy,grid_func(2),dummy,err=err)
         if (err) &
-             call stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(2))
+            call fatal_error('construct_grid','unknown grid_func '//grid_func(2))
 
         select case (grid_func(2))
 
@@ -241,8 +241,8 @@ module Grid
           yprim = g2der1
           yprim2= g2der2
         case default
-          call fatal_error("construct_grid", &
-                           "No such y grid function - "//grid_func(2))
+          call fatal_error('construct_grid', &
+                           'No such y grid function - '//grid_func(2))
 
         endselect
 
@@ -267,7 +267,7 @@ module Grid
         ! Test whether grid function is valid
         call grid_profile(dummy,grid_func(3),dummy,ERR=err)
         if (err) &
-             call stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(3))
+            call fatal_error('construct_grid','unknown grid_func '//grid_func(3))
 
         select case(grid_func(3))
 
@@ -301,8 +301,8 @@ module Grid
           zprim = g3der1
           zprim2= g3der2
         case default
-          call fatal_error("construct_grid", &
-                           "No such z grid function - "//grid_func(3))
+          call fatal_error('construct_grid', &
+                           'No such z grid function - '//grid_func(3))
         endselect
 
         dz_1=1./zprim
@@ -402,7 +402,7 @@ module Grid
 !
       use Cparam
       use Cdata
-      use Mpicomm, only: stop_it
+      use Messages
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -452,7 +452,9 @@ module Grid
         if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
         if (lpencil(i_pomx).or.lpencil(i_pomy).or.&
             lpencil(i_phix).or.lpencil(i_phiy)) &
-            call stop_it("pomx, pomy, phix and phix not implemented for spherical polars")
+            call fatal_error('calc_pencils_grid', &
+                'pomx, pomy, phix and phix not implemented for '// &
+                'spherical polars')
       endif
 !
 !  set position vector
@@ -463,8 +465,9 @@ module Grid
           p%rr(:,2)=p%y_mn
           p%rr(:,3)=p%z_mn
          else
-           call stop_it("position vector not implemented for"//&
-                " non-cartesian coordinates")
+           call fatal_error('calc_pencils_grid', &
+               'position vector not implemented for '//&
+               'non-cartesian coordinates')
          endif
       endif
 !
@@ -477,8 +480,9 @@ module Grid
           p%evr(:,3) = p%z_mn
           p%evr = p%evr / spread(p%r_mn+tini,2,3)
         else
-          call stop_it("radial unit vector not implemented for"//&
-               " non-cartesian coordinates")
+          call fatal_error('calc_pencils_grid', &
+              'radial unit vector not implemented for '//&
+              'non-cartesian coordinates')
         endif
       endif
 !
@@ -628,7 +632,7 @@ module Grid
 !  25-jun-04/tobi+wolf: coded
 !
       use Cdata, only: epsi
-      use Mpicomm, only: stop_it
+      use Messages
 
       real, intent(in) :: xi_lo,xi_up,x_lo,x_up,x_star
       character(len=*), intent(in) :: grid_func
@@ -643,7 +647,7 @@ module Grid
 
 
       if (xi_lo>=xi_up) &
-           call stop_it("FIND_STAR: xi1 >= xi2 -- this should not happen")
+           call fatal_error('find_star','xi1 >= xi2 -- this should not happen')
 
       tol=epsi*(xi_up-xi_lo)
       xi_star= (xi_up+xi_lo)/2
@@ -667,7 +671,7 @@ module Grid
 
       enddo
 
-      call stop_it("FIND_STAR: maximum number of iterations exceeded")
+      call fatal_error('find_star','maximum number of iterations exceeded')
 
     endfunction find_star
 !***********************************************************************
