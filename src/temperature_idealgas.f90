@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.16 2007-08-29 15:32:39 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.17 2007-09-03 09:38:49 bingert Exp $
 !  This module can replace the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
 !  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
@@ -43,13 +43,13 @@ module Entropy
   real :: center1_x=0., center1_y=0., center1_z=0.
   real :: r_bcz=0.
   real :: Tbump=0.,Kmin=0.,Kmax=0.
-  integer, parameter :: nheatc_max=1
+  integer, parameter :: nheatc_max=2
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
   logical :: lheatc_Kconst=.false.,lheatc_Kprof=.false.,lheatc_Karctan=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lfreeze_lnTTint=.false.,lfreeze_lnTText=.false.
-  character (len=labellen) :: iheatcond='nothing'
+  character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   logical :: lhcond_global=.false.
   logical :: lviscosity_heat=.true.
   integer :: iglobal_hcond=0
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.16 2007-08-29 15:32:39 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.17 2007-09-03 09:38:49 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -175,7 +175,8 @@ module Entropy
       lheatc_chiconst = .false.
       lnothing = .false.
 !
-      select case (iheatcond)
+      do i=1,nheatc_max
+      select case (iheatcond(i))
         case('K-const')
           lheatc_Kconst=.true.
           if (lroot) call information('initialize_entropy', &
@@ -201,10 +202,11 @@ module Entropy
         case default
           if (lroot) then
             write(unit=errormsg,fmt=*)  &
-                'No such value iheatcond = ', trim(iheatcond)
+                'No such value iheatcond = ', trim(iheatcond(i))
             call fatal_error('initialize_entropy',errormsg)
           endif
        endselect
+       enddo
        lnothing=.true.
 !
 !  compute and store hcond and dhcond if hcond_global=.true.
@@ -234,7 +236,7 @@ module Entropy
       if (lheatc_chiconst .and. chi==0.0) then
         call warning('initialize_entropy','chi is zero!')
       endif
-      if (iheatcond=='nothing') then
+      if (iheatcond(1)=='nothing') then
         if (hcond0 /= impossible) call warning('initialize_entropy', 'No heat conduction, but hcond0 /= 0')
         if (chi /= impossible) call warning('initialize_entropy', 'No heat conduction, but chi /= 0')
       endif
