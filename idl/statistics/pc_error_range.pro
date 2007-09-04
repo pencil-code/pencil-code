@@ -1,14 +1,21 @@
-;$Id: pc_error_range.pro,v 1.3 2007-09-04 16:32:06 brandenb Exp $
+;$Id: pc_error_range.pro,v 1.4 2007-09-04 18:10:05 brandenb Exp $
 pro pc_error_range,tt,a,mean=am,error=err,oplot=oplot
 ;
 ;  calculate averages for each third of time series and use
 ;  maximum departure from full average as error estimate
+;
+;  Location:
+;    pencil-code/idl/statistics/pc_error_range.pro
+;
+;  determine 3 ranges for which separate errors are calculated
 ;
 nt=n_elements(tt)
 it1=0
 it2=it1+(nt-it1)/3
 it3=it2+(nt-it1)/3
 it4=nt-1
+;
+;  calculate the 3 averages
 ;
 am=total(a(it1:it4))/(it4-it1+1)
 am1=total(a(it1:it2))/(it2-it1+1)
