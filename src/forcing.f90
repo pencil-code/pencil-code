@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.114 2007-08-29 14:19:43 dhruba Exp $
+! $Id: forcing.f90,v 1.115 2007-09-04 14:07:46 dhruba Exp $
 
 module Forcing
 
@@ -35,7 +35,7 @@ module Forcing
   integer :: Legendrel
   real ::  Bessel_alpha
 !! for helical forcing in spherical polar coordinate system
-  real, allocatable, dimension(:,:,:) :: psif
+  real, allocatable, dimension(:) :: Z_psi
 ! Persistent stuff
   real :: tsforce=-10.
   real, dimension (3) :: location
@@ -82,7 +82,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.114 2007-08-29 14:19:43 dhruba Exp $")
+           "$Id: forcing.f90,v 1.115 2007-09-04 14:07:46 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -559,9 +559,7 @@ module Forcing
                   *real(cmplx(coef1(j),profx_hel*profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
                   if(lhelical_test) then
-                    !f(l1:l2,m,n,jf)=forcing_rhs(:,j)
-                     f(l1:l2,m,n,jf) = 1.
-                     f(l1:l2,m,n,4) = 1.
+                    f(l1:l2,m,n,jf)=forcing_rhs(:,j)
                   else
                     f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
                   endif
@@ -656,41 +654,30 @@ module Forcing
       real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
       real, dimension(nx,3,3) :: psi_ij,Tij
       real, dimension (mx,my,mz,mfarray) :: f
-      integer ::l,emm,iread,j,jf
-      real :: a_ell,psi_ell_m,anum,adenom,jlm,ylm,rphase,fnorm,alphar
-      real :: rz, Plmreal, Plmimag 
+      real, dimension(mx,my,mz) :: psif
+      integer ::l,emm,iread,j,jf,mmin,mmax
+      complex :: psi_ell_m
+      real :: a_ell,anum,adenom,jlm,ylm,rphase,fnorm,alphar
+      real :: rz, Plmreal, Plmimag,ran_min,ran_max
 !
       if (ifirst==0) then
         if (lroot) print*,'Helical forcing in spherical polar coordinate'
-        if (lroot) print*,'allocating fext ..'
-        allocate(psif(mx,my,mz))
+        if (lroot) print*,'allocating Z_psi ..'
+        allocate(Z_psi(mx))
         if (lroot) print*, '..done'
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
-! Now construct the force 
-! first get a set of ran_ell_m
-        psif = 0.
-        do n=n1,n2
-            do m=m1,m2
-              do l=l1,l2
-                do emm=-Legendrel,Legendrel
-                  call sp_bessely_l(anum,Legendrel,Bessel_alpha*x(l1))
-                  call sp_besselj_l(adenom,Legendrel,Bessel_alpha*x(l1))
-                  a_ell = -anum/adenom
-                  alphar = Bessel_alpha*x(l)
-                  call sp_besselj_l(jlm,Legendrel,alphar)
-                  call sp_bessely_l(ylm,Legendrel,alphar)
-                  call sp_harm_real(Plmreal,Legendrel,emm,y(m),z(n))
-                  call sp_harm_imag(Plmimag,Legendrel,emm,y(m),z(n))
-                  call random_number_wrapper(rphase)
-                  rphase = PI*rphase
-                  psi_ell_m = (a_ell*jlm+ylm)*& 
-                    (Plmreal*cos(rphase)-Plmimag*sin(rphase)) 
-                  psif(l,m,n) = psif(l,m,n)+psi_ell_m
-                enddo
-              enddo
-            enddo
-          enddo
+! Now construct the Z_psi(r) 
+        call sp_bessely_l(anum,Legendrel,Bessel_alpha*x(l1))
+        call sp_besselj_l(adenom,Legendrel,Bessel_alpha*x(l1))
+        a_ell = -anum/adenom
+!        write(*,*) 'dhruba:',anum,adenom,Legendrel,Bessel_alpha,x(l1)
+        do l=l1-nghost,l2+nghost
+          alphar = Bessel_alpha*x(l)
+          call sp_besselj_l(jlm,Legendrel,alphar)
+          call sp_bessely_l(ylm,Legendrel,alphar)
+          Z_psi(l) = (a_ell*jlm+ylm)
+        enddo
         ifirst = ifirst+1
         write(*,*) 'dhruba: first time in hel_sp'
       else
@@ -698,15 +685,40 @@ module Forcing
 ! ----- Now calculate the force from the potential and add this to
 ! velocity
 ! get a random unit vector with three components ee_r, ee_theta, ee_phi
-   
+! psi at present is just Z_{ell}^m. We next do a sum over random coefficients 
+! get random psi. 
+      call random_number_wrapper(ran_min)
+      mmin = nint((ran_min+1.)*dfloat(Legendrel)/2.)
+      call random_number_wrapper(ran_max)
+      mmax = nint((ran_max+1.)*dfloat(Legendrel)/2.)
+      call random_number_wrapper(rphase)
+!      write(*,*) ran_min,ran_max,mmin,mmax,Legendrel,PI
+      rphase = PI*rphase
+      psif = 0.
+      do n=n1-nghost,n2+nghost
+        do m=m1-nghost,m2+nghost
+          do l=l1-nghost,l2+nghost
+            psi_ell_m = 0.
+            do emm=-mmin,mmax
+              call sp_harm_real(Plmreal,Legendrel,emm,y(m),z(n))
+              call sp_harm_imag(Plmimag,Legendrel,emm,y(m),z(n))
+              psi_ell_m = psi_ell_m+ & 
+                Z_psi(l)*cmplx(Plmreal*cos(rphase),Plmimag*sin(rphase)) 
+            enddo
+            psif(l,m,n) = psif(l,m,n)+real(psi_ell_m)
+          enddo
+        enddo
+      enddo
+      write(*,*) 'mmin=',mmin
+!! ----------now generate and add the force ------------
       call random_number_wrapper(rz)
       ee(3) = rz
       call random_number_wrapper(rphase)
       rphase = PI*rphase
-      ee(1) = (1-rz*rz)*cos(rphase)
-      ee(2) = (1-rz*rz)*sin(rphase)
+      ee(1) = sqrt(1-rz*rz)*cos(rphase)
+      ee(2) = sqrt(1-rz*rz)*sin(rphase)
       fnorm = cs0*sqrt(Bessel_alpha*cs0)
-      write(*,*) 'dhruba:',fnorm*sqrt(dt),dt
+ !     write(*,*) 'dhruba:',fnorm*sqrt(dt),dt,ee(1),ee(2),ee(3)
       do n=n1,n2
         do m=m1,m2
           psi(:,1) = psif(l1:l2,m,n)*ee(1)
@@ -720,8 +732,12 @@ module Forcing
           capitalH = capitalT + capitalS
           do j=1,3
             jf = iuu+j-1
+            if(lhelical_test) then
+              f(l1:l2,m,n,jf) = capitalH(:,j)
+            else
 ! stochastic euler scheme of integration 
-            f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ fnorm*capitalH(:,j)*sqrt(dt)
+           f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ fnorm*capitalH(:,j)*sqrt(dt)
+          endif
           enddo
         enddo
       enddo
