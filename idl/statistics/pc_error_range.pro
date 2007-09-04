@@ -1,3 +1,4 @@
+;$Id: pc_error_range.pro,v 1.3 2007-09-04 16:32:06 brandenb Exp $
 pro pc_error_range,tt,a,mean=am,error=err,oplot=oplot
 ;
 ;  calculate averages for each third of time series and use
