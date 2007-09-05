@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.31 2007-07-05 12:48:56 wlyra Exp $',
+  cvsid='$Id: start.in,v 1.32 2007-09-05 17:52:34 wlyra Exp $',
   ip=6,                        ! debugging parameter
   xyz0  = -2.6,-2.6,-0.26,       ! first corner of box
   xyz1  =  2.6, 2.6, 0.26,       ! second corner of box
@@ -49,7 +49,7 @@
   initvvsp='fixed-cm'
   GNewton=1.0
   pmass=1e-4, 1.
-  position=-1., 0.
+  xsp0=-1,0
   r_smooth=0.03,0.0
   lcylindrical_gravity_nbody=T,T
 /
