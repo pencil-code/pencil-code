@@ -1,4 +1,4 @@
-#$Id: README,v 1.2 2007-08-18 06:22:49 brandenb Exp $
+#$Id: README,v 1.3 2007-09-05 18:37:16 dintrans Exp $
 #
 #  list of README file with maintainer names, produced using
 #  (grep -A4 Maintainer */{,*/}README | grep "<"; echo "") >> README 
@@ -9,6 +9,7 @@ chiral-diffusion/README-    Axel Brandenburg <brandenb@nordita.dk>
 conv-slab-noequi/README-    Wolfgang <nobody[at]nowhere.net>
 conv-slab-noequi/README-    Sven Bingert <mail@bingert.com>
 conv-slab/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
+corona/README-    Sven Bingert <mail@bingert.com>
 cosmicray/README-    Andrew Snodin <Andrew.Snodin@newcastle.ac.uk>
 dust_turb_globaldisk/README-    Wladimir Lyra <wlyra@astro.uu.se>
 dust-vortex/README-    Anders <nobody[at]nowhere.net>
@@ -24,6 +25,8 @@ mdwarf/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
 meissner/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
 most-modules/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
 MRI-turbulence_hyper/README-    Anders Johansen <johansen@mpia.de>
+MRI-turbulence_hyper_strict/README-    Anders Johansen <johansen@mpia.de>
+multigrid/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
 no-modules/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
 random_uu_particles/README-    Anders <nobody[at]nowhere.net>
 sound-spherical-noequi/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
@@ -35,6 +38,8 @@ testfield/README-    Axel Brandenburg <brandenb@nordita.dk>
 1d-tests/solar-atmosphere/README-    Tobi <nobody[at]nowhere.net>
 2d-tests/A3+chi11+Ra1e5/README-    Wolfgang Dobler <Wolfgang.Dobler@ucalgary.ca>
 2d-tests/A3+chi11+Ra1e5/README-    Axel Brandenburg <brandenb@nordita.dk>
+2d-tests/bubble/README-    Boris Dintrans <dintrans[at]ast.obs-mip.fr>
+2d-tests/conv-slab-MLT/README-    Boris Dintrans <dintrans[at]ast.obs-mip.fr>
 2d-tests/cylindrical_gdisk/README-    Wladimir Lyra <wlyra@astro.uu.se>
 2d-tests/globaldisc/README-    Wladimir Lyra <wlyra@astro.uu.se>
 2d-tests/GMSW1976/README-    Wolfgang Dobler <wdobler[at]ucalgary.ca>
