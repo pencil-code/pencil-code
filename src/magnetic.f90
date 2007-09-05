@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.457 2007-09-03 21:55:16 bingert Exp $
+! $Id: magnetic.f90,v 1.458 2007-09-05 11:31:05 dhruba Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -339,7 +339,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.457 2007-09-03 21:55:16 bingert Exp $")
+           "$Id: magnetic.f90,v 1.458 2007-09-05 11:31:05 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3014,16 +3014,25 @@ module Magnetic
         else
           bmxy_rms=0.
           do l=1,nx
-            do m=1,ny
-              bxmxy=sum(fnamexy(l,m,:,idiag_bxmxy))/nprocy
-              bymxy=sum(fnamexy(l,m,:,idiag_bymxy))/nprocy
-              bzmxy=sum(fnamexy(l,m,:,idiag_bzmxy))/nprocy
-              bmxy_rms = bmxy_rms+bxmxy**2+bymxy**2+bzmxy**2
+            do j=1,nprocy
+              do m=1,ny
+                bxmxy=fnamexy(l,m,j,idiag_bxmxy)
+                bymxy=fnamexy(l,m,j,idiag_bymxy)
+                bzmxy=fnamexy(l,m,j,idiag_bzmxy)
+                bmxy_rms = bmxy_rms+bxmxy**2+bymxy**2+bzmxy**2
+!                write(*,*) bmxy_rms
+                if(lspherical_coords) & 
+                   bmxy_rms = bmxy_rms*x(l+nghost)*x(l+nghost)*sinth(m+nghost)
+                if((r2_weight(l+nghost).eq.0).or.(sinth_weight(m+nghost).eq.0)) &
+                write(*,*) l,m,j 
+
 !              write(*,*) fnamexy(l,m,1,idiag_bxmxy), fnamexy(l,m,1,idiag_bzmxy), fnamexy(l,m,1,idiag_bzmxy)
+              enddo
             enddo
           enddo
-          bmxy_rms = bmxy_rms/(nx*ny)
+          bmxy_rms = bmxy_rms/(nx*ny*nprocy)
           bmxy_rms = sqrt(bmxy_rms)
+!          write(*,*) bmxy_rms 
         endif
         call save_name(bmxy_rms,idiag_bmxy_rms)
       endif

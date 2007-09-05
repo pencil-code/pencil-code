@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.115 2007-09-04 14:07:46 dhruba Exp $
+! $Id: forcing.f90,v 1.116 2007-09-05 11:31:05 dhruba Exp $
 
 module Forcing
 
@@ -33,7 +33,7 @@ module Forcing
   character (len=labellen) :: iforce='zero', iforce2='zero'
   character (len=labellen) :: iforce_profile='nothing'
   integer :: Legendrel
-  real ::  Bessel_alpha
+  real ::  Bessel_alpha,fpre
 !! for helical forcing in spherical polar coordinate system
   real, allocatable, dimension(:) :: Z_psi
 ! Persistent stuff
@@ -54,7 +54,7 @@ module Forcing
        max_force,dtforce,old_forcing_evector, &
        iforce_profile,lscale_kvector_tobox, &
        force_direction, force_strength, &
-       Legendrel,Bessel_alpha,lhelical_test
+       Legendrel,Bessel_alpha,lhelical_test,fpre
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
@@ -82,7 +82,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.115 2007-09-04 14:07:46 dhruba Exp $")
+           "$Id: forcing.f90,v 1.116 2007-09-05 11:31:05 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -709,7 +709,7 @@ module Forcing
           enddo
         enddo
       enddo
-      write(*,*) 'mmin=',mmin
+!      write(*,*) 'mmin=',mmin
 !! ----------now generate and add the force ------------
       call random_number_wrapper(rz)
       ee(3) = rz
@@ -717,7 +717,7 @@ module Forcing
       rphase = PI*rphase
       ee(1) = sqrt(1-rz*rz)*cos(rphase)
       ee(2) = sqrt(1-rz*rz)*sin(rphase)
-      fnorm = cs0*sqrt(Bessel_alpha*cs0)
+      fnorm = fpre*cs0*sqrt(Bessel_alpha*cs0)
  !     write(*,*) 'dhruba:',fnorm*sqrt(dt),dt,ee(1),ee(2),ee(3)
       do n=n1,n2
         do m=m1,m2
