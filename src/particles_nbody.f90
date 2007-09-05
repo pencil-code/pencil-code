@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.44 2007-09-03 16:05:04 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.45 2007-09-05 17:52:12 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -24,7 +24,7 @@ module Particles_nbody
   real, dimension(nspar,mpvar) :: fsp
   real, dimension(nspar) :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
-  real, dimension(nspar) :: pmass=1.,position,r_smooth,pmass1
+  real, dimension(nspar) :: pmass=1.,r_smooth,pmass1
   real :: delta_vsp0=1.0,totmass,totmass1
   character (len=labellen) :: initxxsp='origin', initvvsp='nothing'
   logical :: lcalc_orbit=.true.,lmigrate=.false.,lnorm=.true.
@@ -35,7 +35,7 @@ module Particles_nbody
 
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
-       pmass, r_smooth, position, lcylindrical_gravity_nbody, &
+       pmass, r_smooth, lcylindrical_gravity_nbody, &
        lexclude_frozen, GNewton
 
 
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.44 2007-09-03 16:05:04 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.45 2007-09-05 17:52:12 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -182,7 +182,8 @@ module Particles_nbody
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
-      real, dimension(nspar) :: ang_vel,kep_vel,velocity,sma
+      real, dimension(nspar) :: ang_vel,kep_vel,sma
+      real, dimension(nspar,3) :: position,velocity
       real :: aux,aux2,rr,fac,parc
       integer :: k,ks
 
@@ -213,6 +214,20 @@ module Particles_nbody
 ! which will have a position determined to fix the center of mass on 
 ! the center of the grid
 !
+        position(:,1) = xsp0; position(:,2) = ysp0; position(:,3) = zsp0
+!
+        if (any(ysp0/=0)) call stop_it("init_particles_nbody: not yet generalized"//&
+             " for non-zero azimuthal initial position")
+!
+        if (any(zsp0/=0)) call stop_it("init_particles_nbody: nbody code not"//&
+             " yet generalized to allow initial inclinations")
+!
+        if (lcylindrical_coords) then
+          if (any(xsp0.lt.0)) &
+               call stop_it("init_particles_nbody: in cylindrical coordinates"//&
+               " all the radial positions must be positive")
+        endif
+!
         if (lroot) then
           print*,'fixed-cm: redefining the mass of the last sink particle'
           print*,'fixed-cm: it assumes that the sum of the mass'//&
@@ -221,7 +236,7 @@ module Particles_nbody
 !
         aux = 0.;parc=0
         do ks=1,nspar-1 
-          sma(ks)=abs(position(ks))
+          sma(ks)=abs(position(ks,1))
           aux=aux+pmass(ks)
           parc = parc - sma(ks)*pmass(ks)
         enddo
@@ -236,15 +251,22 @@ module Particles_nbody
              "reassigned to ensure that the total mass is g0")
 !
         do ks=1,nspar-1 
-          position(ks)=sign(1.,position(ks))* (sma(ks) + parc)
+          position(ks,1)=sign(1.,position(ks,1))* (sma(ks) + parc)
         enddo
 !
 ! The last one (star) fixes the CM at Rcm=zero
 !
-        position(nspar)=parc
+        position(nspar,1)=parc
+        if (lcylindrical_coords) then
+          !put the star in positive coordinates, with pi for azimuth
+          position(nspar,1)=abs(parc)
+          position(nspar,2)=pi
+        endif
 !
-        print*,'pmass =',pmass
-        print*,'position =',position
+        if (lroot) print*,'pmass =',pmass
+        if (lroot) print*,'position (x)=',position(:,1)
+        if (lroot) print*,'position (y)=',position(:,2)
+        if (lroot) print*,'position (z)=',position(:,3)
 !
 ! Loop through ipar to allocate the sink particles
 !
@@ -256,9 +278,7 @@ module Particles_nbody
                  ' was at fp position ',k,&
                  ' at processor ',iproc
 !
-            fp(k,ixp)=position(ipar(k))
-            fp(k,iyp)=0.
-            fp(k,izp)=0.
+            fp(k,ixp:izp)=position(ipar(k),1:3)
 !
 ! Correct for non-existing dimensions (not really needed, I think)
 !
@@ -315,12 +335,12 @@ module Particles_nbody
         enddo
         parc = parc*totmass
         do ks=1,nspar-1 
-          velocity(ks) = sign(1.,position(ks))*(kep_vel(ks) + parc)
+          velocity(ks,2) = sign(1.,position(ks,1))*(kep_vel(ks) + parc)
         enddo
 !
 ! The last one (star) fixes the CM also with velocity zero
 !
-        velocity(nspar)=parc
+        velocity(nspar,2)=parc
 !
 ! Loop through ipar to allocate the sink particles
 !
@@ -331,9 +351,7 @@ module Particles_nbody
                   ' was at fp position ',k,&
                   ' at processor ',iproc
 !
-             fp(k,ivpx) = 0.
-             fp(k,ivpy) = velocity(ipar(k))
-             fp(k,ivpz) = 0.
+             fp(k,ivpx:ivpz) = velocity(ipar(k),1:3)
 !
              print*,'initparticles_nbody. Sink particle ',ipar(k),&
                   ' has velocity y=',fp(k,ivpy)
