@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.518 2007-09-03 21:00:03 bingert Exp $
+! $Id: entropy.f90,v 1.519 2007-09-05 18:38:00 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -106,7 +106,6 @@ module Entropy
       ampl_ss,    &
       widthss,    &
       epsilon_ss, &
-!AB: mixinglength_flux is used as flux in mixing length initial condition
       mixinglength_flux, &
       pp_const, &
       ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
@@ -207,7 +206,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.518 2007-09-03 21:00:03 bingert Exp $")
+           "$Id: entropy.f90,v 1.519 2007-09-05 18:38:00 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -215,8 +214,7 @@ module Entropy
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
-!  21-jul-2002/wolf: coded
-!   4-mai-2006/boris: hcond0 given by mixinglength_flux in the MLT case
+!  21-jul-02/wolf: coded
 !
       use Cdata
       use FArrayManager
@@ -1198,16 +1196,17 @@ module Entropy
 !  scaling is applied, ie no further free parameter is assumed.)
 !
 !  12-jul-05/axel: coded
-!  17-Nov-2005/dintrans: updated using strat_MLT
+!  17-Nov-05/dintrans: updated using strat_MLT
 !
       use Cdata
       use Gravity, only: gravz, z1
       use General, only: safe_character_assign
-      use EquationOfState, only: gamma, gamma1, rho0, lnrho0, cs0, cs20, cs2top
+      use EquationOfState, only: gamma, gamma1, rho0, lnrho0, cs0, &
+                                 cs20, cs2top, eoscalc, ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nzgrid) :: cs2m,lnrhom
-      real :: zm,ztop,mixinglength_flux,lnrho,cs2,ss
+      real, dimension (nzgrid) :: tempm,lnrhom
+      real :: zm,ztop,mixinglength_flux,lnrho,cs2,ss,lnTT
       real :: zbot,rbot,rt_old,rt_new,rb_old,rb_new,crit, &
               rhotop,rhobot
       integer :: iter
@@ -1234,15 +1233,13 @@ module Entropy
 !
       rhotop=rt_old
       cs2top=cs20  ! just to be sure...
-      call strat_MLT (rhotop, mixinglength_flux, lnrhom, &
-                  cs2m, rhobot)
+      call strat_MLT (rhotop,mixinglength_flux,lnrhom,tempm,rhobot)
       rb_old=rhobot
 !
 !  next estimate
 !
       rhotop=rt_new
-      call strat_MLT (rhotop, mixinglength_flux, lnrhom, &
-                  cs2m, rhobot)
+      call strat_MLT (rhotop,mixinglength_flux,lnrhom,tempm,rhobot)
       rb_new=rhobot
 
       do 10 iter=1,10
@@ -1256,8 +1253,7 @@ module Entropy
         crit=abs(rhotop/rt_new-1.)
         if (crit.le.1e-4) goto 20
 !
-        call strat_MLT (rhotop, mixinglength_flux, lnrhom, &
-                    cs2m, rhobot)
+        call strat_MLT (rhotop,mixinglength_flux,lnrhom,tempm,rhobot)
 !
 !  update new estimates
 !
@@ -1283,11 +1279,12 @@ module Entropy
         iz=n+ipz*nz
         zm=xyz0(3)+(iz-1)*dz
         lnrho=lnrhom(nzgrid-iz+1) 
-        cs2=cs2m(nzgrid-iz+1)
-        ss=(alog(cs2/cs20)-gamma1*(lnrho-lnrho0))/gamma
+        lnTT=log(tempm(nzgrid-iz+1))
+        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
         f(:,:,n+nghost,ilnrho)=lnrho
         f(:,:,n+nghost,iss)=ss
-        write(11+ipz,'(4(2x,1pe12.5))') zm,exp(lnrho),cs2,ss
+        write(11+ipz,'(4(2x,1pe12.5))') zm,exp(lnrho),ss, &
+              gamma1*tempm(nzgrid-iz+1)
       enddo
       close(11+ipz)
       return
@@ -3299,32 +3296,31 @@ module Entropy
 !
     endsubroutine newton_cool
 !***********************************************************************
-    subroutine strat_MLT (rhotop, mixinglength_flux, lnrhom, &
-                     cs2m, rhobot)
+    subroutine strat_MLT (rhotop,mixinglength_flux,lnrhom,tempm,rhobot)
 !
-! 04-mai-2006/boris: called by 'mixinglength' to iterate the MLT
+! 04-mai-06/dintrans: called by 'mixinglength' to iterate the MLT
 ! equations until rho=1 at the bottom of convection zone (z=z1)
+! see Eqs. (20-21-22) in Brandenburg et al., AN, 326 (2005)
 !
       use Cdata
       use Gravity, only: z1,z2,gravz
       use EquationOfState, only: gamma, gamma1
 !
-      real, dimension (nzgrid) :: lnrhom, cs2m, zz, tempm
+      real, dimension (nzgrid) :: zz, lnrhom, tempm
       real :: rhotop, zm, ztop, dlnrho, dtemp, &
               mixinglength_flux, lnrhobot, rhobot
-      real :: del, delad, fr_frac, fc_frac, fc, polyad=3./2.
+      real :: del, delad, fr_frac, fc_frac, fc, polyad
       integer :: nbot1, nbot2
 !
 !  inital values at the top
 !
       lnrhom(1)=alog(rhotop)
-      cs2m(1)=cs2top
       tempm(1)=cs2top/gamma1
       ztop=xyz0(3)+Lxyz(3)
       zz(1)=ztop
 !
+      polyad=1./gamma1
       delad=1.-1./gamma
-!     fr_frac=delad*(mpoly0+1.)/abs(gravz)
       fr_frac=delad*(mpoly0+1.)
       fc_frac=1.-fr_frac
       fc=fc_frac*mixinglength_flux
@@ -3340,7 +3336,7 @@ module Entropy
           if (zm<=z2) then
 ! convective zone=mixing-length stratification
             del=delad+1.5*(fc/ &
-                (exp(lnrhom(iz-1))*cs2m(iz-1)**1.5))**.6666667
+                (exp(lnrhom(iz-1))*(gamma1*tempm(iz-1))**1.5))**.6666667
           else
 ! upper zone=isothermal stratification
             del=0.
@@ -3350,7 +3346,6 @@ module Entropy
         dlnrho=gamma*polyad*gravz*(1.-del)/tempm(iz-1)
         tempm(iz)=tempm(iz-1)-dtemp*dz
         lnrhom(iz)=lnrhom(iz-1)-dlnrho*dz
-        cs2m(iz)=gamma1*tempm(iz)
       enddo
 !
 !  find the value of rhobot
