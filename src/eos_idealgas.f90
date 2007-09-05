@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.97 2007-08-25 10:55:58 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.98 2007-09-05 18:52:50 dintrans Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -9,7 +9,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp,cp1,cp1tilde,glnTT,TT,TT1
+! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp,cp1,cp1tilde,glnTT,TT,TT1,gTT
 ! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1
 !
 !***************************************************************
@@ -38,7 +38,7 @@ module EquationOfState
 ! integers specifying which independent variables to use in eoscalc
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
   integer, parameter :: ilnrho_lnTT=4,ilnrho_cs2=5
-  integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8
+  integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
 
   integer :: iglobal_cs2, iglobal_glnTT
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.97 2007-08-25 10:55:58 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.98 2007-09-05 18:52:50 dintrans Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -298,6 +298,8 @@ module EquationOfState
           if (findex.lt.0) then
             leos_isothermal=.true.
           endif
+      elseif (variable=='TT') then
+          this_var=ieosvar_TT
       elseif (variable=='lnrho') then
           this_var=ieosvar_lnrho
           if (findex.lt.0) then
@@ -342,6 +344,9 @@ module EquationOfState
         case (ieosvar_lnrho+ieosvar_lnTT)
           if (lroot) print*,"select_eos_variable: Using lnrho and lnTT"
           ieosvars=ilnrho_lnTT
+        case (ieosvar_lnrho+ieosvar_TT)
+          if (lroot) print*,"select_eos_variable: Using lnrho and TT"
+          ieosvars=ilnrho_TT
         case (ieosvar_rho+ieosvar_lnTT)
           if (lroot) print*,"select_eos_variable: Using rho and lnTT"
           ieosvars=irho_lnTT
@@ -503,6 +508,11 @@ module EquationOfState
         else
           if (lpencil_in(i_pp)) lpencil_in(i_cs2)=.true.
         endif
+      case (ilnrho_TT)
+        if (lpencil_in(i_ss)) then
+          lpencil_in(i_lnrho)=.true.
+          lpencil_in(i_TT)=.true.
+        endif
 
       case default
         call fatal_error("pencil_interdep_eos","case not implemented yet")
@@ -593,7 +603,6 @@ module EquationOfState
           if (lpencil(i_hlnTT)) call g2ij(f,ieosvar2,p%hlnTT)
           if (lpencil(i_del2lnTT)) call del2(f,ieosvar2,p%del2lnTT)
           if (lpencil(i_cs2)) p%cs2=cp*exp(p%lnTT)*gamma1
-!
         endif
         if (lpencil(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma1*(p%lnrho-lnrho0))
         if (lpencil(i_pp)) p%pp=(cp-cv)*exp(p%lnTT+p%lnrho)
@@ -605,6 +614,16 @@ module EquationOfState
         if (lpencil(i_del2ss)) p%del2ss=cv*(p%del2lnTT-gamma1*p%del2lnrho)
         if (lpencil(i_hss)) p%hss=cv*(p%hlnTT-gamma1*p%hlnrho)
         if (lpencil(i_del6ss)) call fatal_error("calc_pencils_eos","del6ss not available for ilnrho_lnTT")
+!
+!  work out thermodynamic quantities for given lnrho and TT
+!
+      case (ilnrho_TT)
+        if (lpencil(i_TT))  p%TT=f(l1:l2,m,n,ieosvar2)
+        if (lpencil(i_TT1)) p%TT1=1./f(l1:l2,m,n,ieosvar2)
+        if (lpencil(i_cs2)) p%cs2=cp*p%TT*gamma1
+        if (lpencil(i_glnTT)) call grad(f,ieosvar2,p%glnTT)
+        if (lpencil(i_del2lnTT)) call del2(f,ieosvar2,p%del2lnTT)
+        if (lpencil(i_ss)) p%ss=cv*(log(p%TT)-lnTT0-gamma1*(p%lnrho-lnrho0))
 !
 !  work out thermodynamic quantities for given lnrho or rho and cs2
 !

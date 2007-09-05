@@ -1,13 +1,9 @@
-!$Id: temperature_TT.f90,v 1.1 2007-07-03 16:52:24 dintrans Exp $
-! This module can replace the entropy module by using _T_ (not lnTT!) as 
-! dependent variable. For a perfect gas with constant coefficients (no 
-! ionization) 
-! we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
+!$Id: temperature_TT.f90,v 1.2 2007-09-05 18:52:50 dintrans Exp $
+!  This module can replace the entropy module by using _T_ as dependent
+!  variable. For a perfect gas with constant coefficients (no ionization)
+!  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
 !
-! NOTE: very preliminary version on the road to an ADI version for
-! the radiative diffusion (Thomas' PhD on Cepheids), e.g. for the moment,
-! lnTT still means TT :-)
-!
+!  At a later point we may want to rename the module Entropy into Energy
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -31,6 +27,8 @@ module Entropy
   use EquationOfState, only: mpoly0,mpoly1
 
   implicit none
+  public :: ADI_constK, ADI_Kprof
+
 
   include 'entropy.h'
 
@@ -48,7 +46,6 @@ module Entropy
   logical :: lupw_lnTT=.false.
   logical :: lheatc_Kconst=.false.,lheatc_Kprof=.false.,lheatc_Karctan=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
-  logical :: lfreeze_lnTTint=.false.,lfreeze_lnTText=.false.
   character (len=labellen) :: iheatcond='nothing'
   logical :: lhcond_global=.false.
   logical :: lviscosity_heat=.true.
@@ -76,7 +73,7 @@ module Entropy
       heat_uniform,chi,iheatcond,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
       lheatc_chiconst_accurate,hcond0, &
       Tbump,Kmin,Kmax, &
-      lfreeze_lnTTint,lfreeze_lnTText,widthlnTT,mpoly0,mpoly1, &
+      widthlnTT,mpoly0,mpoly1, &
       lhcond_global,lviscosity_heat, &
       Fbot,Tbump,Kmin,Kmax
 !
@@ -112,7 +109,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_TT.f90,v 1.1 2007-07-03 16:52:24 dintrans Exp $")
+           "$Id: temperature_TT.f90,v 1.2 2007-09-05 18:52:50 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -159,12 +156,7 @@ module Entropy
          call fatal_error('initialize_entropy','EOS=noeos but temperature_TT requires an EQUATION OF STATE for the fluid')
       endif
 !
-      call select_eos_variable('lnTT',ilnTT)
-!
-!  freeze temperature
-!
-      if (lfreeze_lnTTint) lfreeze_varint(ilnTT)=.true.
-      if (lfreeze_lnTText) lfreeze_varext(ilnTT)=.true.
+      call select_eos_variable('TT',ilnTT)
 !
 !  Check whether we want heat conduction
 !
@@ -177,8 +169,8 @@ module Entropy
       select case (iheatcond)
         case('K-const')
           lheatc_Kconst=.true.
-          call information('initialize_entropy', &
-          ' heat conduction: K=cst --> gamma*K/rho/TT/cp*div(T*grad lnTT)')
+          call information('initialize_TT', &
+          ' heat conduction: K=cst --> gamma*K/(rho*cp)*lapl(T)')
           if (initlnTT(1).ne.'rad_equil') &
             Fbot=gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
         case('K-profile')
@@ -272,7 +264,7 @@ module Entropy
       case('zero', '0'); f(:,:,:,ilnTT) = 0.
       case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
       case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
-      case('cylind_layers'); call cylind_layers(f)
+      case('polytrope'); call polytrope(f)
       case('rad_equil')
           call rad_equil(f)
           if (ampl_lnTT.ne.0.) then
@@ -289,13 +281,13 @@ module Entropy
           !
           !  Catch unknown values
           !
-          write(unit=errormsg,fmt=*) 'No such value for initss(' &
+          write(unit=errormsg,fmt=*) 'No such value for init_TT(' &
                            //trim(iinit_str)//'): ',trim(initlnTT(iinit))
-          call fatal_error('init_ss',errormsg)
+          call fatal_error('init_TT',errormsg)
 
       endselect
 
-      if (lroot) print*,'init_ss: initss(' &
+      if (lroot) print*,'init_TT: init_TT(' &
                         //trim(iinit_str)//') = ',trim(initlnTT(iinit))
       endif
       enddo
@@ -377,7 +369,7 @@ module Entropy
         lpencil_in(i_u2)=.true.
         lpencil_in(i_cs2)=.true.
       endif
-
+!
       if (lpencil_in(i_uglnTT)) lpencil_in(i_glnTT)=.true.
 !
       if (lpencil_in(i_fpres)) then
@@ -505,6 +497,39 @@ module Entropy
 !
     endsubroutine dss_dt
 !***********************************************************************
+    subroutine polytrope(f)
+!
+! 04-aug-2007/dintrans: a simple polytrope with index mpoly0
+!
+      use Cdata
+      use Gravity, only: gravz
+      use EquationOfState, only: cs20, lnrho0, gamma, gamma1, get_cp1, &
+                                 cs2bot, cs2top
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real :: beta, zbot, ztop, cp1, T0, temp
+!
+!  beta is the temperature gradient
+!  beta = -(g/cp) /[(1-1/gamma)*(m+1)]
+      call get_cp1(cp1)
+      beta=-cp1*gravz/(mpoly0+1.)*gamma/gamma1
+      ztop=xyz0(3)+Lxyz(3)
+      zbot=xyz0(3)
+      T0=cs20/gamma1
+      print*, 'polytrope: mpoly0, beta, T0=', mpoly0, beta, T0
+!
+      do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
+        temp=T0+beta*(ztop-z(n))
+        f(:,m,n,ilnTT)=temp
+        f(:,m,n,ilnrho)=lnrho0+mpoly0*log(temp)-mpoly0*log(T0)
+      enddo
+      cs2bot=gamma1*(T0+beta*(ztop-zbot))
+      cs2top=cs20
+!
+    endsubroutine polytrope
+!***********************************************************************
     subroutine rad_equil(f)
 !
 ! 16-mai-2007/tgastine+dintrans: compute the radiative and hydrostatic 
@@ -512,7 +537,7 @@ module Entropy
 !
       use Cdata
       use Gravity, only: gravz
-      use EquationOfState, only: cs20,lnrho0,cs2top,cs2bot,gamma,gamma1
+      use EquationOfState, only:cs20,lnrho0,cs2top,cs2bot,gamma,gamma1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mz) :: temp,lnrho
@@ -521,8 +546,8 @@ module Entropy
       real :: alp,sig,ecart
       integer :: i
 !
-      sig=10.
-      ecart=0.1
+      sig=7.
+      ecart=0.4
       alp=(Kmax-Kmin)/(pi/2.+atan(sig*ecart**2))
       print*,'sig, ecart, alp=',sig, ecart, alp
       print*,'Kmin, Kmax, Fbot, Tbump=', Kmin, Kmax, Fbot, Tbump
@@ -531,21 +556,21 @@ module Entropy
 !
       temp(n2)=cs20/gamma1
       lnrho(n2)=lnrho0
-      f(:,:,n2,ilnTT)=alog(cs20/gamma1)
+      f(:,:,n2,ilnTT)=cs20/gamma1
       f(:,:,n2,ilnrho)=lnrho0
       do i=n2-1,n1,-1
         arg=sig*(temp(i+1)-Tbump-ecart)*(temp(i+1)-Tbump+ecart)
         hcond=Kmax+alp*(-pi/2.+atan(arg))
         dtemp=Fbot/hcond
-        dlnrho=(-gamma/gamma1*gravz+dtemp)/temp(i+1)
         temp(i)=temp(i+1)+dz*dtemp
+        dlnrho=2d0*(-gamma/gamma1*gravz-dtemp)/(7.d0/6.d0*temp(i)+5.d0/6.d0*temp(i+1))
         lnrho(i)=lnrho(i+1)+dz*dlnrho
-        f(:,:,i,ilnTT)=alog(temp(i))
+        f(:,:,i,ilnTT)=temp(i)
         f(:,:,i,ilnrho)=lnrho(i)
       enddo
 ! initialize cs2bot by taking into account the new bottom value of temperature
 ! note: cs2top is already defined in eos_init by assuming cs2top=cs20
-      cs2bot=gamma1*temp(n1)
+!      cs2bot=gamma1*temp(n1)
       print*,'cs2top, cs2bot=', cs2top, cs2bot
 !
       if (lroot) then
@@ -640,16 +665,16 @@ module Entropy
       real :: alp,sig,ecart
 !
 ! todo: must be defined in the namelist (used by rad_equil and _arctan...)
-      sig=10.
-      ecart=0.1
+      sig=7.
+      ecart=0.4
       alp=(Kmax-Kmin)/(pi/2.+atan(sig*ecart**2))
 !
       arg=sig*(p%TT-Tbump-ecart)*(p%TT-Tbump+ecart)
       hcond=Kmax+alp*(-pi/2.+atan(arg))
-      chiT=2.*p%TT/hcond*sig*alp*(p%TT-Tbump)/(1.+arg**2)  ! d(ln K)/dT
+      chiT=2./hcond*sig*alp*(p%TT-Tbump)/(1.+arg**2)  ! d(ln K)/dT
 !
       glnhcond(:,3)=chiT*p%glnTT(:,3)
-      call dot(p%glnTT,p%glnTT,g1)
+!      call dot(p%glnTT,p%glnTT,g1)
       call dot(p%glnTT,glnhcond,g2)
 !
 !  Write out hcond z-profile (during first time step only)
@@ -661,7 +686,8 @@ module Entropy
 !  Add heat conduction to RHS of temperature equation
 !
       chix=p%rho1*hcond*p%cp1
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g1+g2+p%del2lnTT)
+!      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g1+g2+p%del2lnTT)
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g2+p%del2lnTT)
 !
 !  check maximum diffusion from thermal diffusion
 !
@@ -828,58 +854,277 @@ module Entropy
 !
     endsubroutine rprint_entropy
 !***********************************************************************
-    subroutine cylind_layers(f)
-!
-!  initialise lnTT in a cylindrical ring using 2 superposed polytropic layers
-!
-!  12-mar-07/dintrans: coded
-!
-      use Gravity, only: g0
-      use EquationOfState, only: lnrho0,cs20,gamma,gamma1, &
-                                 cs2top,cs2bot,get_cp1
+      subroutine ADI_constK(f,rho,source)
+       
+      use Cdata
+      use Cparam
+      use EquationOfState, only: gamma,cs2bot,cs2top
 
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: TT
-      real :: beta0,beta1,TT_bcz,TT_ext,TT_int
-      real :: cp1,lnrho_int,lnrho_bcz
+      integer :: i,j
+      double precision :: alpha, chi, aalpha, bbeta, templ1
+      double precision :: templ2, templ
+      real, dimension(mx,my,mz,mfarray) :: f,finter
+      real, dimension(mx,mz) :: source,rho
+      real, dimension(nx)    :: a,b,c
+      real, dimension(nz)    :: rhs,work
 !
-      if (headtt) print*,'r_bcz in cylind_layers.f90=',r_bcz
+      chi=hcond0
+      rho=rho/gamma
 !
-!  beta is the temperature gradient
-!  beta = -(g/cp) 1./[(1-1/gamma)*(m+1)]
+!  lignes en implicite
 !
-      call get_cp1(cp1)
-      beta0=-cp1*g0/(mpoly0+1)*gamma/gamma1
-      beta1=-cp1*g0/(mpoly1+1)*gamma/gamma1
-      TT_ext=cs20/gamma1
-      TT_bcz=TT_ext+beta0*(r_bcz-r_ext)
-      TT_int=TT_bcz+beta1*(r_int-r_bcz)
-      cs2top=cs20
-      cs2bot=gamma1*TT_int
-      lnrho_bcz=lnrho0+mpoly0*log(TT_bcz)-mpoly0*log(TT_ext)
+      do j=n1,n2
+       a=-chi*dt/(2d0*rho(l1:l2,j)*dx**2)
 !
-      do imn=1,ny*nz
-        n=nn(imn)
-        m=mm(imn)
+       b=1d0+chi*dt/(rho(l1:l2,j)*dx**2)
 !
-!  convective layer
+       c=-chi*dt/(2d0*rho(l1:l2,j)*dx**2) 
 !
-        where (rcyl_mn <= r_ext .AND. rcyl_mn > r_bcz)
-          TT=TT_ext+beta0*(rcyl_mn-r_ext)
-          f(l1:l2,m,n,ilnrho)=lnrho0+mpoly0*log(TT)-mpoly0*log(TT_ext)
-          f(l1:l2,m,n,ilnTT)=log(TT)
-        endwhere
+       rhs=f(l1:l2,4,j,ilnTT)+ chi*dt/(2d0*rho(l1:l2,j)*dz**2) &
+           *(f(l1:l2,4,j+1,ilnTT) &
+           -2d0*f(l1:l2,4,j,ilnTT)+f(l1:l2,4,j-1,ilnTT)) &
+           +dt/2d0*source(l1:l2,j)
 !
-!  radiative layer
-!
-        where (rcyl_mn <= r_bcz)
-          TT=TT_bcz+beta1*(rcyl_mn-r_bcz)
-          f(l1:l2,m,n,ilnrho)=lnrho_bcz+mpoly1*log(TT)-mpoly1*log(TT_bcz)
-          f(l1:l2,m,n,ilnTT)=log(TT)
-        endwhere
-!
+           aalpha=c(nx)
+           bbeta=a(1)
+           c(nx)=0d0
+           a(1)=0d0
+           call cyclic(a,b,c,aalpha,bbeta,rhs,work,nx)
+       finter(l1:l2,4,j,ilnTT)=work(1:nx)
       enddo
 !
-    endsubroutine cylind_layers
-!***********************************************************************
+      call BC_CT(finter)
+!
+!  colonnes en implicite
+!
+      do i=l1,l2
+       a=-chi*dt/(2d0*rho(i,n1:n2)*dz**2)
+!
+       b=1d0+chi*dt/(rho(i,n1:n2)*dz**2)
+!
+       c=-chi*dt/(2d0*rho(i,n1:n2)*dz**2)
+!
+       rhs=finter(i,4,n1:n2,ilnTT)+chi*dt/(2d0*rho(i,n1:n2)*dx**2) &
+          *(finter(i+1,4,n1:n2,ilnTT) &
+          -2d0*finter(i,4,n1:n2,ilnTT)  &
+          +finter(i-1,4,n1:n2,ilnTT))+ dt/2d0*source(i,n1:n2)
+!
+!           bbeta=a(1)
+           c(nz)=0d0
+           a(1)=0d0
+           b(1)=1.
+           b(nz)=1.
+           c(1)=0.
+           a(nz)=0.
+           rhs(1)=cs2bot/(gamma-1d0)
+           rhs(nx)=cs2top/(gamma-1d0)
+           call tridag(a,b,c,rhs,work,nz)
+!           call cyclic(a,b,c,aalpha,bbeta,rhs,work,nz)
+        f(i,4,n1:n2,ilnTT)=work(1:nz)
+      enddo
+!
+      call BC_CT(f)
+!
+      end subroutine ADI_constK
+!**************************************************************
+      subroutine ADI_Kprof(f,rho,source)
+       
+      use Cdata
+      use Cparam
+      use EquationOfState, only: gamma,cs2bot,cs2top
+
+      integer :: i,j
+      double precision :: alpha, aalpha, bbeta
+      double precision :: templ2, templ
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,mz) :: source,rho,chiprof,dchi,valinter,val
+      real, dimension(nx)    :: a,b,c
+      real, dimension(nz)    :: rhs,work
+      rho=rho/gamma
+      call hcond_ADI(f,chiprof,dchi)
+!
+!  lignes en implicite
+!
+      do j=n1,n2
+       a=-dt/(4d0*rho(l1:l2,j)*dx**2)*(dchi(l1-1:l2-1,j) &
+         *(f(l1-1:l2-1,4,j,ilnTT)-f(l1:l2,4,j,ilnTT)) &
+         +chiprof(l1-1:l2-1,j)+chiprof(l1:l2,j))
+!
+       b=1d0+dt/(4d0*rho(l1:l2,j)*dx**2)*(dchi(l1:l2,j) &
+         *(2d0*f(l1:l2,4,j,ilnTT)-f(l1-1:l2-1,4,j,ilnTT) &
+         -f(l1+1:l2+1,4,j,ilnTT))+2d0*chiprof(l1:l2,j) &
+       +chiprof(l1+1:l2+1,j)+chiprof(l1-1:l2-1,j))
+!
+       c=-dt/(4d0*rho(l1:l2,j)*dx**2)*(dchi(l1+1:l2+1,j) &
+          *(f(l1+1:l2+1,4,j,ilnTT)-f(l1:l2,4,j,ilnTT)) &
+       +chiprof(l1:l2,j)+chiprof(l1+1:l2+1,j))
+!
+       rhs=1d0/(2d0*rho(l1:l2,j)*dz**2)*((chiprof(l1:l2,j+1) &
+           +chiprof(l1:l2,j))*(f(l1:l2,4,j+1,ilnTT)-f(l1:l2,4,j,ilnTT))&
+           -(chiprof(l1:l2,j)+chiprof(l1:l2,j-1)) &
+       *(f(l1:l2,4,j,ilnTT)-f(l1:l2,4,j-1,ilnTT)))
+!
+       rhs=rhs+1d0/(2d0*rho(l1:l2,j)*dx**2)*((chiprof(l1+1:l2+1,j) &
+           +chiprof(l1:l2,j))*(f(l1+1:l2+1,4,j,ilnTT)-f(l1:l2,4,j,ilnTT))&
+           -(chiprof(l1:l2,j)+chiprof(l1-1:l2-1,j)) &
+           *(f(l1:l2,4,j,ilnTT)-f(l1-1:l2-1,4,j,ilnTT)))
+!
+       aalpha=c(nx)
+       bbeta=a(1)
+       c(nx)=0d0
+       a(1)=0d0
+       call cyclic(a,b,c,aalpha,bbeta,rhs,work,nx)
+       valinter(l1:l2,j)=work(1:nx)
+      enddo
+!
+!  colonnes en implicite
+!
+      do i=l1,l2
+       a=-dt/(4d0*rho(i,n1:n2)*dz**2)*(dchi(i,n1-1:n2-1) &
+         *(f(i,4,n1-1:n2-1,ilnTT)-f(i,4,n1:n2,ilnTT))&
+         +chiprof(i,n1-1:n2-1)+chiprof(i,n1:n2))
+!
+       b=1d0+dt/(4d0*rho(i,n1:n2)*dz**2)*(dchi(i,n1:n2)* &
+         (2d0*f(i,4,n1:n2,ilnTT)-f(i,4,n1-1:n2-1,ilnTT) &
+         -f(i,4,n1+1:n2+1,ilnTT))+2d0*chiprof(i,n1:n2) &
+         +chiprof(i,n1+1:n2+1)+chiprof(i,n1-1:n2-1))
+!
+       c=-dt/(4d0*rho(i,n1:n2)*dz**2)*(dchi(i,n1+1:n2+1) &
+         *(f(i,4,n1+1:n2+1,ilnTT)-f(i,4,n1:n2,ilnTT))&
+         +chiprof(i,n1:n2)+chiprof(i,n1+1:n2+1))
+!
+       rhs=valinter(i,n1:n2)
+!
+       c(nz)=0d0
+       a(1)=0d0
+! Constant flux at the bottom
+!       b(1)=-1.
+!       c(1)=0.
+!       c(1)=1.
+!       rhs(1)=0.
+! Constant temperature at the top
+       b(nx)=1.
+       a(nx)=0.
+       rhs(nz)=0.
+!
+       call tridag(a,b,c,rhs,work,nz)
+       val(i,n1:n2)=work(1:nz)
+      enddo
+!
+      f(:,4,:,ilnTT)=f(:,4,:,ilnTT)+dt*val+dt*source
+!
+!      f(:,:,n1,ilnTT)=cs2bot/(gamma-1d0)
+      f(:,:,n2,ilnTT)=cs2top/(gamma-1d0)
+!      call BC_CT(f)
+      call BC_flux(f,chiprof)
+      call hcond_ADI(f,chiprof,dchi)
+!
+      end subroutine ADI_Kprof
+!**************************************************************
+      subroutine BC_CT(f)
+
+      real, dimension(mx,my,mz,mfarray) :: f
+
+      f(:,:,n1-1,ilnTT)=2*f(:,:,n1,ilnTT)-f(:,:,n1+1,ilnTT)
+      f(:,:,n2+1,ilnTT)=2*f(:,:,n2,ilnTT)-f(:,:,n2-1,ilnTT)
+      ! x-direction
+      f(1:l1-1,:,:,ilnTT)=f(l2i:l2,:,:,ilnTT)
+      f(l2+1:mx,:,:,ilnTT)=f(l1:l1i,:,:,ilnTT)
+
+      end subroutine BC_CT
+!**************************************************************
+      subroutine BC_flux(f,chiprof)
+
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,mz) :: chiprof
+      integer :: i
+
+      do i=1,nghost
+        f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)+2*i*dz*Fbot/chiprof(10,n1+i)
+      enddo
+      f(:,:,n2+1,ilnTT)=2*f(:,:,n2,ilnTT)-f(:,:,n2-1,ilnTT)
+      ! x-direction
+      f(1:l1-1,:,:,ilnTT)=f(l2i:l2,:,:,ilnTT)
+      f(l2+1:mx,:,:,ilnTT)=f(l1:l1i,:,:,ilnTT)
+
+      end subroutine BC_flux
+!**************************************************************
+      subroutine hcond_ADI(f,chiprof,dchi)
+
+      use Sub, only: write_zprof
+      real, dimension(mx,my,mz,mfarray) :: f
+      real , dimension(mx,mz) :: chiprof, dchi
+      double precision :: chi0
+      real, dimension(mx,mz) :: arg
+      real :: alp,sig,ecart,diffus
+!
+!      chi0=1d-3
+!      chiprof=chi0
+!      dchi=0d0
+      sig=7.
+      ecart=0.4
+      alp=(Kmax-Kmin)/(pi/2.+atan(sig*ecart**2))
+      arg=sig*(f(:,4,:,ilnTT)-Tbump-ecart)*(f(:,4,:,ilnTT)-Tbump+ecart)
+      chiprof=Kmax+alp*(-pi/2.+atan(arg))
+      dchi=2d0*alp/(1d0+arg**2)*sig*(f(:,4,:,ilnTT)-Tbump)
+!
+!      call write_zprof('hcond',chiprof(10,n1:n2))
+!      call write_zprof('dhcond/dT',dchi(10,n1:n2))
+
+      end subroutine hcond_ADI
+!**************************************************************
+      subroutine tridag(a,b,c,r,u,n)
+
+      integer :: j,n
+      double precision  :: bet
+      real, dimension(n) :: a,b,c,r,u
+      integer, parameter :: NMAX=500
+      real, dimension(NMAX) :: gam
+!
+      if(b(1).eq.0.) pause 'tridag: rewrite equations'
+      bet=b(1)
+      u(1)=r(1)/bet
+      do 11 j=2,n
+        gam(j)=c(j-1)/bet
+        bet=b(j)-a(j)*gam(j)
+        if(bet.eq.0.) pause 'tridag failed'
+        u(j)=(r(j)-a(j)*u(j-1))/bet
+11    continue
+      do 12 j=n-1,1,-1
+        u(j)=u(j)-gam(j+1)*u(j+1)
+12    continue
+!
+      return
+      end subroutine tridag
+!**************************************************************
+      subroutine cyclic(a,b,c,alpha,beta,r,x,n)
+!
+      integer :: i,n
+      double precision :: alpha, beta,gamma,fact      
+      real, dimension(n) :: a,b,c,r,x
+      integer, parameter :: NMAX=500
+      real, dimension(NMAX) :: bb,u,z
+      if(n.le.2)pause 'n too small in cyclic'
+      if(n.gt.NMAX)pause 'NMAX too small in cyclic'
+      gamma=-b(1)
+      bb(1)=b(1)-gamma
+      bb(n)=b(n)-alpha*beta/gamma
+      do 11 i=2,n-1
+        bb(i)=b(i)
+11    continue
+      call tridag(a,bb,c,r,x,n)
+      u(1)=gamma
+      u(n)=alpha
+      do 12 i=2,n-1
+        u(i)=0.
+12    continue
+      call tridag(a,bb,c,u,z,n)
+      fact=(x(1)+beta*x(n)/gamma)/(1.+z(1)+beta*z(n)/gamma)
+      do 13 i=1,n
+        x(i)=x(i)-fact*z(i)
+13    continue
+!
+      return
+      end subroutine cyclic
+!***************************************************************
 endmodule Entropy
