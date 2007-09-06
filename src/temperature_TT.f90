@@ -1,4 +1,4 @@
-!$Id: temperature_TT.f90,v 1.2 2007-09-05 18:52:50 dintrans Exp $
+!$Id: temperature_TT.f90,v 1.3 2007-09-06 08:31:41 dintrans Exp $
 !  This module can replace the entropy module by using _T_ as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
 !  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
@@ -109,7 +109,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_TT.f90,v 1.2 2007-09-05 18:52:50 dintrans Exp $")
+           "$Id: temperature_TT.f90,v 1.3 2007-09-06 08:31:41 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -264,7 +264,7 @@ module Entropy
       case('zero', '0'); f(:,:,:,ilnTT) = 0.
       case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
       case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
-      case('polytrope'); call polytrope(f)
+      case('single_polytrope'); call single_polytrope(f)
       case('rad_equil')
           call rad_equil(f)
           if (ampl_lnTT.ne.0.) then
@@ -497,7 +497,7 @@ module Entropy
 !
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine polytrope(f)
+    subroutine single_polytrope(f)
 !
 ! 04-aug-2007/dintrans: a simple polytrope with index mpoly0
 !
@@ -509,8 +509,9 @@ module Entropy
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real :: beta, zbot, ztop, cp1, T0, temp
 !
-!  beta is the temperature gradient
+!  beta is the (negative) temperature gradient
 !  beta = -(g/cp) /[(1-1/gamma)*(m+1)]
+!
       call get_cp1(cp1)
       beta=-cp1*gravz/(mpoly0+1.)*gamma/gamma1
       ztop=xyz0(3)+Lxyz(3)
@@ -528,7 +529,7 @@ module Entropy
       cs2bot=gamma1*(T0+beta*(ztop-zbot))
       cs2top=cs20
 !
-    endsubroutine polytrope
+    endsubroutine single_polytrope
 !***********************************************************************
     subroutine rad_equil(f)
 !

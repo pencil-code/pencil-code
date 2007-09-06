@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.519 2007-09-05 18:38:00 dintrans Exp $
+! $Id: entropy.f90,v 1.520 2007-09-06 08:31:41 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -206,7 +206,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.519 2007-09-05 18:38:00 dintrans Exp $")
+           "$Id: entropy.f90,v 1.520 2007-09-06 08:31:41 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -895,6 +895,9 @@ module Entropy
           print*,'init_ss: put bubble in hydrostatic equilibrium: radius_ss,ampl_ss=',radius_ss,ampl_ss
           call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
           call blob(-ampl_ss,f,ilnrho,radius_ss,center1_x,center1_y,center1_z)
+
+        case ('single_polytrope')
+          call single_polytrope(f)
 
         case default
           !
@@ -3737,5 +3740,47 @@ module Entropy
       enddo
 !
     endsubroutine cylind_layers
+!***********************************************************************
+    subroutine single_polytrope(f)
+!
+!  06-sep-07/dintrans: a single polytrope of index mpoly0
+!  Both entropy and density are initialized there (compared to layer_ss)
+!
+      use Cdata
+      use Gravity, only: gravz
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, get_cp1, &
+       gamma1, lnrho0
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+
+      real, dimension (nx) :: lnrho,lnTT,TT,ss,z_mn
+      real :: beta,cp1,lnrho_dummy=0.,ztop,TT0,zbot
+!
+!  beta is the (negative) temperature gradient
+!  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
+!
+      call get_cp1(cp1)
+      beta=cp1*gamma/gamma1*gravz/(mpoly0+1)
+      ztop=xyz0(3)+Lxyz(3)
+      zbot=xyz0(3)
+      TT0=cs20/gamma1
+!
+!  set initial condition (first in terms of TT, and then in terms of ss)
+!
+      do m=m1,m2
+      do n=n1,n2
+        z_mn = spread(z(n),1,nx)
+        TT = TT0+beta*(z_mn-ztop)
+        lnTT=log(TT)
+        lnrho=lnrho0+mpoly0*log(TT/TT0)
+        f(l1:l2,m,n,ilnrho)=lnrho
+        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
+        f(l1:l2,m,n,iss)=ss
+      enddo
+      enddo
+      cs2top=cs20
+      cs2bot=gamma1*(TT0+beta*(zbot-ztop))
+!
+    endsubroutine single_polytrope
 !***********************************************************************
 endmodule Entropy
