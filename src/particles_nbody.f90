@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.46 2007-09-06 14:25:28 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.47 2007-09-06 15:23:17 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.46 2007-09-06 14:25:28 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.47 2007-09-06 15:23:17 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -520,11 +520,12 @@ module Particles_nbody
 !
       real, dimension (npar_loc,nspar,3) :: xxspar,vvspar
 !
-      real :: Omega2,invr3_ij,tdot
+      real :: Omega2,invr3_ij
       integer :: i, k, ks, ki, kj, j, jvel, jpos
       logical :: lheader, lfirstcall=.true.
 !
       real :: e1,e2,e3,e10,e20,e30,ev1,ev2,ev3
+      real :: rad,raddot,sinth,costh,thtdot,phidot
 !
       intent (in) ::     f,  fp,  ineargrid
       intent (inout) :: df, dfp
@@ -596,14 +597,41 @@ module Particles_nbody
 !
         do k=1,npar_loc
           if (ipar(k)==ks) then
+!
+!  Non-coordinate basis (all have dimension of length). 
+!  The main dxx_dt of particle_dust takes care of 
+!  transforming the linear velocities to angular changes 
+!  in position.
+!
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + acc(ks,1:3)
+!
+!  Curvilinear coordinates corrections
+!
             if (lcylindrical_coords) then
-              tdot =  fsp(ks,ivpy)/fsp(ks,ixp)
-              dfp(k,ivpx) = dfp(k,ivpx) + tdot**2*fsp(ks,ixp)
-              dfp(k,ivpy) = dfp(k,ivpy) - 2*fsp(ks,ivpx)*tdot
+!
+              rad    =  fsp(ks,ixp)
+              raddot =  fsp(ks,ivpx)
+              phidot =  fsp(ks,ivpy)/rad
+!
+              dfp(k,ivpx) = dfp(k,ivpx) + rad*phidot**2
+              dfp(k,ivpy) = dfp(k,ivpy) - 2*raddot*phidot
+!
             elseif (lspherical_coords) then
-              call stop_it("dvvp_dt_nbody: not yet implemented for "//&
-                   " spherical polars")
+!
+              rad    = fsp(ks,ixp)
+              sinth  = sin(fsp(ks,iyp))
+              costh  = cos(fsp(ks,iyp))
+              raddot = fsp(ks,ivpx)
+              thtdot = fsp(ks,ivpy)/rad
+              phidot = fsp(ks,ivpz)/(rad*sinth)
+!             
+              dfp(k,ivpx) = dfp(k,ivpx) &
+                   + rad*(thtdot**2 + (sinth*phidot)**2)
+              dfp(k,ivpy) = dfp(k,ivpy) &
+                   - 2*raddot*thtdot + rad*sinth*costh*phidot**2
+              dfp(k,ivpz) = dfp(k,ivpz) &
+                   - 2*phidot*(sinth*raddot + rad*costh*thtdot)
+!
             endif
           endif
         enddo
