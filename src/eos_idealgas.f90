@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.98 2007-09-05 18:52:50 dintrans Exp $
+! $Id: eos_idealgas.f90,v 1.99 2007-09-06 08:14:31 bingert Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.98 2007-09-05 18:52:50 dintrans Exp $')
+           '$Id: eos_idealgas.f90,v 1.99 2007-09-06 08:14:31 bingert Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1582,12 +1582,20 @@ module EquationOfState
                    'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_x: cannot have cs2bot<=0'
-        tmp = 2*cv*log(cs2bot/cs20)
-        f(l1,:,:,iss) = 0.5*tmp - (cp-cv)*(f(l1,:,:,ilnrho)-lnrho0)
-        do i=1,nghost
-          f(l1-i,:,:,iss) = -f(l1+i,:,:,iss) + tmp &
+        if (lentropy .and. .not. pretend_lnTT) then 
+           tmp = 2*cv*log(cs2bot/cs20)
+           f(l1,:,:,iss) = 0.5*tmp - (cp-cv)*(f(l1,:,:,ilnrho)-lnrho0)
+           do i=1,nghost
+              f(l1-i,:,:,iss) = -f(l1+i,:,:,iss) + tmp &
                - (cp-cv)*(f(l1+i,:,:,ilnrho)+f(l1-i,:,:,ilnrho)-2*lnrho0)
-        enddo
+           enddo
+        elseif (lentropy .and. pretend_lnTT) then
+           f(l1,:,:,iss) = log(cs2bot/gamma1)
+           do i=1,nghost; f(l1-i,:,:,iss)=2*f(l1,:,:,iss)-f(l1+i,:,:,iss); enddo              
+        elseif (ltemperature) then
+           f(l1,:,:,ilnTT) = log(cs2bot/gamma1)
+           do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo              
+        endif
 !
 !  top boundary
 !
@@ -1596,12 +1604,20 @@ module EquationOfState
                        'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, &
                        'bc_ss_temp_x: cannot have cs2top<=0'
-        tmp = 2*cv*log(cs2top/cs20)
-        f(l2,:,:,iss) = 0.5*tmp - (cp-cv)*(f(l2,:,:,ilnrho)-lnrho0)
-        do i=1,nghost
-          f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
-               - (cp-cv)*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
-        enddo
+         if (lentropy .and. .not. pretend_lnTT) then 
+            tmp = 2*cv*log(cs2top/cs20)
+            f(l2,:,:,iss) = 0.5*tmp - (cp-cv)*(f(l2,:,:,ilnrho)-lnrho0)
+            do i=1,nghost
+               f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
+                    - (cp-cv)*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
+            enddo
+        elseif (lentropy .and. pretend_lnTT) then
+           f(l2,:,:,iss) = log(cs2top/gamma1)
+           do i=1,nghost; f(l2+i,:,:,iss)=2*f(l2,:,:,iss)-f(l2-i,:,:,iss); enddo
+        elseif (ltemperature) then
+           f(l2,:,:,ilnTT) = log(cs2top/gamma1)
+           do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo           
+        endif
 
       case default
         call fatal_error('bc_ss_temp_x','invalid argument')
@@ -1702,12 +1718,20 @@ module EquationOfState
                    'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_z: cannot have cs2bot = ', cs2bot, ' <= 0'
-        tmp = 2*cv*log(cs2bot/cs20)
-        f(:,:,n1,iss) = 0.5*tmp - (cp-cv)*(f(:,:,n1,ilnrho)-lnrho0)
-        do i=1,nghost
-          f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
-               - (cp-cv)*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
-        enddo
+        if (lentropy .and. .not. pretend_lnTT) then 
+           tmp = 2*cv*log(cs2bot/cs20)
+           f(:,:,n1,iss) = 0.5*tmp - (cp-cv)*(f(:,:,n1,ilnrho)-lnrho0)
+           do i=1,nghost
+              f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
+                   - (cp-cv)*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
+           enddo
+        elseif (lentropy .and. pretend_lnTT) then
+            f(:,:,n1,iss) = log(cs2bot/gamma1)
+            do i=1,nghost; f(:,:,n1-i,iss)=2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
+        elseif (ltemperature) then
+            f(:,:,n1,ilnTT) = log(cs2bot/gamma1)
+            do i=1,nghost; f(:,:,n1-i,ilnTT)=2*f(:,:,n1,ilnTT)-f(:,:,n1+i,ilnTT); enddo
+        endif
 !
 !  top boundary
 !
@@ -1716,12 +1740,21 @@ module EquationOfState
                    'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, &
                    'bc_ss_temp_z: cannot have cs2top = ', cs2top, ' <= 0'
-        tmp = 2*cv*log(cs2top/cs20)
-        f(:,:,n2,iss) = 0.5*tmp - (cp-cv)*(f(:,:,n2,ilnrho)-lnrho0)
-        do i=1,nghost
-          f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &
-               - (cp-cv)*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
-        enddo
+        if (lentropy .and. .not. pretend_lnTT) then 
+           tmp = 2*cv*log(cs2top/cs20)
+           f(:,:,n2,iss) = 0.5*tmp - (cp-cv)*(f(:,:,n2,ilnrho)-lnrho0)
+           do i=1,nghost
+              f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &
+                   - (cp-cv)*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
+           enddo
+        elseif (lentropy .and. pretend_lnTT) then
+            f(:,:,n2,iss) = log(cs2top/gamma1)
+            do i=1,nghost; f(:,:,n2+i,iss)=2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
+        elseif (ltemperature) then
+            f(:,:,n2,ilnTT) = log(cs2top/gamma1)
+            do i=1,nghost; f(:,:,n2+i,ilnTT)=2*f(:,:,n2,ilnTT)-f(:,:,n2-i,ilnTT); enddo
+        endif
+
       case default
         call fatal_error('bc_ss_temp_z','invalid argument')
       endselect

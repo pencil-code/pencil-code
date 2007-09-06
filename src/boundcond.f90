@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.180 2007-09-03 21:55:17 bingert Exp $
+! $Id: boundcond.f90,v 1.181 2007-09-06 08:14:31 bingert Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -141,12 +141,13 @@ module Boundcond
                 case ('cT')
                   ! BCX_DOC: constant temperature (implemented as
                   ! BCX_DOC: condition for enropy $s$ or temperature $T$) 
-                  if (j==iss) call bc_ss_temp_x(f,topbot)
-                  if (j==ilnTT)  then
-                    force_lower_bound='cT'
-                    force_upper_bound='cT'
-                    call bc_force_x(f,-1,topbot,j)
-                  endif
+                  call bc_ss_temp_x(f,topbot)
+                  !if (j==iss) 
+                  !if (j==ilnTT)  then
+                  !  force_lower_bound='cT'
+                  !  force_upper_bound='cT'
+                  !  call bc_force_x(f,-1,topbot,j)
+                  !endif
                 case ('c1')
                   ! BCX_DOC: constant temperature (or maybe rather constant
                   ! BCX_DOC: conductive flux??)
@@ -501,20 +502,20 @@ module Boundcond
                 ! BCZ_DOC: constant temp.
                 ! BCZ_DOC: 
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
-                if (j==iss) then
-                   if (pretend_lnTT) then
-                      force_lower_bound='cT'
-                      force_upper_bound='cT'
-                      call bc_force_z(f,-1,topbot,j)                      
-                   else
-                      call bc_ss_temp_z(f,topbot)
-                   endif
-                endif
-                if (j==ilnTT)  then
-                  force_lower_bound='cT'
-                  force_upper_bound='cT'
-                  call bc_force_z(f,-1,topbot,j)
-                endif
+                call bc_ss_temp_z(f,topbot)
+                !if (j==iss) then
+                !   if (pretend_lnTT) then
+                !       force_lower_bound='cT'
+                !       force_upper_bound='cT'
+                !      call bc_force_z(f,-1,topbot,j)                      
+                !   else
+                ! endif
+                !endif
+                !if (j==ilnTT)  then
+                !   force_lower_bound='cT'
+                !   force_upper_bound='cT'
+                !  call bc_force_z(f,-1,topbot,j)
+                !endif
               case ('cT2')
                 ! BCZ_DOC: constant temp. (keep lnrho)
                 ! BCZ_DOC: 
