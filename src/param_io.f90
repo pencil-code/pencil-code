@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.285 2007-08-22 12:47:09 ajohan Exp $
+! $Id: param_io.f90,v 1.286 2007-09-06 11:57:05 dintrans Exp $
 
 module Param_IO
 
@@ -114,7 +114,7 @@ module Param_IO
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
        lbidiagonal_derij,lisotropic_advection, &
-       crash_file_dtmin_factor,niter_poisson
+       crash_file_dtmin_factor,niter_poisson,lADI
   contains
 
 !***********************************************************************

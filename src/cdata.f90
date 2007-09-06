@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.381 2007-09-02 17:14:56 brandenb Exp $
+! $Id: cdata.f90,v 1.382 2007-09-06 11:57:04 dintrans Exp $
 
 module Cdata
 
@@ -366,6 +366,7 @@ module Cdata
   logical :: lpencil_check=.false., lpencil_init=.false.
   logical :: lpencil_check_diagnos_opti=.false.
   logical :: lcylindrical_gravity=.false.
+  logical :: lADI=.false.
   integer :: nreinit=0
   character (len=5), dimension(10) :: reinit_vars=''
   real :: b_ell=1., rbound=1.
