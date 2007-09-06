@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.46 2007-08-29 17:23:53 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.47 2007-09-06 09:31:07 ajohan Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar,run2D=run2D
 COMPILE_OPT IDL2,HIDDEN
@@ -73,7 +73,6 @@ endfor
 
 
 if (param.lwrite_aux ne 0) then totalvars=dim.mvar+dim.maux else totalvars=dim.mvar
-print,'TEST: totalvars,dim.mvar,dim.maux=',totalvars,dim.mvar,dim.maux
 
 ; Make an array of structures in which to store their descriptions
 ; index zero is kept as a dummy entry.
