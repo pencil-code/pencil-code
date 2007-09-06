@@ -1,4 +1,4 @@
-!$Id: temperature_TT.f90,v 1.3 2007-09-06 08:31:41 dintrans Exp $
+!$Id: temperature_TT.f90,v 1.4 2007-09-06 13:49:04 dintrans Exp $
 !  This module can replace the entropy module by using _T_ as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
 !  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
@@ -109,7 +109,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_TT.f90,v 1.3 2007-09-06 08:31:41 dintrans Exp $")
+           "$Id: temperature_TT.f90,v 1.4 2007-09-06 13:49:04 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -855,43 +855,44 @@ module Entropy
 !
     endsubroutine rprint_entropy
 !***********************************************************************
-      subroutine ADI_constK(f,rho,source)
+      subroutine ADI_constK(finit,f)
        
       use Cdata
       use Cparam
-      use EquationOfState, only: gamma,cs2bot,cs2top
+      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top
+
+      implicit none
 
       integer :: i,j
-      double precision :: alpha, chi, aalpha, bbeta, templ1
-      double precision :: templ2, templ
-      real, dimension(mx,my,mz,mfarray) :: f,finter
-      real, dimension(mx,mz) :: source,rho
+      real, dimension(mx,my,mz,mfarray) :: finit,f
+      real, dimension(mx,mz) :: finter,source,rho
       real, dimension(nx)    :: a,b,c
       real, dimension(nz)    :: rhs,work
+      real    :: alpha, aalpha, bbeta
 !
-      chi=hcond0
+      source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
+      rho=exp(f(:,4,:,ilnrho))
       rho=rho/gamma
 !
 !  lignes en implicite
 !
       do j=n1,n2
-       a=-chi*dt/(2d0*rho(l1:l2,j)*dx**2)
+        a=-hcond0*dt/(2.*rho(l1:l2,j)*dx**2)
 !
-       b=1d0+chi*dt/(rho(l1:l2,j)*dx**2)
+        b=1.+hcond0*dt/(rho(l1:l2,j)*dx**2)
 !
-       c=-chi*dt/(2d0*rho(l1:l2,j)*dx**2) 
+        c=-hcond0*dt/(2.*rho(l1:l2,j)*dx**2) 
 !
-       rhs=f(l1:l2,4,j,ilnTT)+ chi*dt/(2d0*rho(l1:l2,j)*dz**2) &
-           *(f(l1:l2,4,j+1,ilnTT) &
-           -2d0*f(l1:l2,4,j,ilnTT)+f(l1:l2,4,j-1,ilnTT)) &
-           +dt/2d0*source(l1:l2,j)
+        rhs=finit(l1:l2,4,j,ilnTT)+hcond0*dt/(2.*rho(l1:l2,j)*dz**2) &
+            *(finit(l1:l2,4,j+1,ilnTT)-2.*finit(l1:l2,4,j,ilnTT)+ &
+            finit(l1:l2,4,j-1,ilnTT))+dt/2.*source(l1:l2,j)
 !
-           aalpha=c(nx)
-           bbeta=a(1)
-           c(nx)=0d0
-           a(1)=0d0
-           call cyclic(a,b,c,aalpha,bbeta,rhs,work,nx)
-       finter(l1:l2,4,j,ilnTT)=work(1:nx)
+        aalpha=c(nx)
+        bbeta=a(1)
+        c(nx)=0.
+        a(1)=0.
+        call cyclic(a,b,c,aalpha,bbeta,rhs,work,nx)
+        finter(l1:l2,j)=work(1:nx)
       enddo
 !
       call BC_CT(finter)
@@ -899,32 +900,29 @@ module Entropy
 !  colonnes en implicite
 !
       do i=l1,l2
-       a=-chi*dt/(2d0*rho(i,n1:n2)*dz**2)
+        a=-hcond0*dt/(2.*rho(i,n1:n2)*dz**2)
 !
-       b=1d0+chi*dt/(rho(i,n1:n2)*dz**2)
+        b=1.+hcond0*dt/(rho(i,n1:n2)*dz**2)
 !
-       c=-chi*dt/(2d0*rho(i,n1:n2)*dz**2)
+        c=-hcond0*dt/(2.*rho(i,n1:n2)*dz**2)
 !
-       rhs=finter(i,4,n1:n2,ilnTT)+chi*dt/(2d0*rho(i,n1:n2)*dx**2) &
-          *(finter(i+1,4,n1:n2,ilnTT) &
-          -2d0*finter(i,4,n1:n2,ilnTT)  &
-          +finter(i-1,4,n1:n2,ilnTT))+ dt/2d0*source(i,n1:n2)
+        rhs=finter(i,n1:n2)+hcond0*dt/(2.*rho(i,n1:n2)*dx**2) &
+           *(finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2)) &
+           +dt/2.*source(i,n1:n2)
 !
-!           bbeta=a(1)
-           c(nz)=0d0
-           a(1)=0d0
-           b(1)=1.
-           b(nz)=1.
-           c(1)=0.
-           a(nz)=0.
-           rhs(1)=cs2bot/(gamma-1d0)
-           rhs(nx)=cs2top/(gamma-1d0)
-           call tridag(a,b,c,rhs,work,nz)
-!           call cyclic(a,b,c,aalpha,bbeta,rhs,work,nz)
+        c(nz)=0.
+        a(1)=0.
+        b(1)=1.
+        b(nz)=1.
+        c(1)=0.
+        a(nz)=0.
+        rhs(1)=cs2bot/gamma1
+        rhs(nx)=cs2top/gamma1
+        call tridag(a,b,c,rhs,work,nz)
         f(i,4,n1:n2,ilnTT)=work(1:nz)
       enddo
 !
-      call BC_CT(f)
+      call BC_CT(f(:,4,:,ilnTT))
 !
       end subroutine ADI_constK
 !**************************************************************
@@ -934,9 +932,10 @@ module Entropy
       use Cparam
       use EquationOfState, only: gamma,cs2bot,cs2top
 
+      implicit none
+
       integer :: i,j
-      double precision :: alpha, aalpha, bbeta
-      double precision :: templ2, templ
+      real    :: alpha, aalpha, bbeta
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,mz) :: source,rho,chiprof,dchi,valinter,val
       real, dimension(nx)    :: a,b,c
@@ -1022,15 +1021,18 @@ module Entropy
 !
       end subroutine ADI_Kprof
 !**************************************************************
-      subroutine BC_CT(f)
+      subroutine BC_CT(f_2d)
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      implicit none
 
-      f(:,:,n1-1,ilnTT)=2*f(:,:,n1,ilnTT)-f(:,:,n1+1,ilnTT)
-      f(:,:,n2+1,ilnTT)=2*f(:,:,n2,ilnTT)-f(:,:,n2-1,ilnTT)
-      ! x-direction
-      f(1:l1-1,:,:,ilnTT)=f(l2i:l2,:,:,ilnTT)
-      f(l2+1:mx,:,:,ilnTT)=f(l1:l1i,:,:,ilnTT)
+      real, dimension(mx,mz) :: f_2d
+
+! z-direction
+      f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
+      f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
+! x-direction
+      f_2d(1:l1-1,:)=f_2d(l2i:l2,:)
+      f_2d(l2+1:mx,:)=f_2d(l1:l1i,:)
 
       end subroutine BC_CT
 !**************************************************************
@@ -1077,9 +1079,9 @@ module Entropy
       subroutine tridag(a,b,c,r,u,n)
 
       integer :: j,n
-      double precision  :: bet
-      real, dimension(n) :: a,b,c,r,u
       integer, parameter :: NMAX=500
+      real    :: bet
+      real, dimension(n) :: a,b,c,r,u
       real, dimension(NMAX) :: gam
 !
       if(b(1).eq.0.) pause 'tridag: rewrite equations'
@@ -1100,11 +1102,14 @@ module Entropy
 !**************************************************************
       subroutine cyclic(a,b,c,alpha,beta,r,x,n)
 !
+      implicit none
+!
       integer :: i,n
-      double precision :: alpha, beta,gamma,fact      
-      real, dimension(n) :: a,b,c,r,x
-      integer, parameter :: NMAX=500
+      integer, parameter    :: NMAX=500
+      real    :: alpha, beta,gamma,fact      
+      real, dimension(n)    :: a,b,c,r,x
       real, dimension(NMAX) :: bb,u,z
+!
       if(n.le.2)pause 'n too small in cyclic'
       if(n.gt.NMAX)pause 'NMAX too small in cyclic'
       gamma=-b(1)
