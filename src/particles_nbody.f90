@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.45 2007-09-05 17:52:12 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.46 2007-09-06 14:25:28 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.45 2007-09-05 17:52:12 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.46 2007-09-06 14:25:28 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -335,12 +335,18 @@ module Particles_nbody
         enddo
         parc = parc*totmass
         do ks=1,nspar-1 
-          velocity(ks,2) = sign(1.,position(ks,1))*(kep_vel(ks) + parc)
+          if (lcartesian_coords) then
+            velocity(ks,2) = sign(1.,position(ks,1))*(kep_vel(ks) + parc)
+          elseif (lcylindrical_coords) then
+            !positive for the planets
+            velocity(ks,2) = abs(kep_vel(ks) + parc)
+          endif
         enddo
 !
 ! The last one (star) fixes the CM also with velocity zero
 !
         velocity(nspar,2)=parc
+        if (lcylindrical_coords) velocity(nspar,2)=-parc
 !
 ! Loop through ipar to allocate the sink particles
 !
@@ -514,7 +520,7 @@ module Particles_nbody
 !
       real, dimension (npar_loc,nspar,3) :: xxspar,vvspar
 !
-      real :: Omega2,invr3_ij
+      real :: Omega2,invr3_ij,tdot
       integer :: i, k, ks, ki, kj, j, jvel, jpos
       logical :: lheader, lfirstcall=.true.
 !
@@ -592,8 +598,9 @@ module Particles_nbody
           if (ipar(k)==ks) then
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + acc(ks,1:3)
             if (lcylindrical_coords) then
-              dfp(k,ivpx) = dfp(k,ivpx) + fsp(ks,ivpy)**2*fsp(ks,ixp)
-              dfp(k,ivpy) = dfp(k,ivpy) - 2*fp(k,ivpx)*fp(k,ivpy)/fp(k,ixp)
+              tdot =  fsp(ks,ivpy)/fsp(ks,ixp)
+              dfp(k,ivpx) = dfp(k,ivpx) + tdot**2*fsp(ks,ixp)
+              dfp(k,ivpy) = dfp(k,ivpy) - 2*fsp(ks,ivpx)*tdot
             elseif (lspherical_coords) then
               call stop_it("dvvp_dt_nbody: not yet implemented for "//&
                    " spherical polars")
@@ -685,18 +692,9 @@ module Particles_nbody
       real, dimension(3) :: vcm
       integer :: k
 !
-      if (lcartesian_coords) then
         vcm(1) = sum(pmass*fsp(:,ivpx))
         vcm(2) = sum(pmass*fsp(:,ivpy))
         vcm(3) = sum(pmass*fsp(:,ivpz))
-      elseif (lcylindrical_coords) then
-        vcm(1) = sum(pmass*fsp(:,ivpx))
-        vcm(2) = sum(pmass*fsp(:,ivpy)*fsp(:,ixp)) !ivpy is angular velocity in this case
-        vcm(3) = sum(pmass*fsp(:,ivpz))
-      elseif (lspherical_coords) then
-        call stop_it("reset_center_of_mass: not implemented for"//&
-             " spherical polars")
-      endif
 !
       do k=1,npar_loc
         if (ipar(k)<=nspar) then
