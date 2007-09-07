@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.223 2007-09-03 12:13:45 reza Exp $
+! $Id: initcond.f90,v 1.224 2007-09-07 18:24:27 wlyra Exp $
 
 module Initcond
 
@@ -40,7 +40,7 @@ module Initcond
   public :: vfield2
   public :: hawley_etal99a
   public :: robertsflow
-  public :: global_shear,dark_matter_halo
+  public :: global_shear,dark_matter_halo,light_matter
   public :: set_thermodynamical_quantities
   public :: const_lou
   public :: corona_init,mdi_init
@@ -2910,8 +2910,6 @@ module Initcond
            ' with angular velocity due to a dark matter halo of ',&
            ' radial core=',r_ref
 !
-      g0_=g0
-!
       do m=m1,m2
         do n=n1,n2
 !
@@ -2938,6 +2936,55 @@ module Initcond
       enddo
 !
     endsubroutine dark_matter_halo
+!*************************************************************
+    subroutine light_matter(f)
+!
+! Velocity profile due to the gravity of a dark matter halo of
+! the type used in gravity_r for 
+!
+      use Cdata
+      use Gravity, only:acceleration
+      use Mpicomm, only:stop_it
+      use Sub,     only:get_radial_distance
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx) :: gr,rr_mn,rr_cyl,rr_sph,OO
+!
+      character (len=labellen), dimension(ninit) :: ipot
+      logical, dimension(ninit) :: lnodark
+      integer :: j
+!
+      if (lroot) &
+           print*,'dark_matter: initializing velocity field',&
+           ' with angular velocity due to a dark matter halo of ',&
+           ' radial core=',r_ref
+!
+      do m=m1,m2
+        do n=n1,n2
+!
+          call get_radial_distance(rr_sph,rr_cyl)
+!
+! centrifugal balance with gravity
+!
+          call acceleration(gr)
+          OO=sqrt(-gr/rr_cyl)
+
+          !vinf=sqrt(4*pi*G*rho0*Rc**2) ; g0_=vinf**2
+!
+          if (lcartesian_coords) then
+            f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*OO
+            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*OO
+            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
+          elseif (lcylindrical_coords) then
+            f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
+            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + OO*rr_cyl
+            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
+          endif
+!      
+        enddo
+      enddo
+!
+    endsubroutine light_matter
 !*************************************************************
     subroutine set_thermodynamical_quantities&
          (f,iglobal_cs2,iglobal_glnTT,ptlaw)
