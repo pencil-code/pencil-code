@@ -1,4 +1,4 @@
-!$Id: temperature_TT.f90,v 1.4 2007-09-06 13:49:04 dintrans Exp $
+!$Id: temperature_TT.f90,v 1.5 2007-09-07 08:35:33 tgastine Exp $
 !  This module can replace the entropy module by using _T_ as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
 !  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
@@ -109,7 +109,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_TT.f90,v 1.4 2007-09-06 13:49:04 dintrans Exp $")
+           "$Id: temperature_TT.f90,v 1.5 2007-09-07 08:35:33 tgastine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -926,7 +926,7 @@ module Entropy
 !
       end subroutine ADI_constK
 !**************************************************************
-      subroutine ADI_Kprof(f,rho,source)
+      subroutine ADI_Kprof(finit,f)
        
       use Cdata
       use Cparam
@@ -936,10 +936,13 @@ module Entropy
 
       integer :: i,j
       real    :: alpha, aalpha, bbeta
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: finit,f
       real, dimension(mx,mz) :: source,rho,chiprof,dchi,valinter,val
       real, dimension(nx)    :: a,b,c
       real, dimension(nz)    :: rhs,work
+
+      source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
+      rho=exp(f(:,4,:,ilnrho))
       rho=rho/gamma
       call hcond_ADI(f,chiprof,dchi)
 !
@@ -947,27 +950,27 @@ module Entropy
 !
       do j=n1,n2
        a=-dt/(4d0*rho(l1:l2,j)*dx**2)*(dchi(l1-1:l2-1,j) &
-         *(f(l1-1:l2-1,4,j,ilnTT)-f(l1:l2,4,j,ilnTT)) &
+         *(finit(l1-1:l2-1,4,j,ilnTT)-finit(l1:l2,4,j,ilnTT)) &
          +chiprof(l1-1:l2-1,j)+chiprof(l1:l2,j))
 !
        b=1d0+dt/(4d0*rho(l1:l2,j)*dx**2)*(dchi(l1:l2,j) &
-         *(2d0*f(l1:l2,4,j,ilnTT)-f(l1-1:l2-1,4,j,ilnTT) &
-         -f(l1+1:l2+1,4,j,ilnTT))+2d0*chiprof(l1:l2,j) &
+         *(2d0*finit(l1:l2,4,j,ilnTT)-finit(l1-1:l2-1,4,j,ilnTT) &
+         -finit(l1+1:l2+1,4,j,ilnTT))+2d0*chiprof(l1:l2,j) &
        +chiprof(l1+1:l2+1,j)+chiprof(l1-1:l2-1,j))
 !
        c=-dt/(4d0*rho(l1:l2,j)*dx**2)*(dchi(l1+1:l2+1,j) &
-          *(f(l1+1:l2+1,4,j,ilnTT)-f(l1:l2,4,j,ilnTT)) &
+          *(finit(l1+1:l2+1,4,j,ilnTT)-finit(l1:l2,4,j,ilnTT)) &
        +chiprof(l1:l2,j)+chiprof(l1+1:l2+1,j))
 !
        rhs=1d0/(2d0*rho(l1:l2,j)*dz**2)*((chiprof(l1:l2,j+1) &
-           +chiprof(l1:l2,j))*(f(l1:l2,4,j+1,ilnTT)-f(l1:l2,4,j,ilnTT))&
+           +chiprof(l1:l2,j))*(finit(l1:l2,4,j+1,ilnTT)-finit(l1:l2,4,j,ilnTT))&
            -(chiprof(l1:l2,j)+chiprof(l1:l2,j-1)) &
-       *(f(l1:l2,4,j,ilnTT)-f(l1:l2,4,j-1,ilnTT)))
+       *(finit(l1:l2,4,j,ilnTT)-finit(l1:l2,4,j-1,ilnTT)))
 !
        rhs=rhs+1d0/(2d0*rho(l1:l2,j)*dx**2)*((chiprof(l1+1:l2+1,j) &
-           +chiprof(l1:l2,j))*(f(l1+1:l2+1,4,j,ilnTT)-f(l1:l2,4,j,ilnTT))&
+         +chiprof(l1:l2,j))*(finit(l1+1:l2+1,4,j,ilnTT)-finit(l1:l2,4,j,ilnTT))&
            -(chiprof(l1:l2,j)+chiprof(l1-1:l2-1,j)) &
-           *(f(l1:l2,4,j,ilnTT)-f(l1-1:l2-1,4,j,ilnTT)))
+           *(finit(l1:l2,4,j,ilnTT)-finit(l1-1:l2-1,4,j,ilnTT)))
 !
        aalpha=c(nx)
        bbeta=a(1)
@@ -981,16 +984,16 @@ module Entropy
 !
       do i=l1,l2
        a=-dt/(4d0*rho(i,n1:n2)*dz**2)*(dchi(i,n1-1:n2-1) &
-         *(f(i,4,n1-1:n2-1,ilnTT)-f(i,4,n1:n2,ilnTT))&
+         *(finit(i,4,n1-1:n2-1,ilnTT)-finit(i,4,n1:n2,ilnTT))&
          +chiprof(i,n1-1:n2-1)+chiprof(i,n1:n2))
 !
        b=1d0+dt/(4d0*rho(i,n1:n2)*dz**2)*(dchi(i,n1:n2)* &
-         (2d0*f(i,4,n1:n2,ilnTT)-f(i,4,n1-1:n2-1,ilnTT) &
-         -f(i,4,n1+1:n2+1,ilnTT))+2d0*chiprof(i,n1:n2) &
+         (2d0*finit(i,4,n1:n2,ilnTT)-finit(i,4,n1-1:n2-1,ilnTT) &
+         -finit(i,4,n1+1:n2+1,ilnTT))+2d0*chiprof(i,n1:n2) &
          +chiprof(i,n1+1:n2+1)+chiprof(i,n1-1:n2-1))
 !
        c=-dt/(4d0*rho(i,n1:n2)*dz**2)*(dchi(i,n1+1:n2+1) &
-         *(f(i,4,n1+1:n2+1,ilnTT)-f(i,4,n1:n2,ilnTT))&
+         *(finit(i,4,n1+1:n2+1,ilnTT)-finit(i,4,n1:n2,ilnTT))&
          +chiprof(i,n1:n2)+chiprof(i,n1+1:n2+1))
 !
        rhs=valinter(i,n1:n2)
@@ -1011,7 +1014,7 @@ module Entropy
        val(i,n1:n2)=work(1:nz)
       enddo
 !
-      f(:,4,:,ilnTT)=f(:,4,:,ilnTT)+dt*val+dt*source
+      f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val+dt*source
 !
 !      f(:,:,n1,ilnTT)=cs2bot/(gamma-1d0)
       f(:,:,n2,ilnTT)=cs2top/(gamma-1d0)
