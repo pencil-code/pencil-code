@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.17 2007-09-03 09:38:49 bingert Exp $
+! $Id: temperature_idealgas.f90,v 1.18 2007-09-07 11:25:46 dintrans Exp $
 !  This module can replace the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
 !  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.17 2007-09-03 09:38:49 bingert Exp $")
+           "$Id: temperature_idealgas.f90,v 1.18 2007-09-07 11:25:46 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -160,7 +160,11 @@ module Entropy
          call fatal_error('initialize_entropy','EOS=noeos but temperature_idealgas requires an EQUATION OF STATE for the fluid')
       endif
 !
-      call select_eos_variable('lnTT',ilnTT)
+      if (pretend_TT) then
+        call select_eos_variable('TT',ilnTT)
+      else
+        call select_eos_variable('lnTT',ilnTT)
+      endif
 !
 !  freeze temperature
 !
@@ -275,6 +279,7 @@ module Entropy
       case('zero', '0'); f(:,:,:,ilnTT) = 0.
       case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
       case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
+      case('single_polytrope'); call single_polytrope(f)
       case('rad_equil')
           call rad_equil(f)
           if (ampl_lnTT.ne.0.) then
@@ -409,7 +414,11 @@ module Entropy
       endif
 !
       if (lpencil_in(i_fpres)) then
-        lpencil_in(i_cs2)=.true.
+        if (pretend_TT) then
+          lpencil_in(i_TT)=.true.
+        else
+          lpencil_in(i_cs2)=.true.
+        endif
         lpencil_in(i_glnrho)=.true.
         lpencil_in(i_glnTT)=.true.
       endif
@@ -437,15 +446,18 @@ module Entropy
 !  Temperature advection
 !  (Needs to be here because of lupw_lnTT)
 !
-      if (lpencil(i_uglnTT)) then
+      if (lpencil(i_uglnTT)) &
         call u_dot_grad(f,ilnTT,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_lnTT)
-      endif
 !
 ! fpres
 !
       if (lpencil(i_fpres)) then
         do j=1,3
-          p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma11
+          if (pretend_TT) then
+            p%fpres(:,j)=-gamma1*gamma11*(p%TT*p%glnrho(:,j) + p%glnTT(:,j))
+          else
+            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma11
+          endif
         enddo
       endif
 !
@@ -523,7 +535,13 @@ module Entropy
 !  Need to add left-hand-side of the continuity equation (see manual)
 !  Check this
 
-      if (ldensity) df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma1*p%divu
+      if (ldensity) then
+        if (pretend_TT) then
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma1*p%TT*p%divu
+        else
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma1*p%divu
+        endif
+      endif
 !
 !  Calculate entropy related diagnostics
 !
@@ -699,13 +717,16 @@ module Entropy
       real, dimension(nx) :: g2,hcond,chix
 !
       hcond=hcond0
-      call dot(p%glnTT,p%glnTT,g2)
 !
 !  Add heat conduction to RHS of temperature equation
 !
       chix=p%rho1*hcond*p%cp1
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g2 + p%del2lnTT)
-
+      if (pretend_TT) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*p%del2lnTT
+      else
+        call dot(p%glnTT,p%glnTT,g2)
+       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g2 + p%del2lnTT)
+      endif
 !
 !  check maximum diffusion from thermal diffusion
 !
@@ -926,5 +947,43 @@ module Entropy
       endif
 !
     endsubroutine rprint_entropy
+!***********************************************************************
+    subroutine single_polytrope(f)
+!
+! 04-aug-2007/dintrans: a simple polytrope with index mpoly0
+!
+      use Cdata
+      use Gravity, only: gravz
+      use EquationOfState, only: cs20, lnrho0, gamma, gamma1, get_cp1, &
+                                 cs2bot, cs2top
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real :: beta, zbot, ztop, cp1, T0, temp
+!
+!  beta is the (negative) temperature gradient
+!  beta = -(g/cp) /[(1-1/gamma)*(m+1)]
+!
+      call get_cp1(cp1)
+      beta=-cp1*gravz/(mpoly0+1.)*gamma/gamma1
+      ztop=xyz0(3)+Lxyz(3)
+      zbot=xyz0(3)
+      T0=cs20/gamma1
+      print*, 'polytrope: mpoly0, beta, T0=', mpoly0, beta, T0
+!
+      do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
+        temp=T0+beta*(ztop-z(n))
+        if (pretend_TT) then
+          f(:,m,n,ilnTT)=temp
+        else
+          f(:,m,n,ilnTT)=log(temp)
+        endif
+        f(:,m,n,ilnrho)=lnrho0+mpoly0*log(temp/T0)
+      enddo
+      cs2bot=gamma1*(T0+beta*(ztop-zbot))
+      cs2top=cs20
+!
+    endsubroutine single_polytrope
 !***********************************************************************
 endmodule Entropy

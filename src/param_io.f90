@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.286 2007-09-06 11:57:05 dintrans Exp $
+! $Id: param_io.f90,v 1.287 2007-09-07 11:25:46 dintrans Exp $
 
 module Param_IO
 
@@ -74,7 +74,8 @@ module Param_IO
 !AB/15-Mar-07: the lcylindrical is kept to produce a warning: outdated
        lcylindrical, &
        lcylinder_in_a_box,lsphere_in_a_box,llocal_iso,init_loops,lwrite_2d,&
-       lcylindrical_gravity,border_frac,border_frac_x,border_frac_y,border_frac_z
+       lcylindrical_gravity,border_frac,border_frac_x,border_frac_y, &
+       border_frac_z,pretend_TT
  !      lextrapolate_bot_density,ltop_velocity_kep,laccelerat_zone, &
  !      ldecelerat_zone,lsurface_zone,lnstar_entropy,lnstar_T_const, &
  !      lnstar_1D,T_disc
@@ -114,7 +115,7 @@ module Param_IO
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
        lbidiagonal_derij,lisotropic_advection, &
-       crash_file_dtmin_factor,niter_poisson,lADI
+       crash_file_dtmin_factor,niter_poisson,lADI,pretend_TT
   contains
 
 !***********************************************************************
