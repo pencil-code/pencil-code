@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.47 2007-09-06 15:23:17 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.48 2007-09-07 01:10:17 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.47 2007-09-06 15:23:17 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.48 2007-09-07 01:10:17 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -525,7 +525,7 @@ module Particles_nbody
       logical :: lheader, lfirstcall=.true.
 !
       real :: e1,e2,e3,e10,e20,e30,ev1,ev2,ev3
-      real :: rad,raddot,sinth,costh,thtdot,phidot
+      real :: rad,raddot,sintht,costht,thtdot,phidot
 !
       intent (in) ::     f,  fp,  ineargrid
       intent (inout) :: df, dfp
@@ -619,18 +619,18 @@ module Particles_nbody
             elseif (lspherical_coords) then
 !
               rad    = fsp(ks,ixp)
-              sinth  = sin(fsp(ks,iyp))
-              costh  = cos(fsp(ks,iyp))
+              sintht = sin(fsp(ks,iyp))
+              costht = cos(fsp(ks,iyp))
               raddot = fsp(ks,ivpx)
               thtdot = fsp(ks,ivpy)/rad
-              phidot = fsp(ks,ivpz)/(rad*sinth)
+              phidot = fsp(ks,ivpz)/(rad*sintht)
 !             
               dfp(k,ivpx) = dfp(k,ivpx) &
-                   + rad*(thtdot**2 + (sinth*phidot)**2)
+                   + rad*(thtdot**2 + (sintht*phidot)**2)
               dfp(k,ivpy) = dfp(k,ivpy) &
-                   - 2*raddot*thtdot + rad*sinth*costh*phidot**2
+                   - 2*raddot*thtdot + rad*sintht*costht*phidot**2
               dfp(k,ivpz) = dfp(k,ivpz) &
-                   - 2*phidot*(sinth*raddot + rad*costh*thtdot)
+                   - 2*phidot*(sintht*raddot + rad*costht*thtdot)
 !
             endif
           endif
@@ -937,9 +937,9 @@ module Particles_nbody
         gg(:,2) = (y(  m  )-y0)*grr
         gg(:,3) = (z(  n  )-z0)*grr
       elseif (coord_system=='cylindric') then
-        gg(:,1) = (x(l1:l2) - x0*cos(y(m)-y0))*grr
-        gg(:,2) =             x0*sin(y(m)-y0) *grr
-        gg(:,3) = (z(n)-z0)                   *grr
+        gg(:,1) = (x(l1:l2)-x0*cos(y(m)-y0))*grr
+        gg(:,2) =           x0*sin(y(m)-y0) *grr
+        gg(:,3) = (z(  n  )-z0)             *grr
       elseif (coord_system=='spherical') then
         call stop_it("get_gravity_field_nbody: off-center gravity"//&
              " field not yet implemented for spherical polars")
