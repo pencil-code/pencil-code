@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.520 2007-09-06 08:31:41 dintrans Exp $
+! $Id: entropy.f90,v 1.521 2007-09-07 17:27:56 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -28,6 +28,8 @@ module Entropy
                          beta_glnrho_global
 
   implicit none
+
+  public :: ADI_constK
 
   include 'entropy.h'
 
@@ -206,7 +208,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.520 2007-09-06 08:31:41 dintrans Exp $")
+           "$Id: entropy.f90,v 1.521 2007-09-07 17:27:56 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -3783,4 +3785,14 @@ module Entropy
 !
     endsubroutine single_polytrope
 !***********************************************************************
+    subroutine ADI_constK(finit,f)
+
+      use Cparam
+
+      implicit none
+
+      real, dimension(mx,my,mz,mfarray) :: finit,f
+
+    end subroutine ADI_constK
+!**************************************************************
 endmodule Entropy

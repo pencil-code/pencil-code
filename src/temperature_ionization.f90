@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.30 2007-04-08 10:13:35 ajohan Exp $
+! $Id: temperature_ionization.f90,v 1.31 2007-09-07 17:27:56 dintrans Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -24,6 +24,8 @@ module Entropy
   use Interstellar
 
   implicit none
+
+  public :: ADI_constK
 
   include 'entropy.h'
 
@@ -89,7 +91,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.30 2007-04-08 10:13:35 ajohan Exp $")
+           "$Id: temperature_ionization.f90,v 1.31 2007-09-07 17:27:56 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -640,4 +642,14 @@ module Entropy
 !
     endsubroutine rprint_entropy
 !***********************************************************************
+    subroutine ADI_constK(finit,f)
+
+      use Cparam
+
+      implicit none
+
+      real, dimension(mx,my,mz,mfarray) :: finit,f
+
+    end subroutine ADI_constK
+!**************************************************************
 endmodule Entropy
