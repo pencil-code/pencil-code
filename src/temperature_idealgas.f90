@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.20 2007-09-07 13:19:28 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.21 2007-09-07 15:01:31 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -45,7 +45,8 @@ module Entropy
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
   real :: center1_x=0., center1_y=0., center1_z=0.
   real :: r_bcz=0.
-  real :: Tbump=0.,Kmin=0.,Kmax=0.
+! entries for ADI
+  real :: Tbump=0.,Kmin=0.,Kmax=0.,hole_slope=0.,hole_width=0.
   integer, parameter :: nheatc_max=2
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
@@ -71,17 +72,16 @@ module Entropy
       lnTT_left,lnTT_right,lnTT_const,TT_const, &
       kx_lnTT,ky_lnTT,kz_lnTT,center1_x,center1_y,center1_z, &
       mpoly0,mpoly1,r_bcz, &
-      Fbot,Tbump,Kmin,Kmax
+      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width
 
 ! run parameters
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
       heat_uniform,chi,iheatcond,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
       lheatc_chiconst_accurate,hcond0,lcalc_heat_cool,&
-      Tbump,Kmin,Kmax, &
       lfreeze_lnTTint,lfreeze_lnTText,widthlnTT,mpoly0,mpoly1, &
       lhcond_global,lviscosity_heat, &
-      Fbot,Tbump,Kmin,Kmax
+      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
@@ -116,7 +116,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.20 2007-09-07 13:19:28 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.21 2007-09-07 15:01:31 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -566,55 +566,64 @@ module Entropy
 !***********************************************************************
     subroutine rad_equil(f)
 !
-! 16-mai-2007/tgastine+dintrans: compute the radiative and hydrostatic 
+! 16-mai-07/gastine+dintrans: compute the radiative and hydrostatic 
 ! equilibria for a given radiative profile (here a hole for the moment)
 !
       use Cdata
       use Gravity, only: gravz
-      use EquationOfState, only: cs20,lnrho0,cs2top,cs2bot,gamma,gamma1
+      use EquationOfState, only: lnrho0,cs20,cs2top,cs2bot,gamma, &
+                                 gamma1,eoscalc,ilnrho_TT
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mz) :: temp,lnrho
       type (pencil_case) :: p
       real :: arg,hcond,dtemp,dlnrho
-      real :: alp,sig,ecart
+      real :: alp,ss
       integer :: i
 !
-      sig=10.
-      ecart=0.1
-      alp=(Kmax-Kmin)/(pi/2.+atan(sig*ecart**2))
-      print*,'sig, ecart, alp=',sig, ecart, alp
+      if (.not. ltemperature_nolog) &
+        call fatal_error('temperature_idealgas','rad_equil not implemented for lnTT')
+      if (lroot) print*,'init_ss: rad_equil for kappa-mechanism pb'
+!
+      alp=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
+      print*,'hole_slope, hole_width, alp=',hole_slope, hole_width, alp
       print*,'Kmin, Kmax, Fbot, Tbump=', Kmin, Kmax, Fbot, Tbump
 !
-! integrate from the top to the bottom
+! Integrate from the top to the bottom
 !
       temp(n2)=cs20/gamma1
       lnrho(n2)=lnrho0
-      f(:,:,n2,ilnTT)=alog(cs20/gamma1)
+      f(:,:,n2,ilnTT)=cs20/gamma1
       f(:,:,n2,ilnrho)=lnrho0
       do i=n2-1,n1,-1
-        arg=sig*(temp(i+1)-Tbump-ecart)*(temp(i+1)-Tbump+ecart)
+        arg=hole_slope*(temp(i+1)-Tbump-hole_width)* &
+            (temp(i+1)-Tbump+hole_width)
         hcond=Kmax+alp*(-pi/2.+atan(arg))
         dtemp=Fbot/hcond
-        dlnrho=(-gamma/gamma1*gravz+dtemp)/temp(i+1)
         temp(i)=temp(i+1)+dz*dtemp
+!       dlnrho=2.*(-gamma/gamma1*gravz-dtemp)/(7.d0/6.d0*temp(i)+5.d0/6.d0*temp(i+1))
+        dlnrho=(-gamma/gamma1*gravz-dtemp)/temp(i+1)
         lnrho(i)=lnrho(i+1)+dz*dlnrho
-        f(:,:,i,ilnTT)=alog(temp(i))
+!
+        f(:,:,i,ilnTT)=temp(i)
         f(:,:,i,ilnrho)=lnrho(i)
       enddo
-! initialize cs2bot by taking into account the new bottom value of temperature
-! note: cs2top is already defined in eos_init by assuming cs2top=cs20
+!
+! Initialize cs2bot by taking into account the new bottom value of temperature
+! Note: cs2top=cs20 already defined in eos_idealgas
       cs2bot=gamma1*temp(n1)
       print*,'cs2top, cs2bot=', cs2top, cs2bot
 !
       if (lroot) then
         print*,'--> write the initial setup in data/proc0/setup.dat'
         open(unit=11,file=trim(directory)//'/setup.dat')
-        write(11,'(4a14)') 'z','rho','temp','hcond'
+        write(11,'(5a14)') 'z','rho','temp','ss','hcond'
         do i=n2,n1,-1
-          arg=sig*(temp(i)-Tbump-ecart)*(temp(i)-Tbump+ecart)
+          arg=hole_slope*(temp(i)-Tbump-hole_width)* &
+              (temp(i)-Tbump+hole_width)
           hcond=Kmax+alp*(-pi/2.+atan(arg))
-          write(11,'(4e14.5)') z(i),exp(lnrho(i)),temp(i),hcond
+          call eoscalc(ilnrho_TT,lnrho(i),temp(i),ss=ss)
+          write(11,'(5e14.5)') z(i),exp(lnrho(i)),temp(i),ss,hcond
         enddo
         close(11)
       endif
@@ -744,7 +753,7 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond_arctan(df,p)
 !
-! 16-mai-2007/tgastine+dintrans: radiative diffusion with an arctan
+! 16-mai-07/gastine+dintrans: radiative diffusion with an arctan
 !  profile for the conductivity
 !  calculate gamma/rho*cp*div(K T*grad lnTT)=
 !    gamma*K/rho*cp*(gradlnTT.gradlnTT + del2ln TT + gradlnTT.gradlnK)
@@ -756,16 +765,14 @@ module Entropy
       type (pencil_case) :: p
       real, dimension(nx) :: arg,hcond,chiT,g1,g2,chix
       real, dimension (nx,3) :: glnhcond=0.
-      real :: alp,sig,ecart
+      real :: alp
 !
 ! todo: must be defined in the namelist (used by rad_equil and _arctan...)
-      sig=10.
-      ecart=0.1
-      alp=(Kmax-Kmin)/(pi/2.+atan(sig*ecart**2))
+      alp=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
 !
-      arg=sig*(p%TT-Tbump-ecart)*(p%TT-Tbump+ecart)
+      arg=hole_slope*(p%TT-Tbump-hole_width)*(p%TT-Tbump+hole_width)
       hcond=Kmax+alp*(-pi/2.+atan(arg))
-      chiT=2.*p%TT/hcond*sig*alp*(p%TT-Tbump)/(1.+arg**2)  ! d(ln K)/dT
+      chiT=2.*p%TT/hcond*hole_slope*alp*(p%TT-Tbump)/(1.+arg**2)  ! d(ln K)/dT
 !
       glnhcond(:,3)=chiT*p%glnTT(:,3)
       call dot(p%glnTT,p%glnTT,g1)

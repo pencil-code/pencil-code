@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.101 2007-09-07 11:44:56 dintrans Exp $
+! $Id: eos_idealgas.f90,v 1.102 2007-09-07 15:01:31 dintrans Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.101 2007-09-07 11:44:56 dintrans Exp $')
+           '$Id: eos_idealgas.f90,v 1.102 2007-09-07 15:01:31 dintrans Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1051,6 +1051,11 @@ module EquationOfState
           if (present(pp)) pp=(cp-cv)*exp(lnTT_)*lnrho_
         endif
 !
+! Log rho and T
+!
+      case (ilnrho_TT)
+          call fatal_error('eoscalc_farray','no implemented for lnrho_TT')
+!
 ! Log rho and cs2
 !
       case (ilnrho_cs2,irho_cs2)
@@ -1125,7 +1130,7 @@ module EquationOfState
       real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp,cs2
-      real :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_
+      real :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
 !
       if (gamma1==0.) call fatal_error('eoscalc_point','gamma=1 not allowed w/entropy')
 !
@@ -1163,6 +1168,14 @@ module EquationOfState
         pp_=ee_*exp(lnrho_)*gamma1
         cs2_=gamma*gamma1*ee_
 
+      case (ilnrho_TT)
+        lnrho_=var1
+        TT_=var2
+        ss_=cv*(log(TT_)-lnTT0-gamma1*(lnrho_-lnrho0))
+        ee_=cv*TT_
+        pp_=ee_*exp(lnrho_)*gamma1
+        cs2_=gamma1*TT_
+
       case default
         call not_implemented('eoscalc_point')
       end select
@@ -1199,7 +1212,7 @@ module EquationOfState
       real, dimension(nx), intent(out), optional :: lnrho,ss
       real, dimension(nx), intent(out), optional :: yH,lnTT
       real, dimension(nx), intent(out), optional :: ee,pp,cs2
-      real, dimension(nx) :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_
+      real, dimension(nx) :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
 !
       if (gamma1==0.) call fatal_error('eoscalc_pencil','gamma=1 not allowed w/entropy')
 !
@@ -1237,6 +1250,14 @@ module EquationOfState
         ee_=cv*exp(lnTT_)
         pp_=ee_*exp(lnrho_)*gamma1
         cs2_=gamma*gamma1*ee_
+
+      case (ilnrho_TT)
+        lnrho_=var1
+        TT_=var2
+        ss_=cv*(log(TT_)-lnTT0-gamma1*(lnrho_-lnrho0))
+        ee_=cv*TT_
+        pp_=ee_*exp(lnrho_)*gamma1
+        cs2_=gamma1*TT_
 
       case default
         call not_implemented('eoscalc_point')
