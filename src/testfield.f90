@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.30 2007-09-03 14:55:14 brandenb Exp $
+! $Id: testfield.f90,v 1.31 2007-09-07 18:11:36 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -114,7 +114,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.30 2007-09-03 14:55:14 brandenb Exp $")
+           "$Id: testfield.f90,v 1.31 2007-09-07 18:11:36 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -313,10 +313,11 @@ module Testfield
           iaztest=iaxtest+2
           call del2v(f,iaxtest,del2Atest)
           select case(itestfield)
-            case(1); call set_bbtest(bbtest,jtest,ktestfield)
-            case(2); call set_bbtest2(bbtest,jtest)
-            case(3); call set_bbtest3(bbtest,jtest)
-            case(4); call set_bbtest4(bbtest,jtest)
+          case(1); call set_bbtest(bbtest,jtest,ktestfield)
+          case(2); call set_bbtest2(bbtest,jtest)
+          case(3); call set_bbtest3(bbtest,jtest)
+          case(4); call set_bbtest4(bbtest,jtest)
+          case default; call fatal_error('daatest_dt','undefined itestfield')
           endselect
 !
 !  add an external field, if present

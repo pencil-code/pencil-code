@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.215 2007-08-14 01:14:21 dobler Exp $
+! $Id: mpicomm.f90,v 1.216 2007-09-07 18:11:36 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -164,7 +164,11 @@ module Mpicomm
 
   include 'mpif.h'
 !
-! For f-array processor boundaries
+!  initialize debug parameter for this routine
+!
+  logical :: ldebug_mpi=.false.
+!
+!  For f-array processor boundaries
 !
   real, dimension (nghost,ny,nz,mcom) :: lbufxi,ubufxi,lbufxo,ubufxo
   real, dimension (mx,nghost,nz,mcom) :: lbufyi,ubufyi,lbufyo,ubufyo
@@ -326,9 +330,10 @@ module Mpicomm
 !  should print (3,15,12,13,1,5,4,7) for iproc=0
 !
 !  print processor numbers and those of their neighbors
-!  NOTE: the ip print parameter has not yet been read at this point.
+!  NOTE: the ip print parameter has *not* yet been read at this point.
+!  Therefore it must be invoked by resetting ldebug_mpi appropriately.
 !
-      write(0,'(A,I4,"(",3I4,"): ",8I4)') &
+      if (ldebug_mpi) write(6,'(A,I4,"(",3I4,"): ",8I4)') &
         'mpicomm_init: MPICOMM neighbors ', &
         iproc,ipx,ipy,ipz, &
         ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
