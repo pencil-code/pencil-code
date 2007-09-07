@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.21 2007-09-07 15:01:31 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.22 2007-09-07 16:02:19 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -33,7 +33,7 @@ module Entropy
 
   implicit none
 
-  public :: ADI_constK
+  public :: ADI_constK, ADI_Kprof
 
   include 'entropy.h'
 
@@ -47,6 +47,7 @@ module Entropy
   real :: r_bcz=0.
 ! entries for ADI
   real :: Tbump=0.,Kmin=0.,Kmax=0.,hole_slope=0.,hole_width=0.
+  real :: hole_alpha ! initialized _after_ the reading
   integer, parameter :: nheatc_max=2
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
@@ -116,7 +117,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.21 2007-09-07 15:01:31 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.22 2007-09-07 16:02:19 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -231,6 +232,11 @@ module Entropy
          enddo
          enddo
        endif
+!
+!  Some initializations for the ADI setup
+!
+      if (hole_slope.ne.0.) &
+        hole_alpha=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
 !
 !  A word of warning...
 !
@@ -578,15 +584,15 @@ module Entropy
       real, dimension (mz) :: temp,lnrho
       type (pencil_case) :: p
       real :: arg,hcond,dtemp,dlnrho
-      real :: alp,ss
+      real :: ss
       integer :: i
 !
       if (.not. ltemperature_nolog) &
         call fatal_error('temperature_idealgas','rad_equil not implemented for lnTT')
       if (lroot) print*,'init_ss: rad_equil for kappa-mechanism pb'
 !
-      alp=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
-      print*,'hole_slope, hole_width, alp=',hole_slope, hole_width, alp
+      print*,'hole_slope, hole_width, hole_alpha=',hole_slope, &
+             hole_width, hole_alpha
       print*,'Kmin, Kmax, Fbot, Tbump=', Kmin, Kmax, Fbot, Tbump
 !
 ! Integrate from the top to the bottom
@@ -598,7 +604,7 @@ module Entropy
       do i=n2-1,n1,-1
         arg=hole_slope*(temp(i+1)-Tbump-hole_width)* &
             (temp(i+1)-Tbump+hole_width)
-        hcond=Kmax+alp*(-pi/2.+atan(arg))
+        hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
         dtemp=Fbot/hcond
         temp(i)=temp(i+1)+dz*dtemp
 !       dlnrho=2.*(-gamma/gamma1*gravz-dtemp)/(7.d0/6.d0*temp(i)+5.d0/6.d0*temp(i+1))
@@ -621,7 +627,7 @@ module Entropy
         do i=n2,n1,-1
           arg=hole_slope*(temp(i)-Tbump-hole_width)* &
               (temp(i)-Tbump+hole_width)
-          hcond=Kmax+alp*(-pi/2.+atan(arg))
+          hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
           call eoscalc(ilnrho_TT,lnrho(i),temp(i),ss=ss)
           write(11,'(5e14.5)') z(i),exp(lnrho(i)),temp(i),ss,hcond
         enddo
@@ -1006,25 +1012,24 @@ module Entropy
 
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit,f
-      real, dimension(mx,mz) :: finter,source,rho
+      real, dimension(mx,mz) :: finter,source,rho_g
       real, dimension(nx)    :: a,b,c
       real, dimension(nz)    :: rhs,work
       real    :: alpha, aalpha, bbeta
 !
       source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
-      rho=exp(f(:,4,:,ilnrho))
-      rho=rho/gamma
+      rho_g=exp(f(:,4,:,ilnrho))/gamma
 !
 !  lignes en implicite
 !
       do j=n1,n2
-        a=-hcond0*dt/(2.*rho(l1:l2,j)*dx**2)
+        a=-hcond0*dt/(2.*rho_g(l1:l2,j)*dx**2)
 !
-        b=1.+hcond0*dt/(rho(l1:l2,j)*dx**2)
+        b=1.+hcond0*dt/(rho_g(l1:l2,j)*dx**2)
 !
-        c=-hcond0*dt/(2.*rho(l1:l2,j)*dx**2) 
+        c=-hcond0*dt/(2.*rho_g(l1:l2,j)*dx**2) 
 !
-        rhs=finit(l1:l2,4,j,ilnTT)+hcond0*dt/(2.*rho(l1:l2,j)*dz**2) &
+        rhs=finit(l1:l2,4,j,ilnTT)+hcond0*dt/(2.*rho_g(l1:l2,j)*dz**2) &
             *(finit(l1:l2,4,j+1,ilnTT)-2.*finit(l1:l2,4,j,ilnTT)+ &
             finit(l1:l2,4,j-1,ilnTT))+dt/2.*source(l1:l2,j)
 !
@@ -1041,13 +1046,13 @@ module Entropy
 !  colonnes en implicite
 !
       do i=l1,l2
-        a=-hcond0*dt/(2.*rho(i,n1:n2)*dz**2)
+        a=-hcond0*dt/(2.*rho_g(i,n1:n2)*dz**2)
 !
-        b=1.+hcond0*dt/(rho(i,n1:n2)*dz**2)
+        b=1.+hcond0*dt/(rho_g(i,n1:n2)*dz**2)
 !
-        c=-hcond0*dt/(2.*rho(i,n1:n2)*dz**2)
+        c=-hcond0*dt/(2.*rho_g(i,n1:n2)*dz**2)
 !
-        rhs=finter(i,n1:n2)+hcond0*dt/(2.*rho(i,n1:n2)*dx**2) &
+        rhs=finter(i,n1:n2)+hcond0*dt/(2.*rho_g(i,n1:n2)*dx**2) &
            *(finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2)) &
            +dt/2.*source(i,n1:n2)
 !
@@ -1067,6 +1072,131 @@ module Entropy
 !
     end subroutine ADI_constK
 !**************************************************************
+    subroutine ADI_Kprof(finit,f)
+       
+      use Cdata
+      use Cparam
+      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top
+
+      implicit none
+
+      integer :: i,j
+      real    :: alpha, aalpha, bbeta
+      real, dimension(mx,my,mz,mfarray) :: finit,f
+      real, dimension(mx,mz) :: source,rho_g,hcond,dhcond,valinter,val
+      real, dimension(nx)    :: a,b,c
+      real, dimension(nz)    :: rhs,work
+
+      source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
+      rho_g=exp(f(:,4,:,ilnrho))/gamma
+      call hcond_ADI(f,hcond,dhcond)
+!
+!  lignes en implicite
+!
+      do j=n1,n2
+       a=-dt/(4.*rho_g(l1:l2,j)*dx**2)*(dhcond(l1-1:l2-1,j)     &
+         *(finit(l1-1:l2-1,4,j,ilnTT)-finit(l1:l2,4,j,ilnTT))   &
+         +hcond(l1-1:l2-1,j)+hcond(l1:l2,j))
+!
+       b=1.+dt/(4.*rho_g(l1:l2,j)*dx**2)*(dhcond(l1:l2,j)       &
+         *(2.*finit(l1:l2,4,j,ilnTT)-finit(l1-1:l2-1,4,j,ilnTT) &
+         -finit(l1+1:l2+1,4,j,ilnTT))+2.*hcond(l1:l2,j)         &
+         +hcond(l1+1:l2+1,j)+hcond(l1-1:l2-1,j))
+!
+       c=-dt/(4.*rho_g(l1:l2,j)*dx**2)*(dhcond(l1+1:l2+1,j)     &
+          *(finit(l1+1:l2+1,4,j,ilnTT)-finit(l1:l2,4,j,ilnTT))  &
+          +hcond(l1:l2,j)+hcond(l1+1:l2+1,j))
+!
+       rhs=1./(2.*rho_g(l1:l2,j)*dz**2)*((hcond(l1:l2,j+1)      &
+           +hcond(l1:l2,j))*(finit(l1:l2,4,j+1,ilnTT)           &
+           -finit(l1:l2,4,j,ilnTT))-(hcond(l1:l2,j)             &
+           +hcond(l1:l2,j-1))                                   &
+           *(finit(l1:l2,4,j,ilnTT)-finit(l1:l2,4,j-1,ilnTT)))
+!
+       rhs=rhs+1./(2.*rho_g(l1:l2,j)*dx**2)*((hcond(l1+1:l2+1,j) &
+         +hcond(l1:l2,j))*(finit(l1+1:l2+1,4,j,ilnTT)-finit(l1:l2,4,j,ilnTT))&
+           -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j)) &
+           *(finit(l1:l2,4,j,ilnTT)-finit(l1-1:l2-1,4,j,ilnTT)))
+!
+       aalpha=c(nx)
+       bbeta=a(1)
+       c(nx)=0.
+       a(1)=0.
+       call cyclic(a,b,c,aalpha,bbeta,rhs,work,nx)
+       valinter(l1:l2,j)=work(1:nx)
+      enddo
+!
+!  colonnes en implicite
+!
+      do i=l1,l2
+       a=-dt/(4.*rho_g(i,n1:n2)*dz**2)*(dhcond(i,n1-1:n2-1) &
+         *(finit(i,4,n1-1:n2-1,ilnTT)-finit(i,4,n1:n2,ilnTT))&
+         +hcond(i,n1-1:n2-1)+hcond(i,n1:n2))
+!
+       b=1.+dt/(4.*rho_g(i,n1:n2)*dz**2)*(dhcond(i,n1:n2)* &
+         (2.*finit(i,4,n1:n2,ilnTT)-finit(i,4,n1-1:n2-1,ilnTT) &
+         -finit(i,4,n1+1:n2+1,ilnTT))+2.*hcond(i,n1:n2) &
+         +hcond(i,n1+1:n2+1)+hcond(i,n1-1:n2-1))
+!
+       c=-dt/(4.*rho_g(i,n1:n2)*dz**2)*(dhcond(i,n1+1:n2+1) &
+         *(finit(i,4,n1+1:n2+1,ilnTT)-finit(i,4,n1:n2,ilnTT))&
+         +hcond(i,n1:n2)+hcond(i,n1+1:n2+1))
+!
+       rhs=valinter(i,n1:n2)
+!
+       c(nz)=0.
+       a(1)=0.
+! Constant flux at the bottom
+!       b(1)=-1.
+!       c(1)=0.
+!       c(1)=1.
+!       rhs(1)=0.
+! Constant temperature at the bottom
+        b(1)=1.
+        c(1)=0.
+        rhs(1)=0.
+! Constant temperature at the top
+       b(nx)=1.
+       a(nx)=0.
+       rhs(nz)=0.
+!
+       call tridag(a,b,c,rhs,work,nz)
+       val(i,n1:n2)=work(1:nz)
+      enddo
+!
+      f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*(val+source)
+!
+! Boris: is it really needed? i.e. filling f(n1,n2) and hcond_ADI
+      f(:,:,n1,ilnTT)=cs2bot/gamma1
+      f(:,:,n2,ilnTT)=cs2top/gamma1
+
+      call BC_CT(f(:,4,:,ilnTT))
+!     call BC_flux(f,hcond)
+      call hcond_ADI(f,hcond,dhcond)
+!
+    end subroutine ADI_Kprof
+!**************************************************************
+    subroutine hcond_ADI(f,hcond,dhcond)
+!
+! 07-Sep-07/gastine: computed the radiative conductivity hcond(T) and
+! its derivative dhcond=dhcond(T)/dT
+!
+      implicit none
+
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,mz)            :: arg, hcond, dhcond
+!
+      arg=hole_slope*(f(:,4,:,ilnTT)-Tbump-hole_width)* &
+          (f(:,4,:,ilnTT)-Tbump+hole_width)
+      hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
+      dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(f(:,4,:,ilnTT)-Tbump)
+!
+! constant hcond for testing purpose
+!
+!     hcond=hcond0 ; dhcond=0.
+!
+    end subroutine hcond_ADI
+!**************************************************************
     subroutine BC_CT(f_2d)
 
       implicit none
@@ -1081,6 +1211,22 @@ module Entropy
       f_2d(l2+1:mx,:)=f_2d(l1:l1i,:)
 
     end subroutine BC_CT
+!**************************************************************
+    subroutine BC_flux(f,hcond)
+
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,mz) :: hcond
+      integer :: i
+
+      do i=1,nghost
+        f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)+2*i*dz*Fbot/hcond(10,n1+i)
+      enddo
+      f(:,:,n2+1,ilnTT)=2*f(:,:,n2,ilnTT)-f(:,:,n2-1,ilnTT)
+      ! x-direction
+      f(1:l1-1,:,:,ilnTT)=f(l2i:l2,:,:,ilnTT)
+      f(l2+1:mx,:,:,ilnTT)=f(l1:l1i,:,:,ilnTT)
+
+    end subroutine BC_flux
 !**************************************************************
     subroutine tridag(a,b,c,r,u,n)
 
