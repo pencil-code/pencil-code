@@ -1,0 +1,4 @@
+#!/bin/sh
+#$Id: pc_phonelist,v 1.1 2007-09-07 17:43:07 brandenb Exp $
+echo ""
+cat $PENCIL_HOME/license/developers.txt
