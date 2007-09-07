@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.383 2007-09-07 09:20:49 dintrans Exp $
+! $Id: cdata.f90,v 1.384 2007-09-07 11:44:56 dintrans Exp $
 
 module Cdata
 
@@ -277,7 +277,7 @@ module Cdata
   logical :: leos_ionization=.false.,leos_fixed_ionization=.false.
   logical :: leos_temperature_ionization=.false.
   logical :: llocal_iso=.false.
-  logical :: pretend_lnTT=.false., pretend_TT=.false.
+  logical :: pretend_lnTT=.false., ltemperature_nolog=.false.
   logical :: save_lastsnap=.true.
   logical :: lcopysnapshots_exp=.false.
   logical :: lwrite_2d=.false.

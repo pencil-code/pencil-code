@@ -1,7 +1,8 @@
-! $Id: temperature_idealgas.f90,v 1.18 2007-09-07 11:25:46 dintrans Exp $
-!  This module can replace the entropy module by using lnT as dependent
-!  variable. For a perfect gas with constant coefficients (no ionization)
-!  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
+! $Id: temperature_idealgas.f90,v 1.19 2007-09-07 11:44:56 dintrans Exp $
+!  This module can replace the entropy module by using lnT or T (with
+!  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
+!  with constant coefficients (no ionization) we have:
+!  (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
 !
 !  Note that to use lnTT as thermal variable, you may rather want to use
 !  entropy.f90 with pretend_lnTT=.true. As of March 2007, entropy.f90
@@ -113,7 +114,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.18 2007-09-07 11:25:46 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.19 2007-09-07 11:44:56 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -160,7 +161,7 @@ module Entropy
          call fatal_error('initialize_entropy','EOS=noeos but temperature_idealgas requires an EQUATION OF STATE for the fluid')
       endif
 !
-      if (pretend_TT) then
+      if (ltemperature_nolog) then
         call select_eos_variable('TT',ilnTT)
       else
         call select_eos_variable('lnTT',ilnTT)
@@ -414,7 +415,7 @@ module Entropy
       endif
 !
       if (lpencil_in(i_fpres)) then
-        if (pretend_TT) then
+        if (ltemperature_nolog) then
           lpencil_in(i_TT)=.true.
         else
           lpencil_in(i_cs2)=.true.
@@ -453,7 +454,7 @@ module Entropy
 !
       if (lpencil(i_fpres)) then
         do j=1,3
-          if (pretend_TT) then
+          if (ltemperature_nolog) then
             p%fpres(:,j)=-gamma1*gamma11*(p%TT*p%glnrho(:,j) + p%glnTT(:,j))
           else
             p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma11
@@ -536,7 +537,7 @@ module Entropy
 !  Check this
 
       if (ldensity) then
-        if (pretend_TT) then
+        if (ltemperature_nolog) then
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma1*p%TT*p%divu
         else
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma1*p%divu
@@ -721,7 +722,7 @@ module Entropy
 !  Add heat conduction to RHS of temperature equation
 !
       chix=p%rho1*hcond*p%cp1
-      if (pretend_TT) then
+      if (ltemperature_nolog) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*p%del2lnTT
       else
         call dot(p%glnTT,p%glnTT,g2)
@@ -974,7 +975,7 @@ module Entropy
         n=nn(imn)
         m=mm(imn)
         temp=T0+beta*(ztop-z(n))
-        if (pretend_TT) then
+        if (ltemperature_nolog) then
           f(:,m,n,ilnTT)=temp
         else
           f(:,m,n,ilnTT)=log(temp)

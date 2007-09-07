@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.100 2007-09-07 09:20:49 dintrans Exp $
+! $Id: eos_idealgas.f90,v 1.101 2007-09-07 11:44:56 dintrans Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.100 2007-09-07 09:20:49 dintrans Exp $')
+           '$Id: eos_idealgas.f90,v 1.101 2007-09-07 11:44:56 dintrans Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1729,7 +1729,7 @@ module EquationOfState
             f(:,:,n1,iss) = log(cs2bot/gamma1)
             do i=1,nghost; f(:,:,n1-i,iss)=2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
         elseif (ltemperature) then
-            if (pretend_TT) then 
+            if (ltemperature_nolog) then 
               f(:,:,n1,ilnTT) = cs2bot/gamma1
             else
               f(:,:,n1,ilnTT) = log(cs2bot/gamma1)
@@ -1755,7 +1755,7 @@ module EquationOfState
             f(:,:,n2,iss) = log(cs2top/gamma1)
             do i=1,nghost; f(:,:,n2+i,iss)=2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
         elseif (ltemperature) then
-            if (pretend_TT) then 
+            if (ltemperature_nolog) then 
               f(:,:,n2,ilnTT) = cs2top/gamma1
             else
               f(:,:,n2,ilnTT) = log(cs2top/gamma1)

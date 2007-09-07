@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.79 2007-09-07 09:25:48 dintrans Exp $
+! $Id: viscosity.f90,v 1.80 2007-09-07 11:44:56 dintrans Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -102,7 +102,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.79 2007-09-07 09:25:48 dintrans Exp $")
+           "$Id: viscosity.f90,v 1.80 2007-09-07 11:44:56 dintrans Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -861,7 +861,7 @@ module Viscosity
             df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%visc_heat
          endif
       else if (ltemperature) then
-        if (pretend_TT) then
+        if (ltemperature_nolog) then
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%visc_heat
         else
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%visc_heat
