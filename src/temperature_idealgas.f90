@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.19 2007-09-07 11:44:56 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.20 2007-09-07 13:19:28 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -32,6 +32,8 @@ module Entropy
   use EquationOfState, only: mpoly0,mpoly1
 
   implicit none
+
+  public :: ADI_constK
 
   include 'entropy.h'
 
@@ -114,7 +116,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.19 2007-09-07 11:44:56 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.20 2007-09-07 13:19:28 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -987,4 +989,147 @@ module Entropy
 !
     endsubroutine single_polytrope
 !***********************************************************************
+    subroutine ADI_constK(finit,f)
+       
+      use Cdata
+      use Cparam
+      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top
+
+      implicit none
+
+      integer :: i,j
+      real, dimension(mx,my,mz,mfarray) :: finit,f
+      real, dimension(mx,mz) :: finter,source,rho
+      real, dimension(nx)    :: a,b,c
+      real, dimension(nz)    :: rhs,work
+      real    :: alpha, aalpha, bbeta
+!
+      source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
+      rho=exp(f(:,4,:,ilnrho))
+      rho=rho/gamma
+!
+!  lignes en implicite
+!
+      do j=n1,n2
+        a=-hcond0*dt/(2.*rho(l1:l2,j)*dx**2)
+!
+        b=1.+hcond0*dt/(rho(l1:l2,j)*dx**2)
+!
+        c=-hcond0*dt/(2.*rho(l1:l2,j)*dx**2) 
+!
+        rhs=finit(l1:l2,4,j,ilnTT)+hcond0*dt/(2.*rho(l1:l2,j)*dz**2) &
+            *(finit(l1:l2,4,j+1,ilnTT)-2.*finit(l1:l2,4,j,ilnTT)+ &
+            finit(l1:l2,4,j-1,ilnTT))+dt/2.*source(l1:l2,j)
+!
+        aalpha=c(nx)
+        bbeta=a(1)
+        c(nx)=0.
+        a(1)=0.
+        call cyclic(a,b,c,aalpha,bbeta,rhs,work,nx)
+        finter(l1:l2,j)=work(1:nx)
+      enddo
+!
+      call BC_CT(finter)
+!
+!  colonnes en implicite
+!
+      do i=l1,l2
+        a=-hcond0*dt/(2.*rho(i,n1:n2)*dz**2)
+!
+        b=1.+hcond0*dt/(rho(i,n1:n2)*dz**2)
+!
+        c=-hcond0*dt/(2.*rho(i,n1:n2)*dz**2)
+!
+        rhs=finter(i,n1:n2)+hcond0*dt/(2.*rho(i,n1:n2)*dx**2) &
+           *(finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2)) &
+           +dt/2.*source(i,n1:n2)
+!
+        c(nz)=0.
+        a(1)=0.
+        b(1)=1.
+        b(nz)=1.
+        c(1)=0.
+        a(nz)=0.
+        rhs(1)=cs2bot/gamma1
+        rhs(nx)=cs2top/gamma1
+        call tridag(a,b,c,rhs,work,nz)
+        f(i,4,n1:n2,ilnTT)=work(1:nz)
+      enddo
+!
+      call BC_CT(f(:,4,:,ilnTT))
+!
+    end subroutine ADI_constK
+!**************************************************************
+    subroutine BC_CT(f_2d)
+
+      implicit none
+
+      real, dimension(mx,mz) :: f_2d
+
+! z-direction
+      f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
+      f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
+! x-direction
+      f_2d(1:l1-1,:)=f_2d(l2i:l2,:)
+      f_2d(l2+1:mx,:)=f_2d(l1:l1i,:)
+
+    end subroutine BC_CT
+!**************************************************************
+    subroutine tridag(a,b,c,r,u,n)
+
+      integer :: j,n
+      integer, parameter :: NMAX=500
+      real    :: bet
+      real, dimension(n) :: a,b,c,r,u
+      real, dimension(NMAX) :: gam
+!
+      if(b(1).eq.0.) pause 'tridag: rewrite equations'
+      bet=b(1)
+      u(1)=r(1)/bet
+      do 11 j=2,n
+        gam(j)=c(j-1)/bet
+        bet=b(j)-a(j)*gam(j)
+        if(bet.eq.0.) pause 'tridag failed'
+        u(j)=(r(j)-a(j)*u(j-1))/bet
+11    continue
+      do 12 j=n-1,1,-1
+        u(j)=u(j)-gam(j+1)*u(j+1)
+12    continue
+!
+      return
+    end subroutine tridag
+!**************************************************************
+    subroutine cyclic(a,b,c,alpha,beta,r,x,n)
+!
+      implicit none
+!
+      integer :: i,n
+      integer, parameter    :: NMAX=500
+      real    :: alpha, beta,gamma,fact      
+      real, dimension(n)    :: a,b,c,r,x
+      real, dimension(NMAX) :: bb,u,z
+!
+      if(n.le.2)pause 'n too small in cyclic'
+      if(n.gt.NMAX)pause 'NMAX too small in cyclic'
+      gamma=-b(1)
+      bb(1)=b(1)-gamma
+      bb(n)=b(n)-alpha*beta/gamma
+      do 11 i=2,n-1
+        bb(i)=b(i)
+11    continue
+      call tridag(a,bb,c,r,x,n)
+      u(1)=gamma
+      u(n)=alpha
+      do 12 i=2,n-1
+        u(i)=0.
+12    continue
+      call tridag(a,bb,c,u,z,n)
+      fact=(x(1)+beta*x(n)/gamma)/(1.+z(1)+beta*z(n)/gamma)
+      do 13 i=1,n
+        x(i)=x(i)-fact*z(i)
+13    continue
+!
+      return
+    end subroutine cyclic
+!***************************************************************
 endmodule Entropy

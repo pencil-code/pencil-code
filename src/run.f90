@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.248 2007-08-24 01:35:50 dhruba Exp $
+! $Id: run.f90,v 1.249 2007-09-07 13:19:28 dintrans Exp $
 !
 !***********************************************************************
       program run
@@ -41,6 +41,7 @@
         use Particles_main
         use FArrayManager,   only: farray_clean_up
         use SharedVariables, only: sharedvars_clean_up
+        use Entropy,         only: ADI_constK
 !
         implicit none
 !
@@ -56,6 +57,7 @@
         double precision :: time_last_diagnostic, time_this_diagnostic
         integer :: it_last_diagnostic,it_this_diagnostic
         integer :: i,ivar
+        real, allocatable, dimension (:,:,:,:) :: finit
 !
         lrun = .true.
 !
@@ -70,7 +72,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.248 2007-08-24 01:35:50 dhruba Exp $")
+             "$Id: run.f90,v 1.249 2007-09-07 13:19:28 dintrans Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -238,6 +240,10 @@
           call particles_rprint_list(.false.)
           call particles_initialize_modules(LSTARTING=.false.)
         endif
+!
+!  Allocate the finit array if lADI=.true.
+!
+        if (lADI) allocate(finit(mx,my,mz,mfarray))
 !
 !  Write data to file for IDL
 !
@@ -447,9 +453,17 @@
           if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
           if (lvid)   lpencil=lpencil .or. lpenc_video
 !
+          if (lADI)   finit=f
+!
 !  Time advance
 !
           call rk_2n(f,df,p)
+!
+! 07-Sep-07/dintrans+gastine: implicit advance of the radiative diffusion
+! in the temperature equation (using temperature_idealgas)
+!
+          if (lADI) call ADI_constK(finit,f)
+!
           if (lroot) then
             count = count + 1     !  reliable loop count even for premature exit
           endif
@@ -613,6 +627,7 @@
 !
         call farray_clean_up()
         call sharedvars_clean_up()
+        if (lADI) deallocate(finit)
 !
       endprogram run
 
