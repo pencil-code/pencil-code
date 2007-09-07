@@ -1,4 +1,4 @@
-!$Id: temperature_TT.f90,v 1.5 2007-09-07 08:35:33 tgastine Exp $
+!$Id: temperature_TT.f90,v 1.6 2007-09-07 09:20:49 dintrans Exp $
 !  This module can replace the entropy module by using _T_ as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
 !  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
@@ -109,7 +109,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_TT.f90,v 1.5 2007-09-07 08:35:33 tgastine Exp $")
+           "$Id: temperature_TT.f90,v 1.6 2007-09-07 09:20:49 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -157,6 +157,7 @@ module Entropy
       endif
 !
       call select_eos_variable('TT',ilnTT)
+      pretend_TT=.true.
 !
 !  Check whether we want heat conduction
 !
