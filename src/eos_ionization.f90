@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.52 2007-08-23 02:13:47 wlyra Exp $
+! $Id: eos_ionization.f90,v 1.53 2007-09-07 17:44:45 dintrans Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -27,6 +27,7 @@ module EquationOfState
 
 ! integers specifying which independent variables to use in eoscalc
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
+  integer, parameter :: ilnrho_TT=9
 
   interface eoscalc              ! Overload subroutine eoscalc
     module procedure eoscalc_farray
@@ -114,7 +115,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.52 2007-08-23 02:13:47 wlyra Exp $")
+           "$Id: eos_ionization.f90,v 1.53 2007-09-07 17:44:45 dintrans Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
