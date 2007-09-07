@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.346 2007-09-05 14:47:49 dhruba Exp $
+### $Id: Makefile.src,v 1.347 2007-09-07 17:39:03 dintrans Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -309,8 +309,8 @@ LD_FFTW2=
 #FC=f95 -dusty #(davey[12])
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11)
 #CC=mpicc #(obelix)
-#FC=ifort -stand f90 #(Kolmogorov|shal|pcgastine)
-#FFLAGS=-O3 #(Kolmogorov|shal|pcgastine)
+#FC=ifort -stand f90 #(Kolmogorov|pcgastine)
+#FFLAGS=-O3 #(Kolmogorov|pcgastine)
 ##CC=gcc #(Kolmogorov|pcgastine)
 ##CFLAGS=-O3 -DFUNDERSC=1 #(Kolmogorov|pcgastine)
 #CFLAGS=-O3 -DFUNDERSC=2 #(Kepler)
@@ -348,14 +348,16 @@ LD_FFTW2=
 #FC=mpif90 #(damaskus|n00)
 #FC=mpif90 #(bender)
 ##
-## Boris on efigi (ifc 8.1.024, 04may07)
+## Boris' machines: efigi and shal
 ##
-#FC=ifort #(efigi)
-#FFLAGS=-I/home/dintrans/LIB/LAM/include -O3 -assume nounderscore #(efigi)
+#FC=ifort #(efigi|shal)
+#FFLAGS=-O0 -I/home/dintrans/LIB/LAM/include -assume nounderscore #(efigi)
 #CC=gcc #(efigi)
 #CFLAGS=-O3 -m32 #(efigi)
 #LD_MPI=-pthread -L/home/dintrans/LIB/LAM/lib -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(efigi)
 #LIBMPISUFFIX=_#(efigi)
+#FFLAGS=-O0 -I/usr/include/lam #(shal)
+#LD_MPI=-L/usr/lib/lam -pthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(shal)
 ##
 ## Axel on Lucidor, h05n35 (ifc 8.1)
 ##

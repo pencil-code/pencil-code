@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.38 2007-08-23 02:13:47 wlyra Exp $
+! $Id: eos_fixed_ionization.f90,v 1.39 2007-09-07 17:39:03 dintrans Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -40,6 +40,7 @@ module EquationOfState
 ! integers specifying which independent variables to use in eoscalc
 ! (only relevant in ionization.f90)
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
+  integer, parameter :: ilnrho_TT=9
 
   ! Constants use in calculation of thermodynamic quantities
   real :: lnTTss,lnTTlnrho,lnTT0
@@ -104,7 +105,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.38 2007-08-23 02:13:47 wlyra Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.39 2007-09-07 17:39:03 dintrans Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
