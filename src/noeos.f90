@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.38 2007-08-23 02:13:47 wlyra Exp $
+! $Id: noeos.f90,v 1.39 2007-09-07 17:22:13 dintrans Exp $
 
 !  Dummy routine for ideal gas
 
@@ -37,6 +37,7 @@ module EquationOfState
 
 ! integers specifying which independent variables to use in eoscalc
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
+  integer, parameter :: ilnrho_TT=9
 
   ! secondary parameters calculated in initialize
 
@@ -80,7 +81,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.38 2007-08-23 02:13:47 wlyra Exp $')
+           '$Id: noeos.f90,v 1.39 2007-09-07 17:22:13 dintrans Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
