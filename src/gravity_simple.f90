@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.42 2007-08-21 20:08:41 wlyra Exp $
+! $Id: gravity_simple.f90,v 1.43 2007-09-08 17:21:57 wlyra Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -110,7 +110,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.42 2007-08-21 20:08:41 wlyra Exp $")
+           "$Id: gravity_simple.f90,v 1.43 2007-09-08 17:21:57 wlyra Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.
@@ -615,6 +615,18 @@ module Gravity
       if (NO_WARN) gr=0.
 !
     endsubroutine acceleration_penc_1D
+!***********************************************************************
+    subroutine centrifugal_balance(f)
+!
+! dummy
+!
+! 08-sep-07/wlad
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      if (NO_WARN) print*,f
+!
+    endsubroutine centrifugal_balance
 !***********************************************************************
     subroutine read_gravity_init_pars(unit,iostat)
 !
