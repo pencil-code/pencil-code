@@ -106,7 +106,7 @@ done
 cd ${PENCIL_HOME}
 
 EXTRA_ARGS="$EXTRA_ARGS $@"
-UPDATE_PATHS="src bin lib idl"
+UPDATE_PATHS="src bin lib idl license"
 UPDATE_PATHS_NONEWDIR=""
 
 # Conditionally add some other directories to the full update 
