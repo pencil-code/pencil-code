@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.389 2007-09-07 18:24:27 wlyra Exp $
+! $Id: hydro.f90,v 1.390 2007-09-08 17:21:35 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -309,7 +309,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.389 2007-09-07 18:24:27 wlyra Exp $")
+           "$Id: hydro.f90,v 1.390 2007-09-08 17:21:35 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -473,7 +473,7 @@ module Hydro
       use Cdata
       use EquationOfState, only: cs20, gamma, beta_glnrho_scaled
       use General
-      use Gravity, only: grav_const,z1
+      use Gravity, only: grav_const,z1,centrifugal_balance
       use Initcond
       use Mpicomm, only: stop_it
       use Sub
@@ -518,8 +518,7 @@ module Hydro
         case('tor_pert'); call tor_pert(ampluu(j),f,iux,xx,yy,zz)
         case('diffrot'); call diffrot(ampluu(j),f,iuy,xx,yy,zz)
         case('global-shear'); call global_shear(f)
-        case('dark-matter'); call dark_matter_halo(f)
-        case('light-matter'); call light_matter(f)
+        case('centrifugal-balance'); call centrifugal_balance(f)
         case('olddiffrot'); call olddiffrot(ampluu(j),f,iuy,xx,yy,zz)
         case('sinwave-phase')
           call sinwave_phase(f,iux,ampl_ux,kx_uu,ky_uu,kz_uu,phase_ux)

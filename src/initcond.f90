@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.224 2007-09-07 18:24:27 wlyra Exp $
+! $Id: initcond.f90,v 1.225 2007-09-08 17:21:35 wlyra Exp $
 
 module Initcond
 
@@ -40,8 +40,7 @@ module Initcond
   public :: vfield2
   public :: hawley_etal99a
   public :: robertsflow
-  public :: global_shear,dark_matter_halo,light_matter
-  public :: set_thermodynamical_quantities
+  public :: global_shear,set_thermodynamical_quantities
   public :: const_lou
   public :: corona_init,mdi_init
 
@@ -2832,28 +2831,15 @@ module Initcond
 ! 24-feb-05/wlad: coded
 !  4-jul-07/wlad: generalized for any shear
 !
-      use Gravity, only:g0,qgshear,r0_pot,n_pot,acceleration
-      use Particles_nbody, only: get_totalmass
-      use Sub, only: get_radial_distance,power_law
       use Cdata
-!
+      use Mpicomm        , only: stop_it
+      use Sub            , only: get_radial_distance,power_law
+      use Particles_nbody, only: get_totalmass
+      use Gravity        , only: qgshear
+
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: rr_cyl,rr_sph,OO,g_r
+      real, dimension(mx) :: rr_cyl,rr_sph,OO
       real :: g0_
-!
-      if (lroot) &
-           print*,'global_shear: initializing velocity field',&
-           ' with angular velocity profile falling',&
-           ' as 1/r^(',qgshear,')' 
-!
-      if (lgravr) g0_=g0
-!
-      if ((rsmooth.ne.0.).or.(r0_pot.ne.0)) then 
-        if (rsmooth.ne.r0_pot) &
-             call stop_it("rsmooth and r0_pot must be equal")
-        if (n_pot/=2) &
-             call stop_it("don't you dare using less smoothing than n_pot=2")
-      endif
 !
       do m=1,my
         do n=1,mz
@@ -2863,13 +2849,9 @@ module Initcond
           if (lparticles_nbody) then
             call get_totalmass(g0_)
             call power_law(sqrt(g0_),rr_cyl,qgshear,OO)
-          elseif (lgravr) then
-            call acceleration(g_r)
-            if (any(g_r .gt. 0.)) then
-              call stop_it("global_shear: gravity is directed outwards")
-            else
-              OO=sqrt(-g_r/max(rr_cyl,tini))
-            endif
+          else
+            call stop_it("global_shear: if you are using gravity_r.f90"//&
+                 " the centrifugal balance is established internally to it")
           endif
 !
           if (lcartesian_coords) then
@@ -2886,105 +2868,6 @@ module Initcond
       enddo
 !
     endsubroutine global_shear
-!*************************************************************
-    subroutine dark_matter_halo(f)
-!
-! Velocity profile due to the gravity of a dark matter halo of
-! the type used in gravity_r for 
-!
-      use Cdata
-      use Gravity, only:g0,acceleration
-      use Mpicomm, only:stop_it
-      use Sub,     only:get_radial_distance
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: gr,rr_mn,rr_cyl,rr_sph,OO
-      real :: g0_
-!
-      character (len=labellen), dimension(ninit) :: ipot
-      logical, dimension(ninit) :: lnodark
-      integer :: j
-!
-      if (lroot) &
-           print*,'dark_matter: initializing velocity field',&
-           ' with angular velocity due to a dark matter halo of ',&
-           ' radial core=',r_ref
-!
-      do m=m1,m2
-        do n=n1,n2
-!
-          call get_radial_distance(rr_sph,rr_cyl)
-!
-! centrifugal balance with gravity
-!
-          call acceleration(gr)
-          OO=sqrt(-gr/rr_cyl)
-
-          !vinf=sqrt(4*pi*G*rho0*Rc**2) ; g0_=vinf**2
-!
-          if (lcartesian_coords) then
-            f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*OO
-            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*OO
-            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
-          elseif (lcylindrical_coords) then
-            f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
-            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + OO*rr_cyl
-            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
-          endif
-!      
-        enddo
-      enddo
-!
-    endsubroutine dark_matter_halo
-!*************************************************************
-    subroutine light_matter(f)
-!
-! Velocity profile due to the gravity of a dark matter halo of
-! the type used in gravity_r for 
-!
-      use Cdata
-      use Gravity, only:acceleration
-      use Mpicomm, only:stop_it
-      use Sub,     only:get_radial_distance
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: gr,rr_mn,rr_cyl,rr_sph,OO
-!
-      character (len=labellen), dimension(ninit) :: ipot
-      logical, dimension(ninit) :: lnodark
-      integer :: j
-!
-      if (lroot) &
-           print*,'dark_matter: initializing velocity field',&
-           ' with angular velocity due to a dark matter halo of ',&
-           ' radial core=',r_ref
-!
-      do m=m1,m2
-        do n=n1,n2
-!
-          call get_radial_distance(rr_sph,rr_cyl)
-!
-! centrifugal balance with gravity
-!
-          call acceleration(gr)
-          OO=sqrt(-gr/rr_cyl)
-
-          !vinf=sqrt(4*pi*G*rho0*Rc**2) ; g0_=vinf**2
-!
-          if (lcartesian_coords) then
-            f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*OO
-            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*OO
-            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
-          elseif (lcylindrical_coords) then
-            f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
-            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + OO*rr_cyl
-            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
-          endif
-!      
-        enddo
-      enddo
-!
-    endsubroutine light_matter
 !*************************************************************
     subroutine set_thermodynamical_quantities&
          (f,iglobal_cs2,iglobal_glnTT,ptlaw)

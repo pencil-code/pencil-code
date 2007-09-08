@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.29 2007-09-08 11:08:25 wlyra Exp $
+! $Id: gravity_r.f90,v 1.30 2007-09-08 17:21:35 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -85,7 +85,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.29 2007-09-08 11:08:25 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.30 2007-09-08 17:21:35 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -265,9 +265,9 @@ module Gravity
                   elseif (ipotential(j) .eq. 'no-smooth') then
                     g_r=-g0/rr_mn**2
                   elseif (ipotential(j) .eq. 'varying-q') then
-                    g_r=-g0/rr_mn**(2*qgshear-1) 
+                    g_r=-g0/rr_mn**(2*qgshear-1)
                   elseif (ipotential(j) .eq. 'varying-q-smooth') then
-                    g_r=-g0*rr_mn/(rr_mn**2+r0_pot**2)**qgshear  
+                    g_r=-g0*rr_mn/(rr_mn**2+r0_pot**2)**qgshear
                   elseif (ipotential(j) .eq. 'dark-matter-halo') then
                     g_r=-g01(j)*(1-rpot(j)/rr_mn*atan2(rr_mn,rpot(j)))/rr_mn
                   elseif (ipotential(j) .eq. 'light-matter') then
@@ -705,6 +705,65 @@ module Gravity
       endif
 !
     endsubroutine get_gravity_field
+!***********************************************************************
+    subroutine centrifugal_balance(f)
+!
+! This subroutine is a general routine that takes
+! the gravity acceleration and adds the centrifugal force
+! that numerically balances it.
+!
+! Pressure corrections to ensure centrifugal equilibrium are
+! added in the respective modules
+!
+! 24-feb-05/wlad: coded
+! 04-jul-07/wlad: generalized for any shear
+! 08-sep-07/wlad: moved here from initcond
+!
+      use Cdata
+      use Sub,     only: get_radial_distance
+      use Mpicomm, only: stop_it
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx) :: rr_cyl,rr_sph,OO,g_r
+!
+      if (lroot) &
+           print*,'centrifugal_balance: initializing velocity field'
+!
+     if ((rsmooth.ne.0.).or.(r0_pot.ne.0)) then
+       if (rsmooth.ne.r0_pot) &
+            call stop_it("rsmooth and r0_pot must be equal")
+       if (n_pot/=2) &
+            call stop_it("don't you dare using less smoothing than n_pot=2")
+     endif
+!
+      do m=1,my
+        do n=1,mz
+!
+          call get_radial_distance(rr_sph,rr_cyl)
+          call acceleration(g_r)
+          if (any(g_r .gt. 0.)) then
+            call stop_it("centrifugal_balance: gravity is directed outwards")
+          else
+            OO=sqrt(-g_r/max(rr_cyl,tini))
+          endif
+!
+          if (coord_system=='cartesian') then
+            f(:,m,n,iux) = f(:,m,n,iux) - y(m)*OO
+            f(:,m,n,iuy) = f(:,m,n,iuy) + x   *OO
+            f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
+          elseif (coord_system=='cylindric') then
+            f(:,m,n,iux) = f(:,m,n,iux) + 0.
+            f(:,m,n,iuy) = f(:,m,n,iuy) + OO*rr_cyl
+            f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
+          else
+            call stop_it("centrifugal_balance: not "//&
+                 "implemented for spherical polars")
+          endif
+!
+        enddo
+      enddo
+!
+    endsubroutine centrifugal_balance
 !***********************************************************************
     subroutine rprint_gravity(lreset,lwrite)
 !
