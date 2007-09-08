@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.390 2007-09-08 17:21:35 wlyra Exp $
+! $Id: hydro.f90,v 1.391 2007-09-08 17:35:47 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -309,7 +309,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.390 2007-09-08 17:21:35 wlyra Exp $")
+           "$Id: hydro.f90,v 1.391 2007-09-08 17:35:47 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -473,7 +473,7 @@ module Hydro
       use Cdata
       use EquationOfState, only: cs20, gamma, beta_glnrho_scaled
       use General
-      use Gravity, only: grav_const,z1,centrifugal_balance
+      use Gravity, only: grav_const,z1
       use Initcond
       use Mpicomm, only: stop_it
       use Sub
@@ -1552,7 +1552,7 @@ use Mpicomm, only: stop_it
 !***********************************************************************
     subroutine set_border_hydro(f,df,p)
 !
-!  Calculates the driving term for the border5B profile
+!  Calculates the driving term for the border profile
 !  of the uu variable.
 !
 !  28-jul-06/wlad: coded
@@ -1674,6 +1674,66 @@ use Mpicomm, only: stop_it
       endif
 !
     endsubroutine set_border_hydro
+!***********************************************************************
+    subroutine centrifugal_balance(f)
+!
+! This subroutine is a general routine that takes
+! the gravity acceleration and adds the centrifugal force
+! that numerically balances it.
+!
+! Pressure corrections to ensure centrifugal equilibrium are
+! added in the respective modules
+!
+! 24-feb-05/wlad: coded
+! 04-jul-07/wlad: generalized for any shear
+! 08-sep-07/wlad: moved here from initcond
+!
+      use Cdata
+      use Gravity, only: r0_pot,n_pot,acceleration
+      use Sub,     only: get_radial_distance
+      use Mpicomm, only: stop_it
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx) :: rr_cyl,rr_sph,OO,g_r
+!
+      if (lroot) &
+           print*,'centrifugal_balance: initializing velocity field'
+!
+     if ((rsmooth.ne.0.).or.(r0_pot.ne.0)) then
+       if (rsmooth.ne.r0_pot) &
+            call stop_it("rsmooth and r0_pot must be equal")
+       if (n_pot/=2) &
+            call stop_it("don't you dare using less smoothing than n_pot=2")
+     endif
+!
+     do m=1,my
+        do n=1,mz
+!
+          call get_radial_distance(rr_sph,rr_cyl)
+          call acceleration(g_r)
+          if (any(g_r .gt. 0.)) then
+            call stop_it("centrifugal_balance: gravity is directed outwards")
+          else
+            OO=sqrt(-g_r/max(rr_cyl,tini))
+          endif
+!
+          if (coord_system=='cartesian') then
+            f(:,m,n,iux) = f(:,m,n,iux) - y(m)*OO
+            f(:,m,n,iuy) = f(:,m,n,iuy) + x   *OO
+            f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
+          elseif (coord_system=='cylindric') then
+            f(:,m,n,iux) = f(:,m,n,iux) + 0.
+            f(:,m,n,iuy) = f(:,m,n,iuy) + OO*rr_cyl
+            f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
+          else
+            call stop_it("centrifugal_balance: not "//&
+                 "implemented for spherical polars")
+          endif
+!
+        enddo
+      enddo
+!
+    endsubroutine centrifugal_balance
 !***********************************************************************
     subroutine calc_othresh()
 !

@@ -1,4 +1,4 @@
-! $Id: nogravity.f90,v 1.11 2007-09-08 17:21:57 wlyra Exp $
+! $Id: nogravity.f90,v 1.12 2007-09-08 17:35:47 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -73,7 +73,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nogravity.f90,v 1.11 2007-09-08 17:21:57 wlyra Exp $")
+           "$Id: nogravity.f90,v 1.12 2007-09-08 17:35:47 wlyra Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -304,18 +304,6 @@ module Gravity
       if (NO_WARN) gr=0.
 !
     endsubroutine acceleration_penc_1D
-!***********************************************************************
-    subroutine centrifugal_balance(f)
-!
-! dummy
-! 
-! 08-sep-07/wlad
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      if (NO_WARN) print*,f  !(keep compiler quiet)
-!
-    endsubroutine centrifugal_balance
 !***********************************************************************
     subroutine rprint_gravity(lreset,lwrite)
 !
