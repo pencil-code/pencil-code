@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.23 2007-09-08 13:45:10 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.24 2007-09-08 15:34:17 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -117,7 +117,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.23 2007-09-08 13:45:10 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.24 2007-09-08 15:34:17 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -474,10 +474,11 @@ module Entropy
 !**********************************************************************
     subroutine dss_dt(f,df,p)
 !
-!  calculate right hand side of entropy equation
+!  calculate right hand side of temperature equation
 !  heat condution is currently disabled until old stuff,
 !  which in now in calc_heatcond, has been reinstalled.
-!  DlnTT/Dt = -gamma1*divu + gamma*cp1*rho1*TT1*RHS
+!  lnTT version: DlnTT/Dt = -gamma1*divu + gamma*cp1*rho1*TT1*RHS
+!    TT version:   DTT/Dt = -gamma1*TT*divu + gamma*cp1*rho1*RHS
 !
 !  13-dec-02/axel+tobi: adapted from entropy
 !
@@ -966,7 +967,7 @@ module Entropy
 !***********************************************************************
     subroutine single_polytrope(f)
 !
-! 04-aug-2007/dintrans: a simple polytrope with index mpoly0
+! 04-aug-2007/dintrans: a single polytrope with index mpoly0
 !
       use Cdata
       use Gravity, only: gravz
@@ -1003,34 +1004,44 @@ module Entropy
     endsubroutine single_polytrope
 !***********************************************************************
     subroutine calc_heatcond_ADI(finit,f)
-       
+!
+!  08-Sep-07/gastine+dintrans: coded
+!  2-D ADI scheme for the radiative diffusion term (see e.g. 
+!  Peaceman & Rachford 1955). Each direction are solved implicitly:
+!
+!    (1-dt/2*Lambda_x)*T^(n+1/2) = (1+dt/2*Lambda_y)*T^n
+!    (1-dt/2*Lambda_y)*T^(n+1)   = (1+dt/2*Lambda_x)*T^(n+1/2)
+!
+!  where Lambda_x and Lambda_y denote diffusion operators.
+!
       use Cdata
       use Cparam
-      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top
+      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, get_cp1
 
       implicit none
 
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit,f
-      real, dimension(mx,mz) :: finter,source,rho_g
-      real, dimension(nx)    :: a,b,c
+      real, dimension(mx,mz) :: finter,source
+      real, dimension(nx)    :: a,b,c,wx
       real, dimension(nz)    :: rhs,work
-      real    :: alpha, aalpha, bbeta
+      real    :: alpha, aalpha, bbeta, cp1, dx_2, dz_2
 !
       source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
-      rho_g=exp(f(:,4,:,ilnrho))/gamma
+      call get_cp1(cp1)
+      dx_2=1./dx**2
+      dz_2=1./dz**2
 !
-!  lignes en implicite
+!  row dealt implicitly
 !
       do j=n1,n2
-        a=-hcond0*dt/(2.*rho_g(l1:l2,j)*dx**2)
+        wx=dt*gamma*hcond0*cp1/exp(f(l1:l2,4,j,ilnrho))
+        a=-wx*dx_2/2.
+        b=1.+wx*dx_2
+        c=a
 !
-        b=1.+hcond0*dt/(rho_g(l1:l2,j)*dx**2)
-!
-        c=-hcond0*dt/(2.*rho_g(l1:l2,j)*dx**2) 
-!
-        rhs=finit(l1:l2,4,j,ilnTT)+hcond0*dt/(2.*rho_g(l1:l2,j)*dz**2) &
-            *(finit(l1:l2,4,j+1,ilnTT)-2.*finit(l1:l2,4,j,ilnTT)+ &
+        rhs=finit(l1:l2,4,j,ilnTT)+wx*dz_2/2.*                    &
+            (finit(l1:l2,4,j+1,ilnTT)-2.*finit(l1:l2,4,j,ilnTT)+  &
             finit(l1:l2,4,j-1,ilnTT))+dt/2.*source(l1:l2,j)
 !
         aalpha=c(nx)
@@ -1043,18 +1054,17 @@ module Entropy
 !
       call BC_CT(finter)
 !
-!  colonnes en implicite
+!  columns dealt implicitly
 !
       do i=l1,l2
-        a=-hcond0*dt/(2.*rho_g(i,n1:n2)*dz**2)
+        wx=dt*gamma*hcond0*cp1/exp(f(i,4,n1:n2,ilnrho))
+        a=-wx*dz_2/2.
+        b=1.+wx*dz_2
+        c=a
 !
-        b=1.+hcond0*dt/(rho_g(i,n1:n2)*dz**2)
-!
-        c=-hcond0*dt/(2.*rho_g(i,n1:n2)*dz**2)
-!
-        rhs=finter(i,n1:n2)+hcond0*dt/(2.*rho_g(i,n1:n2)*dx**2) &
-           *(finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2)) &
-           +dt/2.*source(i,n1:n2)
+        rhs=finter(i,n1:n2)+wx*dx_2/2.*                              &
+           (finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2))  &
+           +dt*source(i,n1:n2)/2.
 !
         c(nz)=0.
         a(1)=0.
