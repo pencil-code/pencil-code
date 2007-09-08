@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.249 2007-09-07 13:19:28 dintrans Exp $
+! $Id: run.f90,v 1.250 2007-09-08 13:45:10 dintrans Exp $
 !
 !***********************************************************************
       program run
@@ -41,7 +41,7 @@
         use Particles_main
         use FArrayManager,   only: farray_clean_up
         use SharedVariables, only: sharedvars_clean_up
-        use Entropy,         only: ADI_constK
+        use Entropy,         only: calc_heatcond_ADI
 !
         implicit none
 !
@@ -72,7 +72,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.249 2007-09-07 13:19:28 dintrans Exp $")
+             "$Id: run.f90,v 1.250 2007-09-08 13:45:10 dintrans Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -462,7 +462,7 @@
 ! 07-Sep-07/dintrans+gastine: implicit advance of the radiative diffusion
 ! in the temperature equation (using temperature_idealgas)
 !
-          if (lADI) call ADI_constK(finit,f)
+          if (lADI) call calc_heatcond_ADI(finit,f)
 !
           if (lroot) then
             count = count + 1     !  reliable loop count even for premature exit

@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.22 2007-09-07 16:02:19 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.23 2007-09-08 13:45:10 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -33,7 +33,7 @@ module Entropy
 
   implicit none
 
-  public :: ADI_constK, ADI_Kprof
+  public :: calc_heatcond_ADI
 
   include 'entropy.h'
 
@@ -117,7 +117,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.22 2007-09-07 16:02:19 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.23 2007-09-08 13:45:10 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1002,7 +1002,7 @@ module Entropy
 !
     endsubroutine single_polytrope
 !***********************************************************************
-    subroutine ADI_constK(finit,f)
+    subroutine calc_heatcond_ADI(finit,f)
        
       use Cdata
       use Cparam
@@ -1070,7 +1070,7 @@ module Entropy
 !
       call BC_CT(f(:,4,:,ilnTT))
 !
-    end subroutine ADI_constK
+    end subroutine calc_heatcond_ADI
 !**************************************************************
     subroutine ADI_Kprof(finit,f)
        

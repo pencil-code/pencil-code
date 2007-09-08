@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.31 2007-09-07 17:27:56 dintrans Exp $
+! $Id: temperature_ionization.f90,v 1.32 2007-09-08 13:45:10 dintrans Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -25,7 +25,7 @@ module Entropy
 
   implicit none
 
-  public :: ADI_constK
+  public :: calc_heatcond_ADI
 
   include 'entropy.h'
 
@@ -91,7 +91,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.31 2007-09-07 17:27:56 dintrans Exp $")
+           "$Id: temperature_ionization.f90,v 1.32 2007-09-08 13:45:10 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -642,7 +642,7 @@ module Entropy
 !
     endsubroutine rprint_entropy
 !***********************************************************************
-    subroutine ADI_constK(finit,f)
+    subroutine calc_heatcond_ADI(finit,f)
 
       use Cparam
 
@@ -650,6 +650,6 @@ module Entropy
 
       real, dimension(mx,my,mz,mfarray) :: finit,f
 
-    end subroutine ADI_constK
+    end subroutine calc_heatcond_ADI
 !**************************************************************
 endmodule Entropy

@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.100 2007-09-07 13:19:28 dintrans Exp $
+! $Id: noentropy.f90,v 1.101 2007-09-08 13:45:10 dintrans Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -23,7 +23,7 @@ module Entropy
 
   implicit none
 
-  public :: ADI_constK
+  public :: calc_heatcond_ADI
 
   include 'entropy.h'
 
@@ -63,7 +63,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.100 2007-09-07 13:19:28 dintrans Exp $")
+           "$Id: noentropy.f90,v 1.101 2007-09-08 13:45:10 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -376,7 +376,7 @@ module Entropy
 !
     endsubroutine gradloghcond
 !***********************************************************************
-    subroutine ADI_constK(finit,f)
+    subroutine calc_heatcond_ADI(finit,f)
 
       use Cparam
 
@@ -384,6 +384,6 @@ module Entropy
 
       real, dimension(mx,my,mz,mfarray) :: finit,f
 
-    end subroutine ADI_constK
+    end subroutine calc_heatcond_ADI
 !**************************************************************
 endmodule Entropy
