@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.521 2007-09-07 17:27:56 dintrans Exp $
+! $Id: entropy.f90,v 1.522 2007-09-08 11:57:23 bingert Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -208,7 +208,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.521 2007-09-07 17:27:56 dintrans Exp $")
+           "$Id: entropy.f90,v 1.522 2007-09-08 11:57:23 bingert Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -2175,7 +2175,7 @@ module Entropy
 !  check maximum diffusion from thermal diffusion
 !
       if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,chi_hyper3*dxyz_4)
+        diffus_chi=max(diffus_chi,chi_hyper3*dxyz_6)
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
