@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.28 2007-09-07 18:24:27 wlyra Exp $
+! $Id: gravity_r.f90,v 1.29 2007-09-08 11:08:25 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -11,11 +11,9 @@
 !***************************************************************
 
 module Gravity
-
 !
 !  Radial gravity
 !
-
   use Cparam
   use Messages
 
@@ -37,6 +35,7 @@ module Gravity
   ! coefficients for potential
   real, dimension(nx) :: gravx_pencil=0.,gravy_pencil=0.,gravz_pencil=0.
   real, dimension (5,ninit) :: cpot=0. !=(/ 0., 0., 0., 0., 0. /)
+  real, dimension(ninit) :: g01=0.,rpot=0.
   real :: nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.,reduced_top=1.
@@ -57,10 +56,10 @@ module Gravity
   integer :: iglobal_gg=0
 
   namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-       qgshear,lgravity_gas
+       qgshear,lgravity_gas,g01,rpot
 
   namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-       qgshear,lgravity_gas
+       qgshear,lgravity_gas,g01,rpot
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
@@ -86,7 +85,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.28 2007-09-07 18:24:27 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.29 2007-09-08 11:08:25 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -117,9 +116,6 @@ module Gravity
       logical, save :: first=.true.
       logical       :: lpade=.true. ! set to false for 1/r potential
       integer       :: j
-
-      real :: ropt,gmlm,kconst
-      real, dimension(nx) :: xd,func
 
       !ajwm - should this be done on RELOAD too??
       if (first) then
@@ -273,14 +269,13 @@ module Gravity
                   elseif (ipotential(j) .eq. 'varying-q-smooth') then
                     g_r=-g0*rr_mn/(rr_mn**2+r0_pot**2)**qgshear  
                   elseif (ipotential(j) .eq. 'dark-matter-halo') then
-                    g_r=-g0*(1-r_ref/rr_mn*atan2(rr_mn,r_ref))/rr_mn
+                    g_r=-g01(j)*(1-rpot(j)/rr_mn*atan2(rr_mn,rpot(j)))/rr_mn
                   elseif (ipotential(j) .eq. 'light-matter') then
-                    ropt=15.
-                    gmlm=20*g0!/20.
-                    kconst = 1.1*1.97*gmlm/ropt
-                    xd = rr_mn/ropt
-                    func = xd**1.22/(xd**2+0.78**2)**1.43
-                    g_r=-kconst/rr_mn * func
+                    !approximation of bessel functions.
+                    !valid in the interval 0.04<r/rpot<2
+                    !reference - Freeman 1970
+                    g_r=-2.167*g01(j)*rr_mn**(0.22)*rpot(j)**(-2.22)/&
+                         ((rr_mn/rpot(j))**2+0.78**2)**1.43
                   else
 !
 !  smoothed 1/r potential in a spherical shell
@@ -632,11 +627,6 @@ module Gravity
       real, dimension(size(g_r)) :: rr_mn,rr_sph,rr_cyl
       integer :: j
 !
-      
-      real :: ropt,gmlm,kconst
-      real, dimension(size(g_r)) :: xd,func
-
-!
       call get_radial_distance(rr_sph,rr_cyl)
       if (lcylindrical_gravity) then
         rr_mn=rr_cyl
@@ -661,16 +651,11 @@ module Gravity
           g_r=g_r -g0*rr_mn/(rr_mn**2+r0_pot**2)**qgshear  
 !
         case ('dark-matter-halo')
-          g_r=g_r -g0*(1-r_ref/rr_mn*atan2(rr_mn,r_ref))/rr_mn
+          g_r=g_r -g01(j)*(1-rpot(j)/rr_mn*atan2(rr_mn,rpot(j)))/rr_mn
 !
         case ('light-matter')
-          ropt=15.
-          gmlm=20*g0!/20.
-          kconst = 1.1*1.97*gmlm/ropt
-          xd = rr_mn/15.
-          func = xd**1.22/(xd**2+0.78**2)**1.43
-!
-          g_r=g_r - kconst/rr_mn * func
+          g_r=g_r-2.167*g01(j)*rr_mn**(0.22)*rpot(j)**(-2.22)/&
+               ((rr_mn/rpot(j))**2+0.78**2)**1.43
 !
         case ('zero')
           g_r=g_r
