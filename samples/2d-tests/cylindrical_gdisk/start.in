@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.2 2007-08-20 01:02:11 wlyra Exp $',
+  cvsid='$Id: start.in,v 1.3 2007-09-08 17:23:24 wlyra Exp $',
   ip=10,                        ! debugging parameter
   xyz0  =  0.2,-3.1415,-0.26,       ! first corner of box
   xyz1  =  2.7, 3.1415, 0.26,       ! second corner of box
@@ -24,7 +24,7 @@
   gamma= 1.
 /
 &hydro_init_pars
-  inituu='global-shear'
+  inituu='centrifugal-balance'
 /
 &density_init_pars
   initlnrho='local-isothermal'
