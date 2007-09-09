@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.55 2007-08-30 09:01:09 wlyra Exp $
+! $Id: deriv.f90,v 1.56 2007-09-09 08:18:22 bingert Exp $
 
 module Deriv
 
@@ -460,7 +460,7 @@ module Deriv
           if (igndx) then
             fac=(1.0/6)
           else
-            fac=(1.0/6)*1/dz*4
+            fac=(1.0/6)*1/dz**4
           endif
           df=fac*(+ 56.0* f(l1:l2,m,n  ,k) &
                   - 39.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
