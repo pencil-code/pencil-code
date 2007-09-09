@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.341 2007-09-02 20:13:14 wlyra Exp $
+! $Id: sub.f90,v 1.342 2007-09-09 11:43:34 brandenb Exp $
 
 module Sub
 
@@ -2923,6 +2923,7 @@ module Sub
 !
 !  21-feb-07/axel+dhruba: added spherical coordinates
 !  12-mar-07/wlad: added cylindrical coordinates
+!
       use Cdata
 !
       intent(in) :: f,k,gradf,uu,upwind
@@ -3024,11 +3025,12 @@ module Sub
 !***********************************************************************
     subroutine u_dot_grad_scl(f,k,gradf,uu,ugradf,upwind)
 !
-! 28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
-! 29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates. 
 !  Do advection-type term u.grad f_k.
 !  Assumes gradf to be known, but takes f and k as arguments to be able
 !  to calculate upwind correction
+!
+! 28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
+! 29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates. 
 !
       use Cdata
       use Deriv
@@ -3047,23 +3049,32 @@ module Sub
 !  upwind correction (currently just for z-direction)
 !
       if (present(upwind)) then; if (upwind) then
+!
+!  x-direction
+!
         call der6(f,k,del6f,1,UPWIND=.true.)
-        ugradf = ugradf - abs(uu(:,1))*del6f
+        ugradf=ugradf-abs(uu(:,1))*del6f
+!
+!  y-direction
+!
         call der6(f,k,del6f,2,UPWIND=.true.)
         if(lcartesian_coords) then
-           ugradf = ugradf - abs(uu(:,2))*del6f
+          ugradf=ugradf-abs(uu(:,2))*del6f
         else
-           if (lcylindrical_coords) &
-              ugradf = ugradf - rcyl_mn1*abs(uu(:,2))*del6f
-           if (lspherical_coords) &
-              ugradf = ugradf - r1_mn*abs(uu(:,2))*del6f
+          if(lcylindrical_coords) &
+             ugradf=ugradf-rcyl_mn1*abs(uu(:,2))*del6f
+          if(lspherical_coords) &
+             ugradf=ugradf-r1_mn*abs(uu(:,2))*del6f
         endif
+!
+!  z-direction
+!
         call der6(f,k,del6f,3,UPWIND=.true.)
         if((lcartesian_coords).or.(lcylindrical_coords)) then
-           ugradf = ugradf - abs(uu(:,3))*del6f
+          ugradf=ugradf-abs(uu(:,3))*del6f
         else
-           if (lspherical_coords) &
-                ugradf = ugradf - r1_mn*sin1th(m)*abs(uu(:,2))*del6f
+          if(lspherical_coords) &
+             ugradf=ugradf-r1_mn*sin1th(m)*abs(uu(:,2))*del6f
         endif
         
       endif; endif

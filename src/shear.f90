@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.38 2007-03-09 14:04:16 pkapyla Exp $
+! $Id: shear.f90,v 1.39 2007-09-09 11:43:34 brandenb Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.38 2007-03-09 14:04:16 pkapyla Exp $")
+           "$Id: shear.f90,v 1.39 2007-09-09 11:43:34 brandenb Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -79,7 +79,7 @@ module Shear
 !***********************************************************************
     subroutine read_shear_init_pars(unit,iostat)
 !
-!
+!  read initial shear parameters
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -96,7 +96,7 @@ module Shear
 !***********************************************************************
     subroutine write_shear_init_pars(unit)
 !
-!
+!  write initial shear parameters
 !
       integer, intent(in) :: unit
 !
@@ -106,7 +106,7 @@ module Shear
 !***********************************************************************
     subroutine read_shear_run_pars(unit,iostat)
 !
-!
+!  read run shear parameters
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -122,6 +122,8 @@ module Shear
     endsubroutine read_shear_run_pars
 !***********************************************************************
     subroutine write_shear_run_pars(unit)
+!
+!  write run shear parameters
 !
       integer, intent(in) :: unit
 !
@@ -140,8 +142,6 @@ module Shear
 !
       use Cdata
       use Deriv
-!--   use Testfield, only:ntestfield
-      integer, parameter :: ntestfield=36
 !
       integer :: j,k
       real, dimension (mx,my,mz,mfarray) :: f
@@ -201,9 +201,10 @@ module Shear
       endif
 !
 !  Testfield stretching term
+!  Loop through all the dax/dt equations and add -S*ay contribution
 !
       if (ltestfield) then
-        do j=iaatest,iaatest+ntestfield-1,3
+        do j=iaatest,iaatest+3*njtest-1,3
           df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-Sshear*f(l1:l2,m,n,j+1)
         enddo
       endif

@@ -1,4 +1,4 @@
-! $Id: messages.f90,v 1.14 2007-08-22 11:52:58 brandenb Exp $
+! $Id: messages.f90,v 1.15 2007-09-09 11:43:34 brandenb Exp $
 !
 !  This module takes care of messages.
 !
@@ -105,7 +105,7 @@ module Messages
         call terminal_highlight_fatal_error()
         write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
         call terminal_defaultcolor()
-        write (*,*) trim(location) // ":" // trim(message)
+        write (*,*) trim(location) // ": " // trim(message)
 !
         if (ldie_onfatalerror) call die_gracefully
 !
@@ -129,7 +129,7 @@ module Messages
         call terminal_highlight_fatal_error()
         write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
         call terminal_defaultcolor()
-        write (*,*) trim(location) // ":" // trim(message)
+        write (*,*) trim(location) // ": " // trim(message)
 !
       endif
 !
@@ -147,7 +147,7 @@ module Messages
 !
         if (fatal_errors_total/=0) then
           if (lroot) then
-            print*, 'DYING - there was ', fatal_errors_total, ' errors.'
+            print*, 'DYING - there were', fatal_errors_total, 'errors.'
             print*, 'This is probably due to one or more fatal errors that'
             print*, 'have occurred only on a single processor.'
           endif
@@ -172,7 +172,7 @@ module Messages
         call terminal_highlight_error()
         write (*,'(A7)',ADVANCE='NO') "ERROR: "
         call terminal_defaultcolor()
-        write (*,*) trim(location) // ":" // trim(message)
+        write (*,*) trim(location) // ": " // trim(message)
 !
         if (ldie_onerror) call die_gracefully
 !
@@ -238,7 +238,7 @@ module Messages
 !
 !  rcs file name
 !
-      ir0 = index(cvsid, ":") + 2
+      ir0 = index(cvsid, ": ") + 2
       ir1 = ir0 + index(cvsid(ir0+1:), ",") - 1
       rcsfile = cvsid(ir0:ir1)
 !
