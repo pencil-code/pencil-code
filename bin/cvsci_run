@@ -1,5 +1,5 @@
 #!/bin/csh 
-#$Id: cvsci_run,v 1.19 2006-03-28 16:19:51 tarek Exp $
+#$Id: cvsci_run,v 1.20 2007-09-09 12:05:35 brandenb Exp $
 #
 #  This script adds a new run to the repository
 #  and checks in all *.in files as well as material
@@ -27,17 +27,24 @@ cd $dir
 #
 #  add directories and files to cvs
 #
-cvs add *.in k.dat data
+cvs add *.in k.dat data parameters.pro
 #
 cd data
 cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml
 #
 #  add power spectra, if they exist
-#  (for the time being, test existence only on a few)
+#  (for the time being, test existence only on a few such files)
 #
 \ls | egrep 'power.*\.dat' >/dev/null
 if ( ! $status ) then
   cvs add power*.dat
+endif
+#
+#  add testfield_info.dat file if it exists
+#
+\ls | egrep 'testfield_info\.dat' >/dev/null
+if ( ! $status ) then
+  cvs add testfield_info.dat
 endif
 #
 #  add info about directory history
