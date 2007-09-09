@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.4 2007-09-07 18:11:36 brandenb Exp $
+! $Id: testfield_z.f90,v 1.5 2007-09-09 07:41:56 reza Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -132,7 +132,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.4 2007-09-07 18:11:36 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.5 2007-09-09 07:41:56 reza Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -181,7 +181,6 @@ module Testfield
 !  After a reload, we need to rewrite index.pro, but the auxiliary
 !  arrays are already allocated and must not be allocated again.
 !
-print*,'njtest=',njtest
       if (luxb_as_aux) then
         if (iuxb==0) then
           call farray_register_auxiliary('uxb',iuxb,vector=3*njtest)
@@ -499,12 +498,12 @@ print*,'njtest=',njtest
       use Cdata
       use Sub
       use Hydro, only: calc_pencils_hydro
-      use Mpicomm !, only: mpireduce_sum, mpibcast_real
+      use Mpicomm, only: mpireduce_sum, mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (nz,nprocz,3,njtest) :: uxbtestm1,uxbtestm2
-      real, dimension (nz*nprocz*3*njtest) :: uxbtestm3
+      real, dimension (nz,nprocz,3,njtest) :: uxbtestm1
+      real, dimension (nz*nprocz*3*njtest) :: uxbtestm2,uxbtestm3
       real, dimension (nx,3) :: btest,uxbtest
       integer :: jtest,j,nxy=nxgrid*nygrid,juxb
       logical :: headtt_save
@@ -535,6 +534,7 @@ print*,'njtest=',njtest
               call calc_pencils_hydro(f,p)
               call curl(f,iaxtest,btest)
               call cross_mn(p%uu,btest,uxbtest)
+!if (n==11.and.jtest==1) print*,'iproc,m,u,b,uxb=',iproc,m,btest(11,2),f(14,m,11,1),f(14,m,11,3)
               juxb=iuxb+3*(jtest-1)
               if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
               do j=1,3
@@ -549,20 +549,23 @@ print*,'njtest=',njtest
         endif
       enddo
 !
-!  do communication for array of size mz,3,ntestfield/3=mz*ntestfield
-!  (Could do the same in momentum removal procedure.)
+!  do communication for array of size nz*nprocz*3*njtest
 !
-      call mpireduce_sum(uxbtestm1,uxbtestm2,nz*nprocz*nnamez)
-      uxbtestm3=reshape(uxbtestm2,shape=(/nz*nprocz*3*njtest/))
-      call mpibcast_real(uxbtestm3,nz*nprocz*3*njtest)
-      uxbtestm2=reshape(uxbtestm3,shape=(/nz,nprocz,3,njtest/))
-      do jtest=1,njtest
-        do n=n1,n2
-          do j=1,3
-            uxbtestm(n,j,jtest)=uxbtestm2(n-n1+1,ipz+1,j,jtest)
+      if (ncpus>1) then
+        uxbtestm2=reshape(uxbtestm1,shape=(/nz*nprocz*3*njtest/))
+!print*,iproc,uxbtestm(11,1,1)
+!print*,iproc,uxbtestm1(11-n1+1,ipz+1,1,1),uxbtestm2(11-n1+1+nz*ipz)
+        call mpireduce_sum(uxbtestm2,uxbtestm3,nz*nprocz*3*njtest)
+        call mpibcast_real(uxbtestm3,nz*nprocz*3*njtest)
+        uxbtestm1=reshape(uxbtestm3,shape=(/nz,nprocz,3,njtest/))
+        do jtest=1,njtest
+          do n=n1,n2
+            do j=1,3
+              uxbtestm(n,j,jtest)=uxbtestm1(n-n1+1,ipz+1,j,jtest)
+            enddo
           enddo
         enddo
-      enddo
+      endif
 !
 !  reset headtt
 !
