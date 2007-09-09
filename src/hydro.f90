@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.392 2007-09-09 11:43:34 brandenb Exp $
+! $Id: hydro.f90,v 1.393 2007-09-09 17:21:53 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -309,7 +309,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.392 2007-09-09 11:43:34 brandenb Exp $")
+           "$Id: hydro.f90,v 1.393 2007-09-09 17:21:53 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1714,7 +1714,7 @@ use Mpicomm, only: stop_it
           if (any(g_r .gt. 0.)) then
             call stop_it("centrifugal_balance: gravity is directed outwards")
           else
-            OO=sqrt(-g_r/max(rr_cyl,tini))
+            OO=sqrt(max(-g_r/rr_cyl,0.))
           endif
 !
           if (coord_system=='cartesian') then
