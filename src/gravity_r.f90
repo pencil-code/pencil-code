@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.32 2007-09-09 11:43:34 brandenb Exp $
+! $Id: gravity_r.f90,v 1.33 2007-09-09 22:54:28 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -85,7 +85,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.32 2007-09-09 11:43:34 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.33 2007-09-09 22:54:28 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -271,11 +271,10 @@ module Gravity
                   elseif (ipotential(j) .eq. 'dark-matter-halo') then
                     g_r=-g01(j)*(1-rpot(j)/rr_mn*atan2(rr_mn,rpot(j)))/rr_mn
                   elseif (ipotential(j) .eq. 'light-matter') then
-                    !approximation of bessel functions.
-                    !valid in the interval 0.04<r/rpot<2
-                    !reference - Freeman 1970
-                    g_r=-2.167*g01(j)*rr_mn**(0.22)*rpot(j)**(-2.22)/&
-                         ((rr_mn/rpot(j))**2+0.78**2)**1.43
+                    !approximation of the bessel functions potential
+                    !of Freeman 1970. Reference: Persic et al 1996
+                    g_r=-4.134e-4*g01(j)*(.5*rr_mn/rpot(j))**1.22/&
+                         ((.5*rr_mn/rpot(j))**2+1.502)**1.43/rr_mn
                   else
 !
 !  smoothed 1/r potential in a spherical shell
@@ -654,8 +653,8 @@ module Gravity
           g_r=g_r -g01(j)*(1-rpot(j)/rr_mn*atan2(rr_mn,rpot(j)))/rr_mn
 !
         case ('light-matter')
-          g_r=g_r-2.167*g01(j)*rr_mn**(0.22)*rpot(j)**(-2.22)/&
-               ((rr_mn/rpot(j))**2+0.78**2)**1.43
+          g_r=g_r-4.134e-4*g01(j)*(.5*rr_mn/rpot(j))**1.22/&
+               ((.5*rr_mn/rpot(j))**2+1.502)**1.43/rr_mn
 !
         case ('zero')
           g_r=g_r
