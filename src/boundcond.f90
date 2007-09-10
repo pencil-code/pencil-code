@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.183 2007-09-10 14:27:15 dhruba Exp $
+! $Id: boundcond.f90,v 1.184 2007-09-10 14:34:47 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1353,7 +1353,7 @@ module Boundcond
 ! derivatives. 
         f(l1-1,:,:,j)= f(l1+1,:,:,j) +  2.*60.*f(l1,:,:,j)*dx/(45.*x(l1))
         f(l1-2,:,:,j)= f(l1+2,:,:,j) +  2.*60.*f(l1,:,:,j)*dx/(9.*x(l1))
-        f(l1-3,:,:,j)= f(l1+3,:,:,j) +  2.*60.*f(l1,:,:,j)dx/(x(l1))
+        f(l1-3,:,:,j)= f(l1+3,:,:,j) +  2.*60.*f(l1,:,:,j)*dx/x(l1)
       case('top')               ! top boundary
         f(l2+1,:,:,j)= f(l2-1,:,:,j) -  2.*60.*f(l2,:,:,j)*dx/(45.*x(l2))
         f(l2+2,:,:,j)= f(l2-2,:,:,j) -  2.*60.*f(l2,:,:,j)*dx/(9.*x(l2))
@@ -1418,22 +1418,22 @@ module Boundcond
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
-      real :: cotth
+      real :: cottheta
 
       select case(topbot)
 
       case('bot')               ! bottom boundary
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
-        cotth= cot(y(m1))
-        f(:,m1-1,:,j)= f(:,m1+1,:,j) +  2.*60.*dy*cotth*f(:,m1,:,j)/45.
-        f(:,m1-2,:,j)= f(:,m1+2,:,j) +  2.*60.*dy*cotth*f(:,m1,:,j)/9.
-        f(:,m1-3,:,j)= f(:,m1+3,:,j) +  2.*60.*dy*cotth*f(:,m1,:,j)
+        cottheta= cotth(m1)
+        f(:,m1-1,:,j)= f(:,m1+1,:,j) +  2.*60.*dy*cottheta*f(:,m1,:,j)/45.
+        f(:,m1-2,:,j)= f(:,m1+2,:,j) +  2.*60.*dy*cottheta*f(:,m1,:,j)/9.
+        f(:,m1-3,:,j)= f(:,m1+3,:,j) +  2.*60.*dy*cottheta*f(:,m1,:,j)
       case('top')               ! top boundary
-        cotth= cot(y(m2))
-        f(:,m2+1,:,j)= f(:,m2-1,:,j) -  2.*60.*dy*cotth*f(:,m2,:,j)/45.
-        f(:,m2+2,:,j)= f(:,m2-2,:,j) -  2.*60.*dy*cotth*f(:,m2,:,j)/9.
-        f(:,m2+3,:,j)= f(:,m2-3,:,j) -  2.*60.*dy*cotth*f(:,m2,:,j)
+        cottheta= cotth(m2)
+        f(:,m2+1,:,j)= f(:,m2-1,:,j) -  2.*60.*dy*cottheta*f(:,m2,:,j)/45.
+        f(:,m2+2,:,j)= f(:,m2-2,:,j) -  2.*60.*dy*cottheta*f(:,m2,:,j)/9.
+        f(:,m2+3,:,j)= f(:,m2-3,:,j) -  2.*60.*dy*cottheta*f(:,m2,:,j)
 
       case default
         call warning('bc_set_pfc_y',topbot//" should be `top' or `bot'")
