@@ -1,0 +1,20 @@
+!                                  -*-f90-*-
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2007-09-10 05:04:22 brandenb Exp $',
+  lwrite_aux=F
+/
+&eos_init_pars
+  gamma=1.
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&testfield_init_pars
+  luxb_as_aux=T
+/
+&shear_init_pars
+  Sshear=-.1
+/
