@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.350 2007-09-02 17:14:56 brandenb Exp $
+! $Id: density.f90,v 1.351 2007-09-10 16:57:28 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -129,7 +129,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.350 2007-09-02 17:14:56 brandenb Exp $")
+           "$Id: density.f90,v 1.351 2007-09-10 16:57:28 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1798,7 +1798,8 @@ module Density
       if (lroot) print*,'Correcting density gradient on the '//&
            'centrifugal force'
 !
-      call farray_use_global('cs2',iglobal_cs2)
+      if (llocal_iso) &
+           call farray_use_global('cs2',iglobal_cs2)
 !
       do m=m1,m2
         do n=n1,n2
@@ -1812,7 +1813,12 @@ module Density
           else
             gslnrho=glnrho(:,1)
           endif
-          corr=gslnrho*f(l1:l2,m,n,iglobal_cs2)
+          if (llocal_iso) then
+            corr=gslnrho*f(l1:l2,m,n,iglobal_cs2)
+          else
+            corr=gslnrho*cs20
+          endif
+
           if (ltemperature) corr=corr/gamma
 !
           if (lcartesian_coords) then
@@ -1866,19 +1872,16 @@ module Density
            'density with e-fold=',r_ref
 !
       do m=m1,m2
-      do n=n1,n2
-        lheader=lroot.and.(m==m1).and.(n==n1)
-        call get_radial_distance(rr_sph,rr_cyl)
-        f(l1:l2,m,n,ilnrho) = lnrho0 - rr_cyl/r_ref
-        !call correct_density_gradient(f)
-
-        !!correct pressure gradient
-        !tmp1=(f(:,:,:,iuy)/xx)**2
-        !corr=cs20/rd
-        !tmp2=tmp1 - corr/xx
-        !!f(:,:,:,iuy)= sqrt(tmp2)*xx
+        do n=n1,n2
+          lheader=lroot.and.(m==m1).and.(n==n1)
+          call get_radial_distance(rr_sph,rr_cyl)
+          f(l1:l2,m,n,ilnrho) = lnrho0 - rr_cyl/r_ref
+        enddo
       enddo
-      enddo
+!
+! Correct the velocities by this density gradient
+!
+      call correct_density_gradient(f)
 !
     endsubroutine exponential_fall
 !**********************************************************************
