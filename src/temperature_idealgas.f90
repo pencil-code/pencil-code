@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.29 2007-09-10 14:38:14 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.30 2007-09-10 16:34:53 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -122,7 +122,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.29 2007-09-10 14:38:14 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.30 2007-09-10 16:34:53 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1054,13 +1054,14 @@ module Entropy
     subroutine ADI_Kconst(finit,f)
 !
 !  08-Sep-07/gastine+dintrans: coded
-!  2-D ADI scheme for the radiative diffusion term (see e.g. 
+!  2-D ADI scheme for the radiative diffusion term (see
 !  Peaceman & Rachford 1955). Each direction are solved implicitly:
 !
-!    (1-dt/2*Lambda_x)*T^(n+1/2) = (1+dt/2*Lambda_y)*T^n
-!    (1-dt/2*Lambda_y)*T^(n+1)   = (1+dt/2*Lambda_x)*T^(n+1/2)
+!    (1-dt/2*Lambda_x)*T^(n+1/2) = (1+dt/2*Lambda_y)*T^n + source/2
+!    (1-dt/2*Lambda_y)*T^(n+1)   = (1+dt/2*Lambda_x)*T^(n+1/2) + source/2
 !
-!  where Lambda_x and Lambda_y denote diffusion operators.
+!  where Lambda_x and Lambda_y denote diffusion operators and the source
+!  term comes from the explicit advance.
 !
       use Cdata
       use Cparam
@@ -1112,7 +1113,7 @@ module Entropy
 !
         rhs=finter(i,n1:n2)+wx*dx_2/2.*                              &
            (finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2))  &
-           +dt*source(i,n1:n2)/2.
+           +dt/2.*source(i,n1:n2)
 !
         c(nz)=0.
         a(1)=0.
@@ -1135,7 +1136,13 @@ module Entropy
 !  10-Sep-07/gastine+dintrans: coded
 !  2-D ADI scheme for the radiative diffusion term where the radiative
 !  conductivity depends on T (uses heatcond_TT to compute hcond _and_
-!  dhcond).
+!  dhcond). The ADI scheme is of Yakonov's form:
+!
+!    (1-dt/2*J_x)*lambda = f_x(T^n) + f_y(T^n) + source
+!    (1-dt/2*J_y)*beta   = lambda
+!    T^(n+1) = T^n + dt*beta
+!
+!    where J_x and J_y denote Jacobian matrices df/dT.
 !
       use Cdata
       use Cparam
@@ -1158,11 +1165,11 @@ module Entropy
       dz_2=1./dz**2
       TT=finit(:,4,:,ilnTT)
 !
-!  rows dealt implictly
+!  rows dealt implicitly
 !
       do j=n1,n2
-! a=-dt/2*J_x for i=i-1 (lower diagonal)
        wx=cp1*gamma/exp(f(l1:l2,4,j,ilnrho))
+! a=-dt/2*J_x for i=i-1 (lower diagonal)
        a=-dt*wx*dx_2/4.*(dhcond(l1-1:l2-1,j)     &
          *(TT(l1-1:l2-1,j)-TT(l1:l2,j))          &
          +hcond(l1-1:l2-1,j)+hcond(l1:l2,j))
@@ -1186,7 +1193,7 @@ module Entropy
        rhs=rhs+wx*dx_2/2.*((hcond(l1+1:l2+1,j)   &
          +hcond(l1:l2,j))*(TT(l1+1:l2+1,j)-TT(l1:l2,j))  &
            -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j))  &
-           *(TT(l1:l2,j)-TT(l1-1:l2-1,j)))
+           *(TT(l1:l2,j)-TT(l1-1:l2-1,j)))+source(l1:l2,j)
 !
        aalpha=c(nx)
        bbeta=a(1)
@@ -1196,7 +1203,7 @@ module Entropy
        finter(l1:l2,j)=work(1:nx)
       enddo
 !
-!  columns dealt implictly
+!  columns dealt implicitly
 !
       do i=l1,l2
        wx=dt*cp1*gamma*dz_2/exp(f(i,4,n1:n2,ilnrho))
@@ -1235,7 +1242,8 @@ module Entropy
        val(i,n1:n2)=work(1:nz)
       enddo
 !
-      f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*(val+source)
+!     f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*(val+source)
+      f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
 !
 ! Boris: is it really needed? i.e. filling f(n1,n2) and heatcond_TT
       f(:,:,n1,ilnTT)=cs2bot/gamma1
