@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.182 2007-09-10 14:25:25 dhruba Exp $
+! $Id: boundcond.f90,v 1.183 2007-09-10 14:27:15 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -357,6 +357,17 @@ module Boundcond
               case ('der')
                 ! BCY_DOC: set derivative on the boundary
                 call bc_set_der_y(f,topbot,j,fbcy12(j))
+              case('pfc')
+                  !BCY_DOC: In spherical polar coordinate system,
+                  !BCY_DOC: at a theta boundary set : $A_r = 0$ and 
+                  !BCY_DOC: $A_{\phi} = 0$, and demand $div A = 0$ gives the 
+                  !BCY_DOC: condition on $A_r$ to be  
+                  !BCY_DOC: $d/d\theta( A_\theta) + cot(\theta)A_{\theta} = 0$.
+                  !BCY_DOC: This subroutine sets this condition on  $j$-th 
+                  !BCY_DOC: component of f. As this is related to setting the
+                  !BCY_DOC: perfect conducting boundary condition we call 
+                  !BCY_DOC: this "pfc".  
+                  call bc_set_pfc_y(f,topbot,j)
               case ('')
                 ! do nothing; assume that everything is set
               case default
