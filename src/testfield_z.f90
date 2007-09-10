@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.5 2007-09-09 07:41:56 reza Exp $
+! $Id: testfield_z.f90,v 1.6 2007-09-10 04:16:59 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -45,7 +45,6 @@ module Testfield
   character (len=labellen) :: itestfield='B11-B21+B=0'
   real :: ktestfield=1.
   integer, parameter :: ntestfield=3*njtest
-
 
   namelist /testfield_init_pars/ &
        B_ext,zextent,initaatest, &
@@ -114,9 +113,13 @@ module Testfield
       if (.not. first) call stop_it('register_aa called twice')
       first = .false.
 !
+!  Set first and last index of text field
+!  Here always ltestfield=T
+!
       ltestfield = .true.
-      iaatest = nvar+1          ! indices to access aa
-      nvar = nvar+ntestfield    ! added ntestfield variables
+      iaatest = nvar+1
+      iaztestpq = nvar+ntestfield
+      nvar = nvar+ntestfield
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_testfield: nvar = ', nvar
@@ -132,7 +135,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.5 2007-09-09 07:41:56 reza Exp $")
+           "$Id: testfield_z.f90,v 1.6 2007-09-10 04:16:59 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -777,6 +780,8 @@ module Testfield
         write(3,*) 'idiag_E20z=',idiag_E20z
         write(3,*) 'idiag_E30z=',idiag_E30z
         write(3,*) 'iaatest=',iaatest
+        write(3,*) 'iaztestpq=',iaztestpq
+        write(3,*) 'ntestfield=',ntestfield
         write(3,*) 'nnamez=',nnamez
         write(3,*) 'nnamexy=',nnamexy
         write(3,*) 'nnamexz=',nnamexz
