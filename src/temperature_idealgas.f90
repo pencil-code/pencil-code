@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.28 2007-09-10 14:16:08 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.29 2007-09-10 14:38:14 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -122,7 +122,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.28 2007-09-10 14:16:08 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.29 2007-09-10 14:38:14 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1145,7 +1145,7 @@ module Entropy
 
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit,f
-      real, dimension(mx,mz) :: source,hcond,dhcond,finter,val
+      real, dimension(mx,mz) :: source,hcond,dhcond,finter,val,TT
       real, dimension(nx)    :: a,b,c, wx
       real, dimension(nz)    :: rhs,work
       real    :: alpha, aalpha, bbeta
@@ -1156,36 +1156,37 @@ module Entropy
       call get_cp1(cp1)
       dx_2=1./dx**2
       dz_2=1./dz**2
+      TT=finit(:,4,:,ilnTT)
 !
-!  lignes en implicite
+!  rows dealt implictly
 !
       do j=n1,n2
 ! a=-dt/2*J_x for i=i-1 (lower diagonal)
        wx=cp1*gamma/exp(f(l1:l2,4,j,ilnrho))
        a=-dt*wx*dx_2/4.*(dhcond(l1-1:l2-1,j)     &
-         *(finit(l1-1:l2-1,4,j,ilnTT)-finit(l1:l2,4,j,ilnTT))   &
+         *(TT(l1-1:l2-1,j)-TT(l1:l2,j))          &
          +hcond(l1-1:l2-1,j)+hcond(l1:l2,j))
 ! b=1-dt/2*J_x for i=i (main diagonal)
        b=1.+dt*wx*dx_2/4.*(dhcond(l1:l2,j)       &
-         *(2.*finit(l1:l2,4,j,ilnTT)-finit(l1-1:l2-1,4,j,ilnTT) &
-         -finit(l1+1:l2+1,4,j,ilnTT))+2.*hcond(l1:l2,j)         &
+         *(2.*TT(l1:l2,j)-TT(l1-1:l2-1,j)        &
+         -TT(l1+1:l2+1,j))+2.*hcond(l1:l2,j)     &
          +hcond(l1+1:l2+1,j)+hcond(l1-1:l2-1,j))
 ! c=-dt/2*J_x for i=i+1 (upper diagonal)
        c=-dt*wx*dx_2/4.*(dhcond(l1+1:l2+1,j)     &
-          *(finit(l1+1:l2+1,4,j,ilnTT)-finit(l1:l2,4,j,ilnTT))  &
+          *(TT(l1+1:l2+1,j)-TT(l1:l2,j))         &
           +hcond(l1:l2,j)+hcond(l1+1:l2+1,j))
 ! rhs=f_y(T^n) + f_x(T^n) (Eq. 3.6)
 ! do first f_y(T^n)
-       rhs=wx*dz_2/2.*((hcond(l1:l2,j+1)      &
-           +hcond(l1:l2,j))*(finit(l1:l2,4,j+1,ilnTT)           &
-           -finit(l1:l2,4,j,ilnTT))-(hcond(l1:l2,j)             &
-           +hcond(l1:l2,j-1))                                   &
-           *(finit(l1:l2,4,j,ilnTT)-finit(l1:l2,4,j-1,ilnTT)))
+       rhs=wx*dz_2/2.*((hcond(l1:l2,j+1)         &
+           +hcond(l1:l2,j))*(TT(l1:l2,j+1)       &
+           -TT(l1:l2,j))-(hcond(l1:l2,j)         &
+           +hcond(l1:l2,j-1))                    &
+           *(TT(l1:l2,j)-TT(l1:l2,j-1)))
 ! then add f_x(T^n)
-       rhs=rhs+wx*dx_2/2.*((hcond(l1+1:l2+1,j) &
-         +hcond(l1:l2,j))*(finit(l1+1:l2+1,4,j,ilnTT)-finit(l1:l2,4,j,ilnTT))&
-           -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j)) &
-           *(finit(l1:l2,4,j,ilnTT)-finit(l1-1:l2-1,4,j,ilnTT)))
+       rhs=rhs+wx*dx_2/2.*((hcond(l1+1:l2+1,j)   &
+         +hcond(l1:l2,j))*(TT(l1+1:l2+1,j)-TT(l1:l2,j))  &
+           -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j))  &
+           *(TT(l1:l2,j)-TT(l1-1:l2-1,j)))
 !
        aalpha=c(nx)
        bbeta=a(1)
@@ -1195,21 +1196,21 @@ module Entropy
        finter(l1:l2,j)=work(1:nx)
       enddo
 !
-!  colonnes en implicite
+!  columns dealt implictly
 !
       do i=l1,l2
        wx=dt*cp1*gamma*dz_2/exp(f(i,4,n1:n2,ilnrho))
        a=-wx/4.*(dhcond(i,n1-1:n2-1) &
-         *(finit(i,4,n1-1:n2-1,ilnTT)-finit(i,4,n1:n2,ilnTT))&
+         *(TT(i,n1-1:n2-1)-TT(i,n1:n2))&
          +hcond(i,n1-1:n2-1)+hcond(i,n1:n2))
 !
        b=1.+wx/4.*(dhcond(i,n1:n2)* &
-         (2.*finit(i,4,n1:n2,ilnTT)-finit(i,4,n1-1:n2-1,ilnTT) &
-         -finit(i,4,n1+1:n2+1,ilnTT))+2.*hcond(i,n1:n2) &
+         (2.*TT(i,n1:n2)-TT(i,n1-1:n2-1) &
+         -TT(i,n1+1:n2+1))+2.*hcond(i,n1:n2) &
          +hcond(i,n1+1:n2+1)+hcond(i,n1-1:n2-1))
 !
        c=-wx/4.*(dhcond(i,n1+1:n2+1) &
-         *(finit(i,4,n1+1:n2+1,ilnTT)-finit(i,4,n1:n2,ilnTT))&
+         *(TT(i,n1+1:n2+1)-TT(i,n1:n2))&
          +hcond(i,n1:n2)+hcond(i,n1+1:n2+1))
 !
        rhs=finter(i,n1:n2)
@@ -1221,13 +1222,13 @@ module Entropy
 !       c(1)=0.
 !       c(1)=1.
 !       rhs(1)=0.
-! Constant temperature at the bottom
+! Constant temperature at the bottom: T^(n+1)-T^n=0
         b(1)=1.
         c(1)=0.
         rhs(1)=0.
-! Constant temperature at the top
-       b(nx)=1.
-       a(nx)=0.
+! Constant temperature at the top: T^(n+1)-T^n=0
+       b(nz)=1.
+       a(nz)=0.
        rhs(nz)=0.
 !
        call tridag(a,b,c,rhs,work,nz)
