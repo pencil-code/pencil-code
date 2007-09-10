@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.48 2007-09-10 05:56:22 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.49 2007-09-10 05:59:09 brandenb Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar,run2D=run2D
 COMPILE_OPT IDL2,HIDDEN
@@ -179,6 +179,14 @@ varcontent[iaatest].idlinit    = 'fltarr(mx,my,mz,ntestfield)*one'
 varcontent[iaatest].idlvarloc= 'aatest_loc'
 varcontent[iaatest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestfield)*one'
 varcontent[iaatest].skip  = ntestfield-1
+
+default,iuxb,0
+varcontent[iuxb].variable = 'Testfield vector potential (uxb)'
+varcontent[iuxb].idlvar   = 'uxb'
+varcontent[iuxb].idlinit    = 'fltarr(mx,my,mz,ntestfield)*one'
+varcontent[iuxb].idlvarloc= 'uxb_loc'
+varcontent[iuxb].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestfield)*one'
+varcontent[iuxb].skip  = ntestfield-1
 
 default,iuun,0
 varcontent[iuun].variable   = 'Velocity of neutrals (uun)'
