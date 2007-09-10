@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.26 2007-09-10 12:55:45 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.27 2007-09-10 13:08:08 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -122,7 +122,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.26 2007-09-10 12:55:45 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.27 2007-09-10 13:08:08 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -600,7 +600,7 @@ module Entropy
     subroutine rad_equil(f)
 !
 ! 16-mai-07/gastine+dintrans: compute the radiative and hydrostatic 
-! equilibria for a given radiative profile (here a hole for the moment)
+! equilibria for a given radiative profile defined in heatcond_TT.
 !
       use Cdata
       use Gravity, only: gravz
@@ -609,32 +609,41 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mz) :: temp,lnrho
-      type (pencil_case) :: p
-      real :: hcond, dhcond, dtemp,dlnrho
-      real :: ss
+      real :: hcond, dhcond, dtemp, dlnrho, ss
       integer :: i
 !
       if (.not. ltemperature_nolog) &
-        call fatal_error('temperature_idealgas','rad_equil not implemented for lnTT')
+        call fatal_error('temperature_idealgas',  &
+                         'rad_equil not implemented for lnTT')
       if (lroot) print*,'init_ss: rad_equil for kappa-mechanism pb'
 !
-!
-! Integrate from the top to the bottom
+! Integrate from top to bottom: z(n2) --> z(n1)
 !
       temp(n2)=cs20/gamma1
       lnrho(n2)=lnrho0
       f(:,:,n2,ilnTT)=cs20/gamma1
       f(:,:,n2,ilnrho)=lnrho0
-      do i=n2-1,n1,-1
-        call heatcond_TT(temp(i+1),hcond,dhcond)
-        dtemp=Fbot/hcond
-        temp(i)=temp(i+1)+dz*dtemp
-!       dlnrho=2.*(-gamma/gamma1*gravz-dtemp)/(7.d0/6.d0*temp(i)+5.d0/6.d0*temp(i+1))
-        dlnrho=(-gamma/gamma1*gravz-dtemp)/temp(i+1)
-        lnrho(i)=lnrho(i+1)+dz*dlnrho
 !
-        f(:,:,i,ilnTT)=temp(i)
-        f(:,:,i,ilnrho)=lnrho(i)
+! Calculate the n2-1 gridpoint thanks to a 1st order forward Euler scheme
+!
+      call heatcond_TT(temp(n2),hcond,dhcond)
+      dtemp=Fbot/hcond
+      temp(n2-1)=temp(n2)+dz*dtemp
+      dlnrho=(-gamma/gamma1*gravz-dtemp)/temp(n2)
+      lnrho(n2-1)=lnrho(n2)+dz*dlnrho
+      f(:,:,n2-1,ilnTT)=temp(n2-1)
+      f(:,:,n2-1,ilnrho)=lnrho(n2-1)
+!
+! Now we use a 2nd order centered scheme for the other gridpoints
+!
+      do i=n2-1,n1+1,-1
+        call heatcond_TT(temp(i),hcond,dhcond)
+        dtemp=Fbot/hcond
+        temp(i-1)=temp(i+1)+2.*dz*dtemp
+        dlnrho=(-gamma/gamma1*gravz-dtemp)/temp(i)
+        lnrho(i-1)=lnrho(i+1)+2.*dz*dlnrho
+        f(:,:,i-1,ilnTT)=temp(i-1)
+        f(:,:,i-1,ilnrho)=lnrho(i-1)
       enddo
 !
 ! Initialize cs2bot by taking into account the new bottom value of temperature
