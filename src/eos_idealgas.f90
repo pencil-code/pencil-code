@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.102 2007-09-07 15:01:31 dintrans Exp $
+! $Id: eos_idealgas.f90,v 1.103 2007-09-10 10:53:42 bingert Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -10,7 +10,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp,cp1,cp1tilde,glnTT,TT,TT1,gTT
-! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1
+! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1,del6lnTT
 !
 !***************************************************************
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.102 2007-09-07 15:01:31 dintrans Exp $')
+           '$Id: eos_idealgas.f90,v 1.103 2007-09-10 10:53:42 bingert Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -602,6 +602,7 @@ module EquationOfState
           if (lpencil(i_glnTT)) call grad(f,ieosvar2,p%glnTT)
           if (lpencil(i_hlnTT)) call g2ij(f,ieosvar2,p%hlnTT)
           if (lpencil(i_del2lnTT)) call del2(f,ieosvar2,p%del2lnTT)
+          if (lpencil(i_del6lnTT)) call del6(f,ieosvar2,p%del6lnTT)
           if (lpencil(i_cs2)) p%cs2=cp*exp(p%lnTT)*gamma1
         endif
         if (lpencil(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma1*(p%lnrho-lnrho0))

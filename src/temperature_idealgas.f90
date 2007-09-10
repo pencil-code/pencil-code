@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.24 2007-09-08 15:34:17 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.25 2007-09-10 10:53:42 bingert Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -40,7 +40,7 @@ module Entropy
   real :: radius_lnTT=0.1,ampl_lnTT=0.,widthlnTT=2*epsi
   real :: lnTT_left=1.0,lnTT_right=1.0,lnTT_const=0.0,TT_const=1.0
   real :: kx_lnTT=1.0,ky_lnTT=1.0,kz_lnTT=1.0
-  real :: chi=impossible,heat_uniform=0.0
+  real :: chi=impossible,heat_uniform=0.0,difflnTT_hyper=0.
   real :: zbot=0.0,ztop=0.0
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
   real :: center1_x=0., center1_y=0., center1_z=0.
@@ -50,7 +50,7 @@ module Entropy
   real :: hole_alpha ! initialized _after_ the reading
   integer, parameter :: nheatc_max=2
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
-  logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
+  logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.,ldiff_hyper=.false.
   logical :: lheatc_Kconst=.false.,lheatc_Kprof=.false.,lheatc_Karctan=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lfreeze_lnTTint=.false.,lfreeze_lnTText=.false.
@@ -81,7 +81,7 @@ module Entropy
       heat_uniform,chi,iheatcond,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
       lheatc_chiconst_accurate,hcond0,lcalc_heat_cool,&
       lfreeze_lnTTint,lfreeze_lnTText,widthlnTT,mpoly0,mpoly1, &
-      lhcond_global,lviscosity_heat, &
+      lhcond_global,lviscosity_heat,difflnTT_hyper, &
       Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width
 !
 ! other variables (needs to be consistent with reset list below)
@@ -117,7 +117,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.24 2007-09-08 15:34:17 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.25 2007-09-10 10:53:42 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -181,6 +181,7 @@ module Entropy
       lheatc_Kprof= .false.
       lheatc_Karctan= .false.
       lheatc_chiconst = .false.
+      ldiff_hyper = .false.
       lnothing = .false.
 !
       do i=1,nheatc_max
@@ -205,6 +206,9 @@ module Entropy
         case('chi-const')
           lheatc_chiconst=.true.
           if (lroot) call information('initialize_entropy',' heat conduction: constant chi')
+        case ('hyper')
+          ldiff_hyper=.true.
+          if (lroot) call information('initialize_entropy','hyper diffusion')
         case ('nothing')
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
@@ -366,6 +370,9 @@ module Entropy
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_cp1)=.true.
+      endif
+      if (ldiff_hyper) then
+         lpenc_requested(i_del6lnTT)=.true.
       endif
 
 !
@@ -541,6 +548,16 @@ module Entropy
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
       if (lheatc_Kprof)    call calc_heatcond(f,df,p)
       if (lheatc_Karctan)  call calc_heatcond_arctan(df,p)
+!
+!  Hyper diffusion
+!
+      if (ldiff_hyper) then
+         if(headtt) print*,'Hyper diffusion: difflnTT_hyper=',difflnTT_hyper
+         !
+         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + difflnTT_hyper*p%del6lnTT
+         !
+         if (lfirst.and.ldt) diffus_chi=diffus_chi+difflnTT_hyper*dxyz_6
+      endif
 !
 !  Need to add left-hand-side of the continuity equation (see manual)
 !  Check this

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.342 2007-09-09 11:43:34 brandenb Exp $
+! $Id: sub.f90,v 1.343 2007-09-10 10:53:42 bingert Exp $
 
 module Sub
 
@@ -27,7 +27,7 @@ module Sub
   public :: der_step
   public :: u_dot_grad
   public :: del2, del2v, del2v_etc
-  public :: del4v, del2vi_etc
+  public :: del4v, del4, del2vi_etc
   public :: del6_nodx, del6v, del6, del6_other, del6fj, del6fjv
   public :: gradf_upw1st
 
