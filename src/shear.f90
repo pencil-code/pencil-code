@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.40 2007-09-10 04:16:59 brandenb Exp $
+! $Id: shear.f90,v 1.41 2007-09-10 06:07:39 brandenb Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.40 2007-09-10 04:16:59 brandenb Exp $")
+           "$Id: shear.f90,v 1.41 2007-09-10 06:07:39 brandenb Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -204,7 +204,7 @@ module Shear
 !  Loop through all the dax/dt equations and add -S*ay contribution
 !
       if (ltestfield) then
-        do j=iaatest,iaatest+iaztestpq,3
+        do j=iaatest,iaxtestpq,3
           df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-Sshear*f(l1:l2,m,n,j+1)
         enddo
       endif
