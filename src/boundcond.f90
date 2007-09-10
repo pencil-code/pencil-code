@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.181 2007-09-06 08:14:31 bingert Exp $
+! $Id: boundcond.f90,v 1.182 2007-09-10 14:25:25 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1333,20 +1333,20 @@ module Boundcond
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
-
+  
 
       select case(topbot)
 
       case('bot')               ! bottom boundary
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
-        f(l1-1,:,:,j)= f(l1+1,:,:,j) +  2.*60.*dx/(45.*x(l1))
-        f(l1-2,:,:,j)= f(l1+2,:,:,j) +  2.*60.*dx/(9.*x(l1))
-        f(l1-3,:,:,j)= f(l1+3,:,:,j) +  2.*60.*dx/(x(l1))
+        f(l1-1,:,:,j)= f(l1+1,:,:,j) +  2.*60.*f(l1,:,:,j)*dx/(45.*x(l1))
+        f(l1-2,:,:,j)= f(l1+2,:,:,j) +  2.*60.*f(l1,:,:,j)*dx/(9.*x(l1))
+        f(l1-3,:,:,j)= f(l1+3,:,:,j) +  2.*60.*f(l1,:,:,j)dx/(x(l1))
       case('top')               ! top boundary
-        f(l2+1,:,:,j)= f(l2-1,:,:,j) -  2.*60.*dx/(45.*x(l2))
-        f(l2+2,:,:,j)= f(l2-2,:,:,j) -  2.*60.*dx/(9.*x(l2))
-        f(l2+3,:,:,j)= f(l2-3,:,:,j) -  2.*60.*dx/(x(l2))
+        f(l2+1,:,:,j)= f(l2-1,:,:,j) -  2.*60.*f(l2,:,:,j)*dx/(45.*x(l2))
+        f(l2+2,:,:,j)= f(l2-2,:,:,j) -  2.*60.*f(l2,:,:,j)*dx/(9.*x(l2))
+        f(l2+3,:,:,j)= f(l2-3,:,:,j) -  2.*60.*f(l2,:,:,j)*dx/(x(l2))
 
       case default
         call warning('bc_set_pfc_x',topbot//" should be `top' or `bot'")
@@ -1390,6 +1390,46 @@ module Boundcond
       endselect
 !
     endsubroutine bc_set_sfree_x
+! **********************************************************************
+    subroutine bc_set_pfc_y(f,topbot,j)
+!
+! In spherical polar coordinate system,
+! at a radial boundary set : $A_{\theta} = 0$ and $A_{phi} = 0$,
+! and demand $div A = 0$ gives the condition on $A_r$ to be
+! $d/dr( A_r) + 2/r = 0$ . This subroutine sets this condition of
+! $j$ the component of f. As this is related to setting the
+! perfect conducting boundary condition we call this "pfc". 
+!
+!  25-Aug-2007/dhruba: coded
+!
+      use Cdata
+!
+      character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer, intent (in) :: j
+      real :: cotth
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+! The coding assumes we are using 6-th order centered finite difference for our
+! derivatives. 
+        cotth= cot(y(m1))
+        f(:,m1-1,:,j)= f(:,m1+1,:,j) +  2.*60.*dy*cotth*f(:,m1,:,j)/45.
+        f(:,m1-2,:,j)= f(:,m1+2,:,j) +  2.*60.*dy*cotth*f(:,m1,:,j)/9.
+        f(:,m1-3,:,j)= f(:,m1+3,:,j) +  2.*60.*dy*cotth*f(:,m1,:,j)
+      case('top')               ! top boundary
+        cotth= cot(y(m2))
+        f(:,m2+1,:,j)= f(:,m2-1,:,j) -  2.*60.*dy*cotth*f(:,m2,:,j)/45.
+        f(:,m2+2,:,j)= f(:,m2-2,:,j) -  2.*60.*dy*cotth*f(:,m2,:,j)/9.
+        f(:,m2+3,:,j)= f(:,m2-3,:,j) -  2.*60.*dy*cotth*f(:,m2,:,j)
+
+      case default
+        call warning('bc_set_pfc_y',topbot//" should be `top' or `bot'")
+
+      endselect
+!
+    endsubroutine bc_set_pfc_y
 !***********************************************************************
     subroutine bc_set_der_y(f,topbot,j,val)
 !
