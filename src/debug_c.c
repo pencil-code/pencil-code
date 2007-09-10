@@ -16,7 +16,7 @@
 #include <math.h>
 
 
-/* Beware: You need to choose single or double precision here */
+/* Choose single or double precision here (typically done from the Makefile) */
 #ifdef DOUBLE_PRECISION
 #  define REAL double
 #  define FINT int		/* should this be long int? */
@@ -35,9 +35,8 @@
 
 /* Pick correct number of underscores here (2 for g77 without
    `-fno-second-underscore', 1 for most other compilers).
-   Use the `-DFUNDERSC=1' option in the makefile to set this.
+   Use the `-DFUNDERSC=1' option in the Makefile to set this.
 */
-
 #if (FUNDERSC == 0)
 #  define FTNIZE(name) name
 #elif (FUNDERSC == 1)
