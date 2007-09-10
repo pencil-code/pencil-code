@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.25 2007-09-10 10:53:42 bingert Exp $
+! $Id: temperature_idealgas.f90,v 1.26 2007-09-10 12:55:45 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -36,6 +36,11 @@ module Entropy
   public :: calc_heatcond_ADI
 
   include 'entropy.h'
+
+  interface heatcond_TT ! Overload subroutine `hcond_TT' function
+    module procedure heatcond_TT_2d     ! get 2d-arrays (hcond, dhcond)
+    module procedure heatcond_TT_point  ! get one value (hcond, dhcond)
+  end interface
 
   real :: radius_lnTT=0.1,ampl_lnTT=0.,widthlnTT=2*epsi
   real :: lnTT_left=1.0,lnTT_right=1.0,lnTT_const=0.0,TT_const=1.0
@@ -117,7 +122,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.25 2007-09-10 10:53:42 bingert Exp $")
+           "$Id: temperature_idealgas.f90,v 1.26 2007-09-10 12:55:45 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -239,8 +244,12 @@ module Entropy
 !
 !  Some initializations for the ADI setup
 !
-      if (hole_slope.ne.0.) &
+      if (hole_slope.ne.0.) then
         hole_alpha=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
+        print*,'hole_slope, hole_width, hole_alpha=',hole_slope, &
+             hole_width, hole_alpha
+        print*,'Kmin, Kmax, Fbot, Tbump=', Kmin, Kmax, Fbot, Tbump
+      endif
 !
 !  A word of warning...
 !
@@ -601,7 +610,7 @@ module Entropy
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mz) :: temp,lnrho
       type (pencil_case) :: p
-      real :: arg,hcond,dtemp,dlnrho
+      real :: hcond, dhcond, dtemp,dlnrho
       real :: ss
       integer :: i
 !
@@ -609,9 +618,6 @@ module Entropy
         call fatal_error('temperature_idealgas','rad_equil not implemented for lnTT')
       if (lroot) print*,'init_ss: rad_equil for kappa-mechanism pb'
 !
-      print*,'hole_slope, hole_width, hole_alpha=',hole_slope, &
-             hole_width, hole_alpha
-      print*,'Kmin, Kmax, Fbot, Tbump=', Kmin, Kmax, Fbot, Tbump
 !
 ! Integrate from the top to the bottom
 !
@@ -620,9 +626,7 @@ module Entropy
       f(:,:,n2,ilnTT)=cs20/gamma1
       f(:,:,n2,ilnrho)=lnrho0
       do i=n2-1,n1,-1
-        arg=hole_slope*(temp(i+1)-Tbump-hole_width)* &
-            (temp(i+1)-Tbump+hole_width)
-        hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
+        call heatcond_TT(temp(i+1),hcond,dhcond)
         dtemp=Fbot/hcond
         temp(i)=temp(i+1)+dz*dtemp
 !       dlnrho=2.*(-gamma/gamma1*gravz-dtemp)/(7.d0/6.d0*temp(i)+5.d0/6.d0*temp(i+1))
@@ -643,10 +647,8 @@ module Entropy
         open(unit=11,file=trim(directory)//'/setup.dat')
         write(11,'(5a14)') 'z','rho','temp','ss','hcond'
         do i=n2,n1,-1
-          arg=hole_slope*(temp(i)-Tbump-hole_width)* &
-              (temp(i)-Tbump+hole_width)
-          hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
           call eoscalc(ilnrho_TT,lnrho(i),temp(i),ss=ss)
+          call heatcond_TT(temp(i),hcond,dhcond)
           write(11,'(5e14.5)') z(i),exp(lnrho(i)),temp(i),ss,hcond
         enddo
         close(11)
@@ -1019,8 +1021,28 @@ module Entropy
       cs2top=cs20
 !
     endsubroutine single_polytrope
-!***********************************************************************
+!**************************************************************
     subroutine calc_heatcond_ADI(finit,f)
+!
+!  10-sep-07/gastine+dintrans: wrapper to the two possible ADI subroutines
+!  ADI_Kconst: constant radiative conductivity
+!  ADI_Kprof: radiative conductivity depends on T, i.e. hcond(T)
+!
+      use Cparam
+
+      implicit none
+
+      real, dimension(mx,my,mz,mfarray) :: finit,f
+!
+      if (hcond0 /= impossible) then
+        call ADI_Kconst(finit,f)
+      else
+        call ADI_Kprof(finit,f)
+      endif
+!
+    end subroutine calc_heatcond_ADI
+!***********************************************************************
+    subroutine ADI_Kconst(finit,f)
 !
 !  08-Sep-07/gastine+dintrans: coded
 !  2-D ADI scheme for the radiative diffusion term (see e.g. 
@@ -1097,10 +1119,15 @@ module Entropy
 !
       call BC_CT(f(:,4,:,ilnTT))
 !
-    end subroutine calc_heatcond_ADI
+    end subroutine ADI_Kconst
 !**************************************************************
     subroutine ADI_Kprof(finit,f)
-       
+!
+!  10-Sep-07/gastine+dintrans: coded
+!  2-D ADI scheme for the radiative diffusion term where the radiative
+!  conductivity depends on T (uses heatcond_TT to compute hcond _and_
+!  dhcond).
+!
       use Cdata
       use Cparam
       use EquationOfState, only: gamma, gamma1, cs2bot, cs2top
@@ -1116,7 +1143,7 @@ module Entropy
 
       source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
       rho_g=exp(f(:,4,:,ilnrho))/gamma
-      call hcond_ADI(f,hcond,dhcond)
+      call heatcond_TT(finit(:,4,:,ilnTT),hcond,dhcond)
 !
 !  lignes en implicite
 !
@@ -1193,36 +1220,54 @@ module Entropy
 !
       f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*(val+source)
 !
-! Boris: is it really needed? i.e. filling f(n1,n2) and hcond_ADI
+! Boris: is it really needed? i.e. filling f(n1,n2) and heatcond_TT
       f(:,:,n1,ilnTT)=cs2bot/gamma1
       f(:,:,n2,ilnTT)=cs2top/gamma1
 
       call BC_CT(f(:,4,:,ilnTT))
 !     call BC_flux(f,hcond)
-      call hcond_ADI(f,hcond,dhcond)
+      call heatcond_TT(f(:,4,:,ilnTT),hcond,dhcond)
 !
     end subroutine ADI_Kprof
 !**************************************************************
-    subroutine hcond_ADI(f,hcond,dhcond)
+    subroutine heatcond_TT_2d(TT,hcond,dhcond)
 !
 ! 07-Sep-07/gastine: computed the radiative conductivity hcond(T) and
-! its derivative dhcond=dhcond(T)/dT
+! its derivative dhcond=dhcond(T)/dT when the input TT is a 2d-array.
 !
       implicit none
 
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,mz)            :: arg, hcond, dhcond
+      real, dimension(mx,mz) :: TT, arg, hcond, dhcond
 !
-      arg=hole_slope*(f(:,4,:,ilnTT)-Tbump-hole_width)* &
-          (f(:,4,:,ilnTT)-Tbump+hole_width)
+      arg=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
       hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
-      dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(f(:,4,:,ilnTT)-Tbump)
+      dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !
 ! constant hcond for testing purpose
 !
 !     hcond=hcond0 ; dhcond=0.
 !
-    end subroutine hcond_ADI
+    end subroutine heatcond_TT_2d
+!**************************************************************
+    subroutine heatcond_TT_point(TT,hcond,dhcond)
+!
+! 07-Sep-07/gastine: computed the radiative conductivity hcond(T) and
+! its derivative dhcond=dhcond(T)/dT when the input TT is a single
+! point.
+!
+      implicit none
+
+      real :: TT, arg, hcond, dhcond
+!
+      arg=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
+      hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
+      dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
+!
+! constant hcond for testing purpose
+!
+!     hcond=hcond0 ; dhcond=0.
+!
+    end subroutine heatcond_TT_point
 !**************************************************************
     subroutine BC_CT(f_2d)
 
