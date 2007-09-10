@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.27 2007-09-10 13:08:08 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.28 2007-09-10 14:16:08 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -122,7 +122,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.27 2007-09-10 13:08:08 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.28 2007-09-10 14:16:08 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1139,44 +1139,50 @@ module Entropy
 !
       use Cdata
       use Cparam
-      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top
+      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, get_cp1
 
       implicit none
 
       integer :: i,j
-      real    :: alpha, aalpha, bbeta
       real, dimension(mx,my,mz,mfarray) :: finit,f
-      real, dimension(mx,mz) :: source,rho_g,hcond,dhcond,valinter,val
-      real, dimension(nx)    :: a,b,c
+      real, dimension(mx,mz) :: source,hcond,dhcond,finter,val
+      real, dimension(nx)    :: a,b,c, wx
       real, dimension(nz)    :: rhs,work
+      real    :: alpha, aalpha, bbeta
+      real    :: dx_2, dz_2, cp1
 
       source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
-      rho_g=exp(f(:,4,:,ilnrho))/gamma
       call heatcond_TT(finit(:,4,:,ilnTT),hcond,dhcond)
+      call get_cp1(cp1)
+      dx_2=1./dx**2
+      dz_2=1./dz**2
 !
 !  lignes en implicite
 !
       do j=n1,n2
-       a=-dt/(4.*rho_g(l1:l2,j)*dx**2)*(dhcond(l1-1:l2-1,j)     &
+! a=-dt/2*J_x for i=i-1 (lower diagonal)
+       wx=cp1*gamma/exp(f(l1:l2,4,j,ilnrho))
+       a=-dt*wx*dx_2/4.*(dhcond(l1-1:l2-1,j)     &
          *(finit(l1-1:l2-1,4,j,ilnTT)-finit(l1:l2,4,j,ilnTT))   &
          +hcond(l1-1:l2-1,j)+hcond(l1:l2,j))
-!
-       b=1.+dt/(4.*rho_g(l1:l2,j)*dx**2)*(dhcond(l1:l2,j)       &
+! b=1-dt/2*J_x for i=i (main diagonal)
+       b=1.+dt*wx*dx_2/4.*(dhcond(l1:l2,j)       &
          *(2.*finit(l1:l2,4,j,ilnTT)-finit(l1-1:l2-1,4,j,ilnTT) &
          -finit(l1+1:l2+1,4,j,ilnTT))+2.*hcond(l1:l2,j)         &
          +hcond(l1+1:l2+1,j)+hcond(l1-1:l2-1,j))
-!
-       c=-dt/(4.*rho_g(l1:l2,j)*dx**2)*(dhcond(l1+1:l2+1,j)     &
+! c=-dt/2*J_x for i=i+1 (upper diagonal)
+       c=-dt*wx*dx_2/4.*(dhcond(l1+1:l2+1,j)     &
           *(finit(l1+1:l2+1,4,j,ilnTT)-finit(l1:l2,4,j,ilnTT))  &
           +hcond(l1:l2,j)+hcond(l1+1:l2+1,j))
-!
-       rhs=1./(2.*rho_g(l1:l2,j)*dz**2)*((hcond(l1:l2,j+1)      &
+! rhs=f_y(T^n) + f_x(T^n) (Eq. 3.6)
+! do first f_y(T^n)
+       rhs=wx*dz_2/2.*((hcond(l1:l2,j+1)      &
            +hcond(l1:l2,j))*(finit(l1:l2,4,j+1,ilnTT)           &
            -finit(l1:l2,4,j,ilnTT))-(hcond(l1:l2,j)             &
            +hcond(l1:l2,j-1))                                   &
            *(finit(l1:l2,4,j,ilnTT)-finit(l1:l2,4,j-1,ilnTT)))
-!
-       rhs=rhs+1./(2.*rho_g(l1:l2,j)*dx**2)*((hcond(l1+1:l2+1,j) &
+! then add f_x(T^n)
+       rhs=rhs+wx*dx_2/2.*((hcond(l1+1:l2+1,j) &
          +hcond(l1:l2,j))*(finit(l1+1:l2+1,4,j,ilnTT)-finit(l1:l2,4,j,ilnTT))&
            -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j)) &
            *(finit(l1:l2,4,j,ilnTT)-finit(l1-1:l2-1,4,j,ilnTT)))
@@ -1186,26 +1192,27 @@ module Entropy
        c(nx)=0.
        a(1)=0.
        call cyclic(a,b,c,aalpha,bbeta,rhs,work,nx)
-       valinter(l1:l2,j)=work(1:nx)
+       finter(l1:l2,j)=work(1:nx)
       enddo
 !
 !  colonnes en implicite
 !
       do i=l1,l2
-       a=-dt/(4.*rho_g(i,n1:n2)*dz**2)*(dhcond(i,n1-1:n2-1) &
+       wx=dt*cp1*gamma*dz_2/exp(f(i,4,n1:n2,ilnrho))
+       a=-wx/4.*(dhcond(i,n1-1:n2-1) &
          *(finit(i,4,n1-1:n2-1,ilnTT)-finit(i,4,n1:n2,ilnTT))&
          +hcond(i,n1-1:n2-1)+hcond(i,n1:n2))
 !
-       b=1.+dt/(4.*rho_g(i,n1:n2)*dz**2)*(dhcond(i,n1:n2)* &
+       b=1.+wx/4.*(dhcond(i,n1:n2)* &
          (2.*finit(i,4,n1:n2,ilnTT)-finit(i,4,n1-1:n2-1,ilnTT) &
          -finit(i,4,n1+1:n2+1,ilnTT))+2.*hcond(i,n1:n2) &
          +hcond(i,n1+1:n2+1)+hcond(i,n1-1:n2-1))
 !
-       c=-dt/(4.*rho_g(i,n1:n2)*dz**2)*(dhcond(i,n1+1:n2+1) &
+       c=-wx/4.*(dhcond(i,n1+1:n2+1) &
          *(finit(i,4,n1+1:n2+1,ilnTT)-finit(i,4,n1:n2,ilnTT))&
          +hcond(i,n1:n2)+hcond(i,n1+1:n2+1))
 !
-       rhs=valinter(i,n1:n2)
+       rhs=finter(i,n1:n2)
 !
        c(nz)=0.
        a(1)=0.
