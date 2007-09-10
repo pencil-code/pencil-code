@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.116 2007-09-05 11:31:05 dhruba Exp $
+! $Id: forcing.f90,v 1.117 2007-09-10 13:09:35 brandenb Exp $
 
 module Forcing
 
@@ -82,7 +82,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.116 2007-09-05 11:31:05 dhruba Exp $")
+           "$Id: forcing.f90,v 1.117 2007-09-10 13:09:35 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -688,9 +688,9 @@ module Forcing
 ! psi at present is just Z_{ell}^m. We next do a sum over random coefficients 
 ! get random psi. 
       call random_number_wrapper(ran_min)
-      mmin = nint((ran_min+1.)*dfloat(Legendrel)/2.)
+      mmin = nint((ran_min+1.)*float(Legendrel)/2.)
       call random_number_wrapper(ran_max)
-      mmax = nint((ran_max+1.)*dfloat(Legendrel)/2.)
+      mmax = nint((ran_max+1.)*float(Legendrel)/2.)
       call random_number_wrapper(rphase)
 !      write(*,*) ran_min,ran_max,mmin,mmax,Legendrel,PI
       rphase = PI*rphase
