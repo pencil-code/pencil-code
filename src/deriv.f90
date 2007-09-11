@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.56 2007-09-09 08:18:22 bingert Exp $
+! $Id: deriv.f90,v 1.57 2007-09-11 16:49:42 wlyra Exp $
 
 module Deriv
 
@@ -591,11 +591,13 @@ module Deriv
       else
         upwnd = .false.
         if (.not. lequidist(j)) then
-          call fatal_error('der6','NOT IMPLEMENTED for no equidistant grid')
-       endif
-       if (lspherical_coords) &
-            call fatal_error('der6','NOT IMPLEMENTED for spherical coordinates')
-      endif
+          call fatal_error('der6','NOT IMPLEMENTED for non-equidistant grid')
+        endif
+        if (.not.lcartesian_coords) then
+          call fatal_error('der6','in non-cartesian coordinates '//&
+               'just works if upwiding is used')
+        endif
+     endif
 !     
 !
       if (j==1) then
@@ -627,7 +629,6 @@ module Deriv
                   + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
                   -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
                   +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
-          if (lcylindrical_coords)   df=df*rcyl_mn1**6
          else
           df=0.
         endif
@@ -687,13 +688,13 @@ module Deriv
         upwnd = upwind
       else
         upwnd = .false.
-        if (.not. lequidist(j)) then
-          call fatal_error('der6_other','NOT IMPLEMENTED for no equidistant grid')
-        endif
+        if (.not. lequidist(j)) &
+             call fatal_error('der6_other','NOT IMPLEMENTED for '//&
+             'non equidistant grid')
+        if (.not.lcartesian_coords) &
+             call fatal_error('der6_other','in non-cartesian coordinates '//&
+             'just works if upwiding is used')
       endif
-!
-      if (lspherical_coords) &
-           call fatal_error('der6_other','NOT IMPLEMENTED for spherical coordinates')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -724,7 +725,6 @@ module Deriv
                   + 15.0*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
                   -  6.0*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
                   +      (f(l1:l2,m+3,n)+f(l1:l2,m-3,n)))
-          if (lcylindrical_coords)   df=df*rcyl_mn1**6
         else
           df=0.
         endif
