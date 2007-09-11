@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.33 2007-09-11 15:41:06 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.34 2007-09-11 17:04:43 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -133,7 +133,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.33 2007-09-11 15:41:06 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.34 2007-09-11 17:04:43 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1350,12 +1350,12 @@ module Entropy
 
       real, dimension(mx,mz) :: f_2d
 
-! z-direction
-      f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
-      f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
-! x-direction
+! x-direction: periodic
       f_2d(1:l1-1,:)=f_2d(l2i:l2,:)
       f_2d(l2+1:mx,:)=f_2d(l1:l1i,:)
+! z-direction: constant temperature
+      f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
+      f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
 
     end subroutine BC_CT
 !**************************************************************
@@ -1365,13 +1365,14 @@ module Entropy
       real, dimension(mx,mz) :: hcond
       integer :: i
 
-      do i=1,nghost
-        f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)+2*i*dz*Fbot/hcond(10,n1+i)
-      enddo
-      f(:,:,n2+1,ilnTT)=2*f(:,:,n2,ilnTT)-f(:,:,n2-1,ilnTT)
-      ! x-direction
+! x-direction: periodic
       f(1:l1-1,:,:,ilnTT)=f(l2i:l2,:,:,ilnTT)
       f(l2+1:mx,:,:,ilnTT)=f(l1:l1i,:,:,ilnTT)
+! z-direction: bot=constant flux, top=constant temperature
+      do i=1,nghost
+        f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)+2.*i*dz*Fbot/hcond(10,n1+i)
+      enddo
+      f(:,:,n2+1,ilnTT)=2.*f(:,:,n2,ilnTT)-f(:,:,n2-1,ilnTT)
 
     end subroutine BC_flux
 !**************************************************************
