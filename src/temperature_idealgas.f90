@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.32 2007-09-11 12:52:32 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.33 2007-09-11 15:41:06 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -58,7 +58,6 @@ module Entropy
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.,ldiff_hyper=.false.
   logical :: lheatc_Kconst=.false.,lheatc_Kprof=.false.,lheatc_Karctan=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
-  logical :: lheatc_simplified=.false.
   logical :: lfreeze_lnTTint=.false.,lfreeze_lnTText=.false.
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   logical :: lhcond_global=.false.
@@ -134,7 +133,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.32 2007-09-11 12:52:32 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.33 2007-09-11 15:41:06 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -199,7 +198,6 @@ module Entropy
       lheatc_Kprof= .false.
       lheatc_Karctan= .false.
       lheatc_chiconst = .false.
-      lheatc_simplified = .false.
       ldiff_hyper = .false.
       lnothing = .false.
 !
@@ -228,10 +226,6 @@ module Entropy
         case ('hyper')
           ldiff_hyper=.true.
           if (lroot) call information('initialize_entropy','hyper diffusion')
-        case('simplified')
-          lheatc_simplified=.true.
-          lheatc_chiconst=.true.
-          if (lroot) call information('initialize_entropy',' heat conduction: only del2')
         case ('nothing')
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
@@ -287,9 +281,6 @@ module Entropy
         call warning('initialize_entropy', 'hcond0 is zero!')
       endif
       if (lheatc_chiconst .and. chi==0.0) then
-        call warning('initialize_entropy','chi is zero!')
-      endif
-      if (lheatc_simplified .and. chi==0.0) then
         call warning('initialize_entropy','chi is zero!')
       endif
       if (iheatcond(1)=='nothing') then
@@ -398,14 +389,12 @@ module Entropy
 !
       if (lheatc_chiconst) then
         lpenc_requested(i_del2lnTT)=.true.
-        if (.not. lheatc_simplified) then
-          lpenc_requested(i_glnTT)=.true.
-          lpenc_requested(i_glnrho)=.true.
-        endif
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_glnrho)=.true.
       endif
 !
       if (lheatc_Kconst) then
-        lpenc_requested(i_rho1)=.true.
+        if (ldensity) lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_cp1)=.true.
@@ -768,8 +757,6 @@ module Entropy
 !           = gamma*chi*(g2.glnTT+g2lnTT) where g2=glnrho+glnTT
 !    TT version: cp*chi*Div(rho*gTT)/(rho*cv)
 !           = gamma*chi*(g2.gTT+g2TT) where g2=glnrho
-!  Note: if lheatc_simplified=.true. then g2=0 and only gamma*chi*g2lnTT
-!        (or gamma*chi*g2TT) is computed
 !
       use Sub, only: max_mn_name,dot,del2,multsv
       use EquationOfState, only: gamma
@@ -778,14 +765,10 @@ module Entropy
       type (pencil_case) :: p
       real, dimension (nx) :: g2
 !
-      if (.not. lheatc_simplified) then
-        if (ltemperature_nolog) then
-          call dot(p%glnrho,p%glnTT,g2)
-        else
-          call dot(p%glnTT+p%glnrho,p%glnTT,g2)
-        endif
+      if (ltemperature_nolog) then
+        call dot(p%glnrho,p%glnTT,g2)
       else
-        g2=0.
+        call dot(p%glnTT+p%glnrho,p%glnTT,g2)
       endif
 !
 !  Add heat conduction to RHS of temperature equation
@@ -805,28 +788,32 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond_constK(df,p)
 !
-! 
-!  calculate gamma*K/rho/TT/cp*div(T*grad lnTT)= 
-!            gamma*K/rho/cp*(gradlnTT.gradlnTT + del2ln TT)
-!
+!  Calculate the radiative diffusion term for K=cte:
+!  lnTT version: gamma*K/rho/TT/cp*div(T*grad lnTT)
+!                =gamma*K/rho/cp*(gradlnTT.gradlnTT + del2ln TT)
+!    TT version: gamma*K/rho/cp*del2(TT)=gamma*chi*del2(TT)
+!  Note: if ldensity=.false. then rho=1 and chi=K/cp
 !
       use Sub, only: max_mn_name,dot,del2,multsv
       use EquationOfState, only: gamma
 
       real, dimension(mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-      real, dimension(nx) :: g2,hcond,chix
-!
-      hcond=hcond0
+      type (pencil_case)  :: p
+      real, dimension(nx) :: g2, chix
 !
 !  Add heat conduction to RHS of temperature equation
 !
-      chix=p%rho1*hcond*p%cp1
+      if (ldensity) then
+        chix=p%rho1*hcond0*p%cp1
+      else
+        chix=hcond0*p%cp1
+      endif
+!
       if (ltemperature_nolog) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*p%del2lnTT
       else
         call dot(p%glnTT,p%glnTT,g2)
-       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g2 + p%del2lnTT)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g2 + p%del2lnTT)
       endif
 !
 !  check maximum diffusion from thermal diffusion
@@ -894,7 +881,6 @@ module Entropy
 !  12-Mar-07/dintrans: coded
 !  calculate gamma*K/rho*cp*div(T*grad lnTT)= 
 !              gamma*K/rho*cp*(gradlnTT.gradln(hcond*TT) + del2ln TT)
-!
 !
       use Sub, only: max_mn_name,dot,del2,multsv,step,der_step
       use EquationOfState, only: gamma
@@ -1125,7 +1111,7 @@ module Entropy
 
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit,f
-      real, dimension(mx,mz) :: finter,source
+      real, dimension(mx,mz) :: finter, source, rho
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real    :: alpha, aalpha, bbeta, cp1, dx_2, dz_2
@@ -1134,11 +1120,16 @@ module Entropy
       call get_cp1(cp1)
       dx_2=1./dx**2
       dz_2=1./dz**2
+      if (ldensity) then
+        rho=exp(f(:,4,:,ilnrho))
+      else
+        rho=1.
+      endif
 !
 !  row dealt implicitly
 !
       do j=n1,n2
-        wx=dt*gamma*hcond0*cp1/exp(f(l1:l2,4,j,ilnrho))
+        wx=dt*gamma*hcond0*cp1/rho(l1:l2,j)
         ax=-wx*dx_2/2.
         bx=1.+wx*dx_2
         cx=ax
@@ -1160,7 +1151,7 @@ module Entropy
 !  columns dealt implicitly
 !
       do i=l1,l2
-        wz=dt*gamma*hcond0*cp1/exp(f(i,4,n1:n2,ilnrho))
+        wz=dt*gamma*hcond0*cp1/rho(i,n1:n2)
         az=-wz*dz_2/2.
         bz=1.+wz*dz_2
         cz=az
@@ -1206,7 +1197,7 @@ module Entropy
 
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit,f
-      real, dimension(mx,mz) :: source,hcond,dhcond,finter,val,TT
+      real, dimension(mx,mz) :: source,hcond,dhcond,finter,val,TT,rho
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real    :: alpha, aalpha, bbeta
@@ -1218,35 +1209,40 @@ module Entropy
       dx_2=1./dx**2
       dz_2=1./dz**2
       TT=finit(:,4,:,ilnTT)
+      if (ldensity) then
+        rho=exp(f(:,4,:,ilnrho))
+      else
+        rho=1.
+      endif
 !
 !  rows dealt implicitly
 !
       do j=n1,n2
-       wx=cp1*gamma/exp(f(l1:l2,4,j,ilnrho))
+       wx=cp1*gamma/rho(l1:l2,j)
 ! ax=-dt/2*J_x for i=i-1 (lower diagonal)
-       ax=-dt*wx*dx_2/4.*(dhcond(l1-1:l2-1,j)     &
+       ax=-dt*wx*dx_2/4.*(dhcond(l1-1:l2-1,j)    &
          *(TT(l1-1:l2-1,j)-TT(l1:l2,j))          &
          +hcond(l1-1:l2-1,j)+hcond(l1:l2,j))
 ! bx=1-dt/2*J_x for i=i (main diagonal)
-       bx=1.+dt*wx*dx_2/4.*(dhcond(l1:l2,j)       &
+       bx=1.+dt*wx*dx_2/4.*(dhcond(l1:l2,j)      &
          *(2.*TT(l1:l2,j)-TT(l1-1:l2-1,j)        &
          -TT(l1+1:l2+1,j))+2.*hcond(l1:l2,j)     &
          +hcond(l1+1:l2+1,j)+hcond(l1-1:l2-1,j))
 ! cx=-dt/2*J_x for i=i+1 (upper diagonal)
-       cx=-dt*wx*dx_2/4.*(dhcond(l1+1:l2+1,j)     &
+       cx=-dt*wx*dx_2/4.*(dhcond(l1+1:l2+1,j)    &
           *(TT(l1+1:l2+1,j)-TT(l1:l2,j))         &
           +hcond(l1:l2,j)+hcond(l1+1:l2+1,j))
 ! rhsx=f_y(T^n) + f_x(T^n) (Eq. 3.6)
 ! do first f_y(T^n)
-       rhsx=wx*dz_2/2.*((hcond(l1:l2,j+1)         &
+       rhsx=wx*dz_2/2.*((hcond(l1:l2,j+1)        &
            +hcond(l1:l2,j))*(TT(l1:l2,j+1)       &
            -TT(l1:l2,j))-(hcond(l1:l2,j)         &
            +hcond(l1:l2,j-1))                    &
            *(TT(l1:l2,j)-TT(l1:l2,j-1)))
 ! then add f_x(T^n)
-       rhsx=rhsx+wx*dx_2/2.*((hcond(l1+1:l2+1,j)   &
+       rhsx=rhsx+wx*dx_2/2.*((hcond(l1+1:l2+1,j)         &
          +hcond(l1:l2,j))*(TT(l1+1:l2+1,j)-TT(l1:l2,j))  &
-           -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j))  &
+           -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j))          &
            *(TT(l1:l2,j)-TT(l1-1:l2-1,j)))+source(l1:l2,j)
 !
        aalpha=cx(nx)
@@ -1260,18 +1256,18 @@ module Entropy
 !  columns dealt implicitly
 !
       do i=l1,l2
-       wz=dt*cp1*gamma*dz_2/exp(f(i,4,n1:n2,ilnrho))
-       az=-wz/4.*(dhcond(i,n1-1:n2-1) &
-         *(TT(i,n1-1:n2-1)-TT(i,n1:n2))&
+       wz=dt*cp1*gamma*dz_2/rho(i,n1:n2)
+       az=-wz/4.*(dhcond(i,n1-1:n2-1)   &
+         *(TT(i,n1-1:n2-1)-TT(i,n1:n2)) &
          +hcond(i,n1-1:n2-1)+hcond(i,n1:n2))
 !
-       bz=1.+wz/4.*(dhcond(i,n1:n2)* &
-         (2.*TT(i,n1:n2)-TT(i,n1-1:n2-1) &
-         -TT(i,n1+1:n2+1))+2.*hcond(i,n1:n2) &
+       bz=1.+wz/4.*(dhcond(i,n1:n2)*             &
+         (2.*TT(i,n1:n2)-TT(i,n1-1:n2-1)         &
+         -TT(i,n1+1:n2+1))+2.*hcond(i,n1:n2)     &
          +hcond(i,n1+1:n2+1)+hcond(i,n1-1:n2-1))
 !
-       cz=-wz/4.*(dhcond(i,n1+1:n2+1) &
-         *(TT(i,n1+1:n2+1)-TT(i,n1:n2))&
+       cz=-wz/4.*(dhcond(i,n1+1:n2+1)            &
+         *(TT(i,n1+1:n2+1)-TT(i,n1:n2))          &
          +hcond(i,n1:n2)+hcond(i,n1+1:n2+1))
 !
        rhsz=finter(i,n1:n2)
