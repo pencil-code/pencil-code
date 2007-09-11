@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.30 2007-09-10 16:34:53 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.31 2007-09-11 12:06:05 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -29,7 +29,7 @@ module Entropy
   use Cdata
   use Messages
   use Interstellar
-  use EquationOfState, only: mpoly0,mpoly1
+  use EquationOfState, only: mpoly0, mpoly1
 
   implicit none
 
@@ -42,7 +42,7 @@ module Entropy
     module procedure heatcond_TT_point  ! get one value (hcond, dhcond)
   end interface
 
-  real :: radius_lnTT=0.1,ampl_lnTT=0.,widthlnTT=2*epsi
+  real :: radius_lnTT=0.,ampl_lnTT=0.,widthlnTT=2*epsi
   real :: lnTT_left=1.0,lnTT_right=1.0,lnTT_const=0.0,TT_const=1.0
   real :: kx_lnTT=1.0,ky_lnTT=1.0,kz_lnTT=1.0
   real :: chi=impossible,heat_uniform=0.0,difflnTT_hyper=0.
@@ -58,6 +58,7 @@ module Entropy
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.,ldiff_hyper=.false.
   logical :: lheatc_Kconst=.false.,lheatc_Kprof=.false.,lheatc_Karctan=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
+  logical :: lheatc_simplified=.false.
   logical :: lfreeze_lnTTint=.false.,lfreeze_lnTText=.false.
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   logical :: lhcond_global=.false.
@@ -90,12 +91,23 @@ module Entropy
       Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width
 !
 ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
+  integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
+  integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
+  integer :: idiag_TTm=0      ! DIAG_DOC: $\left< T \right>$
   integer :: idiag_yHmax=0,idiag_yHmin=0,idiag_yHm=0
   integer :: idiag_eth=0,idiag_ssm=0,idiag_thcool=0
-  integer :: idiag_dtchi=0,idiag_dtc=0
   integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0
- 
+  integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
+                                ! DIAG_DOC:   /\max c_{\rm s}]$
+                                ! DIAG_DOC:   \quad(time step relative to
+                                ! DIAG_DOC:   acoustic time step;
+                                ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_dtchi=0      ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm v}}\,
+                                ! DIAG_DOC:   \delta x^2/\chi_{\rm max}]$
+                                ! DIAG_DOC:   \quad(time step relative to time
+                                ! DIAG_DOC:   step based on heat conductivity;
+                                ! DIAG_DOC:   see \S~\ref{time-step})
+
   contains
 
 !***********************************************************************
@@ -122,7 +134,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.30 2007-09-10 16:34:53 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.31 2007-09-11 12:06:05 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -156,7 +168,8 @@ module Entropy
       use Cdata
       use FArrayManager
       use Gravity, only: g0
-      use EquationOfState
+      use EquationOfState, only : cs2bot, cs2top, gamma, gamma1, &
+                                  select_eos_variable
       use Sub, only: step,der_step
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -186,6 +199,7 @@ module Entropy
       lheatc_Kprof= .false.
       lheatc_Karctan= .false.
       lheatc_chiconst = .false.
+      lheatc_simplified = .false.
       ldiff_hyper = .false.
       lnothing = .false.
 !
@@ -214,6 +228,10 @@ module Entropy
         case ('hyper')
           ldiff_hyper=.true.
           if (lroot) call information('initialize_entropy','hyper diffusion')
+        case('simplified')
+          lheatc_simplified=.true.
+          lheatc_chiconst=.true.
+          if (lroot) call information('initialize_entropy',' heat conduction: only del2')
         case ('nothing')
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
@@ -251,6 +269,15 @@ module Entropy
         print*,'Kmin, Kmax, Fbot, Tbump=', Kmin, Kmax, Fbot, Tbump
       endif
 !
+      if (initlnTT(1).eq.'gaussian') then
+! needed when one only works with temperature_idealgas to check the
+! radiative diffusion term, i.e. one solves d(TT)/dt=gamma*chi*del2(TT)
+! with bcz='cT' (all other modules are down)
+        cs2bot=gamma1*f(l1,4,n1,ilnTT)
+        cs2top=gamma1*f(l1,4,n1,ilnTT)
+      endif
+!
+!
 !  A word of warning...
 !
       if (lheatc_Kconst .and. hcond0==0.0) then
@@ -262,6 +289,9 @@ module Entropy
       if (lheatc_chiconst .and. chi==0.0) then
         call warning('initialize_entropy','chi is zero!')
       endif
+      if (lheatc_simplified .and. chi==0.0) then
+        call warning('initialize_entropy','chi is zero!')
+      endif
       if (iheatcond(1)=='nothing') then
         if (hcond0 /= impossible) call warning('initialize_entropy', 'No heat conduction, but hcond0 /= 0')
         if (chi /= impossible) call warning('initialize_entropy', 'No heat conduction, but chi /= 0')
@@ -271,7 +301,7 @@ module Entropy
 !***********************************************************************
     subroutine init_ss(f,xx,yy,zz)
 !
-!  initialise lnTT; called from start.f90
+!  initialise lnTT or TT (; called from start.f90
 !
 !  13-dec-2002/axel+tobi: adapted from init_ss
 !
@@ -282,7 +312,9 @@ module Entropy
       use General,  only: chn
       use Sub,      only: blob
       use Initcond, only: jump
+      use EquationOfState, only: gamma1, cs2bot, cs2top
 !
+      integer :: j
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz), intent (in) :: xx,yy,zz
       logical :: lnothing=.true.
@@ -302,6 +334,13 @@ module Entropy
       case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
       case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
       case('single_polytrope'); call single_polytrope(f)
+      case('gaussian')
+        do j=n1,n2
+          f(l1:l2,4,j,ilnTT)=exp(-(x(l1:l2)/radius_lnTT)**2)* &
+                 exp(-((z(j)-0.5)/radius_lnTT)**2)
+        enddo
+        cs2bot=gamma1*f(l1,4,n1,ilnTT)
+        cs2top=gamma1*f(l1,4,n2,ilnTT)
       case('rad_equil')
           call rad_equil(f)
           if (ampl_lnTT.ne.0.) then
@@ -339,6 +378,7 @@ module Entropy
       use Cdata
 !
       if (ldt) lpenc_requested(i_cs2)=.true.
+!
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
 !
       if (lviscosity.and.lviscosity_heat) then
@@ -347,9 +387,7 @@ module Entropy
         lpenc_requested(i_visc_heat)=.true.
       endif
 !
-      if (ldensity) then
-         lpenc_requested(i_divu)=.true.
-      endif
+      if (ldensity) lpenc_requested(i_divu)=.true.
 !
       if (lcalc_heat_cool) then
         lpenc_requested(i_rho1)=.true.
@@ -360,19 +398,26 @@ module Entropy
 !
       if (lheatc_chiconst) then
         lpenc_requested(i_del2lnTT)=.true.
+        if (.not. lheatc_simplified) then
+          lpenc_requested(i_glnTT)=.true.
+          lpenc_requested(i_glnrho)=.true.
+        endif
       endif
+!
       if (lheatc_Kconst) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_cp1)=.true.
       endif
+!
       if (lheatc_Kprof) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_cp1)=.true.
       endif
+!
       if (lheatc_Karctan) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_TT)=.true.
@@ -380,10 +425,8 @@ module Entropy
         lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_cp1)=.true.
       endif
-      if (ldiff_hyper) then
-         lpenc_requested(i_del6lnTT)=.true.
-      endif
-
+!
+      if (ldiff_hyper) lpenc_requested(i_del6lnTT)=.true.
 !
       if (ladvection_temperature) lpenc_requested(i_uglnTT)=.true.
 !
@@ -433,10 +476,8 @@ module Entropy
         lpencil_in(i_u2)=.true.
         lpencil_in(i_cs2)=.true.
       endif
-
-      if (lpencil_in(i_uglnTT)) then
-        lpencil_in(i_glnTT)=.true.
-      endif
+!
+      if (lpencil_in(i_uglnTT)) lpencil_in(i_glnTT)=.true.
 !
       if (lpencil_in(i_fpres)) then
         if (ltemperature_nolog) then
@@ -490,7 +531,7 @@ module Entropy
 !**********************************************************************
     subroutine dss_dt(f,df,p)
 !
-!  calculate right hand side of temperature equation
+!  Calculate right hand side of temperature equation
 !  heat condution is currently disabled until old stuff,
 !  which in now in calc_heatcond, has been reinstalled.
 !  lnTT version: DlnTT/Dt = -gamma1*divu + gamma*cp1*rho1*TT1*RHS
@@ -722,8 +763,13 @@ module Entropy
 !
 !  01-mar-07/dintrans: adapted from temperature_ionization
 !
-!  calculate chi*grad(rho*T*glnTT)/(rho*TT)
-!           =chi*(g2.glnTT+g2lnTT) where g2=glnrho+glnTT
+!  Calculate the radiative diffusion term for chi=cte:
+!  lnTT version: cp*chi*Div(rho*T*glnTT)/(rho*cv*TT)
+!           = gamma*chi*(g2.glnTT+g2lnTT) where g2=glnrho+glnTT
+!    TT version: cp*chi*Div(rho*gTT)/(rho*cv)
+!           = gamma*chi*(g2.gTT+g2TT) where g2=glnrho
+!  Note: if lheatc_simplified=.true. then g2=0 and only gamma*chi*g2lnTT
+!        (or gamma*chi*g2TT) is computed
 !
       use Sub, only: max_mn_name,dot,del2,multsv
       use EquationOfState, only: gamma
@@ -732,7 +778,15 @@ module Entropy
       type (pencil_case) :: p
       real, dimension (nx) :: g2
 !
-      call dot(p%glnTT+p%glnrho,p%glnTT,g2)
+      if (.not. lheatc_simplified) then
+        if (ltemperature_nolog) then
+          call dot(p%glnrho,p%glnTT,g2)
+        else
+          call dot(p%glnTT+p%glnrho,p%glnTT,g2)
+        endif
+      else
+        g2=0.
+      endif
 !
 !  Add heat conduction to RHS of temperature equation
 !
@@ -837,7 +891,7 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond(f,df,p)
 !
-!  12-Mar-2007/dintrans: coded
+!  12-Mar-07/dintrans: coded
 !  calculate gamma*K/rho*cp*div(T*grad lnTT)= 
 !              gamma*K/rho*cp*(gradlnTT.gradln(hcond*TT) + del2ln TT)
 !
@@ -995,7 +1049,7 @@ module Entropy
 !***********************************************************************
     subroutine single_polytrope(f)
 !
-! 04-aug-2007/dintrans: a single polytrope with index mpoly0
+! 04-aug-07/dintrans: a single polytrope with index mpoly0
 !
       use Cdata
       use Gravity, only: gravz
@@ -1242,12 +1296,12 @@ module Entropy
        val(i,n1:n2)=work(1:nz)
       enddo
 !
-!     f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*(val+source)
       f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
 !
 ! Boris: is it really needed? i.e. filling f(n1,n2) and heatcond_TT
-      f(:,:,n1,ilnTT)=cs2bot/gamma1
-      f(:,:,n2,ilnTT)=cs2top/gamma1
+! 11-sep-07/gastine: f(n1,n2) is not needed
+!     f(:,:,n1,ilnTT)=cs2bot/gamma1
+!     f(:,:,n2,ilnTT)=cs2top/gamma1
 
       call BC_CT(f(:,4,:,ilnTT))
 !     call BC_flux(f,hcond)

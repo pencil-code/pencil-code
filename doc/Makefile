@@ -38,7 +38,7 @@ MAY_HAVE_CHANGED='may have changed. Rerun to get'
 
 # ------------------
 
-default: manual.pdf manual.ps.gz
+default: diag-table.tex manual.pdf manual.ps.gz
 
 all:  manual.pdf manual.dvi manual.ps.gz
 
