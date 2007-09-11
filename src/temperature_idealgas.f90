@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.31 2007-09-11 12:06:05 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.32 2007-09-11 12:52:32 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -134,7 +134,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.31 2007-09-11 12:06:05 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.32 2007-09-11 12:52:32 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1126,8 +1126,8 @@ module Entropy
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit,f
       real, dimension(mx,mz) :: finter,source
-      real, dimension(nx)    :: a,b,c,wx
-      real, dimension(nz)    :: rhs,work
+      real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
+      real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real    :: alpha, aalpha, bbeta, cp1, dx_2, dz_2
 !
       source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
@@ -1139,20 +1139,20 @@ module Entropy
 !
       do j=n1,n2
         wx=dt*gamma*hcond0*cp1/exp(f(l1:l2,4,j,ilnrho))
-        a=-wx*dx_2/2.
-        b=1.+wx*dx_2
-        c=a
+        ax=-wx*dx_2/2.
+        bx=1.+wx*dx_2
+        cx=ax
 !
-        rhs=finit(l1:l2,4,j,ilnTT)+wx*dz_2/2.*                    &
+        rhsx=finit(l1:l2,4,j,ilnTT)+wx*dz_2/2.*                   &
             (finit(l1:l2,4,j+1,ilnTT)-2.*finit(l1:l2,4,j,ilnTT)+  &
             finit(l1:l2,4,j-1,ilnTT))+dt/2.*source(l1:l2,j)
 !
-        aalpha=c(nx)
-        bbeta=a(1)
-        c(nx)=0.
-        a(1)=0.
-        call cyclic(a,b,c,aalpha,bbeta,rhs,work,nx)
-        finter(l1:l2,j)=work(1:nx)
+        aalpha=cx(nx)
+        bbeta=ax(1)
+        cx(nx)=0.
+        ax(1)=0.
+        call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,workx,nx)
+        finter(l1:l2,j)=workx(1:nx)
       enddo
 !
       call BC_CT(finter)
@@ -1160,25 +1160,25 @@ module Entropy
 !  columns dealt implicitly
 !
       do i=l1,l2
-        wx=dt*gamma*hcond0*cp1/exp(f(i,4,n1:n2,ilnrho))
-        a=-wx*dz_2/2.
-        b=1.+wx*dz_2
-        c=a
+        wz=dt*gamma*hcond0*cp1/exp(f(i,4,n1:n2,ilnrho))
+        az=-wz*dz_2/2.
+        bz=1.+wz*dz_2
+        cz=az
 !
-        rhs=finter(i,n1:n2)+wx*dx_2/2.*                              &
+        rhsz=finter(i,n1:n2)+wz*dx_2/2.*                             &
            (finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2))  &
            +dt/2.*source(i,n1:n2)
 !
-        c(nz)=0.
-        a(1)=0.
-        b(1)=1.
-        b(nz)=1.
-        c(1)=0.
-        a(nz)=0.
-        rhs(1)=cs2bot/gamma1
-        rhs(nx)=cs2top/gamma1
-        call tridag(a,b,c,rhs,work,nz)
-        f(i,4,n1:n2,ilnTT)=work(1:nz)
+        cz(nz)=0.
+        az(1)=0.
+        bz(1)=1.
+        bz(nz)=1.
+        cz(1)=0.
+        az(nz)=0.
+        rhsz(1)=cs2bot/gamma1
+        rhsz(nx)=cs2top/gamma1
+        call tridag(az,bz,cz,rhsz,workz,nz)
+        f(i,4,n1:n2,ilnTT)=workz(1:nz)
       enddo
 !
       call BC_CT(f(:,4,:,ilnTT))
@@ -1207,8 +1207,8 @@ module Entropy
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit,f
       real, dimension(mx,mz) :: source,hcond,dhcond,finter,val,TT
-      real, dimension(nx)    :: a,b,c, wx
-      real, dimension(nz)    :: rhs,work
+      real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
+      real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real    :: alpha, aalpha, bbeta
       real    :: dx_2, dz_2, cp1
 
@@ -1223,77 +1223,77 @@ module Entropy
 !
       do j=n1,n2
        wx=cp1*gamma/exp(f(l1:l2,4,j,ilnrho))
-! a=-dt/2*J_x for i=i-1 (lower diagonal)
-       a=-dt*wx*dx_2/4.*(dhcond(l1-1:l2-1,j)     &
+! ax=-dt/2*J_x for i=i-1 (lower diagonal)
+       ax=-dt*wx*dx_2/4.*(dhcond(l1-1:l2-1,j)     &
          *(TT(l1-1:l2-1,j)-TT(l1:l2,j))          &
          +hcond(l1-1:l2-1,j)+hcond(l1:l2,j))
-! b=1-dt/2*J_x for i=i (main diagonal)
-       b=1.+dt*wx*dx_2/4.*(dhcond(l1:l2,j)       &
+! bx=1-dt/2*J_x for i=i (main diagonal)
+       bx=1.+dt*wx*dx_2/4.*(dhcond(l1:l2,j)       &
          *(2.*TT(l1:l2,j)-TT(l1-1:l2-1,j)        &
          -TT(l1+1:l2+1,j))+2.*hcond(l1:l2,j)     &
          +hcond(l1+1:l2+1,j)+hcond(l1-1:l2-1,j))
-! c=-dt/2*J_x for i=i+1 (upper diagonal)
-       c=-dt*wx*dx_2/4.*(dhcond(l1+1:l2+1,j)     &
+! cx=-dt/2*J_x for i=i+1 (upper diagonal)
+       cx=-dt*wx*dx_2/4.*(dhcond(l1+1:l2+1,j)     &
           *(TT(l1+1:l2+1,j)-TT(l1:l2,j))         &
           +hcond(l1:l2,j)+hcond(l1+1:l2+1,j))
-! rhs=f_y(T^n) + f_x(T^n) (Eq. 3.6)
+! rhsx=f_y(T^n) + f_x(T^n) (Eq. 3.6)
 ! do first f_y(T^n)
-       rhs=wx*dz_2/2.*((hcond(l1:l2,j+1)         &
+       rhsx=wx*dz_2/2.*((hcond(l1:l2,j+1)         &
            +hcond(l1:l2,j))*(TT(l1:l2,j+1)       &
            -TT(l1:l2,j))-(hcond(l1:l2,j)         &
            +hcond(l1:l2,j-1))                    &
            *(TT(l1:l2,j)-TT(l1:l2,j-1)))
 ! then add f_x(T^n)
-       rhs=rhs+wx*dx_2/2.*((hcond(l1+1:l2+1,j)   &
+       rhsx=rhsx+wx*dx_2/2.*((hcond(l1+1:l2+1,j)   &
          +hcond(l1:l2,j))*(TT(l1+1:l2+1,j)-TT(l1:l2,j))  &
            -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j))  &
            *(TT(l1:l2,j)-TT(l1-1:l2-1,j)))+source(l1:l2,j)
 !
-       aalpha=c(nx)
-       bbeta=a(1)
-       c(nx)=0.
-       a(1)=0.
-       call cyclic(a,b,c,aalpha,bbeta,rhs,work,nx)
-       finter(l1:l2,j)=work(1:nx)
+       aalpha=cx(nx)
+       bbeta=ax(1)
+       cx(nx)=0.
+       ax(1)=0.
+       call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,workx,nx)
+       finter(l1:l2,j)=workx(1:nx)
       enddo
 !
 !  columns dealt implicitly
 !
       do i=l1,l2
-       wx=dt*cp1*gamma*dz_2/exp(f(i,4,n1:n2,ilnrho))
-       a=-wx/4.*(dhcond(i,n1-1:n2-1) &
+       wz=dt*cp1*gamma*dz_2/exp(f(i,4,n1:n2,ilnrho))
+       az=-wz/4.*(dhcond(i,n1-1:n2-1) &
          *(TT(i,n1-1:n2-1)-TT(i,n1:n2))&
          +hcond(i,n1-1:n2-1)+hcond(i,n1:n2))
 !
-       b=1.+wx/4.*(dhcond(i,n1:n2)* &
+       bz=1.+wz/4.*(dhcond(i,n1:n2)* &
          (2.*TT(i,n1:n2)-TT(i,n1-1:n2-1) &
          -TT(i,n1+1:n2+1))+2.*hcond(i,n1:n2) &
          +hcond(i,n1+1:n2+1)+hcond(i,n1-1:n2-1))
 !
-       c=-wx/4.*(dhcond(i,n1+1:n2+1) &
+       cz=-wz/4.*(dhcond(i,n1+1:n2+1) &
          *(TT(i,n1+1:n2+1)-TT(i,n1:n2))&
          +hcond(i,n1:n2)+hcond(i,n1+1:n2+1))
 !
-       rhs=finter(i,n1:n2)
+       rhsz=finter(i,n1:n2)
 !
-       c(nz)=0.
-       a(1)=0.
+       cz(nz)=0.
+       az(1)=0.
 ! Constant flux at the bottom
-!       b(1)=-1.
-!       c(1)=0.
-!       c(1)=1.
-!       rhs(1)=0.
+!       bz(1)=-1.
+!       cz(1)=0.
+!       cz(1)=1.
+!       rhsz(1)=0.
 ! Constant temperature at the bottom: T^(n+1)-T^n=0
-        b(1)=1.
-        c(1)=0.
-        rhs(1)=0.
+        bz(1)=1.
+        cz(1)=0.
+        rhsz(1)=0.
 ! Constant temperature at the top: T^(n+1)-T^n=0
-       b(nz)=1.
-       a(nz)=0.
-       rhs(nz)=0.
+       bz(nz)=1.
+       az(nz)=0.
+       rhsz(nz)=0.
 !
-       call tridag(a,b,c,rhs,work,nz)
-       val(i,n1:n2)=work(1:nz)
+       call tridag(az,bz,cz,rhsz,workz,nz)
+       val(i,n1:n2)=workz(1:nz)
       enddo
 !
       f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
