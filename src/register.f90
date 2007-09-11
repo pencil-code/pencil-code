@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.218 2007-09-11 11:14:25 wlyra Exp $
+! $Id: register.f90,v 1.219 2007-09-11 13:13:51 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -366,6 +366,9 @@ module Register
 !  Need to modify for 2-D and 1-D cases!
 !
         r2_weight=x(l1:l2)**2
+!
+!  Trapezoidal rule
+!
         if (ipx==0       ) r2_weight( 1)=.5*r2_weight( 1)
         if (ipx==nprocx-1) r2_weight(nx)=.5*r2_weight(nx)
 !
@@ -386,7 +389,9 @@ module Register
         rcyl_mn1=max(1./x(l1:l2),tini)
         rcyl_mn2=rcyl_mn1**2
 !
-        rcyl_weight=x(l1:l2)
+!  Trapezoidal rule
+!
+        rcyl_weight=rcyl_mn
         if (ipx==0       ) rcyl_weight( 1)=.5*rcyl_weight( 1)
         if (ipx==nprocx-1) rcyl_weight(nx)=.5*rcyl_weight(nx)
 !
