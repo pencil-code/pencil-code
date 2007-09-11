@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.49 2007-09-11 13:21:11 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.50 2007-09-11 14:38:00 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -65,13 +65,23 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.49 2007-09-11 13:21:11 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.50 2007-09-11 14:38:00 wlyra Exp $")
+!
+!  No need to solve the N-body equations for non-N-body problems.
+!
+      if (nspar < 2) then
+        if (lroot) write(0,*) 'nspar = ', nspar
+        call fatal_error('register_particles_nbody','the number of massive'//&
+             ' particles is less than 2. There is no need to use the'//&
+             ' N-body code. Consider setting gravity as a global variable'//&
+             ' using gravity_r.f90 instead.')
+      endif
 !
 !  Check that we aren't registering too many auxiliary variables
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux= ', maux
-        call fatal_error('register_shock','naux > maux')
+        call fatal_error('register_particles_nbody','naux > maux')
       endif
 !
     endsubroutine register_particles_nbody
