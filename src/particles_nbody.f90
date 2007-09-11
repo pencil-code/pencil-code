@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.48 2007-09-07 01:10:17 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.49 2007-09-11 13:21:11 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.48 2007-09-07 01:10:17 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.49 2007-09-11 13:21:11 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -371,6 +371,11 @@ module Particles_nbody
         call stop_it("")
 !
       endselect
+!
+! Make the particles known to all processors
+!
+      call boundconds_particles(fp,npar_loc,ipar)
+      call share_sinkparticles(fp)
 !
     endsubroutine init_particles_nbody
 !***********************************************************************
