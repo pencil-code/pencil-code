@@ -15,35 +15,13 @@
 #include <string.h>
 #include <math.h>
 
-
-/* Choose single or double precision here (typically done from the Makefile) */
-#ifdef DOUBLE_PRECISION
-#  define REAL double
-#  define FINT int		/* should this be long int? */
-#  define NBYTES 8
-#else
-#  define REAL float
-#  define FINT int
-#  define NBYTES 4
-#endif
+#include "headers_c.h"
 
 /* Some arbitrary limits */
 /* Maximum number of debugging files to write at one time: */
 #define MAX_PENCIL_FILES 100
 /* Maximum length of (significant part of) file name: */
 #define FN_LENGTH 80
-
-/* Pick correct number of underscores here (2 for g77 without
-   `-fno-second-underscore', 1 for most other compilers).
-   Use the `-DFUNDERSC=1' option in the Makefile to set this.
-*/
-#if (FUNDERSC == 0)
-#  define FTNIZE(name) name
-#elif (FUNDERSC == 1)
-#  define FTNIZE(name) name##_
-#else
-#  define FTNIZE(name) name##__
-#endif
 
 /*
   do imn=1,ny*nz
