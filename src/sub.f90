@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.343 2007-09-10 10:53:42 bingert Exp $
+! $Id: sub.f90,v 1.344 2007-09-11 11:14:25 wlyra Exp $
 
 module Sub
 
@@ -401,10 +401,7 @@ module Sub
           if (lspherical_coords) then
             fname(iname)=sum(r2_weight*sinth_weight(m)*a)
           elseif (lcylindrical_coords) then
-            fname(iname) = 0.
-            do isum=l1,l2
-              fname(iname) = fname(iname)+x(isum)*a(isum)
-            enddo
+            fname(iname) = sum(rcyl_weight*a)
           else
             fname(iname)=sum(a)
           endif
@@ -412,9 +409,7 @@ module Sub
           if(lspherical_coords) then
             fname(iname)=fname(iname)+sum(r2_weight*sinth_weight(m)*a)
           elseif (lcylindrical_coords) then
-            do isum=l1,l2
-              fname(iname) = fname(iname)+x(isum)*a(isum)
-            enddo
+            fname(iname)=fname(iname)+sum(rcyl_weight*a)
           else
             fname(iname)=fname(iname)+sum(a)
           endif

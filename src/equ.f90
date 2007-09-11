@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.377 2007-09-02 18:14:29 reza Exp $
+! $Id: equ.f90,v 1.378 2007-09-11 11:14:25 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -67,7 +67,7 @@ module Equ
       logical :: lweight_comm
       logical, save :: first=.true.
       real, save :: dVol_rel1
-      real :: intdr_rel,intdtheta_rel,intdphi_rel
+      real :: intdr_rel,intdtheta_rel,intdphi_rel,intdz_rel
 !
 !  calculate relative volume integral
 !
@@ -78,7 +78,10 @@ module Equ
           intdphi_rel   =      (xyz1(3)   -    xyz0(3)) /dz
           dVol_rel1=1./(intdr_rel*intdtheta_rel*intdphi_rel)
         elseif (lcylindrical_coords) then
-          dVol_rel1=1. !(similar as above needs to be done!)
+          intdr_rel   =      (xyz1(1)**2-    xyz0(1)**2)/(2.*dx)
+          intdphi_rel =      (xyz1(2)   -    xyz0(2)) /dy
+          intdz_rel   =      (xyz1(3)   -    xyz0(3)) /dz
+          dVol_rel1=1./(intdr_rel*intdphi_rel*intdz_rel)
         else
           dVol_rel1=1./(nw*ncpus)
         endif
@@ -467,7 +470,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.377 2007-09-02 18:14:29 reza Exp $")
+           "$Id: equ.f90,v 1.378 2007-09-11 11:14:25 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.

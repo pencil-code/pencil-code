@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.217 2007-09-02 17:14:57 brandenb Exp $
+! $Id: register.f90,v 1.218 2007-09-11 11:14:25 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -385,6 +385,11 @@ module Register
         rcyl_mn=x(l1:l2)
         rcyl_mn1=max(1./x(l1:l2),tini)
         rcyl_mn2=rcyl_mn1**2
+!
+        rcyl_weight=x(l1:l2)
+        if (ipx==0       ) rcyl_weight( 1)=.5*rcyl_weight( 1)
+        if (ipx==nprocx-1) rcyl_weight(nx)=.5*rcyl_weight(nx)
+!
       endif
 !
 !  print the value for which output is being produced

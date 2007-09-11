@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.387 2007-09-10 06:07:39 brandenb Exp $
+! $Id: cdata.f90,v 1.388 2007-09-11 11:14:25 wlyra Exp $
 
 module Cdata
 
@@ -27,7 +27,7 @@ module Cdata
   logical :: lcartesian_coords=.true.
   real, dimension (nx) :: r1_mn,r2_mn,r2_weight
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth,sinth_weight
-  real, dimension (nx) :: rcyl_mn,rcyl_mn1,rcyl_mn2
+  real, dimension (nx) :: rcyl_mn,rcyl_mn1,rcyl_mn2,rcyl_weight
 
 !
 ! timestep related:
