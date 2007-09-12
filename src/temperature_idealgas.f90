@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.34 2007-09-11 17:04:43 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.35 2007-09-12 11:17:53 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -69,7 +69,8 @@ module Entropy
   character (len=5) :: iinit_str
 
 ! Delete (or use) me asap!
-  real :: hcond0=impossible, hcond1=1.,Fbot,FbotKbot,Ftop,Kbot,FtopKtop
+  real :: hcond0=impossible, hcond1=1.
+  real :: Fbot=impossible,FbotKbot,Ftop,Kbot,FtopKtop
   logical :: lmultilayer=.false.
 
 ! input parameters
@@ -133,7 +134,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.34 2007-09-11 17:04:43 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.35 2007-09-12 11:17:53 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -166,7 +167,7 @@ module Entropy
 !
       use Cdata
       use FArrayManager
-      use Gravity, only: g0
+      use Gravity, only: g0, gravz
       use EquationOfState, only : cs2bot, cs2top, gamma, gamma1, &
                                   select_eos_variable
       use Sub, only: step,der_step
@@ -207,15 +208,13 @@ module Entropy
           lheatc_Kconst=.true.
           if (lroot) call information('initialize_entropy', &
           ' heat conduction: K=cst --> gamma*K/rho/TT/cp*div(T*grad lnTT)')
-          if (initlnTT(1).ne.'rad_equil') &
-            Fbot=gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
         case('K-profile')
           lheatc_Kprof=.true.
 ! 
 !  TODO..... ailleurs !
 !
           hcond1=(mpoly1+1.)/(mpoly0+1.)
-          Fbot=gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
+          Fbot=-gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
           if (lroot) call information('initialize_entropy',' heat conduction: K=K(r)')
         case('K-arctan')
           lheatc_Karctan=.true.         
@@ -269,6 +268,24 @@ module Entropy
 ! with bcz='cT' (all other modules are down)
         cs2bot=gamma1*f(l1,4,n1,ilnTT)
         cs2top=gamma1*f(l1,4,n1,ilnTT)
+      endif
+!
+! some tricks regarding Fbot and hcond0 when bcz1='c1' (constant flux)
+!
+      if (bcz1(ilnTT)=='c1' .and. lrun) then
+        if (Fbot==impossible .and. hcond0 /= impossible) then
+          Fbot=-gamma/gamma1*hcond0*gravz/(mpoly0+1.)
+          if (lroot) print*, &
+                     'initialize_entropy: Calculated Fbot = ', Fbot
+        endif
+        if (hcond0==impossible .and. Fbot /= impossible) then
+          hcond0=-Fbot*gamma1/gamma*(mpoly0+1.)/gravz
+          if (lroot) print*, &
+                     'initialize_entropy: Calculated hcond0 = ', hcond0
+        endif
+        if (Fbot==impossible .and. hcond0==impossible) &
+          call fatal_error('temperature_idealgas',  &
+                           'Both Fbot and hcond0 are unknown')
       endif
 !
 !
@@ -1138,10 +1155,9 @@ module Entropy
             (finit(l1:l2,4,j+1,ilnTT)-2.*finit(l1:l2,4,j,ilnTT)+  &
             finit(l1:l2,4,j-1,ilnTT))+dt/2.*source(l1:l2,j)
 !
-        aalpha=cx(nx)
-        bbeta=ax(1)
-        cx(nx)=0.
-        ax(1)=0.
+! x boundary conditions: periodic
+        aalpha=cx(nx) ; bbeta=ax(1)
+!
         call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,workx,nx)
         finter(l1:l2,j)=workx(1:nx)
       enddo
@@ -1160,12 +1176,9 @@ module Entropy
            (finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2))  &
            +dt/2.*source(i,n1:n2)
 !
-        cz(nz)=0.
-        az(1)=0.
-        bz(1)=1.
-        bz(nz)=1.
-        cz(1)=0.
-        az(nz)=0.
+! z boundary conditions: constant temperature
+        bz(1)=1. ; bz(nz)=1.
+        cz(1)=0. ; az(nz)=0.
         rhsz(1)=cs2bot/gamma1
         rhsz(nx)=cs2top/gamma1
         call tridag(az,bz,cz,rhsz,workz,nz)

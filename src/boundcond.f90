@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.184 2007-09-10 14:34:47 dhruba Exp $
+! $Id: boundcond.f90,v 1.185 2007-09-12 11:17:53 dintrans Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -2777,7 +2777,7 @@ module Boundcond
     subroutine bc_lnTT_flux_z(f,topbot,hcond0,Fbot)
 !
 !  constant flux boundary condition for temperature (called when bcz='c1')
-!  12-May-2007/dintrans: coded
+!  12-May-07/dintrans: coded
 !
       use Cdata
 !
@@ -2787,23 +2787,22 @@ module Boundcond
       real, dimension (mx,my) :: tmp_xy
       integer :: i
 !
-!  Do the `c1' boundary condition (constant heat flux) for lnTT.
-!  check whether we want to do top or bottom (this is precessor dependent)
+!  Do the `c1' boundary condition (constant heat flux) for lnTT or TT (if
+!  ltemperature_nolog=.true.) at the bottom _only_.
+!  lnTT version: enforce dlnT/dz = - Fbot/(K*T)
+!    TT version: enforce   dT/dz = - Fbot/K
 !
       if(headtt) print*,'bc_lnTT_flux_z: Fbot,hcond,dz=',Fbot,hcond0,dz
 
       select case(topbot)
-!
-!  bottom boundary
-!  ===============
-!
       case('bot')
-        tmp_xy=-Fbot/hcond0/exp(f(:,:,n1,ilnTT))
-!
-!  enforce dlnT/dz = - Fbot/(K*T)
-!
+        if (ltemperature_nolog) then
+          tmp_xy=-Fbot/hcond0
+        else
+          tmp_xy=-Fbot/hcond0/exp(f(:,:,n1,ilnTT))
+        endif
         do i=1,nghost
-          f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)-2*i*dz*tmp_xy
+          f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)-2.*i*dz*tmp_xy
         enddo
 
       case default
