@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 
 # Name:   adapt-mkfile
 # Author: wd (Wolfgangi [.] Dobler [at] kis.uni-freiburg.de)
-# $Date: 2007-09-12 14:38:17 $
-# $Revision: 1.6 $
+# $Date: 2007-09-12 15:08:39 $
+# $Revision: 1.7 $
 # Description:
 #   Transform a makefile with machine-dependent information into one that
 #   is adapted to the machine we're running on.
@@ -47,8 +47,7 @@ my $host = `uname -n`; chomp($host);
 my $myostag = "\#\#\\s$os:\\s*\$"; # Beginning..
 my $end_ostag = '^\s*$';	# and end of block for my OS
 my $anyhosttag = '\#\s*\(.*\)\s*$'; # ' Any explicit #(host) entry
-# Read 
-print "$ENV{HOME}" ;
+
 my $cmdname = (split('/', $0))[-1];
 my $usage = "Usage:  $cmdname [-h|--help] [-v|--version] [-f incfile] [file1 [file2]]
 Processes the makefile file1 (or stdin) and writes the locally adapted
@@ -72,8 +71,8 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { die $usage; }
 my $doll='\$';                  # Need this to trick CVS
 if ($opts{'v'} || $opts{'version'}) {
-    my $rev = '$Revision: 1.6 $';
-    my $date = '$Date: 2007-09-12 14:38:17 $';
+    my $rev = '$Revision: 1.7 $';
+    my $date = '$Date: 2007-09-12 15:08:39 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     die "$cmdname version $rev ($date)\n";
