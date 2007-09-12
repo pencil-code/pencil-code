@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.14 2007-09-12 08:30:20 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.15 2007-09-12 11:52:41 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -8,8 +8,9 @@
 pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, lplot=lplot, iplot=iplot, min=min, max=max, zoom=zoom, $
     xax=xax, yax=yax, xtitle=xtitle, ytitle=ytitle, title=title, $
-    lsubbox=lsubbox, rsubbox=rsubbox, subboxcolor=subboxcolor, noaxes=noaxes, $
-    t_title=t_title, t_scale=t_scale, t_zero=t_zero, $
+    lsubbox=lsubbox, rsubbox=rsubbox, subboxcolor=subboxcolor, tsubbox=tsubbox,$
+    noaxes=noaxes, $
+    t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
     position=position, fillwindow=fillwindow, tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, quiet=quiet
@@ -29,7 +30,7 @@ default, max, 1.0
 default, tmin, 0.0
 default, njump, 0
 default, ps, 0
-default, png, 0
+default, png, 0 & if (png) then lplot=1
 default, noerase, 0
 default, imgdir, '.'
 default, xsize, 10.0
@@ -38,9 +39,11 @@ default, title, ''
 default, t_title, 0
 default, t_scale, 1.0
 default, t_zero, 0.0
+default, interp, 0
 default, lsubbox, 0
 default, rsubbox, 5
 default, subboxcolor, 255
+default, tsubbox, 0.0
 default, fillwindow, 0
 default, tformat, '(f5.1)'
 default, it1, 10
@@ -156,11 +159,12 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
       plotimage, array_plot, $
           range=[min, max], imgxrange=[x0,x1], imgyrange=[y0,y1], $
           xtitle=xtitle, ytitle=ytitle, title=title, $
-          position=position, noerase=noerase, noaxes=noaxes
+          position=position, noerase=noerase, noaxes=noaxes, $
+          interp=interp
 ;;
 ;;  Enlargement of ``densest'' point.          
 ;;
-      if (lsubbox) then begin
+      if ( lsubbox and (t ge tsubbox) ) then begin
         imax=where(array_plot eq max(array_plot))
         imax=array_indices(array_plot,imax)
         subpos=[0.7,0.7,0.9,0.9]
@@ -206,7 +210,8 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
             xrange=xax[imax[0]]+[-rsubbox,rsubbox], $
             yrange=yax[imax[1]]+[-rsubbox,rsubbox], $
             range=[min,max], imgxrange=[x0,x1], imgyrange=[y0,y1], $
-            position=subpos, /noerase, /noaxes
+            position=subpos, /noerase, /noaxes, $
+            interp=interp
         plots, [subpos[0],subpos[2],subpos[2],subpos[0],subpos[0]], $
                [subpos[1],subpos[1],subpos[3],subpos[3],subpos[1]], /normal
       endif
