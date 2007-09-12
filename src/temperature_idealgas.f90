@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.35 2007-09-12 11:17:53 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.36 2007-09-12 13:47:00 tgastine Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -134,7 +134,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.35 2007-09-12 11:17:53 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.36 2007-09-12 13:47:00 tgastine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1162,7 +1162,12 @@ module Entropy
         finter(l1:l2,j)=workx(1:nx)
       enddo
 !
-      call BC_CT(finter)
+      select case (bcz1(ilnTT))
+        case('cT')
+         call BC_CT(finter)
+        case('c1')
+         call BC_flux(finter)
+      endselect
 !
 !  columns dealt implicitly
 !
@@ -1176,16 +1181,32 @@ module Entropy
            (finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2))  &
            +dt/2.*source(i,n1:n2)
 !
-! z boundary conditions: constant temperature
-        bz(1)=1. ; bz(nz)=1.
-        cz(1)=0. ; az(nz)=0.
-        rhsz(1)=cs2bot/gamma1
+! z boundary conditions
+! Constant temperature at the top
+        bz(nz)=1. ; az(nz)=0.
         rhsz(nx)=cs2top/gamma1
+! bottom
+      select case (bcz1(ilnTT))
+! Constant temperature at the bottom
+        case('cT')
+         bz(1)=1.  ; cz(1)=0. 
+         rhsz(1)=cs2bot/gamma1
+! Constant flux at the bottom
+        case('c1')
+         bz(1)=1.   ; cz(1)=-1
+         rhsz(1)=dz*Fbot/hcond0
+      endselect
+!
         call tridag(az,bz,cz,rhsz,workz,nz)
         f(i,4,n1:n2,ilnTT)=workz(1:nz)
       enddo
 !
-      call BC_CT(f(:,4,:,ilnTT))
+      select case (bcz1(ilnTT))
+        case('cT')
+         call BC_CT(f(:,4,:,ilnTT))
+        case('c1')
+         call BC_flux(f(:,4,:,ilnTT))
+      endselect
 !
     end subroutine ADI_Kconst
 !**************************************************************
@@ -1372,20 +1393,20 @@ module Entropy
 
     end subroutine BC_CT
 !**************************************************************
-    subroutine BC_flux(f,hcond)
+    subroutine BC_flux(f)
 
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,mz) :: hcond
+      real, dimension(mx,mz) :: f, hcond
       integer :: i
 
+      hcond=hcond0
 ! x-direction: periodic
-      f(1:l1-1,:,:,ilnTT)=f(l2i:l2,:,:,ilnTT)
-      f(l2+1:mx,:,:,ilnTT)=f(l1:l1i,:,:,ilnTT)
+      f(1:l1-1,:)=f(l2i:l2,:)
+      f(l2+1:mx,:)=f(l1:l1i,:)
 ! z-direction: bot=constant flux, top=constant temperature
       do i=1,nghost
-        f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)+2.*i*dz*Fbot/hcond(10,n1+i)
+        f(:,n1-i)=f(:,n1+i)+2.*i*dz*Fbot/hcond(l1,n1+i)
       enddo
-      f(:,:,n2+1,ilnTT)=2.*f(:,:,n2,ilnTT)-f(:,:,n2-1,ilnTT)
+      f(:,n2+1)=2.*f(:,n2)-f(:,n2-1)
 
     end subroutine BC_flux
 !**************************************************************
