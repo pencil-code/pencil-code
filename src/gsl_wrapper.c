@@ -44,5 +44,14 @@ void FTNIZE(sp_harm_imag)
     Plm = gsl_sf_legendre_sphPlm(ell,emm,x);
     *y = (REAL)pow(-1,emm)*Plm*sin(emm*fi);}
 }
+/* ------------------------------ */
+void FTNIZE(legendre_pl)
+     (REAL *y, FINT *l, REAL *theta) {
+  REAL Pl;
+  FINT ell = *l;
+  REAL x =  cos(*theta);
+  Pl = gsl_sf_legendre_Pl(ell,x);
+  *y = Pl;
 
+}
 

@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.117 2007-09-10 13:09:35 brandenb Exp $
+! $Id: forcing.f90,v 1.118 2007-09-12 14:38:17 dhruba Exp $
 
 module Forcing
 
@@ -34,8 +34,8 @@ module Forcing
   character (len=labellen) :: iforce_profile='nothing'
   integer :: Legendrel
   real ::  Bessel_alpha,fpre
-!! for helical forcing in spherical polar coordinate system
-  real, allocatable, dimension(:) :: Z_psi
+! For helical forcing in sphreical polar coordinate system
+  real,allocatable,dimension(:,:,:) :: psif
 ! Persistent stuff
   real :: tsforce=-10.
   real, dimension (3) :: location
@@ -82,7 +82,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.117 2007-09-10 13:09:35 brandenb Exp $")
+           "$Id: forcing.f90,v 1.118 2007-09-12 14:38:17 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -654,16 +654,17 @@ module Forcing
       real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
       real, dimension(nx,3,3) :: psi_ij,Tij
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz) :: psif
       integer ::l,emm,iread,j,jf,mmin,mmax
       complex :: psi_ell_m
       real :: a_ell,anum,adenom,jlm,ylm,rphase,fnorm,alphar
       real :: rz, Plmreal, Plmimag,ran_min,ran_max
-!
+      real, dimension(mx) :: Z_psi
+      real,dimension(my) :: Pl
+! -----------------------------------------
       if (ifirst==0) then
         if (lroot) print*,'Helical forcing in spherical polar coordinate'
-        if (lroot) print*,'allocating Z_psi ..'
-        allocate(Z_psi(mx))
+        if (lroot) print*,'allocating psif ..'
+        allocate(psif(mx,my,mz))
         if (lroot) print*, '..done'
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
@@ -678,7 +679,18 @@ module Forcing
           call sp_bessely_l(ylm,Legendrel,alphar)
           Z_psi(l) = (a_ell*jlm+ylm)
         enddo
-        ifirst = ifirst+1
+        do m=m1-nghost,m2+nghost
+          call legendre_pl(Pl(m),Legendrel,y(m))
+        enddo
+!-------
+        do n=n1-nghost,n2+nghost
+          do m=m1-nghost,m2+nghost
+            do l=l1-nghost,l2+nghost
+              psif(l,m,n) = Z_psi(l)*Pl(m)
+            enddo
+          enddo
+        enddo
+        ifirst= ifirst+1
         write(*,*) 'dhruba: first time in hel_sp'
       else
       endif
@@ -687,28 +699,7 @@ module Forcing
 ! get a random unit vector with three components ee_r, ee_theta, ee_phi
 ! psi at present is just Z_{ell}^m. We next do a sum over random coefficients 
 ! get random psi. 
-      call random_number_wrapper(ran_min)
-      mmin = nint((ran_min+1.)*float(Legendrel)/2.)
-      call random_number_wrapper(ran_max)
-      mmax = nint((ran_max+1.)*float(Legendrel)/2.)
-      call random_number_wrapper(rphase)
-!      write(*,*) ran_min,ran_max,mmin,mmax,Legendrel,PI
-      rphase = PI*rphase
-      psif = 0.
-      do n=n1-nghost,n2+nghost
-        do m=m1-nghost,m2+nghost
-          do l=l1-nghost,l2+nghost
-            psi_ell_m = 0.
-            do emm=-mmin,mmax
-              call sp_harm_real(Plmreal,Legendrel,emm,y(m),z(n))
-              call sp_harm_imag(Plmimag,Legendrel,emm,y(m),z(n))
-              psi_ell_m = psi_ell_m+ & 
-                Z_psi(l)*cmplx(Plmreal*cos(rphase),Plmimag*sin(rphase)) 
-            enddo
-            psif(l,m,n) = psif(l,m,n)+real(psi_ell_m)
-          enddo
-        enddo
-      enddo
+
 !      write(*,*) 'mmin=',mmin
 !! ----------now generate and add the force ------------
       call random_number_wrapper(rz)
@@ -741,7 +732,7 @@ module Forcing
           enddo
         enddo
       enddo
-
+ 
       
     endsubroutine forcing_hel_sp
 !***********************************************************************
