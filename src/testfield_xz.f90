@@ -1,4 +1,4 @@
-! $Id: testfield_xz.f90,v 1.8 2007-09-12 13:00:23 brandenb Exp $
+! $Id: testfield_xz.f90,v 1.9 2007-09-12 13:12:07 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -105,7 +105,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_xz.f90,v 1.8 2007-09-12 13:00:23 brandenb Exp $")
+           "$Id: testfield_xz.f90,v 1.9 2007-09-12 13:12:07 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -404,7 +404,7 @@ module Testfield
 !
 !  Write slices for animation of magnetic variables.
 !
-!  26-jul-06/tony: coded
+!  12-sep-09/axel: adapted from the corresponding magnetic routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices 

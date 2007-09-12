@@ -133,6 +133,15 @@ module Testfield
 !
     endsubroutine daatest_dt
 !***********************************************************************
+    subroutine get_slices_testfield(f,slices)
+!
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+    endsubroutine get_slices_testfield
+!***********************************************************************
     subroutine calc_ltestfield_pars(f)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
