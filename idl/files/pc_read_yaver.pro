@@ -1,4 +1,4 @@
-;; $Id: pc_read_yaver.pro,v 1.4 2007-08-31 07:16:04 ajohan Exp $
+;; $Id: pc_read_yaver.pro,v 1.5 2007-09-12 11:52:03 ajohan Exp $
 ;;
 ;;   Read y-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -11,7 +11,7 @@ pro pc_read_yaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, lplot=lplot, iplot=iplot, min=min, max=max, zoom=zoom, $
     xax=xax, zax=zax, xtitle=xtitle, ytitle=ytitle, title=title, $
     lsubbox=lsubbox, rsubbox=rsubbox, noaxes=noaxes, $
-    t_title=t_title, t_scale=t_scale, t_zero=t_zero, $
+    t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
     position=position, fillwindow=fillwindow, tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, nt=nt, quiet=quiet
@@ -40,6 +40,7 @@ default, title, ''
 default, t_title, 0
 default, t_scale, 1.0
 default, t_zero, 0.0
+default, interp, 0
 default, lsubbox, 0
 default, rsubbox, 5
 default, fillwindow, 0
@@ -159,7 +160,7 @@ while ( (not eof(file)) and (nit eq 0 or it lt nit) ) do begin
       plotimage, array_plot, $
           range=[min, max], imgxrange=[x0,x1], imgyrange=[z0,z1], $
           xtitle=xtitle, ytitle=ytitle, title=title, $
-          position=position, noerase=noerase, noaxes=noaxes
+          position=position, noerase=noerase, noaxes=noaxes, interp=interp
 ;;
 ;;  Enlargement of ``densest'' point.          
 ;;
@@ -209,7 +210,7 @@ while ( (not eof(file)) and (nit eq 0 or it lt nit) ) do begin
             xrange=xax[imax[0]]+[-rsubbox,rsubbox], $
             yrange=zax[imax[1]]+[-rsubbox,rsubbox], $
             range=[min,max], imgxrange=[x0,x1], imgyrange=[z0,z1], $
-            position=subpos, /noerase, /noaxes
+            position=subpos, /noerase, /noaxes, interp=interp
         plots, [subpos[0],subpos[2],subpos[2],subpos[0],subpos[0]], $
                [subpos[1],subpos[1],subpos[3],subpos[3],subpos[1]], /normal
       endif
