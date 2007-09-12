@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.13 2007-08-31 07:16:31 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.14 2007-09-12 08:30:20 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -121,7 +121,7 @@ endif
 ;;
 it=0 & itimg=0
 lwindow_opened=0
-while (not eof(file)) do begin
+while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
 
   readu, file, t
   if ( (t ge tmin) and (it mod njump eq 0) ) then begin
