@@ -1,4 +1,4 @@
-;$Id: pc_error_range.pro,v 1.4 2007-09-04 18:10:05 brandenb Exp $
+;$Id: pc_error_range.pro,v 1.5 2007-09-13 18:08:22 brandenb Exp $
 pro pc_error_range,tt,a,mean=am,error=err,oplot=oplot
 ;
 ;  calculate averages for each third of time series and use
@@ -28,9 +28,16 @@ err=(amu-am) > (am-aml)
 ;  possibility of overplotting error range
 ;
 if keyword_set(oplot) then begin
-  oplot,tt,(tt-tt+1.)*am,col=122
-  oplot,tt,(tt-tt+1.)*(am+err),col=188
-  oplot,tt,(tt-tt+1.)*(am-err),col=188
+  print,'DEVICE=',!d.name
+  if !d.name eq 'X' then begin
+    oplot,tt,(tt-tt+1.)*am,col=122
+    oplot,tt,(tt-tt+1.)*(am+err),col=188
+    oplot,tt,(tt-tt+1.)*(am-err),col=188
+  endif else begin
+    oplot,tt,(tt-tt+1.)*am,li=3
+    oplot,tt,(tt-tt+1.)*(am+err),li=1
+    oplot,tt,(tt-tt+1.)*(am-err),li=1
+  endelse
 endif
 ;
 END
