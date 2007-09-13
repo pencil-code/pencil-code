@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.458 2007-09-05 11:31:05 dhruba Exp $
+! $Id: magnetic.f90,v 1.459 2007-09-13 17:45:03 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -140,6 +140,7 @@ module Magnetic
   logical :: lupw_aa=.false.
   logical :: lforcing_continuous_aa=.false.
   logical :: lelectron_inertia=.false.
+  logical :: lremove_mean_emf
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
 
@@ -165,7 +166,7 @@ module Magnetic
        sigma_ratio,zdep_profile,eta_width,eta_z0, &
        borderaa,eta_aniso_hyper3, &
        lelectron_inertia,inertial_length, &
-       lbb_as_aux,ljj_as_aux
+       lbb_as_aux,ljj_as_aux,lremove_mean_emf
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_b2m=0        ! DIAG_DOC: $\left<\Bv^2\right>$
@@ -199,6 +200,9 @@ module Magnetic
                                 ! DIAG_DOC:   \quad(time step relative to
                                 ! DIAG_DOC:   resistive time step;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_axm=0        ! DIAG_DOC:
+  integer :: idiag_aym=0        ! DIAG_DOC:
+  integer :: idiag_azm=0        ! DIAG_DOC:
   integer :: idiag_arms=0       ! DIAG_DOC:
   integer :: idiag_amax=0       ! DIAG_DOC:
   integer :: idiag_beta1m=0     ! DIAG_DOC: $\left<\Bv^2/(2\mu_0 p)\right>$
@@ -339,7 +343,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.458 2007-09-05 11:31:05 dhruba Exp $")
+           "$Id: magnetic.f90,v 1.459 2007-09-13 17:45:03 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1766,8 +1770,11 @@ module Magnetic
 !
         if (idiag_epsM/=0) call sum_mn_name(eta*p%j2,idiag_epsM)
 !
-! <A^2> and A^2|max
+! <A>'s, <A^2> and A^2|max
 !
+        if (idiag_axm/=0) call sum_mn_name(p%aa(:,1),idiag_axm)
+        if (idiag_aym/=0) call sum_mn_name(p%aa(:,2),idiag_aym)
+        if (idiag_azm/=0) call sum_mn_name(p%aa(:,3),idiag_azm)
         if (idiag_arms/=0) call sum_mn_name(p%a2,idiag_arms,lsqrt=.true.)
         if (idiag_amax/=0) call max_mn_name(p%a2,idiag_amax,lsqrt=.true.)
 !
@@ -2530,6 +2537,7 @@ module Magnetic
         idiag_vAmax=0; idiag_dtb=0; idiag_arms=0; idiag_amax=0
         idiag_beta1m=0; idiag_beta1max=0
         idiag_bxm=0; idiag_bym=0; idiag_bzm=0
+        idiag_axm=0; idiag_aym=0; idiag_azm=0
         idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
         idiag_bxbymz=0; idiag_bxbzmz=0; idiag_bybzmz=0; idiag_b2mz=0
         idiag_bxbym=0; idiag_bxbzm=0; idiag_bybzm=0; idiag_djuidjbim=0
@@ -2577,6 +2585,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bmax',idiag_bmax)
         call parse_name(iname,cname(iname),cform(iname),'jrms',idiag_jrms)
         call parse_name(iname,cname(iname),cform(iname),'jmax',idiag_jmax)
+        call parse_name(iname,cname(iname),cform(iname),'axm',idiag_axm)
+        call parse_name(iname,cname(iname),cform(iname),'aym',idiag_aym)
+        call parse_name(iname,cname(iname),cform(iname),'azm',idiag_azm)
         call parse_name(iname,cname(iname),cform(iname),'arms',idiag_arms)
         call parse_name(iname,cname(iname),cform(iname),'amax',idiag_amax)
         call parse_name(iname,cname(iname),cform(iname),'vArms',idiag_vArms)
@@ -2736,6 +2747,9 @@ module Magnetic
         write(3,*) 'i_bmax=',idiag_bmax
         write(3,*) 'i_jrms=',idiag_jrms
         write(3,*) 'i_jmax=',idiag_jmax
+        write(3,*) 'i_axm=',idiag_axm
+        write(3,*) 'i_aym=',idiag_aym
+        write(3,*) 'i_azm=',idiag_azm
         write(3,*) 'i_arms=',idiag_arms
         write(3,*) 'i_amax=',idiag_amax
         write(3,*) 'i_vArms=',idiag_vArms
@@ -4232,6 +4246,66 @@ module Magnetic
       endselect
 !
     endsubroutine eta_zdep
+!************************************************************************
+    subroutine remove_mean_emf(f,df)
+!
+!  Substract mean emf from the radial component of the induction 
+!  equation. Activated only when large Bz fields and are present 
+!  keplerian advection. Due to this u_phi x Bz term, the radial 
+!  component of the magnetic potential
+!  develops a divergence that grows linearly in time. Since it is
+!  purely divergent, it is okay analytically. But numerically it leads to 
+!  problems if this divergent grows bigger than the curl, which it does 
+!  eventually.
+!
+!  This is a cylindrical version of the rtime_phiavg special file.
+!
+!  13-sep-07/wlad: adapted from remove_mean_momenta
+!
+!
+      use Cdata,   only: iuy,lcylindrical_coords
+      use Mpicomm, only: mpiallreduce_sum,stop_it
+      use Sub    , only: curl
+!
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
+      real, dimension (nx,3)  :: tmp
+      real, dimension (nx)    :: uu,bb,fsum_tmp,fsum
+      real                    :: fac
+      integer                 :: m,n
+!
+      real, dimension (nx) :: uxb
+!
+      if (lremove_mean_emf) then
+
+        if (.not.lcylindrical_coords) &
+             call fatal_error("remove_mean_emf","just for cylindrical coords")
+!      
+        fac = 1.0/ny
+!
+        do n=n1,n2
+          uxb=0.
+          do m=m1,m2
+            call curl(f,iaa,tmp)
+            bb=tmp(:,3)+B_ext(3)
+            uu=f(l1:l2,m,n,iuy)
+            uxb = uxb + fac*uu*bb
+          enddo
+          
+          fsum_tmp = uxb
+          call mpiallreduce_sum(fsum_tmp,fsum,nx)
+          uxb = fsum
+!
+          do m=m1,m2
+            df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - uxb
+          enddo
+        enddo
+!
+!else do nothing
+!
+      endif
+!
+    endsubroutine remove_mean_emf
 !************************************************************************
     subroutine bb_unitvec_shock(f,bb_hat)
 !

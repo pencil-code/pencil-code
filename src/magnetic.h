@@ -15,7 +15,7 @@
   public :: calc_mfield
   public :: bc_aa_pot, bc_aa_pot2, bc_aa_pot3, bc_frozen_in_bb
   public :: pert_aa, rescaling
-  public :: bb_unitvec_shock
+  public :: bb_unitvec_shock, remove_mean_emf
   public :: lelectron_inertia, inertial_length, linertial_2
 
 !ajwm SHOULDN'T BE SHARED

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.378 2007-09-11 11:14:25 wlyra Exp $
+! $Id: equ.f90,v 1.379 2007-09-13 17:45:03 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -470,7 +470,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.378 2007-09-11 11:14:25 wlyra Exp $")
+           "$Id: equ.f90,v 1.379 2007-09-13 17:45:03 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -521,6 +521,7 @@ module Equ
 !  to be set in hydro_run_pars).
 !
       if (lshear) call remove_mean_momenta(f)
+      if (lmagnetic) call remove_mean_emf(f,df)
 !
 !  Check for dust grain mass interval overflows
 !  (should consider having possibility for all modules to fiddle with the
