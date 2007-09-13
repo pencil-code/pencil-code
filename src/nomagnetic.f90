@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.84 2007-08-11 06:39:53 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.85 2007-09-13 18:07:38 dintrans Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -63,7 +63,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.84 2007-08-11 06:39:53 brandenb Exp $")
+           "$Id: nomagnetic.f90,v 1.85 2007-09-13 18:07:38 dintrans Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -385,5 +385,15 @@ module Magnetic
 
     endsubroutine bb_unitvec_shock
 !***********************************************************************
+    subroutine remove_mean_emf(f,df)
+!
+!  Dummy routine
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
 
+    endsubroutine remove_mean_emf
+!***********************************************************************
 endmodule Magnetic
