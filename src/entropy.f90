@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.525 2007-09-13 11:30:34 dintrans Exp $
+! $Id: entropy.f90,v 1.526 2007-09-13 13:32:10 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -208,7 +208,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.525 2007-09-13 11:30:34 dintrans Exp $")
+           "$Id: entropy.f90,v 1.526 2007-09-13 13:32:10 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -444,6 +444,9 @@ module Entropy
             Fbot=gamma/gamma1*hcond0*g0/(mpoly0+1)
             FbotKbot=gamma/gamma1*g0/(mpoly0+1)
           endif
+          cs2cool=cs2top
+
+        case('single_polytrope')
           cs2cool=cs2top
 
       endselect
@@ -2650,11 +2653,6 @@ module Entropy
 !
       if (headtt) print*, 'calc_heat_cool: lgravz, lgravr=', lgravz, lgravr
 !
-!  Define bottom and top height.
-!
-      zbot=xyz0(3)
-      ztop=xyz0(3)+Lxyz(3)
-!
 !  Initialize heating/cooling term.
 !
       heat=0.
@@ -2662,6 +2660,8 @@ module Entropy
 !  Vertical gravity case: Heat at bottom, cool top layers
 !
       if (lgravz .and. ( (luminosity/=0.) .or. (cool/=0.) ) ) then
+        zbot=xyz0(3)
+        ztop=xyz0(3)+Lxyz(3)
 !
 !  TEMPORARY: Add heat near bottom. Wrong: should be Heat/(T*rho)
 !AB: Wolfgang, the last part of above comment seems wrong;
@@ -2689,11 +2689,11 @@ module Entropy
         case ('cubic_step')
           prof = cubic_step(spread(z(n),1,nx),z2,wcool)
         endselect
+        heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
 !
 !  Write out cooling profile (during first time step only) and apply.
 !
-        if (lgravz) call write_zprof('cooling_profile',prof)
-        heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+        call write_zprof('cooling_profile',prof)
 !
 !  Write divergence of cooling flux.
 !
@@ -2705,8 +2705,7 @@ module Entropy
 !  Spherical gravity case: heat at centre, cool outer layers.
 !
       if (lgravr) then
-!  central heating
-!  heating profile, normalised, so volume integral = 1
+!  normalised central heating profile so volume integral = 1
         if (initss(1).eq.'star_heat') then
           prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
         else
@@ -2715,11 +2714,17 @@ module Entropy
         heat = luminosity*prof
         if (headt .and. lfirst .and. ip<=9) &
           call output_pencil(trim(directory)//'/heat.dat',heat,1)
-!  surface cooling; entropy or temperature
+!
+!  surface cooling: entropy or temperature
 !  cooling profile; maximum = 1
+!
 !       prof = 0.5*(1+tanh((r_mn-1.)/wcool))
         if (rcool==0.) rcool=r_ext
-        prof = step(p%r_mn,rcool,wcool)
+        if (lcylindrical_coords) then
+          prof = step(p%rcyl_mn,rcool,wcool)
+        else
+          prof = step(p%r_mn,rcool,wcool)
+        endif
 !
 !  pick type of cooling
 !
@@ -2731,12 +2736,7 @@ module Entropy
           heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool/p%rho1
         case ('entropy')        ! cooling to reference entropy (currently =0)
           heat = heat - cool*prof*(p%ss-0.)
-! dgm
         case ('shell')          !  heating/cooling at shell boundaries
-          heat=0.                            ! default
-          select case(initss(1))
-            case ('geo-kws'); heat=0.    ! can add heating later based on value of initss
-          endselect
 !
 !  possibility of a latitudinal heating profile
 !  T=T0-(2/3)*delT*P2(costheta), for testing Taylor-Proudman theorem
@@ -2752,15 +2752,10 @@ module Entropy
             prof = 1 - step(p%r_mn,r_int,wcool)  ! inner heating/cooling step
             heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
           else
-            if (lcylindrical_coords) then
-              prof = step(p%rcyl_mn,rcool,wcool)  ! outer heating/cooling step
-              heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
-            else
-              prof = step(p%r_mn,r_ext,wcool)     ! outer heating/cooling step
-              heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
-              prof = 1 - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
-              heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
-            endif
+            prof = step(p%r_mn,r_ext,wcool)     ! outer heating/cooling step
+            heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
+            prof = 1 - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
+            heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
           endif
 !
         case default
@@ -3693,27 +3688,23 @@ module Entropy
 !
 !  17-mar-07/dintrans: coded
 !  
-      use SharedVariables
-      use Gravity, only: gravz
+      use Gravity, only: gravz, g0
       use EquationOfState, only: lnrho0,cs20,gamma,gamma1,cs2top,cs2bot, &
                                  get_cp1,eoscalc,ilnrho_lnTT
 
-      integer :: ierr
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: TT,lnTT,lnrho,ss
       real :: beta0,beta1,TT_bcz,TT_ext,TT_int
       real :: cp1,lnrho_int,lnrho_bcz
-      real, pointer :: gravx
 !
       if (headtt) print*,'r_bcz in cylind_layers=',r_bcz
-      call get_shared_variable('gravx',gravx,ierr)
 !
 !  beta is the temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !
       call get_cp1(cp1)
-      beta0=cp1*gravx/(mpoly0+1)*gamma/gamma1
-      beta1=cp1*gravx/(mpoly1+1)*gamma/gamma1
+      beta0=-cp1*g0/(mpoly0+1)*gamma/gamma1
+      beta1=-cp1*g0/(mpoly1+1)*gamma/gamma1
       TT_ext=cs20/gamma1
       TT_bcz=TT_ext+beta0*(r_bcz-r_ext)
       TT_int=TT_bcz+beta1*(r_int-r_bcz)
@@ -3753,25 +3744,20 @@ module Entropy
 !  Note: both entropy and density are initialized there (compared to layer_ss)
 !
       use Cdata
-      use SharedVariables
-      use Gravity, only: gravz
+      use Gravity, only: gravz, g0
       use EquationOfState, only: eoscalc, ilnrho_lnTT, get_cp1, &
                                  gamma1, lnrho0
 !
-      integer :: ierr
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-
       real, dimension (nx) :: lnrho, lnTT, TT, ss, z_mn
       real    :: beta, cp1, lnrho_dummy=0., zbot, ztop, TT0
-      real, pointer :: gravx
 !
 !  beta is the (negative) temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !
       call get_cp1(cp1)
       if (lcylindrical_coords) then
-        call get_shared_variable('gravx',gravx,ierr)
-        beta=cp1*gamma/gamma1*gravx/(mpoly0+1)
+        beta=-cp1*gamma/gamma1*g0/(mpoly0+1)
       else
         beta=cp1*gamma/gamma1*gravz/(mpoly0+1)
         ztop=xyz0(3)+Lxyz(3)
