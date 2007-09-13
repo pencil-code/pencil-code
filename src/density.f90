@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.351 2007-09-10 16:57:28 wlyra Exp $
+! $Id: density.f90,v 1.352 2007-09-13 09:20:31 dintrans Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -129,7 +129,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.351 2007-09-10 16:57:28 wlyra Exp $")
+           "$Id: density.f90,v 1.352 2007-09-13 09:20:31 dintrans Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -771,10 +771,6 @@ module Density
         f(:,:,:,iuy) = f(:,:,:,iuy) &
              + abs(ampllnrho*cmplx(0,-0.5*Omega/(kx_lnrho*rho0))) * &
              sin(kx_lnrho*xx+complex_phase(ampllnrho*cmplx(0,-0.5*Omega/(kx_lnrho*rho0))))
-
-      case('cylind-poly')
-        call information('init_lnrho',' cylind-poly')
-        call cylind_poly(f)
 
       case('compressive-shwave')
         ! should be consistent with density 
@@ -2056,46 +2052,6 @@ module Density
       endif
 !
     endsubroutine mass_source
-!***********************************************************************
-    subroutine cylind_poly(f)
-!
-!  Initialize density and entropy/temperature on a cylindrical grid
-!  using a polytrope under a constant (radial) gravity
-!
-!  07-mar-07/dintrans: coded
-!
-      use Gravity, only: g0
-      use EquationOfState
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: temp,lnTT,lnrho,ss
-      real :: beta1,temp_top,temp_bot
-!
-      mpoly0=mpoly ! to be consistent with the Fbot definition
-      beta1=-g0/(mpoly+1)*gamma/gamma1  ! gamma1/gamma=R_{*} (for cp=1)
-      temp_top=cs20/gamma1
-      temp_bot=temp_top+beta1*(r_int-r_ext)
-      cs2top=cs20
-      cs2bot=gamma1*temp_bot
-      if (lroot) &
-        print*,'cylind_poly: beta1,temp_top,r_ext=',beta1,temp_top,r_ext
-!
-      do imn=1,ny*nz
-        n=nn(imn)
-        m=mm(imn)
-!
-        temp=temp_top+beta1*(x(l1:l2)-r_ext)
-        lnTT=alog(temp)
-        f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*lnTT-mpoly*log(temp_top)
-        if (lentropy) then
-          lnrho=f(l1:l2,m,n,ilnrho)
-          call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
-          f(l1:l2,m,n,iss)=ss
-        endif
-        if (ltemperature) f(l1:l2,m,n,ilnTT)=lnTT
-      enddo
-!
-    endsubroutine cylind_poly
 !***********************************************************************
     subroutine impose_density_floor(f)
 !

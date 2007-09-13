@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.185 2007-09-12 11:17:53 dintrans Exp $
+! $Id: boundcond.f90,v 1.186 2007-09-13 09:20:31 dintrans Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -140,7 +140,7 @@ module Boundcond
                   call bc_van_x(f,topbot,j)
                 case ('cT')
                   ! BCX_DOC: constant temperature (implemented as
-                  ! BCX_DOC: condition for enropy $s$ or temperature $T$) 
+                  ! BCX_DOC: condition for entropy $s$ or temperature $T$) 
                   call bc_ss_temp_x(f,topbot)
                   !if (j==iss) 
                   !if (j==ilnTT)  then

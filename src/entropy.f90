@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.523 2007-09-08 13:45:10 dintrans Exp $
+! $Id: entropy.f90,v 1.524 2007-09-13 09:20:31 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -208,7 +208,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.523 2007-09-08 13:45:10 dintrans Exp $")
+           "$Id: entropy.f90,v 1.524 2007-09-13 09:20:31 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -3693,7 +3693,7 @@ module Entropy
 !
 !  17-mar-07/dintrans: coded
 !  
-      use Gravity, only: g0
+      use Gravity, only: gravx
       use EquationOfState, only: lnrho0,cs20,gamma,gamma1,cs2top,cs2bot, &
                                  get_cp1,eoscalc,ilnrho_lnTT
 
@@ -3702,14 +3702,14 @@ module Entropy
       real :: beta0,beta1,TT_bcz,TT_ext,TT_int
       real :: cp1,lnrho_int,lnrho_bcz
 !
-      if (headtt) print*,'r_bcz in cylind_layers.f90=',r_bcz
+      if (headtt) print*,'r_bcz in cylind_layers=',r_bcz
 !
 !  beta is the temperature gradient
-!  beta = -(g/cp) 1./[(1-1/gamma)*(m+1)]
+!  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !
       call get_cp1(cp1)
-      beta0=-cp1*g0/(mpoly0+1)*gamma/gamma1
-      beta1=-cp1*g0/(mpoly1+1)*gamma/gamma1
+      beta0=cp1*gravx/(mpoly0+1)*gamma/gamma1
+      beta1=cp1*gravx/(mpoly1+1)*gamma/gamma1
       TT_ext=cs20/gamma1
       TT_bcz=TT_ext+beta0*(r_bcz-r_ext)
       TT_int=TT_bcz+beta1*(r_int-r_bcz)
@@ -3745,34 +3745,42 @@ module Entropy
 !***********************************************************************
     subroutine single_polytrope(f)
 !
-!  06-sep-07/dintrans: a single polytrope of index mpoly0
-!  Both entropy and density are initialized there (compared to layer_ss)
+!  06-sep-07/dintrans: coded a single polytrope of index mpoly0
+!  Note: both entropy and density are initialized there (compared to layer_ss)
 !
       use Cdata
-      use Gravity, only: gravz
+      use Gravity, only: gravz, gravx
       use EquationOfState, only: eoscalc, ilnrho_lnTT, get_cp1, &
-       gamma1, lnrho0
+                                 gamma1, lnrho0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 
-      real, dimension (nx) :: lnrho,lnTT,TT,ss,z_mn
-      real :: beta,cp1,lnrho_dummy=0.,ztop,TT0,zbot
+      real, dimension (nx) :: lnrho, lnTT, TT, ss, z_mn
+      real :: beta, cp1, lnrho_dummy=0., zbot, ztop, TT0
 !
 !  beta is the (negative) temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !
       call get_cp1(cp1)
-      beta=cp1*gamma/gamma1*gravz/(mpoly0+1)
-      ztop=xyz0(3)+Lxyz(3)
-      zbot=xyz0(3)
+      if (lcylindrical_coords) then
+        beta=cp1*gamma/gamma1*gravx/(mpoly0+1)
+      else
+        beta=cp1*gamma/gamma1*gravz/(mpoly0+1)
+        ztop=xyz0(3)+Lxyz(3)
+        zbot=xyz0(3)
+      endif
       TT0=cs20/gamma1
 !
 !  set initial condition (first in terms of TT, and then in terms of ss)
 !
       do m=m1,m2
       do n=n1,n2
-        z_mn = spread(z(n),1,nx)
-        TT = TT0+beta*(z_mn-ztop)
+        if (lcylindrical_coords) then
+          TT = TT0+beta*(rcyl_mn-r_ext)
+        else
+          z_mn = spread(z(n),1,nx)
+          TT = TT0+beta*(z_mn-ztop)
+        endif
         lnTT=log(TT)
         lnrho=lnrho0+mpoly0*log(TT/TT0)
         f(l1:l2,m,n,ilnrho)=lnrho
@@ -3781,7 +3789,11 @@ module Entropy
       enddo
       enddo
       cs2top=cs20
-      cs2bot=gamma1*(TT0+beta*(zbot-ztop))
+      if (lcylindrical_coords) then
+        cs2bot=gamma1*(TT0+beta*(r_int-r_ext))
+      else
+        cs2bot=gamma1*(TT0+beta*(zbot-ztop))
+      endif
 !
     endsubroutine single_polytrope
 !***********************************************************************
