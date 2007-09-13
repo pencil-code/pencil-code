@@ -1,4 +1,4 @@
-! $Id: hypervisc_strict_2nd.f90,v 1.5 2007-08-23 12:02:41 ajohan Exp $
+! $Id: hypervisc_strict_2nd.f90,v 1.6 2007-09-13 11:49:49 ajohan Exp $
 
 !
 !  This module applies a sixth order hyperviscosity to the equation
@@ -53,7 +53,7 @@ module Hypervisc_strict
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: hypervisc_strict_2nd.f90,v 1.5 2007-08-23 12:02:41 ajohan Exp $")
+           "$Id: hypervisc_strict_2nd.f90,v 1.6 2007-09-13 11:49:49 ajohan Exp $")
 !
 !  Set indices for auxiliary variables
 ! 
@@ -81,13 +81,16 @@ module Hypervisc_strict
       use Cdata, only: lfirst
       use Io
       use Mpicomm
+      use SharedVariables
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (mx,my,mz,3) :: tmp, tmp2
-!      real, dimension (nx,ny,nz) :: sij2
-!      integer :: i,j
+      real, dimension (mx,my,mz) :: tmp3
+      integer :: i, j, ierr
+      logical, save :: lfirstcall=.true.
+      logical, pointer, save :: lvisc_hyper3_nu_const_strict
 !
 !  Calculate del2(del2(del2(u))), accurate to second order.
 !
@@ -110,6 +113,42 @@ module Hypervisc_strict
 !  Add the two terms.
 !
       f(:,:,:,ihypvis:ihypvis+2)=tmp+tmp2/3.
+!
+!  For constant nu we also need the term 2*nu*S.grad(lnrho).
+!
+      if (lfirstcall) then
+        call get_shared_variable('lvisc_hyper3_nu_const_strict',lvisc_hyper3_nu_const_strict,ierr)
+        if (ip<10) &
+            print*, 'hyperviscosity_strict: lvisc_hyper3_nu_const_strict=', &
+            lvisc_hyper3_nu_const_strict
+        lfirstcall=.false.
+      endif
+!
+!  First we calculate the gradient of the logarithmic density (second order
+!  accuracy).
+!
+      if (lvisc_hyper3_nu_const_strict) then
+        call grad_2nd(f,ilnrho,tmp)
+        if (ldensity_nolog) then
+          tmp3=exp(f(:,:,:,ilnrho))
+          do i=1,3; tmp(:,:,:,i)=tmp(:,:,:,i)/tmp3; enddo
+        endif
+!
+!  Add 1/2*(u_i,j+u_j,i).grad(lnrho) to hyperviscosity.
+!
+        do i=1,3; do j=1,3
+          call der_2nd(f,iux-1+i,tmp3,j)
+          f(:,:,:,ihypvis-1+i)=f(:,:,:,ihypvis-1+i)+0.5*tmp3*tmp(:,:,:,j)
+          f(:,:,:,ihypvis-1+j)=f(:,:,:,ihypvis-1+j)+0.5*tmp3*tmp(:,:,:,i)
+        enddo; enddo
+!
+!  Add -1/3*delta_ij*div(u).grad(lnrho) term.
+!
+        call div_2nd(f,iux,tmp3)
+        do i=1,3
+          f(:,:,:,ihypvis-1+i)=f(:,:,:,ihypvis-1+i)-1/3.*tmp3*tmp(:,:,:,i)
+        enddo
+      endif
 !
 ! find heating term (yet it only works for ivisc='hyper3')
 ! the heating term is d/dt(0.5*rho*u^2) = -2*mu3*( S^(2) )^2
@@ -157,10 +196,45 @@ module Hypervisc_strict
 !
     endsubroutine hyperviscosity_strict
 !***********************************************************************
-    subroutine divu_2nd(f,df)
+    subroutine der_2nd(f,k,df,j)
 !
-!  Calculate divergence of a vector u, get scalar.
-!  Accurate to 2nd order.
+!  Calculate derivative of scalar, accurate to 2nd order.
+!
+!  13-sep-07/anders: adapted from div_2nd
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: df
+      integer :: j,k
+!
+      real :: fac
+!
+      df=0.0
+!
+      if (j==1 .and. nxgrid/=1) then
+        fac=1./(2.*dx)
+        df(2:mx-1,:,:) = df(2:mx-1,:,:) &
+                         + ( f(3:mx,:,:,k)-f(1:mx-2,:,:,k) ) *fac
+      endif
+!
+      if (j==2 .and. nygrid/=1) then
+        fac=1./(2.*dy)
+        df(:,2:my-1,:) = df(:,2:my-1,:) &  
+                         + ( f(:,3:my,:,k)-f(:,1:my-2,:,k) )*fac
+      endif
+!
+      if (j==3 .and. nzgrid/=1) then
+        fac=1./(2.*dz)
+        df(:,:,2:mz-1) = df(:,:,2:mz-1) &
+                         + ( f(:,:,3:mz,k)-f(:,:,1:mz-2,k) )*fac
+      endif
+!      
+    endsubroutine der_2nd
+!***********************************************************************
+    subroutine div_2nd(f,k,df)
+!
+!  Calculate divergence of a vector, accurate to 2nd order.
 !
 !  23-nov-02/tony: coded
 !
@@ -168,29 +242,64 @@ module Hypervisc_strict
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: df
+      integer :: k
+!
       real :: fac
 !
-      df=0.
+      df=0.0
 !
       if (nxgrid/=1) then
-         fac=1./(2.*dx)
-         df(2:mx-1,:,:) =     df(2:mx-1,:,:) &
-                           + ( f(3:mx,:,:,iux)-f(1:mx-2,:,:,iux) ) *fac
+        fac=1./(2.*dx)
+        df(2:mx-1,:,:) = df(2:mx-1,:,:) &
+                         + ( f(3:mx,:,:,k  )-f(1:mx-2,:,:,k  ) ) *fac
       endif
 !
       if (nygrid/=1) then
-         fac=1./(2.*dy)
-         df(:,2:my-1,:) =    df(:,2:my-1,:) &  
-                          + ( f(:,3:my,:,iuy)-f(:,1:my-2,:,iuy) )*fac
+        fac=1./(2.*dy)
+        df(:,2:my-1,:) = df(:,2:my-1,:) &  
+                         + ( f(:,3:my,:,k+1)-f(:,1:my-2,:,k+1) )*fac
       endif
 !
       if (nzgrid/=1) then
-         fac=1./(2.*dz)
-         df(:,:,2:mz-1) = df(:,:,2:mz-1) &
-                          + (f(:,:,3:mz,iuz)-f(:,:,1:mz-2,iuz))*fac
+        fac=1./(2.*dz)
+        df(:,:,2:mz-1) = df(:,:,2:mz-1) &
+                         + ( f(:,:,3:mz,k+2)-f(:,:,1:mz-2,k+2) )*fac
       endif
 !      
-    endsubroutine divu_2nd
+    endsubroutine div_2nd
+!***********************************************************************
+    subroutine grad_2nd(f,k,df)
+!
+!  Calculate gradient of scalar, accurate to second order.
+!
+!  13-sep-07/anders: adapted from div_2nd
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,3) :: df
+      integer :: k
+!
+      real :: fac
+!
+      df=0.0
+!
+      if (nxgrid/=1) then
+        fac=1./(2.*dx)
+        df(2:mx-1,:,:,1) = (f(3:mx,:,:,k  )-f(1:mx-2,:,:,k  ))*fac
+      endif
+!
+      if (nygrid/=1) then
+        fac=1./(2.*dy)
+        df(:,2:my-1,:,2) = (f(:,3:my,:,k+1)-f(:,1:my-2,:,k+1))*fac
+      endif
+!
+      if (nzgrid/=1) then
+        fac=1./(2.*dz)
+        df(:,:,2:mz-1,3) = (f(:,:,3:mz,k+2)-f(:,:,1:mz-2,k+2))*fac
+      endif
+!      
+    endsubroutine grad_2nd
 !***********************************************************************
     subroutine der_2nd_nof(var,tmp,j)
 !
@@ -206,7 +315,7 @@ module Hypervisc_strict
       intent (out) :: tmp
 !
       tmp=0.
-
+!
       if (j==1 .and. nxgrid/=1) then
           tmp(     1,:,:) = (-3.*var(1,:,:) &
                              +4.*var(2,:,:) &

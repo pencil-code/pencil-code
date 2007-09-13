@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.80 2007-09-07 11:44:56 dintrans Exp $
+! $Id: viscosity.f90,v 1.81 2007-09-13 11:49:49 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -44,6 +44,7 @@ module Viscosity
   logical :: lvisc_hyper3_simplified=.false.
   logical :: lvisc_hyper3_rho_nu_const=.false.
   logical :: lvisc_hyper3_mu_const_strict=.false.
+  logical :: lvisc_hyper3_nu_const_strict=.false.
   logical :: lvisc_hyper3_rho_nu_const_symm=.false.
   logical :: lvisc_hyper3_rho_nu_const_aniso=.false.
   logical :: lvisc_hyper3_nu_const_aniso=.false.
@@ -102,7 +103,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.80 2007-09-07 11:44:56 dintrans Exp $")
+           "$Id: viscosity.f90,v 1.81 2007-09-13 11:49:49 ajohan Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -113,11 +114,13 @@ module Viscosity
 !  20-nov-02/tony: coded
 !
       use Cdata
-      use Mpicomm, only: stop_it
       use FArrayManager
-
+      use Mpicomm, only: stop_it
+      use SharedVariables
+!
       logical, intent(in) :: lstarting
-      integer :: i
+!
+      integer :: i, ierr
 !
 !  Some viscosity types need the rate-of-strain tensor and grad(lnrho)
 !
@@ -131,6 +134,7 @@ module Viscosity
       lvisc_hyper3_rho_nu_const=.false.
       lvisc_hyper3_rho_nu_const_symm=.false.
       lvisc_hyper3_mu_const_strict=.false.
+      lvisc_hyper3_nu_const_strict=.false.
       lvisc_hyper3_rho_nu_const_aniso=.false.
       lvisc_hyper3_nu_const_aniso=.false.
       lvisc_hyper3_rho_nu_const_bulk=.false.
@@ -138,7 +142,7 @@ module Viscosity
       lvisc_smag_simplified=.false.
       lvisc_smag_cross_simplified=.false.
       lvisc_snr_damp=.false.
-
+!
       do i=1,nvisc_max
         select case (ivisc(i))
         case ('simplified', '0')
@@ -177,9 +181,15 @@ module Viscosity
           if (lroot) print*, 'viscous force(i): '// &
               'nu_hyper/rho*(del2(del2(del2(u)))+del2(del2(grad(divu))))'
           if (.not.lhyperviscosity_strict) &
-               call stop_it("initialize_viscosity: This viscosity type"//&
-               " cannot be used with HYPERVISC_STRICT=nohypervisc_strict")
+               call stop_it('initialize_viscosity: This viscosity type'//&
+               ' cannot be used with HYPERVISC_STRICT=nohypervisc_strict')
           lvisc_hyper3_mu_const_strict=.true.
+       case ('hyper3_nu-const_strict')
+          if (lroot) print*, 'viscous force(i): 1/rho*div[2*rho*nu_3*S^(3)]'
+          if (.not.lhyperviscosity_strict) &
+               call stop_it('initialize_viscosity: This viscosity type'//&
+               ' cannot be used with HYPERVISC_STRICT=nohypervisc_strict')
+          lvisc_hyper3_nu_const_strict=.true.
        case ('hyper3_rho_nu-const_aniso')
           if (lroot) print*,&
                'viscous force(i): 1/rho*(nu.del6)ui'
@@ -231,7 +241,8 @@ module Viscosity
         if ( (lvisc_hyper3_simplified.or.lvisc_hyper3_rho_nu_const.or. &
               lvisc_hyper3_rho_nu_const_bulk.or.lvisc_hyper3_nu_const.or. &
               lvisc_hyper3_rho_nu_const_symm.or. &
-              lvisc_hyper3_mu_const_strict).and. &
+              lvisc_hyper3_mu_const_strict .or. &
+              lvisc_hyper3_nu_const_strict ).and. &
               nu_hyper3==0.0 ) &
             call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_hyper3 is zero!')
@@ -259,13 +270,18 @@ module Viscosity
 !
       if (lvisc_heat_as_aux) then
         call farray_register_auxiliary('visc_heat',ivisc_heat)
-        !
+!
         if (lroot) then
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
           write(3,*) 'ivisc_heat=',ivisc_heat
           close(3)
         endif
       endif
+!
+!  Let Hypervisc_strict module know if we wish the more complicated nu=const
+!  version of hyperviscosity.
+!
+      call put_shared_variable('lvisc_hyper3_nu_const_strict',lvisc_hyper3_nu_const_strict,ierr)
 !
       call keep_compiler_quiet(lstarting)
 !
@@ -659,6 +675,26 @@ module Viscosity
           if (headtt) then              ! (see Haugen & Brandenburg 2004)
             call warning('calc_pencils_viscosity', 'viscous heating term '// &
               'is not implemented for lvisc_hyper3_mu_const_strict')
+          endif
+        endif
+        if (lfirst.and.ldt) &
+            p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
+      endif
+!
+      if (lvisc_hyper3_nu_const_strict) then
+!
+!  Viscous force:
+!      du/dt = 1/rho*div[2*rho*nu_3*S^(3)]
+!  This viscosity type requires HYPERVISC_STRICT =  hypervisc_strict_fft in
+!  your Makefile.local.
+!
+        do i=1,3
+          p%fvisc(:,i)=p%fvisc(:,i)+nu_hyper3*f(l1:l2,m,n,ihypvis-1+i)
+        enddo
+        if (lpencil(i_visc_heat)) then
+          if (headtt) then
+            call warning('calc_pencils_viscosity', 'viscous heating term '// &
+              'is not implemented for lvisc_hyper3_nu_const_strict')
           endif
         endif
         if (lfirst.and.ldt) &
