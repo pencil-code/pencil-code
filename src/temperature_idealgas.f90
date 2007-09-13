@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.36 2007-09-12 13:47:00 tgastine Exp $
+! $Id: temperature_idealgas.f90,v 1.37 2007-09-13 09:22:37 tgastine Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -134,7 +134,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.36 2007-09-12 13:47:00 tgastine Exp $")
+           "$Id: temperature_idealgas.f90,v 1.37 2007-09-13 09:22:37 tgastine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1162,12 +1162,7 @@ module Entropy
         finter(l1:l2,j)=workx(1:nx)
       enddo
 !
-      select case (bcz1(ilnTT))
-        case('cT')
-         call BC_CT(finter)
-        case('c1')
-         call BC_flux(finter)
-      endselect
+      call boundary_ADI(finter)
 !
 !  columns dealt implicitly
 !
@@ -1201,12 +1196,7 @@ module Entropy
         f(i,4,n1:n2,ilnTT)=workz(1:nz)
       enddo
 !
-      select case (bcz1(ilnTT))
-        case('cT')
-         call BC_CT(f(:,4,:,ilnTT))
-        case('c1')
-         call BC_flux(f(:,4,:,ilnTT))
-      endselect
+      call boundary_ADI(f(:,4,:,ilnTT))
 !
     end subroutine ADI_Kconst
 !**************************************************************
@@ -1279,10 +1269,8 @@ module Entropy
            -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j))          &
            *(TT(l1:l2,j)-TT(l1-1:l2-1,j)))+source(l1:l2,j)
 !
-       aalpha=cx(nx)
-       bbeta=ax(1)
-       cx(nx)=0.
-       ax(1)=0.
+! x boundary conditions: periodic
+       aalpha=cx(nx) ; bbeta=ax(1)
        call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,workx,nx)
        finter(l1:l2,j)=workx(1:nx)
       enddo
@@ -1306,21 +1294,21 @@ module Entropy
 !
        rhsz=finter(i,n1:n2)
 !
-       cz(nz)=0.
-       az(1)=0.
-! Constant flux at the bottom
-!       bz(1)=-1.
-!       cz(1)=0.
-!       cz(1)=1.
-!       rhsz(1)=0.
-! Constant temperature at the bottom: T^(n+1)-T^n=0
-        bz(1)=1.
-        cz(1)=0.
-        rhsz(1)=0.
+! z boundary conditions
 ! Constant temperature at the top: T^(n+1)-T^n=0
-       bz(nz)=1.
-       az(nz)=0.
+       bz(nz)=1. ; az(nz)=0.
        rhsz(nz)=0.
+! bottom
+       select case (bcz1(ilnTT))
+! Constant temperature at the bottom: T^(n+1)-T^n=0
+         case('cT')
+          bz(1)=1. ; cz(1)=0.
+          rhsz(1)=0.
+! Constant flux at the bottom
+         case('c1')
+          bz(1)=1. ; cz(1)=-1.
+          rhsz(1)=0.
+       endselect
 !
        call tridag(az,bz,cz,rhsz,workz,nz)
        val(i,n1:n2)=workz(1:nz)
@@ -1328,13 +1316,8 @@ module Entropy
 !
       f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
 !
-! Boris: is it really needed? i.e. filling f(n1,n2) and heatcond_TT
-! 11-sep-07/gastine: f(n1,n2) is not needed
-!     f(:,:,n1,ilnTT)=cs2bot/gamma1
-!     f(:,:,n2,ilnTT)=cs2top/gamma1
-
-      call BC_CT(f(:,4,:,ilnTT))
-!     call BC_flux(f,hcond)
+      call boundary_ADI(f(:,4,:,ilnTT),hcond)
+!
       call heatcond_TT(f(:,4,:,ilnTT),hcond,dhcond)
 !
     end subroutine ADI_Kprof
@@ -1378,37 +1361,45 @@ module Entropy
 !
     end subroutine heatcond_TT_point
 !**************************************************************
-    subroutine BC_CT(f_2d)
+    subroutine boundary_ADI(f_2d,hcond)
 
+! 13-Sep-07/gastine: computed two different types of boundary 
+! conditions for the implicit solver:
+!     - Always periodic in x-direction
+!     - Possibility to choose between 'cT' and 'c1' in z direction
+! Note: 'c1' means that the flux is constant at the _bottom_ 
+! boundary and the temperature is constant at the top
       implicit none
 
       real, dimension(mx,mz) :: f_2d
+      real, dimension(mx,mz), optional :: hcond
+      integer :: i
 
 ! x-direction: periodic
       f_2d(1:l1-1,:)=f_2d(l2i:l2,:)
       f_2d(l2+1:mx,:)=f_2d(l1:l1i,:)
 ! z-direction: constant temperature
-      f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
-      f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
+      select case (bcz1(ilnTT))
+        case('cT')
+          f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
+          f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
+!
+! Constant flux at the bottom
+        case('c1')
+          if (.not. present(hcond)) then
+            do i=1,nghost
+              f_2d(:,n1-i)=f_2d(:,n1+i)+2.*i*dz*Fbot/hcond0
+            enddo
+          else 
+            do i=1,nghost
+              f_2d(:,n1-i)=f_2d(:,n1+i)+2.*i*dz*Fbot/hcond(l1,n1+i)
+            enddo
+          endif
+! Constant temperature at the top
+          f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
+      endselect
 
-    end subroutine BC_CT
-!**************************************************************
-    subroutine BC_flux(f)
-
-      real, dimension(mx,mz) :: f, hcond
-      integer :: i
-
-      hcond=hcond0
-! x-direction: periodic
-      f(1:l1-1,:)=f(l2i:l2,:)
-      f(l2+1:mx,:)=f(l1:l1i,:)
-! z-direction: bot=constant flux, top=constant temperature
-      do i=1,nghost
-        f(:,n1-i)=f(:,n1+i)+2.*i*dz*Fbot/hcond(l1,n1+i)
-      enddo
-      f(:,n2+1)=2.*f(:,n2)-f(:,n2-1)
-
-    end subroutine BC_flux
+    end subroutine boundary_ADI
 !**************************************************************
     subroutine tridag(a,b,c,r,u,n)
 
