@@ -17,15 +17,8 @@ void FTNIZE(sp_harm_real)
 void FTNIZE(sp_harm_imag)
      (REAL *y, FINT *l, FINT *m, REAL *theta, REAL *phi) {
 }
-<<<<<<< nogsl.c
 /* ------------------------------------------ */
 void FTNIZE(legendre_pl)
      (REAL *y, FINT *l, REAL *theta) {
 }
 
-=======
-/* -------------------------------------------- */
-void FTNIZE(legendre_pl)
-     (REAL *y, FINT *l, REAL *theta) {
-}
->>>>>>> 1.5
