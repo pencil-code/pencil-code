@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.31 2007-09-07 18:11:36 brandenb Exp $
+! $Id: testfield.f90,v 1.32 2007-09-13 01:45:27 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -9,9 +9,6 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-!!old MVAR CONTRIBUTION 36
-!
-!! MVAR CONTRIBUTION 18
 ! MVAR CONTRIBUTION 36
 ! MAUX CONTRIBUTION 0
 !
@@ -114,7 +111,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.31 2007-09-07 18:11:36 brandenb Exp $")
+           "$Id: testfield.f90,v 1.32 2007-09-13 01:45:27 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -470,6 +467,15 @@ module Testfield
       enddo
 !
     endsubroutine daatest_dt
+!***********************************************************************
+    subroutine get_slices_testfield(f,slices)
+! 
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+    endsubroutine get_slices_testfield
 !***********************************************************************
     subroutine calc_ltestfield_pars(f)
 !

@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.78 2007-09-12 19:56:37 brandenb Exp $
+! $Id: slices.f90,v 1.79 2007-09-13 01:45:27 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -410,12 +410,12 @@ module Slices
           if (lparticles)    call get_slices_particles   (f,slices)
           if (lshock)        call get_slices_shock       (f,slices)
           if (linterstellar) call get_slices_interstellar(f,slices)
-          if (lhydro)        call get_slices_hydro(f,slices)
-          if (lmagnetic)     call get_slices_magnetic(f,slices)
-!         if (ltestfield)    call get_slices_testfield(f,slices)
-          if (lradiation)    call get_slices_radiation(f,slices)
-          if (lchiral)       call get_slices_chiral(f,slices)
-          if (lspecial)      call get_slices_special(f,slices)
+          if (lhydro)        call get_slices_hydro       (f,slices)
+          if (lmagnetic)     call get_slices_magnetic    (f,slices)
+!         if (ltestfield)    call get_slices_testfield   (f,slices)
+          if (lradiation)    call get_slices_radiation   (f,slices)
+          if (lchiral)       call get_slices_chiral      (f,slices)
+          if (lspecial)      call get_slices_special     (f,slices)
 !
         endselect
 

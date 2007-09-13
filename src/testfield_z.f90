@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.7 2007-09-10 06:07:39 brandenb Exp $
+! $Id: testfield_z.f90,v 1.8 2007-09-13 01:45:27 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -31,7 +31,14 @@ module Testfield
   implicit none
 
   include 'testfield.h'
-
+!
+! Slice precalculation buffers
+!
+  real, target, dimension (nx,ny,3) :: bb11_xy
+  real, target, dimension (nx,ny,3) :: bb11_xy2
+  real, target, dimension (nx,nz,3) :: bb11_xz
+  real, target, dimension (ny,nz,3) :: bb11_yz
+!
   character (len=labellen), dimension(ninit) :: initaatest='nothing'
   real, dimension (ninit) :: amplaatest=0.
 
@@ -137,7 +144,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.7 2007-09-10 06:07:39 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.8 2007-09-13 01:45:27 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -492,7 +499,49 @@ module Testfield
 !
       endif
 !
+!  write B-slices for output in wvid in run.f90
+!  Note: ix is the index with respect to array with ghost zones.
+! 
+      if (lvid.and.lfirst) then
+        do j=1,3
+          bb11_yz(m-m1+1,n-n1+1,j)=bpq(ix_loc-l1+1,j,1)
+          if (m==iy_loc)  bb11_xz(:,n-n1+1,j)=bpq(:,j,1)
+          if (n==iz_loc)  bb11_xy(:,m-m1+1,j)=bpq(:,j,1)
+          if (n==iz2_loc) bb11_xy2(:,m-m1+1,j)=bpq(:,j,1)
+        enddo
+      endif
+!
     endsubroutine daatest_dt
+!***********************************************************************
+    subroutine get_slices_testfield(f,slices)
+! 
+!  Write slices for animation of magnetic variables.
+! 
+!  12-sep-09/axel: adapted from the corresponding magnetic routine
+! 
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+! 
+!  Loop over slices
+! 
+      select case (trim(slices%name))
+!
+!  Magnetic field (derived variable)
+!
+        case ('bb11')
+          if (slices%index >= 3) then
+            slices%ready = .false.
+          else
+            slices%index = slices%index+1
+            slices%yz=>bb11_yz(:,:,slices%index)
+            slices%xz=>bb11_xz(:,:,slices%index)
+            slices%xy=>bb11_xy(:,:,slices%index)
+            slices%xy2=>bb11_xy2(:,:,slices%index)
+            if (slices%index < 3) slices%ready = .true.
+          endif
+      endselect
+!
+    endsubroutine get_slices_testfield
 !***********************************************************************
     subroutine calc_ltestfield_pars(f)
 !
