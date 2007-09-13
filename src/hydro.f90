@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.393 2007-09-09 17:21:53 wlyra Exp $
+! $Id: hydro.f90,v 1.394 2007-09-13 11:17:06 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -54,8 +54,11 @@ module Hydro
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
   real :: uy_left=0.,uy_right=0.
   real :: initpower=1.,cutoff=0.
-  real :: ampl_ux=0.0, ampl_uy=0.0, ampl_uz=0.0
-  real :: phase_ux=0.0, phase_uy=0.0, phase_uz=0.0
+  real, dimension (ninit) :: ampl_ux=0.0, ampl_uy=0.0, ampl_uz=0.0
+  real, dimension (ninit) :: kx_ux=0.0, kx_uy=0.0, kx_uz=0.0
+  real, dimension (ninit) :: ky_ux=0.0, ky_uy=0.0, ky_uz=0.0
+  real, dimension (ninit) :: kz_ux=0.0, kz_uy=0.0, kz_uz=0.0
+  real, dimension (ninit) :: phase_ux=0.0, phase_uy=0.0, phase_uz=0.0
   real :: omega_precession=0.
   real, dimension (ninit) :: ampluu=0.0
   character (len=labellen), dimension(ninit) :: inituu='nothing'
@@ -74,10 +77,12 @@ module Hydro
 ! Dhruba
   real :: outest
   logical :: loutest
+
   namelist /hydro_init_pars/ &
        ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
        inituu, widthuu, radiusuu, urand, &
-       uu_left, uu_right, uu_lower, uu_upper,  kx_uu, ky_uu, kz_uu, coefuu, &
+       uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, coefuu, &
+       kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
        uy_left, uy_right,uu_const, Omega,  initpower, cutoff, &
        kep_cutoff_pos_ext, kep_cutoff_width_ext, &
        kep_cutoff_pos_int, kep_cutoff_width_int, &
@@ -309,7 +314,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.393 2007-09-09 17:21:53 wlyra Exp $")
+           "$Id: hydro.f90,v 1.394 2007-09-13 11:17:06 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -521,13 +526,13 @@ module Hydro
         case('centrifugal-balance'); call centrifugal_balance(f)
         case('olddiffrot'); call olddiffrot(ampluu(j),f,iuy,xx,yy,zz)
         case('sinwave-phase')
-          call sinwave_phase(f,iux,ampl_ux,kx_uu,ky_uu,kz_uu,phase_ux)
-          call sinwave_phase(f,iuy,ampl_uy,kx_uu,ky_uu,kz_uu,phase_uy)
-          call sinwave_phase(f,iuz,ampl_uz,kx_uu,ky_uu,kz_uu,phase_uz)
+          call sinwave_phase(f,iux,ampl_ux(j),kx_ux(j),ky_ux(j),kz_ux(j),phase_ux(j))
+          call sinwave_phase(f,iuy,ampl_uy(j),kx_uy(j),ky_uy(j),kz_uy(j),phase_uy(j))
+          call sinwave_phase(f,iuz,ampl_uz(j),kx_uz(j),ky_uz(j),kz_uz(j),phase_uz(j))
         case('coswave-phase')
-          call coswave_phase(f,iux,ampl_ux,kx_uu,ky_uu,kz_uu,phase_ux)
-          call coswave_phase(f,iuy,ampl_uy,kx_uu,ky_uu,kz_uu,phase_uy)
-          call coswave_phase(f,iuz,ampl_uz,kx_uu,ky_uu,kz_uu,phase_uz)
+          call coswave_phase(f,iux,ampl_ux(j),kx_ux(j),ky_ux(j),kz_ux(j),phase_ux(j))
+          call coswave_phase(f,iuy,ampl_uy(j),kx_uy(j),ky_uy(j),kz_uy(j),phase_uy(j))
+          call coswave_phase(f,iuz,ampl_uz(j),kx_uz(j),ky_uz(j),kz_uz(j),phase_uz(j))
         case('sinwave-x'); call sinwave(ampluu(j),f,iux,kx=kx_uu)
         case('sinwave-y'); call sinwave(ampluu(j),f,iuy,ky=ky_uu)
         case('sinwave-z'); call sinwave(ampluu(j),f,iuz,kz=kz_uu)
@@ -747,12 +752,13 @@ module Hydro
 
         case('compressive-shwave')
 ! compressive (non-vortical) shear wave of Johnson & Gammie (2005a)
-          call coswave_phase(f,iux,ampl_ux,kx_uu,ky_uu,kz_uu,phase_ux)
-          call coswave_phase(f,iuy,ampl_uy,kx_uu,ky_uu,kz_uu,phase_uy)
+          call coswave_phase(f,iux,ampl_ux(i),kx_ux(i),ky_ux(i),kz_ux(i),phase_ux(i))
+          call coswave_phase(f,iuy,ampl_uy(i),kx_uy(i),ky_uy(i),kz_uy(i),phase_uy(i))
           eta_sigma = (2. - qshear)*Omega
           do m=m1,m2; do n=n1,n2
-            f(l1:l2,m,n,ilnrho) = -kx_uu*ampl_uy*eta_sigma* & 
-                (cos(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) + sin(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)))
+            f(l1:l2,m,n,ilnrho) = -kx_ux(i)*ampl_uy(i)*eta_sigma* & 
+                (cos(kx_ux(i)*x(l1:l2)+ky_ux(i)*y(m)+kz_ux(i)*z(n)) + &
+                sin(kx_uy(i)*x(l1:l2)+ky_uy(i)*y(m)+kz_uy(i)*z(n)))
           enddo; enddo
         case default
           !
