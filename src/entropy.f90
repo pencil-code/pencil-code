@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.524 2007-09-13 09:20:31 dintrans Exp $
+! $Id: entropy.f90,v 1.525 2007-09-13 11:30:34 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -208,7 +208,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.524 2007-09-13 09:20:31 dintrans Exp $")
+           "$Id: entropy.f90,v 1.525 2007-09-13 11:30:34 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -3693,16 +3693,20 @@ module Entropy
 !
 !  17-mar-07/dintrans: coded
 !  
-      use Gravity, only: gravx
+      use SharedVariables
+      use Gravity, only: gravz
       use EquationOfState, only: lnrho0,cs20,gamma,gamma1,cs2top,cs2bot, &
                                  get_cp1,eoscalc,ilnrho_lnTT
 
+      integer :: ierr
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: TT,lnTT,lnrho,ss
       real :: beta0,beta1,TT_bcz,TT_ext,TT_int
       real :: cp1,lnrho_int,lnrho_bcz
+      real, pointer :: gravx
 !
       if (headtt) print*,'r_bcz in cylind_layers=',r_bcz
+      call get_shared_variable('gravx',gravx,ierr)
 !
 !  beta is the temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
@@ -3749,20 +3753,24 @@ module Entropy
 !  Note: both entropy and density are initialized there (compared to layer_ss)
 !
       use Cdata
-      use Gravity, only: gravz, gravx
+      use SharedVariables
+      use Gravity, only: gravz
       use EquationOfState, only: eoscalc, ilnrho_lnTT, get_cp1, &
                                  gamma1, lnrho0
 !
+      integer :: ierr
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 
       real, dimension (nx) :: lnrho, lnTT, TT, ss, z_mn
-      real :: beta, cp1, lnrho_dummy=0., zbot, ztop, TT0
+      real    :: beta, cp1, lnrho_dummy=0., zbot, ztop, TT0
+      real, pointer :: gravx
 !
 !  beta is the (negative) temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !
       call get_cp1(cp1)
       if (lcylindrical_coords) then
+        call get_shared_variable('gravx',gravx,ierr)
         beta=cp1*gamma/gamma1*gravx/(mpoly0+1)
       else
         beta=cp1*gamma/gamma1*gravz/(mpoly0+1)

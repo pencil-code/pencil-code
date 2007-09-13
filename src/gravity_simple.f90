@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.44 2007-09-08 17:35:47 wlyra Exp $
+! $Id: gravity_simple.f90,v 1.45 2007-09-13 11:30:34 dintrans Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -110,7 +110,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.44 2007-09-08 17:35:47 wlyra Exp $")
+           "$Id: gravity_simple.f90,v 1.45 2007-09-13 11:30:34 dintrans Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.
@@ -162,6 +162,7 @@ module Gravity
         if (lroot) print*,'initialize_gravity: constant x-grav=',gravx
         gravx_xpencil=gravx
         potx_xpencil=-gravx*(x-xinfty)
+        call put_shared_variable('gravx',gravx,ierr)
 !
 !  tanh profile
 !  for isothermal EOS, we have 0=-cs2*dlnrho+gravx
