@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.37 2007-09-13 09:22:37 tgastine Exp $
+! $Id: temperature_idealgas.f90,v 1.38 2007-09-14 13:11:34 tgastine Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -134,7 +134,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.37 2007-09-13 09:22:37 tgastine Exp $")
+           "$Id: temperature_idealgas.f90,v 1.38 2007-09-14 13:11:34 tgastine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -272,7 +272,8 @@ module Entropy
 !
 ! some tricks regarding Fbot and hcond0 when bcz1='c1' (constant flux)
 !
-      if (bcz1(ilnTT)=='c1' .and. lrun) then
+      if (hole_slope.eq.0.) then
+       if (bcz1(ilnTT)=='c1' .and. lrun) then
         if (Fbot==impossible .and. hcond0 /= impossible) then
           Fbot=-gamma/gamma1*hcond0*gravz/(mpoly0+1.)
           if (lroot) print*, &
@@ -286,6 +287,7 @@ module Entropy
         if (Fbot==impossible .and. hcond0==impossible) &
           call fatal_error('temperature_idealgas',  &
                            'Both Fbot and hcond0 are unknown')
+       endif
       endif
 !
 !
