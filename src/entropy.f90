@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.527 2007-09-14 14:50:49 dintrans Exp $
+! $Id: entropy.f90,v 1.528 2007-09-14 20:01:32 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -208,7 +208,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.527 2007-09-14 14:50:49 dintrans Exp $")
+           "$Id: entropy.f90,v 1.528 2007-09-14 20:01:32 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -447,7 +447,7 @@ module Entropy
           cs2cool=cs2top
 
         case('single_polytrope')
-          if (lcylindrical_coords) cs2cool=cs2top
+!         if (lcylindrical_coords) cs2cool=cs2top
 
       endselect
 !
@@ -884,11 +884,6 @@ module Entropy
 
         case ('cylind_layers')
           call cylind_layers(f)
-          if (ampl_ss.ne.0.) then
-            print*,'init_ss: also put an entropy bubble in hydrostatic equilibrium: radius_ss,ampl_ss=',radius_ss,ampl_ss
-            call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
-            call blob(-ampl_ss,f,ilnrho,radius_ss,center1_x,center1_y,center1_z)
-          endif
 
         case ('polytropic_simple')
           !
@@ -896,8 +891,8 @@ module Entropy
           !
           call layer_ss(f)
 
-        case('bubble_hs')
-          print*,'init_ss: put bubble in hydrostatic equilibrium: radius_ss,ampl_ss=',radius_ss,ampl_ss
+        case('blob_hs')
+          print*,'init_ss: put blob in hydrostatic equilibrium: radius_ss,ampl_ss=',radius_ss,ampl_ss
           call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
           call blob(-ampl_ss,f,ilnrho,radius_ss,center1_x,center1_y,center1_z)
 
@@ -3684,22 +3679,21 @@ module Entropy
 !***********************************************************************
     subroutine cylind_layers(f)
 !
-!  initialise ss in a cylindrical ring using 2 superposed polytropic layers
-!
 !  17-mar-07/dintrans: coded
+!  Initialise ss in a cylindrical ring using 2 superposed polytropic layers
 !  
       use Gravity, only: gravz, g0
       use EquationOfState, only: lnrho0,cs20,gamma,gamma1,cs2top,cs2bot, &
-                                 get_cp1,eoscalc,ilnrho_lnTT
+                                 get_cp1,eoscalc,ilnrho_TT
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: TT,lnTT,lnrho,ss
-      real :: beta0,beta1,TT_bcz,TT_ext,TT_int
-      real :: cp1,lnrho_int,lnrho_bcz
+      real, dimension (nx) :: lnrho, TT, ss
+      real :: beta0, beta1, TT_bcz, TT_ext, TT_int
+      real :: cp1, lnrho_int, lnrho_bcz
 !
-      if (headtt) print*,'r_bcz in cylind_layers=',r_bcz
+      if (headtt) print*,'r_bcz in cylind_layers=', r_bcz
 !
-!  beta is the temperature gradient
+!  beta is the (negative) temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !
       call get_cp1(cp1)
@@ -3710,30 +3704,29 @@ module Entropy
       TT_int=TT_bcz+beta1*(r_int-r_bcz)
       cs2top=cs20
       cs2bot=gamma1*TT_int
-      lnrho_bcz=lnrho0+mpoly0*log(TT_bcz)-mpoly0*log(TT_ext)
+      lnrho_bcz=lnrho0+mpoly0*log(TT_bcz/TT_ext)
 !
-      do imn=1,ny*nz
-        n=nn(imn)
-        m=mm(imn)
+      do m=m1,m2
+      do n=n1,n2
 !
 !  convective layer
+!
         where (rcyl_mn <= r_ext .AND. rcyl_mn > r_bcz)
           TT=TT_ext+beta0*(rcyl_mn-r_ext)
-          lnTT=log(TT)
-          lnrho=lnrho0+mpoly0*lnTT-mpoly0*log(TT_ext)
+          lnrho=lnrho0+mpoly0*log(TT/TT_ext)
         endwhere
 !
 !  radiative layer
 !
         where (rcyl_mn <= r_bcz)
           TT=TT_bcz+beta1*(rcyl_mn-r_bcz)
-          lnTT=log(TT)
-          lnrho=lnrho_bcz+mpoly1*lnTT-mpoly1*log(TT_bcz)
+          lnrho=lnrho_bcz+mpoly1*log(TT/TT_bcz)
         endwhere
 !
         f(l1:l2,m,n,ilnrho)=lnrho
-        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
+        call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
         f(l1:l2,m,n,iss)=ss
+      enddo
       enddo
 !
     endsubroutine cylind_layers
@@ -3745,12 +3738,12 @@ module Entropy
 !
       use Cdata
       use Gravity, only: gravz, g0
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, get_cp1, &
+      use EquationOfState, only: eoscalc, ilnrho_TT, get_cp1, &
                                  gamma1, lnrho0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: lnrho, lnTT, TT, ss, z_mn
-      real    :: beta, cp1, lnrho_dummy=0., zbot, ztop, TT0
+      real, dimension (nx) :: lnrho, TT, ss, z_mn
+      real :: beta, cp1, lnrho_dummy=0., zbot, ztop, TT0
 !
 !  beta is the (negative) temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
@@ -3775,10 +3768,9 @@ module Entropy
           z_mn = spread(z(n),1,nx)
           TT = TT0+beta*(z_mn-ztop)
         endif
-        lnTT=log(TT)
         lnrho=lnrho0+mpoly0*log(TT/TT0)
         f(l1:l2,m,n,ilnrho)=lnrho
-        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
+        call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
         f(l1:l2,m,n,iss)=ss
       enddo
       enddo
