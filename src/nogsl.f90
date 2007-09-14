@@ -1,4 +1,4 @@
-! $Id: nogsl.f90,v 1.1 2007-09-10 08:56:59 brandenb Exp $
+! $Id: nogsl.f90,v 1.2 2007-09-14 05:47:25 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -10,6 +10,8 @@
 !***************************************************************
 
 module Gsl
+
+  use Cparam
 
   implicit none
 
