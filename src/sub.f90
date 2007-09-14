@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.344 2007-09-11 11:14:25 wlyra Exp $
+! $Id: sub.f90,v 1.345 2007-09-14 04:02:27 wlyra Exp $
 
 module Sub
 
@@ -2836,11 +2836,6 @@ module Sub
       call der6(f,k,d6fdy,2,IGNOREDX=.true.)
       call der6(f,k,d6fdz,3,IGNOREDX=.true.)
       del6f = d6fdx + d6fdy + d6fdz
-!
-!  Exit if this is requested for non-cartesian runs
-! 
-      if (lcylindrical_coords.or.lspherical_coords) &
-        call stop_it("del2_nodx not implemented for non-cartesian coordinates")
 !
     endsubroutine del6_nodx
 !***********************************************************************
