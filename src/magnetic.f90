@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.459 2007-09-13 17:45:03 wlyra Exp $
+! $Id: magnetic.f90,v 1.460 2007-09-14 04:01:40 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -92,6 +92,7 @@ module Magnetic
   logical :: lresi_etaSS=.false.
   logical :: lresi_hyper2=.false.
   logical :: lresi_hyper3=.false.
+  logical :: lresi_hyper3_cyl=.false.
   logical :: lresi_hyper3_strict=.false.
   logical :: lresi_zdep=.false.
   logical :: lresi_hyper3_aniso=.false.
@@ -343,7 +344,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.459 2007-09-13 17:45:03 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.460 2007-09-14 04:01:40 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -430,6 +431,7 @@ module Magnetic
       lresi_eta_const=.false.
       lresi_hyper2=.false.
       lresi_hyper3=.false.
+      lresi_hyper3_cyl=.false.
       lresi_hyper3_strict=.false.
       lresi_hyper3_aniso=.false.
       lresi_eta_shock=.false.
@@ -450,6 +452,9 @@ module Magnetic
           lresi_hyper2=.true.
         case('hyper3')
           if (lroot) print*, 'resistivity: hyper3'
+          lresi_hyper3=.true.
+        case('hyper3_cyl')
+          if (lroot) print*, 'resistivity: hyper3_cyl'
           lresi_hyper3=.true.
         case('hyper3_strict')
           if (lroot) print*, 'resistivity: strict hyper3 with positive definite heating rate'
@@ -503,6 +508,9 @@ module Magnetic
             'Resistivity coefficient eta_hyper2 is zero!')
         if (lresi_hyper3.and.eta_hyper3==0.0) &
             call fatal_error('initialize_magnetic', &
+            'Resistivity coefficient eta_hyper3 is zero!')
+        if (lresi_hyper3_cyl.and.eta_hyper3==0.0) &
+             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper3 is zero!')
         if (lresi_hyper3_strict.and.eta_hyper3==0.0) &
             call fatal_error('initialize_magnetic', &
@@ -1386,10 +1394,10 @@ module Magnetic
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b3b21,b1b32,b2b13,sign_jo,rho1_jxb
-      real, dimension (nx) :: B1dot_glnrhoxb
+      real, dimension (nx) :: B1dot_glnrhoxb,tmp1
       real, dimension (nx) :: eta_mn,eta_smag,etatotal,fres2,etaSS,penc
       real :: tmp,eta_out1,OmegaSS=1.
-      integer :: i,j,k
+      integer :: i,j,k,ju
 !
       intent(in)     :: f,p
       intent(inout)  :: df
@@ -1456,6 +1464,15 @@ module Magnetic
 !
       if (lresi_hyper3) then
         fres=fres+eta_hyper3*p%del6a
+      endif
+!
+      if (lresi_hyper3_cyl) then
+        do j=1,3
+          ju=j+iaa-1
+          call del6_nodx(f,ju,tmp1)
+          fres(:,j)=fres(:,j)+eta_hyper3*pi4_1*tmp1*dxyz_2
+        enddo
+        etatotal=etatotal+eta_hyper3
       endif
 !
       if (lresi_hyper3_strict) then
@@ -1681,7 +1698,6 @@ module Magnetic
                  advec_va2=sqrt(p%va2*dxyz_2)
           endif
         endif
-
 !
 !  resistive time step considerations
 !

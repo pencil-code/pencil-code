@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.352 2007-09-13 09:20:31 dintrans Exp $
+! $Id: density.f90,v 1.353 2007-09-14 04:01:40 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -53,6 +53,7 @@ module Density
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_aniso=.false.
+  logical :: ldiff_hyper3_cyl=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: lfreeze_lnrhosqu=.false.
 
@@ -129,7 +130,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.352 2007-09-13 09:20:31 dintrans Exp $")
+           "$Id: density.f90,v 1.353 2007-09-14 04:01:40 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -186,6 +187,7 @@ module Density
       ldiff_hyper3=.false.
       ldiff_hyper3lnrho=.false.
       ldiff_hyper3_aniso=.false.
+      ldiff_hyper3_cyl=.false.
 !
       lnothing=.false.
 !
@@ -203,6 +205,9 @@ module Density
        case ('hyper3_aniso')
           if (lroot) print*,'diffusion: (Dx*d^6/dx^6 + Dy*d^6/dy^6 + Dz*d^6/dz^6)rho'
           ldiff_hyper3_aniso=.true.
+        case ('hyper3_cyl')
+          if (lroot) print*,'diffusion: (d^6)rho'
+          ldiff_hyper3_cyl=.true.
         case ('shock')
           if (lroot) print*,'diffusion: shock diffusion'
           ldiff_shock=.true.
@@ -1076,6 +1081,8 @@ module Density
       endif
       if (ldiff_hyper3) lpenc_requested(i_del6rho)=.true.
       if (ldiff_hyper3.and..not.ldensity_nolog) lpenc_requested(i_rho)=.true.
+      if (ldiff_hyper3_cyl.and..not.ldensity_nolog) &
+           lpenc_requested(i_rho1)=.true.
       if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
 !
       if (lmass_source) then
@@ -1351,6 +1358,14 @@ module Density
           fdiff = fdiff + 1/p%rho*diffrho_hyper3*p%del6rho
         endif
         if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho_hyper3*dxyz_6
+        if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
+      endif
+!
+      if (ldiff_hyper3_cyl) then
+        call del6_nodx(f,ilnrho,tmp)
+        if (.not.ldensity_nolog) tmp=tmp*p%rho1
+        fdiff = fdiff + diffrho_hyper3*pi4_1*tmp*dxyz_2
+        if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho_hyper3*dxyz_2
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
 !

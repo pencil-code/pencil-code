@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.81 2007-09-13 11:49:49 ajohan Exp $
+! $Id: viscosity.f90,v 1.82 2007-09-14 04:01:40 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -42,6 +42,7 @@ module Viscosity
   logical :: lvisc_nu_shock=.false.
   logical :: lvisc_hyper2_simplified=.false.
   logical :: lvisc_hyper3_simplified=.false.
+  logical :: lvisc_hyper3_cyl=.false.
   logical :: lvisc_hyper3_rho_nu_const=.false.
   logical :: lvisc_hyper3_mu_const_strict=.false.
   logical :: lvisc_hyper3_nu_const_strict=.false.
@@ -103,7 +104,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.81 2007-09-13 11:49:49 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.82 2007-09-14 04:01:40 wlyra Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -131,6 +132,7 @@ module Viscosity
       lvisc_nu_shock=.false.
       lvisc_hyper2_simplified=.false.
       lvisc_hyper3_simplified=.false.
+      lvisc_hyper3_cyl=.false.
       lvisc_hyper3_rho_nu_const=.false.
       lvisc_hyper3_rho_nu_const_symm=.false.
       lvisc_hyper3_mu_const_strict=.false.
@@ -171,6 +173,9 @@ module Viscosity
         case ('hyper3_simplified', 'hyper6')
           if (lroot) print*,'viscous force: nu_hyper*del6v'
           lvisc_hyper3_simplified=.true.
+        case ('hyper3-cyl')  
+          if (lroot) print*,'viscous force: nu_hyper*d6v'
+          lvisc_hyper3_cyl=.true.
         case ('hyper3_rho_nu-const')
           if (lroot) print*,'viscous force: nu_hyper/rho*del6v'
           lvisc_hyper3_rho_nu_const=.true.
@@ -241,6 +246,7 @@ module Viscosity
         if ( (lvisc_hyper3_simplified.or.lvisc_hyper3_rho_nu_const.or. &
               lvisc_hyper3_rho_nu_const_bulk.or.lvisc_hyper3_nu_const.or. &
               lvisc_hyper3_rho_nu_const_symm.or. &
+              lvisc_hyper3_cyl.or.&
               lvisc_hyper3_mu_const_strict .or. &
               lvisc_hyper3_nu_const_strict ).and. &
               nu_hyper3==0.0 ) &
@@ -500,7 +506,7 @@ module Viscosity
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu
       real, dimension (nx) :: murho1,nu_smag,tmp3,tmp4,pnu
 !
-      integer :: i,j
+      integer :: i,j,ju
 !
       intent(inout) :: f,p
 !
@@ -623,6 +629,26 @@ module Viscosity
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
       endif
 !
+      if (lvisc_hyper3_cyl) then
+!
+! General way of coding an anisotropic hyperviscosity.
+!
+        do j=1,3 
+          ju=j+iuu-1
+          call del6_nodx(f,ju,tmp3)
+          p%fvisc(:,j)=p%fvisc(:,j)+nu_hyper3*pi4_1*tmp3*dxyz_2
+!
+          if (lpencil(i_visc_heat)) then
+            if (headtt) then
+              call warning('calc_pencils_viscosity', 'viscous heating term '//&
+                   'is not implemented for lvisc_hyper3_cyl')
+            endif
+          endif
+          if (lfirst.and.ldt) &
+               p%diffus_total=p%diffus_total+nu_hyper3
+        enddo
+      endif
+!
       if (lvisc_hyper3_rho_nu_const) then
 !
 !  viscous force: mu/rho*del6u
@@ -706,22 +732,22 @@ module Viscosity
 !  viscous force: f_i = mu_i/rho*del6u
 !  Used for non-cubic cells
 !
-         call del6fjv(f,nu_aniso_hyper3,iuu,tmp)
-         do i=1,3
-            p%fvisc(:,i)=p%fvisc(:,i)+tmp(:,i)*p%rho1
-         enddo
+        call del6fjv(f,nu_aniso_hyper3,iuu,tmp)
+        do i=1,3
+          p%fvisc(:,i)=p%fvisc(:,i)+tmp(:,i)*p%rho1
+        enddo
 !         
-         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
-           if (headtt) then
-             call warning('calc_pencils_viscosity', 'viscous heating term '// &
+        if (lpencil(i_visc_heat)) then  ! Heating term not implemented
+          if (headtt) then
+            call warning('calc_pencils_viscosity', 'viscous heating term '// &
                  'is not implemented for lvisc_hyper3_rho_nu_const_aniso')
-           endif
-         endif
+          endif
+        endif
 !
-         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+&
-              (nu_aniso_hyper3(1)*dx_1(l1:l2)**6 + &
-              nu_aniso_hyper3(2)*dy_1(m)**6     + &
-              nu_aniso_hyper3(3)*dz_1(n)**6)    / dxyz_2
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+&
+             (nu_aniso_hyper3(1)*dx_1(l1:l2)**6 + &
+              nu_aniso_hyper3(2)*dy_1(  m  )**6 + &
+              nu_aniso_hyper3(3)*dz_1(  n  )**6)/ dxyz_2
 !
       endif
 !
@@ -730,31 +756,30 @@ module Viscosity
 !  viscous force: f_i = (nu_j.del6)u_i + nu_j.uij5.glnrho
 !  Used for non-cubic cells
 !
-         call del6fjv(f,nu_aniso_hyper3,iuu,tmp)
+        call del6fjv(f,nu_aniso_hyper3,iuu,tmp)
 !
-         do i=1,3
-            tmp3=0.
-            do j=1,3
-               tmp3=tmp3+p%uij(:,i,j)*p%glnrho(:,j)*nu_aniso_hyper3(j)
-            enddo
+        do i=1,3
+          tmp3=0.
+          do j=1,3
+            tmp3=tmp3+p%uij(:,i,j)*p%glnrho(:,j)*nu_aniso_hyper3(j)
+          enddo
 !
-            p%fvisc(:,i)=p%fvisc(:,i)+tmp(:,i)+tmp3
-         enddo
+          p%fvisc(:,i)=p%fvisc(:,i)+tmp(:,i)+tmp3
+        enddo
 !
-         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
-           if (headtt) then
-             call warning('calc_pencils_viscosity', 'viscous heating term '// &
+        if (lpencil(i_visc_heat)) then  ! Heating term not implemented
+          if (headtt) then
+            call warning('calc_pencils_viscosity', 'viscous heating term '// &
                  'is not implemented for lvisc_hyper3_nu_const_aniso')
-           endif
-         endif
-
+          endif
+        endif
 !
 ! diffusion time: it will be multiplied by dxyz_2 again further down
 !
          if (lfirst.and.ldt) p%diffus_total=p%diffus_total+&
                  (nu_aniso_hyper3(1)*dx_1(l1:l2)**6 + &
-                  nu_aniso_hyper3(2)*dy_1(m)**6     + &
-                  nu_aniso_hyper3(3)*dz_1(n)**6)    / dxyz_2
+                  nu_aniso_hyper3(2)*dy_1(  m  )**6 + &
+                  nu_aniso_hyper3(3)*dz_1(  n  )**6)/ dxyz_2
 !
       endif
 !
