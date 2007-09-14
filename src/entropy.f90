@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.526 2007-09-13 13:32:10 dintrans Exp $
+! $Id: entropy.f90,v 1.527 2007-09-14 14:50:49 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -208,7 +208,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.526 2007-09-13 13:32:10 dintrans Exp $")
+           "$Id: entropy.f90,v 1.527 2007-09-14 14:50:49 dintrans Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -447,7 +447,7 @@ module Entropy
           cs2cool=cs2top
 
         case('single_polytrope')
-          cs2cool=cs2top
+          if (lcylindrical_coords) cs2cool=cs2top
 
       endselect
 !
