@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.57 2007-09-11 16:49:42 wlyra Exp $
+! $Id: deriv.f90,v 1.58 2007-09-14 04:03:02 wlyra Exp $
 
 module Deriv
 
@@ -593,7 +593,7 @@ module Deriv
         if (.not. lequidist(j)) then
           call fatal_error('der6','NOT IMPLEMENTED for non-equidistant grid')
         endif
-        if (.not.lcartesian_coords) then
+        if ((.not.lcartesian_coords).and.(.not.igndx)) then
           call fatal_error('der6','in non-cartesian coordinates '//&
                'just works if upwiding is used')
         endif
