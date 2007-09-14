@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.186 2007-09-13 09:20:31 dintrans Exp $
+! $Id: boundcond.f90,v 1.187 2007-09-14 18:53:02 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -357,6 +357,14 @@ module Boundcond
               case ('der')
                 ! BCY_DOC: set derivative on the boundary
                 call bc_set_der_y(f,topbot,j,fbcy12(j))
+              case('sfr')
+                  ! BCY_DOC: "stress-free" boundary condition for spherical coordinate system. 
+                  ! BCY_DOC: $(1/r)d_\theta(u_{\phi}) =\cot(\theta) u_{\phi}$  with 
+                  ! BCY_DOC: $u_{\theta} = 0$ sets $S_{\phi \theta}$
+                  ! BCY_DOC: component of the strain matrix to be zero in spherical coordinate  
+                  ! BCY_DOC: system. This subroutine sets only the first part of this boundary
+                  ! BCY_DOC:  condition for 'j'-th component of f. 
+                  call bc_set_sfree_y(f,topbot,j)
               case('pfc')
                   !BCY_DOC: In spherical polar coordinate system,
                   !BCY_DOC: at a theta boundary set : $A_r = 0$ and 
@@ -1401,6 +1409,44 @@ module Boundcond
       endselect
 !
     endsubroutine bc_set_sfree_x
+! **********************************************************************
+    subroutine bc_set_sfree_y(f,topbot,j)
+! "stress-free" boundary condition for spherical coordinate system. 
+! d_r(u_{\theta}) = u_{\theta}/r  with u_r = 0 sets S_{r \theta}
+! component of the strain matrix to be zero in spherical coordinate system. 
+! This subroutine sets only the first part of this boundary condition for 'j'-th
+! component of f. 
+!
+!  25-Aug-2007/dhruba: coded
+!
+      use Cdata
+!
+      character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer, intent (in) :: j
+      real :: cottheta
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+! The coding assumes we are using 6-th order centered finite difference for our
+! derivatives. 
+        cottheta= cotth(m1)
+        f(:,m1-1,:,j)= f(:,m1+1,:,j) -  60.*dy*cottheta*f(:,m1,:,j)/45.
+        f(:,m1-2,:,j)= f(:,m1+2,:,j) -  60.*dy*cottheta*f(:,m1,:,j)/9.
+        f(:,m1-3,:,j)= f(:,m1+3,:,j) -  60.*dy*cottheta*f(:,m1,:,j)
+      case('top')               ! top boundary
+        cottheta= cotth(m2)
+        f(:,m2+1,:,j)= f(:,m2-1,:,j) +  60.*dy*cottheta*f(:,m2,:,j)/45.
+        f(:,m2+2,:,j)= f(:,m2-2,:,j) +  60.*dy*cottheta*f(:,m2,:,j)/9.
+        f(:,m2+3,:,j)= f(:,m2-3,:,j) +  60.*dy*cottheta*f(:,m2,:,j)
+
+      case default
+        call warning('bc_set_sfree_y',topbot//" should be `top' or `bot'")
+
+      endselect
+!
+    endsubroutine bc_set_sfree_y
 ! **********************************************************************
     subroutine bc_set_pfc_y(f,topbot,j)
 !
