@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.394 2007-09-13 11:17:06 ajohan Exp $
+! $Id: hydro.f90,v 1.395 2007-09-14 17:39:43 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -32,9 +32,6 @@ module Hydro
 !
 ! Slice precalculation buffers
 !
-! Dhruba
-
-  integer :: l
   real, target, dimension (nx,ny,3) :: oo_xy
   real, target, dimension (nx,ny,3) :: oo_xy2
   real, target, dimension (nx,nz,3) :: oo_xz
@@ -76,8 +73,7 @@ module Hydro
   logical :: luut_as_aux=.false.
 ! Dhruba
   real :: outest
-  logical :: loutest
-
+  logical :: loutest,ldiffrot_test=.false.
   namelist /hydro_init_pars/ &
        ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
        inituu, widthuu, radiusuu, urand, &
@@ -127,7 +123,7 @@ module Hydro
        utop,ubot,omega_out,omega_in, & 
        lprecession, omega_precession, lshear_rateofstrain, &
        lalways_use_gij_etc, &
-       luut_as_aux,loutest, &
+       luut_as_aux,loutest, ldiffrot_test,&
        velocity_ceiling
 
 ! end geodynamo
@@ -314,7 +310,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.394 2007-09-13 11:17:06 ajohan Exp $")
+           "$Id: hydro.f90,v 1.395 2007-09-14 17:39:43 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1225,7 +1221,7 @@ use Mpicomm, only: stop_it
 !
 !  adding differential rotation via a frictional term
 !
-      if (tau_diffrot1/=0) call impose_profile_diffrot(f,df,uuprof)
+      if (tau_diffrot1/=0) call impose_profile_diffrot(f,df,uuprof,ldiffrot_test)
 !
 !  Possibility to damp mean x momentum, ruxm, to zero.
 !  This can be useful in situations where a mean flow is generated.
@@ -2832,7 +2828,7 @@ use Mpicomm, only: stop_it
 
     endsubroutine remove_mean_flow
 !***********************************************************************
-    subroutine impose_profile_diffrot(f,df,prof_diffrot)
+    subroutine impose_profile_diffrot(f,df,prof_diffrot,ldiffrot_test)
 !
 !  forcing of differential rotation with a -(1/tau)*(u-uref) method
 !
@@ -2846,6 +2842,7 @@ use Mpicomm, only: stop_it
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: prof_amp1,prof_amp2
       character (len=labellen) :: prof_diffrot 
+      logical :: ldiffrot_test
 !
       select case(prof_diffrot)
 !
@@ -2880,9 +2877,16 @@ use Mpicomm, only: stop_it
 !
       case ('solar_simple')
       prof_amp1=ampl1_diffrot*step(x(l1:l2),x1_ff_uu,width_ff_uu)
-      prof_amp2=ampl2_diffrot*step(x(l1:l2),x2_ff_uu,width_ff_uu)
+      prof_amp2=1.-step(x(l1:l2),x2_ff_uu,width_ff_uu)
       df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
-        -prof_amp1*(1.5-7.5*costh(m)*costh(m))+prof_amp2)
+        -prof_amp1*(1.5-7.5*costh(m)*costh(m)))
+      if(ldiffrot_test) then
+        f(l1:l2,m,n,iux) = 0.
+        f(l1:l2,m,n,iuy) = 0.
+        f(l1:l2,m,n,iuz) = prof_amp1*(1.5-7.5*costh(m)*costh(m))
+        f(l1:l2,m,n,iuz+1) = 1.
+       else
+       endif
 !
 !  radial_uniform_shear
 !  uphi = slope*x + uoffset
