@@ -64,7 +64,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
       endif else if keyword_set(ss) then begin
        ;result = fn of  where var1,var2 = lnrho, lnTT
        lnrho=var1
-       lnTT=var2
+       if (param.ltemperature_nolog) then lnTT=alog(var2) else lnTT=var2 
       ;
        cs20=param.cs0^2
        lnrho0=alog(param.rho0)
@@ -72,7 +72,6 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
        gamma1=gamma-1.     
        cp=param.cp
        lnTT0=alog(cs20/(cp * gamma1))
-;      ss=(lnTT-lnTT0)/gamma-gamma1/gamma*(lnrho-lnrho0)
        result=(lnTT-lnTT0)/gamma-gamma1/gamma*(lnrho-lnrho0)
       endif
 

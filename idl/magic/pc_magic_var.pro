@@ -1,12 +1,12 @@
-; $Id: pc_magic_var.pro,v 1.23 2007-08-29 22:19:39 dintrans Exp $
+; $Id: pc_magic_var.pro,v 1.24 2007-09-14 11:40:29 dintrans Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2007-08-29 22:19:39 $
-;  $Revision: 1.23 $
+;  $Date: 2007-09-14 11:40:29 $
+;  $Revision: 1.24 $
 ;
 ;  25-may-04/tony: coded 
 ;
-; Utility routine to automatically constuct expressions for commonly
+; Utility routine to automatically construct expressions for commonly
 ; requested variable from variables stored in a var file. 
 ;
 ; The routine is not really desigend to be called directly
@@ -80,6 +80,7 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
 
   lionization = safe_get_tag(param,'lionization',default=safe_get_tag(param,'leos_ionization',default=0)) 
   lionization_fixed = safe_get_tag(param,'lionization_fixed',default=safe_get_tag(param,'leos_ionizationi_fixed',default=0)) 
+  lentropy = safe_get_tag(param,'lentropy',default=safe_get_tag(param,'lentropy',default=0)) 
 
   for iv=0,n_elements(variables)-1 do begin
 
@@ -179,13 +180,14 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
         variables[iv]='pc_eoscalc(lnrho,ss,/lntt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 
-    ; entropy ss
+    ; Entropy ss
     endif else if variables[iv] eq 'ss' then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
         message,"Thermodynamic combination not implemented yet: /ss from lnrho and lnTT with lionization"
       endif else begin
-;       variables[iv]='pc_eoscalc(lnrho,lnTT,/ss,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
+        if (lentropy ne -1) then $
+          variables[iv]='pc_eoscalc(lnrho,lnTT,/ss,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)' else variables[iv]='ss'
       endelse
 
     ; Pressure
