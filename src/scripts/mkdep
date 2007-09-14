@@ -3,7 +3,9 @@
 #  Author: Tony Mee.
 #
 #  Usage:
-#    In $PENCIL_HOME/src run mkdep *.f90 > Makefile.depend
+#    In $PENCIL_HOME/src do 'mkdep *.f90 > Makefile.depend'
+#
+#  TODO: currently mkdep does not detect dependencies on fftpack.o or on gsl.
 #
 dollar='$'
 
