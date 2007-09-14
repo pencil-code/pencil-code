@@ -1,4 +1,4 @@
-! $Id: hypervisc_strict_2nd.f90,v 1.6 2007-09-13 11:49:49 ajohan Exp $
+! $Id: hypervisc_strict_2nd.f90,v 1.7 2007-09-14 11:14:59 ajohan Exp $
 
 !
 !  This module applies a sixth order hyperviscosity to the equation
@@ -6,8 +6,11 @@
 !  ensures that the energy dissipation rate is positive define everywhere.
 !
 !  The rate of strain tensor
+!
 !    S^(3) = (-nab^2)^2*S
-!  is a high order generalisation of the first order operator
+!
+!  is a high order generalisation of the first order rate of strain tensor
+!
 !    2*S_ij = u_i,j + u_j,i - 2/3*delta_ij*div(u)
 !
 !  Spatial derivatives are accurate to second order.
@@ -53,7 +56,7 @@ module Hypervisc_strict
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: hypervisc_strict_2nd.f90,v 1.6 2007-09-13 11:49:49 ajohan Exp $")
+           "$Id: hypervisc_strict_2nd.f90,v 1.7 2007-09-14 11:14:59 ajohan Exp $")
 !
 !  Set indices for auxiliary variables
 ! 
@@ -73,6 +76,16 @@ module Hypervisc_strict
 !  Apply momentum-conserving, symmetric, sixth order hyperviscosity with
 !  positive definite heating rate (see Haugen & Brandenburg 2004).
 !
+!  The rate of strain tensor of order 3 is defined as:
+!
+!               /-1/3*div(u)+dux/dx  1/2*(dux/dy+duy/dx) 1/2*(dux/dz+duz/dx) \
+!               |                                                            |
+!  S^(3)=(d2)^2 |1/2*(dux/dy+duy/dx) -1/3*div(u)+duy/dy  1/2*(duy/dz+duz/dy) |
+!               |                                                            |
+!               \1/2*(dux/dz+duz/dx) 1/2*(duy/dz+duz/dy) -1/3*div(u)+2*duz/dz/
+!
+!  where d2 is the Laplacian operator d2=(d^2/dx^2+d2/dy^2+d2/dz^2).
+!
 !  To avoid communicating ghost zones after each operator, we use
 !  derivatives that are second order in space.
 !
@@ -87,7 +100,7 @@ module Hypervisc_strict
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (mx,my,mz,3) :: tmp, tmp2
-      real, dimension (mx,my,mz) :: tmp3
+      real, dimension (mx,my,mz) :: tmp3, tmp4
       integer :: i, j, ierr
       logical, save :: lfirstcall=.true.
       logical, pointer, save :: lvisc_hyper3_nu_const_strict
@@ -112,9 +125,10 @@ module Hypervisc_strict
 !
 !  Add the two terms.
 !
-      f(:,:,:,ihypvis:ihypvis+2)=tmp+tmp2/3.
+!      f(:,:,:,ihypvis:ihypvis+2)=tmp+tmp2/3.
+      f(:,:,:,ihypvis:ihypvis+2)=0.0
 !
-!  For constant nu we also need the term 2*nu*S.grad(lnrho).
+!  For constant nu we also need the term [2*nu*S^3].grad(lnrho).
 !
       if (lfirstcall) then
         call get_shared_variable('lvisc_hyper3_nu_const_strict',lvisc_hyper3_nu_const_strict,ierr)
@@ -134,20 +148,24 @@ module Hypervisc_strict
           do i=1,3; tmp(:,:,:,i)=tmp(:,:,:,i)/tmp3; enddo
         endif
 !
-!  Add 1/2*(u_i,j+u_j,i).grad(lnrho) to hyperviscosity.
+!  Add [(del2)^2(u_i,j+u_j,i)].grad(lnrho) to hyperviscosity (CHECKED).
 !
         do i=1,3; do j=1,3
           call der_2nd(f,iux-1+i,tmp3,j)
-          f(:,:,:,ihypvis-1+i)=f(:,:,:,ihypvis-1+i)+0.5*tmp3*tmp(:,:,:,j)
-          f(:,:,:,ihypvis-1+j)=f(:,:,:,ihypvis-1+j)+0.5*tmp3*tmp(:,:,:,i)
+          call del2_2nd_nof(tmp3,tmp4)
+          call del2_2nd_nof(tmp4,tmp3)
+          f(:,:,:,ihypvis-1+i)=f(:,:,:,ihypvis-1+i)+tmp3*tmp(:,:,:,j)
+          f(:,:,:,ihypvis-1+j)=f(:,:,:,ihypvis-1+j)+tmp3*tmp(:,:,:,i)
         enddo; enddo
 !
-!  Add -1/3*delta_ij*div(u).grad(lnrho) term.
+!  Add -2/3*[(del2)^2delta_ij*div(u)].grad(lnrho) term (CHECKED).
 !
         call div_2nd(f,iux,tmp3)
-        do i=1,3
-          f(:,:,:,ihypvis-1+i)=f(:,:,:,ihypvis-1+i)-1/3.*tmp3*tmp(:,:,:,i)
-        enddo
+        call del2_2nd_nof(tmp3,tmp4)
+        call del2_2nd_nof(tmp4,tmp3)
+        f(:,:,:,ihypvis  )=f(:,:,:,ihypvis  )-2/3.*tmp3*tmp(:,:,:,1)
+        f(:,:,:,ihypvis+1)=f(:,:,:,ihypvis+1)-2/3.*tmp3*tmp(:,:,:,2)
+        f(:,:,:,ihypvis+2)=f(:,:,:,ihypvis+2)-2/3.*tmp3*tmp(:,:,:,3)
       endif
 !
 ! find heating term (yet it only works for ivisc='hyper3')
@@ -286,17 +304,17 @@ module Hypervisc_strict
 !
       if (nxgrid/=1) then
         fac=1./(2.*dx)
-        df(2:mx-1,:,:,1) = (f(3:mx,:,:,k  )-f(1:mx-2,:,:,k  ))*fac
+        df(2:mx-1,:,:,1) = (f(3:mx,:,:,k)-f(1:mx-2,:,:,k))*fac
       endif
 !
       if (nygrid/=1) then
         fac=1./(2.*dy)
-        df(:,2:my-1,:,2) = (f(:,3:my,:,k+1)-f(:,1:my-2,:,k+1))*fac
+        df(:,2:my-1,:,2) = (f(:,3:my,:,k)-f(:,1:my-2,:,k))*fac
       endif
 !
       if (nzgrid/=1) then
         fac=1./(2.*dz)
-        df(:,:,2:mz-1,3) = (f(:,:,3:mz,k+2)-f(:,:,1:mz-2,k+2))*fac
+        df(:,:,2:mz-1,3) = (f(:,:,3:mz,k)-f(:,:,1:mz-2,k))*fac
       endif
 !      
     endsubroutine grad_2nd
