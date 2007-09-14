@@ -1,4 +1,4 @@
-! $Id: hypervisc_strict_2nd.f90,v 1.7 2007-09-14 11:14:59 ajohan Exp $
+! $Id: hypervisc_strict_2nd.f90,v 1.8 2007-09-14 11:19:40 ajohan Exp $
 
 !
 !  This module applies a sixth order hyperviscosity to the equation
@@ -56,7 +56,7 @@ module Hypervisc_strict
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: hypervisc_strict_2nd.f90,v 1.7 2007-09-14 11:14:59 ajohan Exp $")
+           "$Id: hypervisc_strict_2nd.f90,v 1.8 2007-09-14 11:19:40 ajohan Exp $")
 !
 !  Set indices for auxiliary variables
 ! 
@@ -125,8 +125,7 @@ module Hypervisc_strict
 !
 !  Add the two terms.
 !
-!      f(:,:,:,ihypvis:ihypvis+2)=tmp+tmp2/3.
-      f(:,:,:,ihypvis:ihypvis+2)=0.0
+      f(:,:,:,ihypvis:ihypvis+2)=tmp+tmp2/3.
 !
 !  For constant nu we also need the term [2*nu*S^3].grad(lnrho).
 !
@@ -148,7 +147,7 @@ module Hypervisc_strict
           do i=1,3; tmp(:,:,:,i)=tmp(:,:,:,i)/tmp3; enddo
         endif
 !
-!  Add [(del2)^2(u_i,j+u_j,i)].grad(lnrho) to hyperviscosity (CHECKED).
+!  Add [(del2)^2(u_i,j+u_j,i)].grad(lnrho) to hyperviscosity.
 !
         do i=1,3; do j=1,3
           call der_2nd(f,iux-1+i,tmp3,j)
@@ -158,7 +157,7 @@ module Hypervisc_strict
           f(:,:,:,ihypvis-1+j)=f(:,:,:,ihypvis-1+j)+tmp3*tmp(:,:,:,i)
         enddo; enddo
 !
-!  Add -2/3*[(del2)^2delta_ij*div(u)].grad(lnrho) term (CHECKED).
+!  Add -2/3*[(del2)^2delta_ij*div(u)].grad(lnrho) term.
 !
         call div_2nd(f,iux,tmp3)
         call del2_2nd_nof(tmp3,tmp4)
