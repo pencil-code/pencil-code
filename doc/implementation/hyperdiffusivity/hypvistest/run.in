@@ -1,0 +1,18 @@
+!                          -*-f90-*- (for Emacs)
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2007-09-15 11:50:58 ajohan Exp $',
+  nt=10000, it1=5, cdt=0.4, cdtv=0.001, isave=100, itorder=3,
+  dsnap=6.2831853, dtmin=1.0e-6
+  lpencil_check=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  ladvection_velocity=F
+/
+&density_run_pars
+  lcontinuity_gas=F
+/
+&viscosity_run_pars
+  nu_hyper3=6.0e-4, ivisc='hyper3_nu-const_strict'
+/

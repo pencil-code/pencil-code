@@ -1,0 +1,23 @@
+!                              -*-f90-*-     (for emacs)
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2007-09-15 11:50:59 ajohan Exp $',
+  xyz0  =  -3.1415927, -3.1415927, -3.1415927
+  Lxyz  =   6.2831853,  6.2831853,  6.2831853
+  lperi =           T,          T,          T
+  ip=14, lwrite_ic=T, lwrite_aux=T
+/
+&eos_init_pars
+  cs0=1.0, gamma=1.0, rho0=1.0
+/
+&hydro_init_pars
+  inituu='sinwave-phase'
+  ampl_ux=0.1, ampl_uy=1.0, ampl_uz=10.0
+  kx_ux=2.0, ky_ux=1.0, kz_ux=2.0
+  kx_uy=1.0, ky_uy=2.0, kz_uy=1.0
+  kx_uz=2.0, ky_uz=1.0, kz_uz=1.0
+/
+&density_init_pars
+  initlnrho='sinwave-phase'
+  ampllnrho=1.2
+  kx_lnrho=3.0, ky_lnrho=1.0, kz_lnrho=1.0
+/
