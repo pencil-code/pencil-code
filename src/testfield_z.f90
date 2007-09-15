@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.9 2007-09-15 19:50:59 brandenb Exp $
+! $Id: testfield_z.f90,v 1.10 2007-09-15 21:20:55 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -49,7 +49,7 @@ module Testfield
   logical :: reinitalize_aatest=.false.
   logical :: zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
   logical :: luxb_as_aux=.false.
-  character (len=labellen) :: itestfield='B11-B21+B=0'
+  character (len=labellen) :: itestfield='B11-B21'
   real :: ktestfield=1.
   integer, parameter :: ntestfield=3*njtest
 
@@ -144,7 +144,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.9 2007-09-15 19:50:59 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.10 2007-09-15 21:20:55 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -369,9 +369,9 @@ module Testfield
         iaztest=iaxtest+2
         call del2v(f,iaxtest,del2Atest)
         select case(itestfield)
-          case('B11-B21+B=0'); call set_bbtest(bbtest,jtest,ktestfield)
-          case('B11-B21'); call set_bbtest_B11_B21(bbtest,jtest,ktestfield)
-          case('B11-B22'); call set_bbtest_B11_B22(bbtest,jtest,ktestfield)
+          case('B11-B21+B=0'); call set_bbtest(bbtest,jtest)
+          case('B11-B21'); call set_bbtest_B11_B21(bbtest,jtest)
+          case('B11-B22'); call set_bbtest_B11_B22(bbtest,jtest)
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
         endselect
@@ -432,8 +432,8 @@ module Testfield
 !
       if (ldiagnos) then  
         if (first) then
-          cz=cos(z)
-          sz=sin(z)
+          cz=cos(ktestfield*z)
+          sz=sin(ktestfield*z)
         endif
         first=.false.
 !
@@ -627,7 +627,7 @@ module Testfield
 !
     endsubroutine calc_ltestfield_pars
 !***********************************************************************
-    subroutine set_bbtest(bbtest,jtest,ktestfield)
+    subroutine set_bbtest(bbtest,jtest)
 !
 !  set testfield
 !
@@ -639,9 +639,8 @@ module Testfield
       real, dimension (nx,3) :: bbtest
       real, dimension (nx) :: cz,sz
       integer :: jtest
-      real :: ktestfield
 !
-      intent(in)  :: jtest,ktestfield
+      intent(in)  :: jtest
       intent(out) :: bbtest
 !
 !  zz for calculating diffusive part of emf
@@ -660,7 +659,7 @@ module Testfield
 !
     endsubroutine set_bbtest
 !***********************************************************************
-    subroutine set_bbtest_B11_B21 (bbtest,jtest,ktestfield)
+    subroutine set_bbtest_B11_B21 (bbtest,jtest)
 !
 !  set testfield
 !
@@ -672,9 +671,8 @@ module Testfield
       real, dimension (nx,3) :: bbtest
       real, dimension (nx) :: cz,sz
       integer :: jtest
-      real :: ktestfield
 !
-      intent(in)  :: jtest,ktestfield
+      intent(in)  :: jtest
       intent(out) :: bbtest
 !
 !  zz for calculating diffusive part of emf
@@ -692,7 +690,7 @@ module Testfield
 !
     endsubroutine set_bbtest_B11_B21
 !***********************************************************************
-    subroutine set_bbtest_B11_B22 (bbtest,jtest,ktestfield)
+    subroutine set_bbtest_B11_B22 (bbtest,jtest)
 !
 !  set testfield
 !
@@ -704,9 +702,8 @@ module Testfield
       real, dimension (nx,3) :: bbtest
       real, dimension (nx) :: cz,sz
       integer :: jtest
-      real :: ktestfield
 !
-      intent(in)  :: jtest,ktestfield
+      intent(in)  :: jtest
       intent(out) :: bbtest
 !
 !  zz for calculating diffusive part of emf
