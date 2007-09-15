@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.101 2007-09-08 13:45:10 dintrans Exp $
+! $Id: noentropy.f90,v 1.102 2007-09-15 12:40:22 ajohan Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -33,6 +33,7 @@ module Entropy
   real :: Ftop=impossible,FtopKtop=impossible
   logical :: lmultilayer=.true.
   logical :: lheatc_chiconst=.false.
+  logical, pointer :: lpressuregradient_gas ! Shared with Hydro module.
 
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -49,21 +50,29 @@ module Entropy
 !***********************************************************************
     subroutine register_entropy()
 !
-!  no energy equation is being solved; use isothermal equation of state
+!  No energy equation is being solved; use isothermal equation of state
+!
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
       use Cdata
+      use SharedVariables
       use Sub
 !
       logical, save :: first=.true.
+      integer :: ierr
 !
       if (.not. first) call fatal_error('register_entropy','module registration called twice')
-      first = .false.
+      first=.false.
 !
-!  identify version number
+!  Get the shared variable lpressuregradient_gas from Hydro module.
+!
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)     
+      if (ierr/=0) call fatal_error('register_entropy','there was a problem getting lpressuregradient_gas')
+!
+!  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.101 2007-09-08 13:45:10 dintrans Exp $")
+           "$Id: noentropy.f90,v 1.102 2007-09-15 12:40:22 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -80,14 +89,8 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      if (ip == 0) print*,f,lstarting ! keep compiler quiet
+!  Tell the equation of state that we're here and what f variable we use
 !
-! Tell the equation of state that we're here and what f variable we use
-!
-    !  if (lpretend_lnTT) then
-    !    call select_eos_vars('ss',-1) !isentropic
-    !  else
-    !  endif
       if (llocal_iso) then
         call select_eos_variable('cs2',-2) !special local isothermal
       else
@@ -107,11 +110,14 @@ module Entropy
             'with beta_glnrho_global=', beta_glnrho_global
       endif
 !
+      if (NO_WARN) print*,f,lstarting ! keep compiler quiet
+!
     endsubroutine initialize_entropy
 !***********************************************************************
     subroutine init_ss(f,xx,yy,zz)
 !
-!  initialise entropy; called from start.f90
+!  Initialise entropy; called from start.f90
+!
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !  24-nov-02/tony: renamed for consistancy (i.e. init_[varaible name])
 !
@@ -120,7 +126,7 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if(ip==1) print*,f,xx,yy,zz  !(to remove compiler warnings)
+      if (NO_WARN) print*, f, xx, yy, zz ! keep compiler quiet
 !
     endsubroutine init_ss
 !***********************************************************************
@@ -231,16 +237,18 @@ module Entropy
         if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
       endif
 !
-!  add isothermal/polytropic pressure term in momentum equation
+!  Add isothermal/polytropic pressure term in momentum equation
 !
-      if (lhydro) then
+      if (lhydro .and. lpressuregradient_gas) then
         do j=1,3
           ju=j+iuu-1
           if (lneutralvelocity) then
-             !factor two for electron pressure
-             df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+2*p%fpres(:,j)
+!
+!  Factor two for electron pressure. [AJ: Wlad, perhaps more details here?]
+!
+            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+2*p%fpres(:,j)
           else
-             df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%fpres(:,j)
+            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%fpres(:,j)
           endif
         enddo
 !

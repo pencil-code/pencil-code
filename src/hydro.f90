@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.395 2007-09-14 17:39:43 dhruba Exp $
+! $Id: hydro.f90,v 1.396 2007-09-15 12:40:22 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -71,12 +71,13 @@ module Hydro
   logical :: lprecession=.false.
   logical :: lshear_rateofstrain=.false.
   logical :: luut_as_aux=.false.
+  logical :: lpressuregradient_gas=.true.
 ! Dhruba
   real :: outest
   logical :: loutest,ldiffrot_test=.false.
   namelist /hydro_init_pars/ &
        ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
-       inituu, widthuu, radiusuu, urand, &
+       inituu, widthuu, radiusuu, urand, lpressuregradient_gas, &
        uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, coefuu, &
        kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
        uy_left, uy_right,uu_const, Omega,  initpower, cutoff, &
@@ -116,7 +117,7 @@ module Hydro
        xexp_diffrot,kx_diffrot,kz_diffrot, &
        lremove_mean_momenta,lremove_mean_flow, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
-       borderuu, lfreeze_uint, &
+       borderuu, lfreeze_uint, lpressuregradient_gas, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
        lforcing_continuous_uu,iforcing_continuous_uu, &
        lembed,k1_ff,ampl_ff,width_ff_uu,x1_ff_uu,x2_ff_uu, &
@@ -281,9 +282,11 @@ module Hydro
 !
       use Cdata
       use Mpicomm, only: stop_it
+      use SharedVariables
       use Sub
 !
       logical, save :: first=.true.
+      integer :: ierr
 !
       if (.not. first) call stop_it('register_hydro called twice')
       first = .false.
@@ -310,7 +313,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.395 2007-09-14 17:39:43 dhruba Exp $")
+           "$Id: hydro.f90,v 1.396 2007-09-15 12:40:22 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -329,6 +332,12 @@ module Hydro
         write(15,*) 'uu = fltarr(mx,my,mz,3)*one'
       endif
 !
+!  Share lpressuregradient_gas so Entropy module knows whether to apply
+!  pressure gradient or not.
+!
+      call put_shared_variable('lpressuregradient_gas',lpressuregradient_gas, ierr)     
+      if (ierr/=0) call fatal_error('register_hydro','there was a problem sharing lpressuregradient_gas')
+!
     endsubroutine register_hydro
 !***********************************************************************
     subroutine initialize_hydro(f,lstarting)
@@ -346,7 +355,6 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
-      integer :: ierr
 !
 ! Check any module dependencies
 !
@@ -426,41 +434,57 @@ module Hydro
       endsubroutine initialize_hydro
 !***********************************************************************
     subroutine read_hydro_init_pars(unit,iostat)
+!
+!
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=hydro_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=hydro_init_pars,ERR=99)
       endif
-
+!
 99    return
+!
     endsubroutine read_hydro_init_pars
 !***********************************************************************
     subroutine write_hydro_init_pars(unit)
+!
+!
+!    
       integer, intent(in) :: unit
 !
       write(unit,NML=hydro_init_pars)
+!
     endsubroutine write_hydro_init_pars
 !***********************************************************************
     subroutine read_hydro_run_pars(unit,iostat)
+!
+!
+!    
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=hydro_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=hydro_run_pars,ERR=99)
       endif
-
+!
 99    return
+!
     endsubroutine read_hydro_run_pars
 !***********************************************************************
     subroutine write_hydro_run_pars(unit)
+!
+!
+!    
       integer, intent(in) :: unit
 !
       write(unit,NML=hydro_run_pars)
+!
     endsubroutine write_hydro_run_pars
 !***********************************************************************
     subroutine init_uu(f,xx,yy,zz)

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.528 2007-09-14 20:01:32 dintrans Exp $
+! $Id: entropy.f90,v 1.529 2007-09-15 12:40:22 ajohan Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -67,7 +67,8 @@ module Entropy
   logical :: lheatc_corona=.false.
   logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
   logical :: lupw_ss=.false.,lmultilayer=.true.
-  logical :: lpressuregradient_gas=.true.,ladvection_entropy=.true.
+  logical :: ladvection_entropy=.true.
+  logical, pointer :: lpressuregradient_gas ! Shared with Hydro.
   logical :: lviscosity_heat=.true.
   logical :: lfreeze_sint=.false.,lfreeze_sext=.false.
   logical :: lhcond_global=.false.
@@ -129,7 +130,7 @@ module Entropy
       tau_ss_exterior,lmultilayer,Kbot,tau_cor,TT_cor,z_cor, &
       tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
       heat_uniform,lupw_ss,cool_int,cool_ext,chi_hyper3, &
-      lturbulent_heat,deltaT_poleq,lpressuregradient_gas, &
+      lturbulent_heat,deltaT_poleq, &
       tdown, allp,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global, &
       tau_cool,TTref_cool
@@ -193,10 +194,12 @@ module Entropy
 !
 !  6-nov-01/wolf: coded
 !
-      use FArrayManager
       use Cdata
+      use FArrayManager
+      use SharedVariables
       use Sub
 !
+      integer :: ierr
       logical, save :: first=.true.
 !
       if (.not. first) call fatal_error('register_entropy','module registration called twice')
@@ -204,17 +207,21 @@ module Entropy
 !
       call farray_register_pde('ss',iss)
 !
-!
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.528 2007-09-14 20:01:32 dintrans Exp $")
+           "$Id: entropy.f90,v 1.529 2007-09-15 12:40:22 ajohan Exp $")
+!
+!  Get the shared variable lpressuregradient_gas from Hydro module.
+!
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,   ierr)     
+      if (ierr/=0) call fatal_error('register_entropy','there was a problem   getting lpressuregradient_gas')
 !
     endsubroutine register_entropy
 !***********************************************************************
     subroutine initialize_entropy(f,lstarting)
 !
-!  called by run.f90 after reading parameters, but before the time loop
+!  Called by run.f90 after reading parameters, but before the time loop.
 !
 !  21-jul-02/wolf: coded
 !
@@ -227,6 +234,8 @@ module Entropy
                                  select_eos_variable,gamma,gamma1
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      logical :: lstarting
+!
       real, dimension (nx,3) :: glhc
       real, dimension (nx) :: aa=0., hcond=0.
       real, dimension (3) :: gg_mn=0.
@@ -234,8 +243,7 @@ module Entropy
       real :: r_mn, flumi, g_r, u
       integer :: i
       integer, pointer :: iglobal_gg
-      logical :: lstarting, lnothing
-      type (pencil_case) :: p
+      logical :: lnothing
 !
 ! Check any module dependencies
 !

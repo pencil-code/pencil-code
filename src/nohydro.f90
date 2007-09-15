@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.75 2007-08-13 15:22:45 dobler Exp $
+! $Id: nohydro.f90,v 1.76 2007-09-15 12:40:22 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,9 +60,11 @@ module Hydro
 !
       use Cdata
       use Mpicomm, only: lroot,stop_it
+      use SharedVariables
       use Sub
 !
       logical, save :: first=.true.
+      integer :: ierr
 !
       if (.not. first) call stop_it('register_hydro called twice')
       first = .false.
@@ -71,7 +73,13 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.75 2007-08-13 15:22:45 dobler Exp $")
+           "$Id: nohydro.f90,v 1.76 2007-09-15 12:40:22 ajohan Exp $")
+!
+!  Share lpressuregradient_gas so Entropy module knows whether to apply
+!  pressure gradient or not.
+!
+      call put_shared_variable('lpressuregradient_gas',lpressuregradient_gas,   ierr)
+      if (ierr/=0) call fatal_error('register_hydro','there was a problem     sharing lpressuregradient_gas')
 !
     endsubroutine register_hydro
 !***********************************************************************
