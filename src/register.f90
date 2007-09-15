@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.220 2007-09-14 20:01:33 dintrans Exp $
+! $Id: register.f90,v 1.221 2007-09-15 22:25:25 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -390,6 +390,8 @@ module Register
         rcyl_mn2=rcyl_mn1**2
         r_int=x(l1)
         r_ext=x(l2)
+        box_volume =.5*(xyz1(1)**2-xyz0(1)**2)*Lxyz(2)*Lxyz(3)
+!
 !
 !  Trapezoidal rule
 !
