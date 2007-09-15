@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.76 2007-09-14 05:53:50 ajohan Exp $
+### $Id: Makefile.depend,v 1.77 2007-09-15 12:25:27 ajohan Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -203,7 +203,7 @@ param_io.o:  param_io.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(TIMES
 register.o:  register.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(physics) $(TIMEAVG_OBJ) prints.o equ.o $(GRID_OBJ)
 $(EQU_OBJ):                 $(EQU_SRC)           $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(physics) boundcond.o $(POISSON_OBJ) $(GLOBAL_OBJ) $(PARTICLES_MAIN_OBJ) $(INTERSTELLAR_OBJ) $(GRID_OBJ) snapshot.o
 boundcond.o: boundcond.f90        $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(ENTROPY_OBJ) $(MAGNETIC_OBJ) $(DENSITY_OBJ) $(RADIATION_OBJ) $(HYDRO_OBJ)
-$(INITCOND_OBJ):            initcond.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(GENERAL_OBJ) $(FOURIER_OBJ) $(SUB_OBJ) $(EOS_OBJ)
+$(INITCOND_OBJ): initcond.f90  cdata.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) general.o $(GRAVITY_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(PARTICLES_NBODY_OBJ) sub.o
 $(TIMESTEP_OBJ):            $(TIMESTEP).f90      $(CDATA_OBJ) $(MPICOMM_OBJ) equ.o $(FORCING_OBJ) $(BORDER_PROF_OBJ)
 snapshot.o:  snapshot.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(IO_OBJ) boundcond.o $(POWER_OBJ) $(STRUCT_FUNC_OBJ) $(RADIATION_OBJ) $(EOS_OBJ) $(MAGNETIC_OBJ) persist.o $(PARTICLES_MAIN_OBJ) $(SHOCK_OBJ)
 $(MESSAGES_OBJ):            messages.f90         $(CDATA_OBJ) $(MPICOMM_OBJ)
