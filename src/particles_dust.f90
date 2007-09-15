@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.191 2007-09-06 15:24:01 wlyra Exp $
+! $Id: particles_dust.f90,v 1.192 2007-09-15 23:22:32 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -128,7 +128,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.191 2007-09-06 15:24:01 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.192 2007-09-15 23:22:32 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -270,11 +270,14 @@ module Particles
           rhom=1.0
         endif
         rhop_tilde=eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
+        mp_tilde  =eps_dtog*rhom*box_volume/real(npar)
         if (lroot) then
           print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
           print*, 'initialize_particles: '// &
             'mass density per particle rhop_tilde=', rhop_tilde
+          print*, 'initialize_particles: '// &
+            'mass per particle mp_tilde=', mp_tilde
         endif
       else
         if (lroot) print*, 'initialize_particles: '// &
@@ -402,19 +405,31 @@ module Particles
 
        case ('random-cylindrical')
           if (lroot) print*, 'init_particles: Random particle cylindrical positions'
+!
           do k=1,npar_loc
-
              call random_number_wrapper(rad2)
              call random_number_wrapper(phi)
-             rad2 = rp_int**2 + rad2*(rp_ext**2-rp_int**2)
-             rad = sqrt(rad2)
-             phi = 2*pi*phi
-             if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
-             if (nygrid/=1) fp(k,iyp)=rad*sin(phi)
-
+             if (lcartesian_coords) then
+               rad2 = rp_int**2 + rad2*(rp_ext**2-rp_int**2)
+               rad = sqrt(rad2)
+               phi = 2*pi*phi
+               if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
+               if (nygrid/=1) fp(k,iyp)=rad*sin(phi)
+             elseif (lcylindrical_coords) then
+               rad2 = rp_int**2 + rad2*(rp_ext**2-rp_int**2)
+               rad = sqrt(rad2)
+               phi = xyz0_loc(2)+phi*Lxyz_loc(2)
+               if (nxgrid/=1) fp(k,ixp)=rad
+               if (nygrid/=1) fp(k,iyp)=phi
+             elseif (lspherical_coords) then
+               call stop_it("init_particles: random-cylindrical not implemented "//&
+                    "for spherical coordinates") 
+             endif
+!
              if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
              if (nzgrid/=1) &
                fp(k,izp)=xyz0_loc(3)+fp(k,izp)*Lxyz_loc(3)
+!
           enddo
 
         case ('np-constant')
@@ -821,15 +836,23 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           if (lroot) then
             print*,'init_particles: Keplerian velocities assuming GM=1'
-            if (.not.lcartesian_coords) call stop_it("Keplerian particle "//&
-                 "initial condition: not implemented for curvilinear coordinates")
+            if (lspherical_coords) call stop_it("Keplerian particle "//&
+                 "initial condition: not implemented for spherical coordinates")
           endif
           do k=1,npar_loc
-            rad=sqrt(fp(k,ixp)**2 + fp(k,iyp)**2 + fp(k,izp)**2)
-            OO=rad**(-1.5)
-            fp(k,ivpx) = -OO*fp(k,iyp)
-            fp(k,ivpy) =  OO*fp(k,ixp)
-            fp(k,ivpz) = 0.0
+            if (lcartesian_coords) then
+              rad=sqrt(fp(k,ixp)**2 + fp(k,iyp)**2 + fp(k,izp)**2)
+              OO=rad**(-1.5)
+              fp(k,ivpx) = -OO*fp(k,iyp)
+              fp(k,ivpy) =  OO*fp(k,ixp)
+              fp(k,ivpz) =  0.0
+            elseif (lcylindrical_coords) then
+              rad=fp(k,ixp)
+              OO=rad**(-1.5)
+              fp(k,ivpx) =  0.0
+              fp(k,ivpy) =  OO*rad
+              fp(k,ivpz) =  0.0
+            endif
           enddo
 
         case default
