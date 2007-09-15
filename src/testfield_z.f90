@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.8 2007-09-13 01:45:27 brandenb Exp $
+! $Id: testfield_z.f90,v 1.9 2007-09-15 19:50:59 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -144,7 +144,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.8 2007-09-13 01:45:27 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.9 2007-09-15 19:50:59 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -460,13 +460,13 @@ module Testfield
 !
         if (idiag_alp11/=0) call sum_mn_name(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2),idiag_alp11)
         if (idiag_alp21/=0) call sum_mn_name(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2),idiag_alp21)
-        if (idiag_eta11/=0) call sum_mn_name(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2),idiag_eta11)
-        if (idiag_eta21/=0) call sum_mn_name(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2),idiag_eta21)
+        if (idiag_eta11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))/ktestfield,idiag_eta11)
+        if (idiag_eta21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))/ktestfield,idiag_eta21)
 !
         if (idiag_alp12/=0) call sum_mn_name(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4),idiag_alp12)
         if (idiag_alp22/=0) call sum_mn_name(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4),idiag_alp22)
-        if (idiag_eta12/=0) call sum_mn_name(-sz(n)*Eipq(:,1,3)+cz(n)*Eipq(:,1,4),idiag_eta12)
-        if (idiag_eta22/=0) call sum_mn_name(-sz(n)*Eipq(:,2,3)+cz(n)*Eipq(:,2,4),idiag_eta22)
+        if (idiag_eta12/=0) call sum_mn_name((-sz(n)*Eipq(:,1,3)+cz(n)*Eipq(:,1,4))/ktestfield,idiag_eta12)
+        if (idiag_eta22/=0) call sum_mn_name((-sz(n)*Eipq(:,2,3)+cz(n)*Eipq(:,2,4))/ktestfield,idiag_eta22)
 !
 !  rms values of small scales fields bpq in response to the test fields Bpq
 !  Obviously idiag_b0rms and idiag_b12rms cannot both be invoked!
