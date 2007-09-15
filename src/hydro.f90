@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.396 2007-09-15 12:40:22 ajohan Exp $
+! $Id: hydro.f90,v 1.397 2007-09-15 17:56:42 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -313,7 +313,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.396 2007-09-15 12:40:22 ajohan Exp $")
+           "$Id: hydro.f90,v 1.397 2007-09-15 17:56:42 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -335,7 +335,7 @@ module Hydro
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
 !
-      call put_shared_variable('lpressuregradient_gas',lpressuregradient_gas, ierr)     
+      call put_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)     
       if (ierr/=0) call fatal_error('register_hydro','there was a problem sharing lpressuregradient_gas')
 !
     endsubroutine register_hydro
