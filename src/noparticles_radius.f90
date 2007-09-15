@@ -1,4 +1,4 @@
-! $Id: noparticles_radius.f90,v 1.10 2006-11-30 09:03:36 dobler Exp $
+! $Id: noparticles_radius.f90,v 1.11 2007-09-15 23:27:06 wlyra Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -39,7 +39,7 @@ module Particles_radius
 !
       logical :: lstarting
 !
-      mp_tilde=1.0
+      !mp_tilde=1.0
 !
       if (NO_WARN) print*, lstarting
 !
