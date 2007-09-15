@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.225 2007-09-08 17:21:35 wlyra Exp $
+! $Id: initcond.f90,v 1.226 2007-09-15 22:15:08 wlyra Exp $
 
 module Initcond
 
@@ -2851,7 +2851,8 @@ module Initcond
             call power_law(sqrt(g0_),rr_cyl,qgshear,OO)
           else
             call stop_it("global_shear: if you are using gravity_r.f90"//&
-                 " the centrifugal balance is established internally to it")
+                 " the centrifugal balance is established in hydro. "//&
+                 " Use inituu='centrifugal-balance' instead")
           endif
 !
           if (lcartesian_coords) then
