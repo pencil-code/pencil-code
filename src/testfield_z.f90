@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.10 2007-09-15 21:20:55 brandenb Exp $
+! $Id: testfield_z.f90,v 1.11 2007-09-16 06:47:47 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -38,6 +38,10 @@ module Testfield
   real, target, dimension (nx,ny,3) :: bb11_xy2
   real, target, dimension (nx,nz,3) :: bb11_xz
   real, target, dimension (ny,nz,3) :: bb11_yz
+!
+!  cosine and sine function for setting test fields and analysis
+!
+  real, dimension(mz) :: cz,sz
 !
   character (len=labellen), dimension(ninit) :: initaatest='nothing'
   real, dimension (ninit) :: amplaatest=0.
@@ -144,7 +148,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.10 2007-09-15 21:20:55 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.11 2007-09-16 06:47:47 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -183,6 +187,11 @@ module Testfield
         f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
       endif
 !
+!  set cosine and sine function for setting test fields and analysis
+!
+      cz=cos(ktestfield*z)
+      sz=sin(ktestfield*z)
+!
 !  Register an extra aux slot for uxb if requested (so uxb is written
 !  to snapshots and can be easily analyzed later). For this to work you
 !  must reserve enough auxiliary workspace by setting, for example,
@@ -212,7 +221,7 @@ module Testfield
         write(1,'(a,i1)') 'zextent=',merge(1,0,zextent)
         write(1,'(a,i1)') 'lsoca='  ,merge(1,0,lsoca)
         write(1,'(3a)') "itestfield='",trim(itestfield)//"'"
-        write(1,'(a,f3.0)') 'ktestfield=',ktestfield
+        write(1,'(a,f5.2)') 'ktestfield=',ktestfield
         close(1)
       endif
 !
@@ -343,9 +352,8 @@ module Testfield
       real, dimension (nx,3,njtest) :: Eipq,bpq
       real, dimension (nx,3) :: del2Atest
       real, dimension (nx) :: bpq2
-      real, dimension(mz), save :: cz,sz
       integer :: jtest,jfnamez,j
-      logical,save :: first=.true., ltest_uxb=.false.
+      logical,save :: ltest_uxb=.false.
 
 !
       intent(in)     :: f,p
@@ -431,12 +439,6 @@ module Testfield
 !  in the following block, we have already swapped the 4-6 entries with 7-9
 !
       if (ldiagnos) then  
-        if (first) then
-          cz=cos(ktestfield*z)
-          sz=sin(ktestfield*z)
-        endif
-        first=.false.
-!
         if (idiag_bx0mz/=0) call xysum_mn_name_z(bpq(:,1,3),idiag_bx0mz)
         if (idiag_by0mz/=0) call xysum_mn_name_z(bpq(:,2,3),idiag_by0mz)
         if (idiag_bz0mz/=0) call xysum_mn_name_z(bpq(:,3,3),idiag_bz0mz)
@@ -637,23 +639,17 @@ module Testfield
       use Sub
 !
       real, dimension (nx,3) :: bbtest
-      real, dimension (nx) :: cz,sz
       integer :: jtest
 !
       intent(in)  :: jtest
       intent(out) :: bbtest
 !
-!  zz for calculating diffusive part of emf
-!
-      cz=cos(ktestfield*z(n))
-      sz=sin(ktestfield*z(n))
-!
 !  set bbtest for each of the 9 cases
 !
       select case(jtest)
-      case(1); bbtest(:,1)=cz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(2); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(1); bbtest(:,1)=cz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(2); bbtest(:,1)=sz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(3); bbtest(:,1)=0.   ; bbtest(:,2)=0.; bbtest(:,3)=0.
       case default; bbtest(:,:)=0.
       endselect
 !
@@ -669,22 +665,16 @@ module Testfield
       use Sub
 !
       real, dimension (nx,3) :: bbtest
-      real, dimension (nx) :: cz,sz
       integer :: jtest
 !
       intent(in)  :: jtest
       intent(out) :: bbtest
 !
-!  zz for calculating diffusive part of emf
-!
-      cz=cos(ktestfield*z(n))
-      sz=sin(ktestfield*z(n))
-!
 !  set bbtest for each of the 9 cases
 !
       select case(jtest)
-      case(1); bbtest(:,1)=cz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(2); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(1); bbtest(:,1)=cz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(2); bbtest(:,1)=sz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
       case default; bbtest(:,:)=0.
       endselect
 !
@@ -700,24 +690,18 @@ module Testfield
       use Sub
 !
       real, dimension (nx,3) :: bbtest
-      real, dimension (nx) :: cz,sz
       integer :: jtest
 !
       intent(in)  :: jtest
       intent(out) :: bbtest
 !
-!  zz for calculating diffusive part of emf
-!
-      cz=cos(ktestfield*z(n))
-      sz=sin(ktestfield*z(n))
-!
 !  set bbtest for each of the 9 cases
 !
       select case(jtest)
-      case(1); bbtest(:,1)=cz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(2); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(3); bbtest(:,1)=0.; bbtest(:,2)=cz; bbtest(:,3)=0.
-      case(4); bbtest(:,1)=0.; bbtest(:,2)=sz; bbtest(:,3)=0.
+      case(1); bbtest(:,1)=cz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(2); bbtest(:,1)=sz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(3); bbtest(:,1)=0.; bbtest(:,2)=cz(n); bbtest(:,3)=0.
+      case(4); bbtest(:,1)=0.; bbtest(:,2)=sz(n); bbtest(:,3)=0.
       case default; bbtest(:,:)=0.
       endselect
 !
