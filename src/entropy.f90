@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.530 2007-09-16 08:03:19 dintrans Exp $
+! $Id: entropy.f90,v 1.531 2007-09-16 08:21:31 ajohan Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -210,7 +210,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.530 2007-09-16 08:03:19 dintrans Exp $")
+           "$Id: entropy.f90,v 1.531 2007-09-16 08:21:31 ajohan Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -534,19 +534,6 @@ module Entropy
         endselect
         lnothing=.true.
       enddo
-
-      if (lhcond_global) then
-        call farray_register_global("hcond",iglobal_hcond)
-        call farray_register_global("glhc",iglobal_glhc,vector=3)
-        do n=n1,n2
-        do m=m1,m2
-          call heatcond(hcond)
-          call gradloghcond(glhc)
-          f(l1:l2,m,n,iglobal_hcond)=hcond
-          f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc
-        enddo
-        enddo
-      endif
 !
 !  A word of warning...
 !
@@ -570,6 +557,22 @@ module Entropy
       endif
       if (lheatc_shock .and. chi_shock==0.0) then
         call warning('initialize_entropy','chi_shock is zero!')
+      endif
+!
+!  Heat conduction calculated globally.
+!  [AJ: Boris, perhaps some details here?]
+!
+      if (lhcond_global) then
+        call farray_register_global("hcond",iglobal_hcond)
+        call farray_register_global("glhc",iglobal_glhc,vector=3)
+        do n=n1,n2
+        do m=m1,m2
+          call heatcond(hcond)
+          call gradloghcond(glhc)
+          f(l1:l2,m,n,iglobal_hcond)=hcond
+          f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc
+        enddo
+        enddo
       endif
 !
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
