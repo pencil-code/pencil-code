@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.52 2007-09-16 22:14:42 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.53 2007-09-16 22:33:31 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -66,7 +66,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.52 2007-09-16 22:14:42 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.53 2007-09-16 22:33:31 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -517,7 +517,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
-!  Evolution of sink particles velocities due to
+!  Evolution of sink and dust particles velocities due to
 !  particle-particle interaction only. 
 !
 !  Coriolis and shear already added in particles_dust
@@ -532,15 +532,12 @@ module Particles_nbody
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
-      real, dimension (nspar,3) :: acc
-!
       real, dimension (npar_loc,nspar,3) :: xxspar,vvspar
-!
-      real :: Omega2,invr3_ij
-      integer :: i, k, ks, ki, kj, j, jvel, jpos
-      logical :: lheader, lfirstcall=.true.
-!
       real :: e1,e2,e3,e10,e20,e30,ev1,ev2,ev3
+      real :: Omega2,invr3_ij
+!
+      integer :: i, k, ks, j, jvel, jpos
+      logical :: lheader, lfirstcall=.true.
 !
       intent (in) ::     f,  fp,  ineargrid
       intent (inout) :: df, dfp
@@ -553,78 +550,62 @@ module Particles_nbody
 !
       if (lheader) print*,'dvvp_dt_nbody: Calculate dvvp_dt_nbody'
 !
+!  Evolve particle positions due to the gravity of the sink particles
+!  not only sink's gravity on dust but also sink-sink (n-body)
 !
-!  Evolve the position of the sink particles due to their mutual gravity
+      do k=1,npar_loc
 !
-      do ks=1,nspar
+!  Loop through the sinks
 !
-!  Calculate in the root only, then broadcast
+        do ks=1,nspar
+          if (k/=ks) then
 !
-        if (lroot) then
-          acc(ks,:) = 0.
-          do kj=1,nspar
-            if (kj/=ks) then
-!
-              e1=fsp(ks,ixp);e10=fsp(kj,ixp)
-              e2=fsp(ks,iyp);e20=fsp(kj,iyp)
-              e3=fsp(ks,izp);e30=fsp(kj,izp)
+            e1=fp(k,ixp);e10=fsp(ks,ixp)
+            e2=fp(k,iyp);e20=fsp(ks,iyp)
+            e3=fp(k,izp);e30=fsp(ks,izp)
 !
 !  Get the distances in each ortogonal component. 
 !  These are NOT (x,y,z) for all.
 !  For cartesian it is (x,y,z), for cylindrical (s,phi,z)
 !  for spherical (r,theta,phi)
 ! 
-              if (lcartesian_coords) then
-                ev1 = e1 - e10  
-                ev2 = e2 - e20  
-                ev3 = e3 - e30  
-              elseif (lcylindrical_coords) then
-                ev1 = e1 - e10*cos(e2-e20)  
-                ev2 = e10*sin(e2-e20)       
-                ev3 = e3 - e30              
-              elseif (lspherical_coords) then
-                call stop_it("dvvp_dt_nbody: not yet implemented for "//&
-                     " spherical polars")
-              endif
+            if (lcartesian_coords) then
+              ev1 = e1 - e10  
+              ev2 = e2 - e20  
+              ev3 = e3 - e30  
+            elseif (lcylindrical_coords) then
+              ev1 = e1 - e10*cos(e2-e20)  
+              ev2 = e10*sin(e2-e20)       
+              ev3 = e3 - e30              
+            elseif (lspherical_coords) then
+              call stop_it("dvvp_dt_nbody: not yet implemented for "//&
+                   " spherical polars")
+            endif
 !
 !  Particles relative distance from each other
 !
 !  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
 !  invr3_ij = r_ij**(-3)
 !
-              invr3_ij = (ev1**2 + ev2**2 + ev3**2)**(-1.5)
+            invr3_ij = (ev1**2 + ev2**2 + ev3**2)**(-1.5)
 !
 !  Gravitational acceleration: g=g0/|r-r0|^3 (r-r0)
-!
-              acc(ks,1) = acc(ks,1) - GNewton*pmass(kj)*invr3_ij*ev1
-              acc(ks,2) = acc(ks,2) - GNewton*pmass(kj)*invr3_ij*ev2
-              acc(ks,3) = acc(ks,3) - GNewton*pmass(kj)*invr3_ij*ev3
-!
-            endif
-          enddo
-        endif
-!
-!  Broadcast particle acceleration
-!
-        call mpibcast_real(acc(ks,:),3)
-!
-!  Put it back on the dfp array on this processor
-!
-        do k=1,npar_loc
-          if (ipar(k)==ks) then
-!
-!  Non-coordinate basis (all have dimension of length). 
+!  The acceleration is in non-coordinate basis (all have dimension of length). 
 !  The main dxx_dt of particle_dust takes care of 
 !  transforming the linear velocities to angular changes 
 !  in position.
 !
-            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + acc(ks,1:3)
-!            
+            dfp(k,ivpx) = dfp(k,ivpx) - GNewton*pmass(ks)*invr3_ij*ev1
+            dfp(k,ivpy) = dfp(k,ivpy) - GNewton*pmass(ks)*invr3_ij*ev2
+            dfp(k,ivpz) = dfp(k,ivpz) - GNewton*pmass(ks)*invr3_ij*ev3
+!
           endif
         enddo
+      enddo
 !
 !  Position and velocity diagnostics (per sink particle)
 !
+      do ks=1,nspar
         if (ldiagnos) then
           if (lfollow_particle(ks)) then
             do j=1,3
@@ -639,7 +620,6 @@ module Particles_nbody
             enddo
           endif
         endif
-!
       enddo
 !
       if (lfirstcall) lfirstcall=.false.
