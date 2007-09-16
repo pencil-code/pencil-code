@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.221 2007-09-15 22:25:25 wlyra Exp $
+! $Id: register.f90,v 1.222 2007-09-16 13:40:27 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -324,6 +324,26 @@ module Register
         lcartesian_coords=.true.
         lspherical_coords=.false.
         lcylindrical_coords=.false.
+!
+! Box volume and volume element
+!
+        box_volume=1.;dvolume=1.;dvolume_1=1.
+        if (nxgrid/=1) then
+          box_volume = box_volume*Lxyz(1)
+          dvolume    = dvolume   *dx
+          dvolume_1  = dvolume_1 *dx_1(l1:l2)
+        endif
+        if (nygrid/=1) then
+          box_volume = box_volume*Lxyz(2)
+          dvolume    = dvolume   *dy
+          dvolume_1  = dvolume_1 *dy_1(m)
+        endif
+        if (nzgrid/=1) then
+          box_volume = box_volume*Lxyz(3)
+          dvolume    = dvolume   *dz
+          dvolume_1  = dvolume_1 *dz_1(n)
+        endif
+!
       elseif (coord_system=='spherical' &
           .or.coord_system=='spherical_coords') then
         lcartesian_coords=.false.
@@ -362,6 +382,25 @@ module Register
 !
         cotth=cos(y)*sin1th
 !
+! Box volume and volume element
+!
+        box_volume=1.;dvolume=1.;dvolume_1=1.
+        if (nxgrid/=1) then
+          box_volume = box_volume*1./3*(xyz1(1)**3-xyz0(1)**3)
+          dvolume    = dvolume   *dx
+          dvolume_1  = dvolume_1 *dx_1(l1:l2)
+        endif
+        if (nygrid/=1) then
+          box_volume = box_volume*(-(cos(xyz1(2))  -cos(xyz0(2))))
+          dvolume    = dvolume   *x(l1:l2)*dy
+          dvolume_1  = dvolume_1 *r1_mn*dy_1(m)
+        endif
+        if (nzgrid/=1) then
+          box_volume = box_volume*Lxyz(3)
+          dvolume    = dvolume   *x(l1:l2)*sinth(m)*dz
+          dvolume_1  = dvolume_1 *r1_mn*sin1th(m)*dz_1(n)
+        endif
+!
 !  weighted coordinates for integration purposes
 !  Need to modify for 2-D and 1-D cases!
 !
@@ -390,7 +429,25 @@ module Register
         rcyl_mn2=rcyl_mn1**2
         r_int=x(l1)
         r_ext=x(l2)
-        box_volume =.5*(xyz1(1)**2-xyz0(1)**2)*Lxyz(2)*Lxyz(3)
+!
+! Box volume and volume element
+!
+        box_volume=1.;dvolume=1.;dvolume_1=1.
+        if (nxgrid/=1) then
+          box_volume = box_volume*.5*(xyz1(1)**2-xyz0(1)**2)
+          dvolume    = dvolume   *dx
+          dvolume_1  = dvolume_1 *dx_1(l1:l2)
+        endif
+        if (nygrid/=1) then
+          box_volume = box_volume*Lxyz(2)
+          dvolume    = dvolume   *rcyl_mn*dy
+          dvolume_1  = dvolume_1 *rcyl_mn1*dy_1(m)
+        endif
+        if (nzgrid/=1) then
+          box_volume = box_volume*Lxyz(3)
+          dvolume    = dvolume   *dz
+          dvolume_1  = dvolume_1 *dz_1(n)
+        endif
 !
 !
 !  Trapezoidal rule
