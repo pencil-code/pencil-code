@@ -1,0 +1,13 @@
+Directory:
+    ${PENCIL_HOME}/doc/implementation/hyperdiffusivity/hypvistest
+CVS-Id:
+    $Id: README,v 1.1 2007-09-16 17:24:29 brandenb Exp $
+Maintainer:
+    Anders Johansen <johansen@mpia-hd.mpg.de>
+Added:
+    08-Jun-2002
+Status:
+    working since 15 Sep 2007
+Recommended resolution:
+Comments:
+References:
