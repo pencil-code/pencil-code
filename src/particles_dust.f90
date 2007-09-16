@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.195 2007-09-16 16:30:39 wlyra Exp $
+! $Id: particles_dust.f90,v 1.196 2007-09-16 16:55:32 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -128,7 +128,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.195 2007-09-16 16:30:39 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.196 2007-09-16 16:55:32 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -270,18 +270,35 @@ module Particles
           rhom=1.0
         endif
         rhop_tilde=eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
-        mp_tilde  =eps_dtog*rhom*box_volume/real(npar)
         if (lroot) then
           print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
           print*, 'initialize_particles: '// &
             'mass density per particle rhop_tilde=', rhop_tilde
-          print*, 'initialize_particles: '// &
-            'mass per particle mp_tilde=', mp_tilde
         endif
       else
         if (lroot) print*, 'initialize_particles: '// &
             'mass density per particle rhop_tilde=', rhop_tilde
+      endif
+!
+! Calculate mass per particle for drag-force and back-reaction in curvilinear
+! coordinates. It follows simply
+!   mp_tilde*N = eps*Int(rho*dv) = eps*rhom*V
+! where N is the total number of particles, eps is the dust to gas ratio and
+! V is the total volume of the box 
+!
+      if (mp_tilde==0.0) then
+        rhom=1.0
+        mp_tilde  =eps_dtog*rhom*box_volume/real(npar)
+        if (lroot) then
+          print*, 'initialize_particles: '// &
+               'dust-to-gas ratio eps_dtog=', eps_dtog
+          print*, 'initialize_particles: '// &
+               'mass per particle mp_tilde=', mp_tilde
+        endif
+      else
+        if (lroot) print*, 'initialize_particles: '// &
+             'mass per particle mp_tilde=', mp_tilde
       endif
 !
 !  Calculate nu_epicycle**2 for gravity.

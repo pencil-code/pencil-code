@@ -1,4 +1,4 @@
-! $Id: particles_cdata.f90,v 1.27 2007-09-16 14:10:13 wlyra Exp $
+! $Id: particles_cdata.f90,v 1.28 2007-09-16 16:55:32 wlyra Exp $
 !!
 !! Global particle variables
 !!
@@ -12,7 +12,7 @@ module Particles_cdata
   real, parameter :: npar_per_cell=npar/(1.*nwgrid)
 
   real :: dsnap_par_minor=0.0
-  real :: rhops=1.0e10, rhop_tilde=0.0, mp_tilde=1.0
+  real :: rhops=1.0e10, rhop_tilde=0.0, mp_tilde=0.0
   integer, dimension (mpar_loc) :: ipar
   integer :: npvar=0, npar_loc=0
   integer :: ixp=0,iyp=0,izp=0,ivpx=0,ivpy=0,ivpz=0,iap=0,inptilde=0
