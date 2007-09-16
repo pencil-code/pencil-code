@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.529 2007-09-15 12:40:22 ajohan Exp $
+! $Id: entropy.f90,v 1.530 2007-09-16 08:03:19 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -210,7 +210,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.529 2007-09-15 12:40:22 ajohan Exp $")
+           "$Id: entropy.f90,v 1.530 2007-09-16 08:03:19 dintrans Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -540,10 +540,8 @@ module Entropy
         call farray_register_global("glhc",iglobal_glhc,vector=3)
         do n=n1,n2
         do m=m1,m2
-          p%r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-          p%z_mn=spread(z(n),1,nx)
-          call heatcond(p,hcond)
-          call gradloghcond(p,glhc)
+          call heatcond(hcond)
+          call gradloghcond(glhc)
           f(l1:l2,m,n,iglobal_hcond)=hcond
           f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc
         enddo
@@ -2511,8 +2509,8 @@ module Entropy
               hcond=f(l1:l2,m,n,iglobal_hcond)
               glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
             else
-              call heatcond(p,hcond)
-              call gradloghcond(p,glhc)
+              call heatcond(hcond)
+              call gradloghcond(glhc)
             endif
             if (chi_t/=0) then
               call chit_profile(chit_prof)
@@ -2525,8 +2523,8 @@ module Entropy
             hcond=f(l1:l2,m,n,iglobal_hcond)
             glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
           else
-            call heatcond(p,hcond)
-            call gradloghcond(p,glhc)
+            call heatcond(hcond)
+            call gradloghcond(glhc)
           endif
           if (chi_t/=0) then
             call chit_profile(chit_prof)
@@ -3087,7 +3085,7 @@ module Entropy
 !
     endsubroutine calc_heatcond_zprof
 !***********************************************************************
-    subroutine heatcond(p,hcond)
+    subroutine heatcond(hcond)
 !
 !  calculate the heat conductivity hcond along a pencil.
 !  This is an attempt to remove explicit reference to hcond[0-2] from
@@ -3102,20 +3100,21 @@ module Entropy
       use Sub, only: step
       use Gravity
 !
-      real, dimension (nx) :: hcond
-      type (pencil_case) :: p
+      real, dimension (nx) :: hcond, z_mn, r_mn
 !
       if (lgravz) then
+        z_mn=spread(z(n),1,nx)
         if (lmultilayer) then
-          hcond = 1 + (hcond1-1)*step(p%z_mn,z1,-widthss) &
-                    + (hcond2-1)*step(p%z_mn,z2,widthss)
+          hcond = 1 + (hcond1-1)*step(z_mn,z1,-widthss) &
+                    + (hcond2-1)*step(z_mn,z2,widthss)
           hcond = hcond0*hcond
         else
           hcond=Kbot
         endif
       else
+        r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
         if (lmultilayer) then
-          hcond = 1. + (hcond1-1.)*step(p%r_mn,r_bcz,-widthss)
+          hcond = 1. + (hcond1-1.)*step(r_mn,r_bcz,-widthss)
           hcond = hcond0*hcond
         else
           hcond = hcond0
@@ -3124,7 +3123,7 @@ module Entropy
 !
     endsubroutine heatcond
 !***********************************************************************
-    subroutine gradloghcond(p,glhc)
+    subroutine gradloghcond(glhc)
 !
 !  calculate grad(log hcond), where hcond is the heat conductivity
 !  NB: *Must* be in sync with heatcond() above.
@@ -3135,26 +3134,27 @@ module Entropy
       use Gravity
 !
       real, dimension (nx,3) :: glhc
-      real, dimension (nx)   :: dhcond
-      type (pencil_case) :: p
+      real, dimension (nx)   :: dhcond, z_mn, r_mn
 !
       if (lgravz) then
+        z_mn=spread(z(n),1,nx)
         if (lmultilayer) then
-          glhc(:,3) = (hcond1-1)*der_step(p%z_mn,z1,-widthss) &
-                      + (hcond2-1)*der_step(p%z_mn,z2,widthss)
+          glhc(:,3) = (hcond1-1)*der_step(z_mn,z1,-widthss) &
+                      + (hcond2-1)*der_step(z_mn,z2,widthss)
           glhc(:,3) = hcond0*glhc(:,3)
         else
           glhc = 0.
         endif
       else
+        r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
         if (lmultilayer) then
-          dhcond=hcond0*(hcond1-1.)*der_step(p%r_mn,r_bcz,-widthss)
-          glhc(:,1) = x(l1:l2)/p%r_mn*dhcond
-          glhc(:,2) = y(m)/p%r_mn*dhcond
+          dhcond=hcond0*(hcond1-1.)*der_step(r_mn,r_bcz,-widthss)
+          glhc(:,1) = x(l1:l2)/r_mn*dhcond
+          glhc(:,2) = y(m)/r_mn*dhcond
           if (lcylinder_in_a_box) then
             glhc(:,3) = 0.
           else
-            glhc(:,3) = z(n)/p%r_mn*dhcond
+            glhc(:,3) = z(n)/r_mn*dhcond
           endif
         else
           glhc = 0.
