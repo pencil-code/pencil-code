@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.196 2007-09-16 16:55:32 wlyra Exp $
+! $Id: particles_dust.f90,v 1.197 2007-09-16 22:15:20 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -128,7 +128,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.196 2007-09-16 16:55:32 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.197 2007-09-16 22:15:20 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -1438,7 +1438,16 @@ k_loop:   do while (.not. (k>npar_loc))
             else
               uup=0.0
             endif
+!
             dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-uup)
+!
+! Exclude drag for the massive sink particles
+!
+            if (lparticles_nbody) then
+              if (ipar(k).le.nspar) &
+                   dragforce = 0.
+            endif
+!
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !
 !  Heating of gas due to drag force.
