@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.115 2007-09-16 15:14:47 wlyra Exp $
+! $Id: particles_sub.f90,v 1.116 2007-09-16 18:43:29 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -597,16 +597,25 @@ module Particles_sub
 !  Check that received particles are really at the right processor.
             if (lmigration_real_check) then
               do k=npar_loc+1,npar_loc+nmig(i,iproc)
-                if (fp(k,iyp)<y0_mig .or. fp(k,iyp)>=y1_mig .or. &
-                    fp(k,izp)<z0_mig .or. fp(k,izp)>=z1_mig ) then
-                  print*, 'redist_particles_procs: received particle closer '//&
-                      'to ghost point than to physical grid point!'
-                  print*, 'redist_particles_procs: ipar, xxp=', &
-                      ipar(k), fp(k,ixp:izp)
-                  print*, 'redist_particles_procs: y0_mig, y1_mig=', &
-                      y0_mig, y1_mig
-                  print*, 'redist_particles_procs: z0_mig, z1_mig=', &
-                      z0_mig, z1_mig
+                if (nygrid/=1) then
+                  if (fp(k,iyp)<y0_mig .or. fp(k,iyp)>=y1_mig) then
+                    print*, 'redist_particles_procs: received particle closer '//&
+                         'to ghost point than to physical grid point!'
+                    print*, 'redist_particles_procs: ipar, xxp=', &
+                         ipar(k), fp(k,ixp:izp)
+                    print*, 'redist_particles_procs: y0_mig, y1_mig=', &
+                         y0_mig, y1_mig
+                  endif
+                endif
+                if (nzgrid/=1) then
+                  if (fp(k,izp)<z0_mig .or. fp(k,izp)>=z1_mig) then
+                    print*, 'redist_particles_procs: received particle closer '//&
+                         'to ghost point than to physical grid point!'
+                    print*, 'redist_particles_procs: ipar, xxp=', &
+                         ipar(k), fp(k,ixp:izp)
+                    print*, 'redist_particles_procs: z0_mig, z1_mig=', &
+                         z0_mig, z1_mig
+                  endif
                 endif
               enddo
             endif
