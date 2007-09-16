@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.194 2007-09-16 10:57:05 wlyra Exp $
+! $Id: particles_dust.f90,v 1.195 2007-09-16 16:30:39 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -128,7 +128,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.194 2007-09-16 10:57:05 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.195 2007-09-16 16:30:39 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -1483,8 +1483,13 @@ k_loop:   do while (.not. (k>npar_loc))
                     rho1_point=p%rho1(ixx-nghost)
                   endif
 !  Add friction force to grid point.
-                  df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                      rhop_tilde*rho1_point*dragforce*weight
+                  if (lcartesian_coords) then
+                    df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                         rhop_tilde*rho1_point*dragforce*weight
+                  else
+                    df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                         mp_tilde*dvolume_1(ixx)*rho1_point*dragforce*weight
+                  endif
                 enddo; enddo; enddo
 !
 !  Triangular Shaped Cloud (TSC) scheme.
@@ -1551,16 +1556,26 @@ k_loop:   do while (.not. (k>npar_loc))
                     rho1_point=p%rho1(ixx-nghost)
                   endif
 !  Add friction force to grid point.
-                  df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                      rhop_tilde*rho1_point*dragforce*weight
+                  if (lcartesian_coords) then
+                    df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                         rhop_tilde*rho1_point*dragforce*weight
+                  else
+                    df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                         mp_tilde*dvolume_1(ixx)*rho1_point*dragforce*weight
+                  endif
                 enddo; enddo; enddo
               else
 !
 !  Nearest Grid Point (NGP) scheme.
 !
                 l=ineargrid(k,1)
-                df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
-                    rhop_tilde*p%rho1(l-nghost)*dragforce
+                if (lcartesian_coords) then
+                  df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
+                       rhop_tilde*p%rho1(l-nghost)*dragforce
+                  else
+                    df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
+                         mp_tilde*dvolume_1(l-nghost)*p%rho1(l-nghost)*dragforce
+                  endif
               endif
             endif
 !
