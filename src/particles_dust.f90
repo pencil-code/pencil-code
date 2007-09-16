@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.193 2007-09-16 10:00:51 wlyra Exp $
+! $Id: particles_dust.f90,v 1.194 2007-09-16 10:57:05 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -128,7 +128,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.193 2007-09-16 10:00:51 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.194 2007-09-16 10:57:05 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -1773,7 +1773,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension(3) :: ggp
       real :: Omega2, np_tilde, rsph, OO2
-      real :: rad,raddot,phidot,thtdot,sintht,costht
       integer :: k
       logical :: lheader, lfirstcall=.true.
 !
@@ -1859,8 +1858,8 @@ k_loop:   do while (.not. (k>npar_loc))
            if (lheader) print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
            do k=1,npar_loc
              if (lcartesian_coords) then
-               rad=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2)
-               OO2=rad**(-3)
+               rsph=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2)
+               OO2=rsph**(-3)
                ggp(1) = -fp(k,ixp)*OO2
                ggp(2) = -fp(k,iyp)*OO2
                ggp(3) = -fp(k,izp)*OO2
@@ -1872,22 +1871,12 @@ k_loop:   do while (.not. (k>npar_loc))
                ggp(2) = 0.
                ggp(3) = -fp(k,izp)*OO2
                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
-               !cylindrical corrections
-               rad=fp(k,ixp);raddot=fp(k,ivpx);phidot=fp(k,ivpy)/rad
-               dfp(k,ivpx) = dfp(k,ivpx) + rad*phidot**2
-               dfp(k,ivpy) = dfp(k,ivpy) - 2*raddot*phidot
              elseif (lspherical_coords) then
-               rad=fp(k,ixp)
-               OO2=rad**(-3)
+               rsph=fp(k,ixp)
+               OO2=rsph**(-3)
                ggp(1) = -fp(k,ixp)*OO2
                ggp(2) = 0.; ggp(3) = 0.
                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
-               !spherical corrections
-               sintht=sin(fp(k,iyp));costht=cos(fp(k,iyp))
-               raddot=fp(k,ivpx);thtdot=fp(k,ivpy)/rad
-               phidot=fp(k,ivpz)/(rad*sintht)
-               dfp(k,ivpx) = dfp(k,ivpx) + rad*phidot**2
-               dfp(k,ivpy) = dfp(k,ivpy) - 2*raddot*phidot
              endif
            enddo
 

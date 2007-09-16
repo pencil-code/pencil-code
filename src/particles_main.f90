@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.56 2006-11-30 09:03:36 dobler Exp $
+! $Id: particles_main.f90,v 1.57 2007-09-16 10:57:05 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -335,7 +335,40 @@ module Particles_main
          call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
       endif
 !
+!  Correct for curvilinear geometry
+!
+      call correct_curvilinear
+!
     endsubroutine particles_pde
+!***********************************************************************    
+    subroutine correct_curvilinear
+!
+!  Curvilinear corrections
+!
+!  15-sep-07/wlad: coded
+!
+      real :: rad,raddot,phidot,thtdot,sintht,costht
+      integer :: k
+!
+      do k=1,npar_loc
+        if (lcylindrical_coords) then
+          rad=fp(k,ixp);raddot=fp(k,ivpx);phidot=fp(k,ivpy)/rad
+          dfp(k,ivpx) = dfp(k,ivpx) + rad*phidot**2
+          dfp(k,ivpy) = dfp(k,ivpy) - 2*raddot*phidot
+        elseif (lspherical_coords) then
+          sintht=sin(fp(k,iyp));costht=cos(fp(k,iyp))
+          raddot=fp(k,ivpx);thtdot=fp(k,ivpy)/rad
+          phidot=fp(k,ivpz)/(rad*sintht)
+          dfp(k,ivpx) = dfp(k,ivpx) &
+               + rad*(thtdot**2 + (sintht*phidot)**2)
+          dfp(k,ivpy) = dfp(k,ivpy) &
+               - 2*raddot*thtdot + rad*sintht*costht*phidot**2
+          dfp(k,ivpz) = dfp(k,ivpz) &
+               - 2*phidot*(sintht*raddot + rad*costht*thtdot)
+        endif
+      enddo
+!
+    endsubroutine correct_curvilinear
 !***********************************************************************
     subroutine read_particles_init_pars_wrap(unit,iostat)
 !

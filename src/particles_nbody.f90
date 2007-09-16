@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.50 2007-09-11 14:38:00 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.51 2007-09-16 10:57:05 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.50 2007-09-11 14:38:00 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.51 2007-09-16 10:57:05 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -540,7 +540,6 @@ module Particles_nbody
       logical :: lheader, lfirstcall=.true.
 !
       real :: e1,e2,e3,e10,e20,e30,ev1,ev2,ev3
-      real :: rad,raddot,sintht,costht,thtdot,phidot
 !
       intent (in) ::     f,  fp,  ineargrid
       intent (inout) :: df, dfp
@@ -619,35 +618,7 @@ module Particles_nbody
 !  in position.
 !
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + acc(ks,1:3)
-!
-!  Curvilinear coordinates corrections
-!
-            if (lcylindrical_coords) then
-!
-              rad    =  fsp(ks,ixp)
-              raddot =  fsp(ks,ivpx)
-              phidot =  fsp(ks,ivpy)/rad
-!
-              dfp(k,ivpx) = dfp(k,ivpx) + rad*phidot**2
-              dfp(k,ivpy) = dfp(k,ivpy) - 2*raddot*phidot
-!
-            elseif (lspherical_coords) then
-!
-              rad    = fsp(ks,ixp)
-              sintht = sin(fsp(ks,iyp))
-              costht = cos(fsp(ks,iyp))
-              raddot = fsp(ks,ivpx)
-              thtdot = fsp(ks,ivpy)/rad
-              phidot = fsp(ks,ivpz)/(rad*sintht)
-!             
-              dfp(k,ivpx) = dfp(k,ivpx) &
-                   + rad*(thtdot**2 + (sintht*phidot)**2)
-              dfp(k,ivpy) = dfp(k,ivpy) &
-                   - 2*raddot*thtdot + rad*sintht*costht*phidot**2
-              dfp(k,ivpz) = dfp(k,ivpz) &
-                   - 2*phidot*(sintht*raddot + rad*costht*thtdot)
-!
-            endif
+!            
           endif
         enddo
 !
