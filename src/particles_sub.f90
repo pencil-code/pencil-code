@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.114 2007-09-16 13:39:51 wlyra Exp $
+! $Id: particles_sub.f90,v 1.115 2007-09-16 15:14:47 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -236,39 +236,39 @@ module Particles_sub
             fp(k,ivpy) =  OO*fp(k,ixp)
           endif
 !
-       enddo
+        enddo
 !
-       if (nzgrid/=1) then
-        if (bcpz=='p') then
-          do k=1,npar_loc
+        if (nzgrid/=1) then
+          if (bcpz=='p') then
+            do k=1,npar_loc
 !  zp < z0
-            if (fp(k,izp)< xyz0(3)) then
-              fp(k,izp)=fp(k,izp)+Lxyz(3)
               if (fp(k,izp)< xyz0(3)) then
-                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
-                    ' was further than Lz outside the simulation box!'
-                print*, 'This must never happen.'
-                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
-                call fatal_error_local('boundconds_particles','')
+                fp(k,izp)=fp(k,izp)+Lxyz(3)
+                if (fp(k,izp)< xyz0(3)) then
+                  print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                       ' was further than Lz outside the simulation box!'
+                  print*, 'This must never happen.'
+                  print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                  call fatal_error_local('boundconds_particles','')
+                endif
               endif
-            endif
 !  zp > z1
-            if (fp(k,izp)>=xyz1(3)) then
-              fp(k,izp)=fp(k,izp)-Lxyz(3)
               if (fp(k,izp)>=xyz1(3)) then
-                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
-                    ' was further than Lz outside the simulation box!'
-                print*, 'This must never happen.'
-                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
-                call fatal_error_local('boundconds_particles','')
+                fp(k,izp)=fp(k,izp)-Lxyz(3)
+                if (fp(k,izp)>=xyz1(3)) then
+                  print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                       ' was further than Lz outside the simulation box!'
+                  print*, 'This must never happen.'
+                  print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                  call fatal_error_local('boundconds_particles','')
+                endif
               endif
-            endif
-          enddo
-        else
-          print*, 'boundconds_particles: No such boundary condition bcpz=', bcpz
-          call stop_it('boundconds_particles')
+            enddo
+          else
+            print*, 'boundconds_particles: No such boundary condition bcpz=', bcpz
+            call stop_it('boundconds_particles')
+          endif
         endif
-      endif
 !
       else
 !
