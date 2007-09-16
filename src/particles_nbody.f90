@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.51 2007-09-16 10:57:05 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.52 2007-09-16 22:14:42 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -36,12 +36,13 @@ module Particles_nbody
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
        pmass, r_smooth, lcylindrical_gravity_nbody, &
-       lexclude_frozen, GNewton
+       lexclude_frozen, GNewton, bcspx, bcspy, bcspz
 
 
   namelist /particles_nbody_run_pars/ &
        dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
-       lnogravz_star,lfollow_particle, lmigrate, lexclude_frozen, GNewton
+       lnogravz_star,lfollow_particle, lmigrate, lexclude_frozen, GNewton, &
+       bcspx, bcspy, bcspz
 
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -65,7 +66,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.51 2007-09-16 10:57:05 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.52 2007-09-16 22:14:42 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
