@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.57 2007-09-16 10:57:05 wlyra Exp $
+! $Id: particles_main.f90,v 1.58 2007-09-16 11:16:20 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -343,14 +343,19 @@ module Particles_main
 !***********************************************************************    
     subroutine correct_curvilinear
 !
-!  Curvilinear corrections
+!  Curvilinear corrections to acceleration only.
+!  Corrections to velocity were already taken into account
+!  in the dxx_dp of particles_dust.f90
 !
 !  15-sep-07/wlad: coded
 !
       real :: rad,raddot,phidot,thtdot,sintht,costht
       integer :: k
-!
+
       do k=1,npar_loc
+!
+! Correct acceleration
+!
         if (lcylindrical_coords) then
           rad=fp(k,ixp);raddot=fp(k,ivpx);phidot=fp(k,ivpy)/rad
           dfp(k,ivpx) = dfp(k,ivpx) + rad*phidot**2
