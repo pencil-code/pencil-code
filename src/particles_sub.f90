@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.113 2007-09-15 23:24:26 wlyra Exp $
+! $Id: particles_sub.f90,v 1.114 2007-09-16 13:39:51 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1525,8 +1525,6 @@ module Particles_sub
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension(nx) :: dv_1
-!
       real :: weight, weight_x, weight_y, weight_z
       integer :: k, ix0, iy0, iz0, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
@@ -1560,8 +1558,6 @@ module Particles_sub
       if (irhop/=0) then
         f(:,:,:,irhop)=0.0
         if (lparticlemesh_cic) then
-          if (.not.lcartesian_coords) call stop_it("map_xxp_grid: Cloud in "//&
-               "Cell scheme not implemented for curvilinear coordinates. Use NGP.")
 !
 !  Cloud In Cell (CIC) scheme.
 !
@@ -1590,8 +1586,6 @@ module Particles_sub
 !  Triangular Shaped Cloud (TSC) scheme.
 !
         elseif (lparticlemesh_tsc) then
-          if (.not.lcartesian_coords) call stop_it("map_xxp_grid: Triang. Shaped "//&
-               "Cloud scheme not implemented for curvilinear coordinates. Use NGP.")
 !
 !  Particle influences the 27 surrounding grid points, but has a density that
 !  decreases with the distance from the particle centre.
@@ -1653,27 +1647,22 @@ module Particles_sub
 !  Nearest Grid Point (NGP) method.
 !
         else
-          if (lcartesian_coords) then
-            f(l1:l2,m1:m2,n1:n2,irhop)=rhop_tilde*f(l1:l2,m1:m2,n1:n2,inp)
-          else
-            do m=m1,m2; do n=n1,n2
-              dv_1=1.
-              if (nxgrid/=1) dv_1=dv_1*dx_1(l1:l2)
-              if (nygrid/=1) dv_1=dv_1*dy_1(  m  )*rcyl_mn1
-              if (nzgrid/=1) dv_1=dv_1*dz_1(  n  )
-              f(l1:l2,m,n,irhop)=f(l1:l2,m,n,inp)*mp_tilde*dv_1
-            enddo; enddo
-          endif
+            f(l1:l2,m1:m2,n1:n2,irhop)=f(l1:l2,m1:m2,n1:n2,inp)
         endif
 !
 !  Fold first ghost zone of f.
 !
-        if (lparticlemesh_cic.or.lparticlemesh_tsc) then 
-          call fold_f(f,irhop,irhop)
-          f(l1:l2,m1:m2,n1:n2,irhop)=rhop_tilde*f(l1:l2,m1:m2,n1:n2,irhop)
+        if (lparticlemesh_cic.or.lparticlemesh_tsc) & 
+             call fold_f(f,irhop,irhop)
+        if (lcartesian_coords) then
+          f(l1:l2,m1:m2,n1:n2,irhop)=rhop_tilde*f(l1:l2,m1:m2,n1:n2,irhop)  
+        else
+          do m=m1,m2; do n=n1,n2
+            f(l1:l2,m,n,irhop)=f(l1:l2,m,n,irhop)*mp_tilde*dvolume_1
+          enddo; enddo
         endif
 !        call sharpen_tsc_density(f)
-      endif
+        endif
 !
     endsubroutine map_xxp_grid
 !***********************************************************************
