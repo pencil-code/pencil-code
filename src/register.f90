@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.222 2007-09-16 13:40:27 wlyra Exp $
+ $Id: register.f90,v 1.223 2007-09-17 01:27:37 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -196,6 +196,7 @@ module Register
       real, dimension(mx,my,mz,mfarray) :: f
       real :: sinth_min=1e-5 !(to avoid axis)
       logical :: lstarting
+
 !
 !  Defaults for some logicals; will later be set to true if needed
       lpenc_requested(:) = .false.
@@ -336,12 +337,12 @@ module Register
         if (nygrid/=1) then
           box_volume = box_volume*Lxyz(2)
           dvolume    = dvolume   *dy
-          dvolume_1  = dvolume_1 *dy_1(m)
+          dvolume_1  = dvolume_1 *dy_1(mpoint)
         endif
         if (nzgrid/=1) then
           box_volume = box_volume*Lxyz(3)
           dvolume    = dvolume   *dz
-          dvolume_1  = dvolume_1 *dz_1(n)
+          dvolume_1  = dvolume_1 *dz_1(npoint)
         endif
 !
       elseif (coord_system=='spherical' &
@@ -382,7 +383,8 @@ module Register
 !
         cotth=cos(y)*sin1th
 !
-! Box volume and volume element
+! Box volume and volume element - it is wrong for spherical, since
+! sinth also changes with y-position 
 !
         box_volume=1.;dvolume=1.;dvolume_1=1.
         if (nxgrid/=1) then
@@ -393,12 +395,12 @@ module Register
         if (nygrid/=1) then
           box_volume = box_volume*(-(cos(xyz1(2))  -cos(xyz0(2))))
           dvolume    = dvolume   *x(l1:l2)*dy
-          dvolume_1  = dvolume_1 *r1_mn*dy_1(m)
+          dvolume_1  = dvolume_1 *r1_mn*dy_1(mpoint)
         endif
         if (nzgrid/=1) then
           box_volume = box_volume*Lxyz(3)
-          dvolume    = dvolume   *x(l1:l2)*sinth(m)*dz
-          dvolume_1  = dvolume_1 *r1_mn*sin1th(m)*dz_1(n)
+          dvolume    = dvolume   *x(l1:l2)*sinth(mpoint)*dz
+          dvolume_1  = dvolume_1 *r1_mn*sin1th(mpoint)*dz_1(npoint)
         endif
 !
 !  weighted coordinates for integration purposes
@@ -441,12 +443,12 @@ module Register
         if (nygrid/=1) then
           box_volume = box_volume*Lxyz(2)
           dvolume    = dvolume   *rcyl_mn*dy
-          dvolume_1  = dvolume_1 *rcyl_mn1*dy_1(m)
+          dvolume_1  = dvolume_1 *rcyl_mn1*dy_1(mpoint)
         endif
         if (nzgrid/=1) then
           box_volume = box_volume*Lxyz(3)
           dvolume    = dvolume   *dz
-          dvolume_1  = dvolume_1 *dz_1(n)
+          dvolume_1  = dvolume_1 *dz_1(npoint)
         endif
 !
 !
