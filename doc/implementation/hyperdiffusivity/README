@@ -1,0 +1,3 @@
+Implementation test of strict hyperviscosity. See Haugen & Brandenburg (2004)
+for details. Here we test that the implementation is correct and that the
+hyperviscosity conserves momentum.
