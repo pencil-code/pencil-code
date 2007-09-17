@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.38 2007-09-14 13:11:34 tgastine Exp $
+! $Id: temperature_idealgas.f90,v 1.39 2007-09-17 15:08:47 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -42,7 +42,7 @@ module Entropy
     module procedure heatcond_TT_point  ! get one value (hcond, dhcond)
   end interface
 
-  real :: radius_lnTT=0.,ampl_lnTT=0.,widthlnTT=2*epsi
+  real :: radius_lnTT=0.1,ampl_lnTT=0.,widthlnTT=2*epsi
   real :: lnTT_left=1.0,lnTT_right=1.0,lnTT_const=0.0,TT_const=1.0
   real :: kx_lnTT=1.0,ky_lnTT=1.0,kz_lnTT=1.0
   real :: chi=impossible,heat_uniform=0.0,difflnTT_hyper=0.
@@ -134,7 +134,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.38 2007-09-14 13:11:34 tgastine Exp $")
+           "$Id: temperature_idealgas.f90,v 1.39 2007-09-17 15:08:47 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -340,28 +340,29 @@ module Entropy
 !  select different initial conditions
 !
       select case(initlnTT(iinit))
-      case('zero', '0'); f(:,:,:,ilnTT) = 0.
-      case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
-      case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
-      case('single_polytrope'); call single_polytrope(f)
-      case('gaussian')
-        do j=n1,n2
-          f(l1:l2,4,j,ilnTT)=exp(-(x(l1:l2)/radius_lnTT)**2)* &
-                 exp(-((z(j)-0.5)/radius_lnTT)**2)
-        enddo
-        cs2bot=gamma1*f(l1,4,n1,ilnTT)
-        cs2top=gamma1*f(l1,4,n2,ilnTT)
-      case('rad_equil')
-          call rad_equil(f)
-          if (ampl_lnTT.ne.0.) then
-            print*,'add a bubble with:',ampl_lnTT,radius_lnTT,center1_x,center1_y,center1_z
+        case('zero', '0'); f(:,:,:,ilnTT) = 0.
+!
+        case('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
+!
+        case('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
+!
+        case('single_polytrope'); call single_polytrope(f)
+!
+        case('gaussian')
+          do j=n1,n2
+            f(l1:l2,4,j,ilnTT)=exp(-(x(l1:l2)/radius_lnTT)**2)* &
+                   exp(-((z(j)-0.5)/radius_lnTT)**2)
+          enddo
+          cs2bot=gamma1*f(l1,4,n1,ilnTT)
+          cs2top=gamma1*f(l1,4,n2,ilnTT)
+!
+        case('rad_equil')
+            call rad_equil(f)
+!
+        case('blob_hs')
+            print*,'init_lnTT: put a blob in hydrostatic equilibrium: radius_lnTT,ampl_lnTT=',radius_lnTT,ampl_lnTT,center1_x,center1_y,center1_z
             call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
             call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)
-          endif
-      case('bubble_hs')
-!         print*,'init_lnTT: put bubble in hydrostatic equilibrium: radius_lnTT,ampl_lnTT=',radius_lnTT,ampl_lnTT,center1_x,center1_y,center1_z
-          call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
-          call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)
          !
         case default
           !
