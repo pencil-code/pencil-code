@@ -4,31 +4,32 @@
 !
 &init_pars
 ip=14
-  cvsid='$Id: start.in,v 1.15 2005-06-29 12:44:39 ajohan Exp $'
-  Lxyz=+4.,+8.,+0.4, xyz0=-2.,-4.,-0.2, 
+  cvsid='$Id: start.in,v 1.16 2007-09-17 05:42:34 ajohan Exp $'
+  Lxyz=+4.0,+8.0,+4.0
+  xyz0=-2.0,-4.0,-2.0, 
   bcz = 's','s','a','s','s','s','a','s'
   lperi=T,T,F
 /
 &eos_init_pars
 /
 &hydro_init_pars
-  inituu='zero',ampluu=.0,widthuu=.0,Omega=1.
+  inituu='zero', Omega=1.0
 /
 &density_init_pars
-  initlnrho='planet',eps_planet=.4,radius_lnrho=0.7,rbound=1.
-  widthlnrho=.05,hh0=0.01
+  initlnrho='planet', eps_planet=0.4, radius_lnrho=0.7, rbound=1.0
+  widthlnrho=0.05, hh0=0.01
 /
 &grav_init_pars
-  nu_epicycle=1.,gravz_profile='linear'
+  nu_epicycle=1.0, gravz_profile='linear'
 /
 &dustvelocity_init_pars
-  md0=1., deltamd=1., draglaw='epstein_cst_b'
+  md0=1.0, deltamd=1.0, draglaw='epstein_cst_b'
 /
 &dustdensity_init_pars
-  initnd='const_nd', nd_const=1e-3
+  initnd='const_nd', nd_const=1.0e-3
 /
 &shear_init_pars
-  qshear=1.5,
+  qshear=1.5
 /
 &particles_init_pars
   initxxp='random'

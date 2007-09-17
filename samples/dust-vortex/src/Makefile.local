@@ -3,9 +3,6 @@
 ### Included by `Makefile'
 ###
 
-LIBSIG=-L$(HOME)/f90/lib
-LDMPI=-lmpi
-
 MPICOMM   = nompicomm
 GLOBAL    = noglobal
 
@@ -19,7 +16,6 @@ PSCALAR   = nopscalar
 GRAVITY   =   gravity_simple
 FORCING   = noforcing
 VISCOSITY =   viscosity
-IO        = io_dist
 SHEAR     =   shear
 
 DUSTDENSITY  =   dustdensity
@@ -27,10 +23,5 @@ DUSTVELOCITY =   dustvelocity
 
 PARTICLES =   particles_tracers
 
-FFTPACK   = nofftpack
-FFT       = nofft
-
-
 # Use double precision
 REAL_PRECISION = double
-

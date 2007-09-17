@@ -1,16 +1,17 @@
 Directory:
     ${PENCIL_HOME}/samples/dust-vortex
 CVS-Id:
-    $Id: README,v 1.4 2007-09-16 17:22:15 brandenb Exp $
+    $Id: README,v 1.5 2007-09-17 05:42:34 ajohan Exp $
 Maintainer:
-    Anders Johansen <johansen@mpia-hd.mpg.de>
+    Anders Johansen <johansen@mpia.de>
 Added:
     16-Apr-2005
 Status:
-    working in this form since May 2007
+    Working in this form since September 2007.
 Recommended resolution:
-    128x128x128 (nu=eta=1.3e-3)
-Comments:
-    Comments can start on this line,
-    and continue later, as long as they are indented.
-
+    128x256x128 (nu=nud=2.0e-4)
+References:
+    ``Simulations of dust-trapping vortices in protoplanetary discs''
+    Johansen A., Andersen A. C., & Brandenburg A. 2004
+    Astronomy and Astrophysics, vol. 417, p. 361-374
+    [astro-ph/0310059]
