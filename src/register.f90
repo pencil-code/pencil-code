@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.224 2007-09-17 01:37:41 wlyra Exp $
+! $Id: register.f90,v 1.225 2007-09-17 07:56:50 bingert Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -306,17 +306,6 @@ module Register
 !
 !----------------------------------------------------------------------------
 !  Coordinate-related issues: nonuniform meshes, different corrdinate systems
-!
-!  The following is only kept for backwards compatibility with
-!  an old grid.dat.
-!
-!AB:  Removed for now, because
-!AB:  (i) it should be taken care of by grid.f90
-!AB:  (ii) it doesn't take care of 1-D cases with dx=0.
-!
-!     if (lequidist(1)) dx_1=1./dx
-!     if (lequidist(2)) dy_1=1./dy
-!     if (lequidist(3)) dz_1=1./dz
 !
 !  For spherical coordinate system, calculate 1/r, cot(theta)/r, etc
 !  Introduce new names (spherical_coords), in addition to the old ones.
