@@ -1,4 +1,4 @@
- $Id: register.f90,v 1.223 2007-09-17 01:27:37 wlyra Exp $
+! $Id: register.f90,v 1.224 2007-09-17 01:37:41 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
