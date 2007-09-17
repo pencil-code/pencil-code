@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.53 2007-09-16 22:33:31 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.54 2007-09-17 00:27:53 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -66,7 +66,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.53 2007-09-16 22:33:31 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.54 2007-09-17 00:27:53 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -558,7 +558,7 @@ module Particles_nbody
 !  Loop through the sinks
 !
         do ks=1,nspar
-          if (k/=ks) then
+          if (ipar(k)/=ks) then
 !
             e1=fp(k,ixp);e10=fsp(ks,ixp)
             e2=fp(k,iyp);e20=fsp(ks,iyp)
@@ -605,8 +605,8 @@ module Particles_nbody
 !
 !  Position and velocity diagnostics (per sink particle)
 !
-      do ks=1,nspar
-        if (ldiagnos) then
+      if (ldiagnos) then
+        do ks=1,nspar
           if (lfollow_particle(ks)) then
             do j=1,3
               jpos=j+ixp-1 ; jvel=j+ivpx-1
@@ -619,8 +619,8 @@ module Particles_nbody
                    call sum_par_name(vvspar(1:npar_loc,ks,j),idiag_vvspar(ks,j))
             enddo
           endif
-        endif
-      enddo
+        enddo
+      endif
 !
       if (lfirstcall) lfirstcall=.false.
 !
