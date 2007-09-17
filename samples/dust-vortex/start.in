@@ -1,10 +1,9 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
-! Initialisation parameters for disc run
+! Initialisation parameters for vortex simulation.
 !
 &init_pars
-ip=14
-  cvsid='$Id: start.in,v 1.16 2007-09-17 05:42:34 ajohan Exp $'
+  cvsid='$Id: start.in,v 1.17 2007-09-17 05:44:01 ajohan Exp $'
   Lxyz=+4.0,+8.0,+4.0
   xyz0=-2.0,-4.0,-2.0, 
   bcz = 's','s','a','s','s','s','a','s'
