@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.353 2007-09-14 04:01:40 wlyra Exp $
+! $Id: density.f90,v 1.354 2007-09-17 17:10:54 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -130,7 +130,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.353 2007-09-14 04:01:40 wlyra Exp $")
+           "$Id: density.f90,v 1.354 2007-09-17 17:10:54 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1876,17 +1876,17 @@ module Density
       use Sub, only: get_radial_distance
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: rr_sph,rr_cyl
+      real, dimension(mx) :: rr_sph,rr_cyl
       logical :: lheader
 !
       if (lroot) print*,'setting exponential falling '//&
            'density with e-fold=',r_ref
 !
-      do m=m1,m2
-        do n=n1,n2
-          lheader=lroot.and.(m==m1).and.(n==n1)
+      do m=1,my
+        do n=1,mz
+          lheader=lroot.and.(m==1).and.(n==1)
           call get_radial_distance(rr_sph,rr_cyl)
-          f(l1:l2,m,n,ilnrho) = lnrho0 - rr_cyl/r_ref
+          f(1:mx,m,n,ilnrho) = lnrho0 - rr_cyl/r_ref
         enddo
       enddo
 !
