@@ -1,4 +1,4 @@
-! $Id: messages.f90,v 1.15 2007-09-09 11:43:34 brandenb Exp $
+! $Id: messages.f90,v 1.16 2007-09-17 08:34:14 brandenb Exp $
 !
 !  This module takes care of messages.
 !
@@ -262,11 +262,13 @@ module Messages
       author = cvsid(ia0:ia1)
 !
 !  Construct format
+!  Need to set explicit format below, to avoid problems when the
+!  -i8 compiler option is invoked. Hope that the format i5 is sufficient.
 !
-      write(tmp1,*) rw
-      write(tmp2,*) 6+rw
-      write(tmp3,*) 6+rw+4+vw
-      write(tmp4,*) 6+rw+4+vw+2+aw
+      write(tmp1,'(i5)') rw
+      write(tmp2,'(i5)') 6+rw
+      write(tmp3,'(i5)') 6+rw+4+vw
+      write(tmp4,'(i5)') 6+rw+4+vw+2+aw
 !      fmt = '(A, A' // trim(adjustl(tmp1)) &
       fmt = '(A, A' &
            // ', T' // trim(adjustl(tmp2)) &
