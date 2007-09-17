@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.39 2007-09-17 15:08:47 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.40 2007-09-17 19:57:27 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -134,7 +134,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.39 2007-09-17 15:08:47 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.40 2007-09-17 19:57:27 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -360,7 +360,8 @@ module Entropy
             call rad_equil(f)
 !
         case('blob_hs')
-            print*,'init_lnTT: put a blob in hydrostatic equilibrium: radius_lnTT,ampl_lnTT=',radius_lnTT,ampl_lnTT,center1_x,center1_y,center1_z
+        if (lroot) print*, 'init_lnTT: hydrostatic blob with ', &
+               radius_lnTT, ampl_lnTT, center1_x, center1_y, center1_z
             call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
             call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)
          !
