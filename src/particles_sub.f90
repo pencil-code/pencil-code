@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.117 2007-09-16 22:14:42 wlyra Exp $
+! $Id: particles_sub.f90,v 1.118 2007-09-17 05:38:21 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -609,22 +609,22 @@ module Particles_sub
               do k=npar_loc+1,npar_loc+nmig(i,iproc)
                 if (nygrid/=1) then
                   if (fp(k,iyp)<y0_mig .or. fp(k,iyp)>=y1_mig) then
-                    print*, 'redist_particles_procs: received particle closer '//&
-                         'to ghost point than to physical grid point!'
+                    print*, 'redist_particles_procs: received particle '// &
+                        'closer to ghost point than to physical grid point!'
                     print*, 'redist_particles_procs: ipar, xxp=', &
-                         ipar(k), fp(k,ixp:izp)
+                        ipar(k), fp(k,ixp:izp)
                     print*, 'redist_particles_procs: y0_mig, y1_mig=', &
-                         y0_mig, y1_mig
+                        y0_mig, y1_mig
                   endif
                 endif
                 if (nzgrid/=1) then
                   if (fp(k,izp)<z0_mig .or. fp(k,izp)>=z1_mig) then
-                    print*, 'redist_particles_procs: received particle closer '//&
-                         'to ghost point than to physical grid point!'
+                    print*, 'redist_particles_procs: received particle '// &
+                        'closer to ghost point than to physical grid point!'
                     print*, 'redist_particles_procs: ipar, xxp=', &
-                         ipar(k), fp(k,ixp:izp)
+                        ipar(k), fp(k,ixp:izp)
                     print*, 'redist_particles_procs: z0_mig, z1_mig=', &
-                         z0_mig, z1_mig
+                        z0_mig, z1_mig
                   endif
                 endif
               enddo
