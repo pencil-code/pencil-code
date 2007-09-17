@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.54 2007-09-17 00:27:53 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.55 2007-09-17 02:08:28 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -66,7 +66,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.54 2007-09-17 00:27:53 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.55 2007-09-17 02:08:28 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -533,7 +533,8 @@ module Particles_nbody
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
       real, dimension (npar_loc,nspar,3) :: xxspar,vvspar
-      real :: e1,e2,e3,e10,e20,e30,ev1,ev2,ev3
+      real, dimension (3) :: evr
+      real :: e1,e2,e3,e10,e20,e30
       real :: Omega2,invr3_ij
 !
       integer :: i, k, ks, j, jvel, jpos
@@ -570,13 +571,13 @@ module Particles_nbody
 !  for spherical (r,theta,phi)
 ! 
             if (lcartesian_coords) then
-              ev1 = e1 - e10  
-              ev2 = e2 - e20  
-              ev3 = e3 - e30  
+              evr(1) = e1 - e10  
+              evr(2) = e2 - e20  
+              evr(3) = e3 - e30  
             elseif (lcylindrical_coords) then
-              ev1 = e1 - e10*cos(e2-e20)  
-              ev2 = e10*sin(e2-e20)       
-              ev3 = e3 - e30              
+              evr(1) = e1 - e10*cos(e2-e20)  
+              evr(2) = e10*sin(e2-e20)       
+              evr(3) = e3 - e30              
             elseif (lspherical_coords) then
               call stop_it("dvvp_dt_nbody: not yet implemented for "//&
                    " spherical polars")
@@ -587,7 +588,7 @@ module Particles_nbody
 !  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
 !  invr3_ij = r_ij**(-3)
 !
-            invr3_ij = (ev1**2 + ev2**2 + ev3**2)**(-1.5)
+            invr3_ij = (sum(evr**2))**(-1.5)
 !
 !  Gravitational acceleration: g=g0/|r-r0|^3 (r-r0)
 !  The acceleration is in non-coordinate basis (all have dimension of length). 
@@ -595,9 +596,8 @@ module Particles_nbody
 !  transforming the linear velocities to angular changes 
 !  in position.
 !
-            dfp(k,ivpx) = dfp(k,ivpx) - GNewton*pmass(ks)*invr3_ij*ev1
-            dfp(k,ivpy) = dfp(k,ivpy) - GNewton*pmass(ks)*invr3_ij*ev2
-            dfp(k,ivpz) = dfp(k,ivpz) - GNewton*pmass(ks)*invr3_ij*ev3
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) &
+                 - GNewton*pmass(ks)*invr3_ij*evr(1:3)
 !
           endif
         enddo
