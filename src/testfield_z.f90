@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.11 2007-09-16 06:47:47 brandenb Exp $
+! $Id: testfield_z.f90,v 1.12 2007-09-18 04:44:55 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -148,7 +148,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.11 2007-09-16 06:47:47 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.12 2007-09-18 04:44:55 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -159,12 +159,12 @@ module Testfield
 !
       if (lroot) then
         if (maux == 0) then
-          if (nvar < mvar) write(4,*) ',aa $'
-          if (nvar == mvar) write(4,*) ',aa'
+          if (nvar < mvar) write(4,*) ',aatest $'
+          if (nvar == mvar) write(4,*) ',aatest'
         else
-          write(4,*) ',aa $'
+          write(4,*) ',aatest $'
         endif
-        write(15,*) 'aa = fltarr(mx,my,mz,3)*one'
+        write(15,*) 'aatest = fltarr(mx,my,mz,ntestfield)*one'
       endif
 !
     endsubroutine register_testfield
