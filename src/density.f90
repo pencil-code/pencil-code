@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.354 2007-09-17 17:10:54 wlyra Exp $
+! $Id: density.f90,v 1.355 2007-09-18 12:18:58 bingert Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -130,7 +130,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.354 2007-09-17 17:10:54 wlyra Exp $")
+           "$Id: density.f90,v 1.355 2007-09-18 12:18:58 bingert Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1581,8 +1581,6 @@ module Density
         idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0 
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0
         idiag_rhomxz=0
-        cdiffrho=0.
-        diffrho=0.
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
