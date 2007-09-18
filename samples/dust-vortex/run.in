@@ -3,7 +3,7 @@
 !  Run parameters for vortex simulation.
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.15 2007-09-17 05:44:01 ajohan Exp $',
+  cvsid='$Id: run.in,v 1.16 2007-09-18 05:54:05 ajohan Exp $',
   nt=20, it1=5, isave=500, itorder=3,
   dsnap=10.0, dtmin=1.0e-9, ip=16, 
   lpencil_check=T
@@ -17,14 +17,14 @@
 &grav_run_pars
 /
 &dustvelocity_run_pars
-  nud=8.0e-4, betad=1.0e-3, ldragforce_gas=T
+  nud=2.0e-3, betad=1.0e-3, ldragforce_gas=T
 /
 &dustdensity_run_pars
 /
 &shear_run_pars
 /
 &viscosity_run_pars
-  nu=8.0e-4
+  nu=2.0e-3
 /
 &particles_run_pars
 /
