@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.55 2007-09-17 02:08:28 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.56 2007-09-19 14:58:04 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -26,7 +26,7 @@ module Particles_nbody
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
   real, dimension(nspar) :: pmass=1.,r_smooth,pmass1
   real :: delta_vsp0=1.0,totmass,totmass1
-  character (len=labellen) :: initxxsp='origin', initvvsp='nothing'
+  character (len=labellen) :: initxxsp='random', initvvsp='nothing'
   logical :: lcalc_orbit=.true.,lmigrate=.false.,lnorm=.true.
   logical :: lreset_cm=.false.,lnogravz_star=.false.,lexclude_frozen=.true.
   logical, dimension(nspar) :: lcylindrical_gravity_nbody=.false.
@@ -66,7 +66,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.55 2007-09-17 02:08:28 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.56 2007-09-19 14:58:04 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -103,7 +103,7 @@ module Particles_nbody
 ! because I might want units in which both G and GM are 1. 
 !
       if (GNewton == impossible) then
-         GNewton=G_Newton
+        GNewton=G_Newton
       endif
 !
 ! inverse mass
@@ -219,6 +219,41 @@ module Particles_nbody
           fp(1:nspar,izp)=zsp0
         endif
 !
+      case ('random')
+        if (lroot) print*, 'init_particles_nbody: Random particle positions'
+        do ks=1,nspar
+          if (nxgrid/=1) call random_number_wrapper(position(ks,ixp))
+          if (nygrid/=1) call random_number_wrapper(position(ks,iyp))
+          if (nzgrid/=1) call random_number_wrapper(position(ks,izp))
+        enddo
+
+        if (nxgrid/=1) &
+             position(1:nspar,ixp)=xyz0_loc(1)+position(1:nspar,ixp)*Lxyz_loc(1)
+        if (nygrid/=1) &
+             position(1:nspar,iyp)=xyz0_loc(2)+position(1:nspar,iyp)*Lxyz_loc(2)
+        if (nzgrid/=1) &
+             position(1:nspar,izp)=xyz0_loc(3)+position(1:nspar,izp)*Lxyz_loc(3)
+!
+!  Loop through ipar to allocate the sink particles
+!
+        do k=1,npar_loc
+          if (ipar(k) <= nspar) then
+            print*,'initparticles_nbody. Slot for sink particle ',ipar(k),&
+                 ' was at fp position ',k,' at processor ',iproc
+!
+            fp(k,ixp:izp)=position(ipar(k),1:3)
+!
+! Correct for non-existing dimensions (not really needed, I think)
+!
+            if (nxgrid==1) fp(k,ixp)=x(nghost+1)
+            if (nygrid==1) fp(k,iyp)=y(nghost+1)
+            if (nzgrid==1) fp(k,izp)=z(nghost+1)
+!
+            print*,'initparticles_nbody. Sink particle ',ipar(k),&
+                 ' located at ixp=',fp(k,ixp)
+          endif
+        enddo
+!
       case ('fixed-cm')
 !
 ! Ok, I have the masses and the positions of all sinks except the last, 
@@ -274,20 +309,20 @@ module Particles_nbody
           position(nspar,2)=pi
         endif
 !
-        if (lroot) print*,'pmass =',pmass
-        if (lroot) print*,'position (x)=',position(:,1)
-        if (lroot) print*,'position (y)=',position(:,2)
-        if (lroot) print*,'position (z)=',position(:,3)
+        if (lroot) then 
+          print*,'pmass =',pmass
+          print*,'position (x)=',position(:,1)
+          print*,'position (y)=',position(:,2)
+          print*,'position (z)=',position(:,3)
+        endif
 !
 ! Loop through ipar to allocate the sink particles
 !
         do k=1,npar_loc
           if (ipar(k) <= nspar) then
 !
-            print*,&
-                 'initparticles_nbody. Slot for sink particle ',ipar(k),&
-                 ' was at fp position ',k,&
-                 ' at processor ',iproc
+            print*,'initparticles_nbody. Slot for sink particle ',ipar(k),&
+                 ' was at fp position ',k,' at processor ',iproc
 !
             fp(k,ixp:izp)=position(ipar(k),1:3)
 !
@@ -297,8 +332,7 @@ module Particles_nbody
             if (nygrid==1) fp(k,iyp)=y(nghost+1)
             if (nzgrid==1) fp(k,izp)=z(nghost+1)
 !
-            print*,&
-                 'initparticles_nbody. Sink particle ',ipar(k),&
+            print*,'initparticles_nbody. Sink particle ',ipar(k),&
                  ' located at ixp=',fp(k,ixp)
           endif
         enddo
@@ -535,7 +569,7 @@ module Particles_nbody
       real, dimension (npar_loc,nspar,3) :: xxspar,vvspar
       real, dimension (3) :: evr
       real :: e1,e2,e3,e10,e20,e30
-      real :: Omega2,invr3_ij
+      real :: Omega2,r2_ij,invr3_ij
 !
       integer :: i, k, ks, j, jvel, jpos
       logical :: lheader, lfirstcall=.true.
@@ -588,7 +622,14 @@ module Particles_nbody
 !  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
 !  invr3_ij = r_ij**(-3)
 !
-            invr3_ij = (sum(evr**2))**(-1.5)
+            r2_ij = sum(evr**2)
+            if (r2_ij.eq.0) then
+              print*,"Particle ",ipar(k)," is too close to the massive particle ", ks
+              print*," The resulting acceleration is infinite! Better stop and check"
+              call stop_it("")
+            endif
+!
+            invr3_ij = r2_ij**(-1.5)
 !
 !  Gravitational acceleration: g=g0/|r-r0|^3 (r-r0)
 !  The acceleration is in non-coordinate basis (all have dimension of length). 
