@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.39 2007-05-30 06:52:47 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.40 2007-09-19 14:04:26 wlyra Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -65,7 +65,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.39 2007-05-30 06:52:47 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.40 2007-09-19 14:04:26 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -129,6 +129,25 @@ module Particles
       else
         if (lroot) print*, 'initialize_particles: '// &
             'mass density per particle rhop_tilde=', rhop_tilde
+      endif
+!
+! Calculate mass per particle
+!   mp_tilde*N = eps*Int(rho*dv) = eps*rhom*V
+! where N is the total number of particles, eps is the dust to gas ratio and
+! V is the total volume of the box
+!
+      if (mp_tilde==0.0) then
+        rhom=1.0
+        mp_tilde  =eps_dtog*rhom*box_volume/real(npar)
+        if (lroot) then
+          print*, 'initialize_particles: '// &
+               'dust-to-gas ratio eps_dtog=', eps_dtog
+          print*, 'initialize_particles: '// &
+               'mass per particle mp_tilde=', mp_tilde
+        endif
+      else
+        if (lroot) print*, 'initialize_particles: '// &
+             'mass per particle mp_tilde=', mp_tilde
       endif
 !
 !  Calculate nu_epicycle**2 for gravity.
