@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.56 2007-09-19 14:58:04 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.57 2007-09-19 15:30:21 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -66,7 +66,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.56 2007-09-19 14:58:04 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.57 2007-09-19 15:30:21 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -201,7 +201,10 @@ module Particles_nbody
       intent (in) :: f
       intent (out) :: fp
 !
-!  Initial particle position.
+!  Initialize particles' positions and velocities
+!
+      position(:,1) = xsp0 ; position(:,2) = ysp0 ; position(:,3) = zsp0
+      velocity(:,1) = vspx0; velocity(:,2) = vspy0; velocity(:,3) = vspz0
 !
       select case(initxxsp)
 
@@ -259,8 +262,6 @@ module Particles_nbody
 ! Ok, I have the masses and the positions of all sinks except the last, 
 ! which will have a position determined to fix the center of mass on 
 ! the center of the grid
-!
-        position(:,1) = xsp0; position(:,2) = ysp0; position(:,3) = zsp0
 !
         if (any(ysp0/=0)) call stop_it("init_particles_nbody: not yet generalized"//&
              " for non-zero azimuthal initial position")
