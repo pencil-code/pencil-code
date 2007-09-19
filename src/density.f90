@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.355 2007-09-18 12:18:58 bingert Exp $
+! $Id: density.f90,v 1.356 2007-09-19 17:19:22 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -130,7 +130,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.355 2007-09-18 12:18:58 bingert Exp $")
+           "$Id: density.f90,v 1.356 2007-09-19 17:19:22 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -385,6 +385,7 @@ module Density
       case('blob'); call blob(ampllnrho,f,ilnrho,radius_lnrho,xblob,yblob,zblob)
       case('isothermal'); call isothermal_density(f)
       case('local-isothermal'); call local_isothermal_density(f)
+      case('power-law'); call power_law_disk(f)
       case('galactic-disk'); call exponential_fall(f)
       case('stratification'); call stratification(f,strati_type)
       case('polytropic_simple'); call polytropic_simple(f)
@@ -1893,6 +1894,33 @@ module Density
       call correct_density_gradient(f)
 !
     endsubroutine exponential_fall
+!**********************************************************************
+    subroutine power_law_disk(f)
+!
+! Simple power-law disk
+!
+      use Sub, only: get_radial_distance
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx) :: rr_sph,rr_cyl
+      logical :: lheader
+!
+      if (lroot) print*,'setting density gradient of power '//&
+           'law=',plaw
+!
+      do m=1,my
+        do n=1,mz
+          lheader=lroot.and.(m==1).and.(n==1)
+          call get_radial_distance(rr_sph,rr_cyl)
+          f(:,m,n,ilnrho)=log(rho0)-.5*plaw*log(rr_cyl**2+rsmooth**2)
+        enddo
+      enddo
+!
+! Correct the velocities by this density gradient
+!
+      call correct_density_gradient(f)
+!
+    endsubroutine power_law_disk
 !**********************************************************************
     subroutine polytropic_simple(f)
 !
