@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.345 2007-09-14 04:02:27 wlyra Exp $
+! $Id: sub.f90,v 1.346 2007-09-21 15:14:18 wlyra Exp $
 
 module Sub
 
@@ -5859,7 +5859,7 @@ nameloop: do
 
     end function erfunc_mn
 !***********************************************************************
-    subroutine power_law_mn(const,dist,plaw_,output)
+    subroutine power_law_mn(const,dist,plaw_,output,xref)
 !
 ! General distance power law initial conditions
 !
@@ -5870,9 +5870,12 @@ nameloop: do
 
       real, dimension(:) :: dist,output
       real :: const,plaw_
+      real, optional :: xref
 !
-      intent(in)  :: const,dist,plaw_
+      intent(in)  :: const,plaw_
       intent(out) :: output
+!
+      if (present(xref)) dist=dist/xref
 !
       if (rsmooth.eq.0.) then
         output = const*dist**(-plaw_)
@@ -5882,7 +5885,7 @@ nameloop: do
 !
     endsubroutine power_law_mn
 !***********************************************************************
-    subroutine power_law_pt(const,dist,plaw_,output)
+    subroutine power_law_pt(const,dist,plaw_,output,xref)
 !
 ! General distance power law initial conditions
 !
@@ -5893,9 +5896,12 @@ nameloop: do
 
       real :: dist,output
       real :: const,plaw_
+      real, optional :: xref
 !
-      intent(in)  :: const,dist,plaw_
+      intent(in)  :: const,plaw_
       intent(out) :: output
+!
+      if (present(xref)) dist=dist/xref
 !
       if (rsmooth.eq.0.) then
         output = const*dist**(-plaw_)
