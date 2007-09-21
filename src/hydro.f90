@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.398 2007-09-20 19:50:02 wlyra Exp $
+! $Id: hydro.f90,v 1.399 2007-09-21 13:49:26 steveb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -313,7 +313,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.398 2007-09-20 19:50:02 wlyra Exp $")
+           "$Id: hydro.f90,v 1.399 2007-09-21 13:49:26 steveb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1155,8 +1155,10 @@ use Mpicomm, only: stop_it
 !
       if (Omega/=0.) then
         if (lcylindrical_coords) &
-             call fatal_error("duu_dt","Coriolis force "//&
-             "NOT IMPLEMENTED for cylindrical coordinates")
+!&
+!             call fatal_error("duu_dt","Coriolis force "//&
+!             "NOT IMPLEMENTED for cylindrical coordinates")
+          call coriolis_cylindrical(f,df,p)
         if (lspherical_coords) then
           call coriolis_spherical(f,df,p)
         elseif (lprecession) then
@@ -1864,6 +1866,35 @@ use Mpicomm, only: stop_it
       df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-c2*p%uu(:,2)+s2*p%uu(:,1)
 !
     endsubroutine coriolis_spherical
+!***********************************************************************
+    subroutine coriolis_cylindrical(f,df,p)
+!
+!  coriolis_spherical terms using cylindrical coords
+!
+!  19-sep-07/steveb: coded
+!
+     use Cdata
+     use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real :: c2
+!
+!  info about coriolis_cylindrical term
+!
+      if (headtt) then
+        print*, 'coriolis_cylindrical: Omega=', Omega
+      endif
+!
+!  -2 Omega x u
+!    
+      c2=2*Omega
+      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%lnrho*p%uu(:,2)
+      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)
+!   Note, there is no z-component
+!
+    endsubroutine coriolis_cylindrical
 !***********************************************************************
     subroutine udamping(f,df,p)
 !
