@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.356 2007-09-19 17:19:22 wlyra Exp $
+! $Id: density.f90,v 1.357 2007-09-21 15:15:08 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -130,7 +130,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.356 2007-09-19 17:19:22 wlyra Exp $")
+           "$Id: density.f90,v 1.357 2007-09-21 15:15:08 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1511,10 +1511,10 @@ module Density
                ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
 !
             if (ldensity_nolog) then
-              call power_law(rho_const,p%rcyl_mn(i),plaw,f_target(i))
+              call power_law(rho_const,p%rcyl_mn(i),plaw,f_target(i),r_ref)
 !             f_target=rho_const*p%rcyl_mn1**(plaw)
             else
-              f_target(i)=lnrho_const - plaw*log(p%rcyl_mn(i))
+              f_target(i)=lnrho_const - plaw*log(p%rcyl_mn(i)/r_ref)
             endif
 !
           endif
@@ -1736,18 +1736,26 @@ module Density
       use Sub,     only:get_radial_distance
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx)   :: pot,tmp1,tmp2
+      real, dimension (mx)   :: pot,tmp1,tmp2,cs2
       real, dimension (mx)   :: rr_sph,rr,rr_cyl,lnrhomid!,cs2
-      real                   :: ptlaw
+      real                   :: ptlaw,cp1
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: i
       logical                :: lheader
 !
-      if (lroot) print*,'local isothermal_density: local isothermal stratification'
+      if (lroot) print*,&
+           'local isothermal_density: locally isothermal approximation'
       if (lroot) print*,'Radial stratification with power law=',plaw
 !
+! Set the sound speed
+!
       call get_ptlaw(ptlaw)
-      call set_thermodynamical_quantities(f,iglobal_cs2,iglobal_glnTT,ptlaw)
+      if (llocal_iso) then
+        call set_thermodynamical_quantities&
+             (f,ptlaw,iglobal_cs2,iglobal_glnTT)
+      else
+        call set_thermodynamical_quantities(f,ptlaw)
+      endif
 !
       if (lspherical_coords) call stop_it("local_isothermal_density: "//&
            "not implemented for spherical polar coordinates")
@@ -1755,11 +1763,18 @@ module Density
       do n=1,mz
         do m=1,my
           lheader=lroot.and.(m==1).and.(n==1)
+!
+! midplane density
+!
           call get_radial_distance(rr_sph,rr_cyl)
-          lnrhomid=log(rho0)-.5*plaw*log(rr_cyl**2+rsmooth**2)
+          lnrhomid=log(rho0)-.5*plaw*log((rr_cyl/r_ref)**2+rsmooth**2)
+!
+! vertical stratification, if needed
+!
           if (.not.lcylindrical_gravity) then 
             if (lheader) &
-                 print*,'Adding vertical stratification with scale height h/r=',cs0
+                 print*,"Adding vertical stratification with "//&
+                 "scale height h/r=",cs0
 !
 !  The subroutine "potential" yields the whole gradient.
 !  I want the function that partially derived in 
@@ -1770,7 +1785,19 @@ module Density
             call potential(POT=tmp1,RMN=rr_sph)
             call potential(POT=tmp2,RMN=rr_cyl)
 !
-            pot=-(tmp1-tmp2)/f(:,m,n,iglobal_cs2)
+            if (llocal_iso) then
+              cs2=f(:,m,n,iglobal_cs2)
+            elseif (ltemperature) then
+              call get_cp1(cp1)
+              cs2=exp(f(:,m,n,ilnTT))*gamma1/cp1
+            elseif (lentropy) then
+              call stop_it("local_isothermal_density: cs2 not "//&
+                   "implemented for entropy. Use temperature_idealgas")
+            else
+              cs2=cs20
+            endif
+!
+            pot=-(tmp1-tmp2)/cs2
             if (ltemperature) pot=gamma*pot
           else 
             pot=0.
@@ -1800,13 +1827,16 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: glnrho
       real, dimension (nx)   :: rr_cyl,rr_sph
-      real, dimension (nx)   :: tmp1,tmp2,corr,gslnrho
+      real, dimension (nx)   :: cs2,tmp1,tmp2,corr,gslnrho
       integer,pointer        :: iglobal_cs2
       integer                :: i
-      logical                :: lheader
+      logical                :: lheader,lenergy
+      real                   :: cp1
 !
       if (lroot) print*,'Correcting density gradient on the '//&
            'centrifugal force'
+!
+      lenergy=ltemperature.or.lentropy
 !
       if (llocal_iso) &
            call farray_use_global('cs2',iglobal_cs2)
@@ -1814,6 +1844,8 @@ module Density
       do m=m1,m2
         do n=n1,n2
           lheader=((m==1).and.(n==1).and.lroot)
+!
+! get the density gradient
 !
           call get_radial_distance(rr_sph,rr_cyl)
           call grad(f,ilnrho,glnrho)
@@ -1823,18 +1855,33 @@ module Density
           else
             gslnrho=glnrho(:,1)
           endif
+!
+! get sound speed
+!
           if (llocal_iso) then
-            corr=gslnrho*f(l1:l2,m,n,iglobal_cs2)
+            cs2=f(l1:l2,m,n,iglobal_cs2)
+          elseif (ltemperature) then
+            call get_cp1(cp1)
+            cs2=exp(f(l1:l2,m,n,ilnTT))*gamma1/cp1
+          elseif (lentropy) then
+            call stop_it("local_isothermal_density: cs2 not "//&
+                 "implemented for entropy. Use temperature_idealgas")
           else
-            corr=gslnrho*cs20
+            cs2=cs20
           endif
-
-          if (ltemperature) corr=corr/gamma
+!
+! correct for cartesian or spherical
+!
+          corr=gslnrho*cs2
+          if (lenergy) corr=corr/gamma
 !
           if (lcartesian_coords) then
             tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
           elseif (lcylindrical_coords) then
             tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
+          elseif (lspherical_coords) then
+            call stop_it("correct_density_gradient: not implemented"//&
+                 " for spherical polars")
           endif
 !
           tmp2=tmp1 + corr/rr_cyl
@@ -1912,7 +1959,7 @@ module Density
         do n=1,mz
           lheader=lroot.and.(m==1).and.(n==1)
           call get_radial_distance(rr_sph,rr_cyl)
-          f(:,m,n,ilnrho)=log(rho0)-.5*plaw*log(rr_cyl**2+rsmooth**2)
+          f(:,m,n,ilnrho)=log(rho0)-.5*plaw*log((rr_cyl/r_ref)**2+rsmooth**2)
         enddo
       enddo
 !

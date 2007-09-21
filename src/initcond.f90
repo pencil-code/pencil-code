@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.226 2007-09-15 22:15:08 wlyra Exp $
+! $Id: initcond.f90,v 1.227 2007-09-21 15:15:08 wlyra Exp $
 
 module Initcond
 
@@ -2871,7 +2871,7 @@ module Initcond
     endsubroutine global_shear
 !*************************************************************
     subroutine set_thermodynamical_quantities&
-         (f,iglobal_cs2,iglobal_glnTT,ptlaw)
+         (f,ptlaw,iglobal_cs2,iglobal_glnTT)
 
       use FArrayManager
       use Mpicomm
@@ -2884,42 +2884,74 @@ module Initcond
       real, dimension(mx) :: rr_sph,rr_cyl,cs2
       real, dimension(mx) :: tmp1,tmp2,gslnTT,corr
       real :: cp1,ptlaw
-      integer, pointer :: iglobal_cs2,iglobal_glnTT
+      integer, pointer, optional :: iglobal_cs2,iglobal_glnTT
       integer :: i
-      logical :: lheader
+      logical :: lheader,lenergy
 !
       intent(in)  :: ptlaw
       intent(out) :: f
 !
-      if (ltemperature.and.llocal_iso) then
-        print*,'You are using temperature, but llocal_iso is switched on in'
-        print*,'start.in. Better changed it'
-        call stop_it("")
-      endif
+! Break if llocal_iso is used with entropy or temperature
 !
-      if (gamma/=1.0) then
-        if ((.not. lentropy) .and. (.not. ltemperature)) &
-             call stop_it('local_isothermal_density: '//&
-             'for gamma/=1.0, you need entropy or temperature!')
+      lenergy=ltemperature.or.lentropy
+!
+      if (lenergy.and.llocal_iso) &
+           call stop_it("set_thermodynamical_quantities: You are "//&
+           "evolving the energy, but llocal_iso is switched "//&
+           " on in start.in. Better stop and change it")
+!
+! Break if gamma=1.0 and energy is solved
+!
+      if ((gamma==1.0).and.lenergy) then
+        if (lroot) then
+          print*,"set_thermodynamical_quantities: gamma=1.0 "             //&
+               "means an isothermal disk. You don't need entropy or "     //&
+               "temperature for that. Switch to noentropy instead, which "//&
+               "is a better way of having isothermality. "                //&
+               "If you do not want isothermality but wants to keep a "    //&
+               "static temperature gradient through the simulation, use " //&
+               "noentropy with the switch llocal_iso in init_pars "       //& 
+               "(start.in file) and add the following line "      
+          print*,""
+          print*,"! MGLOBAL CONTRIBUTION 4"
+          print*,""
+          print*,"(containing the '!') to the header of the "//&
+               "src/cparam.local file"
+          call stop_it("")
+        endif
       endif
 !
       if (lroot) print*,'Temperature gradient with power law=',ptlaw
 !
-      nullify(iglobal_cs2)
-      nullify(iglobal_glnTT)
-      call farray_use_global('cs2',iglobal_cs2)
-      call farray_use_global('glnTT',iglobal_glnTT)
+! Get the pointers to the global arrays if needed
+!
+      if (llocal_iso) then
+        nullify(iglobal_cs2)
+        nullify(iglobal_glnTT)
+        call farray_use_global('cs2',iglobal_cs2)
+        call farray_use_global('glnTT',iglobal_glnTT)
+      endif
 !
       call get_cp1(cp1)
 !
       do m=1,my
         do n=1,mz
           lheader=((m==1).and.(n==1).and.lroot)
+!
+!  Calculate the sound speed
+!
           call get_radial_distance(rr_sph,rr_cyl)
-          call power_law(cs20,rr_cyl,ptlaw,cs2)
+          call power_law(cs20,rr_cyl,ptlaw,cs2,r_ref)
+!
+!  Temperature gradient
+!
+          gslnTT=-ptlaw/(rr_cyl**2+rsmooth**2)*rr_cyl
+!
+!  Put in the global arrays if they are to be static
+!  else put in the temperature or entropy array
+!
           if (llocal_iso) then
             f(:,m,n,iglobal_cs2)= cs2
-            gslnTT=-ptlaw/(rr_cyl**2+rsmooth**2)*rr_cyl
             if (lcartesian_coords) then
               f(:,m,n,iglobal_glnTT  )=gslnTT*x   /rr_cyl
               f(:,m,n,iglobal_glnTT+1)=gslnTT*y(m)/rr_cyl
@@ -2934,24 +2966,30 @@ module Initcond
 !
           elseif (ltemperature) then
             f(:,m,n,ilnTT)=log(cs2*cp1/gamma1)
-            !gslnTT=??
+          elseif (lentropy) then
+            call stop_it("set_thermodynamical_variables: Wlad got lazy and "//&
+                 "didn't want to calculate the entropy for the given "//&
+                 "sound speed")
           else
-            print*,"No thermodynamical variable. Choose if you want a "
-            print*,"local thermodynamical approximation (switch llocal_iso=T in"
-            print*,"init_pars and entropy=noentropy on Makefile.local), or if "
-            print*,"you want to compute the temperature directly and evolve it."
-            call stop_it("")
+            call stop_it("No thermodynamical variable. Choose if you want "//&
+                 "a local thermodynamical approximation "//&
+                 "(switch llocal_iso=T init_pars and entropy=noentropy on "//&
+                 "Makefile.local), or if you want to compute the "//&
+                 "temperature directly and evolve it in time.")
           endif
 !
 !  correct for temperature gradient term in the centrifugal force
 !  the density gradient term will be corrected in density
 !
           corr=gslnTT*cs2
-          if (ltemperature) corr=corr/gamma
+          if (lenergy) corr=corr/gamma
           if (lcartesian_coords) then
             tmp1=(f(:,m,n,iux)**2+f(:,m,n,iuy)**2)/rr_cyl**2
           elseif (lcylindrical_coords) then
             tmp1=(f(:,m,n,iuy)/rr_cyl)**2
+          elseif (lspherical_coords) then
+            call stop_it("set_thermodynamical_quantities: not "//&
+                 "implemented for spherical polars")
           endif
           tmp2=tmp1 + corr/rr_cyl
 !
@@ -2980,17 +3018,26 @@ module Initcond
         enddo
       enddo
 !
-      if (associated(iglobal_cs2)) then
-        print*,"Max global cs2 = ",maxval(f(l1:l2,m1:m2,n1:n2,iglobal_cs2))
-        print*,"Sum global cs2 = ",sum(f(l1:l2,m1:m2,n1:n2,iglobal_cs2))
-      endif
-      if (associated(iglobal_glnTT)) then
-        print*,"Max global glnTT(1) = ",maxval(f(l1:l2,m1:m2,n1:n2,iglobal_glnTT))
-        print*,"Sum global glnTT(1) = ",sum(f(l1:l2,m1:m2,n1:n2,iglobal_glnTT))
+      if (llocal_iso) then
+        if (associated(iglobal_cs2)) then
+          print*,"Max global cs2 = ",&
+               maxval(f(l1:l2,m1:m2,n1:n2,iglobal_cs2))
+          print*,"Sum global cs2 = ",&
+               sum(f(l1:l2,m1:m2,n1:n2,iglobal_cs2))
+        endif
+        if (associated(iglobal_glnTT)) then
+          print*,"Max global glnTT(1) = ",&
+               maxval(f(l1:l2,m1:m2,n1:n2,iglobal_glnTT))
+          print*,"Sum global glnTT(1) = ",&
+               sum(f(l1:l2,m1:m2,n1:n2,iglobal_glnTT))
+        endif
       endif
 !
       cs2bot=cs20
       cs2top=cs20
+!
+      if (lroot) &
+           print*,"thermodynamical quantities successfully set"
 !
     endsubroutine set_thermodynamical_quantities
 !*************************************************************
