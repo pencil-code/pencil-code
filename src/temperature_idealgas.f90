@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.40 2007-09-17 19:57:27 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.41 2007-09-21 19:00:32 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -38,8 +38,9 @@ module Entropy
   include 'entropy.h'
 
   interface heatcond_TT ! Overload subroutine `hcond_TT' function
-    module procedure heatcond_TT_2d     ! get 2d-arrays (hcond, dhcond)
     module procedure heatcond_TT_point  ! get one value (hcond, dhcond)
+    module procedure heatcond_TT_1d     ! get 1d-arrays (hcond, dhcond)
+    module procedure heatcond_TT_2d     ! get 2d-arrays (hcond, dhcond)
   end interface
 
   real :: radius_lnTT=0.1,ampl_lnTT=0.,widthlnTT=2*epsi
@@ -134,7 +135,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.40 2007-09-17 19:57:27 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.41 2007-09-21 19:00:32 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -357,7 +358,7 @@ module Entropy
           cs2top=gamma1*f(l1,4,n2,ilnTT)
 !
         case('rad_equil')
-            call rad_equil(f)
+          call rad_equil(f)
 !
         case('blob_hs')
         if (lroot) print*, 'init_lnTT: hydrostatic blob with ', &
@@ -852,39 +853,31 @@ module Entropy
 !
 ! 16-mai-07/gastine+dintrans: radiative diffusion with an arctan
 !  profile for the conductivity
-!  calculate gamma/rho*cp*div(K T*grad lnTT)=
-!    gamma*K/rho*cp*(gradlnTT.gradlnTT + del2ln TT + gradlnTT.gradlnK)
+!  calculate gamma/rho*cp*div(K *grad TT)=
+!    gamma*K/rho*cp*(grad LnK.grad TT + del2 TT)
 !
-      use Sub, only: max_mn_name,dot,del2,multsv,write_zprof
+      use Sub, only: multsv, dot, max_mn_name, write_zprof
       use EquationOfState, only: gamma
 
       real, dimension(mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-      real, dimension(nx) :: arg,hcond,chiT,g1,g2,chix
-      real, dimension (nx,3) :: glnhcond=0.
-      real :: alp
+      real, dimension (nx)   :: hcond, dhcond, g1, chix
+      real, dimension (nx,3) :: gLnhcond=0.
+      type (pencil_case)     :: p
 !
-! todo: must be defined in the namelist (used by rad_equil and _arctan...)
-      alp=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
+      if (.not. ltemperature_nolog) &
+         call fatal_error('calc_heatcond_arctan','only valid for TT')
 !
-      arg=hole_slope*(p%TT-Tbump-hole_width)*(p%TT-Tbump+hole_width)
-      hcond=Kmax+alp*(-pi/2.+atan(arg))
-      chiT=2.*p%TT/hcond*hole_slope*alp*(p%TT-Tbump)/(1.+arg**2)  ! d(ln K)/dT
-!
-      glnhcond(:,3)=chiT*p%glnTT(:,3)
-      call dot(p%glnTT,p%glnTT,g1)
-      call dot(p%glnTT,glnhcond,g2)
-!
-!  Write out hcond z-profile (during first time step only)
-!
-      call write_zprof('hcond',hcond)
-      call write_zprof('glnhcond',glnhcond(:,3))
-      call write_zprof('K_T',chiT)
+      call heatcond_TT(p%TT, hcond, dhcond)
+! must specify the new bottom value of hcond for the 'c1' BC
+      if (n == n1) hcond0=hcond(1) 
+      dhcond=dhcond/hcond
+      call multsv(dhcond, p%glnTT, gLnhcond)
+      call dot(gLnhcond, p%glnTT, g1)
 !
 !  Add heat conduction to RHS of temperature equation
 !
       chix=p%rho1*hcond*p%cp1
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g1+g2+p%del2lnTT)
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g1+p%del2lnTT)
 !
 !  check maximum diffusion from thermal diffusion
 !
@@ -1102,12 +1095,20 @@ module Entropy
 
       implicit none
 
-      real, dimension(mx,my,mz,mfarray) :: finit,f
+      real, dimension(mx,my,mz,mfarray) :: finit, f
 !
       if (hcond0 /= impossible) then
-        call ADI_Kconst(finit,f)
+        if (nx == 1) then
+          call ADI_Kconst_1d(finit,f)
+        else
+          call ADI_Kconst(finit,f)
+        endif
       else
-        call ADI_Kprof(finit,f)
+        if (nx == 1) then
+          call ADI_Kprof_1d(finit,f)
+        else
+          call ADI_Kprof(finit,f)
+        endif
       endif
 !
     end subroutine calc_heatcond_ADI
@@ -1322,14 +1323,15 @@ module Entropy
 !
       call boundary_ADI(f(:,4,:,ilnTT),hcond)
 !
-      call heatcond_TT(f(:,4,:,ilnTT),hcond,dhcond)
+! 19-sep-07/dintrans: useless
+!     call heatcond_TT(f(:,4,:,ilnTT),hcond,dhcond)
 !
     end subroutine ADI_Kprof
 !**************************************************************
     subroutine heatcond_TT_2d(TT,hcond,dhcond)
 !
-! 07-Sep-07/gastine: computed the radiative conductivity hcond(T) and
-! its derivative dhcond=dhcond(T)/dT when the input TT is a 2d-array.
+! 07-Sep-07/gastine: computed 2-D radiative conductivity hcond(T) with
+! its derivative dhcond=dhcond(T)/dT.
 !
       implicit none
 
@@ -1339,17 +1341,28 @@ module Entropy
       hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
       dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !
-! constant hcond for testing purpose
-!
-!     hcond=hcond0 ; dhcond=0.
-!
     end subroutine heatcond_TT_2d
 !**************************************************************
-    subroutine heatcond_TT_point(TT,hcond,dhcond)
+    subroutine heatcond_TT_1d(TT,hcond,dhcond)
 !
-! 07-Sep-07/gastine: computed the radiative conductivity hcond(T) and
-! its derivative dhcond=dhcond(T)/dT when the input TT is a single
-! point.
+! 18-Sep-07/dintrans: computed 1-D radiative conductivity 
+! hcond(T) with its derivative dhcond=dhcond(T)/dT.
+!
+      implicit none
+
+      real, dimension(:)          :: TT, hcond, dhcond
+      real, dimension(size(TT,1)) :: arg
+!
+      arg=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
+      hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
+      dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
+!
+    end subroutine heatcond_TT_1d
+!**************************************************************
+    subroutine heatcond_TT_point(TT, hcond, dhcond)
+!
+! 07-Sep-07/gastine: computed the radiative conductivity hcond(T) 
+! with its derivative dhcond=dhcond(T)/dT at a given temperature.
 !
       implicit none
 
@@ -1358,10 +1371,6 @@ module Entropy
       arg=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
       hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
       dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
-!
-! constant hcond for testing purpose
-!
-!     hcond=hcond0 ; dhcond=0.
 !
     end subroutine heatcond_TT_point
 !**************************************************************
@@ -1382,11 +1391,13 @@ module Entropy
 ! x-direction: periodic
       f_2d(1:l1-1,:)=f_2d(l2i:l2,:)
       f_2d(l2+1:mx,:)=f_2d(l1:l1i,:)
-! z-direction: constant temperature
+! z-direction: always constant temperature at the top and cT or c1 at
+! the bottom
+      f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
+
       select case (bcz1(ilnTT))
         case('cT')
           f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
-          f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
 !
 ! Constant flux at the bottom
         case('c1')
@@ -1399,8 +1410,6 @@ module Entropy
               f_2d(:,n1-i)=f_2d(:,n1+i)+2.*i*dz*Fbot/hcond(l1,n1+i)
             enddo
           endif
-! Constant temperature at the top
-          f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
       endselect
 
     end subroutine boundary_ADI
@@ -1462,4 +1471,140 @@ module Entropy
       return
     end subroutine cyclic
 !***************************************************************
+    subroutine ADI_Kconst_1d(finit,f)
+!
+! 18-sep-07/dintrans: coded
+! Implicit Crank Nicolson scheme in 1-D for a constant K (not 
+! really an ADI but keep the generic name for commodity).
+!
+      use Cdata
+      use Cparam
+      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, get_cp1
+
+      implicit none
+
+      integer :: i, j, jj
+      real, dimension(mx,my,mz,mfarray) :: finit,f
+      real, dimension(mz) :: source, rho, TT
+      real, dimension(nz) :: a, b, c, rhs, work
+      real  :: cp1, dz_2, wz
+!
+      source=(f(4,4,:,ilnTT)-finit(4,4,:,ilnTT))/dt
+      call get_cp1(cp1)
+      dz_2=1./dz**2
+      rho=exp(f(4,4,:,ilnrho))
+      TT=finit(4,4,:,ilnTT)
+!
+      do j=n1,n2
+        wz=dt*gamma*hcond0*cp1/rho(j)
+        jj=j-nghost
+        a(jj)=-wz*dz_2/2.
+        b(jj)=1.+wz*dz_2
+        c(jj)=a(jj)
+!
+        rhs(jj)=TT(j)+wz*dz_2/2.*(TT(j+1)-2.*TT(j)+TT(j-1))+dt*source(j)
+!
+! Always constant temperature at the top
+        b(nz)=1. ; a(nz)=0.
+        rhs(nz)=cs2top/gamma1
+        if (bcz1(ilnTT)=='cT') then
+! Constant temperature at the bottom
+          b(1)=1. ; c(1)=0. 
+          rhs(1)=cs2bot/gamma1
+        else
+! Constant flux at the bottom
+          b(1)=1.  ; c(1)=-1.
+          rhs(1)=dz*Fbot/hcond0
+        endif
+      enddo
+      call tridag(a,b,c,rhs,work,nz)
+      f(4,4,n1:n2,ilnTT)=work
+!
+! Update ghost zones: always constant temperature at the top while
+! T=cte or Flux=cte at the bottom
+!
+      f(:,:,n2+1,ilnTT)=2.*f(:,:,n2,ilnTT)-f(:,:,n2-1,ilnTT)
+      if (bcz1(ilnTT)=='cT') then
+! Constant temperature at the bottom
+        f(:,:,n1-1,ilnTT)=2.*f(:,:,n1,ilnTT)-f(:,:,n1+1,ilnTT)
+      else
+! Constant flux at the bottom
+        do i=1,nghost
+          f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)+2.*i*dz*Fbot/hcond0
+        enddo
+      endif
+!
+    end subroutine ADI_Kconst_1d
+!**************************************************************
+    subroutine ADI_Kprof_1d(finit,f)
+!
+! 18-sep-07/dintrans: coded
+! Implicit 1-D case for a temperature-dependent conductivity K(T).
+! Not really an ADI but keep the generic name for commodity.
+!
+      use Cdata
+      use Cparam
+      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, get_cp1
+
+      implicit none
+
+      integer :: i, j, jj
+      real, dimension(mx,my,mz,mfarray) :: finit,f
+      real, dimension(mz) :: source, rho, TT, hcond, dhcond, arg, hcond1
+      real, dimension(nz) :: a, b, c, rhs, work
+      real  :: cp1, dz_2, wz, hcondp, hcondm
+!
+      source=(f(4,4,:,ilnTT)-finit(4,4,:,ilnTT))/dt
+      call get_cp1(cp1)
+      dz_2=1./dz**2
+      rho=exp(f(4,4,:,ilnrho))
+      TT=finit(4,4,:,ilnTT)
+      call heatcond_TT(TT, hcond, dhcond)
+!
+      do j=n1,n2
+        jj=j-nghost
+        wz=dt*dz_2*gamma*cp1/rho(j)
+        hcondp=hcond(j+1)+hcond(j)
+        hcondm=hcond(j)+hcond(j-1)
+!
+        a(jj)=-wz/4.*(hcondm-dhcond(j-1)*(TT(j)-TT(j-1)))
+        b(jj)=1.-wz/4.*(-hcondp-hcondm+dhcond(j)*(TT(j+1)-2.*TT(j)+TT(j-1)))
+        c(jj)=-wz/4.*(hcondp+dhcond(j+1)*(TT(j+1)-TT(j)))
+!
+        rhs(jj)=wz/2.*(hcondp*(TT(j+1)-TT(j))-hcondm*(TT(j)-TT(j-1))) &
+          +dt*source(j)
+!
+! Always constant temperature at the top: T^(n+1)-T^n = 0
+        b(nz)=1. ; a(nz)=0.
+        rhs(nz)=0.
+        if (bcz1(ilnTT)=='cT') then
+! Constant temperature at the bottom
+          b(1)=1. ; c(1)=0. 
+          rhs(1)=0.
+        else
+! Constant flux at the bottom: d/dz [T^(n+1)-T^n] = 0
+          b(1)=1.  ; c(1)=-1.
+          rhs(1)=0.
+        endif
+      enddo
+      call tridag(a,b,c,rhs,work,nz)
+      f(4,4,n1:n2,ilnTT)=work+TT(n1:n2)
+!
+! Update ghost zones: always constant temperature at the top while
+! T=cte or Flux=cte at the bottom
+      f(:,:,n2+1,ilnTT)=2.*f(:,:,n2,ilnTT)-f(:,:,n2-1,ilnTT)
+      if (bcz1(ilnTT)=='cT') then
+! Constant temperature at the bottom
+        f(:,:,n1-1,ilnTT)=2.*f(:,:,n1,ilnTT)-f(:,:,n1+1,ilnTT)
+      else
+! Constant flux at the bottom: compute new hcond(n1) before
+! use available hcondp and hcondm to save memory
+        call heatcond_TT(f(4,4,n1,ilnTT), hcondp, hcondm)
+        do i=1,nghost
+          f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)+2.*i*dz*Fbot/hcondp
+        enddo
+      endif
+!
+    end subroutine ADI_Kprof_1d
+!**************************************************************
 endmodule Entropy

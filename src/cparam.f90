@@ -1,11 +1,11 @@
-! $Id: cparam.f90,v 1.62 2007-08-11 06:39:52 brandenb Exp $
+! $Id: cparam.f90,v 1.63 2007-09-21 19:00:32 dintrans Exp $
 
 module Cparam
 
 !!!  Parameters
 
 !  (nx,ny,nz) is the size of the computational mesh
-!  The total nmumber of meshpoints is (nx*nprocx,ny*nprocy,nz*nprocz).
+!  The total number of meshpoints is (nx*nprocx,ny*nprocy,nz*nprocz).
 !  The number of ghost zones is NOT counted.
 !
 !  In practice, the user will change the number of cpus (in y and z)
