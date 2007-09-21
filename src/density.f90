@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.357 2007-09-21 15:15:08 wlyra Exp $
+! $Id: density.f90,v 1.358 2007-09-21 16:34:21 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -130,7 +130,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.357 2007-09-21 15:15:08 wlyra Exp $")
+           "$Id: density.f90,v 1.358 2007-09-21 16:34:21 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1741,11 +1741,13 @@ module Density
       real                   :: ptlaw,cp1
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: i
-      logical                :: lheader
+      logical                :: lheader,lenergy
 !
       if (lroot) print*,&
            'local isothermal_density: locally isothermal approximation'
       if (lroot) print*,'Radial stratification with power law=',plaw
+!
+      lenergy=ltemperature.or.lentropy
 !
 ! Set the sound speed
 !
@@ -1798,11 +1800,11 @@ module Density
             endif
 !
             pot=-(tmp1-tmp2)/cs2
-            if (ltemperature) pot=gamma*pot
+            if (lenergy) pot=gamma*pot
           else 
             pot=0.
           endif
-          f(:,m,n,ilnrho) = lnrhomid+pot
+          f(:,m,n,ilnrho) = max(lnrhomid+pot,density_floor)
         enddo
       enddo
 !
