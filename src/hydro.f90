@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.399 2007-09-21 13:49:26 steveb Exp $
+! $Id: hydro.f90,v 1.400 2007-09-21 14:15:55 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -313,7 +313,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.399 2007-09-21 13:49:26 steveb Exp $")
+           "$Id: hydro.f90,v 1.400 2007-09-21 14:15:55 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1154,12 +1154,9 @@ use Mpicomm, only: stop_it
 !  (theta,phi,r) i.e. (south,east,up), in spherical polar coordinates
 !
       if (Omega/=0.) then
-        if (lcylindrical_coords) &
-!&
-!             call fatal_error("duu_dt","Coriolis force "//&
-!             "NOT IMPLEMENTED for cylindrical coordinates")
+        if (lcylindrical_coords) then
           call coriolis_cylindrical(f,df,p)
-        if (lspherical_coords) then
+        elseif (lspherical_coords) then
           call coriolis_spherical(f,df,p)
         elseif (lprecession) then
           call precession(f,df,p)
@@ -1869,7 +1866,10 @@ use Mpicomm, only: stop_it
 !***********************************************************************
     subroutine coriolis_cylindrical(f,df,p)
 !
-!  coriolis_spherical terms using cylindrical coords
+!  Coriolis terms using cylindrical coords
+!  The formulation is the same as in cartesian, but it is better to 
+!  keep it here because precession is not implemented for 
+!  cylindrical coordinates.
 !
 !  19-sep-07/steveb: coded
 !
@@ -1890,8 +1890,9 @@ use Mpicomm, only: stop_it
 !  -2 Omega x u
 !    
       c2=2*Omega
-      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%lnrho*p%uu(:,2)
+      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)
+!
 !   Note, there is no z-component
 !
     endsubroutine coriolis_cylindrical
