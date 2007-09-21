@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.391 2007-09-16 13:40:27 wlyra Exp $
+! $Id: cdata.f90,v 1.392 2007-09-21 15:11:30 wlyra Exp $
 
 module Cdata
 
@@ -57,7 +57,7 @@ module Cdata
   real :: dsnap=100.,d2davg=100.,dvid=0.,dtmin=1.e-6,dtmax=1E37,dspec=impossible
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: rp_int=-impossible,rp_ext=-impossible
-  real :: r_ref=0.,rsmooth=0.,box_volume=1.0
+  real :: r_ref=1.,rsmooth=0.,box_volume=1.0
 
 !
 ! parameters for freezing
@@ -130,6 +130,7 @@ module Cdata
   integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0,ikapparho=0
   integer :: iQrad2=0,ikapparho2=0
   integer :: iFrad=0,iFradx=0,iFrady=0,iFradz=0
+  integer :: iFrad2=0,iFradx2=0,iFrady2=0,iFradz2=0
   integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0, irhop=0
   integer :: nt=1000000,it1=10,it1d=impossible_int
   integer :: it=1,itsub,ix=-1,iy=-1,iz=-1,iz2=-1
