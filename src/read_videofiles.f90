@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.27 2007-09-13 11:17:19 brandenb Exp $
+! $Id: read_videofiles.f90,v 1.28 2007-09-22 07:36:39 brandenb Exp $
 
 !***********************************************************************
       program rvid_box
@@ -8,6 +8,7 @@
 !  rvid_box.pro
 !
 !  13-nov-02/axel: coded
+!  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
 !
       use Cparam
       use General
@@ -111,7 +112,7 @@ print*,'ipz_top,ipz_bottom=',ipz_top,ipz_bottom
         err_timestep=.false.
         lun=10
 !
-!  Top Xy-plane:
+!  Top xy2-plane:
 !  need data where ipz=nprocz-1
 !
       ipz=ipz_top
@@ -120,7 +121,7 @@ print*,'ipz_top,ipz_bottom=',ipz_top,ipz_bottom
         iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
         call chn(iproc,chproc,'rvid_box: top xy')
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
-        call safe_character_assign(file,'/slice_'//trim(field)//'.Xy')
+        call safe_character_assign(file,'/slice_'//trim(field)//'.xy2')
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it<=itdebug) print*,trim(fullname)
         inquire(FILE=trim(fullname),EXIST=exists)

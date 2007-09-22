@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.80 2007-09-13 12:56:23 brandenb Exp $
+! $Id: slices.f90,v 1.81 2007-09-22 07:36:39 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -137,6 +137,7 @@ module Slices
 !
 !  13-nov-02/axel: added more fields, use wslice.
 !  16-aug-04/anders: put slices in the order code-aux-derived
+!  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
 !
       use EquationOfState, only: eoscalc, ilnrho_ss
       use General
@@ -195,7 +196,7 @@ module Slices
           call wslice(path//'lnrho.yz',lnrho_yz,x(ix_loc),ny,nz)
           call wslice(path//'lnrho.xz',lnrho_xz,y(iy_loc),nx,nz)
           call wslice(path//'lnrho.xy',lnrho_xy,z(iz_loc),nx,ny)
-          call wslice(path//'lnrho.Xy',lnrho_xy2,z(iz2_loc),nx,ny)
+          call wslice(path//'lnrho.xy2',lnrho_xy2,z(iz2_loc),nx,ny)
 !
 !  Entropy (code variable)
 !
@@ -207,7 +208,7 @@ module Slices
           call wslice(path//'ss.yz',ss_yz,x(ix_loc),ny,nz)
           call wslice(path//'ss.xz',ss_xz,y(iy_loc),nx,nz)
           call wslice(path//'ss.xy',ss_xy,z(iz_loc),nx,ny)
-          call wslice(path//'ss.Xy',ss_xy2,z(iz2_loc),nx,ny)
+          call wslice(path//'ss.xy2',ss_xy2,z(iz2_loc),nx,ny)
 !
 !  Passive scalar (code variable)
 !
@@ -222,7 +223,7 @@ module Slices
             call wslice(path//'cc.yz',cc_yz,x(ix_loc),ny,nz)
             call wslice(path//'cc.xz',cc_xz,y(iy_loc),nx,nz)
             call wslice(path//'cc.xy',cc_xy,z(iz_loc),nx,ny)
-            call wslice(path//'cc.Xy',cc_xy2,z(iz2_loc),nx,ny)
+            call wslice(path//'cc.xy2',cc_xy2,z(iz2_loc),nx,ny)
           endif
 !
 !  Passive scalar (code variable)
@@ -238,7 +239,7 @@ module Slices
             call wslice(path//'lncc.yz',lncc_yz,x(ix_loc),ny,nz)
             call wslice(path//'lncc.xz',lncc_xz,y(iy_loc),nx,nz)
             call wslice(path//'lncc.xy',lncc_xy,z(iz_loc),nx,ny)
-            call wslice(path//'lncc.Xy',lncc_xy2,z(iz2_loc),nx,ny)
+            call wslice(path//'lncc.xy2',lncc_xy2,z(iz2_loc),nx,ny)
           endif
 !
 !  Dust velocity (code variable)
@@ -269,11 +270,11 @@ module Slices
                 uud_xy(:,:,2),z(iz_loc),nx,ny)
             call wslice(path//'udz'//trim(sindex)//'.xy', &
                 uud_xy(:,:,3),z(iz_loc),nx,ny)
-            call wslice(path//'udx'//trim(sindex)//'.Xy', &
+            call wslice(path//'udx'//trim(sindex)//'.xy2', &
                 uud_xy2(:,:,1),z(iz2_loc),nx,ny)
-            call wslice(path//'udy'//trim(sindex)//'.Xy', &
+            call wslice(path//'udy'//trim(sindex)//'.xy2', &
                 uud_xy2(:,:,2),z(iz2_loc),nx,ny)
-            call wslice(path//'udz'//trim(sindex)//'.Xy', &
+            call wslice(path//'udz'//trim(sindex)//'.xy2', &
                 uud_xy2(:,:,3),z(iz2_loc),nx,ny)
           enddo
 !
@@ -291,7 +292,7 @@ module Slices
               call wslice(path//'nd'//trim(sindex)//'.yz',nd_yz,x(ix_loc),ny,nz)
               call wslice(path//'nd'//trim(sindex)//'.xz',nd_xz,y(iy_loc),nx,nz)
               call wslice(path//'nd'//trim(sindex)//'.xy',nd_xy,z(iz_loc),nx,ny)
-              call wslice(path//'nd'//trim(sindex)//'.Xy',nd_xy2,z(iz2_loc),nx,ny)
+              call wslice(path//'nd'//trim(sindex)//'.xy2',nd_xy2,z(iz2_loc),nx,ny)
             else
               if (lroot) call warning('WVID', &
                   "Can't use 'nd' slices with nodustdensity")
@@ -308,7 +309,7 @@ module Slices
           call wslice(path//'yH.yz',yH_yz,x(ix_loc),ny,nz)
           call wslice(path//'yH.xz',yH_xz,y(iy_loc),nx,nz)
           call wslice(path//'yH.xy',yH_xy,z(iz_loc),nx,ny)
-          call wslice(path//'yH.Xy',yH_xy2,z(iz2_loc),nx,ny)
+          call wslice(path//'yH.xy2',yH_xy2,z(iz2_loc),nx,ny)
 !
 !  Cosmic ray energy density (auxiliary variable)
 !
@@ -320,7 +321,7 @@ module Slices
           call wslice(path//'ecr.yz',ecr_yz,x(ix_loc),ny,nz)
           call wslice(path//'ecr.xz',ecr_xz,y(iy_loc),nx,nz)
           call wslice(path//'ecr.xy',ecr_xy,z(iz_loc),nx,ny)
-          call wslice(path//'ecr.Xy',ecr_xy2,z(iz2_loc),nx,ny)
+          call wslice(path//'ecr.xy2',ecr_xy2,z(iz2_loc),nx,ny)
 !
 !  Temperature (derived variable, sometimes code variable)
 !
@@ -350,7 +351,7 @@ module Slices
           call wslice(path//'lnTT.yz',lnTT_yz,x(ix_loc),ny,nz)
           call wslice(path//'lnTT.xz',lnTT_xz,y(iy_loc),nx,nz)
           call wslice(path//'lnTT.xy',lnTT_xy,z(iz_loc),nx,ny)
-          call wslice(path//'lnTT.Xy',lnTT_xy2,z(iz2_loc),nx,ny)
+          call wslice(path//'lnTT.xy2',lnTT_xy2,z(iz2_loc),nx,ny)
 !
 !  Pressure (derived variable)
 !
@@ -373,7 +374,7 @@ module Slices
           call wslice(path//'pp.yz',pp_yz,x(ix_loc),ny,nz)
           call wslice(path//'pp.xz',pp_xz,y(iy_loc),nx,nz)
           call wslice(path//'pp.xy',pp_xy,z(iz_loc),nx,ny)
-          call wslice(path//'pp.Xy',pp_xy2,z(iz2_loc),nx,ny)
+          call wslice(path//'pp.xy2',pp_xy2,z(iz2_loc),nx,ny)
 !
 !  Dust-to-gas mass ratio (derived variable)
 !
@@ -399,7 +400,7 @@ module Slices
             call wslice(path//'epsd'//trim(sindex)//'.yz',epsd_yz,x(ix_loc),ny,nz)
             call wslice(path//'epsd'//trim(sindex)//'.xz',epsd_xz,y(iy_loc),nx,nz)
             call wslice(path//'epsd'//trim(sindex)//'.xy',epsd_xy,z(iz_loc),nx,ny)
-            call wslice(path//'epsd'//trim(sindex)//'.Xy',epsd_xy2,z(iz2_loc),nx,ny)
+            call wslice(path//'epsd'//trim(sindex)//'.xy2',epsd_xy2,z(iz2_loc),nx,ny)
           enddo
 !
         case default
@@ -436,7 +437,7 @@ module Slices
               call wslice(path//trim(slices%name)//'.xy',slices%xy, &
                                                      z(slices%iz),nx,ny)
             if (associated(slices%xy2)) &
-              call wslice(path//trim(slices%name)//'.Xy',slices%xy2, &
+              call wslice(path//trim(slices%name)//'.xy2',slices%xy2, &
                                                      z(slices%iz2),nx,ny)
             inamev=inamev+1
            else
@@ -451,7 +452,7 @@ module Slices
               call wslice(path//trim(slices%name)//trim(sindex)//'.xy', &
                                        slices%xy, z(slices%iz),nx,ny)
             if (associated(slices%xy2)) &
-              call wslice(path//trim(slices%name)//trim(sindex)//'.Xy', &
+              call wslice(path//trim(slices%name)//trim(sindex)//'.xy2', &
                                        slices%xy2, z(slices%iz2),nx,ny)
           endif
         else
@@ -484,6 +485,7 @@ module Slices
 !
 !  12-nov-02/axel: coded
 !  26-jun-06/anders: moved from Slices
+!  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
 !
       use Cdata, only: t, lwrite_slice_xy2, lwrite_slice_xy, lwrite_slice_xz, lwrite_slice_yz
 !
@@ -494,7 +496,7 @@ module Slices
 !
 !  check whether we want to write a slice on this processor
 !
-      if ( (lwrite_slice_xy2.and.index(filename,'Xy')>0) .or. &
+      if ( (lwrite_slice_xy2.and.index(filename,'xy2')>0) .or. &
            (lwrite_slice_xy .and.index(filename,'xy')>0) .or. &
            (lwrite_slice_xz .and.index(filename,'xz')>0) .or. &
            (lwrite_slice_yz .and.index(filename,'yz')>0) ) then
