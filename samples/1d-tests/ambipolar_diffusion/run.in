@@ -3,12 +3,15 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2007-08-15 16:48:32 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.2 2007-09-22 13:57:35 wlyra Exp $',
   nt=100, it1=5, isave=100, itorder=3, ialive=1
   dsnap=1.0
   cdt=0.4,
   cdtv=0.3, 
   dtmin=1e-6,
+!  
+  lpencil_check=T
+!
 /
 &eos_run_pars
 /

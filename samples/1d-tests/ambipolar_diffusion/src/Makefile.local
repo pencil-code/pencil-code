@@ -21,3 +21,5 @@ SHEAR     = noshear
 
 NEUTRALDENSITY  = neutraldensity
 NEUTRALVELOCITY = neutralvelocity
+
+REAL_PRECISION = double
