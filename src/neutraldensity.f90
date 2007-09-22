@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.12 2007-09-03 09:57:55 wlyra Exp $
+! $Id: neutraldensity.f90,v 1.13 2007-09-22 13:56:54 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -106,7 +106,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.12 2007-09-03 09:57:55 wlyra Exp $")
+           "$Id: neutraldensity.f90,v 1.13 2007-09-22 13:56:54 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -366,10 +366,19 @@ module NeutralDensity
 !
       use Cdata
 !
-      if (ldensity_nolog) lpenc_requested(i_rhon)=.true.
+!  always needed for ionization and recombination
+!      
+      lpenc_requested(i_rho)  =.true.
+      lpenc_requested(i_rhon) =.true.
+!
+      if (.not.lneutraldensity_nolog) then
+        lpenc_requested(i_rho1) =.true.
+        lpenc_requested(i_rhon1)=.true.
+      endif
+!
       if (lcontinuity_neutral) then
         lpenc_requested(i_divun)=.true.
-        if (ldensity_nolog) then
+        if (lneutraldensity_nolog) then
           lpenc_requested(i_ungrhon)=.true.
         else
           lpenc_requested(i_unglnrhon)=.true.
@@ -378,7 +387,7 @@ module NeutralDensity
       if (ldiffn_shock) then
         lpenc_requested(i_shock)=.true.
         lpenc_requested(i_gshock)=.true.
-        if (ldensity_nolog) then
+        if (lneutraldensity_nolog) then
           lpenc_requested(i_grhon)=.true.
           lpenc_requested(i_del2rhon)=.true.
         else
@@ -388,7 +397,7 @@ module NeutralDensity
         endif
       endif
       if (ldiffn_normal) then
-        if (ldensity_nolog) then
+        if (lneutraldensity_nolog) then
           lpenc_requested(i_del2rhon)=.true.
         else
           lpenc_requested(i_glnrhon2)=.true.
@@ -396,7 +405,7 @@ module NeutralDensity
         endif
       endif
       if (ldiffn_hyper3.or.ldiffn_hyper3_aniso) lpenc_requested(i_del6rhon)=.true.
-      if (ldiffn_hyper3.and..not.ldensity_nolog) lpenc_requested(i_rhon)=.true.
+      if (ldiffn_hyper3.and..not.lneutraldensity_nolog) lpenc_requested(i_rhon)=.true.
       if (ldiffn_hyper3lnrhon) lpenc_requested(i_del6lnrhon)=.true.
 !
       if (lmass_source) lpenc_requested(i_rcyl_mn)=.true.
@@ -410,7 +419,6 @@ module NeutralDensity
            lpenc_diagnos(i_rhon)=.true.
       if (idiag_lnrhon2m/=0) lpenc_diagnos(i_lnrhon)=.true.
       if (idiag_unglnrhonm/=0) lpenc_diagnos(i_unglnrhon)=.true.
-
 !
     endsubroutine pencil_criteria_neutraldensity
 !***********************************************************************
@@ -423,7 +431,7 @@ module NeutralDensity
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (ldensity_nolog) then
+      if (lneutraldensity_nolog) then
         if (lpencil_in(i_rhon1)) lpencil_in(i_rhon)=.true.
       else
         if (lpencil_in(i_rhon)) lpencil_in(i_rhon1)=.true.
@@ -443,7 +451,7 @@ module NeutralDensity
       endif
 !  The pencils glnrhon and grhon come in a bundle.
       if (lpencil_in(i_glnrhon) .and. lpencil_in(i_grhon)) then
-        if (ldensity_nolog) then
+        if (lneutraldensity_nolog) then
           lpencil_in(i_grhon)=.false.
         else
           lpencil_in(i_glnrhon)=.false.
@@ -469,14 +477,14 @@ module NeutralDensity
       intent(inout) :: f,p
 ! lnrhon
       if (lpencil(i_lnrhon)) then
-        if (ldensity_nolog) then
+        if (lneutraldensity_nolog) then
           p%lnrhon=log(f(l1:l2,m,n,ilnrhon))
         else
           p%lnrhon=f(l1:l2,m,n,ilnrhon)
         endif
       endif
 ! rhon1 and rhon
-      if (ldensity_nolog) then
+      if (lneutraldensity_nolog) then
         if (lpencil(i_rhon)) p%rhon=f(l1:l2,m,n,ilnrhon)
         if (lpencil(i_rhon1)) p%rhon1=1.0/p%rhon
       else
@@ -485,7 +493,7 @@ module NeutralDensity
       endif
 ! glnrhon and grhon
       if (lpencil(i_glnrhon).or.lpencil(i_grhon)) then
-        if (ldensity_nolog) then
+        if (lneutraldensity_nolog) then
           call grad(f,ilnrhon,p%grhon)
           if (lpencil(i_glnrhon)) then
             do i=1,3
@@ -503,7 +511,7 @@ module NeutralDensity
       endif
 ! unglnrhon
       if (lpencil(i_unglnrhon)) then
-        if (ldensity_nolog) then
+        if (lneutraldensity_nolog) then
           call dot(p%uun,p%glnrhon,p%unglnrhon)
         else
           call u_dot_grad(f,ilnrhon,p%glnrhon,p%uun,p%unglnrhon,UPWIND=lupw_lnrhon)
@@ -511,7 +519,7 @@ module NeutralDensity
       endif
 ! ungrhon
       if (lpencil(i_ungrhon)) then
-        if (ldensity_nolog) then
+        if (lneutraldensity_nolog) then
           call u_dot_grad(f,ilnrhon,p%grhon,p%uun,p%ungrhon,UPWIND=lupw_rhon)
         else
           call dot(p%uun,p%grhon,p%ungrhon)
@@ -521,7 +529,7 @@ module NeutralDensity
       if (lpencil(i_glnrhon2)) call dot2(p%glnrhon,p%glnrhon2)
 ! del2lnrhon
       if (lpencil(i_del2lnrhon)) then
-        if (ldensity_nolog) then
+        if (lneutraldensity_nolog) then
           if (headtt) then
             call fatal_error('calc_pencils_neutraldensity', &
                              'del2lnrhon not available for non-logarithmic mass density')
@@ -532,7 +540,7 @@ module NeutralDensity
       endif
 ! del2rhon
       if (lpencil(i_del2rhon)) then
-        if (ldensity_nolog) then
+        if (lneutraldensity_nolog) then
           call del2(f,ilnrhon,p%del2rhon)
         else
           if (headtt) then
@@ -543,7 +551,7 @@ module NeutralDensity
       endif
 ! del6rhon
       if (lpencil(i_del6rhon)) then
-        if (ldensity_nolog) then
+        if (lneutraldensity_nolog) then
           call del6(f,ilnrhon,p%del6rhon)
         else
           if (lfirstpoint) then
@@ -564,7 +572,7 @@ module NeutralDensity
       endif
 ! del6lnrhon
       if (lpencil(i_del6lnrhon)) then
-        if (ldensity_nolog) then
+        if (lneutraldensity_nolog) then
           if (headtt) then
             call fatal_error('calc_pencils_neutraldensity', &
                              'del6lnrhon not available for non-logarithmic mass density')

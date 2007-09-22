@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.14 2007-08-31 13:03:30 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.15 2007-09-22 13:56:54 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -131,7 +131,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.14 2007-08-31 13:03:30 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.15 2007-09-22 13:56:54 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -308,20 +308,26 @@ module NeutralVelocity
       if (ladvection_velocity) lpenc_requested(i_ungun)=.true.
       if (ldt) lpenc_requested(i_uun)=.true.
 !
-      lpenc_requested(i_uu)=.true.
-      lpenc_requested(i_rho)=.true.
-      lpenc_requested(i_rhon)=.true.
+      lpenc_requested(i_uu)   =.true.
+      lpenc_requested(i_rho)  =.true.
+      lpenc_requested(i_rhon) =.true.
+      lpenc_requested(i_rho1) =.true.
+      lpenc_requested(i_rhon1)=.true.
 !
       if (any(iviscn=='nun-const')) then
-         lpenc_requested(i_snij)=.true.
-         lpenc_requested(i_glnrhon)=.true.
+         !lpenc_requested(i_snij)=.true.
+         !lpenc_requested(i_glnrhon)=.true.
          lpenc_requested(i_del2un)=.true.
          lpenc_requested(i_snglnrhon)=.true.
          lpenc_requested(i_graddivun)=.true.
        endif
        if (any(iviscn=='hyper3_nun-const')) then
-          !lpenc_requested(i_uij5)=.true.
+          lpenc_requested(i_del6un)=.true.
           lpenc_requested(i_glnrhon)=.true.
+       endif
+       if (any(iviscn=='rhon_nun-const')) then
+          lpenc_requested(i_del2un)=.true.
+          lpenc_requested(i_graddivun)=.true.
        endif
 !
        if (lpressuregradient) &
@@ -422,7 +428,7 @@ module NeutralVelocity
         call u_dot_grad(f,iuun,p%unij,p%uun,p%ungun,UPWIND=lupw_uun)
       endif
 ! del6un
-      if (lpencil(i_del6u)) call del6v(f,iuun,p%del6un)
+      if (lpencil(i_del6un)) call del6v(f,iuun,p%del6un)
 ! del2un
 ! graddivun
       if (lpencil(i_del2un)) then
@@ -764,7 +770,7 @@ module NeutralVelocity
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: fvisc,unij5glnrhon
-      real, dimension(nx) :: murho1,diffus_total
+      real, dimension(nx) :: munrhon1,diffus_total
       integer :: i,j
       type (pencil_case) :: p
 !
@@ -777,18 +783,18 @@ module NeutralVelocity
       do j=1,ninit
          select case (iviscn(j))
 !
-         case('rho_nun-const') 
+         case('rhon_nun-const') 
 !
 !  viscous force: mu/rho*(del2u+graddivu/3)
 !  -- the correct expression for rho*nu=const
 !
-            if (headtt) print*,'Viscous force (neutral):  mu/rhon*(del2un+graddivun/3)'
-            murho1=nun*p%rhon1  !(=mu/rhon)
+            if (headtt) print*,'Viscous force (neutral):  mun/rhon*(del2un+graddivun/3)'
+            munrhon1=nun*p%rhon1  !(=mun/rhon)
             do i=1,3
-               fvisc(:,i)=fvisc(:,i)+murho1*(p%del2un(:,i)+1./3.*p%graddivun(:,i))
+               fvisc(:,i)=fvisc(:,i)+munrhon1*(p%del2un(:,i)+1./3.*p%graddivun(:,i))
             enddo
             !if (lpencil(i_visc_heat)) visc_heat=visc_heat + 2*nun*p%snij2*p%rhon1
-            if (lfirst.and.ldt) diffus_nun=diffus_nun+murho1*dxyz_2
+            if (lfirst.and.ldt) diffus_nun=diffus_nun+munrhon1*dxyz_2
 
          case('nun-const')
 !
