@@ -9,7 +9,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,TRUEPNG=png_truecolor,tmin=tmin,$
                nsmooth=nsmooth, textsize=textsize, $
                _extra=_extra
 ;
-; $Id: rvid_plane.pro,v 1.30 2007-08-03 09:53:26 ajohan Exp $
+; $Id: rvid_plane.pro,v 1.31 2007-09-22 07:32:42 brandenb Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -92,6 +92,7 @@ if (n_elements(proc) ne 0) then begin
   file_slice=datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
 endif else begin
   file_slice=datadir+'/slice_'+field+'.'+extension
+  print,'file_slice=',file_slice
 endelse
 ;
 if (keyword_set(shell)) then begin
@@ -182,7 +183,7 @@ if (keyword_set(shell)) then begin
   ;     hardwired into boxbotex_scl, also.
   ix=mx/2 & iy=my/2 & iz=mz/2 & iz2=iz
   if extension eq 'xy' then rrxy =rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz)
-  if extension eq 'Xy' then rrxy2=rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz2)
+  if extension eq 'xy2' then rrxy2=rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz2)
   if extension eq 'xz' then rrxz =rr(nghostx:mx-nghostx-1,iy,nghostz:mz-nghostz-1)
   if extension eq 'yz' then rryz =rr(ix,nghosty:my-nghosty-1,nghostz:mz-nghostz-1)
   ;
@@ -191,7 +192,7 @@ endif
 t=zero & islice=0
 ;
 if (extension eq 'xy') then plane=fltarr(nx,ny)*one
-if (extension eq 'Xy') then plane=fltarr(nx,ny)*one
+if (extension eq 'xy2') then plane=fltarr(nx,ny)*one
 if (extension eq 'xz') then plane=fltarr(nx,nz)*one
 if (extension eq 'yz') then plane=fltarr(ny,nz)*one
 size_plane=size(plane)
@@ -319,7 +320,7 @@ while (not eof(1)) do begin
       indxy=where(zrr lt r_int or zrr gt r_ext)
       plane2(indxy)=white
     endif
-    if (extension eq 'Xy') then begin
+    if (extension eq 'xy2') then begin
       zrr2 = rebinbox(reform(rrxy2,nx,ny),zoom)
       indxy2=where(zrr2 lt r_int or zrr2 gt r_ext)
       plane2(indxy2)=white
