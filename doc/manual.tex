@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.org)
-%%  CVS: $Id: manual.tex,v 1.375 2007-09-17 09:40:32 dintrans Exp $
+%%  CVS: $Id: manual.tex,v 1.376 2007-09-22 15:46:12 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2007-09-17 09:40:32 $ $,~ $ $Revision: 1.375 $ $}
+%\date{$ $Date: 2007-09-22 15:46:12 $ $,~ $ $Revision: 1.376 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2007-09-17 09:40:32 $ $,~ $ $Revision: 1.375 $ $}\\
+  \emph{$ $Date: 2007-09-22 15:46:12 $ $,~ $ $Revision: 1.376 $ $}\\
   \url{http://www.nordita.org/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -5328,14 +5328,28 @@ is usually the easiest way to proceed.  In short the most important rules are:
 tab character is an extension to the Fortran standard)
 \item code in any delimited block, e.g. if statements, do loops, subroutines 
 etc., is indented be precisely 2 spaces.
+E.g.
+\begin{Verbatim}
+  if (lcylindrical) then
+    call stop_it("del2fjv not implemented")
+  endif
+\end{Verbatim}
+\item continuation lines (i.e.~the continuation part of a logical line
+  that is split using the \& sign) are indented by 4 spaces.
+  E.g.~(note the difference from the previous example)
+\begin{Verbatim}
+  if (lcylindrical) &
+      call stop_it("del2fjv not implemented")
+  [...]
+\end{Verbatim}
 \item in general all comments are placed on their own lines with the '!' 
 appearing in the first column. 
 \item all subroutine/functions begin with a standard comment block describing
 what they do, when and by whom they were created and when and by whom any
 non-trivial modifications were made.
-\item lines longer that 78 characters should be explicitly wrapped, unless
-there is a block of longer lines that can only be read easily when they are
-not wrapped.
+\item lines longer that 78 characters should be explicitly wrapped using
+  the \& character, unless there is a block of longer lines that can only
+  be read easily when they are not wrapped.
 \end{itemize}
 
 These and other issues are discussed in more depth and with examples in 
@@ -5818,7 +5832,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2007-09-17 09:40:32 $ $,~ $ $Revision: 1.375 $ $}
+  \hfill\normalsize\rm$ $Date: 2007-09-22 15:46:12 $ $,~ $ $Revision: 1.376 $ $}
 
 \section{Timings}
 
@@ -9156,7 +9170,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.375 2007-09-17 09:40:32 dintrans Exp $ $}
+$ $Id: manual.tex,v 1.376 2007-09-22 15:46:12 dobler Exp $ $}
 
 
 \end{document}
