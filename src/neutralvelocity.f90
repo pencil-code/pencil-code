@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.15 2007-09-22 13:56:54 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.16 2007-09-22 13:59:57 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -131,7 +131,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.15 2007-09-22 13:56:54 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.16 2007-09-22 13:59:57 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -760,7 +760,7 @@ module NeutralVelocity
 !***********************************************************************
     subroutine calc_viscous_force_neutral(df,p)
 !
-!  DOCUMENT ME!!
+!  calculate viscous force term for right hand side of momentum equation
 !
 !  28-feb-07/wlad: coded
 !
