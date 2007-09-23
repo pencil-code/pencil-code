@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.60 2007-08-14 01:14:21 dobler Exp $
+! $Id: general.f90,v 1.61 2007-09-23 09:14:32 wlyra Exp $
 
 module General
 
@@ -792,13 +792,13 @@ module General
       u(1)=r(1)/bet
       do j=2,n
          gam(j)=c(j-1)/bet
-         bet=b(j)-a(j-1)*gam(j)
+         bet=b(j)-a(j)*gam(j)
          if (bet.eq.0.) then
             print*,'tridag: Error at code stage 2'
             if (present(err)) err=.true.
             return
          endif
-         u(j)=(r(j)-a(j-1)*u(j-1))/bet
+         u(j)=(r(j)-a(j)*u(j-1))/bet
       end do
       do j=n-1,1,-1
          u(j)=u(j)-gam(j+1)*u(j+1)
@@ -832,13 +832,13 @@ module General
       u(1)=r(1)/bet
       do j=2,n
          gam(j)=c(j-1)/bet
-         bet=b(j)-a(j-1)*gam(j)
+         bet=b(j)-a(j)*gam(j)
          if (bet.eq.0.) then
             print*,'tridag_double: Error at code stage 2'
             if (present(err)) err=.true.
             return
          endif
-         u(j)=(r(j)-a(j-1)*u(j-1))/bet
+         u(j)=(r(j)-a(j)*u(j-1))/bet
       end do
       do j=n-1,1,-1
          u(j)=u(j)-gam(j+1)*u(j+1)
