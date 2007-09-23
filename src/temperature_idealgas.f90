@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.41 2007-09-21 19:00:32 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.42 2007-09-23 13:16:46 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -135,7 +135,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.41 2007-09-21 19:00:32 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.42 2007-09-23 13:16:46 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1128,6 +1128,7 @@ module Entropy
       use Cdata
       use Cparam
       use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, get_cp1
+      use General, only: tridag
 
       implicit none
 
@@ -1197,7 +1198,7 @@ module Entropy
          rhsz(1)=dz*Fbot/hcond0
       endselect
 !
-        call tridag(az,bz,cz,rhsz,workz,nz)
+        call tridag(az,bz,cz,rhsz,workz)
         f(i,4,n1:n2,ilnTT)=workz(1:nz)
       enddo
 !
@@ -1221,6 +1222,7 @@ module Entropy
       use Cdata
       use Cparam
       use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, get_cp1
+      use General, only: tridag
 
       implicit none
 
@@ -1315,7 +1317,7 @@ module Entropy
           rhsz(1)=0.
        endselect
 !
-       call tridag(az,bz,cz,rhsz,workz,nz)
+       call tridag(az,bz,cz,rhsz,workz)
        val(i,n1:n2)=workz(1:nz)
       enddo
 !
@@ -1414,39 +1416,17 @@ module Entropy
 
     end subroutine boundary_ADI
 !**************************************************************
-    subroutine tridag(a,b,c,r,u,n)
-
-      integer :: j,n
-      integer, parameter :: NMAX=500
-      real    :: bet
-      real, dimension(n) :: a,b,c,r,u
-      real, dimension(NMAX) :: gam
-!
-      if(b(1).eq.0.) pause 'tridag: rewrite equations'
-      bet=b(1)
-      u(1)=r(1)/bet
-      do 11 j=2,n
-        gam(j)=c(j-1)/bet
-        bet=b(j)-a(j)*gam(j)
-        if(bet.eq.0.) pause 'tridag failed'
-        u(j)=(r(j)-a(j)*u(j-1))/bet
-11    continue
-      do 12 j=n-1,1,-1
-        u(j)=u(j)-gam(j+1)*u(j+1)
-12    continue
-!
-      return
-    end subroutine tridag
-!**************************************************************
     subroutine cyclic(a,b,c,alpha,beta,r,x,n)
+!
+      use General, only: tridag
 !
       implicit none
 !
       integer :: i,n
       integer, parameter    :: NMAX=500
       real    :: alpha, beta,gamma,fact      
-      real, dimension(n)    :: a,b,c,r,x
-      real, dimension(NMAX) :: bb,u,z
+      real, dimension(n)    :: a,b,c,r,x,bb,u,z
+!     real, dimension(NMAX) :: bb,u,z
 !
       if(n.le.2)pause 'n too small in cyclic'
       if(n.gt.NMAX)pause 'NMAX too small in cyclic'
@@ -1456,13 +1436,13 @@ module Entropy
       do 11 i=2,n-1
         bb(i)=b(i)
 11    continue
-      call tridag(a,bb,c,r,x,n)
+      call tridag(a,bb,c,r,x)
       u(1)=gamma
       u(n)=alpha
       do 12 i=2,n-1
         u(i)=0.
 12    continue
-      call tridag(a,bb,c,u,z,n)
+      call tridag(a,bb,c,u,z)
       fact=(x(1)+beta*x(n)/gamma)/(1.+z(1)+beta*z(n)/gamma)
       do 13 i=1,n
         x(i)=x(i)-fact*z(i)
@@ -1480,6 +1460,7 @@ module Entropy
       use Cdata
       use Cparam
       use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, get_cp1
+      use General, only: tridag
 
       implicit none
 
@@ -1517,7 +1498,7 @@ module Entropy
           rhs(1)=dz*Fbot/hcond0
         endif
       enddo
-      call tridag(a,b,c,rhs,work,nz)
+      call tridag(a,b,c,rhs,work)
       f(4,4,n1:n2,ilnTT)=work
 !
 ! Update ghost zones: always constant temperature at the top while
@@ -1545,6 +1526,7 @@ module Entropy
       use Cdata
       use Cparam
       use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, get_cp1
+      use General, only: tridag
 
       implicit none
 
@@ -1587,7 +1569,7 @@ module Entropy
           rhs(1)=0.
         endif
       enddo
-      call tridag(a,b,c,rhs,work,nz)
+      call tridag(a,b,c,rhs,work)
       f(4,4,n1:n2,ilnTT)=work+TT(n1:n2)
 !
 ! Update ghost zones: always constant temperature at the top while
