@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.64 2007-09-06 09:27:18 ajohan Exp $
+#  $Id: mkdatadir,v 1.65 2007-09-23 07:47:08 brandenb Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -123,17 +123,18 @@ else if ($hn =~ nunatak* ) then
 else if ($hn =~ aida25 ) then
   set str='s/home/var\/tmp/g'
 else
-  #set str='s/home/var\/tmp/g'
+  #
+  #  set the default to empty string (to make local data directory; see below)
+  #
   set str=''
 endif
 #
 if ("$str" == '') then
   #
-  #  alternatively, make a local directory in run directory
+  #  by default, make a local directory in the run directory
   #
-  if ($hn =~ n0) then
-    mkdir data
-  endif
+  echo "... in the current run directory"
+  mkdir data
 else
   #
   #  make and link to scatch disk
@@ -149,12 +150,16 @@ else
     mkdir -p `cat .scr`
   endif
   ln -s `cat .scr` data
-  #Tidy up temporary files
+  #
+  #  Tidy up temporary files
+  #
   rm -f .scr .tmp
 endif
-
-#For certain people who like it like that... Create a default .cvsignore file in the data directory
+#
+#  For certain people who like it like that...
+#  Create a default .cvsignore file in the data directory
+#
 if (($USER =~ mee) || ($USER =~ n7026413) || ($USER =~ hpeukue2)) then
   ln -s $PENCIL_HOME/src/data.cvsignore data/.cvsignore
 endif
-
+#
