@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.61 2007-09-23 09:14:32 wlyra Exp $
+! $Id: general.f90,v 1.62 2007-09-24 07:50:15 wlyra Exp $
 
 module General
 
@@ -847,9 +847,10 @@ module General
 !***********************************************************************
     subroutine spline(arrx,arry,x2,S,psize1,psize2,err)
 !
-! Interpolates in x2 a natural cubic spline with knots defined by the 1d
-! arrays arrx and arry
-! 25-03-05/wlad : coded
+!  Interpolates in x2 a natural cubic spline with knots defined by the 1d
+!  arrays arrx and arry
+!
+!  25-mar-05/wlad : coded
 !
       integer, intent(in) :: psize1,psize2
       integer :: i,j,ct1,ct2
@@ -875,11 +876,11 @@ module General
 ! Breaks if x is not monotonically increasing
 !
       do i=1,ct1-1
-         if (arrx(i+1).le.arrx(i)) then
-            print*,'spline x:y in x2:y2 : vector x is not monotonically increasing'
-            if (present(err)) err=.true.
-            return
-         endif
+        if (arrx(i+1).le.arrx(i)) then
+          print*,'spline x:y in x2:y2 : vector x is not monotonically increasing'
+          if (present(err)) err=.true.
+          return
+        endif
       enddo
 !
 ! step h
