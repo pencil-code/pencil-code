@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.214 2007-09-05 09:11:23 pkapyla Exp $
+# $Id: getconf.csh,v 1.215 2007-09-24 21:04:25 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -941,7 +941,7 @@ else if ($hn =~ rio* || $hn =~ pia*) then
       set local_disc = 0
       set one_local_disc = 1
 #    endif
-    set mpirun = /afs/ipp/amd64_sles9/soft/mvapich/mvapich2-0.9.5/f95i.9.1/bin/mpiexec
+    set mpirun = /afs/ipp/amd64_sles9/soft/mvapich/mvapich2-0.9.8-opteron-x/f95i.9.1/bin/mpirun
     set nodelist=`cat $TMPDIR/machines`
     echo $nodelist
     setenv SSH 'ssh -x'
