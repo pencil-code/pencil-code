@@ -1,4 +1,4 @@
-! $Id: radiation_nongrey.f90,v 1.4 2007-05-18 19:15:42 wlyra Exp $
+! $Id: radiation_nongrey.f90,v 1.5 2007-09-24 10:24:49 wlyra Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -8,7 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 5
+! MAUX CONTRIBUTION 10
 !
 !***************************************************************
 
@@ -218,7 +218,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_nongrey.f90,v 1.4 2007-05-18 19:15:42 wlyra Exp $")
+           "$Id: radiation_nongrey.f90,v 1.5 2007-09-24 10:24:49 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1337,12 +1337,17 @@ module Radiation
       endif
 !
 !  Set intensity equal to a pre-defined radially variable incoming intensity
+!  The stellar flux falls with the r^2 law and in addition
+!  the angle recipe accounts for the effect that the flaring of the disk
+!  has on the intercepted stellar radiation, based on Chiang & Goldreich '97
+!  The factor is 0.5*0.05*r[AU]^(2/7), valid for 0.4 to 84 AU,
+!  where 0.5 comes in because only half the star is seen 
 !
       if (bc_ray_z=='Fr') then
         rad = x
         rau=rad*unit_length/AU_cgs
         angle_recipe=0.025*rau**0.286
-        Frad_bound=solar_flux*(solar_radius/rad)**2*angle_recipe*.5
+        Frad_bound=solar_flux*(solar_radius/rad)**2*angle_recipe*.25
         do im=1,my
           Qrad0_xy(:,im)=-Srad(:,im,nnstart-nrad)+Frad_bound/(2.*weightn(idir))
         enddo
@@ -1499,28 +1504,13 @@ module Radiation
         enddo
 
       case ('blob')
-        !if (lfirst) then
-        do n=n1-radz,n2+radz
-        do m=m1-rady,m2+rady
-          !call eoscalc(f,mx,lnTT=lnTT)
-          !width=.05
-          do i=l1-radx,l2+radx
-          rrp=sqrt(x(i)**2+y(m)**2+z(n)**2)
-          if (rrp .le. 0.5) then
-            Srad(i,m,n)=98.!solar_flux*(solar_radius/rrp)**2
-          else
-            Srad(i,m,n)=0.0
-          endif
-        enddo
-          !Srad(i,m,n)=arad*57.**4 *(2*pi*width**2)**(-1.5) * exp(-.5*rr**2/width**2) 
-           !&
-              !+amplSrad*spread(spread(exp(-(x/radius_Srad)**2),2,my),3,mz) &
-              !         *spread(spread(exp(-(y/radius_Srad)**2),1,mx),3,mz) &
-              !         *spread(spread(exp(-(z/radius_Srad)**2),1,mx),2,my)
-          !lfirst=.false.
-      enddo
-        enddo
-        !endif
+        if (lfirst) then
+          Srad=Srad_const &
+              +amplSrad*spread(spread(exp(-(x/radius_Srad)**2),2,my),3,mz) &
+                       *spread(spread(exp(-(y/radius_Srad)**2),1,mx),3,mz) &
+                       *spread(spread(exp(-(z/radius_Srad)**2),1,mx),2,my)
+          lfirst=.false.
+        endif
 
       case ('cos')
         if (lfirst) then
@@ -1562,8 +1552,9 @@ module Radiation
       use IO, only: output
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx) :: tmp,lnrho,lnTT,qq,kapparho
-      real :: kappa0, kappa0_cgs,k1,k2
+      real, dimension(mx) :: tmp,lnrho,lnTT,qq,kapparho,lnkappa
+      real :: kappa0, kappa0_cgs,k1,k2,rhoref=1e-9
+      real :: TT7,TT8,TT9,lnTT7,lnTT8,lnTT9,qqedge,a,b !!
       logical, save :: lfirst=.true.
       integer :: i,inu,ikr
 
@@ -1593,8 +1584,12 @@ module Radiation
         enddo
         enddo
 
-      case ('Tsquare') !! Morfill et al. 1985 
-        kappa0_cgs=2e-4 ! 2e-6 in D'Angelo 2003 (wrong!)
+      case ('Tsquare') 
+!
+!  HT: Case of Morfill et al. 1985 
+!      The coefficient is wrongly stated as 2e-6 in D'Angelo et al 2003
+!
+        kappa0_cgs=2e-4 
         kappa0=kappa0_cgs*unit_density*unit_length
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
@@ -1603,8 +1598,12 @@ module Radiation
         enddo
         enddo
 
-      case ('Kramers') !! as in Frank et al. 1992 (D'Angelo 2003)
-         kappa0_cgs=6.6e22 !! (7.5e22 in Prialnik)
+      case ('Kramers') 
+!
+!  HT: Case of Frank et al. 1992, also used in D'Angelo et al 2003
+!      The coefficient is 7.5e22 in Prialnik
+!
+         kappa0_cgs=6.6e22
          kappa0=kappa0_cgs*unit_density*unit_length
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
@@ -1614,6 +1613,9 @@ module Radiation
         enddo
         
       case ('dust-visible', 'dust-infrared')
+!
+!  WL: What's the interval of validity?
+!
         if (unit_temperature/=1) &
              call stop_it("opacity: dust opacity just works for unit_temperature=1")
         ikr=ikapparho-1+inu
@@ -1635,10 +1637,164 @@ module Radiation
           if (opacity_type(inu)=='dust-infrared') &
                f(:,m,n,ikr)=kapparho
           if (opacity_type(inu)=='dust-visible') then
-            !q-recipe of Calvet et al 1991 for the opacity 
-            !increase on visible wavelengths
-            qq=exp(-8.93e-4*exp(lnTT)+3.42)
+!
+!  HT: q-recipe of Calvet et al 1991 for the opacity 
+!      increase on visible wavelengths
+!      valid for 100K < T < 200K, assumed constant for T < 100K
+!      for 200-1400K, qq=exp(-8.93e-4*exp(lnTT)+3.42)
+!
+            qq=min(exp(-1.2e-2*exp(lnTT)+5.8),1e2) 
             f(:,m,n,ikr)=kapparho*qq
+          endif
+        enddo
+        enddo
+
+      case ('dust-visible2', 'dust-infrared2')
+!
+!  HT: extended to higher temperatures, following table in Bell et al. 97
+!
+        if (unit_temperature/=1) &
+             call stop_it("opacity: dust opacity just works for unit_temperature=1")
+        ikr=ikapparho-1+inu
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
+          do i=1,mx
+            lnkappa(i)=1. ! skip?
+            if (exp(lnTT(i)).le.132) then
+              tmp(i)=1e-4*exp(lnTT(i))**(2.1)
+            elseif (exp(lnTT(i)).le.170) then
+              tmp(i)=3.0*exp(lnTT(i))**(-0.01)
+            elseif (exp(lnTT(i)).le.375) then
+              tmp(i)=1e-2*exp(lnTT(i))**(1.1)
+            elseif (exp(lnTT(i)).le.390) then
+              tmp(i)=5e4*exp(lnTT(i))**(-1.5)
+            elseif (exp(lnTT(i)).le.580) then
+              tmp(i)=1e-1*exp(lnTT(i))**(0.7)
+            elseif (exp(lnTT(i)).le.680) then
+              lnkappa(i)=23.94-5.2*lnTT(i)
+              tmp(i)=exp(lnkappa(i))
+!
+! density dependence comes in...
+!
+            elseif (exp(lnTT(i)).le.960) then
+              tmp(i)=2e-2*exp(lnTT(i))**(0.8)
+            elseif (exp(lnTT(i)).le.1570) then
+              lnkappa(i)=187.2+log(rhoref)-24.*lnTT(i)
+              tmp(i)=exp(lnkappa(i))
+            elseif (exp(lnTT(i)).le.3730) then
+              tmp(i)=1e-8*rhoref**(2./3.)*exp(lnTT(i))**(3.0)
+            else
+              lnkappa(i)=-82.9+(log(rhoref)/3.)+(10.*lnTT(i))
+              tmp(i)=exp(lnkappa(i))
+            endif
+          enddo
+          kapparho=exp(lnrho)*tmp
+          if (opacity_type(inu)=='dust-infrared2') &
+               f(:,m,n,ikr)=kapparho
+          if (opacity_type(inu)=='dust-visible2') then
+!
+!  q-recipe of Calvet et al 1991 for the opacity
+!  increase on visible wavelengths
+!  really only valid for 100K<T<1400K
+!
+            do i=1,mx
+              if (exp(lnTT(i)).le.200) then 
+                qq(i)=min(exp(-1.2e-2*exp(lnTT(i))+5.8),1e2)
+              else
+                qq(i)=exp(-8.93e-4*exp(lnTT(i))+3.42)
+              endif
+              f(:,m,n,ikr)=kapparho*qq
+            enddo
+          endif
+        enddo
+        enddo
+
+      case ('dust-visible2rho', 'dust-infrared2rho')
+!
+!  extended to higher temperatures, following table in Bell et al. '97...
+!  now also density dependent
+!
+        if (unit_temperature/=1) &
+             call stop_it("opacity: dust opacity just works for unit_temperature=1")
+        ikr=ikapparho-1+inu
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
+          do i=1,mx
+            lnkappa(i)=1. ! skip?
+            lnTT7=7.706263+(1./24.8)*lnrho(i)+log(unit_density)
+            TT7=exp(lnTT7)
+            lnTT8=7.615675+(1./81.)*lnrho(i)+log(unit_density)
+            TT8=exp(lnTT8)
+            lnTT9=9.210340+(1./21.)*lnrho(i)+log(unit_density)
+            TT9=exp(lnTT9)
+            if (exp(lnTT(i)).le.132) then
+              tmp(i)=1e-4*exp(lnTT(i))**(2.1)
+            elseif (exp(lnTT(i)).le.170) then
+              tmp(i)=3.0*exp(lnTT(i))**(-0.01)
+            elseif (exp(lnTT(i)).le.375) then
+              tmp(i)=1e-2*exp(lnTT(i))**(1.1)
+            elseif (exp(lnTT(i)).le.390) then
+              tmp(i)=5e4*exp(lnTT(i))**(-1.5)
+!
+!  density dependence comes in...
+!
+            elseif (exp(lnTT(i)).le.TT7) then ! check better...
+              if (TT7.ge.580) then
+                if (exp(lnTT(i)).le.580) then
+                  tmp(i)=1e-1*exp(lnTT(i))**(0.7)
+                elseif (TT7.le.680) then
+                  lnkappa(i)=23.94-5.2*lnTT(i)
+                  tmp(i)=exp(lnkappa(i))
+                elseif (exp(lnTT(i)).le.680) then
+                  lnkappa(i)=23.94-5.2*lnTT(i)
+                  tmp(i)=exp(lnkappa(i))
+                else
+                  tmp(i)=2e-2*exp(lnTT(i))**(0.8)
+                endif                
+              else
+                tmp(i)=2e-2*exp(lnTT(i))**(0.8)
+              endif              
+            elseif (exp(lnTT(i)).le.TT8) then
+              lnkappa(i)=187.2+lnrho(i)-24.*lnTT(i)
+              tmp(i)=exp(lnkappa(i))
+            elseif (exp(lnTT(i)).le.TT9) then
+              tmp(i)=1e-8*exp(lnrho(i))**(2./3.)*exp(lnTT(i))**(3.0)
+            else
+              lnkappa(i)=-82.9+(lnrho(i)/3.)+(10.*lnTT(i))
+              tmp(i)=exp(lnkappa(i))
+            endif
+          enddo
+          kapparho=exp(lnrho)*tmp
+          if (opacity_type(inu)=='dust-infrared2rho') &
+               f(:,m,n,ikr)=kapparho
+          if (opacity_type(inu)=='dust-visible2rho') then
+!
+!  q-recipe of Calvet et al 1991 for the opacity
+!  increase on visible wavelengths
+!  steep fall with T to T=200K, then less steep to T=TT7,
+!  where dust sublimates and qq is assumed to drop linearly to 1 at T=TT8
+!
+            do i=1,mx
+              lnTT7=7.706263+(1./24.8)*lnrho(i)+log(unit_density)
+              TT7=exp(lnTT7)
+              lnTT8=7.615675+(1./81.)*lnrho(i)+log(unit_density)
+              TT8=exp(lnTT8)
+              if (exp(lnTT(i)).le.200) then
+                qq(i)=min(exp(-1.2e-2*exp(lnTT(i))+5.8),1e2)
+              elseif (exp(lnTT(i)).le.TT7) then
+                qq(i)=exp(-8.93e-4*exp(lnTT(i))+3.42)
+                if (exp(lnTT(i)).eq.TT7) then
+                  qqedge=qq(i)
+                endif
+              else
+                a=(1.-qqedge)/(TT8-TT7)
+                b=qqedge-a*TT7
+                qq(i)=max(a*exp(lnTT(i))+b,1.)
+              endif
+              f(:,m,n,ikr)=kapparho*qq
+            enddo
           endif
         enddo
         enddo
