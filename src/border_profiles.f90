@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.18 2007-08-30 10:03:23 wlyra Exp $
+! $Id: border_profiles.f90,v 1.19 2007-09-25 08:48:09 ajohan Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -18,7 +18,7 @@ module BorderProfiles
   private
 
   include 'border_profiles.h'
-!:
+!
 !  border_prof_[x-z] could be of size n[x-z], but having the same
 !  length as f() (in the given dimension) gives somehow more natural code.
 !
@@ -37,23 +37,24 @@ module BorderProfiles
 !  border_frac=1 would affect everything between center and border.
 !
       use Cdata
-
+!
       real, dimension(nx) :: xi
       real, dimension(ny) :: eta
       real, dimension(nz) :: zeta
-      real :: border_width,lborder,uborder
+      real :: border_width, lborder, uborder
+      integer :: l
 !
 !  x-direction
 !
       border_prof_x(l1:l2)=1
-
+!
       if ((border_frac_x(1)>0) .and. (.not. lperi(1))) then
         border_width=border_frac_x(1)*Lxyz(1)/2
         lborder=xyz0(1)+border_width
         xi=1-max(lborder-x(l1:l2),0.0)/border_width
         border_prof_x(l1:l2)=min(border_prof_x(l1:l2),xi**2*(3-2*xi))
       endif
-
+!
       if ((border_frac_x(2)>0) .and. (.not. lperi(1))) then
         border_width=border_frac_x(2)*Lxyz(1)/2
         uborder=xyz1(1)-border_width
@@ -64,14 +65,14 @@ module BorderProfiles
 !  y-direction
 !
       border_prof_y(m1:m2)=1
-
+!
       if ((border_frac_y(1)>0) .and. (.not. lperi(2))) then
         border_width=border_frac_y(1)*Lxyz(2)/2
         lborder=xyz0(2)+border_width
         eta=1-max(lborder-y(m1:m2),0.0)/border_width
         border_prof_y(m1:m2)=min(border_prof_y(m1:m2),eta**2*(3-2*eta))
       endif
-
+!
       if ((border_frac_y(2)>0) .and. (.not. lperi(2))) then
         border_width=border_frac_y(2)*Lxyz(2)/2
         uborder=xyz1(2)-border_width
@@ -82,20 +83,40 @@ module BorderProfiles
 !  z-direction
 !
       border_prof_z(n1:n2)=1
-
+!
       if ((border_frac_z(1)>0) .and. (.not. lperi(3))) then
         border_width=border_frac_z(1)*Lxyz(3)/2
         lborder=xyz0(3)+border_width
         zeta=1-max(lborder-z(n1:n2),0.0)/border_width
         border_prof_z(n1:n2)=min(border_prof_z(n1:n2),zeta**2*(3-2*zeta))
       endif
-
+!
       if ((border_frac_z(2)>0) .and. (.not. lperi(3))) then
         border_width=border_frac_z(2)*Lxyz(3)/2
         uborder=xyz1(3)-border_width
         zeta=1-max(z(n1:n2)-uborder,0.0)/border_width
         border_prof_z(n1:n2)=min(border_prof_z(n1:n2),zeta**2*(3-2*zeta))
       endif
+!
+!  Write border profiles to file.
+!
+      open(1,file=trim(directory_snap)//'/border_prof_x.dat')
+        do l=1,mx
+          write(1,'(2f15.6)') x(l), border_prof_x(l)
+        enddo
+      close(1)
+!
+      open(1,file=trim(directory_snap)//'/border_prof_y.dat')
+        do m=1,my
+          write(1,'(2f15.6)') y(m), border_prof_y(m)
+        enddo
+      close(1)
+!
+      open(1,file=trim(directory_snap)//'/border_prof_z.dat')
+        do n=1,mz
+          write(1,'(2f15.6)') z(n), border_prof_z(n)
+        enddo
+      close(1)
 !
     endsubroutine initialize_border_profiles
 !***********************************************************************
