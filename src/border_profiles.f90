@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.19 2007-09-25 08:48:09 ajohan Exp $
+! $Id: border_profiles.f90,v 1.20 2007-09-25 13:56:38 ajohan Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -37,6 +37,7 @@ module BorderProfiles
 !  border_frac=1 would affect everything between center and border.
 !
       use Cdata
+      use Messages
 !
       real, dimension(nx) :: xi
       real, dimension(ny) :: eta
@@ -48,14 +49,18 @@ module BorderProfiles
 !
       border_prof_x(l1:l2)=1
 !
-      if ((border_frac_x(1)>0) .and. (.not. lperi(1))) then
+      if (border_frac_x(1)>0) then
+        if (lperi(1)) call fatal_error('initialize_border_profiles', &
+            'must have lperi(1)=F for border profile in x')
         border_width=border_frac_x(1)*Lxyz(1)/2
         lborder=xyz0(1)+border_width
         xi=1-max(lborder-x(l1:l2),0.0)/border_width
         border_prof_x(l1:l2)=min(border_prof_x(l1:l2),xi**2*(3-2*xi))
       endif
 !
-      if ((border_frac_x(2)>0) .and. (.not. lperi(1))) then
+      if (border_frac_x(2)>0) then
+        if (lperi(1)) call fatal_error('initialize_border_profiles', &
+            'must have lperi(1)=F for border profile in x')
         border_width=border_frac_x(2)*Lxyz(1)/2
         uborder=xyz1(1)-border_width
         xi=1-max(x(l1:l2)-uborder,0.0)/border_width
@@ -66,14 +71,18 @@ module BorderProfiles
 !
       border_prof_y(m1:m2)=1
 !
-      if ((border_frac_y(1)>0) .and. (.not. lperi(2))) then
+      if (border_frac_y(1)>0) then
+        if (lperi(2)) call fatal_error('initialize_border_profiles', &
+            'must have lperi(2)=F for border profile in y')
         border_width=border_frac_y(1)*Lxyz(2)/2
         lborder=xyz0(2)+border_width
         eta=1-max(lborder-y(m1:m2),0.0)/border_width
         border_prof_y(m1:m2)=min(border_prof_y(m1:m2),eta**2*(3-2*eta))
       endif
 !
-      if ((border_frac_y(2)>0) .and. (.not. lperi(2))) then
+      if (border_frac_y(2)>0) then
+        if (lperi(2)) call fatal_error('initialize_border_profiles', &
+            'must have lperi(2)=F for border profile in y')
         border_width=border_frac_y(2)*Lxyz(2)/2
         uborder=xyz1(2)-border_width
         eta=1-max(y(m1:m2)-uborder,0.0)/border_width
@@ -84,14 +93,18 @@ module BorderProfiles
 !
       border_prof_z(n1:n2)=1
 !
-      if ((border_frac_z(1)>0) .and. (.not. lperi(3))) then
+      if (border_frac_z(1)>0) then
+        if (lperi(3)) call fatal_error('initialize_border_profiles', &
+            'must have lperi(3)=F for border profile in z')
         border_width=border_frac_z(1)*Lxyz(3)/2
         lborder=xyz0(3)+border_width
         zeta=1-max(lborder-z(n1:n2),0.0)/border_width
         border_prof_z(n1:n2)=min(border_prof_z(n1:n2),zeta**2*(3-2*zeta))
       endif
 !
-      if ((border_frac_z(2)>0) .and. (.not. lperi(3))) then
+      if (border_frac_z(2)>0) then
+        if (lperi(3)) call fatal_error('initialize_border_profiles', &
+            'must have lperi(3)=F for border profile in z')
         border_width=border_frac_z(2)*Lxyz(3)/2
         uborder=xyz1(3)-border_width
         zeta=1-max(z(n1:n2)-uborder,0.0)/border_width
