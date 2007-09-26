@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.400 2007-09-21 14:15:55 wlyra Exp $
+! $Id: hydro.f90,v 1.401 2007-09-26 10:35:12 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -313,7 +313,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.400 2007-09-21 14:15:55 wlyra Exp $")
+           "$Id: hydro.f90,v 1.401 2007-09-26 10:35:12 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1203,7 +1203,7 @@ use Mpicomm, only: stop_it
 !
 !  ``uu/dx'' for timestep
 !
-      if (lfirst.and.ldt) then 
+      if (lfirst.and.ldt.and.ladvection_velocity) then 
         if      (lspherical_coords) then 
           advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
                    abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
