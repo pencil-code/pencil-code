@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.392 2007-09-21 15:11:30 wlyra Exp $
+! $Id: cdata.f90,v 1.393 2007-09-26 10:45:25 ajohan Exp $
 
 module Cdata
 
@@ -34,9 +34,12 @@ module Cdata
 !
   real, dimension (nx) :: advec_uu,advec_shear,advec_hall,advec_csn2
   real, dimension (nx) :: advec_cs2,advec_va2,advec_crad2,advec_uud,advec_uun
-  real, dimension (nx) :: diffus_pscalar
-  real, dimension (nx) :: diffus_chiral,diffus_diffrho,diffus_cr,diffus_nud,diffus_nun
-  real, dimension (nx) :: diffus_eta,diffus_nu,diffus_chi,diffus_diffnd,diffus_diffrhon
+  real, dimension (nx) :: diffus_nu,diffus_nu2,diffus_nu3
+  real, dimension (nx) :: diffus_diffrho,diffus_diffrho3
+  real, dimension (nx) :: diffus_eta,diffus_eta2,diffus_eta3
+  real, dimension (nx) :: diffus_chi,diffus_diffrhon
+  real, dimension (nx) :: diffus_diffnd,diffus_pscalar
+  real, dimension (nx) :: diffus_chiral,diffus_cr,diffus_nud,diffus_nun
   real, dimension (nx) :: dt1_advec,dt1_diffus,dt1_max
 
   real, parameter :: pi=3.14159265358979324D0
@@ -48,7 +51,8 @@ module Cdata
   real :: dt1_last=0.
   real, dimension (3) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
 
-  real :: cdt=0.4,cdtv=0.25,cdts=1.0,cdtr=1.0
+  real :: cdt=0.4,cdts=1.0,cdtr=1.0
+  real :: cdtv=0.25,cdtv2=0.03,cdtv3=0.01
   real :: cdtvDim
   real :: ddt=0.
 

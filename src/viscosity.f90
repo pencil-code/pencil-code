@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.82 2007-09-14 04:01:40 wlyra Exp $
+! $Id: viscosity.f90,v 1.83 2007-09-26 10:45:25 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -11,7 +11,8 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
-! PENCILS PROVIDED fvisc, diffus_total, visc_heat
+! PENCILS PROVIDED fvisc, diffus_total, diffus_total2, diffus_total3
+! PENCILS PROVIDED visc_heat
 !
 !***************************************************************
 
@@ -104,7 +105,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.82 2007-09-14 04:01:40 wlyra Exp $")
+           "$Id: viscosity.f90,v 1.83 2007-09-26 10:45:25 ajohan Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -514,7 +515,11 @@ module Viscosity
 !
       p%fvisc=0.0
       p%visc_heat=0.0
-      p%diffus_total=0.0
+      if (lfirst.and.ldt) then
+        p%diffus_total=0.0
+        p%diffus_total2=0.0
+        p%diffus_total3=0.0
+      endif
 !
       if (lvisc_simplified) then
 !
@@ -605,14 +610,14 @@ module Viscosity
 !
 !  viscous force: nu_hyper2*de46v (not momentum-conserving)
 !
-        p%fvisc=p%fvisc+nu_hyper2*p%del4u
+        p%fvisc=p%fvisc-nu_hyper2*p%del4u
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
           if (headtt) then
             call warning('calc_pencils_viscosity', 'viscous heating term '// &
               'is not implemented for lvisc_hyper2_simplified')
           endif
         endif
-        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper2*dxyz_4/dxyz_2
+        if (lfirst.and.ldt) p%diffus_total2=p%diffus_total2+nu_hyper2
       endif
 !
       if (lvisc_hyper3_simplified) then
@@ -626,7 +631,7 @@ module Viscosity
               'is not implemented for lvisc_hyper3_simplified')
           endif
         endif
-        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
+        if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
       endif
 !
       if (lvisc_hyper3_cyl) then
@@ -644,8 +649,7 @@ module Viscosity
                    'is not implemented for lvisc_hyper3_cyl')
             endif
           endif
-          if (lfirst.and.ldt) &
-               p%diffus_total=p%diffus_total+nu_hyper3
+          if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
         enddo
       endif
 !
@@ -663,7 +667,7 @@ module Viscosity
               'is not implemented for lvisc_hyper3_rho_nu_const')
           endif
         endif
-        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
+        if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
       endif
 !
       if (lvisc_hyper3_rho_nu_const_symm) then
@@ -682,8 +686,7 @@ module Viscosity
                 .5*nu_hyper3*(p%uij5(:,i,j)+p%uij5(:,j,i))*p%uij(:,i,j)
           enddo; enddo
         endif
-        if (lfirst.and.ldt) &
-            p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
+        if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
       endif
 !
       if (lvisc_hyper3_mu_const_strict) then
@@ -703,8 +706,7 @@ module Viscosity
               'is not implemented for lvisc_hyper3_mu_const_strict')
           endif
         endif
-        if (lfirst.and.ldt) &
-            p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
+        if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
       endif
 !
       if (lvisc_hyper3_nu_const_strict) then
@@ -723,8 +725,7 @@ module Viscosity
               'is not implemented for lvisc_hyper3_nu_const_strict')
           endif
         endif
-        if (lfirst.and.ldt) &
-            p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
+        if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
       endif
 !
       if (lvisc_hyper3_rho_nu_const_aniso) then
@@ -797,7 +798,7 @@ module Viscosity
               'is not implemented for lvisc_hyper3_rho_nu_const_bulk')
           endif
         endif
-        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
+        if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
       endif
 !
       if (lvisc_hyper3_nu_const) then
@@ -811,7 +812,7 @@ module Viscosity
               'is not implemented for lvisc_hyper3_nu_const')
           endif
         endif
-        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
+        if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
       endif
 !
 !  viscous force: Handle damping at the core of SNRs
@@ -954,7 +955,6 @@ module Viscosity
 !
       intent (in) :: p
       intent (inout) :: df 
-
 !
 !  Add viscosity to equation of motion
 !
@@ -962,7 +962,9 @@ module Viscosity
 !
 !  Calculate max total diffusion coefficient for timestep calculation etc.
 !
-      diffus_nu=max(diffus_nu,p%diffus_total*dxyz_2)
+      diffus_nu =max(diffus_nu ,p%diffus_total *dxyz_2)
+      diffus_nu2=max(diffus_nu2,p%diffus_total2*dxyz_4)
+      diffus_nu3=max(diffus_nu3,p%diffus_total3*dxyz_6)
 !
 !  Diagnostic output
 !

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.288 2007-09-07 11:44:56 dintrans Exp $
+! $Id: param_io.f90,v 1.289 2007-09-26 10:45:25 ajohan Exp $
 
 module Param_IO
 
@@ -80,7 +80,8 @@ module Param_IO
  !      ldecelerat_zone,lsurface_zone,lnstar_entropy,lnstar_T_const, &
  !      lnstar_1D,T_disc
   namelist /run_pars/ &
-       cvsid,ip,nt,it1,it1d,dt,cdt,ddt,cdtv,cdts,cdtr,isave,itorder, &
+       cvsid,ip,nt,it1,it1d,dt,cdt,ddt,cdtv,cdtv2,cdtv3,&
+       cdts,cdtr,isave,itorder, &
        dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, max_walltime, &
        dtmax, &
        vel_spec,mag_spec,uxj_spec,vec_spec,ou_spec,ab_spec,fft_switch, &

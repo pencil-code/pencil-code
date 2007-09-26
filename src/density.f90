@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.358 2007-09-21 16:34:21 wlyra Exp $
+! $Id: density.f90,v 1.359 2007-09-26 10:45:25 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -130,7 +130,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.358 2007-09-21 16:34:21 wlyra Exp $")
+           "$Id: density.f90,v 1.359 2007-09-26 10:45:25 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1346,7 +1346,7 @@ module Density
         else
           fdiff = fdiff + diffrho*(p%del2lnrho+p%glnrho2)
         endif
-        if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho*dxyz_2
+        if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho
         if (headtt) print*,'dlnrho_dt: diffrho=', diffrho
       endif
 !
@@ -1358,15 +1358,15 @@ module Density
         else
           fdiff = fdiff + 1/p%rho*diffrho_hyper3*p%del6rho
         endif
-        if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho_hyper3*dxyz_6
+        if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
 !
       if (ldiff_hyper3_cyl) then
         call del6_nodx(f,ilnrho,tmp)
         if (.not.ldensity_nolog) tmp=tmp*p%rho1
-        fdiff = fdiff + diffrho_hyper3*pi4_1*tmp*dxyz_2
-        if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho_hyper3*dxyz_2
+        fdiff = fdiff + diffrho_hyper3*pi4_1*tmp
+        if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
 !
@@ -1374,10 +1374,11 @@ module Density
          if (ldensity_nolog) then
             call del6fj(f,diffrho_hyper3_aniso,ilnrho,tmp)
             fdiff = fdiff + tmp
-            if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+&
-                 diffrho_hyper3_aniso(1)*dx_1(l1:l2)**6 + &
+!  Must divide by dxyz_6 here, because it is multiplied on later.
+            if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+ &
+                 (diffrho_hyper3_aniso(1)*dx_1(l1:l2)**6 + &
                  diffrho_hyper3_aniso(2)*dy_1(m)**6 + &
-                 diffrho_hyper3_aniso(3)*dz_1(n)**6
+                 diffrho_hyper3_aniso(3)*dz_1(n)**6)/dxyz_6
             if (headtt) &
                  print*,'dlnrho_dt: diffrho_hyper3=(Dx,Dy,Dz)=',diffrho_hyper3_aniso
          else
@@ -1389,7 +1390,7 @@ module Density
         if (.not. ldensity_nolog) then
           fdiff = fdiff + diffrho_hyper3*p%del6lnrho
         endif
-        if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho_hyper3*dxyz_6
+        if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
 !
@@ -1406,20 +1407,25 @@ module Density
               diffrho_shock*p%shock*(p%del2lnrho+p%glnrho2) + &
               diffrho_shock*gshockglnrho
         endif
-        if (lfirst.and.ldt) &
-            diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock*dxyz_2
+        if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
         if (headtt) print*,'dlnrho_dt: diffrho_shock=', diffrho_shock
       endif
 !
 !  Add diffusion term to continuity equation
 !
       df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
-      if (headtt.or.ldebug) &
-          print*,'dlnrho_dt: max(diffus_diffrho) =', maxval(diffus_diffrho)
+!
+!  Multiply diffusion coefficient by Nyquist scale.
+!
+      diffus_diffrho =diffus_diffrho *dxyz_2
+      diffus_diffrho3=diffus_diffrho3*dxyz_6
+      if (headtt.or.ldebug) then
+        print*,'dlnrho_dt: max(diffus_diffrho ) =', maxval(diffus_diffrho)
+        print*,'dlnrho_dt: max(diffus_diffrho3) =', maxval(diffus_diffrho3)
+      endif
 !
 !
 !
-!ajwm  Cannot alter special interface!!
       if (lspecial) call special_calc_density(f,df,p)
 !
 !  Apply border profile

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.460 2007-09-14 04:01:40 wlyra Exp $
+! $Id: magnetic.f90,v 1.461 2007-09-26 10:45:25 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -344,7 +344,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.460 2007-09-14 04:01:40 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.461 2007-09-26 10:45:25 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1431,8 +1431,15 @@ module Magnetic
 !
 !  Note: lweyl_gauge=T is so far only implemented for shock resistivity.
 !
+      if (headtt) print*, 'daa_dt: iresistivity=', iresistivity
+!
       fres=0.0
       etatotal=0.0
+      if (lfirst.and.ldt) then
+        diffus_eta =0.0
+        diffus_eta2=0.0
+        diffus_eta3=0.0
+      endif
 !
       if (lresi_eta_const) then
         if (lweyl_gauge) then
@@ -1440,6 +1447,7 @@ module Magnetic
         else
           fres = fres + eta*p%del2a
         endif
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta
         etatotal=etatotal+eta
       endif
 !
@@ -1455,15 +1463,26 @@ module Magnetic
         do j=1,3
           fres(:,j)=fres(:,j)+eta*p%del2a(:,j)-etaSS*p%jj(:,j)
         enddo
-        etatotal=etaSS+eta
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+etaSS+eta
+        etatotal=etatotal+etaSS+eta
+      endif
+!
+      if (lresi_zdep) then 
+        do j=1,3
+          fres(:,j)=fres(:,j)+eta_z(n)*p%del2a(:,j)+geta_z(n,j)*p%diva
+        enddo
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_z(n)
+        etatotal=etatotal+eta_z(n)
       endif
 !
       if (lresi_hyper2) then
         fres=fres+eta_hyper2*p%del4a
+        if (lfirst.and.ldt) diffus_eta2=diffus_eta2+eta_hyper2
       endif
 !
       if (lresi_hyper3) then
         fres=fres+eta_hyper3*p%del6a
+        if (lfirst.and.ldt) diffus_eta3=diffus_eta3+eta_hyper3
       endif
 !
       if (lresi_hyper3_cyl) then
@@ -1472,23 +1491,22 @@ module Magnetic
           call del6_nodx(f,ju,tmp1)
           fres(:,j)=fres(:,j)+eta_hyper3*pi4_1*tmp1*dxyz_2
         enddo
-        etatotal=etatotal+eta_hyper3
+        if (lfirst.and.ldt) diffus_eta3=diffus_eta3+eta_hyper3
       endif
 !
       if (lresi_hyper3_strict) then
         fres=fres+eta_hyper3*f(l1:l2,m,n,ihypres:ihypres+2)
-      endif
-!
-      if (lresi_zdep) then 
-        do j=1,3
-          fres(:,j)=fres(:,j)+eta_z(n)*p%del2a(:,j)+geta_z(n,j)*p%diva
-        enddo
-        etatotal=etatotal + eta_z(n)
+        if (lfirst.and.ldt) diffus_eta3=diffus_eta3+eta_hyper3
       endif
 !
       if (lresi_hyper3_aniso) then
          call del6fjv(f,eta_aniso_hyper3,iaa,tmp2)
          fres=fres+tmp2
+!  Must divide by dxyz_6 here, because it is multiplied on later.
+         if (lfirst.and.ldt) diffus_eta3=diffus_eta3 + &
+             (eta_aniso_hyper3(1)*dx_1(l1:l2)**6 + &
+             eta_aniso_hyper3(2)*dy_1(m)**6 + &
+             eta_aniso_hyper3(3)*dz_1(n)**6)/dxyz_6
       endif
 !
       if (lresi_shell) then
@@ -1496,6 +1514,7 @@ module Magnetic
         do j=1,3
           fres(:,j)=fres(:,j)+eta_mn*p%del2a(:,j)+geta(:,j)*p%diva
         enddo
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_mn
         etatotal=etatotal+eta_mn
       endif
 !
@@ -1510,6 +1529,7 @@ module Magnetic
                       + eta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))
           enddo
         endif
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_shock*p%shock
         etatotal=etatotal+eta_shock*p%shock
       endif
 !
@@ -1525,12 +1545,14 @@ module Magnetic
                                   +p%diva*p%gshock_perp(:,i))
           enddo
         endif
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_shock*p%shock_perp
         etatotal=etatotal+eta_shock*p%shock_perp
       endif
 !
       if (lresi_smagorinsky) then
         eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
         call multsv(eta_smag+eta,p%del2a,fres)
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_smag+eta
         etatotal=etatotal+eta_smag+eta
       endif
 !
@@ -1541,12 +1563,34 @@ module Magnetic
         enddo
         eta_smag=(D_smag*dxmax)**2.*sign_jo*sqrt(p%jo*sign_jo)
         call multsv(eta_smag+eta,p%del2a,fres)
-        etatotal=eta_smag+eta
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_smag+eta
+        etatotal=etatotal+eta_smag+eta
       endif
 !
-      if (headtt) print*,'daa_dt: iresistivity=',iresistivity
+!  Multiply resistivity by Nyquist scale, for resistive time-step.
+!  We include possible contribution from meanfield_etat, which is however
+!  only invoked in mean field models.
 !
-!  add eta mu_0 j2/rho to entropy or temperature equation
+      if (lfirst.and.ldt) then
+        diffus_eta =(diffus_eta+meanfield_etat)*dxyz_2
+        diffus_eta2=diffus_eta2*dxyz_4
+        diffus_eta3=diffus_eta3*dxyz_6
+!
+        if (headtt.or.ldebug) then
+          print*, 'daa_dt: max(diffus_eta)  =', maxval(diffus_eta)
+          print*, 'daa_dt: max(diffus_eta2) =', maxval(diffus_eta2)
+          print*, 'daa_dt: max(diffus_eta3) =', maxval(diffus_eta3)
+        endif
+      endif
+!
+!  Ambipolar diffusion in the strong coupling approximation
+!
+      if (nu_ni/=0.) then
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+nu_ni1*p%jxbrxb
+        etatotal=etatotal+nu_ni1*p%va2
+      endif
+!
+!  Add Ohmic heat to entropy or temperature equation
 !
       if (lentropy .and. lohmic_heat) then
          if (pretend_lnTT) then
@@ -1557,7 +1601,7 @@ module Magnetic
                  + etatotal*mu0*p%j2*p%rho1*p%TT1
          endif
       endif
-
+!
       if (ltemperature .and. lohmic_heat) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
                             + etatotal*mu0*p%j2*p%rho1*p%cv1*p%TT1
@@ -1590,9 +1634,9 @@ module Magnetic
 !  we only do upwinding for the advection-type terms on the
 !  left hand side.
 !
-        if (lupw_aa.and.headtt) then
-          print *,'calc_pencils_magnetic: upwinding advection term. '//&
-                  'Not well tested; use at own risk!'; endif
+      if (lupw_aa.and.headtt) then
+        print *,'calc_pencils_magnetic: upwinding advection term. '//&
+                'Not well tested; use at own risk!'; endif
 !  Add Lorentz force that results from the external field.
 !  Note: For now, this only works for uniform external fields.
         uxb_upw(:,1) = p%uu(:,2)*B_ext(3) - p%uu(:,3)*B_ext(2)
@@ -1609,13 +1653,6 @@ module Magnetic
         enddo; enddo
 !  Full right hand side of the induction equation
         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_upw + fres
-      endif
-!
-!  Ambipolar diffusion in the strong coupling approximation
-!
-      if (nu_ni/=0.) then
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+nu_ni1*p%jxbrxb
-        etatotal=etatotal+nu_ni1*p%va2
       endif
 !
 !  Hall term
@@ -1650,17 +1687,15 @@ module Magnetic
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(eta_out1*mu0)*p%jj
       endif
 !
-!  add possibility of forcing that is not delta-correlated in time
+!  Add possibility of forcing that is not delta-correlated in time.
 !
       if (lforcing_continuous_aa) call forcing_continuous(df,p)
 !
-!  possibility of relaxation of A in exterior region
+!  Possibility of relaxation of A in exterior region.
 !
       if (tau_aa_exterior/=0.) call calc_tau_aa_exterior(f,df)
 !
-!  ``va^2/dx^2'' and ``eta/dx^2'' for timestep
-!  in the diffusive timestep, we include possible contribution from
-!  meanfield_etat, which is however only invoked in mean field models
+!  ``va^2/dx^2'' for timestep
 !  Consider advective timestep only when lhydro=T.
 !
       if (lfirst.and.ldt) then
@@ -1683,8 +1718,8 @@ module Magnetic
             advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
                        (p%bb(:,2)*dy_1(  m  ))**2+ &
                        (p%bb(:,3)*dz_1(  n  ))**2)*mu01*rho1_jxb
+          endif
         endif
-      endif
 !
 !WL: don't know if this is correct, but it's the only way I can make
 !    some 1D and 2D samples work when the non-existent direction has the
@@ -1698,28 +1733,6 @@ module Magnetic
                  advec_va2=sqrt(p%va2*dxyz_2)
           endif
         endif
-!
-!  resistive time step considerations
-!
-        if (lresi_hyper3_aniso) then
-           diffus_eta=eta_aniso_hyper3(1)*dx_1(l1:l2)**6 + &
-                eta_aniso_hyper3(2)*dy_1(m)**6 + &
-                eta_aniso_hyper3(3)*dz_1(n)**6 + &
-                etatotal*dxyz_2
-        elseif (lresi_hyper3) then
-           diffus_eta=eta_hyper3*dxyz_6 + (etatotal+meanfield_etat)*dxyz_2
-        elseif (lresi_hyper2) then
-           diffus_eta=eta_hyper2*dxyz_4 + (etatotal+meanfield_etat)*dxyz_2
-        else
-           diffus_eta=(etatotal+meanfield_etat)*dxyz_2
-        endif
-        if (ldiagnos.and.idiag_dteta/=0) then
-          call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
-        endif
-      endif
-      if (headtt.or.ldebug) then
-        print*,'daa_dt: max(advec_va2) =',maxval(advec_va2)
-        print*,'daa_dt: max(diffus_eta) =',maxval(diffus_eta)
       endif
 !
 !  Special contributions to this module are called here
@@ -1781,6 +1794,7 @@ module Magnetic
         if (idiag_jrms/=0) call sum_mn_name(p%j2,idiag_jrms,lsqrt=.true.)
         if (idiag_jmax/=0) call max_mn_name(p%j2,idiag_jmax,lsqrt=.true.)
         if (idiag_epsM_LES/=0) call sum_mn_name(eta_smag*p%j2,idiag_epsM_LES)
+        if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
 !
 !  Not correct for hyperresistivity:
 !

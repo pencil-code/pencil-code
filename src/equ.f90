@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.379 2007-09-13 17:45:03 wlyra Exp $
+! $Id: equ.f90,v 1.380 2007-09-26 10:45:25 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -461,7 +461,8 @@ module Equ
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: maxadvec,maxdiffus,pfreeze,pfreeze_int,pfreeze_ext
+      real, dimension (nx) :: maxadvec,maxdiffus,maxdiffus2,maxdiffus3
+      real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
       integer :: i,iv
 !
 !  print statements when they are first executed
@@ -470,7 +471,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.379 2007-09-13 17:45:03 wlyra Exp $")
+           "$Id: equ.f90,v 1.380 2007-09-26 10:45:25 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -622,9 +623,12 @@ module Equ
           advec_uu=0.; advec_shear=0.; advec_hall=0.; advec_uun=0;
           advec_cs2=0.; advec_va2=0.; advec_crad2=0.; advec_uud=0;
           advec_csn2=0
+          diffus_nu=0.; diffus_nu2=0.; diffus_nu3=0.
+          diffus_diffrho=0.; diffus_diffrho3=0.
           diffus_pscalar=0.
-          diffus_chiral=0.; diffus_diffrho=0.; diffus_cr=0.
-          diffus_eta=0.; diffus_nu=0.; diffus_chi=0.
+          diffus_chiral=0.
+          diffus_cr=0.
+          diffus_eta=0.; diffus_chi=0.
           diffus_nud=0.; diffus_diffnd=0.
           diffus_nun=0.; diffus_diffrhon=0.
         endif
@@ -962,6 +966,8 @@ module Equ
           maxdiffus=max(diffus_nu,diffus_chi,diffus_eta,diffus_diffrho, &
               diffus_pscalar,diffus_cr,diffus_nud,diffus_diffnd,diffus_chiral, &
               diffus_diffrhon,diffus_nun)
+          maxdiffus2=max(diffus_nu2,diffus_eta2)
+          maxdiffus3=max(diffus_nu3,diffus_diffrho3,diffus_eta3)
 !
           if (nxgrid==1.and.nygrid==1.and.nzgrid==1) then
             maxadvec=0.
@@ -998,8 +1004,8 @@ module Equ
              endif
           endif
 !
-          dt1_advec=maxadvec/cdt
-          dt1_diffus=maxdiffus/cdtv
+          dt1_advec  =maxadvec/cdt
+          dt1_diffus =maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
 !
           dt1_max=max(dt1_max,sqrt(dt1_advec**2+dt1_diffus**2))
 !
