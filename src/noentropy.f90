@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.102 2007-09-15 12:40:22 ajohan Exp $
+! $Id: noentropy.f90,v 1.103 2007-09-26 09:36:17 ajohan Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -72,7 +72,7 @@ module Entropy
 !  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.102 2007-09-15 12:40:22 ajohan Exp $")
+           "$Id: noentropy.f90,v 1.103 2007-09-26 09:36:17 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -232,7 +232,7 @@ module Entropy
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (leos) then            ! no sound waves without equation of state
+      if (leos.and.ldensity) then ! no sound waves without equation of state
         if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
         if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
       endif
