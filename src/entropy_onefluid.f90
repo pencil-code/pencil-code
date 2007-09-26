@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.23 2007-04-08 10:13:32 ajohan Exp $
+! $Id: entropy_onefluid.f90,v 1.24 2007-09-26 13:01:58 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.23 2007-04-08 10:13:32 ajohan Exp $")
+           "$Id: entropy_onefluid.f90,v 1.24 2007-09-26 13:01:58 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1856,7 +1856,7 @@ module Entropy
 !  check maximum diffusion from thermal diffusion
 !
       if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,chi*dxyz_6)
+        diffus_chi3=diffus_chi3+chi_hyper3
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif

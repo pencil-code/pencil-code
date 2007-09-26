@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.122 2007-08-30 05:28:55 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.123 2007-09-26 13:01:57 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -137,7 +137,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.122 2007-08-30 05:28:55 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.123 2007-09-26 13:01:57 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1038,7 +1038,7 @@ module Dustvelocity
           case('hyper3_simplified')
             if (headtt) print*, 'Viscous force (dust): nud*del6ud'
             fviscd = fviscd + nud_hyper3(k)*p%del6ud(:,:,k)
-            if (lfirst.and.ldt) diffus_nud=diffus_nud+nud_hyper3(k)*dxyz_6
+            if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
 
           case('hyper3_rhod_nud-const')
 !
@@ -1049,7 +1049,7 @@ module Dustvelocity
             do i=1,3
               fviscd(:,i) = fviscd(:,i) + mudrhod1*p%del6ud(:,i,k)
             enddo
-            if (lfirst.and.ldt) diffus_nud=diffus_nud+nud_hyper3(k)*dxyz_6
+            if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
 
           case('hyper3_nud-const')
 !
@@ -1057,7 +1057,7 @@ module Dustvelocity
 !
             if (headtt) print*, 'Viscous force (dust): nud*(del6ud+S.glnnd)'
             fviscd = fviscd + nud_hyper3(k)*(p%del6ud(:,:,k)+p%sdglnnd(:,:,k))
-            if (lfirst.and.ldt) diffus_nud=diffus_nud+nud_hyper3(k)*dxyz_6
+            if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
 
           case default
 

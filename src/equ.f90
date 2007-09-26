@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.380 2007-09-26 10:45:25 ajohan Exp $
+! $Id: equ.f90,v 1.381 2007-09-26 13:01:58 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -471,7 +471,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.380 2007-09-26 10:45:25 ajohan Exp $")
+           "$Id: equ.f90,v 1.381 2007-09-26 13:01:58 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -625,12 +625,15 @@ module Equ
           advec_csn2=0
           diffus_nu=0.; diffus_nu2=0.; diffus_nu3=0.
           diffus_diffrho=0.; diffus_diffrho3=0.
-          diffus_pscalar=0.
+          diffus_eta=0.; diffus_eta2=0.; diffus_eta3=0.
+          diffus_chi=0.; diffus_chi3=0.
+          diffus_pscalar=0.; diffus_pscalar3=0.
           diffus_chiral=0.
           diffus_cr=0.
-          diffus_eta=0.; diffus_chi=0.
-          diffus_nud=0.; diffus_diffnd=0.
-          diffus_nun=0.; diffus_diffrhon=0.
+          diffus_nud=0.; diffus_nud3=0.
+          diffus_diffnd=0.; diffus_diffnd3=0.
+          diffus_nun=0.; diffus_nun3=0.
+          diffus_diffrhon=0.; diffus_diffrhon3=0.
         endif
 !
 !  The following is only kept for backwards compatibility.
@@ -967,7 +970,9 @@ module Equ
               diffus_pscalar,diffus_cr,diffus_nud,diffus_diffnd,diffus_chiral, &
               diffus_diffrhon,diffus_nun)
           maxdiffus2=max(diffus_nu2,diffus_eta2)
-          maxdiffus3=max(diffus_nu3,diffus_diffrho3,diffus_eta3)
+          maxdiffus3=max(diffus_nu3,diffus_diffrho3,diffus_eta3, &
+              diffus_chi3,diffus_nud3,diffus_diffnd3,diffus_pscalar3, &
+              diffus_diffrhon3,diffus_nun3)
 !
           if (nxgrid==1.and.nygrid==1.and.nzgrid==1) then
             maxadvec=0.

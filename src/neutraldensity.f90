@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.13 2007-09-22 13:56:54 wlyra Exp $
+! $Id: neutraldensity.f90,v 1.14 2007-09-26 13:01:58 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -106,7 +106,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.13 2007-09-22 13:56:54 wlyra Exp $")
+           "$Id: neutraldensity.f90,v 1.14 2007-09-26 13:01:58 ajohan Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -652,7 +652,7 @@ module NeutralDensity
         else
           fdiff = fdiff + 1/p%rhon*diffrhon_hyper3*p%del6rhon
         endif
-        if (lfirst.and.ldt) diffus_diffrhon=diffus_diffrhon+diffrhon_hyper3*dxyz_6
+        if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*dxyz_6
         if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
       endif
 !
@@ -660,7 +660,7 @@ module NeutralDensity
          if (lneutraldensity_nolog) then
             call del6fj(f,diffrhon_hyper3_aniso,ilnrhon,tmp)
             fdiff = fdiff + tmp
-            if (lfirst.and.ldt) diffus_diffrhon=diffus_diffrhon+&
+            if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+ &
                  diffrhon_hyper3_aniso(1)*dx_1(l1:l2)**6 + &
                  diffrhon_hyper3_aniso(2)*dy_1(m)**6 + &
                  diffrhon_hyper3_aniso(3)*dz_1(n)**6
@@ -675,7 +675,7 @@ module NeutralDensity
         if (.not. lneutraldensity_nolog) then
           fdiff = fdiff + diffrhon_hyper3*p%del6lnrhon
         endif
-        if (lfirst.and.ldt) diffus_diffrhon=diffus_diffrhon+diffrhon_hyper3*dxyz_6
+        if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*dxyz_6
         if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
       endif
 !

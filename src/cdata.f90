@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.393 2007-09-26 10:45:25 ajohan Exp $
+! $Id: cdata.f90,v 1.394 2007-09-26 13:01:57 ajohan Exp $
 
 module Cdata
 
@@ -37,9 +37,13 @@ module Cdata
   real, dimension (nx) :: diffus_nu,diffus_nu2,diffus_nu3
   real, dimension (nx) :: diffus_diffrho,diffus_diffrho3
   real, dimension (nx) :: diffus_eta,diffus_eta2,diffus_eta3
-  real, dimension (nx) :: diffus_chi,diffus_diffrhon
-  real, dimension (nx) :: diffus_diffnd,diffus_pscalar
-  real, dimension (nx) :: diffus_chiral,diffus_cr,diffus_nud,diffus_nun
+  real, dimension (nx) :: diffus_chi,diffus_chi3
+  real, dimension (nx) :: diffus_diffrhon,diffus_diffrhon3
+  real, dimension (nx) :: diffus_diffnd,diffus_diffnd3
+  real, dimension (nx) :: diffus_pscalar,diffus_pscalar3
+  real, dimension (nx) :: diffus_chiral,diffus_cr
+  real, dimension (nx) :: diffus_nud,diffus_nud3
+  real, dimension (nx) :: diffus_nun,diffus_nun3
   real, dimension (nx) :: dt1_advec,dt1_diffus,dt1_max
 
   real, parameter :: pi=3.14159265358979324D0

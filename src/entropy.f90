@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.532 2007-09-17 09:39:20 dintrans Exp $
+! $Id: entropy.f90,v 1.533 2007-09-26 13:01:57 ajohan Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -210,7 +210,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.532 2007-09-17 09:39:20 dintrans Exp $")
+           "$Id: entropy.f90,v 1.533 2007-09-26 13:01:57 ajohan Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -2189,7 +2189,7 @@ module Entropy
 !  check maximum diffusion from thermal diffusion
 !
       if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,chi_hyper3*dxyz_6)
+        diffus_chi3=diffus_chi3+chi_hyper3
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif

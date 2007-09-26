@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.16 2007-09-22 13:59:57 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.17 2007-09-26 13:01:58 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -131,7 +131,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.16 2007-09-22 13:59:57 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.17 2007-09-26 13:01:58 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -820,7 +820,7 @@ module NeutralVelocity
 !
             if (headtt) print*, 'Viscous force (neutral): nun*(del6un+Sn.glnrhon)'
             fvisc = fvisc + nun_hyper3*(p%del6un+unij5glnrhon)
-            if (lfirst.and.ldt) diffus_nun=diffus_nun+nun_hyper3*dxyz_6
+            if (lfirst.and.ldt) diffus_nun3=diffus_nun3+nun_hyper3*dxyz_6
 
          case ('')
             ! do nothing

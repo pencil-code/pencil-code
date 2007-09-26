@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.175 2007-04-08 10:13:28 ajohan Exp $
+! $Id: dustdensity.f90,v 1.176 2007-09-26 13:01:57 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -140,7 +140,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.175 2007-04-08 10:13:28 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.176 2007-09-26 13:01:57 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1032,14 +1032,14 @@ module Dustdensity
           else
             fdiffd = fdiffd + diffnd_hyper3*p%del6nd(:,k)
           endif
-          if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd_hyper3*dxyz_6
+          if (lfirst.and.ldt) diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*dxyz_6
         endif
 !
         if (ldiffd_hyper3lnnd) then
           if (ldustdensity_log) then
             fdiffd = fdiffd + diffnd_hyper3*p%del6lnnd(:,k)
           endif
-          if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd_hyper3*dxyz_6
+          if (lfirst.and.ldt) diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*dxyz_6
         endif
 !
         df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + fdiffd
