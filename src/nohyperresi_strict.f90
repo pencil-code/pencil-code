@@ -1,4 +1,4 @@
-! $Id: nohyperresi_strict.f90,v 1.1 2007-08-23 11:59:33 ajohan Exp $
+! $Id: nohyperresi_strict.f90,v 1.2 2007-09-26 14:52:17 bingert Exp $
 
 !
 !  This module applies a sixth order hyperresistivity to the induction
@@ -22,7 +22,6 @@ module Hyperresi_strict
   use Cparam
   use Cdata
   use Messages
-  use Density
 
   implicit none
 
