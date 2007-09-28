@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.57 2007-09-26 10:45:26 ajohan Exp $
+# CVS: $Id: mkcparam,v 1.58 2007-09-28 07:41:33 dobler Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -521,7 +521,7 @@ foreach my $pencil (@pencil_names) {
   $i++;
 }
 
-print OUT_PENCIL "character (len=12), parameter, dimension(npencils) :: pencil_names = &\n  (/ ";
+print OUT_PENCIL "character (len=15), parameter, dimension(npencils) :: pencil_names = &\n  (/ ";
 #$,=", &\n   ";
 #print OUT_PENCIL @pencil_names_fill;
 $i=0;
