@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.118 2007-09-12 14:38:17 dhruba Exp $
+! $Id: forcing.f90,v 1.119 2007-10-01 11:47:54 ajohan Exp $
 
 module Forcing
 
@@ -18,7 +18,8 @@ module Forcing
   real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
   real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.,work_ff=0.
   real :: omega_ff=1.
-  real :: tforce_stop=impossible,tforce_start=0.
+  real :: tforce_stop=impossible,tforce_stop2=impossible
+  real :: tforce_start=0.,tforce_start2=0.
   real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=impossible
   real :: dtforce=0., force_strength=0.
   real, dimension(3) :: force_direction=(/0.,0.,0./)
@@ -27,8 +28,8 @@ module Forcing
   integer :: kfountain=5,ifff,iffx,iffy,iffz
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
   logical :: lmagnetic_forcing=.false.,ltestfield_forcing=.false.
-  logical :: lhelical_test=.false.
-  logical :: lscale_kvector_tobox=.false.
+  logical :: lhelical_test=.false.,lrandom_location=.true.
+  logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.true.
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
   character (len=labellen) :: iforce_profile='nothing'
@@ -44,11 +45,11 @@ module Forcing
   namelist /forcing_init_pars/ dummy
 
   namelist /forcing_run_pars/ &
-       tforce_start,&
+       tforce_start,tforce_start2,&
        iforce,force,relhel,height_ff,r_ff,width_ff, &
-       iforce2,force2,kfountain,fountain,tforce_stop, &
+       iforce2,force2,kfountain,fountain,tforce_stop,tforce_stop2, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
-       omega_ff, &
+       omega_ff,lrandom_location,lwrite_gausspot_to_file, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
        lmagnetic_forcing,ltestfield_forcing, &
        max_force,dtforce,old_forcing_evector, &
@@ -82,7 +83,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.118 2007-09-12 14:38:17 dhruba Exp $")
+           "$Id: forcing.f90,v 1.119 2007-10-01 11:47:54 ajohan Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -162,14 +163,21 @@ module Forcing
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-!  if t>tforce_stop, then turn off forcing
+      logical, save :: lfirstforce=.true., lfirstforce2=.true.
+      logical, save :: llastforce=.true., llastforce2=.true.
+!
+!  Turn off forcing if t<tforce_start or t>tforce_stop.
 !  This can be useful for producing good initial conditions
 !  for turbulent decay experiments.
 !
-      if ((t>tforce_stop) .or.(t<tforce_start))then
-        if (headtt.or.ldebug) print*,'addforce: t>tforce_stop; no forcing'
+      if ( (t>tforce_stop) .or. (t<tforce_start) ) then
+        if ( (t>tforce_stop) .and. llastforce .and. lroot) &
+            print*, 'addforce: t>tforce_stop; no forcing'
+        if (t>tforce_stop) llastforce=.false.
       else
-        if (headtt.or.ldebug) print*,'addforce: addforce started'
+        if ( iforce/='zero' .and. lfirstforce .and. lroot ) &
+            print*, 'addforce: addforce started'
+        lfirstforce=.false.
 !
 !  calculate and add forcing function
 !
@@ -191,8 +199,18 @@ module Forcing
         case ('hel_sp');        call forcing_hel_sp(f)
         case default; if(lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
         endselect
+      endif
 !
 !  add *additional* forcing function
+!
+      if ( (t>tforce_stop2) .or. (t<tforce_start2) ) then
+        if ( (t>tforce_stop2) .and. llastforce2 .and. lroot) &
+            print*,'addforce: t>tforce_stop2; no forcing'
+        if (t>tforce_stop2) llastforce2=.false.
+      else
+        if ( (iforce2/='zero') .and. lfirstforce2 .and. lroot) &
+            print*, 'addforce: addforce2 started'
+        lfirstforce2=.false.
 !
         select case(iforce2)
         case ('zero'); if(headtt .and. lroot) print*,'addforce: No additional forcing'
@@ -1176,9 +1194,18 @@ module Forcing
 !
 !  generate random numbers
 !
-      if (t .gt. tsforce) then
-        call random_number_wrapper(fran)
-        location=fran*Lxyz+xyz0
+      if (t>tsforce) then
+        if (lrandom_location) then
+          call random_number_wrapper(fran)
+          location=fran*Lxyz+xyz0
+        endif
+!
+        if (lroot .and. lwrite_gausspot_to_file) then
+          open(1,file=trim(datadir)//'/gaussian_pot_forcing.dat',status='unknown',position='append')
+            write(1,'(4f14.7)') t, location
+          close (1)
+        endif
+!
         tsforce=t+dtforce
         if(ip<=6) print*,'forcing_gaussianpot: location=',location
       endif
@@ -1239,27 +1266,27 @@ module Forcing
           endif
         enddo
       enddo
-      !
-      ! For printouts
-      !
+!
+!  For printouts
+!
       if (lout) then
         if (idiag_rufm/=0) then
           irufm=irufm/(nwgrid)
-          !
-          !  on different processors, irufm needs to be communicated
-          !  to other processors
-          !
+!
+!  on different processors, irufm needs to be communicated
+!  to other processors
+!
           fsum_tmp(1)=irufm
           call mpireduce_sum(fsum_tmp,fsum,1)
           irufm=fsum(1)
           call mpibcast_real(irufm,1)
-          !
+!
           fname(idiag_rufm)=irufm
           itype_name(idiag_rufm)=ilabel_sum
         endif
       endif
 !
-      if (ip.le.9) print*,'forcing_nocos: forcing OK'
+      if (ip<=9) print*,'forcing_nocos: forcing OK'
 !
     endsubroutine forcing_gaussianpot
 !***********************************************************************
