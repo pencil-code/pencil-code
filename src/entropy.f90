@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.533 2007-09-26 13:01:57 ajohan Exp $
+! $Id: entropy.f90,v 1.534 2007-10-01 06:33:36 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -210,7 +210,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.533 2007-09-26 13:01:57 ajohan Exp $")
+           "$Id: entropy.f90,v 1.534 2007-10-01 06:33:36 dintrans Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -1638,7 +1638,14 @@ module Entropy
          lpenc_requested(i_cv1)=.true.
          lpenc_requested(i_cp1)=.true.
       endif
-      if (lgravr) lpenc_requested(i_r_mn)=.true.
+      if (lgravr) then 
+! spherical case (cylindrical case also included)
+        if (lcylindrical_coords) then
+          lpenc_requested(i_rcyl_mn)=.true.
+        else
+          lpenc_requested(i_r_mn)=.true.
+        endif
+      endif
       if (lheatc_simple) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_glnTT)=.true.
@@ -1708,16 +1715,9 @@ module Entropy
         lpenc_requested(i_glnTT)=.true.
       endif
       if (lheatc_hyper3ss) lpenc_requested(i_del6ss)=.true.
-      if (cooltype=='shell') then
-        if (lcylindrical_coords) then
-          lpenc_requested(i_rcyl_mn)=.true.
-        else
-          lpenc_requested(i_r_mn)=.true.
-        endif
-        if (deltaT_poleq/=0.) then
-          lpenc_requested(i_z_mn)=.true.
-          lpenc_requested(i_rcyl_mn)=.true.
-        endif
+      if (cooltype=='shell' .and. deltaT_poleq/=0.) then
+        lpenc_requested(i_z_mn)=.true.
+        lpenc_requested(i_rcyl_mn)=.true.
       endif
       if (tau_cool/=0.0) then
         lpenc_requested(i_cp)=.true.
