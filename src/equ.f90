@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.381 2007-09-26 13:01:58 ajohan Exp $
+! $Id: equ.f90,v 1.382 2007-10-01 11:48:47 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -471,7 +471,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.381 2007-09-26 13:01:58 ajohan Exp $")
+           "$Id: equ.f90,v 1.382 2007-10-01 11:48:47 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -1170,7 +1170,7 @@ module Equ
       character (len=10) :: filename
       character (len=1) :: icrash_string
 !
-      if (dt <= crash_file_dtmin_factor*dtmin) then
+      if ( (it>1) .and. (itsub==1) .and. (dt<=crash_file_dtmin_factor*dtmin) ) then
         write(icrash_string, fmt='(i1)') icrash
         filename='crash'//icrash_string//'.dat'
         call wsnap(trim(directory_snap)//'/'//filename,f,mvar_io,.false.)
