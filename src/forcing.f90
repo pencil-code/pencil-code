@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.119 2007-10-01 11:47:54 ajohan Exp $
+! $Id: forcing.f90,v 1.120 2007-10-02 13:04:19 ajohan Exp $
 
 module Forcing
 
@@ -83,7 +83,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.119 2007-10-01 11:47:54 ajohan Exp $")
+           "$Id: forcing.f90,v 1.120 2007-10-02 13:04:19 ajohan Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -183,7 +183,7 @@ module Forcing
 !
         select case(iforce)
         case ('zero'); if (headt) print*,'addforce: No forcing'
-        case ('irrotational');  call forcing_irro(f)
+        case ('irrotational');  call forcing_irro(f,force)
         case ('helical', '2');  call forcing_hel(f)
         case ('GP');            call forcing_GP(f)
         case ('TG');            call forcing_TG(f)
@@ -194,7 +194,7 @@ module Forcing
         case ('twist');         call forcing_twist(f)
         case ('diffrot');       call forcing_diffrot(f,force)
         case ('blobs');         call forcing_blobs(f)
-        case ('gaussianpot');   call forcing_gaussianpot(f)
+        case ('gaussianpot');   call forcing_gaussianpot(f,force)
         case ('hel_smooth');    call forcing_hel_smooth(f)
         case ('hel_sp');        call forcing_hel_sp(f)
         case default; if(lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
@@ -214,7 +214,7 @@ module Forcing
 !
         select case(iforce2)
         case ('zero'); if(headtt .and. lroot) print*,'addforce: No additional forcing'
-        case ('irrotational'); call forcing_irro(f)
+        case ('irrotational'); call forcing_irro(f,force2)
         case ('helical');      call forcing_hel(f)
         case ('fountain');     call forcing_fountain(f)
         case ('horiz-shear');  call forcing_hshear(f)
@@ -227,7 +227,7 @@ module Forcing
 !
     endsubroutine addforce
 !***********************************************************************
-    subroutine forcing_irro(f)
+    subroutine forcing_irro(f,force_ampl)
 !
 !  add acoustic forcing function, using a set of precomputed wavevectors
 !  This forcing drives pressure waves
@@ -237,10 +237,12 @@ module Forcing
       use Mpicomm
       use Cdata
 !
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: force_ampl
+!
       real :: phase,ffnorm
       real, save :: kav
       real, dimension (2) :: fran
-      real, dimension (mx,my,mz,mfarray) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
@@ -280,7 +282,7 @@ module Forcing
 !  divided by sqrt(dt), because square of forcing is proportional
 !  to a delta function of the time difference
 !
-      ffnorm=force*sqrt(kav/dt)*dt
+      ffnorm=force_ampl*sqrt(kav/dt)*dt
       fx=exp(cmplx(0.,kkx(ik)*x+phase))*ffnorm
       fy=exp(cmplx(0.,kky(ik)*y))
       fz=exp(cmplx(0.,kkz(ik)*z))
@@ -1160,7 +1162,7 @@ module Forcing
 !
     endsubroutine forcing_nocos
 !***********************************************************************
-    subroutine forcing_gaussianpot(f)
+    subroutine forcing_gaussianpot(f,force_ampl)
 !
 !  gradient of gaussians as forcing function
 !
@@ -1173,11 +1175,13 @@ module Forcing
       use EquationOfState, only: cs0
       use Hydro
 !
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: force_ampl
+!
       real, dimension (1) :: fsum_tmp,fsum
       real, dimension (3) :: fran
       real, dimension (nx) :: radius2,gaussian,ruf,rho
       real, dimension (nx,3) :: variable_rhs,force_all,delta
-      real, dimension (mx,my,mz,mfarray) :: f
       logical, dimension (3), save :: extent
       integer :: ik,j,jf
       real :: irufm,fact,width_ff21
@@ -1221,7 +1225,7 @@ module Forcing
 !  Also define width_ff21 = 1/width^2
 !
       width_ff21=1./width_ff**2
-      fact=2.*width_ff21*force*dt*sqrt(cs0*width_ff/max(dtforce+.5*dt,dt))
+      fact=2.*width_ff21*force_ampl*dt*sqrt(cs0*width_ff/max(dtforce+.5*dt,dt))
 !
 !  loop the two cases separately, so we don't check for r_ff during
 !  each loop cycle which could inhibit (pseudo-)vectorisation
