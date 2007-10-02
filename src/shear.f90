@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.42 2007-10-02 06:45:42 ajohan Exp $
+! $Id: shear.f90,v 1.43 2007-10-02 06:46:33 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.42 2007-10-02 06:45:42 ajohan Exp $")
+           "$Id: shear.f90,v 1.43 2007-10-02 06:46:33 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -255,7 +255,9 @@ module Shear
 !***********************************************************************
     subroutine boundcond_shear(f,ivar1,ivar2)
 !
+!  Shearing boundary conditions, called from the Boundconds module.
 !
+!  02-oct-07/anders: coded
 !
       use Mpicomm, only: initiate_shearing, finalize_shearing
 !
