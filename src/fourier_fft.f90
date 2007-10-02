@@ -1,4 +1,4 @@
-! $Id: fourier_fft.f90,v 1.5 2006-10-05 15:42:24 theine Exp $
+! $Id: fourier_fft.f90,v 1.6 2007-10-02 07:39:11 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -125,5 +125,22 @@ module Fourier
       if (NO_WARN) print*, a_re, a_im
 !
     endsubroutine fourier_transform_other_2
+!***********************************************************************
+    subroutine fourier_shift_yz(a_re,shift_y)
+!
+!  Performs a periodic shift in the y-direction of an entire y-z plane by
+!  the amount shift_y.
+!
+!  02-oct-07/anders: dummy
+!
+      real, dimension (ny,nz) :: a_re
+      real :: shift_y
+!
+      call fatal_error('fourier_shift_yz', &
+          'this sub is not available in fourier_fft.f90!')
+!
+      if (NO_WARN) print*, a_re, shift_y
+!
+    endsubroutine fourier_shift_yz
 !***********************************************************************
 endmodule Fourier

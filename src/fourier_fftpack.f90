@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.17 2007-06-25 09:55:16 ajohan Exp $
+! $Id: fourier_fftpack.f90,v 1.18 2007-10-02 07:39:11 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -987,5 +987,174 @@ module Fourier
       endif
 
     endsubroutine fourier_transform_xy_xy
+!***********************************************************************
+    subroutine fourier_shift_yz(a_re,shift_y)
+!
+!  Performs a periodic shift in the y-direction of an entire y-z plane by
+!  the amount shift_y. The shift is done in Fourier space for maximum
+!  interpolation accuracy.
+!
+!  19-jul-06/anders: coded
+!
+      use Cdata, only: ky_fft
+      use Mpicomm
+!
+      real, dimension (ny,nz) :: a_re
+      real :: shift_y
+!
+      complex, dimension(nygrid) :: a_cmplx, cmplx_shift
+      real, dimension(nygrid,max(nz/nprocy,1)) :: a_re_new, a_im_new
+      integer :: n, nz_new, ipy_from, ipy_to, iproc_from, iproc_to
+!
+!  Fourier transform of the subdivided y-interval is done by collecting
+!  pencils of length nygrid at each processor. Consider the processor space
+!  for a given ipz for nygrid=32, nz=8:
+!
+!     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+!    |               |               |               |               | 8
+!    |               |               |               |               | 7
+!    |               |               |               |               | 6
+!    |               |               |               |               | 5
+!  z |     ipy=0     |     ipy=1     |     ipy=2     |     ipy=3     | 4
+!    |               |               |               |               | 3
+!    |               |               |               |               | 2
+!    |               |               |               |               | 1
+!     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+!                                    y
+!
+!  This is the resulting processor division that can be used for the Fourier
+!  transform:
+!
+!     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+!    |                             ipy=3                             | 8
+!    |_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _| 7
+!    |                             ipy=2                             | 6
+!    |_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _| 5
+!  z |                             ipy=1                             | 4
+!    |_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _| 3
+!    |                             ipy=0                             | 2
+!    |                                                               | 1
+!     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+!                                    y
+!
+!  The height at each processor is nz/nprocy.
+!
+      nz_new=max(nz/nprocy,1)
+      if (nprocy/=1) then
+        if (nzgrid==1) then
+!
+!  Degenerate z-direction. Let root processor do the shift of the single nygrid
+!  pencil.
+!
+          do iproc_from=1,ncpus-1
+            if (lroot) then
+              call mpirecv_real( &
+                  a_re_new(iproc_from*ny+1:(iproc_from+1)*ny,1), &
+                  ny, iproc_from, 666)
+            else
+              iproc_to=0
+              if (iproc==iproc_from) &
+                  call mpisend_real(a_re(:,1), ny, iproc_to, 666)
+            endif
+          enddo
+          if (lroot) a_re_new(1:ny,1)=a_re(:,1)
+        else
+!
+!  Present z-direction. Here nz must be a whole multiple of nprocy (e.g. nz=8,
+!  nprocy=4). This constraint could be removed with a bit of work if it should
+!  become necessary.
+!
+          if (modulo(nz,nprocy)/=0) then
+            if (lroot) print*, 'fourier_shift_yz: nz must be a whole '// &
+                'multiple of nprocy!'
+            call fatal_error('fourier_shift_yz','')
+          endif
+!
+          do ipy_from=0,nprocy-1
+            iproc_from=ipz*nprocy+ipy_from
+            if (ipy/=ipy_from) then
+              call mpirecv_real( &
+                  a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,:), &
+                  (/ny,nz_new/), iproc_from, 666)
+            else
+              a_re_new(ipy*ny+1:(ipy+1)*ny,:) = &
+                  a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)
+              do ipy_to=0,nprocy-1
+                iproc_to=ipz*nprocy+ipy_to
+                if (ipy/=ipy_to) call mpisend_real( &
+                    a_re(:,ipy_to*nz_new+1:(ipy_to+1)*nz_new), &
+                    (/ny,nz_new/), iproc_to, 666)
+              enddo
+            endif
+          enddo
+        endif
+      else
+!
+!  Only parallelization along z (or not at all).
+!
+        a_re_new(1:ny,1:nz_new)=a_re(1:ny,1:nz_new)
+      endif
+!
+      a_im_new=0.0
+      cmplx_shift=exp(cmplx(0.0,-ky_fft*shift_y))
+!
+!  Transform to Fourier space.
+!
+      do n=1,nz_new
+        call fourier_transform_other(a_re_new(:,n),a_im_new(:,n))
+        a_cmplx=cmplx(a_re_new(:,n),a_im_new(:,n))
+        a_cmplx=a_cmplx*cmplx_shift
+        a_re_new(:,n)=real(a_cmplx)
+        a_im_new(:,n)=aimag(a_cmplx)
+      enddo
+!
+!  Back to real space.
+!
+      do n=1,nz_new
+        call fourier_transform_other(a_re_new(:,n),a_im_new(:,n),linv=.true.)
+      enddo
+!
+!  Reinstate original division of yz-plane.
+!
+      if (nprocy/=1) then
+        if (nzgrid==1) then
+!  No z-direction.
+          if (.not. lroot) then
+            iproc_from=0
+            call mpirecv_real(a_re(:,1), ny, iproc_from, 666)
+          else
+            do iproc_to=1,ncpus-1
+              call mpisend_real( &
+                  a_re_new(iproc_to*ny+1:(iproc_to+1)*ny,1), &
+                  ny, iproc_to, 666)
+            enddo
+          endif
+          if (lroot) a_re(:,1)=a_re_new(1:ny,1)
+        else
+!  Present z-direction.
+          do ipy_from=0,nprocy-1
+            iproc_from=ipz*nprocy+ipy_from
+            if (ipy/=ipy_from) then
+              call mpirecv_real( &
+                  a_re(:,ipy_from*nz_new+1:(ipy_from+1)*nz_new), &
+                  (/ny,nz_new/), iproc_from, 666)
+            else
+              a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)= &
+                  a_re_new(ipy*ny+1:(ipy+1)*ny,:)
+              do ipy_to=0,nprocy-1
+                iproc_to=ipz*nprocy+ipy_to
+                if (ipy/=ipy_to) call mpisend_real( &
+                    a_re_new(ipy_to*ny+1:(ipy_to+1)*ny,:), &
+                    (/ny,nz_new/), iproc_to, 666)
+              enddo
+            endif
+          enddo
+        endif
+      else
+!  Only parallelization along z (or not at all).
+        a_re(1:ny,1:nz_new)=a_re_new(1:ny,1:nz_new)
+      endif
+!
+    endsubroutine fourier_shift_yz
 !***********************************************************************
 endmodule Fourier

@@ -1,4 +1,4 @@
-! $Id: ghostfold_nompicomm.f90,v 1.8 2006-11-30 09:03:35 dobler Exp $
+! $Id: ghostfold_nompicomm.f90,v 1.9 2007-10-02 07:39:11 ajohan Exp $
 !
 !  This module performs some special mpifunctions that
 !  also require the Fourier routines.
@@ -148,45 +148,5 @@ module GhostFold
       endif
 !
     endsubroutine fold_f
-!***********************************************************************
-    subroutine fourier_shift_yz(a_re,shift_y)
-!
-!  Performs a periodic shift in the y-direction of an entire y-z plane by
-!  the amount shift_y. The shift is done in Fourier space for maximum
-!  interpolation accuracy.
-!
-!  19-jul-06/anders: coded
-!
-      use Cdata, only: ky_fft
-      use Fourier
-!
-      real, dimension (ny,nz) :: a_re
-      real :: shift_y
-!
-      real, dimension(ny,nz) :: a_im
-      complex, dimension(ny) :: a_cmplx
-      complex, dimension(ny) :: cmplx_shift
-      integer :: n
-!
-      a_im=0.0
-      cmplx_shift=exp(cmplx(0.0,-ky_fft(1:ny)*shift_y))
-!
-!  Transform to Fourier space.
-!
-      do n=1,nz
-        call fourier_transform_other(a_re(:,n),a_im(:,n))
-        a_cmplx=cmplx(a_re(:,n),a_im(:,n))
-        a_cmplx=a_cmplx*cmplx_shift
-        a_re(:,n)=real(a_cmplx)
-        a_im(:,n)=aimag(a_cmplx)
-      enddo
-!
-!  Back to real space.
-!
-      do n=1,nz
-        call fourier_transform_other(a_re(:,n),a_im(:,n),linv=.true.)
-      enddo
-!
-    endsubroutine fourier_shift_yz
 !***********************************************************************
 endmodule GhostFold
