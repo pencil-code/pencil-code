@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.382 2007-10-01 11:48:47 ajohan Exp $
+! $Id: equ.f90,v 1.383 2007-10-02 06:44:11 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -87,7 +87,7 @@ module Equ
         endif
         first=.false.
         if (lroot.and.ip<=10) print*,'dVol_rel1=',dVol_rel1
-        if (lroot) print*,'Volume=',dx*dy*dz/dVol_rel1
+        if (lroot) print*,'box volume = ', dx*dy*dz/dVol_rel1
       endif
 !
 !  go through all print names, and sort into communicators
@@ -471,7 +471,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.382 2007-10-01 11:48:47 ajohan Exp $")
+           "$Id: equ.f90,v 1.383 2007-10-02 06:44:11 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
