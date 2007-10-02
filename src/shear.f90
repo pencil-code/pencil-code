@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.41 2007-09-10 06:07:39 brandenb Exp $
+! $Id: shear.f90,v 1.42 2007-10-02 06:45:42 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.41 2007-09-10 06:07:39 brandenb Exp $")
+           "$Id: shear.f90,v 1.42 2007-10-02 06:45:42 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -252,6 +252,22 @@ module Shear
       if (headtt.or.ldebug) print*,'advance_shear: deltay=',deltay
 !
     end subroutine advance_shear
+!***********************************************************************
+    subroutine boundcond_shear(f,ivar1,ivar2)
+!
+!
+!
+      use Mpicomm, only: initiate_shearing, finalize_shearing
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar1, ivar2
+!
+      if (ip<12.and.headtt) print*, &
+          'boundconds_x: use shearing sheet boundary condition'
+      call initiate_shearing(f,ivar1,ivar2)
+      if (nprocy>1 .or. (.not. lmpicomm)) call finalize_shearing(f,ivar1,ivar2)
+!
+    endsubroutine boundcond_shear
 !***********************************************************************
     subroutine rprint_shear(lreset,lwrite)
 !

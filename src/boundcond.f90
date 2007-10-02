@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.187 2007-09-14 18:53:02 dhruba Exp $
+! $Id: boundcond.f90,v 1.188 2007-10-02 06:45:42 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -65,10 +65,11 @@ module Boundcond
 !
       use Cdata
       use Entropy
-      use Magnetic
-      use Special, only: special_boundconds
-      use Radiation
       use EquationOfState
+      use Magnetic
+      use Radiation
+      use Shear
+      use Special, only: special_boundconds
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -93,17 +94,13 @@ module Boundcond
 !  Boundary conditions in x.
 !
       case default
-        one = min(1,mcom)
 !
 !  Use the following construct to keep compiler from complaining if
 !  we have no variables (and boundconds) at all (samples/no-modules):
 !
+        one = min(1,mcom)
         if (any(bcx1(1:one)=='she')) then
-          if (ip<12.and.headtt) print*, &
-               'boundconds_x: use shearing sheet boundary condition'
-          call initiate_shearing(f,ivar1,ivar2)
-          if (nprocy>1 .or. (.not. lmpicomm)) &
-              call finalize_shearing(f,ivar1,ivar2)
+          call boundcond_shear(f,ivar1,ivar2)
         else
           do k=1,2                ! loop over 'bot','top'
             if (k==1) then

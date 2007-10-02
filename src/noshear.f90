@@ -1,4 +1,4 @@
-! $Id: noshear.f90,v 1.13 2006-11-30 09:03:36 dobler Exp $
+! $Id: noshear.f90,v 1.14 2007-10-02 06:45:42 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear are invoked, a corresponding replacement dummy
@@ -39,7 +39,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noshear.f90,v 1.13 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: noshear.f90,v 1.14 2007-10-02 06:45:42 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -115,6 +115,19 @@ module Shear
       if (NO_WARN) print*, dt_shear
 !
     endsubroutine advance_shear
+!***********************************************************************
+    subroutine boundcond_shear(f,ivar1,ivar2)
+!
+!  Dummy routine
+!
+!  01-oct-07/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar1, ivar2
+!
+      if (NO_WARN) print*, f, ivar1, ivar2
+!
+    endsubroutine boundcond_shear
 !***********************************************************************
     subroutine rprint_shear(lreset,lwrite)
 !
