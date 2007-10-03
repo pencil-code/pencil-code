@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.44 2007-10-03 13:10:15 ajohan Exp $
+! $Id: shear.f90,v 1.45 2007-10-03 13:40:36 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.44 2007-10-03 13:10:15 ajohan Exp $")
+           "$Id: shear.f90,v 1.45 2007-10-03 13:40:36 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -272,10 +272,14 @@ module Shear
           f_tmp_yz=f(l,m1:m2,n1:n2,ivar)
           call fourier_shift_yz(f_tmp_yz,uy0(l-l1+1)*dt_shear)
           f(l,m1:m2,n1:n2,ivar)=f_tmp_yz
-          f_tmp_yz=df(l,m1:m2,n1:n2,ivar)
-          call fourier_shift_yz(f_tmp_yz,uy0(l-l1+1)*dt_shear)
-          df(l,m1:m2,n1:n2,ivar)=f_tmp_yz
         enddo; enddo
+        if (itsub/=itorder) then
+          do ivar=1,mvar; do l=l1,l2
+            f_tmp_yz=df(l,m1:m2,n1:n2,ivar)
+            call fourier_shift_yz(f_tmp_yz,uy0(l-l1+1)*dt_shear)
+            df(l,m1:m2,n1:n2,ivar)=f_tmp_yz
+          enddo; enddo
+        endif
       endif
 !
 !  Print identifier.
