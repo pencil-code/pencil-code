@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.49 2007-02-05 22:07:10 wlyra Exp $
+! $Id: timestep.f90,v 1.50 2007-10-03 13:10:15 ajohan Exp $
 
 module Timestep
 
@@ -70,7 +70,7 @@ module Timestep
           ds=0.
         else
           lfirst=.false.
-          df=alpha_ts(itsub)*df  !(could be subsumed into pde, but is dangerous!)
+          df=alpha_ts(itsub)*df !(could be subsumed into pde, but is dangerous!)
           ds=alpha_ts(itsub)*ds
         endif
 !
@@ -123,9 +123,10 @@ module Timestep
 !
         if (lparticles) call particles_timestep_second()
 !
-!  Advance deltay of the shear
+!  Advance deltay of the shear (and, optionally, perform shear advection
+!  by shifting all variables and their derivatives).
 !
-        if (lshear) call advance_shear(dt_beta_ts(itsub)*ds)
+        if (lshear) call advance_shear(f,df,dt_beta_ts(itsub)*ds)
 !
 !  Increase time
 !

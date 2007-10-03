@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.43 2007-10-02 06:46:33 ajohan Exp $
+! $Id: shear.f90,v 1.44 2007-10-03 13:10:15 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -17,15 +17,15 @@ module Shear
 
   real, dimension (nz) :: uy0_extra, duy0dz_extra
   real :: eps_vshear=0.0
-  logical :: luy0_extra=.false.
+  logical :: luy0_extra=.false.,lshearadvection_as_shift=.false.
 
   include 'shear.h'
 
   namelist /shear_init_pars/ &
-       qshear,Sshear,deltay,eps_vshear,Omega
+      qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift
 
   namelist /shear_run_pars/ &
-       qshear,Sshear,deltay,eps_vshear,Omega
+      qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift
 
   integer :: idiag_dtshear=0
 
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.43 2007-10-02 06:46:33 ajohan Exp $")
+           "$Id: shear.f90,v 1.44 2007-10-03 13:10:15 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -142,11 +142,14 @@ module Shear
 !
       use Cdata
       use Deriv
+      use Fourier, only: fourier_shift_yz
 !
-      integer :: j,k
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+!
+      real, dimension (ny,nz) :: f_tmp_yz
       real, dimension (nx) :: uy0,dfdy
+      integer :: j,k
 !
       intent(in)  :: f
 !
@@ -162,10 +165,14 @@ module Shear
 !
       if (luy0_extra) uy0=uy0+uy0_extra(n-nghost)
 !
-      do j=1,nvar
-        call der(f,j,dfdy,2)
-        df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-uy0*dfdy
-      enddo
+!  Advection of all variables by shear flow.
+!
+      if (.not. lshearadvection_as_shift) then
+        do j=1,nvar
+          call der(f,j,dfdy,2)
+          df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-uy0*dfdy
+        enddo
+      endif
 !
 ! Taking care of the fact that the Coriolis force changes when
 ! we have got shear. The rest of the Coriolis force is calculated
@@ -173,7 +180,7 @@ module Shear
 !
       if (lhydro) then
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear*f(l1:l2,m,n,iux)
-
+!
         if (luy0_extra) df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) &
            -f(l1:l2,m,n,iuz)*duy0dz_extra(n-nghost)
       endif
@@ -209,9 +216,10 @@ module Shear
         enddo
       endif
 !
-!  take shear into account for calculating time step
+!  Take shear into account for calculating time step
 !
-      if (lfirst.and.ldt) advec_shear=abs(uy0*dy_1(m))
+      if (lfirst.and.ldt.and.(.not.lshearadvection_as_shift)) &
+          advec_shear=abs(uy0*dy_1(m))
 !
 !  Calculate shearing related diagnostics
 !
@@ -222,24 +230,31 @@ module Shear
 !
     end subroutine shearing
 !***********************************************************************
-    subroutine advance_shear(dt_shear)
+    subroutine advance_shear(f,df,dt_shear)
 !
-!  advance shear distance, deltay, using dt. Using t instead introduces
+!  Advance shear distance, deltay, using dt. Using t instead introduces
 !  significant errors when nt = t/dt exceeds ~100,000 steps.
 !  This formulation works also when Sshear is changed during the run.
 !
-! 18-aug-02/axel: incorporated from nompicomm.f90
+!  18-aug-02/axel: incorporated from nompicomm.f90
 !
       use Cdata
+      use Fourier, only: fourier_shift_yz
       use Mpicomm, only: stop_it
 !
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real :: dt_shear
 !
-!  Works currently only when Sshear is not positive
+      real, dimension (ny,nz) :: f_tmp_yz
+      real, dimension (nx) :: uy0
+      integer :: l, ivar
+!
+!  Works currently only when Sshear is not positive.
 !
       if (Sshear>0.) then
-        if(lroot) print*,'Note: must use non-positive values of Sshear'
-        call stop_it("")
+        if (lroot) print*, 'Note: must use non-positive values of Sshear'
+        call stop_it('')
       endif
 !
 !  Make sure deltay is in the range 0 <= deltay < Ly (assuming Sshear<0).
@@ -247,7 +262,23 @@ module Shear
       deltay=deltay-Sshear*Lx*dt_shear
       deltay=deltay-int(deltay/Ly)*Ly
 !
-!  print identifier
+!  Solve for advection by shear motion by shifting all variables and their
+!  time derivative (following Gammie 2001). Removes time-step constraint
+!  from shear motion.
+!
+      if (lshearadvection_as_shift) then
+        uy0=Sshear*x(l1:l2)
+        do ivar=1,mvar; do l=l1,l2
+          f_tmp_yz=f(l,m1:m2,n1:n2,ivar)
+          call fourier_shift_yz(f_tmp_yz,uy0(l-l1+1)*dt_shear)
+          f(l,m1:m2,n1:n2,ivar)=f_tmp_yz
+          f_tmp_yz=df(l,m1:m2,n1:n2,ivar)
+          call fourier_shift_yz(f_tmp_yz,uy0(l-l1+1)*dt_shear)
+          df(l,m1:m2,n1:n2,ivar)=f_tmp_yz
+        enddo; enddo
+      endif
+!
+!  Print identifier.
 !
       if (headtt.or.ldebug) print*,'advance_shear: deltay=',deltay
 !
@@ -266,10 +297,49 @@ module Shear
 !
       if (ip<12.and.headtt) print*, &
           'boundconds_x: use shearing sheet boundary condition'
-      call initiate_shearing(f,ivar1,ivar2)
-      if (nprocy>1 .or. (.not. lmpicomm)) call finalize_shearing(f,ivar1,ivar2)
+!
+      if (lshearadvection_as_shift) then
+        call fourier_shift_ghostzones(f,ivar1,ivar2)
+      else
+        call initiate_shearing(f,ivar1,ivar2)
+        if (nprocy>1 .or. (.not. lmpicomm)) call finalize_shearing(f,ivar1,ivar2)
+      endif
 !
     endsubroutine boundcond_shear
+!***********************************************************************
+    subroutine fourier_shift_ghostzones(f,ivar1,ivar2)
+!
+!  Shearing boundary conditions by Fourier interpolation.
+!
+!  02-oct-07/anders: coded
+!
+      use Fourier, only: fourier_shift_yz
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar1, ivar2
+!
+      real, dimension (ny,nz) :: f_tmp_yz
+      integer :: i, ivar
+!
+      if (nxgrid/=1) then
+        f(l2+1:mx,m1:m2,n1:n2,ivar1:ivar2)=f(l1:l1+2,m1:m2,n1:n2,ivar1:ivar2)
+        f( 1:l1-1,m1:m2,n1:n2,ivar1:ivar2)=f(l2-2:l2,m1:m2,n1:n2,ivar1:ivar2)
+      endif
+!
+      if (nygrid/=1) then
+        do ivar=ivar1,ivar2
+          do i=1,3
+            f_tmp_yz=f(l1-i,m1:m2,n1:n2,ivar)
+            call fourier_shift_yz(f_tmp_yz,+deltay)
+            f(l1-i,m1:m2,n1:n2,ivar)=f_tmp_yz
+            f_tmp_yz=f(l2+i,m1:m2,n1:n2,ivar)
+            call fourier_shift_yz(f_tmp_yz,-deltay)
+            f(l2+i,m1:m2,n1:n2,ivar)=f_tmp_yz
+          enddo
+        enddo
+      endif
+!
+    endsubroutine fourier_shift_ghostzones
 !***********************************************************************
     subroutine rprint_shear(lreset,lwrite)
 !

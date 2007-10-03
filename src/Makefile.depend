@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.78 2007-10-02 06:45:42 ajohan Exp $
+### $Id: Makefile.depend,v 1.79 2007-10-03 13:10:15 ajohan Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -221,7 +221,7 @@ COMMON_DEPS=$(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(MESSAGES_OBJ)
 $(MPICOMM_OBJ):         mpicomm.h         $(MPICOMM_SRC)         $(CDATA_OBJ)
 $(GLOBAL_OBJ):          global.h          $(GLOBAL_SRC)          $(COMMON_DEPS) $(IO_OBJ)
 $(VISCOSITY_OBJ):       viscosity.h       $(VISCOSITY_SRC)       $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(DENSITY_OBJ) $(INTERSTELLAR_OBJ) 
-$(SHEAR_OBJ): shear.h $(SHEAR_SRC)  cdata.o deriv.o messages.o $(MPICOMM_FIX_OBJ) sub.o
+$(SHEAR_OBJ): shear.h $(SHEAR_SRC) cdata.o deriv.o messages.o $(FOURIER_OBJ) $(MPICOMM_FIX_OBJ) sub.o
 #$(SHEAR_OBJ):           shear.h           $(SHEAR_SRC)           $(COMMON_DEPS) $(CPARAM_OBJ) $(HYDRO_OBJ)
 $(GRAVITY_OBJ):         gravity.h         $(GRAVITY_SRC)         $(COMMON_DEPS) $(GLOBAL_OBJ) $(SHARED_VARIABLES_OBJ)
 $(SELFGRAVITY_OBJ):     selfgravity.h     $(SELFGRAVITY_SRC)     $(CDATA_OBJ)   $(SUB_OBJ) $(POISSON_OBJ) $(PARTICLES_MAIN_OBJ) $(SHARED_VARIABLES_OBJ)
