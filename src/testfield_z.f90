@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.12 2007-09-18 04:44:55 brandenb Exp $
+! $Id: testfield_z.f90,v 1.13 2007-10-03 09:36:56 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -148,7 +148,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.12 2007-09-18 04:44:55 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.13 2007-10-03 09:36:56 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -607,7 +607,7 @@ module Testfield
 !
 !  do communication for array of size nz*nprocz*3*njtest
 !
-      if (ncpus>1) then
+      if (nprocy>1) then
         uxbtestm2=reshape(uxbtestm1,shape=(/nz*nprocz*3*njtest/))
 !print*,iproc,uxbtestm(11,1,1)
 !print*,iproc,uxbtestm1(11-n1+1,ipz+1,1,1),uxbtestm2(11-n1+1+nz*ipz)
