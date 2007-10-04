@@ -3,8 +3,8 @@
 !  velocity field.
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.3 2007-09-25 13:46:54 ajohan Exp $',
-  nt=300, it1=5, cdt=0.4, cdtv=0.4, isave=100, itorder=3
+  cvsid='$Id: run.in,v 1.4 2007-10-04 09:16:19 ajohan Exp $',
+  nt=100, it1=5, cdt=0.4, cdtv=0.4, isave=100, itorder=3
   dsnap=0.667, dvid=0.05, ip=20
   lpencil_check=T
 /
@@ -18,6 +18,7 @@
 &selfgrav_run_pars
 /
 &shear_run_pars
+  lshearadvection_as_shift=T
 /
 &viscosity_run_pars
   ivisc='simplified', nu=1.0e-3
