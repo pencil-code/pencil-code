@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.18 2007-10-02 07:39:11 ajohan Exp $
+! $Id: fourier_fftpack.f90,v 1.19 2007-10-04 07:08:43 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -988,7 +988,7 @@ module Fourier
 
     endsubroutine fourier_transform_xy_xy
 !***********************************************************************
-    subroutine fourier_shift_yz(a_re,shift_y)
+    subroutine fourier_shift_yz_y(a_re,shift_y)
 !
 !  Performs a periodic shift in the y-direction of an entire y-z plane by
 !  the amount shift_y. The shift is done in Fourier space for maximum
@@ -1065,9 +1065,9 @@ module Fourier
 !  become necessary.
 !
           if (modulo(nz,nprocy)/=0) then
-            if (lroot) print*, 'fourier_shift_yz: nz must be a whole '// &
+            if (lroot) print*, 'fourier_shift_yz_y: nz must be a whole '// &
                 'multiple of nprocy!'
-            call fatal_error('fourier_shift_yz','')
+            call fatal_error('fourier_shift_yz_y','')
           endif
 !
           do ipy_from=0,nprocy-1
@@ -1155,6 +1155,74 @@ module Fourier
         a_re(1:ny,1:nz_new)=a_re_new(1:ny,1:nz_new)
       endif
 !
-    endsubroutine fourier_shift_yz
+    endsubroutine fourier_shift_yz_y
+!***********************************************************************
+    subroutine fourier_shift_y(a_re,shift_y)
+!
+!  Performs a periodic shift in the y-direction by the amount shift_y(x).
+!  The shift is done in Fourier space for maximum interpolation accuracy.
+!
+!  04-oct-07/anders: adapted from fourier_transform_shear
+!
+      real, dimension (nx,ny,nz) :: a_re
+      real, dimension (nx) :: shift_y
+!
+      real, dimension (nx,ny,nz) :: a_im
+      complex, dimension (nxgrid) :: ay
+      real, dimension (4*nxgrid+15) :: wsave
+      integer :: l,m,n,two
+!
+      two = 2         ! avoid `array out of bounds' below for nygrid=1
+!
+!  if nxgrid/=nygrid/=nzgrid, stop.
+!
+      if (nygrid/=nxgrid .and. nygrid /= 1) then
+        print*, 'fourier_shift_y: need to have nygrid=nxgrid if nygrid/=1'
+        call fatal_error('fourier_transform_shear','')
+      endif
+      if (nzgrid/=nxgrid .and. nzgrid /= 1) then
+        print*,'fourier_shift_y: need to have nzgrid=nxgrid if nzgrid/=1'
+        call fatal_error('fourier_shift_y','')
+      endif
+!
+!  Initialize cfft.
+!
+      call cffti(nygrid,wsave)
+!
+!  Transform y-direction.
+!
+      if (nygrid/=1) then
+        a_im=0.0
+        if (lroot.and.ip<10) print*, 'fourier_shift_y: doing FFTpack in y'
+        call transp(a_re,'y')
+        do n=1,nz; do l=1,ny
+          ay=cmplx(a_re(:,l,n),a_im(:,l,n))
+          call cfftf(nygrid,ay,wsave)
+!
+!  Shift all modes by the amount shift_y(x).
+!          
+          ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0,-ky_fft(two:nxgrid)*shift_y(l)))
+          a_re(:,l,n)=real(ay)
+          a_im(:,l,n)=aimag(ay)
+        enddo; enddo
+!
+!  Transform y-direction back.
+!
+        if (lroot.and.ip<10) print*, 'fourier_shift_y: doing FFTpack in y'
+        do n=1,nz; do l=1,ny
+          ay=cmplx(a_re(:,l,n),a_im(:,l,n))
+          call cfftb(nygrid,ay,wsave)
+          a_re(:,l,n)=real(ay)
+          a_im(:,l,n)=aimag(ay)
+        enddo; enddo
+        call transp(a_re,'y')
+        call transp(a_im,'y')
+!
+!  Normalize
+!
+        a_re=a_re/nygrid
+      endif
+!
+    endsubroutine fourier_shift_y
 !***********************************************************************
 endmodule Fourier
