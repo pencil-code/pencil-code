@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.120 2007-10-02 13:04:19 ajohan Exp $
+! $Id: forcing.f90,v 1.121 2007-10-04 10:51:19 ajohan Exp $
 
 module Forcing
 
@@ -49,7 +49,7 @@ module Forcing
        iforce,force,relhel,height_ff,r_ff,width_ff, &
        iforce2,force2,kfountain,fountain,tforce_stop,tforce_stop2, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
-       omega_ff,lrandom_location,lwrite_gausspot_to_file, &
+       omega_ff,location,lrandom_location,lwrite_gausspot_to_file, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
        lmagnetic_forcing,ltestfield_forcing, &
        max_force,dtforce,old_forcing_evector, &
@@ -83,7 +83,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.120 2007-10-02 13:04:19 ajohan Exp $")
+           "$Id: forcing.f90,v 1.121 2007-10-04 10:51:19 ajohan Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
