@@ -1,4 +1,4 @@
-! $Id: nofourier.f90,v 1.8 2007-10-04 07:08:43 ajohan Exp $
+! $Id: nofourier.f90,v 1.9 2007-10-04 11:18:45 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -158,6 +158,9 @@ module Fourier
       real, dimension (ny,nz) :: a_re
       real :: shift_y
 !
+      call fatal_error('fourier_transform_yz_y', &
+          'this sub is not available in nofourier.f90!')
+!
       if (NO_WARN) print*, a_re, shift_y
 !
     endsubroutine fourier_shift_yz_y
@@ -170,6 +173,9 @@ module Fourier
 !
       real, dimension (nx,ny,nz) :: a_re
       real, dimension (nx) :: shift_y
+!
+      call fatal_error('fourier_transform_y', &
+          'this sub is not available in nofourier.f90!')
 !
       if (NO_WARN) print*, a_re, shift_y
 !
