@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.19 2007-10-04 07:08:43 ajohan Exp $
+! $Id: fourier_fftpack.f90,v 1.20 2007-10-04 09:02:42 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -1201,7 +1201,7 @@ module Fourier
 !
 !  Shift all modes by the amount shift_y(x).
 !          
-          ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0,-ky_fft(two:nxgrid)*shift_y(l)))
+          ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0,-ky_fft(two:nxgrid)*shift_y(l+ipy*ny)))
           a_re(:,l,n)=real(ay)
           a_im(:,l,n)=aimag(ay)
         enddo; enddo
