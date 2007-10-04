@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.45 2007-10-03 13:40:36 ajohan Exp $
+! $Id: shear.f90,v 1.46 2007-10-04 07:10:51 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.45 2007-10-03 13:40:36 ajohan Exp $")
+           "$Id: shear.f90,v 1.46 2007-10-04 07:10:51 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -142,7 +142,7 @@ module Shear
 !
       use Cdata
       use Deriv
-      use Fourier, only: fourier_shift_yz
+      use Fourier, only: fourier_shift_yz_y
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -239,14 +239,14 @@ module Shear
 !  18-aug-02/axel: incorporated from nompicomm.f90
 !
       use Cdata
-      use Fourier, only: fourier_shift_yz
+      use Fourier, only: fourier_shift_y
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: dt_shear
 !
-      real, dimension (ny,nz) :: f_tmp_yz
+      real, dimension (nx,ny,nz) :: tmp
       real, dimension (nx) :: uy0
       integer :: l, ivar
 !
@@ -268,23 +268,23 @@ module Shear
 !
       if (lshearadvection_as_shift) then
         uy0=Sshear*x(l1:l2)
-        do ivar=1,mvar; do l=l1,l2
-          f_tmp_yz=f(l,m1:m2,n1:n2,ivar)
-          call fourier_shift_yz(f_tmp_yz,uy0(l-l1+1)*dt_shear)
-          f(l,m1:m2,n1:n2,ivar)=f_tmp_yz
-        enddo; enddo
+        do ivar=1,mvar
+          tmp=f(l1:l2,m1:m2,n1:n2,ivar)
+          call fourier_shift_y(tmp,uy0*dt_shear)
+          f(l1:l2,m1:m2,n1:n2,ivar)=tmp
+        enddo
         if (itsub/=itorder) then
-          do ivar=1,mvar; do l=l1,l2
-            f_tmp_yz=df(l,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz(f_tmp_yz,uy0(l-l1+1)*dt_shear)
-            df(l,m1:m2,n1:n2,ivar)=f_tmp_yz
-          enddo; enddo
+          do ivar=1,mvar
+            tmp=df(l1:l2,m1:m2,n1:n2,ivar)
+            call fourier_shift_y(tmp,uy0*dt_shear)
+            df(l1:l2,m1:m2,n1:n2,ivar)=tmp
+          enddo
         endif
       endif
 !
 !  Print identifier.
 !
-      if (headtt.or.ldebug) print*,'advance_shear: deltay=',deltay
+      if (headtt.or.ldebug) print*, 'advance_shear: deltay=',deltay
 !
     end subroutine advance_shear
 !***********************************************************************
@@ -317,7 +317,7 @@ module Shear
 !
 !  02-oct-07/anders: coded
 !
-      use Fourier, only: fourier_shift_yz
+      use Fourier, only: fourier_shift_yz_y
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
@@ -334,10 +334,10 @@ module Shear
         do ivar=ivar1,ivar2
           do i=1,3
             f_tmp_yz=f(l1-i,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz(f_tmp_yz,+deltay)
+            call fourier_shift_yz_y(f_tmp_yz,+deltay)
             f(l1-i,m1:m2,n1:n2,ivar)=f_tmp_yz
             f_tmp_yz=f(l2+i,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz(f_tmp_yz,-deltay)
+            call fourier_shift_yz_y(f_tmp_yz,-deltay)
             f(l2+i,m1:m2,n1:n2,ivar)=f_tmp_yz
           enddo
         enddo
