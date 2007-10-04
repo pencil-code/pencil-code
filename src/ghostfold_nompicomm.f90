@@ -1,4 +1,4 @@
-! $Id: ghostfold_nompicomm.f90,v 1.9 2007-10-02 07:39:11 ajohan Exp $
+! $Id: ghostfold_nompicomm.f90,v 1.10 2007-10-04 07:09:24 ajohan Exp $
 !
 !  This module performs some special mpifunctions that
 !  also require the Fourier routines.
@@ -59,10 +59,10 @@ module GhostFold
         if (lshear) then
           do ivar=ivar1,ivar2
             df_tmp_yz=df(l1-1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz(df_tmp_yz,-deltay)
+            call fourier_shift_yz_y(df_tmp_yz,-deltay)
             df(l1-1,m1:m2,n1:n2,ivar)=df_tmp_yz
             df_tmp_yz=df(l2+1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz(df_tmp_yz,+deltay)
+            call fourier_shift_yz_y(df_tmp_yz,+deltay)
             df(l2+1,m1:m2,n1:n2,ivar)=df_tmp_yz
           enddo
         endif
@@ -125,10 +125,10 @@ module GhostFold
         if (lshear) then
           do ivar=ivar1,ivar2
             f_tmp_yz=f(l1-1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz(f_tmp_yz,-deltay)
+            call fourier_shift_yz_y(f_tmp_yz,-deltay)
             f(l1-1,m1:m2,n1:n2,ivar)=f_tmp_yz
             f_tmp_yz=f(l2+1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz(f_tmp_yz,+deltay)
+            call fourier_shift_yz_y(f_tmp_yz,+deltay)
             f(l2+1,m1:m2,n1:n2,ivar)=f_tmp_yz
           enddo
         endif
