@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.122 2007-10-04 11:37:03 ajohan Exp $
+! $Id: forcing.f90,v 1.123 2007-10-04 12:02:13 ajohan Exp $
 
 module Forcing
 
@@ -23,6 +23,7 @@ module Forcing
   real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=impossible
   real :: dtforce=0., dtforce_duration=-1.0, force_strength=0.
   real, dimension(3) :: force_direction=(/0.,0.,0./)
+  real, dimension(3) :: location_fixed=(/0.,0.,0./)
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=0. !(initialize profz_hel=1)
   integer :: kfountain=5,ifff,iffx,iffy,iffz
@@ -49,7 +50,7 @@ module Forcing
        iforce,force,relhel,height_ff,r_ff,width_ff, &
        iforce2,force2,kfountain,fountain,tforce_stop,tforce_stop2, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
-       omega_ff,location,lrandom_location,lwrite_gausspot_to_file, &
+       omega_ff,location_fixed,lrandom_location,lwrite_gausspot_to_file, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
        lmagnetic_forcing,ltestfield_forcing, &
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
@@ -83,7 +84,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.122 2007-10-04 11:37:03 ajohan Exp $")
+           "$Id: forcing.f90,v 1.123 2007-10-04 12:02:13 ajohan Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -1202,6 +1203,8 @@ module Forcing
         if (lrandom_location) then
           call random_number_wrapper(fran)
           location=fran*Lxyz+xyz0
+        else
+          location=location_fixed
         endif
 !
         if (lroot .and. lwrite_gausspot_to_file) then
@@ -2231,6 +2234,7 @@ module Forcing
 
       if (present(iostat).and.NO_WARN) print*,iostat
       if (NO_WARN) print *,unit
+       
 
     endsubroutine read_forcing_init_pars
 !***********************************************************************
