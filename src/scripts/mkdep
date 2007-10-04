@@ -49,7 +49,7 @@ dollar='$'
 #    s/\bGRID\b/\$(GRID)\$(PC_META_TYPE).o/i;
 #    s/\bFOURIER\b/\$(FOURIER)\$(PC_META_TYPE).o/i;
 #    s/\bGHOSTFOLD\b/ghostfold_\$(MPICOMM)\$(PC_META_TYPE).o/i;
-#    s/\bBORDERPROFILES\b/\$(BORDER_PROF)\$(PC_META_TYPE).o/i;
+#    s/\bBORDERPROFILES\b/\$(BORDER_PROFILES)\$(PC_META_TYPE).o/i;
 #
 #    s/\bPARTICLES_CDATA\b/\particles_cdata\$(PC_META_TYPE).o/i;
 #    s/\bCDATA\b/cdata\$(PC_META_TYPE).o/i; 
@@ -76,7 +76,7 @@ dollar='$'
 
 script='
 
-    s/\bBORDERPROFILES\b/\$(BORDER_PROF_OBJ)/i;
+    s/\bBORDERPROFILES\b/\$(BORDER_PROFILES_OBJ)/i;
     s/\bCHIRAL\b/\$(CHIRAL_OBJ)/i;
     s/\bCOSMICRAY\b/\$(COSMICRAY_OBJ)/i;
     s/\bCOSMICRAYFLUX\b/\$(COSMICRAYFLUX_OBJ)/i;
