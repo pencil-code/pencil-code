@@ -1,4 +1,4 @@
-! $Id: noborder_profiles.f90,v 1.7 2007-01-13 21:46:44 dobler Exp $
+! $Id: noborder_profiles.f90,v 1.8 2007-10-04 10:57:29 ajohan Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -30,7 +30,32 @@ module BorderProfiles
 !  border_frac is a 3-D array, separately for all three directions.
 !  border_frac=1 would affect everything between center and border.
 !
-    ! DUMMY ROUTINE
+      use Messages
+!
+      if (border_frac_x(1)/=0.0.or.border_frac_x(2)/=0.0) then
+        if (lroot) then
+          print*, 'initialize_border_profiles: must use '// &
+              'BORDER_PROFILES =   border_profiles'
+          print*, '                            for border_frac_x'
+        endif
+        call fatal_error('initialize_border_profiles','')
+      endif
+      if (border_frac_y(1)/=0.0.or.border_frac_y(2)/=0.0) then
+        if (lroot) then
+          print*, 'initialize_border_profiles: must use '// &
+              'BORDER_PROFILES =   border_profiles'
+          print*, '                            for border_frac_y'
+        endif
+        call fatal_error('initialize_border_profiles','')
+      endif
+      if (border_frac_z(1)/=0.0.or.border_frac_z(2)/=0.0) then
+        if (lroot) then
+          print*, 'initialize_border_profiles: must use '// &
+              'BORDER_PROFILES =   border_profiles'
+          print*, '                            for border_frac_z'
+        endif
+        call fatal_error('initialize_border_profiles','')
+      endif
 !
     endsubroutine initialize_border_profiles
 !***********************************************************************
