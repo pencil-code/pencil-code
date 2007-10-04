@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.121 2007-10-04 10:51:19 ajohan Exp $
+! $Id: forcing.f90,v 1.122 2007-10-04 11:37:03 ajohan Exp $
 
 module Forcing
 
@@ -21,7 +21,7 @@ module Forcing
   real :: tforce_stop=impossible,tforce_stop2=impossible
   real :: tforce_start=0.,tforce_start2=0.
   real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=impossible
-  real :: dtforce=0., force_strength=0.
+  real :: dtforce=0., dtforce_duration=-1.0, force_strength=0.
   real, dimension(3) :: force_direction=(/0.,0.,0./)
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=0. !(initialize profz_hel=1)
@@ -52,7 +52,7 @@ module Forcing
        omega_ff,location,lrandom_location,lwrite_gausspot_to_file, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
        lmagnetic_forcing,ltestfield_forcing, &
-       max_force,dtforce,old_forcing_evector, &
+       max_force,dtforce,dtforce_duration,old_forcing_evector, &
        iforce_profile,lscale_kvector_tobox, &
        force_direction, force_strength, &
        Legendrel,Bessel_alpha,lhelical_test,fpre
@@ -83,7 +83,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.121 2007-10-04 10:51:19 ajohan Exp $")
+           "$Id: forcing.f90,v 1.122 2007-10-04 11:37:03 ajohan Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -1214,6 +1214,11 @@ module Forcing
         if(ip<=6) print*,'forcing_gaussianpot: location=',location
       endif
 !
+!  Let explosion last dtforce_duration or, by default, until next explosion.
+!
+      if ( (dtforce_duration<0.0) .or. &
+           (t-(tsforce-dtforce))<=dtforce_duration ) then
+!
 !  Normalize ff; since we don't know dt yet, we finalize this
 !  within timestep where dt is determined and broadcast.
 !
@@ -1224,52 +1229,53 @@ module Forcing
 !  The 1/2 factor takes care of round-off errors.
 !  Also define width_ff21 = 1/width^2
 !
-      width_ff21=1./width_ff**2
-      fact=2.*width_ff21*force_ampl*dt*sqrt(cs0*width_ff/max(dtforce+.5*dt,dt))
+        width_ff21=1./width_ff**2
+        fact=2.*width_ff21*force_ampl*dt*sqrt(cs0*width_ff/max(dtforce+.5*dt,dt))
 !
 !  loop the two cases separately, so we don't check for r_ff during
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
-      irufm=0
+        irufm=0
 !
 !  loop over all pencils
 !
-      do n=n1,n2
-        do m=m1,m2
+        do n=n1,n2
+          do m=m1,m2
 !
 !  Obtain distance to center of blob
 !
-          delta(:,1)=x(l1:l2)-location(1)
-          delta(:,2)=y(m)-location(2)
-          delta(:,3)=z(n)-location(3)
-          do j=1,3
-            if (lperi(j)) then
-              where (delta(:,j) .gt. Lxyz(j)/2.) delta(:,j)=delta(:,j)-Lxyz(j)
-              where (delta(:,j) .lt. -Lxyz(j)/2.) delta(:,j)=delta(:,j)+Lxyz(j)
-            endif
-            if(.not.extent(j)) delta(:,j)=0.
-          enddo
+            delta(:,1)=x(l1:l2)-location(1)
+            delta(:,2)=y(m)-location(2)
+            delta(:,3)=z(n)-location(3)
+            do j=1,3
+              if (lperi(j)) then
+                where (delta(:,j) >  Lxyz(j)/2.) delta(:,j)=delta(:,j)-Lxyz(j)
+                where (delta(:,j) < -Lxyz(j)/2.) delta(:,j)=delta(:,j)+Lxyz(j)
+              endif
+              if (.not.extent(j)) delta(:,j)=0.
+            enddo
 !
-          radius2=delta(:,1)**2+delta(:,2)**2+delta(:,3)**2
-          gaussian=fact*exp(-radius2*width_ff21)
-          variable_rhs=f(l1:l2,m,n,iffx:iffz)
-          do j=1,3
-            if(extent(j)) then
-              jf=j+ifff-1
-              f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+gaussian*delta(:,j)
+            radius2=delta(:,1)**2+delta(:,2)**2+delta(:,3)**2
+            gaussian=fact*exp(-radius2*width_ff21)
+            variable_rhs=f(l1:l2,m,n,iffx:iffz)
+            do j=1,3
+              if (extent(j)) then
+                jf=j+ifff-1
+                f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+gaussian*delta(:,j)
+              endif
+            enddo
+            if (lout) then
+              if (idiag_rufm/=0) then
+                rho=exp(f(l1:l2,m,n,ilnrho))
+                call multsv_mn(rho/dt,spread(gaussian,2,3)*delta,force_all)
+                call dot_mn(variable_rhs,force_all,ruf)
+                irufm=irufm+sum(ruf)
+              endif
             endif
           enddo
-          if (lout) then
-            if (idiag_rufm/=0) then
-              rho=exp(f(l1:l2,m,n,ilnrho))
-              call multsv_mn(rho/dt,spread(gaussian,2,3)*delta,force_all)
-              call dot_mn(variable_rhs,force_all,ruf)
-              irufm=irufm+sum(ruf)
-            endif
-          endif
         enddo
-      enddo
+      endif
 !
 !  For printouts
 !
