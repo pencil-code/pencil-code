@@ -19,7 +19,7 @@ SHOCK     =   shock
 
 PARTICLES       = particles_dust
 PARTICLES_NBODY = particles_nbody
-BORDER_PROF     = border_profiles
+BORDER_PROFILES = border_profiles
 
 SPECIAL         = special/rtime_phiavg
 

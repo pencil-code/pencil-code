@@ -18,7 +18,7 @@ FORCING   = noforcing
 SHEAR     = noshear
 SHOCK     =   shock
 
-BORDER_PROF = border_profiles
+BORDER_PROFILES = border_profiles
 
 SPECIAL = special/rtime_phiavg
 

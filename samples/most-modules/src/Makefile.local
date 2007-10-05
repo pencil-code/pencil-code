@@ -41,7 +41,7 @@ GRAVITY               =   gravity_simple
 SELFGRAVITY           =   selfgravity
 FORCING               =   forcing
 SHEAR                 =   shear
-BORDER_PROF           =   border_profiles
+BORDER_PROFILES       =   border_profiles
 
 POISSON               =   poisson
 FOURIER               =   fourier_fftpack
