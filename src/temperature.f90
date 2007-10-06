@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.26 2007-02-20 17:50:30 dobler Exp $
+! $Id: temperature.f90,v 1.27 2007-10-06 13:56:53 ajohan Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -93,7 +93,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.26 2007-02-20 17:50:30 dobler Exp $")
+           "$Id: temperature.f90,v 1.27 2007-10-06 13:56:53 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -370,7 +370,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss
 !
-      if (lfirst.and.ldt) diffus_chi=max(diffus_chi,(gamma*chi+chi_t)*dxyz_2)
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+(gamma*chi+chi_t)*dxyz_2
 !
       if(NO_WARN) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_constchi
@@ -420,7 +420,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chix*del2ss
 !
-      if (lfirst.and.ldt) diffus_chi=max(diffus_chi,(gamma*chix+chi_t)*dxyz_2)
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+(gamma*chix+chi_t)*dxyz_2
 !
     endsubroutine calc_heatcond_simple
 !***********************************************************************
@@ -542,7 +542,7 @@ endif
 !  NB: With heat conduction, the second-order term for entropy is
 !    gamma*chix*del2ss
 !
-      if (lfirst.and.ldt) diffus_chi=max(diffus_chi,(gamma*chix+chi_t)*dxyz_2)
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+(gamma*chix+chi_t)*dxyz_2
 !
     endsubroutine calc_heatcond
 !***********************************************************************

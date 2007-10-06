@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.123 2007-09-26 13:01:57 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.124 2007-10-06 13:56:53 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -137,7 +137,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.123 2007-09-26 13:01:57 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.124 2007-10-06 13:56:53 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1007,6 +1007,7 @@ module Dustvelocity
         if (lviscosity_dust) then
 !
           fviscd=0.0
+! AJ: this only works if viscosity coefficient is same for all species:
           diffus_nud=0.0  ! Do not sum viscosity from all dust species
 !
           select case (iviscd)

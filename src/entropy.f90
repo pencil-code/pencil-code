@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.534 2007-10-01 06:33:36 dintrans Exp $
+! $Id: entropy.f90,v 1.535 2007-10-06 13:56:53 ajohan Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -210,7 +210,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.534 2007-10-01 06:33:36 dintrans Exp $")
+           "$Id: entropy.f90,v 1.535 2007-10-06 13:56:53 ajohan Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -1953,8 +1953,8 @@ module Entropy
         call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs*p%rho1
         if (lfirst.and.ldt) then
-           diffus_chi=max(diffus_chi,gamma*Kgpara*exp(-p%lnrho)/p%cp*dxyz_2)           
-           dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
+          diffus_chi=diffus_chi+gamma*Kgpara*exp(-p%lnrho)/p%cp*dxyz_2
+          dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
         endif
       endif
 !
@@ -2146,9 +2146,9 @@ module Entropy
 !
       if (lfirst.and.ldt) then
         if (leos_idealgas) then
-          diffus_chi=max(diffus_chi,(gamma*chi+chi_t)*dxyz_2)
+          diffus_chi=diffus_chi+(gamma*chi+chi_t)*dxyz_2
         else
-          diffus_chi=max(diffus_chi,(chi+chi_t)*dxyz_2)
+          diffus_chi=diffus_chi+(chi+chi_t)*dxyz_2
         endif
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
@@ -2188,12 +2188,7 @@ module Entropy
 !
 !  check maximum diffusion from thermal diffusion
 !
-      if (lfirst.and.ldt) then
-        diffus_chi3=diffus_chi3+chi_hyper3
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
-      endif
+      if (lfirst.and.ldt) diffus_chi3=diffus_chi3+chi_hyper3*dxyz_6
 !
     endsubroutine calc_heatcond_hyper3
 !***********************************************************************
@@ -2261,9 +2256,9 @@ module Entropy
 !
       if (lfirst.and.ldt) then
         if (leos_idealgas) then
-          diffus_chi=max(diffus_chi,(chi_t+gamma*chi_shock*p%shock)*dxyz_2)
+          diffus_chi=diffus_chi+(chi_t+gamma*chi_shock*p%shock)*dxyz_2
         else
-          diffus_chi=max(diffus_chi,(chi_t+chi_shock*p%shock)*dxyz_2)
+          diffus_chi=diffus_chi+(chi_t+chi_shock*p%shock)*dxyz_2
         endif
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
@@ -2335,7 +2330,7 @@ module Entropy
 !  gamma*chix*del2ss
 !
       if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)
+        diffus_chi=diffus_chi+gamma*chix*dxyz_2
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
@@ -2412,9 +2407,9 @@ module Entropy
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + thdiff
 !
       if (lfirst.and.ldt) then
-         !
+!
          dt1_max=max(dt1_max,maxval(abs(thdiff)*gamma)/(cdts))
-         diffus_chi=max(diffus_chi,gamma*Kgpara*exp(2.5*p%lnTT-p%lnrho)/p%cp*dxyz_2)
+         diffus_chi=diffus_chi+gamma*Kgpara*exp(2.5*p%lnTT-p%lnrho)/p%cp*dxyz_2
       endif
 !
     endsubroutine calc_heatcond_spitzer
@@ -2628,7 +2623,7 @@ module Entropy
 !    gamma*chix*del2ss
 !
       if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,(gamma*chix+chi_t)*dxyz_2)
+        diffus_chi=diffus_chi+(gamma*chix+chi_t)*dxyz_2
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif

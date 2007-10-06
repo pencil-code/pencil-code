@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.24 2007-09-26 13:01:58 ajohan Exp $
+! $Id: entropy_onefluid.f90,v 1.25 2007-10-06 13:56:53 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.24 2007-09-26 13:01:58 ajohan Exp $")
+           "$Id: entropy_onefluid.f90,v 1.25 2007-10-06 13:56:53 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1814,7 +1814,7 @@ module Entropy
 !  gamma*chi*del2ss
 !
       if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,(gamma*chi+chi_t)*dxyz_2)
+        diffus_chi=diffus_chi+(gamma*chi+chi_t)*dxyz_2
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
@@ -1855,12 +1855,7 @@ module Entropy
 !
 !  check maximum diffusion from thermal diffusion
 !
-      if (lfirst.and.ldt) then
-        diffus_chi3=diffus_chi3+chi_hyper3
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
-      endif
+      if (lfirst.and.ldt) diffus_chi3=diffus_chi3+chi_hyper3*dxyz_6
 !
     endsubroutine calc_heatcond_hyper3
 !***********************************************************************
@@ -1915,7 +1910,7 @@ module Entropy
 !  gamma*chi*del2ss
 !
       if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,(chi_t+chi_shock*p%shock)*dxyz_2)
+        diffus_chi=diffus_chi+(chi_t+chi_shock*p%shock)*dxyz_2
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
@@ -1969,7 +1964,7 @@ module Entropy
 !  gamma*chix*del2ss
 !
       if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)
+        diffus_chi=diffus_chi+gamma*chix*dxyz_2
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
@@ -2049,7 +2044,7 @@ module Entropy
 !   gamma*chi*del2ss
 !
       if (lfirst.and.ldt) then
-         diffus_chi=max(diffus_chi,(gamma*Kgpara/p%rho*TT**2.5+chi_t)*dxyz_2)
+         diffus_chi=diffus_chi+(gamma*Kgpara/p%rho*TT**2.5+chi_t)*dxyz_2
          if (ldiagnos.and.idiag_dtchi/=0) then
             call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
          endif
@@ -2186,7 +2181,7 @@ module Entropy
 !    gamma*chix*del2ss
 !
       if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,(gamma*chix+chi_t)*dxyz_2)
+        diffus_chi=diffus_chi+(gamma*chix+chi_t)*dxyz_2
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif

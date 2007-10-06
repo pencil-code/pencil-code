@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.359 2007-09-26 10:45:25 ajohan Exp $
+! $Id: density.f90,v 1.360 2007-10-06 13:56:52 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -130,7 +130,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.359 2007-09-26 10:45:25 ajohan Exp $")
+           "$Id: density.f90,v 1.360 2007-10-06 13:56:52 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1417,11 +1417,13 @@ module Density
 !
 !  Multiply diffusion coefficient by Nyquist scale.
 !
-      diffus_diffrho =diffus_diffrho *dxyz_2
-      diffus_diffrho3=diffus_diffrho3*dxyz_6
-      if (headtt.or.ldebug) then
-        print*,'dlnrho_dt: max(diffus_diffrho ) =', maxval(diffus_diffrho)
-        print*,'dlnrho_dt: max(diffus_diffrho3) =', maxval(diffus_diffrho3)
+      if (lfirst.and.ldt) then
+        diffus_diffrho =diffus_diffrho *dxyz_2
+        diffus_diffrho3=diffus_diffrho3*dxyz_6
+        if (headtt.or.ldebug) then
+          print*,'dlnrho_dt: max(diffus_diffrho ) =', maxval(diffus_diffrho)
+          print*,'dlnrho_dt: max(diffus_diffrho3) =', maxval(diffus_diffrho3)
+        endif
       endif
 !
 !

@@ -1,4 +1,4 @@
-! $Id: visc_smagorinsky.f90,v 1.12 2006-11-30 09:03:36 dobler Exp $
+! $Id: visc_smagorinsky.f90,v 1.13 2007-10-06 14:00:06 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here smagorinsky viscosity
@@ -69,7 +69,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_smagorinsky.f90,v 1.12 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: visc_smagorinsky.f90,v 1.13 2007-10-06 14:00:06 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -367,7 +367,7 @@ module Viscosity
              call grad(f,ismagorinsky,gradnu_smag)
              call multmv_mn(sij,gradnu_smag,sgradnu_smag)
              fvisc=2*nusglnrho+tmp2+2*sgradnu_smag
-             diffus_nu=max(diffus_nu,f(l1:l2,m,n,ismagorinsky)*dxyz_2)
+             diffus_nu=diffus_nu+f(l1:l2,m,n,ismagorinsky)*dxyz_2
           else
              if(lfirstpoint) &
                   print*,"ldensity better be .true. for ivisc='smagorinsky'"
@@ -388,7 +388,7 @@ module Viscosity
             call grad(f,ismagorinsky,gradnu_smag)
             call multmv_mn(2*sij,gradnu_smag,sgradnu_smag)
             fvisc=2*nusglnrho+tmp2+sgradnu_smag
-            diffus_nu=max(diffus_nu,f(l1:l2,m,n,ismagorinsky)*dxyz_2)
+            diffus_nu=diffus_nu+f(l1:l2,m,n,ismagorinsky)*dxyz_2
          else
             if(lfirstpoint) print*,&
                  "ldensity better be true for ivisc='smagorinsky_simplified'"
@@ -410,7 +410,7 @@ module Viscosity
          !  -- the correct expression for nu=const
          !
          fvisc=fvisc+2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
-         diffus_nu=max(diffus_nu,nu*dxyz_2)
+         diffus_nu=diffus_nu+nu*dxyz_2
       endif
 !
       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc

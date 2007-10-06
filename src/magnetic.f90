@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.461 2007-09-26 10:45:25 ajohan Exp $
+! $Id: magnetic.f90,v 1.462 2007-10-06 13:56:53 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -344,7 +344,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.461 2007-09-26 10:45:25 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.462 2007-10-06 13:56:53 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1435,11 +1435,6 @@ module Magnetic
 !
       fres=0.0
       etatotal=0.0
-      if (lfirst.and.ldt) then
-        diffus_eta =0.0
-        diffus_eta2=0.0
-        diffus_eta3=0.0
-      endif
 !
       if (lresi_eta_const) then
         if (lweyl_gauge) then

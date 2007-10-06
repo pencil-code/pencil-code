@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.17 2007-09-26 13:01:58 ajohan Exp $
+! $Id: neutralvelocity.f90,v 1.18 2007-10-06 13:56:53 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -131,7 +131,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.17 2007-09-26 13:01:58 ajohan Exp $")
+           "$Id: neutralvelocity.f90,v 1.18 2007-10-06 13:56:53 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -770,7 +770,7 @@ module NeutralVelocity
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: fvisc,unij5glnrhon
-      real, dimension(nx) :: munrhon1,diffus_total
+      real, dimension(nx) :: munrhon1
       integer :: i,j
       type (pencil_case) :: p
 !

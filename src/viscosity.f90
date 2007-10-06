@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.83 2007-09-26 10:45:25 ajohan Exp $
+! $Id: viscosity.f90,v 1.84 2007-10-06 13:56:53 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -105,7 +105,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.83 2007-09-26 10:45:25 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.84 2007-10-06 13:56:53 ajohan Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -962,9 +962,11 @@ module Viscosity
 !
 !  Calculate max total diffusion coefficient for timestep calculation etc.
 !
-      diffus_nu =max(diffus_nu ,p%diffus_total *dxyz_2)
-      diffus_nu2=max(diffus_nu2,p%diffus_total2*dxyz_4)
-      diffus_nu3=max(diffus_nu3,p%diffus_total3*dxyz_6)
+      if (lfirst.and.ldt) then
+        diffus_nu =p%diffus_total *dxyz_2
+        diffus_nu2=p%diffus_total2*dxyz_4
+        diffus_nu3=p%diffus_total3*dxyz_6
+      endif
 !
 !  Diagnostic output
 !

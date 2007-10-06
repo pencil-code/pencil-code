@@ -1,4 +1,4 @@
-! $Id: chiral.f90,v 1.14 2007-01-31 12:50:12 wlyra Exp $
+! $Id: chiral.f90,v 1.15 2007-10-06 13:56:52 ajohan Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -92,7 +92,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: chiral.f90,v 1.14 2007-01-31 12:50:12 wlyra Exp $")
+           "$Id: chiral.f90,v 1.15 2007-10-06 13:56:52 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -302,9 +302,9 @@ module Chiral
 !
 !  For the timestep calculation, need maximum diffusion
 !
-        if (lfirst.and.ldt) diffus_chiral=chiral_diff*dxyz_2
-        if (headtt.or.ldebug) print*,'dXY_chiral_dt: max(diffus_chiral) =', &
-                                      maxval(diffus_chiral)
+      if (lfirst.and.ldt) diffus_chiral=diffus_chiral+chiral_diff*dxyz_2
+      if (headtt.or.ldebug) print*,'dXY_chiral_dt: max(diffus_chiral) =', &
+                                    maxval(diffus_chiral)
 !
 !  diagnostics
 !

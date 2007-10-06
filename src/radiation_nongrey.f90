@@ -1,4 +1,4 @@
-! $Id: radiation_nongrey.f90,v 1.5 2007-09-24 10:24:49 wlyra Exp $
+! $Id: radiation_nongrey.f90,v 1.6 2007-10-06 13:56:53 ajohan Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -218,7 +218,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_nongrey.f90,v 1.5 2007-09-24 10:24:49 wlyra Exp $")
+           "$Id: radiation_nongrey.f90,v 1.6 2007-10-06 13:56:53 ajohan Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -2219,8 +2219,6 @@ module Radiation
 !  Frad=sigmaSB*T^4, and Egas=rho*cv*T. (At the moment we use cp.)
 !  cdtrad=0.8 is an empirical coefficient (harcoded for the time being)
 !
-
-
         chi_rad=Krad*p%rho1*p%cp1
 
         if (lrad_cool_diffus .and. lrad_pres_diffus) then
