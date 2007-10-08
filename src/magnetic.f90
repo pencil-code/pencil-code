@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.462 2007-10-06 13:56:53 ajohan Exp $
+! $Id: magnetic.f90,v 1.463 2007-10-08 10:58:44 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -344,7 +344,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.462 2007-10-06 13:56:53 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.463 2007-10-08 10:58:44 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -740,7 +740,7 @@ module Magnetic
             f(l1:l2,m,n,iglobal_by_ext)= &
                 sqrt(2*mu0*1.0**2*rho/beta_const)
             f(l1:l2,m,n,iglobal_jx_ext)= &
-                sqrt(0.5*mu0*1.0**2*beta_const)*sqrt(rho)*z(n)/scaleH**2
+                sqrt(0.5*mu0*1.0**2/beta_const)*sqrt(rho)*z(n)/scaleH**2
           enddo; enddo
         case('hydrostatic_disk')
           call get_shared_variable('nu_epicycle',nu_epicycle,ierr)
