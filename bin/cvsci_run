@@ -1,5 +1,5 @@
 #!/bin/csh 
-#$Id: cvsci_run,v 1.20 2007-09-09 12:05:35 brandenb Exp $
+#$Id: cvsci_run,v 1.21 2007-10-09 06:16:07 sur Exp $
 #
 #  This script adds a new run to the repository
 #  and checks in all *.in files as well as material
@@ -27,10 +27,17 @@ cd $dir
 #
 #  add directories and files to cvs
 #
-cvs add *.in k.dat data parameters.pro
+cvs add *.in k.dat testfield_info.dat data
 #
 cd data
 cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml
+#
+#  add alpeta.sav, if it exists
+#
+\ls | egrep 'alpeta.sav' >/dev/null
+if ( ! $status ) then
+  cvs add alpeta.sav
+endif
 #
 #  add power spectra, if they exist
 #  (for the time being, test existence only on a few such files)
