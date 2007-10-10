@@ -62,7 +62,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.50 2007-08-03 09:53:26 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.51 2007-10-10 15:55:27 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -112,19 +112,19 @@ COMPILE_OPT IDL2,HIDDEN
 ; Get necessary dimensions QUIETly
 ;
   if (n_elements(dim) eq 0) then pc_read_dim,object=dim,datadir=datadir,proc=proc,/quiet
-  if (n_elements(param) eq 0) then pc_read_param,object=param,dim=dim,datadir=datadir,/QUIET
+  if (n_elements(param) eq 0) then pc_read_param,object=param,dim=dim,datadir=datadir,/quiet
 ;
 ; Call pc_read_grid to make sure any derivative stuff is correctly set in the common block
 ; Don't need the data fro anything though
 ;
-  pc_read_grid,dim=dim,datadir=datadir,param=param,/QUIET,SWAP_ENDIAN=SWAP_ENDIAN
+  pc_read_grid,dim=dim,datadir=datadir,param=param,/quiet,SWAP_ENDIAN=SWAP_ENDIAN
 ;
 ; Read problem dimensions (global)
 ;
   if (n_elements(proc) eq 1) then begin
     procdim=dim
   endif else begin
-    pc_read_dim,object=procdim,datadir=datadir,proc=0,/QUIET
+    pc_read_dim,object=procdim,datadir=datadir,proc=0,/quiet
   endelse
 ;
 ; and check pc_precision is set for all Pencil Code tools
@@ -174,9 +174,9 @@ COMPILE_OPT IDL2,HIDDEN
                          param=param,quiet=quiet,scalar=scalar,run2D=run2D)
   totalvars=(size(varcontent))[1]-1L
 ;
-  if n_elements(variables) ne 0 then begin
+  if (n_elements(variables) ne 0) then begin
     VALIDATE_VARIABLES=1
-    if keyword_set(ADDITIONAL) then begin
+    if (keyword_set(ADDITIONAL)) then begin
       filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
       variables=[filevars,variables]
       if n_elements(tags) ne 0 then begin
@@ -205,12 +205,12 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Apply "magic" variable transformations for derived quantities
 ;
-  if keyword_set(MAGIC) then pc_magic_var,variables,tags,param=param, $
+  if (keyword_set(magic)) then pc_magic_var,variables,tags,param=param, $
       datadir=datadir
 ;
 ; Get a free unit number
 ;
-  GET_LUN, file
+  get_lun, file
 ;
 ; Prepare for read (build read command)
 ;
@@ -246,7 +246,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Display information about the files contents
 ;
   content = strmid(content,2)
-  IF ( not keyword_set(QUIET) ) THEN print,'File '+varfile+' contains: ', content
+  if ( not keyword_set(QUIET) ) then print,'File '+varfile+' contains: ', content
 ;
 ; Loop over processors
 ;
@@ -260,7 +260,7 @@ COMPILE_OPT IDL2,HIDDEN
           print, 'Loading chunk ', strtrim(str(i+1)), ' of ', $
           strtrim(str(nprocs)), ' (', $
           strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
-      pc_read_dim,object=procdim,datadir=datadir,proc=i,/QUIET
+      pc_read_dim,object=procdim,datadir=datadir,proc=i,/quiet
     endelse
     ; Check for existance and read the data
     dummy=findfile(filename, COUNT=countfile)
@@ -417,21 +417,18 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  ;makeobject="object = CREATE_STRUCT(name='"+objectname+"',['t','x','y','z','dx','dy','dz'" + $
 ;
-  if keyword_set(VALIDATE_VARIABLES) then begin
+  if (keyword_set(VALIDATE_VARIABLES)) then begin
     skipvariable=make_array(n_elements(variables),/INT,value=0)
     for iv=0,n_elements(variables)-1 do begin
-    ;  res1=execute("testvariable=n_elements("+variables[iv]+")")
       res=execute(tags[iv]+'='+variables[iv])
-      if not res then begin
-        if not keyword_set(QUIET) then print,"% Skipping: "+tags[iv]+" -> "+variables[iv]
+      if (not res) then begin
+        if (not keyword_set(quiet)) then print,"% Skipping: "+tags[iv]+" -> "+variables[iv]
         skipvariable[iv]=1
       endif
     endfor
     testvariable=0
-    if min(skipvariable) ne 0 then begin
-      return
-    endif
-    if max(skipvariable) eq 1 then begin
+    if (min(skipvariable) ne 0) then return
+    if (max(skipvariable) eq 1) then begin
       variables=variables[where(skipvariable eq 0)]
       tags=tags[where(skipvariable eq 0)]
     endif
