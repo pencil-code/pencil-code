@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.24 2007-09-14 11:40:29 dintrans Exp $
+; $Id: pc_magic_var.pro,v 1.25 2007-10-10 15:54:00 ajohan Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2007-09-14 11:40:29 $
-;  $Revision: 1.24 $
+;  $Date: 2007-10-10 15:54:00 $
+;  $Revision: 1.25 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -73,10 +73,9 @@
 ;
 pro pc_magic_var,variables,tags,param=param,datadir=datadir
 
-; default, datadir, 'data'
-  IF (not keyword_set(datadir)) THEN datadir='data'
-; Allow param to be passed it if already loaded (eg. when called from inside another pc_ routine)
-  if n_elements(param) eq 0 then pc_read_param,object=param,datadir=datadir
+  if (not keyword_set(datadir)) then datadir='data'
+  if (n_elements(param) eq 0) then $
+      pc_read_param,object=param,datadir=datadir,/quiet
 
   lionization = safe_get_tag(param,'lionization',default=safe_get_tag(param,'leos_ionization',default=0)) 
   lionization_fixed = safe_get_tag(param,'lionization_fixed',default=safe_get_tag(param,'leos_ionizationi_fixed',default=0)) 
