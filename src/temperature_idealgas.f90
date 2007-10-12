@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.44 2007-10-06 13:56:53 ajohan Exp $
+! $Id: temperature_idealgas.f90,v 1.45 2007-10-12 07:26:56 bingert Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -46,6 +46,7 @@ module Entropy
   real :: radius_lnTT=0.1,ampl_lnTT=0.,widthlnTT=2*epsi
   real :: lnTT_left=1.0,lnTT_right=1.0,lnTT_const=0.0,TT_const=1.0
   real :: kx_lnTT=1.0,ky_lnTT=1.0,kz_lnTT=1.0
+  real :: Kgperp=0.,Kgpara=0.
   real :: chi=impossible,heat_uniform=0.0,difflnTT_hyper=0.
   real :: zbot=0.0,ztop=0.0
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
@@ -58,6 +59,7 @@ module Entropy
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.,ldiff_hyper=.false.
   logical :: lheatc_Kconst=.false.,lheatc_Kprof=.false.,lheatc_Karctan=.false.
+  logical :: lheatc_tensordiffusion=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lfreeze_lnTTint=.false.,lfreeze_lnTText=.false.
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
@@ -89,7 +91,7 @@ module Entropy
       lheatc_chiconst_accurate,hcond0,lcalc_heat_cool,&
       lfreeze_lnTTint,lfreeze_lnTText,widthlnTT,mpoly0,mpoly1, &
       lhcond_global,lviscosity_heat,difflnTT_hyper, &
-      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width
+      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width,Kgpara,Kgperp
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
@@ -135,7 +137,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.44 2007-10-06 13:56:53 ajohan Exp $")
+           "$Id: temperature_idealgas.f90,v 1.45 2007-10-12 07:26:56 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -199,6 +201,7 @@ module Entropy
       lheatc_Kconst= .false.
       lheatc_Kprof= .false.
       lheatc_Karctan= .false.
+      lheatc_tensordiffusion=.false.
       lheatc_chiconst = .false.
       ldiff_hyper = .false.
       lnothing = .false.
@@ -226,6 +229,9 @@ module Entropy
         case ('hyper')
           ldiff_hyper=.true.
           if (lroot) call information('initialize_entropy','hyper diffusion')
+        case ('tensor-diffusion')
+          lheatc_tensordiffusion=.true.
+          if (lroot) print*, 'heat conduction: tensor diffusion'
         case ('nothing')
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
@@ -437,10 +443,6 @@ module Entropy
         lpenc_requested(i_cp1)=.true.
       endif
 !
-      if (ldiff_hyper) lpenc_requested(i_del6lnTT)=.true.
-!
-      if (ladvection_temperature) lpenc_requested(i_uglnTT)=.true.
-!
       !if (lheatc_shock) then
       !   lpenc_requested(i_glnrho)=.true.
       !   lpenc_requested(i_gss)=.true.
@@ -449,6 +451,19 @@ module Entropy
       !   lpenc_requested(i_shock)=.true.
       !   lpenc_requested(i_glnTT)=.true.
       !endif
+!
+      if (lheatc_tensordiffusion) then
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_hlnTT)=.true.
+        lpenc_requested(i_cp1)=.true.
+      endif
+!
+      if (ldiff_hyper) lpenc_requested(i_del6lnTT)=.true.
+!
+      if (ladvection_temperature) lpenc_requested(i_uglnTT)=.true.
 !
 !  Diagnostics
 !
@@ -555,12 +570,13 @@ module Entropy
       use Sub
       use Global
       use Viscosity, only: calc_viscous_heat
-      use EquationOfState, only: gamma1
+      use EquationOfState, only: gamma1,gamma
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension(nx) :: Hmax=0.
+      real, dimension (nx) :: vKpara,vKperp,rhs            
       integer :: j,ju
 !
       intent(inout) :: f,p
@@ -609,6 +625,16 @@ module Entropy
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
       if (lheatc_Kprof)    call calc_heatcond(f,df,p)
       if (lheatc_Karctan)  call calc_heatcond_arctan(df,p)
+      if (lheatc_tensordiffusion) then
+        vKpara(:) = Kgpara
+        vKperp(:) = Kgperp
+        call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs*p%rho1*gamma*p%cp1
+        if (lfirst.and.ldt) then
+          diffus_chi=diffus_chi+gamma*Kgpara*p%rho1*p%cp1*dxyz_2
+          dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
+        endif
+      endif
 !
 !  Hyper diffusion
 !
