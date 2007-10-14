@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.46 2007-10-04 07:10:51 ajohan Exp $
+! $Id: shear.f90,v 1.47 2007-10-14 07:31:59 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -18,14 +18,17 @@ module Shear
   real, dimension (nz) :: uy0_extra, duy0dz_extra
   real :: eps_vshear=0.0
   logical :: luy0_extra=.false.,lshearadvection_as_shift=.false.
+  logical :: lmagnetic_stretching=.true.
 
   include 'shear.h'
 
   namelist /shear_init_pars/ &
-      qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift
+      qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift, &
+      lmagnetic_stretching
 
   namelist /shear_run_pars/ &
-      qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift
+      qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift, &
+      lmagnetic_stretching
 
   integer :: idiag_dtshear=0
 
@@ -50,7 +53,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.46 2007-10-04 07:10:51 ajohan Exp $")
+           "$Id: shear.f90,v 1.47 2007-10-14 07:31:59 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -200,9 +203,9 @@ module Shear
         enddo
       endif
 !
-!  Magnetic stretching term
+!  Magnetic stretching term (can be turned off for debugging purposes).
 !
-      if (lmagnetic) then
+      if (lmagnetic .and. lmagnetic_stretching) then
         df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Sshear*f(l1:l2,m,n,iay)
         if (luy0_extra) df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)-duy0dz_extra(n-nghost)*f(l1:l2,m,n,iay)
       endif
