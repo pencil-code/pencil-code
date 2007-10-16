@@ -1,4 +1,4 @@
-! $Id: testfield_xz.f90,v 1.10 2007-10-16 09:25:47 pkapyla Exp $
+! $Id: testfield_xz.f90,v 1.11 2007-10-16 14:44:07 pkapyla Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -36,11 +36,14 @@ module Testfield
   real, dimension(3) :: B_ext=(/0.,0.,0./)
   real, dimension (nx,3) :: bbb
   real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
+  real :: taainit=0.,daainit=0.
   logical :: reinitialize_aatest=.false.
   logical :: zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
+  logical :: linit_aatest=.false.
   character (len=labellen) :: itestfield='B11-B21'
   real :: ktestfield=1.
   integer, parameter :: njtest=2,ntestfield=3*njtest
+  integer :: naainit
 
   namelist /testfield_init_pars/ &
        B_ext,zextent,initaatest
@@ -49,7 +52,8 @@ module Testfield
   real :: etatest=0.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca, &
-       lset_bbtest2,etatest,itestfield,ktestfield
+       lset_bbtest2,etatest,itestfield,ktestfield, &
+       daainit,linit_aatest
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_E111z=0      ! DIAG_DOC: ${\cal E}_1^{11}$
@@ -105,7 +109,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_xz.f90,v 1.10 2007-10-16 09:25:47 pkapyla Exp $")
+           "$Id: testfield_xz.f90,v 1.11 2007-10-16 14:44:07 pkapyla Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -277,8 +281,10 @@ module Testfield
       real, dimension (nx) :: bpq2
       real, dimension(mz), save :: cz,sz
       integer :: jtest,jfnamez,j
+      integer,save :: ifirst=0
       logical,save :: first=.true.
-
+      character (len=5) :: ch
+      character (len=130) :: file
 !
       intent(in)     :: f,p
       intent(inout)  :: df
@@ -396,6 +402,26 @@ module Testfield
           if (n==iz_loc)  bb11_xy(:,m-m1+1,j)=bpq(:,j,1)
           if (n==iz2_loc) bb11_xy2(:,m-m1+1,j)=bpq(:,j,1)
         enddo
+      endif
+!
+! initialize aatest periodically if requested
+!
+      if (linit_aatest) then
+         file=trim(datadir)//'/tinit_aatest.dat'
+         if (ifirst==0) then
+            call read_snaptime(trim(file),taainit,naainit,daainit,t)
+            if (taainit==0 .or. taainit < t-daainit) then
+              taainit=t+daainit
+            endif
+            ifirst=1
+         endif
+!
+         if (t >= taainit) then
+            reinitialize_aatest=.true.
+            call initialize_testfield(f)
+            reinitialize_aatest=.false.
+            call update_snaptime(file,taainit,naainit,daainit,t,ltestfield,ch,ENUM=.false.)
+         endif
       endif
 !
     endsubroutine daatest_dt

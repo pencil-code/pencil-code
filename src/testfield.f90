@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.33 2007-10-16 09:25:47 pkapyla Exp $
+! $Id: testfield.f90,v 1.34 2007-10-16 14:44:07 pkapyla Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -29,12 +29,15 @@ module Testfield
   real, dimension(3) :: B_ext=(/0.,0.,0./)
   real, dimension (nx,3) :: bbb
   real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
+  real :: taainit=0.,daainit=0.
   logical :: reinitialize_aatest=.false.
   logical :: xextent=.true.,zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
+  logical :: linit_aatest=.false.
   integer :: itestfield=1
   real :: ktestfield=1.
   integer, parameter :: njtest=12,ntestfield=3*njtest
 ! integer, parameter :: njtest=6,ntestfield=3*njtest
+  integer :: naainit
 
   namelist /testfield_init_pars/ &
        B_ext,xextent,zextent,initaatest
@@ -43,7 +46,8 @@ module Testfield
   real :: etatest=0.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,xextent,zextent,lsoca, &
-       lset_bbtest2,etatest,itestfield,ktestfield
+       lset_bbtest2,etatest,itestfield,ktestfield,daainit, &
+       linit_aatest
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0,idiag_alp21=0,idiag_alp31=0
@@ -111,7 +115,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.33 2007-10-16 09:25:47 pkapyla Exp $")
+           "$Id: testfield.f90,v 1.34 2007-10-16 14:44:07 pkapyla Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -280,6 +284,9 @@ module Testfield
       real, dimension (nx,3) :: del2Atest
 !     real :: fnamez_mean
       integer :: jtest,jfnamez,j
+      integer,save :: ifirst=0
+      character (len=5) :: ch
+      character (len=130) :: file
 !
       intent(in)     :: f,p
       intent(inout)  :: df
@@ -465,6 +472,26 @@ module Testfield
           endif
         endif
       enddo
+!
+! initialize aatest periodically if requested
+!
+      if (linit_aatest) then
+         file=trim(datadir)//'/tinit_aatest.dat'
+         if (ifirst==0) then
+            call read_snaptime(trim(file),taainit,naainit,daainit,t)
+            if (taainit==0 .or. taainit < t-daainit) then
+              taainit=t+daainit
+            endif
+            ifirst=1
+         endif
+!
+         if (t >= taainit) then
+            reinitialize_aatest=.true.
+            call initialize_testfield(f)
+            reinitialize_aatest=.false.
+            call update_snaptime(file,taainit,naainit,daainit,t,ltestfield,ch,ENUM=.false.)
+         endif
+      endif
 !
     endsubroutine daatest_dt
 !***********************************************************************
