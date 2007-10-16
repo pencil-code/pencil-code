@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.13 2007-10-03 09:36:56 brandenb Exp $
+! $Id: testfield_z.f90,v 1.14 2007-10-16 09:25:47 pkapyla Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Testfield
   real, dimension(3) :: B_ext=(/0.,0.,0./)
   real, dimension (nx,3) :: bbb
   real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
-  logical :: reinitalize_aatest=.false.
+  logical :: reinitialize_aatest=.false.
   logical :: zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
   logical :: luxb_as_aux=.false.
   character (len=labellen) :: itestfield='B11-B21'
@@ -65,7 +65,7 @@ module Testfield
   ! run parameters
   real :: etatest=0.
   namelist /testfield_run_pars/ &
-       B_ext,reinitalize_aatest,zextent,lsoca, &
+       B_ext,reinitialize_aatest,zextent,lsoca, &
        lset_bbtest2,etatest,itestfield,ktestfield, &
        luxb_as_aux
 
@@ -148,7 +148,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.13 2007-10-03 09:36:56 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.14 2007-10-16 09:25:47 pkapyla Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -183,7 +183,7 @@ module Testfield
 !  set to zero and then rescale the testfield
 !  (in future, could call something like init_aa_simple)
 !
-      if (reinitalize_aatest) then
+      if (reinitialize_aatest) then
         f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
       endif
 !
