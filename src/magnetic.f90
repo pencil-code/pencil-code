@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.463 2007-10-08 10:58:44 ajohan Exp $
+! $Id: magnetic.f90,v 1.464 2007-10-16 10:13:02 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -344,7 +344,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.463 2007-10-08 10:58:44 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.464 2007-10-16 10:13:02 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -455,7 +455,7 @@ module Magnetic
           lresi_hyper3=.true.
         case('hyper3_cyl')
           if (lroot) print*, 'resistivity: hyper3_cyl'
-          lresi_hyper3=.true.
+          lresi_hyper3_cyl=.true.
         case('hyper3_strict')
           if (lroot) print*, 'resistivity: strict hyper3 with positive definite heating rate'
           lresi_hyper3_strict=.true.

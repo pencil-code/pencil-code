@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.346 2007-09-21 15:14:18 wlyra Exp $
+! $Id: sub.f90,v 1.347 2007-10-16 10:13:01 wlyra Exp $
 
 module Sub
 
@@ -2400,7 +2400,7 @@ module Sub
 !  unless lpencil_check=T
 ! 
       if (.not.lpencil_check.and.(lcylindrical_coords.or.lspherical_coords)) &
-           call stop_it("del6vi_etc not implemented for non-cartesian coordinates")
+           call stop_it("del6v not implemented for non-cartesian coordinates")
 !
     endsubroutine del6v
 !***********************************************************************
