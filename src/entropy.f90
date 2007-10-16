@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.535 2007-10-06 13:56:53 ajohan Exp $
+! $Id: entropy.f90,v 1.536 2007-10-16 18:22:43 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -210,7 +210,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.535 2007-10-06 13:56:53 ajohan Exp $")
+           "$Id: entropy.f90,v 1.536 2007-10-16 18:22:43 dintrans Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -457,7 +457,7 @@ module Entropy
           cs2cool=cs2top
 
         case('single_polytrope')
-!         if (lcylindrical_coords) cs2cool=cs2top
+          if (cool/=0.) cs2cool=cs0**2
 
       endselect
 !
