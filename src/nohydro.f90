@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.77 2007-09-15 17:56:42 brandenb Exp $
+! $Id: nohydro.f90,v 1.78 2007-10-17 14:21:09 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -74,7 +74,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.77 2007-09-15 17:56:42 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.78 2007-10-17 14:21:09 brandenb Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -288,7 +288,15 @@ module Hydro
         p%uu(:,1)=-cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
         p%uu(:,2)=+sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
         p%uu(:,3)=+cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)
-! divu (check!)
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  Taylor-Green flow
+!
+      elseif (kinflow=='TG') then
+        if (headtt) print*,'Taylor-Green flow; kx_aa,ky_aa=',kkx_aa,kky_aa
+        p%uu(:,1)=+2.*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*cos(kkz_aa*z(n))
+        p%uu(:,2)=-2.*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*cos(kkz_aa*z(n))
+        p%uu(:,3)=+0.
         if (lpencil(i_divu)) p%divu=0.
 !
 !  Galloway-Proctor flow

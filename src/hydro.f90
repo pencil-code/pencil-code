@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.401 2007-09-26 10:35:12 ajohan Exp $
+! $Id: hydro.f90,v 1.402 2007-10-17 14:21:09 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -40,6 +40,7 @@ module Hydro
   real, target, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2
   real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz
   real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz
+  real, dimension (nz,3) :: uumz
 !
 !  precession matrices
 !
@@ -105,6 +106,7 @@ module Hydro
   logical :: lremove_mean_momenta=.false.
   logical :: lremove_mean_flow=.false.
   logical :: lalways_use_gij_etc=.false.
+  logical :: lcalc_uumean=.false.
   character (len=labellen) :: iforcing_continuous_uu='ABC'
   character (len=labellen) :: uuprof='nothing'
 !
@@ -123,7 +125,7 @@ module Hydro
        lembed,k1_ff,ampl_ff,width_ff_uu,x1_ff_uu,x2_ff_uu, &
        utop,ubot,omega_out,omega_in, & 
        lprecession, omega_precession, lshear_rateofstrain, &
-       lalways_use_gij_etc, &
+       lalways_use_gij_etc,lcalc_uumean, &
        luut_as_aux,loutest, ldiffrot_test,&
        velocity_ceiling
 
@@ -313,7 +315,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.401 2007-09-26 10:35:12 ajohan Exp $")
+           "$Id: hydro.f90,v 1.402 2007-10-17 14:21:09 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1496,10 +1498,11 @@ use Mpicomm, only: stop_it
 !  or tau_damp_ruzm are different from zero. Was used to remove net
 !  momenta in any of the three directions. A better method is now
 !  to set lremove_mean_momenta=T in the call to remove_mean_momenta.
+!  calculate <U>, when lcalc_uumean=.true.
 !
 !   9-nov-06/axel: adapted from calc_ltestfield_pars
 !
-      use Cdata, only: iux,iuy,iuz,ilnrho,l1,l2,m1,m2,n1,n2,lroot,t
+      use Cdata, only: iux,iuy,iuz,ilnrho,l1,l2,m1,m2,n1,n2,lroot,t !,ipz
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1508,8 +1511,11 @@ use Mpicomm, only: stop_it
       real, dimension (nreduce) :: fsum_tmp,fsum
       real, dimension (3,3) :: mat_cori1=0.,mat_cori2=0.
       real, dimension (3,3) :: mat_cent1=0.,mat_cent2=0.,mat_cent3=0.
+      integer :: nxy=nxgrid*nygrid
+!     real, dimension (nz,nprocz,3) :: uumz1
+!     real, dimension (nz*nprocz*3) :: uumz2,uumz3
       real :: c,s
-      integer :: m,n
+      integer :: m,n,j
       real :: fact
 !
       intent(in) :: f
@@ -1545,6 +1551,32 @@ use Mpicomm, only: stop_it
       ruym=fsum(2)
       ruzm=fsum(3)
       endif
+!
+!  do mean field for each component
+!
+      if (lcalc_uumean) then
+        fact=1./nxy
+        do n=n1,n2
+          uumz(n,:)=0.
+          do j=1,3
+            uumz(n-n1+1,j)=fact*sum(f(l1:l2,m1:m2,n,j))
+          enddo
+        enddo
+      endif
+!
+!  do communication for array of size nz*nprocz*3*njtest
+!
+!     if (nprocy>1) then
+!       uum2=reshape(uumz1,shape=(/nz*nprocz*3/))
+!       call mpireduce_sum(uumz2,uum3,nz*nprocz*3)
+!       call mpibcast_real(uumz3,nz*nprocz*3)
+!       uum1=reshape(uum3,shape=(/nz,nprocz,3/))
+!       do n=n1,n2
+!         do j=1,3
+!           uumz(n,j)=uumz1(n-n1+1,ipz+1,j)
+!         enddo
+!       enddo
+!     endif
 !
 !  calculate precession matrices
 !

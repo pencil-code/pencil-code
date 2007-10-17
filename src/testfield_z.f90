@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.15 2007-10-16 14:44:07 pkapyla Exp $
+! $Id: testfield_z.f90,v 1.16 2007-10-17 14:21:09 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -150,7 +150,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.15 2007-10-16 14:44:07 pkapyla Exp $")
+           "$Id: testfield_z.f90,v 1.16 2007-10-17 14:21:09 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -344,6 +344,7 @@ module Testfield
 !
       use Cdata
       use Sub
+      use Hydro, only: uumz,lcalc_uumean
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -352,7 +353,7 @@ module Testfield
 
       real, dimension (nx,3) :: bb,aa,uxB,bbtest,btest,uxbtest,duxbtest
       real, dimension (nx,3,njtest) :: Eipq,bpq
-      real, dimension (nx,3) :: del2Atest
+      real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx) :: bpq2
       integer :: jtest,jfnamez,j
       integer,save :: ifirst=0
@@ -370,6 +371,16 @@ module Testfield
         if (iaxtest /= 0) call identify_bcs('Axtest',iaxtest)
         if (iaytest /= 0) call identify_bcs('Aytest',iaytest)
         if (iaztest /= 0) call identify_bcs('Aztest',iaztest)
+      endif
+!
+!  calculate uufluct=U-Umean
+!
+      if (lcalc_uumean) then
+        do j=1,3
+          uufluct(:,j)=p%uu(:,j)-uumz(n,j)
+        enddo
+      else
+        uufluct=p%uu
       endif
 !
 !  do each of the 9 test fields at a time
@@ -394,7 +405,7 @@ module Testfield
         if (B_ext(2)/=0.) bbtest(:,2)=bbtest(:,2)+B_ext(2)
         if (B_ext(3)/=0.) bbtest(:,3)=bbtest(:,3)+B_ext(3)
 !
-        call cross_mn(p%uu,bbtest,uxB)
+        call cross_mn(uufluct,bbtest,uxB)
         if (lsoca) then
           df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
             +uxB+etatest*del2Atest
