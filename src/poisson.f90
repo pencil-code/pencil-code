@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.26 2007-08-17 18:32:42 dobler Exp $
+! $Id: poisson.f90,v 1.27 2007-10-18 10:30:29 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -27,12 +27,37 @@ module Poisson
 
   implicit none
 
+  real :: kmax=0.0
+  logical :: lrazor_thin=.false., lsemispectral=.false.
+
   include 'poisson.h'
+
+  namelist /poisson_init_pars/ &
+      lsemispectral, kmax, lrazor_thin
+
+  namelist /poisson_run_pars/ &
+      lsemispectral, kmax, lrazor_thin
 
   contains
 
 !***********************************************************************
-    subroutine inverse_laplacian(phi,h,kmax)
+    subroutine initialize_poisson()
+!
+!  Perform any post-parameter-read initialization i.e. calculate derived
+!  parameters.
+!
+!  18-oct-07/anders: adapted
+!
+      if (lrazor_thin) then
+        if (nzgrid/=1) then
+          if (lroot) print*, 'inverse_laplacian_fft: razon-thin approximation only works with nzgrid==1'
+          call fatal_error('inverse_laplacian_fft','')
+        endif
+      endif
+!
+    endsubroutine initialize_poisson
+!***********************************************************************
+    subroutine inverse_laplacian(phi)
 !
 !  Dispatch solving the Poisson equation to inverse_laplacian_fft
 !  or inverse_laplacian_semispectral, based on the boundary conditions
@@ -40,48 +65,18 @@ module Poisson
 !  17-jul-2007/wolf: coded wrapper
 !
       real, dimension (nx,ny,nz) :: phi
-      real, optional             :: kmax,h
-      real                       :: kmax1
 !
-      intent(in)    :: kmax, h
       intent(inout) :: phi
 !
-!  Always specify kmax in order to save some if statements below
-!  [feel free to change this if you think this has performance issues]
-!
-      if (present(kmax)) then
-        kmax1 = kmax
+      if (lsemispectral) then
+        call inverse_laplacian_semispectral(phi)
       else
-        kmax1 = huge1
-      endif
-
-      if (all(lperi)) then
-        !
-        if (present(h)) then
-          call inverse_laplacian_fft(phi,h,kmax1)
-        else
-          call inverse_laplacian_fft(phi,KMAX=kmax1)
-        endif
-
-      elseif (lperi(1) .and. lperi(2) .and. .not. lperi(3)) then
-        !
-        if (present(h)) then
-          call inverse_laplacian_semispectral(phi,h)
-        else
-          call inverse_laplacian_semispectral(phi)
-        endif
-
-      else
-        !
-        write(0,*) "Don't know how to handle lperi = ", lperi
-        call not_implemented("inverse_laplacian", &
-            "Arbitrary lperi not implemented")
-
+        call inverse_laplacian_fft(phi)
       endif
 !
     endsubroutine inverse_laplacian
 !***********************************************************************
-    subroutine inverse_laplacian_fft(phi,h,kmax)
+    subroutine inverse_laplacian_fft(phi)
 !
 !  Solve the Poisson equation by Fourier transforming on a periodic grid.
 !  This method works both with and without shear.
@@ -89,28 +84,29 @@ module Poisson
 !  15-may-2006/anders+jeff: coded
 !
       real, dimension (nx,ny,nz) :: phi
-      real, optional             :: kmax,h
 !
       real, dimension (nx,ny,nz) :: b1
       real :: k2
       integer :: ikx, iky, ikz
 !
-!  identify version
+!  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.26 2007-08-17 18:32:42 dobler Exp $")
+        "$Id: poisson.f90,v 1.27 2007-10-18 10:30:29 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
       b1 = 0.0
+!
 !  Forward transform (to k-space).
+!
       if (lshear) then
         call fourier_transform_shear(phi,b1)
       else
         call fourier_transform(phi,b1)
       endif
 !
-!  FT(PHI) = -rhs_poisson_const*FT(rho)/k^2
+!  Solve Poisson equation.
 !
       do ikz=1,nz; do iky=1,ny; do ikx=1,nx
         if ((kx_fft(ikx)==0.0) .and. &
@@ -118,7 +114,8 @@ module Poisson
           phi(ikx,iky,ikz) = 0.0
           b1(ikx,iky,ikz) = 0.0
         else
-          if (lshear) then
+          if (.not. lrazor_thin) then
+            if (lshear) then
 !
 !  Take into account that the Fourier transform has been done in shearing
 !  coordinates, and that the kx of each Fourier mode is different in the normal
@@ -131,36 +128,52 @@ module Poisson
 !  must be able to identify the x-direction in order to take shear into account.
 !  (see the subroutine transform_fftpack_shear in Mpicomm for details).
 !
-            if (nzgrid/=1) then ! Order (kz,ky',kx)
-              k2 = (kx_fft(ikz+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
-                    ky_fft(iky+ipy*ny)**2 + kz_fft(ikx)**2
-            else                ! Order (kx,ky',kz)
-              k2 = (kx_fft(ikx)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
-                    ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
-            endif
+              if (nzgrid/=1) then ! Order (kz,ky',kx)
+                k2 = (kx_fft(ikz+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
+                      ky_fft(iky+ipy*ny)**2 + kz_fft(ikx)**2
+              else                ! Order (kx,ky',kz)
+                k2 = (kx_fft(ikx)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
+                      ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
+              endif
 !  The ordering of the array is not important here, because there is no shear!
-          else
-            k2 = kx_fft(ikx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
-          endif
-          if (present(h)) k2 = k2+h
+            else
+              k2 = kx_fft(ikx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
+            endif
 !
 !  Solution of Poisson equation.
 !
-          phi(ikx,iky,ikz) = -phi(ikx,iky,ikz) / k2
-          b1(ikx,iky,ikz) = -b1(ikx,iky,ikz) / k2
+            phi(ikx,iky,ikz) = -phi(ikx,iky,ikz) / k2
+            b1(ikx,iky,ikz)  = - b1(ikx,iky,ikz) / k2
+!
+          else
+!
+!  Razor-thin approximation. Here we solve the equation
+!    del2Phi=4*pi*G*Sigma(x,y)*delta(z)
+!  The solution at scale k=(kx,ky) is
+!    Phi(x,y,z)=-(2*pi*G/|k|)*Sigma(x,y)*exp[i*(kx*x+ky*y)-|k|*|z|]
+!
+            if (lshear) then
+              k2 = (kx_fft(ikx)+deltay/Lx*ky_fft(iky+ipy*ny))**2+ky_fft(iky+ipy*ny)**2
+            else
+              k2 = kx_fft(ikx)**2+ky_fft(iky+ipy*ny)**2
+            endif
+            phi(ikx,iky,ikz) = -phi(ikx,iky,ikz) / sqrt(k2)
+            b1(ikx,iky,ikz)  = - b1(ikx,iky,ikz) / sqrt(k2)
+          endif
+        endif
 !
 !  Limit |k| < kmax
 !
-          if (present(kmax)) then
+          if (kmax>0.0) then
             if (sqrt(k2)>=kmax) then
               phi(ikx,iky,ikz) = 0.
               b1(ikx,iky,ikz) = 0.
             endif
           endif
-!
-        endif
       enddo; enddo; enddo
+!
 !  Inverse transform (to real space).
+!
       if (lshear) then
         call fourier_transform_shear(phi,b1,linv=.true.)
       else
@@ -169,7 +182,7 @@ module Poisson
 !
     endsubroutine inverse_laplacian_fft
 !***********************************************************************
-    subroutine inverse_laplacian_semispectral(phi,h)
+    subroutine inverse_laplacian_semispectral(phi)
 !
 !  Solve the Poisson equation by Fourier transforming in the xy-plane and
 !  solving the discrete matrix equation in the z-direction.
@@ -180,7 +193,6 @@ module Poisson
       use Mpicomm, only: transp_xz, transp_zx
 !
       real, dimension (nx,ny,nz) :: phi
-      real, optional             :: h
 !
       real, dimension (nx,ny,nz) :: b1
       real, dimension (nzgrid,nx/nprocz) :: rhst, b1t
@@ -192,7 +204,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.26 2007-08-17 18:32:42 dobler Exp $")
+        "$Id: poisson.f90,v 1.27 2007-10-18 10:30:29 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -212,7 +224,6 @@ module Poisson
         c_tri(:)=1.0/dz**2
         do ikx=1,nxgrid/nprocz
           k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
-          if (present(h)) k2 = k2 + h
           b_tri=-2.0/dz**2-k2
 !
           if (k2==0.0) then
@@ -240,7 +251,6 @@ module Poisson
         c_tri(:)=1.0/dz**2
         do ikx=1,nxgrid/nprocz
           k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
-          if (present(h)) k2 = k2 + h
           b_tri=-2.0/dz**2-k2
 !
           if (k2==0.0) then
@@ -270,6 +280,64 @@ module Poisson
 !
     endsubroutine inverse_laplacian_semispectral
 !***********************************************************************
-
+    subroutine read_poisson_init_pars(unit,iostat)
+!
+!  Read Poisson init parameters.
+!
+!  17-oct-2007/anders: coded
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=poisson_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=poisson_init_pars,ERR=99)
+      endif
+!
+99    return
+    endsubroutine read_poisson_init_pars
+!***********************************************************************
+    subroutine write_poisson_init_pars(unit)
+!
+!  Write Poisson init parameters.
+!
+!  17-oct-2007/anders: coded
+!
+      integer, intent(in) :: unit
+!
+      write(unit,NML=poisson_init_pars)
+!
+    endsubroutine write_poisson_init_pars
+!***********************************************************************
+    subroutine read_poisson_run_pars(unit,iostat)
+!
+!  Read Poisson run parameters.
+!
+!  17-oct-2007/anders: coded
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=poisson_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=poisson_run_pars,ERR=99)
+      endif
+!
+99    return
+    endsubroutine read_Poisson_run_pars
+!***********************************************************************
+    subroutine write_poisson_run_pars(unit)
+!
+!  Write Poisson run parameters.
+!
+!  17-oct-2007/anders: coded
+!
+      integer, intent(in) :: unit
+!
+      write(unit,NML=poisson_run_pars)
+!
+    endsubroutine write_poisson_run_pars
+!***********************************************************************
 endmodule Poisson
-

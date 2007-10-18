@@ -1,4 +1,4 @@
-! $Id: poisson_multigrid.f90,v 1.2 2007-08-16 23:19:23 dobler Exp $
+! $Id: poisson_multigrid.f90,v 1.3 2007-10-18 10:30:29 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -26,12 +26,29 @@ module Poisson
 
   implicit none
 
+  real :: h=0.0
+
   include 'poisson.h'
+
+  namelist /poisson_init_pars/ &
+      h
+
+  namelist /poisson_run_pars/ &
+      h
 
   contains
 
 !***********************************************************************
-    subroutine inverse_laplacian(phi, h, kmax)
+    subroutine initialize_poisson()
+!
+!  Perform any post-parameter-read initialization i.e. calculate derived
+!  parameters.
+!
+!  18-oct-07/anders: adapted
+!
+    endsubroutine initialize_poisson
+!***********************************************************************
+    subroutine inverse_laplacian(phi)
 !
 !  Solve the Poisson (or inhomogeneous Helmholtz) equation
 !    (\Laplace - h) f = rhs
@@ -40,24 +57,17 @@ module Poisson
 !
 !  18-may-2007/wolf: adapted from IDL prototype
 !
-      real, dimension(nx,ny,nz)           :: phi,rhs
-      real, dimension(nx,ny,nz), optional :: h
-      real, optional                      :: kmax
-      real, dimension(3)                  :: dxyz
-      integer                             :: iter
+      real, dimension(nx,ny,nz) :: phi,rhs
 !
-      intent(in)    :: h, kmax
+      real, dimension(3) :: dxyz
+      integer :: iter
+!
       intent(inout) :: phi
 !
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson_multigrid.f90,v 1.2 2007-08-16 23:19:23 dobler Exp $")
-!
-      if (present(kmax)) then
-        call warning("inverse_laplacian", &
-            "kmax ignored by multigrid solver")
-      endif
+        "$Id: poisson_multigrid.f90,v 1.3 2007-10-18 10:30:29 ajohan Exp $")
 !
       if (lshear) then
         call fatal_error("inverse_laplacian", &
@@ -71,7 +81,7 @@ module Poisson
           if (mod(iter,10) == 0) &
               write(*,'(A,I4,"/",I4)') 'Iteration ', iter, niter_poisson 
         endif
-        if (present(h)) then
+        if (h>0.0) then
           call v_cycle(phi,rhs,dxyz,h)
         else
           call v_cycle(phi,rhs,dxyz)
@@ -101,7 +111,7 @@ module Poisson
 ! !  identify version
 ! !
 !       if (lroot .and. ip<10) call cvs_id( &
-!         "$Id: poisson_multigrid.f90,v 1.2 2007-08-16 23:19:23 dobler Exp $")
+!         "$Id: poisson_multigrid.f90,v 1.3 2007-10-18 10:30:29 ajohan Exp $")
 ! !
 !       if (present(kmax)) then
 !         call warning("inverse_curl2", &
@@ -569,6 +579,66 @@ module Poisson
           'Cheating! This is not multigrid we are using')
 !
     endsubroutine inverse_laplacian_semispectral
+!***********************************************************************
+    subroutine read_poisson_init_pars(unit,iostat)
+!
+!  Read Poisson init parameters.
+!
+!  17-oct-2007/anders: coded
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=poisson_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=poisson_init_pars,ERR=99)
+      endif
+!
+99    return
+    endsubroutine read_poisson_init_pars
+!***********************************************************************
+    subroutine write_poisson_init_pars(unit)
+!
+!  Write Poisson init parameters.
+!
+!  17-oct-2007/anders: coded
+!
+      integer, intent(in) :: unit
+!
+      write(unit,NML=poisson_init_pars)
+!
+    endsubroutine write_poisson_init_pars
+!***********************************************************************
+    subroutine read_poisson_run_pars(unit,iostat)
+!
+!  Read Poisson run parameters.
+!
+!  17-oct-2007/anders: coded
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=poisson_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=poisson_run_pars,ERR=99)
+      endif
+!
+99    return
+    endsubroutine read_Poisson_run_pars
+!***********************************************************************
+    subroutine write_poisson_run_pars(unit)
+!
+!  Write Poisson run parameters.
+!
+!  17-oct-2007/anders: coded
+!
+      integer, intent(in) :: unit
+!
+      write(unit,NML=poisson_run_pars)
+!
+    endsubroutine write_poisson_run_pars
 !***********************************************************************
 
 endmodule Poisson

@@ -1,4 +1,4 @@
-! $Id: nopoisson.f90,v 1.11 2007-08-17 01:58:58 dobler Exp $
+! $Id: nopoisson.f90,v 1.12 2007-10-18 10:30:29 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -24,18 +24,76 @@ module Poisson
   contains
 
 !***********************************************************************
-    subroutine inverse_laplacian(phi,h,kmax)
+    subroutine initialize_poisson()
+!
+!  Perform any post-parameter-read initialization i.e. calculate derived
+!  parameters.
+!
+!  18-oct-07/anders: dummy
+!
+    endsubroutine initialize_poisson
+!***********************************************************************
+    subroutine inverse_laplacian(phi)
 !
 !  Solve the Poisson equation by Fourier transforming on a periodic grid.
 !
 !  15-may-2006/anders+jeff: dummy
 !
       real, dimension (nx,ny,nz) :: phi
-      real, optional             :: h,kmax
 !
-      if (NO_WARN) print*, phi, kmax
+      if (NO_WARN) print*, phi
 !
     endsubroutine inverse_laplacian
+!***********************************************************************
+    subroutine read_poisson_init_pars(unit,iostat)
+!
+!  Read Poisson init parameters.
+!
+!  18-oct-2007/anders: dummy
+!
+      integer :: unit
+      integer, optional :: iostat
+!
+      if (NO_WARN) print*, unit, iostat
+!
+    endsubroutine read_poisson_init_pars
+!***********************************************************************
+    subroutine write_poisson_init_pars(unit)
+!
+!  Write Poisson init parameters.
+!
+!  18-oct-2007/anders: dummy
+!
+      integer :: unit
+!
+      if (NO_WARN) print*, unit
+!
+    endsubroutine write_poisson_init_pars
+!***********************************************************************
+    subroutine read_poisson_run_pars(unit,iostat)
+!
+!  Read Poisson run parameters.
+!
+!  18-oct-2007/anders: dummy
+!
+      integer :: unit
+      integer, optional :: iostat
+!
+      if (NO_WARN) print*, unit, iostat
+!
+    endsubroutine read_Poisson_run_pars
+!***********************************************************************
+    subroutine write_poisson_run_pars(unit)
+!
+!  Write Poisson run parameters.
+!
+!  18-oct-2007/anders: dummy
+!
+      integer :: unit
+!
+      if (NO_WARN) print*, unit
+!
+    endsubroutine write_poisson_run_pars
 !***********************************************************************
 
 endmodule Poisson

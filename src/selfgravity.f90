@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.26 2007-08-28 14:34:51 wlyra Exp $
+! $Id: selfgravity.f90,v 1.27 2007-10-18 10:30:29 ajohan Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -34,6 +34,7 @@ module Selfgravity
   real :: kmax=0.0
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
   logical :: lklimit_shear=.false., lpoisson_fftxy_discretez=.false.
+  logical :: lrazor_thin=.false.
 
   namelist /selfgrav_init_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
@@ -41,7 +42,8 @@ module Selfgravity
 
   namelist /selfgrav_run_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
-      tstart_selfgrav, lklimit_shear, kmax, lpoisson_fftxy_discretez
+      tstart_selfgrav, lklimit_shear, kmax, lpoisson_fftxy_discretez, &
+      lrazor_thin
 
   integer :: idiag_gpoten=0, idiag_gpotenmxy=0
   integer :: idiag_gpotselfxm=0, idiag_gpotselfym=0, idiag_gpotselfzm=0
@@ -74,7 +76,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.26 2007-08-28 14:34:51 wlyra Exp $")
+           "$Id: selfgravity.f90,v 1.27 2007-10-18 10:30:29 ajohan Exp $")
 !
 !  Put variable name in array
 !
@@ -258,11 +260,7 @@ module Selfgravity
 !  Send the right-hand-side of the Poisson equation to the Poisson solver and
 !  receive the self-gravity potential back.
 !
-        if (kmax/=0.0) then
-          call inverse_laplacian(rhs_poisson,kmax=kmax)
-        else
-          call inverse_laplacian(rhs_poisson)
-        endif
+        call inverse_laplacian(rhs_poisson)
 !
 !  Put potential into f array.
 !

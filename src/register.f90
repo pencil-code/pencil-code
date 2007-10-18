@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.225 2007-09-17 07:56:50 bingert Exp $
+! $Id: register.f90,v 1.226 2007-10-18 10:30:29 ajohan Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -174,6 +174,7 @@ module Register
       use Shock,           only: initialize_shock
       use Gravity,         only: initialize_gravity
       use Selfgravity,     only: initialize_selfgravity
+      use Poisson,         only: initialize_poisson
       use Forcing,         only: initialize_forcing
       use Entropy,         only: initialize_entropy
       use Magnetic,        only: initialize_magnetic
@@ -269,6 +270,7 @@ module Register
       call initialize_eos()
       call initialize_gravity(f,lstarting)
       call initialize_selfgravity()
+      call initialize_poisson()
       call initialize_density(f,lstarting)
       call initialize_hydro(f,lstarting)
       call initialize_forcing(lstarting)   ! get random seed from file, ..
@@ -598,30 +600,30 @@ module Register
 !  20-11-04/anders: coded
 !
       use Cdata
- use Grid,            only: pencil_criteria_grid
- use BorderProfiles,  only: pencil_criteria_borderprofiles
- use EquationOfState, only: pencil_criteria_eos
- use Hydro,           only: pencil_criteria_hydro
- use Density,         only: pencil_criteria_density
- use Shock,           only: pencil_criteria_shock
- use Viscosity,       only: pencil_criteria_viscosity
- use Entropy,         only: pencil_criteria_entropy
- use Gravity,         only: pencil_criteria_gravity
- use Selfgravity,     only: pencil_criteria_selfgravity
- use Pscalar,         only: pencil_criteria_pscalar
- use Dustvelocity,    only: pencil_criteria_dustvelocity
- use Dustdensity,     only: pencil_criteria_dustdensity
- use NeutralVelocity, only: pencil_criteria_neutralvelocity
- use NeutralDensity,  only: pencil_criteria_neutraldensity
- use Magnetic,        only: pencil_criteria_magnetic
- use Testfield,       only: pencil_criteria_testfield
- use Cosmicray,       only: pencil_criteria_cosmicray
- use Cosmicrayflux,   only: pencil_criteria_cosmicrayflux
- use Chiral,          only: pencil_criteria_chiral
- use Radiation,       only: pencil_criteria_radiation
- use Interstellar,    only: pencil_criteria_interstellar
- use Special,         only: pencil_criteria_special
- use Particles_main,  only: particles_pencil_criteria
+      use Grid,            only: pencil_criteria_grid
+      use BorderProfiles,  only: pencil_criteria_borderprofiles
+      use EquationOfState, only: pencil_criteria_eos
+      use Hydro,           only: pencil_criteria_hydro
+      use Density,         only: pencil_criteria_density
+      use Shock,           only: pencil_criteria_shock
+      use Viscosity,       only: pencil_criteria_viscosity
+      use Entropy,         only: pencil_criteria_entropy
+      use Gravity,         only: pencil_criteria_gravity
+      use Selfgravity,     only: pencil_criteria_selfgravity
+      use Pscalar,         only: pencil_criteria_pscalar
+      use Dustvelocity,    only: pencil_criteria_dustvelocity
+      use Dustdensity,     only: pencil_criteria_dustdensity
+      use NeutralVelocity, only: pencil_criteria_neutralvelocity
+      use NeutralDensity,  only: pencil_criteria_neutraldensity
+      use Magnetic,        only: pencil_criteria_magnetic
+      use Testfield,       only: pencil_criteria_testfield
+      use Cosmicray,       only: pencil_criteria_cosmicray
+      use Cosmicrayflux,   only: pencil_criteria_cosmicrayflux
+      use Chiral,          only: pencil_criteria_chiral
+      use Radiation,       only: pencil_criteria_radiation
+      use Interstellar,    only: pencil_criteria_interstellar
+      use Special,         only: pencil_criteria_special
+      use Particles_main,  only: particles_pencil_criteria
 !
       call pencil_criteria_grid()
       call pencil_criteria_borderprofiles()

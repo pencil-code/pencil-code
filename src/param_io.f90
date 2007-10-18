@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.289 2007-09-26 10:45:25 ajohan Exp $
+! $Id: param_io.f90,v 1.290 2007-10-18 10:30:29 ajohan Exp $
 
 module Param_IO
 
@@ -29,6 +29,7 @@ module Param_IO
   use Forcing
   use Gravity
   use Selfgravity
+  use Poisson
   use Interstellar
   use Shear
   use Timeavg
@@ -240,6 +241,10 @@ module Param_IO
       if (ierr.ne.0) call sample_startpars('selfgrav_init_pars',ierr)
 
       call sgi_fix(lsgifix,1,'start.in')
+      call read_poisson_init_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_startpars('poisson_init_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'start.in')
       call read_entropy_init_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('entropy_init_pars',ierr)
 
@@ -388,6 +393,7 @@ module Param_IO
         ! no input parameters for forcing
         if (lgrav           ) print*,'&grav_init_pars            /'
         if (lselfgravity    ) print*,'&selfgrav_init_pars        /'
+        if (lpoisson        ) print*,'&poisson_init_pars         /'
         if (lentropy        ) print*,'&entropy_init_pars         /'
         if (ltemperature    ) print*,'&entropy_init_pars         /'
         if (lmagnetic       ) print*,'&magnetic_init_pars        /'
@@ -458,6 +464,7 @@ module Param_IO
         call write_forcing_init_pars(unit)
         call write_gravity_init_pars(unit)
         call write_selfgravity_init_pars(unit)
+        call write_poisson_init_pars(unit)
         call write_entropy_init_pars(unit)
         call write_magnetic_init_pars(unit)
         call write_testfield_init_pars(unit)
@@ -553,6 +560,10 @@ module Param_IO
       call sgi_fix(lsgifix,1,'run.in')
       call read_selfgravity_run_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_runpars('selfgrav_run_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'run.in')
+      call read_poisson_run_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_runpars('poisson_run_pars',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
       call read_entropy_run_pars(1,IOSTAT=ierr)
@@ -703,6 +714,7 @@ module Param_IO
         if (lforcing        ) print*,'&forcing_run_pars         /'
         if (lgrav           ) print*,'&grav_run_pars            /'
         if (lselfgravity    ) print*,'&selfgrav_run_pars        /'
+        if (lpoisson        ) print*,'&poisson_run_pars         /'
         if (lentropy        ) print*,'&entropy_run_pars         /'
         if (ltemperature    ) print*,'&entropy_run_pars         /'
         if (lmagnetic       ) print*,'&magnetic_run_pars        /'
@@ -796,6 +808,7 @@ module Param_IO
         call write_forcing_run_pars(unit)
         call write_gravity_run_pars(unit)
         call write_selfgravity_run_pars(unit)
+        call write_poisson_run_pars(unit)
         call write_entropy_run_pars(unit)
         call write_magnetic_run_pars(unit)
         call write_testfield_run_pars(unit)
@@ -966,6 +979,7 @@ module Param_IO
         call write_forcing_init_pars(1)
         call write_gravity_init_pars(1)
         call write_selfgravity_init_pars(1)
+        call write_poisson_init_pars(1)
         call write_entropy_init_pars(1)
         call write_magnetic_init_pars(1)
         call write_testfield_init_pars(1)
@@ -1011,6 +1025,7 @@ module Param_IO
         call read_forcing_init_pars(1)
         call read_gravity_init_pars(1)
         call read_selfgravity_init_pars(1)
+        call read_poisson_init_pars(1)
         call read_entropy_init_pars(1)
         call read_magnetic_init_pars(1)
         call read_testfield_init_pars(1)
@@ -1054,6 +1069,7 @@ module Param_IO
         call write_forcing_run_pars(1)
         call write_gravity_run_pars(1)
         call write_selfgravity_run_pars(1)
+        call write_poisson_run_pars(1)
         call write_entropy_run_pars(1)
         call write_magnetic_run_pars(1)
         call write_testfield_run_pars(1)
