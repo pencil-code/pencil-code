@@ -1,4 +1,4 @@
-! $Id: poisson_multigrid.f90,v 1.3 2007-10-18 10:30:29 ajohan Exp $
+! $Id: poisson_multigrid.f90,v 1.4 2007-10-18 10:36:21 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -26,15 +26,15 @@ module Poisson
 
   implicit none
 
-  real :: h=0.0
+  real :: dummy=0.0
 
   include 'poisson.h'
 
   namelist /poisson_init_pars/ &
-      h
+      dummy
 
   namelist /poisson_run_pars/ &
-      h
+      dummy
 
   contains
 
@@ -67,7 +67,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson_multigrid.f90,v 1.3 2007-10-18 10:30:29 ajohan Exp $")
+        "$Id: poisson_multigrid.f90,v 1.4 2007-10-18 10:36:21 ajohan Exp $")
 !
       if (lshear) then
         call fatal_error("inverse_laplacian", &
@@ -81,11 +81,7 @@ module Poisson
           if (mod(iter,10) == 0) &
               write(*,'(A,I4,"/",I4)') 'Iteration ', iter, niter_poisson 
         endif
-        if (h>0.0) then
-          call v_cycle(phi,rhs,dxyz,h)
-        else
-          call v_cycle(phi,rhs,dxyz)
-        endif
+        call v_cycle(phi,rhs,dxyz)
       enddo
 !
     endsubroutine inverse_laplacian
@@ -111,7 +107,7 @@ module Poisson
 ! !  identify version
 ! !
 !       if (lroot .and. ip<10) call cvs_id( &
-!         "$Id: poisson_multigrid.f90,v 1.3 2007-10-18 10:30:29 ajohan Exp $")
+!         "$Id: poisson_multigrid.f90,v 1.4 2007-10-18 10:36:21 ajohan Exp $")
 ! !
 !       if (present(kmax)) then
 !         call warning("inverse_curl2", &
