@@ -4,7 +4,7 @@
 !  velocity field.
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2006-07-20 07:36:19 ajohan Exp $',
+  cvsid='$Id: start.in,v 1.2 2007-10-18 10:31:14 ajohan Exp $',
   lperi =    T,    T,    T
   ip=20, lwrite_ic=T, lwrite_aux=T
 /
@@ -14,6 +14,8 @@
 &selfgrav_init_pars
   rhs_poisson_const=12.5664
   lselfgravity_gas=F, lselfgravity_dust=F
+/
+&poisson_init_pars
 /
 &shear_init_pars
   Omega=1.0, qshear=1.5
