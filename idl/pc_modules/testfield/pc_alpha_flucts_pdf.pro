@@ -1,9 +1,10 @@
-;$Id: pc_alpha_flucts_pdf.pro,v 1.1 2007-10-18 03:55:16 brandenb Exp $
+;$Id: pc_alpha_flucts_pdf.pro,v 1.2 2007-10-18 04:23:28 brandenb Exp $
 ;
-;  This routine plots alpha and eta results from time series.
-;  The rms value of the fluctuations (departure from mean)
-;  are being written to the file alphaeta_rms.pro, and then
-;  added to cvs (this would not work if one is off-line).
+;  Calculates pdf of all 4 components of alpha_ij, and saves the
+;  pdf results for the full array of all 4 components and the fit.
+;
+;  normalized with respect to etatt0, taken from parameters.pro,
+;  and this in turn from running kinshear_Re14
 ;
 pc_read_ts,o=o
 ;
@@ -94,12 +95,12 @@ endfor
 endfor
 print,'etamax=',amax
 ;
-wait,1.
-stop
+wait,.1
 !p.multi=0
-amax=.006
-pdf,alpgood,xx,yy,n=31,fmin=-amax,fmax=amax
-plot_io,xx,yy,ps=10,yr=[1,1e3]
+print,max(abs(alpgood/etatt0))
+amax=1.6
+pdf,alpgood/etatt0,xx,yy,n=21,fmin=-amax,fmax=amax
+plot_io,xx,yy,ps=10,yr=[.001,3.]
 p=moments0(xx,yy,fit=fit,xfit=xfit)
 oplot,xfit,fit
 ;
