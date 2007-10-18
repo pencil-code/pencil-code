@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.27 2007-10-18 10:30:29 ajohan Exp $
+! $Id: poisson.f90,v 1.28 2007-10-18 11:04:57 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -28,15 +28,15 @@ module Poisson
   implicit none
 
   real :: kmax=0.0
-  logical :: lrazor_thin=.false., lsemispectral=.false.
+  logical :: lrazor_thin=.false., lsemispectral=.false., lklimit_shear=.false.
 
   include 'poisson.h'
 
   namelist /poisson_init_pars/ &
-      lsemispectral, kmax, lrazor_thin
+      lsemispectral, kmax, lrazor_thin, lklimit_shear
 
   namelist /poisson_run_pars/ &
-      lsemispectral, kmax, lrazor_thin
+      lsemispectral, kmax, lrazor_thin, lklimit_shear
 
   contains
 
@@ -54,6 +54,27 @@ module Poisson
           call fatal_error('inverse_laplacian_fft','')
         endif
       endif
+!
+!  Limit the wavenumber to the maximum circular region that is always available
+!  in k-space. The radial wavenumber kx changes with time due to shear as
+!
+!    kx = kx0+qshear*Omega*t*ky
+!
+!  Considering the available (kx,ky) space, it turns slowly from a square to a
+!  parallellogram (the hole for kx,ky<1 is ignored here):
+!
+!       - - - -                  - - - -
+!      |       |               /       /
+!      |       |    ->       /       /
+!      |       |           /       /
+!      |       |         /       /
+!       - - - -          - - - -
+!     
+!  To make the gravity force isotropic at small scales one can limit k to
+!  the largest circular region that is present in both the square and the
+!  parallellogram. The circle has radius kmax=kNy/sqrt(2). See Gammie (2001).
+!
+      if (lklimit_shear) kmax = kx_ny/sqrt(2.0)
 !
     endsubroutine initialize_poisson
 !***********************************************************************
@@ -92,7 +113,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.27 2007-10-18 10:30:29 ajohan Exp $")
+        "$Id: poisson.f90,v 1.28 2007-10-18 11:04:57 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -204,7 +225,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.27 2007-10-18 10:30:29 ajohan Exp $")
+        "$Id: poisson.f90,v 1.28 2007-10-18 11:04:57 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
