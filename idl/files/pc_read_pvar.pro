@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.25 2007-08-03 09:53:26 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.26 2007-10-19 16:59:02 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -54,11 +54,14 @@ xloc=fltarr(procdim.mx)*one & yloc=fltarr(procdim.my)*one & zloc=fltarr(procdim.
 ;  Read variable indices from index.pro
 ;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
-cmd = 'perl -000 -ne '+"'"+'s/[ \t]+/ /g; print join(" & ",split(/\n/,$_)),     "\n"'+"' "+datadir+'/index.pro'
-spawn, cmd, result
-res = flatten_strings(result)
-if (execute(res) ne 1) then $
+openr, 1, datadir+'/index.pro'
+line=''
+while ~ eof(1) do begin
+  readf, 1, line, format='(a)'
+  if (execute(line) ne 1) then $
     message, 'There was a problem with index.pro', /INF
+endwhile
+close, 1
 ;
 ;  Define structure for data
 ;
