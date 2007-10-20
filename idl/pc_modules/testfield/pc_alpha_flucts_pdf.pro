@@ -1,4 +1,4 @@
-;$Id: pc_alpha_flucts_pdf.pro,v 1.2 2007-10-18 04:23:28 brandenb Exp $
+;$Id: pc_alpha_flucts_pdf.pro,v 1.3 2007-10-20 10:08:06 brandenb Exp $
 ;
 ;  Calculates pdf of all 4 components of alpha_ij, and saves the
 ;  pdf results for the full array of all 4 components and the fit.
@@ -16,6 +16,7 @@ spawn,'touch parameters.pro'
 @data/index.pro
 @data/testfield_info.dat
 default,run,''
+default,npdf,31
 ;
 ;  introduce abbreviations
 ;
@@ -24,6 +25,9 @@ urms=o.urms
 nt=n_elements(tt)
 alp=fltarr(nt,2,2)&alpm=fltarr(2,2)&alprms=fltarr(2,2)&alprms_err=fltarr(2,2)
 eta=fltarr(nt,2,2)&etam=fltarr(2,2)&etarms=fltarr(2,2)&etarms_err=fltarr(2,2)
+xpdf_alp=fltarr(npdf,2,2) & ypdf_alp=fltarr(npdf,2,2)
+xpdf_eta=fltarr(npdf,2,2) & ypdf_eta=fltarr(npdf,2,2)
+amax=1.6
 ;
 ;  alpha tensor
 ;
@@ -72,37 +76,39 @@ endelse
 ;  give modified alpmax values in parameters.pro file
 ;
 ialpcount=0
-amax=max(abs(alp))
 for i=0,1 do begin
 for j=0,index_max do begin
   !p.title='!7a!6!d'+str(i)+str(j)+'!n'
   alpij=alp(*,i,j)
-  pdf,alpij(good),xx,yy,n=31,fmin=-amax,fmax=amax
+  pdf,alpij(good)/(etatt0*kf),xx,yy,n=npdf
   plot,xx,yy,ps=10
+  xpdf_alp(*,i,j)=xx
+  ypdf_alp(*,i,j)=yy
   if ialpcount eq 0 then alpgood=alpij(good) else alpgood=[alpgood,alpij(good)]
   ialpcount=ialpcount+1
 endfor
 endfor
 print,'alpmax=',amax
 ;
-amax=max(abs(eta))
 for i=0,1 do begin
 for j=index_min,1 do begin
   !p.title='!7g!6!d'+str(i)+str(j)+'!n'
-  pdf,eta(*,i,j),xx,yy,n=31,fmin=-amax,fmax=amax
+  pdf,eta(*,i,j)/etatt0,xx,yy,n=npdf
   plot,xx,yy,ps=10
+  xpdf_eta(*,i,j)=xx
+  ypdf_eta(*,i,j)=yy
 endfor
 endfor
 print,'etamax=',amax
 ;
 wait,.1
 !p.multi=0
-print,max(abs(alpgood/etatt0))
-amax=1.6
-pdf,alpgood/etatt0,xx,yy,n=21,fmin=-amax,fmax=amax
+print,max(abs(alpgood/(etatt0*kf)))
+amax=0.3
+pdf,alpgood/(etatt0*kf),xx,yy,n=21,fmin=-amax,fmax=amax
 plot_io,xx,yy,ps=10,yr=[.001,3.]
 p=moments0(xx,yy,fit=fit,xfit=xfit)
 oplot,xfit,fit
 ;
-save,file='alphaeta_pdf.sav',xx,yy,xfit,fit
+save,file='alphaeta_pdf.sav',xx,yy,xfit,fit,xpdf_alp,ypdf_alp,xpdf_eta,ypdf_eta
 END
