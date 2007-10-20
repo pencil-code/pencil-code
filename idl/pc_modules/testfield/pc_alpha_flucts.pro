@@ -1,4 +1,4 @@
-;$Id: pc_alpha_flucts.pro,v 1.1 2007-09-29 10:38:15 brandenb Exp $
+;$Id: pc_alpha_flucts.pro,v 1.2 2007-10-20 17:57:01 brandenb Exp $
 ;
 ;  This routine plots alpha and eta results from time series.
 ;  The rms value of the fluctuations (departure from mean)
@@ -62,8 +62,10 @@ if itestfield eq 'B11-B21' or itestfield eq 'B11-B21+B=0' then begin
   index_max=0
   index_min=1
 endif else begin
-  !p.multi=[0,2,4]
-  !p.charsize=2.6
+  ;!p.multi=[0,2,4]
+  !p.multi=[0,2,2]
+  ;!p.charsize=2.6
+  !p.charsize=1.6
   index_max=1
   index_min=0
 endelse
@@ -94,21 +96,39 @@ print
 if itestfield eq 'B11-B22' then begin
   alprms_all=sqrt(.25*total(alprms^2))
   etarms_all=sqrt(.25*total(etarms^2))
+  etatrms_all=sqrt(.5*etarms(0,0)^2+etarms(1,1)^2)
+  eta21rms_all=etarms(1,0)
+  eta12rms_all=etarms(0,1)
   alprms_err_all=sqrt(.25*total(alprms_err^2))
   etarms_err_all=sqrt(.25*total(etarms_err^2))
+  etatrms_err_all=sqrt(.5*etarms_err(0,0)^2+etarms_err(1,1)^2)
+  eta21rms_err_all=etarms_err(1,0)
+  eta12rms_err_all=etarms_err(0,1)
 endif else begin
   alprms_all=sqrt(.5*total(alprms(*,0)^2))
   etarms_all=sqrt(.5*total(etarms(*,1)^2))
+  etatrms_all=etarms(1,1)
+  eta21rms_all=etarms(1,0)
+  eta12rms_all=etarms(1,0)
   alprms_err_all=sqrt(.5*total(alprms_err(*,0)^2))
   etarms_err_all=sqrt(.5*total(etarms_err(*,1)^2))
+  etatrms_err_all=etarms_err(1,1)
+  eta21rms_err_all=etarms_err(1)
+  eta12rms_err_all=0.
 endelse
 ;
 fo='(a,e8.2)'
 openw,1,'alphaeta_rms.pro'
 printf,1,'alprms_all=',alprms_all,fo=fo
 printf,1,'etarms_all=',etarms_all,fo=fo
+printf,1,'etatrms_all=',etatrms_all,fo=fo
+printf,1,'eta21rms_all=',eta21rms_all,fo=fo
+printf,1,'eta12rms_all=',eta12rms_all,fo=fo
 printf,1,'alprms_err_all=',alprms_err_all,fo=fo
 printf,1,'etarms_err_all=',etarms_err_all,fo=fo
+printf,1,'etatrms_err_all=',etatrms_err_all,fo=fo
+printf,1,'eta21rms_err_all=',eta21rms_err_all,fo=fo
+printf,1,'eta12rms_err_all=',eta12rms_err_all,fo=fo
 close,1
 ;
 spawn,'cat alphaeta_rms.pro'
