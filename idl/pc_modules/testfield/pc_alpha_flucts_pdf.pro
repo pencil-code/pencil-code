@@ -1,9 +1,9 @@
-;$Id: pc_alpha_flucts_pdf.pro,v 1.3 2007-10-20 10:08:06 brandenb Exp $
+;$Id: pc_alpha_flucts_pdf.pro,v 1.4 2007-10-21 23:14:42 brandenb Exp $
 ;
 ;  Calculates pdf of all 4 components of alpha_ij, and saves the
 ;  pdf results for the full array of all 4 components and the fit.
 ;
-;  normalized with respect to etatt0, taken from parameters.pro,
+;  normalized with respect to etat0, taken from parameters.pro,
 ;  and this in turn from running kinshear_Re14
 ;
 pc_read_ts,o=o
@@ -80,7 +80,7 @@ for i=0,1 do begin
 for j=0,index_max do begin
   !p.title='!7a!6!d'+str(i)+str(j)+'!n'
   alpij=alp(*,i,j)
-  pdf,alpij(good)/(etatt0*kf),xx,yy,n=npdf
+  pdf,alpij(good)/(etat0*kf),xx,yy,n=npdf
   plot,xx,yy,ps=10
   xpdf_alp(*,i,j)=xx
   ypdf_alp(*,i,j)=yy
@@ -93,7 +93,7 @@ print,'alpmax=',amax
 for i=0,1 do begin
 for j=index_min,1 do begin
   !p.title='!7g!6!d'+str(i)+str(j)+'!n'
-  pdf,eta(*,i,j)/etatt0,xx,yy,n=npdf
+  pdf,eta(*,i,j)/etat0,xx,yy,n=npdf
   plot,xx,yy,ps=10
   xpdf_eta(*,i,j)=xx
   ypdf_eta(*,i,j)=yy
@@ -103,9 +103,9 @@ print,'etamax=',amax
 ;
 wait,.1
 !p.multi=0
-print,max(abs(alpgood/(etatt0*kf)))
-amax=0.3
-pdf,alpgood/(etatt0*kf),xx,yy,n=21,fmin=-amax,fmax=amax
+print,max(abs(alpgood/(etat0*kf)))
+amax=0.4
+pdf,alpgood/(etat0*kf),xx,yy,n=21,fmin=-amax,fmax=amax
 plot_io,xx,yy,ps=10,yr=[.001,3.]
 p=moments0(xx,yy,fit=fit,xfit=xfit)
 oplot,xfit,fit
