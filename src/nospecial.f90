@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.27 2007-02-26 21:44:21 brandenb Exp $
+! $Id: nospecial.f90,v 1.28 2007-10-23 12:53:37 bingert Exp $
 
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
@@ -129,19 +129,19 @@ module Special
 !! Set any required f-array indexes to the next available slot
 !!
 !!
-!      iSPECIAL_VARIABLE_INDEX = nvar+1             ! index to access entropy
+!      iSPECIAL_VARIABLE_INDEX = nvar+1                ! index to access special variable
 !      nvar = nvar+1
 !
-!      iSPECIAL_AUXILIARY_VARIABLE_INDEX = naux+1             ! index to access entropy
+!      iSPECIAL_AUXILIARY_VARIABLE_INDEX = naux+1      ! index to access special variable
 !      naux = naux+1
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.27 2007-02-26 21:44:21 brandenb Exp $
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.28 2007-10-23 12:53:37 bingert Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.27 2007-02-26 21:44:21 brandenb Exp $")
+           "$Id: nospecial.f90,v 1.28 2007-10-23 12:53:37 bingert Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
