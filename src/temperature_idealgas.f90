@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.45 2007-10-12 07:26:56 bingert Exp $
+! $Id: temperature_idealgas.f90,v 1.46 2007-10-23 13:34:54 bingert Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -137,7 +137,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.45 2007-10-12 07:26:56 bingert Exp $")
+           "$Id: temperature_idealgas.f90,v 1.46 2007-10-23 13:34:54 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -629,7 +629,7 @@ module Entropy
         vKpara(:) = Kgpara
         vKperp(:) = Kgperp
         call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
-        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs*p%rho1*gamma*p%cp1
+        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs*p%rho1*gamma*p%cp1
         if (lfirst.and.ldt) then
           diffus_chi=diffus_chi+gamma*Kgpara*p%rho1*p%cp1*dxyz_2
           dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
