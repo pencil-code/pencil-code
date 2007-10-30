@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.358 2007-10-19 18:38:43 dintrans Exp $
+### $Id: Makefile.src,v 1.359 2007-10-30 09:32:08 mgellert Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -421,14 +421,14 @@ LD_FFTW2=
 #LD_MPI=-L/opt/scali/lib -lfmpi -lmpi -lpthread #(login-1.monolith.nsc.liu.se)
 ##LIBMPISUFFIX=_#(login-1.monolith.nsc.liu.se)
 ##
-## Axel on Sanssouci (ifc 7.1)
+## Axel on Sanssouci (ifc 9.1)
 ##
-#FC=mpif90 #(sanssouci|belvedere)
-#FFLAGS= -O3 #(sanssouci|belvedere)
-#CC=mpicc #(sanssouci|belvedere)
-#CFLAGS=-O3 -DFUNDERSC=1 #(sanssouci|belvedere)
-#LD_MPI= #(sanssouci|belvedere)
-#LIBMPISUFFIX=#(sanssouci|belvedere)
+#FC=mpif90 #(sanssouci|belvedere|octopus)
+#FFLAGS= -O3 -xW -mp -vec_report0 #(sanssouci|belvedere|octopus)
+#CC=mpicc #(sanssouci|belvedere|octopus)
+#CFLAGS=-O3 -DFUNDERSC=1 #(sanssouci|belvedere|octopus)
+#LD_MPI= #(sanssouci|belvedere|octopus)
+#LIBMPISUFFIX=#(sanssouci|belvedere|octopus)
 ##
 ## Axel's laptop (nl6, 2.0 GHz)
 ##
@@ -700,13 +700,12 @@ LD_FFTW2=
 #LD_MPI=-pthread -I/usr/lib -lmpi_f90 -lmpi -lorte -lopal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(frenesi)
 #LIBMPISUFFIX=_#(frenesi)
 ##
-## Steve's test cluster
-#FC=gfortran #(asd)
-#FFLAGS=-O3 -m64 -march=opteron -I/usr/local/include -L/usr/lib -L/usr/local/lib -I/usr/include -fno-second-underscore #(asd)
-#LDFLAGS=-m64 -m64 -march=opteron #(asd)
-#LD_MPI=-lmpich -lfmpich -lpthread #(asd)
-#CC=gcc #(asd)
-#CFLAGS=-O3 -DFUNDERSC=1 -Wall -march=opteron #(asd)
+## Marcus on janus (ifc/icc 9.1)
+##
+#FC=ifort #(janus)
+#FFLAGS= -O3 -xP -mp -vec_report0 #(janus)
+#CC=icc #(janus)
+#CFLAGS=-O3 -DFUNDERSC=1 #(janus)
 
 ## Darwin:
 ## Power Macintosh

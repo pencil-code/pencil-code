@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.215 2007-09-24 21:04:25 ajohan Exp $
+# $Id: getconf.csh,v 1.216 2007-10-30 09:32:51 mgellert Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -434,6 +434,21 @@ else if ($hn =~ node[0-9]*) then
   endif
   set mpirun = mpiexec
   set mpirunops =
+  set local_disc = 0
+  set one_local_disc = 1
+  set local_binary = 0
+
+else if ($hn =~ octopus[0-9]*) then
+  echo "AIP Potsdam Octopus Xeon Linux Cluster"
+  if ( $?PBS_JOBID ) then
+    echo "Running job: $PBS_JOBID"
+  endif
+  setenv SCRATCH_DIR /scratch2/mgm
+  set nodelist=` cat nodes.octopus | grep -v '^#' `
+  set mpirun = '/opt/intel/mpich-1.2.7/bin/mpirun'
+  set mpirunops = '-v -machinefile nodes.octopus '
+  set nprocpernode = 2
+  set npops = "-np $ncpus"
   set local_disc = 0
   set one_local_disc = 1
   set local_binary = 0
