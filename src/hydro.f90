@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.402 2007-10-17 14:21:09 brandenb Exp $
+! $Id: hydro.f90,v 1.403 2007-10-30 09:28:08 mgellert Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -49,6 +49,7 @@ module Hydro
 ! init parameters
 !
   real :: widthuu=.1, radiusuu=1., urand=0., kx_uu=1., ky_uu=1., kz_uu=1.
+  real :: urandi=0.
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
   real :: uy_left=0.,uy_right=0.
   real :: initpower=1.,cutoff=0.
@@ -66,6 +67,9 @@ module Hydro
   real :: kep_cutoff_pos_ext= huge1,kep_cutoff_width_ext=0.0
   real :: kep_cutoff_pos_int=-huge1,kep_cutoff_width_int=0.0
   real :: u_out_kep=0.0, velocity_ceiling=-1.0
+  real :: mu_omega, gap
+  integer :: nb_rings
+  real, dimension(5) :: om_rings
   integer :: N_modes_uu=0
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: ladvection_velocity=.true.
@@ -78,15 +82,15 @@ module Hydro
   logical :: loutest,ldiffrot_test=.false.
   namelist /hydro_init_pars/ &
        ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
-       inituu, widthuu, radiusuu, urand, lpressuregradient_gas, &
+       inituu, widthuu, radiusuu, urand, urandi, lpressuregradient_gas, &
        uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, coefuu, &
        kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
        uy_left, uy_right,uu_const, Omega,  initpower, cutoff, &
        kep_cutoff_pos_ext, kep_cutoff_width_ext, &
        kep_cutoff_pos_int, kep_cutoff_width_int, &
        u_out_kep, N_modes_uu, lcoriolis_force, lcentrifugal_force, &
-       ladvection_velocity,lprecession, omega_precession, &
-       luut_as_aux, velocity_ceiling
+       ladvection_velocity, lprecession, omega_precession, &
+       luut_as_aux, velocity_ceiling, mu_omega, nb_rings, om_rings, gap
 
   ! run parameters
   real :: tdamp=0.,dampu=0.,wdamp=0.
@@ -315,7 +319,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.402 2007-10-17 14:21:09 brandenb Exp $")
+           "$Id: hydro.f90,v 1.403 2007-10-30 09:28:08 mgellert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -587,6 +591,8 @@ module Hydro
         case('coswave-x-z'); call coswave(ampluu(j),f,iux,kz=kz_uu)
         case('coswave-z-x'); call coswave(ampluu(j),f,iuz,kx=kx_uu)
         case('x1cosycosz'); call x1_cosy_cosz(ampluu(j),f,iuy,ky=ky_uu,kz=kz_uu)
+        case('couette'); call couette(ampluu(j),mu_omega,f,iuy)
+        case('couette_rings'); call couette_rings(ampluu(j),mu_omega,nb_rings,om_rings,gap,f,iuy)
         case('soundwave-x'); call soundwave(ampluu(j),f,iux,kx=kx_uu)
         case('soundwave-y'); call soundwave(ampluu(j),f,iuy,ky=ky_uu)
         case('soundwave-z'); call soundwave(ampluu(j),f,iuz,kz=kz_uu)
@@ -814,6 +820,25 @@ module Hydro
           enddo
         endif
       endif
+
+! mgellert, add random fluctuation only inside domain, not on boundary 
+!           (to be able to use the 'freeze' option for BCs)
+      if (urandi /= 0) then
+        if (lroot) print*, 'init_uu: Adding random uu fluctuations (not on boundary), urandi=',urandi
+        if (urandi > 0) then
+          do i=iux,iuz
+            call random_number_wrapper(tmp)
+            f(l1+1:l2-1,m1:m2,n1+1:n2-1,i) = f(l1+1:l2-1,m1:m2,n1+1:n2-1,i) + urandi*(tmp(l1+1:l2-1,m1:m2,n1+1:n2-1)-0.5)
+          enddo
+        else
+          if (lroot) print*, 'init_uu:  ... multiplicative fluctuations (not on boundary)'
+          do i=iux,iuz
+            call random_number_wrapper(tmp)
+            f(l1:l2,m1:m2,n1:n2,i) = f(l1:l2,m1:m2,n1:n2,i) * urandi*(tmp(l1:l2,m1:m2,n1:n2)-0.5)
+          enddo
+        endif
+      endif
+
 !
 !     if (NO_WARN) print*,yy,zz !(keep compiler from complaining)
 !

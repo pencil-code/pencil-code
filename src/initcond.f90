@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.227 2007-09-21 15:15:08 wlyra Exp $
+! $Id: initcond.f90,v 1.228 2007-10-30 09:28:09 mgellert Exp $
 
 module Initcond
 
@@ -34,7 +34,7 @@ module Initcond
   public :: sinx_siny_sinz, cosx_siny_cosz, sinx_siny_cosz
   public :: sin2x_sin2y_cosz, cosy_sinz, x3_cosy_cosz
   public :: halfcos_x, magsupport, vfield
-  public :: uniform_x, uniform_y, uniform_z, uniform_phi
+  public :: uniform_x, uniform_y, uniform_z, uniform_phi, phi_comp_over_r
   public :: vfluxlayer, hfluxlayer
   public :: vortex_2d
   public :: vfield2
@@ -43,6 +43,7 @@ module Initcond
   public :: global_shear,set_thermodynamical_quantities
   public :: const_lou
   public :: corona_init,mdi_init
+  public :: couette, couette_rings
 
   interface posnoise            ! Overload the `posnoise' function
     module procedure posnoise_vect
@@ -461,6 +462,108 @@ module Initcond
       endif
 !
     endsubroutine cosx_coscosy_cosz
+!***********************************************************************
+    subroutine couette(ampl,mu,f,i)
+!
+!   couette flow,  Omega = a + b/r^2
+!
+!   12-jul-07/mgellert: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl, mu, omegao, omegai, rinner, router, a, b
+!
+      rinner=xyz0(1)
+      router=xyz1(1)
+      omegai=ampl
+      omegao=ampl*mu
+!
+      if (ampl==0) then
+        if (lroot) print*,'couette flow: omegai=0'
+      else
+        if (lroot) write(*,wave_fmt1) 'couette flow: omegai,omegao=', omegai,omegao
+        a = ( (omegao/omegai) - (rinner/router)**2 ) / ( 1. - (rinner/router)**2 ) * omegai
+        b = ( ( 1. - (omegao/omegai) ) / ( 1. - (rinner/router)**2 ) ) * rinner**2 * omegai
+        f(:,:,:,i)=f(:,:,:,i)+spread(spread((a*x + b/x),2,my),3,mz)
+      endif
+!
+    endsubroutine couette
+!***********************************************************************
+    subroutine couette_rings(ampl,mu,nr,om_nr,gap,f,i)
+!
+!   * (finite) couette flow  with top/bottom split in several rings
+!   * can be used with the 'freeze' condition for top/bottom BCs
+!   * gap is the width of the gap between two rings filled with a tanh smoothing profile
+!     (in experiments you usually have something around gap=0.05*D)
+!
+!   18-jul-07/mgellert: coded
+!   21-aug-07/mgellert: made compatible with nprocx>1
+!   09-oct-07/mgellert: smoothing profile between neighboring rings added
+!
+      use Cdata, only: tini
+
+      integer                           :: i, k, l, nr
+      real, dimension(nr)               :: om_nr, xsteps
+      real, dimension(nr+2)             :: om_all, om_diff
+      real, dimension(:), allocatable   :: omx
+      real, dimension(mx,my,mz,mfarray) :: f
+      real                              :: ampl, mu, gap, omegao, omegai, rinner, router, step
+      real                              :: x0, y0
+      character(len=20)                 :: unfmt
+!
+      rinner=xyz0(1)
+      router=xyz1(1)
+      omegai=ampl
+      omegao=ampl*mu
+!
+      allocate(omx(mx))
+      omx=0.
+!
+      step=(router-rinner)/nr
+      do k=1,nr
+        xsteps(k)=rinner+k*step-gap/2. ! ring boundaries
+      enddo
+!
+      if (gap>tini) then
+        om_all(1)=omegai
+        om_all(2:nr+1)=om_nr
+        om_all(nr+2)=omegao
+        om_diff=0.
+        om_diff=om_all(1:nr+1)-om_all(2:nr+2) ! difference in omega from ring to ring
+        omx(l1:l2)=omegai
+        do k=1,nr+1
+          if (k==1) then
+            x0=rinner+gap/2.
+          else
+            x0=rinner+(k-1)*step-gap/2.
+          endif
+          y0=0.5*om_diff(k)
+          omx(l1:l2) = omx(l1:l2) - ( y0*(1.+tanh((x(l1:l2)-x0)/(0.15*gap+tini))) );
+        enddo
+      else
+        do l=l1,l2
+          k=nr
+          do while (k>0)
+            if (x(l).le.xsteps(k)) omx(l)=om_nr(k)*omegai
+            k=k-1
+          enddo
+        enddo
+      endif
+!
+      if (ampl==0) then
+        if (lroot) print*,'couette flow with rings: omegai=0'
+      else
+        write(unfmt,FMT='(A12,1I2.2,A6)') '(A19,I2,A24,',nr,'2F7.3)'
+        if (lroot) write(*,FMT=unfmt) 'couette flow with ',nr,' rings: omegai,omegao = ', omegai,omegao
+        write(unfmt,FMT='(A12,1I2.2,A5)') '(A19,I2,A24,',nr,'F7.3)'
+        if (lroot) write(*,FMT=unfmt) 'couette flow with ',nr,' rings: omega_rings   = ',om_nr*omegai
+        if (lroot) write(*,FMT=unfmt) 'couette flow with ',nr,' rings: radius_rings  = ',xsteps
+        f(:,:,:,i)=f(:,:,:,i)+spread(spread((omx*x),2,my),3,mz) ! velocity up=omx*x
+      endif
+!
+      if (allocated(omx))    deallocate(omx)
+!
+    endsubroutine couette_rings
 !***********************************************************************
     subroutine hat(ampl,f,i,width,kx,ky,kz)
 !
@@ -2141,6 +2244,35 @@ module Initcond
 !
       if (ip==1) print*,rr
     endsubroutine uniform_phi
+!***********************************************************************
+    subroutine phi_comp_over_r(ampl,f,i,xx,yy,zz)
+!
+!  B_phi ~ 1/R field (in terms of vector potential)
+!  meaningful mainly in cylindrical coordinates, otherwise it will be By~1/x
+!
+!  05-jul-07/mgellert: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: xx, yy, zz
+      real :: ampl
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'phi_comp_over_r: set variable to zero; i=',i
+      else
+        if (coord_system=='cylindric') then
+          print*,'phi_comp_over_r: set Bphi ~ 1/r ; i=',i
+        else
+          print*,'phi_comp_over_r: set By ~ 1/x ; i=',i
+        endif
+        if ((ip<=16).and.lroot) print*,'phi_comp_over_r: ampl=',ampl
+        f(:,:,:,i  )=0.!ampl*zz/xx
+        f(:,:,:,i+1)=0.
+        f(:,:,:,i+2)=-ampl*log(xx)
+      endif
+!
+    endsubroutine phi_comp_over_r
 !***********************************************************************
     subroutine vfield(ampl,f,i,xx,kx)
 !
