@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.464 2007-10-16 10:13:02 wlyra Exp $
+! $Id: magnetic.f90,v 1.465 2007-10-30 09:29:14 mgellert Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -344,7 +344,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.464 2007-10-16 10:13:02 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.465 2007-10-30 09:29:14 mgellert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -641,7 +641,7 @@ module Magnetic
 
         select case(initaa(j))
 
-        case('nothing'); if(lroot .and. j==1) print*,'init_uu: nothing'
+        case('nothing'); if(lroot .and. j==1) print*,'init_aa: nothing'
         case('zero', '0'); f(:,:,:,iax:iaz) = 0.
         case('rescale'); f(:,:,:,iax:iaz)=amplaa(j)*f(:,:,:,iax:iaz)
         case('mode'); call modev(amplaa(j),coefaa,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),xx,yy,zz)
@@ -673,6 +673,10 @@ module Magnetic
         case('uniform-By'); call uniform_y(amplaa(j),f,iaa,xx,yy,zz)
         case('uniform-Bz'); call uniform_z(amplaa(j),f,iaa,xx,yy,zz)
         case('uniform-Bphi'); call uniform_phi(amplaa(j),f,iaa,xx,yy,zz)
+        case('phi_comp_over_r'); call phi_comp_over_r(amplaa(j),f,iaa,xx,yy,zz)
+        case('phi_comp_over_r_noise') 
+          call phi_comp_over_r(amplaa(j),f,iaa,xx,yy,zz)
+          call gaunoise(1.0e-5*amplaa(j),f,iax,iaz)
         case('Bz(x)', '3'); call vfield(amplaa(j),f,iaa,xx)
         case('vfield2'); call vfield2(amplaa(j),f,iaa,xx)
         case('vecpatternxy'); call vecpatternxy(amplaa(j),f,iaa)
