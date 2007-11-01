@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.58 2007-09-14 04:03:02 wlyra Exp $
+! $Id: deriv.f90,v 1.59 2007-11-01 16:48:47 ajohan Exp $
 
 module Deriv
 
@@ -9,7 +9,7 @@ module Deriv
   private
 
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j
-  public :: der6_other
+  public :: der6_other, der_pencil, der2_pencil
   public :: der_upwind1st
 
 !debug  integer, parameter :: icount_der   = 1         !DERCOUNT
@@ -159,6 +159,62 @@ module Deriv
 !
     endsubroutine der_other
 !***********************************************************************
+    subroutine der_pencil(j,pencil,df)
+!
+!  Calculate first derivative of any x, y or z pencil.
+!
+!  01-nov-07/anders: adapted from der
+!
+      use Cdata
+!
+      real, dimension (:) :: pencil,df
+      integer :: j
+!
+      intent(in)  :: j, pencil
+      intent(out) :: df
+!
+!  x-derivative
+!
+      if (j==1) then
+        if (size(pencil)/=mx) then
+          if (lroot) print*, 'der_pencil: pencil must be of size mx for x derivative'
+          call fatal_error('der_pencil','')
+        endif
+        df(l1:l2)=(1./60)*dx_1(l1:l2)*( &
+            + 45.0*(pencil(l1+1:l2+1)-pencil(l1-1:l2-1)) &
+            -  9.0*(pencil(l1+2:l2+2)-pencil(l1-2:l2-2)) &
+            +      (pencil(l1+3:l2+3)-pencil(l1-3:l2-3)))
+      else if (j==2) then
+!
+!  y-derivative
+!
+        if (size(pencil)/=my) then
+          if (lroot) print*, 'der_pencil: pencil must be of size my for y derivative'
+          call fatal_error('der_pencil','')
+        endif
+        df(m1:m2)=(1./60)*dy_1(m1:m2)*( &
+            + 45.0*(pencil(m1+1:m2+1)-pencil(m1-1:m2-1)) &
+            -  9.0*(pencil(m1+2:m2+2)-pencil(m1-2:m2-2)) &
+            +      (pencil(m1+3:m2+3)-pencil(m1-3:m2-3)))
+      else if (j==3) then
+!
+!  z-derivative
+!
+        if (size(pencil)/=mz) then
+          if (lroot) print*, 'der_pencil: pencil must be of size mz for z derivative'
+          call fatal_error('der_pencil','')
+        endif
+        df(n1:n2)=(1./60)*dz_1(n1:n2)*( &
+            + 45.0*(pencil(n1+1:n2+1)-pencil(n1-1:n2-1)) &
+            -  9.0*(pencil(n1+2:n2+2)-pencil(n1-2:n2-2)) &
+            +      (pencil(n1+3:n2+3)-pencil(n1-3:n2-3)))
+      else
+        if (lroot) print*, 'der_pencil: no such direction j=', j
+        call fatal_error('der_pencil','')
+      endif
+!
+    endsubroutine der_pencil
+!***********************************************************************
     subroutine der2_main(f,k,df2,j)
 !
 !  calculate 2nd derivative d^2f_k/dx_j^2
@@ -302,6 +358,62 @@ module Deriv
 
 !
     endsubroutine der2_other
+!***********************************************************************
+    subroutine der2_pencil(j,pencil,df2)
+!
+!  Calculate 2nd derivative of any x, y or z pencil.
+!
+!  01-nov-07/anders: adapted from der2
+!
+      use Cdata
+!
+      real, dimension (:) :: pencil,df2
+      integer :: j
+!
+      intent(in)  :: j, pencil
+      intent(out) :: df2
+!
+!  x-derivative
+!
+      if (j==1) then
+        if (size(pencil)/=mx) then
+          if (lroot) print*, 'der2_pencil: pencil must be of size mx for x derivative'
+          call fatal_error('der2_pencil','')
+        endif
+        df2=(1./180)*dx_1(l1:l2)**2*(-490.0*pencil(l1:l2) &
+               +270.0*(pencil(l1+1:l2+1)+pencil(l1-1:l2-1)) &
+               - 27.0*(pencil(l1+2:l2+2)+pencil(l1-2:l2-2)) &
+               +  2.0*(pencil(l1+3:l2+3)+pencil(l1-3:l2-3)))
+      else if (j==2) then
+!
+!  y-derivative
+!
+        if (size(pencil)/=my) then
+          if (lroot) print*, 'der2_pencil: pencil must be of size my for y derivative'
+          call fatal_error('der2_pencil','')
+        endif
+        df2=(1./180)*dy_1(m1:m2)**2*(-490.0*pencil(m1:m2) &
+               +270.0*(pencil(m1+1:m2+1)+pencil(m1-1:m2-1)) &
+               - 27.0*(pencil(m1+2:m2+2)+pencil(m1-2:m2-2)) &
+               +  2.0*(pencil(m1+3:m2+3)+pencil(m1-3:m2-3)))
+      else if (j==3) then
+!
+!  z-derivative
+!
+        if (size(pencil)/=mz) then
+          if (lroot) print*, 'der2_pencil: pencil must be of size mz for z derivative'
+          call fatal_error('der2_pencil','')
+        endif
+        df2(n1:n2)=(1./180)*dz_1(n1:n2)**2*(-490.0*pencil(n1:n2) &
+               +270.0*(pencil(n1+1:n2+1)+pencil(n1-1:n2-1)) &
+               - 27.0*(pencil(n1+2:n2+2)+pencil(n1-2:n2-2)) &
+               +  2.0*(pencil(n1+3:n2+3)+pencil(n1-3:n2-3)))
+      else
+        if (lroot) print*, 'der2_pencil: no such direction j=', j
+        call fatal_error('der2_pencil','')
+      endif
+!
+    endsubroutine der2_pencil
 !***********************************************************************
     subroutine der3(f,k,df,j,ignoredx)
 !
