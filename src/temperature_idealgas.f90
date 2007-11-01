@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.46 2007-10-23 13:34:54 bingert Exp $
+! $Id: temperature_idealgas.f90,v 1.47 2007-11-01 16:11:55 bingert Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -137,7 +137,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.46 2007-10-23 13:34:54 bingert Exp $")
+           "$Id: temperature_idealgas.f90,v 1.47 2007-11-01 16:11:55 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -571,6 +571,7 @@ module Entropy
       use Global
       use Viscosity, only: calc_viscous_heat
       use EquationOfState, only: gamma1,gamma
+      use Special, only: special_calc_entropy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -648,7 +649,7 @@ module Entropy
 !
 !  Need to add left-hand-side of the continuity equation (see manual)
 !  Check this
-
+!
       if (ldensity) then
         if (ltemperature_nolog) then
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma1*p%TT*p%divu
@@ -656,6 +657,11 @@ module Entropy
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma1*p%divu
         endif
       endif
+!
+!  Entry possibility for "personal" entries.
+!  In that case you'd need to provide your own "special" routine.
+!
+      if (lspecial) call special_calc_entropy(f,df,p)
 !
 !  Calculate entropy related diagnostics
 !
