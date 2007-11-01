@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.394 2007-09-26 13:01:57 ajohan Exp $
+! $Id: cdata.f90,v 1.395 2007-11-01 17:11:32 ajohan Exp $
 
 module Cdata
 
@@ -248,7 +248,7 @@ module Cdata
 !
 ! Module flags
 !
-  logical :: ldensity_nolog=.false.
+  logical :: ldensity_nolog=.false., lwrite_stratification=.false.
   logical :: ltestfield=.false.
   logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.

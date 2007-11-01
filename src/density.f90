@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.360 2007-10-06 13:56:52 ajohan Exp $
+! $Id: density.f90,v 1.361 2007-11-01 17:11:32 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -47,13 +47,15 @@ module Density
   real :: wdamp=0.,density_floor=-1.0
   real :: mass_source_Mdot=0.,mass_source_sigma=0.
   real, dimension(3) :: diffrho_hyper3_aniso=0.
+  real, dimension(mz) :: lnrho_init_z=0.0,del2lnrho_init_z=0.0
+  real, dimension(mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
   real, target :: plaw=0.0
   integer, parameter :: ndiff_max=4
   logical :: lmass_source=.false.,lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_aniso=.false.
-  logical :: ldiff_hyper3_cyl=.false.
+  logical :: ldiff_hyper3_cyl=.false.,lanti_shockdiffusion=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: lfreeze_lnrhosqu=.false.
 
@@ -72,11 +74,11 @@ module Density
        ampllnrho,initlnrho,initlnrho2,widthlnrho,    &
        rho_left,rho_right,lnrho_const,rho_const,cs2bot,cs2top, &
        radius_lnrho,eps_planet,xblob,yblob,zblob,    &
-       b_ell,q_ell,hh0,rbound,                       &
+       b_ell,q_ell,hh0,rbound,lwrite_stratification, &
        mpoly,strati_type,beta_glnrho_global,         &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
-       wdamp,plaw,lcontinuity_gas,density_floor
+       wdamp,plaw,lcontinuity_gas,density_floor,lanti_shockdiffusion
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
@@ -85,7 +87,8 @@ module Density
        lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
        wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,         &
        lnrho_const,plaw,lcontinuity_gas,borderlnrho,    &
-       diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor
+       diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor, &
+       lanti_shockdiffusion
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
@@ -130,7 +133,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.360 2007-10-06 13:56:52 ajohan Exp $")
+           "$Id: density.f90,v 1.361 2007-11-01 17:11:32 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -149,6 +152,7 @@ module Density
 
       use CData, only: lfreeze_varext,lfreeze_varint,lreloading,&
                        ilnrho,lfreeze_varsquare,llocal_iso
+      use Deriv, only: der_pencil,der2_pencil
       use FArrayManager
       use EquationOfState, only: select_eos_variable
       use Gravity, only: lnumerical_equilibrium
@@ -257,24 +261,55 @@ module Density
 !
 ! Tell the equation of state that we're here and what f variable we use
 !
-        if (ldensity_nolog) then
-          call select_eos_variable('rho',ilnrho)
-        else
-          call select_eos_variable('lnrho',ilnrho)
-        endif
+      if (ldensity_nolog) then
+        call select_eos_variable('rho',ilnrho)
+      else
+        call select_eos_variable('lnrho',ilnrho)
+      endif
 !
-        if (lnumerical_equilibrium) then
-           if (lroot) print*,'initializing global gravity in density'
-           call farray_register_global('gg',iglobal_gg,vector=3)
-        endif
+      if (lnumerical_equilibrium) then
+         if (lroot) print*,'initializing global gravity in density'
+         call farray_register_global('gg',iglobal_gg,vector=3)
+      endif
 
-        if (llocal_iso) then
-          call put_shared_variable('plaw',plaw,ierr)
-          if (ierr/=0) call stop_it("local_isothermal_density: "//&
-               "there was a problem when sharing plaw")
-        endif
+      if (llocal_iso) then
+        call put_shared_variable('plaw',plaw,ierr)
+        if (ierr/=0) call stop_it("local_isothermal_density: "//&
+             "there was a problem when sharing plaw")
+      endif
 !
-      if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
+!  Possible to read initial stratification from file.
+!
+      if (.not. lstarting .and. lwrite_stratification) then
+        if (lroot) print*, 'initialize_density: reading original stratification from stratification.dat'
+        open(19,file='stratification.dat')
+          if (ldensity_nolog) then
+            if (lroot) then
+              print*, 'initialize_density: currently only possible to read'
+              print*, '                    *logarithmic* stratification from file'
+            endif
+            call fatal_error('initialize_density','')
+          else
+            read(19,*) lnrho_init_z
+          endif
+        close(19)
+!
+!  Need to precalculate some terms for anti shock diffusion.
+!
+        if (lanti_shockdiffusion) then        
+          call der_pencil(3,lnrho_init_z,dlnrhodz_init_z)
+          call der2_pencil(3,lnrho_init_z,del2lnrho_init_z)
+          glnrho2_init_z=dlnrhodz_init_z**2
+        endif
+      endif
+!
+!  Must write stratification to file to counteract the shock diffusion of the
+!  mean stratification.
+!
+      if (lanti_shockdiffusion .and. .not. lwrite_stratification) then
+        if (lroot) print*, 'initialize_density: must have lwrite_stratification for anti shock diffusion'
+        call fatal_error('','')
+      endif
 !
     endsubroutine initialize_density
 !***********************************************************************
@@ -1313,6 +1348,8 @@ module Density
       type (pencil_case) :: p
 !
       real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho, tmp
+!      real, dimension (mz) :: term_init
+!      real, dimension (3,mz) :: glnrho_init
 !
       intent(in)  :: f,p
       intent(out) :: df
@@ -1406,6 +1443,25 @@ module Density
           df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + &
               diffrho_shock*p%shock*(p%del2lnrho+p%glnrho2) + &
               diffrho_shock*gshockglnrho
+!
+!  Counteract the shock diffusion of the mean stratification. Must set
+!  lwrite_stratification=T in start.in for this to work.
+!            
+          if (lanti_shockdiffusion) then
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - &
+                diffrho_shock*p%shock*(del2lnrho_init_z(n)+glnrho2_init_z(n))- &
+                diffrho_shock*p%gshock(:,3)*dlnrhodz_init_z(n)
+!          if (it==1 .and. itsub==1 .and. m==4) then
+!            term_init(n)=p%del2lnrho(1)+p%glnrho2(1)
+!            glnrho_init(:,n)=p%glnrho(1,:)
+!          else
+!            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + &
+!              diffrho_shock*p%shock*term_init(n) - &
+!              diffrho_shock*p%gshock(:,1)*glnrho_init(1,n) - &
+!              diffrho_shock*p%gshock(:,2)*glnrho_init(2,n) - &
+!              diffrho_shock*p%gshock(:,3)*glnrho_init(3,n)
+!           endif
+          endif
         endif
         if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
         if (headtt) print*,'dlnrho_dt: diffrho_shock=', diffrho_shock
