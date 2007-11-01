@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.361 2007-11-01 17:11:32 ajohan Exp $
+! $Id: density.f90,v 1.362 2007-11-01 17:14:46 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -133,7 +133,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.361 2007-11-01 17:11:32 ajohan Exp $")
+           "$Id: density.f90,v 1.362 2007-11-01 17:14:46 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1348,8 +1348,6 @@ module Density
       type (pencil_case) :: p
 !
       real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho, tmp
-!      real, dimension (mz) :: term_init
-!      real, dimension (3,mz) :: glnrho_init
 !
       intent(in)  :: f,p
       intent(out) :: df
@@ -1449,18 +1447,8 @@ module Density
 !            
           if (lanti_shockdiffusion) then
             df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - &
-                diffrho_shock*p%shock*(del2lnrho_init_z(n)+glnrho2_init_z(n))- &
+                diffrho_shock*p%shock*(del2lnrho_init_z(n)+glnrho2_init_z(n))-&
                 diffrho_shock*p%gshock(:,3)*dlnrhodz_init_z(n)
-!          if (it==1 .and. itsub==1 .and. m==4) then
-!            term_init(n)=p%del2lnrho(1)+p%glnrho2(1)
-!            glnrho_init(:,n)=p%glnrho(1,:)
-!          else
-!            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + &
-!              diffrho_shock*p%shock*term_init(n) - &
-!              diffrho_shock*p%gshock(:,1)*glnrho_init(1,n) - &
-!              diffrho_shock*p%gshock(:,2)*glnrho_init(2,n) - &
-!              diffrho_shock*p%gshock(:,3)*glnrho_init(3,n)
-!           endif
           endif
         endif
         if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
