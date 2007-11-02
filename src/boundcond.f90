@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.188 2007-10-02 06:45:42 ajohan Exp $
+! $Id: boundcond.f90,v 1.189 2007-11-02 12:06:42 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -465,7 +465,7 @@ module Boundcond
             if (ipz==ip_ok) then
               select case(bc12(j))
               case ('0')
-                ! BCZ_DOC: zero value
+                ! BCZ_DOC: zero value in ghost zones, free value on boundary
                 call bc_zero_z(f,topbot,j)
               case ('p')
                 ! BCZ_DOC: periodic
