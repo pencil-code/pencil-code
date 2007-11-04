@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.20 2007-10-04 09:02:42 ajohan Exp $
+! $Id: fourier_fftpack.f90,v 1.21 2007-11-04 08:29:40 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -1174,15 +1174,11 @@ module Fourier
 !
       two = 2         ! avoid `array out of bounds' below for nygrid=1
 !
-!  if nxgrid/=nygrid/=nzgrid, stop.
+!  if nxgrid/=nygrid, then stop.
 !
       if (nygrid/=nxgrid .and. nygrid /= 1) then
         print*, 'fourier_shift_y: need to have nygrid=nxgrid if nygrid/=1'
         call fatal_error('fourier_transform_shear','')
-      endif
-      if (nzgrid/=nxgrid .and. nzgrid /= 1) then
-        print*,'fourier_shift_y: need to have nzgrid=nxgrid if nzgrid/=1'
-        call fatal_error('fourier_shift_y','')
       endif
 !
 !  Initialize cfft.
