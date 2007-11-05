@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.347 2007-10-16 10:13:01 wlyra Exp $
+! $Id: sub.f90,v 1.348 2007-11-05 20:19:56 bingert Exp $
 
 module Sub
 
@@ -1750,17 +1750,16 @@ module Sub
 !***********************************************************************
     subroutine gij_psi(psif,ee,g)
 !
-!  calculate gradient of a scalar field multiplied by a constant vector), 
-! return matrix
-!   31-jul-07/dhruba: adapted from gij
+!  calculate gradient of a scalar field multiplied by a constant vector),
+!  return matrix
+!  31-jul-07/dhruba: adapted from gij
 !
       use Cdata
       use Deriv
       use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz) :: psif
-      real, dimension(3) :: ee
-      real, dimension(nx,3) :: pp
+      real, dimension (3) :: ee
       real, dimension (nx,3,3) :: g
       real, dimension (nx) :: tmp
       integer :: i,j
@@ -2555,7 +2554,7 @@ module Sub
 !
       real, dimension (nx,3,3,3) :: d2A
       real, dimension (nx) :: tmp
-      integer :: iref1,i,j
+      integer :: i,j
 !
 ! 
 !
@@ -2767,7 +2766,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: del6f
 !
-      real, dimension (mx,my,mz,mfarray) :: f,tmp,tmp2
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
       integer :: k
 !
@@ -5537,16 +5536,16 @@ nameloop: do
           hhh(:,i)=hhh(:,i)+bunit(:,j)*(bij(:,i,j)+bunit(:,i)*tmpj(:))
         enddo
       enddo
-      call multsv_mn(b1,hhh,hhh)
+      call multsv_mn(b1,hhh,tmp)
 !
 !  limit the length of H such that dxmin*H < 1, so we also multiply
 !  by 1/sqrt(1.+dxmin^2*H^2).
 !  and dot H with ecr gradient
 !
-!     call dot2_mn(hhh,hhh2,PRECISE_SQRT=.true.)
-      call dot2_mn(hhh,hhh2,FAST_SQRT=.true.)
+!     call dot2_mn(tmp,hhh2,PRECISE_SQRT=.true.)
+      call dot2_mn(tmp,hhh2,FAST_SQRT=.true.)
       quenchfactor=1./max(1.,limiter_tensordiff*hhh2*dxmax)
-      call multsv_mn(quenchfactor,hhh,hhh)
+      call multsv_mn(quenchfactor,tmp,hhh)
       call dot_mn(hhh,gecr,tmp)
 !
 !  dot Hessian matrix of ecr with bi*bj, and add into tmp
