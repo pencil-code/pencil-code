@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.348 2007-11-05 20:19:56 bingert Exp $
+! $Id: sub.f90,v 1.349 2007-11-05 20:23:27 bingert Exp $
 
 module Sub
 
@@ -5504,7 +5504,7 @@ nameloop: do
       use Cdata
 !
       real, dimension (nx,3,3) :: ecr_ij,bij
-      real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp1,gvKpara1
+      real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp1,gvKpara1,tmpv
       real, dimension (nx) :: abs_b,b1,del2ecr,gecr2,vKperp,vKpara
       real, dimension (nx) :: hhh2,quenchfactor,rhs,tmp,tmpi,tmpj,tmpk
       real :: limiter_tensordiff=3.
@@ -5536,16 +5536,16 @@ nameloop: do
           hhh(:,i)=hhh(:,i)+bunit(:,j)*(bij(:,i,j)+bunit(:,i)*tmpj(:))
         enddo
       enddo
-      call multsv_mn(b1,hhh,tmp)
+      call multsv_mn(b1,hhh,tmpv)
 !
 !  limit the length of H such that dxmin*H < 1, so we also multiply
 !  by 1/sqrt(1.+dxmin^2*H^2).
 !  and dot H with ecr gradient
 !
-!     call dot2_mn(tmp,hhh2,PRECISE_SQRT=.true.)
-      call dot2_mn(tmp,hhh2,FAST_SQRT=.true.)
+!     call dot2_mn(tmpv,hhh2,PRECISE_SQRT=.true.)
+      call dot2_mn(tmpv,hhh2,FAST_SQRT=.true.)
       quenchfactor=1./max(1.,limiter_tensordiff*hhh2*dxmax)
-      call multsv_mn(quenchfactor,tmp,hhh)
+      call multsv_mn(quenchfactor,tmpv,hhh)
       call dot_mn(hhh,gecr,tmp)
 !
 !  dot Hessian matrix of ecr with bi*bj, and add into tmp
