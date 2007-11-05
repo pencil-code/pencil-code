@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.466 2007-11-05 09:30:17 dhruba Exp $
+! $Id: magnetic.f90,v 1.467 2007-11-05 09:33:53 dhruba Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -345,7 +345,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.466 2007-11-05 09:30:17 dhruba Exp $")
+           "$Id: magnetic.f90,v 1.467 2007-11-05 09:33:53 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -639,9 +639,8 @@ module Magnetic
       integer :: j, ierr
 !
       do j=1,ninit
-
+!        
         select case(initaa(j))
-
         case('nothing'); if(lroot .and. j==1) print*,'init_aa: nothing'
         case('zero', '0'); f(:,:,:,iax:iaz) = 0.
         case('rescale'); f(:,:,:,iax:iaz)=amplaa(j)*f(:,:,:,iax:iaz)
@@ -811,7 +810,7 @@ module Magnetic
           !
           if (lroot) &
               print*, 'init_aa: No such value for initaa: ', trim(initaa(j))
-          call stop_it("")
+          call stop_it("init_aa value not recognised")
 
         endselect
         !
@@ -3073,9 +3072,6 @@ module Magnetic
 !                write(*,*) bmxy_rms
                 if(lspherical_coords) & 
                    bmxy_rms = bmxy_rms*x(l+nghost)*x(l+nghost)*sinth(m+nghost)
-                if((r2_weight(l+nghost).eq.0).or.(sinth_weight(m+nghost).eq.0)) &
-                write(*,*) l,m,j 
-
 !              write(*,*) fnamexy(l,m,1,idiag_bxmxy), fnamexy(l,m,1,idiag_bzmxy), fnamexy(l,m,1,idiag_bzmxy)
               enddo
             enddo
