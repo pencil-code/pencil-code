@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.465 2007-10-30 09:29:14 mgellert Exp $
+! $Id: magnetic.f90,v 1.466 2007-11-05 09:30:17 dhruba Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -142,6 +142,7 @@ module Magnetic
   logical :: lforcing_continuous_aa=.false.
   logical :: lelectron_inertia=.false.
   logical :: lremove_mean_emf
+  logical :: lkinematic=.false.
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
 
@@ -167,7 +168,7 @@ module Magnetic
        sigma_ratio,zdep_profile,eta_width,eta_z0, &
        borderaa,eta_aniso_hyper3, &
        lelectron_inertia,inertial_length, &
-       lbb_as_aux,ljj_as_aux,lremove_mean_emf
+       lbb_as_aux,ljj_as_aux,lremove_mean_emf,lkinematic
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_b2m=0        ! DIAG_DOC: $\left<\Bv^2\right>$
@@ -344,7 +345,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.465 2007-10-30 09:29:14 mgellert Exp $")
+           "$Id: magnetic.f90,v 1.466 2007-11-05 09:30:17 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1418,7 +1419,9 @@ module Magnetic
 !  add jxb/rho to momentum equation
 !
       if (lhydro) then
-        if (llorentzforce) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+        if(.not.lkinematic) then
+          if (llorentzforce) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+        endif
       endif
 !
 !  Restivivity term
@@ -1591,19 +1594,23 @@ module Magnetic
 !
 !  Add Ohmic heat to entropy or temperature equation
 !
-      if (lentropy .and. lohmic_heat) then
-         if (pretend_lnTT) then
+      if(.not.lkinematic) then
+        if (lentropy .and. lohmic_heat) then
+          if (pretend_lnTT) then
             df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
-                 + p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
-         else
+              + p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
+          else
             df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
                  + etatotal*mu0*p%j2*p%rho1*p%TT1
          endif
-      endif
+        endif
 !
-      if (ltemperature .and. lohmic_heat) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
+        if (ltemperature .and. lohmic_heat) then
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
                             + etatotal*mu0*p%j2*p%rho1*p%cv1*p%TT1
+        else
+        endif
+      else
       endif
 !
 !  Switch off diffusion in boundary slice if requested by boundconds
