@@ -1,4 +1,4 @@
-! $Id: noshear.f90,v 1.15 2007-10-03 13:10:15 ajohan Exp $
+! $Id: noshear.f90,v 1.16 2007-11-06 21:08:03 bingert Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear are invoked, a corresponding replacement dummy
@@ -39,7 +39,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noshear.f90,v 1.15 2007-10-03 13:10:15 ajohan Exp $")
+           "$Id: noshear.f90,v 1.16 2007-11-06 21:08:03 bingert Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -114,7 +114,7 @@ module Shear
 !
       if (headtt.or.ldebug) print*,'advance_shear: deltay=const=',deltay
 !
-      if (NO_WARN) print*, dt_shear
+      if (NO_WARN) print*,f,df,dt_shear
 !
     endsubroutine advance_shear
 !***********************************************************************
