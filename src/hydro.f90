@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.403 2007-10-30 09:28:08 mgellert Exp $
+! $Id: hydro.f90,v 1.404 2007-11-10 10:38:36 bingert Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -319,7 +319,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.403 2007-10-30 09:28:08 mgellert Exp $")
+           "$Id: hydro.f90,v 1.404 2007-11-10 10:38:36 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1153,7 +1153,7 @@ use Mpicomm, only: stop_it
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: pdamp,space_part_re,space_part_im,u2t
+      real, dimension (nx) :: space_part_re,space_part_im,u2t
       real :: c2,s2,kx
       integer :: j
 !
@@ -1182,11 +1182,11 @@ use Mpicomm, only: stop_it
 !
       if (Omega/=0.) then
         if (lcylindrical_coords) then
-          call coriolis_cylindrical(f,df,p)
+          call coriolis_cylindrical(df,p)
         elseif (lspherical_coords) then
-          call coriolis_spherical(f,df,p)
+          call coriolis_spherical(df,p)
         elseif (lprecession) then
-          call precession(f,df,p)
+          call precession(df,p)
         else
           if (theta==0) then
             if (lcoriolis_force) then
@@ -1856,7 +1856,7 @@ use Mpicomm, only: stop_it
 !
     endsubroutine calc_othresh
 !***********************************************************************
-    subroutine precession(f,df,p)
+    subroutine precession(df,p)
 !
 !  precession terms
 !
@@ -1866,7 +1866,6 @@ use Mpicomm, only: stop_it
       use Mpicomm, only: stop_it
       use Sub, only: step,sum_mn_name
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
@@ -1891,7 +1890,7 @@ use Mpicomm, only: stop_it
 !
     endsubroutine precession
 !***********************************************************************
-    subroutine coriolis_spherical(f,df,p)
+    subroutine coriolis_spherical(df,p)
 !
 !  coriolis_spherical terms using spherical polars
 !
@@ -1900,7 +1899,6 @@ use Mpicomm, only: stop_it
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real :: c2,s2
@@ -1921,7 +1919,7 @@ use Mpicomm, only: stop_it
 !
     endsubroutine coriolis_spherical
 !***********************************************************************
-    subroutine coriolis_cylindrical(f,df,p)
+    subroutine coriolis_cylindrical(df,p)
 !
 !  Coriolis terms using cylindrical coords
 !  The formulation is the same as in cartesian, but it is better to 
@@ -1933,7 +1931,6 @@ use Mpicomm, only: stop_it
      use Cdata
      use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real :: c2
