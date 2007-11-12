@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.359 2007-10-30 09:32:08 mgellert Exp $
+### $Id: Makefile.src,v 1.360 2007-11-12 16:40:45 tgastine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -359,21 +359,19 @@ LD_FFTW2=
 #FC=mpif90 #(damaskus|n00)
 #FC=mpif90 #(bender)
 ##
-## Boris' machines: efigi, shal, galileo & pleiades
+## Toulouse's machines: efigi, shal, mithra & pleiades
 ##
-#FC=ifort #(shal|efigi|galileo|pleiades)
-#FFLAGS=-O0 -stand f90 -I/usr/include/lam #(shal)
+#FC=ifort #(shal|efigi|mithra|pleiades)
+#FFLAGS=-O0 -stand f90 -I/usr/include/lam #(shal|mithra)
 #FFLAGS=-O0 -stand f90 -I/home/dintrans/LIB/LAM/include -assume nounderscore #(efigi)
-#FFLAGS=-O0 -stand f90 -I/usr/include/lam -assume nounderscore #(galileo)
 #FFLAGS=-O3 -stand f90 -I/usr/include #(pleiades)
 #CC=gcc #(efigi)
-#CFLAGS=-O3 -m32 #(efigi)
-#CFLAGS=-O3 -m64 #(galileo)
-#LD_MPI=-L/usr/lib/lam -lpthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(shal)
+#CFLAGS=-O3 -m32 #(efigi|mithra)
+#LD_MPI=-L/usr/lib/lam -lpthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(mithra)
+#LD_MPI=-L/usr/lib64/lam -lpthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(shal)
 #LD_MPI=-pthread -L/home/dintrans/LIB/LAM/lib -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(efigi)
-#LD_MPI=-L/usr/lib64/lam -lmpi -llam -lpthread -lutil -ldl -llammpio -llamf77mpi #(galileo)
 #LD_MPI=-L/usr/lib -lpthread -llamf77mpi -lmpi -llam -lutil -ldl #(pleiades)
-#LIBMPISUFFIX=_#(efigi|galileo|pleiades)
+#LIBMPISUFFIX=_#(efigi|pleiades)
 ##
 ## Axel on Lucidor, h05n35 (ifc 8.1)
 ##
