@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.20 2007-08-17 01:58:57 dobler Exp $
+! $Id: farray.f90,v 1.21 2007-11-13 12:50:28 ajohan Exp $
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  This includes handling different
@@ -391,15 +391,6 @@ module FArrayManager
 
       consecutive_free=0
       iscratch=0
-      do i=1,mscratch
-        if (consecutive_free==0) iscratch=i
-        if (scratch_used(i)) then
-          consecutive_free=0
-        else
-          consecutive_free=consecutive_free+1
-          if (consecutive_free>=ncomponents) exit
-        endif
-      enddo
 
       if (iscratch+ncomponents>mscratch) then
         if (present(ierr)) then
@@ -412,6 +403,16 @@ module FArrayManager
         "There are insufficient consecutive mscratch slots available. "// &
         "The scratch area has become fragmented!")
       endif
+
+      do i=1,mscratch
+        if (consecutive_free==0) iscratch=i
+        if (scratch_used(i)) then
+          consecutive_free=0
+        else
+          consecutive_free=consecutive_free+1
+          if (consecutive_free>=ncomponents) exit
+        endif
+      enddo
 
       call new_item_atstart(thelist,new=new)
       new%varname=varname
