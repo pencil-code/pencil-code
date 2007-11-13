@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.59 2007-09-28 14:37:19 dobler Exp $
+# CVS: $Id: mkcparam,v 1.60 2007-11-13 17:17:49 ajohan Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -484,18 +484,21 @@ my $mpar_loc=0;
 my $npar_mig=0;
 my $npar_species=0;
 my $nspar=0;
+my $npar_stalk=0;
 foreach my $line (@cparam) {
   $line=substr($line, 0, index($line,"!"));# Ignore lines that are commented out
   if ($line=~ 'mpar_loc')     {$mpar_loc=1;}
   if ($line=~ 'npar_mig')     {$npar_mig=1;}
   if ($line=~ 'npar_species') {$npar_species=1;}
   if ($line=~ 'nspar')        {$nspar=1;}
+  if ($line=~ 'npar_stalk')   {$npar_stalk=1;}
   }
 
 if ($mpar_loc eq 0)     {print OUT "integer, parameter :: mpar_loc=npar\n";}
 if ($npar_mig eq 0)     {print OUT "integer, parameter :: npar_mig=1\n";}
 if ($npar_species eq 0) {print OUT "integer, parameter :: npar_species=1\n";}
 if ($nspar eq 0)        {print OUT "integer, parameter :: nspar=1\n";}
+if ($npar_stalk eq 0)   {print OUT "integer, parameter :: npar_stalk=0\n";}
 
 # Insert all CPARAM lines
 $,="\n";
