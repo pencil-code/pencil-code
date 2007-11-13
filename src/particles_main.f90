@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.59 2007-11-13 13:44:43 ajohan Exp $
+! $Id: particles_main.f90,v 1.60 2007-11-13 17:17:17 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -171,7 +171,7 @@ module Particles_main
       character (len=*) :: filename
 !
       open(1,file=filename)
-        write(1,'(2i9)') npar, mpvar, npar_stalk
+        write(1,'(3i9)') npar, mpvar, npar_stalk
       close(1)
 !
     endsubroutine particles_write_pdim
