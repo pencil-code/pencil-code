@@ -1,18 +1,19 @@
-! $Id: particles_main.f90,v 1.58 2007-09-16 11:16:20 wlyra Exp $
+! $Id: particles_main.f90,v 1.59 2007-11-13 13:44:43 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
 module Particles_main
 
   use Cdata
-  use Particles_cdata
-  use Particles_sub
-  use Particles
-  use Particles_radius
-  use Particles_number
-  use Particles_selfgravity
-  use Particles_nbody
   use Messages
+  use Particles
+  use Particles_cdata
+  use Particles_nbody
+  use Particles_number
+  use Particles_radius
+  use Particles_selfgravity
+  use Particles_stalker
+  use Particles_sub
 
   implicit none
 
@@ -84,6 +85,7 @@ module Particles_main
       call initialize_particles_number  (lstarting)
       call initialize_particles_selfgrav(lstarting)
       call initialize_particles_nbody   (lstarting)
+      call initialize_particles_stalker (lstarting)
 !
     endsubroutine particles_initialize_modules
 !***********************************************************************
@@ -169,7 +171,7 @@ module Particles_main
       character (len=*) :: filename
 !
       open(1,file=filename)
-        write(1,'(2i9)') npar, mpvar
+        write(1,'(2i9)') npar, mpvar, npar_stalk
       close(1)
 !
     endsubroutine particles_write_pdim
@@ -323,6 +325,10 @@ module Particles_main
 !
       intent (out) :: f, df
 !
+!  Write information about local environment to file.
+!
+      if (itsub==1) call particles_stalker_sub(f,fp,ineargrid)
+!
 !  Dynamical equations.
 !
       call dxxp_dt(f,df,fp,dfp,ineargrid)
@@ -387,6 +393,8 @@ module Particles_main
           call read_particles_selfg_init_pars(unit,iostat)
       if (lparticles_nbody) &
           call read_particles_nbody_init_pars(unit,iostat)
+      if (lparticles_stalker) &
+          call read_particles_stalker_init_pars(unit,iostat)
 !
     endsubroutine read_particles_init_pars_wrap
 !***********************************************************************
@@ -401,6 +409,8 @@ module Particles_main
           call write_particles_selfg_init_pars(unit)
       if (lparticles_nbody) &
           call write_particles_nbody_init_pars(unit)
+      if (lparticles_stalker) &
+          call write_particles_stalker_init_pars(unit)
 !
     endsubroutine write_particles_init_pars_wrap
 !***********************************************************************
@@ -416,6 +426,8 @@ module Particles_main
           call read_particles_selfg_run_pars(unit,iostat)
       if (lparticles_nbody) &
           call read_particles_nbody_run_pars(unit,iostat)
+      if (lparticles_stalker) &
+          call read_particles_stalker_run_pars(unit,iostat)
 !
     endsubroutine read_particles_run_pars_wrap
 !***********************************************************************
@@ -430,6 +442,8 @@ module Particles_main
           call write_particles_selfg_run_pars(unit)
       if (lparticles_nbody) &
            call write_particles_nbody_run_pars(unit)
+      if (lparticles_stalker) &
+           call write_particles_stalker_run_pars(unit)
 !
     endsubroutine write_particles_run_pars_wrap
 !***********************************************************************

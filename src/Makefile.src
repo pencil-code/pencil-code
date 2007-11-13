@@ -1,8 +1,8 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.360 2007-11-12 16:40:45 tgastine Exp $
+### $Id: Makefile.src,v 1.361 2007-11-13 13:44:43 ajohan Exp $
 ### Makefile for modular pencil code
 
-## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
+## Default settings: they can be overwritten by src/Makefile.local
 ## which should be present in each local to run directory.
 
 MPICOMM          =   mpicomm
@@ -54,6 +54,7 @@ PARTICLES_RADIUS       = noparticles_radius
 PARTICLES_NUMBER       = noparticles_number
 PARTICLES_SELFGRAVITY  = noparticles_selfgravity
 PARTICLES_NBODY        = noparticles_nbody
+PARTICLES_STALKER      = noparticles_stalker
 
 #SPECIAL_FUNCTIONS = nospecial_functions
 
@@ -76,7 +77,7 @@ FFLAGS_DOUBLE=-r8
 CFLAGS_DOUBLE=-DDOUBLE_PRECISION
 
 ## Overwrite settings that are local to each run directory
-include Makefile$(PC_META_TYPE).local
+include Makefile.local
 
 ## Double precision settings and similar. Must be included _after_
 ## Makefile.local, so we can set REAL_PRECISION=double there
@@ -888,14 +889,14 @@ endif
 
 ## Generic rules:
 .SUFFIXES:			# get rid of that annoying Modula rule
-.SUFFIXES: .f .f90 .c $(PC_META_TYPE).o .inc .h .dot .ps .svg
+.SUFFIXES: .f .f90 .c .o .inc .h .dot .ps .svg
 
-.f$(PC_META_TYPE).o:
-	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS)  -o $*$(PC_META_TYPE).o -c $*.f
-.f90$(PC_META_TYPE).o:
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $*$(PC_META_TYPE).o -c $*.f90
-.c$(PC_META_TYPE).o:
-	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) -o $*$(PC_META_TYPE).o -c $*.c
+.f.o:
+	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS)  -o $*.o -c $*.f
+.f90.o:
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $*.o -c $*.f90
+.c.o:
+	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) -o $*.o -c $*.c
 #
 # Rules for creating images of dot dependency diagrams
 #
@@ -907,57 +908,57 @@ endif
 #
 # ---------------------------------------------------------------------- #
 ## Abbreviations
-technical=cparam$(PC_META_TYPE).o cdata$(PC_META_TYPE).o particles_cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o general$(PC_META_TYPE).o farray$(PC_META_TYPE).o shared_variables$(PC_META_TYPE).o $(FOURIER)$(PC_META_TYPE).o slices$(PC_META_TYPE).o deriv$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o filter$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o initcond$(PC_META_TYPE).o register$(PC_META_TYPE).o prints$(PC_META_TYPE).o $(TIMEAVG)$(PC_META_TYPE).o persist$(PC_META_TYPE).o $(GRID)$(PC_META_TYPE).o
+technical=cparam.o cdata.o particles_cdata.o messages.o general.o farray.o shared_variables.o $(FOURIER).o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o persist.o $(GRID).o
 #
-physics=$(GLOBAL)$(PC_META_TYPE).o $(VISCOSITY)$(PC_META_TYPE).o $(SHOCK)$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o $(FORCING)$(PC_META_TYPE).o $(GRAVITY)$(PC_META_TYPE).o $(POISSON)$(PC_META_TYPE).o $(SELFGRAVITY)$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o $(ENTROPY)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(MAGNETIC)$(PC_META_TYPE).o $(SHEAR)$(PC_META_TYPE).o $(PSCALAR)$(PC_META_TYPE).o $(CHIRAL)$(PC_META_TYPE).o $(RADIATION)$(PC_META_TYPE).o $(DUSTVELOCITY)$(PC_META_TYPE).o $(DUSTDENSITY)$(PC_META_TYPE).o $(SPECIAL)$(PC_META_TYPE).o $(COSMICRAY)$(PC_META_TYPE).o $(COSMICRAYFLUX)$(PC_META_TYPE).o $(TESTFIELD)$(PC_META_TYPE).o $(PARTICLES)$(PC_META_TYPE).o $(PARTICLES_RADIUS)$(PC_META_TYPE).o $(PARTICLES_NUMBER)$(PC_META_TYPE).o $(PARTICLES_SELFGRAVITY)$(PC_META_TYPE).o $(PARTICLES_NBODY)$(PC_META_TYPE).o $(NEUTRALVELOCITY)$(PC_META_TYPE).o $(NEUTRALDENSITY)$(PC_META_TYPE).o $(HYPERVISC_STRICT).o $(HYPERRESI_STRICT).o
+physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(POISSON).o $(SELFGRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(TESTFIELD).o $(PARTICLES).o $(PARTICLES_RADIUS).o $(PARTICLES_NUMBER).o $(PARTICLES_SELFGRAVITY).o $(PARTICLES_NBODY).o $(PARTICLES_STALKER).o $(NEUTRALVELOCITY).o $(NEUTRALDENSITY).o $(HYPERVISC_STRICT).o $(HYPERRESI_STRICT).o
 #
-switchable=$(physics) $(BORDER_PROFILES)$(PC_META_TYPE).o
+switchable=$(physics) $(BORDER_PROFILES).o
 #
 # special function module disabled for the time being.: dhruba 
-comm_deps=$(technical) sub$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o snapshot$(PC_META_TYPE).o param_io$(PC_META_TYPE).o  $(MPICOMM_FIX)$(PC_META_TYPE).o ghostfold_$(MPICOMM)$(PC_META_TYPE).o $(switchable) $(POWER)$(PC_META_TYPE).o $(STRUCT_FUNC)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o $(PARTICLES_SUB)$(PC_META_TYPE).o
+comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o  $(MPICOMM_FIX).o ghostfold_$(MPICOMM).o $(switchable) $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o
 
-#comm_deps=$(technical) sub$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o snapshot$(PC_META_TYPE).o param_io$(PC_META_TYPE).o  $(MPICOMM_FIX)$(PC_META_TYPE).o ghostfold_$(MPICOMM)$(PC_META_TYPE).o $(switchable) $(POWER)$(PC_META_TYPE).o $(STRUCT_FUNC)$(PC_META_TYPE).o $(SPECIAL_FUNCTIONS)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o $(PARTICLES_SUB)$(PC_META_TYPE).o
+#comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o  $(MPICOMM_FIX).o ghostfold_$(MPICOMM).o $(switchable) $(POWER).o $(STRUCT_FUNC).o $(SPECIAL_FUNCTIONS).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o
 
 #
 start_deps_f90=$(comm_deps)
 #
-start_deps=$(start_deps_f90) $(DEBUG)$(PC_META_TYPE).o $(GSL).o
+start_deps=$(start_deps_f90) $(DEBUG).o $(GSL).o
 #
-run_deps_f90=$(comm_deps) equ$(PC_META_TYPE).o $(TIMESTEP)$(PC_META_TYPE).o
+run_deps_f90=$(comm_deps) equ.o $(TIMESTEP).o
 #
-run_deps=$(run_deps_f90) $(DEBUG)$(PC_META_TYPE).o $(GSL).o
+run_deps=$(run_deps_f90) $(DEBUG).o $(GSL).o
 #
-shock_finder_deps=cparam$(PC_META_TYPE).o
+shock_finder_deps=cparam.o
 #
-start_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 ghostfold_$(MPICOMM).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG)$(PC_META_TYPE).o $(IO).f90 $(GLOBAL).f90 $(POISSON)$(PC_META_TYPE).o $(GRAVITY).f90 $(SELFGRAVITY)$(PC_META_TYPE).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES)$(PC_META_TYPE).o $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 $(GRID).f90 start.f90
+start_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 ghostfold_$(MPICOMM).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(POISSON).o $(GRAVITY).f90 $(SELFGRAVITY).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES).o $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 $(GRID).f90 start.f90
 # special functions module disabled 
-#start_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 ghostfold_$(MPICOMM).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG)$(PC_META_TYPE).o $(IO).f90 $(GLOBAL).f90 $(POISSON)$(PC_META_TYPE).o $(GRAVITY).f90 $(SELFGRAVITY)$(PC_META_TYPE).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES)$(PC_META_TYPE).o $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 $(SPECIAL_FUNCTIONS).f90 snapshot.f90 $(GRID).f90 start.f90
+#start_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 ghostfold_$(MPICOMM).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(POISSON).o $(GRAVITY).f90 $(SELFGRAVITY).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES).o $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 $(SPECIAL_FUNCTIONS).f90 snapshot.f90 $(GRID).f90 start.f90
 
 #
-run_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 ghostfold_$(MPICOMM).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG)$(PC_META_TYPE).o $(IO).f90 $(GLOBAL).f90 $(POISSON)$(PC_META_TYPE).o $(GRAVITY).f90 $(SELFGRAVITY)$(PC_META_TYPE).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES).f90 equ.f90 $(TIMESTEP).f90 $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 run.f90
+run_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 ghostfold_$(MPICOMM).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(POISSON).o $(GRAVITY).f90 $(SELFGRAVITY).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES).f90 equ.f90 $(TIMESTEP).f90 $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 run.f90
 # special functions module disabled. 
-run_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 ghostfold_$(MPICOMM).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG)$(PC_META_TYPE).o $(IO).f90 $(GLOBAL).f90 $(POISSON)$(PC_META_TYPE).o $(GRAVITY).f90 $(SELFGRAVITY)$(PC_META_TYPE).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES).f90 equ.f90 $(TIMESTEP).f90 $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 $(SPECIAL_FUNCTIONS).f90 snapshot.f90 run.f90
+run_fast_deps=cparam.f90 cdata.f90 general.f90 $(MPICOMM_FIX).f90 ghostfold_$(MPICOMM).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(POISSON).o $(GRAVITY).f90 $(SELFGRAVITY).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(NEUTRALVELOCITY).f90 $(NEUTRALDENSITY).f90 $(PARTICLES).f90 equ.f90 $(TIMESTEP).f90 $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 $(SPECIAL_FUNCTIONS).f90 snapshot.f90 run.f90
 #
-start=start$(PC_META_TYPE).o $(start_deps)
+start=start.o $(start_deps)
 #
-run=run$(PC_META_TYPE).o $(run_deps)
+run=run.o $(run_deps)
 #
-shock_finder=$(SHOCK_FINDER)$(PC_META_TYPE).o $(shock_finder_deps)
-#merge_tony var2ascii_deps=cparam$(PC_META_TYPE).o
-#merge_tony var2ascii=var2ascii$(PC_META_TYPE).o $(var2ascii_deps)
-read_videofiles_deps=cparam$(PC_META_TYPE).o cdata$(PC_META_TYPE).o general$(PC_META_TYPE).o
-read_videofiles=read_videofiles$(PC_META_TYPE).o $(read_videofiles_deps)
-read_vectorfiles_deps=cparam$(PC_META_TYPE).o cdata$(PC_META_TYPE).o general$(PC_META_TYPE).o
-read_vectorfiles=read_vectorfiles$(PC_META_TYPE).o $(read_vectorfiles_deps)
-TAG_SOURCE=$(run_deps_f90:$(PC_META_TYPE).o=.f90) start.f90 run.f90 debug_c.c read_videofiles.f90
+shock_finder=$(SHOCK_FINDER).o $(shock_finder_deps)
+#merge_tony var2ascii_deps=cparam.o
+#merge_tony var2ascii=var2ascii.o $(var2ascii_deps)
+read_videofiles_deps=cparam.o cdata.o general.o
+read_videofiles=read_videofiles.o $(read_videofiles_deps)
+read_vectorfiles_deps=cparam.o cdata.o general.o
+read_vectorfiles=read_vectorfiles.o $(read_vectorfiles_deps)
+TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c read_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
 
 # ---------------------------------------------------------------------- #
 ## Symbolic targets
 
-default: start_buildtime Makefile Makefile_inc cparam$(PC_META_TYPE).inc code stop_buildtime buildinfo
+default: start_buildtime Makefile Makefile_inc cparam.inc code stop_buildtime buildinfo
 
-pacx: pacx-makefile cparam$(PC_META_TYPE).inc code
+pacx: pacx-makefile cparam.inc code
 
 # Create Makefile.inc, but need this to be a `phony' target (i.e. not a
 # filename as target), so this file is always written.
@@ -995,7 +996,7 @@ Makefile_inc:
 	esac
 
 Makefile: Makefile.src
-	scripts/check-mkfile Makefile$(PC_META_TYPE).local Makefile.src
+	scripts/check-mkfile Makefile.local Makefile.src
 	env ADAPT_MKFILE=$(ADAPT_MKFILE) scripts/adapt-mkfile Makefile.src Makefile
 
 pacx-makefile: Makefile.src
@@ -1011,7 +1012,7 @@ depend dep:
 	    '  rm src/Makefile.depend; pc_setupsrc' \
 	    '*********************************************'
 	rm -f Makefile.depend
-	scripts/mkdep start.f90 run.f90 read_videofiles.f90 read_vectorfiles.f90 equ.f90 $(TIMESTEP).f90 debug_c.c $(GRID).f90 $(comm_deps:$(PC_META_TYPE).o=.f90)  > Makefile.depend
+	scripts/mkdep start.f90 run.f90 read_videofiles.f90 read_vectorfiles.f90 equ.f90 $(TIMESTEP).f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend
 
 # Help us finding out what compiler, MPI library, etc we have and give recommendations
 semiauto-conf:
@@ -1061,18 +1062,18 @@ buildinfo:
 #-e "SPECIAL_FUNCTIONS='$(SPECIAL_FUNCTIONS)';" \
 # Ignore cparam dependencies upon .f90 files to save a few time consuming
 # recompiles! Just check for switching of modules instead.
-all.dot: Makefile.src Makefile$(PC_META_TYPE).local scripts/mkdot
+all.dot: Makefile.src Makefile.local scripts/mkdot
 	scripts/mkdot -T "All f90 dependencies" *.f90 | grep -v "RVID_BOX" | grep -v "SURFACEDATA" | grep -v "MAIN_PROGRAM" | grep -v "WRITE_DEFAULT_NAMELISTS" > all.dot
 all_nocdata.dot: all.dot
 	cat all.dot | grep -v "CDATA" | grep -v "CPARAM" > all_nocdata.dot
 all_nocdataexe.dot: all.dot
 	cat all.dot | grep -v "CDATA" | grep -v "CPARAM" | grep -v "RUN" | grep -v "START"| grep -v "READ_VIDEOFILES" | grep -v "READ_VECTORFILES" > all_nocdataexe.dot
-switchable.dot: Makefile.src Makefile$(PC_META_TYPE).local scripts/mkdot
-	scripts/mkdot -T "Switchable Module Dependencies" $(switchable:$(PC_META_TYPE).o=.f90) > switchable.dot
-run.dot: Makefile.src Makefile$(PC_META_TYPE).local scripts/mkdot 
-	scripts/mkdot -T "Run Dependencies" $(run:$(PC_META_TYPE).o=.f90) > run.dot
-start.dot: Makefile.src Makefile$(PC_META_TYPE).local scripts/mkdot
-	scripts/mkdot -T "Start Dependencies" $(start:$(PC_META_TYPE).o=.f90) > start.dot
+switchable.dot: Makefile.src Makefile.local scripts/mkdot
+	scripts/mkdot -T "Switchable Module Dependencies" $(switchable:.o=.f90) > switchable.dot
+run.dot: Makefile.src Makefile.local scripts/mkdot 
+	scripts/mkdot -T "Run Dependencies" $(run:.o=.f90) > run.dot
+start.dot: Makefile.src Makefile.local scripts/mkdot
+	scripts/mkdot -T "Start Dependencies" $(start:.o=.f90) > start.dot
 run_nocdata.dot: run.dot
 	cat run.dot | grep -v "CDATA" | grep -v "CPARAM" > run_nocdata.dot
 start_nocdata.dot: start.dot
@@ -1109,27 +1110,27 @@ all_nocdataexe.svg: all_nocdataexe.dot
 diagrams_svg: run.svg run_nocdata.svg start.svg start_nocdata.svg switchable.svg switchable_nocdata.svg all.svg all_nocdata.svg all_nocdataexe.svg
 #
 #
-cparam$(PC_META_TYPE).inc: Makefile.src Makefile$(PC_META_TYPE).local cparam$(PC_META_TYPE).local scripts/mkcparam
-	scripts/mkcparam $(switchable:$(PC_META_TYPE).o=.f90) grid.f90 cparam$(PC_META_TYPE).local -M "$(PC_META_TYPE)" -o cparam$(PC_META_TYPE).inc
-cparam$(PC_META_TYPE).o:  cparam.f90 cparam$(PC_META_TYPE).local cparam$(PC_META_TYPE).inc
-	if [ "$(PC_META_TYPE)" ]; then \
+cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam
+	scripts/mkcparam $(switchable:.o=.f90) grid.f90 cparam.local -M "" -o cparam.inc
+cparam.o:  cparam.f90 cparam.local cparam.inc
+	if [ "" ]; then \
 		 rm -f cparam.inc; \
 		 rm -f cparam_pencils.inc; \
-	     ln -s cparam$(PC_META_TYPE).inc cparam.inc;\
-	     ln -s cparam_pencils$(PC_META_TYPE).inc cparam_pencils.inc;\
+	     ln -s cparam.inc cparam.inc;\
+	     ln -s cparam_pencils.inc cparam_pencils.inc;\
 	fi
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o cparam$(PC_META_TYPE).o -c cparam.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o cparam.o -c cparam.f90
 
 special_dummies.inc:  nospecial.f90 $(SPECIAL).f90
 	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 > special_dummies.inc
 
-shock_profile$(PC_META_TYPE).inc: Makefile.src Makefile$(PC_META_TYPE).local $(SHOCK_FINDER)$(PC_META_TYPE).x $(SHOCK_PROFILE).desc
-	+if [ -f $(SHOCK_PROFILE)$(PC_META_TYPE).inc ]; then \
-          rm -f shock_profile$(PC_META_TYPE).inc; \
-          ln -s $(SHOCK_PROFILE).inc shock_profile$(PC_META_TYPE).inc; \
+shock_profile.inc: Makefile.src Makefile.local $(SHOCK_FINDER).x $(SHOCK_PROFILE).desc
+	+if [ -f $(SHOCK_PROFILE).inc ]; then \
+          rm -f shock_profile.inc; \
+          ln -s $(SHOCK_PROFILE).inc shock_profile.inc; \
 	elif [ -f $(SHOCK_PROFILE).desc ]; then \
-          $(MAKE) $(SHOCK_FINDER)$(PC_META_TYPE).x; \
-          ./$(SHOCK_FINDER)$(PC_META_TYPE).x < $(SHOCK_PROFILE).desc > shock_profile$(PC_META_TYPE).inc; \
+          $(MAKE) $(SHOCK_FINDER).x; \
+          ./$(SHOCK_FINDER).x < $(SHOCK_PROFILE).desc > shock_profile.inc; \
         fi
 
 mpicomm_double.f90: mpicomm.f90
@@ -1143,10 +1144,10 @@ mpicomm_double_.f90: mpicomm_double.f90
 nompicomm_.f90: nompicomm.f90
 	cp nompicomm.f90 nompicomm_.f90
 
-EXECUTABLES=start$(PC_META_TYPE).x run$(PC_META_TYPE).x \
-	read_videofiles$(PC_META_TYPE).x read_vectorfiles$(PC_META_TYPE).x
+EXECUTABLES=start.x run.x \
+	read_videofiles.x read_vectorfiles.x
 
-        # write_dummy_namelists$(PC_META_TYPE).x
+        # write_dummy_namelists.x
 # The last few object files to compile. We need to compile _all_ object
 # files before linking, because FC=g95_quick_and_dirty will otherwise
 # delete already compiled .x files:
@@ -1161,7 +1162,7 @@ code: Makefile_inc
 	    $(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
 
-FASTEXECS=startfast$(PC_META_TYPE).x runfast$(PC_META_TYPE).x read_videofiles$(PC_META_TYPE).x read_vectorfiles$(PC_META_TYPE).x
+FASTEXECS=startfast.x runfast.x read_videofiles.x read_vectorfiles.x
 fast:
 	@echo "$(MAKE) $(MAKEOPTS) $(FASTEXECS)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
@@ -1172,37 +1173,37 @@ fast:
 	fi
 
 debug:
-	@echo "$(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start$(PC_META_TYPE).x run$(PC_META_TYPE).x"
+	@echo "$(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
-	    ($(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start$(PC_META_TYPE).x run$(PC_META_TYPE).x \
+	    ($(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x \
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
 	else \
-	    $(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start$(PC_META_TYPE).x run$(PC_META_TYPE).x; \
+	    $(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x; \
 	fi
 
 
-start$(PC_META_TYPE).x: $(start) Makefile$(PC_META_TYPE).local
-	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start$(PC_META_TYPE).x
+start.x: $(start) Makefile.local
+	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
 
-run$(PC_META_TYPE).x: $(run) Makefile$(PC_META_TYPE).local
-	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run$(PC_META_TYPE).x
+run.x: $(run) Makefile.local
+	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 
-runfast$(PC_META_TYPE).x: $(run_fast_deps) Makefile$(PC_META_TYPE).local
-	$(FC) -o runfast$(PC_META_TYPE).x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(run_fast_deps) $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) $(LIBSIG)
+runfast.x: $(run_fast_deps) Makefile.local
+	$(FC) -o runfast.x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(run_fast_deps) $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) $(LIBSIG)
 
-startfast$(PC_META_TYPE).x: $(start_fast_deps) Makefile$(PC_META_TYPE).local
-	$(FC) -o startfast$(PC_META_TYPE).x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(start_fast_deps) $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) 
+startfast.x: $(start_fast_deps) Makefile.local
+	$(FC) -o startfast.x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(start_fast_deps) $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) 
 
-$(SHOCK_FINDER)$(PC_META_TYPE).x: $(shock_finder) Makefile$(PC_META_TYPE).local
-	$(LD) $(LDFLAGS) $(shock_finder) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o $(SHOCK_FINDER)$(PC_META_TYPE).x
+$(SHOCK_FINDER).x: $(shock_finder) Makefile.local
+	$(LD) $(LDFLAGS) $(shock_finder) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o $(SHOCK_FINDER).x
 # testing spatial differential operators 
-optest$(PC_META_TYPE).x: $(optest) Makefile$(PC_META_TYPE).local
-	$(LD) $(LDFLAGS) $(optest) $(LD_MPI) $(LD_FOURIER) -o optest$(PC_META_TYPE).x
+optest.x: $(optest) Makefile.local
+	$(LD) $(LDFLAGS) $(optest) $(LD_MPI) $(LD_FOURIER) -o optest.x
 # Handy for debugging; just compile by hand what is changed.
 # When you use this you must be certain that everying is consistent.
 linkonly:
-	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start$(PC_META_TYPE).x
-	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run$(PC_META_TYPE).x
+	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start.x
+	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x
 #shorthand for this
 l:
 	$(MAKE) $(MAKEOPTS) linkonly
@@ -1216,20 +1217,20 @@ mpicomm_.f90:      mpicomm.f90
 #   F90FLAGS=$(FFLAGS_SLOPPY) -Werror
 #   F77FLAGS=$(FFLAGS_SLOPPY)
 # to restrict `-Werror' to F90 files other than MPICOMM.
-$(MPICOMM_FIX)$(PC_META_TYPE).o: mpicomm.h $(MPICOMM_FIX).f90 cdata$(PC_META_TYPE).o
+$(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
 	@fflags="$(FFLAGS_SLOPPY)"; \
 	if [ -z "$$fflags" ]; then fflags="$(FFLAGS) $(F90FLAGS)"; fi; \
 	echo $(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
-	    -o $(MPICOMM_FIX)$(PC_META_TYPE).o -c $(MPICOMM_FIX).f90; \
+	    -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90; \
 	$(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
-	    -o $(MPICOMM_FIX)$(PC_META_TYPE).o -c $(MPICOMM_FIX).f90
+	    -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
 #
 
 # Shortcut for debugging radiation:
 rad:
 	ifc -c radiation_exp.f90
-	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start$(PC_META_TYPE).x
-	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run$(PC_META_TYPE).x
+	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start.x
+	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x
 
 # Remove all build files, but keep executables
 # (misleading name..)
@@ -1285,28 +1286,28 @@ distclean: cleanall
 
 nograv.o:
 
-read_videofiles$(PC_META_TYPE).x: $(read_videofiles)
-	$(LD) $(LDFLAGS) $(read_videofiles) $(LD_MPI) -o read_videofiles$(PC_META_TYPE).x
+read_videofiles.x: $(read_videofiles)
+	$(LD) $(LDFLAGS) $(read_videofiles) $(LD_MPI) -o read_videofiles.x
 
-read_vectorfiles$(PC_META_TYPE).x: $(read_vectorfiles)
-	$(LD) $(LDFLAGS) $(read_vectorfiles) $(LD_MPI) -o read_vectorfiles$(PC_META_TYPE).x
+read_vectorfiles.x: $(read_vectorfiles)
+	$(LD) $(LDFLAGS) $(read_vectorfiles) $(LD_MPI) -o read_vectorfiles.x
 
-var2ascii$(PC_META_TYPE).x: $(var2ascii)
-	$(LD) $(LDFLAGS) $(var2ascii) $(LD_MPI) -o var2ascii$(PC_META_TYPE).x
+var2ascii.x: $(var2ascii)
+	$(LD) $(LDFLAGS) $(var2ascii) $(LD_MPI) -o var2ascii.x
 
-write_dnlists_deps=write_dummy_namelists$(PC_META_TYPE).o $(comm_deps) $(DEBUG)$(PC_META_TYPE).o
-write_dummy_namelists$(PC_META_TYPE).x: $(write_dnlists_deps)
-	$(LD) $(LDFLAGS) $(write_dnlists_deps) $(LD_MPI) -o write_dummy_namelists$(PC_META_TYPE).x
+write_dnlists_deps=write_dummy_namelists.o $(comm_deps) $(DEBUG).o
+write_dummy_namelists.x: $(write_dnlists_deps)
+	$(LD) $(LDFLAGS) $(write_dnlists_deps) $(LD_MPI) -o write_dummy_namelists.x
 
 ## ---------------------------------------------------------------------- #
 ## Non-F90 / undetectable dependencies
 ## ---------------------------------------------------------------------- #
 #
-fft$(PC_META_TYPE).o:	     fft.f Makefile.src
-nodebug$(PC_META_TYPE).o:            nodebug.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o
-#$(TIMEAVG)$(PC_META_TYPE).o:        ctimeavg.local
-#axeltest $(INITCOND_SPEC)$(PC_META_TYPE).o:$(INITCOND_SPEC).f90
-write_dummy_namelists$(PC_META_TYPE).o: write_dummy_namelists.f90 $(comm_deps)
+fft.o:	     fft.f Makefile.src
+nodebug.o:            nodebug.f90 cdata.o $(MPICOMM_FIX).o
+#$(TIMEAVG).o:        ctimeavg.local
+#axeltest $(INITCOND_SPEC).o:$(INITCOND_SPEC).f90
+write_dummy_namelists.o: write_dummy_namelists.f90 $(comm_deps)
 
 ## ---------------------------------------------------------------------- #
 ## Dependencies

@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.80 2007-10-04 10:44:40 ajohan Exp $
+### $Id: Makefile.depend,v 1.81 2007-11-13 13:44:43 ajohan Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -144,6 +144,8 @@ PARTICLES_SELFGRAVITY_OBJ=$(PARTICLES_SELFGRAVITY).o
 PARTICLES_SELFGRAVITY_SRC=$(PARTICLES_SELFGRAVITY).f90
 PARTICLES_NBODY_OBJ=$(PARTICLES_NBODY).o
 PARTICLES_NBODY_SRC=$(PARTICLES_NBODY).f90
+PARTICLES_STALKER_OBJ=$(PARTICLES_STALKER).o
+PARTICLES_STALKER_SRC=$(PARTICLES_STALKER).f90
 
 ## ---------------------------------------------------------------------- #
 ## Non-F90 / undetectable dependencies
@@ -255,12 +257,13 @@ $(SPECIAL_OBJ):         special.h         $(SPECIAL_SRC) special_dummies.inc $(C
 #  Particle modules
 #
 $(PARTICLES_CDATA_OBJ):  particles_cdata.f90 $(CDATA_OBJ)
-$(PARTICLES_MAIN_OBJ):   particles_main.h             $(PARTICLES_OBJ) $(PARTICLES_SUB_OBJ) $(PARTICLES_NUMBER_OBJ) $(PARTICLES_RADIUS_OBJ) $(PARTICLES_SELFGRAVITY_OBJ) $(PARTICLES_NBODY_OBJ) $(CDATA_OBJ)
+$(PARTICLES_MAIN_OBJ):   particles_main.h             $(PARTICLES_OBJ) $(PARTICLES_SUB_OBJ) $(PARTICLES_NUMBER_OBJ) $(PARTICLES_RADIUS_OBJ) $(PARTICLES_SELFGRAVITY_OBJ) $(PARTICLES_NBODY_OBJ) $(PARTICLES_STALKER_OBJ) $(CDATA_OBJ)
 $(PARTICLES_SUB_OBJ):                                 $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_SRC) $(CDATA_OBJ) $(GHOSTFOLD_OBJ) $(GLOBAL_OBJ) $(MESSAGES_OBJ)
 $(PARTICLES_OBJ):        particles.h                  $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ) $(PARTICLES_NUMBER_OBJ) $(COMMON_DEPS) $(GLOBAL_OBJ) $(EOS_OBJ) $(POWER_OBJ)
 $(PARTICLES_NUMBER_OBJ): particles_number.h           $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
 $(PARTICLES_SELFGRAVITY_OBJ): particles_selfgravity.h $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
 $(PARTICLES_NBODY_OBJ): particles_nbody.h             $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
 $(PARTICLES_RADIUS_OBJ): particles_radius.h           $(PARTICLES_CDATA_OBJ) $(PARTICLES_NUMBER_OBJ)
+$(PARTICLES_STALKER_OBJ): particles_stalker.h
 
 # DO NOT DELETE
