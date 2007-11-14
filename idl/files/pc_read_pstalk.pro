@@ -1,5 +1,5 @@
 ;;
-;; $Id: pc_read_pstalk.pro,v 1.3 2007-11-14 11:21:30 ajohan Exp $
+;; $Id: pc_read_pstalk.pro,v 1.4 2007-11-14 14:58:22 ajohan Exp $
 ;;
 ;; NAME:
 ;;      pc_read_pstalk
@@ -56,10 +56,7 @@ endif
 ; Initialize data arrays.
 ;
 t=fltarr(nout)*zero
-for ifield=0,nfields-1 do begin
-  command=fields[ifield]+'=fltarr(pdim.npar_stalk,nout)*zero' & status=execute(command)
-  command=fields_loc[ifield]+'=zero' & status=execute(command)
-endfor
+array=fltarr(nfields,pdim.npar_stalk,nout)*zero
 ;
 ; Go through all processor directories.
 ;
@@ -79,17 +76,13 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
       if ( (it1 ne -1) and (it mod it1 eq 0) ) then $
           print, iproc, it, t_loc
 
-      for k=0,npar_stalk_loc-1 do begin
-        command='readu, 1, ipar'
-        for ifield=0,nfields-1 do begin
-          command=command+', '+fields_loc[ifield]
-        endfor
-        status=execute(command)
-        for ifield=0,nfields-1 do begin
-          command=fields[ifield]+'[ipar-1,it]='+fields_loc[ifield]
-          status=execute(command)
-        endfor
-      endfor
+      ipar_loc=lonarr(npar_stalk_loc)
+      readu, 1, ipar_loc
+
+      array_loc=fltarr(nfields,npar_stalk_loc)*zero
+      readu, 1, array_loc
+
+      array[*,ipar_loc-1,it]=array_loc
 
       t[it]=t_loc
 
@@ -102,7 +95,8 @@ endfor
 ; Build structure of all the variables.
 ;
 command="object = create_struct(name=objectname,['t'"+ $
-    arraytostring(fields,quote="'")+"],t"+arraytostring(fields)+")"
+    arraytostring(fields,quote="'")+"],t"+ $
+    arraytostring('reform(array['+strtrim(indgen(nfields),2)+",*,*])")+")"
 status=execute(command)
 ;
 end
