@@ -1,4 +1,4 @@
-; $Id: r_sph.pro,v 1.1 2007-06-12 16:16:57 dhruba Exp $
+; $Id: r_sph.pro,v 1.2 2007-11-14 08:10:17 dhruba Exp $
 
 ;;;;;;;;;;;;;;;;;;;
 ;;;  r_sph.pro  ;;;
@@ -14,7 +14,7 @@ rr_1 = spread(1/x,[1,2],[my,mz])
 theta = yy
 phi = zz
 cotth = spread(cos(y)/sin(y),[0,2],[mx,mz]) 
-
+sinth = spread(sin(y),[0,2],[mx,mz])
 END
 
 ; End of file
