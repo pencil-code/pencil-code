@@ -1,4 +1,4 @@
-! $Id: particles_stalker.f90,v 1.3 2007-11-14 14:57:34 ajohan Exp $
+! $Id: particles_stalker.f90,v 1.4 2007-11-14 23:01:42 dobler Exp $
 !
 !  This module writes information about the local state of the gas at
 !  the positions of a selected number of particles.
@@ -406,7 +406,7 @@ module Particles_stalker
 !   
     endsubroutine stalk_magnetic
 !***********************************************************************
-    subroutine read_particles_stalker_init_pars(unit,iostat)
+    subroutine read_pstalker_init_pars(unit,iostat)
 !
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
@@ -419,17 +419,17 @@ module Particles_stalker
 !
 99    return
 !
-    endsubroutine read_particles_stalker_init_pars
+    endsubroutine read_pstalker_init_pars
 !***********************************************************************
-    subroutine write_particles_stalker_init_pars(unit)
+    subroutine write_pstalker_init_pars(unit)
 !
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_stalker_init_pars)
 !
-    endsubroutine write_particles_stalker_init_pars
+    endsubroutine write_pstalker_init_pars
 !***********************************************************************
-    subroutine read_particles_stalker_run_pars(unit,iostat)
+    subroutine read_pstalker_run_pars(unit,iostat)
 !
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
@@ -442,14 +442,14 @@ module Particles_stalker
 !
 99    return
 !
-    endsubroutine read_particles_stalker_run_pars
+    endsubroutine read_pstalker_run_pars
 !***********************************************************************
-    subroutine write_particles_stalker_run_pars(unit)
+    subroutine write_pstalker_run_pars(unit)
 !
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_stalker_run_pars)
 !
-    endsubroutine write_particles_stalker_run_pars
+    endsubroutine write_pstalker_run_pars
 !***********************************************************************
 endmodule Particles_stalker

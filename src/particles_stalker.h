@@ -2,5 +2,6 @@
   private
  
   public :: initialize_particles_stalker, particles_stalker_sub
-  public :: read_particles_stalker_init_pars, write_particles_stalker_init_pars
-  public :: read_particles_stalker_run_pars, write_particles_stalker_run_pars
+  public :: read_pstalker_init_pars, write_pstalker_init_pars
+  public :: read_pstalker_run_pars, write_pstalker_run_pars
+

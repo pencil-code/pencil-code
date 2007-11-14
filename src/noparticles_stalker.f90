@@ -1,4 +1,4 @@
-! $Id: noparticles_stalker.f90,v 1.1 2007-11-13 13:44:43 ajohan Exp $
+! $Id: noparticles_stalker.f90,v 1.2 2007-11-14 23:01:42 dobler Exp $
 !
 !  This module writes information about the local state of the gas at
 !  the positions of a selected number of particles.
@@ -46,38 +46,38 @@ module Particles_stalker
 !    
     endsubroutine particles_stalker_sub
 !***********************************************************************
-    subroutine read_particles_stalker_init_pars(unit,iostat)
+    subroutine read_pstalker_init_pars(unit,iostat)
 !
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
       if (NO_WARN) print*, unit, iostat
 !
-    endsubroutine read_particles_stalker_init_pars
+    endsubroutine read_pstalker_init_pars
 !***********************************************************************
-    subroutine write_particles_stalker_init_pars(unit)
+    subroutine write_pstalker_init_pars(unit)
 !
       integer, intent (in) :: unit
 !
       if (NO_WARN) print*, unit
 !
-    endsubroutine write_particles_stalker_init_pars
+    endsubroutine write_pstalker_init_pars
 !***********************************************************************
-    subroutine read_particles_stalker_run_pars(unit,iostat)
+    subroutine read_pstalker_run_pars(unit,iostat)
 !
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
       if (NO_WARN) print*, unit, iostat
 !
-    endsubroutine read_particles_stalker_run_pars
+    endsubroutine read_pstalker_run_pars
 !***********************************************************************
-    subroutine write_particles_stalker_run_pars(unit)
+    subroutine write_pstalker_run_pars(unit)
 !
       integer, intent (in) :: unit
 !
       if (NO_WARN) print*, unit
 !
-    endsubroutine write_particles_stalker_run_pars
+    endsubroutine write_pstalker_run_pars
 !***********************************************************************
 endmodule Particles_stalker
