@@ -1,5 +1,5 @@
 ;;
-;; $Id: pc_read_pstalk.pro,v 1.2 2007-11-14 07:18:26 ajohan Exp $
+;; $Id: pc_read_pstalk.pro,v 1.3 2007-11-14 11:21:30 ajohan Exp $
 ;;
 ;; NAME:
 ;;      pc_read_pstalk
@@ -11,13 +11,14 @@
 ;; MODIFICATION HISTORY:
 ;;     Written by: Anders Johansen (johansen@mpia.de) on 13.07.2007
 ;;
-pro pc_read_pstalk, object=object, datadir=datadir, quiet=quiet
+pro pc_read_pstalk, object=object, datadir=datadir, it1=it1, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
 ; Default values.
 ;
 default, quiet, 0
+default, it1, -1
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;
 ; Read dimensions and set precision.
@@ -74,6 +75,9 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
   openr, 1, datadir+'/proc'+strtrim(iproc,2)+'/particles_stalker.dat', /f77
     while (it lt nout and not eof(1)) do begin
       readu, 1, t_loc, npar_stalk_loc
+
+      if ( (it1 ne -1) and (it mod it1 eq 0) ) then $
+          print, iproc, it, t_loc
 
       for k=0,npar_stalk_loc-1 do begin
         command='readu, 1, ipar'
