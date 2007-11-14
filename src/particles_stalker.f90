@@ -1,4 +1,4 @@
-! $Id: particles_stalker.f90,v 1.1 2007-11-13 13:44:43 ajohan Exp $
+! $Id: particles_stalker.f90,v 1.2 2007-11-14 07:17:57 ajohan Exp $
 !
 !  This module writes information about the local state of the gas at
 !  the positions of a selected number of particles.
@@ -30,6 +30,7 @@ module Particles_stalker
   logical :: lstalk_xx=.true., lstalk_vv=.true.
   logical :: lstalk_uu=.true., lstalk_guu=.false.
   logical :: lstalk_rho=.true., lstalk_grho=.false.
+  logical :: lstalk_bb=.true.
 
   namelist /particles_stalker_init_pars/ &
       dstalk, linterpolate_cic, linterpolate_tsc, &
@@ -58,10 +59,11 @@ module Particles_stalker
 !
 !  Turn off stalking if physics not selected.
 !
-      if (ivpx==0)        lstalk_vv=.false.
-      if (.not. lhydro)   lstalk_uu=.false.
-      if (.not. ldensity) lstalk_rho=.false.
-      if (.not. ldensity) lstalk_grho=.false.
+      if (ivpx==0)         lstalk_vv=.false.
+      if (.not. lhydro)    lstalk_uu=.false.
+      if (.not. ldensity)  lstalk_rho=.false.
+      if (.not. ldensity)  lstalk_grho=.false.
+      if (.not. lmagnetic) lstalk_bb=.false.
 !
 !  Write information on which variables are stalked to file.
 !
@@ -76,6 +78,7 @@ module Particles_stalker
           if (lstalk_guu)  write(1,'(A)',advance='no') 'duzdx,duzdy,duzdz,'
           if (lstalk_rho)  write(1,'(A)',advance='no') 'rho,'
           if (lstalk_grho) write(1,'(A)',advance='no') 'drhodx,drhody,drhodz,'
+          if (lstalk_bb)   write(1,'(A)',advance='no') 'bx,by,bz,'
         close (1)
       endif
 !
@@ -113,6 +116,7 @@ module Particles_stalker
       real, dimension (npar_stalk) :: duxdx, duxdy, duxdz
       real, dimension (npar_stalk) :: duydx, duydy, duydz
       real, dimension (npar_stalk) :: duzdx, duzdy, duzdz
+      real, dimension (npar_stalk) :: bx, by, bz
       real, dimension (100) :: values
       real, dimension (3) :: uu_loc
       integer, dimension (npar_stalk) :: k_stalk
@@ -191,6 +195,12 @@ module Particles_stalker
           call stalk_gradient(f,fp,k_stalk,npar_stalk_loc,ineargrid,ilnrho,3,drhodz)
         endif
 !
+!  Magnetic field.
+!
+        if (lstalk_bb) then
+          call stalk_magnetic(f,fp,k_stalk,npar_stalk_loc,ineargrid,bx,by,bz)
+        endif
+!
 !  Write information to a file
 !
         open(1,file=trim(directory_snap)//'/particles_stalker.dat', &
@@ -226,6 +236,11 @@ module Particles_stalker
               ivalue=ivalue+1; values(ivalue)=drhodx(i)
               ivalue=ivalue+1; values(ivalue)=drhody(i)
               ivalue=ivalue+1; values(ivalue)=drhodz(i)
+            endif
+            if (lstalk_bb) then
+              ivalue=ivalue+1; values(ivalue)=bx(i)
+              ivalue=ivalue+1; values(ivalue)=by(i)
+              ivalue=ivalue+1; values(ivalue)=bz(i)
             endif
 !
 !  Write to file.
@@ -297,6 +312,7 @@ module Particles_stalker
 !
 !  13-nov-07/anders: coded
 !
+      use Boundcond, only: bc_per_x, bc_per_y, bc_per_z
       use Deriv, only: der
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -316,6 +332,9 @@ module Particles_stalker
         call der(f(:,:,:,ivar),der_pencil,ider)
         f(l1:l2,m,n,iscratch)=der_pencil
       enddo; enddo
+      call bc_per_x(f,'top',iscratch); call bc_per_x(f,'bot',iscratch)
+      call bc_per_y(f,'top',iscratch); call bc_per_y(f,'bot',iscratch)
+      call bc_per_z(f,'top',iscratch); call bc_per_z(f,'bot',iscratch)
 !
 !  Now that the derivative is stored in the f array, we can use the usual
 !  subroutine to find the local state of the gas at the positions of the
@@ -324,6 +343,58 @@ module Particles_stalker
       call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iscratch,value)
 !   
     endsubroutine stalk_gradient
+!***********************************************************************
+    subroutine stalk_magnetic(f,fp,k_stalk,npar_stalk_loc,ineargrid,bx,by,bz)
+!
+!  Calculate magnetic field B from vector potential A and interpolate
+!  to position of stalked particles.
+!
+!  14-nov-07/anders: coded
+!
+      use Boundcond, only: bc_per_x, bc_per_y, bc_per_z
+      use Deriv, only: der
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (npar_stalk) :: k_stalk
+      integer :: npar_stalk_loc
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer :: ivar, ider
+      real, dimension (npar_stalk) :: bx, by, bz
+!
+      real, dimension (nx) :: der1_pencil, der2_pencil
+!
+      do n=n1,n2; do m=m1,m2
+        call der(f,iaa-1+3,der1_pencil,2)
+        call der(f,iaa-1+2,der2_pencil,3)
+        f(l1:l2,m,n,iscratch)=der1_pencil-der2_pencil
+      enddo; enddo
+      call bc_per_x(f,'top',iscratch); call bc_per_x(f,'bot',iscratch)
+      call bc_per_y(f,'top',iscratch); call bc_per_y(f,'bot',iscratch)
+      call bc_per_z(f,'top',iscratch); call bc_per_z(f,'bot',iscratch)
+      call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iscratch,bx)
+!
+      do n=n1,n2; do m=m1,m2
+        call der(f,iaa-1+1,der1_pencil,3)
+        call der(f,iaa-1+3,der2_pencil,1)
+        f(l1:l2,m,n,iscratch)=der1_pencil-der2_pencil
+      enddo; enddo
+      call bc_per_x(f,'top',iscratch); call bc_per_x(f,'bot',iscratch)
+      call bc_per_y(f,'top',iscratch); call bc_per_y(f,'bot',iscratch)
+      call bc_per_z(f,'top',iscratch); call bc_per_z(f,'bot',iscratch)
+      call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iscratch,by)
+!
+      do n=n1,n2; do m=m1,m2
+        call der(f,iaa-1+2,der1_pencil,1)
+        call der(f,iaa-1+1,der2_pencil,2)
+        f(l1:l2,m,n,iscratch)=der1_pencil-der2_pencil
+      enddo; enddo
+      call bc_per_x(f,'top',iscratch); call bc_per_x(f,'bot',iscratch)
+      call bc_per_y(f,'top',iscratch); call bc_per_y(f,'bot',iscratch)
+      call bc_per_z(f,'top',iscratch); call bc_per_z(f,'bot',iscratch)
+      call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iscratch,bz)
+!   
+    endsubroutine stalk_magnetic
 !***********************************************************************
     subroutine read_particles_stalker_init_pars(unit,iostat)
 !

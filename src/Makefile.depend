@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.81 2007-11-13 13:44:43 ajohan Exp $
+### $Id: Makefile.depend,v 1.82 2007-11-14 07:17:57 ajohan Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -264,6 +264,6 @@ $(PARTICLES_NUMBER_OBJ): particles_number.h           $(PARTICLES_CDATA_OBJ) $(P
 $(PARTICLES_SELFGRAVITY_OBJ): particles_selfgravity.h $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
 $(PARTICLES_NBODY_OBJ): particles_nbody.h             $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
 $(PARTICLES_RADIUS_OBJ): particles_radius.h           $(PARTICLES_CDATA_OBJ) $(PARTICLES_NUMBER_OBJ)
-$(PARTICLES_STALKER_OBJ): particles_stalker.h
+$(PARTICLES_STALKER_OBJ): particles_stalker.h         boundcond.o
 
 # DO NOT DELETE
