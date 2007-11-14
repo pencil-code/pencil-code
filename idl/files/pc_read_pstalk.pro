@@ -1,5 +1,5 @@
 ;;
-;; $Id: pc_read_pstalk.pro,v 1.1 2007-11-13 13:46:58 ajohan Exp $
+;; $Id: pc_read_pstalk.pro,v 1.2 2007-11-14 07:18:26 ajohan Exp $
 ;;
 ;; NAME:
 ;;      pc_read_pstalk
@@ -17,7 +17,7 @@ COMMON pc_precision, zero, one
 ;
 ; Default values.
 ;
-default, quiet, 1
+default, quiet, 0
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;
 ; Read dimensions and set precision.
