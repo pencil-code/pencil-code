@@ -1,4 +1,4 @@
-! $Id: particles_stalker.f90,v 1.2 2007-11-14 07:17:57 ajohan Exp $
+! $Id: particles_stalker.f90,v 1.3 2007-11-14 14:57:34 ajohan Exp $
 !
 !  This module writes information about the local state of the gas at
 !  the positions of a selected number of particles.
@@ -25,7 +25,7 @@ module Particles_stalker
   include 'particles_stalker.h'
 
   real :: dstalk=0.1, tstalk=0.0
-  integer :: iscratch=0, nout=0
+  integer :: iscratch=0, nout=0, nvar_stalk=0
   logical :: linterpolate_cic=.false., linterpolate_tsc=.true.
   logical :: lstalk_xx=.true., lstalk_vv=.true.
   logical :: lstalk_uu=.true., lstalk_guu=.false.
@@ -64,6 +64,17 @@ module Particles_stalker
       if (.not. ldensity)  lstalk_rho=.false.
       if (.not. ldensity)  lstalk_grho=.false.
       if (.not. lmagnetic) lstalk_bb=.false.
+!
+!  Count the number of variables to be stalked.
+!
+      nvar_stalk=0
+      if (lstalk_xx)   nvar_stalk=nvar_stalk+3
+      if (lstalk_vv)   nvar_stalk=nvar_stalk+3
+      if (lstalk_uu)   nvar_stalk=nvar_stalk+3
+      if (lstalk_guu)  nvar_stalk=nvar_stalk+9
+      if (lstalk_rho)  nvar_stalk=nvar_stalk+1
+      if (lstalk_grho) nvar_stalk=nvar_stalk+3
+      if (lstalk_bb)   nvar_stalk=nvar_stalk+3
 !
 !  Write information on which variables are stalked to file.
 !
@@ -117,7 +128,7 @@ module Particles_stalker
       real, dimension (npar_stalk) :: duydx, duydy, duydz
       real, dimension (npar_stalk) :: duzdx, duzdy, duzdz
       real, dimension (npar_stalk) :: bx, by, bz
-      real, dimension (100) :: values
+      real, dimension (:,:), allocatable :: values
       real, dimension (3) :: uu_loc
       integer, dimension (npar_stalk) :: k_stalk
       integer :: i, k, ix0, iy0, iz0, npar_stalk_loc, ivalue
@@ -209,44 +220,43 @@ module Particles_stalker
 !  Write the time and the number of stalked particles at this processor.
 !
           write(1) t, npar_stalk_loc
+          write(1) ipar(k_stalk(1):k_stalk(npar_stalk_loc))
 !
-!  Collect environment information in single array.
-!        
-          do i=1,npar_stalk_loc
-            ivalue=0
-            if (lstalk_xx) then
-              ivalue=ivalue+1; values(ivalue)=xp(i)
-              ivalue=ivalue+1; values(ivalue)=yp(i)
-              ivalue=ivalue+1; values(ivalue)=zp(i)
-            endif
-            if (lstalk_vv) then
-              ivalue=ivalue+1; values(ivalue)=vpx(i)
-              ivalue=ivalue+1; values(ivalue)=vpy(i)
-              ivalue=ivalue+1; values(ivalue)=vpz(i)
-            endif
-            if (lstalk_uu) then
-              ivalue=ivalue+1; values(ivalue)=ux(i)
-              ivalue=ivalue+1; values(ivalue)=uy(i)
-              ivalue=ivalue+1; values(ivalue)=uz(i)
-            endif
-            if (lstalk_rho) then
-              ivalue=ivalue+1; values(ivalue)=rho(i)
-            endif
-            if (lstalk_grho) then
-              ivalue=ivalue+1; values(ivalue)=drhodx(i)
-              ivalue=ivalue+1; values(ivalue)=drhody(i)
-              ivalue=ivalue+1; values(ivalue)=drhodz(i)
-            endif
-            if (lstalk_bb) then
-              ivalue=ivalue+1; values(ivalue)=bx(i)
-              ivalue=ivalue+1; values(ivalue)=by(i)
-              ivalue=ivalue+1; values(ivalue)=bz(i)
-            endif
+!  Collect environment information in single array and write array to file.
 !
-!  Write to file.
-!          
-            write(1) ipar(k_stalk(i)), values(1:ivalue)
-          enddo
+          allocate(values(nvar_stalk,npar_stalk))
+          ivalue=0
+          if (lstalk_xx) then
+            ivalue=ivalue+1; values(ivalue,:)=xp(1:npar_stalk)
+            ivalue=ivalue+1; values(ivalue,:)=yp(1:npar_stalk)
+            ivalue=ivalue+1; values(ivalue,:)=zp(1:npar_stalk)
+          endif
+          if (lstalk_vv) then
+            ivalue=ivalue+1; values(ivalue,:)=vpx(1:npar_stalk)
+            ivalue=ivalue+1; values(ivalue,:)=vpy(1:npar_stalk)
+            ivalue=ivalue+1; values(ivalue,:)=vpz(1:npar_stalk)
+          endif
+          if (lstalk_uu) then
+            ivalue=ivalue+1; values(ivalue,:)=ux(1:npar_stalk)
+            ivalue=ivalue+1; values(ivalue,:)=uy(1:npar_stalk)
+            ivalue=ivalue+1; values(ivalue,:)=uz(1:npar_stalk)
+          endif
+          if (lstalk_rho) then
+            ivalue=ivalue+1; values(ivalue,:)=rho(1:npar_stalk)
+          endif
+          if (lstalk_grho) then
+            ivalue=ivalue+1; values(ivalue,:)=drhodx(1:npar_stalk)
+            ivalue=ivalue+1; values(ivalue,:)=drhody(1:npar_stalk)
+            ivalue=ivalue+1; values(ivalue,:)=drhodz(1:npar_stalk)
+          endif
+          if (lstalk_bb) then
+            ivalue=ivalue+1; values(ivalue,:)=bx(1:npar_stalk)
+            ivalue=ivalue+1; values(ivalue,:)=by(1:npar_stalk)
+            ivalue=ivalue+1; values(ivalue,:)=bz(1:npar_stalk)
+          endif
+!
+          write(1) values
+!
         close (1)
 !
 !  Next stalking time is dstalk later.
