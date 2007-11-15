@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.189 2007-11-02 12:06:42 dobler Exp $
+! $Id: boundcond.f90,v 1.190 2007-11-15 14:40:47 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -202,21 +202,27 @@ module Boundcond
                   ! BCX_DOC:  sets  d(rA_{\alpha})/dr = fbcx12(j)
                   call bc_set_spder_x(f,topbot,j,fbcx12(j))
                 case('sfr')
-                  ! BCX_DOC: "stress-free" boundary condition for spherical coordinate system. 
-                  ! BCX_DOC: $d_r(u_{\theta}) = u_{\theta}/r$  with $u_r = 0$ sets $S_{r \theta}$
-                  ! BCX_DOC: component of the strain matrix to be zero in spherical coordinate  
-                  ! BCX_DOC: system. This subroutine sets only the first part of this boundary
-                  ! BCX_DOC:  condition for 'j'-th component of f. 
+                  ! BCX_DOC: stress-free boundary condition for spherical
+                  ! BCX_DOC: coordinates.
+                  ! BCX_DOC: $d_r(u_{\theta}) = u_{\theta}/r$  with $u_r = 0$
+                  ! BCX_DOC: sets $S_{r \theta}$ component of the strain
+                  ! BCX_DOC: matrix to be zero in spherical coordinate  
+                  ! BCX_DOC: system.
+                  ! BCX_DOC: This subroutine sets only the first part of
+                  ! BCX_DOC: this boundary condition for 'j'-th component
+                  ! BCX_DOC: of f. 
+                  ! BCX_DOC: \nFIXME: this description is completely
+                  ! BCX_DOC: incomprehensible [wd, 12-nov-2007] 
                   call bc_set_sfree_x(f,topbot,j)
                 case('pfc')
-                  !BCX_DOC: In spherical polar coordinate system,
-                  !BCX_DOC: at a radial boundary set : $A_{\theta} = 0$ and 
-                  !BCX_DOC: $A_{phi} = 0$, and demand $div A = 0$ gives the 
-                  !BCX_DOC: condition on $A_r$ to be  $d/dr( A_r) + 2/r = 0$ . 
-                  !BCX_DOC: This subroutine sets this condition on  $j$-th 
-                  !BCX_DOC: component of f. As this is related to setting the
-                  !BCX_DOC: perfect conducting boundary condition we call 
-                  !BCX_DOC: this "pfc".  
+                  ! BCX_DOC: In spherical polar coordinate system,
+                  ! BCX_DOC: at a radial boundary set : $A_{\theta} = 0$ and 
+                  ! BCX_DOC: $A_{phi} = 0$, and demand $div A = 0$ gives the 
+                  ! BCX_DOC: condition on $A_r$ to be  $d/dr( A_r) + 2/r = 0$ . 
+                  ! BCX_DOC: This subroutine sets this condition on  $j$-th 
+                  ! BCX_DOC: component of f. As this is related to setting the
+                  ! BCX_DOC: perfect conducting boundary condition we call 
+                  ! BCX_DOC: this "pfc".  
                   call bc_set_pfc_x(f,topbot,j)
                  case ('fix')
                   ! BCX_DOC: set boundary value [really??]
@@ -355,23 +361,27 @@ module Boundcond
                 ! BCY_DOC: set derivative on the boundary
                 call bc_set_der_y(f,topbot,j,fbcy12(j))
               case('sfr')
-                  ! BCY_DOC: "stress-free" boundary condition for spherical coordinate system. 
-                  ! BCY_DOC: $(1/r)d_\theta(u_{\phi}) =\cot(\theta) u_{\phi}$  with 
-                  ! BCY_DOC: $u_{\theta} = 0$ sets $S_{\phi \theta}$
-                  ! BCY_DOC: component of the strain matrix to be zero in spherical coordinate  
-                  ! BCY_DOC: system. This subroutine sets only the first part of this boundary
-                  ! BCY_DOC:  condition for 'j'-th component of f. 
+                  ! BCY_DOC: stress-free boundary condition for spherical
+                  ! BCY_DOC: coordinates.
+                  ! BCY_DOC: $(1/r)d_\theta(u_{\phi}) =\cot(\theta) u_{\phi}$
+                  ! BCY_DOC: with $u_{\theta} = 0$ sets $S_{\phi \theta}$
+                  ! BCY_DOC: component of the strain matrix to be zero in
+                  ! BCY_DOC: spherical coordinate system.
+                  ! BCY_DOC: This subroutine sets only the first part of this
+                  ! BCY_DOC: boundary condition for 'j'-th component of f. 
+                  ! BCX_DOC: \nFIXME: this description is completely
+                  ! BCX_DOC: incomprehensible [wd, 12-nov-2007] 
                   call bc_set_sfree_y(f,topbot,j)
               case('pfc')
-                  !BCY_DOC: In spherical polar coordinate system,
-                  !BCY_DOC: at a theta boundary set : $A_r = 0$ and 
-                  !BCY_DOC: $A_{\phi} = 0$, and demand $div A = 0$ gives the 
-                  !BCY_DOC: condition on $A_r$ to be  
-                  !BCY_DOC: $d/d\theta( A_\theta) + cot(\theta)A_{\theta} = 0$.
-                  !BCY_DOC: This subroutine sets this condition on  $j$-th 
-                  !BCY_DOC: component of f. As this is related to setting the
-                  !BCY_DOC: perfect conducting boundary condition we call 
-                  !BCY_DOC: this "pfc".  
+                  ! BCY_DOC: In spherical polar coordinate system,
+                  ! BCY_DOC: at a theta boundary set : $A_r = 0$ and 
+                  ! BCY_DOC: $A_{\phi} = 0$, and demand $div A = 0$ gives the 
+                  ! BCY_DOC: condition on $A_r$ to be  
+                  ! BCY_DOC: $d/d\theta( A_\theta) + cot(\theta)A_{\theta} = 0$.
+                  ! BCY_DOC: This subroutine sets this condition on  $j$-th 
+                  ! BCY_DOC: component of f. As this is related to setting the
+                  ! BCY_DOC: perfect conducting boundary condition we call 
+                  ! BCY_DOC: this "pfc".  
                   call bc_set_pfc_y(f,topbot,j)
               case ('')
                 ! do nothing; assume that everything is set
