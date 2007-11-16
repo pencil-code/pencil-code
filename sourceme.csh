@@ -63,6 +63,12 @@ if (! $?_sourceme) then		# called for the fist time?
     else
       setenv IDL_PATH "./idl:../idl:+${PENCIL_HOME}/idl:./data:./tmp:<IDL_DEFAULT>"
     endif
+    #  Set PYTHON path
+    if ($?PYTHONPATH) then
+      setenv PYTHONPATH "$PYTHONPATH:${PENCIL_HOME}/numpy"
+    else
+      setenv PYTHONPATH "${PENCIL_HOME}/numpy"
+    endif
 
 #    #  Set Perl module path
 #    set _perl5lib = "${PENCIL_HOME}/perl"
