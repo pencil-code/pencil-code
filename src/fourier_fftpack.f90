@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.21 2007-11-04 08:29:40 ajohan Exp $
+! $Id: fourier_fftpack.f90,v 1.22 2007-11-16 16:29:45 wlyra Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -353,14 +353,16 @@ module Fourier
       complex, dimension(nx) :: ax
       real, dimension(4*nx+15) :: wsavex
       integer :: m,n
+      logical :: lforward
 !
+      lforward=.true.
       if (present(linv)) then
-        if (linv) then
-          if (lroot) print*, 'fourier_transform_x: only implemented for '// &
-              'forwards transform!'
-          call fatal_error('fourier_transform_x','')
-        endif
+        if (linv) lforward=.false.
       endif
+!
+!  need to initialize cfft only once, because nxgrid=nygrid
+!
+      call cffti(nx,wsavex)
 !
 !  check whether nxgrid=nygrid=nzgrid
 !
@@ -371,22 +373,39 @@ module Fourier
         call fatal_error('fourier_transform_x','')
       endif
 !
-!  need to initialize cfft only once, because nxgrid=nygrid=nzgrid
+      if (lforward) then
 !
-      call cffti(nx,wsavex)
+!  Transform x-direction to fourier space
 !
-      if (lroot .and. ip<10) print*, 'fourier_transform_x: doing FFTpack in x'
-      do n=1,nz; do m=1,ny
-        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-        call cfftf(nx,ax,wsavex)
-        a_re(:,m,n)=real(ax)
-        a_im(:,m,n)=aimag(ax)
-      enddo; enddo
+        if (lroot.and.ip<10) print*, 'fourier_transform_x: doing FFTpack in x'
+        do n=1,nz; do m=1,ny
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          call cfftf(nx,ax,wsavex)
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
+        enddo; enddo
+!
+      else
+!
+!  Transform x-direction back to real space
+!
+        if (lroot.and.ip<10) print*, 'fourier_transform_xy: doing FFTpack in x'
+        do n=1,nz; do m=1,ny
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          call cfftb(nx,ax,wsavex)
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
+        enddo; enddo
+!
+      endif
 !
 !  Normalize
 !
-      a_re=a_re/nxgrid
-      a_im=a_im/nxgrid
+      if (lforward) then
+        a_re=a_re/nxgrid
+        a_im=a_im/nxgrid
+      endif
+!
       if (lroot .and. ip<10) print*, 'fourier_transform_x: fft has finished'
 !
     endsubroutine fourier_transform_x
