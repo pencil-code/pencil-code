@@ -1,0 +1,17 @@
+This directory contains a sole subdirectory, pencil. sourceme.sh now resents
+your $PYTHONPATH to include $PENCIL_HOME/numpy, so you can just do
+
+import pencil as pc
+
+in your script or from your favorite python shell (ipython is a good one). 
+
+Once you've done so, 
+
+var = pc.read_var(datadir='data/')
+
+returns an object with the entire f array as well as some handy constants. 
+
+Note that because python is C-indexed instead of fortran-indexed, and
+matplotlib assumes [y,x] ordering for 2D plotting, the f array returned is in
+the opposite order from how it is in pencil: var.f.shape will return
+(nvar,nz,ny,nx).
