@@ -5,8 +5,8 @@
 # Description:
 #   Parse F90 namelist into a hash and export in different formats.
 # Author: wd (wdobler [at] cpan.org)
-# $Date: 2007-08-13 10:12:21 $
-# $Revision: 1.1 $
+# $Date: 2007-11-16 13:57:03 $
+# $Revision: 1.2 $
 # [Date and CVS revision are now pretty irrelevant, as I keep the code
 #  under Darcs now]
 
@@ -882,7 +882,7 @@ sub output {
     my $self = shift();
 
     # Optional arguments:
-    #   format   => format   ('f90' [default] or 'idl')
+    #   format   => format   ('f90' [default], 'idl', or 'python')
     #   name     => nl_name  (name of nlist/struct [default: get from nlist])
     #   trim     => 0/1      (trim trailing whitespace off strings)
     #   double   => 0/1      (mark all floats as double precision)
@@ -980,6 +980,16 @@ sub output {
         }
         #
         $cmplx_pref = "complex"; # complex number prefix
+    } elsif (lc($format) eq 'python') {
+	$header    = "class $name:\n";
+	$footer    = "\n\n";
+	$head_pref = "";
+        $head_suff = "\n";
+	$slot_pref = "\t";
+	$slot_suff = "\n";
+        $last_suff = "\n\n";
+        $foot_pref = "";
+        $foot_suff = "\n";
     } else                         {
         croak "output(): Format <$format> unknown";
     }
@@ -1377,6 +1387,8 @@ sub assign_slot_val {
         $assmnt .= "=";
     } elsif ($format eq 'idl') {
         $assmnt .= ": ";        # structure syntax
+    } elsif ($format eq 'python') {
+        $assmnt .= "=";
     } else {
         croak "assign_slot_val: Unknown format <$format>\n";
     }
@@ -1427,6 +1439,16 @@ use Data::Dumper;
         #
         if      ($type==LOGICAL) {
             @vals = map { encaps_logical_idl($_) } @vals;
+        } elsif ($type==SQ_STRING or $type==DQ_STRING) {
+            @vals = map { quote_string_f90($_) } @vals;
+        }
+    } elsif ($format eq 'python') {
+        #
+        #  python output format:
+        #  - quote strings
+        #  - convert logicals to python True/Fase constants
+        if      ($type==LOGICAL) {
+            @vals = map { encaps_logical_python($_) } @vals;
         } elsif ($type==SQ_STRING or $type==DQ_STRING) {
             @vals = map { quote_string_f90($_) } @vals;
         }
@@ -1532,6 +1554,8 @@ sub add_array_bracket {
         # No delimiters
     } elsif ($format eq 'idl') {
         $string = "[$string]";
+    } elsif ($format eq 'python') {
+        $string = "[$string]";
     } else {
         #
         #  Invalid format
@@ -1550,6 +1574,18 @@ sub encaps_logical_idl {
 
     $val =~ s/(\.false\.|F)/0L/i;
     $val =~ s/(\.true\.|T)/-1L/i;
+
+    return $val;
+}
+
+# ---------------------------------------------------------------------- #
+
+sub encaps_logical_python {
+# Convert logical string to integer for python
+    my $val = shift;
+
+    $val =~ s/(\.false\.|F)/0/i;
+    $val =~ s/(\.true\.|T)/-1/i;
 
     return $val;
 }
