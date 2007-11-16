@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.28 2007-10-18 11:04:57 ajohan Exp $
+! $Id: poisson.f90,v 1.29 2007-11-16 16:33:54 wlyra Exp $
 
 !
 !  This module solves the Poisson equation
@@ -90,7 +90,13 @@ module Poisson
       intent(inout) :: phi
 !
       if (lsemispectral) then
-        call inverse_laplacian_semispectral(phi)
+!
+        if (lcylindrical_coords) then
+          call inverse_laplacian_semispec_cyl(phi)
+        else
+          call inverse_laplacian_semispectral(phi)
+        endif
+!
       else
         call inverse_laplacian_fft(phi)
       endif
@@ -113,7 +119,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.28 2007-10-18 11:04:57 ajohan Exp $")
+        "$Id: poisson.f90,v 1.29 2007-11-16 16:33:54 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -225,7 +231,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.28 2007-10-18 11:04:57 ajohan Exp $")
+        "$Id: poisson.f90,v 1.29 2007-11-16 16:33:54 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -300,6 +306,111 @@ module Poisson
       endif
 !
     endsubroutine inverse_laplacian_semispectral
+!***********************************************************************
+    subroutine inverse_laplacian_semispec_cyl(phi)
+!
+! Solve the cylindrical Poisson equation by Fourier-transforming 
+! the azimuthal direction and solving the tridiagonal system in 
+! the radial direction.
+!
+! Currently works only for 2D cases
+!
+! 16-nov-07/wlad: coded
+!
+      use General, only: tridag
+      use Mpicomm, only: transp_xy
+!
+      real, dimension (nx,ny,nz) :: phi,b1
+!      
+      real, dimension (nygrid,nx/nprocy) :: tmp
+      real, dimension (nygrid,nx/nprocy,nz) :: phit,b1t
+      real, dimension (nygrid) :: a_tri,b_tri,c_tri
+      real, dimension (nygrid) :: re_tri,im_tri,u_re_tri,u_im_tri
+      real    :: alpha,rad
+      integer :: i,m,n,ikx,iky,ikz
+      logical :: err
+!
+! The right-hand-side of the Poisson equation is purely real
+!
+      b1=0.0
+!
+      do n=1,nz
+!
+! Transpose prior to Fourier transform 
+!
+        tmp=phi(:,:,n)
+        call transp_xy(tmp)
+        phit(:,:,n)=tmp
+!
+! Fourier transform x (transposed y) to k-space
+!
+      call fourier_transform_x(phit,b1t)
+!transpose back
+      tmp=phit(:,:,n)
+      call transp_xy(tmp)
+      phi(:,:,n)=tmp
+!
+      tmp=b1t(:,:,n)
+      call transp_xy(tmp)
+      b1(:,:,n)=tmp
+
+      !phi is the real part 
+      ! b1 is the imaginary 
+!
+      do iky=1,ny 
+!
+          do i=2,nx-1
+            rad = x(l1-1+i)
+            alpha= .5/((i-1)+x(l1)/dx)
+            a_tri(i) = (1 - alpha)/dx**2 
+            b_tri(i) =-2/dx**2 - (ky_fft(iky)/rad)**2
+            c_tri(i) = (1 + alpha)/dx**2
+          enddo
+!
+! Symmetric boundary condition using L'Hospital rule
+!  lim  f'/f  =  lim  f"/f'
+! r-->0         r-->0  
+!
+          b_tri(1) =-4./dx**2 
+          c_tri(1) = 4./dx**2 
+!
+! no material outside
+!
+          b_tri(nx)=-2./dx**2 - 2.*dx/x(l2)
+          a_tri(nx)= 1./dx    + 1.
+!
+          re_tri = phi(:,iky,n)
+          im_tri = b1(:,iky,n)
+!
+          call tridag(a_tri,b_tri,c_tri,re_tri,u_re_tri,err)
+          call tridag(a_tri,b_tri,c_tri,im_tri,u_im_tri,err)
+!      
+          phi(:,iky,n)=u_re_tri
+          b1(:,iky,n)=u_im_tri
+!
+        enddo
+!     
+! Transform it back to real space
+! 
+        tmp=phi(:,:,n)
+        call transp_xy(tmp)
+        phit(:,:,n)=tmp
+!
+        tmp=b1(:,:,n)
+        call transp_xy(tmp)
+        b1t(:,:,n)=tmp
+!
+        call fourier_transform_x(phit,b1t,linv=.true.)
+!
+! Transpose the result
+!
+        tmp=phit(:,:,n)
+        call transp_xy(tmp)
+        phi(:,:,n)=tmp
+!
+    enddo
+!
+  endsubroutine inverse_laplacian_semispec_cyl
 !***********************************************************************
     subroutine read_poisson_init_pars(unit,iostat)
 !
