@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.404 2007-11-10 10:38:36 bingert Exp $
+! $Id: hydro.f90,v 1.405 2007-11-17 14:54:26 theine Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -189,9 +189,15 @@ module Hydro
   integer :: idiag_uzmy=0       ! DIAG_DOC: 
   integer :: idiag_u2mz=0       ! DIAG_DOC: 
   integer :: idiag_umz=0        ! DIAG_DOC: 
-  integer :: idiag_uxmxy=0      ! DIAG_DOC: 
-  integer :: idiag_uymxy=0      ! DIAG_DOC: 
-  integer :: idiag_uzmxy=0      ! DIAG_DOC: 
+  integer :: idiag_uxmxy=0      ! DIAG_DOC: $\left< u_x \right>_{z}$
+  integer :: idiag_uymxy=0      ! DIAG_DOC: $\left< u_y \right>_{z}$
+  integer :: idiag_uzmxy=0      ! DIAG_DOC: $\left< u_z \right>_{z}$
+  integer :: idiag_rux2mxy=0   ! DIAG_DOC: $\left< \rho u_x^2 \right>_{z}$
+  integer :: idiag_ruy2mxy=0   ! DIAG_DOC: $\left< \rho u_y^2 \right>_{z}$
+  integer :: idiag_ruz2mxy=0   ! DIAG_DOC: $\left< \rho u_z^2 \right>_{z}$
+  integer :: idiag_ruxuymxy=0   ! DIAG_DOC: $\left< \rho u_x u_y \right>_{z}$
+  integer :: idiag_ruxuzmxy=0   ! DIAG_DOC: $\left< \rho u_x u_z \right>_{z}$
+  integer :: idiag_ruyuzmxy=0   ! DIAG_DOC: $\left< \rho u_y u_z \right>_{z}$
   integer :: idiag_uxmxz=0      ! DIAG_DOC: $\left< u_x \right>_{y}$
   integer :: idiag_uymxz=0      ! DIAG_DOC: $\left< u_y \right>_{y}$
   integer :: idiag_uzmxz=0      ! DIAG_DOC: $\left< u_z \right>_{y}$
@@ -319,7 +325,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.404 2007-11-10 10:38:36 bingert Exp $")
+           "$Id: hydro.f90,v 1.405 2007-11-17 14:54:26 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1513,6 +1519,18 @@ use Mpicomm, only: stop_it
         if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
         if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
         if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
+        if (idiag_rux2mxy/=0) then
+          call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%uu(:,1),idiag_rux2mxy); endif
+        if (idiag_ruy2mxy/=0) then
+          call zsum_mn_name_xy(p%rho*p%uu(:,2)*p%uu(:,2),idiag_ruy2mxy); endif
+        if (idiag_ruz2mxy/=0) then
+          call zsum_mn_name_xy(p%rho*p%uu(:,3)*p%uu(:,3),idiag_ruz2mxy); endif
+        if (idiag_ruxuymxy/=0) then
+          call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuymxy); endif
+        if (idiag_ruxuzmxy/=0) then
+          call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%uu(:,3),idiag_ruxuzmxy); endif
+        if (idiag_ruyuzmxy/=0) then
+          call zsum_mn_name_xy(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzmxy); endif
       endif
 !
     endsubroutine duu_dt
@@ -2316,6 +2334,15 @@ use Mpicomm, only: stop_it
         idiag_uxmxz=0
         idiag_uymxz=0
         idiag_uzmxz=0
+        idiag_uxmxy=0
+        idiag_uymxy=0
+        idiag_uzmxy=0
+        idiag_rux2mxy=0
+        idiag_ruy2mxy=0
+        idiag_ruz2mxy=0
+        idiag_ruxuymxy=0
+        idiag_ruxuzmxy=0
+        idiag_ruyuzmxy=0
         !
         idiag_ruxm=0
         idiag_ruym=0
@@ -2524,6 +2551,12 @@ use Mpicomm, only: stop_it
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxmxy',idiag_uxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uymxy',idiag_uymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uzmxy',idiag_uzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'rux2mxy',idiag_rux2mxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruy2mxy',idiag_ruy2mxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruz2mxy',idiag_ruz2mxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruxuymxy',idiag_ruxuymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruxuzmxy',idiag_ruxuzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruyuzmxy',idiag_ruyuzmxy)
       enddo
 !
 !  check for those quantities for which we want phi-averages
@@ -2617,6 +2650,12 @@ use Mpicomm, only: stop_it
         write(3,*) 'i_uxmxy=',idiag_uxmxy
         write(3,*) 'i_uymxy=',idiag_uymxy
         write(3,*) 'i_uzmxy=',idiag_uzmxy
+        write(3,*) 'i_rux2mxy=',idiag_rux2mxy
+        write(3,*) 'i_ruy2mxy=',idiag_ruy2mxy
+        write(3,*) 'i_ruz2mxy=',idiag_ruz2mxy
+        write(3,*) 'i_ruxuymxy=',idiag_ruxuymxy
+        write(3,*) 'i_ruxuzmxy=',idiag_ruxuzmxy
+        write(3,*) 'i_ruyuzmxy=',idiag_ruyuzmxy
         write(3,*) 'i_uxmxz=',idiag_uxmxz
         write(3,*) 'i_uymxz=',idiag_uymxz
         write(3,*) 'i_uzmxz=',idiag_uzmxz
