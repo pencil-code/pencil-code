@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.362 2007-11-01 17:14:46 ajohan Exp $
+! $Id: density.f90,v 1.363 2007-11-18 14:40:54 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -133,7 +133,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.362 2007-11-01 17:14:46 ajohan Exp $")
+           "$Id: density.f90,v 1.363 2007-11-18 14:40:54 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -282,7 +282,7 @@ module Density
 !
       if (.not. lstarting .and. lwrite_stratification) then
         if (lroot) print*, 'initialize_density: reading original stratification from stratification.dat'
-        open(19,file='stratification.dat')
+        open(19,file=trim(directory_snap)//'/stratification.dat')
           if (ldensity_nolog) then
             if (lroot) then
               print*, 'initialize_density: currently only possible to read'
@@ -1446,9 +1446,10 @@ module Density
 !  lwrite_stratification=T in start.in for this to work.
 !            
           if (lanti_shockdiffusion) then
-            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - &
-                diffrho_shock*p%shock*(del2lnrho_init_z(n)+glnrho2_init_z(n))-&
-                diffrho_shock*p%gshock(:,3)*dlnrhodz_init_z(n)
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - diffrho_shock*( &
+                p%shock*(del2lnrho_init_z(n) + glnrho2_init_z(n) + &
+                2*(p%glnrho(:,3)-dlnrhodz_init_z(n))*dlnrhodz_init_z(n)) + &
+                p%gshock(:,3)*dlnrhodz_init_z(n) )
           endif
         endif
         if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock

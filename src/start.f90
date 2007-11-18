@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.174 2007-11-01 17:11:32 ajohan Exp $
+! $Id: start.f90,v 1.175 2007-11-18 14:40:55 ajohan Exp $
 !
 !***********************************************************************
       program start
@@ -100,7 +100,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.174 2007-11-01 17:11:32 ajohan Exp $")
+             "$Id: start.f90,v 1.175 2007-11-18 14:40:55 ajohan Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -306,7 +306,7 @@
 !
         if (lwrite_stratification) then
           call update_ghosts(f)
-          open(19,file='stratification.dat')
+          open(19,file=trim(directory_snap)//'/stratification.dat')
             write(19,*) f(l1,m1,:,ilnrho)
           close(19)
         endif
