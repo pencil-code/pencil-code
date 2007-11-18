@@ -1,5 +1,5 @@
 ;;
-;; $Id: pc_read_pstalk.pro,v 1.4 2007-11-14 14:58:22 ajohan Exp $
+;; $Id: pc_read_pstalk.pro,v 1.5 2007-11-18 06:31:05 ajohan Exp $
 ;;
 ;; NAME:
 ;;      pc_read_pstalk
@@ -11,7 +11,8 @@
 ;; MODIFICATION HISTORY:
 ;;     Written by: Anders Johansen (johansen@mpia.de) on 13.07.2007
 ;;
-pro pc_read_pstalk, object=object, datadir=datadir, it1=it1, quiet=quiet
+pro pc_read_pstalk, object=object, datadir=datadir, it1=it1, quiet=quiet, $
+    nout=nout
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
@@ -30,10 +31,12 @@ pc_set_precision, dim=dim, datadir=datadir, /quiet
 ; Read the number of output times from file.
 ;
 tout=zero
-nout=0
-openr, 1, datadir+'/tstalk.dat'
-  readf, 1, tout, nout
-close, 1
+default, nout, 0
+if (nout eq 0) then begin
+  openr, 1, datadir+'/tstalk.dat'
+    readf, 1, tout, nout
+  close, 1
+endif
 ;
 ; Read header information from file.
 ;
@@ -76,13 +79,17 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
       if ( (it1 ne -1) and (it mod it1 eq 0) ) then $
           print, iproc, it, t_loc
 
-      ipar_loc=lonarr(npar_stalk_loc)
-      readu, 1, ipar_loc
+      if (npar_stalk_loc ge 1) then begin
 
-      array_loc=fltarr(nfields,npar_stalk_loc)*zero
-      readu, 1, array_loc
+        ipar_loc=lonarr(npar_stalk_loc)
+        readu, 1, ipar_loc
+ 
+        array_loc=fltarr(nfields,npar_stalk_loc)*zero
+        readu, 1, array_loc
+ 
+        array[*,ipar_loc-1,it]=array_loc
 
-      array[*,ipar_loc-1,it]=array_loc
+      endif
 
       t[it]=t_loc
 
