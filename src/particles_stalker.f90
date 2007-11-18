@@ -1,4 +1,4 @@
-! $Id: particles_stalker.f90,v 1.5 2007-11-18 06:23:08 ajohan Exp $
+! $Id: particles_stalker.f90,v 1.6 2007-11-18 06:41:20 ajohan Exp $
 !
 !  This module writes information about the local state of the gas at
 !  the positions of a selected number of particles.
@@ -220,11 +220,11 @@ module Particles_stalker
 !  Write the time and the number of stalked particles at this processor.
 !
           write(1) t, npar_stalk_loc
-          write(1) ipar(k_stalk(1):k_stalk(npar_stalk_loc))
 !
 !  Collect environment information in single array and write array to file.
 !
           if (npar_stalk_loc>=1) then
+            write(1) ipar(k_stalk(1):k_stalk(npar_stalk_loc))
             allocate(values(nvar_stalk,npar_stalk_loc))
             ivalue=0
             if (lstalk_xx) then
