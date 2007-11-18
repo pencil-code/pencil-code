@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.30 2007-11-18 16:14:04 wlyra Exp $
+! $Id: poisson.f90,v 1.31 2007-11-18 21:34:25 bingert Exp $
 
 !
 !  This module solves the Poisson equation
@@ -119,7 +119,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.30 2007-11-18 16:14:04 wlyra Exp $")
+        "$Id: poisson.f90,v 1.31 2007-11-18 21:34:25 bingert Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -231,7 +231,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.30 2007-11-18 16:14:04 wlyra Exp $")
+        "$Id: poisson.f90,v 1.31 2007-11-18 21:34:25 bingert Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -325,7 +325,7 @@ module Poisson
       real, dimension (nygrid,nx/nprocy) :: tmp
       real, dimension (nygrid,nx/nprocy,nz) :: phit,b1t
       real, dimension (nygrid) :: a_tri,b_tri,c_tri
-      real, dimension (nygrid) :: re_tri,im_tri,u_re_tri,u_im_tri
+      real, dimension (nx/nprocy) :: re_tri,im_tri,u_re_tri,u_im_tri
       real    :: alpha,rad
       integer :: i,m,n,ikx,iky,ikz
       logical :: err
