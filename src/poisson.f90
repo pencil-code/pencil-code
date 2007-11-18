@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.29 2007-11-16 16:33:54 wlyra Exp $
+! $Id: poisson.f90,v 1.30 2007-11-18 16:14:04 wlyra Exp $
 
 !
 !  This module solves the Poisson equation
@@ -119,7 +119,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.29 2007-11-16 16:33:54 wlyra Exp $")
+        "$Id: poisson.f90,v 1.30 2007-11-18 16:14:04 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -231,7 +231,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.29 2007-11-16 16:33:54 wlyra Exp $")
+        "$Id: poisson.f90,v 1.30 2007-11-18 16:14:04 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -345,17 +345,6 @@ module Poisson
 ! Fourier transform x (transposed y) to k-space
 !
       call fourier_transform_x(phit,b1t)
-!transpose back
-      tmp=phit(:,:,n)
-      call transp_xy(tmp)
-      phi(:,:,n)=tmp
-!
-      tmp=b1t(:,:,n)
-      call transp_xy(tmp)
-      b1(:,:,n)=tmp
-
-      !phi is the real part 
-      ! b1 is the imaginary 
 !
       do iky=1,ny 
 !
@@ -379,26 +368,18 @@ module Poisson
           b_tri(nx)=-2./dx**2 - 2.*dx/x(l2)
           a_tri(nx)= 1./dx    + 1.
 !
-          re_tri = phi(:,iky,n)
-          im_tri = b1(:,iky,n)
+          re_tri = phit(iky,:,n)
+          im_tri = b1t(iky,:,n)
 !
           call tridag(a_tri,b_tri,c_tri,re_tri,u_re_tri,err)
           call tridag(a_tri,b_tri,c_tri,im_tri,u_im_tri,err)
 !      
-          phi(:,iky,n)=u_re_tri
-          b1(:,iky,n)=u_im_tri
+          phit(iky,:,n)=u_re_tri
+          b1t(iky,:,n)=u_im_tri
 !
         enddo
 !     
 ! Transform it back to real space
-! 
-        tmp=phi(:,:,n)
-        call transp_xy(tmp)
-        phit(:,:,n)=tmp
-!
-        tmp=b1(:,:,n)
-        call transp_xy(tmp)
-        b1t(:,:,n)=tmp
 !
         call fourier_transform_x(phit,b1t,linv=.true.)
 !
