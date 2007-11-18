@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.60 2007-11-13 17:17:17 ajohan Exp $
+! $Id: particles_main.f90,v 1.61 2007-11-18 06:09:39 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -394,7 +394,7 @@ module Particles_main
       if (lparticles_nbody) &
           call read_particles_nbody_init_pars(unit,iostat)
       if (lparticles_stalker) &
-          call read_particles_stalker_init_pars(unit,iostat)
+          call read_pstalker_init_pars(unit,iostat)
 !
     endsubroutine read_particles_init_pars_wrap
 !***********************************************************************
@@ -410,7 +410,7 @@ module Particles_main
       if (lparticles_nbody) &
           call write_particles_nbody_init_pars(unit)
       if (lparticles_stalker) &
-          call write_particles_stalker_init_pars(unit)
+          call write_pstalker_init_pars(unit)
 !
     endsubroutine write_particles_init_pars_wrap
 !***********************************************************************
@@ -427,7 +427,7 @@ module Particles_main
       if (lparticles_nbody) &
           call read_particles_nbody_run_pars(unit,iostat)
       if (lparticles_stalker) &
-          call read_particles_stalker_run_pars(unit,iostat)
+          call read_pstalker_run_pars(unit,iostat)
 !
     endsubroutine read_particles_run_pars_wrap
 !***********************************************************************
@@ -443,7 +443,7 @@ module Particles_main
       if (lparticles_nbody) &
            call write_particles_nbody_run_pars(unit)
       if (lparticles_stalker) &
-           call write_particles_stalker_run_pars(unit)
+           call write_pstalker_run_pars(unit)
 !
     endsubroutine write_particles_run_pars_wrap
 !***********************************************************************
