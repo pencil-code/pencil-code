@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.361 2007-11-13 13:44:43 ajohan Exp $
+### $Id: Makefile.src,v 1.362 2007-11-18 09:25:41 pkapyla Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -592,7 +592,8 @@ LD_FFTW2=
 #FC=mpif90 #(c[0-9][0-9]*)
 #F90=$(FC) #(c[0-9][0-9]*)
 #CC=mpicc #(c[0-9][0-9]*)
-#FFLAGS=-O2 -Mrecursive -mcmodel=medium #(c[0-9][0-9]*)
+##FFLAGS=-O2 -Mrecursive -mcmodel=medium #(c[0-9][0-9]*)
+#FFLAGS=-O2 -Mrecursive #(c[0-9][0-9]*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(c[0-9][0-9]*)
 #LD_MPI= #(c[0-9][0-9]*)
 ##
