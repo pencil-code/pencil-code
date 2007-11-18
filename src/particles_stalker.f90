@@ -1,4 +1,4 @@
-! $Id: particles_stalker.f90,v 1.4 2007-11-14 23:01:42 dobler Exp $
+! $Id: particles_stalker.f90,v 1.5 2007-11-18 06:23:08 ajohan Exp $
 !
 !  This module writes information about the local state of the gas at
 !  the positions of a selected number of particles.
@@ -224,38 +224,39 @@ module Particles_stalker
 !
 !  Collect environment information in single array and write array to file.
 !
-          allocate(values(nvar_stalk,npar_stalk))
-          ivalue=0
-          if (lstalk_xx) then
-            ivalue=ivalue+1; values(ivalue,:)=xp(1:npar_stalk)
-            ivalue=ivalue+1; values(ivalue,:)=yp(1:npar_stalk)
-            ivalue=ivalue+1; values(ivalue,:)=zp(1:npar_stalk)
+          if (npar_stalk_loc>=1) then
+            allocate(values(nvar_stalk,npar_stalk_loc))
+            ivalue=0
+            if (lstalk_xx) then
+              ivalue=ivalue+1; values(ivalue,:)=xp(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=yp(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=zp(1:npar_stalk)
+            endif
+            if (lstalk_vv) then
+              ivalue=ivalue+1; values(ivalue,:)=vpx(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=vpy(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=vpz(1:npar_stalk)
+            endif
+            if (lstalk_uu) then
+              ivalue=ivalue+1; values(ivalue,:)=ux(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=uy(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=uz(1:npar_stalk)
+            endif
+            if (lstalk_rho) then
+              ivalue=ivalue+1; values(ivalue,:)=rho(1:npar_stalk)
+            endif
+            if (lstalk_grho) then
+              ivalue=ivalue+1; values(ivalue,:)=drhodx(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=drhody(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=drhodz(1:npar_stalk)
+            endif
+            if (lstalk_bb) then
+              ivalue=ivalue+1; values(ivalue,:)=bx(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=by(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=bz(1:npar_stalk)
+            endif
+            write(1) values
           endif
-          if (lstalk_vv) then
-            ivalue=ivalue+1; values(ivalue,:)=vpx(1:npar_stalk)
-            ivalue=ivalue+1; values(ivalue,:)=vpy(1:npar_stalk)
-            ivalue=ivalue+1; values(ivalue,:)=vpz(1:npar_stalk)
-          endif
-          if (lstalk_uu) then
-            ivalue=ivalue+1; values(ivalue,:)=ux(1:npar_stalk)
-            ivalue=ivalue+1; values(ivalue,:)=uy(1:npar_stalk)
-            ivalue=ivalue+1; values(ivalue,:)=uz(1:npar_stalk)
-          endif
-          if (lstalk_rho) then
-            ivalue=ivalue+1; values(ivalue,:)=rho(1:npar_stalk)
-          endif
-          if (lstalk_grho) then
-            ivalue=ivalue+1; values(ivalue,:)=drhodx(1:npar_stalk)
-            ivalue=ivalue+1; values(ivalue,:)=drhody(1:npar_stalk)
-            ivalue=ivalue+1; values(ivalue,:)=drhodz(1:npar_stalk)
-          endif
-          if (lstalk_bb) then
-            ivalue=ivalue+1; values(ivalue,:)=bx(1:npar_stalk)
-            ivalue=ivalue+1; values(ivalue,:)=by(1:npar_stalk)
-            ivalue=ivalue+1; values(ivalue,:)=bz(1:npar_stalk)
-          endif
-!
-          write(1) values
 !
         close (1)
 !
