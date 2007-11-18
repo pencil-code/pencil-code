@@ -44,7 +44,7 @@ endif
 #
 #  Loop through all possible *.in and *.local files.
 #
-foreach file ( start.in run.in print.in video.in xyaver.in xzaver.in yzaver.in zaver.in src/Makefile.local src/cparam.local)
+foreach file ( start.in run.in print.in video.in xyaver.in xzaver.in yzaver.in zaver.in k.dat src/Makefile.local src/cparam.local)
 
   if ( -e ${dir1}/${file} && -e ${dir2}/${file} ) then
     echo "-- ${file}:  --"
