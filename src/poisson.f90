@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.31 2007-11-18 21:34:25 bingert Exp $
+! $Id: poisson.f90,v 1.32 2007-11-19 09:49:29 wlyra Exp $
 
 !
 !  This module solves the Poisson equation
@@ -119,7 +119,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.31 2007-11-18 21:34:25 bingert Exp $")
+        "$Id: poisson.f90,v 1.32 2007-11-19 09:49:29 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -231,7 +231,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.31 2007-11-18 21:34:25 bingert Exp $")
+        "$Id: poisson.f90,v 1.32 2007-11-19 09:49:29 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -324,11 +324,29 @@ module Poisson
 !      
       real, dimension (nygrid,nx/nprocy) :: tmp
       real, dimension (nygrid,nx/nprocy,nz) :: phit,b1t
-      real, dimension (nygrid) :: a_tri,b_tri,c_tri
-      real, dimension (nx/nprocy) :: re_tri,im_tri,u_re_tri,u_im_tri
-      real    :: alpha,rad
+      real, dimension (nx) :: a_tri,b_tri,c_tri,rad
+      real, dimension (nx) :: re_tri,im_tri,u_re_tri,u_im_tri
+      real    :: alpha,dr,r0,rn
       integer :: i,m,n,ikx,iky,ikz
       logical :: err
+!
+      intent(inout) :: phi
+!
+      if (lroot) print*,"inverse_laplacian: lperi=",lperi,&
+           " in cylindrical coords. Fourier transform in the",&
+           " azimuthal direction, solve the tridiagonal system in the",&
+           " radial one"
+!
+      if (nzgrid/=1.or..not.lcylindrical_coords) &
+           call not_implemented("inverse_laplacian",&
+           "This poisson solver is just for 2d r-phi in cylindrical")
+!
+      if (lshear) call not_implemented("inverse_laplacian", &
+           "Not implemented for shearing boxes")
+!
+! From x to r, for the sake of clarity
+!
+      dr=dx;rad=x(l1:l2);r0=xyz0(1);rn=xyz1(1)
 !
 ! The right-hand-side of the Poisson equation is purely real
 !
@@ -338,60 +356,65 @@ module Poisson
 !
 ! Transpose prior to Fourier transform 
 !
-        tmp=phi(:,:,n)
-        call transp_xy(tmp)
-        phit(:,:,n)=tmp
+        tmp=phi(:,:,n);call transp_xy(tmp);phit(:,:,n)=tmp
 !
 ! Fourier transform x (transposed y) to k-space
 !
-      call fourier_transform_x(phit,b1t)
+        call fourier_transform_x(phit,b1t)
 !
-      do iky=1,ny 
+! Transpose back to solve the tridiagonal matrix
+!
+        tmp=phit(:,:,n);call transp_xy(tmp);phi(:,:,n)=tmp
+        tmp= b1t(:,:,n);call transp_xy(tmp); b1(:,:,n)=tmp
+!
+        do iky=1,ny
 !
           do i=2,nx-1
-            rad = x(l1-1+i)
-            alpha= .5/((i-1)+x(l1)/dx)
-            a_tri(i) = (1 - alpha)/dx**2 
-            b_tri(i) =-2/dx**2 - (ky_fft(iky)/rad)**2
-            c_tri(i) = (1 + alpha)/dx**2
+            alpha= .5/((i-1)+r0/dr)
+            a_tri(i) = (1 - alpha)/dr**2
+            b_tri(i) =-2/dr**2 - (ky_fft(iky)/rad(i))**2
+            c_tri(i) = (1 + alpha)/dr**2
           enddo
 !
 ! Symmetric boundary condition using L'Hospital rule
 !  lim  f'/f  =  lim  f"/f'
 ! r-->0         r-->0  
 !
-          b_tri(1) =-4./dx**2 
-          c_tri(1) = 4./dx**2 
+          b_tri(1) =-4./dr**2
+          c_tri(1) = 4./dr**2
 !
-! no material outside
+! No material outside
 !
-          b_tri(nx)=-2./dx**2 - 2.*dx/x(l2)
-          a_tri(nx)= 1./dx    + 1.
+          b_tri(nx)=-2./dr**2 - 2.*dr/rn
+          a_tri(nx)= 1./dr    + 1.
 !
-          re_tri = phit(iky,:,n)
-          im_tri = b1t(iky,:,n)
+          re_tri = phi(:,iky,n)
+          im_tri =  b1(:,iky,n)
 !
           call tridag(a_tri,b_tri,c_tri,re_tri,u_re_tri,err)
           call tridag(a_tri,b_tri,c_tri,im_tri,u_im_tri,err)
 !      
-          phit(iky,:,n)=u_re_tri
-          b1t(iky,:,n)=u_im_tri
+          phi(:,iky,n)=u_re_tri
+          b1 (:,iky,n)=u_im_tri
 !
         enddo
-!     
+!
+! Transpose to perform the fourier transform back to real space
+!
+        tmp=phi(:,:,n);call transp_xy(tmp);phit(:,:,n)=tmp
+        tmp= b1(:,:,n);call transp_xy(tmp); b1t(:,:,n)=tmp
+!
 ! Transform it back to real space
 !
         call fourier_transform_x(phit,b1t,linv=.true.)
 !
 ! Transpose the result
 !
-        tmp=phit(:,:,n)
-        call transp_xy(tmp)
-        phi(:,:,n)=tmp
+        tmp=phit(:,:,n);call transp_xy(tmp);phi(:,:,n)=tmp
 !
-    enddo
+      enddo
 !
-  endsubroutine inverse_laplacian_semispec_cyl
+    endsubroutine inverse_laplacian_semispec_cyl
 !***********************************************************************
     subroutine read_poisson_init_pars(unit,iostat)
 !
