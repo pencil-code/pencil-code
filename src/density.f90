@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.363 2007-11-18 14:40:54 ajohan Exp $
+! $Id: density.f90,v 1.364 2007-11-19 17:32:07 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -133,7 +133,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.363 2007-11-18 14:40:54 ajohan Exp $")
+           "$Id: density.f90,v 1.364 2007-11-19 17:32:07 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1999,7 +1999,11 @@ module Density
 !**********************************************************************
     subroutine power_law_disk(f)
 !
-! Simple power-law disk
+! Simple power-law disk. It sets only the density
+! local_isothermal sets the density and thermodynamical
+! quantities
+!
+! 19-sep-07/wlad: coded
 !
       use Sub, only: get_radial_distance
 !
