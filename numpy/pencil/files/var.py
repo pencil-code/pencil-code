@@ -1,4 +1,4 @@
-# $Id: var.py,v 1.1 2007-11-16 13:57:04 joishi Exp $
+# $Id: var.py,v 1.2 2007-11-19 13:41:27 tgastine Exp $
 #
 # read VAR files. based on the read_var.pro IDL script.
 #
@@ -25,7 +25,7 @@ class VarFileData:
 # !!!  for one vector field, 8 for var.dat in the case of MHD with entropy.
 
 # but, deltay(1) is only there if lshear is on! need to know parameters...
-def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=False,format='native'):
+def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=False,format='native',param=None,dim=None, run2D=False):
     """
     read VAR files from pencil code. if proc < 0, then load all data
     and assemble. otherwise, load VAR file from specified processor.
@@ -33,9 +33,10 @@ def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=Fals
     format -- one of (['native', 'n'], ['ieee-le', 'l'], ['ieee-be', 'B']) for byte-ordering
     """
     datadir = os.path.expanduser(datadir)
-    param = read_param(datadir)
-    # global dim
-    dim = read_dim(datadir,proc) 
+    if (dim == None):
+      dim = read_dim(datadir,proc) 
+    if (param == None):
+      param = read_param(datadir)
     if dim.precision == 'D':
         precision = 'd'
     else:
@@ -63,7 +64,10 @@ def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=Fals
         procdirs = ['proc'+str(proc)]
 
     #global array
-    f = N.zeros((totalvars,dim.mz,dim.my,dim.mx),dtype=precision)
+    if (not run2D):
+      f = N.zeros((totalvars,dim.mz,dim.my,dim.mx),dtype=precision)
+    else :
+      f = N.zeros((totalvars,dim.mz,dim.mx),dtype=precision)
     x = N.zeros(dim.mx,dtype=precision)
     y = N.zeros(dim.my,dtype=precision)
     z = N.zeros(dim.mz,dtype=precision)
@@ -81,7 +85,10 @@ def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=Fals
         #read data
         filename = datadir+directory+'/'+varfile
         infile = npfile(filename,endian=format)
-        f_loc = infile.fort_read(precision,shape=(-1,mzloc,myloc,mxloc))
+        if (not run2D):
+          f_loc = infile.fort_read(precision,shape=(-1,mzloc,myloc,mxloc))
+        else:
+          f_loc = infile.fort_read(precision,shape=(-1,mzloc,mxloc))
         raw_etc = infile.fort_read(precision)
         infile.close()
 
@@ -148,7 +155,10 @@ def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=Fals
             y[i0y:i1y] = y_loc[i0yloc:i1yloc]
             z[i0z:i1z] = z_loc[i0zloc:i1zloc]
             
-            f[:,i0z:i1z,i0y:i1y,i0x:i1x] = f_loc[:,i0zloc:i1zloc,i0yloc:i1yloc,i0xloc:i1xloc]
+            if (not run2D):
+              f[:,i0z:i1z,i0y:i1y,i0x:i1x] = f_loc[:,i0zloc:i1zloc,i0yloc:i1yloc,i0xloc:i1xloc]
+            else:
+              f[:,i0z:i1z,i0x:i1x] = f_loc[:,i0zloc:i1zloc,i0xloc:i1xloc]
         else:
             f = f_loc
             x = x_loc
@@ -167,7 +177,10 @@ def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=Fals
         var.x = x[dim.l1:dim.l2+1]
         var.y = y[dim.m1:dim.m2+1]
         var.z = z[dim.n1:dim.n2+1]
-        var.f = f[:,dim.n1:dim.n2+1,dim.m1:dim.m2+1,dim.l1:dim.l2+1]
+        if (not run2D):
+          var.f = f[:,dim.n1:dim.n2+1,dim.m1:dim.m2+1,dim.l1:dim.l2+1]
+        else:
+          var.f = f[:,dim.n1:dim.n2+1,dim.l1:dim.l2+1]
     else:
         var.x = x
         var.y = y
