@@ -3,7 +3,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2,datatopdir=datatopdir
 ;
-;  $Id: power.pro,v 1.27 2007-01-23 22:03:22 brandenb Exp $
+;  $Id: power.pro,v 1.28 2007-11-20 08:24:18 ajohan Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -122,17 +122,18 @@ globalmax=1e-30
 i=1
 close,1
 openr,1, datatopdir+'/'+file1
-    while not eof(1) do begin
-       readf,1,time
-       readf,1,spectrum1
-       if (max(spectrum1(1:*)) gt globalmax) then globalmax=max(spectrum1(1:*))
-       if (min(spectrum1(1:*)) lt globalmin) then globalmin=min(spectrum1(1:*))
-       i=i+1
-    endwhile
+  while not eof(1) do begin
+    readf,1,time
+    readf,1,spectrum1
+    if (max(spectrum1(1:*)) gt globalmax) then globalmax=max(spectrum1(1:*))
+    if (min(spectrum1(1:*)) lt globalmin) then globalmin=min(spectrum1(1:*))
+    i=i+1
+  endwhile
 close,1
 spec1=fltarr(imax,i-1)
 tt=fltarr(i-1)
 lasti=i-2
+default,yrange,[10.0^(floor(alog10(min(spectrum1(1:*))))),10.0^ceil(alog10(max(spectrum1(1:*))))]
 ;
 ;  Opening file 2 if it is defined
 ;
@@ -197,7 +198,6 @@ openr,1, datatopdir+'/'+file1
 	      xrr=[1,imax]
 	      yrr=[globalmin,globalmax]
 	      !p.title='t='+str(time)
-	      default,yrange,[globalmin,globalmax]
               if iplot eq 1 then begin
 		plot_oo,k,spectrum1*k^compensate1,back=255,col=0,yr=yrange
          	if (file2 ne '') then begin
