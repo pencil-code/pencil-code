@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.468 2007-11-17 14:54:26 theine Exp $
+! $Id: magnetic.f90,v 1.469 2007-11-20 09:44:20 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -351,7 +351,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.468 2007-11-17 14:54:26 theine Exp $")
+           "$Id: magnetic.f90,v 1.469 2007-11-20 09:44:20 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1498,7 +1498,8 @@ module Magnetic
           call del6_nodx(f,ju,tmp1)
           fres(:,j)=fres(:,j)+eta_hyper3*pi4_1*tmp1*dxyz_2
         enddo
-        if (lfirst.and.ldt) diffus_eta3=diffus_eta3+eta_hyper3
+        if (lfirst.and.ldt) &
+             diffus_eta3=diffus_eta3+eta_hyper3*pi4_1/dxyz_4
       endif
 !
       if (lresi_hyper3_strict) then

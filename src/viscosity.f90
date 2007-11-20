@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.84 2007-10-06 13:56:53 ajohan Exp $
+! $Id: viscosity.f90,v 1.85 2007-11-20 09:44:20 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -105,7 +105,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.84 2007-10-06 13:56:53 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.85 2007-11-20 09:44:20 wlyra Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -649,7 +649,8 @@ module Viscosity
                    'is not implemented for lvisc_hyper3_cyl')
             endif
           endif
-          if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
+          if (lfirst.and.ldt) &
+               p%diffus_total3=p%diffus_total3+nu_hyper3*pi4_1/dxyz_4
         enddo
       endif
 !
