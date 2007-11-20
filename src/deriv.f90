@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.59 2007-11-01 16:48:47 ajohan Exp $
+! $Id: deriv.f90,v 1.60 2007-11-20 09:49:33 bingert Exp $
 
 module Deriv
 
@@ -300,7 +300,7 @@ module Deriv
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df2,fac,df
-      integer :: j,k
+      integer :: j
 !
       intent(in)  :: f,j
       intent(out) :: df2
@@ -1057,7 +1057,7 @@ module Deriv
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
-      integer :: i,j,k
+      integer :: i,j
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
