@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.83 2007-11-17 16:17:26 ajohan Exp $
+### $Id: Makefile.depend,v 1.84 2007-11-20 21:21:22 wlyra Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -204,7 +204,7 @@ $(SUB_OBJ):                 sub.f90              $(CDATA_OBJ) $(MPICOMM_OBJ) der
 param_io.o:  param_io.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(TIMESTEP_OBJ) $(TIMEAVG_OBJ) $(physics) $(PARTICLES_MAIN_OBJ)  
 register.o:  register.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(physics) $(TIMEAVG_OBJ) prints.o equ.o $(GRID_OBJ)
 $(EQU_OBJ):                 $(EQU_SRC)           $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(physics) boundcond.o $(POISSON_OBJ) $(GLOBAL_OBJ) $(PARTICLES_MAIN_OBJ) $(INTERSTELLAR_OBJ) $(GRID_OBJ) snapshot.o
-boundcond.o: boundcond.f90  cdata.o cparam.o $(DENSITY_OBJ) $(ENTROPY_OBJ) $(EOS_OBJ) farray.o $(FOURIER_OBJ) $(HYDRO_OBJ) $(MAGNETIC_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(RADIATION_OBJ) $(SHEAR_OBJ) $(SPECIAL_OBJ)
+boundcond.o: boundcond.f90  cdata.o cparam.o $(ENTROPY_OBJ) $(EOS_OBJ) farray.o $(FOURIER_OBJ) $(MAGNETIC_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(RADIATION_OBJ) $(SHEAR_OBJ) $(SPECIAL_OBJ)
 $(INITCOND_OBJ): initcond.f90  cdata.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) general.o $(GRAVITY_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(PARTICLES_NBODY_OBJ) sub.o
 $(TIMESTEP_OBJ):            $(TIMESTEP).f90      $(CDATA_OBJ) $(MPICOMM_OBJ) equ.o $(FORCING_OBJ) $(BORDER_PROFILES_OBJ)
 snapshot.o:  snapshot.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(IO_OBJ) boundcond.o $(POWER_OBJ) $(STRUCT_FUNC_OBJ) $(RADIATION_OBJ) $(EOS_OBJ) $(MAGNETIC_OBJ) persist.o $(PARTICLES_MAIN_OBJ) $(SHOCK_OBJ)
@@ -232,7 +232,7 @@ $(FORCING_OBJ):         forcing.h         $(FORCING_SRC)         $(COMMON_DEPS) 
 $(ENTROPY_OBJ):         entropy.h         $(ENTROPY_SRC)         $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(EOS_OBJ) $(GLOBAL_OBJ) $(VISCOSITY_OBJ) $(INTERSTELLAR_OBJ)
 $(MAGNETIC_OBJ):        magnetic.h        $(MAGNETIC_SRC)        $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(IO_OBJ) $(FOURIER_OBJ) $(DENSITY_OBJ)
 $(HYDRO_OBJ):           hydro.h           $(HYDRO_SRC)           $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(VISCOSITY_OBJ) $(DENSITY_OBJ) $(MAGNETIC_OBJ) $(COSMICRAY_OBJ)
-$(DENSITY_OBJ):         density.h         $(DENSITY_SRC)         $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(IO_OBJ) $(EOS_OBJ) $(SELFGRAVITY_OBJ)
+$(DENSITY_OBJ):         density.h         $(DENSITY_SRC)         $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(IO_OBJ) $(EOS_OBJ) $(SELFGRAVITY_OBJ) boundcond.o
 $(RADIATION_OBJ):       radiation.h       $(RADIATION_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(DENSITY_OBJ) $(EOS_OBJ)
 $(COSMICRAY_OBJ):       cosmicray.h       $(COSMICRAY_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(DENSITY_OBJ)
 $(COSMICRAYFLUX_OBJ):   cosmicrayflux.h   $(COSMICRAYFLUX_SRC)   $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(COSMICRAY_OBJ) slices.o

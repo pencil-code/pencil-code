@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.190 2007-11-15 14:40:47 dobler Exp $
+! $Id: boundcond.f90,v 1.191 2007-11-20 21:21:22 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -422,7 +422,7 @@ module Boundcond
                          lmultilayer,lheatc_chiconst
       use Magnetic
       use Special, only: special_boundconds
-      use Density
+      !use Density
       use EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2257,8 +2257,8 @@ module Boundcond
             call bc_force_axy_sin_cos(f,n1,j)
          case ('uxy_convection')
             call uu_driver(f)
-         case ('kepler')
-            call bc_force_kepler(f,n1,j)
+         !case ('kepler')
+         !   call bc_force_kepler(f,n1,j)
          case ('cT')
             f(:,:,n1,j) = log(cs2bot/gamma1)
          case default
@@ -2281,8 +2281,8 @@ module Boundcond
             call bc_force_axy_sin_cos(f,n2,j)
          case ('uxy_convection')
             call uu_driver(f)
-         case ('kepler')
-            call bc_force_kepler(f,n2,j)
+         !case ('kepler')
+         !   call bc_force_kepler(f,n2,j)
          case ('cT')
             f(:,:,n2,j) = log(cs2top/gamma1)
          case default
@@ -2405,93 +2405,95 @@ module Boundcond
 !
     endsubroutine bc_force_axy_sin_cos
 !***********************************************************************
-    subroutine bc_force_kepler(f,idz,j)
-
-      use Cdata, only: x,y,iux,iuy,iuz,pi, &
-                       mx,my,mz,m1,m2,l1,l2,mfarray,nx
-      use Mpicomm, only: stop_it
-      use Hydro, only: kep_cutoff_pos_ext,kep_cutoff_width_ext
-      use Hydro, only: kep_cutoff_pos_int,kep_cutoff_width_int
-      use Hydro, only: u_out_kep
-      use FArrayManager
-
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      integer, intent(in) :: idz,j
-      real, dimension (nx,3) :: gg
-      real, dimension (nx) :: r,g_r
-      real, dimension (mx,my), save :: ux,uy,uz
-      real :: r1_ext,r2_ext
-      real :: r1_int,r2_int
-      integer :: m
-      logical, save :: initialize=.true.
-
-      if (initialize) then
-
-        r1_int=kep_cutoff_pos_int-kep_cutoff_width_int/2
-        r2_int=kep_cutoff_pos_int+kep_cutoff_width_int/2
-
-        r1_ext=kep_cutoff_pos_ext-kep_cutoff_width_ext/2
-        r2_ext=kep_cutoff_pos_ext+kep_cutoff_width_ext/2
-
-        do m=m1,m2
-
-          r=sqrt(x(l1:l2)**2+y(m)**2)
-
-          !
-          ! First time round, look up gg in the f-array
-          ! and get it's index.
-          !
-          if (.not.associated(iglobal_gg)) then
-            call farray_use_global('gg',iglobal_gg,vector=3)
-            if (.not.associated(iglobal_gg)) then
-              call fatal_error("bc_force_kepler", &
-               "Could not get global gg from an f-array slot")
-            endif
-          endif
-
-          gg=f(l1:l2,m,idz,iglobal_gg:iglobal_gg+2)
-
-          g_r=sqrt(gg(:,1)**2+gg(:,2)**2)
-
-          ux(l1:l2,m)=-y(  m  )*sqrt(g_r/(r+10*tiny(r)))
-          uy(l1:l2,m)= x(l1:l2)*sqrt(g_r/(r+10*tiny(r)))
-
-          where (r>r1_int.and.r<=r2_int)
-            ux(l1:l2,m)=ux(l1:l2,m)*sin((pi/2)*(r-r1_int)/(r2_int-r1_int))**2
-            uy(l1:l2,m)=uy(l1:l2,m)*sin((pi/2)*(r-r1_int)/(r2_int-r1_int))**2
-          endwhere
-
-          where (r>r1_ext.and.r<=r2_ext)
-            ux(l1:l2,m)=ux(l1:l2,m)*cos((pi/2)*(r-r1_ext)/(r2_ext-r1_ext))**2
-            uy(l1:l2,m)=uy(l1:l2,m)*cos((pi/2)*(r-r1_ext)/(r2_ext-r1_ext))**2
-          endwhere
-
-          where (r<=r1_int.or.r>r2_ext)
-            ux(l1:l2,m)=0
-            uy(l1:l2,m)=0
-          endwhere
-
-          ! outflow velocity = u_out_kep * u_kep
-          uz(l1:l2,m)=u_out_kep*sqrt(ux(l1:l2,m)**2+uy(l1:l2,m)**2)
-
-          initialize=.false.
-
-        enddo
-
-      endif
-
-      if     (j==iux) then
-        f(l1:l2,m1:m2,idz,j)=ux(l1:l2,m1:m2)
-      elseif (j==iuy) then
-        f(l1:l2,m1:m2,idz,j)=uy(l1:l2,m1:m2)
-      elseif (j==iuz) then
-        f(l1:l2,m1:m2,idz,j)=uz(l1:l2,m1:m2)
-      else
-        call stop_it('BC_FORCE_KEPLER: only implemented for uu')
-      endif
-
-    endsubroutine bc_force_kepler
-!***********************************************************************
+!    subroutine bc_force_kepler(f,idz,j)
+!!
+!! DOCUMENT ME!!
+!!
+!      use Cdata, only: x,y,iux,iuy,iuz,pi, &
+!                       mx,my,mz,m1,m2,l1,l2,mfarray,nx
+!      use Mpicomm, only: stop_it
+!      use Hydro, only: kep_cutoff_pos_ext,kep_cutoff_width_ext
+!      use Hydro, only: kep_cutoff_pos_int,kep_cutoff_width_int
+!      use Hydro, only: u_out_kep
+!      use FArrayManager
+!
+!      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!      integer, intent(in) :: idz,j
+!      real, dimension (nx,3) :: gg
+!      real, dimension (nx) :: r,g_r
+!      real, dimension (mx,my), save :: ux,uy,uz
+!      real :: r1_ext,r2_ext
+!      real :: r1_int,r2_int
+!      integer :: m
+!      logical, save :: initialize=.true.
+!
+!      if (initialize) then
+!
+!        r1_int=kep_cutoff_pos_int-kep_cutoff_width_int/2
+!        r2_int=kep_cutoff_pos_int+kep_cutoff_width_int/2
+!
+!        r1_ext=kep_cutoff_pos_ext-kep_cutoff_width_ext/2
+!        r2_ext=kep_cutoff_pos_ext+kep_cutoff_width_ext/2
+!
+!        do m=m1,m2
+!
+!          r=sqrt(x(l1:l2)**2+y(m)**2)
+!
+!          !
+!          ! First time round, look up gg in the f-array
+!          ! and get it's index.
+!          !
+!          if (.not.associated(iglobal_gg)) then
+!            call farray_use_global('gg',iglobal_gg,vector=3)
+!            if (.not.associated(iglobal_gg)) then
+!              call fatal_error("bc_force_kepler", &
+!               "Could not get global gg from an f-array slot")
+!            endif
+!          endif
+!
+!          gg=f(l1:l2,m,idz,iglobal_gg:iglobal_gg+2)
+!
+!          g_r=sqrt(gg(:,1)**2+gg(:,2)**2)
+!
+!          ux(l1:l2,m)=-y(  m  )*sqrt(g_r/(r+10*tiny(r)))
+!          uy(l1:l2,m)= x(l1:l2)*sqrt(g_r/(r+10*tiny(r)))
+!
+!          where (r>r1_int.and.r<=r2_int)
+!            ux(l1:l2,m)=ux(l1:l2,m)*sin((pi/2)*(r-r1_int)/(r2_int-r1_int))**2
+!            uy(l1:l2,m)=uy(l1:l2,m)*sin((pi/2)*(r-r1_int)/(r2_int-r1_int))**2
+!          endwhere
+!
+!          where (r>r1_ext.and.r<=r2_ext)
+!            ux(l1:l2,m)=ux(l1:l2,m)*cos((pi/2)*(r-r1_ext)/(r2_ext-r1_ext))**2
+!            uy(l1:l2,m)=uy(l1:l2,m)*cos((pi/2)*(r-r1_ext)/(r2_ext-r1_ext))**2
+!          endwhere
+!
+!          where (r<=r1_int.or.r>r2_ext)
+!            ux(l1:l2,m)=0
+!            uy(l1:l2,m)=0
+!          endwhere
+!
+!          ! outflow velocity = u_out_kep * u_kep
+!          uz(l1:l2,m)=u_out_kep*sqrt(ux(l1:l2,m)**2+uy(l1:l2,m)**2)
+!
+!          initialize=.false.
+!
+!        enddo
+!
+!      endif
+!
+!      if     (j==iux) then
+!        f(l1:l2,m1:m2,idz,j)=ux(l1:l2,m1:m2)
+!      elseif (j==iuy) then
+!        f(l1:l2,m1:m2,idz,j)=uy(l1:l2,m1:m2)
+!      elseif (j==iuz) then
+!        f(l1:l2,m1:m2,idz,j)=uz(l1:l2,m1:m2)
+!      else
+!        call stop_it('BC_FORCE_KEPLER: only implemented for uu')
+!      endif
+!
+!    endsubroutine bc_force_kepler
+!!***********************************************************************
     subroutine bc_one_x(f,topbot,j)
 !
 !  Set bdry values to 1 for debugging purposes
