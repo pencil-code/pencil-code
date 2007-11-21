@@ -8,9 +8,3 @@
   public :: init_ss, dss_dt
   public :: pencil_criteria_entropy, pencil_interdep_entropy
   public :: calc_pencils_entropy
-
-!ajwm SHOULDN'T BE SHARED
-  public :: hcond0,hcond1,Fbot,FbotKbot,Ftop,Kbot,FtopKtop,chi, lmultilayer
-!!  public :: nu_turb
-  public :: lheatc_chiconst
-
