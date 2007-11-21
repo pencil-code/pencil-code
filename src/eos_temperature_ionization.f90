@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.59 2007-08-23 02:13:47 wlyra Exp $
+! $Id: eos_temperature_ionization.f90,v 1.60 2007-11-21 11:45:00 wlyra Exp $
 
 !  Dummy routine for ideal gas
 
@@ -129,7 +129,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.59 2007-08-23 02:13:47 wlyra Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.60 2007-11-21 11:45:00 wlyra Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -896,8 +896,7 @@ module EquationOfState
 !
     endsubroutine isothermal_lnrho_ss
 !***********************************************************************
-    subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fheat,FheatK,chi, &
-                lmultilayer,lcalc_heatcond_constchi)
+    subroutine bc_ss_flux(f,topbot)
 !
 !  constant flux boundary condition for entropy (called when bcz='c1')
 !
@@ -907,15 +906,16 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       use Gravity
+      use Mpicomm,only:stop_it
+      use SharedVariables,only:get_shared_variable
 !
-      real, intent(in) :: Fheat, FheatK, hcond0, hcond1, chi
-      logical, intent(in) :: lmultilayer, lcalc_heatcond_constchi
-
+      real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
+      logical, pointer :: lmultilayer, lheatc_chiconst
+!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
-      integer :: i
-
+      integer :: i,ierr
 !
       if(ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
@@ -929,9 +929,9 @@ module EquationOfState
 !
       case('bot')
         if (lmultilayer) then
-          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fheat,hcond0*hcond1
+          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
         else
-          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fheat,hcond0
+          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
         endif
 !
 !  calculate Fbot/(K*cs2)
@@ -942,10 +942,10 @@ module EquationOfState
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
 !
-        if(lcalc_heatcond_constchi) then
-          tmp_xy=Fheat/(rho_xy*chi*cs2_xy)
+        if(lheatc_chiconst) then
+          tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
         else
-          tmp_xy=FheatK/cs2_xy
+          tmp_xy=FbotKbot/cs2_xy
         endif
 !
 !  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
@@ -960,9 +960,9 @@ module EquationOfState
 !
       case('top')
         if (lmultilayer) then
-          if(headtt) print*,'bc_ss_flux: Ftop,hcond=',Fheat,hcond0*hcond1
+          if(headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
         else
-          if(headtt) print*,'bc_ss_flux: Ftop,hcond=',Fheat,hcond0
+          if(headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0
         endif
 !
 !  calculate Ftop/(K*cs2)
@@ -973,10 +973,10 @@ module EquationOfState
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
 !
-        if(lcalc_heatcond_constchi) then
-          tmp_xy=Fheat/(rho_xy*chi*cs2_xy)
+        if(lheatc_chiconst) then
+          tmp_xy=Ftop/(rho_xy*chi*cs2_xy)
         else
-          tmp_xy=FheatK/cs2_xy
+          tmp_xy=FtopKtop/cs2_xy
         endif
 !
 !  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)

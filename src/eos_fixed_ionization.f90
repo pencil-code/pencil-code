@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.39 2007-09-07 17:39:03 dintrans Exp $
+! $Id: eos_fixed_ionization.f90,v 1.40 2007-11-21 11:45:00 wlyra Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -105,7 +105,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.39 2007-09-07 17:39:03 dintrans Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.40 2007-11-21 11:45:00 wlyra Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -962,8 +962,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     endsubroutine isothermal_lnrho_ss
 !***********************************************************************
-    subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fbot, FbotKbot, chi, &
-                lmultilayer,lcalc_heatcond_constchi)
+    subroutine bc_ss_flux(f,topbot)
 !
 !  constant flux boundary condition for entropy (called when bcz='c1')
 !
@@ -974,14 +973,11 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Mpicomm, only: stop_it
       use Cdata
 !
-      real, intent(in) :: Fbot, FbotKbot, hcond0, hcond1, chi
-      logical, intent(in) :: lmultilayer, lcalc_heatcond_constchi
-
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_flux: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f,hcond0,hcond1,Fbot, FbotKbot, chi,lmultilayer,lcalc_heatcond_constchi,topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_flux
 !***********************************************************************
