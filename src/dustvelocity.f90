@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.124 2007-10-06 13:56:53 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.125 2007-11-21 14:32:47 wlyra Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -20,7 +20,6 @@ module Dustvelocity
 
   use Cdata
   use Messages
-  use Hydro
 
   implicit none
 
@@ -137,7 +136,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.124 2007-10-06 13:56:53 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.125 2007-11-21 14:32:47 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

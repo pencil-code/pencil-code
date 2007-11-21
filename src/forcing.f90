@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.123 2007-10-04 12:02:13 ajohan Exp $
+! $Id: forcing.f90,v 1.124 2007-11-21 14:32:47 wlyra Exp $
 
 module Forcing
 
@@ -84,7 +84,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.123 2007-10-04 12:02:13 ajohan Exp $")
+           "$Id: forcing.f90,v 1.124 2007-11-21 14:32:47 wlyra Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -324,7 +324,6 @@ module Forcing
       use General
       use Sub
       use EquationOfState, only: cs0
-      use Hydro
 !
       real :: phase,ffnorm,irufm
       real, save :: kav
@@ -666,7 +665,6 @@ module Forcing
       use General
       use Sub
       use EquationOfState, only: cs0
-      use Hydro
 !      use SpecialFunctions
 !
       real :: phase,ffnorm,irufm
@@ -767,7 +765,6 @@ module Forcing
       use Cdata
       use General
       use Sub
-      use Hydro
 !
       real :: phase,ffnorm,irufm
       real, save :: kav
@@ -860,7 +857,6 @@ module Forcing
       use Cdata
       use General
       use Sub
-      use Hydro
 !
       real :: phase,ffnorm,irufm
       real, save :: kav
@@ -963,7 +959,6 @@ module Forcing
       use Cdata
       use General
       use Sub
-      use Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1072,7 +1067,6 @@ module Forcing
       use Cdata
       use General
       use Sub
-      use Hydro
 !
       real :: phase,ffnorm,irufm
       real, save :: kav
@@ -1174,7 +1168,6 @@ module Forcing
       use General
       use Sub
       use EquationOfState, only: cs0
-      use Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: force_ampl
@@ -1312,7 +1305,6 @@ module Forcing
 !
       use Cdata
       use Sub
-      use Hydro
       use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1373,7 +1365,6 @@ module Forcing
       use General
       use Sub
       use EquationOfState, only: cs0
-      use Hydro
 !
       real :: phase,ffnorm
       real, save :: kav
@@ -1900,7 +1891,6 @@ module Forcing
 !
       use Mpicomm
       use Cdata
-      use Hydro
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2046,7 +2036,6 @@ module Forcing
       use General
       use Sub
       use EquationOfState, only: cs0
-      use Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: phase,ffnorm

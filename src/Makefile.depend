@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.86 2007-11-21 13:58:54 wlyra Exp $
+### $Id: Makefile.depend,v 1.87 2007-11-21 14:32:47 wlyra Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -264,13 +264,12 @@ $(SELFGRAVITY_OBJ):     selfgravity.h     $(SELFGRAVITY_SRC)     $(CDATA_OBJ)   
 #
 $(POISSON_OBJ):         poisson.h         $(POISSON_SRC)         $(CDATA_OBJ)   $(FOURIER_OBJ) $(SUB_OBJ)
 #
-$(FORCING_OBJ):         forcing.h         $(FORCING_SRC)         $(COMMON_DEPS) $(HYDRO_OBJ)
-#
+$(FORCING_OBJ):         forcing.h         $(FORCING_SRC)         $(COMMON_DEPS) #
 $(ENTROPY_OBJ):         entropy.h         $(ENTROPY_SRC)         $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(EOS_OBJ) $(GLOBAL_OBJ) $(VISCOSITY_OBJ) $(INTERSTELLAR_OBJ)
 #
 $(MAGNETIC_OBJ):        magnetic.h        $(MAGNETIC_SRC)        $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(IO_OBJ) $(FOURIER_OBJ)
 #
-$(HYDRO_OBJ):           hydro.h           $(HYDRO_SRC)           $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(VISCOSITY_OBJ) $(MAGNETIC_OBJ) $(COSMICRAY_OBJ)
+$(HYDRO_OBJ):           hydro.h           $(HYDRO_SRC)           $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(VISCOSITY_OBJ) $(MAGNETIC_OBJ) $(COSMICRAY_OBJ) $(SELFGRAVITY_OBJ)
 #
 $(DENSITY_OBJ):         density.h         $(DENSITY_SRC)         $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(IO_OBJ) $(EOS_OBJ) $(SELFGRAVITY_OBJ) boundcond.o
 #
@@ -284,13 +283,13 @@ $(PSCALAR_OBJ):         pscalar.h         $(PSCALAR_SRC)         $(COMMON_DEPS) 
 #
 $(CHIRAL_OBJ):          chiral.h          $(CHIRAL_SRC)          $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ)
 #
-$(DUSTVELOCITY_OBJ):    dustvelocity.h    $(DUSTVELOCITY_SRC)    $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(GENERAL_OBJ) $(EOS_OBJ) $(HYDRO_OBJ) $(PSCALAR_OBJ) $(GRAVITY_OBJ)
+$(DUSTVELOCITY_OBJ):    dustvelocity.h    $(DUSTVELOCITY_SRC)    $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(GENERAL_OBJ) $(EOS_OBJ) $(PSCALAR_OBJ) $(GRAVITY_OBJ)
 #
 $(DUSTDENSITY_OBJ):     dustdensity.h     $(DUSTDENSITY_SRC)     $(COMMON_DEPS) $(INITCOND_OBJ) $(DUSTVELOCITY_OBJ) slices.o
 #
 $(NEUTRALDENSITY_OBJ):  neutraldensity.h  $(NEUTRALDENSITY_SRC)  $(COMMON_DEPS) $(INITCOND_OBJ) 
 #
-$(NEUTRALVELOCITY_OBJ): neutralvelocity.h $(NEUTRALVELOCITY_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(GENERAL_OBJ) $(HYDRO_OBJ) $(GRAVITY_OBJ) $(NEUTRALDENSITY_OBJ)
+$(NEUTRALVELOCITY_OBJ): neutralvelocity.h $(NEUTRALVELOCITY_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(GENERAL_OBJ) $(GRAVITY_OBJ) $(NEUTRALDENSITY_OBJ)
 #
 $(TESTFIELD_OBJ):       testfield.h       $(TESTFIELD_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(IO_OBJ) $(HYDRO_OBJ)
 #
