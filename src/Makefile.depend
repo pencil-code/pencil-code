@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.87 2007-11-21 14:32:47 wlyra Exp $
+### $Id: Makefile.depend,v 1.88 2007-11-21 21:06:58 wlyra Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -208,7 +208,7 @@ $(FARRAY_OBJ):              farray.f90           $(CDATA_OBJ) $(MESSAGES_OBJ) $(
 #
 $(SHARED_VARIABLES_OBJ):    shared_variables.f90 $(MESSAGES_OBJ) 
 #
-$(BORDER_PROFILES_OBJ):                              $(CDATA_OBJ) $(BORDER_PROFILES_SRC) $(SUB_OBJ) $(GRAVITY_OBJ)
+$(BORDER_PROFILES_OBJ):                              $(CDATA_OBJ) $(BORDER_PROFILES_SRC) $(SUB_OBJ)
 #
 slices.o:    slices.f90           $(CDATA_OBJ) $(SUB_OBJ) $(EOS_OBJ) $(PARTICLES_MAIN_OBJ) $(SHOCK_OBJ) $(INTERSTELLAR_OBJ) $(HYDRO_OBJ) $(RADIATION_OBJ) $(MAGNETIC_OBJ) $(SPECIAL_OBJ) $(CHIRAL_OBJ) $(TESTFIELD_OBJ)
 #

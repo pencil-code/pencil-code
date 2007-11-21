@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.21 2007-11-21 21:05:20 wlyra Exp $
+! $Id: border_profiles.f90,v 1.22 2007-11-21 21:06:58 wlyra Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -220,8 +220,6 @@ module BorderProfiles
 ! orbital time is implemented.
 !
 ! 28-Jul-06/wlad : coded
-!
-      use Gravity, only:qgshear
 !
       real, intent(out) :: inverse_drive_time
       type (pencil_case) :: p
