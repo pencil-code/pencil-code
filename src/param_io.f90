@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.290 2007-10-18 10:30:29 ajohan Exp $
+! $Id: param_io.f90,v 1.291 2007-11-21 11:46:41 wlyra Exp $
 
 module Param_IO
 
@@ -518,9 +518,11 @@ module Param_IO
       if (lshear) bcx(:)='she'
       !
       !  entropy
+      !  WL: why are Kbot and hcond0 set here??? 
+      !      Shouldn't they be in the entropy module??
       !
-      Kbot=impossible
-      hcond0=impossible
+      !Kbot=impossible
+      !hcond0=impossible
 !
 ! find out if we should open and close the file everytime
 ! to fix the SGI reading problem
