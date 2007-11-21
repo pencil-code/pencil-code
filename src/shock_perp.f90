@@ -1,4 +1,4 @@
-! $Id: shock_perp.f90,v 1.11 2006-11-30 09:03:36 dobler Exp $
+! $Id: shock_perp.f90,v 1.12 2007-11-21 13:56:36 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -28,7 +28,6 @@ module Shock
 
   use Cparam
   use Cdata
-  use Density
   use Messages
 
   implicit none
@@ -105,7 +104,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_perp.f90,v 1.11 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: shock_perp.f90,v 1.12 2007-11-21 13:56:36 wlyra Exp $")
 !
     endsubroutine register_shock
 !***********************************************************************

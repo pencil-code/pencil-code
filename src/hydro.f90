@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.405 2007-11-17 14:54:26 theine Exp $
+! $Id: hydro.f90,v 1.406 2007-11-21 13:56:36 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -325,7 +325,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.405 2007-11-17 14:54:26 theine Exp $")
+           "$Id: hydro.f90,v 1.406 2007-11-21 13:56:36 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2877,9 +2877,8 @@ use Mpicomm, only: stop_it
 !
 !  15-nov-06/tobi: coded
 !
-      use Cdata, only: ilnrho,iux,iuz
+      use Cdata, only: ilnrho,iux,iuz,ldensity_nolog
       use Mpicomm, only: mpiallreduce_sum
-      use Density, only: ldensity_nolog
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 

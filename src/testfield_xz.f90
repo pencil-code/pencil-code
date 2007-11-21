@@ -1,4 +1,4 @@
-! $Id: testfield_xz.f90,v 1.11 2007-10-16 14:44:07 pkapyla Exp $
+! $Id: testfield_xz.f90,v 1.12 2007-11-21 13:56:36 wlyra Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -109,7 +109,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_xz.f90,v 1.11 2007-10-16 14:44:07 pkapyla Exp $")
+           "$Id: testfield_xz.f90,v 1.12 2007-11-21 13:56:36 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -168,7 +168,6 @@ module Testfield
 !
       use Cdata
       use Mpicomm
-      use Density
       use Gravity, only: gravz
       use Sub
       use Initcond

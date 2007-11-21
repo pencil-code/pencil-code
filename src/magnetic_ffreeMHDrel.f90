@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.44 2007-03-28 18:32:45 dobler Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.45 2007-11-21 13:56:36 wlyra Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -109,7 +109,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.44 2007-03-28 18:32:45 dobler Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.45 2007-11-21 13:56:36 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -152,7 +152,6 @@ module Magnetic
 !
       use Cdata
       use Mpicomm
-      use Density
       use Gravity, only: gravz
       use Sub
       use Initcond
