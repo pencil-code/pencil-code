@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.216 2007-10-30 09:32:51 mgellert Exp $
+# $Id: getconf.csh,v 1.217 2007-11-21 12:40:41 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -144,6 +144,12 @@ else if ($?LOADL_PROCESSOR_LIST) then
 else if ($?PE_HOSTFILE) then
   if ($debug) echo "SGE Parallel Environment job - $PE"
   set nodelist = `cat $PE_HOSTFILE | grep -v '^#' | sed 's/\ .*//'`
+else if ($?SLURM_NODELIST) then
+  if ($debug) echo "Simple Linux Utility for Resource Management (SLURM) job"
+  set nodelist = `cat $SLURM_NODELIST | grep -v '^#' | sed 's/\ .*//'`
+  echo "SLURM_NODELIST = $SLURM_NODELIST"
+  echo "nodelist = $nodelist"
+  echo "SLURM_TASKS_PER_NODE = $SLURM_TASKS_PER_NODE"
 else if ($?JOB_ID) then
   if (-e $HOME/.score/ndfile.$JOB_ID) then
     if ($debug) echo "Scout job"
@@ -158,8 +164,14 @@ else
   if ($debug) echo "Setting nodelist to ($hn)"
   set nodelist = ("$hn")
 endif
+
 # Output information about number of cpus per node
-set nnodes = $#nodelist
+# But with SLURM we know w nnodes from $SLURM_NNODES.
+if ($?SLURM_NODELIST) then
+  set nnodes = $SLURM_NNODES
+else
+  set nnodes = $#nodelist
+endif
 set nprocpernode = `expr $ncpus / $nnodes`
 echo "$nnodes nodes, $nprocpernode CPU(s) per node"
 
@@ -508,14 +520,14 @@ else if ($hn =~ c[0-9][0-9][0-9]) then
   set one_local_disc = 0
   set local_binary = 0
 
-else if ($hn =~ n[0-8]*) then
-  echo "Cetus, Iucaa, India"
-  set mpirunops = '-srun'
-  set mpirun = 'nuripm'
-  set npops = ''
-  set local_disc = 0
-  set one_local_disc = 0
-  set local_binary = 0
+#else if ($hn =~ n[0-8]*) then
+#  echo "Cetus, Iucaa, India"
+#  set mpirunops = '-srun'
+#  set mpirun = 'nuripm'
+#  set npops = ''
+#  set local_disc = 0
+#  set one_local_disc = 0
+#  set local_binary = 0
 
 else if ($hn =~ corona*) then
   echo "Corona SunFire - CSC, Espoo, Finland"
@@ -1044,6 +1056,18 @@ else if ($hn =~ *.pdc.kth.se) then
 # setenv SSH rsh 
 # setenv SCP rcp
 
+else if ($hn =~ n[0-9]*) then
+  echo "Neolith cluster in Linkoping"
+  if ($mpi) echo "Use mpprun"
+  set mpirun = mpprun
+  #
+  echo "nprocpernode = $nprocpernode"
+  set mpirunops = ""
+  #set npops = "-np $ncpus"
+  set npops = ""
+  #
+  set one_local_disc = 0
+
 else if ($hn =~ sans*) then
   echo "Sanssouci cluster in Potsdam (AIP)"
   if ($?PBS_NODEFILE) then
@@ -1125,6 +1149,8 @@ if ($mpi) then
   else if ("$mpirun" =~ *nuripm*) then
     set mpirun = 'mpirun'
     set npops = ""
+  else if ("$mpirun" =~ *mpprun*) then
+    echo "npops = $npops"
   else
     echo "getconf.csh: No clue how to tell $mpirun to use $ncpus nodes"
   endif
@@ -1214,6 +1240,7 @@ endif
 
 # Wrap up nodelist as (scalar, colon-separated) environment variable
 # NODELIST for transport to sub-processes.
+echo "set NODELIST by stream-editing nodelist (=$nodelist)"
 setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
 
 if ($debug) then
