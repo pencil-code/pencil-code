@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.536 2007-10-16 18:22:43 dintrans Exp $
+! $Id: entropy.f90,v 1.537 2007-11-21 11:42:30 wlyra Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -37,7 +37,8 @@ module Entropy
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss=0.
   real :: luminosity=0.,wheat=0.1,cool=0.,rcool=0.,wcool=0.1
   real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.,ampl_TT=0.
-  real :: chi=0.,chi_t=0.,chi_shock=0.,chi_hyper3=0.
+  real,target :: chi=0.
+  real :: chi_t=0.,chi_shock=0.,chi_hyper3=0.
   real :: Kgperp=0.,Kgpara=0.,tdown=0.,allp=2.
   real :: ss_left=1.,ss_right=1.
   real :: ss0=0.,khor_ss=1.,ss_const=0.
@@ -49,10 +50,13 @@ module Entropy
   real :: center2_x=0., center2_y=0., center2_z=0.
   real :: kx_ss=1.
   real :: thermal_background=0., thermal_peak=0., thermal_scaling=1.
-  real :: hcond0=impossible
-  real :: hcond1=impossible,hcond2=impossible
-  real :: Fbot=impossible,FbotKbot=impossible,Kbot=impossible
-  real :: Ftop=impossible,FtopKtop=impossible,Ktop=impossible
+!
+  real, target :: hcond0=impossible,hcond1=impossible
+  real, target :: Fbot=impossible,FbotKbot=impossible
+  real, target :: Ftop=impossible,FtopKtop=impossible
+!
+  real :: Kbot=impossible,Ktop=impossible
+  real :: hcond2=impossible
   real :: chit_prof1=1.,chit_prof2=1.
   real :: tau_cor=0.,TT_cor=0.,z_cor=0.
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
@@ -61,12 +65,14 @@ module Entropy
   real :: tau_cool=0.0, TTref_cool=0.0
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
-  logical :: lheatc_Kconst=.false.,lheatc_simple=.false.,lheatc_chiconst=.false.
+  logical :: lheatc_Kconst=.false.,lheatc_simple=.false.
+  logical, target :: lheatc_chiconst=.false.
   logical :: lheatc_tensordiffusion=.false.,lheatc_spitzer=.false.
   logical :: lheatc_hubeny=.false.
   logical :: lheatc_corona=.false.
   logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
-  logical :: lupw_ss=.false.,lmultilayer=.true.
+  logical :: lupw_ss=.false.
+  logical, target :: lmultilayer=.true.
   logical :: ladvection_entropy=.true.
   logical, pointer :: lpressuregradient_gas ! Shared with Hydro.
   logical :: lviscosity_heat=.true.
@@ -210,7 +216,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.536 2007-10-16 18:22:43 dintrans Exp $")
+           "$Id: entropy.f90,v 1.537 2007-11-21 11:42:30 wlyra Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -233,6 +239,8 @@ module Entropy
                                  beta_glnrho_global, beta_glnrho_scaled, &
                                  mpoly, mpoly0, mpoly1, mpoly2, &
                                  select_eos_variable,gamma,gamma1
+      use SharedVariables, only: put_shared_variable
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -242,7 +250,7 @@ module Entropy
       real, dimension (3) :: gg_mn=0.
       real :: beta1, cp1, lnrho_dummy=0., beta0, TT_crit
       real :: r_mn, flumi, g_r, u
-      integer :: i
+      integer :: i, ierr
       integer, pointer :: iglobal_gg
       logical :: lnothing
       type (pencil_case) :: p
@@ -581,6 +589,36 @@ module Entropy
         enddo
         enddo
       endif
+!
+! Shared variables
+!
+      call put_shared_variable('hcond0',hcond0,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting hcond0")
+      call put_shared_variable('hcond1',hcond1,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting hcond1")
+      call put_shared_variable('Fbot',Fbot,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting Fbot")
+      call put_shared_variable('Ftop',Ftop,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting Ftop")
+      call put_shared_variable('FbotKbot',FbotKbot,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting FbotKbot")
+      call put_shared_variable('FtopKtop',FtopKtop,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting FtopKtop")
+      call put_shared_variable('chi',chi,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting chi")
+      call put_shared_variable('lmultilayer',lmultilayer,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting lmultilayer")
+      call put_shared_variable('lheatc_chiconst',lheatc_chiconst,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting lcalc_heatcond_constchi")
 !
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
 !
