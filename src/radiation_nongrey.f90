@@ -1,4 +1,4 @@
-! $Id: radiation_nongrey.f90,v 1.6 2007-10-06 13:56:53 ajohan Exp $
+! $Id: radiation_nongrey.f90,v 1.7 2007-11-21 14:34:22 wlyra Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -218,7 +218,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_nongrey.f90,v 1.6 2007-10-06 13:56:53 ajohan Exp $")
+           "$Id: radiation_nongrey.f90,v 1.7 2007-11-21 14:34:22 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -399,6 +399,11 @@ module Radiation
 !***********************************************************************
     subroutine calc_angle_weights
 !     
+! Weights for angle integration.
+! Began coding the weigths by spherical harmonics 
+!
+! 18-may-07/wlad+heidar: coded
+!
       use Cdata, only: dx,dy,dz,pi,lroot
       use Mpicomm, only: stop_it
 !
@@ -417,11 +422,13 @@ module Radiation
 !
         if (dx/=dy) then
           print*,'dx,dy=',dx,dy
-          call stop_it("initialize_radiation: weights not calculated for dx/dy != 1")
+          call stop_it("initialize_radiation: weights not "//&
+               "calculated for dx/dy != 1")
         endif
         aspect_ratio=dx/dz
         if (aspect_ratio.lt.0.69.or.aspect_ratio.gt.sqrt(3.)) &
-             call stop_it("initialize_radiation: weights go negative for this dx/dz ratio")
+             call stop_it("initialize_radiation: weights go "//&
+             "negative for this dx/dz ratio")
 !
 !  Calculate the weights
 !
