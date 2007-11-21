@@ -1,4 +1,4 @@
-! $Id: shock_highorder.f90,v 1.14 2007-08-31 12:29:26 dhruba Exp $
+! $Id: shock_highorder.f90,v 1.15 2007-11-21 20:56:02 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -76,7 +76,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_highorder.f90,v 1.14 2007-08-31 12:29:26 dhruba Exp $")
+           "$Id: shock_highorder.f90,v 1.15 2007-11-21 20:56:02 wlyra Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -104,28 +104,27 @@ module Shock
 !
        use Cdata, only: ishock,lroot
        use Messages, only: fatal_error
-
+!
        real, dimension (mx,my,mz,mfarray) :: f
        logical, intent(in) :: lstarting
-
+!
        real, dimension (-3:3) :: weights
        integer :: i,j,k
 !
 !  Initialize shock profile to zero
 !
       f(:,:,:,ishock)=0.0
-
 !
 !  Calculate factors for polynomial smoothing
 !
       smooth_factor = 1.
-
+!
       if (lgaussian_smooth) then
         weights = (/1.,9.,45.,70.,45.,9.,1./)
       else
         weights = (/1.,6.,15.,20.,15.,6.,1./)
       endif
-
+!
       if (nxgrid > 1) then
         do i = -3,3
           smooth_factor(i,:,:) = smooth_factor(i,:,:)*weights(i)
@@ -134,7 +133,7 @@ module Shock
         smooth_factor(-3:-1,:,:) = 0.
         smooth_factor(+1:+3,:,:) = 0.
       endif
-
+!
       if (nygrid > 1) then
         do j = -3,3
           smooth_factor(:,j,:) = smooth_factor(:,j,:)*weights(j)
@@ -143,7 +142,7 @@ module Shock
         smooth_factor(:,-3:-1,:) = 0.
         smooth_factor(:,+1:+3,:) = 0.
       endif
-
+!
       if (nzgrid > 1) then
         do k = -3,3
           smooth_factor(:,:,k) = smooth_factor(:,:,k)*weights(k)
@@ -152,9 +151,8 @@ module Shock
         smooth_factor(:,:,-3:-1) = 0.
         smooth_factor(:,:,+1:+3) = 0.
       endif
-
+!
       smooth_factor = smooth_factor/sum(smooth_factor)
-
 !
 !  Check that smooth order is within bounds
 !
@@ -164,7 +162,7 @@ module Shock
                            'ishock_max needs to be between 1 and 3.')
         endif
       endif
-
+!
     endsubroutine initialize_shock
 !***********************************************************************
     subroutine read_shock_init_pars(unit,iostat)
@@ -198,9 +196,9 @@ module Shock
 !***********************************************************************
     subroutine write_shock_run_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=shock_run_pars)
-
+!
     endsubroutine write_shock_run_pars
 !*******************************************************************
     subroutine rprint_shock(lreset,lwrite)
@@ -252,7 +250,7 @@ module Shock
 !  26-jul-06/tony: coded
 !
       use Cdata, only: ishock
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -270,9 +268,9 @@ module Shock
           slices%ready = .true.
 
       endselect
-
+!
     endsubroutine get_slices_shock
-!!***********************************************************************
+!***********************************************************************
     subroutine pencil_criteria_shock()
 !
 !  All pencils that the Viscosity module depends on are specified here.
@@ -284,7 +282,7 @@ module Shock
       if (idiag_shockmax/=0) then
           lpenc_diagnos(i_shock)=.true.
       endif
-
+!
     endsubroutine pencil_criteria_shock
 !***********************************************************************
     subroutine pencil_interdep_shock(lpencil_in)
@@ -309,19 +307,19 @@ module Shock
       use Cdata, only: m,n,ishock
       use Cdata, only: ldiagnos
       use Sub, only: grad,max_mn_name
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-
+!
       intent(in) :: f
       intent(inout) :: p
-
+!
       ! shock
       if (lpencil(i_shock)) p%shock=f(l1:l2,m,n,ishock)
-
+!
       ! gshock
       if (lpencil(i_gshock)) call grad(f,ishock,p%gshock)
-
+!
       if (ldiagnos) then
         if (idiag_shockmax/=0) call max_mn_name(p%shock,idiag_shockmax)
       endif
@@ -341,27 +339,26 @@ module Shock
       use Boundcond, only: boundconds_x,boundconds_y,boundconds_z
       use Mpicomm, only: initiate_isendrcv_bdry,finalize_isendrcv_bdry
       use sub, only: div
-
+!
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-
+!
       real, dimension (mx,my,mz) :: tmp
       real, dimension (nx) :: penc
       integer :: imn
       integer :: i,j,k
       integer :: ni,nj,nk
-
 !
 !  Compute divergence
 !
       call boundconds_x(f,iux,iux)
-
+!
       call initiate_isendrcv_bdry(f,iuy,iuz)
-
+!
       do imn=1,ny*nz
-
+!
         n = nn(imn)
         m = mm(imn)
-
+!
         if (necessary(imn)) then
           call finalize_isendrcv_bdry(f,iuy,iuz)
           call boundconds_y(f,iuy,iuy)
@@ -370,34 +367,34 @@ module Shock
 ! The following will calculate div u for any coordinate system. 
         call div(f,iuu,penc)
         f(l1:l2,m,n,ishock) = max(0.,-penc)
-
+!
       enddo
-
 !
 !  Take maximum over a number of grid cells
 !
       ni = merge(ishock_max,0,nxgrid > 1)
       nj = merge(ishock_max,0,nygrid > 1)
       nk = merge(ishock_max,0,nzgrid > 1)
-
+!
       call boundconds_x(f,ishock,ishock)
+!
       call initiate_isendrcv_bdry(f,ishock,ishock)
-
+!
       tmp = 0.
-
+!
       do imn=1,ny*nz
-
+!
         n = nn(imn)
         m = mm(imn)
-
+!
         if (necessary(imn)) then
           call finalize_isendrcv_bdry(f,ishock,ishock)
           call boundconds_y(f,ishock,ishock)
           call boundconds_z(f,ishock,ishock)
         endif
-
+!
         penc = 0.
-
+!
         do k=-nk,nk
         do j=-nj,nj
         do i=-ni,ni
@@ -405,38 +402,37 @@ module Shock
         enddo
         enddo
         enddo
-
+!
         tmp(l1:l2,m,n) = penc
-
+!
       enddo
-
+!
       f(:,:,:,ishock) = tmp
-
 !
 !  Smooth with a Gaussian profile
 !
       ni = merge(3,0,nxgrid > 1)
       nj = merge(3,0,nygrid > 1)
       nk = merge(3,0,nzgrid > 1)
-
+!
       call boundconds_x(f,ishock,ishock)
       call initiate_isendrcv_bdry(f,ishock,ishock)
-
+!
       tmp = 0.
-
+!
       do imn=1,ny*nz
-
+!
         n = nn(imn)
         m = mm(imn)
-
+!
         if (necessary(imn)) then
           call finalize_isendrcv_bdry(f,ishock,ishock)
           call boundconds_y(f,ishock,ishock)
           call boundconds_z(f,ishock,ishock)
         endif
-
+!
         penc = 0.
-
+!
         do k=-nk,nk
         do j=-nj,nj
         do i=-ni,ni
@@ -444,18 +440,18 @@ module Shock
         enddo
         enddo
         enddo
-
+!
         tmp(l1:l2,m,n) = penc
-
+!
       enddo
 
 !
 !  Scale by dxmax**2
 !
       f(:,:,:,ishock) = tmp*dxmax**2
-
+!
     endsubroutine calc_shock_profile
-!!***********************************************************************
+!***********************************************************************
     subroutine calc_shock_profile_simple(f)
 !
 !  Calculate divu based shock profile to be used in viscosity and
@@ -464,7 +460,7 @@ module Shock
 !  12-apr-05/tony: coded
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
-
+!
     endsubroutine calc_shock_profile_simple
 !***********************************************************************
 endmodule Shock
