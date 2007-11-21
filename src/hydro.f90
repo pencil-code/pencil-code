@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.406 2007-11-21 13:56:36 wlyra Exp $
+! $Id: hydro.f90,v 1.407 2007-11-21 21:20:10 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -325,7 +325,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.406 2007-11-21 13:56:36 wlyra Exp $")
+           "$Id: hydro.f90,v 1.407 2007-11-21 21:20:10 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1659,12 +1659,15 @@ use Mpicomm, only: stop_it
 !
       use Cdata
       use BorderProfiles,  only: border_driving
-      use EquationOfState, only: cs0,cs20,get_ptlaw
+      use EquationOfState, only: cs0,cs20,get_ptlaw,rho0
       use Particles_nbody, only: get_totalmass
       use Gravity,         only: g0,qgshear
       use Sub,             only: power_law
       use Mpicomm,         only: stop_it
       use SharedVariables
+      use Deriv,           only: der_pencil
+      use General,         only: tridag
+      use Selfgravity,     only: rhs_poisson_const
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1674,6 +1677,14 @@ use Mpicomm, only: stop_it
       real :: tmp,OO,corr,corrmag
       integer :: ju,j,i,ierr
       real, pointer :: zmode,plaw
+!!
+      real :: dr,r0,alpha
+      real, dimension(nx) :: tmp_nx,a_tri,b_tri,c_tri,d_tri,u_tri
+      real, dimension(nx) :: usg,corr_nx,uu_nx,dens
+      real, dimension(mx) :: potential,gpotential
+      logical :: err
+!!
+
 !
 ! these tmps and where's are needed because these square roots
 ! go negative in the frozen inner disc if the sound speed is big enough
@@ -1754,7 +1765,45 @@ use Mpicomm, only: stop_it
             f_target(i,3) = 0.
           endif
         enddo
-
+!
+      case('global-shear-selfg')
+        call get_ptlaw(ptlaw)
+        call get_shared_variable('plaw',plaw,ierr)
+        if (ierr/=0) call stop_it("borderuu: "//&
+             "there was a problem when getting plaw")
+        !minimize use of exponentials if no smoothing is used
+        !power law density - what's the potential?
+        call power_law(rho0,p%rcyl_mn,plaw,dens)
+        !get potential
+        dr=dx;r0=xyz0(1)
+        do i=2,nx-1
+          alpha= .5/((i-1)+r0/dr)
+          a_tri(i) = (1 - alpha)/dr**2
+          b_tri(i) =-2/dr**2 
+          c_tri(i) = (1 + alpha)/dr**2
+        enddo
+        b_tri(1)=-4/dr**2;c_tri(1) = 4/dr**2;a_tri(1) =0.
+        c_tri(nx)=1/dr**2;b_tri(nx)=-2/dr**2;a_tri(nx)=1/dr**2
+        d_tri = dens*rhs_poisson_const
+        d_tri(nx)=0.
+        call tridag(a_tri,b_tri,c_tri,d_tri,tmp_nx,err)
+        potential(l1:l2)=tmp_nx
+        !ghost zones of the potential
+        do i=1,nghost 
+          potential(l1-i)=2*potential(l1)-potential(l1+i)
+          potential(l2+i)=2*potential(l2)-potential(l2-i)
+        enddo
+        !take the gradient and correct the velocity with it  
+        call der_pencil(1,potential,gpotential)
+        usg=gpotential(l1:l2)*p%rcyl_mn
+        !pressure correction - assumes r_ref=1.
+        corr_nx=cs20*(ptlaw+plaw)* p%rcyl_mn1**(ptlaw)
+        call power_law(g0,p%rcyl_mn,2*qgshear-2,tmp_nx)
+        uu_nx=sqrt(max(tmp_nx -corr_nx + usg,0.))
+        !only for cylindrical
+        f_target(:,2) = uu_nx
+        f_target(:,1) = 0.;f_target(:,3) = 0.
+!
       case('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_hydro: borderuu='nothing'"
@@ -2941,7 +2990,7 @@ use Mpicomm, only: stop_it
 !
 !  22-may-07/axel: adapted from remove_mean_momenta
 !
-      use Cdata, only: iux,iuz
+      use Cdata, only: iux,iuz,ldensity_nolog
       use Mpicomm, only: mpiallreduce_sum
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
