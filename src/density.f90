@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.365 2007-11-20 09:44:20 wlyra Exp $
+! $Id: density.f90,v 1.366 2007-11-21 21:11:41 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -133,7 +133,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.365 2007-11-20 09:44:20 wlyra Exp $")
+           "$Id: density.f90,v 1.366 2007-11-21 21:11:41 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1784,10 +1784,12 @@ module Density
 !  18-apr-07/wlad : coded
 !
       use FArrayManager
-      use Mpicomm, only:stop_it 
-      use Initcond,only:set_thermodynamical_quantities
-      use Gravity, only:potential
-      use Sub,     only:get_radial_distance
+      use Mpicomm,     only:stop_it 
+      use Initcond,    only:set_thermodynamical_quantities
+      use Gravity,     only:potential
+      use Sub,         only:get_radial_distance,grad
+      use Selfgravity, only:calc_selfpotential
+      use Boundcond,   only:update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx)   :: pot,tmp1,tmp2,cs2
@@ -1796,6 +1798,9 @@ module Density
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: i
       logical                :: lheader,lenergy
+!
+      real, dimension(nx,3)  :: gpotself
+      real, dimension(nx)    :: usg
 !
       if (lroot) print*,&
            'local isothermal_density: locally isothermal approximation'
@@ -1824,6 +1829,7 @@ module Density
 !
           call get_radial_distance(rr_sph,rr_cyl)
           lnrhomid=log(rho0)-.5*plaw*log((rr_cyl/r_ref)**2+rsmooth**2)
+          !lnrhomid=log(rho0)-.5*plaw*log((rr_cyl/r_ref)**2+1)
 !
 ! vertical stratification, if needed
 !
@@ -1865,6 +1871,39 @@ module Density
 ! Correct the velocities by this density gradient
 !
       call correct_density_gradient(f)
+!
+! Correct the velocities for self-gravity, if needed
+!
+      if (lselfgravity) then
+!
+! feed linear density into the poisson solver
+!
+        f(:,:,:,ilnrho) = exp(f(:,:,:,ilnrho))
+        call calc_selfpotential(f)
+        f(:,:,:,ilnrho) = alog(f(:,:,:,ilnrho))
+!
+! update the boundaries for the self-potential
+!
+        call update_ghosts(f)
+!
+        do n=n1,n2
+          do m=m1,m2
+            call grad(f,ipotself,gpotself)
+!
+! the correction to the (squared) linear velocity is 
+! uphi_selfgravity**2=r*d(Phi)/dr
+!
+            if (lcylindrical_coords) then
+              usg=x(l1:l2)*gpotself(:,1)      
+              f(l1:l2,m,n,iuy)= sqrt(f(l1:l2,m,n,iuy)**2 + usg)
+            else
+              call stop_it("local_isothermal_density: "//&
+                   "Poisson solver not yet implemented for"//&
+                   " global Cartesian disks")
+            endif
+          enddo
+        enddo
+      endif
 !
     endsubroutine local_isothermal_density
 !***********************************************************************
