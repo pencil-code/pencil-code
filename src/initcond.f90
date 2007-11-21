@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.228 2007-10-30 09:28:09 mgellert Exp $
+! $Id: initcond.f90,v 1.229 2007-11-21 21:13:08 wlyra Exp $
 
 module Initcond
 
@@ -3077,7 +3077,7 @@ module Initcond
 !
 !  Temperature gradient
 !
-          gslnTT=-ptlaw/(rr_cyl**2+rsmooth**2)*rr_cyl
+          gslnTT=-ptlaw/((rr_cyl/r_ref)**2+rsmooth**2)*rr_cyl/r_ref**2
 !
 !  Put in the global arrays if they are to be static
 !  else put in the temperature or entropy array
