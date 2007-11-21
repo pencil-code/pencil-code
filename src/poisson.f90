@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.32 2007-11-19 09:49:29 wlyra Exp $
+! $Id: poisson.f90,v 1.33 2007-11-21 21:09:36 wlyra Exp $
 
 !
 !  This module solves the Poisson equation
@@ -119,7 +119,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.32 2007-11-19 09:49:29 wlyra Exp $")
+        "$Id: poisson.f90,v 1.33 2007-11-21 21:09:36 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -231,7 +231,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.32 2007-11-19 09:49:29 wlyra Exp $")
+        "$Id: poisson.f90,v 1.33 2007-11-21 21:09:36 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -332,18 +332,6 @@ module Poisson
 !
       intent(inout) :: phi
 !
-      if (lroot) print*,"inverse_laplacian: lperi=",lperi,&
-           " in cylindrical coords. Fourier transform in the",&
-           " azimuthal direction, solve the tridiagonal system in the",&
-           " radial one"
-!
-      if (nzgrid/=1.or..not.lcylindrical_coords) &
-           call not_implemented("inverse_laplacian",&
-           "This poisson solver is just for 2d r-phi in cylindrical")
-!
-      if (lshear) call not_implemented("inverse_laplacian", &
-           "Not implemented for shearing boxes")
-!
 ! From x to r, for the sake of clarity
 !
       dr=dx;rad=x(l1:l2);r0=xyz0(1);rn=xyz1(1)
@@ -380,16 +368,22 @@ module Poisson
 !  lim  f'/f  =  lim  f"/f'
 ! r-->0         r-->0  
 !
-          b_tri(1) =-4./dr**2
+          b_tri(1) =-4./dr**2 !- (ky_fft(iky)/rad(0))**2
           c_tri(1) = 4./dr**2
 !
-! No material outside
+! Vanishing second order derivative in the outer boundary
 !
-          b_tri(nx)=-2./dr**2 - 2.*dr/rn
-          a_tri(nx)= 1./dr    + 1.
+          !b_tri(nx)=-2./dr**2 - 2.*dr/rn
+          !a_tri(nx)= 1./dr    + 1.
+          c_tri(nx)=1/dr**2
+          b_tri(nx)=-2/dr**2
+          a_tri(nx)=1/dr**2
 !
           re_tri = phi(:,iky,n)
           im_tri =  b1(:,iky,n)
+!
+          re_tri(nx)=0.
+          im_tri(nx)=0.
 !
           call tridag(a_tri,b_tri,c_tri,re_tri,u_re_tri,err)
           call tridag(a_tri,b_tri,c_tri,im_tri,u_im_tri,err)
