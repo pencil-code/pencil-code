@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.20 2007-09-25 13:56:38 ajohan Exp $
+! $Id: border_profiles.f90,v 1.21 2007-11-21 21:05:20 wlyra Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -160,18 +160,18 @@ module BorderProfiles
       type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target
-      real :: pborder,drive_time
+      real :: pborder,inverse_drive_time
       integer :: i,j
 !
       do i=1,nx
         if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
              ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
 !        
-          call get_drive_time(p,drive_time,i)
+          call get_drive_time(p,inverse_drive_time,i)
           call get_border(p,pborder,i)
         
           df(i+l1-1,m,n,j) = df(i+l1-1,m,n,j) &
-               - (f(i+l1-1,m,n,j) - f_target(i))*pborder/drive_time
+               - (f(i+l1-1,m,n,j) - f_target(i))*pborder*inverse_drive_time
         endif
       !else do nothing
       !df(l1:l2,m,n,j) = df(l1:l2,m,n,j) 
@@ -213,7 +213,7 @@ module BorderProfiles
 !
     endsubroutine get_border
 !***********************************************************************
-    subroutine get_drive_time(p,drive_time,i)
+    subroutine get_drive_time(p,inverse_drive_time,i)
 !
 ! This is problem-dependent, since the driving should occur in the
 ! typical time-scale of the problem. Currently, only the keplerian
@@ -223,11 +223,11 @@ module BorderProfiles
 !
       use Gravity, only:qgshear
 !
-      real, intent(out) :: drive_time
+      real, intent(out) :: inverse_drive_time
       type (pencil_case) :: p
       integer :: i
 !
-      drive_time = 2*pi*p%rcyl_mn(i)**qgshear
+      inverse_drive_time = .5*pi_1*p%uu(i,2)*p%rcyl_mn1(i)
 !
     endsubroutine get_drive_time
 !***********************************************************************

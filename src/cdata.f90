@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.397 2007-11-21 12:32:35 brandenb Exp $
+! $Id: cdata.f90,v 1.398 2007-11-21 21:05:20 wlyra Exp $
 
 module Cdata
 
@@ -47,7 +47,7 @@ module Cdata
   real, dimension (nx) :: dt1_advec,dt1_diffus,dt1_max
 
   real, parameter :: pi=3.14159265358979324D0
-  real, parameter :: pi4_1=pi**(-4)
+  real, parameter :: pi_1=1./pi,pi4_1=pi**(-4)
   real, parameter :: epsi=5*epsilon(1.0),tini=5*tiny(1.0),huge1=0.2*huge(1.0)
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible,xyz_star=(/0.0,0.0,0.0/)
   real, dimension(3) :: Lxyz_loc,xyz0_loc,xyz1_loc
