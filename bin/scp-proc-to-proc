@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: scp-proc-to-proc,v 1.6 2005-06-26 17:34:17 eos_merger_tony Exp $
+#$Id: scp-proc-to-proc,v 1.7 2007-11-21 12:37:47 brandenb Exp $
 #
 #  Purpose:
 #      copies directory trees to another machine
@@ -17,5 +17,6 @@
 set procdirs  =  `ls data | grep proc `
 foreach proc ($procdirs)
   echo "scp data/$proc/$1 $2/data/$proc"
-  scp $3/data/$proc/$1 $2/data/$proc
+  scp $3/data/$proc/$1 $2/data/$proc &
+  sleep 10
 end
