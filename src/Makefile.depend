@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.85 2007-11-21 11:41:20 wlyra Exp $
+### $Id: Makefile.depend,v 1.86 2007-11-21 13:58:54 wlyra Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -182,89 +182,157 @@ $(GENERAL_OBJ):   $(GENERAL_SRC) $(MESSAGES_OBJ) $(CPARAM_OBJ) $(CDATA_OBJ)
 #
 fft.o :      fft.f
 fftpack.o :  fftpack.f
+#
 nofourier.o:       nofourier.f90 fourier.h $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
+#
 fourier_fft.o:     fourier_fft.f90 fft.o fourier.h $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
+#
 fourier_fftpack.o: fourier_fftpack.f90 fftpack.o fourier.h $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
-
+#
 #
 # Explict dependencies for the Shock routines
 # different library routines
 #
-shock.o:       shock.h   shock.f90 shock_profile.inc $(CDATA_OBJ) $(CPARAM_OBJ) $(DENSITY_OBJ) $(SUB_OBJ) boundcond.o $(FARRAY_OBJ) $(INTERSTELLAR_OBJ)
+shock.o:       shock.h   shock.f90 shock_profile.inc $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) boundcond.o $(FARRAY_OBJ) $(INTERSTELLAR_OBJ)
+#
 shock_highorder.o:       shock.h   shock_highorder.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) boundcond.o $(FARRAY_OBJ)
-shock_perp.o:  shock.h   shock_perp.f90 shock_profile.inc $(CDATA_OBJ) $(CPARAM_OBJ) $(DENSITY_OBJ) $(SUB_OBJ) boundcond.o $(FARRAY_OBJ) $(INTERSTELLAR_OBJ)
+#
+shock_perp.o:  shock.h   shock_perp.f90 shock_profile.inc $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) boundcond.o $(FARRAY_OBJ) $(INTERSTELLAR_OBJ)
+#
 noshock.o:     shock.h   noshock.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(FARRAY_OBJ)
-
+#
+#
 deriv.o:     deriv.f90            $(CDATA_OBJ) $(MESSAGES_OBJ)
+#
 $(FARRAY_OBJ):              farray.f90           $(CDATA_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ)
+#
 $(SHARED_VARIABLES_OBJ):    shared_variables.f90 $(MESSAGES_OBJ) 
+#
 $(BORDER_PROFILES_OBJ):                              $(CDATA_OBJ) $(BORDER_PROFILES_SRC) $(SUB_OBJ) $(GRAVITY_OBJ)
+#
 slices.o:    slices.f90           $(CDATA_OBJ) $(SUB_OBJ) $(EOS_OBJ) $(PARTICLES_MAIN_OBJ) $(SHOCK_OBJ) $(INTERSTELLAR_OBJ) $(HYDRO_OBJ) $(RADIATION_OBJ) $(MAGNETIC_OBJ) $(SPECIAL_OBJ) $(CHIRAL_OBJ) $(TESTFIELD_OBJ)
+#
 $(SUB_OBJ):                 sub.f90              $(CDATA_OBJ) $(MPICOMM_OBJ) deriv.o $(MESSAGES_OBJ) $(GENERAL_OBJ) $(GRID_OBJ)
+#
 param_io.o:  param_io.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(TIMESTEP_OBJ) $(TIMEAVG_OBJ) $(physics) $(PARTICLES_MAIN_OBJ)  
+#
 register.o:  register.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(physics) $(TIMEAVG_OBJ) prints.o equ.o $(GRID_OBJ)
+#
 $(EQU_OBJ):                 $(EQU_SRC)           $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(physics) boundcond.o $(POISSON_OBJ) $(GLOBAL_OBJ) $(PARTICLES_MAIN_OBJ) $(INTERSTELLAR_OBJ) $(GRID_OBJ) snapshot.o
+#
 boundcond.o: boundcond.f90  cdata.o cparam.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) $(MAGNETIC_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(RADIATION_OBJ) $(SHEAR_OBJ) $(SPECIAL_OBJ)
+#
 $(INITCOND_OBJ): initcond.f90  cdata.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) general.o $(GRAVITY_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(PARTICLES_NBODY_OBJ) sub.o
+#
 $(TIMESTEP_OBJ):            $(TIMESTEP).f90      $(CDATA_OBJ) $(MPICOMM_OBJ) equ.o $(FORCING_OBJ) $(BORDER_PROFILES_OBJ)
+#
 snapshot.o:  snapshot.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(IO_OBJ) boundcond.o $(POWER_OBJ) $(STRUCT_FUNC_OBJ) $(RADIATION_OBJ) $(EOS_OBJ) $(MAGNETIC_OBJ) persist.o $(PARTICLES_MAIN_OBJ) $(SHOCK_OBJ)
+#
 $(MESSAGES_OBJ):            messages.f90         $(CDATA_OBJ) $(MPICOMM_OBJ)
+#
 $(GHOSTFOLD_OBJ):           $(GHOSTFOLD_SRC)     $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(FOURIER_OBJ)
+#
 persist.o:   persist.f90          $(CDATA_OBJ) $(GENERAL_OBJ) $(INTERSTELLAR_OBJ) $(FORCING_OBJ)
+#
 filter.o:    filter.f90           $(CDATA_OBJ) $(SUB_OBJ) boundcond.o
+#
 prints.o:    prints.f90           $(CDATA_OBJ) $(SUB_OBJ) param_io.o $(physics)
+#
 noinitcond_spec.o: noinitcond_spec.f90 $(CDATA_OBJ) $(GENERAL_OBJ)
-
+#
+#
 #
 # Shorthand for the most common dependencies
+#
+#
 #
 COMMON_DEPS=$(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(MESSAGES_OBJ)
 
 $(MPICOMM_OBJ):         mpicomm.h         $(MPICOMM_SRC)         $(CDATA_OBJ)
+#
 $(GLOBAL_OBJ):          global.h          $(GLOBAL_SRC)          $(COMMON_DEPS) $(IO_OBJ)
+#
 $(VISCOSITY_OBJ):       viscosity.h       $(VISCOSITY_SRC)       $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(INTERSTELLAR_OBJ) 
+#
 $(SHEAR_OBJ): shear.h $(SHEAR_SRC) cdata.o deriv.o messages.o $(FOURIER_OBJ) $(MPICOMM_FIX_OBJ) sub.o
+#
 #$(SHEAR_OBJ):           shear.h           $(SHEAR_SRC)           $(COMMON_DEPS) $(CPARAM_OBJ) $(HYDRO_OBJ)
+#
 $(GRAVITY_OBJ):         gravity.h         $(GRAVITY_SRC)         $(COMMON_DEPS) $(GLOBAL_OBJ) $(SHARED_VARIABLES_OBJ)
+#
 $(SELFGRAVITY_OBJ):     selfgravity.h     $(SELFGRAVITY_SRC)     $(CDATA_OBJ)   $(SUB_OBJ) $(POISSON_OBJ) $(PARTICLES_MAIN_OBJ) $(SHARED_VARIABLES_OBJ)
+#
 $(POISSON_OBJ):         poisson.h         $(POISSON_SRC)         $(CDATA_OBJ)   $(FOURIER_OBJ) $(SUB_OBJ)
+#
 $(FORCING_OBJ):         forcing.h         $(FORCING_SRC)         $(COMMON_DEPS) $(HYDRO_OBJ)
+#
 $(ENTROPY_OBJ):         entropy.h         $(ENTROPY_SRC)         $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(EOS_OBJ) $(GLOBAL_OBJ) $(VISCOSITY_OBJ) $(INTERSTELLAR_OBJ)
-$(MAGNETIC_OBJ):        magnetic.h        $(MAGNETIC_SRC)        $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(IO_OBJ) $(FOURIER_OBJ) $(DENSITY_OBJ)
-$(HYDRO_OBJ):           hydro.h           $(HYDRO_SRC)           $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(VISCOSITY_OBJ) $(DENSITY_OBJ) $(MAGNETIC_OBJ) $(COSMICRAY_OBJ)
+#
+$(MAGNETIC_OBJ):        magnetic.h        $(MAGNETIC_SRC)        $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(IO_OBJ) $(FOURIER_OBJ)
+#
+$(HYDRO_OBJ):           hydro.h           $(HYDRO_SRC)           $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(VISCOSITY_OBJ) $(MAGNETIC_OBJ) $(COSMICRAY_OBJ)
+#
 $(DENSITY_OBJ):         density.h         $(DENSITY_SRC)         $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(IO_OBJ) $(EOS_OBJ) $(SELFGRAVITY_OBJ) boundcond.o
-$(RADIATION_OBJ):       radiation.h       $(RADIATION_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(DENSITY_OBJ) $(EOS_OBJ)
-$(COSMICRAY_OBJ):       cosmicray.h       $(COSMICRAY_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(DENSITY_OBJ)
+#
+$(RADIATION_OBJ):       radiation.h       $(RADIATION_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(EOS_OBJ)
+#
+$(COSMICRAY_OBJ):       cosmicray.h       $(COSMICRAY_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ)
+#
 $(COSMICRAYFLUX_OBJ):   cosmicrayflux.h   $(COSMICRAYFLUX_SRC)   $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(COSMICRAY_OBJ) slices.o
-$(PSCALAR_OBJ):         pscalar.h         $(PSCALAR_SRC)         $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(DENSITY_OBJ)
-$(CHIRAL_OBJ):          chiral.h          $(CHIRAL_SRC)          $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(DENSITY_OBJ)
+#
+$(PSCALAR_OBJ):         pscalar.h         $(PSCALAR_SRC)         $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ)
+#
+$(CHIRAL_OBJ):          chiral.h          $(CHIRAL_SRC)          $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ)
+#
 $(DUSTVELOCITY_OBJ):    dustvelocity.h    $(DUSTVELOCITY_SRC)    $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(GENERAL_OBJ) $(EOS_OBJ) $(HYDRO_OBJ) $(PSCALAR_OBJ) $(GRAVITY_OBJ)
+#
 $(DUSTDENSITY_OBJ):     dustdensity.h     $(DUSTDENSITY_SRC)     $(COMMON_DEPS) $(INITCOND_OBJ) $(DUSTVELOCITY_OBJ) slices.o
+#
 $(NEUTRALDENSITY_OBJ):  neutraldensity.h  $(NEUTRALDENSITY_SRC)  $(COMMON_DEPS) $(INITCOND_OBJ) 
+#
 $(NEUTRALVELOCITY_OBJ): neutralvelocity.h $(NEUTRALVELOCITY_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(GENERAL_OBJ) $(HYDRO_OBJ) $(GRAVITY_OBJ) $(NEUTRALDENSITY_OBJ)
-$(TESTFIELD_OBJ):       testfield.h       $(TESTFIELD_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(IO_OBJ) $(HYDRO_OBJ) $(DENSITY_OBJ)
+#
+$(TESTFIELD_OBJ):       testfield.h       $(TESTFIELD_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(IO_OBJ) $(HYDRO_OBJ)
+#
 $(INTERSTELLAR_OBJ):    interstellar.h    $(INTERSTELLAR_SRC)    $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(EOS_OBJ)
+#
 $(HYPERVISC_STRICT_OBJ):       hypervisc_strict.h $(HYPERVISC_STRICT_SRC)       $(CDATA_OBJ)   $(CPARAM_OBJ) $(FOURIER_OBJ)
+#
 $(HYPERRESI_STRICT_OBJ):       hyperresi_strict.h $(HYPERRESI_STRICT_SRC)       $(CDATA_OBJ)   $(CPARAM_OBJ) $(FOURIER_OBJ)
+#
 $(EOS_OBJ):             eos.h             $(EOS_SRC)             $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(FARRAY_OBJ) $(GRAVITY_OBJ) $(FOURIER_OBJ)
+#
 $(IO_OBJ):              io.h              $(IO_SRC)              $(COMMON_DEPS) $(GENERAL_OBJ) $(SUB_OBJ)
+#
 $(TIMEAVG_OBJ):         timeavg.h         $(TIMEAVG_SRC)         $(COMMON_DEPS) $(IO_OBJ)
+#
 $(POWER_OBJ):           power_spectrum.h  $(POWER_SRC)           $(COMMON_DEPS) $(GENERAL_OBJ) $(FOURIER_OBJ)
+#
 $(STRUCT_FUNC_OBJ):     struct_func.h     $(STRUCT_FUNC_SRC)     $(COMMON_DEPS) $(GENERAL_OBJ)
+#
 $(SPECIAL_OBJ):         special.h         $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_SPEC_OBJ) $(GLOBAL_OBJ) $(INITCOND_OBJ)
-
+#
 #
 #  Particle modules
 #
+#
 $(PARTICLES_CDATA_OBJ):  particles_cdata.f90 $(CDATA_OBJ)
+#
 $(PARTICLES_MAIN_OBJ):   particles_main.h             $(PARTICLES_OBJ) $(PARTICLES_SUB_OBJ) $(PARTICLES_NUMBER_OBJ) $(PARTICLES_RADIUS_OBJ) $(PARTICLES_SELFGRAVITY_OBJ) $(PARTICLES_NBODY_OBJ) $(PARTICLES_STALKER_OBJ) $(CDATA_OBJ)
+#
 $(PARTICLES_SUB_OBJ):                                 $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_SRC) $(CDATA_OBJ) $(GHOSTFOLD_OBJ) $(GLOBAL_OBJ) $(MESSAGES_OBJ)
+#
 $(PARTICLES_OBJ):        particles.h                  $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ) $(PARTICLES_NUMBER_OBJ) $(COMMON_DEPS) $(GLOBAL_OBJ) $(EOS_OBJ) $(POWER_OBJ)
+#
 $(PARTICLES_NUMBER_OBJ): particles_number.h           $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
+#
 $(PARTICLES_SELFGRAVITY_OBJ): particles_selfgravity.h $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
+#
 $(PARTICLES_NBODY_OBJ): particles_nbody.h             $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
+#
 $(PARTICLES_RADIUS_OBJ): particles_radius.h           $(PARTICLES_CDATA_OBJ) $(PARTICLES_NUMBER_OBJ)
+#
 $(PARTICLES_STALKER_OBJ): particles_stalker.h $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ) $(MESSAGES_OBJ) $(FARRAY_OBJ)
-
+#
 
 # DO NOT DELETE
