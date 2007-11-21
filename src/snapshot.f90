@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.23 2007-09-03 12:43:14 ajohan Exp $
+! $Id: snapshot.f90,v 1.24 2007-11-21 12:32:36 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -207,12 +207,15 @@ contains
       if (lspec.or.llwrite_only) then
         if (ldo_all)  call update_ghosts(a)
         if (vel_spec) call power(a,'u')
+        if (r2u_spec) call power(a,'r2u')
+        if (r3u_spec) call power(a,'r3u')
         if (mag_spec) call power(a,'b')
         if (vec_spec) call power(a,'a')
         if (uxj_spec) call powerhel(a,'uxj')
         if (ab_spec)  call powerhel(a,'mag')
         if (ou_spec)  call powerhel(a,'kin')
         if (ro_spec)  call powerscl(a,'ro')
+        if (lr_spec)  call powerscl(a,'lr')
         if (TT_spec)  call powerscl(a,'TT')
         if (ss_spec)  call powerscl(a,'ss')
         if (cc_spec)  call powerscl(a,'cc')

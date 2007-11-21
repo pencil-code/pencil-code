@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.60 2006-11-30 09:03:36 dobler Exp $
+! $Id: power_spectrum.f90,v 1.61 2007-11-21 12:32:36 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -40,12 +40,12 @@ module  power_spectrum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
-  character (len=1) :: sp
+  character (len=*) :: sp
   !
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.60 2006-11-30 09:03:36 dobler Exp $")
+       "$Id: power_spectrum.f90,v 1.61 2007-11-21 12:32:36 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -59,12 +59,17 @@ module  power_spectrum
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
+  !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
   !
   do ivec=1,3
      !
-     if (sp=='u') then
+     if (trim(sp)=='u') then
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
-     elseif (sp=='b') then
+     elseif (trim(sp)=='r2u') then
+        a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/2.)
+     elseif (trim(sp)=='r3u') then
+        a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/3.)
+     elseif (trim(sp)=='b') then
         do n=n1,n2
            do m=m1,m2
               call curli(f,iaa,bb,ivec)
@@ -73,10 +78,10 @@ module  power_spectrum
               a1(:,im,in)=bb
            enddo
         enddo
-     elseif (sp=='a') then
+     elseif (trim(sp)=='a') then
         a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
      else
-        print*,'There are no such sp=',sp
+        print*,'There are no such sp=',trim(sp)
      endif
      b1=0
 !
@@ -111,7 +116,7 @@ module  power_spectrum
 !  append to diagnostics file
 !
   if (iproc==root) then
-     if (ip<10) print*,'Writing power spectra of variable',sp &
+     if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
           ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
      spectrum_sum=.5*spectrum_sum
      open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
@@ -143,7 +148,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.60 2006-11-30 09:03:36 dobler Exp $")
+       "$Id: power_spectrum.f90,v 1.61 2007-11-21 12:32:36 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -243,7 +248,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.60 2006-11-30 09:03:36 dobler Exp $")
+       "$Id: power_spectrum.f90,v 1.61 2007-11-21 12:32:36 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -384,7 +389,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.60 2006-11-30 09:03:36 dobler Exp $")
+       "$Id: power_spectrum.f90,v 1.61 2007-11-21 12:32:36 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -404,20 +409,18 @@ module  power_spectrum
   !
   if (sp=='ro') then
     a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-    a_im=0.
+  elseif (sp=='lr') then
+    a_re=f(l1:l2,m1:m2,n1:n2,ilnrho)
   elseif (sp=='TT') then
     a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
-    a_im=0.
   elseif (sp=='ss') then
     a_re=f(l1:l2,m1:m2,n1:n2,iss)
-    a_im=0.
   elseif (sp=='cc') then
     a_re=f(l1:l2,m1:m2,n1:n2,ilncc)
-    a_im=0.
   elseif (sp=='cr') then
     a_re=f(l1:l2,m1:m2,n1:n2,iecr)
-    a_im=0.
   endif
+  a_im=0.
 !
 !  Doing the Fourier transform
 !
@@ -485,7 +488,7 @@ module  power_spectrum
 !  identify version
 !
     if (lroot .AND. ip<10) call cvs_id( &
-        "$Id: power_spectrum.f90,v 1.60 2006-11-30 09:03:36 dobler Exp $")
+        "$Id: power_spectrum.f90,v 1.61 2007-11-21 12:32:36 brandenb Exp $")
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero

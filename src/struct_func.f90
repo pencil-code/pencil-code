@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.29 2007-04-08 10:13:34 ajohan Exp $
+! $Id: struct_func.f90,v 1.30 2007-11-21 12:32:36 brandenb Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -59,9 +59,9 @@ module struct_func
       character (len=20):: filetowrite
       logical :: llsf=.false., llpdf=.false.
       !
+      !  Do structure functions
       !
-      !
-      if (iproc==root) print*,'Doing structure functions'
+      if (iproc==root.and.ip<9) print*,'Doing structure functions'
       !
       if (variabl .eq. 'u') then
         vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)

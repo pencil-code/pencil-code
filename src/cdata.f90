@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.396 2007-11-05 19:45:12 bingert Exp $
+! $Id: cdata.f90,v 1.397 2007-11-21 12:32:35 brandenb Exp $
 
 module Cdata
 
@@ -313,6 +313,7 @@ module Cdata
   logical :: lfirstpoint=.false.,llastpoint=.false.
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.
   logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
+  logical :: lr_spec=.false.,r2u_spec=.false.,r3u_spec=.false.
   logical :: ab_spec=.false.,ou_spec=.false.,oned=.false.,twod=.false.
   logical :: rhocc_pdf=.false.,cc_pdf=.false.,lncc_pdf=.false.
   logical :: gcc_pdf=.false.,lngcc_pdf=.false.

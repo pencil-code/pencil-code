@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.291 2007-11-21 11:46:41 wlyra Exp $
+! $Id: param_io.f90,v 1.292 2007-11-21 12:32:36 brandenb Exp $
 
 module Param_IO
 
@@ -87,6 +87,7 @@ module Param_IO
        dtmax, &
        vel_spec,mag_spec,uxj_spec,vec_spec,ou_spec,ab_spec,fft_switch, &
        ro_spec,TT_spec,ss_spec,cc_spec,cr_spec,isaveglobal, &
+       lr_spec,r2u_spec,r3u_spec, &
        rhocc_pdf,cc_pdf,lncc_pdf,gcc_pdf,lngcc_pdf, &
        kinflow,eps_kinflow,omega_kinflow,ampl_kinflow,lkinflow_as_aux, &
        random_gen, &
