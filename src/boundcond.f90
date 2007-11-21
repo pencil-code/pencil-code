@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.191 2007-11-20 21:21:22 wlyra Exp $
+! $Id: boundcond.f90,v 1.192 2007-11-21 11:43:23 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -64,7 +64,7 @@ module Boundcond
 !  15-dec-06/wolf: Replaced "if (bcx1(1)=='she') then" by "any" command
 !
       use Cdata
-      use Entropy
+!!      use Entropy
       use EquationOfState
       use Magnetic
       use Radiation
@@ -148,8 +148,8 @@ module Boundcond
                 case ('c1')
                   ! BCX_DOC: constant temperature (or maybe rather constant
                   ! BCX_DOC: conductive flux??)
-                  if (j==iss)   call bc_ss_flux_x(f,topbot,FbotKbot)
-                  if (j==ilnTT) call bc_lnTT_flux_x(f,topbot,hcond0,hcond1,Fbot)
+                  if (j==iss)   call bc_ss_flux_x(f,topbot)
+                  if (j==ilnTT) call bc_lnTT_flux_x(f,topbot)
                 case ('sT')
                   ! BCX_DOC: symmetric temperature, $T_{N-i}=T_{N+i}$;
                   ! BCX_DOC: implies $T'(x_N)=T'''(x_0)=0$
@@ -276,7 +276,7 @@ module Boundcond
 !  11-nov-02/wolf: unified bot/top, now handled by loop
 !
       use Cdata
-      use Entropy
+!!      use Entropy
       use Magnetic
       use Special, only: special_boundconds
       use EquationOfState
@@ -418,19 +418,22 @@ module Boundcond
 !  11-nov-02/wolf: unified bot/top, now handled by loop
 !
       use Cdata
-      use Entropy, only: hcond0,hcond1,Fbot,FbotKbot,Ftop,FtopKtop,chi, &
-                         lmultilayer,lheatc_chiconst
+!!      use Entropy, only: hcond0,hcond1,Fbot,FbotKbot,Ftop,FtopKtop,chi, &
+!!                         lmultilayer,lheatc_chiconst
       use Magnetic
       use Special, only: special_boundconds
       !use Density
       use EquationOfState
+      !use SharedVariables, only : get_shared_variable
+      !use Mpicomm,         only : stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
+      !real, pointer :: Fbot, Ftop, FbotKbot, FtopKtop
 !
       real, dimension (mcom) :: fbcz12, fbcz12_1, fbcz12_2
-      real :: Ftopbot,FtopbotK
-      integer :: ivar1, ivar2, j, k, ip_ok
+      !real :: Ftopbot,FtopbotK
+      integer :: ivar1, ivar2, j, k, ip_ok, ierr
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
       type (boundary_condition) :: bc
@@ -449,6 +452,18 @@ module Boundcond
 !  Boundary conditions in z
 !
       case default
+        !call get_shared_variable('Fbot',Fbot,ierr)
+        !if (ierr/=0) call stop_it("boundcond_z: "//&
+        !     "there was a problem when getting Fbot")
+        !call get_shared_variable('Ftop',Ftop,ierr)
+        !if (ierr/=0) call stop_it("boundcond_z: "//&
+        !     "there was a problem when getting Fbot")
+        !call get_shared_variable('FbotKbot',FbotKbot,ierr)
+        !if (ierr/=0) call stop_it("boundcond_z: "//&
+        !     "there was a problem when getting FbotKbot")
+        !call get_shared_variable('FtopKtop',FtopKtop,ierr)
+        !if (ierr/=0) call stop_it("boundcond_z: "//&
+        !     "there was a problem when getting FtopKtop")
         do k=1,2                ! loop over 'bot','top'
           if (k==1) then
             topbot='bot'
@@ -457,8 +472,8 @@ module Boundcond
             fbcz12_1=fbcz1_1
             fbcz12_2=fbcz1_2
             ip_ok=0
-            Ftopbot=Fbot
-            FtopbotK=FbotKbot
+            !Ftopbot=Fbot
+            !FtopbotK=FbotKbot
           else
             topbot='top'
             bc12=bcz2
@@ -466,8 +481,8 @@ module Boundcond
             fbcz12_1=fbcz2_1
             fbcz12_2=fbcz2_2
             ip_ok=nprocz-1
-            Ftopbot=Ftop
-            FtopbotK=FtopKtop
+            !Ftopbot=Ftop
+            !FtopbotK=FtopKtop
           endif
 !
           do j=ivar1,ivar2
@@ -503,10 +518,9 @@ module Boundcond
                 call bc_onesided_z(f,topbot,j)
               case ('c1')
                 ! BCZ_DOC: complex
-                if (j==iss) call bc_ss_flux(f,topbot,hcond0,hcond1,Ftopbot,FtopbotK,chi, &
-                                  lmultilayer,lheatc_chiconst)
+                if (j==iss) call bc_ss_flux(f,topbot)
                 if (j==iaa) call bc_aa_pot(f,topbot)
-                if (j==ilnTT) call bc_lnTT_flux_z(f,topbot,hcond0,Fbot)
+                if (j==ilnTT) call bc_lnTT_flux_z(f,topbot)
               case ('pot')
                 ! BCZ_DOC: 
                 if (j==iaa) call bc_aa_pot2(f,topbot)
@@ -2790,21 +2804,32 @@ module Boundcond
 !
      endsubroutine uu_driver
 !***********************************************************************
-    subroutine bc_lnTT_flux_x(f,topbot,hcond0,hcond1,Fbot)
+    subroutine bc_lnTT_flux_x(f,topbot)
 !
 !  constant flux boundary condition for temperature (called when bcx='c1')
 !  12-Mar-2007/dintrans: coded
 !
       use Cdata
+      use SharedVariables, only: get_shared_variable
 !
-      real, intent(in) :: hcond0, hcond1, Fbot
+      real, pointer :: hcond0, hcond1, Fbot
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: tmp_yz
-      integer :: i
+      integer :: i,ierr
 !
 !  Do the `c1' boundary condition (constant heat flux) for lnTT.
 !  check whether we want to do top or bottom (this is precessor dependent)
+!
+      call get_shared_variable('hcond0',hcond0,ierr)
+      if (ierr/=0) call stop_it("bc_lnTT_flux_x: "//&
+           "there was a problem when getting hcond0")
+      call get_shared_variable('hcond1',hcond1,ierr)
+      if (ierr/=0) call stop_it("bc_lnTT_flux_x: "//&
+           "there was a problem when getting hcond1")
+      call get_shared_variable('Fbot',Fbot,ierr)
+      if (ierr/=0) call stop_it("bc_lnTT_flux_x: "//&
+           "there was a problem when getting Fbot")
 !
       if(headtt) print*,'bc_lnTT_flux_x: Fbot,hcond,dx=',Fbot,hcond0*hcond1,dx
 
@@ -2829,23 +2854,31 @@ module Boundcond
 !
     endsubroutine bc_lnTT_flux_x
 !***********************************************************************
-    subroutine bc_lnTT_flux_z(f,topbot,hcond0,Fbot)
+    subroutine bc_lnTT_flux_z(f,topbot)
 !
 !  constant flux boundary condition for temperature (called when bcz='c1')
 !  12-May-07/dintrans: coded
 !
       use Cdata
+      use SharedVariables, only: get_shared_variable
 !
-      real, intent(in) :: hcond0, Fbot
+      real, pointer :: hcond0, Fbot
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: tmp_xy
-      integer :: i
+      integer :: i,ierr
 !
 !  Do the `c1' boundary condition (constant heat flux) for lnTT or TT (if
 !  ltemperature_nolog=.true.) at the bottom _only_.
 !  lnTT version: enforce dlnT/dz = - Fbot/(K*T)
 !    TT version: enforce   dT/dz = - Fbot/K
+!      
+      call get_shared_variable('hcond0',hcond0,ierr)
+      if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
+           "there was a problem when getting hcond0")
+      call get_shared_variable('Fbot',Fbot,ierr)
+      if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
+           "there was a problem when getting Fbot")      
 !
       if(headtt) print*,'bc_lnTT_flux_z: Fbot,hcond,dz=',Fbot,hcond0,dz
 
@@ -2867,22 +2900,27 @@ module Boundcond
 !
     endsubroutine bc_lnTT_flux_z
 !***********************************************************************
-    subroutine bc_ss_flux_x(f,topbot,FbotKbot)
+    subroutine bc_ss_flux_x(f,topbot)
 !
 !  constant flux boundary condition for entropy (called when bcx='c1')
 !  17-mar-07/dintrans: coded
 !
       use Cdata
       use EquationOfState, only: gamma, gamma1, lnrho0, cs20
+      use SharedVariables, only: get_shared_variable
 !
-      real, intent(in) :: FbotKbot
+      real, pointer :: FbotKbot
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: tmp_yz,cs2_yz
-      integer :: i
+      integer :: i,ierr
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !  check whether we want to do top or bottom (this is precessor dependent)
+!
+      call get_shared_variable('FbotKbot',FbotKbot,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+           "there was a problem when getting FbotKbot")
 !
       select case(topbot)
 !
