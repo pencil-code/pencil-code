@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.192 2007-11-21 11:43:23 wlyra Exp $
+! $Id: boundcond.f90,v 1.193 2007-11-22 11:33:02 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -64,10 +64,8 @@ module Boundcond
 !  15-dec-06/wolf: Replaced "if (bcx1(1)=='she') then" by "any" command
 !
       use Cdata
-!!      use Entropy
       use EquationOfState
       use Magnetic
-      use Radiation
       use Shear
       use Special, only: special_boundconds
 !
@@ -154,12 +152,6 @@ module Boundcond
                   ! BCX_DOC: symmetric temperature, $T_{N-i}=T_{N+i}$;
                   ! BCX_DOC: implies $T'(x_N)=T'''(x_0)=0$
                   if (j==iss) call bc_ss_stemp_x(f,topbot)
-                case ('in')
-                  ! BCX_DOC: inflow [Need details!]
-                  if (j==ie) call bc_ee_inflow_x(f,topbot)
-                case ('out')
-                  ! BCX_DOC: outflow [Need details!]
-                  if (j==ie) call bc_ee_outflow_x(f,topbot)
                 case ('db')
                   ! BCX_DOC:
                   call bc_db_x(f,topbot,j)

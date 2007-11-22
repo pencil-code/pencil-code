@@ -1,6 +1,6 @@
 ### -*-Makefile-*- (for Emacs)
 ###
-### $Id: Makefile.depend,v 1.89 2007-11-22 11:11:38 ajohan Exp $
+### $Id: Makefile.depend,v 1.90 2007-11-22 11:33:02 ajohan Exp $
 ### Makefile dependencies for modular Pencil Code.
 ###
 ##
@@ -267,7 +267,7 @@ register.o: register.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(phys
 #
 $(EQU_OBJ): $(EQU_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(physics) boundcond.o $(POISSON_OBJ) $(GLOBAL_OBJ) $(PARTICLES_MAIN_OBJ) $(INTERSTELLAR_OBJ) $(GRID_OBJ) snapshot.o
 #
-boundcond.o: boundcond.f90 cdata.o cparam.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) $(MAGNETIC_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(RADIATION_OBJ) $(SHEAR_OBJ) $(SPECIAL_OBJ)
+boundcond.o: boundcond.f90 cdata.o cparam.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) $(MAGNETIC_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(SHEAR_OBJ) $(SPECIAL_OBJ)
 #
 $(INITCOND_OBJ): initcond.f90 cdata.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) general.o $(GRAVITY_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(PARTICLES_NBODY_OBJ) sub.o
 #

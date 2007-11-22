@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.35 2006-11-30 09:03:36 dobler Exp $
+! $Id: noradiation.f90,v 1.36 2007-11-22 11:33:02 ajohan Exp $
 
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -49,7 +49,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.35 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: noradiation.f90,v 1.36 2007-11-22 11:33:02 ajohan Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -279,31 +279,5 @@ module Radiation
       call keep_compiler_quiet(slices)
 !
     endsubroutine get_slices_radiation
-!***********************************************************************
-    subroutine  bc_ee_inflow_x(f,topbot)
-!
-!  Dummy routine
-!
-!  8-aug-02/nils: coded
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      if (ip==1) print*,topbot,f  !(to keep compiler quiet)
-!
-    end subroutine bc_ee_inflow_x
-!***********************************************************************
-    subroutine  bc_ee_outflow_x(f,topbot)
-!
-!  Dummy routine
-!
-!  8-aug-02/nils: coded
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      if (ip==1) print*,topbot,f  !(to keep compiler quiet)
-!
-    end subroutine bc_ee_outflow_x
 !***********************************************************************
   endmodule Radiation

@@ -1,4 +1,4 @@
-! $Id: radiation_nongrey.f90,v 1.7 2007-11-21 14:34:22 wlyra Exp $
+! $Id: radiation_nongrey.f90,v 1.8 2007-11-22 11:33:02 ajohan Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -218,7 +218,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_nongrey.f90,v 1.7 2007-11-21 14:34:22 wlyra Exp $")
+           "$Id: radiation_nongrey.f90,v 1.8 2007-11-22 11:33:02 ajohan Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -2132,32 +2132,6 @@ module Radiation
       endselect
 !
     endsubroutine get_slices_radiation
-!***********************************************************************
-    subroutine  bc_ee_inflow_x(f,topbot)
-!
-!  Dummy routine for Flux Limited Diffusion routine
-!
-!  8-aug-02/nils: coded
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      if (ip==1) print*,topbot,f  !(to keep compiler quiet)
-!
-    end subroutine bc_ee_inflow_x
-!***********************************************************************
-    subroutine  bc_ee_outflow_x(f,topbot)
-!
-!  Dummy routine for Flux Limited Diffusion routine
-!
-!  8-aug-02/nils: coded
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      if (ip==1) print*,topbot,f  !(to keep compiler quiet)
-!
-    end subroutine bc_ee_outflow_x
 !***********************************************************************
     subroutine calc_rad_diffusion(f,df,p)
 !
