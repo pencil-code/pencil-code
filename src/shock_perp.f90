@@ -1,4 +1,4 @@
-! $Id: shock_perp.f90,v 1.12 2007-11-21 13:56:36 wlyra Exp $
+! $Id: shock_perp.f90,v 1.13 2007-11-22 10:56:12 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -41,6 +41,7 @@ module Shock
   logical :: lgauss_integral=.false.
   logical :: lgauss_integral_comm_uu=.false.
   logical :: lcommunicate_uu=.true.
+  logical :: lforce_periodic_shockviscosity=.false.
   real :: div_threshold=0., div_scaling=1.
   real, dimension (3,3,3) :: smooth_factor
 
@@ -48,9 +49,10 @@ module Shock
   !namelist /viscosity_init_pars/ dummy
 
   ! run parameters
-  namelist /shock_run_pars/ lshock_first, lshock_max5, div_threshold, div_scaling, &
-                            lmax_smooth, lgauss_integral, lcommunicate_uu, lgauss_integral_comm_uu, &
-                            lshock_max3_interp, ldivu_perp
+  namelist /shock_run_pars/ &
+      lshock_first, lshock_max5, div_threshold, div_scaling, &
+      lmax_smooth, lgauss_integral, lcommunicate_uu, lgauss_integral_comm_uu, &
+      lshock_max3_interp, ldivu_perp, lforce_periodic_shockviscosity
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_shockmax=0
@@ -104,7 +106,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_perp.f90,v 1.12 2007-11-21 13:56:36 wlyra Exp $")
+           "$Id: shock_perp.f90,v 1.13 2007-11-22 10:56:12 ajohan Exp $")
 !
     endsubroutine register_shock
 !***********************************************************************
@@ -157,9 +159,47 @@ module Shock
       if (div_threshold/=0.) lwith_extreme_div=.true.
 
       if (.not.lgauss_integral) lmax_smooth=.true.
-!        if (headtt.and.lroot.and.(.not.lstarting)) &
-!                  print*,'viscosity: nu=',nu,', nu_shock=',nu_shock
-      if (NO_WARN) print*,lstarting
+!
+!
+!  Die if periodic boundary condition for shock viscosity, but not for
+!  velocity field. It can lead to subtle numerical errors near non-
+!  periodic boundaries if the shock viscosity is assumed periodic.
+!
+      if (.not. lstarting .and. .not. lforce_periodic_shockviscosity) then
+        if (bcx(ishock)=='p' .and. .not. all((/bcx(iux:iuz)/)=='p')) then
+          if (lroot) then
+            print*, 'initialize_shock: shock viscosity has bcx=''p'', but the velocity field is not'
+            print*, '                  periodic! (you must set a proper boundary condition for the'
+            print*, '                  shock viscosity)'
+            print*, 'initialize_shock: bcz=', bcz
+            print*, 'initialize_shock: to suppress this error,'
+            print*, '                  set lforce_periodic_shockviscosity=T in  &shock_run_pars' 
+          endif
+          call fatal_error('initialize_shock','')
+        endif
+        if (bcy(ishock)=='p' .and. .not. all((/bcy(iux:iuz)/)=='p')) then
+          if (lroot) then
+            print*, 'initialize_shock: shock viscosity has bcy=''p'', but the velocity field is not'
+            print*, '                  periodic! (you must set a proper boundary condition for the'
+            print*, '                  shock viscosity)'
+            print*, 'initialize_shock: bcz=', bcz
+            print*, 'initialize_shock: to suppress this error,'
+            print*, '                  set lforce_periodic_shockviscosity=T in  &shock_run_pars'
+          endif
+          call fatal_error('initialize_shock','')
+        endif
+        if (bcz(ishock)=='p' .and. .not. all((/bcz(iux:iuz)/)=='p')) then
+          if (lroot) then
+            print*, 'initialize_shock: shock viscosity has bcz=''p'', but the velocity field is not'
+            print*, '                  periodic! (you must set a proper boundary condition for the'
+            print*, '                  shock viscosity)'
+            print*, 'initialize_shock: bcz=', bcz
+            print*, 'initialize_shock: to suppress this error,'
+            print*, '                  set lforce_periodic_shockviscosity=T in  &shock_run_pars'
+          endif
+          call fatal_error('initialize_shock','')
+        endif
+      endif
 !
     endsubroutine initialize_shock
 !***********************************************************************

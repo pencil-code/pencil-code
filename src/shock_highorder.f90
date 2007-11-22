@@ -1,4 +1,4 @@
-! $Id: shock_highorder.f90,v 1.15 2007-11-21 20:56:02 wlyra Exp $
+! $Id: shock_highorder.f90,v 1.16 2007-11-22 10:56:12 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -32,11 +32,13 @@ module Shock
 
   include 'shock.h'
 
-  integer :: ishock_max = 1
-  logical :: lgaussian_smooth = .false.
+  integer :: ishock_max=1
+  logical :: lgaussian_smooth=.false.
+  logical :: lforce_periodic_shockviscosity=.false.
 
   ! run parameters
-  namelist /shock_run_pars/ ishock_max,lgaussian_smooth
+  namelist /shock_run_pars/ &
+      ishock_max,lgaussian_smooth,lforce_periodic_shockviscosity
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_shockmax=0
@@ -76,7 +78,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_highorder.f90,v 1.15 2007-11-21 20:56:02 wlyra Exp $")
+           "$Id: shock_highorder.f90,v 1.16 2007-11-22 10:56:12 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -102,7 +104,7 @@ module Shock
 !
 !  20-nov-02/tony: coded
 !
-       use Cdata, only: ishock,lroot
+       use Cdata, only: ishock,iux,iuy,iuz,lroot,bcx,bcy,bcz
        use Messages, only: fatal_error
 !
        real, dimension (mx,my,mz,mfarray) :: f
@@ -160,6 +162,46 @@ module Shock
         if (ishock_max < 1.or.ishock_max > 3) then
           call fatal_error('initialize_shock', &
                            'ishock_max needs to be between 1 and 3.')
+        endif
+      endif
+!
+!  Die if periodic boundary condition for shock viscosity, but not for
+!  velocity field. It can lead to subtle numerical errors near non-
+!  periodic boundaries if the shock viscosity is assumed periodic.
+!
+      if (.not. lstarting .and. .not. lforce_periodic_shockviscosity) then
+        if (bcx(ishock)=='p' .and. .not. all((/bcx(iux:iuz)/)=='p')) then
+          if (lroot) then
+            print*, 'initialize_shock: shock viscosity has bcx=''p'', but the velocity field is not'
+            print*, '                  periodic! (you must set a proper boundary condition for the'
+            print*, '                  shock viscosity)'
+            print*, 'initialize_shock: bcz=', bcz
+            print*, 'initialize_shock: to suppress this error,'
+            print*, '                  set lforce_periodic_shockviscosity=T in &shock_run_pars'
+          endif
+          call fatal_error('initialize_shock','')
+        endif
+        if (bcy(ishock)=='p' .and. .not. all((/bcy(iux:iuz)/)=='p')) then
+          if (lroot) then
+            print*, 'initialize_shock: shock viscosity has bcy=''p'', but the velocity field is not'
+            print*, '                  periodic! (you must set a proper boundary condition for the'
+            print*, '                  shock viscosity)'
+            print*, 'initialize_shock: bcz=', bcz
+            print*, 'initialize_shock: to suppress this error,'
+            print*, '                  set lforce_periodic_shockviscosity=T in &shock_run_pars'
+          endif
+          call fatal_error('initialize_shock','')
+        endif
+        if (bcz(ishock)=='p' .and. .not. all((/bcz(iux:iuz)/)=='p')) then
+          if (lroot) then
+            print*, 'initialize_shock: shock viscosity has bcz=''p'', but the velocity field is not'
+            print*, '                  periodic! (you must set a proper boundary condition for the'
+            print*, '                  shock viscosity)'
+            print*, 'initialize_shock: bcz=', bcz
+            print*, 'initialize_shock: to suppress this error,'
+            print*, '                  set lforce_periodic_shockviscosity=T in &shock_run_pars'
+          endif
+          call fatal_error('initialize_shock','')
         endif
       endif
 !
