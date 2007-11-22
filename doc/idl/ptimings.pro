@@ -1,4 +1,4 @@
-; $Id: ptimings.pro,v 1.9 2007-08-16 18:26:50 brandenb Exp $
+; $Id: ptimings.pro,v 1.10 2007-11-22 22:31:32 brandenb Exp $
 ;
 red = 122
 blue = 55
@@ -24,6 +24,7 @@ e=rtable('pdc_06.dat',2,head=1)
 e2=rtable('lenngren_06.dat',2,head=1)
 f=rtable('steno_06.dat',2,head=1)
 f=rtable('louhi07.dat',2,head=1)
+f2=rtable('neolith07.dat',2,head=1)
 g=rtable('spherical.dat',2,head=1)
 g=rtable('pittsburg07.dat',2,head=1)
 n1=reform(a(0,*)) & t1=reform(a(1,*))
@@ -33,6 +34,7 @@ n4=reform(d(0,*)) & t4=reform(d(1,*))
 n5=reform(e(0,*)) & t5=reform(e(1,*))
 n5b=reform(e2(0,*)) & t5b=reform(e2(1,*))
 n6=reform(f(0,*)) & t6=reform(f(1,*))
+n6b=reform(f2(0,*)) & t6b=reform(f2(1,*))
 n7=reform(g(0,*)) & t7=reform(g(1,*))
 ;
 save_state
@@ -53,6 +55,7 @@ oplot,   n4, fact*t4, PSYM=-7,li=3, COLOR=blue
 oplot,   n5, fact*t5, PSYM=-4,li=0, COLOR=fg
 oplot,   n5b, fact*t5b, PSYM=-4,li=0, COLOR=fg
 oplot,   n6, fact*t6, PSYM=-5,li=2, COLOR=red
+oplot,   n6b,fact*t6b, PSYM=-5,li=2, COLOR=blue, symsize=4
 oplot,   n7, fact*t7, PSYM=-5,li=2, COLOR=blue
 ;
 !p.charsize=.9
