@@ -1,4 +1,4 @@
-;$Id: pc_alpha_flucts.pro,v 1.2 2007-10-20 17:57:01 brandenb Exp $
+;$Id: pc_alpha_flucts.pro,v 1.3 2007-11-26 12:25:42 brandenb Exp $
 ;
 ;  This routine plots alpha and eta results from time series.
 ;  The rms value of the fluctuations (departure from mean)
@@ -51,7 +51,6 @@ tmin=min(tt)
 tmax=max(tt)
 default,t1,(tmin+tmax)/2.
 good=where(tt gt t1 and tt lt t2)
-kf=5.
 ;
 ;  if itestfield eq 'B11-B21' then use special index limits
 ;
