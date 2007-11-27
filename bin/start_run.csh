@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start_run.csh,v 1.44 2007-08-23 22:31:04 dobler Exp $
+# CVS: $Id: start_run.csh,v 1.45 2007-11-27 10:48:57 brandenb Exp $
 
 #                       start_run.csh
 #                      ---------------
@@ -207,6 +207,16 @@ if ($start_status2) exit $start_status2 # propagate error status
 
 # ---------------------------------------------------------------------- #
 rerun:
+
+# if the file ADDITIONAL_RUN_COMMAND.csh exist, execute it.
+# common file content could be:
+# copy-proc-to-proc var.dat . ../another_run_directory
+# if one wants to use the var.dat files from another_run_directory
+# after having said start.x
+if (-e ADDITIONAL_RUN_COMMAND.csh) then
+  source ADDITIONAL_RUN_COMMAND.csh
+endif
+
 
 # Clean up control and data files
 # NB. Don't remove NEWDIR it may have been put there on purpose so as

@@ -1,5 +1,5 @@
 #!/bin/sh
-#$Id: copy-proc-to-proc,v 1.6 2006-08-26 16:39:10 mee Exp $
+#$Id: copy-proc-to-proc,v 1.7 2007-11-27 10:48:57 brandenb Exp $
 #
 #  Example:
 #     copy-proc-to-proc grid.dat ../hydro256e
@@ -8,12 +8,19 @@
 
 #  will copy all var.dat files fron current directory to var.dat in
 #  another run directory.
+#  An optional 3rd argument ($fromdir) can be give as soure directory
 #  Used for restarting in a different directory.
 #  Target dir tree needs to exist already.
+
+if [ $# -eq 3 ]; then
+  fromdir=$3
+else
+  fromdir='.'
+fi
 
 procdirs=`\ls data | grep proc `
 for proc in $procdirs
 do
   echo "cp data/$proc/$1 $2/data/$proc/"
-  cp data/$proc/$1 $2/data/$proc/
+  cp $fromdir/data/$proc/$1 $2/data/$proc/
 done
