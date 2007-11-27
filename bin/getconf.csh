@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.217 2007-11-21 12:40:41 brandenb Exp $
+# $Id: getconf.csh,v 1.218 2007-11-27 11:25:59 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -520,14 +520,14 @@ else if ($hn =~ c[0-9][0-9][0-9]) then
   set one_local_disc = 0
   set local_binary = 0
 
-#else if ($hn =~ n[0-8]*) then
-#  echo "Cetus, Iucaa, India"
-#  set mpirunops = '-srun'
-#  set mpirun = 'nuripm'
-#  set npops = ''
-#  set local_disc = 0
-#  set one_local_disc = 0
-#  set local_binary = 0
+else if (($hn =~ n[0-9]*) && ($USER =~ sur || $USER =~ kandu)) then
+  echo "Cetus, Iucaa, India"
+  set mpirunops = '-srun'
+  set mpirun = 'nuripm'
+  set npops = ''
+  set local_disc = 0
+  set one_local_disc = 0
+  set local_binary = 0
 
 else if ($hn =~ corona*) then
   echo "Corona SunFire - CSC, Espoo, Finland"
@@ -1056,10 +1056,13 @@ else if ($hn =~ *.pdc.kth.se) then
 # setenv SSH rsh 
 # setenv SCP rcp
 
-else if ($hn =~ n[0-9]*) then
+else if (($hn =~ n[0-9]*) && ($USER =~ x_axebr)) then
   echo "Neolith cluster in Linkoping"
+  echo "special settings for USER=$USER"
   if ($mpi) echo "Use mpprun"
   set mpirun = mpprun
+  echo "uname -n"
+  uname -n
   #
   echo "nprocpernode = $nprocpernode"
   set mpirunops = ""
