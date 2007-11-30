@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.537 2007-11-21 11:42:30 wlyra Exp $
+! $Id: entropy.f90,v 1.538 2007-11-30 08:45:26 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -139,7 +139,7 @@ module Entropy
       lturbulent_heat,deltaT_poleq, &
       tdown, allp,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global, &
-      tau_cool,TTref_cool
+      tau_cool,TTref_cool,mixinglength_flux
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -216,7 +216,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.537 2007-11-21 11:42:30 wlyra Exp $")
+           "$Id: entropy.f90,v 1.538 2007-11-30 08:45:26 dintrans Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -252,7 +252,7 @@ module Entropy
       real :: r_mn, flumi, g_r, u
       integer :: i, ierr
       integer, pointer :: iglobal_gg
-      logical :: lnothing
+      logical :: lnothing,lcompute_grav
       type (pencil_case) :: p
 !
 ! Check any module dependencies
@@ -284,20 +284,22 @@ module Entropy
         else                    ! Kbot = possible
           hcond0 = Kbot
         endif
-!
-!  hcond0 is given by mixinglength_flux in the MLT case
-!
-        if (mixinglength_flux /= 0.) then
-          hcond0=-mixinglength_flux/(gamma/(gamma-1.)*gravz/(mpoly0+1.))
-          Kbot=hcond0
-          lmultilayer=.true.
-        endif
       else                      ! hcond0 = possible
         if (Kbot == impossible) then
           Kbot = hcond0
         else
           call warning('initialize_entropy','You should not set Kbot and hcond0 at the same time')
         endif
+      endif
+!
+!  hcond0 is given by mixinglength_flux in the MLT case
+!  hcond1 and hcond2 follow below in the block 'if (lmultilayer) etc...'
+!
+      if (mixinglength_flux /= 0.) then
+        hcond0=-mixinglength_flux/(gamma/(gamma-1.)*gravz/(mpoly0+1.))
+        Kbot=hcond0
+        lmultilayer=.true.  ! just to be sure...
+        if (lroot) print*,'initialize_entropy: hcond0 given by mixinglength_flux=',hcond0
       endif
 !
 !  freeze entroopy
@@ -455,7 +457,9 @@ module Entropy
           if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
           if (lroot) print*,'initialize_entropy: set cs2cool=cs20'
           cs2cool=cs20
-          call star_heat_grav(f)   ! crush the profile done by gravity_r
+          cs2_ext=cs20
+          ! only compute the gravity profile
+          call star_heat(f,lcompute_grav)
 
         case('cylind_layers')
           if (bcx1(iss)=='c1') then
@@ -3479,24 +3483,50 @@ module Entropy
 !
     endsubroutine shell_ss_layers
 !***********************************************************************
-    subroutine star_heat(f)
+    subroutine star_heat(f,lcompute_grav)
 !
 !  Initialize entropy for two superposed polytropes with a central heating
 !
 !  20-dec-06/dintrans: coded
+!  28-nov-07/dintrans: merged with strat_heat_grav
 !
-    use EquationOfState, only: gamma, gamma1, rho0, lnrho0, cs20, get_soundspeed,eoscalc, ilnrho_lnTT
-    use Sub, only: step, erfunc
+    use Cdata
+    use EquationOfState, only: gamma, gamma1, rho0, lnrho0, cs20, get_soundspeed,eoscalc, ilnrho_TT
+    use FArrayManager
 
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-    real, dimension(nx) :: aa
-!
     integer, parameter   :: nr=100
-    real, dimension (nr) :: r,lnrhom,tempm
-    real                 :: u,r_mn,lnrho_r,temp_r,cs2,lnTT,ss
-    integer              :: i,imn,istop,l,i1,i2,iter
-    real :: rhotop,cs2top,rbot,rt_old,rt_new,rhobot,rb_old,rb_new,crit
-   
+    integer              :: i,istop,l,i1,i2,iter
+    real, dimension (nr) :: r,lnrho,temp
+    real                 :: u,r_mn,lnrho_r,temp_r,cs2,lnTT,ss,lumi,g, &
+        rhotop,cs2top,rbot,rt_old,rt_new,rhobot,rb_old,rb_new,crit,r_max
+! variables for the gravity profile
+    logical, optional    :: lcompute_grav
+    integer, pointer     :: iglobal_gg
+    real, allocatable, dimension (:)   :: rr_mn,u_mn,lumi_mn,g_r
+!
+    if (present(lcompute_grav)) then
+      print*,'only compute the gravity profile',lcompute_grav
+      call farray_use_global('gg',iglobal_gg)
+      allocate (rr_mn(nx),u_mn(nx),lumi_mn(nx),g_r(nx))
+      do imn=1,ny*nz
+        m=mm(imn)
+        n=nn(imn)
+!       rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+        rr_mn=sqrt(x(l1:l2)**2+y(m)**2)
+        u_mn=rr_mn/sqrt(2.)/wheat
+!       lumi_mn=luminosity*(erfunc(u_mn)-2.*u_mn/sqrt(pi)*exp(-u_mn**2))
+        lumi_mn=luminosity*(1.-exp(-u_mn**2))
+        g_r=-lumi_mn/(2.*pi*rr_mn)*(mpoly0+1.)/hcond0*gamma1/gamma
+        f(l1:l2,m,n,iglobal_gg)   = x(l1:l2)/rr_mn*g_r   ! g_x
+        f(l1:l2,m,n,iglobal_gg+1) = y(m)/rr_mn*g_r       ! g_y
+!       f(l1:l2,m,n,iglobal_gg+2) = z(n)/rr_mn*g_r       ! g_z
+        f(l1:l2,m,n,iglobal_gg+2) = 0.
+     enddo
+     deallocate(rr_mn,u_mn,lumi_mn,g_r)
+     return
+    endif
+
 !  the bottom value that we want for density at r=r_bcz
     rbot=1.
     rt_old=0.1*rbot
@@ -3505,28 +3535,23 @@ module Entropy
 !  need to iterate for rhobot=1
 !  produce first estimate
     rhotop=rt_old
-    cs2top=cs20    ! just to be sure...
-    call strat_heat(rhotop,cs2top,lnrhom,tempm,rhobot)
+    call strat_heat(lnrho,temp,rhotop,rhobot)
     rb_old=rhobot
 
 !  next estimate
     rhotop=rt_new
-    call strat_heat(rhotop,cs2top,lnrhom,tempm,rhobot)
+    call strat_heat(lnrho,temp,rhotop,rhobot)
     rb_new=rhobot
 
     do 10 iter=1,10
 !  new estimate
       rhotop=rt_old+(rt_new-rt_old)/(rb_new-rb_old)*(rbot-rb_old)
 !
-!  check convergence
-!
       crit=abs(rhotop/rt_new-1.)
       if (crit.le.1e-4) goto 20
-      call strat_heat(rhotop,cs2top,lnrhom,tempm,rhobot)
-!
-!
+      call strat_heat(lnrho,temp,rhotop,rhobot)
+
 !  update new estimates
-!
       rt_old=rt_new
       rb_old=rb_new
       rt_new=rhotop
@@ -3540,9 +3565,10 @@ module Entropy
     T0=cs20/gamma1
     print*,'final rho0, lnrho0, T0=',rho0, lnrho0, T0
     
-!  the radial grid on which we know rho and temp
+! define the radial grid r=[0,r_max]
+    r_max=sqrt(xyz1(1)**2+xyz1(2)**2)
     do i=1,nr
-      r(i)=r_ext*float(i-1)/(nr-1)
+      r(i)=r_max*float(i-1)/(nr-1)
     enddo
 
     do imn=1,ny*nz
@@ -3551,26 +3577,16 @@ module Entropy
 !
       do l=l1,l2
         r_mn=sqrt(x(l)**2+y(m)**2+z(n)**2)
-        if (r_mn > r_ext) then
-! 08-May-2007/dintrans: TODO
-! should be an isothermal density profile instead of waiting the hydrostatic 
-! adjustment when running?
-! --> better for convergence and mean density evolution in the box
-          lnrho_r=lnrhom(nr)
-          temp_r=T0
-        else
-          istop=0 ; i=1
-          do while (istop /= 1)
-            if (r(i) >= r_mn) istop=1
-            i=i+1
-          enddo
-          i1=i-2 ; i2=i-1
-          lnrho_r=(lnrhom(i1)*(r(i2)-r_mn)+lnrhom(i2)*(r_mn-r(i1)))/(r(i2)-r(i1))
-          temp_r=(tempm(i1)*(r(i2)-r_mn)+tempm(i2)*(r_mn-r(i1)))/(r(i2)-r(i1))
-        endif
+        istop=0 ; i=1
+        do while (istop /= 1)
+          if (r(i) >= r_mn) istop=1
+          i=i+1
+        enddo
+        i1=i-2 ; i2=i-1
+        lnrho_r=(lnrho(i1)*(r(i2)-r_mn)+lnrho(i2)*(r_mn-r(i1)))/(r(i2)-r(i1))
+        temp_r=(temp(i1)*(r(i2)-r_mn)+temp(i2)*(r_mn-r(i1)))/(r(i2)-r(i1))
         f(l,m,n,ilnrho)=lnrho_r
-        lnTT=log(temp_r)
-        call eoscalc(ilnrho_lnTT,lnrho_r,lnTT,ss=ss)
+        call eoscalc(ilnrho_TT,lnrho_r,temp_r,ss=ss)
         f(l,m,n,iss)=ss
       enddo
     enddo
@@ -3579,19 +3595,25 @@ module Entropy
       open(unit=11,file=trim(directory)//'/setup.dat')
       print*,'--> write initial setup in data/proc0/setup.dat'
       open(unit=11,file=trim(directory)//'/setup.dat')
-      write(11,'(a6,3a14)') 'r','rho','ss','cs2'
+      write(11,'(a6,4a14)') 'r','rho','ss','cs2','grav'
       do i=nr,1,-1
-        lnTT=log(tempm(i))
-        call get_soundspeed(lnTT,cs2)
-        call eoscalc(ilnrho_lnTT,lnrhom(i),lnTT,ss=ss)
-        write(11,'(f6.3,3e14.5)') r(i),exp(lnrhom(i)),ss,cs2
+        u=r(i)/sqrt(2.)/wheat
+        lumi=luminosity*(1.-exp(-u**2))
+        if (r(i) .ne. 0.) then 
+          g=-lumi/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma1/gamma
+        else
+          g=0.
+        endif
+        call get_soundspeed(log(temp(i)),cs2)
+        call eoscalc(ilnrho_TT,lnrho(i),temp(i),ss=ss)
+        write(11,'(f6.3,4e14.5)') r(i),exp(lnrho(i)),ss,cs2,g
       enddo
       close(11)
     endif
 
     endsubroutine star_heat
 !***********************************************************************
-    subroutine strat_heat(rhotop,cs2top,lnrhom,tempm,rhobot)
+    subroutine strat_heat(lnrho,temp,rhotop,rhobot)
 !
 !  compute the radial stratification for two superposed polytropic
 !  layers and a central heating
@@ -3603,49 +3625,55 @@ module Entropy
 
     integer, parameter   :: nr=100
     integer              :: i,nbot1,nbot2
-    real, dimension (nr) :: r,flumim,hcondm,tempm,lnrhom
-    real                 :: dtemp,dlnrho,dr,u,rhotop,cs2top,  &
-                            rhobot,lnrhobot
+    real, dimension (nr) :: r,lumi,hcond,g,lnrho,temp
+    real                 :: dtemp,dlnrho,dr,u,rhotop,rhobot,lnrhobot,r_max
 
+! define the radial grid r=[0,r_max]
+    r_max=sqrt(xyz1(1)**2+xyz1(2)**2)
     do i=1,nr
-      r(i)=r_ext*float(i-1)/(nr-1)
+      r(i)=r_max*float(i-1)/(nr-1)
     enddo
 
-    flumim(1)=0. 
+! luminosity and gravity radial profiles
+    lumi(1)=0. ; g(i)=0.
     do i=2,nr
       u=r(i)/sqrt(2.)/wheat
-! 3-D case
-!     flumim(i)=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
-! 2-D case
-      flumim(i)=luminosity*(1.-exp(-u**2))
+!     lumi(i)=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
+      lumi(i)=luminosity*(1.-exp(-u**2))
+      g(i)=-lumi(i)/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma1/gamma
     enddo
 
-!  radiative conductivity profile
+! radiative conductivity profile
     hcond1=(mpoly1+1.)/(mpoly0+1.)
-    hcondm=1.+(hcond1-1.)*step(r,r_bcz,-widthss)
-    hcondm=hcond0*hcondm
+    hcond=1.+(hcond1-1.)*step(r,r_bcz,-widthss)
+    hcond=hcond0*hcond
 
-!  start from surface values for rho and temp
-    tempm(nr)=cs2top/gamma1 ; lnrhom(nr)=log(rhotop)
+! start from surface values for rho and temp
+    temp(nr)=cs20/gamma1 ; lnrho(nr)=alog(rhotop)
     dr=r(2)
     do i=nr-1,1,-1
-! 3-D case
-!     dtemp=flumim(i+1)/(4.*pi*r(i+1)**2)/hcondm(i+1)
-! 2-D case
-      dtemp=flumim(i+1)/(2.*pi*r(i+1))/hcondm(i+1)
-      if (r(i+1) > r_bcz) then
-        dlnrho=mpoly0*dtemp/tempm(i+1)
+      if (r(i+1) > r_ext) then
+! isothermal exterior
+        dtemp=0.
+        dlnrho=-gamma*g(i+1)/cs20
+      elseif (r(i+1) > r_bcz) then
+! convective zone
+        dtemp=lumi(i+1)/(2.*pi*r(i+1))/hcond(i+1)
+        dlnrho=mpoly0*dtemp/temp(i+1)
       else
-        dlnrho=mpoly1*dtemp/tempm(i+1)
+! radiative zone
+        dtemp=lumi(i+1)/(2.*pi*r(i+1))/hcond(i+1)
+        dlnrho=mpoly1*dtemp/temp(i+1)
       endif
-      tempm(i)=tempm(i+1)+dtemp*dr
-      lnrhom(i)=lnrhom(i+1)+dlnrho*dr
-    enddo 
+      temp(i)=temp(i+1)+dtemp*dr
+      lnrho(i)=lnrho(i+1)+dlnrho*dr
+    enddo
 !
-!  find the value of rhobot
+! find the value of rhobot at the bottom of convection zone
 !
     do i=1,nr
       if (r(i) > r_bcz) exit
+!     if (r(i) > 1.) exit
     enddo
 !   stop 'find rhobot: didnt find bottom value of z'
     nbot1=i-1
@@ -3653,78 +3681,14 @@ module Entropy
 !
 !  interpolate
 !
-    lnrhobot=lnrhom(nbot1)+(lnrhom(nbot2)-lnrhom(nbot1))/ &
+    lnrhobot=lnrho(nbot1)+(lnrho(nbot2)-lnrho(nbot1))/ &
              (r(nbot2)-r(nbot1))*(r_bcz-r(nbot1))
+!   lnrhobot=lnrho(nbot1)+(lnrho(nbot2)-lnrho(nbot1))/ &
+!            (r(nbot2)-r(nbot1))*(1.-r(nbot1))
     rhobot=exp(lnrhobot)
     print*,'find rhobot=',rhobot,r(nbot1),r(nbot2)
 
     endsubroutine strat_heat
-!***********************************************************************
-    subroutine star_heat_grav(f)
-!
-!  Initialize the gravity for two superposed polytropes with a central heating
-!
-!  20-dec-06/dintrans: coded
-!
-    use Sub, only: erfunc
-    use EquationOfState, only: gamma, gamma1, mpoly0
-    use FArrayManager
-
-    real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-    real, dimension (nx,3) :: gg_mn=0.
-    real, dimension (nx)   :: rr_mn,u_mn,lumi_mn,g_r
-    real :: rr,u_r,lumi_r,g
-    integer          :: imn,m,n,i
-    integer, pointer :: iglobal_gg
- 
-    call farray_use_global('gg',iglobal_gg)
-    print*,'**************************************************'
-    print*,'star_heat_grav: luminosity,wheat,hcond0,iglobal_gg=', &
-        luminosity,wheat,hcond0,iglobal_gg
-    print*,'**************************************************'
-
-    do imn=1,ny*nz
-      n=nn(imn)
-      m=mm(imn)
-      rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-!
-      u_mn=rr_mn/sqrt(2.)/wheat
-! 3-D case
-!     lumi_mn=luminosity*(erfunc(u_mn)-2.*u_mn/sqrt(pi)*exp(-u_mn**2))
-!     g_r=-lumi_mn/(4.*pi*rr_mn**2)*gamma1/gamma*(mpoly0+1.)/hcond0
-! 2-D case
-      lumi_mn=luminosity*(1.-exp(-u_mn**2))
-      g_r=-lumi_mn/(2.*pi*rr_mn)*gamma1/gamma*(mpoly0+1.)/hcond0
-      gg_mn(:,1)=x(l1:l2)/rr_mn*g_r
-      gg_mn(:,2)=y(m)/rr_mn*g_r
-      gg_mn(:,3)=z(n)/rr_mn*g_r
-      f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
-    enddo
-!
-! write the gravity profile in file 'data/proc0/grav.dat'
-! useful for post-processing (e.g. Rayleigh's number)
-!
-    if (lroot) then
-      open(unit=11,file=trim(directory)//'/grav.dat')
-      do i=1,100
-        rr=r_ext*(i-1)/99
-        u_r=rr/sqrt(2.)/wheat
-! 3-D case
-!       lumi_r=luminosity*(erfunc(u_r)-2.*u_r/sqrt(pi)*exp(-u_r**2))
-! 2-D case
-        lumi_r=luminosity*(1.-exp(-u_r**2))
-        if (rr.eq.0.) then
-          g=0.
-        else
-!         g=-lumi_r/(4.*pi*rr**2)*gamma1/gamma*(mpoly0+1.)/hcond0
-          g=-lumi_r/(2.*pi*rr)*gamma1/gamma*(mpoly0+1.)/hcond0
-        endif
-        write(11,'(3e14.5)') rr,g,lumi_r
-      enddo
-      close(11)
-    endif
-!
-    endsubroutine star_heat_grav
 !***********************************************************************
     subroutine cylind_layers(f)
 !
