@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.48 2007-11-30 09:42:55 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.49 2007-11-30 12:59:59 bingert Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -137,7 +137,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.48 2007-11-30 09:42:55 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.49 2007-11-30 12:59:59 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -528,7 +528,7 @@ module Entropy
       endif
 !
     endsubroutine pencil_interdep_entropy
-!*********************************************************************** 
+!***********************************************************************
     subroutine calc_pencils_entropy(f,p)
 !
 !  Calculate Entropy pencils.
@@ -566,7 +566,7 @@ module Entropy
       endif
 !
     endsubroutine calc_pencils_entropy
-!**********************************************************************
+!***********************************************************************
     subroutine dss_dt(f,df,p)
 !
 !  Calculate right hand side of temperature equation
@@ -1128,7 +1128,7 @@ module Entropy
       cs2top=cs20
 !
     endsubroutine single_polytrope
-!**************************************************************
+!***********************************************************************
     subroutine calc_heatcond_ADI(finit,f)
 !
 !  10-sep-07/gastine+dintrans: wrapper to the two possible ADI subroutines
@@ -1249,7 +1249,7 @@ module Entropy
       call boundary_ADI(f(:,4,:,ilnTT))
 !
     end subroutine ADI_Kconst
-!**************************************************************
+!***********************************************************************
     subroutine ADI_Kprof(finit,f)
 !
 !  10-Sep-07/gastine+dintrans: coded
@@ -1373,7 +1373,7 @@ module Entropy
 !     call heatcond_TT(f(:,4,:,ilnTT),hcond,dhcond)
 !
     end subroutine ADI_Kprof
-!**************************************************************
+!***********************************************************************
     subroutine heatcond_TT_2d(TT,hcond,dhcond)
 !
 ! 07-Sep-07/gastine: computed 2-D radiative conductivity hcond(T) with
@@ -1388,7 +1388,7 @@ module Entropy
       dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !
     end subroutine heatcond_TT_2d
-!**************************************************************
+!***********************************************************************
     subroutine heatcond_TT_1d(TT,hcond,dhcond)
 !
 ! 18-Sep-07/dintrans: computed 1-D radiative conductivity 
@@ -1404,7 +1404,7 @@ module Entropy
       dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !
     end subroutine heatcond_TT_1d
-!**************************************************************
+!***********************************************************************
     subroutine heatcond_TT_point(TT, hcond, dhcond)
 !
 ! 07-Sep-07/gastine: computed the radiative conductivity hcond(T) 
@@ -1419,7 +1419,7 @@ module Entropy
       dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !
     end subroutine heatcond_TT_point
-!**************************************************************
+!***********************************************************************
     subroutine boundary_ADI(f_2d,hcond)
 
 ! 13-Sep-07/gastine: computed two different types of boundary 
@@ -1459,7 +1459,7 @@ module Entropy
       endselect
 
     end subroutine boundary_ADI
-!**************************************************************
+!***********************************************************************
     subroutine cyclic(a,b,c,alpha,beta,r,x,n)
 !
       use General, only: tridag
@@ -1494,7 +1494,7 @@ module Entropy
 !
       return
     end subroutine cyclic
-!***************************************************************
+!***********************************************************************
     subroutine ADI_Kconst_1d(finit,f)
 !
 ! 18-sep-07/dintrans: coded
@@ -1560,7 +1560,7 @@ module Entropy
       endif
 !
     end subroutine ADI_Kconst_1d
-!**************************************************************
+!***********************************************************************
     subroutine ADI_Kprof_1d(finit,f)
 !
 ! 18-sep-07/dintrans: coded
@@ -1632,5 +1632,5 @@ module Entropy
       endif
 !
     end subroutine ADI_Kprof_1d
-!**************************************************************
+!***********************************************************************
 endmodule Entropy
