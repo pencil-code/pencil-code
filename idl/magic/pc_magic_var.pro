@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.26 2007-11-30 13:53:13 ajohan Exp $
+; $Id: pc_magic_var.pro,v 1.27 2007-11-30 14:22:34 ajohan Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2007-11-30 13:53:13 $
-;  $Revision: 1.26 $
+;  $Date: 2007-11-30 14:22:34 $
+;  $Revision: 1.27 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -83,7 +83,7 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
 
   for iv=0,n_elements(variables)-1 do begin
 ; x Coordinate
-    endif else if (variables[iv] eq 'xx') then begin
+    if (variables[iv] eq 'xx') then begin
       tags[iv]=variables[iv]
       variables[iv]='spread(spread(x,1,n_elements(y)),2,n_elements(z))'
 ; y Coordinate
@@ -99,7 +99,7 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
       tags[iv]=variables[iv]
       variables[iv]='sqrt(spread(spread(x^2,1,n_elements(y)),2,n_elements(z))+spread(spread(y^2,0,n_elements(x)),2,n_elements(z))+spread(spread(z^2,0,n_elements(x)),1,n_elements(y)))'
 ; Magnetic field vector
-    if (variables[iv] eq 'bb') then begin
+    endif else if (variables[iv] eq 'bb') then begin
       tags[iv]=variables[iv]
       variables[iv]='curl(aa)'
 ; Current density [jj=curl(bb)=curl(curl(aa))=grad(div(a))-del2(aa)]
@@ -172,8 +172,7 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
       if (lionization and not lionization_fixed) then begin
         message,"Thermodynamic combination not implemented yet: /ss from lnrho and lnTT with lionization"
       endif else begin
-        if (lentropy ne -1) then $
-          variables[iv]='pc_eoscalc(lnrho,lnTT,/ss,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)') else variables[iv]='ss'
+        if (lentropy ne -1) then variables[iv]='pc_eoscalc(lnrho,lnTT,/ss,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)' else variables[iv]='ss'
       endelse
 ; Pressure
     endif else if (variables[iv] eq 'pp') then begin
