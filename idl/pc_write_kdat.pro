@@ -1,12 +1,28 @@
 ;
-;  $Id: pc_write_kdat.pro,v 1.1 2007-11-13 07:09:49 ajohan Exp $
+;  $Id: pc_write_kdat.pro,v 1.2 2007-11-30 13:55:53 ajohan Exp $
 ;
-;  Program to calculate all possible vector k that have a specified
+;  Program to calculate all possible vectors k that have a specified
 ;  length (in 1, 2 or 3 dimensions). The output file, k.dat, can be used
 ;  directly as input to forced turbulence simulations with the Pencil
 ;  Code.
 ;
-pro pc_write_kdat, kmean, deltak, ndim
+pro pc_write_kdat, kmean, deltak, ndim, kmin=kmin, format=format
+;
+;  Format of the output.
+;
+default, format, '(9f8.1)'
+;
+;  Smallest wavenumber is kmin. If box size is 2*pi, then kmin=1.0 is fine.
+;
+default, kmin, 1.0
+;
+;  If kmin is not an integer, one must be careful and get enough significant
+;  digits on the k vectors.
+;
+if (kmin ne fix(kmin)) then begin
+  print, 'Warning: kmin is not an integer, so please check that the k vectors have enough significant digits'
+  if (format eq '(9f8.1)') then format='(9f13.7)'
+endif
 ;
 ;  Chosen interval in k.
 ;
@@ -69,10 +85,14 @@ if (ndim le 2) then qq=fltarr(n_elements(kk))
 if (ndim le 1) then pp=fltarr(n_elements(kk))
 close, 1
 openw, 1, 'k.dat'
-  printf, 1, n_elements(kk), klen
-  printf, 1, kk, format='(9i8)'
-  printf, 1, pp, format='(9i8)'
-  printf, 1, qq, format='(9i8)'
+  printf, 1, n_elements(kk), klen*kmin
+  printf, 1, kk*kmin, format=format
+  printf, 1, pp*kmin, format=format
+  printf, 1, qq*kmin, format=format
 close, 1
+;
+;
+;
+print, 'Found '+strtrim(n_elements(kk),2)+' vectors in the specified range.'
 ;
 end
