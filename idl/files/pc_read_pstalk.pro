@@ -1,5 +1,5 @@
 ;;
-;; $Id: pc_read_pstalk.pro,v 1.5 2007-11-18 06:31:05 ajohan Exp $
+;; $Id: pc_read_pstalk.pro,v 1.6 2007-11-30 13:58:15 ajohan Exp $
 ;;
 ;; NAME:
 ;;      pc_read_pstalk
@@ -64,6 +64,9 @@ array=fltarr(nfields,pdim.npar_stalk,nout)*zero
 ; Go through all processor directories.
 ;
 for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
+
+  if (not quiet) then print, 'Reading data from processor '+ $
+      strtrim(iproc,2)+'/'+strtrim(dim.nprocx*dim.nprocy*dim.nprocz-1,2)
 ;
 ; Initialize variables.
 ;
@@ -76,8 +79,10 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
     while (it lt nout and not eof(1)) do begin
       readu, 1, t_loc, npar_stalk_loc
 
+      if (it eq 0) then $
+          print, '-------- iproc ------ it --------- t ----------- npar ------- '
       if ( (it1 ne -1) and (it mod it1 eq 0) ) then $
-          print, iproc, it, t_loc
+          print, iproc, it, t_loc, npar_stalk_loc
 
       if (npar_stalk_loc ge 1) then begin
 
