@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.25 2007-10-10 15:54:00 ajohan Exp $
+; $Id: pc_magic_var.pro,v 1.26 2007-11-30 13:53:13 ajohan Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2007-10-10 15:54:00 $
-;  $Revision: 1.25 $
+;  $Date: 2007-11-30 13:53:13 $
+;  $Revision: 1.26 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -82,186 +82,157 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
   lentropy = safe_get_tag(param,'lentropy',default=safe_get_tag(param,'lentropy',default=0)) 
 
   for iv=0,n_elements(variables)-1 do begin
-
-    ; Magnetic field vector
-    if variables[iv] eq 'bb' then begin
-      tags[iv]=variables[iv]
-      variables[iv]='curl(aa)'
-
-    ; X Coordinate
-    endif else if variables[iv] eq 'xx' then begin
+; x Coordinate
+    endif else if (variables[iv] eq 'xx') then begin
       tags[iv]=variables[iv]
       variables[iv]='spread(spread(x,1,n_elements(y)),2,n_elements(z))'
-
-    ; Y Coordinate
-    endif else if variables[iv] eq 'yy' then begin
+; y Coordinate
+    endif else if (variables[iv] eq 'yy') then begin
       tags[iv]=variables[iv]
       variables[iv]='spread(spread(y,0,n_elements(x)),2,n_elements(z))'
-
-    ; Z Coordinate
-    endif else if variables[iv] eq 'zz' then begin
+; z Coordinate
+    endif else if (variables[iv] eq 'zz') then begin
       tags[iv]=variables[iv]
       variables[iv]='spread(spread(z,0,n_elements(x)),1,n_elements(y))'
-
-    ; R Coordinate
-    endif else if variables[iv] eq 'rr' then begin
+; r Coordinate
+    endif else if (variables[iv] eq 'rr') then begin
       tags[iv]=variables[iv]
       variables[iv]='sqrt(spread(spread(x^2,1,n_elements(y)),2,n_elements(z))+spread(spread(y^2,0,n_elements(x)),2,n_elements(z))+spread(spread(z^2,0,n_elements(x)),1,n_elements(y)))'
-
-    ; Current density 
-    endif else if variables[iv] eq 'jj' then begin
+; Magnetic field vector
+    if (variables[iv] eq 'bb') then begin
       tags[iv]=variables[iv]
-      variables[iv]='curl(curl(aa))'
-
-    ; Vorticity
-    endif else if variables[iv] eq 'oo' then begin
+      variables[iv]='curl(aa)'
+; Current density [jj=curl(bb)=curl(curl(aa))=grad(div(a))-del2(aa)]
+    endif else if (variables[iv] eq 'jj') then begin
+      tags[iv]=variables[iv]
+      variables[iv]='graddiv(aa)-del2(aa)'
+; Vorticity
+    endif else if (variables[iv] eq 'oo') then begin
       tags[iv]=variables[iv]
       variables[iv]='curl(uu)'
-
-    ; Divergence of velocity
-    endif else if variables[iv] eq 'divu' then begin
+; Divergence of velocity
+    endif else if (variables[iv] eq 'divu') then begin
       tags[iv]=variables[iv]
       variables[iv]='div(uu)'
-
-    ; Gas Density 
-    endif else if variables[iv] eq 'rho' then begin
+; Gas Density 
+    endif else if (variables[iv] eq 'rho') then begin
       tags[iv]=variables[iv]
       variables[iv]='exp(lnrho)'
-
-    ; Advection
-    endif else if variables[iv] eq 'advu' then begin
+; Velocity advection
+    endif else if (variables[iv] eq 'advu') then begin
       tags[iv]=variables[iv]
-      variables[iv]='0.5*grad(dot2(uu))-cross(uu,curl(uu))'
-
-    ; Advection
-    endif else if variables[iv] eq 'advlnrho' then begin
+      variables[iv]='-0.5*grad(dot2(uu))+cross(uu,curl(uu))'
+; Density advection
+    endif else if (variables[iv] eq 'advlnrho') then begin
       tags[iv]=variables[iv]
       variables[iv]='dot(uu,grad(lnrho))'
-
-    ; Modulus of velocity
-    endif else if variables[iv] eq 'u2' then begin
+; Modulus of velocity
+    endif else if (variables[iv] eq 'u2') then begin
       tags[iv]=variables[iv]
       variables[iv]='dot2(uu)'
-
-    ; Sound speed squared
-    endif else if variables[iv] eq 'cs2' then begin
+; Sound speed squared
+    endif else if (variables[iv] eq 'cs2') then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
         variables[iv]='pc_eoscalc(lnrho,lnTT,/cs2,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
         variables[iv]='pc_eoscalc(lnrho,ss,/cs2,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
-
-    ; Specific energy
-    endif else if variables[iv] eq 'ee' then begin
+; Pressure gradient
+    endif else if (variables[iv] eq 'fpres') then begin
+      tags[iv]=variables[iv]
+      variables[iv]='grad(lnrho)'
+; Specific energy
+    endif else if (variables[iv] eq 'ee') then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
         variables[iv]='pc_eoscalc(lnrho,lnTT,/ee,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
         variables[iv]='pc_eoscalc(lnrho,ss,/ee,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
-
-    ; Temperature
-    endif else if variables[iv] eq 'tt' then begin
+; Temperature
+    endif else if (variables[iv] eq 'tt') then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
         variables[iv]='exp(lnTT)'
       endif else begin
         variables[iv]='pc_eoscalc(lnrho,ss,/tt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
-
-    ; ln Temperature
-    endif else if variables[iv] eq 'lntt' then begin
+; Logarithm of temperature
+    endif else if (variables[iv] eq 'lntt') then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
         variables[iv]='lnTT'
       endif else begin
         variables[iv]='pc_eoscalc(lnrho,ss,/lntt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
-
-    ; Entropy ss
-    endif else if variables[iv] eq 'ss' then begin
+; Entropy ss
+    endif else if (variables[iv] eq 'ss') then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
         message,"Thermodynamic combination not implemented yet: /ss from lnrho and lnTT with lionization"
       endif else begin
         if (lentropy ne -1) then $
-          variables[iv]='pc_eoscalc(lnrho,lnTT,/ss,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)' else variables[iv]='ss'
+          variables[iv]='pc_eoscalc(lnrho,lnTT,/ss,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)') else variables[iv]='ss'
       endelse
-
-    ; Pressure
-    endif else if variables[iv] eq 'pp' then begin
+; Pressure
+    endif else if (variables[iv] eq 'pp') then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
         variables[iv]='pc_eoscalc(lnrho,lnTT,/pp,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
         variables[iv]='pc_eoscalc(lnrho,ss,/pp,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
-
-    ; Divergence of dust velocity
-    endif else if variables[iv] eq 'divud' then begin
+; Divergence of dust velocity
+    endif else if (variables[iv] eq 'divud') then begin
       tags[iv]=variables[iv]
       variables[iv]='div(uud)'
-
-    ; Dust density
-    endif else if variables[iv] eq 'rhod' then begin
+; Dust density
+    endif else if (variables[iv] eq 'rhod') then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(nd=nd,md=md,param=param,var='rhod')"
-
-    ; Dust distribution function dn = f dm
-    endif else if variables[iv] eq 'fd' then begin
+; Dust distribution function dn = f dm
+    endif else if (variables[iv] eq 'fd') then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(nd=nd,param=param,var='fd')"
-
-    ; Dust grain radius
-    endif else if variables[iv] eq 'ad' then begin
+; Dust grain radius
+    endif else if (variables[iv] eq 'ad') then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(md=md,param=param,var='ad')"
-
-    ; Dust-to-gas ratio (sum over all bins)
-    endif else if variables[iv] eq 'epsd' then begin
+; Dust-to-gas ratio (sum over all bins)
+    endif else if (variables[iv] eq 'epsd') then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(lnrho=lnrho,nd=nd,md=md,par=param,var='epsd')"
-
-    ; Supersaturation level Pmon/Psat
-    endif else if variables[iv] eq 'smon' then begin
+; Supersaturation level Pmon/Psat
+    endif else if (variables[iv] eq 'smon') then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(lnrho=lnrho,ss=ss,nd=nd,md=md," + $
           "param=param,datadir=datadir,var='smon')"
-
-    ; Dust mass unit
-    endif else if variables[iv] eq 'unit_md' then begin
+; Dust mass unit
+    endif else if (variables[iv] eq 'unit_md') then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(param=param,var='unit_md')"
-
-    ; Average grain mass (mean over all bins)
-    endif else if variables[iv] eq 'mdave' then begin
+; Average grain mass (mean over all bins)
+    endif else if (variables[iv] eq 'mdave') then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(nd=nd,md=md,param=param,var='mdave')"
-
-    ; Interstellar cooling term (as switched by the cooling_select param.)
-    endif else if variables[iv] eq 'ismcool' then begin
+; Interstellar cooling term (as switched by the cooling_select param.)
+    endif else if (variables[iv] eq 'ismcool') then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_interstellar_cool(lnrho=lnrho,ss=ss,param=param)"
-
-    ; Particle velocity
-    endif else if variables[iv] eq 'vvp' then begin
+; Particle velocity
+    endif else if (variables[iv] eq 'vvp') then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_particles_aux(np=np,vvpsum=vvpsum,dim=dim,var='vvp')"
-
-    ; Absolute value of the wavefunction squared
-    endif else if variables[iv] eq 'psi2' then begin
+; Absolute value of the wavefunction squared
+    endif else if (variables[iv] eq 'psi2') then begin
       tags[iv]=variables[iv]
       variables[iv]="psi_real^2+psi_imag^2"
-
-    ; Argument of the complex wavefunction
-    endif else if variables[iv] eq 'argpsi' then begin
+; Argument of the complex wavefunction
+    endif else if (variables[iv] eq 'argpsi') then begin
       tags[iv]=variables[iv]
       variables[iv]="atan(psi_imag,psi_real)"
-
     endif
-
-
   endfor
-
+;
 end
