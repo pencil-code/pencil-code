@@ -1,5 +1,5 @@
 ;
-;  $Id: yderzder_6th_ghost.pro,v 1.1 2007-11-30 12:24:49 ajohan Exp $
+;  $Id: yderzder_6th_ghost.pro,v 1.2 2007-11-30 14:29:46 ajohan Exp $
 ;
 ;  Second derivative d2/dydz
 ;  - 6th-order
@@ -36,7 +36,31 @@ function yderzder,f
 ;
 ;  Calculate d2/dydz.
 ;
-  if (s[0] eq 4) then begin
+  if (s[0] eq 3) then begin
+    d=fltarr(mx,my,mz)
+    for n=n1,n2 do begin & for m=m1,m2 do begin
+      fac=(1/60.0^2)*dy_1*dz_1
+      d[l1:l2,m,n,*]=fac*( $
+          45.*( (45.*(f[l1:l2,m+1,n+1]-f[l1:l2,m-1,n+1])  $
+                 -9.*(f[l1:l2,m+2,n+1]-f[l1:l2,m-2,n+1])  $
+                    +(f[l1:l2,m+3,n+1]-f[l1:l2,m-3,n+1])) $
+               -(45.*(f[l1:l2,m+1,n-1]-f[l1:l2,m-1,n-1])  $
+                 -9.*(f[l1:l2,m+2,n-1]-f[l1:l2,m-2,n-1])  $
+                    +(f[l1:l2,m+3,n-1]-f[l1:l2,m-3,n-1])))$
+          -9.*( (45.*(f[l1:l2,m+1,n+2]-f[l1:l2,m-1,n+2])  $
+                 -9.*(f[l1:l2,m+2,n+2]-f[l1:l2,m-2,n+2])  $
+                    +(f[l1:l2,m+3,n+2]-f[l1:l2,m-3,n+2])) $
+               -(45.*(f[l1:l2,m+1,n-2]-f[l1:l2,m-1,n-2])  $
+                 -9.*(f[l1:l2,m+2,n-2]-f[l1:l2,m-2,n-2])  $
+                    +(f[l1:l2,m+3,n-2]-f[l1:l2,m-3,n-2])))$
+             +( (45.*(f[l1:l2,m+1,n+3]-f[l1:l2,m-1,n+3])  $
+                 -9.*(f[l1:l2,m+2,n+3]-f[l1:l2,m-2,n+3])  $
+                    +(f[l1:l2,m+3,n+3]-f[l1:l2,m-3,n+3])) $
+               -(45.*(f[l1:l2,m+1,n-3]-f[l1:l2,m-1,n-3])  $
+                 -9.*(f[l1:l2,m+2,n-3]-f[l1:l2,m-2,n-3])  $
+                    +(f[l1:l2,m+3,n-3]-f[l1:l2,m-3,n-3]))) )
+    endfor & endfor
+  endif else if (s[0] eq 4) then begin
     d=fltarr(mx,my,mz,3)
     for n=n1,n2 do begin & for m=m1,m2 do begin
       fac=(1/60.0^2)*dy_1*dz_1

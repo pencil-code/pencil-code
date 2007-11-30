@@ -1,5 +1,5 @@
 ;
-;  $Id: xderyder_6th_ghost.pro,v 1.1 2007-11-30 12:24:49 ajohan Exp $
+;  $Id: xderyder_6th_ghost.pro,v 1.2 2007-11-30 14:29:46 ajohan Exp $
 ;
 ;  Second derivative d2f/dxdy
 ;  - 6th-order
@@ -36,7 +36,31 @@ function xderyder,f
 ;
 ;  Calculate d2f/dxdy.
 ;
-  if (s[0] eq 4) then begin
+  if (s[0] eq 3) then begin
+    d=fltarr(mx,my,mz)
+    for n=n1,n2 do begin & for m=m1,m2 do begin
+      fac=(1/60.0^2)*dx_1*dy_1
+      d[l1:l2,m,n,*]=fac*( $
+          45.*( (45.*(f[l1+1:l2+1,m+1,n]-f[l1-1:l2-1,m+1,n])  $
+                 -9.*(f[l1+2:l2+2,m+1,n]-f[l1-2:l2-2,m+1,n])  $
+                    +(f[l1+3:l2+3,m+1,n]-f[l1-3:l2-3,m+1,n])) $
+               -(45.*(f[l1+1:l2+1,m-1,n]-f[l1-1:l2-1,m-1,n])  $
+                 -9.*(f[l1+2:l2+2,m-1,n]-f[l1-2:l2-2,m-1,n])  $
+                    +(f[l1+3:l2+3,m-1,n]-f[l1-3:l2-3,m-1,n])))$
+          -9.*( (45.*(f[l1+1:l2+1,m+2,n]-f[l1-1:l2-1,m+2,n])  $
+                 -9.*(f[l1+2:l2+2,m+2,n]-f[l1-2:l2-2,m+2,n])  $
+                    +(f[l1+3:l2+3,m+2,n]-f[l1-3:l2-3,m+2,n])) $
+               -(45.*(f[l1+1:l2+1,m-2,n]-f[l1-1:l2-1,m-2,n])  $
+                 -9.*(f[l1+2:l2+2,m-2,n]-f[l1-2:l2-2,m-2,n])  $
+                    +(f[l1+3:l2+3,m-2,n]-f[l1-3:l2-3,m-2,n])))$
+             +( (45.*(f[l1+1:l2+1,m+3,n]-f[l1-1:l2-1,m+3,n])  $
+                 -9.*(f[l1+2:l2+2,m+3,n]-f[l1-2:l2-2,m+3,n])  $
+                    +(f[l1+3:l2+3,m+3,n]-f[l1-3:l2-3,m+3,n])) $
+               -(45.*(f[l1+1:l2+1,m-3,n]-f[l1-1:l2-1,m-3,n])  $
+                 -9.*(f[l1+2:l2+2,m-3,n]-f[l1-2:l2-2,m-3,n])  $
+                    +(f[l1+3:l2+3,m-3,n]-f[l1-3:l2-3,m-3,n]))) )
+    endfor & endfor
+  endif else if (s[0] eq 4) then begin
     d=fltarr(mx,my,mz,3)
     for n=n1,n2 do begin & for m=m1,m2 do begin
       fac=(1/60.0^2)*dx_1*dy_1
