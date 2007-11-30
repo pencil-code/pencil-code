@@ -30,26 +30,26 @@
 ;             (or those vars specified in VARIABLES)
 ;  variables: array of variable name to return                       [string(*)]
 ;
-;  /ADDITIONAL: Load all variables stored in the files, PLUS any additional
+;  /additional: Load all variables stored in the files, PLUS any additional
 ;               variables specified with the variables=[] option.
-;     /MAGIC: call pc_magic_var to replace special variable names with their
+;     /magic: call pc_magic_var to replace special variable names with their
 ;             functional equivalents
 ;
-;   /TRIMXYZ: remove ghost points from the x,y,z arrays that are returned
-;   /TRIMALL: remove ghost points from all returned variables and x,y,z arrays
+;   /trimxyz: remove ghost points from the x,y,z arrays that are returned
+;   /trimall: remove ghost points from all returned variables and x,y,z arrays
 ;             - this is equivalent to wrapping each requested variable with
 ;                     pc_noghost(..., dim=dim)
 ;               pc_noghost will skip, i.e. do nothing to variables not
 ;               initially of size (dim.mx,dim.my,dim.mz)
 ;
-;   /NOSTATS: don't print any summary statistics for the returned fields
-;     /STATS: force printing of summary statistics even if quiet is set
-;     /QUIET: instruction not to print any 'helpful' information
-;      /HELP: display this usage information, and exit
+;   /nostats: don't print any summary statistics for the returned fields
+;     /stats: force printing of summary statistics even if quiet is set
+;     /quiet: instruction not to print any 'helpful' information
+;      /help: display this usage information, and exit
 ;
 ; EXAMPLES:
 ;       pc_read_var,obj=vars             ;; read all vars into VARS struct
-;       pc_read_var,obj=vars,PROC=5      ;; read only from data/proc5
+;       pc_read_var,obj=vars,proc=5      ;; read only from data/proc5
 ;       pc_read_var,obj=vars,variables=['ss']
 ;                                        ;; read entropy into vars.ss
 ;       pc_read_var,obj=vars,variables=['bb'],/MAGIC
@@ -61,22 +61,22 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.52 2007-11-30 13:59:08 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.53 2007-11-30 14:34:23 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
-pro pc_read_var, t=t,                                             $
-            object=object, varfile=varfile_, associate=associate, $
-            variables=variables, tags=tags, magic=magic, bb=bb,   $
-            trimxyz=trimxyz, trimall=trimall,                     $
-            nameobject=nameobject,                                $
-            dim=dim,param=param,                                  $
-            ivar=ivar,                                            $
-            datadir=datadir,proc=proc,ADDITIONAL=ADDITIONAL,      $
-            nxrange=nxrange,nyrange=nyrange,nzrange=nzrange,      $
-            STATS=STATS,NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP,    $
-            SWAP_ENDIAN=SWAP_ENDIAN,varcontent=varcontent,        $
-            scalar=scalar
+pro pc_read_var, t=t,                                            $
+    object=object, varfile=varfile_, associate=associate,        $
+    variables=variables, tags=tags, magic=magic, bb=bb,          $
+    trimxyz=trimxyz, trimall=trimall,                            $
+    nameobject=nameobject,validate_variables=validate_variables, $
+    dim=dim,param=param,                                         $
+    ivar=ivar,                                                   $
+    datadir=datadir,proc=proc,additional=additional,             $
+    nxrange=nxrange,nyrange=nyrange,nzrange=nzrange,             $
+    stats=stats,nostats=nostats,quiet=quiet,help=help,           $
+    swap_endian=swap_endian,varcontent=varcontent,               $
+    scalar=scalar
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -86,6 +86,10 @@ COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
   common pc_precision, zero, one
+;
+; Default settings
+;
+  default, validate_variables, 1
 ;
 ; If no meaningful parameters are given show some help!
 ;
@@ -182,7 +186,6 @@ COMPILE_OPT IDL2,HIDDEN
   totalvars=(size(varcontent))[1]-1
 ;
   if (n_elements(variables) ne 0) then begin
-    validate_variables=1
     if (keyword_set(additional)) then begin
       filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
       variables=[filevars,variables]
@@ -399,16 +402,21 @@ COMPILE_OPT IDL2,HIDDEN
     endfor
   endif
 ;
-  if (keyword_set(validate_variables)) then begin
+; Check variables one at a time and skip the ones that give errors.
+; This way the program can still return the other variables, instead
+; of dying with an error. One can turn off this option off to decrease
+; execution time.
+;
+  if (validate_variables) then begin
     skipvariable=make_array(n_elements(variables),/INT,value=0)
     for iv=0,n_elements(variables)-1 do begin
       res=execute(tags[iv]+'='+variables[iv])
       if (not res) then begin
-        if (not keyword_set(quiet)) then print,"% Skipping: "+tags[iv]+" -> "+variables[iv]
+        if (not keyword_set(quiet)) then $
+            print,"% Skipping: "+tags[iv]+" -> "+variables[iv]
         skipvariable[iv]=1
       endif
     endfor
-    testvariable=0
     if (min(skipvariable) ne 0) then return
     if (max(skipvariable) eq 1) then begin
       variables=variables[where(skipvariable eq 0)]
