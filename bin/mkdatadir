@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.65 2007-09-23 07:47:08 brandenb Exp $
+#  $Id: mkdatadir,v 1.66 2007-11-30 04:12:51 brandenb Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -49,6 +49,9 @@ else if ($hn =~ nl0) then
   set str='s/home\/mattias\/pencil-code\/runs/var\/tmp/g'
 else if ($hn =~ nl3) then
   set str='s/home/scr/g'
+else if ($hn =~ ds0*) then
+  echo "for Axel on DataStar"
+  set str='s/rmount\/users02\/ucsd/gpfs-wan\/scratch/g'
 else if (($hn =~ nl6)) then
   set str='s/home/wkspace2/g'
   #set str='s/brandenb/brandenb\/storage/g'
