@@ -44,7 +44,6 @@
 ;
 ;   /NOSTATS: don't print any summary statistics for the returned fields
 ;     /STATS: force printing of summary statistics even if quiet is set
-;     /RUN2D: read a 2D-snapshot written only in a (x,y) or (x,z) plane
 ;     /QUIET: instruction not to print any 'helpful' information
 ;      /HELP: display this usage information, and exit
 ;
@@ -62,7 +61,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.51 2007-10-10 15:55:27 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.52 2007-11-30 13:59:08 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -77,7 +76,7 @@ pro pc_read_var, t=t,                                             $
             nxrange=nxrange,nyrange=nyrange,nzrange=nzrange,      $
             STATS=STATS,NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP,    $
             SWAP_ENDIAN=SWAP_ENDIAN,varcontent=varcontent,        $
-            scalar=scalar,run2D=run2D
+            scalar=scalar
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -90,18 +89,18 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; If no meaningful parameters are given show some help!
 ;
-  IF ( keyword_set(HELP) ) THEN BEGIN
+  if (keyword_set(help)) then begin
     doc_library,'pc_read_var'
     return
-  ENDIF
+  endif
 ;
 ; Default data directory
 ;
-  IF (not keyword_set(datadir)) THEN datadir=pc_get_datadir()
+  if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;
 ; Name and path of varfile to read
 ;
-  if n_elements(ivar) eq 1 then begin
+  if (n_elements(ivar) eq 1) then begin
     default,varfile_,'VAR'
     varfile=varfile_+strcompress(string(ivar),/remove_all)
   endif else begin
@@ -109,34 +108,36 @@ COMPILE_OPT IDL2,HIDDEN
     varfile=varfile_
   endelse
 ;
-; Get necessary dimensions QUIETly
+; Get necessary dimensions quietly
 ;
-  if (n_elements(dim) eq 0) then pc_read_dim,object=dim,datadir=datadir,proc=proc,/quiet
-  if (n_elements(param) eq 0) then pc_read_param,object=param,dim=dim,datadir=datadir,/quiet
+  if (n_elements(dim) eq 0) then $
+      pc_read_dim, object=dim, datadir=datadir, proc=proc, /quiet
+  if (n_elements(param) eq 0) then $
+      pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
 ;
-; Call pc_read_grid to make sure any derivative stuff is correctly set in the common block
-; Don't need the data fro anything though
+; Call pc_read_grid to make sure any derivative stuff is correctly set in the
+; common block. Don't need the data for anything though.
 ;
-  pc_read_grid,dim=dim,datadir=datadir,param=param,/quiet,SWAP_ENDIAN=SWAP_ENDIAN
+  pc_read_grid, dim=dim, datadir=datadir, param=param, /quiet,SWAP_ENDIAN=SWAP_ENDIAN
 ;
-; Read problem dimensions (global)
+; Read problem dimensions (global)...
 ;
   if (n_elements(proc) eq 1) then begin
     procdim=dim
   endif else begin
-    pc_read_dim,object=procdim,datadir=datadir,proc=0,/quiet
+    pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
   endelse
 ;
-; and check pc_precision is set for all Pencil Code tools
+; ... and check pc_precision is set for all Pencil Code tools
 ;
-  pc_set_precision,dim=dim,quiet=quiet
+  pc_set_precision, dim=dim, quiet=quiet
 ;
 ; Should ghost zones be returned?
 ;
-  if (keyword_set(TRIMALL)) then begin
-    TRIMXYZ=1L
+  if (keyword_set(trimall)) then begin
+    trimxyz=1
   endif else begin
-    TRIMALL=0
+    trimall=0
   endelse
 ;
 ; Local shorthand for some parameters
@@ -154,32 +155,38 @@ COMPILE_OPT IDL2,HIDDEN
   myloc=procdim.my
   mzloc=procdim.mz
 ;
-; Number of procs overwhich to loop
+; Number of processors over which to loop.
 ;
-  if (n_elements(proc) eq 1) then nprocs=1 else nprocs = dim.nprocx*dim.nprocy*dim.nprocz
+  if (n_elements(proc) eq 1) then begin
+    nprocs=1
+  endif else begin
+    nprocs = dim.nprocx*dim.nprocy*dim.nprocz
+  endelse
 ;
 ; Initialize / set default returns for ALL variables
 ;
   t=zero
   x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
-  dx=zero &  dy=zero &  dz=zero & deltay=zero
-
+  dx=zero & dy=zero & dz=zero & deltay=zero
+;
   if (n_elements(proc) ne 1) then begin
-    xloc=fltarr(procdim.mx)*one & yloc=fltarr(procdim.my)*one & zloc=fltarr(procdim.mz)*one
+    xloc=fltarr(procdim.mx)*one
+    yloc=fltarr(procdim.my)*one
+    zloc=fltarr(procdim.mz)*one
   endif
 ;
 ;  Read meta data and set up variable/tag lists
 ;
-  default,varcontent,pc_varcontent(datadir=datadir,dim=dim, $
-                         param=param,quiet=quiet,scalar=scalar,run2D=run2D)
-  totalvars=(size(varcontent))[1]-1L
+  default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
+                              param=param,quiet=quiet,scalar=scalar)
+  totalvars=(size(varcontent))[1]-1
 ;
   if (n_elements(variables) ne 0) then begin
-    VALIDATE_VARIABLES=1
-    if (keyword_set(ADDITIONAL)) then begin
+    validate_variables=1
+    if (keyword_set(additional)) then begin
       filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
       variables=[filevars,variables]
-      if n_elements(tags) ne 0 then begin
+      if (n_elements(tags) ne 0) then begin
         tags=[filevars,tags]
       endif
     endif
@@ -195,9 +202,11 @@ COMPILE_OPT IDL2,HIDDEN
     magic=1
   endif
 ;
-  default,tags,variables
+; Default tags are set equal to the variables.
 ;
-; Sanity check variables and tags
+  default, tags, variables
+;
+; Sanity check for variables and tags
 ;
   if (n_elements(variables) ne n_elements(tags)) then begin
     message, 'ERROR: variables and tags arrays differ in size'
@@ -205,8 +214,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Apply "magic" variable transformations for derived quantities
 ;
-  if (keyword_set(magic)) then pc_magic_var,variables,tags,param=param, $
-      datadir=datadir
+  if (keyword_set(magic)) then $
+      pc_magic_var,variables,tags,param=param, datadir=datadir
 ;
 ; Get a free unit number
 ;
@@ -260,7 +269,7 @@ COMPILE_OPT IDL2,HIDDEN
           print, 'Loading chunk ', strtrim(str(i+1)), ' of ', $
           strtrim(str(nprocs)), ' (', $
           strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
-      pc_read_dim,object=procdim,datadir=datadir,proc=i,/quiet
+      pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet
     endelse
     ; Check for existance and read the data
     dummy=findfile(filename, COUNT=countfile)
@@ -359,28 +368,10 @@ COMPILE_OPT IDL2,HIDDEN
 
       for iv=1L,totalvars do begin
         if (varcontent[iv].variable eq 'UNKNOWN') then continue
-  ;DEBUG: tmp=execute("print,'Minmax of "+varcontent[iv].variable+" = ',minmax("+varcontent[iv].idlvarloc+")")
-        if (not keyword_set(run2D)) then begin
-          ; classical 3D-run (x,y,z)
-          cmd =   varcontent[iv].idlvar $
-              + "[i0x:i1x,i0y:i1y,i0z:i1z,*,*]=" $
-              + varcontent[iv].idlvarloc $
-              +"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*,*]"
-        endif else begin
-          if (ny eq 1) then begin
-            ; 2D-run in plane (x,z)
-            cmd =   varcontent[iv].idlvar $
-                + "[i0x:i1x,i0z:i1z,*,*]=" $
-                + varcontent[iv].idlvarloc $
-                +"[i0xloc:i1xloc,i0zloc:i1zloc,*,*]"
-           endif else begin
-             ; 2D-run in plane (x,y)
-             cmd =   varcontent[iv].idlvar $
-                 + "[i0x:i1x,i0y:i1y,*,*]=" $
-                 + varcontent[iv].idlvarloc $
-                 +"[i0xloc:i1xloc,i0yloc:i1yloc,*,*]"
-           endelse
-        endelse
+        cmd =   varcontent[iv].idlvar $
+            + "[i0x:i1x,i0y:i1y,i0z:i1z,*,*]=" $
+            + varcontent[iv].idlvarloc $
+            +"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*,*]"
         if (execute(cmd) ne 1) then $
             message, 'Error combining data for ' + varcontent[iv].variable
 
@@ -408,16 +399,7 @@ COMPILE_OPT IDL2,HIDDEN
     endfor
   endif
 ;
-;  ; Build structure of all the variables
-;  ;if (n_elements(proc) eq 1) then begin
-;  ;  objectname=filename+arraytostring(tags,LIST='_')
-;  ;endif else begin
-;  ;  objectname=datadir+varfile+arraytostring(tags,LIST='_')
-;  ;endelse
-;
-;  ;makeobject="object = CREATE_STRUCT(name='"+objectname+"',['t','x','y','z','dx','dy','dz'" + $
-;
-  if (keyword_set(VALIDATE_VARIABLES)) then begin
+  if (keyword_set(validate_variables)) then begin
     skipvariable=make_array(n_elements(variables),/INT,value=0)
     for iv=0,n_elements(variables)-1 do begin
       res=execute(tags[iv]+'='+variables[iv])
@@ -438,18 +420,19 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   variables_in=variables
 ;
-; Trim x, y and z if requested
+; Trim x, y and z if requested.
 ;
-  if (keyword_set(TRIMXYZ)) then begin
+  if (keyword_set(trimxyz)) then begin
     xyzstring="x[dim.l1:dim.l2],y[dim.m1:dim.m2],z[dim.n1:dim.n2]"
   endif else begin
     xyzstring="x,y,z"
   endelse
-
-  if keyword_set(TRIMALL) then begin
-  ;  if not keyword_set(QUIET) then print,'NOTE: TRIMALL assumes the result of all specified variables has dimensions from the varfile (with ghosts)'
-    variables = 'pc_noghost('+variables+',dim=dim,run2D=run2D)'
-  endif
+;
+; Remove ghost zones if requested.
+;
+  if (keyword_set(trimall)) then variables = 'pc_noghost('+variables+',dim=dim)'
+;
+; Make structure out of the variables.
 ;
   makeobject = "object = "+ $
       "CREATE_STRUCT(name=objectname,['t','x','y','z','dx','dy','dz'" + $
@@ -458,14 +441,15 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   if (execute(makeobject) ne 1) then begin
     message, 'ERROR Evaluating variables: '+makeobject
-    undefine,object
+    undefine, object
   endif
 ;
 ; If requested print a summary (actually the default - unless being QUIET.)
 ;
-  if keyword_set(STATS) or (not (keyword_set(NOSTATS) or keyword_set(QUIET))) then begin
-    if not keyword_set(QUIET) then print,''
-    if not keyword_set(QUIET) then print,'VARIABLE SUMMARY:'
+  if (keyword_set(STATS) or $
+     (not (keyword_set(NOSTATS) or keyword_set(QUIET)))) then begin
+    if (not keyword_set(QUIET)) then print, ''
+    if (not keyword_set(QUIET)) then print, 'VARIABLE SUMMARY:'
     pc_object_stats, object, dim=dim, TRIM=TRIMALL, QUIET=QUIET
     print,' t = ', t
   endif

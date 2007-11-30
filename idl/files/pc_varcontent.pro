@@ -1,6 +1,6 @@
-;  $Id: pc_varcontent.pro,v 1.49 2007-09-10 05:59:09 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.50 2007-11-30 13:59:08 ajohan Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
-                       param=param,quiet=quiet,scalar=scalar,run2D=run2D
+                       param=param,quiet=quiet,scalar=scalar
 COMPILE_OPT IDL2,HIDDEN
 ;
 ;
@@ -90,28 +90,10 @@ varcontent=REPLICATE({varcontent_all, variable:'UNKNOWN', $
 ;
 
 ;Predefine some variable types used regularly
-if (not keyword_set(run2D)) then begin
-  ; classical 3D-run (x,y,z)
-  INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one'
-  INIT_3VECTOR_LOC = 'fltarr(mxloc,myloc,mzloc,3)*one'
-  INIT_SCALAR      = 'fltarr(mx,my,mz)*one'
-  INIT_SCALAR_LOC  = 'fltarr(mxloc,myloc,mzloc)*one'
-endif else begin
-  if (dim.ny eq 1) then begin
-    ; 2D_run in plane (x,z)
-    INIT_3VECTOR     = 'fltarr(mx,mz,3)*one'
-    INIT_3VECTOR_LOC = 'fltarr(mxloc,mzloc,3)*one'
-    INIT_SCALAR      = 'fltarr(mx,mz)*one'
-    INIT_SCALAR_LOC  = 'fltarr(mxloc,mzloc)*one'
-  endif else begin
-    ; 2D_run in plane (x,y)
-    INIT_3VECTOR     = 'fltarr(mx,my,3)*one'
-    INIT_3VECTOR_LOC = 'fltarr(mxloc,myloc,3)*one'
-    INIT_SCALAR      = 'fltarr(mx,my)*one'
-    INIT_SCALAR_LOC  = 'fltarr(mxloc,myloc)*one'
-  endelse
-endelse
-
+INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one'
+INIT_3VECTOR_LOC = 'fltarr(mxloc,myloc,mzloc,3)*one'
+INIT_SCALAR      = 'fltarr(mx,my,mz)*one'
+INIT_SCALAR_LOC  = 'fltarr(mxloc,myloc,mzloc)*one'
 ; For EVERY POSSIBLE variable in a var file, store a
 ; description of the variable in an indexed array of structures
 ; where the indexes line up with those in the saved f array

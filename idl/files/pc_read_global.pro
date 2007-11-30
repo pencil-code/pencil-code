@@ -12,7 +12,7 @@ pro pc_read_global, t=t,                                          $
             nxrange=nxrange,nyrange=nyrange,nzrange=nzrange,      $
             STATS=STATS,NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP,    $
             SWAP_ENDIAN=SWAP_ENDIAN,varcontent=varcontent,        $
-            scalar=scalar,run2D=run2D
+            scalar=scalar
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -94,7 +94,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Read meta data and set up variable/tag lists
 ;
   default,varcontent,pc_varcontent_global(datadir=datadir,dim=dim, $
-                         param=param,quiet=quiet,scalar=scalar,run2D=run2D)
+                         param=param,quiet=quiet,scalar=scalar)
   totalvars=(size(varcontent))[1]-1L
 ;
   if n_elements(variables) ne 0 then begin
@@ -240,28 +240,10 @@ COMPILE_OPT IDL2,HIDDEN
 
       for iv=1L,totalvars do begin
         if (varcontent[iv].variable eq 'UNKNOWN') then continue
-  ;DEBUG: tmp=execute("print,'Minmax of "+varcontent[iv].variable+" = ',minmax("+varcontent[iv].idlvarloc+")")
-        if (not keyword_set(run2D)) then begin
-          ; classical 3D-run (x,y,z)
-          cmd =   varcontent[iv].idlvar $
-              + "[i0x:i1x,i0y:i1y,i0z:i1z,*,*]=" $
-              + varcontent[iv].idlvarloc $
-              +"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*,*]"
-        endif else begin
-          if (ny eq 1) then begin
-            ; 2D-run in plane (x,z)
-            cmd =   varcontent[iv].idlvar $
-                + "[i0x:i1x,i0z:i1z,*,*]=" $
-                + varcontent[iv].idlvarloc $
-                +"[i0xloc:i1xloc,i0zloc:i1zloc,*,*]"
-           endif else begin
-             ; 2D-run in plane (x,y)
-             cmd =   varcontent[iv].idlvar $
-                 + "[i0x:i1x,i0y:i1y,*,*]=" $
-                 + varcontent[iv].idlvarloc $
-                 +"[i0xloc:i1xloc,i0yloc:i1yloc,*,*]"
-           endelse
-        endelse
+        cmd =   varcontent[iv].idlvar $
+            + "[i0x:i1x,i0y:i1y,i0z:i1z,*,*]=" $
+            + varcontent[iv].idlvarloc $
+            +"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*,*]"
         if (execute(cmd) ne 1) then $
             message, 'Error combining data for ' + varcontent[iv].variable
 
@@ -318,7 +300,7 @@ COMPILE_OPT IDL2,HIDDEN
 
   if keyword_set(TRIMALL) then begin
   ;  if not keyword_set(QUIET) then print,'NOTE: TRIMALL assumes the result of all specified variables has dimensions from the varfile (with ghosts)'
-    variables = 'pc_noghost('+variables+',dim=dim,run2D=run2D)'
+    variables = 'pc_noghost('+variables+',dim=dim)'
   endif
 ;
   makeobject = "object = "+ $
