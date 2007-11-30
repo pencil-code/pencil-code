@@ -8,6 +8,9 @@
 @xder2_6th_ghost
 @yder2_6th_ghost
 @zder2_6th_ghost
+@xderyder_6th_ghost
+@xderzder_6th_ghost
+@yderzder_6th_ghost
 @xder6_6th_ghost
 @yder6_6th_ghost
 @zder6_6th_ghost
@@ -17,8 +20,7 @@
 ;  because xyout would write all letters onto one posision) ..
 ;
 @lenstr
-
-
+;
 pro pc_init
   print, "Compiled default derivative routines - 6th order finite differences with ghost zones"
   print, "Starting Pencil-Code Session"
