@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.47 2007-11-01 16:11:55 bingert Exp $
+! $Id: temperature_idealgas.f90,v 1.48 2007-11-30 09:42:55 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -137,7 +137,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.47 2007-11-01 16:11:55 bingert Exp $")
+           "$Id: temperature_idealgas.f90,v 1.48 2007-11-30 09:42:55 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -174,12 +174,14 @@ module Entropy
       use EquationOfState, only : cs2bot, cs2top, gamma, gamma1, &
                                   select_eos_variable
       use Sub, only: step,der_step
+      use SharedVariables, only: put_shared_variable
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx)   :: hcond,dhcond
       logical :: lstarting, lnothing
       type (pencil_case) :: p
-      integer :: i
+      integer :: i, ierr
 !
       if (.not. leos) then
          call fatal_error('initialize_entropy','EOS=noeos but temperature_idealgas requires an EQUATION OF STATE for the fluid')
@@ -296,6 +298,16 @@ module Entropy
                            'Both Fbot and hcond0 are unknown')
        endif
       endif
+!
+!  30-nov-2007/dintrans: now hcond0 and Fbot are passed to boundcond()
+!  as shared variables
+!
+      call put_shared_variable('hcond0',hcond0,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting hcond0")
+      call put_shared_variable('Fbot',Fbot,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting Fbot")
 !
 !
 !  A word of warning...
