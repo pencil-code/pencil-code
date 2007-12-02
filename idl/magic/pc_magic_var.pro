@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.27 2007-11-30 14:22:34 ajohan Exp $
+; $Id: pc_magic_var.pro,v 1.28 2007-12-02 18:22:04 ajohan Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2007-11-30 14:22:34 $
-;  $Revision: 1.27 $
+;  $Date: 2007-12-02 18:22:04 $
+;  $Revision: 1.28 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -125,7 +125,7 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
 ; Density advection
     endif else if (variables[iv] eq 'advlnrho') then begin
       tags[iv]=variables[iv]
-      variables[iv]='dot(uu,grad(lnrho))'
+      variables[iv]='-dot(uu,grad(lnrho))'
 ; Modulus of velocity
     endif else if (variables[iv] eq 'u2') then begin
       tags[iv]=variables[iv]
