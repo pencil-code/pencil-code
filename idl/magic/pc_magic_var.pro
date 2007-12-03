@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.28 2007-12-02 18:22:04 ajohan Exp $
+; $Id: pc_magic_var.pro,v 1.29 2007-12-03 09:56:03 ajohan Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2007-12-02 18:22:04 $
-;  $Revision: 1.28 $
+;  $Date: 2007-12-03 09:56:03 $
+;  $Revision: 1.29 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -106,6 +106,14 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     endif else if (variables[iv] eq 'jj') then begin
       tags[iv]=variables[iv]
       variables[iv]='graddiv(aa)-del2(aa)'
+; Lorentz force
+    endif else if (variables[iv] eq 'flor') then begin
+      tags[iv]=variables[iv]
+      if (param.ldensity_nolog) then begin
+        variables[iv]='1/spread(lnrho,3,3)*cross(graddiv(aa)-del2(aa),curl(aa))'
+      endif else begin
+        variables[iv]='1/spread(exp(lnrho),3,3)*cross(graddiv(aa)-del2(aa),curl(aa))'
+      endelse
 ; Vorticity
     endif else if (variables[iv] eq 'oo') then begin
       tags[iv]=variables[iv]
@@ -126,6 +134,10 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     endif else if (variables[iv] eq 'advlnrho') then begin
       tags[iv]=variables[iv]
       variables[iv]='-dot(uu,grad(lnrho))'
+; Density advection (non-logarithmic density)
+    endif else if (variables[iv] eq 'advrho') then begin
+      tags[iv]=variables[iv]
+      variables[iv]='-dot(uu,grad(lnrho))'
 ; Modulus of velocity
     endif else if (variables[iv] eq 'u2') then begin
       tags[iv]=variables[iv]
@@ -141,7 +153,11 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
 ; Pressure gradient
     endif else if (variables[iv] eq 'fpres') then begin
       tags[iv]=variables[iv]
-      variables[iv]='grad(lnrho)'
+      if (param.ldensity_nolog) then begin
+        variables[iv]='-grad(lnrho)'
+      endif else begin
+        variables[iv]='-1/spread(lnrho,3,3)*grad(lnrho)'
+      endelse
 ; Specific energy
     endif else if (variables[iv] eq 'ee') then begin
       tags[iv]=variables[iv]
