@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.15 2007-09-12 11:52:41 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.16 2007-12-03 12:20:31 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -9,7 +9,7 @@ pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, lplot=lplot, iplot=iplot, min=min, max=max, zoom=zoom, $
     xax=xax, yax=yax, xtitle=xtitle, ytitle=ytitle, title=title, $
     lsubbox=lsubbox, rsubbox=rsubbox, subboxcolor=subboxcolor, tsubbox=tsubbox,$
-    noaxes=noaxes, $
+    noaxes=noaxes, thick=thick, charsize=charsize, $
     t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
     position=position, fillwindow=fillwindow, tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
@@ -44,10 +44,17 @@ default, lsubbox, 0
 default, rsubbox, 5
 default, subboxcolor, 255
 default, tsubbox, 0.0
+default, thick, 1.0
+default, charsize, 1.0
 default, fillwindow, 0
 default, tformat, '(f5.1)'
 default, it1, 10
 default, quiet, 0
+;;
+;;  Define line and character thickness (will revert to old settings later).
+;;
+oldthick=thick
+!p.charthick=thick & !p.thick=thick & !x.thick=thick & !y.thick=thick
 ;
 if (fillwindow) then position=[0.1,0.1,0.9,0.9]
 ;;
@@ -160,7 +167,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
           range=[min, max], imgxrange=[x0,x1], imgyrange=[y0,y1], $
           xtitle=xtitle, ytitle=ytitle, title=title, $
           position=position, noerase=noerase, noaxes=noaxes, $
-          interp=interp
+          interp=interp, charsize=charsize, thick=thick
 ;;
 ;;  Enlargement of ``densest'' point.          
 ;;
@@ -174,7 +181,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
                 xax[imax[0]]-rsubbox], $
                [yax[imax[1]]-rsubbox,yax[imax[1]]-rsubbox, $
                 yax[imax[1]]+rsubbox,yax[imax[1]]+rsubbox, $
-                yax[imax[1]]-rsubbox], color=subboxcolor
+                yax[imax[1]]-rsubbox], color=subboxcolor, thick=thick
 ;;  Box crosses lower boundary.
         if (yax[imax[1]]-rsubbox lt y0) then begin
           oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
@@ -182,7 +189,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
                   xax[imax[0]]-rsubbox], $
                  [yax[imax[1]]+Ly-rsubbox,yax[imax[1]]+Ly-rsubbox, $
                   yax[imax[1]]+Ly+rsubbox,yax[imax[1]]+Ly+rsubbox, $
-                  yax[imax[1]]+Ly-rsubbox], color=subboxcolor
+                  yax[imax[1]]+Ly-rsubbox], color=subboxcolor, thick=thick
         endif
 ;;  Box crosses upper boundary.
         if (yax[imax[1]]+rsubbox gt y1) then begin
@@ -191,7 +198,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
                   xax[imax[0]]-rsubbox], $
                  [yax[imax[1]]-Ly-rsubbox,yax[imax[1]]-Ly-rsubbox, $
                   yax[imax[1]]-Ly+rsubbox,yax[imax[1]]-Ly+rsubbox, $
-                  yax[imax[1]]-Ly-rsubbox]
+                  yax[imax[1]]-Ly-rsubbox], thick=thick
         endif
 ;;  Subplot and box.
         if ( (xax[imax[0]]-rsubbox lt x0) or $
@@ -211,9 +218,10 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
             yrange=yax[imax[1]]+[-rsubbox,rsubbox], $
             range=[min,max], imgxrange=[x0,x1], imgyrange=[y0,y1], $
             position=subpos, /noerase, /noaxes, $
-            interp=interp
+            interp=interp, charsize=charsize, thick=thick
         plots, [subpos[0],subpos[2],subpos[2],subpos[0],subpos[0]], $
-               [subpos[1],subpos[1],subpos[3],subpos[3],subpos[1]], /normal
+               [subpos[1],subpos[1],subpos[3],subpos[3],subpos[1]], /normal, $
+               thick=thick
       endif
 
 ;;  For png output, take image from z-buffer.          
@@ -258,6 +266,11 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
     it=it+1
 ;;
 endwhile
+;;
+;;  Revert to old settings for line and character thickness.
+;;
+thick=oldthick
+!p.charthick=thick & !p.thick=thick & !x.thick=thick & !y.thick=thick
 ;;
 ;;  Put data in structure.
 ;;
