@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.366 2007-11-21 21:11:41 wlyra Exp $
+! $Id: density.f90,v 1.367 2007-12-03 21:12:03 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -133,7 +133,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.366 2007-11-21 21:11:41 wlyra Exp $")
+           "$Id: density.f90,v 1.367 2007-12-03 21:12:03 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1868,42 +1868,13 @@ module Density
         enddo
       enddo
 !
+! Correct the velocities for self-gravity
+!
+      call correct_for_selfgravity(f)
+!
 ! Correct the velocities by this density gradient
 !
       call correct_density_gradient(f)
-!
-! Correct the velocities for self-gravity, if needed
-!
-      if (lselfgravity) then
-!
-! feed linear density into the poisson solver
-!
-        f(:,:,:,ilnrho) = exp(f(:,:,:,ilnrho))
-        call calc_selfpotential(f)
-        f(:,:,:,ilnrho) = alog(f(:,:,:,ilnrho))
-!
-! update the boundaries for the self-potential
-!
-        call update_ghosts(f)
-!
-        do n=n1,n2
-          do m=m1,m2
-            call grad(f,ipotself,gpotself)
-!
-! the correction to the (squared) linear velocity is 
-! uphi_selfgravity**2=r*d(Phi)/dr
-!
-            if (lcylindrical_coords) then
-              usg=x(l1:l2)*gpotself(:,1)      
-              f(l1:l2,m,n,iuy)= sqrt(f(l1:l2,m,n,iuy)**2 + usg)
-            else
-              call stop_it("local_isothermal_density: "//&
-                   "Poisson solver not yet implemented for"//&
-                   " global Cartesian disks")
-            endif
-          enddo
-        enddo
-      endif
 !
     endsubroutine local_isothermal_density
 !***********************************************************************
@@ -1996,6 +1967,7 @@ module Density
                        'cannot have centrifugal equilibrium in the inner ',&
                        'domain. The pressure gradient is too steep at ',&
                        'x,y,z=',x(i+l1-1),y(m),z(n)
+                call stop_it("")
               endif
             endif
           enddo
@@ -2031,11 +2003,63 @@ module Density
         enddo
       enddo
 !
+! Correct self-gravity
+!
+      call correct_for_selfgravity(f)
+!
 ! Correct the velocities by this density gradient
 !
       call correct_density_gradient(f)
 !
     endsubroutine exponential_fall
+!**********************************************************
+    subroutine correct_for_selfgravity(f)
+!        
+      use Sub,         only:get_radial_distance,grad
+      use Selfgravity, only:calc_selfpotential
+      use Boundcond,   only:update_ghosts
+      use Mpicomm,     only:stop_it
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+
+      real, dimension(nx,3) :: gpotself
+      real, dimension(nx) :: usg      
+!
+! Do nothing if self-gravity is not called
+!
+      if (lselfgravity) then
+!
+! feed linear density into the poisson solver
+!
+        f(:,:,:,ilnrho) = exp(f(:,:,:,ilnrho))
+        call calc_selfpotential(f)
+        f(:,:,:,ilnrho) = alog(f(:,:,:,ilnrho))
+!
+! update the boundaries for the self-potential
+!
+        call update_ghosts(f)
+!
+        do n=n1,n2
+          do m=m1,m2
+            call grad(f,ipotself,gpotself)
+!
+! the correction to the (squared) linear velocity is 
+! uphi_selfgravity**2=r*d(Phi)/dr
+!
+            if (lcylindrical_coords) then
+              usg=sqrt((x(l1:l2)*gpotself(:,1))**2)      
+              f(l1:l2,m,n,iuy)= sqrt(f(l1:l2,m,n,iuy)**2 + usg)
+              !print*,usg
+            else
+              call stop_it("local_isothermal_density: "//&
+                   "Poisson solver not yet implemented for"//&
+                   " global Cartesian disks")
+            endif
+          enddo
+        enddo
+      endif ! if (lselfgravity)
+!
+    endsubroutine correct_for_selfgravity
 !**********************************************************************
     subroutine power_law_disk(f)
 !
