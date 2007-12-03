@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.34 2007-11-22 21:17:51 wlyra Exp $
+! $Id: poisson.f90,v 1.35 2007-12-03 21:19:41 wlyra Exp $
 
 !
 !  This module solves the Poisson equation
@@ -27,16 +27,16 @@ module Poisson
 
   implicit none
 
-  real :: kmax=0.0
+  real :: kmax=0.0, expand_factor=2.
   logical :: lrazor_thin=.false., lsemispectral=.false., lklimit_shear=.false.
 
   include 'poisson.h'
 
   namelist /poisson_init_pars/ &
-      lsemispectral, kmax, lrazor_thin, lklimit_shear
+      lsemispectral, kmax, lrazor_thin, lklimit_shear, expand_factor
 
   namelist /poisson_run_pars/ &
-      lsemispectral, kmax, lrazor_thin, lklimit_shear
+      lsemispectral, kmax, lrazor_thin, lklimit_shear, expand_factor
 
   contains
 
@@ -98,7 +98,11 @@ module Poisson
         endif
 !
       else
-        call inverse_laplacian_fft(phi)
+        if (lcylindrical_coords) then
+          call inverse_laplacian_fft_cyl(phi)
+        else
+          call inverse_laplacian_fft(phi)
+        endif
       endif
 !
     endsubroutine inverse_laplacian
@@ -119,7 +123,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.34 2007-11-22 21:17:51 wlyra Exp $")
+        "$Id: poisson.f90,v 1.35 2007-12-03 21:19:41 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -184,6 +188,9 @@ module Poisson
             else
               k2 = kx_fft(ikx)**2+ky_fft(iky+ipy*ny)**2
             endif
+
+            print*,phi(ikx,iky,ikz),b1(ikx,iky,ikz),ikx,iky
+            
             phi(ikx,iky,ikz) = -.5*phi(ikx,iky,ikz) / sqrt(k2)
             b1(ikx,iky,ikz)  = -.5* b1(ikx,iky,ikz) / sqrt(k2)
           endif
@@ -209,6 +216,232 @@ module Poisson
 !
     endsubroutine inverse_laplacian_fft
 !***********************************************************************
+    subroutine inverse_laplacian_fft_cyl(phi)
+!
+      use Mpicomm,only:stop_it
+!
+      real, dimension (nx,ny,nz) :: phi
+      real, dimension (nx,ny) :: sigmaxy,phixy
+!     
+      real, dimension (2*nx,2*ny) :: nb1,nsigmaxy,nphi
+!
+      real, dimension(nx) :: rad,tht,xc,yc
+      real, dimension(2*nx) :: xf,yf,rr,kkx_fft,kky_fft
+      real :: r0,rn,x0,xn,y0,yn,dxc,dyc,dr,dth,radius
+      real :: delr,delp,theta,fr,fp,p1,p2,p3,p4,interp_pot
+      integer :: nr,nth,ir,im,ix1,ix2,iy1,iy2
+      integer :: i,ir1,ir2,ip1,ip2,nnx,nny
+
+      real :: distx,disty,fx,fy,delx,dely,xp,yp,k2
+      real :: Lxn,Lyn,th0,thn
+!
+      integer :: ikx, iky,ng
+!
+! transform the grid to cartesian 
+!
+      !keep the notation consistent. also use nx=nx,ny=ny
+      nr=nx;rad=x(l1:l2) 
+      nth=ny;tht=y(m1:m2)
+!
+      rn=rad(nr);r0=rad(1)
+      thn=tht(nth);th0=tht(1)
+      xn=rad(nr);x0=-xn
+      yn=rad(nr);y0=-yn
+      dr =dx
+      dth=dy
+!
+      do i=1,nx
+        xc(i)=1.*(i-1)/(nx-1)*(xn-x0)+x0
+        yc(i)=xc(i)
+      enddo
+      dxc=xc(2)-xc(1)
+      dyc=dxc
+!
+      do m=1,ny
+        im=m1-1+m
+        do i=1,nx
+          radius=sqrt(xc(i)**2+yc(m)**2)
+          if ((radius.ge.r0).and.(radius.le.rn)) then 
+!       
+            theta=atan2(yc(m),xc(i))
+!              
+            ir1=floor((radius-r0)/dr ) +1;ir2=ir1+1
+            ip1=floor((theta -th0)/dth)+1;ip2=ip1+1
+!
+            if (ip1==0) then
+              ip1=nth
+              delp=theta-tht(ip1) + 2*pi
+            else
+              delp=theta -tht(ip1)
+            endif
+            if (ip2==nth+1) ip2=1
+!
+            if (ir1.lt.1     ) call stop_it("cyl2cart: ir1<1")
+            if (ir2.gt.nr    ) call stop_it("cyl2cart: ir2>nr")
+            if (ip1.lt.0     ) call stop_it("cyl2cart: ip1<0")
+            if (ip2.gt.nth+1 ) call stop_it("cyl2cart: ip2>nth+1")
+!
+            delr=radius-rad(ir1)
+
+            fr=delr/dr
+            fp=delp/dth
+!              
+            p1=phi(ir2,ip1,npoint-nghost)
+            p2=phi(ir1,ip1,npoint-nghost)
+            p3=phi(ir2,ip2,npoint-nghost)
+            p4=phi(ir1,ip2,npoint-nghost)
+!
+            interp_pot=fr*fp*(p3+p2-p1-p4) + fr*(p1-p2) + fp*(p4-p2) + p2
+!
+            sigmaxy(i,m)=interp_pot
+          else 
+            sigmaxy(i,m)=0.
+          endif
+        enddo
+      enddo
+      
+      do n=1,nz
+        phi(:,:,n)=sigmaxy
+      enddo
+!
+!  Now expand the grid and prepare the fourier transform
+!  The right-hand-side of the Poisson equation is purely real.
+!
+      nb1=0.0
+!
+!  Expand the grid
+!
+      nny=nint(2.*ny)
+      nnx=nint(2.*nx)
+      ng=nint(nx/2.)
+      do i=1,ng
+        xf(i)      =xc(1) -(ng+1-i)*dxc
+        xf(nnx+1-i)=xc(nx)+(ng+1-i)*dxc
+      enddo
+      do i=1,nx
+        xf(ng+i)=xc(i)
+      enddo
+      yf=xf
+!
+      do m=1,nny
+        rr=sqrt(xf**2+yf(m)**2)
+        do i=1,nnx
+          if (rr(i) .gt. rn) then 
+!zero mass reservoir
+            nsigmaxy(i,m)=0.
+          else
+            !copy original density
+!              
+            ix = i-nx/2
+            iy = m-ny/2
+!
+            nsigmaxy(i,m)=sigmaxy(ix,iy)
+!
+          endif
+        enddo
+      enddo
+!
+!  Forward transform (to k-space).
+!
+      nb1=0.
+      call fourier_transform_other(nsigmaxy,nb1)
+      nphi=nsigmaxy
+!
+!  Solve Poisson equation
+!
+      Lxn=2*xf(nnx)
+      Lyn=2*yf(nny)
+!
+      kkx_fft=cshift((/(i-(nnx+1)/2,i=0,nnx-1)/),+(nnx+1)/2)*2*pi/Lxn
+      kky_fft=cshift((/(i-(nny+1)/2,i=0,nny-1)/),+(nny+1)/2)*2*pi/Lyn
+!
+      do iky=1,nny
+        do ikx=1,nnx
+          if ((kkx_fft(ikx)==0.0) .and. (kky_fft(iky)==0.0)) then
+          nphi(ikx,iky) = 0.0
+          nb1(ikx,iky) = 0.0
+        else
+          if (.not.lrazor_thin) then
+            call stop_it("3d case not implemented yet")
+!
+!  Razor-thin approximation. Here we solve the equation
+!    del2Phi=4*pi*G*Sigma(x,y)*delta(z)
+!  The solution at scale k=(kx,ky) is
+!    Phi(x,y,z)=-(2*pi*G/|k|)*Sigma(x,y)*exp[i*(kx*x+ky*y)-|k|*|z|]
+!
+          else
+            
+            k2 = (kkx_fft(ikx)**2+kky_fft(iky)**2)
+            nphi(ikx,iky) = -.5*nphi(ikx,iky) / sqrt(k2)
+            nb1(ikx,iky) = -.5*nb1(ikx,iky) / sqrt(k2)
+          endif
+        endif
+!
+!  Limit |k| < kmax
+!
+          if (kmax>0.0) then
+            if (sqrt(k2)>=kmax) then
+              nphi(ikx,iky) = 0.
+              nb1(ikx,iky) = 0.
+            endif
+          endif
+        enddo
+      enddo
+!
+!  Inverse transform (to real space).
+!
+      call fourier_transform_other(nphi,nb1,linv=.true.)
+!
+!  Map newphi back into phi
+!
+      do m=1,ny
+        do i=1,nx
+!
+          ix=i+nx/2
+          iy=m+ny/2
+!
+          phixy(i,m)=nphi(ix,iy)
+!
+        enddo
+      enddo
+!
+!  Convert back to cylindrical 
+!
+      do n=1,Nz;do ir=1,Nr; do ip=1,Nth
+    
+        xp=rad(ir)*cos(tht(ip))
+        yp=rad(ir)*sin(tht(ip))
+          
+        distx = xp - x0
+        disty = yp - y0
+
+        ix1 = floor(distx/dxc)+1 ; ix2 = ix1+1
+        iy1 = floor(disty/dyc)+1 ; iy2 = iy1+1
+!
+        if (ix1 .lt.  1)  call stop_it("ix1 lt 1")
+        if (iy1 .lt.  1)  call stop_it("iy1 lt 1")
+        if (ix2 .gt. Nx)  call stop_it("ix2 gt Nx")
+        if (iy2 .gt. Ny)  call stop_it("iy2 gy Ny")
+!          
+        delx = xp - xc(ix1)
+        dely = yp - yc(iy1) 
+!
+        fx=delx/dxc
+        fy=dely/dyc
+!         
+        p1=phixy(ix2,iy1)
+        p2=phixy(ix1,iy1)
+        p3=phixy(ix2,iy2)
+        p4=phixy(ix1,iy2)
+!
+        interp_pot=fx*fy*(p3+p2-p1-p4) + fx*(p1-p2) + fy*(p4-p2) + p2
+!          
+        phi(ir,ip,1:nz)=interp_pot
+!
+      enddo;enddo;enddo
+!
+    endsubroutine inverse_laplacian_fft_cyl
+!***********************************************************************
     subroutine inverse_laplacian_semispectral(phi)
 !
 !  Solve the Poisson equation by Fourier transforming in the xy-plane and
@@ -231,7 +464,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.34 2007-11-22 21:17:51 wlyra Exp $")
+        "$Id: poisson.f90,v 1.35 2007-12-03 21:19:41 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -368,7 +601,7 @@ module Poisson
 !  lim  f'/f  =  lim  f"/f'
 ! r-->0         r-->0  
 !
-          b_tri(1) =-4./dr**2 !- (ky_fft(iky)/rad(0))**2
+          b_tri(1) =-4./dr**2 !- (ky_fft(iky)/rad(1))**2
           c_tri(1) = 4./dr**2
 !
 ! Vanishing second order derivative in the outer boundary
