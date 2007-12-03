@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.218 2007-11-27 11:25:59 brandenb Exp $
+# $Id: getconf.csh,v 1.219 2007-12-03 05:31:27 sur Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -528,6 +528,7 @@ else if (($hn =~ n[0-9]*) && ($USER =~ sur || $USER =~ kandu)) then
   set local_disc = 0
   set one_local_disc = 0
   set local_binary = 0
+  set remote_top = 1
 
 else if ($hn =~ corona*) then
   echo "Corona SunFire - CSC, Espoo, Finland"
