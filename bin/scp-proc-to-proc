@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: scp-proc-to-proc,v 1.8 2007-11-27 10:48:57 brandenb Exp $
+#$Id: scp-proc-to-proc,v 1.9 2007-12-03 15:31:13 brandenb Exp $
 #
 #  Purpose:
 #      copies directory trees to another machine
@@ -13,10 +13,24 @@
 #  will copy all var.dat files fron current directory to var.dat in
 #  another run directory.
 #  Used for restarting in a different directory.
+#  Added 4th argument for skipping over $skip counts
+
+if ($#argv == 4) then
+  set skip=$4
+else
+  set skip=0
+endif
+
+# set counter
+set counter="1"
 
 set procdirs  =  `ls data | grep proc `
 foreach proc ($procdirs)
-  echo "scp data/$proc/$1 $2/data/$proc"
-  scp $3/data/$proc/$1 $2/data/$proc &
-  sleep 1
+  if ( $counter >= $skip ) then
+    echo "scp $3/data/$proc/$1 $2/data/$proc"
+    nohup scp $3/data/$proc/$1 $2/data/$proc &
+    sleep 1
+  endif
+  set counter = `expr $counter + 1`
+  echo "counter=$counter"
 end
