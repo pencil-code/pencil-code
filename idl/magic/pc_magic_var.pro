@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.29 2007-12-03 09:56:03 ajohan Exp $
+; $Id: pc_magic_var.pro,v 1.30 2007-12-04 07:14:38 ajohan Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2007-12-03 09:56:03 $
-;  $Revision: 1.29 $
+;  $Date: 2007-12-04 07:14:38 $
+;  $Revision: 1.30 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -110,9 +110,9 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     endif else if (variables[iv] eq 'flor') then begin
       tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='1/spread(lnrho,3,3)*cross(graddiv(aa)-del2(aa),curl(aa))'
+        variables[iv]='spread(1/lnrho,3,3)*cross(graddiv(aa)-del2(aa),curl(aa))'
       endif else begin
-        variables[iv]='1/spread(exp(lnrho),3,3)*cross(graddiv(aa)-del2(aa),curl(aa))'
+        variables[iv]='spread(1/exp(lnrho),3,3)*cross(graddiv(aa)-del2(aa),curl(aa))'
       endelse
 ; Vorticity
     endif else if (variables[iv] eq 'oo') then begin
@@ -156,7 +156,7 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
       if (param.ldensity_nolog) then begin
         variables[iv]='-grad(lnrho)'
       endif else begin
-        variables[iv]='-1/spread(lnrho,3,3)*grad(lnrho)'
+        variables[iv]='spread(-1/lnrho,3,3)*grad(lnrho)'
       endelse
 ; Specific energy
     endif else if (variables[iv] eq 'ee') then begin
