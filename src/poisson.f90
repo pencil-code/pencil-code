@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.35 2007-12-03 21:19:41 wlyra Exp $
+! $Id: poisson.f90,v 1.36 2007-12-04 14:56:25 wlyra Exp $
 
 !
 !  This module solves the Poisson equation
@@ -123,7 +123,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.35 2007-12-03 21:19:41 wlyra Exp $")
+        "$Id: poisson.f90,v 1.36 2007-12-04 14:56:25 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -225,13 +225,17 @@ module Poisson
 !     
       real, dimension (2*nx,2*ny) :: nb1,nsigmaxy,nphi
 !
-      real, dimension(nx) :: rad,tht,xc,yc
-      real, dimension(2*nx) :: xf,yf,rr,kkx_fft,kky_fft
-      real :: r0,rn,x0,xn,y0,yn,dxc,dyc,dr,dth,radius
+      real, dimension(nx) :: rad,xc
+      real, dimension(ny) :: tht,yc
+
+      real, dimension(2*nx) :: xf,kkx_fft
+      real, dimension(2*ny) :: yf,kky_fft
+
+      real :: r0,rn,x0,xn,y0,yn,dxc,dyc,dr,dth,radius,rr
       real :: delr,delp,theta,fr,fp,p1,p2,p3,p4,interp_pot
       integer :: nr,nth,ir,im,ix1,ix2,iy1,iy2
       integer :: i,ir1,ir2,ip1,ip2,nnx,nny
-
+!
       real :: distx,disty,fx,fy,delx,dely,xp,yp,k2
       real :: Lxn,Lyn,th0,thn
 !
@@ -252,8 +256,11 @@ module Poisson
 !
       do i=1,nx
         xc(i)=1.*(i-1)/(nx-1)*(xn-x0)+x0
-        yc(i)=xc(i)
       enddo
+      do i=1,ny
+        yc(i)=1.*(i-1)/(ny-1)*(yn-y0)+y0
+      enddo
+!
       dxc=xc(2)-xc(1)
       dyc=dxc
 !
@@ -321,12 +328,19 @@ module Poisson
       do i=1,nx
         xf(ng+i)=xc(i)
       enddo
-      yf=xf
+!
+      do i=1,ng
+        yf(i)      =yc(1) -(ng+1-i)*dyc
+        yf(nnx+1-i)=yc(nx)+(ng+1-i)*dyc
+      enddo
+      do i=1,ny
+        yf(ng+i)=yc(i)
+      enddo
 !
       do m=1,nny
-        rr=sqrt(xf**2+yf(m)**2)
         do i=1,nnx
-          if (rr(i) .gt. rn) then 
+          rr=sqrt(xf(i)**2+yf(m)**2)
+          if (rr .gt. rn) then 
 !zero mass reservoir
             nsigmaxy(i,m)=0.
           else
@@ -464,7 +478,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.35 2007-12-03 21:19:41 wlyra Exp $")
+        "$Id: poisson.f90,v 1.36 2007-12-04 14:56:25 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
