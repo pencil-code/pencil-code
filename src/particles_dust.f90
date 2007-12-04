@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.197 2007-09-16 22:15:20 wlyra Exp $
+! $Id: particles_dust.f90,v 1.198 2007-12-04 08:39:08 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -43,7 +43,7 @@ module Particles
   real :: tstart_dragforce_par=0.0, tstart_grav_par=0.0
   real :: tstart_collisional_cooling=0.0
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
-  real :: coeff_restitution=0.5
+  real :: coeff_restitution=0.5, mean_free_path_gas=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer, dimension (npar_species) :: ipar_fence_species=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
@@ -55,7 +55,8 @@ module Particles
   logical :: ltau_coll_min_courant=.true.
   logical :: lsmooth_dragforce_dust=.false., lsmooth_dragforce_gas=.false.
   logical :: ldragforce_equi_global_eps=.false.
-  logical, parameter :: ldraglaw_epstein=.true.
+  logical :: ldraglaw_epstein=.true.
+  logical :: ldraglaw_epstein_stokes_linear=.false.
   logical :: lcoldstart_amplitude_correction=.false.
   logical :: linterpolate_spline=.true.
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
@@ -80,7 +81,8 @@ module Particles
       tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole, &
       epsp_friction_increase,lcartesian_mig, lcollisional_dragforce_cooling, &
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
-      lmigration_real_check
+      lmigration_real_check, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
+      mean_free_path_gas
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -95,7 +97,8 @@ module Particles
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
-      lmigration_real_check,lcartesian_mig
+      lmigration_real_check,lcartesian_mig, &
+      ldraglaw_epstein, ldraglaw_epstein_stokes_linear, mean_free_path_gas
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -128,7 +131,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.197 2007-09-16 22:15:20 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.198 2007-12-04 08:39:08 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -354,6 +357,8 @@ module Particles
       endif
 !
       if (lcollisional_cooling_twobody) allocate(kneighbour(mpar_loc))
+!
+      if (ldraglaw_epstein_stokes_linear) ldraglaw_epstein=.false.
 !
     endsubroutine initialize_particles
 !***********************************************************************
@@ -2009,8 +2014,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (ldraglaw_epstein) then
         if (iap/=0) then
-          if (fp(k,iap)/=0.0) &
-              tausp1_par = 1/(fp(k,iap)*rhops)
+          if (fp(k,iap)/=0.0) tausp1_par = 1/(fp(k,iap)*rhops)
         else
           if (npar_species>1) then
 !  Multiple dust particle species.
@@ -2021,6 +2025,38 @@ k_loop:   do while (.not. (k>npar_loc))
             tausp1_par=tausp1
           endif
         endif
+      else if (ldraglaw_epstein_stokes_linear) then
+!
+!  When the particle radius is larger than 9/4 times the mean free path
+!  of the gas molecules one must use the Stokes drag law rather than the
+!  Epstein law.
+!
+!  We need here to know the mean free path of the gas molecules:
+!    lambda = mu_mol/(rhog*sigma_mol) 
+!
+!  The quantities are:
+!    mu_mol    = mean molecular weight          [=3.9e-24 g for H_2]
+!    rhog      = gas density
+!    sigma_mol = cross section of gas molecules [=2e-15 cm^2 for H_2]
+!
+!  Actually need to know the mean free path in units of the gas scale
+!  height H [if H=1]. Inserting the mid-plane expression
+!    rhog=Sigmag/[sqrt(2*pi)*H]
+!  gives
+!    lambda/H = sqrt(2*pi)*mu_mol/(Sigmag*sigma_mol)
+!            ~= 4.5e-9/Sigmag
+!  when Sigmag is given in g/cm^2.
+!
+        if (iap==0) then
+          if (lroot) print*, 'get_frictiontime: need particle radius as dynamical variable for Stokes law'
+          call fatal_error('get_frictiontime','')
+        endif
+        if (fp(k,iap)<2.25*mean_free_path_gas) then
+          tausp1_par = 1/(fp(k,iap)*rhops)
+        else
+          tausp1_par = 1/(fp(k,iap)*rhops)*2.25*mean_free_path_gas/fp(k,iap)
+        endif
+        print*, fp(k,iap), 2.25*mean_free_path_gas, 1/tausp1_par
       endif
 !
 !  Change friction time artificially.
