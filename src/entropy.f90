@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.538 2007-11-30 08:45:26 dintrans Exp $
+! $Id: entropy.f90,v 1.539 2007-12-04 17:41:45 pkapyla Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -189,6 +189,9 @@ module Entropy
   integer :: idiag_TTmz=0       ! DIAG_DOC:
   integer :: idiag_TTmxy=0      ! DIAG_DOC:
   integer :: idiag_TTmr=0       ! DIAG_DOC:
+  integer :: idiag_uxTTmz=0     ! DIAG_DOC:
+  integer :: idiag_uyTTmz=0     ! DIAG_DOC:
+  integer :: idiag_uzTTmz=0     ! DIAG_DOC:
 
   contains
 
@@ -216,7 +219,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.538 2007-11-30 08:45:26 dintrans Exp $")
+           "$Id: entropy.f90,v 1.539 2007-12-04 17:41:45 pkapyla Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -1793,7 +1796,8 @@ module Entropy
       endif
       if (idiag_TTm/=0 .or. idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. &
           idiag_TTmz/=0 .or. idiag_TTmxy/=0 .or. idiag_TTmr/=0 .or. &
-          idiag_TTmax/=0 .or. idiag_TTmin/=0) &
+          idiag_TTmax/=0 .or. idiag_TTmin/=0 .or. &
+          idiag_uxTTmz/=0 .or.idiag_uyTTmz/=0 .or.idiag_uzTTmz/=0) &
           lpenc_diagnos(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_dtc/=0) lpenc_diagnos(i_cs2)=.true.
@@ -2069,11 +2073,17 @@ module Entropy
         if (idiag_ssmz/=0)  call xysum_mn_name_z(p%ss,idiag_ssmz)
         if (idiag_ssmy/=0)  call xzsum_mn_name_y(p%ss,idiag_ssmy)
         if (idiag_ssmx/=0)  call yzsum_mn_name_x(p%ss,idiag_ssmx)
-        if (idiag_TTmx/=0)  call yzsum_mn_name_x(p%TT,idiag_TTmz)
+        if (idiag_TTmx/=0)  call yzsum_mn_name_x(p%TT,idiag_TTmx)
         if (idiag_TTmy/=0)  call xzsum_mn_name_y(p%TT,idiag_TTmy)
         if (idiag_TTmz/=0)  call xysum_mn_name_z(p%TT,idiag_TTmz)
         if (idiag_ssmr/=0)  call phizsum_mn_name_r(p%ss,idiag_ssmr)
         if (idiag_TTmr/=0)  call phizsum_mn_name_r(p%TT,idiag_TTmr)
+        if (idiag_uxTTmz/=0) &
+            call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTTmz)
+        if (idiag_uyTTmz/=0) &
+            call xysum_mn_name_z(p%uu(:,2)*p%TT,idiag_uyTTmz)
+        if (idiag_uzTTmz/=0) &
+            call xysum_mn_name_z(p%uu(:,3)*p%TT,idiag_uzTTmz)
       endif
 !
       if (l2davgfirst) then
@@ -2996,6 +3006,7 @@ module Entropy
         idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
         idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0; idiag_ssmr=0; idiag_TTmr=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0
+        idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -3044,6 +3055,9 @@ module Entropy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz',idiag_fradz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssmz',idiag_ssmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxTTmz',idiag_uxTTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyTTmz',idiag_uyTTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzTTmz',idiag_uzTTmz)
       enddo
 !
       do inamer=1,nnamer
@@ -3086,6 +3100,9 @@ module Entropy
         write(3,*) 'i_fradz=',idiag_fradz
         write(3,*) 'i_ssmz=',idiag_ssmz
         write(3,*) 'i_TTmz=',idiag_TTmz
+        write(3,*) 'i_uxTTmz=',idiag_uxTTmz
+        write(3,*) 'i_uyTTmz=',idiag_uyTTmz
+        write(3,*) 'i_uzTTmz=',idiag_uzTTmz
         write(3,*) 'i_ssmr=',idiag_ssmr
         write(3,*) 'i_TTmr=',idiag_TTmr
         write(3,*) 'nname=',nname
