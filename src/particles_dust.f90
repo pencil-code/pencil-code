@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.198 2007-12-04 08:39:08 ajohan Exp $
+! $Id: particles_dust.f90,v 1.199 2007-12-04 12:25:31 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -131,7 +131,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.198 2007-12-04 08:39:08 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.199 2007-12-04 12:25:31 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -2056,7 +2056,6 @@ k_loop:   do while (.not. (k>npar_loc))
         else
           tausp1_par = 1/(fp(k,iap)*rhops)*2.25*mean_free_path_gas/fp(k,iap)
         endif
-        print*, fp(k,iap), 2.25*mean_free_path_gas, 1/tausp1_par
       endif
 !
 !  Change friction time artificially.
