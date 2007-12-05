@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.37 2007-12-05 14:40:23 wlyra Exp $
+! $Id: poisson.f90,v 1.38 2007-12-05 14:43:50 wlyra Exp $
 
 !
 !  This module solves the Poisson equation
@@ -123,7 +123,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.37 2007-12-05 14:40:23 wlyra Exp $")
+        "$Id: poisson.f90,v 1.38 2007-12-05 14:43:50 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -217,6 +217,10 @@ module Poisson
     endsubroutine inverse_laplacian_fft
 !***********************************************************************
     subroutine inverse_laplacian_fft_cyl(phi)
+!
+! NOT YET READY FOR MPI!!!
+!
+! 01-12-07/wlad: coded
 !
       use Mpicomm,only:stop_it
 !
@@ -331,7 +335,7 @@ module Poisson
 !
       do i=1,ng
         yf(i)      =yc(1) -(ng+1-i)*dyc
-        yf(nnx+1-i)=yc(ny)+(ng+1-i)*dyc
+        yf(nny+1-i)=yc(ny)+(ng+1-i)*dyc
       enddo
       do i=1,ny
         yf(ng+i)=yc(i)
@@ -478,7 +482,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.37 2007-12-05 14:40:23 wlyra Exp $")
+        "$Id: poisson.f90,v 1.38 2007-12-05 14:43:50 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
