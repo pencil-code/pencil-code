@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.16 2007-12-03 12:20:31 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.17 2007-12-05 13:42:01 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -60,8 +60,8 @@ if (fillwindow) then position=[0.1,0.1,0.9,0.9]
 ;;
 ;;  Get necessary dimensions.
 ;;
-pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
-pc_set_precision, dim=dim, quiet=quiet
+pc_read_dim, obj=dim, datadir=datadir, /quiet
+pc_set_precision, dim=dim, /quiet
 ;;
 ;;  Derived dimensions.
 ;;
@@ -242,7 +242,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
 ;;
 ;;  Diagnostics.
 ;;
-    if (it mod it1 eq 0) then begin
+    if ( (not quiet) and (it mod it1 eq 0) ) then begin
       if (it eq 0 ) then $
           print, '  ------- it ------- ivar -------- t --------- min(var) ------- max(var) -----'
       for ivar=0,nvar-1 do begin
@@ -277,7 +277,7 @@ thick=oldthick
 if (nit ne 0) then begin
   makeobject="object = CREATE_STRUCT(name=objectname,['t'," + $
       arraytostring(varnames,QUOTE="'",/noleader) + "]," + $
-      "tt,"+arraytostring(varnames,/noleader) + ")"
+      "tt[0:it-1],"+arraytostring(varnames+'[*,*,0:it-1]',/noleader) + ")"
 ;
   if (execute(makeobject) ne 1) then begin
     message, 'ERROR Evaluating variables: ' + makeobject, /INFO
