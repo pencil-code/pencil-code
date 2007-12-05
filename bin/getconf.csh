@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.222 2007-12-05 12:50:53 dobler Exp $
+# $Id: getconf.csh,v 1.223 2007-12-05 15:45:45 sur Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -534,11 +534,6 @@ else if (($hn =~ n[0-9]*) && ($USER =~ sur || $USER =~ kandu)) then
   set one_local_disc = 0
   set local_binary = 0
   set remote_top = 1
-  set nodelist = `perl < $SLURM_NODELIST -ne 'next if /^\s*(#.*)?$/; if (/\s*([^[]+)\[([^\]]*)/) { ($prefix,$list)=($1,$2); $list =~ s/([0-9]+)-([0-9]+)/join(" ", $1..$2)/eg; $list =~ s/([ ,]+)/ $prefix/g}; print "$prefix$list\n";'`
-  echo "SLURM_NODELIST = $SLURM_NODELIST"
-  echo "nodelist = $nodelist"
-  echo "SLURM_TASKS_PER_NODE = $SLURM_TASKS_PER_NODE"
-
 
 else if ($hn =~ corona*) then
   echo "Corona SunFire - CSC, Espoo, Finland"
