@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.17 2007-12-05 13:42:01 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.18 2007-12-05 13:43:14 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -272,7 +272,8 @@ endwhile
 thick=oldthick
 !p.charthick=thick & !p.thick=thick & !x.thick=thick & !y.thick=thick
 ;;
-;;  Put data in structure.
+;;  Put data in structure. One must set nit>0 to specify how many lines
+;;  of data that should be saved.
 ;;
 if (nit ne 0) then begin
   makeobject="object = CREATE_STRUCT(name=objectname,['t'," + $
