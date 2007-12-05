@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.407 2007-11-21 21:20:10 wlyra Exp $
+! $Id: hydro.f90,v 1.408 2007-12-05 09:05:46 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -325,7 +325,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.407 2007-11-21 21:20:10 wlyra Exp $")
+           "$Id: hydro.f90,v 1.408 2007-12-05 09:05:46 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3088,7 +3088,6 @@ use Mpicomm, only: stop_it
         f(l1:l2,m,n,iux) = 0.
         f(l1:l2,m,n,iuy) = 0.
         f(l1:l2,m,n,iuz) = prof_amp1*(1.5-7.5*costh(m)*costh(m))
-        f(l1:l2,m,n,iuz+1) = 1.
        else
        endif
 !
