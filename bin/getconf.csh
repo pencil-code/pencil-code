@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.219 2007-12-03 05:31:27 sur Exp $
+# $Id: getconf.csh,v 1.220 2007-12-05 09:07:17 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -146,7 +146,12 @@ else if ($?PE_HOSTFILE) then
   set nodelist = `cat $PE_HOSTFILE | grep -v '^#' | sed 's/\ .*//'`
 else if ($?SLURM_NODELIST) then
   if ($debug) echo "Simple Linux Utility for Resource Management (SLURM) job"
-  set nodelist = `cat $SLURM_NODELIST | grep -v '^#' | sed 's/\ .*//'`
+  # unpack SLURM_NODELIST with one line of the form
+  #   n[41,43-49,69-70,111-114]
+  # into the explicit list form
+  #   n41 n43 n44 n45 n46 n47 n48 n49 n69 n70 n111 n112 n113 n114
+  # using a Perl ``one-liner'':
+  set nodelist = `perl < $SLURM_NODELIST -ne 'next if /^\s*(#.*)?$/; if (/\s*([^[]+)\[([^\]]*)/) { ($prefix,$list)=($1,$2); $list =~ s/([0-9]+)-([0-9]+)/join(" ", $1..$2)/eg; $list =~ s/([ ,]+)/ $prefix/g}; print "$prefix$list\n";'`
   echo "SLURM_NODELIST = $SLURM_NODELIST"
   echo "nodelist = $nodelist"
   echo "SLURM_TASKS_PER_NODE = $SLURM_TASKS_PER_NODE"
