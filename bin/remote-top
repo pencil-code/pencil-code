@@ -3,11 +3,12 @@
 # Name:   remote-top
 # Author: wd+ab
 # Date:    7-Oct-2002
-# $Id: remote-top,v 1.8 2005-06-26 17:34:17 eos_merger_tony Exp $
+# $Id: remote-top,v 1.9 2007-12-06 11:00:00 sur Exp $
 # Description:
 #     does top -bn1 on all procs of nodelist, write to datadir
 
 set debug = 0
+unsetenv DISPLAY
 
 # Unpack NODELIST to csh array
 set nodelist = `echo "$NODELIST" | sed 's/:/ /g'`
