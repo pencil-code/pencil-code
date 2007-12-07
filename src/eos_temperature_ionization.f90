@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.60 2007-11-21 11:45:00 wlyra Exp $
+! $Id: eos_temperature_ionization.f90,v 1.61 2007-12-07 18:17:56 steveb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -37,7 +37,7 @@ module EquationOfState
   end interface
 
   ! integers specifying which independent variables to use in eoscalc
-  integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
+  integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4,ilnrho_TT=5
 
   !  secondary parameters calculated in initialize
   real :: mu1_0,Rgas
@@ -129,7 +129,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.60 2007-11-21 11:45:00 wlyra Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.61 2007-12-07 18:17:56 steveb Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
