@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.193 2007-11-22 11:33:02 ajohan Exp $
+! $Id: boundcond.f90,v 1.194 2007-12-08 16:09:10 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -190,10 +190,12 @@ module Boundcond
                   ! BCX_DOC: extrapolation [describe]
                   call bcx_extrap_2_2(f,topbot,j)
                 case ('spd')
-                  ! BCX_DOC: Only for spherical polar coordinate system, 
                   ! BCX_DOC:  sets  d(rA_{\alpha})/dr = fbcx12(j)
                   call bc_set_spder_x(f,topbot,j,fbcx12(j))
                 case('sfr')
+<<<<<<< boundcond.f90
+                  ! BCX_DOC: "stress-free" boundary condition for spherical coordinate system. 
+=======
                   ! BCX_DOC: stress-free boundary condition for spherical
                   ! BCX_DOC: coordinates.
                   ! BCX_DOC: $d_r(u_{\theta}) = u_{\theta}/r$  with $u_r = 0$
@@ -205,8 +207,12 @@ module Boundcond
                   ! BCX_DOC: of f. 
                   ! BCX_DOC: \nFIXME: this description is completely
                   ! BCX_DOC: incomprehensible [wd, 12-nov-2007] 
+>>>>>>> 1.193
                   call bc_set_sfree_x(f,topbot,j)
                 case('pfc')
+<<<<<<< boundcond.f90
+                  !BCX_DOC: perfect-conductor in spherical coordinate: $d/dr( A_r) + 2/r = 0$ . 
+=======
                   ! BCX_DOC: In spherical polar coordinate system,
                   ! BCX_DOC: at a radial boundary set : $A_{\theta} = 0$ and 
                   ! BCX_DOC: $A_{phi} = 0$, and demand $div A = 0$ gives the 
@@ -215,6 +221,7 @@ module Boundcond
                   ! BCX_DOC: component of f. As this is related to setting the
                   ! BCX_DOC: perfect conducting boundary condition we call 
                   ! BCX_DOC: this "pfc".  
+>>>>>>> 1.193
                   call bc_set_pfc_x(f,topbot,j)
                  case ('fix')
                   ! BCX_DOC: set boundary value [really??]
@@ -353,6 +360,9 @@ module Boundcond
                 ! BCY_DOC: set derivative on the boundary
                 call bc_set_der_y(f,topbot,j,fbcy12(j))
               case('sfr')
+<<<<<<< boundcond.f90
+                  ! BCY_DOC: "stress-free" boundary condition for spherical coordinate system. 
+=======
                   ! BCY_DOC: stress-free boundary condition for spherical
                   ! BCY_DOC: coordinates.
                   ! BCY_DOC: $(1/r)d_\theta(u_{\phi}) =\cot(\theta) u_{\phi}$
@@ -363,8 +373,12 @@ module Boundcond
                   ! BCY_DOC: boundary condition for 'j'-th component of f. 
                   ! BCX_DOC: \nFIXME: this description is completely
                   ! BCX_DOC: incomprehensible [wd, 12-nov-2007] 
+>>>>>>> 1.193
                   call bc_set_sfree_y(f,topbot,j)
               case('pfc')
+<<<<<<< boundcond.f90
+                  !BCY_DOC: perfect conducting boundary condition along $\theta$ boundary  
+=======
                   ! BCY_DOC: In spherical polar coordinate system,
                   ! BCY_DOC: at a theta boundary set : $A_r = 0$ and 
                   ! BCY_DOC: $A_{\phi} = 0$, and demand $div A = 0$ gives the 
@@ -374,6 +388,7 @@ module Boundcond
                   ! BCY_DOC: component of f. As this is related to setting the
                   ! BCY_DOC: perfect conducting boundary condition we call 
                   ! BCY_DOC: this "pfc".  
+>>>>>>> 1.193
                   call bc_set_pfc_y(f,topbot,j)
               case ('')
                 ! do nothing; assume that everything is set
