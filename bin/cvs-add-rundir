@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: cvs-add-rundir,v 1.6 2005-06-26 17:34:16 eos_merger_tony Exp $
+# CVS: $Id: cvs-add-rundir,v 1.7 2007-12-09 17:06:37 ajohan Exp $
 
 # Name:   cvs-add-rundir
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -29,6 +29,8 @@ endif
 cvs add *.in
 cvs add src
 cvs add src/*.local
+
+if (-e k.dat) cvs add k.dat
 
 if ($commit) then
   cvs commit
