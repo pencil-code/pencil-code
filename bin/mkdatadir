@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.66 2007-11-30 04:12:51 brandenb Exp $
+#  $Id: mkdatadir,v 1.67 2007-12-09 17:07:39 ajohan Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -104,7 +104,11 @@ else if ($hn =~ psi24*) then
   set str='s/afs\/ipp-garching\.mpg\.de\/home\/a/u/g'
 else if (($hn =~ rio* || $hn =~ pia*) && ($USER =~ ajohan)) then
   if ( $cwd =~ \/afs\/* ) set str='s/afs\/ipp\/home\/[a-z]/nfs\/mpia2/g'
-  if ( $cwd =~ \/nfs\/* ) set str='s/\/nfs\/mpia2\/ajohan\/pencil-code\/runs/\/nfs\/mpia2\/ajohan\/pencil-code\/anders/g'
+  if ( $cwd =~ \/nfs\/* ) then
+    echo "We are on /nfs at pia, so datadir is simply data/"
+    mkdir data
+    exit
+  endif
 else if (($hn =~ rio* || $hn =~ pia*) && ($USER =~ wlyra)) then
   set str='s/code/data/g'
 else if ($hn =~ *.uppmax.uu.se) then 
