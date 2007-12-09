@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.472 2007-12-09 17:03:42 ajohan Exp $
+! $Id: magnetic.f90,v 1.473 2007-12-09 17:05:01 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -365,7 +365,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.472 2007-12-09 17:03:42 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.473 2007-12-09 17:05:01 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -780,7 +780,8 @@ module Magnetic
             endif
             f(l1:l2,m,n,iax) = scaleH*sqrt(2*mu0*pi*rhomid*cs20/beta_const) &
                 *erfunc(0.5*z(n)/scaleH)
-            f(l1:l2,m,n,iuy) = 1/(2*Omega)*cs20*(1+1/beta_const)* &
+            if (Omega/=0.0) f(l1:l2,m,n,iuy) = &
+                1/(2*Omega)*cs20*(1+1/beta_const)* &
                 1/rhomid*(-amplaa(j)*kx_aa(j)*sin(kx_aa(j)*x(l1:l2)))
           enddo; enddo
 !
@@ -800,12 +801,12 @@ module Magnetic
               f(l1:l2,m,n,ilnrho) = alog(rhomid)-0.5*(z(n)/scaleH)**2
               rho=exp(f(l1:l2,m,n,ilnrho))
             endif
-            f(l1:l2,m,n,iglobal_by_ext)= &
+            f(l1:l2,m,n,iglobal_by_ext) = &
                 sqrt(2*mu0*1.0**2*rho/beta_const)
-            f(l1:l2,m,n,iglobal_jx_ext)= &
+            f(l1:l2,m,n,iglobal_jx_ext) = &
                 sqrt(0.5*mu0*1.0**2/beta_const)*sqrt(rho)*z(n)/scaleH**2
             if (amplaa(j)/=0.0) then
-              f(l1:l2,m,n,iglobal_jz_ext)= &
+              f(l1:l2,m,n,iglobal_jz_ext) = &
                   sqrt(0.5*mu0*1.0**2/beta_const)*1/sqrt(rhomid)* &
                   (-amplaa(j)*kx_aa(j)*sin(kx_aa(j)*x(l1:l2)))* &
                   exp(-z(n)**2/(4*scaleH**2))
