@@ -61,7 +61,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.55 2007-12-10 07:49:49 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.56 2007-12-10 09:05:15 dintrans Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -461,7 +461,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Remove ghost zones if requested.
 ;
-  if (keyword_set(trimall)) then variables = 'pc_noghost('+variables+',dim=dim)'
+  if (keyword_set(trimall)) then variables = 'pc_noghost('+variables+',dim=dim,run2d=run2d)'
 ;
 ; Make structure out of the variables.
 ;
