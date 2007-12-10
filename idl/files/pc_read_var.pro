@@ -61,7 +61,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.54 2007-11-30 14:43:04 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.55 2007-12-10 07:49:49 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -76,7 +76,7 @@ pro pc_read_var, t=t,                                            $
     nxrange=nxrange,nyrange=nyrange,nzrange=nzrange,             $
     stats=stats,nostats=nostats,quiet=quiet,help=help,           $
     swap_endian=swap_endian,varcontent=varcontent,               $
-    scalar=scalar
+    scalar=scalar,run2D=run2D
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -179,7 +179,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Read meta data and set up variable/tag lists
 ;
   default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
-                                     param=param,quiet=quiet,scalar=scalar)
+                              param=param,quiet=quiet,scalar=scalar,run2D=run2D)
   totalvars=(size(varcontent))[1]-1
 ;
   if (n_elements(variables) ne 0) then begin
@@ -368,12 +368,36 @@ COMPILE_OPT IDL2,HIDDEN
       y[i0y:i1y] = yloc[i0yloc:i1yloc]
       z[i0z:i1z] = zloc[i0zloc:i1zloc]
 ;
+; Loop over variables.
+;
       for iv=1L,totalvars do begin
         if (varcontent[iv].variable eq 'UNKNOWN') then continue
-        cmd =   varcontent[iv].idlvar $
-            + "[i0x:i1x,i0y:i1y,i0z:i1z,*,*]=" $
-            + varcontent[iv].idlvarloc $
-            +"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*,*]"
+;
+; For 2-D run with lwrite_2d=T we only need to read 2-D data.
+;
+        if (keyword_set(run2D)) then begin
+          if (ny eq 1) then begin
+; 2-D run in (x,z) plane.
+            cmd =   varcontent[iv].idlvar $
+                + "[i0x:i1x,i0z:i1z,*,*]=" $
+                + varcontent[iv].idlvarloc $
+                +"[i0xloc:i1xloc,i0zloc:i1zloc,*,*]"
+          endif else begin
+; 2-D run in (x,y) plane.
+            cmd =   varcontent[iv].idlvar $
+                + "[i0x:i1x,i0y:i1y,*,*]=" $
+                + varcontent[iv].idlvarloc $
+                +"[i0xloc:i1xloc,i0yloc:i1yloc,*,*]"
+          endelse 
+        endif else begin
+;
+; Regular 3-D run.
+;        
+          cmd =   varcontent[iv].idlvar $
+              + "[i0x:i1x,i0y:i1y,i0z:i1z,*,*]=" $
+              + varcontent[iv].idlvarloc $
+              +"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*,*]"
+        endelse
         if (execute(cmd) ne 1) then $
             message, 'Error combining data for ' + varcontent[iv].variable
 ;

@@ -1,6 +1,6 @@
-;  $Id: pc_varcontent.pro,v 1.50 2007-11-30 13:59:08 ajohan Exp $
-FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
-                       param=param,quiet=quiet,scalar=scalar
+;  $Id: pc_varcontent.pro,v 1.51 2007-12-10 07:49:50 ajohan Exp $
+function pc_varcontent, datadir=datadir, dim=dim, param=param, $
+    run2D=run2D, scalar=scalar, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 ;
 ;
@@ -82,18 +82,38 @@ varcontent=REPLICATE({varcontent_all, variable:'UNKNOWN', $
                                       idlvarloc:'dummy_loc', $
                                       idlinitloc:'fltarr(mxloc,myloc,mzloc)*one', $
                                       skip:0},totalvars+1)
-;for i=1L,totalvars do begin
-;  varcontent[i].idlvar='dummy'+str(i)
-;endfor
 ;
 ; Declare ALL variables that MAY OCCUR
 ;
-
-;Predefine some variable types used regularly
-INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one'
-INIT_3VECTOR_LOC = 'fltarr(mxloc,myloc,mzloc,3)*one'
-INIT_SCALAR      = 'fltarr(mx,my,mz)*one'
-INIT_SCALAR_LOC  = 'fltarr(mxloc,myloc,mzloc)*one'
+;
+; Predefine some variable types used regularly
+;
+if (keyword_set(run2D)) then begin
+;
+; For 2-D runs with lwrite_2d=T.
+;  
+  if (dim.ny eq 1) then begin
+; 2-D run in (x,z) plane.
+    INIT_3VECTOR     = 'fltarr(mx,mz,3)*one'
+    INIT_3VECTOR_LOC = 'fltarr(mxloc,mzloc,3)*one'
+    INIT_SCALAR      = 'fltarr(mx,mz)*one'
+    INIT_SCALAR_LOC  = 'fltarr(mxloc,mzloc)*one'
+  endif else begin
+; 2-D run in (x,y) plane.
+    INIT_3VECTOR     = 'fltarr(mx,my,3)*one'
+    INIT_3VECTOR_LOC = 'fltarr(mxloc,myloc,3)*one'
+    INIT_SCALAR      = 'fltarr(mx,my)*one'
+    INIT_SCALAR_LOC  = 'fltarr(mxloc,myloc)*one'
+  endelse
+endif else begin
+;
+; Regular 3-D run.
+;
+  INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one'
+  INIT_3VECTOR_LOC = 'fltarr(mxloc,myloc,mzloc,3)*one'
+  INIT_SCALAR      = 'fltarr(mx,my,mz)*one'
+  INIT_SCALAR_LOC  = 'fltarr(mxloc,myloc,mzloc)*one'
+endelse
 ; For EVERY POSSIBLE variable in a var file, store a
 ; description of the variable in an indexed array of structures
 ; where the indexes line up with those in the saved f array
