@@ -1,4 +1,4 @@
-;; $Id: pc_read_yaver.pro,v 1.6 2007-12-07 09:53:51 ajohan Exp $
+;; $Id: pc_read_yaver.pro,v 1.7 2007-12-10 06:59:28 ajohan Exp $
 ;;
 ;;   Read y-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -66,14 +66,14 @@ pc_set_precision, dim=dim, /quiet
 ;;  Derived dimensions.
 ;;
 nx=dim.nx
-ny=dim.ny
+nz=dim.nz
 ;;
 ;;  Define axes (default to indices if no axes are supplied).
 ;;
 if (n_elements(xax) eq 0) then xax=findgen(nx)
-if (n_elements(yax) eq 0) then yax=findgen(ny)
-x0=xax[0] & x1=xax[nx-1] & y0=yax[0] & y1=yax[ny-1]
-Lx=xax[nx-1]-xax[0] & Ly=yax[ny-1]-yax[0]
+if (n_elements(yax) eq 0) then zax=findgen(nz)
+x0=xax[0] & x1=xax[nx-1] & z0=zax[0] & z1=zax[nz-1]
+Lx=xax[nx-1]-xax[0] & Lz=zax[nz-1]-zax[0]
 ;;
 ;;  Read variables from yaver.in
 ;;
@@ -94,7 +94,7 @@ if (nit gt 0) then begin
 
   tt=fltarr(nit)*one
   for i=0,nvar-1 do begin
-    cmd=varnames[i]+'=fltarr(nx,ny,nit)*one'
+    cmd=varnames[i]+'=fltarr(nx,nz,nit)*one'
     if (execute(cmd,0) ne 1) then message, 'Error defining data arrays'
   endfor
 
@@ -102,7 +102,7 @@ endif
 ;;
 ;;  Variables to put single time snapshot in.
 ;;
-array=fltarr(nx,ny,nvar)*one
+array=fltarr(nx,nz,nvar)*one
 t  =0.0*one
 ;;
 ;;  Prepare for read
@@ -122,7 +122,7 @@ openr, file, filename, /f77
 ;;
 if (png) then begin
   set_plot, 'z'
-  device, set_resolution=[zoom*nx,zoom*ny]
+  device, set_resolution=[zoom*nx,zoom*nz]
   print, 'Deleting old png files in the directory ', imgdir
   spawn, '\rm -f '+imgdir+'/img_*.png'
 endif
@@ -152,10 +152,10 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
       endif else begin
 ;;  Plot to X.
         if (not noerase) then begin
-          window, retain=2, xsize=zoom*nx, ysize=zoom*ny
+          window, retain=2, xsize=zoom*nx, ysize=zoom*nz
         endif else begin
           if (not lwindow_opened) then $
-              window, retain=2, xsize=zoom*nx, ysize=zoom*ny
+              window, retain=2, xsize=zoom*nx, ysize=zoom*nz
           lwindow_opened=1
         endelse
       endelse
@@ -164,7 +164,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
           title='t='+strtrim(string(t/t_scale-t_zero,format=tformat),2)
 ;;  tvscl-type plot with axes.        
       plotimage, array_plot, $
-          range=[min, max], imgxrange=[x0,x1], imgyrange=[y0,y1], $
+          range=[min, max], imgxrange=[x0,x1], imgyrange=[z0,z1], $
           xtitle=xtitle, ytitle=ytitle, title=title, $
           position=position, noerase=noerase, noaxes=noaxes, $
           interp=interp, charsize=charsize, thick=thick
@@ -183,7 +183,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
                 yax[imax[1]]+rsubbox,yax[imax[1]]+rsubbox, $
                 yax[imax[1]]-rsubbox], color=subboxcolor, thick=thick
 ;;  Box crosses lower boundary.
-        if (yax[imax[1]]-rsubbox lt y0) then begin
+        if (yax[imax[1]]-rsubbox lt z0) then begin
           oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
                   xax[imax[0]]+rsubbox,xax[imax[0]]-rsubbox, $
                   xax[imax[0]]-rsubbox], $
@@ -192,7 +192,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
                   yax[imax[1]]+Ly-rsubbox], color=subboxcolor, thick=thick
         endif
 ;;  Box crosses upper boundary.
-        if (yax[imax[1]]+rsubbox gt y1) then begin
+        if (yax[imax[1]]+rsubbox gt z1) then begin
           oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
                   xax[imax[0]]+rsubbox,xax[imax[0]]-rsubbox, $
                   xax[imax[0]]-rsubbox], $
@@ -207,16 +207,16 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
           if (xax[imax[0]]-rsubbox lt x0) then imax[0]=imax[0]+nx/2
           if (xax[imax[0]]+rsubbox gt x1) then imax[0]=imax[0]-nx/2
         endif
-        if ( (yax[imax[1]]-rsubbox lt y0) or $
-             (yax[imax[1]]+rsubbox gt y1) ) then begin
-          array_plot=shift(array_plot,[0,ny/2])
-          if (yax[imax[1]]-rsubbox lt y0) then imax[1]=imax[1]+ny/2
-          if (yax[imax[1]]+rsubbox gt y1) then imax[1]=imax[1]-ny/2
+        if ( (yax[imax[1]]-rsubbox lt z0) or $
+             (yax[imax[1]]+rsubbox gt z1) ) then begin
+          array_plot=shift(array_plot,[0,nz/2])
+          if (yax[imax[1]]-rsubbox lt z0) then imax[1]=imax[1]+nz/2
+          if (yax[imax[1]]+rsubbox gt z1) then imax[1]=imax[1]-nz/2
         endif
         plotimage, array_plot, $
             xrange=xax[imax[0]]+[-rsubbox,rsubbox], $
             yrange=yax[imax[1]]+[-rsubbox,rsubbox], $
-            range=[min,max], imgxrange=[x0,x1], imgyrange=[y0,y1], $
+            range=[min,max], imgxrange=[x0,x1], imgyrange=[z0,z1], $
             position=subpos, /noerase, /noaxes, $
             interp=interp, charsize=charsize, thick=thick
         plots, [subpos[0],subpos[2],subpos[2],subpos[0],subpos[0]], $
