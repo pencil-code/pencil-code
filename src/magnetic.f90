@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.474 2007-12-10 06:03:03 ajohan Exp $
+! $Id: magnetic.f90,v 1.475 2007-12-10 06:21:44 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -365,7 +365,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.474 2007-12-10 06:03:03 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.475 2007-12-10 06:21:44 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2823,9 +2823,9 @@ module Magnetic
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bx2mxz',idiag_bx2mxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'by2mxz',idiag_by2mxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bz2mxz',idiag_bz2mxz)
-        call parse_name(ixz,cnamexy(ixz),cformxz(ixz),'bxbymxz',idiag_bxbymxz)
-        call parse_name(ixz,cnamexy(ixz),cformxz(ixz),'bxbzmxz',idiag_bxbzmxz)
-        call parse_name(ixz,cnamexy(ixz),cformxz(ixz),'bybzmxz',idiag_bybzmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxbymxz',idiag_bxbymxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxbzmxz',idiag_bxbzmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bybzmxz',idiag_bybzmxz)
       enddo
 !
 !  check for those quantities for which we want z-averages
