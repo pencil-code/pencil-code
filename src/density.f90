@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.368 2007-12-07 02:09:00 brandenb Exp $
+! $Id: density.f90,v 1.369 2007-12-11 09:06:53 dintrans Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -134,7 +134,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.368 2007-12-07 02:09:00 brandenb Exp $")
+           "$Id: density.f90,v 1.369 2007-12-11 09:06:53 dintrans Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -378,8 +378,8 @@ module Density
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
       real :: lnrhoint,cs2int,pot0,lnrho_left,lnrho_right
       real :: pot_ext,lnrho_ext,cs2_ext,tmp1,k_j2
-      real :: zbot,ztop,haut,TT
-      real, dimension (nx) :: r_mn,lnrho,lnTT,ss
+      real :: zbot,ztop,haut
+      real, dimension (nx) :: r_mn,lnrho,TT,ss
       logical :: lnothing
       complex :: omega_jeans
 
@@ -419,6 +419,10 @@ module Density
       case('constant'); f(:,:,:,ilnrho)=log(rho_left)
       case('mode'); call modes(ampllnrho,coeflnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho,xx,yy,zz)
       case('blob'); call blob(ampllnrho,f,ilnrho,radius_lnrho,xblob,yblob,zblob)
+      case('blob_hs')
+        call blob(ampllnrho,f,ilnrho,radius_lnrho,xblob,yblob,zblob)
+        call blob(-ampllnrho,f,iss,radius_lnrho,xblob,yblob,zblob)
+
       case('isothermal'); call isothermal_density(f)
       case('local-isothermal'); call local_isothermal_density(f)
       case('power-law'); call power_law_disk(f)
@@ -525,14 +529,28 @@ module Density
         if (lgravr) then
           if (lroot) print*, 'init_lnrho: isothermal sphere'
           haut=cs20/gamma
-          TT=cs20/gamma1
-          lnTT=spread(alog(TT),1,nx)
+          TT=spread(cs20/gamma1,1,nx)
           do n=n1,n2
           do m=m1,m2
             r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
             f(l1:l2,m,n,ilnrho)=lnrho0-r_mn/haut
             lnrho=f(l1:l2,m,n,ilnrho)
-            call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
+            call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
+            f(l1:l2,m,n,iss)=ss
+          enddo
+          enddo
+        endif
+
+      case ('cylind_isoth')
+        if (lgravr) then
+          if (lroot) print*, 'init_lnrho: isothermal cylindrical ring'
+          haut=cs20/gamma
+          TT=spread(cs20/gamma1,1,nx)
+          do n=n1,n2
+          do m=m1,m2
+            lnrho=lnrho0-(x(l1:l2)-r_ext)/haut
+            f(l1:l2,m,n,ilnrho)=lnrho
+            call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
             f(l1:l2,m,n,iss)=ss
           enddo
           enddo
