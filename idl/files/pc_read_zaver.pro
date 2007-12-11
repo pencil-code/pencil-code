@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.18 2007-12-05 13:43:14 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.19 2007-12-11 10:09:10 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -6,10 +6,10 @@
 ;;   number of snapshots to save.
 ;;
 pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
-    nit=nit, lplot=lplot, iplot=iplot, min=min, max=max, zoom=zoom, $
+    nit=nit, iplot=iplot, min=min, max=max, zoom=zoom, $
     xax=xax, yax=yax, xtitle=xtitle, ytitle=ytitle, title=title, $
     lsubbox=lsubbox, rsubbox=rsubbox, subboxcolor=subboxcolor, tsubbox=tsubbox,$
-    noaxes=noaxes, thick=thick, charsize=charsize, $
+    noaxes=noaxes, thick=thick, charsize=charsize, logplot=logplot, $
     t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
     position=position, fillwindow=fillwindow, tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
@@ -22,15 +22,14 @@ COMMON pc_precision, zero, one
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default, varfile, 'zaverages.dat'
 default, nit, 0
-default, lplot, 0
-default, iplot, 0
+default, iplot, -1
 default, zoom, 1
 default, min, 0.0
 default, max, 1.0
 default, tmin, 0.0
 default, njump, 0
 default, ps, 0
-default, png, 0 & if (png) then lplot=1
+default, png, 0
 default, noerase, 0
 default, imgdir, '.'
 default, xsize, 10.0
@@ -46,6 +45,7 @@ default, subboxcolor, 255
 default, tsubbox, 0.0
 default, thick, 1.0
 default, charsize, 1.0
+default, logplot, 0
 default, fillwindow, 0
 default, tformat, '(f5.1)'
 default, it1, 10
@@ -137,10 +137,11 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
   if ( (t ge tmin) and (it mod njump eq 0) ) then begin
     readu, file, array
 ;;
-;;  Plot requested variable, variable number 0 by default.
+;;  Plot requested variable (plotting is turned off by default).
 ;;
-    if (lplot) then begin
+    if (iplot ne -1) then begin
       array_plot=array[*,*,iplot]
+      if (logplot) then array_plot=alog(array_plot)
 ;;  Plot to post script (eps).      
       if (ps) then begin
         set_plot, 'ps'
