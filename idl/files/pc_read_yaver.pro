@@ -1,4 +1,4 @@
-;; $Id: pc_read_yaver.pro,v 1.8 2007-12-11 10:09:10 ajohan Exp $
+;; $Id: pc_read_yaver.pro,v 1.9 2007-12-12 10:18:42 ajohan Exp $
 ;;
 ;;   Read y-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -7,7 +7,7 @@
 ;;
 pro pc_read_yaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, iplot=iplot, min=min, max=max, zoom=zoom, $
-    xax=xax, yax=yax, xtitle=xtitle, ytitle=ytitle, title=title, $
+    xax=xax, zax=zax, xtitle=xtitle, ytitle=ytitle, title=title, $
     lsubbox=lsubbox, rsubbox=rsubbox, subboxcolor=subboxcolor, tsubbox=tsubbox,$
     noaxes=noaxes, thick=thick, charsize=charsize, logplot=logplot, $
     t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
@@ -71,7 +71,7 @@ nz=dim.nz
 ;;  Define axes (default to indices if no axes are supplied).
 ;;
 if (n_elements(xax) eq 0) then xax=findgen(nx)
-if (n_elements(yax) eq 0) then zax=findgen(nz)
+if (n_elements(zax) eq 0) then zax=findgen(nz)
 x0=xax[0] & x1=xax[nx-1] & z0=zax[0] & z1=zax[nz-1]
 Lx=xax[nx-1]-xax[0] & Lz=zax[nz-1]-zax[0]
 ;;
@@ -90,11 +90,18 @@ if (iplot gt nvar-1) then message, 'iplot must not be greater than nvar-1!'
 ;;
 if (nit gt 0) then begin
 
-  if (not quiet) then print, 'Returning averages at ', strtrim(nit,2), ' times'
+  if (not quiet) then begin
+    if (njump eq 1) then begin
+      print, 'Returning averages at '+strtrim(nit,2)+' times'
+    endif else begin
+      print, 'Returning averages at '+strtrim(nit,2)+' times'+ $
+          ' at an interval of '+strtrim(njump,2)+' steps'
+    endelse
+  endif
 
-  tt=fltarr(nit)*one
+  tt=fltarr(nit/njump)*one
   for i=0,nvar-1 do begin
-    cmd=varnames[i]+'=fltarr(nx,nz,nit)*one'
+    cmd=varnames[i]+'=fltarr(nx,nz,nit/njump)*one'
     if (execute(cmd,0) ne 1) then message, 'Error defining data arrays'
   endfor
 
@@ -103,11 +110,11 @@ endif
 ;;  Variables to put single time snapshot in.
 ;;
 array=fltarr(nx,nz,nvar)*one
-t  =0.0*one
+t=0.0*one
 ;;
 ;;  Prepare for read
 ;;
-GET_LUN, file
+get_lun, file
 filename=datadir+'/'+varfile 
 if (not quiet) then print, 'Reading ', filename
 dummy=findfile(filename, COUNT=countfile)
@@ -180,26 +187,26 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
         oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
                 xax[imax[0]]+rsubbox,xax[imax[0]]-rsubbox, $
                 xax[imax[0]]-rsubbox], $
-               [yax[imax[1]]-rsubbox,yax[imax[1]]-rsubbox, $
-                yax[imax[1]]+rsubbox,yax[imax[1]]+rsubbox, $
-                yax[imax[1]]-rsubbox], color=subboxcolor, thick=thick
+               [zax[imax[1]]-rsubbox,zax[imax[1]]-rsubbox, $
+                zax[imax[1]]+rsubbox,zax[imax[1]]+rsubbox, $
+                zax[imax[1]]-rsubbox], color=subboxcolor, thick=thick
 ;;  Box crosses lower boundary.
-        if (yax[imax[1]]-rsubbox lt z0) then begin
+        if (zax[imax[1]]-rsubbox lt z0) then begin
           oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
                   xax[imax[0]]+rsubbox,xax[imax[0]]-rsubbox, $
                   xax[imax[0]]-rsubbox], $
-                 [yax[imax[1]]+Ly-rsubbox,yax[imax[1]]+Ly-rsubbox, $
-                  yax[imax[1]]+Ly+rsubbox,yax[imax[1]]+Ly+rsubbox, $
-                  yax[imax[1]]+Ly-rsubbox], color=subboxcolor, thick=thick
+                 [zax[imax[1]]+Ly-rsubbox,zax[imax[1]]+Ly-rsubbox, $
+                  zax[imax[1]]+Ly+rsubbox,zax[imax[1]]+Ly+rsubbox, $
+                  zax[imax[1]]+Ly-rsubbox], color=subboxcolor, thick=thick
         endif
 ;;  Box crosses upper boundary.
-        if (yax[imax[1]]+rsubbox gt z1) then begin
+        if (zax[imax[1]]+rsubbox gt z1) then begin
           oplot, [xax[imax[0]]-rsubbox,xax[imax[0]]+rsubbox, $
                   xax[imax[0]]+rsubbox,xax[imax[0]]-rsubbox, $
                   xax[imax[0]]-rsubbox], $
-                 [yax[imax[1]]-Ly-rsubbox,yax[imax[1]]-Ly-rsubbox, $
-                  yax[imax[1]]-Ly+rsubbox,yax[imax[1]]-Ly+rsubbox, $
-                  yax[imax[1]]-Ly-rsubbox], thick=thick
+                 [zax[imax[1]]-Ly-rsubbox,zax[imax[1]]-Ly-rsubbox, $
+                  zax[imax[1]]-Ly+rsubbox,zax[imax[1]]-Ly+rsubbox, $
+                  zax[imax[1]]-Ly-rsubbox], thick=thick
         endif
 ;;  Subplot and box.
         if ( (xax[imax[0]]-rsubbox lt x0) or $
@@ -208,15 +215,15 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
           if (xax[imax[0]]-rsubbox lt x0) then imax[0]=imax[0]+nx/2
           if (xax[imax[0]]+rsubbox gt x1) then imax[0]=imax[0]-nx/2
         endif
-        if ( (yax[imax[1]]-rsubbox lt z0) or $
-             (yax[imax[1]]+rsubbox gt z1) ) then begin
+        if ( (zax[imax[1]]-rsubbox lt z0) or $
+             (zax[imax[1]]+rsubbox gt z1) ) then begin
           array_plot=shift(array_plot,[0,nz/2])
-          if (yax[imax[1]]-rsubbox lt z0) then imax[1]=imax[1]+nz/2
-          if (yax[imax[1]]+rsubbox gt z1) then imax[1]=imax[1]-nz/2
+          if (zax[imax[1]]-rsubbox lt z0) then imax[1]=imax[1]+nz/2
+          if (zax[imax[1]]+rsubbox gt z1) then imax[1]=imax[1]-nz/2
         endif
         plotimage, array_plot, $
             xrange=xax[imax[0]]+[-rsubbox,rsubbox], $
-            yrange=yax[imax[1]]+[-rsubbox,rsubbox], $
+            yrange=zax[imax[1]]+[-rsubbox,rsubbox], $
             range=[min,max], imgxrange=[x0,x1], imgyrange=[z0,z1], $
             position=subpos, /noerase, /noaxes, $
             interp=interp, charsize=charsize, thick=thick
@@ -245,18 +252,20 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
 ;;
     if ( (not quiet) and (it mod it1 eq 0) ) then begin
       if (it eq 0 ) then $
-          print, '  ------- it ------- ivar -------- t --------- min(var) ------- max(var) -----'
+          print, '  ------ it -------- t ---------- var ----- min(var) ------- max(var) ------'
       for ivar=0,nvar-1 do begin
-          print, it, ivar, t, min(array[*,*,ivar]), max(array[*,*,ivar])
+          print, it, t, varnames[ivar], $
+              min(array[*,*,ivar]), max(array[*,*,ivar]), $
+              format='(i11,f15.7,A12,2e17.7)'
       endfor
     endif
 ;;
 ;;  Split read data into named arrays.
 ;;
     if ( it le nit-1 ) then begin
-      tt[it]=t
+      tt[it/njump]=t
       for ivar=0,nvar-1 do begin
-        cmd=varnames[ivar]+'[*,*,it]=array[*,*,ivar]'
+        cmd=varnames[ivar]+'[*,*,it/njump]=array[*,*,ivar]'
         if (execute(cmd,0) ne 1) then message, 'Error putting data in array'
       endfor
     endif
@@ -278,8 +287,8 @@ thick=oldthick
 ;;
 if (nit ne 0) then begin
   makeobject="object = CREATE_STRUCT(name=objectname,['t'," + $
-      arraytostring(varnames,QUOTE="'",/noleader) + "]," + $
-      "tt[0:it-1],"+arraytostring(varnames+'[*,*,0:it-1]',/noleader) + ")"
+      arraytostring(varnames,QUOTE="'",/noleader) + "],"+"tt[0:it/njump-1],"+$
+      arraytostring(varnames+'[*,*,0:it/njump-1]',/noleader) + ")"
 ;
   if (execute(makeobject) ne 1) then begin
     message, 'ERROR Evaluating variables: ' + makeobject, /INFO

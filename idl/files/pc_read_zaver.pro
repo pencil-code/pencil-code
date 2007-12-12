@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.19 2007-12-11 10:09:10 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.20 2007-12-12 10:18:42 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -90,11 +90,18 @@ if (iplot gt nvar-1) then message, 'iplot must not be greater than nvar-1!'
 ;;
 if (nit gt 0) then begin
 
-  if (not quiet) then print, 'Returning averages at ', strtrim(nit,2), ' times'
+  if (not quiet) then begin
+    if (njump eq 1) then begin
+      print, 'Returning averages at '+strtrim(nit,2)+' times'
+    endif else begin
+      print, 'Returning averages at '+strtrim(nit,2)+' times'+ $
+          ' at an interval of '+strtrim(njump,2)+' steps'
+    endelse
+  endif
 
-  tt=fltarr(nit)*one
+  tt=fltarr(nit/njump)*one
   for i=0,nvar-1 do begin
-    cmd=varnames[i]+'=fltarr(nx,ny,nit)*one'
+    cmd=varnames[i]+'=fltarr(nx,ny,nit/njump)*one'
     if (execute(cmd,0) ne 1) then message, 'Error defining data arrays'
   endfor
 
@@ -103,11 +110,11 @@ endif
 ;;  Variables to put single time snapshot in.
 ;;
 array=fltarr(nx,ny,nvar)*one
-t  =0.0*one
+t=0.0*one
 ;;
 ;;  Prepare for read
 ;;
-GET_LUN, file
+get_lun, file
 filename=datadir+'/'+varfile 
 if (not quiet) then print, 'Reading ', filename
 dummy=findfile(filename, COUNT=countfile)
@@ -245,18 +252,20 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
 ;;
     if ( (not quiet) and (it mod it1 eq 0) ) then begin
       if (it eq 0 ) then $
-          print, '  ------- it ------- ivar -------- t --------- min(var) ------- max(var) -----'
+          print, '  ------ it -------- t ---------- var ----- min(var) ------- max(var) ------'
       for ivar=0,nvar-1 do begin
-          print, it, ivar, t, min(array[*,*,ivar]), max(array[*,*,ivar])
+          print, it, t, varnames[ivar], $
+              min(array[*,*,ivar]), max(array[*,*,ivar]), $
+              format='(i11,f15.7,A12,2e17.7)'
       endfor
     endif
 ;;
 ;;  Split read data into named arrays.
 ;;
     if ( it le nit-1 ) then begin
-      tt[it]=t
+      tt[it/njump]=t
       for ivar=0,nvar-1 do begin
-        cmd=varnames[ivar]+'[*,*,it]=array[*,*,ivar]'
+        cmd=varnames[ivar]+'[*,*,it/njump]=array[*,*,ivar]'
         if (execute(cmd,0) ne 1) then message, 'Error putting data in array'
       endfor
     endif
@@ -278,8 +287,8 @@ thick=oldthick
 ;;
 if (nit ne 0) then begin
   makeobject="object = CREATE_STRUCT(name=objectname,['t'," + $
-      arraytostring(varnames,QUOTE="'",/noleader) + "]," + $
-      "tt[0:it-1],"+arraytostring(varnames+'[*,*,0:it-1]',/noleader) + ")"
+      arraytostring(varnames,QUOTE="'",/noleader) + "],"+"tt[0:it/njump-1],"+$
+      arraytostring(varnames+'[*,*,0:it/njump-1]',/noleader) + ")"
 ;
   if (execute(makeobject) ne 1) then begin
     message, 'ERROR Evaluating variables: ' + makeobject, /INFO
