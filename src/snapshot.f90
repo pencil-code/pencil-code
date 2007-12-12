@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.24 2007-11-21 12:32:36 brandenb Exp $
+! $Id: snapshot.f90,v 1.25 2007-12-12 07:48:45 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -299,7 +299,9 @@ contains
       if (lserial_io) call start_serialize()
       open(lun_output,FILE=file,FORM='unformatted')
       if (lwrite_2d) then
-        if (ny==1) then
+        if (nx==1) then
+          write(lun_output) a(4,:,:,:)
+        elseif (ny==1) then
           write(lun_output) a(:,4,:,:)
         else
           write(lun_output) a(:,:,4,:)
@@ -337,7 +339,9 @@ contains
       open(1,FILE=file,FORM='unformatted')
       if (ip<=8) print*,'input_snap: open, mx,my,mz,nv=',mx,my,mz,nv
       if (lwrite_2d) then
-        if (ny==1) then
+        if (nx==1) then
+          read(1) a(4,:,:,:)
+        else if (ny==1) then
           read(1) a(:,4,:,:)
         else
           read(1) a(:,:,4,:)
@@ -387,7 +391,9 @@ contains
       open(lun_output,FILE=file,FORM='unformatted')
 
       if (lwrite_2d) then
-        if (ny==1) then
+        if (nx==1) then
+          write(lun_output) a(4,:,:,:)
+        else if (ny==1) then
           write(lun_output) a(:,4,:,:)
         else
           write(lun_output) a(:,:,4,:)
@@ -422,7 +428,9 @@ contains
       open(1,FILE=filename,FORM='unformatted')
         if (ip<=8) print*,'input_globals: open, mx,my,mz,nv=',mx,my,mz,nv
         if (lwrite_2d) then
-          if (ny==1) then
+          if (nx==1) then
+            read(1) a(4,:,:,:)
+          else if (ny==1) then
             read(1) a(:,4,:,:)
           else
             read(1) a(:,:,4,:)
