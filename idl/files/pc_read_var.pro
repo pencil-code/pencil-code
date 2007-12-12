@@ -61,7 +61,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.56 2007-12-10 09:05:15 dintrans Exp $
+;       $Id: pc_read_var.pro,v 1.57 2007-12-12 07:44:27 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -376,7 +376,13 @@ COMPILE_OPT IDL2,HIDDEN
 ; For 2-D run with lwrite_2d=T we only need to read 2-D data.
 ;
         if (keyword_set(run2D)) then begin
-          if (ny eq 1) then begin
+          if (nx eq 1) then begin
+; 2-D run in (y,z) plane.
+            cmd =   varcontent[iv].idlvar $
+                + "[i0y:i1y,i0z:i1z,*,*]=" $
+                + varcontent[iv].idlvarloc $
+                +"[i0yloc:i1yloc,i0zloc:i1zloc,*,*]"
+          endif else if (ny eq 1) then begin
 ; 2-D run in (x,z) plane.
             cmd =   varcontent[iv].idlvar $
                 + "[i0x:i1x,i0z:i1z,*,*]=" $

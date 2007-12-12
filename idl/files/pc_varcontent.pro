@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.51 2007-12-10 07:49:50 ajohan Exp $
+;  $Id: pc_varcontent.pro,v 1.52 2007-12-12 07:44:27 ajohan Exp $
 function pc_varcontent, datadir=datadir, dim=dim, param=param, $
     run2D=run2D, scalar=scalar, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
@@ -92,7 +92,13 @@ if (keyword_set(run2D)) then begin
 ;
 ; For 2-D runs with lwrite_2d=T.
 ;  
-  if (dim.ny eq 1) then begin
+  if (dim.nx eq 1) then begin
+; 2-D run in (y,z) plane.
+    INIT_3VECTOR     = 'fltarr(my,mz,3)*one'
+    INIT_3VECTOR_LOC = 'fltarr(myloc,mzloc,3)*one'
+    INIT_SCALAR      = 'fltarr(my,mz)*one'
+    INIT_SCALAR_LOC  = 'fltarr(myloc,mzloc)*one'
+  endif else if (dim.ny eq 1) then begin
 ; 2-D run in (x,z) plane.
     INIT_3VECTOR     = 'fltarr(mx,mz,3)*one'
     INIT_3VECTOR_LOC = 'fltarr(mxloc,mzloc,3)*one'
