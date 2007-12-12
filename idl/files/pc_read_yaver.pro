@@ -1,4 +1,4 @@
-;; $Id: pc_read_yaver.pro,v 1.9 2007-12-12 10:18:42 ajohan Exp $
+;; $Id: pc_read_yaver.pro,v 1.10 2007-12-12 14:14:55 ajohan Exp $
 ;;
 ;;   Read y-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -13,7 +13,7 @@ pro pc_read_yaver, object=object, varfile=varfile, datadir=datadir, $
     t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
     position=position, fillwindow=fillwindow, tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
-    xsize=xsize, ysize=ysize, it1=it1, quiet=quiet
+    xsize=xsize, ysize=ysize, it1=it1, variables=variables, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;;
@@ -49,6 +49,7 @@ default, logplot, 0
 default, fillwindow, 0
 default, tformat, '(f5.1)'
 default, it1, 10
+default, variables, ''
 default, quiet, 0
 ;;
 ;;  Define line and character thickness (will revert to old settings later).
@@ -78,11 +79,25 @@ Lx=xax[nx-1]-xax[0] & Lz=zax[nz-1]-zax[0]
 ;;  Read variables from yaver.in
 ;;
 spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-spawn, 'cat '+datatopdir+'/yaver.in', varnames
+spawn, 'cat '+datatopdir+'/yaver.in', allvariables
+if (variables[0] eq '') then variables=allvariables
 if (not quiet) then print, 'Preparing to read y-averages ', $
-    arraytostring(varnames,quote="'",/noleader)
-nvar=n_elements(varnames)
-;;  Die if attempt to plot variable that does not exist.
+    arraytostring(variables,quote="'",/noleader)
+nvarall=n_elements(allvariables)
+nvar=n_elements(variables)
+ivarpos=intarr(nvar)
+;;
+;;  Find the position of the requested variables in the list of all
+;;  variables.
+;;
+for ivar=0,nvar-1 do begin
+  ivarpos_est=where(variables[ivar] eq allvariables)
+  if (ivarpos_est[0] eq -1) then $
+      message, 'ERROR: can not find the variable '''+variables[ivar]+'''' + $
+               ' in '+arraytostring(allvariables,/noleader)
+  ivarpos[ivar]=ivarpos_est[0]
+endfor
+;;  Die if attempt to plot a variable that does not exist.
 if (iplot gt nvar-1) then message, 'iplot must not be greater than nvar-1!'
 ;;
 ;;  Define arrays to put data in.
@@ -101,7 +116,7 @@ if (nit gt 0) then begin
 
   tt=fltarr(nit/njump)*one
   for i=0,nvar-1 do begin
-    cmd=varnames[i]+'=fltarr(nx,nz,nit/njump)*one'
+    cmd=variables[i]+'=fltarr(nx,nz,nit/njump)*one'
     if (execute(cmd,0) ne 1) then message, 'Error defining data arrays'
   endfor
 
@@ -109,7 +124,7 @@ endif
 ;;
 ;;  Variables to put single time snapshot in.
 ;;
-array=fltarr(nx,nz,nvar)*one
+array=fltarr(nx,nz,nvarall)*one
 t=0.0*one
 ;;
 ;;  Prepare for read
@@ -254,8 +269,8 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
       if (it eq 0 ) then $
           print, '  ------ it -------- t ---------- var ----- min(var) ------- max(var) ------'
       for ivar=0,nvar-1 do begin
-          print, it, t, varnames[ivar], $
-              min(array[*,*,ivar]), max(array[*,*,ivar]), $
+          print, it, t, variables[ivar], $
+              min(array[*,*,ivarpos[ivar]]), max(array[*,*,ivarpos[ivar]]), $
               format='(i11,f15.7,A12,2e17.7)'
       endfor
     endif
@@ -265,7 +280,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
     if ( it le nit-1 ) then begin
       tt[it/njump]=t
       for ivar=0,nvar-1 do begin
-        cmd=varnames[ivar]+'[*,*,it/njump]=array[*,*,ivar]'
+        cmd=variables[ivar]+'[*,*,it/njump]=array[*,*,ivarpos[ivar]]'
         if (execute(cmd,0) ne 1) then message, 'Error putting data in array'
       endfor
     endif
@@ -286,12 +301,12 @@ thick=oldthick
 ;;  of data that should be saved.
 ;;
 if (nit ne 0) then begin
-  makeobject="object = CREATE_STRUCT(name=objectname,['t'," + $
-      arraytostring(varnames,QUOTE="'",/noleader) + "],"+"tt[0:it/njump-1],"+$
-      arraytostring(varnames+'[*,*,0:it/njump-1]',/noleader) + ")"
+  makeobject="object = create_struct(name=objectname,['t'," + $
+      arraytostring(variables,quote="'",/noleader) + "],"+"tt[0:it/njump-1],"+$
+      arraytostring(variables+'[*,*,0:it/njump-1]',/noleader) + ")"
 ;
   if (execute(makeobject) ne 1) then begin
-    message, 'ERROR Evaluating variables: ' + makeobject, /INFO
+    message, 'ERROR evaluating variables: ' + makeobject, /info
     undefine,object
   endif
 endif
