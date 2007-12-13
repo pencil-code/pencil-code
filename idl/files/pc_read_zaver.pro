@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.21 2007-12-12 14:14:56 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.22 2007-12-13 13:23:43 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -162,7 +162,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
 ;;  Plot requested variable (plotting is turned off by default).
 ;;
     if (iplot ne -1) then begin
-      array_plot=array[*,*,iplot]
+      array_plot=array[*,*,ivarpos[iplot]]
       if (logplot) then array_plot=alog(array_plot)
 ;;  Plot to post script (eps).      
       if (ps) then begin
