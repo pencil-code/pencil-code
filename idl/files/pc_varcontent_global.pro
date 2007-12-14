@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent_global.pro,v 1.3 2007-11-30 13:59:08 ajohan Exp $
+;  $Id: pc_varcontent_global.pro,v 1.4 2007-12-14 15:29:43 theine Exp $
 FUNCTION pc_varcontent_global,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar
 COMPILE_OPT IDL2,HIDDEN
@@ -41,6 +41,7 @@ default, iglobal_jz_ext, 0
 default, iglobal_ex_ext, 0
 default, iglobal_ey_ext, 0
 default, iglobal_ez_ext, 0
+default, gg            , 0
 
 ; For EVERY POSSIBLE variable in a var file, store a
 ; description of the variable in an indexed array of structures
@@ -58,6 +59,7 @@ if (iglobal_jz_ext ne 0) then iglobal_jz_ext=iglobal_jz_ext-dim.mvar-dim.maux
 if (iglobal_ex_ext ne 0) then iglobal_ex_ext=iglobal_ex_ext-dim.mvar-dim.maux
 if (iglobal_ey_ext ne 0) then iglobal_ey_ext=iglobal_ey_ext-dim.mvar-dim.maux
 if (iglobal_ez_ext ne 0) then iglobal_ez_ext=iglobal_ez_ext-dim.mvar-dim.maux
+if (gg             ne 0) then gg            =gg            -dim.mvar-dim.maux
 
 varcontent[iglobal_bx_ext].variable   = 'Magnetic field (bx_ext)'
 varcontent[iglobal_bx_ext].idlvar     = 'bx_ext'
@@ -112,6 +114,13 @@ varcontent[iglobal_ez_ext].idlvar     = 'ez_ext'
 varcontent[iglobal_ez_ext].idlinit    = INIT_SCALAR
 varcontent[iglobal_ez_ext].idlvarloc  = 'ez_ext_loc'
 varcontent[iglobal_ez_ext].idlinitloc = INIT_SCALAR_LOC
+
+varcontent[gg].variable   = 'Gravitational acceleration'
+varcontent[gg].idlvar     = 'gg'
+varcontent[gg].idlinit    = INIT_3VECTOR
+varcontent[gg].idlvarloc  = 'gg_loc'
+varcontent[gg].idlinitloc = INIT_3VECTOR_LOC
+varcontent[gg].skip = 2
 
 ; ZERO out default 'should never be used' definition
 ; will have been filled in where i?????? has not been
