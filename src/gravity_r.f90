@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.33 2007-09-09 22:54:28 wlyra Exp $
+! $Id: gravity_r.f90,v 1.34 2007-12-14 15:26:46 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -40,8 +40,8 @@ module Gravity
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.,reduced_top=1.
   real :: g0=0.
-  real :: r0_pot=0.    ! peak radius for smoothed potential
-  integer :: n_pot=10  ! exponent for smoothed potential
+  real :: r0_pot=0.,r1_pot1=0.    ! peak radius for smoothed potential
+  integer :: n_pot=10,n_pot1=10   ! exponent for smoothed potential
   real :: qgshear=1.5  ! (global) shear parameter
                        !     1.5 for Keplerian disks, 1.0 for galaxies
 
@@ -55,7 +55,7 @@ module Gravity
 
   integer :: iglobal_gg=0
 
-  namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
+  namelist /grav_init_pars/ ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
        qgshear,lgravity_gas,g01,rpot
 
   namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
@@ -85,7 +85,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.33 2007-09-09 22:54:28 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.34 2007-12-14 15:26:46 theine Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -111,7 +111,7 @@ module Gravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: gg_mn=0.
-      real, dimension (nx)   :: g_r,rr_mn,rr_sph,rr_cyl,gdm
+      real, dimension (nx)   :: g_r,rr_mn,rr_sph,rr_cyl,gdm,pot
       logical       :: lstarting
       logical, save :: first=.true.
       logical       :: lpade=.true. ! set to false for 1/r potential
@@ -143,7 +143,7 @@ module Gravity
           call farray_register_global('gg',iglobal_gg,vector=3)
           f(l1:l2,m1:m2,n1:n2,iglobal_gg:iglobal_gg+2) = 0.
 !
-          do j=1,ninit
+          do j=1,1
 !
             lpade=.true.
 
@@ -280,8 +280,13 @@ module Gravity
 !  smoothed 1/r potential in a spherical shell
 !  r0_pot is the smoothing radius, and n_pot the smoothing exponent
 !
-                    g_r=-g0*rr_mn**(n_pot-1) &
-                         *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+                    !g_r=-g0*rr_mn**(n_pot-1) &
+                    !     *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+                    pot = -g0*(1. + (r1_pot1*rr_mn)**n_pot1)**(1.0/n_pot1) &
+                             /(rr_mn**n_pot + r0_pot**n_pot)**(1.0/n_pot)
+                    g_r = pot*(rr_mn**(n_pot-1)/(rr_mn**n_pot+r0_pot**n_pot) &
+                             - r1_pot1*(r1_pot1*rr_mn)**(n_pot1-1) &
+                                      /(1 + (r1_pot1*rr_mn)**n_pot1))
                   endif
                 endif
 !
@@ -459,7 +464,9 @@ module Gravity
         select case (ipotential(j))
 !
         case ('geo-kws','smoothed-newton')
-          pot = pot -g0*(rr**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+          !pot = pot -g0*(rr**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+          pot = pot - g0*(1. + (r1_pot1*rr)**n_pot1)**(1.0/n_pot1) &
+                        /(rr**n_pot + r0_pot**n_pot)**(1.0/n_pot)
           if (present(pot0)) pot0=pot0-g0/r0_pot
 !
         case ('no-smooth')
@@ -516,7 +523,9 @@ module Gravity
         select case (ipotential(j))
 !
         case ('geo-kws','smoothed-newton')
-          pot=pot-g0*(rmn**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+          !pot=pot-g0*(rmn**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+          pot = pot - g0*(1. + (r1_pot1*rmn)**n_pot1)**(1.0/n_pot1) &
+                        /(rmn**n_pot + r0_pot**n_pot)**(1.0/n_pot)
           if (present(pot0)) pot0=pot0-g0/r0_pot
 !
         case ('no-smooth')
@@ -572,7 +581,9 @@ module Gravity
         select case (ipotential(j))
 !
         case ('geo-kws','smoothed-newton')
-          pot=pot-g0*(rad**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+          !pot=pot-g0*(rad**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+          pot = pot - g0*(1. + (r1_pot1*rad)**n_pot1)**(1.0/n_pot1) &
+                        /(rad**n_pot + r0_pot**n_pot)**(1.0/n_pot)
           if (present(pot0)) pot0=pot0-g0/r0_pot
 !
         case ('no-smooth')
@@ -623,7 +634,7 @@ module Gravity
       use Sub,    only: get_radial_distance
 !     
       real, dimension (:) :: g_r
-      real, dimension(size(g_r)) :: rr_mn,rr_sph,rr_cyl
+      real, dimension(size(g_r)) :: rr_mn,rr_sph,rr_cyl,pot
       integer :: j
 !
       call get_radial_distance(rr_sph,rr_cyl)
@@ -640,8 +651,13 @@ module Gravity
           g_r=g_r -g0/rr_mn**2
 !
         case('smoothed-newton')
-          g_r=g_r -g0*rr_mn**(n_pot-1) &
-               *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+          !g_r=g_r -g0*rr_mn**(n_pot-1) &
+          !     *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+          pot = -g0*(1. + (r1_pot1*rr_mn)**n_pot1)**(1.0/n_pot1) &
+                   /(rr_mn**n_pot + r0_pot**n_pot)**(1.0/n_pot)
+          g_r = pot*(rr_mn**(n_pot-1)/(rr_mn**n_pot + r0_pot**n_pot) &
+                   - r1_pot1*(r1_pot1*rr_mn)**(n_pot1-1) &
+                            /(1 + (r1_pot1*rr_mn)**n_pot1))
 !
         case ('varying-q')
           g_r=g_r -g0/rr_mn**(2*qgshear-1) 
