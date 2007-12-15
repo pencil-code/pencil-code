@@ -61,7 +61,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.57 2007-12-12 07:44:27 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.58 2007-12-15 14:02:02 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -70,8 +70,7 @@ pro pc_read_var, t=t,                                            $
     variables=variables, tags=tags, magic=magic, bb=bb,          $
     trimxyz=trimxyz, trimall=trimall,                            $
     nameobject=nameobject,validate_variables=validate_variables, $
-    dim=dim,param=param,                                         $
-    ivar=ivar,                                                   $
+    dim=dim,param=param,ivar=ivar,                               $
     datadir=datadir,proc=proc,additional=additional,             $
     nxrange=nxrange,nyrange=nyrange,nzrange=nzrange,             $
     stats=stats,nostats=nostats,quiet=quiet,help=help,           $
@@ -119,6 +118,11 @@ COMPILE_OPT IDL2,HIDDEN
       pc_read_dim, object=dim, datadir=datadir, proc=proc, /quiet
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
+;
+; We know from start.in whether we have to read 2-D or 3-D data.
+;
+  default, run2D, 0
+  if (param.lwrite_2d) then run2D=1
 ;
 ; Call pc_read_grid to make sure any derivative stuff is correctly set in the
 ; common block. Don't need the data for anything though.
@@ -250,12 +254,13 @@ COMPILE_OPT IDL2,HIDDEN
 ; For vector quantities skip the required number of elements of the f array
 ;
     iv=iv+varcontent[iv].skip
-  end
+  endfor
 ;
 ; Display information about the files contents
 ;
   content = strmid(content,2)
-  if ( not keyword_set(QUIET) ) then print,'File '+varfile+' contains: ', content
+  if ( not keyword_set(quiet) ) then $
+      print,'File '+varfile+' contains: ', content
 ;
 ; Loop over processors
 ;
@@ -265,7 +270,7 @@ COMPILE_OPT IDL2,HIDDEN
       filename=datadir+'/proc'+str(proc)+'/'+varfile
     endif else begin
       filename=datadir+'/proc'+str(i)+'/'+varfile
-      if (not keyword_set(QUIET)) then $
+      if (not keyword_set(quiet)) then $
           print, 'Loading chunk ', strtrim(str(i+1)), ' of ', $
           strtrim(str(nprocs)), ' (', $
           strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
@@ -346,7 +351,7 @@ COMPILE_OPT IDL2,HIDDEN
     openr,file, filename, /f77, swap_endian=swap_endian
     if (not keyword_set(associate)) then begin
       if (execute('readu,file'+res) ne 1) then $
-             message, 'Error reading: ' + 'readu,'+str(file)+res
+          message, 'Error reading: ' + 'readu,' + str(file) + res
     endif else begin
       message, 'Associate behaviour not implemented here yet'
     endelse
@@ -379,19 +384,19 @@ COMPILE_OPT IDL2,HIDDEN
           if (nx eq 1) then begin
 ; 2-D run in (y,z) plane.
             cmd =   varcontent[iv].idlvar $
-                + "[i0y:i1y,i0z:i1z,*,*]=" $
+                + "[dim.l1,i0y:i1y,i0z:i1z,*,*]=" $
                 + varcontent[iv].idlvarloc $
                 +"[i0yloc:i1yloc,i0zloc:i1zloc,*,*]"
           endif else if (ny eq 1) then begin
 ; 2-D run in (x,z) plane.
             cmd =   varcontent[iv].idlvar $
-                + "[i0x:i1x,i0z:i1z,*,*]=" $
+                + "[i0x:i1x,dim.m1,i0z:i1z,*,*]=" $
                 + varcontent[iv].idlvarloc $
                 +"[i0xloc:i1xloc,i0zloc:i1zloc,*,*]"
           endif else begin
 ; 2-D run in (x,y) plane.
             cmd =   varcontent[iv].idlvar $
-                + "[i0x:i1x,i0y:i1y,*,*]=" $
+                + "[i0x:i1x,i0y:i1y,dim.n1,*,*]=" $
                 + varcontent[iv].idlvarloc $
                 +"[i0xloc:i1xloc,i0yloc:i1yloc,*,*]"
           endelse 
@@ -467,7 +472,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Remove ghost zones if requested.
 ;
-  if (keyword_set(trimall)) then variables = 'pc_noghost('+variables+',dim=dim,run2d=run2d)'
+  if (keyword_set(trimall)) then variables = 'pc_noghost('+variables+',dim=dim)'
 ;
 ; Make structure out of the variables.
 ;
@@ -483,7 +488,7 @@ COMPILE_OPT IDL2,HIDDEN
     undefine, object
   endif
 ;
-; If requested print a summary (actually the default - unless being QUIET.)
+; If requested print a summary (actually the default - unless being quiet.)
 ;
   if (keyword_set(stats) or $
      (not (keyword_set(nostats) or keyword_set(quiet)))) then begin
