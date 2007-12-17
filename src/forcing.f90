@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.125 2007-12-17 13:06:15 dhruba Exp $
+! $Id: forcing.f90,v 1.126 2007-12-17 15:55:59 dhruba Exp $
 
 module Forcing
 
@@ -34,10 +34,12 @@ module Forcing
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
   character (len=labellen) :: iforce_profile='nothing'
-  integer :: Legendrel
-  real ::  Bessel_alpha,fpre
-! For helical forcing in sphreical polar coordinate system
+ ! For helical forcing in sphreical polar coordinate system
   real,allocatable,dimension(:,:,:) :: psif
+  integer :: Legendrel_min,Legendrel_max
+  integer :: nalpha=5
+  real,allocatable,dimension(:,:) ::  Bessel_alpha
+  real :: fpre = 1.0
 ! Persistent stuff
   real :: tsforce=-10.
   real, dimension (3) :: location
@@ -56,7 +58,7 @@ module Forcing
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
        iforce_profile,lscale_kvector_tobox, &
        force_direction, force_strength, &
-       Legendrel,Bessel_alpha,lhelical_test,fpre
+       Legendrel_min,Legendrel_max,nalpha,lhelical_test,fpre
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
@@ -84,7 +86,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.125 2007-12-17 13:06:15 dhruba Exp $")
+           "$Id: forcing.f90,v 1.126 2007-12-17 15:55:59 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -673,53 +675,81 @@ module Forcing
       real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
       real, dimension(nx,3,3) :: psi_ij,Tij
       real, dimension (mx,my,mz,mfarray) :: f
-      integer ::l,emm,iread,j,jf,mmin,mmax
+      integer :: emm,iread,l,j,jf,mmin,mmax,ellmin,ellmax,ellno,ell,jalpha,ilread,&
+                      alp_index,ell_index,Legendrel
       complex :: psi_ell_m
-      real :: a_ell,anum,adenom,jlm,ylm,rphase,fnorm,alphar
-      real :: rz, Plmreal, Plmimag,ran_min,ran_max
+      real :: a_ell,anum,adenom,jlm,ylm,rphase,fnorm,alphar,Balpha,Pell
+      real :: rz,ralp,rell,remm, Plmreal, Plmimag,ran_min,ran_max,rmin,rmax
       real, dimension(mx) :: Z_psi
       real,dimension(my) :: Pl
 ! -----------------------------------------
-      if (.not. lspherical_coords) call warning('Chandra-Kendall Forcing:','This forcing works only in spherical coordinates!')
+!  The scheme is as follows: Take randomly an \ell between Legengrel_min and Legendrel_max. 
+! The for this \ell choose randomly one \alpha between alpnano (= 5 by default) possible values of 
+!\alpha which sets
+! $\psi = 0$ at the two radial boundaries. For this \ell and \alpha construct the Chandarsekhar-Kendall
+! potential $\psi^{m}_{\ell)(\alpha r) $. Then construct the helical force from this potential. 
+      if (.not. lspherical_coords) call warning('chandra-kendall forcing:','This forcing works only in spherical coordinates!')
       if (ifirst==0) then
+! If this is the first time this function is being called allocate \psi. Next read from file "alpha_in.dat"
+! the two values of \ell. If this two matches Legendrel_min and Legendrel_max proceed. 
+! Then 
+        ellno=Legendrel_max-Legendrel_min+1
         if (lroot) print*,'Helical forcing in spherical polar coordinate'
         if (lroot) print*,'allocating psif ..'
         allocate(psif(mx,my,mz))
+        allocate(Bessel_alpha(ellno,nalpha))
         if (lroot) print*, '..done'
+       open(unit=76,file="alpha_in.dat")
+       read(76,*) ellmin,ellmax,rmin,rmax
+       if(.not. ((Legendrel_min.eq.ellmin).and.(Legendrel_max.eq.ellmax)) ) then 
+          call stop_it("In CK forcing:  Legendrel s do not match abroting. Check  files run.in  and alpha_in.dat")
+      else
+      endif
+ 
+      do ilread=1,ellno
+         read(76,*) ell,(Bessel_alpha(ilread,jalpha),jalpha=1,nalpha)
+      enddo
+      ifirst= ifirst+1
+      write(*,*) 'dhruba: first time in Chandra-Kendall successful'
+   else
+   endif
+! Now choose a random \ell and and a random \alpha
+   call random_number_wrapper(rell)
+   ell_index= nint(abs(rell)*(ellno-1)) 
+   Legendrel = Legendrel_min+ell_index
+   call random_number_wrapper(ralp)
+   alp_index = nint(abs(ralp)*(nalpha-1))+1
+   Balpha = Bessel_alpha(ell_index+1,alp_index)
+   call random_number_wrapper(remm)
+   emm = nint(remm*Legendrel)
+   write(*,*) "DHRUBA:",ell_index,Legendrel,alp_index,Balpha
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
 ! Now construct the Z_psi(r) 
-        call sp_bessely_l(anum,Legendrel,Bessel_alpha*x(l1))
-        call sp_besselj_l(adenom,Legendrel,Bessel_alpha*x(l1))
+        call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
+        call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
         a_ell = -anum/adenom
 !        write(*,*) 'dhruba:',anum,adenom,Legendrel,Bessel_alpha,x(l1)
         do l=l1-nghost,l2+nghost
-          alphar = Bessel_alpha*x(l)
-          call sp_besselj_l(jlm,Legendrel,alphar)
-          call sp_bessely_l(ylm,Legendrel,alphar)
-          Z_psi(l) = (a_ell*jlm+ylm)
+           alphar = Balpha*x(l)
+           call sp_besselj_l(jlm,Legendrel,alphar)
+           call sp_bessely_l(ylm,Legendrel,alphar)
+           Z_psi(l) = (a_ell*jlm+ylm)
         enddo
-        do m=m1-nghost,m2+nghost
-          call legendre_pl(Pl(m),Legendrel,y(m))
-        enddo
-!-------
+ !-------
         do n=n1-nghost,n2+nghost
-          do m=m1-nghost,m2+nghost
-            do l=l1-nghost,l2+nghost
-              psif(l,m,n) = Z_psi(l)*Pl(m)
-            enddo
-          enddo
+           do m=m1-nghost,m2+nghost
+              call legendre_pl(Pell,Legendrel,y(m))
+              do l=l1-nghost,l2+nghost
+                 psif(l,m,n) = Z_psi(l)*Pell*cos(emm*z(n))
+              enddo
+           enddo
         enddo
-        ifirst= ifirst+1
-        write(*,*) 'dhruba: first time in Chandra-Kendall'
-      else
-      endif
 ! ----- Now calculate the force from the potential and add this to
 ! velocity
 ! get a random unit vector with three components ee_r, ee_theta, ee_phi
 ! psi at present is just Z_{ell}^m. We next do a sum over random coefficients 
 ! get random psi. 
-
 !      write(*,*) 'mmin=',mmin
 !! ----------now generate and add the force ------------
       call random_number_wrapper(rz)
@@ -728,7 +758,7 @@ module Forcing
       rphase = PI*rphase
       ee(1) = sqrt(1-rz*rz)*cos(rphase)
       ee(2) = sqrt(1-rz*rz)*sin(rphase)
-      fnorm = fpre*cs0*sqrt(Bessel_alpha*cs0)
+      fnorm = fpre*cs0*sqrt(Balpha*cs0)
  !     write(*,*) 'dhruba:',fnorm*sqrt(dt),dt,ee(1),ee(2),ee(3)
       do n=n1,n2
         do m=m1,m2
@@ -739,7 +769,7 @@ module Forcing
           call curl_mn(psi_ij,capitalT,psi)
           call gij_psi_etc(psif,ee,psi,psi_ij,Tij)
           call curl_mn(Tij,capitalS,capitalT)
-          capitalS = (1./Bessel_alpha)*capitalS
+          capitalS = (1./Balpha)*capitalS
           capitalH = capitalT + capitalS
           do j=1,3
             jf = iuu+j-1
