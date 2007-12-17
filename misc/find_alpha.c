@@ -11,15 +11,20 @@ int main (void)
   double rmin=0.7,rmax=1.;
   double alpha = 1.,delta_alpha=1.;
   double falpha,ss,err,oldss;
-  int ell_max = 20,iter=0,Nzeros=5;
+  int ell_min=5,ell_max=10;
+  int iter=0,Nzeros=5;
+  int iell;
   double ERR = 1.e-12;
   double zeros[Nzeros];
   int ell=0,izeros;
-  FILE *in,*out;
+  FILE *in,*out,*fout;
   /* --------------------- */
-  in = fopen("alpha_in.dat","w");
-  fprintf(in,"%f %f %d %d\n",rmin,rmax,ell_max,Nzeros);
-  while(ell<=20){
+  in = fopen("alpha_in_tex.dat","w");
+  fout = fopen("alpha_in.dat","w");
+  fprintf(in," %d %d %f %f \n",ell_min,ell_max,rmin,rmax);
+  fprintf(fout," %d %d %f %f \n",ell_min,ell_max,rmin,rmax);
+  for(iell=ell_min;iell<ell_max+1;iell++){
+    ell=iell;
     printf("Legendrel=%d \n",ell);
     alpha = 1.;
     izeros = 0;
@@ -59,7 +64,12 @@ int main (void)
     }
     printf("\n");
     fprintf(in,"\\\\ \n");
-    ell = ell+1;
+/* ---------------------------------------- */
+    fprintf(fout,"%d ",ell);
+    for(izeros=0;izeros<Nzeros;izeros++){
+      fprintf(fout,"   %f ",zeros[izeros]);
+    }
+   fprintf(fout,"\n");
   }
   
   return 0;
