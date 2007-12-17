@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.124 2007-11-21 14:32:47 wlyra Exp $
+! $Id: forcing.f90,v 1.125 2007-12-17 13:06:15 dhruba Exp $
 
 module Forcing
 
@@ -84,7 +84,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.124 2007-11-21 14:32:47 wlyra Exp $")
+           "$Id: forcing.f90,v 1.125 2007-12-17 13:06:15 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -184,20 +184,20 @@ module Forcing
 !
         select case(iforce)
         case ('zero'); if (headt) print*,'addforce: No forcing'
-        case ('irrotational');  call forcing_irro(f,force)
-        case ('helical', '2');  call forcing_hel(f)
-        case ('GP');            call forcing_GP(f)
-        case ('TG');            call forcing_TG(f)
-        case ('ABC');           call forcing_ABC(f)
-        case ('nocos');         call forcing_nocos(f)
-        case ('fountain', '3'); call forcing_fountain(f)
-        case ('horiz-shear');   call forcing_hshear(f)
-        case ('twist');         call forcing_twist(f)
-        case ('diffrot');       call forcing_diffrot(f,force)
-        case ('blobs');         call forcing_blobs(f)
-        case ('gaussianpot');   call forcing_gaussianpot(f,force)
-        case ('hel_smooth');    call forcing_hel_smooth(f)
-        case ('hel_sp');        call forcing_hel_sp(f)
+        case ('irrotational');    call forcing_irro(f,force)
+        case ('helical', '2');    call forcing_hel(f)
+        case ('GP');              call forcing_GP(f)
+        case ('TG');              call forcing_TG(f)
+        case ('ABC');             call forcing_ABC(f)
+        case ('nocos');           call forcing_nocos(f)
+        case ('fountain', '3');   call forcing_fountain(f)
+        case ('horiz-shear');     call forcing_hshear(f)
+        case ('twist');           call forcing_twist(f)
+        case ('diffrot');         call forcing_diffrot(f,force)
+        case ('blobs');           call forcing_blobs(f)
+        case ('gaussianpot');     call forcing_gaussianpot(f,force)
+        case ('hel_smooth');      call forcing_hel_smooth(f)
+        case ('chandra_kendall'); call forcing_chandra_kendall(f)
         case default; if(lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
         endselect
       endif
@@ -655,7 +655,7 @@ module Forcing
 !
     endsubroutine forcing_hel
 !***********************************************************************
-    subroutine forcing_hel_sp(f)
+    subroutine forcing_chandra_kendall(f)
 !
 !  Add helical forcing function in spherical polar coordinate system. 
 !  25-jul-07/dhruba: adapted from forcing_hel
@@ -680,6 +680,7 @@ module Forcing
       real, dimension(mx) :: Z_psi
       real,dimension(my) :: Pl
 ! -----------------------------------------
+      if (.not. lspherical_coords) call warning('Chandra-Kendall Forcing:','This forcing works only in spherical coordinates!')
       if (ifirst==0) then
         if (lroot) print*,'Helical forcing in spherical polar coordinate'
         if (lroot) print*,'allocating psif ..'
@@ -710,7 +711,7 @@ module Forcing
           enddo
         enddo
         ifirst= ifirst+1
-        write(*,*) 'dhruba: first time in hel_sp'
+        write(*,*) 'dhruba: first time in Chandra-Kendall'
       else
       endif
 ! ----- Now calculate the force from the potential and add this to
@@ -751,9 +752,9 @@ module Forcing
           enddo
         enddo
       enddo
- 
+      write(*,*) 'DHRUBA:CK forcing done'
       
-    endsubroutine forcing_hel_sp
+    endsubroutine forcing_chandra_kendall
 !***********************************************************************
     subroutine forcing_GP(f)
 !
