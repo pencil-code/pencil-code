@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.126 2007-12-17 15:55:59 dhruba Exp $
+! $Id: forcing.f90,v 1.127 2007-12-18 15:26:49 dobler Exp $
 
 module Forcing
 
@@ -86,7 +86,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.126 2007-12-17 15:55:59 dhruba Exp $")
+           "$Id: forcing.f90,v 1.127 2007-12-18 15:26:49 dobler Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -683,16 +683,18 @@ module Forcing
       real, dimension(mx) :: Z_psi
       real,dimension(my) :: Pl
 ! -----------------------------------------
-!  The scheme is as follows: Take randomly an \ell between Legengrel_min and Legendrel_max. 
-! The for this \ell choose randomly one \alpha between alpnano (= 5 by default) possible values of 
-!\alpha which sets
-! $\psi = 0$ at the two radial boundaries. For this \ell and \alpha construct the Chandarsekhar-Kendall
-! potential $\psi^{m}_{\ell)(\alpha r) $. Then construct the helical force from this potential. 
+! The scheme is as follows: Take randomly an \ell between Legengrel_min
+! and Legendrel_max. 
+! The for this \ell choose randomly one \alpha between alpnano (= 5 by
+! default) possible values of \alpha which sets $\psi = 0$ at the two
+! radial boundaries. For this \ell and \alpha construct the Chandarsekhar-
+! Kendall potential $\psi^{m}_{\ell)(\alpha r) $. Then construct the
+! helical force from this potential. 
       if (.not. lspherical_coords) call warning('chandra-kendall forcing:','This forcing works only in spherical coordinates!')
       if (ifirst==0) then
-! If this is the first time this function is being called allocate \psi. Next read from file "alpha_in.dat"
-! the two values of \ell. If this two matches Legendrel_min and Legendrel_max proceed. 
-! Then 
+! If this is the first time this function is being called allocate \psi.
+! Next read from file "alpha_in.dat" the two values of \ell. If this two
+! matches Legendrel_min and Legendrel_max proceed. Then 
         ellno=Legendrel_max-Legendrel_min+1
         if (lroot) print*,'Helical forcing in spherical polar coordinate'
         if (lroot) print*,'allocating psif ..'
