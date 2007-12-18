@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.49 2007-11-30 12:59:59 bingert Exp $
+! $Id: temperature_idealgas.f90,v 1.50 2007-12-18 13:53:45 tgastine Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -97,6 +97,8 @@ module Entropy
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
   integer :: idiag_TTm=0      ! DIAG_DOC: $\left< T \right>$
+  integer :: idiag_fradtop=0  ! DIAG_DOC: $<-K{dT\over dz}>_{\text{top}}$ 
+                              ! DIAG_DOC: \quad(radiative flux at the top)
   integer :: idiag_yHmax=0,idiag_yHmin=0,idiag_yHm=0
   integer :: idiag_eth=0,idiag_ssm=0,idiag_thcool=0
   integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0
@@ -137,7 +139,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.49 2007-11-30 12:59:59 bingert Exp $")
+           "$Id: temperature_idealgas.f90,v 1.50 2007-12-18 13:53:45 tgastine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -482,6 +484,10 @@ module Entropy
       if (idiag_TTmax/=0) lpenc_diagnos(i_TT)  =.true.
       if (idiag_TTmin/=0) lpenc_diagnos(i_TT)  =.true.
       if (idiag_TTm/=0)   lpenc_diagnos(i_TT)  =.true.
+      if (idiag_fradtop/=0) then
+        lpenc_diagnos(i_TT) =.true.  ! for hcond computation
+        lpenc_diagnos(i_glnTT) =.true.
+      endif
       if (idiag_yHmax/=0) lpenc_diagnos(i_yH)  =.true.
       if (idiag_yHmin/=0) lpenc_diagnos(i_yH)  =.true.
       if (idiag_yHm/=0)   lpenc_diagnos(i_yH)  =.true.
@@ -588,8 +594,9 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: Hmax=0.
+      real, dimension(nx) :: Hmax=0., hcond, dhcond
       real, dimension (nx) :: vKpara,vKperp,rhs            
+      real :: fradtop
       integer :: j,ju
 !
       intent(inout) :: f,p
@@ -681,6 +688,11 @@ module Entropy
         if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         if (idiag_TTm/=0)   call sum_mn_name(p%TT,idiag_TTm)
+        if (idiag_fradtop/=0.and.n==n2) then
+          call heatcond_TT(p%TT,hcond,dhcond)
+          fradtop=sum(-hcond*p%glnTT(:,3))/nx
+          call save_name(fradtop,idiag_fradtop)
+        endif
         if (idiag_eth/=0)   call sum_mn_name(p%ee/p%rho1,idiag_eth)
         if (idiag_ssm/=0)   call sum_mn_name(p%ss,idiag_ssm)
         if (idiag_dtc/=0) then
@@ -1046,7 +1058,7 @@ module Entropy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
+        idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0; idiag_fradtop=0
         idiag_yHmax=0; idiag_yHmin=0; idiag_yHm=0
         idiag_eth=0; idiag_ssm=0; idiag_thcool=0
         idiag_dtchi=0; idiag_dtc=0
@@ -1059,6 +1071,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
         call parse_name(iname,cname(iname),cform(iname),'TTm',idiag_TTm)
+        call parse_name(iname,cname(iname),cform(iname),'fradtop',idiag_fradtop)
         call parse_name(iname,cname(iname),cform(iname),'eth',idiag_eth)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
         call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
@@ -1079,6 +1092,7 @@ module Entropy
         write(3,*) 'i_TTmax=',idiag_TTmax
         write(3,*) 'i_TTmin=',idiag_TTmin
         write(3,*) 'i_TTm=',idiag_TTm
+        write(3,*) 'i_fradtop=',idiag_fradtop
         write(3,*) 'i_eth=',idiag_eth
         write(3,*) 'i_ssm=',idiag_ssm
         write(3,*) 'i_dtchi=',idiag_dtchi
