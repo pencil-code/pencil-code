@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.28 2007-09-03 05:05:05 ajohan Exp $
+! $Id: grid.f90,v 1.29 2007-12-19 14:24:33 dhruba Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -156,10 +156,8 @@ module Grid
         select case (grid_func(1))
 
         case ('linear','sinh')
-
           a=coeff_grid(1,1)*dx
           xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,xyz_star(1),grid_func(1))/a
-
           call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2)
           call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo)
           call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up)
@@ -215,7 +213,6 @@ module Grid
 
           a=coeff_grid(2,1)*dy
           xi2star=find_star(a*xi2lo,a*xi2up,y00,y00+Ly,xyz_star(2),grid_func(2))/a
-
           call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2)
           call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo)
           call grid_profile(a*(xi2up-xi2star),grid_func(2),g2up)
@@ -275,7 +272,6 @@ module Grid
 
           a=coeff_grid(3,1)*dz
           xi3star=find_star(a*xi3lo,a*xi3up,z00,z00+Lz,xyz_star(3),grid_func(3))/a
-
           call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2)
           call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo)
           call grid_profile(a*(xi3up-xi3star),grid_func(3),g3up)
@@ -334,7 +330,6 @@ module Grid
       if (lequidist(3) .or. nzgrid <= 1) then
         dxmin_z = dz
         dxmax_z = dz
-        if(lspherical_coords) dxmin_z = dz*minval(x(l1:l2))*minval(sinth(m1:m2))
         if(lspherical_coords) dxmin_z = dz*maxval(x(l1:l2))*maxval(sinth(m1:m2))
       else
         dxmin_z = minval(zprim(n1:n2))
@@ -443,9 +438,12 @@ module Grid
         if (lpencil(i_phix))     p%phix    = 0.
         if (lpencil(i_phiy))     p%phiy    = 1.
       elseif (lspherical_coords) then
-        if (lpencil(i_x_mn))     p%x_mn    = x(l1:l2)*sin(z(n))*cos(y(m))
-        if (lpencil(i_y_mn))     p%y_mn    = x(l1:l2)*sin(z(n))*sin(y(m))
-        if (lpencil(i_z_mn))     p%z_mn    = x(l1:l2)*cos(z(n))
+! We have been working with the assumption that x,y,z are actually 
+! r, \theta, \phi in spherical coordinates. Hence changing x_mn
+! may mess up things already coded. It is better not to. 
+!        if (lpencil(i_x_mn))     p%x_mn    = x(l1:l2)*sin(z(n))*cos(y(m))
+!        if (lpencil(i_y_mn))     p%y_mn    = x(l1:l2)*sin(z(n))*sin(y(m))
+!        if (lpencil(i_z_mn))     p%z_mn    = x(l1:l2)*cos(z(n))
         if (lpencil(i_r_mn))     p%r_mn    = x(l1:l2)
         if (lpencil(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)*sin(z(n))
         if (lpencil(i_phi_mn))   p%phi_mn  = spread(z(n),1,nx) 
@@ -641,7 +639,7 @@ module Grid
       real :: g_lo,gder_lo
       real :: g_up,gder_up
       real :: f   ,fder
-      integer, parameter :: maxit=100
+      integer, parameter :: maxit=1000
       logical :: lreturn
       integer :: it
 
