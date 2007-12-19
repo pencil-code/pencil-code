@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.128 2007-12-19 14:20:07 dhruba Exp $
+! $Id: forcing.f90,v 1.129 2007-12-19 15:12:20 dhruba Exp $
 
 module Forcing
 
@@ -86,7 +86,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.128 2007-12-19 14:20:07 dhruba Exp $")
+           "$Id: forcing.f90,v 1.129 2007-12-19 15:12:20 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -701,54 +701,54 @@ module Forcing
         allocate(psif(mx,my,mz))
         allocate(Bessel_alpha(ellno,nalpha))
         if (lroot) print*, '..done'
-       open(unit=76,file="alpha_in.dat")
-       read(76,*) ellmin,ellmax,rmin,rmax
-       if(.not. ((Legendrel_min.eq.ellmin).and.(Legendrel_max.eq.ellmax)) ) then 
+        open(unit=76,file="alpha_in.dat")
+        read(76,*) ellmin,ellmax,rmin,rmax
+        if(.not. ((Legendrel_min.eq.ellmin).and.(Legendrel_max.eq.ellmax)) ) then 
           call stop_it("In CK forcing:  Legendrel s do not match abroting. Check  files run.in  and alpha_in.dat")
+        else
+        endif
+! ---------- 
+        do ilread=1,ellno
+          read(76,*) ell,(Bessel_alpha(ilread,jalpha),jalpha=1,nalpha)
+        enddo
+        close(76)
+        ifirst= ifirst+1
+        if (lroot) write(*,*) 'dhruba: first time in Chandra-Kendall successful'
       else
       endif
-! ---------- 
-      do ilread=1,ellno
-         read(76,*) ell,(Bessel_alpha(ilread,jalpha),jalpha=1,nalpha)
-      enddo
-      close(76)
-      ifirst= ifirst+1
-      if (lroot) write(*,*) 'dhruba: first time in Chandra-Kendall successful'
-   else
-   endif
 ! Now choose a random \ell and and a random \alpha
-   call random_number_wrapper(rell)
-   ell_index= nint(abs(rell)*(ellno-1)) 
-   Legendrel = Legendrel_min+ell_index
-   call random_number_wrapper(ralp)
-   alp_index = nint(abs(ralp)*(nalpha-1))+1
-   Balpha = Bessel_alpha(ell_index+1,alp_index)
-   call random_number_wrapper(remm)
-   emm = nint(remm*Legendrel)
-   call random_number_wrapper(rphase1)
-   rphase1 = rphase1*2.*pi
+      call random_number_wrapper(rell)
+      ell_index= nint(abs(rell)*(ellno-1)) 
+      Legendrel = Legendrel_min+ell_index
+      call random_number_wrapper(ralp)
+      alp_index = nint(abs(ralp)*(nalpha-1))+1
+      Balpha = Bessel_alpha(ell_index+1,alp_index)
+      call random_number_wrapper(remm)
+      emm = nint(remm*Legendrel)
+      call random_number_wrapper(rphase1)
+      rphase1 = rphase1*2.*pi
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
 ! Now construct the Z_psi(r) 
-        call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
-        call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
-        a_ell = -anum/adenom
+      call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
+      call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
+      a_ell = -anum/adenom
 !        write(*,*) 'dhruba:',anum,adenom,Legendrel,Bessel_alpha,x(l1)
-        do l=l1-nghost,l2+nghost
-           alphar = Balpha*x(l)
-           call sp_besselj_l(jlm,Legendrel,alphar)
-           call sp_bessely_l(ylm,Legendrel,alphar)
-           Z_psi(l) = (a_ell*jlm+ylm)
-        enddo
+      do l=l1-nghost,l2+nghost
+        alphar = Balpha*x(l)
+        call sp_besselj_l(jlm,Legendrel,alphar)
+        call sp_bessely_l(ylm,Legendrel,alphar)
+        Z_psi(l) = (a_ell*jlm+ylm)
+      enddo
  !-------
-        do n=n1-nghost,n2+nghost
-           do m=m1-nghost,m2+nghost
-              call legendre_pl(Pell,Legendrel,y(m))
-              do l=l1-nghost,l2+nghost
-                 psif(l,m,n) = Z_psi(l)*Pell*cos(emm*z(n)+rphase1)
-              enddo
-           enddo
+      do n=n1-nghost,n2+nghost
+        do m=m1-nghost,m2+nghost
+          call legendre_pl(Pell,Legendrel,y(m))
+          do l=l1-nghost,l2+nghost
+            psif(l,m,n) = Z_psi(l)*Pell*cos(emm*z(n)+rphase1)
+          enddo
         enddo
+      enddo
 ! ----- Now calculate the force from the potential and add this to
 ! velocity
 ! get a random unit vector with three components ee_r, ee_theta, ee_phi
@@ -781,12 +781,12 @@ module Forcing
               f(l1:l2,m,n,jf) = capitalH(:,j)
             else
 ! stochastic euler scheme of integration 
-           f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ fnorm*capitalH(:,j)*sqrt(dt)
-          endif
+              f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ fnorm*capitalH(:,j)*sqrt(dt)
+            endif
           enddo
         enddo
       enddo
-      
+ !! -------------     
     endsubroutine forcing_chandra_kendall
 !***********************************************************************
     subroutine forcing_GP(f)
