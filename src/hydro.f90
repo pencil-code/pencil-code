@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.409 2007-12-07 10:17:37 ajohan Exp $
+! $Id: hydro.f90,v 1.410 2007-12-19 14:25:10 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -331,7 +331,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.409 2007-12-07 10:17:37 ajohan Exp $")
+           "$Id: hydro.f90,v 1.410 2007-12-19 14:25:10 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1283,7 +1283,10 @@ use Mpicomm, only: stop_it
 !
 !  adding differential rotation via a frictional term
 !
-      if (tau_diffrot1/=0) call impose_profile_diffrot(f,df,uuprof,ldiffrot_test)
+      if (tau_diffrot1/=0) then
+       call impose_profile_diffrot(f,df,uuprof,ldiffrot_test)
+      else
+      endif
 !
 !  Possibility to damp mean x momentum, ruxm, to zero.
 !  This can be useful in situations where a mean flow is generated.
@@ -3083,6 +3086,7 @@ use Mpicomm, only: stop_it
       real, dimension (nx) :: prof_amp1,prof_amp2
       character (len=labellen) :: prof_diffrot 
       logical :: ldiffrot_test
+      integer :: llx
 !
       select case(prof_diffrot)
 !
@@ -3118,11 +3122,27 @@ use Mpicomm, only: stop_it
       case ('solar_simple')
       prof_amp1=ampl1_diffrot*step(x(l1:l2),x1_ff_uu,width_ff_uu)
       prof_amp2=1.-step(x(l1:l2),x2_ff_uu,width_ff_uu)
-      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
-        -prof_amp1*(1.5-7.5*costh(m)*costh(m)))
+      if(lspherical_coords) then
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
+          -prof_amp1*(1.5-7.5*costh(m)*costh(m)))
+      else
+        do llx=l1,l2
+          df(llx,m,n,iuz)=df(llx,m,n,iuz)-tau_diffrot1*( f(llx,m,n,iuz) &
+               -ampl1_diffrot*cos(x(llx))*cos(y(m))*cos(y(m)) )
+!            -prof_amp1*cos(20.*x(llx))*cos(20.*y(m)) )
+        enddo
+      endif
       if(ldiffrot_test) then
         f(l1:l2,m,n,iux) = 0.
         f(l1:l2,m,n,iuy) = 0.
+        if(lspherical_coords) then
+          f(l1:l2,m,n,iuz) = prof_amp1*(1.5-7.5*costh(m)*costh(m))
+        else
+          do llx=l1,l2 
+            f(llx,m,n,iuz) = prof_amp1(llx)*cos(y(m))*cos(y(m)) 
+!prof_amp1(llx)*cos(y(m))*cos(y(m)) 
+          enddo
+        endif
         f(l1:l2,m,n,iuz) = prof_amp1*(1.5-7.5*costh(m)*costh(m))
        else
        endif
