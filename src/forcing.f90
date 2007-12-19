@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.127 2007-12-18 15:26:49 dobler Exp $
+! $Id: forcing.f90,v 1.128 2007-12-19 14:20:07 dhruba Exp $
 
 module Forcing
 
@@ -34,7 +34,7 @@ module Forcing
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
   character (len=labellen) :: iforce_profile='nothing'
- ! For helical forcing in sphreical polar coordinate system
+! For helical forcing in sphreical polar coordinate system
   real,allocatable,dimension(:,:,:) :: psif
   integer :: Legendrel_min,Legendrel_max
   integer :: nalpha=5
@@ -86,7 +86,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.127 2007-12-18 15:26:49 dobler Exp $")
+           "$Id: forcing.f90,v 1.128 2007-12-19 14:20:07 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -678,8 +678,8 @@ module Forcing
       integer :: emm,iread,l,j,jf,mmin,mmax,ellmin,ellmax,ellno,ell,jalpha,ilread,&
                       alp_index,ell_index,Legendrel
       complex :: psi_ell_m
-      real :: a_ell,anum,adenom,jlm,ylm,rphase,fnorm,alphar,Balpha,Pell
-      real :: rz,ralp,rell,remm, Plmreal, Plmimag,ran_min,ran_max,rmin,rmax
+      real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,Pell
+      real :: rz,ralp,rell,remm,rphase2,Plmreal, Plmimag,ran_min,ran_max,rmin,rmax
       real, dimension(mx) :: Z_psi
       real,dimension(my) :: Pl
 ! -----------------------------------------
@@ -691,11 +691,11 @@ module Forcing
 ! Kendall potential $\psi^{m}_{\ell)(\alpha r) $. Then construct the
 ! helical force from this potential. 
       if (.not. lspherical_coords) call warning('chandra-kendall forcing:','This forcing works only in spherical coordinates!')
+      ellno=Legendrel_max-Legendrel_min+1
       if (ifirst==0) then
 ! If this is the first time this function is being called allocate \psi.
 ! Next read from file "alpha_in.dat" the two values of \ell. If this two
-! matches Legendrel_min and Legendrel_max proceed. Then 
-        ellno=Legendrel_max-Legendrel_min+1
+! matches Legendrel_min and Legendrel_max proceed.  
         if (lroot) print*,'Helical forcing in spherical polar coordinate'
         if (lroot) print*,'allocating psif ..'
         allocate(psif(mx,my,mz))
@@ -707,12 +707,13 @@ module Forcing
           call stop_it("In CK forcing:  Legendrel s do not match abroting. Check  files run.in  and alpha_in.dat")
       else
       endif
- 
+! ---------- 
       do ilread=1,ellno
          read(76,*) ell,(Bessel_alpha(ilread,jalpha),jalpha=1,nalpha)
       enddo
+      close(76)
       ifirst= ifirst+1
-      write(*,*) 'dhruba: first time in Chandra-Kendall successful'
+      if (lroot) write(*,*) 'dhruba: first time in Chandra-Kendall successful'
    else
    endif
 ! Now choose a random \ell and and a random \alpha
@@ -724,7 +725,8 @@ module Forcing
    Balpha = Bessel_alpha(ell_index+1,alp_index)
    call random_number_wrapper(remm)
    emm = nint(remm*Legendrel)
-   write(*,*) "DHRUBA:",ell_index,Legendrel,alp_index,Balpha
+   call random_number_wrapper(rphase1)
+   rphase1 = rphase1*2.*pi
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
 ! Now construct the Z_psi(r) 
@@ -743,7 +745,7 @@ module Forcing
            do m=m1-nghost,m2+nghost
               call legendre_pl(Pell,Legendrel,y(m))
               do l=l1-nghost,l2+nghost
-                 psif(l,m,n) = Z_psi(l)*Pell*cos(emm*z(n))
+                 psif(l,m,n) = Z_psi(l)*Pell*cos(emm*z(n)+rphase1)
               enddo
            enddo
         enddo
@@ -756,10 +758,10 @@ module Forcing
 !! ----------now generate and add the force ------------
       call random_number_wrapper(rz)
       ee(3) = rz
-      call random_number_wrapper(rphase)
-      rphase = PI*rphase
-      ee(1) = sqrt(1-rz*rz)*cos(rphase)
-      ee(2) = sqrt(1-rz*rz)*sin(rphase)
+      call random_number_wrapper(rphase2)
+      rphase2 = PI*rphase2
+      ee(1) = sqrt(1-rz*rz)*cos(rphase2)
+      ee(2) = sqrt(1-rz*rz)*sin(rphase2)
       fnorm = fpre*cs0*sqrt(Balpha*cs0)
  !     write(*,*) 'dhruba:',fnorm*sqrt(dt),dt,ee(1),ee(2),ee(3)
       do n=n1,n2
@@ -784,7 +786,6 @@ module Forcing
           enddo
         enddo
       enddo
-      write(*,*) 'DHRUBA:CK forcing done'
       
     endsubroutine forcing_chandra_kendall
 !***********************************************************************
