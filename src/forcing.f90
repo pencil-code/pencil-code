@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.129 2007-12-19 15:12:20 dhruba Exp $
+! $Id: forcing.f90,v 1.130 2007-12-20 23:11:20 dhruba Exp $
 
 module Forcing
 
@@ -86,7 +86,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.129 2007-12-19 15:12:20 dhruba Exp $")
+           "$Id: forcing.f90,v 1.130 2007-12-20 23:11:20 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -675,11 +675,13 @@ module Forcing
       real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
       real, dimension(nx,3,3) :: psi_ij,Tij
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: emm,iread,l,j,jf,mmin,mmax,ellmin,ellmax,ellno,ell,jalpha,ilread,&
-                      alp_index,ell_index,Legendrel
+      integer :: emm,iread,l,j,jf,mmin,mmax,ellmin,ellmax,ellno,ell,& 
+                 jalpha,ilread,alp_index,ell_index,Legendrel
       complex :: psi_ell_m
-      real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,Pell
-      real :: rz,ralp,rell,remm,rphase2,Plmreal, Plmimag,ran_min,ran_max,rmin,rmax
+      real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,& 
+              Pell,psilm,RYlm,IYlm,ramp
+      real :: rz,ralp,rell,remm,rphase2,Plmreal, Plmimag,& 
+              ran_min,ran_max,rmin,rmax
       real, dimension(mx) :: Z_psi
       real,dimension(my) :: Pl
 ! -----------------------------------------
@@ -717,16 +719,16 @@ module Forcing
       else
       endif
 ! Now choose a random \ell and and a random \alpha
-      call random_number_wrapper(rell)
-      ell_index= nint(abs(rell)*(ellno-1)) 
-      Legendrel = Legendrel_min+ell_index
-      call random_number_wrapper(ralp)
-      alp_index = nint(abs(ralp)*(nalpha-1))+1
-      Balpha = Bessel_alpha(ell_index+1,alp_index)
-      call random_number_wrapper(remm)
-      emm = nint(remm*Legendrel)
-      call random_number_wrapper(rphase1)
-      rphase1 = rphase1*2.*pi
+   call random_number_wrapper(rell)
+   ell_index= nint(rell*(ellno-1)) 
+   Legendrel = Legendrel_min+ell_index
+   call random_number_wrapper(ralp)
+   alp_index = nint(ralp*(nalpha-1))+1
+   Balpha = Bessel_alpha(ell_index+1,alp_index)
+   call random_number_wrapper(rphase1)
+   rphase1 = rphase1*2.*pi
+   call random_number_wrapper(ramp)
+!   if (lroot) write(*,*) "Dhruba",Legendrel,alp_index,Balpha 
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
 ! Now construct the Z_psi(r) 
@@ -741,12 +743,18 @@ module Forcing
         Z_psi(l) = (a_ell*jlm+ylm)
       enddo
  !-------
-      do n=n1-nghost,n2+nghost
-        do m=m1-nghost,m2+nghost
-          call legendre_pl(Pell,Legendrel,y(m))
-          do l=l1-nghost,l2+nghost
-            psif(l,m,n) = Z_psi(l)*Pell*cos(emm*z(n)+rphase1)
-          enddo
+        do n=n1-nghost,n2+nghost
+           do m=m1-nghost,m2+nghost
+              psilm=0.
+              do emm=-Legendrel,Legendrel
+                call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n)) 
+                call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
+                call random_number_wrapper(rphase1)
+                rphase1=rphase1*2.*pi
+                psilm= psilm+RYlm*cos(rphase1)-IYlm*sin(rphase1)
+              enddo
+              psif(:,m,n) = ramp*Z_psi*psilm
+!                if(lroot) write(*,*) ramp,Z_psi(10),psilm,psif(10,m,n)
         enddo
       enddo
 ! ----- Now calculate the force from the potential and add this to
@@ -759,10 +767,10 @@ module Forcing
       call random_number_wrapper(rz)
       ee(3) = rz
       call random_number_wrapper(rphase2)
-      rphase2 = PI*rphase2
+      rphase2 = pi*rphase2
       ee(1) = sqrt(1-rz*rz)*cos(rphase2)
       ee(2) = sqrt(1-rz*rz)*sin(rphase2)
-      fnorm = fpre*cs0*sqrt(Balpha*cs0)
+      fnorm = fpre*cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt)
  !     write(*,*) 'dhruba:',fnorm*sqrt(dt),dt,ee(1),ee(2),ee(3)
       do n=n1,n2
         do m=m1,m2
@@ -780,8 +788,8 @@ module Forcing
             if(lhelical_test) then
               f(l1:l2,m,n,jf) = capitalH(:,j)
             else
-! stochastic euler scheme of integration 
-              f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ fnorm*capitalH(:,j)*sqrt(dt)
+! stochastic euler scheme of integration[sqrt(dt) is already included in fnorm] 
+            f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ fnorm*capitalH(:,j)
             endif
           enddo
         enddo
