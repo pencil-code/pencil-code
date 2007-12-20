@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.64 2007-12-19 14:23:32 dhruba Exp $
+! $Id: cparam.f90,v 1.65 2007-12-20 09:16:38 dobler Exp $
 
 module Cparam
 
@@ -55,7 +55,7 @@ module Cparam
 !            lines to be read in
 !            date-and-time string
 !
-  integer, parameter :: fnlen=128,bclen=3,labellen=100,linelen=256,datelen=30
+  integer, parameter :: fnlen=128,bclen=3,labellen=25,linelen=256,datelen=30
 !
 !  number of slots in initlnrho etc.
 !
