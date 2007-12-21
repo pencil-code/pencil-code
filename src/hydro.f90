@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.410 2007-12-19 14:25:10 dhruba Exp $
+! $Id: hydro.f90,v 1.411 2007-12-21 09:18:22 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -267,7 +267,12 @@ module Hydro
   integer :: idiag_ormr=0       ! DIAG_DOC: 
   integer :: idiag_opmr=0       ! DIAG_DOC: 
   integer :: idiag_ozmr=0       ! DIAG_DOC: 
-  integer :: idiag_oumz=0       ! DIAG_DOC: 
+  integer :: idiag_oumx=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}
+                                ! DIAG_DOC: \cdot\uv\right>_{yz}$
+  integer :: idiag_oumy=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}
+                                ! DIAG_DOC: \cdot\uv\right>_{xz}$
+  integer :: idiag_oumz=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}
+                                ! DIAG_DOC: \cdot\uv\right>_{xy}$
   !
   integer :: idiag_Marms=0      ! DIAG_DOC: $\left<\uv^2/\cs^2\right>$
                                 ! DIAG_DOC:   \quad(rms Mach number)
@@ -331,7 +336,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.410 2007-12-19 14:25:10 dhruba Exp $")
+           "$Id: hydro.f90,v 1.411 2007-12-21 09:18:22 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -906,7 +911,8 @@ module Hydro
           lpenc_diagnos(i_oo)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0) &
           lpenc_diagnos(i_o2)=.true.
-      if (idiag_oum/=0 .or. idiag_oumz/=0) lpenc_diagnos(i_ou)=.true.
+      if (idiag_oum/=0 .or. idiag_oumx/=0.or.idiag_oumy/=0.or.idiag_oumz/=0) &
+          lpenc_diagnos(i_ou)=.true.
       if (idiag_Marms/=0 .or. idiag_Mamax/=0) lpenc_diagnos(i_Ma2)=.true.
       if (idiag_u3u21m/=0) lpenc_diagnos(i_u3u21)=.true.
       if (idiag_u1u32m/=0) lpenc_diagnos(i_u1u32)=.true.
@@ -1487,7 +1493,9 @@ use Mpicomm, only: stop_it
         if (idiag_uxuzmx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,3),idiag_uxuzmx)
         if (idiag_uyuzmx/=0) call yzsum_mn_name_x(p%uu(:,2)*p%uu(:,3),idiag_uyuzmx)
         if (idiag_ekinz/=0)  call xysum_mn_name_z(.5*p%rho*p%u2,idiag_ekinz)
-        if (idiag_oumz/=0) call xysum_mn_name_z(p%ou,idiag_oumz)
+        if (idiag_oumx/=0)   call yzsum_mn_name_x(p%ou,idiag_oumx)
+        if (idiag_oumy/=0)   call xzsum_mn_name_y(p%ou,idiag_oumy)
+        if (idiag_oumz/=0)   call xysum_mn_name_z(p%ou,idiag_oumz)
 !  phi-z averages
         if (idiag_u2mr/=0)   call phizsum_mn_name_r(p%u2,idiag_u2mr)
         if (idiag_urmr/=0) &
@@ -2441,6 +2449,8 @@ use Mpicomm, only: stop_it
         idiag_oxoym=0
         idiag_oxozm=0
         idiag_oyozm=0
+        idiag_oumx=0
+        idiag_oumy=0
         idiag_oumz=0
         idiag_oumphi=0
         idiag_ozmphi=0
@@ -2591,6 +2601,7 @@ use Mpicomm, only: stop_it
             'uxuzmy',idiag_uxuzmy)
         call parse_name(inamey,cnamey(inamey),cformy(inamey), &
             'uyuzmy',idiag_uyuzmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'oumy',idiag_oumy)
       enddo
 !
 !  check for those quantities for which we want yz-averages
@@ -2611,6 +2622,7 @@ use Mpicomm, only: stop_it
             'uxuzmx',idiag_uxuzmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex), &
             'uyuzmx',idiag_uyuzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'oumx',idiag_oumx)
       enddo
 !
 !  check for those quantities for which we want y-averages
