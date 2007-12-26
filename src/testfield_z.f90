@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.16 2007-10-17 14:21:09 brandenb Exp $
+! $Id: testfield_z.f90,v 1.17 2007-12-26 06:55:21 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -55,7 +55,7 @@ module Testfield
   logical :: zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
   logical :: luxb_as_aux=.false.,linit_aatest=.false.
   character (len=labellen) :: itestfield='B11-B21'
-  real :: ktestfield=1.
+  real :: ktestfield=1., ktestfield1=1.
   integer, parameter :: ntestfield=3*njtest
   integer :: naainit
 
@@ -150,7 +150,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.16 2007-10-17 14:21:09 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.17 2007-12-26 06:55:21 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -193,6 +193,14 @@ module Testfield
 !
       cz=cos(ktestfield*z)
       sz=sin(ktestfield*z)
+!
+!  Also calculate its inverse, but only if different from zero
+!
+      if (ktestfield==0) then
+        ktestfield1=1.
+      else
+        ktestfield1=1./ktestfield
+      endif
 !
 !  Register an extra aux slot for uxb if requested (so uxb is written
 !  to snapshots and can be easily analyzed later). For this to work you
@@ -477,13 +485,13 @@ module Testfield
 !
         if (idiag_alp11/=0) call sum_mn_name(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2),idiag_alp11)
         if (idiag_alp21/=0) call sum_mn_name(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2),idiag_alp21)
-        if (idiag_eta11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))/ktestfield,idiag_eta11)
-        if (idiag_eta21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))/ktestfield,idiag_eta21)
+        if (idiag_eta11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))*ktestfield1,idiag_eta11)
+        if (idiag_eta21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))*ktestfield1,idiag_eta21)
 !
         if (idiag_alp12/=0) call sum_mn_name(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4),idiag_alp12)
         if (idiag_alp22/=0) call sum_mn_name(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4),idiag_alp22)
-        if (idiag_eta12/=0) call sum_mn_name((-sz(n)*Eipq(:,1,3)+cz(n)*Eipq(:,1,4))/ktestfield,idiag_eta12)
-        if (idiag_eta22/=0) call sum_mn_name((-sz(n)*Eipq(:,2,3)+cz(n)*Eipq(:,2,4))/ktestfield,idiag_eta22)
+        if (idiag_eta12/=0) call sum_mn_name((-sz(n)*Eipq(:,1,3)+cz(n)*Eipq(:,1,4))*ktestfield1,idiag_eta12)
+        if (idiag_eta22/=0) call sum_mn_name((-sz(n)*Eipq(:,2,3)+cz(n)*Eipq(:,2,4))*ktestfield1,idiag_eta22)
 !
 !  rms values of small scales fields bpq in response to the test fields Bpq
 !  Obviously idiag_b0rms and idiag_b12rms cannot both be invoked!

@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.80 2007-11-21 14:04:15 wlyra Exp $
+! $Id: nohydro.f90,v 1.81 2007-12-26 06:55:21 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -23,9 +23,10 @@ module Hydro
 
   include 'hydro.h'
 
+  real, dimension (nz,3) :: uumz=0.
   real :: kep_cutoff_pos_ext= huge1,kep_cutoff_width_ext=0.0
   real :: kep_cutoff_pos_int=-huge1,kep_cutoff_width_int=0.0
-  real :: u_out_kep=0.0, uumz
+  real :: u_out_kep=0.0
   logical :: lpressuregradient_gas=.true.,lcalc_uumean=.false.
 
   real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber?
@@ -73,7 +74,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.80 2007-11-21 14:04:15 wlyra Exp $")
+           "$Id: nohydro.f90,v 1.81 2007-12-26 06:55:21 brandenb Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
