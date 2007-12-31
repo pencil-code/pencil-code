@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.411 2007-12-21 09:18:22 ajohan Exp $
+! $Id: hydro.f90,v 1.412 2007-12-31 00:36:58 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -67,9 +67,9 @@ module Hydro
   real :: kep_cutoff_pos_ext= huge1,kep_cutoff_width_ext=0.0
   real :: kep_cutoff_pos_int=-huge1,kep_cutoff_width_int=0.0
   real :: u_out_kep=0.0, velocity_ceiling=-1.0
-  real :: mu_omega, gap
-  integer :: nb_rings
-  real, dimension(5) :: om_rings
+  real :: mu_omega=0., gap=0.
+  integer :: nb_rings=0
+  real, dimension(5) :: om_rings=0.
   integer :: N_modes_uu=0
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: ladvection_velocity=.true.
@@ -336,7 +336,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.411 2007-12-21 09:18:22 ajohan Exp $")
+           "$Id: hydro.f90,v 1.412 2007-12-31 00:36:58 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
