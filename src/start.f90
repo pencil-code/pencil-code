@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.176 2007-12-14 15:28:34 theine Exp $
+! $Id: start.f90,v 1.177 2007-12-31 01:22:27 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -100,7 +100,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.176 2007-12-14 15:28:34 theine Exp $")
+             "$Id: start.f90,v 1.177 2007-12-31 01:22:27 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -272,7 +272,11 @@
         if (lread_oldsnap) then
           call rsnap(trim(directory_snap)//'/var.dat',f, mvar)
         else
-          f(:,:,:,1:mvar)=0.
+          ! NB: don't trim this to f(:,:,:,1:mvar)=0. unless you know
+          ! for sure there won't be any problems with undefined valus
+          ! being sheared around (which makes code compiled with
+          ! `g95 -freal=nan' throw a floating-point exception):
+          f=0.
         endif
 !
 !  the following init routines do then only need to add to f.
