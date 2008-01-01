@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.81 2007-12-26 06:55:21 brandenb Exp $
+! $Id: nohydro.f90,v 1.82 2008-01-01 19:15:29 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -8,7 +8,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED oo,uij,uu,u2,sij,divu,uij5
+! PENCILS PROVIDED oo,ou,uij,uu,u2,sij,divu,uij5
 !
 !***************************************************************
 
@@ -74,7 +74,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.81 2007-12-26 06:55:21 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.82 2008-01-01 19:15:29 brandenb Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -199,6 +199,7 @@ module Hydro
       if (kinflow/='') lpenc_requested(i_uu)=.true.
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_u2m/=0 .or. &
           idiag_um2/=0) lpenc_diagnos(i_u2)=.true.
+      if (idiag_oum/=0) lpenc_diagnos(i_ou)=.true.
 !
     endsubroutine pencil_criteria_hydro
 !***********************************************************************
@@ -224,6 +225,11 @@ module Hydro
         lpencil_in(i_glnrho)=.true.
       endif
       if (lpencil_in(i_u2)) lpencil_in(i_uu)=.true.
+! oo
+      if (lpencil_in(i_ou)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_oo)=.true.
+      endif
 !
     endsubroutine pencil_interdep_hydro
 !***********************************************************************
@@ -235,7 +241,7 @@ module Hydro
 !   08-nov-04/tony: coded
 !
       use Cdata
-      use Sub, only: dot2_mn, sum_mn_name, max_mn_name, integrate_mn_name
+      use Sub, only: dot_mn, dot2_mn, sum_mn_name, max_mn_name, integrate_mn_name
       use Magnetic, only: ABC_A,ABC_B,ABC_C,kx_aa,ky_aa,kz_aa
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -300,16 +306,41 @@ module Hydro
         if (lpencil(i_divu)) p%divu=0.
 !
 !  Galloway-Proctor flow
+!  only makes sense for kkx_aa=kky_aa
 !
       elseif (kinflow=='Galloway-Proctor') then
         if (headtt) print*,'Galloway-Proctor flow; kx_aa,ky_aa=',kkx_aa,kky_aa
+        fac=ampl_kinflow
+        ecost=eps_kinflow*cos(omega_kinflow*t)
+        esint=eps_kinflow*sin(omega_kinflow*t)
+        p%uu(:,1)=-fac*sin(kky_aa*y(m)    +esint)
+        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2)+ecost)
+        p%uu(:,3)=-fac*(cos(kkx_aa*x(l1:l2)+ecost)+cos(kky_aa*y(m)+esint))
+        if (lpencil(i_divu)) p%divu=0.
+        if (lpencil(i_oo)) p%oo=-kkx_aa*p%uu
+!
+!  original Galloway-Proctor flow
+!
+      elseif (kinflow=='Galloway-Proctor-orig') then
+        if (headtt) print*,'Galloway-Proctor-orig flow; kx_aa=',kkx_aa
         fac=sqrt(1.5)*ampl_kinflow
         ecost=eps_kinflow*cos(omega_kinflow*t)
         esint=eps_kinflow*sin(omega_kinflow*t)
         p%uu(:,1)=+fac*cos(kky_aa*y(m)    +esint)*kky_aa
         p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2)+ecost)*kkx_aa
         p%uu(:,3)=-fac*(cos(kkx_aa*x(l1:l2)+ecost)+sin(kky_aa*y(m)+esint))
-! divu (check!)
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  Galloway-Proctor-2 flow (by mistake)
+!
+      elseif (kinflow=='Galloway-Proctor-2') then
+        if (headtt) print*,'Galloway-Proctor-2 flow; kx_aa,ky_aa=',kkx_aa,kky_aa
+        fac=ampl_kinflow
+        ecost=eps_kinflow*cos(omega_kinflow*t)
+        esint=eps_kinflow*sin(omega_kinflow*t)
+        p%uu(:,1)=-fac*sin(kky_aa*y(m)    +esint)*kky_aa
+        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2)+ecost)*kkx_aa
+        p%uu(:,3)=+fac*(cos(kkx_aa*x(l1:l2)+ecost)+cos(kky_aa*y(m)+esint))
         if (lpencil(i_divu)) p%divu=0.
 !
 !  Convection rolls
@@ -352,6 +383,8 @@ module Hydro
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_u2)=.true.
       endif
+! ou
+      if (lpencil(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
@@ -410,6 +443,9 @@ module Hydro
 !
       if (ldiagnos) then
         if (headtt.or.ldebug) print*,'duu_dt: diagnostics ...'
+        if (idiag_oum/=0) call sum_mn_name(p%ou,idiag_oum)
+        !if (idiag_orms/=0) call sum_mn_name(p%o2,idiag_orms,lsqrt=.true.)
+        !if (idiag_omax/=0) call max_mn_name(p%o2,idiag_omax,lsqrt=.true.)
 !
 !  kinetic field components at one point (=pt)
 !

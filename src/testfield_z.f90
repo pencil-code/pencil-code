@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.17 2007-12-26 06:55:21 brandenb Exp $
+! $Id: testfield_z.f90,v 1.18 2008-01-01 19:15:29 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -65,10 +65,10 @@ module Testfield
        luxb_as_aux
 
   ! run parameters
-  real :: etatest=0.
+  real :: etatest=0.,etatest1=0.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca, &
-       lset_bbtest2,etatest,itestfield,ktestfield, &
+       lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
        luxb_as_aux,daainit,linit_aatest
 
   ! other variables (needs to be consistent with reset list below)
@@ -150,7 +150,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.17 2007-12-26 06:55:21 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.18 2008-01-01 19:15:29 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -181,6 +181,12 @@ module Testfield
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
+!
+!  Precalculate etatest if 1/etatest (==etatest1) is given instead
+!
+      if (etatest1/=0.) then
+        etatest=1./etatest1
+      endif
 !
 !  set to zero and then rescale the testfield
 !  (in future, could call something like init_aa_simple)

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.475 2007-12-10 06:21:44 ajohan Exp $
+! $Id: magnetic.f90,v 1.476 2008-01-01 19:15:28 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -126,7 +126,7 @@ module Magnetic
        lbb_as_aux,ljj_as_aux,beta_const
 
   ! run parameters
-  real :: eta=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
+  real :: eta=0.,eta1=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
   real :: eta_int=0.,eta_ext=0.,wresistivity=.01
   real :: tau_aa_exterior=0.
   real :: sigma_ratio=1.,eta_width=0.,eta_z0=1.
@@ -147,7 +147,7 @@ module Magnetic
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
 
   namelist /magnetic_run_pars/ &
-       eta,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
+       eta,eta1,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
        lmeanfield_theory,alpha_effect,alpha_quenching,delta_effect, &
        lmeanfield_noalpm,alpha_profile, &
        meanfield_etat, lohmic_heat, &
@@ -365,7 +365,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.475 2007-12-10 06:21:44 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.476 2008-01-01 19:15:28 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -405,6 +405,12 @@ module Magnetic
 !  Precalculate 1/mu (moved here from register.f90)
 !
       mu01=1./mu0
+!
+!  Precalculate eta if 1/eta (==eta1) is given instead
+!
+      if (eta1/=0.) then
+        eta=1./eta1
+      endif
 !
 !  Precalculate 1/inertial_length^2
 !
