@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.177 2007-12-31 01:22:27 dobler Exp $
+! $Id: start.f90,v 1.178 2008-01-01 17:24:06 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -100,7 +100,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.177 2007-12-31 01:22:27 dobler Exp $")
+             "$Id: start.f90,v 1.178 2008-01-01 17:24:06 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -272,11 +272,16 @@
         if (lread_oldsnap) then
           call rsnap(trim(directory_snap)//'/var.dat',f, mvar)
         else
-          ! NB: don't trim this to f(:,:,:,1:mvar)=0. unless you know
-          ! for sure there won't be any problems with undefined valus
-          ! being sheared around (which makes code compiled with
-          ! `g95 -freal=nan' throw a floating-point exception):
-          f=0.
+          !
+          ! We used to have just f=0. here, but with GRAVITY=gravity_r,
+          ! the gravitational acceleration (which is computed in
+          ! initialize_gravity and stored in the f-array), is set to zero
+          ! by the statement f=0. After running start.csh, this can lead
+          ! to some confusion as to whether the gravity module actually
+          ! does anything or not.
+          !
+          !   So now we are more specific:
+          f(:,:,:,1:mvar)=0.
         endif
 !
 !  the following init routines do then only need to add to f.

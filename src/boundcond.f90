@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.195 2007-12-08 16:24:23 dhruba Exp $
+! $Id: boundcond.f90,v 1.196 2008-01-01 17:24:06 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -98,7 +98,9 @@ module Boundcond
 !
         one = min(1,mcom)
         if (any(bcx1(1:one)=='she')) then
-          call boundcond_shear(f,ivar1,ivar2)
+          if (.not. lstart) then
+            call boundcond_shear(f,ivar1,ivar2)
+          endif
         else
           do k=1,2                ! loop over 'bot','top'
             if (k==1) then
