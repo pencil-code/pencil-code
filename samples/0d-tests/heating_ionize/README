@@ -1,16 +1,16 @@
 Directory:
     ${PENCIL_HOME}/samples/0d-tests/heating_ionize
 CVS-Id:
-    $Id: README,v 1.5 2007-08-17 04:55:39 brandenb Exp $
+    $Id: README,v 1.6 2008-01-02 17:46:09 brandenb Exp $
 Maintainer:
     Tobias Heinemann <T.Heinemann@damtp.cam.ac.uk>
-    Axel Brandenburg <brandenb@nordita.dk>
+    Axel Brandenburg <brandenb@nordita.org>
 Added:
     23-Apr-2004
 Status:
-    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+    Works since 2003/08/12 (the date when doc/figs/pTTss.ps was made)
 Recommended resolution:
-    1x1x1
+    1x1x1 (zero-dimensional run)
 Comments:
     In this test we solve an ODE with the Pencil Code (hence 0-D).
         rho T ds/dt = heat_uniform
@@ -21,3 +21,9 @@ Comments:
     In order for the run not to last too long on slow machines, we have
     changed the file run.in to run longer and fewer time steps. The original
     file used for making the figure is still available as "run.in-fig.pTTss".
+
+    To reproduce the plot pTTss.ps in the manual, one must adjust the timestep
+    by hand, i.e. it longer as time goes on. The density value can be adjusted
+    by changing simply unit_density in start.in.
+
+    In print.in we should add one more digit for better accuracy.
