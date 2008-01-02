@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.org)
-%%  CVS: $Id: manual.tex,v 1.378 2007-10-23 12:53:38 bingert Exp $
+%%  CVS: $Id: manual.tex,v 1.379 2008-01-02 17:00:05 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2007-10-23 12:53:38 $ $,~ $ $Revision: 1.378 $ $}
+%\date{$ $Date: 2008-01-02 17:00:05 $ $,~ $ $Revision: 1.379 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2007-10-23 12:53:38 $ $,~ $ $Revision: 1.378 $ $}\\
+  \emph{$ $Date: 2008-01-02 17:00:05 $ $,~ $ $Revision: 1.379 $ $}\\
   \url{http://www.nordita.org/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -5835,7 +5835,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2007-10-23 12:53:38 $ $,~ $ $Revision: 1.378 $ $}
+  \hfill\normalsize\rm$ $Date: 2008-01-02 17:00:05 $ $,~ $ $Revision: 1.379 $ $}
 
 \section{Timings}
 
@@ -5953,11 +5953,13 @@ where \code{nw=nx*ny*nz}.
    8 & Kabul & 0.87 & $256^3$ & magn/noentro & 160 MB & 20-jun-02 & WD \\
    8 & fe1   & 0.99 & $256^3$ & magn/noentro &  2x4   &  8-sep-02 & AB \\
    8 & fe1   & 0.98 & $256^3$ & magn/noentro &  4x2   &  8-sep-02 & AB \\
-   8 & cetus & 0.58 & $ 64^3$ & magn/noentro &4x2     & 19-aug-07 & AB \\
-   8 & cetus & 0.73 & $256^3$ & magn/noentro &4x2,156M& 19-aug-07 & AB \\
+   8 & cetus & 0.58 & $ 64^3$ & magn/noentro &4x2     & 19-aug-07 & SS \\
+   8 & cetus & 0.73 & $256^3$ & magn/noentro &4x2,156M& 19-aug-07 & SS \\
+   8 &Neolith& 0.82 &  $64^3$ & magn/noentro &4x2     &  5-dec-07 & AB \\
    8 & Mhd   & 1.46 & $160^2\times40$
                               & nomag/entro &  46 MB &  7-oct-02 & AB \\
    8 & Hwwsx5& 0.50 & $256^3$ & convstar     & 8.6 GB & 29-jan-03 & WD \\
+   8 &Neolith& 0.444& $128^3$ & magn/noentro &        &  6-dec-07 & AB \\
   16 & fe1   & 1.77 &  $64^3$ & convstar     &        &  9-feb-03 & AB \\
   16 & copson& 0.596& $128^3$ & geodynamo/ks95 &      & 21-nov-03 & DM \\
   16 & fe1   & 0.94 & $128^3$ & magn/noentro &  4x4   &  8-sep-02 & AB \\
@@ -5983,6 +5985,7 @@ where \code{nw=nx*ny*nz}.
   16 & Sander& 0.53 & $256^3$ & magn/noentro &        &  8-sep-02 & AB \\
   16 & Luci  & 0.375& $128^3$ & magn/noentro &        & 28-oct-06 & AB \\
   16 & Lenn  & 0.284& $128^3$ & magn/noentro &        &  8-nov-06 & AB \\
+  16 &Neolith& 0.180& $256^3$ & magn/noentro &        &  6-dec-07 & AB \\
   32 & giga? & 0.32 & $256^3$ & magn/noentro &        & 13-sep-03 & AB \\
   32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
   32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
@@ -6005,6 +6008,7 @@ where \code{nw=nx*ny*nz}.
   64 & Gridur& 0.25 & $256^3$ & magn/noentro &        & 19-aug-02 & NE \\
   64 & Ukaff & 0.17 & $512^3$ & magn/noentro &        & 21-may-02 & AB \\
   64 & Steno & 0.075& $512^3$ & magn/noentro &  8x16  & 19-oct-06 & AB \\
+  64 &Neolith& 0.0695&$256^3$ & magn/noentro &        &  6-dec-07 & AB \\
  128 & fe1   & 0.44 & $256^3$ & nomag/entro/rad8/ion &  4x32  & 10-mar-04 & TH \\
  128 & fe1   & 2.8  & $512^3$ & magn/noentro & 16x8   &  5-sep-02 & AB \\
  128 & fe1   & 0.51 & $512^3$ & magn/noentro & 8x16   &  5-sep-02 & AB \\
@@ -9173,7 +9177,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.378 2007-10-23 12:53:38 bingert Exp $ $}
+$ $Id: manual.tex,v 1.379 2008-01-02 17:00:05 brandenb Exp $ $}
 
 
 \end{document}
