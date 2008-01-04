@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.399 2007-11-30 12:59:59 bingert Exp $
+! $Id: cdata.f90,v 1.400 2008-01-04 15:35:20 dhruba Exp $
 
 module Cdata
 
@@ -66,7 +66,8 @@ module Cdata
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: rp_int=-impossible,rp_ext=-impossible
   real :: r_ref=1.,rsmooth=0.,box_volume=1.0
-
+! For calculating averages in non-cartesian coordinates
+  real :: nVol,nVol1
 !
 ! parameters for freezing
 !
@@ -337,7 +338,7 @@ module Cdata
 !
   real, dimension(mcom) :: fbcx1=0.,fbcy1=0.,fbcz1=0., fbcz1_1=0., fbcz1_2=0.
   real, dimension(mcom) :: fbcx2=0.,fbcy2=0.,fbcz2=0., fbcz2_1=0., fbcz2_2=0.
-
+  real, dimension(mcom) :: fbcx1_2=0.,fbcx2_2=0.
   character (len=2*bclen+1), dimension(mcom) :: bcx='p',bcy='p',bcz='p'
   character (len=bclen), dimension(mcom) :: bcx1='',bcx2='', &
                                             bcy1='',bcy2='', &

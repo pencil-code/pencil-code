@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.292 2007-11-21 12:32:36 brandenb Exp $
+! $Id: param_io.f90,v 1.293 2008-01-04 15:35:21 dhruba Exp $
 
 module Param_IO
 
@@ -70,6 +70,7 @@ module Param_IO
        bcx,bcy,bcz,r_int,r_ext,rp_int,rp_ext,r_ref,rsmooth, &
        mu0,force_lower_bound,force_upper_bound, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2,fbcz1_1,fbcz1_2,fbcz2_1,fbcz2_2, &
+       fbcx1_2,fbcx2_2, &
        xyz_step,xi_step_frac,xi_step_width, &
        niter_poisson, &
 !AB/15-Mar-07: the lcylindrical is kept to produce a warning: outdated
@@ -105,6 +106,7 @@ module Param_IO
        wborder,wborder_int,wborder_ext, &
        fshift_int,fshift_ext, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, &
+       fbcx1_2,fbcx2_2,&
        fbcz1_1, fbcz1_2, fbcz2_1,fbcz2_2, &
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lsfflux,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &

@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.196 2008-01-01 17:24:06 dobler Exp $
+! $Id: boundcond.f90,v 1.197 2008-01-04 15:35:21 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -73,6 +73,7 @@ module Boundcond
       integer, optional :: ivar1_opt, ivar2_opt
 !
       real, dimension (mcom) :: fbcx12
+      real, dimension (mcom) :: fbcx2_12
       integer :: ivar1, ivar2, j, k, ip_ok, one
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
@@ -104,9 +105,9 @@ module Boundcond
         else
           do k=1,2                ! loop over 'bot','top'
             if (k==1) then
-              topbot='bot'; bc12=bcx1; fbcx12=fbcx1; ip_ok=0
+              topbot='bot'; bc12=bcx1; fbcx12=fbcx1; fbcx2_12=fbcx1_2; ip_ok=0
             else
-              topbot='top'; bc12=bcx2; fbcx12=fbcx2; ip_ok=nprocx-1
+              topbot='top'; bc12=bcx2; fbcx12=fbcx2; fbcx2_12=fbcx2_2; ip_ok=nprocx-1
             endif
 !
             do j=ivar1,ivar2
@@ -191,6 +192,10 @@ module Boundcond
                 case ('e2')
                   ! BCX_DOC: extrapolation [describe]
                   call bcx_extrap_2_2(f,topbot,j)
+                case ('hat')
+                  !BCX_DOC: top hat jet profile in spherical coordinate. 
+                  !Defined only for the bottom boundary 
+                  call bc_set_jethat_x(f,j,topbot,fbcx12,fbcx2_12)
                 case ('spd')
                   ! BCX_DOC:  sets  d(rA_{\alpha})/dr = fbcx12(j)
                   call bc_set_spder_x(f,topbot,j,fbcx12(j))
@@ -338,12 +343,12 @@ module Boundcond
                 call bc_set_der_y(f,topbot,j,fbcy12(j))
               case('sfr')
                   ! BCY_DOC: "stress-free" boundary condition for spherical coordinate system. 
-                  call bc_set_sfree_y(f,topbot,j)
+                call bc_set_sfree_y(f,topbot,j)
               case('pfc')
                   !BCY_DOC: perfect conducting boundary condition along $\theta$ boundary  
-                  call bc_set_pfc_y(f,topbot,j)
+                call bc_set_pfc_y(f,topbot,j)
               case ('')
-                ! do nothing; assume that everything is set
+               ! do nothing; assume that everything is set
               case default
                 bc%bcname=bc12(j)
                 bc%ivar=j
@@ -1390,6 +1395,69 @@ module Boundcond
 !
     endsubroutine bc_set_sfree_x
 ! **********************************************************************
+    subroutine bc_set_jethat_x(f,jj,topbot,fracall,uzeroall)
+!
+! Sets tophat velocity profile at the inner (bot) boundary
+!
+!  3-jan-2008/dhruba: coded
+!
+      use Cdata
+!
+      character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer, intent(in) :: jj
+      integer :: i,j,k
+      real, dimension(mcom),intent(in) :: fracall,uzeroall
+      real :: frac,uzero,ylim,ymid,ydif,y1,zlim,zmid,zdif,z1
+
+      y1 = xyz1(2)
+      z1 = xyz1(3)
+      frac = fracall(jj)
+      uzero = uzeroall(jj)
+      write(*,*) frac,uzero,y0,z0,y1,z1
+     if(lspherical_coords)then
+!! -----------
+        select case(topbot)
+        case('bot')               ! bottom boundary
+          ylim = (y1-y0)*frac
+          ymid = y0+(y1-y0)/2.
+          zlim = (z1-z0)*frac
+          zmid = z0+(z1-z0)/2.
+          do j=m1,m2
+            do k=n1,n2
+              ydif = abs(y(j)-ymid)
+              zdif = abs(z(k)-zmid)
+              if((ydif.lt.ylim).and.(zdif.lt.zlim)) then
+!                write(*,*) y(j),z(k),ydif,zdif,ymid,zmid,ylim,zlim             
+                f(l1,:,:,iux)= uzero
+                do i=1,nghost
+                  f(l1-i,j,k,iux)= uzero
+                enddo
+              else
+                f(l1,:,:,iux)= 0.
+                do i=1,nghost
+                  f(l1-i,j,k,iux)= 0.
+                enddo
+              endif
+            enddo
+          enddo
+!! -----------
+        case('top')               ! top boundary
+          call warning('bc_set_jethat_x','Jet flowing out of the exit boundary ?')
+          do i=1,nghost
+            f(l2+i,:,:,j)=0.
+          enddo
+!! ---------------
+        case default
+          call warning('bc_set_jethat_x',topbot//" should be `top' or `bot'")
+        endselect
+!! ------
+      else
+        call stop_it('Boundary condition jethat is valid only in spherical coordinate system')
+      endif
+!
+    endsubroutine bc_set_jethat_x
+! **********************************************************************
     subroutine bc_set_sfree_y(f,topbot,j)
 ! "stress-free" boundary condition for spherical coordinate system. 
 ! d_r(u_{\theta}) = u_{\theta}/r  with u_r = 0 sets S_{r \theta}
@@ -1427,6 +1495,7 @@ module Boundcond
       endselect
 !
     endsubroutine bc_set_sfree_y
+
 ! **********************************************************************
     subroutine bc_set_pfc_y(f,topbot,j)
 !
