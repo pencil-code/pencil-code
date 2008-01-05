@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.18 2008-01-01 19:15:29 brandenb Exp $
+! $Id: testfield_z.f90,v 1.19 2008-01-05 19:33:01 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -150,7 +150,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.18 2008-01-01 19:15:29 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.19 2008-01-05 19:33:01 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -369,7 +369,7 @@ module Testfield
       real, dimension (nx,3,njtest) :: Eipq,bpq
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx) :: bpq2
-      integer :: jtest,jfnamez,j
+      integer :: jtest,jfnamez,j,i3,i4
       integer,save :: ifirst=0
       logical,save :: ltest_uxb=.false.
       character (len=5) :: ch
@@ -466,26 +466,30 @@ module Testfield
       endif
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9
+!  The g95 compiler doesn't like to see an index that is out of bounds,
+!  so prevent this warning by writing i3=3 and i4=4
 !
-      if (ldiagnos) then  
-        if (idiag_bx0mz/=0) call xysum_mn_name_z(bpq(:,1,3),idiag_bx0mz)
-        if (idiag_by0mz/=0) call xysum_mn_name_z(bpq(:,2,3),idiag_by0mz)
-        if (idiag_bz0mz/=0) call xysum_mn_name_z(bpq(:,3,3),idiag_bz0mz)
+      i3=3
+      i4=4
+      if (ldiagnos) then
+        if (idiag_bx0mz/=0) call xysum_mn_name_z(bpq(:,1,i3),idiag_bx0mz)
+        if (idiag_by0mz/=0) call xysum_mn_name_z(bpq(:,2,i3),idiag_by0mz)
+        if (idiag_bz0mz/=0) call xysum_mn_name_z(bpq(:,3,i3),idiag_bz0mz)
         if (idiag_E111z/=0) call xysum_mn_name_z(Eipq(:,1,1),idiag_E111z)
         if (idiag_E211z/=0) call xysum_mn_name_z(Eipq(:,2,1),idiag_E211z)
         if (idiag_E311z/=0) call xysum_mn_name_z(Eipq(:,3,1),idiag_E311z)
         if (idiag_E121z/=0) call xysum_mn_name_z(Eipq(:,1,2),idiag_E121z)
         if (idiag_E221z/=0) call xysum_mn_name_z(Eipq(:,2,2),idiag_E221z)
         if (idiag_E321z/=0) call xysum_mn_name_z(Eipq(:,3,2),idiag_E321z)
-        if (idiag_E112z/=0) call xysum_mn_name_z(Eipq(:,1,3),idiag_E112z)
-        if (idiag_E212z/=0) call xysum_mn_name_z(Eipq(:,2,3),idiag_E212z)
-        if (idiag_E312z/=0) call xysum_mn_name_z(Eipq(:,3,3),idiag_E312z)
-        if (idiag_E122z/=0) call xysum_mn_name_z(Eipq(:,1,4),idiag_E122z)
-        if (idiag_E222z/=0) call xysum_mn_name_z(Eipq(:,2,4),idiag_E222z)
-        if (idiag_E322z/=0) call xysum_mn_name_z(Eipq(:,3,4),idiag_E322z)
-        if (idiag_E10z/=0) call xysum_mn_name_z(Eipq(:,1,3),idiag_E10z)
-        if (idiag_E20z/=0) call xysum_mn_name_z(Eipq(:,2,3),idiag_E20z)
-        if (idiag_E30z/=0) call xysum_mn_name_z(Eipq(:,3,3),idiag_E30z)
+        if (idiag_E112z/=0) call xysum_mn_name_z(Eipq(:,1,i3),idiag_E112z)
+        if (idiag_E212z/=0) call xysum_mn_name_z(Eipq(:,2,i3),idiag_E212z)
+        if (idiag_E312z/=0) call xysum_mn_name_z(Eipq(:,3,i3),idiag_E312z)
+        if (idiag_E122z/=0) call xysum_mn_name_z(Eipq(:,1,i4),idiag_E122z)
+        if (idiag_E222z/=0) call xysum_mn_name_z(Eipq(:,2,i4),idiag_E222z)
+        if (idiag_E322z/=0) call xysum_mn_name_z(Eipq(:,3,i4),idiag_E322z)
+        if (idiag_E10z/=0) call xysum_mn_name_z(Eipq(:,1,i3),idiag_E10z)
+        if (idiag_E20z/=0) call xysum_mn_name_z(Eipq(:,2,i3),idiag_E20z)
+        if (idiag_E30z/=0) call xysum_mn_name_z(Eipq(:,3,i3),idiag_E30z)
 !
 !  alpha and eta
 !
@@ -494,17 +498,24 @@ module Testfield
         if (idiag_eta11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))*ktestfield1,idiag_eta11)
         if (idiag_eta21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))*ktestfield1,idiag_eta21)
 !
-        if (idiag_alp12/=0) call sum_mn_name(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4),idiag_alp12)
-        if (idiag_alp22/=0) call sum_mn_name(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4),idiag_alp22)
-        if (idiag_eta12/=0) call sum_mn_name((-sz(n)*Eipq(:,1,3)+cz(n)*Eipq(:,1,4))*ktestfield1,idiag_eta12)
-        if (idiag_eta22/=0) call sum_mn_name((-sz(n)*Eipq(:,2,3)+cz(n)*Eipq(:,2,4))*ktestfield1,idiag_eta22)
+!  print warning if alp12 and alp12 are needed, but njtest is too small XX
+!
+        if ((idiag_alp12/=0.or.idiag_alp22/=0 &
+         .or.idiag_eta12/=0.or.idiag_eta22/=0).and.njtest<=2) then
+          call stop_it('njtest is too small if alp12 and alp12 are needed')
+        else
+          if (idiag_alp12/=0) call sum_mn_name(+cz(n)*Eipq(:,1,i3)+sz(n)*Eipq(:,1,i4),idiag_alp12)
+          if (idiag_alp22/=0) call sum_mn_name(+cz(n)*Eipq(:,2,i3)+sz(n)*Eipq(:,2,i4),idiag_alp22)
+          if (idiag_eta12/=0) call sum_mn_name((-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta12)
+          if (idiag_eta22/=0) call sum_mn_name((-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta22)
+        endif
 !
 !  rms values of small scales fields bpq in response to the test fields Bpq
 !  Obviously idiag_b0rms and idiag_b12rms cannot both be invoked!
 !  Needs modification!
 !
         if (idiag_b0rms/=0) then
-          call dot2(bpq(:,:,3),bpq2)
+          call dot2(bpq(:,:,i3),bpq2)
           call sum_mn_name(bpq2,idiag_b0rms,lsqrt=.true.)
         endif
 !
@@ -519,12 +530,12 @@ module Testfield
         endif
 !
         if (idiag_b12rms/=0) then
-          call dot2(bpq(:,:,3),bpq2)
+          call dot2(bpq(:,:,i3),bpq2)
           call sum_mn_name(bpq2,idiag_b12rms,lsqrt=.true.)
         endif
 !
         if (idiag_b22rms/=0) then
-          call dot2(bpq(:,:,4),bpq2)
+          call dot2(bpq(:,:,i4),bpq2)
           call sum_mn_name(bpq2,idiag_b22rms,lsqrt=.true.)
         endif
 !
