@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.197 2008-01-04 15:35:21 dhruba Exp $
+! $Id: boundcond.f90,v 1.198 2008-01-07 16:24:43 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1414,7 +1414,7 @@ module Boundcond
       z1 = xyz1(3)
       frac = fracall(jj)
       uzero = uzeroall(jj)
-      write(*,*) frac,uzero,y0,z0,y1,z1
+!      write(*,*) frac,uzero,y0,z0,y1,z1
      if(lspherical_coords)then
 !! -----------
         select case(topbot)
@@ -1428,13 +1428,13 @@ module Boundcond
               ydif = abs(y(j)-ymid)
               zdif = abs(z(k)-zmid)
               if((ydif.lt.ylim).and.(zdif.lt.zlim)) then
-!                write(*,*) y(j),z(k),ydif,zdif,ymid,zmid,ylim,zlim             
-                f(l1,:,:,iux)= uzero
+!                write(*,*) y(j),z(k),ydif,zdif,ymid,zmid,ylim,zlim  
+                f(l1,j,k,iux)= uzero
                 do i=1,nghost
                   f(l1-i,j,k,iux)= uzero
                 enddo
               else
-                f(l1,:,:,iux)= 0.
+                f(l1,j,k,iux)= 0.
                 do i=1,nghost
                   f(l1-i,j,k,iux)= 0.
                 enddo
