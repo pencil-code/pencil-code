@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.400 2008-01-04 15:35:20 dhruba Exp $
+! $Id: cdata.f90,v 1.401 2008-01-08 19:07:09 brandenb Exp $
 
 module Cdata
 
@@ -156,6 +156,7 @@ module Cdata
   integer :: mvar_io=0,dimensionality
   integer :: iinit
   integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0,ind=0,imd=0,imi=0
+  integer, dimension(nchemspec) :: ichemspec=0
   integer :: ilnrhon=0,iuun=0,iunx=0,iuny=0,iunz=0
   logical, dimension(3) :: lperi,lshift_origin
   logical, dimension(3) :: lequidist=(/.true.,.true.,.true. /)

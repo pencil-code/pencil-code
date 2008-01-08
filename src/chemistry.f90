@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.1 2007-08-13 14:50:26 steveb Exp $
+! $Id: chemistry.f90,v 1.2 2008-01-08 19:07:09 brandenb Exp $
 
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
@@ -35,7 +35,7 @@
 !
 ! CPARAM logical, parameter :: lspecial = .false.
 !
-! MVAR CONTRIBUTION 0
+! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
@@ -117,31 +117,41 @@ module Special
 ! A quick sanity check
 !
       if (.not. first) call stop_it('register_chemistry called twice')
-      first = .false.
-
-!!
-!! MUST SET lspecial = .true. to enable use of special hooks in the Pencil-Code
-!!   THIS IS NOW DONE IN THE HEADER ABOVE
+      first=.false.
 !
+      lchemistry=.true.
 !
+!  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+nchemspec
 !
-!!
-!! Set any required f-array indexes to the next available slot
-!!
-!!
-!      iSPECIAL_VARIABLE_INDEX = nvar+1             ! index to access entropy
-!      nvar = nvar+1
+      do k=1,nchemspec
+        ichemspec(k)=nvar+k
+      enddo
 !
-!      iSPECIAL_AUXILIARY_VARIABLE_INDEX = naux+1             ! index to access entropy
-!      naux = naux+1
+!  Increase nvar accordingly
 !
+      nvar=nvar+nchemspec
+!
+!  Print some diagnostics
+!
+      do k=1,nchemspec
+        if ((ip<=8) .and. lroot) then
+          print*, 'register_chemistry: k = ', k
+          print*, 'register_chemistry: nvar = ', nvar
+          print*, 'register_chemistry: ichemspec = ', ichemspec(k)
+        endif
+!
+!  Put variable name in array
+!
+        call chn(k,schem)
+        varname(ichemspec(k)) = 'nd('//trim(schem)//')'
+      enddo
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.1 2007-08-13 14:50:26 steveb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.2 2008-01-08 19:07:09 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.1 2007-08-13 14:50:26 steveb Exp $")
+           "$Id: chemistry.f90,v 1.2 2008-01-08 19:07:09 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -382,6 +392,14 @@ module Special
 !!      endif
 !!
 
+!
+!  Write chemistry index in short notation
+!XX
+      call chn(ichemspec(1),snd1)
+      if (lwr) then
+        write(3,*) 'ichemspec=indgen('//trim(schemspec)//') + '//trim(snd1)
+      endif
+!
     endsubroutine rprint_chemistry
 !***********************************************************************
     subroutine get_slices_chemistry(f,slices)
