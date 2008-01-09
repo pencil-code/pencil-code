@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.54 2008-01-09 09:13:21 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.55 2008-01-09 09:33:42 ajohan Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -318,13 +318,12 @@ dustcount=n_elements(ind)
 if (dustcount gt 0L) then begin
   if (keyword_set(scalar)) then begin
     for i=0,dustcount-1 do begin
-     istr=strcompress(string(i),/remove_all)
-;AB: Anders, this should be i, not 0, as it was before, right?
-     varcontent[ind[i]].variable   = 'Dust number density (nd'+istr+')'
-     varcontent[ind[i]].idlvar     = 'nd'+istr
-     varcontent[ind[i]].idlinit    = 'fltarr(mx,my,mz)*one' 
-     varcontent[ind[i]].idlvarloc  = 'nd'+istr+'_loc'
-     varcontent[ind[i]].idlinitloc = 'fltarr(mxloc,myloc,mzloc)*one'
+      istr=strcompress(string(i),/remove_all)
+      varcontent[ind[i]].variable   = 'Dust number density (nd'+istr+')'
+      varcontent[ind[i]].idlvar     = 'nd'+istr
+      varcontent[ind[i]].idlinit    = 'fltarr(mx,my,mz)*one' 
+      varcontent[ind[i]].idlvarloc  = 'nd'+istr+'_loc'
+      varcontent[ind[i]].idlinitloc = 'fltarr(mxloc,myloc,mzloc)*one'
     endfor
   endif else begin
     varcontent[ind[0]].variable   = 'Dust number density (nd)'
