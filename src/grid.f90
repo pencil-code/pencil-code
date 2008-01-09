@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.29 2007-12-19 14:24:33 dhruba Exp $
+! $Id: grid.f90,v 1.30 2008-01-09 14:53:47 dhruba Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -330,7 +330,8 @@ module Grid
       if (lequidist(3) .or. nzgrid <= 1) then
         dxmin_z = dz
         dxmax_z = dz
-        if(lspherical_coords) dxmin_z = dz*maxval(x(l1:l2))*maxval(sinth(m1:m2))
+        if(lspherical_coords) dxmin_z = dz*minval(x(l1:l2))*minval(sinth(m1:m2))
+        if(lspherical_coords) dxmax_z = dz*maxval(x(l1:l2))*maxval(sinth(m1:m2))
       else
         dxmin_z = minval(zprim(n1:n2))
         dxmax_z = maxval(zprim(n1:n2))
