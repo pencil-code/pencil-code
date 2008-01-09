@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.2 2008-01-08 19:07:09 brandenb Exp $
+! $Id: chemistry.f90,v 1.3 2008-01-09 06:41:07 brandenb Exp $
 
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
@@ -33,9 +33,9 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lspecial = .false.
+! CPARAM logical, parameter :: lchemistry = .true.
 !
-! MVAR CONTRIBUTION 3
+! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
@@ -69,7 +69,7 @@
 !
 !--------------------------------------------------------------------
 
-module Special
+module Chemistry
 
   use Cparam
   use Cdata
@@ -78,7 +78,7 @@ module Special
 
   implicit none
 
-  include 'special.h'
+  include 'chemistry.h'
 
 !!  character, len(50) :: initcustom
 
@@ -106,20 +106,21 @@ module Special
 !  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
 !
-!
 !  13-aug-07/steveb: coded
+!   8-jan-08/axel: added modifications analogously to dustdensity
 !
       use Cdata
       use Mpicomm
+      use General, only: chn
 !
       logical, save :: first=.true.
+      integer :: k
+      character (len=5) :: schem
 !
 ! A quick sanity check
 !
       if (.not. first) call stop_it('register_chemistry called twice')
       first=.false.
-!
-      lchemistry=.true.
 !
 !  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+nchemspec
 !
@@ -143,15 +144,15 @@ module Special
 !  Put variable name in array
 !
         call chn(k,schem)
-        varname(ichemspec(k)) = 'nd('//trim(schem)//')'
+        varname(ichemspec(k))='nd('//trim(schem)//')'
       enddo
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.2 2008-01-08 19:07:09 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.3 2008-01-09 06:41:07 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.2 2008-01-08 19:07:09 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.3 2008-01-09 06:41:07 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -232,7 +233,7 @@ module Special
 !***********************************************************************
     subroutine pencil_interdep_chemistry(lpencil_in)
 !
-!  Interdependency among pencils provided by this module are specified here.
+!  Interdependency among pencils provided by this module are specified here
 !
 !  13-aug-07/steveb: coded
 !
@@ -265,7 +266,7 @@ module Special
 !
     endsubroutine calc_pencils_chemistry
 !***********************************************************************
-    subroutine dspecial_dt(f,df,p)
+    subroutine dchemistry_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
 !  along the 'current' Pencil, i.e. f(l1:l2,m,n) where
@@ -294,7 +295,7 @@ module Special
 !
 !  identify module and boundary conditions
 !
-      if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
+      if (headtt.or.ldebug) print*,'dchemistry_dt: SOLVE dchemistry_dt'
 !!      if (headtt) call identify_bcs('ss',iss)
 !
 !!
@@ -311,7 +312,7 @@ module Special
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 
-    endsubroutine dspecial_dt
+    endsubroutine dchemistry_dt
 !***********************************************************************
     subroutine read_chemistry_init_pars(unit,iostat)
 !
@@ -359,28 +360,32 @@ module Special
 !***********************************************************************
     subroutine rprint_chemistry(lreset,lwrite)
 !
-!  reads and registers print parameters relevant to special
+!  reads and registers print parameters relevant to chemistry
 !
 !  13-aug-07/steveb: coded
 !
       use Cdata
       use Sub
+      use General, only: chn
 !!
 !!!   SAMPLE IMPLEMENTATION
 !!
 !!      integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
+      character (len=5) :: schem,schemspec,snd1,smd1,smi1
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-!!!
-!!!  reset everything in case of reset
-!!!  (this needs to be consistent with what is defined above!)
-!!!
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
       if (lreset) then
 !!        i_SPECIAL_DIAGNOSTIC=0
       endif
+!
+      call chn(nchemspec,schemspec)
 !!
 !!      do iname=1,nname
 !!        call parse_name(iname,cname(iname),cform(iname),'NAMEOFSPECIALDIAGNOSTIC',i_SPECIAL_DIAGNOSTIC)
@@ -404,7 +409,7 @@ module Special
 !***********************************************************************
     subroutine get_slices_chemistry(f,slices)
 !
-!  Write slices for animation of special variables.
+!  Write slices for animation of chemistry variables.
 !
 !  13-aug-07/steveb: dummy
 !
@@ -592,5 +597,5 @@ module Special
     include 'special_dummies.inc'
 !********************************************************************
 
-endmodule Special
+endmodule Chemistry
 

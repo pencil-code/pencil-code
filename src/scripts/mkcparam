@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.61 2008-01-08 19:07:09 brandenb Exp $
+# CVS: $Id: mkcparam,v 1.62 2008-01-09 06:41:08 brandenb Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -30,6 +30,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #     ! MSCRATCH CONTRIBUTION 1
 #     ! COMMUNICATED AUXILIARIES 1
 #     ! NDUSTSPEC CONTRIBUTION 17
+#     ! NCHEMSPEC CONTRIBUTION 3
 #   and accumulate the numbers mvar, maux, maux_com, mglobal, mscratch, ndustspecs, etc from these.
 #
 #   Lines of the form:
@@ -83,9 +84,10 @@ use Getopt::Long;
 
 my $line;
 my $dust_string='1*4';
+my $chem_string='1';
 my $lmdvar='.false.';
 my $lmice ='.false.';
-my ($maux,$maux_com,$mvar,$mglobal,$mscratch,$mpvar,$ndustspec,$nchemspec,$mvar_per_dust) = (0) x 8;
+my ($maux,$maux_com,$mvar,$mglobal,$mscratch,$mpvar,$ndustspec,$nchemspec,$mvar_per_dust,$mvar_per_chem) = (0) x 10;
 
 my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'a2'           => ', dimension (nx)',
@@ -353,7 +355,9 @@ file: foreach my $infile (@ARGV) {
 	extract_decl ($line, $mscratch_decl , \$mscratch  );
 	extract_decl ($line, $maux_com_decl, \$maux_com );
 	extract_decl ($line, $mpvar_decl   , \$mpvar    );
-# Check for information about number of dust species and discretization type   
+# Check for information about number of chemical and dust species
+# and discretization type   
+	if ($line=~ /$chem_decl/) {$chem_string=$1;}
 	if ($line=~ /$dust_decl/) {$dust_string=$1;}
 	if ($line=~ /$cparam_decl/) {unshift @cparam_lines, $1;}
 	if ($line=~ /$pencils_decl/) {
@@ -397,7 +401,11 @@ if ($mvar_per_dust >= 5) {$lmdvar = '.true.';}
 if ($mvar_per_dust == 6) {$lmice  = '.true.';}
 
 # More processing of chemistry information
+# The -1 below (and the -4 above) look ready crazy (but are correct!)
+#AB: Anders, what do you think?
+($nchemspec,$mvar_per_chem) = split /\*/, $chem_string;
 if ($nchemspec >= 1) {
+  $mvar = $mvar - 1;
   $mvar = $mvar + $nchemspec;
   }
 

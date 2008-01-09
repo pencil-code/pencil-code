@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.226 2007-10-18 10:30:29 ajohan Exp $
+! $Id: register.f90,v 1.227 2008-01-09 06:41:08 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -46,6 +46,7 @@ module Register
       use Radiation,        only: register_radiation
       use Pscalar,          only: register_pscalar
       use Chiral,           only: register_chiral
+      use Chemistry,        only: register_chemistry
       use Dustdensity,      only: register_dustdensity
       use Dustvelocity,     only: register_dustvelocity
       use NeutralDensity,   only: register_neutraldensity
@@ -109,6 +110,7 @@ module Register
       call register_radiation
       call register_pscalar
       call register_chiral
+      call register_chemistry
       call register_dustvelocity
       call register_dustdensity
       call register_neutralvelocity
@@ -182,6 +184,7 @@ module Register
       use Radiation,       only: initialize_radiation
       use Pscalar,         only: initialize_pscalar
       use Chiral,          only: initialize_chiral
+      use Chemistry,       only: initialize_chemistry
       use Dustvelocity,    only: initialize_dustvelocity
       use Dustdensity,     only: initialize_dustdensity
       use NeutralVelocity, only: initialize_neutralvelocity
@@ -280,6 +283,7 @@ module Register
       call initialize_radiation()
       call initialize_pscalar(f)
       call initialize_chiral(f)
+      call initialize_chemistry(f)
       call initialize_dustvelocity()
       call initialize_dustdensity()
       call initialize_neutraldensity()
@@ -611,6 +615,7 @@ module Register
       use Gravity,         only: pencil_criteria_gravity
       use Selfgravity,     only: pencil_criteria_selfgravity
       use Pscalar,         only: pencil_criteria_pscalar
+      use Chemistry,       only: pencil_criteria_chemistry
       use Dustvelocity,    only: pencil_criteria_dustvelocity
       use Dustdensity,     only: pencil_criteria_dustdensity
       use NeutralVelocity, only: pencil_criteria_neutralvelocity
@@ -637,6 +642,7 @@ module Register
       call pencil_criteria_selfgravity()
       call pencil_criteria_pscalar()
       call pencil_criteria_interstellar()
+      call pencil_criteria_chemistry()
       call pencil_criteria_dustvelocity()
       call pencil_criteria_dustdensity()
       call pencil_criteria_neutralvelocity()
@@ -676,6 +682,7 @@ module Register
       use Magnetic, only: pencil_interdep_magnetic
       use Testfield, only: pencil_interdep_testfield
       use Pscalar, only: pencil_interdep_pscalar
+      use Chemistry, only: pencil_interdep_chemistry
       use Dustvelocity, only: pencil_interdep_dustvelocity
       use Dustdensity, only: pencil_interdep_dustdensity
       use NeutralVelocity, only: pencil_interdep_neutralvelocity
@@ -699,6 +706,7 @@ module Register
       call pencil_interdep_entropy(lpencil_in)
       call pencil_interdep_gravity(lpencil_in)
       call pencil_interdep_selfgravity(lpencil_in)
+      call pencil_interdep_chemistry(lpencil_in)
       call pencil_interdep_dustvelocity(lpencil_in)
       call pencil_interdep_dustdensity(lpencil_in)
       call pencil_interdep_neutralvelocity(lpencil_in)
@@ -735,6 +743,7 @@ module Register
       use Pscalar,         only: rprint_pscalar
       use Chiral,          only: rprint_chiral
       use Interstellar,    only: rprint_interstellar
+      use Chemistry,       only: rprint_chemistry
       use Dustvelocity,    only: rprint_dustvelocity
       use Dustdensity,     only: rprint_dustdensity
       use NeutralVelocity, only: rprint_neutralvelocity
@@ -929,6 +938,7 @@ module Register
       call rprint_pscalar         (lreset,LWRITE=lroot)
       call rprint_chiral          (lreset,LWRITE=lroot)
       call rprint_interstellar    (lreset,LWRITE=lroot)
+      call rprint_chemistry       (lreset,LWRITE=lroot)
       call rprint_dustvelocity    (lreset,LWRITE=lroot)
       call rprint_dustdensity     (lreset,LWRITE=lroot)
       call rprint_neutralvelocity (lreset,LWRITE=lroot)

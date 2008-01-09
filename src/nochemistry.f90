@@ -1,4 +1,4 @@
-! $Id: nochemistry.f90,v 1.1 2007-08-13 15:18:39 steveb Exp $
+! $Id: nochemistry.f90,v 1.2 2008-01-09 06:41:08 brandenb Exp $
 
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
@@ -33,7 +33,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lspecial = .false.
+! CPARAM logical, parameter :: lchemistry = .true.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -69,7 +69,7 @@
 !
 !--------------------------------------------------------------------
 
-module Special
+module Chemistry
 
   use Cparam
   use Cdata
@@ -78,7 +78,7 @@ module Special
 
   implicit none
 
-  include 'special.h'
+  include 'chemistry.h'
 
 !!  character, len(50) :: initcustom
 
@@ -101,7 +101,7 @@ module Special
   contains
 
 !***********************************************************************
-    subroutine register_special()
+    subroutine register_chemistry()
 !
 !  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
@@ -116,7 +116,7 @@ module Special
 !
 ! A quick sanity check
 !
-      if (.not. first) call stop_it('register_special called twice')
+      if (.not. first) call stop_it('register_chemistry called twice')
       first = .false.
 
 !!
@@ -137,11 +137,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nochemistry.f90,v 1.1 2007-08-13 15:18:39 steveb Exp $
+!  CVS should automatically update everything between $Id: nochemistry.f90,v 1.2 2008-01-09 06:41:08 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nochemistry.f90,v 1.1 2007-08-13 15:18:39 steveb Exp $")
+           "$Id: nochemistry.f90,v 1.2 2008-01-09 06:41:08 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -149,17 +149,17 @@ module Special
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_special: naux > maux')
+        call stop_it('register_chemistry: naux > maux')
       endif
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_special: nvar > mvar')
+        call stop_it('register_chemistry: nvar > mvar')
       endif
 !
-    endsubroutine register_special
+    endsubroutine register_chemistry
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_chemistry(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -176,9 +176,9 @@ module Special
 ! DO NOTHING
       call keep_compiler_quiet(f)
 !
-    endsubroutine initialize_special
+    endsubroutine initialize_chemistry
 !***********************************************************************
-    subroutine init_special(f,xx,yy,zz)
+    subroutine init_chemistry(f,xx,yy,zz)
 !
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
@@ -210,17 +210,17 @@ module Special
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(xx,yy,zz)
 !
-    endsubroutine init_special
+    endsubroutine init_chemistry
 !***********************************************************************
-    subroutine pencil_criteria_special()
+    subroutine pencil_criteria_chemistry()
 !
 !  All pencils that this special module depends on are specified here.
 !
 !  18-07-06/tony: coded
 !
-    endsubroutine pencil_criteria_special
+    endsubroutine pencil_criteria_chemistry
 !***********************************************************************
-    subroutine pencil_interdep_special(lpencil_in)
+    subroutine pencil_interdep_chemistry(lpencil_in)
 !
 !  Interdependency among pencils provided by this module are specified here.
 !
@@ -232,9 +232,9 @@ module Special
 !
       call keep_compiler_quiet(lpencil_in)
 !
-    endsubroutine pencil_interdep_special
+    endsubroutine pencil_interdep_chemistry
 !***********************************************************************
-    subroutine calc_pencils_special(f,p)
+    subroutine calc_pencils_chemistry(f,p)
 !
 !  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -253,9 +253,9 @@ module Special
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
 !
-    endsubroutine calc_pencils_special
+    endsubroutine calc_pencils_chemistry
 !***********************************************************************
-    subroutine dspecial_dt(f,df,p)
+    subroutine dchemistry_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
 !  along the 'current' Pencil, i.e. f(l1:l2,m,n) where
@@ -284,7 +284,7 @@ module Special
 !
 !  identify module and boundary conditions
 !
-      if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
+      if (headtt.or.ldebug) print*,'dchemistry_dt: SOLVE dSPECIAL_dt'
 !!      if (headtt) call identify_bcs('ss',iss)
 !
 !!
@@ -301,9 +301,9 @@ module Special
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 
-    endsubroutine dspecial_dt
+    endsubroutine dchemistry_dt
 !***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
+    subroutine read_chemistry_init_pars(unit,iostat)
 !
       use Sub, only: keep_compiler_quiet
 !
@@ -313,9 +313,9 @@ module Special
       if (present(iostat)) call keep_compiler_quiet(iostat)
       call keep_compiler_quiet(unit)
 
-    endsubroutine read_special_init_pars
+    endsubroutine read_chemistry_init_pars
 !***********************************************************************
-    subroutine write_special_init_pars(unit)
+    subroutine write_chemistry_init_pars(unit)
 !
       use Sub, only: keep_compiler_quiet
 !
@@ -323,9 +323,9 @@ module Special
 
       call keep_compiler_quiet(unit)
 
-    endsubroutine write_special_init_pars
+    endsubroutine write_chemistry_init_pars
 !***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
+    subroutine read_chemistry_run_pars(unit,iostat)
 !
       use Sub, only: keep_compiler_quiet
 !
@@ -335,9 +335,9 @@ module Special
       if (present(iostat)) call keep_compiler_quiet(iostat)
       call keep_compiler_quiet(unit)
 
-    endsubroutine read_special_run_pars
+    endsubroutine read_chemistry_run_pars
 !***********************************************************************
-    subroutine write_special_run_pars(unit)
+    subroutine write_chemistry_run_pars(unit)
 !
       use Sub, only: keep_compiler_quiet
 !
@@ -345,11 +345,11 @@ module Special
 
       call keep_compiler_quiet(unit)
 
-    endsubroutine write_special_run_pars
+    endsubroutine write_chemistry_run_pars
 !***********************************************************************
-    subroutine rprint_special(lreset,lwrite)
+    subroutine rprint_chemistry(lreset,lwrite)
 !
-!  reads and registers print parameters relevant to special
+!  reads and registers print parameters relevant to chemistry
 !
 !   06-oct-03/tony: coded
 !
@@ -382,11 +382,11 @@ module Special
 !!      endif
 !!
 
-    endsubroutine rprint_special
+    endsubroutine rprint_chemistry
 !***********************************************************************
-    subroutine get_slices_special(f,slices)
+    subroutine get_slices_chemistry(f,slices)
 !
-!  Write slices for animation of special variables.
+!  Write slices for animation of chemistry variables.
 !
 !  26-jun-06/tony: dummy
 !
@@ -398,7 +398,7 @@ module Special
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(slices%ready)
 !
-    endsubroutine get_slices_special
+    endsubroutine get_slices_chemistry
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
@@ -574,5 +574,5 @@ module Special
     include 'special_dummies.inc'
 !********************************************************************
 
-endmodule Special
+endmodule Chemistry
 

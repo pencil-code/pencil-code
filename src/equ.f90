@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.383 2007-10-02 06:44:11 ajohan Exp $
+! $Id: equ.f90,v 1.384 2008-01-09 06:41:07 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -437,6 +437,7 @@ module Equ
       use EquationOfState
       use Pscalar
       use Chiral
+      use Chemistry
       use Dustvelocity
       use Dustdensity
       use NeutralDensity
@@ -471,7 +472,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.383 2007-10-02 06:44:11 ajohan Exp $")
+           "$Id: equ.f90,v 1.384 2008-01-09 06:41:07 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -697,6 +698,7 @@ module Equ
         if (lgrav)            call calc_pencils_gravity(f,p)
         if (lselfgravity)     call calc_pencils_selfgravity(f,p)
         if (lpscalar)         call calc_pencils_pscalar(f,p)
+        if (lchemistry)       call calc_pencils_chemistry(f,p)
         if (ldustvelocity)    call calc_pencils_dustvelocity(f,p)
         if (ldustdensity)     call calc_pencils_dustdensity(f,p)
         if (lneutralvelocity) call calc_pencils_neutralvelocity(f,p)
@@ -767,6 +769,10 @@ module Equ
 !  Evolution of radiative energy
 !
         if (lradiation_fld) call de_dt(f,df,p,gamma)
+!
+!  Evolution of chemical species
+!
+        if (lchemistry) call dchemistry_dt(f,df,p)
 !
 !  Add and extra 'special' physics
 !
