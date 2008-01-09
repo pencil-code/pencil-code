@@ -1,73 +1,15 @@
-! $Id: nochemistry.f90,v 1.2 2008-01-09 06:41:08 brandenb Exp $
+! $Id: nochemistry.f90,v 1.3 2008-01-09 12:54:09 dobler Exp $
 
-!  This module provide a way for users to specify custom
-!  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
-!
-!  The module provides a set of standard hooks into the Pencil-Code and
-!  currently allows the following customizations:
-!
-!   Description                                     | Relevant function call
-!  ---------------------------------------------------------------------------
-!   Special variable registration                   | register_special
-!     (pre parameter read)                          |
-!   Special variable initialization                 | initialize_special
-!     (post parameter read)                         |
-!                                                   |
-!   Special initial condition                       | init_special
-!    this is called last so may be used to modify   |
-!    the mvar variables declared by this module     |
-!    or optionally modify any of the other f array  |
-!    variables.  The latter, however, should be     |
-!    avoided where ever possible.                   |
-!                                                   |
-!   Special term in the mass (density) equation     | special_calc_density
-!   Special term in the momentum (hydro) equation   | special_calc_hydro
-!   Special term in the entropy equation            | special_calc_entropy
-!   Special term in the induction (magnetic)        | special_calc_magnetic
-!      equation                                     |
-!                                                   |
-!   Special equation                                | dspecial_dt
-!     NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
-!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lchemistry = .true.
+! CPARAM logical, parameter :: lchemistry = .false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
-!-------------------------------------------------------------------
-!
-! HOW TO USE THIS FILE
-! --------------------
-!
-! The rest of this file may be used as a template for your own
-! special module.  Lines which are double commented are intended
-! as examples of code.  Simply fill out the prototypes for the
-! features you want to use.
-!
-! Save the file with a meaningful name, eg. geo_kws.f90 and place
-! it in the $PENCIL_HOME/src/special directory.  This path has
-! been created to allow users ot optionally check their contributions
-! in to the Pencil-Code CVS repository.  This may be useful if you
-! are working on/using the additional physics with somebodyelse or
-! may require some assistance from one of the main Pencil-Code team.
-!
-! To use your additional physics code edit the Makefile.local in
-! the src directory under the run directory in which you wish to
-! use your additional physics.  Add a line with all the module
-! selections to say something like:
-!
-!    SPECIAL=special/geo_kws
-!
-! Where geo_kws it replaced by the filename of your new module
-! upto and not including the .f90
-!
-!--------------------------------------------------------------------
 
 module Chemistry
 
@@ -137,11 +79,11 @@ module Chemistry
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nochemistry.f90,v 1.2 2008-01-09 06:41:08 brandenb Exp $
+!  CVS should automatically update everything between $Id: nochemistry.f90,v 1.3 2008-01-09 12:54:09 dobler Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nochemistry.f90,v 1.2 2008-01-09 06:41:08 brandenb Exp $")
+           "$Id: nochemistry.f90,v 1.3 2008-01-09 12:54:09 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
