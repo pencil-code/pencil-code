@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.53 2007-12-15 14:02:02 ajohan Exp $
+;  $Id: pc_varcontent.pro,v 1.54 2008-01-09 09:13:21 brandenb Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -277,6 +277,20 @@ varcontent[ipsi_imag].idlinit    = INIT_SCALAR
 varcontent[ipsi_imag].idlvarloc  = 'psi_imag_loc'
 varcontent[ipsi_imag].idlinitloc = INIT_SCALAR_LOC
 ;
+default, ichemspec, 0
+chemcount=n_elements(ichemspec)
+if (chemcount gt 0L) then begin
+  for i=0,chemcount-1 do begin
+    istr=strcompress(string(i),/remove_all)
+    print,'DEBUG: istr=',istr
+    varcontent[ichemspec[i]].variable   = 'Chemical species mass fraction (YY'+istr+')'
+    varcontent[ichemspec[i]].idlvar     = 'YY'+istr
+    varcontent[ichemspec[i]].idlinit    = 'fltarr(mx,my,mz)*one'
+    varcontent[ichemspec[i]].idlvarloc  = 'YY'+istr+'_loc'
+    varcontent[ichemspec[i]].idlinitloc = 'fltarr(mxloc,myloc,mzloc)*one'
+  endfor
+endif
+;
 default, iuud, 0
 dustcount=n_elements(iuud) 
 if (dustcount gt 0L) then begin
@@ -305,11 +319,12 @@ if (dustcount gt 0L) then begin
   if (keyword_set(scalar)) then begin
     for i=0,dustcount-1 do begin
      istr=strcompress(string(i),/remove_all)
-     varcontent[ind[0]].variable   = 'Dust number density (nd'+istr+')'
-     varcontent[ind[0]].idlvar     = 'nd'+istr
-     varcontent[ind[0]].idlinit    = 'fltarr(mx,my,mz)*one' 
-     varcontent[ind[0]].idlvarloc  = 'nd'+istr+'_loc'
-     varcontent[ind[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc)*one'
+;AB: Anders, this should be i, not 0, as it was before, right?
+     varcontent[ind[i]].variable   = 'Dust number density (nd'+istr+')'
+     varcontent[ind[i]].idlvar     = 'nd'+istr
+     varcontent[ind[i]].idlinit    = 'fltarr(mx,my,mz)*one' 
+     varcontent[ind[i]].idlvarloc  = 'nd'+istr+'_loc'
+     varcontent[ind[i]].idlinitloc = 'fltarr(mxloc,myloc,mzloc)*one'
     endfor
   endif else begin
     varcontent[ind[0]].variable   = 'Dust number density (nd)'
