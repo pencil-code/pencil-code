@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.3 2008-01-09 06:41:07 brandenb Exp $
+! $Id: chemistry.f90,v 1.4 2008-01-09 12:45:10 nbabkovs Exp $
 
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
@@ -148,11 +148,11 @@ module Chemistry
       enddo
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.3 2008-01-09 06:41:07 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.4 2008-01-09 12:45:10 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.3 2008-01-09 06:41:07 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.4 2008-01-09 12:45:10 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -287,8 +287,13 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+     
+      real, dimension (mx,3) :: glchemspec
+      real, dimension (mx) :: uglchemspec 
       type (pencil_case) :: p
 
+
+      integer :: k
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -307,6 +312,18 @@ module Chemistry
 !!! see also integrate_mn_name
 !!        endif
 !!      endif
+
+       do k=1,nchemspec
+
+     
+        call grad(f,ichemspec(k),glchemspec) 
+
+       
+        call dot_mn(p%uu,glchemspec,uglchemspec)
+      
+        df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k)) - uglchemspec(l1:l2)
+       enddo 
+
 
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(f,df)
