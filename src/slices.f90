@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.81 2007-09-22 07:36:39 brandenb Exp $
+! $Id: slices.f90,v 1.82 2008-01-09 11:40:03 nilshau Exp $
 
 !  This module produces slices for animation purposes
 
@@ -47,6 +47,10 @@ module Slices
   real, public, dimension (nx,ny,ndustspec) :: md_xy
   real, public, dimension (nx,ny,3) :: uud_xy,vvp_xy
 !
+! Chemistry slices
+!
+  real, public, dimension (nx,ny) :: chemspec_xy
+!
 !  Cosmic Ray slices
 !
   real, public, dimension (nx,ny) :: ecr_xy
@@ -58,6 +62,7 @@ module Slices
   real, public, dimension (nx,ny) :: lnrho_xy2,ss_xy2,cc_xy2,lncc_xy2
   real, public, dimension (nx,ny) :: nd_xy2
   real, public, dimension (nx,ny,ndustspec) :: md_xy2
+  real, public, dimension (nx,ny) :: chemspec_xy2
 !  Auxiliary variables
   real, public, dimension (nx,ny) :: yH_xy2,ecr_xy2
 !  Derived variables
@@ -70,6 +75,7 @@ module Slices
   real, public, dimension (nx,nz) :: lnrho_xz,ss_xz,cc_xz,lncc_xz
   real, public, dimension (nx,nz) :: nd_xz
   real, public, dimension (nx,nz,ndustspec) :: md_xz
+  real, public, dimension (nx,nz) :: chemspec_xz
 !  Auxiliary variables
   real, public, dimension (nx,nz) :: yH_xz,ecr_xz
 !  Derived variables
@@ -81,7 +87,8 @@ module Slices
   real, public, dimension (ny,nz,3) :: uud_yz,vvp_yz
   real, public, dimension (ny,nz) :: lnrho_yz,ss_yz,cc_yz,lncc_yz
   real, public, dimension (ny,nz) :: nd_yz
-  real, public, dimension (ny,nz,ndustspec) :: md_yz
+  real, public, dimension (ny,nz,ndustspec) :: md_yz  
+  real, public, dimension (ny,nz) :: chemspec_yz
 !  Auxiliary variables
   real, public, dimension (ny,nz) :: yH_yz,ecr_yz
 !  Derived variables
@@ -296,6 +303,27 @@ module Slices
             else
               if (lroot) call warning('WVID', &
                   "Can't use 'nd' slices with nodustdensity")
+            endif
+          enddo
+!
+!  Chemical species mass fractions (code variable)
+!
+        case ('chemspec')
+          do k=1,nchemspec
+            call chn(k,sindex)
+            if (k == 1) sindex = ''
+            if (lchemistry) then
+              chemspec_yz=f(ix_loc,m1:m2,n1:n2,ichemspec(k))
+              chemspec_xz=f(l1:l2,iy_loc,n1:n2,ichemspec(k))
+              chemspec_xy=f(l1:l2,m1:m2,iz_loc,ichemspec(k))
+              chemspec_xy2=f(l1:l2,m1:m2,iz2_loc,ichemspec(k))
+              call wslice(path//'chemspec'//trim(sindex)//'.yz',chemspec_yz,x(ix_loc),ny,nz)
+              call wslice(path//'chemspec'//trim(sindex)//'.xz',chemspec_xz,y(iy_loc),nx,nz)
+              call wslice(path//'chemspec'//trim(sindex)//'.xy',chemspec_xy,z(iz_loc),nx,ny)
+              call wslice(path//'chemspec'//trim(sindex)//'.xy2',chemspec_xy2,z(iz2_loc),nx,ny)
+            else
+              if (lroot) call warning('WVID', &
+                  "Can't use 'chemspec' slices with nochemistry")
             endif
           enddo
 !
