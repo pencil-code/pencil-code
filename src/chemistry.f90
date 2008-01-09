@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.6 2008-01-09 13:04:11 brandenb Exp $
+! $Id: chemistry.f90,v 1.7 2008-01-09 16:42:33 brandenb Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -24,7 +24,7 @@ module Chemistry
   include 'chemistry.h'
 
   real :: amplchem=1.,kx_chem=1.,ky_chem=1.,kz_chem=1.,widthchem=1.
-  real :: dummy=0.
+  real :: chem_diff=0.
   character (len=labellen), dimension (ninit) :: initchem='nothing'
 
 ! input parameters
@@ -32,7 +32,8 @@ module Chemistry
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem
 
 ! run parameters
-  namelist /chemistry_run_pars/ dummy
+  namelist /chemistry_run_pars/ &
+      chem_diff
 
 !!
 !! Declare any index variables necessary for main or
@@ -94,11 +95,11 @@ module Chemistry
       enddo
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.6 2008-01-09 13:04:11 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.7 2008-01-09 16:42:33 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.6 2008-01-09 13:04:11 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.7 2008-01-09 16:42:33 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -252,8 +253,8 @@ print*,'initchem=',initchem
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
      
-      real, dimension (nx,3) :: glchemspec
-      real, dimension (nx) :: uglchemspec 
+      real, dimension (nx,3) :: gchemspec
+      real, dimension (nx) :: ugchemspec,del2chemspec,diff_op
       type (pencil_case) :: p
 
 
@@ -268,9 +269,19 @@ print*,'initchem=',initchem
 !!      if (headtt) call identify_bcs('ss',iss)
 !
       do k=1,nchemspec
-        call grad(f,ichemspec(k),glchemspec) 
-        call dot_mn(p%uu,glchemspec,uglchemspec)
-        df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))-uglchemspec
+        call grad(f,ichemspec(k),gchemspec) 
+        call dot_mn(p%uu,gchemspec,ugchemspec)
+        df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))-ugchemspec
+!
+!  diffusion operator
+!
+        if (chem_diff/=0.) then
+          call del2(f,ichemspec(k),del2chemspec) 
+          if (headtt) print*,'dchemistry_dt: chem_diff=',chem_diff
+          call dot_mn(p%glnrho,gchemspec,diff_op)
+          diff_op=diff_op+del2chemspec
+          df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+chem_diff*diff_op
+        endif
       enddo 
 !!
 !! SAMPLE DIAGNOSTIC IMPLEMENTATION
@@ -521,7 +532,7 @@ print*,'initchem=',initchem
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
-    subroutine special_boundconds(f,bc)
+    subroutine chemistry_boundconds(f,bc)
 !
 !   calculate a additional 'special' term on the right hand side of the
 !   entropy equation.
@@ -540,7 +551,7 @@ print*,'initchem=',initchem
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(bc)
 !
-    endsubroutine special_boundconds
+    endsubroutine chemistry_boundconds
 !***********************************************************************
     subroutine special_before_boundary(f)
 !

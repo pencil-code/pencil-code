@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.198 2008-01-07 16:24:43 dhruba Exp $
+! $Id: boundcond.f90,v 1.199 2008-01-09 16:42:33 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -208,6 +208,9 @@ module Boundcond
                  case ('fix')
                   ! BCX_DOC: set boundary value [really??]
                   call bc_fix_x(f,topbot,j,fbcx12(j))
+                 case ('fil')
+                  ! BCX_DOC: set boundary value from a file
+                  call bc_file_x(f,topbot,j)
                 case('cfb')
                   ! BCZ_DOC: radial centrifugal balance 
                   if (lcylindrical_coords) then
@@ -1282,6 +1285,64 @@ module Boundcond
       endselect
 !
     endsubroutine bc_fix_x
+!***********************************************************************
+    subroutine bc_file_x(f,topbot,j)
+!
+!  Sets the value of f from a file
+!
+!   9-jan-2008/axel+nils+natalia: coded
+!
+      use Cdata
+!
+      character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (mx,my,mz,mvar) :: bc_file_x_array
+      integer, intent (in) :: j
+      integer :: i,lbc0,lbc1,lbc2
+      real :: lbc,frac,Udrift=.1
+      logical, save :: lbc_file_x=.true.
+
+      if (lbc_file_x) then
+        if (lroot) then
+          print*,'opening bc_file_x.dat'
+          open(9,file=trim(directory_snap)//'/bc_file_x.dat',form='unformatted')
+          read(9,end=99) bc_file_x_array
+          close(9)
+        end if
+        lbc_file_x=.false.
+      endif
+
+      select case(topbot)
+!
+!  x - Udrift*t = dx * (ix - Udrift*t/dx)
+!
+      case('bot')               ! bottom boundary
+        lbc=Udrift*t*dx_1(1)+1.
+        lbc0=int(lbc)
+        frac=mod(lbc,real(lbc0))
+        lbc1=mx+mod(-lbc0,mx)
+        lbc2=mx+mod(-lbc0-1,mx)
+if (frac>1. .or. frac<0.) then
+  print*,'lbc,lbc0,frac,lbc1,lbc2=',lbc,lbc0,frac,lbc1,lbc2
+endif
+        do i=1,nghost
+          f(l1-i,:,:,j)=(1-frac)*bc_file_x_array(lbc1,:,:,j) &
+                           +frac*bc_file_x_array(lbc2,:,:,j)
+        enddo
+      case('top')               ! top boundary
+        lbc1=mod(it,mx)+1
+        lbc2=mod(it-1,mx)+1
+        do i=1,nghost; f(l2+i,:,:,j)=bc_file_x_array(lbc,:,:,j); enddo
+      case default
+        call warning('bc_fix_x',topbot//" should be `top' or `bot'")
+
+      endselect
+!
+      goto 98
+99    continue
+      if (lroot) print*,'need file with dimension: ',mx,my,mz,mvar
+      call stop_it("boundary file bc_file_x.dat not found")
+98  endsubroutine bc_file_x
 !***********************************************************************
     subroutine bc_set_spder_x(f,topbot,j,val)
 !
