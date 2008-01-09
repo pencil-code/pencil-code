@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.229 2007-11-21 21:13:08 wlyra Exp $
+! $Id: initcond.f90,v 1.230 2008-01-09 13:04:11 brandenb Exp $
 
 module Initcond
 
@@ -17,6 +17,7 @@ module Initcond
   private
   public :: arcade_x, vecpatternxy
   public :: soundwave,sinwave,sinwave_phase,coswave,coswave_phase,cos_cos_sin
+  public :: hatwave
   public :: gaunoise, posnoise
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, beltrami, rolls, tor_pert
@@ -1293,6 +1294,57 @@ module Initcond
       endif
 !
     endsubroutine coswave
+!***********************************************************************
+    subroutine hatwave(ampl,f,i,kx,ky,kz)
+!
+!  cosine wave (as initial condition)
+!
+!   9-jan-08/axel: adapted from coswave
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,k=1.,fac
+!
+!  wavenumber k
+!
+!  set x-dependent hat wave
+!
+      if (present(kx)) then
+        k=kx; if(k==0) print*,'hatwave: k must not be zero!'; fac=.5*ampl
+        if (ampl==0) then
+          if (lroot) print*,'hatwave: ampl=0; kx=',k
+        else
+          if (lroot) print*,'hatwave: kx,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(1+tanh(5*cos(k*x)),2,my),3,mz)
+        endif
+      endif
+!
+!  set y-dependent hat wave field
+!
+      if (present(ky)) then
+        k=ky; if(k==0) print*,'hatwave: k must not be zero!'; fac=.5*ampl
+        if (ampl==0) then
+          if (lroot) print*,'hatwave: ampl=0; ky=',k
+        else
+          if (lroot) print*,'hatwave: ky,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(1+tanh(5*cos(k*y)),1,mx),3,mz)
+        endif
+      endif
+!
+!  set z-dependent hat wave field
+!
+      if (present(kz)) then
+        k=kz; if(k==0) print*,'hatwave: k must not be zero!'; fac=.5*ampl
+        if (ampl==0) then
+          if (lroot) print*,'hatwave: ampl=0; kz=',k
+        else
+          if (lroot) print*,'hatwave: kz,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(1+tanh(5*cos(k*z)),1,mx),2,my)
+        endif
+      endif
+!
+    endsubroutine hatwave
 !***********************************************************************
     subroutine sinwave(ampl,f,i,kx,ky,kz)
 !

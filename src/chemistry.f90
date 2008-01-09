@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.5 2008-01-09 12:54:08 dobler Exp $
+! $Id: chemistry.f90,v 1.6 2008-01-09 13:04:11 brandenb Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -23,13 +23,16 @@ module Chemistry
 
   include 'chemistry.h'
 
-!!  character, len(50) :: initcustom
+  real :: amplchem=1.,kx_chem=1.,ky_chem=1.,kz_chem=1.,widthchem=1.
+  real :: dummy=0.
+  character (len=labellen), dimension (ninit) :: initchem='nothing'
 
 ! input parameters
-!  namelist /special_init_pars/ dummy
-!!!eg.    initcustom
+  namelist /chemistry_init_pars/ &
+      initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem
+
 ! run parameters
-!  namelist /special_run_pars/ dummy
+  namelist /chemistry_run_pars/ dummy
 
 !!
 !! Declare any index variables necessary for main or
@@ -91,11 +94,11 @@ module Chemistry
       enddo
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.5 2008-01-09 12:54:08 dobler Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.6 2008-01-09 13:04:11 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.5 2008-01-09 12:54:08 dobler Exp $")
+           "$Id: chemistry.f90,v 1.6 2008-01-09 13:04:11 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -134,32 +137,50 @@ module Chemistry
 !***********************************************************************
     subroutine init_chemistry(f,xx,yy,zz)
 !
-!  initialise special condition; called from start.f90
+!  initialise chemistry initial condition; called from start.f90
 !  13-aug-07/steveb: coded
 !
       use Cdata
+      use Initcond
       use Mpicomm
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
+      integer :: j,k
+      logical :: lnothing
 !
       intent(in) :: xx,yy,zz
       intent(inout) :: f
+!
+!  different initializations of nd (called from start)
+!
+print*,'initchem=',initchem
+      lnothing=.false.
+      do j=1,ninit
+        select case(initchem(j))
 
-!!
-!!  SAMPLE IMPLEMENTATION
-!!
-!!      select case(initspecial)
-!!        case('nothing'); if(lroot) print*,'init_special: nothing'
-!!        case('zero', '0'); f(:,:,:,iSPECIAL_VARIABLE_INDEX) = 0.
-!!        case default
-!!          !
-!!          !  Catch unknown values
-!!          !
-!!          if (lroot) print*,'init_special: No such value for initspecial: ', trim(initspecial)
-!!          call stop_it("")
-!!      endselect
+        case('nothing')
+          if (lroot .and. .not. lnothing) print*, 'init_chem: nothing'
+          lnothing=.true.
+        case('coswave-x')
+          do k=1,nchemspec
+            call coswave(amplchem,f,ichemspec(k),kx=kx_chem)
+          enddo
+        case('hatwave-x')
+          do k=1,nchemspec
+            call hatwave(amplchem,f,ichemspec(k),kx=kx_chem)
+          enddo
+        case default
+!
+!  Catch unknown values
+!
+          if (lroot) print*, 'initchem: No such value for initchem: ', &
+              trim(initchem(j))
+          call stop_it('')
+
+        endselect
+      enddo
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(xx,yy,zz)
@@ -168,7 +189,7 @@ module Chemistry
 !***********************************************************************
     subroutine pencil_criteria_chemistry()
 !
-!  All pencils that this special module depends on are specified here.
+!  All pencils that this chemistry module depends on are specified here.
 !
 !  13-aug-07/steveb: coded
 !
@@ -231,8 +252,8 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
      
-      real, dimension (mx,3) :: glchemspec
-      real, dimension (mx) :: uglchemspec 
+      real, dimension (nx,3) :: glchemspec
+      real, dimension (nx) :: uglchemspec 
       type (pencil_case) :: p
 
 
@@ -246,6 +267,11 @@ module Chemistry
       if (headtt.or.ldebug) print*,'dchemistry_dt: SOLVE dchemistry_dt'
 !!      if (headtt) call identify_bcs('ss',iss)
 !
+      do k=1,nchemspec
+        call grad(f,ichemspec(k),glchemspec) 
+        call dot_mn(p%uu,glchemspec,uglchemspec)
+        df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))-uglchemspec
+      enddo 
 !!
 !! SAMPLE DIAGNOSTIC IMPLEMENTATION
 !!
@@ -256,17 +282,6 @@ module Chemistry
 !!        endif
 !!      endif
 
-       do k=1,nchemspec
-
-     
-        call grad(f,ichemspec(k),glchemspec) 
-
-       
-        call dot_mn(p%uu,glchemspec,uglchemspec)
-      
-        df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k)) - uglchemspec(l1:l2)
-       enddo 
-
 
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(f,df)
@@ -276,45 +291,45 @@ module Chemistry
 !***********************************************************************
     subroutine read_chemistry_init_pars(unit,iostat)
 !
-      use Sub, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-      call keep_compiler_quiet(unit)
-
+!
+      if (present(iostat)) then
+        read(unit,NML=chemistry_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=chemistry_init_pars,ERR=99)
+      endif
+!
+99    return
     endsubroutine read_chemistry_init_pars
 !***********************************************************************
     subroutine write_chemistry_init_pars(unit)
 !
-      use Sub, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
 
-      call keep_compiler_quiet(unit)
+      write(unit,NML=chemistry_init_pars)
 
     endsubroutine write_chemistry_init_pars
 !***********************************************************************
     subroutine read_chemistry_run_pars(unit,iostat)
 !
-      use Sub, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-      call keep_compiler_quiet(unit)
-
+!
+      if (present(iostat)) then
+        read(unit,NML=chemistry_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=chemistry_run_pars,ERR=99)
+      endif
+!
+99    return
     endsubroutine read_chemistry_run_pars
 !***********************************************************************
     subroutine write_chemistry_run_pars(unit)
 !
-      use Sub, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
 
-      call keep_compiler_quiet(unit)
+      write(unit,NML=chemistry_run_pars)
 
     endsubroutine write_chemistry_run_pars
 !***********************************************************************

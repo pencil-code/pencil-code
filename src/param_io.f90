@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.293 2008-01-04 15:35:21 dhruba Exp $
+! $Id: param_io.f90,v 1.294 2008-01-09 13:04:11 brandenb Exp $
 
 module Param_IO
 
@@ -20,6 +20,7 @@ module Param_IO
   use Chiral
   use Cosmicray
   use CosmicrayFlux
+  use Chemistry
   use Dustvelocity
   use Dustdensity
   use NeutralVelocity
@@ -271,6 +272,11 @@ module Param_IO
       call read_chiral_init_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('chiral_init_pars',ierr)
 
+print*,'NOW DOING read_chemistry_init_pars'
+      call sgi_fix(lsgifix,1,'start.in')
+      call read_chemistry_init_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_startpars('chemistry_init_pars',ierr)
+
       call sgi_fix(lsgifix,1,'start.in')
       call read_dustvelocity_init_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('dustvelocity_init_pars',ierr)
@@ -404,6 +410,7 @@ module Param_IO
         if (lradiation      ) print*,'&radiation_init_pars       /'
         if (lpscalar        ) print*,'&pscalar_init_pars         /'
         if (lchiral         ) print*,'&chiral_init_pars          /'
+        if (lchemistry      ) print*,'&chemistry_init_pars       /'
         if (ldustvelocity   ) print*,'&dustvelocity_init_pars    /'
         if (ldustdensity    ) print*,'&dustdensity_init_pars     /'
         if (lneutralvelocity) print*,'&neutralvelocity_init_pars /'
@@ -474,6 +481,7 @@ module Param_IO
         call write_radiation_init_pars(unit)
         call write_pscalar_init_pars(unit)
         call write_chiral_init_pars(unit)
+        call write_chemistry_init_pars(unit)
         call write_dustvelocity_init_pars(unit)
         call write_dustdensity_init_pars(unit)
         call write_neutralvelocity_init_pars(unit)
@@ -593,6 +601,10 @@ module Param_IO
       call sgi_fix(lsgifix,1,'run.in')
       call read_chiral_run_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_runpars('chiral_run_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'run.in')
+      call read_chemistry_run_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_runpars('chemistry_run_pars',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
       call read_dustvelocity_run_pars(1,IOSTAT=ierr)
@@ -727,6 +739,7 @@ module Param_IO
         if (lradiation      ) print*,'&radiation_run_pars       /'
         if (lpscalar        ) print*,'&pscalar_run_pars         /'
         if (lchiral         ) print*,'&chiral_run_pars          /'
+        if (lchemistry      ) print*,'&chemistry_run_pars       /'
         if (ldustvelocity   ) print*,'&dustvelocity_run_pars    /'
         if (ldustdensity    ) print*,'&dustdensity_run_pars     /'
         if (lneutralvelocity) print*,'&neutralvelocity_run_pars /'
@@ -820,6 +833,7 @@ module Param_IO
         call write_radiation_run_pars(unit)
         call write_pscalar_run_pars(unit)
         call write_chiral_run_pars(unit)
+        call write_chemistry_run_pars(unit)
         call write_dustvelocity_run_pars(unit)
         call write_dustdensity_run_pars(unit)
         call write_neutralvelocity_run_pars(unit)
@@ -938,7 +952,7 @@ module Param_IO
 !
       use Cdata, only: lmagnetic_var,lpscalar,lradiation, &
            lforcing,lgravz,lgravr,lshear, &
-           ldustvelocity,ldustdensity,lradiation_fld,  &
+           lchemistry, ldustvelocity,ldustdensity,lradiation_fld,  &
            lneutralvelocity,lneutraldensity, &
            leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
            leos,leos_temperature_ionization,lspecial, ltestfield, &
@@ -958,7 +972,9 @@ module Param_IO
       namelist /lphysics/ &
            lhydro,ldensity,lentropy,lmagnetic,ltestfield,lpscalar,lradiation, &
            lforcing,lgravz,lgravr,lshear,linterstellar,lcosmicray, &
-           lcosmicrayflux,ldustvelocity,ldustdensity,lshock,lradiation_fld, &
+!---       lcosmicrayflux,lchemistry,ldustvelocity,ldustdensity, &
+           lcosmicrayflux,ldustvelocity,ldustdensity, &
+           lshock,lradiation_fld, &
            leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
            leos,leos_temperature_ionization,lneutralvelocity,lneutraldensity
 !
@@ -991,6 +1007,7 @@ module Param_IO
         call write_radiation_init_pars(1)
         call write_pscalar_init_pars(1)
         call write_chiral_init_pars(1)
+        call write_chemistry_init_pars(1)
         call write_dustvelocity_init_pars(1)
         call write_dustdensity_init_pars(1)
         call write_neutralvelocity_init_pars(1)
@@ -1037,6 +1054,7 @@ module Param_IO
         call read_radiation_init_pars(1)
         call read_pscalar_init_pars(1)
         call read_chiral_init_pars(1)
+        call read_chemistry_init_pars(1)
         call read_dustvelocity_init_pars(1)
         call read_dustdensity_init_pars(1)
         call read_neutralvelocity_init_pars(1)
@@ -1081,6 +1099,7 @@ module Param_IO
         call write_radiation_run_pars(1)
         call write_pscalar_run_pars(1)
         call write_chiral_run_pars(1)
+        call write_chemistry_run_pars(1)
         call write_dustvelocity_run_pars(1)
         call write_dustdensity_run_pars(1)
         call write_neutralvelocity_run_pars(1)

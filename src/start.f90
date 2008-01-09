@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.178 2008-01-01 17:24:06 dobler Exp $
+! $Id: start.f90,v 1.179 2008-01-09 13:04:11 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -38,6 +38,7 @@
         use Cosmicray,       only: init_ecr
         use Cosmicrayflux,   only: init_fcr
         use Special,         only: init_special
+        use Chemistry,       only: init_chemistry
         use Dustdensity,     only: init_nd
         use Dustvelocity,    only: init_uud
         use NeutralDensity,  only: init_lnrhon
@@ -100,7 +101,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.178 2008-01-01 17:24:06 dobler Exp $")
+             "$Id: start.f90,v 1.179 2008-01-09 13:04:11 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -301,6 +302,7 @@
           call init_rad       (f,xx,yy,zz)
           call init_lncc      (f,xx,yy,zz)
           call init_chiral    (f,xx,yy,zz)
+          call init_chemistry (f,xx,yy,zz)
           call init_uud       (f)
           call init_nd        (f)
           call init_uun       (f,xx,yy,zz)
