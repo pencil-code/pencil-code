@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.7 2008-01-09 16:42:33 brandenb Exp $
+! $Id: chemistry.f90,v 1.8 2008-01-10 06:16:47 brandenb Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -95,11 +95,11 @@ module Chemistry
       enddo
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.7 2008-01-09 16:42:33 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.8 2008-01-10 06:16:47 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.7 2008-01-09 16:42:33 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.8 2008-01-10 06:16:47 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -171,6 +171,14 @@ print*,'initchem=',initchem
         case('hatwave-x')
           do k=1,nchemspec
             call hatwave(amplchem,f,ichemspec(k),kx=kx_chem)
+          enddo
+        case('hatwave-y')
+          do k=1,nchemspec
+            call hatwave(amplchem,f,ichemspec(k),ky=ky_chem)
+          enddo
+        case('hatwave-z')
+          do k=1,nchemspec
+            call hatwave(amplchem,f,ichemspec(k),kz=kz_chem)
           enddo
         case default
 !

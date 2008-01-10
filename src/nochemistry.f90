@@ -1,4 +1,4 @@
-! $Id: nochemistry.f90,v 1.3 2008-01-09 12:54:09 dobler Exp $
+! $Id: nochemistry.f90,v 1.4 2008-01-10 06:16:47 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -79,11 +79,11 @@ module Chemistry
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nochemistry.f90,v 1.3 2008-01-09 12:54:09 dobler Exp $
+!  CVS should automatically update everything between $Id: nochemistry.f90,v 1.4 2008-01-10 06:16:47 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nochemistry.f90,v 1.3 2008-01-09 12:54:09 dobler Exp $")
+           "$Id: nochemistry.f90,v 1.4 2008-01-10 06:16:47 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -465,7 +465,7 @@ module Chemistry
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
-    subroutine special_boundconds(f,bc)
+    subroutine chemistry_boundconds(f,bc)
 !
 !   calculate a additional 'special' term on the right hand side of the
 !   entropy equation.
@@ -484,7 +484,7 @@ module Chemistry
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(bc)
 !
-    endsubroutine special_boundconds
+    endsubroutine chemistry_boundconds
 !***********************************************************************
     subroutine special_before_boundary(f)
 !
