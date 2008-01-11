@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.225 2007-12-11 17:37:57 pkapyla Exp $
+# $Id: getconf.csh,v 1.226 2008-01-11 06:30:51 nilshau Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -1130,6 +1130,9 @@ else if ($hn =~ is*.uppmax.uu.se) then
   else
     setenv LD_LIBRARY_PATH  /opt/openmpi/1.2pgi/lib:/sw/openmpi/1.1/pgi/comp/openmpi-1.1.3/orte/.libs/:/sw/openmpi/1.1/pgi/install/lib  
   endif
+
+else if ($hn =~ vsl2*) then
+    set mpirunops2 = ' -machinefile machines.txt '
 
 else
   echo "Generic setup; hostname is <$hn>"
