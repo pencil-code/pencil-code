@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.367 2008-01-09 06:41:07 brandenb Exp $
+### $Id: Makefile.src,v 1.368 2008-01-11 06:32:55 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -284,6 +284,7 @@ LD_FFTW2=
 #FFLAGS=-O3 -xW -vec_report0 #(obelix)
 #FC=pgf90 #(tycho|linux29|monolith)
 #FC=ifort #(sintef*|vmware|erland|bohm|igor|onsager|char)
+#FC=ifort #(vsl21*|vsl22*|vsl230)
 #FC=ifort  #(co-login)
 #LD_MPI=-lmpi  #(co-login)
 ##FC=pgf90 #(erland|bohm|igor|onsager)
@@ -307,6 +308,8 @@ LD_FFTW2=
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
 #FFLAGS=-fast -lm #(tycho|linux29)
 ##FFLAGS= #(sintef*|vmware|erland|bohm|igor|onsager)
+#FFLAGS= -I./ -D_REENTRANT -I/opt/scali/include #(vsl21*|vsl22*|vsl230)
+#LD_MPI= -L/opt/scali/lib -lfmpi -lmpi -lpthread #(vsl21*|vsl22*|vsl230)
 #FFLAGS= -fast -lm#(erland|bohm|igor|onsager)
 #FFLAGS= -fast -lm -Nscampi   #(monolith)
 #FFLAGS= #(fe[0-4])  ##(compiles faster/axel)
@@ -345,7 +348,7 @@ LD_FFTW2=
 #CFLAGS=-O3 -DFUNDERSC=2 -Wall #(mhd|metropolis)
 #F77=$(FC) -dusty #(nl3|Mephisto|Aladdin)
 #F77=$(FC) -lm  #(tycho|monolith)
-#F77=$(FC) #(sintef*|vmware|erland|bohm|igor|onsager)
+#F77=$(FC) #(sintef*|vmware|erland|bohm|igor|onsager|vsl21*|vsl22*|vsl230)
 #F77=$(FC) #(Owen|Master|nw17|nl11)
 #F77FLAGS=-w90 #(nw[0-9]+|ns0|nw17|nl11|sandin)
 #FC=ifort #(lws.Stanford.EDU|lws2.Stanford.EDU)
