@@ -1,4 +1,4 @@
-$Id: developers.txt,v 1.7 2007-09-13 12:55:42 pkapyla Exp $
+$Id: developers.txt,v 1.8 2008-01-12 18:04:05 brandenb Exp $
 
 Below are the contact details of some of the Pencil Code developers.
 Their web pages may be found in the pencil code manual.
@@ -16,8 +16,8 @@ Steve Berukoff   steveb/physics.ucla.edu
 Sven Bingert     bingert/kis.uni-freiburg.de 
 Axel Brandenburg brandenb/nordita.dk       +46 8 5537 8707    +46 70 574 0650
 Boris Dintrans   dintrans/ast.obs-mip.fr   +33 5 6133 2811    +33 6 61 24 79 83
-Wolfgang Dobler  dobler/kis.uni-freiburg.de                   +49 1520 4056 762
-Anders Johansen  johansen/mpia-hd.mpg.de   +49 6221 528 381   +49 174 19 77 420
+Wolfgang Dobler  dobler/kis.uni-freiburg.de +49 33201 43791   +49 1520 4056 762
+Anders Johansen  johansen/mpia-hd.mpg.de   +31 71 527 8454    +31 648 211 427
 Nils E.L. Haugen Nils.E.Haugen/sintef.no   +47 73 55 06 75    +47 986 086 83
 Tobias Heinemann T.Heinemann/damtp.cam.ac.uk +44 1223 760 393 +44 784 716 5958
 Maarit Korpi     maarit.korpi/helsinki.fi
