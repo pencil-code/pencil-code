@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.401 2008-01-08 19:07:09 brandenb Exp $
+! $Id: cdata.f90,v 1.402 2008-01-12 13:27:25 brandenb Exp $
 
 module Cdata
 
@@ -340,6 +340,7 @@ module Cdata
   real, dimension(mcom) :: fbcx1=0.,fbcy1=0.,fbcz1=0., fbcz1_1=0., fbcz1_2=0.
   real, dimension(mcom) :: fbcx2=0.,fbcy2=0.,fbcz2=0., fbcz2_1=0., fbcz2_2=0.
   real, dimension(mcom) :: fbcx1_2=0.,fbcx2_2=0.
+  real :: Udrift_bc=0.
   character (len=2*bclen+1), dimension(mcom) :: bcx='p',bcy='p',bcz='p'
   character (len=bclen), dimension(mcom) :: bcx1='',bcx2='', &
                                             bcy1='',bcy2='', &

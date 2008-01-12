@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.294 2008-01-09 13:04:11 brandenb Exp $
+! $Id: param_io.f90,v 1.295 2008-01-12 13:27:25 brandenb Exp $
 
 module Param_IO
 
@@ -109,6 +109,7 @@ module Param_IO
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, &
        fbcx1_2,fbcx2_2,&
        fbcz1_1, fbcz1_2, fbcz2_1,fbcz2_2, &
+       Udrift_bc, &
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lsfflux,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
        lwrite_aux,onedall,pretend_lnTT,old_cdtv,lmaxadvec_sum, &

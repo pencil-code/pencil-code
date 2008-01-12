@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.199 2008-01-09 16:42:33 brandenb Exp $
+! $Id: boundcond.f90,v 1.200 2008-01-12 13:27:25 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1299,7 +1299,7 @@ module Boundcond
       real, dimension (mx,my,mz,mvar) :: bc_file_x_array
       integer, intent (in) :: j
       integer :: i,lbc0,lbc1,lbc2
-      real :: lbc,frac,Udrift=.1
+      real :: lbc,frac
       logical, save :: lbc_file_x=.true.
 
       if (lbc_file_x) then
@@ -1314,25 +1314,32 @@ module Boundcond
 
       select case(topbot)
 !
-!  x - Udrift*t = dx * (ix - Udrift*t/dx)
+!  x - Udrift_bc*t = dx * (ix - Udrift_bc*t/dx)
 !
       case('bot')               ! bottom boundary
-        lbc=Udrift*t*dx_1(1)+1.
+        lbc=Udrift_bc*t*dx_1(1)+1.
         lbc0=int(lbc)
         frac=mod(lbc,real(lbc0))
         lbc1=mx+mod(-lbc0,mx)
         lbc2=mx+mod(-lbc0-1,mx)
-if (frac>1. .or. frac<0.) then
-  print*,'lbc,lbc0,frac,lbc1,lbc2=',lbc,lbc0,frac,lbc1,lbc2
-endif
         do i=1,nghost
           f(l1-i,:,:,j)=(1-frac)*bc_file_x_array(lbc1,:,:,j) &
                            +frac*bc_file_x_array(lbc2,:,:,j)
         enddo
       case('top')               ! top boundary
-        lbc1=mod(it,mx)+1
-        lbc2=mod(it-1,mx)+1
-        do i=1,nghost; f(l2+i,:,:,j)=bc_file_x_array(lbc,:,:,j); enddo
+!
+!  note: this "top" thing hasn't been adapted or tested yet.
+!  The -lbc0-1 has been changed to +lbc0+1, but has not been tested yet.
+!
+        lbc=Udrift_bc*t*dx_1(1)+1.
+        lbc0=int(lbc)
+        frac=mod(lbc,real(lbc0))
+        lbc1=mx+mod(+lbc0,mx)
+        lbc2=mx+mod(+lbc0+1,mx)
+        do i=1,nghost
+          f(l2+i,:,:,j)=(1-frac)*bc_file_x_array(lbc1,:,:,j) &
+                           +frac*bc_file_x_array(lbc2,:,:,j)
+        enddo
       case default
         call warning('bc_fix_x',topbot//" should be `top' or `bot'")
 
