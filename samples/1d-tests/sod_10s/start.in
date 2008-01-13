@@ -1,21 +1,21 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
-! Initialisation parameters for shocktube problem
+! Initialisation parameters for shock tube problem.
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.5 2007-06-30 17:55:25 theine Exp $'
+  cvsid='$Id: start.in,v 1.6 2008-01-13 13:36:48 ajohan Exp $'
   xyz0  = -3.7, 0.0, 0.0,      ! first corner of box
-  xyz1  = 6.3, 1.0, 1.0,      ! box size
-  lperi = F , T , T,          ! periodic direction?
-  lwrite_aux = T
+  xyz1  =  6.3, 1.0, 1.0,      ! box size
+  lperi =  F  , T  , T,        ! periodic direction?
+  lwrite_ic = T
 /
 &eos_init_pars
 /
 &hydro_init_pars
 /
 &density_init_pars
-  initlnrho='xjump', rho_left=10., rho_right=1., widthlnrho=.03
+  initlnrho='xjump', rho_left=10.0, rho_right=1.0, widthlnrho=0.03
 /
 &entropy_init_pars
-  initss='xjump', ss_left=-0.615, ss_right=.306, widthss=.03
+  initss='xjump', ss_left=-0.615, ss_right=0.306, widthss=0.03
 /

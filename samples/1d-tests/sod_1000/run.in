@@ -1,20 +1,26 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
-!  sample file for 1-D sound wave
+! Runtime parameters for shock tube problem.
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.4 2005-06-26 17:34:21 eos_merger_tony Exp $'
-  nt=2000000, it1=100, cdt=0.05, cdtv=0.4, isave=50, itorder=3,
-  dsnap=20., dvid=.02,tmax=1.5,
+  cvsid='$Id: run.in,v 1.5 2008-01-13 13:36:47 ajohan Exp $'
+  nt=200000, it1=100, cdt=0.4, cdtv=0.25, isave=50, itorder=3,
+  dsnap=20.0, dvid=0.02, tmax=1.5,
   bcx = 'a','s','s','s','s'
-  lpencil_check=T
+  lpencil_check=F
+/
+&eos_run_pars
 /
 &hydro_run_pars
-  nu=0.08
 /
 &density_run_pars
-  cdiffrho=0.,  !(mass diffusion not currently used)
+  cdiffrho=0.0,  !(mass diffusion not currently used)
 /
 &entropy_run_pars
-  lcalc_heatcond_constchi=T,chi=5e-4
+  iheatcond='chi-const'
+  chi=5.0e-4
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=0.08
 /

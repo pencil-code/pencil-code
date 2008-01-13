@@ -3,19 +3,12 @@
 ### Included by `Makefile'
 ###
 
-LIBSIG = -L$(HOME)/f90/lib
-LDMPI  = -lmpi
-
 MPICOMM  = nompicomm
-GLOBAL   =   global_rr
 GRAVITY  = nogravity
 FORCING  = noforcing
 ENTROPY  =   entropy
 MAGNETIC = nomagnetic
 HYDRO    =   hydro
-EOS      =   eos_idealgas
 DENSITY  =   density
-
-IO      =   io_dist
-FFTPACK = nofftpack
-POWER   = nopower_spectrum
+SHOCK    = noshock
+POWER    = nopower_spectrum
