@@ -1,12 +1,18 @@
 ;
-;  $Id: pc_write_kdat.pro,v 1.2 2007-11-30 13:55:53 ajohan Exp $
+;  $Id: pc_write_kdat.pro,v 1.3 2008-01-13 14:51:22 ajohan Exp $
 ;
 ;  Program to calculate all possible vectors k that have a specified
 ;  length (in 1, 2 or 3 dimensions). The output file, k.dat, can be used
 ;  directly as input to forced turbulence simulations with the Pencil
 ;  Code.
 ;
-pro pc_write_kdat, kmean, deltak, ndim, kmin=kmin, format=format
+pro pc_write_kdat, kmean, deltak, ndim, kmin=kmin, format=format, $
+    screen=screen, file=file
+;
+;  Print to screen and file by default.
+;
+default, screen, 1
+default, file, 1
 ;
 ;  Format of the output.
 ;
@@ -79,20 +85,31 @@ endif
 ;
 klen=klen/n_elements(kk)
 ;
-;  Write to file.
+;  Information on how many k's were found
+;
+print, 'Found '+strtrim(n_elements(kk),2)+' vectors in the specified range.'
+print, n_elements(kk), klen*kmin
+;
+;  Print to screen.
 ;
 if (ndim le 2) then qq=fltarr(n_elements(kk))
 if (ndim le 1) then pp=fltarr(n_elements(kk))
-close, 1
-openw, 1, 'k.dat'
-  printf, 1, n_elements(kk), klen*kmin
-  printf, 1, kk*kmin, format=format
-  printf, 1, pp*kmin, format=format
-  printf, 1, qq*kmin, format=format
-close, 1
+if (screen) then begin
+  print, kk*kmin, format=format
+  print, pp*kmin, format=format
+  print, qq*kmin, format=format
+endif
 ;
+;  Write to file.
 ;
-;
-print, 'Found '+strtrim(n_elements(kk),2)+' vectors in the specified range.'
+if (file) then begin
+  close, 1
+  openw, 1, 'k.dat'
+    printf, 1, n_elements(kk), klen*kmin
+    printf, 1, kk*kmin, format=format
+    printf, 1, pp*kmin, format=format
+    printf, 1, qq*kmin, format=format
+  close, 1
+endif
 ;
 end
