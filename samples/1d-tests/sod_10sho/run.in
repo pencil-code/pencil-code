@@ -1,11 +1,11 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
-!  Runtime parameters for shocktube problem
+! Runtime parameters for shock tube problem.
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.2 2007-06-30 15:18:00 theine Exp $'
-  nt=20000, it1=5, cdt=0.4, cdtv=0.4, isave=50, itorder=3,
-  dsnap=20., dvid=.02,tmax=2.4,
+  cvsid='$Id: run.in,v 1.3 2008-01-13 14:04:53 ajohan Exp $'
+  nt=200000, it1=100, cdt=0.4, cdtv=0.25, isave=50, itorder=3,
+  dsnap=20.0, dvid=0.02, tmax=2.4,
   bcx = 'a','s','s','s','s','s'
   lpencil_check=F
 /
@@ -14,14 +14,15 @@
 &hydro_run_pars
 /
 &density_run_pars
-  cdiffrho=0.,  !(mass diffusion not currently used)
+  cdiffrho=0.0,  !(mass diffusion not currently used)
 /
 &entropy_run_pars
-  iheatcond='chi-const', chi=5e-4
+  iheatcond='chi-const'
+  chi=5.0e-4
 /
 &viscosity_run_pars
   ivisc='nu-const','nu-shock'
-  nu=0.002, nu_shock=4.
+  nu=0.002, nu_shock=4.0
 /
 &shock_run_pars
 /

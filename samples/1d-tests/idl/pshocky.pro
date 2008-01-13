@@ -8,6 +8,7 @@ save_state
 !x.title='!8y!X'
 
 pc_read_param,obj=par 
+pc_read_param,obj=par2,/param2
 pc_read_var,obj=data,/trimall,variables=['rho','pp','cs2'],/magic,/add
 gamma=par.gamma
 gamma1=par.gamma-1
@@ -69,9 +70,9 @@ restore_state
 ;
 ;  print momentum and theoretical value
 ;
-py = total(exp(llnrho)*uuu[*,*,*,0])*dy
-print, 'momentum p_y = ', py, '; theor.:', (p_left-p_right)*t
-print,'nu/(dy*cs)=',nu/(dy*sqrt(gamma))
+py = total(exp(llnrho)*uuu[*,*,*,0])*data.dy
+print, 'momentum p_y = ', py, '; theor.:', (p_left-p_right)*data.t
+print,'nu/(dy*cs)=',par2.nu/(data.dy*sqrt(par.gamma))
 
 ;print,'import sod_10.gif'
 ;print,'import sod_100.gif'

@@ -8,6 +8,7 @@ save_state
 !x.title='!8z!X'
 
 pc_read_param,obj=par 
+pc_read_param,obj=par2,/param2
 pc_read_var,obj=data,/trimall,variables=['rho','pp','cs2'],/magic,/add
 gamma=par.gamma
 gamma1=par.gamma-1
@@ -19,7 +20,7 @@ p_right=exp(gamma*(ss_right+alog(rho_right)))/gamma
 ;  exclude ghost zones
 ;
 zzz=data.z
-uuu=data.uu[*,*,*,1]
+uuu=data.uu[*,2]
 sss=data.ss
 llnrho=data.lnrho
 cs2=data.cs2
@@ -29,7 +30,7 @@ ppp=data.pp
 ;
 ;  get exact solution
 ;
-shocktube,zzz,t,p,rho,u,[0.,p_left,rho_left],[0.,p_right,rho_right],gamma
+shocktube,zzz,data.t,p,rho,u,[0.,p_left,rho_left],[0.,p_right,rho_right],gamma
 circ_sym,.6,0
 ps=8
 thi=1
@@ -69,9 +70,9 @@ restore_state
 ;
 ;  print momentum and theoretical value
 ;
-pz = total(exp(llnrho)*uuu[*,*,*,0])*dz
-print, 'momentum p_z = ', pz, '; theor.:', (p_left-p_right)*t
-print,'nu/(dz*cs)=',nu/(dz*sqrt(gamma))
+pz = total(exp(llnrho)*uuu[*,*,*,0])*data.dz
+print, 'momentum p_z = ', pz, '; theor.:', (p_left-p_right)*data.t
+print,'nu/(dz*cs)=',par2.nu/(data.dz*sqrt(par.gamma))
 
 ;print,'import sod_10.gif'
 ;print,'import sod_100.gif'
