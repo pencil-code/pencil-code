@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.org)
-%%  CVS: $Id: manual.tex,v 1.379 2008-01-02 17:00:05 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.380 2008-01-13 08:06:35 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2008-01-02 17:00:05 $ $,~ $ $Revision: 1.379 $ $}
+%\date{$ $Date: 2008-01-13 08:06:35 $ $,~ $ $Revision: 1.380 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2008-01-02 17:00:05 $ $,~ $ $Revision: 1.379 $ $}\\
+  \emph{$ $Date: 2008-01-13 08:06:35 $ $,~ $ $Revision: 1.380 $ $}\\
   \url{http://www.nordita.org/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -4527,6 +4527,28 @@ accelerating itself (see Hockney \& Eastwood 1981).
 \subsection{Compilation}
 
 %%%
+\subsubsection[Unable to open include file: chemistry.h]%
+              {Make gives the following error now:}
+\begin{Verbatim}
+PGF90-S-0017-Unable to open include file: chemistry.h (nochemistry.f90: 43)
+  0 inform,   0 warnings,   1 severes, 0 fatal for chemistry
+
+Line 43 of the nochemistry routine, only has 'contains'.
+\end{Verbatim}
+
+\medskip
+
+{\em
+This is because somebody added a new module (together with a corresponding
+\name{nomodule.f90} and a \name{module.h} file (chemistry in this case).
+These files didn't exist before, so you need to say:
+\begin{Verbatim}
+      setup-src
+\end{Verbatim}
+If this does not help, say first \cmd{make clean} and then \cmd{setup-src}.
+}
+
+%%%
 \subsubsection[Compiling with \name{ifc} under Linux]%
               {How do I compile the {\sc Pencil Code} with  the Intel
   (\name{ifc}) compiler under \name{Linux}?}
@@ -5835,7 +5857,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2008-01-02 17:00:05 $ $,~ $ $Revision: 1.379 $ $}
+  \hfill\normalsize\rm$ $Date: 2008-01-13 08:06:35 $ $,~ $ $Revision: 1.380 $ $}
 
 \section{Timings}
 
@@ -9177,7 +9199,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.379 2008-01-02 17:00:05 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.380 2008-01-13 08:06:35 brandenb Exp $ $}
 
 
 \end{document}

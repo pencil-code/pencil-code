@@ -1,4 +1,4 @@
-; $Id: ptimings.pro,v 1.10 2007-11-22 22:31:32 brandenb Exp $
+; $Id: ptimings.pro,v 1.11 2008-01-13 08:06:35 brandenb Exp $
 ;
 red = 122
 blue = 55
@@ -55,7 +55,7 @@ oplot,   n4, fact*t4, PSYM=-7,li=3, COLOR=blue
 oplot,   n5, fact*t5, PSYM=-4,li=0, COLOR=fg
 oplot,   n5b, fact*t5b, PSYM=-4,li=0, COLOR=fg
 oplot,   n6, fact*t6, PSYM=-5,li=2, COLOR=red
-oplot,   n6b,fact*t6b, PSYM=-5,li=2, COLOR=blue, symsize=4
+oplot,   n6b,fact*t6b, PSYM=-6,li=2, COLOR=organe, symsize=4
 oplot,   n7, fact*t7, PSYM=-5,li=2, COLOR=blue
 ;
 !p.charsize=.9
