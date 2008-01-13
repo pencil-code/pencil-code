@@ -1,4 +1,4 @@
-#!/usr/bin/csh
+#!/bin/csh
 #
 #  Compare *.in and *.local files of two Pencil Code run directories.
 #
