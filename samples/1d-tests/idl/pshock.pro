@@ -1,4 +1,3 @@
-
 ;
 ;  Plot profiles of some variables for shock tube problem
 ;
