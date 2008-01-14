@@ -1,7 +1,7 @@
 Directory:
     ${PENCIL_HOME}/samples/1d-tests/sod_10
 CVS-Id:
-    $Id: README,v 1.1 2008-01-14 06:31:28 brandenb Exp $
+    $Id: README,v 1.2 2008-01-14 06:58:26 brandenb Exp $
 Maintainer:
     Axel Brandenburg <brandenb@nordita.org>
 Added:
@@ -16,3 +16,5 @@ Comments:
     Note that, although the shock front is equally well resolved
     as in the case with constant viscosity (i.e. no shock viscosity),
     the corners of the expansion shock are now much sharper.
+    Verify that the total energy is constant by saying (in idl)
+    plot,tt,eth+ekin,yr=[0,7] & oplot,tt,eth & oplot,tt,ekin
