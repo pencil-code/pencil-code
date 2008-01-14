@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.130 2007-12-20 23:11:20 dhruba Exp $
+! $Id: forcing.f90,v 1.131 2008-01-14 14:36:47 ajohan Exp $
 
 module Forcing
 
@@ -86,7 +86,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.130 2007-12-20 23:11:20 dhruba Exp $")
+           "$Id: forcing.f90,v 1.131 2008-01-14 14:36:47 ajohan Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -246,6 +246,7 @@ module Forcing
       real :: phase,ffnorm
       real, save :: kav
       real, dimension (2) :: fran
+      real, dimension (nx) :: rho1
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
@@ -299,7 +300,19 @@ module Forcing
           jf=j+ifff-1
           do n=n1,n2
           do m=m1,m2
-            f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+real(ikk(j)*fx(l1:l2)*fy(m)*fz(n))
+!
+!  Can force either velocity (default) or momentum (slightly more physical).
+!
+            if (lmomentum_ff) then
+              if (ldensity_nolog) then
+                rho1=1/f(l1:l2,m,n,ilnrho)
+              else
+                rho1=exp(-f(l1:l2,m,n,ilnrho))
+              endif
+            else
+              rho1=1.
+            endif
+            f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+rho1*real(ikk(j)*fx(l1:l2)*fy(m)*fz(n))
           enddo
           enddo
         endif
@@ -619,9 +632,9 @@ module Forcing
           endif
         enddo
       endif
-      !
-      ! For printouts
-      !
+!
+! For printouts
+!
       if (lout) then
         if (idiag_rufm/=0) then
           uu=f(l1:l2,m,n,iux:iuz)
