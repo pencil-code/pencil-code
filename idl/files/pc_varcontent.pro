@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.55 2008-01-09 09:33:42 ajohan Exp $
+;  $Id: pc_varcontent.pro,v 1.56 2008-01-14 21:23:39 brandenb Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -262,6 +262,14 @@ varcontent[ifcr].idlinit    = INIT_3VECTOR
 varcontent[ifcr].idlvarloc  = 'fcr_loc'
 varcontent[ifcr].idlinitloc = INIT_3VECTOR_LOC
 varcontent[ifcr].skip       = 2
+;
+default, iam, 0
+varcontent[iam].variable   = 'meanfield_dynamo_z (Am)'
+varcontent[iam].idlvar     = 'Am'
+varcontent[iam].idlinit    = INIT_3VECTOR
+varcontent[iam].idlvarloc  = 'Am_loc'
+varcontent[iam].idlinitloc = INIT_3VECTOR_LOC
+varcontent[iam].skip       = 2
 ;
 default, ipsi_real, 0
 varcontent[ipsi_real].variable   = 'Wave function (real part)'
