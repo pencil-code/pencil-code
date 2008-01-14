@@ -1,0 +1,18 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/sod_10
+CVS-Id:
+    $Id: README,v 1.1 2008-01-14 06:31:28 brandenb Exp $
+Maintainer:
+    Axel Brandenburg <brandenb@nordita.org>
+Added:
+    before 23-apr-2004
+Status:
+    has been working in this form since 26-Feb-2006
+Recommended resolution:
+    400 meshpoints in -4 < x < 6, with nu=0.002 and chi=5e-4
+    (Note that nu is here 10 times smaller than in sod_10,
+    where no shock viscosity is used.)
+Comments:
+    Note that, although the shock front is equally well resolved
+    as in the case with constant viscosity (i.e. no shock viscosity),
+    the corners of the expansion shock are now much sharper.
