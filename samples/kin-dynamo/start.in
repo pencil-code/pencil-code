@@ -3,10 +3,8 @@
 ! Initialisation parameters for a kinematic dynamo run
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.3 2005-06-26 17:34:38 eos_merger_tony Exp $',
+  cvsid='$Id: start.in,v 1.4 2008-01-15 06:34:43 brandenb Exp $',
   random_gen='nr_f90'
-/
-&eos_init_pars
 /
 &magnetic_init_pars
   initaa='gaussian-noise', amplaa=1e-4
