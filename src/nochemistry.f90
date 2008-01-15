@@ -1,4 +1,4 @@
-! $Id: nochemistry.f90,v 1.4 2008-01-10 06:16:47 brandenb Exp $
+! $Id: nochemistry.f90,v 1.5 2008-01-15 07:44:23 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -79,11 +79,11 @@ module Chemistry
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nochemistry.f90,v 1.4 2008-01-10 06:16:47 brandenb Exp $
+!  CVS should automatically update everything between $Id: nochemistry.f90,v 1.5 2008-01-15 07:44:23 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nochemistry.f90,v 1.4 2008-01-10 06:16:47 brandenb Exp $")
+           "$Id: nochemistry.f90,v 1.5 2008-01-15 07:44:23 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -199,15 +199,7 @@ module Chemistry
 !***********************************************************************
     subroutine dchemistry_dt(f,df,p)
 !
-!  calculate right hand side of ONE OR MORE extra coupled PDEs
-!  along the 'current' Pencil, i.e. f(l1:l2,m,n) where
-!  m,n are global variables looped over in equ.f90
-!
-!  Due to the multi-step Runge Kutta timestepping used one MUST always
-!  add to the present contents of the df array.  NEVER reset it to zero.
-!
-!  several precalculated Pencils of information are passed if for
-!  efficiency.
+!  Dummy routine
 !
 !   06-oct-03/tony: coded
 !
@@ -219,30 +211,12 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-
 !
-      intent(in) :: f,p
-      intent(inout) :: df
-!
-!  identify module and boundary conditions
-!
-      if (headtt.or.ldebug) print*,'dchemistry_dt: SOLVE dSPECIAL_dt'
-!!      if (headtt) call identify_bcs('ss',iss)
-!
-!!
-!! SAMPLE DIAGNOSTIC IMPLEMENTATION
-!!
-!!      if(ldiagnos) then
-!!        if(i_SPECIAL_DIAGNOSTIC/=0) then
-!!          call sum_mn_name(SOME MATHEMATICAL EXPRESSION,i_SPECIAL_DIAGNOSTIC)
-!!! see also integrate_mn_name
-!!        endif
-!!      endif
-
 ! Keep compiler quiet by ensuring every parameter is used
+!
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
-
+!
     endsubroutine dchemistry_dt
 !***********************************************************************
     subroutine read_chemistry_init_pars(unit,iostat)

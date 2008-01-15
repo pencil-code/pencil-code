@@ -1,4 +1,4 @@
-! $Id: meanfield_dynamo_z.f90,v 1.1 2008-01-14 21:33:20 brandenb Exp $
+! $Id: meanfield_dynamo_z.f90,v 1.2 2008-01-15 07:44:23 brandenb Exp $
 !
 !  Mean field dynamo equation
 !
@@ -29,20 +29,28 @@ module Special
 !  square of wave speed for gauge field
 !
   real :: etadyn,alpha_const
-
+!
+!  cosine and sine function for setting test fields and analysis
+!
+  real, dimension(mz) :: cz,sz
+  real, dimension(mz,2,2) :: alp_ij,eta_ij
+!
   ! input parameters
   real :: cphi=1.,ampl=1e-3,kx=1.,ky=0.,kz=0.
+  real :: ktestfield=1., ktestfield1=1.
+  integer, parameter :: ntestfield=3*njtest
   character(len=50) :: init='zero'
+  logical :: ldebug_meanfield=.false.
   namelist /special_init_pars/ &
     init,ampl,kx,ky,kz
 
   ! run parameters
   namelist /special_run_pars/ &
-    etadyn,alpha_const
+    etadyn,alpha_const,ktestfield,ldebug_meanfield
 !
 ! Declare any index variables necessary for main or 
 ! 
-   integer :: iam=0
+   integer :: iam=0,iamx=0,iamy=0,iamz=0
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -77,14 +85,17 @@ module Special
 !
 ! Set any required f-array indexes to the next available slot
 !
-      iam = nvar+1
-      nvar = nvar+3
+      iam=nvar+1
+      iamx=iam
+      iamy=iam+1
+      iamz=iam+2
+      nvar=nvar+3
 !
 !      iSPECIAL_AUXILIARY_VARIABLE_INDEX = naux+1      ! index to access entropy
 !      naux = naux+1
 !
       if (lroot) call cvs_id( &
-           "$Id: meanfield_dynamo_z.f90,v 1.1 2008-01-14 21:33:20 brandenb Exp $")
+           "$Id: meanfield_dynamo_z.f90,v 1.2 2008-01-15 07:44:23 brandenb Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -113,7 +124,18 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
 !
 !  Initialize module variables which are parameter dependent
-!  wave speed of gauge potential
+!  set cosine and sine function for setting test fields and analysis
+!
+      cz=cos(ktestfield*z)
+      sz=sin(ktestfield*z)
+!
+!  Also calculate its inverse, but only if different from zero
+!
+      if (ktestfield==0) then
+        ktestfield1=1.
+      else
+        ktestfield1=1./ktestfield
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -139,11 +161,11 @@ module Special
 !
       select case(init)
         case('nothing'); if(lroot) print*,'init_special: nothing'
-        case('zero'); f(:,:,:,iam:iam+2)=0.
+        case('zero'); f(:,:,:,iamx:iamz)=0.
         case('sinwave-x'); call sinwave(ampl,f,iam,kx=kx)
         case('sinwave-y'); call sinwave(ampl,f,iam,ky=ky)
         case('sinwave-z'); call sinwave(ampl,f,iam,kz=kz)
-        case('gaussian-noise'); call gaunoise(ampl,f,iam+0,iam+2)
+        case('gaussian-noise'); call gaunoise(ampl,f,iamx,iamz)
 
         case default
           !
@@ -229,8 +251,9 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: emfx,emfy,amx,amy,am2x,am2y,bmx,bmy,jmx,jmy
-      integer :: iamx,iamy
+      real, dimension (nx) :: damx,damy,d2amx,d2amy
+      real, dimension (nx,2) :: emf,bm,jm
+      integer :: i,j
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -240,29 +263,44 @@ module Special
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
 !!      if (headtt) call identify_bcs('ss',iss)
 !
-!  indices
-!
-      iamx=iam+0
-      iamy=iam+1
-!
 !  calculate mean current and magnetic field
 !
-      call der(f,iamx,amx,3)
-      call der(f,iamy,amy,3)
-      bmx=-amy
-      bmy=+amx
+      call der(f,iamx,damx,3)
+      call der(f,iamy,damy,3)
+      bm(:,1)=-damy
+      bm(:,2)=+damx
 !
-      call der2(f,iamx,am2x,3)
-      call der2(f,iamy,am2y,3)
-      jmx=-am2x
-      jmy=-am2y
+      call der2(f,iamx,d2amx,3)
+      call der2(f,iamy,d2amy,3)
+      jm(:,1)=-d2amx
+      jm(:,2)=-d2amy
 !
 !  solve dynamo equation
 !
-      emfx=alpha_const*bmx
-      emfy=alpha_const*bmy
-      df(l1:l2,m,n,iamx)=df(l1:l2,m,n,iamx)+emfx-etadyn*jmx
-      df(l1:l2,m,n,iamy)=df(l1:l2,m,n,iamy)+emfy-etadyn*jmy
+      do i=1,2
+        emf(:,i)=alpha_const*bm(:,i)
+        do j=1,2
+          emf(:,i)=emf(:,i)+alp_ij(n,i,j)*bm(:,j)-eta_ij(n,i,j)*jm(:,j)
+        enddo
+      enddo
+!
+!  debug output
+!
+      if (ldebug_meanfield) then
+        if (m==m1.and.n==n1) then
+          print*,'t=',t
+          print*,'alp_11,alp_12=',sum(alp_ij(:,1,1))/nz,sum(alp_ij(:,1,2))/nz
+          print*,'alp_21,alp_22=',sum(alp_ij(:,2,1))/nz,sum(alp_ij(:,2,2))/nz
+          print*,'eta_11,eta_12=',sum(eta_ij(:,1,1))/nz,sum(eta_ij(:,1,2))/nz
+          print*,'eta_21,eta_22=',sum(eta_ij(:,2,1))/nz,sum(eta_ij(:,2,2))/nz
+        endif
+      endif
+!
+!  assemble rhs of mean field equation
+!
+      do j=1,2
+        df(l1:l2,m,n,iamx+j-1)=df(l1:l2,m,n,iamx+j-1)+emf(:,j)-etadyn*jm(:,j)
+      enddo
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
 !  and whatever is calculated here
@@ -274,21 +312,21 @@ module Special
 !  diagnostics
 !
       if(ldiagnos) then
-        if (idiag_bmx2m/=0) call sum_mn_name(bmx**2,idiag_bmx2m)
-        if (idiag_bmy2m/=0) call sum_mn_name(bmy**2,idiag_bmy2m)
+        if (idiag_bmx2m/=0) call sum_mn_name(bm(:,1)**2,idiag_bmx2m)
+        if (idiag_bmy2m/=0) call sum_mn_name(bm(:,2)**2,idiag_bmy2m)
 !
 !  check for point 1
 !
         if (lroot.and.m==mpoint.and.n==npoint) then
-          if (idiag_bmxpt/=0) call save_name(bmx(lpoint-nghost),idiag_bmxpt)
-          if (idiag_bmypt/=0) call save_name(bmy(lpoint-nghost),idiag_bmypt)
+          if (idiag_bmxpt/=0) call save_name(bm(lpoint-nghost,1),idiag_bmxpt)
+          if (idiag_bmypt/=0) call save_name(bm(lpoint-nghost,2),idiag_bmypt)
         endif
 !
 !  check for point 2
 !
         if (lroot.and.m==mpoint2.and.n==npoint2) then
-          if (idiag_bmxp2/=0) call save_name(bmx(lpoint2-nghost),idiag_bmxp2)
-          if (idiag_bmyp2/=0) call save_name(bmy(lpoint2-nghost),idiag_bmyp2)
+          if (idiag_bmxp2/=0) call save_name(bm(lpoint2-nghost,1),idiag_bmxp2)
+          if (idiag_bmyp2/=0) call save_name(bm(lpoint2-nghost,2),idiag_bmyp2)
         endif
 !
       endif
@@ -425,6 +463,63 @@ module Special
       endselect
 !
     endsubroutine get_slices_special
+!***********************************************************************
+    subroutine calc_lspecial_pars(f)
+!
+!  calculate alp_ij eta_ij tensors, which are needed when ltestfield=.true.
+!
+!  15-jan-08/axel: coded
+!
+      use Cdata
+      use Sub
+      use Mpicomm, only: mpireduce_sum, mpibcast_real
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      real, dimension(mz,2,2) :: eta_ij3
+      real, dimension (mz,3,njtest) :: Eipq
+      integer :: jtest,j,nxy=nxgrid*nygrid,juxb
+      real :: fac
+!
+      intent(inout) :: f
+!
+      if (.not.ltestfield) then
+        alp_ij(:,:,:)=0.
+        eta_ij(:,:,:)=0.
+      else
+!
+!  calculate emf, Eipq
+!
+        fac=1./nxy
+        do jtest=1,njtest
+          juxb=iuxb+3*(jtest-1)
+          do n=n1,n2
+            do j=1,2
+              Eipq(n,j,jtest)=fac*sum(f(l1:l2,m1:m2,n,juxb+j-1))
+            enddo
+          enddo
+        enddo
+!
+!  calculate alp_ij and eta_ij
+!
+        alp_ij(:,1,1)= +cz*Eipq(:,1,1)+sz*Eipq(:,1,2)
+        alp_ij(:,2,1)= +cz*Eipq(:,2,1)+sz*Eipq(:,2,2)
+        alp_ij(:,1,2)= +cz*Eipq(:,1,3)+sz*Eipq(:,1,4)
+        alp_ij(:,2,2)= +cz*Eipq(:,2,3)+sz*Eipq(:,2,4)
+        eta_ij3(:,1,1)=(-sz*Eipq(:,1,1)+cz*Eipq(:,1,2))*ktestfield1
+        eta_ij3(:,2,1)=(-sz*Eipq(:,2,1)+cz*Eipq(:,2,2))*ktestfield1
+        eta_ij3(:,1,2)=(-sz*Eipq(:,1,3)+cz*Eipq(:,1,4))*ktestfield1
+        eta_ij3(:,2,2)=(-sz*Eipq(:,2,3)+cz*Eipq(:,2,4))*ktestfield1
+!
+!  go from eta_ij3 to eta_ij
+!
+        eta_ij(:,1,1)=+eta_ij3(:,1,2)
+        eta_ij(:,2,1)=-eta_ij3(:,1,1)
+        eta_ij(:,1,2)=+eta_ij3(:,2,2)
+        eta_ij(:,2,2)=-eta_ij3(:,2,1)
+      endif
+!
+    endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !

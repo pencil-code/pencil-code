@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.384 2008-01-09 06:41:07 brandenb Exp $
+! $Id: equ.f90,v 1.385 2008-01-15 07:44:23 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -472,7 +472,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.384 2008-01-09 06:41:07 brandenb Exp $")
+           "$Id: equ.f90,v 1.385 2008-01-15 07:44:23 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -594,6 +594,7 @@ module Equ
 !
       if (lhydro.and.ldensity) call calc_lhydro_pars(f)
       if (ltestfield) call calc_ltestfield_pars(f)
+      if (lspecial) call calc_lspecial_pars(f)
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
