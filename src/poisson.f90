@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.38 2007-12-05 14:43:50 wlyra Exp $
+! $Id: poisson.f90,v 1.39 2008-01-15 10:58:34 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -123,7 +123,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.38 2007-12-05 14:43:50 wlyra Exp $")
+        "$Id: poisson.f90,v 1.39 2008-01-15 10:58:34 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -482,7 +482,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.38 2007-12-05 14:43:50 wlyra Exp $")
+        "$Id: poisson.f90,v 1.39 2008-01-15 10:58:34 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -595,7 +595,7 @@ module Poisson
 !
 ! Transpose prior to Fourier transform 
 !
-        tmp=phi(:,:,n);call transp_xy(tmp);phit(:,:,n)=tmp
+!        tmp=phi(:,:,n);call transp_xy(tmp);phit(:,:,n)=tmp
 !
 ! Fourier transform x (transposed y) to k-space
 !
@@ -603,8 +603,8 @@ module Poisson
 !
 ! Transpose back to solve the tridiagonal matrix
 !
-        tmp=phit(:,:,n);call transp_xy(tmp);phi(:,:,n)=tmp
-        tmp= b1t(:,:,n);call transp_xy(tmp); b1(:,:,n)=tmp
+!        tmp=phit(:,:,n);call transp_xy(tmp);phi(:,:,n)=tmp
+!        tmp= b1t(:,:,n);call transp_xy(tmp); b1(:,:,n)=tmp
 !
         do iky=1,ny
 !
@@ -646,8 +646,8 @@ module Poisson
 !
 ! Transpose to perform the fourier transform back to real space
 !
-        tmp=phi(:,:,n);call transp_xy(tmp);phit(:,:,n)=tmp
-        tmp= b1(:,:,n);call transp_xy(tmp); b1t(:,:,n)=tmp
+!        tmp=phi(:,:,n);call transp_xy(tmp);phit(:,:,n)=tmp
+!        tmp= b1(:,:,n);call transp_xy(tmp); b1t(:,:,n)=tmp
 !
 ! Transform it back to real space
 !
@@ -655,7 +655,7 @@ module Poisson
 !
 ! Transpose the result
 !
-        tmp=phit(:,:,n);call transp_xy(tmp);phi(:,:,n)=tmp
+!        tmp=phit(:,:,n);call transp_xy(tmp);phi(:,:,n)=tmp
 !
       enddo
 !
