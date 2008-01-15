@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.199 2007-12-04 12:25:31 ajohan Exp $
+! $Id: particles_dust.f90,v 1.200 2008-01-15 10:22:06 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -61,8 +61,8 @@ module Particles
   logical :: linterpolate_spline=.true.
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
-  character (len=labellen) :: gravx_profile='zero',  gravz_profile='zero'
-  character (len=labellen) :: gravr_profile='zero'
+  character (len=labellen) :: gravx_profile='', gravz_profile=''
+  character (len=labellen) :: gravr_profile=''
 
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -131,7 +131,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.199 2007-12-04 12:25:31 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.200 2008-01-15 10:22:06 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -306,10 +306,8 @@ module Particles
 !
 !  Calculate nu_epicycle**2 for gravity.
 !
-      if (nu_epicycle/=0.0) then
-        gravz_profile='linear'
-        nu_epicycle2=nu_epicycle**2
-      endif
+      if (gravz_profile=='' .and. nu_epicycle/=0.0) gravz_profile='linear'
+      nu_epicycle2=nu_epicycle**2
 !
 !  Inverse of minimum gas friction time (time-step control).
 !
@@ -1859,8 +1857,16 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         select case (gravx_profile)
 
+          case ('')
+            if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
+
           case ('zero')
             if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
+
+          case ('linear')
+            if (lheader) print*, 'dvvp_dt: Linear gravity field in x-direction.'
+            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
+                nu_epicycle2*fp(1:npar_loc,ixp)
 
           case ('sinusoidal')
             if (lheader) &
@@ -1874,6 +1880,9 @@ k_loop:   do while (.not. (k>npar_loc))
         endselect
 !
         select case (gravz_profile)
+
+          case ('')
+            if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
 
           case ('zero')
             if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
@@ -1895,6 +1904,9 @@ k_loop:   do while (.not. (k>npar_loc))
         endselect
 !
         select case (gravr_profile)
+
+        case ('')
+           if (lheader) print*, 'dvvp_dt: No spherical gravity'
 
         case ('zero')
            if (lheader) print*, 'dvvp_dt: No spherical gravity'
