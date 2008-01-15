@@ -13,7 +13,7 @@ FORCING     = noforcing
 SHOCK       = noshock
 SELFGRAVITY =   selfgravity
 POISSON     =   poisson
-VISCOSITY  = noviscosity
+VISCOSITY   =   viscosity
 
 FOURIER     =   fourier_fftpack
 POWER       = nopower_spectrum
