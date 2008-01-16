@@ -3,7 +3,7 @@
 !
 &run_pars
   ip=14
-  cvsid='$Id: run.in,v 1.4 2007-09-06 10:50:28 bingert Exp $'
+  cvsid='$Id: run.in,v 1.5 2008-01-16 13:37:04 bingert Exp $'
   nt=21, it1=5, isave=50
   cdt=0.4, cdtv=0.08, cdts=0.08, itorder=3
   dsnap=0.03
@@ -36,6 +36,7 @@
  nu=100.
 /
 &shock_run_pars
+ lforce_periodic_shockviscosity=T
  lshock_first=F
  lshock_max5=T
 /
