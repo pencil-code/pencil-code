@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.47 2007-10-14 07:31:59 ajohan Exp $
+! $Id: shear.f90,v 1.48 2008-01-16 07:02:43 brandenb Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -53,7 +53,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.47 2007-10-14 07:31:59 ajohan Exp $")
+           "$Id: shear.f90,v 1.48 2008-01-16 07:02:43 brandenb Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -217,6 +217,13 @@ module Shear
         do j=iaatest,iaxtestpq,3
           df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-Sshear*f(l1:l2,m,n,j+1)
         enddo
+      endif
+!
+!  Meanfield stretching term
+!  Loop through all the dax/dt equations and add -S*ay contribution
+!
+      if (iam/=0) then
+        df(l1:l2,m,n,iamx)=df(l1:l2,m,n,iamx)-Sshear*f(l1:l2,m,n,iamy)
       endif
 !
 !  Take shear into account for calculating time step

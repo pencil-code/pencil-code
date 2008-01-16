@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.402 2008-01-12 13:27:25 brandenb Exp $
+! $Id: cdata.f90,v 1.403 2008-01-16 07:02:43 brandenb Exp $
 
 module Cdata
 
@@ -131,6 +131,7 @@ module Cdata
   integer :: ispx=0,ispy=0,ispz=0
   integer :: ifcr=0,ifcrx=0,ifcry=0,ifcrz=0
   integer :: iaatest=0,iaxtest=0,iaytest=0,iaztest=0,iaxtestpq=0,iaztestpq=0
+  integer :: iam=0,iamx=0,iamy=0,iamz=0
   integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
   integer :: iuxb=0

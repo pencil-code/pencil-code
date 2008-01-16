@@ -1,4 +1,4 @@
-! $Id: meanfield_dynamo_z.f90,v 1.2 2008-01-15 07:44:23 brandenb Exp $
+! $Id: meanfield_dynamo_z.f90,v 1.3 2008-01-16 07:02:43 brandenb Exp $
 !
 !  Mean field dynamo equation
 !
@@ -48,10 +48,7 @@ module Special
   namelist /special_run_pars/ &
     etadyn,alpha_const,ktestfield,ldebug_meanfield
 !
-! Declare any index variables necessary for main or 
-! 
-   integer :: iam=0,iamx=0,iamy=0,iamz=0
-!
+! Declare index variables in cdata, because we need them in shear.f90
 ! other variables (needs to be consistent with reset list below)
 !
   integer :: idiag_bmx2m=0,idiag_bmy2m=0
@@ -95,7 +92,7 @@ module Special
 !      naux = naux+1
 !
       if (lroot) call cvs_id( &
-           "$Id: meanfield_dynamo_z.f90,v 1.2 2008-01-15 07:44:23 brandenb Exp $")
+           "$Id: meanfield_dynamo_z.f90,v 1.3 2008-01-16 07:02:43 brandenb Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
