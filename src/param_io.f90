@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.295 2008-01-12 13:27:25 brandenb Exp $
+! $Id: param_io.f90,v 1.296 2008-01-16 17:27:04 bingert Exp $
 
 module Param_IO
 
@@ -273,7 +273,6 @@ module Param_IO
       call read_chiral_init_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('chiral_init_pars',ierr)
 
-print*,'NOW DOING read_chemistry_init_pars'
       call sgi_fix(lsgifix,1,'start.in')
       call read_chemistry_init_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('chemistry_init_pars',ierr)
