@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.39 2008-01-15 10:58:34 ajohan Exp $
+! $Id: poisson.f90,v 1.40 2008-01-16 09:28:05 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -91,11 +91,7 @@ module Poisson
 !
       if (lsemispectral) then
 !
-        if (lcylindrical_coords) then
-          call inverse_laplacian_semispec_cyl(phi)
-        else
-          call inverse_laplacian_semispectral(phi)
-        endif
+        call inverse_laplacian_semispectral(phi)
 !
       else
         if (lcylindrical_coords) then
@@ -123,7 +119,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.39 2008-01-15 10:58:34 ajohan Exp $")
+        "$Id: poisson.f90,v 1.40 2008-01-16 09:28:05 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -482,7 +478,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.39 2008-01-15 10:58:34 ajohan Exp $")
+        "$Id: poisson.f90,v 1.40 2008-01-16 09:28:05 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -557,109 +553,6 @@ module Poisson
       endif
 !
     endsubroutine inverse_laplacian_semispectral
-!***********************************************************************
-    subroutine inverse_laplacian_semispec_cyl(phi)
-!
-! Solve the cylindrical Poisson equation by Fourier-transforming 
-! the azimuthal direction and solving the tridiagonal system in 
-! the radial direction.
-!
-! Currently works only for 2D cases
-!
-! 16-nov-07/wlad: coded
-!
-      use General, only: tridag
-      use Mpicomm, only: transp_xy
-!
-      real, dimension (nx,ny,nz) :: phi,b1
-!      
-      real, dimension (nygrid,nx/nprocy) :: tmp
-      real, dimension (nygrid,nx/nprocy,nz) :: phit,b1t
-      real, dimension (nx) :: a_tri,b_tri,c_tri,rad
-      real, dimension (nx) :: re_tri,im_tri,u_re_tri,u_im_tri
-      real    :: alpha,dr,r0,rn
-      integer :: i,m,n,ikx,iky,ikz
-      logical :: err
-!
-      intent(inout) :: phi
-!
-! From x to r, for the sake of clarity
-!
-      dr=dx;rad=x(l1:l2);r0=xyz0(1);rn=xyz1(1)
-!
-! The right-hand-side of the Poisson equation is purely real
-!
-      b1=0.0
-!
-      do n=1,nz
-!
-! Transpose prior to Fourier transform 
-!
-!        tmp=phi(:,:,n);call transp_xy(tmp);phit(:,:,n)=tmp
-!
-! Fourier transform x (transposed y) to k-space
-!
-        call fourier_transform_x(phit,b1t)
-!
-! Transpose back to solve the tridiagonal matrix
-!
-!        tmp=phit(:,:,n);call transp_xy(tmp);phi(:,:,n)=tmp
-!        tmp= b1t(:,:,n);call transp_xy(tmp); b1(:,:,n)=tmp
-!
-        do iky=1,ny
-!
-          do i=2,nx-1
-            alpha= .5/((i-1)+r0/dr)
-            a_tri(i) = (1 - alpha)/dr**2
-            b_tri(i) =-2/dr**2 - (ky_fft(iky)/rad(i))**2
-            c_tri(i) = (1 + alpha)/dr**2
-          enddo
-!
-! Symmetric boundary condition using L'Hospital rule
-!  lim  f'/f  =  lim  f"/f'
-! r-->0         r-->0  
-!
-          b_tri(1) =-4./dr**2 !- (ky_fft(iky)/rad(1))**2
-          c_tri(1) = 4./dr**2
-!
-! Vanishing second order derivative in the outer boundary
-!
-          !b_tri(nx)=-2./dr**2 - 2.*dr/rn
-          !a_tri(nx)= 1./dr    + 1.
-          c_tri(nx)=1/dr**2
-          b_tri(nx)=-2/dr**2
-          a_tri(nx)=1/dr**2
-!
-          re_tri = phi(:,iky,n)
-          im_tri =  b1(:,iky,n)
-!
-          re_tri(nx)=0.
-          im_tri(nx)=0.
-!
-          call tridag(a_tri,b_tri,c_tri,re_tri,u_re_tri,err)
-          call tridag(a_tri,b_tri,c_tri,im_tri,u_im_tri,err)
-!      
-          phi(:,iky,n)=u_re_tri
-          b1 (:,iky,n)=u_im_tri
-!
-        enddo
-!
-! Transpose to perform the fourier transform back to real space
-!
-!        tmp=phi(:,:,n);call transp_xy(tmp);phit(:,:,n)=tmp
-!        tmp= b1(:,:,n);call transp_xy(tmp); b1t(:,:,n)=tmp
-!
-! Transform it back to real space
-!
-        call fourier_transform_x(phit,b1t,linv=.true.)
-!
-! Transpose the result
-!
-!        tmp=phit(:,:,n);call transp_xy(tmp);phi(:,:,n)=tmp
-!
-      enddo
-!
-    endsubroutine inverse_laplacian_semispec_cyl
 !***********************************************************************
     subroutine read_poisson_init_pars(unit,iostat)
 !
