@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.156 2007-06-04 16:00:48 theine Exp $
+! $Id: nompicomm.f90,v 1.157 2008-01-17 18:46:15 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -965,6 +965,40 @@ module Mpicomm
       endif
 
     endsubroutine transp_xy
+!***********************************************************************
+    subroutine transp_xy_other(a)
+!
+!  Doing a transpose in x and y only 
+!  (dummy version for single processor)
+!
+!   5-oct-02/tobi: adapted from transp
+!
+      real, dimension(:,:), intent(inout) :: a
+
+      real, dimension(:,:), allocatable :: tmp
+      integer :: ibox,iy,ny_other,nx_other
+      integer :: nxgrid_other,nygrid_other
+!
+      nx_other=size(a,1); ny_other=size(a,2)
+      nxgrid_other=nx_other
+      nygrid_other=ny_other*nprocy 
+!
+      if (ny_other/=1) then
+
+        if (mod(nx_other,ny_other)/=0) then
+          call stop_it('transp: nxgrid must be an integer multiple of nygrid')
+        endif
+
+        allocate (tmp(ny_other,ny_other))
+        do ibox=0,nxgrid_other/nygrid_other-1
+          iy=ibox*ny_other
+          tmp=transpose(a(iy+1:iy+ny_other,:)); a(iy+1:iy+ny_other,:)=tmp
+        enddo
+        deallocate (tmp)
+
+      endif
+
+    endsubroutine transp_xy_other
 !***********************************************************************
     subroutine transp_xz(a,b)
 !
