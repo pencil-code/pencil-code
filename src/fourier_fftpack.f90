@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.22 2007-11-16 16:29:45 wlyra Exp $
+! $Id: fourier_fftpack.f90,v 1.23 2008-01-17 18:41:12 wlyra Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -735,6 +735,8 @@ module Fourier
 !
 !  28-jul-2006/anders: adapted from fourier_transform
 !
+      use Mpicomm, only: stop_it
+!
       real, dimension(:) :: a_re,a_im
       logical, optional :: linv
 !
@@ -742,6 +744,9 @@ module Fourier
       real, dimension(4*size(a_re,1)+15) :: wsavex
       integer :: nx_other
       logical :: lforward
+!
+      if (lmpicomm) &
+           call stop_it("fourier_transform_other: not implemented for MPI")
 !
       lforward=.true.
       if (present(linv)) then
@@ -794,6 +799,8 @@ module Fourier
 !
 !  28-jul-2006/anders: adapted from fourier_transform_1
 !
+      use Mpicomm, only: stop_it
+!
       real, dimension(:,:) :: a_re,a_im
       logical, optional :: linv
 !
@@ -803,6 +810,9 @@ module Fourier
       real, dimension(4*size(a_re,2)+15) :: wsavey
       integer :: l, m, nx_other, ny_other
       logical :: lforward
+!
+      if (lmpicomm) &
+           call stop_it("fourier_transform_other: not implemented for MPI")
 !
       lforward=.true.
       if (present(linv)) then
@@ -1006,6 +1016,128 @@ module Fourier
       endif
 
     endsubroutine fourier_transform_xy_xy
+!***********************************************************************
+    subroutine fourier_transform_xy_xy_other(a_re,a_im,linv)
+!
+!  Subroutine to do Fourier transform of a 2-D array 
+!  of arbitrary size under MPI.
+!  The routine overwrites the input data.
+!
+!  15-jan-2008/wlad: adapted from fourier_transform_xy_xy
+!                    and fourier_transform_other_2
+!
+      use Mpicomm, only: transp_xy_other,transp_xy
+
+      real, dimension(:,:) :: a_re,a_im
+      logical, optional :: linv
+!
+      complex, dimension(size(a_re,1)) :: ax
+      complex, dimension(nprocy*size(a_re,2)) :: ay
+      real, dimension(4*size(a_re,1)+15) :: wsavex
+      real, dimension(4*nprocy*size(a_re,2)+15) :: wsavey
+      integer :: l,m,ibox,nx_other,ny_other
+      integer :: nxgrid_other,nygrid_other
+      logical :: lforward
+!
+      lforward=.true.
+      if (present(linv)) then
+        if (linv) lforward=.false.
+      endif
+!
+      nx_other=size(a_re,1); ny_other=size(a_re,2)
+      nxgrid_other=nx_other
+      nygrid_other=ny_other*nprocy     
+!
+      if (nxgrid_other/=nygrid_other) then
+        call fatal_error('fourier_transform_xy_xy_other', &
+             'nxgrid_other needs to be equal to nygrid_other.')
+      endif
+!
+      if (lforward) then
+        if (nygrid_other > 1) then
+!
+!  Transform y-direction.
+!
+          call transp_xy_other(a_re)
+          call transp_xy_other(a_im)
+
+          call cffti(nygrid_other,wsavey)
+
+          do l=1,ny_other
+            ay=cmplx(a_re(:,l),a_im(:,l))
+            call cfftf(nygrid_other,ay,wsavey)
+            a_re(:,l)=real(ay)
+            a_im(:,l)=aimag(ay)
+          enddo
+
+          call transp_xy_other(a_re)
+          call transp_xy_other(a_im)
+
+      endif
+      
+      if (nxgrid > 1) then
+!
+!  Transform x-direction
+!
+        call cffti(nxgrid_other,wsavex)
+
+        do m=1,ny_other
+          ax=cmplx(a_re(:,m),a_im(:,m))
+          call cfftf(nxgrid_other,ax,wsavex)
+          a_re(:,m)=real(ax)
+          a_im(:,m)=aimag(ax)
+        enddo
+        
+      endif
+
+    else
+
+        if (nxgrid_other>1) then
+!
+!  Transform x-direction back.
+!
+          call cffti(nxgrid_other,wsavex)
+!
+          do m=1,ny_other
+            ax=cmplx(a_re(:,m),a_im(:,m))
+            call cfftb(nxgrid_other,ax,wsavex)
+            a_re(:,m)=real(ax)
+            a_im(:,m)=aimag(ax)
+          enddo
+!
+        endif
+!
+        if (nygrid_other>1) then
+!
+!  Transform y-direction back.
+!
+          call transp_xy_other(a_re)
+          call transp_xy_other(a_im)
+
+          call cffti(nygrid_other,wsavey)
+
+          do l=1,ny_other
+            ay=cmplx(a_re(:,l),a_im(:,l))
+            call cfftb(nygrid_other,ay,wsavey)
+            a_re(:,l)=real(ay)
+            a_im(:,l)=aimag(ay)
+          enddo
+
+          call transp_xy_other(a_re)
+          call transp_xy_other(a_im)
+!
+        endif
+!
+      endif
+!
+!  Normalize
+!
+      if (lforward) then
+        a_re=a_re/(nxgrid_other*nygrid_other)
+        a_im=a_im/(nxgrid_other*nygrid_other)
+      endif
+!
+    endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
     subroutine fourier_shift_yz_y(a_re,shift_y)
 !
