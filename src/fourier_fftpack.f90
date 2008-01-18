@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.23 2008-01-17 18:41:12 wlyra Exp $
+! $Id: fourier_fftpack.f90,v 1.24 2008-01-18 08:54:34 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -731,6 +731,8 @@ module Fourier
     subroutine fourier_transform_other_1(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform on a 1-D array of arbitrary size.
+!  This routine does not operate in parallel, but should be used to Fourier
+!  transform an array present in its entirety on the local processor.
 !  The routine overwrites the input data.
 !
 !  28-jul-2006/anders: adapted from fourier_transform
@@ -744,9 +746,6 @@ module Fourier
       real, dimension(4*size(a_re,1)+15) :: wsavex
       integer :: nx_other
       logical :: lforward
-!
-      if (lmpicomm) &
-           call stop_it("fourier_transform_other: not implemented for MPI")
 !
       lforward=.true.
       if (present(linv)) then
@@ -795,6 +794,8 @@ module Fourier
     subroutine fourier_transform_other_2(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform of a 2-D array of arbitrary size.
+!  This routine does not operate in parallel, but should be used to Fourier
+!  transform an array present in its entirety on the local processor.
 !  The routine overwrites the input data.
 !
 !  28-jul-2006/anders: adapted from fourier_transform_1
@@ -810,9 +811,6 @@ module Fourier
       real, dimension(4*size(a_re,2)+15) :: wsavey
       integer :: l, m, nx_other, ny_other
       logical :: lforward
-!
-      if (lmpicomm) &
-           call stop_it("fourier_transform_other: not implemented for MPI")
 !
       lforward=.true.
       if (present(linv)) then
