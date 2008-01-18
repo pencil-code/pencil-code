@@ -1,8 +1,9 @@
-; $Id: pc_magic_var.pro,v 1.30 2007-12-04 07:14:38 ajohan Exp $
+;
+; $Id: pc_magic_var.pro,v 1.31 2008-01-18 12:30:37 ajohan Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2007-12-04 07:14:38 $
-;  $Revision: 1.30 $
+;  $Date: 2008-01-18 12:30:37 $
+;  $Revision: 1.31 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -72,15 +73,24 @@
 ;
 ;
 pro pc_magic_var,variables,tags,param=param,datadir=datadir
-
+;
   if (not keyword_set(datadir)) then datadir='data'
   if (n_elements(param) eq 0) then $
       pc_read_param,object=param,datadir=datadir,/quiet
-
+;
+;  Dependencies.
+;
+  pc_magic_var_dep, variables, tags, 'mten', 'bb'
+  pc_magic_var_dep, variables, tags, 'mten', 'bij'
+  pc_magic_var_dep, variables, tags, 'mpres', 'bb'
+  pc_magic_var_dep, variables, tags, 'mpres', 'bij'
+;
+;  Modules.
+;
   lionization = safe_get_tag(param,'lionization',default=safe_get_tag(param,'leos_ionization',default=0)) 
   lionization_fixed = safe_get_tag(param,'lionization_fixed',default=safe_get_tag(param,'leos_ionizationi_fixed',default=0)) 
   lentropy = safe_get_tag(param,'lentropy',default=safe_get_tag(param,'lentropy',default=0)) 
-
+;
   for iv=0,n_elements(variables)-1 do begin
 ; x Coordinate
     if (variables[iv] eq 'xx') then begin
@@ -106,13 +116,37 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     endif else if (variables[iv] eq 'jj') then begin
       tags[iv]=variables[iv]
       variables[iv]='graddiv(aa)-del2(aa)'
+; Derivative vector
+    endif else if (variables[iv] eq 'd2A') then begin
+      tags[iv]=variables[iv]
+      variables[iv]='derij(aa)'
+; Derivative vector
+    endif else if (variables[iv] eq 'bij') then begin
+      tags[iv]=variables[iv]
+      variables[iv]='derijcurl(aa)'
 ; Lorentz force
     endif else if (variables[iv] eq 'flor') then begin
       tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='spread(1/lnrho,3,3)*cross(graddiv(aa)-del2(aa),curl(aa))'
+        variables[iv]='spread(1/lnrho,3,3)*cross(curlcurl(aa),curl(aa))'
       endif else begin
-        variables[iv]='spread(1/exp(lnrho),3,3)*cross(graddiv(aa)-del2(aa),curl(aa))'
+        variables[iv]='spread(1/exp(lnrho),3,3)*cross(curlcurl(aa),curl(aa))'
+      endelse
+; Magnetic tension
+    endif else if (variables[iv] eq 'mten') then begin
+      tags[iv]=variables[iv]
+      if (param.ldensity_nolog) then begin
+        variables[iv]='spread(1/lnrho,3,3)*[total(bb*reform(bij[*,*,*,0,*]),4),total(bb*reform(bij[*,*,*,1,*]),4),total(bb*reform(bij[*,*,*,2,*]),4)]'
+      endif else begin
+        variables[iv]='spread(1/exp(lnrho),3,3)*[total(bb*reform(bij[*,*,*,0,*]),4),total(bb*reform(bij[*,*,*,1,*]),4),total(bb*reform(bij[*,*,*,2,*]),4)]'
+      endelse
+; Magnetic pressure
+    endif else if (variables[iv] eq 'mpres') then begin
+      tags[iv]=variables[iv]
+      if (param.ldensity_nolog) then begin
+        variables[iv]='spread(1/lnrho,3,3)*[total(bb*reform(bij[*,*,*,*,0]),4),total(bb*reform(bij[*,*,*,*,1]),4),total(bb*reform(bij[*,*,*,*,2]),4)]'
+      endif else begin
+        variables[iv]='spread(1/exp(lnrho),3,3)*[total(bb*reform(bij[*,*,*,*,0]),4),total(bb*reform(bij[*,*,*,*,1]),4),total(bb*reform(bij[*,*,*,*,2]),4)]'
       endelse
 ; Vorticity
     endif else if (variables[iv] eq 'oo') then begin
@@ -249,5 +283,36 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
       variables[iv]="atan(psi_imag,psi_real)"
     endif
   endfor
+;
+end
+;
+pro pc_magic_var_dep, variables, tags, var, dep
+;
+;  Resolve dependencies of magic variables.
+;
+;  Author: Anders Johansen
+;
+  iv=where(variables eq var) & iv=min(iv)
+;
+;  If variable is requested, put dependencies in the variables array.
+;
+  if (iv ge 0) then begin
+    iv1=where(variables eq dep) & iv1=min(iv1)
+    if (iv1 eq -1) then begin
+      variables=[variables[0:iv-1],dep,variables[iv:n_elements(variables)-1]]
+      tags     =[     tags[0:iv-1],dep,     tags[iv:n_elements(tags     )-1]]
+    endif
+;
+;  Move dependencies so that they are calculated before the variables.
+;
+    var=variables[iv]
+    iv =where(variables eq var) & iv =min(iv)
+    iv1=where(variables eq dep) & iv1=min(iv1)
+    if (iv1 gt iv) then begin
+      index=indgen(n_elements(variables))
+      index[iv]=iv1 & index[iv1]=iv
+      variables=variables[index] & tags=tags[index]
+    endif
+  endif
 ;
 end
