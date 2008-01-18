@@ -1,9 +1,40 @@
 ;
-; $Id: pc_magic_var.pro,v 1.31 2008-01-18 12:30:37 ajohan Exp $
+;  $Id: pc_magic_var.pro,v 1.32 2008-01-18 12:34:34 ajohan Exp $
+;  $Date: 2008-01-18 12:34:34 $
+;  $Revision: 1.32 $
+;
+pro pc_magic_var_dep, variables, tags, var, dep
+;
+;  Resolve dependencies of magic variables.
+;
+;  Author: Anders Johansen
+;
+  iv=where(variables eq var) & iv=min(iv)
+;
+;  If variable is requested, put dependencies in the variables array.
+;
+  if (iv ge 0) then begin
+    iv1=where(variables eq dep) & iv1=min(iv1)
+    if (iv1 eq -1) then begin
+      variables=[variables[0:iv-1],dep,variables[iv:n_elements(variables)-1]]
+      tags     =[     tags[0:iv-1],dep,     tags[iv:n_elements(tags     )-1]]
+    endif
+;
+;  Move dependencies so that they are calculated before the variables.
+;
+    var=variables[iv]
+    iv =where(variables eq var) & iv =min(iv)
+    iv1=where(variables eq dep) & iv1=min(iv1)
+    if (iv1 gt iv) then begin
+      index=indgen(n_elements(variables))
+      index[iv]=iv1 & index[iv1]=iv
+      variables=variables[index] & tags=tags[index]
+    endif
+  endif
+;
+end
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2008-01-18 12:30:37 $
-;  $Revision: 1.31 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -283,36 +314,5 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
       variables[iv]="atan(psi_imag,psi_real)"
     endif
   endfor
-;
-end
-;
-pro pc_magic_var_dep, variables, tags, var, dep
-;
-;  Resolve dependencies of magic variables.
-;
-;  Author: Anders Johansen
-;
-  iv=where(variables eq var) & iv=min(iv)
-;
-;  If variable is requested, put dependencies in the variables array.
-;
-  if (iv ge 0) then begin
-    iv1=where(variables eq dep) & iv1=min(iv1)
-    if (iv1 eq -1) then begin
-      variables=[variables[0:iv-1],dep,variables[iv:n_elements(variables)-1]]
-      tags     =[     tags[0:iv-1],dep,     tags[iv:n_elements(tags     )-1]]
-    endif
-;
-;  Move dependencies so that they are calculated before the variables.
-;
-    var=variables[iv]
-    iv =where(variables eq var) & iv =min(iv)
-    iv1=where(variables eq dep) & iv1=min(iv1)
-    if (iv1 gt iv) then begin
-      index=indgen(n_elements(variables))
-      index[iv]=iv1 & index[iv1]=iv
-      variables=variables[index] & tags=tags[index]
-    endif
-  endif
 ;
 end
