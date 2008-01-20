@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.82 2008-01-01 19:15:29 brandenb Exp $
+! $Id: nohydro.f90,v 1.83 2008-01-20 08:40:21 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -74,7 +74,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.82 2008-01-01 19:15:29 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.83 2008-01-20 08:40:21 brandenb Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -305,8 +305,9 @@ module Hydro
         p%uu(:,3)=+0.
         if (lpencil(i_divu)) p%divu=0.
 !
-!  Galloway-Proctor flow
-!  only makes sense for kkx_aa=kky_aa
+!  Galloway-Proctor flow, U=-z x grad(psi) - z k psi, where
+!  psi = U0/kH * (cosX+cosY), so U = U0 * (-sinY, sinX, -cosX-cosY).
+!  This makes sense only for kkx_aa=kky_aa
 !
       elseif (kinflow=='Galloway-Proctor') then
         if (headtt) print*,'Galloway-Proctor flow; kx_aa,ky_aa=',kkx_aa,kky_aa
