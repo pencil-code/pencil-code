@@ -1,7 +1,7 @@
 ;
-;  $Id: pc_magic_var.pro,v 1.35 2008-01-21 13:50:44 ajohan Exp $
-;  $Date: 2008-01-21 13:50:44 $
-;  $Revision: 1.35 $
+;  $Id: pc_magic_var.pro,v 1.36 2008-01-21 14:08:34 ajohan Exp $
+;  $Date: 2008-01-21 14:08:34 $
+;  $Revision: 1.36 $
 ;
 pro pc_magic_var_dep, variables, tags, var, dep
 ;
@@ -115,6 +115,7 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
   pc_magic_var_dep, variables, tags, 'mten', 'bij'
   pc_magic_var_dep, variables, tags, 'mpres', 'bb'
   pc_magic_var_dep, variables, tags, 'mpres', 'bij'
+  pc_magic_var_dep, variables, tags, 'alflim', 'bb'
 ;
 ;  Modules.
 ;
@@ -178,6 +179,14 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
         variables[iv]='spread(1/lnrho,3,3)*reform([[[total(bb*reform(bij[*,*,*,0,*]),4)]],[[total(bb*reform(bij[*,*,*,1,*]),4)]],[[total(bb*reform(bij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
       endif else begin
         variables[iv]='spread(1/exp(lnrho),3,3)*reform([[[total(bb*reform(bij[*,*,*,0,*]),4)]],[[total(bb*reform(bij[*,*,*,1,*]),4)]],[[total(bb*reform(bij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
+      endelse
+; Alfven speed limiter [ (numerical flor) = alflim * (actual flor) ].
+    endif else if (variables[iv] eq 'alflim') then begin
+      tags[iv]=variables[iv]
+      if (param.ldensity_nolog) then begin
+        variables[iv]='(1+((total(bb^2,4)/(param.mu0*lnrho))/param2.va2max_jxb)^param2.va2power_jxb)^(-1./param2.va2power_jxb)'
+      endif else begin
+        variables[iv]='(1+((total(bb^2,4)/(param.mu0*exp(lnrho)))/param2.va2max_jxb)^param2.va2power_jxb)^(-1./param2.va2power_jxb)'
       endelse
 ; Vorticity
     endif else if (variables[iv] eq 'oo') then begin
