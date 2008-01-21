@@ -61,16 +61,16 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.58 2007-12-15 14:02:02 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.59 2008-01-21 14:09:50 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
 pro pc_read_var, t=t,                                            $
     object=object, varfile=varfile_, associate=associate,        $
-    variables=variables, tags=tags, magic=magic, bb=bb,          $
+    variables=variables, tags=tags, magic=magic, bbtoo=bbtoo,    $
     trimxyz=trimxyz, trimall=trimall,                            $
     nameobject=nameobject,validate_variables=validate_variables, $
-    dim=dim,param=param,ivar=ivar,                               $
+    dim=dim,param=param,param2=param2,ivar=ivar,                 $
     datadir=datadir,proc=proc,additional=additional,             $
     nxrange=nxrange,nyrange=nyrange,nzrange=nzrange,             $
     stats=stats,nostats=nostats,quiet=quiet,help=help,           $
@@ -118,6 +118,8 @@ COMPILE_OPT IDL2,HIDDEN
       pc_read_dim, object=dim, datadir=datadir, proc=proc, /quiet
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
+  if (n_elements(param2) eq 0) then $
+      pc_read_param, object=param2, /param2, dim=dim, datadir=datadir, /quiet
 ;
 ; We know from start.in whether we have to read 2-D or 3-D data.
 ;
@@ -200,8 +202,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Shortcut for getting magnetic field bb.
 ;
-  default, bb, 0
-  if (bb) then begin
+  default, bbtoo, 0
+  if (bbtoo) then begin
     variables=[variables,'bb']
     magic=1
   endif
