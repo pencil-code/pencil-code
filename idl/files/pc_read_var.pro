@@ -61,7 +61,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.59 2008-01-21 14:09:50 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.60 2008-01-21 15:43:11 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -88,8 +88,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Default settings
 ;
-  default, validate_variables, 1
+  default, magic, 0
   default, trimall, 0
+  default, validate_variables, 1
 ;
 ; If no meaningful parameters are given show some help!
 ;
@@ -118,8 +119,15 @@ COMPILE_OPT IDL2,HIDDEN
       pc_read_dim, object=dim, datadir=datadir, proc=proc, /quiet
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
-  if (n_elements(param2) eq 0) then $
+  if (n_elements(param2) eq 0 and magic) then begin
+    spawn, 'ls '+datadir+'/param2.nml', exit_status=exit_status
+    if (not exit_status) then begin
       pc_read_param, object=param2, /param2, dim=dim, datadir=datadir, /quiet
+    endif else begin
+      print, 'Could not find '+datadir+'/param2. This may give problems with'+ $
+          ' magic variables.'
+    endelse
+  endif
 ;
 ; We know from start.in whether we have to read 2-D or 3-D data.
 ;
