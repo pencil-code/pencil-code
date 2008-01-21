@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.133 2008-01-21 18:32:07 dhruba Exp $
+! $Id: forcing.f90,v 1.134 2008-01-21 22:03:18 dhruba Exp $
 
 module Forcing
 
@@ -87,7 +87,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.133 2008-01-21 18:32:07 dhruba Exp $")
+           "$Id: forcing.f90,v 1.134 2008-01-21 22:03:18 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -698,6 +698,7 @@ module Forcing
               ran_min,ran_max,rmin,rmax
       real, dimension(mx) :: Z_psi
       real,dimension(my) :: Pl
+      real,allocatable,dimension(:) :: mphase
 ! -----------------------------------------
 ! The scheme is as follows: Take randomly an \ell between Legengrel_min
 ! and Legendrel_max. 
@@ -741,6 +742,7 @@ module Forcing
    call random_number_wrapper(rell)
    ell_index= nint(rell*(ellno-1)) 
    Legendrel = Legendrel_min+ell_index
+   allocate(mphase(2*Legendrel+1))
    call random_number_wrapper(ralp)
    alp_index = nint(ralp*(nalpha-1))+1
    Balpha = Bessel_alpha(ell_index+1,alp_index)
@@ -760,19 +762,24 @@ module Forcing
         Z_psi(l) = ramp*(a_ell*jlm+ylm)
       enddo
  !-------
-        call random_number_wrapper(rphase1)
-        rphase1=rphase1*2*pi
+        do emm=1,2*Legendrel+1
+          call random_number_wrapper(rphase1)
+          rphase1=rphase1*2*pi
+          mphase(emm) = rphase1
+        enddo
         do n=n1-nghost,n2+nghost
            do m=m1-nghost,m2+nghost
               psilm=0.
               do emm=-Legendrel,Legendrel
                 call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n)) 
                 call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
+                rphase1 = mphase(emm+Legendrel+1) 
                 psilm= psilm+RYlm*cos(rphase1)-IYlm*sin(rphase1)
               enddo
               psif(:,m,n) = Z_psi*psilm
         enddo
       enddo
+      deallocate(mphase)
 ! ----- Now calculate the force from the potential and add this to
 ! velocity
 ! get a random unit vector with three components ee_r, ee_theta, ee_phi
