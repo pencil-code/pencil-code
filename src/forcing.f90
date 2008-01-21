@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.131 2008-01-14 14:36:47 ajohan Exp $
+! $Id: forcing.f90,v 1.132 2008-01-21 17:22:11 dhruba Exp $
 
 module Forcing
 
@@ -37,6 +37,7 @@ module Forcing
 ! For helical forcing in sphreical polar coordinate system
   real,allocatable,dimension(:,:,:) :: psif
   integer :: Legendrel_min,Legendrel_max
+  integer :: helsign=0
   integer :: nalpha=5
   real,allocatable,dimension(:,:) ::  Bessel_alpha
   real :: fpre = 1.0
@@ -58,7 +59,7 @@ module Forcing
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
        iforce_profile,lscale_kvector_tobox, &
        force_direction, force_strength, &
-       Legendrel_min,Legendrel_max,nalpha,lhelical_test,fpre
+       Legendrel_min,Legendrel_max,nalpha,lhelical_test,fpre,helsign
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
@@ -86,7 +87,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.131 2008-01-14 14:36:47 ajohan Exp $")
+           "$Id: forcing.f90,v 1.132 2008-01-21 17:22:11 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -722,6 +723,11 @@ module Forcing
           call stop_it("In CK forcing:  Legendrel s do not match abroting. Check  files run.in  and alpha_in.dat")
         else
         endif
+        if (lroot) then
+          if(.not.((helsign.eq.1).or.(helsign.eq.-1))) & 
+            call stop_it("CK forcing: helsign must be +1 or -1, aborting")
+        else
+        endif
 ! ---------- 
         do ilread=1,ellno
           read(76,*) ell,(Bessel_alpha(ilread,jalpha),jalpha=1,nalpha)
@@ -766,7 +772,8 @@ module Forcing
                 rphase1=rphase1*2.*pi
                 psilm= psilm+RYlm*cos(rphase1)-IYlm*sin(rphase1)
               enddo
-              psif(:,m,n) = ramp*Z_psi*psilm
+!DHRUBA
+              psif(:,m,n) = Z_psi*psilm
 !                if(lroot) write(*,*) ramp,Z_psi(10),psilm,psif(10,m,n)
         enddo
       enddo
@@ -794,12 +801,12 @@ module Forcing
           call curl_mn(psi_ij,capitalT,psi)
           call gij_psi_etc(psif,ee,psi,psi_ij,Tij)
           call curl_mn(Tij,capitalS,capitalT)
-          capitalS = (1./Balpha)*capitalS
+          capitalS = dfloat(helsign)*(1./Balpha)*capitalS
           capitalH = capitalT + capitalS
           do j=1,3
             jf = iuu+j-1
             if(lhelical_test) then
-              f(l1:l2,m,n,jf) = capitalH(:,j)
+              f(l1:l2,m,n,jf) = fnorm*capitalH(:,j)
             else
 ! stochastic euler scheme of integration[sqrt(dt) is already included in fnorm] 
             f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ fnorm*capitalH(:,j)
