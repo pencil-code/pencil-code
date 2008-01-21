@@ -1,7 +1,7 @@
 ;
-;  $Id: pc_magic_var.pro,v 1.33 2008-01-21 10:46:36 ajohan Exp $
-;  $Date: 2008-01-21 10:46:36 $
-;  $Revision: 1.33 $
+;  $Id: pc_magic_var.pro,v 1.34 2008-01-21 11:00:43 ajohan Exp $
+;  $Date: 2008-01-21 11:00:43 $
+;  $Revision: 1.34 $
 ;
 pro pc_magic_var_dep, variables, tags, var, dep
 ;
@@ -175,9 +175,9 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     endif else if (variables[iv] eq 'mpres') then begin
       tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='spread(1/lnrho,3,3)*glue_array(total(bb*reform(bij[*,*,*,*,0]),4),total(bb*reform(bij[*,*,*,*,1]),4),total(bb*reform(bij[*,*,*,*,2]),4))'
+        variables[iv]='-spread(1/lnrho,3,3)*glue_array(total(bb*reform(bij[*,*,*,*,0]),4),total(bb*reform(bij[*,*,*,*,1]),4),total(bb*reform(bij[*,*,*,*,2]),4))'
       endif else begin
-        variables[iv]='spread(1/exp(lnrho),3,3)*glue_array(total(bb*reform(bij[*,*,*,*,0]),4),total(bb*reform(bij[*,*,*,*,1]),4),total(bb*reform(bij[*,*,*,*,2]),4))'
+        variables[iv]='-spread(1/exp(lnrho),3,3)*glue_array(total(bb*reform(bij[*,*,*,*,0]),4),total(bb*reform(bij[*,*,*,*,1]),4),total(bb*reform(bij[*,*,*,*,2]),4))'
       endelse
 ; Vorticity
     endif else if (variables[iv] eq 'oo') then begin
