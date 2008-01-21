@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.132 2008-01-21 17:22:11 dhruba Exp $
+! $Id: forcing.f90,v 1.133 2008-01-21 18:32:07 dhruba Exp $
 
 module Forcing
 
@@ -87,7 +87,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.132 2008-01-21 17:22:11 dhruba Exp $")
+           "$Id: forcing.f90,v 1.133 2008-01-21 18:32:07 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -744,8 +744,6 @@ module Forcing
    call random_number_wrapper(ralp)
    alp_index = nint(ralp*(nalpha-1))+1
    Balpha = Bessel_alpha(ell_index+1,alp_index)
-   call random_number_wrapper(rphase1)
-   rphase1 = rphase1*2.*pi
    call random_number_wrapper(ramp)
 !   if (lroot) write(*,*) "Dhruba",Legendrel,alp_index,Balpha 
 ! Now calculate the "potential" for the helical forcing. The expression
@@ -759,22 +757,20 @@ module Forcing
         alphar = Balpha*x(l)
         call sp_besselj_l(jlm,Legendrel,alphar)
         call sp_bessely_l(ylm,Legendrel,alphar)
-        Z_psi(l) = (a_ell*jlm+ylm)
+        Z_psi(l) = ramp*(a_ell*jlm+ylm)
       enddo
  !-------
+        call random_number_wrapper(rphase1)
+        rphase1=rphase1*2*pi
         do n=n1-nghost,n2+nghost
            do m=m1-nghost,m2+nghost
               psilm=0.
               do emm=-Legendrel,Legendrel
                 call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n)) 
                 call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
-                call random_number_wrapper(rphase1)
-                rphase1=rphase1*2.*pi
                 psilm= psilm+RYlm*cos(rphase1)-IYlm*sin(rphase1)
               enddo
-!DHRUBA
               psif(:,m,n) = Z_psi*psilm
-!                if(lroot) write(*,*) ramp,Z_psi(10),psilm,psif(10,m,n)
         enddo
       enddo
 ! ----- Now calculate the force from the potential and add this to
