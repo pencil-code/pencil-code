@@ -1,7 +1,7 @@
 ;
-;  $Id: pc_magic_var.pro,v 1.34 2008-01-21 11:00:43 ajohan Exp $
-;  $Date: 2008-01-21 11:00:43 $
-;  $Revision: 1.34 $
+;  $Id: pc_magic_var.pro,v 1.35 2008-01-21 13:50:44 ajohan Exp $
+;  $Date: 2008-01-21 13:50:44 $
+;  $Revision: 1.35 $
 ;
 pro pc_magic_var_dep, variables, tags, var, dep
 ;
@@ -163,21 +163,21 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
       endif else begin
         variables[iv]='spread(1/exp(lnrho),3,3)*cross(curlcurl(aa),curl(aa))'
       endelse
-; Magnetic tension
-    endif else if (variables[iv] eq 'mten') then begin
-      tags[iv]=variables[iv]
-      if (param.ldensity_nolog) then begin
-        variables[iv]='spread(1/lnrho,3,3)*glue_array(total(bb*reform(bij[*,*,*,0,*]),4),total(bb*reform(bij[*,*,*,1,*]),4),total(bb*reform(bij[*,*,*,2,*]),4))'
-      endif else begin
-        variables[iv]='spread(1/exp(lnrho),3,3)*glue_array(total(bb*reform(bij[*,*,*,0,*]),4),total(bb*reform(bij[*,*,*,1,*]),4),total(bb*reform(bij[*,*,*,2,*]),4))'
-      endelse
 ; Magnetic pressure
     endif else if (variables[iv] eq 'mpres') then begin
       tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='-spread(1/lnrho,3,3)*glue_array(total(bb*reform(bij[*,*,*,*,0]),4),total(bb*reform(bij[*,*,*,*,1]),4),total(bb*reform(bij[*,*,*,*,2]),4))'
+        variables[iv]='-spread(1/lnrho,3,3)*reform([[[total(bb*reform(bij[*,*,*,*,0]),4)]],[[total(bb*reform(bij[*,*,*,*,1]),4)]],[[total(bb*reform(bij[*,*,*,*,2]),4)]]],dim.mx,dim.my,dim.mz,3)'
       endif else begin
-        variables[iv]='-spread(1/exp(lnrho),3,3)*glue_array(total(bb*reform(bij[*,*,*,*,0]),4),total(bb*reform(bij[*,*,*,*,1]),4),total(bb*reform(bij[*,*,*,*,2]),4))'
+        variables[iv]='-spread(1/exp(lnrho),3,3)*reform([[[total(bb*reform(bij[*,*,*,*,0]),4)]],[[total(bb*reform(bij[*,*,*,*,1]),4)]],[[total(bb*reform(bij[*,*,*,*,2]),4)]]],dim.mx,dim.my,dim.mz,3)'
+      endelse
+; Magnetic tension
+    endif else if (variables[iv] eq 'mten') then begin
+      tags[iv]=variables[iv]
+      if (param.ldensity_nolog) then begin
+        variables[iv]='spread(1/lnrho,3,3)*reform([[[total(bb*reform(bij[*,*,*,0,*]),4)]],[[total(bb*reform(bij[*,*,*,1,*]),4)]],[[total(bb*reform(bij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
+      endif else begin
+        variables[iv]='spread(1/exp(lnrho),3,3)*reform([[[total(bb*reform(bij[*,*,*,0,*]),4)]],[[total(bb*reform(bij[*,*,*,1,*]),4)]],[[total(bb*reform(bij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
       endelse
 ; Vorticity
     endif else if (variables[iv] eq 'oo') then begin
