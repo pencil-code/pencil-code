@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.85 2007-11-20 09:44:20 wlyra Exp $
+! $Id: viscosity.f90,v 1.86 2008-01-22 17:13:53 glesur Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -30,7 +30,7 @@ module Viscosity
   integer, parameter :: nvisc_max = 4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   real :: nu=0., nu_mol=0., nu_hyper2=0., nu_hyper3=0., nu_shock=0.
-  real :: nu_jump=1., znu=0., widthnu=0.1
+  real :: nu_jump=1., znu=0., xnu=0., widthnu=0.1
   real, dimension(3) :: nu_aniso_hyper3=0.
 
   ! dummy logical
@@ -40,6 +40,7 @@ module Viscosity
   logical :: lvisc_rho_nu_const=.false.
   logical :: lvisc_nu_const=.false.
   logical :: lvisc_nu_prof=.false.
+  logical :: lvisc_nu_profx=.false.
   logical :: lvisc_nu_shock=.false.
   logical :: lvisc_hyper2_simplified=.false.
   logical :: lvisc_hyper3_simplified=.false.
@@ -63,7 +64,7 @@ module Viscosity
   ! run parameters
   namelist /viscosity_run_pars/ &
       nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
-      nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,widthnu
+      nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,widthnu
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
@@ -105,7 +106,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.85 2007-11-20 09:44:20 wlyra Exp $")
+           "$Id: viscosity.f90,v 1.86 2008-01-22 17:13:53 glesur Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -130,6 +131,7 @@ module Viscosity
       lvisc_rho_nu_const=.false.
       lvisc_nu_const=.false.
       lvisc_nu_prof=.false.
+      lvisc_nu_profx=.false.
       lvisc_nu_shock=.false.
       lvisc_hyper2_simplified=.false.
       lvisc_hyper3_simplified=.false.
@@ -162,6 +164,10 @@ module Viscosity
           if (lroot) print*,'viscous force with a vertical profile for nu'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nu_prof=.true.
+        case('nu-profx')
+          if (lroot) print*,'viscous force with a horizontal profile for nu'
+          if (nu/=0.) lpenc_requested(i_sij)=.true.
+          lvisc_nu_profx=.true.
         case('nu-shock')
           if (lroot) print*,'viscous force: nu_shock*(XXXXXXXXXXX)'
           lvisc_nu_shock=.true.
@@ -404,9 +410,10 @@ module Viscosity
       if ((lentropy.or.ltemperature) .and. &
           (lvisc_simplified .or. lvisc_rho_nu_const .or. &
            lvisc_nu_const .or. lvisc_nu_shock .or. &
-           lvisc_nu_prof)) lpenc_requested(i_TT1)=.true.
+           lvisc_nu_prof .or. lvisc_nu_profx))&
+           lpenc_requested(i_TT1)=.true.
       if (lvisc_rho_nu_const .or. lvisc_nu_const .or. &
-          lvisc_nu_prof) then
+          lvisc_nu_prof .or. lvisc_nu_profx) then
         if (lentropy.or.ltemperature) lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
@@ -415,9 +422,10 @@ module Viscosity
       if (lvisc_smag_simplified) lpenc_requested(i_sij2)=.true.
       if (lvisc_smag_cross_simplified) lpenc_requested(i_ss12)=.true.
       if (lvisc_nu_prof) lpenc_requested(i_z_mn)=.true.
+      if (lvisc_nu_profx) lpenc_requested(i_x_mn)=.true.
       if (lvisc_simplified .or. lvisc_rho_nu_const .or. lvisc_nu_const .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
-          lvisc_nu_prof) lpenc_requested(i_del2u)=.true.
+          lvisc_nu_prof .or. lvisc_nu_profx) lpenc_requested(i_del2u)=.true.
       if (lvisc_hyper3_simplified .or. lvisc_hyper3_rho_nu_const .or. &
           lvisc_hyper3_nu_const .or. lvisc_hyper3_rho_nu_const_symm) &
           lpenc_requested(i_del6u)=.true.
@@ -437,7 +445,7 @@ module Viscosity
           lvisc_hyper3_rho_nu_const_symm .or. &
           lvisc_hyper3_mu_const_strict) lpenc_requested(i_rho1)=.true.
 
-      if (lvisc_nu_const .or. lvisc_nu_prof .or. &
+      if (lvisc_nu_const .or. lvisc_nu_prof .or. lvisc_nu_profx .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified)  &
           lpenc_requested(i_sglnrho)=.true.
       if (lvisc_hyper3_nu_const) lpenc_requested(i_uij5glnrho)=.true.
@@ -565,6 +573,31 @@ module Viscosity
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + 2*nu*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu
      endif
+
+!
+      if (lvisc_nu_profx) then
+!
+!  viscous force: nu(x)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
+!  -- here the nu viscosity depends on x; nu_jump=nu2/nu1
+        pnu = nu + nu*(nu_jump-1.)*step(abs(p%x_mn),xnu,widthnu)
+!  Write out viscosity z-profile (during first time step only)
+!  A routine for write_xprof should be written here
+!       call write_xprof('visc',pnu)
+        gradnu(:,1) = nu*(nu_jump-1.)*der_step(abs(p%x_mn),xnu,widthnu)
+        gradnu(:,2) = 0.
+        gradnu(:,3) = 0.
+        call multmv(p%sij,gradnu,sgradnu)
+        call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
+        !tobi: The following only works with operator overloading for pencils
+        !      (see sub.f90). Commented out because it seems to be slower.
+        !p%fvisc=p%fvisc+2*pnu*p%sglnrho+pnu*(p%del2u+1./3.*p%graddivu) &
+        !        +2*sgradnu
+        p%fvisc=p%fvisc+tmp+2*sgradnu
+        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + 2*pnu*p%sij2
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+pnu
+     endif
+
+     
 !
       if (lvisc_nu_prof) then
 !
