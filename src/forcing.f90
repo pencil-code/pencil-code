@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.134 2008-01-21 22:03:18 dhruba Exp $
+! $Id: forcing.f90,v 1.135 2008-01-22 14:46:15 brandenb Exp $
 
 module Forcing
 
@@ -87,7 +87,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.134 2008-01-21 22:03:18 dhruba Exp $")
+           "$Id: forcing.f90,v 1.135 2008-01-22 14:46:15 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -804,7 +804,7 @@ module Forcing
           call curl_mn(psi_ij,capitalT,psi)
           call gij_psi_etc(psif,ee,psi,psi_ij,Tij)
           call curl_mn(Tij,capitalS,capitalT)
-          capitalS = dfloat(helsign)*(1./Balpha)*capitalS
+          capitalS = float(helsign)*(1./Balpha)*capitalS
           capitalH = capitalT + capitalS
           do j=1,3
             jf = iuu+j-1
