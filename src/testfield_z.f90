@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.19 2008-01-05 19:33:01 brandenb Exp $
+! $Id: testfield_z.f90,v 1.20 2008-01-23 05:52:00 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -150,7 +150,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.19 2008-01-05 19:33:01 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.20 2008-01-23 05:52:00 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -502,7 +502,7 @@ module Testfield
 !
         if ((idiag_alp12/=0.or.idiag_alp22/=0 &
          .or.idiag_eta12/=0.or.idiag_eta22/=0).and.njtest<=2) then
-          call stop_it('njtest is too small if alp12 and alp12 are needed')
+          call stop_it('njtest is too small if alp12, alp22, eta12, or eta22 are needed')
         else
           if (idiag_alp12/=0) call sum_mn_name(+cz(n)*Eipq(:,1,i3)+sz(n)*Eipq(:,1,i4),idiag_alp12)
           if (idiag_alp22/=0) call sum_mn_name(+cz(n)*Eipq(:,2,i3)+sz(n)*Eipq(:,2,i4),idiag_alp22)
