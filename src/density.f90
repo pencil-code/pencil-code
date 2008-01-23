@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.369 2007-12-11 09:06:53 dintrans Exp $
+! $Id: density.f90,v 1.370 2008-01-23 16:08:32 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -134,7 +134,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.369 2007-12-11 09:06:53 dintrans Exp $")
+           "$Id: density.f90,v 1.370 2008-01-23 16:08:32 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1594,6 +1594,13 @@ module Density
 !
           endif
         enddo
+!
+      case('exponential')
+        if (ldensity_nolog) then
+          f_target = rho0*exp(-p%rcyl_mn/r_ref)
+        else
+          f_target = lnrho0 - p%rcyl_mn/r_ref
+        endif
 !
       case('stratification')
         do i=1,nx
