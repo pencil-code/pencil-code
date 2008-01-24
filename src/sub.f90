@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.349 2007-11-05 20:23:27 bingert Exp $
+! $Id: sub.f90,v 1.350 2008-01-24 17:58:33 dintrans Exp $
 
 module Sub
 
@@ -15,7 +15,7 @@ module Sub
   public :: keep_compiler_quiet
   public :: blob, vecout
   public :: cubic_step, cubic_der_step, quintic_step, quintic_der_step, erfunc
-  public :: sine_step
+  public :: sine_step, interp1
   public :: hypergeometric2F1
   public :: gamma_function
 
@@ -5980,5 +5980,31 @@ nameloop: do
       endif
 !
     endsubroutine get_radial_distance
+!***********************************************************************
+    function interp1(r,fr,nr,r0)
+!
+!  20-dec-07/dintrans: coded
+!
+    integer :: nr,istop,i,i1,i2
+    real, dimension (nr) :: r,fr
+    real    :: r0,f0,interp1
+
+    if (r0 == r(1)) then
+      interp1=fr(1)
+      return
+    elseif (r0 > r(nr)) then
+      interp1=fr(nr)
+      return
+    else
+      istop=0 ; i=1
+      do while (istop /= 1)
+        if (r(i) >= r0) istop=1
+        i=i+1
+      enddo
+      i1=i-2 ; i2=i-1
+      interp1=(fr(i1)*(r(i2)-r0)+fr(i2)*(r0-r(i1)))/(r(i2)-r(i1))
+    endif
+
+    endfunction interp1
 !***********************************************************************
 endmodule Sub

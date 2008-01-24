@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.539 2007-12-04 17:41:45 pkapyla Exp $
+! $Id: entropy.f90,v 1.540 2008-01-24 17:58:33 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -219,7 +219,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.539 2007-12-04 17:41:45 pkapyla Exp $")
+           "$Id: entropy.f90,v 1.540 2008-01-24 17:58:33 dintrans Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -458,6 +458,7 @@ module Entropy
 !
         case('star_heat')
           if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
+          if (hcond2==impossible) hcond2=(mpoly2+1.)/(mpoly0+1.)
           if (lroot) print*,'initialize_entropy: set cs2cool=cs20'
           cs2cool=cs20
           cs2_ext=cs20
@@ -3177,7 +3178,8 @@ module Entropy
         endif
       else
         if (lmultilayer) then
-          hcond = 1. + (hcond1-1.)*step(p%r_mn,r_bcz,-widthss)
+          hcond = 1. + (hcond1-1.)*step(p%r_mn,r_bcz,-widthss) &
+                     + (hcond2-1.)*step(p%r_mn,r_ext,widthss)
           hcond = hcond0*hcond
         else
           hcond = hcond0
@@ -3210,7 +3212,9 @@ module Entropy
         endif
       else
         if (lmultilayer) then
-          dhcond=hcond0*(hcond1-1.)*der_step(p%r_mn,r_bcz,-widthss)
+          dhcond=(hcond1-1.)*der_step(p%r_mn,r_bcz,-widthss) &
+                 + (hcond2-1.)*der_step(p%r_mn,r_ext,widthss)
+          dhcond=hcond0*dhcond
           glhc(:,1) = x(l1:l2)/p%r_mn*dhcond
           glhc(:,2) = y(m)/p%r_mn*dhcond
           if (lcylinder_in_a_box) then
@@ -3510,11 +3514,12 @@ module Entropy
     use Cdata
     use EquationOfState, only: gamma, gamma1, rho0, lnrho0, cs20, get_soundspeed,eoscalc, ilnrho_TT
     use FArrayManager
+    use Sub, only: step, interp1
 
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
     integer, parameter   :: nr=100
-    integer              :: i,istop,l,i1,i2,iter
-    real, dimension (nr) :: r,lnrho,temp
+    integer              :: i,l,iter
+    real, dimension (nr) :: r,lnrho,temp,hcond
     real                 :: u,r_mn,lnrho_r,temp_r,cs2,lnTT,ss,lumi,g, &
         rhotop,cs2top,rbot,rt_old,rt_new,rhobot,rb_old,rb_new,crit,r_max
 ! variables for the gravity profile
@@ -3543,6 +3548,10 @@ module Entropy
      deallocate(rr_mn,u_mn,lumi_mn,g_r)
      return
     endif
+
+!   rhotop=1.
+!   call strat_heat(lnrho,temp,rhotop,rhobot)
+!   goto 20
 
 !  the bottom value that we want for density at r=r_bcz
     rbot=1.
@@ -3593,15 +3602,10 @@ module Entropy
       m=mm(imn)
 !
       do l=l1,l2
-        r_mn=sqrt(x(l)**2+y(m)**2+z(n)**2)
-        istop=0 ; i=1
-        do while (istop /= 1)
-          if (r(i) >= r_mn) istop=1
-          i=i+1
-        enddo
-        i1=i-2 ; i2=i-1
-        lnrho_r=(lnrho(i1)*(r(i2)-r_mn)+lnrho(i2)*(r_mn-r(i1)))/(r(i2)-r(i1))
-        temp_r=(temp(i1)*(r(i2)-r_mn)+temp(i2)*(r_mn-r(i1)))/(r(i2)-r(i1))
+!       r_mn=sqrt(x(l)**2+y(m)**2+z(n)**2)
+        r_mn=sqrt(x(l)**2+y(m)**2)
+        lnrho_r=interp1(r,lnrho,nr,r_mn)
+        temp_r=interp1(r,temp,nr,r_mn)
         f(l,m,n,ilnrho)=lnrho_r
         call eoscalc(ilnrho_TT,lnrho_r,temp_r,ss=ss)
         f(l,m,n,iss)=ss
@@ -3609,10 +3613,13 @@ module Entropy
     enddo
 !
     if (lroot) then
+      hcond=1.+(hcond1-1.)*step(r,r_bcz,-widthss) &
+              +(hcond2-1.)*step(r,r_ext,widthss)
+      hcond=hcond0*hcond
       open(unit=11,file=trim(directory)//'/setup.dat')
       print*,'--> write initial setup in data/proc0/setup.dat'
       open(unit=11,file=trim(directory)//'/setup.dat')
-      write(11,'(a6,4a14)') 'r','rho','ss','cs2','grav'
+      write(11,'(a6,5a14)') 'r','rho','ss','cs2','grav','hcond'
       do i=nr,1,-1
         u=r(i)/sqrt(2.)/wheat
         lumi=luminosity*(1.-exp(-u**2))
@@ -3623,7 +3630,7 @@ module Entropy
         endif
         call get_soundspeed(log(temp(i)),cs2)
         call eoscalc(ilnrho_TT,lnrho(i),temp(i),ss=ss)
-        write(11,'(f6.3,4e14.5)') r(i),exp(lnrho(i)),ss,cs2,g
+        write(11,'(f6.3,4e14.5,1pe14.5)') r(i),exp(lnrho(i)),ss,cs2,g,hcond(i)
       enddo
       close(11)
     endif
@@ -3638,10 +3645,10 @@ module Entropy
 !  17-jan-07/dintrans: coded
 !
     use EquationOfState, only: gamma, gamma1, mpoly0, mpoly1, lnrho0, cs20
-    use Sub, only: step, erfunc
+    use Sub, only: step, erfunc, interp1
 
     integer, parameter   :: nr=100
-    integer              :: i,nbot1,nbot2
+    integer              :: i
     real, dimension (nr) :: r,lumi,hcond,g,lnrho,temp
     real                 :: dtemp,dlnrho,dr,u,rhotop,rhobot,lnrhobot,r_max
 
@@ -3662,7 +3669,9 @@ module Entropy
 
 ! radiative conductivity profile
     hcond1=(mpoly1+1.)/(mpoly0+1.)
-    hcond=1.+(hcond1-1.)*step(r,r_bcz,-widthss)
+    hcond2=(mpoly2+1.)/(mpoly0+1.)
+    hcond=1.+(hcond1-1.)*step(r,r_bcz,-widthss) &
+            +(hcond2-1.)*step(r,r_ext,widthss)
     hcond=hcond0*hcond
 
 ! start from surface values for rho and temp
@@ -3688,22 +3697,11 @@ module Entropy
 !
 ! find the value of rhobot at the bottom of convection zone
 !
-    do i=1,nr
-      if (r(i) > r_bcz) exit
-!     if (r(i) > 1.) exit
-    enddo
-!   stop 'find rhobot: didnt find bottom value of z'
-    nbot1=i-1
-    nbot2=i
-!
-!  interpolate
-!
-    lnrhobot=lnrho(nbot1)+(lnrho(nbot2)-lnrho(nbot1))/ &
-             (r(nbot2)-r(nbot1))*(r_bcz-r(nbot1))
-!   lnrhobot=lnrho(nbot1)+(lnrho(nbot2)-lnrho(nbot1))/ &
-!            (r(nbot2)-r(nbot1))*(1.-r(nbot1))
+!   lnrhobot=interp1(r,lnrho,nr,r_max)
+!   lnrhobot=interp1(r,lnrho,nr,r_ext)
+    lnrhobot=interp1(r,lnrho,nr,r_bcz)
     rhobot=exp(lnrhobot)
-    print*,'find rhobot=',rhobot,r(nbot1),r(nbot2)
+    print*,'find rhobot=',rhobot
 
     endsubroutine strat_heat
 !***********************************************************************
@@ -3822,5 +3820,5 @@ module Entropy
       real, dimension(mx,my,mz,mfarray) :: finit,f
 
     end subroutine calc_heatcond_ADI
-!**************************************************************
+!***********************************************************************
 endmodule Entropy
