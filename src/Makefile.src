@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.369 2008-01-24 17:58:33 dintrans Exp $
+### $Id: Makefile.src,v 1.370 2008-01-25 10:25:11 dintrans Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -364,10 +364,10 @@ LD_FFTW2=
 #FC=mpif90 #(damaskus|n00)
 #FC=mpif90 #(bender)
 ##
-## Toulouse's machines: efigi, shal, mithra & pleiades
+## Toulouse's machines: efigi, shal, galileo, mithra & pleiades
 ##
-#FC=ifort #(shal|efigi|mithra|pleiades)
-#FFLAGS=-O3 -stand f90 -I/usr/include/lam #(shal|mithra)
+#FC=ifort #(shal|efigi|mithra|pleiades|galileo)
+#FFLAGS=-O3 -stand f90 -I/usr/include/lam #(shal|mithra|galileo)
 #FFLAGS=-O3 -stand f90 -I/home/dintrans/LIB/LAM/include -assume nounderscore #(efigi)
 #FFLAGS=-O3 -stand f90 -I/usr/include #(pleiades)
 #CC=gcc #(efigi)
