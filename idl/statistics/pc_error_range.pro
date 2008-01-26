@@ -1,4 +1,4 @@
-;$Id: pc_error_range.pro,v 1.7 2008-01-10 05:26:40 brandenb Exp $
+;$Id: pc_error_range.pro,v 1.8 2008-01-26 14:24:47 brandenb Exp $
 pro pc_error_range,tt,a,mean=am,error=err,oplot=oplot,accum=accum
 ;
 ;  calculate averages for each third of time series and use
@@ -31,12 +31,12 @@ if keyword_set(oplot) then begin
   print,'DEVICE=',!d.name
   if !d.name eq 'X' then begin
     oplot,tt,(tt-tt+1.)*am,col=122
-    if keyword_set(accum) then oplot,tt,accum(a),col=55,li=2
+    if keyword_set(accum) then oplot,tt,pc_accumulate(a),col=55,li=2
     oplot,tt,(tt-tt+1.)*(am+err),col=188,li=2
     oplot,tt,(tt-tt+1.)*(am-err),col=188,li=2
   endif else begin
     ;oplot,tt,(tt-tt+1.)*am,li=3
-    if keyword_set(accum) then oplot,tt,accum(a),li=3
+    if keyword_set(accum) then oplot,tt,pc_accumulate(a),li=3
     oplot,tt,(tt-tt+1.)*(am+err),li=1
     oplot,tt,(tt-tt+1.)*(am-err),li=1
   endelse
