@@ -34,6 +34,7 @@
 ;               variables specified with the variables=[] option.
 ;     /magic: call pc_magic_var to replace special variable names with their
 ;             functional equivalents
+;    /global: add global values to snapshot variables.
 ;
 ;   /trimxyz: remove ghost points from the x,y,z arrays that are returned
 ;   /trimall: remove ghost points from all returned variables and x,y,z arrays
@@ -48,34 +49,34 @@
 ;      /help: display this usage information, and exit
 ;
 ; EXAMPLES:
-;       pc_read_var,obj=vars             ;; read all vars into VARS struct
-;       pc_read_var,obj=vars,proc=5      ;; read only from data/proc5
-;       pc_read_var,obj=vars,variables=['ss']
+;       pc_read_var, obj=vars            ;; read all vars into vars struct
+;       pc_read_var, obj=vars, proc=5    ;; read only from data/proc5
+;       pc_read_var, obj=vars, variables=['ss']
 ;                                        ;; read entropy into vars.ss
-;       pc_read_var,obj=vars,variables=['bb'],/MAGIC
+;       pc_read_var, obj=vars, variables=['bb'], /magic
 ;                                        ;; calculate vars.bb from aa
-;       pc_read_var,obj=vars,variables=['bb'],/MAGIC,/ADDITIONAL
+;       pc_read_var, obj=vars, variables=['bb'], /magic, /additional
 ;                                        ;; get vars.bb, vars.uu, vars.aa, etc.
-;       pc_read_var,obj=vars,/bb         ;; shortcut for the above
-;       pc_read_var,obj=vars,variables=['bb'],/MAGIC, /TRIMALL
+;       pc_read_var, obj=vars, /bb       ;; shortcut for the above
+;       pc_read_var, obj=vars, variables=['bb'], /magic, /trimall
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.60 2008-01-21 15:43:11 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.61 2008-01-29 10:46:27 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
-pro pc_read_var, t=t,                                            $
-    object=object, varfile=varfile_, associate=associate,        $
-    variables=variables, tags=tags, magic=magic, bbtoo=bbtoo,    $
-    trimxyz=trimxyz, trimall=trimall,                            $
-    nameobject=nameobject,validate_variables=validate_variables, $
-    dim=dim,param=param,param2=param2,ivar=ivar,                 $
-    datadir=datadir,proc=proc,additional=additional,             $
-    nxrange=nxrange,nyrange=nyrange,nzrange=nzrange,             $
-    stats=stats,nostats=nostats,quiet=quiet,help=help,           $
-    swap_endian=swap_endian,varcontent=varcontent,               $
-    scalar=scalar,run2D=run2D
+pro pc_read_var, t=t,                                             $
+    object=object, varfile=varfile_, associate=associate,         $
+    variables=variables, tags=tags, magic=magic, bbtoo=bbtoo,     $
+    trimxyz=trimxyz, trimall=trimall,                             $
+    nameobject=nameobject, validate_variables=validate_variables, $
+    dim=dim, param=param, param2=param2, ivar=ivar,               $
+    datadir=datadir, proc=proc, additional=additional,            $
+    nxrange=nxrange, nyrange=nyrange, nzrange=nzrange,            $
+    stats=stats, nostats=nostats, quiet=quiet, help=help,         $
+    swap_endian=swap_endian, varcontent=varcontent,               $
+    global=global, scalar=scalar, run2D=run2D
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -226,10 +227,19 @@ COMPILE_OPT IDL2,HIDDEN
     message, 'ERROR: variables and tags arrays differ in size'
   endif
 ;
+; Add global parameters (like external magnetic field) to snapshot.
+;
+  default, global, 0
+  if (global) then begin
+    pc_read_global, obj=gg, datadir=datadir, /quiet
+    global_names=tag_names(gg)
+  endif
+;
 ; Apply "magic" variable transformations for derived quantities
 ;
   if (keyword_set(magic)) then $
-      pc_magic_var,variables,tags,param=param, datadir=datadir
+      pc_magic_var, variables, tags, $
+      param=param, global_names=global_names, datadir=datadir, quiet=quiet
 ;
 ; Get a free unit number
 ;

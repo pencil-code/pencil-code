@@ -1,7 +1,7 @@
 ;
-;  $Id: pc_magic_var.pro,v 1.36 2008-01-21 14:08:34 ajohan Exp $
-;  $Date: 2008-01-21 14:08:34 $
-;  $Revision: 1.36 $
+;  $Id: pc_magic_var.pro,v 1.37 2008-01-29 10:46:26 ajohan Exp $
+;  $Date: 2008-01-29 10:46:26 $
+;  $Revision: 1.37 $
 ;
 pro pc_magic_var_dep, variables, tags, var, dep
 ;
@@ -16,8 +16,13 @@ pro pc_magic_var_dep, variables, tags, var, dep
   if (iv ge 0) then begin
     iv1=where(variables eq dep) & iv1=min(iv1)
     if (iv1 eq -1) then begin
-      variables=[variables[0:iv-1],dep,variables[iv:n_elements(variables)-1]]
-      tags     =[     tags[0:iv-1],dep,     tags[iv:n_elements(tags     )-1]]
+      if (iv eq 0) then begin
+        variables=[dep,variables]
+        tags     =[dep,     tags]
+      endif else begin
+        variables=[variables[0:iv-1],dep,variables[iv:n_elements(variables)-1]]
+        tags     =[     tags[0:iv-1],dep,     tags[iv:n_elements(tags     )-1]]
+      endelse
     endif
 ;
 ;  Move dependencies so that they are calculated before the variables.
@@ -102,15 +107,32 @@ end
 ;    psi2    -> mod psi squared (density squared)
 ;    argpsi  -> atan(imag(psi),real(psi))
 ;
+pro pc_magic_var, variables, tags, $
+    param=param, datadir=datadir, global_names=global_names, quiet=quiet
 ;
-pro pc_magic_var,variables,tags,param=param,datadir=datadir
+;  Default values.
+;
+  default, quiet, 0
 ;
   if (not keyword_set(datadir)) then datadir='data'
   if (n_elements(param) eq 0) then $
-      pc_read_param,object=param,datadir=datadir,/quiet
+      pc_read_param, object=param, datadir=datadir, /quiet
+;
+;  Add global values if requested (e.g. external magnetic field to bb).
+;
+  default, global, 0
+  if (n_elements(global_names) gt 0) then begin
+    global=1
+    if (not quiet) then print, 'pc_magic_var: WARNING - overloading of global variables on snapshot data comes with no guarantee for consistent implementation'
+    global_names=strlowcase(global_names)
+  endif else begin
+    global=0
+  endelse
 ;
 ;  Dependencies.
 ;
+  pc_magic_var_dep, variables, tags, 'flor', 'bb'
+  pc_magic_var_dep, variables, tags, 'flor', 'jj'
   pc_magic_var_dep, variables, tags, 'mten', 'bb'
   pc_magic_var_dep, variables, tags, 'mten', 'bij'
   pc_magic_var_dep, variables, tags, 'mpres', 'bb'
@@ -144,10 +166,46 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     endif else if (variables[iv] eq 'bb') then begin
       tags[iv]=variables[iv]
       variables[iv]='curl(aa)'
+      if (global) then begin
+        if (max(where(global_names eq 'bx_ext')) ne -1) then begin
+          vari1='gg.bx_ext'
+        endif else begin
+          vari1='fltarr(dim.mx,dim.my,dim.mz)'
+        endelse
+        if (max(where(global_names eq 'by_ext')) ne -1) then begin
+          vari2='gg.by_ext'
+        endif else begin
+          vari2='fltarr(dim.mx,dim.my,dim.mz)'
+        endelse
+        if (max(where(global_names eq 'bz_ext')) ne -1) then begin
+          vari3='gg.bz_ext'
+        endif else begin
+          vari3='fltarr(dim.mx,dim.my,dim.mz)'
+        endelse
+        variables[iv]=variables[iv]+'+reform([[['+vari1+']],[['+vari2+']],[['+vari3+']]],dim.mx,dim.my,dim.mz,3)'
+      endif
 ; Current density [jj=curl(bb)=curl(curl(aa))=grad(div(a))-del2(aa)]
     endif else if (variables[iv] eq 'jj') then begin
       tags[iv]=variables[iv]
       variables[iv]='graddiv(aa)-del2(aa)'
+      if (global) then begin
+        if (max(where(global_names eq 'jx_ext')) ne -1) then begin
+          vari1='gg.jx_ext'
+        endif else begin
+          vari1='fltarr(dim.mx,dim.my,dim.mz)'
+        endelse
+        if (max(where(global_names eq 'jy_ext')) ne -1) then begin
+          vari2='gg.jy_ext'
+        endif else begin
+          vari2='fltarr(dim.mx,dim.my,dim.mz)'
+        endelse
+        if (max(where(global_names eq 'jz_ext')) ne -1) then begin
+          vari3='gg.jz_ext'
+        endif else begin
+          vari3='fltarr(dim.mx,dim.my,dim.mz)'
+        endelse
+        variables[iv]=variables[iv]+'+reform([[['+vari1+']],[['+vari2+']],[['+vari3+']]],dim.mx,dim.my,dim.mz,3)'
+      endif
 ; Derivative vector
     endif else if (variables[iv] eq 'd2A') then begin
       tags[iv]=variables[iv]
@@ -160,9 +218,9 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     endif else if (variables[iv] eq 'flor') then begin
       tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='spread(1/lnrho,3,3)*cross(curlcurl(aa),curl(aa))'
+        variables[iv]='spread(1/lnrho,3,3)*cross(jj,bb)'
       endif else begin
-        variables[iv]='spread(1/exp(lnrho),3,3)*cross(curlcurl(aa),curl(aa))'
+        variables[iv]='spread(1/exp(lnrho),3,3)*cross(jj,bb)'
       endelse
 ; Magnetic pressure
     endif else if (variables[iv] eq 'mpres') then begin
