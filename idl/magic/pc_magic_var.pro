@@ -1,7 +1,7 @@
 ;
-;  $Id: pc_magic_var.pro,v 1.37 2008-01-29 10:46:26 ajohan Exp $
-;  $Date: 2008-01-29 10:46:26 $
-;  $Revision: 1.37 $
+;  $Id: pc_magic_var.pro,v 1.38 2008-01-30 15:58:17 ajohan Exp $
+;  $Date: 2008-01-30 15:58:17 $
+;  $Revision: 1.38 $
 ;
 pro pc_magic_var_dep, variables, tags, var, dep
 ;
@@ -131,6 +131,7 @@ pro pc_magic_var, variables, tags, $
 ;
 ;  Dependencies.
 ;
+  pc_magic_var_dep, variables, tags, 'va2', 'bb'
   pc_magic_var_dep, variables, tags, 'flor', 'bb'
   pc_magic_var_dep, variables, tags, 'flor', 'jj'
   pc_magic_var_dep, variables, tags, 'mten', 'bb'
@@ -221,6 +222,14 @@ pro pc_magic_var, variables, tags, $
         variables[iv]='spread(1/lnrho,3,3)*cross(jj,bb)'
       endif else begin
         variables[iv]='spread(1/exp(lnrho),3,3)*cross(jj,bb)'
+      endelse
+; Alfven speed squared
+    endif else if (variables[iv] eq 'va2') then begin
+      tags[iv]=variables[iv]
+      if (param.ldensity_nolog) then begin
+        variables[iv]='total(bb^2,4)/lnrho'
+      endif else begin
+        variables[iv]='total(bb^2,4)/exp(lnrho)'
       endelse
 ; Magnetic pressure
     endif else if (variables[iv] eq 'mpres') then begin
