@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.370 2008-01-25 10:25:11 dintrans Exp $
+### $Id: Makefile.src,v 1.371 2008-01-30 14:40:35 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -247,6 +247,8 @@ LD_FFTW2=
 #FC=g95-andy #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*|aida69)
 #FFLAGS=-fno-second-underscore -O3 -I/home/johansen/local/mpich2/include #(aida69)
 #LD_MPI=-l pthread -L /home/johansen/local/mpich2/lib -lmpich #(aida69)
+#FC=mpif90 #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*|milipeia)
+#FFLAGS=-O3 #(milipeia)
 #FC=ifort #(swift)
 #FFLAGS=-O3 -I/usr/local/mpich/include #(swift)
 #LD_MPI=-L /usr/local/mpich/lib -lmpich #(swift)
