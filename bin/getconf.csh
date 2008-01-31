@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.227 2008-01-30 14:41:29 ajohan Exp $
+# $Id: getconf.csh,v 1.228 2008-01-31 13:50:55 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -992,7 +992,7 @@ else if ($hn =~ rio* || $hn =~ pia*) then
     end
   endif
 
-else if ($PBS_O_HOST =~ milipeia*) then
+else if ($hn =~ comp*) then
   echo "milipeia cluster at Universidade de Coimbra."
   set nodelist = `cat $PBS_NODEFILE | grep -v '^#' | sed 's/:[0-9]*//'`
   cat $PBS_NODEFILE > mpi.hosts
