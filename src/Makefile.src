@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.371 2008-01-30 14:40:35 ajohan Exp $
+### $Id: Makefile.src,v 1.372 2008-02-02 00:38:23 steveb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -701,6 +701,14 @@ LD_FFTW2=
 #FFLAGS=-O3 -L/misc/network/dhruba/Library/lib/ #(starpc37.maths.qmul.ac.uk)
 #CC=mpicc -I/misc/network/dhruba/Library/include/  #(starpc37.maths.qmul.ac.uk)
 #CFLAGS=-O3 -DFUNDERSC=1  #(starpc37)
+##
+## Hoffman2 Cluster @ UCLA (Steve B)
+##
+#FC=mpif90 #(i01|i02)
+#F77=$(FC) #(i01|i02)
+#FFLAGS=-O3 #(i01|i02)
+#CC=mpicc #(i01|i02)
+#CFLAGS=-O3 -DFUNDERSC=1 #(i01|i02)
 ##
 ##
 ## CrayXT4 - (Espoo, Finland)
