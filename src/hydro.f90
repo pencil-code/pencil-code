@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.412 2007-12-31 00:36:58 dobler Exp $
+! $Id: hydro.f90,v 1.413 2008-02-04 13:04:07 dintrans Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -336,7 +336,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.412 2007-12-31 00:36:58 dobler Exp $")
+           "$Id: hydro.f90,v 1.413 2008-02-04 13:04:07 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -396,12 +396,23 @@ module Hydro
       endif
 !
 !  damping parameters for damping velocities outside an embedded sphere
+!  04-feb-2008/dintrans: corriged because otherwise rdampext=r_ext all the time
 !
       if (dampuext /= 0.0) then
-        if (r_ext < impossible) then
-          rdampext = r_ext
-        elseif (rdampext == impossible) then
-          write(*,*) 'initialize_hydro: outer radius not yet set, dampuext= ',dampuext
+!       if (r_ext < impossible) then
+!         rdampext = r_ext
+!       elseif (rdampext == impossible) then
+!         write(*,*) 'initialize_hydro: outer radius not yet set, dampuext= ',dampuext
+!       endif
+        if (rdampext == impossible) then
+          if (r_ext < impossible) then
+            write(*,*) 'initialize_hydro: set outer radius rdampext=r_ext'
+            rdampext = r_ext
+          else
+            write(*,*) 'initialize_hydro: cannot set outer radius rdampext=r_ext'
+          endif
+        else
+          write(*,*) 'initialize_hydro: outer radius rdampext=',rdampext
         endif
       endif
 !
