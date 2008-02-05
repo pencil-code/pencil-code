@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.200 2008-01-12 13:27:25 brandenb Exp $
+! $Id: boundcond.f90,v 1.201 2008-02-05 23:32:51 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -168,20 +168,20 @@ module Boundcond
                   ! BCX_DOC: $f=1$ (for debugging)
                   call bc_one_x(f,topbot,j)
                 case ('set')
-                  ! BCX_DOC: set boundary value to |fbcx12|
+                  ! BCX_DOC: set boundary value to \var{fbcx12}
                   call bc_sym_x(f,-1,topbot,j,REL=.true.,val=fbcx12)
                 case ('der')
-                  ! BCX_DOC: set derivative on boundary to |fbcx12|
+                  ! BCX_DOC: set derivative on boundary to \var{fbcx12}
                   call bc_set_der_x(f,topbot,j,fbcx12(j))
                 case ('slo')
-                  ! BCX_DOC: set slope at the boundary = fbcx12
+                  ! BCX_DOC: set slope at the boundary = \var{fbcx12}
                   call bc_slope_x(f,fbcx12,topbot,j)
                 case ('dr0')
                   ! BCX_DOC: set boundary value [really??]
                   call bc_dr0_x(f,fbcx12,topbot,j)
                 case ('ovr')
                   ! BCX_DOC: overshoot boundary condition
-                  ! BCX_DOC:  ie (d/dx-1/dist) f = 0. 
+                  ! BCX_DOC:  ie $(d/dx-1/\mathrm{dist}) f = 0.$ 
                   call bc_overshoot_x(f,fbcx12,topbot,j)
                 case ('ant')
                   ! BCX_DOC: set boundary value [really??]
@@ -197,7 +197,7 @@ module Boundcond
                   !Defined only for the bottom boundary 
                   call bc_set_jethat_x(f,j,topbot,fbcx12,fbcx2_12)
                 case ('spd')
-                  ! BCX_DOC:  sets  d(rA_{\alpha})/dr = fbcx12(j)
+                  ! BCX_DOC:  sets $d(rA_{\alpha})/dr = \mathtt{fbcx12(j)}$
                   call bc_set_spder_x(f,topbot,j,fbcx12(j))
                 case('sfr')
                   ! BCX_DOC: "stress-free" boundary condition for spherical coordinate system. 
@@ -489,10 +489,10 @@ module Boundcond
                 if (j==iaa) call bc_aa_pot(f,topbot)
                 if (j==ilnTT) call bc_lnTT_flux_z(f,topbot)
               case ('pot')
-                ! BCZ_DOC: 
+                ! BCZ_DOC: potential magnetic field
                 if (j==iaa) call bc_aa_pot2(f,topbot)
               case ('pwd')
-                ! BCZ_DOC: 
+                ! BCZ_DOC: a variant of `pot'
                 if (j==iaa) call bc_aa_pot3(f,topbot)
               case ('d2z')
                 ! BCZ_DOC: 

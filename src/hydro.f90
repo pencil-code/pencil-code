@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.413 2008-02-04 13:04:07 dintrans Exp $
+! $Id: hydro.f90,v 1.414 2008-02-05 23:32:51 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -21,7 +21,7 @@ module Hydro
 !  Note that Omega is already defined in cdata.
 
   use Cparam
-  use Cdata , only: Omega, theta, huge1
+  use Cdata, only: Omega, theta, huge1
   use Viscosity
   use Messages
 ! Dhruba 
@@ -336,7 +336,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.413 2008-02-04 13:04:07 dintrans Exp $")
+           "$Id: hydro.f90,v 1.414 2008-02-05 23:32:51 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -372,7 +372,7 @@ module Hydro
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
 !
       use Mpicomm, only: stop_it
-      use CData,   only: r_int,r_ext,lfreeze_varint,lfreeze_varext,epsi,leos,iux,iuy,iuz,iuut,iuxt,iuyt,iuzt,lroot,datadir
+      use Cdata,   only: r_int,r_ext,lfreeze_varint,lfreeze_varext,epsi,leos,iux,iuy,iuz,iuut,iuxt,iuyt,iuzt,lroot,datadir
       use FArrayManager
       use SharedVariables
 !

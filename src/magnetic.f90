@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.476 2008-01-01 19:15:28 brandenb Exp $
+! $Id: magnetic.f90,v 1.477 2008-02-05 23:32:51 dobler Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -262,15 +262,15 @@ module Magnetic
   integer :: idiag_bx2mxz=0     ! DIAG_DOC: $\left< B_x^2 \right>_{xz}$
   integer :: idiag_by2mxz=0     ! DIAG_DOC: $\left< B_y^2 \right>_{xz}$
   integer :: idiag_bz2mxz=0     ! DIAG_DOC: $\left< B_z^2 \right>_{xz}$
-  integer :: idiag_bx2mxy=0     ! DIAG_DOC: $\left< B_x^2 \right\>_{z}$
-  integer :: idiag_by2mxy=0     ! DIAG_DOC: $\left< B_y^2 \right\>_{z}$
-  integer :: idiag_bz2mxy=0     ! DIAG_DOC: $\left< B_z^2 \right\>_{z}$
-  integer :: idiag_bxbymxy=0    ! DIAG_DOC: $\left< B_x B_y \right\>_{z}$
-  integer :: idiag_bxbzmxy=0    ! DIAG_DOC: $\left< B_x B_z \right\>_{z}$
-  integer :: idiag_bybzmxy=0    ! DIAG_DOC: $\left< B_y B_z \right\>_{z}$
-  integer :: idiag_bxbymxz=0    ! DIAG_DOC: $\left< B_x B_y \right\>_{y}$
-  integer :: idiag_bxbzmxz=0    ! DIAG_DOC: $\left< B_x B_z \right\>_{y}$
-  integer :: idiag_bybzmxz=0    ! DIAG_DOC: $\left< B_y B_z \right\>_{y}$
+  integer :: idiag_bx2mxy=0     ! DIAG_DOC: $\left< B_x^2 \right>_{z}$
+  integer :: idiag_by2mxy=0     ! DIAG_DOC: $\left< B_y^2 \right>_{z}$
+  integer :: idiag_bz2mxy=0     ! DIAG_DOC: $\left< B_z^2 \right>_{z}$
+  integer :: idiag_bxbymxy=0    ! DIAG_DOC: $\left< B_x B_y \right>_{z}$
+  integer :: idiag_bxbzmxy=0    ! DIAG_DOC: $\left< B_x B_z \right>_{z}$
+  integer :: idiag_bybzmxy=0    ! DIAG_DOC: $\left< B_y B_z \right>_{z}$
+  integer :: idiag_bxbymxz=0    ! DIAG_DOC: $\left< B_x B_y \right>_{y}$
+  integer :: idiag_bxbzmxz=0    ! DIAG_DOC: $\left< B_x B_z \right>_{y}$
+  integer :: idiag_bybzmxz=0    ! DIAG_DOC: $\left< B_y B_z \right>_{y}$
   integer :: idiag_uxbm=0       ! DIAG_DOC:
   integer :: idiag_oxuxbm=0     ! DIAG_DOC:
   integer :: idiag_jxbxbm=0     ! DIAG_DOC:
@@ -324,8 +324,8 @@ module Magnetic
   integer :: idiag_mflux_y=0    ! DIAG_DOC:
   integer :: idiag_mflux_z=0    ! DIAG_DOC:
   integer :: idiag_bmxy_rms=0   ! DIAG_DOC: $\sqrt{[\left<b_x\right>_z(x,y)]^2 + 
-                                ! DIAG_DOC: [\left<b_x\right>_z(x,y)]^2 +
-                                ! DIAG_DOC: [\left<b_x>_z(x,y)\right>]^2} $ 
+                                ! DIAG_DOC: [\left<b_y\right>_z(x,y)]^2 +
+                                ! DIAG_DOC: [\left<b_z\right>_z(x,y)]^2} $ 
   contains
 
 !***********************************************************************
@@ -365,7 +365,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.476 2008-01-01 19:15:28 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.477 2008-02-05 23:32:51 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
