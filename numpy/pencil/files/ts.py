@@ -1,4 +1,4 @@
-# $Id: ts.py,v 1.2 2008-02-05 15:44:34 theine Exp $
+# $Id: ts.py,v 1.3 2008-02-05 15:47:28 theine Exp $
 #
 # read time_series.dat and return a TimeSeries class of 1D numpy
 # arrrays
@@ -16,12 +16,12 @@ class TimeSeries:
     """
     pass
 
-def read_ts(filename='time_series.dat',datadir='data',double=0,print_std=0,quiet=0):
+def read_ts(filename='time_series.dat',datadir='data/',double=0,print_std=0,quiet=0):
     """
     read_ts -- reads Pencil Code time series data. modeled after idl function of same name.
     """
     datadir = os.path.expanduser(datadir)
-    infile = open(datadir+'/'+filename,"r")
+    infile = open(datadir+filename,"r")
     lines = infile.readlines()
     infile.close()
     
