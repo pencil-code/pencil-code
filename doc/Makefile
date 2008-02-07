@@ -38,14 +38,14 @@ MAY_HAVE_CHANGED='may have changed. Rerun to get'
 
 # ------------------
 
-default: diag-table.tex manual.pdf manual.ps.gz
+default: inlinedoc manual.pdf manual.ps.gz
 
 all:  manual.pdf manual.dvi manual.ps.gz
 
 pdffigs:
 	cd figs; make pdf
 
-manual_dvi: manual.tex diag-table.tex
+manual_dvi: manual.tex inlinedoc-diag.tex
 	@TEXINPUTS="./texinputs:${TEXINPUTS}"; \
 	export TEXINPUTS; \
 	echo "TEXINPUTS=$${TEXINPUTS}"; \
@@ -77,8 +77,10 @@ manual.ps: driver_ps2pdf manual_dvi
 manual.ps.gz: manual.ps
 	gzip -f manual.ps
 
-diag-table.tex:
-	./extract-diag-doc -q -o diag-table.tex
+inlinedoc-diag.tex: inlinedoc
+
+inlinedoc:
+	./extract-diag-doc
 
 driver_:
 	@printf "%s\n" \
@@ -148,10 +150,11 @@ www/faq.tex: manual.tex
 clean:
 	rm -f manual.ps* body.ps* appendix.ps* manual.dvi *.aux *.toc *.log \
 	*.idx *.ind *.ilg *.out *.vidx *.vind *.fidx *.find manual.image.*
-# same, but including image directory
+# same, but including image directory and automatically generated inline
+# doc files
 cleanall: cleann
 cleann: clean
-	rm -f *.pdf
+	rm -f *.pdf inlinedoc-*
 	cd figs; make clean
 
 # End of file

@@ -6,8 +6,8 @@
 #   Extract Documentation strings following variable declarations and
 #   Collect in LaTeX longtable environment for inclusion in the manual.
 # Author: wd (wdobler [at] cpan.org)
-# $Date: 2007-08-22 16:10:56 $
-# $Revision: 1.2 $
+# $Date: 2008-02-07 23:03:59 $
+# $Revision: 1.3 $
 #
 # This file is part of the Pencil Code and licensed under the GNU Public
 # License version 3 or later; see $PENCIL_HOME/license/GNU_public_license.txt.
@@ -34,6 +34,7 @@ sub new {
 # Takes configuration parameters as argument, either in a (flattened) hash
 #
 #   Pencil::DocExtractor->new(marker   => qr/!\s*DIAG_DOC:/,
+#                             prefix   => qr/integer\s*::\s*idiag_/,
 #                             whatelse => somethingelse);
 #
 # or in a hashref
@@ -43,14 +44,21 @@ sub new {
     my $proto = shift;          # either classref or object ref or string
     my @argv  = @_;
 
-    my $class = ref($proto) || $proto;
     my $self = {};
+    my $class;
+    my $parent = {};
+    if (ref($proto)) {
+        $class = ref($proto);
+        # If this is a call of the form $object->new(), extract properties
+        # of original object and use them as default values.
+        if ($proto->isa('Pencil::DocExtractor')) {
+            $parent = $proto;
+        }
+    } else {
+        $class = $proto;
+    }
 
     # Parse argument(s) (name => <nlname>); may be list or hashref
-    my %config = ( marker => qr/!\s*[A-Z]+_DOC:/,
-                   debug  => 0,
-                   quiet  => 0,
-                 );
     my %args;
     if (@argv) {
         if (ref($argv[0]) eq 'HASH') { # parse($hashref)
@@ -59,18 +67,19 @@ sub new {
             %args = @argv;
         }
     }
-    # Overwrite default settings with explicitly given config parameters
-    while (my ($key, $val) = each %args) {
-        $config{$key} = $val;
-    }
-    #
+    # Set object fields based on
+    # 1. explicitly given parameters,
+    # 2. existing fields (this could be an object constructor [as in
+    #   $bcx_doc = $bc_doc->new(marker => qr/!\s*BCX_DOC:/);] or a class
+    #   constructor)
+    # 3. a default value
 
-    my $quiet = ($config{quiet} || 0);
-    my $debug = ($config{debug} || 0);
-
-    $self->{MARKER} = $config{marker};
-    $self->{DEBUG}  = $config{debug};
-    $self->{QUIET}  = $config{quiet};
+    $self->{MARKER}  = $args{marker}  || $parent->{MARKER} || qr/!\s*[A-Z]+_DOC:/ ;
+    $self->{PREFIX}  = $args{prefix}  || $parent->{PREFIX} || qr/\s*/;
+    $self->{DEBUG}   = $args{debug}   || $parent->{DEBUG}  || 0;
+    $self->{VERBOSE} = $args{verbose} || $parent->{DEBUG}  || 0;
+    # debugging implies verbosity:
+    $self->{VERBOSE} = $self->{DEBUG} || 0;
 
     bless($self, $class);
     return($self);
@@ -92,8 +101,9 @@ sub parse {
 
     my @localdoc = get_docs_from_file($file,
                                       $self->{MARKER},
+                                      $self->{PREFIX},
                                       $self->{DEBUG},
-                                      $self->{QUIET});
+                                      $self->{VERBOSE});
     (my $sfile = $file) =~ s{.*/}{}; # remove path
     $self->{DOC}{$sfile} = \@localdoc if (@localdoc);
     my $count = scalar @localdoc;
@@ -103,11 +113,43 @@ sub parse {
 
 # ---------------------------------------------------------------------- #
 
+sub write_to_file {
+#
+#   $doc->write_to_file(file)
+#   $doc->write_to_file(file          => 'filename',
+#                       sort_files    => 1/0,
+#                       print_empty   => 0/1,
+#                       descr_width   => '0.7\textwidth',
+#                       selfcontained => 0/1)
+#
+# Write LaTeX {longtable} environment of docstrings to given file.
+# Just a convenience wrapper around longtable().
+#
+    my $self = shift();
+    my @args = @_;
+    my %args;
+    # Parse arguments (sort_files => <true/false>, etc.); may be hash or hashref
+    if (ref($args[0]) eq 'HASH') { # longtable($hashref)
+        %args = %{$args[0]};
+    } else {                    # longtable(%hash)
+        %args = @args;
+    }
+
+    my $file = $args{file} or croak "write_to_file() needs a <file> argument";
+    open(my $fh, "> $file") or croak "Cannot open $file for writing: $!";
+    print $fh $self->longtable(@args);
+    close $fh;
+}
+
+# ---------------------------------------------------------------------- #
+
 sub longtable {
 #
 #   $doc->longtable()
-#   $doc->longtable(sort_files  => 1/0,
-#                   print_empty => 0/1)
+#   $doc->longtable(sort_files    => 1/0,
+#                   print_empty   => 0/1,
+#                   descr_width   => '0.7\textwidth',
+#                   selfcontained => 0/1)
 #
 # Output docstrings in a LaTeX {longtable} environment.
 #
@@ -137,7 +179,7 @@ sub longtable {
                       } @files;
     }
 
-    my $text  = header(@files);
+    my $text  = header(\@files, $args{selfcontained}, $args{descr_width});
 
     foreach my $module (@files) {
         # Header line for each section of table
@@ -162,7 +204,7 @@ sub longtable {
 
     }
 
-    $text .= footer();
+    $text .= footer($args{selfcontained});
 
 }
 
@@ -179,8 +221,9 @@ sub get_docs_from_file {
 #
     my $module = shift;
     my $marker = shift;
+    my $prefix = shift;
     my $debug  = shift || 0;
-    my $quiet  = shift || 0;
+    my $verbose  = shift || 0;
 
     my @localdoc;
     my $file  = $module;
@@ -190,43 +233,89 @@ sub get_docs_from_file {
         carp "Cannot open $file for reading: $!\n";
         return ();
     }
-    print STDERR "$module:\n" unless ($quiet);
+    print STDERR "$module:\n" if ($verbose);
+    my $no_line_to_continue = 1;
+
+    # Store prefix for processing with the next line to cover cases
+    # like
+    #   case ('cop')
+    #   ! BCZ_DOC: copy value
+    my $saved_prefix_line = '';
     LINE: while(defined(my $line = <MODULE>)) {
-        next unless $line =~ /$marker/;
+        print STDERR "----------- input line $. ----------\n" if ($debug);
+        if ($line =~ /\s*($prefix)/) {
+            $saved_prefix_line = $1;
+            print STDERR "Saving prefix line #",
+              $., " = <", printable_substring($line), ">\n"
+                if ($debug);
+        }
+        unless ($line =~ /$marker/) {
+            # Whatever comes next, cannot be a continuation line:
+            $no_line_to_continue = 1;
+            next;
+        }
+
+        print STDERR "\$line = <", printable_substring($line), ">\n"
+          if ($debug);
         my ($var,$misc,$docstring) = ('', '', '');
 
         my ($decl, $latex)
           = ($line =~ /^\s*(.*?)\s*$marker\s*(.*?)\s*$/);
+        warn "Weird... \$line=<$line>\n" unless defined($latex);
+        print STDERR "\$decl=<$decl>, \$latex=<$latex>\n" if ($debug);
 
-        if ($decl ne '') {      # there is a declaration part
+        # Get stored declaration line if there was no $prefix in the
+        # actual line:
+        if ($decl eq '') {
+            print STDERR "\$decl <-- <",
+              printable_substring($saved_prefix_line), ">\n"
+                if ($debug);
+            $decl = $saved_prefix_line;
+        }
+
+        if ($decl =~ /$prefix/) {
+            # there is a declaration part
+            # -> not a continuation line
             print STDERR "docstring at ${module}:$.\n" if ($debug);
-            ($var,$misc) = 
-              ($decl =~
-               /^integer\s*::\s*idiag_(\S+)(.*?)(?:\s*=\s*[-+0-9]+\s*)/i);
-            if ($misc =~ /idiag_/i) {
+
+            my ($var,$rest)
+              = ($decl =~ /$prefix\s*(.*?)\s*/);
+            print STDERR "## \$var=<$var>, \$rest=<$rest>\n" if ($debug);
+            $misc
+              = ($rest =~ /^(.*?)(?:\s*=\s*[-+0-9]+\s*)/i);
+            print STDERR "\$var=<$var>, \$msc=<$misc>\n" if ($debug);
+            if (defined($misc) && $misc =~ /idiag_/i) {
                 carp "In line $. of $file: "
                   . "multiple diagnostic variables in one line:\n";
                 carp "  $var, $misc\n";
                 next LINE;
             }
+            unless (defined($var)) {
+                carp "In line $. of $file: "
+                  . "variable name not found:\n";
+                next LINE;
+            }
             print STDERR "    $var -> $latex\n" if ($debug);
             push @localdoc, [$var, $latex];
+            $no_line_to_continue = 0;
             $count++;
-
-        } else {              #  no declaration part --> continuation line
+        } else {
+            #  no declaration part --> continuation line
             print STDERR "..continuation line at ${module}:$.\n" if ($debug);
             ## Append latex part to previous entry
             my ($var1,$latex1) = @{ pop @localdoc || [] }
                 or next LINE; # nothing to append to
             push @localdoc, [$var1, "$latex1\n  $latex"];
         }
+        $saved_prefix_line = '';
     }
 
     if ($count) {
         print STDERR "Found documentation for $count diagnostic variables\n"
           if ($debug);
     } else {
-        print STDERR "Hmm, no documentation found in $file\n" unless ($quiet);
+        print STDERR "No documentation found in $file\n"
+          if ($debug);
     }
 
     return @localdoc;
@@ -236,8 +325,8 @@ sub get_docs_from_file {
 
 sub filter_doc {
 # Remove (or not) items with empty documentation lines
-    my $docref = shift;
-    my $quiet  = shift || 0;
+    my $docref  = shift;
+    my $verbose = shift || 0;
 
     my %newdoc;
     my $empty    = 0;
@@ -257,7 +346,7 @@ sub filter_doc {
     }
 
     # Give statistical feedback
-    unless ($quiet) {
+    if ($verbose) {
         print STDERR "  (doc, undoc, tot) = ($nonempty, $empty, ",
           $nonempty+$empty, ")\n";
     }
@@ -271,18 +360,46 @@ sub header {
 #
 # Print LaTeX longtable header
 #
-    my @files =  @_;
+    my @files =  @{shift()};
+    my $selfcontained = shift;
+    my $descr_width = (shift || '0.7\textwidth');
 
     my $string =
-        '%% $Id: DocExtractor.pm,v 1.2 2007-08-22 16:10:56 dobler Exp $' . "\n"
-      . "%% This file was automatically generated by Pencil::DocExtractor\n"
-      . "%% from\n%%   "
-      . join("\n%%   ", @files) . "\n"
-      . "%% So think twice before you modify it.\n\n";
+        '%% $Id: DocExtractor.pm,v 1.3 2008-02-07 23:03:59 dobler Exp $' . "\n"
+      . "%% This file was automatically generated by Pencil::DocExtractor,\n"
+      . "%% so think twice before you modify it.\n"
+      . "%%\n"
+      . "%% Source files:\n%%   "
+      . join("\n%%   ", @files) . "\n\n";
+
+    if ($selfcontained) {
+        $string .=
+            "\n\\documentclass[12pt]{article}\n"
+          . "\n"
+          . "\\usepackage{longtable,booktabs}\n"
+          . "\\usepackage{underscore}\n"
+          . "\\usepackage{amsmath,newcent,helvet}\n"
+          . "\\renewcommand{\\ttdefault}{cmtt} % Courier is too broad\n"
+          . "\n"
+          . "\\newcommand{\\file}[1]{`\\texttt{#1}'}\n"
+          . "\\newcommand{\\var}[1]{\\textsl{#1}}\n"
+          . "\n"
+          . "\\newcommand{\\vekt}[1] {\\mathbf{#1}}\n"
+          . "\n"
+          . "\\newcommand{\\Av}{\\vekt{A}}\n"
+          . "\\newcommand{\\Bv}{\\vekt{B}}\n"
+          . "\\newcommand{\\cs}{c_{\rm s}}\n"
+          . "\\newcommand{\\curl}{\\nabla\\times}\n"
+          . "\\newcommand{\\jv}{\\vekt{j}}\n"
+          . "\\newcommand{\\Strain}{\\boldsymbol{\\mathsf{S}}}\n"
+          . "\\newcommand{\\uv}{\\vekt{u}}\n"
+          . "\n"
+          . "\\begin{document}\n\n"
+    }
 
     $string .=
         "% ---------------------------------------------------------------- %\n"
-      . "\\begin{longtable}{lp{0.7\\textwidth}}\n"
+      . "\\begin{longtable}{lp{$descr_width}}\n"
       . "\\toprule\n"
       . "  \\multicolumn{1}{c}{\\emph{Variable}} \& {\\emph{Meaning}} \\\\\n";
 
@@ -295,10 +412,15 @@ sub footer {
 #
 # Return LaTeX longtable footer
 #
+my $selfcontained = shift;
     my $string =
         "%\n"
       . "\\bottomrule\n"
       . "\\end{longtable}\n\n";
+
+    if ($selfcontained) {
+        $string .= "\n\\end{document}\n\n";
+    }
 
     return $string;
 }
@@ -325,6 +447,22 @@ sub compare_modulenames_for_sorting {
     my $infty = 100000;         # or will we get more modules...?
 
     return $mapping{$short} || $infty;
+}
+
+# ---------------------------------------------------------------------- #
+
+sub printable_substring {
+# Extract substring and quote newlines for diagnostic printing
+    my $string = shift;
+    my $length = shift || 60;
+
+    $string =~ s{\n}{\\n}g;      # quote newlines
+    $ string =~ s{\s\s+}{\\s\+}; # compactify whitespace
+    my $oldlen = length($string);
+    $string = substr($string,0,$length);
+    substr($string,-3,3) = '...' if ($length<$oldlen);
+
+    return $string;
 }
 
 # ---------------------------------------------------------------------- #
@@ -366,7 +504,7 @@ or
     ! BCX_DOC: implies $f'(x_N)=f'''(x_0)=0$
     call bc_sym_x(f,+1,topbot,j)
 
-and creates a LaTeX {longtable} environment fo inclusion into the manual:
+and creates a LaTeX {longtable} environment for inclusion into the manual:
 
   %% This file was automatically generated by extract-diag-doc
   %% from the src/*.f90 files.

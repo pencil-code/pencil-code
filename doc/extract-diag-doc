@@ -22,13 +22,17 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   Extract documentation for diagnostic variables from lines of the form
 #     integer :: idiag_var=0  ! DIAG_DOC: <TeX documentation string>
 #                             ! DIAG_DOC: <possible continuation>
-#   in the modules in ${PENCIL_HOME}/src/
+#     integer :: idiag_var=0  ! DIAG_DOC: <TeX documentation string>
+#                             ! BCY_DOC: set boundary value
+#   in the modules in ${PENCIL_HOME}/src/ .
+#   Currently the doc tags DIAG, BCX, BCY, BCZ are supported.
 # Usage:
-#   extract-diag-doc [-v|-h]
+#   extract-diag-doc ../src/toto*.f90  # (specific files)
+#   extract-diag-doc                   # (all F90 files)
 # Options:
 #   -h, --help      This help
 #   -v, --version   Print version number
-#   -q, --quiet     Be quiet
+#   -V, --verbose   Be verbose
 
 # Copyright (C) 2006  Wolfgang Dobler
 #
@@ -45,25 +49,16 @@ BEGIN {
     }
 }
 
-eval "use Pencil::DocExtractor";
-if ($@) {             # Error loading DocExtractor.pm -- give useful advice
-    my $error = join("\n",$@);
-    if ($error =~ m|Can't locate Pencil/DocExtractor.pm in \@INC|) {
-        if (! -d "$ENV{PENCIL_HOME}/lib/perl") { # forgot to cvs up -d perl
-            die "Perl: Can't locate Pencil/DocExtractor.pm in \@INC\n"
-              . "You need to check out the Pencil library (including lib/perl) d
-irectory:\n"
-              . "  (cd \$PENCIL_HOME; cvs up -d lib)\n";
-        } else {               # $PENCIL_HOME/lib/perl missing in PERL5LIB
-            die "Perl: Can't locate Pencil::DocExtractor.pm in \@INC\n"
-              ."Pencil::DocExtractor.pm must be missing from your working copy, 
-try:\n"
-              ."(cd \$PENCIL_HOME/lib/perl; cvs up -dA)\n";
-        }
-    } else {                    # unknown error message
-        die "$@\n";
-    }
+# Temporarily: give useful diagnostics if the useful-diagnostics mdule
+# cannot be found...
+# use Pencil::Diagnostics;
+eval 'use Pencil::Util';
+if ($@) {
+    die "You need to run\n  (cd \$PENCIL_HOME; cvs up -dA lib)\n$@\n";
 }
+
+Pencil::Util::use_pencil_perl_module('Pencil::DocExtractor')
+  or die;
 
 use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
@@ -77,7 +72,7 @@ GetOptions(\%opts,
            qw( -h    --help
                      --debug
                -o=s  --output=s
-               -q    --quiet
+               -V    --verbose
                -v    --version ));
 
 my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
@@ -89,42 +84,79 @@ if ($debug) {
 if ($opts{'h'} || $opts{'help'})    { die usage();   }
 if ($opts{'v'} || $opts{'version'}) { die version(); }
 
-my $quiet = ($opts{'q'} || $opts{'quiet'}  || '' );
-my $file  = ($opts{'o'} || $opts{'output'} || '-');
+my $verbose = ($opts{'V'} || $opts{'verbose'}  || '' );
+my $file    = ($opts{'o'} || $opts{'output'}   || '-');
 
-my $marker_re = '!\s+[A-Z]+_DOC:';
-my (@module_files, $all_src);
+## Construct file list
+my ($src_files_ref, $all_src) = get_src_files(@ARGV);
 
-if (@ARGV) {                    # explicit source files given
-    @module_files = @ARGV;
-    $all_src = 0;
-} else {
-    # Process all src/*.f90 files
-    my $srcdir;
-    if (-d '../src') {
-        $srcdir = '../src';
-    } elsif (-d "$ENV{PENCIL_HOME}/src") {
-        $srcdir = "$ENV{PENCIL_HOME}/src";
-    } else {
-        die " Can't find suitable src/ dir\n";
+
+my $diag_doc = Pencil::DocExtractor->new(
+    marker  => qr/!\s*DIAG_DOC:/,
+    prefix  => qr/integer\s*::\s*idiag_(\S+)/,
+    verbose => $verbose,
+    debug   => $debug
+);
+
+my $bc_doc   = Pencil::DocExtractor->new(
+    prefix  => qr/case\s*\(['"](.*)['"]\)/,
+    verbose => $verbose,
+    debug   => $debug
+);
+my $bcx_doc = $bc_doc->new(marker  => qr/!\s*BCX_DOC:/);
+my $bcy_doc = $bc_doc->new(marker  => qr/!\s*BCY_DOC:/);
+my $bcz_doc = $bc_doc->new(marker  => qr/!\s*BCZ_DOC:/);
+
+foreach my $file (@$src_files_ref) {
+    $diag_doc->parse($file) or print "No DIAG_DOC labels found in $file\n";
+    $bcx_doc ->parse($file) or print "No BCX_DOC found in $file\n";
+    $bcy_doc ->parse($file) or print "No BCY_DOC found in $file\n";
+    $bcz_doc ->parse($file) or print "No BCZ_DOC found in $file\n";
+}
+
+$diag_doc->write_to_file({ file          => 'inlinedoc-diag.tex',
+                           sort_files    => 1,
+                           print_empty   => 0,
+                         });
+$bcx_doc ->write_to_file({ file          => 'inlinedoc-bcx.tex',
+                           sort_files    => 1,
+                           print_empty   => 0,
+                           descr_width   => '0.8\textwidth',
+                         });
+$bcy_doc ->write_to_file({ file          => 'inlinedoc-bcy.tex',
+                           sort_files    => 1,
+                           print_empty   => 0,
+                           descr_width   => '0.8\textwidth',
+                         });
+$bcz_doc ->write_to_file({ file          => 'inlinedoc-bcz.tex',
+                           sort_files    => 1,
+                           print_empty   => 0,
+                         });
+
+# ---------------------------------------------------------------------- #
+sub get_src_files {
+# Construct list of .f90 source files
+    my @src_files = @_;
+    my $all_src = 0;
+
+    if (! @src_files) {         # no explicit source files given
+        # Process all src/*.f90 files
+        my $srcdir;
+        if (-d '../src') {
+            $srcdir = '../src';
+        } elsif (-d "$ENV{PENCIL_HOME}/src") {
+            $srcdir = "$ENV{PENCIL_HOME}/src";
+        } else {
+            die " Can't find suitable src/ dir\n";
+        }
+        print STDERR  "\$srcdir = <$srcdir>\n" if ($debug);
+
+        @src_files = <$srcdir/*.f90>;
+        $all_src = 1;
     }
-    print STDERR  "\$srcdir = <$srcdir>\n" if ($debug);
 
-    @module_files = <$srcdir/*.f90>;
-    $all_src = 1;
+    return (\@src_files, $all_src);
 }
-
-my $doc = Pencil::DocExtractor->new(quiet => $quiet);
-
-foreach my $file (@module_files) {
-    $doc->parse($file);
-}
-
-open OUT, "> $file";
-print OUT $doc->longtable({ sort_files  => 1,
-                            print_empty => 0 });
-close OUT;
-
 # ---------------------------------------------------------------------- #
 sub printopts {
 # Print command line options
@@ -156,8 +188,8 @@ sub version {
 # Return CVS data and version info.
     my $doll='\$';              # Need this to trick CVS
     my $cmdname = (split('/', $0))[-1];
-    my $rev = '$Revision: 1.4 $';
-    my $date = '$Date: 2007-08-22 15:59:28 $';
+    my $rev = '$Revision: 1.5 $';
+    my $date = '$Date: 2008-02-07 23:03:58 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     "$cmdname version $rev ($date)\n";

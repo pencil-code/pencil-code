@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.org)
-%%  CVS: $Id: manual.tex,v 1.382 2008-02-07 22:49:22 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.383 2008-02-07 23:03:59 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2008-02-07 22:49:22 $ $,~ $ $Revision: 1.382 $ $}
+%\date{$ $Date: 2008-02-07 23:03:59 $ $,~ $ $Revision: 1.383 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2008-02-07 22:49:22 $ $,~ $ $Revision: 1.382 $ $}\\
+  \emph{$ $Date: 2008-02-07 23:03:59 $ $,~ $ $Revision: 1.383 $ $}\\
   \url{http://www.nordita.org/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -5858,7 +5858,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2008-02-07 22:49:22 $ $,~ $ $Revision: 1.382 $ $}
+  \hfill\normalsize\rm$ $Date: 2008-02-07 23:03:59 $ $,~ $ $Revision: 1.383 $ $}
 
 \section{Timings}
 
@@ -7849,7 +7849,8 @@ of directions (see also \cite{Abramowitz-Stegun}, \S 25.4.65):
 %(AB: but acroread somehow still doesn't bring me to the right place)
 
 The table below lists the available physics and technical
-modules.
+modules
+[Note: this is most likely very outdated and should probably be automated]
 
 % ---------------------------------------------------------------------- %
 %\begin{table}
@@ -8844,7 +8845,7 @@ The following table lists all possible inputs to the file \file{print.in}
 that are documented.
 
 % ---------------------------------------------------------------------- %
-\input{diag-table.tex}
+\input{inlinedoc-diag.tex}
 % ---------------------------------------------------------------------- %
 
 
@@ -9000,6 +9001,28 @@ possible inputs to the file \file{phiaver.in}.
 %
 \bottomrule
 \end{longtable}
+% ---------------------------------------------------------------------- %
+
+
+\subsection{Boundary conditions}
+\label{S-boundconds}
+
+The following tables list all possible boundary condition labels
+that are documented.
+
+\subsubsection{Boundary condition \var{bcx}}
+% ---------------------------------------------------------------------- %
+\input{inlinedoc-bcx.tex}
+% ---------------------------------------------------------------------- %
+
+\subsubsection{Boundary condition \var{bcy}}
+% ---------------------------------------------------------------------- %
+\input{inlinedoc-bcy.tex}
+% ---------------------------------------------------------------------- %
+
+\subsubsection{Boundary condition \var{bcz}}
+% ---------------------------------------------------------------------- %
+\input{inlinedoc-bcz.tex}
 % ---------------------------------------------------------------------- %
 
 
@@ -9330,7 +9353,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.382 2008-02-07 22:49:22 dobler Exp $ $}
+$ $Id: manual.tex,v 1.383 2008-02-07 23:03:59 dobler Exp $ $}
 
 
 \end{document}
