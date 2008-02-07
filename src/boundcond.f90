@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.201 2008-02-05 23:32:51 dobler Exp $
+! $Id: boundcond.f90,v 1.202 2008-02-07 22:53:10 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -200,7 +200,7 @@ module Boundcond
                   ! BCX_DOC:  sets $d(rA_{\alpha})/dr = \mathtt{fbcx12(j)}$
                   call bc_set_spder_x(f,topbot,j,fbcx12(j))
                 case('sfr')
-                  ! BCX_DOC: "stress-free" boundary condition for spherical coordinate system. 
+                  ! BCX_DOC: stress-free boundary condition for spherical coordinate system. 
                   call bc_set_sfree_x(f,topbot,j)
                 case('pfc')
                   !BCX_DOC: perfect-conductor in spherical coordinate: $d/dr( A_r) + 2/r = 0$ . 
@@ -345,7 +345,7 @@ module Boundcond
                 ! BCY_DOC: set derivative on the boundary
                 call bc_set_der_y(f,topbot,j,fbcy12(j))
               case('sfr')
-                  ! BCY_DOC: "stress-free" boundary condition for spherical coordinate system. 
+                  ! BCY_DOC: stress-free boundary condition for spherical coordinate system. 
                 call bc_set_sfree_y(f,topbot,j)
               case('pfc')
                   !BCY_DOC: perfect conducting boundary condition along $\theta$ boundary  
@@ -1428,7 +1428,7 @@ module Boundcond
     endsubroutine bc_set_pfc_x
 !***********************************************************************
     subroutine bc_set_sfree_x(f,topbot,j)
-! "stress-free" boundary condition for spherical coordinate system. 
+! Stress-free boundary condition for spherical coordinate system. 
 ! d_r(u_{\theta}) = u_{\theta}/r  with u_r = 0 sets S_{r \theta}
 ! component of the strain matrix to be zero in spherical coordinate system. 
 ! This subroutine sets only the first part of this boundary condition for 'j'-th
@@ -1527,7 +1527,7 @@ module Boundcond
     endsubroutine bc_set_jethat_x
 ! **********************************************************************
     subroutine bc_set_sfree_y(f,topbot,j)
-! "stress-free" boundary condition for spherical coordinate system. 
+! Stress-free boundary condition for spherical coordinate system. 
 ! d_r(u_{\theta}) = u_{\theta}/r  with u_r = 0 sets S_{r \theta}
 ! component of the strain matrix to be zero in spherical coordinate system. 
 ! This subroutine sets only the first part of this boundary condition for 'j'-th
