@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.org)
-%%  CVS: $Id: manual.tex,v 1.380 2008-01-13 08:06:35 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.381 2008-02-07 22:47:59 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2008-01-13 08:06:35 $ $,~ $ $Revision: 1.380 $ $}
+%\date{$ $Date: 2008-02-07 22:47:59 $ $,~ $ $Revision: 1.381 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2008-01-13 08:06:35 $ $,~ $ $Revision: 1.380 $ $}\\
+  \emph{$ $Date: 2008-02-07 22:47:59 $ $,~ $ $Revision: 1.381 $ $}\\
   \url{http://www.nordita.org/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1555,7 +1555,7 @@ For example, the settings for forced turbulent MHD simulations are
   MPICOMM   = nompicomm
   GLOBAL    = noglobal
   IO        =   io_dist
-  FOURIER       = nofourier
+  FOURIER   = nofourier
 \end{verbatim}
 This file will be processed by \name{make} and the settings are thus
 assignments of \name{make} variables.
@@ -2865,6 +2865,7 @@ Regarding details of this scheme see Sect.~\ref{S-2N-scheme}.
 
 \subsection{Boundary conditions}
 \label{boundconds}
+\index{Boundary conditions}
 
 \subsubsection{Where to specify boundary conditions}
 \label{S-boundconds-where}
@@ -5857,7 +5858,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2008-01-13 08:06:35 $ $,~ $ $Revision: 1.380 $ $}
+  \hfill\normalsize\rm$ $Date: 2008-02-07 22:47:59 $ $,~ $ $Revision: 1.381 $ $}
 
 \section{Timings}
 
@@ -6782,6 +6783,80 @@ $\xi_0$ & $c_{\rm s,bot}^2$ \\
     \end{tabular}
   \end{center}
 \end{table}
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Potential-field boundary condition}
+\label{S-potential-field}
+\index{Potential-field boundary condition}
+
+The \option{pot} [or currently rather the \option{pwd}] boundary condition
+for the magnetic vector potential implements a
+\emph{potential-field boundary condition} in $z$ for the case of an
+$x$-$y$-periodic box.
+In this section, we discuss the relevant formulas and their
+implementation in the \textsc{Pencil Code}.
+
+If the top boundary is at $z=0$, the relevant potential field for $z>0$ is
+given by
+\begin{eqnarray}
+  \label{Eq-Apot-x}
+  \tilde{A}_x(k_x, k_y, z) &=& C_x(\kv_{xy}) \,  e^{- \kappa z} \; , \\
+  \tilde{A}_y(k_x, k_y, z) &=& C_y(\kv_{xy}) \, e^{- \kappa z} \; , \\
+  \label{Eq-Apot-z}
+  \tilde{A}_x(k_x, k_y, z) &=& C_z(\kv_{xy}) \, e^{- \kappa z} \; ,
+\end{eqnarray}
+where
+\begin{equation}
+  \tilde{A}_i(k_x, k_y, z)
+  \equiv \int  e^{-i\kv_{xy}\cdot\xv} A_i(x,y,z) \; dx\, dy
+\end{equation}
+is the horizontal Fourier transform with $\kv_{xy} \equiv (k_x, k_y, 0)$,
+and $k \equiv |\kv_{xy}|$.
+Note that this implies a certain gauge and generally speaking the $z$
+dependence in Eq.~(\ref{Eq-Apot-z}) is completely arbitrary, but the form
+used here works well in terms of numerical stability.
+
+At the very boundary, the potential field
+(\ref{Eq-Apot-x})--(\ref{Eq-Apot-z}) implies
+\begin{equation}
+  \dfrac{\partial \tilde{\Av}}{\partial z} + \kappa \tilde{\Av}
+  \ =\ 0 \; , \\
+\end{equation}
+and, due to natural continuity requirements on the vector potential, these
+conditions also hold for the interior field at the boundary.
+
+
+\paragraph{Robin boundary conditions and ghost points}
+To implement a homogeneous Robin boundary condition, i.\,e. a condition of
+the form
+\begin{equation}
+  \dfrac{df}{dz} + \kappa f = 0
+\end{equation}
+using ghost points, we first write it as
+\begin{equation}
+  \dfrac{d}{dz} \left( f\,e^{\kappa z} \right)
+  = 0
+\end{equation}
+and implement this as symmetry condition for the variable
+$\varphi(z) \equiv f(z)\,e^{\kappa z}$:
+\begin{equation}
+  \varphi_{N-j} = \varphi_{N+j} \; , \qquad j=1,2,3
+\end{equation}
+(where $z_N$ is the position of the top boundary and $z_{N+1}$, \ldots are
+the bounary points).
+In terms of $f$, this becomes
+\begin{equation}
+  \label{Eq-ghost-f}
+  f_{N+j} = f_{N-j}\, e^{-\kappa(z_{N+j} - z_{N-j})} \; .
+\end{equation}
+
+Note that although the exponential term in Eq.~(\ref{Eq-ghost-f}) looks
+very much like the exterior potential field
+~(\ref{Eq-Apot-x})--(\ref{Eq-Apot-z}), our ghost-zone values do \emph{not}
+represent the exterior field -- they are rather made-up values that allow
+us to implement a local boundary condition at $z=0$.
+
 
 % ---------------------------------------------------------------------- %
 
@@ -9199,7 +9274,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.380 2008-01-13 08:06:35 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.381 2008-02-07 22:47:59 dobler Exp $ $}
 
 
 \end{document}
