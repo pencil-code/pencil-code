@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.20 2008-01-23 05:52:00 brandenb Exp $
+! $Id: testfield_z.f90,v 1.21 2008-02-07 19:11:00 dhruba Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -58,7 +58,7 @@ module Testfield
   real :: ktestfield=1., ktestfield1=1.
   integer, parameter :: ntestfield=3*njtest
   integer :: naainit
-
+  real :: bamp=1.
   namelist /testfield_init_pars/ &
        B_ext,zextent,initaatest, &
        amplaatest, &
@@ -69,7 +69,7 @@ module Testfield
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
-       luxb_as_aux,daainit,linit_aatest
+       luxb_as_aux,daainit,linit_aatest,bamp
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -150,7 +150,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.20 2008-01-23 05:52:00 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.21 2008-02-07 19:11:00 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -455,7 +455,7 @@ module Testfield
           call cross_mn(p%uu,btest,uxbtest)
         endif
         bpq(:,:,jtest)=btest
-        Eipq(:,:,jtest)=uxbtest
+        Eipq(:,:,jtest)=uxbtest/bamp
       enddo
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
@@ -758,10 +758,10 @@ module Testfield
 !  set bbtest for each of the 9 cases
 !
       select case(jtest)
-      case(1); bbtest(:,1)=cz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(2); bbtest(:,1)=sz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(3); bbtest(:,1)=0.; bbtest(:,2)=cz(n); bbtest(:,3)=0.
-      case(4); bbtest(:,1)=0.; bbtest(:,2)=sz(n); bbtest(:,3)=0.
+      case(1); bbtest(:,1)=bamp*cz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(2); bbtest(:,1)=bamp*sz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(3); bbtest(:,1)=0.; bbtest(:,2)=bamp*cz(n); bbtest(:,3)=0.
+      case(4); bbtest(:,1)=0.; bbtest(:,2)=bamp*sz(n); bbtest(:,3)=0.
       case default; bbtest(:,:)=0.
       endselect
 !
