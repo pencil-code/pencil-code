@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.org)
-%%  CVS: $Id: manual.tex,v 1.381 2008-02-07 22:47:59 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.382 2008-02-07 22:49:22 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2008-02-07 22:47:59 $ $,~ $ $Revision: 1.381 $ $}
+%\date{$ $Date: 2008-02-07 22:49:22 $ $,~ $ $Revision: 1.382 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2008-02-07 22:47:59 $ $,~ $ $Revision: 1.381 $ $}\\
+  \emph{$ $Date: 2008-02-07 22:49:22 $ $,~ $ $Revision: 1.382 $ $}\\
   \url{http://www.nordita.org/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -5858,7 +5858,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2008-02-07 22:47:59 $ $,~ $ $Revision: 1.381 $ $}
+  \hfill\normalsize\rm$ $Date: 2008-02-07 22:49:22 $ $,~ $ $Revision: 1.382 $ $}
 
 \section{Timings}
 
@@ -7367,7 +7367,8 @@ should always be weaker than the advective Courant criterion.
 \index{Bidiagonal scheme}
 \label{Bidiagonal}
 
-The default scheme used for off-diagonal terms reads as follows:
+The default scheme used for cross-derivatives of type
+$\partial^2/(\partial x \partial y)$ reads as follows:
 \begin{verbatim}
       df=fac*( &
                   270.*( f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k)  &
@@ -7378,51 +7379,106 @@ The default scheme used for off-diagonal terms reads as follows:
                         +f(l1-3:l2-3,m-3,n,k)-f(l1+3:l2+3,m-3,n,k)) &
              )
 \end{verbatim}
+and is ``visualized'' in the left part of Fig.~\ref{Fig-bidiagonal-scheme}.
+It is way more efficient than the straight-forward approach of first
+taking the $x$ and the $y$ derivative consecutively.
+(shown in the right part of Fig.~\ref{Fig-bidiagonal-scheme}).
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[h]
+  \centering
+  \footnotesize
+
+  \begin{tabular}{|c|c|c|c|c|c|c|}
+    \hline
+    -2 & 0   & 0    & 0 & 0    & 0   & +2 \\
+    \hline
+    0  & +27 & 0    & 0 & 0    & -27 & 0  \\
+    \hline
+    0  & 0   & -270 & 0 & +270 & 0   & 0  \\
+    \hline
+    0  & 0   & 0    & 0 & 0    & 0   & 0  \\
+    \hline
+    0  & 0   & +270 & 0 & -270 & 0   & 0  \\
+    \hline
+    0  & -27 & 0    & 0 & 0    & +27 & 0  \\
+    \hline
+    +2 & 0   & 0    & 0 & 0    & 0   & -2 \\
+    \hline
+  \end{tabular}\
+  \qquad\qquad\
+  \begin{tabular}{|c|c|c|c|c|c|c|}
+    \hline
+    9    & -27  & 135   & 0 & -135  & 27   & -9   \\
+    \hline
+    -27  & 81   & -405  & 0 & 405   & -81  & 27   \\
+    \hline
+    135  & -405 & 2025  & 0 & -2025 & 405  & -135 \\
+    \hline
+    0    & 0    & 0     & 0 & 0     & 0    & 0    \\
+    \hline
+    -135 & 405  & -2025 & 0 & 2025  & -405 & 135  \\
+    \hline
+    27   & -81  & 405   & 0 & -405  & 81   & -27  \\
+    \hline
+    -9   & 27   & -135  & 0 & 135   & -27  & 9    \\
+    \hline
+  \end{tabular}
+
+  \caption{Weights of bidiagonal scheme (left) and consecutive scheme
+    (right) for mixed derivatives $\partial^2/\partial x \partial y$.
+    The numbers shown need to be divided by $720\,\delta x\,\delta y$ for
+    the bidiagonal and by $3600\,\delta x\,\delta y$ for the consecutive
+    scheme.    
+  }
+  \label{Fig-bidiagonal-scheme}
+\end{figure}
+% ---------------------------------------------------------------------- %
 
 Off-diagonal terms enter not only the diffusion terms through
 $\nab\nab\cdot\uv$ and $\nab\nab\cdot\Av$ terms, but also through
 the $\Jv=\nab\times\nab\times\Av$ operator.
 The general formula is $J_i=A_{j,ij}-A_{i,jj}$, so in 2-D in the
 $xy$-plane we have
-\begin{equation}
-J_x=A_{x,xx}+A_{y,xy}-A_{x,xx}-A_{x,yy}=A_{y,xy}-A_{x,yy}
-\end{equation}
-\begin{equation}
-J_y=A_{x,yx}+A_{y,yy}-A_{y,xx}-A_{y,yy}=A_{x,yx}-A_{y,xx}
-\end{equation}
+\begin{eqnarray}
+  J_x &=& A_{x,xx}+A_{y,xy}-A_{x,xx}-A_{x,yy}=A_{y,xy}-A_{x,yy} \; , \\
+  J_y &=& A_{x,yx}+A_{y,yy}-A_{y,xx}-A_{y,yy}=A_{x,yx}-A_{y,xx}
+\end{eqnarray}
 
-\begin{figure}[h!]\begin{center}
-\includegraphics[width=\columnwidth]{pcompbidiagonal}
-\end{center}\caption[]{
-Alfv\'en wave for $\Bv_0=(1,2,0)$ and $\kv=(1,2,0)$ after $t=2\pi$.
-The wave travels in the direction of $\kv$.
-The red symbols are for the bidiagonal scheme.
-Already for $16^2$ mesh points there are no clear differences.
-For $8^2$ mesh points both schemes are equally imprecise regarding
-the phase error, but the amplitude error is still quite small
-(but this is mainly a property of the time stepping scheme).
-}\label{pcompbidiagonal}\end{figure}
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\columnwidth]{pcompbidiagonal}
+  \caption{
+    Alfv\'en wave for $\Bv_0=(1,2,0)$ and $\kv=(1,2,0)$ after $t=2\pi$.
+    The wave travels in the direction of $\kv$.
+    Red symbols are for the bidiagonal scheme, black symbols show results
+    obtained using the consecutive scheme.
+    Already for $16^2$ mesh points there are no clear differences.
+    For $8^2$ mesh points both schemes are equally imprecise regarding
+    the phase error, but the amplitude error is still quite small
+    (but this is mainly a property of the time stepping scheme).
+  }
+  \label{Fig-pcompbidiagonal}
+\end{figure}
 
-\begin{equation}
-\dot{u}_z=J_xB_{0y}-J_yB_{0x}
-\end{equation}
-\begin{equation}
-\dot{A}_x=-u_zB_{0y}
-\end{equation}
-\begin{equation}
-\dot{A}_y=+u_zB_{0x}
-\end{equation}
-Initial condition (as implemented in \texttt{subroutine alfven\_xy}:
-\begin{equation}
-u_z\sim\cos(k_xx+k_yy-\omega t)
-\end{equation}
-\begin{equation}
-A_x\sim+B_{0y}\sin(k_xx+k_yy-\omega t)/\omega
-\end{equation}
-\begin{equation}
-A_y\sim-B_{0x}\sin(k_xx+k_yy-\omega t)/\omega
-\end{equation}
+Figure \ref{Fig-pcompbidiagonal} shows how the two schemes perform for the
+propagation of Alfvén waves,
+
+\begin{eqnarray}
+  \dot{u}_z &=& J_xB_{0y}-J_yB_{0x} \; , \\
+  \dot{A}_x &=& -u_zB_{0y} \; , \\
+  \dot{A}_y &=& +u_zB_{0x} \; .
+\end{eqnarray}
+The initial condition (as implemented in \texttt{subroutine alfven\_xy})
+is
+\begin{eqnarray}
+  u_z &\sim& \cos(k_xx+k_yy-\omega t) \; , \\
+  A_x &\sim& +B_{0y}\sin(k_xx+k_yy-\omega t)/\omega \; , \\
+  A_y &\sim& -B_{0x}\sin(k_xx+k_yy-\omega t)/\omega \; ,
+\end{eqnarray}
 where $\omega=\kv\cdot\Bv_0$.
+The figure shows that there is no clear advantage of either scheme, so the
+code uses the more efficient bidiagonal one.
 
 \subsection{The 2N-scheme for time-stepping}
 \index{2N-scheme}
@@ -9274,7 +9330,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.381 2008-02-07 22:47:59 dobler Exp $ $}
+$ $Id: manual.tex,v 1.382 2008-02-07 22:49:22 dobler Exp $ $}
 
 
 \end{document}
