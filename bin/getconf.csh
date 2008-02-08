@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.228 2008-01-31 13:50:55 ajohan Exp $
+# $Id: getconf.csh,v 1.229 2008-02-08 13:59:45 dintrans Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -1146,6 +1146,28 @@ else if ($hn =~ is*.uppmax.uu.se) then
 
 else if ($hn =~ vsl2*) then
     set mpirunops2 = ' -machinefile machines.txt '
+
+else if ($hn =~ *pastel*) then
+  if ($?OAR_FILE_NODES) then
+    echo "OAR job"
+    cat $OAR_FILE_NODES >! lamhosts
+    setenv LAMRSH '/usr/bin/ssh -x'
+    echo "lambooting.."
+    /usr/local/mpilam/bin/lamboot -prefix /usr/local/mpilam lamhosts
+    /usr/local/mpilam/bin/lamnodes
+  else
+    echo "Non-OAR, running on `hostname`"
+    echo `hostname` >! lamhosts
+  endif
+  setenv PENCIL_HOME /home/toulouse/bdintran/f90/pencil-code
+  if (  $?LD_LIBRARY_PATH) then
+    setenv LD_LIBRARY_PATH /home/toulouse/bdintran/opt/intel_fce_80/lib:${LD_LIBRARY_PATH}
+  else
+    setenv LD_LIBRARY_PATH /home/toulouse/bdintran/opt/intel_fce_80/lib
+  endif
+  set mpirun=/usr/local/mpilam/bin/mpirun
+  set mpirunops="-x LD_LIBRARY_PATH"
+  set booted_lam = 1
 
 else
   echo "Generic setup; hostname is <$hn>"
