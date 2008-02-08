@@ -1,4 +1,4 @@
-#$Id: sourceme.csh,v 1.29 2007-11-18 02:54:21 brandenb Exp $
+#$Id: sourceme.csh,v 1.30 2008-02-08 15:56:26 tgastine Exp $
 #
 #  This file tries to set the PENCIL_HOME environment variable if it
 #  doesn't exist yet, and then adds stuff to your PATH and IDL_PATH.
@@ -66,7 +66,7 @@ if (! $?_sourceme) then		# called for the fist time?
     endif
     #  Set PYTHON path
     if ($?PYTHONPATH) then
-      setenv PYTHONPATH "${PYTHONPATH}:+${PENCIL_HOME}/numpy"
+      setenv PYTHONPATH "${PYTHONPATH}:${PENCIL_HOME}/numpy"
     else
       setenv PYTHONPATH "${PENCIL_HOME}/numpy"
     endif
