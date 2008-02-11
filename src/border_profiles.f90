@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.22 2007-11-21 21:06:58 wlyra Exp $
+! $Id: border_profiles.f90,v 1.23 2008-02-11 13:59:17 wlyra Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -149,6 +149,9 @@ module BorderProfiles
         lpenc_requested(i_x_mn)=.true.
       endif
 !
+      lpenc_requested(i_phix)=.true.
+      lpenc_requested(i_phiy)=.true.
+!
     endsubroutine pencil_criteria_borderprofiles
 !***********************************************************************
     subroutine border_driving(f,df,p,f_target,j)
@@ -222,10 +225,13 @@ module BorderProfiles
 ! 28-Jul-06/wlad : coded
 !
       real, intent(out) :: inverse_drive_time
+      real :: uphi
       type (pencil_case) :: p
       integer :: i
 !
-      inverse_drive_time = .5*pi_1*p%uu(i,2)*p%rcyl_mn1(i)
+      uphi=p%uu(i,1)*p%phix(i)+p%uu(i,2)*p%phiy(i)
+!
+      inverse_drive_time = .5*pi_1*uphi*p%rcyl_mn1(i)
 !
     endsubroutine get_drive_time
 !***********************************************************************
