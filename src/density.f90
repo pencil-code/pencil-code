@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.370 2008-01-23 16:08:32 wlyra Exp $
+! $Id: density.f90,v 1.371 2008-02-11 11:39:08 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -134,7 +134,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.370 2008-01-23 16:08:32 wlyra Exp $")
+           "$Id: density.f90,v 1.371 2008-02-11 11:39:08 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -784,14 +784,18 @@ module Density
      case('jeans-wave-x')
 ! soundwave + self gravity
         omega_jeans = sqrt(cmplx(cs20*kx_lnrho**2 - rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho)
-        print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
-          real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
+        if (lroot) &
+            print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
+            real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
 
-        f(:,:,:,ilnrho) = lnrho_const + &
-          ampllnrho*sin(kx_lnrho*xx+phase_lnrho)
-        f(:,:,:,iux) = f(:,:,:,iux) &
+        f(:,:,:,ilnrho) = lnrho_const + ampllnrho*sin(kx_lnrho*xx+phase_lnrho)
+        if (abs(omega_jeans)/=0.0) then
+          f(:,:,:,iux) = f(:,:,:,iux) &
              + abs(omega_jeans*ampllnrho) * &
              sin(kx_lnrho*xx+phase_lnrho+complex_phase(omega_jeans*ampllnrho))
+        else
+          f(:,:,:,iux) = f(:,:,:,iux) + 0.0
+        endif
 
      case('jeans-wave-oblique')
 ! soundwave + self gravity
