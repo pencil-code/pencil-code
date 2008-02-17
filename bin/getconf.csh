@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.230 2008-02-08 14:16:06 dintrans Exp $
+# $Id: getconf.csh,v 1.231 2008-02-17 09:29:24 dintrans Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -165,6 +165,10 @@ else if ($?JOB_ID) then
     if ($debug) echo "Setting nodelist to ($hn)"
     set nodelist = ("$hn")
   endif
+#else if ($?OAR_FILE_NODES) then
+# if ($debug) echo "OARSUB job"
+# set nodelist = `cat $OAR_FILE_NODES | grep -v '^#' | sed 's/\ .*//'`
+# set nodelist = `cat $OAR_FILE_NODES | tr " " "\n" | uniq`
 else
   if ($debug) echo "Setting nodelist to ($hn)"
   set nodelist = ("$hn")
@@ -1147,12 +1151,12 @@ else if ($hn =~ is*.uppmax.uu.se) then
 else if ($hn =~ vsl2*) then
     set mpirunops2 = ' -machinefile machines.txt '
 
-else if ($hn =~ *pastel*) then
+else if (($hn =~ *pastel*) || ($hn =~ *violette*)) then
   if ($?OAR_FILE_NODES) then
     echo "OAR job"
     cat $OAR_FILE_NODES >! lamhosts
     setenv LAMHOME /usr/local/mpilam
-    setenv LAMRSH '/usr/bin/ssh -x'
+    setenv LAMRSH '/usr/bin/rsh'
     setenv PATH ${LAMHOME}/bin:${PATH} 
     echo "lambooting.."
     lamboot -prefix ${LAMHOME} lamhosts
