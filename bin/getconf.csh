@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.231 2008-02-17 09:29:24 dintrans Exp $
+# $Id: getconf.csh,v 1.232 2008-02-18 17:53:45 dintrans Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -165,10 +165,10 @@ else if ($?JOB_ID) then
     if ($debug) echo "Setting nodelist to ($hn)"
     set nodelist = ("$hn")
   endif
-#else if ($?OAR_FILE_NODES) then
-# if ($debug) echo "OARSUB job"
-# set nodelist = `cat $OAR_FILE_NODES | grep -v '^#' | sed 's/\ .*//'`
-# set nodelist = `cat $OAR_FILE_NODES | tr " " "\n" | uniq`
+ else if ($?OAR_FILE_NODES) then
+  if ($debug) echo "OARSUB job"
+  set nodelist = `cat $OAR_FILE_NODES | grep -v '^#' | sed 's/\ .*//'`
+  set nodelist = `cat $OAR_FILE_NODES | tr " " "\n" | uniq`
 else
   if ($debug) echo "Setting nodelist to ($hn)"
   set nodelist = ("$hn")
@@ -1152,6 +1152,13 @@ else if ($hn =~ vsl2*) then
     set mpirunops2 = ' -machinefile machines.txt '
 
 else if (($hn =~ *pastel*) || ($hn =~ *violette*)) then
+# use the local /tmp by default on every node
+  set local_disc     = 1
+  set one_local_disc = 0
+  setenv SCRATCH_DIR /tmp
+  set remove_scratch_root = 1
+  setenv SSH rsh
+  setenv SCP rcp
   if ($?OAR_FILE_NODES) then
     echo "OAR job"
     cat $OAR_FILE_NODES >! lamhosts
