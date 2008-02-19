@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.415 2008-02-19 12:46:54 ajohan Exp $
+! $Id: hydro.f90,v 1.416 2008-02-19 15:05:53 theine Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -192,6 +192,9 @@ module Hydro
   integer :: idiag_uxmxy=0      ! DIAG_DOC: $\left< u_x \right>_{z}$
   integer :: idiag_uymxy=0      ! DIAG_DOC: $\left< u_y \right>_{z}$
   integer :: idiag_uzmxy=0      ! DIAG_DOC: $\left< u_z \right>_{z}$
+  integer :: idiag_ruxmxy=0     ! DIAG_DOC: $\left< \rho u_x \right>_{z}$
+  integer :: idiag_ruymxy=0     ! DIAG_DOC: $\left< \rho u_y \right>_{z}$
+  integer :: idiag_ruzmxy=0     ! DIAG_DOC: $\left< \rho u_z \right>_{z}$
   integer :: idiag_ux2mxy=0     ! DIAG_DOC: $\left< u_x^2 \right>_{z}$
   integer :: idiag_uy2mxy=0     ! DIAG_DOC: $\left< u_y^2 \right>_{z}$
   integer :: idiag_uz2mxy=0     ! DIAG_DOC: $\left< u_z^2 \right>_{z}$
@@ -336,7 +339,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.415 2008-02-19 12:46:54 ajohan Exp $")
+           "$Id: hydro.f90,v 1.416 2008-02-19 15:05:53 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1554,6 +1557,9 @@ use Mpicomm, only: stop_it
         if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
         if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
         if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
+        if (idiag_ruxmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,1),idiag_ruxmxy)
+        if (idiag_ruymxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,2),idiag_ruymxy)
+        if (idiag_ruzmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,3),idiag_ruzmxy)
         if (idiag_ux2mxy/=0) &
             call zsum_mn_name_xy(p%uu(:,1)**2,idiag_ux2mxy)
         if (idiag_uy2mxy/=0) &
@@ -2430,6 +2436,9 @@ use Mpicomm, only: stop_it
         idiag_uxmxy=0
         idiag_uymxy=0
         idiag_uzmxy=0
+        idiag_ruxmxy=0
+        idiag_ruymxy=0
+        idiag_ruzmxy=0
         idiag_ux2mxy=0
         idiag_uy2mxy=0
         idiag_uz2mxy=0
@@ -2654,6 +2663,9 @@ use Mpicomm, only: stop_it
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxmxy',idiag_uxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uymxy',idiag_uymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uzmxy',idiag_uzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruxmxy',idiag_ruxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruymxy',idiag_ruymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruzmxy',idiag_ruzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ux2mxy',idiag_ux2mxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uy2mxy',idiag_uy2mxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uz2mxy',idiag_uz2mxy)
@@ -2756,6 +2768,9 @@ use Mpicomm, only: stop_it
         write(3,*) 'i_uxmxy=',idiag_uxmxy
         write(3,*) 'i_uymxy=',idiag_uymxy
         write(3,*) 'i_uzmxy=',idiag_uzmxy
+        write(3,*) 'i_ruxmxy=',idiag_ruxmxy
+        write(3,*) 'i_ruymxy=',idiag_ruymxy
+        write(3,*) 'i_ruzmxy=',idiag_ruzmxy
         write(3,*) 'i_ux2mxy=',idiag_ux2mxy
         write(3,*) 'i_uy2mxy=',idiag_uy2mxy
         write(3,*) 'i_uz2mxy=',idiag_uz2mxy
