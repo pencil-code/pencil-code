@@ -60,7 +60,7 @@ if [ -z $_sourceme ]; then	# called for the first time?
     #   Set PYTHONPATH
     if [ -z $PYTHONPATH ]; then
        PYTHONPATH="$PENCIL_HOME/numpy"
-    else ;
+    else 
        PYTHONPATH="$PYTHONPATH:$PENCIL_HOME/numpy"
     fi
     # Remember that sourceme has been successfully run
