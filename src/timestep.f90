@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.50 2007-10-03 13:10:15 ajohan Exp $
+! $Id: timestep.f90,v 1.51 2008-02-21 06:52:46 brandenb Exp $
 
 module Timestep
 
@@ -242,6 +242,7 @@ module Timestep
             print*,"     Cosmic ray diffusion: maxval(diffus_cr)          = ", maxval(diffus_cr)/cdtv
             print*,"     Dust viscosity:       maxval(diffus_nud)         = ", maxval(diffus_nud)/cdtv
             print*,"     Chirality diffusion:  maxval(diffus_chiral)      = ", maxval(diffus_chiral)/cdtv
+            print*,"     Chemicals diffusion:  maxval(diffus_chem)        = ", maxval(diffus_chem)/cdtv
             print*,"------------------- END OF CONFESSION -----------------------"
 
 !          endif

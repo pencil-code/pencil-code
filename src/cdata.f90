@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.403 2008-01-16 07:02:43 brandenb Exp $
+! $Id: cdata.f90,v 1.404 2008-02-21 06:52:46 brandenb Exp $
 
 module Cdata
 
@@ -41,7 +41,7 @@ module Cdata
   real, dimension (nx) :: diffus_diffrhon,diffus_diffrhon3
   real, dimension (nx) :: diffus_diffnd,diffus_diffnd3
   real, dimension (nx) :: diffus_pscalar,diffus_pscalar3
-  real, dimension (nx) :: diffus_chiral,diffus_cr
+  real, dimension (nx) :: diffus_chiral,diffus_cr,diffus_chem
   real, dimension (nx) :: diffus_nud,diffus_nud3
   real, dimension (nx) :: diffus_nun,diffus_nun3
   real, dimension (nx) :: dt1_advec,dt1_diffus,dt1_max

@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.8 2008-01-10 06:16:47 brandenb Exp $
+! $Id: chemistry.f90,v 1.9 2008-02-21 06:52:46 brandenb Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -22,29 +22,42 @@ module Chemistry
   implicit none
 
   include 'chemistry.h'
-
+!
+!  parameters related to chemical reactions
+!
+  logical :: lreactions=.true.
+  integer :: nreactions=0
+  integer, parameter :: mreactions=2*nchemspec
+  integer, dimension(nchemspec,mreactions) :: stoichio,Sijm
+  real, dimension(mreactions) :: kreactions
+!
+!  hydro-related parameters
+!
+  real, dimension(nchemspec) :: amplchemk=0.
   real :: amplchem=1.,kx_chem=1.,ky_chem=1.,kz_chem=1.,widthchem=1.
   real :: chem_diff=0.
   character (len=labellen), dimension (ninit) :: initchem='nothing'
 
 ! input parameters
   namelist /chemistry_init_pars/ &
-      initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem
+      initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
+      amplchemk
 
 ! run parameters
   namelist /chemistry_run_pars/ &
       chem_diff
-
-!!
-!! Declare any index variables necessary for main or
-!!
-!!   integer :: iSPECIAL_VARIABLE_INDEX=0
-!!
-!! other variables (needs to be consistent with reset list below)
-!!
-!!   integer :: i_POSSIBLEDIAGNOSTIC=0
-!!
-
+!
+! diagnostic variables (need to be consistent with reset list below)
+!
+  integer :: idiag_Y1m=0        ! DIAG_DOC: $\left<Y_1\right>$
+  integer :: idiag_Y2m=0        ! DIAG_DOC: $\left<Y_2\right>$
+  integer :: idiag_Y3m=0        ! DIAG_DOC: $\left<Y_3\right>$
+  integer :: idiag_Y4m=0        ! DIAG_DOC: $\left<Y_4\right>$
+  integer :: idiag_Y5m=0        ! DIAG_DOC: $\left<Y_5\right>$
+  integer :: idiag_Y6m=0        ! DIAG_DOC: $\left<Y_6\right>$
+  integer :: idiag_Y7m=0        ! DIAG_DOC: $\left<Y_7\right>$
+  integer :: idiag_Y8m=0        ! DIAG_DOC: $\left<Y_8\right>$
+!
   contains
 
 !***********************************************************************
@@ -95,11 +108,11 @@ module Chemistry
       enddo
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.8 2008-01-10 06:16:47 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.9 2008-02-21 06:52:46 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.8 2008-01-10 06:16:47 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.9 2008-02-21 06:52:46 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -122,16 +135,48 @@ module Chemistry
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  13-aug-07/steveb: coded
+!  19-feb-08/axelb: reads in chemistry.dat file
 !
       use Cdata
       use Sub, only: keep_compiler_quiet
 !
+      character (len=80) :: chemicals=''
       real, dimension (mx,my,mz,mfarray) :: f
-!!
-!!  Initialize any module variables which are parameter dependent
-!!
+      logical :: exist
+      integer :: i,j
 !
-! DO NOTHING
+!  read chemistry data, if present
+!
+      inquire(file='chemistry.dat',exist=exist)
+      if(exist) then
+        open(19,file='chemistry.dat')
+        read(19,*) chemicals
+        do j=1,mreactions
+          read(19,*,end=990) kreactions(j),(stoichio(i,j),i=1,nchemspec)
+        enddo
+990     nreactions=j-1
+!
+!  calculate negative part of stoichiometric matrix
+!
+        Sijm=-min(stoichio,0)
+!
+!  print input data for verification
+!
+        if (lroot) then
+          print*,'chemicals=',chemicals
+          print*,'kreactions=',kreactions(1:nreactions)
+          print*,'stoichio=' ; write(*,100),stoichio(:,1:nreactions)
+          print*,'Sijm:' ; write(*,100),Sijm(:,1:nreactions)
+100       format(8i4)
+        endif
+      else 
+        if (lroot) print*,'no chemistry.dat file to be read.'
+        lreactions=.false.
+      endif
+      close(19)
+!
+!  that's it
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_chemistry
@@ -156,7 +201,6 @@ module Chemistry
 !
 !  different initializations of nd (called from start)
 !
-print*,'initchem=',initchem
       lnothing=.false.
       do j=1,ninit
         select case(initchem(j))
@@ -164,6 +208,10 @@ print*,'initchem=',initchem
         case('nothing')
           if (lroot .and. .not. lnothing) print*, 'init_chem: nothing'
           lnothing=.true.
+        case('constant')
+          do k=1,nchemspec
+            f(:,:,:,ichemspec(k))=amplchemk(k)
+          enddo
         case('coswave-x')
           do k=1,nchemspec
             call coswave(amplchem,f,ichemspec(k),kx=kx_chem)
@@ -252,6 +300,8 @@ print*,'initchem=',initchem
 !  efficiency.
 !
 !   13-aug-07/steveb: coded
+!    8-jan-08/natalia: included advection/diffusion
+!   20-feb-08/axel: included reactions
 !
       use Cdata
       use Mpicomm
@@ -262,11 +312,13 @@ print*,'initchem=',initchem
       real, dimension (mx,my,mz,mvar) :: df
      
       real, dimension (nx,3) :: gchemspec
-      real, dimension (nx) :: ugchemspec,del2chemspec,diff_op
+      real, dimension (nx) :: ugchemspec,del2chemspec,diff_op,xdot
+      real, dimension (nx,mreactions) :: vreactions
       type (pencil_case) :: p
-
-
-      integer :: k
+!
+!  indices
+!
+      integer :: j,k
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -276,7 +328,28 @@ print*,'initchem=',initchem
       if (headtt.or.ldebug) print*,'dchemistry_dt: SOLVE dchemistry_dt'
 !!      if (headtt) call identify_bcs('ss',iss)
 !
+!  if we do reactions, we must calculate the reaction speed vector
+!  outside the loop where we multiply it by the stoichiometric matrix
+!
+      if (lreactions) then
+        do j=1,nreactions
+          vreactions(:,j)=kreactions(j)
+!print*,'1) j,v=',j,vreactions(1,j)
+          do k=1,nchemspec
+            vreactions(:,j)=vreactions(:,j)*f(l1:l2,m,n,ichemspec(k))**Sijm(k,j)
+!print*,'2) x,S=',f(l1:l2,m,n,ichemspec(k)),Sijm(k,j)
+!print*,'3) k,v=',j,vreactions(1,j)
+          enddo
+!print*,'4) j,v=',j,vreactions(1,j)
+          enddo
+      endif
+!
+!  loop over all chemicals
+!
       do k=1,nchemspec
+!
+!  advection terms
+!
         call grad(f,ichemspec(k),gchemspec) 
         call dot_mn(p%uu,gchemspec,ugchemspec)
         df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))-ugchemspec
@@ -290,19 +363,43 @@ print*,'initchem=',initchem
           diff_op=diff_op+del2chemspec
           df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+chem_diff*diff_op
         endif
+!
+!  chemical reactions:
+!  multiply with stoichiometric matrix with reaction speed
+!  d/dt(x_i) = S_ij v_j
+!
+        if (lreactions) then
+          xdot=0.
+          do j=1,nreactions
+            xdot=xdot+stoichio(k,j)*vreactions(:,j)
+!print*,'5) j,Skj,vj,xdot=',j,stoichio(k,j),vreactions(:,j),xdot
+          enddo
+          df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+xdot
+        endif
+!
       enddo 
-!!
-!! SAMPLE DIAGNOSTIC IMPLEMENTATION
-!!
-!!      if(ldiagnos) then
-!!        if(i_SPECIAL_DIAGNOSTIC/=0) then
-!!          call sum_mn_name(SOME MATHEMATICAL EXPRESSION,i_SPECIAL_DIAGNOSTIC)
-!!! see also integrate_mn_name
-!!        endif
-!!      endif
-
-
+!
+!  For the timestep calculation, need maximum diffusion
+!
+        if (lfirst.and.ldt) then
+          diffus_chem=chem_diff*dxyz_2
+        endif
+!
+!  Calculate diagnostic quantities
+!
+      if (ldiagnos) then
+        if (idiag_Y1m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(1)),idiag_Y1m)
+        if (idiag_Y2m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(2)),idiag_Y2m)
+        if (idiag_Y3m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(3)),idiag_Y3m)
+        if (idiag_Y4m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(4)),idiag_Y4m)
+        if (idiag_Y5m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(5)),idiag_Y5m)
+        if (idiag_Y6m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(6)),idiag_Y6m)
+        if (idiag_Y7m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(7)),idiag_Y7m)
+        if (idiag_Y8m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(8)),idiag_Y8m)
+      endif
+!
 ! Keep compiler quiet by ensuring every parameter is used
+!
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 
@@ -361,10 +458,8 @@ print*,'initchem=',initchem
       use Cdata
       use Sub
       use General, only: chn
-!!
-!!!   SAMPLE IMPLEMENTATION
-!!
-!!      integer :: iname
+!
+      integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
       character (len=5) :: schem,schemspec,snd1,smd1,smi1
@@ -376,26 +471,37 @@ print*,'initchem=',initchem
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-!!        i_SPECIAL_DIAGNOSTIC=0
+        idiag_Y1m=0; idiag_Y2m=0; idiag_Y3m=0; idiag_Y4m=0
+        idiag_Y5m=0; idiag_Y6m=0; idiag_Y7m=0; idiag_Y8m=0
       endif
 !
       call chn(nchemspec,schemspec)
-!!
-!!      do iname=1,nname
-!!        call parse_name(iname,cname(iname),cform(iname),'NAMEOFSPECIALDIAGNOSTIC',i_SPECIAL_DIAGNOSTIC)
-!!      enddo
-!!
-!!!  write column where which magnetic variable is stored
-!!      if (lwr) then
-!!        write(3,*) 'i_SPECIAL_DIAGNOSTIC=',i_SPECIAL_DIAGNOSTIC
-!!      endif
-!!
-
+!
+!  check for those quantities that we want to evaluate online
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'Y1m',idiag_Y1m)
+        call parse_name(iname,cname(iname),cform(iname),'Y2m',idiag_Y2m)
+        call parse_name(iname,cname(iname),cform(iname),'Y3m',idiag_Y3m)
+        call parse_name(iname,cname(iname),cform(iname),'Y4m',idiag_Y4m)
+        call parse_name(iname,cname(iname),cform(iname),'Y5m',idiag_Y5m)
+        call parse_name(iname,cname(iname),cform(iname),'Y6m',idiag_Y6m)
+        call parse_name(iname,cname(iname),cform(iname),'Y7m',idiag_Y7m)
+        call parse_name(iname,cname(iname),cform(iname),'Y8m',idiag_Y8m)
+      enddo
 !
 !  Write chemistry index in short notation
-!XX
+!
       call chn(ichemspec(1),snd1)
       if (lwr) then
+        write(3,*) 'i_Y1m=',idiag_Y1m
+        write(3,*) 'i_Y2m=',idiag_Y2m
+        write(3,*) 'i_Y3m=',idiag_Y3m
+        write(3,*) 'i_Y4m=',idiag_Y4m
+        write(3,*) 'i_Y5m=',idiag_Y5m
+        write(3,*) 'i_Y6m=',idiag_Y6m
+        write(3,*) 'i_Y7m=',idiag_Y7m
+        write(3,*) 'i_Y8m=',idiag_Y8m
         write(3,*) 'ichemspec=indgen('//trim(schemspec)//') + '//trim(snd1)
       endif
 !

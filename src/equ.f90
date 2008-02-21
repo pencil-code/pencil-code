@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.385 2008-01-15 07:44:23 brandenb Exp $
+! $Id: equ.f90,v 1.386 2008-02-21 06:52:46 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -472,7 +472,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.385 2008-01-15 07:44:23 brandenb Exp $")
+           "$Id: equ.f90,v 1.386 2008-02-21 06:52:46 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -631,6 +631,7 @@ module Equ
           diffus_chi=0.; diffus_chi3=0.
           diffus_pscalar=0.; diffus_pscalar3=0.
           diffus_chiral=0.
+          diffus_chem=0.
           diffus_cr=0.
           diffus_nud=0.; diffus_nud3=0.
           diffus_diffnd=0.; diffus_diffnd3=0.
@@ -975,7 +976,7 @@ module Equ
               sqrt(advec_cs2+advec_va2+advec_crad2+advec_csn2)
           maxdiffus=max(diffus_nu,diffus_chi,diffus_eta,diffus_diffrho, &
               diffus_pscalar,diffus_cr,diffus_nud,diffus_diffnd,diffus_chiral, &
-              diffus_diffrhon,diffus_nun)
+              diffus_chem,diffus_diffrhon,diffus_nun)
           maxdiffus2=max(diffus_nu2,diffus_eta2)
           maxdiffus3=max(diffus_nu3,diffus_diffrho3,diffus_eta3, &
               diffus_chi3,diffus_nud3,diffus_diffnd3,diffus_pscalar3, &
