@@ -1,4 +1,4 @@
-! $Id: internal_flow.f90,v 1.1 2008-01-09 23:58:03 nilshau Exp $
+! $Id: internal_flow.f90,v 1.2 2008-02-22 11:59:44 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -22,14 +22,25 @@ module Special
 
   include 'special.h'
 
+  !
+  ! Slice precalculation buffers
+  !
+  real, target, dimension (nx,ny,3) :: oo_xy_meanx
+  real, target, dimension (nx,ny,3) :: uu_xy_meanx
+
+  integer :: dummy
+  character(len=24) :: initspecial='nothing'
+  real :: central_vel=0,ampluu_spec=0
+
 !!  character, len(50) :: initcustom
 
 ! input parameters
-!  namelist /special_init_pars/ dummy
-!!!eg.    initcustom
-! run parameters
-!  namelist /special_run_pars/ dummy
-
+  namelist /internal_flow_init_pars/ &
+       initspecial,central_vel,ampluu_spec
+  ! run parameters
+  namelist /internal_flow_run_pars/  &
+       dummy
+  
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -79,11 +90,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.1 2008-01-09 23:58:03 nilshau Exp $
+!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.2 2008-02-22 11:59:44 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: internal_flow.f90,v 1.1 2008-01-09 23:58:03 nilshau Exp $")
+           "$Id: internal_flow.f90,v 1.2 2008-02-22 11:59:44 nilshau Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -128,30 +139,42 @@ module Special
       use Cdata
       use Mpicomm
       use Sub
+      use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
+      integer :: i
+      real :: height,h2
 !
       intent(in) :: xx,yy,zz
       intent(inout) :: f
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!
-!!      select case(initspecial)
-!!        case('nothing'); if(lroot) print*,'init_special: nothing'
-!!        case('zero', '0'); f(:,:,:,iSPECIAL_VARIABLE_INDEX) = 0.
-!!        case default
-!!          !
-!!          !  Catch unknown values
-!!          !
-!!          if (lroot) print*,'init_special: No such value for initspecial: ', trim(initspecial)
-!!          call stop_it("")
-!!      endselect
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(xx,yy,zz)
-!
+      !
+      ! Select case
+      !
+      select case(initspecial)
+      case('nothing'); if(lroot) print*,'init_special: nothing'
+      case('poiseulle_xy')
+        f(:,:,:,iux:iuz)=0
+        call poiseulle_flowx_wally(f,xx,yy,zz,central_vel)
+      case('poiseulle_xy_noise')
+        f(:,:,:,iux:iuz)=0
+        height=Lxyz(2)/2
+        h2=height**2
+        call gaunoise(ampluu_spec,f,iux,iuz)
+        do i=iux,iuz
+          f(l1:l2,m1:m2,n1:n2,i)=f(l1:l2,m1:m2,n1:n2,i)&
+               *(1-(yy(l1:l2,m1:m2,n1:n2)-xyz0(2)-height)**2/h2)
+        enddo
+        call poiseulle_flowx_wally(f,xx,yy,zz,central_vel)
+      case default
+        !
+        !  Catch unknown values
+        !
+        if (lroot) print*,'init_special: No such value for initspecial: ', &
+             trim(initspecial)
+        call stop_it("")
+      endselect
+      !
     endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special()
@@ -218,7 +241,10 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (3) :: meanx_oo
+      real, dimension (3) :: meanx_uu
       type (pencil_case) :: p
+      integer :: i,j
 
 !
       intent(in) :: f,p
@@ -239,9 +265,22 @@ module Special
 !!        endif
 !!      endif
 
-! Keep compiler quiet by ensuring every parameter is used
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
+
+
+      !
+      ! Write video slices
+      !
+      if(lvid.and.lfirst) then
+        if (n==iz_loc)  then
+          do j=1,3
+            meanx_oo(j)=sum(p%oo(:,j))/(l2-l1+1)
+            meanx_uu(j)=sum(p%uu(:,j))/(l2-l1+1)
+            oo_xy_meanx(:,m-m1+1,j)=p%oo(:,j)-meanx_oo(j)
+            uu_xy_meanx(:,m-m1+1,j)=p%uu(:,j)-meanx_uu(j)
+          enddo
+        endif
+      endif
+
 
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -252,9 +291,14 @@ module Special
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-      call keep_compiler_quiet(unit)
+ 
+      if (present(iostat)) then
+        read(unit,NML=internal_flow_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=internal_flow_init_pars,ERR=99)
+      endif
 
+99    return
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
@@ -263,7 +307,7 @@ module Special
 !
       integer, intent(in) :: unit
 
-      call keep_compiler_quiet(unit)
+      write(unit,NML=internal_flow_init_pars)
 
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -274,9 +318,13 @@ module Special
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-      call keep_compiler_quiet(unit)
+      if (present(iostat)) then
+        read(unit,NML=internal_flow_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=internal_flow_run_pars,ERR=99)
+      endif
 
+99    return
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
@@ -285,7 +333,7 @@ module Special
 !
       integer, intent(in) :: unit
 
-      call keep_compiler_quiet(unit)
+      write(unit,NML=internal_flow_run_pars)
 
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -336,9 +384,33 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
+      !
+      !  Loop over slices
+      !
+      select case (trim(slices%name))
+        !
+        !  Vorticity (derived variable)
+        !
+      case ('oo_meanx')
+        if (slices%index == 3) then
+          slices%ready = .false.
+        else
+          slices%index = slices%index+1
+          slices%xy=>oo_xy_meanx(:,:,slices%index)
+          if (slices%index < 3) slices%ready = .true.
+        endif
+      case ('uu_meanx')
+        if (slices%index >= 3) then
+          slices%ready = .false.
+        else
+          slices%index = slices%index+1
+          slices%xy=uu_xy_meanx(:,:,slices%index)
+          if (slices%index < 3) slices%ready = .true.
+        endif
+      endselect
+
+!NILS      call keep_compiler_quiet(f)
+!NILS      call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_special
 !***********************************************************************
@@ -394,11 +466,11 @@ module Special
 !!     (remember one must ALWAYS add to df)
 !!
 !!
-      if (m>=18.and.m<=20) then
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - f(l1:l2,m,n,iux)*100
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - f(l1:l2,m,n,iuy)*100
-        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - f(l1:l2,m,n,iuz)*100
-      endif
+!NILS      if (m>=18.and.m<=20) then
+!NILS        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - f(l1:l2,m,n,iux)*100
+!NILS        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - f(l1:l2,m,n,iuy)*100
+!NILS        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - f(l1:l2,m,n,iuz)*100
+!NILS      endif
 !!
 !!
       call keep_compiler_quiet(f,df)
@@ -506,6 +578,26 @@ module Special
       call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
+!***********************************************************************
+    subroutine poiseulle_flowx_wally(f,xx,yy,zz,central_vel)
+      !
+      ! Set initial Poiseulle flow in x-direction.
+      ! The walls are in the y-direction
+      !
+      ! 2008.02.18: Nils Erland (Coded)
+      !
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+      real :: central_vel, height, h2
+      integer :: i,j,k
+      !
+      height=Lxyz(2)/2
+      h2=height**2
+      !
+      f(l1:l2,m1:m2,n1:n2,iux)=f(l1:l2,m1:m2,n1:n2,iux)+central_vel*&
+           (1-(yy(l1:l2,m1:m2,n1:n2)-xyz0(2)-height)**2/h2)
+      !
+    end subroutine poiseulle_flowx_wally
 !***********************************************************************
 
 !********************************************************************
