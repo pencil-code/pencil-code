@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.org)
-%%  CVS: $Id: manual.tex,v 1.385 2008-02-23 14:42:08 dintrans Exp $
+%%  CVS: $Id: manual.tex,v 1.386 2008-02-23 22:50:31 dintrans Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2008-02-23 14:42:08 $ $,~ $ $Revision: 1.385 $ $}
+%\date{$ $Date: 2008-02-23 22:50:31 $ $,~ $ $Revision: 1.386 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2008-02-23 14:42:08 $ $,~ $ $Revision: 1.385 $ $}\\
+  \emph{$ $Date: 2008-02-23 22:50:31 $ $,~ $ $Revision: 1.386 $ $}\\
   \url{http://www.nordita.org/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -2248,9 +2248,9 @@ All numbers are 4-byte numbers (floating-point numbers or integers),
 unless you use double precision (see \S\ref{double-precision}).
 
 To read and visualize azimuthal averages in \name{IDL}, use
-\file[read_phiavg.pro]{\$PENCIL_HOME/idl/read_phiavg.pro}
+\file[pc_read_phiavg.pro]{\$PENCIL_HOME/idl/files/pc_read_phiavg.pro}
 \begin{alltt}
-  \prompt{IDL> } avg = read_phiavg('data/averages/PHIAVG1')
+  \prompt{IDL> } avg = pc_read_phiavg('data/averages/PHIAVG1')
   \prompt{IDL> } contour, avg.b2mphi, avg.rcyl, avg.z, TITLE='!17B!U2!N!X'
 \end{alltt}
 or have a look at \file[phiavg.pro]{\$PENCIL_HOME/idl/phiavg.pro} for a
@@ -5862,7 +5862,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2008-02-23 14:42:08 $ $,~ $ $Revision: 1.385 $ $}
+  \hfill\normalsize\rm$ $Date: 2008-02-23 22:50:31 $ $,~ $ $Revision: 1.386 $ $}
 
 \section{Timings}
 
@@ -9359,7 +9359,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.385 2008-02-23 14:42:08 dintrans Exp $ $}
+$ $Id: manual.tex,v 1.386 2008-02-23 22:50:31 dintrans Exp $ $}
 
 
 \end{document}
