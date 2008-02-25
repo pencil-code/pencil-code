@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.477 2008-02-05 23:32:51 dobler Exp $
+! $Id: magnetic.f90,v 1.478 2008-02-25 14:29:48 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -326,6 +326,9 @@ module Magnetic
   integer :: idiag_bmxy_rms=0   ! DIAG_DOC: $\sqrt{[\left<b_x\right>_z(x,y)]^2 + 
                                 ! DIAG_DOC: [\left<b_y\right>_z(x,y)]^2 +
                                 ! DIAG_DOC: [\left<b_z\right>_z(x,y)]^2} $ 
+  integer :: idiag_etasmagm=0   ! DIAG_DOC: Mean of Smagorinsky resistivity
+  integer :: idiag_etasmagmin=0 ! DIAG_DOC: Min of Smagorinsky resistivity
+  integer :: idiag_etasmagmax=0 ! DIAG_DOC: Max of Smagorinsky resistivity
   contains
 
 !***********************************************************************
@@ -365,7 +368,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.477 2008-02-05 23:32:51 dobler Exp $")
+           "$Id: magnetic.f90,v 1.478 2008-02-25 14:29:48 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1858,6 +1861,12 @@ module Magnetic
         if (idiag_epsM_LES/=0) call sum_mn_name(eta_smag*p%j2,idiag_epsM_LES)
         if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
 !
+!  Resistivity.
+!
+        if (idiag_etasmagm/=0)   call sum_mn_name(eta_smag,idiag_etasmagm)
+        if (idiag_etasmagmin/=0) call max_mn_name(-eta_smag,idiag_etasmagmin,lneg=.true.)
+        if (idiag_etasmagmax/=0) call max_mn_name(eta_smag,idiag_etasmagmax)
+!
 !  Not correct for hyperresistivity:
 !
         if (idiag_epsM/=0) call sum_mn_name(eta*p%j2,idiag_epsM)
@@ -2628,390 +2637,6 @@ module Magnetic
       endif
 !
     endsubroutine forcing_continuous
-!***********************************************************************
-    subroutine rprint_magnetic(lreset,lwrite)
-!
-!  reads and registers print parameters relevant for magnetic fields
-!
-!   3-may-02/axel: coded
-!  27-may-02/axel: added possibility to reset list
-!
-      use Cdata
-      use Sub
-!
-      integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer
-      logical :: lreset,lwr
-      logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  reset everything in case of RELOAD
-!  (this needs to be consistent with what is defined above!)
-!
-      if (lreset) then
-        idiag_b2m=0; idiag_bm2=0; idiag_j2m=0; idiag_jm2=0; idiag_abm=0
-        idiag_jbm=0; idiag_ubm=0; idiag_epsM=0
-        idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0; idiag_epsM_LES=0
-        idiag_aybym2=0; idiag_exaym2=0; idiag_exjm2=0
-        idiag_brms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0; idiag_vArms=0
-        idiag_vAmax=0; idiag_dtb=0; idiag_arms=0; idiag_amax=0
-        idiag_beta1m=0; idiag_beta1max=0
-        idiag_bxm=0; idiag_bym=0; idiag_bzm=0
-        idiag_axm=0; idiag_aym=0; idiag_azm=0
-        idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
-        idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0
-        idiag_bxbymz=0; idiag_bxbzmz=0; idiag_bybzmz=0
-        idiag_b2mz=0
-        idiag_bxbym=0; idiag_bxbzm=0; idiag_bybzm=0; idiag_djuidjbim=0
-        idiag_bxmz=0; idiag_bymz=0; idiag_bzmz=0; idiag_bmx=0; idiag_bmy=0
-        idiag_bx2mz=0; idiag_by2mz=0; idiag_bz2mz=0
-        idiag_bmz=0; idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
-        idiag_bx2mxy=0; idiag_by2mxy=0; idiag_bz2mxy=0
-        idiag_bxbymxy=0; idiag_bxbzmxy=0; idiag_bybzmxy=0
-        idiag_bxbymxz=0; idiag_bxbzmxz=0; idiag_bybzmxz=0
-        idiag_uxbm=0; idiag_oxuxbm=0; idiag_jxbxbm=0.; idiag_gpxbm=0.
-        idiag_uxDxuxbm=0.; idiag_uxbmx=0; idiag_uxbmy=0; idiag_uxbmz=0
-        idiag_uxjm=0; idiag_ujxbm=0
-        idiag_b3b21m=0; idiag_b1b32m=0; idiag_b2b13m=0
-        idiag_EMFdotBm=0
-        idiag_udotxbm=0; idiag_uxbdotm=0
-        idiag_brmphi=0; idiag_bpmphi=0; idiag_bzmphi=0; idiag_b2mphi=0
-        idiag_jbmphi=0; idiag_uxbrmphi=0; idiag_uxbpmphi=0; idiag_uxbzmphi=0
-        idiag_jxbrmphi=0; idiag_jxbpmphi=0; idiag_jxbzmphi=0
-        idiag_armphi=0; idiag_apmphi=0; idiag_azmphi=0
-        idiag_dteta=0; idiag_uxBrms=0; idiag_Bresrms=0; idiag_Rmrms=0
-        idiag_jfm=0; idiag_brbpmr=0; idiag_va2m=0
-        idiag_b2mr=0; idiag_brmr=0; idiag_bpmr=0; idiag_bzmr=0
-        idiag_armr=0; idiag_apmr=0; idiag_azmr=0
-        idiag_bxmx=0; idiag_bymx=0; idiag_bzmx=0
-        idiag_bxmy=0; idiag_bymy=0; idiag_bzmy=0
-        idiag_bx2my=0; idiag_by2my=0; idiag_bz2my=0
-        idiag_mflux_x=0; idiag_mflux_y=0; idiag_mflux_z=0
-        idiag_bmxy_rms=0
-!
-      endif
-!
-!  check for those quantities that we want to evaluate online
-!
-      do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'dteta',idiag_dteta)
-        call parse_name(iname,cname(iname),cform(iname),'aybym2',idiag_aybym2)
-        call parse_name(iname,cname(iname),cform(iname),'exaym2',idiag_exaym2)
-        call parse_name(iname,cname(iname),cform(iname),'exjm2',idiag_exjm2)
-        call parse_name(iname,cname(iname),cform(iname),'abm',idiag_abm)
-        call parse_name(iname,cname(iname),cform(iname),'jbm',idiag_jbm)
-        call parse_name(iname,cname(iname),cform(iname),'ubm',idiag_ubm)
-        call parse_name(iname,cname(iname),cform(iname),'b2m',idiag_b2m)
-        call parse_name(iname,cname(iname),cform(iname),'bm2',idiag_bm2)
-        call parse_name(iname,cname(iname),cform(iname),'j2m',idiag_j2m)
-        call parse_name(iname,cname(iname),cform(iname),'jm2',idiag_jm2)
-        call parse_name(iname,cname(iname),cform(iname),'epsM',idiag_epsM)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'epsM_LES',idiag_epsM_LES)
-        call parse_name(iname,cname(iname),cform(iname),'brms',idiag_brms)
-        call parse_name(iname,cname(iname),cform(iname),'bmax',idiag_bmax)
-        call parse_name(iname,cname(iname),cform(iname),'jrms',idiag_jrms)
-        call parse_name(iname,cname(iname),cform(iname),'jmax',idiag_jmax)
-        call parse_name(iname,cname(iname),cform(iname),'axm',idiag_axm)
-        call parse_name(iname,cname(iname),cform(iname),'aym',idiag_aym)
-        call parse_name(iname,cname(iname),cform(iname),'azm',idiag_azm)
-        call parse_name(iname,cname(iname),cform(iname),'arms',idiag_arms)
-        call parse_name(iname,cname(iname),cform(iname),'amax',idiag_amax)
-        call parse_name(iname,cname(iname),cform(iname),'vArms',idiag_vArms)
-        call parse_name(iname,cname(iname),cform(iname),'vAmax',idiag_vAmax)
-        call parse_name(iname,cname(iname),cform(iname),'vA2m',idiag_vA2m)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'beta1m',idiag_beta1m)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'beta1max',idiag_beta1max)
-        call parse_name(iname,cname(iname),cform(iname),'dtb',idiag_dtb)
-        call parse_name(iname,cname(iname),cform(iname),'bxm',idiag_bxm)
-        call parse_name(iname,cname(iname),cform(iname),'bym',idiag_bym)
-        call parse_name(iname,cname(iname),cform(iname),'bzm',idiag_bzm)
-        call parse_name(iname,cname(iname),cform(iname),'bx2m',idiag_bx2m)
-        call parse_name(iname,cname(iname),cform(iname),'by2m',idiag_by2m)
-        call parse_name(iname,cname(iname),cform(iname),'bz2m',idiag_bz2m)
-        call parse_name(iname,cname(iname),cform(iname),'bxbym',idiag_bxbym)
-        call parse_name(iname,cname(iname),cform(iname),'bxbzm',idiag_bxbzm)
-        call parse_name(iname,cname(iname),cform(iname),'bybzm',idiag_bybzm)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'djuidjbim',idiag_djuidjbim)
-        call parse_name(iname,cname(iname),cform(iname),'uxbm',idiag_uxbm)
-        call parse_name(iname,cname(iname),cform(iname),'uxbmx',idiag_uxbmx)
-        call parse_name(iname,cname(iname),cform(iname),'uxbmy',idiag_uxbmy)
-        call parse_name(iname,cname(iname),cform(iname),'uxbmz',idiag_uxbmz)
-        call parse_name(iname,cname(iname),cform(iname),'uxjm',idiag_uxjm)
-        call parse_name(iname,cname(iname),cform(iname),'ujxbm',idiag_ujxbm)
-        call parse_name(iname,cname(iname),cform(iname),'jxbxbm',idiag_jxbxbm)
-        call parse_name(iname,cname(iname),cform(iname),'oxuxbm',idiag_oxuxbm)
-        call parse_name(iname,cname(iname),cform(iname),'gpxbm',idiag_gpxbm)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'uxDxuxbm',idiag_uxDxuxbm)
-        call parse_name(iname,cname(iname),cform(iname),'b3b21m',idiag_b3b21m)
-        call parse_name(iname,cname(iname),cform(iname),'b1b32m',idiag_b1b32m)
-        call parse_name(iname,cname(iname),cform(iname),'b2b13m',idiag_b2b13m)
-        call parse_name(iname,cname(iname),cform(iname),'EMFdotBm',idiag_EMFdotBm)
-        call parse_name(iname,cname(iname),cform(iname),'udotxbm',idiag_udotxbm)
-        call parse_name(iname,cname(iname),cform(iname),'uxbdotm',idiag_uxbdotm)
-        call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
-        call parse_name(iname,cname(iname),cform(iname),'bmy',idiag_bmy)
-        call parse_name(iname,cname(iname),cform(iname),'bmz',idiag_bmz)
-        call parse_name(iname,cname(iname),cform(iname),'bxpt',idiag_bxpt)
-        call parse_name(iname,cname(iname),cform(iname),'bypt',idiag_bypt)
-        call parse_name(iname,cname(iname),cform(iname),'bzpt',idiag_bzpt)
-        call parse_name(iname,cname(iname),cform(iname),'uxBrms',idiag_uxBrms)
-        call parse_name(iname,cname(iname),cform(iname),'Bresrms',idiag_Bresrms)
-        call parse_name(iname,cname(iname),cform(iname),'Rmrms',idiag_Rmrms)
-        call parse_name(iname,cname(iname),cform(iname),'jfm',idiag_jfm)
-        call parse_name(iname,cname(iname),cform(iname),'bmxy_rms',idiag_bmxy_rms)
-!
-      enddo
-!
-! Currently need to force zaverage calculation at every lout step for
-! bmx and bmy.
-!
-      if ((idiag_bmx+idiag_bmy)>0) ldiagnos_need_zaverages=.true.
-!
-!  check for those quantities for which we want xy-averages
-!
-      do inamex=1,nnamex
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bxmx',idiag_bxmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bymx',idiag_bymx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bzmx',idiag_bzmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bx2mx',idiag_bx2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'by2mx',idiag_by2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bz2mx',idiag_bz2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bxbymx',idiag_bxbymx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-                        'mflux_x',idiag_mflux_x)
-      enddo
-      do inamey=1,nnamey
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'bxmy',idiag_bxmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'bymy',idiag_bymy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'bzmy',idiag_bzmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'bx2my',idiag_bx2my)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'by2my',idiag_by2my)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'bz2my',idiag_bz2my)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'bxbymy',idiag_bxbymy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'bxbzmy',idiag_bxbzmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'bybzmy',idiag_bybzmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'mflux_y',idiag_mflux_y)
-      enddo
-      do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxmz',idiag_bxmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bymz',idiag_bymz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzmz',idiag_bzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bx2mz',idiag_bx2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'by2mz',idiag_by2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bz2mz',idiag_bz2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxbymz',idiag_bxbymz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxbzmz',idiag_bxbzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bybzmz',idiag_bybzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'b2mz',idiag_b2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-                        'mflux_z',idiag_mflux_z)
-      enddo
-!
-!  check for those quantities for which we want y-averages
-!
-      do ixz=1,nnamexz
-        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxmxz',idiag_bxmxz)
-        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bymxz',idiag_bymxz)
-        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bzmxz',idiag_bzmxz)
-        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bx2mxz',idiag_bx2mxz)
-        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'by2mxz',idiag_by2mxz)
-        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bz2mxz',idiag_bz2mxz)
-        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxbymxz',idiag_bxbymxz)
-        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxbzmxz',idiag_bxbzmxz)
-        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bybzmxz',idiag_bybzmxz)
-      enddo
-!
-!  check for those quantities for which we want z-averages
-!
-      do ixy=1,nnamexy
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxmxy',idiag_bxmxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bymxy',idiag_bymxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bzmxy',idiag_bzmxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bx2mxy',idiag_bx2mxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'by2mxy',idiag_by2mxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bz2mxy',idiag_bz2mxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxbymxy',idiag_bxbymxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxbzmxy',idiag_bxbzmxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bybzmxy',idiag_bybzmxy)
-      enddo
-!
-!  check for those quantities for which we want phi-averages
-!
-      do irz=1,nnamerz
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'brmphi'  ,idiag_brmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'bpmphi'  ,idiag_bpmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'bzmphi'  ,idiag_bzmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'b2mphi'  ,idiag_b2mphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'jbmphi'  ,idiag_jbmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbrmphi',idiag_uxbrmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbpmphi',idiag_uxbpmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbzmphi',idiag_uxbzmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'jxbrmphi',idiag_jxbrmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'jxbpmphi',idiag_jxbpmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'jxbzmphi',idiag_jxbzmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'armphi'  ,idiag_armphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'apmphi'  ,idiag_apmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'azmphi'  ,idiag_azmphi)
-
-      enddo
-!
-!  check for those quantities for which we want phiz-averages
-!
-      do inamer=1,nnamer
-        call parse_name(inamer,cnamer(inamer),cformr(inamer),'brmr',  idiag_brmr)
-        call parse_name(inamer,cnamer(inamer),cformr(inamer),'bpmr',  idiag_bpmr)
-        call parse_name(inamer,cnamer(inamer),cformr(inamer),'bzmr',  idiag_bzmr)
-        call parse_name(inamer,cnamer(inamer),cformr(inamer),'armr',  idiag_armr)
-        call parse_name(inamer,cnamer(inamer),cformr(inamer),'apmr',  idiag_apmr)
-        call parse_name(inamer,cnamer(inamer),cformr(inamer),'azmr',  idiag_azmr)
-        call parse_name(inamer,cnamer(inamer),cformr(inamer),'b2mr',  idiag_b2mr)
-        call parse_name(inamer,cnamer(inamer),cformr(inamer),'brbpmr',idiag_brbpmr)
-      enddo
-!
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!
-      if (lwr) then
-        write(3,*) 'i_dteta=',idiag_dteta
-        write(3,*) 'i_aybym2=',idiag_aybym2
-        write(3,*) 'i_exaym2=',idiag_exaym2
-        write(3,*) 'i_exjm2=',idiag_exjm2
-        write(3,*) 'i_abm=',idiag_abm
-        write(3,*) 'i_jbm=',idiag_jbm
-        write(3,*) 'i_ubm=',idiag_ubm
-        write(3,*) 'i_b2m=',idiag_b2m
-        write(3,*) 'i_bm2=',idiag_bm2
-        write(3,*) 'i_j2m=',idiag_j2m
-        write(3,*) 'i_jm2=',idiag_jm2
-        write(3,*) 'i_epsM=',idiag_epsM
-        write(3,*) 'i_epsM_LES=',idiag_epsM_LES
-        write(3,*) 'i_brms=',idiag_brms
-        write(3,*) 'i_bmax=',idiag_bmax
-        write(3,*) 'i_jrms=',idiag_jrms
-        write(3,*) 'i_jmax=',idiag_jmax
-        write(3,*) 'i_axm=',idiag_axm
-        write(3,*) 'i_aym=',idiag_aym
-        write(3,*) 'i_azm=',idiag_azm
-        write(3,*) 'i_arms=',idiag_arms
-        write(3,*) 'i_amax=',idiag_amax
-        write(3,*) 'i_vArms=',idiag_vArms
-        write(3,*) 'i_vAmax=',idiag_vAmax
-        write(3,*) 'i_vA2m=',idiag_vA2m
-        write(3,*) 'i_beta1m=',idiag_beta1m
-        write(3,*) 'i_beta1max=',idiag_beta1max
-        write(3,*) 'i_dtb=',idiag_dtb
-        write(3,*) 'i_bxm=',idiag_bxm
-        write(3,*) 'i_bym=',idiag_bym
-        write(3,*) 'i_bzm=',idiag_bzm
-        write(3,*) 'i_bx2m=',idiag_bx2m
-        write(3,*) 'i_by2m=',idiag_by2m
-        write(3,*) 'i_bz2m=',idiag_bz2m
-        write(3,*) 'i_bxbym=',idiag_bxbym
-        write(3,*) 'i_bxbzm=',idiag_bxbzm
-        write(3,*) 'i_bybzm=',idiag_bybzm
-        write(3,*) 'i_djuidjbim=',idiag_djuidjbim
-        write(3,*) 'i_uxbm=',idiag_uxbm
-        write(3,*) 'i_uxbmx=',idiag_uxbmx
-        write(3,*) 'i_uxbmy=',idiag_uxbmy
-        write(3,*) 'i_uxbmz=',idiag_uxbmz
-        write(3,*) 'i_uxjm=',idiag_uxjm
-        write(3,*) 'i_ujxbm=',idiag_ujxbm
-        write(3,*) 'i_oxuxbm=',idiag_oxuxbm
-        write(3,*) 'i_jxbxbm=',idiag_jxbxbm
-        write(3,*) 'i_gpxbm=',idiag_gpxbm
-        write(3,*) 'i_uxDxuxbm=',idiag_uxDxuxbm
-        write(3,*) 'i_b3b21m=',idiag_b3b21m
-        write(3,*) 'i_b1b32m=',idiag_b1b32m
-        write(3,*) 'i_b2b13m=',idiag_b2b13m
-        write(3,*) 'i_EMFdotBm=',idiag_EMFdotBm
-        write(3,*) 'i_udotxbm=',idiag_udotxbm
-        write(3,*) 'i_uxbdotm=',idiag_uxbdotm
-        write(3,*) 'i_bxmz=',idiag_bxmz
-        write(3,*) 'i_bymz=',idiag_bymz
-        write(3,*) 'i_bzmz=',idiag_bzmz
-        write(3,*) 'i_bx2mz=',idiag_bxmz
-        write(3,*) 'i_by2mz=',idiag_bymz
-        write(3,*) 'i_bz2mz=',idiag_bzmz
-        write(3,*) 'i_bxbymz=',idiag_bxbymz
-        write(3,*) 'i_b2mz=',idiag_b2mz
-        write(3,*) 'i_bmx=',idiag_bmx
-        write(3,*) 'i_bmy=',idiag_bmy
-        write(3,*) 'i_bmz=',idiag_bmz
-        write(3,*) 'i_bxpt=',idiag_bxpt
-        write(3,*) 'i_bypt=',idiag_bypt
-        write(3,*) 'i_bzpt=',idiag_bzpt
-        write(3,*) 'i_bxmxy=',idiag_bxmxy
-        write(3,*) 'i_bymxy=',idiag_bymxy
-        write(3,*) 'i_bzmxy=',idiag_bzmxy
-        write(3,*) 'i_bxmxz=',idiag_bxmxz
-        write(3,*) 'i_bymxz=',idiag_bymxz
-        write(3,*) 'i_bzmxz=',idiag_bzmxz
-        write(3,*) 'i_bx2mxz=',idiag_bx2mxz
-        write(3,*) 'i_by2mxz=',idiag_by2mxz
-        write(3,*) 'i_bz2mxz=',idiag_bz2mxz
-        write(3,*) 'i_bx2mxy=',idiag_bx2mxy
-        write(3,*) 'i_by2mxy=',idiag_by2mxy
-        write(3,*) 'i_bz2mxy=',idiag_bz2mxy
-        write(3,*) 'i_bxbymxy=',idiag_bxbymxy
-        write(3,*) 'i_bxbzmxy=',idiag_bxbzmxy
-        write(3,*) 'i_bybzmxy=',idiag_bybzmxy
-        write(3,*) 'i_bxbymxz=',idiag_bxbymxz
-        write(3,*) 'i_bxbzmxz=',idiag_bxbzmxz
-        write(3,*) 'i_bybzmxz=',idiag_bybzmxz
-        write(3,*) 'i_brmphi=',idiag_brmphi
-        write(3,*) 'i_bpmphi=',idiag_bpmphi
-        write(3,*) 'i_bzmphi=',idiag_bzmphi
-        write(3,*) 'i_b2mphi=',idiag_b2mphi
-        write(3,*) 'i_armphi=',idiag_armphi
-        write(3,*) 'i_apmphi=',idiag_apmphi
-        write(3,*) 'i_azmphi=',idiag_azmphi
-        write(3,*) 'i_brmr=',idiag_brmr
-        write(3,*) 'i_bpmr=',idiag_bpmr
-        write(3,*) 'i_bzmr=',idiag_bzmr
-        write(3,*) 'i_armr=',idiag_armr
-        write(3,*) 'i_apmr=',idiag_apmr
-        write(3,*) 'i_azmr=',idiag_azmr
-        write(3,*) 'i_b2mr=',idiag_b2mr
-        write(3,*) 'i_jbmphi=',idiag_jbmphi
-        write(3,*) 'i_uxBrms=',idiag_uxBrms
-        write(3,*) 'i_Bresrms=',idiag_Bresrms
-        write(3,*) 'i_Rmrms=',idiag_Rmrms
-        write(3,*) 'i_jfm=',idiag_jfm
-        write(3,*) 'i_bxmx=',idiag_bxmx
-        write(3,*) 'i_bxmy=',idiag_bxmy
-        write(3,*) 'i_bymy=',idiag_bymy
-        write(3,*) 'i_bzmy=',idiag_bzmy
-        write(3,*) 'i_bx2my=',idiag_bx2my
-        write(3,*) 'i_by2my=',idiag_by2my
-        write(3,*) 'i_bz2my=',idiag_bz2my
-        write(3,*) 'i_mflux_x=',idiag_mflux_x
-        write(3,*) 'i_mflux_y=',idiag_mflux_y
-        write(3,*) 'i_mflux_z=',idiag_mflux_z
-        write(3,*) 'nname=',nname
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'iaa=',iaa
-        write(3,*) 'iax=',iax
-        write(3,*) 'iay=',iay
-        write(3,*) 'iaz=',iaz
-        write(3,*) 'ihypres=',ihypres
-        write(3,*) 'i_bmxy_rms=',idiag_bmxy_rms
-      endif
-!
-    endsubroutine rprint_magnetic
 !***********************************************************************
     subroutine get_slices_magnetic(f,slices)
 !
@@ -4554,5 +4179,392 @@ module Magnetic
       do j=1,3; bb_hat(:,j) = bb_hat(:,j)/(bb_len+tini); enddo
 
     endsubroutine bb_unitvec_shock
+!***********************************************************************
+    subroutine rprint_magnetic(lreset,lwrite)
+!
+!  reads and registers print parameters relevant for magnetic fields
+!
+!   3-may-02/axel: coded
+!  27-may-02/axel: added possibility to reset list
+!
+      use Cdata
+      use Sub
+!
+      integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+!
+!  reset everything in case of RELOAD
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+        idiag_b2m=0; idiag_bm2=0; idiag_j2m=0; idiag_jm2=0; idiag_abm=0
+        idiag_jbm=0; idiag_ubm=0; idiag_epsM=0
+        idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0; idiag_epsM_LES=0
+        idiag_aybym2=0; idiag_exaym2=0; idiag_exjm2=0
+        idiag_brms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0; idiag_vArms=0
+        idiag_vAmax=0; idiag_dtb=0; idiag_arms=0; idiag_amax=0
+        idiag_beta1m=0; idiag_beta1max=0
+        idiag_bxm=0; idiag_bym=0; idiag_bzm=0
+        idiag_axm=0; idiag_aym=0; idiag_azm=0
+        idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
+        idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0
+        idiag_bxbymz=0; idiag_bxbzmz=0; idiag_bybzmz=0
+        idiag_b2mz=0
+        idiag_bxbym=0; idiag_bxbzm=0; idiag_bybzm=0; idiag_djuidjbim=0
+        idiag_bxmz=0; idiag_bymz=0; idiag_bzmz=0; idiag_bmx=0; idiag_bmy=0
+        idiag_bx2mz=0; idiag_by2mz=0; idiag_bz2mz=0
+        idiag_bmz=0; idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
+        idiag_bx2mxy=0; idiag_by2mxy=0; idiag_bz2mxy=0
+        idiag_bxbymxy=0; idiag_bxbzmxy=0; idiag_bybzmxy=0
+        idiag_bxbymxz=0; idiag_bxbzmxz=0; idiag_bybzmxz=0
+        idiag_uxbm=0; idiag_oxuxbm=0; idiag_jxbxbm=0.; idiag_gpxbm=0.
+        idiag_uxDxuxbm=0.; idiag_uxbmx=0; idiag_uxbmy=0; idiag_uxbmz=0
+        idiag_uxjm=0; idiag_ujxbm=0
+        idiag_b3b21m=0; idiag_b1b32m=0; idiag_b2b13m=0
+        idiag_EMFdotBm=0
+        idiag_udotxbm=0; idiag_uxbdotm=0
+        idiag_brmphi=0; idiag_bpmphi=0; idiag_bzmphi=0; idiag_b2mphi=0
+        idiag_jbmphi=0; idiag_uxbrmphi=0; idiag_uxbpmphi=0; idiag_uxbzmphi=0
+        idiag_jxbrmphi=0; idiag_jxbpmphi=0; idiag_jxbzmphi=0
+        idiag_armphi=0; idiag_apmphi=0; idiag_azmphi=0
+        idiag_dteta=0; idiag_uxBrms=0; idiag_Bresrms=0; idiag_Rmrms=0
+        idiag_jfm=0; idiag_brbpmr=0; idiag_va2m=0
+        idiag_b2mr=0; idiag_brmr=0; idiag_bpmr=0; idiag_bzmr=0
+        idiag_armr=0; idiag_apmr=0; idiag_azmr=0
+        idiag_bxmx=0; idiag_bymx=0; idiag_bzmx=0
+        idiag_bxmy=0; idiag_bymy=0; idiag_bzmy=0
+        idiag_bx2my=0; idiag_by2my=0; idiag_bz2my=0
+        idiag_mflux_x=0; idiag_mflux_y=0; idiag_mflux_z=0
+        idiag_bmxy_rms=0
+!
+      endif
+!
+!  check for those quantities that we want to evaluate online
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'dteta',idiag_dteta)
+        call parse_name(iname,cname(iname),cform(iname),'aybym2',idiag_aybym2)
+        call parse_name(iname,cname(iname),cform(iname),'exaym2',idiag_exaym2)
+        call parse_name(iname,cname(iname),cform(iname),'exjm2',idiag_exjm2)
+        call parse_name(iname,cname(iname),cform(iname),'abm',idiag_abm)
+        call parse_name(iname,cname(iname),cform(iname),'jbm',idiag_jbm)
+        call parse_name(iname,cname(iname),cform(iname),'ubm',idiag_ubm)
+        call parse_name(iname,cname(iname),cform(iname),'b2m',idiag_b2m)
+        call parse_name(iname,cname(iname),cform(iname),'bm2',idiag_bm2)
+        call parse_name(iname,cname(iname),cform(iname),'j2m',idiag_j2m)
+        call parse_name(iname,cname(iname),cform(iname),'jm2',idiag_jm2)
+        call parse_name(iname,cname(iname),cform(iname),'epsM',idiag_epsM)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'epsM_LES',idiag_epsM_LES)
+        call parse_name(iname,cname(iname),cform(iname),'brms',idiag_brms)
+        call parse_name(iname,cname(iname),cform(iname),'bmax',idiag_bmax)
+        call parse_name(iname,cname(iname),cform(iname),'jrms',idiag_jrms)
+        call parse_name(iname,cname(iname),cform(iname),'jmax',idiag_jmax)
+        call parse_name(iname,cname(iname),cform(iname),'axm',idiag_axm)
+        call parse_name(iname,cname(iname),cform(iname),'aym',idiag_aym)
+        call parse_name(iname,cname(iname),cform(iname),'azm',idiag_azm)
+        call parse_name(iname,cname(iname),cform(iname),'arms',idiag_arms)
+        call parse_name(iname,cname(iname),cform(iname),'amax',idiag_amax)
+        call parse_name(iname,cname(iname),cform(iname),'vArms',idiag_vArms)
+        call parse_name(iname,cname(iname),cform(iname),'vAmax',idiag_vAmax)
+        call parse_name(iname,cname(iname),cform(iname),'vA2m',idiag_vA2m)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'beta1m',idiag_beta1m)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'beta1max',idiag_beta1max)
+        call parse_name(iname,cname(iname),cform(iname),'dtb',idiag_dtb)
+        call parse_name(iname,cname(iname),cform(iname),'bxm',idiag_bxm)
+        call parse_name(iname,cname(iname),cform(iname),'bym',idiag_bym)
+        call parse_name(iname,cname(iname),cform(iname),'bzm',idiag_bzm)
+        call parse_name(iname,cname(iname),cform(iname),'bx2m',idiag_bx2m)
+        call parse_name(iname,cname(iname),cform(iname),'by2m',idiag_by2m)
+        call parse_name(iname,cname(iname),cform(iname),'bz2m',idiag_bz2m)
+        call parse_name(iname,cname(iname),cform(iname),'bxbym',idiag_bxbym)
+        call parse_name(iname,cname(iname),cform(iname),'bxbzm',idiag_bxbzm)
+        call parse_name(iname,cname(iname),cform(iname),'bybzm',idiag_bybzm)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'djuidjbim',idiag_djuidjbim)
+        call parse_name(iname,cname(iname),cform(iname),'uxbm',idiag_uxbm)
+        call parse_name(iname,cname(iname),cform(iname),'uxbmx',idiag_uxbmx)
+        call parse_name(iname,cname(iname),cform(iname),'uxbmy',idiag_uxbmy)
+        call parse_name(iname,cname(iname),cform(iname),'uxbmz',idiag_uxbmz)
+        call parse_name(iname,cname(iname),cform(iname),'uxjm',idiag_uxjm)
+        call parse_name(iname,cname(iname),cform(iname),'ujxbm',idiag_ujxbm)
+        call parse_name(iname,cname(iname),cform(iname),'jxbxbm',idiag_jxbxbm)
+        call parse_name(iname,cname(iname),cform(iname),'oxuxbm',idiag_oxuxbm)
+        call parse_name(iname,cname(iname),cform(iname),'gpxbm',idiag_gpxbm)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'uxDxuxbm',idiag_uxDxuxbm)
+        call parse_name(iname,cname(iname),cform(iname),'b3b21m',idiag_b3b21m)
+        call parse_name(iname,cname(iname),cform(iname),'b1b32m',idiag_b1b32m)
+        call parse_name(iname,cname(iname),cform(iname),'b2b13m',idiag_b2b13m)
+        call parse_name(iname,cname(iname),cform(iname),'EMFdotBm',idiag_EMFdotBm)
+        call parse_name(iname,cname(iname),cform(iname),'udotxbm',idiag_udotxbm)
+        call parse_name(iname,cname(iname),cform(iname),'uxbdotm',idiag_uxbdotm)
+        call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
+        call parse_name(iname,cname(iname),cform(iname),'bmy',idiag_bmy)
+        call parse_name(iname,cname(iname),cform(iname),'bmz',idiag_bmz)
+        call parse_name(iname,cname(iname),cform(iname),'bxpt',idiag_bxpt)
+        call parse_name(iname,cname(iname),cform(iname),'bypt',idiag_bypt)
+        call parse_name(iname,cname(iname),cform(iname),'bzpt',idiag_bzpt)
+        call parse_name(iname,cname(iname),cform(iname),'uxBrms',idiag_uxBrms)
+        call parse_name(iname,cname(iname),cform(iname),'Bresrms',idiag_Bresrms)
+        call parse_name(iname,cname(iname),cform(iname),'Rmrms',idiag_Rmrms)
+        call parse_name(iname,cname(iname),cform(iname),'jfm',idiag_jfm)
+        call parse_name(iname,cname(iname),cform(iname),'bmxy_rms',idiag_bmxy_rms)
+        call parse_name(iname,cname(iname),cform(iname),'etasmagm',idiag_etasmagm)
+        call parse_name(iname,cname(iname),cform(iname),'etasmagmin',idiag_etasmagmin)
+        call parse_name(iname,cname(iname),cform(iname),'etasmagmax',idiag_etasmagmax)
+!
+      enddo
+!
+! Currently need to force zaverage calculation at every lout step for
+! bmx and bmy.
+!
+      if ((idiag_bmx+idiag_bmy)>0) ldiagnos_need_zaverages=.true.
+!
+!  check for those quantities for which we want xy-averages
+!
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bxmx',idiag_bxmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bymx',idiag_bymx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bzmx',idiag_bzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bx2mx',idiag_bx2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'by2mx',idiag_by2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bz2mx',idiag_bz2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bxbymx',idiag_bxbymx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+                        'mflux_x',idiag_mflux_x)
+      enddo
+      do inamey=1,nnamey
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'bxmy',idiag_bxmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'bymy',idiag_bymy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'bzmy',idiag_bzmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'bx2my',idiag_bx2my)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'by2my',idiag_by2my)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'bz2my',idiag_bz2my)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'bxbymy',idiag_bxbymy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'bxbzmy',idiag_bxbzmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'bybzmy',idiag_bybzmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+            'mflux_y',idiag_mflux_y)
+      enddo
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxmz',idiag_bxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bymz',idiag_bymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzmz',idiag_bzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bx2mz',idiag_bx2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'by2mz',idiag_by2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bz2mz',idiag_bz2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxbymz',idiag_bxbymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxbzmz',idiag_bxbzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bybzmz',idiag_bybzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'b2mz',idiag_b2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+                        'mflux_z',idiag_mflux_z)
+      enddo
+!
+!  check for those quantities for which we want y-averages
+!
+      do ixz=1,nnamexz
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxmxz',idiag_bxmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bymxz',idiag_bymxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bzmxz',idiag_bzmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bx2mxz',idiag_bx2mxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'by2mxz',idiag_by2mxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bz2mxz',idiag_bz2mxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxbymxz',idiag_bxbymxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxbzmxz',idiag_bxbzmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bybzmxz',idiag_bybzmxz)
+      enddo
+!
+!  check for those quantities for which we want z-averages
+!
+      do ixy=1,nnamexy
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxmxy',idiag_bxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bymxy',idiag_bymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bzmxy',idiag_bzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bx2mxy',idiag_bx2mxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'by2mxy',idiag_by2mxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bz2mxy',idiag_bz2mxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxbymxy',idiag_bxbymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxbzmxy',idiag_bxbzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bybzmxy',idiag_bybzmxy)
+      enddo
+!
+!  check for those quantities for which we want phi-averages
+!
+      do irz=1,nnamerz
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'brmphi'  ,idiag_brmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'bpmphi'  ,idiag_bpmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'bzmphi'  ,idiag_bzmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'b2mphi'  ,idiag_b2mphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'jbmphi'  ,idiag_jbmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbrmphi',idiag_uxbrmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbpmphi',idiag_uxbpmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbzmphi',idiag_uxbzmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'jxbrmphi',idiag_jxbrmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'jxbpmphi',idiag_jxbpmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'jxbzmphi',idiag_jxbzmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'armphi'  ,idiag_armphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'apmphi'  ,idiag_apmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'azmphi'  ,idiag_azmphi)
+
+      enddo
+!
+!  check for those quantities for which we want phiz-averages
+!
+      do inamer=1,nnamer
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'brmr',  idiag_brmr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'bpmr',  idiag_bpmr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'bzmr',  idiag_bzmr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'armr',  idiag_armr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'apmr',  idiag_apmr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'azmr',  idiag_azmr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'b2mr',  idiag_b2mr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'brbpmr',idiag_brbpmr)
+      enddo
+!
+!  write column, idiag_XYZ, where our variable XYZ is stored
+!
+      if (lwr) then
+        write(3,*) 'i_dteta=',idiag_dteta
+        write(3,*) 'i_aybym2=',idiag_aybym2
+        write(3,*) 'i_exaym2=',idiag_exaym2
+        write(3,*) 'i_exjm2=',idiag_exjm2
+        write(3,*) 'i_abm=',idiag_abm
+        write(3,*) 'i_jbm=',idiag_jbm
+        write(3,*) 'i_ubm=',idiag_ubm
+        write(3,*) 'i_b2m=',idiag_b2m
+        write(3,*) 'i_bm2=',idiag_bm2
+        write(3,*) 'i_j2m=',idiag_j2m
+        write(3,*) 'i_jm2=',idiag_jm2
+        write(3,*) 'i_epsM=',idiag_epsM
+        write(3,*) 'i_epsM_LES=',idiag_epsM_LES
+        write(3,*) 'i_brms=',idiag_brms
+        write(3,*) 'i_bmax=',idiag_bmax
+        write(3,*) 'i_jrms=',idiag_jrms
+        write(3,*) 'i_jmax=',idiag_jmax
+        write(3,*) 'i_axm=',idiag_axm
+        write(3,*) 'i_aym=',idiag_aym
+        write(3,*) 'i_azm=',idiag_azm
+        write(3,*) 'i_arms=',idiag_arms
+        write(3,*) 'i_amax=',idiag_amax
+        write(3,*) 'i_vArms=',idiag_vArms
+        write(3,*) 'i_vAmax=',idiag_vAmax
+        write(3,*) 'i_vA2m=',idiag_vA2m
+        write(3,*) 'i_beta1m=',idiag_beta1m
+        write(3,*) 'i_beta1max=',idiag_beta1max
+        write(3,*) 'i_dtb=',idiag_dtb
+        write(3,*) 'i_bxm=',idiag_bxm
+        write(3,*) 'i_bym=',idiag_bym
+        write(3,*) 'i_bzm=',idiag_bzm
+        write(3,*) 'i_bx2m=',idiag_bx2m
+        write(3,*) 'i_by2m=',idiag_by2m
+        write(3,*) 'i_bz2m=',idiag_bz2m
+        write(3,*) 'i_bxbym=',idiag_bxbym
+        write(3,*) 'i_bxbzm=',idiag_bxbzm
+        write(3,*) 'i_bybzm=',idiag_bybzm
+        write(3,*) 'i_djuidjbim=',idiag_djuidjbim
+        write(3,*) 'i_uxbm=',idiag_uxbm
+        write(3,*) 'i_uxbmx=',idiag_uxbmx
+        write(3,*) 'i_uxbmy=',idiag_uxbmy
+        write(3,*) 'i_uxbmz=',idiag_uxbmz
+        write(3,*) 'i_uxjm=',idiag_uxjm
+        write(3,*) 'i_ujxbm=',idiag_ujxbm
+        write(3,*) 'i_oxuxbm=',idiag_oxuxbm
+        write(3,*) 'i_jxbxbm=',idiag_jxbxbm
+        write(3,*) 'i_gpxbm=',idiag_gpxbm
+        write(3,*) 'i_uxDxuxbm=',idiag_uxDxuxbm
+        write(3,*) 'i_b3b21m=',idiag_b3b21m
+        write(3,*) 'i_b1b32m=',idiag_b1b32m
+        write(3,*) 'i_b2b13m=',idiag_b2b13m
+        write(3,*) 'i_EMFdotBm=',idiag_EMFdotBm
+        write(3,*) 'i_udotxbm=',idiag_udotxbm
+        write(3,*) 'i_uxbdotm=',idiag_uxbdotm
+        write(3,*) 'i_bxmz=',idiag_bxmz
+        write(3,*) 'i_bymz=',idiag_bymz
+        write(3,*) 'i_bzmz=',idiag_bzmz
+        write(3,*) 'i_bx2mz=',idiag_bxmz
+        write(3,*) 'i_by2mz=',idiag_bymz
+        write(3,*) 'i_bz2mz=',idiag_bzmz
+        write(3,*) 'i_bxbymz=',idiag_bxbymz
+        write(3,*) 'i_b2mz=',idiag_b2mz
+        write(3,*) 'i_bmx=',idiag_bmx
+        write(3,*) 'i_bmy=',idiag_bmy
+        write(3,*) 'i_bmz=',idiag_bmz
+        write(3,*) 'i_bxpt=',idiag_bxpt
+        write(3,*) 'i_bypt=',idiag_bypt
+        write(3,*) 'i_bzpt=',idiag_bzpt
+        write(3,*) 'i_bxmxy=',idiag_bxmxy
+        write(3,*) 'i_bymxy=',idiag_bymxy
+        write(3,*) 'i_bzmxy=',idiag_bzmxy
+        write(3,*) 'i_bxmxz=',idiag_bxmxz
+        write(3,*) 'i_bymxz=',idiag_bymxz
+        write(3,*) 'i_bzmxz=',idiag_bzmxz
+        write(3,*) 'i_bx2mxz=',idiag_bx2mxz
+        write(3,*) 'i_by2mxz=',idiag_by2mxz
+        write(3,*) 'i_bz2mxz=',idiag_bz2mxz
+        write(3,*) 'i_bx2mxy=',idiag_bx2mxy
+        write(3,*) 'i_by2mxy=',idiag_by2mxy
+        write(3,*) 'i_bz2mxy=',idiag_bz2mxy
+        write(3,*) 'i_bxbymxy=',idiag_bxbymxy
+        write(3,*) 'i_bxbzmxy=',idiag_bxbzmxy
+        write(3,*) 'i_bybzmxy=',idiag_bybzmxy
+        write(3,*) 'i_bxbymxz=',idiag_bxbymxz
+        write(3,*) 'i_bxbzmxz=',idiag_bxbzmxz
+        write(3,*) 'i_bybzmxz=',idiag_bybzmxz
+        write(3,*) 'i_brmphi=',idiag_brmphi
+        write(3,*) 'i_bpmphi=',idiag_bpmphi
+        write(3,*) 'i_bzmphi=',idiag_bzmphi
+        write(3,*) 'i_b2mphi=',idiag_b2mphi
+        write(3,*) 'i_armphi=',idiag_armphi
+        write(3,*) 'i_apmphi=',idiag_apmphi
+        write(3,*) 'i_azmphi=',idiag_azmphi
+        write(3,*) 'i_brmr=',idiag_brmr
+        write(3,*) 'i_bpmr=',idiag_bpmr
+        write(3,*) 'i_bzmr=',idiag_bzmr
+        write(3,*) 'i_armr=',idiag_armr
+        write(3,*) 'i_apmr=',idiag_apmr
+        write(3,*) 'i_azmr=',idiag_azmr
+        write(3,*) 'i_b2mr=',idiag_b2mr
+        write(3,*) 'i_jbmphi=',idiag_jbmphi
+        write(3,*) 'i_uxBrms=',idiag_uxBrms
+        write(3,*) 'i_Bresrms=',idiag_Bresrms
+        write(3,*) 'i_Rmrms=',idiag_Rmrms
+        write(3,*) 'i_jfm=',idiag_jfm
+        write(3,*) 'i_bxmx=',idiag_bxmx
+        write(3,*) 'i_bxmy=',idiag_bxmy
+        write(3,*) 'i_bymy=',idiag_bymy
+        write(3,*) 'i_bzmy=',idiag_bzmy
+        write(3,*) 'i_bx2my=',idiag_bx2my
+        write(3,*) 'i_by2my=',idiag_by2my
+        write(3,*) 'i_bz2my=',idiag_bz2my
+        write(3,*) 'i_mflux_x=',idiag_mflux_x
+        write(3,*) 'i_mflux_y=',idiag_mflux_y
+        write(3,*) 'i_mflux_z=',idiag_mflux_z
+        write(3,*) 'nname=',nname
+        write(3,*) 'nnamexy=',nnamexy
+        write(3,*) 'nnamexz=',nnamexz
+        write(3,*) 'nnamez=',nnamez
+        write(3,*) 'iaa=',iaa
+        write(3,*) 'iax=',iax
+        write(3,*) 'iay=',iay
+        write(3,*) 'iaz=',iaz
+        write(3,*) 'ihypres=',ihypres
+        write(3,*) 'i_bmxy_rms=',idiag_bmxy_rms
+      endif
+!
+    endsubroutine rprint_magnetic
 !***********************************************************************
 endmodule Magnetic
