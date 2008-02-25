@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.86 2008-01-22 17:13:53 glesur Exp $
+! $Id: viscosity.f90,v 1.87 2008-02-25 14:28:55 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -70,6 +70,9 @@ module Viscosity
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
   integer :: idiag_fviscmin=0   ! DIAG_DOC: Min value of viscous acceleration
   integer :: idiag_fviscmax=0   ! DIAG_DOC: Max value of viscous acceleration
+  integer :: idiag_nusmagm=0    ! DIAG_DOC: Mean value of Smagorinsky viscosity
+  integer :: idiag_nusmagmin=0  ! DIAG_DOC: Min value of Smagorinsky viscosity
+  integer :: idiag_nusmagmax=0  ! DIAG_DOC: Max value of Smagorinsky viscosity
   integer :: idiag_epsK=0  ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
   integer :: idiag_epsK2=0      ! DIAG_DOC:
   integer :: idiag_epsK_LES=0   ! DIAG_DOC:
@@ -106,7 +109,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.86 2008-01-22 17:13:53 glesur Exp $")
+           "$Id: viscosity.f90,v 1.87 2008-02-25 14:28:55 ajohan Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -369,6 +372,9 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'fviscm',idiag_fviscm)
         call parse_name(iname,cname(iname),cform(iname),'fviscmin',idiag_fviscmin)
         call parse_name(iname,cname(iname),cform(iname),'fviscmax',idiag_fviscmax)
+        call parse_name(iname,cname(iname),cform(iname),'nusmagm',idiag_nusmagm)
+        call parse_name(iname,cname(iname),cform(iname),'nusmagmin',idiag_nusmagmin)
+        call parse_name(iname,cname(iname),cform(iname),'nusmagmax',idiag_nusmagmax)
         call parse_name(iname,cname(iname),cform(iname),'dtnu',idiag_dtnu)
         call parse_name(iname,cname(iname),cform(iname),'nu_LES',idiag_nu_LES)
         call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
@@ -917,6 +923,12 @@ module Viscosity
 !  know we are?
 !
      if (lvisc_heat_as_aux) f(l1:l2,m,n,ivisc_heat) = p%visc_heat
+!
+     if (ldiagnos) then
+       if (idiag_nusmagm/=0)   call sum_mn_name(nu_smag,idiag_nusmagm)
+       if (idiag_nusmagmin/=0) call max_mn_name(-nu_smag,idiag_nusmagmin,lneg=.true.)
+       if (idiag_nusmagmax/=0) call max_mn_name(nu_smag,idiag_nusmagmax)
+     endif
 !
      if (NO_WARN) print*, f    !(to keep compiler quiet)
 !
