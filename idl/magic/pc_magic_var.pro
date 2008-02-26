@@ -1,7 +1,7 @@
 ;
-;  $Id: pc_magic_var.pro,v 1.38 2008-01-30 15:58:17 ajohan Exp $
-;  $Date: 2008-01-30 15:58:17 $
-;  $Revision: 1.38 $
+;  $Id: pc_magic_var.pro,v 1.39 2008-02-26 07:20:55 ajohan Exp $
+;  $Date: 2008-02-26 07:20:55 $
+;  $Revision: 1.39 $
 ;
 pro pc_magic_var_dep, variables, tags, var, dep
 ;
@@ -274,11 +274,19 @@ pro pc_magic_var, variables, tags, $
 ; Density advection
     endif else if (variables[iv] eq 'advlnrho') then begin
       tags[iv]=variables[iv]
-      variables[iv]='-dot(uu,grad(lnrho))'
+      if (param.ldensity_nolog) then begin
+        variables[iv]='-dot(uu,grad(alog(lnrho)))'
+      endif else begin  
+        variables[iv]='-dot(uu,grad(lnrho))'
+      endelse
 ; Density advection (non-logarithmic density)
     endif else if (variables[iv] eq 'advrho') then begin
       tags[iv]=variables[iv]
-      variables[iv]='-dot(uu,grad(lnrho))'
+      if (param.ldensity_nolog) then begin
+        variables[iv]='-dot(uu,grad(lnrho))'
+      endif else begin  
+        variables[iv]='-dot(uu,grad(exp(lnrho)))'
+      endelse
 ; Modulus of velocity
     endif else if (variables[iv] eq 'u2') then begin
       tags[iv]=variables[iv]
