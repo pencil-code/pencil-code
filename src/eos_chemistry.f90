@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.1 2008-02-26 13:36:33 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.2 2008-02-26 16:21:03 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -9,7 +9,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp,cp1,cp1tilde,glnTT,TT,TT1,gTT
+! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp,cp1,cp1tilde,glnTT,TT,TT1,gTT,mu1
 ! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1,del6lnTT
 !
 !***************************************************************
@@ -76,8 +76,9 @@ module EquationOfState
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
 
-  real, dimension(nchemspec) :: mu_spec, cp_spec
-
+  
+  real, dimension(nchemspec) :: mu_spec, cp_spec 
+ 
   ! input parameters
   namelist /eos_init_pars/ xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw
 
@@ -112,7 +113,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.1 2008-02-26 13:36:33 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.2 2008-02-26 16:21:03 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -221,6 +222,8 @@ module EquationOfState
     subroutine initialize_eos()
 !
       use Mpicomm, only: stop_it
+      integer, save :: ifirst=0
+      integer :: k
 !
 ! Initialize variable selection code (needed for RELOADing)
 !
@@ -230,8 +233,8 @@ module EquationOfState
 !  write constants to disk. In future we may want to deal with this
 !  using an include file or another module.
 !
-      if (lroot) then
-        open (1,file=trim(datadir)//'/pc_constants.pro')
+!      if (lroot) then
+!        open (1,file=trim(datadir)//'/pc_constants.pro')
 !        write (1,*) 'TT_ion=',TT_ion
 !        write (1,*) 'TT_ion_=',TT_ion_
 !        write (1,*) 'lnrho_e=',lnrho_e
@@ -241,13 +244,36 @@ module EquationOfState
 !        write (1,*) 'lnrho_e_=',lnrho_e_
 !        write (1,*) 'ss_ion=',ss_ion
 !        write (1,*) 'kappa0=',kappa0
-        write (1,'(a,1pd26.16)') 'k_B=',k_B
-        write (1,'(a,1pd26.16)') 'm_H=',m_H
-        write (1,*) 'lnTTO=',lnTT0
-        write (1,*) 'cp=',cp
-        close (1)
-      endif
+!        write (1,'(a,1pd26.16)') 'k_B=',k_B
+!        write (1,'(a,1pd26.16)') 'm_H=',m_H
+!        write (1,*) 'lnTTO=',lnTT0
+!        write (1,*) 'cp=',cp
+!        close (1)
+!      endif
 !
+
+! Natalia (26.02.2008) read data of Cp_spec and mu_spec
+
+
+  if (ifirst==0) then
+        if (lroot) print*,'opening cp.dat'
+
+        open(1,file='cp.dat')
+         do k=1,nchemspec
+          read(1,*) cp_spec(k)
+         enddo
+        close(1)
+
+        open(2,file='mu.dat')
+         do k=1,nchemspec
+          read(2,*) mu_spec(k)
+         enddo
+        close(2)
+
+      endif
+    ifirst=ifirst+1
+
+
     endsubroutine initialize_eos
 !*******************************************************************
     subroutine select_eos_variable(variable,findex)
@@ -533,10 +559,12 @@ module EquationOfState
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: tmp_sum  
       type (pencil_case) :: p
 !
       intent(in) :: f
       intent(inout) :: p
+      integer :: k
 !
 ! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG
 ! FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
@@ -676,14 +704,43 @@ module EquationOfState
       case default
         call fatal_error("calc_pencils_eos","case not implemented yet")
       endselect
+
+
+!  Natalia: 26.02.2008: calculation of additional penciles
+
 !
-!  inverse cv and cp values
+!  Mean molecular weight
 !
-       if (lpencil(i_cv1)) p%cv1=cv1
-       if (lpencil(i_cp1)) p%cp1=cp1
-       if (lpencil(i_cp))  p%cp=1/p%cp1
-       if (lpencil(i_cp1tilde)) p%cp1tilde=cp1
+   tmp_sum=0.
+   
+      if (lpencil(i_mu1)) then 
+        do k=1,nchemspec
+         tmp_sum=tmp_sum+f(l1:l2,m,n,ichemspec(k))/mu_spec(k)
+        enddo
+         p%mu1=tmp_sum
+      endif
+
 !
+!  Pressure
+!
+      if (lpencil(i_pp)) p%pp = Rgas*p%mu1*p%rho*p%TT
+
+!
+!  Specific heat at constant pressure
+!
+
+    tmp_sum=0.
+
+      if (lpencil(i_cp)) then
+        do k=1,nchemspec
+         tmp_sum=tmp_sum+f(l1:l2,m,n,ichemspec(k))*cp_spec(k)
+        enddo
+        p%cp=tmp_sum 
+      endif
+      if (lpencil(i_cp1)) p%cp1 = 1/p%cp
+
+
+
     endsubroutine calc_pencils_eos
 !***********************************************************************
     subroutine ioninit(f)
@@ -2904,36 +2961,5 @@ module EquationOfState
 !
     end subroutine bc_lnrho_hds_z_liso
 !***********************************************************************
-!***********************************************************************
-    subroutine getcp_full(f,cp_full)
 !
-!  Calculate average species mass in the gas relative to
-!
-      integer :: k
-      real, dimension (mx,my,mz), intent(out) :: cp_full
-      real, dimension (mx,my,mz,mfarray) :: f
-
-      do k=1,nchemspec
-       cp_full(:,m,n)=f(:,m,n,ichemspec(k))*cp_spec(k)
-      enddo
-
-    endsubroutine getcp_full
-!*******************************************************************
-    subroutine getmu_full(f,mu_full)
-!
-!  Calculate average cp 
-
-      integer :: k
-      real, dimension (mx,my,mz), intent(out) :: mu_full
-      real, dimension (mx,my,mz) :: mu1
-      real, dimension (mx,my,mz,mfarray) :: f
-
-      do k=1,nchemspec
-       mu1(:,m,n)=f(:,m,n,ichemspec(k))/mu_spec(k)
-      enddo
-      mu_full=1./mu1
-
-    endsubroutine getmu_full
-!*******************************************************************
-
 endmodule EquationOfState
