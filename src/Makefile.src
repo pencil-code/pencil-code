@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.374 2008-02-24 10:38:41 ajohan Exp $
+### $Id: Makefile.src,v 1.375 2008-02-26 13:08:02 nbabkovs Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -497,6 +497,7 @@ LD_FFTW2=
 ## Natalia's laptop (Natalia, 1.8 GHz)
 ##
 #FC=ifort #(nbabkovs)
+#FC=ifort #(hikari)
 ##
 ## renton & morvern (ngrs's desktop & laptop)
 ##
