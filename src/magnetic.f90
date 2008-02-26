@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.478 2008-02-25 14:29:48 ajohan Exp $
+! $Id: magnetic.f90,v 1.479 2008-02-26 23:14:35 theine Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -368,7 +368,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.478 2008-02-25 14:29:48 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.479 2008-02-26 23:14:35 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2079,7 +2079,7 @@ module Magnetic
         if (idiag_by2mxz/=0) call ysum_mn_name_xz(p%bb(:,2)**2,idiag_by2mxz)
         if (idiag_bz2mxz/=0) call ysum_mn_name_xz(p%bb(:,3)**2,idiag_bz2mxz)
         if (idiag_bx2mxy/=0) call zsum_mn_name_xy(p%bb(:,1)**2,idiag_bx2mxy)
-        if (idiag_bz2mxy/=0) call zsum_mn_name_xy(p%bb(:,2)**2,idiag_by2mxy)
+        if (idiag_by2mxy/=0) call zsum_mn_name_xy(p%bb(:,2)**2,idiag_by2mxy)
         if (idiag_bz2mxy/=0) call zsum_mn_name_xy(p%bb(:,3)**2,idiag_bz2mxy)
         if (idiag_bxbymxy/=0) &
             call zsum_mn_name_xy(p%bb(:,1)*p%bb(:,2),idiag_bxbymxy)
