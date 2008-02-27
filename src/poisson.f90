@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.41 2008-01-23 16:13:46 wlyra Exp $
+! $Id: poisson.f90,v 1.42 2008-02-27 12:35:06 wlyra Exp $
 
 !
 !  This module solves the Poisson equation
@@ -123,7 +123,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.41 2008-01-23 16:13:46 wlyra Exp $")
+        "$Id: poisson.f90,v 1.42 2008-02-27 12:35:06 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -218,182 +218,137 @@ module Poisson
 !***********************************************************************
     subroutine inverse_laplacian_fft_cyl(phi)
 !
-! NOT YET READY FOR MPI!!!
+!  Solve the 2D Poisson equation in cylindrical coordinates
+!  by transforming to a periodic cartesian grid before 
+!  Fourier transforming 
+!
+!  This method works only for serial runs
 !
 ! 01-12-07/wlad: coded
 !
-      use Mpicomm,only:stop_it
-!
       real, dimension (nx,ny,nz) :: phi
-      real, dimension (nx,ny) :: sigmaxy,phixy
-!     
-      real, dimension (2*nx,2*ny) :: nb1,nsigmaxy,nphi
+      real, dimension (2*nx,2*ny) :: nphi,nb1
 !
-      real, dimension(nx) :: rad,xc
-      real, dimension(ny) :: tht,yc
-
-      real, dimension(2*nx) :: xf,kkx_fft
-      real, dimension(2*ny) :: yf,kky_fft
-
+      real, dimension(nx) :: rad
+      real, dimension(ny) :: tht
+!
+      real, dimension(2*nx) :: xc,kkx_fft
+      real, dimension(2*ny) :: yc
+      real, dimension(2*nygrid) :: kky_fft
+!
       real :: r0,rn,x0,xn,y0,yn,dxc,dyc,dr,dth,radius,rr
       real :: delr,delp,theta,fr,fp,p1,p2,p3,p4,interp_pot
-      integer :: nr,nth,ir,im,ix1,ix2,iy1,iy2
-      integer :: i,ir1,ir2,ip1,ip2,nnx,nny
+      real :: distx,disty,fx,fy,delx,dely,xp,yp,k2,dxc1,dyc1
+      real :: Lxn,Lyn,theta0,theta1,dr1,dth1
+      integer :: nr,nth,ir,im,ix1,ix2,iy1,iy2,nnxgrid,nnygrid
+      integer :: i,ir1,ir2,ip1,ip2,nnx,nny,j,ikx,iky
+      integer :: nrgrid,nthgrid,nnghost
 !
-      real :: distx,disty,fx,fy,delx,dely,xp,yp,k2
-      real :: Lxn,Lyn,th0,thn
+! transform the grid to cartesian
+! keep the notation consistent.
 !
-      integer :: ikx, iky,ng
+      rad=x(l1:l2)     ; tht=y(m1:m2)
+      nr =nx           ; nth=ny
+      r0=rad(1)        ; theta0=xyz0(2)+.5*dth 
+      rn=rad(nr)       ; theta1=xyz1(2)-.5*dth
+      nrgrid=nxgrid    ; nthgrid=nygrid
+      dr=dx            ; dth=dy
+      dr1=1./dr        ; dth1=1./dth
 !
-! transform the grid to cartesian 
+! Expanded cartesian axes
 !
-      !keep the notation consistent. also use nx=nx,ny=ny
-      nr=nx;rad=x(l1:l2) 
-      nth=ny;tht=y(m1:m2)
+      nnx=2*nx         ; nny=2*ny
+      xn=2*rad(nr)     ; x0=-xn
+      yn=xn            ; y0=-yn
+      nnxgrid=2*nxgrid ; nnygrid=2*nygrid
 !
-      rn=rad(nr);r0=rad(1)
-      thn=tht(nth);th0=tht(1)
-      xn=rad(nr);x0=-xn
-      yn=rad(nr);y0=-yn
-      dr =dx
-      dth=dy
-!
-      do i=1,nx
-        xc(i)=1.*(i-1)/(nx-1)*(xn-x0)+x0
+      do i=1,nnx
+        xc(i)=1.*(i-1)        /(nnxgrid-1)*(xn-x0)+x0
       enddo
-      do i=1,ny
-        yc(i)=1.*(i-1)/(ny-1)*(yn-y0)+y0
-      enddo
+      do m=1,nny
+        yc(m)=1.*(m-1+ipy*nny)/(nnygrid-1)*(yn-y0)+y0
+      enddo      
 !
-      dxc=xc(2)-xc(1)
-      dyc=dxc
+      dxc=xc(2)-xc(1)  ; dyc=dxc
+      dxc1=1/dxc       ; dyc1=1/dyc
 !
-      do m=1,ny
-        im=m1-1+m
-        do i=1,nx
+! Now transform to Cartesian grid
+!
+      nnghost=npoint-nghost
+!
+      do m=1,nny
+        do i=1,nnx
           radius=sqrt(xc(i)**2+yc(m)**2)
-          if ((radius.ge.r0).and.(radius.le.rn)) then 
-!       
-            theta=atan2(yc(m),xc(i))
-!              
-            ir1=floor((radius-r0)/dr ) +1;ir2=ir1+1
-            ip1=floor((theta -th0)/dth)+1;ip2=ip1+1
+          if ((radius.ge.r0).and.(radius.le.rn)) then
+            ir1=floor((radius-r0)*dr1 ) +1;ir2=ir1+1
+            delr=radius-rad(ir1)
 !
+! this should never happen, but is here for warning
+!
+            if (ir1.lt.1 ) call fatal_error("","cyl2cart: ir1<1")
+            if (ir2.gt.nr) call fatal_error("","cyl2cart: ir2>nr")
+!
+            theta=atan2(yc(m),xc(i))
+            ip1=floor((theta - theta0)*dth1)+1;ip2=ip1+1
             if (ip1==0) then
-              ip1=nth
+              ip1=nthgrid
               delp=theta-tht(ip1) + 2*pi
             else
-              delp=theta -tht(ip1)
+              delp=theta-tht(ip1)
             endif
-            if (ip2==nth+1) ip2=1
+            if (ip2==nthgrid+1) ip2=1
 !
-            if (ir1.lt.1     ) call stop_it("cyl2cart: ir1<1")
-            if (ir2.gt.nr    ) call stop_it("cyl2cart: ir2>nr")
-            if (ip1.lt.0     ) call stop_it("cyl2cart: ip1<0")
-            if (ip2.gt.nth+1 ) call stop_it("cyl2cart: ip2>nth+1")
+! Bilinear interpolation
 !
-            delr=radius-rad(ir1)
-
-            fr=delr/dr
-            fp=delp/dth
-!              
-            p1=phi(ir2,ip1,npoint-nghost)
-            p2=phi(ir1,ip1,npoint-nghost)
-            p3=phi(ir2,ip2,npoint-nghost)
-            p4=phi(ir1,ip2,npoint-nghost)
+            p1=phi(ir2,ip1,nnghost);p2=phi(ir1,ip1,nnghost)
+            p3=phi(ir2,ip2,nnghost);p4=phi(ir1,ip2,nnghost)
 !
-            interp_pot=fr*fp*(p3+p2-p1-p4) + fr*(p1-p2) + fp*(p4-p2) + p2
+            fr=delr*dr1
+            fp=delp*dth1
 !
-            sigmaxy(i,m)=interp_pot
-          else 
-            sigmaxy(i,m)=0.
+            nphi(i,m)=fr*fp*(p3+p2-p1-p4) + fr*(p1-p2) + fp*(p4-p2) + p2
+          else
+            nphi(i,m)=0.
           endif
         enddo
       enddo
-      
-      do n=1,nz
-        phi(:,:,n)=sigmaxy
-      enddo
 !
-!  Now expand the grid and prepare the fourier transform
 !  The right-hand-side of the Poisson equation is purely real.
 !
       nb1=0.0
 !
-!  Expand the grid
-!
-      nny=nint(2.*ny)
-      nnx=nint(2.*nx)
-      ng=nint(nx/2.)
-      do i=1,ng
-        xf(i)      =xc(1) -(ng+1-i)*dxc
-        xf(nnx+1-i)=xc(nx)+(ng+1-i)*dxc
-      enddo
-      do i=1,nx
-        xf(ng+i)=xc(i)
-      enddo
-!
-      do i=1,ng
-        yf(i)      =yc(1) -(ng+1-i)*dyc
-        yf(nny+1-i)=yc(ny)+(ng+1-i)*dyc
-      enddo
-      do i=1,ny
-        yf(ng+i)=yc(i)
-      enddo
-!
-      do m=1,nny
-        do i=1,nnx
-          rr=sqrt(xf(i)**2+yf(m)**2)
-          if (rr .gt. rn) then 
-!zero mass reservoir
-            nsigmaxy(i,m)=0.
-          else
-            !copy original density
-!              
-            ix = i-nx/2
-            iy = m-ny/2
-!
-            nsigmaxy(i,m)=sigmaxy(ix,iy)
-!
-          endif
-        enddo
-      enddo
-!
 !  Forward transform (to k-space).
 !
-      nb1=0.
-      call fourier_transform_other(nsigmaxy,nb1)
-      nphi=nsigmaxy
+      call fourier_transform_xy_xy_other(nphi,nb1)
 !
 !  Solve Poisson equation
 !
-      Lxn=2*xf(nnx)
-      Lyn=2*yf(nny)
+      Lxn=2*xc(nnx);Lyn=Lxn
 !
-      kkx_fft=cshift((/(i-(nnx+1)/2,i=0,nnx-1)/),+(nnx+1)/2)*2*pi/Lxn
-      kky_fft=cshift((/(i-(nny+1)/2,i=0,nny-1)/),+(nny+1)/2)*2*pi/Lyn
+      kkx_fft=cshift((/(i-(nnxgrid+1)/2,i=0,nnxgrid-1)/),+(nnxgrid+1)/2)*2*pi/Lxn
+      kky_fft=cshift((/(i-(nnygrid+1)/2,i=0,nnygrid-1)/),+(nnygrid+1)/2)*2*pi/Lyn
 !
       do iky=1,nny
         do ikx=1,nnx
-          if ((kkx_fft(ikx)==0.0) .and. (kky_fft(iky)==0.0)) then
-          nphi(ikx,iky) = 0.0
-          nb1(ikx,iky) = 0.0
-        else
-          if (.not.lrazor_thin) then
-            call stop_it("3d case not implemented yet")
+          if ((kkx_fft(ikx)==0.0) .and. (kky_fft(iky+ipy*nny)==0.0)) then
+            nphi(ikx,iky) = 0.0
+            nb1(ikx,iky) = 0.0
+          else
+            if (.not.lrazor_thin) then
+              call fatal_error("","3d case not implemented yet")
 !
 !  Razor-thin approximation. Here we solve the equation
 !    del2Phi=4*pi*G*Sigma(x,y)*delta(z)
 !  The solution at scale k=(kx,ky) is
 !    Phi(x,y,z)=-(2*pi*G/|k|)*Sigma(x,y)*exp[i*(kx*x+ky*y)-|k|*|z|]
 !
-          else
-            
-            k2 = (kkx_fft(ikx)**2+kky_fft(iky)**2)
-            nphi(ikx,iky) = -.5*nphi(ikx,iky) / sqrt(k2)
-            nb1(ikx,iky) = -.5*nb1(ikx,iky) / sqrt(k2)
+            else
+              k2 = (kkx_fft(ikx)**2+kky_fft(iky+ipy*nny)**2)
+!              if (ipy==0) print*,kkx_fft(ikx),kky_fft(iky+ipy*nny)
+              nphi(ikx,iky) = -.5*nphi(ikx,iky) / sqrt(k2)
+              nb1(ikx,iky)  = -.5*nb1(ikx,iky)  / sqrt(k2)
+            endif
           endif
-        endif
 !
 !  Limit |k| < kmax
 !
@@ -408,317 +363,325 @@ module Poisson
 !
 !  Inverse transform (to real space).
 !
-      call fourier_transform_other(nphi,nb1,linv=.true.)
+      call fourier_transform_xy_xy_other(nphi,nb1,linv=.true.)
 !
-!  Map newphi back into phi
+!  Convert back to cylindrical
 !
-      do m=1,ny
-        do i=1,nx
+      do ip=1,Nth
+        do ir=1,Nr
 !
-          ix=i+nx/2
-          iy=m+ny/2
+          xp=rad(ir)*cos(tht(ip))
+          yp=rad(ir)*sin(tht(ip))
 !
-          phixy(i,m)=nphi(ix,iy)
+          distx = xp - x0
+          disty = yp - y0
+!
+          ix1 = floor(distx*dxc1)+1 ; ix2 = ix1+1
+          iy1 = floor(disty*dyc1)+1 ; iy2 = iy1+1
+!
+          if (ix1 .lt.  1)      call fatal_error("","ix1 lt 1")
+          if (iy1 .lt.  1)      call fatal_error("","iy1 lt 1")
+          if (ix2 .gt. nnxgrid) call fatal_error("","ix2 gt nnxgrid")
+          if (iy2 .gt. nnygrid) call fatal_error("","iy2 gt nnygrid")
+!
+          delx=xp-xc(ix1);fx=delx*dxc1
+          dely=yp-yc(iy1);fy=dely*dyc1
+!
+! Bilinear interpolation
+!
+          p1=nphi(ix2,iy1);p2=nphi(ix1,iy1)
+          p3=nphi(ix2,iy2);p4=nphi(ix1,iy2)
+!
+          interp_pot=fx*fy*(p3+p2-p1-p4) + fx*(p1-p2) + fy*(p4-p2) + p2
+!
+          do n=1,nz
+            phi(ir,ip,n)=interp_pot
+          enddo
 !
         enddo
       enddo
-!
-!  Convert back to cylindrical 
-!
-      do n=1,Nz;do ir=1,Nr; do ip=1,Nth
-    
-        xp=rad(ir)*cos(tht(ip))
-        yp=rad(ir)*sin(tht(ip))
-          
-        distx = xp - x0
-        disty = yp - y0
-
-        ix1 = floor(distx/dxc)+1 ; ix2 = ix1+1
-        iy1 = floor(disty/dyc)+1 ; iy2 = iy1+1
-!
-        if (ix1 .lt.  1)  call stop_it("ix1 lt 1")
-        if (iy1 .lt.  1)  call stop_it("iy1 lt 1")
-        if (ix2 .gt. Nx)  call stop_it("ix2 gt Nx")
-        if (iy2 .gt. Ny)  call stop_it("iy2 gy Ny")
-!          
-        delx = xp - xc(ix1)
-        dely = yp - yc(iy1) 
-!
-        fx=delx/dxc
-        fy=dely/dyc
-!         
-        p1=phixy(ix2,iy1)
-        p2=phixy(ix1,iy1)
-        p3=phixy(ix2,iy2)
-        p4=phixy(ix1,iy2)
-!
-        interp_pot=fx*fy*(p3+p2-p1-p4) + fx*(p1-p2) + fy*(p4-p2) + p2
-!          
-        phi(ir,ip,1:nz)=interp_pot
-!
-      enddo;enddo;enddo
 !
     endsubroutine inverse_laplacian_fft_cyl
 !***********************************************************************
     subroutine inverse_laplacian_fft_cyl_mpi(phi)
 !
+!  Solve the 2D Poisson equation in cylindrical coordinates
+!  by transforming to a periodic cartesian grid before 
+!  Fourier transforming. 
+!
+!  This is for parallel runs, but it still seems to involve an 
+!  awful lots of communication. 
+!
+!  20-feb-08/wlad : coded
+!
       use Mpicomm
 !
-      real, dimension (nx,ny,nz) :: phi
-      real, dimension (nx,ny) :: sigmaxy,phixy
+      real, dimension (nx,ny,nz)  :: phi
+      real, dimension (2*nx,2*ny) :: nphi,nb1
 !
-      real, dimension (nx*ny) :: cross_proc
-      real, dimension (4*nx*ny) :: cross_proc_big
-      
-      real, dimension (nx*nygrid) :: cross
-      real, dimension (4*nx*nygrid) :: crossbig
+      real, dimension(nx) :: rad
+      real, dimension(ny) :: tht
 !
-      real, dimension (2*nx,2*ny) :: nb1,nsigmaxy,nphi
+      real, dimension(nygrid)   :: theta_serial
 !
-      real, dimension(nx) :: rad,xc,yserial
-      real, dimension(ny) :: tht,yc
-
-      real, dimension(nygrid) :: theta_serial
-
-      real, dimension(2*nx) :: xf,kkx_fft
-      real, dimension(2*nygrid) :: kky_fft
-      real, dimension(2*ny) :: yf
-
+      real, dimension(2*nx)     :: xc,kkx_fft
+      real, dimension(2*ny)     :: yc
+      real, dimension(2*nygrid) :: kky_fft,yserial
+!
+      real   , dimension (0:ncpus-1,nx*ny)     :: phi_send,phi_recv
+      integer, dimension (0:ncpus-1,nx*ny)     :: sri_send,sri_recv
+      integer, dimension (0:ncpus-1,0:ncpus-1) :: nmig
+!
       real :: r0,rn,x0,xn,y0,yn,dxc,dyc,dr,dth,radius,rr
       real :: delr,delp,theta,fr,fp,p1,p2,p3,p4,interp_pot
-      integer :: nr,nth,ir,im,ix1,ix2,iy1,iy2,nnxgrid,nnygrid
-      integer :: i,ir1,ir2,ip1,ip2,nnx,nny,j,iup,ido,iys1,iys2
-!
-      real :: distx,disty,fx,fy,delx,dely,xp,yp,k2,recreal
-      real :: Lxn,Lyn,th0,thn,theta0,theta1,ips,xis
-!
-      integer :: ikx, iky,ng,serial_index,iproc_recv,iproc_send,ik,recint
-      integer :: ipserial
+      real :: distx,disty,fx,fy,delx,dely,xp,yp,k2
+      real :: Lxn,Lyn,th0,thn,theta0,theta1
       real :: yps,dxc1,dyc1,dr1,dth1
-      real, dimension(4) :: pneigh
-
-      integer :: proc_cart,proc_cyl,tag
 !
-! transform the grid to cartesian 
+      integer :: nr,nth,ir,im,ix1,ix2,iy1,iy2,nnxgrid,nnygrid
+      integer :: i,j,ir1,ir2,ip1,ip2,nnx,nny
+      integer :: iproc_ip1,iproc_ip2,iphi,ik
+      integer :: iproc_iy1,iproc_iy2,ikx,iky
+      integer :: tmp,tmp1,tmp2,nrgrid,nthgrid
 !
-      !keep the notation consistent. also use nx=nx,ny=ny
-      nr=nx ;rad=x(l1:l2) 
-      nth=ny;tht=y(m1:m2)
+      logical :: lprint
 !
-      rn=rad(nr);r0=rad(1)
-      thn=tht(nth);th0=tht(1)
-      xn=rad(nr);x0=-xn
-      yn=rad(nr);y0=-yn
-      dr =dx
-      dth=dy
+      lprint = lroot.and.(ip<=9)
 !
-      theta0=xyz0(2)+.5*dth
-      theta1=xyz1(2)-.5*dth
+! transform the grid to cartesian
+! keep the notation consistent.
 !
-! Cartesian axes
+      rad=x(l1:l2)     ; tht=y(m1:m2)
+      nr =nx           ; nth=ny
+      r0=rad(1)        ; theta0=xyz0(2)+.5*dth 
+      rn=rad(nr)       ; theta1=xyz1(2)-.5*dth
+      nrgrid=nxgrid    ; nthgrid=nygrid
+      dr=dx            ; dth=dy
+      dr1=1./dr        ; dth1=1./dth
 !
-      do i=1,nx
-        xc(i)=1.*(i-1)       /(nxgrid-1)*(xn-x0)+x0
+! Expanded cartesian axes
+!
+      nnx=2*nx         ; nny=2*ny
+      xn=2*rad(nr)     ; x0=-xn
+      yn=xn            ; y0=-yn
+      nnxgrid=2*nxgrid ; nnygrid=2*nygrid
+!
+      do i=1,nnx
+        xc(i)=1.*(i-1)        /(nnxgrid-1)*(xn-x0)+x0
       enddo
-      do i=1,ny
-        yc(i)=1.*(i-1+ipy*ny)/(nygrid-1)*(yn-y0)+y0
-      enddo
+      do m=1,nny
+        yc(m)=1.*(m-1+ipy*nny)/(nnygrid-1)*(yn-y0)+y0
+      enddo      
 !
-! Distance elements
-!
-      dxc=xc(2)-xc(1)
-      dyc=dxc
-!
-      dxc1=1/dxc
-      dyc1=1/dyc
-      dr1=1/dr
-      dth1=1/dth
+      dxc=xc(2)-xc(1)  ; dyc=dxc
+      dxc1=1/dxc       ; dyc1=1/dyc
 !
 ! Need the serial theta later in order to compute the 
 ! azimuthal displacement in parallel
 !
       do i=1,nygrid
-        theta_serial(i)=1.*(i-1)/(nxgrid-1)*(theta1-theta0)+theta0
+        theta_serial(i)=1.*(i-1)/(nthgrid-1)*(theta1-theta0)+theta0
       enddo
-!        
-! I couldn't find a better solution for the transformation in parallel. 
-! This is far from elegant, but seems to work: I'll simply broadcast 
-! the whole density array and then transform as in the serial case. 
-! For this, I will need first to transform the 2D density array to 
-! a 1D, for broadcasting purposes. 
-! (apparently, it is not possible to send 2d arrays with 
-! mpibcast, mpisend and mpirecv) 
-! 
-      do ip=1,ny
-        do ir=1,nx
+      yserial = xc
 !
-! Transform the 2d density array of each processor
-! into a 1D array. Processor indexing (nx*ny, not nx*nygrid)
+! Loop throught the cylindrical grid, check where they pertain, and send 
+! a package (like a tarball) from processor to processor
+! like a tarball
 !
-          ik=ir+(ip-1)*nx
-          cross_proc(ik)=phi(ir,ip,npoint-nghost)
+      nmig=0.
+      do iphi=1,nth
+        do ir=1,nr
+!
+          yp=rad(ir)*sin(tht(iphi))
+          iy1 = floor((yp-y0)*dyc1)+1 ; iy2 = iy1+1
+          if (iy1 .lt.  1)      call fatal_error("","iy1 lt 1")
+          if (iy2 .gt. nnygrid) call fatal_error("","iy2 gt nnygrid")
+!
+! Which Cartesian processors to these cells belong to?          
+!
+          iproc_iy1 = (iy1-1)/nny 
+          iproc_iy2 = (iy2-1)/nny
+!
+          if (iproc_iy1 .ge. ncpus) call fatal_error("","iproc_iy1 doesn't exist: up")
+          if (iproc_iy2 .ge. ncpus) call fatal_error("","iproc_iy2 doesn't exist: up")
+          if (iproc_iy1 .lt. 0    ) call fatal_error("","iproc_iy1 doesn't exist: do")
+          if (iproc_iy2 .lt. 0    ) call fatal_error("","iproc_iy2 doesn't exist: do")
+!
+! Prepare the arrays to be sent
+!
+          if (iproc_iy1 /= iproc) then
+            nmig(iproc,iproc_iy1) = nmig(iproc,iproc_iy1) + 1
+            phi_send(iproc_iy1,nmig(iproc,iproc_iy1))=phi(ir,iphi,npoint-nghost)
+            sri_send(iproc_iy1,nmig(iproc,iproc_iy1))=ir+(iphi+nth*iproc-1)*nr !serial index
+          endif
+          !if iproc_iy2/=iproc_iy1, another processor will receive
+          if ((iproc_iy2 /= iproc).and.(iproc_iy2 /= iproc_iy1)) then
+            nmig(iproc,iproc_iy2) = nmig(iproc,iproc_iy2) + 1
+            phi_send(iproc_iy2,nmig(iproc,iproc_iy2))=phi(ir,iphi,npoint-nghost)
+            sri_send(iproc_iy2,nmig(iproc,iproc_iy2))=ir+(iphi+nth*iproc-1)*nr
+          endif
+!
+! ugly, but let's see... send all first and last rows of each proc to the neighbour processor
+!          
+          if (iproc_iy2/=ncpus-1) then !not last row of last processor
+            tmp2=iy2-iproc_iy2*nny
+            if ((tmp2==nny).and.(iproc_iy2+1/=iproc)) then
+              nmig(iproc,iproc_iy2+1) = nmig(iproc,iproc_iy2+1) + 1
+              phi_send(iproc_iy2+1,nmig(iproc,iproc_iy2+1))=&
+                   phi(ir,iphi,npoint-nghost)
+              sri_send(iproc_iy2+1,nmig(iproc,iproc_iy2+1))=&
+                   ir+(iphi+nth*iproc-1)*nr
+            endif
+          endif
+!
+          if (iproc_iy1/=0) then !not first row of first processor
+            tmp1=iy1-iproc_iy1*nny
+            if ((tmp1==1).and.(iproc_iy1-1/=iproc)) then
+              nmig(iproc,iproc_iy1-1) = nmig(iproc,iproc_iy1-1) + 1
+              phi_send(iproc_iy1-1,nmig(iproc,iproc_iy1-1))=&
+                   phi(ir,iphi,npoint-nghost)
+              sri_send(iproc_iy1-1,nmig(iproc,iproc_iy1-1))=&
+                   ir+(iphi+nth*iproc-1)*nr
+            endif
+          endif
+!
         enddo
       enddo
 !
-! each processor sends its 1d array to the root processor
+!  Share information about size of the migrating chunks
 !
-      if (.not.lroot) then
-        !the tag is the processor sending it
-        call mpisend_real(cross_proc,nx*ny,root,iproc)
-      else 
-        !the root processor receives all arrays and 
-        !stores them in a single big array of dimension
-        !nx*nygrid
-        do j=0,ncpus-1 
-          !the tag is the processor that is sending
-          if (j/=0) call mpirecv_real(cross_proc,nx*ny,j,j)
-          ido= j   *nx*nygrid/ncpus +1
-          iup=(j+1)*nx*nygrid/ncpus
-          cross(ido:iup)=cross_proc
-        enddo
-      endif
+      do i=0,ncpus-1
+        if (iproc/=i) then
+          call mpirecv_int(nmig(i,iproc), 1, i, 111)
+        else
+          do j=0,ncpus-1
+            if (iproc/=j) call mpisend_int(nmig(iproc,j), 1, j, 111)
+          enddo
+        endif
+      enddo
 !
-! Broadcast the 1D density field to all processors
-! 
-      call mpibcast_real(cross,nx*nygrid)
+!  Do the communication between all processors - no need for broadcasting
+!  Each processors knows what the others need.
+!     
+      do i=0,ncpus-1
+        !directed send
+        if (iproc==i) then
+          !send to all processors
+          do j=0,ncpus-1
+            if (iproc/=j .and. nmig(iproc,j)/=0) then
+              call mpisend_real(phi_send(j,1:nmig(iproc,j)),nmig(iproc,j),j,112)
+              call mpisend_int (sri_send(j,1:nmig(iproc,j)),nmig(iproc,j),j,113)
+            endif
+          enddo
+        else 
+          !set to receive
+          if (nmig(i,iproc)/=0) then
+            call mpirecv_real(phi_recv(i,1:nmig(i,iproc)),nmig(i,iproc),i,112)
+            call mpirecv_int (sri_recv(i,1:nmig(i,iproc)),nmig(i,iproc),i,113)
+          endif
+        endif
+      enddo
 !
-! Now finally transform to a Cartesian grid, as in serial
+! Transform to the Cartesian grid. All the information needed is stored in phi_recv
 !
-      do m=1,ny
-        do i=1,nx  
+      do m=1,nny
+        do i=1,nnx  
 !
           radius=sqrt(xc(i)**2+yc(m)**2)
-
+!
           if ((radius.ge.r0).and.(radius.le.rn)) then 
             ir1=floor((radius-r0)*dr1 ) +1;ir2=ir1+1
-!            
+!
             delr=radius-rad(ir1)
             fr=delr*dr1
 !
 ! this should never happen, but is here for warning
 !
-            if (ir1.lt.1 ) call stop_it("cyl2cart: ir1<1")
-            if (ir2.gt.nr) call stop_it("cyl2cart: ir2>nr")
+            if (ir1.lt.1 ) call fatal_error("","cyl2cart: ir1<1")
+            if (ir2.gt.nr) call fatal_error("","cyl2cart: ir2>nr")
 !
             theta=atan2(yc(m),xc(i))
             !for getting the crossed one, the index 
             !must be the serial index
-            ip1=floor((theta -theta0)/dth)+1;ip2=ip1+1
+            ip1=floor((theta -theta0)*dth1)+1;ip2=ip1+1
             if (ip1==0) then
-              ip1=nygrid
+              ip1=nthgrid
               delp=theta-theta_serial(ip1) + 2*pi
             else
               delp=theta-theta_serial(ip1)
             endif
-            if (ip2==nygrid+1) ip2=1
+            if (ip2==nthgrid+1) ip2=1
 !
-            p1=cross(ir2+(ip1-1)*nx) !phi(ir2,ip1) !!npoint-nghost
-            p2=cross(ir1+(ip1-1)*nx) !phi(ir1,ip1)
-            p3=cross(ir2+(ip2-1)*nx) !phi(ir2,ip2)
-            p4=cross(ir1+(ip2-1)*nx) !phi(ir1,ip2)
+            !processor theta belongs to
+            iproc_ip1 = (ip1-1)/nth
+            iproc_ip2 = (ip2-1)/nth
 !
-            fp=delp/dth
-            interp_pot=fr*fp*(p3+p2-p1-p4) + fr*(p1-p2) + fp*(p4-p2) + p2
+            if (iproc_ip1 .ge. ncpus) call fatal_error("","iproc_ip1 doesn't exist: up")
+            if (iproc_ip2 .ge. ncpus) call fatal_error("","iproc_ip2 doesn't exist: up")
+            if (iproc_ip1 .lt. 0    ) call fatal_error("","iproc_ip1 doesn't exist: do")
+            if (iproc_ip2 .lt. 0    ) call fatal_error("","iproc_ip2 doesn't exist: do")
 !
-            sigmaxy(i,m)=interp_pot
+            if (iproc_ip1 == iproc) then
+              p1=phi(ir1,ip1-nth*iproc,npoint-nghost)
+              p2=phi(ir2,ip1-nth*iproc,npoint-nghost)
+            else
+              !loop through the nmig to find ip1
+              if (nmig(iproc_ip1,iproc) /=0) then 
+                do j=1,nmig(iproc_ip1,iproc)
+                  if (sri_recv(iproc_ip1,j) == ir1+(ip1-1)*nr) &
+                       p1=phi_recv(iproc_ip1,j)
+                  if (sri_recv(iproc_ip1,j) == ir2+(ip1-1)*nr) &
+                       p2=phi_recv(iproc_ip1,j)
+                enddo
+              else
+                print*,iproc_ip1,iproc
+                call fatal_error("","nmig is empty."//&
+                     " Something is wrong. Go check.")
+              endif
+            endif
+!
+            if (iproc_ip2 == iproc) then
+              p3=phi(ir1,ip2-nth*iproc,npoint-nghost)
+              p4=phi(ir2,ip2-nth*iproc,npoint-nghost)
+            else
+              if (nmig(iproc_ip2,iproc) /=0) then 
+                do j=1,nmig(iproc_ip2,iproc)
+                  if (sri_recv(iproc_ip2,j) == ir1+(ip2-1)*nr) &
+                       p3=phi_recv(iproc_ip2,j)
+                  if (sri_recv(iproc_ip2,j) == ir2+(ip2-1)*nr) &
+                       p4=phi_recv(iproc_ip2,j)
+                enddo
+              else
+                print*,iproc_ip2,iproc
+                call fatal_error("","nmig is empty."//&
+                     " Something is wrong. Go check.")
+              endif
+            endif
+!
+            !p1=phi(ir1,ip1),p2=phi(ir2,ip1)
+            !p3=phi(ir1,ip2),p4=phi(ir2,ip2)
+!
+            fp=delp*dth1
+            interp_pot=fr*fp*(p1-p2-p3+p4) + fr*(p2-p1) + fp*(p3-p1) + p1
+!
+            nphi(i,m)=interp_pot
           else 
-            sigmaxy(i,m)=0.
+            nphi(i,m)=0.
           endif
         enddo
       enddo
-!
-!  Now expand the grid and prepare the fourier transform
-!  The right-hand-side of the Poisson equation is purely real.
-!
-      nb1=0.0
-!
-!  Expand the grid
-!
-      nny=nint(2.*ny)
-      nnx=nint(2.*nx)
-      ng=nint(nx/2.)
-      do i=1,ng
-        xf(i)      =xc(1) -(ng+1-i)*dxc
-        xf(nnx+1-i)=xc(nx)+(ng+1-i)*dxc
-      enddo
-      do i=1,nx
-        xf(ng+i)=xc(i)
-      enddo
-!
-      ido=iproc*nny+1
-      iup=(iproc+1)*nny      
-      yf = xf(ido:iup)
-!
-! Same business, broadcast the full array 
-! 
-      do m=1,ny
-        do i=1,nx
-!
-! Transform the 2d density array of each processor
-! into a 1D array. Processor indexing (nx*ny, not nx*nygrid)
-!
-          ik=i+(m-1)*nx
-          cross_proc(ik)=sigmaxy(i,m)
-        enddo
-      enddo
-!
-! each processor sends its 1d array to the root processor
-!
-      if (.not.lroot) then
-        !the tag is the processor sending it
-        call mpisend_real(cross_proc,nx*ny,root,iproc)
-      else 
-        !the root processor receives all arrays and 
-        !stores them in a single big array of dimension
-        !nx*nygrid
-        do j=0,ncpus-1 
-          !the tag is the processor that is sending
-          if (j/=0) call mpirecv_real(cross_proc,nx*ny,j,j)
-          ido= j   *nx*nygrid/ncpus +1
-          iup=(j+1)*nx*nygrid/ncpus
-          cross(ido:iup)=cross_proc
-        enddo
-      endif
-!
-      call mpibcast_real(cross,nx*nygrid)
-!
-      do m=1,nny
-        do i=1,nnx
-          rr=sqrt(xf(i)**2+yf(m)**2)
-          if (rr .gt. rn) then 
-!zero mass reservoir
-            nsigmaxy(i,m)=0.
-          else
-            !copy original density
-!              
-            ix = i-nx/2
-            !iy = m-ny/2  
-            !serial - relative to the smaller grid
-            iy = nint((yf(m)-y0)*dyc1)+1 
-!            
-            ik=ix+(iy-1)*nx
-!
-            nsigmaxy(i,m)=cross(ik)
-!
-          endif
-        enddo
-      enddo
-!
-!
+      if (lprint) print*,'finished transforming to Cartesian'
+!      
 !  Forward transform (to k-space).
 !
       nb1=0.
 !
-      call fourier_transform_xy_xy_other(nsigmaxy,nb1)
-      nphi=nsigmaxy
+      call fourier_transform_xy_xy_other(nphi,nb1)
 !
 !  Solve Poisson equation
 !
-      Lxn=2*xf(nnx)
-      Lyn=Lxn!2*yf(nny)
-!
-      nnxgrid=nnx
-      nnygrid=nnxgrid
+      Lxn=2*xc(nnx)
+      Lyn=Lxn
 !
       kkx_fft=cshift((/(i-(nnxgrid+1)/2,i=0,nnxgrid-1)/),+(nnxgrid+1)/2)*2*pi/Lxn
       kky_fft=cshift((/(i-(nnygrid+1)/2,i=0,nnygrid-1)/),+(nnygrid+1)/2)*2*pi/Lyn
@@ -761,127 +724,196 @@ module Poisson
 !
       call fourier_transform_xy_xy_other(nphi,nb1,linv=.true.)
 !
-      cross_proc=0.
+!  Transform back from Cartesian to cylindrical
 !
+      !
+      !prepare the grid for directed send
+      ! 
+      
+      nmig=0.
       do m=1,nny
         do i=1,nnx
+          radius=sqrt(xc(i)**2+yc(m)**2)
+          !if ((radius.ge.r0).and.(radius.le.rn)) then 
+          if ((radius.ge.(r0-2*dr)).and.(radius.le.(rn+2*dr))) then !give some room for ir=1 and ir=nr
+            theta=atan2(yc(m),xc(i))
+            ip1=floor((theta -theta0)*dth1)+1;ip2=ip1+1
+            if (ip1==0)         ip1=nthgrid
+            if (ip2==nthgrid+1) ip2=1
 !
-! Transform the 2d density array of each processor
-! into a 1D array. Processor indexing (nx*ny, not nx*nygrid)
+! Which cylindrical processors to these cells belong to?          
 !
-          ik=i+(m-1)*nnx
-          cross_proc_big(ik)=nphi(i,m)
+            iproc_ip1 = (ip1-1)/nth 
+            iproc_ip2 = (ip2-1)/nth
+!
+            if (iproc_ip1 .ge. ncpus) call fatal_error("","iproc_ip1 doesn't exist: up")
+            if (iproc_ip2 .ge. ncpus) call fatal_error("","iproc_ip2 doesn't exist: up")
+            if (iproc_ip1 .lt. 0    ) call fatal_error("","iproc_ip1 doesn't exist: do")
+            if (iproc_ip2 .lt. 0    ) call fatal_error("","iproc_ip2 doesn't exist: do")
+!
+! Prepare the arrays to be sent
+!
+            if (iproc_ip1 /= iproc) then
+              nmig(iproc,iproc_ip1) = nmig(iproc,iproc_ip1) + 1
+              phi_send(iproc_ip1,nmig(iproc,iproc_ip1))=nphi(i,m)
+              sri_send(iproc_ip1,nmig(iproc,iproc_ip1))=i+(m+nny*iproc-1)*nnx !serial index
+            endif
+          !if iproc_iy2/=iproc_iy1, another processor will receive
+            if ((iproc_ip2 /= iproc).and.(iproc_ip2 /= iproc_ip1)) then
+              nmig(iproc,iproc_ip2) = nmig(iproc,iproc_ip2) + 1
+              phi_send(iproc_ip2,nmig(iproc,iproc_ip2))=nphi(i,m)
+              sri_send(iproc_ip2,nmig(iproc,iproc_ip2))=i+(m+nny*iproc-1)*nnx
+            endif
+!
+! ugly, but let's see... send all first and last rows of each proc to the neighbour processor
+!          
+            !last 3 rows of iproc_ip2
+            tmp2=ip2-iproc_ip2*nth
+            if (tmp2 >= nth-5) then
+              if (iproc_ip2/=ncpus-1) then
+                tmp=iproc_ip2+1
+              else
+                tmp=0 !root
+              endif
+              if (iproc/=tmp) then
+                nmig(iproc,tmp) = nmig(iproc,tmp) + 1
+                phi_send(tmp,nmig(iproc,tmp))=nphi(i,m)
+                sri_send(tmp,nmig(iproc,tmp))=i+(m+nny*iproc-1)*nnx
+              endif
+            endif
+!
+            !first rows of iproc_ip1
+            tmp1=ip1-iproc_ip1*nth
+            if (tmp1<= 6) then
+              if (iproc_ip1/=0) then
+                tmp=iproc_ip1-1
+              else
+                tmp=ncpus-1 !last
+              endif
+              if (iproc/=tmp) then
+                nmig(iproc,tmp) = nmig(iproc,tmp) + 1
+                phi_send(tmp,nmig(iproc,tmp))=nphi(i,m)
+                sri_send(tmp,nmig(iproc,tmp))=i+(m+nny*iproc-1)*nnx
+              endif
+            endif
+!
+          endif
         enddo
       enddo
+!
+!  Share information about size of the migrating chunks
+!
+      do i=0,ncpus-1
+        if (iproc/=i) then
+          call mpirecv_int(nmig(i,iproc), 1, i, 222)
+        else
+          do j=0,ncpus-1
+            if (iproc/=j) call mpisend_int(nmig(iproc,j), 1, j, 222)
+          enddo
+        endif
+      enddo
+!
+!  Do the communication between all processors - no need for broadcasting
+!  Each processors knows what the others need.
+!     
+      do i=0,ncpus-1
+        !directed send
+        if (iproc==i) then
+          !send to all processors
+          do j=0,ncpus-1
+            if (iproc/=j .and. nmig(iproc,j)/=0) then
+              call mpisend_real(phi_send(j,1:nmig(iproc,j)),nmig(iproc,j),j,223)
+              call mpisend_int (sri_send(j,1:nmig(iproc,j)),nmig(iproc,j),j,224)
+            endif
+          enddo
+        else 
+          !set to receive
+          if (nmig(i,iproc)/=0) then
+            call mpirecv_real(phi_recv(i,1:nmig(i,iproc)),nmig(i,iproc),i,223)
+            call mpirecv_int (sri_recv(i,1:nmig(i,iproc)),nmig(i,iproc),i,224)
+          endif
+        endif
+      enddo
+!
+!  Convert back to cylindrical. All the information needed is stored in phi_recv
+!
+      do ip=1,Nth
+        do ir=1,Nr
+!
+          xp=rad(ir)*cos(tht(ip))
+          yp=rad(ir)*sin(tht(ip))
+!
+          distx = xp - x0
+          disty = yp - y0
+!
+          ix1 = floor(distx*dxc1)+1 ; ix2 = ix1+1
+          iy1 = floor(disty*dyc1)+1 ; iy2 = iy1+1
+!
+          if (ix1 .lt.  1)      call fatal_error("","ix1 lt 1")
+          if (iy1 .lt.  1)      call fatal_error("","iy1 lt 1")
+          if (ix2 .gt. nnxgrid) call fatal_error("","ix2 gt nnxgrid")
+          if (iy2 .gt. nnygrid) call fatal_error("","iy2 gt nnygrid")
+!
+! What processor does iy1 belong to?
+! 
+          iproc_iy1 = (iy1-1)/nny
+          iproc_iy2 = (iy2-1)/nny
+!
+          if (iproc_iy1 .ge. ncpus) call fatal_error("","iproc_iy1 doesn't exist: up")
+          if (iproc_iy2 .ge. ncpus) call fatal_error("","iproc_iy2 doesn't exist: up")
+          if (iproc_iy1 .lt. 0    ) call fatal_error("","iproc_iy1 doesn't exist: do")
+          if (iproc_iy2 .lt. 0    ) call fatal_error("","iproc_iy2 doesn't exist: do")
+!
+          if (iproc_iy1 == iproc) then
+            p1=nphi(ix1,iy1-nny*iproc)
+            p2=nphi(ix2,iy1-nny*iproc)
+          else
+            !loop through the nmig to find iy1
+            if (nmig(iproc_iy1,iproc) /=0) then 
+              do j=1,nmig(iproc_iy1,iproc)
+                if (sri_recv(iproc_iy1,j) == ix1+(iy1-1)*nnx) &
+                     p1=phi_recv(iproc_iy1,j)
+                if (sri_recv(iproc_iy1,j) == ix2+(iy1-1)*nnx) &
+                     p2=phi_recv(iproc_iy1,j)
+              enddo
+            else
+              print*,iproc_iy1,iproc
+              call fatal_error("","nmig iproc_iy1 is empty."//&
+                   " Something is wrong. Go check.")
+            endif
+          endif
+!
+          if (iproc_iy2 == iproc) then
+            p3=nphi(ix1,iy2-nny*iproc)
+            p4=nphi(ix2,iy2-nny*iproc)
+          else
+            if (nmig(iproc_iy2,iproc) /=0) then 
+              do j=1,nmig(iproc_iy2,iproc)
+                if (sri_recv(iproc_iy2,j) == ix1+(iy2-1)*nnx) &
+                     p3=phi_recv(iproc_iy2,j)
+                if (sri_recv(iproc_iy2,j) == ix2+(iy2-1)*nnx) &
+                     p4=phi_recv(iproc_iy2,j)
+              enddo
+            else
+              print*,iproc_iy2,iproc
+              call fatal_error("","nmig iproc_iy2 is empty."//&
+                   " Something is wrong. Go check.")
+            endif
+          endif
 
+          delx=xp-xc(ix1);fx=delx*dxc1
+          dely=yp-yserial(iy1);fy=dely*dyc1
 !
-! each processor sends its 1d array to the root processor
+! Bilinear interpolation
 !
-      if (.not.lroot) then
-        !the tag is the processor sending it
-        call mpisend_real(cross_proc_big,nnx*nny,root,iproc)
-      else 
-        !the root processor receives all arrays and 
-        !stores them in a single big array of dimension
-        !nx*nygrid
-        do j=0,ncpus-1 
-          !the tag is the processor that is sending
-          if (j/=0) call mpirecv_real(cross_proc_big,nnx*nny,j,j)
-          ido= j   *nnx*nnygrid/ncpus +1
-          iup=(j+1)*nnx*nnygrid/ncpus
-          crossbig(ido:iup)=cross_proc_big
-        enddo
-      endif
+          interp_pot=fx*fy*(p1-p2-p3+p4) + fx*(p2-p1) + fy*(p3-p1) + p1
 !
-      call mpibcast_real(crossbig,nnx*nnygrid)
-!
-!  Map newphi back into phi
-!
-      do i=1,nx
-        do m=1,ny
-        
-!
-          ix=i+nx/2  !this is correct
-          !m and iy must be the serial one (parallel)
-          !relative to the bigger grid
-          iy = ceiling((yc(m)-2*y0)*dyc1)+1 !iy=m+ny/2
-!
-          ik=ix+(iy-1)*nnx
-!
-          phixy(i,m)=crossbig(ik)
+          do n=1,nz
+            phi(ir,ip,n)=interp_pot
+          enddo
 !
         enddo
       enddo
-!
-! phixy into a cross that can be broadcast
-!
-      do m=1,ny
-        do i=1,nx
-!
-! Transform the 2d density array of each processor
-! into a 1D array. Processor indexing (nx*ny, not nx*nygrid)
-!
-          ik=i+(m-1)*nx
-          cross_proc(ik)=phixy(i,m)
-        enddo
-      enddo
-!
-! each processor sends its 1d array to the root processor
-!
-      if (.not.lroot) then
-        !the tag is the processor sending it
-        call mpisend_real(cross_proc,nx*ny,root,iproc)
-      else 
-        !the root processor receives all arrays and 
-        !stores them in a single big array of dimension
-        !nx*nygrid
-        do j=0,ncpus-1 
-          !the tag is the processor that is sending
-          if (j/=0) call mpirecv_real(cross_proc,nx*ny,j,j)
-          ido= j   *nx*nygrid/ncpus +1
-          iup=(j+1)*nx*nygrid/ncpus
-          cross(ido:iup)=cross_proc
-        enddo
-      endif
-!
-      call mpibcast_real(cross,nx*nygrid)
-!
-!  Convert back to cylindrical 
-!
-      yserial = xc
-!
-      do n=1,Nz;do ir=1,Nr; do ip=1,Nth
-    
-        xp=rad(ir)*cos(tht(ip))
-        yp=rad(ir)*sin(tht(ip))
-          
-        distx = xp - x0
-        disty = yp - y0
-!
-        ix1 = floor(distx*dxc1)+1 ; ix2 = ix1+1
-        iy1 = floor(disty*dyc1)+1 ; iy2 = iy1+1
-!
-        if (ix1 .lt.  1)     call stop_it("ix1 lt 1")
-        if (iy1 .lt.  1)     call stop_it("iy1 lt 1")
-        if (ix2 .gt. nxgrid) call stop_it("ix2 gt Nxgrid")
-        if (iy2 .gt. nygrid) call stop_it("iy2 gt Nygrid")
-!          
-        delx = xp - xc(ix1)
-        dely = yp - yserial(iy1)
-!
-        fx=delx*dxc1
-        fy=dely*dyc1
-!
-        p1=cross(ix2+(iy1-1)*nx) !phixy(ix2,iy1) !!npoint-nghost
-        p2=cross(ix1+(iy1-1)*nx) !phixy(ix1,iy1)
-        p3=cross(ix2+(iy2-1)*nx) !phixy(ix2,iy2)
-        p4=cross(ix1+(iy2-1)*nx) !phixy(ix1,iy2)
-!
-        interp_pot=fx*fy*(p3+p2-p1-p4) + fx*(p1-p2) + fy*(p4-p2) + p2
-!          
-        phi(ir,ip,1:nz)=interp_pot
-!
-      enddo;enddo;enddo
 !
     endsubroutine inverse_laplacian_fft_cyl_mpi
 !***********************************************************************
@@ -907,7 +939,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.41 2008-01-23 16:13:46 wlyra Exp $")
+        "$Id: poisson.f90,v 1.42 2008-02-27 12:35:06 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
