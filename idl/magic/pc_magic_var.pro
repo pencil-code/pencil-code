@@ -1,7 +1,7 @@
 ;
-;  $Id: pc_magic_var.pro,v 1.39 2008-02-26 07:20:55 ajohan Exp $
-;  $Date: 2008-02-26 07:20:55 $
-;  $Revision: 1.39 $
+;  $Id: pc_magic_var.pro,v 1.40 2008-02-27 13:53:04 ajohan Exp $
+;  $Date: 2008-02-27 13:53:04 $
+;  $Revision: 1.40 $
 ;
 pro pc_magic_var_dep, variables, tags, var, dep
 ;
@@ -139,6 +139,13 @@ pro pc_magic_var, variables, tags, $
   pc_magic_var_dep, variables, tags, 'mpres', 'bb'
   pc_magic_var_dep, variables, tags, 'mpres', 'bij'
   pc_magic_var_dep, variables, tags, 'alflim', 'bb'
+  pc_magic_var_dep, variables, tags, 'advB', 'uu'
+  pc_magic_var_dep, variables, tags, 'advB', 'bij'
+  pc_magic_var_dep, variables, tags, 'mstr', 'bb'
+  pc_magic_var_dep, variables, tags, 'mstr', 'uij'
+  pc_magic_var_dep, variables, tags, 'mstrkep', 'uu'
+  pc_magic_var_dep, variables, tags, 'mcomp', 'uu'
+  pc_magic_var_dep, variables, tags, 'mcomp', 'bb'
 ;
 ;  Modules.
 ;
@@ -207,11 +214,11 @@ pro pc_magic_var, variables, tags, $
         endelse
         variables[iv]=variables[iv]+'+reform([[['+vari1+']],[['+vari2+']],[['+vari3+']]],dim.mx,dim.my,dim.mz,3)'
       endif
-; Derivative vector
+; Derivative vector of magnetic vector potential
     endif else if (variables[iv] eq 'd2A') then begin
       tags[iv]=variables[iv]
       variables[iv]='derij(aa)'
-; Derivative vector
+; Derivative vector of magnetic field
     endif else if (variables[iv] eq 'bij') then begin
       tags[iv]=variables[iv]
       variables[iv]='derijcurl(aa)'
@@ -255,6 +262,22 @@ pro pc_magic_var, variables, tags, $
       endif else begin
         variables[iv]='(1+((total(bb^2,4)/(param.mu0*exp(lnrho)))/param2.va2max_jxb)^param2.va2power_jxb)^(-1./param2.va2power_jxb)'
       endelse
+; Magnetic field advection
+    endif else if (variables[iv] eq 'advB') then begin
+      tags[iv]=variables[iv]
+      variables[iv]='-reform([[[total(uu*reform(bij[*,*,*,0,*]),4)]],[[total(uu*reform(bij[*,*,*,1,*]),4)]],[[total(uu*reform(bij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
+; Magnetic stretching
+    endif else if (variables[iv] eq 'mstr') then begin
+      tags[iv]=variables[iv]
+      variables[iv]='reform([[[total(bb*reform(uij[*,*,*,0,*]),4)]],[[total(bb*reform(uij[*,*,*,1,*]),4)]],[[total(bb*reform(uij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
+; Magnetic stretching by Keplerian shear
+    endif else if (variables[iv] eq 'mstrkep') then begin
+      tags[iv]=variables[iv]
+      variables[iv]='-param.qshear*param.omega*bb[*,*,*,0]'
+; Magnetic compression
+    endif else if (variables[iv] eq 'mcomp') then begin
+      tags[iv]=variables[iv]
+      variables[iv]='-bb*spread(div(uu),3,3)'
 ; Vorticity
     endif else if (variables[iv] eq 'oo') then begin
       tags[iv]=variables[iv]
@@ -263,6 +286,10 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'divu') then begin
       tags[iv]=variables[iv]
       variables[iv]='div(uu)'
+; Derivative vector of velocity field
+    endif else if (variables[iv] eq 'uij') then begin
+      tags[iv]=variables[iv]
+      variables[iv]='derij(uu)'
 ; Gas Density 
     endif else if (variables[iv] eq 'rho') then begin
       tags[iv]=variables[iv]
