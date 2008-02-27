@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.217 2008-01-17 18:46:15 wlyra Exp $
+! $Id: mpicomm.f90,v 1.218 2008-02-27 12:31:13 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -75,6 +75,7 @@ module Mpicomm
   interface mpirecv_int
     module procedure mpirecv_int_scl
     module procedure mpirecv_int_arr
+    module procedure mpirecv_int_arr2
   endinterface
 
   interface mpisend_logical
@@ -93,7 +94,8 @@ module Mpicomm
   interface mpisend_int
     module procedure mpisend_int_scl
     module procedure mpisend_int_arr
-  endinterface
+    module procedure mpisend_int_arr2
+ endinterface
 
   interface mpibcast_logical
     module procedure mpibcast_logical_scl
@@ -108,6 +110,7 @@ module Mpicomm
   interface mpibcast_real
     module procedure mpibcast_real_scl
     module procedure mpibcast_real_arr
+    module procedure mpibcast_real_arr2
   endinterface
 
   interface mpibcast_double
@@ -1309,6 +1312,25 @@ module Mpicomm
 !
     endsubroutine mpirecv_int_arr
 !***********************************************************************
+    subroutine mpirecv_int_arr2(bcast_array,nbcast_array,proc_src,tag_id)
+!
+!  Receive 2D integer array from other processor.
+!
+!  20-fev-08/wlad: adpated from mpirecv_real_arr2
+!
+      integer, dimension(2) :: nbcast_array
+      integer, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer :: proc_src, tag_id, nbcast
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      intent(out) :: bcast_array
+      nbcast = nbcast_array(1)*nbcast_array(2)
+!
+      call MPI_RECV(bcast_array, nbcast, MPI_INTEGER, proc_src, &
+          tag_id, MPI_COMM_WORLD, stat, ierr)
+!
+    endsubroutine mpirecv_int_arr2
+!***********************************************************************
     subroutine mpisend_logical_scl(bcast_array,nbcast_array,proc_rec,tag_id)
 !
 !  Send logical scalar to other processor.
@@ -1388,7 +1410,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpisend_real_arr3(bcast_array,nbcast_array,proc_rec,tag_id)
 !
-!  Receive real array(:,:,:) from other processor.
+!  Send real array(:,:,:) to other processor.
 !
 !  20-may-06/anders: adapted
 !
@@ -1406,7 +1428,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpisend_real_arr4(bcast_array,nbcast_array,proc_rec,tag_id)
 !
-!  Receive real array(:,:,:,:) from other processor.
+!  Send real array(:,:,:,:) to other processor.
 !
 !  20-may-06/anders: adapted
 !
@@ -1424,7 +1446,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpisend_int_scl(bcast_array,nbcast_array,proc_rec,tag_id)
 !
-!  Send real scalar to other processor.
+!  Send integer scalar to other processor.
 !
 !  02-jul-05/anders: coded
 !
@@ -1439,7 +1461,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id)
 !
-!  Receive real array from other processor.
+!  Send integer array to other processor.
 !
 !  02-jul-05/anders: coded
 !
@@ -1451,6 +1473,23 @@ module Mpicomm
           tag_id, MPI_COMM_WORLD,ierr)
 !
     endsubroutine mpisend_int_arr
+!***********************************************************************
+    subroutine mpisend_int_arr2(bcast_array,nbcast_array,proc_rec,tag_id)
+!
+!  Send 2d integer array to other processor.
+!
+!  20-fev-08/wlad: adapted from mpisend_real_arr2
+!
+      integer, dimension(2) :: nbcast_array
+      integer, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer :: proc_rec, tag_id, nbcast
+!
+      nbcast=nbcast_array(1)*nbcast_array(2)
+!
+      call MPI_SEND(bcast_array, nbcast, MPI_INTEGER, proc_rec, &
+          tag_id, MPI_COMM_WORLD,ierr)
+!
+    endsubroutine mpisend_int_arr2
 !***********************************************************************
     subroutine mpibcast_logical_scl(lbcast_array,nbcast_array,proc)
 !
@@ -1571,6 +1610,29 @@ module Mpicomm
           MPI_COMM_WORLD,ierr)
 !
     endsubroutine mpibcast_real_arr
+!***********************************************************************
+    subroutine mpibcast_real_arr2(bcast_array,nbcast_array,proc)
+!
+!  Communicate real array(:,:) to other processor.
+!
+!  25-fev-08/wlad: adapted
+!
+      integer, dimension(2) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc,nbcast
+!
+      nbcast=nbcast_array(1)*nbcast_array(2)
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(bcast_array, nbcast, MPI_REAL, ibcast_proc, &
+          MPI_COMM_WORLD,ierr)
+!
+    endsubroutine mpibcast_real_arr2
 !***********************************************************************
     subroutine mpibcast_double_scl(bcast_array,nbcast_array,proc)
 !
