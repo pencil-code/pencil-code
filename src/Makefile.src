@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.375 2008-02-26 13:08:02 nbabkovs Exp $
+### $Id: Makefile.src,v 1.376 2008-02-27 14:41:20 wlyra Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -625,11 +625,11 @@ LD_FFTW2=
 ## Uppmax cluster - (Uppsala)
 ## www.uppmax.uu.se/systems/ra
 ##
-#FC=/opt/openmpi/1.2pgi/bin/mpif90   #(is[0-9]+)
+#FC=/opt/openmpi/1.2.5gcc/bin/mpif90 #(is[0-9]+)
 #CC=mpicc    #(is[0-9]+)
 #FFLAGS=-O3  #(is[0-9]+)
 #CFLAGS=-DFUNDERSC=1 #(is[0-9]+)
-#MPI_HOME=/opt/openmpi/1.2pgi#(is[0-9]+)
+#MPI_HOME=/opt/openmpi/1.2.5gcc#(is[0-9]+)
 #LD_MPI=-I$(MPI_HOME)/include -L$(MPI_HOME)/lib -lmpi -lmpi_f90 #(is[0-9]+)
 ##
 ## RA cluster at uppmax 
