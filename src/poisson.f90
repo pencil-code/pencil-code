@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.42 2008-02-27 12:35:06 wlyra Exp $
+! $Id: poisson.f90,v 1.43 2008-02-27 23:59:19 wlyra Exp $
 
 !
 !  This module solves the Poisson equation
@@ -27,16 +27,16 @@ module Poisson
 
   implicit none
 
-  real :: kmax=0.0, expand_factor=2.
+  real :: kmax=0.0
   logical :: lrazor_thin=.false., lsemispectral=.false., lklimit_shear=.false.
 
   include 'poisson.h'
 
   namelist /poisson_init_pars/ &
-      lsemispectral, kmax, lrazor_thin, lklimit_shear, expand_factor
+      lsemispectral, kmax, lrazor_thin, lklimit_shear
 
   namelist /poisson_run_pars/ &
-      lsemispectral, kmax, lrazor_thin, lklimit_shear, expand_factor
+      lsemispectral, kmax, lrazor_thin, lklimit_shear
 
   contains
 
@@ -123,7 +123,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.42 2008-02-27 12:35:06 wlyra Exp $")
+        "$Id: poisson.f90,v 1.43 2008-02-27 23:59:19 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -428,9 +428,10 @@ module Poisson
       real, dimension(2*ny)     :: yc
       real, dimension(2*nygrid) :: kky_fft,yserial
 !
-      real   , dimension (0:ncpus-1,nx*ny)     :: phi_send,phi_recv
-      integer, dimension (0:ncpus-1,nx*ny)     :: sri_send,sri_recv
       integer, dimension (0:ncpus-1,0:ncpus-1) :: nmig
+      real   , dimension (0:ncpus-1,nx,ny)     :: phi_send,phi_recv
+      real   , dimension (0:ncpus-1,2*nx,2*ny) :: phi_send2,phi_recv2
+
 !
       real :: r0,rn,x0,xn,y0,yn,dxc,dyc,dr,dth,radius,rr
       real :: delr,delp,theta,fr,fp,p1,p2,p3,p4,interp_pot
@@ -488,7 +489,8 @@ module Poisson
 ! a package (like a tarball) from processor to processor
 ! like a tarball
 !
-      nmig=0.
+!
+      nmig=0.;phi_send=0.
       do iphi=1,nth
         do ir=1,nr
 !
@@ -511,14 +513,12 @@ module Poisson
 !
           if (iproc_iy1 /= iproc) then
             nmig(iproc,iproc_iy1) = nmig(iproc,iproc_iy1) + 1
-            phi_send(iproc_iy1,nmig(iproc,iproc_iy1))=phi(ir,iphi,npoint-nghost)
-            sri_send(iproc_iy1,nmig(iproc,iproc_iy1))=ir+(iphi+nth*iproc-1)*nr !serial index
+            phi_send(iproc_iy1,ir,iphi)=phi(ir,iphi,npoint-nghost)
           endif
           !if iproc_iy2/=iproc_iy1, another processor will receive
           if ((iproc_iy2 /= iproc).and.(iproc_iy2 /= iproc_iy1)) then
             nmig(iproc,iproc_iy2) = nmig(iproc,iproc_iy2) + 1
-            phi_send(iproc_iy2,nmig(iproc,iproc_iy2))=phi(ir,iphi,npoint-nghost)
-            sri_send(iproc_iy2,nmig(iproc,iproc_iy2))=ir+(iphi+nth*iproc-1)*nr
+            phi_send(iproc_iy2,ir,iphi)=phi(ir,iphi,npoint-nghost)
           endif
 !
 ! ugly, but let's see... send all first and last rows of each proc to the neighbour processor
@@ -527,10 +527,7 @@ module Poisson
             tmp2=iy2-iproc_iy2*nny
             if ((tmp2==nny).and.(iproc_iy2+1/=iproc)) then
               nmig(iproc,iproc_iy2+1) = nmig(iproc,iproc_iy2+1) + 1
-              phi_send(iproc_iy2+1,nmig(iproc,iproc_iy2+1))=&
-                   phi(ir,iphi,npoint-nghost)
-              sri_send(iproc_iy2+1,nmig(iproc,iproc_iy2+1))=&
-                   ir+(iphi+nth*iproc-1)*nr
+              phi_send(iproc_iy2+1,ir,iphi)=phi(ir,iphi,npoint-nghost)
             endif
           endif
 !
@@ -538,10 +535,7 @@ module Poisson
             tmp1=iy1-iproc_iy1*nny
             if ((tmp1==1).and.(iproc_iy1-1/=iproc)) then
               nmig(iproc,iproc_iy1-1) = nmig(iproc,iproc_iy1-1) + 1
-              phi_send(iproc_iy1-1,nmig(iproc,iproc_iy1-1))=&
-                   phi(ir,iphi,npoint-nghost)
-              sri_send(iproc_iy1-1,nmig(iproc,iproc_iy1-1))=&
-                   ir+(iphi+nth*iproc-1)*nr
+              phi_send(iproc_iy1-1,ir,iphi)=phi(ir,iphi,npoint-nghost)
             endif
           endif
 !
@@ -569,15 +563,13 @@ module Poisson
           !send to all processors
           do j=0,ncpus-1
             if (iproc/=j .and. nmig(iproc,j)/=0) then
-              call mpisend_real(phi_send(j,1:nmig(iproc,j)),nmig(iproc,j),j,112)
-              call mpisend_int (sri_send(j,1:nmig(iproc,j)),nmig(iproc,j),j,113)
+              call mpisend_real(phi_send(j,1:nr,1:nth),(/nr,nth/),j,112)
             endif
           enddo
         else 
           !set to receive
           if (nmig(i,iproc)/=0) then
-            call mpirecv_real(phi_recv(i,1:nmig(i,iproc)),nmig(i,iproc),i,112)
-            call mpirecv_int (sri_recv(i,1:nmig(i,iproc)),nmig(i,iproc),i,113)
+            call mpirecv_real(phi_recv(i,1:nr,1:nth),(/nr,nth/),i,112)
           endif
         endif
       enddo
@@ -625,42 +617,19 @@ module Poisson
               p1=phi(ir1,ip1-nth*iproc,npoint-nghost)
               p2=phi(ir2,ip1-nth*iproc,npoint-nghost)
             else
-              !loop through the nmig to find ip1
-              if (nmig(iproc_ip1,iproc) /=0) then 
-                do j=1,nmig(iproc_ip1,iproc)
-                  if (sri_recv(iproc_ip1,j) == ir1+(ip1-1)*nr) &
-                       p1=phi_recv(iproc_ip1,j)
-                  if (sri_recv(iproc_ip1,j) == ir2+(ip1-1)*nr) &
-                       p2=phi_recv(iproc_ip1,j)
-                enddo
-              else
-                print*,iproc_ip1,iproc
-                call fatal_error("","nmig is empty."//&
-                     " Something is wrong. Go check.")
-              endif
+              p1=phi_recv(iproc_ip1,ir1,ip1-nth*iproc_ip1)
+              p2=phi_recv(iproc_ip1,ir2,ip1-nth*iproc_ip1)
             endif
 !
             if (iproc_ip2 == iproc) then
               p3=phi(ir1,ip2-nth*iproc,npoint-nghost)
               p4=phi(ir2,ip2-nth*iproc,npoint-nghost)
             else
-              if (nmig(iproc_ip2,iproc) /=0) then 
-                do j=1,nmig(iproc_ip2,iproc)
-                  if (sri_recv(iproc_ip2,j) == ir1+(ip2-1)*nr) &
-                       p3=phi_recv(iproc_ip2,j)
-                  if (sri_recv(iproc_ip2,j) == ir2+(ip2-1)*nr) &
-                       p4=phi_recv(iproc_ip2,j)
-                enddo
-              else
-                print*,iproc_ip2,iproc
-                call fatal_error("","nmig is empty."//&
-                     " Something is wrong. Go check.")
-              endif
+              p3=phi_recv(iproc_ip2,ir1,ip1-nth*iproc_ip2)
+              p4=phi_recv(iproc_ip2,ir2,ip1-nth*iproc_ip2)
             endif
-!
             !p1=phi(ir1,ip1),p2=phi(ir2,ip1)
             !p3=phi(ir1,ip2),p4=phi(ir2,ip2)
-!
             fp=delp*dth1
             interp_pot=fr*fp*(p1-p2-p3+p4) + fr*(p2-p1) + fp*(p3-p1) + p1
 !
@@ -730,7 +699,7 @@ module Poisson
       !prepare the grid for directed send
       ! 
       
-      nmig=0.
+      nmig=0.;phi_send2=0.
       do m=1,nny
         do i=1,nnx
           radius=sqrt(xc(i)**2+yc(m)**2)
@@ -755,14 +724,12 @@ module Poisson
 !
             if (iproc_ip1 /= iproc) then
               nmig(iproc,iproc_ip1) = nmig(iproc,iproc_ip1) + 1
-              phi_send(iproc_ip1,nmig(iproc,iproc_ip1))=nphi(i,m)
-              sri_send(iproc_ip1,nmig(iproc,iproc_ip1))=i+(m+nny*iproc-1)*nnx !serial index
+              phi_send2(iproc_ip1,i,m)=nphi(i,m)
             endif
           !if iproc_iy2/=iproc_iy1, another processor will receive
             if ((iproc_ip2 /= iproc).and.(iproc_ip2 /= iproc_ip1)) then
               nmig(iproc,iproc_ip2) = nmig(iproc,iproc_ip2) + 1
-              phi_send(iproc_ip2,nmig(iproc,iproc_ip2))=nphi(i,m)
-              sri_send(iproc_ip2,nmig(iproc,iproc_ip2))=i+(m+nny*iproc-1)*nnx
+              phi_send2(iproc_ip2,i,m)=nphi(i,m)
             endif
 !
 ! ugly, but let's see... send all first and last rows of each proc to the neighbour processor
@@ -777,8 +744,7 @@ module Poisson
               endif
               if (iproc/=tmp) then
                 nmig(iproc,tmp) = nmig(iproc,tmp) + 1
-                phi_send(tmp,nmig(iproc,tmp))=nphi(i,m)
-                sri_send(tmp,nmig(iproc,tmp))=i+(m+nny*iproc-1)*nnx
+                phi_send2(tmp,i,m)=nphi(i,m)
               endif
             endif
 !
@@ -792,8 +758,7 @@ module Poisson
               endif
               if (iproc/=tmp) then
                 nmig(iproc,tmp) = nmig(iproc,tmp) + 1
-                phi_send(tmp,nmig(iproc,tmp))=nphi(i,m)
-                sri_send(tmp,nmig(iproc,tmp))=i+(m+nny*iproc-1)*nnx
+                phi_send2(tmp,i,m)=nphi(i,m)
               endif
             endif
 !
@@ -822,15 +787,13 @@ module Poisson
           !send to all processors
           do j=0,ncpus-1
             if (iproc/=j .and. nmig(iproc,j)/=0) then
-              call mpisend_real(phi_send(j,1:nmig(iproc,j)),nmig(iproc,j),j,223)
-              call mpisend_int (sri_send(j,1:nmig(iproc,j)),nmig(iproc,j),j,224)
+              call mpisend_real(phi_send2(j,1:nnx,1:nny),(/nnx,nny/),j,223)
             endif
           enddo
         else 
           !set to receive
           if (nmig(i,iproc)/=0) then
-            call mpirecv_real(phi_recv(i,1:nmig(i,iproc)),nmig(i,iproc),i,223)
-            call mpirecv_int (sri_recv(i,1:nmig(i,iproc)),nmig(i,iproc),i,224)
+            call mpirecv_real(phi_recv2(i,1:nnx,1:nny),(/nnx,nny/),i,223)
           endif
         endif
       enddo
@@ -859,7 +822,7 @@ module Poisson
           iproc_iy1 = (iy1-1)/nny
           iproc_iy2 = (iy2-1)/nny
 !
-          if (iproc_iy1 .ge. ncpus) call fatal_error("","iproc_iy1 doesn't exist: up")
+          if (iproc_iy1 .ge. ncpus) call fatal_error("","iproc_iy1 doesn't eVAR951xist: up")
           if (iproc_iy2 .ge. ncpus) call fatal_error("","iproc_iy2 doesn't exist: up")
           if (iproc_iy1 .lt. 0    ) call fatal_error("","iproc_iy1 doesn't exist: do")
           if (iproc_iy2 .lt. 0    ) call fatal_error("","iproc_iy2 doesn't exist: do")
@@ -868,37 +831,16 @@ module Poisson
             p1=nphi(ix1,iy1-nny*iproc)
             p2=nphi(ix2,iy1-nny*iproc)
           else
-            !loop through the nmig to find iy1
-            if (nmig(iproc_iy1,iproc) /=0) then 
-              do j=1,nmig(iproc_iy1,iproc)
-                if (sri_recv(iproc_iy1,j) == ix1+(iy1-1)*nnx) &
-                     p1=phi_recv(iproc_iy1,j)
-                if (sri_recv(iproc_iy1,j) == ix2+(iy1-1)*nnx) &
-                     p2=phi_recv(iproc_iy1,j)
-              enddo
-            else
-              print*,iproc_iy1,iproc
-              call fatal_error("","nmig iproc_iy1 is empty."//&
-                   " Something is wrong. Go check.")
-            endif
+            p1=phi_recv2(iproc_iy1,ix1,iy1-nny*iproc_iy1)
+            p2=phi_recv2(iproc_iy1,ix2,iy1-nny*iproc_iy1)
           endif
 !
           if (iproc_iy2 == iproc) then
             p3=nphi(ix1,iy2-nny*iproc)
             p4=nphi(ix2,iy2-nny*iproc)
           else
-            if (nmig(iproc_iy2,iproc) /=0) then 
-              do j=1,nmig(iproc_iy2,iproc)
-                if (sri_recv(iproc_iy2,j) == ix1+(iy2-1)*nnx) &
-                     p3=phi_recv(iproc_iy2,j)
-                if (sri_recv(iproc_iy2,j) == ix2+(iy2-1)*nnx) &
-                     p4=phi_recv(iproc_iy2,j)
-              enddo
-            else
-              print*,iproc_iy2,iproc
-              call fatal_error("","nmig iproc_iy2 is empty."//&
-                   " Something is wrong. Go check.")
-            endif
+            p3=phi_recv2(iproc_iy2,ix1,iy2-nny*iproc_iy1)
+            p4=phi_recv2(iproc_iy2,ix2,iy2-nny*iproc_iy2)
           endif
 
           delx=xp-xc(ix1);fx=delx*dxc1
@@ -939,7 +881,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.42 2008-02-27 12:35:06 wlyra Exp $")
+        "$Id: poisson.f90,v 1.43 2008-02-27 23:59:19 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
