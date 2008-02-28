@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.157 2008-01-17 18:46:15 wlyra Exp $
+! $Id: nompicomm.f90,v 1.158 2008-02-28 11:04:28 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -64,6 +64,7 @@ module Mpicomm
   interface mpibcast_real
     module procedure mpibcast_real_scl
     module procedure mpibcast_real_arr
+    module procedure mpibcast_real_arr2
   endinterface
 
   interface mpibcast_double
@@ -610,6 +611,16 @@ module Mpicomm
       if (NO_WARN) print*, bcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_real_arr
+!***********************************************************************
+    subroutine mpibcast_real_arr2(bcast_array,nbcast_array,proc)
+!
+      integer, dimension(2) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer, optional :: proc
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc
+!
+    endsubroutine mpibcast_real_arr2
 !***********************************************************************
     subroutine mpibcast_double_scl(bcast_array,nbcast_array,proc)
 !
