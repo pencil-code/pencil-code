@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.118 2007-09-17 05:38:21 ajohan Exp $
+! $Id: particles_sub.f90,v 1.119 2008-02-28 23:49:45 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1547,6 +1547,7 @@ module Particles_sub
       real :: weight, weight_x, weight_y, weight_z
       integer :: k, ix0, iy0, iz0, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
+      logical :: lsink
 !
       intent(in)  :: fp, ineargrid
       intent(out) :: f
@@ -1556,8 +1557,12 @@ module Particles_sub
       if (inp/=0) then
         f(:,:,:,inp)=0.0
         do k=1,npar_loc
-          ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-          f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
+          !exclude the massive particles from the mapping
+          lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
+          if (.not.lsink) then 
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+            f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
+          endif
         enddo
       endif
 !
@@ -1581,6 +1586,8 @@ module Particles_sub
 !  Cloud In Cell (CIC) scheme.
 !
           do k=1,npar_loc
+            lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
+            if (.not.lsink) then 
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             ixx0=ix0; iyy0=iy0; izz0=iz0
             ixx1=ix0; iyy1=iy0; izz1=iz0
@@ -1600,6 +1607,7 @@ module Particles_sub
                   weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
               f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
             enddo; enddo; enddo
+            endif
           enddo
 !
 !  Triangular Shaped Cloud (TSC) scheme.
@@ -1610,6 +1618,8 @@ module Particles_sub
 !  decreases with the distance from the particle centre.
 !
           do k=1,npar_loc
+            lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
+            if (.not.lsink) then 
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             if (nxgrid/=1) then
               ixx0=ix0-1; ixx1=ix0+1
@@ -1661,6 +1671,7 @@ module Particles_sub
               if (nzgrid/=1) weight=weight*weight_z
               f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
             enddo; enddo; enddo
+            endif
           enddo
 !
 !  Nearest Grid Point (NGP) method.
