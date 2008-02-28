@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.2 2008-02-26 16:21:03 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.3 2008-02-28 13:02:01 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -9,8 +9,8 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp,cp1,cp1tilde,glnTT,TT,TT1,gTT,mu1
-! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1,del6lnTT
+! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp,cp1,cp1tilde,glnTT,TT,TT1,gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1
+! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1,del6lnTT,rho1gpp
 !
 !***************************************************************
 
@@ -76,9 +76,11 @@ module EquationOfState
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
 
-  
+
+
   real, dimension(nchemspec) :: mu_spec, cp_spec 
- 
+
+
   ! input parameters
   namelist /eos_init_pars/ xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw
 
@@ -113,7 +115,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.2 2008-02-26 16:21:03 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.3 2008-02-28 13:02:01 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -222,8 +224,10 @@ module EquationOfState
     subroutine initialize_eos()
 !
       use Mpicomm, only: stop_it
-      integer, save :: ifirst=0
+      integer, save :: ifirst1=0
+      integer, save :: ifirst2=0
       integer :: k
+      logical ::  ex
 !
 ! Initialize variable selection code (needed for RELOADing)
 !
@@ -233,8 +237,8 @@ module EquationOfState
 !  write constants to disk. In future we may want to deal with this
 !  using an include file or another module.
 !
-!      if (lroot) then
-!        open (1,file=trim(datadir)//'/pc_constants.pro')
+      if (lroot) then
+        open (1,file=trim(datadir)//'/pc_constants.pro')
 !        write (1,*) 'TT_ion=',TT_ion
 !        write (1,*) 'TT_ion_=',TT_ion_
 !        write (1,*) 'lnrho_e=',lnrho_e
@@ -244,18 +248,32 @@ module EquationOfState
 !        write (1,*) 'lnrho_e_=',lnrho_e_
 !        write (1,*) 'ss_ion=',ss_ion
 !        write (1,*) 'kappa0=',kappa0
-!        write (1,'(a,1pd26.16)') 'k_B=',k_B
-!        write (1,'(a,1pd26.16)') 'm_H=',m_H
-!        write (1,*) 'lnTTO=',lnTT0
-!        write (1,*) 'cp=',cp
-!        close (1)
-!      endif
+        write (1,'(a,1pd26.16)') 'k_B=',k_B
+        write (1,'(a,1pd26.16)') 'm_H=',m_H
+        write (1,*) 'lnTTO=',lnTT0
+        write (1,*) 'cp=',cp
+        close (1)
+      endif
 !
 
-! Natalia (26.02.2008) read data of Cp_spec and mu_spec
+
+! Natalia (26.02.2008) read data for Cp_spec and mu_spec
+
+!this is just temporal notes --------------------------
+!  OPEN(INUNT,FILE=INNAME,STATUS='OLD',ACCESS='SEQUENTIAL',
+!     ;  FORM='FORMATTED',IOSTAT=ERR)
+!      IF (ERR.NE.0) STOP 'File cannot be opened'
+!      REWIND(INUNT)
+!----------------------------------------------------
 
 
-  if (ifirst==0) then
+    if (ifirst1==0) then
+
+     inquire(file='cp.dat',EXIST=ex)
+     if (.not.ex) then 
+      print*,'File cp.dat does not exist'
+     else
+
         if (lroot) print*,'opening cp.dat'
 
         open(1,file='cp.dat')
@@ -264,14 +282,34 @@ module EquationOfState
          enddo
         close(1)
 
-        open(2,file='mu.dat')
-         do k=1,nchemspec
-          read(2,*) mu_spec(k)
-         enddo
-        close(2)
+     endif
 
-      endif
-    ifirst=ifirst+1
+   endif
+
+    ifirst1=ifirst1+1
+
+   if (ifirst2==0) then
+
+     inquire(file='mu.dat',EXIST=ex)
+     if (.not.ex) then 
+      print*,'File mu.dat does not exist'
+     else
+
+       if (lroot) print*,'opening cp.dat'
+
+       open(2,file='mu.dat')
+        do k=1,nchemspec
+         read(2,*) mu_spec(k)
+        enddo
+       close(2)
+
+     endif
+
+   endif
+
+   ifirst2=ifirst2+1
+
+
 
 
     endsubroutine initialize_eos
@@ -446,105 +484,85 @@ module EquationOfState
 !
 !  20-11-04/anders: coded
 !
-      logical, dimension(npencils) :: lpencil_in
-!
-      if (lpencil_in(i_cp)) lpencil_in(i_cp1)=.true.
-      select case (ieosvars)
-      case (ilnrho_ss,irho_ss)
-        if (lpencil_in(i_ee)) then
-          lpencil_in(i_lnTT)=.true.
-        endif
-        if (lpencil_in(i_pp)) then
-          lpencil_in(i_lnTT)=.true.
-          lpencil_in(i_lnrho)=.true.
-        endif
-        if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
-        if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
-        if (lpencil_in(i_lnTT)) then
-          lpencil_in(i_lnrho)=.true.
-          lpencil_in(i_ss)=.true.
-        endif
-        if (lpencil_in(i_del2lnTT)) then
-          lpencil_in(i_del2lnrho)=.true.
-          lpencil_in(i_del2ss)=.true.
-        endif
-        if (lpencil_in(i_glnTT)) then
-          lpencil_in(i_glnrho)=.true.
-          lpencil_in(i_gss)=.true.
-        endif
-        if (lpencil_in(i_hlnTT)) then
-          lpencil_in(i_hss)=.true.
-          lpencil_in(i_hlnrho)=.true.
-        endif
-        if (leos_isentropic) then
-          if (lpencil_in(i_cs2)) lpencil_in(i_lnrho)=.true.
-        elseif (leos_isothermal) then
-          if (lpencil_in(i_ss)) lpencil_in(i_lnrho)=.true.
-          if (lpencil_in(i_gss)) lpencil_in(i_glnrho)=.true.
-          if (lpencil_in(i_hss)) lpencil_in(i_hlnrho)=.true.
-          if (lpencil_in(i_del2ss)) lpencil_in(i_del2lnrho)=.true.
-          if (lpencil_in(i_del6ss)) lpencil_in(i_del6lnrho)=.true.
-        else
-          if (lpencil_in(i_cs2)) then
-            lpencil_in(i_lnrho)=.true.
-            lpencil_in(i_ss)=.true.
-          endif
-        endif
-      case (ilnrho_lnTT,irho_lnTT)
-        if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
-        if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
-        if (lpencil_in(i_ss)) then
-          lpencil_in(i_lnrho)=.true.
-          lpencil_in(i_lnTT)=.true.
-        endif
-        if (lpencil_in(i_del2ss)) then
-          lpencil_in(i_del2lnrho)=.true.
-          lpencil_in(i_del2lnTT)=.true.
-        endif
-        if (lpencil_in(i_gss)) then
-          lpencil_in(i_glnrho)=.true.
-          lpencil_in(i_glnTT)=.true.
-        endif
-        if (lpencil_in(i_hss)) then
-          lpencil_in(i_hlnTT)=.true.
-          lpencil_in(i_hlnrho)=.true.
-        endif
-        if (lpencil_in(i_ee)) lpencil_in(i_lnTT)=.true.
-        if (lpencil_in(i_pp)) then
-          lpencil_in(i_lnTT)=.true.
-          lpencil_in(i_lnrho)=.true.
-        endif
-        if (leos_isentropic) then
-          if (lpencil_in(i_lnTT)) lpencil_in(i_lnrho)=.true.
-          if (lpencil_in(i_glnTT)) lpencil_in(i_glnrho)=.true.
-          if (lpencil_in(i_hlnTT)) lpencil_in(i_hlnrho)=.true.
-          if (lpencil_in(i_del2lnTT)) lpencil_in(i_del2lnrho)=.true.
-          if (lpencil_in(i_cs2)) lpencil_in(i_lnrho)=.true.
-        else
-          if (lpencil_in(i_cs2)) lpencil_in(i_lnTT)=.true.
-        endif
-      case (ilnrho_cs2,irho_cs2)
-        if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
-        if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
-        if (lpencil_in(i_ee)) lpencil_in(i_lnTT)=.true.
-        if (lpencil_in(i_pp)) lpencil_in(i_rho)=.true.
-        if (leos_isothermal) then
-          if (lpencil_in(i_ss)) lpencil_in(i_lnrho)=.true.
-          if (lpencil_in(i_del2ss)) lpencil_in(i_del2lnrho)=.true.
-          if (lpencil_in(i_gss)) lpencil_in(i_glnrho)=.true.
-          if (lpencil_in(i_hss)) lpencil_in(i_hlnrho)=.true.
-        else
-          if (lpencil_in(i_pp)) lpencil_in(i_cs2)=.true.
-        endif
-      case (ilnrho_TT)
-        if (lpencil_in(i_ss)) then
-          lpencil_in(i_lnrho)=.true.
-          lpencil_in(i_TT)=.true.
-        endif
+! Modified by Natalia. Taken from  eos_temperature_ionization module
+ 
+   logical, dimension(npencils) :: lpencil_in
 
-      case default
-        call fatal_error("pencil_interdep_eos","case not implemented yet")
-      endselect
+      if (lpencil_in(i_cs2)) then
+        lpencil_in(i_gamma)=.true.
+        lpencil_in(i_rho1)=.true.
+        lpencil_in(i_pp)=.true.
+      endif
+
+      if (lpencil_in(i_rho1gpp)) then
+        lpencil_in(i_gamma11)=.true.
+        lpencil_in(i_cs2)=.true.
+        lpencil_in(i_glnrho)=.true.
+  !      lpencil_in(i_delta)=.true.
+        lpencil_in(i_glnTT)=.true.
+      endif
+
+     ! if (lpencil_in(i_nabla_ad)) then
+     !   lpencil_in(i_mu1)=.true.
+     !   lpencil_in(i_delta)=.true.
+     !   lpencil_in(i_cp1)=.true.
+     ! endif
+
+      if (lpencil_in(i_gamma1)) lpencil_in(i_gamma)=.true.
+
+      if (lpencil_in(i_gamma)) then
+        lpencil_in(i_cp)=.true.
+        lpencil_in(i_cv1)=.true.
+      endif
+
+      if (lpencil_in(i_gamma11)) then
+        lpencil_in(i_cv)=.true.
+        lpencil_in(i_cp1)=.true.
+      endif
+
+      if (lpencil_in(i_cv1)) lpencil_in(i_cv)=.true.
+
+      if (lpencil_in(i_cv)) then
+        lpencil_in(i_yH)=.true.
+        lpencil_in(i_TT1)=.true.
+        lpencil_in(i_mu1)=.true.
+      endif
+
+      if (lpencil_in(i_cp1)) lpencil_in(i_cp)=.true.
+
+      if (lpencil_in(i_cp)) then
+        lpencil_in(i_yH)=.true.
+        lpencil_in(i_TT1)=.true.
+        lpencil_in(i_mu1)=.true.
+      endif
+
+      if (lpencil_in(i_pp)) then
+        lpencil_in(i_mu1)=.true.
+        lpencil_in(i_rho)=.true.
+        lpencil_in(i_TT)=.true.
+      endif
+
+      if (lpencil_in(i_mu1)) lpencil_in(i_yH)=.true.
+
+      if (lpencil_in(i_ee)) then
+        lpencil_in(i_mu1)=.true.
+        lpencil_in(i_TT)=.true.
+        lpencil_in(i_yH)=.true.
+      endif
+
+      if (lpencil_in(i_ss)) then
+        lpencil_in(i_yH)=.true.
+        lpencil_in(i_lnrho)=.true.
+        lpencil_in(i_lnTT)=.true.
+      endif
+
+      if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
+      if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true.
+
+    !  if (lpencil_in(i_gradcp)) lcalc_cp_full=.true.
+
+      if (NO_WARN) print *,lpencil_in
+
 !
     endsubroutine pencil_interdep_eos
 !***********************************************************************
@@ -559,8 +577,10 @@ module EquationOfState
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: tmp_sum  
       type (pencil_case) :: p
+      real, dimension (mx,my,mz) :: cp_full
+      real, dimension (nx) :: tmp_sum
+
 !
       intent(in) :: f
       intent(inout) :: p
@@ -571,148 +591,32 @@ module EquationOfState
 ! The code is not wrong however since this is correctly
 ! handled by the eos module.
 
-      select case (ieosvars)
-!
-!  work out thermodynamic quantities for given lnrho or rho and ss
-!
-      case (ilnrho_ss,irho_ss)
-        if (leos_isentropic) then
-          if (lpencil(i_ss)) p%ss=0
-          if (lpencil(i_gss)) p%gss=0
-          if (lpencil(i_hss)) p%hss=0
-          if (lpencil(i_del2ss)) p%del2ss=0
-          if (lpencil(i_del6ss)) p%del6ss=0
-          if (lpencil(i_cs2)) p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
-        elseif (leos_isothermal) then
-          if (lpencil(i_ss)) p%ss=-(cp-cv)*(p%lnrho-lnrho0)
-          if (lpencil(i_gss)) p%gss=-(cp-cv)*p%glnrho
-          if (lpencil(i_hss)) p%hss=-(cp-cv)*p%hlnrho
-          if (lpencil(i_del2ss)) p%del2ss=-(cp-cv)*p%del2lnrho
-          if (lpencil(i_del6ss)) p%del6ss=-(cp-cv)*p%del6lnrho
-          if (lpencil(i_cs2)) p%cs2=cs20
-        elseif (leos_localisothermal) then
-          call fatal_error("calc_pencils_eos","leos_localisothermal not implemented for ilnrho_ss, try ilnrho_cs2")
-        else
-          if (lpencil(i_ss)) p%ss=f(l1:l2,m,n,ieosvar2)
-          if (lpencil(i_gss)) call grad(f,ieosvar2,p%gss)
-          if (lpencil(i_hss)) call g2ij(f,ieosvar2,p%hss)
-          if (lpencil(i_del2ss)) call del2(f,ieosvar2,p%del2ss)
-          if (lpencil(i_del6ss)) call del6(f,ieosvar2,p%del6ss)
-          if (lpencil(i_cs2)) p%cs2=cs20*exp(cv1*p%ss+gamma1*(p%lnrho-lnrho0))
-        endif
-        if (lpencil(i_lnTT)) p%lnTT=lnTT0+cv1*p%ss+gamma1*(p%lnrho-lnrho0)
-        if (lpencil(i_pp)) p%pp=(cp-cv)*exp(p%lnTT+p%lnrho)
-        if (lpencil(i_ee)) p%ee=cv*exp(p%lnTT)
-        if (lpencil(i_yH)) p%yH=impossible
-        if (lpencil(i_TT)) p%TT=exp(p%lnTT)
-        if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
-        if (lpencil(i_glnTT)) p%glnTT=gamma1*p%glnrho+cv1*p%gss
-        if (lpencil(i_del2lnTT)) p%del2lnTT=gamma1*p%del2lnrho+cv1*p%del2ss
-        if (lpencil(i_hlnTT)) p%hlnTT=gamma1*p%hlnrho+cv1*p%hss
-!
-!  work out thermodynamic quantities for given lnrho or rho and lnTT
-!
-      case (ilnrho_lnTT,irho_lnTT)
-        if (leos_isentropic) then
-          if (lpencil(i_lnTT)) p%lnTT=gamma1*(p%lnrho-lnrho0)+lnTT0
-          if (lpencil(i_glnTT)) p%glnTT=gamma1*p%glnrho
-          if (lpencil(i_hlnTT)) p%hlnTT=gamma1*p%hlnrho
-          if (lpencil(i_del2lnTT)) p%del2lnTT=gamma1*p%del2lnrho
-          if (lpencil(i_cs2)) p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
-        elseif (leos_isothermal) then
-          if (lpencil(i_lnTT)) p%lnTT=lnTT0
-          if (lpencil(i_glnTT)) p%glnTT=0
-          if (lpencil(i_hlnTT)) p%hlnTT=0
-          if (lpencil(i_del2lnTT)) p%del2lnTT=0
-          if (lpencil(i_cs2)) p%cs2=cs20
-        elseif (leos_localisothermal) then
-          call fatal_error("calc_pencils_eos","leos_localisothermal not implemented for ilnrho_ss, try ilnrho_cs2")
-        else
-          if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ieosvar2)
-          if (lpencil(i_glnTT)) call grad(f,ieosvar2,p%glnTT)
-          if (lpencil(i_hlnTT)) call g2ij(f,ieosvar2,p%hlnTT)
-          if (lpencil(i_del2lnTT)) call del2(f,ieosvar2,p%del2lnTT)
-          if (lpencil(i_del6lnTT)) call del6(f,ieosvar2,p%del6lnTT)
-          if (lpencil(i_cs2)) p%cs2=cp*exp(p%lnTT)*gamma1
-        endif
-        if (lpencil(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma1*(p%lnrho-lnrho0))
-        if (lpencil(i_pp)) p%pp=(cp-cv)*exp(p%lnTT+p%lnrho)
-        if (lpencil(i_ee)) p%ee=cv*exp(p%lnTT)
-        if (lpencil(i_yH)) p%yH=impossible
-        if (lpencil(i_TT)) p%TT=exp(p%lnTT)
-        if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
-        if (lpencil(i_gss)) p%gss=cv*(p%glnTT-gamma1*p%glnrho)
-        if (lpencil(i_del2ss)) p%del2ss=cv*(p%del2lnTT-gamma1*p%del2lnrho)
-        if (lpencil(i_hss)) p%hss=cv*(p%hlnTT-gamma1*p%hlnrho)
-        if (lpencil(i_del6ss)) call fatal_error("calc_pencils_eos","del6ss not available for ilnrho_lnTT")
-!
-!  work out thermodynamic quantities for given lnrho and TT
-!
-      case (ilnrho_TT)
-        if (lpencil(i_TT))  p%TT=f(l1:l2,m,n,ieosvar2)
-        if (lpencil(i_TT1)) p%TT1=1./f(l1:l2,m,n,ieosvar2)
-        if (lpencil(i_cs2)) p%cs2=cp*p%TT*gamma1
-        if (lpencil(i_glnTT)) call grad(f,ieosvar2,p%glnTT)
-        if (lpencil(i_del2lnTT)) call del2(f,ieosvar2,p%del2lnTT)
-        if (lpencil(i_ss)) p%ss=cv*(log(p%TT)-lnTT0-gamma1*(p%lnrho-lnrho0))
-!
-!  work out thermodynamic quantities for given lnrho or rho and cs2
-!
-      case (ilnrho_cs2,irho_cs2)
-        if (leos_isentropic) then
-          call fatal_error("calc_pencils_eos","leos_isentropic not implemented for ilnrho_cs2, try ilnrho_ss")
-        elseif (leos_isothermal) then
-          if (lpencil(i_cs2)) p%cs2=cs20
-          if (lpencil(i_lnTT)) p%lnTT=lnTT0
-          if (lpencil(i_glnTT)) p%glnTT=0
-          if (lpencil(i_hlnTT)) p%hlnTT=0
-          if (lpencil(i_del2lnTT)) p%del2lnTT=0
-          if (lpencil(i_ss)) p%ss=-(cp-cv)*(p%lnrho-lnrho0)
-          if (lpencil(i_del2ss)) p%del2ss=-(cp-cv)*p%del2lnrho
-          if (lpencil(i_gss)) p%gss=-(cp-cv)*p%glnrho
-          if (lpencil(i_hss)) p%hss=-(cp-cv)*p%hlnrho
-          if (lpencil(i_pp)) p%pp=gamma11*p%rho*cs20
-        elseif (leos_localisothermal) then
-          if (lpencil(i_cs2)) p%cs2=f(l1:l2,m,n,iglobal_cs2)
-          if (lpencil(i_lnTT)) call fatal_error("calc_pencils_eos","temperature not needed for localisothermal")
-          if (lpencil(i_glnTT)) p%glnTT=f(l1:l2,m,n,iglobal_glnTT:iglobal_glnTT+2)
-          if (lpencil(i_hlnTT)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal")
-          if (lpencil(i_del2lnTT)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal")
-          if (lpencil(i_ss)) call fatal_error("calc_pencils_eos","entropy not needed for localisothermal")
-          if (lpencil(i_del2ss)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal")
-          if (lpencil(i_gss)) call fatal_error("calc_pencils_eos","entropy gradient not needed for localisothermal")
-          if (lpencil(i_hss)) call fatal_error("calc_pencils_eos","no gradients yet for localisothermal")
-          if (lpencil(i_pp)) p%pp=p%rho*p%cs2
-        else
-          call fatal_error("calc_pencils_eos","Full equation of state not implemented for ilnrho_cs2")
-        endif
-!
-!  internal energy
-!  For gamma=1, we use R/mu = c_p = c_v, thus ee = c_vT = R/mu T = p/rho = cs^2.
-!
-        if (lpencil(i_ee)) then
-          if (gamma1 /= 0.) then
-            p%ee=(gamma11/gamma1)*p%cs2
-          else
-            p%ee=p%cs2            
-          endif
-        endif
-        if (lpencil(i_yH)) p%yH=impossible
-        if (lpencil(i_TT)) p%TT=exp(p%lnTT)
-        if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
-        if (lpencil(i_del6ss)) call fatal_error("calc_pencils_eos","del6ss not available for ilnrho_cs2")
-      case default
-        call fatal_error("calc_pencils_eos","case not implemented yet")
-      endselect
+!Natalia: removed all previous staff and included my own
 
+
+ if (NO_WARN) print *,f,p
 
 !  Natalia: 26.02.2008: calculation of additional penciles
+
+
+!
+!  Temperature
+!
+      if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
+      if (lpencil(i_TT)) p%TT=exp(p%lnTT)
+      if (lpencil(i_TT1)) p%TT1=1/p%TT
+
+!
+!  Temperature laplacian and gradient
+!
+      if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
+      if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
 
 !
 !  Mean molecular weight
 !
    tmp_sum=0.
-   
+
       if (lpencil(i_mu1)) then 
         do k=1,nchemspec
          tmp_sum=tmp_sum+f(l1:l2,m,n,ichemspec(k))/mu_spec(k)
@@ -729,16 +633,35 @@ module EquationOfState
 !  Specific heat at constant pressure
 !
 
-    tmp_sum=0.
+      cp_full(:,m,n)=0.
 
       if (lpencil(i_cp)) then
         do k=1,nchemspec
-         tmp_sum=tmp_sum+f(l1:l2,m,n,ichemspec(k))*cp_spec(k)
+         cp_full(:,m,n)=cp_full(:,m,n)+f(:,m,n,ichemspec(k))*cp_spec(k)
         enddo
-        p%cp=tmp_sum 
+        p%cp=cp_full(l1:l2,m,n)
       endif
-      if (lpencil(i_cp1)) p%cp1 = 1/p%cp
+      if (lpencil(i_cp1)) p%cp1 = 1./p%cp
 
+
+!  Gradient of the above
+!
+      if (lpencil(i_gradcp)) call grad(cp_full,p%gradcp)
+
+
+!
+!  Specific heat at constant volume (i.e. density)
+!
+      if (lpencil(i_cv)) p%cv = p%cp - Rgas
+      if (lpencil(i_cv1)) p%cv1=1/p%cv
+
+
+!
+!  Polytropic index
+!
+      if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
+      if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
+      if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
 
 
     endsubroutine calc_pencils_eos
@@ -1462,8 +1385,7 @@ module EquationOfState
       endif
 
     endsubroutine Hminus_opacity
-!**********************************************************************
-
+!***********************************************************************
     subroutine bc_ss_flux(f,topbot)
 !
 !  constant flux boundary condition for entropy (called when bcz='c1')
@@ -2961,5 +2883,4 @@ module EquationOfState
 !
     end subroutine bc_lnrho_hds_z_liso
 !***********************************************************************
-!
 endmodule EquationOfState
