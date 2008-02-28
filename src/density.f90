@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.371 2008-02-11 11:39:08 ajohan Exp $
+! $Id: density.f90,v 1.372 2008-02-28 11:38:03 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -46,6 +46,7 @@ module Density
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
   real :: wdamp=0.,density_floor=-1.0
   real :: mass_source_Mdot=0.,mass_source_sigma=0.
+  real :: radial_percent_smooth=10.
   real, dimension(3) :: diffrho_hyper3_aniso=0.
   real, dimension(mz) :: lnrho_init_z=0.0,del2lnrho_init_z=0.0
   real, dimension(mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
@@ -57,7 +58,7 @@ module Density
   logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_aniso=.false.
   logical :: ldiff_hyper3_cyl=.false.,lanti_shockdiffusion=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
-  logical :: lfreeze_lnrhosqu=.false.
+  logical :: lfreeze_lnrhosqu=.false.,lexponential_smooth=.false.
 
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
@@ -71,23 +72,23 @@ module Density
   integer :: iglobal_rho=0
 
   namelist /density_init_pars/ &
-       ampllnrho,initlnrho,initlnrho2,widthlnrho,    &
-       rho_left,rho_right,lnrho_const,rho_const,cs2bot,cs2top, &
-       radius_lnrho,eps_planet,xblob,yblob,zblob,    &
-       b_ell,q_ell,hh0,rbound,lwrite_stratification, &
-       mpoly,strati_type,beta_glnrho_global,         &
-       kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
-       co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
+       ampllnrho,initlnrho,initlnrho2,widthlnrho,                    &
+       rho_left,rho_right,lnrho_const,rho_const,cs2bot,cs2top,       &
+       radius_lnrho,eps_planet,xblob,yblob,zblob,                    &
+       b_ell,q_ell,hh0,rbound,lwrite_stratification,                 &
+       mpoly,strati_type,beta_glnrho_global,radial_percent_smooth,   &
+       kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho,     &
+       co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,lexponential_smooth,&
        wdamp,plaw,lcontinuity_gas,density_floor,lanti_shockdiffusion
 
   namelist /density_run_pars/ &
-       cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
-       cs2bot,cs2top,lupw_lnrho,lupw_rho,idiff,lmass_source,     &
-       mass_source_profile, mass_source_Mdot, mass_source_sigma, &
-       lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
-       wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,         &
-       lnrho_const,plaw,lcontinuity_gas,borderlnrho,    &
-       diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor, &
+       cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,                &
+       cs2bot,cs2top,lupw_lnrho,lupw_rho,idiff,lmass_source,         &
+       mass_source_profile, mass_source_Mdot, mass_source_sigma,     &
+       lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext,              &
+       wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,                      &
+       lnrho_const,plaw,lcontinuity_gas,borderlnrho,                 &
+       diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor,          &
        lanti_shockdiffusion
 
   ! diagnostic variables (need to be consistent with reset list below)
@@ -134,7 +135,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.371 2008-02-11 11:39:08 ajohan Exp $")
+           "$Id: density.f90,v 1.372 2008-02-28 11:38:03 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1829,7 +1830,7 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx)   :: pot,tmp1,tmp2,cs2
       real, dimension (mx)   :: rr_sph,rr,rr_cyl,lnrhomid!,cs2
-      real                   :: ptlaw,cp1
+      real                   :: ptlaw,cp1,rmid
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: i
       logical                :: lheader,lenergy
@@ -1863,8 +1864,15 @@ module Density
 ! midplane density
 !
           call get_radial_distance(rr_sph,rr_cyl)
-          lnrhomid=log(rho0)-.5*plaw*log((rr_cyl/r_ref)**2+rsmooth**2)
-          !lnrhomid=log(rho0)-.5*plaw*log((rr_cyl/r_ref)**2+1)
+          if (lexponential_smooth) then
+            !radial_percent_smooth = percentage of the grid
+            !that the smoothing is applied
+            rmid=xyz0(1)+(xyz1(1)-xyz0(1))/radial_percent_smooth
+            lnrhomid=log(rho0) &
+                 + plaw*log((1-exp( -((rr_cyl-xyz0(1))/rmid)**2 ))/rr_cyl)
+           else
+            lnrhomid=log(rho0)-.5*plaw*log((rr_cyl/r_ref)**2+rsmooth**2)
+          endif
 !
 ! vertical stratification, if needed
 !
