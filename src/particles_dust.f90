@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.200 2008-01-15 10:22:06 ajohan Exp $
+! $Id: particles_dust.f90,v 1.201 2008-02-28 23:27:57 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -131,7 +131,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.200 2008-01-15 10:22:06 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.201 2008-02-28 23:27:57 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -1402,6 +1402,8 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
 !
+      logical :: lsink
+!
       intent (in) :: f, fp, ineargrid
       intent (inout) :: df, dfp
 !
@@ -1420,6 +1422,9 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
 !
           do k=k1_imn(imn),k2_imn(imn)
+!  Exclude the massive sink particles from the drag calculations
+            lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
+            if (.not.lsink) then
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
 !  Use interpolation to calculate gas velocity at position of particles.
@@ -1444,13 +1449,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
             dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-uup)
 !
-! Exclude drag for the massive sink particles
-!
-            if (lparticles_nbody) then
-              if (ipar(k).le.nspar) &
-                   dragforce = 0.
-            endif
-!
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !
 !  Heating of gas due to drag force.
@@ -1461,6 +1459,7 @@ k_loop:   do while (.not. (k>npar_loc))
               else
                 up2=sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-uup))
               endif
+!
               drag_heat(ix0-nghost)=drag_heat(ix0-nghost) + &
                   rhop_tilde*tausp1_par*up2
             endif
@@ -1624,6 +1623,7 @@ k_loop:   do while (.not. (k>npar_loc))
                     p%epsp(ix0-nghost)/p%np(ix0-nghost)*tausp1_par
               endif
             endif
+          endif
           enddo
 !
 !  Add drag force heating in pencils.
