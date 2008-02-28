@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.230 2008-01-09 13:04:11 brandenb Exp $
+! $Id: initcond.f90,v 1.231 2008-02-28 22:44:50 brandenb Exp $
 
 module Initcond
 
@@ -33,7 +33,7 @@ module Initcond
   public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
   public :: x_siny_cosz, x1_siny_cosz, x1_cosy_cosz, lnx_cosy_cosz
   public :: sinx_siny_sinz, cosx_siny_cosz, sinx_siny_cosz
-  public :: sin2x_sin2y_cosz, cosy_sinz, x3_cosy_cosz
+  public :: sin2x_sin2y_cosz, cosy_sinz, x3_cosy_cosz, cos2x_cos2y_cos2z
   public :: halfcos_x, magsupport, vfield
   public :: uniform_x, uniform_y, uniform_z, uniform_phi, phi_comp_over_r
   public :: vfluxlayer, hfluxlayer
@@ -463,6 +463,45 @@ module Initcond
       endif
 !
     endsubroutine cosx_coscosy_cosz
+!***********************************************************************
+    subroutine cos2x_cos2y_cos2z(ampl,f,i,kx,ky,kz)
+!
+!  sinusoidal wave, adapted from sinxsinz (that routine was already doing
+!  this, but under a different name)
+!
+!  21-feb-08/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,kx1=1.,ky1=1.,kz1=1.
+!
+!  wavenumber k, helicity H=ampl (can be either sign)
+!
+!  sinx(kx*x)*sin(kz*z)
+!
+      if (present(kx)) kx1=kx
+      if (present(ky)) ky1=ky
+      if (present(kz)) kz1=kz
+      if (ampl==0) then
+        if (lroot) print*,'cos2x_cos2y_cos2z: ampl=0'
+      else
+        if (lroot) write(*,wave_fmt1) 'cos2x_cos2y_cos2z: ampl,kx,ky,kz=', &
+                                      ampl,kx1,ky1,kz1
+        if (ampl>0.) then
+          f(:,:,:,i)=f(:,:,:,i)+ampl*tanh(10.* &
+              spread(spread(cos(.5*kx1*x)**2,2,my),3,mz) &
+             *spread(spread(cos(.5*ky1*y)**2,1,mx),3,mz) &
+             *spread(spread(cos(.5*kz1*z)**2,1,mx),2,my))
+        else
+          f(:,:,:,i)=f(:,:,:,i)-ampl*(1.-tanh(10.* &
+              spread(spread(cos(.5*kx1*x)**2,2,my),3,mz) &
+             *spread(spread(cos(.5*ky1*y)**2,1,mx),3,mz) &
+             *spread(spread(cos(.5*kz1*z)**2,1,mx),2,my)))
+        endif
+      endif
+!
+    endsubroutine cos2x_cos2y_cos2z
 !***********************************************************************
     subroutine couette(ampl,mu,f,i)
 !
