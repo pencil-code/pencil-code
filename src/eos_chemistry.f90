@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.3 2008-02-28 13:02:01 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.4 2008-02-28 13:36:15 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -115,7 +115,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.3 2008-02-28 13:02:01 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.4 2008-02-28 13:36:15 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -271,7 +271,7 @@ module EquationOfState
 
      inquire(file='cp.dat',EXIST=ex)
      if (.not.ex) then 
-      print*,'File cp.dat does not exist'
+      print*,'WARNING: file cp.dat does not exist'
      else
 
         if (lroot) print*,'opening cp.dat'
@@ -292,10 +292,10 @@ module EquationOfState
 
      inquire(file='mu.dat',EXIST=ex)
      if (.not.ex) then 
-      print*,'File mu.dat does not exist'
+      print*,'WARNING: file mu.dat does not exist'
      else
 
-       if (lroot) print*,'opening cp.dat'
+       if (lroot) print*,'opening mu.dat'
 
        open(2,file='mu.dat')
         do k=1,nchemspec
