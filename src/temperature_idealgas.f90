@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.50 2007-12-18 13:53:45 tgastine Exp $
+! $Id: temperature_idealgas.f90,v 1.51 2008-02-29 17:22:28 nbabkovs Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -62,6 +62,7 @@ module Entropy
   logical :: lheatc_tensordiffusion=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lfreeze_lnTTint=.false.,lfreeze_lnTText=.false.
+  logical :: lheatc_chemistry=.false.
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   logical :: lhcond_global=.false.
   logical :: lviscosity_heat=.true.
@@ -139,7 +140,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.50 2007-12-18 13:53:45 tgastine Exp $")
+           "$Id: temperature_idealgas.f90,v 1.51 2008-02-29 17:22:28 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -478,6 +479,13 @@ module Entropy
       if (ldiff_hyper) lpenc_requested(i_del6lnTT)=.true.
 !
       if (ladvection_temperature) lpenc_requested(i_uglnTT)=.true.
+
+
+      if (lheatc_chemistry) then
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+      endif
+
 !
 !  Diagnostics
 !
@@ -655,6 +663,10 @@ module Entropy
           dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
         endif
       endif
+! Natalia: thermal conduction for the chemistry case: lheatc_chemistry=true
+
+      if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
+
 !
 !  Hyper diffusion
 !
@@ -997,6 +1009,37 @@ module Entropy
       endif
 
     endsubroutine calc_heatcond
+!***********************************************************************
+    subroutine calc_heatcond_chemistry(f,df,p)
+!
+!  29-Feb-08/: Natalia coded
+!  calculate cp*chi*(del2lnT+gradlnTT.grad(lnT+lnrho+lncp+lnchi))
+!
+      use EquationOfState, only: cp_full
+      use Sub
+
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(mx,my,mz) :: chi_full, sum_tmp
+      real, dimension (nx,3) :: gsum
+      type (pencil_case) :: p
+
+      real, dimension(nx) :: g2,chix
+!
+      sum_tmp(:,m,n) = f(:,m,n,ilnTT) + f(:,m,n,ilnrho) + cp_full(:,m,n) + chi_full(:,m,n)
+
+      call grad(sum_tmp,gsum)
+
+      call dot(p%glnTT,gsum,g2)
+
+!
+!  Add heat conduction to RHS of temperature equation
+!
+
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cp*chi_full(l1:l2,m,n)*(p%del2lnTT+g2)
+
+
+    endsubroutine calc_heatcond_chemistry
 !***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
       integer, intent(in) :: unit

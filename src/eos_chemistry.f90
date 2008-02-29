@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.4 2008-02-28 13:36:15 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.5 2008-02-29 17:22:28 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -79,6 +79,7 @@ module EquationOfState
 
 
   real, dimension(nchemspec) :: mu_spec, cp_spec 
+  real, dimension (mx,my,mz) :: cp_full
 
 
   ! input parameters
@@ -115,7 +116,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.4 2008-02-28 13:36:15 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.5 2008-02-29 17:22:28 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -578,7 +579,6 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (mx,my,mz) :: cp_full
       real, dimension (nx) :: tmp_sum
 
 !
