@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.5 2008-02-29 17:22:28 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.6 2008-02-29 18:22:39 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -10,7 +10,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp,cp1,cp1tilde,glnTT,TT,TT1,gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1
-! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1,del6lnTT,rho1gpp
+! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1,del6lnTT,rho1gpp,lncp
 !
 !***************************************************************
 
@@ -80,6 +80,7 @@ module EquationOfState
 
   real, dimension(nchemspec) :: mu_spec, cp_spec 
   real, dimension (mx,my,mz) :: cp_full
+ 
 
 
   ! input parameters
@@ -116,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.5 2008-02-29 17:22:28 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.6 2008-02-29 18:22:39 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -527,6 +528,7 @@ module EquationOfState
         lpencil_in(i_yH)=.true.
         lpencil_in(i_TT1)=.true.
         lpencil_in(i_mu1)=.true.
+        lpencil_in(i_lncp)=.true.
       endif
 
       if (lpencil_in(i_cp1)) lpencil_in(i_cp)=.true.
@@ -616,7 +618,6 @@ module EquationOfState
 !  Mean molecular weight
 !
    tmp_sum=0.
-
       if (lpencil(i_mu1)) then 
         do k=1,nchemspec
          tmp_sum=tmp_sum+f(l1:l2,m,n,ichemspec(k))/mu_spec(k)
@@ -654,6 +655,7 @@ module EquationOfState
 !
       if (lpencil(i_cv)) p%cv = p%cp - Rgas
       if (lpencil(i_cv1)) p%cv1=1/p%cv
+      if (lpencil(i_lncp)) p%lncp=log(p%cp)
 
 
 !
