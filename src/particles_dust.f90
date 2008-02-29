@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.201 2008-02-28 23:27:57 wlyra Exp $
+! $Id: particles_dust.f90,v 1.202 2008-02-29 06:39:18 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -131,7 +131,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.201 2008-02-28 23:27:57 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.202 2008-02-29 06:39:18 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -213,7 +213,7 @@ module Particles
 !
 !  Must have set tausp_species for drag force.
 !
-        if (ldragforce_dust_par .or. ldragforce_dust_par) then
+        if (ldragforce_dust_par .or. ldragforce_gas_par) then
           if (any(tausp_species==0)) then
             if (lroot) print*, &
                 'initialize_particles: drag force must have tausp_species/=0 !'
