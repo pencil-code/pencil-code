@@ -46,4 +46,3 @@
   public :: cs2cool
   public :: mpoly, mpoly0, mpoly1, mpoly2
   public :: isothtop
-  public :: cp_full

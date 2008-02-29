@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.51 2008-02-29 17:22:28 nbabkovs Exp $
+! $Id: temperature_idealgas.f90,v 1.52 2008-02-29 17:29:57 nbabkovs Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -140,7 +140,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.51 2008-02-29 17:22:28 nbabkovs Exp $")
+           "$Id: temperature_idealgas.f90,v 1.52 2008-02-29 17:29:57 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1015,7 +1015,7 @@ module Entropy
 !  29-Feb-08/: Natalia coded
 !  calculate cp*chi*(del2lnT+gradlnTT.grad(lnT+lnrho+lncp+lnchi))
 !
-      use EquationOfState, only: cp_full
+  !    use EquationOfState, only: cp_full
       use Sub
 
       real, dimension(mx,my,mz,mfarray) :: f
@@ -1026,7 +1026,7 @@ module Entropy
 
       real, dimension(nx) :: g2,chix
 !
-      sum_tmp(:,m,n) = f(:,m,n,ilnTT) + f(:,m,n,ilnrho) + cp_full(:,m,n) + chi_full(:,m,n)
+      sum_tmp(l1:l2,m,n) = f(l1:l2,m,n,ilnTT) + f(l1:l2,m,n,ilnrho) +p%cp(:) + chi_full(l1:l2,m,n)
 
       call grad(sum_tmp,gsum)
 
