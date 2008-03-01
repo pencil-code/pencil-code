@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.57 2007-09-19 15:30:21 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.58 2008-03-01 18:54:01 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -24,7 +24,7 @@ module Particles_nbody
   real, dimension(nspar,mpvar) :: fsp
   real, dimension(nspar) :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
-  real, dimension(nspar) :: pmass=1.,r_smooth,pmass1
+  real, dimension(nspar) :: pmass=1.,r_smooth,pmass1,final_ramped_mass=1.
   real :: delta_vsp0=1.0,totmass,totmass1
   character (len=labellen) :: initxxsp='random', initvvsp='nothing'
   logical :: lcalc_orbit=.true.,lmigrate=.false.,lnorm=.true.
@@ -32,12 +32,15 @@ module Particles_nbody
   logical, dimension(nspar) :: lcylindrical_gravity_nbody=.false.
   logical, dimension(nspar) :: lfollow_particle=.false.
   real :: GNewton=impossible
+  integer :: ramp_orbits=5
+  logical :: lramp=.false.
+
 
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
        pmass, r_smooth, lcylindrical_gravity_nbody, &
-       lexclude_frozen, GNewton, bcspx, bcspy, bcspz
-
+       lexclude_frozen, GNewton, bcspx, bcspy, bcspz, &
+       ramp_orbits,lramp,final_ramped_mass
 
   namelist /particles_nbody_run_pars/ &
        dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
@@ -66,7 +69,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.57 2007-09-19 15:30:21 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.58 2008-03-01 18:54:01 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -96,7 +99,6 @@ module Particles_nbody
 !
       use Mpicomm,only:stop_it
 !
-      integer :: k
       logical :: lstarting
 !
 ! G_Newton. Overwrite the one set by start.in if set again here, 
@@ -107,6 +109,11 @@ module Particles_nbody
       endif
 !
 ! inverse mass
+!
+      if (lramp) then
+        pmass(1:nspar-1) = epsi
+        pmass(nspar)=1-epsi*(nspar-1)
+      endif
 !
       pmass1=1./pmass
 !
@@ -195,7 +202,7 @@ module Particles_nbody
       integer, dimension (mpar_loc,3) :: ineargrid
       real, dimension(nspar) :: ang_vel,kep_vel,sma
       real, dimension(nspar,3) :: position,velocity
-      real :: aux,aux2,rr,fac,parc
+      real :: tmp,tmp2,rr,fac,parc
       integer :: k,ks
 
       intent (in) :: f
@@ -281,15 +288,15 @@ module Particles_nbody
                ' of the particles is always g0'
         endif
 !
-        aux = 0.;parc=0
+        tmp = 0.;parc=0
         do ks=1,nspar-1 
           sma(ks)=abs(position(ks,1))
-          aux=aux+pmass(ks)
+          tmp=tmp+pmass(ks)
           parc = parc - sma(ks)*pmass(ks)
         enddo
-        pmass(nspar)=1.- aux;pmass1=1./pmass;totmass=1.;totmass1=1.
+        pmass(nspar)=1.- tmp;pmass1=1./pmass;totmass=1.;totmass1=1.
         parc = parc*totmass1
-        if (aux .ge. 1.) &
+        if (tmp .ge. 1.) &
              call stop_it("particles_nbody,init_particles. The mass of one "//& 
              "(or more) of the particles is too big! The masses should "//&
              "never be bigger than g0. Please scale your assemble so that "//&
@@ -448,6 +455,8 @@ module Particles_nbody
 !
       intent (in) :: f, p, fp, ineargrid
       intent (inout) :: df,dfp
+!
+      if (lramp) call get_ramped_mass
 !
 ! Output the positions of all particles
 !
@@ -1012,6 +1021,27 @@ module Particles_nbody
       call sum_lim_mn_name(torqint,idiag_torqint(ks),p)
 !
     endsubroutine calc_torque
+!***********************************************************************
+    subroutine get_ramped_mass
+!     
+      real :: ramping_period,tmp
+      integer :: ks
+!
+      ramping_period=2*pi*ramp_orbits
+      if (t .le. ramping_period) then
+        !sin ((pi/2)*(t/(ramp_orbits*2*pi))
+        tmp=0.
+        do ks=1,nspar-1
+          pmass(ks)= max(tini,&
+               final_ramped_mass(ks)*(sin((.5*pi)*(t/ramping_period))**2))
+          tmp=tmp+pmass(ks)
+        enddo
+        pmass(nspar)= 1-tmp
+      else
+        pmass=final_ramped_mass
+      endif
+!
+    endsubroutine get_ramped_mass
 !***********************************************************************
     subroutine rprint_particles_nbody(lreset,lwrite)
 !
