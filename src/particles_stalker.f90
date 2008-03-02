@@ -1,4 +1,4 @@
-! $Id: particles_stalker.f90,v 1.7 2008-03-02 17:58:33 ajohan Exp $
+! $Id: particles_stalker.f90,v 1.8 2008-03-02 18:03:13 ajohan Exp $
 !
 !  This module writes information about the local state of the gas at
 !  the positions of a selected number of particles.
@@ -53,6 +53,13 @@ module Particles_stalker
       use FArrayManager
 !
       logical :: lstarting
+!
+!  Stop if no particles are stalked.
+!
+      if (npar_stalk==0) then
+        if (lroot) print*, 'initialize_particles_stalker: npar_stalk is zero - set it in cparam.local'
+        call fatal_error('initialize_particles_stalker','')
+      endif
 !
 !  Need scratch slot in f array to interpolate derived variables.
 !
