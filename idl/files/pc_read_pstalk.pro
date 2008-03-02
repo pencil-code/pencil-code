@@ -1,5 +1,5 @@
 ;;
-;; $Id: pc_read_pstalk.pro,v 1.6 2007-11-30 13:58:15 ajohan Exp $
+;; $Id: pc_read_pstalk.pro,v 1.7 2008-03-02 17:59:22 ajohan Exp $
 ;;
 ;; NAME:
 ;;      pc_read_pstalk
@@ -27,6 +27,13 @@ if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 pc_read_dim, obj=dim, datadir=datadir, /quiet
 pc_read_pdim, obj=pdim, datadir=datadir, /quiet
 pc_set_precision, dim=dim, datadir=datadir, /quiet
+;
+; Stop if no particles have been stalked.
+;
+if (pdim.npar_stalk eq 0) then begin
+  print, 'pc_read_pstalk: npar_stalk is zero - set it in cparam.local and rerun'
+  exit
+endif
 ;
 ; Read the number of output times from file.
 ;
@@ -91,7 +98,7 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
  
         array_loc=fltarr(nfields,npar_stalk_loc)*zero
         readu, 1, array_loc
- 
+
         array[*,ipar_loc-1,it]=array_loc
 
       endif
