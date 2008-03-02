@@ -1,4 +1,4 @@
-! $Id: particles_stalker.f90,v 1.6 2007-11-18 06:41:20 ajohan Exp $
+! $Id: particles_stalker.f90,v 1.7 2008-03-02 17:58:33 ajohan Exp $
 !
 !  This module writes information about the local state of the gas at
 !  the positions of a selected number of particles.
@@ -34,7 +34,8 @@ module Particles_stalker
 
   namelist /particles_stalker_init_pars/ &
       dstalk, linterpolate_cic, linterpolate_tsc, &
-      lstalk_xx, lstalk_vv, lstalk_uu, lstalk_guu, lstalk_rho, lstalk_grho
+      lstalk_xx, lstalk_vv, lstalk_uu, lstalk_guu, lstalk_rho, lstalk_grho, &
+      lstalk_bb
 
   namelist /particles_stalker_run_pars/ &
       dstalk, linterpolate_cic, linterpolate_tsc
@@ -224,7 +225,7 @@ module Particles_stalker
 !  Collect environment information in single array and write array to file.
 !
           if (npar_stalk_loc>=1) then
-            write(1) ipar(k_stalk(1):k_stalk(npar_stalk_loc))
+            write(1) ipar(k_stalk)
             allocate(values(nvar_stalk,npar_stalk_loc))
             ivalue=0
             if (lstalk_xx) then
@@ -241,6 +242,17 @@ module Particles_stalker
               ivalue=ivalue+1; values(ivalue,:)=ux(1:npar_stalk)
               ivalue=ivalue+1; values(ivalue,:)=uy(1:npar_stalk)
               ivalue=ivalue+1; values(ivalue,:)=uz(1:npar_stalk)
+            endif
+            if (lstalk_guu) then
+              ivalue=ivalue+1; values(ivalue,:)=duxdx(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=duxdy(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=duxdz(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=duydx(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=duydy(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=duydz(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=duzdx(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=duzdy(1:npar_stalk)
+              ivalue=ivalue+1; values(ivalue,:)=duzdz(1:npar_stalk)
             endif
             if (lstalk_rho) then
               ivalue=ivalue+1; values(ivalue,:)=rho(1:npar_stalk)
