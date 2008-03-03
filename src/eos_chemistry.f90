@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.6 2008-02-29 18:22:39 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.7 2008-03-03 12:15:01 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -117,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.6 2008-02-29 18:22:39 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.7 2008-03-03 12:15:01 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -274,16 +274,17 @@ module EquationOfState
      inquire(file='cp.dat',EXIST=ex)
      if (.not.ex) then 
       print*,'WARNING: file cp.dat does not exist'
+         do k=1,nchemspec
+          cp_spec(k)=Rgas/(mu*gamma1*gamma11)
+           print*,cp_spec(k)
+         enddo 
      else
-
         if (lroot) print*,'opening cp.dat'
-
         open(1,file='cp.dat')
          do k=1,nchemspec
           read(1,*) cp_spec(k)
          enddo
         close(1)
-
      endif
 
    endif
@@ -295,6 +296,9 @@ module EquationOfState
      inquire(file='mu.dat',EXIST=ex)
      if (.not.ex) then 
       print*,'WARNING: file mu.dat does not exist'
+         do k=1,nchemspec
+          mu_spec(k)=mu
+         enddo 
      else
 
        if (lroot) print*,'opening mu.dat'
@@ -528,10 +532,12 @@ module EquationOfState
         lpencil_in(i_yH)=.true.
         lpencil_in(i_TT1)=.true.
         lpencil_in(i_mu1)=.true.
-        lpencil_in(i_lncp)=.true.
       endif
 
-      if (lpencil_in(i_cp1)) lpencil_in(i_cp)=.true.
+      if (lpencil_in(i_cp)) then
+        lpencil_in(i_cp1)=.true.
+        lpencil_in(i_lncp)=.true.
+      endif
 
       if (lpencil_in(i_cp)) then
         lpencil_in(i_yH)=.true.
@@ -587,11 +593,12 @@ module EquationOfState
       intent(in) :: f
       intent(inout) :: p
       integer :: k
+
 !
 ! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG
 ! FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
 ! The code is not wrong however since this is correctly
-! handled by the eos module.
+! handled by the eos moduleinteger :: tm1=1, tm2=2,tm3=3.
 
 !Natalia: removed all previous staff and included my own
 
@@ -638,12 +645,14 @@ module EquationOfState
 
       if (lpencil(i_cp)) then
         do k=1,nchemspec
-         cp_full(:,m,n)=cp_full(:,m,n)+f(:,m,n,ichemspec(k))*cp_spec(k)
+         cp_full(:,m,n)=cp_full(:,m,n)+cp_spec(k)!+f(:,m,n,ichemspec(k))*cp_spec(k)
+    !    print*,f(5,m,n,ichemspec(k))
+    !print*,cp_full(5,m,n)
         enddo
         p%cp=cp_full(l1:l2,m,n)
       endif
-      if (lpencil(i_cp1)) p%cp1 = 1./p%cp
 
+      if (lpencil(i_cp1))   p%cp1 = 1./p%cp
 
 !  Gradient of the above
 !
@@ -664,6 +673,8 @@ module EquationOfState
       if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
       if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
       if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
+
+
 
 
     endsubroutine calc_pencils_eos
