@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.203 2008-03-03 01:58:17 wlyra Exp $
+! $Id: particles_dust.f90,v 1.204 2008-03-03 02:10:49 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -133,7 +133,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.203 2008-03-03 01:58:17 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.204 2008-03-03 02:10:49 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -2040,15 +2040,13 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Single species of dust particles.
             if (ldraglaw_variable) then
 !  Special case for 1/tau=omega when omega is not 
-!  constant (as, for instance, global disks, for which
-!  omega=v_phi/rr
+!   constant (as, for instance, global Keplerian disks,
+!   for which omega=rad**(-3/2)
               if (lcartesian_coords) then
-                rad=sqrt(fp(k,ixp)**2 + fp(k,iyp)**2)
-                OO=(-fp(k,ivpx)*fp(k,iyp)+fp(k,ivpy)*fp(k,ixp))/rad**2
-                tausp1_par=tausp1*OO
+                tausp1_par=tausp1*&
+                     (fp(k,ixp)**2 + fp(k,iyp)**2)**(-0.75) 
               elseif (lcylindrical_coords) then
-                OO=fp(k,ivpy)/fp(k,ixp)
-                tausp1_par=tausp1*OO
+                tausp1_par=tausp1*fp(k,ixp)**(-1.5)
               elseif (lspherical_coords) then
                 call fatal_error("get_frictiontime",&
                      "variable draglaw not implemented for"//&
