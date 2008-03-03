@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.44 2008-02-28 11:03:53 wlyra Exp $
+! $Id: poisson.f90,v 1.45 2008-03-03 00:53:20 wlyra Exp $
 
 !
 !  This module solves the Poisson equation
@@ -119,7 +119,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.44 2008-02-28 11:03:53 wlyra Exp $")
+        "$Id: poisson.f90,v 1.45 2008-03-03 00:53:20 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -260,6 +260,11 @@ module Poisson
       integer :: i,j,ikx,iky,ir,im,ido,iup
       integer :: nr,nth,nnx,nny,nnghost
       integer :: nrgrid,nthgrid,nnxgrid,nnygrid
+!
+      if (nx/=nygrid) &
+           call fatal_error("","currently only works for nx=nygrid")
+      if (nzgrid/=1)  &
+           call fatal_error("","currently only works for 2D simulations")
 !
 ! Keep the notation consistent.
 !
@@ -502,7 +507,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.44 2008-02-28 11:03:53 wlyra Exp $")
+        "$Id: poisson.f90,v 1.45 2008-03-03 00:53:20 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
