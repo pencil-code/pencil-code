@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.53 2008-02-29 18:22:39 nbabkovs Exp $
+! $Id: temperature_idealgas.f90,v 1.54 2008-03-03 09:38:15 nbabkovs Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -83,7 +83,7 @@ module Entropy
       lnTT_left,lnTT_right,lnTT_const,TT_const, &
       kx_lnTT,ky_lnTT,kz_lnTT,center1_x,center1_y,center1_z, &
       mpoly0,mpoly1,r_bcz, &
-      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width
+      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width,lheatc_chemistry
 
 ! run parameters
   namelist /entropy_run_pars/ &
@@ -92,7 +92,7 @@ module Entropy
       lheatc_chiconst_accurate,hcond0,lcalc_heat_cool,&
       lfreeze_lnTTint,lfreeze_lnTText,widthlnTT,mpoly0,mpoly1, &
       lhcond_global,lviscosity_heat,difflnTT_hyper, &
-      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width,Kgpara,Kgperp
+      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width,Kgpara,Kgperp,lheatc_chemistry
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
@@ -140,7 +140,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.53 2008-02-29 18:22:39 nbabkovs Exp $")
+           "$Id: temperature_idealgas.f90,v 1.54 2008-03-03 09:38:15 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1012,8 +1012,8 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond_chemistry(f,df,p)
 !
-!  29-Feb-08/: Natalia coded
-!  calculate cp*chi*(del2lnT+gradlnTT.grad(lnT+lnrho+lncp+lnchi))
+!  29-Feb-08/: Natalia
+!  calculate gamma*chi*(del2lnT+gradlnTT.grad(lnT+lnrho+lncp+lnchi))
 !
   !    use EquationOfState, only: cp_full
       use Sub
@@ -1036,7 +1036,7 @@ module Entropy
 !  Add heat conduction to RHS of temperature equation
 !
 
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cp*chix(:)*(p%del2lnTT+g2)
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%gamma*chix(:)*(p%del2lnTT+g2)
 
 
     endsubroutine calc_heatcond_chemistry
