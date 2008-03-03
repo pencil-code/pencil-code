@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.202 2008-02-29 06:39:18 ajohan Exp $
+! $Id: particles_dust.f90,v 1.203 2008-03-03 01:58:17 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -59,6 +59,8 @@ module Particles
   logical :: ldraglaw_epstein_stokes_linear=.false.
   logical :: lcoldstart_amplitude_correction=.false.
   logical :: linterpolate_spline=.true.
+  logical :: ldraglaw_variable=.false.
+
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
   character (len=labellen) :: gravx_profile='', gravz_profile=''
@@ -97,7 +99,7 @@ module Particles
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
-      lmigration_real_check,lcartesian_mig, &
+      lmigration_real_check,lcartesian_mig,ldraglaw_variable, &
       ldraglaw_epstein, ldraglaw_epstein_stokes_linear, mean_free_path_gas
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
@@ -131,7 +133,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.202 2008-02-29 06:39:18 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.203 2008-03-03 01:58:17 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -2010,6 +2012,8 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: ix0, jspec
       logical :: nochange=.false.
 !
+      real :: rad,OO
+!
       if (present(nochange_opt)) then
         if (nochange_opt) then
           nochange=.true.
@@ -2034,7 +2038,25 @@ k_loop:   do while (.not. (k>npar_loc))
             tausp1_par=tausp1_species(jspec)
           else
 !  Single species of dust particles.
-            tausp1_par=tausp1
+            if (ldraglaw_variable) then
+!  Special case for 1/tau=omega when omega is not 
+!  constant (as, for instance, global disks, for which
+!  omega=v_phi/rr
+              if (lcartesian_coords) then
+                rad=sqrt(fp(k,ixp)**2 + fp(k,iyp)**2)
+                OO=(-fp(k,ivpx)*fp(k,iyp)+fp(k,ivpy)*fp(k,ixp))/rad**2
+                tausp1_par=tausp1*OO
+              elseif (lcylindrical_coords) then
+                OO=fp(k,ivpy)/fp(k,ixp)
+                tausp1_par=tausp1*OO
+              elseif (lspherical_coords) then
+                call fatal_error("get_frictiontime",&
+                     "variable draglaw not implemented for"//&
+                     "spherical coordinates")
+              endif
+            else
+              tausp1_par=tausp1
+            endif
           endif
         endif
       else if (ldraglaw_epstein_stokes_linear) then
