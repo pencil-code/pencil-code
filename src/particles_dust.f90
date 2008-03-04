@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.204 2008-03-03 02:10:49 wlyra Exp $
+! $Id: particles_dust.f90,v 1.205 2008-03-04 01:52:07 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -60,7 +60,8 @@ module Particles
   logical :: lcoldstart_amplitude_correction=.false.
   logical :: linterpolate_spline=.true.
   logical :: ldraglaw_variable=.false.
-
+  logical :: ldraglaw_epstein_transsonic=.false.
+  
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
   character (len=labellen) :: gravx_profile='', gravz_profile=''
@@ -84,7 +85,7 @@ module Particles
       epsp_friction_increase,lcartesian_mig, lcollisional_dragforce_cooling, &
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
-      mean_free_path_gas
+      mean_free_path_gas, ldraglaw_epstein_transsonic
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -100,7 +101,8 @@ module Particles
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check,lcartesian_mig,ldraglaw_variable, &
-      ldraglaw_epstein, ldraglaw_epstein_stokes_linear, mean_free_path_gas
+      ldraglaw_epstein, ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
+      ldraglaw_epstein_transsonic
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -133,7 +135,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.204 2008-03-03 02:10:49 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.205 2008-03-04 01:52:07 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -359,6 +361,7 @@ module Particles
       if (lcollisional_cooling_twobody) allocate(kneighbour(mpar_loc))
 !
       if (ldraglaw_epstein_stokes_linear) ldraglaw_epstein=.false.
+      if (ldraglaw_epstein_transsonic   ) ldraglaw_epstein=.false. 
 !
     endsubroutine initialize_particles
 !***********************************************************************
@@ -1308,6 +1311,11 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_requested(i_np)=.true.
         lpenc_requested(i_rho1)=.true.
       endif
+      if (ldraglaw_epstein_transsonic) then
+        lpenc_requested(i_uu)=.true.
+        lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_cs2)=.true.
+      endif
 !
       lpenc_diagnos(i_np)=.true.
       lpenc_diagnos(i_rhop)=.true.
@@ -2000,6 +2008,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Calculate the friction time.
 !
+      use EquationOfState, only: rho0,cs0
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       type (pencil_case) :: p
@@ -2009,10 +2019,11 @@ k_loop:   do while (.not. (k>npar_loc))
       logical, optional :: nochange_opt
 !
       real :: tausg1_point
-      integer :: ix0, jspec
+      integer :: ix0, inx0, jspec
       logical :: nochange=.false.
 !
-      real :: rad,OO
+      real, dimension(3) :: vrel
+      real :: OO,fd,mach2
 !
       if (present(nochange_opt)) then
         if (nochange_opt) then
@@ -2024,7 +2035,7 @@ k_loop:   do while (.not. (k>npar_loc))
         nochange=.false.
       endif
 !
-      ix0=ineargrid(k,1)
+      ix0=ineargrid(k,1);inx0=ix0-nghost
 !
 !  Epstein drag law.
 !
@@ -2043,15 +2054,15 @@ k_loop:   do while (.not. (k>npar_loc))
 !   constant (as, for instance, global Keplerian disks,
 !   for which omega=rad**(-3/2)
               if (lcartesian_coords) then
-                tausp1_par=tausp1*&
-                     (fp(k,ixp)**2 + fp(k,iyp)**2)**(-0.75) 
+                OO=(fp(k,ixp)**2 + fp(k,iyp)**2)**(-0.75) 
               elseif (lcylindrical_coords) then
-                tausp1_par=tausp1*fp(k,ixp)**(-1.5)
+                OO=fp(k,ixp)**(-1.5)
               elseif (lspherical_coords) then
                 call fatal_error("get_frictiontime",&
                      "variable draglaw not implemented for"//&
                      "spherical coordinates")
               endif
+              tausp1_par=tausp1*OO
             else
               tausp1_par=tausp1
             endif
@@ -2088,6 +2099,93 @@ k_loop:   do while (.not. (k>npar_loc))
         else
           tausp1_par = 1/(fp(k,iap)*rhops)*2.25*mean_free_path_gas/fp(k,iap)
         endif
+      else if (ldraglaw_epstein_transsonic) then
+!
+!  Epstein drag away from the limit of subsonic particle motion. The drag
+!  force is given by (Schaaf 1963)
+!  
+!       Feps=-pi*a**2 * rhog * |Delta(u)| * Delta(u) &                    (1)
+!        *[(1+1/m**2+1/(4*m**4))*erf(m) + (1/m+1/(2*m**3)*exp(-m**2)/sqrt(pi)]
+!
+!  where Delta(u) is the relative dust-to-gas velocity (vector) 
+!  and m=|Delta(u)|/cs (scalar) is the relative mach number of the flow
+!
+!  As this is too cumbersome to implement numerically, an interpolation 
+!  between the limits of 
+!  
+!     subsonic:    Feps=-sqrt(128*pi)/3*a**2*rhog*cs*Delta(u)             (2)
+!     supersonic:  Feps=-pi*a**2*|Delta(u)|*Delta(u)                      (3) 
+!  
+!  is used, leading to an expression that can be used for arbitrary velocities
+!  as derived by Kwok (1975). 
+!
+!     transsonic:  Feps=-sqrt(128*pi)/3*a**2*rhog*cs*fd*Delta(u)          (4)
+!
+!  where fd=sqrt(1 + 9*pi/128*m**2)                                       (5)
+!
+!  The force Feps is divided by the mass of the particle mp=4/3*pi*a**3*rhops
+!  to yield the acceleration feps=Feps/mp
+!
+!         feps = -sqrt(8/pi)*rhog*cs*fd*Delta(u)/[a*rhops]                (6)
+!
+!  (The discussion above was taken from Paardekooper 2006)
+!
+!  In the 2D case, the density rhog is to be replaced by 
+!
+!     rhog=Sigmag/[sqrt(2*pi)H]
+!         =Sigmag*Omega/[sqrt(2*pi)*cs]
+!
+!  which removes the dependence of (6) on cs. We are left with 
+!
+!         feps = -2/pi*sigmag*Omega*fd*Delta(u)/[a*rhops]
+!  
+!  the constant terms are tausp1.
+!
+        if (nzgrid==1) then 
+!  then omega is needed
+          if (ldraglaw_variable) then
+            !these omegas assume GM=1
+            if (lcartesian_coords) then
+              OO=(fp(k,ixp)**2 + fp(k,iyp)**2)**(-0.75) 
+            elseif (lcylindrical_coords) then
+              OO=fp(k,ixp)**(-1.5)
+            elseif (lspherical_coords) then
+              call fatal_error("get_frictiontime",&
+                   "variable draglaw not implemented for"//&
+                   "spherical coordinates")
+            endif
+          else
+            OO=nu_epicycle
+          endif
+        endif
+!
+!  The other needed quantities
+!
+        vrel=fp(k,ivpx:ivpz)-p%uu(inx0,:)
+        mach2=(vrel(1)**2+vrel(2)**2+vrel(3)**2)/p%cs2(inx0)
+        fd=sqrt(1+(9.*pi/128)*mach2)
+!
+! Calculate tausp1_par for 2d and 3d cases with and without particle_radius 
+! as a dynamical variable
+!      
+        if (iap/=0) then
+          if (fp(k,iap)/=0.0) then
+            if (nzgrid==1) then
+              tausp1_par=     2*pi_1*OO          *p%rho(inx0)*fd/(fp(k,iap)*rhops)
+            else
+              tausp1_par=sqrt(8*pi_1*p%cs2(inx0))*p%rho(inx0)*fd/(fp(k,iap)*rhops)
+            endif
+          endif
+        else
+          !normalize to make tausp1 not dependent on cs0 or rho0
+          !bad because it comes at the expense of evil divisions
+          if (nzgrid==1) then
+            tausp1_par=tausp1*OO               *p%rho(inx0)*fd/ rho0
+          else
+            tausp1_par=tausp1*sqrt(p%cs2(inx0))*p%rho(inx0)*fd/(rho0*cs0)
+          endif
+        endif
+!
       endif
 !
 !  Change friction time artificially.
