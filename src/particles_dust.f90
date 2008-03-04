@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.206 2008-03-04 10:39:38 wlyra Exp $
+! $Id: particles_dust.f90,v 1.207 2008-03-04 19:52:27 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -135,7 +135,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.206 2008-03-04 10:39:38 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.207 2008-03-04 19:52:27 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -1436,7 +1436,6 @@ k_loop:   do while (.not. (k>npar_loc))
             lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
             if (.not.lsink) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
 !  Use interpolation to calculate gas velocity at position of particles.
               if (lhydro) then
                 if (lparticlemesh_cic) then
@@ -1455,6 +1454,16 @@ k_loop:   do while (.not. (k>npar_loc))
                 endif
               else
                 uup=0.0
+              endif
+!
+!  Get the friction time. For the case of |uup| ~> cs, the Epstein drag law
+!  is dependent on the relative mach number, hence the need to feed uup as 
+!  an optional argument to get_frictiontime.
+!
+              if (ldraglaw_epstein_transsonic) then
+                call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup)
+              else
+                call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
               endif
 !
               dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-uup)
@@ -2004,7 +2013,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dvvp_dt
 !***********************************************************************
-    subroutine get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,nochange_opt)
+    subroutine get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup,nochange_opt)
 !
 !  Calculate the friction time.
 !
@@ -2022,8 +2031,9 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: ix0, inx0, jspec
       logical :: nochange=.false.
 !
-      real, dimension(3) :: vrel
+      real, optional, dimension(3) :: uup
       real :: OO,fd,mach2
+      integer :: j,ju
 !
       if (present(nochange_opt)) then
         if (nochange_opt) then
@@ -2161,8 +2171,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  The other needed quantities
 !
-        vrel=fp(k,ivpx:ivpz)-p%uu(inx0,:)
-        mach2=(vrel(1)**2+vrel(2)**2+vrel(3)**2)/p%cs2(inx0)
+        mach2=(uup(1)**2+uup(2)**2+uup(3)**2)/p%cs2(inx0)
         fd=sqrt(1+(9.*pi/128)*mach2)
 !
 ! Calculate tausp1_par for 2d and 3d cases with and without particle_radius 
