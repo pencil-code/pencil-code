@@ -21,7 +21,6 @@
 # Based on sleipsub (by theine)
 #
 foreach block ($argv)
-
   if ("$block" =~ -*) then # non filename
     if ("$block" =~ *=*) then  # variable
       set variable = `perl -e "@a = split /=/, '$block'; print @a[0]"`
@@ -35,20 +34,32 @@ foreach block ($argv)
   else # filename
     set filename = $block
   endif
-
 end
+#
+# Save command and options to the file .history_qsub for later copy paste.
+#
+echo "`date`" >> .history_qsub
+echo "pc_llsubmit $argv" >> .history_qsub
+#
+# Default filename
+#
 if (! $?filename) set filename = start_run.csh
 #
 # LoadLeveler default values
 #
+if (! $?node) set node = 1
+if (! $?tasks_per_node) set tasks_per_node = 1
+if (! $?wall_clock_limit) set wall_clock_limit = 50:00:00
+if (! $?networkMPI) set networkMPI =
 if (! $?job_name) set job_name = $filename
 if (! $?job_type) set job_type = parallel
-if (! $?total_tasks) set total_tasks = `perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
-if (! $?class) set class = qexp
+if (! $?total_tasks && ! $?tasks_per_node) set total_tasks = `perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
+if (! $?class) set class =
 if (! $?environment) set environment = "PENCIL_HOME=$PENCIL_HOME"
 if (! $?input) set input = /dev/null
 if (! $?output) set output = \$\(job_name\).\$\(jobid\).out
 if (! $?error) set error = $output
+if (! $?resources) set resources = 
 if (! $?notification) set notification = never
 #
 # write temporary jobscript
@@ -56,7 +67,14 @@ if (! $?notification) set notification = never
 echo "#\!/bin/sh" > pc_llsubmit.tmp
 echo "# @ job_name = $job_name" >> pc_llsubmit.tmp
 echo "# @ job_type = $job_type" >> pc_llsubmit.tmp
-echo "# @ total_tasks = $total_tasks" >> pc_llsubmit.tmp
+echo "# @ node = $node" >> pc_llsubmit.tmp
+if ($?tasks_per_node) then
+  echo "# @ tasks_per_node = $tasks_per_node" >> pc_llsubmit.tmp
+else
+  echo "# @ total_tasks = $total_tasks" >> pc_llsubmit.tmp
+endif
+echo "# @ wall_clock_limit = $wall_clock_limit" >> pc_llsubmit.tmp
+echo "# @ network.MPI = $networkMPI" >> pc_llsubmit.tmp
 echo "# @ class = $class" >> pc_llsubmit.tmp
 echo "# @ environment = $environment" >> pc_llsubmit.tmp
 echo "# @ executable = $filename" >> pc_llsubmit.tmp
@@ -64,8 +82,10 @@ echo "# @ input = $input" >> pc_llsubmit.tmp
 echo "# @ output = $output" >> pc_llsubmit.tmp
 echo "# @ error =  $error" >> pc_llsubmit.tmp
 echo "# @ notification = $notification" >> pc_llsubmit.tmp
-echo "# @ resources = ConsumableCpus(1)" >> pc_llsubmit.tmp
+echo "# @ resources = $resources" >> pc_llsubmit.tmp
 echo "# @ queue" >> pc_llsubmit.tmp
+echo "cd `pwd`" >> pc_llsubmit.tmp
+echo "./$filename" >> pc_llsubmit.tmp
 #
 # Print out contents of jobscript
 #
