@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.120 2008-03-04 10:14:49 wlyra Exp $
+! $Id: particles_sub.f90,v 1.121 2008-03-04 15:21:31 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -328,6 +328,19 @@ module Particles_sub
             elseif (boundx=='out') then
               ! massive particles can be out of the box
               ! the star, for example, in a cylindrical simulation
+            elseif (boundx=='flk') then
+              !Flush-Keplerian
+              !flush it to the outer boundary with keplerian speed
+              if ((fp(k,ixp)< xyz0(1)).or.(fp(k,ixp)> xyz1(1))) then
+                if (lcylindrical_coords) then
+                  fp(k,ixp)  = r_ext
+                  fp(k,ivpx) = 0.
+                  fp(k,ivpy) = r_ext**(-1.5)
+                else
+                  call fatal_error_local('boundconds_particles',&
+                       'flush-keplerian only ready for cylindrical')
+                endif
+              endif
             else
               print*, 'boundconds_particles: No such boundary condition =', boundx
               call stop_it('boundconds_particles')
