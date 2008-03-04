@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.232 2008-02-18 17:53:45 dintrans Exp $
+# $Id: getconf.csh,v 1.233 2008-03-04 09:16:08 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -106,12 +106,22 @@ set remove_scratch_root = 0
 setenv SCRATCH_DIR /scratch
 setenv SSH ssh
 setenv SCP scp
-
+#
 # Any lam daemons to shutdown at the end of run.csh?
+#
 set booted_lam = 0
-
-echo `uname -a`
+#
+# Define hostname variable from uname. Sometimes $HOSTNAME is more informative,
+# so we use this to define $hostname.
+#
 set hn = `uname -n`
+if ($?HOSTNAME) then
+  set hostname=$HOSTNAME
+else
+  set hostname=$hn
+endif
+echo $hn
+#
 if ($mpi) echo "Running under MPI"
 set mpirunops  = ''  # options before -np $ncpus
 set mpirunops2 = ''  # options after -np $ncpus
@@ -1004,6 +1014,17 @@ else if ($hn =~ comp*) then
   set local_disc = 0
   set one_local_disc = 1
   set mpirun = ''
+  set npops = ''
+  setenv SSH 'ssh -x'
+  setenv SCP scp
+  setenv SCRATCH_DIR /var/tmp/$USER
+
+else if ($hostname =~ *huygens.sara.nl*) then
+  echo "huygens cluster in Amsteradam"
+  set nprocpernode = 1
+  set local_disc = 0
+  set one_local_disc = 1
+  set mpirun = mpiexec
   set npops = ''
   setenv SSH 'ssh -x'
   setenv SCP scp
