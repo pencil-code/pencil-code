@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.205 2008-03-04 01:52:07 wlyra Exp $
+! $Id: particles_dust.f90,v 1.206 2008-03-04 10:39:38 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -135,7 +135,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.205 2008-03-04 01:52:07 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.206 2008-03-04 10:39:38 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -1435,44 +1435,44 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Exclude the massive sink particles from the drag calculations
             lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
             if (.not.lsink) then
-            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-            call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
+              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
 !  Use interpolation to calculate gas velocity at position of particles.
-            if (lhydro) then
-              if (lparticlemesh_cic) then
-                call interpolate_linear( &
-                    f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
-              elseif (lparticlemesh_tsc) then
-                if (linterpolate_spline) then
-                  call interpolate_quadratic_spline( &
-                      f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+              if (lhydro) then
+                if (lparticlemesh_cic) then
+                  call interpolate_linear( &
+                       f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+                elseif (lparticlemesh_tsc) then
+                  if (linterpolate_spline) then
+                    call interpolate_quadratic_spline( &
+                         f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+                  else
+                    call interpolate_quadratic( &
+                         f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+                  endif
                 else
-                  call interpolate_quadratic( &
-                      f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+                  uup=f(ix0,iy0,iz0,iux:iuz)
                 endif
               else
-                uup=f(ix0,iy0,iz0,iux:iuz)
+                uup=0.0
               endif
-            else
-              uup=0.0
-            endif
 !
-            dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-uup)
+              dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-uup)
 !
-            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !
 !  Heating of gas due to drag force.
 !
-            if (ldragforce_heat .or. (ldiagnos .and. idiag_dedragp/=0)) then
-              if (ldragforce_gas_par) then
-                up2=sum((fp(k,ivpx:ivpz)-uup)**2)
-              else
-                up2=sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-uup))
-              endif
+              if (ldragforce_heat .or. (ldiagnos .and. idiag_dedragp/=0)) then
+                if (ldragforce_gas_par) then
+                  up2=sum((fp(k,ivpx:ivpz)-uup)**2)
+                else
+                  up2=sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-uup))
+                endif
 !
-              drag_heat(ix0-nghost)=drag_heat(ix0-nghost) + &
-                  rhop_tilde*tausp1_par*up2
-            endif
+                drag_heat(ix0-nghost)=drag_heat(ix0-nghost) + &
+                     rhop_tilde*tausp1_par*up2
+              endif
 !
 !  Back-reaction friction force from particles on gas. Three methods are
 !  implemented for assigning a particle to the mesh (see Hockney & Eastwood):
@@ -1487,135 +1487,135 @@ k_loop:   do while (.not. (k>npar_loc))
 !       a density that falls linearly outwards.
 !       This is equivalent to a second order spline interpolation scheme.
 !
-            if (ldragforce_gas_par) then
+              if (ldragforce_gas_par) then
 !
 !  Cloud In Cell (CIC) scheme.
 !
-              if (lparticlemesh_cic) then
-                ixx0=ix0; iyy0=iy0; izz0=iz0
-                ixx1=ix0; iyy1=iy0; izz1=iz0
+                if (lparticlemesh_cic) then
+                  ixx0=ix0; iyy0=iy0; izz0=iz0
+                  ixx1=ix0; iyy1=iy0; izz1=iz0
 !
 !  Particle influences the 8 surrounding grid points. The reference point is
 !  the grid point at the lower left corner.
 !
-                if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
-                if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iyy0=iyy0-1
-                if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) izz0=izz0-1
-                if (nxgrid/=1) ixx1=ixx0+1
-                if (nygrid/=1) iyy1=iyy0+1
-                if (nzgrid/=1) izz1=izz0+1
-                do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
-                  weight=1.0
-                  if (nxgrid/=1) &
-                      weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
-                  if (nygrid/=1) &
-                      weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
-                  if (nzgrid/=1) &
-                      weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+                  if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
+                  if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iyy0=iyy0-1
+                  if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) izz0=izz0-1
+                  if (nxgrid/=1) ixx1=ixx0+1
+                  if (nygrid/=1) iyy1=iyy0+1
+                  if (nzgrid/=1) izz1=izz0+1
+                  do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                    weight=1.0
+                    if (nxgrid/=1) &
+                         weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
+                    if (nygrid/=1) &
+                         weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
+                    if (nzgrid/=1) &
+                         weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
 !  Save the calculation of rho1 when inside pencil.
-                  if ( (iyy/=m) .or. (izz/=n) .or. (ixx<l1) .or. (ixx>l2) ) then
-                    rho_point=f(ixx,iyy,izz,ilnrho)
-                    if (.not. ldensity_nolog) rho_point=exp(rho_point)
-                    rho1_point=1/rho_point
-                  else
-                    rho1_point=p%rho1(ixx-nghost)
-                  endif
+                    if ( (iyy/=m) .or. (izz/=n) .or. (ixx<l1) .or. (ixx>l2) ) then
+                      rho_point=f(ixx,iyy,izz,ilnrho)
+                      if (.not. ldensity_nolog) rho_point=exp(rho_point)
+                      rho1_point=1/rho_point
+                    else
+                      rho1_point=p%rho1(ixx-nghost)
+                    endif
 !  Add friction force to grid point.
-                  if (lcartesian_coords) then
-                    df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                         rhop_tilde*rho1_point*dragforce*weight
-                  else
-                    df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                         mp_tilde*dvolume_1(ixx)*rho1_point*dragforce*weight
-                  endif
-                enddo; enddo; enddo
+                    if (lcartesian_coords) then
+                      df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                           rhop_tilde*rho1_point*dragforce*weight
+                    else
+                      df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                           mp_tilde*dvolume_1(ixx)*rho1_point*dragforce*weight
+                    endif
+                  enddo; enddo; enddo
 !
 !  Triangular Shaped Cloud (TSC) scheme.
 !
-              elseif (lparticlemesh_tsc) then
+                elseif (lparticlemesh_tsc) then
 !
 !  Particle influences the 27 surrounding grid points, but has a density that
 !  decreases with the distance from the particle centre.
 !
-                if (nxgrid/=1) then
-                  ixx0=ix0-1; ixx1=ix0+1
-                else
-                  ixx0=ix0  ; ixx1=ix0
-                endif
-                if (nygrid/=1) then
-                  iyy0=iy0-1; iyy1=iy0+1
-                else
-                  iyy0=iy0  ; iyy1=iy0
-                endif
-                if (nzgrid/=1) then
-                  izz0=iz0-1; izz1=iz0+1
-                else
-                  izz0=iz0  ; izz1=iz0
-                endif
+                  if (nxgrid/=1) then
+                    ixx0=ix0-1; ixx1=ix0+1
+                  else
+                    ixx0=ix0  ; ixx1=ix0
+                  endif
+                  if (nygrid/=1) then
+                    iyy0=iy0-1; iyy1=iy0+1
+                  else
+                    iyy0=iy0  ; iyy1=iy0
+                  endif
+                  if (nzgrid/=1) then
+                    izz0=iz0-1; izz1=iz0+1
+                  else
+                    izz0=iz0  ; izz1=iz0
+                  endif
 !
 !  The nearest grid point is influenced differently than the left and right
 !  neighbours are. A particle that is situated exactly on a grid point gives
 !  3/4 contribution to that grid point and 1/8 to each of the neighbours.
 !
-                do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
-                  if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
-                    weight_x = 1.125 - 1.5* abs(fp(k,ixp)-x(ixx))*dx_1(ixx) + &
-                                       0.5*(abs(fp(k,ixp)-x(ixx))*dx_1(ixx))**2
-                  else
-                    if (nxgrid/=1) &
-                    weight_x = 0.75  -       ((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
-                  endif
-                  if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
-                    weight_y = 1.125 - 1.5* abs(fp(k,iyp)-y(iyy))*dy_1(iyy) + &
-                                       0.5*(abs(fp(k,iyp)-y(iyy))*dy_1(iyy))**2
-                  else
-                    if (nygrid/=1) &
-                    weight_y = 0.75  -       ((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
-                  endif
-                  if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
-                    weight_z = 1.125 - 1.5* abs(fp(k,izp)-z(izz))*dz_1(izz) + &
-                                       0.5*(abs(fp(k,izp)-z(izz))*dz_1(izz))**2
-                  else
-                    if (nzgrid/=1) &
-                    weight_z = 0.75  -       ((fp(k,izp)-z(izz))*dz_1(izz))**2
-                  endif
+                  do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                    if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
+                      weight_x = 1.125 - 1.5* abs(fp(k,ixp)-x(ixx))*dx_1(ixx) + &
+                                         0.5*(abs(fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+                    else
+                      if (nxgrid/=1) &
+                           weight_x = 0.75  -       ((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+                    endif
+                    if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
+                      weight_y = 1.125 - 1.5* abs(fp(k,iyp)-y(iyy))*dy_1(iyy) + &
+                                         0.5*(abs(fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+                    else
+                      if (nygrid/=1) &
+                           weight_y = 0.75  -       ((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+                    endif
+                    if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
+                      weight_z = 1.125 - 1.5* abs(fp(k,izp)-z(izz))*dz_1(izz) + &
+                                         0.5*(abs(fp(k,izp)-z(izz))*dz_1(izz))**2
+                    else
+                      if (nzgrid/=1) &
+                           weight_z = 0.75  -       ((fp(k,izp)-z(izz))*dz_1(izz))**2
+                    endif
 
-                  weight=1.0
+                    weight=1.0
 
-                  if (nxgrid/=1) weight=weight*weight_x
-                  if (nygrid/=1) weight=weight*weight_y
-                  if (nzgrid/=1) weight=weight*weight_z
+                    if (nxgrid/=1) weight=weight*weight_x
+                    if (nygrid/=1) weight=weight*weight_y
+                    if (nzgrid/=1) weight=weight*weight_z
 !  Save the calculation of rho1 when inside pencil.
-                  if ( (iyy/=m) .or. (izz/=n) .or. (ixx<l1) .or. (ixx>l2) ) then
-                    rho_point=f(ixx,iyy,izz,ilnrho)
-                    if (.not. ldensity_nolog) rho_point=exp(rho_point)
-                    rho1_point=1/rho_point
-                  else
-                    rho1_point=p%rho1(ixx-nghost)
-                  endif
+                    if ( (iyy/=m) .or. (izz/=n) .or. (ixx<l1) .or. (ixx>l2) ) then
+                      rho_point=f(ixx,iyy,izz,ilnrho)
+                      if (.not. ldensity_nolog) rho_point=exp(rho_point)
+                      rho1_point=1/rho_point
+                    else
+                      rho1_point=p%rho1(ixx-nghost)
+                    endif
 !  Add friction force to grid point.
-                  if (lcartesian_coords) then
-                    df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                         rhop_tilde*rho1_point*dragforce*weight
-                  else
-                    df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                         mp_tilde*dvolume_1(ixx)*rho1_point*dragforce*weight
-                  endif
-                enddo; enddo; enddo
-              else
+                    if (lcartesian_coords) then
+                      df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                           rhop_tilde*rho1_point*dragforce*weight
+                    else
+                      df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                           mp_tilde*dvolume_1(ixx)*rho1_point*dragforce*weight
+                    endif
+                  enddo; enddo; enddo
+                else
 !
 !  Nearest Grid Point (NGP) scheme.
 !
-                l=ineargrid(k,1)
-                if (lcartesian_coords) then
-                  df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
-                       rhop_tilde*p%rho1(l-nghost)*dragforce
+                  l=ineargrid(k,1)
+                  if (lcartesian_coords) then
+                    df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
+                         rhop_tilde*p%rho1(l-nghost)*dragforce
                   else
                     df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
                          mp_tilde*dvolume_1(l-nghost)*p%rho1(l-nghost)*dragforce
                   endif
+                endif
               endif
-            endif
 !
 !  The minimum friction time of particles in a grid cell sets the local friction
 !  time-step when there is only drag force on the dust,
@@ -1624,16 +1624,16 @@ k_loop:   do while (.not. (k>npar_loc))
 !  With drag force on the gas as well, the maximum time-step is set as
 !    dt1_drag = Sum_k[eps_k/tau_k]
 !
-            if (lfirst.and.ldt) then
-              dt1_drag_dust(ix0-nghost)= &
-                  max(dt1_drag_dust(ix0-nghost),tausp1_par)
-              if (ldragforce_gas_par) then
-                if (p%np(ix0-nghost)/=0.0) &
-                    dt1_drag_gas(ix0-nghost)=dt1_drag_gas(ix0-nghost)+ &
-                    p%epsp(ix0-nghost)/p%np(ix0-nghost)*tausp1_par
+              if (lfirst.and.ldt) then
+                dt1_drag_dust(ix0-nghost)= &
+                     max(dt1_drag_dust(ix0-nghost),tausp1_par)
+                if (ldragforce_gas_par) then
+                  if (p%np(ix0-nghost)/=0.0) &
+                       dt1_drag_gas(ix0-nghost)=dt1_drag_gas(ix0-nghost)+ &
+                       p%epsp(ix0-nghost)/p%np(ix0-nghost)*tausp1_par
+                endif
               endif
             endif
-          endif
           enddo
 !
 !  Add drag force heating in pencils.
