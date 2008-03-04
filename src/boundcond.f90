@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.202 2008-02-07 22:53:10 dobler Exp $
+! $Id: boundcond.f90,v 1.203 2008-03-04 17:17:18 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -68,6 +68,7 @@ module Boundcond
       use Magnetic
       use Shear
       use Special, only: special_boundconds
+  !    use Chemistry, only: chemistry_boundconds
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -232,6 +233,7 @@ module Boundcond
                   bc%done=.false.
 
                   call special_boundconds(f,bc)
+        !         call chemistry_boundconds(f,bc)
 
                   if (.not.bc%done) then
                     write(unit=errormsg,fmt='(A,A4,A,I3)') &

@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.7 2008-03-03 12:15:01 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.8 2008-03-04 17:17:18 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -117,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.7 2008-03-03 12:15:01 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.8 2008-03-04 17:17:18 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -645,9 +645,7 @@ module EquationOfState
 
       if (lpencil(i_cp)) then
         do k=1,nchemspec
-         cp_full(:,m,n)=cp_full(:,m,n)+cp_spec(k)!+f(:,m,n,ichemspec(k))*cp_spec(k)
-    !    print*,f(5,m,n,ichemspec(k))
-    !print*,cp_full(5,m,n)
+         cp_full(:,m,n)=cp_full(:,m,n)+f(:,m,n,ichemspec(k))*cp_spec(k)
         enddo
         p%cp=cp_full(l1:l2,m,n)
       endif
