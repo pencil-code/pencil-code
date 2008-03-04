@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.119 2008-02-28 23:49:45 wlyra Exp $
+! $Id: particles_sub.f90,v 1.120 2008-03-04 10:14:49 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1588,25 +1588,25 @@ module Particles_sub
           do k=1,npar_loc
             lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
             if (.not.lsink) then 
-            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-            ixx0=ix0; iyy0=iy0; izz0=iz0
-            ixx1=ix0; iyy1=iy0; izz1=iz0
-            if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
-            if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iyy0=iyy0-1
-            if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) izz0=izz0-1
-            if (nxgrid/=1) ixx1=ixx0+1
-            if (nygrid/=1) iyy1=iyy0+1
-            if (nzgrid/=1) izz1=izz0+1
-            do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
-              weight=1.0
-              if (nxgrid/=1) &
-                  weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
-              if (nygrid/=1) &
-                  weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
-              if (nzgrid/=1) &
-                  weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
-              f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
-            enddo; enddo; enddo
+              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+              ixx0=ix0; iyy0=iy0; izz0=iz0
+              ixx1=ix0; iyy1=iy0; izz1=iz0
+              if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
+              if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iyy0=iyy0-1
+              if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) izz0=izz0-1
+              if (nxgrid/=1) ixx1=ixx0+1
+              if (nygrid/=1) iyy1=iyy0+1
+              if (nzgrid/=1) izz1=izz0+1
+              do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                weight=1.0
+                if (nxgrid/=1) &
+                     weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
+                if (nygrid/=1) &
+                     weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
+                if (nzgrid/=1) &
+                     weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+                f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
+              enddo; enddo; enddo
             endif
           enddo
 !
@@ -1620,57 +1620,57 @@ module Particles_sub
           do k=1,npar_loc
             lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
             if (.not.lsink) then 
-            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-            if (nxgrid/=1) then
-              ixx0=ix0-1; ixx1=ix0+1
-            else
-              ixx0=ix0  ; ixx1=ix0
-            endif
-            if (nygrid/=1) then
-              iyy0=iy0-1; iyy1=iy0+1
-            else
-              iyy0=iy0  ; iyy1=iy0
-            endif
-            if (nzgrid/=1) then
-              izz0=iz0-1; izz1=iz0+1
-            else
-              izz0=iz0  ; izz1=iz0
-            endif
+              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+              if (nxgrid/=1) then
+                ixx0=ix0-1; ixx1=ix0+1
+              else
+                ixx0=ix0  ; ixx1=ix0
+              endif
+              if (nygrid/=1) then
+                iyy0=iy0-1; iyy1=iy0+1
+              else
+                iyy0=iy0  ; iyy1=iy0
+              endif
+              if (nzgrid/=1) then
+                izz0=iz0-1; izz1=iz0+1
+              else
+                izz0=iz0  ; izz1=iz0
+              endif
 !
 !  The nearest grid point is influenced differently than the left and right
 !  neighbours are. A particle that is situated exactly on a grid point gives
 !  3/4 contribution to that grid point and 1/8 to each of the neighbours.
 !
-            do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
-              if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
-                weight_x = 1.125 - 1.5* abs(fp(k,ixp)-x(ixx))*dx_1(ixx) + &
-                                   0.5*(abs(fp(k,ixp)-x(ixx))*dx_1(ixx))**2
-              else
-                if (nxgrid/=1) &
-                weight_x = 0.75  -       ((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
-              endif
-              if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
-                weight_y = 1.125 - 1.5* abs(fp(k,iyp)-y(iyy))*dy_1(iyy) + &
-                                   0.5*(abs(fp(k,iyp)-y(iyy))*dy_1(iyy))**2
-              else
-                if (nygrid/=1) &
-                weight_y = 0.75  -       ((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
-              endif
-              if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
-                weight_z = 1.125 - 1.5* abs(fp(k,izp)-z(izz))*dz_1(izz) + &
-                                   0.5*(abs(fp(k,izp)-z(izz))*dz_1(izz))**2
-              else
-                if (nzgrid/=1) &
-                weight_z = 0.75  -       ((fp(k,izp)-z(izz))*dz_1(izz))**2
-              endif
+              do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
+                  weight_x = 1.125 - 1.5* abs(fp(k,ixp)-x(ixx))*dx_1(ixx) + &
+                                     0.5*(abs(fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+                else
+                  if (nxgrid/=1) &
+                       weight_x = 0.75  -   ((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+                endif
+                if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
+                  weight_y = 1.125 - 1.5* abs(fp(k,iyp)-y(iyy))*dy_1(iyy) + &
+                                     0.5*(abs(fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+                else
+                  if (nygrid/=1) &
+                       weight_y = 0.75  -   ((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+                endif
+                if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
+                  weight_z = 1.125 - 1.5* abs(fp(k,izp)-z(izz))*dz_1(izz) + &
+                                     0.5*(abs(fp(k,izp)-z(izz))*dz_1(izz))**2
+                else
+                  if (nzgrid/=1) &
+                       weight_z = 0.75  -   ((fp(k,izp)-z(izz))*dz_1(izz))**2
+                endif
 
-              weight=1.0
+                weight=1.0
 
-              if (nxgrid/=1) weight=weight*weight_x
-              if (nygrid/=1) weight=weight*weight_y
-              if (nzgrid/=1) weight=weight*weight_z
-              f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
-            enddo; enddo; enddo
+                if (nxgrid/=1) weight=weight*weight_x
+                if (nygrid/=1) weight=weight*weight_y
+                if (nzgrid/=1) weight=weight*weight_z
+                f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
+              enddo; enddo; enddo
             endif
           enddo
 !
