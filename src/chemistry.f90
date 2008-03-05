@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.14 2008-03-05 18:51:46 brandenb Exp $
+! $Id: chemistry.f90,v 1.15 2008-03-05 21:53:26 brandenb Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -83,12 +83,13 @@ module Chemistry
       use General, only: chn
 !
       logical, save :: first=.true.
-      integer :: k,file_id=123, StartNr, StopNr, ind, ind_chem
+!-    integer :: k,file_id=123, StartNr, StopNr, ind, ind_chem
+      integer :: k,file_id=123, StartNr, StopNr, ind2, ind_chem
       character (len=5) :: schem,nnn
       character (len=80) :: ChemInpLine,SubLine
       character (len=20) :: input_file='chem.inp'
       logical :: lcheminp=.false., emptyfile, IsSpecie=.false., found
-      integer :: In1,In2,In3,In4,In5,line,SNr,nn
+      integer :: In1,In2,In3,In4,In5,line,SNr,nn2
       logical :: IsThermo=.false.
       real, dimension(4) :: MolMass
       real, dimension(3) :: tmp_temp
@@ -175,7 +176,8 @@ module Chemistry
 !  Print some diagnostics
 !
       do k=1,nchemspec
-        write(*,'("register_chemistry: k=",I4," nvar=",I4," ichemspec(k)=",I4," name=",8A)') k, nvar, ichemspec(k), trim(varname(ichemspec(k)))
+        write(*,'("register_chemistry: k=",I4," nvar=",I4," ichemspec(k)=",I4," name=",8A)') &
+          k, nvar, ichemspec(k), trim(varname(ichemspec(k)))
       enddo
 
 
@@ -198,7 +200,7 @@ module Chemistry
           if (IsThermo) then
             if (ChemInpLine(1:7) /= "THERMO") then
               StopNr=index(ChemInpLine,' ')
-              call find_species_index(trim(ChemInpLine(1:StopNr-1)),ind,ind_chem,found)
+              call find_species_index(trim(ChemInpLine(1:StopNr-1)),ind2,ind_chem,found)
               if (found) then
                 line=0
                 !
@@ -213,8 +215,8 @@ module Chemistry
                   call find_mass(trim(ChemInpLine(In1:In2)),MolMass(SNr))
                   In5=verify(ChemInpLine(In3:In4),' ')+In3-1
                   nnn=trim(ChemInpLine(In5:In4))
-                  read (unit=nnn,fmt='(I5)') nn
-                  MolMass(SNr)=MolMass(SNr)*nn
+                  read (unit=nnn,fmt='(I5)') nn2
+                  MolMass(SNr)=MolMass(SNr)*nn2
                 enddo
                 species_constants(ind_chem,imass)=sum(MolMass)
                 !
@@ -251,11 +253,11 @@ module Chemistry
 !stop
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.14 2008-03-05 18:51:46 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.15 2008-03-05 21:53:26 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.14 2008-03-05 18:51:46 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.15 2008-03-05 21:53:26 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -910,7 +912,7 @@ module Chemistry
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    subroutine find_species_index(species_name,ind,ind_chem,found_specie)
+    subroutine find_species_index(species_name,ind2,ind_chem,found_specie)
 !
 !   Find index in the f array for specie
 !
@@ -918,15 +920,15 @@ module Chemistry
 !
       use Cdata
 !
-      integer, intent(out) :: ind,ind_chem
+      integer, intent(out) :: ind2,ind_chem
       character (len=*), intent(in) :: species_name
       integer :: k
       logical, intent(out) :: found_specie
 !
-      ind=0
+      ind2=0
       do k=1,nchemspec
         if (trim(varname(k))==species_name) then
-          ind=k
+          ind2=k
           ind_chem=k-ichemspec(1)+1
           exit
         endif
@@ -934,7 +936,7 @@ module Chemistry
       !
       ! Check if the specie was really found
       !
-      if (ind==0) then
+      if (ind2==0) then
         found_specie=.false.
       else
         found_specie=.true.
