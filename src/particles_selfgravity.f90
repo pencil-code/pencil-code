@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.11 2006-11-30 09:03:36 dobler Exp $
+! $Id: particles_selfgravity.f90,v 1.12 2008-03-05 10:13:26 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -54,7 +54,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.11 2006-11-30 09:03:36 dobler Exp $")
+           "$Id: particles_selfgravity.f90,v 1.12 2008-03-05 10:13:26 wlyra Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -204,6 +204,7 @@ module Particles_selfgravity
       real, dimension (3) :: gpotself
       integer :: k
       logical :: lheader, lfirstcall=.true.
+      logical :: lsink
 !
       intent (in) :: f, fp
       intent (out) :: dfp
@@ -222,10 +223,13 @@ module Particles_selfgravity
 !
         if (lselfgravity_particles) then
           do k=1,npar_loc
-            call interpolate_quadratic_spline( &
-                f,igpotselfx,igpotselfz,fp(k,ixp:izp),gpotself, &
-                ineargrid(k,:),ipar(k) )
-            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)-gpotself
+            lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
+            if (.not.lsink) then
+              call interpolate_quadratic_spline( &
+                   f,igpotselfx,igpotselfz,fp(k,ixp:izp),gpotself, &
+                   ineargrid(k,:),ipar(k) )
+              dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)-gpotself
+            endif
           enddo
         endif
 !
