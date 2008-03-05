@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.13 2008-03-05 14:22:23 nilshau Exp $
+! $Id: chemistry.f90,v 1.14 2008-03-05 18:51:46 brandenb Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -27,10 +27,10 @@ module Chemistry
 !  parameters related to chemical reactions
 !
   logical :: lreactions=.true.,lkreactions_profile=.false.
-  integer :: nreactions=0
+  integer :: nreactions=0,nreactions1=0,nreactions2=0
   integer, parameter :: mreactions=2*nchemspec
-  integer, dimension(nchemspec,mreactions) :: stoichio,Sijm
-  real, dimension(mreactions) :: kreactions
+  integer, dimension(nchemspec,mreactions) :: stoichio,Sijm,Sijp
+  real, dimension(mreactions) :: kreactions_m,kreactions_p
   real, dimension(mz,mreactions) :: kreactions_z=1.
   real, dimension(mreactions) :: kreactions_profile_width=0.
 !
@@ -248,14 +248,14 @@ module Chemistry
 1001    continue
         close(file_id)
       endif
-stop
+!stop
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.13 2008-03-05 14:22:23 nilshau Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.14 2008-03-05 18:51:46 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.13 2008-03-05 14:22:23 nilshau Exp $")
+           "$Id: chemistry.f90,v 1.14 2008-03-05 18:51:46 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -278,45 +278,86 @@ stop
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  13-aug-07/steveb: coded
-!  19-feb-08/axelb: reads in chemistry.dat file
+!  19-feb-08/axel: reads in chemistry.dat file
 !
       use Cdata
+      use Mpicomm, only: stop_it
       use Sub, only: keep_compiler_quiet
 !
       character (len=80) :: chemicals=''
+      character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: exist
+      logical :: exist,exist1,exist2
       integer :: i,j
 !
-!  read chemistry data, if present
+!  read chemistry data
+!  if both chemistry1.dat and chemistry2.dat are present,
+!  then read Sijp and Sijm, and calculate their sum
 !
-      inquire(file='chemistry.dat',exist=exist)
-      if(exist) then
-        open(19,file='chemistry.dat')
+      inquire(file=file1,exist=exist1)
+      inquire(file=file2,exist=exist2)
+      if(exist1.and.exist2) then
+!
+!  file1
+!
+        open(19,file=file1)
         read(19,*) chemicals
         do j=1,mreactions
-          read(19,*,end=990) kreactions(j),(stoichio(i,j),i=1,nchemspec)
+          read(19,*,end=994) kreactions_m(j),(Sijm(i,j),i=1,nchemspec)
         enddo
-990     nreactions=j-1
+994     close(19)
+        nreactions1=j-1
 !
-!  calculate negative part of stoichiometric matrix
+!  file2
 !
-        Sijm=-min(stoichio,0)
+        open(19,file=file2)
+        read(19,*) chemicals
+        do j=1,mreactions
+          read(19,*,end=992) kreactions_p(j),(Sijp(i,j),i=1,nchemspec)
+        enddo
+992     close(19)
+        nreactions2=j-1
+!
+!  calculate stoichio and nreactions
+!
+        if (nreactions1==nreactions2) then
+          nreactions=nreactions1
+          stoichio=Sijp-Sijm
+        else
+          call stop_it('nreactions1/=nreactions2')
+        endif
+!
+      else
+!
+!  old method: read chemistry data, if present
+!
+        inquire(file='chemistry.dat',exist=exist)
+        if(exist) then
+          open(19,file='chemistry.dat')
+          read(19,*) chemicals
+          do j=1,mreactions
+            read(19,*,end=990) kreactions_p(j),(stoichio(i,j),i=1,nchemspec)
+          enddo
+990       close(19)
+          nreactions=j-1
+          Sijm=-min(stoichio,0)
+          Sijp=+max(stoichio,0)
+        else
+          if (lroot) print*,'no chemistry.dat file to be read.'
+          lreactions=.false.
+        endif
+      endif
 !
 !  print input data for verification
 !
-        if (lroot) then
-          print*,'chemicals=',chemicals
-          print*,'kreactions=',kreactions(1:nreactions)
-          print*,'stoichio=' ; write(*,100),stoichio(:,1:nreactions)
-          print*,'Sijm:' ; write(*,100),Sijm(:,1:nreactions)
-100       format(8i4)
-        endif
-      else 
-        if (lroot) print*,'no chemistry.dat file to be read.'
-        lreactions=.false.
+      if (lroot) then
+        print*,'chemicals=',chemicals
+        print*,'kreactions_m=',kreactions_m(1:nreactions)
+        print*,'kreactions_p=',kreactions_p(1:nreactions)
+        print*,'Sijm:' ; write(*,100),Sijm(:,1:nreactions)
+        print*,'Sijp:' ; write(*,100),Sijp(:,1:nreactions)
+        print*,'stoichio=' ; write(*,100),stoichio(:,1:nreactions)
       endif
-      close(19)
 !
 !  possibility of z-dependent kreactions_z profile
 !
@@ -334,6 +375,7 @@ stop
 !
       call keep_compiler_quiet(f)
 !
+100   format(8i4)
     endsubroutine initialize_chemistry
 !***********************************************************************
     subroutine init_chemistry(f,xx,yy,zz)
@@ -478,7 +520,7 @@ stop
      
       real, dimension (nx,3) :: gchemspec
       real, dimension (nx) :: ugchemspec,del2chemspec,diff_op,xdot
-      real, dimension (nx,mreactions) :: vreactions
+      real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
       type (pencil_case) :: p
 !
 !  indices
@@ -498,11 +540,14 @@ stop
 !
       if (lreactions) then
         do j=1,nreactions
-          vreactions(:,j)=kreactions(j)*kreactions_z(n,j)
+          vreactions_p(:,j)=kreactions_p(j)*kreactions_z(n,j)
+          vreactions_m(:,j)=kreactions_m(j)*kreactions_z(n,j)
           do k=1,nchemspec
-            vreactions(:,j)=vreactions(:,j)*f(l1:l2,m,n,ichemspec(k))**Sijm(k,j)
+            vreactions_p(:,j)=vreactions_p(:,j)*f(l1:l2,m,n,ichemspec(k))**Sijm(k,j)
+            vreactions_m(:,j)=vreactions_m(:,j)*f(l1:l2,m,n,ichemspec(k))**Sijp(k,j)
           enddo
-          enddo
+        enddo
+        vreactions=vreactions_p-vreactions_m
       endif
 !
 !  loop over all chemicals
