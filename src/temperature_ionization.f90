@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.33 2007-10-06 14:00:06 ajohan Exp $
+! $Id: temperature_ionization.f90,v 1.34 2008-03-05 16:01:03 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -32,12 +32,13 @@ module Entropy
   real :: radius_lnTT=0.1,ampl_lnTT=0.,widthlnTT=2*epsi
   real :: lnTT_left=1.0,lnTT_right=1.0,lnTT_const=0.0,TT_const=1.0
   real :: kx_lnTT=1.0,ky_lnTT=1.0,kz_lnTT=1.0
-  real :: chi=0.0,heat_uniform=0.0
+  real :: chi=0.0,heat_uniform=0.0,chi_hyper3=0.0
   real :: zbot=0.0,ztop=0.0
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
+  logical :: lheatc_hyper3=.false.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=5) :: iinit_str
 
@@ -55,7 +56,7 @@ module Entropy
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
       heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
-      lheatc_chiconst_accurate
+      lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3
 
   ! other variables (needs to be consistent with reset list below)
     integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
@@ -91,7 +92,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.33 2007-10-06 14:00:06 ajohan Exp $")
+           "$Id: temperature_ionization.f90,v 1.34 2008-03-05 16:01:03 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -145,7 +146,8 @@ module Entropy
 !
 !  Check whether we want heat conduction
 !
-      lheatc_chiconst = (chi/=0.0)
+      lheatc_chiconst = (chi > tiny(chi))
+      lheatc_hyper3 = (chi_hyper3 > tiny(chi_hyper3))
 
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
 !
@@ -297,6 +299,8 @@ module Entropy
           lpenc_requested(i_gamma)=.true.
         endif
       endif
+
+      if (lheatc_hyper3) lpenc_requested(i_del6lnTT)=.true.
 
 !
 !  Diagnostics
@@ -451,6 +455,7 @@ module Entropy
 !  Thermal conduction
 !
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
+      if (lheatc_hyper3) call calc_heatcond_hyper3(df,p)
 
 !
 !  Interstellar radiative cooling and UV heating
@@ -531,6 +536,32 @@ module Entropy
       endif
 
     end subroutine calc_heatcond_constchi
+!***********************************************************************
+    subroutine calc_heatcond_hyper3(df,p)
+!
+!
+!
+      use Sub, only: max_mn_name
+
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+
+!
+!  Add heat conduction to RHS of temperature equation
+!
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + chi_hyper3*p%del6lnTT
+
+!
+!  check maximum diffusion from thermal diffusion
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+chi_hyper3*dxyz_6
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
+      endif
+
+    end subroutine calc_heatcond_hyper3
 !***********************************************************************
     subroutine calc_heat_cool(f,df,p)
 

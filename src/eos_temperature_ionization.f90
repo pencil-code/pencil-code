@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.61 2007-12-07 18:17:56 steveb Exp $
+! $Id: eos_temperature_ionization.f90,v 1.62 2008-03-05 16:01:03 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -11,7 +11,7 @@
 !
 ! PENCILS PROVIDED ss,ee,pp,lnTT,cs2,nabla_ad,glnTT,TT,TT1
 ! PENCILS PROVIDED yH,del2lnTT,cv,cv1,cp,cp1,gamma,gamma1,gamma11,mu1
-! PENCILS PROVIDED glnTT,rho1gpp,delta,gradcp
+! PENCILS PROVIDED glnTT,rho1gpp,delta,gradcp,del6lnTT
 !
 !***************************************************************
 
@@ -129,7 +129,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.61 2007-12-07 18:17:56 steveb Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.62 2008-03-05 16:01:03 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -283,7 +283,7 @@ module EquationOfState
 !
 !  dummy (but to be changed)
 !
-      use Sub, only: grad,del2
+      use Sub, only: grad,del2,del6
 
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -308,6 +308,7 @@ module EquationOfState
 !
       if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
       if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+      if (lpencil(i_del6lnTT)) call del6(f,ilnTT,p%del6lnTT)
 
 !
 !  Ionization fraction
