@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.12 2008-03-05 10:13:26 wlyra Exp $
+! $Id: particles_selfgravity.f90,v 1.13 2008-03-05 10:54:22 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -54,7 +54,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.12 2008-03-05 10:13:26 wlyra Exp $")
+           "$Id: particles_selfgravity.f90,v 1.13 2008-03-05 10:54:22 wlyra Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -204,7 +204,6 @@ module Particles_selfgravity
       real, dimension (3) :: gpotself
       integer :: k
       logical :: lheader, lfirstcall=.true.
-      logical :: lsink
 !
       intent (in) :: f, fp
       intent (out) :: dfp
@@ -223,13 +222,27 @@ module Particles_selfgravity
 !
         if (lselfgravity_particles) then
           do k=1,npar_loc
-            lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
-            if (.not.lsink) then
-              call interpolate_quadratic_spline( &
-                   f,igpotselfx,igpotselfz,fp(k,ixp:izp),gpotself, &
-                   ineargrid(k,:),ipar(k) )
-              dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)-gpotself
+            call interpolate_quadratic_spline( &
+                 f,igpotselfx,igpotselfz,fp(k,ixp:izp),gpotself, &
+                 ineargrid(k,:),ipar(k) )
+!            
+            if (lparticles_nbody) then 
+!
+!  A sink particle can be out of the box. A star for example. For this
+!  case, set potself to zero. It's faster to re-assign the value of gpotself 
+!  to zero for that specific particle than to test all particles
+!  for "out of boundary" (as opposed to only the ones found to be massive)
+!
+              if (ipar(k).le.nspar) then
+                if ((fp(k,ixp)< xyz0(1)).or.(fp(k,ixp) > xyz1(1)) .or. &
+                    (fp(k,iyp)< xyz0(2)).or.(fp(k,iyp) > xyz1(2)) .or. &
+                    (fp(k,izp)< xyz0(3)).or.(fp(k,izp) > xyz1(3))) &
+                    gpotself=0.
+              endif
             endif
+!
+            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)-gpotself
+!
           enddo
         endif
 !
