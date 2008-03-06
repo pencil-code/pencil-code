@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.373 2008-03-06 16:36:32 ajohan Exp $
+! $Id: density.f90,v 1.374 2008-03-06 18:28:28 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -96,6 +96,8 @@ module Density
                                 ! DIAG_DOC:   \quad(mean density)
   integer :: idiag_rho2m=0      ! DIAG_DOC:
   integer :: idiag_lnrho2m=0    ! DIAG_DOC:
+  integer :: idiag_drho2m=0     ! DIAG_DOC:
+  integer :: idiag_drhom=0      ! DIAG_DOC:
   integer :: idiag_rhomin=0     ! DIAG_DOC:
   integer :: idiag_rhomax=0     ! DIAG_DOC:
   integer :: idiag_ugrhom=0     ! DIAG_DOC: $\left<\uv\cdot\nabla\varrho\right>$
@@ -135,7 +137,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.373 2008-03-06 16:36:32 ajohan Exp $")
+           "$Id: density.f90,v 1.374 2008-03-06 18:28:28 theine Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1110,8 +1112,7 @@ module Density
 !
       use Cdata
 !
-      if (ldensity_nolog .or. lanti_shockdiffusion) &
-          lpenc_requested(i_rho)=.true.
+      if (ldensity_nolog) lpenc_requested(i_rho)=.true.
       if (lcontinuity_gas) then
         lpenc_requested(i_divu)=.true.
         if (ldensity_nolog) then
@@ -1165,7 +1166,7 @@ module Density
       if (idiag_rhom/=0 .or. idiag_rhomz/=0 .or. idiag_rhomy/=0 .or. &
            idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rhomin/=0 .or. &
            idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
-           idiag_totmass/=0) &
+           idiag_totmass/=0 .or. idiag_drho2m/=0 .or. idiag_drhom/=0) &
            lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
       if (idiag_ugrhom/=0) lpenc_diagnos(i_ugrho)=.true.
@@ -1474,9 +1475,9 @@ module Density
 !            
           if (lanti_shockdiffusion) then
             df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - diffrho_shock*( &
-                p%shock*(del2lnrho_init_z(n) + glnrho2_init_z(n)) + &
-                p%gshock(:,3)*dlnrhodz_init_z(n) ) * &
-                exp(lnrho_init_z(n))/p%rho
+                p%shock*(del2lnrho_init_z(n) + glnrho2_init_z(n) + &
+                2*(p%glnrho(:,3)-dlnrhodz_init_z(n))*dlnrhodz_init_z(n)) + &
+                p%gshock(:,3)*dlnrhodz_init_z(n) )
           endif
         endif
         if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
@@ -1535,6 +1536,8 @@ module Density
         if (idiag_rhomax/=0)   call max_mn_name(p%rho,idiag_rhomax)
         if (idiag_rho2m/=0)    call sum_mn_name(p%rho**2,idiag_rho2m)
         if (idiag_lnrho2m/=0)  call sum_mn_name(p%lnrho**2,idiag_lnrho2m)
+        if (idiag_drho2m/=0)   call sum_mn_name((p%rho-rho0)**2,idiag_drho2m)
+        if (idiag_drhom/=0)    call sum_mn_name(p%rho-rho0,idiag_drhom)
         if (idiag_ugrhom/=0)   call sum_mn_name(p%ugrho,idiag_ugrhom)
         if (idiag_uglnrhom/=0) call sum_mn_name(p%uglnrho,idiag_uglnrhom)
         if (idiag_dtd/=0) &
@@ -1665,6 +1668,7 @@ module Density
 !
       if (lreset) then
         idiag_rhom=0; idiag_rho2m=0; idiag_lnrho2m=0
+        idiag_drho2m=0; idiag_drhom=0
         idiag_ugrhom=0; idiag_uglnrhom=0
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
@@ -1679,6 +1683,8 @@ module Density
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rhom',idiag_rhom)
         call parse_name(iname,cname(iname),cform(iname),'rho2m',idiag_rho2m)
+        call parse_name(iname,cname(iname),cform(iname),'drho2m',idiag_drho2m)
+        call parse_name(iname,cname(iname),cform(iname),'drhom',idiag_drhom)
         call parse_name(iname,cname(iname),cform(iname),'rhomin',idiag_rhomin)
         call parse_name(iname,cname(iname),cform(iname),'rhomax',idiag_rhomax)
         call parse_name(iname,cname(iname),cform(iname),'lnrho2m',idiag_lnrho2m)
@@ -1737,6 +1743,8 @@ module Density
       if (lwr) then
         write(3,*) 'i_rhom=',idiag_rhom
         write(3,*) 'i_rho2m=',idiag_rho2m
+        write(3,*) 'i_drho2m=',idiag_drho2m
+        write(3,*) 'i_drhom=',idiag_drhom
         write(3,*) 'i_rhomin=',idiag_rhomin
         write(3,*) 'i_rhomax=',idiag_rhomax
         write(3,*) 'i_lnrho2m=',idiag_lnrho2m
