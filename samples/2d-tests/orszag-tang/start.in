@@ -1,0 +1,29 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in vertically stratified atmosphere/solar convection zone
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2008-03-06 19:23:01 theine Exp $',
+  xyz0  =  0.,  0.,  0.,        ! first corner of box
+  Lxyz  =  1.,  1.,  1.,          ! box size
+  lwrite_aux=T
+/
+&eos_init_pars
+  cs0=1.
+  rho0=1.
+  gamma=1.66666666667
+/
+&hydro_init_pars
+  inituu='sinwave-ux-ky','sinwave-uy-kx'
+  ampluu=-1.0,+1.0
+  kx_uu = 6.28318530718, ky_uu = 6.28318530718
+/
+&density_init_pars
+  ldensity_nolog=T
+/
+&magnetic_init_pars
+  initaa='coswave-Az-kx','coswave-Az-ky'
+  amplaa=0.0477464829276,0.0954929658551
+  kx_aa = 12.5663706144,0.0, ky_aa = 0.0,6.28318530718
+/
