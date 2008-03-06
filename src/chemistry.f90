@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.16 2008-03-06 10:58:50 nilshau Exp $
+! $Id: chemistry.f90,v 1.17 2008-03-06 13:58:05 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -146,11 +146,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.16 2008-03-06 10:58:50 nilshau Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.17 2008-03-06 13:58:05 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.16 2008-03-06 10:58:50 nilshau Exp $")
+           "$Id: chemistry.f90,v 1.17 2008-03-06 13:58:05 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -761,19 +761,11 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (boundary_condition) :: bc
-!???????????????????????????????????????????????????
-! Axel, please look at this more!  If I want to make the special boundary conditions ('stream'),
-! do I need the next two calls?
-
- !     call keep_compiler_quiet(f)
- !     call keep_compiler_quiet(bc)
-!?????????????????????????????????????????????????
 
       select case (bc%bcname)
        case ('stm')
          select case (bc%location)
          case (iBC_X_TOP)
-
            call bc_stream_x(f,-1, bc)
          case (iBC_X_BOT)
            call bc_stream_x(f,-1, bc)
@@ -783,6 +775,10 @@ module Chemistry
  
 
       if (NO_WARN) print*,f(1,1,1,1),bc%bcname
+
+    call keep_compiler_quiet(f)
+    call keep_compiler_quiet(bc)
+
 
     endsubroutine chemistry_boundconds
 !***********************************************************************
