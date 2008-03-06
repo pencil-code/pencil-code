@@ -1,4 +1,4 @@
-! $Id: nogsl.f90,v 1.2 2007-09-14 05:47:25 ajohan Exp $
+! $Id: nogsl.f90,v 1.3 2008-03-06 10:34:54 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -20,7 +20,7 @@ module Gsl
 !***********************************************************************
     subroutine sp_besselj_l(y,l,x)
 !
-!  dummy routine
+!  regular spherical bessel function - dummy routine
 !
       real :: y,x
       integer :: l
@@ -31,7 +31,7 @@ module Gsl
 !***********************************************************************
     subroutine sp_bessely_l_(y,l,x)
 !
-!  dummy routine
+!  irregular spherical bessel function - dummy routine
 !
       real :: y,x
       integer :: l
@@ -39,6 +39,26 @@ module Gsl
       if (NO_WARN) print*,y,l,x
 !
     endsubroutine sp_bessely_l_
+!***********************************************************************
+    subroutine sp_bessel_jnu_(y,nu,x)
+!
+!  regular cylindrical bessel function - dummy routine
+!
+      real :: y,x,nu
+!
+      if (NO_WARN) print*,y,nu,x
+!
+    endsubroutine sp_bessel_jnu_
+!***********************************************************************
+    subroutine sp_bessely_l_(y,nu,x)
+!
+!  irregular cylindrical bessel function - dummy routine
+!
+      real :: y,x,nu
+!
+      if (NO_WARN) print*,y,nu,x
+!
+    endsubroutine sp_bessel_ynu_
 !***********************************************************************
     subroutine sp_harm_real_(y,l,m,theta,phi)
 !

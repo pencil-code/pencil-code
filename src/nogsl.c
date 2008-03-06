@@ -1,13 +1,20 @@
 /* Dummy routines for gsl */
 
 #include "headers_c.h"
-
 void FTNIZE(sp_besselj_l)
      (REAL* y, FINT*l, REAL* x) {
 }
 /* ------------------------------------------ */
 void FTNIZE(sp_bessely_l)
      (REAL *y, FINT*l, REAL* x) {
+}
+/* ------------------------------------------ */
+void FTNIZE(sp_bessel_jnu)
+     (REAL* y, REAL*nu, REAL* x) {
+}
+/* ------------------------------------------ */
+void FTNIZE(sp_bessel_ynu)
+     (REAL *y, REAL*nu, REAL* x) {
 }
 /* ------------------------------------------ */
 void FTNIZE(sp_harm_real)

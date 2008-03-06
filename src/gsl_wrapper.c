@@ -4,7 +4,7 @@
 #include <math.h>
 
 #include "headers_c.h"
-
+//spherical bessel functions
 void FTNIZE(sp_besselj_l)
      (REAL* y, FINT*l, REAL* x) {
    *y =  gsl_sf_bessel_jl(*l,*x);
@@ -15,6 +15,18 @@ void FTNIZE(sp_bessely_l)
    *y =  gsl_sf_bessel_yl(*l,*x);
 }
 /* ------------------------------------------ */
+//cylindrical bessel functions
+void FTNIZE(sp_bessel_jnu)
+     (REAL* y, REAL*nu, REAL* x) {
+   *y =  gsl_sf_bessel_Jnu(*nu,*x);
+}
+/* ------------------------------------------ */
+void FTNIZE(sp_bessel_ynu)
+     (REAL *y, REAL*nu, REAL* x) {
+   *y =  gsl_sf_bessel_Ynu(*nu,*x);
+}
+/* ------------------------------------------ */
+
 void FTNIZE(sp_harm_real)
      (REAL *y, FINT *l, FINT *m, REAL *theta, REAL *phi) {
   REAL Plm;
