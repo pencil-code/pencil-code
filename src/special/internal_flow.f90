@@ -1,4 +1,4 @@
-! $Id: internal_flow.f90,v 1.2 2008-02-22 11:59:44 nilshau Exp $
+! $Id: internal_flow.f90,v 1.3 2008-03-06 14:34:33 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -90,11 +90,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.2 2008-02-22 11:59:44 nilshau Exp $
+!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.3 2008-03-06 14:34:33 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: internal_flow.f90,v 1.2 2008-02-22 11:59:44 nilshau Exp $")
+           "$Id: internal_flow.f90,v 1.3 2008-03-06 14:34:33 nilshau Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -550,13 +550,20 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Cdata
-      use Sub, only: keep_compiler_quiet
+      use Cparam
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (boundary_condition) :: bc
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(bc)
+      select case (bc%bcname)
+      case ('poi')
+        select case (bc%location)
+        case (iBC_X_TOP)
+          call bc_poi_x(f,-1,'top',iux,REL=.true.,val=bc%value1)
+        case (iBC_X_BOT)
+          call bc_poi_x(f,-1,'bot',iux,REL=.true.,val=bc%value1)
+        end select
+      end select
 !
     endsubroutine special_boundconds
 !***********************************************************************
@@ -598,6 +605,80 @@ module Special
            (1-(yy(l1:l2,m1:m2,n1:n2)-xyz0(2)-height)**2/h2)
       !
     end subroutine poiseulle_flowx_wally
+!***********************************************************************
+    subroutine bc_poi_x(f,sgn,topbot,j,rel,val)
+!
+! Poiseulle inflow
+!
+!  03-jan-08/nils: Coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mcom), optional :: val
+      real :: umax,y2,height,h2
+      integer :: sgn,i,j,jj
+      logical, optional :: rel
+      logical :: relative
+!
+      if (present(rel)) then; relative=rel; else; relative=.false.; endif
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        if (present(val)) then
+          ! Multiply by three halfs to get max velocity from mean velocity
+          umax=val(j)!*3/2
+        else
+          umax=0
+        endif
+
+        height=Lxyz(2)/2
+        h2=height**2
+
+        do jj=m1,m2
+          y2=(y(jj)-xyz0(2)-height)**2
+          f(l1,jj,n1:n2,j)=umax*(1-y2/h2)
+        enddo
+
+
+        if (relative) then
+          do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
+        else
+          do i=1,nghost; f(l1-i,:,:,j)=              sgn*f(l1+i,:,:,j); enddo
+          f(l1,:,:,j)=(4.*f(l1+1,:,:,j)-f(l1+2,:,:,j))/3.
+        endif
+
+      case('top')               ! top boundary
+        if (present(val)) then
+          umax=val(j)
+        else
+          umax=0
+        endif
+
+
+        height=Lxyz(2)/2
+        h2=height**2
+
+        do jj=m1,m2
+          y2=(y(jj)-xyz0(2)-height)**2
+          f(l2,jj,n1:n2,j)=umax*(1-y2/h2)
+        enddo
+
+        if (relative) then
+          do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
+        else
+          do i=1,nghost; f(l2+i,:,:,j)=              sgn*f(l2-i,:,:,j); enddo
+          f(l2,:,:,j)=(4.*f(l2-1,:,:,j)-f(l2-2,:,:,j))/3.
+        endif
+
+      case default
+        print*, "bc_poi_x: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_poi_x
 !***********************************************************************
 
 !********************************************************************
