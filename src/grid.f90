@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.30 2008-01-09 14:53:47 dhruba Exp $
+! $Id: grid.f90,v 1.31 2008-03-06 14:42:22 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -69,6 +69,7 @@ module Grid
       use Cdata, only: nghost,coeff_grid,grid_func
       use Cdata, only: xyz_step,xi_step_frac,xi_step_width
       use Cdata, only: lperi,lshift_origin,xyz_star,lequidist
+      use Cdata, only: pi
       use Messages
 
       real, dimension(mx), intent(out) :: x
@@ -82,7 +83,7 @@ module Grid
       real, dimension(3,2) :: xi_step
       real, dimension(3,3) :: dxyz_step
       real :: dxmin_x,dxmax_x,dxmin_y,dxmax_y,dxmin_z,dxmax_z
-      real :: xi1star,xi2star,xi3star
+      real :: xi1star,xi2star,xi3star,bound_prim1,bound_prim2
 
       real, dimension(mx) :: g1,g1der1,g1der2,xi1,xprim2
       real, dimension(my) :: g2,g2der1,g2der2,xi2,yprim2
@@ -220,6 +221,36 @@ module Grid
           y     =y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
           yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
           yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
+
+
+        case ('duct')
+
+          a=pi/(nygrid-1)
+
+          call grid_profile(a*xi2  -pi/2,grid_func(2),g2,g2der1,g2der2)
+          call grid_profile(a*xi2lo-pi/2,grid_func(2),g2lo)
+          call grid_profile(a*xi2up-pi/2,grid_func(2),g2up)
+
+          y     =y00+Ly*(g2-g2lo)/2
+          yprim =    Ly*(g2der1*a   )/2
+          yprim2=    Ly*(g2der2*a**2)/2
+
+          if (ipy==0) then
+            bound_prim1=y(m1+1)-y(m1)
+            do i=1,nghost
+              y(m1-i)=y(m1)-i*bound_prim1
+              yprim(1:m1)=bound_prim1
+            enddo
+          endif
+          if (ipy==nprocy-1) then
+            bound_prim2=y(m2)-y(m2-1)
+            do i=1,nghost
+              y(m2+i)=y(m2)+i*bound_prim2
+              yprim(m2:my)=bound_prim2
+            enddo            
+          endif
+
+
 
         case ('step-linear')
 
@@ -525,6 +556,11 @@ module Grid
         if (present(gder1)) gder1=cosh(xi)
         if (present(gder2)) gder2=sinh(xi)
 
+      case ('duct')
+        g=sin(xi)
+        if (present(gder1)) gder1= cos(xi)
+        if (present(gder2)) gder2=-sin(xi)
+
       case ('step-linear')
        if (present(dxyz) .and. present(xistep) .and. present(delta)) then
         g=                                                                    &
@@ -589,6 +625,11 @@ module Grid
         g=sinh(xi)
         if (present(gder1)) gder1=cosh(xi)
         if (present(gder2)) gder2=sinh(xi)
+
+      case ('duct')
+        g=sin(xi)
+        if (present(gder1)) gder1= cos(xi)
+        if (present(gder2)) gder2=-sin(xi)
 
       case ('step-linear')
        if (present(dxyz) .and. present(xistep) .and. present(delta)) then
