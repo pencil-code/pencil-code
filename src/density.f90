@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.372 2008-02-28 11:38:03 wlyra Exp $
+! $Id: density.f90,v 1.373 2008-03-06 16:36:32 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -135,7 +135,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.372 2008-02-28 11:38:03 wlyra Exp $")
+           "$Id: density.f90,v 1.373 2008-03-06 16:36:32 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1110,7 +1110,8 @@ module Density
 !
       use Cdata
 !
-      if (ldensity_nolog) lpenc_requested(i_rho)=.true.
+      if (ldensity_nolog .or. lanti_shockdiffusion) &
+          lpenc_requested(i_rho)=.true.
       if (lcontinuity_gas) then
         lpenc_requested(i_divu)=.true.
         if (ldensity_nolog) then
@@ -1473,9 +1474,9 @@ module Density
 !            
           if (lanti_shockdiffusion) then
             df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - diffrho_shock*( &
-                p%shock*(del2lnrho_init_z(n) + glnrho2_init_z(n) + &
-                2*(p%glnrho(:,3)-dlnrhodz_init_z(n))*dlnrhodz_init_z(n)) + &
-                p%gshock(:,3)*dlnrhodz_init_z(n) )
+                p%shock*(del2lnrho_init_z(n) + glnrho2_init_z(n)) + &
+                p%gshock(:,3)*dlnrhodz_init_z(n) ) * &
+                exp(lnrho_init_z(n))/p%rho
           endif
         endif
         if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
