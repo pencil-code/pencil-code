@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.479 2008-02-26 23:14:35 theine Exp $
+! $Id: magnetic.f90,v 1.480 2008-03-06 18:17:32 theine Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -368,7 +368,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.479 2008-02-26 23:14:35 theine Exp $")
+           "$Id: magnetic.f90,v 1.480 2008-03-06 18:17:32 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -728,6 +728,15 @@ module Magnetic
         case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case('crazy', '5'); call crazy(amplaa(j),f,iaa)
         case('sinwave-x'); call sinwave(amplaa(j),f,iaa,kx=kx_aa(j))
+        case('coswave-Ax-kx'); call coswave(amplaa(j),f,iax,kx=kx_aa(j))
+        case('coswave-Ax-ky'); call coswave(amplaa(j),f,iax,ky=ky_aa(j))
+        case('coswave-Ax-kz'); call coswave(amplaa(j),f,iax,kz=kz_aa(j))
+        case('coswave-Ay-kx'); call coswave(amplaa(j),f,iay,kx=kx_aa(j))
+        case('coswave-Ay-ky'); call coswave(amplaa(j),f,iay,ky=ky_aa(j))
+        case('coswave-Ay-kz'); call coswave(amplaa(j),f,iay,kz=kz_aa(j))
+        case('coswave-Az-kx'); call coswave(amplaa(j),f,iaz,kx=kx_aa(j))
+        case('coswave-Az-ky'); call coswave(amplaa(j),f,iaz,ky=ky_aa(j))
+        case('coswave-Az-kz'); call coswave(amplaa(j),f,iaz,kz=kz_aa(j))
         case('linear-zx'); f(:,:,:,iay)=-.5*amplaa(j)*zz**2/Lxyz(3)
         case('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,xx,kx_aa(j))
         case('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,yy,ky_aa(j),mu0)
