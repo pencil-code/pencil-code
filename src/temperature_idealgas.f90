@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.55 2008-03-03 12:15:01 nbabkovs Exp $
+! $Id: temperature_idealgas.f90,v 1.56 2008-03-06 13:54:52 nbabkovs Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -140,7 +140,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.55 2008-03-03 12:15:01 nbabkovs Exp $")
+           "$Id: temperature_idealgas.f90,v 1.56 2008-03-06 13:54:52 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1023,23 +1023,33 @@ module Entropy
 
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(mx,my,mz) ::  sum_tmp
-      real, dimension (nx,3) :: gsum
+      real, dimension(mx,my,mz) ::  sum_tmp, cp_tmp
+      real, dimension (nx,3) :: gsum, gcp_tmp
       type (pencil_case) :: p
 
       real, dimension(nx) :: g2,g2cp,chi_tmp,lnchi_tmp
 !
-     sum_tmp(l1:l2,m,n) = f(l1:l2,m,n,ilnTT) + f(l1:l2,m,n,ilnrho) +p%lncp(:) + lnchi_tmp(:)
+     sum_tmp(l1:l2,m,n) = f(l1:l2,m,n,ilnTT) + f(l1:l2,m,n,ilnrho) + lnchi_tmp(:) !+p%lncp(:) 
+
+     cp_tmp(l1:l2,m,n)=p%cp
 
       call grad(sum_tmp,gsum)
 
+      call grad(cp_tmp,gcp_tmp) 
+
       call dot(p%glnTT,gsum,g2)
+
+      call dot(p%glnTT,gcp_tmp,g2cp)
 
 !
 !  Add heat conduction to RHS of temperature equation
 !
+! while there is no data, one takes chi=const
 
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%gamma*chi_tmp(:)*(p%del2lnTT+g2)
+      chi_tmp(:)=chi
+
+!----------------------------------------------
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%gamma*chi_tmp(:)*(p%del2lnTT+g2+g2cp/p%cp)
 
     endsubroutine calc_heatcond_chemistry
 !***********************************************************************
