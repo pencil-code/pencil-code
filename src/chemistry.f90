@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.15 2008-03-05 21:53:26 brandenb Exp $
+! $Id: chemistry.f90,v 1.16 2008-03-06 10:58:50 nilshau Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -44,6 +44,12 @@ module Chemistry
 
   real, dimension (nchemspec-1) :: mask_param
   real :: rho_init=2., T_init=2., YY8_init=0.2
+!
+!  Chemkin related parameters
+!
+  real, dimension(nchemspec,11) :: species_constants
+  integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
+  integer, dimension(7) :: ia1,ia2
 
 ! input parameters
   namelist /chemistry_init_pars/ &
@@ -83,20 +89,10 @@ module Chemistry
       use General, only: chn
 !
       logical, save :: first=.true.
-!-    integer :: k,file_id=123, StartNr, StopNr, ind, ind_chem
-      integer :: k,file_id=123, StartNr, StopNr, ind2, ind_chem
-      character (len=5) :: schem,nnn
-      character (len=80) :: ChemInpLine,SubLine
+      integer :: k
+      character (len=5) :: schem
       character (len=20) :: input_file='chem.inp'
-      logical :: lcheminp=.false., emptyfile, IsSpecie=.false., found
-      integer :: In1,In2,In3,In4,In5,line,SNr,nn2
-      logical :: IsThermo=.false.
-      real, dimension(4) :: MolMass
-      real, dimension(3) :: tmp_temp
-      real, dimension(nchemspec,11) :: species_constants
-      integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
-      integer, dimension(7) :: ia1,ia2
-      real :: nne
+      logical :: lcheminp=.false.
 !
 ! Initialize some index pointers
 !
@@ -118,51 +114,11 @@ module Chemistry
 !
       nvar=nvar+nchemspec
 !
-!  Read species from chem.inp if it exists
+!  Read species to be used from chem.inp (if the file exists)
 !     
       if (lroot) inquire(FILE=input_file, EXIST=lcheminp)
       if (lcheminp) then
-        emptyFile=.true.
-        k=1
-        open(file_id,file=input_file)
-        dataloop: do
-          read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
-          emptyFile=.false.
-          !
-          ! Check if we are reading a line within the species section
-          !
-          if (ChemInpLine(1:7)=="SPECIES") IsSpecie=.true.
-          if (ChemInpLine(1:3)=="END" .and. IsSpecie) IsSpecie=.false.
-          !
-          ! Read in species
-          !
-          if (IsSpecie) then
-            if (ChemInpLine(1:7) /= "SPECIES") then
-              StartNr=1
-              StopNr =0
-              stringloop: do
-                StopNr=index(ChemInpLine(StartNr:),' ')+StartNr-1
-                if (StopNr==StartNr) then
-                  StartNr=StartNr+1
-                else
-                  varname(ichemspec(k))=trim(ChemInpLine(StartNr:StopNr-1))
-                  StartNr=StopNr
-                  k=k+1
-                  if (k>nvar) then
-                    print*,'nchemspec=',nchemspec
-                    call stop_it("There were too many species, please increase nchemspec!")
-                  endif
-                endif
-                if (StartNr==80) exit
-              enddo stringloop
-            endif
-          endif
-        enddo dataloop
-        !
-        ! Stop if chem.inp is empty
-        !
-1000    if (emptyFile)  call stop_it('The input file chem.inp was empty!')
-        close(file_id)
+        call read_species(input_file)
       else
         do k=1,nchemspec
           !
@@ -179,85 +135,22 @@ module Chemistry
         write(*,'("register_chemistry: k=",I4," nvar=",I4," ichemspec(k)=",I4," name=",8A)') &
           k, nvar, ichemspec(k), trim(varname(ichemspec(k)))
       enddo
-
-
-
 !
-!  Read in data on the different species
+!  Read data on the thermodynamical properties of the different species.
+!  All these data are stored in the array species_constants.
 !
-      if (lcheminp) then
-        open(file_id,file=input_file)
-        dataloop2: do
-          read(file_id,'(80A)',end=1001) ChemInpLine(1:80)
-          !
-          ! Check if we are reading a line within the thermo section
-          !
-          if (ChemInpLine(1:6)=="THERMO") IsThermo=.true.
-          if (ChemInpLine(1:3)=="END" .and. IsThermo) IsThermo=.false.
-          !
-          ! Read in thermo data
-          !
-          if (IsThermo) then
-            if (ChemInpLine(1:7) /= "THERMO") then
-              StopNr=index(ChemInpLine,' ')
-              call find_species_index(trim(ChemInpLine(1:StopNr-1)),ind2,ind_chem,found)
-              if (found) then
-                line=0
-                !
-                ! Find molar mass
-                !
-                MolMass=0
-                do SNr=1,4
-                  In1=25+(SNr-1)*5
-                  In2=26+(SNr-1)*5
-                  In3=27+(SNr-1)*5
-                  In4=29+(SNr-1)*5
-                  call find_mass(trim(ChemInpLine(In1:In2)),MolMass(SNr))
-                  In5=verify(ChemInpLine(In3:In4),' ')+In3-1
-                  nnn=trim(ChemInpLine(In5:In4))
-                  read (unit=nnn,fmt='(I5)') nn2
-                  MolMass(SNr)=MolMass(SNr)*nn2
-                enddo
-                species_constants(ind_chem,imass)=sum(MolMass)
-                !
-                ! Find temperature-ranges for low and high temperature fitting
-                !
-                do SNr=1,3
-                  In1=46+(SNr-1)*10
-                  In2=55+(SNr-1)*10
-                  if (SNr==3) In2=73
-                  In3=verify(ChemInpLine(In1:In2),' ')+In1-1
-                  nnn=trim(ChemInpLine(In3:In2))
-                  read (unit=nnn,fmt='(F10.1)') nne
-                  tmp_temp(SNr)=nne
-                enddo
-                species_constants(ind_chem,iTemp1)=tmp_temp(1)
-                species_constants(ind_chem,iTemp2)=tmp_temp(3)
-                species_constants(ind_chem,iTemp3)=tmp_temp(2)
-              elseif (ChemInpLine(80:80)=="2") then
-                read (unit=ChemInpLine(1:75),fmt='(5E15.8)')  &
-                     species_constants(ind_chem,ia1(1):ia1(5))
-              elseif (ChemInpLine(80:80)=="3") then
-                read (unit=ChemInpLine(1:75),fmt='(5E15.8)')  &
-                     species_constants(ind_chem,ia1(6):ia2(3))
-              elseif (ChemInpLine(80:80)=="4") then
-                read (unit=ChemInpLine(1:75),fmt='(4E15.8)')  &
-                     species_constants(ind_chem,ia2(4):ia2(7))
-              endif
-            endif
-          endif
-        enddo dataloop2
-1001    continue
-        close(file_id)
-      endif
-!stop
+      if (lcheminp) call read_thermodyn(input_file)
+!
+!  Write all data on species and their thermodynamics to file 
+!
+      if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.15 2008-03-05 21:53:26 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.16 2008-03-06 10:58:50 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.15 2008-03-05 21:53:26 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.16 2008-03-06 10:58:50 nilshau Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -912,7 +805,7 @@ module Chemistry
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    subroutine find_species_index(species_name,ind2,ind_chem,found_specie)
+    subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
 !
 !   Find index in the f array for specie
 !
@@ -920,23 +813,23 @@ module Chemistry
 !
       use Cdata
 !
-      integer, intent(out) :: ind2,ind_chem
+      integer, intent(out) :: ind_glob,ind_chem
       character (len=*), intent(in) :: species_name
       integer :: k
       logical, intent(out) :: found_specie
 !
-      ind2=0
+      ind_glob=0
       do k=1,nchemspec
-        if (trim(varname(k))==species_name) then
-          ind2=k
-          ind_chem=k-ichemspec(1)+1
+        if (trim(varname(ichemspec(k)))==species_name) then
+          ind_glob=k+ichemspec(1)-1
+          ind_chem=k
           exit
         endif
       enddo
       !
       ! Check if the specie was really found
       !
-      if (ind2==0) then
+      if (ind_glob==0) then
         found_specie=.false.
       else
         found_specie=.true.
@@ -1073,8 +966,183 @@ module Chemistry
       endif
 !
     endsubroutine bc_stream_x
+    !********************************************************************
+    subroutine read_species(input_file)
+      !
+      ! This subroutine reads all species information from chem.inp
+      ! See the chemkin manual for more information on
+      ! the syntax of chem.inp.
+      !
+      ! 2008.03.06 Nils Erland: Coded
+      !
+      use Mpicomm
+      !
+      logical :: IsSpecie=.false., emptyfile
+      integer :: k,file_id=123, StartInd, StopInd
+      character (len=80) :: ChemInpLine
+      character (len=*) :: input_file
+      !
+      emptyFile=.true.
+      k=1
+      open(file_id,file=input_file)
+      dataloop: do
+        read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
+        emptyFile=.false.
+        !
+        ! Check if we are reading a line within the species section
+        !
+        if (ChemInpLine(1:7)=="SPECIES")            IsSpecie=.true.
+        if (ChemInpLine(1:3)=="END" .and. IsSpecie) IsSpecie=.false.
+        !
+        ! Read in species
+        !
+        if (IsSpecie) then
+          if (ChemInpLine(1:7) /= "SPECIES") then
+            StartInd=1; StopInd =0
+            stringloop: do
+              StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+              if (StopInd==StartInd) then
+                StartInd=StartInd+1
+              else
+                varname(ichemspec(k))=trim(ChemInpLine(StartInd:StopInd-1))
+                StartInd=StopInd
+                k=k+1
+                if (k>nvar) then
+                  print*,'nchemspec=',nchemspec
+                  call stop_it("There were too many species, please increase nchemspec!")
+                endif
+              endif
+              if (StartInd==80) exit
+            enddo stringloop
+          endif
+        endif
+      enddo dataloop
+      !
+      ! Stop if chem.inp is empty
+      !
+1000  if (emptyFile)  call stop_it('The input file chem.inp was empty!')
+      close(file_id)
+      !
+    end subroutine read_species
  !********************************************************************
-
+    subroutine read_thermodyn(input_file)
+      !
+      ! This subroutine reads the thermodynamical data for all species 
+      ! from chem.inp. See the chemkin manual for more information on
+      ! the syntax of chem.inp.
+      !
+      ! 2008.03.06 Nils Erland: Coded
+      !
+      character (len=*), intent(in) :: input_file
+      integer :: file_id=123, ind_glob, ind_chem
+      character (len=80) :: ChemInpLine
+      integer :: In1,In2,In3,In4,In5,iElement,iTemperature,nn2,StopInd
+      integer :: NumberOfElement_i
+      logical :: IsThermo=.false., found_specie
+      real, dimension(4) :: MolMass
+      real, dimension(3) :: tmp_temp
+      character (len=5) :: NumberOfElement_string,element_string
+      character (len=10) :: specie_string,TemperatureNr_i
+      real :: nne
+      !
+      open(file_id,file=input_file)
+      dataloop2: do
+        read(file_id,'(80A)',end=1001) ChemInpLine(1:80)
+        !
+        ! Check if we are reading a line within the thermo section
+        !
+        if (ChemInpLine(1:6)=="THERMO") IsThermo=.true.
+        if (ChemInpLine(1:3)=="END" .and. IsThermo) IsThermo=.false.
+        !
+        ! Read in thermo data
+        !
+        if (IsThermo) then
+          if (ChemInpLine(1:7) /= "THERMO") then
+            StopInd=index(ChemInpLine,' ')
+            specie_string=trim(ChemInpLine(1:StopInd-1))
+            call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
+            if (found_specie) then
+              !
+              ! Find molar mass
+              !
+              MolMass=0
+              do iElement=1,4
+                In1=25+(iElement-1)*5
+                In2=26+(iElement-1)*5
+                In3=27+(iElement-1)*5
+                In4=29+(iElement-1)*5
+                element_string=trim(ChemInpLine(In1:In2))
+                call find_mass(element_string,MolMass(iElement))
+                In5=verify(ChemInpLine(In3:In4),' ')+In3-1
+                NumberOfElement_string=trim(ChemInpLine(In5:In4))
+                read (unit=NumberOfElement_string,fmt='(I5)') NumberOfElement_i
+                MolMass(iElement)=MolMass(iElement)*NumberOfElement_i
+              enddo
+              species_constants(ind_chem,imass)=sum(MolMass)
+              !
+              ! Find temperature-ranges for low and high temperature fitting
+              !
+              do iTemperature=1,3
+                In1=46+(iTemperature-1)*10
+                In2=55+(iTemperature-1)*10
+                if (iTemperature==3) In2=73
+                In3=verify(ChemInpLine(In1:In2),' ')+In1-1
+                TemperatureNr_i=trim(ChemInpLine(In3:In2))
+                read (unit=TemperatureNr_i,fmt='(F10.1)') nne
+                tmp_temp(iTemperature)=nne
+              enddo
+              species_constants(ind_chem,iTemp1)=tmp_temp(1)
+              species_constants(ind_chem,iTemp2)=tmp_temp(3)
+              species_constants(ind_chem,iTemp3)=tmp_temp(2)
+            elseif (ChemInpLine(80:80)=="2") then
+              ! Read ia1(1):ia1(5)
+              read (unit=ChemInpLine(1:75),fmt='(5E15.8)')  &
+                   species_constants(ind_chem,ia1(1):ia1(5))
+            elseif (ChemInpLine(80:80)=="3") then
+              ! Read ia1(6):ia5(3)
+              read (unit=ChemInpLine(1:75),fmt='(5E15.8)')  &
+                   species_constants(ind_chem,ia1(6):ia2(3))
+            elseif (ChemInpLine(80:80)=="4") then
+              ! Read ia2(4):ia2(7)
+              read (unit=ChemInpLine(1:75),fmt='(4E15.8)')  &
+                   species_constants(ind_chem,ia2(4):ia2(7))
+            endif
+          endif
+        endif
+      enddo dataloop2
+1001  continue
+      close(file_id)
+      !
+    end subroutine read_thermodyn
+ !********************************************************************
+    subroutine write_thermodyn()
+      !
+      ! This subroutine writes the thermodynamical data for every specie
+      ! to ./data/chem.out. 
+      !
+      ! 2008.03.06 Nils Erland: Coded
+      !
+      character (len=20) :: input_file="./data/chem.out"
+      integer :: file_id=123,k
+      !
+      open(file_id,file=input_file)
+      write(file_id,*) 'Specie'
+      write(file_id,*) 'MolMass Temp1 Temp2 Temp3'
+      write(file_id,*) 'a1(1)  a1(2)  a1(3)  a1(4)  a1(5)  a1(6)  a1(7)'
+      write(file_id,*) 'a2(1)  a2(2)  a2(3)  a2(4)  a2(5)  a2(6)  a2(7)'
+      write(file_id,*) '***********************************************'
+      dataloop2: do k=1,nchemspec
+        write(file_id,*) varname(ichemspec(k))
+        write(file_id,'(F10.2,3F10.2)') species_constants(k,imass),&
+             species_constants(k,iTemp1:iTemp3)
+        write(file_id,'(7E10.2)') species_constants(k,ia1)
+        write(file_id,'(7E10.2)') species_constants(k,ia2)
+      enddo dataloop2
+      !
+      close(file_id)
+      !
+    end subroutine write_thermodyn
+!***************************************************************
 
 !***************************************************************
 !********************************************************************
