@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.62 2007-09-24 07:50:15 wlyra Exp $
+! $Id: general.f90,v 1.63 2008-03-06 19:10:06 wlyra Exp $
 
 module General
 
@@ -20,7 +20,7 @@ module General
   public :: setup_mm_nn
   public :: input_persistent_general, output_persistent_general
 
-  public :: spline,tridag,complex_phase,erfcc
+  public :: spline,tridag,complex_phase,erfcc,besselj_nu_int
 
   include 'record_types.h'
 
@@ -974,5 +974,43 @@ module General
       where (x.lt.0.) erfcc=2.-erfcc
       return
     endfunction erfcc
+!*****************************************************************************
+    subroutine besselj_nu_int(res,nu,arg)
+!
+      use Cdata, only: pi,pi_1
+!
+!  Calculate the cylindrical bessel function
+!  with integer index. The function in gsl_wrapper.c 
+!  only calculates the cylindrical Bessel functions 
+!  with real index. The amount of factorials in the 
+!  real index Bessel function leads to over and underflows
+!  as the index goes only moderately high.
+!                 
+!                 _ 
+!             1  /  pi
+!  J_m(z) = ____ |     (cos(z*sin(theta)-m*theta)) dtheta 
+!                |  
+!            pi _/  0
+!
+!  The function defines its own theta from 0 to pi for the
+!  integration, with the same number of points as the 
+!  azimuthal direction. 
+!
+!  06-03-08/wlad: coded
+!
+      real, dimension(nygrid) :: theta,a
+      real :: arg,res,fac
+      integer :: i,nu
+!
+      intent(in)  :: nu,arg
+      intent(out) :: res
+!
+      theta=(/(i,i=0,nygrid-1)/)*pi/(nygrid-1)
+      a=cos(arg*sin(theta)-nu*theta)
+      fac=pi_1*(theta(2)-theta(1))
+!
+      res=fac*(sum(a(2:nygrid-1))+.5*(a(1)+a(nygrid)))
+!
+    endsubroutine besselj_nu_int
 !*****************************************************************************
 endmodule General
