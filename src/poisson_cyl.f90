@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.2 2008-03-07 14:14:05 wlyra Exp $
+! $Id: poisson_cyl.f90,v 1.3 2008-03-07 14:42:43 wlyra Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -84,13 +84,8 @@ module Poisson
         call fatal_error('initialize_poisson','')
       endif
 !
-      if ((lsolve_bessel).and.(lsolve_cyl2cart)) then
-        if (lroot) print*,'initialize_poisson:'//&
-             'both lsolve_bessel and lsolve_cyl2cart'//&
-             'are switched on. Choose just one'
-        call fatal_error('initialize_poisson','')
-      endif
-!    
+      if (lsolve_cyl2cart) lsolve_bessel=.false.
+!
       if ((.not.lsolve_bessel).and.(.not.lsolve_cyl2cart)) then
         if (lroot) print*,'initialize_poisson: '//&
              'neither lsolve_bessel nor lsolve_cyl2cart'//&
@@ -373,7 +368,7 @@ module Poisson
         endif
         call mpibcast_real(crossbig,(/nnx,nnygrid/))
       else
-        crossbig(:,1:ny)=nphi(:,1:ny)
+        crossbig(:,1:nny)=nphi(:,1:nny)
       endif
 !
 !  Convert back to cylindrical
