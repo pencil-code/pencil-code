@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.13 2008-03-05 10:54:22 wlyra Exp $
+! $Id: particles_selfgravity.f90,v 1.14 2008-03-07 18:48:43 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -54,7 +54,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.13 2008-03-05 10:54:22 wlyra Exp $")
+           "$Id: particles_selfgravity.f90,v 1.14 2008-03-07 18:48:43 wlyra Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -228,11 +228,10 @@ module Particles_selfgravity
 !            
             if (lparticles_nbody) then 
 !
-!  A sink particle can be out of the box. A star for example. For this
-!  case, set potself to zero. It's faster to re-assign the value of gpotself 
-!  to zero for that specific particle than to test all particles
-!  for "out of boundary" (as opposed to only the ones found to be massive)
-!
+!  A sink particle can be out of the box, in which case the 
+!  interpolation is not possible. The nbody module will take 
+!  care of this case
+! 
               if (ipar(k).le.nspar) then
                 if ((fp(k,ixp)< xyz0(1)).or.(fp(k,ixp) > xyz1(1)) .or. &
                     (fp(k,iyp)< xyz0(2)).or.(fp(k,iyp) > xyz1(2)) .or. &
