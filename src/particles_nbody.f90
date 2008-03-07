@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.60 2008-03-07 19:34:35 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.61 2008-03-07 19:36:49 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -70,7 +70,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.60 2008-03-07 19:34:35 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.61 2008-03-07 19:36:49 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -727,8 +727,7 @@ module Particles_nbody
       integer :: iname
 !
       if (iname/=0) then
-        if (icount==0) fname(iname)=0
-        fname(iname)=fname(iname)+a
+        fname(iname)=a
       endif
 !
 !  There is no entry in itype_name.
