@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.18 2008-03-07 09:06:37 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.19 2008-03-07 09:51:44 nilshau Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -44,7 +44,7 @@ module Chemistry
 
 !  Chemkin related parameters
 !
-  real, dimension(nchemspec,11) :: species_constants
+  real, dimension(nchemspec,18) :: species_constants
   integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
   integer, dimension(7) :: ia1,ia2
 
@@ -143,11 +143,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.18 2008-03-07 09:06:37 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.19 2008-03-07 09:51:44 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.18 2008-03-07 09:06:37 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.19 2008-03-07 09:51:44 nilshau Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
