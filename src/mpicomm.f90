@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.218 2008-02-27 12:31:13 wlyra Exp $
+! $Id: mpicomm.f90,v 1.219 2008-03-07 11:24:47 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -111,6 +111,7 @@ module Mpicomm
     module procedure mpibcast_real_scl
     module procedure mpibcast_real_arr
     module procedure mpibcast_real_arr2
+    module procedure mpibcast_real_arr3
   endinterface
 
   interface mpibcast_double
@@ -1633,6 +1634,29 @@ module Mpicomm
           MPI_COMM_WORLD,ierr)
 !
     endsubroutine mpibcast_real_arr2
+!***********************************************************************
+    subroutine mpibcast_real_arr3(bcast_array,nb,proc)
+!
+!  Communicate real array(:,:) to other processor.
+!
+!  25-fev-08/wlad: adapted
+!
+      integer, dimension(3) :: nb
+      real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc,nbcast
+!
+      nbcast=nb(1)*nb(2)*nb(3)
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(bcast_array, nbcast, MPI_REAL, ibcast_proc, &
+          MPI_COMM_WORLD,ierr)
+!
+    endsubroutine mpibcast_real_arr3
 !***********************************************************************
     subroutine mpibcast_double_scl(bcast_array,nbcast_array,proc)
 !
