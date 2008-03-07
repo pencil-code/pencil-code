@@ -1,7 +1,7 @@
 ;
-;  $Id: pc_magic_var.pro,v 1.40 2008-02-27 13:53:04 ajohan Exp $
-;  $Date: 2008-02-27 13:53:04 $
-;  $Revision: 1.40 $
+;  $Id: pc_magic_var.pro,v 1.41 2008-03-07 14:06:09 ajohan Exp $
+;  $Date: 2008-03-07 14:06:09 $
+;  $Revision: 1.41 $
 ;
 pro pc_magic_var_dep, variables, tags, var, dep
 ;
@@ -146,6 +146,8 @@ pro pc_magic_var, variables, tags, $
   pc_magic_var_dep, variables, tags, 'mstrkep', 'uu'
   pc_magic_var_dep, variables, tags, 'mcomp', 'uu'
   pc_magic_var_dep, variables, tags, 'mcomp', 'bb'
+  pc_magic_var_dep, variables, tags, 'divadvu', 'uu'
+  pc_magic_var_dep, variables, tags, 'divadvu', 'uij'
 ;
 ;  Modules.
 ;
@@ -221,7 +223,7 @@ pro pc_magic_var, variables, tags, $
 ; Derivative vector of magnetic field
     endif else if (variables[iv] eq 'bij') then begin
       tags[iv]=variables[iv]
-      variables[iv]='derijcurl(aa)'
+      variables[iv]='gijcurl(aa)'
 ; Lorentz force
     endif else if (variables[iv] eq 'flor') then begin
       tags[iv]=variables[iv]
@@ -289,7 +291,7 @@ pro pc_magic_var, variables, tags, $
 ; Derivative vector of velocity field
     endif else if (variables[iv] eq 'uij') then begin
       tags[iv]=variables[iv]
-      variables[iv]='derij(uu)'
+      variables[iv]='gij(uu)'
 ; Gas Density 
     endif else if (variables[iv] eq 'rho') then begin
       tags[iv]=variables[iv]
@@ -318,6 +320,10 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'u2') then begin
       tags[iv]=variables[iv]
       variables[iv]='dot2(uu)'
+; Divergence of advection ter,
+    endif else if (variables[iv] eq 'divadvu') then begin
+      tags[iv]=variables[iv]
+      variables[iv]='-dot(uu,graddiv(uu))-total(total(uij*transpose(uij,[2,1,0,3,4]),5),4)'
 ; Sound speed squared
     endif else if (variables[iv] eq 'cs2') then begin
       tags[iv]=variables[iv]
