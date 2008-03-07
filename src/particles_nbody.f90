@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.59 2008-03-07 18:48:43 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.60 2008-03-07 19:34:35 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -70,7 +70,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.59 2008-03-07 18:48:43 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.60 2008-03-07 19:34:35 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -617,7 +617,6 @@ module Particles_nbody
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
-      real, dimension (npar_loc,nspar,3) :: xxspar,vvspar
       real, dimension (3) :: evr
       real :: e1,e2,e3,e10,e20,e30
       real :: Omega2,r2_ij,invr3_ij
@@ -702,13 +701,10 @@ module Particles_nbody
           if (lfollow_particle(ks)) then
             do j=1,3
               jpos=j+ixp-1 ; jvel=j+ivpx-1
-              xxspar(1:npar_loc,ks,j) = fsp(ks,jpos)
-              vvspar(1:npar_loc,ks,j) = fsp(ks,jvel)
-!
               if (idiag_xxspar(ks,j)/=0) &
-                   call sum_par_name(xxspar(1:npar_loc,ks,j),idiag_xxspar(ks,j))
+                   call point_par_name(fsp(ks,jpos),idiag_xxspar(ks,j))
               if (idiag_vvspar(ks,j)/=0) &
-                   call sum_par_name(vvspar(1:npar_loc,ks,j),idiag_vvspar(ks,j))
+                   call point_par_name(fsp(ks,jvel),idiag_vvspar(ks,j))
             enddo
           endif
         enddo
@@ -717,6 +713,27 @@ module Particles_nbody
       if (lfirstcall) lfirstcall=.false.
 !
     endsubroutine dvvp_dt_nbody
+!**********************************************************
+    subroutine point_par_name(a,iname)
+!
+!  Register a, a simple scalar, as diagnostic.
+!  Works for individual particle diagnostics. 
+!
+!  07-mar-08/wlad: adapted from sum_par_name
+!
+      use Cdata
+!
+      real ::  a
+      integer :: iname
+!
+      if (iname/=0) then
+        if (icount==0) fname(iname)=0
+        fname(iname)=fname(iname)+a
+      endif
+!
+!  There is no entry in itype_name.
+!
+    endsubroutine point_par_name
 !***********************************************************************
     subroutine read_particles_nbody_init_pars(unit,iostat)
 !
