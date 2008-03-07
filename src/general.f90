@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.63 2008-03-06 19:10:06 wlyra Exp $
+! $Id: general.f90,v 1.64 2008-03-07 14:26:24 wlyra Exp $
 
 module General
 
@@ -998,16 +998,18 @@ module General
 !
 !  06-03-08/wlad: coded
 !
-      real, dimension(nygrid) :: theta,a
+      real, dimension(nygrid) :: angle,a
       real :: arg,res,fac
       integer :: i,nu
 !
       intent(in)  :: nu,arg
       intent(out) :: res
 !
-      theta=(/(i,i=0,nygrid-1)/)*pi/(nygrid-1)
-      a=cos(arg*sin(theta)-nu*theta)
-      fac=pi_1*(theta(2)-theta(1))
+      do i=0,nygrid-1
+        angle(i)=i*pi/(nygrid-1)
+      enddo
+      a=cos(arg*sin(angle)-nu*angle)
+      fac=pi_1*(angle(2)-angle(1))
 !
       res=fac*(sum(a(2:nygrid-1))+.5*(a(1)+a(nygrid)))
 !
