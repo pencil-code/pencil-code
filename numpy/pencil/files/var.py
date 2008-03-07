@@ -1,4 +1,4 @@
-# $Id: var.py,v 1.2 2007-11-19 13:41:27 tgastine Exp $
+# $Id: var.py,v 1.3 2008-03-07 16:41:15 dintrans Exp $
 #
 # read VAR files. based on the read_var.pro IDL script.
 #
@@ -67,7 +67,10 @@ def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=Fals
     if (not run2D):
       f = N.zeros((totalvars,dim.mz,dim.my,dim.mx),dtype=precision)
     else :
-      f = N.zeros((totalvars,dim.mz,dim.mx),dtype=precision)
+      if (dim.ny==1):
+        f = N.zeros((totalvars,dim.mz,dim.mx),dtype=precision)
+      else:
+        f = N.zeros((totalvars,dim.my,dim.mx),dtype=precision)
     x = N.zeros(dim.mx,dtype=precision)
     y = N.zeros(dim.my,dtype=precision)
     z = N.zeros(dim.mz,dtype=precision)
@@ -88,7 +91,10 @@ def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=Fals
         if (not run2D):
           f_loc = infile.fort_read(precision,shape=(-1,mzloc,myloc,mxloc))
         else:
-          f_loc = infile.fort_read(precision,shape=(-1,mzloc,mxloc))
+          if (dim.ny==1):
+            f_loc = infile.fort_read(precision,shape=(-1,mzloc,mxloc))
+          else:
+            f_loc = infile.fort_read(precision,shape=(-1,myloc,mxloc))
         raw_etc = infile.fort_read(precision)
         infile.close()
 
@@ -158,7 +164,10 @@ def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=Fals
             if (not run2D):
               f[:,i0z:i1z,i0y:i1y,i0x:i1x] = f_loc[:,i0zloc:i1zloc,i0yloc:i1yloc,i0xloc:i1xloc]
             else:
-              f[:,i0z:i1z,i0x:i1x] = f_loc[:,i0zloc:i1zloc,i0xloc:i1xloc]
+              if (dim.ny==1):
+                f[:,i0z:i1z,i0x:i1x] = f_loc[:,i0zloc:i1zloc,i0xloc:i1xloc]
+              else:
+                f[:,i0y:i1y,i0x:i1x] = f_loc[:,i0yloc:i1yloc,i0xloc:i1xloc]
         else:
             f = f_loc
             x = x_loc
@@ -180,7 +189,10 @@ def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=Fals
         if (not run2D):
           var.f = f[:,dim.n1:dim.n2+1,dim.m1:dim.m2+1,dim.l1:dim.l2+1]
         else:
-          var.f = f[:,dim.n1:dim.n2+1,dim.l1:dim.l2+1]
+         if (dim.ny==1):
+           var.f = f[:,dim.n1:dim.n2+1,dim.l1:dim.l2+1]
+         else:
+           var.f = f[:,dim.m1:dim.m2+1,dim.l1:dim.l2+1]
     else:
         var.x = x
         var.y = y
