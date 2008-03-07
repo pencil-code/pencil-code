@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.17 2008-03-06 13:58:05 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.18 2008-03-07 09:06:37 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -42,9 +42,6 @@ module Chemistry
   character (len=labellen), dimension (ninit) :: initchem='nothing'
   character (len=labellen), dimension (mreactions) :: kreactions_profile=''
 
-  real, dimension (nchemspec-1) :: mask_param
-  real :: rho_init=2., T_init=2., YY8_init=0.2
-!
 !  Chemkin related parameters
 !
   real, dimension(nchemspec,11) :: species_constants
@@ -54,7 +51,7 @@ module Chemistry
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk, mask_param
+      amplchemk
 
 ! run parameters
   namelist /chemistry_run_pars/ &
@@ -146,11 +143,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.17 2008-03-06 13:58:05 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.18 2008-03-07 09:06:37 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.17 2008-03-06 13:58:05 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.18 2008-03-07 09:06:37 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -328,8 +325,6 @@ module Chemistry
           do k=1,nchemspec
             call hatwave(amplchem,f,ichemspec(k),kz=kz_chem)
           enddo
-        case('stream')
-            call stream_field(f,xx,yy)
         case default
 !
 !  Catch unknown values
@@ -746,42 +741,6 @@ module Chemistry
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
-    subroutine chemistry_boundconds(f,bc)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   13-aug-07/steveb: coded
-!
-      use Cdata
-      use Sub, only: keep_compiler_quiet
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      type (boundary_condition) :: bc
-
-      select case (bc%bcname)
-       case ('stm')
-         select case (bc%location)
-         case (iBC_X_TOP)
-           call bc_stream_x(f,-1, bc)
-         case (iBC_X_BOT)
-           call bc_stream_x(f,-1, bc)
-         endselect
-         bc%done=.true.
-     endselect
- 
-
-      if (NO_WARN) print*,f(1,1,1,1),bc%bcname
-
-    call keep_compiler_quiet(f)
-    call keep_compiler_quiet(bc)
-
-
-    endsubroutine chemistry_boundconds
-!***********************************************************************
     subroutine special_before_boundary(f)
 !
 !   Possibility to modify the f array before the boundaries are
@@ -857,113 +816,7 @@ module Chemistry
       !
     end subroutine find_mass
 !***********************************************************************
-   subroutine make_mask(mask)
-
-    real, dimension(my, nchemspec-1), intent(out) :: mask
-    integer :: k
-
-   do k=1, nchemspec-1
-       mask(:,k)=mask_param(k)
-   enddo
-
-   endsubroutine make_mask
-!***********************************************************************
-    subroutine stream_field(f,xx,yy)
-!
-! Natalia
-! Initialization of chem. species  in a case of the stream
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, yy
-      real, dimension (my, nchemspec-1) :: mask
-      real, dimension (my) :: sum_mask=0.
-      integer :: k,j
-
-     call make_mask(mask)
-
-     ! do k=1,my
-     !    if (abs(y(k)) .lt. 3.) then
-     !     do j=1, nchemspec-1
-     !      f(:,k,:,ichemspec(j))=mask(k,j)*0.
-     !     enddo
-     !      f(:,k,:,ichemspec(nchemspec))=1.
-     !     do j=1, nchemspec-1
-     !      f(:,k,:,ichemspec(nchemspec))=f(:,k,:,ichemspec(nchemspec))-mask(k,j)
-     !     enddo
-     !   endif
-     ! enddo
-
-     f(:,:,:,4)=rho_init
-     f(:,:,:,5)=T_init
-     f(:,:,:,ichemspec(nchemspec))=YY8_init
-
-    endsubroutine stream_field
-!***********************************************************************
-  subroutine bc_stream_x(f,sgn,bc)
-!
-! Natalia
-!
-    use Cdata
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (my, nchemspec-1) :: mask
-      integer :: sgn
-      type (boundary_condition) :: bc
-      integer :: i,j,vr,k
-      real :: value1, value2
-
-      vr=bc%ivar
-
-      value1=bc%value1
-      value2=bc%value2
-
-     call make_mask(mask)
-
-    if (bc%location==iBC_X_BOT) then
-      ! bottom boundary
-
-       if (vr==1) then
-        do k=1,my
-            if (abs(y(k)) .lt. 3.) then
-              do i=0,nghost;   f(l1-i,k,:,vr)=value1;  enddo
-            endif
-        enddo
-       endif
-
-
-      if (vr==4) then
-           do i=0,nghost;  f(l1-i,:,:,vr)=value1;  enddo
-      endif
-
-      if (vr==5) then
-          do i=0,nghost;   f(l1-i,k,:,vr)=value1; enddo 
-      endif
-
-       if (vr >= ichemspec(1)) then
-
-         do i=0,nghost; 
-          do k=1,my
-             if (abs(y(k)) .lt. 3.) then
-                if (vr < ichemspec(nchemspec))  f(l1-i,k,:,vr)=value1
-             else
-                if (vr == ichemspec(nchemspec))   f(l1-i,k,:,vr)=value1
-             endif
-          enddo
-         enddo
-
-       endif
-
-      elseif (bc%location==iBC_X_TOP) then
-      ! top boundary
-        do i=1,nghost; f(l2+i,:,:,vr)=2*f(l2,:,:,vr)+sgn*f(l2-i,:,:,vr); enddo
-      else
-        print*, "bc_BL_x: ", bc%location, " should be `top(", &
-                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
-      endif
-!
-    endsubroutine bc_stream_x
-    !********************************************************************
-    subroutine read_species(input_file)
+     subroutine read_species(input_file)
       !
       ! This subroutine reads all species information from chem.inp
       ! See the chemkin manual for more information on

@@ -14,8 +14,6 @@
   public :: pencil_criteria_chemistry
   public :: pencil_interdep_chemistry
 
-  public :: chemistry_boundconds
-
 ! public :: chemistry_calc_density
 ! public :: chemistry_calc_hydro
 ! public :: chemistry_calc_entropy
