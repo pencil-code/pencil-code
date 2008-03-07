@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.179 2008-01-09 13:04:11 brandenb Exp $
+! $Id: start.f90,v 1.180 2008-03-07 15:22:23 wlyra Exp $
 !
 !***********************************************************************
       program start
@@ -101,7 +101,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.179 2008-01-09 13:04:11 brandenb Exp $")
+             "$Id: start.f90,v 1.180 2008-03-07 15:22:23 wlyra Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -341,10 +341,6 @@
         endif
 !
 !  Prepare particles.
-!
-        if (rp_int == -impossible .and. r_int > epsi) &
-             rp_int = r_int
-        if (rp_ext == -impossible) rp_ext = r_ext
 !
         call particles_register_modules()
         call particles_rprint_list(.false.)

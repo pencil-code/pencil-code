@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.61 2007-11-18 06:09:39 ajohan Exp $
+! $Id: particles_main.f90,v 1.62 2008-03-07 15:22:23 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -86,6 +86,13 @@ module Particles_main
       call initialize_particles_selfgrav(lstarting)
       call initialize_particles_nbody   (lstarting)
       call initialize_particles_stalker (lstarting)
+!
+!  Set internal and external radii of particles
+!  (moved here from start.f90)
+!
+      if (rp_int == -impossible .and. r_int > epsi) &
+           rp_int = r_int
+      if (rp_ext == -impossible) rp_ext = r_ext
 !
     endsubroutine particles_initialize_modules
 !***********************************************************************
