@@ -1,12 +1,12 @@
 ;
-;  $Id: derijcurl.pro,v 1.1 2008-01-18 10:42:21 ajohan Exp $
+;  $Id: gijcurl.pro,v 1.1 2008-03-07 13:30:50 ajohan Exp $
 ;
 ;  Derivative matrix from curl in cartesian coordinates.
-;  Used to calculate B_{i,j} as bij=derijcurl(aa).
+;  Used to calculate B_{i,j} as bij=gijcurl(aa).
 ;
 ;  20-mar-04/axel: adapted from f90 routine bij_etc
 ;
-function derijcurl, f
+function gijcurl, f
 ;
 s=size(f) & mx=s(1) & my=s(2) & mz=s(3)
 bij=fltarr(mx,my,mz,3,3)
