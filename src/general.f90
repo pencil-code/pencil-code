@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.64 2008-03-07 14:26:24 wlyra Exp $
+! $Id: general.f90,v 1.65 2008-03-07 14:37:10 wlyra Exp $
 
 module General
 
@@ -1005,8 +1005,8 @@ module General
       intent(in)  :: nu,arg
       intent(out) :: res
 !
-      do i=0,nygrid-1
-        angle(i)=i*pi/(nygrid-1)
+      do i=1,nygrid
+        angle(i)=(i-1)*pi/(nygrid-1)
       enddo
       a=cos(arg*sin(angle)-nu*angle)
       fac=pi_1*(angle(2)-angle(1))
