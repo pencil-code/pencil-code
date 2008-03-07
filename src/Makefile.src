@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.377 2008-03-04 09:13:35 ajohan Exp $
+### $Id: Makefile.src,v 1.378 2008-03-07 10:24:43 dhruba Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -706,6 +706,13 @@ LD_FFTW2=
 #FFLAGS=-O3 -L/misc/network/dhruba/Library/lib/ #(starpc37.maths.qmul.ac.uk)
 #CC=mpicc -I/misc/network/dhruba/Library/include/  #(starpc37.maths.qmul.ac.uk)
 #CFLAGS=-O3 -DFUNDERSC=1  #(starpc37)
+##
+## Dhruba on ukmhd cluster
+##
+#FC=mpif90 -f90=pgf90   #(ukmhd)
+#FFLAGS=  -O3  #(ukmhd)
+#CC=mpicc -cc=pgcc#(ukmhd)
+#LD_MPI = -lmpich #(ukmhd) 
 ##
 ## Hoffman2 Cluster @ UCLA (Steve B)
 ##
