@@ -1,5 +1,5 @@
 ;
-;  $Id: xder2_6th_ghost.pro,v 1.8 2006-10-07 09:57:56 brandenb Exp $
+;  $Id: xder2_6th_ghost.pro,v 1.9 2008-03-07 14:36:14 ajohan Exp $
 ;
 ;  Second derivative d^2/dx^2
 ;  - 6th-order (7-point stencil)
@@ -10,10 +10,6 @@
 function xder2,f
   COMPILE_OPT IDL2,HIDDEN
 ;
-  ;common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
-  ;AB: chose to read in only x, y, and z, not nx, ny, and nz.
-  ;AB: Thus, we can redefine them freely.
-  ;AB: For non-uniform meshes dx_1, dy_1, and dz_1 would not be ok.
   common cdat,x,y,z
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
 ;
@@ -25,7 +21,7 @@ function xder2,f
 ;  Check for degenerate case (no x-extension)
 ;
   if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
-  if (nx eq 1) then return,fltarr(nx,ny,nz)
+  if (nx eq 1) then return, fltarr(nx,ny,nz)
 ;
 ;  determine location of ghost zones, assume nghost=3 for now.
 ;
@@ -49,9 +45,9 @@ function xder2,f
         dd  = d1*spread(dx_tilde,[1,2],[s[2],s[3]])
       endif
       d[l1:l2,*,*]=dx2*(-490.*f[l1:l2,*,*]$
-                       +270.*(f[l1-1:l2-1,*,*]+f[l1+1:l2+1,*,*])$
-                        -27.*(f[l1-2:l2-2,*,*]+f[l1+2:l2+2,*,*])$
-                         +2.*(f[l1-3:l2-3,*,*]+f[l1+3:l2+3,*,*])$
+                        +270.*(f[l1-1:l2-1,*,*]+f[l1+1:l2+1,*,*])$
+                         -27.*(f[l1-2:l2-2,*,*]+f[l1+2:l2+2,*,*])$
+                          +2.*(f[l1-3:l2-3,*,*]+f[l1+3:l2+3,*,*])$
                        )
     endif else begin
       d[l1:l2,*,*]=0.
@@ -65,9 +61,9 @@ function xder2,f
         dd  = d1*spread(dx_tilde,[1,2,3],[s[2],s[3],s[4]])
       endif
       d[l1:l2,*,*,*]=dx2*(-490.*f[l1:l2,*,*,*]$
-                         +270.*(f[l1-1:l2-1,*,*,*]+f[l1+1:l2+1,*,*,*])$
-                          -27.*(f[l1-2:l2-2,*,*,*]+f[l1+2:l2+2,*,*,*])$
-                           +2.*(f[l1-3:l2-3,*,*,*]+f[l1+3:l2+3,*,*,*])$
+                          +270.*(f[l1-1:l2-1,*,*,*]+f[l1+1:l2+1,*,*,*])$
+                           -27.*(f[l1-2:l2-2,*,*,*]+f[l1+2:l2+2,*,*,*])$
+                            +2.*(f[l1-3:l2-3,*,*,*]+f[l1+3:l2+3,*,*,*])$
                          )
     endif else begin
       d[l1:l2,*,*,*]=0.
@@ -80,8 +76,8 @@ function xder2,f
 ;
 ; apply correction only for nonuniform mesh
 ;
-  if not lequidist[0] then d=d+dd
+  if (not lequidist[0]) then d=d+dd
 ;
-  return,d
+  return, d
 ;
 end

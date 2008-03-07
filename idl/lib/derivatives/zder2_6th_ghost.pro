@@ -1,5 +1,5 @@
 ;
-;  $Id: zder2_6th_ghost.pro,v 1.8 2006-10-07 09:57:56 brandenb Exp $
+;  $Id: zder2_6th_ghost.pro,v 1.9 2008-03-07 14:36:14 ajohan Exp $
 ;
 ;  Second derivative d^2/dz^2
 ;  - 6th-order (7-point stencil)
@@ -10,10 +10,6 @@
 function zder2,f
   COMPILE_OPT IDL2,HIDDEN
 ;
-  ;common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
-  ;AB: chose to read in only x, y, and z, not nx, ny, and nz.
-  ;AB: Thus, we can redefine them freely.
-  ;AB: For non-uniform meshes dx_1, dy_1, and dz_1 would not be ok.
   common cdat,x,y,z
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
 ;
@@ -25,7 +21,7 @@ function zder2,f
 ;  Check for degenerate case (no x-extension)
 ;
   if (n_elements(lequidist) ne 3) then lequidist=[-1,-1,-1]
-  if (nz eq 1) then return,fltarr(nx,ny,nz)
+  if (nz eq 1) then return, fltarr(nx,ny,nz)
 ;
 ;  determine location of ghost zones, assume nghost=3 for now.
 ;
@@ -50,9 +46,9 @@ function zder2,f
         ; will also work on slices like zder2(ss[10,20,*])
       endif
       d[*,*,n1:n2]=dz2*(-490.*f[*,*,n1:n2]$
-                       +270.*(f[*,*,n1-1:n2-1]+f[*,*,n1+1:n2+1])$
-                        -27.*(f[*,*,n1-2:n2-2]+f[*,*,n1+2:n2+2])$
-                         +2.*(f[*,*,n1-3:n2-3]+f[*,*,n1+3:n2+3])$
+                        +270.*(f[*,*,n1-1:n2-1]+f[*,*,n1+1:n2+1])$
+                         -27.*(f[*,*,n1-2:n2-2]+f[*,*,n1+2:n2+2])$
+                          +2.*(f[*,*,n1-3:n2-3]+f[*,*,n1+3:n2+3])$
                        )
     endif else begin
       d[*,*,n1:n2]=0.
@@ -67,10 +63,10 @@ function zder2,f
         ; will also work on slices like zder2(uu[10,20,*,*])
       endif
       d[*,*,n1:n2,*]=dz2*(-490.*f[*,*,n1:n2,*]$
-                         +270.*(f[*,*,n1-1:n2-1,*]+f[*,*,n1+1:n2+1,*])$
-                          -27.*(f[*,*,n1-2:n2-2,*]+f[*,*,n1+2:n2+2,*])$
-                           +2.*(f[*,*,n1-3:n2-3,*]+f[*,*,n1+3:n2+3,*])$
-                       )
+                          +270.*(f[*,*,n1-1:n2-1,*]+f[*,*,n1+1:n2+1,*])$
+                           -27.*(f[*,*,n1-2:n2-2,*]+f[*,*,n1+2:n2+2,*])$
+                            +2.*(f[*,*,n1-3:n2-3,*]+f[*,*,n1+3:n2+3,*])$
+                         )
     endif else begin
       d[*,*,n1:n2,*]=0.
     endelse
@@ -82,8 +78,8 @@ function zder2,f
 ;
 ; apply correction only for nonuniform mesh
 ;
-  if not lequidist[2] then d=d+dd
+  if (not lequidist[2]) then d=d+dd
 ;
-  return,d
+  return, d
 ;
 end

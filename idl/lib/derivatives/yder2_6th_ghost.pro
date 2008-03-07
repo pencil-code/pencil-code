@@ -1,5 +1,5 @@
 ;
-;  $Id: yder2_6th_ghost.pro,v 1.8 2006-10-07 09:57:56 brandenb Exp $
+;  $Id: yder2_6th_ghost.pro,v 1.9 2008-03-07 14:36:14 ajohan Exp $
 ;
 ;  Second derivative d^2/dy^2
 ;  - 6th-order (7-point stencil)
@@ -10,10 +10,6 @@
 function yder2,f
   COMPILE_OPT IDL2,HIDDEN
 ;
-  ;common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
-  ;AB: chose to read in only x, y, and z, not nx, ny, and nz.
-  ;AB: Thus, we can redefine them freely.
-  ;AB: For non-uniform meshes dx_1, dy_1, and dz_1 would not be ok.
   common cdat,x,y,z
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
 ;
@@ -25,7 +21,7 @@ function yder2,f
 ;  Check for degenerate case (no x-extension)
 ;
   if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
-  if (ny eq 1) then return,fltarr(nx,ny,nz)
+  if (ny eq 1) then return, fltarr(nx,ny,nz)
 ;
 ;  determine location of ghost zones, assume nghost=3 for now.
 ;
@@ -50,9 +46,9 @@ function yder2,f
         ; will also work on slices like yder2(ss[10,*,*])
       endif
       d[*,m1:m2,*]=dy2*(-490.*f[*,m1:m2,*]$
-                       +270.*(f[*,m1-1:m2-1,*]+f[*,m1+1:m2+1,*])$
-                        -27.*(f[*,m1-2:m2-2,*]+f[*,m1+2:m2+2,*])$
-                         +2.*(f[*,m1-3:m2-3,*]+f[*,m1+3:m2+3,*])$
+                        +270.*(f[*,m1-1:m2-1,*]+f[*,m1+1:m2+1,*])$
+                         -27.*(f[*,m1-2:m2-2,*]+f[*,m1+2:m2+2,*])$
+                          +2.*(f[*,m1-3:m2-3,*]+f[*,m1+3:m2+3,*])$
                        )
     endif else begin
       d[*,m1:m2,*]=0.
@@ -67,9 +63,9 @@ function yder2,f
         ; will also work on slices like yder2(uu[10,*,*,*])
       endif
       d[*,m1:m2,*,*]=dy2*(-490.*f[*,m1:m2,*,*]$
-                         +270.*(f[*,m1-1:m2-1,*,*]+f[*,m1+1:m2+1,*,*])$
-                          -27.*(f[*,m1-2:m2-2,*,*]+f[*,m1+2:m2+2,*,*])$
-                           +2.*(f[*,m1-3:m2-3,*,*]+f[*,m1+3:m2+3,*,*])$
+                          +270.*(f[*,m1-1:m2-1,*,*]+f[*,m1+1:m2+1,*,*])$
+                           -27.*(f[*,m1-2:m2-2,*,*]+f[*,m1+2:m2+2,*,*])$
+                            +2.*(f[*,m1-3:m2-3,*,*]+f[*,m1+3:m2+3,*,*])$
                          )
     endif else begin
       d[*,m1:m2,*,*]=0.
@@ -82,8 +78,8 @@ function yder2,f
 ;
 ; apply correction only for nonuniform mesh
 ;
-  if not lequidist[1] then d=d+dd
+  if (not lequidist[1]) then d=d+dd
 ;
-  return,d
+  return, d
 ;
 end
