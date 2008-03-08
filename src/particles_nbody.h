@@ -8,4 +8,4 @@
   public :: rprint_particles_nbody
   public :: read_particles_nbody_init_pars, write_particles_nbody_init_pars
   public :: read_particles_nbody_run_pars, write_particles_nbody_run_pars
-  public :: share_sinkparticles,get_totalmass
+  public :: share_sinkparticles,get_totalmass,calc_nbodygravity_particles

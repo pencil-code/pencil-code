@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.61 2008-03-07 19:36:49 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.62 2008-03-08 18:14:20 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -11,7 +11,8 @@
 !
 !***************************************************************
 module Particles_nbody
-
+!!!! 08 mar 08, supposed to be the new one, apart from a break in eos
+!    i still don't understand
   use Cdata
   use Messages
   use Particles_cdata
@@ -35,22 +36,29 @@ module Particles_nbody
   real :: GNewton=impossible,prhs_cte
   integer :: ramp_orbits=5
   logical :: lramp=.false.
+  logical :: linterpolate_gravity=.false.,linterpolate_linear=.true.
+  logical :: linterpolate_quadratic_spline=.false.
 
+  integer :: iglobal_ggp=0
 
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
        pmass, r_smooth, lcylindrical_gravity_nbody, &
        lexclude_frozen, GNewton, bcspx, bcspy, bcspz, &
-       ramp_orbits,lramp,final_ramped_mass,prhs_cte
+       ramp_orbits,lramp,final_ramped_mass,prhs_cte,linterpolate_gravity,&
+       linterpolate_quadratic_spline
 
   namelist /particles_nbody_run_pars/ &
        dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
-       lnogravz_star,lfollow_particle, lbackreaction, lexclude_frozen, GNewton, &
-       bcspx, bcspy, bcspz,prhs_cte,lnoselfgrav_star
+       lnogravz_star,lfollow_particle, lbackreaction, lexclude_frozen, &
+       GNewton, bcspx, bcspy, bcspz,prhs_cte,lnoselfgrav_star,&
+       linterpolate_quadratic_spline
 
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
   integer                     :: idiag_totenergy=0,idiag_totangmom=0
+
+  logical :: ldust=.false.
 
   contains
 
@@ -70,7 +78,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.61 2008-03-07 19:36:49 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.62 2008-03-08 18:14:20 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -99,6 +107,7 @@ module Particles_nbody
 !  27-aug-06/wlad: adapted
 !
       use Mpicomm,only:stop_it
+      use FArrayManager
 !
       logical :: lstarting
 !
@@ -152,6 +161,30 @@ module Particles_nbody
         call fatal_error("initialize_particles_nbody","")
       endif
 !
+!  The presence of dust particles needs to be known
+!
+      if (npar > nspar) ldust=.true.
+      if (linterpolate_gravity.and.(.not.ldust)) then
+        if (lroot) print*,'interpolate gravity is just'//&
+             ' for the dust component. No need for it if'//&
+             ' you are not using dust particles'
+        call fatal_error("initialize_particles_nbody","")
+      endif
+      if (linterpolate_gravity) then
+         if (lroot) print*,'initializing global array for sink gravity'
+         call farray_register_global('ggp',iglobal_ggp,vector=3)
+      endif
+!      
+      if (linterpolate_quadratic_spline) &
+           linterpolate_linear=.false.
+!
+      if ((.not.linterpolate_gravity).and.&
+           linterpolate_quadratic_spline) then
+        if (lroot) print*,'no need for linterpolate_quadratic_spline'//&
+             'if linterpolate_gravity is false'
+        call fatal_error("initialize_particles_nbody","")
+      endif
+!
     endsubroutine initialize_particles_nbody
 !***********************************************************************
     subroutine pencil_criteria_par_nbody()
@@ -161,7 +194,7 @@ module Particles_nbody
 !  22-sep-06/wlad: adapted
 !
       lpenc_requested(i_rho)=.true.
-      lpenc_requested(i_rhop)=.true.
+      if (ldust) lpenc_requested(i_rhop)=.true.
       lpenc_requested(i_r_mn)=.true.
       lpenc_requested(i_rcyl_mn)=.true.
       
@@ -454,6 +487,10 @@ module Particles_nbody
 !  Add gravity from the particles to the gas
 !  and the backreaction from the gas onto the particles
 !
+!  Adding the gravity on the dust component via the grid
+!  is less accurate, but much faster than looping through all 
+!  npar_loc particle and add the gravity of all sinks to it.
+!
 !  07-sep-06/wlad: coded
 !
       use Messages, only: fatal_error
@@ -462,9 +499,9 @@ module Particles_nbody
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
-      real, dimension (nx,3) :: ggp
       real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
-      real, dimension (nx) :: grav_particle,rrp,pot_energy
+      real, dimension (nx,3) :: ggt
+      real, dimension (nx) :: pot_energy
       real, dimension (3) :: xxpar,accg
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -474,53 +511,47 @@ module Particles_nbody
       intent (in) :: f, p, fp, ineargrid
       intent (inout) :: df,dfp
 !
-      if (lramp) call get_ramped_mass
+! Get the total gravity field. In the case of dust,
+! it is already pre-calculated
 !
-! Output the positions of all particles
+      if (linterpolate_gravity) then
+!
+! Interpolate the gravity to the position of the particles
+!
+          if (npar_imn(imn)/=0) then
+            do k=k1_imn(imn),k2_imn(imn) !loop throught in the pencil
+              if (ipar(k).gt.nspar) then !for dust
+                !interpolate the gravity
+                if (linterpolate_linear) then
+                  call interpolate_linear(f,iglobal_ggp,&
+                       iglobal_ggp+2,fp(k,ixp:izp),accg,ineargrid(k,:),ipar(k))
+                else if (linterpolate_quadratic_spline) then
+                  !
+                  ! WL: I am not sure if this interpolation
+                  !     works for cylindrical coordinates, so
+                  !     beware
+                  !
+                  call interpolate_quadratic_spline(f,iglobal_ggp,&
+                       iglobal_ggp+2,fp(k,ixp:izp),accg,ineargrid(k,:),ipar(k))
+                endif
+                dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+accg
+              endif
+            enddo
+          endif
+      endif
+! 
+! Add the acceleration to the gas
 !
       if (lhydro) then
-        if (headtt) then
-          print*,'dvvp_dt_nbody_pencil: Add particles gravity to the gas'
-          if (nxgrid/=1) print*,'dvvp_dt_nbody_pencil: Particles '//&
-               'located at fsp(x)=',fsp(:,ixp)
-          if (nygrid/=1) print*,'dvvp_dt_nbody_pencil: Particles '//&
-               'located at fsp(y)=',fsp(:,iyp)
-          if (nzgrid/=1) print*,'dvvp_dt_nbody_pencil: Particles '//&
-               'located at fsp(z)=',fsp(:,izp)
+        if (linterpolate_gravity) then
+          !already calculate, so no need to lose time
+          !calculating again
+          ggt=f(l1:l2,m,n,iglobal_ggp:iglobal_ggp+2)
+        else
+          call get_total_gravity(ggt)
         endif
-!
-! Initialize tmp for potential energy
-!
-        if (idiag_totenergy/=0) pot_energy=0.
-!
-! Calculate gas-particles distances
-!
-        do ks=1,nspar
-!
-! Spherical and cylindrical distances
-!
-          call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
-               E1_=fsp(ks,ixp),E2_=fsp(ks,iyp),E3_=fsp(ks,izp))
-!
-! Check which particle has cylindrical gravity switched on
-!
-          if (lcylindrical_gravity_nbody(ks)) then
-            rrp = rpcyl_mn(:,ks)
-          else
-            rrp = rp_mn(:,ks)
-          endif
-!
-! Gravity field from the particle ks
-!
-          grav_particle =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
-          call get_gravity_field_nbody(grav_particle,ggp,ks)
-!
-          if ((ks==nspar).and.lnogravz_star) &
-               ggp(:,3) = 0.
-!
-! Add this acceleration to the gas
-!
-          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggp
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggt 
+      
 !
 ! Backreaction of the gas+dust gravity onto the massive particles
 ! The integration is needed for these two cases:
@@ -529,6 +560,7 @@ module Particles_nbody
 !   2. We are, but a particle is out of the box (a star, for instance)
 !      and therefore the potential cannot be interpolated.
 !
+        do ks=1,nspar
           lparticle_out=.false.
           if (lselfgravity) then
             if ((fsp(ks,ixp)< xyz0(1)).or.(fsp(ks,ixp) > xyz1(1)) .or. &
@@ -552,7 +584,14 @@ module Particles_nbody
 ! Get the acceleration particle ks suffers due to self-gravity
 !
             xxpar = fsp(ks,ixp:izp)
-            call integrate_selfgravity(p,rrp,xxpar,accg,r_smooth(ks))
+            if (lcylindrical_gravity_nbody(ks)) then
+              call integrate_selfgravity(p,rpcyl_mn(:,ks),&
+                   xxpar,accg,r_smooth(ks))
+            else
+              call integrate_selfgravity(p,rp_mn(:,ks),&
+                   xxpar,accg,r_smooth(ks))
+            endif
+            
 !
 ! Add it to its dfp
 !
@@ -562,13 +601,19 @@ module Particles_nbody
             enddo
           endif
 !
-! Calculate torques for output, if needed
+! Diagnostic
 !
           if (ldiagnos) then
+            if (idiag_totenergy/=0) pot_energy=0.
+            call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
+                 E1_=fsp(ks,ixp),E2_=fsp(ks,iyp),E3_=fsp(ks,izp))
+!
+! Calculate torques for output, if needed
+!
             if ((idiag_torqext(ks)/=0).or.(idiag_torqint(ks)/=0)) &
                  call calc_torque(p,rpcyl_mn(:,ks),ks)
 !
-! Total energy
+! Total energy      
 !
             if (idiag_totenergy/=0) then
               !potential energy
@@ -576,12 +621,11 @@ module Particles_nbody
                    GNewton*pmass(ks)*&
                    (rpcyl_mn(:,ks)**2+r_smooth(ks)**2)**(-0.5)
               if (ks==nspar) &
-                   call sum_lim_mn_name(p%rho*0.5*p%u2 + pot_energy,&
+                   call sum_lim_mn_name(.5*p%rho*p%u2 + pot_energy,&
                    idiag_totenergy,p)
             endif
           endif
         enddo
-!
       endif
 !
     endsubroutine dvvp_dt_nbody_pencil
@@ -617,11 +661,9 @@ module Particles_nbody
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
-      real, dimension (3) :: evr
-      real :: e1,e2,e3,e10,e20,e30
-      real :: Omega2,r2_ij,invr3_ij
 !
-      integer :: i, k, ks, j, jvel, jpos
+      real, dimension(3) :: xxpar,accg
+      integer :: k, ks, j, jpos, jvel
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) ::     f,  fp,  ineargrid
@@ -635,68 +677,31 @@ module Particles_nbody
 !
       if (lheader) print*,'dvvp_dt_nbody: Calculate dvvp_dt_nbody'
 !
-!  Evolve particle positions due to the gravity of the sink particles
-!  not only sink's gravity on dust but also sink-sink (n-body)
+!  Evolve sink particle positions due to the gravity of other 
+!  sink particles. The gravity of the sinks on the dust will be
+!  added inside the pencil in dvvp_dt_nbody_pencil
+!
+      if (lramp) call get_ramped_mass
 !
       do k=1,npar_loc
-!
-!  Loop through the sinks
-!
-        do ks=1,nspar
-          if (ipar(k)/=ks) then
-!
-            e1=fp(k,ixp);e10=fsp(ks,ixp)
-            e2=fp(k,iyp);e20=fsp(ks,iyp)
-            e3=fp(k,izp);e30=fsp(ks,izp)
-!
-!  Get the distances in each ortogonal component. 
-!  These are NOT (x,y,z) for all.
-!  For cartesian it is (x,y,z), for cylindrical (s,phi,z)
-!  for spherical (r,theta,phi)
-! 
-            if (lcartesian_coords) then
-              evr(1) = e1 - e10  
-              evr(2) = e2 - e20  
-              evr(3) = e3 - e30  
-            elseif (lcylindrical_coords) then
-              evr(1) = e1 - e10*cos(e2-e20)  
-              evr(2) = e10*sin(e2-e20)       
-              evr(3) = e3 - e30              
-            elseif (lspherical_coords) then
-              call stop_it("dvvp_dt_nbody: not yet implemented for "//&
-                   " spherical polars")
-            endif
-!
-!  Particles relative distance from each other
-!
-!  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
-!  invr3_ij = r_ij**(-3)
-!
-            r2_ij = sum(evr**2)
-            if (r2_ij.eq.0) then
-              print*,"Particle ",ipar(k)," is too close to the massive particle ", ks
-              print*," The resulting acceleration is infinite! Better stop and check"
-              call stop_it("")
-            endif
-!
-            invr3_ij = r2_ij**(-1.5)
-!
-!  Gravitational acceleration: g=g0/|r-r0|^3 (r-r0)
-!  The acceleration is in non-coordinate basis (all have dimension of length). 
-!  The main dxx_dt of particle_dust takes care of 
-!  transforming the linear velocities to angular changes 
-!  in position.
-!
-            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) &
-                 - GNewton*pmass(ks)*invr3_ij*evr(1:3)
-!
+        if (linterpolate_gravity) then
+          !only loop through sinks
+          if (ipar(k).le.nspar) then
+            xxpar=fp(k,ixp:izp)
+            call loop_through_sinks(xxpar,ipar(k),accg)
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accg
           endif
-        enddo
+        else
+          !for all particles
+          xxpar=fp(k,ixp:izp)
+          call loop_through_sinks(xxpar,ipar(k),accg)
+          dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accg
+        endif
       enddo
 !
 !  Position and velocity diagnostics (per sink particle)
-!
-      if (ldiagnos) then
+! 
+     if (ldiagnos) then
         do ks=1,nspar
           if (lfollow_particle(ks)) then
             do j=1,3
@@ -713,6 +718,71 @@ module Particles_nbody
       if (lfirstcall) lfirstcall=.false.
 !
     endsubroutine dvvp_dt_nbody
+!************************************************************
+    subroutine loop_through_sinks(xxpar,kj,accg)
+!
+      real, dimension (3) :: xxpar,evr, accg
+      real :: e1,e2,e3,e10,e20,e30
+      real :: r2_ij,invr3_ij
+      integer :: k, ks, kj
+!
+      intent(in)  :: xxpar,kj
+      intent(out) :: accg 
+!
+      accg=0.
+      do ks=1,nspar
+        if (kj/=ks) then
+!
+          e1=xxpar(1);e10=fsp(ks,ixp)
+          e2=xxpar(2);e20=fsp(ks,iyp)
+          e3=xxpar(3);e30=fsp(ks,izp)
+!
+!  Get the distances in each ortogonal component. 
+!  These are NOT (x,y,z) for all.
+!  For cartesian it is (x,y,z), for cylindrical (s,phi,z)
+!  for spherical (r,theta,phi)
+! 
+          if (lcartesian_coords) then
+            evr(1) = e1 - e10  
+            evr(2) = e2 - e20  
+            evr(3) = e3 - e30  
+          elseif (lcylindrical_coords) then
+            evr(1) = e1 - e10*cos(e2-e20)  
+            evr(2) = e10*sin(e2-e20)       
+            evr(3) = e3 - e30              
+          elseif (lspherical_coords) then
+            call fatal_error("loop_through_sinks","not yet implemented "//&
+                 "for spherical polars")
+          endif
+!
+!  Particles relative distance from each other
+!
+!  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
+!  invr3_ij = r_ij**(-3)
+!
+          r2_ij = sum(evr**2)
+          if (r2_ij.eq.0) then
+            print*,"Particle ",kj," is too close "//&
+                 "to the massive particle ", ks,". The "//&
+                 "resulting acceleration is infinite! Better "//&
+                 "stop and check"
+            call fatal_error("loop_through_sinks","")
+          endif
+!
+          invr3_ij = r2_ij**(-1.5)
+!
+!  Gravitational acceleration: g=g0/|r-r0|^3 (r-r0)
+!  The acceleration is in non-coordinate basis (all have dimension of length). 
+!  The main dxx_dt of particle_dust takes care of 
+!  transforming the linear velocities to angular changes 
+!  in position.
+!
+          accg=accg-GNewton*pmass(ks)*invr3_ij*evr(1:3)
+!
+        endif
+      enddo
+!
+    endsubroutine loop_through_sinks
 !**********************************************************
     subroutine point_par_name(a,iname)
 !
@@ -1130,6 +1200,73 @@ module Particles_nbody
       endif
 !
     endsubroutine get_ramped_mass
+!***********************************************************************
+    subroutine calc_nbodygravity_particles(f)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx,3) :: ggt
+!
+      if (linterpolate_gravity) then
+!
+        if (lramp) call get_ramped_mass
+!
+! Calculate grid - sink particles distances
+!
+        do n=n1,n2
+          do m=m1,m2
+            call get_total_gravity(ggt)
+            f(l1:l2,m,n,iglobal_ggp:iglobal_ggp+2)=ggt
+          enddo
+        enddo
+!
+!  else do nothing
+!
+      endif
+!
+    endsubroutine calc_nbodygravity_particles
+!***********************************************************************
+      subroutine get_total_gravity(ggt)
+!  
+        use Sub
+!
+      real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
+      real, dimension (nx,3)     :: ggp,ggt
+      real, dimension (nx)       :: grav_particle,rrp
+      integer                    :: ks
+!
+      intent(out) :: ggt
+!
+      ggt=0.
+      do ks=1,nspar
+!
+! Spherical and cylindrical distances
+!
+        call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
+             e1_=fsp(ks,ixp),e2_=fsp(ks,iyp),e3_=fsp(ks,izp))
+!
+! Check which particle has cylindrical gravity switched on
+!
+        if (lcylindrical_gravity_nbody(ks)) then
+          rrp = rpcyl_mn(:,ks)
+        else
+          rrp = rp_mn(:,ks)
+        endif
+!
+! Gravity field from the particle ks
+!
+        grav_particle =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
+        call get_gravity_field_nbody(grav_particle,ggp,ks)
+!
+        if ((ks==nspar).and.lnogravz_star) &
+             ggp(:,3) = 0.
+!
+! Sum up the accelerations of the sinks
+!
+        ggt=ggt+ggp
+!
+      enddo
+!
+    endsubroutine get_total_gravity
 !***********************************************************************
     subroutine rprint_particles_nbody(lreset,lwrite)
 !
