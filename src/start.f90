@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.180 2008-03-07 15:22:23 wlyra Exp $
+! $Id: start.f90,v 1.181 2008-03-08 17:26:38 wlyra Exp $
 !
 !***********************************************************************
       program start
@@ -92,6 +92,7 @@
         allocate(df(mx,my,mz,mvar)     ,STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for df")
 !
         call register_modules()         ! register modules, etc.
+        call particles_register_modules()
 !
 !  The logical headtt is sometimes referred to in start.x, even though it is
 !  not yet defined. So we set it simply to lroot here.
@@ -101,7 +102,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.180 2008-03-07 15:22:23 wlyra Exp $")
+             "$Id: start.f90,v 1.181 2008-03-08 17:26:38 wlyra Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -122,6 +123,7 @@
 
         call read_startpars(FILE=.true.)
         call rprint_list(.false.)
+        call particles_rprint_list(.false.)
 !
 !  Will we write all slots of f?
 !
@@ -265,6 +267,7 @@
 !  example).
 !
         call initialize_modules(f,lstarting=.true.)
+        call particles_initialize_modules(lstarting=.true.)
 !
 !  Initial conditions: by default, we put f=0 (ss=lnrho=uu=0, etc)
 !  alternatively: read existing snapshot and overwrite only some fields
@@ -313,6 +316,8 @@
           call init_special   (f,xx,yy,zz)
         enddo
 !
+        if (lparticles) call particles_init(f)
+!
 !  If requested, write original stratification to file.
 !
         if (lwrite_stratification) then
@@ -339,13 +344,6 @@
           enddo
           if (lroot) print*,'DONE: filter initial velocity, nfilter=',nfilter
         endif
-!
-!  Prepare particles.
-!
-        call particles_register_modules()
-        call particles_rprint_list(.false.)
-        call particles_initialize_modules(lstarting=.true.)
-        if (lparticles) call particles_init(f)
 !
 !  Calculate the potential of the self-gravity (mostly for debugging).
 !
