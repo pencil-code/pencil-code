@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.65 2008-03-07 14:37:10 wlyra Exp $
+! $Id: general.f90,v 1.66 2008-03-08 14:34:38 wlyra Exp $
 
 module General
 
@@ -1009,9 +1009,13 @@ module General
         angle(i)=(i-1)*pi/(nygrid-1)
       enddo
       a=cos(arg*sin(angle)-nu*angle)
-      fac=pi_1*(angle(2)-angle(1))
 !
-      res=fac*(sum(a(2:nygrid-1))+.5*(a(1)+a(nygrid)))
+      if (nygrid>=3) then
+        fac=pi_1*(angle(2)-angle(1))
+        res=fac*(sum(a(2:nygrid-1))+.5*(a(1)+a(nygrid)))
+      else
+        call fatal_error("besselj_nu_int","too few points to integrate")
+      endif
 !
     endsubroutine besselj_nu_int
 !*****************************************************************************
