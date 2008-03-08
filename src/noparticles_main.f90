@@ -1,4 +1,4 @@
-! $Id: noparticles_main.f90,v 1.22 2006-11-30 09:03:36 dobler Exp $
+! $Id: noparticles_main.f90,v 1.23 2008-03-08 18:16:48 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -186,6 +186,14 @@ module Particles_main
       if (NO_WARN) print*, f, rhs_poisson, rhs_poisson_const, lcontinued
 !
     endsubroutine particles_calc_selfpotential
+!***********************************************************************
+    subroutine particles_calc_nbodygravity(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      if (NO_WARN) print*, f
+!
+    endsubroutine particles_calc_nbodygravity
 !***********************************************************************
     subroutine particles_pde(f,df)
 !
