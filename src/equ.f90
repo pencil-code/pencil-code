@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.386 2008-02-21 06:52:46 brandenb Exp $
+! $Id: equ.f90,v 1.387 2008-03-08 18:15:12 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -472,7 +472,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.386 2008-02-21 06:52:46 brandenb Exp $")
+           "$Id: equ.f90,v 1.387 2008-03-08 18:15:12 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -516,6 +516,13 @@ module Equ
 !  later.
 !
       call calc_selfpotential(f)
+!
+!  Calculate the summed gravity due to the massive particles. 
+!  Needed because it is too slow to calculate the gravity at the 
+!  position of all dust particles. So we calculate the gravity 
+!  for the grid and interpolate to the position of the particles.
+!
+      if (lparticles_nbody) call particles_calc_nbodygravity(f)
 !
 !  Remove mean x-momentum if desired.
 !  Useful to avoid unphysical winds in shearing box simulations.
