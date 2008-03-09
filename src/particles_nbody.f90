@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.64 2008-03-09 17:11:25 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.65 2008-03-09 18:35:16 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -78,7 +78,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.64 2008-03-09 17:11:25 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.65 2008-03-09 18:35:16 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -500,7 +500,7 @@ module Particles_nbody
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
-      real, dimension (nx,3) :: ggt
+      real, dimension (mx,3) :: ggt
       real, dimension (nx) :: pot_energy
       real, dimension (3) :: xxpar,accg
       type (pencil_case) :: p
@@ -546,12 +546,11 @@ module Particles_nbody
         if (linterpolate_gravity) then
           !already calculate, so no need to lose time
           !calculating again
-          ggt=f(l1:l2,m,n,iglobal_ggp:iglobal_ggp+2)
+          ggt=f(:,m,n,iglobal_ggp:iglobal_ggp+2)
         else
           call get_total_gravity(ggt)
         endif
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggt 
-      
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggt(l1:l2,:)       
 !
 ! Backreaction of the gas+dust gravity onto the massive particles
 ! The integration is needed for these two cases:
@@ -1199,7 +1198,7 @@ module Particles_nbody
     subroutine calc_nbodygravity_particles(f)
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx,3) :: ggt
+      real, dimension(mx,3) :: ggt
 !
       if (linterpolate_gravity) then
 !
@@ -1207,10 +1206,10 @@ module Particles_nbody
 !
 ! Calculate grid - sink particles distances
 !
-        do n=n1,n2
-          do m=m1,m2
+        do n=1,mz
+          do m=1,my
             call get_total_gravity(ggt)
-            f(l1:l2,m,n,iglobal_ggp:iglobal_ggp+2)=ggt
+            f(:,m,n,iglobal_ggp:iglobal_ggp+2)=ggt
           enddo
         enddo
 !
@@ -1224,9 +1223,9 @@ module Particles_nbody
 !  
         use Sub
 !
-      real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
-      real, dimension (nx,3)     :: ggp,ggt
-      real, dimension (nx)       :: grav_particle,rrp
+      real, dimension (mx,nspar) :: rp_mn,rpcyl_mn
+      real, dimension (mx,3)     :: ggp,ggt
+      real, dimension (mx)       :: grav_particle,rrp
       integer                    :: ks
 !
       intent(out) :: ggt
