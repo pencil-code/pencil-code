@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.65 2008-03-09 18:35:16 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.66 2008-03-09 21:59:04 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -78,7 +78,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.65 2008-03-09 18:35:16 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.66 2008-03-09 21:59:04 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -1095,21 +1095,21 @@ module Particles_nbody
                       m,n,nx,lcylindrical_gravity
       use Mpicomm,only:stop_it
 !
-      real, dimension(nx),intent(in) :: grr
-      real, dimension(nx,3),intent(out) :: gg
+      real, dimension(mx),intent(in) :: grr
+      real, dimension(mx,3),intent(out) :: gg
       real :: x0,y0,z0
       integer :: ks
 !
       x0=fsp(ks,ixp);y0=fsp(ks,iyp);z0=fsp(ks,izp)
 !
       if (coord_system=='cartesian') then
-        gg(:,1) = (x(l1:l2)-x0)*grr
-        gg(:,2) = (y(  m  )-y0)*grr
-        gg(:,3) = (z(  n  )-z0)*grr
+        gg(:,1) = (x   -x0)*grr
+        gg(:,2) = (y(m)-y0)*grr
+        gg(:,3) = (z(n)-z0)*grr
       elseif (coord_system=='cylindric') then
-        gg(:,1) = (x(l1:l2)-x0*cos(y(m)-y0))*grr
-        gg(:,2) =           x0*sin(y(m)-y0) *grr
-        gg(:,3) = (z(  n  )-z0)             *grr
+        gg(:,1) = (x   -x0*cos(y(m)-y0))*grr
+        gg(:,2) =       x0*sin(y(m)-y0) *grr
+        gg(:,3) = (z(n)-z0             )*grr
       elseif (coord_system=='spherical') then
         call stop_it("get_gravity_field_nbody: off-center gravity"//&
              " field not yet implemented for spherical polars")
@@ -1219,9 +1219,9 @@ module Particles_nbody
 !
     endsubroutine calc_nbodygravity_particles
 !***********************************************************************
-      subroutine get_total_gravity(ggt)
+    subroutine get_total_gravity(ggt)
 !  
-        use Sub
+      use Sub
 !
       real, dimension (mx,nspar) :: rp_mn,rpcyl_mn
       real, dimension (mx,3)     :: ggp,ggt
