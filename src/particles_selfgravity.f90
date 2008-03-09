@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.14 2008-03-07 18:48:43 wlyra Exp $
+! $Id: particles_selfgravity.f90,v 1.15 2008-03-09 19:25:08 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -54,7 +54,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.14 2008-03-07 18:48:43 wlyra Exp $")
+           "$Id: particles_selfgravity.f90,v 1.15 2008-03-09 19:25:08 wlyra Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -90,6 +90,36 @@ module Particles_selfgravity
       if (ierr/=0) then
         if (lroot) print*, 'initialize_particles_selfgrav: '// &
             'there was a problem when getting tstart_selfgrav!'
+        call fatal_error('initialize_particles_selfgrav','')
+      endif
+!
+! Boundary condition consistency
+!
+      if (any(bcx(igpotselfx:igpotselfz)=='p') .and. .not.(bcx(ipotself)=='p')) then
+        if (lroot) then
+          print*, 'initialize_particles_selfgrav: igpotself has bcx=''p'', but the potential is not'
+          print*, '                               periodic! (you must set a proper boundary'
+          print*, '                               condition for the gradient of the potential)'
+          print*, 'initialize_particles_selfgrav: bcx=', bcx
+        endif
+        call fatal_error('initialize_particles_selfgrav','')
+      endif
+      if (any(bcy(igpotselfx:igpotselfz)=='p') .and. .not.(bcy(ipotself)=='p')) then
+        if (lroot) then
+          print*, 'initialize_particles_selfgrav: igpotself has bcy=''p'', but the potential is not'
+          print*, '                               periodic! (you must set a proper boundary'
+          print*, '                               condition for the gradient of the potential)'
+          print*, 'initialize_particles_selfgrav: bcy=', bcy
+        endif
+        call fatal_error('initialize_particles_selfgrav','')
+      endif
+      if (any(bcz(igpotselfx:igpotselfz)=='p') .and. .not.(bcz(ipotself)=='p')) then
+        if (lroot) then
+          print*, 'initialize_particles_selfgrav: igpotself has bcz=''p'', but the potential is not'
+          print*, '                               periodic! (you must set a proper boundary'
+          print*, '                               condition for the gradient of the potential)'
+          print*, 'initialize_particles_selfgrav: bcz=', bcz
+        endif
         call fatal_error('initialize_particles_selfgrav','')
       endif
 !
