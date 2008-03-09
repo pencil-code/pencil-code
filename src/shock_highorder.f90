@@ -1,4 +1,4 @@
-! $Id: shock_highorder.f90,v 1.16 2007-11-22 10:56:12 ajohan Exp $
+! $Id: shock_highorder.f90,v 1.17 2008-03-09 19:26:05 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -78,7 +78,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_highorder.f90,v 1.16 2007-11-22 10:56:12 ajohan Exp $")
+           "$Id: shock_highorder.f90,v 1.17 2008-03-09 19:26:05 wlyra Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -175,7 +175,7 @@ module Shock
             print*, 'initialize_shock: shock viscosity has bcx=''p'', but the velocity field is not'
             print*, '                  periodic! (you must set a proper boundary condition for the'
             print*, '                  shock viscosity)'
-            print*, 'initialize_shock: bcz=', bcz
+            print*, 'initialize_shock: bcx=', bcx
             print*, 'initialize_shock: to suppress this error,'
             print*, '                  set lforce_periodic_shockviscosity=T in &shock_run_pars'
           endif
@@ -186,7 +186,7 @@ module Shock
             print*, 'initialize_shock: shock viscosity has bcy=''p'', but the velocity field is not'
             print*, '                  periodic! (you must set a proper boundary condition for the'
             print*, '                  shock viscosity)'
-            print*, 'initialize_shock: bcz=', bcz
+            print*, 'initialize_shock: bcy=', bcy
             print*, 'initialize_shock: to suppress this error,'
             print*, '                  set lforce_periodic_shockviscosity=T in &shock_run_pars'
           endif
