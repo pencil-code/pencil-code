@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.63 2008-03-09 14:33:56 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.64 2008-03-09 17:11:25 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -78,7 +78,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.63 2008-03-09 14:33:56 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.64 2008-03-09 17:11:25 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -760,14 +760,7 @@ module Particles_nbody
 !  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
 !  invr3_ij = r_ij**(-3)
 !
-          r2_ij = sum(evr**2)
-          if (r2_ij.eq.0) then
-            print*,"Particle ",kj," is too close "//&
-                 "to the massive particle ", ks,". The "//&
-                 "resulting acceleration is infinite! Better "//&
-                 "stop and check"
-            call fatal_error("loop_through_sinks","")
-          endif
+          r2_ij = sum(evr**2)+r_smooth(ks)**2
 !
           invr3_ij = r2_ij**(-1.5)
 !
