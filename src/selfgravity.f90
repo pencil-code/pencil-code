@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.28 2007-10-18 11:04:57 ajohan Exp $
+! $Id: selfgravity.f90,v 1.29 2008-03-09 19:24:27 wlyra Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -72,7 +72,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.28 2007-10-18 11:04:57 ajohan Exp $")
+           "$Id: selfgravity.f90,v 1.29 2008-03-09 19:24:27 wlyra Exp $")
 !
 !  Put variable name in array
 !
@@ -123,6 +123,34 @@ module Selfgravity
       if (ierr/=0) then
         if (lroot) print*, 'initialize_selfgravity: there was a problem '// &
             'when sharing tstart_selfgrav!'
+        call fatal_error('initialize_selfgravity','')
+      endif
+!
+      if (bcx(ipotself)=='p' .and. .not.(bcx(ilnrho)=='p')) then
+        if (lroot) then
+          print*, 'initialize_selfgravity: potself has bcx=''p'', but the density is not'
+          print*, '                        periodic! (you must set a proper boundary condition'
+          print*, '                        for the potential)'
+          print*, 'initialize_selfgravity: bcx=', bcx
+        endif
+        call fatal_error('initialize_selfgravity','')
+      endif
+      if (bcy(ipotself)=='p' .and. .not.(bcy(ilnrho)=='p')) then
+        if (lroot) then
+          print*, 'initialize_selfgravity: potself has bcy=''p'', but the density is not'
+          print*, '                        periodic! (you must set a proper boundary condition'
+          print*, '                        for the potential)'
+          print*, 'initialize_selfgravity: bcy=', bcy
+        endif
+        call fatal_error('initialize_selfgravity','')
+      endif
+      if (bcz(ipotself)=='p' .and. .not.(bcz(ilnrho)=='p')) then
+        if (lroot) then
+          print*, 'initialize_selfgravity: potself has bcz=''p'', but the density is not'
+          print*, '                        periodic! (you must set a proper boundary condition'
+          print*, '                        for the potential)'
+          print*, 'initialize_selfgravity: bcz=', bcz
+        endif
         call fatal_error('initialize_selfgravity','')
       endif
 !
