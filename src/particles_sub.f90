@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.121 2008-03-04 15:21:31 wlyra Exp $
+! $Id: particles_sub.f90,v 1.122 2008-03-09 21:17:17 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -333,9 +333,9 @@ module Particles_sub
               !flush it to the outer boundary with keplerian speed
               if ((fp(k,ixp)< xyz0(1)).or.(fp(k,ixp)> xyz1(1))) then
                 if (lcylindrical_coords) then
-                  fp(k,ixp)  = r_ext
+                  fp(k,ixp)  = rp_ext-epsi
                   fp(k,ivpx) = 0.
-                  fp(k,ivpy) = r_ext**(-1.5)
+                  fp(k,ivpy) = fp(k,ixp)**(-1.5)
                 else
                   call fatal_error_local('boundconds_particles',&
                        'flush-keplerian only ready for cylindrical')
@@ -515,6 +515,8 @@ module Particles_sub
             enddo
           endif
 !  Calculate serial index of receiving processor.
+          if (ipz_rec==-1) ipz_rec=0
+          if (ipy_rec==-1) ipy_rec=0
           iproc_rec=ipy_rec+nprocy*ipz_rec
 !  Migrate particle if it is no longer at the current processor.
           if (iproc_rec/=iproc) then
