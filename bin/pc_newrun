@@ -1,6 +1,6 @@
 #!/bin/bash 
 #
-#  $Id: pc_newrun,v 1.7 2007-09-09 12:05:35 brandenb Exp $
+#  $Id: pc_newrun,v 1.8 2008-03-09 05:57:09 brandenb Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
@@ -94,6 +94,9 @@ cd $olddir
 echo "Use *.in files from:" `pwd`; ls -l *.in
 cp *.in $targetdir
 [ -f k.dat ] && cp k.dat $targetdir
+[ -f chemistry.dat ] && cp chemistry.dat $targetdir
+[ -f chemistry_m.dat ] && cp chemistry_m.dat $targetdir
+[ -f chemistry_p.dat ] && cp chemistry_p.dat $targetdir
 [ -f parameters.pro ] && cp parameters.pro $targetdir
 [ -f stratification.dat ] && cp stratification.dat $targetdir
 #
