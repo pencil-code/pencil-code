@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.57 2008-01-21 14:03:14 ajohan Exp $
+;  $Id: pc_varcontent.pro,v 1.58 2008-03-09 21:11:51 brandenb Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -289,7 +289,7 @@ default, ichemspec, 0
 chemcount=n_elements(ichemspec)
 if (chemcount gt 0L) then begin
   for i=0,chemcount-1 do begin
-    istr=strcompress(string(i),/remove_all)
+    istr=strcompress(string(i+1),/remove_all) ;(the +1 so we start with YY1)
     varcontent[ichemspec[i]].variable   = 'Chemical species mass fraction (YY'+istr+')'
     varcontent[ichemspec[i]].idlvar     = 'YY'+istr
     varcontent[ichemspec[i]].idlinit    = 'fltarr(mx,my,mz)*one'
