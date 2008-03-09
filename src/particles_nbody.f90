@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.62 2008-03-08 18:14:20 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.63 2008-03-09 14:33:56 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -78,7 +78,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.62 2008-03-08 18:14:20 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.63 2008-03-09 14:33:56 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -1023,10 +1023,12 @@ module Particles_nbody
 ! Send it to root. As there will be just nspar calls to
 ! mpisend, the tag can be ipar itself
 !
-              call mpisend_real(fsp(ks,:),mpvar,root,ks)
-              if (ip<=6) print*,'logical for particle ',ks,&
-                   ' set to true on processor ',iproc, &
-                   ' with tag=',ks
+              if (.not.lroot) then
+                call mpisend_real(fsp(ks,:),mpvar,root,ks)
+                if (ip<=6) print*,'logical for particle ',ks,&
+                     ' set to true on processor ',iproc, &
+                     ' with tag=',ks
+              endif
             endif
           enddo
 !
