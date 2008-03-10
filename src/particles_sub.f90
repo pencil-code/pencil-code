@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.123 2008-03-09 21:19:39 wlyra Exp $
+! $Id: particles_sub.f90,v 1.124 2008-03-10 02:03:46 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -450,6 +450,8 @@ module Particles_sub
       real, dimension (0:ncpus-1,npar_mig,mpvar) :: fp_mig, dfp_mig
       double precision, save :: dx1, dy1, dz1
       real, save :: y0_mig, y1_mig, z0_mig, z1_mig
+      real, dimension(nprocy), save :: y0_proc, y1_proc
+      real, dimension(nprocz), save :: z0_proc, z1_proc
       integer, dimension (0:ncpus-1,npar_mig) :: ipar_mig
       integer, dimension (0:ncpus-1,0:ncpus-1) :: nmig
       integer :: i, j, k, iproc_rec, ipy_rec, ipz_rec, iy0_rec, iz0_rec
@@ -471,6 +473,16 @@ module Particles_sub
           call fatal_error('redist_particles_procs','')
         endif
         dx1=1/dx; dy1=1/dy; dz1=1/dz
+        !boundaries - y
+        do j=1,nprocy
+          y0_proc(j) =  xyz0(2)+(j-1)*Lxyz(2)/ nprocy
+          y1_proc(j) =  xyz0(2)+ j   *Lxyz(2)/ nprocy
+        enddo
+        !boundaries - z
+        do j=1,nprocz
+          z0_proc(j) =  xyz0(3)*(j-1)*Lxyz(3)/ nprocz
+          z1_proc(j) =  xyz0(3)* j   *Lxyz(3)/ nprocz
+        enddo
         lfirstcall=.false.
       endif
 !
@@ -487,12 +499,20 @@ module Particles_sub
 !  Find y index of receiving processor.
           ipy_rec=ipy
           if (fp(k,iyp)>=y1_mig) then
+            if (lcheck_exact_frontier) then 
+              if (any(fp(k,iyp)==y1_proc(1:nprocy))) &
+                   fp(k,iyp)=fp(k,iyp)-epsi
+            endif
             iy0_rec=nint((fp(k,iyp)-y(m1))*dy1+nygrid)-nygrid+1
             do while (iy0_rec>ny)
               ipy_rec=ipy_rec+1
               iy0_rec=iy0_rec-ny
             enddo
           else if (fp(k,iyp)<y0_mig) then
+            if (lcheck_exact_frontier) then 
+              if (any(fp(k,iyp)==y0_proc(1:nprocy))) &
+                   fp(k,iyp)=fp(k,iyp)+epsi
+            endif
             iy0_rec=nint((fp(k,iyp)-y(m1))*dy1+nygrid)-nygrid+1
             do while (iy0_rec<1)
               ipy_rec=ipy_rec-1
@@ -502,12 +522,20 @@ module Particles_sub
 !  Find z index of receiving processor.
           ipz_rec=ipz
           if (fp(k,izp)>=z1_mig) then
+            if (lcheck_exact_frontier) then 
+              if (any(fp(k,izp)==z1_proc(1:nprocz))) &
+                   fp(k,izp)=fp(k,izp)-epsi
+            endif
             iz0_rec=nint((fp(k,izp)-z(n1))*dz1+nzgrid)-nzgrid+1
             do while (iz0_rec>nz)
               ipz_rec=ipz_rec+1
               iz0_rec=iz0_rec-nz
             enddo
           else if (fp(k,izp)<z0_mig) then
+            if (lcheck_exact_frontier) then 
+              if (any(fp(k,izp)==z0_proc(1:nprocz))) &
+                   fp(k,izp)=fp(k,izp)+epsi
+            endif
             iz0_rec=nint((fp(k,izp)-z(n1))*dz1+nzgrid)-nzgrid+1
             do while (iz0_rec<1)
               ipz_rec=ipz_rec-1
