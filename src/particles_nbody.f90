@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.66 2008-03-09 21:59:04 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.67 2008-03-10 21:29:30 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -11,8 +11,7 @@
 !
 !***************************************************************
 module Particles_nbody
-!!!! 08 mar 08, supposed to be the new one, apart from a break in eos
-!    i still don't understand
+
   use Cdata
   use Messages
   use Particles_cdata
@@ -37,7 +36,7 @@ module Particles_nbody
   integer :: ramp_orbits=5
   logical :: lramp=.false.
   logical :: linterpolate_gravity=.false.,linterpolate_linear=.true.
-  logical :: linterpolate_quadratic_spline=.false.
+  logical :: linterpolate_quadratic_spline=.false.,laccretion=.true.
 
   integer :: iglobal_ggp=0
 
@@ -46,13 +45,13 @@ module Particles_nbody
        pmass, r_smooth, lcylindrical_gravity_nbody, &
        lexclude_frozen, GNewton, bcspx, bcspy, bcspz, &
        ramp_orbits,lramp,final_ramped_mass,prhs_cte,linterpolate_gravity,&
-       linterpolate_quadratic_spline
+       linterpolate_quadratic_spline,laccretion
 
   namelist /particles_nbody_run_pars/ &
        dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
        lnogravz_star,lfollow_particle, lbackreaction, lexclude_frozen, &
        GNewton, bcspx, bcspy, bcspz,prhs_cte,lnoselfgrav_star,&
-       linterpolate_quadratic_spline
+       linterpolate_quadratic_spline,laccretion
 
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -78,7 +77,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.66 2008-03-09 21:59:04 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.67 2008-03-10 21:29:30 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -164,12 +163,18 @@ module Particles_nbody
 !  The presence of dust particles needs to be known
 !
       if (npar > nspar) ldust=.true.
-      if (linterpolate_gravity.and.(.not.ldust)) then
+      if (linterpolate_gravity.and.(.not.ldust)) then 
         if (lroot) print*,'interpolate gravity is just'//&
              ' for the dust component. No need for it if'//&
              ' you are not using dust particles'
         call fatal_error("initialize_particles_nbody","")
       endif
+      if (laccretion.and.linterpolate_gravity) then 
+        if (lroot) print*,'interpolate gravity  not yet '//&
+             'implemented in connection with accretion'
+        call fatal_error("initialize_particles_nbody","")
+      endif
+      
       if (linterpolate_gravity) then
          if (lroot) print*,'initializing global array for sink gravity'
          call farray_register_global('ggp',iglobal_ggp,vector=3)
@@ -661,12 +666,11 @@ module Particles_nbody
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension(3) :: xxpar,accg
       integer :: k, ks, j, jpos, jvel
       logical :: lheader, lfirstcall=.true.
 !
-      intent (in) ::     f,  fp,  ineargrid
-      intent (inout) :: df, dfp
+      intent (in) ::     f,  ineargrid
+      intent (inout) :: fp, df, dfp
 !
 !  Print out header information in first time step.
 !
@@ -682,19 +686,15 @@ module Particles_nbody
 !
       if (lramp) call get_ramped_mass
 !
-      do k=1,npar_loc
+      do k=npar_loc,1,-1
         if (linterpolate_gravity) then
           !only loop through sinks
           if (ipar(k).le.nspar) then
-            xxpar=fp(k,ixp:izp)
-            call loop_through_sinks(xxpar,ipar(k),accg)
-            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accg
+            call loop_through_sinks(fp,dfp,k)
           endif
         else
           !for all particles
-          xxpar=fp(k,ixp:izp)
-          call loop_through_sinks(xxpar,ipar(k),accg)
-          dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accg
+          call loop_through_sinks(fp,dfp,k)
         endif
       enddo
 !
@@ -718,23 +718,26 @@ module Particles_nbody
 !
     endsubroutine dvvp_dt_nbody
 !************************************************************
-    subroutine loop_through_sinks(xxpar,kj,accg)
+    subroutine loop_through_sinks(fp,dfp,k)
 !
-      real, dimension (3) :: xxpar,evr, accg
+      real, dimension (mpar_loc,mpvar) :: fp,dfp
+      real, dimension (3) ::evr
       real :: e1,e2,e3,e10,e20,e30
-      real :: r2_ij,invr3_ij
-      integer :: k, ks, kj
+      real :: r2_ij,rs2,invr3_ij
+      integer :: k, ks
 !
-      intent(in)  :: xxpar,kj
-      intent(out) :: accg 
+      intent(inout) :: fp,dfp
+      intent(in)  :: k
 !
-      accg=0.
+
+!      dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accg
+
       do ks=1,nspar
-        if (kj/=ks) then
+        if (ipar(k)/=ks) then
 !
-          e1=xxpar(1);e10=fsp(ks,ixp)
-          e2=xxpar(2);e20=fsp(ks,iyp)
-          e3=xxpar(3);e30=fsp(ks,izp)
+          e1=fp(k,ixp);e10=fsp(ks,ixp)
+          e2=fp(k,iyp);e20=fsp(ks,iyp)
+          e3=fp(k,izp);e30=fsp(ks,izp)
 !
 !  Get the distances in each ortogonal component. 
 !  These are NOT (x,y,z) for all.
@@ -759,9 +762,19 @@ module Particles_nbody
 !  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
 !  invr3_ij = r_ij**(-3)
 !
-          r2_ij = sum(evr**2)+r_smooth(ks)**2
-!
-          invr3_ij = r2_ij**(-1.5)
+          r2_ij = sum(evr**2)
+          rs2   = r_smooth(ks)**2
+
+          if (laccretion.and.(r2_ij.le.rs2)) then 
+            !particle got too close to the planet
+            !remove it!!
+            call remove_particle(fp,npar_loc,k,dfp)
+            !add mass to the planet
+            !calculate...
+            goto 99
+          else
+            r2_ij=r2_ij+rs2
+            invr3_ij = r2_ij**(-1.5)
 !
 !  Gravitational acceleration: g=g0/|r-r0|^3 (r-r0)
 !  The acceleration is in non-coordinate basis (all have dimension of length). 
@@ -769,11 +782,15 @@ module Particles_nbody
 !  transforming the linear velocities to angular changes 
 !  in position.
 !
-          accg=accg-GNewton*pmass(ks)*invr3_ij*evr(1:3)
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
+                 GNewton*pmass(ks)*invr3_ij*evr(1:3)
+          endif
 !
         endif
       enddo
 !
+99    continue
+      
     endsubroutine loop_through_sinks
 !**********************************************************
     subroutine point_par_name(a,iname)
