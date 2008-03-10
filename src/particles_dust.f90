@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.207 2008-03-04 19:52:27 wlyra Exp $
+! $Id: particles_dust.f90,v 1.208 2008-03-10 02:05:09 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -85,7 +85,7 @@ module Particles
       epsp_friction_increase,lcartesian_mig, lcollisional_dragforce_cooling, &
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
-      mean_free_path_gas, ldraglaw_epstein_transsonic
+      mean_free_path_gas, ldraglaw_epstein_transsonic, lcheck_exact_frontier
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -102,7 +102,7 @@ module Particles
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check,lcartesian_mig,ldraglaw_variable, &
       ldraglaw_epstein, ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
-      ldraglaw_epstein_transsonic
+      ldraglaw_epstein_transsonic,lcheck_exact_frontier
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -135,7 +135,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.207 2008-03-04 19:52:27 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.208 2008-03-10 02:05:09 wlyra Exp $")
 !
 !  Indices for particle position.
 !
