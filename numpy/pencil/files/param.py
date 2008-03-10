@@ -1,4 +1,4 @@
-# $Id: param.py,v 1.1 2007-11-16 13:57:04 joishi Exp $
+# $Id: param.py,v 1.2 2008-03-10 16:59:13 dintrans Exp $
 """
 param.py -- reads parameters from the f90 namelists
 Author: J. Oishi (joishi@amnh.org)
@@ -10,7 +10,7 @@ todo: think about single/double precision; make things into numpy arrays?
 import numpy as N
 import os
 
-def read_param(datadir='data/',param2=False):
+def read_param(datadir='data/',param2=False,quiet=False):
 
     if (not datadir.endswith('/')): datadir += '/'
     datadir = os.path.expanduser(datadir)
@@ -30,7 +30,7 @@ def read_param(datadir='data/',param2=False):
     
     cmd = 'nl2python '+filen
     script = os.popen(cmd).read()
-    print script;
+    if (not quiet): print script;
     if (len(script) != 0):
         exec(script)
     else:
