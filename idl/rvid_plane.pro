@@ -9,7 +9,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,TRUEPNG=png_truecolor,tmin=tmin,$
                nsmooth=nsmooth, textsize=textsize, $
                _extra=_extra
 ;
-; $Id: rvid_plane.pro,v 1.31 2007-09-22 07:32:42 brandenb Exp $
+; $Id: rvid_plane.pro,v 1.32 2008-03-10 09:33:24 brandenb Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -207,7 +207,7 @@ slice_z2pos=0.0*one
 ;
 dev='x' ;(default)
 if (keyword_set(png)) then begin
-  Nwx=zoom*size_plane[1] & Nwy=zoom*size_plane[2]
+  Nwx=1.15*zoom*size_plane[1] & Nwy=zoom*size_plane[2]
   resolution=[Nwx,Nwy] ; set window size
   print, 'z-buffer resolution in pixels '+ $
       '(set with zoom=', strtrim(zoom,2), ') =', strtrim(resolution,2)
@@ -346,7 +346,7 @@ while (not eof(1)) do begin
 ;  show image scaled between amin and amax and filling whole screen
 ;
         if (keyword_set(contourplot)) then begin
-          contourfill, plane, levels=grange(amin,amax,60), _extra=_extra
+          contourfill, plane, levels=grange(amin,amax,60), tit='t='+str(t), _extra=_extra
         endif else begin
 ;          plotimage, plane2, range=[amin,amax]
           tv, bytscl(plane2,min=amin,max=amax), iplane
