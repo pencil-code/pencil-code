@@ -9,7 +9,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,TRUEPNG=png_truecolor,tmin=tmin,$
                nsmooth=nsmooth, textsize=textsize, $
                _extra=_extra
 ;
-; $Id: rvid_plane.pro,v 1.32 2008-03-10 09:33:24 brandenb Exp $
+; $Id: rvid_plane.pro,v 1.33 2008-03-10 10:36:04 brandenb Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -81,6 +81,11 @@ mx=dim.mx & my=dim.my & mz=dim.mz
 nghostx=dim.nghostx & nghosty=dim.nghosty & nghostz=dim.nghostz
 nprocx=dim.nprocx & nprocy=dim.nprocy & nprocz=dim.nprocz
 ncpus=nprocx*nprocy*nprocz
+;
+;  read grid data
+;
+pc_read_grid, obj=grid;, datadir=datadir
+x=grid.x(dim.l1:dim.l2) & y=grid.y(dim.m1:dim.m2)
 ;
 ;  Set reasonable extension for 2-D runs.
 ;
@@ -346,13 +351,14 @@ while (not eof(1)) do begin
 ;  show image scaled between amin and amax and filling whole screen
 ;
         if (keyword_set(contourplot)) then begin
-          contourfill, plane, levels=grange(amin,amax,60), tit='t='+str(t), _extra=_extra
+          contourfill, plane, x, y, levels=grange(amin,amax,60), $
+              tit='!8t!6 ='+string(t/tunit,fo="(f6.1)"), _extra=_extra
         endif else begin
 ;          plotimage, plane2, range=[amin,amax]
           tv, bytscl(plane2,min=amin,max=amax), iplane
         endelse
-        xyouts, 0.05, 0.9, /normal, $
-            '!8t!6='+string(t/tunit,fo="(f6.1)"), color=color, size=textsize
+        ;xyouts, 0.05, 0.9, /normal, $
+        ;    '!8t!6='+string(t/tunit,fo="(f6.1)"), color=color, size=textsize
         if (keyword_set(png)) then begin
           istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
           image = tvrd()

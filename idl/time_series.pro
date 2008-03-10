@@ -1,4 +1,4 @@
-;  $Id: time_series.pro,v 1.29 2007-08-03 09:53:26 ajohan Exp $
+;  $Id: time_series.pro,v 1.30 2008-03-10 10:36:04 brandenb Exp $
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
@@ -112,6 +112,8 @@ if defined(i_oxuxBm) ne 0 then oxuxBm=reform(a(i_oxuxBm-1,*))
 if defined(i_uxDxuxbm) ne 0 then uxDxuxbm=reform(a(i_uxDxuxbm-1,*))
 if defined(i_JxBxBm) ne 0 then JxBxBm=reform(a(i_JxBxBm-1,*))
 if defined(i_gpxBm) ne 0 then gpxBm=reform(a(i_gpxBm-1,*))
+if defined(i_u3u21m) ne 0 then u3u21m=reform(a(i_u3u21m-1,*))
+if defined(i_b3b21m) ne 0 then b3b21m=reform(a(i_b3b21m-1,*))
 if defined(i_u2u13m) ne 0 then u2u13m=reform(a(i_u2u13m-1,*))
 if defined(i_b2b13m) ne 0 then b2b13m=reform(a(i_b2b13m-1,*))
 if defined(i_u1u32m) ne 0 then u1u32m=reform(a(i_u1u32m-1,*))
