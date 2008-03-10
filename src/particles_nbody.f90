@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.67 2008-03-10 21:29:30 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.68 2008-03-10 22:44:12 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -25,6 +25,7 @@ module Particles_nbody
   real, dimension(nspar) :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
   real, dimension(nspar) :: pmass=1.,r_smooth,pmass1,final_ramped_mass=1.
+  real, dimension(nspar) :: accrete_hills_frac=0.2
   real :: delta_vsp0=1.0,totmass,totmass1
   character (len=labellen) :: initxxsp='random', initvvsp='nothing'
   logical :: lcalc_orbit=.true.,lbackreaction=.false.,lnorm=.true.
@@ -45,13 +46,13 @@ module Particles_nbody
        pmass, r_smooth, lcylindrical_gravity_nbody, &
        lexclude_frozen, GNewton, bcspx, bcspy, bcspz, &
        ramp_orbits,lramp,final_ramped_mass,prhs_cte,linterpolate_gravity,&
-       linterpolate_quadratic_spline,laccretion
+       linterpolate_quadratic_spline,laccretion,accrete_hills_frac
 
   namelist /particles_nbody_run_pars/ &
        dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
        lnogravz_star,lfollow_particle, lbackreaction, lexclude_frozen, &
        GNewton, bcspx, bcspy, bcspz,prhs_cte,lnoselfgrav_star,&
-       linterpolate_quadratic_spline,laccretion
+       linterpolate_quadratic_spline,laccretion,accrete_hills_frac
 
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -77,7 +78,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.67 2008-03-10 21:29:30 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.68 2008-03-10 22:44:12 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -666,6 +667,9 @@ module Particles_nbody
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
+      real, dimension(nspar) :: sq_hills
+      real :: rr,w2,smap
+!
       integer :: k, ks, j, jpos, jvel
       logical :: lheader, lfirstcall=.true.
 !
@@ -686,15 +690,30 @@ module Particles_nbody
 !
       if (lramp) call get_ramped_mass
 !
+! Calculate Hills radius if laccretion is switched on      
+!
+      if (laccretion) then
+        do ks=1,nspar-1 
+          rr    = sqrt(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)
+          w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
+          !semi major axis - assumes GM=1, so beware...
+          smap  = 1./(2./rr - w2)
+          !squared hills radius
+          sq_hills(ks)=(smap**2)*(pmass(ks)*pmass1(nspar)/3)**(2./3.)
+        enddo
+        !the ipar(ks)=nspar particle is the star
+        sq_hills(nspar)=0. 
+      endif
+!
       do k=npar_loc,1,-1
         if (linterpolate_gravity) then
           !only loop through sinks
           if (ipar(k).le.nspar) then
-            call loop_through_sinks(fp,dfp,k)
+            call loop_through_sinks(fp,dfp,k,sq_hills)
           endif
         else
           !for all particles
-          call loop_through_sinks(fp,dfp,k)
+          call loop_through_sinks(fp,dfp,k,sq_hills)
         endif
       enddo
 !
@@ -718,12 +737,13 @@ module Particles_nbody
 !
     endsubroutine dvvp_dt_nbody
 !************************************************************
-    subroutine loop_through_sinks(fp,dfp,k)
+    subroutine loop_through_sinks(fp,dfp,k,sq_hills)
 !
       real, dimension (mpar_loc,mpvar) :: fp,dfp
+      real, dimension (nspar) :: sq_hills
       real, dimension (3) ::evr
       real :: e1,e2,e3,e10,e20,e30
-      real :: r2_ij,rs2,invr3_ij
+      real :: r2_ij,rs2,invr3_ij,hills2
       integer :: k, ks
 !
       intent(inout) :: fp,dfp
@@ -763,17 +783,15 @@ module Particles_nbody
 !  invr3_ij = r_ij**(-3)
 !
           r2_ij = sum(evr**2)
-          rs2   = r_smooth(ks)**2
+          rs2=(accrete_hills_frac(ks)**2)*sq_hills(ks)
 
-          if (laccretion.and.(r2_ij.le.rs2)) then 
-            !particle got too close to the planet
-            !remove it!!
+          if (laccretion.and.(r2_ij.le.rs2)) then
             call remove_particle(fp,npar_loc,k,dfp)
             !add mass to the planet
             !calculate...
             goto 99
           else
-            r2_ij=r2_ij+rs2
+            r2_ij=r2_ij+r_smooth(ks)**2
             invr3_ij = r2_ij**(-1.5)
 !
 !  Gravitational acceleration: g=g0/|r-r0|^3 (r-r0)
