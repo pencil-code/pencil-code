@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.231 2008-02-28 22:44:50 brandenb Exp $
+! $Id: initcond.f90,v 1.232 2008-03-10 06:23:02 brandenb Exp $
 
 module Initcond
 
@@ -44,6 +44,7 @@ module Initcond
   public :: global_shear,set_thermodynamical_quantities
   public :: const_lou
   public :: corona_init,mdi_init
+  public :: innerbox
   public :: couette, couette_rings
 
   interface posnoise            ! Overload the `posnoise' function
@@ -502,6 +503,36 @@ module Initcond
       endif
 !
     endsubroutine cos2x_cos2y_cos2z
+!***********************************************************************
+    subroutine innerbox(ampl,ampl2,f,i,width)
+!
+!  set background value plus a different value inside a box
+!
+!   9-mar-08/axel: coded
+!
+      use Sub, only: find_index_range
+!
+      integer :: i,ll1,ll2,mm1,mm2,nn1,nn2
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,ampl2,width
+!
+!  inner box
+!
+      if (ampl==0.and.ampl2==0) then
+        if (lroot) print*,'innerbox: ampl=0'
+      else
+        if (lroot) write(*,wave_fmt1) 'innerbox: ampl,ampl2,width=', &
+                                                 ampl,ampl2,width
+        f(:,:,:,i)=ampl
+        call find_index_range(x,mx,-width,width,ll1,ll2)
+        call find_index_range(y,my,-width,width,mm1,mm2)
+        call find_index_range(z,mz,-width,width,nn1,nn2)
+        if (lroot) print*,'innerbox: ll1,ll2,mm1,mm2,nn1,nn2=', &
+                                     ll1,ll2,mm1,mm2,nn1,nn2
+        f(ll1:ll2,mm1:mm2,nn1:nn2,i)=ampl2
+      endif
+!
+    endsubroutine innerbox
 !***********************************************************************
     subroutine couette(ampl,mu,f,i)
 !

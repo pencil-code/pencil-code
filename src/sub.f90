@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.350 2008-01-24 17:58:33 dintrans Exp $
+! $Id: sub.f90,v 1.351 2008-03-10 06:23:02 brandenb Exp $
 
 module Sub
 
@@ -13,7 +13,7 @@ module Sub
 
   public :: poly, notanumber
   public :: keep_compiler_quiet
-  public :: blob, vecout
+  public :: blob, vecout, find_index_range
   public :: cubic_step, cubic_der_step, quintic_step, quintic_der_step, erfunc
   public :: sine_step, interp1
   public :: hypergeometric2F1
@@ -5352,6 +5352,51 @@ nameloop: do
       endif
 !
     endsubroutine blob
+!***********************************************************************
+    subroutine find_index_range(aa,naa,aa1,aa2,ii1,ii2)
+!
+!  find index range (ii1,ii2) such that aa
+!
+!   9-mar-08/axel: coded
+!
+      use Cparam, only: nghost
+!
+      integer :: naa,ii,ii1,ii2
+      real, dimension (naa) :: aa
+      real :: aa1,aa2
+!
+!  if not extent in this direction, set indices to interior values
+!
+print*,'naa,2*nghost+1=',naa,2*nghost+1
+      if (naa==2*nghost+1) then
+print*,'ghostzone detected'
+        ii1=nghost+1
+        ii2=nghost+1
+        goto 99
+      endif
+!
+!  find lower index
+!
+      ii1=naa
+      do ii=1,naa
+        if (aa(ii)>=aa1) then
+          ii1=ii
+          goto 10
+        endif
+      enddo
+!
+!  find upper index
+!
+10    ii2=1
+      do ii=naa,1,-1
+        if (aa(ii)<=aa2) then
+          ii2=ii
+          goto 99
+        endif
+      enddo
+!
+99    continue
+    endsubroutine find_index_range
 !***********************************************************************
     recursive function hypergeometric2F1(a,b,c,z,tol) result (hyp2F1)
 

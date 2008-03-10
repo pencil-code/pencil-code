@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.19 2008-03-07 09:51:44 nilshau Exp $
+! $Id: chemistry.f90,v 1.20 2008-03-10 06:23:02 brandenb Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -36,7 +36,8 @@ module Chemistry
 !
 !  hydro-related parameters
 !
-  real, dimension(nchemspec) :: amplchemk=0.
+  real, dimension(nchemspec) :: amplchemk=0.,amplchemk2=0.
+  real, dimension(nchemspec) :: chem_diff_prefactor=1.
   real :: amplchem=1.,kx_chem=1.,ky_chem=1.,kz_chem=1.,widthchem=1.
   real :: chem_diff=0.
   character (len=labellen), dimension (ninit) :: initchem='nothing'
@@ -51,12 +52,12 @@ module Chemistry
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk
+      amplchemk,amplchemk2
 
 ! run parameters
   namelist /chemistry_run_pars/ &
       lkreactions_profile,kreactions_profile,kreactions_profile_width, &
-      chem_diff
+      chem_diff,chem_diff_prefactor
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -143,11 +144,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.19 2008-03-07 09:51:44 nilshau Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.20 2008-03-10 06:23:02 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.19 2008-03-07 09:51:44 nilshau Exp $")
+           "$Id: chemistry.f90,v 1.20 2008-03-10 06:23:02 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -305,6 +306,10 @@ module Chemistry
           do k=1,nchemspec
             call posnoise(amplchemk(k),f,ichemspec(k))
           enddo
+        case('innerbox')
+          do k=1,nchemspec
+            call innerbox(amplchemk(k),amplchemk2(k),f,ichemspec(k),widthchem)
+          enddo
         case('cos2x_cos2y_cos2z')
           do k=1,nchemspec
             call cos2x_cos2y_cos2z(amplchemk(k),f,ichemspec(k))
@@ -411,6 +416,7 @@ module Chemistry
       real, dimension (nx,3) :: gchemspec
       real, dimension (nx) :: ugchemspec,del2chemspec,diff_op,xdot
       real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
+      real :: diff_k
       type (pencil_case) :: p
 !
 !  indices
@@ -442,6 +448,7 @@ module Chemistry
 !
 !  loop over all chemicals
 !
+      diff_k=chem_diff
       do k=1,nchemspec
 !
 !  advection terms
@@ -453,11 +460,12 @@ module Chemistry
 !  diffusion operator
 !
         if (chem_diff/=0.) then
+          diff_k=chem_diff*chem_diff_prefactor(k)
+          if (headtt) print*,'dchemistry_dt: k,diff_k=',k,diff_k
           call del2(f,ichemspec(k),del2chemspec) 
-          if (headtt) print*,'dchemistry_dt: chem_diff=',chem_diff
           call dot_mn(p%glnrho,gchemspec,diff_op)
           diff_op=diff_op+del2chemspec
-          df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+chem_diff*diff_op
+          df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+diff_k*diff_op
         endif
 !
 !  chemical reactions:
@@ -477,7 +485,7 @@ module Chemistry
 !  For the timestep calculation, need maximum diffusion
 !
         if (lfirst.and.ldt) then
-          diffus_chem=chem_diff*dxyz_2
+          diffus_chem=chem_diff*maxval(chem_diff_prefactor)*dxyz_2
         endif
 !
 !  Calculate diagnostic quantities
