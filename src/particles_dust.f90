@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.208 2008-03-10 02:05:09 wlyra Exp $
+! $Id: particles_dust.f90,v 1.209 2008-03-10 21:32:52 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -135,7 +135,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.208 2008-03-10 02:05:09 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.209 2008-03-10 21:32:52 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -1931,7 +1931,11 @@ k_loop:   do while (.not. (k>npar_loc))
            if (lheader) print*, 'dvvp_dt: No spherical gravity'
 
         case('no-smooth')
-           !Experimental: assumes GM=1, static and cylindrical gravity
+          if (lparticles_nbody) &
+               call fatal_error("dvvp_dt","You are using massive particles. "//&
+               "The N-body code should take care of thi stellar-like gravity "//&
+               "on the dust. Switch off the gravr_profile='no-smooth' on particles_init")
+          !Experimental: assumes GM=1, static and cylindrical gravity
            if (lheader) print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
            do k=1,npar_loc
              if (lcartesian_coords) then
