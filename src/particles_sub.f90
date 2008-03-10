@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.125 2008-03-10 11:12:19 wlyra Exp $
+! $Id: particles_sub.f90,v 1.126 2008-03-10 21:18:29 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -19,7 +19,7 @@ module Particles_sub
   public :: interpolate_quadratic, interpolate_quadratic_spline
   public :: map_nearest_grid, map_xxp_grid, sort_particles_imn
   public :: particle_pencil_index
-  public :: shepherd_neighbour
+  public :: shepherd_neighbour,remove_particle
 
   contains
 
@@ -198,8 +198,9 @@ module Particles_sub
       real, dimension (mpar_loc,mpvar), optional :: dfp
       integer, dimension (mpar_loc) :: ipar
       real :: xold,yold,rad,r1old,OO
-      integer :: npar_loc,k
+      integer :: npar_loc,k,ik,k1,k2
       character (len=2*bclen+1) :: boundx,boundy,boundz
+      logical :: lsink
 !
       intent (inout) :: fp, npar_loc, ipar, dfp
 !
@@ -286,9 +287,15 @@ module Particles_sub
 !    y \in [y0,y1[
 !    z \in [z0,z1[
 !
-        do k=1,npar_loc
+        if (bcpx=='rmv') then 
+          k1=npar_loc;k2=1;ik=-1
+        else
+          k1=1;k2=npar_loc;ik=1
+        endif
 !
-          if (ipar(k) .gt. nspar) then
+        do k=k1,k2,ik
+          lsink=lparticles_nbody.and.(ipar(k).le.nspar)
+          if (.not.lsink) then
             !dust particle
             boundx=bcpx ;boundy=bcpy ;boundz=bcpz
           else
@@ -327,23 +334,40 @@ module Particles_sub
                 endif
               endif
             elseif (boundx=='out') then
-              ! massive particles can be out of the box
-              ! the star, for example, in a cylindrical simulation
+              ! Do nothing. A massive particle, can be out of the
+              ! box. A star, for example, in a cylindrical simulation
             elseif (boundx=='flk') then
-              !Flush-Keplerian
-              !flush it to the outer boundary with keplerian speed
-              if ((fp(k,ixp)< rp_int).or.(fp(k,ixp)>= rp_ext)) then
-                if (lcylindrical_coords) then
-                  fp(k,ixp)  = rp_ext  !flush to outer boundary
-                  call random_number_wrapper(fp(k,iyp))   !random new y position
+              ! Flush-Keplerian
+              ! flush it to the outer boundary with keplerian speed
+              if (lcylindrical_coords) then
+                if ((fp(k,ixp)< rp_int).or.(fp(k,ixp)>= rp_ext)) then
+                  !flush to outer boundary
+                  fp(k,ixp)  = rp_ext  
+                  !random new azimuthal y position
+                  call random_number_wrapper(fp(k,iyp))   
                   fp(k,iyp)=xyz0_loc(2)+fp(k,iyp)*Lxyz_loc(2)
-
-                  fp(k,ivpx) = 0. !zero x velocity
-                  fp(k,ivpy) = fp(k,ixp)**(-1.5) !keplerian speed
-                else
-                  call fatal_error_local('boundconds_particles',&
-                       'flush-keplerian only ready for cylindrical')
+                  !zero radial velocity
+                  fp(k,ivpx) = 0. 
+                  !keplerian azimuthal velocity
+                  fp(k,ivpy) = fp(k,ixp)**(-1.5) 
                 endif
+              else
+                call fatal_error_local('boundconds_particles',&
+                     'flush-keplerian only ready for cylindrical')
+              endif
+            elseif (boundx=='rmv') then
+              !remove the particle from the simulation
+              if (lcylindrical_coords) then
+                if ((fp(k,ixp)< rp_int).or.(fp(k,ixp)>= rp_ext)) then
+                  if (present(dfp)) then
+                    call remove_particle(fp,npar_loc,k,dfp)
+                  else
+                    call remove_particle(fp,npar_loc,k)
+                  endif
+                endif
+              else
+                call fatal_error_local('boundconds_particles',&
+                     'remove particles only ready for cylindrical')
               endif
             else
               print*, 'boundconds_particles: No such boundary condition =', boundx
@@ -749,7 +773,7 @@ module Particles_sub
 !  it will do for now. The best thing would be to allocate all sink particles
 !  at the root and the rest (if any) distributed evenly 
 !
-      if (npar<=ncpus) then
+      if ((lparticles_nbody).and.(npar==nspar)) then
         if (lroot) then
           npar_loc=nspar
           do k=1,nspar
@@ -1845,5 +1869,34 @@ module Particles_sub
       endif
 !
     endsubroutine shepherd_neighbour
+!***********************************************************************
+    subroutine remove_particle(fp,npar_loc,k,dfp)
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mpvar), optional :: dfp
+      integer :: npar_loc,k
+!   
+      intent (inout) :: fp, npar_loc, dfp
+      intent (in)    :: k
+!
+! switch with the last particle present in the processor npar_loc
+!
+      fp(k,:)=fp(npar_loc,:)
+      if (present(dfp)) dfp(k,:)=dfp(npar_loc,:) 
+!
+! Reduce the number of particles by one.
+!
+      npar_loc=npar_loc-1
+!
+! Write to the respective processor that the particle
+! was removed
+!
+      open(20,file=trim(directory)//'/rmv_par.dat',position='append')
+      write(20,*) ipar(k) 
+      close(20)
+!
+      if (lroot.and.(ip<=8)) print*,'removed particle ',ipar(k)
+!
+  endsubroutine remove_particle
 !***********************************************************************
 endmodule Particles_sub
