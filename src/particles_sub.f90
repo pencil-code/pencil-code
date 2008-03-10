@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.124 2008-03-10 02:03:46 wlyra Exp $
+! $Id: particles_sub.f90,v 1.125 2008-03-10 11:12:19 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -192,6 +192,7 @@ module Particles_sub
 !
       use Messages, only: fatal_error_local
       use Mpicomm
+      use General, only: random_number_wrapper
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mpar_loc,mpvar), optional :: dfp
@@ -230,8 +231,8 @@ module Particles_sub
             fp(k,ivpx) = -OO*fp(k,iyp)
             fp(k,ivpy) =  OO*fp(k,ixp)
           endif
-!  rp > rp_ext : flush particle and move to outer boundary
-          if (rad>rp_ext) then
+!  rp >= rp_ext : flush particle and move to outer boundary
+          if (rad>=rp_ext) then
             xold=fp(k,ixp); yold=fp(k,iyp); r1old = 1./max(rad,tini)
 !
             rad=rp_ext
@@ -331,11 +332,14 @@ module Particles_sub
             elseif (boundx=='flk') then
               !Flush-Keplerian
               !flush it to the outer boundary with keplerian speed
-              if ((fp(k,ixp)< xyz0(1)).or.(fp(k,ixp)> xyz1(1))) then
+              if ((fp(k,ixp)< rp_int).or.(fp(k,ixp)>= rp_ext)) then
                 if (lcylindrical_coords) then
-                  fp(k,ixp)  = rp_ext-epsi
-                  fp(k,ivpx) = 0.
-                  fp(k,ivpy) = fp(k,ixp)**(-1.5)
+                  fp(k,ixp)  = rp_ext  !flush to outer boundary
+                  call random_number_wrapper(fp(k,iyp))   !random new y position
+                  fp(k,iyp)=xyz0_loc(2)+fp(k,iyp)*Lxyz_loc(2)
+
+                  fp(k,ivpx) = 0. !zero x velocity
+                  fp(k,ivpy) = fp(k,ixp)**(-1.5) !keplerian speed
                 else
                   call fatal_error_local('boundconds_particles',&
                        'flush-keplerian only ready for cylindrical')
