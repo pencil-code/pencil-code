@@ -1,0 +1,11 @@
+!
+!  Initialisation parameters for Kelvin-Helmholtz turbulence.
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2008-03-10 22:25:42 brandenb Exp $',
+  xyz0 = -1.25, -1.25, -1.25
+  xyz1 = +1.25, +1.25, +1.25
+/
+&chemistry_init_pars
+  initchem='innerbox', amplchemk=1.,0., amplchemk2=.5,.25, widthchem=.5
+/
