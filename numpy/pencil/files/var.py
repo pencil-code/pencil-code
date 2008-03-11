@@ -1,4 +1,4 @@
-# $Id: var.py,v 1.4 2008-03-11 13:15:04 dintrans Exp $
+# $Id: var.py,v 1.5 2008-03-11 15:14:06 tgastine Exp $
 #
 # read VAR files. based on the read_var.pro IDL script.
 #
@@ -11,6 +11,7 @@
 import numpy as N
 from npfile import npfile
 import os
+import string
 from param import read_param 
 from dim import read_dim 
 
@@ -49,7 +50,7 @@ def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=Fals
 
     # read index.pro to get positions and "names"
     # of variables in f(mx,my,mz,nvar)
-    index = read_index(datadir)
+    index,dict = read_index(datadir)
     exec(index) # this loads the indicies.
 
     if (not varfile):
@@ -205,7 +206,8 @@ def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=Fals
         var.n1 = dim.n1
         var.n2 = dim.n2+1
         
-
+    for i in range(len(dict.keys())):
+      setattr(var,dict.keys()[i],var.f[dict.values()[i]-1,...])
     var.t = t
     var.dx = dx
     var.dy = dy
@@ -222,10 +224,13 @@ def read_index(datadir='data/'):
 
     index = ''
     f = open(datadir+'index.pro')
+    dict={}
     for line in f.readlines():
         clean = line.strip()
 
         if (not clean.endswith('0') and not clean.startswith('i_') and clean.startswith('i')):
+            val=string.split(clean, '=')
+            dict[val[0].lstrip('i')]=int(val[1])
             index += clean+'\n'
 
-    return index
+    return index, dict
