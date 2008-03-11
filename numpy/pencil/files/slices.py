@@ -1,4 +1,4 @@
-# $Id: slices.py,v 1.1 2007-11-16 13:57:04 joishi Exp $
+# $Id: slices.py,v 1.2 2008-03-11 14:44:06 rplasson Exp $
 #
 # read slice files
 #
@@ -134,6 +134,7 @@ def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='na
 
     # for real-time image display
     manager = P.get_current_fig_manager()
+    manager.show()
 
     ifirst = True
     islice = 0
