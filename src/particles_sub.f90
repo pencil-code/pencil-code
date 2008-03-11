@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.126 2008-03-10 21:18:29 wlyra Exp $
+! $Id: particles_sub.f90,v 1.127 2008-03-11 10:39:35 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -360,9 +360,9 @@ module Particles_sub
               if (lcylindrical_coords) then
                 if ((fp(k,ixp)< rp_int).or.(fp(k,ixp)>= rp_ext)) then
                   if (present(dfp)) then
-                    call remove_particle(fp,npar_loc,k,dfp)
+                    call remove_particle(fp,npar_loc,ipar,k,dfp)
                   else
-                    call remove_particle(fp,npar_loc,k)
+                    call remove_particle(fp,npar_loc,ipar,k)
                   endif
                 endif
               else
@@ -1870,32 +1870,51 @@ module Particles_sub
 !
     endsubroutine shepherd_neighbour
 !***********************************************************************
-    subroutine remove_particle(fp,npar_loc,k,dfp)
+    subroutine remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid)
+!
+      use Messages, only: fatal_error
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mpar_loc,mpvar), optional :: dfp
+      integer, dimension (mpar_loc) :: ipar
+      integer, dimension (mpar_loc,3), optional :: ineargrid
       integer :: npar_loc,k
+      logical :: lsink
 !   
-      intent (inout) :: fp, npar_loc, dfp
+      intent (inout) :: fp, npar_loc, dfp,ineargrid
       intent (in)    :: k
 !
 ! switch with the last particle present in the processor npar_loc
 !
+      lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
+      if (lsink) then
+        print*,ipar(k)
+        print*,'xp=',fp(k,ixp)
+        print*,'yp=',fp(k,iyp)
+        print*,'vxp=',fp(k,ivpx)
+        print*,'vyp=',fp(k,ivpy)
+        call fatal_error("remove_particle","you are "//&
+             "removing a sink! That should not happen!")
+      endif
+!
       fp(k,:)=fp(npar_loc,:)
-      if (present(dfp)) dfp(k,:)=dfp(npar_loc,:) 
-!
-! Reduce the number of particles by one.
-!
-      npar_loc=npar_loc-1
+      if (present(dfp)) dfp(k,:)=dfp(npar_loc,:)
+      if (present(ineargrid)) ineargrid(k,:)=ineargrid(npar_loc,:)
+      ipar(k)=ipar(npar_loc)
 !
 ! Write to the respective processor that the particle
 ! was removed
 !
       open(20,file=trim(directory)//'/rmv_par.dat',position='append')
-      write(20,*) ipar(k) 
+      write(20,*) ipar(npar_loc) 
       close(20)
 !
-      if (lroot.and.(ip<=8)) print*,'removed particle ',ipar(k)
+      if (lroot.and.(ip<=8)) print*,'removed particle ',ipar(npar_loc)
+!
+!
+! Reduce the number of particles by one.
+!
+      npar_loc=npar_loc-1
 !
   endsubroutine remove_particle
 !***********************************************************************
