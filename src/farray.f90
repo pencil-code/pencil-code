@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.21 2007-11-13 12:50:28 ajohan Exp $
+! $Id: farray.f90,v 1.22 2008-03-11 10:55:31 wlyra Exp $
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  This includes handling different
@@ -12,7 +12,7 @@
 module FArrayManager
 !
   use Cparam, only: mvar,maux,mglobal,maux_com,mscratch
-  use Cdata, only: nvar,naux,naux_com,datadir
+  use Cdata, only: nvar,naux,naux_com,datadir,lroot
   use Messages
 !
   implicit none
@@ -145,9 +145,11 @@ module FArrayManager
         call farray_register_variable(varname,ivar,vartype)
       endif
 !
-      open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+      if (lroot) then 
+        open(3,file=trim(datadir)//'/index.pro', POSITION='append')
         write(3,*) varname, '=', ivar
-      close(3)
+        close(3)
+      endif
 !
     endsubroutine farray_register_global
 !***********************************************************************
