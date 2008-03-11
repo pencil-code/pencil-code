@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.68 2008-03-10 22:44:12 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.69 2008-03-11 10:37:02 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -32,12 +32,12 @@ module Particles_nbody
   logical :: lreset_cm=.false.,lnogravz_star=.false.,lexclude_frozen=.false.
   logical :: lnoselfgrav_star=.true.
   logical, dimension(nspar) :: lcylindrical_gravity_nbody=.false.
-  logical, dimension(nspar) :: lfollow_particle=.false.
+  logical, dimension(nspar) :: lfollow_particle=.false.,laccretion=.true.
   real :: GNewton=impossible,prhs_cte
   integer :: ramp_orbits=5
   logical :: lramp=.false.
   logical :: linterpolate_gravity=.false.,linterpolate_linear=.true.
-  logical :: linterpolate_quadratic_spline=.false.,laccretion=.true.
+  logical :: linterpolate_quadratic_spline=.false.
 
   integer :: iglobal_ggp=0
 
@@ -78,7 +78,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.68 2008-03-10 22:44:12 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.69 2008-03-11 10:37:02 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -170,7 +170,7 @@ module Particles_nbody
              ' you are not using dust particles'
         call fatal_error("initialize_particles_nbody","")
       endif
-      if (laccretion.and.linterpolate_gravity) then 
+      if (any(laccretion).and.linterpolate_gravity) then 
         if (lroot) print*,'interpolate gravity  not yet '//&
              'implemented in connection with accretion'
         call fatal_error("initialize_particles_nbody","")
@@ -668,7 +668,7 @@ module Particles_nbody
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension(nspar) :: sq_hills
-      real :: rr,w2,smap
+      real :: rr,w2,sma2
 !
       integer :: k, ks, j, jpos, jvel
       logical :: lheader, lfirstcall=.true.
@@ -692,28 +692,38 @@ module Particles_nbody
 !
 ! Calculate Hills radius if laccretion is switched on      
 !
-      if (laccretion) then
-        do ks=1,nspar-1 
-          rr    = sqrt(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)
-          w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
-          !semi major axis - assumes GM=1, so beware...
-          smap  = 1./(2./rr - w2)
+      do ks=1,nspar 
+        if (laccretion(ks)) then 
+          if (lcartesian_coords) then
+            rr    = sqrt(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)
+            w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
+          elseif (lcylindrical_coords) then 
+            rr= fsp(ks,ixp)
+            if (nzgrid/=1) rr=sqrt(fsp(ks,ixp)**2+fsp(ks,izp)**2)
+            !particle velocities are non-coordinate (linear)
+            w2= fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 
+          elseif (lspherical_coords) then
+            call fatal_error("dvvp_dt_nbody",&
+                 "not yet implemented for spherical polars")
+          endif
+          !squared semi major axis - assumes GM=1, so beware...
+          sma2  = (rr/(2-rr*w2))**2
           !squared hills radius
-          sq_hills(ks)=(smap**2)*(pmass(ks)*pmass1(nspar)/3)**(2./3.)
-        enddo
-        !the ipar(ks)=nspar particle is the star
-        sq_hills(nspar)=0. 
-      endif
+          sq_hills(ks)=sma2*(pmass(ks)*pmass1(nspar)/3)**(2./3.)
+        else
+          sq_hills(ks)=0.
+        endif
+      enddo
 !
       do k=npar_loc,1,-1
         if (linterpolate_gravity) then
           !only loop through sinks
           if (ipar(k).le.nspar) then
-            call loop_through_sinks(fp,dfp,k,sq_hills)
+            call loop_through_sinks(fp,dfp,k,sq_hills,ineargrid)
           endif
         else
           !for all particles
-          call loop_through_sinks(fp,dfp,k,sq_hills)
+          call loop_through_sinks(fp,dfp,k,sq_hills,ineargrid)
         endif
       enddo
 !
@@ -737,13 +747,14 @@ module Particles_nbody
 !
     endsubroutine dvvp_dt_nbody
 !************************************************************
-    subroutine loop_through_sinks(fp,dfp,k,sq_hills)
+    subroutine loop_through_sinks(fp,dfp,k,sq_hills,ineargrid)
 !
       real, dimension (mpar_loc,mpvar) :: fp,dfp
       real, dimension (nspar) :: sq_hills
-      real, dimension (3) ::evr
+      real, dimension (3) :: evr
+      integer, dimension (mpar_loc,3) :: ineargrid
       real :: e1,e2,e3,e10,e20,e30
-      real :: r2_ij,rs2,invr3_ij,hills2
+      real :: r2_ij,rs2,invr3_ij
       integer :: k, ks
 !
       intent(inout) :: fp,dfp
@@ -785,8 +796,8 @@ module Particles_nbody
           r2_ij = sum(evr**2)
           rs2=(accrete_hills_frac(ks)**2)*sq_hills(ks)
 
-          if (laccretion.and.(r2_ij.le.rs2)) then
-            call remove_particle(fp,npar_loc,k,dfp)
+          if (laccretion(ks).and.(r2_ij.le.rs2)) then
+            call remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid)
             !add mass to the planet
             !calculate...
             goto 99
