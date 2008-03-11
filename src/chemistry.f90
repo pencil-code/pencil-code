@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.20 2008-03-10 06:23:02 brandenb Exp $
+! $Id: chemistry.f90,v 1.21 2008-03-11 11:38:07 nilshau Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -28,11 +28,13 @@ module Chemistry
 !
   logical :: lreactions=.true.,lkreactions_profile=.false.
   integer :: nreactions=0,nreactions1=0,nreactions2=0
-  integer, parameter :: mreactions=2*nchemspec
-  integer, dimension(nchemspec,mreactions) :: stoichio,Sijm,Sijp
-  real, dimension(mreactions) :: kreactions_m,kreactions_p
-  real, dimension(mz,mreactions) :: kreactions_z=1.
-  real, dimension(mreactions) :: kreactions_profile_width=0.
+  real, dimension(2*nchemspec) :: kreactions_profile_width=0.
+
+  integer :: mreactions
+  integer, allocatable, dimension(:,:) :: stoichio,Sijm,Sijp
+  real,    allocatable, dimension(:,:) :: kreactions_z
+  real,    allocatable, dimension(:)   :: kreactions_m,kreactions_p
+  character (len=30),allocatable, dimension(:) :: reaction_name
 !
 !  hydro-related parameters
 !
@@ -41,13 +43,15 @@ module Chemistry
   real :: amplchem=1.,kx_chem=1.,ky_chem=1.,kz_chem=1.,widthchem=1.
   real :: chem_diff=0.
   character (len=labellen), dimension (ninit) :: initchem='nothing'
-  character (len=labellen), dimension (mreactions) :: kreactions_profile=''
-
+  character (len=labellen), dimension (2*nchemspec) :: kreactions_profile=''
+!
 !  Chemkin related parameters
 !
+  logical :: lcheminp=.false.
   real, dimension(nchemspec,18) :: species_constants
   integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
   integer, dimension(7) :: ia1,ia2
+  real,    allocatable, dimension(:) :: B_n, alpha_n, E_an
 
 ! input parameters
   namelist /chemistry_init_pars/ &
@@ -90,7 +94,6 @@ module Chemistry
       integer :: k
       character (len=5) :: schem
       character (len=20) :: input_file='chem.inp'
-      logical :: lcheminp=.false.
 !
 ! Initialize some index pointers
 !
@@ -114,7 +117,7 @@ module Chemistry
 !
 !  Read species to be used from chem.inp (if the file exists)
 !     
-      if (lroot) inquire(FILE=input_file, EXIST=lcheminp)
+      inquire(FILE=input_file, EXIST=lcheminp)
       if (lcheminp) then
         call read_species(input_file)
       else
@@ -144,11 +147,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.20 2008-03-10 06:23:02 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.21 2008-03-11 11:38:07 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.20 2008-03-10 06:23:02 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.21 2008-03-11 11:38:07 nilshau Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -176,20 +179,67 @@ module Chemistry
       use Cdata
       use Mpicomm, only: stop_it
       use Sub, only: keep_compiler_quiet
+      use General, only: chn
 !
       character (len=80) :: chemicals=''
       character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
+      character (len=20) :: input_file='chem.inp'
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: exist,exist1,exist2
-      integer :: i,j
+      integer :: i,j,k,stat,reac,spec
+!
+!  Find number of ractions
+!
+      if (lcheminp) then
+        call read_reactions(input_file,NrOfReactions=mreactions)
+        print*,'Number of reactions=',mreactions
+      else
+        mreactions=2*nchemspec
+      endif
+!
+!  Allocate reaction arrays
+!
+      allocate(stoichio(nchemspec,mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for stoichio")
+      allocate(Sijm(nchemspec,mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for Sijm")
+      allocate(Sijp(nchemspec,mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for Sijp")
+      allocate(kreactions_z(mz,mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_z")
+      allocate(kreactions_p(mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_p")
+      allocate(kreactions_m(mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_m")
+      allocate(reaction_name(mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for reaction_name")
+      if (lcheminp) then
+        allocate(B_n(mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for B_n")
+        allocate(alpha_n(mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for alpha_n")
+        allocate(E_an(mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for E_an")
+      end if
+!
+!  Initialize data
+!
+      kreactions_z=1.
+      Sijp=0
+      Sijm=0
 !
 !  read chemistry data
-!  if both chemistry1.dat and chemistry2.dat are present,
-!  then read Sijp and Sijm, and calculate their sum
 !
       inquire(file=file1,exist=exist1)
       inquire(file=file2,exist=exist2)
-      if(exist1.and.exist2) then
+! 
+      if (lcheminp) then
+        call read_reactions(input_file)
+        call write_reactions()
+      elseif(exist1.and.exist2) then
+!
+!  if both chemistry1.dat and chemistry2.dat are present,
+!  then read Sijp and Sijm, and calculate their sum
 !
 !  file1
 !
@@ -220,7 +270,7 @@ module Chemistry
           call stop_it('nreactions1/=nreactions2')
         endif
 !
-      else
+      else 
 !
 !  old method: read chemistry data, if present
 !
@@ -806,6 +856,8 @@ module Chemistry
       !
       ! 2008-02-05/Nils Erland: coded
       !
+      use Mpicomm
+      !
       character (len=*), intent(in) :: element_name
       real, intent(out) :: MolMass
       !
@@ -818,8 +870,13 @@ module Chemistry
         MolMass=14.00674
       case('O')  
         MolMass=15.9994
-      case('Ar') 
+      case('Ar','AR') 
         MolMass=39.948
+      case('He','HE') 
+        MolMass=4.0026
+      case default
+        print*,'element_name=',element_name
+        call stop_it('find_mass: Element not found!')
       end select
       !
     end subroutine find_mass
@@ -923,17 +980,21 @@ module Chemistry
               ! Find molar mass
               !
               MolMass=0
-              do iElement=1,4
+              do iElement=1,4                
                 In1=25+(iElement-1)*5
                 In2=26+(iElement-1)*5
                 In3=27+(iElement-1)*5
                 In4=29+(iElement-1)*5
-                element_string=trim(ChemInpLine(In1:In2))
-                call find_mass(element_string,MolMass(iElement))
-                In5=verify(ChemInpLine(In3:In4),' ')+In3-1
-                NumberOfElement_string=trim(ChemInpLine(In5:In4))
-                read (unit=NumberOfElement_string,fmt='(I5)') NumberOfElement_i
-                MolMass(iElement)=MolMass(iElement)*NumberOfElement_i
+                if (ChemInpLine(In1:In1)==' ') then
+                  MolMass(iElement)=0
+                else
+                  element_string=trim(ChemInpLine(In1:In2))
+                  call find_mass(element_string,MolMass(iElement))
+                  In5=verify(ChemInpLine(In3:In4),' ')+In3-1
+                  NumberOfElement_string=trim(ChemInpLine(In5:In4))
+                  read (unit=NumberOfElement_string,fmt='(I5)') NumberOfElement_i
+                  MolMass(iElement)=MolMass(iElement)*NumberOfElement_i
+                endif
               enddo
               species_constants(ind_chem,imass)=sum(MolMass)
               !
@@ -971,6 +1032,157 @@ module Chemistry
       close(file_id)
       !
     end subroutine read_thermodyn
+!***********************************************************************
+     subroutine read_reactions(input_file,NrOfReactions)
+      !
+      ! This subroutine reads all reaction information from chem.inp
+      ! See the chemkin manual for more information on
+      ! the syntax of chem.inp.
+      !
+      ! 2008.03.10 Nils Erland: Coded
+      !
+      use Mpicomm
+      !
+      logical :: IsReaction=.false.,LastSpecie
+      integer, optional :: NrOfReactions
+      integer :: k,file_id=123, StartInd, StopInd, StopIndName
+      integer :: VarNumber, SeparatorInd, StartSpecie,stoi, PlusInd
+      integer :: LastLeftCharacter,ParanthesisInd
+      character (len=80) :: ChemInpLine
+      character (len=*) :: input_file
+      !
+
+      if (present(NrOfReactions)) NrOfReactions=0
+
+      k=1
+      open(file_id,file=input_file)
+      dataloop3: do
+        read(file_id,'(80A)',end=1012) ChemInpLine(1:80)
+        !
+        ! Check if we are reading a line within the reactions section
+        !
+        if (ChemInpLine(1:9)=="REACTIONS")            IsReaction=.true.
+        if (ChemInpLine(1:3)=="END" .and. IsReaction) IsReaction=.false.
+        !
+        if (present(NrOfReactions)) then
+          !
+          ! Find number of reactions
+          !
+          if (IsReaction) then
+            if (ChemInpLine(1:9) /= "REACTIONS") then
+              StartInd=1; StopInd =0
+              StopInd=index(ChemInpLine(StartInd:),'=')+StartInd-1
+              if (StopInd>0 .and. ChemInpLine(1:1) /= '!') then
+                NrOfReactions=NrOfReactions+1
+              endif
+            endif
+          endif
+        else
+          !
+          ! Read in species
+          !
+          if (IsReaction) then
+            if (ChemInpLine(1:9) /= "REACTIONS") then
+              StartInd=1; StopInd =0
+              StopInd=index(ChemInpLine(StartInd:),'=')+StartInd-1
+              if (StopInd>0 .and. ChemInpLine(1:1) /= '!') then
+                !
+                ! Fill in reaction name
+                !
+!                print*,'Find reaction name.'
+                StopIndName=index(ChemInpLine(StartInd:),' ')+StartInd-1
+                reaction_name(k)=ChemInpLine(StartInd:StopIndName)
+                !
+                ! Find reactant side stoichiometric coefficients
+                !
+                SeparatorInd=index(ChemInpLine(StartInd:),'<=')
+                if (SeparatorInd==0) then
+                  SeparatorInd=index(ChemInpLine(StartInd:),'=')
+                endif
+                !
+                ParanthesisInd=index(ChemInpLine(StartInd:),'(+M)')
+                if (ParanthesisInd>0) then
+                  LastLeftCharacter=min(ParanthesisInd,SeparatorInd)-1
+                else
+                  LastLeftCharacter=SeparatorInd-1
+                endif
+                !
+                StartInd=1
+                PlusInd=index(ChemInpLine(StartInd:LastLeftCharacter),'+')&
+                     +StartInd-1
+                do while (PlusInd<LastLeftCharacter .AND. PlusInd>0)
+                  StopInd=PlusInd-1
+                  call build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,.false.)
+                  StartInd=StopInd+2
+                  PlusInd=index(ChemInpLine(StartInd:),'+')+StartInd-1
+                enddo
+                StopInd=LastLeftCharacter
+                call build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,.false.)
+                !
+                ! Find product side stoichiometric coefficients
+                !
+                StartInd=index(ChemInpLine,'>')+1
+                if (StartInd==1) StartInd=index(ChemInpLine,'=')+1
+                SeparatorInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+                !
+                ParanthesisInd=index(ChemInpLine(StartInd:),'(+M)')+StartInd-1
+                if (ParanthesisInd>StartInd) then
+                  LastLeftCharacter=min(ParanthesisInd,SeparatorInd)-1
+                else
+                  LastLeftCharacter=SeparatorInd-1
+                endif
+                PlusInd=index(ChemInpLine(StartInd:LastLeftCharacter),'+')&
+                     +StartInd-1
+                do while (PlusInd<LastLeftCharacter .AND. PlusInd>StartInd)
+                  StopInd=PlusInd-1
+                  call build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,.true.)
+                  StartInd=StopInd+2
+                  PlusInd=index(ChemInpLine(StartInd:),'+')+StartInd-1
+                enddo
+                StopInd=LastLeftCharacter
+                call build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,.true.)
+                !
+                ! Find Arrhenius coefficients
+                !
+!                print*,'Start reading Arrhenius coefficients.'
+                VarNumber=1; StartInd=1; StopInd =0
+                stringloop: do while (VarNumber<4)
+                  StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+                  StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
+                  StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+                  if (StopInd==StartInd) then
+                    StartInd=StartInd+1
+                  else
+                    if (VarNumber==1) then
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                           B_n(k)
+                    elseif (VarNumber==2) then
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                           alpha_n(k)
+                    elseif (VarNumber==3) then
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                           E_an(k)
+                    else
+                      call stop_it("No such VarNumber!")
+                    endif
+                    VarNumber=VarNumber+1
+                    StartInd=StopInd
+                  endif
+                  if (StartInd==80) exit
+                enddo stringloop
+                !
+                ! Increase reaction counter by one
+                !
+                k=k+1
+              endif
+            endif
+          endif
+        endif
+      enddo dataloop3
+1012  continue
+      close(file_id)
+      !
+    end subroutine read_reactions
  !********************************************************************
     subroutine write_thermodyn()
       !
@@ -1000,7 +1212,83 @@ module Chemistry
       !
     end subroutine write_thermodyn
 !***************************************************************
-
+    subroutine build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,product)
+      !
+      ! 2008.03.10 Nils Erland: Coded
+      !
+      use Mpicomm
+      !
+      integer, intent(in) :: StartInd,StopInd,k
+      character (len=*), intent(in) :: ChemInpLine
+      integer :: StartSpecie,ind_glob,ind_chem,stoi
+      logical :: found_specie,product
+      !
+      if (ChemInpLine(StartInd:StopInd) /= "M" ) then
+        StartSpecie=verify(ChemInpLine(StartInd:StopInd),"1234567890")+StartInd-1
+        call find_species_index(ChemInpLine(StartSpecie:StopInd),&
+             ind_glob,ind_chem,found_specie)
+        if (.not. found_specie) call stop_it("Did not find specie!")
+        if (StartSpecie==StartInd) then
+          stoi=1
+        else
+          read (unit=ChemInpLine(StartInd:StartInd),fmt='(I1)') stoi
+        endif
+        if (product) then
+          Sijm(ind_chem,k)=Sijm(ind_chem,k)+stoi
+        else
+          Sijp(ind_chem,k)=Sijp(ind_chem,k)+stoi
+        endif
+      endif
+      !
+    end subroutine build_stoich_matrix
+    !***************************************************************
+    subroutine write_reactions()
+      !
+      ! 2008.03.11 Nils Erland: Coded
+      !
+      use General, only: chn
+      !
+      integer :: reac,spec
+      character (len=80) :: reac_string,product_string,output_string
+      character (len=1)  :: Sijp_string,Sijm_string
+      character (len=1)  :: separatorp,separatorm
+      character (len=20) :: input_file="./data/chem.out"
+      integer :: file_id=123
+      !
+      open(file_id,file=input_file,POSITION='APPEND',FORM='FORMATTED')
+      write(file_id,*) 'REACTIONS'
+!      open(file_id,file=input_file)
+      do reac=1,mreactions
+          reac_string=''
+          product_string=''
+          separatorp=''
+          separatorm=''
+          do spec=1,nchemspec
+            if (Sijp(spec,reac)>0) then
+              Sijp_string=''
+              if (Sijp(spec,reac)>1) call chn(Sijp(spec,reac),Sijp_string)
+              reac_string=trim(reac_string)//trim(separatorp)//&
+                   trim(Sijp_string)//trim(varname(ichemspec(spec)))
+              separatorp='+'
+            endif
+            if (Sijm(spec,reac)>0) then
+              Sijm_string=''
+              if (Sijm(spec,reac)>1) call chn(Sijm(spec,reac),Sijm_string)
+              product_string=trim(product_string)//trim(separatorm)//&
+                   trim(Sijm_string)//trim(varname(ichemspec(spec)))
+              separatorm='+'
+            endif
+          enddo
+          output_string=trim(reac_string)//'='//trim(product_string)
+          write(unit=output_string(30:45),fmt='(E14.4)') B_n(reac)
+          write(unit=output_string(47:62),fmt='(E14.4)') alpha_n(reac)
+          write(unit=output_string(64:79),fmt='(E14.4)') E_an(reac)
+          write(file_id,*) trim(output_string)
+        enddo
+        write(file_id,*) 'END'
+        close(file_id)
+        !
+      end subroutine write_reactions
 !***************************************************************
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
