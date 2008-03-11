@@ -1,4 +1,4 @@
-# $Id: grid.py,v 1.1 2007-11-16 13:57:04 joishi Exp $
+# $Id: grid.py,v 1.2 2008-03-11 13:15:04 dintrans Exp $
 #
 # read grid
 #
@@ -15,14 +15,14 @@ class Grid:
     pass
 
 
-def read_grid(datadir='data/',proc=-1,ivar=-1,quiet=False,trim=False,format='native'):
+def read_grid(datadir='data/',proc=-1,ivar=-1,quiet=False,trim=False,format='native',param=None):
     
     """
     read grid from pencil code. if proc < 0, then load all data
     and assemble. otherwise, load grid from specified processor.
     """
     datadir = os.path.expanduser(datadir)
-    param = read_param(datadir)
+    if (param == None): param = read_param(datadir)
     # global dim
     dim = read_dim(datadir,proc) 
     if dim.precision == 'D':

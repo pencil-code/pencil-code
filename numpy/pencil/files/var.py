@@ -1,4 +1,4 @@
-# $Id: var.py,v 1.3 2008-03-07 16:41:15 dintrans Exp $
+# $Id: var.py,v 1.4 2008-03-11 13:15:04 dintrans Exp $
 #
 # read VAR files. based on the read_var.pro IDL script.
 #
@@ -36,7 +36,7 @@ def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=Fals
     if (dim == None):
       dim = read_dim(datadir,proc) 
     if (param == None):
-      param = read_param(datadir)
+      param = read_param(datadir,quiet=quiet)
     if dim.precision == 'D':
         precision = 'd'
     else:
