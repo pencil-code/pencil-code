@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.69 2008-03-11 14:59:19 wlyra Exp $
+! $Id: general.f90,v 1.70 2008-03-11 16:34:57 brandenb Exp $
 
 module General
 
@@ -19,6 +19,7 @@ module General
 
   public :: setup_mm_nn
   public :: input_persistent_general, output_persistent_general
+  public :: find_index_range
 
   public :: spline,tridag,complex_phase,erfcc,besselj_nu_int
 
@@ -548,6 +549,49 @@ module General
       close(1)
 !
     endsubroutine input_array
+!***********************************************************************
+    subroutine find_index_range(aa,naa,aa1,aa2,ii1,ii2)
+!
+!  find index range (ii1,ii2) such that aa
+!
+!   9-mar-08/axel: coded
+!
+      use Cparam, only: nghost
+!
+      integer :: naa,ii,ii1,ii2
+      real, dimension (naa) :: aa
+      real :: aa1,aa2
+!
+!  if not extent in this direction, set indices to interior values
+!
+      if (naa==2*nghost+1) then
+        ii1=nghost+1
+        ii2=nghost+1
+        goto 99
+      endif
+!
+!  find lower index
+!
+      ii1=naa
+      do ii=1,naa
+        if (aa(ii)>=aa1) then
+          ii1=ii
+          goto 10
+        endif
+      enddo
+!
+!  find upper index
+!
+10    ii2=1
+      do ii=naa,1,-1
+        if (aa(ii)<=aa2) then
+          ii2=ii
+          goto 99
+        endif
+      enddo
+!
+99    continue
+    endsubroutine find_index_range
 !***********************************************************************
     function spline_derivative(z,f)
 !

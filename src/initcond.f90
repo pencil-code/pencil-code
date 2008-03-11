@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.232 2008-03-10 06:23:02 brandenb Exp $
+! $Id: initcond.f90,v 1.233 2008-03-11 16:34:57 brandenb Exp $
 
 module Initcond
 
@@ -510,7 +510,7 @@ module Initcond
 !
 !   9-mar-08/axel: coded
 !
-      use Sub, only: find_index_range
+      use General, only: find_index_range
 !
       integer :: i,ll1,ll2,mm1,mm2,nn1,nn2
       real, dimension (mx,my,mz,mfarray) :: f
