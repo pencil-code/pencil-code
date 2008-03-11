@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.68 2008-03-10 15:15:23 wlyra Exp $
+! $Id: general.f90,v 1.69 2008-03-11 14:59:19 wlyra Exp $
 
 module General
 
@@ -999,21 +999,23 @@ module General
 !  06-03-08/wlad: coded
 !
       real, dimension(nygrid) :: angle,a
-      real :: arg,res,fac
+      real :: arg,res,nygrid1,d_angle
       integer :: i,nu
 !
       intent(in)  :: nu,arg
       intent(out) :: res
 !
+      nygrid1=1.
+      if (nygrid/=1) nygrid1=nygrid1/(nygrid-1)
+      d_angle=pi*nygrid1
+
       do i=1,nygrid
-        angle(i)=(i-1)*pi/(nygrid-1)
+        angle(i)=(i-1)*d_angle
       enddo
       a=cos(arg*sin(angle)-nu*angle)
 !
-      fac=1.
       if (nygrid>=3) then
-        fac=fac/(nygrid-1)
-        res=fac*(sum(a(2:nygrid-1))+.5*(a(1)+a(nygrid)))
+        res=pi_1*d_angle*(sum(a(2:nygrid-1))+.5*(a(1)+a(nygrid)))
       else
         stop 'besselj_nu_int : too few points to integrate'
       endif
