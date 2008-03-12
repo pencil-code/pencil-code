@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.29 2008-03-09 19:24:27 wlyra Exp $
+! $Id: selfgravity.f90,v 1.30 2008-03-12 00:06:58 wlyra Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -72,7 +72,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.29 2008-03-09 19:24:27 wlyra Exp $")
+           "$Id: selfgravity.f90,v 1.30 2008-03-12 00:06:58 wlyra Exp $")
 !
 !  Put variable name in array
 !
@@ -225,6 +225,10 @@ module Selfgravity
       real, dimension (nx,ny,nz) :: rhs_poisson
 !
       if (t>=tstart_selfgrav) then
+!
+!  Zero rhs 
+!
+        rhs_poisson=0.
 !
 !  Consider self-gravity from gas and dust density or from either one.
 !
