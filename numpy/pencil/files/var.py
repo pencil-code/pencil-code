@@ -1,4 +1,4 @@
-# $Id: var.py,v 1.5 2008-03-11 15:14:06 tgastine Exp $
+# $Id: var.py,v 1.6 2008-03-12 15:57:59 tgastine Exp $
 #
 # read VAR files. based on the read_var.pro IDL script.
 #
@@ -7,37 +7,58 @@
 #
 # Author: J. Oishi (joishi@amnh.org). 
 # 
+# modify var.py in a more object-oriented way
+# 03/08 : T. Gastine (tgastine@ast.obs-mip.fr)
 # 
 import numpy as N
 from npfile import npfile
 import os
 import string
 from param import read_param 
+from index import read_index
 from dim import read_dim 
 
-class VarFileData:
-    pass
-
+class read_var:
 # !!!  The file format written by output() (and used, e.g. in var.dat)
 # !!!  consists of the followinig Fortran records:
 # !!!    1. data(mx,my,mz,nvar)
 # !!!    2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), deltay(1)
 # !!!  Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
 # !!!  for one vector field, 8 for var.dat in the case of MHD with entropy.
-
 # but, deltay(1) is only there if lshear is on! need to know parameters...
-def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=False,format='native',param=None,dim=None, run2D=False):
+  def __init__(self,varfile='',datadir='data/',proc=-1,ivar=-1,
+                quiet=False,trimall=False,format='native',
+                param=None,dim=None,index=None, run2D=False):
     """
+    Description:
+    -----------
     read VAR files from pencil code. if proc < 0, then load all data
     and assemble. otherwise, load VAR file from specified processor.
     
-    format -- one of (['native', 'n'], ['ieee-le', 'l'], ['ieee-be', 'B']) for byte-ordering
+    format -- one of (['native', 'n'], ['ieee-le', 'l'], 
+    ['ieee-be', 'B']) for byte-ordering
+    
+    Params:
+    ------
+        varfile=''
+        datadir='data/'
+        proc=-1
+        ivar=-1
+        quiet=False
+        trimall=False
+        format='native'
+        param=None
+        dim=None
+        index=None
+        run2D=False
     """
     datadir = os.path.expanduser(datadir)
     if (dim == None):
       dim = read_dim(datadir,proc) 
     if (param == None):
       param = read_param(datadir,quiet=quiet)
+    if (index == None):
+      index = read_index()
     if dim.precision == 'D':
         precision = 'd'
     else:
@@ -50,8 +71,8 @@ def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=Fals
 
     # read index.pro to get positions and "names"
     # of variables in f(mx,my,mz,nvar)
-    index,dict = read_index(datadir)
-    exec(index) # this loads the indicies.
+    # Thomas: seems useless now ?
+    #exec(index) # this loads the indicies.
 
     if (not varfile):
         if (ivar < 0):
@@ -178,59 +199,35 @@ def read_var(varfile='',datadir='data/',proc=-1,ivar=-1,quiet=False,trimall=Fals
         
     #endfor directories loop
 
-        
-    # create a VarFileData class object to return
-    var = VarFileData()
-
     # trim ghost zones if asked
     if (trimall):
-        var.x = x[dim.l1:dim.l2+1]
-        var.y = y[dim.m1:dim.m2+1]
-        var.z = z[dim.n1:dim.n2+1]
+        self.x = x[dim.l1:dim.l2+1]
+        self.y = y[dim.m1:dim.m2+1]
+        self.z = z[dim.n1:dim.n2+1]
         if (not run2D):
-          var.f = f[:,dim.n1:dim.n2+1,dim.m1:dim.m2+1,dim.l1:dim.l2+1]
+          self.f = f[:,dim.n1:dim.n2+1,dim.m1:dim.m2+1,dim.l1:dim.l2+1]
         else:
          if (dim.ny==1):
-           var.f = f[:,dim.n1:dim.n2+1,dim.l1:dim.l2+1]
+           self.f = f[:,dim.n1:dim.n2+1,dim.l1:dim.l2+1]
          else:
-           var.f = f[:,dim.m1:dim.m2+1,dim.l1:dim.l2+1]
+           self.f = f[:,dim.m1:dim.m2+1,dim.l1:dim.l2+1]
     else:
-        var.x = x
-        var.y = y
-        var.z = z
-        var.f = f
-        var.l1 = dim.l1
-        var.l2 = dim.l2+1
-        var.m1 = dim.m1
-        var.m2 = dim.m2+1
-        var.n1 = dim.n1
-        var.n2 = dim.n2+1
+        self.x = x
+        self.y = y
+        self.z = z
+        self.f = f
+        self.l1 = dim.l1
+        self.l2 = dim.l2+1
+        self.m1 = dim.m1
+        self.m2 = dim.m2+1
+        self.n1 = dim.n1
+        self.n2 = dim.n2+1
         
-    for i in range(len(dict.keys())):
-      setattr(var,dict.keys()[i],var.f[dict.values()[i]-1,...])
-    var.t = t
-    var.dx = dx
-    var.dy = dy
-    var.dz = dz
+    for i in range(len(index.index.keys())):
+      setattr(self,index.index.keys()[i],self.f[index.index.values()[i]-1,...])
+    self.t = t
+    self.dx = dx
+    self.dy = dy
+    self.dz = dz
     if param.lshear:
-        var.deltay = deltay
-
-    return var
-            
-
-def read_index(datadir='data/'):
-    if datadir.endswith('/'):
-        datadir += '/'
-
-    index = ''
-    f = open(datadir+'index.pro')
-    dict={}
-    for line in f.readlines():
-        clean = line.strip()
-
-        if (not clean.endswith('0') and not clean.startswith('i_') and clean.startswith('i')):
-            val=string.split(clean, '=')
-            dict[val[0].lstrip('i')]=int(val[1])
-            index += clean+'\n'
-
-    return index, dict
+        self.deltay = deltay
