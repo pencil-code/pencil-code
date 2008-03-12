@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.387 2008-03-08 18:15:12 wlyra Exp $
+! $Id: equ.f90,v 1.388 2008-03-12 17:52:36 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -433,6 +433,7 @@ module Equ
       use Entropy
       use Magnetic
       use Testfield
+      use Testflow
       use Radiation
       use EquationOfState
       use Pscalar
@@ -472,7 +473,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.387 2008-03-08 18:15:12 wlyra Exp $")
+           "$Id: equ.f90,v 1.388 2008-03-12 17:52:36 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -736,6 +737,10 @@ module Equ
 !  Testfield evolution
 !
         if (ltestfield) call daatest_dt(f,df,p)
+!
+!  Testflow evolution
+!
+        if (ltestflow) call duutest_dt(f,df,p)
 !
 !  Passive scalar evolution
 !

@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.181 2008-03-08 17:26:38 wlyra Exp $
+! $Id: start.f90,v 1.182 2008-03-12 17:52:36 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -34,6 +34,7 @@
         use Chiral,          only: init_chiral
         use Magnetic,        only: init_aa
         use Testfield,       only: init_aatest
+        use Testflow,        only: init_uutest
         use Gravity,         only: init_gg
         use Cosmicray,       only: init_ecr
         use Cosmicrayflux,   only: init_fcr
@@ -102,7 +103,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.181 2008-03-08 17:26:38 wlyra Exp $")
+             "$Id: start.f90,v 1.182 2008-03-12 17:52:36 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -302,6 +303,7 @@
           call init_ss        (f,xx,yy,zz)
           call init_aa        (f,xx,yy,zz)
           call init_aatest    (f,xx,yy,zz)
+          call init_uutest    (f,xx,yy,zz)
           call init_rad       (f,xx,yy,zz)
           call init_lncc      (f,xx,yy,zz)
           call init_chiral    (f,xx,yy,zz)

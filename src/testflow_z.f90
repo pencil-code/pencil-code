@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.22 2008-03-12 17:52:36 brandenb Exp $
+! $Id: testflow_z.f90,v 1.1 2008-03-12 17:52:36 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -23,14 +23,14 @@
 !
 !***************************************************************
 
-module Testfield
+module Testflow
 
   use Cparam
   use Messages
 
   implicit none
 
-  include 'testfield.h'
+  include 'testflow.h'
 !
 ! Slice precalculation buffers
 !
@@ -43,33 +43,33 @@ module Testfield
 !
   real, dimension(mz) :: cz,sz
 !
-  character (len=labellen), dimension(ninit) :: initaatest='nothing'
-  real, dimension (ninit) :: amplaatest=0.
+  character (len=labellen), dimension(ninit) :: inituutest='nothing'
+  real, dimension (ninit) :: ampluutest=0.
 
   ! input parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
   real, dimension (nx,3) :: bbb
-  real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
-  real :: taainit=0.,daainit=0.
-  logical :: reinitialize_aatest=.false.
+  real :: ampluu=0., kx_uu=1.,ky_uu=1.,kz_uu=1.
+  real :: tuuinit=0.,duuinit=0.
+  logical :: reinitialize_uutest=.false.
   logical :: zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
-  logical :: luxb_as_aux=.false.,linit_aatest=.false.
+  logical :: luxb_as_aux=.false.,linit_uutest=.false.
   character (len=labellen) :: itestfield='B11-B21'
   real :: ktestfield=1., ktestfield1=1.
-  integer, parameter :: ntestfield=3*njtest
-  integer :: naainit
+  integer, parameter :: ntestflow=4*njtest
+  integer :: nuuinit
   real :: bamp=1.
-  namelist /testfield_init_pars/ &
-       B_ext,zextent,initaatest, &
-       amplaatest, &
+  namelist /testflow_init_pars/ &
+       B_ext,zextent,inituutest, &
+       ampluutest, &
        luxb_as_aux
 
   ! run parameters
-  real :: etatest=0.,etatest1=0.
-  namelist /testfield_run_pars/ &
-       B_ext,reinitialize_aatest,zextent,lsoca, &
-       lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
-       luxb_as_aux,daainit,linit_aatest,bamp
+  real :: nutest=0.,nutest1=0.
+  namelist /testflow_run_pars/ &
+       B_ext,reinitialize_uutest,zextent,lsoca, &
+       lset_bbtest2,nutest,nutest1,itestfield,ktestfield, &
+       luxb_as_aux,duuinit,linit_uutest,bamp
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -104,15 +104,15 @@ module Testfield
   integer :: idiag_by0mz=0      ! DIAG_DOC: $\left<b_{y}\right>_{xy}$
   integer :: idiag_bz0mz=0      ! DIAG_DOC: $\left<b_{z}\right>_{xy}$
 
-  real, dimension (mz,3,ntestfield/3) :: uxbtestm
+! real, dimension (mz,4,ntestflow/4) :: uxbtestm
 
   contains
 
 !***********************************************************************
-    subroutine register_testfield()
+    subroutine register_testflow()
 !
 !  Initialise variables which should know that we solve for the vector
-!  potential: iaatest, etc; increase nvar accordingly
+!  potential: iuutest, etc; increase nvar accordingly
 !
 !   3-jun-05/axel: adapted from register_magnetic
 !
@@ -123,55 +123,56 @@ module Testfield
       logical, save :: first=.true.
       integer :: j
 !
-      if (.not. first) call stop_it('register_aa called twice')
+      if (.not. first) call stop_it('register_uu called twice')
       first=.false.
 !
 !  Set first and last index of text field
-!  Here always ltestfield=T
+!  Here always ltestflow=T
 !
-      ltestfield=.true.
-      iaatest=nvar+1
-      iaxtest=iaatest
-      iaxtestpq=iaatest+3*(njtest-1)
-      iaztestpq=iaxtestpq+2
-      nvar=nvar+ntestfield
+      ltestflow=.true.
+      iuutest=nvar+1
+      iuxtest=iuutest
+      iuxtestpq=iuutest+4*(njtest-1)
+      iuztestpq=iuxtestpq+2
+      ihhtestpq=iuxtestpq+3
+      nvar=nvar+ntestflow
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'register_testfield: nvar = ', nvar
-        print*, 'register_testfield: iaatest = ', iaatest
+        print*, 'register_testflow: nvar = ', nvar
+        print*, 'register_testflow: iuutest = ', iuutest
       endif
 !
 !  Put variable names in array
 !
-      do j=1,ntestfield
-        varname(j) = 'aatest'
+      do j=1,ntestflow
+        varname(j) = 'uutest'
       enddo
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.22 2008-03-12 17:52:36 brandenb Exp $")
+           "$Id: testflow_z.f90,v 1.1 2008-03-12 17:52:36 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_testfield: nvar > mvar')
+        call stop_it('register_testflow: nvar > mvar')
       endif
 !
 !  Writing files for use with IDL
 !
       if (lroot) then
         if (maux == 0) then
-          if (nvar < mvar) write(4,*) ',aatest $'
-          if (nvar == mvar) write(4,*) ',aatest'
+          if (nvar < mvar) write(4,*) ',uutest $'
+          if (nvar == mvar) write(4,*) ',uutest'
         else
-          write(4,*) ',aatest $'
+          write(4,*) ',uutest $'
         endif
-        write(15,*) 'aatest = fltarr(mx,my,mz,ntestfield)*one'
+        write(15,*) 'uutest = fltarr(mx,my,mz,ntestflow)*one'
       endif
 !
-    endsubroutine register_testfield
+    endsubroutine register_testflow
 !***********************************************************************
-    subroutine initialize_testfield(f)
+    subroutine initialize_testflow(f)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -182,17 +183,17 @@ module Testfield
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-!  Precalculate etatest if 1/etatest (==etatest1) is given instead
+!  Precalculate nutest if 1/nutest (==nutest1) is given instead
 !
-      if (etatest1/=0.) then
-        etatest=1./etatest1
+      if (nutest1/=0.) then
+        nutest=1./nutest1
       endif
 !
-!  set to zero and then rescale the testfield
-!  (in future, could call something like init_aa_simple)
+!  set to zero and then rescale the testflow
+!  (in future, could call something like init_uu_simple)
 !
-      if (reinitialize_aatest) then
-        f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
+      if (reinitialize_uutest) then
+        f(:,:,:,iuutest:iuutest+ntestflow-1)=0.
       endif
 !
 !  set cosine and sine function for setting test fields and analysis
@@ -218,6 +219,8 @@ module Testfield
 !  After a reload, we need to rewrite index.pro, but the auxiliary
 !  arrays are already allocated and must not be allocated again.
 !
+!  ?? This could be someting like u.gradu ??
+!
       if (luxb_as_aux) then
         if (iuxb==0) then
           call farray_register_auxiliary('uxb',iuxb,vector=3*njtest)
@@ -230,10 +233,10 @@ module Testfield
         endif
       endif
 !
-!  write testfield information to a file (for convenient post-processing)
+!  write testflow information to a file (for convenient post-processing)
 !
       if (lroot) then
-        open(1,file=trim(datadir)//'/testfield_info.dat',STATUS='unknown')
+        open(1,file=trim(datadir)//'/testflow_info.dat',STATUS='unknown')
         write(1,'(a,i1)') 'zextent=',merge(1,0,zextent)
         write(1,'(a,i1)') 'lsoca='  ,merge(1,0,lsoca)
         write(1,'(3a)') "itestfield='",trim(itestfield)//"'"
@@ -241,11 +244,11 @@ module Testfield
         close(1)
       endif
 !
-    endsubroutine initialize_testfield
+    endsubroutine initialize_testflow
 !***********************************************************************
-    subroutine init_aatest(f,xx,yy,zz)
+    subroutine init_uutest(f,xx,yy,zz)
 !
-!  initialise testfield; called from start.f90
+!  initialise testflow; called from start.f90
 !
 !   2-jun-05/axel: adapted from magnetic
 !
@@ -263,29 +266,29 @@ module Testfield
 !
       do j=1,ninit
 
-      select case(initaatest(j))
+      select case(inituutest(j))
 
-      case('zero'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
-      case('gaussian-noise-1'); call gaunoise(amplaatest(j),f,iaatest+0,iaatest+2)
-      case('gaussian-noise-2'); call gaunoise(amplaatest(j),f,iaatest+3,iaatest+5)
-      case('gaussian-noise-3'); call gaunoise(amplaatest(j),f,iaatest+6,iaatest+8)
+      case('zero'); f(:,:,:,iuutest:iuutest+ntestflow-1)=0.
+      case('gaussian-noise-1'); call gaunoise(ampluutest(j),f,iuutest+0,iuutest+2)
+      case('gaussian-noise-2'); call gaunoise(ampluutest(j),f,iuutest+3,iuutest+5)
+      case('gaussian-noise-3'); call gaunoise(ampluutest(j),f,iuutest+6,iuutest+8)
       case('nothing'); !(do nothing)
 
       case default
         !
         !  Catch unknown values
         !
-        if (lroot) print*, 'init_aatest: check initaatest: ', trim(initaatest(j))
+        if (lroot) print*, 'init_uutest: check inituutest: ', trim(inituutest(j))
         call stop_it("")
 
       endselect
       enddo
 !
-    endsubroutine init_aatest
+    endsubroutine init_uutest
 !***********************************************************************
-    subroutine pencil_criteria_testfield()
+    subroutine pencil_criteria_testflow()
 !
-!   All pencils that the Testfield module depends on are specified here.
+!   All pencils that the Testflow module depends on are specified here.
 !
 !  26-jun-05/anders: adapted from magnetic
 !
@@ -293,11 +296,11 @@ module Testfield
 !
       lpenc_requested(i_uu)=.true.
 !
-    endsubroutine pencil_criteria_testfield
+    endsubroutine pencil_criteria_testflow
 !***********************************************************************
-    subroutine pencil_interdep_testfield(lpencil_in)
+    subroutine pencil_interdep_testflow(lpencil_in)
 !
-!  Interdependency among pencils from the Testfield module is specified here.
+!  Interdependency among pencils from the Testflow module is specified here.
 !
 !  26-jun-05/anders: adapted from magnetic
 !
@@ -305,56 +308,56 @@ module Testfield
 !
       logical, dimension(npencils) :: lpencil_in
 !
-    endsubroutine pencil_interdep_testfield
+    endsubroutine pencil_interdep_testflow
 !***********************************************************************
-    subroutine read_testfield_init_pars(unit,iostat)
+    subroutine read_testflow_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then
-        read(unit,NML=testfield_init_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=testflow_init_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=testfield_init_pars,ERR=99)
+        read(unit,NML=testflow_init_pars,ERR=99)
       endif
 
 99    return
-    endsubroutine read_testfield_init_pars
+    endsubroutine read_testflow_init_pars
 !***********************************************************************
-    subroutine write_testfield_init_pars(unit)
+    subroutine write_testflow_init_pars(unit)
       integer, intent(in) :: unit
 
-      write(unit,NML=testfield_init_pars)
+      write(unit,NML=testflow_init_pars)
 
-    endsubroutine write_testfield_init_pars
+    endsubroutine write_testflow_init_pars
 !***********************************************************************
-    subroutine read_testfield_run_pars(unit,iostat)
+    subroutine read_testflow_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then
-        read(unit,NML=testfield_run_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=testflow_run_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=testfield_run_pars,ERR=99)
+        read(unit,NML=testflow_run_pars,ERR=99)
       endif
 
 99    return
-    endsubroutine read_testfield_run_pars
+    endsubroutine read_testflow_run_pars
 !***********************************************************************
-    subroutine write_testfield_run_pars(unit)
+    subroutine write_testflow_run_pars(unit)
       integer, intent(in) :: unit
 
-      write(unit,NML=testfield_run_pars)
+      write(unit,NML=testflow_run_pars)
 
-    endsubroutine write_testfield_run_pars
+    endsubroutine write_testflow_run_pars
 !***********************************************************************
-    subroutine daatest_dt(f,df,p)
+    subroutine duutest_dt(f,df,p)
 !
-!  testfield evolution:
+!  testflow evolution:
 !
-!  calculate da^(pq)/dt=Uxb^(pq)+uxB^(pq)+uxb-<uxb>+eta*del2A^(pq),
-!    where p=1,2 and q=1 (if B11-B21) and optionally q=2 (if B11-B22)
+!  calculate du^(pq)/dt = -u^(pq).gradu^(pq)+<u^(pq).gradu^(pq)> - gradhh^(pq)
+!                         + Lorentz force (added in testfield)
 !
-!   3-jun-05/axel: coded
+!  12-mar-08/axel: coded
 !
       use Cdata
       use Sub
@@ -365,12 +368,10 @@ module Testfield
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx,3) :: bb,aa,uxB,bbtest,btest,uxbtest,duxbtest
+      real, dimension (nx,3) :: bb,aa,uxB,uutest,btest,uxbtest,duxbtest
       real, dimension (nx,3,njtest) :: Eipq,bpq
-      real, dimension (nx,3) :: del2Atest,uufluct
-      real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
-      real, dimension (nx,3,3) :: aijtest,bijtest
-      real, dimension (nx) :: bpq2
+      real, dimension (nx,3) :: del2utest,uufluct,ghhtest
+      real, dimension (nx) :: bpq2,uutest_dot_ghhtest,divuutest
       integer :: jtest,jfnamez,j,i3,i4
       integer,save :: ifirst=0
       logical,save :: ltest_uxb=.false.
@@ -382,102 +383,106 @@ module Testfield
 !
 !  identify module and boundary conditions
 !
-      if (headtt.or.ldebug) print*,'daatest_dt: SOLVE'
+      if (headtt.or.ldebug) print*,'duutest_dt: SOLVE'
       if (headtt) then
-        if (iaxtest /= 0) call identify_bcs('Axtest',iaxtest)
-        if (iaytest /= 0) call identify_bcs('Aytest',iaytest)
-        if (iaztest /= 0) call identify_bcs('Aztest',iaztest)
+        if (iuxtest /= 0) call identify_bcs('Axtest',iuxtest)
+        if (iuytest /= 0) call identify_bcs('Aytest',iuytest)
+        if (iuztest /= 0) call identify_bcs('Aztest',iuztest)
+        if (ihhtest /= 0) call identify_bcs('hhtest',ihhtest)
       endif
 !
 !  calculate uufluct=U-Umean
 !
-      if (lcalc_uumean) then
-        do j=1,3
-          uufluct(:,j)=p%uu(:,j)-uumz(n,j)
-        enddo
-      else
-        uufluct=p%uu
-      endif
+!     if (lcalc_uumean) then
+!       do j=1,3
+!         uufluct(:,j)=p%uu(:,j)-uumz(n,j)
+!       enddo
+!     else
+!       uufluct=p%uu
+!     endif
 !
-!  do each of the 9 test fields at a time
-!  but exclude redundancies, e.g. if the averaged field lacks x extent.
+!  do each of the 9 test flow at a time
+!  but exclude redundancies, e.g. if the averaged flow lacks x extent.
 !  Note: the same block of lines occurs again further down in the file.
 !
       do jtest=1,njtest
-        iaxtest=iaatest+3*(jtest-1)
-        iaztest=iaxtest+2
-        call del2v(f,iaxtest,del2Atest)
-        select case(itestfield)
-          case('B11-B21+B=0'); call set_bbtest(bbtest,jtest)
-          case('B11-B21'); call set_bbtest_B11_B21(bbtest,jtest)
-          case('B11-B22'); call set_bbtest_B11_B22(bbtest,jtest)
-        case default
-          call fatal_error('daatest_dt','undefined itestfield value')
-        endselect
+        iuxtest=iuutest+3*(jtest-1)
+        iuztest=iuxtest+2
+        ihhtest=iuxtest+3
 !
-!  add an external field, if present
+!  gradient of (pseudo) enthalpy
 !
-        if (B_ext(1)/=0.) bbtest(:,1)=bbtest(:,1)+B_ext(1)
-        if (B_ext(2)/=0.) bbtest(:,2)=bbtest(:,2)+B_ext(2)
-        if (B_ext(3)/=0.) bbtest(:,3)=bbtest(:,3)+B_ext(3)
+        call grad(f,ihhtest,ghhtest)
+        df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)-ghhtest
 !
-        call cross_mn(uufluct,bbtest,uxB)
-        if (lsoca) then
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-            +uxB+etatest*del2Atest
-        else
+!  continuity equation, dh/dt = - u.gradh - cs^2*divutest,
+!  but assume cs=1 in this context
+!
+        uutest=f(l1:l2,m,n,iuxtest:iuztest)
+        call dot_mn(uutest,ghhtest,uutest_dot_ghhtest)
+        call div(f,iuutest,divuutest)
+        df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest) &
+          -uutest_dot_ghhtest-divuutest
+!
+!       select case(itestfield)
+!         case('B11-B21+B=0'); call set_bbtest(bbtest,jtest)
+!         case('B11-B21'); call set_bbtest_B11_B21(bbtest,jtest)
+!         case('B11-B22'); call set_bbtest_B11_B22(bbtest,jtest)
+!       case default
+!         call fatal_error('duutest_dt','undefined itestfield value')
+!       endselect
+!
+!  add an external flow, if present
+!
+!       if (B_ext(1)/=0.) bbtest(:,1)=bbtest(:,1)+B_ext(1)
+!       if (B_ext(2)/=0.) bbtest(:,2)=bbtest(:,2)+B_ext(2)
+!       if (B_ext(3)/=0.) bbtest(:,3)=bbtest(:,3)+B_ext(3)
+!
+!       call cross_mn(uufluct,bbtest,uxB)
+!       if (lsoca) then
+!         df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
+!           +uxB+etatest*del2Atest
+!       else
 !
 !  use f-array for uxb (if space has been allocated for this) and
 !  if we don't test (i.e. if ltest_uxb=.false.)
 !
-          if (iuxb/=0.and..not.ltest_uxb) then
-            uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
-          else
-            call curl(f,iaxtest,btest)
-            call cross_mn(p%uu,btest,uxbtest)
-          endif
+!         if (iuxb/=0.and..not.ltest_uxb) then
+!           uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
+!         else
+!           call curl(f,iuxtest,btest)
+!           call cross_mn(p%uu,btest,uxbtest)
+!         endif
 !
 !  subtract average emf
 !
-          do j=1,3
-            duxbtest(:,j)=uxbtest(:,j)-uxbtestm(n,j,jtest)
-          enddo
+!         do j=1,3
+!           duxbtest(:,j)=uxbtest(:,j)-uxbtestm(n,j,jtest)
+!         enddo
 !
-!  advance test field equation
+!  advance test flow equation, add diffusion term
 !
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-            +uxB+etatest*del2Atest+duxbtest
-!
-!  Calculate Lorentz force
-!
-          if (ltestflow) then
-            aatest=f(l1:l2,m,n,iaxtest:iaztest)
-            call gij(f,iaatest,aijtest,1)
-            call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest2,graddivatest)
-            call curl_mn(bijtest,jjtest,btest)
-            call cross_mn(jjtest,btest,jxbrtest)
-            df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
-              +jxbrtest
-          endif
-!
-        endif
+          call del2v(f,iuxtest,del2utest)
+          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
+            +nutest*del2utest
+!       endif
 !
 !  calculate alpha, begin by calculating uxbtest (if not already done above)
 !
-        if ((ldiagnos.or.l1ddiagnos).and. &
-          ((lsoca.or.iuxb/=0).and.(.not.ltest_uxb))) then
-          call curl(f,iaxtest,btest)
-          call cross_mn(p%uu,btest,uxbtest)
-        endif
-        bpq(:,:,jtest)=btest
-        Eipq(:,:,jtest)=uxbtest/bamp
+!       if ((ldiagnos.or.l1ddiagnos).and. &
+!         ((lsoca.or.iuxb/=0).and.(.not.ltest_uxb))) then
+!         call curl(f,iuxtest,btest)
+!         call cross_mn(p%uu,btest,uxbtest)
+!       endif
+!       bpq(:,:,jtest)=btest
+!       Eipq(:,:,jtest)=uxbtest/bamp
       enddo
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
 !  and whatever is calculated here
 !
       if (lfirst.and.ldt) then
-        diffus_eta=max(diffus_eta,etatest*dxyz_2)
+        diffus_eta=max(diffus_eta,nutest*dxyz_2)
       endif
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9
@@ -568,29 +573,29 @@ module Testfield
         enddo
       endif
 !
-! initialize aatest periodically if requested
+! initialize uutest periodically if requested
 !
-      if (linit_aatest) then
-         file=trim(datadir)//'/tinit_aatest.dat'
+      if (linit_uutest) then
+         file=trim(datadir)//'/tinit_uutest.dat'
          if (ifirst==0) then
-            call read_snaptime(trim(file),taainit,naainit,daainit,t)
-            if (taainit==0 .or. taainit < t-daainit) then
-              taainit=t+daainit
+            call read_snaptime(trim(file),tuuinit,nuuinit,duuinit,t)
+            if (tuuinit==0 .or. tuuinit < t-duuinit) then
+              tuuinit=t+duuinit
             endif
             ifirst=1
          endif
 !
-         if (t >= taainit) then
-            reinitialize_aatest=.true.
-            call initialize_testfield(f)
-            reinitialize_aatest=.false.
-            call update_snaptime(file,taainit,naainit,daainit,t,ltestfield,ch,ENUM=.false.)
+         if (t >= tuuinit) then
+            reinitialize_uutest=.true.
+            call initialize_testflow(f)
+            reinitialize_uutest=.false.
+            call update_snaptime(file,tuuinit,nuuinit,duuinit,t,ltestflow,ch,ENUM=.false.)
          endif
       endif
 !
-    endsubroutine daatest_dt
+    endsubroutine duutest_dt
 !***********************************************************************
-    subroutine get_slices_testfield(f,slices)
+    subroutine get_slices_testflow(f,slices)
 ! 
 !  Write slices for animation of magnetic variables.
 ! 
@@ -618,11 +623,12 @@ module Testfield
           endif
       endselect
 !
-    endsubroutine get_slices_testfield
+    endsubroutine get_slices_testflow
 !***********************************************************************
-    subroutine calc_ltestfield_pars(f)
+    subroutine calc_ltestflow_pars(f)
 !
-!  calculate <uxb>, which is needed when lsoca=.false.
+!  ... calculate <uxb>, which is needed when lsoca=.false.
+!  this is done prior to the pencil loop
 !
 !  21-jan-06/axel: coded
 !
@@ -633,8 +639,8 @@ module Testfield
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (nz,nprocz,3,njtest) :: uxbtestm1
-      real, dimension (nz*nprocz*3*njtest) :: uxbtestm2,uxbtestm3
+!     real, dimension (nz,nprocz,3,njtest) :: uxbtestm1
+!     real, dimension (nz*nprocz*3*njtest) :: uxbtestm2,uxbtestm3
       real, dimension (nx,3) :: btest,uxbtest
       integer :: jtest,j,nxy=nxgrid*nygrid,juxb
       logical :: headtt_save
@@ -649,64 +655,61 @@ module Testfield
       headtt_save=headtt
       fac=1./nxy
 !
-!  do each of the 9 test fields at a time
-!  but exclude redundancies, e.g. if the averaged field lacks x extent.
+!  do each of the 9 test flows at a time
+!  but exclude redundancies, e.g. if the averaged flows lacks x extent.
 !  Note: the same block of lines occurs again further up in the file.
 !
-      do jtest=1,njtest
-        iaxtest=iaatest+3*(jtest-1)
-        iaztest=iaxtest+2
-        if (lsoca) then
-          uxbtestm(:,:,jtest)=0.
-        else
-          do n=n1,n2
-            uxbtestm(n,:,jtest)=0.
-            do m=m1,m2
-              call calc_pencils_hydro(f,p)
-              call curl(f,iaxtest,btest)
-              call cross_mn(p%uu,btest,uxbtest)
-!if (n==11.and.jtest==1) print*,'iproc,m,u,b,uxb=',iproc,m,btest(11,2),f(14,m,11,1),f(14,m,11,3)
-              juxb=iuxb+3*(jtest-1)
-              if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
-              do j=1,3
-                uxbtestm(n,j,jtest)=uxbtestm(n,j,jtest)+fac*sum(uxbtest(:,j))
-              enddo
-              headtt=.false.
-            enddo
-            do j=1,3
-              uxbtestm1(n-n1+1,ipz+1,j,jtest)=uxbtestm(n,j,jtest)
-            enddo
-          enddo
-        endif
-      enddo
+!     do jtest=1,njtest
+!       iuxtest=iuutest+3*(jtest-1)
+!       iuztest=iuxtest+2
+!       if (lsoca) then
+!         uxbtestm(:,:,jtest)=0.
+!       else
+!         do n=n1,n2
+!           uxbtestm(n,:,jtest)=0.
+!           do m=m1,m2
+!             call calc_pencils_hydro(f,p)
+!             call curl(f,iuxtest,btest)
+!             call cross_mn(p%uu,btest,uxbtest)
+!             juxb=iuxb+3*(jtest-1)
+!             if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
+!             do j=1,3
+!               uxbtestm(n,j,jtest)=uxbtestm(n,j,jtest)+fac*sum(uxbtest(:,j))
+!             enddo
+!             headtt=.false.
+!           enddo
+!           do j=1,3
+!             uxbtestm1(n-n1+1,ipz+1,j,jtest)=uxbtestm(n,j,jtest)
+!           enddo
+!         enddo
+!       endif
+!     enddo
 !
 !  do communication for array of size nz*nprocz*3*njtest
 !
-      if (nprocy>1) then
-        uxbtestm2=reshape(uxbtestm1,shape=(/nz*nprocz*3*njtest/))
-!print*,iproc,uxbtestm(11,1,1)
-!print*,iproc,uxbtestm1(11-n1+1,ipz+1,1,1),uxbtestm2(11-n1+1+nz*ipz)
-        call mpireduce_sum(uxbtestm2,uxbtestm3,nz*nprocz*3*njtest)
-        call mpibcast_real(uxbtestm3,nz*nprocz*3*njtest)
-        uxbtestm1=reshape(uxbtestm3,shape=(/nz,nprocz,3,njtest/))
-        do jtest=1,njtest
-          do n=n1,n2
-            do j=1,3
-              uxbtestm(n,j,jtest)=uxbtestm1(n-n1+1,ipz+1,j,jtest)
-            enddo
-          enddo
-        enddo
-      endif
+!     if (nprocy>1) then
+!       uxbtestm2=reshape(uxbtestm1,shape=(/nz*nprocz*3*njtest/))
+!       call mpireduce_sum(uxbtestm2,uxbtestm3,nz*nprocz*3*njtest)
+!       call mpibcast_real(uxbtestm3,nz*nprocz*3*njtest)
+!       uxbtestm1=reshape(uxbtestm3,shape=(/nz,nprocz,3,njtest/))
+!       do jtest=1,njtest
+!         do n=n1,n2
+!           do j=1,3
+!             uxbtestm(n,j,jtest)=uxbtestm1(n-n1+1,ipz+1,j,jtest)
+!           enddo
+!         enddo
+!       enddo
+!     endif
 !
 !  reset headtt
 !
       headtt=headtt_save
 !
-    endsubroutine calc_ltestfield_pars
+    endsubroutine calc_ltestflow_pars
 !***********************************************************************
     subroutine set_bbtest(bbtest,jtest)
 !
-!  set testfield
+!  set testflow
 !
 !   3-jun-05/axel: coded
 !
@@ -732,7 +735,7 @@ module Testfield
 !***********************************************************************
     subroutine set_bbtest_B11_B21 (bbtest,jtest)
 !
-!  set testfield
+!  set testflow
 !
 !   3-jun-05/axel: coded
 !
@@ -757,7 +760,7 @@ module Testfield
 !***********************************************************************
     subroutine set_bbtest_B11_B22 (bbtest,jtest)
 !
-!  set testfield
+!  set testflow
 !
 !   3-jun-05/axel: coded
 !
@@ -782,9 +785,9 @@ module Testfield
 !
     endsubroutine set_bbtest_B11_B22
 !***********************************************************************
-    subroutine rprint_testfield(lreset,lwrite)
+    subroutine rprint_testflow(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for testfield fields
+!  reads and registers print parameters relevant for testflow fields
 !
 !   3-jun-05/axel: adapted from rprint_magnetic
 !
@@ -886,15 +889,15 @@ module Testfield
         write(3,*) 'idiag_E10z=',idiag_E10z
         write(3,*) 'idiag_E20z=',idiag_E20z
         write(3,*) 'idiag_E30z=',idiag_E30z
-        write(3,*) 'iaatest=',iaatest
-        write(3,*) 'iaxtestpq=',iaxtestpq
-        write(3,*) 'iaztestpq=',iaztestpq
-        write(3,*) 'ntestfield=',ntestfield
+        write(3,*) 'iuutest=',iuutest
+        write(3,*) 'iuxtestpq=',iuxtestpq
+        write(3,*) 'iuztestpq=',iuztestpq
+        write(3,*) 'ntestflow=',ntestflow
         write(3,*) 'nnamez=',nnamez
         write(3,*) 'nnamexy=',nnamexy
         write(3,*) 'nnamexz=',nnamexz
       endif
 !
-    endsubroutine rprint_testfield
+    endsubroutine rprint_testflow
 
-endmodule Testfield
+endmodule Testflow

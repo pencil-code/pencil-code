@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.48 2008-01-16 07:02:43 brandenb Exp $
+! $Id: shear.f90,v 1.49 2008-03-12 17:52:36 brandenb Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -53,7 +53,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.48 2008-01-16 07:02:43 brandenb Exp $")
+           "$Id: shear.f90,v 1.49 2008-03-12 17:52:36 brandenb Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -216,6 +216,15 @@ module Shear
       if (ltestfield) then
         do j=iaatest,iaxtestpq,3
           df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-Sshear*f(l1:l2,m,n,j+1)
+        enddo
+      endif
+!
+!  Testflow stretching term
+!  Loop through all the duy/dt equations and add -S*ux contribution
+!
+      if (ltestflow) then
+        do j=iuutest+1,iuxtestpq,3
+          df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-Sshear*f(l1:l2,m,n,j-1)
         enddo
       endif
 !

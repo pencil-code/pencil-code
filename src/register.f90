@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.227 2008-01-09 06:41:08 brandenb Exp $
+! $Id: register.f90,v 1.228 2008-03-12 17:52:36 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -43,6 +43,7 @@ module Register
       use Entropy,          only: register_entropy
       use Magnetic,         only: register_magnetic
       use Testfield,        only: register_testfield
+      use Testflow,         only: register_testflow
       use Radiation,        only: register_radiation
       use Pscalar,          only: register_pscalar
       use Chiral,           only: register_chiral
@@ -107,6 +108,7 @@ module Register
       call register_entropy
       call register_magnetic
       call register_testfield
+      call register_testflow
       call register_radiation
       call register_pscalar
       call register_chiral
@@ -181,6 +183,7 @@ module Register
       use Entropy,         only: initialize_entropy
       use Magnetic,        only: initialize_magnetic
       use Testfield,       only: initialize_testfield
+      use Testflow,        only: initialize_testflow
       use Radiation,       only: initialize_radiation
       use Pscalar,         only: initialize_pscalar
       use Chiral,          only: initialize_chiral
@@ -280,6 +283,7 @@ module Register
       call initialize_entropy(f,lstarting) ! calculate radiative conductivity,..
       call initialize_magnetic(f,lstarting)
       call initialize_testfield(f)
+      call initialize_testflow(f)
       call initialize_radiation()
       call initialize_pscalar(f)
       call initialize_chiral(f)
@@ -622,6 +626,7 @@ module Register
       use NeutralDensity,  only: pencil_criteria_neutraldensity
       use Magnetic,        only: pencil_criteria_magnetic
       use Testfield,       only: pencil_criteria_testfield
+      use Testflow,        only: pencil_criteria_testflow
       use Cosmicray,       only: pencil_criteria_cosmicray
       use Cosmicrayflux,   only: pencil_criteria_cosmicrayflux
       use Chiral,          only: pencil_criteria_chiral
@@ -649,6 +654,7 @@ module Register
       call pencil_criteria_neutraldensity()
       call pencil_criteria_magnetic()
       call pencil_criteria_testfield()
+      call pencil_criteria_testflow()
       call pencil_criteria_cosmicray()
       call pencil_criteria_cosmicrayflux()
       call pencil_criteria_chiral()
@@ -681,6 +687,7 @@ module Register
       use Selfgravity, only: pencil_interdep_selfgravity
       use Magnetic, only: pencil_interdep_magnetic
       use Testfield, only: pencil_interdep_testfield
+      use Testflow, only: pencil_interdep_testflow
       use Pscalar, only: pencil_interdep_pscalar
       use Chemistry, only: pencil_interdep_chemistry
       use Dustvelocity, only: pencil_interdep_dustvelocity
@@ -714,6 +721,7 @@ module Register
       call pencil_interdep_pscalar(lpencil_in)
       call pencil_interdep_magnetic(lpencil_in)
       call pencil_interdep_testfield(lpencil_in)
+      call pencil_interdep_testflow(lpencil_in)
       call pencil_interdep_cosmicray(lpencil_in)
       call pencil_interdep_cosmicrayflux(lpencil_in)
       call pencil_interdep_chiral(lpencil_in)
@@ -738,6 +746,7 @@ module Register
       use Entropy,         only: rprint_entropy
       use Magnetic,        only: rprint_magnetic
       use Testfield,       only: rprint_testfield
+      use Testflow,        only: rprint_testflow
       use Radiation,       only: rprint_radiation
       use EquationOfState, only: rprint_eos
       use Pscalar,         only: rprint_pscalar
@@ -933,6 +942,7 @@ module Register
       call rprint_entropy         (lreset,LWRITE=lroot)
       call rprint_magnetic        (lreset,LWRITE=lroot)
       call rprint_testfield       (lreset,LWRITE=lroot)
+      call rprint_testflow        (lreset,LWRITE=lroot)
       call rprint_radiation       (lreset,LWRITE=lroot)
       call rprint_eos             (lreset,LWRITE=lroot)
       call rprint_pscalar         (lreset,LWRITE=lroot)

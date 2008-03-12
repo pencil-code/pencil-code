@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.296 2008-01-16 17:27:04 bingert Exp $
+! $Id: param_io.f90,v 1.297 2008-03-12 17:52:36 brandenb Exp $
 
 module Param_IO
 
@@ -16,6 +16,7 @@ module Param_IO
   use Density
   use Magnetic
   use Testfield
+  use Testflow
   use Pscalar
   use Chiral
   use Cosmicray
@@ -262,6 +263,10 @@ module Param_IO
       if (ierr.ne.0) call sample_startpars('testfield_init_pars',ierr)
 
       call sgi_fix(lsgifix,1,'start.in')
+      call read_testflow_init_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_startpars('testflow_init_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'start.in')
       call read_radiation_init_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('radiation_init_pars',ierr)
 
@@ -407,6 +412,7 @@ module Param_IO
         if (ltemperature    ) print*,'&entropy_init_pars         /'
         if (lmagnetic       ) print*,'&magnetic_init_pars        /'
         if (ltestfield      ) print*,'&testfield_init_pars       /'
+        if (ltestflow       ) print*,'&testflow_init_pars        /'
         if (lradiation      ) print*,'&radiation_init_pars       /'
         if (lpscalar        ) print*,'&pscalar_init_pars         /'
         if (lchiral         ) print*,'&chiral_init_pars          /'
@@ -478,6 +484,7 @@ module Param_IO
         call write_entropy_init_pars(unit)
         call write_magnetic_init_pars(unit)
         call write_testfield_init_pars(unit)
+        call write_testflow_init_pars(unit)
         call write_radiation_init_pars(unit)
         call write_pscalar_init_pars(unit)
         call write_chiral_init_pars(unit)
@@ -589,6 +596,10 @@ module Param_IO
       call sgi_fix(lsgifix,1,'run.in')
       call read_testfield_run_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_runpars('testfield_run_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'run.in')
+      call read_testflow_run_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_runpars('testflow_run_pars',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
       call read_radiation_run_pars(1,IOSTAT=ierr)
@@ -736,6 +747,7 @@ module Param_IO
         if (ltemperature    ) print*,'&entropy_run_pars         /'
         if (lmagnetic       ) print*,'&magnetic_run_pars        /'
         if (ltestfield      ) print*,'&testfield_run_pars       /'
+        if (ltestflow       ) print*,'&testflow_run_pars        /'
         if (lradiation      ) print*,'&radiation_run_pars       /'
         if (lpscalar        ) print*,'&pscalar_run_pars         /'
         if (lchiral         ) print*,'&chiral_run_pars          /'
@@ -830,6 +842,7 @@ module Param_IO
         call write_entropy_run_pars(unit)
         call write_magnetic_run_pars(unit)
         call write_testfield_run_pars(unit)
+        call write_testflow_run_pars(unit)
         call write_radiation_run_pars(unit)
         call write_pscalar_run_pars(unit)
         call write_chiral_run_pars(unit)
@@ -955,7 +968,7 @@ module Param_IO
            lchemistry, ldustvelocity,ldustdensity,lradiation_fld,  &
            lneutralvelocity,lneutraldensity, &
            leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
-           leos,leos_temperature_ionization,lspecial, ltestfield, &
+           leos,leos_temperature_ionization,lspecial, ltestfield, ltestflow, &
            lhydro_var, lentropy_var, ldensity_var, lshock_var, &
            lcosmicray_var, lcosmicrayflux_var, linterstellar_var, &
            datadir
@@ -970,7 +983,8 @@ module Param_IO
       logical :: lcosmicrayflux = lcosmicrayflux_var
 
       namelist /lphysics/ &
-           lhydro,ldensity,lentropy,lmagnetic,ltestfield,lpscalar,lradiation, &
+           lhydro,ldensity,lentropy,lmagnetic,ltestfield,ltestflow, &
+           lpscalar,lradiation, &
            lforcing,lgravz,lgravr,lshear,linterstellar,lcosmicray, &
 !---       lcosmicrayflux,lchemistry,ldustvelocity,ldustdensity, &
            lcosmicrayflux,ldustvelocity,ldustdensity, &
@@ -1004,6 +1018,7 @@ module Param_IO
         call write_entropy_init_pars(1)
         call write_magnetic_init_pars(1)
         call write_testfield_init_pars(1)
+        call write_testflow_init_pars(1)
         call write_radiation_init_pars(1)
         call write_pscalar_init_pars(1)
         call write_chiral_init_pars(1)
@@ -1025,7 +1040,8 @@ module Param_IO
         close(1)
       endif
 !
-      if (NO_WARN) print*, lhydro, ldensity, lentropy, lmagnetic, ltestfield, &
+      if (NO_WARN) print*, lhydro, ldensity, lentropy, lmagnetic, &
+                           ltestfield,ltestflow, &
                            lpscalar, lradiation, lcosmicray, lcosmicrayflux, &
                            linterstellar, lshock
 !
@@ -1051,6 +1067,7 @@ module Param_IO
         call read_entropy_init_pars(1)
         call read_magnetic_init_pars(1)
         call read_testfield_init_pars(1)
+        call read_testflow_init_pars(1)
         call read_radiation_init_pars(1)
         call read_pscalar_init_pars(1)
         call read_chiral_init_pars(1)
@@ -1096,6 +1113,7 @@ module Param_IO
         call write_entropy_run_pars(1)
         call write_magnetic_run_pars(1)
         call write_testfield_run_pars(1)
+        call write_testflow_run_pars(1)
         call write_radiation_run_pars(1)
         call write_pscalar_run_pars(1)
         call write_chiral_run_pars(1)
