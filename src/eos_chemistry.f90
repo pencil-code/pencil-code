@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.8 2008-03-04 17:17:18 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.9 2008-03-12 13:44:04 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -117,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.8 2008-03-04 17:17:18 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.9 2008-03-12 13:44:04 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -259,62 +259,13 @@ module EquationOfState
 !
 
 
-! Natalia (26.02.2008) read data for Cp_spec and mu_spec
-
-!this is just temporal notes --------------------------
-!  OPEN(INUNT,FILE=INNAME,STATUS='OLD',ACCESS='SEQUENTIAL',
-!     ;  FORM='FORMATTED',IOSTAT=ERR)
-!      IF (ERR.NE.0) STOP 'File cannot be opened'
-!      REWIND(INUNT)
-!----------------------------------------------------
-
-
-    if (ifirst1==0) then
-
-     inquire(file='cp.dat',EXIST=ex)
-     if (.not.ex) then 
-      print*,'WARNING: file cp.dat does not exist'
          do k=1,nchemspec
           cp_spec(k)=Rgas/(mu*gamma1*gamma11)
-           print*,cp_spec(k)
          enddo 
-     else
-        if (lroot) print*,'opening cp.dat'
-        open(1,file='cp.dat')
-         do k=1,nchemspec
-          read(1,*) cp_spec(k)
-         enddo
-        close(1)
-     endif
 
-   endif
-
-    ifirst1=ifirst1+1
-
-   if (ifirst2==0) then
-
-     inquire(file='mu.dat',EXIST=ex)
-     if (.not.ex) then 
-      print*,'WARNING: file mu.dat does not exist'
          do k=1,nchemspec
           mu_spec(k)=mu
          enddo 
-     else
-
-       if (lroot) print*,'opening mu.dat'
-
-       open(2,file='mu.dat')
-        do k=1,nchemspec
-         read(2,*) mu_spec(k)
-        enddo
-       close(2)
-
-     endif
-
-   endif
-
-   ifirst2=ifirst2+1
-
 
 
 

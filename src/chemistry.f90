@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.22 2008-03-11 12:37:42 nilshau Exp $
+! $Id: chemistry.f90,v 1.23 2008-03-12 13:44:04 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -10,6 +10,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
+! PENCILS PROVIDEDgTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,mu1
 !***************************************************************
 
 module Chemistry
@@ -44,6 +45,8 @@ module Chemistry
   real :: chem_diff=0.
   character (len=labellen), dimension (ninit) :: initchem='nothing'
   character (len=labellen), dimension (2*nchemspec) :: kreactions_profile=''
+
+  real :: Rgas_unit_sys=1.
 !
 !  Chemkin related parameters
 !
@@ -107,6 +110,7 @@ module Chemistry
 !
 !  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+nchemspec
 !
+
       do k=1,nchemspec
         ichemspec(k)=nvar+k
       enddo
@@ -147,11 +151,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.22 2008-03-11 12:37:42 nilshau Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.23 2008-03-12 13:44:04 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.22 2008-03-11 12:37:42 nilshau Exp $")
+           "$Id: chemistry.f90,v 1.23 2008-03-12 13:44:04 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -168,6 +172,17 @@ module Chemistry
       endif
 !
     endsubroutine register_chemistry
+!***********************************************************************
+    subroutine units_chemistry()
+
+
+       if (unit_system == 'cgs') then
+         Rgas_unit_sys = k_B_cgs/m_u_cgs
+      elseif (unit_system == 'SI') then
+         Rgas_unit_sys = k_B_cgs/m_u_cgs*1.e-4
+      endif
+
+    endsubroutine units_chemistry
 !***********************************************************************
     subroutine initialize_chemistry(f)
 !
@@ -426,14 +441,90 @@ module Chemistry
 !   13-aug-07/steveb: coded
 !
       use Cdata
-      use Sub, only: keep_compiler_quiet
+      use Sub
+      use Cparam
+      use EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      real, dimension (nx) :: tmp_sum, cp_spec, Rgas_cgs, Rgas
+      real, dimension (mx,my,mz) :: cp_full
 !
       intent(in) :: f
       intent(inout) :: p
+      integer :: k,i,j
+      real :: T_local, T_up, T_mid, T_low, tmp 
+      logical :: lcheminp_tmp=.false.
+    !   logical :: lcheminp_tmp=.true.
+
+ if (lcheminp_tmp) then
+
+    call units_chemistry
+
 !
+!  Mean molecular weight
+!
+       tmp_sum=0.
+        if (lpencil(i_mu1)) then 
+          do k=1,nchemspec
+           tmp_sum=tmp_sum+f(l1:l2,m,n,ichemspec(k))/species_constants(ichemspec(k),imass)
+          enddo
+          p%mu1=tmp_sum*unit_mass
+          Rgas=k_B*p%mu1
+          unit_temperature=unit_velocity**2/Rgas_unit_sys
+        endif
+!
+!  Pressure
+!
+       if (lpencil(i_pp)) p%pp = Rgas*p%mu1*p%rho*p%TT
+!
+!  Specific heat at constant pressure
+!
+       cp_full(:,m,n)=0.
+
+      if (lpencil(i_cp)) then
+        do k=1,nchemspec
+          T_low=species_constants(ichemspec(k),iTemp1)/unit_temperature 
+          T_mid=species_constants(ichemspec(k),iTemp2)/unit_temperature 
+          T_up=species_constants(ichemspec(k),iTemp3)/unit_temperature 
+         do i=1,nx
+          T_local=p%TT(i)
+           if (T_local >=T_low .and. T_local <= T_mid) then
+               tmp=0. 
+               do j=1,5 
+                tmp=tmp+species_constants(ichemspec(k),ia1(j))*T_local**(j-1) 
+               enddo
+               cp_spec(i)=tmp
+           else
+               tmp=0. 
+               do j=1,5 
+                tmp=tmp+species_constants(ichemspec(k),ia2(j))*T_local**(j-1) 
+               enddo
+               cp_spec(i)=tmp
+           endif
+          cp_full(l1:l2,m,n)=cp_full(l1:l2,m,n)+f(l1:l2,m,n,ichemspec(k))*cp_spec(:)*Rgas*p%mu1
+         enddo
+        enddo
+        p%cp=cp_full(l1:l2,m,n)
+     endif
+
+      if (lpencil(i_cp1))   p%cp1 = 1./p%cp
+
+!  Gradient of the above
+!
+      if (lpencil(i_gradcp)) call grad(cp_full,p%gradcp)
+!
+!  Specific heat at constant volume (i.e. density)
+!
+     if (lpencil(i_cv)) p%cv = p%cp - Rgas
+
+print*, p%cp(10), Rgas(10)
+
+      if (lpencil(i_cv1)) p%cv1=1/p%cv
+      if (lpencil(i_lncp)) p%lncp=log(p%cp)
+
+  endif
+
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
 !
