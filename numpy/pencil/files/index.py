@@ -1,4 +1,6 @@
-#$Id: index.py,v 1.1 2008-03-12 15:57:59 tgastine Exp $
+#$Id: index.py,v 1.2 2008-03-13 11:34:32 dintrans Exp $
+
+from param import read_param
 
 class read_index:
    """
@@ -7,7 +9,7 @@ class read_index:
 
      Author: T. Gastine (tgastine@ast.obs-mip.fr)
    """
-   def __init__(self, datadir='data/'):
+   def __init__(self, datadir='data/', param=None):
       """Constructor:
          -----------
 
@@ -22,12 +24,17 @@ class read_index:
       if datadir.endswith('/'):
           datadir += '/'
 
+      if (param == None): param = read_param(datadir,quiet=True)
+
       f = open(datadir+'index.pro')
       self.index={}
       for line in f.readlines():
         clean = line.strip()
 
         if (not clean.endswith('0') and not clean.startswith('i_') and clean.startswith('i')):
-           val=clean.split('=')
-           self.index[val[0].lstrip('i')]=int(val[1])
+           val=clean.lstrip('i').split('=')
+           name=val[0]
+           if (name=='lnTT' and param.ltemperature_nolog==True): name='tt'
+           self.index[name]=int(val[1])
+
 

@@ -1,4 +1,4 @@
-# $Id: var.py,v 1.7 2008-03-13 08:41:09 dintrans Exp $
+# $Id: var.py,v 1.8 2008-03-13 11:34:32 dintrans Exp $
 #
 # read VAR files. based on the read_var.pro IDL script.
 #
@@ -240,12 +240,9 @@ class read_var:
             setattr(self,'rho',N.exp(self.lnrho))
           else:
             sys.exit("pb in magic!")
-        if (field=='tt'):
+        if (field=='tt' and not hasattr(self,'tt')):
           if (hasattr(self,'lnTT')):
-            if (param.ltemperature_nolog):
-              tt=self.lnTT
-            else:
-              tt=N.exp(self.lnTT)
+            tt=N.exp(self.lnTT)
             setattr(self,'tt',tt)
           else:
             if (hasattr(self,'lnrho') and hasattr(self,'ss')):
