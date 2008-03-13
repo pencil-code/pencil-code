@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.382 2008-03-13 12:47:11 ajohan Exp $
+### $Id: Makefile.src,v 1.383 2008-03-13 18:32:20 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -846,6 +846,7 @@ LD_FFTW2=
 #CC=gcc #(mac)
 #CFLAGS=-O3 -DFUNDERSC=1 #(mac)
 #LD_MPI= -L/usr/local/lib -lmpich -lpmpich #(mac)
+
 ##
 ## SunOS:
 ## Solaris
