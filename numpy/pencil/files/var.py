@@ -1,4 +1,4 @@
-# $Id: var.py,v 1.6 2008-03-12 15:57:59 tgastine Exp $
+# $Id: var.py,v 1.7 2008-03-13 08:41:09 dintrans Exp $
 #
 # read VAR files. based on the read_var.pro IDL script.
 #
@@ -14,6 +14,7 @@ import numpy as N
 from npfile import npfile
 import os
 import string
+import sys
 from param import read_param 
 from index import read_index
 from dim import read_dim 
@@ -28,7 +29,7 @@ class read_var:
 # but, deltay(1) is only there if lshear is on! need to know parameters...
   def __init__(self,varfile='',datadir='data/',proc=-1,ivar=-1,
                 quiet=False,trimall=False,format='native',
-                param=None,dim=None,index=None, run2D=False):
+                param=None,dim=None,index=None, run2D=False,magic=None):
     """
     Description:
     -----------
@@ -231,3 +232,30 @@ class read_var:
     self.dz = dz
     if param.lshear:
         self.deltay = deltay
+
+    if (magic!=None):
+      for field in magic:
+        if (field=='rho'):
+          if (hasattr(self,'lnrho')):
+            setattr(self,'rho',N.exp(self.lnrho))
+          else:
+            sys.exit("pb in magic!")
+        if (field=='tt'):
+          if (hasattr(self,'lnTT')):
+            if (param.ltemperature_nolog):
+              tt=self.lnTT
+            else:
+              tt=N.exp(self.lnTT)
+            setattr(self,'tt',tt)
+          else:
+            if (hasattr(self,'lnrho') and hasattr(self,'ss')):
+              cp=param.cp
+              gamma=param.gamma
+              cs20=param.cs0**2
+              lnrho0=N.log(param.rho0)
+              lnTT0=N.log(cs20/(cp*(gamma-1.)))
+              lnTT=lnTT0+gamma/cp*self.ss+(gamma-1.)*(self.lnrho-lnrho0)
+              setattr(self,'tt',N.exp(lnTT))
+            else:
+              sys.exit("pb in magic!")
+
