@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.24 2008-03-13 10:56:04 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.25 2008-03-13 14:15:12 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -150,11 +150,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.24 2008-03-13 10:56:04 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.25 2008-03-13 14:15:12 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.24 2008-03-13 10:56:04 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.25 2008-03-13 14:15:12 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -432,6 +432,7 @@ module Chemistry
       use Sub
       use Cparam
       use EquationOfState
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -446,7 +447,9 @@ module Chemistry
 
 
  if (lcheminp) then
-    Rgas_unit_sys = k_B_cgs/m_u_cgs
+  if (unit_system == 'cgs') then
+
+     Rgas_unit_sys = k_B_cgs/m_u_cgs
     Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
 !
 !  Mean molecular weight
@@ -469,26 +472,24 @@ module Chemistry
 
       if (lpencil(i_cp)) then
         do k=1,nchemspec
-          T_low=species_constants(ichemspec(k),iTemp1)
-          T_mid=species_constants(ichemspec(k),iTemp2)
-          T_up=species_constants(ichemspec(k),iTemp3)
+          T_low=species_constants(k,iTemp1)
+          T_mid=species_constants(k,iTemp2)
+          T_up= species_constants(k,iTemp3)
          do i=1,nx
           T_local=p%TT(i)*unit_temperature 
            if (T_local >=T_low .and. T_local <= T_mid) then
                tmp=0. 
                do j=1,5
-                tmp=tmp+species_constants(ichemspec(k),ia1(j))*T_local**(j-1) 
+                tmp=tmp+species_constants(k,ia1(j))*T_local**(j-1) 
                enddo
                cp_spec(i)=tmp
            else
                tmp=0. 
                do j=1,5 
-                tmp=tmp+species_constants(ichemspec(k),ia2(j))*T_local**(j-1) 
+                tmp=tmp+species_constants(k,ia2(j))*T_local**(j-1) 
                enddo
                cp_spec(i)=tmp
            endif
-!print*, cp_spec(10)
-
           cp_full(l1:l2,m,n)=cp_full(l1:l2,m,n)+f(l1:l2,m,n,ichemspec(k))*cp_spec(:)*Rgas*p%mu1
          enddo
         enddo
@@ -517,8 +518,13 @@ module Chemistry
       if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
       if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
 
+   else
+    call stop_it('This case works only for cgs units system!')
+   endif
 
   endif
+
+
 
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -1103,7 +1109,7 @@ print*,species_name
               ! Read ia1(1):ia1(5)
               read (unit=ChemInpLine(1:75),fmt='(5E15.8)')  &
                    species_constants(ind_chem,ia1(1):ia1(5))
-            elseif (ChemInpLine(80:80)=="3") then
+           elseif (ChemInpLine(80:80)=="3") then
               ! Read ia1(6):ia5(3)
               read (unit=ChemInpLine(1:75),fmt='(5E15.8)')  &
                    species_constants(ind_chem,ia1(6):ia2(3))
