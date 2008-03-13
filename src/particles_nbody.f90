@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.69 2008-03-11 10:37:02 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.70 2008-03-13 13:19:11 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -21,7 +21,8 @@ module Particles_nbody
 
   include 'particles_nbody.h'
 
-  real, dimension(nspar,mpvar) :: fsp
+  real, dimension(nspar,mpvar+1) :: fsp
+  integer, dimension(nspar) :: ipar_sink
   real, dimension(nspar) :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
   real, dimension(nspar) :: pmass=1.,r_smooth,pmass1,final_ramped_mass=1.
@@ -39,14 +40,17 @@ module Particles_nbody
   logical :: linterpolate_gravity=.false.,linterpolate_linear=.true.
   logical :: linterpolate_quadratic_spline=.false.
 
-  integer :: iglobal_ggp=0
+  real :: create_jeans_constant=0.25,GNewton1
+  real, pointer :: rhs_poisson_const
+
+  integer :: iglobal_ggp=0,istar=1,imass=0
 
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
        pmass, r_smooth, lcylindrical_gravity_nbody, &
        lexclude_frozen, GNewton, bcspx, bcspy, bcspz, &
        ramp_orbits,lramp,final_ramped_mass,prhs_cte,linterpolate_gravity,&
-       linterpolate_quadratic_spline,laccretion,accrete_hills_frac
+       linterpolate_quadratic_spline,laccretion,accrete_hills_frac,istar
 
   namelist /particles_nbody_run_pars/ &
        dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
@@ -78,7 +82,12 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.69 2008-03-11 10:37:02 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.70 2008-03-13 13:19:11 wlyra Exp $")
+!
+! Set up mass as particle index. Plus seven, since the other 6 are 
+! used by positions and velocities.      
+!
+      imass=npvar+7
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -97,6 +106,10 @@ module Particles_nbody
         call fatal_error('register_particles_nbody','naux > maux')
       endif
 !
+!  No sink created yet, so mspar=nspar
+!
+      mspar=nspar
+!
     endsubroutine register_particles_nbody
 !***********************************************************************
     subroutine initialize_particles_nbody(lstarting)
@@ -108,21 +121,38 @@ module Particles_nbody
 !
       use Mpicomm,only:stop_it
       use FArrayManager
+      use SharedVariables
 !
+      integer :: ierr,ks
       logical :: lstarting
 !
 ! G_Newton. Overwrite the one set by start.in if set again here, 
 ! because I might want units in which both G and GM are 1. 
+! If we are solving for selfgravity, get that one instead
 !
-      if (GNewton == impossible) then
-        GNewton=G_Newton
+      if (lselfgravity) then 
+        call get_shared_variable('rhs_poisson_const',rhs_poisson_const,ierr)
+        if (ierr/=0) then
+          if (lroot) print*, 'initialize_particles_nbody: '// &
+               'there was a problem when getting rhs_poisson_const!'
+          call fatal_error('initialize_particles_nbody','')
+        endif
+        GNewton=rhs_poisson_const/(4*pi)
+      else
+        if (GNewton == impossible) then
+          GNewton=G_Newton
+        endif
       endif
+!
+      GNewton1=1./GNewton
 !
 ! inverse mass
 !
       if (lramp) then
-        pmass(1:nspar-1) = epsi
-        pmass(nspar)=1-epsi*(nspar-1)
+        do ks=1,mspar
+          if (ks/=istar) pmass(ks) = epsi
+        enddo
+        pmass(istar)=1-epsi*(mspar-1)
       endif
 !
       pmass1=1./pmass
@@ -136,15 +166,15 @@ module Particles_nbody
 ! from cdata and the one from nbody
 !
       if (((lcylindrical_gravity).and.&
-        (.not.lcylindrical_gravity_nbody(nspar))).or.&
+        (.not.lcylindrical_gravity_nbody(istar))).or.&
              (.not.lcylindrical_gravity).and.&
-             (lcylindrical_gravity_nbody(nspar))) then 
+             (lcylindrical_gravity_nbody(istar))) then 
         call stop_it("initialize_particles_nbody: inconsitency "//&
              "between lcylindrical_gravity from cdata and the "//&
              "one from nbody")
       endif
 !
-      if (rsmooth.ne.r_smooth(nspar)) then 
+      if (rsmooth.ne.r_smooth(istar)) then 
         call stop_it("initialize_particles_nbody: inconsitency "//&
              "between rsmooth from cdata and the "//&
              "one from nbody")
@@ -256,8 +286,8 @@ module Particles_nbody
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
-      real, dimension(nspar) :: ang_vel,kep_vel,sma
-      real, dimension(nspar,3) :: position,velocity
+      real, dimension(mspar) :: ang_vel,kep_vel,sma
+      real, dimension(mspar,3) :: position,velocity
       real :: tmp,tmp2,rr,fac,parc
       integer :: k,ks
 
@@ -274,36 +304,36 @@ module Particles_nbody
       case ('origin')
         if (lroot) then
           print*, 'init_particles_nbody: All sink particles at origin'
-          fp(1:nspar,ixp:izp)=0.
+          fp(1:mspar,ixp:izp)=0.
         endif
 !
       case('constant')
         if (lroot) then
           print*, 'init_particles_nbody: All sink particles at x,y,z=', xsp0, ysp0, zsp0
-          fp(1:nspar,ixp)=xsp0
-          fp(1:nspar,iyp)=ysp0
-          fp(1:nspar,izp)=zsp0
+          fp(1:mspar,ixp)=xsp0
+          fp(1:mspar,iyp)=ysp0
+          fp(1:mspar,izp)=zsp0
         endif
 !
       case ('random')
         if (lroot) print*, 'init_particles_nbody: Random particle positions'
-        do ks=1,nspar
+        do ks=1,mspar
           if (nxgrid/=1) call random_number_wrapper(position(ks,ixp))
           if (nygrid/=1) call random_number_wrapper(position(ks,iyp))
           if (nzgrid/=1) call random_number_wrapper(position(ks,izp))
         enddo
 
         if (nxgrid/=1) &
-             position(1:nspar,ixp)=xyz0_loc(1)+position(1:nspar,ixp)*Lxyz_loc(1)
+             position(1:mspar,ixp)=xyz0_loc(1)+position(1:mspar,ixp)*Lxyz_loc(1)
         if (nygrid/=1) &
-             position(1:nspar,iyp)=xyz0_loc(2)+position(1:nspar,iyp)*Lxyz_loc(2)
+             position(1:mspar,iyp)=xyz0_loc(2)+position(1:mspar,iyp)*Lxyz_loc(2)
         if (nzgrid/=1) &
-             position(1:nspar,izp)=xyz0_loc(3)+position(1:nspar,izp)*Lxyz_loc(3)
+             position(1:mspar,izp)=xyz0_loc(3)+position(1:mspar,izp)*Lxyz_loc(3)
 !
 !  Loop through ipar to allocate the sink particles
 !
         do k=1,npar_loc
-          if (ipar(k) <= nspar) then
+          if (ipar(k) <= mspar) then
             print*,'initparticles_nbody. Slot for sink particle ',ipar(k),&
                  ' was at fp position ',k,' at processor ',iproc
 !
@@ -345,12 +375,14 @@ module Particles_nbody
         endif
 !
         tmp = 0.;parc=0
-        do ks=1,nspar-1 
-          sma(ks)=abs(position(ks,1))
-          tmp=tmp+pmass(ks)
-          parc = parc - sma(ks)*pmass(ks)
+        do ks=1,mspar
+          if (ks/=istar) then 
+            sma(ks)=abs(position(ks,1))
+            tmp=tmp+pmass(ks)
+            parc = parc - sma(ks)*pmass(ks)
+          endif
         enddo
-        pmass(nspar)=1.- tmp;pmass1=1./pmass;totmass=1.;totmass1=1.
+        pmass(istar)=1.- tmp;pmass1=1./pmass;totmass=1.;totmass1=1.
         parc = parc*totmass1
         if (tmp .ge. 1.) &
              call stop_it("particles_nbody,init_particles. The mass of one "//& 
@@ -360,17 +392,18 @@ module Particles_nbody
              "The mass of the last particle in the pmass array will be "//&
              "reassigned to ensure that the total mass is g0")
 !
-        do ks=1,nspar-1 
-          position(ks,1)=sign(1.,position(ks,1))* (sma(ks) + parc)
+        do ks=1,mspar
+          if (ks/=istar) &
+               position(ks,1)=sign(1.,position(ks,1))* (sma(ks) + parc)
         enddo
 !
 ! The last one (star) fixes the CM at Rcm=zero
 !
-        position(nspar,1)=parc
+        position(istar,1)=parc
         if (lcylindrical_coords) then
           !put the star in positive coordinates, with pi for azimuth
-          position(nspar,1)=abs(parc)
-          position(nspar,2)=pi
+          position(istar,1)=abs(parc)
+          position(istar,2)=pi
         endif
 !
         if (lroot) then 
@@ -383,7 +416,7 @@ module Particles_nbody
 ! Loop through ipar to allocate the sink particles
 !
         do k=1,npar_loc
-          if (ipar(k) <= nspar) then
+          if (ipar(k) <= mspar) then
 !
             print*,'initparticles_nbody. Slot for sink particle ',ipar(k),&
                  ' was at fp position ',k,' at processor ',iproc
@@ -421,16 +454,16 @@ module Particles_nbody
       case ('zero')
         if (lroot) then
           print*, 'init_particles: Zero particle velocity'
-          fp(1:nspar,ivpx:ivpz)=0.
+          fp(1:mspar,ivpx:ivpz)=0.
         endif
 !
       case ('constant')
          if (lroot) then
            print*, 'init_particles: Constant particle velocity'
            print*, 'init_particles: vspx0, vspy0, vspz0=', vspx0, vspy0, vspz0
-           fp(1:nspar,ivpx)=vspx0
-           fp(1:nspar,ivpy)=vspy0
-           fp(1:nspar,ivpz)=vspz0
+           fp(1:mspar,ivpx)=vspx0
+           fp(1:mspar,ivpy)=vspy0
+           fp(1:mspar,ivpz)=vspz0
          endif
 !
       case ('fixed-cm')
@@ -438,29 +471,33 @@ module Particles_nbody
 ! Keplerian velocities for the planets
 !
         parc=0.
-        do ks=1,nspar-1 
-          kep_vel(ks)=sqrt(1./sma(ks)) !circular velocity
-          parc = parc - kep_vel(ks)*pmass(ks)
+        do ks=1,mspar
+          if (ks/=istar) then
+            kep_vel(ks)=sqrt(1./sma(ks)) !circular velocity
+            parc = parc - kep_vel(ks)*pmass(ks)
+          endif
         enddo
         parc = parc*totmass
-        do ks=1,nspar-1 
-          if (lcartesian_coords) then
-            velocity(ks,2) = sign(1.,position(ks,1))*(kep_vel(ks) + parc)
-          elseif (lcylindrical_coords) then
-            !positive for the planets
-            velocity(ks,2) = abs(kep_vel(ks) + parc)
+        do ks=1,mspar
+          if (ks/=istar) then 
+            if (lcartesian_coords) then
+              velocity(ks,2) = sign(1.,position(ks,1))*(kep_vel(ks) + parc)
+            elseif (lcylindrical_coords) then
+              !positive for the planets
+              velocity(ks,2) = abs(kep_vel(ks) + parc)
+            endif
           endif
         enddo
 !
 ! The last one (star) fixes the CM also with velocity zero
 !
-        velocity(nspar,2)=parc
-        if (lcylindrical_coords) velocity(nspar,2)=-parc
+        velocity(istar,2)=parc
+        if (lcylindrical_coords) velocity(istar,2)=-parc
 !
 ! Loop through ipar to allocate the sink particles
 !
          do k=1,npar_loc
-           if (ipar(k)<=nspar) then
+           if (ipar(k)<=mspar) then
              print*,&
                   'initparticles_nbody. Slot for sink particle ',ipar(k),&
                   ' was at fp position ',k,&
@@ -505,7 +542,7 @@ module Particles_nbody
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
-      real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
+      real, dimension (nx,mspar) :: rp_mn,rpcyl_mn
       real, dimension (mx,3) :: ggt
       real, dimension (nx) :: pot_energy
       real, dimension (3) :: xxpar,accg
@@ -526,7 +563,7 @@ module Particles_nbody
 !
           if (npar_imn(imn)/=0) then
             do k=k1_imn(imn),k2_imn(imn) !loop throught in the pencil
-              if (ipar(k).gt.nspar) then !for dust
+              if (ipar(k).gt.mspar) then !for dust
                 !interpolate the gravity
                 if (linterpolate_linear) then
                   call interpolate_linear(f,iglobal_ggp,&
@@ -565,7 +602,7 @@ module Particles_nbody
 !   2. We are, but a particle is out of the box (a star, for instance)
 !      and therefore the potential cannot be interpolated.
 !
-        do ks=1,nspar
+        do ks=1,mspar
           lparticle_out=.false.
           if (lselfgravity) then
             if ((fsp(ks,ixp)< xyz0(1)).or.(fsp(ks,ixp) > xyz1(1)) .or. &
@@ -581,7 +618,7 @@ module Particles_nbody
 ! leads to numerical troubles as the star is too close to the 
 ! origin (in cylindrical coordinates).
 !
-          if ((ks==nspar).and.lnoselfgrav_star) &
+          if ((ks==istar).and.lnoselfgrav_star) &
                lintegrate=.false.
 !
           if (lintegrate) then
@@ -625,7 +662,7 @@ module Particles_nbody
               pot_energy = pot_energy - &
                    GNewton*pmass(ks)*&
                    (rpcyl_mn(:,ks)**2+r_smooth(ks)**2)**(-0.5)
-              if (ks==nspar) &
+              if (ks==mspar) &
                    call sum_lim_mn_name(.5*p%rho*p%u2 + pot_energy,&
                    idiag_totenergy,p)
             endif
@@ -667,7 +704,7 @@ module Particles_nbody
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension(nspar) :: sq_hills
+      real, dimension(mspar) :: sq_hills
       real :: rr,w2,sma2
 !
       integer :: k, ks, j, jpos, jvel
@@ -692,8 +729,8 @@ module Particles_nbody
 !
 ! Calculate Hills radius if laccretion is switched on      
 !
-      do ks=1,nspar 
-        if (laccretion(ks)) then 
+      do ks=1,mspar 
+        if (laccretion(ks).and.(ks/=istar)) then 
           if (lcartesian_coords) then
             rr    = sqrt(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)
             w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
@@ -709,7 +746,7 @@ module Particles_nbody
           !squared semi major axis - assumes GM=1, so beware...
           sma2  = (rr/(2-rr*w2))**2
           !squared hills radius
-          sq_hills(ks)=sma2*(pmass(ks)*pmass1(nspar)/3)**(2./3.)
+          sq_hills(ks)=sma2*(pmass(ks)*pmass1(istar)/3)**(2./3.)
         else
           sq_hills(ks)=0.
         endif
@@ -718,7 +755,7 @@ module Particles_nbody
       do k=npar_loc,1,-1
         if (linterpolate_gravity) then
           !only loop through sinks
-          if (ipar(k).le.nspar) then
+          if (ipar(k).le.mspar) then
             call loop_through_sinks(fp,dfp,k,sq_hills,ineargrid)
           endif
         else
@@ -730,7 +767,7 @@ module Particles_nbody
 !  Position and velocity diagnostics (per sink particle)
 ! 
      if (ldiagnos) then
-        do ks=1,nspar
+        do ks=1,mspar
           if (lfollow_particle(ks)) then
             do j=1,3
               jpos=j+ixp-1 ; jvel=j+ivpx-1
@@ -750,7 +787,7 @@ module Particles_nbody
     subroutine loop_through_sinks(fp,dfp,k,sq_hills,ineargrid)
 !
       real, dimension (mpar_loc,mpvar) :: fp,dfp
-      real, dimension (nspar) :: sq_hills
+      real, dimension (mspar) :: sq_hills
       real, dimension (3) :: evr
       integer, dimension (mpar_loc,3) :: ineargrid
       real :: e1,e2,e3,e10,e20,e30
@@ -763,7 +800,7 @@ module Particles_nbody
 
 !      dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accg
 
-      do ks=1,nspar
+      do ks=1,mspar
         if (ipar(k)/=ks) then
 !
           e1=fp(k,ixp);e10=fsp(ks,ixp)
@@ -908,7 +945,7 @@ module Particles_nbody
         vcm(3) = sum(pmass*fsp(:,ivpz))
 !
       do k=1,npar_loc
-        if (ipar(k)<=nspar) then
+        if (ipar(k)<=mspar) then
           dfp(k,ixp:izp) = dfp(k,ixp:izp) - vcm*totmass1
         endif
       enddo
@@ -965,7 +1002,7 @@ module Particles_nbody
 ! -> gx = selfgrav * (x-x0)/r = G*((rho+rhop)*dv)*mass*(r**2+r0**2)**(-1.5) * (x-x0)
 !
       density=0.
-      if (npar>nspar) then !npar>nspar equals dust is being used
+      if (npar>mspar) then !npar>mspar equals dust is being used
         density=density+p%rhop
       else
         density=density+p%rho
@@ -1035,14 +1072,14 @@ module Particles_nbody
       use Mpicomm
 !
       real, dimension(mpar_loc,mpvar) :: fp
-      logical, dimension(nspar) :: lsink
+      logical, dimension(mspar) :: lsink
       integer :: ks,k,tagsend,j,tagrecv
 !
       if (lmpicomm) then
 !
 ! Loop through the sink particles
 !
-        do ks=1,nspar
+        do ks=1,mspar
 !
 ! Set the logical to false initially
 !
@@ -1056,9 +1093,9 @@ module Particles_nbody
 ! A sink was found here. Turn the logical true and copy fp to fsp
 !
               lsink(ks) = .true.
-              fsp(ks,:) = fp(k,:)
+              fsp(ks,ixp:ivpz) = fp(k,:)
 !
-! Send it to root. As there will be just nspar calls to
+! Send it to root. As there will be just mspar calls to
 ! mpisend, the tag can be ipar itself
 !
               if (.not.lroot) then
@@ -1070,19 +1107,19 @@ module Particles_nbody
             endif
           enddo
 !
-! Send the logicals from each processor. As all processors send nspar calls,
-! the tags are now in base nspar. It assures that two logicals will not have
+! Send the logicals from each processor. As all processors send mspar calls,
+! the tags are now in base mspar. It assures that two logicals will not have
 ! the same tag.
 !
           if (.not.lroot) then
-            tagsend = nspar*iproc + ks
+            tagsend = mspar*iproc + ks
             call mpisend_logical(lsink(ks),1,root,tagsend)
           else
 !
 ! The root receives all logicals. Same tag.
 !
             do j=1,ncpus-1
-              tagrecv = nspar*j + ks
+              tagrecv = mspar*j + ks
               call mpirecv_logical(lsink(ks),1,j,tagrecv)
 !
 ! Test the received logicals
@@ -1114,7 +1151,7 @@ module Particles_nbody
 ! Non-parallel. Just copy fp to fsp
 !
         do k=1,npar_loc
-          if (ipar(k)<=nspar) fsp(ipar(k),:) = fp(k,:)
+          if (ipar(k)<=mspar) fsp(ipar(k),ixp:ivpz) = fp(k,:)
         enddo
 !
       endif
@@ -1182,13 +1219,13 @@ module Particles_nbody
            call stop_it("particles_nbody: calc_torque not yet "//&
            "implemented for curvilinear coordinates.")
 !
-      if (ks==nspar) &
+      if (ks==istar) &
            call stop_it("Nonsense to calculate torques for the star")
 
       rr    = sqrt(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)
       w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
       smap  = 1./(2./rr - w2)
-      hills = smap*(pmass(ks)*pmass1(nspar)/3.)**(1./3.)
+      hills = smap*(pmass(ks)*pmass1(istar)/3.)**(1./3.)
 !
       rpre  = fsp(ks,ixp)*y(m) - fsp(ks,iyp)*x(l1:l2)
       torque = GNewton*pmass(ks)*p%rho*rpre*&
@@ -1229,12 +1266,14 @@ module Particles_nbody
       if (t .le. ramping_period) then
         !sin ((pi/2)*(t/(ramp_orbits*2*pi))
         tmp=0.
-        do ks=1,nspar-1
-          pmass(ks)= max(tini,&
-               final_ramped_mass(ks)*(sin((.5*pi)*(t/ramping_period))**2))
-          tmp=tmp+pmass(ks)
+        do ks=1,mspar
+          if (ks/=istar) then 
+            pmass(ks)= max(tini,&
+                 final_ramped_mass(ks)*(sin((.5*pi)*(t/ramping_period))**2))
+            tmp=tmp+pmass(ks)
+          endif
         enddo
-        pmass(nspar)= 1-tmp
+        pmass(istar)= 1-tmp
       else
         pmass=final_ramped_mass
       endif
@@ -1269,7 +1308,7 @@ module Particles_nbody
 !  
       use Sub
 !
-      real, dimension (mx,nspar) :: rp_mn,rpcyl_mn
+      real, dimension (mx,mspar) :: rp_mn,rpcyl_mn
       real, dimension (mx,3)     :: ggp,ggt
       real, dimension (mx)       :: grav_particle,rrp
       integer                    :: ks
@@ -1277,7 +1316,7 @@ module Particles_nbody
       intent(out) :: ggt
 !
       ggt=0.
-      do ks=1,nspar
+      do ks=1,mspar
 !
 ! Spherical and cylindrical distances
 !
@@ -1297,7 +1336,7 @@ module Particles_nbody
         grav_particle =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
         call get_gravity_field_nbody(grav_particle,ggp,ks)
 !
-        if ((ks==nspar).and.lnogravz_star) &
+        if ((ks==istar).and.lnogravz_star) &
              ggp(:,3) = 0.
 !
 ! Sum up the accelerations of the sinks
@@ -1307,6 +1346,178 @@ module Particles_nbody
       enddo
 !
     endsubroutine get_total_gravity
+!***********************************************************************
+    subroutine create_sink_particle(f,fp,dfp,ineargrid,p)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mpar_loc,mpvar) :: fp,dfp
+      real, dimension(nx,3) :: vvpm
+      real, dimension(nx) :: rho_jeans,rho_jeans_dust,vpm2
+      real, dimension(nx), save :: Delta1
+!
+      integer, dimension(nx,mpar_loc) :: pik
+      integer, dimension(mpar_loc,3) :: ineargrid
+      integer :: i,k,kn,ixx,inx0
+!
+      logical :: lfirstcall=.true.
+      type (pencil_case) :: p
+!
+      if (lfirstcall) then 
+        do i=1,nx
+          if (lcartesian_coords) then 
+            Delta1(i)=max(dx_1(i),dy_1(m),dz_1(n))
+          elseif (lcylindrical_coords) then 
+            Delta1(i)=max(dx_1(i),rcyl_mn1(i)*dy_1(m),dz_1(n))
+          elseif (lspherical_coords) then 
+            call fatal_error("create_sink_particle","not yet implemented"//&
+                 "for spherical polars")
+          endif
+        enddo
+        lfirstcall=.false.
+      endif
+!
+! Jeans analysis of the Gas
+!
+! The Jeans length is lambda_J = sqrt(pi*cs2/(G*rho))
+! We substitute lambda_J by the biggest resolution 
+! element and write the condition in terms of density
+!
+!    rho_J = pi*cs2/G*Delta_x^2 
+!
+! The constant is a free parameter of the module
+!
+      rho_jeans = create_jeans_constant*pi*p%cs2*GNewton1*Delta1**2 
+!      
+      do i=1,nx
+        ixx=l1+i-1
+        if (p%rho(i).gt.rho_jeans(i)) then 
+!
+! create a new particle at the center of the grid
+!
+          npar_loc=npar_loc+1
+          fp(npar_loc,ixp) = x(ixx)
+          fp(npar_loc,iyp) = y( m )
+          fp(npar_loc,izp) = z( n )
+!
+! give it the velocity of the grid cell
+!
+          fp(npar_loc,ivpx:ivpz) = p%uu(i,:)
+!
+! make this particle a sink
+!           
+          mspar=mspar+1
+          fsp(mspar,ixp:ivpz)=fp(npar_loc,:)
+          ipar_sink(mspar)   = ipar(npar_loc)
+!          
+! the mass of the new particle is the 
+! collapsed mass m=[rho - rho_jeans]*dV
+!
+          fsp(mspar,imass)   = (p%rho(i)-rho_jeans(i))*dvolume(i)
+!
+! and that amount was lost by the grid, so only rho_jeans remains
+!
+          if (ldensity_nolog) then 
+            f(ixx,m,n,ilnrho) = rho_jeans(i)
+          else 
+            f(ixx,m,n,ilnrho) = log(rho_jeans(i))
+          endif
+!
+          if (mspar>nspar) then 
+            print*,'too many sink particles were created. Stop and allocated more'
+            call fatal_error("create_sink_particles","")
+          endif
+!         
+        endif
+      enddo
+!
+! Jeans analysis of the dust
+! 
+      if (ldust) then 
+!
+! Substitute sound speed for vpm2=<(vvp-<vvp>)^2>, the particle's velocity dispersion 
+!
+        vvpm=0.0; vpm2=0.0
+        do k=k1_imn(imn),k2_imn(imn)
+          inx0=ineargrid(k,1)-nghost
+          vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
+        enddo
+        do i=1,nx
+          if (p%np(i)>1.0) &
+            vvpm(i,:)=vvpm(i,:)/p%np(i)
+        enddo
+! vpm2
+        do k=k1_imn(imn),k2_imn(imn)
+          inx0=ineargrid(k,1)-nghost
+          vpm2(inx0) = vpm2(inx0) + (fp(k,ivpx)-vvpm(inx0,1))**2 + &
+                                    (fp(k,ivpy)-vvpm(inx0,2))**2 + &
+                                    (fp(k,ivpz)-vvpm(inx0,3))**2 
+        enddo
+        do i=1,nx
+          if (p%np(i)>1.0) then
+            vpm2(i)=vpm2(i)/p%np(i)
+          endif
+        enddo
+        rho_jeans_dust = create_jeans_constant*pi*vpm2*GNewton1*Delta1**2 
+!
+! Which particle is in which cell?
+!
+        do k=k1_imn(imn),k2_imn(imn)
+          inx0=ineargrid(k,1)-nghost
+          if (p%np(inx0) > 1.0) then 
+            do kn=1,p%np(inx0) 
+              pik(inx0,kn) = k
+            enddo
+          endif
+        enddo
+!
+        do i=1,nx
+          if (p%rhop(i).gt.rho_jeans_dust(i)) then 
+!
+! remove all particles from the cell
+!
+            do kn=1,p%np(i) 
+              call remove_particle(fp,npar_loc,ipar,pik(i,kn),dfp,ineargrid)
+            enddo
+!
+! create a new particle at the center of the grid
+!
+            npar_loc=npar_loc+1
+            ixx=l1+i-1
+            fp(npar_loc,ixp) = x(ixx)
+            fp(npar_loc,iyp) = y( m )
+            fp(npar_loc,izp) = z( n )
+!
+! give it the mean velocity of the group of particles that 
+! was accreted
+!
+          fp(npar_loc,ivpx:ivpz) = vvpm(i,:)
+!
+! make this particle a sink
+!           
+          mspar=mspar+1
+          fsp(mspar,ixp:ivpz)=fp(npar_loc,:)
+          ipar_sink(mspar)   = ipar(npar_loc)
+!          
+! the mass of the new particle is the 
+! collapsed mass M=m_particle*np
+!
+          fsp(mspar,imass)   = mp_tilde*p%np(i)
+!
+          if (mspar>nspar) then 
+            print*,'too many sink particles were created. Stop and allocated more'
+            call fatal_error("create_sink_particles","")
+          endif
+!         
+        endif
+      enddo
+!
+    endif !if (ldust)
+!
+! Share the new sinks among the processors
+!
+      call share_sinkparticles(fp)
+!
+    endsubroutine create_sink_particle
 !***********************************************************************
     subroutine rprint_particles_nbody(lreset,lwrite)
 !
@@ -1344,7 +1555,7 @@ module Particles_nbody
 !
 !  Now check diagnostics for specific particles
 !
-      do ks=1,nspar
+      do ks=1,mspar
         call chn(ks,sks)
         do j=1,3
           if (j==1) str='x';if (j==2) str='y';if (j==3)  str='z'
