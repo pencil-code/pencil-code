@@ -1,6 +1,15 @@
 #!/usr/bin/perl
 ##
-## $Id: pc_qjobname,v 1.9 2008-03-13 19:29:35 ajohan Exp $
+## $Id: pc_qjobname,v 1.10 2008-03-13 19:33:49 ajohan Exp $
+##
+## Extract simulation directory of queued jobs.
+##
+## Usage:
+##   'pc_qjobname' gives directories of all jobs belonging to the user
+##   'pc_qjobname jobid' gives directory of selected job
+##
+## Different queuing systems require different treatment. Add new host
+## names according to the relevant queuing system below.
 ##
 $host = `hostname`;
 #
