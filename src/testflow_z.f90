@@ -1,4 +1,4 @@
-! $Id: testflow_z.f90,v 1.1 2008-03-12 17:52:36 brandenb Exp $
+! $Id: testflow_z.f90,v 1.2 2008-03-13 15:46:16 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -45,11 +45,12 @@ module Testflow
 !
   character (len=labellen), dimension(ninit) :: inituutest='nothing'
   real, dimension (ninit) :: ampluutest=0.
+  real, parameter :: cs2test=1.
 
   ! input parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
   real, dimension (nx,3) :: bbb
-  real :: ampluu=0., kx_uu=1.,ky_uu=1.,kz_uu=1.
+  real :: kx_uutest=1.,ky_uutest=1.,kz_uutest=1.
   real :: tuuinit=0.,duuinit=0.
   logical :: reinitialize_uutest=.false.
   logical :: zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
@@ -61,7 +62,7 @@ module Testflow
   real :: bamp=1.
   namelist /testflow_init_pars/ &
        B_ext,zextent,inituutest, &
-       ampluutest, &
+       ampluutest,kx_uutest,ky_uutest,kz_uutest, &
        luxb_as_aux
 
   ! run parameters
@@ -128,13 +129,18 @@ module Testflow
 !
 !  Set first and last index of text field
 !  Here always ltestflow=T
+!  Note that iuxtest, ..., ihhtest are being overwritten later,
+!  and only iuutest stays fixed.
 !
       ltestflow=.true.
       iuutest=nvar+1
       iuxtest=iuutest
-      iuxtestpq=iuutest+4*(njtest-1)
-      iuztestpq=iuxtestpq+2
-      ihhtestpq=iuxtestpq+3
+      iuytest=iuutest+1
+      iuztest=iuutest+2
+      ihhtest=iuutest+3
+!     iuxtestpq=iuutest+4*(njtest-1)
+!     iuztestpq=iuxtestpq+2
+!     ihhtestpq=iuxtestpq+3
       nvar=nvar+ntestflow
 !
       if ((ip<=8) .and. lroot) then
@@ -151,7 +157,7 @@ module Testflow
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testflow_z.f90,v 1.1 2008-03-12 17:52:36 brandenb Exp $")
+           "$Id: testflow_z.f90,v 1.2 2008-03-13 15:46:16 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -269,9 +275,15 @@ module Testflow
       select case(inituutest(j))
 
       case('zero'); f(:,:,:,iuutest:iuutest+ntestflow-1)=0.
-      case('gaussian-noise-1'); call gaunoise(ampluutest(j),f,iuutest+0,iuutest+2)
-      case('gaussian-noise-2'); call gaunoise(ampluutest(j),f,iuutest+3,iuutest+5)
-      case('gaussian-noise-3'); call gaunoise(ampluutest(j),f,iuutest+6,iuutest+8)
+      case('gaussian-noise-1'); call gaunoise(ampluutest(j),f,iuxtest+0,iuztest+0)
+      case('gaussian-noise-2'); call gaunoise(ampluutest(j),f,iuxtest+4,iuztest+4)
+      case('gaussian-noise-3'); call gaunoise(ampluutest(j),f,iuxtest+8,iuztest+8)
+      case('sinwave-x-1')
+        call sinwave(+ampluutest(j),f,ihhtest+0,kx=kx_uutest)
+        call sinwave(+ampluutest(j),f,iuxtest+0,kx=kx_uutest)
+      case('sinwave-x-2')
+        call sinwave(+ampluutest(j),f,iuxtest+4,kx=kx_uutest)
+        call sinwave(+ampluutest(j),f,ihhtest+4,kx=kx_uutest)
       case('nothing'); !(do nothing)
 
       case default
@@ -370,6 +382,8 @@ module Testflow
 
       real, dimension (nx,3) :: bb,aa,uxB,uutest,btest,uxbtest,duxbtest
       real, dimension (nx,3,njtest) :: Eipq,bpq
+      real, dimension (nx,3,3) :: uijtest
+      real, dimension (nx,3) :: uutest_dot_guutest
       real, dimension (nx,3) :: del2utest,uufluct,ghhtest
       real, dimension (nx) :: bpq2,uutest_dot_ghhtest,divuutest
       integer :: jtest,jfnamez,j,i3,i4
@@ -385,9 +399,9 @@ module Testflow
 !
       if (headtt.or.ldebug) print*,'duutest_dt: SOLVE'
       if (headtt) then
-        if (iuxtest /= 0) call identify_bcs('Axtest',iuxtest)
-        if (iuytest /= 0) call identify_bcs('Aytest',iuytest)
-        if (iuztest /= 0) call identify_bcs('Aztest',iuztest)
+        if (iuxtest /= 0) call identify_bcs('uxtest',iuxtest)
+        if (iuytest /= 0) call identify_bcs('uytest',iuytest)
+        if (iuztest /= 0) call identify_bcs('uztest',iuztest)
         if (ihhtest /= 0) call identify_bcs('hhtest',ihhtest)
       endif
 !
@@ -406,23 +420,33 @@ module Testflow
 !  Note: the same block of lines occurs again further down in the file.
 !
       do jtest=1,njtest
-        iuxtest=iuutest+3*(jtest-1)
+        iuxtest=iuutest+4*(jtest-1)
+        iuytest=iuxtest+1 !(even though its not used)
         iuztest=iuxtest+2
         ihhtest=iuxtest+3
+!
+!  velocity gradient matrix and u.gradu term
+!
+        uutest=f(l1:l2,m,n,iuxtest:iuztest)
+        call gij(f,iuxtest,uijtest,1)
+        call div_mn(uijtest,divuutest,uutest)
+        call u_dot_grad(f,iuxtest,uijtest,uutest,uutest_dot_guutest)
 !
 !  gradient of (pseudo) enthalpy
 !
         call grad(f,ihhtest,ghhtest)
-        df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)-ghhtest
+!
+!  rhs of momentum eqn.
+!
+        df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
+          -uutest_dot_guutest-ghhtest
 !
 !  continuity equation, dh/dt = - u.gradh - cs^2*divutest,
 !  but assume cs=1 in this context
 !
-        uutest=f(l1:l2,m,n,iuxtest:iuztest)
         call dot_mn(uutest,ghhtest,uutest_dot_ghhtest)
-        call div(f,iuutest,divuutest)
         df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest) &
-          -uutest_dot_ghhtest-divuutest
+          -uutest_dot_ghhtest-cs2test*divuutest
 !
 !       select case(itestfield)
 !         case('B11-B21+B=0'); call set_bbtest(bbtest,jtest)
@@ -476,12 +500,21 @@ module Testflow
 !       endif
 !       bpq(:,:,jtest)=btest
 !       Eipq(:,:,jtest)=uxbtest/bamp
+!
+!  check for testflow timestep
+!
+        if (lfirst.and.ldt) then
+          advec_uu=abs(uutest(:,1))*dx_1(l1:l2)+ &
+                   abs(uutest(:,2))*dy_1(  m  )+ &
+                   abs(uutest(:,3))*dz_1(  n  )
+        endif
       enddo
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
-!  and whatever is calculated here
+!  and whatever is calculated here. Check also for testsound timestep.
 !
       if (lfirst.and.ldt) then
+        advec_cs2=cs2test*dxyz_2
         diffus_eta=max(diffus_eta,nutest*dxyz_2)
       endif
 !
@@ -890,8 +923,8 @@ module Testflow
         write(3,*) 'idiag_E20z=',idiag_E20z
         write(3,*) 'idiag_E30z=',idiag_E30z
         write(3,*) 'iuutest=',iuutest
-        write(3,*) 'iuxtestpq=',iuxtestpq
-        write(3,*) 'iuztestpq=',iuztestpq
+!       write(3,*) 'iuxtestpq=',iuxtestpq
+!       write(3,*) 'iuztestpq=',iuztestpq
         write(3,*) 'ntestflow=',ntestflow
         write(3,*) 'nnamez=',nnamez
         write(3,*) 'nnamexy=',nnamexy

@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.22 2008-03-12 17:52:36 brandenb Exp $
+! $Id: testfield_z.f90,v 1.23 2008-03-13 15:46:16 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -49,7 +49,7 @@ module Testfield
   ! input parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
   real, dimension (nx,3) :: bbb
-  real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
+  real :: amplaa=0., kx_aatest=1.,ky_aatest=1.,kz_aatest=1.
   real :: taainit=0.,daainit=0.
   logical :: reinitialize_aatest=.false.
   logical :: zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
@@ -150,7 +150,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.22 2008-03-12 17:52:36 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.23 2008-03-13 15:46:16 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -266,9 +266,12 @@ module Testfield
       select case(initaatest(j))
 
       case('zero'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
-      case('gaussian-noise-1'); call gaunoise(amplaatest(j),f,iaatest+0,iaatest+2)
-      case('gaussian-noise-2'); call gaunoise(amplaatest(j),f,iaatest+3,iaatest+5)
-      case('gaussian-noise-3'); call gaunoise(amplaatest(j),f,iaatest+6,iaatest+8)
+      case('gaussian-noise-1'); call gaunoise(amplaatest(j),f,iaxtest+0,iaztest+0)
+      case('gaussian-noise-2'); call gaunoise(amplaatest(j),f,iaxtest+3,iaztest+3)
+      case('gaussian-noise-3'); call gaunoise(amplaatest(j),f,iaxtest+6,iaztest+6)
+      case('sinwave-x-1'); call sinwave(amplaatest(j),f,iaxtest+0+1,kx=kx_aatest)
+      case('sinwave-x-2'); call sinwave(amplaatest(j),f,iaxtest+3+1,kx=kx_aatest)
+      case('sinwave-x-3'); call sinwave(amplaatest(j),f,iaxtest+6+1,kx=kx_aatest)
       case('nothing'); !(do nothing)
 
       case default
@@ -447,19 +450,22 @@ module Testfield
 !
           df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
             +uxB+etatest*del2Atest+duxbtest
+        endif
 !
 !  Calculate Lorentz force
 !
-          if (ltestflow) then
-            aatest=f(l1:l2,m,n,iaxtest:iaztest)
-            call gij(f,iaatest,aijtest,1)
-            call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest2,graddivatest)
-            call curl_mn(bijtest,jjtest,btest)
-            call cross_mn(jjtest,btest,jxbrtest)
-            df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
-              +jxbrtest
-          endif
-!
+        if (ltestflow) then
+          iuxtest=iuutest+4*(jtest-1)
+          iuytest=iuxtest+1 !(even though its not used)
+          iuztest=iuxtest+2
+          aatest=f(l1:l2,m,n,iaxtest:iaztest)
+          call gij(f,iaxtest,aijtest,1)
+          call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest2,graddivatest)
+          call curl_mn(aijtest,btest,aatest)
+          call curl_mn(bijtest,jjtest,btest)
+          call cross_mn(jjtest,btest,jxbrtest)
+          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
+            +jxbrtest
         endif
 !
 !  calculate alpha, begin by calculating uxbtest (if not already done above)
