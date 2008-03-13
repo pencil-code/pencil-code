@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.9 2008-03-12 13:44:04 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.10 2008-03-13 10:56:04 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -60,7 +60,7 @@ module EquationOfState
   real :: cs20=1., lnrho0=0.
   real :: ptlaw=3./4.
   real :: gamma=5./3.
-  real :: Rgas_cgs=0., Rgas, error_cp=1e-6
+  real :: Rgas_cgs=0., Rgas, Rgas_unit_sys=1.,  error_cp=1e-6
   real :: gamma1    !(=gamma-1)
   real :: gamma11   !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
@@ -76,7 +76,7 @@ module EquationOfState
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
 
-
+  logical :: lcheminp=.false.
 
   real, dimension(nchemspec) :: mu_spec, cp_spec 
   real, dimension (mx,my,mz) :: cp_full
@@ -117,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.9 2008-03-12 13:44:04 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.10 2008-03-13 10:56:04 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -137,7 +137,7 @@ module EquationOfState
 !
       use Mpicomm, only: stop_it
 !
-      real :: Rgas_unit_sys=1., cp_reference
+      real ::  cp_reference
 !
 !  set gamma1, cs20, and lnrho0
 !  (used currently for non-dimensional equation of state)
@@ -169,13 +169,14 @@ module EquationOfState
       endif
 !
       if (unit_temperature == impossible) then
-        if (cp == impossible) cp=1.
-        if (gamma1 == 0.) then
-          Rgas=mu*cp
-        else
-          Rgas=mu*gamma1*gamma11*cp
-        endif
-        unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
+    !    if (cp == impossible) cp=1.
+    !    if (gamma1 == 0.) then
+    !      Rgas=mu*cp
+    !    else
+    !      Rgas=mu*gamma1*gamma11*cp
+    !    endif
+    !    unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
+        call stop_it('unit_temperature is not found!')
       else
         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
         if (cp == impossible) then
@@ -540,6 +541,8 @@ module EquationOfState
       type (pencil_case) :: p
       real, dimension (nx) :: tmp_sum
 
+      character (len=20) :: input_file='chem.inp'
+
 !
       intent(in) :: f
       intent(inout) :: p
@@ -572,10 +575,13 @@ module EquationOfState
       if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
       if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
 
+   inquire(FILE=input_file, EXIST=lcheminp)
+   if (lcheminp==.false.) then
+
 !
 !  Mean molecular weight
 !
-   tmp_sum=0.
+    tmp_sum=0.
       if (lpencil(i_mu1)) then 
         do k=1,nchemspec
          tmp_sum=tmp_sum+f(l1:l2,m,n,ichemspec(k))/mu_spec(k)
@@ -623,7 +629,7 @@ module EquationOfState
       if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
       if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
 
-
+ endif
 
 
     endsubroutine calc_pencils_eos

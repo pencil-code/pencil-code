@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.23 2008-03-12 13:44:04 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.24 2008-03-13 10:56:04 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -46,7 +46,6 @@ module Chemistry
   character (len=labellen), dimension (ninit) :: initchem='nothing'
   character (len=labellen), dimension (2*nchemspec) :: kreactions_profile=''
 
-  real :: Rgas_unit_sys=1.
 !
 !  Chemkin related parameters
 !
@@ -151,11 +150,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.23 2008-03-12 13:44:04 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.24 2008-03-13 10:56:04 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.23 2008-03-12 13:44:04 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.24 2008-03-13 10:56:04 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -172,17 +171,6 @@ module Chemistry
       endif
 !
     endsubroutine register_chemistry
-!***********************************************************************
-    subroutine units_chemistry()
-
-
-       if (unit_system == 'cgs') then
-         Rgas_unit_sys = k_B_cgs/m_u_cgs
-      elseif (unit_system == 'SI') then
-         Rgas_unit_sys = k_B_cgs/m_u_cgs*1.e-4
-      endif
-
-    endsubroutine units_chemistry
 !***********************************************************************
     subroutine initialize_chemistry(f)
 !
@@ -447,31 +435,28 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx) :: tmp_sum, cp_spec, Rgas_cgs, Rgas
+      real, dimension (nx) :: mu1_cgs, cp_spec
       real, dimension (mx,my,mz) :: cp_full
 !
       intent(in) :: f
       intent(inout) :: p
       integer :: k,i,j
-      real :: T_local, T_up, T_mid, T_low, tmp 
+      real :: T_local, T_up, T_mid, T_low, tmp,  Rgas, Rgas_unit_sys=1.
       logical :: lcheminp_tmp=.false.
-    !   logical :: lcheminp_tmp=.true.
 
- if (lcheminp_tmp) then
 
-    call units_chemistry
-
+ if (lcheminp) then
+    Rgas_unit_sys = k_B_cgs/m_u_cgs
+    Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
 !
 !  Mean molecular weight
 !
-       tmp_sum=0.
+       mu1_cgs=0.
         if (lpencil(i_mu1)) then 
           do k=1,nchemspec
-           tmp_sum=tmp_sum+f(l1:l2,m,n,ichemspec(k))/species_constants(ichemspec(k),imass)
+           mu1_cgs=mu1_cgs+f(l1:l2,m,n,ichemspec(k))/species_constants(ichemspec(k),imass)
           enddo
-          p%mu1=tmp_sum*unit_mass
-          Rgas=k_B*p%mu1
-          unit_temperature=unit_velocity**2/Rgas_unit_sys
+          p%mu1=mu1_cgs*unit_mass
         endif
 !
 !  Pressure
@@ -484,14 +469,14 @@ module Chemistry
 
       if (lpencil(i_cp)) then
         do k=1,nchemspec
-          T_low=species_constants(ichemspec(k),iTemp1)/unit_temperature 
-          T_mid=species_constants(ichemspec(k),iTemp2)/unit_temperature 
-          T_up=species_constants(ichemspec(k),iTemp3)/unit_temperature 
+          T_low=species_constants(ichemspec(k),iTemp1)
+          T_mid=species_constants(ichemspec(k),iTemp2)
+          T_up=species_constants(ichemspec(k),iTemp3)
          do i=1,nx
-          T_local=p%TT(i)
+          T_local=p%TT(i)*unit_temperature 
            if (T_local >=T_low .and. T_local <= T_mid) then
                tmp=0. 
-               do j=1,5 
+               do j=1,5
                 tmp=tmp+species_constants(ichemspec(k),ia1(j))*T_local**(j-1) 
                enddo
                cp_spec(i)=tmp
@@ -502,6 +487,8 @@ module Chemistry
                enddo
                cp_spec(i)=tmp
            endif
+!print*, cp_spec(10)
+
           cp_full(l1:l2,m,n)=cp_full(l1:l2,m,n)+f(l1:l2,m,n,ichemspec(k))*cp_spec(:)*Rgas*p%mu1
          enddo
         enddo
@@ -518,10 +505,18 @@ module Chemistry
 !
      if (lpencil(i_cv)) p%cv = p%cp - Rgas
 
-print*, p%cp(10), Rgas(10)
+!print*, p%cp(10), p%cv(10), Rgas
 
       if (lpencil(i_cv1)) p%cv1=1/p%cv
       if (lpencil(i_lncp)) p%lncp=log(p%cp)
+
+!
+!  Polytropic index
+!
+      if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
+      if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
+      if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
+
 
   endif
 
@@ -934,7 +929,8 @@ print*, p%cp(10), Rgas(10)
       ! Check if the specie was really found
       !
       if (ind_glob==0) then
-        found_specie=.false.
+        found_specie=.false. 
+print*,species_name
       else
         found_specie=.true.
       endif
