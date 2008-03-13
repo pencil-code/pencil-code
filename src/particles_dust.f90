@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.209 2008-03-10 21:32:52 wlyra Exp $
+! $Id: particles_dust.f90,v 1.210 2008-03-13 13:24:05 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -135,7 +135,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.209 2008-03-10 21:32:52 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.210 2008-03-13 13:24:05 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -1433,7 +1433,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           do k=k1_imn(imn),k2_imn(imn)
 !  Exclude the massive sink particles from the drag calculations
-            lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
+            lsink=(lparticles_nbody.and.(ipar(k).le.mspar))
             if (.not.lsink) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
 !  Use interpolation to calculate gas velocity at position of particles.

@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.127 2008-03-11 10:39:35 wlyra Exp $
+! $Id: particles_sub.f90,v 1.128 2008-03-13 13:24:05 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -294,7 +294,7 @@ module Particles_sub
         endif
 !
         do k=k1,k2,ik
-          lsink=lparticles_nbody.and.(ipar(k).le.nspar)
+          lsink=lparticles_nbody.and.(ipar(k).le.mspar)
           if (.not.lsink) then
             !dust particle
             boundx=bcpx ;boundy=bcpy ;boundz=bcpz
@@ -1627,7 +1627,7 @@ module Particles_sub
         f(:,:,:,inp)=0.0
         do k=1,npar_loc
           !exclude the massive particles from the mapping
-          lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
+          lsink=(lparticles_nbody.and.(ipar(k).le.mspar))
           if (.not.lsink) then 
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
@@ -1655,7 +1655,7 @@ module Particles_sub
 !  Cloud In Cell (CIC) scheme.
 !
           do k=1,npar_loc
-            lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
+            lsink=(lparticles_nbody.and.(ipar(k).le.mspar))
             if (.not.lsink) then 
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               ixx0=ix0; iyy0=iy0; izz0=iz0
@@ -1687,7 +1687,7 @@ module Particles_sub
 !  decreases with the distance from the particle centre.
 !
           do k=1,npar_loc
-            lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
+            lsink=(lparticles_nbody.and.(ipar(k).le.mspar))
             if (.not.lsink) then 
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               if (nxgrid/=1) then
@@ -1886,7 +1886,7 @@ module Particles_sub
 !
 ! switch with the last particle present in the processor npar_loc
 !
-      lsink=(lparticles_nbody.and.(ipar(k).le.nspar))
+      lsink=(lparticles_nbody.and.(ipar(k).le.mspar))
       if (lsink) then
         print*,ipar(k)
         print*,'xp=',fp(k,ixp)
