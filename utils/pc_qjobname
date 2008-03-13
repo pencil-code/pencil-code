@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 ##
-## $Id: pc_qjobname,v 1.8 2007-02-21 06:58:40 ajohan Exp $
+## $Id: pc_qjobname,v 1.9 2008-03-13 19:29:35 ajohan Exp $
 ##
 $host = `hostname`;
 #
@@ -37,6 +37,25 @@ elsif ($host =~ /riologin/ || $host =~ /pia/){   # SGE
     $a =~ /(\/.*)$/;
     $a = $1;
     $a =~ s/$ENV{'HOME'}/\~/g;
+    print "$job : $a\n";
+    }
+
+  }
+elsif ($host =~ /p5120/){   # LoadLeveler
+  
+  if ($#ARGV ne -1) { @jobs = @ARGV; }
+  else {
+    @jobs = `llq | grep $ENV{'USER'} | sort`;
+    foreach $job (@jobs) { $job =~ s/ .*//g; chomp $job; }
+    }
+
+  foreach $job (@jobs){
+
+    $a = `llq -l -j $job | grep "Initial Working Dir"`;
+    $a =~ /(\/.*)$/;
+    $a = $1;
+    $a =~ s/$ENV{'HOME'}/\~/g;
+    $a =~ s/\/gpfs\/h05\/$ENV{'USER'}/\~/g;
     print "$job : $a\n";
     }
 
