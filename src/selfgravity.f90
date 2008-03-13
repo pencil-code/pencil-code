@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.31 2008-03-12 17:33:16 wlyra Exp $
+! $Id: selfgravity.f90,v 1.32 2008-03-13 13:20:11 wlyra Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -28,7 +28,7 @@ module Selfgravity
 
   include 'selfgravity.h'
 
-  real :: rhs_poisson_const=1.0
+  real, target :: rhs_poisson_const=1.0
   real, target :: tstart_selfgrav=0.0
 
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
@@ -72,7 +72,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.31 2008-03-12 17:33:16 wlyra Exp $")
+           "$Id: selfgravity.f90,v 1.32 2008-03-13 13:20:11 wlyra Exp $")
 !
 !  Put variable name in array
 !
@@ -123,6 +123,15 @@ module Selfgravity
       if (ierr/=0) then
         if (lroot) print*, 'initialize_selfgravity: there was a problem '// &
             'when sharing tstart_selfgrav!'
+        call fatal_error('initialize_selfgravity','')
+      endif
+!
+!  Also share rhs_poisson_const
+!      
+      call put_shared_variable('rhs_poisson_const',rhs_poisson_const,ierr)
+      if (ierr/=0) then
+        if (lroot) print*, 'initialize_selfgravity: there was a problem '// &
+            'when sharing rhs_poisson_const!'
         call fatal_error('initialize_selfgravity','')
       endif
 !
