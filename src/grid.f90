@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.31 2008-03-06 14:42:22 nilshau Exp $
+! $Id: grid.f90,v 1.32 2008-03-13 11:36:12 rplasson Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -90,7 +90,7 @@ module Grid
       real, dimension(mz) :: g3,g3der1,g3der2,xi3,zprim2
 
       real :: a,dummy=0.
-      integer :: i
+      integer :: i,nygrid_tmp
       logical :: err
 
 
@@ -225,7 +225,8 @@ module Grid
 
         case ('duct')
 
-          a=pi/(nygrid-1)
+          nygrid_tmp=nygrid
+          a=pi/(nygrid_tmp-1)
 
           call grid_profile(a*xi2  -pi/2,grid_func(2),g2,g2der1,g2der2)
           call grid_profile(a*xi2lo-pi/2,grid_func(2),g2lo)

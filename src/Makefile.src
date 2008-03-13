@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.379 2008-03-12 17:52:35 brandenb Exp $
+### $Id: Makefile.src,v 1.380 2008-03-13 11:36:12 rplasson Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -149,6 +149,8 @@ CFLAGS=-O3 -DFUNDERSC=1
 FCCLEANER=
 LIBMPISUFFIX=
 MAKEOPTS=
+
+
 
 #
 # Defaults for external libraries
@@ -750,6 +752,19 @@ LD_FFTW2=
 #FFLAGS= -O3 -xP -mp -vec_report0 #(janus)
 #CC=icc #(janus)
 #CFLAGS=-O3 -DFUNDERSC=1 #(janus)
+##
+##  Raphael's Nordita Thinkpad
+##
+#FC=gfortran -I/usr/include -I. -I/usr/include/lam  -frecord-marker=4 #(wintermute)
+#F77=$(FC)  #(wintermute)
+#FFLAGS_SLOPPY=  #(wintermute)
+#FFLAGS=-O3   #(wintermute)
+#F90FLAGS=  #(wintermute)
+#F77FLAGS=   #(wintermute)
+#FFLAGS_DOUBLE=-fdefault-real-8  #(wintermute)
+#CC=gcc     #(wintermute)
+#CFLAGS=-O3 -DFUNDERSC=1   #(wintermute)
+#LD_MPI=-lmpi  #(wintermute)
 
 ## Darwin:
 ## Power Macintosh
@@ -828,7 +843,6 @@ LD_FFTW2=
 #CC=gcc #(mac)
 #CFLAGS=-O3 -DFUNDERSC=1 #(mac)
 #LD_MPI= -L/usr/local/lib -lmpich -lpmpich #(mac)
-
 ##
 ## SunOS:
 ## Solaris
