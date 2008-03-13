@@ -1,4 +1,6 @@
-from pylab import *
+#$Id: zprof.py,v 1.2 2008-03-13 14:16:27 dintrans Exp $
+
+import numpy as N
 import pencil as pc
 
 class read_zprof:
@@ -24,8 +26,8 @@ class read_zprof:
 
     if (dim==None): dim=pc.read_dim()
     nz=dim.nzgrid/dim.nprocz
-    self.z=zeros(dim.nzgrid,Float)
-    self.prof=zeros(dim.nzgrid,Float)
+    self.z=N.zeros(dim.nzgrid,'f')
+    self.prof=N.zeros(dim.nzgrid,'f')
 #
 #  loop over all processors and records in file
 #
@@ -36,7 +38,7 @@ class read_zprof:
       file=open(filename,'r')
       for i in range(nz):
         st=file.readline()
-        data=asarray(string.split(st)).astype(Float)
+        data=N.asarray(st.split()).astype('f')
         self.z[izcount]=data[0]
         self.prof[izcount]=data[1]
         izcount=izcount+1
