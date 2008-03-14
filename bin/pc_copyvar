@@ -1,5 +1,5 @@
 #!/bin/csh
-#  $Id: pc_copyvar,v 1.3 2008-03-14 14:31:18 ajohan Exp $
+#  $Id: pc_copyvar,v 1.4 2008-03-14 14:32:05 ajohan Exp $
 #
 #  Author: Anders Johansen
 #
@@ -15,7 +15,8 @@
 #    pc_copyvar 8 v onesim othersim
 #      copies all VAR8 files from 'onesim' directory to var.dat in 'othersim'
 #    pc_copyvar v v onesim $USER@server:othersim -cp=scp
-#      copies with scp to other server
+#      copies with scp to other server. cp is automatically set to 'scp' if
+#      a colon appears in the source or destination directories.
 #
 #  Abbreviations:
 #    v, var       - var.dat
