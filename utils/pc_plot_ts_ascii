@@ -26,23 +26,26 @@ close TS;
 #
 $header=~ s/#//g;
 $header=~ s/\n//g;
-$header=~ s/-+/ /g;
-$header=~ s/ $//g;
-$header=~ s/^ //g;
+$header=~ s/ //g;
+$header=~ s/-+/-/g;
+$header=~ s/^-//g;
+$header=~ s/-$//g;
 
-@header=split(/ /, $header);
+#print $header;
+
+@header=split(/-/, $header);
 #
 #  Find positions of plot variables in header.
 #
-$i1=0; $i2=0;
+$i1=-1; $i2=-1;
 
 for ($i=0; $i<$#header+1; $i++) {
   if ($var1 eq $header[$i]) {$i1=$i;}
   if ($var2 eq $header[$i]) {$i2=$i;}
   }
 
-if ($i1 eq 0) {print "ERROR: Could not find variable \"$var1\" in variable list [$header]\n"; die;}
-if ($i2 eq 0) {print "ERROR: Could not find variable \"$var2\" in variable list $header \n"; die;}
+if ($i1 eq -1) {print "ERROR: Could not find variable \"$var1\" in variable list [$header]\n"; die;}
+if ($i2 eq -1) {print "ERROR: Could not find variable \"$var2\" in variable list $header \n"; die;}
 #
 #  Find min and max of variable to be plotted.
 #
