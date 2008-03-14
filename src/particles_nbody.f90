@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.74 2008-03-14 17:58:05 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.75 2008-03-14 18:05:19 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -36,7 +36,7 @@ module Particles_nbody
   logical, dimension(nspar) :: lfollow_particle=.false.,laccretion=.true.
   real :: GNewton=impossible,prhs_cte
   integer :: ramp_orbits=5
-  logical :: lramp=.false.
+  logical :: lramp=.false.,lcreate_sinks=F
   logical :: linterpolate_gravity=.false.,linterpolate_linear=.true.
   logical :: linterpolate_quadratic_spline=.false.
 
@@ -45,7 +45,7 @@ module Particles_nbody
 
   integer :: iglobal_ggp=0,istar=1,imass=0
 
-  integer :: maxsink=10*nspar
+  integer :: maxsink=10*nspar,icreate=100
 
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
@@ -58,7 +58,8 @@ module Particles_nbody
        dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
        lnogravz_star,lfollow_particle, lbackreaction, lexclude_frozen, &
        GNewton, bcspx, bcspy, bcspz,prhs_cte,lnoselfgrav_star,&
-       linterpolate_quadratic_spline,laccretion,accrete_hills_frac,istar
+       linterpolate_quadratic_spline,laccretion,accrete_hills_frac,istar,&
+       lcreate_sinks,icreate
 
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -84,7 +85,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.74 2008-03-14 17:58:05 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.75 2008-03-14 18:05:19 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -1341,9 +1342,15 @@ module Particles_nbody
       integer, dimension(mpar_loc,3) :: ineargrid
       integer :: i,k,kn,inx0,nc
       integer, pointer :: iglobal_cs2
+
+      logical :: ltime_to_create
 !
       real, dimension(nx)  ::prho,prhop,pnp,pcs2
       real, dimension(nx,3)::puu
+!
+      if (lcreate_sinks) then
+      ltime_to_create=mod(it-1,icreate).eq.0
+      if (ltime_to_create) then
 !
       do i=1,nx
         if (lcartesian_coords) then 
@@ -1529,6 +1536,9 @@ module Particles_nbody
 ! processors to the fp array. 
 !
       call merge_and_share(fcsp,nc,fp)
+!
+    endif
+    endif
 !
     endsubroutine create_sink_particles
 !**************************************************************************
