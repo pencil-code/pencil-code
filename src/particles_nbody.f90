@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.72 2008-03-14 15:02:39 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.73 2008-03-14 17:51:53 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -58,7 +58,7 @@ module Particles_nbody
        dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
        lnogravz_star,lfollow_particle, lbackreaction, lexclude_frozen, &
        GNewton, bcspx, bcspy, bcspz,prhs_cte,lnoselfgrav_star,&
-       linterpolate_quadratic_spline,laccretion,accrete_hills_frac
+       linterpolate_quadratic_spline,laccretion,accrete_hills_frac,istar
 
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -84,7 +84,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.72 2008-03-14 15:02:39 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.73 2008-03-14 17:51:53 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
