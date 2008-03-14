@@ -1,4 +1,4 @@
-! $Id: internal_flow.f90,v 1.3 2008-03-06 14:34:33 nilshau Exp $
+! $Id: internal_flow.f90,v 1.4 2008-03-14 15:14:38 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -27,6 +27,7 @@ module Special
   !
   real, target, dimension (nx,ny,3) :: oo_xy_meanx
   real, target, dimension (nx,ny,3) :: uu_xy_meanx
+  real, dimension(nygrid,3) :: mean_u
 
   integer :: dummy
   character(len=24) :: initspecial='nothing'
@@ -40,16 +41,9 @@ module Special
   ! run parameters
   namelist /internal_flow_run_pars/  &
        dummy
+
+  integer :: idiag_turbint=0
   
-!!
-!! Declare any index variables necessary for main or
-!!
-!!   integer :: iSPECIAL_VARIABLE_INDEX=0
-!!
-!! other variables (needs to be consistent with reset list below)
-!!
-!!   integer :: i_POSSIBLEDIAGNOSTIC=0
-!!
 
   contains
 
@@ -90,11 +84,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.3 2008-03-06 14:34:33 nilshau Exp $
+!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.4 2008-03-14 15:14:38 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: internal_flow.f90,v 1.3 2008-03-06 14:34:33 nilshau Exp $")
+           "$Id: internal_flow.f90,v 1.4 2008-03-14 15:14:38 nilshau Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -243,6 +237,8 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (3) :: meanx_oo
       real, dimension (3) :: meanx_uu
+      real, dimension (nx,3) :: ufluct
+      real, dimension (nx) :: ufluct2
       type (pencil_case) :: p
       integer :: i,j
 
@@ -253,20 +249,6 @@ module Special
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
-!!      if (headtt) call identify_bcs('ss',iss)
-!
-!!
-!! SAMPLE DIAGNOSTIC IMPLEMENTATION
-!!
-!!      if(ldiagnos) then
-!!        if(i_SPECIAL_DIAGNOSTIC/=0) then
-!!          call sum_mn_name(SOME MATHEMATICAL EXPRESSION,i_SPECIAL_DIAGNOSTIC)
-!!! see also integrate_mn_name
-!!        endif
-!!      endif
-
-
-
       !
       ! Write video slices
       !
@@ -274,13 +256,25 @@ module Special
         if (n==iz_loc)  then
           do j=1,3
             meanx_oo(j)=sum(p%oo(:,j))/(l2-l1+1)
-            meanx_uu(j)=sum(p%uu(:,j))/(l2-l1+1)
+            meanx_uu(j)=mean_u(m+ny*ipy-nghost,j)
             oo_xy_meanx(:,m-m1+1,j)=p%oo(:,j)-meanx_oo(j)
             uu_xy_meanx(:,m-m1+1,j)=p%uu(:,j)-meanx_uu(j)
           enddo
         endif
       endif
-
+!
+! Write diagnostics
+!
+      if(ldiagnos) then
+        if (idiag_turbint/=0) then
+          do j=1,3
+            meanx_uu(j)=mean_u(m+ny*ipy-nghost,j)
+            ufluct(:,j)=p%uu(:,j)-meanx_uu(j)
+          enddo
+          call dot2(ufluct,ufluct2)
+          call sum_mn_name(ufluct2,idiag_turbint)
+        endif
+      endif
 
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -300,6 +294,39 @@ module Special
 
 99    return
     endsubroutine read_special_init_pars
+!***********************************************************************
+    subroutine calc_lspecial_pars(f)
+!
+!  Mean flow velocitites
+!
+!  14-mar-08/nils: coded
+!
+      use Cdata
+      use Sub
+      use Mpicomm, only: mpireduce_sum, mpibcast_real
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nygrid,3) :: mean_u_tmp
+      real :: faq
+      integer :: j,k
+!
+!  calculate mean of velocity in xz planes
+!
+      if(lvid.and.lfirst .or. ldiagnos) then
+        mean_u_tmp=0
+        faq=nxgrid*nzgrid
+        do j=m1,m2
+          do k=1,3
+            mean_u_tmp(j+ny*ipy-nghost,k)=sum(f(l1:l2,j,n1:n2,k+iux-1))/faq
+          enddo
+        enddo        
+        do k=1,3
+          call mpireduce_sum(mean_u_tmp(:,k),mean_u(:,k),nygrid)
+          call mpibcast_real(mean_u(:,k),nygrid)
+        enddo
+      endif
+!
+    endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
 !
@@ -345,33 +372,30 @@ module Special
 !
       use Cdata
       use Sub
-!!
-!!!   SAMPLE IMPLEMENTATION
-!!
-!!      integer :: iname
+!
+      integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-!!!
-!!!  reset everything in case of reset
-!!!  (this needs to be consistent with what is defined above!)
-!!!
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
       if (lreset) then
-!!        i_SPECIAL_DIAGNOSTIC=0
+        idiag_turbint=0
       endif
-!!
-!!      do iname=1,nname
-!!        call parse_name(iname,cname(iname),cform(iname),'NAMEOFSPECIALDIAGNOSTIC',i_SPECIAL_DIAGNOSTIC)
-!!      enddo
-!!
-!!!  write column where which magnetic variable is stored
-!!      if (lwr) then
-!!        write(3,*) 'i_SPECIAL_DIAGNOSTIC=',i_SPECIAL_DIAGNOSTIC
-!!      endif
-!!
-
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'turbint',idiag_turbint)
+      enddo
+!
+!  write column where which magnetic variable is stored
+      if (lwr) then
+        write(3,*) 'i_turbint=',idiag_turbint
+      endif
+!
     endsubroutine rprint_special
 !***********************************************************************
     subroutine get_slices_special(f,slices)
