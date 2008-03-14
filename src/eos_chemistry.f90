@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.10 2008-03-13 10:56:04 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.11 2008-03-14 13:04:47 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -22,7 +22,7 @@ module EquationOfState
 
   implicit none
 
-  include 'eos.h'
+  include 'eos_chemistry.h'
 
   interface eoscalc ! Overload subroutine `eoscalc' function
     module procedure eoscalc_pencil   ! explicit f implicit m,n
@@ -53,7 +53,7 @@ module EquationOfState
 !  initialize the helium fraction (by mass) to 0.
 !  and the mean molecular weight mu to unity.
 !
-  real :: xHe=0.
+ ! real :: xHe=0.
   real :: mu=1.
 
   real :: cs0=1., rho0=1.
@@ -75,19 +75,23 @@ module EquationOfState
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
+!  logical :: leos_chemistry =.false.
 
-  logical :: lcheminp=.false.
+
 
   real, dimension(nchemspec) :: mu_spec, cp_spec 
   real, dimension (mx,my,mz) :: cp_full
  
 
+  character (len=20) :: input_file='chem.inp'
+  logical :: lcheminp=.false.
+
 
   ! input parameters
-  namelist /eos_init_pars/ xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw
+  namelist /eos_init_pars/  mu, cp, cs0, rho0, gamma, error_cp, ptlaw
 
   ! run parameters
-  namelist /eos_run_pars/  xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw
+  namelist /eos_run_pars/   mu, cp, cs0, rho0, gamma, error_cp, ptlaw
 
   contains
 
@@ -103,11 +107,13 @@ module EquationOfState
 !
       if (.not. first) call fatal_error('register_eos','module registration called twice')
       first = .false.
-!
-      leos=.true.
-      leos_idealgas=.true.
-!
-      iyH = 0
+   !
+       leos=.true.
+   !   leos_idealgas=.true.
+   !   leos_chemistry=.true.
+
+
+  !    iyH = 0
       ilnTT = 0
 
       if ((ip<=8) .and. lroot) then
@@ -117,7 +123,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.10 2008-03-13 10:56:04 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.11 2008-03-14 13:04:47 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -138,6 +144,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       real ::  cp_reference
+
 !
 !  set gamma1, cs20, and lnrho0
 !  (used currently for non-dimensional equation of state)
@@ -214,12 +221,28 @@ module EquationOfState
       else
         lnTT0=log(cs20/cp)  !(isothermal/polytropic cases: check!)
       endif
+
+       inquire(FILE=input_file, EXIST=lcheminp)
+       if (lcheminp) then
+        cp=impossible
+        cp1=impossible
+        cv=impossible 
+        cv1=impossible
+        gamma=impossible
+        gamma1=impossible
+        gamma11=impossible
+        mu=impossible
+       endif 
 !
 !  check that everything is OK
 !
       if (lroot) then
+       if (.not. lcheminp) then
         print*,'initialize_eos: unit_temperature=',unit_temperature
         print*,'initialize_eos: cp,lnTT0,cs0=',cp,lnTT0,cs0
+       else
+        print*,'initialize_eos: chem.imp is found! Now cp, cv, gamma, mu are pencils ONLY!'
+       endif  
       endif
 !
     endsubroutine units_eos
@@ -258,8 +281,6 @@ module EquationOfState
         close (1)
       endif
 !
-
-
          do k=1,nchemspec
           cp_spec(k)=Rgas/(mu*gamma1*gamma11)
          enddo 
@@ -267,8 +288,6 @@ module EquationOfState
          do k=1,nchemspec
           mu_spec(k)=mu
          enddo 
-
-
 
     endsubroutine initialize_eos
 !*******************************************************************
@@ -403,7 +422,7 @@ module EquationOfState
 !        = 3.97
 !
       if (mu == 0.) then
-        mu_tmp=1.+2.97153*xHe
+        mu_tmp=1.!+2.97153*xHe
       else
         mu_tmp=mu
       endif
@@ -425,7 +444,7 @@ module EquationOfState
 !
     endsubroutine rprint_eos
 !***********************************************************************
-    subroutine pencil_criteria_eos()
+   subroutine pencil_criteria_eos()
 !
 !  All pencils that the EquationOfState module depends on are specified here.
 !
@@ -541,7 +560,6 @@ module EquationOfState
       type (pencil_case) :: p
       real, dimension (nx) :: tmp_sum
 
-      character (len=20) :: input_file='chem.inp'
 
 !
       intent(in) :: f
@@ -575,7 +593,6 @@ module EquationOfState
       if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
       if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
 
-   inquire(FILE=input_file, EXIST=lcheminp)
    if (lcheminp==.false.) then
 
 !
@@ -634,31 +651,46 @@ module EquationOfState
 
     endsubroutine calc_pencils_eos
 !***********************************************************************
-    subroutine ioninit(f)
+   subroutine ioninit(f)
+!
+!  the ionization fraction has to be set to a value yH0 < yH < yHmax before
+!  rtsafe is called for the first time
+!
+!  12-jul-03/tobi: coded
+!
+      use Cdata
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx) :: lnrho,ss,yH,lnTT
 !
-      if(NO_WARN) print*,f  !(keep compiler quiet)
-!
+ 
     endsubroutine ioninit
 !***********************************************************************
     subroutine ioncalc(f)
 !
-    real, dimension (mx,my,mz,mfarray) :: f
+!   calculate degree of ionization and temperature
+!   This routine is called from equ.f90 and operates on the full 3-D array.
 !
-    if(NO_WARN) print*,f  !(keep compiler quiet)
+!   13-jun-03/tobi: coded
 !
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx) :: lnrho,ss,yH,lnTT
+!
+
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine getdensity(EE,TT,yH,rho)
 
-      real, intent(in) :: EE,TT,yH
-      real, intent(inout) :: rho
+   subroutine getdensity(EE,TT,yH,rho)
 
-      rho = EE * cv1 / TT
+     real, intent(in) :: EE,TT,yH
+     real, intent(inout) :: rho
+
+     rho = EE * cv1 / TT
       if (NO_WARN) print*,yH
 
-    end subroutine getdensity
+   end subroutine getdensity
 !***********************************************************************
     subroutine get_cp1(cp1_)
 !
@@ -666,9 +698,15 @@ module EquationOfState
 !
 !  return the value of cp1 to outside modules
 !
+    use Mpicomm, only: stop_it 
+
       real, intent(out) :: cp1_
 !
+    if (.not. lcheminp) then
       cp1_=cp1
+    else
+      call stop_it('chem.inp is found: pressure_gradient_point can not be used for this moment')
+    endif
 !
     end subroutine get_cp1
 !***********************************************************************
@@ -705,7 +743,11 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
       real, dimension(nx) :: lnrho,ss
+ 
+      type (pencil_case) :: p
 !
+
+
       if (ldensity_nolog) then
         lnrho=log(f(l1:l2,m,n,ilnrho))
       else
@@ -715,26 +757,22 @@ module EquationOfState
 !
 !  pretend_lnTT
 !
+ 
+    if (.not. lcheminp) then
       if (pretend_lnTT) then
         cs2=gamma1*exp(cv1*ss)
       else
         cs2=cs20*exp(cv1*ss+gamma1*(lnrho-lnrho0))
       endif
-!! Actual pressure gradient calculation:
-!!          do j=1,3
-!!            ju=j+iuu-1
-!!            if (pretend_lnTT) then
-!!              df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) - &
-!!                  p%cs2*(p%glnrho(:,j)/gamma + p%cp1tilde*p%gss(:,j))
-!!            else
-!!              df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) - &
-!!                  p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
-!!            endif
-!!           enddo
-!
-!  inverse cp (will be different from 1 when cp is not 1)
-!
       cp1tilde=cp1
+    else
+      if (pretend_lnTT) then
+        cs2=p%gamma1*exp(p%cv1*ss)
+      else
+        cs2=cs20*exp(p%cv1*ss+p%gamma1*(lnrho-lnrho0))
+      endif
+      cp1tilde=p%cp1
+    endif
 !
     endsubroutine pressure_gradient_farray
 !***********************************************************************
@@ -747,18 +785,23 @@ module EquationOfState
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
       use Cdata
+      use Mpicomm, only: stop_it 
 !
       real, intent(in) :: lnrho,ss
       real, intent(out) :: cs2,cp1tilde
 !
 !  pretend_lnTT
 !
+    if (.not. lcheminp) then
       if (pretend_lnTT) then
         cs2=gamma1*exp(gamma*cp1*ss)
       else
         cs2=cs20*exp(cv1*ss+gamma1*(lnrho-lnrho0))
       endif
       cp1tilde=cp1
+    else
+     call stop_it('chem.inp is found: pressure_gradient_point can not be used for this moment')
+    endif
 !
     endsubroutine pressure_gradient_point
 !***********************************************************************
@@ -775,6 +818,9 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
+      type (pencil_case) :: p
+
+      integer :: i
 !
       if (gamma1==0.) call fatal_error('temperature_gradient', &
         'gamma=1 not allowed with entropy turned on!')
@@ -783,8 +829,14 @@ module EquationOfState
 !
       if (pretend_lnTT) then
         glnTT=gss
-      else
-        glnTT=gamma1*glnrho+cv1*gss
+       else
+        if (.not. lcheminp) then
+         glnTT=gamma1*glnrho+cv1*gss
+        else
+         do i=1,3 
+          glnTT(:,i)=p%gamma1(:)*glnrho(:,i)+p%cv1(:)*gss(:,i)
+         enddo
+        endif
       endif
 !
       if (NO_WARN) print*,f !(keep compiler quiet)
@@ -803,6 +855,8 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(in) :: del2lnrho,del2ss
       real, dimension(nx), intent(out) :: del2lnTT
+      type (pencil_case) :: p
+
 !
       if (gamma1==0.) call fatal_error('temperature_laplacian','gamma=1 not allowed w/entropy')
 !
@@ -811,13 +865,17 @@ module EquationOfState
       if (pretend_lnTT) then
         del2lnTT=del2ss
       else
-        del2lnTT=gamma1*del2lnrho+cv1*del2ss
+        if (.not. lcheminp) then
+         del2lnTT=gamma1*del2lnrho+cv1*del2ss
+        else
+          del2lnTT=p%gamma1*del2lnrho+p%cv1*del2ss
+        endif
       endif
 !
       if (NO_WARN) print*,f !(keep compiler quiet)
     endsubroutine temperature_laplacian
 !***********************************************************************
-    subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
+    subroutine temperature_hessian_commented(f,hlnrho,hss,hlnTT)
 !
 !   Calculate thermodynamical quantities, cs2 and cp1
 !   and optionally hlnPP and hlnTT
@@ -842,9 +900,9 @@ module EquationOfState
       endif
 !
       if (NO_WARN) print*,f !(keep compiler quiet)
-    endsubroutine temperature_hessian
+    endsubroutine temperature_hessian_commented
 !***********************************************************************
-    subroutine eosperturb(f,psize,ee,pp,ss)
+    subroutine eosperturb_commented(f,psize,ee,pp,ss)
 !
 !  Set f(l1:l2,m,n,iss), depending on the valyes of ee and pp
 !  Adding pressure perturbations is not implemented
@@ -901,7 +959,7 @@ module EquationOfState
       else
         call not_implemented("eosperturb")
       endif
-    end subroutine eosperturb
+    end subroutine eosperturb_commented
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,kapparho)
 !
@@ -915,6 +973,8 @@ module EquationOfState
 !
       use Cdata
       use Sub, only: max_mn_name, sum_mn_name
+     
+      type (pencil_case) :: p
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
@@ -942,7 +1002,11 @@ module EquationOfState
           if (leos_isentropic) then
             ss_=0
           elseif (leos_isothermal) then
+           if (.not. lcheminp) then
             ss_=-cv*gamma1*(lnrho_-lnrho0)
+           else
+            ss_=-p%cv*p%gamma1*(lnrho_-lnrho0)
+           endif
           else
             ss_=f(l1:l2,m,n,ieosvar2)
           endif
@@ -951,7 +1015,11 @@ module EquationOfState
           if (leos_isentropic) then
             ss_=0
           elseif (leos_isothermal) then
+           if (.not. lcheminp) then
             ss_=-cv*gamma1*(lnrho_-lnrho0)
+           else
+            ss_=-p%cv*p%gamma1*(lnrho_-lnrho0)
+           endif
           else
             ss_=f(:,m,n,ieosvar2)
           endif
@@ -959,13 +1027,22 @@ module EquationOfState
           call fatal_error('eoscalc_farray','no such pencil size')
         end select
 
-        lnTT_=lnTT0+cv1*ss_+gamma1*(lnrho_-lnrho0)
+        if (.not. lcheminp) then
+          lnTT_=lnTT0+cv1*ss_+gamma1*(lnrho_-lnrho0)
+        else
+          lnTT_=lnTT0+p%cv1*ss_+p%gamma1*(lnrho_-lnrho0)
+        endif
         if (gamma1==0.) &
             call fatal_error('eoscalc_farray','gamma=1 not allowed w/entropy')
         if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT_
+       if (.not. lcheminp) then 
         if (present(ee)) ee=cv*exp(lnTT_)
         if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
+       else
+        if (present(ee)) ee=p%cv*exp(lnTT_)
+        if (present(pp)) pp=(p%cp-p%cv)*exp(lnTT_+lnrho_)
+       endif  
 !
 ! Log rho and Log T
 !
@@ -974,7 +1051,11 @@ module EquationOfState
         case (nx)
           lnrho_=f(l1:l2,m,n,ieosvar1)
           if (leos_isentropic) then
+           if (.not. lcheminp) then
             lnTT_=lnTT0+(cp-cv)*(lnrho_-lnrho0)
+           else
+            lnTT_=lnTT0+(p%cp-p%cv)*(lnrho_-lnrho0)
+           endif
           elseif (leos_isothermal) then
             lnTT_=lnTT0
           else
@@ -983,7 +1064,11 @@ module EquationOfState
         case (mx)
           lnrho_=f(:,m,n,ieosvar1)
           if (leos_isentropic) then
+           if (.not. lcheminp) then
             lnTT_=lnTT0+(cp-cv)*(lnrho_-lnrho0)
+           else
+            lnTT_=lnTT0+(p%cp-p%cv)*(lnrho_-lnrho0)
+           endif
           elseif (leos_isothermal) then
             lnTT_=lnTT0
           else
@@ -995,12 +1080,22 @@ module EquationOfState
 !
         if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT_
+
+       if (.not. lcheminp) then
         if (present(ee)) ee=cv*exp(lnTT_)
         if (ieosvars==ilnrho_lnTT) then
           if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
         else
           if (present(pp)) pp=(cp-cv)*exp(lnTT_)*lnrho_
         endif
+       else
+        if (present(ee)) ee=p%cv*exp(lnTT_)
+        if (ieosvars==ilnrho_lnTT) then
+          if (present(pp)) pp=(p%cp-p%cv)*exp(lnTT_+lnrho_)
+        else
+          if (present(pp)) pp=(p%cp-p%cv)*exp(lnTT_)*lnrho_
+        endif
+       endif
 !
 ! Log rho and T
 !
@@ -1043,8 +1138,13 @@ module EquationOfState
 !
         if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT0+log(cs2_)
+       if (.not. lcheminp) then 
         if (present(ee)) ee=gamma11*cs2_/gamma1
         if (present(pp)) pp=gamma11*cs2_*exp(lnrho_)
+       else
+        if (present(ee)) ee=p%gamma11*cs2_/p%gamma1
+        if (present(pp)) pp=p%gamma11*cs2_*exp(lnrho_)
+       endif
 !
       case default
         call fatal_error("eoscalc_farray",'Thermodynamic variable combination not implemented!')
@@ -1075,6 +1175,7 @@ module EquationOfState
 !   22-jun-06/axel: reinstated cp,cp1,cv,cv1 in hopefully all the places.
 !
       use Cdata
+      use Mpicomm, only: stop_it 
 !
       integer, intent(in) :: ivars
       real, intent(in) :: var1,var2
@@ -1085,6 +1186,9 @@ module EquationOfState
 !
       if (gamma1==0.) call fatal_error('eoscalc_point','gamma=1 not allowed w/entropy')
 !
+
+      if (lcheminp) call stop_it('chem.inp is found. eoscalc_point can not be used for this moment')
+ 
       select case (ivars)
 
       case (ilnrho_ss)
@@ -1164,6 +1268,8 @@ module EquationOfState
       real, dimension(nx), intent(out), optional :: yH,lnTT
       real, dimension(nx), intent(out), optional :: ee,pp,cs2
       real, dimension(nx) :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
+
+      type (pencil_case) :: p
 !
       if (gamma1==0.) call fatal_error('eoscalc_pencil','gamma=1 not allowed w/entropy')
 !
@@ -1172,43 +1278,79 @@ module EquationOfState
       case (ilnrho_ss)
         lnrho_=var1
         ss_=var2
+       if (.not. lcheminp) then
         lnTT_=lnTT0+cv1*ss_+gamma1*(lnrho_-lnrho0)
         ee_=cv*exp(lnTT_)
         pp_=(cp-cv)*exp(lnTT_+lnrho_)
         cs2_=gamma*gamma1*ee_
         cs2_=cs20*cv1*ee_
+       else
+        lnTT_=lnTT0+p%cv1*ss_+p%gamma1*(lnrho_-lnrho0)
+        ee_=p%cv*exp(lnTT_)
+        pp_=(p%cp-p%cv)*exp(lnTT_+lnrho_)
+        cs2_=p%gamma*p%gamma1*ee_
+        cs2_=cs20*p%cv1*ee_
+       endif
 
       case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
+       if (.not. lcheminp) then
         lnTT_=log(cv1*ee_)
         ss_=cv*(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))
         pp_=gamma1*ee_*exp(lnrho_)
         cs2_=gamma*gamma1*ee_
+       else
+        lnTT_=log(p%cv1*ee_)
+        ss_=p%cv*(lnTT_-lnTT0-p%gamma1*(lnrho_-lnrho0))
+        pp_=p%gamma1*ee_*exp(lnrho_)
+        cs2_=p%gamma*p%gamma1*ee_
+       endif
 
       case (ilnrho_pp)
         lnrho_=var1
         pp_=var2
+       if (.not. lcheminp) then
         ss_=cv*(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma1*(lnrho_-lnrho0))
         ee_=pp_*exp(-lnrho_)/gamma1
         lnTT_=log(cv1*ee_)
         cs2_=gamma*gamma1*ee_
+       else
+        ss_=p%cv*(log(pp_*exp(-lnrho_)*p%gamma/cs20)-p%gamma1*(lnrho_-lnrho0))
+        ee_=pp_*exp(-lnrho_)/p%gamma1
+        lnTT_=log(p%cv1*ee_)
+        cs2_=p%gamma*p%gamma1*ee_
+       endif
 
       case (ilnrho_lnTT)
         lnrho_=var1
         lnTT_=var2
+       if (.not. lcheminp) then
         ss_=cv*(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))
         ee_=cv*exp(lnTT_)
         pp_=ee_*exp(lnrho_)*gamma1
         cs2_=gamma*gamma1*ee_
+       else
+        ss_=p%cv*(lnTT_-lnTT0-p%gamma1*(lnrho_-lnrho0))
+        ee_=p%cv*exp(lnTT_)
+        pp_=ee_*exp(lnrho_)*p%gamma1
+        cs2_=p%gamma*p%gamma1*ee_
+       endif 
 
       case (ilnrho_TT)
         lnrho_=var1
         TT_=var2
+       if (.not. lcheminp) then
         ss_=cv*(log(TT_)-lnTT0-gamma1*(lnrho_-lnrho0))
         ee_=cv*TT_
         pp_=ee_*exp(lnrho_)*gamma1
         cs2_=gamma1*TT_
+       else
+        ss_=p%cv*(log(TT_)-lnTT0-p%gamma1*(lnrho_-lnrho0))
+        ee_=p%cv*TT_
+        pp_=ee_*exp(lnrho_)*p%gamma1
+        cs2_=p%gamma1*TT_
+       endif
 
       case default
         call not_implemented('eoscalc_point')
@@ -1230,10 +1372,16 @@ module EquationOfState
 !
 !  20-Oct-03/tobi: Coded
 !
+     use Mpicomm, only: stop_it 
+
       real, intent(in)  :: lnTT
       real, intent(out) :: cs2
 !
+     if (.not.lcheminp) then 
       cs2=gamma1*cp*exp(lnTT)
+     else
+        call stop_it('chem.inp is found: get_soundspeed can not be used for this moment')
+     endif 
 !
     end subroutine get_soundspeed
 !***********************************************************************
@@ -1277,7 +1425,7 @@ module EquationOfState
 
     endsubroutine write_eos_run_pars
 !***********************************************************************
-    subroutine isothermal_entropy(f,T0)
+    subroutine isothermal_entropy_commented(f,T0)
 !
 !  Isothermal stratification (for lnrho and ss)
 !  This routine should be independent of the gravity module used.
@@ -1321,9 +1469,9 @@ module EquationOfState
       call get_soundspeed(log(T0),cs2bot)
       cs2top=cs2bot
 !
-    endsubroutine isothermal_entropy
+    endsubroutine isothermal_entropy_commented
 !***********************************************************************
-    subroutine isothermal_lnrho_ss(f,T0,rho0)
+    subroutine isothermal_lnrho_ss_commented(f,T0,rho0)
 !
 !  Isothermal stratification for lnrho and ss (for yH=0!)
 !
@@ -1334,25 +1482,25 @@ module EquationOfState
 !
       if (NO_WARN) print*,f,T0,rho0
 !
-    endsubroutine isothermal_lnrho_ss
+    endsubroutine isothermal_lnrho_ss_commented
 !***********************************************************************
-    subroutine Hminus_opacity(f,kapparho)
+ !   subroutine Hminus_opacity(f,kapparho)
 !
 !  dummy routine
 !
 !  03-apr-2004/tobi: coded
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(mx,my,mz), intent(out) :: kapparho
+ !     real, dimension(mx,my,mz,mfarray), intent(in) :: f
+ !     real, dimension(mx,my,mz), intent(out) :: kapparho
 
-      call fatal_error('Hminus_opacity',"opacity_type='Hminus' may not be used with noionization")
+ !     call fatal_error('Hminus_opacity',"opacity_type='Hminus' may not be used with noionization")
 
-      if (NO_WARN) then
-        kapparho=0
-        print*,f
-      endif
+ !     if (NO_WARN) then
+ !       kapparho=0
+ !       print*,f
+ !     endif
 
-    endsubroutine Hminus_opacity
+ !   endsubroutine Hminus_opacity
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot)
 !
@@ -1376,6 +1524,9 @@ module EquationOfState
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
       integer :: i,ierr
 !
+
+    if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
+
       if(ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
@@ -1499,6 +1650,9 @@ module EquationOfState
       real, dimension (mx,my) :: tmp_xy
       integer :: i
 !
+
+     if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
+
       if(ldebug) print*,'bc_ss_temp_old: ENTER - cs20,cs0=',cs20,cs0
 !
 !  Do the `c2' boundary condition (fixed temperature/sound speed) for entropy.
@@ -1565,6 +1719,9 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
       integer :: i
+
+      if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
+
 !
       if(ldebug) print*,'bc_ss_temp_x: cs20,cs0=',cs20,cs0
 !
@@ -1642,6 +1799,9 @@ module EquationOfState
       real :: tmp
       integer :: i
 !
+
+      if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
+
       if(ldebug) print*,'bc_ss_temp_y: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
@@ -1702,6 +1862,9 @@ module EquationOfState
       real :: tmp
       integer :: i
 !
+
+      if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
+
       if(ldebug) print*,'bc_ss_temp_z: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
@@ -1786,6 +1949,9 @@ module EquationOfState
       real :: tmp
       integer :: i
 !
+
+      if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
+
       if(ldebug) print*,'bc_lnrho_temp_z: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
@@ -1864,6 +2030,9 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
+
+      if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
+
       if(ldebug) print*,'bc_lnrho_pressure_z: cs20,cs0=',cs20,cs0
 !
 !  Constant pressure, i.e. antisymmetric
@@ -1967,6 +2136,9 @@ module EquationOfState
       real :: tmp
       integer :: i
 !
+
+      if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
+
       if(ldebug) print*,'bc_ss_temp2_z: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
@@ -2022,6 +2194,9 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
+
+      if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
+
       if(ldebug) print*,'bc_ss_stemp_x: cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
@@ -2071,7 +2246,8 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
-!
+! 
+      if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
       if(ldebug) print*,'bc_ss_stemp_y: cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
@@ -2123,6 +2299,8 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
+      if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
+
       if(ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
@@ -2178,6 +2356,9 @@ module EquationOfState
 !  This assumes that the density is already set (ie density must register
 !  first!)
 !
+
+    if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
+
     select case(topbot)
 !
 ! Bottom boundary
@@ -2216,6 +2397,8 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
+
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
       if (NO_WARN) print*,f,topbot
 !
@@ -2247,6 +2430,9 @@ module EquationOfState
       real :: dlnrhodz, dssdz
       real :: potp,potm,rad,step
       integer :: i,j
+
+
+      if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
 
       select case (topbot)
 
@@ -2346,6 +2532,9 @@ module EquationOfState
       real :: dlnrhodz, dssdz
       real :: potp,potm
       integer :: i
+
+
+     if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
 
       select case (topbot)
 
@@ -2474,6 +2663,9 @@ module EquationOfState
       real, dimension (nx,ny) :: tmp_re,tmp_im
       real :: pot
       integer :: i
+
+      if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
+
 !
 !  Get local wave numbers
 !
@@ -2606,6 +2798,8 @@ module EquationOfState
       real, dimension (nx,ny) :: tmp_re,tmp_im
       real, dimension (nx) :: pot,rr_cyl,rr_sph,cs2,tmp1,tmp2
       integer :: i,mm_noghost
+
+      if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
 !
 !  Get local wave numbers
 !
@@ -2787,7 +2981,10 @@ module EquationOfState
       character (len=3), intent (in) :: topbot
       real :: dlnrhodz, dssdz
       integer :: i
-      
+ 
+
+     if (lcheminp) print*,'chem.imp was found! Be careful with using such boundary conditions!!!'
+
       select case (topbot)
 !
 !  Bottom boundary
