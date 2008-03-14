@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.25 2008-03-13 14:15:12 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.26 2008-03-14 22:29:33 brandenb Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -150,11 +150,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.25 2008-03-13 14:15:12 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.26 2008-03-14 22:29:33 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.25 2008-03-13 14:15:12 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.26 2008-03-14 22:29:33 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -564,6 +564,7 @@ module Chemistry
 !  indices
 !
       integer :: j,k
+      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -633,14 +634,14 @@ module Chemistry
 !  Calculate diagnostic quantities
 !
       if (ldiagnos) then
-        if (idiag_Y1m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(1)),idiag_Y1m)
-        if (idiag_Y2m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(2)),idiag_Y2m)
-        if (idiag_Y3m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(3)),idiag_Y3m)
-        if (idiag_Y4m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(4)),idiag_Y4m)
-        if (idiag_Y5m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(5)),idiag_Y5m)
-        if (idiag_Y6m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(6)),idiag_Y6m)
-        if (idiag_Y7m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(7)),idiag_Y7m)
-        if (idiag_Y8m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(8)),idiag_Y8m)
+        if (idiag_Y1m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i1)),idiag_Y1m)
+        if (idiag_Y2m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i2)),idiag_Y2m)
+        if (idiag_Y3m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i3)),idiag_Y3m)
+        if (idiag_Y4m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i4)),idiag_Y4m)
+        if (idiag_Y5m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i5)),idiag_Y5m)
+        if (idiag_Y6m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i6)),idiag_Y6m)
+        if (idiag_Y7m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i7)),idiag_Y7m)
+        if (idiag_Y8m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i8)),idiag_Y8m)
       endif
 !
 ! Keep compiler quiet by ensuring every parameter is used
