@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.71 2008-03-14 14:26:00 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.72 2008-03-14 15:02:39 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -84,7 +84,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.71 2008-03-14 14:26:00 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.72 2008-03-14 15:02:39 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -792,47 +792,24 @@ module Particles_nbody
       real, dimension (mspar) :: sq_hills
       real, dimension (3) :: evr
       integer, dimension (mpar_loc,3) :: ineargrid
-      real :: e1,e2,e3,e10,e20,e30
       real :: r2_ij,rs2,invr3_ij
       integer :: k, ks
 !
       intent(inout) :: fp,dfp
       intent(in)  :: k
 !
-
-!      dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accg
-
       do ks=1,mspar
         if (ipar(k)/=ks) then
 !
-          e1=fp(k,ixp);e10=fsp(ks,ixp)
-          e2=fp(k,iyp);e20=fsp(ks,iyp)
-          e3=fp(k,izp);e30=fsp(ks,izp)
-!
-!  Get the distances in each ortogonal component. 
-!  These are NOT (x,y,z) for all.
-!  For cartesian it is (x,y,z), for cylindrical (s,phi,z)
-!  for spherical (r,theta,phi)
-! 
-          if (lcartesian_coords) then
-            evr(1) = e1 - e10  
-            evr(2) = e2 - e20  
-            evr(3) = e3 - e30  
-          elseif (lcylindrical_coords) then
-            evr(1) = e1 - e10*cos(e2-e20)  
-            evr(2) = e10*sin(e2-e20)       
-            evr(3) = e3 - e30              
-          elseif (lspherical_coords) then
-            call fatal_error("loop_through_sinks","not yet implemented "//&
-                 "for spherical polars")
-          endif
+          call get_particles_interdistance(&
+               fp(k,ixp:izp),fsp(ks,ixp:izp),&
+               VECTOR=evr,DISTANCE=r2_ij,lsquare=.true.)
 !
 !  Particles relative distance from each other
 !
 !  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
 !  invr3_ij = r_ij**(-3)
 !
-          r2_ij = sum(evr**2)
           rs2=(accrete_hills_frac(ks)**2)*sq_hills(ks)
 
           if (laccretion(ks).and.(r2_ij.le.rs2)) then
@@ -1716,25 +1693,10 @@ module Particles_nbody
 !
       do k=1,nc 
         if (.not.lchecked(k)) then 
-!
-! If not checked, test if the distance is less than the linking length
-!
-          e1=fcsp(k,ixp);e10=fcsp(par,ixp)
-          e2=fcsp(k,iyp);e20=fcsp(par,iyp)
-          e3=fcsp(k,izp);e30=fcsp(par,izp)
-          if (lcartesian_coords) then
-            evr(1) = e1 - e10  
-            evr(2) = e2 - e20  
-            evr(3) = e3 - e30  
-          elseif (lcylindrical_coords) then
-            evr(1) = e1 - e10*cos(e2-e20)  
-            evr(2) = e10*sin(e2-e20)       
-            evr(3) = e3 - e30              
-          elseif (lspherical_coords) then 
-            call fatal_error("add friends","not implemented for spherical polars")
-          endif
-!
-          dist=sqrt(sum(evr**2))
+          call get_particles_interdistance(&
+               fcsp(k,ixp:izp),fcsp(par,ixp:izp),&
+               DISTANCE=dist)
+
           if (dist.le.link_length) then 
 !
 ! if so, add it to the cluster, tag it and call its friends

@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.128 2008-03-13 13:24:05 wlyra Exp $
+! $Id: particles_sub.f90,v 1.129 2008-03-14 15:02:39 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -20,6 +20,7 @@ module Particles_sub
   public :: map_nearest_grid, map_xxp_grid, sort_particles_imn
   public :: particle_pencil_index
   public :: shepherd_neighbour,remove_particle
+  public :: get_particles_interdistance
 
   contains
 
@@ -1869,6 +1870,55 @@ module Particles_sub
       endif
 !
     endsubroutine shepherd_neighbour
+!***********************************************************************
+    subroutine get_particles_interdistance(xx1,xx2,vector,distance,lsquare)
+!      
+      use Messages, only: fatal_error
+!
+      real,dimension(3) :: xx1,xx2,evr
+      real :: e1,e2,e3,e10,e20,e30
+      real,dimension(3),optional :: vector
+      real,optional :: distance
+      logical,optional :: lsquare
+!
+      e1=xx1(1);e10=xx2(1)
+      e2=xx1(2);e20=xx2(2)
+      e3=xx1(3);e30=xx2(3)
+!
+!  Get the distances in each ortogonal component. 
+!  These are NOT (x,y,z) for all.
+!  For cartesian it is (x,y,z), for cylindrical (s,phi,z)
+!  for spherical (r,theta,phi)
+! 
+      if (lcartesian_coords) then
+        evr(1) = e1 - e10  
+        evr(2) = e2 - e20  
+        evr(3) = e3 - e30  
+      elseif (lcylindrical_coords) then
+        evr(1) = e1 - e10*cos(e2-e20)  
+        evr(2) = e10*sin(e2-e20)       
+        evr(3) = e3 - e30              
+      elseif (lspherical_coords) then
+        call fatal_error("get_particles_interdistance",&
+             "not yet implemented for spherical polars")
+      endif
+!
+!  Particles relative distance from each other
+!
+!  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
+!  invr3_ij = r_ij**(-3)
+!
+      if (present(distance)) then 
+        if (present(lsquare)) then 
+          distance =      sum(evr**2)
+        else
+          distance = sqrt(sum(evr**2))
+        endif
+      endif
+!
+      if (present(vector)) vector=evr
+!
+    endsubroutine get_particles_interdistance
 !***********************************************************************
     subroutine remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid)
 !
