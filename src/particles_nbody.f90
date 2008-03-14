@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.76 2008-03-14 18:09:45 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.77 2008-03-14 19:35:12 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -85,7 +85,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.76 2008-03-14 18:09:45 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.77 2008-03-14 19:35:12 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -133,16 +133,18 @@ module Particles_nbody
 ! because I might want units in which both G and GM are 1. 
 ! If we are solving for selfgravity, get that one instead
 !
-      if (lselfgravity) then 
-        call get_shared_variable('rhs_poisson_const',rhs_poisson_const,ierr)
-        if (ierr/=0) then
-          if (lroot) print*, 'initialize_particles_nbody: '// &
-               'there was a problem when getting rhs_poisson_const!'
-          call fatal_error('initialize_particles_nbody','')
-        endif
-        GNewton=rhs_poisson_const/(4*pi)
-      else
-        if (GNewton == impossible) then
+      if (GNewton == impossible) then
+        !ONLY REASSIGN THE GNEWTON 
+        !IF IT IS NOT SET IN START.IN!!!!!
+        if (lselfgravity) then 
+          call get_shared_variable('rhs_poisson_const',rhs_poisson_const,ierr)
+          if (ierr/=0) then
+            if (lroot) print*, 'initialize_particles_nbody: '// &
+                 'there was a problem when getting rhs_poisson_const!'
+            call fatal_error('initialize_particles_nbody','')
+          endif
+          GNewton=rhs_poisson_const/(4*pi)
+        else
           GNewton=G_Newton
         endif
       endif
