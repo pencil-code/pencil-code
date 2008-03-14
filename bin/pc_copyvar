@@ -1,5 +1,5 @@
 #!/bin/csh
-#  $Id: pc_copyvar,v 1.2 2008-03-14 13:33:25 ajohan Exp $
+#  $Id: pc_copyvar,v 1.3 2008-03-14 14:31:18 ajohan Exp $
 #
 #  Author: Anders Johansen
 #
@@ -85,6 +85,14 @@ endif
 set int2=`perl -e '$int = '$var2' =~ /^\d+$/; print $int;'`
 if ( $int2 =~ 1 ) then
   set var2="VAR$var2"
+endif
+#
+#  Automatically set cp to 'scp' if ':' appears in source or destination.
+#
+set remsource=`echo $source | grep -c ":"`
+set remdest=`echo $dest | grep -c ":"`
+if ($remdest > 0 || $remsource > 0) then
+  set cp="scp"
 endif
 #
 #  Inform what is about to happen.
