@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.58 2008-03-09 21:11:51 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.59 2008-03-14 15:34:45 brandenb Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -168,13 +168,22 @@ varcontent[iaatest].idlvarloc  = 'aatest_loc'
 varcontent[iaatest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestfield)*one'
 varcontent[iaatest].skip       = ntestfield-1
 ;
-default, iuxb, 0
-varcontent[iuxb].variable   = 'Testfield vector potential (uxb)'
-varcontent[iuxb].idlvar     = 'uxb'
-varcontent[iuxb].idlinit    = 'fltarr(mx,my,mz,ntestfield)*one'
-varcontent[iuxb].idlvarloc  = 'uxb_loc'
-varcontent[iuxb].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestfield)*one'
-varcontent[iuxb].skip       = ntestfield-1
+default, iuutest, 0
+default, ntestfield, 0
+varcontent[iuutest].variable   = 'Testflow (uutest)'
+varcontent[iuutest].idlvar     = 'uutest'
+varcontent[iuutest].idlinit    = 'fltarr(mx,my,mz,ntestflow)*one'
+varcontent[iuutest].idlvarloc  = 'uutest_loc'
+varcontent[iuutest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestflow)*one'
+varcontent[iuutest].skip       = ntestflow-1
+;
+;default, iuxb, 0
+;varcontent[iuxb].variable   = 'Testfield vector potential (uxb)'
+;varcontent[iuxb].idlvar     = 'uxb'
+;varcontent[iuxb].idlinit    = 'fltarr(mx,my,mz,ntestfield)*one'
+;varcontent[iuxb].idlvarloc  = 'uxb_loc'
+;varcontent[iuxb].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestfield)*one'
+;varcontent[iuxb].skip       = ntestfield-1
 ;
 default, iuun, 0
 varcontent[iuun].variable   = 'Velocity of neutrals (uun)'
