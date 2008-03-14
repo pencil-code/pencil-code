@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.70 2008-03-13 13:19:11 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.71 2008-03-14 14:26:00 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -45,6 +45,8 @@ module Particles_nbody
 
   integer :: iglobal_ggp=0,istar=1,imass=0
 
+  integer :: maxsink=10*nspar
+
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
        pmass, r_smooth, lcylindrical_gravity_nbody, &
@@ -82,7 +84,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.70 2008-03-13 13:19:11 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.71 2008-03-14 14:26:00 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -1349,19 +1351,29 @@ module Particles_nbody
 !***********************************************************************
     subroutine create_sink_particle(f,fp,dfp,ineargrid,p)
 !
+      use Mpicomm
+!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mpar_loc,mpvar) :: fp,dfp
+      real, dimension(maxsink,mpvar+1) :: fcsp
       real, dimension(nx,3) :: vvpm
       real, dimension(nx) :: rho_jeans,rho_jeans_dust,vpm2
       real, dimension(nx), save :: Delta1
 !
       integer, dimension(nx,mpar_loc) :: pik
       integer, dimension(mpar_loc,3) :: ineargrid
-      integer :: i,k,kn,ixx,inx0
+      integer :: i,k,kn,inx0,kc,j,np,ns
+
+      integer :: iz0,iy0,ipz_rec,ipy_rec,nc,iproc_rec,iroot
+      real :: dy1,dz1
+      integer, dimension(0:ncpus-1) :: nsmig
+      real, dimension(0:ncpus-1,nspar,mpvar) :: fcsp_mig      
 !
       logical :: lfirstcall=.true.
       type (pencil_case) :: p
 !
+      dy1=1/dy; dz1=1/dz
+      iroot=0
       if (lfirstcall) then 
         do i=1,nx
           if (lcartesian_coords) then 
@@ -1376,6 +1388,10 @@ module Particles_nbody
         lfirstcall=.false.
       endif
 !
+! start number of created particles
+!
+      nc=0
+!
 ! Jeans analysis of the Gas
 !
 ! The Jeans length is lambda_J = sqrt(pi*cs2/(G*rho))
@@ -1387,44 +1403,41 @@ module Particles_nbody
 ! The constant is a free parameter of the module
 !
       rho_jeans = create_jeans_constant*pi*p%cs2*GNewton1*Delta1**2 
-!      
+!
       do i=1,nx
-        ixx=l1+i-1
         if (p%rho(i).gt.rho_jeans(i)) then 
 !
 ! create a new particle at the center of the grid
 !
-          npar_loc=npar_loc+1
-          fp(npar_loc,ixp) = x(ixx)
-          fp(npar_loc,iyp) = y( m )
-          fp(npar_loc,izp) = z( n )
+          nc=nc+1
+!
+! check if we are not creating too many particles
+!
+          if (nc>maxsink) then
+            print*,'too many sink particles were created. Stop and allocated more'
+            print*,'nc,maxsink=',nc,maxsink
+            call fatal_error("create_sink_particles","")
+          endif
+!
+          fcsp(nc,ixp) = x(i+nghost)
+          fcsp(nc,iyp) = y(m)
+          fcsp(nc,izp) = z(n)
 !
 ! give it the velocity of the grid cell
 !
-          fp(npar_loc,ivpx:ivpz) = p%uu(i,:)
-!
-! make this particle a sink
-!           
-          mspar=mspar+1
-          fsp(mspar,ixp:ivpz)=fp(npar_loc,:)
-          ipar_sink(mspar)   = ipar(npar_loc)
+          fcsp(nc,ivpx:ivpz) = p%uu(i,:)
 !          
 ! the mass of the new particle is the 
 ! collapsed mass m=[rho - rho_jeans]*dV
 !
-          fsp(mspar,imass)   = (p%rho(i)-rho_jeans(i))*dvolume(i)
+          fcsp(nc,imass)   = (p%rho(i)-rho_jeans(i))*dvolume(i)
 !
 ! and that amount was lost by the grid, so only rho_jeans remains
 !
           if (ldensity_nolog) then 
-            f(ixx,m,n,ilnrho) = rho_jeans(i)
+            f(i+nghost,m,n,ilnrho) = rho_jeans(i)
           else 
-            f(ixx,m,n,ilnrho) = log(rho_jeans(i))
-          endif
-!
-          if (mspar>nspar) then 
-            print*,'too many sink particles were created. Stop and allocated more'
-            call fatal_error("create_sink_particles","")
+            f(i+nghost,m,n,ilnrho) = log(rho_jeans(i))
           endif
 !         
         endif
@@ -1481,43 +1494,260 @@ module Particles_nbody
 !
 ! create a new particle at the center of the grid
 !
-            npar_loc=npar_loc+1
-            ixx=l1+i-1
-            fp(npar_loc,ixp) = x(ixx)
-            fp(npar_loc,iyp) = y( m )
-            fp(npar_loc,izp) = z( n )
+            nc=nc+1
+!
+! check if we are not making too many particles
+!
+            if (nc>maxsink) then
+              print*,'too many sink particles were created. Stop and allocated more'
+              print*,'nc,maxsink=',nc,maxsink
+              call fatal_error("create_sink_particles","")
+            endif
+!
+            fcsp(nc,ixp) = x(i+nghost)
+            fcsp(nc,iyp) = y(m)
+            fcsp(nc,izp) = z(n)
 !
 ! give it the mean velocity of the group of particles that 
 ! was accreted
 !
-          fp(npar_loc,ivpx:ivpz) = vvpm(i,:)
-!
-! make this particle a sink
-!           
-          mspar=mspar+1
-          fsp(mspar,ixp:ivpz)=fp(npar_loc,:)
-          ipar_sink(mspar)   = ipar(npar_loc)
+          fcsp(nc,ivpx:ivpz) = vvpm(i,:)
 !          
 ! the mass of the new particle is the 
 ! collapsed mass M=m_particle*np
 !
-          fsp(mspar,imass)   = mp_tilde*p%np(i)
-!
-          if (mspar>nspar) then 
-            print*,'too many sink particles were created. Stop and allocated more'
-            call fatal_error("create_sink_particles","")
-          endif
+          fcsp(nc,imass)    = mp_tilde*p%np(i)
 !         
         endif
       enddo
 !
     endif !if (ldust)
+!   
+! Broadcast the created particles
 !
-! Share the new sinks among the processors
+    do kc=1,nc
+      call mpibcast_real(fcsp(kc,:),mpvar+1)
+    enddo
 !
-      call share_sinkparticles(fp)
+! The root processor merges them with the friends of friends algorithm
+!    
+    if (lroot) then
+! 
+      call friends_of_friends(fcsp,nc)
+
+      if (mspar>nspar) then 
+        print*,'too many sink particles were created. Stop and allocated more'
+        call fatal_error("create_sink_particles","")
+      endif
+!
+! Friends of friends merged the created particles into few massive
+! clusters. These new clusters are truly sinks.
+!
+      mspar=mspar+nc
+      fsp(mspar-nc+1:mspar,:) = fcsp(1:nc,:)
+!
+! Send the created particles to the processor where it came from
+!  
+      do kc=1,nc
+        ipy_rec=ipy
+        iy0=nint((fcsp(kc,iyp)-xyz0(2))*dy1)+1
+        do while (iy0>ny)
+          ipy_rec=ipy_rec+1
+          iy0=iy0-ny
+        enddo
+        
+        ipz_rec=ipz
+        iz0=nint((fcsp(kc,izp)-xyz0(3))*dz1)+1
+        do while (iz0>nz)
+          ipz_rec=ipz_rec+1
+          iz0=iz0-nz
+        enddo
+        !  Calculate serial index of receiving processor.
+        iproc_rec=ipy_rec+nprocy*ipz_rec
+
+        if (iproc_rec/=iproc) then
+          !prepare for migration
+          nsmig(iproc_rec)=nsmig(iproc_rec)+1
+          fcsp_mig(iproc_rec,nsmig(iproc_rec),:)=fcsp(kc,1:mpvar)
+        else
+          !the particle is in the root processor
+          !create the particle here
+          npar_loc=npar_loc+1
+          fp(npar_loc,:)=fcsp(kc,1:mpvar)
+        endif  
+      enddo
+    endif
+
+    !info about migrating sinks particles
+    if (lroot) then 
+      do j=1,ncpus-1
+        call mpisend_int(nsmig(j), 1, j, 111)
+      enddo
+    else
+      call mpirecv_int(nsmig(iproc), 1, iroot, 111)
+    endif
+! directed send
+    if (lroot) then
+      do j=1,ncpus-1
+        ns=nsmig(j)
+        if (ns/=0) &
+             call mpisend_real(fcsp_mig(j,1:ns,:), (/ns,mpvar/), j, 222)
+      enddo
+    else
+      np=npar_loc
+      ns=nsmig(iproc)
+      if (ns/=0) &
+           call mpirecv_real(fp(np+1:np+ns,:),(/ns,mpvar/),iroot,222)
+    endif
 !
     endsubroutine create_sink_particle
+!***********************************************************************
+    subroutine friends_of_friends(fcsp,nc)
+!
+      real,    dimension(maxsink,mpvar+1) :: fcsp
+      integer, dimension(nc,nc)           :: clusters 
+      integer, dimension(nc)              :: cluster 
+      logical, dimension(nc)              :: lchecked
+      
+      integer :: ks,nc,nf,nclusters
+      integer :: min_number_members
+
+      intent(in) :: nc
+!
+      min_number_members=3
+!
+!  All particles are initially unchecked
+!
+      lchecked(1:nc)=.false.
+!
+!  No clusters yet, counter is zero 
+!
+      nclusters=0 
+!
+! Loop through the particles to cluster them
+!
+      do ks=1,nc
+        if (.not.lchecked(ks)) then
+!
+! If a particle is unchecked particle, start a new cluster
+!
+          nclusters=nclusters+1 
+!
+! Make the cluster 
+!          
+          call make_cluster(ks,lchecked,cluster,nc,nf,fcsp)
+!
+! Cluster done, fill up the clusters array with it
+!          
+          if (nf >= min_number_members) & 
+               clusters(1:nf,nclusters)=cluster(1:nf)
+!
+        endif
+      enddo
+!
+    endsubroutine friends_of_friends
+!***********************************************************************
+    subroutine make_cluster(ks,lchecked,cluster,nc,nf,fcsp)
+!
+      real,    dimension(maxsink,mpvar+1)   :: fcsp
+      integer, intent(inout), dimension(nc) :: cluster 
+      logical, intent(inout), dimension(nc) :: lchecked
+      integer, intent(in)  :: ks,nc
+      integer, intent(out) :: nf
+!
+      integer :: ic
+!
+! Start the cluster counter and add the first particle
+!
+      ic=1 
+      cluster(ic)=ks
+!
+! Tag the particles as checked. The subroutine will also
+! loop through its friends and friends of friends
+!
+      call check_particle(ks,lchecked,cluster,ic,nc,fcsp)
+!
+! When it ends this loop, the cluster is done. Nf is the final 
+! number of members in the cluster
+!
+      nf=ic
+!
+    endsubroutine make_cluster
+!***********************************************************************
+    subroutine check_particle(k,lchecked,cluster,ic,nc,fcsp)
+!
+      real,    dimension(maxsink,mpvar+1)   :: fcsp
+      integer, intent(inout), dimension(nc) :: cluster 
+      logical, intent(inout), dimension(nc) :: lchecked
+      integer, intent(inout) :: ic
+      integer, intent(in) :: k,nc
+!
+! Add the particle to the cluster
+!
+      ic=ic+1
+      cluster(ic)=k
+!
+! Tag it as visited and add its friends to the cluster 
+! as well
+!
+      lchecked(k)=.true.
+      call add_friends(k,lchecked,cluster,ic,nc,fcsp)
+!
+    endsubroutine check_particle
+!***********************************************************************
+    subroutine add_friends(par,lchecked,cluster,ic,nc,fcsp)
+!
+      real,    dimension(maxsink,mpvar+1)   :: fcsp
+      logical, intent(inout), dimension(nc) :: lchecked
+      integer, intent(inout), dimension(nc) :: cluster
+      integer, intent(inout)                :: ic
+      integer, intent(in)                   :: par,nc
+!
+      real, dimension(3) :: evr
+      real    :: e1,e2,e3,e10,e20,e30
+      real    :: dist,link_length
+      integer :: k      
+!
+! linking length 
+!
+      link_length=4.*dx
+!
+! Loop through the particle
+!
+      do k=1,nc 
+        if (.not.lchecked(k)) then 
+!
+! If not checked, test if the distance is less than the linking length
+!
+          e1=fcsp(k,ixp);e10=fcsp(par,ixp)
+          e2=fcsp(k,iyp);e20=fcsp(par,iyp)
+          e3=fcsp(k,izp);e30=fcsp(par,izp)
+          if (lcartesian_coords) then
+            evr(1) = e1 - e10  
+            evr(2) = e2 - e20  
+            evr(3) = e3 - e30  
+          elseif (lcylindrical_coords) then
+            evr(1) = e1 - e10*cos(e2-e20)  
+            evr(2) = e10*sin(e2-e20)       
+            evr(3) = e3 - e30              
+          elseif (lspherical_coords) then 
+            call fatal_error("add friends","not implemented for spherical polars")
+          endif
+!
+          dist=sqrt(sum(evr**2))
+          if (dist.le.link_length) then 
+!
+! if so, add it to the cluster, tag it and call its friends
+!
+            call check_particle(k,lchecked,cluster,ic,nc,fcsp)
+          endif
+!
+! done
+! 
+        endif
+      enddo
+!
+    endsubroutine add_friends
 !***********************************************************************
     subroutine rprint_particles_nbody(lreset,lwrite)
 !
