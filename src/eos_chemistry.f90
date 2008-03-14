@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.11 2008-03-14 13:04:47 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.12 2008-03-14 13:35:04 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -123,7 +123,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.11 2008-03-14 13:04:47 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.12 2008-03-14 13:35:04 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1113,7 +1113,11 @@ module EquationOfState
             lnrho_=alog(f(l1:l2,m,n,ieosvar1))
           endif
           if (leos_isentropic) then
+           if (.not. lcheminp) then 
             cs2_=exp(gamma1*(lnrho_-lnrho0)+log(cs20))
+           else
+            cs2_=exp(p%gamma1*(lnrho_-lnrho0)+log(cs20))
+           endif  
           elseif (leos_isothermal) then
             cs2_=cs20
           elseif (leos_localisothermal) then
@@ -1124,7 +1128,11 @@ module EquationOfState
         case (mx)
           lnrho_=f(:,m,n,ieosvar1)
           if (leos_isentropic) then
+           if (.not. lcheminp) then 
             cs2_=exp(gamma1*(lnrho_-lnrho0)+log(cs20))
+           else
+            cs2_=exp(p%gamma1*(lnrho_-lnrho0)+log(cs20))
+           endif
           elseif (leos_isothermal) then
             cs2_=cs20
           elseif (leos_localisothermal) then
