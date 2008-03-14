@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.23 2008-03-13 15:46:16 brandenb Exp $
+! $Id: testfield_z.f90,v 1.24 2008-03-14 17:39:00 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -74,12 +74,16 @@ module Testfield
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
   integer :: idiag_alp21=0      ! DIAG_DOC: $\alpha_{21}$
+  integer :: idiag_alp31=0      ! DIAG_DOC: $\alpha_{31}$
   integer :: idiag_alp12=0      ! DIAG_DOC: $\alpha_{12}$
   integer :: idiag_alp22=0      ! DIAG_DOC: $\alpha_{22}$
+  integer :: idiag_alp32=0      ! DIAG_DOC: $\alpha_{32}$
   integer :: idiag_eta11=0      ! DIAG_DOC: $\eta_{113}k$
   integer :: idiag_eta21=0      ! DIAG_DOC: $\eta_{213}k$
+  integer :: idiag_eta31=0      ! DIAG_DOC: $\eta_{313}k$
   integer :: idiag_eta12=0      ! DIAG_DOC: $\eta_{123}k$
   integer :: idiag_eta22=0      ! DIAG_DOC: $\eta_{223}k$
+  integer :: idiag_eta32=0      ! DIAG_DOC: $\eta_{323}k$
   integer :: idiag_b0rms=0      ! DIAG_DOC: $\left<b_{0}^2\right>$
   integer :: idiag_b11rms=0     ! DIAG_DOC: $\left<b_{11}^2\right>$
   integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>$
@@ -127,11 +131,15 @@ module Testfield
       first=.false.
 !
 !  Set first and last index of text field
+!  Note: iaxtest, iaytest, and iaztest are initialized to the first test field.
+!  These values are used in this form in start, but later overwritten.
 !  Here always ltestfield=T
 !
       ltestfield=.true.
       iaatest=nvar+1
       iaxtest=iaatest
+      iaytest=iaatest+1
+      iaztest=iaatest+2
       iaxtestpq=iaatest+3*(njtest-1)
       iaztestpq=iaxtestpq+2
       nvar=nvar+ntestfield
@@ -150,7 +158,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.23 2008-03-13 15:46:16 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.24 2008-03-14 17:39:00 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -368,7 +376,8 @@ module Testfield
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx,3) :: bb,aa,uxB,bbtest,btest,uxbtest,duxbtest
+      real, dimension (nx,3) :: bb,aa,uxB,bbtest=0,btest,uxbtest,duxbtest
+      real, dimension (nx,3) :: J0test,jxb0rtest,J0xbrtest
       real, dimension (nx,3,njtest) :: Eipq,bpq
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
@@ -414,6 +423,7 @@ module Testfield
           case('B11-B21+B=0'); call set_bbtest(bbtest,jtest)
           case('B11-B21'); call set_bbtest_B11_B21(bbtest,jtest)
           case('B11-B22'); call set_bbtest_B11_B22(bbtest,jtest)
+          case('B=0') !(dont do anything)
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
         endselect
@@ -461,11 +471,33 @@ module Testfield
           aatest=f(l1:l2,m,n,iaxtest:iaztest)
           call gij(f,iaxtest,aijtest,1)
           call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest2,graddivatest)
+!
+!  calculate jpq x bpq
+!
           call curl_mn(aijtest,btest,aatest)
           call curl_mn(bijtest,jjtest,btest)
           call cross_mn(jjtest,btest,jxbrtest)
+!
+!  calculate jpq x Bpq
+!
+          call cross_mn(jjtest,bbtest,jxb0rtest)
+!
+!  calculate jpq x Bpq
+!
+          select case(itestfield)
+!           case('B11-B21+B=0'); call set_J0test(J0test,jtest)
+            case('B11-B21'); call set_J0test_B11_B21(J0test,jtest)
+!           case('B11-B22'); call set_J0test_B11_B22(J0test,jtest)
+            case('B=0') !(dont do anything)
+          case default
+            call fatal_error('daatest_dt','undefined itestfield value')
+          endselect
+          call cross_mn(J0test,btest,J0xbrtest)
+!
+!  add them all together
+!
           df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
-            +jxbrtest
+            +jxbrtest+jxb0rtest+J0xbrtest
         endif
 !
 !  calculate alpha, begin by calculating uxbtest (if not already done above)
@@ -516,19 +548,24 @@ module Testfield
 !
         if (idiag_alp11/=0) call sum_mn_name(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2),idiag_alp11)
         if (idiag_alp21/=0) call sum_mn_name(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2),idiag_alp21)
+        if (idiag_alp31/=0) call sum_mn_name(+cz(n)*Eipq(:,3,1)+sz(n)*Eipq(:,3,2),idiag_alp31)
         if (idiag_eta11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))*ktestfield1,idiag_eta11)
         if (idiag_eta21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))*ktestfield1,idiag_eta21)
+        if (idiag_eta31/=0) call sum_mn_name((-sz(n)*Eipq(:,3,1)+cz(n)*Eipq(:,3,2))*ktestfield1,idiag_eta31)
 !
 !  print warning if alp12 and alp12 are needed, but njtest is too small XX
 !
-        if ((idiag_alp12/=0.or.idiag_alp22/=0 &
-         .or.idiag_eta12/=0.or.idiag_eta22/=0).and.njtest<=2) then
-          call stop_it('njtest is too small if alp12, alp22, eta12, or eta22 are needed')
+        if ((idiag_alp12/=0.or.idiag_alp22/=0.or.idiag_alp32/=0 &
+         .or.idiag_eta12/=0.or.idiag_eta22/=0.or.idiag_eta32/=0) &
+         .and.njtest<=2) then
+          call stop_it('njtest is too small if alpi2 or etai2 for i=1,2,3 are needed')
         else
           if (idiag_alp12/=0) call sum_mn_name(+cz(n)*Eipq(:,1,i3)+sz(n)*Eipq(:,1,i4),idiag_alp12)
           if (idiag_alp22/=0) call sum_mn_name(+cz(n)*Eipq(:,2,i3)+sz(n)*Eipq(:,2,i4),idiag_alp22)
+          if (idiag_alp32/=0) call sum_mn_name(+cz(n)*Eipq(:,3,i3)+sz(n)*Eipq(:,3,i4),idiag_alp32)
           if (idiag_eta12/=0) call sum_mn_name((-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta12)
           if (idiag_eta22/=0) call sum_mn_name((-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta22)
+          if (idiag_eta32/=0) call sum_mn_name((-sz(n)*Eipq(:,3,i3)+cz(n)*Eipq(:,3,i4))*ktestfield1,idiag_eta32)
         endif
 !
 !  rms values of small scales fields bpq in response to the test fields Bpq
@@ -761,6 +798,31 @@ module Testfield
 !
     endsubroutine set_bbtest_B11_B21
 !***********************************************************************
+    subroutine set_J0test_B11_B21 (J0test,jtest)
+!
+!  set testfield
+!
+!   3-jun-05/axel: coded
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (nx,3) :: J0test
+      integer :: jtest
+!
+      intent(in)  :: jtest
+      intent(out) :: J0test
+!
+!  set J0test for each of the 9 cases
+!
+      select case(jtest)
+      case(1); J0test(:,1)=0.; J0test(:,2)=-ktestfield*sz(n); J0test(:,3)=0.
+      case(2); J0test(:,1)=0.; J0test(:,2)=+ktestfield*cz(n); J0test(:,3)=0.
+      case default; J0test(:,:)=0.
+      endselect
+!
+    endsubroutine set_J0test_B11_B21
+!***********************************************************************
     subroutine set_bbtest_B11_B22 (bbtest,jtest)
 !
 !  set testfield
@@ -812,8 +874,10 @@ module Testfield
         idiag_E111z=0; idiag_E211z=0; idiag_E311z=0
         idiag_E121z=0; idiag_E221z=0; idiag_E321z=0
         idiag_E10z=0; idiag_E20z=0; idiag_E30z=0
-        idiag_alp11=0; idiag_alp21=0; idiag_alp12=0; idiag_alp22=0
-        idiag_eta11=0; idiag_eta21=0; idiag_eta12=0; idiag_eta22=0
+        idiag_alp11=0; idiag_alp21=0; idiag_alp31=0
+        idiag_alp12=0; idiag_alp22=0; idiag_alp32=0
+        idiag_eta11=0; idiag_eta21=0; idiag_eta31=0
+        idiag_eta12=0; idiag_eta22=0; idiag_eta32=0
         idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0; idiag_b0rms=0
       endif
 !
@@ -822,12 +886,16 @@ module Testfield
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'alp11',idiag_alp11)
         call parse_name(iname,cname(iname),cform(iname),'alp21',idiag_alp21)
+        call parse_name(iname,cname(iname),cform(iname),'alp31',idiag_alp31)
         call parse_name(iname,cname(iname),cform(iname),'alp12',idiag_alp12)
         call parse_name(iname,cname(iname),cform(iname),'alp22',idiag_alp22)
+        call parse_name(iname,cname(iname),cform(iname),'alp32',idiag_alp32)
         call parse_name(iname,cname(iname),cform(iname),'eta11',idiag_eta11)
         call parse_name(iname,cname(iname),cform(iname),'eta21',idiag_eta21)
+        call parse_name(iname,cname(iname),cform(iname),'eta31',idiag_eta31)
         call parse_name(iname,cname(iname),cform(iname),'eta12',idiag_eta12)
         call parse_name(iname,cname(iname),cform(iname),'eta22',idiag_eta22)
+        call parse_name(iname,cname(iname),cform(iname),'eta32',idiag_eta32)
         call parse_name(iname,cname(iname),cform(iname),'b11rms',idiag_b11rms)
         call parse_name(iname,cname(iname),cform(iname),'b21rms',idiag_b21rms)
         call parse_name(iname,cname(iname),cform(iname),'b12rms',idiag_b12rms)
@@ -863,12 +931,16 @@ module Testfield
       if (lwr) then
         write(3,*) 'idiag_alp11=',idiag_alp11
         write(3,*) 'idiag_alp21=',idiag_alp21
+        write(3,*) 'idiag_alp31=',idiag_alp31
         write(3,*) 'idiag_alp12=',idiag_alp12
         write(3,*) 'idiag_alp22=',idiag_alp22
+        write(3,*) 'idiag_alp32=',idiag_alp32
         write(3,*) 'idiag_eta11=',idiag_eta11
         write(3,*) 'idiag_eta21=',idiag_eta21
+        write(3,*) 'idiag_eta31=',idiag_eta31
         write(3,*) 'idiag_eta12=',idiag_eta12
         write(3,*) 'idiag_eta22=',idiag_eta22
+        write(3,*) 'idiag_eta32=',idiag_eta32
         write(3,*) 'idiag_b0rms=',idiag_b0rms
         write(3,*) 'idiag_b11rms=',idiag_b11rms
         write(3,*) 'idiag_b21rms=',idiag_b21rms

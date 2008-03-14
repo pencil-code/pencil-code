@@ -1,4 +1,4 @@
-! $Id: testflow_z.f90,v 1.2 2008-03-13 15:46:16 brandenb Exp $
+! $Id: testflow_z.f90,v 1.3 2008-03-14 17:39:00 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -34,10 +34,10 @@ module Testflow
 !
 ! Slice precalculation buffers
 !
-  real, target, dimension (nx,ny,3) :: bb11_xy
-  real, target, dimension (nx,ny,3) :: bb11_xy2
-  real, target, dimension (nx,nz,3) :: bb11_xz
-  real, target, dimension (ny,nz,3) :: bb11_yz
+  real, target, dimension (nx,ny,3) :: uu11_xy
+  real, target, dimension (nx,ny,3) :: uu11_xy2
+  real, target, dimension (nx,nz,3) :: uu11_xz
+  real, target, dimension (ny,nz,3) :: uu11_yz
 !
 !  cosine and sine function for setting test fields and analysis
 !
@@ -81,11 +81,11 @@ module Testflow
   integer :: idiag_eta21=0      ! DIAG_DOC: $\eta_{213}k$
   integer :: idiag_eta12=0      ! DIAG_DOC: $\eta_{123}k$
   integer :: idiag_eta22=0      ! DIAG_DOC: $\eta_{223}k$
-  integer :: idiag_b0rms=0      ! DIAG_DOC: $\left<b_{0}^2\right>$
-  integer :: idiag_b11rms=0     ! DIAG_DOC: $\left<b_{11}^2\right>$
-  integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>$
-  integer :: idiag_b12rms=0     ! DIAG_DOC: $\left<b_{12}^2\right>$
-  integer :: idiag_b22rms=0     ! DIAG_DOC: $\left<b_{22}^2\right>$
+  integer :: idiag_u0rms=0      ! DIAG_DOC: $\left<u_{0}^2\right>$
+  integer :: idiag_u11rms=0     ! DIAG_DOC: $\left<u_{11}^2\right>$
+  integer :: idiag_u21rms=0     ! DIAG_DOC: $\left<u_{21}^2\right>$
+  integer :: idiag_u12rms=0     ! DIAG_DOC: $\left<u_{12}^2\right>$
+  integer :: idiag_u22rms=0     ! DIAG_DOC: $\left<u_{22}^2\right>$
   integer :: idiag_E111z=0      ! DIAG_DOC: ${\cal E}_1^{11}$
   integer :: idiag_E211z=0      ! DIAG_DOC: ${\cal E}_2^{11}$
   integer :: idiag_E311z=0      ! DIAG_DOC: ${\cal E}_3^{11}$
@@ -101,9 +101,9 @@ module Testflow
   integer :: idiag_E10z=0       ! DIAG_DOC: ${\cal E}_1^{0}$
   integer :: idiag_E20z=0       ! DIAG_DOC: ${\cal E}_2^{0}$
   integer :: idiag_E30z=0       ! DIAG_DOC: ${\cal E}_3^{0}$
-  integer :: idiag_bx0mz=0      ! DIAG_DOC: $\left<b_{x}\right>_{xy}$
-  integer :: idiag_by0mz=0      ! DIAG_DOC: $\left<b_{y}\right>_{xy}$
-  integer :: idiag_bz0mz=0      ! DIAG_DOC: $\left<b_{z}\right>_{xy}$
+  integer :: idiag_ux0mz=0      ! DIAG_DOC: $\left<u_{x}\right>_{xy}$
+  integer :: idiag_uy0mz=0      ! DIAG_DOC: $\left<u_{y}\right>_{xy}$
+  integer :: idiag_uz0mz=0      ! DIAG_DOC: $\left<u_{z}\right>_{xy}$
 
 ! real, dimension (mz,4,ntestflow/4) :: uxbtestm
 
@@ -157,7 +157,7 @@ module Testflow
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testflow_z.f90,v 1.2 2008-03-13 15:46:16 brandenb Exp $")
+           "$Id: testflow_z.f90,v 1.3 2008-03-14 17:39:00 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -265,7 +265,7 @@ module Testflow
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz,tmp,prof
-      real, dimension (nx,3) :: bb
+!     real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact
       real :: beq2
       integer :: j
@@ -380,12 +380,13 @@ module Testflow
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx,3) :: bb,aa,uxB,uutest,btest,uxbtest,duxbtest
-      real, dimension (nx,3,njtest) :: Eipq,bpq
+!     real, dimension (nx,3) :: bb,aa,uxB,uutest,btest,uxbtest,duxbtest
+      real, dimension (nx,3) :: aa,uxB,uutest,btest,uxbtest,duxbtest
+      real, dimension (nx,3,njtest) :: Eipq,upq
       real, dimension (nx,3,3) :: uijtest
       real, dimension (nx,3) :: uutest_dot_guutest
       real, dimension (nx,3) :: del2utest,uufluct,ghhtest
-      real, dimension (nx) :: bpq2,uutest_dot_ghhtest,divuutest
+      real, dimension (nx) :: upq2,uutest_dot_ghhtest,divuutest
       integer :: jtest,jfnamez,j,i3,i4
       integer,save :: ifirst=0
       logical,save :: ltest_uxb=.false.
@@ -425,9 +426,13 @@ module Testflow
         iuztest=iuxtest+2
         ihhtest=iuxtest+3
 !
-!  velocity gradient matrix and u.gradu term
+!  velocity vector
 !
         uutest=f(l1:l2,m,n,iuxtest:iuztest)
+        upq(:,:,jtest)=uutest
+!
+!  velocity gradient matrix and u.gradu term
+!
         call gij(f,iuxtest,uijtest,1)
         call div_mn(uijtest,divuutest,uutest)
         call u_dot_grad(f,iuxtest,uijtest,uutest,uutest_dot_guutest)
@@ -498,15 +503,14 @@ module Testflow
 !         call curl(f,iuxtest,btest)
 !         call cross_mn(p%uu,btest,uxbtest)
 !       endif
-!       bpq(:,:,jtest)=btest
 !       Eipq(:,:,jtest)=uxbtest/bamp
 !
 !  check for testflow timestep
 !
         if (lfirst.and.ldt) then
-          advec_uu=abs(uutest(:,1))*dx_1(l1:l2)+ &
-                   abs(uutest(:,2))*dy_1(  m  )+ &
-                   abs(uutest(:,3))*dz_1(  n  )
+          advec_uu=max(advec_uu,abs(uutest(:,1))*dx_1(l1:l2)+ &
+                                abs(uutest(:,2))*dy_1(  m  )+ &
+                                abs(uutest(:,3))*dz_1(  n  ))
         endif
       enddo
 !
@@ -514,8 +518,8 @@ module Testflow
 !  and whatever is calculated here. Check also for testsound timestep.
 !
       if (lfirst.and.ldt) then
-        advec_cs2=cs2test*dxyz_2
-        diffus_eta=max(diffus_eta,nutest*dxyz_2)
+        advec_cs2=max(advec_cs2,cs2test*dxyz_2)
+        diffus_nu=max(diffus_nu,nutest*dxyz_2)
       endif
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9
@@ -525,9 +529,9 @@ module Testflow
       i3=3
       i4=4
       if (ldiagnos) then
-        if (idiag_bx0mz/=0) call xysum_mn_name_z(bpq(:,1,i3),idiag_bx0mz)
-        if (idiag_by0mz/=0) call xysum_mn_name_z(bpq(:,2,i3),idiag_by0mz)
-        if (idiag_bz0mz/=0) call xysum_mn_name_z(bpq(:,3,i3),idiag_bz0mz)
+        if (idiag_ux0mz/=0) call xysum_mn_name_z(upq(:,1,i3),idiag_ux0mz)
+        if (idiag_uy0mz/=0) call xysum_mn_name_z(upq(:,2,i3),idiag_uy0mz)
+        if (idiag_uz0mz/=0) call xysum_mn_name_z(upq(:,3,i3),idiag_uz0mz)
         if (idiag_E111z/=0) call xysum_mn_name_z(Eipq(:,1,1),idiag_E111z)
         if (idiag_E211z/=0) call xysum_mn_name_z(Eipq(:,2,1),idiag_E211z)
         if (idiag_E311z/=0) call xysum_mn_name_z(Eipq(:,3,1),idiag_E311z)
@@ -563,33 +567,33 @@ module Testflow
           if (idiag_eta22/=0) call sum_mn_name((-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta22)
         endif
 !
-!  rms values of small scales fields bpq in response to the test fields Bpq
-!  Obviously idiag_b0rms and idiag_b12rms cannot both be invoked!
+!  rms values of small scales fields upq in response to the test fields Bpq
+!  Obviously idiag_u0rms and idiag_u12rms cannot both be invoked!
 !  Needs modification!
 !
-        if (idiag_b0rms/=0) then
-          call dot2(bpq(:,:,i3),bpq2)
-          call sum_mn_name(bpq2,idiag_b0rms,lsqrt=.true.)
+        if (idiag_u0rms/=0) then
+          call dot2(upq(:,:,i3),upq2)
+          call sum_mn_name(upq2,idiag_u0rms,lsqrt=.true.)
         endif
 !
-        if (idiag_b11rms/=0) then
-          call dot2(bpq(:,:,1),bpq2)
-          call sum_mn_name(bpq2,idiag_b11rms,lsqrt=.true.)
+        if (idiag_u11rms/=0) then
+          call dot2(upq(:,:,1),upq2)
+          call sum_mn_name(upq2,idiag_u11rms,lsqrt=.true.)
         endif
 !
-        if (idiag_b21rms/=0) then
-          call dot2(bpq(:,:,2),bpq2)
-          call sum_mn_name(bpq2,idiag_b21rms,lsqrt=.true.)
+        if (idiag_u21rms/=0) then
+          call dot2(upq(:,:,2),upq2)
+          call sum_mn_name(upq2,idiag_u21rms,lsqrt=.true.)
         endif
 !
-        if (idiag_b12rms/=0) then
-          call dot2(bpq(:,:,i3),bpq2)
-          call sum_mn_name(bpq2,idiag_b12rms,lsqrt=.true.)
+        if (idiag_u12rms/=0) then
+          call dot2(upq(:,:,i3),upq2)
+          call sum_mn_name(upq2,idiag_u12rms,lsqrt=.true.)
         endif
 !
-        if (idiag_b22rms/=0) then
-          call dot2(bpq(:,:,i4),bpq2)
-          call sum_mn_name(bpq2,idiag_b22rms,lsqrt=.true.)
+        if (idiag_u22rms/=0) then
+          call dot2(upq(:,:,i4),upq2)
+          call sum_mn_name(upq2,idiag_u22rms,lsqrt=.true.)
         endif
 !
       endif
@@ -599,10 +603,10 @@ module Testflow
 ! 
       if (lvid.and.lfirst) then
         do j=1,3
-          bb11_yz(m-m1+1,n-n1+1,j)=bpq(ix_loc-l1+1,j,1)
-          if (m==iy_loc)  bb11_xz(:,n-n1+1,j)=bpq(:,j,1)
-          if (n==iz_loc)  bb11_xy(:,m-m1+1,j)=bpq(:,j,1)
-          if (n==iz2_loc) bb11_xy2(:,m-m1+1,j)=bpq(:,j,1)
+          uu11_yz(m-m1+1,n-n1+1,j)=upq(ix_loc-l1+1,j,1)
+          if (m==iy_loc)  uu11_xz(:,n-n1+1,j)=upq(:,j,1)
+          if (n==iz_loc)  uu11_xy(:,m-m1+1,j)=upq(:,j,1)
+          if (n==iz2_loc) uu11_xy2(:,m-m1+1,j)=upq(:,j,1)
         enddo
       endif
 !
@@ -643,15 +647,15 @@ module Testflow
 !
 !  Magnetic field (derived variable)
 !
-        case ('bb11')
+        case ('uu11')
           if (slices%index >= 3) then
             slices%ready = .false.
           else
             slices%index = slices%index+1
-            slices%yz=>bb11_yz(:,:,slices%index)
-            slices%xz=>bb11_xz(:,:,slices%index)
-            slices%xy=>bb11_xy(:,:,slices%index)
-            slices%xy2=>bb11_xy2(:,:,slices%index)
+            slices%yz=>uu11_yz(:,:,slices%index)
+            slices%xz=>uu11_xz(:,:,slices%index)
+            slices%xy=>uu11_xy(:,:,slices%index)
+            slices%xy2=>uu11_xy2(:,:,slices%index)
             if (slices%index < 3) slices%ready = .true.
           endif
       endselect
@@ -740,7 +744,7 @@ module Testflow
 !
     endsubroutine calc_ltestflow_pars
 !***********************************************************************
-    subroutine set_bbtest(bbtest,jtest)
+    subroutine set_uutest(uutest,jtest)
 !
 !  set testflow
 !
@@ -749,24 +753,24 @@ module Testflow
       use Cdata
       use Sub
 !
-      real, dimension (nx,3) :: bbtest
+      real, dimension (nx,3) :: uutest
       integer :: jtest
 !
       intent(in)  :: jtest
-      intent(out) :: bbtest
+      intent(out) :: uutest
 !
-!  set bbtest for each of the 9 cases
+!  set uutest for each of the 9 cases
 !
       select case(jtest)
-      case(1); bbtest(:,1)=cz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(2); bbtest(:,1)=sz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(3); bbtest(:,1)=0.   ; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case default; bbtest(:,:)=0.
+      case(1); uutest(:,1)=cz(n); uutest(:,2)=0.; uutest(:,3)=0.
+      case(2); uutest(:,1)=sz(n); uutest(:,2)=0.; uutest(:,3)=0.
+      case(3); uutest(:,1)=0.   ; uutest(:,2)=0.; uutest(:,3)=0.
+      case default; uutest(:,:)=0.
       endselect
 !
-    endsubroutine set_bbtest
+    endsubroutine set_uutest
 !***********************************************************************
-    subroutine set_bbtest_B11_B21 (bbtest,jtest)
+    subroutine set_uutest_B11_B21 (uutest,jtest)
 !
 !  set testflow
 !
@@ -775,23 +779,23 @@ module Testflow
       use Cdata
       use Sub
 !
-      real, dimension (nx,3) :: bbtest
+      real, dimension (nx,3) :: uutest
       integer :: jtest
 !
       intent(in)  :: jtest
-      intent(out) :: bbtest
+      intent(out) :: uutest
 !
-!  set bbtest for each of the 9 cases
+!  set uutest for each of the 9 cases
 !
       select case(jtest)
-      case(1); bbtest(:,1)=cz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(2); bbtest(:,1)=sz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case default; bbtest(:,:)=0.
+      case(1); uutest(:,1)=cz(n); uutest(:,2)=0.; uutest(:,3)=0.
+      case(2); uutest(:,1)=sz(n); uutest(:,2)=0.; uutest(:,3)=0.
+      case default; uutest(:,:)=0.
       endselect
 !
-    endsubroutine set_bbtest_B11_B21
+    endsubroutine set_uutest_B11_B21
 !***********************************************************************
-    subroutine set_bbtest_B11_B22 (bbtest,jtest)
+    subroutine set_uutest_B11_B22 (uutest,jtest)
 !
 !  set testflow
 !
@@ -800,23 +804,23 @@ module Testflow
       use Cdata
       use Sub
 !
-      real, dimension (nx,3) :: bbtest
+      real, dimension (nx,3) :: uutest
       integer :: jtest
 !
       intent(in)  :: jtest
-      intent(out) :: bbtest
+      intent(out) :: uutest
 !
-!  set bbtest for each of the 9 cases
+!  set uutest for each of the 9 cases
 !
       select case(jtest)
-      case(1); bbtest(:,1)=bamp*cz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(2); bbtest(:,1)=bamp*sz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(3); bbtest(:,1)=0.; bbtest(:,2)=bamp*cz(n); bbtest(:,3)=0.
-      case(4); bbtest(:,1)=0.; bbtest(:,2)=bamp*sz(n); bbtest(:,3)=0.
-      case default; bbtest(:,:)=0.
+      case(1); uutest(:,1)=bamp*cz(n); uutest(:,2)=0.; uutest(:,3)=0.
+      case(2); uutest(:,1)=bamp*sz(n); uutest(:,2)=0.; uutest(:,3)=0.
+      case(3); uutest(:,1)=0.; uutest(:,2)=bamp*cz(n); uutest(:,3)=0.
+      case(4); uutest(:,1)=0.; uutest(:,2)=bamp*sz(n); uutest(:,3)=0.
+      case default; uutest(:,:)=0.
       endselect
 !
-    endsubroutine set_bbtest_B11_B22
+    endsubroutine set_uutest_B11_B22
 !***********************************************************************
     subroutine rprint_testflow(lreset,lwrite)
 !
@@ -838,13 +842,13 @@ module Testflow
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_bx0mz=0; idiag_by0mz=0; idiag_bz0mz=0
+        idiag_ux0mz=0; idiag_uy0mz=0; idiag_uz0mz=0
         idiag_E111z=0; idiag_E211z=0; idiag_E311z=0
         idiag_E121z=0; idiag_E221z=0; idiag_E321z=0
         idiag_E10z=0; idiag_E20z=0; idiag_E30z=0
         idiag_alp11=0; idiag_alp21=0; idiag_alp12=0; idiag_alp22=0
         idiag_eta11=0; idiag_eta21=0; idiag_eta12=0; idiag_eta22=0
-        idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0; idiag_b0rms=0
+        idiag_u11rms=0; idiag_u21rms=0; idiag_u12rms=0; idiag_u22rms=0; idiag_u0rms=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -858,19 +862,19 @@ module Testflow
         call parse_name(iname,cname(iname),cform(iname),'eta21',idiag_eta21)
         call parse_name(iname,cname(iname),cform(iname),'eta12',idiag_eta12)
         call parse_name(iname,cname(iname),cform(iname),'eta22',idiag_eta22)
-        call parse_name(iname,cname(iname),cform(iname),'b11rms',idiag_b11rms)
-        call parse_name(iname,cname(iname),cform(iname),'b21rms',idiag_b21rms)
-        call parse_name(iname,cname(iname),cform(iname),'b12rms',idiag_b12rms)
-        call parse_name(iname,cname(iname),cform(iname),'b22rms',idiag_b22rms)
-        call parse_name(iname,cname(iname),cform(iname),'b0rms',idiag_b0rms)
+        call parse_name(iname,cname(iname),cform(iname),'u11rms',idiag_u11rms)
+        call parse_name(iname,cname(iname),cform(iname),'u21rms',idiag_u21rms)
+        call parse_name(iname,cname(iname),cform(iname),'u12rms',idiag_u12rms)
+        call parse_name(iname,cname(iname),cform(iname),'u22rms',idiag_u22rms)
+        call parse_name(iname,cname(iname),cform(iname),'u0rms',idiag_u0rms)
       enddo
 !
 !  check for those quantities for which we want xy-averages
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bx0mz',idiag_bx0mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'by0mz',idiag_by0mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bz0mz',idiag_bz0mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ux0mz',idiag_ux0mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uy0mz',idiag_uy0mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uz0mz',idiag_uz0mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E111z',idiag_E111z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E211z',idiag_E211z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E311z',idiag_E311z)
@@ -899,14 +903,14 @@ module Testflow
         write(3,*) 'idiag_eta21=',idiag_eta21
         write(3,*) 'idiag_eta12=',idiag_eta12
         write(3,*) 'idiag_eta22=',idiag_eta22
-        write(3,*) 'idiag_b0rms=',idiag_b0rms
-        write(3,*) 'idiag_b11rms=',idiag_b11rms
-        write(3,*) 'idiag_b21rms=',idiag_b21rms
-        write(3,*) 'idiag_b12rms=',idiag_b12rms
-        write(3,*) 'idiag_b22rms=',idiag_b22rms
-        write(3,*) 'idiag_bx0mz=',idiag_bx0mz
-        write(3,*) 'idiag_by0mz=',idiag_by0mz
-        write(3,*) 'idiag_bz0mz=',idiag_bz0mz
+        write(3,*) 'idiag_u0rms=',idiag_u0rms
+        write(3,*) 'idiag_u11rms=',idiag_u11rms
+        write(3,*) 'idiag_u21rms=',idiag_u21rms
+        write(3,*) 'idiag_u12rms=',idiag_u12rms
+        write(3,*) 'idiag_u22rms=',idiag_u22rms
+        write(3,*) 'idiag_ux0mz=',idiag_ux0mz
+        write(3,*) 'idiag_uy0mz=',idiag_uy0mz
+        write(3,*) 'idiag_uz0mz=',idiag_uz0mz
         write(3,*) 'idiag_E111z=',idiag_E111z
         write(3,*) 'idiag_E211z=',idiag_E211z
         write(3,*) 'idiag_E311z=',idiag_E311z
