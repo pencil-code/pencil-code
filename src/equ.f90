@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.388 2008-03-12 17:52:36 brandenb Exp $
+! $Id: equ.f90,v 1.389 2008-03-14 17:53:56 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -473,7 +473,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.388 2008-03-12 17:52:36 brandenb Exp $")
+           "$Id: equ.f90,v 1.389 2008-03-14 17:53:56 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -1074,6 +1074,14 @@ module Equ
 !
      if (notanumber(dt1_advec)) then
        print*, 'pde: dt1_advec contains a NaN at iproc=', iproc
+       if (lhydro)           print*, 'advec_uu   =',advec_uu
+       if (lshear)           print*, 'advec_shear=',advec_shear
+       if (lmagnetic)        print*, 'advec_hall =',advec_hall
+       if (lneutralvelocity) print*, 'advec_uun  =',advec_uun
+       if (lentropy)         print*, 'advec_cs2  =',advec_cs2
+       if (lmagnetic)        print*, 'advec_va2  =',advec_va2
+       if (lradiation)       print*, 'advec_crad2=',advec_crad2
+       if (lneutralvelocity) print*, 'advec_csn2 =',advec_csn2
        call fatal_error_local('pde','')
      endif
 !
@@ -1109,6 +1117,10 @@ module Equ
 !  Change dfp according to the chosen particle modules
 !
       if (lparticles) call particles_pde(f,df)
+!
+!  Check if sink particles were created
+!
+      if (lparticles) call particles_create_sinks(f)
 !
 !  in case of lvisc_hyper=true epsK is calculated for the whole array
 !  at not just for one pencil, it must therefore be added outside the

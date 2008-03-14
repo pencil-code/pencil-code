@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.63 2008-03-08 18:15:12 wlyra Exp $
+! $Id: particles_main.f90,v 1.64 2008-03-14 17:53:56 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -395,6 +395,19 @@ module Particles_main
       enddo
 !
     endsubroutine correct_curvilinear
+!***********************************************************************
+    subroutine particles_create_sinks(f)
+!
+! Fetch fp and ineargrid to create sinks
+!
+! 14-mar-08/wlad : coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!     
+      if (lparticles_nbody) &
+           call create_sink_particles(f,fp,ineargrid)
+!
+    endsubroutine particles_create_sinks
 !***********************************************************************
     subroutine read_particles_init_pars_wrap(unit,iostat)
 !

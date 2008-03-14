@@ -1,4 +1,4 @@
-! $Id: noparticles_main.f90,v 1.23 2008-03-08 18:16:48 wlyra Exp $
+! $Id: noparticles_main.f90,v 1.24 2008-03-14 17:53:56 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -221,6 +221,18 @@ module Particles_main
       if (NO_WARN) print*, f, df, p
 !
     endsubroutine particles_pde_pencil
+!***********************************************************************
+    subroutine particles_create_sinks(f)
+!
+! Fetch fp and ineargrid to create_sinks 
+! 
+! 14-mar-08/wlad: dummy 
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      if (NO_WARN) print*,f
+!
+    endsubroutine particles_create_sinks
 !***********************************************************************
     subroutine read_particles_init_pars_wrap(unit,iostat)
 !

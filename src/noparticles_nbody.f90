@@ -1,4 +1,4 @@
-! $Id: noparticles_nbody.f90,v 1.10 2008-03-08 18:16:48 wlyra Exp $
+! $Id: noparticles_nbody.f90,v 1.11 2008-03-14 17:53:56 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -137,6 +137,16 @@ module Particles_nbody
       if (NO_WARN) print*, f, df, fp, dfp, ineargrid
 !
     endsubroutine dvvp_dt_nbody
+!***********************************************************************
+    subroutine create_sink_particles(f,fp,ineargrid)
+!
+      real,    dimension (mx,my,mz,mfarray) :: f
+      real,    dimension (mpar_loc,mpvar)   :: fp
+      integer, dimension (mpar_loc,3)       :: ineargrid
+!
+      if (NO_WARN) print*, f, fp, ineargrid
+!
+    endsubroutine create_sink_particles
 !***********************************************************************
     subroutine calc_nbodygravity_particles(f)
 !
