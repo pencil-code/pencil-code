@@ -13,6 +13,9 @@ use POSIX qw(ceil floor);
 #
 $var1=$ARGV[0];
 $var2=$ARGV[1];
+#
+#  Default x-axis is time.
+#
 if ($var2 eq '') {$var2=$var1; $var1='t';}
 #
 #  Read header and data from time series.
@@ -26,12 +29,9 @@ close TS;
 #
 $header=~ s/#//g;
 $header=~ s/\n//g;
-$header=~ s/ //g;
 $header=~ s/-+/-/g;
 $header=~ s/^-//g;
 $header=~ s/-$//g;
-
-#print $header;
 
 @header=split(/-/, $header);
 #
