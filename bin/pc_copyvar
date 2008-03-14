@@ -1,0 +1,107 @@
+#!/bin/csh
+#  $Id: pc_copyvar,v 1.1 2008-03-14 13:26:47 ajohan Exp $
+#
+#  Author: Anders Johansen
+#
+#  Usage:
+#    pc_copyvar var1 var2 source dest  
+#    pc_copyvar var1 var2 dest  
+#
+#  Example:
+#    pc_copyvar var.dat VAR9 ../othersim
+#      copies all var.dat files from current directory to VAR9 in '../othersim'
+#    pc_copyvar v v onesim othersim
+#      copies all var.dat files from 'onesim' directory to var.dat in 'othersim'
+#    pc_copyvar 8 v onesim othersim
+#      copies all VAR8 files from 'onesim' directory to var.dat in 'othersim'
+#    pc_copyvar v v onesim $USER@server:othersim -cp=scp
+#      copies with scp to other server
+#
+#  Abbreviations:
+#    v, var       - var.dat
+#    naked number - VAR*
+#
+set narg=0
+set cp=cp
+set execute=0
+set e=0
+#
+#  Sort through all command line input.
+#
+foreach block ($argv)
+  if ("$block" =~ -*) then # optional input
+    if ("$block" =~ *=*) then
+      set variable = `perl -e "@a = split /=/, '$block'; print @a[0]"`
+      set value    = `perl -e "@a = split /=/, '$block'; print @a[1]"`
+      set variable = `perl -e "@a = substr('$variable',1); print @a[0]"`
+      set $variable = $value
+    else # option
+      set option   = `perl -e "@a = substr('$block',1); print @a[0]"`
+      set $option
+    endif
+  else # count number of mandatory input slots
+    set narg=`expr $narg + 1`
+  endif
+end
+#
+#  Need at least three fields of mandatory input.
+#
+if ( $narg < 3 ) then
+  echo "usage: pc_copyvar var1 var2 source dest"
+  echo "usage: pc_copyvar var1 var2 dest"
+  exit
+endif
+#
+#  Snapshots names and source and destination directories.
+#
+set var1=$argv[1]
+set var2=$argv[2]
+if ( $narg > 3) then
+  set source=$argv[3]
+  set dest=$argv[4]
+else
+  set dest=$argv[3]
+  set source='.'
+endif
+#
+#  Abbrevations.
+#
+if ($e != 0) then
+  set execute=1
+endif
+if ( $var1 == 'v' || $var1 == 'var' ) then
+  set var1='var.dat'
+endif
+if ( $var2 == 'v' || $var2 == 'var' ) then
+  set var2='var.dat'
+endif
+#
+#  Naked integers get 'VAR' in front.
+#
+set int1=`perl -e '$int = '$var1' =~ /^\d+$/; print $int;'`
+if ( $int1 ) then
+  set var1="VAR$var1"
+endif
+set int2=`perl -e '$int = '$var2' =~ /^\d+$/; print $int;'`
+if ( $int2 ) then
+  set var2="VAR$var2"
+endif
+#
+#  Inform what is about to happen.
+#
+echo ""
+echo "Going to execute"
+echo "  $cp $source/data/proc*/$var1 $dest/data/proc*/$var2"
+#
+#  Only execute the command if -e or -execute=1 is set, to avoid catastrophes.
+#
+if ($execute) then
+  foreach dir ( $source/data/proc* )
+    set procdir=`basename $dir`
+    echo "$cp $dir/$var1 $dest/data/$procdir/$var2"
+    $cp $dir/$var1 $dest/data/$procdir/$var2
+  end
+else
+  echo ""
+  echo "** To really do this, run the same command with -e or -execute=1 **"
+endif
