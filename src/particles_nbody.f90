@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.73 2008-03-14 17:51:53 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.74 2008-03-14 17:58:05 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -84,7 +84,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.73 2008-03-14 17:51:53 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.74 2008-03-14 17:58:05 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -1326,48 +1326,63 @@ module Particles_nbody
 !
     endsubroutine get_total_gravity
 !***********************************************************************
-    subroutine create_sink_particle(f,fp,dfp,ineargrid,p)
+    subroutine create_sink_particles(f,fp,ineargrid)
 !
-      use Mpicomm
+      use EquationOfState, only:cs20
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mpar_loc,mpvar) :: fp,dfp
+      real, dimension(mpar_loc,mpvar) :: fp
       real, dimension(maxsink,mpvar+1) :: fcsp
       real, dimension(nx,3) :: vvpm
       real, dimension(nx) :: rho_jeans,rho_jeans_dust,vpm2
-      real, dimension(nx), save :: Delta1
+      real, dimension(nx) :: Delta1
 !
       integer, dimension(nx,mpar_loc) :: pik
       integer, dimension(mpar_loc,3) :: ineargrid
-      integer :: i,k,kn,inx0,kc,j,np,ns
+      integer :: i,k,kn,inx0,nc
+      integer, pointer :: iglobal_cs2
+!
+      real, dimension(nx)  ::prho,prhop,pnp,pcs2
+      real, dimension(nx,3)::puu
+!
+      do i=1,nx
+        if (lcartesian_coords) then 
+          Delta1(i)=max(dx_1(i),dy_1(mpoint),dz_1(npoint))
+        elseif (lcylindrical_coords) then 
+          Delta1(i)=max(dx_1(i),rcyl_mn1(i)*dy_1(mpoint),dz_1(npoint))
+        elseif (lspherical_coords) then 
+          call fatal_error("create_sink_particle","not yet implemented"//&
+               "for spherical polars")
+        endif
+      enddo
 
-      integer :: iz0,iy0,ipz_rec,ipy_rec,nc,iproc_rec,iroot
-      real :: dy1,dz1
-      integer, dimension(0:ncpus-1) :: nsmig
-      real, dimension(0:ncpus-1,nspar,mpvar) :: fcsp_mig      
+      do n=n1,n2
+        do m=m1,m2
 !
-      logical :: lfirstcall=.true.
-      type (pencil_case) :: p
+! define the "pencils"
 !
-      dy1=1/dy; dz1=1/dz
-      iroot=0
-      if (lfirstcall) then 
-        do i=1,nx
-          if (lcartesian_coords) then 
-            Delta1(i)=max(dx_1(i),dy_1(m),dz_1(n))
-          elseif (lcylindrical_coords) then 
-            Delta1(i)=max(dx_1(i),rcyl_mn1(i)*dy_1(m),dz_1(n))
-          elseif (lspherical_coords) then 
-            call fatal_error("create_sink_particle","not yet implemented"//&
-                 "for spherical polars")
+          if (ldensity_nolog) then 
+            prho=f(l1:l2,m,n,ilnrho)
+          else
+            prho=exp(f(l1:l2,m,n,ilnrho))
           endif
-        enddo
-        lfirstcall=.false.
-      endif
+!
+          if (ldust)  then 
+            prhop=f(l1:l2,m,n,irhop)
+            pnp  =f(l1:l2,m,n,inp)
+          endif
+!
+          if (lhydro) puu=f(l1:l2,m,n,iux:iuz)
+!
+          if (llocal_iso) then 
+            pcs2=f(l1:l2,m,n,iglobal_cs2)
+          else
+            pcs2=cs20
+          endif
 !
 ! start number of created particles
 !
-      nc=0
+          nc=0
 !
 ! Jeans analysis of the Gas
 !
@@ -1379,217 +1394,275 @@ module Particles_nbody
 !
 ! The constant is a free parameter of the module
 !
-      rho_jeans = create_jeans_constant*pi*p%cs2*GNewton1*Delta1**2 
+          rho_jeans = create_jeans_constant*pi*pcs2*GNewton1*Delta1**2 
 !
-      do i=1,nx
-        if (p%rho(i).gt.rho_jeans(i)) then 
+          do i=1,nx
+            if (prho(i).gt.rho_jeans(i)) then 
 !
 ! create a new particle at the center of the grid
 !
-          nc=nc+1
+              nc=nc+1
 !
 ! check if we are not creating too many particles
 !
-          if (nc>maxsink) then
-            print*,'too many sink particles were created. Stop and allocated more'
-            print*,'nc,maxsink=',nc,maxsink
-            call fatal_error("create_sink_particles","")
-          endif
+              if (nc>maxsink) then
+                print*,'too many sink particles were created. '//&
+                     'Stop and allocated more'
+                print*,'nc,maxsink=',nc,maxsink
+                call fatal_error("create_sink_particles","")
+              endif
 !
-          fcsp(nc,ixp) = x(i+nghost)
-          fcsp(nc,iyp) = y(m)
-          fcsp(nc,izp) = z(n)
+              fcsp(nc,ixp) = x(i+nghost)
+              fcsp(nc,iyp) = y(m)
+              fcsp(nc,izp) = z(n)
 !
 ! give it the velocity of the grid cell
 !
-          fcsp(nc,ivpx:ivpz) = p%uu(i,:)
+              fcsp(nc,ivpx:ivpz) = puu(i,:)
 !          
 ! the mass of the new particle is the 
 ! collapsed mass m=[rho - rho_jeans]*dV
 !
-          fcsp(nc,imass)   = (p%rho(i)-rho_jeans(i))*dvolume(i)
+              fcsp(nc,imass)   = (prho(i)-rho_jeans(i))*dvolume(i)
 !
 ! and that amount was lost by the grid, so only rho_jeans remains
 !
-          if (ldensity_nolog) then 
-            f(i+nghost,m,n,ilnrho) = rho_jeans(i)
-          else 
-            f(i+nghost,m,n,ilnrho) = log(rho_jeans(i))
-          endif
+              if (ldensity_nolog) then 
+                f(i+nghost,m,n,ilnrho) = rho_jeans(i)
+              else 
+                f(i+nghost,m,n,ilnrho) = log(rho_jeans(i))
+              endif
 !         
-        endif
-      enddo
+            endif
+          enddo
 !
 ! Jeans analysis of the dust
 ! 
-      if (ldust) then 
+          if (ldust) then 
 !
-! Substitute sound speed for vpm2=<(vvp-<vvp>)^2>, the particle's velocity dispersion 
+! Have to get k1s,k2s and ineargrids...
 !
-        vvpm=0.0; vpm2=0.0
-        do k=k1_imn(imn),k2_imn(imn)
-          inx0=ineargrid(k,1)-nghost
-          vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
-        enddo
-        do i=1,nx
-          if (p%np(i)>1.0) &
-            vvpm(i,:)=vvpm(i,:)/p%np(i)
-        enddo
+
+!
+! Substitute sound speed for vpm2=<(vvp-<vvp>)^2>, the particle's velocity 
+! dispersion 
+!
+            vvpm=0.0; vpm2=0.0
+            do k=k1_imn(imn),k2_imn(imn)
+              inx0=ineargrid(k,1)-nghost
+              vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
+            enddo
+            do i=1,nx
+              if (pnp(i)>1.0) &
+                   vvpm(i,:)=vvpm(i,:)/pnp(i)
+            enddo
 ! vpm2
-        do k=k1_imn(imn),k2_imn(imn)
-          inx0=ineargrid(k,1)-nghost
-          vpm2(inx0) = vpm2(inx0) + (fp(k,ivpx)-vvpm(inx0,1))**2 + &
-                                    (fp(k,ivpy)-vvpm(inx0,2))**2 + &
-                                    (fp(k,ivpz)-vvpm(inx0,3))**2 
-        enddo
-        do i=1,nx
-          if (p%np(i)>1.0) then
-            vpm2(i)=vpm2(i)/p%np(i)
-          endif
-        enddo
-        rho_jeans_dust = create_jeans_constant*pi*vpm2*GNewton1*Delta1**2 
+            do k=k1_imn(imn),k2_imn(imn)
+              inx0=ineargrid(k,1)-nghost
+              vpm2(inx0) = vpm2(inx0) + (fp(k,ivpx)-vvpm(inx0,1))**2 + &
+                                        (fp(k,ivpy)-vvpm(inx0,2))**2 + &
+                                        (fp(k,ivpz)-vvpm(inx0,3))**2 
+            enddo
+            do i=1,nx
+              if (pnp(i)>1.0) then
+                vpm2(i)=vpm2(i)/pnp(i)
+              endif
+            enddo
+            rho_jeans_dust = create_jeans_constant*pi*vpm2*GNewton1*Delta1**2 
 !
 ! Which particle is in which cell?
 !
-        do k=k1_imn(imn),k2_imn(imn)
-          inx0=ineargrid(k,1)-nghost
-          if (p%np(inx0) > 1.0) then 
-            do kn=1,p%np(inx0) 
-              pik(inx0,kn) = k
+            do k=k1_imn(imn),k2_imn(imn)
+              inx0=ineargrid(k,1)-nghost
+              if (pnp(inx0) > 1.0) then 
+                do kn=1,pnp(inx0) 
+                  pik(inx0,kn) = k
+                enddo
+              endif
             enddo
-          endif
-        enddo
 !
-        do i=1,nx
-          if (p%rhop(i).gt.rho_jeans_dust(i)) then 
+            do i=1,nx
+              if (prhop(i).gt.rho_jeans_dust(i)) then 
 !
 ! remove all particles from the cell
 !
-            do kn=1,p%np(i) 
-              call remove_particle(fp,npar_loc,ipar,pik(i,kn),dfp,ineargrid)
-            enddo
+                do kn=1,pnp(i) 
+                  call remove_particle(fp,npar_loc,ipar,pik(i,kn))
+                enddo
 !
 ! create a new particle at the center of the grid
 !
-            nc=nc+1
+                nc=nc+1
 !
 ! check if we are not making too many particles
 !
-            if (nc>maxsink) then
-              print*,'too many sink particles were created. Stop and allocated more'
-              print*,'nc,maxsink=',nc,maxsink
-              call fatal_error("create_sink_particles","")
-            endif
+                if (nc>maxsink) then
+                  print*,'too many sink particles were created. '//&
+                       'Stop and allocated more'
+                  print*,'nc,maxsink=',nc,maxsink
+                  call fatal_error("create_sink_particles","")
+                endif
 !
-            fcsp(nc,ixp) = x(i+nghost)
-            fcsp(nc,iyp) = y(m)
-            fcsp(nc,izp) = z(n)
+                fcsp(nc,ixp) = x(i+nghost)
+                fcsp(nc,iyp) = y(m)
+                fcsp(nc,izp) = z(n)
 !
 ! give it the mean velocity of the group of particles that 
 ! was accreted
 !
-          fcsp(nc,ivpx:ivpz) = vvpm(i,:)
+                fcsp(nc,ivpx:ivpz) = vvpm(i,:)
 !          
 ! the mass of the new particle is the 
 ! collapsed mass M=m_particle*np
 !
-          fcsp(nc,imass)    = mp_tilde*p%np(i)
+                fcsp(nc,imass)    = mp_tilde*pnp(i)
 !         
-        endif
+              endif
+            enddo
+!
+          endif !if (ldust)
+        
+        enddo
       enddo
 !
-    endif !if (ldust)
-!   
-! Broadcast the created particles
+! Finished creating them. Now merge the particles and share across
+! processors to the fp array. 
 !
-    do kc=1,nc
-      call mpibcast_real(fcsp(kc,:),mpvar+1)
-    enddo
+      call merge_and_share(fcsp,nc,fp)
+!
+    endsubroutine create_sink_particles
+!**************************************************************************
+    subroutine merge_and_share(fcspp,nc,fp)
+!     
+      use Mpicomm
+!
+      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension(maxsink,mpvar+1) :: fcspp,fcsp_proc,fcsp
+      real, dimension(0:ncpus-1,nspar,mpvar) :: fcsp_mig
+      integer, dimension(0:ncpus-1) :: nsmig
+!
+      integer :: nc,nc_proc,ncr,nf,ns,np
+      integer :: iz0,iy0,ipz_rec,ipy_rec,iproc_rec
+      integer :: j,kc
+      real :: dy1,dz1
+!
+! Send the info about all the created particles to 
+! the root processor
+!
+      if (lmpicomm) then 
+        if (.not.lroot) then 
+          call mpisend_int(nc,1,root,222)
+          call mpisend_real(fcspp(1:nc,:),(/nc,mpvar+1/),root,111)
+        else
+          ncr=nc !lroot's nc
+          fcsp=fcspp
+          do j=1,ncpus-1
+            call mpirecv_int(nc_proc,1,j,222)
+            call mpirecv_real(fcsp_proc(1:nc_proc,:),(/nc_proc,mpvar+1/),j,111)
+            fcsp(ncr+1:ncr+nc_proc,:)=fcsp_proc(1:nc_proc,:)
+            ncr=ncr+nc_proc
+          enddo
+        endif
+      else
+        !serial, just copy it
+        ncr =nc
+        fcsp=fcspp
+      endif
 !
 ! The root processor merges them with the friends of friends algorithm
-!    
-    if (lroot) then
-! 
-      call friends_of_friends(fcsp,nc)
+!
+      if (lroot) then 
 
-      if (mspar>nspar) then 
-        print*,'too many sink particles were created. Stop and allocated more'
-        call fatal_error("create_sink_particles","")
-      endif
+        call friends_of_friends(fcsp,ncr,nf)
 !
 ! Friends of friends merged the created particles into few massive
 ! clusters. These new clusters are truly sinks.
 !
-      mspar=mspar+nc
-      fsp(mspar-nc+1:mspar,:) = fcsp(1:nc,:)
+        mspar=mspar+nf
+!        
+! But check if we did not end up with too many particles
 !
-! Send the created particles to the processor where it came from
+        if (mspar>nspar) then 
+          print*,'after friends_of_friends, we still have '//&
+               'too many sink particles.'//&
+               'Stop and allocated more'
+          call fatal_error("merge and share","")
+        endif
+!
+! Okay. So copy the new sinks to fsp
+!
+        fsp(mspar-nf+1:mspar,:) = fcsp(1:nf,:)
+!
+! Finally created the particles, in the processor where they came from
 !  
-      do kc=1,nc
-        ipy_rec=ipy
-        iy0=nint((fcsp(kc,iyp)-xyz0(2))*dy1)+1
-        do while (iy0>ny)
-          ipy_rec=ipy_rec+1
-          iy0=iy0-ny
-        enddo
-        
-        ipz_rec=ipz
-        iz0=nint((fcsp(kc,izp)-xyz0(3))*dz1)+1
-        do while (iz0>nz)
-          ipz_rec=ipz_rec+1
-          iz0=iz0-nz
-        enddo
-        !  Calculate serial index of receiving processor.
-        iproc_rec=ipy_rec+nprocy*ipz_rec
-
-        if (iproc_rec/=iproc) then
-          !prepare for migration
-          nsmig(iproc_rec)=nsmig(iproc_rec)+1
-          fcsp_mig(iproc_rec,nsmig(iproc_rec),:)=fcsp(kc,1:mpvar)
-        else
-          !the particle is in the root processor
-          !create the particle here
-          npar_loc=npar_loc+1
-          fp(npar_loc,:)=fcsp(kc,1:mpvar)
-        endif  
-      enddo
-    endif
-
-    !info about migrating sinks particles
-    if (lroot) then 
-      do j=1,ncpus-1
-        call mpisend_int(nsmig(j), 1, j, 111)
-      enddo
-    else
-      call mpirecv_int(nsmig(iproc), 1, iroot, 111)
-    endif
-! directed send
-    if (lroot) then
-      do j=1,ncpus-1
-        ns=nsmig(j)
-        if (ns/=0) &
-             call mpisend_real(fcsp_mig(j,1:ns,:), (/ns,mpvar/), j, 222)
-      enddo
-    else
-      np=npar_loc
-      ns=nsmig(iproc)
-      if (ns/=0) &
-           call mpirecv_real(fp(np+1:np+ns,:),(/ns,mpvar/),iroot,222)
-    endif
+        dy1=1/dy; dz1=1/dz
 !
-    endsubroutine create_sink_particle
+        do kc=1,nf
+          ipy_rec=ipy
+          iy0=nint((fcsp(kc,iyp)-xyz0(2))*dy1)+1
+          do while (iy0>ny)
+            ipy_rec=ipy_rec+1
+            iy0=iy0-ny
+          enddo
+        
+          ipz_rec=ipz
+          iz0=nint((fcsp(kc,izp)-xyz0(3))*dz1)+1
+          do while (iz0>nz)
+            ipz_rec=ipz_rec+1
+            iz0=iz0-nz
+          enddo
+        !  Calculate serial index of receiving processor.
+          iproc_rec=ipy_rec+nprocy*ipz_rec
+
+          if (iproc_rec/=iproc) then
+          !prepare for migration
+            nsmig(iproc_rec)=nsmig(iproc_rec)+1
+            fcsp_mig(iproc_rec,nsmig(iproc_rec),:)=fcsp(kc,1:mpvar)
+          else
+            !the particle is in the root processor
+            !create the particle here
+            npar_loc=npar_loc+1
+            fp(npar_loc,:)=fcsp(kc,1:mpvar)
+          endif
+        enddo
+      endif
+      
+    !info about migrating sinks particles
+      if (lroot) then 
+        do j=1,ncpus-1
+          call mpisend_int(nsmig(j), 1, j, 111)
+        enddo
+      else
+        call mpirecv_int(nsmig(iproc), 1, root, 111)
+      endif
+! directed send
+      if (lroot) then
+        do j=1,ncpus-1
+          ns=nsmig(j)
+          if (ns/=0) &
+               call mpisend_real(fcsp_mig(j,1:ns,:), (/ns,mpvar/), j, 222)
+        enddo
+      else
+        np=npar_loc
+        ns=nsmig(iproc)
+        if (ns/=0) &
+             call mpirecv_real(fp(np+1:np+ns,:),(/ns,mpvar/),root,222)
+      endif
+!
+    endsubroutine merge_and_share
 !***********************************************************************
-    subroutine friends_of_friends(fcsp,nc)
+    subroutine friends_of_friends(fcsp,nc,nfinal)
 !
       real,    dimension(maxsink,mpvar+1) :: fcsp
       integer, dimension(nc,nc)           :: clusters 
       integer, dimension(nc)              :: cluster 
       logical, dimension(nc)              :: lchecked
       
-      integer :: ks,nc,nf,nclusters
+      integer :: ks,nc,nf,nclusters,nfinal
       integer :: min_number_members
 
-      intent(in) :: nc
+      intent(in)  :: nc
+      intent(out) :: nfinal
 !
       min_number_members=3
 !
@@ -1600,6 +1673,10 @@ module Particles_nbody
 !  No clusters yet, counter is zero 
 !
       nclusters=0 
+!
+!  And the final number of particles is the same as the initial
+!
+      nfinal=nc
 !
 ! Loop through the particles to cluster them
 !
@@ -1618,6 +1695,10 @@ module Particles_nbody
 !          
           if (nf >= min_number_members) & 
                clusters(1:nf,nclusters)=cluster(1:nf)
+!
+          !nf particles were grouped, remove them from the
+          !final count of sinks
+          nfinal=nc-nf
 !
         endif
       enddo
