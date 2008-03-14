@@ -1,0 +1,22 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2008-03-14 18:34:30 wlyra Exp $',
+  ip=10,                        ! debugging parameter
+  xyz0  =  -32,-32,-0.26,       ! first corner of box
+  xyz1  =   32, 32, 0.26,       ! second corner of box
+/
+&particles_init_pars
+/
+&particles_nbody_init_pars
+  initxxsp='fixed-cm'
+  initvvsp='fixed-cm'
+  bcspx='out',bcspy='out',bcspz='out'
+  GNewton=1.0
+  pmass=2e-7,3e-6,3e-6,3e-7,1e-3,3e-4,4e-5,5e-5,1.
+  xsp0=0.38,0.72,1.0,1.5,5.2,10.,19.,30.,0.
+  r_smooth=0.00,0.00,0.0,0.0,0.0,0.0,0.0,0.0,0.
+  istar=9
+/

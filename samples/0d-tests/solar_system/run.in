@@ -1,0 +1,20 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters!
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2008-03-14 18:34:30 wlyra Exp $',
+  ip=10,
+  nt=2000, it1=10, it1d=100,  isave=100, itorder=3, ialive=1
+  cdt=0.4, 
+  cdtv=0.4, 
+  dtmin=1e-6,
+  dsnap=6.283 ,dvid=6.283, d2davg=6.283 
+  dt=1e-2
+/
+&particles_run_pars
+/
+&particles_nbody_run_pars
+  lfollow_particle=T,T,T,T,T,T,T,T,T
+  lreset_cm=T
+/
