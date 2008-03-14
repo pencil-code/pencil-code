@@ -1,5 +1,5 @@
 #!/bin/csh
-#  $Id: pc_copyvar,v 1.1 2008-03-14 13:26:47 ajohan Exp $
+#  $Id: pc_copyvar,v 1.2 2008-03-14 13:33:25 ajohan Exp $
 #
 #  Author: Anders Johansen
 #
@@ -69,21 +69,21 @@ endif
 if ($e != 0) then
   set execute=1
 endif
-if ( $var1 == 'v' || $var1 == 'var' ) then
+if ( $var1 =~ "v" || $var1 =~ "var") then
   set var1='var.dat'
 endif
-if ( $var2 == 'v' || $var2 == 'var' ) then
+if ( $var2 =~ "v" || $var2 =~ "var") then
   set var2='var.dat'
 endif
 #
 #  Naked integers get 'VAR' in front.
 #
 set int1=`perl -e '$int = '$var1' =~ /^\d+$/; print $int;'`
-if ( $int1 ) then
+if ( $int1 =~ 1 ) then
   set var1="VAR$var1"
 endif
 set int2=`perl -e '$int = '$var2' =~ /^\d+$/; print $int;'`
-if ( $int2 ) then
+if ( $int2 =~ 1 ) then
   set var2="VAR$var2"
 endif
 #
