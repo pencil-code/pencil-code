@@ -1,4 +1,4 @@
-! $Id: testflow_z.f90,v 1.3 2008-03-14 17:39:00 brandenb Exp $
+! $Id: testflow_z.f90,v 1.4 2008-03-15 06:12:23 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -53,8 +53,8 @@ module Testflow
   real :: kx_uutest=1.,ky_uutest=1.,kz_uutest=1.
   real :: tuuinit=0.,duuinit=0.
   logical :: reinitialize_uutest=.false.
-  logical :: zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
-  logical :: luxb_as_aux=.false.,linit_uutest=.false.
+  logical :: zextent=.true.,lsoca_ugu=.true.,lset_bbtest2=.false.
+  logical :: lugu_as_aux=.false.,linit_uutest=.false.
   character (len=labellen) :: itestfield='B11-B21'
   real :: ktestfield=1., ktestfield1=1.
   integer, parameter :: ntestflow=4*njtest
@@ -63,14 +63,14 @@ module Testflow
   namelist /testflow_init_pars/ &
        B_ext,zextent,inituutest, &
        ampluutest,kx_uutest,ky_uutest,kz_uutest, &
-       luxb_as_aux
+       lugu_as_aux
 
   ! run parameters
   real :: nutest=0.,nutest1=0.
   namelist /testflow_run_pars/ &
-       B_ext,reinitialize_uutest,zextent,lsoca, &
+       B_ext,reinitialize_uutest,zextent,lsoca_ugu, &
        lset_bbtest2,nutest,nutest1,itestfield,ktestfield, &
-       luxb_as_aux,duuinit,linit_uutest,bamp
+       lugu_as_aux,duuinit,linit_uutest,bamp
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -105,7 +105,7 @@ module Testflow
   integer :: idiag_uy0mz=0      ! DIAG_DOC: $\left<u_{y}\right>_{xy}$
   integer :: idiag_uz0mz=0      ! DIAG_DOC: $\left<u_{z}\right>_{xy}$
 
-! real, dimension (mz,4,ntestflow/4) :: uxbtestm
+  real, dimension (mz,4,ntestflow/4) :: ugutestm
 
   contains
 
@@ -157,7 +157,7 @@ module Testflow
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testflow_z.f90,v 1.3 2008-03-14 17:39:00 brandenb Exp $")
+           "$Id: testflow_z.f90,v 1.4 2008-03-15 06:12:23 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -215,7 +215,7 @@ module Testflow
         ktestfield1=1./ktestfield
       endif
 !
-!  Register an extra aux slot for uxb if requested (so uxb is written
+!  Register an extra aux slot for ugu if requested (so ugu is written
 !  to snapshots and can be easily analyzed later). For this to work you
 !  must reserve enough auxiliary workspace by setting, for example,
 !     ! MAUX CONTRIBUTION 9
@@ -225,16 +225,14 @@ module Testflow
 !  After a reload, we need to rewrite index.pro, but the auxiliary
 !  arrays are already allocated and must not be allocated again.
 !
-!  ?? This could be someting like u.gradu ??
-!
-      if (luxb_as_aux) then
-        if (iuxb==0) then
-          call farray_register_auxiliary('uxb',iuxb,vector=3*njtest)
+      if (lugu_as_aux) then
+        if (iugu==0) then
+          call farray_register_auxiliary('ugu',iugu,vector=3*njtest)
         endif
-        if (iuxb/=0.and.lroot) then
-          print*, 'initialize_magnetic: iuxb = ', iuxb
+        if (iugu/=0.and.lroot) then
+          print*, 'initialize_magnetic: iugu = ', iugu
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iuxb=',iuxb
+          write(3,*) 'iugu=',iugu
           close(3)
         endif
       endif
@@ -244,7 +242,7 @@ module Testflow
       if (lroot) then
         open(1,file=trim(datadir)//'/testflow_info.dat',STATUS='unknown')
         write(1,'(a,i1)') 'zextent=',merge(1,0,zextent)
-        write(1,'(a,i1)') 'lsoca='  ,merge(1,0,lsoca)
+        write(1,'(a,i1)') 'lsoca_ugu='  ,merge(1,0,lsoca_ugu)
         write(1,'(3a)') "itestfield='",trim(itestfield)//"'"
         write(1,'(a,f5.2)') 'ktestfield=',ktestfield
         close(1)
@@ -380,16 +378,15 @@ module Testflow
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-!     real, dimension (nx,3) :: bb,aa,uxB,uutest,btest,uxbtest,duxbtest
-      real, dimension (nx,3) :: aa,uxB,uutest,btest,uxbtest,duxbtest
+!     real, dimension (nx,3) :: bb,aa,uxB,uutest,btest,ugutest,dugutest
+      real, dimension (nx,3) :: aa,uxB,uutest,btest,ugutest,dugutest
       real, dimension (nx,3,njtest) :: Eipq,upq
       real, dimension (nx,3,3) :: uijtest
-      real, dimension (nx,3) :: uutest_dot_guutest
       real, dimension (nx,3) :: del2utest,uufluct,ghhtest
       real, dimension (nx) :: upq2,uutest_dot_ghhtest,divuutest
       integer :: jtest,jfnamez,j,i3,i4
       integer,save :: ifirst=0
-      logical,save :: ltest_uxb=.false.
+      logical,save :: ltest_ugu=.false.
       character (len=5) :: ch
       character (len=130) :: file
 !
@@ -435,16 +432,16 @@ module Testflow
 !
         call gij(f,iuxtest,uijtest,1)
         call div_mn(uijtest,divuutest,uutest)
-        call u_dot_grad(f,iuxtest,uijtest,uutest,uutest_dot_guutest)
 !
 !  gradient of (pseudo) enthalpy
 !
         call grad(f,ihhtest,ghhtest)
 !
-!  rhs of momentum eqn.
+!  rhs of momentum equation, but include the ugutest
+!  term only if lsoca_ugu=.true.
 !
         df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
-          -uutest_dot_guutest-ghhtest
+          -ghhtest
 !
 !  continuity equation, dh/dt = - u.gradh - cs^2*divutest,
 !  but assume cs=1 in this context
@@ -467,43 +464,44 @@ module Testflow
 !       if (B_ext(2)/=0.) bbtest(:,2)=bbtest(:,2)+B_ext(2)
 !       if (B_ext(3)/=0.) bbtest(:,3)=bbtest(:,3)+B_ext(3)
 !
-!       call cross_mn(uufluct,bbtest,uxB)
-!       if (lsoca) then
-!         df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
-!           +uxB+etatest*del2Atest
-!       else
+        if (lsoca_ugu) then
+        else
 !
-!  use f-array for uxb (if space has been allocated for this) and
-!  if we don't test (i.e. if ltest_uxb=.false.)
+!  use f-array for ugu (if space has been allocated for this) and
+!  if we don't test (i.e. if ltest_ugu=.false.)
 !
-!         if (iuxb/=0.and..not.ltest_uxb) then
-!           uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
-!         else
-!           call curl(f,iuxtest,btest)
-!           call cross_mn(p%uu,btest,uxbtest)
-!         endif
+          if (iugu/=0.and..not.ltest_ugu) then
+            ugutest=f(l1:l2,m,n,iugu+3*(jtest-1):iugu+3*jtest-1)
+          else
+            call u_dot_grad(f,iuxtest,uijtest,uutest,ugutest)
+          endif
 !
 !  subtract average emf
 !
-!         do j=1,3
-!           duxbtest(:,j)=uxbtest(:,j)-uxbtestm(n,j,jtest)
-!         enddo
+          do j=1,3
+            dugutest(:,j)=ugutest(:,j)-ugutestm(n,j,jtest)
+          enddo
+!
+!  non-soca term here
+!
+          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
+            -dugutest
+        endif
 !
 !  advance test flow equation, add diffusion term
 !
           call del2v(f,iuxtest,del2utest)
           df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
             +nutest*del2utest
-!       endif
 !
-!  calculate alpha, begin by calculating uxbtest (if not already done above)
+!  calculate alpha, begin by calculating ugutest (if not already done above)
 !
 !       if ((ldiagnos.or.l1ddiagnos).and. &
-!         ((lsoca.or.iuxb/=0).and.(.not.ltest_uxb))) then
+!         ((lsoca_ugu.or.iugu/=0).and.(.not.ltest_ugu))) then
 !         call curl(f,iuxtest,btest)
-!         call cross_mn(p%uu,btest,uxbtest)
+!         call cross_mn(p%uu,btest,ugutest)
 !       endif
-!       Eipq(:,:,jtest)=uxbtest/bamp
+!       Eipq(:,:,jtest)=ugutest/bamp
 !
 !  check for testflow timestep
 !
@@ -664,22 +662,22 @@ module Testflow
 !***********************************************************************
     subroutine calc_ltestflow_pars(f)
 !
-!  ... calculate <uxb>, which is needed when lsoca=.false.
+!  calculate <u.gradu>, which is needed when lsoca_ugu=.false.
 !  this is done prior to the pencil loop
 !
-!  21-jan-06/axel: coded
+!  15-mar-08/axel: coded
 !
       use Cdata
       use Sub
-      use Hydro, only: calc_pencils_hydro
       use Mpicomm, only: mpireduce_sum, mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-!     real, dimension (nz,nprocz,3,njtest) :: uxbtestm1
-!     real, dimension (nz*nprocz*3*njtest) :: uxbtestm2,uxbtestm3
-      real, dimension (nx,3) :: btest,uxbtest
-      integer :: jtest,j,nxy=nxgrid*nygrid,juxb
+      real, dimension (nz,nprocz,3,njtest) :: ugutestm1
+      real, dimension (nz*nprocz*3*njtest) :: ugutestm2,ugutestm3
+      real, dimension (nx,3,3) :: uijtest
+      real, dimension (nx,3) :: uutest,ugutest
+      integer :: jtest,j,nxy=nxgrid*nygrid,jugu
       logical :: headtt_save
       real :: fac
       type (pencil_case) :: p
@@ -692,51 +690,57 @@ module Testflow
       headtt_save=headtt
       fac=1./nxy
 !
-!  do each of the 9 test flows at a time
+!  do each of the njtest (=2, 4, or 9) test flows at a time
 !  but exclude redundancies, e.g. if the averaged flows lacks x extent.
 !  Note: the same block of lines occurs again further up in the file.
 !
-!     do jtest=1,njtest
-!       iuxtest=iuutest+3*(jtest-1)
-!       iuztest=iuxtest+2
-!       if (lsoca) then
-!         uxbtestm(:,:,jtest)=0.
-!       else
-!         do n=n1,n2
-!           uxbtestm(n,:,jtest)=0.
-!           do m=m1,m2
-!             call calc_pencils_hydro(f,p)
-!             call curl(f,iuxtest,btest)
-!             call cross_mn(p%uu,btest,uxbtest)
-!             juxb=iuxb+3*(jtest-1)
-!             if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
-!             do j=1,3
-!               uxbtestm(n,j,jtest)=uxbtestm(n,j,jtest)+fac*sum(uxbtest(:,j))
-!             enddo
-!             headtt=.false.
-!           enddo
-!           do j=1,3
-!             uxbtestm1(n-n1+1,ipz+1,j,jtest)=uxbtestm(n,j,jtest)
-!           enddo
-!         enddo
-!       endif
-!     enddo
+      do jtest=1,njtest
+        iuxtest=iuutest+3*(jtest-1)
+        iuztest=iuxtest+2
+        if (lsoca_ugu) then
+          ugutestm(:,:,jtest)=0.
+        else
+          do n=n1,n2
+            ugutestm(n,:,jtest)=0.
+            do m=m1,m2
+!
+!  velocity vector
+!
+              uutest=f(l1:l2,m,n,iuxtest:iuztest)
+!
+!  velocity gradient matrix and u.gradu term
+!
+              call gij(f,iuxtest,uijtest,1)
+              call u_dot_grad(f,iuxtest,uijtest,uutest,ugutest)
+              jugu=iugu+3*(jtest-1)
+              if (iugu/=0) f(l1:l2,m,n,jugu:jugu+2)=ugutest
+              do j=1,3
+                ugutestm(n,j,jtest)=ugutestm(n,j,jtest)+fac*sum(ugutest(:,j))
+              enddo
+              headtt=.false.
+            enddo
+            do j=1,3
+              ugutestm1(n-n1+1,ipz+1,j,jtest)=ugutestm(n,j,jtest)
+            enddo
+          enddo
+        endif
+      enddo
 !
 !  do communication for array of size nz*nprocz*3*njtest
 !
-!     if (nprocy>1) then
-!       uxbtestm2=reshape(uxbtestm1,shape=(/nz*nprocz*3*njtest/))
-!       call mpireduce_sum(uxbtestm2,uxbtestm3,nz*nprocz*3*njtest)
-!       call mpibcast_real(uxbtestm3,nz*nprocz*3*njtest)
-!       uxbtestm1=reshape(uxbtestm3,shape=(/nz,nprocz,3,njtest/))
-!       do jtest=1,njtest
-!         do n=n1,n2
-!           do j=1,3
-!             uxbtestm(n,j,jtest)=uxbtestm1(n-n1+1,ipz+1,j,jtest)
-!           enddo
-!         enddo
-!       enddo
-!     endif
+      if (nprocy>1) then
+        ugutestm2=reshape(ugutestm1,shape=(/nz*nprocz*3*njtest/))
+        call mpireduce_sum(ugutestm2,ugutestm3,nz*nprocz*3*njtest)
+        call mpibcast_real(ugutestm3,nz*nprocz*3*njtest)
+        ugutestm1=reshape(ugutestm3,shape=(/nz,nprocz,3,njtest/))
+        do jtest=1,njtest
+          do n=n1,n2
+            do j=1,3
+              ugutestm(n,j,jtest)=ugutestm1(n-n1+1,ipz+1,j,jtest)
+            enddo
+          enddo
+        enddo
+      endif
 !
 !  reset headtt
 !
