@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.77 2008-03-14 19:35:12 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.78 2008-03-16 17:48:42 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -85,7 +85,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.77 2008-03-14 19:35:12 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.78 2008-03-16 17:48:42 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -1347,7 +1347,8 @@ module Particles_nbody
 
       logical :: ltime_to_create
 !
-      real, dimension(nx)  ::prho,prhop,pnp,pcs2
+      real, dimension(nx)  ::prho,prhop,pcs2
+      integer, dimension(nx) :: pnp
       real, dimension(nx,3)::puu
 !
       if (lcreate_sinks) then
@@ -1378,7 +1379,7 @@ module Particles_nbody
 !
           if (ldust)  then 
             prhop=f(l1:l2,m,n,irhop)
-            pnp  =f(l1:l2,m,n,inp)
+            pnp  =int(f(l1:l2,m,n,inp))
           endif
 !
           if (lhydro) puu=f(l1:l2,m,n,iux:iuz)
