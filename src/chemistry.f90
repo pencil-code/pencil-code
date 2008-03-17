@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.28 2008-03-17 14:35:14 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.29 2008-03-17 15:19:13 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -153,11 +153,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.28 2008-03-17 14:35:14 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.29 2008-03-17 15:19:13 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.28 2008-03-17 14:35:14 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.29 2008-03-17 15:19:13 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -692,7 +692,11 @@ module Chemistry
           do j=1,nreactions
             xdot=xdot+stoichio(k,j)*vreactions(:,j)
           enddo
+         if (.not. lcheminp) then
           df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+xdot
+         else
+          df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+xdot*species_constants(ichemspec(k),imass)/p%rho(:)
+         endif
         endif
 !
       enddo 
@@ -1473,7 +1477,6 @@ print*,species_name
      real  :: sum_tmp=0.
 
 !
-
 
     do reac=1,nreactions
 
