@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.59 2008-03-14 15:34:45 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.60 2008-03-17 05:16:08 brandenb Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -169,7 +169,7 @@ varcontent[iaatest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestfield)*one'
 varcontent[iaatest].skip       = ntestfield-1
 ;
 default, iuutest, 0
-default, ntestfield, 0
+default, ntestflow, 0
 varcontent[iuutest].variable   = 'Testflow (uutest)'
 varcontent[iuutest].idlvar     = 'uutest'
 varcontent[iuutest].idlinit    = 'fltarr(mx,my,mz,ntestflow)*one'
