@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.26 2008-03-14 22:29:33 brandenb Exp $
+! $Id: chemistry.f90,v 1.27 2008-03-17 11:40:13 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -10,7 +10,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDEDgTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,mu1
+! PENCILS PROVIDEDgTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,mu1,H0RT,S0R
 !***************************************************************
 
 module Chemistry
@@ -150,11 +150,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.26 2008-03-14 22:29:33 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.27 2008-03-17 11:40:13 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.26 2008-03-14 22:29:33 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.27 2008-03-17 11:40:13 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -239,6 +239,9 @@ module Chemistry
       if (lcheminp) then
         call read_reactions(input_file)
         call write_reactions()
+
+!       call get_reaction_rate 
+
       elseif(exist1.and.exist2) then
 !
 !  if both chemistry1.dat and chemistry2.dat are present,
@@ -442,7 +445,7 @@ module Chemistry
       intent(in) :: f
       intent(inout) :: p
       integer :: k,i,j
-      real :: T_local, T_up, T_mid, T_low, tmp,  Rgas, Rgas_unit_sys=1.
+      real :: T_local, T_up, T_mid, T_low, tmp,  Rgas, Rgas_unit_sys=1.,lnT_local
       logical :: lcheminp_tmp=.false.
 
 
@@ -517,6 +520,66 @@ module Chemistry
       if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
       if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
       if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
+
+!
+!  Dimensionless Standard-state molar enthalpy H0/RT
+!
+
+       if (lpencil(i_H0RT)) then
+        do k=1,nchemspec
+          T_low=species_constants(k,iTemp1)
+          T_mid=species_constants(k,iTemp2)
+          T_up= species_constants(k,iTemp3)
+         do i=1,nx
+          T_local=p%TT(i)*unit_temperature 
+           if (T_local >=T_low .and. T_local <= T_mid) then
+               tmp=0. 
+               do j=1,5
+                tmp=tmp+species_constants(k,ia1(j))*T_local**(j-1)/j 
+               enddo
+              p%H0RT(:,k)=tmp+species_constants(k,ia1(6))/T_local
+           else
+               tmp=0. 
+               do j=1,5 
+                tmp=tmp+species_constants(k,ia2(j))*T_local**(j-1)/j 
+               enddo
+             p%H0RT(:,k)=tmp+species_constants(k,ia2(6))/T_local
+           endif
+         enddo
+        enddo
+       endif 
+!
+
+!
+!  Dimensionless Standard-state molar entropy  S0/R
+!
+
+       if (lpencil(i_S0R)) then
+        do k=1,nchemspec
+          T_low=species_constants(k,iTemp1)
+          T_mid=species_constants(k,iTemp2)
+          T_up= species_constants(k,iTemp3)
+         do i=1,nx
+          T_local=p%TT(i)*unit_temperature 
+          lnT_local=p%lnTT(i)+log(unit_temperature)
+           if (T_local >=T_low .and. T_local <= T_mid) then
+               tmp=0. 
+               do j=2,5
+                tmp=tmp+species_constants(k,ia1(j))*T_local**(j-1)/(j-1) 
+               enddo
+              p%S0R(:,k)=species_constants(k,ia1(1))*lnT_local+tmp+species_constants(k,ia1(7))
+           else
+               tmp=0. 
+               do j=2,5 
+                tmp=tmp+species_constants(k,ia2(j))*T_local**(j-1)/(j-1) 
+               enddo
+             p%S0R(:,k)=species_constants(k,ia2(1))*lnT_local+tmp+species_constants(k,ia2(7))
+           endif
+         enddo
+        enddo
+       endif 
+!
+
 
    else
     call stop_it('This case works only for cgs units system!')
