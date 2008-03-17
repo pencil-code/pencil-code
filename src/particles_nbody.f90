@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.80 2008-03-17 16:40:53 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.81 2008-03-17 18:41:50 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -86,7 +86,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.80 2008-03-17 16:40:53 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.81 2008-03-17 18:41:50 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -1425,7 +1425,11 @@ module Particles_nbody
 !
 ! The constant is a free parameter of the module
 !
-              rho_jeans = create_jeans_constant*pi*pcs2*GNewton1*Delta1**2 
+              if (nzgrid/=1) then 
+                rho_jeans = create_jeans_constant*3.*pi*pcs2*GNewton1*Delta1**2/32 
+              else
+                rho_jeans = create_jeans_constant*   pi*pcs2*GNewton1*Delta1   /8
+              endif
 !
               do i=1,nx
                 if (prho(i).gt.rho_jeans(i)) then 
@@ -1499,7 +1503,12 @@ module Particles_nbody
                     vpm2(i)=vpm2(i)/pnp(i)
                   endif
                 enddo
-                rho_jeans_dust = create_jeans_constant*pi*vpm2*GNewton1*Delta1**2 
+!
+                if (nzgrid/=1) then 
+                  rho_jeans_dust = create_jeans_constant*3*pi*vpm2*GNewton1*Delta1**2/32 
+                else
+                  rho_jeans_dust = create_jeans_constant*  pi*vpm2*GNewton1*Delta1   /8
+                endif
 !
 ! Which particle is in which cell?
 !
@@ -1559,8 +1568,8 @@ module Particles_nbody
 ! Finished creating them. Now merge the particles and share across
 ! processors to the fp array. 
 !
-
-          call merge_and_share(fcsp,nc,fp)
+          if (nc/=0) &
+               call merge_and_share(fcsp,nc,fp)
 !
         endif
       endif
@@ -1576,6 +1585,12 @@ module Particles_nbody
       real, dimension(nspar,mpvar+1) :: fleft
 !
       integer :: nc,nc_proc,ncr,nf,kc,j
+
+      real, dimension(0:ncpus-1,nspar,mpvar) :: fcsp_mig
+      integer, dimension(0:ncpus-1) :: nsmig
+      integer :: iz0,iy0,ipz_rec,ipy_rec,iproc_rec
+      integer:: ns,np,i
+      double precision :: dy1,dz1
 !
 ! Send the info about all the created particles to 
 ! the root processor
@@ -1602,8 +1617,7 @@ module Particles_nbody
 !
 ! The root processor merges them with the friends of friends algorithm
 !
-      if (lroot) then 
-!
+      if (lroot) then
         call friends_of_friends(fcsp,fleft,ncr,nf)
 !
 ! Friends of friends merged the created particles into few massive
@@ -1619,15 +1633,78 @@ module Particles_nbody
                'Stop and allocated more'
           call fatal_error("merge and share","")
         endif
-!
       endif
+!      
+      call mpibcast_int(mspar,1)
 !
-! Broadcast fleft     
+! Migrate the particles to their respective processors
 !
-      call mpibcast_real(fleft,(/nf,mpvar+1/))
-!
-      if (lmpicomm) then 
-        call migrate_sinks(fp,fleft)
+      if (lmpicomm) then
+        if (lroot) then
+          dy1=1/dy; dz1=1/dz
+          !y0_mig=0.5*(y(m1)+y(m1-1)); y1_mig=0.5*(y(m2)+y(m2+1))
+          !z0_mig=0.5*(z(n1)+z(n1-1)); z1_mig=0.5*(z(n2)+z(n2+1))
+          do kc=1,nf
+            ipy_rec=ipy
+            iy0=nint((fleft(kc,iyp)-y(m1))*dy1+nygrid)-nygrid+1
+            do while (iy0>ny)
+              ipy_rec=ipy_rec+1
+              iy0=iy0-ny
+            enddo
+!            
+            ipz_rec=ipz
+            iz0=nint((fleft(kc,izp)-z(n1))*dz1+nzgrid)-nzgrid+1
+            do while (iz0>nz)
+              ipz_rec=ipz_rec+1
+              iz0=iz0-nz
+            enddo
+        !  Calculate serial index of receiving processor.
+            iproc_rec=ipy_rec+nprocy*ipz_rec
+            if (iproc_rec>=ncpus .or. iproc_rec<0) then
+              call warning('merge_and_share','',iproc)
+              print*, 'merge_and_share: receiving proc does not exist'
+              print*, 'merge_and_share: iproc, iproc_rec=', &
+                   iproc, iproc_rec
+              call fatal_error_local("","")
+            endif
+            if (iproc_rec/=iproc) then
+          !prepare for migration
+              nsmig(iproc_rec)=nsmig(iproc_rec)+1
+              fcsp_mig(iproc_rec,nsmig(iproc_rec),:)=fleft(kc,1:mpvar)
+            else
+              !the particle is in the root processor
+              !create the particle here
+              npar_loc=npar_loc+1
+              fp(npar_loc,:)=fleft(kc,1:mpvar)
+              ipar(npar_loc)=npar_loc
+            endif
+          enddo
+        
+    !info about migrating sinks particles
+          do j=1,ncpus-1
+            call mpisend_int(nsmig(j), 1, j, 111)
+          enddo
+        else
+          call mpirecv_int(nsmig(iproc), 1, root, 111)
+        endif
+! directed send
+        if (lroot) then
+          do j=1,ncpus-1
+            ns=nsmig(j)
+            if (ns/=0) &
+                 call mpisend_real(fcsp_mig(j,1:ns,:), (/ns,mpvar/), j, 222)
+          enddo
+        else
+          np=npar_loc
+          ns=nsmig(iproc)
+          if (ns/=0) then
+            call mpirecv_real(fp(np+1:np+ns,:),(/ns,mpvar/),root,222)
+            do kc=1,ns
+              npar_loc=npar_loc+1
+              ipar(npar_loc)=npar_loc
+            enddo
+          endif
+        endif
       else
         do kc=1,nf
           npar_loc=npar_loc+1
@@ -1637,80 +1714,6 @@ module Particles_nbody
       endif
 !
     endsubroutine merge_and_share
-!************************************************************************
-    subroutine migrate_sinks(fp,fleft)
-!
-      use Mpicomm
-!
-! Finally created the particles, in the processor where they came from
-!  
-      real, dimension(mpar_loc,mpvar) :: fp
-      real, dimension(nspar,mpvar+1) :: fleft
-      real, dimension(0:ncpus-1,nspar,mpvar) :: fcsp_mig
-      integer, dimension(0:ncpus-1) :: nsmig
-      integer :: iz0,iy0,ipz_rec,ipy_rec,iproc_rec
-      integer:: ns,np,j,kc,nf,i
-      real :: dy1,dz1
-
-      dy1=1/dy; dz1=1/dz
-!
-      if (lroot) then
-        do kc=1,nf
-          ipy_rec=ipy
-          iy0=nint((fleft(kc,iyp)-xyz0(2))*dy1)+1
-          do while (iy0>ny)
-            ipy_rec=ipy_rec+1
-            iy0=iy0-ny
-          enddo
-          
-          ipz_rec=ipz
-          iz0=nint((fleft(kc,izp)-xyz0(3))*dz1)+1
-          do while (iz0>nz)
-            ipz_rec=ipz_rec+1
-            iz0=iz0-nz
-          enddo
-        !  Calculate serial index of receiving processor.
-          iproc_rec=ipy_rec+nprocy*ipz_rec
-
-          if (iproc_rec/=iproc) then
-          !prepare for migration
-            nsmig(iproc_rec)=nsmig(iproc_rec)+1
-            fcsp_mig(iproc_rec,nsmig(iproc_rec),:)=fleft(kc,1:mpvar)
-          else
-              !the particle is in the root processor
-              !create the particle here
-            npar_loc=npar_loc+1
-            fp(npar_loc,:)=fleft(kc,1:mpvar)
-            ipar(npar_loc)=npar_loc
-          endif
-        enddo
-        
-    !info about migrating sinks particles
-        do j=1,ncpus-1
-          call mpisend_int(nsmig(j), 1, j, 111)
-        enddo
-      else
-        call mpirecv_int(nsmig(iproc), 1, root, 111)
-      endif
-! directed send
-      if (lroot) then
-        do j=1,ncpus-1
-          ns=nsmig(j)
-          if (ns/=0) &
-               call mpisend_real(fcsp_mig(j,1:ns,:), (/ns,mpvar/), j, 222)
-        enddo
-      else
-        np=npar_loc
-        ns=nsmig(iproc)
-        if (ns/=0) then
-          call mpirecv_real(fp(np+1:np+ns,:),(/ns,mpvar/),root,222)
-          do i=1,ns
-            ipar(np+1:np+ns)=np+i
-          enddo
-        endif
-      endif
-!
-    endsubroutine migrate_sinks
 !***********************************************************************
     subroutine friends_of_friends(fcsp,fleft,nc,nfinal)
 !
