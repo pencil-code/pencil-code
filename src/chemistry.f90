@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.27 2008-03-17 11:40:13 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.28 2008-03-17 14:35:14 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -36,6 +36,9 @@ module Chemistry
   real,    allocatable, dimension(:,:) :: kreactions_z
   real,    allocatable, dimension(:)   :: kreactions_m,kreactions_p
   character (len=30),allocatable, dimension(:) :: reaction_name
+
+   real :: Rgas, Rgas_unit_sys=1.
+
 !
 !  hydro-related parameters
 !
@@ -150,11 +153,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.27 2008-03-17 11:40:13 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.28 2008-03-17 14:35:14 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.27 2008-03-17 11:40:13 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.28 2008-03-17 14:35:14 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -239,9 +242,6 @@ module Chemistry
       if (lcheminp) then
         call read_reactions(input_file)
         call write_reactions()
-
-!       call get_reaction_rate 
-
       elseif(exist1.and.exist2) then
 !
 !  if both chemistry1.dat and chemistry2.dat are present,
@@ -445,7 +445,7 @@ module Chemistry
       intent(in) :: f
       intent(inout) :: p
       integer :: k,i,j
-      real :: T_local, T_up, T_mid, T_low, tmp,  Rgas, Rgas_unit_sys=1.,lnT_local
+      real :: T_local, T_up, T_mid, T_low, tmp,  lnT_local
       logical :: lcheminp_tmp=.false.
 
 
@@ -641,6 +641,9 @@ module Chemistry
 !  outside the loop where we multiply it by the stoichiometric matrix
 !
       if (lreactions) then
+
+       if (.not. lcheminp) then
+! Axel' case
         do j=1,nreactions
           vreactions_p(:,j)=kreactions_p(j)*kreactions_z(n,j)
           vreactions_m(:,j)=kreactions_m(j)*kreactions_z(n,j)
@@ -649,7 +652,13 @@ module Chemistry
             vreactions_m(:,j)=vreactions_m(:,j)*f(l1:l2,m,n,ichemspec(k))**Sijp(k,j)
           enddo
         enddo
+       else
+! Chemkin data case
+         call get_reaction_rate(f,vreactions_p,vreactions_m)
+       endif 
+
         vreactions=vreactions_p-vreactions_m
+
       endif
 !
 !  loop over all chemicals
@@ -1446,6 +1455,54 @@ print*,species_name
         close(file_id)
         !
       end subroutine write_reactions
+!***************************************************************
+   subroutine get_reaction_rate(f,vreact_p,vreact_m)
+!Natalia (17.03.2008)
+!This subroutine calculates forward and reverse reaction rates, if chem.inp file exists.
+!For more details see Chemkin Theory Manual
+!
+    real, dimension (mx,my,mz,mfarray) :: f 
+    intent(in) :: f
+    type (pencil_case) :: p
+    real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1=0.,prod2=0.
+    real, dimension (nx) :: kreac_array_pk=0., kreac_array_mk=0.
+
+    real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
+
+     integer :: k , reac
+     real  :: sum_tmp=0.
+
+!
+
+
+    do reac=1,nreactions
+
+     kreac_array_pk(:)=B_n(reac)*(p%TT(:)*unit_temperature)**alpha_n(reac)*exp(E_an(reac)/Rgas_unit_sys/p%TT(:)/unit_temperature)
+
+     do k=1,nchemspec
+       dSR(:) =dSR(:)+(Sijm(k,reac)-Sijp(k,reac))*p%S0R(:,k)
+       dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*p%H0RT(:,k)
+       sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
+     enddo
+
+     Kp=exp(dSR-dHRT)
+
+     Kc=Kp*(p%pp/p%TT/Rgas_unit_sys/0.986*unit_mass/unit_length/unit_time**2/unit_temperature)**sum_tmp
+
+     kreac_array_mk(:)=kreac_array_pk(:)/Kc
+
+      do k=1,nchemspec   
+       prod1=prod1*f(l1:l2,m,n,ichemspec(k))**Sijp(k,reac)
+      enddo
+      do k=1,nchemspec   
+       prod2=prod2*f(l1:l2,m,n,ichemspec(k))**Sijm(k,reac)
+      enddo
+       vreact_p(:,reac)=kreac_array_pk*prod1
+       vreact_m(:,reac)=kreac_array_mk*prod2
+
+    enddo
+
+   end subroutine get_reaction_rate
 !***************************************************************
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
