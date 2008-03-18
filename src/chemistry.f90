@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.31 2008-03-18 10:00:29 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.32 2008-03-18 11:26:30 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -10,7 +10,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDEDgTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,mu1
+! PENCILS PROVIDEDgTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,mu1,XX,YY
 !***************************************************************
 
 module Chemistry
@@ -157,11 +157,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.31 2008-03-18 10:00:29 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.32 2008-03-18 11:26:30 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.31 2008-03-18 10:00:29 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.32 2008-03-18 11:26:30 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -466,84 +466,98 @@ module Chemistry
       real :: T_local, T_up, T_mid, T_low, tmp,  lnT_local
       logical :: lcheminp_tmp=.false.
 
+!
+!  Mass fraction YY
+!
+      if (lpencil(i_YY)) then
+       do k=1,nchemspec;  p%YY(:,k)=f(l1:l2,m,n,ichemspec(k)); enddo
+      endif
 
- if (lcheminp) then
-  if (unit_system == 'cgs') then
+      if (lcheminp) then
+         if (unit_system == 'cgs') then
 
-     Rgas_unit_sys = k_B_cgs/m_u_cgs
-    Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
+            Rgas_unit_sys = k_B_cgs/m_u_cgs
+            Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
 !
 !  Mean molecular weight
 !
-       mu1_cgs=0.
-        if (lpencil(i_mu1)) then 
-          do k=1,nchemspec
-           mu1_cgs=mu1_cgs+f(l1:l2,m,n,ichemspec(k))/species_constants(ichemspec(k),imass)
-          enddo
-          p%mu1=mu1_cgs*unit_mass
-        endif
+            mu1_cgs=0.
+            if (lpencil(i_mu1)) then 
+              do k=1,nchemspec
+                mu1_cgs=mu1_cgs+f(l1:l2,m,n,ichemspec(k))/species_constants(ichemspec(k),imass)
+              enddo
+              p%mu1=mu1_cgs*unit_mass
+            endif
+!
+!  Mole fraction XX
+!
+          if (lpencil(i_XX)) then
+            do k=1,nchemspec;  p%XX(:,k)=p%YY(:,k)/species_constants(ichemspec(k),imass)/p%mu1; enddo
+          endif
+
+
 !
 !  Pressure
 !
-       if (lpencil(i_pp)) p%pp = Rgas*p%mu1*p%rho*p%TT
+         if (lpencil(i_pp)) p%pp = Rgas*p%mu1*p%rho*p%TT
 !
 !  Specific heat at constant pressure
 !
-       cp_full(:,m,n)=0.
+         cp_full(:,m,n)=0.
 
-      if (lpencil(i_cp)) then
-        do k=1,nchemspec
-          T_low=species_constants(k,iTemp1)
-          T_mid=species_constants(k,iTemp2)
-          T_up= species_constants(k,iTemp3)
-         do i=1,nx
-          T_local=p%TT(i)*unit_temperature 
-           if (T_local >=T_low .and. T_local <= T_mid) then
-               tmp=0. 
-               do j=1,5
-                tmp=tmp+species_constants(k,ia1(j))*T_local**(j-1) 
-               enddo
-               cp_spec(i)=tmp
-           else
-               tmp=0. 
-               do j=1,5 
-                tmp=tmp+species_constants(k,ia2(j))*T_local**(j-1) 
-               enddo
-               cp_spec(i)=tmp
-           endif
-          cp_full(l1:l2,m,n)=cp_full(l1:l2,m,n)+f(l1:l2,m,n,ichemspec(k))*cp_spec(:)*Rgas*p%mu1
-         enddo
-        enddo
-        p%cp=cp_full(l1:l2,m,n)
-     endif
+         if (lpencil(i_cp)) then
+           do k=1,nchemspec
+             T_low=species_constants(k,iTemp1)
+             T_mid=species_constants(k,iTemp2)
+             T_up= species_constants(k,iTemp3)
+            do i=1,nx
+             T_local=p%TT(i)*unit_temperature 
+               if (T_local >=T_low .and. T_local <= T_mid) then
+                tmp=0. 
+                 do j=1,5
+                  tmp=tmp+species_constants(k,ia1(j))*T_local**(j-1) 
+                 enddo
+                cp_spec(i)=tmp
+               else
+                tmp=0. 
+                 do j=1,5 
+                  tmp=tmp+species_constants(k,ia2(j))*T_local**(j-1) 
+                 enddo
+                cp_spec(i)=tmp
+               endif
+             cp_full(l1:l2,m,n)=cp_full(l1:l2,m,n)+f(l1:l2,m,n,ichemspec(k))*cp_spec(:)*Rgas*p%mu1
+            enddo
+           enddo
+           p%cp=cp_full(l1:l2,m,n)
+         endif
 
-      if (lpencil(i_cp1))   p%cp1 = 1./p%cp
+         if (lpencil(i_cp1))   p%cp1 = 1./p%cp
 
 !  Gradient of the above
 !
-      if (lpencil(i_gradcp)) call grad(cp_full,p%gradcp)
+         if (lpencil(i_gradcp)) call grad(cp_full,p%gradcp)
 !
 !  Specific heat at constant volume (i.e. density)
 !
-     if (lpencil(i_cv)) p%cv = p%cp - Rgas
+         if (lpencil(i_cv)) p%cv = p%cp - Rgas
 
 !print*, p%cp(10), p%cv(10), Rgas
 
-      if (lpencil(i_cv1)) p%cv1=1/p%cv
-      if (lpencil(i_lncp)) p%lncp=log(p%cp)
+         if (lpencil(i_cv1)) p%cv1=1/p%cv
+         if (lpencil(i_lncp)) p%lncp=log(p%cp)
 
 !
 !  Polytropic index
 !
-      if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
-      if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
-      if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
+         if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
+         if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
+         if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
 
-   else
-    call stop_it('This case works only for cgs units system!')
-   endif
+       else
+         call stop_it('This case works only for cgs units system!')
+       endif
 
-  endif
+      endif
 
 
 
@@ -577,7 +591,7 @@ module Chemistry
       real, dimension (mx,my,mz,mvar) :: df
      
       real, dimension (nx,3) :: gchemspec
-      real, dimension (nx) :: ugchemspec,del2chemspec,diff_op,xdot
+      real, dimension (nx) :: ugchemspec,del2chemspec,diff_op,xdot, Dmix=0.
       real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
       real :: diff_k
       type (pencil_case) :: p
@@ -644,9 +658,14 @@ module Chemistry
           df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+diff_k*diff_op
         endif
       else
-        
+        do j=1,nchemspec
+         Dmix(:)=Dmix(:)+f(l1:l2,m,n,ichemspec(k))/species_constants(ichemspec(k),imass)/Bin_Diff_coef(k,j)
+        enddo
+        Dmix(:)=(1.-f(l1:l2,m,n,ichemspec(k)))*p%mu1/Dmix(:)
 
-      endif
+        call del2(f,ichemspec(k),del2chemspec) 
+
+       endif
 
 !
 !  chemical reactions:
