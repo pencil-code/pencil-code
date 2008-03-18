@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.81 2008-03-17 18:41:50 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.82 2008-03-18 17:03:39 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -86,7 +86,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.81 2008-03-17 18:41:50 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.82 2008-03-18 17:03:39 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -110,9 +110,6 @@ module Particles_nbody
         call fatal_error('register_particles_nbody','naux > maux')
       endif
 !
-!  No sink created yet, so mspar=0
-!
-!
     endsubroutine register_particles_nbody
 !***********************************************************************
     subroutine initialize_particles_nbody(lstarting)
@@ -134,6 +131,12 @@ module Particles_nbody
         mspar=0
       else
         mspar=nspar
+        !when first called, mspar was zero, so no diagnostic 
+        !index was written to index.pro
+        if (lroot) open(3, file=trim(datadir)//'/index.pro', &
+             STATUS='old', POSITION='append')
+        call rprint_particles_nbody(.false.,LWRITE=lroot)
+        if (lroot) close(3)
       endif
 !
 ! G_Newton. Overwrite the one set by start.in if set again here, 
@@ -1984,11 +1987,9 @@ module Particles_nbody
 !  Run through parse list again
 !
           if (lwr) then
-            if (idiag_xxspar(ks,j)/=0) &
-                 write(3,*) ' i_'//trim(str)//'par'//trim(sks)//'=',&
+            write(3,*) ' i_'//trim(str)//'par'//trim(sks)//'=',&
                  idiag_xxspar(ks,j)
-            if (idiag_vvspar(ks,j)/=0) &
-                 write(3,*) 'i_v'//trim(str)//'par'//trim(sks)//'=',&
+            write(3,*) 'i_v'//trim(str)//'par'//trim(sks)//'=',&
                  idiag_vvspar(ks,j)
           endif
 !
@@ -2002,9 +2003,7 @@ module Particles_nbody
         enddo
 !
         if (lwr) then
-          if (idiag_torqint(ks)/=0) &
-               write(3,*) 'i_torqint_'//trim(sks)//'=',idiag_torqint(ks)
-          if (idiag_torqext(ks)/=0) &
+          write(3,*) 'i_torqint_'//trim(sks)//'=',idiag_torqint(ks)
           write(3,*) 'i_torqext_'//trim(sks)//'=',idiag_torqext(ks)
         endif
       enddo
