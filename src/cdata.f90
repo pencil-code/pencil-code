@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.407 2008-03-18 14:23:21 brandenb Exp $
+! $Id: cdata.f90,v 1.408 2008-03-18 16:22:58 wlyra Exp $
 
 module Cdata
 
@@ -28,7 +28,7 @@ module Cdata
   real, dimension (nx) :: r1_mn,r2_mn,r2_weight,dvolume,dvolume_1
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth,sinth_weight
   real, dimension (nx) :: rcyl_mn,rcyl_mn1,rcyl_mn2,rcyl_weight
-
+  real, dimension (nx,3) :: dline_1
 !
 ! timestep related:
 !

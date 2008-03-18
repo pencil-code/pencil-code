@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.390 2008-03-15 06:12:23 brandenb Exp $
+! $Id: equ.f90,v 1.391 2008-03-18 16:22:58 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -473,7 +473,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.390 2008-03-15 06:12:23 brandenb Exp $")
+           "$Id: equ.f90,v 1.391 2008-03-18 16:22:58 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -655,21 +655,21 @@ module Equ
           dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m)**2,dz_1(n)**2)
         else
           if (lspherical_coords) then
-            dxyz_2 = dx_1(l1:l2)**2+ & 
-              (r1_mn*dy_1(m))**2+(r1_mn*sin1th(m)*dz_1(n))**2
-            dxyz_4 = dx_1(l1:l2)**4+ &
-              (r1_mn*dy_1(m))**4+(r1_mn*sin1th(m)*dz_1(n))**4
-            dxyz_6 = dx_1(l1:l2)**6+ & 
-              (r1_mn*dy_1(m))**6+(r1_mn*sin1th(m)*dz_1(n))**6
+            dline_1(:,1)=dx_1(l1:l2)
+            dline_1(:,2)=r1_mn*dy_1(m)
+            dline_1(:,3)=r1_mn*sin1th(m)*dz_1(n)
           else if (lcylindrical_coords) then
-            dxyz_2 = dx_1(l1:l2)**2+(rcyl_mn1*dy_1(m))**2+dz_1(n)**2
-            dxyz_4 = dx_1(l1:l2)**4+(rcyl_mn1*dy_1(m))**4+dz_1(n)**4
-            dxyz_6 = dx_1(l1:l2)**6+(rcyl_mn1*dy_1(m))**6+dz_1(n)**6
-          else
-            dxyz_2 = dx_1(l1:l2)**2+dy_1(m)**2+dz_1(n)**2
-            dxyz_4 = dx_1(l1:l2)**4+dy_1(m)**4+dz_1(n)**4
-            dxyz_6 = dx_1(l1:l2)**6+dy_1(m)**6+dz_1(n)**6
+            dline_1(:,1)=dx_1(l1:l2)
+            dline_1(:,2)=rcyl_mn1*dy_1(m)
+            dline_1(:,3)=dz_1(n)
+          else if (lcartesian_coords) then
+            dline_1(:,1)=dx_1(l1:l2)
+            dline_1(:,2)=dy_1(m)
+            dline_1(:,3)=dz_1(n)
           endif
+          dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
+          dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
+          dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
         endif
 !
 !  [AB: Isn't it true that not all 2-D averages use rcyl_mn?
