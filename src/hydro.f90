@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.417 2008-03-13 15:46:16 brandenb Exp $
+! $Id: hydro.f90,v 1.418 2008-03-18 13:28:07 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -339,7 +339,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.417 2008-03-13 15:46:16 brandenb Exp $")
+           "$Id: hydro.f90,v 1.418 2008-03-18 13:28:07 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1918,7 +1918,12 @@ use Mpicomm, only: stop_it
               endif
             enddo
           else
-            OO=sqrt(max(-g_r/rr_cyl,0.))
+            if ( (coord_system=='cylindric')  .or.&
+                 (coord_system=='cartesian')) then 
+              OO=sqrt(max(-g_r/rr_cyl,0.))
+            else if (coord_system=='spherical') then
+              OO=sqrt(max(-g_r/(rr_sph*sinth(m)**2),0.))
+            endif
           endif
 !
           if (coord_system=='cartesian') then
@@ -1929,9 +1934,10 @@ use Mpicomm, only: stop_it
             f(:,m,n,iux) = f(:,m,n,iux) + 0.
             f(:,m,n,iuy) = f(:,m,n,iuy) + OO*rr_cyl
             f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
-          else
-            call stop_it("centrifugal_balance: not "//&
-                 "implemented for spherical polars")
+          elseif (coord_system=='spherical') then
+            f(:,m,n,iux) = f(:,m,n,iux) + 0.
+            f(:,m,n,iuy) = f(:,m,n,iuy) + 0.
+            f(:,m,n,iuz) = f(:,m,n,iuz) + OO*(rr_sph*sinth(m))
           endif
 !
         enddo

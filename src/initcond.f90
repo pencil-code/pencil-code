@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.233 2008-03-11 16:34:57 brandenb Exp $
+! $Id: initcond.f90,v 1.234 2008-03-18 13:28:07 wlyra Exp $
 
 module Initcond
 
@@ -3214,6 +3214,11 @@ module Initcond
               f(:,m,n,iglobal_glnTT  )=gslnTT
               f(:,m,n,iglobal_glnTT+1)=0.
               f(:,m,n,iglobal_glnTT+2)=0.
+            elseif (lspherical_coords) then
+              f(:,m,n,iglobal_glnTT  )=gslnTT*sinth(m)
+              f(:,m,n,iglobal_glnTT+1)=gslnTT*costh(m)
+              f(:,m,n,iglobal_glnTT+2)=0.
+
             endif
 !
 !  else do it as temperature
@@ -3238,14 +3243,16 @@ module Initcond
           corr=gslnTT*cs2
           if (lenergy) corr=corr/gamma
           if (lcartesian_coords) then
+            !tmp1 is the cylindrical velocity
             tmp1=(f(:,m,n,iux)**2+f(:,m,n,iuy)**2)/rr_cyl**2
+            tmp2=tmp1 + corr/rr_cyl
           elseif (lcylindrical_coords) then
             tmp1=(f(:,m,n,iuy)/rr_cyl)**2
+            tmp2=tmp1 + corr/rr_cyl
           elseif (lspherical_coords) then
-            call stop_it("set_thermodynamical_quantities: not "//&
-                 "implemented for spherical polars")
+            tmp1=(f(:,m,n,iuz)/(rr_sph*sinth(m)))**2
+            tmp2=tmp1 + corr/(rr_sph*sinth(m)**2)
           endif
-          tmp2=tmp1 + corr/rr_cyl
 !
           do i=1,mx
             if (tmp2(i).lt.0.) then
@@ -3268,6 +3275,8 @@ module Initcond
             f(:,m,n,iuy)= sqrt(tmp2)*x
           elseif (lcylindrical_coords) then
             f(:,m,n,iuy)= sqrt(tmp2)*rr_cyl
+          elseif (lspherical_coords) then 
+            !!f(:,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
           endif
         enddo
       enddo

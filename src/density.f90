@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.374 2008-03-06 18:28:28 theine Exp $
+! $Id: density.f90,v 1.375 2008-03-18 13:28:07 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -137,7 +137,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.374 2008-03-06 18:28:28 theine Exp $")
+           "$Id: density.f90,v 1.375 2008-03-18 13:28:07 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1863,9 +1863,6 @@ module Density
         call set_thermodynamical_quantities(f,ptlaw)
       endif
 !
-      if (lspherical_coords) call stop_it("local_isothermal_density: "//&
-           "not implemented for spherical polar coordinates")
-!
       do n=1,mz
         do m=1,my
           lheader=lroot.and.(m==1).and.(n==1)
@@ -1922,11 +1919,11 @@ module Density
 !
 ! Correct the velocities for self-gravity
 !
-      call correct_for_selfgravity(f)
+      !!call correct_for_selfgravity(f)
 !
 ! Correct the velocities by this density gradient
 !
-      call correct_density_gradient(f)
+      !!call correct_density_gradient(f)
 !
     endsubroutine local_isothermal_density
 !***********************************************************************
@@ -1967,11 +1964,13 @@ module Density
 !
           call get_radial_distance(rr_sph,rr_cyl)
           call grad(f,ilnrho,glnrho)
-          !!gs= gx*cos + gy*sin
           if (lcartesian_coords) then
             gslnrho=(glnrho(:,1)*x(l1:l2) + glnrho(:,2)*y(m))/rr_cyl
-          else
+            !!gs= gx*cos + gy*sin
+          else if (lcylindrical_coords) then 
             gslnrho=glnrho(:,1)
+          else if (lspherical_coords) then 
+            gslnrho=glnrho(:,1)*sinth(m) + glnrho(:,2)*costh(m)
           endif
 !
 ! get sound speed
@@ -1982,7 +1981,7 @@ module Density
             call get_cp1(cp1)
             cs2=exp(f(l1:l2,m,n,ilnTT))*gamma1/cp1
           elseif (lentropy) then
-            call stop_it("local_isothermal_density: cs2 not "//&
+            call stop_it("correct_density_gradient: cs2 not "//&
                  "implemented for entropy. Use temperature_idealgas")
           else
             cs2=cs20
@@ -1995,14 +1994,14 @@ module Density
 !
           if (lcartesian_coords) then
             tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
+            tmp2=tmp1 + corr/rr_cyl
           elseif (lcylindrical_coords) then
             tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
+            tmp2=tmp1 + corr/rr_cyl
           elseif (lspherical_coords) then
-            call stop_it("correct_density_gradient: not implemented"//&
-                 " for spherical polars")
+            tmp1=(f(l1:l2,m,n,iuz)/(rr_sph*sinth(m)))**2
+            tmp2=tmp1 + corr/(rr_sph*sinth(m)**2)
           endif
-!
-          tmp2=tmp1 + corr/rr_cyl
 !
           do i=1,nx
             if (tmp2(i).lt.0.) then
@@ -2028,6 +2027,8 @@ module Density
             f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
           elseif (lcylindrical_coords) then
             f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
+          elseif (lspherical_coords) then 
+            f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
           endif
         enddo
       enddo
