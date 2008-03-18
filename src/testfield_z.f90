@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.24 2008-03-14 17:39:00 brandenb Exp $
+! $Id: testfield_z.f90,v 1.25 2008-03-18 14:23:22 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -52,8 +52,8 @@ module Testfield
   real :: amplaa=0., kx_aatest=1.,ky_aatest=1.,kz_aatest=1.
   real :: taainit=0.,daainit=0.
   logical :: reinitialize_aatest=.false.
-  logical :: zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
-  logical :: luxb_as_aux=.false.,linit_aatest=.false.
+  logical :: zextent=.true.,lsoca=.true.,lsoca_jxb=.true.,lset_bbtest2=.false.
+  logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,linit_aatest=.false.
   character (len=labellen) :: itestfield='B11-B21'
   real :: ktestfield=1., ktestfield1=1.
   integer, parameter :: ntestfield=3*njtest
@@ -62,14 +62,14 @@ module Testfield
   namelist /testfield_init_pars/ &
        B_ext,zextent,initaatest, &
        amplaatest, &
-       luxb_as_aux
+       luxb_as_aux,ljxb_as_aux
 
   ! run parameters
   real :: etatest=0.,etatest1=0.
   namelist /testfield_run_pars/ &
-       B_ext,reinitialize_aatest,zextent,lsoca, &
+       B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
-       luxb_as_aux,daainit,linit_aatest,bamp
+       luxb_as_aux,ljxb_as_aux,daainit,linit_aatest,bamp
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -107,8 +107,10 @@ module Testfield
   integer :: idiag_bx0mz=0      ! DIAG_DOC: $\left<b_{x}\right>_{xy}$
   integer :: idiag_by0mz=0      ! DIAG_DOC: $\left<b_{y}\right>_{xy}$
   integer :: idiag_bz0mz=0      ! DIAG_DOC: $\left<b_{z}\right>_{xy}$
-
-  real, dimension (mz,3,ntestfield/3) :: uxbtestm
+!
+!  arrays for horizontally averaged uxb and jxb
+!
+  real, dimension (mz,3,ntestfield/3) :: uxbtestm,jxbtestm
 
   contains
 
@@ -158,7 +160,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.24 2008-03-14 17:39:00 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.25 2008-03-18 14:23:22 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -238,12 +240,28 @@ module Testfield
         endif
       endif
 !
+!  possibility of using jxb as auxiliary array (is intended to be
+!  used in connection with testflow method)
+!
+      if (ljxb_as_aux) then
+        if (ijxb==0) then
+          call farray_register_auxiliary('jxb',ijxb,vector=3*njtest)
+        endif
+        if (ijxb/=0.and.lroot) then
+          print*, 'initialize_magnetic: ijxb = ', ijxb
+          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+          write(3,*) 'ijxb=',ijxb
+          close(3)
+        endif
+      endif
+!
 !  write testfield information to a file (for convenient post-processing)
 !
       if (lroot) then
         open(1,file=trim(datadir)//'/testfield_info.dat',STATUS='unknown')
         write(1,'(a,i1)') 'zextent=',merge(1,0,zextent)
         write(1,'(a,i1)') 'lsoca='  ,merge(1,0,lsoca)
+        write(1,'(a,i1)') 'lsoca_jxb='  ,merge(1,0,lsoca_jxb)
         write(1,'(3a)') "itestfield='",trim(itestfield)//"'"
         write(1,'(a,f5.2)') 'ktestfield=',ktestfield
         close(1)
@@ -365,7 +383,11 @@ module Testfield
 !  calculate da^(pq)/dt=Uxb^(pq)+uxB^(pq)+uxb-<uxb>+eta*del2A^(pq),
 !    where p=1,2 and q=1 (if B11-B21) and optionally q=2 (if B11-B22)
 !
+!  also calculate corresponding Lorentz force in connection with
+!  testflow method
+!
 !   3-jun-05/axel: coded
+!  16-mar-08/axel: Lorentz force added for testfield method
 !
       use Cdata
       use Sub
@@ -376,8 +398,9 @@ module Testfield
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx,3) :: bb,aa,uxB,bbtest=0,btest,uxbtest,duxbtest
-      real, dimension (nx,3) :: J0test,jxb0rtest,J0xbrtest
+      real, dimension (nx,3) :: bb,aa,uxB,B0test=0,bbtest
+      real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbrtest
+      real, dimension (nx,3) :: J0test,jxB0rtest,J0xbrtest
       real, dimension (nx,3,njtest) :: Eipq,bpq
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
@@ -385,7 +408,7 @@ module Testfield
       real, dimension (nx) :: bpq2
       integer :: jtest,jfnamez,j,i3,i4
       integer,save :: ifirst=0
-      logical,save :: ltest_uxb=.false.
+      logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
       character (len=5) :: ch
       character (len=130) :: file
 !
@@ -420,9 +443,9 @@ module Testfield
         iaztest=iaxtest+2
         call del2v(f,iaxtest,del2Atest)
         select case(itestfield)
-          case('B11-B21+B=0'); call set_bbtest(bbtest,jtest)
-          case('B11-B21'); call set_bbtest_B11_B21(bbtest,jtest)
-          case('B11-B22'); call set_bbtest_B11_B22(bbtest,jtest)
+          case('B11-B21+B=0'); call set_bbtest(B0test,jtest)
+          case('B11-B21'); call set_bbtest_B11_B21(B0test,jtest)
+          case('B11-B22'); call set_bbtest_B11_B22(B0test,jtest)
           case('B=0') !(dont do anything)
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
@@ -430,11 +453,11 @@ module Testfield
 !
 !  add an external field, if present
 !
-        if (B_ext(1)/=0.) bbtest(:,1)=bbtest(:,1)+B_ext(1)
-        if (B_ext(2)/=0.) bbtest(:,2)=bbtest(:,2)+B_ext(2)
-        if (B_ext(3)/=0.) bbtest(:,3)=bbtest(:,3)+B_ext(3)
+        if (B_ext(1)/=0.) B0test(:,1)=B0test(:,1)+B_ext(1)
+        if (B_ext(2)/=0.) B0test(:,2)=B0test(:,2)+B_ext(2)
+        if (B_ext(3)/=0.) B0test(:,3)=B0test(:,3)+B_ext(3)
 !
-        call cross_mn(uufluct,bbtest,uxB)
+        call cross_mn(uufluct,B0test,uxB)
         if (lsoca) then
           df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
             +uxB+etatest*del2Atest
@@ -446,8 +469,8 @@ module Testfield
           if (iuxb/=0.and..not.ltest_uxb) then
             uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
           else
-            call curl(f,iaxtest,btest)
-            call cross_mn(p%uu,btest,uxbtest)
+            call curl(f,iaxtest,bbtest)
+            call cross_mn(p%uu,bbtest,uxbtest)
           endif
 !
 !  subtract average emf
@@ -474,15 +497,14 @@ module Testfield
 !
 !  calculate jpq x bpq
 !
-          call curl_mn(aijtest,btest,aatest)
-          call curl_mn(bijtest,jjtest,btest)
-          call cross_mn(jjtest,btest,jxbrtest)
+          call curl_mn(aijtest,bbtest,aatest)
+          call curl_mn(bijtest,jjtest,bbtest)
 !
-!  calculate jpq x Bpq
+!  calculate jpq x B0pq
 !
-          call cross_mn(jjtest,bbtest,jxb0rtest)
+          call cross_mn(jjtest,B0test,jxB0rtest)
 !
-!  calculate jpq x Bpq
+!  calculate J0pq x bpq
 !
           select case(itestfield)
 !           case('B11-B21+B=0'); call set_J0test(J0test,jtest)
@@ -492,22 +514,42 @@ module Testfield
           case default
             call fatal_error('daatest_dt','undefined itestfield value')
           endselect
-          call cross_mn(J0test,btest,J0xbrtest)
+          call cross_mn(J0test,bbtest,J0xbrtest)
 !
 !  add them all together
 !
+        if (lsoca_jxb) then
           df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
-            +jxbrtest+jxb0rtest+J0xbrtest
+            +jxB0rtest+J0xbrtest
+        else
+!
+!  use f-array for uxb (if space has been allocated for this) and
+!  if we don't test (i.e. if ltest_jxb=.false.)
+!
+          if (ijxb/=0.and..not.ltest_jxb) then
+            jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
+          else
+            call cross_mn(jjtest,bbtest,jxbrtest)
+          endif
+!
+!  subtract average jxb
+!
+          do j=1,3
+            djxbrtest(:,j)=jxbtest(:,j)-jxbtestm(n,j,jtest)
+          enddo
+          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
+            +jxB0rtest+J0xbrtest+djxbrtest
+        endif
         endif
 !
 !  calculate alpha, begin by calculating uxbtest (if not already done above)
 !
         if ((ldiagnos.or.l1ddiagnos).and. &
           ((lsoca.or.iuxb/=0).and.(.not.ltest_uxb))) then
-          call curl(f,iaxtest,btest)
-          call cross_mn(p%uu,btest,uxbtest)
+          call curl(f,iaxtest,bbtest)
+          call cross_mn(p%uu,bbtest,uxbtest)
         endif
-        bpq(:,:,jtest)=btest
+        bpq(:,:,jtest)=bbtest
         Eipq(:,:,jtest)=uxbtest/bamp
       enddo
 !
@@ -678,8 +720,14 @@ module Testfield
 !
       real, dimension (nz,nprocz,3,njtest) :: uxbtestm1
       real, dimension (nz*nprocz*3*njtest) :: uxbtestm2,uxbtestm3
-      real, dimension (nx,3) :: btest,uxbtest
-      integer :: jtest,j,nxy=nxgrid*nygrid,juxb
+!
+      real, dimension (nz,nprocz,3,njtest) :: jxbtestm1
+      real, dimension (nz*nprocz*3*njtest) :: jxbtestm2,jxbtestm3
+!
+      real, dimension (nx,3,3) :: aijtest,bijtest
+      real, dimension (nx,3) :: aatest,bbtest,jjtest,uxbtest,jxbtest
+      real, dimension (nx,3) :: del2Atest2,graddivatest
+      integer :: jtest,j,nxy=nxgrid*nygrid,juxb,jjxb
       logical :: headtt_save
       real :: fac
       type (pencil_case) :: p
@@ -706,9 +754,8 @@ module Testfield
             uxbtestm(n,:,jtest)=0.
             do m=m1,m2
               call calc_pencils_hydro(f,p)
-              call curl(f,iaxtest,btest)
-              call cross_mn(p%uu,btest,uxbtest)
-!if (n==11.and.jtest==1) print*,'iproc,m,u,b,uxb=',iproc,m,btest(11,2),f(14,m,11,1),f(14,m,11,3)
+              call curl(f,iaxtest,bbtest)
+              call cross_mn(p%uu,bbtest,uxbtest)
               juxb=iuxb+3*(jtest-1)
               if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
               do j=1,3
@@ -727,8 +774,6 @@ module Testfield
 !
       if (nprocy>1) then
         uxbtestm2=reshape(uxbtestm1,shape=(/nz*nprocz*3*njtest/))
-!print*,iproc,uxbtestm(11,1,1)
-!print*,iproc,uxbtestm1(11-n1+1,ipz+1,1,1),uxbtestm2(11-n1+1+nz*ipz)
         call mpireduce_sum(uxbtestm2,uxbtestm3,nz*nprocz*3*njtest)
         call mpibcast_real(uxbtestm3,nz*nprocz*3*njtest)
         uxbtestm1=reshape(uxbtestm3,shape=(/nz,nprocz,3,njtest/))
@@ -741,13 +786,62 @@ module Testfield
         enddo
       endif
 !
+!  Do the same for jxb; do each of the 9 test fields at a time
+!  but exclude redundancies, e.g. if the averaged field lacks x extent.
+!  Note: the same block of lines occurs again further up in the file.
+!
+      do jtest=1,njtest
+        iaxtest=iaatest+3*(jtest-1)
+        iaztest=iaxtest+2
+        if (lsoca_jxb) then
+          jxbtestm(:,:,jtest)=0.
+        else
+          do n=n1,n2
+            jxbtestm(n,:,jtest)=0.
+            do m=m1,m2
+              aatest=f(l1:l2,m,n,iaxtest:iaztest)
+              call gij(f,iaxtest,aijtest,1)
+              call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest2,graddivatest)
+              call curl_mn(aijtest,bbtest,aatest)
+              call curl_mn(bijtest,jjtest,bbtest)
+              call cross_mn(jjtest,bbtest,jxbtest)
+              jjxb=ijxb+3*(jtest-1)
+              if (ijxb/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
+              do j=1,3
+                jxbtestm(n,j,jtest)=jxbtestm(n,j,jtest)+fac*sum(jxbtest(:,j))
+              enddo
+              headtt=.false.
+            enddo
+            do j=1,3
+              jxbtestm1(n-n1+1,ipz+1,j,jtest)=jxbtestm(n,j,jtest)
+            enddo
+          enddo
+        endif
+      enddo
+!
+!  do communication for array of size nz*nprocz*3*njtest
+!
+      if (nprocy>1) then
+        jxbtestm2=reshape(jxbtestm1,shape=(/nz*nprocz*3*njtest/))
+        call mpireduce_sum(jxbtestm2,jxbtestm3,nz*nprocz*3*njtest)
+        call mpibcast_real(jxbtestm3,nz*nprocz*3*njtest)
+        jxbtestm1=reshape(jxbtestm3,shape=(/nz,nprocz,3,njtest/))
+        do jtest=1,njtest
+          do n=n1,n2
+            do j=1,3
+              jxbtestm(n,j,jtest)=jxbtestm1(n-n1+1,ipz+1,j,jtest)
+            enddo
+          enddo
+        enddo
+      endif
+!
 !  reset headtt
 !
       headtt=headtt_save
 !
     endsubroutine calc_ltestfield_pars
 !***********************************************************************
-    subroutine set_bbtest(bbtest,jtest)
+    subroutine set_bbtest(B0test,jtest)
 !
 !  set testfield
 !
@@ -756,24 +850,24 @@ module Testfield
       use Cdata
       use Sub
 !
-      real, dimension (nx,3) :: bbtest
+      real, dimension (nx,3) :: B0test
       integer :: jtest
 !
       intent(in)  :: jtest
-      intent(out) :: bbtest
+      intent(out) :: B0test
 !
-!  set bbtest for each of the 9 cases
+!  set B0test for each of the 9 cases
 !
       select case(jtest)
-      case(1); bbtest(:,1)=cz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(2); bbtest(:,1)=sz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(3); bbtest(:,1)=0.   ; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case default; bbtest(:,:)=0.
+      case(1); B0test(:,1)=cz(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case(2); B0test(:,1)=sz(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case(3); B0test(:,1)=0.   ; B0test(:,2)=0.; B0test(:,3)=0.
+      case default; B0test(:,:)=0.
       endselect
 !
     endsubroutine set_bbtest
 !***********************************************************************
-    subroutine set_bbtest_B11_B21 (bbtest,jtest)
+    subroutine set_bbtest_B11_B21 (B0test,jtest)
 !
 !  set testfield
 !
@@ -782,18 +876,18 @@ module Testfield
       use Cdata
       use Sub
 !
-      real, dimension (nx,3) :: bbtest
+      real, dimension (nx,3) :: B0test
       integer :: jtest
 !
       intent(in)  :: jtest
-      intent(out) :: bbtest
+      intent(out) :: B0test
 !
-!  set bbtest for each of the 9 cases
+!  set B0test for each of the 9 cases
 !
       select case(jtest)
-      case(1); bbtest(:,1)=cz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(2); bbtest(:,1)=sz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case default; bbtest(:,:)=0.
+      case(1); B0test(:,1)=cz(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case(2); B0test(:,1)=sz(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case default; B0test(:,:)=0.
       endselect
 !
     endsubroutine set_bbtest_B11_B21
@@ -823,7 +917,7 @@ module Testfield
 !
     endsubroutine set_J0test_B11_B21
 !***********************************************************************
-    subroutine set_bbtest_B11_B22 (bbtest,jtest)
+    subroutine set_bbtest_B11_B22 (B0test,jtest)
 !
 !  set testfield
 !
@@ -832,20 +926,20 @@ module Testfield
       use Cdata
       use Sub
 !
-      real, dimension (nx,3) :: bbtest
+      real, dimension (nx,3) :: B0test
       integer :: jtest
 !
       intent(in)  :: jtest
-      intent(out) :: bbtest
+      intent(out) :: B0test
 !
-!  set bbtest for each of the 9 cases
+!  set B0test for each of the 9 cases
 !
       select case(jtest)
-      case(1); bbtest(:,1)=bamp*cz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(2); bbtest(:,1)=bamp*sz(n); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(3); bbtest(:,1)=0.; bbtest(:,2)=bamp*cz(n); bbtest(:,3)=0.
-      case(4); bbtest(:,1)=0.; bbtest(:,2)=bamp*sz(n); bbtest(:,3)=0.
-      case default; bbtest(:,:)=0.
+      case(1); B0test(:,1)=bamp*cz(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case(2); B0test(:,1)=bamp*sz(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case(3); B0test(:,1)=0.; B0test(:,2)=bamp*cz(n); B0test(:,3)=0.
+      case(4); B0test(:,1)=0.; B0test(:,2)=bamp*sz(n); B0test(:,3)=0.
+      case default; B0test(:,:)=0.
       endselect
 !
     endsubroutine set_bbtest_B11_B22

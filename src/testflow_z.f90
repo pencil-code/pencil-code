@@ -1,4 +1,4 @@
-! $Id: testflow_z.f90,v 1.4 2008-03-15 06:12:23 brandenb Exp $
+! $Id: testflow_z.f90,v 1.5 2008-03-18 14:23:22 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -157,7 +157,7 @@ module Testflow
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testflow_z.f90,v 1.4 2008-03-15 06:12:23 brandenb Exp $")
+           "$Id: testflow_z.f90,v 1.5 2008-03-18 14:23:22 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -379,7 +379,7 @@ module Testflow
       type (pencil_case) :: p
 
 !     real, dimension (nx,3) :: bb,aa,uxB,uutest,btest,ugutest,dugutest
-      real, dimension (nx,3) :: aa,uxB,uutest,btest,ugutest,dugutest
+      real, dimension (nx,3) :: aa,uxB,uutest,ugutest,dugutest
       real, dimension (nx,3,njtest) :: Eipq,upq
       real, dimension (nx,3,3) :: uijtest
       real, dimension (nx,3) :: del2utest,uufluct,ghhtest

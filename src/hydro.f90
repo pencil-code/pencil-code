@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.418 2008-03-18 13:28:07 wlyra Exp $
+! $Id: hydro.f90,v 1.419 2008-03-18 14:23:22 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -45,6 +45,11 @@ module Hydro
 !  precession matrices
 !
   real, dimension (3,3) :: mat_cori=0.,mat_cent=0.
+!
+!  for continuous forcing function
+!
+  real, dimension (my) :: phi1_ff
+  real, dimension (mx) :: phi2_ff
 !
 ! init parameters
 !
@@ -102,6 +107,7 @@ module Hydro
   real :: Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.,kz_diffrot=0.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   real :: k1_ff=1.,ampl_ff=1.,width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
+  real :: kf_ff_uu=0.,omega_ff_uu=0.
   real :: utop=0.,ubot=0.,omega_out=0.,omega_in=0.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
@@ -127,6 +133,7 @@ module Hydro
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
        lforcing_continuous_uu,iforcing_continuous_uu, &
        lembed,k1_ff,ampl_ff,width_ff_uu,x1_ff_uu,x2_ff_uu, &
+       kf_ff_uu,omega_ff_uu, &
        utop,ubot,omega_out,omega_in, & 
        lprecession, omega_precession, lshear_rateofstrain, &
        lalways_use_gij_etc,lcalc_uumean, &
@@ -339,7 +346,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.418 2008-03-18 13:28:07 wlyra Exp $")
+           "$Id: hydro.f90,v 1.419 2008-03-18 14:23:22 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1593,7 +1600,7 @@ use Mpicomm, only: stop_it
 !
 !   9-nov-06/axel: adapted from calc_ltestfield_pars
 !
-      use Cdata, only: iux,iuy,iuz,ilnrho,l1,l2,m1,m2,n1,n2,lroot,t !,ipz
+      use Cdata, only: iux,iuy,iuz,ilnrho,l1,l2,m1,m2,n1,n2,lroot,t,x,y
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1694,6 +1701,13 @@ use Mpicomm, only: stop_it
         mat_cori=2.*(omega_precession*mat_cori1+Omega*mat_cori2)
         mat_cent=omega_precession**2*mat_cent1+Omega**2*mat_cent2 &
           +2.*omega_precession*Omega*mat_cent3
+      endif
+!
+!  AKA effect
+!
+      if (iforcing_continuous_uu=='AKA') then
+        phi1_ff=cos(kf_ff_uu*y+omega_ff_uu*t)
+        phi2_ff=cos(kf_ff_uu*x-omega_ff_uu*t)
       endif
 !
     endsubroutine calc_lhydro_pars
@@ -2324,6 +2338,11 @@ use Mpicomm, only: stop_it
         forcing_rhs(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
         forcing_rhs(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
         forcing_rhs(:,3)=0.
+      elseif (iforcing_continuous_uu=='AKA') then
+        fact=sqrt(2.)*ampl_ff
+        forcing_rhs(:,1)=fact*phi1_ff(m    )
+        forcing_rhs(:,2)=fact*phi2_ff(l1:l2)
+        forcing_rhs(:,3)=fact*(phi1_ff(m)+phi1_ff(l1:l2))
       endif
 !
 !  apply forcing in momentum equation
