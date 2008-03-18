@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.30 2008-03-18 08:49:59 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.31 2008-03-18 10:00:29 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -10,7 +10,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDEDgTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,mu1,H0RT,S0R
+! PENCILS PROVIDEDgTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,mu1
 !***************************************************************
 
 module Chemistry
@@ -24,6 +24,9 @@ module Chemistry
   implicit none
 
   include 'chemistry.h'
+
+  real :: Rgas, Rgas_unit_sys=1.
+
 !
 !  parameters related to chemical reactions
 !
@@ -37,7 +40,6 @@ module Chemistry
   real,    allocatable, dimension(:)   :: kreactions_m,kreactions_p
   character (len=30),allocatable, dimension(:) :: reaction_name
 
-   real :: Rgas, Rgas_unit_sys=1.
 
 !
 !  hydro-related parameters
@@ -48,6 +50,8 @@ module Chemistry
   real :: chem_diff=0.
   character (len=labellen), dimension (ninit) :: initchem='nothing'
   character (len=labellen), dimension (2*nchemspec) :: kreactions_profile=''
+
+  real,    allocatable, dimension(:,:) :: Bin_Diff_coef
 
 !
 !  Chemkin related parameters
@@ -153,11 +157,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.30 2008-03-18 08:49:59 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.31 2008-03-18 10:00:29 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.30 2008-03-18 08:49:59 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.31 2008-03-18 10:00:29 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -202,6 +206,20 @@ module Chemistry
       else
         mreactions=2*nchemspec
       endif
+!
+!  Allocate binary diffusion coefficient array
+!
+      allocate(Bin_Diff_coef(nchemspec,nchemspec),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for binary diffusion coefficients") 
+
+! TEMPORARY!
+! While we do not have the data file all binary diffusion coefficients are 1.
+
+  Bin_Diff_coef=1.
+
+!
+! TEMPORARY!
+
 !
 !  Allocate reaction arrays
 !
@@ -521,65 +539,6 @@ module Chemistry
       if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
       if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
 
-!
-!  Dimensionless Standard-state molar enthalpy H0/RT
-!
-
-       if (lpencil(i_H0RT)) then
-        do k=1,nchemspec
-          T_low=species_constants(k,iTemp1)
-          T_mid=species_constants(k,iTemp2)
-          T_up= species_constants(k,iTemp3)
-         do i=1,nx
-          T_local=p%TT(i)*unit_temperature 
-           if (T_local >=T_low .and. T_local <= T_mid) then
-               tmp=0. 
-               do j=1,5
-                tmp=tmp+species_constants(k,ia1(j))*T_local**(j-1)/j 
-               enddo
-              p%H0RT(:,k)=tmp+species_constants(k,ia1(6))/T_local
-           else
-               tmp=0. 
-               do j=1,5 
-                tmp=tmp+species_constants(k,ia2(j))*T_local**(j-1)/j 
-               enddo
-             p%H0RT(:,k)=tmp+species_constants(k,ia2(6))/T_local
-           endif
-         enddo
-        enddo
-       endif 
-!
-
-!
-!  Dimensionless Standard-state molar entropy  S0/R
-!
-
-       if (lpencil(i_S0R)) then
-        do k=1,nchemspec
-          T_low=species_constants(k,iTemp1)
-          T_mid=species_constants(k,iTemp2)
-          T_up= species_constants(k,iTemp3)
-         do i=1,nx
-          T_local=p%TT(i)*unit_temperature 
-          lnT_local=p%lnTT(i)+log(unit_temperature)
-           if (T_local >=T_low .and. T_local <= T_mid) then
-               tmp=0. 
-               do j=2,5
-                tmp=tmp+species_constants(k,ia1(j))*T_local**(j-1)/(j-1) 
-               enddo
-              p%S0R(:,k)=species_constants(k,ia1(1))*lnT_local+tmp+species_constants(k,ia1(7))
-           else
-               tmp=0. 
-               do j=2,5 
-                tmp=tmp+species_constants(k,ia2(j))*T_local**(j-1)/(j-1) 
-               enddo
-             p%S0R(:,k)=species_constants(k,ia2(1))*lnT_local+tmp+species_constants(k,ia2(7))
-           endif
-         enddo
-        enddo
-       endif 
-!
-
    else
     call stop_it('This case works only for cgs units system!')
    endif
@@ -673,6 +632,9 @@ module Chemistry
 !
 !  diffusion operator
 !
+!   Temporary we check the existence of chem.imp data, further one should check the existence of a file with binary diffusion coefficients!
+!
+      if (.not. lcheminp) then  
         if (chem_diff/=0.) then
           diff_k=chem_diff*chem_diff_prefactor(k)
           if (headtt) print*,'dchemistry_dt: k,diff_k=',k,diff_k
@@ -681,6 +643,11 @@ module Chemistry
           diff_op=diff_op+del2chemspec
           df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+diff_k*diff_op
         endif
+      else
+        
+
+      endif
+
 !
 !  chemical reactions:
 !  multiply with stoichiometric matrix with reaction speed
@@ -740,7 +707,7 @@ module Chemistry
 99    return
     endsubroutine read_chemistry_init_pars
 !***********************************************************************
-    subroutine write_chemistry_init_pars(unit)
+   subroutine write_chemistry_init_pars(unit)
 !
       integer, intent(in) :: unit
 
@@ -1469,19 +1436,81 @@ print*,species_name
     type (pencil_case) :: p
     real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1=0.,prod2=0.
     real, dimension (nx) :: kf=0., kr=0.
+    real, dimension (nx,nchemspec) :: H0_RT, S0_R
 
     real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
 
-     integer :: k , reac
-     real  :: sum_tmp=0.
+     integer :: k , reac, j, i
+     real  :: sum_tmp=0., T_low, T_mid, T_up, T_local, lnT_local, tmp
 !
+
+
+!
+!  Dimensionless Standard-state molar enthalpy H0/RT
+!
+
+        do k=1,nchemspec
+          T_low=species_constants(k,iTemp1)
+          T_mid=species_constants(k,iTemp2)
+          T_up= species_constants(k,iTemp3)
+         do i=1,nx
+          T_local=p%TT(i)*unit_temperature 
+           if (T_local >=T_low .and. T_local <= T_mid) then
+               tmp=0. 
+               do j=1,5
+                tmp=tmp+species_constants(k,ia1(j))*T_local**(j-1)/j 
+               enddo
+              H0_RT(i,k)=tmp+species_constants(k,ia1(6))/T_local
+           else
+               tmp=0. 
+               do j=1,5 
+                tmp=tmp+species_constants(k,ia2(j))*T_local**(j-1)/j 
+               enddo
+             H0_RT(i,k)=tmp+species_constants(k,ia2(6))/T_local
+           endif
+         enddo
+        enddo
+
+!
+
+!
+!  Dimensionless Standard-state molar entropy  S0/R
+!
+
+        do k=1,nchemspec
+          T_low=species_constants(k,iTemp1)
+          T_mid=species_constants(k,iTemp2)
+          T_up= species_constants(k,iTemp3)
+         do i=1,nx
+          T_local=p%TT(i)*unit_temperature 
+          lnT_local=p%lnTT(i)+log(unit_temperature)
+           if (T_local >=T_low .and. T_local <= T_mid) then
+               tmp=0. 
+               do j=2,5
+                tmp=tmp+species_constants(k,ia1(j))*T_local**(j-1)/(j-1) 
+               enddo
+              S0_R(i,k)=species_constants(k,ia1(1))*lnT_local+tmp+species_constants(k,ia1(7))
+           else
+               tmp=0. 
+               do j=2,5 
+                tmp=tmp+species_constants(k,ia2(j))*T_local**(j-1)/(j-1) 
+               enddo
+             S0_R(i,k)=species_constants(k,ia2(1))*lnT_local+tmp+species_constants(k,ia2(7))
+           endif
+         enddo
+        enddo
+
+!
+! calculation of the reaction rate
+!
+
     do reac=1,nreactions
 
      kf(:)=B_n(reac)*(p%TT(:)*unit_temperature)**alpha_n(reac)*exp(-E_an(reac)/Rgas_unit_sys/p%TT(:)/unit_temperature)
 
      do k=1,nchemspec
-       dSR(:) =dSR(:)+(Sijm(k,reac)-Sijp(k,reac))*p%S0R(:,k)
-       dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*p%H0RT(:,k)
+       dSR(:) =dSR(:)+(Sijm(k,reac)-Sijp(k,reac))*S0_R(:,k)
+       dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*H0_RT(:,k)
        sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
      enddo
 
