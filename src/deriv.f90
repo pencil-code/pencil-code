@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.60 2007-11-20 09:49:33 bingert Exp $
+! $Id: deriv.f90,v 1.61 2008-03-18 16:23:45 wlyra Exp $
 
 module Deriv
 
@@ -707,7 +707,7 @@ module Deriv
         endif
         if ((.not.lcartesian_coords).and.(.not.igndx)) then
           call fatal_error('der6','in non-cartesian coordinates '//&
-               'just works if upwiding is used')
+               'just works if upwinding is used')
         endif
      endif
 !     
