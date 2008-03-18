@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.29 2008-03-17 15:19:13 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.30 2008-03-18 08:49:59 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -153,11 +153,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.29 2008-03-17 15:19:13 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.30 2008-03-18 08:49:59 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.29 2008-03-17 15:19:13 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.30 2008-03-18 08:49:59 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -579,7 +579,6 @@ module Chemistry
         enddo
        endif 
 !
-
 
    else
     call stop_it('This case works only for cgs units system!')
@@ -1469,18 +1468,16 @@ print*,species_name
     intent(in) :: f
     type (pencil_case) :: p
     real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1=0.,prod2=0.
-    real, dimension (nx) :: kreac_array_pk=0., kreac_array_mk=0.
+    real, dimension (nx) :: kf=0., kr=0.
 
     real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
 
      integer :: k , reac
      real  :: sum_tmp=0.
-
 !
-
     do reac=1,nreactions
 
-     kreac_array_pk(:)=B_n(reac)*(p%TT(:)*unit_temperature)**alpha_n(reac)*exp(E_an(reac)/Rgas_unit_sys/p%TT(:)/unit_temperature)
+     kf(:)=B_n(reac)*(p%TT(:)*unit_temperature)**alpha_n(reac)*exp(-E_an(reac)/Rgas_unit_sys/p%TT(:)/unit_temperature)
 
      do k=1,nchemspec
        dSR(:) =dSR(:)+(Sijm(k,reac)-Sijp(k,reac))*p%S0R(:,k)
@@ -1489,19 +1486,21 @@ print*,species_name
      enddo
 
      Kp=exp(dSR-dHRT)
-
+!
+! p is in atm units; atm/bar=1./0.986
+!
      Kc=Kp*(p%pp/p%TT/Rgas_unit_sys/0.986*unit_mass/unit_length/unit_time**2/unit_temperature)**sum_tmp
 
-     kreac_array_mk(:)=kreac_array_pk(:)/Kc
+     kr(:)=kf(:)/Kc
 
       do k=1,nchemspec   
-       prod1=prod1*f(l1:l2,m,n,ichemspec(k))**Sijp(k,reac)
+       prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*p%rho(:)/species_constants(k,imass))**Sijp(k,reac)
       enddo
       do k=1,nchemspec   
-       prod2=prod2*f(l1:l2,m,n,ichemspec(k))**Sijm(k,reac)
+       prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*p%rho(:)/species_constants(k,imass))**Sijm(k,reac)
       enddo
-       vreact_p(:,reac)=kreac_array_pk*prod1
-       vreact_m(:,reac)=kreac_array_mk*prod2
+       vreact_p(:,reac)=kf*prod1
+       vreact_m(:,reac)=kr*prod2
 
     enddo
 
