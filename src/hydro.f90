@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.419 2008-03-18 14:23:22 brandenb Exp $
+! $Id: hydro.f90,v 1.420 2008-03-19 23:07:47 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -346,7 +346,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.419 2008-03-18 14:23:22 brandenb Exp $")
+           "$Id: hydro.f90,v 1.420 2008-03-19 23:07:47 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2342,7 +2342,7 @@ use Mpicomm, only: stop_it
         fact=sqrt(2.)*ampl_ff
         forcing_rhs(:,1)=fact*phi1_ff(m    )
         forcing_rhs(:,2)=fact*phi2_ff(l1:l2)
-        forcing_rhs(:,3)=fact*(phi1_ff(m)+phi1_ff(l1:l2))
+        forcing_rhs(:,3)=fact*(phi1_ff(m)+phi2_ff(l1:l2))
       endif
 !
 !  apply forcing in momentum equation
