@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.32 2008-03-18 11:26:30 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.33 2008-03-19 10:51:10 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -10,7 +10,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDEDgTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,mu1,XX,YY
+! PENCILS PROVIDEDgTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,XX,YY
 !***************************************************************
 
 module Chemistry
@@ -26,7 +26,8 @@ module Chemistry
   include 'chemistry.h'
 
   real :: Rgas, Rgas_unit_sys=1.
-
+  real, dimension (mx,my,mz) :: cp_full,mu1_full
+  real, dimension (mx,my,mz,mfarray) :: Diff_full, XX_full
 !
 !  parameters related to chemical reactions
 !
@@ -157,11 +158,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.32 2008-03-18 11:26:30 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.33 2008-03-19 10:51:10 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.32 2008-03-18 11:26:30 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.33 2008-03-19 10:51:10 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -458,7 +459,7 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension (nx) :: mu1_cgs, cp_spec
-      real, dimension (mx,my,mz) :: cp_full
+      real, dimension (mx) :: tmp_sum
 !
       intent(in) :: f
       intent(inout) :: p
@@ -482,17 +483,23 @@ module Chemistry
 !  Mean molecular weight
 !
             mu1_cgs=0.
+            mu1_full=0.
             if (lpencil(i_mu1)) then 
               do k=1,nchemspec
                 mu1_cgs=mu1_cgs+f(l1:l2,m,n,ichemspec(k))/species_constants(ichemspec(k),imass)
+                mu1_full(:,m,n)=mu1_full(:,m,n)+f(:,m,n,ichemspec(k))/species_constants(ichemspec(k),imass)
               enddo
               p%mu1=mu1_cgs*unit_mass
+              mu1_full=mu1_full*unit_mass
             endif
 !
 !  Mole fraction XX
 !
           if (lpencil(i_XX)) then
-            do k=1,nchemspec;  p%XX(:,k)=p%YY(:,k)/species_constants(ichemspec(k),imass)/p%mu1; enddo
+            do k=1,nchemspec 
+             p%XX(:,k)=p%YY(:,k)/species_constants(ichemspec(k),imass)/p%mu1
+             XX_full(:,m,n,k)=f(:,m,n,ichemspec(k))/species_constants(ichemspec(k),imass)/mu1_full(:,m,n)
+            enddo
           endif
 
 
@@ -553,13 +560,24 @@ module Chemistry
          if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
          if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
 
+
+!
+!  Diffusion coeffisient of a mixture
+!
+       do k=1,nchemspec
+        tmp_sum=0.
+         do j=1,nchemspec
+          tmp_sum=tmp_sum  &
+           +f(:,m,n,ichemspec(j))/species_constants(ichemspec(j),imass)/Bin_Diff_coef(k,j)
+         enddo
+          Diff_full(:,m,n,k)=(1.-f(:,m,n,ichemspec(k)))*mu1_full(:,m,n)/tmp_sum
+       enddo
+
        else
          call stop_it('This case works only for cgs units system!')
        endif
 
       endif
-
-
 
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -587,11 +605,11 @@ module Chemistry
       use Sub
       use Global
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f, Diff_full_add
       real, dimension (mx,my,mz,mvar) :: df
-     
-      real, dimension (nx,3) :: gchemspec
-      real, dimension (nx) :: ugchemspec,del2chemspec,diff_op,xdot, Dmix=0.
+
+      real, dimension (nx,3) :: gchemspec,gXX, gDiff_full_add
+      real, dimension (nx) :: ugchemspec,del2chemspec,diff_op,diff_op1,diff_op2,xdot, del2XX 
       real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
       real :: diff_k
       type (pencil_case) :: p
@@ -639,7 +657,7 @@ module Chemistry
       do k=1,nchemspec
 !
 !  advection terms
-!
+! 
         call grad(f,ichemspec(k),gchemspec) 
         call dot_mn(p%uu,gchemspec,ugchemspec)
         df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))-ugchemspec
@@ -657,15 +675,20 @@ module Chemistry
           diff_op=diff_op+del2chemspec
           df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+diff_k*diff_op
         endif
-      else
-        do j=1,nchemspec
-         Dmix(:)=Dmix(:)+f(l1:l2,m,n,ichemspec(k))/species_constants(ichemspec(k),imass)/Bin_Diff_coef(k,j)
-        enddo
-        Dmix(:)=(1.-f(l1:l2,m,n,ichemspec(k)))*p%mu1/Dmix(:)
+      else 
 
-        call del2(f,ichemspec(k),del2chemspec) 
+          Diff_full_add(:,:,:,k)=Diff_full(:,:,:,k)*species_constants(ichemspec(k),imass)*mu1_full(:,:,:)
 
-       endif
+          call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
+          call del2(XX_full,k,del2XX)
+          call grad(XX_full(:,:,:,k),gXX)
+          call dot_mn(p%glnrho,gXX,diff_op1)
+          call dot_mn(gDiff_full_add,gXX,diff_op2)
+ 
+         df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k)) &
+                   +Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2
+
+      endif
 
 !
 !  chemical reactions:
