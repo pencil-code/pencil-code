@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.34 2008-03-19 10:58:29 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.35 2008-03-19 11:01:59 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -158,11 +158,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.34 2008-03-19 10:58:29 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.35 2008-03-19 11:01:59 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.34 2008-03-19 10:58:29 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.35 2008-03-19 11:01:59 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -498,7 +498,7 @@ module Chemistry
           if (lpencil(i_XX)) then
             do k=1,nchemspec 
              p%XX(:,k)=p%YY(:,k)/species_constants(ichemspec(k),imass)/p%mu1
-             XX_full(:,m,n,k)=f(:,m,n,ichemspec(k))/species_constants(ichemspec(k),imass)/mu1_full(:,m,n)
+             XX_full(:,m,n,k)=f(:,m,n,ichemspec(k))*unit_mass/species_constants(ichemspec(k),imass)/mu1_full(:,m,n)
             enddo
           endif
 
@@ -568,7 +568,7 @@ module Chemistry
         tmp_sum=0.
          do j=1,nchemspec
           tmp_sum=tmp_sum  &
-           +f(:,m,n,ichemspec(j))/species_constants(ichemspec(j),imass)/Bin_Diff_coef(k,j)
+           +f(:,m,n,ichemspec(j))*unit_mass/species_constants(ichemspec(j),imass)/Bin_Diff_coef(k,j)
          enddo
           Diff_full(:,m,n,k)=(1.-f(:,m,n,ichemspec(k)))*mu1_full(:,m,n)/tmp_sum
        enddo
@@ -677,7 +677,7 @@ module Chemistry
         endif
       else 
 
-          Diff_full_add(:,:,:,k)=Diff_full(:,:,:,k)*species_constants(ichemspec(k),imass)*mu1_full(:,:,:)
+          Diff_full_add(:,:,:,k)=Diff_full(:,:,:,k)*species_constants(ichemspec(k),imass)/unit_mass*mu1_full(:,:,:)
 
           call del2(XX_full,k,del2XX)
 
