@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.129 2008-03-14 15:02:39 wlyra Exp $
+! $Id: particles_sub.f90,v 1.130 2008-03-19 00:29:59 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -467,7 +467,7 @@ module Particles_sub
 !
 !  01-jan-05/anders: coded
 !
-      use Messages, only: fatal_error, warning
+      use Messages, only: fatal_error, fatal_error_local,warning
       use Mpicomm
       use Sub, only: max_name
 !
@@ -588,7 +588,7 @@ module Particles_sub
                   ipar(k), fp(k,ixp:izp)
               print*, 'redist_particles_procs: y0_mig, y1_mig=', y0_mig, y1_mig
               print*, 'redist_particles_procs: z0_mig, z1_mig=', z0_mig, z1_mig
-              stop
+              call fatal_error_local("","")
             endif
 !  Copy migrating particle to the end of the fp array.
             nmig(iproc,iproc_rec)=nmig(iproc,iproc_rec)+1
@@ -1899,8 +1899,9 @@ module Particles_sub
         evr(2) = e10*sin(e2-e20)       
         evr(3) = e3 - e30              
       elseif (lspherical_coords) then
-        call fatal_error("get_particles_interdistance",&
-             "not yet implemented for spherical polars")
+        evr(1) = e1 - e10*sin(e2)*sin(e20)*cos(e3-e30)
+        evr(2) = e10*(sin(e2)*cos(e20) - cos(e2)*sin(e20)*cos(e3-e30))
+        evr(3) = e10*sin(e20)*sin(e3-e30)
       endif
 !
 !  Particles relative distance from each other
