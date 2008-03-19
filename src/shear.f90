@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.49 2008-03-12 17:52:36 brandenb Exp $
+! $Id: shear.f90,v 1.50 2008-03-19 23:17:09 pkapyla Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -53,7 +53,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.49 2008-03-12 17:52:36 brandenb Exp $")
+           "$Id: shear.f90,v 1.50 2008-03-19 23:17:09 pkapyla Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -271,10 +271,10 @@ module Shear
 !
 !  Works currently only when Sshear is not positive.
 !
-      if (Sshear>0.) then
-        if (lroot) print*, 'Note: must use non-positive values of Sshear'
-        call stop_it('')
-      endif
+!      if (Sshear>0.) then
+!        if (lroot) print*, 'Note: must use non-positive values of Sshear'
+!        call stop_it('')
+!      endif
 !
 !  Make sure deltay is in the range 0 <= deltay < Ly (assuming Sshear<0).
 !
