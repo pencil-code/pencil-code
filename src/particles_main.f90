@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.64 2008-03-14 17:53:56 wlyra Exp $
+! $Id: particles_main.f90,v 1.65 2008-03-19 00:29:04 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -373,6 +373,7 @@ module Particles_main
       real :: rad,raddot,phidot,thtdot,sintht,costht
       integer :: k
 
+
       do k=1,npar_loc
 !
 ! Correct acceleration
@@ -382,9 +383,11 @@ module Particles_main
           dfp(k,ivpx) = dfp(k,ivpx) + rad*phidot**2
           dfp(k,ivpy) = dfp(k,ivpy) - 2*raddot*phidot
         elseif (lspherical_coords) then
+          rad=fp(k,ixp)
           sintht=sin(fp(k,iyp));costht=cos(fp(k,iyp))
           raddot=fp(k,ivpx);thtdot=fp(k,ivpy)/rad
           phidot=fp(k,ivpz)/(rad*sintht)
+!
           dfp(k,ivpx) = dfp(k,ivpx) &
                + rad*(thtdot**2 + (sintht*phidot)**2)
           dfp(k,ivpy) = dfp(k,ivpy) &
