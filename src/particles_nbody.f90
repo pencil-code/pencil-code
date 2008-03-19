@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.82 2008-03-18 17:03:39 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.83 2008-03-19 00:41:46 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -86,7 +86,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.82 2008-03-18 17:03:39 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.83 2008-03-19 00:41:46 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -392,6 +392,11 @@ module Particles_nbody
                ' of the particles is always g0'
         endif
 !
+        if (lspherical_coords) then
+          if (lroot) print*,'put all particles in the midplane'
+          position(1:mspar,iyp)=pi/2
+        endif
+!
         tmp = 0.;parc=0
         do ks=1,mspar
           if (ks/=istar) then 
@@ -417,11 +422,15 @@ module Particles_nbody
 !
 ! The last one (star) fixes the CM at Rcm=zero
 !
-        position(istar,1)=parc
-        if (lcylindrical_coords) then
+        if (lcartesian_coords) then 
+          position(istar,1)=parc
+        elseif (lcylindrical_coords) then
           !put the star in positive coordinates, with pi for azimuth
           position(istar,1)=abs(parc)
           position(istar,2)=pi
+        elseif (lspherical_coords) then
+          position(istar,1)=abs(parc)
+          position(istar,3)=pi
         endif
 !
         if (lroot) then 
@@ -503,14 +512,21 @@ module Particles_nbody
             elseif (lcylindrical_coords) then
               !positive for the planets
               velocity(ks,2) = abs(kep_vel(ks) + parc)
+            elseif (lspherical_coords) then
+              velocity(ks,3) = abs(kep_vel(ks) + parc)
             endif
           endif
         enddo
 !
 ! The last one (star) fixes the CM also with velocity zero
 !
-        velocity(istar,2)=parc
-        if (lcylindrical_coords) velocity(istar,2)=-parc
+        if (lcartesian_coords) then 
+          velocity(istar,2)=parc
+        elseif (lcylindrical_coords) then 
+          velocity(istar,2)=-parc
+        elseif (lspherical_coords) then 
+          velocity(istar,3)=-parc
+        endif
 !
 ! Loop through ipar to allocate the sink particles
 !
@@ -928,20 +944,57 @@ module Particles_nbody
 !  Assumes that the total mass of the particles is one.
 !
 !  27-aug-06/wlad: coded
+!  18-mar-08/wlad: cylindrical and spherical corrections
 !
       use Mpicomm,only:stop_it
 !
       real, dimension(mpar_loc,mpvar),intent(inout) :: dfp
       real, dimension(3) :: vcm
+      real :: xcm,ycm,zcm,thtcm,phicm,vxcm,vycm,vzcm
       integer :: k
 !
       if (lcartesian_coords) then 
         vcm(1) = sum(pmass*fsp(:,ivpx))
         vcm(2) = sum(pmass*fsp(:,ivpy))
         vcm(3) = sum(pmass*fsp(:,ivpz))
-      else
-        call fatal_error("reset_center_of_mass",&
-             "not implemented for curvilinear coordinates")
+      else if (lcylindrical_coords) then
+        xcm=sum(pmass*(fsp(:,ipx)*cos(fsp(:,iyp))))
+        ycm=sum(pmass*(fsp(:,ipx)*sin(fsp(:,iyp))))
+        phicm=atan2(ycm,xcm)
+        vxcm=sum(pmass*(&
+             fsp(:,ivpx)*cos(fsp(:,iyp))-fsp(:,ivpy)*sin(fsp(:,iyp))&
+                                                                    ))
+        vycm=sum(pmass*(&
+             fsp(:,ivpx)*sin(fsp(:,iyp))+fsp(:,ivpy)*cos(fsp(:,iyp))&
+                                                                    ))
+        !
+        vcm(1)= vxcm*cos(phicm) + vycm*sin(phicm)
+        vcm(2)=-vxcm*sin(phicm) + vycm*cos(phicm)
+        vcm(3) = sum(pmass*fsp(:,ivpz))
+      else if (lspherical_coords) then
+        vxcm=sum(pmass*( &
+              fsp(:,ivpx)*sin(fsp(:,iyp))*cos(fsp(:,izp))&
+             +fsp(:,ivpy)*cos(fsp(:,iyp))*cos(fsp(:,izp))&
+             -fsp(:,ivpz)*sin(fsp(:,izp))                ))
+        vycm=sum(pmass*( &
+              fsp(:,ivpx)*sin(fsp(:,iyp))*sin(fsp(:,izp))&
+             +fsp(:,ivpy)*cos(fsp(:,iyp))*sin(fsp(:,izp))&
+             +fsp(:,ivpz)*cos(fsp(:,izp))                ))
+
+        vzcm=sum(pmass*(&
+             fsp(:,ivpx)*cos(fsp(:,iyp))-fsp(:,ivpy)*sin(fsp(:,iyp))&
+                                                               ))
+!
+        xcm=sum(pmass*(fsp(:,ixp)*sin(fsp(:,iyp))*cos(fsp(:,izp))))
+        ycm=sum(pmass*(fsp(:,ixp)*sin(fsp(:,iyp))*sin(fsp(:,izp))))
+        zcm=sum(pmass*(fsp(:,ixp)*cos(fsp(:,iyp))))
+!        
+        thtcm=atan2(sqrt(xcm**2+ycm**2),zcm)
+        phicm=atan2(ycm,xcm)
+!
+        vcm(1)= vxcm*sin(thtcm)*cos(phicm) + vycm*sin(thtcm)*sin(phicm) + vzcm*cos(thtcm) 
+        vcm(2)= vxcm*cos(thtcm)*cos(phicm) + vycm*cos(thtcm)*sin(phicm) - vzcm*sin(thtcm) 
+        vcm(3)=-vxcm*sin(phicm)            + vycm*cos(phicm) 
       endif
 !
       do k=1,npar_loc
