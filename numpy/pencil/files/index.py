@@ -1,4 +1,4 @@
-#$Id: index.py,v 1.2 2008-03-13 11:34:32 dintrans Exp $
+#$Id: index.py,v 1.3 2008-03-19 10:08:37 tgastine Exp $
 
 from param import read_param
 
@@ -34,7 +34,7 @@ class read_index:
         if (not clean.endswith('0') and not clean.startswith('i_') and clean.startswith('i')):
            val=clean.lstrip('i').split('=')
            name=val[0]
-           if (name=='lnTT' and param.ltemperature_nolog==True): name='tt'
+           if (name=='lnTT' and param.ltemperature_nolog): name='tt'
            self.index[name]=int(val[1])
 
 
