@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.32 2008-03-13 11:36:12 rplasson Exp $
+! $Id: grid.f90,v 1.33 2008-03-19 23:38:17 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -90,7 +90,7 @@ module Grid
       real, dimension(mz) :: g3,g3der1,g3der2,xi3,zprim2
 
       real :: a,dummy=0.
-      integer :: i,nygrid_tmp
+      integer :: i
       logical :: err
 
 
@@ -225,9 +225,7 @@ module Grid
 
         case ('duct')
 
-          nygrid_tmp=nygrid
-          a=pi/(nygrid_tmp-1)
-
+          a = pi/max(nygrid-1, 1)
           call grid_profile(a*xi2  -pi/2,grid_func(2),g2,g2der1,g2der2)
           call grid_profile(a*xi2lo-pi/2,grid_func(2),g2lo)
           call grid_profile(a*xi2up-pi/2,grid_func(2),g2up)
@@ -548,21 +546,29 @@ module Grid
       select case (grid_func)
 
       case ('linear')
+        ! Equidistant grid
         g=xi
         if (present(gder1)) gder1=1.0
         if (present(gder2)) gder2=0.0
 
       case ('sinh')
+        ! Sinh grid:
+        ! Approximately equidistant near the middle, but approximately
+        ! exponential near the boundaries
         g=sinh(xi)
         if (present(gder1)) gder1=cosh(xi)
         if (present(gder2)) gder2=sinh(xi)
 
       case ('duct')
+        ! Chebyshev-type grid in all Cartesian directions:
+        ! Points are much denser near the boundaires than in the middle
         g=sin(xi)
         if (present(gder1)) gder1= cos(xi)
         if (present(gder2)) gder2=-sin(xi)
 
       case ('step-linear')
+       ! [Document me!
+       ! This is certainly _not_ stepwise linear as the name would suggest] 
        if (present(dxyz) .and. present(xistep) .and. present(delta)) then
         g=                                                                    &
          dxyz(1)*0.5*(xi-delta(1)*log(cosh(dble((xi-xistep(1))/delta(1))))) + &
