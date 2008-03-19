@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.83 2008-03-19 00:41:46 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.84 2008-03-19 00:56:44 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -86,7 +86,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.83 2008-03-19 00:41:46 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.84 2008-03-19 00:56:44 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -374,13 +374,25 @@ module Particles_nbody
 ! which will have a position determined to fix the center of mass on 
 ! the center of the grid
 !
-        if (any(ysp0/=0)) call stop_it("init_particles_nbody: not yet generalized"//&
-             " for non-zero azimuthal initial position")
-!
-        if (any(zsp0/=0)) call stop_it("init_particles_nbody: nbody code not"//&
-             " yet generalized to allow initial inclinations")
-!
-        if (lcylindrical_coords) then
+        if (any(ysp0/=0)) then
+          if (lspherical_coords) then
+            call stop_it("init_particles_nbody: not yet generalized"//&
+                 " for non-zero initial inclinations")
+          else
+            call stop_it("init_particles_nbody: not yet generalized"//&
+                 " for non-zero azimuthal initial position")
+          endif
+        endif
+        if (any(zsp0/=0)) then  
+          if (lspherical_coords) then
+            call stop_it("init_particles_nbody: not yet generalized"//&
+                 " for non-zero azimuthal initial position")
+          else
+            call stop_it("init_particles_nbody: nbody code not"//&
+                 " yet generalized to allow initial inclinations")
+          endif
+        endif
+        if (lcylindrical_coords.or.lspherical_coords) then
           if (any(xsp0.lt.0)) &
                call stop_it("init_particles_nbody: in cylindrical coordinates"//&
                " all the radial positions must be positive")
@@ -767,16 +779,14 @@ module Particles_nbody
         if (laccretion(ks).and.(ks/=istar)) then 
           if (lcartesian_coords) then
             rr    = sqrt(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)
-            w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
           elseif (lcylindrical_coords) then 
             rr= fsp(ks,ixp)
             if (nzgrid/=1) rr=sqrt(fsp(ks,ixp)**2+fsp(ks,izp)**2)
-            !particle velocities are non-coordinate (linear)
-            w2= fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 
           elseif (lspherical_coords) then
-            call fatal_error("dvvp_dt_nbody",&
-                 "not yet implemented for spherical polars")
+           rr= fsp(ks,ixp)
           endif
+          !particle velocities are non-coordinate (linear)
+          w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
           !squared semi major axis - assumes GM=1, so beware...
           sma2  = (rr/(2-rr*w2))**2
           !squared hills radius
@@ -1250,8 +1260,10 @@ module Particles_nbody
         gg(:,2) =       x0*sin(y(m)-y0) *grr
         gg(:,3) = (z(n)-z0             )*grr
       elseif (coord_system=='spherical') then
-        call stop_it("get_gravity_field_nbody: off-center gravity"//&
-             " field not yet implemented for spherical polars")
+        gg(:,1)  = x-x0*sin(y(m))*sin(y0)*cos(z(n)-z0)*grr
+        gg(:,2)  = x0*(sin(y(m))*cos(y0)-&
+             cos(y(m))*sin(y0)*cos(z(n)-z0))*grr
+        gg(:,3)  = x0*sin(y0)*sin(z(n)-z0)*grr
       endif
 !
     endsubroutine get_gravity_field_nbody
