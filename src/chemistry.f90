@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.33 2008-03-19 10:51:10 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.34 2008-03-19 10:58:29 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -158,11 +158,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.33 2008-03-19 10:51:10 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.34 2008-03-19 10:58:29 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.33 2008-03-19 10:51:10 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.34 2008-03-19 10:58:29 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -679,10 +679,12 @@ module Chemistry
 
           Diff_full_add(:,:,:,k)=Diff_full(:,:,:,k)*species_constants(ichemspec(k),imass)*mu1_full(:,:,:)
 
-          call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
           call del2(XX_full,k,del2XX)
+
           call grad(XX_full(:,:,:,k),gXX)
           call dot_mn(p%glnrho,gXX,diff_op1)
+
+          call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
           call dot_mn(gDiff_full_add,gXX,diff_op2)
  
          df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k)) &
