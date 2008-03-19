@@ -1,4 +1,4 @@
-# $Id: var.py,v 1.8 2008-03-13 11:34:32 dintrans Exp $
+# $Id: var.py,v 1.9 2008-03-19 12:18:35 tgastine Exp $
 #
 # read VAR files. based on the read_var.pro IDL script.
 #
@@ -235,11 +235,13 @@ class read_var:
 
     if (magic!=None):
       for field in magic:
+
         if (field=='rho'):
           if (hasattr(self,'lnrho')):
             setattr(self,'rho',N.exp(self.lnrho))
           else:
             sys.exit("pb in magic!")
+
         if (field=='tt' and not hasattr(self,'tt')):
           if (hasattr(self,'lnTT')):
             tt=N.exp(self.lnTT)
@@ -256,3 +258,15 @@ class read_var:
             else:
               sys.exit("pb in magic!")
 
+        if (field=='ss' and not hasattr(self,'ss')):
+            cp=param.cp
+            gamma=param.gamma
+            cs20=param.cs0**2
+            lnrho0=N.log(param.rho0)
+            lnTT0=N.log(cs20/(cp*(gamma-1.)))
+            if (hasattr(self, 'lnTT')):
+              self.ss=cp/gamma*(self.lnTT-lnTT0-(gamma-1.)*(self.lnrho-lnrho0))
+            elif (hasattr(self, 'tt')):
+              self.ss=cp/gamma*(N.log(self.tt)-lnTT0-(gamma-1.)*(self.lnrho-lnrho0))
+            else:
+              sys.exit("pb in magic!")
