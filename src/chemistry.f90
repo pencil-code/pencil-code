@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.35 2008-03-19 11:01:59 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.36 2008-03-19 14:45:11 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -158,11 +158,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.35 2008-03-19 11:01:59 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.36 2008-03-19 14:45:11 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.35 2008-03-19 11:01:59 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.36 2008-03-19 14:45:11 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -214,9 +214,9 @@ module Chemistry
       if (stat>0) call stop_it("Couldn't allocate memory for binary diffusion coefficients") 
 
 ! TEMPORARY!
-! While we do not have the data file all binary diffusion coefficients are 1.
+! While we do not have the data file all binary diffusion coefficients equal to chem_diff
 
-  Bin_Diff_coef=1.
+  Bin_Diff_coef=chem_diff
 
 !
 ! TEMPORARY!
@@ -548,7 +548,6 @@ module Chemistry
 !
          if (lpencil(i_cv)) p%cv = p%cp - Rgas
 
-!print*, p%cp(10), p%cv(10), Rgas
 
          if (lpencil(i_cv1)) p%cv1=1/p%cv
          if (lpencil(i_lncp)) p%lncp=log(p%cp)
@@ -568,9 +567,12 @@ module Chemistry
         tmp_sum=0.
          do j=1,nchemspec
           tmp_sum=tmp_sum  &
-           +f(:,m,n,ichemspec(j))*unit_mass/species_constants(ichemspec(j),imass)/Bin_Diff_coef(k,j)
+           +f(:,m,n,ichemspec(j))*unit_mass/species_constants(ichemspec(j),imass)/Bin_Diff_coef(j,k)
          enddo
           Diff_full(:,m,n,k)=(1.-f(:,m,n,ichemspec(k)))*mu1_full(:,m,n)/tmp_sum
+
+      !   print*,maxval(Diff_full(:,m,n,k)),maxval(mu1_full(:,m,n)), maxval(tmp_sum)
+
        enddo
 
        else
@@ -714,7 +716,16 @@ module Chemistry
 !  For the timestep calculation, need maximum diffusion
 !
         if (lfirst.and.ldt) then
+         if (.not. lcheminp) then
           diffus_chem=chem_diff*maxval(chem_diff_prefactor)*dxyz_2
+         else
+!???????????????????????????????????????????????????????????????
+!  This expression should be discussed 
+!???????????????????????????????????????????????????????????????
+          do j=1,nx
+           diffus_chem(j)=maxval(Diff_full(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
+          enddo 
+         endif 
         endif
 !
 !  Calculate diagnostic quantities
