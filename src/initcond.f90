@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.234 2008-03-18 13:28:07 wlyra Exp $
+! $Id: initcond.f90,v 1.235 2008-03-20 22:25:24 wlyra Exp $
 
 module Initcond
 
@@ -3092,7 +3092,7 @@ module Initcond
       use Gravity        , only: qgshear
 
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: rr_cyl,rr_sph,OO
+      real, dimension(mx) :: rr_cyl,rr_sph,OO,tmp
       real :: g0_
 !
       do m=1,my
@@ -3102,7 +3102,18 @@ module Initcond
 !
           if (lparticles_nbody) then
             call get_totalmass(g0_)
-            call power_law(sqrt(g0_),rr_cyl,qgshear,OO)
+            call power_law(sqrt(g0_),rr_sph,qgshear,tmp)
+            if (lcartesian_coords.or.lcylindrical_coords) then
+              OO=tmp
+              if (lcylindrical_gravity) &
+                   OO=tmp*sqrt(rr_sph/rr_cyl)
+            elseif (lspherical_coords) then
+              OO=tmp/sinth(m) 
+            else
+              !debug statement
+              print*,coord_system
+              call stop_it("no valid coordinate system chose")
+            endif
           else
             call stop_it("global_shear: if you are using gravity_r.f90"//&
                  " the centrifugal balance is established in hydro. "//&
@@ -3117,6 +3128,10 @@ module Initcond
             f(:,m,n,iux) = f(:,m,n,iux) + 0.
             f(:,m,n,iuy) = f(:,m,n,iuy) + OO*rr_cyl
             f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
+          elseif (lspherical_coords) then 
+            f(:,m,n,iux) = f(:,m,n,iux) + 0.
+            f(:,m,n,iuy) = f(:,m,n,iuy) + 0.
+            f(:,m,n,iuz) = f(:,m,n,iuz) + OO*rr_sph
           endif
 !
         enddo
@@ -3218,7 +3233,6 @@ module Initcond
               f(:,m,n,iglobal_glnTT  )=gslnTT*sinth(m)
               f(:,m,n,iglobal_glnTT+1)=gslnTT*costh(m)
               f(:,m,n,iglobal_glnTT+2)=0.
-
             endif
 !
 !  else do it as temperature
@@ -3266,7 +3280,8 @@ module Initcond
               else
                 print*,'set_thermodynamical_quantities '
                 print*,'the disk is too hot at x,y,z=',x(i),y(m),z(n)
-                call stop_it("")
+                print*,'the azimuthal velocity there is',sqrt(tmp1(i-nghost))
+                !call stop_it("")
               endif
             endif
           enddo
@@ -3276,7 +3291,7 @@ module Initcond
           elseif (lcylindrical_coords) then
             f(:,m,n,iuy)= sqrt(tmp2)*rr_cyl
           elseif (lspherical_coords) then 
-            !!f(:,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
+            f(:,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
           endif
         enddo
       enddo

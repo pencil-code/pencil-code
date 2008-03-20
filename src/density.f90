@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.376 2008-03-18 16:21:36 wlyra Exp $
+! $Id: density.f90,v 1.377 2008-03-20 22:25:24 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -137,7 +137,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.376 2008-03-18 16:21:36 wlyra Exp $")
+           "$Id: density.f90,v 1.377 2008-03-20 22:25:24 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1923,11 +1923,11 @@ module Density
 !
 ! Correct the velocities for self-gravity
 !
-      !!call correct_for_selfgravity(f)
+      call correct_for_selfgravity(f)
 !
 ! Correct the velocities by this density gradient
 !
-      !!call correct_density_gradient(f)
+      call correct_density_gradient(f)
 !
     endsubroutine local_isothermal_density
 !***********************************************************************
