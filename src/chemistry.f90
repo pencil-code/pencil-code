@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.36 2008-03-19 14:45:11 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.37 2008-03-20 11:44:46 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -10,7 +10,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDEDgTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,XX,YY
+! PENCILS PROVIDEDgTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,nu
 !***************************************************************
 
 module Chemistry
@@ -26,8 +26,10 @@ module Chemistry
   include 'chemistry.h'
 
   real :: Rgas, Rgas_unit_sys=1.
-  real, dimension (mx,my,mz) :: cp_full,mu1_full
-  real, dimension (mx,my,mz,mfarray) :: Diff_full, XX_full
+  real, dimension (mx,my,mz) :: cp_full,mu1_full, nu_full
+  
+
+
 !
 !  parameters related to chemical reactions
 !
@@ -53,6 +55,9 @@ module Chemistry
   character (len=labellen), dimension (2*nchemspec) :: kreactions_profile=''
 
   real,    allocatable, dimension(:,:) :: Bin_Diff_coef
+  real, dimension (mx,my,mz,mfarray) :: Diff_full, XX_full
+  real, dimension (nchemspec) :: species_viscosity
+  real, dimension(nchemspec) :: nu_spec=1.
 
 !
 !  Chemkin related parameters
@@ -71,7 +76,7 @@ module Chemistry
 ! run parameters
   namelist /chemistry_run_pars/ &
       lkreactions_profile,kreactions_profile,kreactions_profile_width, &
-      chem_diff,chem_diff_prefactor
+      chem_diff,chem_diff_prefactor, nu_spec
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -158,11 +163,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.36 2008-03-19 14:45:11 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.37 2008-03-20 11:44:46 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.36 2008-03-19 14:45:11 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.37 2008-03-20 11:44:46 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -214,9 +219,19 @@ module Chemistry
       if (stat>0) call stop_it("Couldn't allocate memory for binary diffusion coefficients") 
 
 ! TEMPORARY!
-! While we do not have the data file all binary diffusion coefficients equal to chem_diff
+! While we do not have the data file, all binary diffusion coefficients equal to chem_diff
+! now Bin_Diff_coef is dimensionless
+!
 
-  Bin_Diff_coef=chem_diff
+  Bin_Diff_coef=chem_diff/(unit_length**2/unit_time)
+
+!
+! Wile we do not have the data file, all dynamical viscosities [g/cm/s] equal to  nu
+!
+! now species_viscosity is dimensionless
+!
+  species_viscosity=nu_spec/(unit_mass/unit_length/unit_time)
+
 
 !
 ! TEMPORARY!
@@ -459,12 +474,14 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension (nx) :: mu1_cgs, cp_spec
-      real, dimension (mx) :: tmp_sum
+      real, dimension (mx) :: tmp_sum, tmp_sum2
+      real, dimension (nchemspec,nchemspec) :: Phi
 !
       intent(in) :: f
       intent(inout) :: p
       integer :: k,i,j
       real :: T_local, T_up, T_mid, T_low, tmp,  lnT_local
+      real :: mk_mj, nuk_nuj
       logical :: lcheminp_tmp=.false.
 
 !
@@ -495,12 +512,12 @@ module Chemistry
 !
 !  Mole fraction XX
 !
-          if (lpencil(i_XX)) then
+      !    if (lpencil(i_XX)) then
             do k=1,nchemspec 
-             p%XX(:,k)=p%YY(:,k)/species_constants(ichemspec(k),imass)/p%mu1
+         !    p%XX(:,k)=p%YY(:,k)/species_constants(ichemspec(k),imass)/p%mu1
              XX_full(:,m,n,k)=f(:,m,n,ichemspec(k))*unit_mass/species_constants(ichemspec(k),imass)/mu1_full(:,m,n)
             enddo
-          endif
+      !    endif
 
 
 !
@@ -570,10 +587,30 @@ module Chemistry
            +f(:,m,n,ichemspec(j))*unit_mass/species_constants(ichemspec(j),imass)/Bin_Diff_coef(j,k)
          enddo
           Diff_full(:,m,n,k)=(1.-f(:,m,n,ichemspec(k)))*mu1_full(:,m,n)/tmp_sum
-
-      !   print*,maxval(Diff_full(:,m,n,k)),maxval(mu1_full(:,m,n)), maxval(tmp_sum)
-
        enddo
+
+!
+!  Viscosity of a mixture
+!
+ 
+       do k=1,nchemspec
+         do j=1,nchemspec
+           mk_mj=species_constants(ichemspec(k),imass)/species_constants(ichemspec(j),imass)
+           nuk_nuj=species_viscosity(k)/species_viscosity(j)
+          Phi(k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj)*(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
+         enddo
+       enddo
+
+        tmp_sum=0.
+        tmp_sum2=0.
+       do k=1,nchemspec 
+        do j=1,nchemspec 
+         tmp_sum2=tmp_sum2+XX_full(:,m,n,j)*Phi(k,j) 
+        enddo
+         tmp_sum=tmp_sum+XX_full(:,m,n,k)*species_viscosity(k)/tmp_sum2
+       enddo
+        nu_full(l1:l2,m,n)=tmp_sum(l1:l2)/p%rho
+        p%nu=nu_full(l1:l2,m,n)
 
        else
          call stop_it('This case works only for cgs units system!')
