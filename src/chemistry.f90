@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.39 2008-03-20 12:12:54 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.40 2008-03-20 16:07:25 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -10,7 +10,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,nu
+! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,nu,gradnu
 !***************************************************************
 
 module Chemistry
@@ -163,11 +163,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.39 2008-03-20 12:12:54 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.40 2008-03-20 16:07:25 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.39 2008-03-20 12:12:54 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.40 2008-03-20 16:07:25 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -510,33 +510,20 @@ module Chemistry
       endif
 
       if (lcheminp) then
-         if (unit_system == 'cgs') then
-
-            Rgas_unit_sys = k_B_cgs/m_u_cgs
-            Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
 !
 !  Mean molecular weight
 !
-            mu1_cgs=0.
-            mu1_full=0.
             if (lpencil(i_mu1)) then 
-              do k=1,nchemspec
-                mu1_cgs=mu1_cgs+f(l1:l2,m,n,ichemspec(k))/species_constants(ichemspec(k),imass)
-                mu1_full(:,m,n)=mu1_full(:,m,n)+f(:,m,n,ichemspec(k))/species_constants(ichemspec(k),imass)
-              enddo
-              p%mu1=mu1_cgs*unit_mass
-              mu1_full=mu1_full*unit_mass
+              p%mu1=mu1_full(l1:l2,m,n)
             endif
 !
 !  Mole fraction XX
 !
       !    if (lpencil(i_XX)) then
-            do k=1,nchemspec 
+         !   do k=1,nchemspec 
          !    p%XX(:,k)=p%YY(:,k)/species_constants(ichemspec(k),imass)/p%mu1
-             XX_full(:,m,n,k)=f(:,m,n,ichemspec(k))*unit_mass/species_constants(ichemspec(k),imass)/mu1_full(:,m,n)
-            enddo
+!            enddo
       !    endif
-
 
 !
 !  Pressure
@@ -545,31 +532,7 @@ module Chemistry
 !
 !  Specific heat at constant pressure
 !
-         cp_full(:,m,n)=0.
-
          if (lpencil(i_cp)) then
-           do k=1,nchemspec
-             T_low=species_constants(k,iTemp1)
-             T_mid=species_constants(k,iTemp2)
-             T_up= species_constants(k,iTemp3)
-            do i=1,nx
-             T_local=p%TT(i)*unit_temperature 
-               if (T_local >=T_low .and. T_local <= T_mid) then
-                tmp=0. 
-                 do j=1,5
-                  tmp=tmp+species_constants(k,ia1(j))*T_local**(j-1) 
-                 enddo
-                cp_spec(i)=tmp
-               else
-                tmp=0. 
-                 do j=1,5 
-                  tmp=tmp+species_constants(k,ia2(j))*T_local**(j-1) 
-                 enddo
-                cp_spec(i)=tmp
-               endif
-             cp_full(l1:l2,m,n)=cp_full(l1:l2,m,n)+f(l1:l2,m,n,ichemspec(k))*cp_spec(:)*Rgas*p%mu1
-            enddo
-           enddo
            p%cp=cp_full(l1:l2,m,n)
          endif
 
@@ -582,8 +545,6 @@ module Chemistry
 !  Specific heat at constant volume (i.e. density)
 !
          if (lpencil(i_cv)) p%cv = p%cp - Rgas
-
-
          if (lpencil(i_cv1)) p%cv1=1/p%cv
          if (lpencil(i_lncp)) p%lncp=log(p%cp)
 
@@ -594,48 +555,16 @@ module Chemistry
          if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
          if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
 
-
-!
-!  Diffusion coeffisient of a mixture
-!
-       do k=1,nchemspec
-        tmp_sum=0.
-         do j=1,nchemspec
-          tmp_sum=tmp_sum  &
-           +f(:,m,n,ichemspec(j))*unit_mass/species_constants(ichemspec(j),imass)/Bin_Diff_coef(j,k)
-         enddo
-          Diff_full(:,m,n,k)=(1.-f(:,m,n,ichemspec(k)))*mu1_full(:,m,n)/tmp_sum
-       enddo
-
 !
 !  Viscosity of a mixture
 !
- 
-       do k=1,nchemspec
-         do j=1,nchemspec
-           mk_mj=species_constants(ichemspec(k),imass)/species_constants(ichemspec(j),imass)
-           nuk_nuj=species_viscosity(k)/species_viscosity(j)
-          Phi(k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj)*(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
-         enddo
-       enddo
 
-        tmp_sum=0.
-        tmp_sum2=0.
-       do k=1,nchemspec 
-        do j=1,nchemspec 
-         tmp_sum2=tmp_sum2+XX_full(:,m,n,j)*Phi(k,j) 
-        enddo
-         tmp_sum=tmp_sum+XX_full(:,m,n,k)*species_viscosity(k)/tmp_sum2
-       enddo
-        nu_full(l1:l2,m,n)=tmp_sum(l1:l2)/p%rho
-
-       if (lpencil(i_nu)) then
-        p%nu=nu_full(l1:l2,m,n)
-       endif 
-
-       else
-         call stop_it('This case works only for cgs units system!')
-       endif
+         if (lpencil(i_nu)) then
+          p%nu=nu_full(l1:l2,m,n)
+             if (lpencil(i_gradnu)) then
+               call grad(nu_full,p%gradnu)
+             endif 
+         endif
 
       endif
 
@@ -644,7 +573,133 @@ module Chemistry
 !
     endsubroutine calc_pencils_chemistry
 !***********************************************************************
-    subroutine dchemistry_dt(f,df,p)
+ subroutine calc_for_chem_mixture(f)
+
+     use Cdata
+      use Sub
+      use Cparam
+      use EquationOfState
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx) ::  cp_spec
+      real, dimension (mx,my,mz) :: tmp_sum, tmp_sum2
+      real, dimension (nchemspec,nchemspec) :: Phi
+!
+      intent(in) :: f
+      integer :: k,i,j
+      real :: T_local, T_up, T_mid, T_low, tmp,  lnT_local
+      real :: mk_mj, nuk_nuj
+
+
+
+!
+!  Mean molecular weight
+!
+            mu1_full=0.
+              do k=1,nchemspec
+                mu1_full(:,:,:)=mu1_full(:,:,:)+f(:,:,:,ichemspec(k))/species_constants(ichemspec(k),imass)
+              enddo
+              mu1_full=mu1_full*unit_mass
+
+!
+!  Mole fraction XX
+!
+           do k=1,nchemspec 
+             XX_full(:,:,:,k)=f(:,:,:,ichemspec(k))*unit_mass/species_constants(ichemspec(k),imass)/mu1_full(:,:,:)
+           enddo
+
+
+
+      if (lcheminp) then
+
+      
+       if (unit_system == 'cgs') then
+
+          Rgas_unit_sys = k_B_cgs/m_u_cgs
+          Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
+
+
+
+!
+!  Specific heat at constant pressure
+!
+         cp_full=0.
+
+           do k=1,nchemspec
+             T_low=species_constants(k,iTemp1)
+             T_mid=species_constants(k,iTemp2)
+             T_up= species_constants(k,iTemp3)
+            do i=1,mx
+             do n=1,mz
+               do m=1,my
+                 T_local=exp(f(i,m,n,ilnTT))*unit_temperature 
+                  if (T_local >=T_low .and. T_local <= T_mid) then
+                   tmp=0. 
+                    do j=1,5
+                     tmp=tmp+species_constants(k,ia1(j))*T_local**(j-1) 
+                    enddo
+                   cp_spec(i)=tmp
+                  else
+                   tmp=0. 
+                    do j=1,5 
+                     tmp=tmp+species_constants(k,ia2(j))*T_local**(j-1) 
+                    enddo
+                   cp_spec(i)=tmp
+                  endif
+
+                cp_full(i,m,n)=cp_full(i,m,n)+f(i,m,n,ichemspec(k))*cp_spec(i)*Rgas*mu1_full(i,m,n)
+
+              enddo
+             enddo
+            enddo
+   
+           enddo
+
+!
+!  Diffusion coeffisient of a mixture
+!
+           do k=1,nchemspec
+            tmp_sum=0.
+             do j=1,nchemspec
+               tmp_sum=tmp_sum  &
+                 +f(:,:,:,ichemspec(j))*unit_mass/species_constants(ichemspec(j),imass)/Bin_Diff_coef(j,k)
+             enddo
+              Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k)))*mu1_full(:,:,:)/tmp_sum
+           enddo
+
+!
+!  Viscosity of a mixture
+!
+ 
+           do k=1,nchemspec
+             do j=1,nchemspec
+               mk_mj=species_constants(ichemspec(k),imass)/species_constants(ichemspec(j),imass)
+               nuk_nuj=species_viscosity(k)/species_viscosity(j)
+               Phi(k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj)*(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
+             enddo
+           enddo
+
+            tmp_sum=0.
+            tmp_sum2=0.
+           do k=1,nchemspec 
+            do j=1,nchemspec 
+              tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(k,j) 
+            enddo
+           tmp_sum=tmp_sum+XX_full(:,:,:,k)*species_viscosity(k)/tmp_sum2
+           enddo
+           nu_full=tmp_sum/exp(f(:,:,:,ilnrho))
+
+        else
+         call stop_it('This case works only for cgs units system!')
+        endif
+      endif
+
+
+
+ endsubroutine calc_for_chem_mixture
+!**********************************************************************
+   subroutine dchemistry_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
 !  along the 'current' Pencil, i.e. f(l1:l2,m,n) where

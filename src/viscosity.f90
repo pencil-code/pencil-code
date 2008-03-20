@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.88 2008-03-18 16:21:08 wlyra Exp $
+! $Id: viscosity.f90,v 1.89 2008-03-20 16:07:25 nbabkovs Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -109,7 +109,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.88 2008-03-18 16:21:08 wlyra Exp $")
+           "$Id: viscosity.f90,v 1.89 2008-03-20 16:07:25 nbabkovs Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -918,6 +918,16 @@ module Viscosity
               "ldensity better be .true. for ivisc='smagorinsky'"
         endif
      endif
+
+
+    ! if (lvisc_chemistry) then
+
+    ! endif
+
+
+
+
+
 !
 !  Store viscous heating rate in auxiliary variable if requested.
 !  Just neccessary immediately before writing snapshots, but how would we

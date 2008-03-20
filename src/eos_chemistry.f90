@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.12 2008-03-14 13:35:04 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.13 2008-03-20 16:07:25 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -77,11 +77,7 @@ module EquationOfState
   logical :: leos_localisothermal=.false.
 !  logical :: leos_chemistry =.false.
 
-
-
   real, dimension(nchemspec) :: mu_spec, cp_spec 
-  real, dimension (mx,my,mz) :: cp_full
- 
 
   character (len=20) :: input_file='chem.inp'
   logical :: lcheminp=.false.
@@ -123,7 +119,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.12 2008-03-14 13:35:04 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.13 2008-03-20 16:07:25 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -560,6 +556,7 @@ module EquationOfState
       type (pencil_case) :: p
       real, dimension (nx) :: tmp_sum
 
+      real, dimension (mx,my,mz) :: cp_full
 
 !
       intent(in) :: f
@@ -615,11 +612,11 @@ module EquationOfState
 !  Specific heat at constant pressure
 !
 
-      cp_full(:,m,n)=0.
+      cp_full=0.
 
       if (lpencil(i_cp)) then
         do k=1,nchemspec
-         cp_full(:,m,n)=cp_full(:,m,n)+f(:,m,n,ichemspec(k))*cp_spec(k)
+         cp_full(:,:,:)=cp_full(:,:,:)+f(:,:,:,ichemspec(k))*cp_spec(k)
         enddo
         p%cp=cp_full(l1:l2,m,n)
       endif
@@ -629,7 +626,6 @@ module EquationOfState
 !  Gradient of the above
 !
       if (lpencil(i_gradcp)) call grad(cp_full,p%gradcp)
-
 
 !
 !  Specific heat at constant volume (i.e. density)
