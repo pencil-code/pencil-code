@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.37 2008-03-20 11:44:46 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.38 2008-03-20 12:05:32 dobler Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -10,7 +10,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDEDgTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,nu
+! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,nu
 !***************************************************************
 
 module Chemistry
@@ -163,11 +163,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.37 2008-03-20 11:44:46 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.38 2008-03-20 12:05:32 dobler Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.37 2008-03-20 11:44:46 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.38 2008-03-20 12:05:32 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -683,7 +683,7 @@ module Chemistry
         enddo
        else
 ! Chemkin data case
-         call get_reaction_rate(f,vreactions_p,vreactions_m)
+         call get_reaction_rate(f,vreactions_p,vreactions_m,p)
        endif 
 
         vreactions=vreactions_p-vreactions_m
@@ -1469,7 +1469,7 @@ print*,species_name
       endif
       !
     end subroutine build_stoich_matrix
-    !***************************************************************
+!***************************************************************
     subroutine write_reactions()
       !
       ! 2008.03.11 Nils Erland: Coded
@@ -1518,10 +1518,10 @@ print*,species_name
         !
       end subroutine write_reactions
 !***************************************************************
-   subroutine get_reaction_rate(f,vreact_p,vreact_m)
-!Natalia (17.03.2008)
-!This subroutine calculates forward and reverse reaction rates, if chem.inp file exists.
-!For more details see Chemkin Theory Manual
+   subroutine get_reaction_rate(f,vreact_p,vreact_m,p)
+! Natalia (17.03.2008)
+! This subroutine calculates forward and reverse reaction rates, if chem.inp file exists.
+! For more details see Chemkin Theory Manual
 !
     real, dimension (mx,my,mz,mfarray) :: f 
     intent(in) :: f
