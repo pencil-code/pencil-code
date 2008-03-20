@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.70 2008-03-11 16:34:57 brandenb Exp $
+! $Id: general.f90,v 1.71 2008-03-20 11:32:41 wlyra Exp $
 
 module General
 
@@ -1043,16 +1043,14 @@ module General
 !  06-03-08/wlad: coded
 !
       real, dimension(nygrid) :: angle,a
-      real :: arg,res,nygrid1,d_angle
+      real :: arg,res,d_angle
       integer :: i,nu
 !
       intent(in)  :: nu,arg
       intent(out) :: res
 !
-      nygrid1=1.
-      if (nygrid/=1) nygrid1=nygrid1/(nygrid-1)
-      d_angle=pi*nygrid1
-
+      d_angle=pi/max(nygrid-1,1)
+!
       do i=1,nygrid
         angle(i)=(i-1)*d_angle
       enddo
