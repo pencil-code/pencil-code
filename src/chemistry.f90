@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.38 2008-03-20 12:05:32 dobler Exp $
+! $Id: chemistry.f90,v 1.39 2008-03-20 12:12:54 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -163,11 +163,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.38 2008-03-20 12:05:32 dobler Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.39 2008-03-20 12:12:54 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.38 2008-03-20 12:05:32 dobler Exp $")
+           "$Id: chemistry.f90,v 1.39 2008-03-20 12:12:54 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -442,7 +442,25 @@ module Chemistry
 !
 !  13-aug-07/steveb: coded
 !
-    endsubroutine pencil_criteria_chemistry
+       lpenc_requested(i_YY)=.true.
+
+       if (lcheminp) then
+        lpenc_requested(i_mu1)=.true.
+        lpenc_requested(i_pp)=.true.
+        lpenc_requested(i_cp)=.true.
+        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_gradcp)=.true.
+        lpenc_requested(i_cv)=.true.
+        lpenc_requested(i_cv1)=.true.
+        lpenc_requested(i_lncp)=.true.
+        lpenc_requested(i_gamma)=.true.
+        lpenc_requested(i_gamma1)=.true.
+        lpenc_requested(i_gamma11)=.true.
+        lpenc_requested(i_nu)=.true.
+       endif
+
+
+     endsubroutine pencil_criteria_chemistry
 !***********************************************************************
     subroutine pencil_interdep_chemistry(lpencil_in)
 !
@@ -610,7 +628,10 @@ module Chemistry
          tmp_sum=tmp_sum+XX_full(:,m,n,k)*species_viscosity(k)/tmp_sum2
        enddo
         nu_full(l1:l2,m,n)=tmp_sum(l1:l2)/p%rho
+
+       if (lpencil(i_nu)) then
         p%nu=nu_full(l1:l2,m,n)
+       endif 
 
        else
          call stop_it('This case works only for cgs units system!')
