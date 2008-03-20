@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.352 2008-03-11 16:34:57 brandenb Exp $
+! $Id: sub.f90,v 1.353 2008-03-20 22:06:10 wlyra Exp $
 
 module Sub
 
@@ -3003,11 +3003,11 @@ module Sub
         ugradf(:,3)=ugradf(:,3)+r1_mn*(uu(:,3)*ff(:,1)+uu(:,3)*ff(:,2)*cotth(m))
       endif
 !
-!  the following currently only works for u.gradu, not u.gradA
+!  the following now works for general u.gradA
 !
       if (lcylindrical_coords) then
-         ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)**2)
-         ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,1)*uu(:,2))
+         ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)*ff(:,2))
+         ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,1)*ff(:,2))
       endif
 !
     endsubroutine u_dot_grad_vec
