@@ -1,4 +1,4 @@
-! $Id: nochemistry.f90,v 1.5 2008-01-15 07:44:23 brandenb Exp $
+! $Id: nochemistry.f90,v 1.6 2008-03-20 16:59:32 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -79,11 +79,11 @@ module Chemistry
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nochemistry.f90,v 1.5 2008-01-15 07:44:23 brandenb Exp $
+!  CVS should automatically update everything between $Id: nochemistry.f90,v 1.6 2008-03-20 16:59:32 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nochemistry.f90,v 1.5 2008-01-15 07:44:23 brandenb Exp $")
+           "$Id: nochemistry.f90,v 1.6 2008-03-20 16:59:32 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -196,6 +196,16 @@ module Chemistry
       call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_chemistry
+!***********************************************************************
+ subroutine calc_for_chem_mixture(f)
+!
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+ endsubroutine calc_for_chem_mixture
 !***********************************************************************
     subroutine dchemistry_dt(f,df,p)
 !
