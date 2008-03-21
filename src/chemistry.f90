@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.42 2008-03-21 11:13:28 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.43 2008-03-21 11:32:52 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -163,11 +163,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.42 2008-03-21 11:13:28 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.43 2008-03-21 11:32:52 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.42 2008-03-21 11:13:28 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.43 2008-03-21 11:32:52 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -463,7 +463,15 @@ module Chemistry
       real :: T_local, T_up, T_mid, T_low, tmp,  lnT_local
       real :: mk_mj, nuk_nuj
 
+!
+! Now this routine is only for chemkin data !!!
+!
+      if (lcheminp) then
 
+       if (unit_system == 'cgs') then
+
+          Rgas_unit_sys = k_B_cgs/m_u_cgs
+          Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
 
 !
 !  Mean molecular weight
@@ -480,18 +488,6 @@ module Chemistry
            do k=1,nchemspec 
              XX_full(:,:,:,k)=f(:,:,:,ichemspec(k))*unit_mass/species_constants(ichemspec(k),imass)/mu1_full(:,:,:)
            enddo
-
-
-
-      if (lcheminp) then
-
-      
-       if (unit_system == 'cgs') then
-
-          Rgas_unit_sys = k_B_cgs/m_u_cgs
-          Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
-
-
 
 !
 !  Specific heat at constant pressure
@@ -525,7 +521,7 @@ module Chemistry
               enddo
              enddo
             enddo
-   
+
            enddo
 
 !
