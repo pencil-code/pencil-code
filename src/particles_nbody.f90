@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.85 2008-03-20 22:25:24 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.86 2008-03-21 22:56:21 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -86,7 +86,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.85 2008-03-20 22:25:24 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.86 2008-03-21 22:56:21 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -646,7 +646,7 @@ module Particles_nbody
         else
           call get_total_gravity(ggt)
         endif
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggt(l1:l2,:)       
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggt(l1:l2,:)
 !
 ! Backreaction of the gas+dust gravity onto the massive particles
 ! The integration is needed for these two cases:
@@ -1245,6 +1245,17 @@ module Particles_nbody
 !   
     endsubroutine get_totalmass
 !***********************************************************************
+    subroutine potential_nbody(pot,rmn)
+!
+      real, dimension (:) :: pot
+      real, dimension (size(pot)) :: rmn
+      real :: g0_
+!
+      call get_totalmass(g0_)
+      pot=-g0_/rmn
+!
+    endsubroutine potential_nbody
+!***********************************************************************
     subroutine get_gravity_field_nbody(grr,gg,ks)
 
       use Cdata,only: coord_system,x,y,z,l1,l2,&
@@ -1267,9 +1278,9 @@ module Particles_nbody
         gg(:,2) =       x0*sin(y(m)-y0) *grr
         gg(:,3) = (z(n)-z0             )*grr
       elseif (coord_system=='spherical') then
-        gg(:,1)  = (x-x0*sin(y(m))*sin(y0)*cos(z(n)-z0))*grr
-        gg(:,2)  = (x0*(sin(y(m))*cos(y0)-&
-             cos(y(m))*sin(y0)*cos(z(n)-z0)))*grr
+        gg(:,1)  = (x-x0*sinth(m)*sin(y0)*cos(z(n)-z0))*grr
+        gg(:,2)  = (x0*(sinth(m)*cos(y0)-&
+             costh(m)*sin(y0)*cos(z(n)-z0)))*grr
         gg(:,3)  = (x0*sin(y0)*sin(z(n)-z0))*grr
       endif
 !

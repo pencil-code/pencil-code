@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.377 2008-03-20 22:25:24 wlyra Exp $
+! $Id: density.f90,v 1.378 2008-03-21 22:56:21 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -137,7 +137,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.377 2008-03-20 22:25:24 wlyra Exp $")
+           "$Id: density.f90,v 1.378 2008-03-21 22:56:21 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1839,6 +1839,7 @@ module Density
       use Sub,         only:get_radial_distance,grad
       use Selfgravity, only:calc_selfpotential
       use Boundcond,   only:update_ghosts
+      use Particles_nbody, only:potential_nbody
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx)   :: pot,tmp1,tmp2,cs2
@@ -1897,8 +1898,17 @@ module Density
 !  The second call takes care of normalizing it 
 !  i.e., there should be no correction at midplane
 !
-            call potential(POT=tmp1,RMN=rr_sph)
-            call potential(POT=tmp2,RMN=rr_cyl)
+            if (lgrav) then 
+              call potential(POT=tmp1,RMN=rr_sph)
+              call potential(POT=tmp2,RMN=rr_cyl)
+            elseif (lparticles_nbody) then
+              call potential_nbody(POT=tmp1,RMN=rr_sph)
+              call potential_nbody(POT=tmp2,RMN=rr_cyl)
+            else
+              print*,"both gravity and particles_nbody are switched off"
+              print*,"there is no gravity to determine the stratification"
+              call stop_it("local_isothermal_density")
+            endif
 !
             if (llocal_iso) then
               cs2=f(:,m,n,iglobal_cs2)
@@ -2021,7 +2031,8 @@ module Density
                 print*,'correct_density_gradient: ',&
                        'cannot have centrifugal equilibrium in the inner ',&
                        'domain. The pressure gradient is too steep at ',&
-                       'x,y,z=',x(i+l1-1),y(m),z(n)
+                       'x,y,z=',x(i+nghost),y(m),z(n)
+                print*,'the azimuthal velocity here is ',f(i+nghost,m,n,iuz)
                 call stop_it("")
               endif
             endif
