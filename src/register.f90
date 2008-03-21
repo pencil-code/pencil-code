@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.229 2008-03-21 07:55:13 brandenb Exp $
+! $Id: register.f90,v 1.230 2008-03-21 22:54:10 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -366,7 +366,24 @@ module Register
 !  calculate sin(theta)
 !
         sinth=sin(y)
-        costh=cos(y)
+!
+! This is a fix to a feature of the spherical grid. The 
+! mid point of the theta direction is pi/2 only machine 
+! precision. That makes cos(y(mpoint)) ~ 1e-6 (1e-12 in 
+! double precision).  This is not a big problem in most
+! cases. But for a rotating disk, the large scale azimu-
+! thal velocity amounts to a small but steady contribution
+! to the term uu(:,3)*ff(:,3)*cotth(m) in the advection 
+! This contribution makes the polar velocity grow linearly 
+! (and unboundly) in time. 
+!
+        if (lenforce_costh_is_zero) then
+          costh=sqrt(1-sinth**2)
+!  respect the sign
+          costh=costh*sign(1.,cos(y))
+        else
+          costh=cos(y)
+        endif        
 !
 !  calculate 1/sin(theta). To avoid the axis we check that sinth
 !  is always larger than a minmal value, sinth_min. The problem occurs
@@ -382,7 +399,7 @@ module Register
 !
 !  calculate cot(theta)
 !
-        cotth=cos(y)*sin1th
+        cotth=costh*sin1th
 !
 ! Box volume and volume element - it is wrong for spherical, since
 ! sinth also changes with y-position 
