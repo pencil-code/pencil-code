@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.41 2008-03-21 10:20:21 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.42 2008-03-21 11:13:28 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -163,11 +163,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.41 2008-03-21 10:20:21 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.42 2008-03-21 11:13:28 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.41 2008-03-21 10:20:21 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.42 2008-03-21 11:13:28 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -197,12 +197,26 @@ module Chemistry
 
     real, dimension (mx,my,mz,mfarray) :: f
     logical :: data_file_exit=.false.
+    logical :: exist,exist1,exist2
+    character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
+
+
+    inquire(file=file1,exist=exist1)
+    inquire(file=file2,exist=exist2)
+    inquire(file='chemistry.dat',exist=exist)
 
 
     if (lcheminp) then
       call chemkin_data(f)
       data_file_exit=.true.
-    else
+    endif
+
+    if (exist1 .and. exist2) then
+      call astrobiology_data(f)
+      data_file_exit=.true.
+    endif
+
+    if (exist) then
       call astrobiology_data(f)
       data_file_exit=.true.
     endif
@@ -607,10 +621,7 @@ module Chemistry
       inquire(file=file1,exist=exist1)
       inquire(file=file2,exist=exist2)
 ! 
-      if (lcheminp) then
-        call read_reactions(input_file)
-        call write_reactions()
-      elseif(exist1.and.exist2) then
+      if(exist1.and.exist2) then
 !
 !  if both chemistry1.dat and chemistry2.dat are present,
 !  then read Sijp and Sijm, and calculate their sum
