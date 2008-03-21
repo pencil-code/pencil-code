@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.420 2008-03-19 23:07:47 dobler Exp $
+! $Id: hydro.f90,v 1.421 2008-03-21 22:59:29 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -346,7 +346,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.420 2008-03-19 23:07:47 dobler Exp $")
+           "$Id: hydro.f90,v 1.421 2008-03-21 22:59:29 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -586,8 +586,7 @@ module Hydro
         case('cos-cos-sin-uz'); call cos_cos_sin(ampluu(j),f,iuz,xx,yy,zz)
         case('tor_pert'); call tor_pert(ampluu(j),f,iux,xx,yy,zz)
         case('diffrot'); call diffrot(ampluu(j),f,iuy,xx,yy,zz)
-        case('global-shear'); call global_shear(f)
-        case('centrifugal-balance'); call centrifugal_balance(f)
+        case('centrifugal-balance','global-shear'); call centrifugal_balance(f)
         case('olddiffrot'); call olddiffrot(ampluu(j),f,iuy,xx,yy,zz)
         case('sinwave-phase')
           call sinwave_phase(f,iux,ampl_ux(j),kx_ux(j),ky_ux(j),kz_ux(j),phase_ux(j))
@@ -1900,12 +1899,14 @@ use Mpicomm, only: stop_it
 ! 08-sep-07/wlad: moved here from initcond
 !
       use Cdata
-      use Gravity, only: r0_pot,n_pot,acceleration
-      use Sub,     only: get_radial_distance
+      use Gravity, only: r0_pot,n_pot,acceleration,qgshear
+      use Sub,     only: get_radial_distance,power_law
       use Mpicomm, only: stop_it
+      use Particles_nbody, only: get_totalmass
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: rr_cyl,rr_sph,OO,g_r
+      real, dimension(mx) :: rr_cyl,rr_sph,OO,g_r,tmp
+      real :: g0_
       integer :: i
 !
       if (lroot) &
@@ -1922,22 +1923,46 @@ use Mpicomm, only: stop_it
         do n=1,mz
 !
           call get_radial_distance(rr_sph,rr_cyl)
-          call acceleration(g_r)
-          if (any(g_r .gt. 0.)) then
-            do i=1,mx
-              if (g_r(i) .gt. 0) then
-                print*,"centrifugal_balance: gravity at point ",x(i),y(m),&
-                     z(n),"is directed outwards"
-                call stop_it("")
+
+          if (lgrav) then 
+!
+! Gravity of a static central body
+!
+            call acceleration(g_r)
+!
+            if (any(g_r .gt. 0.)) then
+              do i=1,mx
+                if (g_r(i) .gt. 0) then
+                  print*,"centrifugal_balance: gravity at point ",x(i),y(m),&
+                       z(n),"is directed outwards"
+                  call stop_it("")
+                endif
+              enddo
+            else
+              if ( (coord_system=='cylindric')  .or.&
+                   (coord_system=='cartesian')) then 
+                OO=sqrt(max(-g_r/rr_cyl,0.))
+              else if (coord_system=='spherical') then
+                OO=sqrt(max(-g_r/(rr_sph*sinth(m)**2),0.))
               endif
-            enddo
-          else
-            if ( (coord_system=='cylindric')  .or.&
-                 (coord_system=='cartesian')) then 
-              OO=sqrt(max(-g_r/rr_cyl,0.))
-            else if (coord_system=='spherical') then
-              OO=sqrt(max(-g_r/(rr_sph*sinth(m)**2),0.))
             endif
+!
+          elseif (lparticles_nbody) then 
+!
+! Nbody gravity with a dominating but dynamical central body
+!
+            call get_totalmass(g0_)
+            call power_law(sqrt(g0_),rr_sph,qgshear,tmp)
+!
+            if (lcartesian_coords.or.&
+                 lcylindrical_coords) then
+              OO=tmp
+              if (lcylindrical_gravity) &
+                   OO=tmp*sqrt(rr_sph/rr_cyl)
+            elseif (lspherical_coords) then
+              OO=tmp/sinth(m) 
+            endif
+!
           endif
 !
           if (coord_system=='cartesian') then

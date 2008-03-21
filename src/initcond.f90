@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.235 2008-03-20 22:25:24 wlyra Exp $
+! $Id: initcond.f90,v 1.236 2008-03-21 22:59:30 wlyra Exp $
 
 module Initcond
 
@@ -41,7 +41,7 @@ module Initcond
   public :: vfield2
   public :: hawley_etal99a
   public :: robertsflow
-  public :: global_shear,set_thermodynamical_quantities
+  public :: set_thermodynamical_quantities
   public :: const_lou
   public :: corona_init,mdi_init
   public :: innerbox
@@ -3074,71 +3074,6 @@ module Initcond
 !
     endsubroutine random_isotropic_KS
 !**********************************************************
-    subroutine global_shear(f)
-!
-! Initial shear in a global disk, as specified by the
-! shear parameter qgshear. Default is qgshear=1.5, i.e., Keplerian
-!
-! Pressure corrections to ensure centrifugal equilibrium are
-! added in the respective modules
-!
-! 24-feb-05/wlad: coded
-!  4-jul-07/wlad: generalized for any shear
-!
-      use Cdata
-      use Mpicomm        , only: stop_it
-      use Sub            , only: get_radial_distance,power_law
-      use Particles_nbody, only: get_totalmass
-      use Gravity        , only: qgshear
-
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: rr_cyl,rr_sph,OO,tmp
-      real :: g0_
-!
-      do m=1,my
-        do n=1,mz
-!
-          call get_radial_distance(rr_sph,rr_cyl)
-!
-          if (lparticles_nbody) then
-            call get_totalmass(g0_)
-            call power_law(sqrt(g0_),rr_sph,qgshear,tmp)
-            if (lcartesian_coords.or.lcylindrical_coords) then
-              OO=tmp
-              if (lcylindrical_gravity) &
-                   OO=tmp*sqrt(rr_sph/rr_cyl)
-            elseif (lspherical_coords) then
-              OO=tmp/sinth(m) 
-            else
-              !debug statement
-              print*,coord_system
-              call stop_it("no valid coordinate system chose")
-            endif
-          else
-            call stop_it("global_shear: if you are using gravity_r.f90"//&
-                 " the centrifugal balance is established in hydro. "//&
-                 " Use inituu='centrifugal-balance' instead")
-          endif
-!
-          if (lcartesian_coords) then
-            f(:,m,n,iux) = f(:,m,n,iux) - y(m)*OO
-            f(:,m,n,iuy) = f(:,m,n,iuy) + x   *OO
-            f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
-          elseif (lcylindrical_coords) then
-            f(:,m,n,iux) = f(:,m,n,iux) + 0.
-            f(:,m,n,iuy) = f(:,m,n,iuy) + OO*rr_cyl
-            f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
-          elseif (lspherical_coords) then 
-            f(:,m,n,iux) = f(:,m,n,iux) + 0.
-            f(:,m,n,iuy) = f(:,m,n,iuy) + 0.
-            f(:,m,n,iuz) = f(:,m,n,iuz) + OO*rr_sph
-          endif
-!
-        enddo
-      enddo
-!
-    endsubroutine global_shear
-!*************************************************************
     subroutine set_thermodynamical_quantities&
          (f,ptlaw,iglobal_cs2,iglobal_glnTT)
 
