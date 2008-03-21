@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.14 2008-03-21 10:20:21 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.15 2008-03-21 11:27:34 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -105,7 +105,6 @@ module EquationOfState
    !
        leos=.true.
    !   leos_idealgas=.true.
-   !   leos_chemistry=.true.
 
 
   !    iyH = 0
@@ -118,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.14 2008-03-21 10:20:21 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.15 2008-03-21 11:27:34 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -217,18 +216,7 @@ module EquationOfState
         lnTT0=log(cs20/cp)  !(isothermal/polytropic cases: check!)
       endif
 
-!       inquire(FILE=input_file, EXIST=lcheminp)
 
-!       if (lcheminp) then
-!        cp=impossible
-!        cp1=impossible
-!        cv=impossible 
-!        cv1=impossible
-!        gamma=impossible
-!        gamma1=impossible
-!        gamma11=impossible
-!        mu=impossible
-!       endif 
 !
 !  check that everything is OK
 !
@@ -488,7 +476,7 @@ module EquationOfState
       if (lpencil_in(i_cv1)) lpencil_in(i_cv)=.true.
 
       if (lpencil_in(i_cv)) then
-        lpencil_in(i_yH)=.true.
+   !     lpencil_in(i_yH)=.true.
         lpencil_in(i_TT1)=.true.
         lpencil_in(i_mu1)=.true.
       endif
@@ -499,7 +487,7 @@ module EquationOfState
       endif
 
       if (lpencil_in(i_cp)) then
-        lpencil_in(i_yH)=.true.
+   !     lpencil_in(i_yH)=.true.
         lpencil_in(i_TT1)=.true.
         lpencil_in(i_mu1)=.true.
       endif
@@ -510,16 +498,16 @@ module EquationOfState
         lpencil_in(i_TT)=.true.
       endif
 
-      if (lpencil_in(i_mu1)) lpencil_in(i_yH)=.true.
+   !   if (lpencil_in(i_mu1)) lpencil_in(i_yH)=.true.
 
       if (lpencil_in(i_ee)) then
         lpencil_in(i_mu1)=.true.
         lpencil_in(i_TT)=.true.
-        lpencil_in(i_yH)=.true.
+    !    lpencil_in(i_yH)=.true.
       endif
 
       if (lpencil_in(i_ss)) then
-        lpencil_in(i_yH)=.true.
+   !     lpencil_in(i_yH)=.true.
         lpencil_in(i_lnrho)=.true.
         lpencil_in(i_lnTT)=.true.
       endif
