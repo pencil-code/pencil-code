@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.40 2008-03-20 16:07:25 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.41 2008-03-21 10:20:21 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -163,11 +163,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.40 2008-03-20 16:07:25 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.41 2008-03-21 10:20:21 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.40 2008-03-20 16:07:25 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.41 2008-03-21 10:20:21 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -186,179 +186,37 @@ module Chemistry
     endsubroutine register_chemistry
 !***********************************************************************
     subroutine initialize_chemistry(f)
-!
+
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  13-aug-07/steveb: coded
 !  19-feb-08/axel: reads in chemistry.dat file
 !
-      use Cdata
-      use Mpicomm, only: stop_it
-      use Sub, only: keep_compiler_quiet
-      use General, only: chn
-!
-      character (len=80) :: chemicals=''
-      character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
-      character (len=20) :: input_file='chem.inp'
-      real, dimension (mx,my,mz,mfarray) :: f
-      logical :: exist,exist1,exist2
-      integer :: i,j,k,stat,reac,spec
-!
-!  Find number of ractions
-!
-      if (lcheminp) then
-        call read_reactions(input_file,NrOfReactions=mreactions)
-        print*,'Number of reactions=',mreactions
-      else
-        mreactions=2*nchemspec
-      endif
-!
-!  Allocate binary diffusion coefficient array
-!
-      allocate(Bin_Diff_coef(nchemspec,nchemspec),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for binary diffusion coefficients") 
 
-! TEMPORARY!
-! While we do not have the data file, all binary diffusion coefficients equal to chem_diff
-! now Bin_Diff_coef is dimensionless
-!
+  use Mpicomm, only: stop_it
 
-  Bin_Diff_coef=chem_diff/(unit_length**2/unit_time)
-
-!
-! Wile we do not have the data file, all dynamical viscosities [g/cm/s] equal to  nu
-!
-! now species_viscosity is dimensionless
-!
-  species_viscosity=nu_spec/(unit_mass/unit_length/unit_time)
+    real, dimension (mx,my,mz,mfarray) :: f
+    logical :: data_file_exit=.false.
 
 
-!
-! TEMPORARY!
+    if (lcheminp) then
+      call chemkin_data(f)
+      data_file_exit=.true.
+    else
+      call astrobiology_data(f)
+      data_file_exit=.true.
+    endif
 
 !
-!  Allocate reaction arrays
+! check the existence of a data file
 !
-      allocate(stoichio(nchemspec,mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for stoichio")
-      allocate(Sijm(nchemspec,mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for Sijm")
-      allocate(Sijp(nchemspec,mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for Sijp")
-      allocate(kreactions_z(mz,mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_z")
-      allocate(kreactions_p(mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_p")
-      allocate(kreactions_m(mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_m")
-      allocate(reaction_name(mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for reaction_name")
-      if (lcheminp) then
-        allocate(B_n(mreactions),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for B_n")
-        allocate(alpha_n(mreactions),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for alpha_n")
-        allocate(E_an(mreactions),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for E_an")
-      end if
-!
-!  Initialize data
-!
-      kreactions_z=1.
-      Sijp=0
-      Sijm=0
-!
-!  read chemistry data
-!
-      inquire(file=file1,exist=exist1)
-      inquire(file=file2,exist=exist2)
-! 
-      if (lcheminp) then
-        call read_reactions(input_file)
-        call write_reactions()
-      elseif(exist1.and.exist2) then
-!
-!  if both chemistry1.dat and chemistry2.dat are present,
-!  then read Sijp and Sijm, and calculate their sum
-!
-!  file1
-!
-        open(19,file=file1)
-        read(19,*) chemicals
-        do j=1,mreactions
-          read(19,*,end=994) kreactions_m(j),(Sijm(i,j),i=1,nchemspec)
-        enddo
-994     close(19)
-        nreactions1=j-1
-!
-!  file2
-!
-        open(19,file=file2)
-        read(19,*) chemicals
-        do j=1,mreactions
-          read(19,*,end=992) kreactions_p(j),(Sijp(i,j),i=1,nchemspec)
-        enddo
-992     close(19)
-        nreactions2=j-1
-!
-!  calculate stoichio and nreactions
-!
-        if (nreactions1==nreactions2) then
-          nreactions=nreactions1
-          stoichio=Sijp-Sijm
-        else
-          call stop_it('nreactions1/=nreactions2')
-        endif
-!
-      else 
-!
-!  old method: read chemistry data, if present
-!
-        inquire(file='chemistry.dat',exist=exist)
-        if(exist) then
-          open(19,file='chemistry.dat')
-          read(19,*) chemicals
-          do j=1,mreactions
-            read(19,*,end=990) kreactions_p(j),(stoichio(i,j),i=1,nchemspec)
-          enddo
-990       close(19)
-          nreactions=j-1
-          Sijm=-min(stoichio,0)
-          Sijp=+max(stoichio,0)
-        else
-          if (lroot) print*,'no chemistry.dat file to be read.'
-          lreactions=.false.
-        endif
-      endif
-!
-!  print input data for verification
-!
-      if (lroot) then
-        print*,'chemicals=',chemicals
-        print*,'kreactions_m=',kreactions_m(1:nreactions)
-        print*,'kreactions_p=',kreactions_p(1:nreactions)
-        print*,'Sijm:' ; write(*,100),Sijm(:,1:nreactions)
-        print*,'Sijp:' ; write(*,100),Sijp(:,1:nreactions)
-        print*,'stoichio=' ; write(*,100),stoichio(:,1:nreactions)
-      endif
-!
-!  possibility of z-dependent kreactions_z profile
-!
-      if (lkreactions_profile) then
-        do j=1,nreactions
-          if (kreactions_profile(j)=='cosh') then
-            do n=1,mz
-              kreactions_z(n,j)=1./cosh(z(n)/kreactions_profile_width(j))**2
-            enddo
-          endif
-        enddo
-      endif
-!
-!  that's it
-!
+     if (.not. data_file_exit) then
+       call stop_it('there is no data file')
+     endif
+
       call keep_compiler_quiet(f)
 !
-100   format(8i4)
+
     endsubroutine initialize_chemistry
 !***********************************************************************
     subroutine init_chemistry(f,xx,yy,zz)
@@ -699,6 +557,241 @@ module Chemistry
 
  endsubroutine calc_for_chem_mixture
 !**********************************************************************
+ subroutine astrobiology_data(f)
+ 
+      use Cdata
+      use Mpicomm, only: stop_it
+      use Sub, only: keep_compiler_quiet
+      use General, only: chn
+!
+      character (len=80) :: chemicals=''
+      character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
+      character (len=20) :: input_file='chem.inp'
+      real, dimension (mx,my,mz,mfarray) :: f
+      logical :: exist,exist1,exist2
+      integer :: i,j,k,stat,reac,spec
+
+!
+!  Find number of ractions
+!
+       mreactions=2*nchemspec
+       print*,'Number of reactions=',mreactions
+
+
+!
+!  Allocate reaction arrays
+!
+      allocate(stoichio(nchemspec,mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for stoichio")
+      allocate(Sijm(nchemspec,mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for Sijm")
+      allocate(Sijp(nchemspec,mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for Sijp")
+      allocate(kreactions_z(mz,mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_z")
+      allocate(kreactions_p(mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_p")
+      allocate(kreactions_m(mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_m")
+      allocate(reaction_name(mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for reaction_name")
+!
+!  Initialize data
+!
+      kreactions_z=1.
+      Sijp=0
+      Sijm=0
+!
+!  read chemistry data
+!
+      inquire(file=file1,exist=exist1)
+      inquire(file=file2,exist=exist2)
+! 
+      if (lcheminp) then
+        call read_reactions(input_file)
+        call write_reactions()
+      elseif(exist1.and.exist2) then
+!
+!  if both chemistry1.dat and chemistry2.dat are present,
+!  then read Sijp and Sijm, and calculate their sum
+!
+!  file1
+!
+        open(19,file=file1)
+        read(19,*) chemicals
+        do j=1,mreactions
+          read(19,*,end=994) kreactions_m(j),(Sijm(i,j),i=1,nchemspec)
+        enddo
+994     close(19)
+        nreactions1=j-1
+!
+!  file2
+!
+        open(19,file=file2)
+        read(19,*) chemicals
+        do j=1,mreactions
+          read(19,*,end=992) kreactions_p(j),(Sijp(i,j),i=1,nchemspec)
+        enddo
+992     close(19)
+        nreactions2=j-1
+!
+!  calculate stoichio and nreactions
+!
+        if (nreactions1==nreactions2) then
+          nreactions=nreactions1
+          stoichio=Sijp-Sijm
+        else
+          call stop_it('nreactions1/=nreactions2')
+        endif
+!
+      else 
+!
+!  old method: read chemistry data, if present
+!
+        inquire(file='chemistry.dat',exist=exist)
+        if(exist) then
+          open(19,file='chemistry.dat')
+          read(19,*) chemicals
+          do j=1,mreactions
+            read(19,*,end=990) kreactions_p(j),(stoichio(i,j),i=1,nchemspec)
+          enddo
+990       close(19)
+          nreactions=j-1
+          Sijm=-min(stoichio,0)
+          Sijp=+max(stoichio,0)
+        else
+          if (lroot) print*,'no chemistry.dat file to be read.'
+          lreactions=.false.
+        endif
+      endif
+!
+!  print input data for verification
+!
+      if (lroot) then
+        print*,'chemicals=',chemicals
+        print*,'kreactions_m=',kreactions_m(1:nreactions)
+        print*,'kreactions_p=',kreactions_p(1:nreactions)
+        print*,'Sijm:' ; write(*,100),Sijm(:,1:nreactions)
+        print*,'Sijp:' ; write(*,100),Sijp(:,1:nreactions)
+        print*,'stoichio=' ; write(*,100),stoichio(:,1:nreactions)
+      endif
+!
+!  possibility of z-dependent kreactions_z profile
+!
+      if (lkreactions_profile) then
+        do j=1,nreactions
+          if (kreactions_profile(j)=='cosh') then
+            do n=1,mz
+              kreactions_z(n,j)=1./cosh(z(n)/kreactions_profile_width(j))**2
+            enddo
+          endif
+        enddo
+      endif
+
+ 100   format(8i4)
+
+    endsubroutine astrobiology_data
+!**********************************************************************
+   subroutine chemkin_data(f)
+!
+!  if the file with chemkin data exists
+! 
+      use Cdata
+      use Mpicomm, only: stop_it
+      use Sub, only: keep_compiler_quiet
+      use General, only: chn
+!
+      character (len=20) :: input_file='chem.inp'
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: stat
+
+!
+!  Find number of ractions
+!
+        call read_reactions(input_file,NrOfReactions=mreactions)
+        print*,'Number of reactions=',mreactions
+
+!
+!  Allocate binary diffusion coefficient array
+!
+      allocate(Bin_Diff_coef(nchemspec,nchemspec),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for binary diffusion coefficients") 
+
+! TEMPORARY!
+! While we do not have the data file, all binary diffusion coefficients equal to chem_diff
+! now Bin_Diff_coef is dimensionless
+!
+
+      Bin_Diff_coef=chem_diff/(unit_length**2/unit_time)
+
+!
+! Wile we do not have the data file, all dynamical viscosities [g/cm/s] equal to  nu
+!
+! now species_viscosity is dimensionless
+!
+      species_viscosity=nu_spec/(unit_mass/unit_length/unit_time)
+!
+! TEMPORARY!
+
+
+!
+!  Allocate reaction arrays
+!
+      allocate(stoichio(nchemspec,mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for stoichio")
+      allocate(Sijm(nchemspec,mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for Sijm")
+      allocate(Sijp(nchemspec,mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for Sijp")
+      allocate(kreactions_p(mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_p")
+      allocate(kreactions_m(mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_m")
+      allocate(reaction_name(mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for reaction_name")
+
+      allocate(B_n(mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for B_n")
+      allocate(alpha_n(mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for alpha_n")
+      allocate(E_an(mreactions),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for E_an")
+ 
+!
+!  Initialize data
+!
+
+      Sijp=0
+      Sijm=0
+!
+!  read chemistry data
+!
+        call read_reactions(input_file)
+        call write_reactions()
+!
+!  calculate stoichio and nreactions
+!
+        if (nreactions1==nreactions2) then
+          nreactions=nreactions1
+          stoichio=Sijp-Sijm
+        else
+          call stop_it('nreactions1/=nreactions2')
+        endif
+!
+!  print input data for verification
+!
+      if (lroot) then
+        print*,'kreactions_m=',kreactions_m(1:nreactions)
+        print*,'kreactions_p=',kreactions_p(1:nreactions)
+        print*,'Sijm:' ; write(*,100),Sijm(:,1:nreactions)
+        print*,'Sijp:' ; write(*,100),Sijp(:,1:nreactions)
+        print*,'stoichio=' ; write(*,100),stoichio(:,1:nreactions)
+      endif
+
+   100   format(8i4)
+
+   endsubroutine chemkin_data
+!**********************************************************************
    subroutine dchemistry_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -761,9 +854,7 @@ module Chemistry
 ! Chemkin data case
          call get_reaction_rate(f,vreactions_p,vreactions_m,p)
        endif 
-
         vreactions=vreactions_p-vreactions_m
-
       endif
 !
 !  loop over all chemicals

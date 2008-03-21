@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.13 2008-03-20 16:07:25 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.14 2008-03-21 10:20:21 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -77,7 +77,6 @@ module EquationOfState
   logical :: leos_localisothermal=.false.
 !  logical :: leos_chemistry =.false.
 
-  real, dimension(nchemspec) :: mu_spec, cp_spec 
 
   character (len=20) :: input_file='chem.inp'
   logical :: lcheminp=.false.
@@ -119,7 +118,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.13 2008-03-20 16:07:25 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.14 2008-03-21 10:20:21 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -218,17 +217,18 @@ module EquationOfState
         lnTT0=log(cs20/cp)  !(isothermal/polytropic cases: check!)
       endif
 
-       inquire(FILE=input_file, EXIST=lcheminp)
-       if (lcheminp) then
-        cp=impossible
-        cp1=impossible
-        cv=impossible 
-        cv1=impossible
-        gamma=impossible
-        gamma1=impossible
-        gamma11=impossible
-        mu=impossible
-       endif 
+!       inquire(FILE=input_file, EXIST=lcheminp)
+
+!       if (lcheminp) then
+!        cp=impossible
+!        cp1=impossible
+!        cv=impossible 
+!        cv1=impossible
+!        gamma=impossible
+!        gamma1=impossible
+!        gamma11=impossible
+!        mu=impossible
+!       endif 
 !
 !  check that everything is OK
 !
@@ -277,14 +277,6 @@ module EquationOfState
         close (1)
       endif
 !
-         do k=1,nchemspec
-          cp_spec(k)=Rgas/(mu*gamma1*gamma11)
-         enddo 
-
-         do k=1,nchemspec
-          mu_spec(k)=mu
-         enddo 
-
     endsubroutine initialize_eos
 !*******************************************************************
     subroutine select_eos_variable(variable,findex)
@@ -590,60 +582,7 @@ module EquationOfState
       if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
       if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
 
-   if (lcheminp==.false.) then
-
-!
-!  Mean molecular weight
-!
-    tmp_sum=0.
-      if (lpencil(i_mu1)) then 
-        do k=1,nchemspec
-         tmp_sum=tmp_sum+f(l1:l2,m,n,ichemspec(k))/mu_spec(k)
-        enddo
-         p%mu1=tmp_sum
-      endif
-
-!
-!  Pressure
-!
-      if (lpencil(i_pp)) p%pp = Rgas*p%mu1*p%rho*p%TT
-
-!
-!  Specific heat at constant pressure
-!
-
-      cp_full=0.
-
-      if (lpencil(i_cp)) then
-        do k=1,nchemspec
-         cp_full(:,:,:)=cp_full(:,:,:)+f(:,:,:,ichemspec(k))*cp_spec(k)
-        enddo
-        p%cp=cp_full(l1:l2,m,n)
-      endif
-
-      if (lpencil(i_cp1))   p%cp1 = 1./p%cp
-
-!  Gradient of the above
-!
-      if (lpencil(i_gradcp)) call grad(cp_full,p%gradcp)
-
-!
-!  Specific heat at constant volume (i.e. density)
-!
-      if (lpencil(i_cv)) p%cv = p%cp - Rgas
-      if (lpencil(i_cv1)) p%cv1=1/p%cv
-      if (lpencil(i_lncp)) p%lncp=log(p%cp)
-
-
-!
-!  Polytropic index
-!
-      if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
-      if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
-      if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
-
- endif
-
+ 
 
     endsubroutine calc_pencils_eos
 !***********************************************************************
