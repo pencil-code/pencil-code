@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.250 2007-09-08 13:45:10 dintrans Exp $
+! $Id: run.f90,v 1.251 2008-03-21 07:55:13 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -31,6 +31,7 @@
         use Timeavg
         use Interstellar,    only: check_SN
         use Shear
+        use TestPerturb,     only: testperturbing
         use Forcing
         use EquationOfState
         use Dustvelocity,    only: init_uud
@@ -72,7 +73,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.250 2007-09-08 13:45:10 dintrans Exp $")
+             "$Id: run.f90,v 1.251 2008-03-21 07:55:13 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -242,8 +243,9 @@
         endif
 !
 !  Allocate the finit array if lADI=.true.
+!  Do this also when ltestperturb=.true.
 !
-        if (lADI) allocate(finit(mx,my,mz,mfarray))
+        if (lADI.or.ltestperturb) allocate(finit(mx,my,mz,mfarray))
 !
 !  Write data to file for IDL
 !
@@ -304,7 +306,7 @@
 !  Do loop in time
 !
         Time_loop: do while (it<=nt)
-          lout  =mod(it-1,it1).eq.0
+          lout=mod(it-1,it1).eq.0
           l1dout=mod(it-1,it1d).eq.0
           if (lout) then
 !
@@ -453,7 +455,10 @@
           if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
           if (lvid)   lpencil=lpencil .or. lpenc_video
 !
+!  save state vector prior to update
+!
           if (lADI)   finit=f
+          if (ltestperturb) call testperturbing(f,df)
 !
 !  Time advance
 !

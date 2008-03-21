@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.228 2008-03-12 17:52:36 brandenb Exp $
+! $Id: register.f90,v 1.229 2008-03-21 07:55:13 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -56,6 +56,7 @@ module Register
       use CosmicrayFlux,    only: register_cosmicrayflux
       use Interstellar,     only: register_interstellar
       use Shear,            only: register_shear
+      use TestPerturb,      only: register_testperturb
       use Viscosity,        only: register_viscosity
       use Hypervisc_strict, only: register_hypervisc_strict
       use Hyperresi_strict, only: register_hyperresi_strict
@@ -195,6 +196,7 @@ module Register
       use Cosmicray,       only: initialize_cosmicray
       use Interstellar,    only: initialize_interstellar
       use Shear,           only: initialize_shear
+      use TestPerturb,     only: initialize_testperturb
       use Viscosity,       only: initialize_viscosity
       use Special,         only: initialize_special
       use BorderProfiles,  only: initialize_border_profiles
@@ -765,6 +767,7 @@ module Register
       use Shock,           only: rprint_shock
       use Viscosity,       only: rprint_viscosity
       use Shear,           only: rprint_shear
+      use TestPerturb,     only: rprint_testperturb
       use Mpicomm
 !
       integer :: iname,inamev,inamez,inamey,inamex,inamer,inamexy,inamexz,inamerz
@@ -961,6 +964,7 @@ module Register
       call rprint_shock           (lreset,LWRITE=lroot)
       call rprint_viscosity       (lreset,LWRITE=lroot)
       call rprint_shear           (lreset,LWRITE=lroot)
+      call rprint_testperturb     (lreset,LWRITE=lroot)
       if (lroot) close(3)
 !
     endsubroutine rprint_list

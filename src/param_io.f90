@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.297 2008-03-12 17:52:36 brandenb Exp $
+! $Id: param_io.f90,v 1.298 2008-03-21 07:55:13 brandenb Exp $
 
 module Param_IO
 
@@ -34,6 +34,7 @@ module Param_IO
   use Poisson
   use Interstellar
   use Shear
+  use TestPerturb
   use Timeavg
   use Viscosity
   use Special
@@ -123,7 +124,8 @@ module Param_IO
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
        lbidiagonal_derij,lisotropic_advection, &
-       crash_file_dtmin_factor,niter_poisson,lADI,ltemperature_nolog
+       crash_file_dtmin_factor,niter_poisson, &
+       lADI,ltestperturb,ltemperature_nolog
   contains
 
 !***********************************************************************
@@ -315,6 +317,10 @@ module Param_IO
       if (ierr.ne.0) call sample_startpars('shear_init_pars',ierr)
 
       call sgi_fix(lsgifix,1,'start.in')
+      call read_testperturb_init_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_startpars('testperturb_init_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'start.in')
       call read_viscosity_init_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('viscosity_init_pars',ierr)
 
@@ -425,6 +431,7 @@ module Param_IO
         if (lcosmicrayflux  ) print*,'&cosmicrayflux_init_pars   /'
         if (linterstellar   ) print*,'&interstellar_init_pars    /'
         if (lshear          ) print*,'&shear_init_pars           /'
+        if (ltestperturb    ) print*,'&testperturb_init_pars           /'
         if (lspecial        ) print*,'&special_init_pars         /'
         if (lparticles) &
             print*,'&particles_init_pars         /'
@@ -497,6 +504,7 @@ module Param_IO
         call write_cosmicrayflux_init_pars(unit)
         call write_interstellar_init_pars(unit)
         call write_shear_init_pars(unit)
+        call write_testperturb_init_pars(unit)
         call write_viscosity_init_pars(unit)
         call write_special_init_pars(unit)
         call write_particles_init_pars_wrap(unit)
@@ -650,6 +658,10 @@ module Param_IO
       if (ierr.ne.0) call sample_runpars('shear_run_pars',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
+      call read_testperturb_run_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_runpars('testperturb_run_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'run.in')
       call read_viscosity_run_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_runpars('viscosity_run_pars',ierr)
 
@@ -760,6 +772,7 @@ module Param_IO
         if (lcosmicrayflux  ) print*,'&cosmicrayflux_run_pars   /'
         if (linterstellar   ) print*,'&interstellar_run_pars    /'
         if (lshear          ) print*,'&shear_run_pars           /'
+        if (ltestperturb    ) print*,'&testperturb_run_pars     /'
         if (lviscosity      ) print*,'&viscosity_run_pars       /'
         if (lspecial        ) print*,'&special_run_pars         /'
         if (lparticles) &
@@ -855,6 +868,7 @@ module Param_IO
         call write_cosmicrayflux_run_pars(unit)
         call write_interstellar_run_pars(unit)
         call write_shear_run_pars(unit)
+        call write_testperturb_run_pars(unit)
         call write_viscosity_run_pars(unit)
         call write_special_run_pars(unit)
         call write_particles_run_pars_wrap(unit)
@@ -964,7 +978,7 @@ module Param_IO
 !  21-jan-02/wolf: coded
 !
       use Cdata, only: lmagnetic_var,lpscalar,lradiation, &
-           lforcing,lgravz,lgravr,lshear, &
+           lforcing,lgravz,lgravr,lshear,ltestperturb, &
            lchemistry, ldustvelocity,ldustdensity,lradiation_fld,  &
            lneutralvelocity,lneutraldensity, &
            leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
@@ -985,8 +999,7 @@ module Param_IO
       namelist /lphysics/ &
            lhydro,ldensity,lentropy,lmagnetic,ltestfield,ltestflow, &
            lpscalar,lradiation, &
-           lforcing,lgravz,lgravr,lshear,linterstellar,lcosmicray, &
-!---       lcosmicrayflux,lchemistry,ldustvelocity,ldustdensity, &
+           lforcing,lgravz,lgravr,lshear,ltestperturb,linterstellar,lcosmicray, &
            lcosmicrayflux,ldustvelocity,ldustdensity, &
            lshock,lradiation_fld, &
            leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
@@ -1031,6 +1044,7 @@ module Param_IO
         call write_cosmicrayflux_init_pars(1)
         call write_interstellar_init_pars(1)
         call write_shear_init_pars(1)
+        call write_testperturb_init_pars(1)
         call write_viscosity_init_pars(1)
         call write_special_init_pars(1)
         call write_particles_init_pars_wrap(1)
@@ -1080,6 +1094,7 @@ module Param_IO
         call read_cosmicrayflux_init_pars(1)
         call read_interstellar_init_pars(1)
         call read_shear_init_pars(1)
+        call read_testperturb_init_pars(1)
         call read_viscosity_init_pars(1)
         call read_special_init_pars(1)
         call read_particles_init_pars_wrap(1)
@@ -1126,6 +1141,7 @@ module Param_IO
         call write_cosmicrayflux_run_pars(1)
         call write_interstellar_run_pars(1)
         call write_shear_run_pars(1)
+        call write_testperturb_run_pars(1)
         call write_viscosity_run_pars(1)
         call write_special_run_pars(1)
         call write_particles_run_pars_wrap(1)

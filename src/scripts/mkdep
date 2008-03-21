@@ -41,9 +41,11 @@ dollar='$'
 #    s/\bEQUATIONOFSTATE\b/\$(EOS)\$(PC_META_TYPE).o/i;
 #    s/\bFORCING\b/\$(FORCING)\$(PC_META_TYPE).o/i;
 #    s/\bSHEAR\b/\$(SHEAR)\$(PC_META_TYPE).o/i;
+#    s/\bTESTPERTURB\b/\$(TESTPERTURB)\$(PC_META_TYPE).o/i;
 #    s/\bTIMEAVG\b/\$(TIMEAVG)\$(PC_META_TYPE).o/i;
 #    s/\bSPECIAL\b/\$(SPECIAL)\$(PC_META_TYPE).o/i;
 #    s/\bTESTFIELD\b/\$(TESTFIELD)\$(PC_META_TYPE).o/i;
+#    s/\bTESTFLOW\b/\$(TESTFLOW)\$(PC_META_TYPE).o/i;
 #    s/\bSHOCK\b/\$(SHOCK)\$(PC_META_TYPE).o/i;
 #    s/\bCHIRAL\b/\$(CHIRAL)\$(PC_META_TYPE).o/i;
 #    s/\bGRID\b/\$(GRID)\$(PC_META_TYPE).o/i;
@@ -115,10 +117,12 @@ script='
     s/\bRADIATION\b/\$(RADIATION_OBJ)/i;
     s/\bSELFGRAVITY\b/\$(SELFGRAVITY_OBJ)/i;
     s/\bSHEAR\b/\$(SHEAR_OBJ)/i;
+    s/\bTESTPERTURB\b/\$(TESTPERTURB_OBJ)/i;
     s/\bSHOCK\b/\$(SHOCK_OBJ)/i;
     s/\bSPECIAL\b/\$(SPECIAL_OBJ)/i;
     s/\bSTRUCT_FUNC\b/\$(STRUCT_FUNC_OBJ)/i;
     s/\bTESTFIELD\b/\$(TESTFIELD_OBJ)/i;
+    s/\bTESTFLOW\b/\$(TESTFLOW_OBJ)/i;
     s/\bTIMEAVG\b/\$(TIMEAVG_OBJ)/i;
     s/\bVISCOSITY\b/\$(VISCOSITY_OBJ)/i;
 
