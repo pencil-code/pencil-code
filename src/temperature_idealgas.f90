@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.56 2008-03-06 13:54:52 nbabkovs Exp $
+! $Id: temperature_idealgas.f90,v 1.57 2008-03-21 12:23:06 nbabkovs Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -140,7 +140,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.56 2008-03-06 13:54:52 nbabkovs Exp $")
+           "$Id: temperature_idealgas.f90,v 1.57 2008-03-21 12:23:06 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1023,33 +1023,25 @@ module Entropy
 
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(mx,my,mz) ::  sum_tmp, cp_tmp
-      real, dimension (nx,3) :: gsum, gcp_tmp
+      real, dimension (nx) :: gradlnchi_tmp=0., chi_tmp=1. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       type (pencil_case) :: p
 
-      real, dimension(nx) :: g2,g2cp,chi_tmp,lnchi_tmp
+      real, dimension(nx) :: g2TT,g2cp, g2TTrho, g2TTlnchi
 !
-     sum_tmp(l1:l2,m,n) = f(l1:l2,m,n,ilnTT) + f(l1:l2,m,n,ilnrho) + lnchi_tmp(:) !+p%lncp(:) 
-
-     cp_tmp(l1:l2,m,n)=p%cp
-
-      call grad(sum_tmp,gsum)
-
-      call grad(cp_tmp,gcp_tmp) 
-
-      call dot(p%glnTT,gsum,g2)
-
-      call dot(p%glnTT,gcp_tmp,g2cp)
+!      call dot(p%glnTT,gradlnchi_tmp,g2TTlnchi)
+      call dot(p%glnTT,p%glnrho,g2TTrho)
+      call dot(p%glnTT,p%glnTT,g2TT)
+      call dot(p%glnTT,p%gradcp,g2cp)
 
 !
 !  Add heat conduction to RHS of temperature equation
-!
-! while there is no data, one takes chi=const
-
-      chi_tmp(:)=chi
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! while there is no data, one takes chi_tmp=1. and  gradlnchi_tmp=0.
 !----------------------------------------------
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%gamma*chi_tmp(:)*(p%del2lnTT+g2+g2cp/p%cp)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  & 
+          + p%gamma*chi_tmp(:)*(p%del2lnTT+g2TT+g2TTrho+g2cp/p%cp+g2TTlnchi)
 
     endsubroutine calc_heatcond_chemistry
 !***********************************************************************
