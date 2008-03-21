@@ -13,10 +13,7 @@ MAGNETIC  = nomagnetic
 RADIATION = noradiation
 PSCALAR   = nopscalar
 
-#GRAVITY   =   gravity_r
+GRAVITY   =   gravity_r
 FORCING   = noforcing
 SHEAR     = noshear
-SHOCK     =   shock_highorder
 
-PARTICLES_NBODY = particles_nbody
-PARTICLES = particles_dust
