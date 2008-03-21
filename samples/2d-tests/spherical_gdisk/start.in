@@ -3,21 +3,23 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2008-03-18 16:41:39 wlyra Exp $',
-  ip=10,                      ! debugging parameter
-  xyz0  =  0.3,1.39626,-.1,    ! first corner of box  - 80 degrees
-  xyz1  =  2.0,1.74533, .1,    ! second corner of box - 100 degrees
-
-  lperi = F  , F  , T,       ! periodic direction?
-  bcx='f','f','f','f'
-  bcy='f','f','f','f'
-
+  cvsid='$Id: start.in,v 1.2 2008-03-21 23:13:07 wlyra Exp $',
+  ip=10,                         ! debugging parameter
+!  xyz0  =  0.3,1.39626,-.1,     ! first corner of box  - 80 degrees
+!  xyz1  =  2.0,1.74533, .1,     ! second corner of box - 100 degrees
+  xyz0  =  0.3,1.48353,-3.141592,! first corner of box  - 80 degrees
+  xyz1  =  2.0,1.65806, 3.141592,! second corner of box - 100 degrees
+  lperi = F  , F  , T,           ! periodic direction?
+  bcx='f','f','f','f','a2'
+  bcy='f','f','f','f','a2'
   llocal_iso=T
   lwrite_ic=T
   coord_system='spherical'
+  lwrite_aux=T
+  lenforce_costh_is_zero=T
 /
 &eos_init_pars
-  cs0  = 0.05 
+  cs0  = 0.05
   rho0 = 1.
   ptlaw= 1.
   gamma= 1.
@@ -29,10 +31,24 @@
   initlnrho='local-isothermal'
   lnrho_const=0.  
   ldensity_nolog=T
-  plaw=1.5
+  plaw=0.0
   density_floor=-100
 /
 &grav_init_pars
   ipotential='no-smooth'
   g0=1.
 /
+&particles_init_pars
+  initxxp='random', initvvp='random'
+/
+&particles_nbody_init_pars
+  initxxsp='fixed-cm'
+  initvvsp='fixed-cm'
+  bcspx='out',bcspy='out',bcspz='p'
+  GNewton=1.0
+  pmass=1e-3, 1.
+  xsp0=1,0
+  r_smooth=0.07,0.0
+  istar=2
+/
+

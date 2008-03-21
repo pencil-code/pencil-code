@@ -3,27 +3,37 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2008-03-18 16:41:39 wlyra Exp $',
-  ip=14,
-  nt=100, it1=10, it1d=500,  isave=500, itorder=3, ialive=1
+  cvsid='$Id: run.in,v 1.2 2008-03-21 23:13:07 wlyra Exp $',
+  ip=9,
+  nt=10000, it1=5, it1d=500,  isave=50, itorder=3, ialive=1
   cdt=0.4, 
   cdtv=0.4, 
   dtmin=1e-6,
   dsnap=6.283 ,dvid=0.6283, d2davg=6.283 
   tmax=628.30
-!
 /
 &eos_run_pars
 /
 &hydro_run_pars
 /
 &density_run_pars
- idiff='hyper3-sph'
- diffrho_hyper3=1e-2
+!lupw_rho=T
+idiff='hyper3-sph','shock'
+diffrho_hyper3=1e-2,diffrho_shock=1e-2
 /
 &grav_run_pars
 /
 &viscosity_run_pars
-  ivisc='hyper3-sph'
-  nu_hyper3=1e-2
+  ivisc='hyper3-sph','nu-shock'
+  nu_hyper3=1e-2,nu_shock=1.
+  !ivisc='nu-const'
+  !nu=1e-5
+/
+&particles_run_pars
+  ldragforce_dust_par=F
+/
+&particles_nbody_run_pars
+  lfollow_particle=T,T
+/
+&shock_run_pars
 /
