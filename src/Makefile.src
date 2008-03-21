@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.384 2008-03-21 07:55:13 brandenb Exp $
+### $Id: Makefile.src,v 1.385 2008-03-21 08:15:55 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -1375,7 +1375,7 @@ nodebug.o:            nodebug.f90 cdata.o $(MPICOMM_FIX).o
 #$(TIMEAVG).o:        ctimeavg.local
 #axeltest $(INITCOND_SPEC).o:$(INITCOND_SPEC).f90
 write_dummy_namelists.o: write_dummy_namelists.f90 $(comm_deps)
-testperturb.o: testperturb.f90 $(TIMESTEP)  #(axel)
+#testperturb.o: testperturb.f90 $(TIMESTEP)  #(axel)
 
 ## ---------------------------------------------------------------------- #
 ## Dependencies

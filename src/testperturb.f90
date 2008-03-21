@@ -1,4 +1,4 @@
-! $Id: testperturb.f90,v 1.1 2008-03-21 07:55:13 brandenb Exp $
+! $Id: testperturb.f90,v 1.2 2008-03-21 08:15:55 brandenb Exp $
 
 !  test perturbation method
 
@@ -41,7 +41,7 @@ module TestPerturb
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testperturb.f90,v 1.1 2008-03-21 07:55:13 brandenb Exp $")
+           "$Id: testperturb.f90,v 1.2 2008-03-21 08:15:55 brandenb Exp $")
 !
     endsubroutine register_testperturb
 !***********************************************************************
@@ -113,7 +113,7 @@ module TestPerturb
 !
     endsubroutine write_testperturb_run_pars
 !***********************************************************************
-    subroutine testperturbing(finit,f,df)
+    subroutine testperturbing(f,df)
 !
 !  Calculate the response to perturbations after one timestep.
 !  The name "testperturbing" is chosen, because a subroutine's name
@@ -122,7 +122,7 @@ module TestPerturb
 !
 !  19-mar-08/axel: coded
 !
-      use Timestep, only: rk_2n
+!--   use Timestep, only: rk_2n
       use Hydro, only: calc_pencils_hydro
 
       real, dimension (mx,my,mz,mfarray) :: finit,f
@@ -140,7 +140,7 @@ module TestPerturb
 !
 !  Time advance
 !
-          call rk_2n(f,df,p)
+!--       call rk_2n(f,df,p)
 !
 !  calculate emf for alpha effect (for imposed field)
 !  Note that uxbm means <EMF.B0>/B0^2, so it gives already alpha=EMF/B0.
