@@ -2,6 +2,9 @@
 #
 #  Author: Tony Mee.
 #
+#  CVS:
+#    $Id: mkdep,v 1.14 2008-03-21 15:53:02 brandenb Exp $
+#
 #  Usage:
 #    In $PENCIL_HOME/src do 'mkdep *.f90 > Makefile.depend'
 #
@@ -48,6 +51,7 @@ dollar='$'
 #    s/\bTESTFLOW\b/\$(TESTFLOW)\$(PC_META_TYPE).o/i;
 #    s/\bSHOCK\b/\$(SHOCK)\$(PC_META_TYPE).o/i;
 #    s/\bCHIRAL\b/\$(CHIRAL)\$(PC_META_TYPE).o/i;
+#    s/\bCHEMISTRY\b/\$(CHEMISTRY)\$(PC_META_TYPE).o/i;
 #    s/\bGRID\b/\$(GRID)\$(PC_META_TYPE).o/i;
 #    s/\bFOURIER\b/\$(FOURIER)\$(PC_META_TYPE).o/i;
 #    s/\bGHOSTFOLD\b/ghostfold_\$(MPICOMM)\$(PC_META_TYPE).o/i;
@@ -80,6 +84,7 @@ script='
 
     s/\bBORDERPROFILES\b/\$(BORDER_PROFILES_OBJ)/i;
     s/\bCHIRAL\b/\$(CHIRAL_OBJ)/i;
+    s/\bCHEMISTRY\b/\$(CHEMISTRY_OBJ)/i;
     s/\bCOSMICRAY\b/\$(COSMICRAY_OBJ)/i;
     s/\bCOSMICRAYFLUX\b/\$(COSMICRAYFLUX_OBJ)/i;
     s/\bDENSITY\b/\$(DENSITY_OBJ)/i;
