@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.25 2008-03-18 14:23:22 brandenb Exp $
+! $Id: testfield_z.f90,v 1.26 2008-03-22 14:54:09 pkapyla Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -160,7 +160,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.25 2008-03-18 14:23:22 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.26 2008-03-22 14:54:09 pkapyla Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -207,8 +207,8 @@ module Testfield
 !
 !  set cosine and sine function for setting test fields and analysis
 !
-      cz=cos(ktestfield*z)
-      sz=sin(ktestfield*z)
+      cz=cos(2.*pi*ktestfield*(z-z0)/Lz-pi)
+      sz=sin(2.*pi*ktestfield*(z-z0)/Lz-pi)
 !
 !  Also calculate its inverse, but only if different from zero
 !
