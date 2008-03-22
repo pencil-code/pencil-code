@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.300 2008-03-22 01:18:49 wlyra Exp $
+! $Id: param_io.f90,v 1.301 2008-03-22 05:44:03 brandenb Exp $
 
 module Param_IO
 
@@ -317,7 +317,7 @@ module Param_IO
       if (ierr.ne.0) call sample_startpars('shear_init_pars',ierr)
 
       call sgi_fix(lsgifix,1,'start.in')
-      !call read_testperturb_init_pars(1,IOSTAT=ierr)
+      call read_testperturb_init_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('testperturb_init_pars',ierr)
 
       call sgi_fix(lsgifix,1,'start.in')
@@ -504,7 +504,7 @@ module Param_IO
         call write_cosmicrayflux_init_pars(unit)
         call write_interstellar_init_pars(unit)
         call write_shear_init_pars(unit)
-        !call write_testperturb_init_pars(unit)
+        call write_testperturb_init_pars(unit)
         call write_viscosity_init_pars(unit)
         call write_special_init_pars(unit)
         call write_particles_init_pars_wrap(unit)
@@ -658,7 +658,7 @@ module Param_IO
       if (ierr.ne.0) call sample_runpars('shear_run_pars',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
-      !call read_testperturb_run_pars(1,IOSTAT=ierr)
+      call read_testperturb_run_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_runpars('testperturb_run_pars',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
@@ -868,7 +868,7 @@ module Param_IO
         call write_cosmicrayflux_run_pars(unit)
         call write_interstellar_run_pars(unit)
         call write_shear_run_pars(unit)
-        !call write_testperturb_run_pars(unit)
+        call write_testperturb_run_pars(unit)
         call write_viscosity_run_pars(unit)
         call write_special_run_pars(unit)
         call write_particles_run_pars_wrap(unit)
@@ -1044,7 +1044,7 @@ module Param_IO
         call write_cosmicrayflux_init_pars(1)
         call write_interstellar_init_pars(1)
         call write_shear_init_pars(1)
-        !call write_testperturb_init_pars(1)
+        call write_testperturb_init_pars(1)
         call write_viscosity_init_pars(1)
         call write_special_init_pars(1)
         call write_particles_init_pars_wrap(1)
@@ -1094,7 +1094,7 @@ module Param_IO
         call read_cosmicrayflux_init_pars(1)
         call read_interstellar_init_pars(1)
         call read_shear_init_pars(1)
-        !call read_testperturb_init_pars(1)
+        call read_testperturb_init_pars(1)
         call read_viscosity_init_pars(1)
         call read_special_init_pars(1)
         call read_particles_init_pars_wrap(1)
@@ -1141,7 +1141,7 @@ module Param_IO
         call write_cosmicrayflux_run_pars(1)
         call write_interstellar_run_pars(1)
         call write_shear_run_pars(1)
-        !call write_testperturb_run_pars(1)
+        call write_testperturb_run_pars(1)
         call write_viscosity_run_pars(1)
         call write_special_run_pars(1)
         call write_particles_run_pars_wrap(1)
