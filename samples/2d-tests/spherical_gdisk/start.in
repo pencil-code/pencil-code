@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.3 2008-03-21 23:39:12 wlyra Exp $',
+  cvsid='$Id: start.in,v 1.4 2008-03-22 01:20:56 wlyra Exp $',
   ip=10,                         ! debugging parameter
   xyz0  =  0.3,1.39626,-.1,     ! first corner of box  - 80 degrees
   xyz1  =  2.0,1.74533, .1,     ! second corner of box - 100 degrees
@@ -16,7 +16,7 @@
   lwrite_ic=T
   coord_system='spherical'
   lwrite_aux=T
-  lenforce_costh_is_zero=T
+  luse_latitude=T
 /
 &eos_init_pars
   cs0  = 0.05
