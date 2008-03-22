@@ -1,6 +1,6 @@
 ### -*-Makefile-*- (for Emacs)
 ###
-### $Id: Makefile.depend,v 1.90 2007-11-22 11:33:02 ajohan Exp $
+### $Id: Makefile.depend,v 1.91 2008-03-22 02:44:02 wlyra Exp $
 ### Makefile dependencies for modular Pencil Code.
 ###
 ##
@@ -149,6 +149,9 @@ NEUTRALDENSITY_SRC=$(NEUTRALDENSITY).f90
 TESTFIELD_OBJ=$(TESTFIELD).o
 TESTFIELD_SRC=$(TESTFIELD).f90
 #
+TESTPERTURB_OBJ=$(TESTPERTURB).o
+TESTPERTURB_SRC=$(TESTPERTURB).f90
+#
 IO_OBJ=$(IO).o
 IO_SRC=$(IO).f90
 #
@@ -261,9 +264,9 @@ slices.o: slices.f90 $(CDATA_OBJ) $(SUB_OBJ) $(EOS_OBJ) $(PARTICLES_MAIN_OBJ) $(
 #
 $(SUB_OBJ): sub.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) deriv.o $(MESSAGES_OBJ) $(GENERAL_OBJ) $(GRID_OBJ)
 #
-param_io.o: param_io.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(TIMESTEP_OBJ) $(TIMEAVG_OBJ) $(physics) $(PARTICLES_MAIN_OBJ) 
+param_io.o: param_io.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(TIMESTEP_OBJ) $(TIMEAVG_OBJ) $(physics) $(PARTICLES_MAIN_OBJ) $(TESTPERTURB_OBJ)
 #
-register.o: register.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(physics) $(TIMEAVG_OBJ) prints.o equ.o $(GRID_OBJ)
+register.o: register.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(physics) $(TIMEAVG_OBJ) prints.o equ.o $(GRID_OBJ) $(TESTPERTURB_OBJ)
 #
 $(EQU_OBJ): $(EQU_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(physics) boundcond.o $(POISSON_OBJ) $(GLOBAL_OBJ) $(PARTICLES_MAIN_OBJ) $(INTERSTELLAR_OBJ) $(GRID_OBJ) snapshot.o
 #
@@ -333,6 +336,8 @@ $(NEUTRALDENSITY_OBJ): neutraldensity.h $(NEUTRALDENSITY_SRC) $(COMMON_DEPS) $(I
 $(NEUTRALVELOCITY_OBJ): neutralvelocity.h $(NEUTRALVELOCITY_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(GENERAL_OBJ) $(GRAVITY_OBJ) $(NEUTRALDENSITY_OBJ)
 #
 $(TESTFIELD_OBJ): testfield.h $(TESTFIELD_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(IO_OBJ) $(HYDRO_OBJ)
+#
+$(TESTPERTURB_OBJ): testperturb.h $(TESTPERTURB_SRC) $(TIMESTEP_OBJ)
 #
 $(INTERSTELLAR_OBJ): interstellar.h $(INTERSTELLAR_SRC) $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(EOS_OBJ)
 #
