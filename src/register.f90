@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.230 2008-03-21 22:54:10 wlyra Exp $
+! $Id: register.f90,v 1.231 2008-03-22 01:18:49 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -203,6 +203,7 @@ module Register
       use Equ,             only: initialize_time_integrals
 
       real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(my) :: lat
       real :: sinth_min=1e-5 !(to avoid axis)
       logical :: lstarting
 
@@ -367,20 +368,12 @@ module Register
 !
         sinth=sin(y)
 !
-! This is a fix to a feature of the spherical grid. The 
-! mid point of the theta direction is pi/2 only machine 
-! precision. That makes cos(y(mpoint)) ~ 1e-6 (1e-12 in 
-! double precision).  This is not a big problem in most
-! cases. But for a rotating disk, the large scale azimu-
-! thal velocity amounts to a small but steady contribution
-! to the term uu(:,3)*ff(:,3)*cotth(m) in the advection 
-! This contribution makes the polar velocity grow linearly 
-! (and unboundly) in time. 
+! Calculate cos(theta) via latitude, which allows us to ensure
+! that sin(lat(midpoint)) = 0 exactly
 !
-        if (lenforce_costh_is_zero) then
-          costh=sqrt(1-sinth**2)
-!  respect the sign
-          costh=costh*sign(1.,cos(y))
+        if (luse_latitude) then
+          lat=pi/2-y
+          costh=sin(lat)
         else
           costh=cos(y)
         endif        

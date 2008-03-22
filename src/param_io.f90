@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.299 2008-03-21 22:54:10 wlyra Exp $
+! $Id: param_io.f90,v 1.300 2008-03-22 01:18:49 wlyra Exp $
 
 module Param_IO
 
@@ -80,7 +80,7 @@ module Param_IO
        lcylindrical, &
        lcylinder_in_a_box,lsphere_in_a_box,llocal_iso,init_loops,lwrite_2d,&
        lcylindrical_gravity,border_frac,border_frac_x,border_frac_y, &
-       border_frac_z,ltemperature_nolog,lenforce_costh_is_zero
+       border_frac_z,ltemperature_nolog,luse_latitude
  !      lextrapolate_bot_density,ltop_velocity_kep,laccelerat_zone, &
  !      ldecelerat_zone,lsurface_zone,lnstar_entropy,lnstar_T_const, &
  !      lnstar_1D,T_disc
