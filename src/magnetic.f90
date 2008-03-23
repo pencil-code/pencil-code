@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.481 2008-03-18 16:21:36 wlyra Exp $
+! $Id: magnetic.f90,v 1.482 2008-03-23 14:23:09 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -92,7 +92,7 @@ module Magnetic
   logical :: lresi_etaSS=.false.
   logical :: lresi_hyper2=.false.
   logical :: lresi_hyper3=.false.
-  logical :: lresi_hyper3_cyl=.false.
+  logical :: lresi_hyper3_cyl_or_sph=.false.
   logical :: lresi_hyper3_strict=.false.
   logical :: lresi_zdep=.false.
   logical :: lresi_hyper3_aniso=.false.
@@ -110,6 +110,7 @@ module Magnetic
   logical :: lmeanfield_noalpm=.false.
   logical :: lgauss=.false.
   logical :: lbb_as_aux=.false.,ljj_as_aux=.false.
+  logical :: lbext_curvilinear=.true.
   character (len=labellen) :: pertaa='zero'
 
   namelist /magnetic_init_pars/ &
@@ -123,7 +124,7 @@ module Magnetic
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa, &
        rmode,zmode,rm_int,rm_ext,lgauss, &
-       lbb_as_aux,ljj_as_aux,beta_const
+       lbb_as_aux,ljj_as_aux,beta_const,lbext_curvilinear
 
   ! run parameters
   real :: eta=0.,eta1=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
@@ -167,7 +168,7 @@ module Magnetic
        lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint,lfreeze_aext, &
        sigma_ratio,zdep_profile,eta_width,eta_z0, &
        borderaa,eta_aniso_hyper3, &
-       lelectron_inertia,inertial_length, &
+       lelectron_inertia,inertial_length,lbext_curvilinear, &
        lbb_as_aux,ljj_as_aux,lremove_mean_emf,lkinematic
 
   ! diagnostic variables (need to be consistent with reset list below)
@@ -368,7 +369,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.481 2008-03-18 16:21:36 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.482 2008-03-23 14:23:09 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -461,7 +462,7 @@ module Magnetic
       lresi_eta_const=.false.
       lresi_hyper2=.false.
       lresi_hyper3=.false.
-      lresi_hyper3_cyl=.false.
+      lresi_hyper3_cyl_or_sph=.false.
       lresi_hyper3_strict=.false.
       lresi_hyper3_aniso=.false.
       lresi_eta_shock=.false.
@@ -483,9 +484,9 @@ module Magnetic
         case('hyper3')
           if (lroot) print*, 'resistivity: hyper3'
           lresi_hyper3=.true.
-        case('hyper3_cyl')
-          if (lroot) print*, 'resistivity: hyper3_cyl'
-          lresi_hyper3_cyl=.true.
+        case('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
+          if (lroot) print*, 'resistivity: hyper3 curvilinear'
+          lresi_hyper3_cyl_or_sph=.true.
         case('hyper3_strict')
           if (lroot) print*, 'resistivity: strict hyper3 with positive definite heating rate'
           lresi_hyper3_strict=.true.
@@ -539,7 +540,7 @@ module Magnetic
         if (lresi_hyper3.and.eta_hyper3==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper3 is zero!')
-        if (lresi_hyper3_cyl.and.eta_hyper3==0.0) &
+        if (lresi_hyper3_cyl_or_sph.and.eta_hyper3==0.0) &
              call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper3 is zero!')
         if (lresi_hyper3_strict.and.eta_hyper3==0.0) &
@@ -1253,14 +1254,39 @@ module Magnetic
 !  with frequency omega_Bz_ext
 !
         if (B2_ext/=0.) then
-          if (omega_Bz_ext==0.) then
-            B_ext_tmp=B_ext
-          elseif (omega_Bz_ext/=0.) then
-            c=cos(omega_Bz_ext*t)
-            s=sin(omega_Bz_ext*t)
-            B_ext_tmp(1)=B_ext(1)*c-B_ext(2)*s
-            B_ext_tmp(2)=B_ext(1)*s+B_ext(2)*c
-            B_ext_tmp(3)=B_ext(3)
+          if (lbext_curvilinear.or.lcartesian_coords) then
+!
+!  luse_curvilinear_bext is default. The B_ext the user defines in 
+!  magnetic_init_pars respects the coordinate system of preference
+!  which means that B_ext=(0.,1.,0.) is an azimuthal field in cylindrical
+!  coordinates and a polar one in spherical. 
+!
+            if (omega_Bz_ext==0.) then
+              B_ext_tmp=B_ext
+            elseif (omega_Bz_ext/=0.) then
+              c=cos(omega_Bz_ext*t)
+              s=sin(omega_Bz_ext*t)
+              B_ext_tmp(1)=B_ext(1)*c-B_ext(2)*s
+              B_ext_tmp(2)=B_ext(1)*s+B_ext(2)*c
+              B_ext_tmp(3)=B_ext(3)
+            endif
+          else if (lcylindrical_coords) then
+            if (omega_Bz_ext/=0.) &
+                 call fatal_error("calc_pencils_magnetic",&
+                  "precession of the external field not "//&
+                  "implemented for cylindrical coordinates")
+            !transform b_ext to other coordinate systems
+            B_ext_tmp(1)=  B_ext(1)*cos(y(m)) + B_ext(2)*sin(y(m))
+            B_ext_tmp(2)= -B_ext(1)*sin(y(m)) + B_ext(2)*cos(y(m))
+            B_ext_tmp(3)=  B_ext(3)
+          else if (lspherical_coords) then 
+            if (omega_Bz_ext/=0.) &
+                 call fatal_error("calc_pencils_magnetic",&
+                  "precession of the external field not "//&
+                  "implemented for spherical coordinates")
+            B_ext_tmp(1)= B_ext(1)*sinth(m)*cos(z(n)) + B_ext(2)*sinth(m)*sin(z(n)) + B_ext(3)*costh(m)
+            B_ext_tmp(2)= B_ext(1)*costh(m)*cos(z(n)) + B_ext(2)*costh(m)*sin(z(n)) - B_ext(3)*sinth(m)
+            B_ext_tmp(3)=-B_ext(1)         *sin(z(n)) + B_ext(2)         *cos(z(n))
           endif
 !  add the external field
           if (B_ext_tmp(1)/=0.) p%bb(:,1)=p%bb(:,1)+B_ext_tmp(1)
@@ -1554,7 +1580,7 @@ module Magnetic
         if (lfirst.and.ldt) diffus_eta3=diffus_eta3+eta_hyper3
       endif
 !
-      if (lresi_hyper3_cyl) then
+      if (lresi_hyper3_cyl_or_sph) then
         do j=1,3
           ju=j+iaa-1
           do i=1,3
