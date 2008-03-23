@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.355 2008-03-23 08:29:45 brandenb Exp $
+! $Id: sub.f90,v 1.356 2008-03-23 22:49:50 brandenb Exp $
 
 module Sub
 
@@ -25,7 +25,7 @@ module Sub
   public :: gij, g2ij, gij_etc
   public :: gij_psi, gij_psi_etc
   public :: der_step
-  public :: u_dot_grad
+  public :: u_dot_grad, h_dot_grad
   public :: del2, del2v, del2v_etc
   public :: del4v, del4, del2vi_etc
   public :: del6_nodx, del6v, del6, del6_other, del6fj, del6fjv
@@ -110,6 +110,11 @@ module Sub
   interface u_dot_grad
     module procedure u_dot_grad_scl
     module procedure u_dot_grad_vec
+  endinterface
+
+  interface h_dot_grad
+    module procedure h_dot_grad_scl
+    module procedure h_dot_grad_vec
   endinterface
 
   interface dot
@@ -1589,8 +1594,9 @@ module Sub
     subroutine multsv_mn(a,b,c)
 !
 !  vector multiplied with scalar, gives vector
-!   22-nov-01/nils erland: coded
-!   10-oct-03/axel: a is now the scalar (now consistent with old routines)
+!
+!  22-nov-01/nils erland: coded
+!  10-oct-03/axel: a is now the scalar (now consistent with old routines)
 !
       use Cdata
 !
@@ -3097,6 +3103,65 @@ module Sub
       endif; endif
 !
     endsubroutine u_dot_grad_scl
+!***********************************************************************
+    subroutine h_dot_grad_vec(hh,gradf,ff,hgradf)
+!
+!  h.gradf for vectors h and f
+!
+!  23-mar-08/axel: adapted from u_dot_grad_vec
+!
+      use Cdata
+!
+      intent(in) :: hh,gradf,ff
+      intent(out) :: hgradf
+!
+      real, dimension (nx,3,3) :: gradf
+      real, dimension (nx,3) :: hh,ff,hgradf
+      real, dimension (nx) :: tmp
+      integer :: j
+!
+!  dot product for each of the three components of gradf
+!
+      do j=1,3
+        call h_dot_grad_scl(hh,gradf(:,j,:),tmp)
+        hgradf(:,j)=tmp
+      enddo
+!
+!  adjustments for spherical coordinate system.
+!  The following now works for general u.gradA
+!
+      if (lspherical_coords) then
+        hgradf(:,1)=hgradf(:,1)-r1_mn*(hh(:,2)*ff(:,2)+hh(:,3)*ff(:,3))
+        hgradf(:,2)=hgradf(:,2)+r1_mn*(hh(:,2)*ff(:,1)-hh(:,3)*ff(:,3)*cotth(m))
+        hgradf(:,3)=hgradf(:,3)+r1_mn*(hh(:,3)*ff(:,1)+hh(:,3)*ff(:,2)*cotth(m))
+      endif
+!
+!  the following now works for general u.gradA
+!
+      if (lcylindrical_coords) then
+        hgradf(:,1)=hgradf(:,1)-rcyl_mn1*(hh(:,2)*ff(:,2))
+        hgradf(:,2)=hgradf(:,2)+rcyl_mn1*(hh(:,1)*ff(:,2))
+      endif
+!
+    endsubroutine h_dot_grad_vec
+!***********************************************************************
+    subroutine h_dot_grad_scl(hh,gradf,hgradf)
+!
+!  Do advection-type term h.grad f_k, but h is not taken from f array
+!
+!  23-mar-08/axel: adapted from u_dot_grad_scl
+!
+      use Cdata
+!
+      intent(in) :: hh,gradf
+      intent(out) :: hgradf
+!
+      real, dimension (nx,3) :: hh,gradf
+      real, dimension (nx) :: hgradf
+!
+      call dot_mn(hh,gradf,hgradf)
+!
+    endsubroutine h_dot_grad_scl
 !***********************************************************************
     subroutine gradf_upw1st(f,uu,k,gradf)
 !

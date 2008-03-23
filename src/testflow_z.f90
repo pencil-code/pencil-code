@@ -1,4 +1,4 @@
-! $Id: testflow_z.f90,v 1.6 2008-03-23 10:46:19 brandenb Exp $
+! $Id: testflow_z.f90,v 1.7 2008-03-23 22:49:50 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -53,13 +53,14 @@ module Testflow
   real :: kx_uutest=1.,ky_uutest=1.,kz_uutest=1.
   real :: tuuinit=0.,duuinit=0.
   logical :: reinitialize_uutest=.false.
-  logical :: zextent=.true.,lsoca_ugu=.true.,lset_bbtest2=.false.
+  logical :: zextent=.true.,lsoca_ugu=.true.
+  logical :: lset_bbtest2=.false.,lset_U0test=.true.
   logical :: lugu_as_aux=.false.,linit_uutest=.false.
   character (len=labellen) :: itestfield='B11-B21'
   real :: ktestfield=1., ktestfield1=1.
   integer, parameter :: ntestflow=4*njtest
   integer :: nuuinit
-  real :: bamp=1.
+  real :: wamp=1.
   namelist /testflow_init_pars/ &
        B_ext,zextent,inituutest, &
        ampluutest,kx_uutest,ky_uutest,kz_uutest, &
@@ -69,38 +70,39 @@ module Testflow
   real :: nutest=0.,nutest1=0.
   namelist /testflow_run_pars/ &
        B_ext,reinitialize_uutest,zextent,lsoca_ugu, &
-       lset_bbtest2,nutest,nutest1,itestfield,ktestfield, &
-       lugu_as_aux,duuinit,linit_uutest,bamp
+       lset_bbtest2,lset_U0test, &
+       nutest,nutest1,itestfield,ktestfield, &
+       lugu_as_aux,duuinit,linit_uutest,wamp
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_mu11=0      ! DIAG_DOC: $\muha_{11}$
-  integer :: idiag_mu21=0      ! DIAG_DOC: $\muha_{21}$
-  integer :: idiag_mu12=0      ! DIAG_DOC: $\muha_{12}$
-  integer :: idiag_mu22=0      ! DIAG_DOC: $\muha_{22}$
-  integer :: idiag_nu11=0      ! DIAG_DOC: $\nu_{113}k$
-  integer :: idiag_nu21=0      ! DIAG_DOC: $\nu_{213}k$
-  integer :: idiag_nu12=0      ! DIAG_DOC: $\nu_{123}k$
-  integer :: idiag_nu22=0      ! DIAG_DOC: $\nu_{223}k$
+  integer :: idiag_lam11=0      ! DIAG_DOC: $\lambda_{11}$
+  integer :: idiag_lam21=0      ! DIAG_DOC: $\lambda_{21}$
+  integer :: idiag_lam12=0      ! DIAG_DOC: $\lambda_{12}$
+  integer :: idiag_lam22=0      ! DIAG_DOC: $\lambda_{22}$
+  integer :: idiag_nu11=0       ! DIAG_DOC: $\nu_{113}k$
+  integer :: idiag_nu21=0       ! DIAG_DOC: $\nu_{213}k$
+  integer :: idiag_nu12=0       ! DIAG_DOC: $\nu_{123}k$
+  integer :: idiag_nu22=0       ! DIAG_DOC: $\nu_{223}k$
   integer :: idiag_u0rms=0      ! DIAG_DOC: $\left<u_{0}^2\right>$
   integer :: idiag_u11rms=0     ! DIAG_DOC: $\left<u_{11}^2\right>$
   integer :: idiag_u21rms=0     ! DIAG_DOC: $\left<u_{21}^2\right>$
   integer :: idiag_u12rms=0     ! DIAG_DOC: $\left<u_{12}^2\right>$
   integer :: idiag_u22rms=0     ! DIAG_DOC: $\left<u_{22}^2\right>$
-  integer :: idiag_E111z=0      ! DIAG_DOC: ${\cal E}_1^{11}$
-  integer :: idiag_E211z=0      ! DIAG_DOC: ${\cal E}_2^{11}$
-  integer :: idiag_E311z=0      ! DIAG_DOC: ${\cal E}_3^{11}$
-  integer :: idiag_E121z=0      ! DIAG_DOC: ${\cal E}_1^{21}$
-  integer :: idiag_E221z=0      ! DIAG_DOC: ${\cal E}_2^{21}$
-  integer :: idiag_E321z=0      ! DIAG_DOC: ${\cal E}_3^{21}$
-  integer :: idiag_E112z=0      ! DIAG_DOC: ${\cal E}_1^{12}$
-  integer :: idiag_E212z=0      ! DIAG_DOC: ${\cal E}_2^{12}$
-  integer :: idiag_E312z=0      ! DIAG_DOC: ${\cal E}_3^{12}$
-  integer :: idiag_E122z=0      ! DIAG_DOC: ${\cal E}_1^{22}$
-  integer :: idiag_E222z=0      ! DIAG_DOC: ${\cal E}_2^{22}$
-  integer :: idiag_E322z=0      ! DIAG_DOC: ${\cal E}_3^{22}$
-  integer :: idiag_E10z=0       ! DIAG_DOC: ${\cal E}_1^{0}$
-  integer :: idiag_E20z=0       ! DIAG_DOC: ${\cal E}_2^{0}$
-  integer :: idiag_E30z=0       ! DIAG_DOC: ${\cal E}_3^{0}$
+  integer :: idiag_F111z=0      ! DIAG_DOC: ${\cal F}_1^{11}$
+  integer :: idiag_F211z=0      ! DIAG_DOC: ${\cal F}_2^{11}$
+  integer :: idiag_F311z=0      ! DIAG_DOC: ${\cal F}_3^{11}$
+  integer :: idiag_F121z=0      ! DIAG_DOC: ${\cal F}_1^{21}$
+  integer :: idiag_F221z=0      ! DIAG_DOC: ${\cal F}_2^{21}$
+  integer :: idiag_F321z=0      ! DIAG_DOC: ${\cal F}_3^{21}$
+  integer :: idiag_F112z=0      ! DIAG_DOC: ${\cal F}_1^{12}$
+  integer :: idiag_F212z=0      ! DIAG_DOC: ${\cal F}_2^{12}$
+  integer :: idiag_F312z=0      ! DIAG_DOC: ${\cal F}_3^{12}$
+  integer :: idiag_F122z=0      ! DIAG_DOC: ${\cal F}_1^{22}$
+  integer :: idiag_F222z=0      ! DIAG_DOC: ${\cal F}_2^{22}$
+  integer :: idiag_F322z=0      ! DIAG_DOC: ${\cal F}_3^{22}$
+  integer :: idiag_F10z=0       ! DIAG_DOC: ${\cal F}_1^{0}$
+  integer :: idiag_F20z=0       ! DIAG_DOC: ${\cal F}_2^{0}$
+  integer :: idiag_F30z=0       ! DIAG_DOC: ${\cal F}_3^{0}$
   integer :: idiag_ux0mz=0      ! DIAG_DOC: $\left<u_{x}\right>_{xy}$
   integer :: idiag_uy0mz=0      ! DIAG_DOC: $\left<u_{y}\right>_{xy}$
   integer :: idiag_uz0mz=0      ! DIAG_DOC: $\left<u_{z}\right>_{xy}$
@@ -157,7 +159,7 @@ module Testflow
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testflow_z.f90,v 1.6 2008-03-23 10:46:19 brandenb Exp $")
+           "$Id: testflow_z.f90,v 1.7 2008-03-23 22:49:50 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -370,7 +372,12 @@ module Testflow
 !  testflow evolution:
 !
 !  calculate du^(pq)/dt = -u^(pq).gradu^(pq)+<u^(pq).gradu^(pq)> - gradhh^(pq)
+!                         -U^(pq).gradu^(pq)-u^(pq).gradU^(pq)
 !                         + Lorentz force (added in testfield)
+!
+!  and dh^(pq)/dt = -u.gradh + <u.gradh> - cs2*divu^(pq)
+!                   -U.gradh -u.gradH 
+!
 !
 !  12-mar-08/axel: coded
 !
@@ -383,9 +390,9 @@ module Testflow
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-!     real, dimension (nx,3) :: bb,aa,uxB,uutest,btest,ugutest,dugutest
-      real, dimension (nx,3) :: aa,uxB,U0test=0,uutest,ugutest,dugutest
-      real, dimension (nx,3,njtest) :: Eipq,upq
+      real, dimension (nx,3) :: uutest,ugutest,dugutest
+      real, dimension (nx,3) :: U0test=0,dU0test=0,U0gutest,ugU0test
+      real, dimension (nx,3,njtest) :: Fipq,upq
       real, dimension (nx,3,3) :: uijtest
       real, dimension (nx,3) :: del2utest,uufluct,ghhtest
       real, dimension (nx) :: upq2,uutest_dot_ghhtest,divuutest
@@ -459,18 +466,30 @@ module Testflow
 !         case('B11-B21+B=0'); call set_bbtest(bbtest,jtest)
 !         case('B11-B21'); call set_bbtest_B11_B21(bbtest,jtest)
 !         case('B11-B22'); call set_bbtest_B11_B22(bbtest,jtest)
-          case('W11-W22'); call set_U0test_W11_W22(U0test,jtest)
+          case('W11-W22'); call set_U0test_W11_W22(U0test,dU0test,jtest)
         case default
           call fatal_error('duutest_dt','undefined itestfield value')
         endselect
 !
-!  add an external flow, if present
+!  add -U^(pq).gradu^(pq)-u^(pq).gradU^(pq) terms
 !
-!       if (B_ext(1)/=0.) bbtest(:,1)=bbtest(:,1)+B_ext(1)
-!       if (B_ext(2)/=0.) bbtest(:,2)=bbtest(:,2)+B_ext(2)
-!       if (B_ext(3)/=0.) bbtest(:,3)=bbtest(:,3)+B_ext(3)
+        if (lset_U0test) then
+!         call h_dot_grad(U0test,uijtest,uutest,U0gutest)
+!         call multsv(uutest(:,3),dU0test,ugU0test)
+!
+          call h_dot_grad(U0test,p%uij,p%uu,U0gutest)
+          call multsv(p%uu(:,3),dU0test,ugU0test)
+!
+          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
+            -U0gutest-ugU0test
+        endif
+!
+!  add hydrodynamic SOCA term
 !
         if (lsoca_ugu) then
+!
+!  no additional term under SOCA
+!
         else
 !
 !  use f-array for ugu (if space has been allocated for this) and
@@ -507,7 +526,8 @@ module Testflow
 !         call curl(f,iuxtest,btest)
 !         call cross_mn(p%uu,btest,ugutest)
 !       endif
-!       Eipq(:,:,jtest)=ugutest/bamp
+        Fipq(:,:,jtest)=-ugutest/wamp
+!--print*,'Fipq(11,:,jtest)=',Fipq(11,:,jtest)
 !
 !  check for testflow timestep
 !
@@ -536,39 +556,39 @@ module Testflow
         if (idiag_ux0mz/=0) call xysum_mn_name_z(upq(:,1,i3),idiag_ux0mz)
         if (idiag_uy0mz/=0) call xysum_mn_name_z(upq(:,2,i3),idiag_uy0mz)
         if (idiag_uz0mz/=0) call xysum_mn_name_z(upq(:,3,i3),idiag_uz0mz)
-        if (idiag_E111z/=0) call xysum_mn_name_z(Eipq(:,1,1),idiag_E111z)
-        if (idiag_E211z/=0) call xysum_mn_name_z(Eipq(:,2,1),idiag_E211z)
-        if (idiag_E311z/=0) call xysum_mn_name_z(Eipq(:,3,1),idiag_E311z)
-        if (idiag_E121z/=0) call xysum_mn_name_z(Eipq(:,1,2),idiag_E121z)
-        if (idiag_E221z/=0) call xysum_mn_name_z(Eipq(:,2,2),idiag_E221z)
-        if (idiag_E321z/=0) call xysum_mn_name_z(Eipq(:,3,2),idiag_E321z)
-        if (idiag_E112z/=0) call xysum_mn_name_z(Eipq(:,1,i3),idiag_E112z)
-        if (idiag_E212z/=0) call xysum_mn_name_z(Eipq(:,2,i3),idiag_E212z)
-        if (idiag_E312z/=0) call xysum_mn_name_z(Eipq(:,3,i3),idiag_E312z)
-        if (idiag_E122z/=0) call xysum_mn_name_z(Eipq(:,1,i4),idiag_E122z)
-        if (idiag_E222z/=0) call xysum_mn_name_z(Eipq(:,2,i4),idiag_E222z)
-        if (idiag_E322z/=0) call xysum_mn_name_z(Eipq(:,3,i4),idiag_E322z)
-        if (idiag_E10z/=0) call xysum_mn_name_z(Eipq(:,1,i3),idiag_E10z)
-        if (idiag_E20z/=0) call xysum_mn_name_z(Eipq(:,2,i3),idiag_E20z)
-        if (idiag_E30z/=0) call xysum_mn_name_z(Eipq(:,3,i3),idiag_E30z)
+        if (idiag_F111z/=0) call xysum_mn_name_z(Fipq(:,1,1),idiag_F111z)
+        if (idiag_F211z/=0) call xysum_mn_name_z(Fipq(:,2,1),idiag_F211z)
+        if (idiag_F311z/=0) call xysum_mn_name_z(Fipq(:,3,1),idiag_F311z)
+        if (idiag_F121z/=0) call xysum_mn_name_z(Fipq(:,1,2),idiag_F121z)
+        if (idiag_F221z/=0) call xysum_mn_name_z(Fipq(:,2,2),idiag_F221z)
+        if (idiag_F321z/=0) call xysum_mn_name_z(Fipq(:,3,2),idiag_F321z)
+        if (idiag_F112z/=0) call xysum_mn_name_z(Fipq(:,1,i3),idiag_F112z)
+        if (idiag_F212z/=0) call xysum_mn_name_z(Fipq(:,2,i3),idiag_F212z)
+        if (idiag_F312z/=0) call xysum_mn_name_z(Fipq(:,3,i3),idiag_F312z)
+        if (idiag_F122z/=0) call xysum_mn_name_z(Fipq(:,1,i4),idiag_F122z)
+        if (idiag_F222z/=0) call xysum_mn_name_z(Fipq(:,2,i4),idiag_F222z)
+        if (idiag_F322z/=0) call xysum_mn_name_z(Fipq(:,3,i4),idiag_F322z)
+        if (idiag_F10z/=0) call xysum_mn_name_z(Fipq(:,1,i3),idiag_F10z)
+        if (idiag_F20z/=0) call xysum_mn_name_z(Fipq(:,2,i3),idiag_F20z)
+        if (idiag_F30z/=0) call xysum_mn_name_z(Fipq(:,3,i3),idiag_F30z)
 !
-!  mu and nu
+!  lambda and nu tensors
 !
-        if (idiag_mu11/=0) call sum_mn_name(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2),idiag_mu11)
-        if (idiag_mu21/=0) call sum_mn_name(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2),idiag_mu21)
-        if (idiag_nu11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))*ktestfield1,idiag_nu11)
-        if (idiag_nu21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))*ktestfield1,idiag_nu21)
+        if (idiag_lam11/=0) call sum_mn_name(+cz(n)*Fipq(:,1,1)+sz(n)*Fipq(:,1,2),idiag_lam11)
+        if (idiag_lam21/=0) call sum_mn_name(+cz(n)*Fipq(:,2,1)+sz(n)*Fipq(:,2,2),idiag_lam21)
+        if (idiag_nu11/=0) call sum_mn_name((-sz(n)*Fipq(:,1,1)+cz(n)*Fipq(:,1,2))*ktestfield1,idiag_nu11)
+        if (idiag_nu21/=0) call sum_mn_name((-sz(n)*Fipq(:,2,1)+cz(n)*Fipq(:,2,2))*ktestfield1,idiag_nu21)
 !
-!  print warning if mu12 and mu12 are needed, but njtest is too small XX
+!  print warning if lam12 and lam12 are needed, but njtest is too small XX
 !
-        if ((idiag_mu12/=0.or.idiag_mu22/=0 &
+        if ((idiag_lam12/=0.or.idiag_lam22/=0 &
          .or.idiag_nu12/=0.or.idiag_nu22/=0).and.njtest<=2) then
-          call stop_it('njtest is too small if mu12, mu22, nu12, or nu22 are needed')
+          call stop_it('njtest is too small if lam12, lam22, nu12, or nu22 are needed')
         else
-          if (idiag_mu12/=0) call sum_mn_name(+cz(n)*Eipq(:,1,i3)+sz(n)*Eipq(:,1,i4),idiag_mu12)
-          if (idiag_mu22/=0) call sum_mn_name(+cz(n)*Eipq(:,2,i3)+sz(n)*Eipq(:,2,i4),idiag_mu22)
-          if (idiag_nu12/=0) call sum_mn_name((-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_nu12)
-          if (idiag_nu22/=0) call sum_mn_name((-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_nu22)
+          if (idiag_lam12/=0) call sum_mn_name(+cz(n)*Fipq(:,1,i3)+sz(n)*Fipq(:,1,i4),idiag_lam12)
+          if (idiag_lam22/=0) call sum_mn_name(+cz(n)*Fipq(:,2,i3)+sz(n)*Fipq(:,2,i4),idiag_lam22)
+          if (idiag_nu12/=0) call sum_mn_name((-sz(n)*Fipq(:,1,i3)+cz(n)*Fipq(:,1,i4))*ktestfield1,idiag_nu12)
+          if (idiag_nu22/=0) call sum_mn_name((-sz(n)*Fipq(:,2,i3)+cz(n)*Fipq(:,2,i4))*ktestfield1,idiag_nu22)
         endif
 !
 !  rms values of small scales fields upq in response to the test fields Bpq
@@ -805,7 +825,7 @@ module Testflow
 !
     endsubroutine set_uutest_B11_B21
 !***********************************************************************
-    subroutine set_U0test_W11_W22 (U0test,jtest)
+    subroutine set_U0test_W11_W22 (U0test,dU0test,jtest)
 !
 !  set testflow
 !
@@ -814,19 +834,27 @@ module Testflow
       use Cdata
       use Sub
 !
-      real, dimension (nx,3) :: U0test
+      real, dimension (nx,3) :: U0test,dU0test
       integer :: jtest
 !
       intent(in)  :: jtest
-      intent(out) :: U0test
+      intent(out) :: U0test,dU0test
 !
-!  set U0test for each of the 9 cases
+!  set U0test and dU0test for each of the various cases
 !
       select case(jtest)
-      case(1); U0test(:,1)=0.; U0test(:,2)=-k1sz(n); U0test(:,3)=0.
-      case(2); U0test(:,1)=0.; U0test(:,2)=+k1cz(n); U0test(:,3)=0.
-      case(3); U0test(:,1)=+k1sz(n); U0test(:,2)=0.; U0test(:,3)=0.
-      case(4); U0test(:,1)=-k1cz(n); U0test(:,2)=0.; U0test(:,3)=0.
+      case(1)
+        U0test(:,1)=0.; U0test(:,2)=-wamp*k1sz(n); U0test(:,3)=0.
+        dU0test(:,1)=0.; dU0test(:,2)=-wamp*cz(n); dU0test(:,3)=0.
+      case(2)
+        U0test(:,1)=0.; U0test(:,2)=+wamp*k1cz(n); U0test(:,3)=0.
+        dU0test(:,1)=0.; dU0test(:,2)=-wamp*sz(n); dU0test(:,3)=0.
+      case(3)
+        U0test(:,1)=+wamp*k1sz(n); U0test(:,2)=0.; U0test(:,3)=0.
+        dU0test(:,1)=+wamp*cz(n); dU0test(:,2)=0.; dU0test(:,3)=0.
+      case(4)
+        U0test(:,1)=-wamp*k1cz(n); U0test(:,2)=0.; U0test(:,3)=0.
+        dU0test(:,1)=+wamp*sz(n); dU0test(:,2)=0.; dU0test(:,3)=0.
       case default; U0test(:,:)=0.
       endselect
 !
@@ -853,10 +881,10 @@ module Testflow
 !
       if (lreset) then
         idiag_ux0mz=0; idiag_uy0mz=0; idiag_uz0mz=0
-        idiag_E111z=0; idiag_E211z=0; idiag_E311z=0
-        idiag_E121z=0; idiag_E221z=0; idiag_E321z=0
-        idiag_E10z=0; idiag_E20z=0; idiag_E30z=0
-        idiag_mu11=0; idiag_mu21=0; idiag_mu12=0; idiag_mu22=0
+        idiag_F111z=0; idiag_F211z=0; idiag_F311z=0
+        idiag_F121z=0; idiag_F221z=0; idiag_F321z=0
+        idiag_F10z=0; idiag_F20z=0; idiag_F30z=0
+        idiag_lam11=0; idiag_lam21=0; idiag_lam12=0; idiag_lam22=0
         idiag_nu11=0; idiag_nu21=0; idiag_nu12=0; idiag_nu22=0
         idiag_u11rms=0; idiag_u21rms=0; idiag_u12rms=0; idiag_u22rms=0; idiag_u0rms=0
       endif
@@ -864,10 +892,10 @@ module Testflow
 !  check for those quantities that we want to evaluate online
 ! 
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'mu11',idiag_mu11)
-        call parse_name(iname,cname(iname),cform(iname),'mu21',idiag_mu21)
-        call parse_name(iname,cname(iname),cform(iname),'mu12',idiag_mu12)
-        call parse_name(iname,cname(iname),cform(iname),'mu22',idiag_mu22)
+        call parse_name(iname,cname(iname),cform(iname),'lam11',idiag_lam11)
+        call parse_name(iname,cname(iname),cform(iname),'lam21',idiag_lam21)
+        call parse_name(iname,cname(iname),cform(iname),'lam12',idiag_lam12)
+        call parse_name(iname,cname(iname),cform(iname),'lam22',idiag_lam22)
         call parse_name(iname,cname(iname),cform(iname),'nu11',idiag_nu11)
         call parse_name(iname,cname(iname),cform(iname),'nu21',idiag_nu21)
         call parse_name(iname,cname(iname),cform(iname),'nu12',idiag_nu12)
@@ -885,30 +913,30 @@ module Testflow
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ux0mz',idiag_ux0mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uy0mz',idiag_uy0mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uz0mz',idiag_uz0mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E111z',idiag_E111z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E211z',idiag_E211z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E311z',idiag_E311z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E121z',idiag_E121z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E221z',idiag_E221z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E321z',idiag_E321z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E112z',idiag_E112z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E212z',idiag_E212z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E312z',idiag_E312z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E122z',idiag_E122z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E222z',idiag_E222z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E322z',idiag_E322z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E10z',idiag_E10z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E20z',idiag_E20z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'E30z',idiag_E30z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'F111z',idiag_F111z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'F211z',idiag_F211z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'F311z',idiag_F311z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'F121z',idiag_F121z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'F221z',idiag_F221z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'F321z',idiag_F321z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'F112z',idiag_F112z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'F212z',idiag_F212z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'F312z',idiag_F312z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'F122z',idiag_F122z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'F222z',idiag_F222z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'F322z',idiag_F322z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'F10z',idiag_F10z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'F20z',idiag_F20z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'F30z',idiag_F30z)
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        write(3,*) 'idiag_mu11=',idiag_mu11
-        write(3,*) 'idiag_mu21=',idiag_mu21
-        write(3,*) 'idiag_mu12=',idiag_mu12
-        write(3,*) 'idiag_mu22=',idiag_mu22
+        write(3,*) 'idiag_lam11=',idiag_lam11
+        write(3,*) 'idiag_lam21=',idiag_lam21
+        write(3,*) 'idiag_lam12=',idiag_lam12
+        write(3,*) 'idiag_lam22=',idiag_lam22
         write(3,*) 'idiag_nu11=',idiag_nu11
         write(3,*) 'idiag_nu21=',idiag_nu21
         write(3,*) 'idiag_nu12=',idiag_nu12
@@ -921,21 +949,21 @@ module Testflow
         write(3,*) 'idiag_ux0mz=',idiag_ux0mz
         write(3,*) 'idiag_uy0mz=',idiag_uy0mz
         write(3,*) 'idiag_uz0mz=',idiag_uz0mz
-        write(3,*) 'idiag_E111z=',idiag_E111z
-        write(3,*) 'idiag_E211z=',idiag_E211z
-        write(3,*) 'idiag_E311z=',idiag_E311z
-        write(3,*) 'idiag_E121z=',idiag_E121z
-        write(3,*) 'idiag_E221z=',idiag_E221z
-        write(3,*) 'idiag_E321z=',idiag_E321z
-        write(3,*) 'idiag_E112z=',idiag_E112z
-        write(3,*) 'idiag_E212z=',idiag_E212z
-        write(3,*) 'idiag_E312z=',idiag_E312z
-        write(3,*) 'idiag_E122z=',idiag_E122z
-        write(3,*) 'idiag_E222z=',idiag_E222z
-        write(3,*) 'idiag_E322z=',idiag_E322z
-        write(3,*) 'idiag_E10z=',idiag_E10z
-        write(3,*) 'idiag_E20z=',idiag_E20z
-        write(3,*) 'idiag_E30z=',idiag_E30z
+        write(3,*) 'idiag_F111z=',idiag_F111z
+        write(3,*) 'idiag_F211z=',idiag_F211z
+        write(3,*) 'idiag_F311z=',idiag_F311z
+        write(3,*) 'idiag_F121z=',idiag_F121z
+        write(3,*) 'idiag_F221z=',idiag_F221z
+        write(3,*) 'idiag_F321z=',idiag_F321z
+        write(3,*) 'idiag_F112z=',idiag_F112z
+        write(3,*) 'idiag_F212z=',idiag_F212z
+        write(3,*) 'idiag_F312z=',idiag_F312z
+        write(3,*) 'idiag_F122z=',idiag_F122z
+        write(3,*) 'idiag_F222z=',idiag_F222z
+        write(3,*) 'idiag_F322z=',idiag_F322z
+        write(3,*) 'idiag_F10z=',idiag_F10z
+        write(3,*) 'idiag_F20z=',idiag_F20z
+        write(3,*) 'idiag_F30z=',idiag_F30z
         write(3,*) 'iuutest=',iuutest
 !       write(3,*) 'iuxtestpq=',iuxtestpq
 !       write(3,*) 'iuztestpq=',iuztestpq
