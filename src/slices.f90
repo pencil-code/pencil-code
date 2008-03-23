@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.82 2008-01-09 11:40:03 nilshau Exp $
+! $Id: slices.f90,v 1.83 2008-03-23 10:46:19 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -154,6 +154,7 @@ module Slices
       use Shock,           only: get_slices_shock
       use Magnetic,        only: get_slices_magnetic
       use Testfield,       only: get_slices_testfield
+      use Testflow,        only: get_slices_testflow
       use Hydro,           only: get_slices_hydro
       use Radiation,       only: get_slices_radiation
       use Chiral,          only: get_slices_chiral
@@ -442,6 +443,7 @@ module Slices
           if (lhydro)        call get_slices_hydro       (f,slices)
           if (lmagnetic)     call get_slices_magnetic    (f,slices)
           if (ltestfield)    call get_slices_testfield   (f,slices)
+          if (ltestflow)     call get_slices_testflow    (f,slices)
           if (lradiation)    call get_slices_radiation   (f,slices)
           if (lchiral)       call get_slices_chiral      (f,slices)
           if (lspecial)      call get_slices_special     (f,slices)

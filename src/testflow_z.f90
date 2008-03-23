@@ -1,4 +1,4 @@
-! $Id: testflow_z.f90,v 1.5 2008-03-18 14:23:22 brandenb Exp $
+! $Id: testflow_z.f90,v 1.6 2008-03-23 10:46:19 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -41,7 +41,7 @@ module Testflow
 !
 !  cosine and sine function for setting test fields and analysis
 !
-  real, dimension(mz) :: cz,sz
+  real, dimension(mz) :: cz,sz,k1cz,k1sz
 !
   character (len=labellen), dimension(ninit) :: inituutest='nothing'
   real, dimension (ninit) :: ampluutest=0.
@@ -73,14 +73,14 @@ module Testflow
        lugu_as_aux,duuinit,linit_uutest,bamp
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
-  integer :: idiag_alp21=0      ! DIAG_DOC: $\alpha_{21}$
-  integer :: idiag_alp12=0      ! DIAG_DOC: $\alpha_{12}$
-  integer :: idiag_alp22=0      ! DIAG_DOC: $\alpha_{22}$
-  integer :: idiag_eta11=0      ! DIAG_DOC: $\eta_{113}k$
-  integer :: idiag_eta21=0      ! DIAG_DOC: $\eta_{213}k$
-  integer :: idiag_eta12=0      ! DIAG_DOC: $\eta_{123}k$
-  integer :: idiag_eta22=0      ! DIAG_DOC: $\eta_{223}k$
+  integer :: idiag_mu11=0      ! DIAG_DOC: $\muha_{11}$
+  integer :: idiag_mu21=0      ! DIAG_DOC: $\muha_{21}$
+  integer :: idiag_mu12=0      ! DIAG_DOC: $\muha_{12}$
+  integer :: idiag_mu22=0      ! DIAG_DOC: $\muha_{22}$
+  integer :: idiag_nu11=0      ! DIAG_DOC: $\nu_{113}k$
+  integer :: idiag_nu21=0      ! DIAG_DOC: $\nu_{213}k$
+  integer :: idiag_nu12=0      ! DIAG_DOC: $\nu_{123}k$
+  integer :: idiag_nu22=0      ! DIAG_DOC: $\nu_{223}k$
   integer :: idiag_u0rms=0      ! DIAG_DOC: $\left<u_{0}^2\right>$
   integer :: idiag_u11rms=0     ! DIAG_DOC: $\left<u_{11}^2\right>$
   integer :: idiag_u21rms=0     ! DIAG_DOC: $\left<u_{21}^2\right>$
@@ -157,7 +157,7 @@ module Testflow
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testflow_z.f90,v 1.5 2008-03-18 14:23:22 brandenb Exp $")
+           "$Id: testflow_z.f90,v 1.6 2008-03-23 10:46:19 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -214,6 +214,11 @@ module Testflow
       else
         ktestfield1=1./ktestfield
       endif
+!
+!  cosine and sine functions multiplied with k1
+!
+      k1cz=ktestfield1*cos(ktestfield*z)
+      k1sz=ktestfield1*sin(ktestfield*z)
 !
 !  Register an extra aux slot for ugu if requested (so ugu is written
 !  to snapshots and can be easily analyzed later). For this to work you
@@ -379,7 +384,7 @@ module Testflow
       type (pencil_case) :: p
 
 !     real, dimension (nx,3) :: bb,aa,uxB,uutest,btest,ugutest,dugutest
-      real, dimension (nx,3) :: aa,uxB,uutest,ugutest,dugutest
+      real, dimension (nx,3) :: aa,uxB,U0test=0,uutest,ugutest,dugutest
       real, dimension (nx,3,njtest) :: Eipq,upq
       real, dimension (nx,3,3) :: uijtest
       real, dimension (nx,3) :: del2utest,uufluct,ghhtest
@@ -450,13 +455,14 @@ module Testflow
         df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest) &
           -uutest_dot_ghhtest-cs2test*divuutest
 !
-!       select case(itestfield)
+        select case(itestfield)
 !         case('B11-B21+B=0'); call set_bbtest(bbtest,jtest)
 !         case('B11-B21'); call set_bbtest_B11_B21(bbtest,jtest)
 !         case('B11-B22'); call set_bbtest_B11_B22(bbtest,jtest)
-!       case default
-!         call fatal_error('duutest_dt','undefined itestfield value')
-!       endselect
+          case('W11-W22'); call set_U0test_W11_W22(U0test,jtest)
+        case default
+          call fatal_error('duutest_dt','undefined itestfield value')
+        endselect
 !
 !  add an external flow, if present
 !
@@ -512,7 +518,7 @@ module Testflow
         endif
       enddo
 !
-!  diffusive time step, just take the max of diffus_eta (if existent)
+!  diffusive time step, just take the max of diffus_nu (if existent)
 !  and whatever is calculated here. Check also for testsound timestep.
 !
       if (lfirst.and.ldt) then
@@ -546,23 +552,23 @@ module Testflow
         if (idiag_E20z/=0) call xysum_mn_name_z(Eipq(:,2,i3),idiag_E20z)
         if (idiag_E30z/=0) call xysum_mn_name_z(Eipq(:,3,i3),idiag_E30z)
 !
-!  alpha and eta
+!  mu and nu
 !
-        if (idiag_alp11/=0) call sum_mn_name(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2),idiag_alp11)
-        if (idiag_alp21/=0) call sum_mn_name(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2),idiag_alp21)
-        if (idiag_eta11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))*ktestfield1,idiag_eta11)
-        if (idiag_eta21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))*ktestfield1,idiag_eta21)
+        if (idiag_mu11/=0) call sum_mn_name(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2),idiag_mu11)
+        if (idiag_mu21/=0) call sum_mn_name(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2),idiag_mu21)
+        if (idiag_nu11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))*ktestfield1,idiag_nu11)
+        if (idiag_nu21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))*ktestfield1,idiag_nu21)
 !
-!  print warning if alp12 and alp12 are needed, but njtest is too small XX
+!  print warning if mu12 and mu12 are needed, but njtest is too small XX
 !
-        if ((idiag_alp12/=0.or.idiag_alp22/=0 &
-         .or.idiag_eta12/=0.or.idiag_eta22/=0).and.njtest<=2) then
-          call stop_it('njtest is too small if alp12, alp22, eta12, or eta22 are needed')
+        if ((idiag_mu12/=0.or.idiag_mu22/=0 &
+         .or.idiag_nu12/=0.or.idiag_nu22/=0).and.njtest<=2) then
+          call stop_it('njtest is too small if mu12, mu22, nu12, or nu22 are needed')
         else
-          if (idiag_alp12/=0) call sum_mn_name(+cz(n)*Eipq(:,1,i3)+sz(n)*Eipq(:,1,i4),idiag_alp12)
-          if (idiag_alp22/=0) call sum_mn_name(+cz(n)*Eipq(:,2,i3)+sz(n)*Eipq(:,2,i4),idiag_alp22)
-          if (idiag_eta12/=0) call sum_mn_name((-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta12)
-          if (idiag_eta22/=0) call sum_mn_name((-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta22)
+          if (idiag_mu12/=0) call sum_mn_name(+cz(n)*Eipq(:,1,i3)+sz(n)*Eipq(:,1,i4),idiag_mu12)
+          if (idiag_mu22/=0) call sum_mn_name(+cz(n)*Eipq(:,2,i3)+sz(n)*Eipq(:,2,i4),idiag_mu22)
+          if (idiag_nu12/=0) call sum_mn_name((-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_nu12)
+          if (idiag_nu22/=0) call sum_mn_name((-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_nu22)
         endif
 !
 !  rms values of small scales fields upq in response to the test fields Bpq
@@ -799,32 +805,32 @@ module Testflow
 !
     endsubroutine set_uutest_B11_B21
 !***********************************************************************
-    subroutine set_uutest_B11_B22 (uutest,jtest)
+    subroutine set_U0test_W11_W22 (U0test,jtest)
 !
 !  set testflow
 !
-!   3-jun-05/axel: coded
+!  23-mar-08/axel: adapted from testflow_z
 !
       use Cdata
       use Sub
 !
-      real, dimension (nx,3) :: uutest
+      real, dimension (nx,3) :: U0test
       integer :: jtest
 !
       intent(in)  :: jtest
-      intent(out) :: uutest
+      intent(out) :: U0test
 !
-!  set uutest for each of the 9 cases
+!  set U0test for each of the 9 cases
 !
       select case(jtest)
-      case(1); uutest(:,1)=bamp*cz(n); uutest(:,2)=0.; uutest(:,3)=0.
-      case(2); uutest(:,1)=bamp*sz(n); uutest(:,2)=0.; uutest(:,3)=0.
-      case(3); uutest(:,1)=0.; uutest(:,2)=bamp*cz(n); uutest(:,3)=0.
-      case(4); uutest(:,1)=0.; uutest(:,2)=bamp*sz(n); uutest(:,3)=0.
-      case default; uutest(:,:)=0.
+      case(1); U0test(:,1)=0.; U0test(:,2)=-k1sz(n); U0test(:,3)=0.
+      case(2); U0test(:,1)=0.; U0test(:,2)=+k1cz(n); U0test(:,3)=0.
+      case(3); U0test(:,1)=+k1sz(n); U0test(:,2)=0.; U0test(:,3)=0.
+      case(4); U0test(:,1)=-k1cz(n); U0test(:,2)=0.; U0test(:,3)=0.
+      case default; U0test(:,:)=0.
       endselect
 !
-    endsubroutine set_uutest_B11_B22
+    endsubroutine set_U0test_W11_W22
 !***********************************************************************
     subroutine rprint_testflow(lreset,lwrite)
 !
@@ -850,22 +856,22 @@ module Testflow
         idiag_E111z=0; idiag_E211z=0; idiag_E311z=0
         idiag_E121z=0; idiag_E221z=0; idiag_E321z=0
         idiag_E10z=0; idiag_E20z=0; idiag_E30z=0
-        idiag_alp11=0; idiag_alp21=0; idiag_alp12=0; idiag_alp22=0
-        idiag_eta11=0; idiag_eta21=0; idiag_eta12=0; idiag_eta22=0
+        idiag_mu11=0; idiag_mu21=0; idiag_mu12=0; idiag_mu22=0
+        idiag_nu11=0; idiag_nu21=0; idiag_nu12=0; idiag_nu22=0
         idiag_u11rms=0; idiag_u21rms=0; idiag_u12rms=0; idiag_u22rms=0; idiag_u0rms=0
       endif
 !
 !  check for those quantities that we want to evaluate online
 ! 
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'alp11',idiag_alp11)
-        call parse_name(iname,cname(iname),cform(iname),'alp21',idiag_alp21)
-        call parse_name(iname,cname(iname),cform(iname),'alp12',idiag_alp12)
-        call parse_name(iname,cname(iname),cform(iname),'alp22',idiag_alp22)
-        call parse_name(iname,cname(iname),cform(iname),'eta11',idiag_eta11)
-        call parse_name(iname,cname(iname),cform(iname),'eta21',idiag_eta21)
-        call parse_name(iname,cname(iname),cform(iname),'eta12',idiag_eta12)
-        call parse_name(iname,cname(iname),cform(iname),'eta22',idiag_eta22)
+        call parse_name(iname,cname(iname),cform(iname),'mu11',idiag_mu11)
+        call parse_name(iname,cname(iname),cform(iname),'mu21',idiag_mu21)
+        call parse_name(iname,cname(iname),cform(iname),'mu12',idiag_mu12)
+        call parse_name(iname,cname(iname),cform(iname),'mu22',idiag_mu22)
+        call parse_name(iname,cname(iname),cform(iname),'nu11',idiag_nu11)
+        call parse_name(iname,cname(iname),cform(iname),'nu21',idiag_nu21)
+        call parse_name(iname,cname(iname),cform(iname),'nu12',idiag_nu12)
+        call parse_name(iname,cname(iname),cform(iname),'nu22',idiag_nu22)
         call parse_name(iname,cname(iname),cform(iname),'u11rms',idiag_u11rms)
         call parse_name(iname,cname(iname),cform(iname),'u21rms',idiag_u21rms)
         call parse_name(iname,cname(iname),cform(iname),'u12rms',idiag_u12rms)
@@ -899,14 +905,14 @@ module Testflow
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        write(3,*) 'idiag_alp11=',idiag_alp11
-        write(3,*) 'idiag_alp21=',idiag_alp21
-        write(3,*) 'idiag_alp12=',idiag_alp12
-        write(3,*) 'idiag_alp22=',idiag_alp22
-        write(3,*) 'idiag_eta11=',idiag_eta11
-        write(3,*) 'idiag_eta21=',idiag_eta21
-        write(3,*) 'idiag_eta12=',idiag_eta12
-        write(3,*) 'idiag_eta22=',idiag_eta22
+        write(3,*) 'idiag_mu11=',idiag_mu11
+        write(3,*) 'idiag_mu21=',idiag_mu21
+        write(3,*) 'idiag_mu12=',idiag_mu12
+        write(3,*) 'idiag_mu22=',idiag_mu22
+        write(3,*) 'idiag_nu11=',idiag_nu11
+        write(3,*) 'idiag_nu21=',idiag_nu21
+        write(3,*) 'idiag_nu12=',idiag_nu12
+        write(3,*) 'idiag_nu22=',idiag_nu22
         write(3,*) 'idiag_u0rms=',idiag_u0rms
         write(3,*) 'idiag_u11rms=',idiag_u11rms
         write(3,*) 'idiag_u21rms=',idiag_u21rms
