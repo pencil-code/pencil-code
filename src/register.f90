@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.231 2008-03-22 01:18:49 wlyra Exp $
+! $Id: register.f90,v 1.232 2008-03-23 08:29:45 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -299,6 +299,7 @@ module Register
       call initialize_cosmicrayflux(f)
       call initialize_interstellar(lstarting)
       call initialize_shear()
+      call initialize_testperturb()
       call initialize_shock(f,lstarting)
       call initialize_viscosity(lstarting)
       call initialize_special(f)

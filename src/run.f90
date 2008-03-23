@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.251 2008-03-21 07:55:13 brandenb Exp $
+! $Id: run.f90,v 1.252 2008-03-23 08:29:45 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -31,7 +31,7 @@
         use Timeavg
         use Interstellar,    only: check_SN
         use Shear
-        use TestPerturb,     only: testperturbing
+        use TestPerturb,     only: testperturb_begin, testperturb_finalize
         use Forcing
         use EquationOfState
         use Dustvelocity,    only: init_uud
@@ -73,7 +73,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.251 2008-03-21 07:55:13 brandenb Exp $")
+             "$Id: run.f90,v 1.252 2008-03-23 08:29:45 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -458,7 +458,7 @@
 !  save state vector prior to update
 !
           if (lADI)   finit=f
-          if (ltestperturb) call testperturbing(f,df)
+          if (ltestperturb) call testperturb_begin(f,df)
 !
 !  Time advance
 !
@@ -468,6 +468,7 @@
 ! in the temperature equation (using temperature_idealgas)
 !
           if (lADI) call calc_heatcond_ADI(finit,f)
+          if (ltestperturb) call testperturb_finalize(f)
 !
           if (lroot) then
             count = count + 1     !  reliable loop count even for premature exit
@@ -475,6 +476,7 @@
 !
 !  Update time averages and time antegrals
 !
+          call diagnostic
           if (ltavg) call update_timeavgs(f,dt)
           if (ltime_integrals) call time_integrals(f)
 !

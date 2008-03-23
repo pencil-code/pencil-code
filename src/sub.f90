@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.354 2008-03-21 15:09:53 wlyra Exp $
+! $Id: sub.f90,v 1.355 2008-03-23 08:29:45 brandenb Exp $
 
 module Sub
 
@@ -368,7 +368,7 @@ module Sub
 !
     endsubroutine max_mn_name
 !***********************************************************************
-    subroutine sum_mn_name(a,iname,lsqrt,lint)
+    subroutine sum_mn_name(a,iname,lsqrt,lint,ipart)
 !
 !  successively calculate sum of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true.
@@ -379,6 +379,7 @@ module Sub
 !  23-jun-02/axel: allows for taking square root in the end
 !  20-jun-07/dhruba: adapted for spherical polar coordinate system
 !  30-aug-07/wlad: adapted for cylindrical coordinates
+!  22-mar-08/axel: added ladd option, to add to previous values
 !
 !  Note [24-may-2004, wd]:
 !    This routine should incorporate a test for iname /= 0, so instead of
@@ -392,26 +393,52 @@ module Sub
       use Cdata
 !
       real, dimension (nx) :: a
+      real :: ppart=1.,qpart=0.
       integer :: iname,isum
+      integer, optional :: ipart
       logical, optional :: lsqrt, lint
 !
       if (iname /= 0) then
 !
-        if (lfirstpoint) then
-          if (lspherical_coords) then
-            fname(iname)=sum(r2_weight*sinth_weight(m)*a)
-          elseif (lcylindrical_coords) then
-            fname(iname) = sum(rcyl_weight*a)
+!  set fraction if old and new stuff
+!
+        if (present(ipart)) then
+          ppart=1./float(ipart)
+          if (lfirstpoint) then
+            qpart=1.-ppart
           else
-            fname(iname)=sum(a)
+            qpart=1.
           endif
-        else
+!
+!  use it
+!
           if(lspherical_coords) then
-            fname(iname)=fname(iname)+sum(r2_weight*sinth_weight(m)*a)
+            fname(iname)=qpart*fname(iname)+ppart*sum(r2_weight*sinth_weight(m)*a)
           elseif (lcylindrical_coords) then
-            fname(iname)=fname(iname)+sum(rcyl_weight*a)
+            fname(iname)=qpart*fname(iname)+ppart*sum(rcyl_weight*a)
           else
-            fname(iname)=fname(iname)+sum(a)
+            fname(iname)=qpart*fname(iname)+ppart*sum(a)
+          endif
+!
+!  normal method
+!
+        else
+          if (lfirstpoint) then
+            if (lspherical_coords) then
+              fname(iname)=sum(r2_weight*sinth_weight(m)*a)
+            elseif (lcylindrical_coords) then
+              fname(iname)=sum(rcyl_weight*a)
+            else
+              fname(iname)=sum(a)
+            endif
+          else
+            if(lspherical_coords) then
+              fname(iname)=fname(iname)+sum(r2_weight*sinth_weight(m)*a)
+            elseif (lcylindrical_coords) then
+              fname(iname)=fname(iname)+sum(rcyl_weight*a)
+            else
+              fname(iname)=fname(iname)+sum(a)
+            endif
           endif
         endif
         !
@@ -3388,10 +3415,7 @@ module Sub
 !  (otherwise slices are written just to catch up with tt.)
 !
       if (tt >= tout) then
-! 18-05-2006/anders: commented out this to avoid potential freezing.
-!        do while (tt >= tout)
-          tout=tout+abs(dtout)
-!        enddo
+        tout=tout+abs(dtout)
         nout=nout+1
         lout=.true.
 !

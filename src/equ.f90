@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.392 2008-03-20 16:07:25 nbabkovs Exp $
+! $Id: equ.f90,v 1.393 2008-03-23 08:29:45 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -16,7 +16,7 @@ module Equ
 !
   private
 !
-  public :: pde, debug_imn_arrays
+  public :: pde, debug_imn_arrays, diagnostic
   public :: initialize_pencils,pencil_consistency_check
   public :: initialize_time_integrals, time_integrals
 !
@@ -473,14 +473,18 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.392 2008-03-20 16:07:25 nbabkovs Exp $")
+           "$Id: equ.f90,v 1.393 2008-03-23 08:29:45 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
+!!!  Prevent diagnostics and other averages if ltestperturb_inside
 !
-      ldiagnos=lfirst.and.lout
-      l1ddiagnos=lfirst.and.l1dout
-      l2davgfirst=lfirst.and.l2davg
+      ldiagnos=lfirst.and.lout !.and..not.ltestperturb_inside
+      l1ddiagnos=lfirst.and.l1dout !.and..not.ltestperturb_inside
+      l2davgfirst=lfirst.and.l2davg !.and..not.ltestperturb_inside
+!
+!  derived diagnostics switches
+!
       l1dphiavg=lcylinder_in_a_box.and.l1ddiagnos
 !
 !  record times for diagnostic and 2d average output
@@ -1144,7 +1148,7 @@ module Equ
 !
       if (lfirst.and.ldt) call collect_UUmax
       if (ldiagnos) then
-        call diagnostic
+!       call diagnostic
         call xyaverages_z
         call xzaverages_y
         call yzaverages_x

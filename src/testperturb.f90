@@ -1,4 +1,4 @@
-! $Id: testperturb.f90,v 1.3 2008-03-21 15:06:55 brandenb Exp $
+! $Id: testperturb.f90,v 1.4 2008-03-23 08:29:45 brandenb Exp $
 
 !  test perturbation method
 
@@ -9,7 +9,16 @@ module TestPerturb
   use Messages
 
   implicit none
-
+!
+!  cosine and sine function for setting test fields and analysis
+!
+  real, dimension(mz) :: cz,sz,Bk1cz,Bk1sz,B1k1cz,B1k1sz,B1cz,B1sz
+  integer :: njtest=0
+!
+!  input parameters
+!
+  character (len=labellen) :: itestfield='B11-B21'
+  real :: ktestfield=1., ktestfield1=1., Btest0=1.
   real :: dummy
 
   include 'testperturb.h'
@@ -18,9 +27,21 @@ module TestPerturb
       dummy
 
   namelist /testperturb_run_pars/ &
-      ltestperturb
+      ltestperturb,itestfield,ktestfield,Btest0
 
-  integer :: idiag_alp11=0
+  ! other variables (needs to be consistent with reset list below)
+  integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
+  integer :: idiag_alp21=0      ! DIAG_DOC: $\alpha_{21}$
+  integer :: idiag_alp31=0      ! DIAG_DOC: $\alpha_{31}$
+  integer :: idiag_alp12=0      ! DIAG_DOC: $\alpha_{12}$
+  integer :: idiag_alp22=0      ! DIAG_DOC: $\alpha_{22}$
+  integer :: idiag_alp32=0      ! DIAG_DOC: $\alpha_{32}$
+  integer :: idiag_eta11=0      ! DIAG_DOC: $\eta_{113}k$
+  integer :: idiag_eta21=0      ! DIAG_DOC: $\eta_{213}k$
+  integer :: idiag_eta31=0      ! DIAG_DOC: $\eta_{313}k$
+  integer :: idiag_eta12=0      ! DIAG_DOC: $\eta_{123}k$
+  integer :: idiag_eta22=0      ! DIAG_DOC: $\eta_{223}k$
+  integer :: idiag_eta32=0      ! DIAG_DOC: $\eta_{323}k$
 
   contains
 
@@ -31,7 +52,7 @@ module TestPerturb
 !
 !  2-july-02/nils: coded
 !
-      use Mpicomm
+      use Mpicomm, only: stop_it
 !
       logical, save :: first=.true.
 !
@@ -41,21 +62,64 @@ module TestPerturb
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testperturb.f90,v 1.3 2008-03-21 15:06:55 brandenb Exp $")
+           "$Id: testperturb.f90,v 1.4 2008-03-23 08:29:45 brandenb Exp $")
 !
     endsubroutine register_testperturb
 !***********************************************************************
     subroutine initialize_testperturb()
 !
-!  21-nov-02/tony: coded
-!  08-jul-04/anders: Sshear calculated whenever qshear /= 0
-
-!  calculate shear flow velocity; if qshear is given then Sshear=-qshear*Omega
-!  is calculated. Otherwise Sshear keeps its value from the input list.
+!  22-mar-08/axel: adapted from testfield_z
 !
-      if (qshear/=0.0) Sshear=-qshear*Omega
-      if (lroot .and. ip<=12) &
-          print*,'initialize_testperturb: Sshear,qshear=',Sshear,qshear
+!  pre-calculate cos(kz) and sin(kz), as well as 1/ktestfield
+!
+      if (lroot.and.ip<=12) &
+          print*,'initialize_testperturb: ktestfield=',ktestfield
+!
+!  set cosine and sine function for setting test fields and analysis
+!
+      cz=cos(ktestfield*z)
+      sz=sin(ktestfield*z)
+!
+!  Also calculate its inverse, but only if different from zero
+!
+      if (ktestfield==0) then
+        ktestfield1=1.
+      else
+        ktestfield1=1./ktestfield
+      endif
+!
+!  other abbreviations
+!
+      Bk1cz=Btest0*ktestfield1*cz
+      Bk1sz=Btest0*ktestfield1*sz
+!
+!  scale with inverse Btest0
+!
+      B1cz=cz/Btest0
+      B1sz=sz/Btest0
+!
+      B1k1cz=ktestfield1*B1cz
+      B1k1sz=ktestfield1*B1sz
+!
+!  determine number of testfields, njest
+!
+        select case(itestfield)
+          case('B11-B21+B=0'); njtest=3
+          case('B11-B21'); njtest=2
+          case('B11-B22'); njtest=4
+          case('B=0'); njtest=1
+        case default
+          call fatal_error('testperturb','undefined itestfield value')
+        endselect
+!
+!  write testfield information to a file (for convenient post-processing)
+!
+      if (lroot) then
+        open(1,file=trim(datadir)//'/testperturb_info.dat',STATUS='unknown')
+        write(1,'(3a)') "itestfield='",trim(itestfield)//"'"
+        write(1,'(a,f5.2)') 'ktestfield=',ktestfield
+        close(1)
+      endif
 !
     endsubroutine initialize_testperturb
 !***********************************************************************
@@ -113,95 +177,206 @@ module TestPerturb
 !
     endsubroutine write_testperturb_run_pars
 !***********************************************************************
-    subroutine testperturbing(f,df)
+    subroutine testperturb_begin(f,df)
 !
 !  Calculate the response to perturbations after one timestep.
-!  The name "testperturbing" is chosen, because a subroutine's name
-!  cannot be the same as that of a module (testperturb).
-!  We have followed here the convection from the shear module.
 !
 !  19-mar-08/axel: coded
 !
       use Timestep, only: rk_2n
       use Hydro, only: calc_pencils_hydro
 
-      real, dimension (mx,my,mz,mfarray) :: finit,f
+      real, dimension (mx,my,mz,mfarray) :: fsave,f
       real, dimension (mx,my,mz,mvar) :: df
 !
       real, dimension (nx,3) :: uu,bb,uxb
       logical :: headtt_save
+      integer :: jtest
+      real :: tsave
       type (pencil_case) :: p
 !
 !  print identifier
 !
-      if (headtt.or.ldebug) print*, 'testperturbing'
+      if (headtt.or.ldebug) print*, 'testperturb_begin'
 !
-      finit=f
+!  Save current f-array and current time
+!
+      fsave=f
+      tsave=t
+      ltestperturb_inside=.true.
+!
+!  do each of the test fields one after another
+!
+      do jtest=1,njtest
+        select case(itestfield)
+          case('B11-B22'); call add_A0test_B11_B22(f,jtest)
+          case('B=0') !(dont do anything)
+        case default
+          call fatal_error('testperturb_begin','undefined itestfield value')
+        endselect
 !
 !  Time advance
 !
-      call rk_2n(f,df,p)
+        call rk_2n(f,df,p)
 !
-!  calculate emf for alpha effect (for imposed field)
-!  Note that uxbm means <EMF.B0>/B0^2, so it gives already alpha=EMF/B0.
+!  calculate emf for calculation of alpha_ij and eta_ij tensor
 !
-      lfirstpoint=.true.
-      headtt_save=headtt
-      do m=m1,m2
-      do n=n1,n2
-!       if (idiag_uxbm/=0 .or. idiag_uxbmx/=0 .or. idiag_uxbmy/=0 &
-!           .or. idiag_uxbmz/=0) then
-!         uxb_dotB0=B_ext(1)*p%uxb(:,1)+B_ext(2)*p%uxb(:,2)+B_ext(3)*p%uxb(:,3)
-!         uxb_dotB0=uxb_dotB0*B_ext21
-!         if (idiag_uxbm/=0) call sum_mn_name(uxb_dotB0,idiag_uxbm)
-!         if (idiag_uxbmx/=0) call sum_mn_name(uxbb(:,1),idiag_uxbmx)
-!         if (idiag_uxbmy/=0) call sum_mn_name(uxbb(:,2),idiag_uxbmy)
-!         if (idiag_uxbmz/=0) call sum_mn_name(uxbb(:,3),idiag_uxbmz)
+        lfirstpoint=.true.
+        headtt_save=headtt
+        do m=m1,m2
+        do n=n1,n2
           call calc_pencils_hydro(f,p)
           call curl(f,iaa,bb)
           call cross_mn(p%uu,bb,uxb)
-          call sum_mn_name(uxb(:,1),idiag_alp11)
-        headtt=.false.
-        lfirstpoint=.false.
-      enddo
+          select case(jtest)
+          case(1)
+            call sum_mn_name(B1cz(n)*uxb(:,1),idiag_alp11)
+            call sum_mn_name(B1cz(n)*uxb(:,2),idiag_alp21)
+            call sum_mn_name(B1cz(n)*uxb(:,3),idiag_alp31)
+            call sum_mn_name(-B1k1sz(n)*uxb(:,1),idiag_eta11)
+            call sum_mn_name(-B1k1sz(n)*uxb(:,2),idiag_eta21)
+            call sum_mn_name(-B1k1sz(n)*uxb(:,3),idiag_eta31)
+          case(2)
+            call sum_mn_name(B1sz(n)*uxb(:,1),idiag_alp11,ipart=2)
+            call sum_mn_name(B1sz(n)*uxb(:,2),idiag_alp21,ipart=2)
+            call sum_mn_name(B1sz(n)*uxb(:,3),idiag_alp31,ipart=2)
+            call sum_mn_name(B1k1cz(n)*uxb(:,1),idiag_eta11,ipart=2)
+            call sum_mn_name(B1k1cz(n)*uxb(:,2),idiag_eta21,ipart=2)
+            call sum_mn_name(B1k1cz(n)*uxb(:,3),idiag_eta31,ipart=2)
+          case(3)
+            call sum_mn_name(B1cz(n)*uxb(:,1),idiag_alp12)
+            call sum_mn_name(B1cz(n)*uxb(:,2),idiag_alp22)
+            call sum_mn_name(B1cz(n)*uxb(:,3),idiag_alp32)
+            call sum_mn_name(-B1k1sz(n)*uxb(:,1),idiag_eta12)
+            call sum_mn_name(-B1k1sz(n)*uxb(:,2),idiag_eta22)
+            call sum_mn_name(-B1k1sz(n)*uxb(:,3),idiag_eta32)
+          case(4)
+            call sum_mn_name(B1sz(n)*uxb(:,1),idiag_alp12,ipart=2)
+            call sum_mn_name(B1sz(n)*uxb(:,2),idiag_alp22,ipart=2)
+            call sum_mn_name(B1sz(n)*uxb(:,3),idiag_alp32,ipart=2)
+            call sum_mn_name(B1k1cz(n)*uxb(:,1),idiag_eta12,ipart=2)
+            call sum_mn_name(B1k1cz(n)*uxb(:,2),idiag_eta22,ipart=2)
+            call sum_mn_name(B1k1cz(n)*uxb(:,3),idiag_eta32,ipart=2)
+          endselect
+          headtt=.false.
+          lfirstpoint=.false.
+        enddo
+        enddo
       enddo
 !
 !  reset f to what it was before
 !
-      f=finit
+      f=fsave
+      t=tsave
+      ltestperturb_inside=.false.
 !
 !  Since this routine was called before any regular call to the
 !  timestepping routine, we must reset headtt to what it was before.
 !
       headtt=headtt_save
 !
-    endsubroutine testperturbing
+    endsubroutine testperturb_begin
 !***********************************************************************
-    subroutine advance_testperturb(f,df,dt_shear)
+    subroutine testperturb_finalize(f)
 !
-!  Advance shear distance, deltay, using dt. Using t instead introduces
-!  significant errors when nt = t/dt exceeds ~100,000 steps.
-!  This formulation works also when Sshear is changed during the run.
+!  Finalize testperturb method by subtracting contribution
+!  emf of the reference state.
 !
-!  18-aug-02/axel: incorporated from nompicomm.f90
+!  22-mar-08/axel: adapted from testperturb_begin
+!
+      use Hydro, only: calc_pencils_hydro
+      use Equ, only: diagnostic
+
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      real, dimension (nx,3) :: uu,bb,uxb
+      logical :: headtt_save
+      integer :: jtest
+      real :: tmp
+      type (pencil_case) :: p
+!
+!  print identifier
+!
+      if (headtt.or.ldebug) print*, 'testperturb_finalize'
+!
+!  calculate emf for calculation of alpha_ij and eta_ij tensor
+!
+      lfirstpoint=.true.
+      do m=m1,m2
+      do n=n1,n2
+        call calc_pencils_hydro(f,p)
+        call curl(f,iaa,bb)
+        call cross_mn(p%uu,bb,uxb)
+!
+!  alpha terms
+!
+        tmp=-(B1cz(n)+B1sz(n))
+        call sum_mn_name(tmp*uxb(:,1),idiag_alp11,ipart=3)
+        call sum_mn_name(tmp*uxb(:,2),idiag_alp21,ipart=3)
+        call sum_mn_name(tmp*uxb(:,3),idiag_alp31,ipart=3)
+        call sum_mn_name(tmp*uxb(:,1),idiag_alp12,ipart=3)
+        call sum_mn_name(tmp*uxb(:,2),idiag_alp22,ipart=3)
+        call sum_mn_name(tmp*uxb(:,3),idiag_alp32,ipart=3)
+!
+!  eta terms
+!
+        tmp=B1k1sz(n)-B1k1cz(n)
+        call sum_mn_name(tmp*uxb(:,1),idiag_eta11,ipart=3)
+        call sum_mn_name(tmp*uxb(:,2),idiag_eta21,ipart=3)
+        call sum_mn_name(tmp*uxb(:,3),idiag_eta31,ipart=3)
+        call sum_mn_name(tmp*uxb(:,1),idiag_eta12,ipart=3)
+        call sum_mn_name(tmp*uxb(:,2),idiag_eta22,ipart=3)
+        call sum_mn_name(tmp*uxb(:,3),idiag_eta32,ipart=3)
+!
+        headtt=.false.
+        lfirstpoint=.false.
+      enddo
+      enddo
+!
+    endsubroutine testperturb_finalize
+!***********************************************************************
+    subroutine add_A0test_B11_B22 (f,jtest)
+!
+!  add testfields into f array:
+!
+!         ( 0 )   (     0      )     ( B*coskz )
+!  B^11 = ( 0 ) x ( -B/k*sinkz )  =  (    0    )
+!         ( dz)   (     0      )     (    0    )
+!
+!         ( 0 )   (     0      )     ( B*sinkz )
+!  B^21 = ( 0 ) x ( +B/k*coskz )  =  (    0    )
+!         ( dz)   (     0      )     (    0    )
+!
+!         ( 0 )   ( +B/k*sinkz )     (    0    )
+!  B^12 = ( 0 ) x (      0    )   =  ( B*coskz )
+!         ( dz)   (      0    )      (    0    )
+!
+!         ( 0 )   ( -B/k*coskz )     (    0    )
+!  B^22 = ( 0 ) x (      0    )   =  ( B*sinkz )
+!         ( dz)   (      0    )      (    0    )
+!
+!  22-mar-08/axel: adapted from testfield_z
 !
       use Cdata
-      use Fourier, only: fourier_shift_y
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real :: dt_shear
+      integer :: jtest
 !
-      real, dimension (nx,ny,nz) :: tmp
-      real, dimension (nx) :: uy0
-      integer :: l, ivar
+      intent(inout) :: f
+      intent(in)  :: jtest
 !
-!  Print identifier.
+!  add testfield contribution to the f array
 !
-      if (headtt.or.ldebug) print*, 'advance_shear: deltay=',deltay
+      select case(jtest)
+      case(1); f(:,:,:,iay)=f(:,:,:,iay)-spread(spread(Bk1sz,1,mx),2,my)
+      case(2); f(:,:,:,iay)=f(:,:,:,iay)+spread(spread(Bk1cz,1,mx),2,my)
+      case(3); f(:,:,:,iax)=f(:,:,:,iax)+spread(spread(Bk1sz,1,mx),2,my)
+      case(4); f(:,:,:,iax)=f(:,:,:,iax)-spread(spread(Bk1cz,1,mx),2,my)
+      case default; call stop_it('add_A0test_B11_B22: jtest incorrect')
+      endselect
 !
-    end subroutine advance_testperturb
+    endsubroutine add_A0test_B11_B22
 !***********************************************************************
     subroutine rprint_testperturb(lreset,lwrite)
 !
@@ -223,19 +398,44 @@ module TestPerturb
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_alp11=0
+        idiag_alp11=0; idiag_alp21=0; idiag_alp31=0
+        idiag_alp12=0; idiag_alp22=0; idiag_alp32=0
+        idiag_eta11=0; idiag_eta21=0; idiag_eta31=0
+        idiag_eta12=0; idiag_eta22=0; idiag_eta32=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'alp11',idiag_alp11)
+        call parse_name(iname,cname(iname),cform(iname),'alp21',idiag_alp21)
+        call parse_name(iname,cname(iname),cform(iname),'alp31',idiag_alp31)
+        call parse_name(iname,cname(iname),cform(iname),'alp12',idiag_alp12)
+        call parse_name(iname,cname(iname),cform(iname),'alp22',idiag_alp22)
+        call parse_name(iname,cname(iname),cform(iname),'alp32',idiag_alp32)
+        call parse_name(iname,cname(iname),cform(iname),'eta11',idiag_eta11)
+        call parse_name(iname,cname(iname),cform(iname),'eta21',idiag_eta21)
+        call parse_name(iname,cname(iname),cform(iname),'eta31',idiag_eta31)
+        call parse_name(iname,cname(iname),cform(iname),'eta12',idiag_eta12)
+        call parse_name(iname,cname(iname),cform(iname),'eta22',idiag_eta22)
+        call parse_name(iname,cname(iname),cform(iname),'eta32',idiag_eta32)
       enddo
 !
 !  write column where which testperturb variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_alp11=',idiag_alp11
+        write(3,*) 'idiag_alp11=',idiag_alp11
+        write(3,*) 'idiag_alp21=',idiag_alp21
+        write(3,*) 'idiag_alp31=',idiag_alp31
+        write(3,*) 'idiag_alp12=',idiag_alp12
+        write(3,*) 'idiag_alp22=',idiag_alp22
+        write(3,*) 'idiag_alp32=',idiag_alp32
+        write(3,*) 'idiag_eta11=',idiag_eta11
+        write(3,*) 'idiag_eta21=',idiag_eta21
+        write(3,*) 'idiag_eta31=',idiag_eta31
+        write(3,*) 'idiag_eta12=',idiag_eta12
+        write(3,*) 'idiag_eta22=',idiag_eta22
+        write(3,*) 'idiag_eta32=',idiag_eta32
       endif
 !
     endsubroutine rprint_testperturb

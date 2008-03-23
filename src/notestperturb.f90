@@ -1,4 +1,4 @@
-! $Id: notestperturb.f90,v 1.1 2008-03-21 07:55:13 brandenb Exp $
+! $Id: notestperturb.f90,v 1.2 2008-03-23 08:29:45 brandenb Exp $
 
 !  test perturbation method
 
@@ -65,7 +65,7 @@ module TestPerturb
 !
     endsubroutine write_testperturb_run_pars
 !***********************************************************************
-    subroutine testperturbing(f,df)
+    subroutine testperturb_begin(f,df)
 !
 !  Dummy routine
 !
@@ -76,7 +76,19 @@ module TestPerturb
       real, dimension (mx,my,mz,mvar) :: df
 !
       call keep_compiler_quiet(f,df)
-    endsubroutine testperturbing
+    endsubroutine testperturb_begin
+!***********************************************************************
+    subroutine testperturb_finalize(f)
+!
+!  Dummy routine
+!
+      use Cparam, only: mx,my,mz,mfarray,mvar
+      use Sub, only: keep_compiler_quiet
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+    endsubroutine testperturb_finalize
 !***********************************************************************
     subroutine rprint_testperturb(lreset,lwrite)
 !
