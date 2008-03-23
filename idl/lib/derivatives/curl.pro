@@ -1,50 +1,49 @@
 ;;; Calculate the curl of a 3-d vector field
-function curlx,f
+;cartesian
+function curlx,f,lsystem,xx,yy
 COMPILE_OPT IDL2,HIDDEN
-  return,yder(f[*,*,*,2])-zder(f[*,*,*,1])
+  if (lsystem eq 0) then corr=0.
+  if (lsystem eq 1) then corr=0.
+  if (lsystem eq 2) then begin
+      cotth=cos(yy)/sin(yy)      
+      i_sin=where(abs(sin(yy)) lt 1e-5) ;sinth_min=1e-5
+      if (i_sin ne -1) then cotth[i_sin]=0.
+      corr=f[*,*,*,2]*cotth/xx
+  endif
+  return,yder(f[*,*,*,2])-zder(f[*,*,*,1])+corr
 end
-function curly,f
+function curly,f,lsystem,xx
 COMPILE_OPT IDL2,HIDDEN
-  return,zder(f[*,*,*,0])-xder(f[*,*,*,2])
+  if (lsystem eq 0) then corr=0.
+  if (lsystem eq 1) then corr=0.
+  if (lsystem eq 2) then corr=-f[*,*,*,2]/xx
+  return,zder(f[*,*,*,0])-xder(f[*,*,*,2])+corr
 end
-function curlz,f
+function curlz,f,lsystem,xx
 COMPILE_OPT IDL2,HIDDEN
-  return,xder(f[*,*,*,1])-yder(f[*,*,*,0])
+  if (lsystem eq 0) then corr=0.
+  if (lsystem eq 1) then corr=f[*,*,*,1]/pxx
+  if (lsystem eq 2) then corr=f[*,*,*,1]/xx
+  return,xder(f[*,*,*,1])-yder(f[*,*,*,0])+corr
 end
-function curlrad,f,xx
-COMPILE_OPT IDL2,HIDDEN
-  return,yder(f[*,*,*,2])/xx -zder(f[*,*,*,1])
-end
-function curlphi,f,xx
-COMPILE_OPT IDL2,HIDDEN
-  return,zder(f[*,*,*,0])-xder(f[*,*,*,2])
-end
-function curlzed,f,xx
-COMPILE_OPT IDL2,HIDDEN
-  return,xder(f[*,*,*,1])+f[*,*,*,1]/xx-yder(f[*,*,*,0])/xx
-end
+;
 function curl,f
 
 COMPILE_OPT IDL2,HIDDEN
-common cdat, x
+common cdat, x, y
 ;
   w=make_array(size=size(f),/nozero)
+  pc_read_param,obj=par,datadir=datadir,dim=dim,/quiet
+  if (par.coord_system eq 'cartesian') then lsystem=0
+  if (par.coord_system eq 'cylindric') then lsystem=1
+  if (par.coord_system eq 'spherical') then lsystem=2
 ;
-  pc_read_param,obj=par,/quiet
+  xx=spread(x,[1,2],[dim.my,dim.mz])
+  yy=spread(y,[0,2],[dim.mx,dim.mz])
 ;
-  if (par.coord_system eq 'cylindric') then begin
-    tmp=size(f) &  my=tmp[2] &  mz=tmp[3]
-    xx=spread(x,[1,2],[my,mz])
-    w[*,*,*,0]=curlrad(f,xx)
-    w[*,*,*,1]=curlphi(f,xx)
-    w[*,*,*,2]=curlzed(f,xx)
-  endif else if (par.coord_system eq 'cartesian') then begin
-    w[*,*,*,0]=curlx(f)
-    w[*,*,*,1]=curly(f)
-    w[*,*,*,2]=curlz(f)
-  endif else begin
-    print, 'error: curl not implemented for spherical polars'
-  endelse
+  w[*,*,*,0]=curlx(f,lsystem,xx,yy)
+  w[*,*,*,1]=curly(f,lsystem,xx)
+  w[*,*,*,2]=curlz(f,lsystem,xx)
 ;
   return,w
 ;

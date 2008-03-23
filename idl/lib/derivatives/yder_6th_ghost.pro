@@ -1,5 +1,5 @@
 ;
-;  $Id: yder_6th_ghost.pro,v 1.10 2006-10-07 09:57:56 brandenb Exp $
+;  $Id: yder_6th_ghost.pro,v 1.11 2008-03-23 19:28:17 wlyra Exp $
 ;
 ;  First derivative d/dy
 ;  - 6th-order
@@ -21,6 +21,12 @@ function yder,f
 ;
   s=size(f) & d=make_array(size=s)
   nx=s[1] & ny=s[2] & nz=s[3]
+;
+  pc_read_param,obj=par,datadir=datadir,dim=dim,/quiet
+  if (par.coord_system eq 'cartesian') then lsystem=0
+  if (par.coord_system eq 'cylindric') then lsystem=1
+  if (par.coord_system eq 'spherical') then lsystem=2
+  xx=spread(x,[1,2],[ny,nz])
 ;
 ;  Check for degenerate case (no y-extension)
 ;
@@ -44,6 +50,7 @@ function yder,f
       d[*,m1:m2,*]=dy2*( +45.*(f[*,m1+1:m2+1,*]-f[*,m1-1:m2-1,*]) $
                           -9.*(f[*,m1+2:m2+2,*]-f[*,m1-2:m2-2,*]) $
                              +(f[*,m1+3:m2+3,*]-f[*,m1-3:m2-3,*]) )
+      if (lsystem ne 0) then d=d/xx
     endif else begin
       d[*,m1:m2,*]=0.
     endelse
@@ -57,6 +64,7 @@ function yder,f
       d[*,m1:m2,*,*]=dy2*( +45.*(f[*,m1+1:m2+1,*,*]-f[*,m1-1:m2-1,*,*]) $
                             -9.*(f[*,m1+2:m2+2,*,*]-f[*,m1-2:m2-2,*,*]) $
                                +(f[*,m1+3:m2+3,*,*]-f[*,m1-3:m2-3,*,*]) )
+      if (lsystem ne 0) then d[*,*,*,0:s[4]-1]=d[*,*,*,0:s[4]-1]/xx
     endif else begin
       d[*,m1:m2,*,*]=0.
     endelse
