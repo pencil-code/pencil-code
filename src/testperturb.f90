@@ -1,4 +1,4 @@
-! $Id: testperturb.f90,v 1.4 2008-03-23 08:29:45 brandenb Exp $
+! $Id: testperturb.f90,v 1.5 2008-03-24 08:20:06 brandenb Exp $
 
 !  test perturbation method
 
@@ -62,7 +62,7 @@ module TestPerturb
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testperturb.f90,v 1.4 2008-03-23 08:29:45 brandenb Exp $")
+           "$Id: testperturb.f90,v 1.5 2008-03-24 08:20:06 brandenb Exp $")
 !
     endsubroutine register_testperturb
 !***********************************************************************
@@ -97,6 +97,8 @@ module TestPerturb
 !
       B1cz=cz/Btest0
       B1sz=sz/Btest0
+!
+!  scale with inverse Btest0 and with inverse ktestfield
 !
       B1k1cz=ktestfield1*B1cz
       B1k1sz=ktestfield1*B1sz
@@ -203,7 +205,6 @@ module TestPerturb
 !
       fsave=f
       tsave=t
-      ltestperturb_inside=.true.
 !
 !  do each of the test fields one after another
 !
@@ -219,7 +220,9 @@ module TestPerturb
 !
         call rk_2n(f,df,p)
 !
-!  calculate emf for calculation of alpha_ij and eta_ij tensor
+!  calculate emf for calculation of alpha_ij and eta_ij tensor.
+!  Note that this result applies to the end of this timestep, and does not
+!  agree with that calcuted in pdf for the beginning of the timestep.
 !
         lfirstpoint=.true.
         headtt_save=headtt
@@ -228,6 +231,10 @@ module TestPerturb
           call calc_pencils_hydro(f,p)
           call curl(f,iaa,bb)
           call cross_mn(p%uu,bb,uxb)
+!
+!  Note that we have not subtracted the contributions from the EMF
+!  of the mean magnetic and velocity fields. Need to check.
+!
           select case(jtest)
           case(1)
             call sum_mn_name(B1cz(n)*uxb(:,1),idiag_alp11)
@@ -262,13 +269,12 @@ module TestPerturb
           lfirstpoint=.false.
         enddo
         enddo
+!
+!  reset f to what it was before.
+!
+        f=fsave
+        t=tsave
       enddo
-!
-!  reset f to what it was before
-!
-      f=fsave
-      t=tsave
-      ltestperturb_inside=.false.
 !
 !  Since this routine was called before any regular call to the
 !  timestepping routine, we must reset headtt to what it was before.

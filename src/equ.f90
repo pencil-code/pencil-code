@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.394 2008-03-24 02:31:04 wlyra Exp $
+! $Id: equ.f90,v 1.395 2008-03-24 08:20:06 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -473,15 +473,14 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.394 2008-03-24 02:31:04 wlyra Exp $")
+           "$Id: equ.f90,v 1.395 2008-03-24 08:20:06 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
-!!!  Prevent diagnostics and other averages if ltestperturb_inside
 !
-      ldiagnos=lfirst.and.lout !.and..not.ltestperturb_inside
-      l1ddiagnos=lfirst.and.l1dout !.and..not.ltestperturb_inside
-      l2davgfirst=lfirst.and.l2davg !.and..not.ltestperturb_inside
+      ldiagnos=lfirst.and.lout
+      l1ddiagnos=lfirst.and.l1dout
+      l2davgfirst=lfirst.and.l2davg
 !
 !  derived diagnostics switches
 !
