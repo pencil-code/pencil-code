@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.89 2008-03-20 16:07:25 nbabkovs Exp $
+! $Id: viscosity.f90,v 1.90 2008-03-24 03:29:37 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -109,7 +109,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.89 2008-03-20 16:07:25 nbabkovs Exp $")
+           "$Id: viscosity.f90,v 1.90 2008-03-24 03:29:37 wlyra Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -171,7 +171,7 @@ module Viscosity
           if (lroot) print*,'viscous force with a horizontal profile for nu'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nu_profx=.true.
-        case('nu-shock')
+        case('nu-shock','shock')
           if (lroot) print*,'viscous force: nu_shock*(XXXXXXXXXXX)'
           lvisc_nu_shock=.true.
           if (.not. lshock) &
