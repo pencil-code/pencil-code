@@ -2,6 +2,7 @@
 
   public :: initialize_border_profiles
   public :: pencil_criteria_borderprofiles
+  public :: calc_pencils_borderprofiles
   public :: border_quenching, border_driving
 
   integer, parameter, public :: i_BORDER_ZERO    = 1

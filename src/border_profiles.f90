@@ -1,10 +1,12 @@
-! $Id: border_profiles.f90,v 1.23 2008-02-11 13:59:17 wlyra Exp $
+! $Id: border_profiles.f90,v 1.24 2008-03-24 22:48:54 wlyra Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lborder_profiles = .true.
+!
+! PENCILS PROVIDED rborder_mn
 !
 !***************************************************************
 
@@ -143,16 +145,40 @@ module BorderProfiles
 !
       if (lcylindrical_coords.or.lcylinder_in_a_box) then
         lpenc_requested(i_rcyl_mn)=.true.
+        lpenc_requested(i_rcyl_mn1)=.true.
       elseif (lspherical_coords.or.lsphere_in_a_box) then
         lpenc_requested(i_r_mn)=.true.
+        lpenc_requested(i_r_mn1)=.true.
       else
         lpenc_requested(i_x_mn)=.true.
       endif
 !
-      lpenc_requested(i_phix)=.true.
-      lpenc_requested(i_phiy)=.true.
+      if (.not.lspherical_coords) then
+        lpenc_requested(i_phix)=.true.
+        lpenc_requested(i_phiy)=.true.
+      endif
+!
+      lpenc_requested(i_rborder_mn)=.true.
+      
 !
     endsubroutine pencil_criteria_borderprofiles
+!***********************************************************************
+    subroutine calc_pencils_borderprofiles(f,p)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      if (lpencil(i_rborder_mn)) then 
+        if (lcylinder_in_a_box.or.lcylindrical_coords) then
+          p%rborder_mn = p%rcyl_mn
+        elseif (lsphere_in_a_box.or.lspherical_coords) then
+          p%rborder_mn = p%r_mn
+        else
+          p%rborder_mn = p%x_mn
+        endif
+      endif
+!
+    endsubroutine calc_pencils_borderprofiles
 !***********************************************************************
     subroutine border_driving(f,df,p,f_target,j)
 !
@@ -166,6 +192,8 @@ module BorderProfiles
       real :: pborder,inverse_drive_time
       integer :: i,j
 !
+
+!
       do i=1,nx
         if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
              ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
@@ -175,6 +203,7 @@ module BorderProfiles
         
           df(i+l1-1,m,n,j) = df(i+l1-1,m,n,j) &
                - (f(i+l1-1,m,n,j) - f_target(i))*pborder*inverse_drive_time
+          !if (j==ilnrho) print*,pborder,inverse_drive_time,f_target(i)
         endif
       !else do nothing
       !df(l1:l2,m,n,j) = df(l1:l2,m,n,j) 
@@ -229,9 +258,13 @@ module BorderProfiles
       type (pencil_case) :: p
       integer :: i
 !
-      uphi=p%uu(i,1)*p%phix(i)+p%uu(i,2)*p%phiy(i)
+      if (lcartesian_coords.or.lcylindrical_coords) then
+        uphi=p%uu(i,1)*p%phix(i)+p%uu(i,2)*p%phiy(i)
+      elseif (lspherical_coords) then
+        uphi=p%uu(i,3)
+      endif
 !
-      inverse_drive_time = .5*pi_1*uphi*p%rcyl_mn1(i)
+      inverse_drive_time = .5*pi_1*uphi/p%rborder_mn(i)
 !
     endsubroutine get_drive_time
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.395 2008-03-24 08:20:06 brandenb Exp $
+! $Id: equ.f90,v 1.396 2008-03-24 22:48:54 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -457,6 +457,7 @@ module Equ
       use Hypervisc_strict, only: hyperviscosity_strict
       use Hyperresi_strict, only: hyperresistivity_strict
       use Interstellar, only: interstellar_before_boundary
+      use BorderProfiles, only: calc_pencils_borderprofiles
       use Particles_main
 !
       logical :: early_finalize,ldiagnos_mdt
@@ -473,7 +474,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.395 2008-03-24 08:20:06 brandenb Exp $")
+           "$Id: equ.f90,v 1.396 2008-03-24 22:48:54 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -736,6 +737,7 @@ module Equ
         if (lchiral)          call calc_pencils_chiral(f,p)
         if (lradiation)       call calc_pencils_radiation(f,p)
         if (lspecial)         call calc_pencils_special(f,p)
+        if (lborder_profiles) call calc_pencils_borderprofiles(f,p)
         if (lparticles)       call particles_calc_pencils(f,p)
 !
 !  --------------------------------------------------------
