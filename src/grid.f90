@@ -1,10 +1,10 @@
-! $Id: grid.f90,v 1.33 2008-03-19 23:38:17 dobler Exp $
+! $Id: grid.f90,v 1.34 2008-03-24 22:50:38 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! PENCILS PROVIDED x_mn, y_mn, z_mn, r_mn
+! PENCILS PROVIDED x_mn, y_mn, z_mn, r_mn, r_mn1
 ! PENCILS PROVIDED phix, phiy
 ! PENCILS PROVIDED pomx, pomy
 ! PENCILS PROVIDED rcyl_mn, rcyl_mn1, phi_mn
@@ -449,6 +449,8 @@ module Grid
         if (lpencil(i_phi_mn))   p%phi_mn  = atan2(y(m),x(l1:l2))
 !inverse cylindrical distance 1/pomega
         if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
+!inverse spherical distance 1/r
+        if (lpencil(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
 !pomega unit vectors
         if (lpencil(i_pomx))     p%pomx    = x(l1:l2)*p%rcyl_mn1
         if (lpencil(i_pomy))     p%pomy    = y(  m  )*p%rcyl_mn1
@@ -464,21 +466,20 @@ module Grid
         if (lpencil(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)
         if (lpencil(i_phi_mn))   p%phi_mn  = spread(y(m),1,nx)
         if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
+        if (lpencil(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
         if (lpencil(i_pomx))     p%pomx    = 1.
         if (lpencil(i_pomy))     p%pomy    = 0.
         if (lpencil(i_phix))     p%phix    = 0.
         if (lpencil(i_phiy))     p%phiy    = 1.
       elseif (lspherical_coords) then
-! We have been working with the assumption that x,y,z are actually 
-! r, \theta, \phi in spherical coordinates. Hence changing x_mn
-! may mess up things already coded. It is better not to. 
-!        if (lpencil(i_x_mn))     p%x_mn    = x(l1:l2)*sin(z(n))*cos(y(m))
-!        if (lpencil(i_y_mn))     p%y_mn    = x(l1:l2)*sin(z(n))*sin(y(m))
-!        if (lpencil(i_z_mn))     p%z_mn    = x(l1:l2)*cos(z(n))
+        if (lpencil(i_x_mn))     p%x_mn    = x(l1:l2)*sin(y(m))*cos(z(n))
+        if (lpencil(i_y_mn))     p%y_mn    = x(l1:l2)*sin(y(m))*sin(z(n))
+        if (lpencil(i_z_mn))     p%z_mn    = x(l1:l2)*cos(y(m))
         if (lpencil(i_r_mn))     p%r_mn    = x(l1:l2)
-        if (lpencil(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)*sin(z(n))
+        if (lpencil(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)*sin(y(m))
         if (lpencil(i_phi_mn))   p%phi_mn  = spread(z(n),1,nx) 
         if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
+        if (lpencil(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
         if (lpencil(i_pomx).or.lpencil(i_pomy).or.&
             lpencil(i_phix).or.lpencil(i_phiy)) &
             call fatal_error('calc_pencils_grid', &
