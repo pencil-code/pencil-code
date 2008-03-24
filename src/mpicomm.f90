@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.220 2008-03-24 02:31:33 wlyra Exp $
+! $Id: mpicomm.f90,v 1.221 2008-03-24 03:24:46 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1753,7 +1753,7 @@ module Mpicomm
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, &
                       MPI_COMM_WORLD, ierr)
 !
-    endsubroutine mpiallreduce_sum_arr
+    endsubroutine mpiallreduce_sum_arr2
 !***********************************************************************
     subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce)
 !
