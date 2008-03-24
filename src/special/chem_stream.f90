@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.1 2008-03-07 09:04:33 nbabkovs Exp $
+! $Id: chem_stream.f90,v 1.2 2008-03-24 16:39:09 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -71,14 +71,14 @@ module Special
   character (len=labellen) :: initstream='default'
   real :: test 
 
-  real :: rho_init=2., T_init=2., YY8_init=0.2
+  real :: rho_init=1., T_init=1., Y1_init=1., Y2_init=1., Y3_init=1.
 
 ! Keep some over used pencils
 !
 
 ! start parameters
   namelist /chem_stream_init_pars/ &
-   initstream
+   initstream,rho_init, T_init, Y1_init, Y2_init, Y3_init
 
 ! run parameters
   namelist /chem_stream_run_pars/ &
@@ -134,11 +134,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.1 2008-03-07 09:04:33 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.2 2008-03-24 16:39:09 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.1 2008-03-07 09:04:33 nbabkovs Exp $")
+           "$Id: chem_stream.f90,v 1.2 2008-03-24 16:39:09 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -511,7 +511,7 @@ module Special
       real, dimension (mx,my,mz) :: xx, yy
       real, dimension (my, nchemspec-1) :: mask
       real, dimension (my) :: sum_mask=0.
-      integer :: k,j
+      integer :: k,j,i
 
   !   call make_mask(mask)
 
@@ -529,7 +529,13 @@ module Special
 
      f(:,:,:,4)=rho_init
      f(:,:,:,5)=T_init
-     f(:,:,:,ichemspec(nchemspec))=YY8_init
+     f(l1:mx,:,:,ichemspec(nchemspec))=Y3_init
+
+     do i=0,nghost
+       f(i,:,:,ichemspec(nchemspec-1))=Y2_init*((l1+1.-i)/l1)**2
+       f(i,:,:,ichemspec(nchemspec-2))=Y1_init*((l1+1.-i)/l1)**2
+     enddo
+
 
     endsubroutine stream_field
 !***********************************************************************
@@ -543,7 +549,7 @@ module Special
       real, dimension (my, nchemspec-1) :: mask
       integer :: sgn
       type (boundary_condition) :: bc
-      integer :: i,j,vr,k
+      integer :: i,i1,j,vr,k
       real :: value1, value2
 
       vr=bc%ivar
@@ -560,7 +566,10 @@ module Special
         do k=1,my
             if (abs(y(k)) .lt. 3.) then
               do i=0,nghost;   f(l1-i,k,:,vr)=value1;  enddo
+            else
+              do i=0,nghost;   f(l1-i,k,:,vr)=0.;  enddo
             endif
+        
         enddo
        endif
 
@@ -579,8 +588,12 @@ module Special
           do k=1,my
              if (abs(y(k)) .lt. 3.) then
                 if (vr < ichemspec(nchemspec))  f(l1-i,k,:,vr)=value1
+                if (vr == ichemspec(nchemspec))                    f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4
              else
-                if (vr == ichemspec(nchemspec))   f(l1-i,k,:,vr)=value1
+                if (vr < ichemspec(nchemspec)) then
+                 f(l1-i,k,:,vr)=value1
+                endif 
+                if (vr == ichemspec(nchemspec))   f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4
              endif
           enddo
          enddo
