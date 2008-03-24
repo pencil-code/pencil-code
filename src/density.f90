@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.378 2008-03-21 22:56:21 wlyra Exp $
+! $Id: density.f90,v 1.379 2008-03-24 03:30:06 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -137,7 +137,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.378 2008-03-21 22:56:21 wlyra Exp $")
+           "$Id: density.f90,v 1.379 2008-03-24 03:30:06 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -216,7 +216,7 @@ module Density
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           if (lroot) print*,'diffusion: Dhyper/pi^4 *(Delta(rho))^6/Deltaq^2'
           ldiff_hyper3_cyl_or_sph=.true.
-        case ('shock')
+        case ('shock','diff-shock','diffrho-shock')
           if (lroot) print*,'diffusion: shock diffusion'
           ldiff_shock=.true.
         case ('')

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.483 2008-03-24 02:31:04 wlyra Exp $
+! $Id: magnetic.f90,v 1.484 2008-03-24 03:30:07 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -369,7 +369,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.483 2008-03-24 02:31:04 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.484 2008-03-24 03:30:07 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -500,7 +500,7 @@ module Magnetic
         case('shell')
           if (lroot) print*, 'resistivity: shell'
           lresi_shell=.true.
-        case ('shock')
+        case ('shock','eta-shock')
           if (lroot) print*, 'resistivity: shock'
           lresi_eta_shock=.true.
           if (.not. lshock) &
