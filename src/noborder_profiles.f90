@@ -1,4 +1,4 @@
-! $Id: noborder_profiles.f90,v 1.9 2008-03-24 22:52:51 wlyra Exp $
+! $Id: noborder_profiles.f90,v 1.10 2008-03-24 22:57:17 wlyra Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,6 +70,8 @@ module BorderProfiles
     endsubroutine pencil_criteria_borderprofiles
 !***********************************************************************
     subroutine calc_pencils_borderprofiles(f,p)
+!
+      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
