@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.219 2008-03-07 11:24:47 wlyra Exp $
+! $Id: mpicomm.f90,v 1.220 2008-03-24 02:31:33 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -125,6 +125,7 @@ module Mpicomm
   endinterface
 
   interface mpiallreduce_sum
+    module procedure mpiallreduce_sum_arr2
     module procedure mpiallreduce_sum_arr
     module procedure mpiallreduce_sum_scl
   endinterface
@@ -1737,6 +1738,22 @@ module Mpicomm
           MPI_COMM_WORLD,ierr)
 !
     endsubroutine mpibcast_char_arr
+!***********************************************************************
+    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce_array)
+!
+      integer, dimension(2) :: nreduce_array
+      real, dimension(nreduce_array(1),nreduce_array(2)) :: fsum_tmp,fsum
+      integer :: nreduce
+!
+!  calculate total sum for each array element
+!  and return to all processors
+!
+      nreduce=nreduce_array(1)*nreduce_array(2)
+!
+      call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, &
+                      MPI_COMM_WORLD, ierr)
+!
+    endsubroutine mpiallreduce_sum_arr
 !***********************************************************************
     subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce)
 !
