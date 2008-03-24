@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.379 2008-03-24 03:30:06 wlyra Exp $
+! $Id: density.f90,v 1.380 2008-03-24 22:49:47 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -46,7 +46,7 @@ module Density
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
   real :: wdamp=0.,density_floor=-1.0
   real :: mass_source_Mdot=0.,mass_source_sigma=0.
-  real :: radial_percent_smooth=10.
+  real :: radial_percent_smooth=10.,rshift=0.0
   real, dimension(3) :: diffrho_hyper3_aniso=0.
   real, dimension(mz) :: lnrho_init_z=0.0,del2lnrho_init_z=0.0
   real, dimension(mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
@@ -79,7 +79,8 @@ module Density
        mpoly,strati_type,beta_glnrho_global,radial_percent_smooth,   &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho,     &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,lexponential_smooth,&
-       wdamp,plaw,lcontinuity_gas,density_floor,lanti_shockdiffusion
+       wdamp,plaw,lcontinuity_gas,density_floor,lanti_shockdiffusion,&
+       rshift
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,                &
@@ -137,7 +138,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.379 2008-03-24 03:30:06 wlyra Exp $")
+           "$Id: density.f90,v 1.380 2008-03-24 22:49:47 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1566,8 +1567,8 @@ module Density
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx) :: f_target!,lnrhomid,pot,tmp1,tmp2
-      real :: lnrhomid,pot,tmp1,tmp2
+      real, dimension(nx) :: f_target
+      real :: lnrhomid,pot,tmp1,tmp2,rmid
       type (pencil_case)  :: p
       integer            :: i
 
@@ -1595,12 +1596,11 @@ module Density
         if (plaw.eq.0) call stop_it("borderlnrho: no need to call a power-"//&
              "law border for a flat density profile")
         do i=1,nx
-          if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
-               ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
+          if ( ((p%rborder_mn(i).ge.r_int).and.(p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
+               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.(p%rborder_mn(i).le.r_ext))) then
 !
             if (ldensity_nolog) then
               call power_law(rho_const,p%rcyl_mn(i),plaw,f_target(i),r_ref)
-!             f_target=rho_const*p%rcyl_mn1**(plaw)
             else
               f_target(i)=lnrho_const - plaw*log(p%rcyl_mn(i)/r_ref)
             endif
@@ -1617,10 +1617,18 @@ module Density
 !
       case('stratification')
         do i=1,nx
-          if ( ((p%rcyl_mn(i).ge.r_int).and.(p%rcyl_mn(i).le.r_int+2*wborder_int)).or.&
-               ((p%rcyl_mn(i).ge.r_ext-2*wborder_ext).and.(p%rcyl_mn(i).le.r_ext))) then
+          if ( ((p%rborder_mn(i).ge.r_int).and.(p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
+               ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.(p%rborder_mn(i).le.r_ext))) then
 !            
-            lnrhomid=log(rho0) - plaw*log(p%rcyl_mn(i))
+            if (lexponential_smooth) then
+              !radial_percent_smooth = percentage of the grid
+              !that the smoothing is applied
+              rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
+              lnrhomid=log(rho0) &
+                   + plaw*log((1-exp( -((p%rcyl_mn(i)-rshift)/rmid)**2 ))/p%rcyl_mn(i))
+            else
+              lnrhomid=log(rho0)-.5*plaw*log((p%rcyl_mn(i)/r_ref)**2+rsmooth**2)
+            endif
             call potential(R=p%r_mn(i),POT=tmp1)
             call potential(R=p%rcyl_mn(i),POT=tmp2)
             pot=-gamma*(tmp1-tmp2)/p%cs2(i)
@@ -1878,9 +1886,9 @@ module Density
           if (lexponential_smooth) then
             !radial_percent_smooth = percentage of the grid
             !that the smoothing is applied
-            rmid=xyz0(1)+(xyz1(1)-xyz0(1))/radial_percent_smooth
+            rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
             lnrhomid=log(rho0) &
-                 + plaw*log((1-exp( -((rr_cyl-xyz0(1))/rmid)**2 ))/rr_cyl)
+                 + plaw*log((1-exp( -((rr_cyl-rshift)/rmid)**2 ))/rr_cyl)
            else
             lnrhomid=log(rho0)-.5*plaw*log((rr_cyl/r_ref)**2+rsmooth**2)
           endif
