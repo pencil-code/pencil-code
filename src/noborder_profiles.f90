@@ -1,10 +1,12 @@
-! $Id: noborder_profiles.f90,v 1.8 2007-10-04 10:57:29 ajohan Exp $
+! $Id: noborder_profiles.f90,v 1.9 2008-03-24 22:52:51 wlyra Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lborder_profiles = .false.
+!
+! PENCILS PROVIDED rborder_mn
 !
 !***************************************************************
 
@@ -66,6 +68,18 @@ module BorderProfiles
 !  DUMMY ROUTINE
 !
     endsubroutine pencil_criteria_borderprofiles
+!***********************************************************************
+    subroutine calc_pencils_borderprofiles(f,p)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      if (lpencil(i_rborder_mn))  p%rborder_mn=0.
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_pencils_borderprofiles
 !***********************************************************************
     subroutine border_driving(f,df,p,f_target,j)
 !
