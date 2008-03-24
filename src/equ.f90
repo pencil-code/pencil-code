@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.393 2008-03-23 08:29:45 brandenb Exp $
+! $Id: equ.f90,v 1.394 2008-03-24 02:31:04 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -473,7 +473,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.393 2008-03-23 08:29:45 brandenb Exp $")
+           "$Id: equ.f90,v 1.394 2008-03-24 02:31:04 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -535,6 +535,13 @@ module Equ
 !  to be set in hydro_run_pars).
 !
       if (lshear) call remove_mean_momenta(f)
+!
+!  Remove mean emf in the radial direction if desired.
+!  Useful as a simple way to remove the large scale 
+!  contribution from uphi x Bz from global disk simulations. 
+!  (This is only done if lremove_mean_emf=T,
+!  to be set in magnetic_run_pars).
+!
       if (lmagnetic) call remove_mean_emf(f,df)
 !
 !  Check for dust grain mass interval overflows
