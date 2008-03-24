@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.83 2008-01-20 08:40:21 brandenb Exp $
+! $Id: nohydro.f90,v 1.84 2008-03-24 17:26:16 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -74,7 +74,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.83 2008-01-20 08:40:21 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.84 2008-03-24 17:26:16 brandenb Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -741,9 +741,9 @@ module Hydro
 !
     enddo
 !
-!   form RA = RA x k_unit and RB = RB x k_unit
+!  form RA = RA x k_unit and RB = RB x k_unit
+!  Note: cannot reuse same vector for input and output
 !
-
     do modeN=1,KS_modes
       call cross(KS_A(:,modeN),k_unit(:),KS_A(:,modeN))
       call cross(KS_B(:,modeN),k_unit(:),KS_B(:,modeN))
@@ -781,6 +781,7 @@ module Hydro
     kmin=10.88279619
     kmax=23.50952672
 !
+!-----------------------------
     KS_k(1,1)=2.00*pi
     KS_k(2,1)=-2.00*pi
     KS_k(3,1)=2.00*pi
@@ -792,6 +793,11 @@ module Hydro
     KS_k(1,3)=4.00*pi
     KS_k(2,3)=2.00*pi
     KS_k(3,3)=-6.00*pi
+!
+!-----------------------------
+    KS_k(1,1)=+1; KS_k(2,1)=-1; KS_k(3,1)=1
+    KS_k(1,2)=+0; KS_k(2,2)=-2; KS_k(3,2)=1
+    KS_k(1,3)=+0; KS_k(2,3)=-0; KS_k(3,3)=1
 !
     k(1)=kmin
     k(2)=14.04962946
