@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.43 2008-03-21 11:32:52 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.44 2008-03-25 12:15:18 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -10,7 +10,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,nu,gradnu
+! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,nu,gradnu,cs2
 !***************************************************************
 
 module Chemistry
@@ -26,14 +26,18 @@ module Chemistry
   include 'chemistry.h'
 
   real :: Rgas, Rgas_unit_sys=1.
-  real, dimension (mx,my,mz) :: cp_full,mu1_full, nu_full
+  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full
   
 
 
 !
 !  parameters related to chemical reactions
 !
-  logical :: lreactions=.true.,lkreactions_profile=.false.
+  logical :: lreactions=.true.
+  logical :: ladvection=.true.
+  logical :: lreaction_chemkin=.false.,ldiffusion_chemkin=.true.
+
+  logical :: lkreactions_profile=.false.
   integer :: nreactions=0,nreactions1=0,nreactions2=0
   real, dimension(2*nchemspec) :: kreactions_profile_width=0.
 
@@ -163,11 +167,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.43 2008-03-21 11:32:52 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.44 2008-03-25 12:15:18 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.43 2008-03-21 11:32:52 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.44 2008-03-25 12:15:18 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -315,6 +319,7 @@ module Chemistry
 !  13-aug-07/steveb: coded
 !
        lpenc_requested(i_YY)=.true.
+       lpenc_requested(i_cs2)=.true.
 
        if (lcheminp) then
         lpenc_requested(i_mu1)=.true.
@@ -406,6 +411,13 @@ module Chemistry
 !
          if (lpencil(i_cp)) then
            p%cp=cp_full(l1:l2,m,n)
+  !          do k=1,nx
+  !           if (p%cp(k) < 0.) then
+  !            call stop_it(" NEGATIVE Cp ")
+  !           endif
+  !          enddo 
+
+
          endif
 
          if (lpencil(i_cp1))   p%cp1 = 1./p%cp
@@ -416,8 +428,16 @@ module Chemistry
 !
 !  Specific heat at constant volume (i.e. density)
 !
-         if (lpencil(i_cv)) p%cv = p%cp - Rgas
-         if (lpencil(i_cv1)) p%cv1=1/p%cv
+         if (lpencil(i_cv)) p%cv = cv_full(l1:l2,m,n)
+
+ !         do k=1,nx
+ !            if (p%cv(k) < 0.) then
+ !             print*, p%cp(k), p%cv(k)
+ !             call stop_it(" NEGATIVE Cv ")
+ !            endif
+ !          enddo 
+
+         if (lpencil(i_cv1)) p%cv1=1./p%cv
          if (lpencil(i_lncp)) p%lncp=log(p%cp)
 
 !
@@ -426,6 +446,12 @@ module Chemistry
          if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
          if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
          if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
+
+!
+!  Sound speed
+!
+
+   if (lpencil(i_cs2)) p%cs2=p%cp*p%TT*p%gamma1
 
 !
 !  Viscosity of a mixture
@@ -454,7 +480,7 @@ module Chemistry
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) ::  cp_spec
+      real, dimension (mx) ::  cp_R_spec, cv_R_spec
       real, dimension (mx,my,mz) :: tmp_sum, tmp_sum2
       real, dimension (nchemspec,nchemspec) :: Phi
 !
@@ -493,6 +519,7 @@ module Chemistry
 !  Specific heat at constant pressure
 !
          cp_full=0.
+         cv_full=0.
 
            do k=1,nchemspec
              T_low=species_constants(k,iTemp1)
@@ -503,20 +530,25 @@ module Chemistry
                do m=1,my
                  T_local=exp(f(i,m,n,ilnTT))*unit_temperature 
                   if (T_local >=T_low .and. T_local <= T_mid) then
-                   tmp=0. 
+                   cp_R_spec(i)=0. 
                     do j=1,5
-                     tmp=tmp+species_constants(k,ia1(j))*T_local**(j-1) 
+                     cp_R_spec(i)=cp_R_spec(i)+species_constants(k,ia1(j))*T_local**(j-1) 
                     enddo
-                   cp_spec(i)=tmp
+                   cv_R_spec(i)=1.-cp_R_spec(i)
+                   cp_R_spec(i)=cp_R_spec(i)/species_constants(k,imass)
+                   cv_R_spec(i)=cv_R_spec(i)/species_constants(k,imass)
                   else
-                   tmp=0. 
+                   cp_R_spec(i)=0.
                     do j=1,5 
-                     tmp=tmp+species_constants(k,ia2(j))*T_local**(j-1) 
+                     cp_R_spec(i)=cp_R_spec(i)+species_constants(k,ia2(j))*T_local**(j-1) 
                     enddo
-                   cp_spec(i)=tmp
+                   cv_R_spec(i)=cp_R_spec(i)-1.
+                   cp_R_spec(i)=cp_R_spec(i)/species_constants(k,imass)
+                   cv_R_spec(i)=cv_R_spec(i)/species_constants(k,imass)
                   endif
 
-                cp_full(i,m,n)=cp_full(i,m,n)+f(i,m,n,ichemspec(k))*cp_spec(i)*Rgas*mu1_full(i,m,n)
+                cp_full(i,m,n)=cp_full(i,m,n)+f(i,m,n,ichemspec(k))*cp_R_spec(i)*Rgas
+                cv_full(i,m,n)=cv_full(i,m,n)+f(i,m,n,ichemspec(k))*cv_R_spec(i)*Rgas
 
               enddo
              enddo
@@ -871,9 +903,12 @@ module Chemistry
 !
 !  advection terms
 ! 
+
+      if (ladvection) then 
         call grad(f,ichemspec(k),gchemspec) 
         call dot_mn(p%uu,gchemspec,ugchemspec)
         df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))-ugchemspec
+      endif
 !
 !  diffusion operator
 !
@@ -890,6 +925,8 @@ module Chemistry
         endif
       else 
 
+       if (ldiffusion_chemkin) then
+
           Diff_full_add(:,:,:,k)=Diff_full(:,:,:,k)*species_constants(ichemspec(k),imass)/unit_mass*mu1_full(:,:,:)
 
           call del2(XX_full,k,del2XX)
@@ -902,6 +939,7 @@ module Chemistry
  
          df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k)) &
                    +Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2
+       endif
 
       endif
 
@@ -918,7 +956,9 @@ module Chemistry
          if (.not. lcheminp) then
           df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+xdot
          else
-          df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+xdot*species_constants(ichemspec(k),imass)/p%rho(:)
+          if (lreaction_chemkin) then
+             df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+xdot*species_constants(ichemspec(k),imass)/p%rho(:)
+          endif
          endif
         endif
 !
