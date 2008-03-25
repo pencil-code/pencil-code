@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.17 2008-03-24 16:34:24 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.18 2008-03-25 12:16:44 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -112,7 +112,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.17 2008-03-24 16:34:24 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.18 2008-03-25 12:16:44 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -421,9 +421,6 @@ module EquationOfState
     lpenc_requested(i_TT1)=.true.
     lpenc_requested(i_glnTT)=.true.
     lpenc_requested(i_del2lnTT)=.true.
-    lpenc_requested(i_rho)=.true.
-
-
 
     endsubroutine pencil_criteria_eos
 !***********************************************************************
@@ -456,9 +453,6 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx) :: tmp_sum
-
-      real, dimension (mx,my,mz) :: cp_full
 
 !
       intent(in) :: f
@@ -482,8 +476,7 @@ module EquationOfState
 !
       if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
       if (lpencil(i_TT)) p%TT=exp(p%lnTT)
-      if (lpencil(i_TT1)) p%TT1=1./p%TT
-      if (lpencil(i_rho)) p%rho=exp(f(l1:l2,m,n,ilnrho))
+      if (lpencil(i_TT1)) p%TT1=1./p%TT!
 
 !
 !  Temperature laplacian and gradient
