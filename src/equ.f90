@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.396 2008-03-24 22:48:54 wlyra Exp $
+! $Id: equ.f90,v 1.397 2008-03-25 08:31:41 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -450,8 +450,11 @@ module Equ
       use Shear
       use Poisson
       use Density
+      use Forcing, only: calc_pencils_forcing, calc_lforcing_cont_pars, &
+                         forcing_continuous
       use Grid, only: calc_pencils_grid
-      use Shock, only: calc_pencils_shock, calc_shock_profile, calc_shock_profile_simple
+      use Shock, only: calc_pencils_shock, calc_shock_profile, &
+                       calc_shock_profile_simple
       use Viscosity, only: calc_viscosity, calc_pencils_viscosity, &
                            lvisc_first, idiag_epsK
       use Hypervisc_strict, only: hyperviscosity_strict
@@ -474,7 +477,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.396 2008-03-24 22:48:54 wlyra Exp $")
+           "$Id: equ.f90,v 1.397 2008-03-25 08:31:41 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -619,6 +622,7 @@ module Equ
 !  in hydro of the testfield procedure (only when lsoca=.false.)
 !
       if (lhydro.and.ldensity) call calc_lhydro_pars(f)
+      if (lforcing_cont) call calc_lforcing_cont_pars(f)
       if (ltestfield) call calc_ltestfield_pars(f)
       if (ltestflow) call calc_ltestflow_pars(f)
       if (lspecial) call calc_lspecial_pars(f)
@@ -722,6 +726,7 @@ module Equ
                               call calc_pencils_eos(f,p)
         if (lshock)           call calc_pencils_shock(f,p)
         if (lviscosity)       call calc_pencils_viscosity(f,p)
+        if (lforcing_cont)    call calc_pencils_forcing(f,p)
                               call calc_pencils_entropy(f,p)
                               call calc_pencils_magnetic(f,p)
         if (lgrav)            call calc_pencils_gravity(f,p)
@@ -807,6 +812,10 @@ module Equ
 !  Evolution of chemical species
 !
         if (lchemistry) call dchemistry_dt(f,df,p)
+!
+!  Continuous forcing function (currently only for extra diagonstics)
+!
+        if (lforcing_cont) call forcing_continuous(f,p)
 !
 !  Add and extra 'special' physics
 !

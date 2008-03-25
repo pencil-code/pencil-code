@@ -1,4 +1,4 @@
-! $Id: notestflow.f90,v 1.1 2008-03-12 17:52:36 brandenb Exp $
+! $Id: notestflow.f90,v 1.2 2008-03-25 08:31:42 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -22,6 +22,7 @@ module Testflow
   implicit none
 
   include 'testflow.h'
+
   real :: dummy
   namelist /testflow_init_pars/ dummy
 

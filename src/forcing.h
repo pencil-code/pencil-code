@@ -7,4 +7,7 @@
   public :: output_persistent_forcing, input_persistent_forcing
   public :: rprint_forcing
   public :: addforce
-  
+  public :: forcing_continuous, calc_lforcing_cont_pars
+
+  public :: pencil_criteria_forcing, pencil_interdep_forcing
+  public :: calc_pencils_forcing

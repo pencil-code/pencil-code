@@ -1,4 +1,4 @@
-! $Id: testflow_z.f90,v 1.7 2008-03-23 22:49:50 brandenb Exp $
+! $Id: testflow_z.f90,v 1.8 2008-03-25 08:31:42 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -45,7 +45,7 @@ module Testflow
 !
   character (len=labellen), dimension(ninit) :: inituutest='nothing'
   real, dimension (ninit) :: ampluutest=0.
-  real, parameter :: cs2test=1.
+  real, parameter :: cs2test=1., cs2test1=1./cs2test
 
   ! input parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
@@ -54,8 +54,9 @@ module Testflow
   real :: tuuinit=0.,duuinit=0.
   logical :: reinitialize_uutest=.false.
   logical :: zextent=.true.,lsoca_ugu=.true.
-  logical :: lset_bbtest2=.false.,lset_U0test=.true.
+  logical :: lset_bbtest2=.false.,lset_U0test=.true.,lignore_ugutestm=.false.
   logical :: lugu_as_aux=.false.,linit_uutest=.false.
+  logical :: lforcing_cont_uutest=.false.
   character (len=labellen) :: itestfield='B11-B21'
   real :: ktestfield=1., ktestfield1=1.
   integer, parameter :: ntestflow=4*njtest
@@ -70,9 +71,10 @@ module Testflow
   real :: nutest=0.,nutest1=0.
   namelist /testflow_run_pars/ &
        B_ext,reinitialize_uutest,zextent,lsoca_ugu, &
-       lset_bbtest2,lset_U0test, &
+       lset_bbtest2,lset_U0test,lignore_ugutestm, &
        nutest,nutest1,itestfield,ktestfield, &
-       lugu_as_aux,duuinit,linit_uutest,wamp
+       lugu_as_aux,duuinit,linit_uutest,wamp, &
+       lforcing_cont_uutest
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_lam11=0      ! DIAG_DOC: $\lambda_{11}$
@@ -159,7 +161,7 @@ module Testflow
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testflow_z.f90,v 1.7 2008-03-23 22:49:50 brandenb Exp $")
+           "$Id: testflow_z.f90,v 1.8 2008-03-25 08:31:42 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -393,10 +395,11 @@ module Testflow
       real, dimension (nx,3) :: uutest,ugutest,dugutest
       real, dimension (nx,3) :: U0test=0,dU0test=0,U0gutest,ugU0test
       real, dimension (nx,3,njtest) :: Fipq,upq
-      real, dimension (nx,3,3) :: uijtest
-      real, dimension (nx,3) :: del2utest,uufluct,ghhtest
-      real, dimension (nx) :: upq2,uutest_dot_ghhtest,divuutest
-      integer :: jtest,jfnamez,j,i3,i4
+      real, dimension (nx,3,3) :: uijtest,sijtest
+      real, dimension (nx,3) :: del2utest,graddivutest,ghtest,sghtest
+      real, dimension (nx,3) :: uufluct
+      real, dimension (nx) :: upq2,ughtest,divutest
+      integer :: jtest,jfnamez,j,i,i3,i4
       integer,save :: ifirst=0
       logical,save :: ltest_ugu=.false.
       character (len=5) :: ch
@@ -443,30 +446,31 @@ module Testflow
 !  velocity gradient matrix and u.gradu term
 !
         call gij(f,iuxtest,uijtest,1)
-        call div_mn(uijtest,divuutest,uutest)
+        call div_mn(uijtest,divutest,uutest)
 !
 !  gradient of (pseudo) enthalpy
 !
-        call grad(f,ihhtest,ghhtest)
+        call grad(f,ihhtest,ghtest)
 !
 !  rhs of momentum equation, but include the ugutest
 !  term only if lsoca_ugu=.true.
 !
         df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
-          -ghhtest
+          -ghtest
 !
 !  continuity equation, dh/dt = - u.gradh - cs^2*divutest,
 !  but assume cs=1 in this context
 !
-        call dot_mn(uutest,ghhtest,uutest_dot_ghhtest)
+        call dot_mn(uutest,ghtest,ughtest)
         df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest) &
-          -uutest_dot_ghhtest-cs2test*divuutest
+          -ughtest-cs2test*divutest
 !
         select case(itestfield)
 !         case('B11-B21+B=0'); call set_bbtest(bbtest,jtest)
 !         case('B11-B21'); call set_bbtest_B11_B21(bbtest,jtest)
 !         case('B11-B22'); call set_bbtest_B11_B22(bbtest,jtest)
           case('W11-W22'); call set_U0test_W11_W22(U0test,dU0test,jtest)
+          case('W=0'); U0test=0; dU0test=0
         case default
           call fatal_error('duutest_dt','undefined itestfield value')
         endselect
@@ -474,11 +478,11 @@ module Testflow
 !  add -U^(pq).gradu^(pq)-u^(pq).gradU^(pq) terms
 !
         if (lset_U0test) then
-!         call h_dot_grad(U0test,uijtest,uutest,U0gutest)
-!         call multsv(uutest(:,3),dU0test,ugU0test)
+          call h_dot_grad(U0test,uijtest,uutest,U0gutest)
+          call multsv(uutest(:,3),dU0test,ugU0test)
 !
-          call h_dot_grad(U0test,p%uij,p%uu,U0gutest)
-          call multsv(p%uu(:,3),dU0test,ugU0test)
+!         call h_dot_grad(U0test,p%uij,p%uu,U0gutest)
+!         call multsv(p%uu(:,3),dU0test,ugU0test)
 !
           df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
             -U0gutest-ugU0test
@@ -501,10 +505,14 @@ module Testflow
             call u_dot_grad(f,iuxtest,uijtest,uutest,ugutest)
           endif
 !
-!  subtract average emf
+!  calculate non-soca term, u.gradu - <u.gradu>
 !
           do j=1,3
-            dugutest(:,j)=ugutest(:,j)-ugutestm(n,j,jtest)
+            if (lignore_ugutestm) then
+              dugutest(:,j)=ugutest(:,j)
+            else
+              dugutest(:,j)=ugutest(:,j)-ugutestm(n,j,jtest)
+            endif
           enddo
 !
 !  non-soca term here
@@ -514,10 +522,25 @@ module Testflow
         endif
 !
 !  advance test flow equation, add diffusion term
+!  nu*(del2u + divu/3 + 2Sgradh/cs2)
 !
-          call del2v(f,iuxtest,del2utest)
+        if (nutest/=0.) then
+          do j=1,3
+            do i=1,3
+              sijtest(:,i,j)=.5*(uijtest(:,i,j)+uijtest(:,j,i))
+            enddo
+            sijtest(:,j,j)=sijtest(:,j,j)-(1./3.)*divutest
+          enddo
+          call multmv(sijtest,ghtest,sghtest)
+          call del2v_etc(f,iuxtest,DEL2=del2utest,GRADDIV=graddivutest)
           df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
-            +nutest*del2utest
+            +nutest*(del2utest+(1./3.)*graddivutest+2.*cs2test1*sghtest)
+        endif
+!
+!  add possibility of continuous forcing (not delta-correlated in time)
+!
+        if (lforcing_cont_uutest) &
+          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)+p%fcont
 !
 !  calculate alpha, begin by calculating ugutest (if not already done above)
 !

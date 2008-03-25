@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.422 2008-03-24 22:49:46 wlyra Exp $
+! $Id: hydro.f90,v 1.423 2008-03-25 08:31:41 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -45,11 +45,6 @@ module Hydro
 !  precession matrices
 !
   real, dimension (3,3) :: mat_cori=0.,mat_cent=0.
-!
-!  for continuous forcing function
-!
-  real, dimension (my) :: phi1_ff
-  real, dimension (mx) :: phi2_ff
 !
 ! init parameters
 !
@@ -106,18 +101,16 @@ module Hydro
   real :: ampl1_diffrot=0.,ampl2_diffrot=0.
   real :: Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.,kz_diffrot=0.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
-  real :: k1_ff=1.,ampl_ff=1.,width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
-  real :: kf_ff_uu=0.,omega_ff_uu=0.
   real :: utop=0.,ubot=0.,omega_out=0.,omega_in=0.
+  real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
-  logical :: lforcing_continuous_uu=.false.,lembed=.false.
   logical :: lremove_mean_momenta=.false.
   logical :: lremove_mean_flow=.false.
   logical :: lalways_use_gij_etc=.false.
   logical :: lcalc_uumean=.false.
-  character (len=labellen) :: iforcing_continuous_uu='ABC'
+  logical :: lforcing_cont_uu=.false.
   character (len=labellen) :: uuprof='nothing'
 !
 ! geodynamo
@@ -131,12 +124,11 @@ module Hydro
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, lpressuregradient_gas, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-       lforcing_continuous_uu,iforcing_continuous_uu, &
-       lembed,k1_ff,ampl_ff,width_ff_uu,x1_ff_uu,x2_ff_uu, &
-       kf_ff_uu,omega_ff_uu, &
        utop,ubot,omega_out,omega_in, & 
        lprecession, omega_precession, lshear_rateofstrain, &
        lalways_use_gij_etc,lcalc_uumean, &
+       lforcing_cont_uu, &
+       width_ff_uu,x1_ff_uu,x2_ff_uu, &
        luut_as_aux,loutest, ldiffrot_test,&
        velocity_ceiling
 
@@ -346,7 +338,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.422 2008-03-24 22:49:46 wlyra Exp $")
+           "$Id: hydro.f90,v 1.423 2008-03-25 08:31:41 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1212,7 +1204,7 @@ use Mpicomm, only: stop_it
 !  advection term, -u.gradu
 !
       if (ladvection_velocity) &
-          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%ugu
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
 !
 !  Coriolis force, -2*Omega x u (unless lprecession=T)
 !  Omega=(-sin_theta, 0, cos_theta), where theta corresponds to
@@ -1302,7 +1294,8 @@ use Mpicomm, only: stop_it
 !
 !  add possibility of forcing that is not delta-correlated in time
 !
-      if (lforcing_continuous_uu) call forcing_continuous(df,p)
+      if (lforcing_cont_uu) &
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fcont
 !
 !  damp motions in some regions for some time spans if desired
 !  for geodynamo: addition of dampuint evaluation
@@ -1700,13 +1693,6 @@ use Mpicomm, only: stop_it
         mat_cori=2.*(omega_precession*mat_cori1+Omega*mat_cori2)
         mat_cent=omega_precession**2*mat_cent1+Omega**2*mat_cent2 &
           +2.*omega_precession*Omega*mat_cent3
-      endif
-!
-!  AKA effect
-!
-      if (iforcing_continuous_uu=='AKA') then
-        phi1_ff=cos(kf_ff_uu*y+omega_ff_uu*t)
-        phi2_ff=cos(kf_ff_uu*x-omega_ff_uu*t)
       endif
 !
     endsubroutine calc_lhydro_pars
@@ -2304,120 +2290,6 @@ use Mpicomm, only: stop_it
         endif
 !
     endsubroutine udamping
-!***********************************************************************
-    subroutine forcing_continuous(df,p)
-!
-!  add a continuous forcing term (here currently only for ABC flow)
-!
-!  17-sep-06/axel: coded
-!
-      use Cdata
-      use Sub
-!
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: forcing_rhs,fxb
-      real, dimension (nx) :: uf
-      real, dimension (mx), save :: sinx,cosx,embedx
-      real, dimension (my), save :: siny,cosy,embedy
-      real, dimension (mz), save :: sinz,cosz,embedz
-      type (pencil_case) :: p
-      integer, save :: ifirst
-      integer :: j,jf,ifff
-      real :: fact
-!
-!  at the first step, the sin and cos functions are calculated for all
-!  x,y,z points and are then saved and used for all subsequent steps
-!  and pencils
-!
-      if(ip<=6) print*,'forcing_continuous: ifirst=',ifirst
-      if (ifirst==0) then
-        if (iforcing_continuous_uu=='ABC') then
-          if (lroot) print*,'forcing_continuous: ABC--calc sinx, cosx, etc'
-          sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
-          siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
-          sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
-        elseif (iforcing_continuous_uu=='RobertsFlow') then
-          if (lroot) print*,'forcing_continuous: Roberts Flow'
-          sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
-          siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
-        elseif (iforcing_continuous_uu=='nocos') then
-          if (lroot) print*,'forcing_continuous: nocos flow'
-          sinx=sin(k1_ff*x)
-          siny=sin(k1_ff*y)
-          sinz=sin(k1_ff*z)
-        elseif (iforcing_continuous_uu=='TG') then
-          if (lroot) print*,'forcing_continuous: TG'
-          sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
-          siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
-          cosz=cos(k1_ff*z)
-          if (lembed) then
-            embedx=.5+.5*tanh(x/width_ff_uu)*tanh((pi-x)/width_ff_uu)
-            embedy=.5+.5*tanh(y/width_ff_uu)*tanh((pi-y)/width_ff_uu)
-            embedz=.5+.5*tanh(z/width_ff_uu)*tanh((pi-z)/width_ff_uu)
-            sinx=embedx*sinx; cosx=embedx*cosx
-            siny=embedy*siny; cosy=embedy*cosy
-            cosz=embedz*cosz
-          endif
-        endif
-      endif
-      ifirst=ifirst+1
-      if(ip<=6) print*,'forcing_continuous: dt, ifirst=',dt,ifirst
-!
-!  calculate forcing
-!
-      if (iforcing_continuous_uu=='ABC') then
-        fact=ampl_ff/sqrt(3.)
-        forcing_rhs(:,1)=fact*(sinz(n    )+cosy(m)    )
-        forcing_rhs(:,2)=fact*(sinx(l1:l2)+cosz(n)    )
-        forcing_rhs(:,3)=fact*(siny(m    )+cosx(l1:l2))
-      elseif (iforcing_continuous_uu=='RobertsFlow') then
-        fact=ampl_ff
-        forcing_rhs(:,1)=-fact*cosx(l1:l2)*siny(m)
-        forcing_rhs(:,2)=+fact*sinx(l1:l2)*cosy(m)
-        forcing_rhs(:,3)=+fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
-      elseif (iforcing_continuous_uu=='nocos') then
-        fact=ampl_ff
-        forcing_rhs(:,1)=fact*sinz(n)
-        forcing_rhs(:,2)=fact*sinx(l1:l2)
-        forcing_rhs(:,3)=fact*siny(m)
-      elseif (iforcing_continuous_uu=='TG') then
-        fact=2.*ampl_ff
-        forcing_rhs(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
-        forcing_rhs(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
-        forcing_rhs(:,3)=0.
-      elseif (iforcing_continuous_uu=='AKA') then
-        fact=sqrt(2.)*ampl_ff
-        forcing_rhs(:,1)=fact*phi1_ff(m    )
-        forcing_rhs(:,2)=fact*phi2_ff(l1:l2)
-        forcing_rhs(:,3)=fact*(phi1_ff(m)+phi2_ff(l1:l2))
-      endif
-!
-!  apply forcing in momentum equation
-!
-      ifff=iux
-      do j=1,3
-        jf=j+ifff-1
-        df(l1:l2,m,n,jf)=df(l1:l2,m,n,jf)+forcing_rhs(:,j)
-      enddo
-!
-!  diagnostics
-!
-      if (ldiagnos) then
-        if (idiag_rufm/=0) then
-          call dot_mn(p%uu,forcing_rhs,uf)
-          call sum_mn_name(p%rho*uf,idiag_rufm)
-        endif
-        if (lmagnetic) then
-          if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
-            call cross(forcing_rhs,p%bb,fxb)
-            call sum_mn_name(fxb(:,1),idiag_fxbxm)
-            call sum_mn_name(fxb(:,2),idiag_fxbym)
-            call sum_mn_name(fxb(:,3),idiag_fxbzm)
-          endif
-        endif
-      endif
-!
-    endsubroutine forcing_continuous
 !***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)
 !

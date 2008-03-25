@@ -1,4 +1,19 @@
-! $Id: forcing.f90,v 1.135 2008-01-22 14:46:15 brandenb Exp $
+! $Id: forcing.f90,v 1.136 2008-03-25 08:31:41 brandenb Exp $
+
+!  This module contains routines both for delta-correlated
+!  and continuous forcing. The fcont pencil is only provided
+!  for continuous forcing.
+
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! MVAR CONTRIBUTION 0
+! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED fcont
+!
+!***************************************************************
 
 module Forcing
 
@@ -44,7 +59,22 @@ module Forcing
 ! Persistent stuff
   real :: tsforce=-10.
   real, dimension (3) :: location
-
+!
+!  continuous forcing variables
+!
+  logical :: lembed=.false.
+  character (len=labellen) :: iforcing_cont='ABC'
+  real :: ampl_ff=1.,width_fcont=1.,x1_fcont=0.,x2_fcont=0.
+  real :: kf_fcont=0.,omega_fcont=0.
+!
+!  auxiliary functions for continuous forcing function
+!
+  real, dimension (my) :: phi1_ff
+  real, dimension (mx) :: phi2_ff
+  real, dimension (mx) :: sinx,cosx,embedx
+  real, dimension (my) :: siny,cosy,embedy
+  real, dimension (mz) :: sinz,cosz,embedz
+!
   integer :: dummy              ! We cannot define empty namelists
   namelist /forcing_init_pars/ dummy
 
@@ -59,7 +89,10 @@ module Forcing
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
        iforce_profile,lscale_kvector_tobox, &
        force_direction, force_strength, &
-       Legendrel_min,Legendrel_max,nalpha,lhelical_test,fpre,helsign
+       Legendrel_min,Legendrel_max,nalpha,lhelical_test,fpre,helsign, &
+       lforcing_cont,iforcing_cont, &
+       lembed,k1_ff,ampl_ff,width_fcont,x1_fcont,x2_fcont, &
+       kf_fcont,omega_fcont
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
@@ -87,7 +120,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.135 2008-01-22 14:46:15 brandenb Exp $")
+           "$Id: forcing.f90,v 1.136 2008-03-25 08:31:41 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -154,6 +187,41 @@ module Forcing
         profx_ampl=.5*(1.-tanh((x(l1:l2)-xff_ampl)/wff_ampl))
         profx_hel=1.
       endif
+!
+!  at the first step, the sin and cos functions are calculated for all
+!  x,y,z points and are then saved and used for all subsequent steps
+!  and pencils
+!
+      if(ip<=6) print*,'forcing_cont'
+      if (iforcing_cont=='ABC') then
+        if (lroot) print*,'forcing_cont: ABC--calc sinx, cosx, etc'
+        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
+        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+        sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
+      elseif (iforcing_cont=='RobertsFlow') then
+        if (lroot) print*,'forcing_cont: Roberts Flow'
+        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
+        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+      elseif (iforcing_cont=='nocos') then
+        if (lroot) print*,'forcing_cont: nocos flow'
+          sinx=sin(k1_ff*x)
+        siny=sin(k1_ff*y)
+        sinz=sin(k1_ff*z)
+      elseif (iforcing_cont=='TG') then
+        if (lroot) print*,'forcing_cont: TG'
+        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
+        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+        cosz=cos(k1_ff*z)
+        if (lembed) then
+          embedx=.5+.5*tanh(x/width_fcont)*tanh((pi-x)/width_fcont)
+          embedy=.5+.5*tanh(y/width_fcont)*tanh((pi-y)/width_fcont)
+          embedz=.5+.5*tanh(z/width_fcont)*tanh((pi-z)/width_fcont)
+          sinx=embedx*sinx; cosx=embedx*cosx
+          siny=embedy*siny; cosy=embedy*cosy
+          cosz=embedz*cosz
+        endif
+      endif
+      if(ip<=6) print*,'forcing_cont: dt=',dt
 !
     endsubroutine initialize_forcing
 !***********************************************************************
@@ -2281,6 +2349,129 @@ module Forcing
       if (ip.le.9) print*,'hel_vec: forcing OK'
 !
     end subroutine hel_vec
+!***********************************************************************
+    subroutine calc_lforcing_cont_pars(f)
+!
+!  precalculate parameters that are new at each timestep,
+!  but the same for all pencils
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+!  for the AKA effect, calculate auxiliary functions phi1_ff and phi2_ff
+!
+      if (iforcing_cont=='AKA') then
+        phi1_ff=cos(kf_fcont*y+omega_fcont*t)
+        phi2_ff=cos(kf_fcont*x-omega_fcont*t)
+      endif
+!
+    endsubroutine calc_lforcing_cont_pars
+!***********************************************************************
+    subroutine pencil_criteria_forcing()
+!
+!  All pencils that the Forcing module depends on are specified here.
+!
+!  24-mar-08/axel: adapted from density.f90
+!
+      use Cdata
+!
+      if (lforcing_cont) lpenc_requested(i_fcont)=.true.
+!
+    endsubroutine pencil_criteria_forcing
+!***********************************************************************
+    subroutine pencil_interdep_forcing(lpencil_in)
+!
+!  Interdependency among pencils from the Forcing module is specified here.
+!
+!  24-mar-08/axel: adapted from density.f90
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+    endsubroutine pencil_interdep_forcing
+!***********************************************************************
+    subroutine calc_pencils_forcing(f,p)
+!
+!  Calculate forcing pencils.
+!
+!  24-mar-08/axel: adapted from density.f90
+!
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      real :: fact
+!
+      intent(inout) :: f,p
+!
+!  calculate forcing
+!
+      if (lpencil(i_fcont)) then
+        if (iforcing_cont=='ABC') then
+          fact=ampl_ff/sqrt(3.)
+          p%fcont(:,1)=fact*(sinz(n    )+cosy(m)    )
+          p%fcont(:,2)=fact*(sinx(l1:l2)+cosz(n)    )
+          p%fcont(:,3)=fact*(siny(m    )+cosx(l1:l2))
+        elseif (iforcing_cont=='RobertsFlow') then
+          fact=ampl_ff
+          p%fcont(:,1)=-fact*cosx(l1:l2)*siny(m)
+          p%fcont(:,2)=+fact*sinx(l1:l2)*cosy(m)
+          p%fcont(:,3)=+fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
+        elseif (iforcing_cont=='nocos') then
+          fact=ampl_ff
+          p%fcont(:,1)=fact*sinz(n)
+          p%fcont(:,2)=fact*sinx(l1:l2)
+          p%fcont(:,3)=fact*siny(m)
+        elseif (iforcing_cont=='TG') then
+          fact=2.*ampl_ff
+          p%fcont(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
+          p%fcont(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
+          p%fcont(:,3)=0.
+        elseif (iforcing_cont=='AKA') then
+          fact=sqrt(2.)*ampl_ff
+          p%fcont(:,1)=fact*phi1_ff(m    )
+          p%fcont(:,2)=fact*phi2_ff(l1:l2)
+          p%fcont(:,3)=fact*(phi1_ff(m)+phi2_ff(l1:l2))
+        endif
+      endif
+!
+    endsubroutine calc_pencils_forcing
+!***********************************************************************
+    subroutine forcing_continuous(df,p)
+!
+!  add a continuous forcing term (used to be in hydro.f90)
+!
+!  17-sep-06/axel: coded
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3) :: forcing_rhs,fxb
+      real, dimension (nx) :: uf
+      type (pencil_case) :: p
+      integer, save :: ifirst
+      integer :: j,jf,ifff,jtest
+      real :: fact
+!
+!  diagnostics
+!
+      if (ldiagnos) then
+        if (idiag_rufm/=0) then
+          call dot_mn(p%uu,forcing_rhs,uf)
+          call sum_mn_name(p%rho*uf,idiag_rufm)
+        endif
+        if (lmagnetic) then
+          if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
+            call cross(p%fcont,p%bb,fxb)
+            call sum_mn_name(fxb(:,1),idiag_fxbxm)
+            call sum_mn_name(fxb(:,2),idiag_fxbym)
+            call sum_mn_name(fxb(:,3),idiag_fxbzm)
+          endif
+        endif
+      endif
+!
+    endsubroutine forcing_continuous
 !***********************************************************************
     subroutine read_forcing_init_pars(unit,iostat)
       integer, intent(in) :: unit

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.413 2008-03-24 08:20:06 brandenb Exp $
+! $Id: cdata.f90,v 1.414 2008-03-25 08:31:41 brandenb Exp $
 
 module Cdata
 
@@ -257,7 +257,8 @@ module Cdata
 !
   logical :: ldensity_nolog=.false., lwrite_stratification=.false.
   logical :: ltestfield=.false.,ltestflow=.false.
-  logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false.
+  logical :: lmpicomm=.false., lforcing=.false., lforcing_cont=.false.
+  logical :: lpostproc=.false.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
   logical :: lwrite_slices=.false., lwrite_2daverages=.false.
   logical :: lwrite_slice_xy2,lwrite_slice_xy,lwrite_slice_xz,lwrite_slice_yz

@@ -1,11 +1,27 @@
-! $Id: noforcing.f90,v 1.22 2007-05-23 13:39:42 bingert Exp $
+! $Id: noforcing.f90,v 1.23 2008-03-25 08:31:42 brandenb Exp $
+
+!  This module contains routines both for delta-correlated
+!  and continuous forcing. The fcont pencil is only provided
+!  for continuous forcing.
+
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! MVAR CONTRIBUTION 0
+! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED fcont
+!
+!***************************************************************
 
 module Forcing
 
-!! Dummy module for hydro/mhd without forcing
+! Dummy module for hydro/mhd without forcing
 
   use Cdata
-  use General
+!  use General
+  use Sub, only: keep_compiler_quiet
   use Messages
 
   implicit none
@@ -40,7 +56,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.22 2007-05-23 13:39:42 bingert Exp $")
+           "$Id: noforcing.f90,v 1.23 2008-03-25 08:31:42 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -64,8 +80,62 @@ module Forcing
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if(ip==1) print*,f !(to remove compiler warnings)
+      call keep_compiler_quiet(f)
+!
     endsubroutine addforce
+!***********************************************************************
+    subroutine calc_lforcing_cont_pars(f)
+!
+!  precalculate parameters that are new at each timestep,
+!  but the same for all pencils
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_lforcing_cont_pars
+!***********************************************************************
+    subroutine pencil_criteria_forcing()
+!
+!  Dummy routine
+!
+    endsubroutine pencil_criteria_forcing
+!***********************************************************************
+    subroutine pencil_interdep_forcing(lpencil_in)
+!
+!  Dummy routine
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      call keep_compiler_quiet(lpencil_in)
+!
+    endsubroutine pencil_interdep_forcing
+!***********************************************************************
+    subroutine calc_pencils_forcing(f,p)
+!
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      if (lpencil(i_fcont)) p%fcont=0.
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_pencils_forcing
+!***********************************************************************
+    subroutine forcing_continuous(df,p)
+!
+!  dummy routine
+!
+      use Cdata
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      if (NO_WARN) print*,df,p
+!
+    endsubroutine forcing_continuous
 !***********************************************************************
     subroutine read_forcing_init_pars(unit,iostat)
       integer, intent(in) :: unit

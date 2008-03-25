@@ -1,6 +1,6 @@
 ### -*-Makefile-*- (for Emacs)
 ###
-### $Id: Makefile.depend,v 1.93 2008-03-23 13:10:06 wlyra Exp $
+### $Id: Makefile.depend,v 1.94 2008-03-25 08:31:41 brandenb Exp $
 ### Makefile dependencies for modular Pencil Code.
 ###
 ##
@@ -271,7 +271,7 @@ param_io.o: param_io.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(TIMESTEP_OBJ) 
 #
 register.o: register.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(physics) $(TIMEAVG_OBJ) prints.o equ.o $(GRID_OBJ) $(TESTPERTURB_OBJ)
 #
-$(EQU_OBJ): $(EQU_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(physics) boundcond.o $(POISSON_OBJ) $(GLOBAL_OBJ) $(PARTICLES_MAIN_OBJ) $(INTERSTELLAR_OBJ) $(GRID_OBJ) snapshot.o
+$(EQU_OBJ): $(EQU_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(physics) boundcond.o $(POISSON_OBJ) $(GLOBAL_OBJ) $(PARTICLES_MAIN_OBJ) $(INTERSTELLAR_OBJ) $(GRID_OBJ) snapshot.o $(FORCING_OBJ)
 #
 boundcond.o: boundcond.f90 cdata.o cparam.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) $(MAGNETIC_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(SHEAR_OBJ) $(SPECIAL_OBJ)
 #
@@ -342,7 +342,7 @@ $(TESTFIELD_OBJ): testfield.h $(TESTFIELD_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(
 #
 $(TESTPERTURB_OBJ): testperturb.h $(TESTPERTURB_SRC) $(COMMON_DEPS) $(TIMESTEP_OBJ) $(HYDRO_OBJ) equ.o
 #
-$(TESTFLOW_OBJ): testflow.h $(TESTFLOW_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(HYDRO_OBJ) $(FARRAY_OBJ)
+$(TESTFLOW_OBJ): testflow.h $(TESTFLOW_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(HYDRO_OBJ) $(FARRAY_OBJ) $(FORCING_OBJ)
 #
 $(INTERSTELLAR_OBJ): interstellar.h $(INTERSTELLAR_SRC) $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(EOS_OBJ)
 #

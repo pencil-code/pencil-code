@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.232 2008-03-23 08:29:45 brandenb Exp $
+! $Id: register.f90,v 1.233 2008-03-25 08:31:42 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -626,6 +626,7 @@ module Register
       use EquationOfState, only: pencil_criteria_eos
       use Hydro,           only: pencil_criteria_hydro
       use Density,         only: pencil_criteria_density
+      use Forcing,         only: pencil_criteria_forcing
       use Shock,           only: pencil_criteria_shock
       use Viscosity,       only: pencil_criteria_viscosity
       use Entropy,         only: pencil_criteria_entropy
@@ -651,6 +652,7 @@ module Register
       call pencil_criteria_grid()
       call pencil_criteria_borderprofiles()
       call pencil_criteria_density()
+      call pencil_criteria_forcing()
       call pencil_criteria_eos()
       call pencil_criteria_hydro()
       call pencil_criteria_shock()
@@ -693,6 +695,7 @@ module Register
       use EquationOfState, only: pencil_interdep_eos
       use Hydro, only: pencil_interdep_hydro
       use Density, only: pencil_interdep_density
+      use Forcing, only: pencil_interdep_forcing
       use Shock, only: pencil_interdep_shock
       use Viscosity, only: pencil_interdep_viscosity
       use Entropy, only: pencil_interdep_entropy
@@ -719,6 +722,7 @@ module Register
 !
       call pencil_interdep_grid(lpencil_in)
       call pencil_interdep_density(lpencil_in)
+      call pencil_interdep_forcing(lpencil_in)
       call pencil_interdep_eos(lpencil_in)
       call pencil_interdep_hydro(lpencil_in)
       call pencil_interdep_shock(lpencil_in)
