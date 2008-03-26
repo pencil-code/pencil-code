@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.414 2008-03-25 08:31:41 brandenb Exp $
+! $Id: cdata.f90,v 1.415 2008-03-26 13:15:27 nbabkovs Exp $
 
 module Cdata
 
@@ -292,7 +292,7 @@ module Cdata
   logical :: lselfgravity=.false.
   logical :: lmonolithic_io=.false.
   logical :: lrescaling=.false.
-  logical :: leos=.false., leos_idealgas=.false.
+  logical :: leos=.false., leos_idealgas=.false., leos_chemistry=.false.
   logical :: leos_ionization=.false.,leos_fixed_ionization=.false.
   logical :: leos_temperature_ionization=.false.
   logical :: llocal_iso=.false.
