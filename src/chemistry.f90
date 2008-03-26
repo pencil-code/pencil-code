@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.44 2008-03-25 12:15:18 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.45 2008-03-26 13:59:31 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -10,7 +10,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,nu,gradnu,cs2
+! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,nu,gradnu,cs2,rho1gpp,gmu1
 !***************************************************************
 
 module Chemistry
@@ -27,15 +27,15 @@ module Chemistry
 
   real :: Rgas, Rgas_unit_sys=1.
   real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full
-  
-
 
 !
 !  parameters related to chemical reactions
 !
   logical :: lreactions=.true.
   logical :: ladvection=.true.
-  logical :: lreaction_chemkin=.false.,ldiffusion_chemkin=.true.
+
+  logical :: lreaction_chemkin=.true.
+  logical :: ldiffusion_chemkin=.true.
 
   logical :: lkreactions_profile=.false.
   integer :: nreactions=0,nreactions1=0,nreactions2=0
@@ -80,7 +80,7 @@ module Chemistry
 ! run parameters
   namelist /chemistry_run_pars/ &
       lkreactions_profile,kreactions_profile,kreactions_profile_width, &
-      chem_diff,chem_diff_prefactor, nu_spec
+      chem_diff,chem_diff_prefactor, nu_spec,lreaction_chemkin, ldiffusion_chemkin, ladvection
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -167,11 +167,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.44 2008-03-25 12:15:18 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.45 2008-03-26 13:59:31 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.44 2008-03-25 12:15:18 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.45 2008-03-26 13:59:31 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -323,6 +323,7 @@ module Chemistry
 
        if (lcheminp) then
         lpenc_requested(i_mu1)=.true.
+        lpenc_requested(i_gmu1)=.true.
         lpenc_requested(i_pp)=.true.
         lpenc_requested(i_cp)=.true.
         lpenc_requested(i_cp1)=.true.
@@ -393,6 +394,9 @@ module Chemistry
             if (lpencil(i_mu1)) then 
               p%mu1=mu1_full(l1:l2,m,n)
             endif
+
+            if (lpencil(i_gmu1)) call grad(mu1_full,p%gmu1)
+
 !
 !  Mole fraction XX
 !
@@ -451,7 +455,17 @@ module Chemistry
 !  Sound speed
 !
 
-   if (lpencil(i_cs2)) p%cs2=p%cp*p%TT*p%gamma1
+   if (lpencil(i_cs2)) p%cs2=p%cp*p%TT*p%gamma1*p%mu1
+
+!
+!  Logarithmic pressure gradient
+!
+      if (lpencil(i_rho1gpp)) then
+        do i=1,3
+          p%rho1gpp(:,i) = p%gamma11*p%cs2*(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
+        enddo
+      endif
+
 
 !
 !  Viscosity of a mixture
@@ -966,18 +980,25 @@ module Chemistry
 !
 !  For the timestep calculation, need maximum diffusion
 !
+     
+
         if (lfirst.and.ldt) then
          if (.not. lcheminp) then
           diffus_chem=chem_diff*maxval(chem_diff_prefactor)*dxyz_2
          else
+         do j=1,nx
+           if (ldiffusion_chemkin) then
 !???????????????????????????????????????????????????????????????
 !  This expression should be discussed 
-!???????????????????????????????????????????????????????????????
-          do j=1,nx
+!??????????????????????????????????????????????????????????????? 
            diffus_chem(j)=maxval(Diff_full(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
-          enddo 
-         endif 
-        endif
+         else
+           diffus_chem(j)=0.
+         endif  
+        enddo
+       endif
+     endif
+
 !
 !  Calculate diagnostic quantities
 !
