@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.57 2008-03-21 12:23:06 nbabkovs Exp $
+! $Id: temperature_idealgas.f90,v 1.58 2008-03-26 11:50:33 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -62,7 +62,6 @@ module Entropy
   logical :: lheatc_tensordiffusion=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lfreeze_lnTTint=.false.,lfreeze_lnTText=.false.
-  logical :: lheatc_chemistry=.false.
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   logical :: lhcond_global=.false.
   logical :: lviscosity_heat=.true.
@@ -83,7 +82,7 @@ module Entropy
       lnTT_left,lnTT_right,lnTT_const,TT_const, &
       kx_lnTT,ky_lnTT,kz_lnTT,center1_x,center1_y,center1_z, &
       mpoly0,mpoly1,r_bcz, &
-      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width,lheatc_chemistry
+      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width
 
 ! run parameters
   namelist /entropy_run_pars/ &
@@ -92,7 +91,7 @@ module Entropy
       lheatc_chiconst_accurate,hcond0,lcalc_heat_cool,&
       lfreeze_lnTTint,lfreeze_lnTText,widthlnTT,mpoly0,mpoly1, &
       lhcond_global,lviscosity_heat,difflnTT_hyper, &
-      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width,Kgpara,Kgperp,lheatc_chemistry
+      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width,Kgpara,Kgperp
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
@@ -140,7 +139,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.57 2008-03-21 12:23:06 nbabkovs Exp $")
+           "$Id: temperature_idealgas.f90,v 1.58 2008-03-26 11:50:33 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -237,9 +236,6 @@ module Entropy
         case ('tensor-diffusion')
           lheatc_tensordiffusion=.true.
           if (lroot) print*, 'heat conduction: tensor diffusion'
-        case ('chemistry')
-          lheatc_chemistry=.true.
-          if (lroot) print*, 'heat conduction: chemistry case'
         case ('nothing')
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
@@ -482,13 +478,6 @@ module Entropy
       if (ldiff_hyper) lpenc_requested(i_del6lnTT)=.true.
 !
       if (ladvection_temperature) lpenc_requested(i_uglnTT)=.true.
-
-
-      if (lheatc_chemistry) then
-        lpenc_requested(i_glnTT)=.true.
-        lpenc_requested(i_del2lnTT)=.true.
-      endif
-
 !
 !  Diagnostics
 !
@@ -666,10 +655,6 @@ module Entropy
           dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
         endif
       endif
-! Natalia: thermal conduction for the chemistry case: lheatc_chemistry=true
-
-      if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
-
 !
 !  Hyper diffusion
 !
@@ -1012,38 +997,6 @@ module Entropy
       endif
 
     endsubroutine calc_heatcond
-!***********************************************************************
-    subroutine calc_heatcond_chemistry(f,df,p)
-!
-!  29-Feb-08/: Natalia
-!  calculate gamma*chi*(del2lnT+gradlnTT.grad(lnT+lnrho+lncp+lnchi))
-!
-  !    use EquationOfState, only: cp_full
-      use Sub
-
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real, dimension (nx) :: gradlnchi_tmp=0., chi_tmp=1. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      type (pencil_case) :: p
-
-      real, dimension(nx) :: g2TT,g2cp, g2TTrho, g2TTlnchi
-!
-!      call dot(p%glnTT,gradlnchi_tmp,g2TTlnchi)
-      call dot(p%glnTT,p%glnrho,g2TTrho)
-      call dot(p%glnTT,p%glnTT,g2TT)
-      call dot(p%glnTT,p%gradcp,g2cp)
-
-!
-!  Add heat conduction to RHS of temperature equation
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! while there is no data, one takes chi_tmp=1. and  gradlnchi_tmp=0.
-!----------------------------------------------
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  & 
-          + p%gamma*chi_tmp(:)*(p%del2lnTT+g2TT+g2TTrho+g2cp/p%cp+g2TTlnchi)
-
-    endsubroutine calc_heatcond_chemistry
 !***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
       integer, intent(in) :: unit
