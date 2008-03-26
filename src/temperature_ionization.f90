@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.34 2008-03-05 16:01:03 theine Exp $
+! $Id: temperature_ionization.f90,v 1.35 2008-03-26 13:27:44 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -38,7 +38,8 @@ module Entropy
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
-  logical :: lheatc_hyper3=.false.
+  logical :: lheatc_hyper3=.false.,lheatc_chemistry=.false.
+  logical :: lviscous_heat=.true.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=5) :: iinit_str
 
@@ -56,7 +57,8 @@ module Entropy
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
       heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
-      lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3
+      lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3,lheatc_chemistry, &
+      lviscous_heat
 
   ! other variables (needs to be consistent with reset list below)
     integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
@@ -92,7 +94,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.34 2008-03-05 16:01:03 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.35 2008-03-26 13:27:44 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -129,9 +131,11 @@ module Entropy
 !  Check any module dependencies
 !
       if (.not.leos_temperature_ionization) then
+        if (.not.leos_chemistry)  then
         call fatal_error('initialize_entropy','EOS/=noeos but'//&
                          'temperature_ionization already include'//&
                          'an EQUATION OF STATE for the fluid')
+        endif
       endif
 !
 !  Check whether we want heating/cooling
@@ -444,7 +448,7 @@ module Entropy
 !
 !  Calculate viscous contribution to temperature
 !
-      if (lviscosity) call calc_viscous_heat(f,df,p,Hmax)
+      if (lviscosity .and. lviscous_heat) call calc_viscous_heat(f,df,p,Hmax)
 
 !
 !  Various heating/cooling mechanisms
@@ -466,8 +470,12 @@ module Entropy
 !  Need to add left-hand-side of the continuity equation (see manual)
 !
       if (ldensity) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma1*p%divu/p%delta
+      if (.not. lchemistry)  df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma1*p%divu/p%delta
       endif
+
+! Natalia: thermal conduction for the chemistry case: lheatc_chemistry=true
+
+      if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
 
 !
 !  Calculate temperature related diagnostics
@@ -672,6 +680,38 @@ module Entropy
       endif
 !
     endsubroutine rprint_entropy
+!***********************************************************************
+    subroutine calc_heatcond_chemistry(f,df,p)
+!
+!  29-Feb-08/: Natalia
+!  calculate gamma*chi*(del2lnT+gradlnTT.grad(lnT+lnrho+lncp+lnchi))
+!
+  !    use EquationOfState, only: cp_full
+      use Sub
+
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension (nx) :: gradlnchi_tmp=0., chi_tmp=1. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      type (pencil_case) :: p
+
+      real, dimension(nx) :: g2TT,g2cp, g2TTrho, g2TTlnchi
+!
+!      call dot(p%glnTT,gradlnchi_tmp,g2TTlnchi)
+      call dot(p%glnTT,p%glnrho,g2TTrho)
+      call dot(p%glnTT,p%glnTT,g2TT)
+      call dot(p%glnTT,p%gradcp,g2cp)
+
+!
+!  Add heat conduction to RHS of temperature equation
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! while there is no data, one takes chi_tmp=1. and  gradlnchi_tmp=0.
+!----------------------------------------------
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  & 
+          + p%gamma*chi_tmp(:)*(p%del2lnTT+g2TT+g2TTrho+g2cp/p%cp+g2TTlnchi)
+
+    endsubroutine calc_heatcond_chemistry
 !***********************************************************************
     subroutine calc_heatcond_ADI(finit,f)
 
