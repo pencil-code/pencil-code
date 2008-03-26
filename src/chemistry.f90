@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.45 2008-03-26 13:59:31 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.46 2008-03-26 15:36:18 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -72,10 +72,13 @@ module Chemistry
   integer, dimension(7) :: ia1,ia2
   real,    allocatable, dimension(:) :: B_n, alpha_n, E_an
 
+  logical :: Natalia_thoughts=.false.
+
+
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2
+      amplchemk,amplchemk2, Natalia_thoughts
 
 ! run parameters
   namelist /chemistry_run_pars/ &
@@ -167,11 +170,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.45 2008-03-26 13:59:31 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.46 2008-03-26 15:36:18 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.45 2008-03-26 13:59:31 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.46 2008-03-26 15:36:18 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -922,6 +925,19 @@ module Chemistry
         call grad(f,ichemspec(k),gchemspec) 
         call dot_mn(p%uu,gchemspec,ugchemspec)
         df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))-ugchemspec
+!
+!this are Natalia's thoughts, which should be discussed later!
+!
+       if (Natalia_thoughts) then
+
+         do j=l1,l2
+          if (f(j,m,n,ichemspec(k))+df(j,m,n,ichemspec(k)) < 0.) then 
+            df(j,m,n,ichemspec(k))=0.
+          endif
+         enddo
+
+       endif
+
       endif
 !
 !  diffusion operator
