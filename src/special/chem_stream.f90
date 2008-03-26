@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.4 2008-03-26 13:07:39 nbabkovs Exp $
+! $Id: chem_stream.f90,v 1.5 2008-03-26 13:08:38 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -134,11 +134,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.4 2008-03-26 13:07:39 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.5 2008-03-26 13:08:38 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.4 2008-03-26 13:07:39 nbabkovs Exp $")
+           "$Id: chem_stream.f90,v 1.5 2008-03-26 13:08:38 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -595,7 +595,7 @@ module Special
 
       elseif (bc%location==iBC_X_TOP) then
       ! top boundary
-        do i=1,nghost; f(l2+i,:,:,vr)=2*f(l2,:,:,vr)+sgn*f(l2-i,:,:,vr); enddo
+        do i=1,nghost; f(l2+i,:,:,vr)=f(l2,:,:,vr)!2*f(l2,:,:,vr)+sgn*f(l2-i,:,:,vr); enddo
       else
         print*, "bc_BL_x: ", bc%location, " should be `top(", &
                         iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
