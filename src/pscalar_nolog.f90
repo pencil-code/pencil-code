@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.63 2007-11-21 13:56:36 wlyra Exp $
+! $Id: pscalar_nolog.f90,v 1.64 2008-03-26 13:21:55 pkapyla Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc.
@@ -74,7 +74,7 @@ module Pscalar
   integer :: idiag_cc9m=0, idiag_cc10m=0
   integer :: idiag_gcc1m=0, idiag_gcc2m=0, idiag_gcc3m=0, idiag_gcc4m=0
   integer :: idiag_gcc6m=0, idiag_gcc7m=0, idiag_gcc8m=0, idiag_gcc9m=0
-  integer :: idiag_ccmx=0, idiag_ccmy=0, idiag_ccmz=0
+  integer :: idiag_ccmx=0, idiag_ccmy=0, idiag_ccmz=0, idiag_ccglnrm=0
 
   contains
 
@@ -113,7 +113,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.63 2007-11-21 13:56:36 wlyra Exp $")
+           "$Id: pscalar_nolog.f90,v 1.64 2008-03-26 13:21:55 pkapyla Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -329,6 +329,7 @@ module Pscalar
           idiag_gcc4m/=0 .or. idiag_gcc5m/=0 .or. idiag_gcc6m/=0 .or. &
           idiag_gcc7m/=0 .or. idiag_gcc8m/=0 .or. idiag_gcc9m/=0 .or. &
           idiag_gcc10m/=0) lpenc_diagnos(i_gcc1)=.true.
+      if (idiag_ccglnrm/=0) lpenc_requested(i_glnrho)=.true.
 !
     endsubroutine pencil_criteria_pscalar
 !***********************************************************************
@@ -543,6 +544,7 @@ module Pscalar
         if (idiag_gcc8m/=0)   call sum_mn_name(p%gcc1**8,idiag_gcc8m)
         if (idiag_gcc9m/=0)   call sum_mn_name(p%gcc1**9,idiag_gcc9m)
         if (idiag_gcc10m/=0)  call sum_mn_name(p%gcc1**10,idiag_gcc10m)
+        if (idiag_ccglnrm/=0) call sum_mn_name(p%cc*p%glnrho(:,3),idiag_ccglnrm)
       endif
 !
       if (l1ddiagnos) then
@@ -625,7 +627,7 @@ module Pscalar
         idiag_cc6m=0; idiag_cc7m=0; idiag_cc8m=0; idiag_cc9m=0; idiag_cc10m=0
         idiag_gcc1m=0; idiag_gcc2m=0; idiag_gcc3m=0; idiag_gcc4m=0
         idiag_gcc5m=0; idiag_gcc6m=0; idiag_gcc7m=0; idiag_gcc8m=0
-        idiag_gcc9m=0; idiag_gcc10m=0
+        idiag_gcc9m=0; idiag_gcc10m=0; idiag_ccglnrm=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -666,6 +668,7 @@ module Pscalar
         call parse_name(iname,cname(iname),cform(iname),'gcc8m',idiag_gcc8m)
         call parse_name(iname,cname(iname),cform(iname),'gcc9m',idiag_gcc9m)
         call parse_name(iname,cname(iname),cform(iname),'gcc10m',idiag_gcc10m)
+        call parse_name(iname,cname(iname),cform(iname),'ccglnrm',idiag_ccglnrm)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -725,6 +728,7 @@ module Pscalar
         write(3,*) 'i_gcc8m=',idiag_gcc8m
         write(3,*) 'i_gcc9m=',idiag_gcc9m
         write(3,*) 'i_gcc10m=',idiag_gcc10m
+        write(3,*) 'i_ccglnrm=',idiag_ccglnrm
         write(3,*) 'ilncc=0'
         write(3,*) 'icc=',icc
       endif

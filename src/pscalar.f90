@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.72 2007-11-21 13:56:36 wlyra Exp $
+! $Id: pscalar.f90,v 1.73 2008-03-26 13:21:55 pkapyla Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -82,6 +82,7 @@ module Pscalar
   integer :: idiag_ccmz=0       ! DIAG_DOC:
   integer :: idiag_ccmy=0       ! DIAG_DOC:
   integer :: idiag_ccmx=0       ! DIAG_DOC:
+  integer :: idiag_ccglnrm=0    ! DIAG_DOC:
 
   contains
 
@@ -114,7 +115,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.72 2007-11-21 13:56:36 wlyra Exp $")
+           "$Id: pscalar.f90,v 1.73 2008-03-26 13:21:55 pkapyla Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -240,6 +241,7 @@ module Pscalar
           lpenc_diagnos(i_lncc)=.true.
       if (idiag_ccmz/=0 .or. idiag_ccmy/=0 .or. idiag_ccmx/=0) &
           lpenc_diagnos(i_cc)=.true.
+      if (idiag_cclnrm/=0) lpenc_requested(i_glnrho)=.true.
 !
     endsubroutine pencil_criteria_pscalar
 !***********************************************************************
@@ -373,6 +375,7 @@ module Pscalar
         if (idiag_Cz4m/=0)   call sum_mn_name(p%rho*p%cc*z(n)**4,idiag_Cz4m)
         if (idiag_Crmsm/=0)  &
             call sum_mn_name((p%rho*p%cc)**2,idiag_Crmsm,lsqrt=.true.)
+        if (idiag_ccglnrm/=0) call sum_mn_name(p%cc*p%glnrho(:,3),idiag_ccglnrm)
       endif
 !
       if (l1ddiagnos) then
@@ -453,7 +456,7 @@ module Pscalar
         idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0
         idiag_Crmsm=0; idiag_mcct=0
         idiag_lnccmz=0; idiag_lnccmy=0; idiag_lnccmx=0
-        idiag_ccmz=0; idiag_ccmy=0; idiag_ccmx=0
+        idiag_ccmz=0; idiag_ccmy=0; idiag_ccmx=0; idiag_ccglnrm=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -469,6 +472,7 @@ module Pscalar
         call parse_name(iname,cname(iname),cform(iname),'Cz2m',idiag_Cz2m)
         call parse_name(iname,cname(iname),cform(iname),'Cz4m',idiag_Cz4m)
         call parse_name(iname,cname(iname),cform(iname),'Crmsm',idiag_Crmsm)
+        call parse_name(iname,cname(iname),cform(iname),'ccglnrm',idiag_ccglnrm)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -511,6 +515,7 @@ module Pscalar
         write(3,*) 'i_Cz2m=',idiag_Cz2m
         write(3,*) 'i_Cz4m=',idiag_Cz4m
         write(3,*) 'i_Crmsm=',idiag_Crmsm
+        write(3,*) 'i_ccglnrm=',idiag_ccglnrm
         write(3,*) 'ilncc=',ilncc
         write(3,*) 'icc=0'
       endif
