@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.18 2008-03-25 12:16:44 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.19 2008-03-26 13:29:34 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -10,8 +10,8 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED lnTT,cp1tilde,glnTT,TT,TT1,gTT
-! PENCILS PROVIDED hss,hlnTT,del2ss,del6ss,del2lnTT,del6lnTT,rho1gpp
-! PENCILS PROVIDED yH,ee,ss,pp
+! PENCILS PROVIDED hss,hlnTT,del2ss,del6ss,del2lnTT,del6lnTT
+! PENCILS PROVIDED yH,ee,ss,pp,delta
 !
 !***************************************************************
 
@@ -99,7 +99,7 @@ module EquationOfState
       first = .false.
    !
        leos=.true.
-   !   leos_idealgas=.true.
+       leos_chemistry=.true.
 
 
   !    iyH = 0
@@ -112,7 +112,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.18 2008-03-25 12:16:44 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.19 2008-03-26 13:29:34 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
