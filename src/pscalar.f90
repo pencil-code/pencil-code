@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.73 2008-03-26 13:21:55 pkapyla Exp $
+! $Id: pscalar.f90,v 1.74 2008-03-27 04:05:59 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -82,7 +82,7 @@ module Pscalar
   integer :: idiag_ccmz=0       ! DIAG_DOC:
   integer :: idiag_ccmy=0       ! DIAG_DOC:
   integer :: idiag_ccmx=0       ! DIAG_DOC:
-  integer :: idiag_ccglnrm=0    ! DIAG_DOC:
+  integer :: idiag_ccglnrm=0    ! DIAG_DOC: $\left<c\nabla_z\varrho\right>$
 
   contains
 
@@ -115,7 +115,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.73 2008-03-26 13:21:55 pkapyla Exp $")
+           "$Id: pscalar.f90,v 1.74 2008-03-27 04:05:59 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -241,7 +241,7 @@ module Pscalar
           lpenc_diagnos(i_lncc)=.true.
       if (idiag_ccmz/=0 .or. idiag_ccmy/=0 .or. idiag_ccmx/=0) &
           lpenc_diagnos(i_cc)=.true.
-      if (idiag_cclnrm/=0) lpenc_requested(i_glnrho)=.true.
+      if (idiag_ccglnrm/=0) lpenc_requested(i_glnrho)=.true.
 !
     endsubroutine pencil_criteria_pscalar
 !***********************************************************************
