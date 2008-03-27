@@ -1,4 +1,4 @@
-! $Id: fourier_fft.f90,v 1.7 2007-10-04 07:08:43 ajohan Exp $
+! $Id: fourier_fft.f90,v 1.8 2008-03-27 22:26:25 nilshau Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -69,6 +69,62 @@ module Fourier
       if (NO_WARN) print*, a_re, a_im, linv
 !
     endsubroutine fourier_transform_xz
+!***********************************************************************
+    subroutine fourier_transform_xy(a_re,a_im,linv)
+!
+!  Subroutine to do Fourier transform in the x- and y-directions
+!
+      real, dimension(nx,ny) :: a_re,a_im
+      logical, optional :: linv
+!
+      call fatal_error('fourier_transform_xy', &
+          'this sub is not available in fourier_fft.f90!')
+!
+      if (NO_WARN) print*, a_re, a_im, linv
+!
+    endsubroutine fourier_transform_xy
+!***********************************************************************
+    subroutine fourier_transform_shear_xy(a_re,a_im,linv)
+!
+!  Subroutine to do Fourier transform in the x- and y-directions
+!
+      real, dimension(nx,ny,nz) :: a_re,a_im
+      logical, optional :: linv
+!
+      call fatal_error('fourier_transform_xy_shear', &
+          'this sub is not available in fourier_fft.f90!')
+!
+      if (NO_WARN) print*, a_re, a_im, linv
+!
+    endsubroutine fourier_transform_shear_xy
+!***********************************************************************
+    subroutine fourier_transform_xy_xy(a_re,a_im,linv)
+!
+!  Subroutine to do Fourier transform in the x- and y-directions
+!
+      real, dimension(nx,ny) :: a_re,a_im
+      logical, optional :: linv
+!
+      call fatal_error('fourier_transform_xy_xy', &
+          'this sub is not available in fourier_fft.f90!')
+!
+      if (NO_WARN) print*, a_re, a_im, linv
+!
+    endsubroutine fourier_transform_xy_xy
+!***********************************************************************
+    subroutine fourier_transform_xy_xy_other(a_re,a_im,linv)
+!
+!  Subroutine to do Fourier transform in the x- and y-directions
+!
+      real, dimension(nx,ny) :: a_re,a_im
+      logical, optional :: linv
+!
+      call fatal_error('fourier_transform_xy_xy_other', &
+          'this sub is not available in fourier_fft.f90!')
+!
+      if (NO_WARN) print*, a_re, a_im, linv
+!
+    endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
     subroutine fourier_transform_x(a_re,a_im,linv)
 !
