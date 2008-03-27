@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.7 2008-03-26 15:35:00 nbabkovs Exp $
+! $Id: chem_stream.f90,v 1.8 2008-03-27 12:14:21 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -134,11 +134,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.7 2008-03-26 15:35:00 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.8 2008-03-27 12:14:21 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.7 2008-03-26 15:35:00 nbabkovs Exp $")
+           "$Id: chem_stream.f90,v 1.8 2008-03-27 12:14:21 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -523,9 +523,9 @@ module Special
 
      f(:,:,:,4)=log(rho_init)
      f(:,:,:,5)=log(T_init)
-     f(:,:,:,ichemspec(nchemspec))=Y3_init
+     f(l1:mx,:,:,ichemspec(nchemspec))=Y3_init
     ! f(:,:,:,ichemspec(nchemspec-1))=Y2_init
-    ! f(:,:,:,ichemspec(nchemspec-2))=Y1_init*1e-5
+    ! f(:,:,:,ichemspec(nchemspec-2))=Y1_init
 
      do i=0,nghost
        f(i,:,:,ichemspec(nchemspec-1))=Y2_init*((l1+1.-i)/l1)**2
@@ -589,6 +589,7 @@ module Special
                  f(l1-i,k,:,vr)=value1
                 endif 
                 if (vr == ichemspec(nchemspec))   f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4
+            !   f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr)
              endif
           enddo
          enddo
