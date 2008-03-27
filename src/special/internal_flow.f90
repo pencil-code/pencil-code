@@ -1,4 +1,4 @@
-! $Id: internal_flow.f90,v 1.4 2008-03-14 15:14:38 nilshau Exp $
+! $Id: internal_flow.f90,v 1.5 2008-03-27 17:24:22 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -31,19 +31,19 @@ module Special
 
   integer :: dummy
   character(len=24) :: initspecial='nothing'
-  real :: central_vel=0,ampluu_spec=0
+  real :: central_vel=0,ampluu_spec=0,Re_tau=180
 
 !!  character, len(50) :: initcustom
 
 ! input parameters
   namelist /internal_flow_init_pars/ &
-       initspecial,central_vel,ampluu_spec
+       initspecial,central_vel,ampluu_spec,Re_tau
   ! run parameters
   namelist /internal_flow_run_pars/  &
        dummy
 
   integer :: idiag_turbint=0
-  
+  integer :: idiag_uxm_central,idiag_tau_w
 
   contains
 
@@ -84,11 +84,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.4 2008-03-14 15:14:38 nilshau Exp $
+!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.5 2008-03-27 17:24:22 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: internal_flow.f90,v 1.4 2008-03-14 15:14:38 nilshau Exp $")
+           "$Id: internal_flow.f90,v 1.5 2008-03-27 17:24:22 nilshau Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -160,6 +160,8 @@ module Special
                *(1-(yy(l1:l2,m1:m2,n1:n2)-xyz0(2)-height)**2/h2)
         enddo
         call poiseulle_flowx_wally(f,xx,yy,zz,central_vel)
+      case('velocity_defect_xy')
+        call velocity_defect_flowx_wally(f,xx,yy,zz,central_vel,Re_tau)
       case default
         !
         !  Catch unknown values
@@ -232,6 +234,7 @@ module Special
       use Mpicomm
       use Sub
       use Global
+      use Deriv, only: der_pencil
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -241,6 +244,9 @@ module Special
       real, dimension (nx) :: ufluct2
       type (pencil_case) :: p
       integer :: i,j
+      real, dimension (my) :: tmp,du_mean_dy
+      real :: tau_tmp
+      
 
 !
       intent(in) :: f,p
@@ -274,8 +280,32 @@ module Special
           call dot2(ufluct,ufluct2)
           call sum_mn_name(ufluct2,idiag_turbint)
         endif
+        if (idiag_uxm_central/=0) then
+          if (m==m2.and.n==n1) then
+            fname(idiag_uxm_central)=maxval(mean_u)
+            itype_name(idiag_uxm_central)=ilabel_max
+          endif
+!          call max_mn_name(meanx_uu(1),idiag_uxm_central)
+        endif
+        if (idiag_tau_w/=0) then
+          if (m==m1.and.n==n1) then
+            if (ipy==0) then
+              tmp=0
+              tmp(m1:m2)=mean_u(1:ny,1)
+              call der_pencil(2,tmp,du_mean_dy)
+              print*,'nu and rhom is hardcoded in internal_flow.f90: dspecial_dt'
+              tau_tmp=du_mean_dy(m1+3)*1.5e-5*1.2
+!              tau_tmp=-(mean_u(2,1)-mean_u(1,1))/(y(l1+1)-y(l1+0))
+            else
+              tau_tmp=0
+            endif
+            !call max_mn_name(tau_tmp,idiag_tau_w)
+            itype_name(idiag_tau_w)=ilabel_max
+            fname(idiag_tau_w)=tau_tmp
+          endif
+        endif
       endif
-
+!
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
@@ -385,15 +415,21 @@ module Special
 !
       if (lreset) then
         idiag_turbint=0
+        idiag_tau_w=0
+        idiag_uxm_central=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'turbint',idiag_turbint)
+        call parse_name(iname,cname(iname),cform(iname),'tau_w',idiag_tau_w)
+        call parse_name(iname,cname(iname),cform(iname),'uxm_central',idiag_uxm_central)
       enddo
 !
 !  write column where which magnetic variable is stored
       if (lwr) then
         write(3,*) 'i_turbint=',idiag_turbint
+        write(3,*) 'i_tau_w=',idiag_tau_w
+        write(3,*) 'i_uxm_central=',idiag_uxm_central
       endif
 !
     endsubroutine rprint_special
@@ -629,6 +665,48 @@ module Special
            (1-(yy(l1:l2,m1:m2,n1:n2)-xyz0(2)-height)**2/h2)
       !
     end subroutine poiseulle_flowx_wally
+!***********************************************************************
+    subroutine velocity_defect_flowx_wally(f,xx,yy,zz,central_vel,Re_tau)
+      !
+      ! Set initial turbulent flow in x-direction.
+      ! The walls are in the y-direction.
+      ! This method is based on the velocity defect law of Milikan (1938).
+      ! More data on this can be found in e.g. Pope's book on turbulent flows.
+      !
+      ! 2008.03.22: Nils Erland (Coded)
+      !
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz), intent(in) :: xx,yy,zz
+      real, intent(in) :: central_vel,Re_tau
+      real :: B1,kappa,utau,nu, height, h2
+      integer :: i,j,k
+      !
+      height=Lxyz(2)/2
+      h2=height**2
+      B1=0.2
+      kappa=0.41
+      print*,'WARNING!!!!! nu is hardcoded - this must be fixed!'
+      nu=1.5e-5
+      utau=Re_tau*nu/height
+      !
+      do j=m1,m2
+        if (yy(l1,j,n1)<xyz0(2)+height) then
+          ! Lower wall
+          f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)&
+               +central_vel&
+               +utau*log((yy(l1:l2,j,n1:n2)-xyz0(2))/height)/kappa&
+               -B1*utau
+        else
+          ! Upper wall
+          f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)&
+               +central_vel&
+               +utau*log(-((yy(l1:l2,j,n1:n2)-xyz0(2))-Lxyz(2))/height)/kappa&
+               -B1*utau
+        endif
+        !
+      enddo
+      !
+    end subroutine velocity_defect_flowx_wally
 !***********************************************************************
     subroutine bc_poi_x(f,sgn,topbot,j,rel,val)
 !
