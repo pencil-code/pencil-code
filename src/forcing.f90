@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.136 2008-03-25 08:31:41 brandenb Exp $
+! $Id: forcing.f90,v 1.137 2008-03-27 05:10:09 brandenb Exp $
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -120,7 +120,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.136 2008-03-25 08:31:41 brandenb Exp $")
+           "$Id: forcing.f90,v 1.137 2008-03-27 05:10:09 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -2458,7 +2458,7 @@ module Forcing
 !
       if (ldiagnos) then
         if (idiag_rufm/=0) then
-          call dot_mn(p%uu,forcing_rhs,uf)
+          call dot_mn(p%uu,p%fcont,uf)
           call sum_mn_name(p%rho*uf,idiag_rufm)
         endif
         if (lmagnetic) then
