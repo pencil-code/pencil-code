@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.35 2008-03-26 13:27:44 nbabkovs Exp $
+! $Id: temperature_ionization.f90,v 1.36 2008-03-27 13:56:48 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -94,7 +94,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.35 2008-03-26 13:27:44 nbabkovs Exp $")
+           "$Id: temperature_ionization.f90,v 1.36 2008-03-27 13:56:48 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -461,6 +461,11 @@ module Entropy
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_hyper3) call calc_heatcond_hyper3(df,p)
 
+! Natalia: thermal conduction for the chemistry case: lheatc_chemistry=true
+
+      if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
+
+
 !
 !  Interstellar radiative cooling and UV heating
 !
@@ -473,9 +478,6 @@ module Entropy
       if (.not. lchemistry)  df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma1*p%divu/p%delta
       endif
 
-! Natalia: thermal conduction for the chemistry case: lheatc_chemistry=true
-
-      if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
 
 !
 !  Calculate temperature related diagnostics
@@ -691,10 +693,10 @@ module Entropy
 
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension (nx) :: gradlnchi_tmp=0., chi_tmp=1. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      real, dimension (nx) :: gradlnchi_tmp=0., chi_tmp=1e-5 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       type (pencil_case) :: p
 
-      real, dimension(nx) :: g2TT,g2cp, g2TTrho, g2TTlnchi
+      real, dimension(nx) :: g2TT,g2cp, g2TTrho=0., g2TTlnchi=0.
 !
 !      call dot(p%glnTT,gradlnchi_tmp,g2TTlnchi)
       call dot(p%glnTT,p%glnrho,g2TTrho)
