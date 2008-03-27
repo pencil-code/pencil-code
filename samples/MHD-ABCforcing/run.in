@@ -1,0 +1,25 @@
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2008-03-27 05:03:39 brandenb Exp $',
+  nt=51, it1=10, cdt=0.4, isave=20, itorder=3
+  dsnap=20., dvid=20., ialive=1
+  dspec=5., ou_spec=T, ab_spec=T
+  lpencil_check=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lforcing_cont_uu=T
+/
+&density_run_pars
+/
+&forcing_run_pars
+  lforcing_cont=T, ampl_ff=1e-4, k1_ff=1.
+/
+&magnetic_run_pars
+  b_ext=.0,.1,.0
+  eta=1e-1
+  !bthresh_per_brms=2.8
+/
+&viscosity_run_pars
+  nu=1e-1
+/

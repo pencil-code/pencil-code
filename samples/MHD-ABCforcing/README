@@ -1,0 +1,21 @@
+Directory:
+    ${PENCIL_HOME}/samples/MHD-ABCforcing
+CVS-Id:
+    $Id: README,v 1.1 2008-03-27 05:03:39 brandenb Exp $
+Maintainer:
+    Axel Brandenburg <brandenb@nordita.org>
+Added:
+    27-Mar-2008
+Status:
+    succeeds since 27-Mar-2008
+Recommended resolution:
+    32x32x32 for nu=eta=1e-1 is used here and is fine. Somewhat smaller
+    values would probably also work.
+Comments:
+    MHD with continuous ABC-flow driving. Unlike helical-MHDturb, which
+    uses delta-correlated forcing that is added only at the end of each
+    timestep, here the forcing is added on the rhs of the momentum eqn.
+References:
+    Sur, S., Subramanian, K., & Brandenburg, A.: 2007, ``Kinetic and
+    magnetic alpha effects in nonlinear dynamo theory,'' Monthly Notices
+    Roy. Astron. Soc. 376, 1238-1250 (astro-ph/0701001)
