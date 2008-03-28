@@ -2,7 +2,7 @@
 # Name:   pc_xmlexport
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Started:   04-Aug-2005
-# CVS: $Id: pc_xmlexport,v 1.4 2006-03-14 10:40:38 mkorpi Exp $
+# CVS: $Id: pc_xmlexport,v 1.5 2008-03-28 12:54:55 brandenb Exp $
 # Usage:
 #   Hello
 
@@ -132,6 +132,8 @@ cat <<EOF
     `module INITCOND_SPEC` 
     `module SHOCK` 
     `module TESTFIELD` 
+    `module TESTFLOW` 
+    `module TESTPERTURB` 
     `module GRAVITY` 
     `module FORCING` 
     `module SHEAR` 

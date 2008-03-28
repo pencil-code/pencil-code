@@ -1,7 +1,7 @@
 #!/bin/sh
-#$Id: pc_news,v 1.5 2008-03-09 05:57:09 brandenb Exp $
+#$Id: pc_news,v 1.6 2008-03-28 12:54:55 brandenb Exp $
 echo ""
-echo "==> The Pencil Code User Meeting 2008 will be held in Leiden."
+echo "==> The Pencil Code User Meeting 2008 will be held in Leiden 19-22 Aug."
 echo "       http://www.strw.leidenuniv.nl/~ajohan/pencil2008/index.php"
 echo ""
 echo "    For details, talk, and photos from the last meeting, see"
