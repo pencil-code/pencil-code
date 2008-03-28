@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.90 2008-03-24 03:29:37 wlyra Exp $
+! $Id: viscosity.f90,v 1.91 2008-03-28 03:00:49 steveb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -109,7 +109,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.90 2008-03-24 03:29:37 wlyra Exp $")
+           "$Id: viscosity.f90,v 1.91 2008-03-28 03:00:49 steveb Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -487,6 +487,11 @@ module Viscosity
       endif
       if ( (idiag_meshRemax/=0 .or. idiag_dtnu/=0) .and. lvisc_nu_shock) &
           lpenc_diagnos(i_shock)=.true.
+      if (lthermo_ppd) then
+         lpenc_diagnos(i_rho)=.true.
+         lpenc_requested(i_cv1)=.true.
+         lpenc_requested(i_TT1)=.true.
+      endif
 !
     endsubroutine pencil_criteria_viscosity
 !***********************************************************************
@@ -1088,5 +1093,45 @@ module Viscosity
 !
     end subroutine calc_viscous_force
 !***********************************************************************
+    subroutine calc_visc_heat_ppd(f,df,p)
+!    
+!  Calculates viscous dissipation term from D'Angelo et al. (2003)
+! 
+!  03/08 steveb
+! 
+      use Cdata
+      use Sub
+      use Gravity, only: acceleration
 
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+
+      real, dimension (nx) :: diss
+      real, dimension (nx) :: rr_sph,rr_cyl,g_r,OO2
+      integer :: i
+
+!
+! 'Dissipative' heating term Y=9/4 \Sigma \nu \Omega_K^2
+!  Need to get correct angular velocity first
+!
+      call get_radial_distance(rr_sph,rr_cyl)
+      call acceleration(g_r)
+      ! should generalize this to non-cartesian; see hydro L1937
+      OO2=max(-g_r/rr_cyl,0.)
+!
+! only works for 2-D r-phi disks
+! this goes into entropy equation, which divides by \rho, so no density here
+! this is really surface density, though
+!
+      if(nzgrid==1) then
+         diss = 9./4.*nu*OO2
+      else
+         call fatal_error("calc_visc_heat_ppd","dissipation only implemented for 2d-disk")
+      endif
+
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*diss
+
+    End subroutine calc_visc_heat_ppd
+!***********************************************************************
 endmodule Viscosity
