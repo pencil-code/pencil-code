@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.236 2008-03-21 22:59:30 wlyra Exp $
+! $Id: initcond.f90,v 1.237 2008-03-28 03:06:13 steveb Exp $
 
 module Initcond
 
@@ -3175,9 +3175,10 @@ module Initcond
           elseif (ltemperature) then
             f(:,m,n,ilnTT)=log(cs2*cp1/gamma1)
           elseif (lentropy) then
-            call stop_it("set_thermodynamical_variables: Wlad got lazy and "//&
-                 "didn't want to calculate the entropy for the given "//&
-                 "sound speed")
+!            call stop_it("set_thermodynamical_variables: Wlad got lazy and "//&
+!                 "didn't want to calculate the entropy for the given "//&
+!                 "sound speed")
+            f(:,m,n,iss)=gamma1/cp1*(log(cs2/cs20)-(gamma-1.))
           else
             call stop_it("No thermodynamical variable. Choose if you want "//&
                  "a local thermodynamical approximation "//&
