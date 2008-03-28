@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.380 2008-03-24 22:49:47 wlyra Exp $
+! $Id: density.f90,v 1.381 2008-03-28 03:11:14 steveb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -138,7 +138,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.380 2008-03-24 22:49:47 wlyra Exp $")
+           "$Id: density.f90,v 1.381 2008-03-28 03:11:14 steveb Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1851,7 +1851,7 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx)   :: pot,tmp1,tmp2,cs2
-      real, dimension (mx)   :: rr_sph,rr,rr_cyl,lnrhomid!,cs2
+      real, dimension (mx)   :: rr_sph,rr,rr_cyl,lnrhomid
       real                   :: ptlaw,cp1,rmid
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: i
@@ -1884,18 +1884,18 @@ module Density
 !
           call get_radial_distance(rr_sph,rr_cyl)
           if (lexponential_smooth) then
-            !radial_percent_smooth = percentage of the grid
-            !that the smoothing is applied
-            rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
-            lnrhomid=log(rho0) &
-                 + plaw*log((1-exp( -((rr_cyl-rshift)/rmid)**2 ))/rr_cyl)
-           else
-            lnrhomid=log(rho0)-.5*plaw*log((rr_cyl/r_ref)**2+rsmooth**2)
+             !radial_percent_smooth = percentage of the grid
+             !that the smoothing is applied
+             rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
+             lnrhomid=log(rho0) &
+                  + plaw*log((1-exp( -((rr_cyl-rshift)/rmid)**2 ))/rr_cyl)
+          else
+             lnrhomid=log(rho0)-.5*plaw*log((rr_cyl/r_ref)**2+rsmooth**2)
           endif
 !
 ! vertical stratification, if needed
 !
-          if (.not.lcylindrical_gravity) then 
+          if (.not.lcylindrical_gravity.and.nzgrid/=1) then 
             if (lheader) &
                  print*,"Adding vertical stratification with "//&
                  "scale height h/r=",cs0
@@ -1924,8 +1924,9 @@ module Density
               call get_cp1(cp1)
               cs2=exp(f(:,m,n,ilnTT))*gamma1/cp1
             elseif (lentropy) then
-              call stop_it("local_isothermal_density: cs2 not "//&
-                   "implemented for entropy. Use temperature_idealgas")
+!              call stop_it("local_isothermal_density: cs2 not "//&
+!                   "implemented for entropy. Use temperature_idealgas")
+             cs2=cs20*exp(cp1/gamma1*f(:,m,n,iss) + (1./gamma1-1.)*f(:,m,n,ilnrho))
             else
               cs2=cs20
             endif
@@ -2003,8 +2004,9 @@ module Density
             call get_cp1(cp1)
             cs2=exp(f(l1:l2,m,n,ilnTT))*gamma1/cp1
           elseif (lentropy) then
-            call stop_it("correct_density_gradient: cs2 not "//&
-                 "implemented for entropy. Use temperature_idealgas")
+!            call stop_it("local_isothermal_density: cs2 not "//&
+!                 "implemented for entropy. Use temperature_idealgas")
+	    cs2=cs20*exp(cp1/gamma1*f(l1:l2,m,n,iss) + (1./gamma1-1)*f(l1:l2,m,n,ilnrho))
           else
             cs2=cs20
           endif
