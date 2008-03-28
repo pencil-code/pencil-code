@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.46 2008-03-26 15:36:18 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.47 2008-03-28 14:54:50 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -10,7 +10,8 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,nu,gradnu,cs2,rho1gpp,gmu1
+! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,cs2,rho1gpp,gmu1
+! PENCILS PROVIDED nu,gradnu
 !***************************************************************
 
 module Chemistry
@@ -170,11 +171,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.46 2008-03-26 15:36:18 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.47 2008-03-28 14:54:50 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.46 2008-03-26 15:36:18 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.47 2008-03-28 14:54:50 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -337,7 +338,6 @@ module Chemistry
         lpenc_requested(i_gamma)=.true.
         lpenc_requested(i_gamma1)=.true.
         lpenc_requested(i_gamma11)=.true.
-        lpenc_requested(i_nu)=.true.
        endif
 
 
@@ -470,7 +470,6 @@ module Chemistry
       endif
 
 
-!
 !  Viscosity of a mixture
 !
 
@@ -605,7 +604,7 @@ module Chemistry
             enddo
            tmp_sum=tmp_sum+XX_full(:,:,:,k)*species_viscosity(k)/tmp_sum2
            enddo
-           nu_full=tmp_sum/exp(f(:,:,:,ilnrho))
+           nu_full=tmp_sum*sqrt(exp(f(:,:,:,ilnTT)))/exp(f(:,:,:,ilnrho))
 
         else
          call stop_it('This case works only for cgs units system!')
