@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.415 2008-03-26 13:15:27 nbabkovs Exp $
+! $Id: cdata.f90,v 1.416 2008-03-28 02:58:34 steveb Exp $
 
 module Cdata
 
@@ -302,6 +302,7 @@ module Cdata
   logical :: lwrite_2d=.false.
   logical :: lbidiagonal_derij=.true.
   logical :: lisotropic_advection=.false.
+  logical :: lthermo_ppd=.false.
 
 !
 ! Constant 'parameters' cannot occur in namelists, so in order to get the
