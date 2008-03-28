@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.540 2008-01-24 17:58:33 dintrans Exp $
+! $Id: entropy.f90,v 1.541 2008-03-28 03:08:46 steveb Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -139,7 +139,7 @@ module Entropy
       lturbulent_heat,deltaT_poleq, &
       tdown, allp,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global, &
-      tau_cool,TTref_cool,mixinglength_flux
+      tau_cool,TTref_cool,mixinglength_flux,lthermo_ppd
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -192,6 +192,7 @@ module Entropy
   integer :: idiag_uxTTmz=0     ! DIAG_DOC:
   integer :: idiag_uyTTmz=0     ! DIAG_DOC:
   integer :: idiag_uzTTmz=0     ! DIAG_DOC:
+  integer :: idiag_thcool=0     ! DIAG_DOC: PPD Thermal processes SJB
 
   contains
 
@@ -219,7 +220,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.540 2008-01-24 17:58:33 dintrans Exp $")
+           "$Id: entropy.f90,v 1.541 2008-03-28 03:08:46 steveb Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -1769,6 +1770,16 @@ module Entropy
         lpenc_requested(i_cp)=.true.
         lpenc_requested(i_TT)=.true.
       endif
+      if (lthermo_ppd) then
+         lpenc_requested(i_rho)=.true. ! SJB
+         lpenc_diagnos(i_ss)=.true.
+         lpenc_requested(i_cv1)=.true.
+         lpenc_requested(i_TT1)=.true.
+         lpenc_requested(i_TT)=.true.
+         lpenc_requested(i_rho1)=.true.
+         lpenc_requested(i_glnrho)=.true.
+         lpenc_requested(i_glnTT)=.true.
+      endif
 !
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !
@@ -2022,6 +2033,10 @@ module Entropy
 !  Possibility of entropy relaxation in exterior region.
 !
       if (tau_ss_exterior/=0.) call calc_tau_ss_exterior(df,p)
+!
+!  PPDisk thermal processes SJB
+!
+      if (lthermo_ppd) call calc_heat_cool_disk(f,df,p)  !SJB
 !
 !  Entry possibility for "personal" entries.
 !  In that case you'd need to provide your own "special" routine.
@@ -2481,6 +2496,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: tau,cooling,kappa,a1,a3
       real :: a2,kappa0,kappa0_cgs
+
       type (pencil_case) :: p
 !
       intent(in) :: p
@@ -3007,7 +3023,7 @@ module Entropy
         idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
         idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0; idiag_ssmr=0; idiag_TTmr=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0
-        idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0
+        idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_thcool=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -3031,6 +3047,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
         call parse_name(iname,cname(iname),cform(iname),'TTp',idiag_TTp)
+        call parse_name(iname,cname(iname),cform(iname),'thcool',idiag_thcool)
       enddo
 !
 !  check for those quantities for which we want yz-averages
@@ -3117,6 +3134,7 @@ module Entropy
         write(3,*) 'iyH=',iyH
         write(3,*) 'ilnTT=',ilnTT
         write(3,*) 'i_TTmxy=',idiag_TTmxy
+        write(3,*) 'i_thcool=',idiag_thcool
       endif
 !
     endsubroutine rprint_entropy
@@ -3820,5 +3838,90 @@ module Entropy
       real, dimension(mx,my,mz,mfarray) :: finit,f
 
     end subroutine calc_heatcond_ADI
+!***********************************************************************
+    subroutine calc_heat_cool_disk(f,df,p)
+!
+!   Calculates heating and cooling terms for protoplanetary disks 
+!   Notes: 
+!     * viscous heating is computed in viscosity
+!   
+!   Partly taken from various PC subs
+!
+!   02/08   steveb
+!
+      use Cdata
+      use Sub
+      use Viscosity,       only: calc_visc_heat_ppd
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx) :: tau,cooling,kappa,a1,a3,pTT,cooling2,tmp,g2lnTT
+      real :: a2,kappa0,kappa0_cgs,sigmaSB0_cgs,ssb
+
+!
+!  Initialize
+!
+      intent(in) :: p
+      intent(out) :: df
+!
+      if (headtt) print*,'enter calc_heat_cool_disk'
+!
+!  Stellar heating, computed following Nomura \& Millar (2006)
+!  Blackbody + bremsstrahlung + Ly alpha -- not done yet
+!
+
+!
+!  Recipe of D'Angelo, Henning, & Kley (2003)
+!  First start with cooling term \Lambda
+!
+      kappa0_cgs=2.e-6  !cm2/g
+      kappa0=kappa0_cgs*unit_density*unit_length
+      kappa=kappa0*p%TT**2.
+!
+!  Optical Depth tau=kappa*rho*H
+!  If we are using 2D, the pencil value p%rho is actually
+!   sigma, the column density, sigma=rho*2*H
+!
+      if (nzgrid==1) then
+        tau = .5*kappa*p%rho
+      else
+         call fatal_error("calc_heat_cool_disk","opacity not yet implemented for 3D")
+      endif
+!
+! Analytical gray description of Hubeny (1990), used in D'Angelo et al. (2003)
+! a1 is the optically thick contribution, a3 the optically thin one.
+!
+      a1=0.375*tau ; a2=0.433013 ; a3=0.25/tau
+!  this cooling has dimension of energy/time/Kelvin
+      
+      cooling = 2.*sigmaSB*p%TT1*p%rho1*p%TT**4./(a1+a2+a3)
+
+! 
+! Add viscous dissipation term from D'Angelo
+! 
+      call calc_visc_heat_ppd(f,df,p)
+!
+! Add cooling via radiative diffusion term
+! nab.F ~ nab.(rho1*TT**3*gradT)
+! nab.F ~ T**3/rho**2 * (glnTT.(glnTT-glnrho)+g2lnTT)
+! Then another rho1 for volumetric term
+      
+      call dot(p%glnTT,p%glnTT-p%glnrho,tmp)
+      call dot(p%glnTT,p%glnTT,g2lnTT)
+      cooling2 = 16.*sigmaSB/(3.*kappa0) * &
+           (p%TT**3.*p%rho1**2.*(tmp+g2lnTT))
+!
+! Add in the terms
+!
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv1*(cooling+cooling2)
+      
+      if (ldiagnos) then
+         !cooling power - energy radiated away (luminosity)
+         if (idiag_thcool/=0) &
+              call sum_lim_mn_name(cooling*p%rho,idiag_thcool,p)
+      endif
+
+    endsubroutine calc_heat_cool_disk
 !***********************************************************************
 endmodule Entropy
