@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.252 2008-03-23 08:29:45 brandenb Exp $
+! $Id: run.f90,v 1.253 2008-03-28 07:00:09 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -73,7 +73,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.252 2008-03-23 08:29:45 brandenb Exp $")
+             "$Id: run.f90,v 1.253 2008-03-28 07:00:09 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -245,7 +245,7 @@
 !  Allocate the finit array if lADI=.true.
 !  Do this also when ltestperturb=.true.
 !
-        if (lADI.or.ltestperturb) allocate(finit(mx,my,mz,mfarray))
+        if (lADI) allocate(finit(mx,my,mz,mfarray))
 !
 !  Write data to file for IDL
 !

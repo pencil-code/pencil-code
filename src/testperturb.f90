@@ -1,4 +1,4 @@
-! $Id: testperturb.f90,v 1.5 2008-03-24 08:20:06 brandenb Exp $
+! $Id: testperturb.f90,v 1.6 2008-03-28 07:00:10 brandenb Exp $
 
 !  test perturbation method
 
@@ -18,6 +18,7 @@ module TestPerturb
 !  input parameters
 !
   character (len=labellen) :: itestfield='B11-B21'
+  integer :: nt_testperturb=0, it_testperturb_finalize=0
   real :: ktestfield=1., ktestfield1=1., Btest0=1.
   real :: dummy
 
@@ -27,7 +28,7 @@ module TestPerturb
       dummy
 
   namelist /testperturb_run_pars/ &
-      ltestperturb,itestfield,ktestfield,Btest0
+      ltestperturb,itestfield,ktestfield,Btest0,nt_testperturb
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -62,7 +63,7 @@ module TestPerturb
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testperturb.f90,v 1.5 2008-03-24 08:20:06 brandenb Exp $")
+           "$Id: testperturb.f90,v 1.6 2008-03-28 07:00:10 brandenb Exp $")
 !
     endsubroutine register_testperturb
 !***********************************************************************
@@ -120,7 +121,14 @@ module TestPerturb
         open(1,file=trim(datadir)//'/testperturb_info.dat',STATUS='unknown')
         write(1,'(3a)') "itestfield='",trim(itestfield)//"'"
         write(1,'(a,f5.2)') 'ktestfield=',ktestfield
+        write(1,'(a,i5)') 'nt_testperturb=',nt_testperturb
         close(1)
+      endif
+!
+!  print a warning if nt_testperturb exceeds it1
+!
+      if (nt_testperturb>it1) then
+        if (lroot) print*,'WARNING: nt_testperturb>it1 may be problematic'
       endif
 !
     endsubroutine initialize_testperturb
@@ -193,7 +201,7 @@ module TestPerturb
 !
       real, dimension (nx,3) :: uu,bb,uxb
       logical :: headtt_save
-      integer :: jtest
+      integer :: jtest,it_testperturb
       real :: tsave
       type (pencil_case) :: p
 !
@@ -201,85 +209,103 @@ module TestPerturb
 !
       if (headtt.or.ldebug) print*, 'testperturb_begin'
 !
+!  continue only if lout=.true.
+!
+      if (ip<13) print*,'testperturb_begin: it,t,lout=',it,t,lout
+      if (lout) then
+!
 !  Save current f-array and current time
 !
-      fsave=f
-      tsave=t
+        fsave=f
+        tsave=t
+!
+!  set timestep for final analysis step in testperturb_finalize(f)
+!
+        it_testperturb_finalize=it+nt_testperturb-1
+        if (ip<14) print*,'testperturb_begin: it,it_testperturb_finalize=', &
+                                              it,it_testperturb_finalize
 !
 !  do each of the test fields one after another
 !
-      do jtest=1,njtest
-        select case(itestfield)
-          case('B11-B22'); call add_A0test_B11_B22(f,jtest)
-          case('B=0') !(dont do anything)
-        case default
-          call fatal_error('testperturb_begin','undefined itestfield value')
-        endselect
+        do jtest=1,njtest
+          select case(itestfield)
+            case('B11-B22'); call add_A0test_B11_B22(f,jtest)
+            case('B=0') !(dont do anything)
+          case default
+            call fatal_error('testperturb_begin','undefined itestfield value')
+          endselect
 !
-!  Time advance
+!  Time advance for nt_test timesteps
 !
-        call rk_2n(f,df,p)
+          do it_testperturb=1,nt_testperturb
+            call rk_2n(f,df,p)
+            if (ip<13) print*,'testperturb_begin: stay in the loop; t=',t
+          enddo
+          if (ip<14) print*,'testperturb_begin: do analysis; t,jtest=',t,jtest
 !
 !  calculate emf for calculation of alpha_ij and eta_ij tensor.
 !  Note that this result applies to the end of this timestep, and does not
 !  agree with that calcuted in pdf for the beginning of the timestep.
 !
-        lfirstpoint=.true.
-        headtt_save=headtt
-        do m=m1,m2
-        do n=n1,n2
-          call calc_pencils_hydro(f,p)
-          call curl(f,iaa,bb)
-          call cross_mn(p%uu,bb,uxb)
+          lfirstpoint=.true.
+          headtt_save=headtt
+          do m=m1,m2
+          do n=n1,n2
+            call calc_pencils_hydro(f,p)
+            call curl(f,iaa,bb)
+            call cross_mn(p%uu,bb,uxb)
 !
 !  Note that we have not subtracted the contributions from the EMF
 !  of the mean magnetic and velocity fields. Need to check.
 !
-          select case(jtest)
-          case(1)
-            call sum_mn_name(B1cz(n)*uxb(:,1),idiag_alp11)
-            call sum_mn_name(B1cz(n)*uxb(:,2),idiag_alp21)
-            call sum_mn_name(B1cz(n)*uxb(:,3),idiag_alp31)
-            call sum_mn_name(-B1k1sz(n)*uxb(:,1),idiag_eta11)
-            call sum_mn_name(-B1k1sz(n)*uxb(:,2),idiag_eta21)
-            call sum_mn_name(-B1k1sz(n)*uxb(:,3),idiag_eta31)
-          case(2)
-            call sum_mn_name(B1sz(n)*uxb(:,1),idiag_alp11,ipart=2)
-            call sum_mn_name(B1sz(n)*uxb(:,2),idiag_alp21,ipart=2)
-            call sum_mn_name(B1sz(n)*uxb(:,3),idiag_alp31,ipart=2)
-            call sum_mn_name(B1k1cz(n)*uxb(:,1),idiag_eta11,ipart=2)
-            call sum_mn_name(B1k1cz(n)*uxb(:,2),idiag_eta21,ipart=2)
-            call sum_mn_name(B1k1cz(n)*uxb(:,3),idiag_eta31,ipart=2)
-          case(3)
-            call sum_mn_name(B1cz(n)*uxb(:,1),idiag_alp12)
-            call sum_mn_name(B1cz(n)*uxb(:,2),idiag_alp22)
-            call sum_mn_name(B1cz(n)*uxb(:,3),idiag_alp32)
-            call sum_mn_name(-B1k1sz(n)*uxb(:,1),idiag_eta12)
-            call sum_mn_name(-B1k1sz(n)*uxb(:,2),idiag_eta22)
-            call sum_mn_name(-B1k1sz(n)*uxb(:,3),idiag_eta32)
-          case(4)
-            call sum_mn_name(B1sz(n)*uxb(:,1),idiag_alp12,ipart=2)
-            call sum_mn_name(B1sz(n)*uxb(:,2),idiag_alp22,ipart=2)
-            call sum_mn_name(B1sz(n)*uxb(:,3),idiag_alp32,ipart=2)
-            call sum_mn_name(B1k1cz(n)*uxb(:,1),idiag_eta12,ipart=2)
-            call sum_mn_name(B1k1cz(n)*uxb(:,2),idiag_eta22,ipart=2)
-            call sum_mn_name(B1k1cz(n)*uxb(:,3),idiag_eta32,ipart=2)
-          endselect
-          headtt=.false.
-          lfirstpoint=.false.
-        enddo
-        enddo
+            select case(jtest)
+            case(1)
+              call sum_mn_name(B1cz(n)*uxb(:,1),idiag_alp11)
+              call sum_mn_name(B1cz(n)*uxb(:,2),idiag_alp21)
+              call sum_mn_name(B1cz(n)*uxb(:,3),idiag_alp31)
+              call sum_mn_name(-B1k1sz(n)*uxb(:,1),idiag_eta11)
+              call sum_mn_name(-B1k1sz(n)*uxb(:,2),idiag_eta21)
+              call sum_mn_name(-B1k1sz(n)*uxb(:,3),idiag_eta31)
+            case(2)
+              call sum_mn_name(B1sz(n)*uxb(:,1),idiag_alp11,ipart=2)
+              call sum_mn_name(B1sz(n)*uxb(:,2),idiag_alp21,ipart=2)
+              call sum_mn_name(B1sz(n)*uxb(:,3),idiag_alp31,ipart=2)
+              call sum_mn_name(B1k1cz(n)*uxb(:,1),idiag_eta11,ipart=2)
+              call sum_mn_name(B1k1cz(n)*uxb(:,2),idiag_eta21,ipart=2)
+              call sum_mn_name(B1k1cz(n)*uxb(:,3),idiag_eta31,ipart=2)
+            case(3)
+              call sum_mn_name(B1cz(n)*uxb(:,1),idiag_alp12)
+              call sum_mn_name(B1cz(n)*uxb(:,2),idiag_alp22)
+              call sum_mn_name(B1cz(n)*uxb(:,3),idiag_alp32)
+              call sum_mn_name(-B1k1sz(n)*uxb(:,1),idiag_eta12)
+              call sum_mn_name(-B1k1sz(n)*uxb(:,2),idiag_eta22)
+              call sum_mn_name(-B1k1sz(n)*uxb(:,3),idiag_eta32)
+            case(4)
+              call sum_mn_name(B1sz(n)*uxb(:,1),idiag_alp12,ipart=2)
+              call sum_mn_name(B1sz(n)*uxb(:,2),idiag_alp22,ipart=2)
+              call sum_mn_name(B1sz(n)*uxb(:,3),idiag_alp32,ipart=2)
+              call sum_mn_name(B1k1cz(n)*uxb(:,1),idiag_eta12,ipart=2)
+              call sum_mn_name(B1k1cz(n)*uxb(:,2),idiag_eta22,ipart=2)
+              call sum_mn_name(B1k1cz(n)*uxb(:,3),idiag_eta32,ipart=2)
+            endselect
+            headtt=.false.
+            lfirstpoint=.false.
+          enddo
+          enddo
 !
 !  reset f to what it was before.
 !
-        f=fsave
-        t=tsave
-      enddo
+          f=fsave
+          t=tsave
+        enddo
 !
 !  Since this routine was called before any regular call to the
 !  timestepping routine, we must reset headtt to what it was before.
 !
-      headtt=headtt_save
+        headtt=headtt_save
+      else
+        if (ip<13) print*,'testperturb_begin: skip; lout,it=',lout,it
+      endif
 !
     endsubroutine testperturb_begin
 !***********************************************************************
@@ -305,39 +331,47 @@ module TestPerturb
 !
       if (headtt.or.ldebug) print*, 'testperturb_finalize'
 !
+!  continue only if it >= it_testperturb
+!
+      if (it<it_testperturb_finalize) then
+        if (ip<14) print*,'testperturb_finalize: return; t=',t
+      else
+        if (ip<14) print*,'testperturb_finalize: final analysis; t=',t
+!
 !  calculate emf for calculation of alpha_ij and eta_ij tensor
 !
-      lfirstpoint=.true.
-      do m=m1,m2
-      do n=n1,n2
-        call calc_pencils_hydro(f,p)
-        call curl(f,iaa,bb)
-        call cross_mn(p%uu,bb,uxb)
+        lfirstpoint=.true.
+        do m=m1,m2
+        do n=n1,n2
+          call calc_pencils_hydro(f,p)
+          call curl(f,iaa,bb)
+          call cross_mn(p%uu,bb,uxb)
 !
 !  alpha terms
 !
-        tmp=-(B1cz(n)+B1sz(n))
-        call sum_mn_name(tmp*uxb(:,1),idiag_alp11,ipart=3)
-        call sum_mn_name(tmp*uxb(:,2),idiag_alp21,ipart=3)
-        call sum_mn_name(tmp*uxb(:,3),idiag_alp31,ipart=3)
-        call sum_mn_name(tmp*uxb(:,1),idiag_alp12,ipart=3)
-        call sum_mn_name(tmp*uxb(:,2),idiag_alp22,ipart=3)
-        call sum_mn_name(tmp*uxb(:,3),idiag_alp32,ipart=3)
+          tmp=-(B1cz(n)+B1sz(n))
+          call sum_mn_name(tmp*uxb(:,1),idiag_alp11,ipart=3)
+          call sum_mn_name(tmp*uxb(:,2),idiag_alp21,ipart=3)
+          call sum_mn_name(tmp*uxb(:,3),idiag_alp31,ipart=3)
+          call sum_mn_name(tmp*uxb(:,1),idiag_alp12,ipart=3)
+          call sum_mn_name(tmp*uxb(:,2),idiag_alp22,ipart=3)
+          call sum_mn_name(tmp*uxb(:,3),idiag_alp32,ipart=3)
 !
 !  eta terms
 !
-        tmp=B1k1sz(n)-B1k1cz(n)
-        call sum_mn_name(tmp*uxb(:,1),idiag_eta11,ipart=3)
-        call sum_mn_name(tmp*uxb(:,2),idiag_eta21,ipart=3)
-        call sum_mn_name(tmp*uxb(:,3),idiag_eta31,ipart=3)
-        call sum_mn_name(tmp*uxb(:,1),idiag_eta12,ipart=3)
-        call sum_mn_name(tmp*uxb(:,2),idiag_eta22,ipart=3)
-        call sum_mn_name(tmp*uxb(:,3),idiag_eta32,ipart=3)
+          tmp=B1k1sz(n)-B1k1cz(n)
+          call sum_mn_name(tmp*uxb(:,1),idiag_eta11,ipart=3)
+          call sum_mn_name(tmp*uxb(:,2),idiag_eta21,ipart=3)
+          call sum_mn_name(tmp*uxb(:,3),idiag_eta31,ipart=3)
+          call sum_mn_name(tmp*uxb(:,1),idiag_eta12,ipart=3)
+          call sum_mn_name(tmp*uxb(:,2),idiag_eta22,ipart=3)
+          call sum_mn_name(tmp*uxb(:,3),idiag_eta32,ipart=3)
 !
-        headtt=.false.
-        lfirstpoint=.false.
-      enddo
-      enddo
+          headtt=.false.
+          lfirstpoint=.false.
+        enddo
+        enddo
+      endif
 !
     endsubroutine testperturb_finalize
 !***********************************************************************
