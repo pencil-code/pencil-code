@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.26 2008-03-22 14:54:09 pkapyla Exp $
+! $Id: testfield_z.f90,v 1.27 2008-03-29 12:16:13 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -45,6 +45,7 @@ module Testfield
 !
   character (len=labellen), dimension(ninit) :: initaatest='nothing'
   real, dimension (ninit) :: amplaatest=0.
+  integer :: iE0=0
 
   ! input parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
@@ -160,7 +161,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.26 2008-03-22 14:54:09 pkapyla Exp $")
+           "$Id: testfield_z.f90,v 1.27 2008-03-29 12:16:13 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -217,6 +218,18 @@ module Testfield
       else
         ktestfield1=1./ktestfield
       endif
+!
+!  calculate iE0
+!
+      select case(itestfield)
+        case('B11-B21+B=0'); iE0=3
+        case('B11-B22+B=0'); iE0=5
+        case('B11-B21'); iE0=0
+        case('B11-B22'); iE0=0
+        case('B=0') !(dont do anything)
+      case default
+        call fatal_error('initialize_testfield','undefined itestfield value')
+      endselect
 !
 !  Register an extra aux slot for uxb if requested (so uxb is written
 !  to snapshots and can be easily analyzed later). For this to work you
@@ -443,7 +456,8 @@ module Testfield
         iaztest=iaxtest+2
         call del2v(f,iaxtest,del2Atest)
         select case(itestfield)
-          case('B11-B21+B=0'); call set_bbtest(B0test,jtest)
+          case('B11-B21+B=0'); call set_bbtest_B11_B21(B0test,jtest)
+          case('B11-B22+B=0'); call set_bbtest_B11_B22(B0test,jtest)
           case('B11-B21'); call set_bbtest_B11_B21(B0test,jtest)
           case('B11-B22'); call set_bbtest_B11_B22(B0test,jtest)
           case('B=0') !(dont do anything)
@@ -582,9 +596,9 @@ module Testfield
         if (idiag_E122z/=0) call xysum_mn_name_z(Eipq(:,1,i4),idiag_E122z)
         if (idiag_E222z/=0) call xysum_mn_name_z(Eipq(:,2,i4),idiag_E222z)
         if (idiag_E322z/=0) call xysum_mn_name_z(Eipq(:,3,i4),idiag_E322z)
-        if (idiag_E10z/=0) call xysum_mn_name_z(Eipq(:,1,i3),idiag_E10z)
-        if (idiag_E20z/=0) call xysum_mn_name_z(Eipq(:,2,i3),idiag_E20z)
-        if (idiag_E30z/=0) call xysum_mn_name_z(Eipq(:,3,i3),idiag_E30z)
+        if (idiag_E10z/=0) call xysum_mn_name_z(Eipq(:,1,iE0),idiag_E10z)
+        if (idiag_E20z/=0) call xysum_mn_name_z(Eipq(:,2,iE0),idiag_E20z)
+        if (idiag_E30z/=0) call xysum_mn_name_z(Eipq(:,3,iE0),idiag_E30z)
 !
 !  alpha and eta
 !
@@ -841,33 +855,7 @@ module Testfield
 !
     endsubroutine calc_ltestfield_pars
 !***********************************************************************
-    subroutine set_bbtest(B0test,jtest)
-!
-!  set testfield
-!
-!   3-jun-05/axel: coded
-!
-      use Cdata
-      use Sub
-!
-      real, dimension (nx,3) :: B0test
-      integer :: jtest
-!
-      intent(in)  :: jtest
-      intent(out) :: B0test
-!
-!  set B0test for each of the 9 cases
-!
-      select case(jtest)
-      case(1); B0test(:,1)=cz(n); B0test(:,2)=0.; B0test(:,3)=0.
-      case(2); B0test(:,1)=sz(n); B0test(:,2)=0.; B0test(:,3)=0.
-      case(3); B0test(:,1)=0.   ; B0test(:,2)=0.; B0test(:,3)=0.
-      case default; B0test(:,:)=0.
-      endselect
-!
-    endsubroutine set_bbtest
-!***********************************************************************
-    subroutine set_bbtest_B11_B21 (B0test,jtest)
+    subroutine set_bbtest_B11_B21(B0test,jtest)
 !
 !  set testfield
 !
@@ -892,7 +880,7 @@ module Testfield
 !
     endsubroutine set_bbtest_B11_B21
 !***********************************************************************
-    subroutine set_J0test_B11_B21 (J0test,jtest)
+    subroutine set_J0test_B11_B21(J0test,jtest)
 !
 !  set testfield
 !
