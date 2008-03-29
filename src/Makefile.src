@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.386 2008-03-22 02:44:02 wlyra Exp $
+### $Id: Makefile.src,v 1.387 2008-03-29 14:51:27 abag Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -542,6 +542,16 @@ LD_FFTW2=
 #LD_MPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(wormhole)
 #F77=$(FC) #(wormhole)
 #F77FLAGS=-w90 #(wormhole)
+##
+## chimay abag's laptop
+##
+#FC=g95 #(chimay)
+#FFLAGS=-O3 #(chimay)
+##
+##maurice Newcastle machine
+##
+#FC=gfortran -I/usr/lib/openmpi/lib -pthread -I/usr/lib/openmpi/lib -L/usr/lib/ openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-  dynamic -lnsl -lutil -lm -ldl  -I/usr/lib/openmpi/include #(maurice)
+#FFLAGS=-O3 #(maurice)
 ##
 ## starlink Newcastle's general access machine
 ##
