@@ -1,4 +1,4 @@
-;$Id: pc_read_alpha_xyaver.pro,v 1.1 2008-03-30 16:33:38 brandenb Exp $
+;$Id: pc_read_alpha_xyaver.pro,v 1.2 2008-03-30 19:11:08 brandenb Exp $
 ;
 ;  In order to determine the z-dependence of the alpha and eta tensors
 ;  we have to read the horizontal averages of Epq, i.e. we assume that
@@ -17,14 +17,19 @@ nt=n_elements(tt)
 ;  map z-array to a (-pi,pi) interval
 ;
 nz=dim.nz
-dz=2.*!pi/nz
-zz=-!pi+dz*(findgen(nz)+.5)
+zzz=grid.z(dim.n1:dim.n2)
+if param.ltestfield_newz then begin
+  dz=2.*!pi/nz
+  ztestfield=-!pi+dz*(findgen(nz)+.5)
+endif else begin
+  ztestfield=zzz
+endelse
 ;
 ;  prepare sine and cosine functions
 ;
 k=param.ktestfield
-cz=cos(k*zz)
-sz=sin(k*zz)
+cz=cos(k*ztestfield)
+sz=sin(k*ztestfield)
 ;
 k1cz=cz/k
 k1sz=sz/k
