@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.27 2008-03-29 12:16:13 brandenb Exp $
+! $Id: testfield_z.f90,v 1.28 2008-03-30 04:15:50 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -105,6 +105,7 @@ module Testfield
   integer :: idiag_E10z=0       ! DIAG_DOC: ${\cal E}_1^{0}$
   integer :: idiag_E20z=0       ! DIAG_DOC: ${\cal E}_2^{0}$
   integer :: idiag_E30z=0       ! DIAG_DOC: ${\cal E}_3^{0}$
+  integer :: idiag_EBpq=0       ! DIAG_DOC: ${\cal E}\cdot\Bv^{pq}$
   integer :: idiag_bx0mz=0      ! DIAG_DOC: $\left<b_{x}\right>_{xy}$
   integer :: idiag_by0mz=0      ! DIAG_DOC: $\left<b_{y}\right>_{xy}$
   integer :: idiag_bz0mz=0      ! DIAG_DOC: $\left<b_{z}\right>_{xy}$
@@ -161,7 +162,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.27 2008-03-29 12:16:13 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.28 2008-03-30 04:15:50 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -222,6 +223,7 @@ module Testfield
 !  calculate iE0
 !
       select case(itestfield)
+        case('Beltrami'); iE0=1
         case('B11-B21+B=0'); iE0=3
         case('B11-B22+B=0'); iE0=5
         case('B11-B21'); iE0=0
@@ -456,6 +458,7 @@ module Testfield
         iaztest=iaxtest+2
         call del2v(f,iaxtest,del2Atest)
         select case(itestfield)
+          case('Beltrami'); call set_bbtest_Beltrami(B0test,jtest)
           case('B11-B21+B=0'); call set_bbtest_B11_B21(B0test,jtest)
           case('B11-B22+B=0'); call set_bbtest_B11_B22(B0test,jtest)
           case('B11-B21'); call set_bbtest_B11_B21(B0test,jtest)
@@ -608,6 +611,11 @@ module Testfield
         if (idiag_eta11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))*ktestfield1,idiag_eta11)
         if (idiag_eta21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))*ktestfield1,idiag_eta21)
         if (idiag_eta31/=0) call sum_mn_name((-sz(n)*Eipq(:,3,1)+cz(n)*Eipq(:,3,2))*ktestfield1,idiag_eta31)
+!
+!  Projection of EMF from testfield against testfield itself
+!
+        if (idiag_EBpq/=0) call sum_mn_name(cz(n)*Eipq(:,1,1) &
+                                           +sz(n)*Eipq(:,2,1),idiag_EBpq)
 !
 !  print warning if alp12 and alp12 are needed, but njtest is too small XX
 !
@@ -855,6 +863,29 @@ module Testfield
 !
     endsubroutine calc_ltestfield_pars
 !***********************************************************************
+    subroutine set_bbtest_Beltrami(B0test,jtest)
+!
+!  set testfield
+!
+!  29-mar-08/axel: coded
+!
+      use Cdata
+!
+      real, dimension (nx,3) :: B0test
+      integer :: jtest
+!
+      intent(in)  :: jtest
+      intent(out) :: B0test
+!
+!  set B0test for each of the 9 cases
+!
+      select case(jtest)
+      case(1); B0test(:,1)=cz(n); B0test(:,2)=sz(n); B0test(:,3)=0.
+      case default; B0test(:,:)=0.
+      endselect
+!
+    endsubroutine set_bbtest_Beltrami
+!***********************************************************************
     subroutine set_bbtest_B11_B21(B0test,jtest)
 !
 !  set testfield
@@ -862,7 +893,6 @@ module Testfield
 !   3-jun-05/axel: coded
 !
       use Cdata
-      use Sub
 !
       real, dimension (nx,3) :: B0test
       integer :: jtest
@@ -887,7 +917,6 @@ module Testfield
 !   3-jun-05/axel: coded
 !
       use Cdata
-      use Sub
 !
       real, dimension (nx,3) :: J0test
       integer :: jtest
@@ -912,7 +941,6 @@ module Testfield
 !   3-jun-05/axel: coded
 !
       use Cdata
-      use Sub
 !
       real, dimension (nx,3) :: B0test
       integer :: jtest
@@ -955,7 +983,7 @@ module Testfield
         idiag_bx0mz=0; idiag_by0mz=0; idiag_bz0mz=0
         idiag_E111z=0; idiag_E211z=0; idiag_E311z=0
         idiag_E121z=0; idiag_E221z=0; idiag_E321z=0
-        idiag_E10z=0; idiag_E20z=0; idiag_E30z=0
+        idiag_E10z=0; idiag_E20z=0; idiag_E30z=0; idiag_EBpq=0
         idiag_alp11=0; idiag_alp21=0; idiag_alp31=0
         idiag_alp12=0; idiag_alp22=0; idiag_alp32=0
         idiag_eta11=0; idiag_eta21=0; idiag_eta31=0
@@ -983,6 +1011,7 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'b12rms',idiag_b12rms)
         call parse_name(iname,cname(iname),cform(iname),'b22rms',idiag_b22rms)
         call parse_name(iname,cname(iname),cform(iname),'b0rms',idiag_b0rms)
+        call parse_name(iname,cname(iname),cform(iname),'EBpq',idiag_EBpq)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -1046,6 +1075,7 @@ module Testfield
         write(3,*) 'idiag_E10z=',idiag_E10z
         write(3,*) 'idiag_E20z=',idiag_E20z
         write(3,*) 'idiag_E30z=',idiag_E30z
+        write(3,*) 'idiag_EBpq=',idiag_EBpq
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'iaxtestpq=',iaxtestpq
         write(3,*) 'iaztestpq=',iaztestpq
