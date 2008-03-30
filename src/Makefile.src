@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.387 2008-03-29 14:51:27 abag Exp $
+### $Id: Makefile.src,v 1.388 2008-03-30 16:02:36 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -998,7 +998,6 @@ start_deps_f90=$(comm_deps) equ.o $(TIMESTEP).o $(TESTPERTURB).o
 start_deps=$(start_deps_f90) $(DEBUG).o $(GSL).o
 #
 run_deps_f90=$(comm_deps) equ.o $(TIMESTEP).o $(TESTPERTURB).o
-#run_deps_f90=$(comm_deps) equ.o  #axel
 #
 run_deps=$(run_deps_f90) $(DEBUG).o $(GSL).o
 #
@@ -1086,7 +1085,6 @@ depend dep:
 	    '  rm src/Makefile.depend; pc_setupsrc' \
 	    '*********************************************'
 	rm -f Makefile.depend
-	#scripts/mkdep start.f90 run.f90 read_videofiles.f90 read_vectorfiles.f90 equ.f90 $(TIMESTEP).f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend #axel
 	scripts/mkdep start.f90 run.f90 read_videofiles.f90 read_vectorfiles.f90 equ.f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend
 
 # Help us finding out what compiler, MPI library, etc we have and give recommendations
@@ -1382,9 +1380,7 @@ write_dummy_namelists.x: $(write_dnlists_deps)
 fft.o:	     fft.f Makefile.src
 nodebug.o:            nodebug.f90 cdata.o $(MPICOMM_FIX).o
 #$(TIMEAVG).o:        ctimeavg.local
-#axeltest $(INITCOND_SPEC).o:$(INITCOND_SPEC).f90
 write_dummy_namelists.o: write_dummy_namelists.f90 $(comm_deps)
-#testperturb.o: testperturb.f90 $(TIMESTEP)  #(axel)
 
 ## ---------------------------------------------------------------------- #
 ## Dependencies

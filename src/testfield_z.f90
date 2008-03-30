@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.28 2008-03-30 04:15:50 brandenb Exp $
+! $Id: testfield_z.f90,v 1.29 2008-03-30 16:02:36 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -67,10 +67,12 @@ module Testfield
 
   ! run parameters
   real :: etatest=0.,etatest1=0.
+  real, dimension(njtest) :: rescale_aatest=1.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
-       luxb_as_aux,ljxb_as_aux,daainit,linit_aatest,bamp
+       luxb_as_aux,ljxb_as_aux,daainit,linit_aatest,bamp, &
+       rescale_aatest
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -85,11 +87,16 @@ module Testfield
   integer :: idiag_eta12=0      ! DIAG_DOC: $\eta_{123}k$
   integer :: idiag_eta22=0      ! DIAG_DOC: $\eta_{223}k$
   integer :: idiag_eta32=0      ! DIAG_DOC: $\eta_{323}k$
-  integer :: idiag_b0rms=0      ! DIAG_DOC: $\left<b_{0}^2\right>$
-  integer :: idiag_b11rms=0     ! DIAG_DOC: $\left<b_{11}^2\right>$
-  integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>$
-  integer :: idiag_b12rms=0     ! DIAG_DOC: $\left<b_{12}^2\right>$
-  integer :: idiag_b22rms=0     ! DIAG_DOC: $\left<b_{22}^2\right>$
+  integer :: idiag_b11rms=0     ! DIAG_DOC: $\left<b_{11}^2\right>^{1/2}$
+  integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>^{1/2}$
+  integer :: idiag_b12rms=0     ! DIAG_DOC: $\left<b_{12}^2\right>^{1/2}$
+  integer :: idiag_b22rms=0     ! DIAG_DOC: $\left<b_{22}^2\right>^{1/2}$
+  integer :: idiag_b0rms=0      ! DIAG_DOC: $\left<b_{0}^2\right>^{1/2}$
+  integer :: idiag_E11rms=0     ! DIAG_DOC: $\left<{\cal E}_{11}^2\right>^{1/2}$
+  integer :: idiag_E21rms=0     ! DIAG_DOC: $\left<{\cal E}_{21}^2\right>^{1/2}$
+  integer :: idiag_E12rms=0     ! DIAG_DOC: $\left<{\cal E}_{12}^2\right>^{1/2}$
+  integer :: idiag_E22rms=0     ! DIAG_DOC: $\left<{\cal E}_{22}^2\right>^{1/2}$
+  integer :: idiag_E0rms=0      ! DIAG_DOC: $\left<{\cal E}_{0}^2\right>^{1/2}$
   integer :: idiag_E111z=0      ! DIAG_DOC: ${\cal E}_1^{11}$
   integer :: idiag_E211z=0      ! DIAG_DOC: ${\cal E}_2^{11}$
   integer :: idiag_E311z=0      ! DIAG_DOC: ${\cal E}_3^{11}$
@@ -162,7 +169,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.28 2008-03-30 04:15:50 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.29 2008-03-30 16:02:36 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -193,18 +200,12 @@ module Testfield
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j,k,jtest
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
 !
       if (etatest1/=0.) then
         etatest=1./etatest1
-      endif
-!
-!  set to zero and then rescale the testfield
-!  (in future, could call something like init_aa_simple)
-!
-      if (reinitialize_aatest) then
-        f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
       endif
 !
 !  set cosine and sine function for setting test fields and analysis
@@ -232,6 +233,18 @@ module Testfield
       case default
         call fatal_error('initialize_testfield','undefined itestfield value')
       endselect
+!
+!  set to zero and then rescale the testfield
+!  (in future, could call something like init_aa_simple)
+!
+      if (reinitialize_aatest) then
+        do jtest=1,njtest
+          do j=1,3
+            k=j+3*(jtest-1)
+            f(:,:,:,k)=rescale_aatest(jtest)*f(:,:,:,k)
+          enddo
+        enddo
+      endif
 !
 !  Register an extra aux slot for uxb if requested (so uxb is written
 !  to snapshots and can be easily analyzed later). For this to work you
@@ -313,6 +326,9 @@ module Testfield
       case('sinwave-x-1'); call sinwave(amplaatest(j),f,iaxtest+0+1,kx=kx_aatest)
       case('sinwave-x-2'); call sinwave(amplaatest(j),f,iaxtest+3+1,kx=kx_aatest)
       case('sinwave-x-3'); call sinwave(amplaatest(j),f,iaxtest+6+1,kx=kx_aatest)
+      case('Beltrami-z-1'); call beltrami(amplaatest(j),f,iaxtest+0,kz=kz_aatest)
+      case('Beltrami-z-3'); call beltrami(amplaatest(j),f,iaxtest+6,kz=kz_aatest)
+      case('Beltrami-z-5'); call beltrami(amplaatest(j),f,iaxtest+12,kz=kz_aatest)
       case('nothing'); !(do nothing)
 
       case default
@@ -420,8 +436,8 @@ module Testfield
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest,bijtest
-      real, dimension (nx) :: bpq2
-      integer :: jtest,jfnamez,j,i3,i4
+      real, dimension (nx) :: bpq2,Epq2
+      integer :: jtest,jfnamez,j, i1=1, i2=2, i3=3, i4=4
       integer,save :: ifirst=0
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
       character (len=5) :: ch
@@ -581,8 +597,6 @@ module Testfield
 !  The g95 compiler doesn't like to see an index that is out of bounds,
 !  so prevent this warning by writing i3=3 and i4=4
 !
-      i3=3
-      i4=4
       if (ldiagnos) then
         if (idiag_bx0mz/=0) call xysum_mn_name_z(bpq(:,1,i3),idiag_bx0mz)
         if (idiag_by0mz/=0) call xysum_mn_name_z(bpq(:,2,i3),idiag_by0mz)
@@ -637,7 +651,7 @@ module Testfield
 !  Needs modification!
 !
         if (idiag_b0rms/=0) then
-          call dot2(bpq(:,:,i3),bpq2)
+          call dot2(bpq(:,:,iE0),bpq2)
           call sum_mn_name(bpq2,idiag_b0rms,lsqrt=.true.)
         endif
 !
@@ -659,6 +673,31 @@ module Testfield
         if (idiag_b22rms/=0) then
           call dot2(bpq(:,:,i4),bpq2)
           call sum_mn_name(bpq2,idiag_b22rms,lsqrt=.true.)
+        endif
+!
+        if (idiag_E0rms/=0) then
+          call dot2(Eipq(:,:,iE0),Epq2)
+          call sum_mn_name(Epq2,idiag_E0rms,lsqrt=.true.)
+        endif
+!
+        if (idiag_E11rms/=0) then
+          call dot2(Eipq(:,:,i1),Epq2)
+          call sum_mn_name(Epq2,idiag_E11rms,lsqrt=.true.)
+        endif
+!
+        if (idiag_E21rms/=0) then
+          call dot2(Eipq(:,:,i2),Epq2)
+          call sum_mn_name(Epq2,idiag_E21rms,lsqrt=.true.)
+        endif
+!
+        if (idiag_E12rms/=0) then
+          call dot2(Eipq(:,:,i3),Epq2)
+          call sum_mn_name(Epq2,idiag_E12rms,lsqrt=.true.)
+        endif
+!
+        if (idiag_E22rms/=0) then
+          call dot2(Eipq(:,:,i4),Epq2)
+          call sum_mn_name(Epq2,idiag_E22rms,lsqrt=.true.)
         endif
 !
       endif
@@ -988,7 +1027,9 @@ module Testfield
         idiag_alp12=0; idiag_alp22=0; idiag_alp32=0
         idiag_eta11=0; idiag_eta21=0; idiag_eta31=0
         idiag_eta12=0; idiag_eta22=0; idiag_eta32=0
-        idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0; idiag_b0rms=0
+        idiag_b0rms=0; idiag_E0rms=0
+        idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
+        idiag_E11rms=0; idiag_E21rms=0; idiag_E12rms=0; idiag_E22rms=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1011,6 +1052,11 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'b12rms',idiag_b12rms)
         call parse_name(iname,cname(iname),cform(iname),'b22rms',idiag_b22rms)
         call parse_name(iname,cname(iname),cform(iname),'b0rms',idiag_b0rms)
+        call parse_name(iname,cname(iname),cform(iname),'E11rms',idiag_E11rms)
+        call parse_name(iname,cname(iname),cform(iname),'E21rms',idiag_E21rms)
+        call parse_name(iname,cname(iname),cform(iname),'E12rms',idiag_E12rms)
+        call parse_name(iname,cname(iname),cform(iname),'E22rms',idiag_E22rms)
+        call parse_name(iname,cname(iname),cform(iname),'E0rms',idiag_E0rms)
         call parse_name(iname,cname(iname),cform(iname),'EBpq',idiag_EBpq)
       enddo
 !
@@ -1052,11 +1098,16 @@ module Testfield
         write(3,*) 'idiag_eta12=',idiag_eta12
         write(3,*) 'idiag_eta22=',idiag_eta22
         write(3,*) 'idiag_eta32=',idiag_eta32
-        write(3,*) 'idiag_b0rms=',idiag_b0rms
         write(3,*) 'idiag_b11rms=',idiag_b11rms
         write(3,*) 'idiag_b21rms=',idiag_b21rms
         write(3,*) 'idiag_b12rms=',idiag_b12rms
         write(3,*) 'idiag_b22rms=',idiag_b22rms
+        write(3,*) 'idiag_b0rms=',idiag_b0rms
+        write(3,*) 'idiag_E11rms=',idiag_E11rms
+        write(3,*) 'idiag_E21rms=',idiag_E21rms
+        write(3,*) 'idiag_E12rms=',idiag_E12rms
+        write(3,*) 'idiag_E22rms=',idiag_E22rms
+        write(3,*) 'idiag_E0rms=',idiag_E0rms
         write(3,*) 'idiag_bx0mz=',idiag_bx0mz
         write(3,*) 'idiag_by0mz=',idiag_by0mz
         write(3,*) 'idiag_bz0mz=',idiag_bz0mz

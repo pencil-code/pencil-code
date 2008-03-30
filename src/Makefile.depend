@@ -1,6 +1,6 @@
 ### -*-Makefile-*- (for Emacs)
 ###
-### $Id: Makefile.depend,v 1.94 2008-03-25 08:31:41 brandenb Exp $
+### $Id: Makefile.depend,v 1.95 2008-03-30 16:02:36 brandenb Exp $
 ### Makefile dependencies for modular Pencil Code.
 ###
 ##
@@ -329,6 +329,8 @@ $(COSMICRAYFLUX_OBJ): cosmicrayflux.h $(COSMICRAYFLUX_SRC) $(COMMON_DEPS) $(INIT
 $(PSCALAR_OBJ): pscalar.h $(PSCALAR_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ)
 #
 $(CHIRAL_OBJ): chiral.h $(CHIRAL_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ)
+#
+$(CHEMISTRY_OBJ): chemistry.h $(CHEMISTRY_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(GENERAL_OBJ)
 #
 $(DUSTVELOCITY_OBJ): dustvelocity.h $(DUSTVELOCITY_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(GENERAL_OBJ) $(EOS_OBJ) $(PSCALAR_OBJ) $(GRAVITY_OBJ)
 #
