@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.30 2008-03-30 16:44:14 brandenb Exp $
+! $Id: testfield_z.f90,v 1.31 2008-03-30 19:10:12 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -52,7 +52,7 @@ module Testfield
   real, dimension (nx,3) :: bbb
   real :: amplaa=0., kx_aatest=1.,ky_aatest=1.,kz_aatest=1.
   real :: taainit=0.,daainit=0.
-  logical :: reinitialize_aatest=.false.
+  logical :: reinitialize_aatest=.false.,ltestfield_newz=.true.
   logical :: zextent=.true.,lsoca=.true.,lsoca_jxb=.true.,lset_bbtest2=.false.
   logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,linit_aatest=.false.
   character (len=labellen) :: itestfield='B11-B21'
@@ -71,6 +71,7 @@ module Testfield
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
+       ltestfield_newz, &
        luxb_as_aux,ljxb_as_aux,daainit,linit_aatest,bamp, &
        rescale_aatest
 
@@ -169,7 +170,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.30 2008-03-30 16:44:14 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.31 2008-03-30 19:10:12 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -200,6 +201,7 @@ module Testfield
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mz) :: ztestfield
       integer :: j,k,jtest
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
@@ -209,9 +211,15 @@ module Testfield
       endif
 !
 !  set cosine and sine function for setting test fields and analysis
+!  Choice of using rescaled z-array or original z-array
 !
-      cz=cos(2.*pi*ktestfield*(z-z0)/Lz-pi)
-      sz=sin(2.*pi*ktestfield*(z-z0)/Lz-pi)
+      if (ltestfield_newz) then
+        ztestfield=2.*pi*(z-z0)/Lz-pi
+      else
+        ztestfield=z
+      endif
+      cz=cos(ktestfield*ztestfield)
+      sz=sin(ktestfield*ztestfield)
 !
 !  Also calculate its inverse, but only if different from zero
 !
@@ -292,6 +300,10 @@ module Testfield
         write(1,'(a,i1)') 'lsoca_jxb='  ,merge(1,0,lsoca_jxb)
         write(1,'(3a)') "itestfield='",trim(itestfield)//"'"
         write(1,'(a,f5.2)') 'ktestfield=',ktestfield
+        write(1,'(a)') 'cz='
+        write(1,'(8f10.6)') cz
+        write(1,'(a)') 'sz='
+        write(1,'(8f10.6)') sz
         close(1)
       endif
 !
