@@ -1,4 +1,4 @@
-;$Id: ptestfield.pro,v 1.1 2007-09-10 05:04:22 brandenb Exp $
+;$Id: ptestfield.pro,v 1.2 2008-03-30 04:48:00 brandenb Exp $
 ;
 ;  plot alpa and eta results from time series
 ;
@@ -75,6 +75,7 @@ oplot,tt,tt-tt,li=3
 yrgam=[-.5,1.]*gammax
 plot,tt,-alp12,yr=yrgam,ytit='!7c!6'
 if itestfield eq 'B11-B22' then begin
+  gam=-.5*(alp12-alp21)
 endif else begin
   gam=-.5*alp12
 endelse
@@ -87,6 +88,8 @@ oplot,tt(good),+accum(alp21(good)),col=55
 oplot,tt,tt-tt,li=3
 ;
 ;  off-diagonals of eta tensor
+;  Warning: plot here +eta*_12 and -eta*_21.
+;  The both components correspond to delta, in EMF=...+delta x J = delta*(-Jy,+Jx,0)
 ;
 !x.title='!8t!6'
 yrdel=[-.5,1.]*delmax
@@ -131,8 +134,8 @@ fo2='(2(a,f8.5))'
 fo2='(2(a,e9.2))'
 print,' eta_t=',etam,' +/-',eta_error,fo=fo2
 print,' del_t=',delm,' +/-',del_error,fo=fo2
-print,'eta12=',eta12m,' +/-',eta12_error,fo=fo2
-print,'eta21=',eta21m,' +/-',eta21_error,fo=fo2
+print,'+eta12=',eta12m,' +/-',eta12_error,fo=fo2
+print,'-eta21=',eta21m,' +/-',eta21_error,fo=fo2
 print,'  urms=',urmsm,' +/-',urmsm_error,fo=fo
 print
 !p.multi=0
