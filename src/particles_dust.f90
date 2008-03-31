@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.210 2008-03-13 13:24:05 wlyra Exp $
+! $Id: particles_dust.f90,v 1.211 2008-03-31 15:21:17 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -135,7 +135,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.210 2008-03-13 13:24:05 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.211 2008-03-31 15:21:17 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -181,7 +181,7 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: cs0
+      use EquationOfState, only: cs0,rho0
 !
       integer :: jspec
       logical :: lstarting
@@ -295,7 +295,7 @@ module Particles
 ! V is the total volume of the box 
 !
       if (mp_tilde==0.0) then
-        rhom=1.0
+        rhom=1.0*rho0
         mp_tilde  =eps_dtog*rhom*box_volume/real(npar)
         if (lroot) then
           print*, 'initialize_particles: '// &
