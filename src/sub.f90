@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.356 2008-03-23 22:49:50 brandenb Exp $
+! $Id: sub.f90,v 1.357 2008-03-31 16:15:47 snod Exp $
 
 module Sub
 
@@ -305,7 +305,7 @@ module Sub
 !
 !  26-may-02/axel: adapted from max_mn_name
 !
-      use Cdata
+      use Cdata, only: fname,itype_name,ilabel_save
 !
       real :: a
       integer :: iname
@@ -324,7 +324,7 @@ module Sub
 !
 !  29-aug-05/anders: adapted from save_name
 !
-      use Cdata
+      use Cdata, only: fname,itype_name,ilabel_max
 !
       integer :: a, iname
 !
@@ -345,7 +345,9 @@ module Sub
 !   4-may-02/axel: adapted for fname array
 !  23-jun-02/axel: allows for taking square root in the end
 !
-      use Cdata
+      use Cdata, only: nx,lfirstpoint,fname,itype_name,ilabel_max_sqrt,&
+                       ilabel_max_dt,ilabel_max_neg,ilabel_max,        &
+                       ilabel_max_reciprocal
 !
       real, dimension (nx) :: a
       integer :: iname
@@ -395,7 +397,10 @@ module Sub
 !  Update [28-Sep-2004 wd]:
 !    Done here, but not yet in all other routines
 !
-      use Cdata
+      use Cdata, only: lfirstpoint,lspherical_coords,fname,ilabel_sum, &
+                       lcylindrical_coords,nx,sinth_weight,rcyl_weight,&
+                       itype_name,m,r2_weight,ilabel_sum_sqrt,         &
+                       ilabel_integrate
 !
       real, dimension (nx) :: a
       real :: ppart=1.,qpart=0.
@@ -468,7 +473,8 @@ module Sub
 !
 !  17-apr-06/anders : coded
 !
-      use Cdata
+      use Cdata, only: fname,fweight,it,itsub,ilabel_sum_weighted_sqrt,&
+                       ilabel_sum_weighted,itype_name
 !
       real, dimension (:) :: a, weight
       integer :: iname
@@ -508,7 +514,11 @@ module Sub
 !
 !   2-nov-05/wlad: adapted from sum_mn_name
 !
-      use Cdata
+      use Cdata, only: lcylinder_in_a_box,lsphere_in_a_box,r_ext,x,nx, &
+                       nxgrid,nygrid,nzgrid,dx,dy,dz,lfirstpoint,fname,&
+                       sinth,lspherical_coords,lcylindrical_coords,l1, &
+                       l2,pencil_case,itype_name,ilabel_sum_lim,m,nx,  &
+                       itype_name,r_int 
 !
       real, dimension (nx) :: a,aux,rlim
       type (pencil_case) :: p
@@ -576,7 +586,7 @@ module Sub
 !
 !  14-aug-03/axel: adapted from sum_mn_name
 !
-      use Cdata
+      use Cdata, only: fname,lfirstpoint,itype_name,ilabel_surf
 !
       real, intent(in) :: a
       integer, intent(in) :: iname
@@ -607,7 +617,8 @@ module Sub
 !   30-may-03/tony: adapted from sum_mn_name
 !   13-nov-06/tony: modified to handle stretched mesh
 !
-      use Cdata
+      use Cdata, only: nx,lequidist,xprim,yprim,zprim,l1,l2,m,n,fname,&
+                       lfirstpoint,itype_name,ilabel_integrate
 !
       real, dimension (nx) :: a,fac
       integer :: iname
@@ -640,7 +651,8 @@ module Sub
 !
 !   5-jun-02/axel: adapted from sum_mn_name
 !
-      use Cdata
+      use Cdata, only: nx,lfirstpoint,fnamez,nghost,lspherical_coords, &
+                       ipz,x,lcylindrical_coords,n,l1,l2
 !
       real, dimension (nx) :: a
       integer :: iname,n_nghost,isum
@@ -672,7 +684,8 @@ module Sub
 !
 !  12-oct-05/anders: adapted from xysum_mn_name_z
 !
-      use Cdata
+      use Cdata, only: nx,lfirstpoint,m,nghost,ipy,fnamey,sinth,l1,l2, &
+                       lspherical_coords,x
 !
       real, dimension (nx) :: a
       integer :: iname,m_nghost,isum
@@ -704,7 +717,8 @@ module Sub
 !
 !   2-oct-05/anders: adapted from xysum_mn_name_z
 !
-      use Cdata
+      use Cdata, only: nx,lfirstpoint,l1,l2,fnamex,lspherical_coords,x,&
+                       sinth,m,lcylindrical_coords
 !
       real, dimension (nx) :: a
       integer :: iname,isum
@@ -734,8 +748,9 @@ module Sub
 !
 !   18-jun-07/tobi: adapted from xysum_mn_name_z
 !
-      use Cdata
-
+      use Cdata, only: nx,lfirstpoint,fnamez,m,m1,m2,ipy,nprocy,lperi, &
+                       ipz,nghost,n
+!
       real, dimension (nx) :: a
       integer :: iname
       real :: fac,suma
@@ -770,7 +785,8 @@ module Sub
 !
 !   18-jun-07/tobi: adapted from xzsum_mn_name_y
 !
-      use Cdata
+      use Cdata, only: nx,lfirstpoint,fnamey,n,n1,n2,ipz,nprocz,lperi,&
+                       m,nghost,ipy
 
       real, dimension (nx) :: a
       integer :: iname
@@ -806,7 +822,8 @@ module Sub
 !
 !   18-jun-07/tobi: adapted from yzsum_mn_name_x
 !
-      use Cdata
+      use Cdata, only: nx,lfirstpoint,fnamex,m,m1,m2,ipy,nprocy,nprocz,&
+                       lperi,ipz,n,n1,n2
 !
       real, dimension (nx) :: a
       integer :: iname
@@ -839,7 +856,8 @@ module Sub
 !
 !  29-jan-07/wlad: adapted from yzsum_mn_name_x and phisum_mn_name
 !
-      use Cdata
+      use Cdata, only: nx,lfirstpoint,fnamer,nrcyl,phiavg_profile,n,nz,&
+                       nghost,nnamer,mnamer
       use Mpicomm, only: stop_it
 !
       real, dimension (nx) :: a
@@ -877,7 +895,8 @@ module Sub
 !
 !   7-jun-05/axel: adapted from zsum_mn_name_xy
 !
-      use Cdata
+      use Cdata, only: nx,lfirstpoint,fnamexz,n,nghost,x,l1,l2,ipz,    &
+                       lspherical_coords,lcylindrical_coords
 !
       real, dimension (nx) :: a
       integer :: iname,n_nghost
@@ -907,7 +926,7 @@ module Sub
 !
 !  19-jun-02/axel: adapted from xysum_mn_name
 !
-      use Cdata
+      use Cdata, only: nx,lfirstpoint,fnamexy,m,nghost,ipy 
 !
       real, dimension (nx) :: a
       integer :: iname,m_nghost
@@ -931,8 +950,8 @@ module Sub
 !
 !   2-feb-03/wolf: coded
 !
-      use Cdata
-      use Mpicomm
+      use Cdata, only: pencil_case,nrcyl,drcyl,phiavg_profile,rcyl,    &
+                       lcylinder_in_a_box,lsphere_in_a_box
 !
       type (pencil_case) :: p
       real :: r0,width
@@ -963,7 +982,8 @@ module Sub
 !
 !   2-feb-03/wolf: adapted from xysum_mn_name_z
 !
-      use Cdata
+      use Cdata, only: n,nghost,ipz,fnamerz,phiavg_profile,lfirstpoint,&
+                       nx,nrcyl
 !
       real, dimension (nx) :: a
       integer :: iname,n_nghost,ir
@@ -1032,7 +1052,8 @@ module Sub
 !   17-dec-01/wolf: coded
 !   20-jun-07/dhruba:adapted for spherical polar coordinate system
 !
-      use Cdata 
+      use Cdata, only: nx,l1,l2,m,sinth,lfirstpoint,lspherical_coords, &
+                       lcylindrical_coords,x
 !
       real, dimension (nx) :: a
       real :: res
@@ -1069,7 +1090,8 @@ module Sub
 !
 !   1-apr-01/axel+wolf: coded
 !
-      use Cdata 
+      use Cdata, only: nx,l1,l2,m,sinth,lfirstpoint,lspherical_coords, &
+                       lcylindrical_coords,x
 !
       real, dimension (nx) :: a
       real :: res
@@ -1107,7 +1129,8 @@ module Sub
 !
 !   1-apr-01/axel+wolf: coded
 !
-      use Cdata 
+      use Cdata, only: nx,l1,l2,m,sinth,lfirstpoint,lspherical_coords, &
+                       lcylindrical_coords,x
 !
       real, dimension (nx) :: a2
       real :: res
@@ -1145,7 +1168,8 @@ module Sub
 !
 !   1-apr-01/axel+wolf: coded
 !
-      use Cdata
+      use Cdata, only: nx,l1,l2,m,sinth,lfirstpoint,lspherical_coords, &
+                       lcylindrical_coords,x
 !
       real, dimension (nx) :: a
       real :: res
@@ -1180,7 +1204,7 @@ module Sub
 !  dot product with itself, to calculate max and rms values of a vector
 !  29-sep-97/axel: coded,
 !
-      use Cdata
+      use Cdata, only: mx,my,mz
 !
       real, dimension (mx,my,mz) :: a,b
 !
@@ -1193,7 +1217,7 @@ module Sub
 !  dot product, c=a.b, on global arrays
 !  29-sep-97/axel: coded
 !
-      use Cdata
+      use Cdata, only: mx,my,mz
 !
       real, dimension (mx,my,mz,3) :: a,b
       real, dimension (mx,my,mz) :: c
@@ -1210,7 +1234,7 @@ module Sub
 !  dot product, c=a.b, on pencil arrays
 !   3-apr-01/axel+gitta: coded
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension (nx,3) :: a,b
       real, dimension (nx) :: c
@@ -1227,7 +1251,7 @@ module Sub
 !  dot product, c=a.b, between non-pencilized vector and  pencil array
 !  10-oct-06/axel: coded
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension (3)    :: a
       real, dimension (nx,3) :: b
@@ -1245,7 +1269,7 @@ module Sub
 !  dot product, c=a.b, between non-pencilized vector and  pencil matrix
 !  10-oct-06/axel: coded
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension (3)      :: a
       real, dimension (nx,3,3) :: b
@@ -1281,7 +1305,7 @@ module Sub
 !  dot product with itself, to calculate max and rms values of a vector
 !  29-sep-97/axel: coded,
 !
-      use Cdata
+      use Cdata, only: mx,my,mz,nx,l1,l2,m,n
 !
       real, dimension (mx,my,mz,3) :: a
       real, dimension (nx) :: b
@@ -1303,7 +1327,7 @@ module Sub
 !   1-apr-01/axel: adapted for cache-efficient sub-array formulation
 !  25-jun-05/bing: added optional args for calculating |a|
 !
-      use Cdata
+      use Cdata, only: nx,tini
 !
       real, dimension (nx,3) :: a
       real, dimension (nx) :: b,a_max
@@ -1353,7 +1377,7 @@ module Sub
 !  dot product, add to previous value
 !  11-nov-02/axel: adapted from dot_mn
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension (nx,3) :: a,b
       real, dimension (nx) :: c
@@ -1370,7 +1394,7 @@ module Sub
 !  dot product, subtract from previous value
 !  21-jul-03/axel: adapted from dot_mn_sub
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension (nx,3) :: a,b
       real, dimension (nx) :: c
@@ -1388,7 +1412,7 @@ module Sub
 !  trace of a matrix
 !   3-apr-01/axel+gitta: coded
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension (nx,3,3) :: a
       real, dimension (nx) :: b
@@ -1406,7 +1430,7 @@ module Sub
 !   21-dec-01/nils: coded
 !   16-jul-02/nils: adapted from pencil_mpi
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension (nx,3) :: a,b
       real, dimension (nx,3,3) :: c
@@ -1426,7 +1450,7 @@ module Sub
 !   21-dec-01/nils: coded
 !   16-jul-02/nils: adapted from pencil_mpi
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension (nx,3,3) :: a,b
       real, dimension (nx) :: c
@@ -1447,7 +1471,7 @@ module Sub
 !
 !  11-nov-02/axel: adapted from multmm_sc_mn
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension (nx,3,3) :: a
       real, dimension (nx) :: b
@@ -1469,7 +1493,7 @@ module Sub
 !
 !   3-apr-01/axel+gitta: coded
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension (nx,3,3) :: a
       real, dimension (nx,3) :: b,c
@@ -1498,7 +1522,7 @@ module Sub
 !
 !  21-jul-03/axel: adapted from multmv_mn
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension (nx,3,3) :: a
       real, dimension (nx,3) :: b,c
@@ -1525,7 +1549,7 @@ module Sub
 !  of a vector, c=b*dot2(a)
 !  29-sep-97/axel: coded,
 !
-      use Cdata
+      use Cdata, only: mx,my,mz
 !
       real, dimension (mx,my,mz,3) :: a
       real, dimension (mx,my,mz) :: b,c
@@ -1542,7 +1566,7 @@ module Sub
 !  negative dot product, c=-a.b
 !  29-sep-97/axel: coded
 !
-      use Cdata
+      use Cdata, only: mx,my,mz
 !
       real, dimension (mx,my,mz,3) :: a,b
       real, dimension (mx,my,mz) :: c
@@ -1559,7 +1583,7 @@ module Sub
 !  add dot product, c=c+a.b
 !  29-sep-97/axel: coded
 !
-      use Cdata
+      use Cdata, only: mx,my,mz
 !
       real, dimension (mx,my,mz,3) :: a,b
       real, dimension (mx,my,mz) :: c
@@ -1576,7 +1600,7 @@ module Sub
 !  multiply scalar with a vector
 !  29-sep-97/axel: coded
 !
-      use Cdata
+      use Cdata, only: mx,my,mz
 !
       real, dimension (mx,my,mz,3) :: b,c
       real, dimension (mx,my,mz) :: a
@@ -1598,7 +1622,7 @@ module Sub
 !  22-nov-01/nils erland: coded
 !  10-oct-03/axel: a is now the scalar (now consistent with old routines)
 !
-      use Cdata
+      use Cdata, only: nx
 !
       intent(in) :: a,b
       intent(out) :: c
@@ -1618,7 +1642,7 @@ module Sub
 !  multiply scalar with a vector and subtract from another vector
 !  29-oct-97/axel: coded
 !
-      use Cdata
+      use Cdata, only: mx,my,mz
 !
       real, dimension (mx,my,mz,3) :: a,c,d
       real, dimension (mx,my,mz) :: b
@@ -1638,7 +1662,7 @@ module Sub
 !  multiply scalar with a vector and subtract from another vector
 !  29-oct-97/axel: coded
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension (nx,3) :: a,c,d
       real, dimension (nx) :: b
@@ -1658,7 +1682,7 @@ module Sub
 !  multiply scalar with a vector and subtract from another vector
 !  29-oct-97/axel: coded
 !
-      use Cdata
+      use Cdata, only: mx,my,mz
 !
       real, dimension (mx,my,mz,3) :: a,c,d
       real, dimension (mx,my,mz) :: b
@@ -1678,7 +1702,7 @@ module Sub
 !  vector pencil multiplied with scalar pencil, gives vector pencil
 !   22-nov-01/nils erland: coded
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension (nx,3) :: a, c
       real, dimension (nx) :: b
@@ -1694,7 +1718,7 @@ module Sub
 !
 !  cross product, c = a x b, on global arrays
 !
-      use Cdata
+      use Cdata, only: mx,my,mz
 !
       real, dimension (mx,my,mz,3) :: a,b,c
 !
@@ -1712,7 +1736,7 @@ module Sub
 !  cross product, c = a x b, for pencil variables.
 !  Previously called crossp.
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension (nx,3) :: a,b,c
 !
@@ -1730,8 +1754,6 @@ module Sub
 !  cross product, c = a x b, for simple 3-d vectors
 !  (independent of position)
 !
-      use Cdata
-!
       real, dimension (3) :: a,b,c
 !
       intent(in) :: a,b
@@ -1748,8 +1770,8 @@ module Sub
 !  calculate gradient of a vector, return matrix
 !   3-apr-01/axel+gitta: coded
 !
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,mfarray,nx
+      use Deriv, only: der,der2,der3,der4,der5,der6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: g
@@ -1787,8 +1809,8 @@ module Sub
 !  return matrix
 !  31-jul-07/dhruba: adapted from gij
 !
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,nx
+      use Deriv, only: der
       use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz) :: psif
@@ -1814,8 +1836,8 @@ module Sub
 !  calculate gradient of a scalar, get vector
 !  29-sep-97/axel: coded
 !
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,mfarray,nx
+      use Deriv, only: der
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: g
@@ -1837,8 +1859,8 @@ module Sub
 !  calculate gradient of a scalar, get vector
 !  26-nov-02/tony: coded
 !
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,nx
+      use Deriv, only: der
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx,3) :: g
@@ -1860,8 +1882,8 @@ module Sub
 !  Calculate 5th order gradient of a scalar, get vector
 !  03-jun-07/anders: adapted
 !
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,mfarray,nx
+      use Deriv, only: der5
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: g
@@ -1884,8 +1906,9 @@ module Sub
 !  16-jul-02/nils: adapted from pencil_mpi
 !  31-aug-07/wlad: adapted for cylindrical and spherical coords
 !
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,r1_mn,l1,l2,m,n,cotth,rcyl_mn1,nx,     &
+                       lspherical_coords,lcylindrical_coords,mfarray
+      use Deriv, only: der
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1915,8 +1938,10 @@ module Sub
     end subroutine div
 !***********************************************************************
     subroutine div_other(f,g)
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,r1_mn,l1,l2,m,n,cotth,rcyl_mn1,nx,     &
+                       lspherical_coords,lcylindrical_coords
+ 
+      use Deriv, only: der
       use Mpicomm, only: stop_it
 
       real, dimension (mx,my,mz,3) :: f
@@ -1946,7 +1971,8 @@ module Sub
 !  21-feb-07/axel: corrected spherical coordinates
 !  14-mar-07/wlad: added cylindrical coordinates 
 !
-      use Cdata
+      use Cdata, only: nx,r1_mn,rcyl_mn1,cotth,m,lspherical_coords,    &
+                       lcylindrical_coords
 !
       real, dimension (nx,3,3) :: aij
       real, dimension (nx,3) :: a
@@ -1976,7 +2002,8 @@ module Sub
 !  21-feb-07/axel: corrected spherical coordinates
 !  14-mar-07/wlad: added cylindrical coordinates 
 !
-      use Cdata
+      use Cdata, only: nx,r1_mn,rcyl_mn1,cotth,m,lspherical_coords,    &
+                       lcylindrical_coords
 !
       real, dimension (nx,3,3), intent (in) :: aij
       real, dimension (nx,3), intent (in), optional :: a
@@ -2009,8 +2036,9 @@ module Sub
 !  21-feb-07/axel: corrected spherical coordinates
 !  14-mar-07/wlad: added cylindrical coordinates 
 !
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,mfarray,n,r1_mn,rcyl_mn1,cotth,m,l1,l2,&
+                        lspherical_coords,lcylindrical_coords,nx
+      use Deriv, only: der
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: g
@@ -2053,8 +2081,9 @@ module Sub
 !  calculate curl of a vector, get vector
 !  22-oct-02/axel+tarek: adapted from curl
 !
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,mfarray,nx,                           &
+                        lspherical_coords,lcylindrical_coords
+      use Deriv, only: der
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2097,8 +2126,9 @@ module Sub
 !  12-sep-97/axel: coded
 !   7-mar-07/wlad: added cylindrical coordinates 
 !
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,mfarray,nx,r1_mn,cotth,m,rcyl_mn1,     &
+                       lspherical_coords,lcylindrical_coords
+      use Deriv, only: der,der2
       use Mpicomm, only: stop_it
 !
       intent(in) :: f,k
@@ -2133,8 +2163,9 @@ module Sub
 !  28-oct-97/axel: coded
 !  15-mar-07/wlad: added cylindrical coordinates 
 !
-      use Cdata
-      use Deriv,only:der
+      use Cdata, only: mx,my,mz,mfarray,r1_mn,cotth,rcyl_mn2,m,n,l1,l2,&
+                       lcylindrical_coords,lspherical_coords,nx,sin1th
+      use Deriv, only: der
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2194,9 +2225,10 @@ module Sub
 !  12-sep-01/axel: coded
 !  15-mar-07/wlad: added cylindrical coordinates 
 !
-      use Cdata
-      use Deriv
-      use Mpicomm,only:stop_it
+      use Cdata, only: mx,my,mz,mfarray,nx,l1,l2,m,n,rcyl_mn2,rcyl_mn1,&
+                       lspherical_coords,lcylindrical_coords
+      use Deriv, only: der,der2,derij
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: fjji,fijj
@@ -2327,9 +2359,10 @@ module Sub
 !
 !   7-feb-04/axel: adapted from del2v_etc
 !
-      use Cdata
-      use Deriv
-      use Mpicomm,only:stop_it
+      use Cdata, only: mx,my,mz,mfarray,nx,                            &
+                       lspherical_coords,lcylindrical_coords
+      use Deriv, only: der2,derij
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: fjji,fijj
@@ -2376,8 +2409,9 @@ module Sub
 !  calculate del4 of a vector, get vector
 !  09-dec-03/nils: adapted from del6v
 !
-      use Cdata
-      use Mpicomm, only:stop_it
+      use Cdata, only: mx,my,mz,mfarray,nx,lpencil_check,              &
+                       lspherical_coords,lcylindrical_coords
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: del4f
@@ -2409,8 +2443,9 @@ module Sub
 !  28-oct-97/axel: coded
 !  24-apr-03/nils: adapted from del2v
 !
-      use Cdata
-      use Mpicomm, only:stop_it
+      use Cdata, only: mx,my,mz,mfarray,nx,lpencil_check,              &
+                       lspherical_coords,lcylindrical_coords
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: del6f
@@ -2445,9 +2480,11 @@ module Sub
 !  23-feb-07/axel: added spherical coordinates
 !   7-mar-07/wlad: added cylindrical coordinates 
 !
-      use Cdata
-      use Deriv
-      use Mpicomm, only:stop_it
+      use Cdata, only: mx,my,mz,mfarray,cotth,m,r1_mn,rcyl_mn1,r2_mn,  &
+                       sin2th,rcyl_mn2,lspherical_coords,nx,           &
+                       lcylindrical_coords
+      use Deriv, only: der2,derij
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       integer, intent (in) :: iref
@@ -2572,9 +2609,10 @@ module Sub
 !  calculate B_i,j = eps_ikl A_l,jk and A_l,kk
 !
 !  1-aug-07/dhruba : adapted from gij_etc
-      use Cdata
-      use Deriv
-      use Mpicomm, only:stop_it
+      use Cdata, only: mx,my,mz,lspherical_coords,lcylindrical_coords,&
+                       nx,rcyl_mn1,rcyl_mn2,m,cotth,sin2th,r1_mn,r2_mn
+      use Deriv, only: der2,derij
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz), intent (in) :: psif
       real, dimension(3), intent(in) :: ee
@@ -2699,8 +2737,8 @@ module Sub
 !
 !  11-jul-02/axel: coded
 !
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,mfarray,nx
+      use Deriv, only: der2,derij
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: g
@@ -2762,8 +2800,9 @@ module Sub
 !  8-jul-02/wolf: coded
 !  9-dec-03/nils: adapted from del6
 !
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,mfarray,nx,lpencil_check,              &
+                       lspherical_coords,lcylindrical_coords
+      use Deriv, only: der4
       use Mpicomm, only:stop_it
 !
       intent(in) :: f,k
@@ -2792,9 +2831,10 @@ module Sub
 !  than del2^3) of a scalar for hyperdiffusion
 !  8-jul-02/wolf: coded
 !
-      use Cdata
-      use Deriv
-      use Mpicomm, only:stop_it
+      use Cdata, only: mx,my,mz,mfarray,nx,lpencil_check,              &
+                       lspherical_coords,lcylindrical_coords
+      use Deriv, only: der6
+      use Mpicomm, only: stop_it
 !
       intent(in) :: f,k
       intent(out) :: del6f
@@ -2823,9 +2863,9 @@ module Sub
 !
 !  13-jun-05/anders: adapted from del6
 !
-      use Cdata
-      use Deriv
-      use Mpicomm, only:stop_it
+      use Cdata, only: mx,my,mz,nx,lspherical_coords,lcylindrical_coords
+      use Deriv, only: der6_other
+      use Mpicomm, only: stop_it
 !
       intent(in) :: f
       intent(out) :: del6f
@@ -2853,9 +2893,9 @@ module Sub
 !  numbers.
 !  8-jul-02/wolf: coded
 !
-      use Cdata
-      use Deriv
-      use Mpicomm, only:stop_it
+      use Cdata, only: mx,my,mz,mfarray,nx
+      use Deriv, only: der6
+      use Mpicomm, only: stop_it
 !
       intent(in) :: f,k
       intent(out) :: del6f
@@ -2879,8 +2919,9 @@ module Sub
 !
 !  30-oct-06/wlad: adapted from del6
 !
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,lspherical_coords,lcylindrical_coords, &
+                       mfarray,nx
+      use Deriv, only: der6
       use Mpicomm, only:stop_it
 !
       intent(in) :: f,k
@@ -2911,8 +2952,8 @@ module Sub
 !
 !  30-oct-06/wlad: adapted from del6v
 !
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,lspherical_coords,lcylindrical_coords, &
+                       mfarray,nx
       use Mpicomm, only:stop_it
 !
       intent(in) :: f,k
@@ -2946,7 +2987,8 @@ module Sub
 !  21-feb-07/axel+dhruba: added spherical coordinates
 !  12-mar-07/wlad: added cylindrical coordinates
 !
-      use Cdata
+      use Cdata, only: mx,my,mz,lspherical_coords,lcylindrical_coords, &
+                       mfarray,r1_mn,cotth,rcyl_mn1,m,nx
 !
       intent(in) :: f,k,gradf,uu,upwind
       intent(out) :: ugradf
@@ -3000,7 +3042,8 @@ module Sub
 !  21-feb-07/axel+dhruba: added spherical coordinates
 !   7-mar-07/wlad: added cylindrical coordinates
 !
-      use Cdata
+      use Cdata, only: mx,my,mz,lspherical_coords,lcylindrical_coords, &
+                       mfarray,r1_mn,cotth,rcyl_mn1,l1,l2,m,n,nx
 !
       intent(in) :: f,k,gradf,uu,upwind
       intent(out) :: ugradf
@@ -3055,8 +3098,10 @@ module Sub
 ! 28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
 ! 29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates. 
 !
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,mfarray,nx,sin1th,r1_mn,rcyl_mn1,m,    &
+                       lcartesian_coords,lcylindrical_coords,          &
+                       lspherical_coords
+      use Deriv, only: der6
 !
       intent(in) :: f,k,gradf,uu,upwind
       intent(out) :: ugradf
@@ -3110,7 +3155,8 @@ module Sub
 !
 !  23-mar-08/axel: adapted from u_dot_grad_vec
 !
-      use Cdata
+      use Cdata, only: nx,lspherical_coords,lcylindrical_coords,r1_mn,&
+                       m,cotth,rcyl_mn1
 !
       intent(in) :: hh,gradf,ff
       intent(out) :: hgradf
@@ -3151,7 +3197,7 @@ module Sub
 !
 !  23-mar-08/axel: adapted from u_dot_grad_scl
 !
-      use Cdata
+      use Cdata, only: nx
 !
       intent(in) :: hh,gradf
       intent(out) :: hgradf
@@ -3167,8 +3213,8 @@ module Sub
 !
 !  Do advection-type term u.grad f_k for upwind 1st order der scheme.
 !
-      use Cdata
-      use Deriv
+      use Cdata, only: mx,my,mz,mfarray,nx
+      use Deriv, only: der_upwind1st
 !
       intent(in) :: f,uu
       intent(out) :: gradf
@@ -3188,8 +3234,6 @@ module Sub
 !  read particle snapshot file
 !  11-apr-00/axel: adapted from input
 !
-      use Cdata
-!
       integer :: nv
       real, dimension (nv) :: a
       character (len=*) :: file
@@ -3204,7 +3248,7 @@ module Sub
 !  read data (random seed, etc.) from file
 !  11-apr-00/axel: adapted from input
 !
-      use Cdata
+      use Cdata, only: lroot
       use Mpicomm, only: stop_it
 !
       integer :: nv,iostat
@@ -3228,7 +3272,7 @@ module Sub
 !  read formatted snapshot
 !   5-aug-98/axel: coded
 !
-      use Cdata
+      use Cdata, only: mx,my,mz,t,x,y,z
 !
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
@@ -3275,7 +3319,7 @@ module Sub
 !  write formatted snapshot, otherwise like output
 !   5-aug-98/axel: coded
 !
-      use Cdata
+      use Cdata, only: mx,my,mz,t,x,y,z
 !
       integer :: nv
       character (len=*) :: file
@@ -3315,7 +3359,9 @@ module Sub
 !
 !   8-sep-01/axel: adapted to take myout,mzout
 !
-      use Cdata
+      use Cdata, only: nghost,nxgrid,nygrid,nzgrid,mvar,maux,lroot,   &
+                       lmonolithic_io,mx,my,mz,mglobal,lprocz_slowest,&
+                       nprocx,nprocy,nprocz,ipx,ipy,ipz
 !
       character (len=*) :: file
       character         :: prec
@@ -3368,7 +3414,8 @@ module Sub
 !***********************************************************************
     subroutine read_snaptime(file,tout,nout,dtout,t)
 !
-      use Mpicomm
+    use Cdata, only: lroot  
+    use Mpicomm, only: mpibcast_real
 !
 !  Read in output time for next snapshot (or similar) from control file
 !
@@ -3509,7 +3556,7 @@ module Sub
 !
 !  22-jul-03/axel: coded
 !
-      use Cdata
+      use Cdata, only: nx,lfirstpoint,m,n,nghost,llastpoint,t
 !
       character (len=*) :: file
       real, dimension(nx,3) :: vv
@@ -3556,7 +3603,7 @@ module Sub
 !  print variable for debug purposes
 !  29-oct-97/axel: coded
 !
-      use Cdata
+      use Cdata, only: mx,my,mz,ip
 !
       character (len=*) :: label
       real, dimension (mx,my,mz) :: a
@@ -3572,7 +3619,7 @@ module Sub
 !  print variable for debug purposes
 !  29-oct-97/axel: coded
 !
-      use Cdata
+      use Cdata, only: mx,my,mz,ip
 !
       character (len=*) :: label
       real, dimension (mx,my,mz,3) :: a
@@ -3591,7 +3638,7 @@ module Sub
 !  Remove large spikes from
 !  14-aug-06/tony: coded
 !
-      use Cdata
+      use Cdata, only: mx,my,mz,mfarray,nx,m,n,nxgrid,nygrid,nzgrid,l1,l2
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: retval
@@ -3642,7 +3689,7 @@ module Sub
 !  Smooth scalar field FF using predefined constant gaussian like kernel
 !  20-jul-06/tony: coded
 !
-      use Cdata
+      use Cdata, only: mx,my,mz,mfarray,nx,l2,l1,m,n
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: smth
@@ -3662,7 +3709,7 @@ module Sub
 !
 !  WARNING: This routine is likely to be broken if you use MPI
 !
-      use Cdata
+      use Cdata, only: mx,my,mz
 !
       real, dimension (mx,my,mz) :: ff
       integer :: j,nsmooth
@@ -3681,7 +3728,7 @@ module Sub
 !
 !  WARNING: This routine is likely to be broken if you use MPI
 !
-      use Cdata
+      use Cdata, only: mx,my,mz
 !
       real, dimension (mx,my,mz) :: ff,gg
       integer :: idir,i,nsmooth
@@ -3714,7 +3761,7 @@ module Sub
 !  extract nearest maxima
 !  12-oct-97/axel: coded
 !
-      use Cdata
+      use Cdata, only: mx,my,mz
 !
       real, dimension (mx,my,mz) :: f,g
 !
@@ -3749,9 +3796,9 @@ module Sub
 !  calculate th location of the first few maxima
 !   6-jan-00/axel: coded
 !
-      use Cdata
+      use Cdata, only: mz,my,mx,t,x,y,z
 !
-      integer :: lun,l,imax,imax2
+      integer :: n,m,l,lun,imax,imax2
       integer, parameter :: nmax=10
       real, dimension (4,nmax) :: fmax
       real, dimension (mx,my,mz) :: f
@@ -3799,7 +3846,7 @@ module Sub
 !  19-jul-02/wolf: coded
 !  29-may-04/axel: allowed variable name to be 8 chars long
 !
-      use Cdata
+      use Cdata, only: bcx,bcy,bcz
 !
       character (len=*) :: varname_input
       integer :: idx
@@ -4485,7 +4532,7 @@ module Sub
 !  30-apr-04/anders: coded
 !  12-jun-04/anders: region or intervals supplied in call
 !
-        use Cdata
+        use Cdata, only: m,n,mx,my,mz,t,it,itsub,iproc,varname
         use Mpicomm, only: stop_it
 !
         real, dimension(:,:,:,:) :: f
@@ -4829,8 +4876,9 @@ module Sub
 !
 !  24-jan-02/wolf: coded
 !
+        use Cdata, only: lroot
         use Cparam, only: mcom,bclen
-        use Mpicomm
+        use Mpicomm, only: stop_it
 !
         character (len=2*bclen+1), dimension(mcom) :: bc
         character (len=bclen), dimension(mcom) :: bc1,bc2
@@ -4866,8 +4914,9 @@ module Sub
 !
 !   6-jul-03/axel: adapted from parse_bc
 !
+        use Cdata, only: lroot
         use Cparam, only: bclen
-        use Mpicomm
+        use Mpicomm, only: stop_it
 !
         character (len=2*bclen+1), dimension(3) :: bc
         character (len=bclen), dimension(3) :: bc1,bc2
@@ -4903,8 +4952,9 @@ module Sub
 !
 !   6-jul-03/axel: adapted from parse_bc
 !
+        use Cdata, only: lroot
         use Cparam, only: bclen
-        use Mpicomm
+        use Mpicomm, only: stop_it
 !
         character (len=2*bclen+1) :: bc
         character (len=bclen) :: bc1,bc2
@@ -5130,7 +5180,7 @@ nameloop: do
 !  Read the first line from a file; return empty string if file is empty
 !  4-oct-02/wolf: coded
 !
-        use Cparam
+        use Cparam, only: linelen
 !
         character (len=linelen) :: read_line_from_file,line
         character (len=*) :: fname
@@ -5159,7 +5209,7 @@ nameloop: do
 !
 !  WARNING: THIS ROUTINE IS LIKELY TO BE BROKEN IF YOU USE MPI
 !
-      use Cdata
+      use Cdata, only: mx,my,mz,mfarray,t,ilnrho
 !
       real, dimension (mx,my,mz) :: tmp
       real, dimension (mx,my,mz,mfarray) :: f
@@ -5204,7 +5254,9 @@ nameloop: do
 !  04-oct-02/wolf: coded
 !  08-oct-02/tony: use safe_character_assign() to detect string overflows
 !
-      use Cdata
+      use Cdata, only: datelen,linelen,lhydro,ldensity,lentropy,mx,my, &
+                       mz,lmagnetic,lradiation,lpscalar,datadir,dx,dy, &
+                       dz
       use General, only: safe_character_append
 !
       real :: x00,y00,z00
@@ -5293,7 +5345,7 @@ nameloop: do
 !
 !  10-jul-05/axel: coded
 !
-      use Cdata
+      use Cdata, only: nx,lwrite_prof,m,m1,directory,n,n1,z
       use General, only: safe_character_assign
 !
       real, dimension(nx) :: a
@@ -5332,7 +5384,7 @@ nameloop: do
 !
 !  10-jul-05/axel: coded
 !
-      use Cdata
+      use Cdata, only: directory,it,nt
       use General, only: safe_character_assign
 !
       character (len=120) :: filename,wfile,listfile
@@ -5417,7 +5469,7 @@ nameloop: do
 !
 !  single  blob
 !
-      use Cdata
+      use Cdata, only: mx,my,mz,mfarray,lroot,x,y,z,ip
 !
 !  27-jul-02/axel: coded
 !
@@ -5591,7 +5643,7 @@ nameloop: do
 !   9-apr-04/axel: adapted for general purpose tensor diffusion
 !  25-jun-05/bing:
 !
-      use Cdata
+      use Cdata, only: nx,tini,dxmax
 !
       real, dimension (nx,3,3) :: ecr_ij,bij
       real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp1,gvKpara1,tmpv
@@ -5693,7 +5745,7 @@ nameloop: do
 !
 !  30-jan-04/wolf: coded
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension(nx) :: maxf,f
 !
@@ -5710,7 +5762,7 @@ nameloop: do
 !
 !  30-jan-04/wolf: coded
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension(nx) :: maxf
       real                :: f
@@ -5728,7 +5780,7 @@ nameloop: do
 !
 !  30-jan-04/wolf: coded
 !
-      use Cdata
+      use Cdata, only: nx
 !
       real, dimension(nx) :: maxf
       real                :: f1,f2,f3
@@ -5747,7 +5799,7 @@ nameloop: do
 !
 !   6-Sep-05/tobi: coded
 !
-      use Cdata
+      use Cdata, only: nx
 
       real, dimension(nx), intent(in) :: s
       real, dimension(nx,3), intent(in) :: v
@@ -5766,7 +5818,7 @@ nameloop: do
 !
 !   6-Sep-05/tobi: coded
 !
-      use Cdata
+      use Cdata, only: nx
 
       real, dimension(nx,3), intent(in) :: v
       real, dimension(nx), intent(in) :: s
@@ -5785,7 +5837,7 @@ nameloop: do
 !
 !   6-Sep-05/tobi: coded
 !
-      use Cdata
+      use Cdata, only: nx
 
       real, dimension(nx), intent(in) :: s
       real, dimension(nx,3), intent(in) :: v
@@ -5804,7 +5856,7 @@ nameloop: do
 !
 !   6-Sep-05/tobi: coded
 !
-      use Cdata
+      use Cdata, only: nx
 
       real, dimension(nx,3), intent(in) :: v
       real, dimension(nx), intent(in) :: s
@@ -5823,7 +5875,7 @@ nameloop: do
 !
 !   6-Sep-05/tobi: coded
 !
-      use Cdata
+      use Cdata, only: nx
 
       real, dimension(nx), intent(in) :: s
       real, dimension(nx,3), intent(in) :: v
@@ -5842,7 +5894,7 @@ nameloop: do
 !
 !   6-Sep-05/tobi: coded
 !
-      use Cdata
+      use Cdata, only: nx
 
       real, dimension(nx,3), intent(in) :: v
       real, dimension(nx), intent(in) :: s
@@ -5861,7 +5913,7 @@ nameloop: do
 !
 !   6-Sep-05/tobi: coded
 !
-      use Cdata
+      use Cdata, only: nx
 
       real, dimension(nx), intent(in) :: s
       real, dimension(nx,3), intent(in) :: v
@@ -5880,7 +5932,7 @@ nameloop: do
 !
 !   6-Sep-05/tobi: coded
 !
-      use Cdata
+      use Cdata, only: nx
 
       real, dimension(nx,3), intent(in) :: v
       real, dimension(nx), intent(in) :: s
