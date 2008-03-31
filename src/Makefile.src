@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.388 2008-03-30 16:02:36 brandenb Exp $
+### $Id: Makefile.src,v 1.389 2008-03-31 16:04:18 snod Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -1226,7 +1226,7 @@ EXECUTABLES=start.x run.x \
 # files before linking, because FC=g95_quick_and_dirty will otherwise
 # delete already compiled .x files:
 LAST_OBJ=$(EXECUTABLES:.x=.o)
-code: Makefile_inc
+code: Makefile_inc cparam.inc
 	@# Realize error even when last command in pipe is FCCLEANER:
 	@echo "$(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
