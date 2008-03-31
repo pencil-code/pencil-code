@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.36 2008-03-27 13:56:48 nbabkovs Exp $
+! $Id: temperature_ionization.f90,v 1.37 2008-03-31 12:29:12 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2,uglnTT
+! PENCILS PROVIDED Ma2,uglnTT,DYDt_reac,DYDt_diff
 !
 !***************************************************************
 module Entropy
@@ -94,7 +94,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.36 2008-03-27 13:56:48 nbabkovs Exp $")
+           "$Id: temperature_ionization.f90,v 1.37 2008-03-31 12:29:12 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -306,6 +306,11 @@ module Entropy
 
       if (lheatc_hyper3) lpenc_requested(i_del6lnTT)=.true.
 
+      if (lchemistry) then
+        lpenc_requested(i_DYDt_reac)=.true.
+        lpenc_requested(i_DYDt_diff)=.true.
+      endif
+
 !
 !  Diagnostics
 !
@@ -475,7 +480,11 @@ module Entropy
 !  Need to add left-hand-side of the continuity equation (see manual)
 !
       if (ldensity) then
-      if (.not. lchemistry)  df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma1*p%divu/p%delta
+       if (.not. lchemistry) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma1*p%divu/p%delta
+       else
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma1*p%divu
+       endif
       endif
 
 
@@ -706,7 +715,7 @@ module Entropy
 !
 !  Add heat conduction to RHS of temperature equation
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! while there is no data, one takes chi_tmp=1. and  gradlnchi_tmp=0.
+! while there is no data, one takes chi_tmp=1e-5 and  gradlnchi_tmp=0.
 !----------------------------------------------
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 

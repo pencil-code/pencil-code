@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.47 2008-03-28 14:54:50 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.48 2008-03-31 12:29:12 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,cs2,rho1gpp,gmu1
-! PENCILS PROVIDED nu,gradnu
+! PENCILS PROVIDED nu,gradnu,DYDt_reac,DYDt_diff
 !***************************************************************
 
 module Chemistry
@@ -140,7 +140,7 @@ module Chemistry
       nvar=nvar+nchemspec
 !
 !  Read species to be used from chem.inp (if the file exists)
-!     
+!
       inquire(FILE=input_file, EXIST=lcheminp)
       if (lcheminp) then
         call read_species(input_file)
@@ -171,11 +171,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.47 2008-03-28 14:54:50 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.48 2008-03-31 12:29:12 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.47 2008-03-28 14:54:50 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.48 2008-03-31 12:29:12 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -383,6 +383,8 @@ module Chemistry
       real :: mk_mj, nuk_nuj
       logical :: lcheminp_tmp=.false.
 
+!
+!
 !
 !  Mass fraction YY
 !
@@ -868,13 +870,10 @@ module Chemistry
       use Sub
       use Global
 !
-      real, dimension (mx,my,mz,mfarray) :: f, Diff_full_add
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-
-      real, dimension (nx,3) :: gchemspec,gXX, gDiff_full_add
-      real, dimension (nx) :: ugchemspec,del2chemspec,diff_op,diff_op1,diff_op2,xdot, del2XX 
-      real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
-      real :: diff_k
+      real, dimension (nx,3) :: gchemspec
+      real, dimension (nx) :: ugchemspec
       type (pencil_case) :: p
 !
 !  indices
@@ -890,112 +889,66 @@ module Chemistry
       if (headtt.or.ldebug) print*,'dchemistry_dt: SOLVE dchemistry_dt'
 !!      if (headtt) call identify_bcs('ss',iss)
 !
-!  if we do reactions, we must calculate the reaction speed vector
-!  outside the loop where we multiply it by the stoichiometric matrix
-!
-      if (lreactions) then
 
-       if (.not. lcheminp) then
-! Axel' case
-        do j=1,nreactions
-          vreactions_p(:,j)=kreactions_p(j)*kreactions_z(n,j)
-          vreactions_m(:,j)=kreactions_m(j)*kreactions_z(n,j)
-          do k=1,nchemspec
-            vreactions_p(:,j)=vreactions_p(:,j)*f(l1:l2,m,n,ichemspec(k))**Sijm(k,j)
-            vreactions_m(:,j)=vreactions_m(:,j)*f(l1:l2,m,n,ichemspec(k))**Sijp(k,j)
-          enddo
-        enddo
-       else
-! Chemkin data case
-         call get_reaction_rate(f,vreactions_p,vreactions_m,p)
-       endif 
-        vreactions=vreactions_p-vreactions_m
-      endif
-!
 !  loop over all chemicals
 !
-      diff_k=chem_diff
-      do k=1,nchemspec
+     do k=1,nchemspec
 !
 !  advection terms
 ! 
 
-      if (ladvection) then 
-        call grad(f,ichemspec(k),gchemspec) 
-        call dot_mn(p%uu,gchemspec,ugchemspec)
-        df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))-ugchemspec
+         if (ladvection) then 
+           call grad(f,ichemspec(k),gchemspec) 
+           call dot_mn(p%uu,gchemspec,ugchemspec)
+           df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))-ugchemspec
+
 !
 !this are Natalia's thoughts, which should be discussed later!
 !
-       if (Natalia_thoughts) then
-
-         do j=l1,l2
-          if (f(j,m,n,ichemspec(k))+df(j,m,n,ichemspec(k)) < 0.) then 
-            df(j,m,n,ichemspec(k))=0.
-          endif
-         enddo
-
-       endif
-
-      endif
+           if (Natalia_thoughts) then
+             do j=l1,l2
+              if (f(j,m,n,ichemspec(k))+df(j,m,n,ichemspec(k)) < 0.) then 
+               df(j,m,n,ichemspec(k))=0.
+              endif
+             enddo
+           endif
+         endif
 !
 !  diffusion operator
 !
 !   Temporary we check the existence of chem.imp data, further one should check the existence of a file with binary diffusion coefficients!
 !
-      if (.not. lcheminp) then  
-        if (chem_diff/=0.) then
-          diff_k=chem_diff*chem_diff_prefactor(k)
-          if (headtt) print*,'dchemistry_dt: k,diff_k=',k,diff_k
-          call del2(f,ichemspec(k),del2chemspec) 
-          call dot_mn(p%glnrho,gchemspec,diff_op)
-          diff_op=diff_op+del2chemspec
-          df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+diff_k*diff_op
+      call calc_diffusion_term(f,p)
+
+        if (.not. lcheminp) then  
+              df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_diff(:,k)
+          else 
+          if (ldiffusion_chemkin) then
+            df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_diff(:,k) 
+          endif
         endif
-      else 
-
-       if (ldiffusion_chemkin) then
-
-          Diff_full_add(:,:,:,k)=Diff_full(:,:,:,k)*species_constants(ichemspec(k),imass)/unit_mass*mu1_full(:,:,:)
-
-          call del2(XX_full,k,del2XX)
-
-          call grad(XX_full(:,:,:,k),gXX)
-          call dot_mn(p%glnrho,gXX,diff_op1)
-
-          call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
-          call dot_mn(gDiff_full_add,gXX,diff_op2)
- 
-         df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k)) &
-                   +Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2
-       endif
-
-      endif
 
 !
 !  chemical reactions:
 !  multiply with stoichiometric matrix with reaction speed
 !  d/dt(x_i) = S_ij v_j
 !
-        if (lreactions) then
-          xdot=0.
-          do j=1,nreactions
-            xdot=xdot+stoichio(k,j)*vreactions(:,j)
-          enddo
-         if (.not. lcheminp) then
-          df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+xdot
-         else
-          if (lreaction_chemkin) then
-             df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+xdot*species_constants(ichemspec(k),imass)/p%rho(:)
-          endif
-         endif
-        endif
+       if (lreactions) then
+         call calc_reaction_term(f,p)
+           if (.not. lcheminp) then
+              df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_reac(:,k)
+            else
+            if (lreaction_chemkin) then
+              df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_reac(:,k)
+            endif
+           endif
+       endif
 !
-      enddo 
+     enddo 
 !
 !  For the timestep calculation, need maximum diffusion
 !
-     
+
 
         if (lfirst.and.ldt) then
          if (.not. lcheminp) then
@@ -1876,6 +1829,109 @@ print*,species_name
     enddo
 
    end subroutine get_reaction_rate
+!***************************************************************
+   subroutine calc_reaction_term(f,p)
+
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
+  real, dimension (nx) :: xdot
+  type (pencil_case) :: p
+  integer :: k,j
+
+  intent(in) :: f
+
+  p%DYDt_reac=0.
+
+!  if we do reactions, we must calculate the reaction speed vector
+!  outside the loop where we multiply it by the stoichiometric matrix
+!
+        if (.not. lcheminp) then
+! Axel' case
+          do j=1,nreactions
+           vreactions_p(:,j)=kreactions_p(j)*kreactions_z(n,j)
+           vreactions_m(:,j)=kreactions_m(j)*kreactions_z(n,j)
+           do k=1,nchemspec
+             vreactions_p(:,j)=vreactions_p(:,j)*f(l1:l2,m,n,ichemspec(k))**Sijm(k,j)
+             vreactions_m(:,j)=vreactions_m(:,j)*f(l1:l2,m,n,ichemspec(k))**Sijp(k,j)
+           enddo
+          enddo
+        else
+! Chemkin data case
+          call get_reaction_rate(f,vreactions_p,vreactions_m,p)
+        endif 
+          vreactions=vreactions_p-vreactions_m
+
+     do k=1,nchemspec  
+          xdot=0.
+          do j=1,nreactions
+            xdot=xdot+stoichio(k,j)*vreactions(:,j)
+          enddo
+         if (lcheminp) then
+          xdot=xdot*species_constants(ichemspec(k),imass)/p%rho(:)
+         endif
+      p%DYDt_reac(:,k)=xdot
+     enddo 
+
+   endsubroutine calc_reaction_term
+!***************************************************************
+   subroutine calc_diffusion_term(f,p)
+
+      use Cdata
+      use Mpicomm
+      use Sub
+      use Global
+
+
+      real, dimension (mx,my,mz,mfarray) :: f, Diff_full_add
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx,3) :: gXX, gDiff_full_add, gchemspec
+      real, dimension (nx) :: ugchemspec,del2chemspec,diff_op,diff_op1,diff_op2,xdot, del2XX 
+      real :: diff_k
+      integer :: j,k
+
+      intent(in) :: f
+
+      p%DYDt_diff=0.
+      diff_k=chem_diff
+
+      do k=1,nchemspec
+
+       if (.not. lcheminp) then  
+          if (chem_diff/=0.) then
+            diff_k=chem_diff*chem_diff_prefactor(k)
+             if (headtt) print*,'dchemistry_dt: k,diff_k=',k,diff_k
+              call del2(f,ichemspec(k),del2chemspec) 
+              call grad(f,ichemspec(k),gchemspec) 
+              call dot_mn(p%glnrho,gchemspec,diff_op)
+              diff_op=diff_op+del2chemspec
+              p%DYDt_diff(:,k)=diff_k*diff_op
+             endif
+          else 
+
+          if (ldiffusion_chemkin) then
+
+            Diff_full_add(:,:,:,k)=Diff_full(:,:,:,k)*species_constants(ichemspec(k),imass)/unit_mass*mu1_full(:,:,:)
+
+            call del2(XX_full,k,del2XX)
+            call grad(XX_full(:,:,:,k),gXX)
+            call dot_mn(p%glnrho,gXX,diff_op1)
+
+            call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
+            call dot_mn(gDiff_full_add,gXX,diff_op2)
+          endif
+          p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2
+
+ !  if (maxval(p%DYDt_diff(:,k)) >1e-6) then
+  !    print*,maxval(p%DYDt_diff(:,k))
+  ! endif
+
+        endif
+
+
+     enddo
+
+   endsubroutine calc_diffusion_term
 !***************************************************************
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
