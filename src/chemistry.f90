@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.48 2008-03-31 12:29:12 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.49 2008-03-31 15:27:44 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,cs2,rho1gpp,gmu1
-! PENCILS PROVIDED nu,gradnu,DYDt_reac,DYDt_diff
+! PENCILS PROVIDED nu,gradnu,DYDt_reac,DYDt_diff,cvspec
 !***************************************************************
 
 module Chemistry
@@ -28,6 +28,7 @@ module Chemistry
 
   real :: Rgas, Rgas_unit_sys=1.
   real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full
+  real, dimension (mx,my,mz,nchemspec) :: cvspec_full
 
 !
 !  parameters related to chemical reactions
@@ -171,11 +172,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.48 2008-03-31 12:29:12 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.49 2008-03-31 15:27:44 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.48 2008-03-31 12:29:12 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.49 2008-03-31 15:27:44 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -324,6 +325,7 @@ module Chemistry
 !
        lpenc_requested(i_YY)=.true.
        lpenc_requested(i_cs2)=.true.
+       lpenc_requested(i_cvspec)=.true.
 
        if (lcheminp) then
         lpenc_requested(i_mu1)=.true.
@@ -447,6 +449,13 @@ module Chemistry
  !          enddo 
 
          if (lpencil(i_cv1)) p%cv1=1./p%cv
+
+         if (lpencil(i_cvspec)) then
+          do k=1,nchemspec
+            p%cvspec(:,k)=cvspec_full(l1:l2,m,n,k)
+          enddo
+         endif
+
          if (lpencil(i_lncp)) p%lncp=log(p%cp)
 
 !
@@ -498,7 +507,7 @@ module Chemistry
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) ::  cp_R_spec, cv_R_spec
+      real, dimension (mx) ::  cp_R_spec
       real, dimension (mx,my,mz) :: tmp_sum, tmp_sum2
       real, dimension (nchemspec,nchemspec) :: Phi
 !
@@ -538,6 +547,7 @@ module Chemistry
 !
          cp_full=0.
          cv_full=0.
+         cvspec_full=0.
 
            do k=1,nchemspec
              T_low=species_constants(k,iTemp1)
@@ -552,21 +562,21 @@ module Chemistry
                     do j=1,5
                      cp_R_spec(i)=cp_R_spec(i)+species_constants(k,ia1(j))*T_local**(j-1) 
                     enddo
-                   cv_R_spec(i)=1.-cp_R_spec(i)
+                   cvspec_full(i,m,n,k)=1.-cp_R_spec(i)
                    cp_R_spec(i)=cp_R_spec(i)/species_constants(k,imass)
-                   cv_R_spec(i)=cv_R_spec(i)/species_constants(k,imass)
+                   cvspec_full(i,m,n,k)=cvspec_full(i,m,n,k)/species_constants(k,imass)*Rgas
                   else
                    cp_R_spec(i)=0.
                     do j=1,5 
                      cp_R_spec(i)=cp_R_spec(i)+species_constants(k,ia2(j))*T_local**(j-1) 
                     enddo
-                   cv_R_spec(i)=cp_R_spec(i)-1.
+                   cvspec_full(i,m,n,k)=cp_R_spec(i)-1.
                    cp_R_spec(i)=cp_R_spec(i)/species_constants(k,imass)
-                   cv_R_spec(i)=cv_R_spec(i)/species_constants(k,imass)
+                   cvspec_full(i,m,n,k)=cvspec_full(i,m,n,k)/species_constants(k,imass)*Rgas
                   endif
 
                 cp_full(i,m,n)=cp_full(i,m,n)+f(i,m,n,ichemspec(k))*cp_R_spec(i)*Rgas
-                cv_full(i,m,n)=cv_full(i,m,n)+f(i,m,n,ichemspec(k))*cv_R_spec(i)*Rgas
+                cv_full(i,m,n)=cv_full(i,m,n)+f(i,m,n,ichemspec(k))*cvspec_full(i,m,n,k)
 
               enddo
              enddo

@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.37 2008-03-31 12:29:12 nbabkovs Exp $
+! $Id: temperature_ionization.f90,v 1.38 2008-03-31 15:27:45 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2,uglnTT,DYDt_reac,DYDt_diff
+! PENCILS PROVIDED Ma2,uglnTT,DYDt_reac,DYDt_diff,cvspec
 !
 !***************************************************************
 module Entropy
@@ -94,7 +94,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.37 2008-03-31 12:29:12 nbabkovs Exp $")
+           "$Id: temperature_ionization.f90,v 1.38 2008-03-31 15:27:45 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -403,9 +403,9 @@ module Entropy
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: damp
-      real, dimension (nx) :: Hmax
+      real, dimension (nx) :: Hmax, sum_DYDt
       real :: prof
-      integer :: j
+      integer :: j,k
 !
 !  Initialize maximum heating to zero
 !
@@ -479,11 +479,21 @@ module Entropy
 !
 !  Need to add left-hand-side of the continuity equation (see manual)
 !
+
+
       if (ldensity) then
        if (.not. lchemistry) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma1*p%divu/p%delta
-       else
+       else 
+
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma1*p%divu
+
+          sum_DYDt=0.
+           do k=1,nchemspec
+             sum_DYDt=sum_DYDt+p%cvspec(:,k)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
+           enddo
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + f(l1:l2,m,n,ilnTT)*p%cv1(:)*sum_DYDt(:)
+
        endif
       endif
 
