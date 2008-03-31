@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.130 2008-03-19 00:29:59 wlyra Exp $
+! $Id: particles_sub.f90,v 1.131 2008-03-31 15:19:37 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1921,7 +1921,7 @@ module Particles_sub
 !
     endsubroutine get_particles_interdistance
 !***********************************************************************
-    subroutine remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid)
+    subroutine remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid,ks)
 !
       use Messages, only: fatal_error
 !
@@ -1929,24 +1929,30 @@ module Particles_sub
       real, dimension (mpar_loc,mpvar), optional :: dfp
       integer, dimension (mpar_loc) :: ipar
       integer, dimension (mpar_loc,3), optional :: ineargrid
+      integer, optional :: ks
       integer :: npar_loc,k
       logical :: lsink
 !   
       intent (inout) :: fp, npar_loc, dfp,ineargrid
       intent (in)    :: k
 !
-! switch with the last particle present in the processor npar_loc
+! check that we are not removing sinks
 !
       lsink=(lparticles_nbody.and.(ipar(k).le.mspar))
       if (lsink) then
-        print*,ipar(k)
-        print*,'xp=',fp(k,ixp)
-        print*,'yp=',fp(k,iyp)
-        print*,'vxp=',fp(k,ivpx)
-        print*,'vyp=',fp(k,ivpy)
-        call fatal_error("remove_particle","you are "//&
-             "removing a sink! That should not happen!")
+        if (present(ks)) then 
+          print*,'sink particle ',ks 
+          print*,'is removing the following sink particle:'
+        else
+          print*,'the following sink particle is being removed'
+        endif
+        print*,'ipar(k)=',ipar(k)
+        print*,'xp,yp,zp=',fp(k,ixp),fp(k,iyp),fp(k,izp)
+        print*,'vxp,vyp,vzp=',fp(k,ivpx),fp(k,ivpy),fp(k,ivpz)
+        call fatal_error("remove_particle","are you sure this should happen?")
       endif
+!
+! switch the removed particle with the last particle present in the processor npar_loc
 !
       fp(k,:)=fp(npar_loc,:)
       if (present(dfp)) dfp(k,:)=dfp(npar_loc,:)
