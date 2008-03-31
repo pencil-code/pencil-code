@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.org)
-%%  CVS: $Id: manual.tex,v 1.387 2008-03-31 12:54:00 nilshau Exp $
+%%  CVS: $Id: manual.tex,v 1.388 2008-03-31 22:44:40 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -313,7 +313,7 @@
 \newcommand{\Uv}            {\vekt{U}}
 % \newcommand{\bv}            {\vekt{b}}
 \newcommand{\ev}            {\vekt{e}}
-% \newcommand{\Ev}            {\vekt{E}}
+\newcommand{\Ev}            {\vekt{E}}
 % \newcommand{\ex}            {\ev_{x}}
 % \newcommand{\ey}            {\ev_{y}}
 % \newcommand{\ez}            {\ev_{z}}
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2008-03-31 12:54:00 $ $,~ $ $Revision: 1.387 $ $}
+%\date{$ $Date: 2008-03-31 22:44:40 $ $,~ $ $Revision: 1.388 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2008-03-31 12:54:00 $ $,~ $ $Revision: 1.387 $ $}\\
+  \emph{$ $Date: 2008-03-31 22:44:40 $ $,~ $ $Revision: 1.388 $ $}\\
   \url{http://www.nordita.org/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1943,45 +1943,40 @@ and the reference point $\zeta_*$ is found by inverting
 numerically.
 
 \subparagraph{Duct flow:}
-For \code{grid_function='duct'} a grid profile for turbulent flow in ducts
-are used.
-Since most gradients are steepest close to the walls, 
-it is required to have 
-very fine resolution near the walls in a duct flow. Here we follow the method of 
-\cite{kim87} 
-and use a cosine distribution of the grid point such that
-in the y direction the grid points are found at
+The profile function \code{grid_function='duct'} generates a grid profile
+for turbulent flow in ducts.
+For a duct flow, most gradients are steepest close to the walls, and hence
+very fine resolution is required near the walls.
+Here we follow the method of \cite{kim87} and use a Chebyshev-type grid
+with a cosine distribution of the grid points such that in the $y$
+direction they are located at
 \begin{equation}
-\label{deltay}
-y_j=h\cos \theta_j
+  \label{deltay}
+  y_j = h \, \cos \theta_j \; ,
 \end{equation}
 where
 \begin{equation}
-\theta_j=\frac{(N_y-j)\pi}{N_y-1}, \;\;\; j=1,2,...N_y.
+  \theta_j = \frac{(N_y{-}j)\,\pi}{N_y{-}1}, \quad j=1, 2, \ldots, N_y \; .
 \end{equation}
 
-Currently this method is only adapted for ducts where the $x$ is in
-the streamvise direction, $z$ is in the spanwise direction and the walls
+Currently this method is only adapted for ducts where $x$ is
+the streamwise direction, $z$ is in the spanwise direction and the walls
 are at $y=y_0$ and $y=y_0+L_y$.
 
-In order to have fine enough a resolution the first grid point should be
-a distance $y_{\rm first}=0.05l_w$ from the wall,
-when
-\begin{equation}
-l_w=\frac{\nu}{u_{\tau}},
-\end{equation}
-\begin{equation}
-u_{\tau}=\sqrt{\tau_w/\rho}
-\end{equation}
+In order to have fine enough resolution, the first grid point should be
+a distance $\delta = 0.05\,l_w$ from the wall, where
+\begin{eqnarray}
+  l_w      &=& \frac{\nu}{u_{\tau}} \; , \\
+  u_{\tau} &=& \sqrt{\tau_w/\rho} \; , \\
+\end{eqnarray}
 and $\tau_w$ is the shear wall stress.
-This is accomplished by using a total of 
+This is accomplished by using a total of
 \begin{equation}
-N_y=\frac{\cos^{-1}\left(s_1\right)-2\pi}{\cos^{-1}\left(s_1\right)-\pi},
+  N_y \ =\ \frac{\pi - \arccos (\delta/h)}
+                {\arccos (\delta/h)}
+      \ \approx\  \pi\, \sqrt{\dfrac{h}{2\,\delta}}
 \end{equation}
-grid points in the $y$-direction when
-\begin{equation}
-s_1=\frac{y_{\rm first}-h}{h}.
-\end{equation}
+grid points in the $y$-direction.
 
 
 \subparagraph{Example:}
@@ -5904,7 +5899,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2008-03-31 12:54:00 $ $,~ $ $Revision: 1.387 $ $}
+  \hfill\normalsize\rm$ $Date: 2008-03-31 22:44:40 $ $,~ $ $Revision: 1.388 $ $}
 
 \section{Timings}
 
@@ -9405,7 +9400,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.387 2008-03-31 12:54:00 nilshau Exp $ $}
+$ $Id: manual.tex,v 1.388 2008-03-31 22:44:40 dobler Exp $ $}
 
 
 \end{document}
