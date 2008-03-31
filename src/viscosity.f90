@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.92 2008-03-28 14:52:37 nbabkovs Exp $
+! $Id: viscosity.f90,v 1.93 2008-03-31 08:54:47 nbabkovs Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -110,7 +110,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.92 2008-03-28 14:52:37 nbabkovs Exp $")
+           "$Id: viscosity.f90,v 1.93 2008-03-31 08:54:47 nbabkovs Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -475,6 +475,7 @@ module Viscosity
         lpenc_requested(i_nu)=.true.
         lpenc_requested(i_gradnu)=.true.
         lpenc_requested(i_sgnu)=.true.
+        lpenc_diagnos(i_sij2)=.true.
       endif
 
 !
@@ -605,9 +606,8 @@ module Viscosity
      if (lvisc_mixture) then
 !
 !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)+2S.gradnu
-!  
 !
-
+!
 ! sglnrho
       if (lpencil(i_sgnu)) call multmv(p%sij,p%gradnu,p%sgnu)
 
@@ -617,9 +617,10 @@ module Viscosity
          enddo
         endif
 
+      if (lpencil(i_visc_heat)) p%visc_heat=2*p%nu*p%sij2
 
-      !  if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + 2*nu*p%sij2
-       if (lfirst.and.ldt) p%diffus_total=p%diffus_total+p%nu
+      if (lfirst.and.ldt) p%diffus_total=p%diffus_total+p%nu
+
      endif
 
 
