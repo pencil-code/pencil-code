@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.15 2008-03-09 19:25:08 wlyra Exp $
+! $Id: particles_selfgravity.f90,v 1.16 2008-04-01 19:43:18 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -54,7 +54,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.15 2008-03-09 19:25:08 wlyra Exp $")
+           "$Id: particles_selfgravity.f90,v 1.16 2008-04-01 19:43:18 wlyra Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -233,7 +233,7 @@ module Particles_selfgravity
 !
       real, dimension (3) :: gpotself
       integer :: k
-      logical :: lheader, lfirstcall=.true.
+      logical :: lheader, lsink, lfirstcall=.true.
 !
       intent (in) :: f, fp
       intent (out) :: dfp
@@ -262,7 +262,8 @@ module Particles_selfgravity
 !  interpolation is not possible. The nbody module will take 
 !  care of this case
 ! 
-              if (ipar(k).le.nspar) then
+              call get_lsink(ipar(k),lsink)
+              if (lsink) then
                 if ((fp(k,ixp)< xyz0(1)).or.(fp(k,ixp) > xyz1(1)) .or. &
                     (fp(k,iyp)< xyz0(2)).or.(fp(k,iyp) > xyz1(2)) .or. &
                     (fp(k,izp)< xyz0(3)).or.(fp(k,izp) > xyz1(3))) &

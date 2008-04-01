@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.132 2008-04-01 16:06:27 ajohan Exp $
+! $Id: particles_sub.f90,v 1.133 2008-04-01 19:43:18 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -21,6 +21,7 @@ module Particles_sub
   public :: particle_pencil_index
   public :: shepherd_neighbour,remove_particle
   public :: get_particles_interdistance
+  public :: get_lsink
 
   contains
 
@@ -295,12 +296,12 @@ module Particles_sub
         endif
 !
         do k=k1,k2,ik
-          lsink=lparticles_nbody.and.(ipar(k).le.mspar)
+          call get_lsink(ipar(k),lsink)
           if (.not.lsink) then
             !dust particle
             boundx=bcpx ;boundy=bcpy ;boundz=bcpz
           else
-            !massive 'planet' particle
+            !massive particle
             boundx=bcspx;boundy=bcspy;boundz=bcspz
           endif
 !
@@ -769,7 +770,7 @@ module Particles_sub
 !  Set index interval of particles that belong to the local processor.
 !
 !  WL:
-!  For runs with few particles (rather arbitrarily set to <=ncpus),
+!  For runs with few particles (rather arbitrarily set to npar==nspar),
 !  set them all at the root processor at first. Not an optimal solution, but
 !  it will do for now. The best thing would be to allocate all sink particles
 !  at the root and the rest (if any) distributed evenly 
@@ -777,6 +778,7 @@ module Particles_sub
       if ((lparticles_nbody).and.(npar==nspar)) then
         if (lroot) then
           npar_loc=nspar
+          !also needs to initialize ipar(k)
           do k=1,nspar
             ipar(k)=k
           enddo
@@ -1410,6 +1412,7 @@ module Particles_sub
       double precision, save :: dx1, dy1, dz1
       integer :: k, ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
+      logical :: lnot_special_boundx,lsink
 !
       intent(in)  :: fp
       intent(out) :: ineargrid
@@ -1428,6 +1431,17 @@ module Particles_sub
       endif
 !
       do k=1,npar_loc
+!
+!  Small fix for the fact that we have some special particles that ARE
+!  allowed to be outside of the box (a star in cylindrical coordinates,
+!  for instance). 
+!
+      lnot_special_boundx=.true.
+      call get_lsink(ipar(k),lsink)
+      if (lsink.and.bcspx=='out') lnot_special_boundx=.false.
+!    
+      if (lnot_special_boundx) then
+!
         if (nxgrid/=1) ix0 = nint((fp(k,ixp)-x(1))*dx1) + 1
         if (nygrid/=1) iy0 = nint((fp(k,iyp)-y(1))*dy1) + 1
         if (nzgrid/=1) iz0 = nint((fp(k,izp)-z(1))*dz1) + 1
@@ -1437,10 +1451,11 @@ module Particles_sub
 !  physical point. Either stop the code with a fatal error or fix problem
 !  by forcing the nearest grid point to be a physical point.
 !
-        if (lcheck_exact_frontier .and. &
-            any(ineargrid(k,:)==(/l1-1,m1-1,n1-1/)) .or.  &
-            any(ineargrid(k,:)==(/l2+1,m2+1,n2+1/))) then
-          if (ineargrid(k,1)==l1-1) then
+        if (lcheck_exact_frontier .or. &
+             any(ineargrid(k,:)==(/l1-1,m1-1,n1-1/)) .or.  &
+             any(ineargrid(k,:)==(/m1-1,m2+1,n2+1/))) then
+
+          if(ineargrid(k,1)==l1-1) then
             ineargrid(k,1)=l1
           elseif (ineargrid(k,1)==l2+1) then
             ineargrid(k,1)=l2
@@ -1456,12 +1471,12 @@ module Particles_sub
         elseif (any(ineargrid(k,:)<(/l1,m1,n1/)) .or.  &
                 any(ineargrid(k,:)>(/l2,m2,n2/))) then
           print*, 'map_nearest_grid: particle must never be closer to a '// &
-                'ghost point than'
+                  'ghost point than'
           print*, '                  to a physical point.'
           print*, '                  Consider using double precision to '// &
-              'avoid this problem'
+                  'avoid this problem'
           print*, '                  or set lcheck_exact_frontier in '// &
-              '&particles_run_pars.'
+                  '&particles_run_pars.'
           print*, 'Information about what went wrong:'
           print*, '----------------------------------'
           print*, 'it, itsub, t=', it, itsub, t
@@ -1475,6 +1490,7 @@ module Particles_sub
           print*, 'x2, y2, z2  =', x(l2), y(m2), z(n2)
           call fatal_error_local('map_nearest_grid','')
         endif
+      endif
       enddo
 !
     endsubroutine map_nearest_grid
@@ -1672,7 +1688,7 @@ module Particles_sub
         f(:,:,:,inp)=0.0
         do k=1,npar_loc
           !exclude the massive particles from the mapping
-          lsink=(lparticles_nbody.and.(ipar(k).le.mspar))
+          call get_lsink(ipar(k),lsink)
           if (.not.lsink) then 
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
@@ -1700,7 +1716,7 @@ module Particles_sub
 !  Cloud In Cell (CIC) scheme.
 !
           do k=1,npar_loc
-            lsink=(lparticles_nbody.and.(ipar(k).le.mspar))
+            call get_lsink(ipar(k),lsink)
             if (.not.lsink) then 
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               ixx0=ix0; iyy0=iy0; izz0=iz0
@@ -1732,7 +1748,7 @@ module Particles_sub
 !  decreases with the distance from the particle centre.
 !
           do k=1,npar_loc
-            lsink=(lparticles_nbody.and.(ipar(k).le.mspar))
+            call get_lsink(ipar(k),lsink)
             if (.not.lsink) then 
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               if (nxgrid/=1) then
@@ -1965,6 +1981,15 @@ module Particles_sub
 !
     endsubroutine get_particles_interdistance
 !***********************************************************************
+    subroutine get_lsink(ipk,lsink)
+!
+      integer,intent(in)  :: ipk
+      logical,intent(out) :: lsink
+!
+      lsink=lparticles_nbody.and.(any(ipar_sink==ipk))
+!
+    endsubroutine get_lsink
+!***********************************************************************
     subroutine remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid,ks)
 !
       use Messages, only: fatal_error
@@ -1982,7 +2007,8 @@ module Particles_sub
 !
 ! check that we are not removing sinks
 !
-      lsink=(lparticles_nbody.and.(ipar(k).le.mspar))
+      call get_lsink(ipar(k),lsink)
+!
       if (lsink) then
         if (present(ks)) then 
           print*,'sink particle ',ks 
