@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.423 2008-03-25 08:31:41 brandenb Exp $
+! $Id: hydro.f90,v 1.424 2008-04-01 10:43:13 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -191,6 +191,9 @@ module Hydro
   integer :: idiag_uxmxy=0      ! DIAG_DOC: $\left< u_x \right>_{z}$
   integer :: idiag_uymxy=0      ! DIAG_DOC: $\left< u_y \right>_{z}$
   integer :: idiag_uzmxy=0      ! DIAG_DOC: $\left< u_z \right>_{z}$
+  integer :: idiag_oxmxy=0      ! DIAG_DOC: $\left< \omega_x \right>_{z}$
+  integer :: idiag_oymxy=0      ! DIAG_DOC: $\left< \omega_y \right>_{z}$
+  integer :: idiag_ozmxy=0      ! DIAG_DOC: $\left< \omega_z \right>_{z}$
   integer :: idiag_ruxmxy=0     ! DIAG_DOC: $\left< \rho u_x \right>_{z}$
   integer :: idiag_ruymxy=0     ! DIAG_DOC: $\left< \rho u_y \right>_{z}$
   integer :: idiag_ruzmxy=0     ! DIAG_DOC: $\left< \rho u_z \right>_{z}$
@@ -338,7 +341,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.423 2008-03-25 08:31:41 brandenb Exp $")
+           "$Id: hydro.f90,v 1.424 2008-04-01 10:43:13 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -940,6 +943,9 @@ module Hydro
 
       if (idiag_ormr/=0 .or. idiag_opmr/=0 .or. idiag_ozmr/=0) &
           lpenc_diagnos(i_oo)=.true.
+
+      if (idiag_oxmxy/=0 .or. idiag_oymxy/=0 .or. idiag_ozmxy/=0) &
+          lpenc_diagnos2d(i_oo)=.true.
 
       if (idiag_totangmom/=0 ) lpenc_diagnos(i_rcyl_mn)=.true.
 
@@ -1557,6 +1563,9 @@ use Mpicomm, only: stop_it
         if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
         if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
         if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
+        if (idiag_oxmxy/=0) call zsum_mn_name_xy(p%oo(:,1),idiag_oxmxy)
+        if (idiag_oymxy/=0) call zsum_mn_name_xy(p%oo(:,2),idiag_oymxy)
+        if (idiag_ozmxy/=0) call zsum_mn_name_xy(p%oo(:,3),idiag_ozmxy)
         if (idiag_ruxmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,1),idiag_ruxmxy)
         if (idiag_ruymxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,2),idiag_ruymxy)
         if (idiag_ruzmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,3),idiag_ruzmxy)
@@ -2381,6 +2390,9 @@ use Mpicomm, only: stop_it
         idiag_uxmxy=0
         idiag_uymxy=0
         idiag_uzmxy=0
+        idiag_oxmxy=0
+        idiag_oymxy=0
+        idiag_ozmxy=0
         idiag_ruxmxy=0
         idiag_ruymxy=0
         idiag_ruzmxy=0
@@ -2608,6 +2620,9 @@ use Mpicomm, only: stop_it
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxmxy',idiag_uxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uymxy',idiag_uymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uzmxy',idiag_uzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oxmxy',idiag_oxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oymxy',idiag_oymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ozmxy',idiag_ozmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruxmxy',idiag_ruxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruymxy',idiag_ruymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruzmxy',idiag_ruzmxy)
