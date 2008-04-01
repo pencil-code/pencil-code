@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.211 2008-03-31 15:21:17 wlyra Exp $
+! $Id: particles_dust.f90,v 1.212 2008-04-01 10:43:47 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -135,7 +135,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.211 2008-03-31 15:21:17 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.212 2008-04-01 10:43:47 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1325,6 +1325,7 @@ k_loop:   do while (.not. (k>npar_loc))
       endif
       if (idiag_epspmx/=0 .or. idiag_epspmy/=0 .or. idiag_epspmz/=0) &
           lpenc_diagnos(i_epsp)=.true.
+      if (idiag_rhopmxy/=0) lpenc_diagnos2d(i_rhop)=.true.
 !
     endsubroutine pencil_criteria_particles
 !***********************************************************************
