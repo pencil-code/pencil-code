@@ -9,3 +9,5 @@
   public :: read_particles_nbody_init_pars, write_particles_nbody_init_pars
   public :: read_particles_nbody_run_pars, write_particles_nbody_run_pars
   public :: share_sinkparticles,get_totalmass,calc_nbodygravity_particles
+  public :: particles_nbody_read_snapshot
+  public :: particles_nbody_write_snapshot,particles_nbody_write_spdim

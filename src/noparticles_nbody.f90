@@ -1,4 +1,4 @@
-! $Id: noparticles_nbody.f90,v 1.12 2008-03-21 22:56:21 wlyra Exp $
+! $Id: noparticles_nbody.f90,v 1.13 2008-04-01 17:18:17 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -195,6 +195,42 @@ module Particles_nbody
       if (NO_WARN) print*, fp
     endsubroutine share_sinkparticles
 !************************************************************************
+    subroutine particles_nbody_read_snapshot(filename)
+!
+! Read sink particle info
+!
+! 01-apr-08/wlad: dummy
+!
+      character (len=*) :: filename
+      if (NO_WARN) print*, filename
+!
+    endsubroutine particles_nbody_read_snapshot
+!************************************************************************
+    subroutine particles_nbody_write_snapshot(snapbase,enum,flist)
+!
+! Input and output of information about the sinks
+!
+! 01-apr-08/wlad: dummy
+!
+      character (len=*) :: snapbase,flist
+      logical :: enum
+      optional :: flist
+!          
+      if (NO_WARN) print*, snapbase, enum, flist
+!
+    endsubroutine particles_nbody_write_snapshot
+!************************************************************************
+    subroutine particles_nbody_write_spdim(filename)
+!
+!  Write nspar, mspvar and mspar to file.
+!  01-apr-08/wlad: dummy
+!
+      character (len=*) :: filename
+!
+      if (NO_WARN) print*, filename
+!
+    endsubroutine particles_nbody_write_spdim
+!***********************************************************************
     subroutine rprint_particles_nbody(lreset,lwrite)
 !
 !  Read and register print parameters relevant for particle self-gravity.
