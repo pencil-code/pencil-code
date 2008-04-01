@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.84 2008-03-24 17:26:16 brandenb Exp $
+! $Id: nohydro.f90,v 1.85 2008-04-01 21:10:40 abag Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -74,7 +74,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.84 2008-03-24 17:26:16 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.85 2008-04-01 21:10:40 abag Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -862,6 +862,103 @@ module Hydro
      enddo
 !
     endsubroutine random_isotropic_KS_setup_test
+!***********************************************************************
+   ! subroutine random_isotropic_KS_setup_abag
+!
+!  ! produces random, isotropic field from energy spectrum following the
+!  ! KS method, however this setup produces periodic velocity field 
+!  ! (assuming box (-pi,pi))
+!
+!  ! 28-mar-08/abag coded
+!
+   ! use Cdata, only: pi,Lxyz
+   ! use Sub
+   ! use General
+   ! implicit none
+   ! real,allocatable,dimension(:,:) :: unit_k,k,A,B,orderK
+   ! real,allocatable,dimension(:) :: kk,delk,energy,omega,klengths
+   ! real,dimension(3) :: angle,dir_in,u
+   ! real :: k_option(3,10000),mkunit(10000)
+   ! real :: arg
+   ! real :: turn1,turnN
+   ! integer ::i,s1,num,direction(3)
+   ! logical :: ne
+!
+   ! allocate(KS_k(3,KS_modes))
+   ! allocate(KS_A(3,KS_modes))
+   ! allocate(KS_B(3,KS_modes))
+   ! allocate(unit_k(3,KS_modes))
+   ! allocate(k(3,KS_modes))
+   ! allocate(A(3,KS_modes))
+   ! allocate(B(3,KS_modes))
+   ! allocate(orderk(3,KS_modes))
+   ! allocate(KS_omega(KS_modes))
+   ! allocate(kk(KS_modes))
+   ! allocate(delk(KS_modes))
+   ! allocate(energy(KS_modes))
+   ! allocate(omega(KS_modes))
+   ! allocate(klengths(KS_modes))
+   ! num=1
+   ! do i=1,10000   
+   !  call random_number(angle)  
+   !  if((angle(1)-0.0 < epsilon(0.0)) .or. &
+   !     (angle(2)-0.0 < epsilon(0.0)) .or. &
+   !     (angle(3)-0.0 < epsilon(0.0))) then
+   !     call random_number(angle)
+   !  end if
+   !  angle=floor(9.*angle) 
+   !  call random_number(dir_in)
+   !  direction=nint(dir_in)
+   !  direction=2*direction -1  !positive or negative directions
+   !
+   !  k_option(1,i)=direction(1)*angle(1)!a possible orientation
+   !  k_option(2,i)=direction(2)*angle(2)   !provided we haven't
+   !  k_option(3,i)=direction(3)*angle(3)  !already got this length
+
+   !  !find the length of the current k_option vector
+   !  mkunit(i)=dsqrt((k_option(1,i)**2)+(k_option(2,i)**2)+(k_option(3,i)**2))
+
+   !  if(i==1.and.mkunit(i).gt.0.)then 
+   !    k(:,num)=k_option(:,i)
+   !    klengths(num)=mkunit(i)
+   !  end if
+
+   !  !now we check that the current length is unique (hasn't come before)
+   !  if(i.gt.1.and.num.lt.KS_modes)then
+   !    do s1=i-1,1,-1
+   !      if(mkunit(i).gt.0.0D0.and.mkunit(i) /= mkunit(s1))then
+   !        ne=.true.
+   !      else
+   !        ne=.false.
+   !        exit
+   !      end if
+   !      if(s1==1.and.ne)then !i.e. if length of current k_option is new...... 
+   !        num=num+1
+   !        k(:,num)=k_option(:,i) !load current k_option into k that we keep
+   !        klengths(num)=mkunit(i)  ! store the length also
+   !      end if
+   !    end do
+   !   end if
+   !   if(i==10000.and.num.lt.KS_modes)print*,"Haven't got",KS_modes,"modes!!!!"
+   ! end do
+   ! do i=1,KS_modes
+   !    do s1=1,KS_modes
+   !       if(kk(i)==klengths(s1))then
+   !          orderK(:,i)=k(:,s1)
+   !       end if
+   !    end do
+   ! end do
+   ! k=orderK
+   ! do i=1,KS_modes
+   !   unit_k(:,i)=k(:,i)/kk(i)
+   ! end do
+   ! do i=1,N
+   ! !now we find delk as defined in Malik & Vassilicos' paper
+   !    if(i==1)delk(i)=(kk(i+1)-kk(i))/2.0D0 
+   !    if(i==KS_modes)delk(i)=(kk(i)-kk(i-1))/2.0D0 
+   !    if(i.gt.1.and.i.lt.KS_modes)delk(i)=(kk(i+1)-kk(i-1))/2.0D0  
+   ! end do
+   ! endsubroutine random_isotropic_KS_setup_abag
 !***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)
 !
