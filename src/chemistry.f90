@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.50 2008-04-01 13:45:19 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.51 2008-04-01 14:34:10 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -35,9 +35,7 @@ module Chemistry
 !
   logical :: lreactions=.true.
   logical :: ladvection=.true.
-
-  logical :: lreaction_chemkin=.true.
-  logical :: ldiffusion_chemkin=.true.
+  logical :: ldiffusion=.true.
 
   logical :: lkreactions_profile=.false.
   integer :: nreactions=0,nreactions1=0,nreactions2=0
@@ -85,7 +83,7 @@ module Chemistry
 ! run parameters
   namelist /chemistry_run_pars/ &
       lkreactions_profile,kreactions_profile,kreactions_profile_width, &
-      chem_diff,chem_diff_prefactor, nu_spec,lreaction_chemkin, ldiffusion_chemkin, ladvection
+      chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, lreactions
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -172,11 +170,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.50 2008-04-01 13:45:19 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.51 2008-04-01 14:34:10 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.50 2008-04-01 13:45:19 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.51 2008-04-01 14:34:10 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -494,12 +492,19 @@ module Chemistry
          endif
 
       endif
- 
+
+! 
+! Calculate the reaction term and the corresponding pencil 
+!
 
         if (lreactions .and. lpencil(i_DYDt_reac))   call calc_reaction_term(f,p)
 
+! 
+! Calculate the diffusion term and the corresponding pencil 
+!
 
-        if (lpencil(i_DYDt_diff))  call calc_diffusion_term(f,p)
+
+        if (ldiffusion .and. lpencil(i_DYDt_diff))  call calc_diffusion_term(f,p)
 
 
 
@@ -939,30 +944,19 @@ module Chemistry
 !
 !   Temporary we check the existence of chem.imp data, further one should check the existence of a file with binary diffusion coefficients!
 !
-    
 
-        if (.not. lcheminp) then  
-              df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_diff(:,k)
-          else 
-          if (ldiffusion_chemkin) then
+          if (ldiffusion) then
             df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_diff(:,k) 
           endif
-        endif
 
 !
 !  chemical reactions:
 !  multiply with stoichiometric matrix with reaction speed
 !  d/dt(x_i) = S_ij v_j
 !
-       if (lreactions) then
-           if (.not. lcheminp) then
-              df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_reac(:,k)
-            else
-            if (lreaction_chemkin) then
-              df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_reac(:,k)
-            endif
-           endif
-       endif
+         if (lreactions) then
+           df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_reac(:,k)
+         endif
 !
      enddo 
 !
@@ -975,7 +969,7 @@ module Chemistry
           diffus_chem=chem_diff*maxval(chem_diff_prefactor)*dxyz_2
          else
          do j=1,nx
-           if (ldiffusion_chemkin) then
+           if (ldiffusion) then
 !???????????????????????????????????????????????????????????????
 !  This expression should be discussed 
 !??????????????????????????????????????????????????????????????? 
@@ -1929,7 +1923,7 @@ print*,species_name
              endif
           else 
 
-          if (ldiffusion_chemkin) then
+          if (ldiffusion) then
 
             Diff_full_add(:,:,:,k)=Diff_full(:,:,:,k)*species_constants(ichemspec(k),imass)/unit_mass*mu1_full(:,:,:)
 
