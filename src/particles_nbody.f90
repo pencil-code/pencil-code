@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.88 2008-04-01 17:17:51 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.89 2008-04-01 19:36:19 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -27,7 +27,6 @@ module Particles_nbody
   real,dimension(nspar)         :: pmass=0.,r_smooth,pmass1
   real,dimension(nspar)         :: accrete_hills_frac=0.2,final_ramped_mass=0.
 
-  integer, dimension(nspar)     :: ipar_sink
   logical, dimension(nspar)     :: lcylindrical_gravity_nbody=.false.
   logical, dimension(nspar)     :: lfollow_particle=.false.,laccretion=.false.
   logical, dimension(nspar)     :: ladd_mass=.false.
@@ -90,7 +89,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.88 2008-04-01 17:17:51 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.89 2008-04-01 19:36:19 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -134,7 +133,7 @@ module Particles_nbody
 !
       mspar=0
       do ks=1,nspar
-        if (pmass(ks)/=0.) mspar=mspar+1 
+        if (pmass(ks)/=0.) mspar=mspar+1
       enddo
 !
 ! when first called, mspar was zero, so no diagnostic 
@@ -473,7 +472,10 @@ module Particles_nbody
             print*,'initparticles_nbody. Slot for sink particle ',ipar(k),&
                  ' was at fp position ',k,' at processor ',iproc
 !
-            fp(k,ixp:izp)=position(ipar(k),1:3)
+! Here I substitute the first mspar dust particles by massive ones, 
+! since the first ipars are less than mspar
+!
+            fp(k,ixp:izp)=position(ipar(k),1:3) 
 !
 ! Correct for non-existing dimensions (not really needed, I think)
 !
@@ -586,6 +588,14 @@ module Particles_nbody
 !
       call boundconds_particles(fp,npar_loc,ipar)
       call share_sinkparticles(fp)
+!
+! Start the ipar_sink list 
+!
+      do k=1,npar_loc
+        if (ipar(k) <= mspar) then 
+          ipar_sink(ipar(k)) = ipar(k)
+        endif
+      enddo
 !
     endsubroutine init_particles_nbody
 !***********************************************************************
@@ -1724,9 +1734,10 @@ module Particles_nbody
       if (ip <= 10) then
         do ks=1,mspar 
           print*,'ks=',ks
-          print*,'positions',fsp(ks,ixp:izp)
-          print*,'velocities',fsp(ks,ivpx:ivpz)
-          print*,'mass',fsp(ks,imass)
+          print*,'positions=',fsp(ks,ixp:izp)
+          print*,'velocities=',fsp(ks,ivpx:ivpz)
+          print*,'mass=',fsp(ks,imass)
+          print*,'ipar_sink=',ipar_sink
           print*,''
         enddo
       endif
@@ -1841,7 +1852,7 @@ module Particles_nbody
             endif
           enddo
         
-    !info about migrating sinks particles
+    !info about migrating sink particles
           do j=1,ncpus-1
             call mpisend_int(nsmig(j), 1, j, 111)
           enddo
@@ -1863,6 +1874,7 @@ module Particles_nbody
             do kc=1,ns
               npar_loc=npar_loc+1
               ipar(npar_loc)=npar_loc
+              ipar_sink(mspar-ns+kc)=ipar(npar_loc)
             enddo
           endif
         endif
@@ -1871,6 +1883,8 @@ module Particles_nbody
           npar_loc=npar_loc+1
           fp(npar_loc,:)=fleft(kc,1:mpvar)
           ipar(npar_loc)=npar_loc
+          !add this particle to the ipar_sink list
+          ipar_sink(mspar-nf+kc)=ipar(npar_loc)
         enddo
       endif
 !
