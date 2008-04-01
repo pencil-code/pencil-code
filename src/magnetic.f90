@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.487 2008-03-28 07:00:09 brandenb Exp $
+! $Id: magnetic.f90,v 1.488 2008-04-01 05:01:09 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -375,7 +375,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.487 2008-03-28 07:00:09 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.488 2008-04-01 05:01:09 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -693,9 +693,13 @@ module Magnetic
         case('gaussian-noise-rprof')
           tmp=sqrt(xx**2+yy**2+zz**2)
           call gaunoise_rprof(amplaa(j),tmp,prof,f,iax,iaz)
-        case('Beltrami-x', '11'); call beltrami(amplaa(j),f,iaa,KX=kx_aa(j))
-        case('Beltrami-y', '12'); call beltrami(amplaa(j),f,iaa,KY=ky_aa(j))
-        case('Beltrami-z', '1');  call beltrami(amplaa(j),f,iaa,KZ=kz_aa(j))
+!
+!  Beltrami fields, put k=-k to make sure B=curl(A) has the right phase
+!
+        case('Beltrami-x'); call beltrami(amplaa(j),f,iaa,KX=-kx_aa(j))
+        case('Beltrami-y'); call beltrami(amplaa(j),f,iaa,KY=-ky_aa(j))
+        case('Beltrami-z'); call beltrami(amplaa(j),f,iaa,KZ=-kz_aa(j))
+!
         case('propto-ux'); call wave_uu(amplaa(j),f,iaa,kx=kx_aa(j))
         case('propto-uy'); call wave_uu(amplaa(j),f,iaa,ky=ky_aa(j))
         case('propto-uz'); call wave_uu(amplaa(j),f,iaa,kz=kz_aa(j))
@@ -2640,6 +2644,9 @@ module Magnetic
           if (lroot) print*,'forcing_continuous: RobertsFlow'
           sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
           siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+        elseif (iforcing_continuous_aa=='Beltrami-z') then
+          if (lroot) print*,'forcing_continuous: Beltrami-z'
+          sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
         endif
       endif
       ifirst=ifirst+1
@@ -2663,6 +2670,11 @@ module Magnetic
         forcing_rhs(:,1)=-fact*cosx(l1:l2)*siny(m)
         forcing_rhs(:,2)=+fact*sinx(l1:l2)*cosy(m)
         forcing_rhs(:,3)=+fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
+      elseif (iforcing_continuous_aa=='Beltrami-z') then
+        fact=-eta*k1_ff*ampl_ff
+        forcing_rhs(:,1)=fact*cosz(n)
+        forcing_rhs(:,2)=fact*sinz(n)
+        forcing_rhs(:,3)=0.
       endif
 !
 !  apply forcing in uncurled induction equation

@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.31 2008-03-30 19:10:12 brandenb Exp $
+! $Id: testfield_z.f90,v 1.32 2008-04-01 05:01:09 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -88,6 +88,14 @@ module Testfield
   integer :: idiag_eta12=0      ! DIAG_DOC: $\eta_{123}k$
   integer :: idiag_eta22=0      ! DIAG_DOC: $\eta_{223}k$
   integer :: idiag_eta32=0      ! DIAG_DOC: $\eta_{323}k$
+  integer :: idiag_alp11cc=0    ! DIAG_DOC: $\alpha_{11}\cos^2 kz$
+  integer :: idiag_alp21sc=0    ! DIAG_DOC: $\alpha_{21}\sin kz\cos kz$
+  integer :: idiag_alp12cs=0    ! DIAG_DOC: $\alpha_{12}\cos kz\sin kz$
+  integer :: idiag_alp22ss=0    ! DIAG_DOC: $\alpha_{22}\sin^2 kz$
+  integer :: idiag_eta11cc=0    ! DIAG_DOC: $\eta_{11}\cos^2 kz$
+  integer :: idiag_eta21sc=0    ! DIAG_DOC: $\eta_{21}\sin kz\cos kz$
+  integer :: idiag_eta12cs=0    ! DIAG_DOC: $\eta_{12}\cos kz\sin kz$
+  integer :: idiag_eta22ss=0    ! DIAG_DOC: $\eta_{22}\sin^2 kz$
   integer :: idiag_b11rms=0     ! DIAG_DOC: $\left<b_{11}^2\right>^{1/2}$
   integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>^{1/2}$
   integer :: idiag_b12rms=0     ! DIAG_DOC: $\left<b_{12}^2\right>^{1/2}$
@@ -170,7 +178,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.31 2008-03-30 19:10:12 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.32 2008-04-01 05:01:09 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -629,7 +637,7 @@ module Testfield
         if (idiag_E20z/=0) call xysum_mn_name_z(Eipq(:,2,iE0),idiag_E20z)
         if (idiag_E30z/=0) call xysum_mn_name_z(Eipq(:,3,iE0),idiag_E30z)
 !
-!  alpha and eta
+!  averages of alpha and eta
 !
         if (idiag_alp11/=0) call sum_mn_name(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2),idiag_alp11)
         if (idiag_alp21/=0) call sum_mn_name(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2),idiag_alp21)
@@ -637,6 +645,13 @@ module Testfield
         if (idiag_eta11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))*ktestfield1,idiag_eta11)
         if (idiag_eta21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))*ktestfield1,idiag_eta21)
         if (idiag_eta31/=0) call sum_mn_name((-sz(n)*Eipq(:,3,1)+cz(n)*Eipq(:,3,2))*ktestfield1,idiag_eta31)
+!
+!  weighted averages alpha and eta
+!
+        if (idiag_alp11cc/=0) call sum_mn_name(cz(n)**2   *(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2)),idiag_alp11cc)
+        if (idiag_alp21sc/=0) call sum_mn_name(sz(n)*cz(n)*(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2)),idiag_alp21sc)
+        if (idiag_eta11cc/=0) call sum_mn_name(cz(n)**2   *(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))*ktestfield1,idiag_eta11cc)
+        if (idiag_eta21sc/=0) call sum_mn_name(sz(n)*cz(n)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))*ktestfield1,idiag_eta21sc)
 !
 !  Projection of EMF from testfield against testfield itself
 !
@@ -646,7 +661,9 @@ module Testfield
 !  print warning if alp12 and alp12 are needed, but njtest is too small XX
 !
         if ((idiag_alp12/=0.or.idiag_alp22/=0.or.idiag_alp32/=0 &
-         .or.idiag_eta12/=0.or.idiag_eta22/=0.or.idiag_eta32/=0) &
+         .or.idiag_eta12/=0.or.idiag_eta22/=0.or.idiag_eta32/=0 &
+         .or.idiag_alp12cs/=0.or.idiag_alp22ss/=0  &
+         .or.idiag_eta12cs/=0.or.idiag_eta22ss/=0) &
          .and.njtest<=2) then
           call stop_it('njtest is too small if alpi2 or etai2 for i=1,2,3 are needed')
         else
@@ -656,6 +673,10 @@ module Testfield
           if (idiag_eta12/=0) call sum_mn_name((-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta12)
           if (idiag_eta22/=0) call sum_mn_name((-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta22)
           if (idiag_eta32/=0) call sum_mn_name((-sz(n)*Eipq(:,3,i3)+cz(n)*Eipq(:,3,i4))*ktestfield1,idiag_eta32)
+          if (idiag_alp12cs/=0) call sum_mn_name(cz(n)*sz(n)*(+cz(n)*Eipq(:,1,i3)+sz(n)*Eipq(:,1,i4)),idiag_alp12cs)
+          if (idiag_alp22ss/=0) call sum_mn_name(sz(n)**2   *(+cz(n)*Eipq(:,2,i3)+sz(n)*Eipq(:,2,i4)),idiag_alp22ss)
+          if (idiag_eta12cs/=0) call sum_mn_name(cz(n)*sz(n)*(-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta12cs)
+          if (idiag_eta22ss/=0) call sum_mn_name(sz(n)**2   *(-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta22ss)
         endif
 !
 !  rms values of small scales fields bpq in response to the test fields Bpq
@@ -1039,6 +1060,8 @@ module Testfield
         idiag_alp12=0; idiag_alp22=0; idiag_alp32=0
         idiag_eta11=0; idiag_eta21=0; idiag_eta31=0
         idiag_eta12=0; idiag_eta22=0; idiag_eta32=0
+        idiag_alp11cc=0; idiag_alp21sc=0; idiag_alp12cs=0; idiag_alp22ss=0
+        idiag_eta11cc=0; idiag_eta21sc=0; idiag_eta12cs=0; idiag_eta22ss=0
         idiag_b0rms=0; idiag_E0rms=0
         idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
         idiag_E11rms=0; idiag_E21rms=0; idiag_E12rms=0; idiag_E22rms=0
@@ -1059,6 +1082,14 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'eta12',idiag_eta12)
         call parse_name(iname,cname(iname),cform(iname),'eta22',idiag_eta22)
         call parse_name(iname,cname(iname),cform(iname),'eta32',idiag_eta32)
+        call parse_name(iname,cname(iname),cform(iname),'alp11cc',idiag_alp11cc)
+        call parse_name(iname,cname(iname),cform(iname),'alp21sc',idiag_alp21sc)
+        call parse_name(iname,cname(iname),cform(iname),'alp12cs',idiag_alp12cs)
+        call parse_name(iname,cname(iname),cform(iname),'alp22ss',idiag_alp22ss)
+        call parse_name(iname,cname(iname),cform(iname),'eta11cc',idiag_eta11cc)
+        call parse_name(iname,cname(iname),cform(iname),'eta21sc',idiag_eta21sc)
+        call parse_name(iname,cname(iname),cform(iname),'eta12cs',idiag_eta12cs)
+        call parse_name(iname,cname(iname),cform(iname),'eta22ss',idiag_eta22ss)
         call parse_name(iname,cname(iname),cform(iname),'b11rms',idiag_b11rms)
         call parse_name(iname,cname(iname),cform(iname),'b21rms',idiag_b21rms)
         call parse_name(iname,cname(iname),cform(iname),'b12rms',idiag_b12rms)
@@ -1110,6 +1141,14 @@ module Testfield
         write(3,*) 'idiag_eta12=',idiag_eta12
         write(3,*) 'idiag_eta22=',idiag_eta22
         write(3,*) 'idiag_eta32=',idiag_eta32
+        write(3,*) 'idiag_alp11cc=',idiag_alp11cc
+        write(3,*) 'idiag_alp21sc=',idiag_alp21sc
+        write(3,*) 'idiag_alp12cs=',idiag_alp12cs
+        write(3,*) 'idiag_alp22ss=',idiag_alp22ss
+        write(3,*) 'idiag_eta11cc=',idiag_eta11cc
+        write(3,*) 'idiag_eta21sc=',idiag_eta21sc
+        write(3,*) 'idiag_eta12cs=',idiag_eta12cs
+        write(3,*) 'idiag_eta22ss=',idiag_eta22ss
         write(3,*) 'idiag_b11rms=',idiag_b11rms
         write(3,*) 'idiag_b21rms=',idiag_b21rms
         write(3,*) 'idiag_b12rms=',idiag_b12rms

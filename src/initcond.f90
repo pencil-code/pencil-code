@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.237 2008-03-28 03:06:13 steveb Exp $
+! $Id: initcond.f90,v 1.238 2008-04-01 05:01:08 brandenb Exp $
 
 module Initcond
 
@@ -1133,7 +1133,9 @@ module Initcond
 !  set x-dependent Beltrami field
 !
       if (present(kx)) then
-        k=kx; if(k==0) print*,'beltrami: k must not be zero!'; fac=sqrt(abs(ampl/k))
+        k=abs(kx)
+        if (k==0) print*,'beltrami: k must not be zero!'
+        fac=sign(sqrt(abs(ampl/k)),kx)
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; kx=',k
         elseif (ampl>0) then
@@ -1150,7 +1152,9 @@ module Initcond
 !  set y-dependent Beltrami field
 !
       if (present(ky)) then
-        k=ky; if(k==0) print*,'beltrami: k must not be zero!'; fac=sqrt(abs(ampl/k))
+        k=abs(ky)
+        if (k==0) print*,'beltrami: k must not be zero!'
+        fac=sign(sqrt(abs(ampl/k)),ky)
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; ky=',k
         elseif (ampl>0) then
@@ -1167,7 +1171,9 @@ module Initcond
 !  set z-dependent Beltrami field
 !
       if (present(kz)) then
-        k=kz; if(k==0) print*,'beltrami: k must not be zero!'; fac=sqrt(abs(ampl/k))
+        k=abs(kz)
+        if (k==0) print*,'beltrami: k must not be zero!'
+        fac=sign(sqrt(abs(ampl/k)),kz)
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; kz=',k
         elseif (ampl>0) then
