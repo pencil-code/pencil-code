@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.38 2008-03-31 15:27:45 nbabkovs Exp $
+! $Id: temperature_ionization.f90,v 1.39 2008-04-01 15:01:59 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -94,7 +94,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.38 2008-03-31 15:27:45 nbabkovs Exp $")
+           "$Id: temperature_ionization.f90,v 1.39 2008-04-01 15:01:59 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -485,15 +485,14 @@ module Entropy
        if (.not. lchemistry) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma1*p%divu/p%delta
        else 
-
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma1*p%divu
 
           sum_DYDt=0.
            do k=1,nchemspec
              sum_DYDt=sum_DYDt+p%cvspec(:,k)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
            enddo
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + f(l1:l2,m,n,ilnTT)*p%cv1(:)*sum_DYDt(:)
 
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - f(l1:l2,m,n,ilnTT)*p%cv1(:)*sum_DYDt(:)
        endif
       endif
 
