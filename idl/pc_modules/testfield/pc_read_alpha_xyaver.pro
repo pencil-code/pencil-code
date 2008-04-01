@@ -1,4 +1,4 @@
-;$Id: pc_read_alpha_xyaver.pro,v 1.2 2008-03-30 19:11:08 brandenb Exp $
+;$Id: pc_read_alpha_xyaver.pro,v 1.3 2008-04-01 05:17:01 brandenb Exp $
 ;
 ;  In order to determine the z-dependence of the alpha and eta tensors
 ;  we have to read the horizontal averages of Epq, i.e. we assume that
@@ -8,22 +8,37 @@
 ;
 pc_read_xyaver,o=xyaver
 pc_read_param,o=param,/param2
-pc_read_grid,o=grid
-pc_read_dim,o=dim
 ;
-tt=xyaver.t
-nt=n_elements(tt)
+default,use_grid,1
 ;
-;  map z-array to a (-pi,pi) interval
+if use_grid eq 1 then begin
+  pc_read_grid,o=grid
+  pc_read_dim,o=dim
+  nz=dim.nz & n1=dim.n1 & n2=dim.n2
+  zzz=grid.z(n1:n2)
+endif else begin
+  ;
+  ;  map z-array to a (-pi,pi) interval
+  ;
+  nz=128 & n1=3 & n2=130
+  z1=4.*!pi & z0=-z1
+  dz=(z1-z0)/nz
+  zzz=z0+dz*(.5+findgen(nz))
+endelse
 ;
-nz=dim.nz
-zzz=grid.z(dim.n1:dim.n2)
+;  prepare relevant array for testfield sine and cosine functions
+;
 if param.ltestfield_newz then begin
   dz=2.*!pi/nz
   ztestfield=-!pi+dz*(findgen(nz)+.5)
 endif else begin
   ztestfield=zzz
 endelse
+;
+;  time array
+;
+tt=xyaver.t
+nt=n_elements(tt)
 ;
 ;  prepare sine and cosine functions
 ;
@@ -53,4 +68,5 @@ for it=0,nt-1 do begin
   etaij(*,it,1,1)=+(k1sz*xyaver.E211z(*,it)-k1cz*xyaver.E221z(*,it))
 endfor
 ;
+print,'tvscl,alpij(*,*,0,0)'
 END
