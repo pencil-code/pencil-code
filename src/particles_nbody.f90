@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.87 2008-03-31 15:26:02 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.88 2008-04-01 17:17:51 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -30,6 +30,7 @@ module Particles_nbody
   integer, dimension(nspar)     :: ipar_sink
   logical, dimension(nspar)     :: lcylindrical_gravity_nbody=.false.
   logical, dimension(nspar)     :: lfollow_particle=.false.,laccretion=.false.
+  logical, dimension(nspar)     :: ladd_mass=.false.
 
   real                          :: delta_vsp0=1.0,totmass,totmass1
   real                          :: create_jeans_constant=0.25,GNewton1
@@ -56,14 +57,14 @@ module Particles_nbody
        lexclude_frozen, GNewton, bcspx, bcspy, bcspz, &
        ramp_orbits,lramp,final_ramped_mass,prhs_cte,linterpolate_gravity,&
        linterpolate_quadratic_spline,laccretion,accrete_hills_frac,istar,&
-       maxsink,lcreate_sinks,icreate,lcreate_gas,lcreate_dust
+       maxsink,lcreate_sinks,icreate,lcreate_gas,lcreate_dust,ladd_mass
 
   namelist /particles_nbody_run_pars/ &
        dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
        lnogravz_star,lfollow_particle, lbackreaction, lexclude_frozen, &
        GNewton, bcspx, bcspy, bcspz,prhs_cte,lnoselfgrav_star,&
        linterpolate_quadratic_spline,laccretion,accrete_hills_frac,istar,&
-       maxsink,lcreate_sinks,icreate,lcreate_gas,lcreate_dust
+       maxsink,lcreate_sinks,icreate,lcreate_gas,lcreate_dust,ladd_mass
 
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -89,7 +90,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.87 2008-03-31 15:26:02 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.88 2008-04-01 17:17:51 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -133,7 +134,6 @@ module Particles_nbody
 !
       mspar=0
       do ks=1,nspar
-
         if (pmass(ks)/=0.) mspar=mspar+1 
       enddo
 !
@@ -881,8 +881,8 @@ module Particles_nbody
 !
           if (laccretion(ks).and.(r2_ij.le.rs2)) then
             call remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid,ks)
-            !add mass to the planet
-            !calculate...
+            !add mass of the removed particle to the accreting particle
+            if (ladd_mass(ks)) pmass(ks)=pmass(ks)+mp_tilde
             goto 99
           else
             r2_ij=r2_ij+r_smooth(ks)**2
@@ -984,45 +984,48 @@ module Particles_nbody
       use Mpicomm,only:stop_it
 !
       real, dimension(mpar_loc,mpvar),intent(inout) :: dfp
+      real, dimension(mspar,mspvar) :: ftmp
       real, dimension(3) :: vcm
       real :: xcm,ycm,zcm,thtcm,phicm,vxcm,vycm,vzcm
       integer :: k
 !
+      ftmp=fsp(1:mspar,:)
+
       if (lcartesian_coords) then 
-        vcm(1) = sum(pmass*fsp(:,ivpx))
-        vcm(2) = sum(pmass*fsp(:,ivpy))
-        vcm(3) = sum(pmass*fsp(:,ivpz))
+        vcm(1) = sum(ftmp(:,imass)*ftmp(:,ivpx))
+        vcm(2) = sum(ftmp(:,imass)*ftmp(:,ivpy))
+        vcm(3) = sum(ftmp(:,imass)*ftmp(:,ivpz))
       else if (lcylindrical_coords) then
-        xcm=sum(pmass*(fsp(:,ipx)*cos(fsp(:,iyp))))
-        ycm=sum(pmass*(fsp(:,ipx)*sin(fsp(:,iyp))))
+        xcm=sum(ftmp(:,imass)*(ftmp(:,ipx)*cos(ftmp(:,iyp))))
+        ycm=sum(ftmp(:,imass)*(ftmp(:,ipx)*sin(ftmp(:,iyp))))
         phicm=atan2(ycm,xcm)
-        vxcm=sum(pmass*(&
-             fsp(:,ivpx)*cos(fsp(:,iyp))-fsp(:,ivpy)*sin(fsp(:,iyp))&
+        vxcm=sum(ftmp(:,imass)*(&
+             ftmp(:,ivpx)*cos(ftmp(:,iyp))-ftmp(:,ivpy)*sin(ftmp(:,iyp))&
                                                                     ))
-        vycm=sum(pmass*(&
-             fsp(:,ivpx)*sin(fsp(:,iyp))+fsp(:,ivpy)*cos(fsp(:,iyp))&
+        vycm=sum(ftmp(:,imass)*(&
+             ftmp(:,ivpx)*sin(ftmp(:,iyp))+ftmp(:,ivpy)*cos(ftmp(:,iyp))&
                                                                     ))
         !
         vcm(1)= vxcm*cos(phicm) + vycm*sin(phicm)
         vcm(2)=-vxcm*sin(phicm) + vycm*cos(phicm)
-        vcm(3) = sum(pmass*fsp(:,ivpz))
+        vcm(3) = sum(ftmp(:,imass)*ftmp(:,ivpz))
       else if (lspherical_coords) then
-        vxcm=sum(pmass*( &
-              fsp(:,ivpx)*sin(fsp(:,iyp))*cos(fsp(:,izp))&
-             +fsp(:,ivpy)*cos(fsp(:,iyp))*cos(fsp(:,izp))&
-             -fsp(:,ivpz)*sin(fsp(:,izp))                ))
-        vycm=sum(pmass*( &
-              fsp(:,ivpx)*sin(fsp(:,iyp))*sin(fsp(:,izp))&
-             +fsp(:,ivpy)*cos(fsp(:,iyp))*sin(fsp(:,izp))&
-             +fsp(:,ivpz)*cos(fsp(:,izp))                ))
+        vxcm=sum(ftmp(:,imass)*( &
+              ftmp(:,ivpx)*sin(ftmp(:,iyp))*cos(ftmp(:,izp))&
+             +ftmp(:,ivpy)*cos(ftmp(:,iyp))*cos(ftmp(:,izp))&
+             -ftmp(:,ivpz)*sin(ftmp(:,izp))                ))
+        vycm=sum(ftmp(:,imass)*( &
+              ftmp(:,ivpx)*sin(ftmp(:,iyp))*sin(ftmp(:,izp))&
+             +ftmp(:,ivpy)*cos(ftmp(:,iyp))*sin(ftmp(:,izp))&
+             +ftmp(:,ivpz)*cos(ftmp(:,izp))                ))
 
-        vzcm=sum(pmass*(&
-             fsp(:,ivpx)*cos(fsp(:,iyp))-fsp(:,ivpy)*sin(fsp(:,iyp))&
+        vzcm=sum(ftmp(:,imass)*(&
+             ftmp(:,ivpx)*cos(ftmp(:,iyp))-ftmp(:,ivpy)*sin(ftmp(:,iyp))&
                                                                ))
 !
-        xcm=sum(pmass*(fsp(:,ixp)*sin(fsp(:,iyp))*cos(fsp(:,izp))))
-        ycm=sum(pmass*(fsp(:,ixp)*sin(fsp(:,iyp))*sin(fsp(:,izp))))
-        zcm=sum(pmass*(fsp(:,ixp)*cos(fsp(:,iyp))))
+        xcm=sum(ftmp(:,imass)*(ftmp(:,ixp)*sin(ftmp(:,iyp))*cos(ftmp(:,izp))))
+        ycm=sum(ftmp(:,imass)*(ftmp(:,ixp)*sin(ftmp(:,iyp))*sin(ftmp(:,izp))))
+        zcm=sum(ftmp(:,imass)*(ftmp(:,ixp)*cos(ftmp(:,iyp))))
 !        
         thtcm=atan2(sqrt(xcm**2+ycm**2),zcm)
         phicm=atan2(ycm,xcm)
@@ -2092,6 +2095,95 @@ module Particles_nbody
 !
     endsubroutine collapse_cluster
 !***********************************************************************
+    subroutine particles_nbody_read_snapshot(filename)
+!
+! Read sink particle info
+!
+! 01-apr-08/wlad: dummy
+!
+      use Mpicomm, only:mpibcast_int,mpibcast_real
+!
+      character (len=*) :: filename
+!
+      if (lroot) then
+        open(1,FILE=filename,FORM='unformatted')
+        read(1) mspar
+        if (mspar/=0) read(1) fsp(1:mspar,:)
+        if (ip<=8) print*, 'read snapshot', filename
+        close(1)
+      endif
+      call mpibcast_int(mspar,1)
+      call mpibcast_real(fsp,(/mspar,mspvar/))
+!
+    endsubroutine particles_nbody_read_snapshot
+!***********************************************************************
+    subroutine particles_nbody_write_snapshot(snapbase,enum,flist)
+!
+      use General, only:safe_character_assign
+      use IO, only: lun_output
+      use Sub, only: update_snaptime, read_snaptime
+!
+!  Input and output of information about the sinks
+! 
+!  01-apr-08/wlad: coded
+!
+      integer, save :: ifirst=0, nsnap, nsnap_minor
+      real, save :: tsnap,tsnap_minor
+      character (len=*) :: snapbase,flist
+      character (len=fnlen) :: snapname, filename_diag
+      logical :: enum,lsnap
+      character (len=5) :: nsnap_ch,nsnap_minor_ch,nsnap_ch_last
+      optional :: flist
+!          
+      if (enum) then
+        call safe_character_assign(filename_diag,trim(datadir)//'/tsnap.dat')
+        if (ifirst==0) then
+          call read_snaptime(filename_diag,tsnap,nsnap,dsnap,t)
+          ifirst=1
+        endif
+        call update_snaptime(filename_diag,tsnap,nsnap,dsnap,t,&
+             lsnap,nsnap_ch,ENUM=.true.)
+        if (lsnap) then
+          snapname=snapbase//nsnap_ch
+!
+!  Write number of sinks and sink's data
+!
+          open(lun_output,FILE=snapname,FORM='unformatted')
+          write(lun_output) mspar
+          if (mspar/=0) write(lun_output) fsp(1:mspar,:)
+          close(lun_output)
+          if(ip<=10 .and. lroot) &
+               print*,'written snapshot ', snapname
+        endif
+      else
+!
+!  Write snapshot without label
+!
+        snapname=snapbase
+        open(lun_output,FILE=snapname,FORM='unformatted')
+        write(lun_output) mspar
+        if (mspar/=0) write(lun_output) fsp(1:mspar,:)
+        close(lun_output)
+        if(ip<=10 .and. lroot) &
+             print*,'written snapshot ', snapname
+      endif
+!
+    endsubroutine particles_nbody_write_snapshot
+!***********************************************************************
+    subroutine particles_nbody_write_spdim(filename)
+!
+!  Write nspar and mspvar to file.
+!
+!  01-apr-08/wlad: coded
+!
+      character (len=*) :: filename
+!
+      open(1,file=filename)
+      write(1,'(3i9)') nspar, mspvar
+      close(1)
+!
+    endsubroutine particles_nbody_write_spdim
+!***********************************************************************
     subroutine rprint_particles_nbody(lreset,lwrite)
 !
 !  Read and register print parameters relevant for sink particles.
@@ -2113,6 +2205,10 @@ module Particles_nbody
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
+!
+      if (lwr) then
+        write(3,*) 'imass=', imass
+      endif
 !
 !  Reset everything in case of reset
 !
