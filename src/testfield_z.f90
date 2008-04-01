@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.32 2008-04-01 05:01:09 brandenb Exp $
+! $Id: testfield_z.f90,v 1.33 2008-04-01 10:32:40 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -52,7 +52,7 @@ module Testfield
   real, dimension (nx,3) :: bbb
   real :: amplaa=0., kx_aatest=1.,ky_aatest=1.,kz_aatest=1.
   real :: taainit=0.,daainit=0.
-  logical :: reinitialize_aatest=.false.,ltestfield_newz=.true.
+  logical :: reinitialize_aatest=.false.
   logical :: zextent=.true.,lsoca=.true.,lsoca_jxb=.true.,lset_bbtest2=.false.
   logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,linit_aatest=.false.
   character (len=labellen) :: itestfield='B11-B21'
@@ -68,10 +68,11 @@ module Testfield
   ! run parameters
   real :: etatest=0.,etatest1=0.
   real, dimension(njtest) :: rescale_aatest=1.
+  logical :: ltestfield_newz=.true.,leta_rank2=.false.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
-       ltestfield_newz, &
+       ltestfield_newz,leta_rank2, &
        luxb_as_aux,ljxb_as_aux,daainit,linit_aatest,bamp, &
        rescale_aatest
 
@@ -178,7 +179,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.32 2008-04-01 05:01:09 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.33 2008-04-01 10:32:40 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -642,16 +643,23 @@ module Testfield
         if (idiag_alp11/=0) call sum_mn_name(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2),idiag_alp11)
         if (idiag_alp21/=0) call sum_mn_name(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2),idiag_alp21)
         if (idiag_alp31/=0) call sum_mn_name(+cz(n)*Eipq(:,3,1)+sz(n)*Eipq(:,3,2),idiag_alp31)
-        if (idiag_eta11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))*ktestfield1,idiag_eta11)
-        if (idiag_eta21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))*ktestfield1,idiag_eta21)
-        if (idiag_eta31/=0) call sum_mn_name((-sz(n)*Eipq(:,3,1)+cz(n)*Eipq(:,3,2))*ktestfield1,idiag_eta31)
+        if (leta_rank2) then
+          if (idiag_eta11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta11)
+          if (idiag_eta21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta21)
+        else
+          if (idiag_eta11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))*ktestfield1,idiag_eta11)
+          if (idiag_eta21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))*ktestfield1,idiag_eta21)
+          if (idiag_eta31/=0) call sum_mn_name((-sz(n)*Eipq(:,3,1)+cz(n)*Eipq(:,3,2))*ktestfield1,idiag_eta31)
+        endif
 !
 !  weighted averages alpha and eta
 !
         if (idiag_alp11cc/=0) call sum_mn_name(cz(n)**2   *(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2)),idiag_alp11cc)
         if (idiag_alp21sc/=0) call sum_mn_name(sz(n)*cz(n)*(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2)),idiag_alp21sc)
-        if (idiag_eta11cc/=0) call sum_mn_name(cz(n)**2   *(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))*ktestfield1,idiag_eta11cc)
-        if (idiag_eta21sc/=0) call sum_mn_name(sz(n)*cz(n)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))*ktestfield1,idiag_eta21sc)
+        if (leta_rank2) then
+          if (idiag_eta11cc/=0) call sum_mn_name(cz(n)**2   *(-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta11cc)
+          if (idiag_eta21sc/=0) call sum_mn_name(sz(n)*cz(n)*(-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta21sc)
+        endif
 !
 !  Projection of EMF from testfield against testfield itself
 !
@@ -670,13 +678,20 @@ module Testfield
           if (idiag_alp12/=0) call sum_mn_name(+cz(n)*Eipq(:,1,i3)+sz(n)*Eipq(:,1,i4),idiag_alp12)
           if (idiag_alp22/=0) call sum_mn_name(+cz(n)*Eipq(:,2,i3)+sz(n)*Eipq(:,2,i4),idiag_alp22)
           if (idiag_alp32/=0) call sum_mn_name(+cz(n)*Eipq(:,3,i3)+sz(n)*Eipq(:,3,i4),idiag_alp32)
-          if (idiag_eta12/=0) call sum_mn_name((-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta12)
-          if (idiag_eta22/=0) call sum_mn_name((-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta22)
-          if (idiag_eta32/=0) call sum_mn_name((-sz(n)*Eipq(:,3,i3)+cz(n)*Eipq(:,3,i4))*ktestfield1,idiag_eta32)
           if (idiag_alp12cs/=0) call sum_mn_name(cz(n)*sz(n)*(+cz(n)*Eipq(:,1,i3)+sz(n)*Eipq(:,1,i4)),idiag_alp12cs)
           if (idiag_alp22ss/=0) call sum_mn_name(sz(n)**2   *(+cz(n)*Eipq(:,2,i3)+sz(n)*Eipq(:,2,i4)),idiag_alp22ss)
-          if (idiag_eta12cs/=0) call sum_mn_name(cz(n)*sz(n)*(-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta12cs)
-          if (idiag_eta22ss/=0) call sum_mn_name(sz(n)**2   *(-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta22ss)
+          if (leta_rank2) then
+            if (idiag_eta12/=0) call sum_mn_name(-(-sz(n)*Eipq(:,1,i1)+cz(n)*Eipq(:,1,i2))*ktestfield1,idiag_eta12)
+            if (idiag_eta22/=0) call sum_mn_name(-(-sz(n)*Eipq(:,2,i1)+cz(n)*Eipq(:,2,i2))*ktestfield1,idiag_eta22)
+            if (idiag_eta12cs/=0) call sum_mn_name(-cz(n)*sz(n)*(-sz(n)*Eipq(:,1,i1)+cz(n)*Eipq(:,1,i2))*ktestfield1,idiag_eta12cs)
+            if (idiag_eta22ss/=0) call sum_mn_name(-sz(n)**2   *(-sz(n)*Eipq(:,2,i1)+cz(n)*Eipq(:,2,i2))*ktestfield1,idiag_eta22ss)
+          else
+            if (idiag_eta12/=0) call sum_mn_name((-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta12)
+            if (idiag_eta22/=0) call sum_mn_name((-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta22)
+            if (idiag_eta32/=0) call sum_mn_name((-sz(n)*Eipq(:,3,i3)+cz(n)*Eipq(:,3,i4))*ktestfield1,idiag_eta32)
+            if (idiag_eta12cs/=0) call sum_mn_name(cz(n)*sz(n)*(-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta12cs)
+            if (idiag_eta22ss/=0) call sum_mn_name(sz(n)**2   *(-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta22ss)
+          endif
         endif
 !
 !  rms values of small scales fields bpq in response to the test fields Bpq
