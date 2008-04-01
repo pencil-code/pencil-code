@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.233 2008-03-04 09:16:08 ajohan Exp $
+# $Id: getconf.csh,v 1.234 2008-04-01 17:42:33 pkapyla Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -523,8 +523,8 @@ else if ($hn =~ louhi-login*) then
     echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
   endif
   set mpirunops = ''
-  set mpirun = 'yod'
-  set npops = "-sz $ncpus"
+  set mpirun = 'aprun'
+  set npops = "-n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
   set remote_top     = 1
@@ -1234,6 +1234,9 @@ if ($mpi) then
     set npops = ""
   else if ("$mpirun" =~ *mpprun*) then
     echo "npops = $npops"
+  else if ("$mpirun" =~ *aprun*) then
+    set mpirun = 'aprun'
+    set npops = "-n $ncpus"
   else
     echo "getconf.csh: No clue how to tell $mpirun to use $ncpus nodes"
   endif
