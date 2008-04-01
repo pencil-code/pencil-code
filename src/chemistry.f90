@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.49 2008-03-31 15:27:44 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.50 2008-04-01 13:45:19 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -60,7 +60,7 @@ module Chemistry
   character (len=labellen), dimension (ninit) :: initchem='nothing'
   character (len=labellen), dimension (2*nchemspec) :: kreactions_profile=''
 
-  real,    allocatable, dimension(:,:) :: Bin_Diff_coef
+  real, allocatable, dimension(:,:) :: Bin_Diff_coef
   real, dimension (mx,my,mz,mfarray) :: Diff_full, XX_full
   real, dimension (nchemspec) :: species_viscosity
   real, dimension(nchemspec) :: nu_spec=1.
@@ -172,11 +172,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.49 2008-03-31 15:27:44 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.50 2008-04-01 13:45:19 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.49 2008-03-31 15:27:44 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.50 2008-04-01 13:45:19 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -326,6 +326,8 @@ module Chemistry
        lpenc_requested(i_YY)=.true.
        lpenc_requested(i_cs2)=.true.
        lpenc_requested(i_cvspec)=.true.
+       lpenc_requested(i_DYDt_reac)=.true.
+       lpenc_requested(i_DYDt_diff)=.true.
 
        if (lcheminp) then
         lpenc_requested(i_mu1)=.true.
@@ -492,6 +494,14 @@ module Chemistry
          endif
 
       endif
+ 
+
+        if (lreactions .and. lpencil(i_DYDt_reac))   call calc_reaction_term(f,p)
+
+
+        if (lpencil(i_DYDt_diff))  call calc_diffusion_term(f,p)
+
+
 
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -900,6 +910,7 @@ module Chemistry
 !!      if (headtt) call identify_bcs('ss',iss)
 !
 
+
 !  loop over all chemicals
 !
      do k=1,nchemspec
@@ -928,7 +939,7 @@ module Chemistry
 !
 !   Temporary we check the existence of chem.imp data, further one should check the existence of a file with binary diffusion coefficients!
 !
-      call calc_diffusion_term(f,p)
+    
 
         if (.not. lcheminp) then  
               df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_diff(:,k)
@@ -944,7 +955,6 @@ module Chemistry
 !  d/dt(x_i) = S_ij v_j
 !
        if (lreactions) then
-         call calc_reaction_term(f,p)
            if (.not. lcheminp) then
               df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_reac(:,k)
             else
