@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.182 2008-03-12 17:52:36 brandenb Exp $
+! $Id: start.f90,v 1.183 2008-04-01 17:18:47 wlyra Exp $
 !
 !***********************************************************************
       program start
@@ -49,6 +49,8 @@
         use Radiation,       only: init_rad, radtransfer
         use Interstellar,    only: init_interstellar
         use Particles_main
+        use Particles_nbody,  only: particles_nbody_write_snapshot,&
+                                    particles_nbody_write_spdim
         use Hypervisc_strict, only: hyperviscosity_strict
         use Hyperresi_strict, only: hyperresistivity_strict
 
@@ -103,7 +105,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.182 2008-03-12 17:52:36 brandenb Exp $")
+             "$Id: start.f90,v 1.183 2008-04-01 17:18:47 wlyra Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -372,6 +374,10 @@
           if (lparticles) &
               call particles_write_snapshot(trim(directory_snap)//'/PVAR0', &
               ENUM=.false.,FLIST='pvarN.list')
+          if (lparticles_nbody.and.lroot) &
+              call particles_nbody_write_snapshot(&
+              trim(datadir)//'/proc0/SPVAR0', &
+              ENUM=.false.,FLIST='spvarN.list')
         endif
 !
 !  The option lnowrite writes everything except the actual var.dat file
@@ -385,6 +391,9 @@
           if (lparticles) &
               call particles_write_snapshot(trim(directory_snap)//'/pvar.dat', &
               ENUM=.false.)
+          if (lparticles_nbody.and.lroot) &
+               call particles_nbody_write_snapshot(&
+               trim(datadir)//'/proc0/spvar.dat', ENUM=.false.)
           call wtime(trim(directory)//'/time.dat',t)
         endif
         call wdim(trim(directory)//'/dim.dat')
@@ -397,6 +406,8 @@
             nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
           if (lparticles) &
             call particles_write_pdim(trim(datadir)//'/pdim.dat')
+          if (lparticles_nbody) &
+            call particles_nbody_write_spdim(trim(datadir)//'/spdim.dat')
         endif
 !
 !  write global variables:

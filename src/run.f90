@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.253 2008-03-28 07:00:09 brandenb Exp $
+! $Id: run.f90,v 1.254 2008-04-01 17:18:48 wlyra Exp $
 !
 !***********************************************************************
       program run
@@ -40,6 +40,8 @@
         use NeutralDensity,  only: init_lnrhon
         use Magnetic,        only: pert_aa, rescaling
         use Particles_main
+        use Particles_nbody, only: particles_nbody_read_snapshot,&
+                                   particles_nbody_write_snapshot
         use FArrayManager,   only: farray_clean_up
         use SharedVariables, only: sharedvars_clean_up
         use Entropy,         only: calc_heatcond_ADI
@@ -73,7 +75,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.253 2008-03-28 07:00:09 brandenb Exp $")
+             "$Id: run.f90,v 1.254 2008-04-01 17:18:48 wlyra Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -181,6 +183,9 @@
         call rsnap(trim(directory_snap)//'/var.dat',f,mvar)
         if (lparticles) &
            call particles_read_snapshot(trim(directory_snap)//'/pvar.dat')
+        if (lparticles_nbody) &
+             call particles_nbody_read_snapshot(&
+             trim(datadir)//'/proc0/spvar.dat')
 
 !  read time and global variables (if any)
 !
@@ -527,6 +532,10 @@
           if (lparticles) &
               call particles_write_snapshot(trim(directory_snap)//'/PVAR', &
               ENUM=.true.,FLIST='pvarN.list')
+          if (lparticles_nbody.and.lroot) &
+              call particles_nbody_write_snapshot(&
+              trim(datadir)//'/proc0/SPVAR', &
+              ENUM=.true.,FLIST='spvarN.list')
           call wsnap_timeavgs(trim(directory_snap)//'/TAVG',ENUM=.true., &
                FLIST='tavgN.list')
 !
@@ -544,6 +553,9 @@
               if (lparticles) &
                   call particles_write_snapshot( &
                   trim(directory_snap)//'/pvar.dat',ENUM=.false.)
+              if (lparticles_nbody.and.lroot) &
+                  call particles_nbody_write_snapshot( &
+                  trim(datadir)//'/proc0/spvar.dat',ENUM=.false.)
               call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat', &
                                   ENUM=.false.)
               call wtime(trim(directory)//'/time.dat',t)
@@ -596,6 +608,9 @@
           call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
           if (lparticles) call particles_write_snapshot( &
               trim(directory_snap)//'/pvar.dat',ENUM=.false.)
+          if (lparticles_nbody.and.lroot) &
+               call particles_nbody_write_snapshot( &
+               trim(datadir)//'/proc0/spvar.dat',ENUM=.false.)
           call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat', &
                                   ENUM=.false.)
           if (ip<=11) then
