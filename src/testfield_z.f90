@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.33 2008-04-01 10:32:40 brandenb Exp $
+! $Id: testfield_z.f90,v 1.34 2008-04-02 04:13:52 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -67,7 +67,7 @@ module Testfield
 
   ! run parameters
   real :: etatest=0.,etatest1=0.
-  real, dimension(njtest) :: rescale_aatest=1.
+  real, dimension(njtest) :: rescale_aatest=0.
   logical :: ltestfield_newz=.true.,leta_rank2=.false.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
@@ -179,7 +179,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.33 2008-04-01 10:32:40 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.34 2008-04-02 04:13:52 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -256,10 +256,9 @@ module Testfield
 !
       if (reinitialize_aatest) then
         do jtest=1,njtest
-          do j=1,3
-            k=j+3*(jtest-1)
-            f(:,:,:,k)=rescale_aatest(jtest)*f(:,:,:,k)
-          enddo
+          iaxtest=iaatest+3*(jtest-1)
+          iaztest=iaxtest+2
+          f(:,:,:,iaxtest:iaztest)=rescale_aatest(jtest)*f(:,:,:,iaxtest:iaztest)
         enddo
       endif
 !
