@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.89 2008-04-01 19:36:19 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.90 2008-04-02 20:40:23 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -89,7 +89,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.89 2008-04-01 19:36:19 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.90 2008-04-02 20:40:23 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -133,7 +133,10 @@ module Particles_nbody
 !
       mspar=0
       do ks=1,nspar
-        if (pmass(ks)/=0.) mspar=mspar+1
+        if (pmass(ks)/=0.) then 
+          mspar=mspar+1
+          ipar_sink(mspar)=ks
+        endif
       enddo
 !
 ! when first called, mspar was zero, so no diagnostic 
@@ -188,13 +191,15 @@ module Particles_nbody
       if (((lcylindrical_gravity).and.&
         (.not.lcylindrical_gravity_nbody(istar))).or.&
              (.not.lcylindrical_gravity).and.&
-             (lcylindrical_gravity_nbody(istar))) then 
+             (lcylindrical_gravity_nbody(istar))) then
         call stop_it("initialize_particles_nbody: inconsitency "//&
              "between lcylindrical_gravity from cdata and the "//&
              "one from nbody")
       endif
 !
       if (rsmooth.ne.r_smooth(istar)) then 
+        print*,'rsmooth from cdata=',rsmooth
+        print*,'r_smooth(istar)=',r_smooth(istar)
         call stop_it("initialize_particles_nbody: inconsitency "//&
              "between rsmooth from cdata and the "//&
              "one from nbody")
@@ -488,10 +493,6 @@ module Particles_nbody
           endif
         enddo
 !
-        print*,'fp istar=',fp(istar,ixp)
-!
-
-!
       case default
         if (lroot) print*,"init_particles: No such such value for"//&
              " initxxsp: ",trim(initxxsp)
@@ -502,7 +503,6 @@ module Particles_nbody
 !  Redistribute particles among processors (now that positions are determined).
 !
       call boundconds_particles(fp,npar_loc,ipar)
-              print*,'fp istar=',fp(istar,ixp)
 !
 !  Initial particle velocity.
 !
@@ -588,14 +588,6 @@ module Particles_nbody
 !
       call boundconds_particles(fp,npar_loc,ipar)
       call share_sinkparticles(fp)
-!
-! Start the ipar_sink list 
-!
-      do k=1,npar_loc
-        if (ipar(k) <= mspar) then 
-          ipar_sink(ipar(k)) = ipar(k)
-        endif
-      enddo
 !
     endsubroutine init_particles_nbody
 !***********************************************************************
@@ -1192,7 +1184,7 @@ module Particles_nbody
 ! Loop through the particles on this processor
 !
           do k=1,npar_loc
-            if (ks==ipar(k)) then
+            if (ipar_sink(ks)==ipar(k)) then
 !
 ! A sink was found here. Turn the logical true and copy fp to fsp
 !
@@ -1255,14 +1247,18 @@ module Particles_nbody
 !
 ! Non-parallel. Just copy fp to fsp
 !
-        do k=1,npar_loc
-          if (ipar(k)<=mspar) then 
-            fsp(ipar(k),ixp:ivpz) = fp(k,:)
-            fsp(ipar(k),imass)    = pmass(ipar(k))
-          endif
+        do ks=1,mspar
+          do k=1,npar_loc
+            if (ipar_sink(ks)==ipar(k)) then
+              fsp(ks,ixp:ivpz) = fp(k,:)
+            endif
+          enddo
+          fsp(ks,imass)    = pmass(ks)
         enddo
 !
       endif
+!
+      if (ldebug) print*,'share_sinkparticles finished'
 !
     endsubroutine share_sinkparticles
 !***********************************************************************
@@ -1722,7 +1718,7 @@ module Particles_nbody
                call merge_and_share(fcsp,nc,fp)
 !
         endif
-      endif
+      
 !
 ! share the new sinks
 !
@@ -1731,7 +1727,9 @@ module Particles_nbody
 ! print to the screen the positions and velocities of the 
 ! newly generated sinks
 !
-      if (ip <= 10) then
+      if (ldebug) then
+        print*,'---------------------------'
+        print*,'the sinks present are:'
         do ks=1,mspar 
           print*,'ks=',ks
           print*,'positions=',fsp(ks,ixp:izp)
@@ -1740,8 +1738,11 @@ module Particles_nbody
           print*,'ipar_sink=',ipar_sink
           print*,''
         enddo
+        print*,'---------------------------'
       endif
 !
+    endif
+!      
     endsubroutine create_sink_particles
 !**************************************************************************
     subroutine merge_and_share(fcspp,nc,fp)
@@ -2122,12 +2123,13 @@ module Particles_nbody
       if (lroot) then
         open(1,FILE=filename,FORM='unformatted')
         read(1) mspar
-        if (mspar/=0) read(1) fsp(1:mspar,:)
+        if (mspar/=0) read(1) fsp(1:mspar,:),ipar_sink(1:mspar)
         if (ip<=8) print*, 'read snapshot', filename
         close(1)
       endif
       call mpibcast_int(mspar,1)
-      call mpibcast_real(fsp,(/mspar,mspvar/))
+      call mpibcast_real(fsp(1:mspar,:),(/mspar,mspvar/))
+      call mpibcast_int(ipar_sink(1:mspar),mspar)
 !
     endsubroutine particles_nbody_read_snapshot
 !***********************************************************************
@@ -2164,7 +2166,7 @@ module Particles_nbody
 !
           open(lun_output,FILE=snapname,FORM='unformatted')
           write(lun_output) mspar
-          if (mspar/=0) write(lun_output) fsp(1:mspar,:)
+          if (mspar/=0) write(lun_output) fsp(1:mspar,:),ipar_sink(1:mspar)
           close(lun_output)
           if(ip<=10 .and. lroot) &
                print*,'written snapshot ', snapname
@@ -2176,7 +2178,7 @@ module Particles_nbody
         snapname=snapbase
         open(lun_output,FILE=snapname,FORM='unformatted')
         write(lun_output) mspar
-        if (mspar/=0) write(lun_output) fsp(1:mspar,:)
+        if (mspar/=0) write(lun_output) fsp(1:mspar,:),ipar_sink(1:mspar)
         close(lun_output)
         if(ip<=10 .and. lroot) &
              print*,'written snapshot ', snapname
