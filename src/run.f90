@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.254 2008-04-01 17:18:48 wlyra Exp $
+! $Id: run.f90,v 1.255 2008-04-02 20:42:52 wlyra Exp $
 !
 !***********************************************************************
       program run
@@ -75,7 +75,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.254 2008-04-01 17:18:48 wlyra Exp $")
+             "$Id: run.f90,v 1.255 2008-04-02 20:42:52 wlyra Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -532,9 +532,10 @@
           if (lparticles) &
               call particles_write_snapshot(trim(directory_snap)//'/PVAR', &
               ENUM=.true.,FLIST='pvarN.list')
-          if (lparticles_nbody.and.lroot) &
+!  This is weird... if I write only to the root, the other processors complain...
+          if (lparticles_nbody) &
               call particles_nbody_write_snapshot(&
-              trim(datadir)//'/proc0/SPVAR', &
+              trim(directory_snap)//'/SPVAR',&
               ENUM=.true.,FLIST='spvarN.list')
           call wsnap_timeavgs(trim(directory_snap)//'/TAVG',ENUM=.true., &
                FLIST='tavgN.list')
