@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.51 2008-04-01 14:34:10 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.52 2008-04-02 12:42:51 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -71,6 +71,7 @@ module Chemistry
   integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
   integer, dimension(7) :: ia1,ia2
   real,    allocatable, dimension(:) :: B_n, alpha_n, E_an
+  real,   dimension(7) :: e1,e2,e3,e4,e5,e6
 
   logical :: Natalia_thoughts=.false.
 
@@ -78,7 +79,7 @@ module Chemistry
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, Natalia_thoughts
+      amplchemk,amplchemk2, Natalia_thoughts,chem_diff,nu_spec
 
 ! run parameters
   namelist /chemistry_run_pars/ &
@@ -170,11 +171,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.51 2008-04-01 14:34:10 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.52 2008-04-02 12:42:51 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.51 2008-04-01 14:34:10 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.52 2008-04-02 12:42:51 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -211,6 +212,7 @@ module Chemistry
     inquire(file=file1,exist=exist1)
     inquire(file=file2,exist=exist2)
     inquire(file='chemistry.dat',exist=exist)
+
 
 
     if (lcheminp) then
@@ -786,6 +788,10 @@ module Chemistry
       character (len=20) :: input_file='chem.inp'
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: stat
+      logical :: tran_exist
+
+
+      inquire(file='tran_v1.dat',exist=tran_exist)
 
 !
 !  Find number of ractions
@@ -799,22 +805,20 @@ module Chemistry
       allocate(Bin_Diff_coef(nchemspec,nchemspec),STAT=stat)
       if (stat>0) call stop_it("Couldn't allocate memory for binary diffusion coefficients") 
 
-! TEMPORARY!
-! While we do not have the data file, all binary diffusion coefficients equal to chem_diff
-! now Bin_Diff_coef is dimensionless
-!
-
-      Bin_Diff_coef=chem_diff/(unit_length**2/unit_time)
-
-!
-! Wile we do not have the data file, all dynamical viscosities [g/cm/s] equal to  nu
-!
-! now species_viscosity is dimensionless
-!
-      species_viscosity=nu_spec/(unit_mass/unit_length/unit_time)
-!
-! TEMPORARY!
-
+     if (tran_exist) then 
+      if (lroot) then
+         print*,'tran_v1.dat file with transport data is found.'
+        endif
+       call read_transport_data
+     else
+        if (lroot) then
+         print*,'tran_v1.dat file with transport data is not found.'
+         print*,'Now diffusion coefficients is ',chem_diff
+         print*,'Now species viscosity is ',nu_spec
+        endif
+         Bin_Diff_coef=chem_diff/(unit_length**2/unit_time)
+         species_viscosity=nu_spec/(unit_mass/unit_length/unit_time)
+     endif
 
 !
 !  Allocate reaction arrays
@@ -1288,9 +1292,9 @@ module Chemistry
       !
       if (ind_glob==0) then
         found_specie=.false. 
-print*,species_name
       else
         found_specie=.true.
+        print*,species_name,ind_glob
       endif
 !
     endsubroutine find_species_index
@@ -1657,6 +1661,98 @@ print*,species_name
       !
     end subroutine write_thermodyn
 !***************************************************************
+   subroutine read_transport_data
+!
+! reading of the chemkin transport data
+!
+    use Mpicomm
+      !
+      logical :: IsSpecie=.false., emptyfile
+      logical ::  found_specie
+      integer :: file_id=123, ind_glob, ind_chem
+      character (len=80) :: ChemInpLine
+      character (len=10) :: specie_string
+      integer :: VarNumber
+      !character (len=*) :: input_file
+      !
+      integer :: StartInd,StopInd,StartInd_1,StopInd_1,k
+      emptyFile=.true.
+
+      k=1
+      StartInd_1=1; StopInd_1 =0
+      open(file_id,file="tran_v1.dat")
+
+        print*, 'the following species are found in tran_v1.dat: beginning of the list:'
+
+      dataloop: do
+
+        read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
+        emptyFile=.false.
+
+        StopInd_1=index(ChemInpLine,' ') 
+        specie_string=trim(ChemInpLine(1:StopInd_1-1)) 
+
+        call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
+ 
+            if (found_specie) then
+
+               VarNumber=1; StartInd=1; StopInd =0
+                stringloop: do while (VarNumber<7) 
+
+                 StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+                 StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
+                 StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+
+                  if (StopInd==StartInd) then
+                    StartInd=StartInd+1
+                  else
+                    if (VarNumber==1) then
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E1.0)')  &
+                           e1(k) 
+                    elseif (VarNumber==2) then
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                           e2(k)
+                    elseif (VarNumber==3) then
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                           e3(k)
+                    elseif (VarNumber==4) then
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                           e4(k)
+                    elseif (VarNumber==5) then
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                           e5(k)
+                    elseif (VarNumber==6) then
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                           e6(k)
+                    else
+                      call stop_it("No such VarNumber!")
+                    endif
+
+                    VarNumber=VarNumber+1
+                    StartInd=StopInd
+                  endif
+                  if (StartInd==80) exit
+                enddo stringloop
+
+          print*,e1(k),e2(k),e3(k),e4(k),e5(k),e6(k)
+
+              k=k+1
+
+            endif
+      enddo dataloop
+
+!
+! Stop if tran_v1.dat is empty
+!
+
+1000  if (emptyFile)  call stop_it('The input file tran_v1.dat was empty!')
+    
+       print*, 'the following species are found in tran_v1.dat: end of the list:'
+
+      close(file_id)
+      !
+    endsubroutine read_transport_data
+!**************************************************************
     subroutine build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,product)
       !
       ! 2008.03.10 Nils Erland: Coded
