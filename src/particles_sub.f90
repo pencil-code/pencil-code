@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.133 2008-04-01 19:43:18 wlyra Exp $
+! $Id: particles_sub.f90,v 1.134 2008-04-02 20:39:12 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -21,7 +21,6 @@ module Particles_sub
   public :: particle_pencil_index
   public :: shepherd_neighbour,remove_particle
   public :: get_particles_interdistance
-  public :: get_lsink
 
   contains
 
@@ -296,7 +295,7 @@ module Particles_sub
         endif
 !
         do k=k1,k2,ik
-          call get_lsink(ipar(k),lsink)
+          lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
           if (.not.lsink) then
             !dust particle
             boundx=bcpx ;boundy=bcpy ;boundz=bcpz
@@ -529,20 +528,12 @@ module Particles_sub
 !  Find y index of receiving processor.
           ipy_rec=ipy
           if (fp(k,iyp)>=y1_mig) then
-            if (lcheck_exact_frontier) then 
-              if (any(fp(k,iyp)==y1_proc(1:nprocy))) &
-                   fp(k,iyp)=fp(k,iyp)-epsi
-            endif
             iy0_rec=nint((fp(k,iyp)-y(m1))*dy1+nygrid)-nygrid+1
             do while (iy0_rec>ny)
               ipy_rec=ipy_rec+1
               iy0_rec=iy0_rec-ny
             enddo
           else if (fp(k,iyp)<y0_mig) then
-            if (lcheck_exact_frontier) then 
-              if (any(fp(k,iyp)==y0_proc(1:nprocy))) &
-                   fp(k,iyp)=fp(k,iyp)+epsi
-            endif
             iy0_rec=nint((fp(k,iyp)-y(m1))*dy1+nygrid)-nygrid+1
             do while (iy0_rec<1)
               ipy_rec=ipy_rec-1
@@ -552,29 +543,39 @@ module Particles_sub
 !  Find z index of receiving processor.
           ipz_rec=ipz
           if (fp(k,izp)>=z1_mig) then
-            if (lcheck_exact_frontier) then 
-              if (any(fp(k,izp)==z1_proc(1:nprocz))) &
-                   fp(k,izp)=fp(k,izp)-epsi
-            endif
             iz0_rec=nint((fp(k,izp)-z(n1))*dz1+nzgrid)-nzgrid+1
             do while (iz0_rec>nz)
               ipz_rec=ipz_rec+1
               iz0_rec=iz0_rec-nz
             enddo
           else if (fp(k,izp)<z0_mig) then
-            if (lcheck_exact_frontier) then 
-              if (any(fp(k,izp)==z0_proc(1:nprocz))) &
-                   fp(k,izp)=fp(k,izp)+epsi
-            endif
             iz0_rec=nint((fp(k,izp)-z(n1))*dz1+nzgrid)-nzgrid+1
             do while (iz0_rec<1)
               ipz_rec=ipz_rec-1
               iz0_rec=iz0_rec+nz
             enddo
           endif
+!
+!  Fix for error that occurs when a particle lands exactly at a lower
+!  processor boundary, and is assigned to a different processor (one below)
+!
+        if (lcheck_exact_frontier) then
+          if (nprocy/=1) then 
+            if (any(fp(k,iyp)==y0_proc(1:nprocy))) ipy_rec=ipy_rec+1
+            if (any(fp(k,iyp)==y1_proc(1:nprocy))) ipy_rec=ipy_rec-1
+          endif
+          if (nprocz/=1) then 
+            if (any(fp(k,izp)==z0_proc(1:nprocz))) ipz_rec=ipz_rec+1
+            if (any(fp(k,izp)==z1_proc(1:nprocz))) ipz_rec=ipz_rec-1
+          endif
+        endif
+!
 !  Calculate serial index of receiving processor.
+!
           iproc_rec=ipy_rec+nprocy*ipz_rec
+!
 !  Migrate particle if it is no longer at the current processor.
+!
           if (iproc_rec/=iproc) then
             if (ip<=7) print '(a,i7,a,i3,a,i3)', &
                 'redist_particles_procs: Particle ', ipar(k), &
@@ -591,7 +592,9 @@ module Particles_sub
               print*, 'redist_particles_procs: z0_mig, z1_mig=', z0_mig, z1_mig
               call fatal_error_local("","")
             endif
+!
 !  Copy migrating particle to the end of the fp array.
+!
             nmig(iproc,iproc_rec)=nmig(iproc,iproc_rec)+1
             if (nmig(iproc,iproc_rec)>npar_mig) then
               print '(a,i3,a,i3,a)', &
@@ -620,12 +623,16 @@ module Particles_sub
             if (present(dfp)) &
                 dfp_mig(iproc_rec,nmig(iproc,iproc_rec),:)=dfp(k,:)
             ipar_mig(iproc_rec,nmig(iproc,iproc_rec))=ipar(k)
+!
 !  Move the particle with the highest index number to the empty spot left by
 !  the migrating particle.
+!
             fp(k,:)=fp(npar_loc,:)
             if (present(dfp)) dfp(k,:)=dfp(npar_loc,:)
             ipar(k)=ipar(npar_loc)
+!
 !  Reduce the number of particles by one.
+!
             npar_loc=npar_loc-1
           endif
         enddo
@@ -675,7 +682,9 @@ module Particles_sub
                   print*, 'redist_particles_procs: received dfp=',&
                   dfp(npar_loc+1:npar_loc+nmig(i,iproc),:)
             endif
+!
 !  Check that received particles are really at the right processor.
+!
             if (lmigration_real_check) then
               do k=npar_loc+1,npar_loc+nmig(i,iproc)
                 if (nygrid/=1) then
@@ -758,6 +767,7 @@ module Particles_sub
 !  05-jan-05/anders: coded
 !
       use Messages, only: fatal_error
+      use Mpicomm,  only: mpibcast_int
 !
       integer :: npar_loc
       integer, dimension (mpar_loc) :: ipar
@@ -781,8 +791,10 @@ module Particles_sub
           !also needs to initialize ipar(k)
           do k=1,nspar
             ipar(k)=k
+            ipar_sink(k)=k
           enddo
         endif
+        call mpibcast_int(ipar_sink,nspar)
       else
 !  Must be possible to have same number of particles at each processor.
         if (mod(npar,ncpus)/=0) then
@@ -1412,7 +1424,7 @@ module Particles_sub
       double precision, save :: dx1, dy1, dz1
       integer :: k, ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
-      logical :: lnot_special_boundx,lsink
+      logical :: lspecial_boundx,lsink
 !
       intent(in)  :: fp
       intent(out) :: ineargrid
@@ -1432,26 +1444,25 @@ module Particles_sub
 !
       do k=1,npar_loc
 !
+      if (nxgrid/=1) ix0 = nint((fp(k,ixp)-x(1))*dx1) + 1
+      if (nygrid/=1) iy0 = nint((fp(k,iyp)-y(1))*dy1) + 1
+      if (nzgrid/=1) iz0 = nint((fp(k,izp)-z(1))*dz1) + 1
+      ineargrid(k,1)=ix0; ineargrid(k,2)=iy0; ineargrid(k,3)=iz0
+!
 !  Small fix for the fact that we have some special particles that ARE
 !  allowed to be outside of the box (a star in cylindrical coordinates,
 !  for instance). 
 !
-      lnot_special_boundx=.true.
-      call get_lsink(ipar(k),lsink)
-      if (lsink.and.bcspx=='out') lnot_special_boundx=.false.
-!    
-      if (lnot_special_boundx) then
-!
-        if (nxgrid/=1) ix0 = nint((fp(k,ixp)-x(1))*dx1) + 1
-        if (nygrid/=1) iy0 = nint((fp(k,iyp)-y(1))*dy1) + 1
-        if (nzgrid/=1) iz0 = nint((fp(k,izp)-z(1))*dz1) + 1
-        ineargrid(k,1)=ix0; ineargrid(k,2)=iy0; ineargrid(k,3)=iz0
+      lspecial_boundx=.false.
+      lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
+      if (lsink.and.bcspx=='out') lspecial_boundx=.true.
+      if (.not.lspecial_boundx) then 
 !
 !  Round off errors may put a particle closer to a ghost point than to a
 !  physical point. Either stop the code with a fatal error or fix problem
 !  by forcing the nearest grid point to be a physical point.
 !
-        if (lcheck_exact_frontier .or. &
+        if (lcheck_exact_frontier .and. &
              any(ineargrid(k,:)==(/l1-1,m1-1,n1-1/)) .or.  &
              any(ineargrid(k,:)==(/m1-1,m2+1,n2+1/))) then
 
@@ -1491,7 +1502,7 @@ module Particles_sub
           call fatal_error_local('map_nearest_grid','')
         endif
       endif
-      enddo
+    enddo
 !
     endsubroutine map_nearest_grid
 !***********************************************************************
@@ -1688,7 +1699,7 @@ module Particles_sub
         f(:,:,:,inp)=0.0
         do k=1,npar_loc
           !exclude the massive particles from the mapping
-          call get_lsink(ipar(k),lsink)
+          lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
           if (.not.lsink) then 
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
@@ -1716,7 +1727,7 @@ module Particles_sub
 !  Cloud In Cell (CIC) scheme.
 !
           do k=1,npar_loc
-            call get_lsink(ipar(k),lsink)
+            lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
             if (.not.lsink) then 
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               ixx0=ix0; iyy0=iy0; izz0=iz0
@@ -1748,7 +1759,7 @@ module Particles_sub
 !  decreases with the distance from the particle centre.
 !
           do k=1,npar_loc
-            call get_lsink(ipar(k),lsink)
+            lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
             if (.not.lsink) then 
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               if (nxgrid/=1) then
@@ -1981,15 +1992,6 @@ module Particles_sub
 !
     endsubroutine get_particles_interdistance
 !***********************************************************************
-    subroutine get_lsink(ipk,lsink)
-!
-      integer,intent(in)  :: ipk
-      logical,intent(out) :: lsink
-!
-      lsink=lparticles_nbody.and.(any(ipar_sink==ipk))
-!
-    endsubroutine get_lsink
-!***********************************************************************
     subroutine remove_particle(fp,npar_loc,ipar,k,dfp,ineargrid,ks)
 !
       use Messages, only: fatal_error
@@ -2007,7 +2009,7 @@ module Particles_sub
 !
 ! check that we are not removing sinks
 !
-      call get_lsink(ipar(k),lsink)
+      lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
 !
       if (lsink) then
         if (present(ks)) then 

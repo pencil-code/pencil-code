@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.16 2008-04-01 19:43:18 wlyra Exp $
+! $Id: particles_selfgravity.f90,v 1.17 2008-04-02 20:39:12 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -54,7 +54,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.16 2008-04-01 19:43:18 wlyra Exp $")
+           "$Id: particles_selfgravity.f90,v 1.17 2008-04-02 20:39:12 wlyra Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -262,7 +262,7 @@ module Particles_selfgravity
 !  interpolation is not possible. The nbody module will take 
 !  care of this case
 ! 
-              call get_lsink(ipar(k),lsink)
+              lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
               if (lsink) then
                 if ((fp(k,ixp)< xyz0(1)).or.(fp(k,ixp) > xyz1(1)) .or. &
                     (fp(k,iyp)< xyz0(2)).or.(fp(k,iyp) > xyz1(2)) .or. &
