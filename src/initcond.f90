@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.238 2008-04-01 05:01:08 brandenb Exp $
+! $Id: initcond.f90,v 1.239 2008-04-02 23:36:13 steveb Exp $
 
 module Initcond
 
@@ -3086,7 +3086,7 @@ module Initcond
       use FArrayManager
       use Mpicomm
       use EquationOfState, only: gamma,gamma1,get_cp1,&
-                                 cs20,cs2bot,cs2top
+                                 cs20,cs2bot,cs2top,lnrho0
       use Sub,             only: power_law,get_radial_distance
       use Messages       , only: warning
 
@@ -3184,7 +3184,7 @@ module Initcond
 !            call stop_it("set_thermodynamical_variables: Wlad got lazy and "//&
 !                 "didn't want to calculate the entropy for the given "//&
 !                 "sound speed")
-            f(:,m,n,iss)=gamma1/cp1*(log(cs2/cs20)-(gamma-1.))
+            f(:,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma1*lnrho0)
           else
             call stop_it("No thermodynamical variable. Choose if you want "//&
                  "a local thermodynamical approximation "//&
