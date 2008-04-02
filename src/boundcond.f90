@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.204 2008-03-07 09:06:37 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.205 2008-04-02 16:54:20 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -3257,10 +3257,10 @@ module Boundcond
 !
       case('bot')
         do iy=1,my; do ix=1,mx
-          if (f(ix,iy,n1,j)<=0.0) then  ! simply copy to ghost cells
-            do i=1,nghost; f(ix,iy,n1-i,j)=f(ix,iy,n1,j); enddo
-          else                          ! zero, suppressing inflow
-            do i=1,nghost; f(ix,iy,n1-i,j)=0.0; enddo
+          if (f(ix,iy,n1,j)<=0.0) then  ! 's'
+            call bc_sym_z(f,+1,topbot,j)
+          else                          ! 'a'
+            call bc_sym_z(f,-1,topbot,j)
           endif
         enddo; enddo
 !
@@ -3269,9 +3269,9 @@ module Boundcond
       case('top')
         do iy=1,my; do ix=1,mx
           if (f(ix,iy,n2,j)>=0.0) then
-            do i=1,nghost; f(ix,iy,n2+i,j)=f(ix,iy,n2,j); enddo
+            call bc_sym_z(f,+1,topbot,j) ! 's'
           else
-            do i=1,nghost; f(ix,iy,n2+i,j)=0.0; enddo
+            call bc_sym_z(f,-1,topbot,j) ! 'a'
           endif
         enddo; enddo
 !
