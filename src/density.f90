@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.382 2008-04-02 16:55:26 ajohan Exp $
+! $Id: density.f90,v 1.383 2008-04-02 23:35:13 steveb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -138,7 +138,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.382 2008-04-02 16:55:26 ajohan Exp $")
+           "$Id: density.f90,v 1.383 2008-04-02 23:35:13 steveb Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1977,7 +1977,8 @@ module Density
             elseif (lentropy) then
 !              call stop_it("local_isothermal_density: cs2 not "//&
 !                   "implemented for entropy. Use temperature_idealgas")
-             cs2=cs20*exp(cp1/gamma1*f(:,m,n,iss) + (1./gamma1-1.)*f(:,m,n,ilnrho))
+               call get_cp1(cp1)
+               cs2=cs20*exp(cp1*gamma*f(:,m,n,iss) + gamma1*f(:,m,n,ilnrho))
             else
               cs2=cs20
             endif
@@ -2057,7 +2058,8 @@ module Density
           elseif (lentropy) then
 !            call stop_it("local_isothermal_density: cs2 not "//&
 !                 "implemented for entropy. Use temperature_idealgas")
-	    cs2=cs20*exp(cp1/gamma1*f(l1:l2,m,n,iss) + (1./gamma1-1)*f(l1:l2,m,n,ilnrho))
+             call get_cp1(cp1)
+	    cs2=cs20*exp(cp1*gamma*f(l1:l2,m,n,iss) + gamma1*f(l1:l2,m,n,ilnrho))
           else
             cs2=cs20
           endif
