@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.53 2007-08-28 01:08:12 wlyra Exp $
+! $Id: nodensity.f90,v 1.54 2008-04-02 16:55:26 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.53 2007-08-28 01:08:12 wlyra Exp $")
+           "$Id: nodensity.f90,v 1.54 2008-04-02 16:55:26 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -159,6 +159,20 @@ module Density
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_density
+!***********************************************************************
+    subroutine density_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set.
+!
+!   2-apr-08/anders: dummy
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      if (NO_WARN) print*, f(1,1,1,1)
+!
+    endsubroutine density_before_boundary
 !***********************************************************************
     subroutine dlnrho_dt(f,df,p)
 !

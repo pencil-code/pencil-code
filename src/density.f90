@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.381 2008-03-28 03:11:14 steveb Exp $
+! $Id: density.f90,v 1.382 2008-04-02 16:55:26 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -59,6 +59,7 @@ module Density
   logical :: ldiff_hyper3_cyl_or_sph=.false.,lanti_shockdiffusion=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: lfreeze_lnrhosqu=.false.,lexponential_smooth=.false.
+  logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
 
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
@@ -69,7 +70,6 @@ module Density
   complex :: coeflnrho=0.
 
   integer :: iglobal_gg=0
-  integer :: iglobal_rho=0
 
   namelist /density_init_pars/ &
        ampllnrho,initlnrho,initlnrho2,widthlnrho,                    &
@@ -80,7 +80,7 @@ module Density
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho,     &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,lexponential_smooth,&
        wdamp,plaw,lcontinuity_gas,density_floor,lanti_shockdiffusion,&
-       rshift
+       rshift,lrho_as_aux,ldiffusion_nolog
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,                &
@@ -90,7 +90,7 @@ module Density
        wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,                      &
        lnrho_const,plaw,lcontinuity_gas,borderlnrho,                 &
        diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor,          &
-       lanti_shockdiffusion
+       lanti_shockdiffusion,lrho_as_aux,ldiffusion_nolog
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
@@ -138,7 +138,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.381 2008-03-28 03:11:14 steveb Exp $")
+           "$Id: density.f90,v 1.382 2008-04-02 16:55:26 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -252,14 +252,6 @@ module Density
             'diffusion coefficient diffrho_shock is zero!')
       endif
 !
-!  Hyperdiffusion only works with (not log) density. One must either use
-!  ldensity_nolog=T or work with GLOBAL =   global_nolog_density.
-!
-      if ((ldiff_hyper3.or.ldiff_hyper3_aniso) .and. (.not. ldensity_nolog)) then
-        if (lroot) print*,"initialize_density: Creating global array for rho to use hyperdiffusion"
-        call farray_register_global('rho',iglobal_rho)
-      endif
-!
       if (lfreeze_lnrhoint) lfreeze_varint(ilnrho)    = .true.
       if (lfreeze_lnrhoext) lfreeze_varext(ilnrho)    = .true.
       if (lfreeze_lnrhosqu) lfreeze_varsquare(ilnrho) = .true.
@@ -314,6 +306,34 @@ module Density
       if (lanti_shockdiffusion .and. .not. lwrite_stratification) then
         if (lroot) print*, 'initialize_density: must have lwrite_stratification for anti shock diffusion'
         call fatal_error('','')
+      endif
+!
+!  Possible to store non log rho as auxiliary variable.
+!
+      if (lrho_as_aux) then
+        if (ldensity_nolog) then
+          if (lroot) print*, 'initialize_density: makes no sense to have '// &
+              'lrho_as_aux=T if already evolving non log rho'
+          call fatal_error('initialize_density','')
+        else
+          if (irho==0) &
+              call farray_register_auxiliary('rho',irho,communicated=.true.)
+        endif
+      endif
+!
+!  For diffusion term with non-logarithmic density we need to save rho
+!  as an auxiliary variable.
+!
+      if (ldiffusion_nolog .and. .not. lrho_as_aux) then
+        if (lroot) then
+          print*, 'initialize_density: must have lrho_as_aux=T '// &
+              'for non-logarithmic diffusion'
+          print*, '  (consider setting lrho_as_aux=T and'
+          print*, '   !  MAUX CONTRIBUTION 1'
+          print*, '   !  COMMUNICATED AUXILIARIES 1'
+          print*, '   in cparam.local)'
+        endif
+        call fatal_error('initialize_density','')
       endif
 !
     endsubroutine initialize_density
@@ -1125,9 +1145,10 @@ module Density
       if (ldiff_shock) then
         lpenc_requested(i_shock)=.true.
         lpenc_requested(i_gshock)=.true.
-        if (ldensity_nolog) then
+        if (ldensity_nolog .or. ldiffusion_nolog) then
           lpenc_requested(i_grho)=.true.
           lpenc_requested(i_del2rho)=.true.
+          if (ldiffusion_nolog) lpenc_requested(i_rho1)=.true.
         else
           lpenc_requested(i_glnrho)=.true.
           lpenc_requested(i_glnrho2)=.true.
@@ -1135,8 +1156,9 @@ module Density
         endif
       endif
       if (ldiff_normal) then
-        if (ldensity_nolog) then
+        if (ldensity_nolog .or. ldiffusion_nolog) then
           lpenc_requested(i_del2rho)=.true.
+          if (ldiffusion_nolog) lpenc_requested(i_rho1)=.true.
         else
           lpenc_requested(i_glnrho2)=.true.
           lpenc_requested(i_del2lnrho)=.true.
@@ -1260,9 +1282,13 @@ module Density
         else
           call grad(f,ilnrho,p%glnrho)
           if (lpencil(i_grho)) then
-            do i=1,3
-              p%grho(:,i)=p%rho*p%glnrho(:,i)
-            enddo
+            if (lrho_as_aux) then
+              call grad(f,irho,p%grho)
+            else
+              do i=1,3
+                p%grho(:,i)=p%rho*p%glnrho(:,i)
+              enddo
+            endif
           endif
         endif
       endif
@@ -1293,7 +1319,7 @@ module Density
         if (ldensity_nolog) then
           if (headtt) then
             call fatal_error('calc_pencils_density', &
-                             'del2lnrho not available for non-logarithmic mass density')
+                'del2lnrho not available for non-logarithmic mass density')
           endif
         else
           call del2(f,ilnrho,p%del2lnrho)
@@ -1304,9 +1330,12 @@ module Density
         if (ldensity_nolog) then
           call del2(f,ilnrho,p%del2rho)
         else
-          if (headtt) then
-            call fatal_error('calc_pencils_density', &
-                             'del2rho not available for logarithmic mass density')
+          if (lrho_as_aux) then
+            call del2(f,irho,p%del2rho)
+          else
+            if (headtt) &
+                call fatal_error('calc_pencils_density',&
+                'del2rho not available for logarithmic mass density')
           endif
         endif
       endif
@@ -1315,20 +1344,13 @@ module Density
         if (ldensity_nolog) then
           call del6(f,ilnrho,p%del6rho)
         else
-          if (lfirstpoint) then
-            !
-            ! Fill global rho array using the ilnrho data
-!ajwm This won't work unless earlt_finalize is used... ?
-            if (iglobal_rho/=0) then
-              do mm=1,my; do nn=1,mz
-                f(:,mm,nn,iglobal_rho) = exp(f(:,mm,nn,ilnrho))
-              enddo; enddo
-            else
-              call fatal_error("calc_pencils_density",&
-                       "A global rho slot must be available for calculating del6rho from lnrho")
-            endif
+          if (lrho_as_aux) then
+            call del6(f,irho,p%del6rho)
+          else
+            if (headtt) &
+                call fatal_error('calc_pencils_density',&
+                'del6rho not available for logarithmic mass density')
           endif
-          if (iglobal_rho/=0) call del6(f,iglobal_rho,p%del6rho)
         endif
       endif
 ! del6lnrho
@@ -1360,10 +1382,24 @@ module Density
 !
     endsubroutine calc_pencils_density
 !***********************************************************************
+    subroutine density_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set.
+!
+!   2-apr-08/anders: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      if (lrho_as_aux) f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+!
+    endsubroutine density_before_boundary
+!***********************************************************************
     subroutine dlnrho_dt(f,df,p)
 !
-!  continuity equation
-!  calculate dlnrho/dt = - u.gradlnrho - divu
+!  Continuity equation.
+!  Calculate dlnrho/dt = - u.gradlnrho - divu
 !
 !   7-jun-02/axel: incoporated from subroutine pde
 !
@@ -1382,12 +1418,12 @@ module Density
       intent(in)  :: f,p
       intent(out) :: df
 !
-!  identify module and boundary conditions
+!  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dlnrho_dt: SOLVE dlnrho_dt'
       if (headtt) call identify_bcs('lnrho',ilnrho)
 !
-!  continuity equation
+!  Continuity equation.
 !
       if (lcontinuity_gas) then
         if (ldensity_nolog) then
@@ -1397,19 +1433,23 @@ module Density
         endif
       endif
 !
-!  mass sources and sinks
+!  Mass sources and sinks.
 !
       if (lmass_source) call mass_source(f,df,p)
 !
 !  Mass diffusion
 !
       fdiff=0.0
-
+!
       if (ldiff_normal) then  ! Normal diffusion operator
         if (ldensity_nolog) then
           fdiff = fdiff + diffrho*p%del2rho
         else
-          fdiff = fdiff + diffrho*(p%del2lnrho+p%glnrho2)
+          if (ldiffusion_nolog) then
+            fdiff = fdiff + p%rho1*diffrho*p%del2rho
+          else
+            fdiff = fdiff + diffrho*(p%del2lnrho+p%glnrho2)
+          endif
         endif
         if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho
         if (headtt) print*,'dlnrho_dt: diffrho=', diffrho
@@ -1421,7 +1461,11 @@ module Density
         if (ldensity_nolog) then
           fdiff = fdiff + diffrho_hyper3*p%del6rho
         else
-          fdiff = fdiff + 1/p%rho*diffrho_hyper3*p%del6rho
+          if (ldiffusion_nolog) then
+            fdiff = fdiff + p%rho1*diffrho_hyper3*p%del6rho
+          else
+            call fatal_error('dlnrho_dt','hyper diffusion not implemented for lnrho')
+          endif
         endif
         if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
@@ -1470,19 +1514,25 @@ module Density
           df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + &
               diffrho_shock*p%shock*p%del2rho + diffrho_shock*gshockgrho
         else
-          call dot_mn(p%gshock,p%glnrho,gshockglnrho)
-          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + &
-              diffrho_shock*p%shock*(p%del2lnrho+p%glnrho2) + &
-              diffrho_shock*gshockglnrho
+          if (ldiffusion_nolog) then
+            call dot_mn(p%gshock,p%grho,gshockgrho)
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + p%rho1*( &
+              diffrho_shock*p%shock*p%del2rho + diffrho_shock*gshockgrho )
+          else
+            call dot_mn(p%gshock,p%glnrho,gshockglnrho)
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + &
+                diffrho_shock*p%shock*(p%del2lnrho+p%glnrho2) + &
+                diffrho_shock*gshockglnrho
 !
 !  Counteract the shock diffusion of the mean stratification. Must set
 !  lwrite_stratification=T in start.in for this to work.
 !            
-          if (lanti_shockdiffusion) then
-            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - diffrho_shock*( &
-                p%shock*(del2lnrho_init_z(n) + glnrho2_init_z(n) + &
-                2*(p%glnrho(:,3)-dlnrhodz_init_z(n))*dlnrhodz_init_z(n)) + &
-                p%gshock(:,3)*dlnrhodz_init_z(n) )
+            if (lanti_shockdiffusion) then
+              df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - diffrho_shock*( &
+                  p%shock*(del2lnrho_init_z(n) + glnrho2_init_z(n) + &
+                  2*(p%glnrho(:,3)-dlnrhodz_init_z(n))*dlnrhodz_init_z(n)) + &
+                  p%gshock(:,3)*dlnrhodz_init_z(n) )
+            endif
           endif
         endif
         if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
@@ -1769,6 +1819,7 @@ module Density
         write(3,*) 'i_rhomxz=',idiag_rhomxz
         write(3,*) 'nname=',nname
         write(3,*) 'ilnrho=',ilnrho
+        write(3,*) 'irho=',irho
         write(3,*) 'i_lnrhomphi=',idiag_lnrhomphi
         write(3,*) 'i_rhomphi=',idiag_rhomphi
         write(3,*) 'i_rhomr=',idiag_rhomr

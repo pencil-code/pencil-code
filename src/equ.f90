@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.397 2008-03-25 08:31:41 brandenb Exp $
+! $Id: equ.f90,v 1.398 2008-04-02 16:55:26 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -477,7 +477,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.397 2008-03-25 08:31:41 brandenb Exp $")
+           "$Id: equ.f90,v 1.398 2008-04-02 16:55:26 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -557,6 +557,7 @@ module Equ
 !  Call "before_boundary" hooks (for f array precalculation)
 !
       if (linterstellar) call interstellar_before_boundary(f)
+      if (ldensity)      call density_before_boundary(f)
       if (lspecial)      call special_before_boundary(f)
 !
 !  Initiate shock profile calculation and use asynchronous to handle
