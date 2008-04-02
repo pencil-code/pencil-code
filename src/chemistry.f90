@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.52 2008-04-02 12:42:51 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.53 2008-04-02 12:57:55 nilshau Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -171,11 +171,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.52 2008-04-02 12:42:51 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.53 2008-04-02 12:57:55 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.52 2008-04-02 12:42:51 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.53 2008-04-02 12:57:55 nilshau Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -791,7 +791,7 @@ module Chemistry
       logical :: tran_exist
 
 
-      inquire(file='tran_v1.dat',exist=tran_exist)
+      inquire(file='tran.dat',exist=tran_exist)
 
 !
 !  Find number of ractions
@@ -807,12 +807,12 @@ module Chemistry
 
      if (tran_exist) then 
       if (lroot) then
-         print*,'tran_v1.dat file with transport data is found.'
+         print*,'tran.dat file with transport data is found.'
         endif
        call read_transport_data
      else
         if (lroot) then
-         print*,'tran_v1.dat file with transport data is not found.'
+         print*,'tran.dat file with transport data is not found.'
          print*,'Now diffusion coefficients is ',chem_diff
          print*,'Now species viscosity is ',nu_spec
         endif
@@ -1680,9 +1680,9 @@ module Chemistry
 
       k=1
       StartInd_1=1; StopInd_1 =0
-      open(file_id,file="tran_v1.dat")
+      open(file_id,file="tran.dat")
 
-        print*, 'the following species are found in tran_v1.dat: beginning of the list:'
+        print*, 'the following species are found in tran.dat: beginning of the list:'
 
       dataloop: do
 
@@ -1742,12 +1742,12 @@ module Chemistry
       enddo dataloop
 
 !
-! Stop if tran_v1.dat is empty
+! Stop if tran.dat is empty
 !
 
-1000  if (emptyFile)  call stop_it('The input file tran_v1.dat was empty!')
+1000  if (emptyFile)  call stop_it('The input file tran.dat was empty!')
     
-       print*, 'the following species are found in tran_v1.dat: end of the list:'
+       print*, 'the following species are found in tran.dat: end of the list:'
 
       close(file_id)
       !
