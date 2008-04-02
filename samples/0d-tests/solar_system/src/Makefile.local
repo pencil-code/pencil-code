@@ -3,7 +3,7 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   = nompicomm
+MPICOMM   =   mpicomm
 GLOBAL    = noglobal
 
 HYDRO     = nohydro
@@ -22,4 +22,4 @@ EOS       = noeos
 PARTICLES       = particles_dust
 PARTICLES_NBODY = particles_nbody
 
-REAL_PRECISION = double
+REAL_PRECISION=double

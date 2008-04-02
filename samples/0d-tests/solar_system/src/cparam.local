@@ -4,9 +4,10 @@
 !  Local settings concerning grid size and number of CPUs.
 !  This file is included by cparam.f90
 !
-!  MGLOBAL CONTRIBUTION 4
-!  lnTT (3) and cs2 (1)
-integer, parameter :: ncpus=1,nprocy=1,nprocz=ncpus/nprocy,nprocx=1
-integer, parameter :: nxgrid=2,nygrid=2,nzgrid=2
-integer, parameter :: npar=9,nspar=9
+!  The points are to avoid MPI from complaining that we have less
+!  points than ghost points per processor
+!
+integer, parameter :: ncpus=2,nprocy=2,nprocz=ncpus/nprocy,nprocx=1
+integer, parameter :: nxgrid=4,nygrid=6,nzgrid=4
+integer, parameter :: npar=9,nspar=9,mpar_loc=9,npar_mig=9
 
