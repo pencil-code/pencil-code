@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.org)
-%%  CVS: $Id: manual.tex,v 1.389 2008-03-31 23:23:22 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.390 2008-04-03 07:28:01 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2008-03-31 23:23:22 $ $,~ $ $Revision: 1.389 $ $}
+%\date{$ $Date: 2008-04-03 07:28:01 $ $,~ $ $Revision: 1.390 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2008-03-31 23:23:22 $ $,~ $ $Revision: 1.389 $ $}\\
+  \emph{$ $Date: 2008-04-03 07:28:01 $ $,~ $ $Revision: 1.390 $ $}\\
   \url{http://www.nordita.org/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1956,8 +1956,9 @@ direction they are located at
 \end{equation}
 where
 \begin{equation}
-  \theta_j = \frac{(N_y{-}j)\,\pi}{N_y{-}1}, \quad j=1, 2, \ldots, N_y \; .
+  \theta_j = \frac{(N_y{-}j)\,\pi}{N_y{-}1}, \quad j=1, 2, \ldots, N_y
 \end{equation}
+and $h=L_y/2$ is the duct half-width.
 
 Currently this method is only adapted for ducts where $x$ is
 the streamwise direction, $z$ is in the spanwise direction and the walls
@@ -1965,18 +1966,29 @@ are at $y=y_0$ and $y=y_0+L_y$.
 
 In order to have fine enough resolution, the first grid point should be
 a distance $\delta = 0.05\,l_w$ from the wall, where
-\begin{eqnarray}
-  l_w      &=& \frac{\nu}{u_{\tau}} \; , \\
-  u_{\tau} &=& \sqrt{\tau_w/\rho} \; , \\
-\end{eqnarray}
-and $\tau_w$ is the shear wall stress.
-This is accomplished by using a total of
 \begin{equation}
-  N_y \ =\ \frac{\pi - \arccos \Bigl(1-\dfrac{\delta}{h}\Bigr)}
-                {\arccos \Bigl(1-\dfrac{\delta}{h}\Bigr)}
-      \ \approx\  \pi\, \sqrt{\dfrac{h}{2\,\delta}}
+  l_w      = \frac{\nu}{u_{\tau}} \; ,
+  \qquad
+  u_{\tau} = \sqrt{\dfrac{\tau_w}{\rho}} \; ,
 \end{equation}
+and $\tau_w$ is the shear wall stress.
+This is accomplished by using at least
+\begin{eqnarray}
+  N_y \ \ge\ N_y^* &=& \frac{\pi}{\arccos \Bigl(1-\dfrac{\delta}{h}\Bigr)}
+                       + 1 \\
+                   &=&  \pi\,\sqrt{\dfrac{h}{2\,\delta}} + 1
+                        - \dfrac{\pi}{24} \sqrt{\dfrac{2\,\delta}{h}}
+                        + O\left[\left(\dfrac{\delta}{h}\right)^{3/2}\right]
+\end{eqnarray}
 grid points in the $y$-direction.
+After rounding up to the next integer value, we find that the truncated
+condition
+\begin{equation}
+  N_y \ge \left\lceil \pi\,\sqrt{\dfrac{h}{2\,\delta}} \right\rceil + 1
+\end{equation}
+(where $\lceil x \rceil$ denotes the \emph{ceiling function}, i.e.~the
+smallest integer equal to, or larger than, $x$)
+gives practically identical results.
 
 
 \subparagraph{Example:}
@@ -5899,7 +5911,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2008-03-31 23:23:22 $ $,~ $ $Revision: 1.389 $ $}
+  \hfill\normalsize\rm$ $Date: 2008-04-03 07:28:01 $ $,~ $ $Revision: 1.390 $ $}
 
 \section{Timings}
 
@@ -9400,7 +9412,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.389 2008-03-31 23:23:22 dobler Exp $ $}
+$ $Id: manual.tex,v 1.390 2008-04-03 07:28:01 dobler Exp $ $}
 
 
 \end{document}
