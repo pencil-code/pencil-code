@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.138 2008-04-03 12:50:49 ajohan Exp $
+! $Id: forcing.f90,v 1.139 2008-04-03 20:35:32 brandenb Exp $
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -120,7 +120,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.138 2008-04-03 12:50:49 ajohan Exp $")
+           "$Id: forcing.f90,v 1.139 2008-04-03 20:35:32 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -204,7 +204,7 @@ module Forcing
         siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
       elseif (iforcing_cont=='nocos') then
         if (lroot) print*,'forcing_cont: nocos flow'
-          sinx=sin(k1_ff*x)
+        sinx=sin(k1_ff*x)
         siny=sin(k1_ff*y)
         sinz=sin(k1_ff*z)
       elseif (iforcing_cont=='TG') then

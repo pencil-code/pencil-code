@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.34 2008-04-02 04:13:52 brandenb Exp $
+! $Id: testfield_z.f90,v 1.35 2008-04-03 20:35:33 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -179,7 +179,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.34 2008-04-02 04:13:52 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.35 2008-04-03 20:35:33 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -211,7 +211,7 @@ module Testfield
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mz) :: ztestfield
-      integer :: j,k,jtest
+      integer :: jtest
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
 !

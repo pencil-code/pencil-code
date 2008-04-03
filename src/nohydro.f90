@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.86 2008-04-03 12:50:50 ajohan Exp $
+! $Id: nohydro.f90,v 1.87 2008-04-03 20:35:33 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -74,7 +74,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.86 2008-04-03 12:50:50 ajohan Exp $")
+           "$Id: nohydro.f90,v 1.87 2008-04-03 20:35:33 brandenb Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -291,9 +291,10 @@ module Hydro
 !
       elseif (kinflow=='poshel-roberts') then
         if (headtt) print*,'Pos Helicity Roberts flow; kx_aa,ky_aa=',kkx_aa,kky_aa
-        p%uu(:,1)=-cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
-        p%uu(:,2)=+sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
-        p%uu(:,3)=+cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)
+        fac=ampl_kinflow
+        p%uu(:,1)=-fac*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
+        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
+        p%uu(:,3)=+fac*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)
         if (lpencil(i_divu)) p%divu=0.
 !
 !  Taylor-Green flow

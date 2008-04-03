@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.491 2008-04-03 15:18:29 brandenb Exp $
+! $Id: magnetic.f90,v 1.492 2008-04-03 20:35:32 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -336,7 +336,7 @@ module Magnetic
   integer :: idiag_etasmagm=0   ! DIAG_DOC: Mean of Smagorinsky resistivity
   integer :: idiag_etasmagmin=0 ! DIAG_DOC: Min of Smagorinsky resistivity
   integer :: idiag_etasmagmax=0 ! DIAG_DOC: Max of Smagorinsky resistivity
-  integer :: idiag_bmz_belphas=0! DIAG_DOC: Phase eines Beltrami-Feldes
+  integer :: idiag_bmz_belphas=0! DIAG_DOC: Phase of a Beltrami field
 
   contains
 
@@ -377,7 +377,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.491 2008-04-03 15:18:29 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.492 2008-04-03 20:35:32 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2934,9 +2934,8 @@ module Magnetic
 !  so they are present on the root processor.
 !
       if (idiag_bmz_belphas/=0) then
-        
         if ( first ) then
-	  sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
+          sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
         endif
 
         if ( idiag_bxmz==0 .or. idiag_bymz==0 ) then
@@ -2958,12 +2957,10 @@ module Magnetic
             s=(2./nz)*dot_product( fnamez(:,jprocz,idiag_bymz), sinz(n1:n2) )
           enddo
 
-      	  temp = atan2(s,c)
-	  bmz_belphase_delta = abs(bmz_belphase-temp)
+          temp = atan2(s,c)
+          bmz_belphase_delta = abs(bmz_belphase-temp)
 
           bmz_belphase=0.5*(bmz_belphase+temp)
-
-!         write(*,*) fnamez(1:nz,idiag_bxmz), fnamez(1:nz,idiag_bymz)
 
           call save_name(bmz_belphase,idiag_bmz_belphas)
 
@@ -4408,6 +4405,7 @@ module Magnetic
         idiag_bxbym=0; idiag_bxbzm=0; idiag_bybzm=0; idiag_djuidjbim=0
         idiag_bxmz=0; idiag_bymz=0; idiag_bzmz=0
         idiag_bmx=0; idiag_bmy=0; idiag_bmz=0; idiag_ebmz=0
+        idiag_bmz_belphas=0
         idiag_bx2mz=0; idiag_by2mz=0; idiag_bz2mz=0
         idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
         idiag_bx2mxy=0; idiag_by2mxy=0; idiag_bz2mxy=0
@@ -4501,6 +4499,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bmy',idiag_bmy)
         call parse_name(iname,cname(iname),cform(iname),'bmz',idiag_bmz)
         call parse_name(iname,cname(iname),cform(iname),'ebmz',idiag_ebmz)
+        call parse_name(iname,cname(iname),cform(iname),'bmz_belphas',idiag_bmz_belphas)
         call parse_name(iname,cname(iname),cform(iname),'bxpt',idiag_bxpt)
         call parse_name(iname,cname(iname),cform(iname),'bypt',idiag_bypt)
         call parse_name(iname,cname(iname),cform(iname),'bzpt',idiag_bzpt)
@@ -4568,7 +4567,6 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'b2mz',idiag_b2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
                         'mflux_z',idiag_mflux_z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bmz_belphas',idiag_bmz_belphas)
       enddo
 !
 !  check for those quantities for which we want y-averages
@@ -4703,6 +4701,7 @@ module Magnetic
         write(3,*) 'i_bmx=',idiag_bmx
         write(3,*) 'i_bmy=',idiag_bmy
         write(3,*) 'i_bmz=',idiag_bmz
+        write(3,*) 'i_bmz_belphas=',idiag_bmz_belphas
         write(3,*) 'i_ebmz=',idiag_ebmz
         write(3,*) 'i_bxpt=',idiag_bxpt
         write(3,*) 'i_bypt=',idiag_bypt
