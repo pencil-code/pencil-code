@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.489 2008-04-03 14:34:33 rei Exp $
+! $Id: magnetic.f90,v 1.490 2008-04-03 14:45:28 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -377,7 +377,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.489 2008-04-03 14:34:33 rei Exp $")
+           "$Id: magnetic.f90,v 1.490 2008-04-03 14:45:28 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2950,13 +2950,13 @@ module Magnetic
  
         else
 
-          c=(2./nz)*dot( fnamez(1:nz,idiag_bxmz), cosz ) 
-          s=(2./nz)*dot( fnamez(1:nz,idiag_bxmz), sinz )
+!         c=(2./nz)*dot( fnamez(1:nz,idiag_bxmz), cosz ) 
+!         s=(2./nz)*dot( fnamez(1:nz,idiag_bxmz), sinz )
 
           bmz_belphase=atan2(c,-s)
 
-          c=(2./nz)*dot( fnamez(1:nz,idiag_bymz), cosz )
-          s=(2./nz)*dot( fnamez(1:nz,idiag_bymz), sinz )
+!         c=(2./nz)*dot( fnamez(1:nz,idiag_bymz), cosz )
+!         s=(2./nz)*dot( fnamez(1:nz,idiag_bymz), sinz )
 
       	  temp = atan2(s,c)
 	  bmz_belphase_delta = abs(bmz_belphase-temp)
