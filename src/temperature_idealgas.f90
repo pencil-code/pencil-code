@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.58 2008-03-26 11:50:33 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.59 2008-04-03 14:31:04 bingert Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -139,7 +139,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.58 2008-03-26 11:50:33 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.59 2008-04-03 14:31:04 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -606,7 +606,7 @@ module Entropy
 !
       if (headtt.or.ldebug) print*,'SOLVE dlnTT_dt'
       if (headtt) call identify_bcs('lnTT',ilnTT)
-      if (headtt) print*,'dss_dt: lnTT,cs2=', p%lnTT(1), p%cs2(1)
+      if (headtt) print*,'dlnTT_dt: lnTT,cs2=', p%lnTT(1), p%cs2(1)
 !
 !  entropy gradient: needed for advection and pressure gradient
 !
@@ -614,12 +614,12 @@ module Entropy
 !
 !  sound speed squared
 !
-      if (headtt) print*,'dss_dt: cs20=',p%cs2(1)
+      if (headtt) print*,'dlnTT_dt: cs20=',p%cs2(1)
 !
 !  ``cs2/dx^2'' for timestep
 !
       if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
+      if (headtt.or.ldebug) print*,'dlnTT_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  subtract pressure gradient term in momentum equation
 !
