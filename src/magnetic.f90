@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.490 2008-04-03 14:45:28 brandenb Exp $
+! $Id: magnetic.f90,v 1.491 2008-04-03 15:18:29 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -377,7 +377,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.490 2008-04-03 14:45:28 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.491 2008-04-03 15:18:29 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2794,7 +2794,7 @@ module Magnetic
       real, dimension (mz), save :: sinz,cosz
 
       real ::  temp, c, s
-      integer :: l,j
+      integer :: l,j,jprocz
 !
 !  For vector output (of bb vectors) we need brms
 !  on all processors. It suffices to have this for times when lout=.true.,
@@ -2936,7 +2936,7 @@ module Magnetic
       if (idiag_bmz_belphas/=0) then
         
         if ( first ) then
-	   sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
+	  sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
         endif
 
         if ( idiag_bxmz==0 .or. idiag_bymz==0 ) then
@@ -2950,13 +2950,13 @@ module Magnetic
  
         else
 
-!         c=(2./nz)*dot( fnamez(1:nz,idiag_bxmz), cosz ) 
-!         s=(2./nz)*dot( fnamez(1:nz,idiag_bxmz), sinz )
-
           bmz_belphase=atan2(c,-s)
-
-!         c=(2./nz)*dot( fnamez(1:nz,idiag_bymz), cosz )
-!         s=(2./nz)*dot( fnamez(1:nz,idiag_bymz), sinz )
+          do jprocz=1,nprocz
+            c=(2./nz)*dot_product( fnamez(:,jprocz,idiag_bxmz), cosz(n1:n2) ) 
+            s=(2./nz)*dot_product( fnamez(:,jprocz,idiag_bxmz), sinz(n1:n2) )
+            c=(2./nz)*dot_product( fnamez(:,jprocz,idiag_bymz), cosz(n1:n2) )
+            s=(2./nz)*dot_product( fnamez(:,jprocz,idiag_bymz), sinz(n1:n2) )
+          enddo
 
       	  temp = atan2(s,c)
 	  bmz_belphase_delta = abs(bmz_belphase-temp)
