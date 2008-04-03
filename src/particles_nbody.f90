@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.90 2008-04-02 20:40:23 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.91 2008-04-03 22:13:01 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -89,7 +89,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.90 2008-04-02 20:40:23 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.91 2008-04-03 22:13:01 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -178,7 +178,7 @@ module Particles_nbody
         pmass(istar)=1-epsi*(mspar-1)
       endif
 !
-      pmass1=1./pmass
+      pmass1=1./max(pmass,tini)
 !
 ! inverse total mass
 !
@@ -434,7 +434,7 @@ module Particles_nbody
             parc = parc - sma(ks)*pmass(ks)
           endif
         enddo
-        pmass(istar)=1.- tmp;pmass1=1./pmass;totmass=1.;totmass1=1.
+        pmass(istar)=1.- tmp;pmass1=1./max(pmass,tini);totmass=1.;totmass1=1.
         parc = parc*totmass1
         if (tmp .ge. 1.) &
              call stop_it("particles_nbody,init_particles. The mass of one "//& 
