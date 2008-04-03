@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.137 2008-03-27 05:10:09 brandenb Exp $
+! $Id: forcing.f90,v 1.138 2008-04-03 12:50:49 ajohan Exp $
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -120,7 +120,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.137 2008-03-27 05:10:09 brandenb Exp $")
+           "$Id: forcing.f90,v 1.138 2008-04-03 12:50:49 ajohan Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -335,7 +335,7 @@ module Forcing
           if (lroot) print*,'forcing_irro: dimension mk in forcing_irro is insufficient'
           print*,'nk=',nk,'mk=',mk
           call mpifinalize
-        end if
+        endif
         read(9,*) (kkx(ik),ik=1,nk)
         read(9,*) (kky(ik),ik=1,nk)
         read(9,*) (kkz(ik),ik=1,nk)
@@ -446,7 +446,7 @@ module Forcing
           if (lroot) print*,'forcing_hel: mk in forcing_hel is set too small'
           print*,'nk=',nk,'mk=',mk
           call mpifinalize
-        end if
+        endif
         read(9,*) (kkx(ik),ik=1,nk)
         read(9,*) (kky(ik),ik=1,nk)
         read(9,*) (kkz(ik),ik=1,nk)
@@ -632,7 +632,7 @@ module Forcing
          end do
       else
          fda = 1.
-      end if
+      endif
 !
 !  In the past we always forced the du/dt, but in some cases
 !  it may be better to force rho*du/dt (if lmomentum_ff=.true.)
@@ -1526,7 +1526,7 @@ module Forcing
           if (lroot) print*,'force_hel_noshear: dimension mk in forcing_hel is insufficient'
           print*,'nk=',nk,'mk=',mk
           call mpifinalize
-        end if
+        endif
         read(9,*) (kkx(ik),ik=1,nk)
         read(9,*) (kky(ik),ik=1,nk)
         read(9,*) (kkz(ik),ik=1,nk)
@@ -2045,12 +2045,12 @@ module Forcing
          open(9,file='k.dat')
          read(9,*) nk,kav
          if (lroot) print*,'forcing_hel_smooth: average k=',kav
-         if(nk.gt.mk) then
+         if (nk.gt.mk) then
             if (lroot) print*, &
                  'forcing_hel_smooth: dimension mk in forcing_hel_smooth is insufficient'
             print*,'nk=',nk,'mk=',mk
             call mpifinalize
-         end if
+         endif
          read(9,*) (kkx(ik),ik=1,nk)
          read(9,*) (kky(ik),ik=1,nk)
          read(9,*) (kkz(ik),ik=1,nk)

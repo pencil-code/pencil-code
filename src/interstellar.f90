@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.146 2007-04-08 10:13:32 ajohan Exp $
+! $Id: interstellar.f90,v 1.147 2008-04-03 12:50:49 ajohan Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development.
@@ -390,7 +390,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.146 2007-04-08 10:13:32 ajohan Exp $")
+           "$Id: interstellar.f90,v 1.147 2008-04-03 12:50:49 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -511,7 +511,7 @@ module Interstellar
          coolT_cgs=tiny(0.D0)
          coolH_cgs=tiny(0.D0)
          coolB=tiny(0.)
-      end if
+      endif
 !
 ! BEGIN TEMPORARY
         if (any(coolH_cgs(1:ncool+1) == 0) .or. any(coolT_cgs(1:ncool+1) == 0)) then
@@ -1221,13 +1221,13 @@ cool_loop: do i=1,ncool
                print*,'Heating balancing the initial cooling profile (eql)'
                print*,'Note: works only for unstratified cases when cool is z-independent!'
                print*,'      heating_rate is overwritten'
-            end if
+            endif
             call fatal_error("interstellar: calc_heat","heating_select=eql is broken")
-         end if
+         endif
          heat = heating_rate
       else if (heating_select == 'off') Then
          heat = 0.
-      end if
+      endif
     endsubroutine calc_heat
 !***********************************************************************
     subroutine check_SN(f,df)

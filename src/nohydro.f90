@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.85 2008-04-01 21:10:40 abag Exp $
+! $Id: nohydro.f90,v 1.86 2008-04-03 12:50:50 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -74,7 +74,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.85 2008-04-01 21:10:40 abag Exp $")
+           "$Id: nohydro.f90,v 1.86 2008-04-03 12:50:50 ajohan Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -905,7 +905,7 @@ module Hydro
    !     (angle(2)-0.0 < epsilon(0.0)) .or. &
    !     (angle(3)-0.0 < epsilon(0.0))) then
    !     call random_number(angle)
-   !  end if
+   !  endif
    !  angle=floor(9.*angle) 
    !  call random_number(dir_in)
    !  direction=nint(dir_in)
@@ -921,7 +921,7 @@ module Hydro
    !  if(i==1.and.mkunit(i).gt.0.)then 
    !    k(:,num)=k_option(:,i)
    !    klengths(num)=mkunit(i)
-   !  end if
+   !  endif
 
    !  !now we check that the current length is unique (hasn't come before)
    !  if(i.gt.1.and.num.lt.KS_modes)then
@@ -931,21 +931,21 @@ module Hydro
    !      else
    !        ne=.false.
    !        exit
-   !      end if
+   !      endif
    !      if(s1==1.and.ne)then !i.e. if length of current k_option is new...... 
    !        num=num+1
    !        k(:,num)=k_option(:,i) !load current k_option into k that we keep
    !        klengths(num)=mkunit(i)  ! store the length also
-   !      end if
+   !      endif
    !    end do
-   !   end if
+   !   endif
    !   if(i==10000.and.num.lt.KS_modes)print*,"Haven't got",KS_modes,"modes!!!!"
    ! end do
    ! do i=1,KS_modes
    !    do s1=1,KS_modes
    !       if(kk(i)==klengths(s1))then
    !          orderK(:,i)=k(:,s1)
-   !       end if
+   !       endif
    !    end do
    ! end do
    ! k=orderK

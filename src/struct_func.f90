@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.30 2007-11-21 12:32:36 brandenb Exp $
+! $Id: struct_func.f90,v 1.31 2008-04-03 12:50:50 ajohan Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -108,7 +108,7 @@ module struct_func
         sf=0.
         llsf=.true.
         llpdf=.false.
-      end if
+      endif
       !
       !  Setting some variables depending on wether we want to
       !  calculate pdf or structure functions.
@@ -228,7 +228,7 @@ module struct_func
                   sf(lb_ll,q,direction) &
                        =sf(lb_ll,q,direction) &
                        +sum(abs(dvect1(:,:))**q)+sum(abs(dvect2(:,:))**q)
-                end if
+                endif
               enddo
               !
               ! Do unsigned third moment (store in last slot of array)

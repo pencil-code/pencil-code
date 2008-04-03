@@ -1,4 +1,4 @@
-! $Id: timestep_rkf.f90,v 1.5 2006-11-30 09:03:36 dobler Exp $
+! $Id: timestep_rkf.f90,v 1.6 2008-04-03 12:50:50 ajohan Exp $
 
 module Timestep
 
@@ -87,7 +87,7 @@ module Timestep
         if (tnew == t) then
           ! Guard against infinitesimal time steps
           print*, 'WARNING: Timestep underflow in rkqs()'
-        end if
+        endif
       end do
 
 !      print*,"errmax, errcon", errmax,errcon
@@ -97,7 +97,7 @@ module Timestep
       else
         ! But not by more than a factor of 5
         dt_next = 5.0*dt
-      end if
+      endif
 
       ! Time step that was actually performed
       dt_did = dt

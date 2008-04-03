@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.205 2008-04-02 16:54:20 ajohan Exp $
+! $Id: boundcond.f90,v 1.206 2008-04-03 12:50:49 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1308,7 +1308,7 @@ module Boundcond
           open(9,file=trim(directory_snap)//'/bc_file_x.dat',form='unformatted')
           read(9,end=99) bc_file_x_array
           close(9)
-        end if
+        endif
         lbc_file_x=.false.
       endif
 

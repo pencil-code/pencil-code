@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.71 2008-03-20 11:32:41 wlyra Exp $
+! $Id: general.f90,v 1.72 2008-04-03 12:50:49 ajohan Exp $
 
 module General
 
@@ -409,7 +409,7 @@ module General
         iy=ior(ieor(888889999,abs(iseed1)),1)
         ix=ieor(777755555,abs(iseed1))
         iseed1=abs(iseed1)+1   ! Set iseed1 positive.
-      end if
+      endif
       ix=ieor(ix,ishft(ix,13))   ! Marsaglia shift sequence with period 2^32-1.
       ix=ieor(ix,ishft(ix,-17))
       ix=ieor(ix,ishft(ix,5))
@@ -509,7 +509,7 @@ module General
          dest=src(1:destLen)
       else
          dest=src
-      end if
+      endif
 
     endsubroutine safe_character_assign
 !***********************************************************************

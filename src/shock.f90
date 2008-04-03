@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.34 2008-03-09 19:26:05 wlyra Exp $
+! $Id: shock.f90,v 1.35 2008-04-03 12:50:50 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -113,7 +113,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.34 2008-03-09 19:26:05 wlyra Exp $")
+           "$Id: shock.f90,v 1.35 2008-04-03 12:50:50 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -1276,7 +1276,7 @@ module Shock
          endif
       else
          smoothf=tmp
-      end if
+      endif
 
     endsubroutine shock_smooth_farray
 !***********************************************************************

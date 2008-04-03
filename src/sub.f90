@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.357 2008-03-31 16:15:47 snod Exp $
+! $Id: sub.f90,v 1.358 2008-04-03 12:50:50 ajohan Exp $
 
 module Sub
 
@@ -1353,7 +1353,7 @@ module Sub
       else
          b=a(:,1)**2+a(:,2)**2+a(:,3)**2
          if (fast_sqrt1) b=sqrt(b)
-      end if
+      endif
 !
     endsubroutine dot2_mn
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.46 2007-09-13 13:32:10 dintrans Exp $
+! $Id: gravity_simple.f90,v 1.47 2008-04-03 12:50:49 ajohan Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -110,7 +110,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.46 2007-09-13 13:32:10 dintrans Exp $")
+           "$Id: gravity_simple.f90,v 1.47 2008-04-03 12:50:49 ajohan Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.
@@ -432,13 +432,13 @@ module Gravity
             if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%ss*p%gg(:,3)
           else
             if (headtt) print*,'duu_dt_grav: lbounssinesq w/o lentropy not ok!'
-          end if
+          endif
         else
           if (lgravx_gas) df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + p%gg(:,1)
           if (lgravy_gas) df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + p%gg(:,2)
           if (lgravz_gas) df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + p%gg(:,3)
-        end if
-      end if
+        endif
+      endif
 !
 !  Add gravity acceleration on dust
 !
