@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.398 2008-04-02 16:55:26 ajohan Exp $
+! $Id: equ.f90,v 1.399 2008-04-03 12:25:23 dintrans Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -477,7 +477,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.398 2008-04-02 16:55:26 ajohan Exp $")
+           "$Id: equ.f90,v 1.399 2008-04-03 12:25:23 dintrans Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -729,7 +729,7 @@ module Equ
         if (lviscosity)       call calc_pencils_viscosity(f,p)
         if (lforcing_cont)    call calc_pencils_forcing(f,p)
                               call calc_pencils_entropy(f,p)
-                              call calc_pencils_magnetic(f,p)
+        if (lmagnetic)        call calc_pencils_magnetic(f,p)
         if (lgrav)            call calc_pencils_gravity(f,p)
         if (lselfgravity)     call calc_pencils_selfgravity(f,p)
         if (lpscalar)         call calc_pencils_pscalar(f,p)
@@ -758,7 +758,7 @@ module Equ
 !
 !  Magnetic field evolution
 !
-        call daa_dt(f,df,p)
+        if (lmagnetic) call daa_dt(f,df,p)
 !
 !  Testfield evolution
 !
@@ -770,17 +770,17 @@ module Equ
 !
 !  Passive scalar evolution
 !
-        call dlncc_dt(f,df,p)
+        if (lpscalar) call dlncc_dt(f,df,p)
 !
 !  Dust evolution
 !
-        call duud_dt(f,df,p)
-        call dndmd_dt(f,df,p)
+        if (ldustvelocity) call duud_dt(f,df,p)
+        if (ldustdensity) call dndmd_dt(f,df,p)
 !
 !  Neutral evolution
 !
-        call dlnrhon_dt(f,df,p)
-        call duun_dt(f,df,p)
+        if (lneutraldensity) call dlnrhon_dt(f,df,p)
+        if (lneutralvelocity) call duun_dt(f,df,p)
 !
 !  Add gravity, if present
 !
@@ -831,7 +831,7 @@ module Equ
 !
 !  Add shear if present
 !
-        if (lshear)                      call shearing(f,df)
+        if (lshear) call shearing(f,df)
 !
         if (lparticles) call particles_pde_pencil(f,df,p)
 !
