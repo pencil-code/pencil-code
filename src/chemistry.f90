@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.53 2008-04-02 12:57:55 nilshau Exp $
+! $Id: chemistry.f90,v 1.54 2008-04-03 16:59:14 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -27,7 +27,7 @@ module Chemistry
   include 'chemistry.h'
 
   real :: Rgas, Rgas_unit_sys=1.
-  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full
+  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, pp_full
   real, dimension (mx,my,mz,nchemspec) :: cvspec_full
 
 !
@@ -58,7 +58,7 @@ module Chemistry
   character (len=labellen), dimension (ninit) :: initchem='nothing'
   character (len=labellen), dimension (2*nchemspec) :: kreactions_profile=''
 
-  real, allocatable, dimension(:,:) :: Bin_Diff_coef
+  real, allocatable, dimension(:,:,:,:,:) :: Bin_Diff_coef
   real, dimension (mx,my,mz,mfarray) :: Diff_full, XX_full
   real, dimension (nchemspec) :: species_viscosity
   real, dimension(nchemspec) :: nu_spec=1.
@@ -71,7 +71,7 @@ module Chemistry
   integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
   integer, dimension(7) :: ia1,ia2
   real,    allocatable, dimension(:) :: B_n, alpha_n, E_an
-  real,   dimension(7) :: e1,e2,e3,e4,e5,e6
+  real,   dimension(7,nchemspec) :: tran_data
 
   logical :: Natalia_thoughts=.false.
 
@@ -171,11 +171,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.53 2008-04-02 12:57:55 nilshau Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.54 2008-04-03 16:59:14 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.53 2008-04-02 12:57:55 nilshau Exp $")
+           "$Id: chemistry.f90,v 1.54 2008-04-03 16:59:14 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -533,6 +533,9 @@ module Chemistry
       real :: T_local, T_up, T_mid, T_low, tmp,  lnT_local
       real :: mk_mj, nuk_nuj
 
+      logical :: tran_exist=.false.
+
+      
 !
 ! Now this routine is only for chemkin data !!!
 !
@@ -553,6 +556,13 @@ module Chemistry
               mu1_full=mu1_full*unit_mass
 
 !
+!   Pressure
+!
+
+         pp_full = Rgas_unit_sys*mu1_full/unit_mass  &
+            *exp(f(:,:,:,ilnrho))*unit_mass/unit_length**3*exp(f(:,:,:,ilnTT))*unit_temperature
+
+!
 !  Mole fraction XX
 !
            do k=1,nchemspec 
@@ -565,7 +575,7 @@ module Chemistry
          cp_full=0.
          cv_full=0.
          cvspec_full=0.
-
+   
            do k=1,nchemspec
              T_low=species_constants(k,iTemp1)
              T_mid=species_constants(k,iTemp2)
@@ -579,7 +589,7 @@ module Chemistry
                     do j=1,5
                      cp_R_spec(i)=cp_R_spec(i)+species_constants(k,ia1(j))*T_local**(j-1) 
                     enddo
-                   cvspec_full(i,m,n,k)=1.-cp_R_spec(i)
+                   cvspec_full(i,m,n,k)=cp_R_spec(i)-1.
                    cp_R_spec(i)=cp_R_spec(i)/species_constants(k,imass)
                    cvspec_full(i,m,n,k)=cvspec_full(i,m,n,k)/species_constants(k,imass)*Rgas
                   else
@@ -601,18 +611,38 @@ module Chemistry
 
            enddo
 
+  !       cp_full=1.
+  !       cv_full=1.
+  !       cvspec_full=1.
+
+
+
+!
+!  Binary diffusion coefficients
+!
+      inquire(file='tran.dat',exist=tran_exist)
+
+        if (tran_exist) then
+             call calc_Bin_Diff_coef(f)
+        endif
+
+
 !
 !  Diffusion coeffisient of a mixture
 !
            do k=1,nchemspec
             tmp_sum=0.
              do j=1,nchemspec
-               tmp_sum=tmp_sum  &
-                 +f(:,:,:,ichemspec(j))*unit_mass/species_constants(ichemspec(j),imass)/Bin_Diff_coef(j,k)
+                tmp_sum(:,:,:)=tmp_sum(:,:,:) &
+                  +f(:,:,:,ichemspec(j))*unit_mass/species_constants(ichemspec(j),imass) &
+                  /Bin_Diff_coef(:,:,:,j,k)
              enddo
               Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k)))*mu1_full(:,:,:)/tmp_sum
            enddo
 
+!print*, Bin_Diff_coef(10,3,3,1,2)
+
+ 
 !
 !  Viscosity of a mixture
 !
@@ -633,7 +663,7 @@ module Chemistry
             enddo
            tmp_sum=tmp_sum+XX_full(:,:,:,k)*species_viscosity(k)/tmp_sum2
            enddo
-           nu_full=tmp_sum*sqrt(exp(f(:,:,:,ilnTT)))/exp(f(:,:,:,ilnrho))
+           nu_full=tmp_sum!/exp(f(:,:,:,ilnrho))!*sqrt(exp(f(:,:,:,ilnTT)))
 
         else
          call stop_it('This case works only for cgs units system!')
@@ -802,7 +832,7 @@ module Chemistry
 !
 !  Allocate binary diffusion coefficient array
 !
-      allocate(Bin_Diff_coef(nchemspec,nchemspec),STAT=stat)
+      allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
       if (stat>0) call stop_it("Couldn't allocate memory for binary diffusion coefficients") 
 
      if (tran_exist) then 
@@ -810,6 +840,7 @@ module Chemistry
          print*,'tran.dat file with transport data is found.'
         endif
        call read_transport_data
+       call calc_Bin_Diff_coef(f)
      else
         if (lroot) then
          print*,'tran.dat file with transport data is not found.'
@@ -1661,97 +1692,6 @@ module Chemistry
       !
     end subroutine write_thermodyn
 !***************************************************************
-   subroutine read_transport_data
-!
-! reading of the chemkin transport data
-!
-    use Mpicomm
-      !
-      logical :: IsSpecie=.false., emptyfile
-      logical ::  found_specie
-      integer :: file_id=123, ind_glob, ind_chem
-      character (len=80) :: ChemInpLine
-      character (len=10) :: specie_string
-      integer :: VarNumber
-      !character (len=*) :: input_file
-      !
-      integer :: StartInd,StopInd,StartInd_1,StopInd_1,k
-      emptyFile=.true.
-
-      k=1
-      StartInd_1=1; StopInd_1 =0
-      open(file_id,file="tran.dat")
-
-        print*, 'the following species are found in tran.dat: beginning of the list:'
-
-      dataloop: do
-
-        read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
-        emptyFile=.false.
-
-        StopInd_1=index(ChemInpLine,' ') 
-        specie_string=trim(ChemInpLine(1:StopInd_1-1)) 
-
-        call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
- 
-            if (found_specie) then
-
-               VarNumber=1; StartInd=1; StopInd =0
-                stringloop: do while (VarNumber<7) 
-
-                 StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
-                 StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
-                 StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
-
-                  if (StopInd==StartInd) then
-                    StartInd=StartInd+1
-                  else
-                    if (VarNumber==1) then
-                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E1.0)')  &
-                           e1(k) 
-                    elseif (VarNumber==2) then
-                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                           e2(k)
-                    elseif (VarNumber==3) then
-                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                           e3(k)
-                    elseif (VarNumber==4) then
-                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                           e4(k)
-                    elseif (VarNumber==5) then
-                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                           e5(k)
-                    elseif (VarNumber==6) then
-                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                           e6(k)
-                    else
-                      call stop_it("No such VarNumber!")
-                    endif
-
-                    VarNumber=VarNumber+1
-                    StartInd=StopInd
-                  endif
-                  if (StartInd==80) exit
-                enddo stringloop
-
-          print*,e1(k),e2(k),e3(k),e4(k),e5(k),e6(k)
-
-              k=k+1
-
-            endif
-      enddo dataloop
-
-!
-! Stop if tran.dat is empty
-!
-
-1000  if (emptyFile)  call stop_it('The input file tran.dat was empty!')
-    
-       print*, 'the following species are found in tran.dat: end of the list:'
-
-      close(file_id)
-      !
-    endsubroutine read_transport_data
 !**************************************************************
     subroutine build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,product)
       !
@@ -1983,6 +1923,182 @@ module Chemistry
      enddo 
 
    endsubroutine calc_reaction_term
+!***************************************************************
+   subroutine read_transport_data  
+! 
+! Natalia 1.04.2008
+! reading of the chemkin transport data
+!
+    use Mpicomm
+      !
+      logical :: IsSpecie=.false., emptyfile
+      logical ::  found_specie
+      integer :: file_id=123, ind_glob, ind_chem
+      character (len=80) :: ChemInpLine
+      character (len=10) :: specie_string
+      integer :: VarNumber
+      !character (len=*) :: input_file
+      !
+      integer :: StartInd,StopInd,StartInd_1,StopInd_1
+      emptyFile=.true.
+
+      StartInd_1=1; StopInd_1 =0
+      open(file_id,file="tran.dat")
+
+        print*, 'the following species are found in tran.dat: beginning of the list:'
+
+      dataloop: do
+
+        read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
+        emptyFile=.false.
+
+        StopInd_1=index(ChemInpLine,' ') 
+        specie_string=trim(ChemInpLine(1:StopInd_1-1)) 
+
+        call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
+ 
+            if (found_specie) then
+
+               VarNumber=1; StartInd=1; StopInd =0
+                stringloop: do while (VarNumber<7) 
+
+                 StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+                 StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
+                 StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+
+                  if (StopInd==StartInd) then
+                    StartInd=StartInd+1
+                  else
+                    if (VarNumber==1) then
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E1.0)')  &
+                           tran_data(ind_chem,VarNumber) 
+                    elseif (VarNumber==2) then
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                           tran_data(ind_chem,VarNumber) 
+                    elseif (VarNumber==3) then
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                           tran_data(ind_chem,VarNumber) 
+                    elseif (VarNumber==4) then
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                           tran_data(ind_chem,VarNumber) 
+                    elseif (VarNumber==5) then
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                           tran_data(ind_chem,VarNumber) 
+                    elseif (VarNumber==6) then
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                           tran_data(ind_chem,VarNumber) 
+                    else
+                      call stop_it("No such VarNumber!")
+                    endif
+
+                    VarNumber=VarNumber+1
+                    StartInd=StopInd
+                  endif
+                  if (StartInd==80) exit
+                enddo stringloop
+
+          print*,tran_data(ind_chem,1),tran_data(ind_chem,2),tran_data(ind_chem,3),tran_data(ind_chem,4),tran_data(ind_chem,5),tran_data(ind_chem,6)
+
+            endif
+      enddo dataloop
+
+!
+! Stop if tran.dat is empty
+!
+
+1000  if (emptyFile)  call stop_it('The input file tran.dat was empty!')
+    
+       print*, 'the following species are found in tran.dat: end of the list:'
+
+      close(file_id)
+      !
+    endsubroutine read_transport_data
+
+!***************************************************************
+  subroutine  calc_collision_integral(omega,TT,Omega_kl)
+   !
+   ! Get coefficients for calculating of the collision integral 
+   !
+   ! 2008-04-03/Natalia: coded
+   !
+    use Mpicomm
+ !
+      character (len=*), intent(in) :: omega
+      real,  dimension(mx,my,mz), intent(in)  :: TT
+      real,  dimension(mx,my,mz), intent(out) :: Omega_kl
+      integer :: i 
+      real, dimension(8) :: aa
+      !
+
+
+      select case (omega)
+      case('Omega11')
+       aa(1)= 6.96945701E-1
+       aa(2)= 3.39628861E-1
+       aa(3)= 1.32575555E-2
+       aa(4)=-3.41509659E-2
+       aa(5)= 7.71359429E-3
+       aa(6)= 6.16106168E-4
+       aa(7)=-3.27101257E-4
+       aa(8)= 2.51567029E-5
+      case('Omega22')  
+       aa(1)= 6.33225679E-1
+       aa(2)= 3.14473541E-1
+       aa(3)= 1.78229325E-2
+       aa(4)=-3.99489493E-2
+       aa(5)= 8.98483088E-3
+       aa(6)= 7.00167217E-4
+       aa(7)=-3.82733808E-4
+       aa(8)= 2.97208112E-5
+      case default
+        call stop_it('Insert Omega_kl')
+      end select
+
+       Omega_kl=0.
+         do i=1,2
+          Omega_kl=Omega_kl+aa(i)*(log(TT))**(i-1)
+         enddo
+       Omega_kl=1./Omega_kl
+
+   endsubroutine  calc_collision_integral
+!***************************************************************
+    subroutine calc_Bin_Diff_coef(f)
+!
+! calculation of Bin_Diff_coef
+!
+   real, dimension (mx,my,mz,mfarray) :: f
+   intent(in) :: f
+   real, dimension (mx,my,mz) :: T_jk, Omega_kl, prefactor, TT
+   integer :: k,j
+   real :: eps_jk, sigma_jk, m_jk
+   character (len=7) :: omega="Omega11"
+
+
+     TT=exp(f(:,:,:,ilnTT))*unit_temperature
+     prefactor=3./16.*sqrt(2.*k_B**3*TT**3)/pp_full/sqrt(pi)
+
+
+    do k=1,nchemspec
+     do j=1,nchemspec
+
+
+      eps_jk=sqrt(tran_data(2,j)*tran_data(2,k))
+      sigma_jk=0.5*(tran_data(3,j)+tran_data(3,k))
+      m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
+         /(species_constants(j,imass)+species_constants(k,imass))
+
+      T_jk=TT/eps_jk
+
+      call calc_collision_integral(omega,T_jk,Omega_kl)
+
+
+      Bin_Diff_coef(:,:,:,k,j)=prefactor/sqrt(m_jk)/sigma_jk**2/Omega_kl
+
+     enddo
+    enddo
+
+
+    endsubroutine calc_Bin_Diff_coef
 !***************************************************************
    subroutine calc_diffusion_term(f,p)
 
