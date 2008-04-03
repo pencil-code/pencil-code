@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.488 2008-04-01 05:01:09 brandenb Exp $
+! $Id: magnetic.f90,v 1.489 2008-04-03 14:34:33 rei Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -336,6 +336,8 @@ module Magnetic
   integer :: idiag_etasmagm=0   ! DIAG_DOC: Mean of Smagorinsky resistivity
   integer :: idiag_etasmagmin=0 ! DIAG_DOC: Min of Smagorinsky resistivity
   integer :: idiag_etasmagmax=0 ! DIAG_DOC: Max of Smagorinsky resistivity
+  integer :: idiag_bmz_belphas=0! DIAG_DOC: Phase eines Beltrami-Feldes
+
   contains
 
 !***********************************************************************
@@ -375,7 +377,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.488 2008-04-01 05:01:09 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.489 2008-04-03 14:34:33 rei Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2779,6 +2781,7 @@ module Magnetic
 !
 !  19-jun-02/axel: moved from print to here
 !   9-nov-02/axel: corrected bxmy(m,j); it used bzmy instead!
+!   2-apr-08/MR  : introduced phase calculation for Beltrami mean fields
 !
       use Cdata
       use Mpicomm
@@ -2787,7 +2790,10 @@ module Magnetic
       logical,save :: first=.true.
       real, dimension(nx) :: bymx,bzmx
       real, dimension(ny,nprocy) :: bxmy,bzmy
-      real :: bmx,bmy,bmz,ebmz,bxmxy,bymxy,bzmxy,bmxy_rms
+      real :: bmx,bmy,bmz,ebmz,bxmxy,bymxy,bzmxy,bmxy_rms,bmz_belphase,bmz_belphase_delta  
+      real, dimension (mz), save :: sinz,cosz
+
+      real ::  temp, c, s
       integer :: l,j
 !
 !  For vector output (of bb vectors) we need brms
@@ -2919,6 +2925,49 @@ module Magnetic
 !          write(*,*) bmxy_rms 
         endif
         call save_name(bmxy_rms,idiag_bmxy_rms)
+      endif
+!
+!  
+!  Determination of its phase if the xy-averaged (=mean) field is a Beltrami field,
+!  represented by B( cos(kz+phi), sin(kz+phi), 0 ).
+!  bxmz, bymz must have been calculated,
+!  so they are present on the root processor.
+!
+      if (idiag_bmz_belphas/=0) then
+        
+        if ( first ) then
+	   sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
+        endif
+
+        if ( idiag_bxmz==0 .or. idiag_bymz==0 ) then
+
+          if (first) print*,"calc_mfield:                  WARNING"
+          if (first) print*, &
+                  "calc_mfield: NOTE: to get bmz_Beltrami-Phase, bxmz, bymz must also be set in zaver"
+          if (first) print*, &
+                  "calc_mfield:       We proceed, but you'll get bmz_Beltrami-Phase=0"
+          bmz_belphase=0.
+ 
+        else
+
+          c=(2./nz)*dot( fnamez(1:nz,idiag_bxmz), cosz ) 
+          s=(2./nz)*dot( fnamez(1:nz,idiag_bxmz), sinz )
+
+          bmz_belphase=atan2(c,-s)
+
+          c=(2./nz)*dot( fnamez(1:nz,idiag_bymz), cosz )
+          s=(2./nz)*dot( fnamez(1:nz,idiag_bymz), sinz )
+
+      	  temp = atan2(s,c)
+	  bmz_belphase_delta = abs(bmz_belphase-temp)
+
+          bmz_belphase=0.5*(bmz_belphase+temp)
+
+!         write(*,*) fnamez(1:nz,idiag_bxmz), fnamez(1:nz,idiag_bymz)
+
+          call save_name(bmz_belphase,idiag_bmz_belphas)
+
+        endif
       endif
 
       first = .false.
@@ -4519,6 +4568,7 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'b2mz',idiag_b2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
                         'mflux_z',idiag_mflux_z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bmz_belphas',idiag_bmz_belphas)
       enddo
 !
 !  check for those quantities for which we want y-averages
