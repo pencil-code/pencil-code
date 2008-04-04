@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.57 2008-04-04 11:09:38 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.58 2008-04-04 13:03:58 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -60,7 +60,7 @@ module Chemistry
 
   real, allocatable, dimension(:,:,:,:,:) :: Bin_Diff_coef
   real, dimension (mx,my,mz,mfarray) :: Diff_full, XX_full
-  real, dimension (nchemspec) :: species_viscosity
+  real, dimension (mx,my,mz,nchemspec) :: species_viscosity
   real, dimension(nchemspec) :: nu_spec=1.
 
 !
@@ -172,11 +172,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.57 2008-04-04 11:09:38 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.58 2008-04-04 13:03:58 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.57 2008-04-04 11:09:38 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.58 2008-04-04 13:03:58 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -527,13 +527,13 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) ::  cp_R_spec
-      real, dimension (mx,my,mz) :: tmp_sum, tmp_sum2
-      real, dimension (nchemspec,nchemspec) :: Phi
+      real, dimension (mx,my,mz) :: tmp_sum, tmp_sum2, nuk_nuj
+      real, dimension (mx,my,mz,nchemspec,nchemspec) :: Phi
 !
       intent(in) :: f
       integer :: k,i,j
       real :: T_local, T_up, T_mid, T_low, tmp,  lnT_local
-      real :: mk_mj, nuk_nuj
+      real :: mk_mj
 
       logical :: tran_exist=.false.
  
@@ -618,7 +618,7 @@ module Chemistry
       inquire(file='tran.dat',exist=tran_exist)
 
         if (tran_exist) then
-             call calc_Bin_Diff_coef(f)
+             call calc_diff_visc_coef(f)
         endif
 
 
@@ -646,8 +646,8 @@ module Chemistry
              do j=1,nchemspec
                mk_mj=species_constants(ichemspec(k),imass) &
                     /species_constants(ichemspec(j),imass)
-               nuk_nuj=species_viscosity(k)/species_viscosity(j)
-               Phi(k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
+               nuk_nuj(:,:,:)=species_viscosity(:,:,:,k)/species_viscosity(:,:,:,j)
+               Phi(:,:,:,k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
                        *(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
              enddo
            enddo
@@ -656,11 +656,11 @@ module Chemistry
             tmp_sum2=0.
            do k=1,nchemspec 
             do j=1,nchemspec 
-              tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(k,j) 
+              tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:,k,j) 
             enddo
-           tmp_sum=tmp_sum+XX_full(:,:,:,k)*species_viscosity(k)/tmp_sum2
+           tmp_sum=tmp_sum+XX_full(:,:,:,k)*species_viscosity(:,:,:,k)/tmp_sum2
            enddo
-           nu_full=tmp_sum/exp(f(:,:,:,ilnrho))!*sqrt(exp(f(:,:,:,ilnTT)))
+           nu_full=tmp_sum/exp(f(:,:,:,ilnrho))
 
         else
          call stop_it('This case works only for cgs units system!')
@@ -813,7 +813,7 @@ module Chemistry
 !
       character (len=20) :: input_file='chem.inp'
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: stat
+      integer :: stat,k
       logical :: tran_exist
 
 
@@ -836,17 +836,17 @@ module Chemistry
          print*,'tran.dat file with transport data is found.'
         endif
        call read_transport_data
-  !     call calc_Bin_Diff_coef(f)
-    species_viscosity=nu_spec/(unit_mass/unit_length/unit_time)
+  !     call calc_diff_visc_coef(f)
      else
         if (lroot) then
          print*,'tran.dat file with transport data is not found.'
          print*,'Now diffusion coefficients is ',chem_diff
          print*,'Now species viscosity is ',nu_spec
-      
         endif
          Bin_Diff_coef=chem_diff/(unit_length**2/unit_time)
-         species_viscosity=nu_spec/(unit_mass/unit_length/unit_time)
+        do k=1,nchemspec
+         species_viscosity(:,:,:,k)=nu_spec(k)/(unit_mass/unit_length/unit_time)
+        enddo
      endif
 
 !
@@ -2065,16 +2065,16 @@ module Chemistry
 
    endsubroutine  calc_collision_integral
 !***************************************************************
-    subroutine calc_Bin_Diff_coef(f)
+    subroutine calc_diff_visc_coef(f)
 !
 ! calculation of Bin_Diff_coef
 !
    real, dimension (mx,my,mz,mfarray) :: f
    intent(in) :: f
-   real, dimension (mx,my,mz) :: Omega_kl, prefactor, lnT, TT, lnTjk, pp_full, rho
+   real, dimension (mx,my,mz) :: Omega_kl, prefactor, lnT, TT, lnTjk, pp_full, rho, lnTk
    integer :: k,j
-   real :: eps_jk, sigma_jk, m_jk
-   character (len=7) :: omega="Omega11"
+   real :: eps_jk, sigma_jk, m_jk, delta_jk
+   character (len=7) :: omega
    real :: Na=6.022E23
 
 
@@ -2087,31 +2087,53 @@ module Chemistry
 
      prefactor=3./16.*sqrt(2.*k_B_cgs**3*TT**3)/pp_full/sqrt(pi)
 
-    do k=1,nchemspec
-     do j=1,nchemspec
+     omega="Omega11"
+      do k=1,nchemspec
+        do j=1,nchemspec
 
-      eps_jk=(tran_data(2,j)*tran_data(2,k))**0.2
-      sigma_jk=0.5*(tran_data(3,j)+tran_data(3,k))
-      m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
-         /(species_constants(j,imass)+species_constants(k,imass))/Na
+           eps_jk=(tran_data(2,j)*tran_data(2,k))**0.5
+           sigma_jk=0.5*(tran_data(3,j)+tran_data(3,k))*1e-8
+           delta_jk=0.5*tran_data(4,j)*tran_data(4,k)
+           m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
+                /(species_constants(j,imass)+species_constants(k,imass))/Na
 
 
-      lnTjk=lnT-log(eps_jk)
+           lnTjk=lnT-log(eps_jk)
+
+           call calc_collision_integral(omega,lnTjk,Omega_kl)
+
+           Bin_Diff_coef(:,:,:,k,j)=prefactor/sqrt(m_jk)/sigma_jk**2 &
+                  /(Omega_kl+0.19*delta_jk/exp(TT/eps_jk)) &
+                        /(unit_length**2/unit_time)
+  
+   !  if (Bin_Diff_coef(10,10,3,k,j)>5) then
+  !           print*, Bin_Diff_coef(10,10,3,k,j),k,j,m_jk
+  !  endif
+        enddo
+      enddo
+
+ 
+      omega="Omega22"
+      do k=1,nchemspec
+
+      lnTk=lnT-log(tran_data(2,k))
 
       call calc_collision_integral(omega,lnTjk,Omega_kl)
+      species_viscosity(:,:,:,k)=5./16.*sqrt(k_B_cgs*species_constants(k,imass)/Na*TT/pi) &
+                    /(tran_data(3,k)*1e-8)**2   &
+             /(Omega_kl+0.2*tran_data(4,k)/exp(TT/tran_data(3,k))) 
 
-      Bin_Diff_coef(:,:,:,k,j)=prefactor/sqrt(m_jk)/sigma_jk**2/Omega_kl/(unit_length**2/unit_time)
+      species_viscosity(:,:,:,k)=(species_viscosity(:,:,:,k)+nu_spec(k)) &
+               /(unit_mass/unit_length/unit_time)
+
+    !    print*, species_viscosity(10,10,3,k)
+
+      enddo
 
 
-     enddo
-    enddo
-
-
-
-
-    endsubroutine calc_Bin_Diff_coef
+    endsubroutine calc_diff_visc_coef
 !***************************************************************
-   subroutine calc_diffusion_term(f,p)
+    subroutine calc_diffusion_term(f,p)
 
       use Cdata
       use Mpicomm
