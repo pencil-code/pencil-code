@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.55 2008-04-04 02:30:42 brandenb Exp $
+! $Id: chemistry.f90,v 1.56 2008-04-04 08:08:49 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -171,11 +171,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.55 2008-04-04 02:30:42 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.56 2008-04-04 08:08:49 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.55 2008-04-04 02:30:42 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.56 2008-04-04 08:08:49 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -611,12 +611,6 @@ module Chemistry
 
            enddo
 
-  !       cp_full=1.
-  !       cv_full=1.
-  !       cvspec_full=1.
-
-
-
 !
 !  Binary diffusion coefficients
 !
@@ -663,7 +657,7 @@ module Chemistry
             enddo
            tmp_sum=tmp_sum+XX_full(:,:,:,k)*species_viscosity(k)/tmp_sum2
            enddo
-           nu_full=tmp_sum!/exp(f(:,:,:,ilnrho))!*sqrt(exp(f(:,:,:,ilnTT)))
+           nu_full=tmp_sum/exp(f(:,:,:,ilnrho))!*sqrt(exp(f(:,:,:,ilnTT)))
 
         else
          call stop_it('This case works only for cgs units system!')
