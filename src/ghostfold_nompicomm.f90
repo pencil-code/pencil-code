@@ -1,4 +1,4 @@
-! $Id: ghostfold_nompicomm.f90,v 1.11 2008-04-02 12:53:55 ajohan Exp $
+! $Id: ghostfold_nompicomm.f90,v 1.12 2008-04-04 10:13:29 bicanski Exp $
 !
 !  This module performs some special mpifunctions that
 !  also require the Fourier routines.
@@ -56,7 +56,7 @@ module GhostFold
 !  With shearing boundary conditions we must take care that the information is
 !  shifted properly before the final fold.
 !
-        if (lshear) then
+        if (lshear .and. nxgrid>1) then
           do ivar=ivar1,ivar2
             df_tmp_yz=df(l1-1,m1:m2,n1:n2,ivar)
             call fourier_shift_yz_y(df_tmp_yz,-deltay)
