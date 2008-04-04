@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.494 2008-04-04 15:13:15 wlyra Exp $
+! $Id: magnetic.f90,v 1.495 2008-04-04 18:03:44 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -377,7 +377,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.494 2008-04-04 15:13:15 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.495 2008-04-04 18:03:44 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -965,7 +965,8 @@ module Magnetic
 !  jj pencil always needed when in Weyl gauge
 !
       if ( (hall_term/=0. .and. ldt) .or. height_eta/=0. .or. ip<=4 .or. &
-          (lweyl_gauge) .or. (.not.lcartesian_coords) ) &
+          (lweyl_gauge) .or. (lspherical_coords) ) &
+!  WL: but doesn't seem to be needed for the cylindrical case
           lpenc_requested(i_jj)=.true.
       if (eta/=0..and.(.not.lweyl_gauge)) lpenc_requested(i_del2a)=.true.
       if (dvid/=0.) lpenc_video(i_jb)=.true.
@@ -1003,6 +1004,7 @@ module Magnetic
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
       if (lresi_hyper3) lpenc_requested(i_del6a)=.true.
+!WL: for the cylindrical case, lpencil_check says graddiva is not needed
       if (lspherical_coords) lpenc_requested(i_graddiva)=.true.
       if (lentropy .or. lresi_smagorinsky .or. ltemperature) then
         lpenc_requested(i_j2)=.true.
@@ -1141,7 +1143,7 @@ module Magnetic
       if (lpencil_in(i_b2)) lpencil_in(i_bb)=.true.
       if (lpencil_in(i_jj)) lpencil_in(i_bij)=.true.
       if (lpencil_in(i_bb)) then
-        if (lspherical_coords) lpencil_in(i_aa)=.true.
+        if (.not.lcartesian_coords) lpencil_in(i_aa)=.true.
         lpencil_in(i_aij)=.true.
       endif
       if (lpencil_in(i_djuidjbi)) then
@@ -1197,7 +1199,8 @@ module Magnetic
         if (meanfield_etat/=0.) lpencil_in(i_jj)=.true.
       endif
       if (lpencil_in(i_del2A)) then
-        if (.not.lcartesian_coords) then
+        if (lspherical_coords) then 
+!WL: for the cylindrical case, lpencil_check says these pencils are not needed
           lpencil_in(i_jj)=.true.
           lpencil_in(i_graddivA)=.true.
         endif
@@ -1206,9 +1209,7 @@ module Magnetic
         lpencil_in(i_aij)=.true.
         lpencil_in(i_uu)=.true.
       endif
-!XX
-!     if (lspherical_coords) lpencil_in(i_aa)=.true.
-!XX
+!
       if (lpencil_in(i_ss12)) lpencil_in(i_sj)=.true.
 !  Pencils bij, del2a and graddiva come in a bundle.
 !     if ( lpencil_in(i_bij) .and. &
@@ -1332,8 +1333,8 @@ module Magnetic
 ! uga
 ! DM : this requires later attention
       if (lpencil(i_uga)) then
-        if(lspherical_coords) then
-          call warning("calc_pencils_magnetic","u_dot_grad A not implemented for spherical coordinates") 
+        if(.not.lcartesian_coords) then
+          call warning("calc_pencils_magnetic","u_dot_grad A not implemented for non-cartesian coordinates") 
         else
           call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
         endif
@@ -2970,6 +2971,8 @@ module Magnetic
 !                write(*,*) bmxy_rms
                 if(lspherical_coords) & 
                    bmxy_rms = bmxy_rms*x(l+nghost)*x(l+nghost)*sinth(m+nghost)
+                if(lcylindrical_coords) & 
+                   call stop_it("bmxy_rms not yet implemented for cylindrical coordinates")
 !              write(*,*) fnamexy(l,m,1,idiag_bxmxy), fnamexy(l,m,1,idiag_bzmxy), fnamexy(l,m,1,idiag_bzmxy)
               enddo
             enddo
@@ -4264,8 +4267,11 @@ module Magnetic
       real, dimension (nx)    :: uu,bb
       real                    :: fac
       integer                 :: nnghost
+!
+      fac = 1.0/ny
 !      
-      fac = 1.0/nz
+! Average over phi - the result is a (nr,nz) array
+!
       fsum_tmp = 0.
       do m=m1,m2
       do n=n1,n2
@@ -4314,6 +4320,9 @@ module Magnetic
       integer                 :: mmghost
 !
       fac = 1.0/nz
+!      
+! Average over phi - the result is a (nr,ntht) array
+!
       fsum_tmp = 0.
       do n=n1,n2
       do m=m1,m2
