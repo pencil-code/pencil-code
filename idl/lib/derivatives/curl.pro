@@ -22,7 +22,7 @@ end
 function curlz,f,lsystem,xx
 COMPILE_OPT IDL2,HIDDEN
   if (lsystem eq 0) then corr=0.
-  if (lsystem eq 1) then corr=f[*,*,*,1]/pxx
+  if (lsystem eq 1) then corr=f[*,*,*,1]/xx
   if (lsystem eq 2) then corr=f[*,*,*,1]/xx
   return,xder(f[*,*,*,1])-yder(f[*,*,*,0])+corr
 end
