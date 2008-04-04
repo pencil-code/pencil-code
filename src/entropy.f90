@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.541 2008-03-28 03:08:46 steveb Exp $
+! $Id: entropy.f90,v 1.542 2008-04-04 09:12:20 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -170,6 +170,7 @@ module Entropy
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_ssmphi=0     ! DIAG_DOC:
+  integer :: idiag_cs2mphi=0    ! DIAG_DOC:
   integer :: idiag_yHm=0        ! DIAG_DOC:
   integer :: idiag_yHmax=0      ! DIAG_DOC:
   integer :: idiag_TTm=0        ! DIAG_DOC:
@@ -220,7 +221,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.541 2008-03-28 03:08:46 steveb Exp $")
+           "$Id: entropy.f90,v 1.542 2008-04-04 09:12:20 dintrans Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -1818,6 +1819,7 @@ module Entropy
         lpenc_diagnos(i_cs2)=.true.
         lpenc_diagnos(i_rcyl_mn)=.true.
       endif
+      if (idiag_cs2mphi/=0) lpenc_diagnos(i_cs2)=.true.
 !
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
@@ -2050,7 +2052,8 @@ module Entropy
 !  Phi-averages
 !
       if (l2davgfirst) then
-        call phisum_mn_name_rz(p%ss,idiag_ssmphi)
+        if (idiag_ssmphi/=0)  call phisum_mn_name_rz(p%ss,idiag_ssmphi)
+        if (idiag_cs2mphi/=0) call phisum_mn_name_rz(p%cs2,idiag_cs2mphi)
       endif
 !
 !  Enforce maximum heating rate timestep constraint
@@ -3024,6 +3027,7 @@ module Entropy
         idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0; idiag_ssmr=0; idiag_TTmr=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_thcool=0
+        idiag_cs2mphi=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -3094,6 +3098,7 @@ module Entropy
 !
       do irz=1,nnamerz
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ssmphi',idiag_ssmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'cs2mphi',idiag_cs2mphi)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -3112,6 +3117,7 @@ module Entropy
         write(3,*) 'i_csm=',idiag_csm
         write(3,*) 'i_ugradpm=',idiag_ugradpm
         write(3,*) 'i_ssmphi=',idiag_ssmphi
+        write(3,*) 'i_cs2mphi=',idiag_cs2mphi
         write(3,*) 'i_fturbz=',idiag_fturbz
         write(3,*) 'i_fconvz=',idiag_fconvz
         write(3,*) 'i_dcoolz=',idiag_dcoolz
