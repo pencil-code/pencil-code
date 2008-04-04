@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.426 2008-04-04 09:21:34 dintrans Exp $
+! $Id: hydro.f90,v 1.427 2008-04-04 18:05:33 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -341,7 +341,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.426 2008-04-04 09:21:34 dintrans Exp $")
+           "$Id: hydro.f90,v 1.427 2008-04-04 18:05:33 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3124,6 +3124,8 @@ use Mpicomm, only: stop_it
       if(lspherical_coords) then
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
           -prof_amp1*(1.5-7.5*costh(m)*costh(m)))
+      elseif (lcylindrical_coords) then
+        call stop_it("solar_simple: not implemented for cylindrical coordinates")
       else
         do llx=l1,l2
           df(llx,m,n,iuz)=df(llx,m,n,iuz)-tau_diffrot1*( f(llx,m,n,iuz) &
@@ -3136,6 +3138,8 @@ use Mpicomm, only: stop_it
         f(l1:l2,m,n,iuy) = 0.
         if(lspherical_coords) then
           f(l1:l2,m,n,iuz) = prof_amp1*(1.5-7.5*costh(m)*costh(m))
+        else if(lcylindrical_coords) then
+          call stop_it("diffrot_test: not implemented for cylindrical coordinates")
         else
           do llx=l1,l2 
             f(llx,m,n,iuz) = prof_amp1(llx)*cos(y(m))*cos(y(m)) 
