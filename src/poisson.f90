@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.46 2008-03-06 22:56:28 wlyra Exp $
+! $Id: poisson.f90,v 1.47 2008-04-04 18:06:32 wlyra Exp $
 
 !
 !  This module solves the Poisson equation
@@ -95,6 +95,12 @@ module Poisson
         call fatal_error("inverse_laplacian","")
       endif
 !
+      if (lspherical_coords) then 
+        if (lroot) print*,'There is no poisson solver for spherical coordinates yet.'//&
+             'Please implement if you feel like doing it. Many people will thank you for that.'
+        call fatal_error("inverse_laplacian","")
+      endif
+!
       if (lsemispectral) then
         call inverse_laplacian_semispectral(phi)
       else
@@ -119,7 +125,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.46 2008-03-06 22:56:28 wlyra Exp $")
+        "$Id: poisson.f90,v 1.47 2008-04-04 18:06:32 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -234,7 +240,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.46 2008-03-06 22:56:28 wlyra Exp $")
+        "$Id: poisson.f90,v 1.47 2008-04-04 18:06:32 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
