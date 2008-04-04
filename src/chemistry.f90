@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.56 2008-04-04 08:08:49 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.57 2008-04-04 11:09:38 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -27,7 +27,7 @@ module Chemistry
   include 'chemistry.h'
 
   real :: Rgas, Rgas_unit_sys=1.
-  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, pp_full
+  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full
   real, dimension (mx,my,mz,nchemspec) :: cvspec_full
 
 !
@@ -69,7 +69,7 @@ module Chemistry
   logical :: lcheminp=.false.
   real, dimension(nchemspec,18) :: species_constants
   integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
-  integer, dimension(7) :: ia1,ia2
+  integer, dimension(7) :: iaa1,iaa2
   real,    allocatable, dimension(:) :: B_n, alpha_n, E_an
   real,   dimension(7,nchemspec) :: tran_data
 
@@ -120,8 +120,8 @@ module Chemistry
 !
 ! Initialize some index pointers
 !
-      ia1(1)=5;ia1(2)=6;ia1(3)=7;ia1(4)=8;ia1(5)=9;ia1(6)=10;ia1(7)=11
-      ia2(1)=12;ia2(2)=13;ia2(3)=14;ia2(4)=15;ia2(5)=16;ia2(6)=17;ia2(7)=18
+      iaa1(1)=5;iaa1(2)=6;iaa1(3)=7;iaa1(4)=8;iaa1(5)=9;iaa1(6)=10;iaa1(7)=11
+      iaa2(1)=12;iaa2(2)=13;iaa2(3)=14;iaa2(4)=15;iaa2(5)=16;iaa2(6)=17;iaa2(7)=18
 !
 ! A quick sanity check
 !
@@ -164,6 +164,7 @@ module Chemistry
 !  Read data on the thermodynamical properties of the different species.
 !  All these data are stored in the array species_constants.
 !
+
       if (lcheminp) call read_thermodyn(input_file)
 !
 !  Write all data on species and their thermodynamics to file 
@@ -171,11 +172,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.56 2008-04-04 08:08:49 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.57 2008-04-04 11:09:38 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.56 2008-04-04 08:08:49 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.57 2008-04-04 11:09:38 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -315,6 +316,7 @@ module Chemistry
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(xx,yy,zz)
 !
+
     endsubroutine init_chemistry
 !***********************************************************************
     subroutine pencil_criteria_chemistry()
@@ -534,8 +536,7 @@ module Chemistry
       real :: mk_mj, nuk_nuj
 
       logical :: tran_exist=.false.
-
-      
+ 
 !
 ! Now this routine is only for chemkin data !!!
 !
@@ -555,12 +556,6 @@ module Chemistry
               enddo
               mu1_full=mu1_full*unit_mass
 
-!
-!   Pressure
-!
-
-         pp_full = Rgas_unit_sys*mu1_full/unit_mass  &
-            *exp(f(:,:,:,ilnrho))*unit_mass/unit_length**3*exp(f(:,:,:,ilnTT))*unit_temperature
 
 !
 !  Mole fraction XX
@@ -568,6 +563,8 @@ module Chemistry
            do k=1,nchemspec 
              XX_full(:,:,:,k)=f(:,:,:,ichemspec(k))*unit_mass/species_constants(ichemspec(k),imass)/mu1_full(:,:,:)
            enddo
+
+
 
 !
 !  Specific heat at constant pressure
@@ -583,19 +580,21 @@ module Chemistry
             do i=1,mx
              do n=1,mz
                do m=1,my
+
                  T_local=exp(f(i,m,n,ilnTT))*unit_temperature 
                   if (T_local >=T_low .and. T_local <= T_mid) then
                    cp_R_spec(i)=0. 
                     do j=1,5
-                     cp_R_spec(i)=cp_R_spec(i)+species_constants(k,ia1(j))*T_local**(j-1) 
+                     cp_R_spec(i)=cp_R_spec(i)+species_constants(k,iaa1(j))*T_local**(j-1) 
                     enddo
                    cvspec_full(i,m,n,k)=cp_R_spec(i)-1.
                    cp_R_spec(i)=cp_R_spec(i)/species_constants(k,imass)
                    cvspec_full(i,m,n,k)=cvspec_full(i,m,n,k)/species_constants(k,imass)*Rgas
+
                   else
                    cp_R_spec(i)=0.
                     do j=1,5 
-                     cp_R_spec(i)=cp_R_spec(i)+species_constants(k,ia2(j))*T_local**(j-1) 
+                     cp_R_spec(i)=cp_R_spec(i)+species_constants(k,iaa2(j))*T_local**(j-1) 
                     enddo
                    cvspec_full(i,m,n,k)=cp_R_spec(i)-1.
                    cp_R_spec(i)=cp_R_spec(i)/species_constants(k,imass)
@@ -610,6 +609,8 @@ module Chemistry
             enddo
 
            enddo
+
+
 
 !
 !  Binary diffusion coefficients
@@ -634,7 +635,7 @@ module Chemistry
               Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k)))*mu1_full(:,:,:)/tmp_sum
            enddo
 
-!print*, Bin_Diff_coef(10,3,3,1,2)
+!print*, Bin_Diff_coef(10,10,3,1,2)
 
  
 !
@@ -643,9 +644,11 @@ module Chemistry
  
            do k=1,nchemspec
              do j=1,nchemspec
-               mk_mj=species_constants(ichemspec(k),imass)/species_constants(ichemspec(j),imass)
+               mk_mj=species_constants(ichemspec(k),imass) &
+                    /species_constants(ichemspec(j),imass)
                nuk_nuj=species_viscosity(k)/species_viscosity(j)
-               Phi(k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj)*(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
+               Phi(k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
+                       *(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
              enddo
            enddo
 
@@ -663,7 +666,6 @@ module Chemistry
          call stop_it('This case works only for cgs units system!')
         endif
       endif
-
 
 
  endsubroutine calc_for_chem_mixture
@@ -834,12 +836,14 @@ module Chemistry
          print*,'tran.dat file with transport data is found.'
         endif
        call read_transport_data
-       call calc_Bin_Diff_coef(f)
+  !     call calc_Bin_Diff_coef(f)
+    species_viscosity=nu_spec/(unit_mass/unit_length/unit_time)
      else
         if (lroot) then
          print*,'tran.dat file with transport data is not found.'
          print*,'Now diffusion coefficients is ',chem_diff
          print*,'Now species viscosity is ',nu_spec
+      
         endif
          Bin_Diff_coef=chem_diff/(unit_length**2/unit_time)
          species_viscosity=nu_spec/(unit_mass/unit_length/unit_time)
@@ -1449,6 +1453,7 @@ module Chemistry
             StopInd=index(ChemInpLine,' ')
             specie_string=trim(ChemInpLine(1:StopInd-1))
             call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
+
             if (found_specie) then
               !
               ! Find molar mass
@@ -1486,18 +1491,20 @@ module Chemistry
               species_constants(ind_chem,iTemp1)=tmp_temp(1)
               species_constants(ind_chem,iTemp2)=tmp_temp(3)
               species_constants(ind_chem,iTemp3)=tmp_temp(2)
+
             elseif (ChemInpLine(80:80)=="2") then
-              ! Read ia1(1):ia1(5)
+              ! Read iaa1(1):iaa1(5)
               read (unit=ChemInpLine(1:75),fmt='(5E15.8)')  &
-                   species_constants(ind_chem,ia1(1):ia1(5))
+                   species_constants(ind_chem,iaa1(1):iaa1(5))
+
            elseif (ChemInpLine(80:80)=="3") then
-              ! Read ia1(6):ia5(3)
+              ! Read iaa1(6):iaa5(3)
               read (unit=ChemInpLine(1:75),fmt='(5E15.8)')  &
-                   species_constants(ind_chem,ia1(6):ia2(3))
+                   species_constants(ind_chem,iaa1(6):iaa2(3))
             elseif (ChemInpLine(80:80)=="4") then
-              ! Read ia2(4):ia2(7)
+              ! Read iaa2(4):iaa2(7)
               read (unit=ChemInpLine(1:75),fmt='(4E15.8)')  &
-                   species_constants(ind_chem,ia2(4):ia2(7))
+                   species_constants(ind_chem,iaa2(4):iaa2(7))
             endif
           endif
         endif
@@ -1678,8 +1685,8 @@ module Chemistry
         write(file_id,*) varname(ichemspec(k))
         write(file_id,'(F10.2,3F10.2)') species_constants(k,imass),&
              species_constants(k,iTemp1:iTemp3)
-        write(file_id,'(7E10.2)') species_constants(k,ia1)
-        write(file_id,'(7E10.2)') species_constants(k,ia2)
+        write(file_id,'(7E10.2)') species_constants(k,iaa1)
+        write(file_id,'(7E10.2)') species_constants(k,iaa2)
       enddo dataloop2
       !
       close(file_id)
@@ -1797,15 +1804,15 @@ module Chemistry
            if (T_local >=T_low .and. T_local <= T_mid) then
                tmp=0. 
                do j=1,5
-                tmp=tmp+species_constants(k,ia1(j))*T_local**(j-1)/j 
+                tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1)/j 
                enddo
-              H0_RT(i,k)=tmp+species_constants(k,ia1(6))/T_local
+              H0_RT(i,k)=tmp+species_constants(k,iaa1(6))/T_local
            else
                tmp=0. 
                do j=1,5 
-                tmp=tmp+species_constants(k,ia2(j))*T_local**(j-1)/j 
+                tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/j 
                enddo
-             H0_RT(i,k)=tmp+species_constants(k,ia2(6))/T_local
+             H0_RT(i,k)=tmp+species_constants(k,iaa2(6))/T_local
            endif
          enddo
         enddo
@@ -1826,15 +1833,15 @@ module Chemistry
            if (T_local >=T_low .and. T_local <= T_mid) then
                tmp=0. 
                do j=2,5
-                tmp=tmp+species_constants(k,ia1(j))*T_local**(j-1)/(j-1) 
+                tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1)/(j-1) 
                enddo
-              S0_R(i,k)=species_constants(k,ia1(1))*lnT_local+tmp+species_constants(k,ia1(7))
+              S0_R(i,k)=species_constants(k,iaa1(1))*lnT_local+tmp+species_constants(k,iaa1(7))
            else
                tmp=0. 
                do j=2,5 
-                tmp=tmp+species_constants(k,ia2(j))*T_local**(j-1)/(j-1) 
+                tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/(j-1) 
                enddo
-             S0_R(i,k)=species_constants(k,ia2(1))*lnT_local+tmp+species_constants(k,ia2(7))
+             S0_R(i,k)=species_constants(k,iaa2(1))*lnT_local+tmp+species_constants(k,iaa2(7))
            endif
          enddo
         enddo
@@ -2011,7 +2018,7 @@ module Chemistry
     endsubroutine read_transport_data
 
 !***************************************************************
-  subroutine  calc_collision_integral(omega,TT,Omega_kl)
+  subroutine  calc_collision_integral(omega,lnTst,Omega_kl)
    !
    ! Get coefficients for calculating of the collision integral 
    !
@@ -2020,7 +2027,7 @@ module Chemistry
     use Mpicomm
  !
       character (len=*), intent(in) :: omega
-      real,  dimension(mx,my,mz), intent(in)  :: TT
+      real,  dimension(mx,my,mz), intent(in)  :: lnTst
       real,  dimension(mx,my,mz), intent(out) :: Omega_kl
       integer :: i 
       real, dimension(8) :: aa
@@ -2051,8 +2058,8 @@ module Chemistry
       end select
 
        Omega_kl=0.
-         do i=1,2
-          Omega_kl=Omega_kl+aa(i)*(log(TT))**(i-1)
+         do i=1,8
+          Omega_kl=Omega_kl+aa(i)*(lnTst)**(i-1)
          enddo
        Omega_kl=1./Omega_kl
 
@@ -2064,34 +2071,42 @@ module Chemistry
 !
    real, dimension (mx,my,mz,mfarray) :: f
    intent(in) :: f
-   real, dimension (mx,my,mz) :: T_jk, Omega_kl, prefactor, TT
+   real, dimension (mx,my,mz) :: Omega_kl, prefactor, lnT, TT, lnTjk, pp_full, rho
    integer :: k,j
    real :: eps_jk, sigma_jk, m_jk
    character (len=7) :: omega="Omega11"
+   real :: Na=6.022E23
 
 
+     lnT=f(:,:,:,ilnTT)+log(unit_temperature)
      TT=exp(f(:,:,:,ilnTT))*unit_temperature
-     prefactor=3./16.*sqrt(2.*k_B**3*TT**3)/pp_full/sqrt(pi)
+     rho=exp(f(:,:,:,ilnrho))*unit_mass/unit_length**3
 
+
+     pp_full = Rgas_unit_sys*mu1_full/unit_mass*rho*TT
+
+     prefactor=3./16.*sqrt(2.*k_B_cgs**3*TT**3)/pp_full/sqrt(pi)
 
     do k=1,nchemspec
      do j=1,nchemspec
 
-
-      eps_jk=sqrt(tran_data(2,j)*tran_data(2,k))
+      eps_jk=(tran_data(2,j)*tran_data(2,k))**0.2
       sigma_jk=0.5*(tran_data(3,j)+tran_data(3,k))
       m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
-         /(species_constants(j,imass)+species_constants(k,imass))
-
-      T_jk=TT/eps_jk
-
-      call calc_collision_integral(omega,T_jk,Omega_kl)
+         /(species_constants(j,imass)+species_constants(k,imass))/Na
 
 
-      Bin_Diff_coef(:,:,:,k,j)=prefactor/sqrt(m_jk)/sigma_jk**2/Omega_kl
+      lnTjk=lnT-log(eps_jk)
+
+      call calc_collision_integral(omega,lnTjk,Omega_kl)
+
+      Bin_Diff_coef(:,:,:,k,j)=prefactor/sqrt(m_jk)/sigma_jk**2/Omega_kl/(unit_length**2/unit_time)
+
 
      enddo
     enddo
+
+
 
 
     endsubroutine calc_Bin_Diff_coef
