@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.493 2008-04-04 14:19:26 wlyra Exp $
+! $Id: magnetic.f90,v 1.494 2008-04-04 15:13:15 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -142,7 +142,7 @@ module Magnetic
   logical :: lupw_aa=.false.
   logical :: lforcing_continuous_aa=.false.
   logical :: lelectron_inertia=.false.
-  logical :: lremove_mean_emf
+  logical :: lremove_mean_emf=.false.
   logical :: lkinematic=.false.
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
@@ -377,7 +377,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.493 2008-04-04 14:19:26 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.494 2008-04-04 15:13:15 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
