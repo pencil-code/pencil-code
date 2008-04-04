@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.492 2008-04-03 20:35:32 brandenb Exp $
+! $Id: magnetic.f90,v 1.493 2008-04-04 14:19:26 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -377,7 +377,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.492 2008-04-03 20:35:32 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.493 2008-04-04 14:19:26 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -761,6 +761,7 @@ module Magnetic
         case('Alfven-rz'); call alfven_rz(amplaa(j),f,xx,yy,rmode)
         case('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
         case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
+        case('sine-bc'); call sine_avoid_boundary(amplaa(j),f,iaa,kx_aa(j),rm_int,rm_ext)
         case('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa,xx,yy,zz)
         case('tony-nohel')
           f(:,:,:,iay) = amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*zz)
@@ -1469,7 +1470,7 @@ module Magnetic
 !
      if (lbb_as_aux) f(l1:l2,m,n,ibx:ibz)=p%bb
      if (ljj_as_aux) f(l1:l2,m,n,ijx:ijz)=p%jj
-!
+!       
     endsubroutine calc_pencils_magnetic
 !***********************************************************************
     subroutine daa_dt(f,df,p)
@@ -2501,6 +2502,59 @@ module Magnetic
       endselect
 !
     endsubroutine Omega_effect
+!***********************************************************************
+    subroutine sine_avoid_boundary(ampl,f,iaa,kr,r0,rn)
+!
+! Sine field in cylindrical coordinates, used in Armitage 1998
+!  
+!   Bz=B0/r * sin(kr*(r-r0))
+!
+! And 0 outside of the interval r0-rn
+! Code the field and find Aphi through solving the 
+! tridiagonal system for 
+! 
+!  Bz= d/dr Aphi + Aphi/r 
+!
+!  -A_(i-1) + A_(i+1) + 2*A_i*dr/r = 2*dr*Bz 
+! 
+!  05-apr-08/wlad : coded
+!
+      use General, only: tridag
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,kr,r0,rn
+      integer :: iaa,i
+      real, dimension (mx) :: a_tri,b_tri,c_tri,rhs,aphi,bz
+!
+      if (.not.lcylindrical_coords) &
+           call stop_it("this IC assumes cylindrical coordinates")
+!
+      do i=1,mx 
+        if ((rcyl_mn(i).ge.r0).and.(rcyl_mn(i).le.rn)) then
+          bz(i)=ampl/rcyl_mn(i) * sin(kr*(rcyl_mn(i)-r0))
+        else
+          bz(i)=0.
+        endif
+      enddo
+!
+      a_tri=-1.
+      b_tri=2*dx/x
+      c_tri=1.
+      rhs=bz*2*dx
+!      
+      a_tri(1) =0.;c_tri(1 )=0.
+      a_tri(mx)=0.;c_tri(mx)=0.
+!
+      call tridag(a_tri,b_tri,c_tri,rhs,aphi)
+!
+      do m=1,my
+      do n=1,mz
+        f(:,m,n,iay) = aphi
+      enddo
+      enddo
+!
+    endsubroutine sine_avoid_boundary
 !***********************************************************************
     subroutine helflux(aa,uxb,jj)
 !
