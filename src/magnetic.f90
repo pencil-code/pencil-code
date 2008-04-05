@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.495 2008-04-04 18:03:44 wlyra Exp $
+! $Id: magnetic.f90,v 1.496 2008-04-05 01:03:31 rei Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -142,7 +142,7 @@ module Magnetic
   logical :: lupw_aa=.false.
   logical :: lforcing_continuous_aa=.false.
   logical :: lelectron_inertia=.false.
-  logical :: lremove_mean_emf=.false.
+  logical :: lremove_mean_emf
   logical :: lkinematic=.false.
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
@@ -377,7 +377,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.495 2008-04-04 18:03:44 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.496 2008-04-05 01:03:31 rei Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -761,7 +761,6 @@ module Magnetic
         case('Alfven-rz'); call alfven_rz(amplaa(j),f,xx,yy,rmode)
         case('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
         case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
-        case('sine-bc'); call sine_avoid_boundary(amplaa(j),f,iaa,kx_aa(j),rm_int,rm_ext)
         case('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa,xx,yy,zz)
         case('tony-nohel')
           f(:,:,:,iay) = amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*zz)
@@ -965,8 +964,7 @@ module Magnetic
 !  jj pencil always needed when in Weyl gauge
 !
       if ( (hall_term/=0. .and. ldt) .or. height_eta/=0. .or. ip<=4 .or. &
-          (lweyl_gauge) .or. (lspherical_coords) ) &
-!  WL: but doesn't seem to be needed for the cylindrical case
+          (lweyl_gauge) .or. (.not.lcartesian_coords) ) &
           lpenc_requested(i_jj)=.true.
       if (eta/=0..and.(.not.lweyl_gauge)) lpenc_requested(i_del2a)=.true.
       if (dvid/=0.) lpenc_video(i_jb)=.true.
@@ -1004,7 +1002,6 @@ module Magnetic
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
       if (lresi_hyper3) lpenc_requested(i_del6a)=.true.
-!WL: for the cylindrical case, lpencil_check says graddiva is not needed
       if (lspherical_coords) lpenc_requested(i_graddiva)=.true.
       if (lentropy .or. lresi_smagorinsky .or. ltemperature) then
         lpenc_requested(i_j2)=.true.
@@ -1143,7 +1140,7 @@ module Magnetic
       if (lpencil_in(i_b2)) lpencil_in(i_bb)=.true.
       if (lpencil_in(i_jj)) lpencil_in(i_bij)=.true.
       if (lpencil_in(i_bb)) then
-        if (.not.lcartesian_coords) lpencil_in(i_aa)=.true.
+        if (lspherical_coords) lpencil_in(i_aa)=.true.
         lpencil_in(i_aij)=.true.
       endif
       if (lpencil_in(i_djuidjbi)) then
@@ -1199,8 +1196,7 @@ module Magnetic
         if (meanfield_etat/=0.) lpencil_in(i_jj)=.true.
       endif
       if (lpencil_in(i_del2A)) then
-        if (lspherical_coords) then 
-!WL: for the cylindrical case, lpencil_check says these pencils are not needed
+        if (.not.lcartesian_coords) then
           lpencil_in(i_jj)=.true.
           lpencil_in(i_graddivA)=.true.
         endif
@@ -1209,7 +1205,9 @@ module Magnetic
         lpencil_in(i_aij)=.true.
         lpencil_in(i_uu)=.true.
       endif
-!
+!XX
+!     if (lspherical_coords) lpencil_in(i_aa)=.true.
+!XX
       if (lpencil_in(i_ss12)) lpencil_in(i_sj)=.true.
 !  Pencils bij, del2a and graddiva come in a bundle.
 !     if ( lpencil_in(i_bij) .and. &
@@ -1333,8 +1331,8 @@ module Magnetic
 ! uga
 ! DM : this requires later attention
       if (lpencil(i_uga)) then
-        if(.not.lcartesian_coords) then
-          call warning("calc_pencils_magnetic","u_dot_grad A not implemented for non-cartesian coordinates") 
+        if(lspherical_coords) then
+          call warning("calc_pencils_magnetic","u_dot_grad A not implemented for spherical coordinates") 
         else
           call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
         endif
@@ -1471,7 +1469,7 @@ module Magnetic
 !
      if (lbb_as_aux) f(l1:l2,m,n,ibx:ibz)=p%bb
      if (ljj_as_aux) f(l1:l2,m,n,ijx:ijz)=p%jj
-!       
+!
     endsubroutine calc_pencils_magnetic
 !***********************************************************************
     subroutine daa_dt(f,df,p)
@@ -2504,59 +2502,6 @@ module Magnetic
 !
     endsubroutine Omega_effect
 !***********************************************************************
-    subroutine sine_avoid_boundary(ampl,f,iaa,kr,r0,rn)
-!
-! Sine field in cylindrical coordinates, used in Armitage 1998
-!  
-!   Bz=B0/r * sin(kr*(r-r0))
-!
-! And 0 outside of the interval r0-rn
-! Code the field and find Aphi through solving the 
-! tridiagonal system for 
-! 
-!  Bz= d/dr Aphi + Aphi/r 
-!
-!  -A_(i-1) + A_(i+1) + 2*A_i*dr/r = 2*dr*Bz 
-! 
-!  05-apr-08/wlad : coded
-!
-      use General, only: tridag
-      use Mpicomm, only: stop_it
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,kr,r0,rn
-      integer :: iaa,i
-      real, dimension (mx) :: a_tri,b_tri,c_tri,rhs,aphi,bz
-!
-      if (.not.lcylindrical_coords) &
-           call stop_it("this IC assumes cylindrical coordinates")
-!
-      do i=1,mx 
-        if ((rcyl_mn(i).ge.r0).and.(rcyl_mn(i).le.rn)) then
-          bz(i)=ampl/rcyl_mn(i) * sin(kr*(rcyl_mn(i)-r0))
-        else
-          bz(i)=0.
-        endif
-      enddo
-!
-      a_tri=-1.
-      b_tri=2*dx/x
-      c_tri=1.
-      rhs=bz*2*dx
-!      
-      a_tri(1) =0.;c_tri(1 )=0.
-      a_tri(mx)=0.;c_tri(mx)=0.
-!
-      call tridag(a_tri,b_tri,c_tri,rhs,aphi)
-!
-      do m=1,my
-      do n=1,mz
-        f(:,m,n,iay) = aphi
-      enddo
-      enddo
-!
-    endsubroutine sine_avoid_boundary
-!***********************************************************************
     subroutine helflux(aa,uxb,jj)
 !
 !  magnetic helicity flux (preliminary)
@@ -2971,8 +2916,6 @@ module Magnetic
 !                write(*,*) bmxy_rms
                 if(lspherical_coords) & 
                    bmxy_rms = bmxy_rms*x(l+nghost)*x(l+nghost)*sinth(m+nghost)
-                if(lcylindrical_coords) & 
-                   call stop_it("bmxy_rms not yet implemented for cylindrical coordinates")
 !              write(*,*) fnamexy(l,m,1,idiag_bxmxy), fnamexy(l,m,1,idiag_bzmxy), fnamexy(l,m,1,idiag_bzmxy)
               enddo
             enddo
@@ -3005,19 +2948,28 @@ module Magnetic
           bmz_belphase=0.
  
         else
+	  
+	  c=0.; s=0.
 
-          bmz_belphase=atan2(c,-s)
           do jprocz=1,nprocz
-            c=(2./nz)*dot_product( fnamez(:,jprocz,idiag_bxmz), cosz(n1:n2) ) 
-            s=(2./nz)*dot_product( fnamez(:,jprocz,idiag_bxmz), sinz(n1:n2) )
-            c=(2./nz)*dot_product( fnamez(:,jprocz,idiag_bymz), cosz(n1:n2) )
-            s=(2./nz)*dot_product( fnamez(:,jprocz,idiag_bymz), sinz(n1:n2) )
+            c=c+dot_product( fnamez(:,jprocz,idiag_bxmz), cosz(n1:n2) ) 	! <B_x> cos(kz)
+            s=s+dot_product( fnamez(:,jprocz,idiag_bxmz), sinz(n1:n2) )		! <B_x> sin(kz)
           enddo
 
-          temp = atan2(s,c)
-          bmz_belphase_delta = abs(bmz_belphase-temp)
+          bmz_belphase=atan2(-s,c)			! Beltrami-field-phase determined from <B_x>
+          
+          c=0.; s=0.
 
-          bmz_belphase=0.5*(bmz_belphase+temp)
+          do jprocz=1,nprocz
+            c=c+dot_product( fnamez(:,jprocz,idiag_bymz), cosz(n1:n2) )        ! <B_y> cos(kz)
+            s=s+dot_product( fnamez(:,jprocz,idiag_bymz), sinz(n1:n2) )	       ! <B_y> sin(kz)
+          enddo
+
+          temp = atan2(c,s)	                        ! Beltrami-field-phase determined from <B_y>
+	  
+          bmz_belphase_delta = abs(bmz_belphase-temp)	! Difference of both determinations
+
+          bmz_belphase=0.5*(bmz_belphase+temp)		! mean of both det. = result
 
           call save_name(bmz_belphase,idiag_bmz_belphas)
 
@@ -4267,11 +4219,8 @@ module Magnetic
       real, dimension (nx)    :: uu,bb
       real                    :: fac
       integer                 :: nnghost
-!
-      fac = 1.0/ny
 !      
-! Average over phi - the result is a (nr,nz) array
-!
+      fac = 1.0/nz
       fsum_tmp = 0.
       do m=m1,m2
       do n=n1,n2
@@ -4320,9 +4269,6 @@ module Magnetic
       integer                 :: mmghost
 !
       fac = 1.0/nz
-!      
-! Average over phi - the result is a (nr,ntht) array
-!
       fsum_tmp = 0.
       do n=n1,n2
       do m=m1,m2
@@ -4561,8 +4507,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
         call parse_name(iname,cname(iname),cform(iname),'bmy',idiag_bmy)
         call parse_name(iname,cname(iname),cform(iname),'bmz',idiag_bmz)
-        call parse_name(iname,cname(iname),cform(iname),'ebmz',idiag_ebmz)
         call parse_name(iname,cname(iname),cform(iname),'bmz_belphas',idiag_bmz_belphas)
+        call parse_name(iname,cname(iname),cform(iname),'ebmz',idiag_ebmz)
         call parse_name(iname,cname(iname),cform(iname),'bxpt',idiag_bxpt)
         call parse_name(iname,cname(iname),cform(iname),'bypt',idiag_bypt)
         call parse_name(iname,cname(iname),cform(iname),'bzpt',idiag_bzpt)
@@ -4630,6 +4576,7 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'b2mz',idiag_b2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
                         'mflux_z',idiag_mflux_z)
+!        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bmz_belphas',idiag_bmz_belphas)
       enddo
 !
 !  check for those quantities for which we want y-averages
