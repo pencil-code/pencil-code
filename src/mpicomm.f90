@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.221 2008-03-24 03:24:46 wlyra Exp $
+! $Id: mpicomm.f90,v 1.222 2008-04-05 21:52:50 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -128,6 +128,11 @@ module Mpicomm
     module procedure mpiallreduce_sum_arr2
     module procedure mpiallreduce_sum_arr
     module procedure mpiallreduce_sum_scl
+  endinterface
+
+  interface mpiallreduce_sum_int
+     module procedure mpiallreduce_sum_int_arr
+     module procedure mpiallreduce_sum_int_scl
   endinterface
 
   interface mpiallreduce_max
@@ -1548,7 +1553,7 @@ module Mpicomm
         ibcast_proc=root
       endif
 !
-      call MPI_BCAST(ibcast_array,nbcast_array,MPI_INTEGER,ibcast_proc, &
+      call MPI_BCAST(ibcast_array,1,MPI_INTEGER,ibcast_proc, &
           MPI_COMM_WORLD,ierr)
 !
     endsubroutine mpibcast_int_scl
@@ -1779,6 +1784,31 @@ module Mpicomm
                       MPI_COMM_WORLD, ierr)
 !
     endsubroutine mpiallreduce_sum_scl
+!***********************************************************************
+    subroutine mpiallreduce_sum_int_arr(fsum_tmp,fsum,nreduce)
+!
+      integer :: nreduce
+      integer, dimension(nreduce) :: fsum_tmp,fsum
+!
+!  calculate total sum for each array element
+!  and return to all processors
+!
+      call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, &
+                      MPI_COMM_WORLD, ierr)
+!
+    endsubroutine mpiallreduce_sum_int_arr
+!***********************************************************************
+    subroutine mpiallreduce_sum_int_scl(fsum_tmp,fsum)
+!
+      integer :: fsum_tmp,fsum
+!
+!  calculate total sum for each array element
+!  and return to all processors
+!
+      call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_INTEGER, MPI_SUM, &
+                      MPI_COMM_WORLD, ierr)
+!
+    endsubroutine mpiallreduce_sum_int_scl
 !***********************************************************************
     subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce)
 !

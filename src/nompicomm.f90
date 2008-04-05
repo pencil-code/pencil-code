@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.160 2008-03-24 02:31:33 wlyra Exp $
+! $Id: nompicomm.f90,v 1.161 2008-04-05 21:52:50 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -104,6 +104,11 @@ module Mpicomm
     module procedure mpiallreduce_sum_scl
     module procedure mpiallreduce_sum_arr
     module procedure mpiallreduce_sum_arr2
+  endinterface
+
+  interface mpiallreduce_sum_int
+    module procedure mpiallreduce_sum_int_scl
+    module procedure mpiallreduce_sum_int_arr
   endinterface
 
   interface mpiallreduce_max
@@ -696,6 +701,21 @@ module Mpicomm
 !
       fsum=fsum_tmp
     endsubroutine mpiallreduce_sum_scl
+!***********************************************************************
+    subroutine mpiallreduce_sum_int_arr(fsum_tmp,fsum,nreduce)
+!
+      integer :: nreduce
+      integer, dimension(nreduce) :: fsum_tmp, fsum
+!
+      fsum=fsum_tmp
+    endsubroutine mpiallreduce_sum_int_arr
+!***********************************************************************
+    subroutine mpiallreduce_sum_scl_int(fsum_tmp,fsum)
+!
+      integer :: fsum_tmp, fsum
+!
+      fsum=fsum_tmp
+    endsubroutine mpiallreduce_sum_scl_int
 !***********************************************************************
     subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce)
 !

@@ -1,5 +1,5 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
-!$Id: mpicomm.h,v 1.33 2008-01-17 18:46:15 wlyra Exp $
+!$Id: mpicomm.h,v 1.34 2008-04-05 21:52:50 wlyra Exp $
 !
   private
 
@@ -13,7 +13,7 @@
   public :: mpisend_logical, mpisend_real, mpisend_int
   public :: mpireduce_sum, mpireduce_max, mpireduce_min
   public :: mpireduce_sum_scl, mpiallreduce_max, mpiallreduce_sum
-  public :: mpireduce_sum_int, mpireduce_sum_double
+  public :: mpireduce_sum_int, mpireduce_sum_double,mpiallreduce_sum_int
   public :: mpireduce_or
   public :: mpibcast_real,mpibcast_logical
   public :: mpibcast_double
