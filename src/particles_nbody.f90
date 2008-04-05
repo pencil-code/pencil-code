@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.93 2008-04-05 22:00:44 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.94 2008-04-05 23:38:17 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -24,7 +24,7 @@ module Particles_nbody
   real,dimension(nspar,mspvar)  :: fsp
   real,dimension(nspar)         :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real,dimension(nspar)         :: vspx0=0.0, vspy0=0.0, vspz0=0.0
-  real,dimension(nspar)         :: pmass=0.,r_smooth,pmass1
+  real,dimension(nspar)         :: pmass=0.,r_smooth=0.,pmass1
   real,dimension(nspar)         :: accrete_hills_frac=0.2,final_ramped_mass=0.
 
   logical, dimension(nspar)     :: lcylindrical_gravity_nbody=.false.
@@ -43,6 +43,7 @@ module Particles_nbody
   logical :: lcreate_dust=.true.
   logical :: linterpolate_gravity=.false.,linterpolate_linear=.true.
   logical :: linterpolate_quadratic_spline=.false.
+  logical :: laccrete_when_create=.true.
 
   integer :: ramp_orbits=5,mspar_orig=1
   integer :: iglobal_ggp=0,istar=1,imass=0
@@ -56,14 +57,16 @@ module Particles_nbody
        lexclude_frozen, GNewton, bcspx, bcspy, bcspz, &
        ramp_orbits,lramp,final_ramped_mass,prhs_cte,linterpolate_gravity,&
        linterpolate_quadratic_spline,laccretion,accrete_hills_frac,istar,&
-       maxsink,lcreate_sinks,icreate,lcreate_gas,lcreate_dust,ladd_mass
+       maxsink,lcreate_sinks,icreate,lcreate_gas,lcreate_dust,ladd_mass,&
+       laccrete_when_create
 
   namelist /particles_nbody_run_pars/ &
        dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
        lnogravz_star,lfollow_particle, lbackreaction, lexclude_frozen, &
        GNewton, bcspx, bcspy, bcspz,prhs_cte,lnoselfgrav_star,&
        linterpolate_quadratic_spline,laccretion,accrete_hills_frac,istar,&
-       maxsink,lcreate_sinks,icreate,lcreate_gas,lcreate_dust,ladd_mass
+       maxsink,lcreate_sinks,icreate,lcreate_gas,lcreate_dust,ladd_mass,&
+       laccrete_when_create
 
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -89,7 +92,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.93 2008-04-05 22:00:44 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.94 2008-04-05 23:38:17 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -1845,7 +1848,14 @@ module Particles_nbody
 !
 ! Allocate the new ipar_sinks
 !
-        do i=1,nf ; ipar_sink(mspar+i)=mspar+i ; enddo
+        do i=1,nf 
+          ipar_sink(mspar+i)=mspar+i 
+! Activate accretion for the newly created sinks
+          if (laccrete_when_create) then
+            ladd_mass(mspar+i)=.true.
+            laccretion(mspar+i)=.true.
+          endif
+        enddo
         mspar=mspar+nf
 !
 ! But check if we did not end up with too many particles
@@ -1865,7 +1875,9 @@ module Particles_nbody
 !      
       call mpibcast_int(mspar,1)
       call mpibcast_int(ipar_sink(1:mspar),mspar)
-      call mpibcast_real(pmass,mspar)
+      call mpibcast_real(pmass,mspar)      
+      call mpibcast_logical(ladd_mass,mspar)
+      call mpibcast_logical(laccretion,mspar)
 !
 ! Migrate the particles to their respective processors
 !
