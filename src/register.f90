@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.234 2008-03-30 16:02:36 brandenb Exp $
+! $Id: register.f90,v 1.235 2008-04-05 10:19:04 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -170,6 +170,7 @@ module Register
 !
       use Cdata
       use Sub, only: remove_zprof
+      use Mpicomm, only: mpireduce_sum
       use Param_IO
       use Print
       use Timeavg,         only: initialize_timeavg
@@ -205,6 +206,7 @@ module Register
 
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(my) :: lat
+      real, dimension (nz,nprocz) :: z_allprocs_tmp
       real :: sinth_min=1e-5 !(to avoid axis)
       logical :: lstarting
 
@@ -321,6 +323,19 @@ module Register
 !
 !----------------------------------------------------------------------------
 !  Coordinate-related issues: nonuniform meshes, different corrdinate systems
+!
+!  Set z_allprocs, which contains the z values from all processors
+!  ignore the ghost zones
+!
+        z_allprocs(:,ipz+1)=z(n1:n2)
+!
+!  communicate z_allprocs over all processors (if there are more than 1)
+!  the final result is only present on the root processor
+!
+      if (nprocz>1) then
+        z_allprocs_tmp=z_allprocs
+        call mpireduce_sum(z_allprocs_tmp,z_allprocs,nz*nprocz)
+      endif
 !
 !  For spherical coordinate system, calculate 1/r, cot(theta)/r, etc
 !  Introduce new names (spherical_coords), in addition to the old ones.
@@ -463,7 +478,6 @@ module Register
           dvolume    = dvolume   *dz
           dvolume_1  = dvolume_1 *dz_1(npoint)
         endif
-!
 !
 !  Trapezoidal rule
 !

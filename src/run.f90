@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.255 2008-04-02 20:42:52 wlyra Exp $
+! $Id: run.f90,v 1.256 2008-04-05 10:19:04 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -75,7 +75,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.255 2008-04-02 20:42:52 wlyra Exp $")
+             "$Id: run.f90,v 1.256 2008-04-05 10:19:04 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -301,11 +301,11 @@
         endif
 !        
         if (it1d==impossible_int) then 
-           it1d=it1 
+          it1d=it1 
         else
-           if (it1d < it1) then
-              if (lroot) call stop_it("it1d smaller than it1")
-           endif
+          if (it1d < it1) then
+            if (lroot) call stop_it("it1d smaller than it1")
+          endif
         endif
 !
 !  Do loop in time

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.418 2008-04-05 05:08:09 brandenb Exp $
+! $Id: cdata.f90,v 1.419 2008-04-05 10:19:03 brandenb Exp $
 
 module Cdata
 
@@ -60,7 +60,6 @@ module Cdata
   real :: cdtv=0.25,cdtv2=0.03,cdtv3=0.01
   real :: cdtvDim
   real :: ddt=0.
-
 
   real :: dx,dy,dz,dxmin,dxmax,drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real :: dsnap=100.,d2davg=100.,dvid=0.,dtmin=1.e-6,dtmax=1E37,dspec=impossible
@@ -204,16 +203,17 @@ module Cdata
   integer, parameter :: mname=100,mnamev=100,mnamerz=20
   integer, parameter :: mnamez=30,mnamey=30,mnamex=30,mnamer=30
   integer, parameter :: mnamexy=6,mnamexz=6
-  integer, dimension (mname) :: itype_name
+  integer, dimension (mname) :: itype_name=0.
   real, dimension (mname) :: fname, fweight
-  real, dimension (nz,nprocz,mnamez) :: fnamez
-  real, dimension (ny,nprocy,mnamey) :: fnamey
-  real, dimension (nx,mnamex) :: fnamex
-  real, dimension (nrcyl,mnamer) :: fnamer
-  real, dimension (nx,ny,nprocy,mnamexy) :: fnamexy
-  real, dimension (nx,nz,nprocz,mnamexz) :: fnamexz
-  real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fnamerz
-  real, dimension (nrcyl,nx) :: phiavg_profile
+  real, dimension (nz,nprocz) :: z_allprocs=0.
+  real, dimension (nz,nprocz,mnamez) :: fnamez=0.
+  real, dimension (ny,nprocy,mnamey) :: fnamey=0.
+  real, dimension (nx,mnamex) :: fnamex=0.
+  real, dimension (nrcyl,mnamer) :: fnamer=0.
+  real, dimension (nx,ny,nprocy,mnamexy) :: fnamexy=0.
+  real, dimension (nx,nz,nprocz,mnamexz) :: fnamexz=0.
+  real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fnamerz=0.
+  real, dimension (nrcyl,nx) :: phiavg_profile=0.
   character (LEN=30) :: cname(mname),cform(mname)
   character (LEN=30) :: cnamev(mname)
   character (LEN=30) :: cnamexy(mnamexy),cformxy(mnamexy)
@@ -393,6 +393,7 @@ module Cdata
   integer :: nreinit=0
   character (len=5), dimension(10) :: reinit_vars=''
   real :: b_ell=1., rbound=1.
+!  real :: bmz_beltrami_phase
 
   logical :: lfold_df=.false.
 endmodule Cdata

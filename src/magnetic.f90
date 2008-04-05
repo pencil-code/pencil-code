@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.500 2008-04-05 07:11:04 brandenb Exp $
+! $Id: magnetic.f90,v 1.501 2008-04-05 10:19:04 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -252,6 +252,8 @@ module Magnetic
                                 ! DIAG_DOC:   \right>^{1/2}$
                                 ! DIAG_DOC:   \quad(energy of $xy$-averaged
                                 ! DIAG_DOC:   mean field)
+  integer :: idiag_bmzph=0      ! DIAG_DOC: Phase of a Beltrami field
+  integer :: idiag_bmzphe=0     ! DIAG_DOC: Error of phase of a Beltrami field
   integer :: idiag_ebmz=0       ! DIAG_DOC: $\left<\left<\Ev\cdot\Bv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad($xy$-averaged
                                 ! DIAG_DOC:   mean field helicity production )
@@ -337,7 +339,6 @@ module Magnetic
   integer :: idiag_etasmagm=0   ! DIAG_DOC: Mean of Smagorinsky resistivity
   integer :: idiag_etasmagmin=0 ! DIAG_DOC: Min of Smagorinsky resistivity
   integer :: idiag_etasmagmax=0 ! DIAG_DOC: Max of Smagorinsky resistivity
-  integer :: idiag_bmz_belphas=0! DIAG_DOC: Phase of a Beltrami field
 
   contains
 
@@ -378,7 +379,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.500 2008-04-05 07:11:04 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.501 2008-04-05 10:19:04 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2858,10 +2859,10 @@ module Magnetic
       real, dimension(nx) :: bymx,bzmx
       real, dimension(ny,nprocy) :: bxmy,bzmy
       real :: bmx,bmy,bmz,ebmz,bxmxy,bymxy,bzmxy,bmxy_rms
-      real :: bmz_belphase,bmz_belphase1,bmz_belphase2
-      real, dimension (mz), save :: sinz,cosz
-
-      real ::  temp=0., c=0., s=0.
+      real :: bmz_belphase1,bmz_belphase2
+      real :: bmz_beltrami_phase
+      real, dimension (nz,nprocz), save :: sinz,cosz
+      real ::  c=0., s=0.
       integer :: l,j,jprocz
 !
 !  For vector output (of bb vectors) we need brms
@@ -3000,9 +3001,12 @@ module Magnetic
 !  bxmz, bymz must have been calculated,
 !  so they are present on the root processor.
 !
-      if (idiag_bmz_belphas/=0) then
+      if (idiag_bmzph/=0.or.idiag_bmzphe/=0) then
         if (first) then
-          sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
+          sinz=sin(k1_ff*z_allprocs); cosz=cos(k1_ff*z_allprocs)
+print*,'ipz,z_allprocs=',ipz,z_allprocs
+print*,'ipz,sinz=',ipz,sinz
+print*,'ipz,cosz=',ipz,cosz
         endif
 !
 !  print warning if bxmz and bymz are not calculated
@@ -3013,7 +3017,7 @@ module Magnetic
                   "calc_mfield: NOTE: to get bmz_Beltrami-Phase, bxmz, bymz must also be set in zaver"
           if (first) print*, &
                   "calc_mfield:       We proceed, but you'll get bmz_Beltrami-Phase=0"
-          bmz_belphase=0.
+          bmz_beltrami_phase=0.
 !
 !  add up c = <B_x> cos(kz) and s = <B_x> sin(kz)
 !  and determine phase of Beltrami field from <B_x>
@@ -3021,8 +3025,8 @@ module Magnetic
         else
           c=0.; s=0.
           do jprocz=1,nprocz
-            c=c+dot_product(fnamez(:,jprocz,idiag_bxmz),cosz(n1:n2))
-            s=s+dot_product(fnamez(:,jprocz,idiag_bxmz),sinz(n1:n2))
+            c=c+dot_product(fnamez(:,jprocz,idiag_bxmz),cosz(:,jprocz))
+            s=s+dot_product(fnamez(:,jprocz,idiag_bxmz),sinz(:,jprocz))
           enddo
           bmz_belphase1=atan2(-s,c)
 !
@@ -3031,18 +3035,19 @@ module Magnetic
 !
           c=0.; s=0.
           do jprocz=1,nprocz
-            c=c+dot_product(fnamez(:,jprocz,idiag_bymz),cosz(n1:n2) )
-            s=s+dot_product(fnamez(:,jprocz,idiag_bymz),sinz(n1:n2) )
+            c=c+dot_product(fnamez(:,jprocz,idiag_bymz),cosz(:,jprocz))
+            s=s+dot_product(fnamez(:,jprocz,idiag_bymz),sinz(:,jprocz))
           enddo
           bmz_belphase2=atan2(c,s)
 !
-!  Difference of both determinations (but not used later)
-!  and take the mean of both calculations
+!  Difference of both determinations (to estimate error)
+!  and take the mean of both calculations (called bmz_beltrami_phase
+!  and bmzph in the print.in file, for brevity)
 !
-!---      bmz_belphase_delta=abs(bmz_belphase-temp)
-          bmz_belphase=.5*(bmz_belphase1+bmz_belphase2)
-          call save_name(bmz_belphase,idiag_bmz_belphas)
-!
+          bmz_beltrami_phase=.5*(bmz_belphase1+bmz_belphase2)
+          call save_name(bmz_beltrami_phase,idiag_bmzph)
+          if (idiag_bmzphe/=0) &
+              call save_name(abs(bmz_belphase1-bmz_belphase2),idiag_bmzphe)
         endif
       endif
 !
@@ -4490,7 +4495,7 @@ module Magnetic
         idiag_bxbym=0; idiag_bxbzm=0; idiag_bybzm=0; idiag_djuidjbim=0
         idiag_bxmz=0; idiag_bymz=0; idiag_bzmz=0
         idiag_bmx=0; idiag_bmy=0; idiag_bmz=0; idiag_ebmz=0
-        idiag_bmz_belphas=0
+        idiag_bmzph=0; idiag_bmzphe=0
         idiag_bx2mz=0; idiag_by2mz=0; idiag_bz2mz=0
         idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
         idiag_bx2mxy=0; idiag_by2mxy=0; idiag_bz2mxy=0
@@ -4583,7 +4588,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
         call parse_name(iname,cname(iname),cform(iname),'bmy',idiag_bmy)
         call parse_name(iname,cname(iname),cform(iname),'bmz',idiag_bmz)
-        call parse_name(iname,cname(iname),cform(iname),'bmz_belphas',idiag_bmz_belphas)
+        call parse_name(iname,cname(iname),cform(iname),'bmzph',idiag_bmzph)
+        call parse_name(iname,cname(iname),cform(iname),'bmzphe',idiag_bmzphe)
         call parse_name(iname,cname(iname),cform(iname),'ebmz',idiag_ebmz)
         call parse_name(iname,cname(iname),cform(iname),'bxpt',idiag_bxpt)
         call parse_name(iname,cname(iname),cform(iname),'bypt',idiag_bypt)
@@ -4786,7 +4792,8 @@ module Magnetic
         write(3,*) 'i_bmx=',idiag_bmx
         write(3,*) 'i_bmy=',idiag_bmy
         write(3,*) 'i_bmz=',idiag_bmz
-        write(3,*) 'i_bmz_belphas=',idiag_bmz_belphas
+        write(3,*) 'i_bmzph=',idiag_bmzph
+        write(3,*) 'i_bmzphe=',idiag_bmzphe
         write(3,*) 'i_ebmz=',idiag_ebmz
         write(3,*) 'i_bxpt=',idiag_bxpt
         write(3,*) 'i_bypt=',idiag_bypt
