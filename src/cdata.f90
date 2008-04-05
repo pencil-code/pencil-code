@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.419 2008-04-05 10:19:03 brandenb Exp $
+! $Id: cdata.f90,v 1.420 2008-04-05 19:46:52 brandenb Exp $
 
 module Cdata
 
@@ -393,7 +393,6 @@ module Cdata
   integer :: nreinit=0
   character (len=5), dimension(10) :: reinit_vars=''
   real :: b_ell=1., rbound=1.
-!  real :: bmz_beltrami_phase
 
   logical :: lfold_df=.false.
 endmodule Cdata

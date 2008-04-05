@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.501 2008-04-05 10:19:04 brandenb Exp $
+! $Id: magnetic.f90,v 1.502 2008-04-05 19:46:52 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -29,6 +29,7 @@ module Magnetic
 
   implicit none
 
+  include 'record_types.h'
   include 'magnetic.h'
 !
 ! Slice precalculation buffers
@@ -82,6 +83,7 @@ module Magnetic
   real :: displacement_gun=0.
   real :: pertamplaa=0., beta_const=1.0
   real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
+  real :: phase_beltrami=0., ampl_beltrami=0.
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
   integer :: N_modes_aa=1
   integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
@@ -136,6 +138,7 @@ module Magnetic
   real :: k1_ff=1.,ampl_ff=1.,swirl=1.
   real :: k1x_ff=1.,k1y_ff=1.,k1z_ff=1.
   real :: inertial_length=0.,linertial_2
+  real :: forcing_continuous_aa_phasefactor=1.
   real, dimension(mz) :: eta_z
   real, dimension(mz,3) :: geta_z
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
@@ -156,6 +159,7 @@ module Magnetic
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,phasey_aa,ABC_A,ABC_B,ABC_C, &
        lforcing_continuous_aa,iforcing_continuous_aa, &
+       forcing_continuous_aa_phasefactor, &
        k1_ff,ampl_ff,swirl,radius, &
        k1x_ff,k1y_ff,k1z_ff, &
        bthresh,bthresh_per_brms, &
@@ -379,7 +383,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.501 2008-04-05 10:19:04 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.502 2008-04-05 19:46:52 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2716,11 +2720,25 @@ module Magnetic
           siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
         elseif (iforcing_continuous_aa=='Beltrami-z') then
           if (lroot) print*,'forcing_continuous: Beltrami-z'
-          sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
+          sinz=sin(k1_ff*z+phase_beltrami)
+          cosz=cos(k1_ff*z+phase_beltrami)
         endif
       endif
       ifirst=ifirst+1
       if(ip<=6) print*,'forcing_continuous: dt, ifirst=',dt,ifirst
+!
+!  at the first meshpoint, and if phase_beltrami is finite,
+!  recalculate sinz and cosz for the phase correction of an
+!  imposed Beltrami field.
+!
+      if (lfirstpoint) then
+        if (iforcing_continuous_aa=='Beltrami-z') then
+          if (phase_beltrami/=0) then
+            sinz=sin(k1_ff*z+phase_beltrami)
+            cosz=cos(k1_ff*z+phase_beltrami)
+          endif
+        endif
+      endif
 !
 !  calculate forcing
 !
@@ -3004,9 +3022,6 @@ module Magnetic
       if (idiag_bmzph/=0.or.idiag_bmzphe/=0) then
         if (first) then
           sinz=sin(k1_ff*z_allprocs); cosz=cos(k1_ff*z_allprocs)
-print*,'ipz,z_allprocs=',ipz,z_allprocs
-print*,'ipz,sinz=',ipz,sinz
-print*,'ipz,cosz=',ipz,cosz
         endif
 !
 !  print warning if bxmz and bymz are not calculated
@@ -3048,6 +3063,11 @@ print*,'ipz,cosz=',ipz,cosz
           call save_name(bmz_beltrami_phase,idiag_bmzph)
           if (idiag_bmzphe/=0) &
               call save_name(abs(bmz_belphase1-bmz_belphase2),idiag_bmzphe)
+!
+!  Set the phase of the Beltrami forcing equal to the actual phase
+!  of the magnetic field (times forcing_continuous_aa_phasefactor).
+!
+          phase_beltrami=forcing_continuous_aa_phasefactor*bmz_beltrami_phase
         endif
       endif
 !
@@ -4457,6 +4477,56 @@ print*,'ipz,cosz=',ipz,cosz
       do j=1,3; bb_hat(:,j) = bb_hat(:,j)/(bb_len+tini); enddo
 
     endsubroutine bb_unitvec_shock
+!***********************************************************************
+    subroutine input_persistent_magnetic(id,lun,done)
+! 
+!  Read in the stored phase and amplitude for the
+!  correction of the Beltrami wave forcing
+! 
+!   5-apr-08/axel: adapted from input_persistent_forcing
+!
+      use Cdata, only: lroot
+!
+      integer :: id,lun
+      logical :: done
+!
+      if (id==id_record_MAGNETIC_BELTRAMI_PHASE) then
+        read (lun) phase_beltrami
+        done=.true.
+      elseif (id==id_record_MAGNETIC_BELTRAMI_AMPL) then
+        read (lun) ampl_beltrami
+        done=.true.
+      endif
+      if (lroot) &
+          print*,'input_persistent_magnetic: ',phase_beltrami,ampl_beltrami
+!
+    endsubroutine input_persistent_magnetic
+!***********************************************************************
+    subroutine output_persistent_magnetic(lun)
+!
+!  Write the stored phase and amplitude for the
+!  correction of the Beltrami wave forcing
+!
+!   5-apr-08/axel: adapted from output_persistent_forcing
+!
+      use Cdata, only: lroot
+!
+      integer :: lun
+!
+      if (lroot) then
+        if (phase_beltrami>=0.) &
+            print*,'output_persistent_magnetic: ', &
+              phase_beltrami,ampl_beltrami
+      endif
+!
+!  write details
+!
+      write (lun) id_record_MAGNETIC_BELTRAMI_PHASE
+      write (lun) phase_beltrami
+      write (lun) id_record_MAGNETIC_BELTRAMI_AMPL
+      write (lun) ampl_beltrami
+!
+    endsubroutine output_persistent_magnetic
 !***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)
 !

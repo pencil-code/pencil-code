@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.25 2007-12-12 07:48:45 ajohan Exp $
+! $Id: snapshot.f90,v 1.26 2008-04-05 19:46:52 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -310,6 +310,11 @@ contains
         write(lun_output) a
       endif
 !     write(lun_output) a(:,4,:,:)
+!
+!  write shear at the end of x,y,z,dx,dy,dz.
+!  At some good moment we may want to treat deltay like with
+!  other modules and call a corresponding i/o parameter module.
+!
       if (lshear) then
         write(lun_output) t,x,y,z,dx,dy,dz,deltay
       else
