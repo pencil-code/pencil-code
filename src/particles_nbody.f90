@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.91 2008-04-03 22:13:01 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.92 2008-04-05 11:36:55 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -44,7 +44,7 @@ module Particles_nbody
   logical :: linterpolate_gravity=.false.,linterpolate_linear=.true.
   logical :: linterpolate_quadratic_spline=.false.
 
-  integer :: ramp_orbits=5
+  integer :: ramp_orbits=5,mspar_orig=1
   integer :: iglobal_ggp=0,istar=1,imass=0
   integer :: maxsink=10*nspar,icreate=100
 
@@ -89,7 +89,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.91 2008-04-03 22:13:01 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.92 2008-04-05 11:36:55 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -131,13 +131,24 @@ module Particles_nbody
 !
 ! look for initialized masses
 !
-      mspar=0
+      mspar_orig=0
       do ks=1,nspar
         if (pmass(ks)/=0.) then 
-          mspar=mspar+1
-          ipar_sink(mspar)=ks
+          mspar_orig=mspar_orig+1
+          ipar_sink(mspar_orig)=ks
         endif
       enddo
+!
+! Just needs to do this starting, otherwise
+! mspar will be overwritten after reading the
+! snapshot
+!
+      if (lstarting) then
+        mspar=mspar_orig
+      else
+        !else read pmass from fsp
+        pmass(1:mspar)=fsp(1:mspar,imass)
+      endif
 !
 ! when first called, mspar was zero, so no diagnostic 
 ! index was written to index.pro
@@ -171,11 +182,16 @@ module Particles_nbody
 !
 ! inverse mass
 !
-      if (lramp) then
-        do ks=1,mspar
-          if (ks/=istar) pmass(ks) = epsi
-        enddo
-        pmass(istar)=1-epsi*(mspar-1)
+      if (lstarting) then 
+        if (lramp) then
+          do ks=1,mspar
+            if (ks/=istar) pmass(ks) = epsi
+          enddo
+          pmass(istar)=1-epsi*(mspar-1)
+        endif
+      else
+        !read imass from the snapshot
+        pmass(1:mspar)=fsp(1:mspar,imass)
       endif
 !
       pmass1=1./max(pmass,tini)
@@ -830,13 +846,14 @@ module Particles_nbody
 !
 !  Position and velocity diagnostics (per sink particle)
 ! 
-     if (ldiagnos) then
+      if (ldiagnos) then
         do ks=1,mspar
           if (lfollow_particle(ks)) then
             do j=1,3
               jpos=j+ixp-1 ; jvel=j+ivpx-1
-              if (idiag_xxspar(ks,j)/=0) &
-                   call point_par_name(fsp(ks,jpos),idiag_xxspar(ks,j))
+              if (idiag_xxspar(ks,j)/=0) then
+                call point_par_name(fsp(ks,jpos),idiag_xxspar(ks,j))
+              endif
               if (idiag_vvspar(ks,j)/=0) &
                    call point_par_name(fsp(ks,jvel),idiag_vvspar(ks,j))
             enddo
@@ -1388,7 +1405,8 @@ module Particles_nbody
       if (t .le. ramping_period) then
         !sin ((pi/2)*(t/(ramp_orbits*2*pi))
         tmp=0.
-        do ks=1,mspar
+        !just need to do that for the original masses
+        do ks=1,mspar_orig
           if (ks/=istar) then 
             pmass(ks)= max(tini,&
                  final_ramped_mass(ks)*(sin((.5*pi)*(t/ramping_period))**2))
@@ -1397,7 +1415,7 @@ module Particles_nbody
         enddo
         pmass(istar)= 1-tmp
       else
-        pmass=final_ramped_mass
+        pmass(1:mspar_orig)=final_ramped_mass(1:mspar_orig)
       endif
 !
     endsubroutine get_ramped_mass
@@ -2131,6 +2149,14 @@ module Particles_nbody
       call mpibcast_real(fsp(1:mspar,:),(/mspar,mspvar/))
       call mpibcast_int(ipar_sink(1:mspar),mspar)
 !
+      if (ldebug) then 
+        print*,'particles_nbody_read_snapshot'
+        print*,'mspar=',mspar
+        print*,'fsp(1:mspar)=',fsp(1:mspar,:)
+        print*,'ipar_sink(1:mspar)=',ipar_sink
+        print*,''
+      endif
+!
     endsubroutine particles_nbody_read_snapshot
 !***********************************************************************
     subroutine particles_nbody_write_snapshot(snapbase,enum,flist)
@@ -2240,7 +2266,7 @@ module Particles_nbody
 !
 !  Now check diagnostics for specific particles
 !
-      do ks=1,mspar
+      do ks=1,nspar
         call chn(ks,sks)
         do j=1,3
           if (j==1) str='x';if (j==2) str='y';if (j==3)  str='z'
