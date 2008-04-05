@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.499 2008-04-05 06:38:26 brandenb Exp $
+! $Id: magnetic.f90,v 1.500 2008-04-05 07:11:04 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -378,7 +378,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.499 2008-04-05 06:38:26 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.500 2008-04-05 07:11:04 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1290,7 +1290,9 @@ module Magnetic
                  call fatal_error("calc_pencils_magnetic",&
                   "precession of the external field not "//&
                   "implemented for cylindrical coordinates")
-            !transform b_ext to other coordinate systems
+!
+!  transform b_ext to other coordinate systems
+!
             B_ext_tmp(1)=  B_ext(1)*cos(y(m)) + B_ext(2)*sin(y(m))
             B_ext_tmp(2)= -B_ext(1)*sin(y(m)) + B_ext(2)*cos(y(m))
             B_ext_tmp(3)=  B_ext(3)
@@ -1303,19 +1305,25 @@ module Magnetic
             B_ext_tmp(2)= B_ext(1)*costh(m)*cos(z(n)) + B_ext(2)*costh(m)*sin(z(n)) - B_ext(3)*sinth(m)
             B_ext_tmp(3)=-B_ext(1)         *sin(z(n)) + B_ext(2)         *cos(z(n))
           endif
+!
 !  add the external field
+!
           if (B_ext_tmp(1)/=0.) p%bb(:,1)=p%bb(:,1)+B_ext_tmp(1)
           if (B_ext_tmp(2)/=0.) p%bb(:,2)=p%bb(:,2)+B_ext_tmp(2)
           if (B_ext_tmp(3)/=0.) p%bb(:,3)=p%bb(:,3)+B_ext_tmp(3)
           if (headtt) print*,'calc_pencils_magnetic: B_ext=',B_ext
           if (headtt) print*,'calc_pencils_magnetic: B_ext_tmp=',B_ext_tmp
         endif
+!
 !  add the external potential field
+!
         if (lB_ext_pot) then
           call get_global(bb_ext_pot,m,n,'B_ext_pot')
           p%bb=p%bb+bb_ext_pot
         endif
+!
 !  add external B-field.
+!
         if (iglobal_bx_ext/=0) p%bb(:,1)=p%bb(:,1)+f(l1:l2,m,n,iglobal_bx_ext)
         if (iglobal_by_ext/=0) p%bb(:,2)=p%bb(:,2)+f(l1:l2,m,n,iglobal_by_ext)
         if (iglobal_bz_ext/=0) p%bb(:,3)=p%bb(:,3)+f(l1:l2,m,n,iglobal_bz_ext)
@@ -1364,7 +1372,9 @@ module Magnetic
 ! jj
       if (lpencil(i_jj)) then
         p%jj=mu01*p%jj
+!
 !  add external j-field.
+!
         if (iglobal_jx_ext/=0) p%jj(:,1)=p%jj(:,1)+f(l1:l2,m,n,iglobal_jx_ext)
         if (iglobal_jy_ext/=0) p%jj(:,2)=p%jj(:,2)+f(l1:l2,m,n,iglobal_jy_ext)
         if (iglobal_jz_ext/=0) p%jj(:,3)=p%jj(:,3)+f(l1:l2,m,n,iglobal_jz_ext)
@@ -2847,10 +2857,11 @@ module Magnetic
       logical,save :: first=.true.
       real, dimension(nx) :: bymx,bzmx
       real, dimension(ny,nprocy) :: bxmy,bzmy
-      real :: bmx,bmy,bmz,ebmz,bxmxy,bymxy,bzmxy,bmxy_rms,bmz_belphase,bmz_belphase_delta  
+      real :: bmx,bmy,bmz,ebmz,bxmxy,bymxy,bzmxy,bmxy_rms
+      real :: bmz_belphase,bmz_belphase1,bmz_belphase2
       real, dimension (mz), save :: sinz,cosz
 
-      real ::  temp, c, s
+      real ::  temp=0., c=0., s=0.
       integer :: l,j,jprocz
 !
 !  For vector output (of bb vectors) we need brms
@@ -2888,6 +2899,7 @@ module Magnetic
         endif
         call save_name(bmx,idiag_bmx)
       endif
+!
 !  similarly for bmy
 !
       if (idiag_bmy/=0) then
@@ -2948,8 +2960,6 @@ module Magnetic
         endif
         call save_name(ebmz,idiag_ebmz)
       endif
-	  
-	  c=0.; s=0.
 !
 !  Magnetic energy in z averaged field 
 !  The bxmxy, bymxy and bzmxy must have been calculated,
@@ -2972,71 +2982,70 @@ module Magnetic
                 bymxy=fnamexy(l,m,j,idiag_bymxy)
                 bzmxy=fnamexy(l,m,j,idiag_bzmxy)
                 bmxy_rms = bmxy_rms+bxmxy**2+bymxy**2+bzmxy**2
-!                write(*,*) bmxy_rms
                 if(lspherical_coords) & 
                    bmxy_rms = bmxy_rms*x(l+nghost)*x(l+nghost)*sinth(m+nghost)
                 if(lcylindrical_coords) & 
                    call stop_it("bmxy_rms not yet implemented for cylindrical coordinates")
-!              write(*,*) fnamexy(l,m,1,idiag_bxmxy), fnamexy(l,m,1,idiag_bzmxy), fnamexy(l,m,1,idiag_bzmxy)
               enddo
             enddo
           enddo
           bmxy_rms = bmxy_rms/(nx*ny*nprocy)
           bmxy_rms = sqrt(bmxy_rms)
-!          write(*,*) bmxy_rms 
         endif
         call save_name(bmxy_rms,idiag_bmxy_rms)
       endif
 !
-!  
-!  Determination of its phase if the xy-averaged (=mean) field is a Beltrami field,
-!  represented by B( cos(kz+phi), sin(kz+phi), 0 ).
+!  The following is useful if the xy-averaged field is a Beltrami field
+!  Determine its phase as in B ~ [ cos(kz+phi), sin(kz+phi), 0 ].
 !  bxmz, bymz must have been calculated,
 !  so they are present on the root processor.
 !
       if (idiag_bmz_belphas/=0) then
-        if ( first ) then
+        if (first) then
           sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
         endif
-
+!
+!  print warning if bxmz and bymz are not calculated
+!
         if ( idiag_bxmz==0 .or. idiag_bymz==0 ) then
-
           if (first) print*,"calc_mfield:                  WARNING"
           if (first) print*, &
                   "calc_mfield: NOTE: to get bmz_Beltrami-Phase, bxmz, bymz must also be set in zaver"
           if (first) print*, &
                   "calc_mfield:       We proceed, but you'll get bmz_Beltrami-Phase=0"
           bmz_belphase=0.
- 
+!
+!  add up c = <B_x> cos(kz) and s = <B_x> sin(kz)
+!  and determine phase of Beltrami field from <B_x>
+!
         else
-
-          do jprocz=1,nprocz
-            c=c+dot_product( fnamez(:,jprocz,idiag_bxmz), cosz(n1:n2) ) 	! <B_x> cos(kz)
-            s=s+dot_product( fnamez(:,jprocz,idiag_bxmz), sinz(n1:n2) )		! <B_x> sin(kz)
-          enddo
-
-          bmz_belphase=atan2(-s,c)			! Beltrami-field-phase determined from <B_x>
-          
           c=0.; s=0.
-
           do jprocz=1,nprocz
-            c=c+dot_product( fnamez(:,jprocz,idiag_bymz), cosz(n1:n2) )        ! <B_y> cos(kz)
-            s=s+dot_product( fnamez(:,jprocz,idiag_bymz), sinz(n1:n2) )	       ! <B_y> sin(kz)
+            c=c+dot_product(fnamez(:,jprocz,idiag_bxmz),cosz(n1:n2))
+            s=s+dot_product(fnamez(:,jprocz,idiag_bxmz),sinz(n1:n2))
           enddo
-
-          temp = atan2(c,s)	                        ! Beltrami-field-phase determined from <B_y>
-	  
-          bmz_belphase_delta = abs(bmz_belphase-temp)	! Difference of both determinations
-
-          bmz_belphase=0.5*(bmz_belphase+temp)		! mean of both det. = result
-
-print*,'bmz_belphase=',bmz_belphase
-bmz_belphase=.4
+          bmz_belphase1=atan2(-s,c)
+!
+!  add up c = <B_y> cos(kz) and s = <B_y> sin(kz)
+!  and determine phase of Beltrami field from <B_y>
+!
+          c=0.; s=0.
+          do jprocz=1,nprocz
+            c=c+dot_product(fnamez(:,jprocz,idiag_bymz),cosz(n1:n2) )
+            s=s+dot_product(fnamez(:,jprocz,idiag_bymz),sinz(n1:n2) )
+          enddo
+          bmz_belphase2=atan2(c,s)
+!
+!  Difference of both determinations (but not used later)
+!  and take the mean of both calculations
+!
+!---      bmz_belphase_delta=abs(bmz_belphase-temp)
+          bmz_belphase=.5*(bmz_belphase1+bmz_belphase2)
           call save_name(bmz_belphase,idiag_bmz_belphas)
-
+!
         endif
       endif
-
+!
       first = .false.
     endsubroutine calc_mfield
 !***********************************************************************
