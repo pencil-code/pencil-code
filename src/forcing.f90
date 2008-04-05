@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.139 2008-04-03 20:35:32 brandenb Exp $
+! $Id: forcing.f90,v 1.140 2008-04-05 05:08:09 brandenb Exp $
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -120,7 +120,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.139 2008-04-03 20:35:32 brandenb Exp $")
+           "$Id: forcing.f90,v 1.140 2008-04-05 05:08:09 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -221,7 +221,6 @@ module Forcing
           cosz=embedz*cosz
         endif
       endif
-      if(ip<=6) print*,'forcing_cont: dt=',dt
 !
     endsubroutine initialize_forcing
 !***********************************************************************

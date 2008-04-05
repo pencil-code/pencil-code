@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.497 2008-04-05 05:04:16 brandenb Exp $
+! $Id: magnetic.f90,v 1.498 2008-04-05 05:08:09 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -78,6 +78,7 @@ module Magnetic
   real :: rmode=1.,rm_int=0.,rm_ext=0.
   real :: nu_ni=0.,nu_ni1,hall_term=0.
   real :: alpha_effect=0.,alpha_quenching=0.,delta_effect=0.,meanfield_etat=0.
+  real :: meanfield_Qs=1.
   real :: displacement_gun=0.
   real :: pertamplaa=0., beta_const=1.0
   real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
@@ -107,7 +108,7 @@ module Magnetic
   logical :: lB_ext_pot=.false.
   logical :: lforce_free_test=.false.
   logical :: lmeanfield_theory=.false.,lOmega_effect=.false.
-  logical :: lmeanfield_noalpm=.false.
+  logical :: lmeanfield_noalpm=.false., lmeanfield_jxb=.false.
   logical :: lgauss=.false.
   logical :: lbb_as_aux=.false.,ljj_as_aux=.false.
   logical :: lbext_curvilinear=.true.
@@ -151,7 +152,7 @@ module Magnetic
        eta,eta1,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
        lmeanfield_theory,alpha_effect,alpha_quenching,delta_effect, &
        lmeanfield_noalpm,alpha_profile, &
-       meanfield_etat, lohmic_heat, &
+       meanfield_etat, lohmic_heat, lmeanfield_jxb, meanfield_Qs, &
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,phasey_aa,ABC_A,ABC_B,ABC_C, &
        lforcing_continuous_aa,iforcing_continuous_aa, &
@@ -377,7 +378,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.497 2008-04-05 05:04:16 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.498 2008-04-05 05:08:09 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1389,6 +1390,7 @@ module Magnetic
                    * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
         endif
         call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
+        if (lmeanfield_jxb) p%jxbr=meanfield_Qs*p%jxbr
       endif
 ! ub
       if (lpencil(i_ub)) call dot_mn(p%uu,p%bb,p%ub)

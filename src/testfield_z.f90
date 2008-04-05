@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.35 2008-04-03 20:35:33 brandenb Exp $
+! $Id: testfield_z.f90,v 1.36 2008-04-05 05:08:09 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -83,11 +83,11 @@ module Testfield
   integer :: idiag_alp12=0      ! DIAG_DOC: $\alpha_{12}$
   integer :: idiag_alp22=0      ! DIAG_DOC: $\alpha_{22}$
   integer :: idiag_alp32=0      ! DIAG_DOC: $\alpha_{32}$
-  integer :: idiag_eta11=0      ! DIAG_DOC: $\eta_{113}k$
-  integer :: idiag_eta21=0      ! DIAG_DOC: $\eta_{213}k$
+  integer :: idiag_eta11=0      ! DIAG_DOC: $\eta_{113}k$ or $\eta_{11}k$ if leta_rank2=T
+  integer :: idiag_eta21=0      ! DIAG_DOC: $\eta_{213}k$ or $\eta_{21}k$ if leta_rank2=T
   integer :: idiag_eta31=0      ! DIAG_DOC: $\eta_{313}k$
-  integer :: idiag_eta12=0      ! DIAG_DOC: $\eta_{123}k$
-  integer :: idiag_eta22=0      ! DIAG_DOC: $\eta_{223}k$
+  integer :: idiag_eta12=0      ! DIAG_DOC: $\eta_{123}k$ or $\eta_{12}k$ if leta_rank2=T
+  integer :: idiag_eta22=0      ! DIAG_DOC: $\eta_{223}k$ or $\eta_{22}k$ if leta_rank2=T
   integer :: idiag_eta32=0      ! DIAG_DOC: $\eta_{323}k$
   integer :: idiag_alp11cc=0    ! DIAG_DOC: $\alpha_{11}\cos^2 kz$
   integer :: idiag_alp21sc=0    ! DIAG_DOC: $\alpha_{21}\sin kz\cos kz$
@@ -179,7 +179,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.35 2008-04-03 20:35:33 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.36 2008-04-05 05:08:09 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

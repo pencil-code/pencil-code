@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.417 2008-04-02 16:55:26 ajohan Exp $
+! $Id: cdata.f90,v 1.418 2008-04-05 05:08:09 brandenb Exp $
 
 module Cdata
 
@@ -356,7 +356,7 @@ module Cdata
   character (len=120) :: datadir='data' ! default; may be overwritten in
                                         ! Register.initialize()
   character (len=120) :: directory='',datadir_snap='',directory_snap=''
-  character (len=120) :: cvsid='[No CVS Id given]'
+  character (len=120) :: cvsid='no cvsid is given in start.in or run.in!'
 
 !
 ! A buffer in which to construct an error message

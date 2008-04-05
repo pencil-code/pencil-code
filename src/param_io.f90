@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.301 2008-03-22 05:44:03 brandenb Exp $
+! $Id: param_io.f90,v 1.302 2008-04-05 05:08:09 brandenb Exp $
 
 module Param_IO
 
@@ -431,7 +431,7 @@ module Param_IO
         if (lcosmicrayflux  ) print*,'&cosmicrayflux_init_pars   /'
         if (linterstellar   ) print*,'&interstellar_init_pars    /'
         if (lshear          ) print*,'&shear_init_pars           /'
-        if (ltestperturb    ) print*,'&testperturb_init_pars           /'
+        if (ltestperturb    ) print*,'&testperturb_init_pars     /'
         if (lspecial        ) print*,'&special_init_pars         /'
         if (lparticles) &
             print*,'&particles_init_pars         /'
