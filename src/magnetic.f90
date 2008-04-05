@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.498 2008-04-05 05:08:09 brandenb Exp $
+! $Id: magnetic.f90,v 1.499 2008-04-05 06:38:26 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -378,7 +378,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.498 2008-04-05 05:08:09 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.499 2008-04-05 06:38:26 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2948,6 +2948,8 @@ module Magnetic
         endif
         call save_name(ebmz,idiag_ebmz)
       endif
+	  
+	  c=0.; s=0.
 !
 !  Magnetic energy in z averaged field 
 !  The bxmxy, bymxy and bzmxy must have been calculated,
@@ -3008,19 +3010,28 @@ module Magnetic
  
         else
 
-          bmz_belphase=atan2(c,-s)
           do jprocz=1,nprocz
-            c=(2./nz)*dot_product( fnamez(:,jprocz,idiag_bxmz), cosz(n1:n2) ) 
-            s=(2./nz)*dot_product( fnamez(:,jprocz,idiag_bxmz), sinz(n1:n2) )
-            c=(2./nz)*dot_product( fnamez(:,jprocz,idiag_bymz), cosz(n1:n2) )
-            s=(2./nz)*dot_product( fnamez(:,jprocz,idiag_bymz), sinz(n1:n2) )
+            c=c+dot_product( fnamez(:,jprocz,idiag_bxmz), cosz(n1:n2) ) 	! <B_x> cos(kz)
+            s=s+dot_product( fnamez(:,jprocz,idiag_bxmz), sinz(n1:n2) )		! <B_x> sin(kz)
           enddo
 
-          temp = atan2(s,c)
-          bmz_belphase_delta = abs(bmz_belphase-temp)
+          bmz_belphase=atan2(-s,c)			! Beltrami-field-phase determined from <B_x>
+          
+          c=0.; s=0.
 
-          bmz_belphase=0.5*(bmz_belphase+temp)
+          do jprocz=1,nprocz
+            c=c+dot_product( fnamez(:,jprocz,idiag_bymz), cosz(n1:n2) )        ! <B_y> cos(kz)
+            s=s+dot_product( fnamez(:,jprocz,idiag_bymz), sinz(n1:n2) )	       ! <B_y> sin(kz)
+          enddo
 
+          temp = atan2(c,s)	                        ! Beltrami-field-phase determined from <B_y>
+	  
+          bmz_belphase_delta = abs(bmz_belphase-temp)	! Difference of both determinations
+
+          bmz_belphase=0.5*(bmz_belphase+temp)		! mean of both det. = result
+
+print*,'bmz_belphase=',bmz_belphase
+bmz_belphase=.4
           call save_name(bmz_belphase,idiag_bmz_belphas)
 
         endif
@@ -4563,8 +4574,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
         call parse_name(iname,cname(iname),cform(iname),'bmy',idiag_bmy)
         call parse_name(iname,cname(iname),cform(iname),'bmz',idiag_bmz)
-        call parse_name(iname,cname(iname),cform(iname),'ebmz',idiag_ebmz)
         call parse_name(iname,cname(iname),cform(iname),'bmz_belphas',idiag_bmz_belphas)
+        call parse_name(iname,cname(iname),cform(iname),'ebmz',idiag_ebmz)
         call parse_name(iname,cname(iname),cform(iname),'bxpt',idiag_bxpt)
         call parse_name(iname,cname(iname),cform(iname),'bypt',idiag_bypt)
         call parse_name(iname,cname(iname),cform(iname),'bzpt',idiag_bzpt)
