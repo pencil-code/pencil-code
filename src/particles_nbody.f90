@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.92 2008-04-05 11:36:55 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.93 2008-04-05 22:00:44 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -89,7 +89,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.92 2008-04-05 11:36:55 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.93 2008-04-05 22:00:44 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -603,7 +603,9 @@ module Particles_nbody
 ! Make the particles known to all processors
 !
       call boundconds_particles(fp,npar_loc,ipar)
+      print*,'before init part'
       call share_sinkparticles(fp)
+      print*,'init part done'
 !
     endsubroutine init_particles_nbody
 !***********************************************************************
@@ -1508,17 +1510,20 @@ module Particles_nbody
 !
       use EquationOfState, only: cs20
       use FArrayManager,   only: farray_use_global
+      use Mpicomm
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mpar_loc,mpvar) :: fp
-      real, dimension(maxsink,mspvar) :: fcsp
+      real, dimension(maxsink,mspvar) :: fcsp,fcsp_loc
+      real, dimension(maxsink,mspvar) :: fcsp_proc
       real, dimension(nx,3) :: vvpm
       real, dimension(nx) :: rho_jeans,rho_jeans_dust,vpm2
       real, dimension(nx) :: Delta1
 !
       integer, dimension(nx,mpar_loc) :: pik
       integer, dimension(mpar_loc,3) :: ineargrid
-      integer :: i,k,kn,inx0,nc,ks
+      integer :: i,k,kn,inx0,nc,ks,nc_loc,j
+      integer::nc_proc
       integer, pointer :: iglobal_cs2
 !
       logical :: ltime_to_create
@@ -1528,7 +1533,7 @@ module Particles_nbody
       integer, dimension(nx) :: pnp,npik
 !
       if (lcreate_sinks) then
-        ltime_to_create=mod(it-1,icreate).eq.0
+        ltime_to_create=(mod(it-1,icreate).eq.0)
         if (ltime_to_create.and.llast) then
 !
           do i=1,nx
@@ -1544,8 +1549,8 @@ module Particles_nbody
 !
 ! start number of created particles
 !
-          fcsp=0.
-          nc=0
+          fcsp_loc=0.
+          nc_loc=0
 !
           do imn=1,ny*nz
             n=nn(imn)
@@ -1598,14 +1603,14 @@ module Particles_nbody
 !
 ! create a new particle at the center of the grid
 !
-                  nc=nc+1
+                  nc_loc=nc_loc+1
 !
 ! check if we are not creating too many particles
 !
-                  if (nc>maxsink) then
+                  if (nc_loc>maxsink) then
                     print*,'too many gas sink particles were created. '//&
                          'Stop and allocated more'
-                    print*,'number of created partciles (nc)=',nc
+                    print*,'number of created partciles (nc)=',nc_loc
                     print*,'maximum allowed number of sinks '//&
                          'before merging (maxsink)=',maxsink
                     call fatal_error("create_sink_particles","")
@@ -1613,18 +1618,18 @@ module Particles_nbody
 !
 ! store these particles in a temporary array fcsp - "F array of Created Sink Particles"
 !
-                  fcsp(nc,ixp) = x(i+nghost)
-                  fcsp(nc,iyp) = y(m)
-                  fcsp(nc,izp) = z(n)
+                  fcsp_loc(nc_loc,ixp) = x(i+nghost)
+                  fcsp_loc(nc_loc,iyp) = y(m)
+                  fcsp_loc(nc_loc,izp) = z(n)
 !
 ! give it the velocity of the grid cell
 !
-                  fcsp(nc,ivpx:ivpz) = puu(i,:)
+                  fcsp_loc(nc_loc,ivpx:ivpz) = puu(i,:)
 !          
 ! the mass of the new particle is the 
 ! collapsed mass m=[rho - rho_jeans]*dV
 !
-                  fcsp(nc,imass)   = (prho(i)-rho_jeans(i))*dvolume(i)
+                  fcsp_loc(nc_loc,imass)   = (prho(i)-rho_jeans(i))*dvolume(i)
 !
 ! and that amount was lost by the grid, so only rho_jeans remains
 !
@@ -1695,32 +1700,32 @@ module Particles_nbody
 !
 ! create a new particle at the center of the cell
 !
-                    nc=nc+1
+                    nc_loc=nc_loc+1
 !
 ! check if we are not making too many particles
 !
-                    if (nc>maxsink) then
+                    if (nc_loc>maxsink) then
                       print*,'too many dust sink particles were created. '//&
                            'Stop and allocated more'
-                      print*,'number of created partciles (nc)=',nc
+                      print*,'number of created partciles (nc)=',nc_loc
                       print*,'maximum allowed number of sinks '//&
                            'before merging (maxsink)=',maxsink
                       call fatal_error("create_sink_particles","")
                     endif
 !
-                    fcsp(nc,ixp) = x(i+nghost)
-                    fcsp(nc,iyp) = y(m)
-                    fcsp(nc,izp) = z(n)
+                    fcsp_loc(nc_loc,ixp) = x(i+nghost)
+                    fcsp_loc(nc_loc,iyp) = y(m)
+                    fcsp_loc(nc_loc,izp) = z(n)
 !
 ! give it the mean velocity of the group of particles that 
 ! was accreted
 !
-                    fcsp(nc,ivpx:ivpz) = vvpm(i,:)
+                    fcsp_loc(nc_loc,ivpx:ivpz) = vvpm(i,:)
 !          
 ! the mass of the new particle is the 
 ! collapsed mass M=m_particle*np
 !
-                    fcsp(nc,imass)    = mp_tilde*pnp(i)
+                    fcsp_loc(nc_loc,imass)    = mp_tilde*pnp(i)
 !         
                   endif
                 endif
@@ -1728,89 +1733,119 @@ module Particles_nbody
 !
             endif !if (ldust)
           enddo
+          if ((ip<=8).and.nc_loc/=0) &
+               print*,'I, processor ',iproc,&
+               ' created ',nc_loc,' particles'
 !
-! Finished creating them. Now merge the particles and share across
-! processors to the fp array. 
+! Finished creating them. Now merge them across the processors 
+! into a single array
 !
-          if (nc/=0) &
-               call merge_and_share(fcsp,nc,fp)
+          fcsp_proc=0.
+          nc=0
+          if (lmpicomm) then 
+            if (.not.lroot) then
+              if (ldebug) print*,'processor ',iproc,'sending ',nc_loc,' particles'
+              call mpisend_int(nc_loc,1,root,222)
+              if (nc_loc/=0) then
+                print*,'sending',fcsp_loc(1:nc_loc,:)
+                !call stop_it("")
+                call mpisend_real(fcsp_loc(1:nc_loc,:),(/nc_loc,mspvar/),root,111)
+              endif
+            else
+              !root
+              nc_proc=nc_loc
+              if (nc_loc/=0) &
+                   fcsp(nc+1:nc+nc_proc,:)=fcsp_loc(1:nc_proc,:)
+              nc=nc+nc_loc
+              !get from the other processors
+              do j=1,ncpus-1
+                call mpirecv_int(nc_proc,1,j,222)
+                if (ldebug) print*,'received ',nc_proc,'particles from processor,',j
+!                call fatal_error("","")
+                if (nc_proc/=0) then
+                  if (ldebug) print*,'receiving ',nc_proc,' particles from processor ',j
+                  call mpirecv_real(fcsp_proc(1:nc_proc,:),(/nc_proc,mspvar/),j,111)
+                  if (ldebug) print*,'particle received=',fcsp_proc(1:nc_proc,:)
+                  fcsp(nc+1:nc+nc_proc,:)=fcsp_proc(1:nc_proc,:)
+                  nc=nc+nc_proc
+                endif
+              enddo
+            endif
+          else
+            !serial, just copy it
+            nc =nc_loc
+            fcsp=fcsp_loc
+          endif
+!
+! Call merge only if particles were created
+!
+          call mpibcast_int(nc,1)
+!
+          if (nc/=0) then
+            call merge_and_share(fcsp,nc,fp)
+            call share_sinkparticles(fp)
+          endif
 !
         endif
-      
-!
-! share the new sinks
-!
-      call share_sinkparticles(fp)
 !
 ! print to the screen the positions and velocities of the 
 ! newly generated sinks
 !
-      if (ldebug) then
-        print*,'---------------------------'
-        print*,'the sinks present are:'
-        do ks=1,mspar 
-          print*,'ks=',ks
-          print*,'positions=',fsp(ks,ixp:izp)
-          print*,'velocities=',fsp(ks,ivpx:ivpz)
-          print*,'mass=',fsp(ks,imass)
-          print*,'ipar_sink=',ipar_sink
-          print*,''
-        enddo
-        print*,'---------------------------'
-      endif
+        if (ldebug) then
+          print*,'---------------------------'
+          print*,'the sinks present are:'
+          do ks=1,mspar 
+            print*,'ks=',ks
+            print*,'positions=',fsp(ks,ixp:izp)
+            print*,'velocities=',fsp(ks,ivpx:ivpz)
+            print*,'mass=',fsp(ks,imass)
+            print*,'ipar_sink=',ipar_sink
+            print*,''
+          enddo
+          print*,'---------------------------'
+        endif
 !
-    endif
+      endif
 !      
     endsubroutine create_sink_particles
 !**************************************************************************
-    subroutine merge_and_share(fcspp,nc,fp)
+    subroutine merge_and_share(fcsp,nc,fp)
 !     
       use Mpicomm
 !
       real, dimension(mpar_loc,mpvar) :: fp
-      real, dimension(maxsink,mspvar) :: fcspp,fcsp_proc,fcsp
+      real, dimension(maxsink,mspvar) :: fcsp_loc,fcsp
       real, dimension(nspar,mspvar) :: fleft
 !
-      integer :: nc,nc_proc,ncr,nf,kc,j
+      integer :: nc,nc_proc,ncr,nf,kc,j,nc_loc
 
       real, dimension(0:ncpus-1,nspar,mpvar) :: fcsp_mig
       integer, dimension(0:ncpus-1) :: nsmig
-      integer :: iz0,iy0,ipz_rec,ipy_rec,iproc_rec
+      integer :: iz0,iy0,ipz_rec,ipy_rec,iproc_rec,npar_tot
       integer:: ns,np,i
       double precision :: dy1,dz1
 !
-! Send the info about all the created particles to 
-! the root processor
+! How many particles are present in the whole grid? Needed to set
+! the new ipars of the particles that will be created.
 !
-      if (lmpicomm) then 
-        if (.not.lroot) then 
-          call mpisend_int(nc,1,root,222)
-          call mpisend_real(fcspp(1:nc,:),(/nc,mspvar/),root,111)
-        else
-          ncr=nc !lroot's nc
-          fcsp=fcspp
-          do j=1,ncpus-1
-            call mpirecv_int(nc_proc,1,j,222)
-            call mpirecv_real(fcsp_proc(1:nc_proc,:),(/nc_proc,mspvar/),j,111)
-            fcsp(ncr+1:ncr+nc_proc,:)=fcsp_proc(1:nc_proc,:)
-            ncr=ncr+nc_proc
-          enddo
-        endif
-      else
-        !serial, just copy it
-        ncr =nc
-        fcsp=fcspp
-      endif
+      call mpiallreduce_sum_int(npar_loc,npar_tot)
 !
-! The root processor merges them with the friends of friends algorithm
+! The root processor is the only one that has the right fcsp. Merge it
+! with the friends of friends algorithm
 !
       if (lroot) then
-        call friends_of_friends(fcsp,fleft,ncr,nf)
+!
+        call friends_of_friends(fcsp,fleft,nc,nf)
 !
 ! Friends of friends merged the created particles into few massive
-! clusters. These new clusters are truly sinks.
+! clusters. These new clusters are truly sinks. Now we have nf new 
+! particles.
 !
         pmass(mspar+1:mspar+nf)=fleft(1:nf,imass)
+!
+! Allocate the new ipar_sinks
+!
+        do i=1,nf ; ipar_sink(mspar+i)=mspar+i ; enddo
         mspar=mspar+nf
 !
 ! But check if we did not end up with too many particles
@@ -1825,32 +1860,43 @@ module Particles_nbody
           call fatal_error("merge and share","")
         endif
       endif
+!
+! Broadcast mspar, ipar_sink and pmass
 !      
       call mpibcast_int(mspar,1)
+      call mpibcast_int(ipar_sink(1:mspar),mspar)
+      call mpibcast_real(pmass,mspar)
 !
 ! Migrate the particles to their respective processors
 !
       if (lmpicomm) then
-        if (lroot) then
-          dy1=1/dy; dz1=1/dz
+        
+        dy1=1/dy; dz1=1/dz
           !y0_mig=0.5*(y(m1)+y(m1-1)); y1_mig=0.5*(y(m2)+y(m2+1))
           !z0_mig=0.5*(z(n1)+z(n1-1)); z1_mig=0.5*(z(n2)+z(n2+1))
+!
+! Only the root processor knows where the particle is (fleft)
+!
+        if (lroot) then
+
           do kc=1,nf
+! y-index 
             ipy_rec=ipy
             iy0=nint((fleft(kc,iyp)-y(m1))*dy1+nygrid)-nygrid+1
             do while (iy0>ny)
               ipy_rec=ipy_rec+1
               iy0=iy0-ny
             enddo
-!            
+! z-index
             ipz_rec=ipz
             iz0=nint((fleft(kc,izp)-z(n1))*dz1+nzgrid)-nzgrid+1
             do while (iz0>nz)
               ipz_rec=ipz_rec+1
               iz0=iz0-nz
             enddo
-        !  Calculate serial index of receiving processor.
+! Calculate serial index of receiving processor.
             iproc_rec=ipy_rec+nprocy*ipz_rec
+! Check that the processor exists
             if (iproc_rec>=ncpus .or. iproc_rec<0) then
               call warning('merge_and_share','',iproc)
               print*, 'merge_and_share: receiving proc does not exist'
@@ -1858,53 +1904,63 @@ module Particles_nbody
                    iproc, iproc_rec
               call fatal_error_local("","")
             endif
-            if (iproc_rec/=iproc) then
-          !prepare for migration
+!
+! Fill up the migration arrays if the particles are not at the root processor
+!
+            if (iproc_rec/=root) then 
               nsmig(iproc_rec)=nsmig(iproc_rec)+1
               fcsp_mig(iproc_rec,nsmig(iproc_rec),:)=fleft(kc,1:mpvar)
-            else
-              !the particle is in the root processor
-              !create the particle here
+            else 
+! The particle is at the root processor, so create it here
               npar_loc=npar_loc+1
               fp(npar_loc,:)=fleft(kc,1:mpvar)
-              ipar(npar_loc)=npar_loc
+              ipar(npar_loc)=npar_tot+1
             endif
-          enddo
-        
-    !info about migrating sink particles
-          do j=1,ncpus-1
-            call mpisend_int(nsmig(j), 1, j, 111)
-          enddo
-        else
-          call mpirecv_int(nsmig(iproc), 1, root, 111)
-        endif
-! directed send
-        if (lroot) then
+          enddo !loop over particles
+!
+! Send them now
+!          
           do j=1,ncpus-1
             ns=nsmig(j)
-            if (ns/=0) &
-                 call mpisend_real(fcsp_mig(j,1:ns,:), (/ns,mpvar/), j, 222)
+            call mpisend_int(ns, 1, j, 111)
+            if (ns/=0) then 
+               call mpisend_real(fcsp_mig(j,1:ns,:), (/ns,mpvar/), j, 222)
+            endif
           enddo
-        else
-          np=npar_loc
+!
+        else !not lroot
+!
+! The other processors receive the particles
+!
+          call mpirecv_int(nsmig(iproc), 1, root, 111)
           ns=nsmig(iproc)
           if (ns/=0) then
-            call mpirecv_real(fp(np+1:np+ns,:),(/ns,mpvar/),root,222)
+            call mpirecv_real(fp(npar_loc+1:npar_loc+ns,:),(/ns,mpvar/),root,222)
+! update the relevant quantities
             do kc=1,ns
               npar_loc=npar_loc+1
-              ipar(npar_loc)=npar_loc
-              ipar_sink(mspar-ns+kc)=ipar(npar_loc)
+              ipar(npar_loc)=npar_tot+kc
             enddo
+!
           endif
-        endif
-      else
+!
+        endif !if lroot
+!
+      else !serial version. Just copy it all 
+!
         do kc=1,nf
           npar_loc=npar_loc+1
           fp(npar_loc,:)=fleft(kc,1:mpvar)
-          ipar(npar_loc)=npar_loc
-          !add this particle to the ipar_sink list
-          ipar_sink(mspar-nf+kc)=ipar(npar_loc)
+          ipar(npar_loc)=npar_tot+1
         enddo
+!
+      endif
+!
+      if (ldebug) then 
+        print*,'merge_and_share finished. '
+        print*,'We have now ',mspar,' sink particles, '
+        print*,'located at '
+        print*,ipar_sink(1:mspar)
       endif
 !
     endsubroutine merge_and_share
@@ -1913,9 +1969,9 @@ module Particles_nbody
 !
       real,    dimension(maxsink,mspvar) :: fcsp
       real,    dimension(nspar,mspvar)   :: fleft
-      integer, dimension(nc,nc)           :: clusters 
-      integer, dimension(nc)              :: cluster 
-      logical, dimension(nc)              :: lchecked
+      integer, dimension(nc,nc)          :: clusters 
+      integer, dimension(nc)             :: cluster 
+      logical, dimension(nc)             :: lchecked
       real, dimension(mspvar)            :: particle
       
       integer :: ks,nc,kf,nclusters,nf,i,nfinal
@@ -2145,6 +2201,7 @@ module Particles_nbody
         if (ip<=8) print*, 'read snapshot', filename
         close(1)
       endif
+!
       call mpibcast_int(mspar,1)
       call mpibcast_real(fsp(1:mspar,:),(/mspar,mspvar/))
       call mpibcast_int(ipar_sink(1:mspar),mspar)
