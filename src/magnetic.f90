@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.503 2008-04-06 06:23:19 brandenb Exp $
+! $Id: magnetic.f90,v 1.504 2008-04-06 08:09:51 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -384,7 +384,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.503 2008-04-06 06:23:19 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.504 2008-04-06 08:09:51 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2735,7 +2735,6 @@ module Magnetic
 !  imposed Beltrami field.
 !
       if (lfirstpoint) then
-print*,'x) iproc,phase_beltrami=',iproc,phase_beltrami
         if (iforcing_continuous_aa=='Beltrami-z') then
           if (phase_beltrami/=phase_beltrami_before) then
             phase_beltrami_before=phase_beltrami
@@ -3134,6 +3133,8 @@ print*,'x) iproc,phase_beltrami=',iproc,phase_beltrami
 !
 !  The following is useful if the xy-averaged field is a Beltrami field
 !  Determine its phase as in B ~ [ cos(kz+phi), sin(kz+phi), 0 ].
+!  This means that for positive phi the wave is shifted to the left.
+!
 !  bxmz, bymz must have been calculated,
 !  so they are present on the root processor.
 !
