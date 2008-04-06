@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.502 2008-04-05 19:46:52 brandenb Exp $
+! $Id: magnetic.f90,v 1.503 2008-04-06 06:23:19 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -84,6 +84,7 @@ module Magnetic
   real :: pertamplaa=0., beta_const=1.0
   real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
   real :: phase_beltrami=0., ampl_beltrami=0.
+  real :: bmz_beltrami_phase
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
   integer :: N_modes_aa=1
   integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
@@ -383,7 +384,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.502 2008-04-05 19:46:52 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.503 2008-04-06 06:23:19 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2685,6 +2686,7 @@ module Magnetic
 !
       use Cdata
       use Sub
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: forcing_rhs,fxb
@@ -2692,6 +2694,7 @@ module Magnetic
       real, dimension (mx), save :: phix,sinx,cosx
       real, dimension (my), save :: phiy,siny,cosy
       real, dimension (mz), save :: phiz,sinz,cosz
+      real, save :: phase_beltrami_before
       real, save :: R2,R12
       type (pencil_case) :: p
       integer, save :: ifirst
@@ -2732,8 +2735,10 @@ module Magnetic
 !  imposed Beltrami field.
 !
       if (lfirstpoint) then
+print*,'x) iproc,phase_beltrami=',iproc,phase_beltrami
         if (iforcing_continuous_aa=='Beltrami-z') then
-          if (phase_beltrami/=0) then
+          if (phase_beltrami/=phase_beltrami_before) then
+            phase_beltrami_before=phase_beltrami
             sinz=sin(k1_ff*z+phase_beltrami)
             cosz=cos(k1_ff*z+phase_beltrami)
           endif
@@ -2867,21 +2872,10 @@ module Magnetic
 !
 !  19-jun-02/axel: moved from print to here
 !   9-nov-02/axel: corrected bxmy(m,j); it used bzmy instead!
-!   2-apr-08/MR  : introduced phase calculation for Beltrami mean fields
 !
       use Cdata
       use Mpicomm
       use Sub
-!
-      logical,save :: first=.true.
-      real, dimension(nx) :: bymx,bzmx
-      real, dimension(ny,nprocy) :: bxmy,bzmy
-      real :: bmx,bmy,bmz,ebmz,bxmxy,bymxy,bzmxy,bmxy_rms
-      real :: bmz_belphase1,bmz_belphase2
-      real :: bmz_beltrami_phase
-      real, dimension (nz,nprocz), save :: sinz,cosz
-      real ::  c=0., s=0.
-      integer :: l,j,jprocz
 !
 !  For vector output (of bb vectors) we need brms
 !  on all processors. It suffices to have this for times when lout=.true.,
@@ -2894,185 +2888,320 @@ module Magnetic
         if (iproc==0) brms=fname(idiag_brms)
         call mpibcast_real(brms,1)
       endif
-
-      if (.not.lroot) return
 !
-!  Magnetic energy in vertically averaged field!
+!  The following calculation involving spatial averages
+!  This is only done on the root processor.
+!
+      if (lroot) then
+        if (idiag_bmx/=0) call calc_bmx
+        if (idiag_bmy/=0) call calc_bmy
+        if (idiag_bmz/=0) call calc_bmz
+        if (idiag_ebmz/=0) call calc_ebmz
+        if (idiag_bmxy_rms/=0) call calc_bmxy_rms
+        if (idiag_bmzph/=0) call calc_bmz_beltrami_phase
+      endif
+!
+!  Set the phase of the Beltrami forcing equal to the actual phase
+!  of the magnetic field (times forcing_continuous_aa_phasefactor).
+!  Broadcast the result to other processors.
+!
+      phase_beltrami=forcing_continuous_aa_phasefactor*bmz_beltrami_phase
+      call mpibcast_real(phase_beltrami,1)
+!
+    endsubroutine calc_mfield
+!***********************************************************************
+    subroutine calc_bmx
+!
+!  Magnetic energy in the yz-averaged field.
 !  The bymxy and bzmxy must have been calculated,
 !  so they are present on the root processor.
 !
-      if (idiag_bmx/=0) then
-        if (idiag_bymxy==0.or.idiag_bzmxy==0) then
-          if (first) print*,"calc_mfield:                  WARNING"
-          if (first) print*, &
-                  "calc_mfield: NOTE: to get bmx, bymxy and bzmxy must also be set in zaver"
-          if (first) print*, &
-                  "calc_mfield:       We proceed, but you'll get bmx=0"
-          bmx=0.
-        else
-          do l=1,nx
-            bymx(l)=sum(fnamexy(l,:,:,idiag_bymxy))/(ny*nprocy)
-            bzmx(l)=sum(fnamexy(l,:,:,idiag_bzmxy))/(ny*nprocy)
-          enddo
-          bmx=sqrt(sum(bymx**2+bzmx**2)/nx)
+!   6-apr-08/axel: moved from calc_mfield to here
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      logical,save :: first=.true.
+      real, dimension(nx) :: bymx,bzmx
+      real :: bmx
+      integer :: l
+!
+!  This only works if bymxy and bzmxy are in zaver,
+!  so print warning if this is not ok.
+!
+      if (idiag_bymxy==0.or.idiag_bzmxy==0) then
+        if (first) then
+          print*,"calc_mfield: WARNING"
+          print*,"NOTE: to get bmx, set bymxy and bzmxy in zaver"
+          print*,"We proceed, but you'll get bmx=0"
         endif
-        call save_name(bmx,idiag_bmx)
+        bmx=0.
+      else
+        do l=1,nx
+          bymx(l)=sum(fnamexy(l,:,:,idiag_bymxy))/(ny*nprocy)
+          bzmx(l)=sum(fnamexy(l,:,:,idiag_bzmxy))/(ny*nprocy)
+        enddo
+        bmx=sqrt(sum(bymx**2+bzmx**2)/nx)
       endif
 !
-!  similarly for bmy
+!  save the name in the idiag_bmx slot
+!  and set first to false
 !
-      if (idiag_bmy/=0) then
-        if (idiag_bxmxy==0.or.idiag_bzmxy==0) then
-          if (first) print*,"calc_mfield:                  WARNING"
-          if (first) print*, &
-                  "calc_mfield: NOTE: to get bmy, bxmxy and bzmxy must also be set in zaver"
-          if (first) print*, &
-                  "calc_mfield:       We proceed, but you'll get bmy=0"
-          bmy=0.
-        else
-          do j=1,nprocy
+      call save_name(bmx,idiag_bmx)
+      first=.false.
+!
+    endsubroutine calc_bmx
+!***********************************************************************
+    subroutine calc_bmy
+!
+!  Magnetic energy in the xz-averaged field.
+!  The bxmxy and bzmxy must have been calculated,
+!  so they are present on the root processor.
+!
+!   6-apr-08/axel: moved from calc_mfield to here
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      logical,save :: first=.true.
+      real, dimension(ny,nprocy) :: bxmy,bzmy
+      real :: bmy
+      integer :: j
+!
+!  This only works if bxmxy and bzmxy are in zaver,
+!  so print warning if this is not ok.
+!
+      if (idiag_bxmxy==0.or.idiag_bzmxy==0) then
+        if (first) then
+          print*,"calc_mfield: WARNING"
+          print*,"NOTE: to get bmy, set bxmxy and bzmxy in zaver"
+          print*,"We proceed, but you'll get bmy=0"
+        endif
+        bmy=0.
+      else
+        do j=1,nprocy
           do m=1,ny
             bxmy(m,j)=sum(fnamexy(:,m,j,idiag_bxmxy))/nx
             bzmy(m,j)=sum(fnamexy(:,m,j,idiag_bzmxy))/nx
           enddo
-          enddo
-          bmy=sqrt(sum(bxmy**2+bzmy**2)/(ny*nprocy))
-        endif
-        call save_name(bmy,idiag_bmy)
+        enddo
+        bmy=sqrt(sum(bxmy**2+bzmy**2)/(ny*nprocy))
       endif
+!
+!  save the name in the idiag_bmy slot
+!  and set first to false
+!
+      call save_name(bmy,idiag_bmy)
+      first=.false.
+!
+    endsubroutine calc_bmy
+!***********************************************************************
+    subroutine calc_bmz
 !
 !  Magnetic energy in horizontally averaged field
 !  The bxmz and bymz must have been calculated,
 !  so they are present on the root processor.
 !
-      if (idiag_bmz/=0) then
-        if (idiag_bxmz==0.or.idiag_bymz==0) then
-          if (first) print*,"calc_mfield:                  WARNING"
-          if (first) print*, &
-                  "calc_mfield: NOTE: to get bmz, bxmz and bymz must also be set in xyaver"
-          if (first) print*, &
-                  "calc_mfield:       This may be because we renamed zaver.in into xyaver.in"
-          if (first) print*, &
-                  "calc_mfield:       We proceed, but you'll get bmz=0"
-          bmz=0.
-        else
-          bmz=sqrt(sum(fnamez(:,:,idiag_bxmz)**2+fnamez(:,:,idiag_bymz)**2)/(nz*nprocz))
+!   6-apr-08/axel: moved from calc_mfield to here
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      logical,save :: first=.true.
+      real :: bmz
+      integer :: j
+!
+!  This only works if bxmz and bzmz are in xyaver,
+!  so print warning if this is not ok.
+!
+      if (idiag_bxmz==0.or.idiag_bymz==0) then
+        if (first) then
+          print*,"calc_mfield: WARNING"
+          print*,"NOTE: to get bmz, set bxmz and bymz in xyaver"
+          print*,"We proceed, but you'll get bmz=0"
         endif
-        call save_name(bmz,idiag_bmz)
+        bmz=0.
+      else
+        bmz=sqrt(sum(fnamez(:,:,idiag_bxmz)**2 &
+                    +fnamez(:,:,idiag_bymz)**2)/(nz*nprocz))
       endif
+!
+!  save the name in the idiag_bmz slot
+!  and set first to false
+!
+      call save_name(bmz,idiag_bmz)
+      first=.false.
+!
+    endsubroutine calc_bmz
+!***********************************************************************
+    subroutine calc_ebmz
 !
 !  Magnetic helicity production of mean field
 !  The bxmz and bymz as well as Exmz and Eymz must have been calculated,
 !  so they are present on the root processor.
 !
-      if (idiag_ebmz/=0) then
-        if (idiag_Exmz==0.or.idiag_Eymz==0) then
-          if (first) print*,"calc_mfield:                  WARNING"
-          if (first) print*, &
-                  "calc_mfield: NOTE: to get ebmz, bxmz and bymz as well as Exmz and Eymz must also be set in xyaver"
-          if (first) print*, &
-                  "calc_mfield:       We proceed, but you'll get ebmz=0"
-          ebmz=0.
-        else
-          ebmz=sum(fnamez(:,:,idiag_bxmz)*fnamez(:,:,idiag_Exmz) &
-                  +fnamez(:,:,idiag_bymz)*fnamez(:,:,idiag_Eymz))/(nz*nprocz)
+!   6-apr-08/axel: moved from calc_mfield to here
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      logical,save :: first=.true.
+      real :: ebmz
+      integer :: j
+!
+!  This only works if bxmz and bzmz are in xyaver,
+!  so print warning if this is not ok.
+!
+      if (idiag_Exmz==0.or.idiag_Eymz==0) then
+        if (first) then
+          print*,"calc_mfield: WARNING"
+          print*,"NOTE: to get ebmz, set bxmz, bymz, Exmz, and Eymz in xyaver"
+          print*,"We proceed, but you'll get ebmz=0"
         endif
-        call save_name(ebmz,idiag_ebmz)
+        ebmz=0.
+      else
+        ebmz=sum(fnamez(:,:,idiag_bxmz)*fnamez(:,:,idiag_Exmz) &
+                +fnamez(:,:,idiag_bymz)*fnamez(:,:,idiag_Eymz))/(nz*nprocz)
       endif
+!
+!  save the name in the idiag_ebmz slot
+!  and set first to false
+!
+      call save_name(ebmz,idiag_ebmz)
+      first=.false.
+!
+    endsubroutine calc_ebmz
+!***********************************************************************
+    subroutine calc_bmxy_rms
 !
 !  Magnetic energy in z averaged field 
 !  The bxmxy, bymxy and bzmxy must have been calculated,
 !  so they are present on the root processor.
 !
-      if (idiag_bmxy_rms/=0) then
-        if (idiag_bxmxy==0.or.idiag_bymxy==0.or.idiag_bzmxy==0) then
-          if (first) print*,"calc_mfield:                  WARNING"
-          if (first) print*, &
-                  "calc_mfield: NOTE: to get bmxy_rms, bxmxy, bymxy and bzmxy must also be set in zaver"
-          if (first) print*, &
-                  "calc_mfield:       We proceed, but you'll get bmxy_rms=0"
-          bmxy_rms=0.
-        else
-          bmxy_rms=0.
-          do l=1,nx
-            do j=1,nprocy
-              do m=1,ny
-                bxmxy=fnamexy(l,m,j,idiag_bxmxy)
-                bymxy=fnamexy(l,m,j,idiag_bymxy)
-                bzmxy=fnamexy(l,m,j,idiag_bzmxy)
-                bmxy_rms = bmxy_rms+bxmxy**2+bymxy**2+bzmxy**2
-                if(lspherical_coords) & 
-                   bmxy_rms = bmxy_rms*x(l+nghost)*x(l+nghost)*sinth(m+nghost)
-                if(lcylindrical_coords) & 
-                   call stop_it("bmxy_rms not yet implemented for cylindrical coordinates")
-              enddo
+!   6-apr-08/axel: moved from calc_mfield to here
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      logical,save :: first=.true.
+      real :: bxmxy,bymxy,bzmxy,bmxy_rms
+      integer :: l,j
+!
+!  This only works if bxmz and bzmz are in xyaver,
+!  so print warning if this is not ok.
+!
+      if (idiag_bxmxy==0.or.idiag_bymxy==0.or.idiag_bzmxy==0) then
+        if (first) then
+          print*,"calc_mfield: WARNING"
+          print*,"NOTE: to get bmxy_rms, set bxmxy, bymxy and bzmxy in zaver"
+          print*,"We proceed, but you'll get bmxy_rms=0"
+        endif
+        bmxy_rms=0.
+      else
+        bmxy_rms=0.
+        do l=1,nx
+          do j=1,nprocy
+            do m=1,ny
+              bxmxy=fnamexy(l,m,j,idiag_bxmxy)
+              bymxy=fnamexy(l,m,j,idiag_bymxy)
+              bzmxy=fnamexy(l,m,j,idiag_bzmxy)
+              bmxy_rms = bmxy_rms+bxmxy**2+bymxy**2+bzmxy**2
+              if(lspherical_coords) & 
+                  bmxy_rms = bmxy_rms*x(l+nghost)*x(l+nghost)*sinth(m+nghost)
+              if(lcylindrical_coords) & 
+                  call stop_it("bmxy_rms not yet implemented for cylindrical")
             enddo
           enddo
-          bmxy_rms = bmxy_rms/(nx*ny*nprocy)
-          bmxy_rms = sqrt(bmxy_rms)
-        endif
-        call save_name(bmxy_rms,idiag_bmxy_rms)
+        enddo
+        bmxy_rms = bmxy_rms/(nx*ny*nprocy)
+        bmxy_rms = sqrt(bmxy_rms)
       endif
+!
+!  save the name in the idiag_bmxy_rms slot
+!  and set first to false
+!
+      call save_name(bmxy_rms,idiag_bmxy_rms)
+      first=.false.
+!
+    endsubroutine calc_bmxy_rms
+!***********************************************************************
+    subroutine calc_bmz_beltrami_phase
 !
 !  The following is useful if the xy-averaged field is a Beltrami field
 !  Determine its phase as in B ~ [ cos(kz+phi), sin(kz+phi), 0 ].
 !  bxmz, bymz must have been calculated,
 !  so they are present on the root processor.
 !
-      if (idiag_bmzph/=0.or.idiag_bmzphe/=0) then
-        if (first) then
-          sinz=sin(k1_ff*z_allprocs); cosz=cos(k1_ff*z_allprocs)
-        endif
+!   2-apr-08/MR: introduced phase calculation for Beltrami mean fields
+!   6-apr-08/axel: moved from calc_mfield to here
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      logical,save :: first=.true.
+      real :: bmz_belphase1,bmz_belphase2
+      real, dimension (nz,nprocz), save :: sinz,cosz
+      real ::  c=0., s=0.
+      integer :: jprocz
+!
+      if (first) then
+        sinz=sin(k1_ff*z_allprocs); cosz=cos(k1_ff*z_allprocs)
+      endif
 !
 !  print warning if bxmz and bymz are not calculated
 !
-        if ( idiag_bxmz==0 .or. idiag_bymz==0 ) then
-          if (first) print*,"calc_mfield:                  WARNING"
-          if (first) print*, &
-                  "calc_mfield: NOTE: to get bmz_Beltrami-Phase, bxmz, bymz must also be set in zaver"
-          if (first) print*, &
-                  "calc_mfield:       We proceed, but you'll get bmz_Beltrami-Phase=0"
-          bmz_beltrami_phase=0.
+      if (idiag_bxmz==0.or.idiag_bymz==0) then
+        if (first) then
+          print*,"calc_mfield: WARNING"
+          print*,"to get bmz_beltrami_phase, set bxmz, bymz in zaver"
+          print*,"We proceed, but you'll get Beltrami phase bmzpb=0"
+        endif
+        bmz_beltrami_phase=0.
 !
 !  add up c = <B_x> cos(kz) and s = <B_x> sin(kz)
 !  and determine phase of Beltrami field from <B_x>
 !
-        else
-          c=0.; s=0.
-          do jprocz=1,nprocz
-            c=c+dot_product(fnamez(:,jprocz,idiag_bxmz),cosz(:,jprocz))
-            s=s+dot_product(fnamez(:,jprocz,idiag_bxmz),sinz(:,jprocz))
-          enddo
-          bmz_belphase1=atan2(-s,c)
+      else
+        c=0.; s=0.
+        do jprocz=1,nprocz
+          c=c+dot_product(fnamez(:,jprocz,idiag_bxmz),cosz(:,jprocz))
+          s=s+dot_product(fnamez(:,jprocz,idiag_bxmz),sinz(:,jprocz))
+        enddo
+        bmz_belphase1=atan2(-s,c)
 !
 !  add up c = <B_y> cos(kz) and s = <B_y> sin(kz)
 !  and determine phase of Beltrami field from <B_y>
 !
-          c=0.; s=0.
-          do jprocz=1,nprocz
-            c=c+dot_product(fnamez(:,jprocz,idiag_bymz),cosz(:,jprocz))
-            s=s+dot_product(fnamez(:,jprocz,idiag_bymz),sinz(:,jprocz))
-          enddo
-          bmz_belphase2=atan2(c,s)
+        c=0.; s=0.
+        do jprocz=1,nprocz
+          c=c+dot_product(fnamez(:,jprocz,idiag_bymz),cosz(:,jprocz))
+          s=s+dot_product(fnamez(:,jprocz,idiag_bymz),sinz(:,jprocz))
+        enddo
+        bmz_belphase2=atan2(c,s)
 !
 !  Difference of both determinations (to estimate error)
 !  and take the mean of both calculations (called bmz_beltrami_phase
 !  and bmzph in the print.in file, for brevity)
 !
-          bmz_beltrami_phase=.5*(bmz_belphase1+bmz_belphase2)
-          call save_name(bmz_beltrami_phase,idiag_bmzph)
-          if (idiag_bmzphe/=0) &
-              call save_name(abs(bmz_belphase1-bmz_belphase2),idiag_bmzphe)
-!
-!  Set the phase of the Beltrami forcing equal to the actual phase
-!  of the magnetic field (times forcing_continuous_aa_phasefactor).
-!
-          phase_beltrami=forcing_continuous_aa_phasefactor*bmz_beltrami_phase
-        endif
+        bmz_beltrami_phase=.5*(bmz_belphase1+bmz_belphase2)
       endif
 !
-      first = .false.
-    endsubroutine calc_mfield
+!  Save the name in the idiag_bmzph slot; as estimate of the error,
+!  calculate also the difference between the two.
+!  Finally, set first to false
+!
+      call save_name(bmz_beltrami_phase,idiag_bmzph)
+      if (idiag_bmzphe/=0) &
+          call save_name(abs(bmz_belphase1-bmz_belphase2),idiag_bmzphe)
+      first=.false.
+!
+    endsubroutine calc_bmz_beltrami_phase
 !***********************************************************************
     subroutine alfven_x(ampl,f,iuu,iaa,ilnrho,xx,kx)
 !
@@ -3265,7 +3394,7 @@ module Magnetic
 !  04-oct-06/wlad: coded
 !
       use Cdata
-      use Mpicomm,only:stop_it
+      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz) :: xx,yy,rrcyl,Aphi
