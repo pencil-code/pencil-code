@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.504 2008-04-06 08:09:51 brandenb Exp $
+! $Id: magnetic.f90,v 1.505 2008-04-06 17:35:38 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -84,7 +84,7 @@ module Magnetic
   real :: pertamplaa=0., beta_const=1.0
   real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
   real :: phase_beltrami=0., ampl_beltrami=0.
-  real :: bmz_beltrami_phase
+  real :: bmz=0, bmz_beltrami_phase=0.
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
   integer :: N_modes_aa=1
   integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
@@ -140,6 +140,7 @@ module Magnetic
   real :: k1x_ff=1.,k1y_ff=1.,k1z_ff=1.
   real :: inertial_length=0.,linertial_2
   real :: forcing_continuous_aa_phasefactor=1.
+  real :: forcing_continuous_aa_amplfactor=1.
   real, dimension(mz) :: eta_z
   real, dimension(mz,3) :: geta_z
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
@@ -161,6 +162,7 @@ module Magnetic
        kx_aa,ky_aa,kz_aa,phasey_aa,ABC_A,ABC_B,ABC_C, &
        lforcing_continuous_aa,iforcing_continuous_aa, &
        forcing_continuous_aa_phasefactor, &
+       forcing_continuous_aa_amplfactor, &
        k1_ff,ampl_ff,swirl,radius, &
        k1x_ff,k1y_ff,k1z_ff, &
        bthresh,bthresh_per_brms, &
@@ -384,7 +386,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.504 2008-04-06 08:09:51 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.505 2008-04-06 17:35:38 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2723,6 +2725,7 @@ module Magnetic
           siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
         elseif (iforcing_continuous_aa=='Beltrami-z') then
           if (lroot) print*,'forcing_continuous: Beltrami-z'
+          ampl_beltrami=ampl_ff
           sinz=sin(k1_ff*z+phase_beltrami)
           cosz=cos(k1_ff*z+phase_beltrami)
         endif
@@ -2763,7 +2766,7 @@ module Magnetic
         forcing_rhs(:,2)=+fact*sinx(l1:l2)*cosy(m)
         forcing_rhs(:,3)=+fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
       elseif (iforcing_continuous_aa=='Beltrami-z') then
-        fact=-eta*k1_ff*ampl_ff
+        fact=-eta*k1_ff*ampl_beltrami
         forcing_rhs(:,1)=fact*cosz(n)
         forcing_rhs(:,2)=fact*sinz(n)
         forcing_rhs(:,3)=0.
@@ -2907,6 +2910,14 @@ module Magnetic
       phase_beltrami=forcing_continuous_aa_phasefactor*bmz_beltrami_phase
       call mpibcast_real(phase_beltrami,1)
 !
+!  set amplitude to ampl_ff minus a correction term that is
+!  proportional to the actual field minus the target field strength,
+!  scaled by some forcing_continuous_aa_amplfactor, and broadcast, ie
+!  A = Atarget - factor*(Aactual-Atarget).
+!
+      ampl_beltrami=ampl_ff-forcing_continuous_aa_amplfactor*(bmz-ampl_ff)
+      call mpibcast_real(ampl_beltrami,1)
+!
     endsubroutine calc_mfield
 !***********************************************************************
     subroutine calc_bmx
@@ -3010,7 +3021,6 @@ module Magnetic
       use Sub
 !
       logical,save :: first=.true.
-      real :: bmz
       integer :: j
 !
 !  This only works if bxmz and bzmz are in xyaver,
@@ -4643,7 +4653,7 @@ module Magnetic
 !
       integer :: lun
 !
-      if (lroot) then
+      if (lroot.and.ip<14) then
         if (phase_beltrami>=0.) &
             print*,'output_persistent_magnetic: ', &
               phase_beltrami,ampl_beltrami

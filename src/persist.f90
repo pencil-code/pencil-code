@@ -1,4 +1,4 @@
-! $Id: persist.f90,v 1.8 2008-04-05 19:46:52 brandenb Exp $
+! $Id: persist.f90,v 1.9 2008-04-06 17:35:38 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   persist.f90   !!!
@@ -39,6 +39,7 @@ contains
 !  lun should be set to the same lun as that of the snapshot
 !
 !  26-may-03/axel: adapted from output_vect
+!   6-apr-08/axel: added input_persistent_magnetic
 !
       use Cdata
       Use Interstellar, only: input_persistent_interstellar
@@ -84,6 +85,7 @@ dataloop: do
 !  lun should be set to the same lun as that of the snapshot
 !
 !  26-may-03/axel: adapted from output_vect
+!   6-apr-08/axel: added output_persistent_magnetic
 !
       use Cdata
       use Interstellar, only: output_persistent_interstellar
