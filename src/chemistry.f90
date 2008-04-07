@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.59 2008-04-07 08:58:21 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.60 2008-04-07 12:52:23 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -27,7 +27,7 @@ module Chemistry
   include 'chemistry.h'
 
   real :: Rgas, Rgas_unit_sys=1.
-  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, chi_full
+  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, chi_full, rho_full
   real, dimension (mx,my,mz,nchemspec) :: cvspec_full
 
 !
@@ -172,11 +172,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.59 2008-04-07 08:58:21 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.60 2008-04-07 12:52:23 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.59 2008-04-07 08:58:21 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.60 2008-04-07 12:52:23 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -537,7 +537,7 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) ::  cp_R_spec
-      real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nuk_nuj, nu_dyn, rho_full
+      real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nuk_nuj, nu_dyn
       real, dimension (mx,my,mz,nchemspec,nchemspec) :: Phi
       real, dimension (mx,my,mz,nchemspec) :: species_cond
 !
@@ -547,7 +547,12 @@ module Chemistry
       real :: mk_mj
 
       logical :: tran_exist=.false.
- 
+! 
+! Density
+!
+
+      rho_full=exp(f(:,:,:,ilnrho))
+
 !
 ! Now this routine is only for chemkin data !!!
 !
@@ -653,7 +658,8 @@ module Chemistry
 !  Viscosity of a mixture
 !
 
-      rho_full=exp(f(:,:,:,ilnrho))
+ 
+
            do k=1,nchemspec
              do j=1,nchemspec
                mk_mj=species_constants(ichemspec(k),imass) &
@@ -2108,7 +2114,7 @@ module Chemistry
 
      lnT=f(:,:,:,ilnTT)+log(unit_temperature)
      TT=exp(f(:,:,:,ilnTT))*unit_temperature
-     rho=exp(f(:,:,:,ilnrho))*unit_mass/unit_length**3
+     rho=rho_full*unit_mass/unit_length**3
 
 
      pp_full = Rgas_unit_sys*mu1_full/unit_mass*rho*TT
