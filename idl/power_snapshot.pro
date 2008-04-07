@@ -1,89 +1,104 @@
+;;
+;; $Id: power_snapshot.pro,v 1.11 2008-04-07 11:42:29 ajohan Exp $
+;;
+;; Calculate energy spectrum of 3-D cube.
+;;
+;;   eks = shell-integrated spectrum
+;;   fkx = 1-D averaged spectrum <f(kx,y,z)>_(y,z)
+;;   fky = 1-D averaged spectrum <f(x,ky,z)>_(x,z)
+;;   fkz = 1-D averaged spectrum <f(x,y,kz)>_(x,y)
+;;    ks = scalar shell wavenumber
+;;    kx = scalar wavenumber in x
+;;    ky = scalar wavenumber in y
+;;    kz = scalar wavenumber in z
+;;
+pro power_snapshot, ff, eks=eks, fkx=fkx, fky=fky, fkz=fkz, $
+    ks=ks, kx=kx, ky=ky, kz=kz, $
+    double=double, plot=plot, ps=ps, filename=filename, $
+    nolegend=nolegend
 ;
-;  Calculate power spectrum of variable gg along x, y and z directions.
-;
-pro power_snapshot, gg=gg, g_x=g_x, g_y=g_y, g_z=g_z, $
-                    plot=plot,doubleprec=doubleprec,  $
-                    ps=ps, filename=filename, nolegend=nolegend
-
-default, plot, 1
-default, nolegend, 0
-
-zero=0.
-if keyword_set(doubleprec) then begin
-  zero=0.D0
-  gg=double(gg)
-endif
+default, plot, 0
 default, ps, 0
-
-sizegg=size(gg)
-
-nx=1 & ny=1 & nz=1 & g_x=1.0 & g_y=1.0 & g_z=1.0
-
-nx=sizegg[1]
-g_x=fltarr(nx/2)*zero
-if (sizegg[0] ge 2) then begin
-  ny=sizegg[2]
-  g_y=fltarr(ny/2)*zero
-  if (sizegg[0] ge 3) then begin
-    nz=sizegg[3]
-    g_z=fltarr(nz/2)*zero
-  endif
+default, nolegend, 0
+;
+zero=0.0
+one =1.0
+if (keyword_set(double)) then begin
+  zero=0.0d
+  one =1.0d
+  ff=double(ff)
 endif
-
-for m=0,ny-1 do begin
-  for n=0,nz-1 do begin
-    AA=fft(reform(gg[*,m,n]),-1)
-    for j=0,nx/2-1 do begin
-      if keyword_set(doubleprec) then begin
-        g_x[j] = g_x[j] + 2*sqrt(float(AA[j])^2+imaginary(AA[j])^2)
-      endif else begin
-        g_x[j] = g_x[j] + 2*sqrt(float(AA[j])^2+imaginary(AA[j])^2)
-      endelse
-    endfor
-  endfor
-endfor
-
-for l=0,nx-1 do begin
-  for n=0,nz-1 do begin
-    AA=fft(reform(gg[l,*,n]),-1)
-    for j=0,ny/2-1 do begin
-      if keyword_set(doubleprec) then begin
-        g_y[j] = g_y[j] + 2*sqrt(double(AA[j])^2+double(imaginary(AA[j]))^2)
-      endif else begin
-        g_y[j] = g_y[j] + 2*sqrt(double(AA[j])^2+double(imaginary(AA[j]))^2)
-      endelse
-    endfor
-  endfor
-endfor
-
-for l=0,nx-1 do begin
-  for m=0,ny-1 do begin
-    AA=fft(reform(gg[l,m,*]),-1)
-    for j=0,nz/2-1 do begin
-      if keyword_set(doubleprec) then begin
-        g_z[j] = g_z[j] + 2*sqrt(double(AA[j])^2+imaginary(AA[j])^2)
-      endif else begin
-        g_z[j] = g_z[j] + 2*sqrt(float(AA[j])^2+imaginary(AA[j])^2)
-      endelse
-    endfor
-  endfor
-endfor
-
-
-g_x=g_x/(ny*nz)
-g_y=g_y/(nx*nz)
-g_z=g_z/(nx*ny)
-
+;
+sizeff=size(ff)
+;
+if (sizeff[0] ge 1) then nx=sizeff[1] else nx=1
+if (sizeff[0] ge 2) then ny=sizeff[2] else ny=1
+if (sizeff[0] ge 3) then nz=sizeff[3] else nz=1
+;
+;  1-D spectrum in x-direction
+;
+if (arg_present(fkx)) then begin
+  fkx=fltarr(nx/2)*zero
+  for n=0,nz-1 do begin & for m=0,ny-1 do begin
+    AA=fft(reform(ff[*,m,n]),-1)
+    for j=0,nx/2-1 do fkx[j] = fkx[j] + 2*abs(AA[j])
+  endfor & endfor
+  fkx=fkx/(ny*nz)
+endif
+;
+;  1-D spectrum in y-direction
+;
+if (arg_present(fky)) then begin
+  fky=fltarr(ny/2)*zero
+  for n=0,nz-1 do begin & for l=0,nx-1 do begin
+    AA=fft(reform(ff[l,*,n]),-1)
+    for j=0,ny/2-1 do fky[j] = fky[j] + 2*abs(AA[j])
+  endfor & endfor
+  fky=fky/(nx*nz)
+endif
+;
+;  1-D spectrum in z-direction
+;
+if (arg_present(fkz)) then begin
+  fkz=fltarr(nz/2)*zero
+  for m=0,ny-1 do begin & for l=0,nx-1 do begin
+    AA=fft(reform(ff[l,m,*]),-1)
+    for j=0,nz/2-1 do fkz[j] = fkz[j] + 2*abs(AA[j])
+  endfor & endfor
+  fkz=fkz/(nx*ny)
+endif
+;
+;  3-D shell-integrated spectrum.
+;
+if (arg_present(eks)) then begin
+  kx=[indgen(nx/2+1),-reverse(indgen(nx/2-1)+1)]*one
+  ky=[indgen(ny/2+1),-reverse(indgen(ny/2-1)+1)]*one
+  kz=[indgen(nz/2+1),-reverse(indgen(nz/2-1)+1)]*one
+  ks=indgen(nx/2)
+  eks=fltarr(nx/2)
+;
+  fkk=fft(ff)
+;
+  for ikz=0,nz-1 do begin & for iky=0,ny-1 do begin & for ikx=0,nx-1 do begin
+    k=round(sqrt(kx[ikx]^2+ky[iky]^2+kz[ikz]^2))
+    if (k lt nx/2-1) then begin
+      eks[k]=eks[k]+abs(fkk[ikx,iky,ikz])^2
+    endif
+  endfor & endfor & endfor
+endif
+;
+;  Make simple plot if requested.
+;
 if (plot) then begin
-  pmin=min(g_x[1:nx/2-1])
-  pmax=max(g_x[1:nx/2-1])
+  pmin=min(fkx[1:nx/2-1])
+  pmax=max(fkx[1:nx/2-1])
   if (ny gt 1) then begin
-    pmin=min([pmin,g_y[1:ny/2-1]])
-    pmax=max([pmax,g_y[1:ny/2-1]])
+    pmin=min([pmin,fky[1:ny/2-1]])
+    pmax=max([pmax,fky[1:ny/2-1]])
   endif
   if (nz gt 1) then begin
-    pmin=min([pmin,g_z[1:nz/2-1]])
-    pmax=max([pmax,g_z[1:nz/2-1]])
+    pmin=min([pmin,fkz[1:nz/2-1]])
+    pmax=max([pmax,fkz[1:nz/2-1]])
   endif
 
   linestyles=[0,1,2]
@@ -99,13 +114,13 @@ if (plot) then begin
     !p.charthick=thick & !p.thick=thick & !x.thick=thick & !y.thick=thick
   endif
   
-  plot, g_x, xtitle='k/k0', ytitle='|g(k)|', $
+  plot, fkx, xtitle='k/k0', ytitle='|g(k)|', $
       xrange=[1.0,nx/2], $
       yrange=[10.0^floor(alog10(pmin)),10.0^ceil(alog10(pmax))], $
       /xlog, /ylog, $
       linestyle=linestyles[0]
-  if (ny gt 1) then oplot, g_y, linestyle=linestyles[1]
-  if (nz gt 1) then oplot, g_z, linestyle=linestyles[2]
+  if (ny gt 1) then oplot, fky, linestyle=linestyles[1]
+  if (nz gt 1) then oplot, fkz, linestyle=linestyles[2]
 ;  legend, ['k!Dx!N','k!Dy!N','k!Dz!N'], linestyle=linestyles, /bottom
   if (not nolegend) then legend, ['1','2','3'], linestyle=linestyles, /bottom
 
@@ -114,6 +129,5 @@ if (plot) then begin
     set_plot, 'x'
   endif
 endif
-
-
+;
 end
