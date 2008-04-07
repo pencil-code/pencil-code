@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.39 2008-04-01 15:01:59 nbabkovs Exp $
+! $Id: temperature_ionization.f90,v 1.40 2008-04-07 08:58:21 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2,uglnTT,DYDt_reac,DYDt_diff,cvspec
+! PENCILS PROVIDED Ma2,uglnTT,DYDt_reac,DYDt_diff,cvspec,chi,glnchi
 !
 !***************************************************************
 module Entropy
@@ -94,7 +94,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.39 2008-04-01 15:01:59 nbabkovs Exp $")
+           "$Id: temperature_ionization.f90,v 1.40 2008-04-07 08:58:21 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -309,6 +309,10 @@ module Entropy
       if (lchemistry) then
         lpenc_requested(i_DYDt_reac)=.true.
         lpenc_requested(i_DYDt_diff)=.true.
+        if (lheatc_chemistry) then
+           lpenc_requested(i_chi)=.true.
+           lpenc_requested(i_glnchi)=.true.
+        endif
       endif
 
 !
@@ -711,25 +715,21 @@ module Entropy
 
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension (nx) :: gradlnchi_tmp=0., chi_tmp=1e-5 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       type (pencil_case) :: p
 
       real, dimension(nx) :: g2TT,g2cp, g2TTrho=0., g2TTlnchi=0.
 !
-!      call dot(p%glnTT,gradlnchi_tmp,g2TTlnchi)
+      call dot(p%glnTT,p%glnchi,g2TTlnchi)
       call dot(p%glnTT,p%glnrho,g2TTrho)
       call dot(p%glnTT,p%glnTT,g2TT)
       call dot(p%glnTT,p%gradcp,g2cp)
 
 !
 !  Add heat conduction to RHS of temperature equation
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! while there is no data, one takes chi_tmp=1e-5 and  gradlnchi_tmp=0.
-!----------------------------------------------
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+
 
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  & 
-          + p%gamma*chi_tmp(:)*(p%del2lnTT+g2TT+g2TTrho+g2cp/p%cp+g2TTlnchi)
+          + p%gamma*p%chi(:)*(p%del2lnTT+g2TT+g2TTrho+g2cp/p%cp+g2TTlnchi)
 
     endsubroutine calc_heatcond_chemistry
 !***********************************************************************

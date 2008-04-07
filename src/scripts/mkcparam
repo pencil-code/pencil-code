@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.74 2008-03-31 15:27:45 nbabkovs Exp $
+# CVS: $Id: mkcparam,v 1.75 2008-04-07 08:58:21 nbabkovs Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -102,6 +102,7 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'bglnrho'      => ', dimension (nx)',
                   'cc'           => ', dimension (nx)',
                   'cc1'          => ', dimension (nx)',
+                  'chi'          => ', dimension (nx)',
                   'cp'           => ', dimension (nx)',
                   'cp1'          => ', dimension (nx)',
                   'cp1tilde'     => ', dimension (nx)',
@@ -110,7 +111,7 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'curlgg'       => ', dimension (nx,3)',
                   'cv'           => ', dimension (nx)',
                   'cv1'          => ', dimension (nx)',
-                  'cvspec'      => ', dimension (nx,nchemspec)',
+                  'cvspec'       => ', dimension (nx,nchemspec)',
                   'del2u'        => ', dimension (nx,3)',
                   'del4u'        => ', dimension (nx,3)',
                   'del6u'        => ', dimension (nx,3)',
@@ -175,6 +176,7 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'g2'           => ', dimension (nx)',
                   'gecr'         => ', dimension (nx,3)',
                   'glncc'        => ', dimension (nx,3)',
+                  'glnchi'       => ', dimension (nx,3)',
                   'glnnd'        => ', dimension (nx,3,ndustspec)',
                   'glnnd2'       => ', dimension (nx,ndustspec)',
                   'glnrho'       => ', dimension (nx,3)',

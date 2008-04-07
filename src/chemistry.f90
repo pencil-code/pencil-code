@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.58 2008-04-04 13:03:58 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.59 2008-04-07 08:58:21 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,cs2,rho1gpp,gmu1
-! PENCILS PROVIDED nu,gradnu,DYDt_reac,DYDt_diff,cvspec
+! PENCILS PROVIDED nu,gradnu,DYDt_reac,DYDt_diff,cvspec, chi,glnchi
 !***************************************************************
 
 module Chemistry
@@ -27,7 +27,7 @@ module Chemistry
   include 'chemistry.h'
 
   real :: Rgas, Rgas_unit_sys=1.
-  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full
+  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, chi_full
   real, dimension (mx,my,mz,nchemspec) :: cvspec_full
 
 !
@@ -172,11 +172,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.58 2008-04-04 13:03:58 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.59 2008-04-07 08:58:21 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.58 2008-04-04 13:03:58 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.59 2008-04-07 08:58:21 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -511,6 +511,16 @@ module Chemistry
         if (ldiffusion .and. lpencil(i_DYDt_diff))  call calc_diffusion_term(f,p)
 
 
+!
+! Calculate thermal diffusivity
+!
+
+      if (i_chi) then
+        p%chi=chi_full(l1:l2,m,n)
+        if (i_glnchi) call grad(chi_full,p%glnchi)
+      endif 
+
+
 
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -527,8 +537,9 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) ::  cp_R_spec
-      real, dimension (mx,my,mz) :: tmp_sum, tmp_sum2, nuk_nuj
+      real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nuk_nuj, nu_dyn, rho_full
       real, dimension (mx,my,mz,nchemspec,nchemspec) :: Phi
+      real, dimension (mx,my,mz,nchemspec) :: species_cond
 !
       intent(in) :: f
       integer :: k,i,j
@@ -641,7 +652,8 @@ module Chemistry
 !
 !  Viscosity of a mixture
 !
- 
+
+      rho_full=exp(f(:,:,:,ilnrho))
            do k=1,nchemspec
              do j=1,nchemspec
                mk_mj=species_constants(ichemspec(k),imass) &
@@ -652,15 +664,31 @@ module Chemistry
              enddo
            enddo
 
-            tmp_sum=0.
+            nu_dyn=0.
             tmp_sum2=0.
            do k=1,nchemspec 
             do j=1,nchemspec 
               tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:,k,j) 
             enddo
-           tmp_sum=tmp_sum+XX_full(:,:,:,k)*species_viscosity(:,:,:,k)/tmp_sum2
+           nu_dyn=nu_dyn+XX_full(:,:,:,k)*species_viscosity(:,:,:,k)/tmp_sum2
            enddo
-           nu_full=tmp_sum/exp(f(:,:,:,ilnrho))
+           nu_full=nu_dyn/rho_full
+
+
+!
+!   Thermal diffusivity 
+!
+          tmp_sum=0.
+          tmp_sum2=0.
+
+
+           do k=1,nchemspec 
+             species_cond(:,:,:,k)=species_viscosity(:,:,:,k)/species_constants(ichemspec(k),imass)
+            tmp_sum=tmp_sum+XX_full(:,:,:,k)*species_cond(:,:,:,k)
+            tmp_sum2=tmp_sum2+XX_full(:,:,:,k)/species_cond(:,:,:,k)
+           enddo
+
+           chi_full=0.5*(tmp_sum+tmp_sum2)/rho_full/cp_full
 
         else
          call stop_it('This case works only for cgs units system!')

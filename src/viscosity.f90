@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.93 2008-03-31 08:54:47 nbabkovs Exp $
+! $Id: viscosity.f90,v 1.94 2008-04-07 08:58:21 nbabkovs Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -110,7 +110,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.93 2008-03-31 08:54:47 nbabkovs Exp $")
+           "$Id: viscosity.f90,v 1.94 2008-04-07 08:58:21 nbabkovs Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -536,6 +536,7 @@ module Viscosity
       use Sub
       use Interstellar, only: calc_snr_damping
       use Deriv, only: der5i1j,der6
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -614,6 +615,10 @@ module Viscosity
         if(ldensity) then
          do i=1,3
           p%fvisc(:,i)=2*p%nu*p%sglnrho(:,i)+p%nu*(p%del2u(:,i)+1./3.*p%graddivu(:,i))+2*p%sgnu(:,i)
+       !  if (maxval(p%nu)<0) then
+       !    call stop_it("Negative viscosity!")
+       !  endif 
+
          enddo
         endif
 
