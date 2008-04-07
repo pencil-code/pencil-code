@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.95 2008-04-05 23:49:21 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.96 2008-04-07 10:57:04 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -34,7 +34,7 @@ module Particles_nbody
   real                          :: delta_vsp0=1.0,totmass,totmass1
   real                          :: create_jeans_constant=0.25,GNewton1
   real                          :: GNewton=impossible,prhs_cte
-  real, pointer                 :: rhs_poisson_const
+  real, pointer                 :: rhs_poisson_const,tstart_selfgrav
 
   logical :: lcalc_orbit=.true.,lbackreaction=.false.,lnorm=.true.
   logical :: lreset_cm=.false.,lnogravz_star=.false.,lexclude_frozen=.false.
@@ -92,7 +92,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.95 2008-04-05 23:49:21 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.96 2008-04-07 10:57:04 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -182,6 +182,16 @@ module Particles_nbody
       endif
 !
       GNewton1=1./GNewton
+!
+! Get the variable tstart_selfgrav from selfgrav, so we know when to create 
+! sinks
+!
+      call get_shared_variable('tstart_selfgrav',tstart_selfgrav,ierr)
+      if (ierr/=0) then
+        if (lroot) print*, 'initialize_particles_nbody: '// &
+            'there was a problem when getting tstart_selfgrav!'
+        call fatal_error('initialize_particles_nbody','')
+      endif
 !
 ! inverse mass
 !
@@ -864,6 +874,7 @@ module Particles_nbody
         enddo
       endif
 !
+      if (lheader) print*,'dvvp_dt_nbody: Finished dvvp_dt_nbody'
       if (lfirstcall) lfirstcall=.false.
 !
     endsubroutine dvvp_dt_nbody
@@ -1533,9 +1544,19 @@ module Particles_nbody
       real, dimension(nx)  ::prho,prhop,pcs2
       integer, dimension(nx) :: pnp,npik
 !
-      if (lcreate_sinks) then
-        ltime_to_create=(mod(it-1,icreate).eq.0)
+! Just activate this routine if we want sinks to be created and self-
+! gravity is used. If one does not add the t>=tstart_selfgrav flag, the
+! particles initially have zero velocity dispersion and collapse 
+! immediately.
+!
+      if (lcreate_sinks.and.lselfgravity.and.t>=tstart_selfgrav) then
+!
+! just do this for some specific timesteps, otherwise it takes too long!
+!
+        ltime_to_create=mod(it-1,icreate)
         if (ltime_to_create.and.llast) then
+!
+          if (ldebug) print*,'Entered create_sink_particles'
 !
           do i=1,nx
             if (lcartesian_coords) then 
@@ -1590,6 +1611,8 @@ module Particles_nbody
 ! The constant is a free parameter of the module
 !
             if (lcreate_gas) then !test purposes
+!
+              if (ldebug) print*,"Entered create sink from gas"
 !
               if (nzgrid/=1) then 
                 rho_jeans = create_jeans_constant*3.*pi*pcs2*GNewton1*Delta1**2/32 
@@ -1646,25 +1669,31 @@ module Particles_nbody
 !
 ! Jeans analysis of the dust
 ! 
-            if (ldust.and.lcreate_dust) then 
+            if (ldust.and.lparticles_selfgravity.and.lcreate_dust) then 
+!
+              if (ldebug) print*,"Entered create sink from dust"
 !
 ! k1s,k2s and ineargrids are already defined. Substitute sound speed 
 ! for vpm2=<(vvp-<vvp>)^2>, the particle's velocity dispersion 
 !
               vvpm=0.0; vpm2=0.0
               do k=k1_imn(imn),k2_imn(imn)
-                inx0=ineargrid(k,1)-nghost
-                vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
+                if (.not.(any(ipar(k).eq.ipar_sink))) then
+                  inx0=ineargrid(k,1)-nghost
+                  vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
+                endif
               enddo
               do i=1,nx
                 if (pnp(i)>1.0) vvpm(i,:)=vvpm(i,:)/pnp(i)
               enddo
 ! vpm2
               do k=k1_imn(imn),k2_imn(imn)
-                inx0=ineargrid(k,1)-nghost
-                vpm2(inx0) = vpm2(inx0) + (fp(k,ivpx)-vvpm(inx0,1))**2 + &
-                     (fp(k,ivpy)-vvpm(inx0,2))**2 + &
-                     (fp(k,ivpz)-vvpm(inx0,3))**2 
+                if (.not.(any(ipar(k).eq.ipar_sink))) then
+                  inx0=ineargrid(k,1)-nghost
+                  vpm2(inx0) = vpm2(inx0) + (fp(k,ivpx)-vvpm(inx0,1))**2 + &
+                       (fp(k,ivpy)-vvpm(inx0,2))**2 + &
+                       (fp(k,ivpz)-vvpm(inx0,3))**2
+                  endif
               enddo
               do i=1,nx
                 if (pnp(i)>1.0) vpm2(i)=vpm2(i)/pnp(i)
@@ -1681,9 +1710,11 @@ module Particles_nbody
 !
               npik=0.
               do k=k1_imn(imn),k2_imn(imn)
-                inx0=ineargrid(k,1)-nghost
-                npik(inx0)=npik(inx0)+1
-                pik(inx0,npik(inx0)) = k
+                if (.not.(any(ipar(k).eq.ipar_sink))) then
+                  inx0=ineargrid(k,1)-nghost
+                  npik(inx0)=npik(inx0)+1
+                  pik(inx0,npik(inx0)) = k
+                endif
               enddo
 !
 ! Now check for unstable particle concentrations within this pencil
@@ -1696,7 +1727,8 @@ module Particles_nbody
                   if (pnp(i) > 1.0) then
                     !removing must always be done backwards 
                     do kn=pnp(i),1,-1 
-                      call remove_particle(fp,npar_loc,ipar,pik(i,kn))
+                      if (.not.(any(ipar(k).eq.ipar_sink))) &
+                           call remove_particle(fp,npar_loc,ipar,pik(i,kn))
                     enddo
 !
 ! create a new particle at the center of the cell
