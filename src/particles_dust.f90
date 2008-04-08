@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.217 2008-04-08 17:59:19 wlyra Exp $
+! $Id: particles_dust.f90,v 1.218 2008-04-08 19:31:09 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -120,6 +120,8 @@ module Particles
   integer :: idiag_rhopmx=0, idiag_rhopmy=0, idiag_rhopmz=0
   integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
   integer :: idiag_mpt=0, idiag_dedragp=0, idiag_rhopmxy=0, idiag_rhopmr=0
+  integer :: idiag_dvpx2m=0, idiag_dvpy2m=0, idiag_dvpz2m=0
+  integer :: idiag_dvpm=0,idiag_dvpmax=0
 
   contains
 
@@ -138,7 +140,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.217 2008-04-08 17:59:19 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.218 2008-04-08 19:31:09 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -1735,6 +1737,11 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhopmax/=0) call max_mn_name(p%rhop,idiag_rhopmax)
         if (idiag_rhopmin/=0) call max_mn_name(-p%rhop,idiag_rhopmin,lneg=.true.)
         if (idiag_dedragp/=0) call sum_mn_name(drag_heat,idiag_dedragp)
+        if (idiag_dvpx2m /=0  .or. &
+            idiag_dvpx2m /=0  .or. &
+            idiag_dvpx2m /=0  .or. &
+            idiag_dvpm   /=0  .or. &
+            idiag_dvpmax /=0) call calculate_rms_speed(fp,ineargrid,p)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -2700,6 +2707,63 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine compensate_friction_increase
 !***********************************************************************
+    subroutine calculate_rms_speed(fp,ineargrid,p)
+!
+      use Sub,only:sum_mn_name,max_mn_name
+!
+!  Calculate the rms speed dvpm=sqrt(<(vvp-<vvp>)^2>) of the 
+!  particle for diagnostic purposes
+!
+!  08-04-08/wlad: coded
+!
+      real,dimension(mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      real,dimension(nx,3) :: vvpm,dvp2m
+      integer :: inx0,k,l
+      type (pencil_case) :: p
+      logical :: lsink
+!
+!  Calculate the average velocity at each cell
+!
+      vvpm=0.0; dvp2m=0.0
+      do k=k1_imn(imn),k2_imn(imn)
+        lsink=any(ipar(k).eq.ipar_sink)
+        if (.not.lsink) then
+          inx0=ineargrid(k,1)-nghost
+          vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
+        endif
+      enddo
+      do l=1,nx
+        if (p%np(l)>1.0) vvpm(l,:)=vvpm(l,:)/p%np(l)
+      enddo
+!
+!  Get the residual in quadrature, dvp2m
+!
+      do k=k1_imn(imn),k2_imn(imn)
+        lsink=any(ipar(k).eq.ipar_sink)
+        if (.not.lsink) then
+          inx0=ineargrid(k,1)-nghost
+          dvp2m(inx0,1)=dvp2m(inx0,1)+(fp(k,ivpx)-vvpm(inx0,1))**2
+          dvp2m(inx0,2)=dvp2m(inx0,2)+(fp(k,ivpy)-vvpm(inx0,2))**2
+          dvp2m(inx0,3)=dvp2m(inx0,3)+(fp(k,ivpz)-vvpm(inx0,3))**2
+        endif
+      enddo
+      do l=1,nx
+        if (p%np(l)>1.0) dvp2m(l,:)=dvp2m(l,:)/p%np(l)
+      enddo
+!
+!  Output the diagnostics
+!
+      if (idiag_dvpx2m/=0) call sum_mn_name(dvp2m(:,1),idiag_dvpx2m)
+      if (idiag_dvpy2m/=0) call sum_mn_name(dvp2m(:,2),idiag_dvpy2m)
+      if (idiag_dvpz2m/=0) call sum_mn_name(dvp2m(:,3),idiag_dvpz2m)
+      if (idiag_dvpm/=0)   call sum_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),&
+                                            idiag_dvpm,lsqrt=.true.)
+      if (idiag_dvpmax/=0) call max_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),&
+                                            idiag_dvpmax,lsqrt=.true.)
+!     
+      endsubroutine calculate_rms_speed
+!***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !
       integer, intent (in) :: unit
@@ -2808,6 +2872,8 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
         idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
         idiag_rhopmxy=0; idiag_rhopmr=0
+        idiag_dvpx2m=0; idiag_dvpy2m=0; idiag_dvpz2m=0
+        idiag_dvpmax=0; idiag_dvpm=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -2844,7 +2910,12 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'rhopmphi',idiag_rhopmphi)
         call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax)
         call parse_name(iname,cname(iname),cform(iname),'mpt',idiag_mpt)
-        call parse_name(iname,cname(iname),cform(iname), &
+        call parse_name(iname,cname(iname),cform(iname),'dvpx2m',idiag_dvpx2m)
+        call parse_name(iname,cname(iname),cform(iname),'dvpy2m',idiag_dvpy2m)
+        call parse_name(iname,cname(iname),cform(iname),'dvpz2m',idiag_dvpz2m)
+        call parse_name(iname,cname(iname),cform(iname),'dvpm',idiag_dvpm)
+        call parse_name(iname,cname(iname),cform(iname),'dvpmax',idiag_dvpmax)
+         call parse_name(iname,cname(iname),cform(iname), &
             'rhoptilm',idiag_rhoptilm)
         call parse_name(iname,cname(iname),cform(iname), &
             'dedragp',idiag_dedragp)
