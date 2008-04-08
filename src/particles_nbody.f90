@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.97 2008-04-08 06:41:59 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.98 2008-04-08 08:14:20 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -92,7 +92,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.97 2008-04-08 06:41:59 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.98 2008-04-08 08:14:20 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -186,7 +186,7 @@ module Particles_nbody
 ! Get the variable tstart_selfgrav from selfgrav, so we know when to create 
 ! sinks
 !
-      if (lsefgravity) then
+      if (lselfgravity) then
         call get_shared_variable('tstart_selfgrav',tstart_selfgrav,ierr)
         if (ierr/=0) then
           if (lroot) print*, 'initialize_particles_nbody: '// &
