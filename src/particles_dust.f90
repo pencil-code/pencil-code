@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.215 2008-04-07 19:55:39 wlyra Exp $
+! $Id: particles_dust.f90,v 1.216 2008-04-08 10:27:05 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -137,7 +137,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.215 2008-04-07 19:55:39 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.216 2008-04-08 10:27:05 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -2178,7 +2178,7 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: k, inx0
       real :: kd,fd,mach,mach2,fac,OO
       real :: knudsen,reynolds,lambda
-      real :: particle_radius
+      real :: particle_radius,kn_crit
       logical, optional :: lstokes
       logical, save :: lfirstcall
 !
@@ -2211,24 +2211,36 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Epstein drag ceases to work when the particle diameter becomes comparable
 !  to the mean free path (lambda) of the gas molecules. In this case, the force 
-!  is given by Stokes friction 
+!  is given by Stokes friction in the viscous case (low dust Reynolds number)
 !
-!      Fsto=-6*pi*a*kd*mu_kin*Delta(u)                                    (7) 
+!      Fsto=-6*pi*a*mu_kin*Delta(u)                                    (7) 
 !
 !  where mu_kin is the kinematic viscosity of the gas 
 !
 !      mu_kin=1/3*rhog*vth*lambda                                         (8)
 !
-!  and vth=sqrt(8/pi)*cs is the mean thermal velocity of the gas. kd is a factor
-!  that contains the Reynolds number of the flow over the particle (defined in 
-!  the code, some lines below) and the following interpolation works for flows 
-!  or arbitrary Knudsen numbers 
+!  and vth=sqrt(8/pi)*cs is the mean thermal velocity of the gas. For high dust
+!  Reynolds numbers the viscosity if uninmportant and the drag force of the tur-
+!  bulent flow past the particle is given by Newtonian friction 
 !
-!  
-!     Fdrag = [3*Kn/(3*Kn+1)]**2 * Feps +  [1/(3*Kn+1)]**2 * Fsto
+!     Fnew=-1.3*pi*a**2*rhog*|Delta(u)|*Delta(u)
 !
+!  The two cases are once again connected by an interpolating factor
 !
-!  (The discussion above was taken from Paardekooper 2006)
+!     F'sto=-6*pi*a*kd*mu_kin*Delta(u) 
+!
+!  where kd is a factor that contains the Reynolds number of the flow over the 
+!  particle (defined in the code, some lines below). 
+!
+!  The following interpolation then works for flows of arbitrary Knudsen, Mach and Reynolds
+!  numbers 
+! 
+!     Fdrag = [Kn'/(Kn'+1)]**2 * Feps +  [1/(Kn'+1)]**2 * F'sto
+!
+!  Where Kn'=3*Kn is the critical Knudsen number where the viscous (Stokes) drag and the subsonic
+!  Epstein drag are equal. 
+!
+!  (The discussion above was taken from Paardekooper 2006, Woite & Helling 2003 and Kwok 1975) 
 !
 !  In the 2D case, the density rhog is to be replaced by 
 !
@@ -2325,8 +2337,11 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
 !
 !  And we finally have the Stokes correction to intermediate Knudsen numbers
+!  kn_crit is the critical knudsen number where viscous (low reynolds) 
+!  Stokes and subsonic Epstein friction are equal (Woitke & Helling, 2003) 
 !
-          fac=3*knudsen/(3*knudsen+1)**2 * (3*knudsen*fd + kd)
+        kn_crit=3*knudsen 
+        fac=kn_crit/(kn_crit+1)**2 * (kn_crit*fd + kd)
 !
         else 
 !
