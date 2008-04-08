@@ -1,7 +1,7 @@
 ;
-;  $Id: pc_magic_var.pro,v 1.41 2008-03-07 14:06:09 ajohan Exp $
-;  $Date: 2008-03-07 14:06:09 $
-;  $Revision: 1.41 $
+;  $Id: pc_magic_var.pro,v 1.42 2008-04-08 11:42:43 wlyra Exp $
+;  $Date: 2008-04-08 11:42:43 $
+;  $Revision: 1.42 $
 ;
 pro pc_magic_var_dep, variables, tags, var, dep
 ;
@@ -175,7 +175,7 @@ pro pc_magic_var, variables, tags, $
 ; Magnetic field vector
     endif else if (variables[iv] eq 'bb') then begin
       tags[iv]=variables[iv]
-      variables[iv]='curl(aa)'
+      variables[iv]='curl(aa,param.coord_system)'
       if (global) then begin
         if (max(where(global_names eq 'bx_ext')) ne -1) then begin
           vari1='gg.bx_ext'
@@ -279,15 +279,15 @@ pro pc_magic_var, variables, tags, $
 ; Magnetic compression
     endif else if (variables[iv] eq 'mcomp') then begin
       tags[iv]=variables[iv]
-      variables[iv]='-bb*spread(div(uu),3,3)'
+      variables[iv]='-bb*spread(div(uu,param.coord_system),3,3)'
 ; Vorticity
     endif else if (variables[iv] eq 'oo') then begin
       tags[iv]=variables[iv]
-      variables[iv]='curl(uu)'
+      variables[iv]='curl(uu,param.coord_system)'
 ; Divergence of velocity
     endif else if (variables[iv] eq 'divu') then begin
       tags[iv]=variables[iv]
-      variables[iv]='div(uu)'
+      variables[iv]='div(uu,param.coord_system)'
 ; Derivative vector of velocity field
     endif else if (variables[iv] eq 'uij') then begin
       tags[iv]=variables[iv]
@@ -299,7 +299,8 @@ pro pc_magic_var, variables, tags, $
 ; Velocity advection
     endif else if (variables[iv] eq 'advu') then begin
       tags[iv]=variables[iv]
-      variables[iv]='-0.5*grad(dot2(uu))+cross(uu,curl(uu))'
+      variables[iv]=$
+      '-0.5*grad(dot2(uu))+cross(uu,curl(uu,param.coord_system))'
 ; Density advection
     endif else if (variables[iv] eq 'advlnrho') then begin
       tags[iv]=variables[iv]
@@ -383,7 +384,7 @@ pro pc_magic_var, variables, tags, $
 ; Divergence of dust velocity
     endif else if (variables[iv] eq 'divud') then begin
       tags[iv]=variables[iv]
-      variables[iv]='div(uud)'
+      variables[iv]='div(uud,param.coord_system)'
 ; Dust density
     endif else if (variables[iv] eq 'rhod') then begin
       tags[iv]=variables[iv]
