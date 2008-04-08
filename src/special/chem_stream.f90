@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.9 2008-03-28 14:54:50 nbabkovs Exp $
+! $Id: chem_stream.f90,v 1.10 2008-04-08 14:30:12 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -134,11 +134,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.9 2008-03-28 14:54:50 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.10 2008-04-08 14:30:12 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.9 2008-03-28 14:54:50 nbabkovs Exp $")
+           "$Id: chem_stream.f90,v 1.10 2008-04-08 14:30:12 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -458,6 +458,14 @@ module Special
            call bc_stream_x(f,-1, bc)
          case (iBC_X_BOT)
            call bc_stream_x(f,-1, bc)
+         case (iBC_Y_TOP)
+           call bc_stream_y(f,-1, bc)
+         case (iBC_Y_BOT)
+           call bc_stream_y(f,-1, bc)
+         case (iBC_Z_TOP)
+           call bc_stream_z(f,-1, bc)
+         case (iBC_Z_BOT)
+           call bc_stream_z(f,-1, bc)
          endselect
          bc%done=.true.
          case ('1D')
@@ -546,7 +554,9 @@ module Special
       integer :: sgn
       type (boundary_condition) :: bc
       integer :: i,i1,j,vr,k
-      real :: value1, value2
+      real :: value1, value2, y0
+
+      y0=3.
 
       vr=bc%ivar
 
@@ -558,38 +568,48 @@ module Special
       ! bottom boundary
 
        if (vr==1) then
-        do k=1,my
-            if (abs(y(k)) .lt. 3.) then
-              do i=0,nghost;   f(l1-i,k,:,vr)=value1;  enddo
+        do k=m1,my
+            if (abs(y(k)) .lt. y0) then
+              do i=0,nghost
+                   f(l1-i,k,:,vr)=value1*(1.-(y(k)/y0)**2); 
+              enddo
             else
               do i=0,nghost;   f(l1-i,k,:,vr)=0.;  enddo
+            !  do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
             endif
         
         enddo
        endif
 
 
-      if (vr==4) then
-           do i=0,nghost;  f(l1-i,:,:,vr)=log(value1);  enddo
-      endif
-
-      if (vr==5) then
-          do i=0,nghost;   f(l1-i,:,:,vr)=log(value1); enddo 
-      endif
+       if (vr==4 .or. vr==5) then
+         !  if (abs(y(k)) .lt. y0) then
+            do i=0,nghost;  f(l1-i,m1:my,:,vr)=log(value1);  enddo
+         !  else
+          !  do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
+          !  do i=0,nghost; f(l1-i,:,:,vr)=f(l1,:,:,vr); enddo
+          !   do i=0,nghost
+          !      f(l1-i,:,:,vr)=0.5*(f(l1-i+1,:,:,vr)+f(l1-i-1,:,:,vr))
+          !   enddo
+          ! endif
+       endif
 
        if (vr >= ichemspec(1)) then
 
          do i=0,nghost; 
-          do k=1,my
-             if (abs(y(k)) .lt. 3.) then
+          do k=m1,my
+             if (abs(y(k)) .lt. y0) then
                 if (vr < ichemspec(nchemspec))  f(l1-i,k,:,vr)=value1
-                if (vr == ichemspec(nchemspec))                    f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4
+                if (vr == ichemspec(nchemspec)) f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4
              else
                 if (vr < ichemspec(nchemspec)) then
                  f(l1-i,k,:,vr)=value1
                 endif 
-                if (vr == ichemspec(nchemspec))   f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4
-            !   f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr)
+                if (vr == ichemspec(nchemspec)) then
+                      f(l1-i,k,:,vr)=value1!*((l1-i)/(l1-0.))**4*0.
+             !    f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr)
+             !   f(l1-i,:,:,vr)=0.5*(f(l1-i+1,:,:,vr)+f(l1-i-1,:,:,vr))
+               endif
              endif
           enddo
          enddo
@@ -607,6 +627,80 @@ module Special
       endif
 !
     endsubroutine bc_stream_x
+ !******************************************************************** 
+  subroutine bc_stream_y(f,sgn,bc)
+!
+! Natalia
+!
+    use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: sgn
+      type (boundary_condition) :: bc
+      integer :: i, vr
+      real :: value1, value2
+
+
+      vr=bc%ivar
+
+      value1=bc%value1
+      value2=bc%value2
+
+
+    if (bc%location==iBC_Y_BOT) then
+      ! bottom boundary
+        do i=1,nghost
+      !   f(:,m2-i,:,vr)=f(:,m2,:,vr) 
+         f(:,m2-i,:,vr)=2*f(:,m2,:,vr)+sgn*f(:,m2+i,:,vr); 
+        enddo
+      elseif (bc%location==iBC_Y_TOP) then
+      ! top boundary
+        do i=1,nghost
+       ! f(:,m2+i,:,vr)=f(:,m2,:,vr)
+        f(:,m2+i,:,vr)=2*f(:,m2,:,vr)+sgn*f(:,m2-i,:,vr);
+        enddo
+      else
+        print*, "bc_BL_y: ", bc%location, " should be `top(", &
+                        iBC_Y_TOP,")' or `bot(",iBC_Y_BOT,")'"
+      endif
+!
+    endsubroutine bc_stream_y
+ !********************************************************************
+ subroutine bc_stream_z(f,sgn,bc)
+!
+! Natalia
+!
+    use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: sgn
+      type (boundary_condition) :: bc
+      integer :: i, vr
+      real :: value1, value2
+
+
+      vr=bc%ivar
+
+      value1=bc%value1
+      value2=bc%value2
+
+
+    if (bc%location==iBC_Z_BOT) then
+      ! bottom boundary
+        do i=1,nghost
+         f(:,:,n2-i,vr)=f(:,:,n2,vr)!+2*f(:,m2,:,vr)*0.!+sgn*f(:,m2-i,:,vr); 
+        enddo
+      elseif (bc%location==iBC_Z_TOP) then
+      ! top boundary
+        do i=1,nghost
+        f(:,:,n2+i,vr)=f(:,:,n2,vr)!+2*f(:,m2,:,vr)*0.!+sgn*f(:,m2+i,:,vr); 
+        enddo
+      else
+        print*, "bc_BL_z: ", bc%location, " should be `top(", &
+                        iBC_Z_TOP,")' or `bot(",iBC_Z_BOT,")'"
+      endif
+!
+    endsubroutine bc_stream_z
  !********************************************************************
   subroutine bc_1Dstream_x(f,sgn,bc)
 !
