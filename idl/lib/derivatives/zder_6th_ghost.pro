@@ -1,5 +1,5 @@
 ;
-;  $Id: zder_6th_ghost.pro,v 1.15 2008-04-08 11:38:11 ajohan Exp $
+;  $Id: zder_6th_ghost.pro,v 1.16 2008-04-08 11:53:46 wlyra Exp $
 ;
 ;  First derivative d/dz
 ;  - 6th-order (7-point stencil)
@@ -7,7 +7,7 @@
 ;  - on potentially non-equidistant grid
 ;
 ;***********************************************************************
-function zder,f
+function zder,f,lsystem
   COMPILE_OPT IDL2,HIDDEN
 ;
   ;common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
@@ -17,21 +17,20 @@ function zder,f
   common cdat,x,y,z
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
 ;
+default,lsystem,0 ;cartesian
+;       lsystem,1 ;cylindric
+;       lsystem,2 ;spherical  
+;
 ;  calculate nx, ny, and nz, based on the input array size
 ;
   s=size(f) & d=make_array(size=s)
   nx=s[1] & ny=s[2] & nz=s[3]
 ;
-lsystem=0
-;  pc_read_param,obj=par,datadir=datadir,dim=dim,/quiet
-;  if (par.coord_system eq 'cartesian') then lsystem=0
-;  if (par.coord_system eq 'cylindric') then lsystem=1
-;  if (par.coord_system eq 'spherical') then lsystem=2
-;  xx=spread(x,[1,2],[ny,nz])
-;  yy=spread(y,[0,2],[nx,nz])
-;  sin1th=1./sin(yy)
-;  i_sin=where(abs(sin(yy)) lt 1e-5) ;sinth_min=1e-5
-;  if (i_sin ne -1) then sin1th[i_sin]=0.
+  xx=spread(x,[1,2],[ny,nz])
+  yy=spread(y,[0,2],[nx,nz])
+  sin1th=1./sin(yy)
+  i_sin=where(abs(sin(yy)) lt 1e-5) ;sinth_min=1e-5
+  if (i_sin ne -1) then sin1th[i_sin]=0.
 ;
 
 ; 26-jun-2007/dintrans: 2-D case only means (x,z) for the moment
