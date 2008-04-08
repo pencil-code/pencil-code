@@ -1,5 +1,5 @@
 ;
-;  $Id: yder_6th_ghost.pro,v 1.12 2008-04-08 11:34:19 ajohan Exp $
+;  $Id: yder_6th_ghost.pro,v 1.13 2008-04-08 11:41:43 wlyra Exp $
 ;
 ;  First derivative d/dy
 ;  - 6th-order
@@ -7,7 +7,7 @@
 ;  - on potentially non-equidistant grid
 ;
 ;***********************************************************************
-function yder,f
+function yder,f,lsystem
   COMPILE_OPT IDL2,HIDDEN
 ;
   ;common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
@@ -22,12 +22,11 @@ function yder,f
   s=size(f) & d=make_array(size=s)
   nx=s[1] & ny=s[2] & nz=s[3]
 ;
-lsystem=0
-;  pc_read_param,obj=par,datadir=datadir,dim=dim,/quiet
-;  if (par.coord_system eq 'cartesian') then lsystem=0
-;  if (par.coord_system eq 'cylindric') then lsystem=1
-;  if (par.coord_system eq 'spherical') then lsystem=2
-;  xx=spread(x,[1,2],[ny,nz])
+default,lsystem,0 ;cartesian
+;       lsystem,1 ;cylindric
+;       lsystem,2 ;spherical 
+;
+  xx=spread(x,[1,2],[ny,nz])
 ;
 ;  Check for degenerate case (no y-extension)
 ;
