@@ -1,5 +1,5 @@
 ;;
-;; $Id: power_snapshot.pro,v 1.11 2008-04-07 11:42:29 ajohan Exp $
+;; $Id: power_snapshot.pro,v 1.12 2008-04-08 08:08:12 ajohan Exp $
 ;;
 ;; Calculate energy spectrum of 3-D cube.
 ;;
@@ -13,7 +13,7 @@
 ;;    kz = scalar wavenumber in z
 ;;
 pro power_snapshot, ff, eks=eks, fkx=fkx, fky=fky, fkz=fkz, $
-    ks=ks, kx=kx, ky=ky, kz=kz, $
+    nshell=nshell, ks=ks, kx=kx, ky=ky, kz=kz, Lx=Lx, Ly=Ly, Lz=Lz, $
     double=double, plot=plot, ps=ps, filename=filename, $
     nolegend=nolegend
 ;
@@ -71,18 +71,23 @@ endif
 ;  3-D shell-integrated spectrum.
 ;
 if (arg_present(eks)) then begin
-  kx=[indgen(nx/2+1),-reverse(indgen(nx/2-1)+1)]*one
-  ky=[indgen(ny/2+1),-reverse(indgen(ny/2-1)+1)]*one
-  kz=[indgen(nz/2+1),-reverse(indgen(nz/2-1)+1)]*one
+  if (n_elements(Lx) ne 0) then kx0=2*!pi/Lx*one else kx0=one
+  if (n_elements(Ly) ne 0) then ky0=2*!pi/Ly*one else ky0=one
+  if (n_elements(Lz) ne 0) then kz0=2*!pi/Lz*one else kz0=one
+  kx=[indgen(nx/2+1),-reverse(indgen(nx/2-1)+1)]*kx0
+  ky=[indgen(ny/2+1),-reverse(indgen(ny/2-1)+1)]*ky0
+  kz=[indgen(nz/2+1),-reverse(indgen(nz/2-1)+1)]*kz0
   ks=indgen(nx/2)
-  eks=fltarr(nx/2)
+  eks=fltarr(n_elements(ks))
+  nshell=fltarr(n_elements(ks))
 ;
   fkk=fft(ff)
 ;
   for ikz=0,nz-1 do begin & for iky=0,ny-1 do begin & for ikx=0,nx-1 do begin
     k=round(sqrt(kx[ikx]^2+ky[iky]^2+kz[ikz]^2))
-    if (k lt nx/2-1) then begin
+    if (k lt n_elements(ks)) then begin
       eks[k]=eks[k]+abs(fkk[ikx,iky,ikz])^2
+      nshell[k]=nshell[k]+1
     endif
   endfor & endfor & endfor
 endif
