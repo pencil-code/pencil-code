@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.384 2008-04-08 16:26:36 wlyra Exp $
+! $Id: density.f90,v 1.385 2008-04-08 16:44:07 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -138,7 +138,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.384 2008-04-08 16:26:36 wlyra Exp $")
+           "$Id: density.f90,v 1.385 2008-04-08 16:44:07 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -267,11 +267,15 @@ module Density
 ! Do not allow inconsistency between rho0 (from eos) and rho_const 
 ! or lnrho0 and lnrho_const. 
 !
-      if (rho0.ne.rho_const) then 
-        print*,"inconsistency between the density constants from eos "
-        print*,"(rho0 or lnrho0) and the ones from the density module "
-        print*,"(rho_const or lnrho_const)"
-        call fatal_error("initialize_density","")
+      if (rho0.ne.rho_const) then
+        if (lroot) then 
+          print*,"WARNING!"
+          print*,"inconsistency between the density constants from eos  "
+          print*,"(rho0 or lnrho0) and the ones from the density module "
+          print*,"(rho_const or lnrho_const). It may damage your        "
+          print*,"simulation if you are using them in different places. "
+          call warning("initialize_density","")
+        endif
       endif
 !
       if (lnumerical_equilibrium) then
