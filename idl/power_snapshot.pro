@@ -1,5 +1,5 @@
 ;;
-;; $Id: power_snapshot.pro,v 1.12 2008-04-08 08:08:12 ajohan Exp $
+;; $Id: power_snapshot.pro,v 1.13 2008-04-08 10:13:08 ajohan Exp $
 ;;
 ;; Calculate energy spectrum of 3-D cube.
 ;;
@@ -13,13 +13,18 @@
 ;;    kz = scalar wavenumber in z
 ;;
 pro power_snapshot, ff, eks=eks, fkx=fkx, fky=fky, fkz=fkz, $
-    nshell=nshell, ks=ks, kx=kx, ky=ky, kz=kz, Lx=Lx, Ly=Ly, Lz=Lz, $
+    nshell=nshell, ks=ks, kx=kx, ky=ky, kz=kz, $
+    k0x=k0x, k0y=k0y, k0z=k0z, Lx=Lx, Ly=Ly, Lz=Lz, deltak=deltak, nks=nks, $
     double=double, plot=plot, ps=ps, filename=filename, $
-    nolegend=nolegend
+    nolegend=nolegend, quiet=quiet, debug=debug
+;
+;  Default values.
 ;
 default, plot, 0
 default, ps, 0
 default, nolegend, 0
+default, quiet, 0
+default, debug, 0
 ;
 zero=0.0
 one =1.0
@@ -71,25 +76,59 @@ endif
 ;  3-D shell-integrated spectrum.
 ;
 if (arg_present(eks)) then begin
-  if (n_elements(Lx) ne 0) then kx0=2*!pi/Lx*one else kx0=one
-  if (n_elements(Ly) ne 0) then ky0=2*!pi/Ly*one else ky0=one
-  if (n_elements(Lz) ne 0) then kz0=2*!pi/Lz*one else kz0=one
-  kx=[indgen(nx/2+1),-reverse(indgen(nx/2-1)+1)]*kx0
-  ky=[indgen(ny/2+1),-reverse(indgen(ny/2-1)+1)]*ky0
-  kz=[indgen(nz/2+1),-reverse(indgen(nz/2-1)+1)]*kz0
-  ks=indgen(nx/2)
+;
+;  Define directional wavenumbers kx, ky, kz.
+;
+  if (n_elements(k0x) eq 0) then k0x=one else k0x=k0x*one
+  if (n_elements(k0y) eq 0) then k0y=one else k0y=k0y*one
+  if (n_elements(k0z) eq 0) then k0z=one else k0z=k0z*one
+  if (n_elements(Lx) ne 0)  then k0x=2*!pi/Lx*one
+  if (n_elements(Ly) ne 0)  then k0y=2*!pi/Ly*one
+  if (n_elements(Lz) ne 0)  then k0z=2*!pi/Lz*one
+  kx=[indgen(nx/2+1),-reverse(indgen(nx/2-1)+1)]*k0x
+  ky=[indgen(ny/2+1),-reverse(indgen(ny/2-1)+1)]*k0y
+  kz=[indgen(nz/2+1),-reverse(indgen(nz/2-1)+1)]*k0z
+;
+;  Define scalar wavenumber over which to bin.
+;
+  default, deltak, 1.0*one
+  if (n_elements(nks) eq 0) then begin
+    ks=indgen(nx/2)*one
+  endif else begin
+    ks=indgen(nks)*deltak
+  endelse
+  if (not quiet) then begin
+    print, 'k0x, k0y, k0z=', k0x, k0y, k0z
+    print, 'Going to sum in shells of radius ks=', ks
+  endif
+;
+;  Define array to hold shell summed power and number of elements in each shell.
+;  
   eks=fltarr(n_elements(ks))
-  nshell=fltarr(n_elements(ks))
+  nshell=lonarr(n_elements(ks))
+;
+;  Transform to wavenumber space.
 ;
   fkk=fft(ff)
 ;
+;  Loop over all vector k, calculate |k| and assign to proper shell.
+;
   for ikz=0,nz-1 do begin & for iky=0,ny-1 do begin & for ikx=0,nx-1 do begin
-    k=round(sqrt(kx[ikx]^2+ky[iky]^2+kz[ikz]^2))
+    k=round(sqrt(kx[ikx]^2+ky[iky]^2+kz[ikz]^2)/deltak)
+    if (debug) then print, ikx, kx[ikx], iky, ky[iky], ikz, kz[ikz], k
     if (k lt n_elements(ks)) then begin
       eks[k]=eks[k]+abs(fkk[ikx,iky,ikz])^2
       nshell[k]=nshell[k]+1
-    endif
+    endif else begin
+      if (debug) then print, '** Mode not allocated to any shell'
+    endelse
   endfor & endfor & endfor
+;
+;  Print total number of modes that were allocated to a shell.
+;
+  if (not quiet) then begin
+    print, 'total(nshell)=', total(nshell), ' / total(modes)=', n_elements(fkk)
+  endif
 endif
 ;
 ;  Make simple plot if requested.
