@@ -1,5 +1,5 @@
 ;
-;  $Id: zder_6th_ghost.pro,v 1.14 2008-04-08 11:34:19 ajohan Exp $
+;  $Id: zder_6th_ghost.pro,v 1.15 2008-04-08 11:38:11 ajohan Exp $
 ;
 ;  First derivative d/dz
 ;  - 6th-order (7-point stencil)
@@ -29,9 +29,9 @@ lsystem=0
 ;  if (par.coord_system eq 'spherical') then lsystem=2
 ;  xx=spread(x,[1,2],[ny,nz])
 ;  yy=spread(y,[0,2],[nx,nz])
-  sin1th=1./sin(yy)
-  i_sin=where(abs(sin(yy)) lt 1e-5) ;sinth_min=1e-5
-  if (i_sin ne -1) then sin1th[i_sin]=0.
+;  sin1th=1./sin(yy)
+;  i_sin=where(abs(sin(yy)) lt 1e-5) ;sinth_min=1e-5
+;  if (i_sin ne -1) then sin1th[i_sin]=0.
 ;
 
 ; 26-jun-2007/dintrans: 2-D case only means (x,z) for the moment
