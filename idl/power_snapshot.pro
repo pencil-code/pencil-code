@@ -1,16 +1,18 @@
 ;;
-;; $Id: power_snapshot.pro,v 1.13 2008-04-08 10:13:08 ajohan Exp $
+;; $Id: power_snapshot.pro,v 1.14 2008-04-08 10:22:05 ajohan Exp $
 ;;
 ;; Calculate energy spectrum of 3-D cube.
 ;;
-;;   eks = shell-integrated spectrum
-;;   fkx = 1-D averaged spectrum <f(kx,y,z)>_(y,z)
-;;   fky = 1-D averaged spectrum <f(x,ky,z)>_(x,z)
-;;   fkz = 1-D averaged spectrum <f(x,y,kz)>_(x,y)
-;;    ks = scalar shell wavenumber
-;;    kx = scalar wavenumber in x
-;;    ky = scalar wavenumber in y
-;;    kz = scalar wavenumber in z
+;;   eks           : shell-integrated spectrum
+;;   fkx           : 1-D averaged spectrum <f(kx,y,z)>_(y,z)
+;;   fky           : 1-D averaged spectrum <f(x,ky,z)>_(x,z)
+;;   fkz           : 1-D averaged spectrum <f(x,y,kz)>_(x,y)
+;;   ks            : scalar shell wavenumber
+;;   kx, ky, kz    : scalar wavenumber in x, y and z
+;;   k0x, k0y, k0z : unit wavenumbers
+;;   Lx, Ly, Lz    : box dimensions, gives unit wavenumbers k0=2*!pi/L
+;;   nks           : number of shells to sum over
+;;   deltak        : radius difference of shells
 ;;
 pro power_snapshot, ff, eks=eks, fkx=fkx, fky=fky, fkz=fkz, $
     nshell=nshell, ks=ks, kx=kx, ky=ky, kz=kz, $
