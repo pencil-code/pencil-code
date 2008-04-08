@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.400 2008-04-05 19:46:52 brandenb Exp $
+! $Id: equ.f90,v 1.401 2008-04-08 08:22:49 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -477,7 +477,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.400 2008-04-05 19:46:52 brandenb Exp $")
+           "$Id: equ.f90,v 1.401 2008-04-08 08:22:49 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -1148,7 +1148,8 @@ module Equ
 !
 !  Check if sink particles were created
 !
-      if (lparticles) call particles_create_sinks(f)
+      if (lparticles_nbody.and.lselfgravity) &
+           call particles_create_sinks(f)
 !
 !  in case of lvisc_hyper=true epsK is calculated for the whole array
 !  at not just for one pencil, it must therefore be added outside the

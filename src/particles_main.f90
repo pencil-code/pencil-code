@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.65 2008-03-19 00:29:04 wlyra Exp $
+! $Id: particles_main.f90,v 1.66 2008-04-08 08:22:49 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -401,14 +401,14 @@ module Particles_main
 !***********************************************************************
     subroutine particles_create_sinks(f)
 !
-! Fetch fp and ineargrid to create sinks
+! Wrap to fetch fp and ineargrid to create sinks
+! This will be called only if both particles_nbody and selfgravity are used
 !
 ! 14-mar-08/wlad : coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!     
-      if (lparticles_nbody) &
-           call create_sink_particles(f,fp,ineargrid)
+!
+      call create_sink_particles(f,fp,ineargrid)
 !
     endsubroutine particles_create_sinks
 !***********************************************************************
