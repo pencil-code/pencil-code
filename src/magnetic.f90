@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.505 2008-04-06 17:35:38 brandenb Exp $
+! $Id: magnetic.f90,v 1.506 2008-04-08 12:53:07 pkapyla Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -270,6 +270,7 @@ module Magnetic
   integer :: idiag_bx2mz=0      ! DIAG_DOC: $\left< B_x^2 \right>_{xy}$
   integer :: idiag_by2mz=0      ! DIAG_DOC: $\left< B_y^2 \right>_{xy}$
   integer :: idiag_bz2mz=0      ! DIAG_DOC: $\left< B_z^2 \right>_{xy}$
+  integer :: idiag_jbmz=0       ! DIAG_DOC:
   integer :: idiag_bxmxy=0      ! DIAG_DOC: $\left< B_x \right>_{xy}$
   integer :: idiag_bymxy=0      ! DIAG_DOC: $\left< B_y \right>_{xy}$
   integer :: idiag_bzmxy=0      ! DIAG_DOC: $\left< B_z \right>_{xy}$
@@ -386,7 +387,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.505 2008-04-06 17:35:38 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.506 2008-04-08 12:53:07 pkapyla Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1073,7 +1074,7 @@ module Magnetic
       if (idiag_j2m/=0 .or. idiag_jm2/=0 .or. idiag_jrms/=0 .or. &
           idiag_jmax/=0 .or. idiag_epsM/=0 .or. idiag_epsM_LES/=0) &
           lpenc_diagnos(i_j2)=.true.
-      if (idiag_jbm/=0) lpenc_diagnos(i_jb)=.true.
+      if (idiag_jbm/=0 .or. idiag_jbmz/=0) lpenc_diagnos(i_jb)=.true.
       if (idiag_jbmphi/=0) lpenc_diagnos2d(i_jb)=.true.
       if (idiag_vArms/=0 .or. idiag_vAmax/=0 .or. idiag_vA2m/=0) lpenc_diagnos(i_va2)=.true.
       if (idiag_ubm/=0) lpenc_diagnos(i_ub)=.true.
@@ -2085,6 +2086,7 @@ module Magnetic
         if (idiag_bx2mz/=0)  call xysum_mn_name_z(p%bb(:,1)**2,idiag_bx2mz)
         if (idiag_by2mz/=0)  call xysum_mn_name_z(p%bb(:,2)**2,idiag_by2mz)
         if (idiag_bz2mz/=0)  call xysum_mn_name_z(p%bb(:,3)**2,idiag_bz2mz)
+        if (idiag_jbmz/=0)   call xysum_mn_name_z(p%jb,idiag_jbmz)
         if (idiag_bxbymy/=0) &
             call xzsum_mn_name_y(p%bbb(:,1)*p%bbb(:,2),idiag_bxbymy)
         if (idiag_bxbzmy/=0) &
@@ -4701,7 +4703,7 @@ module Magnetic
         idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0
         idiag_bxbymz=0; idiag_bxbzmz=0; idiag_bybzmz=0
-        idiag_b2mz=0
+        idiag_b2mz=0; idiag_jbmz=0
         idiag_bxbym=0; idiag_bxbzm=0; idiag_bybzm=0; idiag_djuidjbim=0
         idiag_bxmz=0; idiag_bymz=0; idiag_bzmz=0
         idiag_bmx=0; idiag_bmy=0; idiag_bmz=0; idiag_ebmz=0
@@ -4868,6 +4870,7 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'b2mz',idiag_b2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
                         'mflux_z',idiag_mflux_z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jbmz',idiag_jbmz)
       enddo
 !
 !  check for those quantities for which we want y-averages
@@ -5017,6 +5020,7 @@ module Magnetic
         write(3,*) 'i_bx2mxz=',idiag_bx2mxz
         write(3,*) 'i_by2mxz=',idiag_by2mxz
         write(3,*) 'i_bz2mxz=',idiag_bz2mxz
+        write(3,*) 'i_jbmz=',idiag_jbmz
         write(3,*) 'i_bx2mxy=',idiag_bx2mxy
         write(3,*) 'i_by2mxy=',idiag_by2mxy
         write(3,*) 'i_bz2mxy=',idiag_bz2mxy
