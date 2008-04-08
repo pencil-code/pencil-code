@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.216 2008-04-08 10:27:05 wlyra Exp $
+! $Id: particles_dust.f90,v 1.217 2008-04-08 17:59:19 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -44,6 +44,7 @@ module Particles
   real :: tstart_collisional_cooling=0.0
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, mean_free_path_gas=0.0
+  real :: pdlaw=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer, dimension (npar_species) :: ipar_fence_species=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
@@ -87,7 +88,7 @@ module Particles
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transsonic, lcheck_exact_frontier,&
-      ldraglaw_epstein_stokes_transsonic
+      ldraglaw_epstein_stokes_transsonic,pdlaw
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -137,7 +138,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.216 2008-04-08 10:27:05 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.217 2008-04-08 17:59:19 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -396,7 +397,7 @@ module Particles
       real :: vpx_sum, vpy_sum, vpz_sum
       real :: r, p, px, py, pz, eps, cs, k2_xxp
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
-      real :: rad,rad2,phi,OO,fact
+      real :: rad,rad_scl,phi,tmp
       integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
 !
@@ -441,20 +442,27 @@ module Particles
               fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
 
        case ('random-cylindrical')
-          if (lroot) print*, 'init_particles: Random particle cylindrical positions'
+          if (lroot) print*, 'init_particles: Random particle '//&
+               'cylindrical positions with power-law pdlaw=',pdlaw
 !
           do k=1,npar_loc
-             call random_number_wrapper(rad2)
-             call random_number_wrapper(phi)
+!
+! Start the particles obbeying a power law pdlaw
+!
+            tmp=2-pdlaw
+            call random_number_wrapper(rad_scl)
+            rad_scl = rp_int**tmp + rad_scl*(rp_ext**tmp-rp_int**tmp)
+            rad = rad_scl**(1./tmp)
+!
+! Random in azimuth
+!
+            call random_number_wrapper(phi)
+!
              if (lcartesian_coords) then
-               rad2 = rp_int**2 + rad2*(rp_ext**2-rp_int**2)
-               rad = sqrt(rad2)
                phi = 2*pi*phi
                if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
                if (nygrid/=1) fp(k,iyp)=rad*sin(phi)
              elseif (lcylindrical_coords) then
-               rad2 = rp_int**2 + rad2*(rp_ext**2-rp_int**2)
-               rad = sqrt(rad2)
                phi = xyz0_loc(2)+phi*Lxyz_loc(2)
                if (nxgrid/=1) fp(k,ixp)=rad
                if (nygrid/=1) fp(k,iyp)=phi
@@ -878,16 +886,17 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
           do k=1,npar_loc
             if (lcartesian_coords) then
+              !tmp is the Keplerian velocity
               rad=sqrt(fp(k,ixp)**2 + fp(k,iyp)**2 + fp(k,izp)**2)
-              OO=rad**(-1.5)
-              fp(k,ivpx) = -OO*fp(k,iyp)
-              fp(k,ivpy) =  OO*fp(k,ixp)
+              tmp=rad**(-1.5)
+              fp(k,ivpx) = -tmp*fp(k,iyp)
+              fp(k,ivpy) =  tmp*fp(k,ixp)
               fp(k,ivpz) =  0.0
             elseif (lcylindrical_coords) then
               rad=fp(k,ixp)
-              OO=rad**(-1.5)
+              tmp=rad**(-1.5)
               fp(k,ivpx) =  0.0
-              fp(k,ivpy) =  OO*rad
+              fp(k,ivpy) =  tmp*rad
               fp(k,ivpz) =  0.0
             endif
           enddo
