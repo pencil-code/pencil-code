@@ -5,10 +5,10 @@ COMPILE_OPT IDL2,HIDDEN
   if (lsystem eq 0) then corr=0.
   if (lsystem eq 1) then corr=0.
   if (lsystem eq 2) then begin
-      cotth=cos(yy)/sin(yy)      
-      i_sin=where(abs(sin(yy)) lt 1e-5) ;sinth_min=1e-5
-      if (i_sin ne -1) then cotth[i_sin]=0.
-      corr=f[*,*,*,2]*cotth/xx
+    cotth=cos(yy)/sin(yy)      
+    i_sin=where(abs(sin(yy)) lt 1e-5) ;sinth_min=1e-5
+    if (i_sin ne -1) then cotth[i_sin]=0.
+    corr=f[*,*,*,2]*cotth/xx
   endif
   return,yder(f[*,*,*,2])-zder(f[*,*,*,1])+corr
 end
@@ -33,13 +33,14 @@ COMPILE_OPT IDL2,HIDDEN
 common cdat, x, y
 ;
   w=make_array(size=size(f),/nozero)
-  pc_read_param,obj=par,datadir=datadir,dim=dim,/quiet
-  if (par.coord_system eq 'cartesian') then lsystem=0
-  if (par.coord_system eq 'cylindric') then lsystem=1
-  if (par.coord_system eq 'spherical') then lsystem=2
+;  pc_read_param,obj=par,datadir=datadir,dim=dim,/quiet
+lsystem=0
+;  if (par.coord_system eq 'cartesian') then lsystem=0
+;  if (par.coord_system eq 'cylindric') then lsystem=1
+;  if (par.coord_system eq 'spherical') then lsystem=2
 ;
-  xx=spread(x,[1,2],[dim.my,dim.mz])
-  yy=spread(y,[0,2],[dim.mx,dim.mz])
+;  xx=spread(x,[1,2],[dim.my,dim.mz])
+;  yy=spread(y,[0,2],[dim.mx,dim.mz])
 ;
   w[*,*,*,0]=curlx(f,lsystem,xx,yy)
   w[*,*,*,1]=curly(f,lsystem,xx)

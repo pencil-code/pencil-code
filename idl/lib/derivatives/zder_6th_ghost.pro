@@ -1,5 +1,5 @@
 ;
-;  $Id: zder_6th_ghost.pro,v 1.13 2008-03-23 19:28:17 wlyra Exp $
+;  $Id: zder_6th_ghost.pro,v 1.14 2008-04-08 11:34:19 ajohan Exp $
 ;
 ;  First derivative d/dz
 ;  - 6th-order (7-point stencil)
@@ -22,12 +22,13 @@ function zder,f
   s=size(f) & d=make_array(size=s)
   nx=s[1] & ny=s[2] & nz=s[3]
 ;
-  pc_read_param,obj=par,datadir=datadir,dim=dim,/quiet
-  if (par.coord_system eq 'cartesian') then lsystem=0
-  if (par.coord_system eq 'cylindric') then lsystem=1
-  if (par.coord_system eq 'spherical') then lsystem=2
-  xx=spread(x,[1,2],[ny,nz])
-  yy=spread(y,[0,2],[nx,nz])
+lsystem=0
+;  pc_read_param,obj=par,datadir=datadir,dim=dim,/quiet
+;  if (par.coord_system eq 'cartesian') then lsystem=0
+;  if (par.coord_system eq 'cylindric') then lsystem=1
+;  if (par.coord_system eq 'spherical') then lsystem=2
+;  xx=spread(x,[1,2],[ny,nz])
+;  yy=spread(y,[0,2],[nx,nz])
   sin1th=1./sin(yy)
   i_sin=where(abs(sin(yy)) lt 1e-5) ;sinth_min=1e-5
   if (i_sin ne -1) then sin1th[i_sin]=0.
