@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.135 2008-04-03 12:41:41 ajohan Exp $
+! $Id: particles_sub.f90,v 1.136 2008-04-09 18:59:08 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -556,19 +556,35 @@ module Particles_sub
             enddo
           endif
 !
-!  Fix for error that occurs when a particle lands exactly at a lower
-!  processor boundary, and is assigned to a different processor (one below)
+!  Fix for error that might occur when a particle lands exactly at the 
+!  box boundary and it assigned to a non-existant processor
 !
-        if (lcheck_exact_frontier) then
-          if (nprocy/=1) then 
-            if (any(fp(k,iyp)==y0_proc(1:nprocy))) ipy_rec=ipy_rec+1
-            if (any(fp(k,iyp)==y1_proc(1:nprocy))) ipy_rec=ipy_rec-1
+          if (lcheck_exact_frontier) then
+            if (nprocy/=1) then 
+!
+!  Check if the particle is really closer to a grid cell than to a  
+!  ghost one. Otherwise, this is a more serious particle position 
+!  problem, that should be allowed to lead to a crash.
+!
+              if (ipy_rec==-1) then
+                !this hopefully doesn't happen often, so 
+                !the division is not as bad as it seems
+                !and makes it more legible
+                if (xyz0(2)-fp(k,iyp).le.dy/2) ipy_rec=0
+              endif
+              if (ipy_rec==nprocy) then 
+                if (fp(k,iyp)-xyz1(2).le.dy/2) ipy_rec=nprocy-1
+              endif
+            endif
+            if (nprocz/=1) then 
+              if (ipz_rec==-1) then 
+                if (xyz0(3)-fp(k,izp).le.dz/2) ipz_rec=0
+              endif
+              if (ipz_rec==nprocz) then
+                if (fp(k,izp)-xyz1(3).le.dz/2) ipz_rec=nprocz-1
+              endif
+            endif
           endif
-          if (nprocz/=1) then 
-            if (any(fp(k,izp)==z0_proc(1:nprocz))) ipz_rec=ipz_rec+1
-            if (any(fp(k,izp)==z1_proc(1:nprocz))) ipz_rec=ipz_rec-1
-          endif
-        endif
 !
 !  Calculate serial index of receiving processor.
 !

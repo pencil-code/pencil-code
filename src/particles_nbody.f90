@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.100 2008-04-09 16:44:40 dobler Exp $
+! $Id: particles_nbody.f90,v 1.101 2008-04-09 18:59:08 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -92,7 +92,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.100 2008-04-09 16:44:40 dobler Exp $")
+           "$Id: particles_nbody.f90,v 1.101 2008-04-09 18:59:08 wlyra Exp $")
 !
 ! Set up mass as particle index. Plus seven, since the other 6 are 
 ! used by positions and velocities.      
@@ -1555,7 +1555,7 @@ module Particles_nbody
 !
 ! just do this for some specific timesteps, otherwise it takes too long!
 !
-        ltime_to_create = (mod(it-1,icreate) /= 0)
+        ltime_to_create = (mod(it-1,icreate) == 0)
         if (ltime_to_create.and.llast) then
 !
           if (ldebug) print*,'Entered create_sink_particles'
