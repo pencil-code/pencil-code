@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.66 2008-04-08 08:22:49 wlyra Exp $
+! $Id: particles_main.f90,v 1.67 2008-04-09 16:44:40 dobler Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -338,7 +338,8 @@ module Particles_main
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
-      intent (out) :: f, df
+      intent (in)  :: f
+      intent (out) :: df
 !
 !  Write information about local environment to file.
 !
