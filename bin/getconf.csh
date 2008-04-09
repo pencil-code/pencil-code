@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.234 2008-04-01 17:42:33 pkapyla Exp $
+# $Id: getconf.csh,v 1.235 2008-04-09 17:28:22 mkorpi Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -530,7 +530,7 @@ else if ($hn =~ louhi-login*) then
   set remote_top     = 1
   set local_binary = 0
 
-else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ abranden)) then
+else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ abranden || $USER =~ mkorpi)) then
   echo "Murska - CSC, Espoo, Finland"
   set mpirunops = '-srun'
   set mpirun = 'nuripm'
