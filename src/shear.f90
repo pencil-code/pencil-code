@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.50 2008-03-19 23:17:09 pkapyla Exp $
+! $Id: shear.f90,v 1.51 2008-04-09 03:10:25 brandenb Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -30,7 +30,9 @@ module Shear
       qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift, &
       lmagnetic_stretching
 
-  integer :: idiag_dtshear=0
+  ! diagnostic variables (need to be consistent with reset list below)
+  integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
+  integer :: idiag_deltay=0     ! DIAG_DOC: deltay
 
   contains
 
@@ -53,7 +55,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.50 2008-03-19 23:17:09 pkapyla Exp $")
+           "$Id: shear.f90,v 1.51 2008-04-09 03:10:25 brandenb Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -305,6 +307,13 @@ module Shear
 !
       if (headtt.or.ldebug) print*, 'advance_shear: deltay=',deltay
 !
+!  Calculate shearing related diagnostics
+!
+      if (ldiagnos) then
+        if (idiag_deltay/=0) &
+            call save_name(deltay,idiag_deltay)
+      endif
+!
     end subroutine advance_shear
 !***********************************************************************
     subroutine boundcond_shear(f,ivar1,ivar2)
@@ -385,18 +394,21 @@ module Shear
 !
       if (lreset) then
         idiag_dtshear=0
+        idiag_deltay=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtshear',idiag_dtshear)
+        call parse_name(iname,cname(iname),cform(iname),'deltay',idiag_deltay)
       enddo
 !
 !  write column where which shear variable is stored
 !
       if (lwr) then
         write(3,*) 'i_dtshear=',idiag_dtshear
+        write(3,*) 'i_deltay=',idiag_deltay
       endif
 !
     endsubroutine rprint_shear
