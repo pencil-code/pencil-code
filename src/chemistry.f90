@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.60 2008-04-07 12:52:23 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.61 2008-04-09 20:17:17 dobler Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -172,11 +172,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.60 2008-04-07 12:52:23 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.61 2008-04-09 20:17:17 dobler Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.60 2008-04-07 12:52:23 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.61 2008-04-09 20:17:17 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -515,12 +515,10 @@ module Chemistry
 ! Calculate thermal diffusivity
 !
 
-      if (i_chi) then
+      if (lpenc_requested(i_chi)) then
         p%chi=chi_full(l1:l2,m,n)
-        if (i_glnchi) call grad(chi_full,p%glnchi)
+        if (lpenc_requested(i_glnchi)) call grad(chi_full,p%glnchi)
       endif 
-
-
 
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
