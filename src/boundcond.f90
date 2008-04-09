@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.206 2008-04-03 12:50:49 ajohan Exp $
+! $Id: boundcond.f90,v 1.207 2008-04-09 06:47:59 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -219,9 +219,6 @@ module Boundcond
                     print*,'not implemented for other than cylindrical'
                     stop
                   endif
-                case ('ouf')
-                  ! BCX_DOC: allow outflow, but no inflow (experimental)
-                  call bc_outflow_x(f,topbot,j)
                 case ('')
                   ! BCX_DOC: do nothing; assume that everything is set
                 case default
@@ -3178,68 +3175,12 @@ module Boundcond
 !
     endsubroutine bc_zero_z
 !***********************************************************************
-    subroutine bc_outflow_x(f,topbot,j)
-!
-!  Outflow boundary conditions.
-!
-!  If velocity vector points out of the box, the velocity in the
-!  ghost cells is copied from the last grid point.
-!
-!  For inwards pointing velocity vector, the velocity is set to zero
-!  in the ghost cells.
-!
-!  12-aug-2007/anders: implemented
-!
-      use Cdata, only: mx, my, mz, mfarray, l1, l2, nghost
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: j
-!
-      integer :: i, iz, iy
-!
-      select case(topbot)
-!
-!  Bottom boundary.
-!
-      case('bot')
-        do iz=1,mz; do iy=1,my; 
-          if (f(l1,iy,iz,j)<=0.0) then  ! simply copy to ghost cells
-            do i=1,nghost; f(l1-i,iy,iz,j)=f(l1,iy,iz,j); enddo
-          else                          ! zero, suppressing inflow
-            do i=1,nghost; f(l1-i,iy,iz,j)=0.0; enddo
-          endif
-        enddo; enddo
-!
-!  Top boundary.
-!
-      case('top')
-        do iz=1,mz;do iy=1,my; 
-          if (f(l2,iy,iz,j)>=0.0) then
-            do i=1,nghost; f(l2+i,iy,iz,j)=f(l2,iy,iz,j); enddo
-          else
-            do i=1,nghost; f(l2+i,iy,iz,j)=0.0; enddo
-          endif
-        enddo; enddo
-!
-!  Default.
-!
-      case default
-        print*, "bc_outflow_x: ", topbot, " should be `top' or `bot'"
-!
-      endselect
-!
-    endsubroutine bc_outflow_x
-!***********************************************************************
     subroutine bc_outflow_z(f,topbot,j)
 !
 !  Outflow boundary conditions.
 !
-!  If velocity vector points out of the box, the velocity in the
-!  ghost cells is copied from the last grid point.
-!
-!  For inwards pointing velocity vector, the velocity is set to zero
-!  in the ghost cells.
+!  If the velocity vector points out of the box, the velocity boundary
+!  condition is set to 's', otherwise it is set to 'a'.
 !
 !  12-aug-2007/anders: implemented
 !
@@ -3258,9 +3199,10 @@ module Boundcond
       case('bot')
         do iy=1,my; do ix=1,mx
           if (f(ix,iy,n1,j)<=0.0) then  ! 's'
-            call bc_sym_z(f,+1,topbot,j)
+            do i=1,nghost; f(ix,iy,n1-i,j)=+f(ix,iy,n1+i,j); enddo
           else                          ! 'a'
-            call bc_sym_z(f,-1,topbot,j)
+            do i=1,nghost; f(ix,iy,n1-i,j)=-f(ix,iy,n1+i,j); enddo
+            f(ix,iy,n1,j)=0.0
           endif
         enddo; enddo
 !
@@ -3268,10 +3210,11 @@ module Boundcond
 !
       case('top')
         do iy=1,my; do ix=1,mx
-          if (f(ix,iy,n2,j)>=0.0) then
-            call bc_sym_z(f,+1,topbot,j) ! 's'
-          else
-            call bc_sym_z(f,-1,topbot,j) ! 'a'
+          if (f(ix,iy,n2,j)>=0.0) then  ! 's'
+            do i=1,nghost; f(ix,iy,n2+i,j)=+f(ix,iy,n2-i,j); enddo
+          else                          ! 'a'
+            do i=1,nghost; f(ix,iy,n2+i,j)=-f(ix,iy,n2-i,j); enddo
+            f(ix,iy,n2,j)=0.0
           endif
         enddo; enddo
 !
