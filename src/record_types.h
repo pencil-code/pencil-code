@@ -15,8 +15,8 @@ integer, parameter :: id_record_RANDOM_SEEDS = 1
 integer, parameter :: id_record_T_NEXT_SN    = 250 
 integer, parameter :: id_record_FORCING_LOCATION = 270 
 integer, parameter :: id_record_FORCING_TSFORCE  = 271 
-integer, parameter :: id_record_MAGNETIC_BELTRAMI_PHASE = 311 
-integer, parameter :: id_record_MAGNETIC_BELTRAMI_AMPL = 312 
+integer, parameter :: varname_was_too_long = 311 
+integer, parameter :: varname_was_too_long_too = 312 
 !
 ! Other
 !

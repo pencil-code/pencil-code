@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.506 2008-04-08 12:53:07 pkapyla Exp $
+! $Id: magnetic.f90,v 1.507 2008-04-09 13:07:06 dobler Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -139,8 +139,8 @@ module Magnetic
   real :: k1_ff=1.,ampl_ff=1.,swirl=1.
   real :: k1x_ff=1.,k1y_ff=1.,k1z_ff=1.
   real :: inertial_length=0.,linertial_2
-  real :: forcing_continuous_aa_phasefactor=1.
-  real :: forcing_continuous_aa_amplfactor=1.
+  real :: forcing_continuous_aa_phasefact=1.
+  real :: forcing_continuous_aa_amplfact=1.
   real, dimension(mz) :: eta_z
   real, dimension(mz,3) :: geta_z
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
@@ -161,8 +161,8 @@ module Magnetic
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,phasey_aa,ABC_A,ABC_B,ABC_C, &
        lforcing_continuous_aa,iforcing_continuous_aa, &
-       forcing_continuous_aa_phasefactor, &
-       forcing_continuous_aa_amplfactor, &
+       forcing_continuous_aa_phasefact, &
+       forcing_continuous_aa_amplfact, &
        k1_ff,ampl_ff,swirl,radius, &
        k1x_ff,k1y_ff,k1z_ff, &
        bthresh,bthresh_per_brms, &
@@ -387,7 +387,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.506 2008-04-08 12:53:07 pkapyla Exp $")
+           "$Id: magnetic.f90,v 1.507 2008-04-09 13:07:06 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2906,18 +2906,18 @@ module Magnetic
       endif
 !
 !  Set the phase of the Beltrami forcing equal to the actual phase
-!  of the magnetic field (times forcing_continuous_aa_phasefactor).
+!  of the magnetic field (times forcing_continuous_aa_phasefact).
 !  Broadcast the result to other processors.
 !
-      phase_beltrami=forcing_continuous_aa_phasefactor*bmz_beltrami_phase
+      phase_beltrami=forcing_continuous_aa_phasefact*bmz_beltrami_phase
       call mpibcast_real(phase_beltrami,1)
 !
 !  set amplitude to ampl_ff minus a correction term that is
 !  proportional to the actual field minus the target field strength,
-!  scaled by some forcing_continuous_aa_amplfactor, and broadcast, ie
+!  scaled by some forcing_continuous_aa_amplfact, and broadcast, ie
 !  A = Atarget - factor*(Aactual-Atarget).
 !
-      ampl_beltrami=ampl_ff-forcing_continuous_aa_amplfactor*(bmz-ampl_ff)
+      ampl_beltrami=ampl_ff-forcing_continuous_aa_amplfact*(bmz-ampl_ff)
       call mpibcast_real(ampl_beltrami,1)
 !
     endsubroutine calc_mfield
@@ -4632,10 +4632,10 @@ module Magnetic
       integer :: id,lun
       logical :: done
 !
-      if (id==id_record_MAGNETIC_BELTRAMI_PHASE) then
+      if (id==varname_was_too_long) then
         read (lun) phase_beltrami
         done=.true.
-      elseif (id==id_record_MAGNETIC_BELTRAMI_AMPL) then
+      elseif (id==varname_was_too_long_too) then
         read (lun) ampl_beltrami
         done=.true.
       endif
@@ -4663,9 +4663,9 @@ module Magnetic
 !
 !  write details
 !
-      write (lun) id_record_MAGNETIC_BELTRAMI_PHASE
+      write (lun) varname_was_too_long
       write (lun) phase_beltrami
-      write (lun) id_record_MAGNETIC_BELTRAMI_AMPL
+      write (lun) varname_was_too_long_too
       write (lun) ampl_beltrami
 !
     endsubroutine output_persistent_magnetic
