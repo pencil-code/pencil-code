@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.392 2008-04-06 06:24:21 brandenb Exp $
+### $Id: Makefile.src,v 1.393 2008-04-10 10:20:18 dintrans Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -689,9 +689,11 @@ LD_FFTW2=
 ## Toulouse's machines: 
 ## Opteron cluster (116+320 cores) + Altix 3700 (256 cores)
 ##
-#FC=ifort #(frontale-pastel*|soleil1)
+#FC=ifort #(frontale-pastel*|soleil1|borderline)
 #FFLAGS=-O3 -I/usr/local/mpilam/include #(frontale-pastel*)
+#FFLAGS=-O3 -I$(HOME)/LAM/include #(borderline)
 #LD_MPI= -L/usr/local/mpilam/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread -ldl #(frontale-pastel*)
+#LD_MPI= -L$(HOME)/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread -ldl #(borderline)
 #LIBMPISUFFIX=_#(frontale-pastel*)
 #FFLAGS=-O3 #(soleil1)
 #LD_MPI= -lmpi #(soleil1)

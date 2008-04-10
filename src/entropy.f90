@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.542 2008-04-04 09:12:20 dintrans Exp $
+! $Id: entropy.f90,v 1.543 2008-04-10 10:20:18 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -221,7 +221,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.542 2008-04-04 09:12:20 dintrans Exp $")
+           "$Id: entropy.f90,v 1.543 2008-04-10 10:20:18 dintrans Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -464,6 +464,7 @@ module Entropy
           if (lroot) print*,'initialize_entropy: set cs2cool=cs20'
           cs2cool=cs20
           cs2_ext=cs20
+          if (rcool==0.) rcool=r_ext
           ! only compute the gravity profile
           call star_heat(f,lcompute_grav)
 
@@ -3643,7 +3644,7 @@ module Entropy
       open(unit=11,file=trim(directory)//'/setup.dat')
       print*,'--> write initial setup in data/proc0/setup.dat'
       open(unit=11,file=trim(directory)//'/setup.dat')
-      write(11,'(a6,5a14)') 'r','rho','ss','cs2','grav','hcond'
+      write(11,'(a1,a5,5a14)') '#','r','rho','ss','cs2','grav','hcond'
       do i=nr,1,-1
         u=r(i)/sqrt(2.)/wheat
         lumi=luminosity*(1.-exp(-u**2))
