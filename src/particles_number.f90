@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.28 2008-04-09 20:19:11 dobler Exp $
+! $Id: particles_number.f90,v 1.29 2008-04-10 07:41:10 dobler Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -54,7 +54,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.28 2008-04-09 20:19:11 dobler Exp $")
+           "$Id: particles_number.f90,v 1.29 2008-04-10 07:41:10 dobler Exp $")
 !
 !  Index for particle internal number.
 !
@@ -89,7 +89,7 @@ module Particles_number
       if (mp_tilde /= 0) then
         np_tilde0 = rhop_tilde/mp_tilde
       else
-        call fatal_error("initlz_partcls_number", &
+        call warning("initlz_partcls_number", &
             "Cowardly refusing to divide by zero -- did you set ap0?")
         np_tilde0 = 1
       endif
