@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.508 2008-04-10 06:23:27 ajohan Exp $
+! $Id: magnetic.f90,v 1.509 2008-04-10 07:09:31 pkapyla Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -387,7 +387,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.508 2008-04-10 06:23:27 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.509 2008-04-10 07:09:31 pkapyla Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -673,7 +673,7 @@ module Magnetic
       use Cdata
       use EquationOfState
       use FArrayManager
-      use Gravity, only: gravz
+      use Gravity, only: gravz, z1, z2
       use Initcond
       use Mpicomm
       use SharedVariables
@@ -705,6 +705,9 @@ module Magnetic
         case('gaussian-noise-rprof')
           tmp=sqrt(xx**2+yy**2+zz**2)
           call gaunoise_rprof(amplaa(j),tmp,prof,f,iax,iaz)
+        case('gaussian-noise-zprof')
+          tmp=amplaa(1)*0.5*(tanh((zz-z1)/0.05)-tanh((zz-z2)/0.05))
+          call gaunoise(tmp,f,iax,iaz)
 !
 !  Beltrami fields, put k=-k to make sure B=curl(A) has the right phase
 !
