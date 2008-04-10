@@ -1,5 +1,5 @@
 #!/bin/sh
-#$Id: copy-VARN-to-var,v 1.8 2006-08-26 16:38:10 mee Exp $
+#$Id: copy-VARN-to-var,v 1.9 2008-04-10 15:55:09 wlyra Exp $
 #
 #  Examples:
 #     nohup copy-VAR-to-var 10 .
@@ -31,6 +31,11 @@ do
     echo "cp data/$proc/PVAR$1 $2/data/$proc/pvar.dat"
     cp data/$proc/PVAR$1 $2/data/$proc/pvar.dat
   fi
+  if [ -e "data/$proc/SPVAR$1" ]; then
+    echo "cp data/$proc/SPVAR$1 $2/data/$proc/spvar.dat"
+    cp data/$proc/SPVAR$1 $2/data/$proc/spvar.dat
+  fi
+
 done
 #
 # Some output and a warning.
