@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.219 2008-04-09 16:31:59 dobler Exp $
+! $Id: particles_dust.f90,v 1.220 2008-04-10 17:40:46 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -62,7 +62,7 @@ module Particles
   logical :: linterpolate_spline=.true.
   logical :: ldraglaw_variable=.false.
   logical :: ldraglaw_epstein_transsonic=.false.
-  logical :: ldraglaw_ep_st_transonic=.false.
+  logical :: ldraglaw_eps_stk_transsonic=.false.
  
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
@@ -88,7 +88,7 @@ module Particles
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transsonic, lcheck_exact_frontier,&
-      ldraglaw_ep_st_transonic,pdlaw
+      ldraglaw_eps_stk_transsonic,pdlaw
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -105,7 +105,7 @@ module Particles
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check,lcartesian_mig,ldraglaw_variable, &
       ldraglaw_epstein, ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
-      ldraglaw_epstein_transsonic,lcheck_exact_frontier,ldraglaw_ep_st_transonic
+      ldraglaw_epstein_transsonic,lcheck_exact_frontier,ldraglaw_eps_stk_transsonic
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -140,7 +140,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.219 2008-04-09 16:31:59 dobler Exp $")
+           "$Id: particles_dust.f90,v 1.220 2008-04-10 17:40:46 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -367,11 +367,11 @@ module Particles
 !
       if (ldraglaw_epstein_stokes_linear) ldraglaw_epstein=.false.
       if (ldraglaw_epstein_transsonic         .or.&
-          ldraglaw_ep_st_transonic) then 
+          ldraglaw_eps_stk_transsonic) then 
         ldraglaw_epstein=.false. 
       endif
       if (ldraglaw_epstein_transsonic         .and.&
-          ldraglaw_ep_st_transonic) then
+          ldraglaw_eps_stk_transsonic) then
         print*,'both epstein and epstein-stokes transsonic '//&
                'drag laws are switched on. You cannot have '//&
                'both. Stop and choose only one.'
@@ -1334,7 +1334,8 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_requested(i_np)=.true.
         lpenc_requested(i_rho1)=.true.
       endif
-      if (ldraglaw_epstein_transsonic) then
+      if (ldraglaw_epstein_transsonic  .or.&
+          ldraglaw_eps_stk_transsonic) then
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_rho)=.true.
         lpenc_requested(i_cs2)=.true.
@@ -1485,7 +1486,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  an optional argument to get_frictiontime.
 !
               if (ldraglaw_epstein_transsonic         .or.&
-                  ldraglaw_ep_st_transonic) then
+                  ldraglaw_eps_stk_transsonic) then
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup)
               else
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
@@ -2146,7 +2147,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         call calc_draglaw_parameters(fp,k,uup,p,inx0,tausp1_par)
 !
-      else if (ldraglaw_ep_st_transonic) then
+      else if (ldraglaw_eps_stk_transsonic) then
 !
 ! ...and this is for a linear combination of Esptein and Stokes drag at
 ! intermediate mach number. Pure Stokes drag is not implemented.
@@ -2188,7 +2189,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use EquationOfState, only: rho0,cs0
 !
       real, dimension (mpar_loc,mpvar) :: fp
-      real, dimension(3) :: uup
+      real, dimension(3) :: uup,duu
       type (pencil_case) :: p
       real :: tausp1_par
       integer :: k, inx0
@@ -2211,7 +2212,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  between the limits of 
 !  
 !     subsonic:    Feps=-sqrt(128*pi)/3*a**2*rhog*cs*Delta(u)             (2)
-!     supersonic:  Feps=-pi*a**2*|Delta(u)|*Delta(u)                      (3) 
+!     supersonic:  Feps=-pi*a**2*rhog*|Delta(u)|*Delta(u)                 (3) 
 !  
 !  is used, leading to an expression that can be used for arbitrary velocities
 !  as derived by Kwok (1975). 
@@ -2267,7 +2268,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !         feps = -2/pi*sigmag*Omega*fd*Delta(u)/[a*rhops]
 !  
-!  the constant terms are tausp1.
+!  the constant terms are tausp1. The same follows for Stokes drag
+!
+      duu=fp(k,ivpx:ivpz)-uup
 !
       if (nzgrid==1) then 
 !  then omega is needed
@@ -2296,7 +2299,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  The mach number and the correction fd to flows of arbitrary mach number
 !
-        mach=sqrt((uup(1)**2+uup(2)**2+uup(3)**2)/p%cs2(inx0))
+        mach=sqrt((duu(1)**2+duu(2)**2+duu(3)**2)/p%cs2(inx0))
         fd=sqrt(1+(9.*pi/128)*mach**2)
 !
 !  For Stokes drag, the mean free path is needed
@@ -2366,7 +2369,7 @@ k_loop:   do while (.not. (k>npar_loc))
           if (lfirstcall) &
                print*,'get_frictiontime: Epstein transsonic drag law'
 !
-          mach2=(uup(1)**2+uup(2)**2+uup(3)**2)/p%cs2(inx0)
+          mach2=(duu(1)**2+duu(2)**2+duu(3)**2)/p%cs2(inx0)
           fd=sqrt(1+(9.*pi/128)*mach2)
           fac=fd
 !
