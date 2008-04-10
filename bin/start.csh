@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.75 2008-02-18 17:53:45 dintrans Exp $
+# CVS: $Id: start.csh,v 1.76 2008-04-10 15:56:01 wlyra Exp $
 
 #                       start.csh
 #                      -----------
@@ -87,7 +87,7 @@ foreach dir ($procdirs $subdirs)
     # Clean up
     # when used with lnowrite=T, for example, we don't want to remove var.dat:
     set list = \
-        `/bin/ls $ddir/VAR* $ddir/TAVG* $ddir/*.dat $ddir/*.info $ddir/slice* $ddir/PVAR*`
+        `/bin/ls $ddir/VAR* $ddir/TAVG* $ddir/*.dat $ddir/*.info $ddir/slice* $ddir/PVAR* $ddir/SPVAR*`
     if (! -e NOERASE) then
       foreach rmfile ($list)
         if ($rmfile != $ddir/var.dat) rm -f $rmfile >& /dev/null
@@ -134,6 +134,7 @@ if ($local_disc) then
   $copysnapshots -v var.dat     >&! copy-snapshots.log
   if (-e $SCRATCH_DIR/proc0/VAR0) $copysnapshots -v VAR0 >&! copy-snapshots.log
   if ($lparticles) $copysnapshots -v pvar.dat >>& copy-snapshots.log
+  if ($lparticles_nbody) $copysnapshots -v spvar.dat >>& copy-snapshots.log
   $copysnapshots -v global.dat  >>& copy-snapshots.log
   $copysnapshots -v timeavg.dat >>& copy-snapshots.log
   $copysnapshots -v dxyz.dat    >>& copy-snapshots.log

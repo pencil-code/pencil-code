@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.236 2008-04-09 17:30:58 mkorpi Exp $
+# $Id: getconf.csh,v 1.237 2008-04-10 15:56:01 wlyra Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -91,6 +91,10 @@ endif
 # Check for particles
 set lparticles=0
 if { ( grep particles_init_pars start.in >& /dev/null ) } set lparticles=1
+
+# Check for massive particles
+set lparticles_nbody=0
+if { ( grep particles_nbody_init_pars start.in >& /dev/null ) } set lparticles_nbody=1
 
 # Settings for machines with local data disks
 # local_disc     = 1 means processes uses their own local scratch disc(s) for
@@ -1351,6 +1355,7 @@ if ($debug) then
   echo '$PARENT_PID   	= ' "<$PARENT_PID>"
   echo '$copysnapshots  = ' "<$copysnapshots>"
   echo '$particles      = ' "<$lparticles>"
+  echo '$particles_nbody= ' "<$lparticles_nbody>"
 endif
 
 exit
