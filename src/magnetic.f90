@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.507 2008-04-09 13:07:06 dobler Exp $
+! $Id: magnetic.f90,v 1.508 2008-04-10 06:23:27 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -387,7 +387,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.507 2008-04-09 13:07:06 dobler Exp $")
+           "$Id: magnetic.f90,v 1.508 2008-04-10 06:23:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1917,7 +1917,7 @@ module Magnetic
 !
 !  v_A = |B|/sqrt(rho); in units where mu_0=1
 !
-        if (idiag_vA2m/=0)   call sum_mn_name(p%va2,idiag_vA2m)
+        if (idiag_vA2m/=0)  call sum_mn_name(p%va2,idiag_vA2m)
         if (idiag_vArms/=0) call sum_mn_name(p%va2,idiag_vArms,lsqrt=.true.)
         if (idiag_vAmax/=0) call max_mn_name(p%va2,idiag_vAmax,lsqrt=.true.)
         if (idiag_dtb/=0) &
