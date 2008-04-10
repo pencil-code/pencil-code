@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.427 2008-04-04 18:05:33 wlyra Exp $
+! $Id: hydro.f90,v 1.428 2008-04-10 11:36:25 pkapyla Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -341,7 +341,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.427 2008-04-04 18:05:33 wlyra Exp $")
+           "$Id: hydro.f90,v 1.428 2008-04-10 11:36:25 pkapyla Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3079,6 +3079,7 @@ use Mpicomm, only: stop_it
       use Mpicomm
       use Cdata
       use Sub, only: step
+      use Gravity, only: z1
       real :: slope,uinn,uext,zbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -3113,6 +3114,13 @@ use Mpicomm, only: stop_it
       zbot=xyz0(3)
       df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
         -tau_diffrot1*(f(l1:l2,m,n,iux)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
+!
+!  vertical shear profile centred around z1
+!
+      case ('vertical_shear_z1')
+      zbot=z1
+      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+        -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*tanh((z(n)-z1)/width_ff_uu))
 !
 !  write differential rotation in terms of Gegenbauer polynomials
 !  Omega = Omega0 + Omega2*P31(costh)/sinth + Omega4*P51(costh)/sinth + ...
