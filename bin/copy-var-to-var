@@ -1,5 +1,5 @@
-#!/bin/csh
-#$Id: copy-var-to-var,v 1.4 2008-03-13 14:02:43 ajohan Exp $
+#!/bin/sh
+#$Id: copy-var-to-var,v 1.5 2008-04-12 12:04:12 wlyra Exp $
 #
 #  Example:
 #     copy-var-to-var ../hydro256e
@@ -7,8 +7,19 @@
 #  another run directory.
 #  Used for restarting in a different directory.
 
-set procdirs  =  `\ls data | grep proc `
-foreach proc ($procdirs)
+procdirs="`\ls data | grep proc`"
+echo $procdirs
+for proc in $procdirs
+do
   echo "cp data/$proc/var.dat $1/data/$proc"
   cp data/$proc/var.dat $1/data/$proc
-end
+  if [ -e "data/$proc/pvar.dat" ]; then
+    echo "cp data/$proc/pvar.dat $1/data/$proc"
+    cp data/$proc/pvar.dat $1/data/$proc
+  fi
+  if [ -e "data/$proc/spvar.dat" ]; then
+    echo "cp data/$proc/spvar.dat $1/data/$proc"
+    cp data/$proc/spvar.dat $1/data/$proc
+  fi
+done
+
