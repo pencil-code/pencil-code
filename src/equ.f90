@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.401 2008-04-08 08:22:49 wlyra Exp $
+! $Id: equ.f90,v 1.402 2008-04-12 05:04:43 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -477,7 +477,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.401 2008-04-08 08:22:49 wlyra Exp $")
+           "$Id: equ.f90,v 1.402 2008-04-12 05:04:43 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -501,7 +501,8 @@ module Equ
 !  This could in principle be avoided (but it not worth it now)
 !
       early_finalize=test_nonblocking.or.leos_ionization.or.lradiation_ray.or. &
-                     lhyperviscosity_strict.or.lhyperresistivity_strict
+                     lhyperviscosity_strict.or.lhyperresistivity_strict.or. &
+                     ltestfield.or.ltestflow
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
