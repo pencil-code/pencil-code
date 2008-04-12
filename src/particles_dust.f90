@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.220 2008-04-10 17:40:46 wlyra Exp $
+! $Id: particles_dust.f90,v 1.221 2008-04-12 13:43:42 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -61,8 +61,8 @@ module Particles
   logical :: lcoldstart_amplitude_correction=.false.
   logical :: linterpolate_spline=.true.
   logical :: ldraglaw_variable=.false.
-  logical :: ldraglaw_epstein_transsonic=.false.
-  logical :: ldraglaw_eps_stk_transsonic=.false.
+  logical :: ldraglaw_epstein_transonic=.false.
+  logical :: ldraglaw_eps_stk_transonic=.false.
  
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
@@ -87,8 +87,8 @@ module Particles
       epsp_friction_increase,lcartesian_mig, lcollisional_dragforce_cooling, &
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
-      mean_free_path_gas, ldraglaw_epstein_transsonic, lcheck_exact_frontier,&
-      ldraglaw_eps_stk_transsonic,pdlaw
+      mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier,&
+      ldraglaw_eps_stk_transonic,pdlaw
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -105,7 +105,7 @@ module Particles
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check,lcartesian_mig,ldraglaw_variable, &
       ldraglaw_epstein, ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
-      ldraglaw_epstein_transsonic,lcheck_exact_frontier,ldraglaw_eps_stk_transsonic
+      ldraglaw_epstein_transonic,lcheck_exact_frontier,ldraglaw_eps_stk_transonic
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -140,7 +140,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.220 2008-04-10 17:40:46 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.221 2008-04-12 13:43:42 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -366,13 +366,13 @@ module Particles
       if (lcollisional_cooling_twobody) allocate(kneighbour(mpar_loc))
 !
       if (ldraglaw_epstein_stokes_linear) ldraglaw_epstein=.false.
-      if (ldraglaw_epstein_transsonic         .or.&
-          ldraglaw_eps_stk_transsonic) then 
+      if (ldraglaw_epstein_transonic         .or.&
+          ldraglaw_eps_stk_transonic) then 
         ldraglaw_epstein=.false. 
       endif
-      if (ldraglaw_epstein_transsonic         .and.&
-          ldraglaw_eps_stk_transsonic) then
-        print*,'both epstein and epstein-stokes transsonic '//&
+      if (ldraglaw_epstein_transonic         .and.&
+          ldraglaw_eps_stk_transonic) then
+        print*,'both epstein and epstein-stokes transonic '//&
                'drag laws are switched on. You cannot have '//&
                'both. Stop and choose only one.'
         call fatal_error("initialize_particles","")
@@ -1334,8 +1334,8 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_requested(i_np)=.true.
         lpenc_requested(i_rho1)=.true.
       endif
-      if (ldraglaw_epstein_transsonic  .or.&
-          ldraglaw_eps_stk_transsonic) then
+      if (ldraglaw_epstein_transonic  .or.&
+          ldraglaw_eps_stk_transonic) then
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_rho)=.true.
         lpenc_requested(i_cs2)=.true.
@@ -1485,8 +1485,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !  is dependent on the relative mach number, hence the need to feed uup as 
 !  an optional argument to get_frictiontime.
 !
-              if (ldraglaw_epstein_transsonic         .or.&
-                  ldraglaw_eps_stk_transsonic) then
+              if (ldraglaw_epstein_transonic         .or.&
+                  ldraglaw_eps_stk_transonic) then
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup)
               else
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
@@ -2141,13 +2141,13 @@ k_loop:   do while (.not. (k>npar_loc))
           tausp1_par = 1/(fp(k,iap)*rhops)*2.25*mean_free_path_gas/fp(k,iap)
         endif
 !
-      else if (ldraglaw_epstein_transsonic) then
+      else if (ldraglaw_epstein_transonic) then
 !
 ! Draw laws for intermediate mach number. This is for pure Epstein drag...
 !
         call calc_draglaw_parameters(fp,k,uup,p,inx0,tausp1_par)
 !
-      else if (ldraglaw_eps_stk_transsonic) then
+      else if (ldraglaw_eps_stk_transonic) then
 !
 ! ...and this is for a linear combination of Esptein and Stokes drag at
 ! intermediate mach number. Pure Stokes drag is not implemented.
@@ -2217,7 +2217,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  is used, leading to an expression that can be used for arbitrary velocities
 !  as derived by Kwok (1975). 
 !
-!     transsonic:  Feps=-sqrt(128*pi)/3*a**2*rhog*cs*fd*Delta(u)          (4)
+!     transonic:  Feps=-sqrt(128*pi)/3*a**2*rhog*cs*fd*Delta(u)          (4)
 !
 !  where fd=sqrt(1 + 9*pi/128*m**2)                                       (5)
 !
@@ -2295,7 +2295,7 @@ k_loop:   do while (.not. (k>npar_loc))
       if (present(lstokes)) then
 !
         if (lfirstcall) &
-             print*,'get_frictiontime: Epstein-Stokes transsonic drag law'
+             print*,'get_frictiontime: Epstein-Stokes transonic drag law'
 !
 !  The mach number and the correction fd to flows of arbitrary mach number
 !
@@ -2367,7 +2367,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Only use Epstein drag
 !
           if (lfirstcall) &
-               print*,'get_frictiontime: Epstein transsonic drag law'
+               print*,'get_frictiontime: Epstein transonic drag law'
 !
           mach2=(duu(1)**2+duu(2)**2+duu(3)**2)/p%cs2(inx0)
           fd=sqrt(1+(9.*pi/128)*mach2)
