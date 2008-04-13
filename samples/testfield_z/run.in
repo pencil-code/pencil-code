@@ -1,7 +1,8 @@
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2007-09-10 05:04:22 brandenb Exp $',
-  nt=501, it1=50, cdt=0.4, isave=100, itorder=3
+  cvsid='$Id: run.in,v 1.2 2008-04-13 03:43:40 brandenb Exp $',
+  nt=201, it1=50, cdt=0.4, isave=100, itorder=3
   dsnap=20., dvid=200., ialive=1
+  lpencil_check=T
 /
 &eos_run_pars
 /
@@ -17,6 +18,7 @@
 &testfield_run_pars
   itestfield='B11-B22'
   etatest=5e-3
+  leta_rank2=T
   lsoca=F
 /
 &shear_run_pars

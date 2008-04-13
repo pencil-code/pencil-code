@@ -1,0 +1,23 @@
+Directory:
+    ${PENCIL_HOME}/samples/testfield_z
+CVS-Id:
+    $Id: README,v 1.1 2008-04-13 03:43:40 brandenb Exp $
+Maintainer:
+    Axel Brandenburg <brandenb@nordita.org>
+Added:
+    26-Jun-2005
+Status:
+    New reference data since 13 April 2008.
+Recommended resolution:
+    32x32x32 with etatest=5e-2 works fine.
+Comments:
+    This procedure allows the full alpha and eta tensors to be calculated.
+    Different test fields can be used. Note however that the result is
+    in general wavenumber dependent. The present examples is for the
+    isotropic helical turbulence.
+References:
+    Brandenburg, A.: 2005, ``Turbulence and its parametrization in
+       accretion discs,'' Astron. Nachr. 326, 787-797
+    Brandenburg, A., Radler, K.-H., Rheinhardt, M., & Kapyla, P. J.:
+       2008, ``Magnetic diffusivity tensor and dynamo effects in
+       rotating and shearing turbulence,'' Astrophys. J. 676, 740-751
