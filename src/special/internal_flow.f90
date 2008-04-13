@@ -1,4 +1,4 @@
-! $Id: internal_flow.f90,v 1.6 2008-04-13 21:31:05 nilshau Exp $
+! $Id: internal_flow.f90,v 1.7 2008-04-13 21:31:48 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -84,11 +84,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.6 2008-04-13 21:31:05 nilshau Exp $
+!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.7 2008-04-13 21:31:48 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: internal_flow.f90,v 1.6 2008-04-13 21:31:05 nilshau Exp $")
+           "$Id: internal_flow.f90,v 1.7 2008-04-13 21:31:48 nilshau Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -702,8 +702,8 @@ module Special
       lw=nu/utau
       log_y=4
       def_y=30
-print*,'u_tau=',utau
-print*,'lw=',lw
+!NILSprint*,'u_tau=',utau
+!NILSprint*,'lw=',lw
       !
       do j=m1,m2
         if (yy(l1,j,n1)<xyz0(2)+height) then
@@ -711,8 +711,6 @@ print*,'lw=',lw
           defect=central_vel&
                +utau*log(y_pluss*lw/height)/kappa&
                -B1*utau
-print*,'y_pluss=',y_pluss
-print*,'defect=',defect
           if (y_pluss .le. log_y) then
             f(l1:l2,j,n1:n2,iux)=y_pluss
           elseif (y_pluss .ge. def_y) then
@@ -721,24 +719,11 @@ print*,'defect=',defect
             f(l1:l2,j,n1:n2,iux)=defect*(y_pluss-log_y)/(def_y-log_y) &
                  +log_y*(def_y-y_pluss)/(def_y-log_y)
           endif
-!NILS          ! Lower wall
-!NILSprint*,'f=',f(l1,j,n1,iux)
-!NILS          f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)&
-!NILS               +central_vel&
-!NILS               +utau*log((yy(l1:l2,j,n1:n2)-xyz0(2))/height)/kappa&
-!NILS               -B1*utau
-!NILSprint*,'-B1*utau=',-B1*utau
-!NILSprint*,'central_vel=',central_vel
-!NILSprint*,'utau*log((yy(l1:l2,j,n1:n2)-xyz0(2))/height)/kappa=',utau*log((yy(l1,j,n1)-xyz0(2))/height)/kappa
-!NILSprint*,'yy(l1:l2,j,n1:n2)-xyz0(2)=',yy(l1,j,n1)-xyz0(2)
-!NILSprint*,'f(l1:l2,j,n1:n2,iux)=',f(l1,j,n1,iux)
         else
           y_pluss=-(yy(l1,j,n1)-xyz0(2)-Lxyz(2))/lw
           defect=central_vel&
                +utau*log(y_pluss*lw/height)/kappa&
                -B1*utau
-print*,'y_pluss=',y_pluss
-print*,'defect=',defect
           if (y_pluss .le. log_y) then
             f(l1:l2,j,n1:n2,iux)=y_pluss
           elseif (y_pluss .ge. def_y) then
@@ -747,11 +732,6 @@ print*,'defect=',defect
             f(l1:l2,j,n1:n2,iux)=defect*(y_pluss-log_y)/(def_y-log_y) &
                  +log_y*(def_y-y_pluss)/(def_y-log_y)
           endif
-!NILS          ! Upper wall
-!NILS          f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)&
-!NILS               +central_vel&
-!NILS               +utau*log(-((yy(l1:l2,j,n1:n2)-xyz0(2))-Lxyz(2))/height)/kappa&
-!NILS               -B1*utau
         endif
         !
       enddo
