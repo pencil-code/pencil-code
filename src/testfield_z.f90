@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.37 2008-04-12 05:04:43 brandenb Exp $
+! $Id: testfield_z.f90,v 1.38 2008-04-13 07:11:29 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -181,7 +181,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.37 2008-04-12 05:04:43 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.38 2008-04-13 07:11:29 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -348,6 +348,8 @@ module Testfield
       case('gaussian-noise-1'); call gaunoise(amplaatest(j),f,iaxtest+0,iaztest+0)
       case('gaussian-noise-2'); call gaunoise(amplaatest(j),f,iaxtest+3,iaztest+3)
       case('gaussian-noise-3'); call gaunoise(amplaatest(j),f,iaxtest+6,iaztest+6)
+      case('gaussian-noise-4'); call gaunoise(amplaatest(j),f,iaxtest+9,iaztest+9)
+      case('gaussian-noise-5'); call gaunoise(amplaatest(j),f,iaxtest+12,iaztest+12)
       case('sinwave-x-1'); call sinwave(amplaatest(j),f,iaxtest+0+1,kx=kx_aatest)
       case('sinwave-x-2'); call sinwave(amplaatest(j),f,iaxtest+3+1,kx=kx_aatest)
       case('sinwave-x-3'); call sinwave(amplaatest(j),f,iaxtest+6+1,kx=kx_aatest)
@@ -609,8 +611,12 @@ module Testfield
 !  calculate alpha, begin by calculating uxbtest (if not already done above)
 !
         if ((ldiagnos.or.l1ddiagnos).and. &
-          (lsoca.or.ltest_uxb)) then
-          call curl(f,iaxtest,bbtest)
+          (lsoca.or.ltest_uxb.or.idiag_b0rms/=0.or. &
+           idiag_b11rms/=0.or.idiag_b21rms/=0.or. &
+           idiag_b12rms/=0.or.idiag_b22rms/=0)) then
+          aatest=f(l1:l2,m,n,iaxtest:iaztest)
+          call gij(f,iaxtest,aijtest,1)
+          call curl_mn(aijtest,bbtest,aatest)
           call cross_mn(p%uu,bbtest,uxbtest)
         endif
         bpq(:,:,jtest)=bbtest
