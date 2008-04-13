@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.509 2008-04-10 07:09:31 pkapyla Exp $
+! $Id: magnetic.f90,v 1.510 2008-04-13 13:50:26 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -387,7 +387,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.509 2008-04-10 07:09:31 pkapyla Exp $")
+           "$Id: magnetic.f90,v 1.510 2008-04-13 13:50:26 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -4635,10 +4635,10 @@ module Magnetic
       integer :: id,lun
       logical :: done
 !
-      if (id==varname_was_too_long) then
+      if (id==id_record_MAGNETIC_PHASE) then
         read (lun) phase_beltrami
         done=.true.
-      elseif (id==varname_was_too_long_too) then
+      elseif (id==id_record_MAGNETIC_AMPL) then
         read (lun) ampl_beltrami
         done=.true.
       endif
@@ -4666,9 +4666,9 @@ module Magnetic
 !
 !  write details
 !
-      write (lun) varname_was_too_long
+      write (lun) id_record_MAGNETIC_PHASE
       write (lun) phase_beltrami
-      write (lun) varname_was_too_long_too
+      write (lun) id_record_MAGNETIC_AMPL
       write (lun) ampl_beltrami
 !
     endsubroutine output_persistent_magnetic

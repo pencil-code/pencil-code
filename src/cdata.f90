@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.420 2008-04-05 19:46:52 brandenb Exp $
+! $Id: cdata.f90,v 1.421 2008-04-13 13:50:26 brandenb Exp $
 
 module Cdata
 
@@ -173,6 +173,7 @@ module Cdata
   character (len=40) :: kinflow=''
   logical :: lkinflow_as_aux
   real :: eps_kinflow=0., omega_kinflow=1., ampl_kinflow=1.
+  real :: dtphase_kinflow=0.
 !
 ! Variables to count the occurance of derivative calls per timestep
 ! for optimisation purposes.  To use uncomment the array and

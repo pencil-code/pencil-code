@@ -1,4 +1,4 @@
-! $Id: persist.f90,v 1.9 2008-04-06 17:35:38 brandenb Exp $
+! $Id: persist.f90,v 1.10 2008-04-13 13:50:27 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   persist.f90   !!!
@@ -46,6 +46,7 @@ contains
       Use Forcing, only: input_persistent_forcing
       use General, only: input_persistent_general
       use Magnetic, only: input_persistent_magnetic
+      use Hydro, only: input_persistent_hydro
 !
       integer :: lun
       integer :: id, dummy,ierr
@@ -70,6 +71,7 @@ dataloop: do
         if (.not.done) call input_persistent_interstellar(id,lun,done)
         if (.not.done) call input_persistent_forcing(id,lun,done)
         if (.not.done) call input_persistent_magnetic(id,lun,done)
+        if (.not.done) call input_persistent_hydro(id,lun,done)
         if (.not.done) read(lun,end=1000) dummy
       enddo dataloop
 
@@ -92,6 +94,7 @@ dataloop: do
       use Forcing, only: output_persistent_forcing
       use General, only: output_persistent_general
       use Magnetic, only: output_persistent_magnetic
+      use Hydro, only: output_persistent_hydro
 !
       integer :: lun_output
 !
@@ -102,6 +105,7 @@ dataloop: do
       call output_persistent_interstellar(lun_output)
       call output_persistent_forcing(lun_output)
       call output_persistent_magnetic(lun_output)
+      call output_persistent_hydro(lun_output)
       write(lun_output) id_block_PERSISTENT
 !
     endsubroutine output_persistent

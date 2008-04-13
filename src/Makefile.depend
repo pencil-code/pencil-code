@@ -1,6 +1,6 @@
 ### -*-Makefile-*- (for Emacs)
 ###
-### $Id: Makefile.depend,v 1.97 2008-04-09 13:07:48 dobler Exp $
+### $Id: Makefile.depend,v 1.98 2008-04-13 13:50:26 brandenb Exp $
 ### Makefile dependencies for modular Pencil Code.
 ###
 ##
@@ -288,7 +288,7 @@ $(MESSAGES_OBJ): messages.f90 $(CDATA_OBJ) $(MPICOMM_OBJ)
 #
 $(GHOSTFOLD_OBJ): $(GHOSTFOLD_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(FOURIER_OBJ)
 #
-persist.o: persist.f90 $(CDATA_OBJ) $(GENERAL_OBJ) $(MAGNETIC_OBJ) $(INTERSTELLAR_OBJ) $(FORCING_OBJ)
+persist.o: persist.f90 $(CDATA_OBJ) $(GENERAL_OBJ) $(MAGNETIC_OBJ) $(HYDRO_OBJ) $(INTERSTELLAR_OBJ) $(FORCING_OBJ)
 #
 filter.o: filter.f90 $(CDATA_OBJ) $(SUB_OBJ) boundcond.o
 #

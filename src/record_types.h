@@ -15,8 +15,11 @@ integer, parameter :: id_record_RANDOM_SEEDS = 1
 integer, parameter :: id_record_T_NEXT_SN    = 250 
 integer, parameter :: id_record_FORCING_LOCATION = 270 
 integer, parameter :: id_record_FORCING_TSFORCE  = 271 
-integer, parameter :: varname_was_too_long = 311 
-integer, parameter :: varname_was_too_long_too = 312 
+integer, parameter :: id_record_NOHYDRO_TPHASE  = 280
+integer, parameter :: id_record_NOHYDRO_PHASE1  = 281
+integer, parameter :: id_record_NOHYDRO_PHASE2  = 282
+integer, parameter :: id_record_MAGNETIC_PHASE = 311
+integer, parameter :: id_record_MAGNETIC_AMPL = 312
 !
 ! Other
 !

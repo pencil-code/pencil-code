@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.302 2008-04-05 05:08:09 brandenb Exp $
+! $Id: param_io.f90,v 1.303 2008-04-13 13:50:27 brandenb Exp $
 
 module Param_IO
 
@@ -94,6 +94,7 @@ module Param_IO
        lr_spec,r2u_spec,r3u_spec, &
        rhocc_pdf,cc_pdf,lncc_pdf,gcc_pdf,lngcc_pdf, &
        kinflow,eps_kinflow,omega_kinflow,ampl_kinflow,lkinflow_as_aux, &
+       dtphase_kinflow, &
        random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        ltime_integrals, &

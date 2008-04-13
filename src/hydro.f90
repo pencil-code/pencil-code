@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.428 2008-04-10 11:36:25 pkapyla Exp $
+! $Id: hydro.f90,v 1.429 2008-04-13 13:50:26 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -341,7 +341,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.428 2008-04-10 11:36:25 pkapyla Exp $")
+           "$Id: hydro.f90,v 1.429 2008-04-13 13:50:26 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2299,6 +2299,29 @@ use Mpicomm, only: stop_it
         endif
 !
     endsubroutine udamping
+!***********************************************************************
+    subroutine input_persistent_hydro(id,lun,done)
+! 
+!  Dummy routine
+! 
+      use Cdata, only: lroot
+!
+      integer :: id,lun
+      logical :: done
+! 
+      if (NO_WARN) print*,id,lun,done
+! 
+    endsubroutine input_persistent_hydro
+!***********************************************************************
+    subroutine output_persistent_hydro(lun)
+! 
+!  Dummy routine
+! 
+      integer :: lun
+! 
+      if (NO_WARN) print*,lun
+!
+    endsubroutine output_persistent_hydro
 !***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)
 !

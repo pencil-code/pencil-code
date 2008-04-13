@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.87 2008-04-03 20:35:33 brandenb Exp $
+! $Id: nohydro.f90,v 1.88 2008-04-13 13:50:27 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -21,12 +21,14 @@ module Hydro
 
   implicit none
 
+  include 'record_types.h'
   include 'hydro.h'
 
   real, dimension (nz,3) :: uumz=0.
   real :: kep_cutoff_pos_ext= huge1,kep_cutoff_width_ext=0.0
   real :: kep_cutoff_pos_int=-huge1,kep_cutoff_width_int=0.0
   real :: u_out_kep=0.0
+  real :: tphase_kinflow=-1.,phase1=0., phase2=0.
   logical :: lpressuregradient_gas=.true.,lcalc_uumean=.false.
 
   real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber?
@@ -47,6 +49,7 @@ module Hydro
   integer :: idiag_umy=0,idiag_umz=0,idiag_uxmxy=0,idiag_uymxy=0,idiag_uzmxy=0
   integer :: idiag_Marms=0,idiag_Mamax=0,idiag_divu2m=0,idiag_epsK=0
   integer :: idiag_urmphi=0,idiag_upmphi=0,idiag_uzmphi=0,idiag_u2mphi=0
+  integer :: idiag_phase1=0,idiag_phase2=0
   integer :: idiag_ekintot=0, idiag_ekin=0
 
   contains
@@ -74,7 +77,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.87 2008-04-03 20:35:33 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.88 2008-04-13 13:50:27 brandenb Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -241,8 +244,9 @@ module Hydro
 !   08-nov-04/tony: coded
 !
       use Cdata
-      use Sub, only: dot_mn, dot2_mn, sum_mn_name, max_mn_name, integrate_mn_name
+      use Sub, only: dot_mn,dot2_mn, sum_mn_name, max_mn_name, integrate_mn_name
       use Magnetic, only: ABC_A,ABC_B,ABC_C,kx_aa,ky_aa,kz_aa
+      use General
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -321,6 +325,40 @@ module Hydro
         if (lpencil(i_divu)) p%divu=0.
         if (lpencil(i_oo)) p%oo=-kkx_aa*p%uu
 !
+!  Galloway-Proctor flow with random temporal phase
+!
+      elseif (kinflow=='Galloway-Proctor-RandomTemporalPhase') then
+        if (headtt) print*,'GP-RandomTemporalPhase; kx,ky=',kkx_aa,kky_aa
+        fac=ampl_kinflow
+        if (t.gt.tphase_kinflow) then
+          call random_number_wrapper(fran1)
+          tphase_kinflow=t+dtphase_kinflow
+          phase1=pi*(2*fran1(1)-1.)
+          phase2=pi*(2*fran1(2)-1.)
+        endif
+        ecost=eps_kinflow*cos(omega_kinflow*t+phase1)
+        esint=eps_kinflow*sin(omega_kinflow*t+phase2)
+        p%uu(:,1)=-fac*sin(kky_aa*y(m)    +esint)
+        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2)+ecost)
+        p%uu(:,3)=-fac*(cos(kkx_aa*x(l1:l2)+ecost)+cos(kky_aa*y(m)+esint))
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  Galloway-Proctor flow with random phase
+!
+      elseif (kinflow=='Galloway-Proctor-RandomPhase') then
+        if (headtt) print*,'Galloway-Proctor-RandomPhase; kx,ky=',kkx_aa,kky_aa
+        fac=ampl_kinflow
+        if (t.gt.tphase_kinflow) then
+          call random_number_wrapper(fran1)
+          tphase_kinflow=t+dtphase_kinflow
+          phase1=pi*(2*fran1(1)-1.)
+          phase2=pi*(2*fran1(2)-1.)
+        endif
+        p%uu(:,1)=-fac*sin(kky_aa*y(m)    +phase1)*kky_aa
+        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2)+phase2)*kkx_aa
+        p%uu(:,3)=-fac*(cos(kkx_aa*x(l1:l2)+phase2)+cos(kky_aa*y(m)+phase1))
+        if (lpencil(i_divu)) p%divu=0.
+!
 !  original Galloway-Proctor flow
 !
       elseif (kinflow=='Galloway-Proctor-orig') then
@@ -331,18 +369,6 @@ module Hydro
         p%uu(:,1)=+fac*cos(kky_aa*y(m)    +esint)*kky_aa
         p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2)+ecost)*kkx_aa
         p%uu(:,3)=-fac*(cos(kkx_aa*x(l1:l2)+ecost)+sin(kky_aa*y(m)+esint))
-        if (lpencil(i_divu)) p%divu=0.
-!
-!  Galloway-Proctor-2 flow (by mistake)
-!
-      elseif (kinflow=='Galloway-Proctor-2') then
-        if (headtt) print*,'Galloway-Proctor-2 flow; kx_aa,ky_aa=',kkx_aa,kky_aa
-        fac=ampl_kinflow
-        ecost=eps_kinflow*cos(omega_kinflow*t)
-        esint=eps_kinflow*sin(omega_kinflow*t)
-        p%uu(:,1)=-fac*sin(kky_aa*y(m)    +esint)*kky_aa
-        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2)+ecost)*kkx_aa
-        p%uu(:,3)=+fac*(cos(kkx_aa*x(l1:l2)+ecost)+cos(kky_aa*y(m)+esint))
         if (lpencil(i_divu)) p%divu=0.
 !
 !  Convection rolls
@@ -455,6 +481,8 @@ module Hydro
           if (idiag_uxpt/=0) call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
           if (idiag_uypt/=0) call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
           if (idiag_uzpt/=0) call save_name(p%uu(lpoint-nghost,3),idiag_uzpt)
+          if (idiag_phase1/=0) call save_name(phase1,idiag_phase1)
+          if (idiag_phase2/=0) call save_name(phase2,idiag_phase2)
         endif
       endif
 !
@@ -961,6 +989,57 @@ module Hydro
    ! end do
    ! endsubroutine random_isotropic_KS_setup_abag
 !***********************************************************************
+    subroutine input_persistent_hydro(id,lun,done)
+!
+!  Read in the stored time of the next random phase calculation
+!
+!  12-apr-08/axel: adapted from input_persistent_forcing
+!
+      use Cdata, only: lroot
+!
+      integer :: id,lun
+      logical :: done
+!
+      if (id==id_record_NOHYDRO_TPHASE) then
+        read (lun) tphase_kinflow
+        done=.true.
+      elseif (id==id_record_NOHYDRO_PHASE1) then
+        read (lun) phase1
+        done=.true.
+      elseif (id==id_record_NOHYDRO_PHASE2) then
+        read (lun) phase2
+        done=.true.
+      endif
+      if (lroot) print*,'input_persistent_hydro: ',tphase_kinflow
+!
+    endsubroutine input_persistent_hydro
+!***********************************************************************
+    subroutine output_persistent_hydro(lun)
+!
+!  Writes out the time of the next random phase calculation
+!
+!  12-apr-08/axel: adapted from output_persistent_forcing
+!
+      use Cdata, only: lroot
+!
+      integer :: lun
+!
+      if (lroot.and.ip<14) then
+        if (tphase_kinflow>=0.) &
+            print*,'output_persistent_hydro: ',tphase_kinflow
+      endif
+!
+!  write details
+!
+      write (lun) id_record_NOHYDRO_TPHASE
+      write (lun) tphase_kinflow
+      write (lun) id_record_NOHYDRO_PHASE1
+      write (lun) phase1
+      write (lun) id_record_NOHYDRO_PHASE2
+      write (lun) phase2
+!
+    endsubroutine output_persistent_hydro
+!***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for hydro part
@@ -983,7 +1062,8 @@ module Hydro
       if (lreset) then
         idiag_u2m=0; idiag_um2=0; idiag_oum=0; idiag_o2m=0
         idiag_uxpt=0; idiag_uypt=0; idiag_uzpt=0; idiag_dtu=0
-        idiag_urms=0; idiag_umax=0; idiag_uzrms=0; idiag_uzmax=0;
+        idiag_urms=0; idiag_umax=0; idiag_uzrms=0; idiag_uzmax=0
+        idiag_phase1=0; idiag_phase2=0
         idiag_orms=0; idiag_omax=0; idiag_oumphi=0
         idiag_ruxm=0; idiag_ruym=0; idiag_ruzm=0; idiag_rumax=0
         idiag_ux2m=0; idiag_uy2m=0; idiag_uz2m=0
@@ -996,7 +1076,7 @@ module Hydro
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'rprint_nohydro: run through parse list'
+      if(lroot.and.ip<14) print*,'rprint_hydro: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
         call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)
@@ -1031,6 +1111,8 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uxpt',idiag_uxpt)
         call parse_name(iname,cname(iname),cform(iname),'uypt',idiag_uypt)
         call parse_name(iname,cname(iname),cform(iname),'uzpt',idiag_uzpt)
+        call parse_name(iname,cname(iname),cform(iname),'phase1',idiag_phase1)
+        call parse_name(iname,cname(iname),cform(iname),'phase2',idiag_phase2)
       enddo
 !
 !  write column where which hydro variable is stored
@@ -1080,6 +1162,8 @@ module Hydro
         write(3,*) 'i_uzmphi=',idiag_uzmphi
         write(3,*) 'i_u2mphi=',idiag_u2mphi
         write(3,*) 'i_oumphi=',idiag_oumphi
+        write(3,*) 'i_phase1=',idiag_phase1
+        write(3,*) 'i_phase2=',idiag_phase2
         write(3,*) 'nname=',nname
         write(3,*) 'iuu=',iuu
         write(3,*) 'iux=',iux
