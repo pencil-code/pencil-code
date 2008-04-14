@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: pc_jobtransfer,v 1.2 2005-06-26 17:34:17 eos_merger_tony Exp $
+#  $Id: pc_jobtransfer,v 1.3 2008-04-14 05:42:20 brandenb Exp $
 #
 #  checks that a valid NEWDIR file exists, and that in
 #  the new directory there is another valid NEWDIR file.
@@ -31,38 +31,46 @@ if (-e NEWDIR) then
     if (-e data/legend.dat) cat data/legend.dat
     if (-e data/time_series.dat) tail -5 data/time_series.dat |grep -v "#"
     #
-    #  use first preliminary rtndir, which is possibly a relative path
+    #  go to new directory and check that executables exist
     #
-    if (-e NEWDIR) then
-      set rtndir=`cat NEWDIR`
-      if (-e $rtndir) then
-        cd $rtndir
-        set rtndir=$cwd
-        echo
-        echo "return directory"
-        pwd
-        #tsnap-all
-        #if (-e data/legend.dat) cat data/legend.dat
-        #if (-e data/time_series.dat) tail -5 data/time_series.dat |grep -v "#"
-        #
-        #  check that original and return directories are the same
-        #
-        if ($orgdir == $rtndir) then
-          echo ""
-          echo "alright: both directories exist full circle"
-          echo "will now touch STOP file to do the transfer"
-          touch STOP
-          echo ""
+    if ((-e src/start.x) && (-e src/run.x)) then
+      #
+      #  use first preliminary rtndir, which is possibly a relative path
+      #
+      if (-e NEWDIR) then
+        set rtndir=`cat NEWDIR`
+        if (-e $rtndir) then
+          cd $rtndir
+          set rtndir=$cwd
+          echo
+          echo "return directory"
+          pwd
+          #tsnap-all
+          #if (-e data/legend.dat) cat data/legend.dat
+          #if (-e data/time_series.dat) tail -5 data/time_series.dat |grep -v "#"
+          #
+          #  check that original and return directories are the same
+          #
+          if ($orgdir == $rtndir) then
+            echo ""
+            echo "alright: both directories exist full circle"
+            echo "will now touch STOP file to do the transfer"
+            touch STOP
+            echo ""
+          else
+            echo "*not* alright, because original and return directories differ:"
+            echo "orignal directory:" $orgdir
+            echo " return directory:" $rtndir
+          endif
         else
-          echo "*not* alright, because original and return directories differ:"
-          echo "orignal directory:" $orgdir
-          echo " return directory:" $rtndir
+          echo "return directory does *not* exist!"
         endif
       else
-        echo "return directory does *not* exist!"
+        echo "stop: return directory does not exist!"
+        exit
       endif
     else
-      echo "stop: return directory does not exist!"
+      echo "executables do not exist in new run directory!"
       exit
     endif
   else
