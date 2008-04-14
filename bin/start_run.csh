@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start_run.csh,v 1.46 2008-04-10 15:56:01 wlyra Exp $
+# CVS: $Id: start_run.csh,v 1.47 2008-04-14 05:39:52 brandenb Exp $
 
 #                       start_run.csh
 #                      ---------------
@@ -257,6 +257,10 @@ if ($?LOADL_STEP_ID) then
   echo $LOADL_STEP_ID "  RUN STARTED on "$LOADL_STEP_CLASS `date` \
     >> $datadir/jobid.dat
 endif
+if ($?SLURM_JOBID) then
+  echo $SLURM_JOBID "  RUN STARTED on "$SLURMD_NODENAME `date` \
+    >> $datadir/jobid.dat
+endif
 
 # Run run.x
 rm -f 'ERROR'
@@ -273,6 +277,9 @@ pc_deprecated_slice_links
 # Write $PBS_JOBID to file (important when run is migrated within the same job)
 if ($?PBS_JOBID) then
   echo $PBS_JOBID " RUN FINISHED on "$PBS_O_QUEUE `date` >> $datadir/jobid.dat
+endif
+if ($?SLURM_JOBID) then
+  echo $SLURM_JOBID " RUN FINISHED on "$SLURMD_NODENAME `date` >> $datadir/jobid.dat
 endif
 
 # look for RERUN file 
