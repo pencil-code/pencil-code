@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.358 2008-04-03 12:50:50 ajohan Exp $
+! $Id: sub.f90,v 1.359 2008-04-16 21:02:05 dobler Exp $
 
 module Sub
 
@@ -3084,7 +3084,7 @@ module Sub
       if (lcylindrical_coords) then
         ff=f(l1:l2,m,n,k:k+2)
         ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)*ff(:,2))
-        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,1)*ff(:,2))
+        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,2)*ff(:,1))
       endif
 !
     endsubroutine u_dot_grad_vec
