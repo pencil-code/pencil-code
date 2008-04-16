@@ -19,7 +19,7 @@ default,coord_system,'cartesian'
     cotth=cos(yy)/sin(yy)      
     i_sin=where(abs(sin(yy)) lt 1e-5) ;sinth_min=1e-5
     if (i_sin ne -1) then cotth[i_sin]=0.
-    corr = (2.*f[,*,*,0]+cotth*f[*,*,*,1])/xx 
+    corr = (2.*f[*,*,*,0]+cotth*f[*,*,*,1])/xx 
  endif
 ;
 return,xder(f[*,*,*,0])+$
