@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.62 2008-04-14 20:08:35 dobler Exp $
+! $Id: chemistry.f90,v 1.63 2008-04-16 20:48:28 dobler Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -172,11 +172,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.62 2008-04-14 20:08:35 dobler Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.63 2008-04-16 20:48:28 dobler Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.62 2008-04-14 20:08:35 dobler Exp $")
+           "$Id: chemistry.f90,v 1.63 2008-04-16 20:48:28 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -548,7 +548,10 @@ module Chemistry
 ! 
 ! Density
 !
-
+      if (.not. ldensity) then
+          call fatal_error("calc_for_chem_mixture", &
+              "Cannot calculate rho with DENSITY=nodensity")
+      endif
       rho_full=exp(f(:,:,:,ilnrho))
 
 !
