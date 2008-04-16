@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.34 2008-03-24 22:50:38 wlyra Exp $
+! $Id: grid.f90,v 1.35 2008-04-16 20:47:49 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -562,7 +562,7 @@ module Grid
 
       case ('duct')
         ! Chebyshev-type grid in all Cartesian directions:
-        ! Points are much denser near the boundaires than in the middle
+        ! Points are much denser near the boundaries than in the middle
         g=sin(xi)
         if (present(gder1)) gder1= cos(xi)
         if (present(gder2)) gder2=-sin(xi)
