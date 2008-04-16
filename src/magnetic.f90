@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.510 2008-04-13 13:50:26 brandenb Exp $
+! $Id: magnetic.f90,v 1.511 2008-04-16 06:37:51 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -114,7 +114,7 @@ module Magnetic
   logical :: lmeanfield_noalpm=.false., lmeanfield_jxb=.false.
   logical :: lgauss=.false.
   logical :: lbb_as_aux=.false.,ljj_as_aux=.false.
-  logical :: lbext_curvilinear=.true.
+  logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   character (len=labellen) :: pertaa='zero'
 
   namelist /magnetic_init_pars/ &
@@ -127,7 +127,7 @@ module Magnetic
        inclaa,lpress_equil,lpress_equil_via_ss,mu_r, &
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa, &
-       rmode,zmode,rm_int,rm_ext,lgauss, &
+       rmode,zmode,rm_int,rm_ext,lgauss,lcheck_positive_va2, &
        lbb_as_aux,ljj_as_aux,beta_const,lbext_curvilinear
 
   ! run parameters
@@ -164,7 +164,7 @@ module Magnetic
        forcing_continuous_aa_phasefact, &
        forcing_continuous_aa_amplfact, &
        k1_ff,ampl_ff,swirl,radius, &
-       k1x_ff,k1y_ff,k1z_ff, &
+       k1x_ff,k1y_ff,k1z_ff,lcheck_positive_va2, &
        bthresh,bthresh_per_brms, &
        iresistivity,lweyl_gauge,lupw_aa, &
        alphaSSm, &
@@ -387,7 +387,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.510 2008-04-13 13:50:26 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.511 2008-04-16 06:37:51 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1396,7 +1396,15 @@ module Magnetic
 ! jb
       if (lpencil(i_jb)) call dot_mn(p%jj,p%bbb,p%jb)
 ! va2
-      if (lpencil(i_va2)) p%va2=p%b2*mu01*p%rho1
+      if (lpencil(i_va2)) then
+        p%va2=p%b2*mu01*p%rho1
+        if (lcheck_positive_va2 .and. minval(p%va2)<0.0) then
+          print*, 'calc_pencils_magnetic: Alfven speed is imaginary!'
+          print*, 'calc_pencils_magnetic: it, itsub, iproc=', it, itsub, iproc
+          print*, 'calc_pencils_magnetic: m, y(m), n, z(n)=', m, y(m), n, z(n)
+          p%va2=abs(p%va2)
+        endif
+      endif
 ! jxb
       if (lpencil(i_jxb)) call cross_mn(p%jj,p%bb,p%jxb)
 ! jxbr
