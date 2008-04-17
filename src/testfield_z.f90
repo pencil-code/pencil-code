@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.38 2008-04-13 07:11:29 brandenb Exp $
+! $Id: testfield_z.f90,v 1.39 2008-04-17 20:43:26 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -41,7 +41,7 @@ module Testfield
 !
 !  cosine and sine function for setting test fields and analysis
 !
-  real, dimension(mz) :: cz,sz
+  real, dimension(mz) :: cz,sz,c2z,csz,s2z
 !
   character (len=labellen), dimension(ninit) :: initaatest='nothing'
   real, dimension (ninit) :: amplaatest=0.
@@ -55,7 +55,7 @@ module Testfield
   logical :: reinitialize_aatest=.false.
   logical :: zextent=.true.,lsoca=.true.,lsoca_jxb=.true.,lset_bbtest2=.false.
   logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,linit_aatest=.false.
-  logical :: lignore_uxbtestm=.false.
+  logical :: lignore_uxbtestm=.false., lphase_adjust=.false.
   character (len=labellen) :: itestfield='B11-B21'
   real :: ktestfield=1., ktestfield1=1.
   integer, parameter :: ntestfield=3*njtest
@@ -73,7 +73,7 @@ module Testfield
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
-       ltestfield_newz,leta_rank2, &
+       ltestfield_newz,leta_rank2,lphase_adjust, &
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
        daainit,linit_aatest,bamp, &
        rescale_aatest
@@ -181,7 +181,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.38 2008-04-13 07:11:29 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.39 2008-04-17 20:43:26 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -212,7 +212,7 @@ module Testfield
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(mz) :: ztestfield
+      real, dimension(mz) :: ztestfield, c, s
       integer :: jtest
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
@@ -231,6 +231,18 @@ module Testfield
       endif
       cz=cos(ktestfield*ztestfield)
       sz=sin(ktestfield*ztestfield)
+!
+!  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
+!  of alpij and etaij. This is useful if there is a mean Beltrami field
+!  in the main calculation (lmagnetic=.true.) with phase zero.
+!  Optionally, one can determine the phase in the actual field
+!  and modify the following calculations in calc_ltestfield_pars.
+!
+      c=cos(z)
+      s=sin(z)
+      c2z=c**2
+      s2z=s**2
+      csz=c*s
 !
 !  debug output
 !
@@ -670,11 +682,11 @@ module Testfield
 !
 !  weighted averages alpha and eta
 !
-        if (idiag_alp11cc/=0) call sum_mn_name(cz(n)**2   *(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2)),idiag_alp11cc)
-        if (idiag_alp21sc/=0) call sum_mn_name(sz(n)*cz(n)*(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2)),idiag_alp21sc)
+        if (idiag_alp11cc/=0) call sum_mn_name(c2z(n)*(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2)),idiag_alp11cc)
+        if (idiag_alp21sc/=0) call sum_mn_name(csz(n)*(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2)),idiag_alp21sc)
         if (leta_rank2) then
-          if (idiag_eta11cc/=0) call sum_mn_name(cz(n)**2   *(-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta11cc)
-          if (idiag_eta21sc/=0) call sum_mn_name(sz(n)*cz(n)*(-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta21sc)
+          if (idiag_eta11cc/=0) call sum_mn_name(c2z(n)*(-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta11cc)
+          if (idiag_eta21sc/=0) call sum_mn_name(csz(n)*(-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta21sc)
         endif
 !
 !  Projection of EMF from testfield against testfield itself
@@ -694,19 +706,19 @@ module Testfield
           if (idiag_alp12/=0) call sum_mn_name(+cz(n)*Eipq(:,1,i3)+sz(n)*Eipq(:,1,i4),idiag_alp12)
           if (idiag_alp22/=0) call sum_mn_name(+cz(n)*Eipq(:,2,i3)+sz(n)*Eipq(:,2,i4),idiag_alp22)
           if (idiag_alp32/=0) call sum_mn_name(+cz(n)*Eipq(:,3,i3)+sz(n)*Eipq(:,3,i4),idiag_alp32)
-          if (idiag_alp12cs/=0) call sum_mn_name(cz(n)*sz(n)*(+cz(n)*Eipq(:,1,i3)+sz(n)*Eipq(:,1,i4)),idiag_alp12cs)
-          if (idiag_alp22ss/=0) call sum_mn_name(sz(n)**2   *(+cz(n)*Eipq(:,2,i3)+sz(n)*Eipq(:,2,i4)),idiag_alp22ss)
+          if (idiag_alp12cs/=0) call sum_mn_name(csz(n)*(+cz(n)*Eipq(:,1,i3)+sz(n)*Eipq(:,1,i4)),idiag_alp12cs)
+          if (idiag_alp22ss/=0) call sum_mn_name(s2z(n)*(+cz(n)*Eipq(:,2,i3)+sz(n)*Eipq(:,2,i4)),idiag_alp22ss)
           if (leta_rank2) then
             if (idiag_eta12/=0) call sum_mn_name(-(-sz(n)*Eipq(:,1,i1)+cz(n)*Eipq(:,1,i2))*ktestfield1,idiag_eta12)
             if (idiag_eta22/=0) call sum_mn_name(-(-sz(n)*Eipq(:,2,i1)+cz(n)*Eipq(:,2,i2))*ktestfield1,idiag_eta22)
-            if (idiag_eta12cs/=0) call sum_mn_name(-cz(n)*sz(n)*(-sz(n)*Eipq(:,1,i1)+cz(n)*Eipq(:,1,i2))*ktestfield1,idiag_eta12cs)
-            if (idiag_eta22ss/=0) call sum_mn_name(-sz(n)**2   *(-sz(n)*Eipq(:,2,i1)+cz(n)*Eipq(:,2,i2))*ktestfield1,idiag_eta22ss)
+            if (idiag_eta12cs/=0) call sum_mn_name(-csz(n)*(-sz(n)*Eipq(:,1,i1)+cz(n)*Eipq(:,1,i2))*ktestfield1,idiag_eta12cs)
+            if (idiag_eta22ss/=0) call sum_mn_name(-s2z(n)*(-sz(n)*Eipq(:,2,i1)+cz(n)*Eipq(:,2,i2))*ktestfield1,idiag_eta22ss)
           else
             if (idiag_eta12/=0) call sum_mn_name((-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta12)
             if (idiag_eta22/=0) call sum_mn_name((-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta22)
             if (idiag_eta32/=0) call sum_mn_name((-sz(n)*Eipq(:,3,i3)+cz(n)*Eipq(:,3,i4))*ktestfield1,idiag_eta32)
-            if (idiag_eta12cs/=0) call sum_mn_name(cz(n)*sz(n)*(-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta12cs)
-            if (idiag_eta22ss/=0) call sum_mn_name(sz(n)**2   *(-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta22ss)
+            if (idiag_eta12cs/=0) call sum_mn_name(csz(n)*(-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta12cs)
+            if (idiag_eta22ss/=0) call sum_mn_name(s2z(n)*(-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta22ss)
           endif
         endif
 !
@@ -842,6 +854,7 @@ module Testfield
       use Mpicomm, only: mpireduce_sum, mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mz) :: c,s
 !
       real, dimension (nz,nprocz,3,njtest) :: uxbtestm1
       real, dimension (nz*nprocz*3*njtest) :: uxbtestm2,uxbtestm3
@@ -854,7 +867,7 @@ module Testfield
       real, dimension (nx,3) :: del2Atest2,graddivatest
       integer :: jtest,j,nxy=nxgrid*nygrid,juxb,jjxb
       logical :: headtt_save
-      real :: fac
+      real :: fac,phase_testfield=.0
       type (pencil_case) :: p
 !
       intent(inout) :: f
@@ -960,6 +973,20 @@ module Testfield
             enddo
           enddo
         enddo
+      endif
+!
+!  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
+!  of alpij and etaij. This is useful if there is a mean Beltrami field
+!  in the main calculation (lmagnetic=.true.) with phase zero.
+!  Here we modify the calculations depending on the phase of the
+!  actual field
+!
+      if (lphase_adjust) then
+        c=cos(z+phase_testfield)
+        s=sin(z+phase_testfield)
+        c2z=c**2
+        s2z=s**2
+        csz=c*s
       endif
 !
 !  reset headtt
