@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.94 2008-04-07 08:58:21 nbabkovs Exp $
+! $Id: viscosity.f90,v 1.95 2008-04-17 12:24:51 nbabkovs Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -12,7 +12,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 ! PENCILS PROVIDED fvisc, diffus_total, diffus_total2, diffus_total3
-! PENCILS PROVIDED visc_heat,nu,gradnu,sgnu
+! PENCILS PROVIDED visc_heat,nu,nu_art,gradnu,sgnu
 !
 !***************************************************************
 
@@ -110,7 +110,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.94 2008-04-07 08:58:21 nbabkovs Exp $")
+           "$Id: viscosity.f90,v 1.95 2008-04-17 12:24:51 nbabkovs Exp $")
 
       ivisc(1)='nu-const'
 !
@@ -473,6 +473,7 @@ module Viscosity
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_sglnrho)=.true.
         lpenc_requested(i_nu)=.true.
+        lpenc_requested(i_nu_art)=.true.
         lpenc_requested(i_gradnu)=.true.
         lpenc_requested(i_sgnu)=.true.
         lpenc_diagnos(i_sij2)=.true.
@@ -614,7 +615,9 @@ module Viscosity
 
         if(ldensity) then
          do i=1,3
-          p%fvisc(:,i)=2*p%nu*p%sglnrho(:,i)+p%nu*(p%del2u(:,i)+1./3.*p%graddivu(:,i))+2*p%sgnu(:,i)
+          p%fvisc(:,i)=2*(p%nu+p%nu_art)*p%sglnrho(:,i) &
+          +(p%nu+p%nu_art)*(p%del2u(:,i)+1./3.*p%graddivu(:,i)) &
+          +2*p%sgnu(:,i)
        !  if (maxval(p%nu)<0) then
        !    call stop_it("Negative viscosity!")
        !  endif 
@@ -622,7 +625,7 @@ module Viscosity
          enddo
         endif
 
-      if (lpencil(i_visc_heat)) p%visc_heat=2*p%nu*p%sij2
+      if (lpencil(i_visc_heat)) p%visc_heat=2*(p%nu+p%nu_art)*p%sij2
 
       if (lfirst.and.ldt) p%diffus_total=p%diffus_total+p%nu
 

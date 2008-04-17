@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.40 2008-04-07 08:58:21 nbabkovs Exp $
+! $Id: temperature_ionization.f90,v 1.41 2008-04-17 12:24:51 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -94,7 +94,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.40 2008-04-07 08:58:21 nbabkovs Exp $")
+           "$Id: temperature_ionization.f90,v 1.41 2008-04-17 12:24:51 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -729,7 +729,10 @@ module Entropy
 
 
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  & 
-          + p%gamma*p%chi(:)*(p%del2lnTT+g2TT+g2TTrho+g2cp/p%cp+g2TTlnchi)
+         ! + p%gamma*p%chi(:)*(p%del2lnTT+g2TT+g2TTrho &
+           + p%gamma*p%chi(:)*(p%del2lnTT+g2TT+g2TTrho &
+          + g2cp/p%cp+g2TTlnchi)
+
 
     endsubroutine calc_heatcond_chemistry
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.63 2008-04-16 20:48:28 dobler Exp $
+! $Id: chemistry.f90,v 1.64 2008-04-17 12:24:51 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,cs2,rho1gpp,gmu1
-! PENCILS PROVIDED nu,gradnu,DYDt_reac,DYDt_diff,cvspec, chi,glnchi
+! PENCILS PROVIDED nu,gradnu,nu_art,DYDt_reac,DYDt_diff,cvspec, chi,glnchi
 !***************************************************************
 
 module Chemistry
@@ -27,7 +27,7 @@ module Chemistry
   include 'chemistry.h'
 
   real :: Rgas, Rgas_unit_sys=1.
-  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, chi_full, rho_full
+  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, chi_full, rho_full, nu_art_full
   real, dimension (mx,my,mz,nchemspec) :: cvspec_full
 
 !
@@ -172,11 +172,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.63 2008-04-16 20:48:28 dobler Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.64 2008-04-17 12:24:51 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.63 2008-04-16 20:48:28 dobler Exp $")
+           "$Id: chemistry.f90,v 1.64 2008-04-17 12:24:51 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -497,6 +497,16 @@ module Chemistry
 
       endif
 
+
+!  Artificial Viscosity of a mixture
+!
+
+         if (lpencil(i_nu_art)) then
+            p%nu_art=nu_art_full(l1:l2,m,n)
+         endif
+
+
+
 ! 
 ! Calculate the reaction term and the corresponding pencil 
 !
@@ -682,6 +692,33 @@ module Chemistry
            nu_full=nu_dyn/rho_full
 
 
+  
+!
+!  Artificial Viscosity of a mixture
+!
+
+          do k=1,nchemspec
+             do j=1,nchemspec
+               mk_mj=species_constants(ichemspec(k),imass) &
+                    /species_constants(ichemspec(j),imass)
+               nuk_nuj(:,:,:)=nu_spec(k)/nu_spec(j)
+               Phi(:,:,:,k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
+                       *(1.+nuk_nuj**0.5*mk_mj**(-0.25))**2.
+             enddo
+           enddo
+
+         nu_dyn=0.
+         tmp_sum2=0.
+           do k=1,nchemspec 
+             do j=1,nchemspec 
+              tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:,k,j) 
+             enddo
+           nu_dyn=nu_dyn+XX_full(:,:,:,k)*nu_spec(k)/tmp_sum2
+           enddo
+           nu_art_full=nu_dyn/rho_full
+
+
+
 !
 !   Thermal diffusivity 
 !
@@ -690,12 +727,12 @@ module Chemistry
 
 
            do k=1,nchemspec 
-             species_cond(:,:,:,k)=species_viscosity(:,:,:,k)/species_constants(ichemspec(k),imass)
+             species_cond(:,:,:,k)=(species_viscosity(:,:,:,k))/species_constants(ichemspec(k),imass)
             tmp_sum=tmp_sum+XX_full(:,:,:,k)*species_cond(:,:,:,k)
             tmp_sum2=tmp_sum2+XX_full(:,:,:,k)/species_cond(:,:,:,k)
            enddo
 
-           chi_full=0.5*(tmp_sum+tmp_sum2)/rho_full/cp_full
+           chi_full=0.5*(tmp_sum+1./tmp_sum2)/rho_full/cp_full
 
         else
          call stop_it('This case works only for cgs units system!')
@@ -2107,6 +2144,7 @@ module Chemistry
    real, dimension (mx,my,mz,mfarray) :: f
    intent(in) :: f
    real, dimension (mx,my,mz) :: Omega_kl, prefactor, lnT, TT, lnTjk, pp_full, rho, lnTk
+   real, dimension (mx,my,mz) :: tmp
    integer :: k,j
    real :: eps_jk, sigma_jk, m_jk, delta_jk
    character (len=7) :: omega
@@ -2154,12 +2192,13 @@ module Chemistry
       lnTk=lnT-log(tran_data(2,k))
 
       call calc_collision_integral(omega,lnTjk,Omega_kl)
-      species_viscosity(:,:,:,k)=5./16.*sqrt(k_B_cgs*species_constants(k,imass)/Na*TT/pi) &
+      tmp=5./16.*sqrt(k_B_cgs*species_constants(k,imass)/Na*TT/pi) &
                     /(tran_data(3,k)*1e-8)**2   &
              /(Omega_kl+0.2*tran_data(4,k)/exp(TT/tran_data(3,k))) 
+      species_viscosity(:,:,:,k)=(tmp)/(unit_mass/unit_length/unit_time)
+       !+nu_spec(k)
 
-      species_viscosity(:,:,:,k)=(species_viscosity(:,:,:,k)+nu_spec(k)) &
-               /(unit_mass/unit_length/unit_time)
+     ! print*,nu_spec(k),(unit_mass/unit_length/unit_time)
 
     !    print*, species_viscosity(10,10,3,k)
 
