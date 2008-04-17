@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.402 2008-04-12 05:04:43 brandenb Exp $
+! $Id: equ.f90,v 1.403 2008-04-17 09:12:40 nbabkovs Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -477,7 +477,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.402 2008-04-12 05:04:43 brandenb Exp $")
+           "$Id: equ.f90,v 1.403 2008-04-17 09:12:40 nbabkovs Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -605,7 +605,7 @@ module Equ
 !
 !  Calculate quantities for a chemical mixture
 !
-    if (lchemistry) call calc_for_chem_mixture(f)
+    if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
 !
 !  Calculate ionization degree (needed for thermodynamics)
 !  Radiation transport along rays
