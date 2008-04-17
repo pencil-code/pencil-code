@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.64 2008-04-17 12:24:51 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.65 2008-04-17 12:42:46 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -172,11 +172,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.64 2008-04-17 12:24:51 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.65 2008-04-17 12:42:46 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.64 2008-04-17 12:24:51 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.65 2008-04-17 12:42:46 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -697,25 +697,29 @@ module Chemistry
 !  Artificial Viscosity of a mixture
 !
 
-          do k=1,nchemspec
-             do j=1,nchemspec
-               mk_mj=species_constants(ichemspec(k),imass) &
-                    /species_constants(ichemspec(j),imass)
-               nuk_nuj(:,:,:)=nu_spec(k)/nu_spec(j)
-               Phi(:,:,:,k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
-                       *(1.+nuk_nuj**0.5*mk_mj**(-0.25))**2.
-             enddo
-           enddo
+        if (maxval(nu_spec)>0) then
+
+        !  do k=1,nchemspec
+        !     do j=1,nchemspec
+        !       mk_mj=species_constants(ichemspec(k),imass) &
+        !            /species_constants(ichemspec(j),imass)
+        !       nuk_nuj(:,:,:)=nu_spec(k)/nu_spec(j)
+        !       Phi(:,:,:,k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
+        !               *(1.+nuk_nuj**0.5*mk_mj**(-0.25))**2.
+        !     enddo
+        !   enddo
 
          nu_dyn=0.
          tmp_sum2=0.
            do k=1,nchemspec 
-             do j=1,nchemspec 
-              tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:,k,j) 
-             enddo
-           nu_dyn=nu_dyn+XX_full(:,:,:,k)*nu_spec(k)/tmp_sum2
+         !    do j=1,nchemspec 
+         !     tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:,k,j) 
+         !    enddo
+           nu_dyn=nu_dyn+XX_full(:,:,:,k)*nu_spec(k)!/tmp_sum2
            enddo
            nu_art_full=nu_dyn/rho_full
+
+        endif
 
 
 
