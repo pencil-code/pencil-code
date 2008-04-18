@@ -1,5 +1,5 @@
 #!/bin/csh 
-#$Id: cvsci_run,v 1.23 2008-03-09 05:57:09 brandenb Exp $
+#$Id: cvsci_run,v 1.24 2008-04-18 02:12:42 brandenb Exp $
 #
 #  This script adds a new run to the repository
 #  and checks in all *.in files as well as material
@@ -30,7 +30,7 @@ cd $dir
 cvs add *.in k.dat parameters.pro testfield_info.dat chemistry*.dat data
 #
 cd data
-cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml
+cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml cvsid.dat
 #
 #  add alpeta.sav, if it exists
 #
@@ -77,7 +77,7 @@ test -h src
 if ( $status ) then
   cvs add src
   cd src
-  cvs add *.local
+  cvs add *.local .build-history
   cd ..
   cvs ci -m "added new run: `uname -n -s`" src
 endif
