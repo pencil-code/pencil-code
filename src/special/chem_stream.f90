@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.11 2008-04-08 14:47:06 nbabkovs Exp $
+! $Id: chem_stream.f90,v 1.12 2008-04-18 11:32:39 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -69,7 +69,12 @@ module Special
   logical :: leffective_gravity=.false.
 
   character (len=labellen) :: initstream='default'
+
+  real, dimension (mx,my,mz,3) :: divtau=0.
+  real, dimension (mx,my,mz) :: pres=0., mmu1=0.
+  logical :: ldivtau=.false.
   real :: test 
+  real :: Rgas, Rgas_unit_sys=1.
 
   real :: rho_init=1., T_init=1., Y1_init=1., Y2_init=1., Y3_init=1.
 
@@ -134,11 +139,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.11 2008-04-08 14:47:06 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.12 2008-04-18 11:32:39 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.11 2008-04-08 14:47:06 nbabkovs Exp $")
+           "$Id: chem_stream.f90,v 1.12 2008-04-18 11:32:39 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -171,6 +176,11 @@ module Special
 !!
 !!  Initialize any module variables which are parameter dependent
 !!
+    if (unit_system == 'cgs') then
+         Rgas_unit_sys = k_B_cgs/m_u_cgs
+         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
+       endif
+
 
 !
 !  Make sure initialization (somehow) works with eos_ionization.f90
@@ -206,6 +216,8 @@ module Special
       select case(initstream)
          case('stream')
             call stream_field(f,xx,yy)
+         case('bomb')
+            call bomb_field(f,xx,yy)
          case('default')
           if(lroot) print*,'init_special: Default neutron star setup'
      !     call density_init(f,xx,zz)
@@ -389,7 +401,19 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
+      integer :: i
 !
+      do i=1,3
+        divtau(l1:l2,m,n,i)=p%fvisc(l1:l2,i)*p%rho(:)
+      enddo
+
+        pres(l1:l2,m,n)=p%pp(:)!/p%mu1(:)
+        mmu1(l1:l2,m,n)=p%mu1(:)
+
+
+     !    print*,'Natalia',p%pp(l1+1), p%fvisc(l1+1,1),mmu1(l1+1,4,4)
+      ldivtau=.true.
+
 
 
     endsubroutine special_calc_hydro
@@ -476,6 +500,14 @@ module Special
            call bc_1Dstream_x(f,-1, bc)
          endselect
          bc%done=.true.
+         case ('wal')
+         select case (bc%location)
+         case (iBC_X_TOP)
+           call bc_gpress_wall(f,-1, bc)
+         case (iBC_X_BOT)
+           call bc_gpress_wall(f,-1, bc)
+         endselect
+         bc%done=.true.
       endselect
 
       if (NO_WARN) print*,f(1,1,1,1),bc%bcname
@@ -542,6 +574,25 @@ module Special
 
 
     endsubroutine stream_field
+!***********************************************************************
+   subroutine bomb_field(f,xx,yy)
+!
+! Natalia
+! Initialization of chem. species  in a case of the stream
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx, yy
+      integer :: k,j,i
+
+
+     f(:,:,:,4)=log(rho_init)-(xx(:,:,:)/(0.5*Lxyz(1)))**2
+     f(:,:,:,5)=log(T_init)!-(xx(:,:,:)/(0.5*Lxyz(1)))**2
+     f(l1:mx,:,:,ichemspec(nchemspec))=Y3_init
+
+
+
+
+    endsubroutine bomb_field
 !***********************************************************************
   subroutine bc_stream_x(f,sgn,bc)
 !
@@ -728,7 +779,9 @@ module Special
        endif
 
       if (vr==4) then
-           do i=0,nghost;  f(l1-i,:,:,vr)=log(value1);  enddo
+           do i=0,nghost
+            f(l1-i,:,:,4)=f(l1,:,:,4)
+           enddo 
       endif
 
       if (vr==5) then
@@ -739,16 +792,42 @@ module Special
 
          do i=0,nghost; 
                 if (vr < ichemspec(nchemspec))  f(l1-i,:,:,vr)=value1
-                if (vr == ichemspec(nchemspec))                    f(l1-i,:,:,vr)=value1*((l1-i)/(l1-0.))**4
+                if (vr == ichemspec(nchemspec))                    f(l1-i,:,:,vr)=value1!*((l1-i)/(l1-0.))**4
           enddo
 
        endif
 
       elseif (bc%location==iBC_X_TOP) then
       ! top boundary
-        do i=1,nghost
-          f(l2+i,:,:,vr)=f(l2,:,:,vr)!2*f(l2,:,:,vr)!+sgn*f(l2-i,:,:,vr);
-        enddo
+       if (vr==1) then
+          do i=0,nghost;   f(l2+i,:,:,vr)=value1;  enddo
+       endif
+
+      if (vr==4) then
+           do i=0,nghost
+            f(l2+i,:,:,4)=f(l2,:,:,4)
+           enddo 
+      endif
+
+      if (vr==5) then
+          do i=0,nghost;   f(l2+i,:,:,vr)=log(value1); enddo 
+      endif
+
+       if (vr >= ichemspec(1)) then
+
+         do i=0,nghost; 
+                if (vr < ichemspec(nchemspec))  f(l2+i,:,:,vr)=value1
+                if (vr == ichemspec(nchemspec))                    f(l2+i,:,:,vr)=value1!*((l1-i)/(l1-0.))**4
+          enddo
+
+       endif
+
+
+
+
+    !   do i=1,nghost
+     !     f(l2+i,:,:,vr)=f(l2,:,:,vr)!2*f(l2,:,:,vr)!+sgn*f(l2-i,:,:,vr);
+     !   enddo
       else
         print*, "bc_BL_x: ", bc%location, " should be `top(", &
                         iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
@@ -756,6 +835,121 @@ module Special
 !
     endsubroutine bc_1Dstream_x
 !***********************************************************************
+ subroutine bc_gpress_wall(f,sgn,bc)
+!
+! Natalia
+!
+    use Cdata
+    use Sub
+    use Deriv
+    use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (l1+2) :: pp
+      integer :: sgn
+      type (boundary_condition) :: bc
+      integer :: i,i1,j,vr,k,m,n
+      real :: value1, value2
+
+      vr=bc%ivar
+
+      value1=bc%value1
+      value2=bc%value2
+
+
+
+    if (bc%location==iBC_X_BOT) then
+      ! bottom boundary
+
+       if (vr==1) then
+              do i=0,nghost;   f(l1-i,:,:,vr)=value1;  enddo
+       endif
+
+ !     if (vr==4) then
+ !          do i=0,nghost;  f(l1-i,:,:,vr)=log(value1);  enddo
+ !     endif
+
+      if (vr==5) then
+
+       if (.not. ldivtau) then
+           do i=0,nghost
+            f(l1-i,:,:,4)=f(l1,:,:,4)
+            f(l1-i,:,:,5)=f(l1,:,:,5)
+           enddo 
+       else
+         do i=0,nghost;   f(l1-i,:,:,vr)=log(value1); enddo 
+
+         do i=0,nghost
+           pres(l1-i,:,:)=pres(l1-i+1,:,:)-divtau(l1-i,:,:,1)*dx
+         enddo
+
+         do i=0,nghost
+           f(l1-i,:,:,4)=log(pres(l1,:,:)/value1/mmu1(l1,:,:)/Rgas); 
+         enddo 
+
+      ! print*,'Natalia2',pres_R(l1,4,4)/value1/mmu1(l1,4,4)
+      endif
+
+     endif
+
+       if (vr >= ichemspec(1)) then
+         do i=0,nghost; 
+           f(l1-i,:,:,vr)=2*f(l1-i+1,:,:,vr)-f(l1-i+2,:,:,vr)
+          enddo
+       endif
+
+      elseif (bc%location==iBC_X_TOP) then
+
+       if (vr==1) then
+              do i=0,nghost;   f(l2+i,:,:,vr)=value1;  enddo
+       endif
+
+ !     if (vr==4) then
+ !          do i=0,nghost;  f(l1-i,:,:,vr)=log(value1);  enddo
+ !     endif
+
+      if (vr==5) then
+
+       if (.not. ldivtau) then
+           do i=0,nghost
+            f(l2+i,:,:,4)=f(l2,:,:,4)
+            f(l2+i,:,:,5)=f(l2,:,:,5)
+           enddo 
+       else
+         do i=0,nghost;   f(l2+i,:,:,vr)=log(value1); enddo 
+
+         do i=0,nghost
+           pres(l2+i,:,:)=pres(l2+i-1,:,:)+divtau(l2+i,:,:,1)*dx
+         enddo
+
+         do i=0,nghost
+           f(l2+i,:,:,4)=log(pres(l2,:,:)/value1/mmu1(l2,:,:)/Rgas); 
+         enddo 
+
+      ! print*,'Natalia2',pres_R(l1,4,4)/value1/mmu1(l1,4,4)
+      endif
+
+     endif
+
+       if (vr >= ichemspec(1)) then
+         do i=0,nghost; 
+           f(l2+i,:,:,vr)=2*f(l2+i-1,:,:,vr)-f(l2+i-2,:,:,vr)
+          enddo
+       endif
+
+
+      ! top boundary
+      !  do i=1,nghost
+      !    f(l2+i,:,:,vr)=f(l2,:,:,vr)!2*f(l2,:,:,vr)!+sgn*f(l2-i,:,:,vr);
+      !  enddo
+      else
+        print*, "bc_stream_x: ", bc%location, " should be `top(", &
+                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
+      endif
+!
+    endsubroutine bc_gpress_wall
+!***********************************************************************
+
     subroutine special_before_boundary(f)
 !
 !   Possibility to modify the f array before the boundaries are
