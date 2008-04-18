@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.65 2008-04-17 12:42:46 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.66 2008-04-18 11:31:44 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -29,6 +29,8 @@ module Chemistry
   real :: Rgas, Rgas_unit_sys=1.
   real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, chi_full, rho_full, nu_art_full
   real, dimension (mx,my,mz,nchemspec) :: cvspec_full
+
+  logical :: lone_spec=.false.
 
 !
 !  parameters related to chemical reactions
@@ -71,7 +73,7 @@ module Chemistry
   integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
   integer, dimension(7) :: iaa1,iaa2
   real,    allocatable, dimension(:) :: B_n, alpha_n, E_an
-  real,   dimension(7,nchemspec) :: tran_data
+  real,   dimension(nchemspec,7) :: tran_data
 
   logical :: Natalia_thoughts=.false.
 
@@ -172,11 +174,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.65 2008-04-17 12:42:46 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.66 2008-04-18 11:31:44 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.65 2008-04-17 12:42:46 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.66 2008-04-18 11:31:44 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -208,6 +210,14 @@ module Chemistry
     logical :: data_file_exit=.false.
     logical :: exist,exist1,exist2
     character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
+
+
+    if (nchemspec==1) then
+      lone_spec=.true.
+      lreactions=.false.
+      ladvection=.false.
+      ldiffusion=.false.
+    endif
 
 
     inquire(file=file1,exist=exist1)
@@ -313,6 +323,12 @@ module Chemistry
         endselect
       enddo
 !
+
+      if (lone_spec) then
+         f(:,:,:,ichemspec(1))=1.
+         if (lroot) print*, 'initchem: this is one specie case'
+      endif
+
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(xx,yy,zz)
 !
@@ -328,8 +344,9 @@ module Chemistry
        lpenc_requested(i_YY)=.true.
        lpenc_requested(i_cs2)=.true.
        lpenc_requested(i_cvspec)=.true.
-       lpenc_requested(i_DYDt_reac)=.true.
-       lpenc_requested(i_DYDt_diff)=.true.
+
+        lpenc_requested(i_DYDt_reac)=.true.
+        lpenc_requested(i_DYDt_diff)=.true.
 
        if (lcheminp) then
         lpenc_requested(i_mu1)=.true.
@@ -511,14 +528,22 @@ module Chemistry
 ! Calculate the reaction term and the corresponding pencil 
 !
 
-        if (lreactions .and. lpencil(i_DYDt_reac))   call calc_reaction_term(f,p)
+        if (lreactions .and. lpencil(i_DYDt_reac)) then
+          call calc_reaction_term(f,p)
+        else
+          p%DYDt_reac=0.
+        endif
 
 ! 
 ! Calculate the diffusion term and the corresponding pencil 
 !
 
 
-        if (ldiffusion .and. lpencil(i_DYDt_diff))  call calc_diffusion_term(f,p)
+        if (ldiffusion .and. lpencil(i_DYDt_diff)) then
+           call calc_diffusion_term(f,p)
+        else
+           p%DYDt_diff=0.
+        endif
 
 
 !
@@ -558,11 +583,12 @@ module Chemistry
 ! 
 ! Density
 !
-      if (.not. ldensity) then
-          call fatal_error("calc_for_chem_mixture", &
-              "Cannot calculate rho with DENSITY=nodensity")
-      endif
-      rho_full=exp(f(:,:,:,ilnrho))
+  !    if (.not. ldensity) then
+  !        call fatal_error("calc_for_chem_mixture", &
+  !            "Cannot calculate rho with DENSITY=nodensity")
+  !    endif
+
+        rho_full=exp(f(:,:,:,ilnrho))
 
 !
 ! Now this routine is only for chemkin data !!!
@@ -579,7 +605,8 @@ module Chemistry
 !
             mu1_full=0.
               do k=1,nchemspec
-                mu1_full(:,:,:)=mu1_full(:,:,:)+f(:,:,:,ichemspec(k))/species_constants(ichemspec(k),imass)
+                mu1_full(:,:,:)=mu1_full(:,:,:)+f(:,:,:,ichemspec(k)) &
+                  /species_constants(ichemspec(k),imass)
               enddo
               mu1_full=mu1_full*unit_mass
 
@@ -588,7 +615,8 @@ module Chemistry
 !  Mole fraction XX
 !
            do k=1,nchemspec 
-             XX_full(:,:,:,k)=f(:,:,:,ichemspec(k))*unit_mass/species_constants(ichemspec(k),imass)/mu1_full(:,:,:)
+             XX_full(:,:,:,k)=f(:,:,:,ichemspec(k))*unit_mass &
+              /species_constants(ichemspec(k),imass)/mu1_full(:,:,:)
            enddo
 
 
@@ -652,15 +680,21 @@ module Chemistry
 !
 !  Diffusion coeffisient of a mixture
 !
+         if (.not. lone_spec) then
+
            do k=1,nchemspec
             tmp_sum=0.
              do j=1,nchemspec
                 tmp_sum(:,:,:)=tmp_sum(:,:,:) &
-                  +f(:,:,:,ichemspec(j))*unit_mass/species_constants(ichemspec(j),imass) &
+                  +f(:,:,:,ichemspec(j))*unit_mass &
+                  /species_constants(ichemspec(j),imass) &
                   /Bin_Diff_coef(:,:,:,j,k)
              enddo
-              Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k)))*mu1_full(:,:,:)/tmp_sum
+              Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k))) &
+                                *mu1_full(:,:,:)/tmp_sum
            enddo
+
+         endif
 
 !print*, Bin_Diff_coef(10,10,3,1,2)
 
@@ -669,13 +703,18 @@ module Chemistry
 !  Viscosity of a mixture
 !
 
- 
+      if  (lone_spec) then
+
+       nu_full=species_viscosity(:,:,:,1)/rho_full
+
+      else
 
            do k=1,nchemspec
              do j=1,nchemspec
                mk_mj=species_constants(ichemspec(k),imass) &
                     /species_constants(ichemspec(j),imass)
-               nuk_nuj(:,:,:)=species_viscosity(:,:,:,k)/species_viscosity(:,:,:,j)
+               nuk_nuj(:,:,:)=species_viscosity(:,:,:,k) &
+                              /species_viscosity(:,:,:,j)
                Phi(:,:,:,k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
                        *(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
              enddo
@@ -691,7 +730,7 @@ module Chemistry
            enddo
            nu_full=nu_dyn/rho_full
 
-
+       endif
   
 !
 !  Artificial Viscosity of a mixture
@@ -731,7 +770,8 @@ module Chemistry
 
 
            do k=1,nchemspec 
-             species_cond(:,:,:,k)=(species_viscosity(:,:,:,k))/species_constants(ichemspec(k),imass)
+             species_cond(:,:,:,k)=(species_viscosity(:,:,:,k)) &
+                                  /species_constants(ichemspec(k),imass)
             tmp_sum=tmp_sum+XX_full(:,:,:,k)*species_cond(:,:,:,k)
             tmp_sum2=tmp_sum2+XX_full(:,:,:,k)/species_cond(:,:,:,k)
            enddo
@@ -895,11 +935,6 @@ module Chemistry
 
       inquire(file='tran.dat',exist=tran_exist)
 
-!
-!  Find number of ractions
-!
-        call read_reactions(input_file,NrOfReactions=mreactions)
-        print*,'Number of reactions=',mreactions
 
 !
 !  Allocate binary diffusion coefficient array
@@ -924,6 +959,15 @@ module Chemistry
          species_viscosity(:,:,:,k)=nu_spec(k)/(unit_mass/unit_length/unit_time)
         enddo
      endif
+
+
+!
+!  Find number of ractions
+!
+        call read_reactions(input_file,NrOfReactions=mreactions)
+        print*,'Number of reactions=',mreactions
+
+
 
 !
 !  Allocate reaction arrays
@@ -959,6 +1003,8 @@ module Chemistry
 !
         call read_reactions(input_file)
         call write_reactions()
+
+
 !
 !  calculate stoichio and nreactions
 !
@@ -1609,6 +1655,8 @@ module Chemistry
       character (len=*) :: input_file
       !
 
+
+
       if (present(NrOfReactions)) NrOfReactions=0
 
       k=1
@@ -2074,9 +2122,9 @@ module Chemistry
                   if (StartInd==80) exit
                 enddo stringloop
 
-              !  print*,tran_data(ind_chem,1),tran_data(ind_chem,2), &
-              !    tran_data(ind_chem,3),tran_data(ind_chem,4), &
-              !    tran_data(ind_chem,5),tran_data(ind_chem,6)
+                print*,tran_data(ind_chem,1),tran_data(ind_chem,2), &
+                  tran_data(ind_chem,3),tran_data(ind_chem,4), &
+                  tran_data(ind_chem,5),tran_data(ind_chem,6)
 
             endif
       enddo dataloop
@@ -2168,9 +2216,9 @@ module Chemistry
       do k=1,nchemspec
         do j=1,nchemspec
 
-           eps_jk=(tran_data(2,j)*tran_data(2,k))**0.5
-           sigma_jk=0.5*(tran_data(3,j)+tran_data(3,k))*1e-8
-           delta_jk=0.5*tran_data(4,j)*tran_data(4,k)
+           eps_jk=(tran_data(j,2)*tran_data(k,2))**0.5
+           sigma_jk=0.5*(tran_data(j,3)+tran_data(k,3))*1e-8
+           delta_jk=0.5*tran_data(j,4)*tran_data(k,4)
            m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
                 /(species_constants(j,imass)+species_constants(k,imass))/Na
 
@@ -2184,7 +2232,7 @@ module Chemistry
                         /(unit_length**2/unit_time)
   
    !  if (Bin_Diff_coef(10,10,3,k,j)>5) then
-  !           print*, Bin_Diff_coef(10,10,3,k,j),k,j,m_jk
+   !         print*, 'Natalia',Bin_Diff_coef(10,3,3,1,1),tran_data(1,1)
   !  endif
         enddo
       enddo
@@ -2193,12 +2241,12 @@ module Chemistry
       omega="Omega22"
       do k=1,nchemspec
 
-      lnTk=lnT-log(tran_data(2,k))
+      lnTk=lnT-log(tran_data(k,2))
 
       call calc_collision_integral(omega,lnTjk,Omega_kl)
       tmp=5./16.*sqrt(k_B_cgs*species_constants(k,imass)/Na*TT/pi) &
-                    /(tran_data(3,k)*1e-8)**2   &
-             /(Omega_kl+0.2*tran_data(4,k)/exp(TT/tran_data(3,k))) 
+                    /(tran_data(k,3)*1e-8)**2   &
+             /(Omega_kl+0.2*tran_data(k,4)/exp(TT/tran_data(k,3))) 
       species_viscosity(:,:,:,k)=(tmp)/(unit_mass/unit_length/unit_time)
        !+nu_spec(k)
 
