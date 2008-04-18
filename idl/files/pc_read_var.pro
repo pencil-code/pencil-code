@@ -62,7 +62,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.62 2008-02-18 18:12:35 dintrans Exp $
+;       $Id: pc_read_var.pro,v 1.63 2008-04-18 07:14:34 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -123,7 +123,7 @@ COMPILE_OPT IDL2,HIDDEN
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
 ; if (n_elements(param2) eq 0 and magic) then begin
   if (n_elements(par2) eq 0 and magic) then begin
-    spawn, 'ls '+datadir+'/param2.nml', exit_status=exit_status
+    spawn, 'ls '+datadir+'/param2.nml', dummy, exit_status=exit_status
     if (not exit_status) then begin
       pc_read_param, object=param2, /param2, dim=dim, datadir=datadir, /quiet
     endif else begin
