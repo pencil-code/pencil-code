@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.39 2008-04-17 20:43:26 brandenb Exp $
+! $Id: testfield_z.f90,v 1.40 2008-04-18 03:53:01 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -42,6 +42,7 @@ module Testfield
 !  cosine and sine function for setting test fields and analysis
 !
   real, dimension(mz) :: cz,sz,c2z,csz,s2z
+  real :: phase_testfield=.0
 !
   character (len=labellen), dimension(ninit) :: initaatest='nothing'
   real, dimension (ninit) :: amplaatest=0.
@@ -73,7 +74,7 @@ module Testfield
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
-       ltestfield_newz,leta_rank2,lphase_adjust, &
+       ltestfield_newz,leta_rank2,lphase_adjust,phase_testfield, &
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
        daainit,linit_aatest,bamp, &
        rescale_aatest
@@ -181,7 +182,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.39 2008-04-17 20:43:26 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.40 2008-04-18 03:53:01 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -851,6 +852,7 @@ module Testfield
       use Cdata
       use Sub
       use Hydro, only: calc_pencils_hydro
+      use Magnetic, only: bmz_beltrami_phase
       use Mpicomm, only: mpireduce_sum, mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -867,7 +869,7 @@ module Testfield
       real, dimension (nx,3) :: del2Atest2,graddivatest
       integer :: jtest,j,nxy=nxgrid*nygrid,juxb,jjxb
       logical :: headtt_save
-      real :: fac,phase_testfield=.0
+      real :: fac
       type (pencil_case) :: p
 !
       intent(inout) :: f
@@ -979,15 +981,23 @@ module Testfield
 !  of alpij and etaij. This is useful if there is a mean Beltrami field
 !  in the main calculation (lmagnetic=.true.) with phase zero.
 !  Here we modify the calculations depending on the phase of the
-!  actual field
+!  actual field.
+!
+!  Set phase_testfield equal to bmz_beltrami_phase if bmz_beltrami_phase is
+!  not zero, indicating that bmz_beltrami_phase is the result of a calculation.
 !
       if (lphase_adjust) then
+        if (lroot) then
+          if (bmz_beltrami_phase/=0) phase_testfield=bmz_beltrami_phase
+        endif
+        call mpibcast_real(phase_testfield,1)
         c=cos(z+phase_testfield)
         s=sin(z+phase_testfield)
         c2z=c**2
         s2z=s**2
         csz=c*s
       endif
+      if (ip<13) print*,'iproc,phase_testfield=',iproc,phase_testfield
 !
 !  reset headtt
 !

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.511 2008-04-16 06:37:51 ajohan Exp $
+! $Id: magnetic.f90,v 1.512 2008-04-18 03:53:01 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -50,7 +50,8 @@ module Magnetic
 !
   integer, parameter :: nresi_max=4
 !
-  real, dimension (ninit) :: amplaa=0.0,kx_aa=1.,ky_aa=1.,kz_aa=1., phasey_aa=0.
+  real, dimension (ninit) :: amplaa=0.0,kx_aa=1.,ky_aa=1.,kz_aa=1.
+  real, dimension (ninit) :: phasex_aa=0., phasey_aa=0., phasez_aa=0.
   character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
@@ -123,7 +124,8 @@ module Magnetic
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,x0aa,z0aa,widthaa, &
        by_left,by_right,bz_left,bz_right, &
-       initaa,amplaa,kx_aa,ky_aa,kz_aa,phasey_aa,coefaa,coefbb, &
+       initaa,amplaa,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
+       phasex_aa,phasey_aa,phasez_aa, &
        inclaa,lpress_equil,lpress_equil_via_ss,mu_r, &
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa, &
@@ -159,7 +161,7 @@ module Magnetic
        lmeanfield_noalpm,alpha_profile, &
        meanfield_etat, lohmic_heat, lmeanfield_jxb, meanfield_Qs, &
        height_eta,eta_out,tau_aa_exterior, &
-       kx_aa,ky_aa,kz_aa,phasey_aa,ABC_A,ABC_B,ABC_C, &
+       kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        lforcing_continuous_aa,iforcing_continuous_aa, &
        forcing_continuous_aa_phasefact, &
        forcing_continuous_aa_amplfact, &
@@ -387,7 +389,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.511 2008-04-16 06:37:51 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.512 2008-04-18 03:53:01 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -711,9 +713,9 @@ module Magnetic
 !
 !  Beltrami fields, put k=-k to make sure B=curl(A) has the right phase
 !
-        case('Beltrami-x'); call beltrami(amplaa(j),f,iaa,KX=-kx_aa(j))
-        case('Beltrami-y'); call beltrami(amplaa(j),f,iaa,KY=-ky_aa(j))
-        case('Beltrami-z'); call beltrami(amplaa(j),f,iaa,KZ=-kz_aa(j))
+        case('Beltrami-x'); call beltrami(amplaa(j),f,iaa,KX=-kx_aa(j),phase=phasex_aa(j))
+        case('Beltrami-y'); call beltrami(amplaa(j),f,iaa,KY=-ky_aa(j),phase=phasey_aa(j))
+        case('Beltrami-z'); call beltrami(amplaa(j),f,iaa,KZ=-kz_aa(j),phase=phasez_aa(j))
 !
         case('propto-ux'); call wave_uu(amplaa(j),f,iaa,kx=kx_aa(j))
         case('propto-uy'); call wave_uu(amplaa(j),f,iaa,ky=ky_aa(j))

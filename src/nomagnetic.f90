@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.86 2008-04-05 19:46:52 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.87 2008-04-18 03:53:01 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -25,7 +25,7 @@ module Magnetic
 
   real, dimension (ninit) :: amplaa=0.0,kx_aa=1.,ky_aa=1.,kz_aa=1.
   real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
-  real :: brms=0.
+  real :: brms=0., bmz_beltrami_phase=0.
   real, dimension(nx) :: meanfield_EMFdotB
   real :: inertial_length=0.,linertial_2
   logical :: lelectron_inertia=.false.
@@ -63,7 +63,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.86 2008-04-05 19:46:52 brandenb Exp $")
+           "$Id: nomagnetic.f90,v 1.87 2008-04-18 03:53:01 brandenb Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
