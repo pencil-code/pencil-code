@@ -1,3 +1,16 @@
+$Id: README,v 1.2 2008-04-19 14:59:48 brandenb Exp $
+
+Dear all,
+This directory was created on 6 August 2007, just before
+the Pencil Code User Meeting that year. The intention was
+to determine which idl files are used by which users.
+The outcome of this has not (yet) been discussed.
+Axel
+
+----------------------------------------------------------
+Below some ideas about possible renamings
+(produced during the Meeting in 2007):
+
 files  -->  read 
 write  (an extra directory)
 plot
