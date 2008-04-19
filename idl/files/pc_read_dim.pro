@@ -1,10 +1,10 @@
-; $Id: pc_read_dim.pro,v 1.21 2007-08-03 09:53:26 ajohan Exp $
+; $Id: pc_read_dim.pro,v 1.22 2008-04-19 06:13:04 brandenb Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2007-08-03 09:53:26 $
-;  $Revision: 1.21 $
+;  $Date: 2008-04-19 06:13:04 $
+;  $Revision: 1.22 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -124,6 +124,10 @@ if (found gt 0) then begin
 ; if execute('readf,file,mx,my,mz,mvar,maux,mglobal',1,1) ne 1 then begin
   if execute('readf,file,mx,my,mz,mvar,maux,mglobal') ne 1 then begin
 ; For backwards compatibility with dim.dat without mglobal.
+    print
+    print,'Note: the Input conversion error is of no significance.'
+    print,'Will now read without the mglobal parameter.'
+    print
     close, file
     openr,file,filename
     readf,file,mx,my,mz,mvar,maux
