@@ -1,5 +1,5 @@
 ;
-;  $Id: zder_6th_ghost.pro,v 1.16 2008-04-08 11:53:46 wlyra Exp $
+;  $Id: zder_6th_ghost.pro,v 1.17 2008-04-19 15:30:27 brandenb Exp $
 ;
 ;  First derivative d/dz
 ;  - 6th-order (7-point stencil)
@@ -30,7 +30,7 @@ default,lsystem,0 ;cartesian
   yy=spread(y,[0,2],[nx,nz])
   sin1th=1./sin(yy)
   i_sin=where(abs(sin(yy)) lt 1e-5) ;sinth_min=1e-5
-  if (i_sin ne -1) then sin1th[i_sin]=0.
+  if (i_sin[0] ne -1) then sin1th[i_sin]=0.
 ;
 
 ; 26-jun-2007/dintrans: 2-D case only means (x,z) for the moment
