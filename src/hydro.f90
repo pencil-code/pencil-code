@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.429 2008-04-13 13:50:26 brandenb Exp $
+! $Id: hydro.f90,v 1.430 2008-04-20 21:44:45 nilshau Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -77,6 +77,7 @@ module Hydro
   logical :: lshear_rateofstrain=.false.
   logical :: luut_as_aux=.false.
   logical :: lpressuregradient_gas=.true.
+  logical :: lscale_tobox=.true.
 ! Dhruba
   real :: outest
   logical :: loutest,ldiffrot_test=.false.
@@ -90,7 +91,8 @@ module Hydro
        kep_cutoff_pos_int, kep_cutoff_width_int, &
        u_out_kep, N_modes_uu, lcoriolis_force, lcentrifugal_force, &
        ladvection_velocity, lprecession, omega_precession, &
-       luut_as_aux, velocity_ceiling, mu_omega, nb_rings, om_rings, gap
+       luut_as_aux, velocity_ceiling, mu_omega, nb_rings, om_rings, gap, &
+       lscale_tobox
 
   ! run parameters
   real :: tdamp=0.,dampu=0.,wdamp=0.
@@ -341,7 +343,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.429 2008-04-13 13:50:26 brandenb Exp $")
+           "$Id: hydro.f90,v 1.430 2008-04-20 21:44:45 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -796,7 +798,7 @@ module Hydro
 
         case('power_randomphase')
 ! initial spectrum k^power
-          call power_randomphase(ampluu(j),initpower,cutoff,f,iux,iuz)
+          call power_randomphase(ampluu(j),initpower,cutoff,f,iux,iuz,lscale_tobox)
 
         case('random-isotropic-KS')
           call random_isotropic_KS(ampluu(j),initpower,cutoff,f,iux,iuz,N_modes_uu)

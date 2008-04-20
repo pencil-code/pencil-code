@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.240 2008-04-18 03:53:01 brandenb Exp $
+! $Id: initcond.f90,v 1.241 2008-04-20 21:44:45 nilshau Exp $
 
 module Initcond
 
@@ -2886,7 +2886,7 @@ module Initcond
 !
     endsubroutine powern
 !***********************************************************************
-    subroutine power_randomphase(ampl,initpower,cutoff,f,i1,i2)
+    subroutine power_randomphase(ampl,initpower,cutoff,f,i1,i2,lscale_tobox)
 !
 !   Produces k^initpower*exp(-k**2/cutoff**2)  spectrum.
 !   Still just one processor (but can be remeshed afterwards).
@@ -2895,6 +2895,7 @@ module Initcond
 !
       use Fourier
 !
+      logical, intent(in), optional :: lscale_tobox
       integer :: i,i1,i2
       real, dimension (nx,ny,nz) :: k2
       real, dimension (nx) :: k2x
@@ -2902,7 +2903,7 @@ module Initcond
       real, dimension (nz) :: k2z
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: u_re,u_im,r
-      real :: ampl,initpower,mhalf,cutoff
+      real :: ampl,initpower,mhalf,cutoff,scale_factor
 
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
@@ -2911,13 +2912,19 @@ module Initcond
 !
 !  calculate k^2
 !
-        k2x = cshift((/(i-(nx+1)/2,i=0,nx-1)/),+(nx+1)/2)*2*pi/Lx
+        scale_factor=1
+        if (lscale_tobox) scale_factor=2*pi/Lx
+        k2x = cshift((/(i-(nx+1)/2,i=0,nx-1)/),+(nx+1)/2)*scale_factor
         k2 =      (spread(spread(k2x,2,ny),3,nz))**2
 
-        k2y = cshift((/(i-(ny+1)/2,i=0,ny-1)/),+(ny+1)/2)*2*pi/Ly
+        scale_factor=1
+        if (lscale_tobox) scale_factor=2*pi/Ly
+        k2y = cshift((/(i-(ny+1)/2,i=0,ny-1)/),+(ny+1)/2)*scale_factor
         k2 = k2 + (spread(spread(k2y,1,nx),3,nz))**2
 
-        k2z = cshift((/(i-(nz+1)/2,i=0,nz-1)/),+(nz+1)/2)*2*pi/Lz
+        scale_factor=1
+        if (lscale_tobox) scale_factor=2*pi/Lz
+        k2z = cshift((/(i-(nz+1)/2,i=0,nz-1)/),+(nz+1)/2)*scale_factor
         k2 = k2 + (spread(spread(k2z,1,nx),2,ny))**2
 
         k2(1,1,1) = 1.  ! Avoid division by zero
