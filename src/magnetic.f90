@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.513 2008-04-21 19:10:01 brandenb Exp $
+! $Id: magnetic.f90,v 1.514 2008-04-21 19:59:51 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -284,6 +284,8 @@ module Magnetic
   integer :: idiag_jmbmz=0      ! DIAG_DOC: $\left<\left<\Jv\cdot\Bv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad(current helicity
                                 ! DIAG_DOC:   of $xy$-averaged mean field)
+  integer :: idiag_kmz=0        ! DIAG_DOC: $\left<\left<\Jv\cdot\Bv\right>_{xy}\right>/
+                                ! DIAG_DOC:  \left<\left<\Jv\cdot\Bv\right>_{xy}\right>$
   integer :: idiag_bx2my=0      ! DIAG_DOC: $\left< B_x^2 \right>_{xz}$
   integer :: idiag_by2my=0      ! DIAG_DOC: $\left< B_y^2 \right>_{xz}$
   integer :: idiag_bz2my=0      ! DIAG_DOC: $\left< B_z^2 \right>_{xz}$
@@ -410,7 +412,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.513 2008-04-21 19:10:01 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.514 2008-04-21 19:59:51 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2947,7 +2949,7 @@ module Magnetic
         if (idiag_jmy/=0) call calc_jmy
         if (idiag_jmz/=0) call calc_jmz
         if (idiag_ebmz/=0) call calc_ebmz
-        if (idiag_jmbmz/=0) call calc_jmbmz
+        if (idiag_jmbmz/=0.or.idiag_kmz/=0) call calc_jmbmz
         if (idiag_bmxy_rms/=0) call calc_bmxy_rms
         if (idiag_bmzph/=0) call calc_bmz_beltrami_phase
       endif
@@ -3295,7 +3297,8 @@ module Magnetic
 !  save the name in the idiag_jmbmz slot
 !  and set first to false
 !
-      call save_name(jmbmz,idiag_jmbmz)
+      if (idiag_jmbmz/=0) call save_name(jmbmz,idiag_jmbmz)
+      if (idiag_kmz/=0) call save_name(jmbmz/bmz**2,idiag_kmz)
       first=.false.
 !
     endsubroutine calc_jmbmz
@@ -4920,7 +4923,7 @@ module Magnetic
         idiag_bxbym=0; idiag_bxbzm=0; idiag_bybzm=0; idiag_djuidjbim=0
         idiag_bxmz=0; idiag_bymz=0; idiag_bzmz=0
         idiag_bmx=0; idiag_bmy=0; idiag_bmz=0; idiag_ebmz=0
-        idiag_jmx=0; idiag_jmy=0; idiag_jmz=0; idiag_jmbmz=0
+        idiag_jmx=0; idiag_jmy=0; idiag_jmz=0; idiag_jmbmz=0; idiag_kmz=0
         idiag_bmzph=0; idiag_bmzphe=0
         idiag_bx2mz=0; idiag_by2mz=0; idiag_bz2mz=0
         idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
@@ -5022,6 +5025,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bmzphe',idiag_bmzphe)
         call parse_name(iname,cname(iname),cform(iname),'ebmz',idiag_ebmz)
         call parse_name(iname,cname(iname),cform(iname),'jmbmz',idiag_jmbmz)
+        call parse_name(iname,cname(iname),cform(iname),'kmz',idiag_kmz)
         call parse_name(iname,cname(iname),cform(iname),'bxpt',idiag_bxpt)
         call parse_name(iname,cname(iname),cform(iname),'bypt',idiag_bypt)
         call parse_name(iname,cname(iname),cform(iname),'bzpt',idiag_bzpt)
@@ -5240,6 +5244,7 @@ module Magnetic
         write(3,*) 'i_bmzphe=',idiag_bmzphe
         write(3,*) 'i_ebmz=',idiag_ebmz
         write(3,*) 'i_jmbmz=',idiag_jmbmz
+        write(3,*) 'i_kmz=',idiag_kmz
         write(3,*) 'i_bxpt=',idiag_bxpt
         write(3,*) 'i_bypt=',idiag_bypt
         write(3,*) 'i_bzpt=',idiag_bzpt
