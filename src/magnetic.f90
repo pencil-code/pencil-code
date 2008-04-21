@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.512 2008-04-18 03:53:01 brandenb Exp $
+! $Id: magnetic.f90,v 1.513 2008-04-21 19:10:01 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -243,9 +243,12 @@ module Magnetic
   integer :: idiag_bxbzmz=0     ! DIAG_DOC:
   integer :: idiag_bybzmz=0     ! DIAG_DOC:
   integer :: idiag_b2mz=0       ! DIAG_DOC:
-  integer :: idiag_bxmz=0       ! DIAG_DOC:
-  integer :: idiag_bymz=0       ! DIAG_DOC:
-  integer :: idiag_bzmz=0       ! DIAG_DOC:
+  integer :: idiag_bxmz=0       ! DIAG_DOC: $\left<{\cal B}_x\right>_{xy}$
+  integer :: idiag_bymz=0       ! DIAG_DOC: $\left<{\cal B}_y\right>_{xy}$
+  integer :: idiag_bzmz=0       ! DIAG_DOC: $\left<{\cal B}_z\right>_{xy}$
+  integer :: idiag_jxmz=0       ! DIAG_DOC: $\left<{\cal J}_x\right>_{xy}$
+  integer :: idiag_jymz=0       ! DIAG_DOC: $\left<{\cal J}_y\right>_{xy}$
+  integer :: idiag_jzmz=0       ! DIAG_DOC: $\left<{\cal J}_z\right>_{xy}$
   integer :: idiag_Exmz=0       ! DIAG_DOC: $\left<{\cal E}_x\right>_{xy}$
   integer :: idiag_Eymz=0       ! DIAG_DOC: $\left<{\cal E}_y\right>_{xy}$
   integer :: idiag_Ezmz=0       ! DIAG_DOC: $\left<{\cal E}_z\right>_{xy}$
@@ -261,21 +264,39 @@ module Magnetic
                                 ! DIAG_DOC:   \right>^{1/2}$
                                 ! DIAG_DOC:   \quad(energy of $xy$-averaged
                                 ! DIAG_DOC:   mean field)
+  integer :: idiag_jmx=0        ! DIAG_DOC: $\left<\left<\Jv\right>_{yz}^2
+                                ! DIAG_DOC:   \right>^{1/2}$
+                                ! DIAG_DOC:   \quad(energy of $yz$-averaged
+                                ! DIAG_DOC:   mean current density)
+  integer :: idiag_jmy=0        ! DIAG_DOC: $\left<\left<\Jv\right>_{xz}^2
+                                ! DIAG_DOC:   \right>^{1/2}$
+                                ! DIAG_DOC:   \quad(energy of $xz$-averaged
+                                ! DIAG_DOC:   mean current density)
+  integer :: idiag_jmz=0        ! DIAG_DOC: $\left<\left<\Jv\right>_{xy}^2
+                                ! DIAG_DOC:   \right>^{1/2}$
+                                ! DIAG_DOC:   \quad(energy of $xy$-averaged
+                                ! DIAG_DOC:   mean current density)
   integer :: idiag_bmzph=0      ! DIAG_DOC: Phase of a Beltrami field
   integer :: idiag_bmzphe=0     ! DIAG_DOC: Error of phase of a Beltrami field
   integer :: idiag_ebmz=0       ! DIAG_DOC: $\left<\left<\Ev\cdot\Bv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad($xy$-averaged
                                 ! DIAG_DOC:   mean field helicity production )
+  integer :: idiag_jmbmz=0      ! DIAG_DOC: $\left<\left<\Jv\cdot\Bv\right>_{xy}
+                                ! DIAG_DOC:   \right>$ \quad(current helicity
+                                ! DIAG_DOC:   of $xy$-averaged mean field)
   integer :: idiag_bx2my=0      ! DIAG_DOC: $\left< B_x^2 \right>_{xz}$
   integer :: idiag_by2my=0      ! DIAG_DOC: $\left< B_y^2 \right>_{xz}$
   integer :: idiag_bz2my=0      ! DIAG_DOC: $\left< B_z^2 \right>_{xz}$
   integer :: idiag_bx2mz=0      ! DIAG_DOC: $\left< B_x^2 \right>_{xy}$
   integer :: idiag_by2mz=0      ! DIAG_DOC: $\left< B_y^2 \right>_{xy}$
   integer :: idiag_bz2mz=0      ! DIAG_DOC: $\left< B_z^2 \right>_{xy}$
-  integer :: idiag_jbmz=0       ! DIAG_DOC:
+  integer :: idiag_jbmz=0       ! DIAG_DOC: $\left< \Jv\cdot\Bv\right>_{xy}$
   integer :: idiag_bxmxy=0      ! DIAG_DOC: $\left< B_x \right>_{xy}$
   integer :: idiag_bymxy=0      ! DIAG_DOC: $\left< B_y \right>_{xy}$
   integer :: idiag_bzmxy=0      ! DIAG_DOC: $\left< B_z \right>_{xy}$
+  integer :: idiag_jxmxy=0      ! DIAG_DOC: $\left< J_x \right>_{xy}$
+  integer :: idiag_jymxy=0      ! DIAG_DOC: $\left< J_y \right>_{xy}$
+  integer :: idiag_jzmxy=0      ! DIAG_DOC: $\left< J_z \right>_{xy}$
   integer :: idiag_bxmxz=0      ! DIAG_DOC: $\left< B_x \right>_{xz}$
   integer :: idiag_bymxz=0      ! DIAG_DOC: $\left< B_y \right>_{xz}$
   integer :: idiag_bzmxz=0      ! DIAG_DOC: $\left< B_z \right>_{xz}$
@@ -389,7 +410,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.512 2008-04-18 03:53:01 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.513 2008-04-21 19:10:01 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2093,6 +2114,9 @@ module Magnetic
         if (idiag_bxmz/=0)   call xysum_mn_name_z(p%bb(:,1),idiag_bxmz)
         if (idiag_bymz/=0)   call xysum_mn_name_z(p%bb(:,2),idiag_bymz)
         if (idiag_bzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_bzmz)
+        if (idiag_jxmz/=0)   call xysum_mn_name_z(p%jj(:,1),idiag_jxmz)
+        if (idiag_jymz/=0)   call xysum_mn_name_z(p%jj(:,2),idiag_jymz)
+        if (idiag_jzmz/=0)   call xysum_mn_name_z(p%jj(:,3),idiag_jzmz)
         if (idiag_Exmz/=0)   call xysum_mn_name_z(p%uxb(:,1),idiag_Exmz)
         if (idiag_Eymz/=0)   call xysum_mn_name_z(p%uxb(:,2),idiag_Eymz)
         if (idiag_Ezmz/=0)   call xysum_mn_name_z(p%uxb(:,3),idiag_Ezmz)
@@ -2161,6 +2185,9 @@ module Magnetic
         if (idiag_bxmxy/=0)  call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
         if (idiag_bymxy/=0)  call zsum_mn_name_xy(p%bb(:,2),idiag_bymxy)
         if (idiag_bzmxy/=0)  call zsum_mn_name_xy(p%bb(:,3),idiag_bzmxy)
+        if (idiag_jxmxy/=0)  call zsum_mn_name_xy(p%jj(:,1),idiag_jxmxy)
+        if (idiag_jymxy/=0)  call zsum_mn_name_xy(p%jj(:,2),idiag_jymxy)
+        if (idiag_jzmxy/=0)  call zsum_mn_name_xy(p%jj(:,3),idiag_jzmxy)
         if (idiag_bxmxz/=0)  call ysum_mn_name_xz(p%bb(:,1),idiag_bxmxz)
         if (idiag_bymxz/=0)  call ysum_mn_name_xz(p%bb(:,2),idiag_bymxz)
         if (idiag_bzmxz/=0)  call ysum_mn_name_xz(p%bb(:,3),idiag_bzmxz)
@@ -2193,6 +2220,9 @@ module Magnetic
           if (idiag_bxmxy/=0) call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
           if (idiag_bymxy/=0) call zsum_mn_name_xy(p%bb(:,2),idiag_bymxy)
           if (idiag_bzmxy/=0) call zsum_mn_name_xy(p%bb(:,3),idiag_bzmxy)
+          if (idiag_jxmxy/=0) call zsum_mn_name_xy(p%jj(:,1),idiag_jxmxy)
+          if (idiag_jymxy/=0) call zsum_mn_name_xy(p%jj(:,2),idiag_jymxy)
+          if (idiag_jzmxy/=0) call zsum_mn_name_xy(p%jj(:,3),idiag_jzmxy)
         endif
       endif
 !
@@ -2913,7 +2943,11 @@ module Magnetic
         if (idiag_bmx/=0) call calc_bmx
         if (idiag_bmy/=0) call calc_bmy
         if (idiag_bmz/=0) call calc_bmz
+        if (idiag_jmx/=0) call calc_jmx
+        if (idiag_jmy/=0) call calc_jmy
+        if (idiag_jmz/=0) call calc_jmz
         if (idiag_ebmz/=0) call calc_ebmz
+        if (idiag_jmbmz/=0) call calc_jmbmz
         if (idiag_bmxy_rms/=0) call calc_bmxy_rms
         if (idiag_bmzph/=0) call calc_bmz_beltrami_phase
       endif
@@ -3061,6 +3095,133 @@ module Magnetic
 !
     endsubroutine calc_bmz
 !***********************************************************************
+    subroutine calc_jmx
+!
+!  Magnetic energy in the yz-averaged field.
+!  The jymxy and jzmxy must have been calculated,
+!  so they are present on the root processor.
+!
+!   6-apr-08/axel: moved from calc_mfield to here
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      logical,save :: first=.true.
+      real, dimension(nx) :: jymx,jzmx
+      real :: jmx
+      integer :: l
+!
+!  This only works if jymxy and jzmxy are in zaver,
+!  so print warning if this is not ok.
+!
+      if (idiag_jymxy==0.or.idiag_jzmxy==0) then
+        if (first) then
+          print*,"calc_mfield: WARNING"
+          print*,"NOTE: to get jmx, set jymxy and jzmxy in zaver"
+          print*,"We proceed, jut you'll get jmx=0"
+        endif
+        jmx=0.
+      else
+        do l=1,nx
+          jymx(l)=sum(fnamexy(l,:,:,idiag_jymxy))/(ny*nprocy)
+          jzmx(l)=sum(fnamexy(l,:,:,idiag_jzmxy))/(ny*nprocy)
+        enddo
+        jmx=sqrt(sum(jymx**2+jzmx**2)/nx)
+      endif
+!
+!  save the name in the idiag_jmx slot
+!  and set first to false
+!
+      call save_name(jmx,idiag_jmx)
+      first=.false.
+!
+    endsubroutine calc_jmx
+!***********************************************************************
+    subroutine calc_jmy
+!
+!  Magnetic energy in the xz-averaged field.
+!  The jxmxy and jzmxy must have been calculated,
+!  so they are present on the root processor.
+!
+!   6-apr-08/axel: moved from calc_mfield to here
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      logical,save :: first=.true.
+      real, dimension(ny,nprocy) :: jxmy,jzmy
+      real :: jmy
+      integer :: j
+!
+!  This only works if jxmxy and jzmxy are in zaver,
+!  so print warning if this is not ok.
+!
+      if (idiag_jxmxy==0.or.idiag_jzmxy==0) then
+        if (first) then
+          print*,"calc_mfield: WARNING"
+          print*,"NOTE: to get jmy, set jxmxy and jzmxy in zaver"
+          print*,"We proceed, but you'll get jmy=0"
+        endif
+        jmy=0.
+      else
+        do j=1,nprocy
+          do m=1,ny
+            jxmy(m,j)=sum(fnamexy(:,m,j,idiag_jxmxy))/nx
+            jzmy(m,j)=sum(fnamexy(:,m,j,idiag_jzmxy))/nx
+          enddo
+        enddo
+        jmy=sqrt(sum(jxmy**2+jzmy**2)/(ny*nprocy))
+      endif
+!
+!  save the name in the idiag_jmy slot
+!  and set first to false
+!
+      call save_name(jmy,idiag_jmy)
+      first=.false.
+!
+    endsubroutine calc_jmy
+!***********************************************************************
+    subroutine calc_jmz
+!
+!  Magnetic energy in horizontally averaged field
+!  The jxmz and jymz must have been calculated,
+!  so they are present on the root processor.
+!
+!   6-apr-08/axel: moved from calc_mfield to here
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      logical,save :: first=.true.
+      real :: jmz
+      integer :: j
+!
+!  This only works if jxmz and jzmz are in xyaver,
+!  so print warning if this is not ok.
+!
+      if (idiag_jxmz==0.or.idiag_jymz==0) then
+        if (first) then
+          print*,"calc_mfield: WARNING"
+          print*,"NOTE: to get jmz, set jxmz and jymz in xyaver"
+          print*,"We proceed, but you'll get jmz=0"
+        endif
+        jmz=0.
+      else
+        jmz=sqrt(sum(fnamez(:,:,idiag_jxmz)**2 &
+                    +fnamez(:,:,idiag_jymz)**2)/(nz*nprocz))
+      endif
+!
+!  save the name in the idiag_jmz slot
+!  and set first to false
+!
+      call save_name(jmz,idiag_jmz)
+      first=.false.
+!
+    endsubroutine calc_jmz
+!***********************************************************************
     subroutine calc_ebmz
 !
 !  Magnetic helicity production of mean field
@@ -3099,6 +3260,45 @@ module Magnetic
       first=.false.
 !
     endsubroutine calc_ebmz
+!***********************************************************************
+    subroutine calc_jmbmz
+!
+!  Current helicity of the xy-averaged mean field
+!  The bxmz and bymz as well as jxmz and jymz must have been calculated,
+!  so they are present on the root processor.
+!
+!  21-apr-08/axel: adapted from calc_ebmz
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      logical,save :: first=.true.
+      real :: jmbmz
+      integer :: j
+!
+!  This only works if bxmz and bzmz are in xyaver,
+!  so print warning if this is not ok.
+!
+      if (idiag_jxmz==0.or.idiag_jymz==0) then
+        if (first) then
+          print*,"calc_mfield: WARNING"
+          print*,"NOTE: to get jmbmz, set bxmz, bymz, jxmz, and jymz in xyaver"
+          print*,"We proceed, but you'll get jmbmz=0"
+        endif
+        jmbmz=0.
+      else
+        jmbmz=sum(fnamez(:,:,idiag_bxmz)*fnamez(:,:,idiag_jxmz) &
+                +fnamez(:,:,idiag_bymz)*fnamez(:,:,idiag_jymz))/(nz*nprocz)
+      endif
+!
+!  save the name in the idiag_jmbmz slot
+!  and set first to false
+!
+      call save_name(jmbmz,idiag_jmbmz)
+      first=.false.
+!
+    endsubroutine calc_jmbmz
 !***********************************************************************
     subroutine calc_bmxy_rms
 !
@@ -4720,9 +4920,11 @@ module Magnetic
         idiag_bxbym=0; idiag_bxbzm=0; idiag_bybzm=0; idiag_djuidjbim=0
         idiag_bxmz=0; idiag_bymz=0; idiag_bzmz=0
         idiag_bmx=0; idiag_bmy=0; idiag_bmz=0; idiag_ebmz=0
+        idiag_jmx=0; idiag_jmy=0; idiag_jmz=0; idiag_jmbmz=0
         idiag_bmzph=0; idiag_bmzphe=0
         idiag_bx2mz=0; idiag_by2mz=0; idiag_bz2mz=0
         idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
+        idiag_jxmxy=0; idiag_jymxy=0; idiag_jzmxy=0
         idiag_bx2mxy=0; idiag_by2mxy=0; idiag_bz2mxy=0
         idiag_bxbymxy=0; idiag_bxbzmxy=0; idiag_bybzmxy=0
         idiag_bxbymxz=0; idiag_bxbzmxz=0; idiag_bybzmxz=0
@@ -4813,9 +5015,13 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
         call parse_name(iname,cname(iname),cform(iname),'bmy',idiag_bmy)
         call parse_name(iname,cname(iname),cform(iname),'bmz',idiag_bmz)
+        call parse_name(iname,cname(iname),cform(iname),'jmx',idiag_jmx)
+        call parse_name(iname,cname(iname),cform(iname),'jmy',idiag_jmy)
+        call parse_name(iname,cname(iname),cform(iname),'jmz',idiag_jmz)
         call parse_name(iname,cname(iname),cform(iname),'bmzph',idiag_bmzph)
         call parse_name(iname,cname(iname),cform(iname),'bmzphe',idiag_bmzphe)
         call parse_name(iname,cname(iname),cform(iname),'ebmz',idiag_ebmz)
+        call parse_name(iname,cname(iname),cform(iname),'jmbmz',idiag_jmbmz)
         call parse_name(iname,cname(iname),cform(iname),'bxpt',idiag_bxpt)
         call parse_name(iname,cname(iname),cform(iname),'bypt',idiag_bypt)
         call parse_name(iname,cname(iname),cform(iname),'bzpt',idiag_bzpt)
@@ -4871,6 +5077,9 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxmz',idiag_bxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bymz',idiag_bymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzmz',idiag_bzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jxmz',idiag_jxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jymz',idiag_jymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jzmz',idiag_jzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Exmz',idiag_Exmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Eymz',idiag_Eymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Ezmz',idiag_Ezmz)
@@ -4906,6 +5115,9 @@ module Magnetic
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxmxy',idiag_bxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bymxy',idiag_bymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bzmxy',idiag_bzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'jxmxy',idiag_jxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'jymxy',idiag_jymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'jzmxy',idiag_jzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bx2mxy',idiag_bx2mxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'by2mxy',idiag_by2mxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bz2mxy',idiag_bz2mxy)
@@ -5007,6 +5219,9 @@ module Magnetic
         write(3,*) 'i_bxmz=',idiag_bxmz
         write(3,*) 'i_bymz=',idiag_bymz
         write(3,*) 'i_bzmz=',idiag_bzmz
+        write(3,*) 'i_jxmz=',idiag_jxmz
+        write(3,*) 'i_jymz=',idiag_jymz
+        write(3,*) 'i_jzmz=',idiag_jzmz
         write(3,*) 'i_Exmz=',idiag_Exmz
         write(3,*) 'i_Eymz=',idiag_Eymz
         write(3,*) 'i_Ezmz=',idiag_Ezmz
@@ -5018,15 +5233,22 @@ module Magnetic
         write(3,*) 'i_bmx=',idiag_bmx
         write(3,*) 'i_bmy=',idiag_bmy
         write(3,*) 'i_bmz=',idiag_bmz
+        write(3,*) 'i_jmx=',idiag_jmx
+        write(3,*) 'i_jmy=',idiag_jmy
+        write(3,*) 'i_jmz=',idiag_jmz
         write(3,*) 'i_bmzph=',idiag_bmzph
         write(3,*) 'i_bmzphe=',idiag_bmzphe
         write(3,*) 'i_ebmz=',idiag_ebmz
+        write(3,*) 'i_jmbmz=',idiag_jmbmz
         write(3,*) 'i_bxpt=',idiag_bxpt
         write(3,*) 'i_bypt=',idiag_bypt
         write(3,*) 'i_bzpt=',idiag_bzpt
         write(3,*) 'i_bxmxy=',idiag_bxmxy
         write(3,*) 'i_bymxy=',idiag_bymxy
         write(3,*) 'i_bzmxy=',idiag_bzmxy
+        write(3,*) 'i_jxmxy=',idiag_jxmxy
+        write(3,*) 'i_jymxy=',idiag_jymxy
+        write(3,*) 'i_jzmxy=',idiag_jzmxy
         write(3,*) 'i_bxmxz=',idiag_bxmxz
         write(3,*) 'i_bymxz=',idiag_bymxz
         write(3,*) 'i_bzmxz=',idiag_bzmxz
