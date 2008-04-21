@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.40 2008-04-18 03:53:01 brandenb Exp $
+! $Id: testfield_z.f90,v 1.41 2008-04-21 08:44:25 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -182,7 +182,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.40 2008-04-18 03:53:01 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.41 2008-04-21 08:44:25 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -853,16 +853,13 @@ module Testfield
       use Sub
       use Hydro, only: calc_pencils_hydro
       use Magnetic, only: bmz_beltrami_phase
-      use Mpicomm, only: mpireduce_sum, mpibcast_real
+      use Mpicomm, only: mpireduce_sum, mpibcast_real, mpibcast_real_arr
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c,s
 !
-      real, dimension (nz,nprocz,3,njtest) :: uxbtestm1
-      real, dimension (nz*nprocz*3*njtest) :: uxbtestm2,uxbtestm3
-!
-      real, dimension (nz,nprocz,3,njtest) :: jxbtestm1
-      real, dimension (nz*nprocz*3*njtest) :: jxbtestm2,jxbtestm3
+      real, dimension (nz,nprocz,3,njtest) :: uxbtestm1,uxbtestm1_tmp
+      real, dimension (nz,nprocz,3,njtest) :: jxbtestm1,jxbtestm1_tmp
 !
       real, dimension (nx,3,3) :: aijtest,bijtest
       real, dimension (nx,3) :: aatest,bbtest,jjtest,uxbtest,jxbtest
@@ -915,14 +912,12 @@ module Testfield
 !  do communication for array of size nz*nprocz*3*njtest
 !
       if (nprocy>1) then
-        uxbtestm2=reshape(uxbtestm1,shape=(/nz*nprocz*3*njtest/))
-        call mpireduce_sum(uxbtestm2,uxbtestm3,nz*nprocz*3*njtest)
-        call mpibcast_real(uxbtestm3,nz*nprocz*3*njtest)
-        uxbtestm1=reshape(uxbtestm3,shape=(/nz,nprocz,3,njtest/))
+        call mpireduce_sum(uxbtestm1,uxbtestm1_tmp,nz*nprocz*3*njtest)
+        call mpibcast_real_arr(uxbtestm1_tmp,nz*nprocz*3*njtest)
         do jtest=1,njtest
           do n=n1,n2
             do j=1,3
-              uxbtestm(n,j,jtest)=uxbtestm1(n-n1+1,ipz+1,j,jtest)
+              uxbtestm(n,j,jtest)=uxbtestm1_tmp(n-n1+1,ipz+1,j,jtest)
             enddo
           enddo
         enddo
@@ -964,14 +959,12 @@ module Testfield
 !  do communication for array of size nz*nprocz*3*njtest
 !
       if (nprocy>1) then
-        jxbtestm2=reshape(jxbtestm1,shape=(/nz*nprocz*3*njtest/))
-        call mpireduce_sum(jxbtestm2,jxbtestm3,nz*nprocz*3*njtest)
-        call mpibcast_real(jxbtestm3,nz*nprocz*3*njtest)
-        jxbtestm1=reshape(jxbtestm3,shape=(/nz,nprocz,3,njtest/))
+        call mpireduce_sum(jxbtestm1,jxbtestm1_tmp,nz*nprocz*3*njtest)
+        call mpibcast_real_arr(jxbtestm1_tmp,nz*nprocz*3*njtest)
         do jtest=1,njtest
           do n=n1,n2
             do j=1,3
-              jxbtestm(n,j,jtest)=jxbtestm1(n-n1+1,ipz+1,j,jtest)
+              jxbtestm(n,j,jtest)=jxbtestm1_tmp(n-n1+1,ipz+1,j,jtest)
             enddo
           enddo
         enddo
