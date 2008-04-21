@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.66 2008-04-18 11:31:44 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.67 2008-04-21 14:11:35 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -174,11 +174,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.66 2008-04-18 11:31:44 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.67 2008-04-21 14:11:35 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.66 2008-04-18 11:31:44 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.67 2008-04-21 14:11:35 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -210,6 +210,13 @@ module Chemistry
     logical :: data_file_exit=.false.
     logical :: exist,exist1,exist2
     character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
+
+
+       if (unit_system == 'cgs') then
+         Rgas_unit_sys = k_B_cgs/m_u_cgs
+         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
+       endif
+
 
 
     if (nchemspec==1) then
@@ -266,19 +273,20 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
       integer :: j,k
-      logical :: lnothing
+      logical :: lnothing, air_exist
 !
       intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
 !  different initializations of nd (called from start)
 !
+
       lnothing=.false.
       do j=1,ninit
         select case(initchem(j))
 
         case('nothing')
-          if (lroot .and. .not. lnothing) print*, 'init_chem: nothing'
+          if (lroot .and. .not. lnothing) print*, 'init_chem: nothing '
           lnothing=.true.
         case('constant')
           do k=1,nchemspec
@@ -312,6 +320,14 @@ module Chemistry
           do k=1,nchemspec
             call hatwave(amplchem,f,ichemspec(k),kz=kz_chem)
           enddo
+        case('air')
+          if (lroot ) print*, 'init_chem: air '
+           inquire(file='air.dat',exist=air_exist)
+           if (air_exist) then
+            call air_field(f)
+           else
+            call stop_it('there is no air.dat file')
+           endif
         case default
 !
 !  Catch unknown values
@@ -475,7 +491,8 @@ module Chemistry
           do k=1,nchemspec
             p%cvspec(:,k)=cvspec_full(l1:l2,m,n,k)
           enddo
-         endif
+         endif  
+
 
          if (lpencil(i_lncp)) p%lncp=log(p%cp)
 
@@ -1445,7 +1462,7 @@ module Chemistry
         found_specie=.false. 
       else
         found_specie=.true.
-        print*,species_name,ind_glob
+        print*,species_name,'ind_glob= ',ind_glob
       endif
 !
     endsubroutine find_species_index
@@ -2122,9 +2139,9 @@ module Chemistry
                   if (StartInd==80) exit
                 enddo stringloop
 
-                print*,tran_data(ind_chem,1),tran_data(ind_chem,2), &
-                  tran_data(ind_chem,3),tran_data(ind_chem,4), &
-                  tran_data(ind_chem,5),tran_data(ind_chem,6)
+           !     print*,tran_data(ind_chem,1),tran_data(ind_chem,2), &
+           !       tran_data(ind_chem,3),tran_data(ind_chem,4), &
+           !      tran_data(ind_chem,5),tran_data(ind_chem,6)
 
             endif
       enddo dataloop
@@ -2317,6 +2334,89 @@ module Chemistry
      enddo
 
    endsubroutine calc_diffusion_term
+!***************************************************************
+  subroutine air_field(f)
+
+  use Mpicomm
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      !
+
+      logical :: IsSpecie=.false., emptyfile
+      logical ::  found_specie
+      integer :: file_id=123, ind_glob, ind_chem
+      character (len=80) :: ChemInpLine
+      character (len=10) :: specie_string
+      character (len=1)  :: tmp_string 
+      integer :: VarNumber,i,j,k=0
+      real :: YY_k, air_mass
+      real, dimension(nchemspec) :: stor1,stor2 
+      !character (len=*) :: input_file
+      !
+      integer :: StartInd,StopInd,StartInd_1,StopInd_1
+
+      air_mass=0.
+      StartInd_1=1; StopInd_1 =0
+      open(file_id,file="air.dat")
+
+      if (lroot) print*, 'the following species are found in air.dat (volume fraction fraction in %): '
+
+      dataloop: do
+
+        read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
+        emptyFile=.false.
+        StartInd_1=1; StopInd_1=0
+        StopInd_1=index(ChemInpLine,' ') 
+        specie_string=trim(ChemInpLine(1:StopInd_1-1)) 
+        tmp_string=trim(ChemInpLine(1:1)) 
+
+        if (tmp_string == '!' .or. tmp_string == ' ') then
+        else
+
+         call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
+
+            if (found_specie) then
+
+               StartInd=1; StopInd =0
+
+               StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+               StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
+               StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+               read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)'), YY_k  
+                       print*, YY_k
+               air_mass=air_mass+species_constants(ind_chem,imass)
+ 
+               if (StartInd==80) exit
+
+               stor1(k)=ind_chem
+               stor2(k)=YY_k
+               k=k+1
+            endif
+
+            endif
+      enddo dataloop
+
+!
+! Stop if air.dat is empty
+!
+
+      1000  if (emptyFile)  call stop_it('The input file tran.dat was empty!')
+
+        do j=1,k-1 
+         f(:,:,:,ichemspec(stor1(j)))=stor2(j)*species_constants(stor1(j),imass)/air_mass*0.01
+        enddo 
+
+       f(:,:,:,5)=log((273.+15.)/unit_temperature)
+
+       f(:,:,:,4)=log((101325./(k_B_cgs/m_u_cgs)*air_mass/(273.+15.))/unit_mass*unit_length**3)
+
+      if (lroot) print*, 'Air temperature, K', (273.+15.)
+      if (lroot) print*, 'Air density, g/cm^3', 101325./(k_B_cgs/m_u_cgs)*air_mass/(273.+15.)
+
+
+
+      close(file_id)
+  endsubroutine air_field
 !***************************************************************
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
