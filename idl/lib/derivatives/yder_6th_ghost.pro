@@ -1,5 +1,5 @@
 ;
-;  $Id: yder_6th_ghost.pro,v 1.13 2008-04-08 11:41:43 wlyra Exp $
+;  $Id: yder_6th_ghost.pro,v 1.14 2008-04-22 12:55:51 wlyra Exp $
 ;
 ;  First derivative d/dy
 ;  - 6th-order
@@ -7,7 +7,7 @@
 ;  - on potentially non-equidistant grid
 ;
 ;***********************************************************************
-function yder,f,lsystem
+function yder,f
   COMPILE_OPT IDL2,HIDDEN
 ;
   ;common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
@@ -16,15 +16,12 @@ function yder,f,lsystem
   ;AB: For non-uniform meshes dx_1, dy_1, and dz_1 would not be ok.
   common cdat,x,y,z
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
+  common cdat_coords,coord_system
 ;
 ;  calculate nx, ny, and nz, based on the input array size
 ;
   s=size(f) & d=make_array(size=s)
   nx=s[1] & ny=s[2] & nz=s[3]
-;
-default,lsystem,0 ;cartesian
-;       lsystem,1 ;cylindric
-;       lsystem,2 ;spherical 
 ;
   xx=spread(x,[1,2],[ny,nz])
 ;
@@ -50,7 +47,7 @@ default,lsystem,0 ;cartesian
       d[*,m1:m2,*]=dy2*( +45.*(f[*,m1+1:m2+1,*]-f[*,m1-1:m2-1,*]) $
                           -9.*(f[*,m1+2:m2+2,*]-f[*,m1-2:m2-2,*]) $
                              +(f[*,m1+3:m2+3,*]-f[*,m1-3:m2-3,*]) )
-      if (lsystem ne 0) then d=d/xx
+      if (not(coord_system eq 'cartesian')) then d=d/xx
     endif else begin
       d[*,m1:m2,*]=0.
     endelse
@@ -64,7 +61,7 @@ default,lsystem,0 ;cartesian
       d[*,m1:m2,*,*]=dy2*( +45.*(f[*,m1+1:m2+1,*,*]-f[*,m1-1:m2-1,*,*]) $
                             -9.*(f[*,m1+2:m2+2,*,*]-f[*,m1-2:m2-2,*,*]) $
                                +(f[*,m1+3:m2+3,*,*]-f[*,m1-3:m2-3,*,*]) )
-      if (lsystem ne 0) then d[*,*,*,0:s[4]-1]=d[*,*,*,0:s[4]-1]/xx
+      if (not(coord_system eq 'cartesian')) then d[*,*,*,0:s[4]-1]=d[*,*,*,0:s[4]-1]/xx
     endif else begin
       d[*,m1:m2,*,*]=0.
     endelse

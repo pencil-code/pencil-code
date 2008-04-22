@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_read_global.pro,v 1.10 2008-01-21 15:29:45 ajohan Exp $
+;  $Id: pc_read_global.pro,v 1.11 2008-04-22 12:55:54 wlyra Exp $
 ;
 ;  Same as pc_read_var, but for global variables.
 ;
@@ -20,6 +20,7 @@ COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
   common pc_precision, zero, one
+  common cdat_coords,coord_system
 ;
 ; Default settings
 ;
@@ -46,6 +47,10 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   default, run2D, 0
   if (param.lwrite_2d) then run2D=1
+;
+; Set coord_system
+;
+  coord_system=param.coord_system
 ;
 ; Call pc_read_grid to make sure any derivative stuff is correctly set in the
 ; common block. Don't need the data for anything though.

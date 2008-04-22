@@ -1,5 +1,5 @@
 ;
-;  $Id: zder_6th_ghost.pro,v 1.17 2008-04-19 15:30:27 brandenb Exp $
+;  $Id: zder_6th_ghost.pro,v 1.18 2008-04-22 12:55:51 wlyra Exp $
 ;
 ;  First derivative d/dz
 ;  - 6th-order (7-point stencil)
@@ -7,7 +7,7 @@
 ;  - on potentially non-equidistant grid
 ;
 ;***********************************************************************
-function zder,f,lsystem
+function zder,f
   COMPILE_OPT IDL2,HIDDEN
 ;
   ;common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
@@ -16,10 +16,7 @@ function zder,f,lsystem
   ;AB: For non-uniform meshes dx_1, dy_1, and dz_1 would not be ok.
   common cdat,x,y,z
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
-;
-default,lsystem,0 ;cartesian
-;       lsystem,1 ;cylindric
-;       lsystem,2 ;spherical  
+  common cdat_coords,coord_system
 ;
 ;  calculate nx, ny, and nz, based on the input array size
 ;
@@ -58,7 +55,7 @@ default,lsystem,0 ;cartesian
       d[*,*,n1:n2]=dz2*( +45.*(f[*,*,n1+1:n2+1]-f[*,*,n1-1:n2-1]) $
                           -9.*(f[*,*,n1+2:n2+2]-f[*,*,n1-2:n2-2]) $
                              +(f[*,*,n1+3:n2+3]-f[*,*,n1-3:n2-3]) )
-      if (lsystem eq 2) then d=d/xx*sin1th
+      if (coord_system eq 'spherical') then d=d/xx*sin1th
     endif else begin
       d[*,*,n1:n2]=0.
     endelse
@@ -71,7 +68,8 @@ default,lsystem,0 ;cartesian
       d[*,*,n1:n2,*]=dz2*( +45.*(f[*,*,n1+1:n2+1,*]-f[*,*,n1-1:n2-1,*]) $
                             -9.*(f[*,*,n1+2:n2+2,*]-f[*,*,n1-2:n2-2,*]) $
                                +(f[*,*,n1+3:n2+3,*]-f[*,*,n1-3:n2-3,*]) )
-      if (lsystem eq 2) then d[*,*,*,0:s[4]-1]=d[*,*,*,0:s[4]-1]/xx*sin1th
+      if (coord_system eq 'spherical') then $
+        d[*,*,*,0:s[4]-1]=d[*,*,*,0:s[4]-1]/xx*sin1th
     endif else begin
       d[*,*,n1:n2,*]=0.
     endelse
@@ -82,7 +80,7 @@ default,lsystem,0 ;cartesian
       d[*,n1:n2]=dz2*( +45.*(f[*,n1+1:n2+1]-f[*,n1-1:n2-1]) $
                         -9.*(f[*,n1+2:n2+2]-f[*,n1-2:n2-2]) $
                            +(f[*,n1+3:n2+3]-f[*,n1-3:n2-3]) )
-      if (lsystem eq 2) then d=d/xx*sin1th
+      if (coord_system eq 'spherical') then d=d/xx*sin1th
     endif else d[*,n1:n2]=0.
 ;
   endif else begin

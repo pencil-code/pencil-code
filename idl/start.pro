@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.77 2007-08-03 09:53:26 ajohan Exp $
+;;; $Id: start.pro,v 1.78 2008-04-22 12:55:52 wlyra Exp $
 
 function param
   COMPILE_OPT IDL2,HIDDEN 
@@ -15,6 +15,7 @@ end
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
+common cdat_coords, coord_system
 ;forward_function safe_get_tag
 ;
 ;  Compile the derivative routines for data that have ghost zones
@@ -210,6 +211,8 @@ if (cpar gt 0) then begin
   lforcing  = par.lforcing
   lshear    = par.lshear
   lradiation_fld = par.lradiation_fld
+  coord_system  = par.coord_system
+
   ;
   ;  Read coefficients for nonequidistant grid
   ;

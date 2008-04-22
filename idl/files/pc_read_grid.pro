@@ -1,10 +1,10 @@
-; $Id: pc_read_grid.pro,v 1.15 2007-08-03 09:53:26 ajohan Exp $
+; $Id: pc_read_grid.pro,v 1.16 2008-04-22 12:55:54 wlyra Exp $
 ;
 ;   Read grid.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2007-08-03 09:53:26 $
-;  $Revision: 1.15 $
+;  $Date: 2008-04-22 12:55:54 $
+;  $Revision: 1.16 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -17,6 +17,7 @@ COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
   common pc_precision, zero, one
+  common cdat_coords,coord_system
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN
     print, "Usage: "
@@ -56,6 +57,9 @@ mx=dim.mx
 my=dim.my
 mz=dim.mz
 lequidist=safe_get_tag(param,'lequidist',default=[1,1,1])
+;set coord_system
+coord_system=param.coord_system
+
 
 ; and check pc_precision is set!
 pc_set_precision,dim=dim,QUIET=QUIET

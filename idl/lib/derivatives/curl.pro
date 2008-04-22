@@ -1,54 +1,47 @@
 ;;; Calculate the curl of a 3-d vector field
 ;cartesian
-function curlx,f,lsystem,xx,yy
+function curlx,f,coord_system,xx,yy
 COMPILE_OPT IDL2,HIDDEN
-  if (lsystem eq 0) then corr=0.
-  if (lsystem eq 1) then corr=0.
-  if (lsystem eq 2) then begin
+  if (coord_system eq 'cartesian') then corr=0.
+  if (coord_system eq 'cylindric') then corr=0.
+  if (coord_system eq 'spherical') then begin
     cotth=cos(yy)/sin(yy)      
     i_sin=where(abs(sin(yy)) lt 1e-5) ;sinth_min=1e-5
     if (i_sin ne -1) then cotth[i_sin]=0.
     corr=f[*,*,*,2]*cotth/xx
   endif
-  return,yder(f[*,*,*,2],lsystem)-zder(f[*,*,*,1],lsystem)+corr
+  return,yder(f[*,*,*,2])-zder(f[*,*,*,1])+corr
 end
-function curly,f,lsystem,xx
+function curly,f,coord_system,xx
 COMPILE_OPT IDL2,HIDDEN
-  if (lsystem eq 0) then corr=0.
-  if (lsystem eq 1) then corr=0.
-  if (lsystem eq 2) then corr=-f[*,*,*,2]/xx
-  return,zder(f[*,*,*,0],lsystem)-xder(f[*,*,*,2])+corr
+  if (coord_system eq 'cartesian') then corr=0.
+  if (coord_system eq 'cylindric') then corr=0.
+  if (coord_system eq 'spherical') then corr=-f[*,*,*,2]/xx
+  return,zder(f[*,*,*,0])-xder(f[*,*,*,2])+corr
 end
-function curlz,f,lsystem,xx
+function curlz,f,coord_system,xx
 COMPILE_OPT IDL2,HIDDEN
-  if (lsystem eq 0) then corr=0.
-  if (lsystem eq 1) then corr=f[*,*,*,1]/xx
-  if (lsystem eq 2) then corr=f[*,*,*,1]/xx
-  return,xder(f[*,*,*,1])-yder(f[*,*,*,0],lsystem)+corr
+  if (coord_system eq 'cartesian') then corr=0.
+  if (coord_system eq 'cylindric') then corr=f[*,*,*,1]/xx
+  if (coord_system eq 'spherical') then corr=f[*,*,*,1]/xx
+  return,xder(f[*,*,*,1])-yder(f[*,*,*,0])+corr
 end
 ;
-function curl,f,coord_system
+function curl,f
 
 COMPILE_OPT IDL2,HIDDEN
 common cdat, x, y
-;
-default,coord_system,'cartesian'
+common cdat_coords,coord_system
 ;
   w=make_array(size=size(f),/nozero)
-  lsystem=-1
-  if (coord_system eq 'cartesian') then lsystem=0
-  if (coord_system eq 'cylindric') then lsystem=1
-  if (coord_system eq 'spherical') then lsystem=2
-  if (lsystem eq -1) then $
-    print,'coord_system= ',coord_system,' is not valid'
 ;
   tmp=size(f) & mx=tmp[1] & my=tmp[2] &  mz=tmp[3]
   xx=spread(x,[1,2],[my,mz])
   yy=spread(y,[0,2],[mx,mz])
 ;
-  w[*,*,*,0]=curlx(f,lsystem,xx,yy)
-  w[*,*,*,1]=curly(f,lsystem,xx)
-  w[*,*,*,2]=curlz(f,lsystem,xx)
+  w[*,*,*,0]=curlx(f,coord_system,xx,yy)
+  w[*,*,*,1]=curly(f,coord_system,xx)
+  w[*,*,*,2]=curlz(f,coord_system,xx)
 ;
   return,w
 ;
