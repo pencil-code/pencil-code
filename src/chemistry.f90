@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.67 2008-04-21 14:11:35 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.68 2008-04-22 15:33:40 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -63,7 +63,7 @@ module Chemistry
   real, allocatable, dimension(:,:,:,:,:) :: Bin_Diff_coef
   real, dimension (mx,my,mz,mfarray) :: Diff_full, XX_full
   real, dimension (mx,my,mz,nchemspec) :: species_viscosity
-  real, dimension(nchemspec) :: nu_spec=1.
+  real, dimension(nchemspec) :: nu_spec=0.
 
 !
 !  Chemkin related parameters
@@ -174,11 +174,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.67 2008-04-21 14:11:35 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.68 2008-04-22 15:33:40 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.67 2008-04-21 14:11:35 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.68 2008-04-22 15:33:40 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -2335,7 +2335,7 @@ module Chemistry
 
    endsubroutine calc_diffusion_term
 !***************************************************************
-  subroutine air_field(f)
+   subroutine air_field(f)
 
   use Mpicomm
 
@@ -2348,8 +2348,8 @@ module Chemistry
       character (len=80) :: ChemInpLine
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string 
-      integer :: VarNumber,i,j,k=0
-      real :: YY_k, air_mass
+      integer :: VarNumber,i,j,k=1
+      real :: YY_k, air_mass, TT
       real, dimension(nchemspec) :: stor1,stor2 
       !character (len=*) :: input_file
       !
@@ -2404,14 +2404,17 @@ module Chemistry
 
         do j=1,k-1 
          f(:,:,:,ichemspec(stor1(j)))=stor2(j)*species_constants(stor1(j),imass)/air_mass*0.01
+
         enddo 
 
-       f(:,:,:,5)=log((273.+15.)/unit_temperature)
+       TT=600.!(273.+15.)
 
-       f(:,:,:,4)=log((101325./(k_B_cgs/m_u_cgs)*air_mass/(273.+15.))/unit_mass*unit_length**3)
+       f(:,:,:,5)=log(TT/unit_temperature)
 
-      if (lroot) print*, 'Air temperature, K', (273.+15.)
-      if (lroot) print*, 'Air density, g/cm^3', 101325./(k_B_cgs/m_u_cgs)*air_mass/(273.+15.)
+       f(:,:,:,4)=log((101325./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
+
+      if (lroot) print*, 'Air temperature, K', TT
+      if (lroot) print*, 'Air density, g/cm^3', 101325./(k_B_cgs/m_u_cgs)*air_mass/TT
 
 
 

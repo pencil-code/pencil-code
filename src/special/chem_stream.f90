@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.13 2008-04-21 14:12:17 nbabkovs Exp $
+! $Id: chem_stream.f90,v 1.14 2008-04-22 15:33:40 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -73,7 +73,7 @@ module Special
   real, dimension (mx,my,mz,3) :: divtau=0.
   real, dimension (mx,my,mz) :: pres=0., mmu1=0.
   logical :: ldivtau=.false.
-  real :: test, H2_max
+  real :: test, H_max
   real :: Rgas, Rgas_unit_sys=1.
 
   real :: rho_init=1., T_init=1., Y1_init=1., Y2_init=1., Y3_init=1.
@@ -83,7 +83,7 @@ module Special
 
 ! start parameters
   namelist /chem_stream_init_pars/ &
-   initstream,rho_init, T_init, Y1_init, Y2_init, Y3_init, H2_max
+   initstream,rho_init, T_init, Y1_init, Y2_init, Y3_init, H_max
 
 ! run parameters
   namelist /chem_stream_run_pars/ &
@@ -139,11 +139,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.13 2008-04-21 14:12:17 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.14 2008-04-22 15:33:40 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.13 2008-04-21 14:12:17 nbabkovs Exp $")
+           "$Id: chem_stream.f90,v 1.14 2008-04-22 15:33:40 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -218,9 +218,9 @@ module Special
             call stream_field(f,xx,yy)
          case('bomb')
             call bomb_field(f,xx,yy)
-         case('H2_bomb')
-            call H2_bomb(f,xx,yy)
-           if(lroot) print*,'init_special: H2_bomb'
+         case('H_bomb')
+            call H_bomb(f,xx,yy)
+           if(lroot) print*,'init_special: H_bomb'
          case('default')
           if(lroot) print*,'init_special: Default neutron star setup'
      !     call density_init(f,xx,zz)
@@ -602,7 +602,7 @@ module Special
 
    endsubroutine bomb_field
 !***********************************************************************
-   subroutine H2_bomb(f,xx,yy)
+   subroutine H_bomb(f,xx,yy)
 !
 ! Natalia
 ! Initialization of chem. species  in a case of the stream
@@ -614,17 +614,18 @@ module Special
 
      do k=1,nx 
 
-      if (abs(x(k))<5.) then
-       f(k,:,:,6)=H2_max*exp(((10.-abs(x(k)))/10.)**2)
-      endif
+   !   if (abs(x(k))<5.) then
+       f(k,:,:,9)=H_max*exp(((-abs(x(k)))))
+   !   endif
 
      enddo
 
    !  f(:,:,:,4)=log(rho_init)-(xx(:,:,:)/(0.5*Lxyz(1)))**2
-   !  f(:,:,:,5)=f(:,:,:,5)+log(T_init)-xx(:,:,:)**2
+     !f(:,:,:,5)=log(T_init)-xx(:,:,:)**2
+      f(:,:,:,5)=log(T_init)
     ! f(:,:,:,6)=f(:,:,:,6)+H2_max*exp(-xx(:,:,:)**2)
 
-    endsubroutine H2_bomb
+    endsubroutine H_bomb
 !***********************************************************************
   subroutine bc_stream_x(f,sgn,bc)
 !
