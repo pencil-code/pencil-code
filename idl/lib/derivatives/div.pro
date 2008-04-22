@@ -13,7 +13,12 @@ default,coord_system,'cartesian'
    print,'coord_system= ',coord_system,' is not valid'
 ;
  if (lsystem eq 0) then corr = 0.
- if (lsystem eq 1) then corr = f[*,*,*,0]/xx
+;
+ if (lsystem eq 1) then begin
+     xx=spread(x,[1,2],[my,mz])
+     corr = f[*,*,*,0]/xx
+ endif
+;
  if (lsystem eq 2) then begin
     yy=spread(y,[1,2],[my,mz])
     cotth=cos(yy)/sin(yy)      
