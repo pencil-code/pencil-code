@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.393 2008-04-10 10:20:18 dintrans Exp $
+### $Id: Makefile.src,v 1.394 2008-04-22 19:02:34 steveb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -762,6 +762,14 @@ LD_FFTW2=
 #CFLAGS=-O3 -DFUNDERSC=1 #(frenesi)
 #LD_MPI=-pthread -I/usr/lib -lmpi_f90 -lmpi -lorte -lopal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(frenesi)
 #LIBMPISUFFIX=_#(frenesi)
+##
+## Steve's test cluster
+#FC=g95 #(asd|kool|aster|bitwo)
+#FFLAGS=-O3 -m64 -march=opteron -ftrace=full -I/usr/local/include -L/usr/lib -L/usr/local/lib -I/usr/include -fno-second-underscore #(asd|kool|aster|bitwo)
+#LDFLAGS=-m64 -m64 -march=opteron #(asd|kool|aster|bitwo)
+#LD_MPI=-lmpich -lfmpich -lpthread #(asd|kool|aster|bitwo)
+#CC=gcc #(asd|kool|aster|bitwo)
+#CFLAGS=-O3 -DFUNDERSC=1 -Wall -march=opteron #(asd|kool|bitwo|aster)
 ##
 ## Marcus on janus (ifc/icc 9.1)
 ##
