@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.543 2008-04-10 10:20:18 dintrans Exp $
+! $Id: entropy.f90,v 1.544 2008-04-23 18:31:48 steveb Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -50,6 +50,7 @@ module Entropy
   real :: center2_x=0., center2_y=0., center2_z=0.
   real :: kx_ss=1.
   real :: thermal_background=0., thermal_peak=0., thermal_scaling=1.
+  real :: cool_fac=1.
 !
   real, target :: hcond0=impossible,hcond1=impossible
   real, target :: Fbot=impossible,FbotKbot=impossible
@@ -122,7 +123,8 @@ module Entropy
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
       T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat, &
-      r_bcz,luminosity,wheat,hcond0,tau_cool,TTref_cool,lhcond_global
+      r_bcz,luminosity,wheat,hcond0,tau_cool,TTref_cool,lhcond_global, &
+      cool_fac
 
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -221,7 +223,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.543 2008-04-10 10:20:18 dintrans Exp $")
+           "$Id: entropy.f90,v 1.544 2008-04-23 18:31:48 steveb Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -721,6 +723,7 @@ module Entropy
 
         case('zero', '0'); f(:,:,:,iss) = 0.
         case('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
+        case('gaussian-noise'); call gaunoise(ampl_ss,f,iss,iss)
         case('blob'); call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
         case('blob_radeq'); call blob_radeq(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
         case('isothermal'); call isothermal_entropy(f,T0)
@@ -2532,7 +2535,7 @@ module Entropy
 !
       cooling = 2*sigmaSB*p%TT**4/(a1+a2+a3)      
 !
-      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) - cooling
+      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) - cool_fac*cooling
 !
     endsubroutine calc_heatcond_hubeny
 !************************************************************************
