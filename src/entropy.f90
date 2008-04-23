@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.545 2008-04-23 20:01:38 steveb Exp $
+! $Id: entropy.f90,v 1.546 2008-04-23 22:18:23 steveb Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -222,7 +222,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.545 2008-04-23 20:01:38 steveb Exp $")
+           "$Id: entropy.f90,v 1.546 2008-04-23 22:18:23 steveb Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -1758,6 +1758,10 @@ module Entropy
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_glnrho)=.true.
+        if (chi_t/=0.) then
+           lpenc_requested(i_gss)=.true.
+           lpenc_requested(i_del2ss)=.true.
+        endif
       endif
       if (lheatc_tensordiffusion) then
         lpenc_requested(i_bij)=.true.
