@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.430 2008-04-20 21:44:45 nilshau Exp $
+! $Id: hydro.f90,v 1.431 2008-04-23 14:07:04 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -64,8 +64,6 @@ module Hydro
   character (len=labellen) :: borderuu='nothing'
   real, dimension(3) :: uu_const=(/0.,0.,0./)
   complex, dimension(3) :: coefuu=(/0.,0.,0./)
-  real :: kep_cutoff_pos_ext= huge1,kep_cutoff_width_ext=0.0
-  real :: kep_cutoff_pos_int=-huge1,kep_cutoff_width_int=0.0
   real :: u_out_kep=0.0, velocity_ceiling=-1.0
   real :: mu_omega=0., gap=0.
   integer :: nb_rings=0
@@ -87,8 +85,6 @@ module Hydro
        uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, coefuu, &
        kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
        uy_left, uy_right,uu_const, Omega,  initpower, cutoff, &
-       kep_cutoff_pos_ext, kep_cutoff_width_ext, &
-       kep_cutoff_pos_int, kep_cutoff_width_int, &
        u_out_kep, N_modes_uu, lcoriolis_force, lcentrifugal_force, &
        ladvection_velocity, lprecession, omega_precession, &
        luut_as_aux, velocity_ceiling, mu_omega, nb_rings, om_rings, gap, &
@@ -343,7 +339,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.430 2008-04-20 21:44:45 nilshau Exp $")
+           "$Id: hydro.f90,v 1.431 2008-04-23 14:07:04 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
