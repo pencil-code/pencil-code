@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.221 2008-04-12 13:43:42 wlyra Exp $
+! $Id: particles_dust.f90,v 1.222 2008-04-23 13:56:36 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -54,7 +54,6 @@ module Particles
   logical :: lcollisional_cooling_twobody=.false.
   logical :: lcollisional_dragforce_cooling=.false.
   logical :: ltau_coll_min_courant=.true.
-  logical :: lsmooth_dragforce_dust=.false., lsmooth_dragforce_gas=.false.
   logical :: ldragforce_equi_global_eps=.false.
   logical :: ldraglaw_epstein=.true.
   logical :: ldraglaw_epstein_stokes_linear=.false.
@@ -72,7 +71,7 @@ module Particles
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, rhop_tilde, &
-      eps_dtog, nu_epicycle, lsmooth_dragforce_dust, &
+      eps_dtog, nu_epicycle, &
       gravx_profile, gravz_profile, gravr_profile, &
       gravx, gravz, kx_gg, kz_gg, Ri0, eps1, &
       lmigration_redo, ldragforce_equi_global_eps, coeff, &
@@ -92,7 +91,7 @@ module Particles
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
-      ldragforce_gas_par, ldragforce_dust_par, lsmooth_dragforce_dust, &
+      ldragforce_gas_par, ldragforce_dust_par, &
       rhop_tilde, eps_dtog, cdtp, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravr_profile, &
@@ -140,7 +139,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.221 2008-04-12 13:43:42 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.222 2008-04-23 13:56:36 ajohan Exp $")
 !
 !  Indices for particle position.
 !
