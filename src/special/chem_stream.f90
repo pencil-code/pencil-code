@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.15 2008-04-23 13:32:51 nbabkovs Exp $
+! $Id: chem_stream.f90,v 1.16 2008-04-23 14:05:54 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -139,11 +139,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.15 2008-04-23 13:32:51 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.16 2008-04-23 14:05:54 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.15 2008-04-23 13:32:51 nbabkovs Exp $")
+           "$Id: chem_stream.f90,v 1.16 2008-04-23 14:05:54 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -595,7 +595,7 @@ module Special
       real, dimension (mx,my,mz) :: xx, yy
       integer :: k,j,i
 
-     do k=1,nx 
+     do k=1,mx 
 
       if (abs(x(k))<10) then
        f(k,:,:,4)=log(rho_init)+((10.-abs(x(k)))/10.)**2
@@ -995,6 +995,7 @@ module Special
            do i=0,nghost
             f(l1-i,:,:,4)=f(l1,:,:,4)
             f(l1-i,:,:,5)=f(l1,:,:,5)
+
            enddo 
        else
          do i=0,nghost;   f(l1-i,:,:,vr)=log(value1); enddo 
@@ -1044,6 +1045,7 @@ module Special
          do i=0,nghost
            f(l2+i,:,:,4)=log(pres(l2,:,:)/value1/mmu1(l2,:,:)/Rgas); 
          enddo 
+
 
       endif
 
