@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.3 2008-03-07 14:42:43 wlyra Exp $
+! $Id: poisson_cyl.f90,v 1.4 2008-04-23 18:53:11 wlyra Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -37,14 +37,16 @@ module Poisson
 
   real :: kmax=0.0
   logical :: lrazor_thin=.true.,lsolve_bessel=.true.,lsolve_cyl2cart=.false.
+  logical :: lsolve_direct=.false.
 
   include 'poisson.h'
 
   namelist /poisson_init_pars/ &
-       kmax,lrazor_thin,lsolve_bessel,lsolve_cyl2cart
+       kmax,lrazor_thin,lsolve_bessel,lsolve_cyl2cart,lsolve_direct
   namelist /poisson_run_pars/ &
-       kmax,lrazor_thin,lsolve_bessel,lsolve_cyl2cart
+       kmax,lrazor_thin,lsolve_bessel,lsolve_cyl2cart,lsolve_direct
 
+  real, dimension(nx,ny,nx,nygrid) :: green_grid
   real, dimension(nx,nx,ny) :: bessel_grid
   real, dimension(nx) :: rad,kr_fft
   real, dimension(ny) :: tht
@@ -84,11 +86,25 @@ module Poisson
         call fatal_error('initialize_poisson','')
       endif
 !
-      if (lsolve_cyl2cart) lsolve_bessel=.false.
+      if (lsolve_cyl2cart) then 
+        lsolve_bessel=.false.
+        lsolve_direct=.false.
+      endif
 !
-      if ((.not.lsolve_bessel).and.(.not.lsolve_cyl2cart)) then
+      if (lsolve_bessel) then 
+        lsolve_cyl2cart=.false.
+        lsolve_direct=.false.
+      endif
+!
+      if (lsolve_direct) then 
+        lsolve_bessel=.false.
+        lsolve_cyl2cart=.false.
+      endif
+!
+      if ((.not.lsolve_bessel).and.(.not.lsolve_cyl2cart)&
+           .and.(.not.lsolve_direct)) then
         if (lroot) print*,'initialize_poisson: '//&
-             'neither lsolve_bessel nor lsolve_cyl2cart'//&
+             'neither lsolve_bessel nor lsolve_cyl2cart nor lsolve_direct'//&
              'are switched on. Choose one of them'
         call fatal_error('initialize_poisson','')
       endif
@@ -121,6 +137,9 @@ module Poisson
       if (lsolve_bessel) &
            call calculate_cross_bessel_functions
 !
+      if (lsolve_direct) &
+           call calculate_cross_green_functions
+!
     endsubroutine initialize_poisson
 !***********************************************************************
     subroutine inverse_laplacian(phi)
@@ -133,12 +152,15 @@ module Poisson
       real, dimension (nx,ny,nz) :: phi
 !
       intent(inout) :: phi
+!
       if (lsolve_bessel) then
         call inverse_laplacian_bessel(phi)
       else if (lsolve_cyl2cart) then
         call inverse_laplacian_cyl2cart(phi)
+      else if (lsolve_direct) then
+        call inverse_laplacian_directsum(phi)
       else
-        call fatal_error("inverse_laplacian","")
+        call fatal_error("inverse_laplacian","no solving method given")
       endif
 !
     endsubroutine inverse_laplacian
@@ -189,7 +211,7 @@ module Poisson
       real    :: p1,p2,p3,p4,interp_pot
 !
       integer :: ix1,ix2,iy1,iy2,ir1,ir2,ip1,ip2
-      integer :: i,j,ikx,iky,ir,im,ido,iup
+      integer :: i,j,ikx,iky,ir,im,ido,iup,ith
       integer :: nnx,nny,nnghost
       integer :: nnxgrid,nnygrid
 !
@@ -373,12 +395,12 @@ module Poisson
 !
 !  Convert back to cylindrical
 !
-      yserial=xc
-      do ip=1,Nth
+      yserial(1:nygrid)=xc(1:nygrid)
+      do ith=1,Nth
         do ir=1,Nr
 !
-          xp=rad(ir)*cos(tht(ip))
-          yp=rad(ir)*sin(tht(ip))
+          xp=rad(ir)*cos(tht(ith))
+          yp=rad(ir)*sin(tht(ith))
 !
           ix1 = floor((xp-x0)*dxc1)+1 ; ix2 = ix1+1
           iy1 = floor((yp-y0)*dyc1)+1 ; iy2 = iy1+1
@@ -399,7 +421,7 @@ module Poisson
           interp_pot=fx*fy*(p1-p2-p3+p4) + fx*(p2-p1) + fy*(p3-p1) + p1
 !
           do n=1,nz
-            phi(ir,ip,n)=interp_pot
+            phi(ir,ith,n)=interp_pot
           enddo
 !
         enddo
@@ -440,7 +462,7 @@ module Poisson
 !  that usually takes most of the computing time. So, think (twice) 
 !  before you modify it.
 !
-!  At every wavelength, the density-potential pair is in fourier space is
+!  At every wavelength, the density-potential pair in fourier space is
 !
 !   Phi_tilde_k = exp(-k|z|) Jm(k*r) ; Sigma_tilde_k =-k/(2piG) Jm(k*r)  
 !
@@ -513,6 +535,83 @@ module Poisson
 !
     endsubroutine inverse_laplacian_bessel
 !***********************************************************************
+    subroutine inverse_laplacian_directsum(phi)
+!
+!  Solve the 2D Poisson equation in cylindrical coordinates
+!
+!  Direct summation phi=-G Int(rho/|r-r'| dV)
+!
+!  23-04-08/wlad: coded
+!
+      use Mpicomm
+!
+      real, dimension (nx,ny,nz)  :: phi
+      real, dimension (nx,nygrid) :: cross,integrand
+      real, dimension (nx,ny)     :: tmp,cross_proc
+      real, dimension (nx)        :: intr
+      integer :: ith,ir,ikr,ikt,imn
+      integer :: nnghost,i,j,ido,iup
+      real :: fac
+!
+      if (nzgrid/=1)  &
+           call fatal_error("","currently only works for 2D simulations")
+      nnghost=npoint-nghost
+
+      !transfer fac to the green grid
+      !fac=-.25*pi_1 !actually, -G = rhs_poisson_const/4*pi
+
+      if (lmpicomm) then
+!
+! All processors send its density array to the root processor
+!
+        if (.not.lroot) then
+          call mpisend_real(phi(:,:,nnghost),(/nx,ny/),root,111)
+        else
+          cross_proc=phi(:,:,nnghost)
+!
+! The root processor receives all arrays and
+! stores them in a single big array of dimension
+! nx*nygrid
+!
+          do j=0,ncpus-1
+            if (j/=0) call mpirecv_real(cross_proc,(/nx,ny/),j,111)
+            ido= j  * ny + 1
+            iup=(j+1)*ny
+            cross(:,ido:iup)=cross_proc
+          enddo
+        endif
+!
+! Broadcast the density field to all processors
+!
+        call mpibcast_real(cross,(/nx,nygrid/))
+!
+      else
+!
+! For serial runs, ny=nygrid, so just copy the density
+!
+        cross(:,1:ny)=phi(:,1:ny,nnghost)
+!
+      endif
+!
+! Now integrate through direct summation
+!
+      do ir=1,nr 
+      do ith=1,nth
+!
+! the scaled green function already has the r*dr*dth term
+!
+        integrand=cross*green_grid(ir,ith,:,:)
+!
+        phi(ir,ith,1:nz)=sum(                    &
+             sum(integrand(2:nr-1,:)) +          &
+             .5*(integrand(1,:)+integrand(nr,:)) &
+                       )
+!
+      enddo
+      enddo
+!
+    endsubroutine inverse_laplacian_directsum
+!***********************************************************************
     subroutine calculate_cross_bessel_functions
 !
 !  Calculate the Bessel functions related to the 
@@ -543,6 +642,87 @@ module Poisson
            print*,'calculated all the needed functions'
 !
     endsubroutine calculate_cross_bessel_functions
+!***********************************************************************
+    subroutine calculate_cross_green_functions
+!
+!  Calculate the Green functions related to the 
+!  cylindrical grid (modified by the jacobian, the 
+!  gravitaional costant and the grid elements to 
+!  ease the amount of calculations in runtime)
+!
+!     green_grid(ir,ip,ir',ip')=-G./|r-r'| * r*dr*dth
+!
+!  06-03-08/wlad: coded
+!
+      use Mpicomm
+!
+      real, dimension(nygrid) :: tht_serial
+      real, dimension(ny) :: tht_proc
+      real    :: jacobian,tmp,Delta,fac
+      integer :: ir,ith,ikr,ikt,i,ido,iup,j
+!
+      if (lroot) &
+        print*,'Pre-calculating the Green functions to '//&
+        'solve the Poisson equation'
+!
+      fac=-.25*pi_1 ! -G = -rhs_poisson_const/4*pi
+!
+! Serial theta to compute the azimuthal displacement in parallel
+!
+      if (lmpicomm) then
+!
+! All processors send its density array to the root processor
+!
+        if (.not.lroot) then
+          call mpisend_real(tht,ny,root,111)
+        else
+!
+          tht_proc=tht
+!
+! The root processor receives all arrays and
+! stores them in a single array of dimension nygrid
+!
+          do j=0,ncpus-1
+            if (j/=0) call mpirecv_real(tht_proc,ny,j,111)
+            ido= j  * ny + 1
+            iup=(j+1)*ny
+            tht_serial(ido:iup)=tht_proc
+          enddo
+        endif
+!
+! Broadcast the serial thetas to all processors
+!
+        call mpibcast_real(tht_serial,nygrid)
+!
+      else
+!
+! For serial runs, ny=nygrid, so just copy the array
+!
+        tht_serial(1:ny)=tht(1:ny)
+!
+      endif
+!
+! Define the smoothing length as the minimum resolution element present
+!
+      Delta=min(dr,dth)
+!
+      do ir =1,nr;do ith=1,nth
+      do ikr=1,nr;do ikt=1,nthgrid
+!
+        jacobian=rad(ikr)*dr*dth
+!
+        tmp=sqrt(Delta**2 + rad(ir)**2 + rad(ikr)**2 - &
+             2*rad(ir)*rad(ikr)*cos(tht(ith)-tht_serial(ikt)))
+!
+        green_grid(ir,ith,ikr,ikt)= fac*jacobian/tmp
+!
+      enddo;enddo
+      enddo;enddo
+!
+      if (lroot) &
+           print*,'calculated all the needed green functions'
+!
+    endsubroutine calculate_cross_green_functions
 !***********************************************************************
     subroutine read_poisson_init_pars(unit,iostat)
 !
