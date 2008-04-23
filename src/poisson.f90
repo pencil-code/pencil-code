@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.47 2008-04-04 18:06:32 wlyra Exp $
+! $Id: poisson.f90,v 1.48 2008-04-23 18:53:43 wlyra Exp $
 
 !
 !  This module solves the Poisson equation
@@ -125,7 +125,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.47 2008-04-04 18:06:32 wlyra Exp $")
+        "$Id: poisson.f90,v 1.48 2008-04-23 18:53:43 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -190,9 +190,7 @@ module Poisson
             else
               k2 = kx_fft(ikx)**2+ky_fft(iky+ipy*ny)**2
             endif
-
-            print*,phi(ikx,iky,ikz),b1(ikx,iky,ikz),ikx,iky
-            
+!            
             phi(ikx,iky,ikz) = -.5*phi(ikx,iky,ikz) / sqrt(k2)
             b1(ikx,iky,ikz)  = -.5* b1(ikx,iky,ikz) / sqrt(k2)
           endif
@@ -240,7 +238,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.47 2008-04-04 18:06:32 wlyra Exp $")
+        "$Id: poisson.f90,v 1.48 2008-04-23 18:53:43 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
