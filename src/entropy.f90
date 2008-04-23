@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.546 2008-04-23 22:18:23 steveb Exp $
+! $Id: entropy.f90,v 1.547 2008-04-23 22:25:16 steveb Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -222,7 +222,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.546 2008-04-23 22:18:23 steveb Exp $")
+           "$Id: entropy.f90,v 1.547 2008-04-23 22:25:16 steveb Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -3036,8 +3036,7 @@ module Entropy
         idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
         idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0; idiag_ssmr=0; idiag_TTmr=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0
-        idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_thcool=0
-        idiag_cs2mphi=0
+        idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -3061,7 +3060,6 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
         call parse_name(iname,cname(iname),cform(iname),'TTp',idiag_TTp)
-        call parse_name(iname,cname(iname),cform(iname),'thcool',idiag_thcool)
       enddo
 !
 !  check for those quantities for which we want yz-averages
@@ -3150,7 +3148,6 @@ module Entropy
         write(3,*) 'iyH=',iyH
         write(3,*) 'ilnTT=',ilnTT
         write(3,*) 'i_TTmxy=',idiag_TTmxy
-        write(3,*) 'i_thcool=',idiag_thcool
       endif
 !
     endsubroutine rprint_entropy
