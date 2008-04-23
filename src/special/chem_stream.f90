@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.14 2008-04-22 15:33:40 nbabkovs Exp $
+! $Id: chem_stream.f90,v 1.15 2008-04-23 13:32:51 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -139,11 +139,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.14 2008-04-22 15:33:40 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.15 2008-04-23 13:32:51 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.14 2008-04-22 15:33:40 nbabkovs Exp $")
+           "$Id: chem_stream.f90,v 1.15 2008-04-23 13:32:51 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -511,6 +511,14 @@ module Special
            call bc_gpress_wall(f,-1, bc)
          endselect
          bc%done=.true.
+         case ('inp')
+         select case (bc%location)
+         case (iBC_X_TOP)
+           call spec_input(f,-1, bc)
+         case (iBC_X_BOT)
+           call spec_input(f,-1, bc)
+         endselect
+         bc%done=.true.
       endselect
 
       if (NO_WARN) print*,f(1,1,1,1),bc%bcname
@@ -612,13 +620,14 @@ module Special
       integer :: k,j,i
 
 
-     do k=1,nx 
+   !  do k=1,nx 
 
-   !   if (abs(x(k))<5.) then
-       f(k,:,:,9)=H_max*exp(((-abs(x(k)))))
+   !  if (abs(x(k))<5.) then
+   !    f(k,:,:,:)=0.
+   !    f(k,:,:,9)=H_max*exp(((-abs(x(k)))))
    !   endif
 
-     enddo
+   !  enddo
 
    !  f(:,:,:,4)=log(rho_init)-(xx(:,:,:)/(0.5*Lxyz(1)))**2
      !f(:,:,:,5)=log(T_init)-xx(:,:,:)**2
@@ -865,6 +874,86 @@ module Special
       endif
 !
     endsubroutine bc_1Dstream_x
+!***********************************************************************
+  subroutine spec_input(f,sgn,bc)
+   !
+! Natalia
+!
+    use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (my, nchemspec-1) :: mask
+      integer :: sgn
+      type (boundary_condition) :: bc
+      integer :: i,i1,j,vr,k
+      real :: value1, value2
+
+      vr=bc%ivar
+
+      value1=bc%value1
+      value2=bc%value2
+
+    if (bc%location==iBC_X_BOT) then
+      ! bottom boundary
+
+      if (vr==1) then
+          do i=0,nghost;   f(l1-i,:,:,vr)=value1;  enddo
+      endif
+
+      if (vr==5) then
+          do i=0,nghost;   f(l1-i,:,:,vr)=log(value1); enddo 
+      endif
+
+       if (vr >= ichemspec(1)) then
+         do i=0,nghost; 
+              f(l1-i,:,:,vr)=value1
+
+
+         enddo
+       endif
+
+      elseif (bc%location==iBC_X_TOP) then
+      ! top boundary
+    
+           if (vr==1) then
+              do i=0,nghost;   f(l2+i,:,:,vr)=value1;  enddo
+       endif
+
+      if (vr==5) then
+
+       if (.not. ldivtau) then
+           do i=0,nghost
+            f(l2+i,:,:,4)=f(l2,:,:,4)
+            f(l2+i,:,:,5)=f(l2,:,:,5)
+           enddo 
+       else
+         do i=0,nghost;   f(l2+i,:,:,vr)=log(value1); enddo 
+
+         do i=0,nghost
+           pres(l2+i,:,:)=pres(l2+i-1,:,:)+divtau(l2+i,:,:,1)*dx
+         enddo
+
+         do i=0,nghost
+           f(l2+i,:,:,4)=log(pres(l2,:,:)/value1/mmu1(l2,:,:)/Rgas); 
+         enddo 
+
+      endif
+
+     endif
+
+       if (vr >= ichemspec(1)) then
+         do i=0,nghost; 
+           f(l2+i,:,:,vr)=2*f(l2+i-1,:,:,vr)-f(l2+i-2,:,:,vr)
+          enddo
+       endif
+
+
+      else
+        print*, "bc_BL_x: ", bc%location, " should be `top(", &
+                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
+      endif
+!
+  endsubroutine spec_input
 !***********************************************************************
  subroutine bc_gpress_wall(f,sgn,bc)
 !

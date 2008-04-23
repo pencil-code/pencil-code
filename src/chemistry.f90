@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.68 2008-04-22 15:33:40 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.69 2008-04-23 13:32:51 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -174,11 +174,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.68 2008-04-22 15:33:40 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.69 2008-04-23 13:32:51 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.68 2008-04-22 15:33:40 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.69 2008-04-23 13:32:51 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -561,6 +561,7 @@ module Chemistry
         else
            p%DYDt_diff=0.
         endif
+
 
 
 !
@@ -984,7 +985,7 @@ module Chemistry
         call read_reactions(input_file,NrOfReactions=mreactions)
         print*,'Number of reactions=',mreactions
 
-
+        nreactions=mreactions
 
 !
 !  Allocate reaction arrays
@@ -1025,12 +1026,12 @@ module Chemistry
 !
 !  calculate stoichio and nreactions
 !
-        if (nreactions1==nreactions2) then
-          nreactions=nreactions1
+      !  if (nreactions1==nreactions2) then
+      !    nreactions=nreactions1
           stoichio=Sijp-Sijm
-        else
-          call stop_it('nreactions1/=nreactions2')
-        endif
+      !  else
+      !    call stop_it('nreactions1/=nreactions2')
+      !  endif
 !
 !  print input data for verification
 !
@@ -1462,7 +1463,7 @@ module Chemistry
         found_specie=.false. 
       else
         found_specie=.true.
-        print*,species_name,'ind_glob= ',ind_glob
+        print*,species_name,'   global index= ',ind_glob
       endif
 !
     endsubroutine find_species_index
@@ -1921,16 +1922,25 @@ module Chemistry
     real, dimension (mx,my,mz,mfarray) :: f 
     intent(in) :: f
     type (pencil_case) :: p
-    real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1=0.,prod2=0.
+    real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1,prod2
     real, dimension (nx) :: kf=0., kr=0.
     real, dimension (nx,nchemspec) :: H0_RT, S0_R
 
-    real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
+    real, dimension (nx) :: T_cgs,rho_cgs,p_atm
 
+    real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
+    real :: Rcal
      integer :: k , reac, j, i
      real  :: sum_tmp=0., T_low, T_mid, T_up, T_local, lnT_local, tmp
 !
 
+!
+! p is in atm units; atm/bar=1./0.986
+!   
+  Rcal=Rgas_unit_sys*4.14e-7
+  T_cgs=p%TT*unit_temperature
+  rho_cgs=p%rho*unit_mass/unit_length**3
+  p_atm=p%pp/0.986
 
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
@@ -1941,7 +1951,7 @@ module Chemistry
           T_mid=species_constants(k,iTemp2)
           T_up= species_constants(k,iTemp3)
          do i=1,nx
-          T_local=p%TT(i)*unit_temperature 
+          T_local=T_cgs(i)
            if (T_local >=T_low .and. T_local <= T_mid) then
                tmp=0. 
                do j=1,5
@@ -1969,7 +1979,7 @@ module Chemistry
           T_mid=species_constants(k,iTemp2)
           T_up= species_constants(k,iTemp3)
          do i=1,nx
-          T_local=p%TT(i)*unit_temperature 
+          T_local=T_cgs(i)
           lnT_local=p%lnTT(i)+log(unit_temperature)
            if (T_local >=T_low .and. T_local <= T_mid) then
                tmp=0. 
@@ -1993,7 +2003,13 @@ module Chemistry
 
     do reac=1,nreactions
 
-     kf(:)=B_n(reac)*(p%TT(:)*unit_temperature)**alpha_n(reac)*exp(-E_an(reac)/Rgas_unit_sys/p%TT(:)/unit_temperature)
+
+     kf(:)=B_n(reac)*T_cgs(:)**alpha_n(reac)*exp(-E_an(reac)/Rcal/T_cgs(:))
+
+
+      dSR=0.
+      dHRT=0.
+      sum_tmp=0.
 
      do k=1,nchemspec
        dSR(:) =dSR(:)+(Sijm(k,reac)-Sijp(k,reac))*S0_R(:,k)
@@ -2001,22 +2017,35 @@ module Chemistry
        sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
      enddo
 
+
      Kp=exp(dSR-dHRT)
-!
-! p is in atm units; atm/bar=1./0.986
-!
-     Kc=Kp*(p%pp/p%TT/Rgas_unit_sys/0.986*unit_mass/unit_length/unit_time**2/unit_temperature)**sum_tmp
+
+     if (sum_tmp==0.) then
+       Kc=Kp
+     else
+       Kc=Kp*(p_atm/T_cgs/Rcal)**sum_tmp
+     endif
 
      kr(:)=kf(:)/Kc
 
-      do k=1,nchemspec   
-       prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*p%rho(:)/species_constants(k,imass))**Sijp(k,reac)
+
+
+      prod1=1.
+      prod2=1.
+
+      do k=1,nchemspec
+       prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijp(k,reac)
+
+!!  print*,'prod',maxval(prod1),maxval(rho_cgs(:)),(Sijp(k,reac)-1)
+
       enddo
-      do k=1,nchemspec   
-       prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*p%rho(:)/species_constants(k,imass))**Sijm(k,reac)
+      do k=1,nchemspec
+       prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm(k,reac)
       enddo
-       vreact_p(:,reac)=kf*prod1
-       vreact_m(:,reac)=kr*prod2
+       vreact_p(:,reac)=prod1/rho_cgs!*kf
+       vreact_m(:,reac)=prod2/rho_cgs!*kr
+
+!print*,'int', maxval(prod1/rho_cgs), maxval(prod2/rho_cgs), maxval(kf),maxval(kr)
 
     enddo
 
@@ -2056,12 +2085,17 @@ module Chemistry
      do k=1,nchemspec  
           xdot=0.
           do j=1,nreactions
-            xdot=xdot+stoichio(k,j)*vreactions(:,j)
+            xdot=xdot+stoichio(k,j)*vreactions(:,j)  
           enddo
          if (lcheminp) then
-          xdot=xdot*species_constants(ichemspec(k),imass)/p%rho(:)
+          xdot=xdot*species_constants(ichemspec(k),imass)
          endif
-      p%DYDt_reac(:,k)=xdot
+      p%DYDt_reac(:,k)=xdot*unit_time
+
+  !  print*,' '
+  !  print*,maxval(p%DYDt_reac(:,k)),k,maxval(p%TT),maxval(vreactions_p),maxval(vreactions_m)
+  !  print*,''
+  !stoichio(k,j),vreactions(10,j),vreactions_p(10,j)-vreactions_m(10,j)
      enddo 
 
    endsubroutine calc_reaction_term
@@ -2383,7 +2417,7 @@ module Chemistry
                StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
                StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)'), YY_k  
-                       print*, YY_k
+                       print*, ' volume fraction, %,    ', YY_k
                air_mass=air_mass+species_constants(ind_chem,imass)
  
                if (StartInd==80) exit
@@ -2411,7 +2445,7 @@ module Chemistry
 
        f(:,:,:,5)=log(TT/unit_temperature)
 
-       f(:,:,:,4)=log((101325./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
+       f(:,:,:,4)=log((101325.*2./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
 
       if (lroot) print*, 'Air temperature, K', TT
       if (lroot) print*, 'Air density, g/cm^3', 101325./(k_B_cgs/m_u_cgs)*air_mass/TT
