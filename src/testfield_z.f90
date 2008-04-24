@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.41 2008-04-21 08:44:25 brandenb Exp $
+! $Id: testfield_z.f90,v 1.42 2008-04-24 20:16:17 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -182,7 +182,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.41 2008-04-21 08:44:25 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.42 2008-04-24 20:16:17 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -852,7 +852,7 @@ module Testfield
       use Cdata
       use Sub
       use Hydro, only: calc_pencils_hydro
-      use Magnetic, only: bmz_beltrami_phase
+      use Magnetic, only: idiag_bcosphz, idiag_bsinphz
       use Mpicomm, only: mpireduce_sum, mpibcast_real, mpibcast_real_arr
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -866,7 +866,7 @@ module Testfield
       real, dimension (nx,3) :: del2Atest2,graddivatest
       integer :: jtest,j,nxy=nxgrid*nygrid,juxb,jjxb
       logical :: headtt_save
-      real :: fac
+      real :: fac,bcosphz,bsinphz
       type (pencil_case) :: p
 !
       intent(inout) :: f
@@ -976,12 +976,15 @@ module Testfield
 !  Here we modify the calculations depending on the phase of the
 !  actual field.
 !
-!  Set phase_testfield equal to bmz_beltrami_phase if bmz_beltrami_phase is
-!  not zero, indicating that bmz_beltrami_phase is the result of a calculation.
+!  Calculate phase_testfield
 !
       if (lphase_adjust) then
         if (lroot) then
-          if (bmz_beltrami_phase/=0) phase_testfield=bmz_beltrami_phase
+          if (idiag_bcosphz/=0.and.idiag_bsinphz/=0) then
+            bcosphz=fname(idiag_bcosphz)
+            bsinphz=fname(idiag_bsinphz)
+            phase_testfield=atan2(bsinphz,bcosphz)
+          endif
         endif
         call mpibcast_real(phase_testfield,1)
         c=cos(z+phase_testfield)

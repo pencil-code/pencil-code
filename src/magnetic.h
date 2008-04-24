@@ -13,7 +13,7 @@
   public :: pencil_criteria_magnetic, pencil_interdep_magnetic
   public :: calc_pencils_magnetic
 
-  public :: calc_mfield, bmz_beltrami_phase
+  public :: calc_mfield, idiag_bcosphz, idiag_bsinphz
   public :: bc_aa_pot, bc_aa_pot2, bc_aa_pot3, bc_frozen_in_bb
   public :: pert_aa, rescaling
   public :: bb_unitvec_shock, remove_mean_emf

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.514 2008-04-21 19:59:51 brandenb Exp $
+! $Id: magnetic.f90,v 1.515 2008-04-24 20:16:17 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -143,7 +143,7 @@ module Magnetic
   real :: inertial_length=0.,linertial_2
   real :: forcing_continuous_aa_phasefact=1.
   real :: forcing_continuous_aa_amplfact=1.
-  real, dimension(mz) :: eta_z
+  real, dimension(mz) :: coskz,sinkz,eta_z
   real, dimension(mz,3) :: geta_z
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
   logical :: lweyl_gauge=.false.
@@ -278,6 +278,8 @@ module Magnetic
                                 ! DIAG_DOC:   mean current density)
   integer :: idiag_bmzph=0      ! DIAG_DOC: Phase of a Beltrami field
   integer :: idiag_bmzphe=0     ! DIAG_DOC: Error of phase of a Beltrami field
+  integer :: idiag_bsinphz=0    ! DIAG_DOC: sine of phase of a Beltrami field
+  integer :: idiag_bcosphz=0    ! DIAG_DOC: cosine of phase of a Beltrami field
   integer :: idiag_ebmz=0       ! DIAG_DOC: $\left<\left<\Ev\cdot\Bv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad($xy$-averaged
                                 ! DIAG_DOC:   mean field helicity production )
@@ -412,7 +414,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.514 2008-04-21 19:59:51 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.515 2008-04-24 20:16:17 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -680,6 +682,14 @@ module Magnetic
         call put_shared_variable('zmode',zmode,ierr)
         if (ierr/=0) call fatal_error('initialize_magnetic',&
              'there was a problem when sharing zmode')
+      endif
+!
+!  calculate cosz and sinz for calculating the phase of a Beltrami field
+!  The choice to use k1_ff may not be optimal, but keep it for now.
+!
+      if (idiag_bsinphz/=0.or.idiag_bcosphz/=0) then
+        sinkz=sin(k1_ff*z)
+        coskz=cos(k1_ff*z)
       endif
 !
       if (NO_WARN) print*, lstarting
@@ -1940,8 +1950,21 @@ module Magnetic
         if (idiag_bxbym/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,2),idiag_bxbym)
         if (idiag_bxbzm/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzm)
         if (idiag_bybzm/=0) call sum_mn_name(p%bbb(:,2)*p%bbb(:,3),idiag_bybzm)
-
         if (idiag_djuidjbim/=0) call sum_mn_name(p%djuidjbi,idiag_djuidjbim)
+!
+!  calculate B*sin(phi) = <Bx*sinkz> + <By*coskz>
+!
+        if (idiag_bsinphz/=0) then
+          call sum_mn_name(-p%bbb(:,1)*sinkz(n),idiag_bsinphz)
+          call sum_mn_name(-p%bbb(:,2)*coskz(n),idiag_bsinphz,ipart=2)
+        endif
+!
+!  calculate B*cos(phi) = <Bx*coskz> + <By*coskz>
+!
+        if (idiag_bcosphz/=0) then
+          call sum_mn_name(+p%bbb(:,1)*coskz(n),idiag_bcosphz)
+          call sum_mn_name(-p%bbb(:,2)*sinkz(n),idiag_bcosphz,ipart=2)
+        endif
 !
 !  magnetic field components at one point (=pt)
 !
@@ -4925,6 +4948,7 @@ module Magnetic
         idiag_bmx=0; idiag_bmy=0; idiag_bmz=0; idiag_ebmz=0
         idiag_jmx=0; idiag_jmy=0; idiag_jmz=0; idiag_jmbmz=0; idiag_kmz=0
         idiag_bmzph=0; idiag_bmzphe=0
+        idiag_bcosphz=0; idiag_bsinphz=0
         idiag_bx2mz=0; idiag_by2mz=0; idiag_bz2mz=0
         idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
         idiag_jxmxy=0; idiag_jymxy=0; idiag_jzmxy=0
@@ -5023,6 +5047,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jmz',idiag_jmz)
         call parse_name(iname,cname(iname),cform(iname),'bmzph',idiag_bmzph)
         call parse_name(iname,cname(iname),cform(iname),'bmzphe',idiag_bmzphe)
+        call parse_name(iname,cname(iname),cform(iname),'bcosphz',idiag_bcosphz)
+        call parse_name(iname,cname(iname),cform(iname),'bsinphz',idiag_bsinphz)
         call parse_name(iname,cname(iname),cform(iname),'ebmz',idiag_ebmz)
         call parse_name(iname,cname(iname),cform(iname),'jmbmz',idiag_jmbmz)
         call parse_name(iname,cname(iname),cform(iname),'kmz',idiag_kmz)
@@ -5242,6 +5268,8 @@ module Magnetic
         write(3,*) 'i_jmz=',idiag_jmz
         write(3,*) 'i_bmzph=',idiag_bmzph
         write(3,*) 'i_bmzphe=',idiag_bmzphe
+        write(3,*) 'i_bcosphz=',idiag_bcosphz
+        write(3,*) 'i_bsinphz=',idiag_bsinphz
         write(3,*) 'i_ebmz=',idiag_ebmz
         write(3,*) 'i_jmbmz=',idiag_jmbmz
         write(3,*) 'i_kmz=',idiag_kmz
