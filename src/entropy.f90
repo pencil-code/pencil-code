@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.547 2008-04-23 22:25:16 steveb Exp $
+! $Id: entropy.f90,v 1.548 2008-04-24 19:11:53 steveb Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -222,7 +222,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.547 2008-04-23 22:25:16 steveb Exp $")
+           "$Id: entropy.f90,v 1.548 2008-04-24 19:11:53 steveb Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -2622,15 +2622,6 @@ module Entropy
         call dot(p%glnTT,glnThcond,g2)
         thdiff = p%rho1*hcond * (p%del2lnTT + g2)
       endif  ! hcond0/=0
-
-!      write(*,*) "rho1 --- ", p%rho1
-!      write(*,*) "hcond --- ", hcond
-!      write(*,*) "cp1 ---", p%cp1
-!      write(*,*) "chix --- ",chix
-!      write(*,*) "glnthcond --- ", glnThcond
-!      write(*,*) "g2 --- ", g2
-!      write(*,*) "thdiff --- ",thdiff
-
 !
 !  Write out hcond z-profile (during first time step only)
 !
