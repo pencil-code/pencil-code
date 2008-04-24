@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.69 2008-04-23 13:32:51 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.70 2008-04-24 11:20:01 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -174,11 +174,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.69 2008-04-23 13:32:51 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.70 2008-04-24 11:20:01 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.69 2008-04-23 13:32:51 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.70 2008-04-24 11:20:01 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1945,25 +1945,28 @@ module Chemistry
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
+!  Natalia thoughts
+! REMEMBER!!! I removed the last term species_constants(k,iaa1(6))/T_local in the decomposition!!!!!!!!
+!
 
         do k=1,nchemspec
           T_low=species_constants(k,iTemp1)
           T_mid=species_constants(k,iTemp2)
           T_up= species_constants(k,iTemp3)
          do i=1,nx
-          T_local=T_cgs(i)
+          T_local=(T_cgs(i))
            if (T_local >=T_low .and. T_local <= T_mid) then
                tmp=0. 
                do j=1,5
                 tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1)/j 
                enddo
-              H0_RT(i,k)=tmp+species_constants(k,iaa1(6))/T_local
+              H0_RT(i,k)=tmp!+species_constants(k,iaa1(6))/T_local
            else
                tmp=0. 
                do j=1,5 
                 tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/j 
                enddo
-             H0_RT(i,k)=tmp+species_constants(k,iaa2(6))/T_local
+             H0_RT(i,k)=tmp!+species_constants(k,iaa2(6))/T_local
            endif
          enddo
         enddo
@@ -2014,8 +2017,12 @@ module Chemistry
      do k=1,nchemspec
        dSR(:) =dSR(:)+(Sijm(k,reac)-Sijp(k,reac))*S0_R(:,k)
        dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*H0_RT(:,k)
+!print*,maxval(dSR(:)),maxval(dHRT(:)),k,maxval(p%lnTT)
+!print*,maxval(S0_R(:,k)),maxval(H0_RT(:,k))
        sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
      enddo
+
+!print*,'sum',maxval(dSR(:)),maxval(dHRT(:))
 
 
      Kp=exp(dSR-dHRT)
@@ -2023,7 +2030,7 @@ module Chemistry
      if (sum_tmp==0.) then
        Kc=Kp
      else
-       Kc=Kp*(p_atm/T_cgs/Rcal)**sum_tmp
+       Kc=Kp*(p_atm/T_cgs/Rgas_unit_sys)**sum_tmp
      endif
 
      kr(:)=kf(:)/Kc
@@ -2042,10 +2049,10 @@ module Chemistry
       do k=1,nchemspec
        prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm(k,reac)
       enddo
-       vreact_p(:,reac)=prod1/rho_cgs!*kf
-       vreact_m(:,reac)=prod2/rho_cgs!*kr
+       vreact_p(:,reac)=prod1/rho_cgs*kf*1e-10
+       vreact_m(:,reac)=prod2/rho_cgs*kr*1e-10
 
-!print*,'int', maxval(prod1/rho_cgs), maxval(prod2/rho_cgs), maxval(kf),maxval(kr)
+!print*,'int', maxval(prod2/rho_cgs), maxval(kf),maxval(kr)
 
     enddo
 
@@ -2088,12 +2095,18 @@ module Chemistry
             xdot=xdot+stoichio(k,j)*vreactions(:,j)  
           enddo
          if (lcheminp) then
-          xdot=xdot*species_constants(ichemspec(k),imass)
+!
+!  Natalia thoughts
+! this '-' is because of the possible mistake in stoichio(k,j)
+! it should be -stoichio(k,j)=-(Sijp-Sijm)
+! Axel, please check your case!!!!
+!
+          xdot=-xdot*species_constants(ichemspec(k),imass)
          endif
       p%DYDt_reac(:,k)=xdot*unit_time
 
-  !  print*,' '
-  !  print*,maxval(p%DYDt_reac(:,k)),k,maxval(p%TT),maxval(vreactions_p),maxval(vreactions_m)
+   !print*,' ',minval(p%DYDt_reac(:,k)),k
+    !print*,maxval(p%DYDt_reac(:,k)),k,maxval(p%TT),maxval(vreactions_p),maxval(vreactions_m)
   !  print*,''
   !stoichio(k,j),vreactions(10,j),vreactions_p(10,j)-vreactions_m(10,j)
      enddo 
