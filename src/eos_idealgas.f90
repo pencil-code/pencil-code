@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.105 2008-03-04 17:17:18 nbabkovs Exp $
+! $Id: eos_idealgas.f90,v 1.106 2008-04-24 23:08:03 steveb Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.105 2008-03-04 17:17:18 nbabkovs Exp $')
+           '$Id: eos_idealgas.f90,v 1.106 2008-04-24 23:08:03 steveb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -437,7 +437,11 @@ module EquationOfState
           lpencil_in(i_ss)=.true.
         endif
         if (lpencil_in(i_del2lnTT)) then
-          lpencil_in(i_del2lnrho)=.true.
+          if (ldensity_nolog) then
+            lpencil_in(i_del2rho)=.true.
+          else
+            lpencil_in(i_del2lnrho)=.true.
+          endif
           lpencil_in(i_del2ss)=.true.
         endif
         if (lpencil_in(i_glnTT)) then
@@ -454,7 +458,13 @@ module EquationOfState
           if (lpencil_in(i_ss)) lpencil_in(i_lnrho)=.true.
           if (lpencil_in(i_gss)) lpencil_in(i_glnrho)=.true.
           if (lpencil_in(i_hss)) lpencil_in(i_hlnrho)=.true.
-          if (lpencil_in(i_del2ss)) lpencil_in(i_del2lnrho)=.true.
+          if (lpencil_in(i_del2ss)) then
+            if (ldensity_nolog) then
+              lpencil_in(i_del2rho)=.true.
+            else
+              lpencil_in(i_del2lnrho)=.true.
+            endif
+          endif
           if (lpencil_in(i_del6ss)) lpencil_in(i_del6lnrho)=.true.
         else
           if (lpencil_in(i_cs2)) then
@@ -470,7 +480,11 @@ module EquationOfState
           lpencil_in(i_lnTT)=.true.
         endif
         if (lpencil_in(i_del2ss)) then
-          lpencil_in(i_del2lnrho)=.true.
+          if (ldensity_nolog) then
+            lpencil_in(i_del2rho)=.true.
+          else
+            lpencil_in(i_del2lnrho)=.true.
+          endif
           lpencil_in(i_del2lnTT)=.true.
         endif
         if (lpencil_in(i_gss)) then
@@ -490,7 +504,13 @@ module EquationOfState
           if (lpencil_in(i_lnTT)) lpencil_in(i_lnrho)=.true.
           if (lpencil_in(i_glnTT)) lpencil_in(i_glnrho)=.true.
           if (lpencil_in(i_hlnTT)) lpencil_in(i_hlnrho)=.true.
-          if (lpencil_in(i_del2lnTT)) lpencil_in(i_del2lnrho)=.true.
+          if (lpencil_in(i_del2lnTT)) then
+            if (ldensity_nolog) then
+              lpencil_in(i_del2rho)=.true.
+            else
+              lpencil_in(i_del2lnrho)=.true.
+            endif
+        endif
           if (lpencil_in(i_cs2)) lpencil_in(i_lnrho)=.true.
         else
           if (lpencil_in(i_cs2)) lpencil_in(i_lnTT)=.true.
@@ -502,7 +522,13 @@ module EquationOfState
         if (lpencil_in(i_pp)) lpencil_in(i_rho)=.true.
         if (leos_isothermal) then
           if (lpencil_in(i_ss)) lpencil_in(i_lnrho)=.true.
-          if (lpencil_in(i_del2ss)) lpencil_in(i_del2lnrho)=.true.
+          if (lpencil_in(i_del2ss)) then 
+            if (ldensity_nolog) then
+              lpencil_in(i_del2rho)=.true.
+            else
+              lpencil_in(i_del2lnrho)=.true.
+            endif
+          endif
           if (lpencil_in(i_gss)) lpencil_in(i_glnrho)=.true.
           if (lpencil_in(i_hss)) lpencil_in(i_hlnrho)=.true.
         else
@@ -535,6 +561,14 @@ module EquationOfState
 !
       intent(in) :: f
       intent(inout) :: p
+      real, dimension(nx) :: grhogrho,d2rho
+!
+!  Convert del2lnrho to rho-only terms; done here to avoid
+!  repeated calls to dot2
+!
+      if (ldensity_nolog) call dot2(p%grho,grhogrho)
+      d2rho=p%rho1*(p%del2rho+p%rho1*grhogrho)
+!
 !
 ! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG
 ! FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
@@ -557,7 +591,13 @@ module EquationOfState
           if (lpencil(i_ss)) p%ss=-(cp-cv)*(p%lnrho-lnrho0)
           if (lpencil(i_gss)) p%gss=-(cp-cv)*p%glnrho
           if (lpencil(i_hss)) p%hss=-(cp-cv)*p%hlnrho
-          if (lpencil(i_del2ss)) p%del2ss=-(cp-cv)*p%del2lnrho
+          if (lpencil(i_del2ss)) then
+            if (ldensity_nolog) then
+              p%del2ss=-(cp-cv)*d2rho
+            else
+              p%del2ss=-(cp-cv)*p%del2lnrho
+            endif
+          endif
           if (lpencil(i_del6ss)) p%del6ss=-(cp-cv)*p%del6lnrho
           if (lpencil(i_cs2)) p%cs2=cs20
         elseif (leos_localisothermal) then
@@ -577,7 +617,13 @@ module EquationOfState
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
         if (lpencil(i_glnTT)) p%glnTT=gamma1*p%glnrho+cv1*p%gss
-        if (lpencil(i_del2lnTT)) p%del2lnTT=gamma1*p%del2lnrho+cv1*p%del2ss
+        if (lpencil(i_del2lnTT)) then
+          if (ldensity_nolog) then
+            p%del2lnTT=gamma1*d2rho+cv1*p%del2ss
+          else
+            p%del2lnTT=gamma1*p%del2lnrho+cv1*p%del2ss
+          endif
+        endif
         if (lpencil(i_hlnTT)) p%hlnTT=gamma1*p%hlnrho+cv1*p%hss
 !
 !  work out thermodynamic quantities for given lnrho or rho and lnTT
@@ -587,7 +633,13 @@ module EquationOfState
           if (lpencil(i_lnTT)) p%lnTT=gamma1*(p%lnrho-lnrho0)+lnTT0
           if (lpencil(i_glnTT)) p%glnTT=gamma1*p%glnrho
           if (lpencil(i_hlnTT)) p%hlnTT=gamma1*p%hlnrho
-          if (lpencil(i_del2lnTT)) p%del2lnTT=gamma1*p%del2lnrho
+          if (lpencil(i_del2lnTT)) then
+            if (ldensity_nolog) then
+              p%del2lnTT=gamma1*d2rho
+            else
+              p%del2lnTT=gamma1*p%del2lnrho
+            endif
+          endif
           if (lpencil(i_cs2)) p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
         elseif (leos_isothermal) then
           if (lpencil(i_lnTT)) p%lnTT=lnTT0
@@ -612,7 +664,13 @@ module EquationOfState
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
         if (lpencil(i_gss)) p%gss=cv*(p%glnTT-gamma1*p%glnrho)
-        if (lpencil(i_del2ss)) p%del2ss=cv*(p%del2lnTT-gamma1*p%del2lnrho)
+        if (lpencil(i_del2ss)) then
+          if (ldensity_nolog) then
+            p%del2ss=cv*(p%del2lnTT-gamma1*d2rho)
+          else
+            p%del2ss=cv*(p%del2lnTT-gamma1*p%del2lnrho)
+          endif
+        endif
         if (lpencil(i_hss)) p%hss=cv*(p%hlnTT-gamma1*p%hlnrho)
         if (lpencil(i_del6ss)) call fatal_error("calc_pencils_eos","del6ss not available for ilnrho_lnTT")
 !
@@ -638,7 +696,13 @@ module EquationOfState
           if (lpencil(i_hlnTT)) p%hlnTT=0
           if (lpencil(i_del2lnTT)) p%del2lnTT=0
           if (lpencil(i_ss)) p%ss=-(cp-cv)*(p%lnrho-lnrho0)
-          if (lpencil(i_del2ss)) p%del2ss=-(cp-cv)*p%del2lnrho
+          if (lpencil(i_del2ss)) then
+            if (ldensity_nolog) then
+              p%del2ss=-(cp-cv)*d2rho
+            else 
+              p%del2ss=-(cp-cv)*p%del2lnrho
+            endif
+          endif
           if (lpencil(i_gss)) p%gss=-(cp-cv)*p%glnrho
           if (lpencil(i_hss)) p%hss=-(cp-cv)*p%hlnrho
           if (lpencil(i_pp)) p%pp=gamma11*p%rho*cs20
@@ -849,10 +913,13 @@ module EquationOfState
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
       use Cdata
+      use Sub, only: dot2
 !
+      type (pencil_case) :: p
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(in) :: del2lnrho,del2ss
       real, dimension(nx), intent(out) :: del2lnTT
+      real, dimension(nx) :: tmp
 !
       if (gamma1==0.) call fatal_error('temperature_laplacian','gamma=1 not allowed w/entropy')
 !
@@ -861,7 +928,12 @@ module EquationOfState
       if (pretend_lnTT) then
         del2lnTT=del2ss
       else
-        del2lnTT=gamma1*del2lnrho+cv1*del2ss
+        if (ldensity_nolog) then
+          call dot2(p%grho,tmp)
+          del2lnTT=gamma1*p%rho1*(p%del2rho+p%rho1*tmp)
+        else
+          del2lnTT=gamma1*del2lnrho+cv1*del2ss
+        endif
       endif
 !
       if (NO_WARN) print*,f !(keep compiler quiet)
