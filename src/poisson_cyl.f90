@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.4 2008-04-23 18:53:11 wlyra Exp $
+! $Id: poisson_cyl.f90,v 1.5 2008-04-24 09:09:49 wlyra Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -36,15 +36,16 @@ module Poisson
   implicit none
 
   real :: kmax=0.0
-  logical :: lrazor_thin=.true.,lsolve_bessel=.true.,lsolve_cyl2cart=.false.
-  logical :: lsolve_direct=.false.
+  logical :: lrazor_thin=.true.,lsolve_bessel=.false.,lsolve_cyl2cart=.false.
+  logical :: lsolve_direct=.false.,lsolve_logspirals=.false.
+  character (len=labellen) :: ipoisson_method='nothing'
 
   include 'poisson.h'
 
   namelist /poisson_init_pars/ &
-       kmax,lrazor_thin,lsolve_bessel,lsolve_cyl2cart,lsolve_direct
+       kmax,lrazor_thin,ipoisson_method
   namelist /poisson_run_pars/ &
-       kmax,lrazor_thin,lsolve_bessel,lsolve_cyl2cart,lsolve_direct
+       kmax,lrazor_thin,ipoisson_method
 
   real, dimension(nx,ny,nx,nygrid) :: green_grid
   real, dimension(nx,nx,ny) :: bessel_grid
@@ -86,28 +87,39 @@ module Poisson
         call fatal_error('initialize_poisson','')
       endif
 !
-      if (lsolve_cyl2cart) then 
-        lsolve_bessel=.false.
-        lsolve_direct=.false.
-      endif
-!
-      if (lsolve_bessel) then 
-        lsolve_cyl2cart=.false.
-        lsolve_direct=.false.
-      endif
-!
-      if (lsolve_direct) then 
-        lsolve_bessel=.false.
-        lsolve_cyl2cart=.false.
-      endif
-!
-      if ((.not.lsolve_bessel).and.(.not.lsolve_cyl2cart)&
-           .and.(.not.lsolve_direct)) then
-        if (lroot) print*,'initialize_poisson: '//&
-             'neither lsolve_bessel nor lsolve_cyl2cart nor lsolve_direct'//&
-             'are switched on. Choose one of them'
+      select case(ipoisson_method)
+
+      case('bessel')
+        if (lroot) print*,'Solving the cylindrical '//&
+             'Poisson equation by Bessel functions'
+        lsolve_bessel    =.true.
+
+      case('cyl2cart')
+        if (lroot) print*,'Solving the cylindrical '//&
+             'Poisson equation by transforming to a periodic '//&
+             'Cartesian grid and applying Fourier transforms there'
+        lsolve_cyl2cart  =.true.
+
+      case('directsum')
+        if (lroot) print*,'Solving the cylindrical '//&
+             'Poisson equation by direct summation'
+        lsolve_direct    =.true.
+
+      case('logspirals')
+        if (lroot) print*,'Solving the cylindrical '//&
+             'Poisson equation by logarithmic spirals'
+        lsolve_logspirals=.true.
+
+      case default
+        !
+        !  Catch unknown values
+        !
+        if (lroot) print*, 'initialize_poisson: '//&
+             'No such value for ipoisson_method: ',&
+             trim(ipoisson_method)
         call fatal_error('initialize_poisson','')
-      endif
+!
+      endselect
 !
 ! Keep the notation consistent
 !
