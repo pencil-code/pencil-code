@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.70 2008-04-24 11:20:01 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.71 2008-04-25 15:32:40 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -174,11 +174,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.70 2008-04-24 11:20:01 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.71 2008-04-25 15:32:40 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.70 2008-04-24 11:20:01 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.71 2008-04-25 15:32:40 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -587,8 +587,8 @@ module Chemistry
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) ::  cp_R_spec
-      real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nuk_nuj, nu_dyn
+   !   real, dimension (mx,my,mz) ::   Cp_test, Cp_test_full
+      real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nuk_nuj, nu_dyn, cp_R_spec
       real, dimension (mx,my,mz,nchemspec,nchemspec) :: Phi
       real, dimension (mx,my,mz,nchemspec) :: species_cond
 !
@@ -624,9 +624,11 @@ module Chemistry
             mu1_full=0.
               do k=1,nchemspec
                 mu1_full(:,:,:)=mu1_full(:,:,:)+f(:,:,:,ichemspec(k)) &
-                  /species_constants(ichemspec(k),imass)
+                  /species_constants(k,imass)
               enddo
               mu1_full=mu1_full*unit_mass
+
+     
 
 
 !
@@ -634,55 +636,72 @@ module Chemistry
 !
            do k=1,nchemspec 
              XX_full(:,:,:,k)=f(:,:,:,ichemspec(k))*unit_mass &
-              /species_constants(ichemspec(k),imass)/mu1_full(:,:,:)
+              /species_constants(k,imass)/mu1_full(:,:,:)
            enddo
-
 
 
 !
 !  Specific heat at constant pressure
 !
-         cp_full=0.
-         cv_full=0.
-         cvspec_full=0.
-   
+
+          cp_full=0.
+          cv_full=0.
+      !    Cp_test_full=0.
+
+
            do k=1,nchemspec
+
              T_low=species_constants(k,iTemp1)
              T_mid=species_constants(k,iTemp2)
              T_up= species_constants(k,iTemp3)
-            do i=1,mx
-             do n=1,mz
-               do m=1,my
 
+             do n=1,mz
+              do m=1,my
+
+              do i=1,mx
                  T_local=exp(f(i,m,n,ilnTT))*unit_temperature 
                   if (T_local >=T_low .and. T_local <= T_mid) then
-                   cp_R_spec(i)=0. 
+                   cp_R_spec(i,m,n)=0. 
                     do j=1,5
-                     cp_R_spec(i)=cp_R_spec(i)+species_constants(k,iaa1(j))*T_local**(j-1) 
+                     cp_R_spec(i,m,n)=cp_R_spec(i,m,n)+species_constants(k,iaa1(j))*T_local**(j-1) 
                     enddo
-                   cvspec_full(i,m,n,k)=cp_R_spec(i)-1.
-                   cp_R_spec(i)=cp_R_spec(i)/species_constants(k,imass)
-                   cvspec_full(i,m,n,k)=cvspec_full(i,m,n,k)/species_constants(k,imass)*Rgas
-
+                     cvspec_full(i,m,n,k)=cp_R_spec(i,m,n)-1.
+               !      Cp_test(i,m,n)=cp_R_spec(i,m,n)
                   else
-                   cp_R_spec(i)=0.
+                    cp_R_spec(i,m,n)=0.
                     do j=1,5 
-                     cp_R_spec(i)=cp_R_spec(i)+species_constants(k,iaa2(j))*T_local**(j-1) 
+                     cp_R_spec(i,m,n)=cp_R_spec(i,m,n)+species_constants(k,iaa2(j))*T_local**(j-1) 
                     enddo
-                   cvspec_full(i,m,n,k)=cp_R_spec(i)-1.
-                   cp_R_spec(i)=cp_R_spec(i)/species_constants(k,imass)
-                   cvspec_full(i,m,n,k)=cvspec_full(i,m,n,k)/species_constants(k,imass)*Rgas
+                     cvspec_full(i,m,n,k)=cp_R_spec(i,m,n)-1.
                   endif
-
-                cp_full(i,m,n)=cp_full(i,m,n)+f(i,m,n,ichemspec(k))*cp_R_spec(i)*Rgas
-                cv_full(i,m,n)=cv_full(i,m,n)+f(i,m,n,ichemspec(k))*cvspec_full(i,m,n,k)
 
               enddo
              enddo
             enddo
 
-           enddo
 
+          !   print*,maxval(cp_R_spec(:,:,:))/(maxval(cp_R_spec(:,:,:))-1.)
+
+                cp_full(:,:,:)=cp_full(:,:,:)+f(:,:,:,ichemspec(k))  &
+                       *cp_R_spec(:,:,:)/species_constants(k,imass)*Rgas
+                cv_full(:,:,:)=cv_full(:,:,:)+f(:,:,:,ichemspec(k))  &
+                       *cvspec_full(:,:,:,k)/species_constants(k,imass)*Rgas
+
+             !   Cp_test_full(:,:,:)=Cp_test_full(:,:,:) &
+             !     +XX_full(:,:,:,k)*Cp_test(:,:,:)*Rgas
+
+              !  Cp_test_full(:,:,:)=Cp_test_full(:,:,:)+ &
+              !       f(:,:,:,ichemspec(k))*Cp_test(:,:,:)*Rgas
+
+            !  print*, maxval(cp_full(:,:,:)/cv_full(:,:,:)), &
+              !maxval(cp_R_spec(:,:,:)/cvspec_full(:,:,:,k))
+
+
+          ! print*,maxval(Cp_test_full),k,maxval(XX_full(:,:,:,k)),maxval(Cp_test) 
+
+          ! print*,maxval(Cp_test_full),k,maxval(f(:,:,:,ichemspec(k))),maxval(Cp_test)
+
+           enddo
 
 
 !
@@ -705,7 +724,7 @@ module Chemistry
              do j=1,nchemspec
                 tmp_sum(:,:,:)=tmp_sum(:,:,:) &
                   +f(:,:,:,ichemspec(j))*unit_mass &
-                  /species_constants(ichemspec(j),imass) &
+                  /species_constants(j,imass) &
                   /Bin_Diff_coef(:,:,:,j,k)
              enddo
               Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k))) &
@@ -729,8 +748,8 @@ module Chemistry
 
            do k=1,nchemspec
              do j=1,nchemspec
-               mk_mj=species_constants(ichemspec(k),imass) &
-                    /species_constants(ichemspec(j),imass)
+               mk_mj=species_constants(k,imass) &
+                    /species_constants(j,imass)
                nuk_nuj(:,:,:)=species_viscosity(:,:,:,k) &
                               /species_viscosity(:,:,:,j)
                Phi(:,:,:,k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
@@ -749,7 +768,8 @@ module Chemistry
            nu_full=nu_dyn/rho_full
 
        endif
-  
+
+ 
 !
 !  Artificial Viscosity of a mixture
 !
@@ -789,12 +809,14 @@ module Chemistry
 
            do k=1,nchemspec 
              species_cond(:,:,:,k)=(species_viscosity(:,:,:,k)) &
-                                  /species_constants(ichemspec(k),imass)
+                /(species_constants(k,imass)/unit_mass)*15./4.*Rgas
             tmp_sum=tmp_sum+XX_full(:,:,:,k)*species_cond(:,:,:,k)
             tmp_sum2=tmp_sum2+XX_full(:,:,:,k)/species_cond(:,:,:,k)
            enddo
 
            chi_full=0.5*(tmp_sum+1./tmp_sum2)/rho_full/cp_full
+
+        !   print*,maxval(0.5*(tmp_sum+1./tmp_sum2)*1e4/Rgas*Rgas_unit_sys)
 
         else
          call stop_it('This case works only for cgs units system!')
@@ -2049,8 +2071,8 @@ module Chemistry
       do k=1,nchemspec
        prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm(k,reac)
       enddo
-       vreact_p(:,reac)=prod1/rho_cgs*kf*1e-10
-       vreact_m(:,reac)=prod2/rho_cgs*kr*1e-10
+       vreact_p(:,reac)=prod1/rho_cgs*kf
+       vreact_m(:,reac)=prod2/rho_cgs*kr
 
 !print*,'int', maxval(prod2/rho_cgs), maxval(kf),maxval(kr)
 
@@ -2316,7 +2338,6 @@ module Chemistry
 
      ! print*,nu_spec(k),(unit_mass/unit_length/unit_time)
 
-    !    print*, species_viscosity(10,10,3,k)
 
       enddo
 
@@ -2417,9 +2438,11 @@ module Chemistry
         specie_string=trim(ChemInpLine(1:StopInd_1-1)) 
         tmp_string=trim(ChemInpLine(1:1)) 
 
+    
+
         if (tmp_string == '!' .or. tmp_string == ' ') then
         else
-
+         print*,specie_string,tmp_string
          call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
 
             if (found_specie) then
@@ -2430,9 +2453,13 @@ module Chemistry
                StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
                StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)'), YY_k  
-                       print*, ' volume fraction, %,    ', YY_k
-               air_mass=air_mass+species_constants(ind_chem,imass)
- 
+                  print*, ' volume fraction, %,    ', YY_k, species_constants(ind_chem,imass)
+
+               air_mass=air_mass+YY_k*0.01/species_constants(ind_chem,imass)
+
+            
+
+
                if (StartInd==80) exit
 
                stor1(k)=ind_chem
@@ -2442,27 +2469,28 @@ module Chemistry
 
             endif
       enddo dataloop
-
 !
 ! Stop if air.dat is empty
 !
 
       1000  if (emptyFile)  call stop_it('The input file tran.dat was empty!')
 
-        do j=1,k-1 
-         f(:,:,:,ichemspec(stor1(j)))=stor2(j)*species_constants(stor1(j),imass)/air_mass*0.01
+        air_mass=1./air_mass
 
+
+        do j=1,k-1 
+         f(:,:,:,ichemspec(stor1(j)))=stor2(j)*0.01
         enddo 
 
-       TT=600.!(273.+15.)
+       TT=300.!(273.+15.)
 
        f(:,:,:,5)=log(TT/unit_temperature)
 
-       f(:,:,:,4)=log((101325.*2./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
+       f(:,:,:,4)=log((9.81e5/(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
 
       if (lroot) print*, 'Air temperature, K', TT
-      if (lroot) print*, 'Air density, g/cm^3', 101325./(k_B_cgs/m_u_cgs)*air_mass/TT
-
+      if (lroot) print*, 'Air density, g/cm^3', 9.81e5/(k_B_cgs/m_u_cgs)*air_mass/TT
+      if (lroot) print*, 'Air mean weight, g/mol', air_mass
 
 
       close(file_id)
