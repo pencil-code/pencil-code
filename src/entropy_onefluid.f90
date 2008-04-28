@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.25 2007-10-06 13:56:53 ajohan Exp $
+! $Id: entropy_onefluid.f90,v 1.26 2008-04-28 18:27:12 steveb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.25 2007-10-06 13:56:53 ajohan Exp $")
+           "$Id: entropy_onefluid.f90,v 1.26 2008-04-28 18:27:12 steveb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1554,7 +1554,7 @@ module Entropy
       endif
 ! del2lnTT
       if (lpencil(i_del2lnTT)) then
-          call temperature_laplacian(f,p%del2lnrho,p%del2ss,p%del2lnTT)
+          call temperature_laplacian(f,p)
       endif
 ! del6ss
       if (lpencil(i_del6ss)) then
