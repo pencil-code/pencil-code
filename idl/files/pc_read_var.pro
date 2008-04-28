@@ -62,7 +62,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.65 2008-04-23 12:15:12 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.66 2008-04-28 09:47:08 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -123,7 +123,7 @@ COMPILE_OPT IDL2,HIDDEN
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
   if (n_elements(par2) eq 0 and magic) then begin
     spawn, 'ls '+datadir+'/param2.nml', dummy, exit_status=exit_status
-    if (not exit_status) then begin
+    if (exit_status eq 0) then begin
       pc_read_param, object=param2, /param2, dim=dim, datadir=datadir, /quiet
     endif else begin
       print, 'Could not find '+datadir+'/param2. This may give problems with'+ $
