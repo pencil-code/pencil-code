@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.72 2008-04-03 12:50:49 ajohan Exp $
+! $Id: general.f90,v 1.73 2008-04-28 21:42:13 wlyra Exp $
 
 module General
 
@@ -21,7 +21,9 @@ module General
   public :: input_persistent_general, output_persistent_general
   public :: find_index_range
 
-  public :: spline,tridag,complex_phase,erfcc,besselj_nu_int
+  public :: spline,tridag,complex_phase,erfcc
+  public :: besselj_nu_int,calc_complete_elliptic_integrals
+
 
   include 'record_types.h'
 
@@ -1042,26 +1044,63 @@ module General
 !
 !  06-03-08/wlad: coded
 !
-      real, dimension(nygrid) :: angle,a
+      real, dimension(:),allocatable :: angle,a
       real :: arg,res,d_angle
-      integer :: i,nu
+      integer :: i,nu,nnt
 !
       intent(in)  :: nu,arg
       intent(out) :: res
 !
-      d_angle=pi/max(nygrid-1,1)
+      nnt=max(100,nygrid)
+      allocate(angle(nnt))
+      allocate(a(nnt))
+!
+      d_angle=pi/(nnt-1)
 !
       do i=1,nygrid
         angle(i)=(i-1)*d_angle
       enddo
       a=cos(arg*sin(angle)-nu*angle)
 !
-      if (nygrid>=3) then
-        res=pi_1*d_angle*(sum(a(2:nygrid-1))+.5*(a(1)+a(nygrid)))
-      else
-        stop 'besselj_nu_int : too few points to integrate'
-      endif
+      res=pi_1*d_angle*(sum(a(2:nnt-1))+.5*(a(1)+a(nnt)))
 !
     endsubroutine besselj_nu_int
+!*****************************************************************************
+    subroutine calc_complete_elliptic_integrals(mu,Kappa_mu,E_mu)
+!
+      use Cdata, only : pi
+!
+      real, dimension(:),allocatable :: angle,a_K,a_E
+      real :: mu,d_angle,Kappa_mu
+      real, optional :: E_mu
+      integer :: i,nnt
+!        
+      nnt=max(100,nygrid)
+      allocate(angle(nnt))
+      allocate(a_K(nnt))
+      if (present(E_mu)) allocate(a_E(nnt))
+!
+      d_angle=.5*pi/(nnt-1)
+      do i=1,nnt
+        angle(i)=(i-1)*d_angle
+      enddo
+!
+! Elliptic integral of first kind
+!
+      a_K=d_angle/sqrt(1-(mu*sin(angle))**2)
+      if (mu .eq. 1 ) then
+        Kappa_mu=0
+      else
+        Kappa_mu=sum(a_k(2:nnt-1)) + .5*(a_k(1)+a_k(nnt))
+      endif
+!
+! Elliptic integral of second kind
+!
+     if (present(E_mu)) then
+        a_E=d_angle*sqrt(1-(mu*sin(angle))**2)
+        E_mu=sum(a_e(2:nnt-1)) + .5*(a_e(1)+a_e(nnt))
+      endif
+!
+    endsubroutine calc_complete_elliptic_integrals
 !*****************************************************************************
 endmodule General
