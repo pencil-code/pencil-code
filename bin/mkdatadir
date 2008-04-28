@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.67 2007-12-09 17:07:39 ajohan Exp $
+#  $Id: mkdatadir,v 1.68 2008-04-28 12:00:18 brandenb Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -27,6 +27,9 @@ else if ($hn =~ fend*.dcsc.ku.dk) then
 else if (($hn =~ h05*) && ($USER =~ brandenb)) then
   echo "special entry for Axel"
   set str='s/afs\/pdc.kth.se\/home\/b/scratch/g'
+else if (($hn =~ *norlx01*) && ($USER =~ brandenb)) then
+  echo "special entry for Axel"
+  set str='s/afs\/physto.se\/home\/b/scratch/g'
 else if (($hn =~ fe*) && ($USER =~ brandenb)) then
   echo "special entry for Axel"
   set str='s/people\/disk2/wkspace3/g'
