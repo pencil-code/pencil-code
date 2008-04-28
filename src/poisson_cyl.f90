@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.5 2008-04-24 09:09:49 wlyra Exp $
+! $Id: poisson_cyl.f90,v 1.6 2008-04-28 22:01:20 wlyra Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -37,8 +37,10 @@ module Poisson
 
   real :: kmax=0.0
   logical :: lrazor_thin=.true.,lsolve_bessel=.false.,lsolve_cyl2cart=.false.
-  logical :: lsolve_direct=.false.,lsolve_logspirals=.false.
+  logical :: lsolve_direct=.false.,lsolve_logspirals=.false.,lsolve_relax_sor=.false.
   character (len=labellen) :: ipoisson_method='nothing'
+
+  integer, parameter :: mmax=8 !eight harmonics for the azimuthal direction
 
   include 'poisson.h'
 
@@ -47,14 +49,29 @@ module Poisson
   namelist /poisson_run_pars/ &
        kmax,lrazor_thin,ipoisson_method
 
-  real, dimension(nx,ny,nx,nygrid) :: green_grid
+!
+! For the colvolution case, green functions
+!
+
+  real, dimension(nx,ny,nxgrid,nygrid) :: green_grid_2D
+!
+! For the Bessel and Hankel transforms, the grid of Bessel functions
+!
   real, dimension(nx,nx,ny) :: bessel_grid
-  real, dimension(nx) :: rad,kr_fft
+!
+! For the 3D mesh relaxation, the functions for the border
+!
+  real, dimension(nx,nz,nxgrid,nzgrid,0:mmax) :: Legendre_Qmod
+  real, dimension(ny,nygrid,0:mmax) :: fourier_cosine_terms
+!
+  real, dimension(nx,ny,nz) :: phi_previous_step,rhs_previous_step
+  real, dimension(nx) :: rad,kr_fft,sqrtrad_1,rad1
   real, dimension(ny) :: tht
+  real, dimension(nz) :: zed
   integer, dimension(nygrid) :: m_fft
   integer :: nr,nth,nkr,nkt,nthgrid
   integer :: nktgrid,nkhgrid
-  real :: dr,dkr,dr1,dth,dth1
+  real :: dr,dkr,dr1,dth,dth1,dz1
   real :: r0,theta0,rn,theta1
 
   contains
@@ -75,40 +92,33 @@ module Poisson
         call fatal_error('initialize_poisson','')
       endif
 !
-      if (lrazor_thin) then
-        if (nzgrid/=1) then
-          if (lroot) print*, 'initialize_poisson: '//&
-               'razor-thin approximation only works with nzgrid==1'
-          call fatal_error('initialize_poisson','')
-        endif
-      else
-        if (lroot) print*, 'initialize_poisson: '//&
-             'not yet implemented for 3D cylindrical runs'
-        call fatal_error('initialize_poisson','')
-      endif
-!
       select case(ipoisson_method)
 
       case('bessel')
-        if (lroot) print*,'Solving the cylindrical '//&
-             'Poisson equation by Bessel functions'
+        if (lroot) print*,'Selecting the cylindrical '//&
+             'Poisson solver that employs Bessel functions'
         lsolve_bessel    =.true.
 
       case('cyl2cart')
-        if (lroot) print*,'Solving the cylindrical '//&
-             'Poisson equation by transforming to a periodic '//&
-             'Cartesian grid and applying Fourier transforms there'
+        if (lroot) print*,'Selecting the cylindrical '//&
+             'Poisson solver that transforms to a periodic '//&
+             'Cartesian grid and applies Fourier transforms there'
         lsolve_cyl2cart  =.true.
 
       case('directsum')
-        if (lroot) print*,'Solving the cylindrical '//&
-             'Poisson equation by direct summation'
+        if (lroot) print*,'Selecting the cylindrical '//&
+             'Poisson solver that performs direct summation'
         lsolve_direct    =.true.
 
       case('logspirals')
-        if (lroot) print*,'Solving the cylindrical '//&
-             'Poisson equation by logarithmic spirals'
+        if (lroot) print*,'Selecting the cylindrical '//&
+             'Poisson solver that uses the method of logarithmic spirals'
         lsolve_logspirals=.true.
+
+      case('sor')
+        if (lroot) print*,'Selecting the cylindrical '//&
+             'Poisson solver that performs mesh-relaxation with SOR'
+        lsolve_relax_sor=.true.
 
       case default
         !
@@ -121,19 +131,39 @@ module Poisson
 !
       endselect
 !
+      if (lrazor_thin) then
+        if (nzgrid/=1) then
+          if (lroot) print*, 'initialize_poisson: '//&
+               'razor-thin approximation only works with nzgrid==1'
+          call fatal_error('initialize_poisson','')
+        endif
+      else
+        if (.not.lsolve_relax_sor) then 
+          if (lroot) print*, 'initialize_poisson: '//&
+               'not yet implemented for 3D cylindrical runs'
+          call fatal_error('initialize_poisson','')
+        endif
+      endif
+!
 ! Keep the notation consistent
 !
       rad=x(l1:l2)     ; tht=y(m1:m2)
       nr =nx           ; nth=ny
-      r0=rad(1)        ; theta0=xyz0(2)+.5*dth 
+      r0=rad(1)        ; theta0=xyz0(2)+.5*dth
       rn=rad(nr)       ; theta1=xyz1(2)-.5*dth
       dr=dx            ; dth=dy
       dr1=1./dr        ; dth1=1./dth
       nkr=nr           ; nkt=ny
       nktgrid=nygrid   ; nthgrid=nygrid
 !
+! For the 3D with SOR
+!
+      zed=z(n1:n2)     ; dz1=1./dz
+      sqrtrad_1=1./sqrt(rad)
+      rad1 = 1./rad
+!
 ! Pre-calculate the radial wavenumbers
-!           
+!         
       do i=1,nkr
         kr_fft(i)=.5*(i-1)/(nr*dr)
       enddo
@@ -143,8 +173,8 @@ module Poisson
 !
       m_fft=cshift((/(i-(nktgrid+1)/2,i=0,nktgrid-1)/),+(nktgrid+1)/2)
 !
-! Pre-calculate the bessel functions of the grid....
-! This is VERY time consuming
+! This ones below are VERY time consuming
+! Pre-calculate the special functions of the grid....
 !
       if (lsolve_bessel) &
            call calculate_cross_bessel_functions
@@ -152,15 +182,19 @@ module Poisson
       if (lsolve_direct) &
            call calculate_cross_green_functions
 !
+      if (lsolve_relax_sor) &
+           call calculate_cross_legendre_functions
+!
     endsubroutine initialize_poisson
 !***********************************************************************
-    subroutine inverse_laplacian(phi)
+    subroutine inverse_laplacian(phi,f)
 !
 !  Dispatch solving the Poisson equation to inverse_laplacian_fft
 !  or inverse_laplacian_semispectral, based on the boundary conditions
 !
 !  17-jul-2007/wolf: coded wrapper
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: phi
 !
       intent(inout) :: phi
@@ -171,7 +205,9 @@ module Poisson
         call inverse_laplacian_cyl2cart(phi)
       else if (lsolve_direct) then
         call inverse_laplacian_directsum(phi)
-      else
+      else if (lsolve_relax_sor) then
+        call inverse_laplacian_sor(phi,f)
+      else 
         call fatal_error("inverse_laplacian","no solving method given")
       endif
 !
@@ -228,9 +264,9 @@ module Poisson
       integer :: nnxgrid,nnygrid
 !
       if (nx/=nygrid) &
-           call fatal_error("","currently only works for nx=nygrid")
+           call fatal_error("inverse_laplacian_cyl2cart","currently only works for nx=nygrid")
       if (nzgrid/=1)  &
-           call fatal_error("","currently only works for 2D simulations")
+           call fatal_error("inverse_laplacian_cyl2cart","currently only works for 2D simulations")
 !
 ! Expanded cartesian axes
 !
@@ -304,8 +340,8 @@ module Poisson
 !
 ! this should never happen, but is here for warning
 !
-            if (ir1.lt.1 ) call fatal_error("","cyl2cart: ir1<1")
-            if (ir2.gt.nr) call fatal_error("","cyl2cart: ir2>nr")
+            if (ir1.lt.1 ) call fatal_error("cyl2cart","ir1<1")
+            if (ir2.gt.nr) call fatal_error("cyl2cart","ir2>nr")
 !
             theta=atan2(yc(m),xc(i))
             ip1=floor((theta - theta0)*dth1)+1;ip2=ip1+1
@@ -356,7 +392,7 @@ module Poisson
             nb1(ikx,iky) = 0.0
           else
             if (.not.lrazor_thin) then
-              call fatal_error("","3d case not implemented yet")
+              call fatal_error("inverse_laplacian_cyl2cart","3d case not implemented yet")
 !
 !  Razor-thin approximation. Here we solve the equation
 !    del2Phi=4*pi*G*Sigma(x,y)*delta(z)
@@ -417,10 +453,10 @@ module Poisson
           ix1 = floor((xp-x0)*dxc1)+1 ; ix2 = ix1+1
           iy1 = floor((yp-y0)*dyc1)+1 ; iy2 = iy1+1
 !
-          if (ix1 .lt.  1)      call fatal_error("","ix1 lt 1")
-          if (iy1 .lt.  1)      call fatal_error("","iy1 lt 1")
-          if (ix2 .gt. nnxgrid) call fatal_error("","ix2 gt nnxgrid")
-          if (iy2 .gt. nnygrid) call fatal_error("","iy2 gt nnygrid")
+          if (ix1 .lt.  1)      call fatal_error("cyl2cart","ix1 lt 1")
+          if (iy1 .lt.  1)      call fatal_error("cyl2cart","iy1 lt 1")
+          if (ix2 .gt. nnxgrid) call fatal_error("cyl2cart","ix2 gt nnxgrid")
+          if (iy2 .gt. nnygrid) call fatal_error("cyl2cart","iy2 gt nnygrid")
 !
           delx=xp-     xc(ix1);fx=delx*dxc1
           dely=yp-yserial(iy1);fy=dely*dyc1
@@ -499,9 +535,9 @@ module Poisson
       real :: fac
 !
       if (nx/=nygrid) &
-           call fatal_error("","currently only works for nx=nygrid")
+           call fatal_error("inverse_laplacian_bessel","currently only works for nx=nygrid")
       if (nzgrid/=1)  &
-           call fatal_error("","currently only works for 2D simulations")
+           call fatal_error("inverse_laplacian_bessel","currently only works for 2D simulations")
       nnghost=npoint-nghost
 !
 ! Fourier transform in theta 
@@ -566,12 +602,12 @@ module Poisson
       real :: fac
 !
       if (nzgrid/=1)  &
-           call fatal_error("","currently only works for 2D simulations")
+           call fatal_error("inverse_laplacian_directsum","currently only works for 2D simulations")
       nnghost=npoint-nghost
 
       !transfer fac to the green grid
       !fac=-.25*pi_1 !actually, -G = rhs_poisson_const/4*pi
-
+!
       if (lmpicomm) then
 !
 ! All processors send its density array to the root processor
@@ -612,7 +648,7 @@ module Poisson
 !
 ! the scaled green function already has the r*dr*dth term
 !
-        integrand=cross*green_grid(ir,ith,:,:)
+        integrand=cross*green_grid_2D(ir,ith,:,:)
 !
         phi(ir,ith,1:nz)=sum(                    &
              sum(integrand(2:nr-1,:)) +          &
@@ -624,6 +660,473 @@ module Poisson
 !
     endsubroutine inverse_laplacian_directsum
 !***********************************************************************
+    subroutine inverse_laplacian_sor(phi,f)
+!
+!  Solve the 3D Poisson equation in cylindrical coordinates by 
+!  using mesh-relaxation with the SOR algorithm. The borders have
+!  to be pre-computed. For this, we use the analytical expression
+!  of Cohl and Tohline (1999) using expansions in Legendre polinomials
+! 
+!  This is very expensive and does not need to be done every time. Just 
+!  when the potential has changed by some small threshold
+!
+!  23-04-08/wlad: coded
+!
+      use Mpicomm
+      use Sub, only: del2
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,ny,nz)  :: phi,rhs,b1,b1_rhs
+!      real, dimension (nx,ny,nz), save :: norm0
+      real, dimension (nx) :: norm0,norm
+      real, dimension (nx) :: a_band,b_band,c_band,d_band
+      real, dimension (nx) :: e_band,b_band1,del2phi
+      integer :: ir,ith,iz,im,i
+      logical :: lfirst_timestep
+      logical, dimension(nx,nz) :: lupdate
+      logical, dimension(nx,ny,nz) :: lupdate_grid
+      !logical, dimension(ny,nz,2) :: lupdate_radial_border
+      !logical, dimension(nx,ny,2) :: lupdate_vertical_border
+      logical, save :: lfirstcall=.true.!,lcompute_norm0=.true.
+!
+      if (nzgrid==1)  &
+           call fatal_error("inverse_laplacian_sor","This method uses the "//&
+           "discretized Poisson equation. It cannot be used for 2d in the r-phi plane")
+!
+      if (nprocz/=1) &
+           call fatal_error("inverse_laplacian_sor","Not yet implemented for z "//&
+           "parallelization. Put all processors in the azimuthal direction")
+! 
+! Upon re-starting, get the stored potential
+!
+      if ((it==1).and.(t.ne.0)) &
+           phi_previous_step=f(l1:l2,m1:m2,n1:n2,ipotself)
+!
+! Integrate the border. In the first time step, sets the potential to the whole grid
+! The call to check update is to make sure we really need to update the border
+!
+      rhs=phi
+      if (.not.lfirstcall) then
+        !if (lcompute_norm0) then 
+        do m=m1,m2;do n=n1,n2
+          ith=m-nghost;iz=n-nghost
+          call del2(f,ipotself,del2phi)
+          norm0=abs(del2phi - rhs_previous_step(:,ith,iz))
+          norm=abs(del2phi - rhs(:,ith,iz))
+          do i=l1,l2
+            ir=i-nghost
+            if (abs(norm(ir)-norm0(ir))/norm(ir) .lt. 1e-3) then 
+              lupdate_grid(ir,ith,iz)=.false.  
+            else
+              lupdate_grid(ir,ith,iz)=.true.  
+            endif
+            !print*,norm(ir),norm0(ir),abs(norm(ir)-norm0(ir))/norm(ir)
+          enddo
+        enddo;enddo
+      endif
+      rhs_previous_step=rhs
+!
+        !call check_update_border(rhs,f,&
+        !     lupdate_radial_border,lupdate_vertical_border,norm0)
+!
+      call get_border_values(rhs,phi,lfirstcall,lupdate_grid)
+!           lupdate_radial_border,lupdate_vertical_border)
+!
+! For the other time-steps, the potential is known, so use discretization 
+! of the 5-point formula (in fourier space) to determine the potential
+!
+      if (.not.lfirstcall) then
+!
+! Get the phi from the previous time step, apart from the newly updated boundaries
+!
+        if (nprocz >= 2) then 
+          if (ipz==0) then 
+            phi(2:nr-1,:,2:nz)=phi_previous_step(2:nr-1,:,2:nz)
+          elseif (ipz==nprocz-1) then 
+            phi(2:nr-1,:,1:nz-1)=phi_previous_step(2:nr-1,:,1:nz-1)
+          else
+            phi(2:nr-1,:,:)=phi_previous_step(2:nr-1,:,:)
+          endif
+        else
+          phi(2:nr-1,:,2:nz-1)=phi_previous_step(2:nr-1,:,2:nz-1)
+        endif
+!
+      endif
+!
+! Fourier transform the potential and the right-hand-side
+!
+      call transp(phi,'y'); b1=0.
+      call fourier_transform_x(phi,b1)
+      call transp(phi,'y');call transp(b1,'y')        
+!
+      call transp(rhs,'y'); b1_rhs=0.
+      call fourier_transform_x(rhs,b1_rhs)
+      call transp(rhs,'y');call transp(b1_rhs,'y')        
+!
+! Solve the five point matrix in fourier space
+!
+      a_band= dr1**2 - .5*dr1*rad1
+      c_band= dr1**2 + .5*dr1*rad1
+      d_band= dz1**2
+      e_band= dz1**2
+!
+      if (lroot.and.ip<=8) print*,'initializing the iterations '//&
+           'to solve the Poisson equation in the grid'
+!
+      do im=1,nkt
+!
+        b_band=-2*(dr1**2 + dz1**2) - m_fft(im+ipy*nkt)**2
+        b_band1=1/b_band
+!          
+! check the points that need updating, then call the five point solver, in both
+! real and imaginary parts
+!
+        !call check_update_grid(phi(:,im,:),rhs(:,im,:),a_band,b_band1,c_band,d_band,e_band,lupdate)
+        call five_point_solver(phi(:,im,:),rhs(:,im,:),&
+             a_band,b_band,b_band1,c_band,d_band,e_band,im,lupdate)
+!
+        !call check_update_grid(b1(:,im,:),b1_rhs(:,im,:),a_band,b_band1,c_band,d_band,e_band,lupdate)
+        call five_point_solver(b1(:,im,:),b1_rhs(:,im,:),&
+             a_band,b_band,b_band1,c_band,d_band,e_band,im,lupdate)
+!
+      enddo
+!
+! Fourier transform back to real space
+!
+      call transp(phi,'y');call transp(b1,'y')
+      call fourier_transform_x(phi,b1,linv=.true.)
+      call transp(phi,'y')
+!
+      lfirstcall=.false.
+!
+! Save the phi from the previous step
+!
+      phi_previous_step=phi
+!
+    endsubroutine inverse_laplacian_sor
+!*******************************************************************************
+    subroutine five_point_solver(lhs,rhs,&
+         a_band,b_band,b_band1,c_band,d_band,e_band,im,lupdate)
+    
+      real, dimension (nx,nz) :: lhs,rhs,lhs_old
+      real, dimension (nx) :: a_band,b_band,c_band,d_band,e_band,b_band1
+      real :: omega,threshold,norm,sig,norm_old,anorm,rjac,resid
+      integer :: n,i,iteration,im
+      logical, dimension(nx,nz) :: lupdate
+!
+! Spectral radius and omega 
+!
+      omega=1 ; threshold=1e-3
+      sig=1e5 ; norm=1e5
+      rjac=(cos(pi/nr) + (dr/dz)**2*cos(pi/nz))/(1+(dr/dz)**2)
+
+!
+      lhs_old=lhs
+!
+      iteration=0
+!
+      do while (sig .gt. threshold)
+        iteration=iteration+1
+        do n=2,nz-1
+          do i=2,nr-1
+            !chebychev : odd-even ordering
+            if (mod(n+i,2) .ne. (mod(iteration,2))) then
+              if (lupdate(i,n)) then
+                resid=  a_band(i)*lhs(i-1,n)+      &
+                        c_band(i)*lhs(i+1,n)+      &
+                        d_band(i)*lhs(i,n+1)+      &
+                        e_band(i)*lhs(i,n-1)+      & 
+                        b_band(i)*lhs(i,n) - rhs(i,n)
+                anorm=anorm+abs(resid)
+                lhs(i,n)=lhs(i,n)-omega*resid*b_band1(i)
+              endif
+            endif
+          enddo
+        enddo
+        
+        if (iteration==1) then 
+          omega=1./(1-.5 *rjac**2)
+        else
+          omega=1./(1-.25*rjac**2*omega)
+        endif
+!
+! error of the iteration
+!
+        norm_old=norm
+        norm=sum((lhs-lhs_old)**2)
+        sig=abs(norm-norm_old)/norm
+!
+      enddo
+!
+      !print*,'number of iterations',iteration,im
+!
+    endsubroutine five_point_solver
+!***********************************************************************
+    subroutine get_border_values(rhs,phi,lfirstcall,lupdate_grid)!&
+!         lupdate_radial_border,lupdate_vertical_border)
+!
+      use Mpicomm
+!
+      real, dimension (nx,ny,nz) :: rhs,phi,rhs_proc
+      real, dimension (nx,nygrid,nzgrid)  :: rhs_serial
+      logical :: lfirstcall
+      integer :: j,jy,jz,iydo,iyup,izdo,izup
+      integer :: ir,ith,iz,skipped
+      real    :: potential
+      logical, dimension(nx,ny,nz) :: lupdate_grid 
+      !logical, dimension(nx,ny,2) :: lupdate_vertical_border 
+      !logical, dimension(ny,nz,2) :: lupdate_radial_border
+!
+! Construct the serial density
+!
+      if (lmpicomm) then
+        if (.not.lroot) then
+          call mpisend_real(rhs,(/nx,ny,nz/),root,111)
+        else
+          do jy=0,nprocy-1
+            do jz=0,nprocz-1
+              j=jy+nprocy*jz
+              if (j/=0) then 
+                call mpirecv_real(rhs_proc,(/nx,ny,nz/),j,111)
+              else
+                rhs_proc=rhs
+              endif
+              iydo= jy  * ny + 1 ; izdo= jz  * nz + 1 
+              iyup=(jy+1)*ny     ; izup=(jz+1)*nz     
+              rhs_serial(:,iydo:iyup,izdo:izup)=rhs_proc
+            enddo
+          enddo
+        endif
+        call mpibcast_real(rhs_serial,(/nx,nygrid,nzgrid/))
+      else
+        rhs_serial(:,1:ny,1:nz)=rhs(:,1:ny,1:nz)
+      endif
+!
+! At the first time step, calculate the potential by integration, everywhere
+!
+      if (lfirstcall) then
+! 
+        if ((lroot).and.(ip<=8)) then 
+          print*,'get_border_values: integrating the distribution everywhere'
+          print*,'it will take a lot of time, so go grab a coffee...'
+        endif
+!
+        do ir=1,nr;do ith=1,ny;do iz=1,nz
+          call integrate_border(rhs_serial,ir,ith,iz,potential)
+          phi(ir,ith,iz)=potential
+        enddo;enddo;enddo
+!
+      else
+        skipped=0
+        if ((lroot).and.(ip<=8)) then 
+          print*,'get_border_values: integrating the border values only'
+        endif
+          !just recompute the border
+        do iz=1,nz;do ith=1,nth
+          !if (lupdate_radial_border(ith,iz,1)) then
+          if (lupdate_grid(1,ith,iz)) then 
+            call integrate_border(rhs_serial,1,ith,iz,potential)
+            phi(1,ith,iz)=potential
+          else
+            skipped=skipped+1
+            phi(1,ith,iz)=phi_previous_step(1,ith,iz)
+          endif
+        enddo;enddo
+        if ((lroot).and.(ip<=8)) print*,'done for ir=1'
+!
+        do iz=1,nz;do ith=1,nth
+!          if (lupdate_radial_border(ith,iz,2)) then
+          if (lupdate_grid(nr,ith,iz)) then 
+            call integrate_border(rhs_serial,nr,ith,iz,potential)
+            phi(nr,ith,iz)=potential
+          else
+            skipped=skipped+1
+            phi(nr,ith,iz)=phi_previous_step(nr,ith,iz)
+          endif
+        enddo;enddo
+        if ((lroot).and.(ip<=8)) print*,'done for ir=nr'
+!
+        if (ipz==0) then 
+          do ir=2,nr-1;do ith=1,nth
+!            if (lupdate_radial_border(ir,ith,1)) then
+            if (lupdate_grid(ir,ith,1)) then 
+              call integrate_border(rhs_serial,ir,ith,1,potential)
+              phi(ir,ith,1)=potential
+            else
+              skipped=skipped+1
+              phi(ir,ith,1)=phi_previous_step(ir,ith,1)
+            endif
+          enddo;enddo
+        endif
+        if ((lroot).and.(ip<=8)) print*,'done for iz=1'
+!
+        if (ipz==nprocz-1) then 
+          do ir=2,nr-1;do ith=1,nth
+!            if (lupdate_radial_border(ir,ith,2)) then
+            if (lupdate_grid(ir,ith,nz)) then 
+              call integrate_border(rhs_serial,ir,ith,nz,potential)
+              phi(ir,ith,nz)=potential
+            else
+              skipped=skipped+1
+              phi(ir,ith,nz)=phi_previous_step(ir,ith,nz)
+            endif
+          enddo;enddo
+        endif
+        if ((lroot).and.(ip<=8)) print*,'done for iz=nz'
+!
+        if ((lroot).and.(ip<=8)) &
+             print*,'border: skipped ',skipped,' of ',2*nth*(nz+nr-2)
+!
+      endif !lfirst_timestep
+
+    endsubroutine get_border_values
+!**********************************************************************************
+    subroutine integrate_border(rhs_serial,ir,ith,iz,potential)
+!
+      real, dimension(nx,nygrid,nzgrid) :: rhs_serial
+      real, dimension (nx) :: intr
+      real, dimension (nygrid) :: intp
+      real, dimension (nzgrid) :: intz
+!
+      real :: summation_over_harmonics,potential,fac
+      integer :: ir,ith,iz,ikr,ikt,ikz,im
+!
+! as rhs already the 4*pi*G factor built in, the factor -G/pi in front of
+! the integral becomes 1/(4*pi^2)
+!
+      fac=-.25*pi_1**2*sqrtrad_1(ir)
+!
+      do ikz=1,nzgrid
+        do ikt=1,nthgrid
+          do ikr=1,nr
+!
+            summation_over_harmonics=0
+! The Legendre function here is modified by including
+! the jacobian, the division by sqrt(rad) and the neumann
+! epsilon factor
+            do im=0,mmax
+              summation_over_harmonics=summation_over_harmonics+&
+                   Legendre_Qmod(ir,iz,ikr,ikz,im)*fourier_cosine_terms(ith,ikt,im)
+            enddo
+            intr(ikr)=rhs_serial(ikr,ikt,ikz)*summation_over_harmonics
+          enddo
+          intp(ikt)=sum(intr(2:nr-1))+.5*(intr(1)+intr(nr))
+        enddo
+        intz(ikz)=sum(intp)  !this is phi-periodic
+      enddo
+!
+      potential=fac*(sum(intz(2:nzgrid-1))+.5*(intz(1)+intz(nzgrid)))
+!  
+    endsubroutine integrate_border
+!***********************************************************************
+    subroutine check_update_grid(rhs,phi_old,a_band,b_band1,c_band,d_band,e_band,lupdate)
+!
+! Check if an update is needed. Otherwise, don't update the lhs
+!
+      real, dimension(nx,nz), intent(in) :: rhs,phi_old
+      real, dimension(nx,nz)  :: lhs
+      real, dimension(nx) :: a_band,b_band1,c_band,d_band,e_band
+      logical, dimension(nx,nz), intent(out) :: lupdate
+      real :: threshold,norm
+      integer :: i,n,skipped
+!
+      threshold=1e-4
+!      
+      skipped=0
+      do n=2,nz-1;do i=2,nr-1
+        lhs(i,n)=b_band1(i)*(rhs(i,n) &
+             - a_band(i)*phi_old(i-1,n)      &
+             - c_band(i)*phi_old(i+1,n)      &
+             - d_band(i)*phi_old(i,n+1)      &
+             - e_band(i)*phi_old(i,n-1)    )
+!
+! don't update if it hadn't change by a significant amount
+!
+        norm=abs(lhs(i,n)-phi_old(i,n))!/max(abs(phi_old(i,n)),abs(lhs(i,n))))
+        if (norm .le. threshold) then
+          skipped=skipped+1
+          lupdate(i,n)=.false.
+        else
+          lupdate(i,n)=.true.
+        endif
+!
+      enddo;enddo
+!
+      if (ldebug) print*,' grid: skipped ',skipped,' of ',2*ny*(nz+nx-4)
+!
+    endsubroutine check_update_grid
+!***********************************************************************
+    subroutine check_update_border(rhs,f,lupdate_radial_border,&
+         lupdate_vertical_border,norm0)
+!
+! Check if an update is needed. Otherwise, don't update the lhs
+!
+      use Sub,only:del2
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx,ny,nz), intent(in) :: rhs,norm0
+      logical, dimension(ny,nz,2), intent(out) :: lupdate_radial_border
+      logical, dimension(nx,ny,2), intent(out) :: lupdate_vertical_border
+      real :: threshold
+      integer :: i,n,ith,iz,ir
+
+      real, dimension (nx) :: del2phi,nnn
+      real  :: norm
+      logical :: lfirstcall
+!
+      threshold=1e-4      
+!
+!  compute del2phi and compare it with 4piGrho
+!  as it has discretization errors, compare it with 
+!  the one computed at the beginning of the calculations
+!
+      do m=m1,m2;do n=n1,n2
+!
+        ith=m-nghost;iz=n-nghost
+!
+        call del2(f,ipotself,del2phi)
+!        
+        nnn=abs(del2phi - rhs(:,ith,iz))!/rhs(:,ith,iz)
+!
+        norm=abs(del2phi(1) - rhs(1,ith,iz))!/rhs(1,ith,iz)
+        if (norm/norm0(1,ith,iz) .lt. threshold) then 
+          lupdate_radial_border(ith,iz,1)=.false.
+        else
+          lupdate_radial_border(ith,iz,1)=.true.
+        endif
+
+        norm=abs(del2phi(nr) - rhs(nr,ith,iz))!/rhs(nr,ith,iz)
+        if (norm/norm0(nr,ith,iz) .lt. threshold) then 
+          lupdate_radial_border(ith,iz,2)=.false.
+        else
+          lupdate_radial_border(ith,iz,2)=.true.
+        endif
+!      
+        if ((ipz==0).and.(iz==1)) then 
+          do ir=2,nr-1
+            norm=abs(del2phi(ir)-rhs(ir,ith,1))!/rhs(ir,ith,1)
+            if (norm/norm0(ir,ith,1) .lt. threshold) then 
+              lupdate_vertical_border(ir,ith,1)=.false.
+            else
+              lupdate_vertical_border(ir,ith,1)=.true.
+            endif
+          enddo
+        endif
+!
+        if ((ipz==nprocz-1).and.(iz==nz)) then 
+          do ir=2,nr-1
+            norm=abs(del2phi(ir)-rhs(ir,ith,nz))!/rhs(ir,ith,nz)
+            if (norm/norm0(ir,ith,nz) .lt. threshold) then 
+              lupdate_vertical_border(ir,ith,2)=.false.
+            else
+              lupdate_vertical_border(ir,ith,2)=.true.
+            endif
+          enddo
+        endif
+      enddo;enddo
+!
+    endsubroutine check_update_border
+!********************************************************************************
     subroutine calculate_cross_bessel_functions
 !
 !  Calculate the Bessel functions related to the 
@@ -669,9 +1172,8 @@ module Poisson
       use Mpicomm
 !
       real, dimension(nygrid) :: tht_serial
-      real, dimension(ny) :: tht_proc
       real    :: jacobian,tmp,Delta,fac
-      integer :: ir,ith,ikr,ikt,i,ido,iup,j
+      integer :: ir,ith,ikr,ikt
 !
       if (lroot) &
         print*,'Pre-calculating the Green functions to '//&
@@ -681,38 +1183,7 @@ module Poisson
 !
 ! Serial theta to compute the azimuthal displacement in parallel
 !
-      if (lmpicomm) then
-!
-! All processors send its density array to the root processor
-!
-        if (.not.lroot) then
-          call mpisend_real(tht,ny,root,111)
-        else
-!
-          tht_proc=tht
-!
-! The root processor receives all arrays and
-! stores them in a single array of dimension nygrid
-!
-          do j=0,ncpus-1
-            if (j/=0) call mpirecv_real(tht_proc,ny,j,111)
-            ido= j  * ny + 1
-            iup=(j+1)*ny
-            tht_serial(ido:iup)=tht_proc
-          enddo
-        endif
-!
-! Broadcast the serial thetas to all processors
-!
-        call mpibcast_real(tht_serial,nygrid)
-!
-      else
-!
-! For serial runs, ny=nygrid, so just copy the array
-!
-        tht_serial(1:ny)=tht(1:ny)
-!
-      endif
+      call get_serial_array(tht,tht_serial,'y')
 !
 ! Define the smoothing length as the minimum resolution element present
 !
@@ -726,7 +1197,7 @@ module Poisson
         tmp=sqrt(Delta**2 + rad(ir)**2 + rad(ikr)**2 - &
              2*rad(ir)*rad(ikr)*cos(tht(ith)-tht_serial(ikt)))
 !
-        green_grid(ir,ith,ikr,ikt)= fac*jacobian/tmp
+        green_grid_2D(ir,ith,ikr,ikt)= fac*jacobian/tmp
 !
       enddo;enddo
       enddo;enddo
@@ -735,6 +1206,161 @@ module Poisson
            print*,'calculated all the needed green functions'
 !
     endsubroutine calculate_cross_green_functions
+!***********************************************************************
+    subroutine calculate_cross_legendre_functions
+!
+      use General, only: calc_complete_elliptic_integrals
+!
+      real, dimension(mmax)   :: Legendre_Q
+      real, dimension(nzgrid) :: zed_serial
+      real, dimension(nygrid) :: tht_serial
+      integer, dimension(mmax) :: neumann_factor_eps
+      real    :: chi,mu,Kappa_mu,E_mu,jac
+      integer :: ir,ith,iz,ikr,ikt,ikz
+      integer :: j,im
+!
+      if (lroot) &
+        print*,'Pre-calculating the half-integer Legendre functions '//&
+        'of second kind to solve the Poisson equation'     
+!
+! Get serial z's
+!
+      if (nprocz /= 1) then
+        call get_serial_array(zed,zed_serial,'z')
+      else
+        zed_serial(1:nz)=zed(1:nz)
+      endif
+!
+      do ir=1,nr;do iz=1,nz        !for all points in this processor 
+      do ikr=1,nr;do ikz=1,nzgrid  !integrate over the whole r-z grid
+!
+! Jacobian
+!
+        jac=rad(ikr)*dr*dth*dz 
+!
+! Calculate the elliptic integrals
+! 
+       chi=(rad(ir)**2+rad(ikr)**2+(zed(iz)-zed_serial(ikz))**2)/(2*rad(ir)*rad(ikr))
+        mu=sqrt(2./(1+chi))
+        call calc_complete_elliptic_integrals(mu,Kappa_mu,E_mu)
+!
+! Calculate the Legendre functions for each harmonic
+!
+        Legendre_Q(0)=    mu*Kappa_mu
+        Legendre_Q(1)=chi*mu*Kappa_mu - (1+chi)*mu*E_mu
+!
+        do im=0,mmax
+          if (im == 0) then
+            neumann_factor_eps(im)=1
+          else
+            neumann_factor_eps(im)=2
+            if (im >= 2) then 
+              Legendre_Q(im)= &
+                   4*(im-1)/(2*im-1)*chi*Legendre_Q(im-1) - &
+                   (2*im-3)/(2*im-1)    *Legendre_Q(im-2)
+            endif
+          endif
+!
+! modify the Legendre function by multipying the jacobian
+! to speed up runtime. Also stick in the neumann factor and 
+! the 1/sqrt(rad) factor
+!
+          Legendre_Qmod(ir,iz,ikr,ikz,im)=&
+               Legendre_Q(im)*neumann_factor_eps(im)*jac/sqrt(rad(ikr))
+!
+        enddo
+! 
+! Finished grid integration of the Legendre functions
+!
+        enddo;enddo
+        enddo;enddo
+!
+! Now the co-sines in the azimuthal direction
+!
+        if (nprocy /= 1) then
+          call get_serial_array(tht,tht_serial,'y')
+        else
+          tht_serial(1:ny)=tht(1:ny)
+        endif
+!
+        do ith=1,nth;do ikt=1,nthgrid
+          do im=0,mmax
+            fourier_cosine_terms(ith,ikt,im)=cos(im*(tht(ith)-tht_serial(ikt)))
+          enddo
+        enddo;enddo
+!       
+    endsubroutine calculate_cross_legendre_functions
+!***********************************************************************
+    subroutine get_serial_array(array,array_serial,var)
+!
+      use Mpicomm
+!
+      real, dimension(:) :: array
+      real, dimension(:) :: array_serial
+      real, dimension(:), allocatable :: array_proc
+      
+      integer :: ido,iup,j,nk,nkgrid,nprock,jy,jz
+      character :: var
+!
+      if (var=='y') then 
+        nk=ny ; nkgrid=nygrid ; nprock=nprocy
+      else if(var=='z') then
+        nk=nz ; nkgrid=nzgrid ; nprock=nprocz
+      else
+        print*,'var=',var
+        call stop_it("you can only call it for var='y' or 'z'")
+      endif
+!
+      allocate(array_proc(nk))
+!
+      if (lmpicomm) then
+!
+! All processors send its array to the root processor
+!
+        if (.not.lroot) then
+          call mpisend_real(array,nk,root,111)
+        else
+!
+          array_proc=array
+!
+! The root processor receives all arrays and
+! stores them in a single array of dimension nkgrid
+!
+          do jy=0,nprocy-1
+            do jz=0,nprocz-1
+              !serial index of the processor
+              j=jy+nprocy*jz
+              if (j/=0) call mpirecv_real(array_proc,nk,j,111)
+!
+              if (var=='y') then 
+                ido= jy  * nk + 1
+                iup=(jy+1)*nk
+                array_serial(ido:iup)=array_proc
+              endif
+!
+              if (var=='z') then 
+                ido= jz  * nk + 1
+                iup=(jz+1)*nk
+                array_serial(ido:iup)=array_proc
+              endif
+!
+            enddo
+          enddo
+        endif
+!
+! Broadcast the serial array to all processors
+!
+        call mpibcast_real(array_serial,nkgrid)
+!
+      else
+!
+! For serial runs, nk=nkgrid, so just copy the array
+!
+        array_serial(1:nk)=array(1:nk)
+!
+      endif
+!
+    endsubroutine get_serial_array
 !***********************************************************************
     subroutine read_poisson_init_pars(unit,iostat)
 !
