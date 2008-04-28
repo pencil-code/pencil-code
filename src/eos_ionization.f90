@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.54 2007-11-21 11:45:00 wlyra Exp $
+! $Id: eos_ionization.f90,v 1.55 2008-04-28 18:26:19 steveb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -115,7 +115,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.54 2007-11-21 11:45:00 wlyra Exp $")
+           "$Id: eos_ionization.f90,v 1.55 2008-04-28 18:26:19 steveb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -425,7 +425,7 @@ module EquationOfState
       endif
 ! del2lnTT
       if (lpencil(i_del2lnTT)) then
-          call temperature_laplacian(f,p%del2lnrho,p%del2ss,p%del2lnTT)
+          call temperature_laplacian(f,p)
       endif
 ! del6ss
       if (lpencil(i_del6ss)) then
@@ -658,7 +658,7 @@ module EquationOfState
 !
     endsubroutine temperature_gradient
 !***********************************************************************
-    subroutine temperature_laplacian(f,del2lnrho,del2ss,del2lnTT)
+    subroutine temperature_laplacian(f,p)
 !
 !   Calculate thermodynamical quantities, cs2 and cp1tilde
 !   and optionally glnPP and glnTT
@@ -669,13 +669,12 @@ module EquationOfState
       use Cdata
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(in) :: del2lnrho,del2ss
-      real, dimension(nx), intent(out) :: del2lnTT
+      type (pencil_case) :: p
 !
       call not_implemented('temperature_laplacian')
 !
-      del2lnTT=0.
-      if (NO_WARN) print*,f,del2lnrho,del2ss !(keep compiler quiet)
+      p%del2lnTT=0.
+      if (NO_WARN) print*,f,p%del2lnrho,p%del2ss !(keep compiler quiet)
     endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
