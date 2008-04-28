@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.17 2008-04-02 20:39:12 wlyra Exp $
+! $Id: particles_selfgravity.f90,v 1.18 2008-04-28 10:20:34 ajohan Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -54,7 +54,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.17 2008-04-02 20:39:12 wlyra Exp $")
+           "$Id: particles_selfgravity.f90,v 1.18 2008-04-28 10:20:34 ajohan Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -252,9 +252,28 @@ module Particles_selfgravity
 !
         if (lselfgravity_particles) then
           do k=1,npar_loc
-            call interpolate_quadratic_spline( &
-                 f,igpotselfx,igpotselfz,fp(k,ixp:izp),gpotself, &
-                 ineargrid(k,:),ipar(k) )
+            if (lparticlemesh_cic) then
+              call interpolate_linear(f, igpotselfx, igpotselfz, &
+                  fp(k,ixp:izp), gpotself, ineargrid(k,:), ipar(k))
+            elseif (lparticlemesh_tsc) then
+              if (linterpolate_spline) then
+                call interpolate_quadratic_spline(f, igpotselfx, igpotselfz, &
+                    fp(k,ixp:izp), gpotself, ineargrid(k,:), ipar(k) )
+              else
+!
+!  Polynomial interpolation can lead to self acceleration of isolated particle,
+!  since one must use the same assignment and interpolation function.
+!                
+                if (lroot) then
+                  print*, 'dvvp_dt_selfgrav: polynomial interpolation not '// &
+                          'allowed'
+                  print*, '                  for interpolating self-gravity'
+                endif
+                call fatal_error('dvvp_dt_selfgrav','')
+              endif
+            else
+              gpotself=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),igpotselfx:igpotselfz)
+            endif
 !            
             if (lparticles_nbody) then 
 !
@@ -272,6 +291,8 @@ module Particles_selfgravity
             endif
 !
             dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)-gpotself
+!            print*, it, itsub, dt, dfp
+!            stop
 !
           enddo
         endif
