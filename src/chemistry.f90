@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.71 2008-04-25 15:32:40 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.72 2008-04-28 13:40:06 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -76,6 +76,8 @@ module Chemistry
   real,   dimension(nchemspec,7) :: tran_data
 
   logical :: Natalia_thoughts=.false.
+
+  
 
 
 ! input parameters
@@ -174,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.71 2008-04-25 15:32:40 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.72 2008-04-28 13:40:06 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.71 2008-04-25 15:32:40 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.72 2008-04-28 13:40:06 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -598,6 +600,10 @@ module Chemistry
       real :: mk_mj
 
       logical :: tran_exist=.false.
+
+      character (len=20) :: input_file="./data/mix_quant.out"
+      integer :: file_id=123
+
 ! 
 ! Density
 !
@@ -696,11 +702,6 @@ module Chemistry
             !  print*, maxval(cp_full(:,:,:)/cv_full(:,:,:)), &
               !maxval(cp_R_spec(:,:,:)/cvspec_full(:,:,:,k))
 
-
-          ! print*,maxval(Cp_test_full),k,maxval(XX_full(:,:,:,k)),maxval(Cp_test) 
-
-          ! print*,maxval(Cp_test_full),k,maxval(f(:,:,:,ichemspec(k))),maxval(Cp_test)
-
            enddo
 
 
@@ -769,7 +770,7 @@ module Chemistry
 
        endif
 
- 
+
 !
 !  Artificial Viscosity of a mixture
 !
@@ -803,6 +804,11 @@ module Chemistry
 !
 !   Thermal diffusivity 
 !
+
+!
+! Natalia thoughts: one should check the coefficient 15/4
+!
+
           tmp_sum=0.
           tmp_sum2=0.
 
@@ -822,6 +828,44 @@ module Chemistry
          call stop_it('This case works only for cgs units system!')
         endif
       endif
+
+    
+        
+       if (lfirst) then
+         open(file_id,file=input_file)
+         write(file_id,*) 'Mixture quantities'
+         write(file_id,*) '*******************'
+         write(file_id,*) ''
+         write(file_id,*) 'Mass, g/mole'
+         write(file_id,'(7E10.2)') 1./maxval(mu1_full/unit_mass)
+         write(file_id,*) ''
+         write(file_id,*) 'Density, g/cm^3'
+         write(file_id,'(7E10.2)') maxval(rho_full)*unit_mass/unit_length**3
+         write(file_id,*) ''
+         write(file_id,*) 'Themperature, K'
+         write(file_id,'(7F7.3)') exp(maxval(f(:,:,:,5)))*unit_temperature
+         write(file_id,*) ''
+         write(file_id,*) 'Cp, erg/mole/K'
+         write(file_id,'(7E10.2)')                       maxval(cp_full)*Rgas_unit_sys/maxval(mu1_full/unit_mass)
+         write(file_id,*) ''
+         write(file_id,*) 'cp, erg/g/K'
+         write(file_id,'(7E10.2)') maxval(cp_full)*Rgas_unit_sys
+         write(file_id,*) ''
+         write(file_id,*) 'gamma,max,min'
+         write(file_id,'(7E10.2)') maxval(cp_full)/maxval(cv_full),minval(cp_full)/minval(cv_full)
+         write(file_id,*) ''
+         write(file_id,*) 'Viscosity, g/cm/s,'
+         write(file_id,'(7E10.2)') maxval(nu_dyn)*(unit_mass/unit_length/unit_time)
+         write(file_id,*) ''
+         write(file_id,*) 'Thermal cond, erg/(cm K s),'
+         write(file_id,'(7E10.2)') maxval(0.5*(tmp_sum+1./tmp_sum2)*1e4/Rgas*Rgas_unit_sys)
+         write(file_id,*) ''
+         write(file_id,*) 'Diffusion coefficient, cm^2/s'
+         write(file_id,'(7E10.2)') maxval(Diff_full)*unit_length**2/unit_time
+        print*,'calc_for_chem_mixture: writing mix_quant.out file'
+      endif
+
+
 
 
  endsubroutine calc_for_chem_mixture
