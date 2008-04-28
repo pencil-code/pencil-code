@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.395 2008-04-27 16:52:38 theine Exp $
+### $Id: Makefile.src,v 1.396 2008-04-28 19:47:32 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -495,6 +495,13 @@ LD_FFTW2=
 #CFLAGS=-O3 -DFUNDERSC=1 #(fe03*)
 #LD_MPI=-Wl,-rpath -Wl,/usr/lib -Wl,-rpath -Wl,/opt/shared/intel_fc_81/lib -L/usr/lib farg.o -lmpichfarg -lmpich -lpthread -lrt  #(fe03*)
 #LIBMPISUFFIX=_#(fe03*)
+##
+##  Patrik's playstation
+##
+#FC=/usr/bin/gfortran #(playstation-desktop)
+#F77=$(FC) #(playstation-desktop)
+#CC=gcc #(playstation-desktop)
+#FFLAGS=-O3 #(playstation-desktop)
 ##
 ##  norlx01 Nordita computer
 ##
