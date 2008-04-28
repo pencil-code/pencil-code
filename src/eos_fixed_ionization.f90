@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.40 2007-11-21 11:45:00 wlyra Exp $
+! $Id: eos_fixed_ionization.f90,v 1.41 2008-04-28 18:25:48 steveb Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -105,7 +105,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.40 2007-11-21 11:45:00 wlyra Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.41 2008-04-28 18:25:48 steveb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -446,7 +446,7 @@ module EquationOfState
       endif
 ! del2lnTT
       if (lpencil(i_del2lnTT)) then
-          call temperature_laplacian(f,p%del2lnrho,p%del2ss,p%del2lnTT)
+          call temperature_laplacian(f,p)
       endif
 ! del6ss
       if (lpencil(i_del6ss)) then
@@ -580,7 +580,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     endsubroutine temperature_gradient
 !***********************************************************************
-    subroutine temperature_laplacian(f,del2lnrho,del2ss,del2lnTT)
+    subroutine temperature_laplacian(f,p)
 !
 !   Calculate thermodynamical quantities, cs2 and cp1tilde
 !   and optionally glnPP and glnTT
@@ -591,13 +591,12 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Cdata
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(in) :: del2lnrho,del2ss
-      real, dimension(nx), intent(out) :: del2lnTT
+      type (pencil_case) :: p
 !
       call not_implemented('temperature_laplacian')
 !
-      del2lnTT=0.
-      if (NO_WARN) print*,f,del2lnrho,del2ss !(keep compiler quiet)
+      p%del2lnTT=0.
+      if (NO_WARN) print*,f,p%del2lnrho,p%del2ss !(keep compiler quiet)
     endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
