@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.107 2008-04-28 07:11:13 dobler Exp $
+! $Id: eos_idealgas.f90,v 1.108 2008-04-28 18:25:18 steveb Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.107 2008-04-28 07:11:13 dobler Exp $')
+           '$Id: eos_idealgas.f90,v 1.108 2008-04-28 18:25:18 steveb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -904,7 +904,7 @@ module EquationOfState
       if (NO_WARN) print*,f !(keep compiler quiet)
     endsubroutine temperature_gradient
 !***********************************************************************
-    subroutine temperature_laplacian(f,del2lnrho,del2ss,del2lnTT)
+    subroutine temperature_laplacian(f,p)
 !
 !   Calculate thermodynamical quantities
 !   and optionally glnPP and glnTT
@@ -917,8 +917,6 @@ module EquationOfState
 !
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(in) :: del2lnrho,del2ss
-      real, dimension(nx), intent(out) :: del2lnTT
       real, dimension(nx) :: tmp
 !
       if (gamma1==0.) &
@@ -928,15 +926,13 @@ module EquationOfState
 !  pretend_lnTT
 !
       if (pretend_lnTT) then
-        del2lnTT=del2ss
+        p%del2lnTT=p%del2ss
       else
         if (ldensity_nolog) then
-           call fatal_error("temperature_laplacian", &
-                "p is not known here, could someone please fix this?")
           call dot2(p%grho,tmp)
-          del2lnTT=gamma1*p%rho1*(p%del2rho+p%rho1*tmp)
+          p%del2lnTT=gamma1*p%rho1*(p%del2rho+p%rho1*tmp)
         else
-          del2lnTT=gamma1*del2lnrho+cv1*del2ss
+          p%del2lnTT=gamma1*p%del2lnrho+p%cv1*p%del2ss
         endif
       endif
 !
