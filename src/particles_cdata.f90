@@ -1,4 +1,4 @@
-! $Id: particles_cdata.f90,v 1.33 2008-04-01 19:36:19 wlyra Exp $
+! $Id: particles_cdata.f90,v 1.34 2008-04-28 10:18:11 ajohan Exp $
 !!
 !! Global particle variables
 !!
@@ -22,9 +22,10 @@ module Particles_cdata
   integer :: inp=0
   integer :: idiag_nmigmax=0
   integer, dimension(ny*nz) :: npar_imn, k1_imn, k2_imn
+  logical :: linterpolate_spline=.true.
+  logical :: lparticlemesh_cic=.false., lparticlemesh_tsc=.false.
   logical :: linterp_reality_check=.false., lmigration_redo=.false.
   logical :: lcalc_np=.false.
-  logical :: lparticlemesh_cic=.false., lparticlemesh_tsc=.false.
   logical :: lcartesian_mig=.true., lmigration_real_check=.true.
   logical :: lcheck_exact_frontier=.false.
   character (len=2*bclen+1) :: bcpx='p',bcpy='p',bcpz='p'

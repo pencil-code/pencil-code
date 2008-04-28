@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.222 2008-04-23 13:56:36 ajohan Exp $
+! $Id: particles_dust.f90,v 1.223 2008-04-28 10:18:11 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -58,7 +58,6 @@ module Particles
   logical :: ldraglaw_epstein=.true.
   logical :: ldraglaw_epstein_stokes_linear=.false.
   logical :: lcoldstart_amplitude_correction=.false.
-  logical :: linterpolate_spline=.true.
   logical :: ldraglaw_variable=.false.
   logical :: ldraglaw_epstein_transonic=.false.
   logical :: ldraglaw_eps_stk_transonic=.false.
@@ -139,7 +138,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.222 2008-04-23 13:56:36 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.223 2008-04-28 10:18:11 ajohan Exp $")
 !
 !  Indices for particle position.
 !
