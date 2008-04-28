@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.106 2008-04-24 23:08:03 steveb Exp $
+! $Id: eos_idealgas.f90,v 1.107 2008-04-28 07:11:13 dobler Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.106 2008-04-24 23:08:03 steveb Exp $')
+           '$Id: eos_idealgas.f90,v 1.107 2008-04-28 07:11:13 dobler Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -921,7 +921,9 @@ module EquationOfState
       real, dimension(nx), intent(out) :: del2lnTT
       real, dimension(nx) :: tmp
 !
-      if (gamma1==0.) call fatal_error('temperature_laplacian','gamma=1 not allowed w/entropy')
+      if (gamma1==0.) &
+           call fatal_error('temperature_laplacian', &
+               'gamma=1 not allowed w/entropy')
 !
 !  pretend_lnTT
 !
@@ -929,6 +931,8 @@ module EquationOfState
         del2lnTT=del2ss
       else
         if (ldensity_nolog) then
+           call fatal_error("temperature_laplacian", &
+                "p is not known here, could someone please fix this?")
           call dot2(p%grho,tmp)
           del2lnTT=gamma1*p%rho1*(p%del2rho+p%rho1*tmp)
         else
