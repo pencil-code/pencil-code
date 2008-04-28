@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.385 2008-04-08 16:44:07 wlyra Exp $
+! $Id: density.f90,v 1.386 2008-04-28 23:07:14 steveb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -51,6 +51,7 @@ module Density
   real, dimension(mz) :: lnrho_init_z=0.0,del2lnrho_init_z=0.0
   real, dimension(mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
   real, target :: plaw=0.0
+  real :: lnrho_z_shift=0.0
   integer, parameter :: ndiff_max=4
   logical :: lmass_source=.false.,lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
@@ -80,7 +81,7 @@ module Density
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho,     &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,lexponential_smooth,&
        wdamp,plaw,lcontinuity_gas,density_floor,lanti_shockdiffusion,&
-       rshift,lrho_as_aux,ldiffusion_nolog
+       rshift,lrho_as_aux,ldiffusion_nolog,lnrho_z_shift
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,                &
@@ -138,7 +139,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.385 2008-04-08 16:44:07 wlyra Exp $")
+           "$Id: density.f90,v 1.386 2008-04-28 23:07:14 steveb Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -494,6 +495,13 @@ module Density
           f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
               alog(exp(f(:,:,n,ilnrho))+ampllnrho*(exp(-z(n)**2/(2*radius_lnrho**2))))
         enddo
+
+      case('gauss-z-offset')
+        do n=n1,n2
+           f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
+              alog(exp(f(:,:,n,ilnrho))+ampllnrho*(exp(-(z(n)+lnrho_z_shift)**2/(2*radius_lnrho**2))))
+        enddo
+
       case('gaussian-noise')
         If (lnrho_left /= 0.) f(:,:,:,ilnrho)=lnrho_left
         call gaunoise(ampllnrho,f,ilnrho,ilnrho)
