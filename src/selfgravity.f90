@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.32 2008-03-13 13:20:11 wlyra Exp $
+! $Id: selfgravity.f90,v 1.33 2008-04-28 09:48:17 ajohan Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -72,7 +72,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.32 2008-03-13 13:20:11 wlyra Exp $")
+           "$Id: selfgravity.f90,v 1.33 2008-04-28 09:48:17 ajohan Exp $")
 !
 !  Put variable name in array
 !
@@ -135,32 +135,36 @@ module Selfgravity
         call fatal_error('initialize_selfgravity','')
       endif
 !
-      if (bcx(ipotself)=='p' .and. .not.(bcx(ilnrho)=='p')) then
-        if (lroot) then
-          print*, 'initialize_selfgravity: potself has bcx=''p'', but the density is not'
-          print*, '                        periodic! (you must set a proper boundary condition'
-          print*, '                        for the potential)'
-          print*, 'initialize_selfgravity: bcx=', bcx
+!  Check that density and self-potential have consistent boundary conditions.
+!
+      if (ldensity) then
+        if (bcx(ipotself)=='p' .and. .not.(bcx(ilnrho)=='p')) then
+          if (lroot) then
+            print*, 'initialize_selfgravity: potself has bcx=''p'', but the density is not'
+            print*, '                        periodic! (you must set a proper boundary condition'
+            print*, '                        for the potential)'
+            print*, 'initialize_selfgravity: bcx=', bcx
+          endif
+          call fatal_error('initialize_selfgravity','')
         endif
-        call fatal_error('initialize_selfgravity','')
-      endif
-      if (bcy(ipotself)=='p' .and. .not.(bcy(ilnrho)=='p')) then
-        if (lroot) then
-          print*, 'initialize_selfgravity: potself has bcy=''p'', but the density is not'
-          print*, '                        periodic! (you must set a proper boundary condition'
-          print*, '                        for the potential)'
-          print*, 'initialize_selfgravity: bcy=', bcy
+        if (bcy(ipotself)=='p' .and. .not.(bcy(ilnrho)=='p')) then
+          if (lroot) then
+            print*, 'initialize_selfgravity: potself has bcy=''p'', but the density is not'
+            print*, '                        periodic! (you must set a proper boundary condition'
+            print*, '                        for the potential)'
+            print*, 'initialize_selfgravity: bcy=', bcy
+          endif
+          call fatal_error('initialize_selfgravity','')
         endif
-        call fatal_error('initialize_selfgravity','')
-      endif
-      if (bcz(ipotself)=='p' .and. .not.(bcz(ilnrho)=='p')) then
-        if (lroot) then
-          print*, 'initialize_selfgravity: potself has bcz=''p'', but the density is not'
-          print*, '                        periodic! (you must set a proper boundary condition'
-          print*, '                        for the potential)'
-          print*, 'initialize_selfgravity: bcz=', bcz
+        if (bcz(ipotself)=='p' .and. .not.(bcz(ilnrho)=='p')) then
+          if (lroot) then
+            print*, 'initialize_selfgravity: potself has bcz=''p'', but the density is not'
+            print*, '                        periodic! (you must set a proper boundary condition'
+            print*, '                        for the potential)'
+            print*, 'initialize_selfgravity: bcz=', bcz
+          endif
+          call fatal_error('initialize_selfgravity','')
         endif
-        call fatal_error('initialize_selfgravity','')
       endif
 !
     endsubroutine initialize_selfgravity
