@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.17 2008-04-23 15:45:09 nbabkovs Exp $
+! $Id: chem_stream.f90,v 1.18 2008-04-28 16:05:40 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -139,11 +139,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.17 2008-04-23 15:45:09 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.18 2008-04-28 16:05:40 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.17 2008-04-23 15:45:09 nbabkovs Exp $")
+           "$Id: chem_stream.f90,v 1.18 2008-04-28 16:05:40 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -218,9 +218,6 @@ module Special
             call stream_field(f,xx,yy)
          case('bomb')
             call bomb_field(f,xx,yy)
-         case('H_bomb')
-            call H_bomb(f,xx,yy)
-           if(lroot) print*,'init_special: H_bomb'
          case('default')
           if(lroot) print*,'init_special: Default neutron star setup'
      !     call density_init(f,xx,zz)
@@ -495,14 +492,6 @@ module Special
            call bc_stream_z(f,-1, bc)
          endselect
          bc%done=.true.
-         case ('1D')
-         select case (bc%location)
-         case (iBC_X_TOP)
-           call bc_1Dstream_x(f,-1, bc)
-         case (iBC_X_BOT)
-           call bc_1Dstream_x(f,-1, bc)
-         endselect
-         bc%done=.true.
          case ('wal')
          select case (bc%location)
          case (iBC_X_TOP)
@@ -519,6 +508,15 @@ module Special
            call spec_input(f,-1, bc)
          endselect
          bc%done=.true.
+         case ('eql')
+         select case (bc%location)
+         case (iBC_X_TOP)
+           call bc_equil_x(f,-1, bc)
+         case (iBC_X_BOT)
+           call bc_equil_x(f,-1, bc)
+         endselect
+         bc%done=.true.
+
       endselect
 
       if (NO_WARN) print*,f(1,1,1,1),bc%bcname
@@ -560,6 +558,8 @@ module Special
 
     endsubroutine  velocity_init
 !***********************************************************************
+!   INITIAL CONDITIONS
+!44444444444444444444444444444444444444444444444444444444444444444444444
     subroutine stream_field(f,xx,yy)
 !
 ! Natalia
@@ -609,33 +609,10 @@ module Special
      f(l1:mx,:,:,ichemspec(nchemspec))=Y3_init
 
    endsubroutine bomb_field
-!***********************************************************************
-   subroutine H_bomb(f,xx,yy)
-!
-! Natalia
-! Initialization of chem. species  in a case of the stream
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, yy
-      integer :: k,j,i
-
-
-   !  do k=1,nx 
-
-   !  if (abs(x(k))<5.) then
-   !    f(k,:,:,:)=0.
-   !    f(k,:,:,9)=H_max*exp(((-abs(x(k)))))
-   !   endif
-
-   !  enddo
-
-   !  f(:,:,:,4)=log(rho_init)-(xx(:,:,:)/(0.5*Lxyz(1)))**2
-     !f(:,:,:,5)=log(T_init)-xx(:,:,:)**2
-      f(:,:,:,5)=log(T_init)
-    ! f(:,:,:,6)=f(:,:,:,6)+H2_max*exp(-xx(:,:,:)**2)
-
-    endsubroutine H_bomb
-!***********************************************************************
+!**************************************************************************
+!**************************************************************************
+!       BOUNDARY CONDITIONS
+!*88888888888888888888888888888888888888888888888888888888888888888888888888
   subroutine bc_stream_x(f,sgn,bc)
 !
 ! Natalia
@@ -795,7 +772,7 @@ module Special
 !
     endsubroutine bc_stream_z
  !********************************************************************
-  subroutine bc_1Dstream_x(f,sgn,bc)
+  subroutine bc_equil_x(f,sgn,bc)
 !
 ! Natalia
 !
@@ -816,10 +793,6 @@ module Special
     if (bc%location==iBC_X_BOT) then
       ! bottom boundary
 
-       if (vr==1) then
-              do i=0,nghost;   f(l1-i,:,:,vr)=value1;  enddo
-       endif
-
       if (vr==4) then
            do i=0,nghost
             f(l1-i,:,:,4)=f(l1,:,:,4)
@@ -827,43 +800,37 @@ module Special
       endif
 
       if (vr==5) then
-          do i=0,nghost;   f(l1-i,:,:,vr)=log(value1); enddo 
+          do i=0,nghost
+            f(l1-i,:,:,vr)=2.*f(l1,:,:,vr)-f(l1+i,:,:,vr)
+          enddo 
       endif
 
        if (vr >= ichemspec(1)) then
-
          do i=0,nghost; 
-                if (vr < ichemspec(nchemspec))  f(l1-i,:,:,vr)=value1
-                if (vr == ichemspec(nchemspec))                    f(l1-i,:,:,vr)=value1!*((l1-i)/(l1-0.))**4
+             f(l1-i,:,:,vr)=f(l1,:,:,vr)
           enddo
-
        endif
 
       elseif (bc%location==iBC_X_TOP) then
       ! top boundary
-       if (vr==1) then
-          do i=0,nghost;   f(l2+i,:,:,vr)=value1;  enddo
-       endif
 
       if (vr==4) then
            do i=0,nghost
-            f(l2+i,:,:,4)=f(l2,:,:,4)
+            f(l2+i,:,:,vr)=f(l2,:,:,vr)
            enddo 
       endif
 
       if (vr==5) then
-          do i=0,nghost;   f(l2+i,:,:,vr)=log(value1); enddo 
+          do i=0,nghost
+            f(l2+i,:,:,vr)=2.*f(l2,:,:,vr)-f(l2-i,:,:,vr)
+          enddo 
       endif
 
        if (vr >= ichemspec(1)) then
-
          do i=0,nghost; 
-                if (vr < ichemspec(nchemspec))  f(l2+i,:,:,vr)=value1
-                if (vr == ichemspec(nchemspec))                    f(l2+i,:,:,vr)=value1!*((l1-i)/(l1-0.))**4
+             f(l2+i,:,:,vr)=f(l2,:,:,vr)
           enddo
-
        endif
-
 
     !   do i=1,nghost
      !     f(l2+i,:,:,vr)=f(l2,:,:,vr)!2*f(l2,:,:,vr)!+sgn*f(l2-i,:,:,vr);
@@ -873,7 +840,7 @@ module Special
                         iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
       endif
 !
-    endsubroutine bc_1Dstream_x
+    endsubroutine bc_equil_x
 !***********************************************************************
   subroutine spec_input(f,sgn,bc)
    !
@@ -921,9 +888,6 @@ module Special
         elseif (bc%location==iBC_X_TOP) then
       ! top boundary
 
-      
-
-   
         do i=1,nghost
           f(l2+i,:,:,vr)=f(l2,:,:,vr)!2*f(l2,:,:,vr)!+sgn*f(l2-i,:,:,vr);
         enddo

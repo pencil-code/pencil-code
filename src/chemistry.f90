@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.73 2008-04-28 13:53:30 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.74 2008-04-28 16:05:40 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.73 2008-04-28 13:53:30 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.74 2008-04-28 16:05:40 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.73 2008-04-28 13:53:30 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.74 2008-04-28 16:05:40 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -216,7 +216,7 @@ module Chemistry
 
        if (unit_system == 'cgs') then
          Rgas_unit_sys = k_B_cgs/m_u_cgs
-         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
+         Rgas=Rgas_unit_sys*unit_energy/unit_velocity**2
        endif
 
 
@@ -623,7 +623,10 @@ module Chemistry
        if (unit_system == 'cgs') then
 
           Rgas_unit_sys = k_B_cgs/m_u_cgs
-          Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
+          Rgas=Rgas_unit_sys*unit_energy/unit_velocity**2
+
+       
+
 
 !
 !  Mean molecular weight
@@ -847,10 +850,10 @@ module Chemistry
          write(file_id,'(7F7.3)') exp(maxval(f(:,:,:,5)))*unit_temperature
          write(file_id,*) ''
          write(file_id,*) 'Cp, erg/mole/K'
-         write(file_id,'(7E10.2)')                       maxval(cp_full)*Rgas_unit_sys/maxval(mu1_full/unit_mass)
+         write(file_id,'(7E10.2)')                       maxval(cp_full)/Rgas*Rgas_unit_sys/maxval(mu1_full/unit_mass)
          write(file_id,*) ''
          write(file_id,*) 'cp, erg/g/K'
-         write(file_id,'(7E10.2)') maxval(cp_full)*Rgas_unit_sys
+         write(file_id,'(7E10.2)') maxval(cp_full)/Rgas*Rgas_unit_sys
          write(file_id,*) ''
          write(file_id,*) 'gamma,max,min'
          write(file_id,'(7E10.2)') maxval(cp_full)/maxval(cv_full),minval(cp_full)/minval(cv_full)
@@ -1217,7 +1220,12 @@ module Chemistry
            diffus_chem(j)=maxval(Diff_full(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
          else
            diffus_chem(j)=0.
-         endif  
+         endif
+
+           if (lreactions) then
+               diffus_chem(j)=diffus_chem(j)+10.*maxval(p%DYDt_reac(j,1:nchemspec)) 
+           endif
+
         enddo
        endif
      endif
