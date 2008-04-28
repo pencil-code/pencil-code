@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.162 2008-04-05 22:41:56 wlyra Exp $
+! $Id: nompicomm.f90,v 1.163 2008-04-28 21:41:09 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -28,6 +28,7 @@ module Mpicomm
     module procedure mpirecv_real_scl
     module procedure mpirecv_real_arr
     module procedure mpirecv_real_arr2
+    module procedure mpirecv_real_arr3
   endinterface
 
   interface mpirecv_int
@@ -44,6 +45,7 @@ module Mpicomm
     module procedure mpisend_real_scl
     module procedure mpisend_real_arr
     module procedure mpisend_real_arr2
+    module procedure mpisend_real_arr3
   endinterface
 
   interface mpisend_int
@@ -433,6 +435,20 @@ module Mpicomm
 !
     endsubroutine mpirecv_real_arr2
 !***********************************************************************
+    subroutine mpirecv_real_arr3(bcast_array,nb,proc_src,tag_id)
+!
+!  Receive real array(:,:,:) from other processor.
+!
+!  27-apr-08/wlad: dummy
+!
+      integer, dimension(3) :: nb
+      real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
+      integer :: proc_src, tag_id
+!
+      if (NO_WARN) print*, bcast_array, nb, proc_src, tag_id
+!
+    endsubroutine mpirecv_real_arr3
+!***********************************************************************
     subroutine mpirecv_int_scl(bcast_array,nbcast_array,proc_src,tag_id)
 !
 !  Receive integer scalar from other processor.
@@ -530,6 +546,20 @@ module Mpicomm
       if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
 !
     endsubroutine mpisend_real_arr2
+!***********************************************************************
+    subroutine mpisend_real_arr3(bcast_array,nb,proc_rec,tag_id)
+!
+!  Receive real array(:,:) from other processor.
+!
+!  27-apr-08/wlad: dummy
+!
+      integer, dimension(3) :: nb
+      real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
+      integer :: proc_rec, tag_id
+!
+      if (NO_WARN) print*, bcast_array, nb, proc_rec, tag_id
+!
+    endsubroutine mpisend_real_arr3
 !***********************************************************************
     subroutine mpisend_int_scl(bcast_array,nbcast_array,proc_rec,tag_id)
 !
