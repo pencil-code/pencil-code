@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.72 2008-04-28 13:40:06 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.73 2008-04-28 13:53:30 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.72 2008-04-28 13:40:06 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.73 2008-04-28 13:53:30 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.72 2008-04-28 13:40:06 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.73 2008-04-28 13:53:30 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -600,6 +600,7 @@ module Chemistry
       real :: mk_mj
 
       logical :: tran_exist=.false.
+      logical,SAVE :: lwrite=.true.
 
       character (len=20) :: input_file="./data/mix_quant.out"
       integer :: file_id=123
@@ -831,7 +832,7 @@ module Chemistry
 
     
         
-       if (lfirst) then
+       if (lwrite) then
          open(file_id,file=input_file)
          write(file_id,*) 'Mixture quantities'
          write(file_id,*) '*******************'
@@ -863,6 +864,7 @@ module Chemistry
          write(file_id,*) 'Diffusion coefficient, cm^2/s'
          write(file_id,'(7E10.2)') maxval(Diff_full)*unit_length**2/unit_time
         print*,'calc_for_chem_mixture: writing mix_quant.out file'
+         lwrite=.false.
       endif
 
 
