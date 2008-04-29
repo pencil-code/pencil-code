@@ -7,7 +7,7 @@ COMPILE_OPT IDL2,HIDDEN
   if (coord_system eq 'spherical') then begin
     cotth=cos(yy)/sin(yy)      
     i_sin=where(abs(sin(yy)) lt 1e-5) ;sinth_min=1e-5
-    if (i_sin ne -1) then cotth[i_sin]=0.
+    if (i_sin[0] ne -1) then cotth[i_sin]=0.
     corr=f[*,*,*,2]*cotth/xx
   endif
   return,yder(f[*,*,*,2])-zder(f[*,*,*,1])+corr
@@ -30,8 +30,8 @@ end
 function curl,f
 
 COMPILE_OPT IDL2,HIDDEN
-common cdat, x, y
-common cdat_coords,coord_system
+  common cdat, x, y
+  common cdat_coords,coord_system
 ;
   w=make_array(size=size(f),/nozero)
 ;
