@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.76 2008-04-29 11:13:07 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.77 2008-04-29 15:25:50 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.76 2008-04-29 11:13:07 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.77 2008-04-29 15:25:50 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.76 2008-04-29 11:13:07 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.77 2008-04-29 15:25:50 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -2021,7 +2021,7 @@ module Chemistry
   Rcal=Rgas_unit_sys*4.14e-7
   T_cgs=p%TT*unit_temperature
   rho_cgs=p%rho*unit_mass/unit_length**3
-  p_atm=p%pp/0.986
+  p_atm=p%pp*unit_energy/unit_length**3/9.81e5
 
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
@@ -2125,6 +2125,9 @@ module Chemistry
 
 !print*,'int', maxval(prod2/rho_cgs), maxval(kf),maxval(kr)
 
+
+  ! if (reac==5) print*,maxval(kf),maxval(kr)
+
     enddo
 
    end subroutine get_reaction_rate
@@ -2175,6 +2178,8 @@ module Chemistry
           xdot=-xdot*species_constants(ichemspec(k),imass)
          endif
       p%DYDt_reac(:,k)=xdot*unit_time
+
+! print*,'Natalia',maxval(p%DYDt_reac(:,4)),unit_time,maxval(xdot)
 
    !print*,' ',minval(p%DYDt_reac(:,k)),k
     !print*,maxval(p%DYDt_reac(:,k)),k,maxval(p%TT),maxval(vreactions_p),maxval(vreactions_m)
