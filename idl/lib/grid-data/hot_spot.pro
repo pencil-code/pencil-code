@@ -21,7 +21,7 @@
 ;;;                character is automatically assumed, but a warning
 ;;;                is issued (unless suppressed with /QUIET)
 ;;;   GHOST     -- data contain ghost cells to be excluded from the
-;;;                maximum; can be a scalar of a vector (if different
+;;;                maximum; can be a scalar or a vector (if different
 ;;;                directions have different number of ghost cells)
 ;;;   QUIET     -- set this to suppress warnings and any kind of
 ;;;                diagnostic messages
@@ -141,20 +141,20 @@ function hot_spot, f,  $
 
   ;; Print coordinates if possible:
   if (not quiet) then begin
-    if (n_elements(xcoord) gt 0) then begin
+    if (nx gt 0) then begin
       x=xcoord[l1:l2]
       print, FORMAT='(A,F0,$)', 'X = ', x[pos[0]]
     endif
-    if (n_elements(ycoord) gt 0) then begin
+    if (ny gt 0) then begin
       ;; is it the full 2d or 3d coordinate array?
       if ((size(ycoord))[0] gt 1) then y=ycoord[0,m1:m2] else y=ycoord[m1:m2]
       print, FORMAT='(A,F0,$)', ', Y = ', y[pos[1]]
     endif
-    if (n_elements(zcoord) gt 0) then begin
-      if ((size(ycoord))[0] gt 2) then z=zcoord[0,0,n1:n2] else z=zcoord[n1:n2]
+    if (nz gt 0) then begin
+      if ((size(zcoord))[0] gt 2) then z=zcoord[0,0,n1:n2] else z=zcoord[n1:n2]
       print, FORMAT='(A,F0,$)', ', Z = ', z[pos[2]]
     endif
-    if (n_elements(xcoord) gt 0) then print ; trailing carriage return
+    if (nx gt 0) then print ; trailing carriage return
     print, 'value: ', gmax
   endif
 
