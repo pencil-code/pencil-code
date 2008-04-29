@@ -1,7 +1,7 @@
 ;
-;  $Id: pc_magic_var.pro,v 1.43 2008-04-22 12:55:50 wlyra Exp $
-;  $Date: 2008-04-22 12:55:50 $
-;  $Revision: 1.43 $
+;  $Id: pc_magic_var.pro,v 1.44 2008-04-29 10:13:34 ajohan Exp $
+;  $Date: 2008-04-29 10:13:34 $
+;  $Revision: 1.44 $
 ;
 pro pc_magic_var_dep, variables, tags, var, dep
 ;
@@ -139,18 +139,20 @@ pro pc_magic_var, variables, tags, $
   pc_magic_var_dep, variables, tags, 'mpres', 'bb'
   pc_magic_var_dep, variables, tags, 'mpres', 'bij'
   pc_magic_var_dep, variables, tags, 'alflim', 'bb'
-  pc_magic_var_dep, variables, tags, 'advB', 'uu'
-  pc_magic_var_dep, variables, tags, 'advB', 'bij'
-  pc_magic_var_dep, variables, tags, 'mstr', 'bb'
-  pc_magic_var_dep, variables, tags, 'mstr', 'uij'
-  pc_magic_var_dep, variables, tags, 'mstrkep', 'uu'
-  pc_magic_var_dep, variables, tags, 'mcomp', 'uu'
-  pc_magic_var_dep, variables, tags, 'mcomp', 'bb'
+  pc_magic_var_dep, variables, tags, 'comprho', 'divu'
+  pc_magic_var_dep, variables, tags, 'advb', 'uu'
+  pc_magic_var_dep, variables, tags, 'advb', 'bij'
+  pc_magic_var_dep, variables, tags, 'strb', 'bb'
+  pc_magic_var_dep, variables, tags, 'strb', 'uij'
+  pc_magic_var_dep, variables, tags, 'strbs', 'uu'
+  pc_magic_var_dep, variables, tags, 'compb', 'uu'
+  pc_magic_var_dep, variables, tags, 'compb', 'bb'
   pc_magic_var_dep, variables, tags, 'divadvu', 'uu'
   pc_magic_var_dep, variables, tags, 'divadvu', 'uij'
 ;
 ;  Modules.
 ;
+  lshear = safe_get_tag(param,'lshear',default=safe_get_tag(param,'lshear',default=0)) 
   lionization = safe_get_tag(param,'lionization',default=safe_get_tag(param,'leos_ionization',default=0)) 
   lionization_fixed = safe_get_tag(param,'lionization_fixed',default=safe_get_tag(param,'leos_ionizationi_fixed',default=0)) 
   lentropy = safe_get_tag(param,'lentropy',default=safe_get_tag(param,'lentropy',default=0)) 
@@ -265,19 +267,31 @@ pro pc_magic_var, variables, tags, $
         variables[iv]='(1+((total(bb^2,4)/(param.mu0*exp(lnrho)))/param2.va2max_jxb)^param2.va2power_jxb)^(-1./param2.va2power_jxb)'
       endelse
 ; Magnetic field advection
-    endif else if (variables[iv] eq 'advB') then begin
+    endif else if (variables[iv] eq 'advb') then begin
       tags[iv]=variables[iv]
       variables[iv]='-reform([[[total(uu*reform(bij[*,*,*,0,*]),4)]],[[total(uu*reform(bij[*,*,*,1,*]),4)]],[[total(uu*reform(bij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
+; Magnetic field advection by background shear
+    endif else if (variables[iv] eq 'sadvb') then begin
+      tags[iv]=variables[iv]
+      if (lshear) then begin
+        variables[iv]='param.qshear*param.omega*spread(x,[2,3],[ny,nz])*yder(bb)'
+      endif else begin
+        variables[iv]='fltarr(mx,my,mz,3)*one'
+      endelse
 ; Magnetic stretching
-    endif else if (variables[iv] eq 'mstr') then begin
+    endif else if (variables[iv] eq 'strb') then begin
       tags[iv]=variables[iv]
       variables[iv]='reform([[[total(bb*reform(uij[*,*,*,0,*]),4)]],[[total(bb*reform(uij[*,*,*,1,*]),4)]],[[total(bb*reform(uij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
-; Magnetic stretching by Keplerian shear
-    endif else if (variables[iv] eq 'mstrkep') then begin
+; Magnetic stretching by background shear
+    endif else if (variables[iv] eq 'strbs') then begin
       tags[iv]=variables[iv]
-      variables[iv]='-param.qshear*param.omega*bb[*,*,*,0]'
+      if (lshear) then begin
+        variables[iv]='-param.qshear*param.omega*bb[*,*,*,0]'
+      endif else begin
+        variables[iv]='fltarr(mx,my,mz)*one'
+      endelse
 ; Magnetic compression
-    endif else if (variables[iv] eq 'mcomp') then begin
+    endif else if (variables[iv] eq 'compb') then begin
       tags[iv]=variables[iv]
       variables[iv]='-bb*spread(div(uu),3,3)'
 ; Vorticity
@@ -301,6 +315,14 @@ pro pc_magic_var, variables, tags, $
       tags[iv]=variables[iv]
       variables[iv]=$
       '-0.5*grad(dot2(uu))+cross(uu,curl(uu))'
+; Velocity advection by background shear
+    endif else if (variables[iv] eq 'sadvu') then begin
+      tags[iv]=variables[iv]
+      if (lshear) then begin
+        variables[iv]='param.qshear*param.omega*spread(x,[2,3],[ny,nz])*yder(uu)'
+      endif else begin
+        variables[iv]='fltarr(mx,my,mz,3)*one'
+      endelse
 ; Density advection
     endif else if (variables[iv] eq 'advlnrho') then begin
       tags[iv]=variables[iv]
@@ -316,6 +338,38 @@ pro pc_magic_var, variables, tags, $
         variables[iv]='-dot(uu,grad(lnrho))'
       endif else begin  
         variables[iv]='-dot(uu,grad(exp(lnrho)))'
+      endelse
+; Density advection by background shear
+    endif else if (variables[iv] eq 'sadvrho') then begin
+      tags[iv]=variables[iv]
+      if (lshear) then begin
+        if (param.ldensity_nolog) then begin
+          variables[iv]='param.qshear*param.omega*spread(x,[2,3],[ny,nz])*yder(lnrho)'
+        endif else begin
+          variables[iv]='param.qshear*param.omega*spread(x,[2,3],[ny,nz])*yder(exp(lnrho))'
+        endelse
+      endif else begin
+        variables[iv]='fltarr(mx,my,mz)*one'
+      endelse
+; Density advection by background shear (logarithmic density)
+    endif else if (variables[iv] eq 'sadvlnrho') then begin
+      tags[iv]=variables[iv]
+      if (lshear) then begin
+        if (param.ldensity_nolog) then begin
+          variables[iv]='param.qshear*param.omega*spread(x,[2,3],[ny,nz])*yder(alog(lnrho))'
+        endif else begin
+          variables[iv]='param.qshear*param.omega*spread(x,[2,3],[ny,nz])*yder(lnrho)'
+        endelse
+      endif else begin
+        variables[iv]='fltarr(mx,my,mz)*one'
+      endelse
+; Density compression
+    endif else if (variables[iv] eq 'comprho') then begin
+      tags[iv]=variables[iv]
+      if (param.ldensity_nolog) then begin
+        variables[iv]='-lnrho*divu'
+      endif else begin  
+        variables[iv]='-exp(lnrho)*divu'
       endelse
 ; Modulus of velocity
     endif else if (variables[iv] eq 'u2') then begin
