@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.515 2008-04-24 20:16:17 brandenb Exp $
+! $Id: magnetic.f90,v 1.516 2008-04-29 22:21:12 dobler Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -414,7 +414,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.515 2008-04-24 20:16:17 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.516 2008-04-29 22:21:12 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -911,6 +911,7 @@ module Magnetic
             f(l1:l2,m,n,iax) = sqrt(2*mu0*rho0*cs20/beta_const) * &
                               4*scaleH*atan(tanh(z(n)/(4*scaleH)))
           enddo; enddo
+
         case('hydrostatic_disk_sinx')
           call get_shared_variable('nu_epicycle',nu_epicycle,ierr)
           if (ierr/=0) then
@@ -1505,10 +1506,12 @@ module Magnetic
 !
       if (lpencil(i_mf_EMF)) then
         select case(alpha_profile)
-        case('nothing'); alpha_tmp=1.
+        case('const'); alpha_tmp=1.
         case('siny'); alpha_tmp=sin(y(m))
         case('cosy'); alpha_tmp=cos(y(m))
         case('read'); alpha_tmp=alpha_input(l1:l2,m)
+        case('nothing'); call fatal_error('calc_pencils_magnetic', &
+            'alpha_profile="nothing" has been renamed to "const", please update your run.in')
         endselect
 !
 !  possibility of dynamical alpha
