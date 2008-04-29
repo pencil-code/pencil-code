@@ -1,4 +1,4 @@
-;$Id: pc_read_alpha_xyaver.pro,v 1.3 2008-04-01 05:17:01 brandenb Exp $
+;$Id: pc_read_alpha_xyaver.pro,v 1.4 2008-04-29 04:36:32 brandenb Exp $
 ;
 ;  In order to determine the z-dependence of the alpha and eta tensors
 ;  we have to read the horizontal averages of Epq, i.e. we assume that
@@ -19,8 +19,10 @@ if use_grid eq 1 then begin
 endif else begin
   ;
   ;  map z-array to a (-pi,pi) interval
+  ;  set default nz to 128, but this can be changed
   ;
-  nz=128 & n1=3 & n2=130
+  default,nz,128
+  n1=3 & n2=nz+2
   z1=4.*!pi & z0=-z1
   dz=(z1-z0)/nz
   zzz=z0+dz*(.5+findgen(nz))
