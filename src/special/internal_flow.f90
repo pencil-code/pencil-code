@@ -1,4 +1,4 @@
-! $Id: internal_flow.f90,v 1.7 2008-04-13 21:31:48 nilshau Exp $
+! $Id: internal_flow.f90,v 1.8 2008-04-29 08:32:55 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -84,11 +84,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.7 2008-04-13 21:31:48 nilshau Exp $
+!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.8 2008-04-29 08:32:55 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: internal_flow.f90,v 1.7 2008-04-13 21:31:48 nilshau Exp $")
+           "$Id: internal_flow.f90,v 1.8 2008-04-29 08:32:55 nilshau Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -161,15 +161,6 @@ module Special
         enddo
         call poiseulle_flowx_wally(f,xx,yy,zz,central_vel)
       case('velocity_defect_xy')
-!NILS        height=Lxyz(2)/2
-!NILS        h2=height**2
-!NILS        do i=iux,iuz
-!NILS          f(l1:l2,m1:m2,n1:n2,i)=f(l1:l2,m1:m2,n1:n2,i)&
-!NILS!               *(1-(yy(l1:l2,m1:m2,n1:n2)-xyz0(2)-height)**2/h2)
-!NILS               *(cos(yy(l1:l2,m1:m2,n1:n2))*cosh(yy(l1:l2,m1:m2,n1:n2))**2&
-!NILS               -minval(cos(yy(l1:l2,m1:m2,n1:n2))*cosh(yy(l1:l2,m1:m2,n1:n2))**2))/&
-!NILS               (-minval(cos(yy(l1:l2,m1:m2,n1:n2))*cosh(yy(l1:l2,m1:m2,n1:n2))**2))
-!NILS        enddo
         call velocity_defect_flowx_wally(f,xx,yy,zz,central_vel,Re_tau)
       case default
         !
@@ -712,11 +703,12 @@ module Special
                +utau*log(y_pluss*lw/height)/kappa&
                -B1*utau
           if (y_pluss .le. log_y) then
-            f(l1:l2,j,n1:n2,iux)=y_pluss
+            f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)+y_pluss
           elseif (y_pluss .ge. def_y) then
-            f(l1:l2,j,n1:n2,iux)=defect
+            f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)+defect
           else
-            f(l1:l2,j,n1:n2,iux)=defect*(y_pluss-log_y)/(def_y-log_y) &
+            f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)&
+                 +defect*(y_pluss-log_y)/(def_y-log_y) &
                  +log_y*(def_y-y_pluss)/(def_y-log_y)
           endif
         else
@@ -725,11 +717,12 @@ module Special
                +utau*log(y_pluss*lw/height)/kappa&
                -B1*utau
           if (y_pluss .le. log_y) then
-            f(l1:l2,j,n1:n2,iux)=y_pluss
+            f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)+y_pluss
           elseif (y_pluss .ge. def_y) then
-            f(l1:l2,j,n1:n2,iux)=defect
+            f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)+defect
           else
-            f(l1:l2,j,n1:n2,iux)=defect*(y_pluss-log_y)/(def_y-log_y) &
+            f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)&
+                 +defect*(y_pluss-log_y)/(def_y-log_y) &
                  +log_y*(def_y-y_pluss)/(def_y-log_y)
           endif
         endif
