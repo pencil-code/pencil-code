@@ -1,10 +1,16 @@
 ;
-;  $Id: gij.pro,v 1.2 2005-01-27 13:59:48 bingert Exp $
+;  $Id: gij.pro,v 1.3 2008-04-29 22:13:08 dobler Exp $
 ;
 ;  Calculate derivative matrix
 ;
 function gij,f
   COMPILE_OPT IDL2,HIDDEN
+  common cdat_coords, coord_system
+
+  if (coord_system ne 'cartesian') then $
+      message, $
+        "gij not yet implemented for coord_system='" + coord_system + "'"
+
 ;
   s=size(f)
 ;

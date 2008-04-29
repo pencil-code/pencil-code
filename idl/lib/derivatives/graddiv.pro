@@ -1,14 +1,20 @@
 ;
-;  $Id: graddiv.pro,v 1.1 2007-12-09 17:08:53 ajohan Exp $
+;  $Id: graddiv.pro,v 1.2 2008-04-29 22:13:08 dobler Exp $
 ;
 ;  Calculate gradient of the divergence of a vector.
 ;
 function graddiv,f
   COMPILE_OPT IDL2,HIDDEN
-;
+  common cdat_coords, coord_system
+
+  if (coord_system ne 'cartesian') then $
+      message, $
+        "graddiv not yet implemented for coord_system='" + coord_system + "'"
+
   s=size(f)
 ;
   if (s[0] eq 4) then begin
+
 ;
     w=make_array(n_elements(f[*,0,0,0]),n_elements(f[0,*,0,0]),n_elements(f[0,0,*,0]),3,/nozero)
     w[*,*,*,0]=   xder2(f[*,*,*,0])+xderyder(f[*,*,*,1])+xderzder(f[*,*,*,2])

@@ -1,5 +1,5 @@
 ;
-;  $Id: gijcurl.pro,v 1.1 2008-03-07 13:30:50 ajohan Exp $
+;  $Id: gijcurl.pro,v 1.2 2008-04-29 22:13:08 dobler Exp $
 ;
 ;  Derivative matrix from curl in cartesian coordinates.
 ;  Used to calculate B_{i,j} as bij=gijcurl(aa).
@@ -7,7 +7,13 @@
 ;  20-mar-04/axel: adapted from f90 routine bij_etc
 ;
 function gijcurl, f
-;
+COMPILE_OPT IDL2,HIDDEN
+common cdat_coords, coord_system
+
+if (coord_system ne 'cartesian') then $
+    message, $
+      "gijcurl not yet implemented for coord_system='" + coord_system + "'"
+
 s=size(f) & mx=s(1) & my=s(2) & mz=s(3)
 bij=fltarr(mx,my,mz,3,3)
 ;
