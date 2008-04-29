@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.7 2008-04-29 09:08:25 wlyra Exp $
+! $Id: poisson_cyl.f90,v 1.8 2008-04-29 21:29:48 dobler Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -1209,7 +1209,7 @@ module Poisson
 !***********************************************************************
     subroutine calculate_cross_legendre_functions
 !
-      use General, only: calc_complete_elliptic_integrals
+      use General, only: calc_complete_ellints
 !
       real, dimension(mmax)   :: Legendre_Q
       real, dimension(nzgrid) :: zed_serial
@@ -1242,7 +1242,7 @@ module Poisson
 ! 
        chi=(rad(ir)**2+rad(ikr)**2+(zed(iz)-zed_serial(ikz))**2)/(2*rad(ir)*rad(ikr))
         mu=sqrt(2./(1+chi))
-        call calc_complete_elliptic_integrals(mu,Kappa_mu,E_mu)
+        call calc_complete_ellints(mu,Kappa_mu,E_mu)
 !
 ! Calculate the Legendre functions for each harmonic
 !

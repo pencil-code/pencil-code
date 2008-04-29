@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.73 2008-04-28 21:42:13 wlyra Exp $
+! $Id: general.f90,v 1.74 2008-04-29 21:29:48 dobler Exp $
 
 module General
 
@@ -22,7 +22,7 @@ module General
   public :: find_index_range
 
   public :: spline,tridag,complex_phase,erfcc
-  public :: besselj_nu_int,calc_complete_elliptic_integrals
+  public :: besselj_nu_int,calc_complete_ellints
 
 
   include 'record_types.h'
@@ -1066,7 +1066,7 @@ module General
 !
     endsubroutine besselj_nu_int
 !*****************************************************************************
-    subroutine calc_complete_elliptic_integrals(mu,Kappa_mu,E_mu)
+    subroutine calc_complete_ellints(mu,Kappa_mu,E_mu)
 !
       use Cdata, only : pi
 !
@@ -1101,6 +1101,6 @@ module General
         E_mu=sum(a_e(2:nnt-1)) + .5*(a_e(1)+a_e(nnt))
       endif
 !
-    endsubroutine calc_complete_elliptic_integrals
+    endsubroutine calc_complete_ellints
 !*****************************************************************************
 endmodule General
