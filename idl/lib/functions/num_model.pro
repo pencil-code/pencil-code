@@ -12,9 +12,19 @@
 ;;;
 ;;;  Usage:
 ;;;   epsi = num_model(1.,/epsilon)
+;;;
+;;;  Keywords:
+;;;   EPSILON -- return the smallest psitive number that makes a
+;;;              difference when added to 1.
+;;;    HUGE   -- reuturn the largest number
+;;;    TINY   -- reuturn tha smallest positive number
 
 function num_model, x, $
-                    EPSILON=epsilon, HUGE=huge, TINY=tiny
+                    EPSILON=epsilon, HUGE=huge, TINY=tiny, $
+                    HELP=help
+
+
+if (keyword_set(help)) then extract_help, 'num_model'
 
 default, epsilon, 0
 default, huge   , 0
