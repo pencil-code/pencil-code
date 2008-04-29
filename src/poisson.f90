@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.48 2008-04-23 18:53:43 wlyra Exp $
+! $Id: poisson.f90,v 1.49 2008-04-29 09:08:25 wlyra Exp $
 
 !
 !  This module solves the Poisson equation
@@ -78,13 +78,14 @@ module Poisson
 !
     endsubroutine initialize_poisson
 !***********************************************************************
-    subroutine inverse_laplacian(phi)
+    subroutine inverse_laplacian(f,phi)
 !
 !  Dispatch solving the Poisson equation to inverse_laplacian_fft
 !  or inverse_laplacian_semispectral, based on the boundary conditions
 !
 !  17-jul-2007/wolf: coded wrapper
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: phi
 !
       intent(inout) :: phi
@@ -96,9 +97,12 @@ module Poisson
       endif
 !
       if (lspherical_coords) then 
-        if (lroot) print*,'There is no poisson solver for spherical coordinates yet.'//&
-             'Please implement if you feel like doing it. Many people will thank you for that.'
-        call fatal_error("inverse_laplacian","")
+        if (lroot) then 
+          print*,'There is no poisson solver for spherical '
+          print*,'coordinates yet. Please feel free to implement it. '
+          print*,'Many people will thank you for that.'
+          call fatal_error("inverse_laplacian","")
+        endif
       endif
 !
       if (lsemispectral) then
@@ -125,7 +129,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.48 2008-04-23 18:53:43 wlyra Exp $")
+        "$Id: poisson.f90,v 1.49 2008-04-29 09:08:25 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -238,7 +242,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.48 2008-04-23 18:53:43 wlyra Exp $")
+        "$Id: poisson.f90,v 1.49 2008-04-29 09:08:25 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !

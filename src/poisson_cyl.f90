@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.6 2008-04-28 22:01:20 wlyra Exp $
+! $Id: poisson_cyl.f90,v 1.7 2008-04-29 09:08:25 wlyra Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -187,7 +187,7 @@ module Poisson
 !
     endsubroutine initialize_poisson
 !***********************************************************************
-    subroutine inverse_laplacian(phi,f)
+    subroutine inverse_laplacian(f,phi)
 !
 !  Dispatch solving the Poisson equation to inverse_laplacian_fft
 !  or inverse_laplacian_semispectral, based on the boundary conditions
@@ -206,7 +206,7 @@ module Poisson
       else if (lsolve_direct) then
         call inverse_laplacian_directsum(phi)
       else if (lsolve_relax_sor) then
-        call inverse_laplacian_sor(phi,f)
+        call inverse_laplacian_sor(f,phi)
       else 
         call fatal_error("inverse_laplacian","no solving method given")
       endif
@@ -660,7 +660,7 @@ module Poisson
 !
     endsubroutine inverse_laplacian_directsum
 !***********************************************************************
-    subroutine inverse_laplacian_sor(phi,f)
+    subroutine inverse_laplacian_sor(f,phi)
 !
 !  Solve the 3D Poisson equation in cylindrical coordinates by 
 !  using mesh-relaxation with the SOR algorithm. The borders have
