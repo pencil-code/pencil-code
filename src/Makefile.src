@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.396 2008-04-28 19:47:32 brandenb Exp $
+### $Id: Makefile.src,v 1.397 2008-04-29 08:35:18 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -295,8 +295,8 @@ LD_FFTW2=
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FFLAGS=-O3 -static-libcxa #(ns0|char)
 #FFLAGS=-O3 -xW -vec_report0 #(obelix)
-#FC=pgf90 #(tycho|linux29|monolith)
-#FC=ifort #(sintef*|vmware|erland|bohm|igor|onsager|char)
+#FC=pgf90 #(sintef*|tycho|linux29|monolith)
+#FC=ifort #(vmware|erland|bohm|igor|onsager|char)
 #FC=ifort #(vsl21*|vsl22*|vsl230)
 #FC=ifort  #(co-login)
 #LD_MPI=-lmpi  #(co-login)
@@ -319,8 +319,8 @@ LD_FFTW2=
 #LD_MPI=-Wl,-m elf_i386 -L/home/ajohan/f90/lib -llamf77mpi -lmpi -llam #(lynx)
 #LD_MPI=-lmpi #(brahe)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
-#FFLAGS=-fast -lm #(tycho|linux29)
-##FFLAGS= #(sintef*|vmware|erland|bohm|igor|onsager)
+#FFLAGS=-fast -lm #(sintef*|tycho|linux29)
+##FFLAGS= #(vmware|erland|bohm|igor|onsager)
 #FFLAGS= -I./ -D_REENTRANT -I/opt/scali/include #(vsl21*|vsl22*|vsl230)
 #LD_MPI= -L/opt/scali/lib -lfmpi -lmpi -lpthread #(vsl21*|vsl22*|vsl230)
 #FFLAGS= -fast -lm#(erland|bohm|igor|onsager)
