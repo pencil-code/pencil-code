@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.75 2008-04-28 16:24:09 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.76 2008-04-29 11:13:07 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.75 2008-04-28 16:24:09 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.76 2008-04-29 11:13:07 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.75 2008-04-28 16:24:09 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.76 2008-04-29 11:13:07 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1756,8 +1756,6 @@ module Chemistry
       character (len=*) :: input_file
       !
 
-
-
       if (present(NrOfReactions)) NrOfReactions=0
 
       k=1
@@ -2053,13 +2051,9 @@ module Chemistry
            endif
          enddo
         enddo
-
-!
-
 !
 !  Dimensionless Standard-state molar entropy  S0/R
 !
-
         do k=1,nchemspec
           T_low=species_constants(k,iTemp1)
           T_mid=species_constants(k,iTemp2)
@@ -2088,10 +2082,7 @@ module Chemistry
 !
 
     do reac=1,nreactions
-
-
      kf(:)=B_n(reac)*T_cgs(:)**alpha_n(reac)*exp(-E_an(reac)/Rcal/T_cgs(:))
-
 
       dSR=0.
       dHRT=0.
@@ -2107,7 +2098,6 @@ module Chemistry
 
 !print*,'sum',maxval(dSR(:)),maxval(dHRT(:))
 
-
      Kp=exp(dSR-dHRT)
 
      if (sum_tmp==0.) then
@@ -2117,8 +2107,6 @@ module Chemistry
      endif
 
      kr(:)=kf(:)/Kc
-
-
 
       prod1=1.
       prod2=1.
@@ -2453,10 +2441,6 @@ module Chemistry
           endif
           p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2
 
- !  if (maxval(p%DYDt_diff(:,k)) >1e-6) then
-  !    print*,maxval(p%DYDt_diff(:,k))
-  ! endif
-
         endif
 
 
@@ -2478,7 +2462,7 @@ module Chemistry
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string 
       integer :: VarNumber,i,j,k=1
-      real :: YY_k, air_mass, TT
+      real :: YY_k, air_mass, TT=300., PP=9.81e4
       real, dimension(nchemspec) :: stor1,stor2 
       !character (len=*) :: input_file
       !
@@ -2488,7 +2472,7 @@ module Chemistry
       StartInd_1=1; StopInd_1 =0
       open(file_id,file="air.dat")
 
-      if (lroot) print*, 'the following species are found in air.dat (volume fraction fraction in %): '
+      if (lroot) print*, 'the following parameters and species are found in air.dat (volume fraction fraction in %): '
 
       dataloop: do
 
@@ -2502,8 +2486,30 @@ module Chemistry
     
 
         if (tmp_string == '!' .or. tmp_string == ' ') then
-        else
-         print*,specie_string,tmp_string
+        elseif (tmp_string == 'T') then
+          StartInd=1; StopInd =0
+
+          StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+          StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
+          StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+
+           read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), TT
+              print*, ' Temperature, K   ', TT
+
+
+         elseif (tmp_string == 'P') then
+
+           StartInd=1; StopInd =0
+
+          StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+          StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
+          StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+
+          read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), PP
+              print*, ' Pressure, Pa   ', PP
+
+         else
+        ! print*,specie_string,tmp_string
          call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
 
             if (found_specie) then
@@ -2517,9 +2523,6 @@ module Chemistry
                   print*, ' volume fraction, %,    ', YY_k, species_constants(ind_chem,imass)
 
                air_mass=air_mass+YY_k*0.01/species_constants(ind_chem,imass)
-
-            
-
 
                if (StartInd==80) exit
 
@@ -2543,14 +2546,13 @@ module Chemistry
          f(:,:,:,ichemspec(stor1(j)))=stor2(j)*0.01
         enddo 
 
-       TT=300.!(273.+15.)
-
        f(:,:,:,5)=log(TT/unit_temperature)
 
-       f(:,:,:,4)=log((9.81e5/(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
+       f(:,:,:,4)=log((PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
 
       if (lroot) print*, 'Air temperature, K', TT
-      if (lroot) print*, 'Air density, g/cm^3', 9.81e5/(k_B_cgs/m_u_cgs)*air_mass/TT
+      if (lroot) print*, 'Air density, g/cm^3:'
+      if (lroot) print '(E10.3)',  PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT
       if (lroot) print*, 'Air mean weight, g/mol', air_mass
 
 
