@@ -1,16 +1,15 @@
 ;
-;  $Id: graddiv.pro,v 1.2 2008-04-29 22:13:08 dobler Exp $
+;  $Id: graddiv.pro,v 1.3 2008-04-30 15:00:10 ajohan Exp $
 ;
 ;  Calculate gradient of the divergence of a vector.
 ;
 function graddiv,f
   COMPILE_OPT IDL2,HIDDEN
   common cdat_coords, coord_system
-
-  if (coord_system ne 'cartesian') then $
-      message, $
-        "graddiv not yet implemented for coord_system='" + coord_system + "'"
-
+;
+  if (coord_system ne 'cartesian') then message, $
+      "graddiv not yet implemented for coord_system='" + coord_system + "'"
+;
   s=size(f)
 ;
   if (s[0] eq 4) then begin

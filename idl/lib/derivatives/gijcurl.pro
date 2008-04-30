@@ -1,5 +1,5 @@
 ;
-;  $Id: gijcurl.pro,v 1.2 2008-04-29 22:13:08 dobler Exp $
+;  $Id: gijcurl.pro,v 1.3 2008-04-30 15:00:10 ajohan Exp $
 ;
 ;  Derivative matrix from curl in cartesian coordinates.
 ;  Used to calculate B_{i,j} as bij=gijcurl(aa).
@@ -9,12 +9,11 @@
 function gijcurl, f
 COMPILE_OPT IDL2,HIDDEN
 common cdat_coords, coord_system
-
-if (coord_system ne 'cartesian') then $
-    message, $
-      "gijcurl not yet implemented for coord_system='" + coord_system + "'"
-
-s=size(f) & mx=s(1) & my=s(2) & mz=s(3)
+;
+if (coord_system ne 'cartesian') then message, $
+    "gijcurl not yet implemented for coord_system='" + coord_system + "'"
+;
+s=size(f) & mx=s[1] & my=s[2] & mz=s[3]
 bij=fltarr(mx,my,mz,3,3)
 ;
 ;  Calculate B_i,j = eps_ikl A_l,jk

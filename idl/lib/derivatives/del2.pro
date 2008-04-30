@@ -1,5 +1,5 @@
 ;
-;  $Id: del2.pro,v 1.3 2008-04-29 22:13:08 dobler Exp $
+;  $Id: del2.pro,v 1.4 2008-04-30 15:00:10 ajohan Exp $
 ;
 ;  Calculate the Laplacian of f, i.e.
 ;    div(grad(f)) if f is a scalar field, or
@@ -10,11 +10,9 @@
 function del2,f
   COMPILE_OPT IDL2,HIDDEN
   common cdat_coords, coord_system
-
-  if (coord_system ne 'cartesian') then $
-      message, $
-        "del2 not yet implemented for coord_system='" + coord_system + "'"
-
+;
+  if (coord_system ne 'cartesian') then message, $
+      "del2 not yet implemented for coord_system='" + coord_system + "'"
 ;
   s=size(f)
 ;
