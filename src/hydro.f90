@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.431 2008-04-23 14:07:04 ajohan Exp $
+! $Id: hydro.f90,v 1.432 2008-04-30 12:44:22 dintrans Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -339,7 +339,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.431 2008-04-23 14:07:04 ajohan Exp $")
+           "$Id: hydro.f90,v 1.432 2008-04-30 12:44:22 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -952,7 +952,7 @@ module Hydro
         lpenc_diagnos(i_pomy)=.true.
       endif
 
-      if (idiag_upmr/=0 .or. idiag_opmr/=0) then
+      if (idiag_upmr/=0 .or. idiag_opmr/=0 .or. idiag_upmphi/=0) then
         lpenc_diagnos(i_phix)=.true.
         lpenc_diagnos(i_phiy)=.true.
       endif
