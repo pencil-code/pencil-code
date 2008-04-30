@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.8 2008-04-29 21:29:48 dobler Exp $
+! $Id: poisson_cyl.f90,v 1.9 2008-04-30 12:11:53 wlyra Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -595,14 +595,15 @@ module Poisson
 !
       real, dimension (nx,ny,nz)  :: phi
       real, dimension (nx,nygrid) :: cross,integrand
-      real, dimension (nx,ny)     :: tmp,cross_proc
+      real, dimension (nx,ny)     :: cross_proc
       real, dimension (nx)        :: intr
-      integer :: ith,ir,ikr,ikt,imn
+      integer :: ith,ir,ikr,ikt,imn,n
       integer :: nnghost,i,j,ido,iup
-      real :: fac
+      real :: fac,tmp
 !
       if (nzgrid/=1)  &
-           call fatal_error("inverse_laplacian_directsum","currently only works for 2D simulations")
+           call fatal_error("inverse_laplacian_directsum",&
+           "currently only works for 2D simulations")
       nnghost=npoint-nghost
 
       !transfer fac to the green grid
@@ -643,6 +644,7 @@ module Poisson
 !
 ! Now integrate through direct summation
 !
+      !fac=1.
       do ir=1,nr 
       do ith=1,nth
 !
@@ -804,7 +806,7 @@ module Poisson
       phi_previous_step=phi
 !
     endsubroutine inverse_laplacian_sor
-!*******************************************************************************
+!*************************************************************************
     subroutine five_point_solver(lhs,rhs,&
          a_band,b_band,b_band1,c_band,d_band,e_band,im,lupdate)
     
@@ -980,7 +982,7 @@ module Poisson
       endif !lfirst_timestep
 
     endsubroutine get_border_values
-!**********************************************************************************
+!***********************************************************************
     subroutine integrate_border(rhs_serial,ir,ith,iz,potential)
 !
       real, dimension(nx,nygrid,nzgrid) :: rhs_serial
@@ -1019,7 +1021,8 @@ module Poisson
 !  
     endsubroutine integrate_border
 !***********************************************************************
-    subroutine check_update_grid(rhs,phi_old,a_band,b_band1,c_band,d_band,e_band,lupdate)
+    subroutine check_update_grid(rhs,phi_old,a_band,b_band1,&
+         c_band,d_band,e_band,lupdate)
 !
 ! Check if an update is needed. Otherwise, don't update the lhs
 !
@@ -1126,7 +1129,7 @@ module Poisson
       enddo;enddo
 !
     endsubroutine check_update_border
-!********************************************************************************
+!***************************************************************************
     subroutine calculate_cross_bessel_functions
 !
 !  Calculate the Bessel functions related to the 
@@ -1173,7 +1176,7 @@ module Poisson
 !
       real, dimension(nygrid) :: tht_serial
       real    :: jacobian,tmp,Delta,fac
-      integer :: ir,ith,ikr,ikt
+      integer :: ir,ith,ikr,ikt,ith_serial
 !
       if (lroot) &
         print*,'Pre-calculating the Green functions to '//&
@@ -1190,14 +1193,42 @@ module Poisson
       Delta=min(dr,dth)
 !
       do ir =1,nr;do ith=1,nth
+      ith_serial=ith+ipy*nth  
       do ikr=1,nr;do ikt=1,nthgrid
 !
         jacobian=rad(ikr)*dr*dth
 !
-        tmp=sqrt(Delta**2 + rad(ir)**2 + rad(ikr)**2 - &
-             2*rad(ir)*rad(ikr)*cos(tht(ith)-tht_serial(ikt)))
+! The distance is 
 !
-        green_grid_2D(ir,ith,ikr,ikt)= fac*jacobian/tmp
+!  tmp=sqrt(rad(ir)**2 + rad(ikr)**2 - &
+!       2*rad(ir)*rad(ikr)*cos(tht(ith)-tht_serial(ikt)))
+!
+! But it is better to work in terms of the indices, to avoid
+! rounding errors. Otherwise, we will get self-accelerations 
+! as the potential is not EXACTLY symmetric with respect to the 
+! particle. With single precision and 64x64, gpot=1e-5 instead of 0.
+! In double precision it goes down quite a lot, but still not zero. 
+! This explicit construction with indices pulls gpot to zero.
+!
+        if ((ir/=ikr).and.(ith_serial/=ikt)) then 
+          tmp=sqrt(rad(ir)**2 + rad(ikr)**2 - &
+               2*rad(ir)*rad(ikr)*cos(tht(ith)-tht_serial(ikt)))
+        endif
+        if ((ir/=ikr).and.(ith_serial==ikt)) then
+          tmp=abs(dr*(ir-ikr))
+        endif
+        if ((ir==ikr).and.(ith_serial/=ikt)) then
+          tmp=2*rad(ir)**2*(1-cos(dth*(ith_serial-ikt)))
+        endif
+        if ((ir==ikr).and.(ith_serial==ikt)) then
+          tmp=0.
+        endif
+!
+        if (tmp .ne. 0 ) then 
+          green_grid_2D(ir,ith,ikr,ikt)= fac*jacobian/tmp
+        else
+          green_grid_2D(ir,ith,ikr,ikt)= 0.
+        endif
 !
       enddo;enddo
       enddo;enddo
