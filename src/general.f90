@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.74 2008-04-29 21:29:48 dobler Exp $
+! $Id: general.f90,v 1.75 2008-04-30 10:40:33 wlyra Exp $
 
 module General
 
@@ -1068,6 +1068,32 @@ module General
 !*****************************************************************************
     subroutine calc_complete_ellints(mu,Kappa_mu,E_mu)
 !
+!  Calculate the complete elliptic integrals of first (K) 
+!  and second kind (E) bessel function
+!                 
+!                 _ 
+!             1  /  pi/2
+!  K(mu)  = ____ |      1/sqrt(1-mu*sin(x)) dx
+!                |  
+!            pi _/  0
+!
+!  The function defines its own theta from 0 to pi for the
+!  integration, with the same number of points as the 
+!  azimuthal direction, or 100 points if nygrid<100. The 
+!  integration is performed with the trapezoidal rule.  As
+!  K(mu) is not defined at the point mu=1, we set K(1)=0
+!
+!  The complete elliptic integral of second kind 
+!
+!                 _ 
+!             1  /  pi/2
+!  E(mu)  = ____ |       sqrt(mu*sin(x)) dx
+!                |  
+!            pi _/  0
+!
+!  is defined everywhere and does not need this fix.
+!
+
       use Cdata, only : pi
 !
       real, dimension(:),allocatable :: angle,a_K,a_E
