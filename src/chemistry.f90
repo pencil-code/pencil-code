@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.77 2008-04-29 15:25:50 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.78 2008-04-30 12:36:21 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.77 2008-04-29 15:25:50 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.78 2008-04-30 12:36:21 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.77 2008-04-29 15:25:50 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.78 2008-04-30 12:36:21 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -849,7 +849,7 @@ module Chemistry
          write(file_id,*) 'Themperature, K'
          write(file_id,'(7F7.3)') exp(maxval(f(:,:,:,5)))*unit_temperature
          write(file_id,*) ''
-         write(file_id,*) 'Cp, erg/mole/K'
+         write(file_id,*) 'Cp,  erg/mole/K'
          write(file_id,'(7E10.2)')                       maxval(cp_full)/Rgas*Rgas_unit_sys/maxval(mu1_full/unit_mass)
          write(file_id,*) ''
          write(file_id,*) 'cp, erg/g/K'
@@ -864,13 +864,14 @@ module Chemistry
          write(file_id,*) 'Thermal cond, erg/(cm K s),'
          write(file_id,'(7E10.2)') maxval(0.5*(tmp_sum+1./tmp_sum2)*1e4/Rgas*Rgas_unit_sys)
          write(file_id,*) ''
-         write(file_id,*) 'Diffusion coefficient, cm^2/s'
+         write(file_id,*) ' Diffusion coefficient, cm^2/s'
          write(file_id,'(7E10.2)') maxval(Diff_full)*unit_length**2/unit_time
         print*,'calc_for_chem_mixture: writing mix_quant.out file'
+         close(file_id)
          lwrite=.false.
       endif
 
-
+      
 
 
  endsubroutine calc_for_chem_mixture
@@ -2018,7 +2019,7 @@ module Chemistry
 !
 ! p is in atm units; atm/bar=1./0.986
 !   
-  Rcal=Rgas_unit_sys*4.14e-7
+  Rcal=Rgas_unit_sys/4.14*1e-7
   T_cgs=p%TT*unit_temperature
   rho_cgs=p%rho*unit_mass/unit_length**3
   p_atm=p%pp*unit_energy/unit_length**3/9.81e5
