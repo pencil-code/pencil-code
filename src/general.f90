@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.75 2008-04-30 10:40:33 wlyra Exp $
+! $Id: general.f90,v 1.76 2008-04-30 10:42:40 wlyra Exp $
 
 module General
 
@@ -1071,11 +1071,11 @@ module General
 !  Calculate the complete elliptic integrals of first (K) 
 !  and second kind (E) bessel function
 !                 
-!                 _ 
-!             1  /  pi/2
-!  K(mu)  = ____ |      1/sqrt(1-mu*sin(x)) dx
-!                |  
-!            pi _/  0
+!              _ 
+!             /  pi/2
+!  K(mu)  =   |       1/sqrt(1-mu*sin(x)) dx
+!             |  
+!            _/  0
 !
 !  The function defines its own theta from 0 to pi for the
 !  integration, with the same number of points as the 
@@ -1085,11 +1085,11 @@ module General
 !
 !  The complete elliptic integral of second kind 
 !
-!                 _ 
-!             1  /  pi/2
-!  E(mu)  = ____ |       sqrt(mu*sin(x)) dx
-!                |  
-!            pi _/  0
+!              _ 
+!             /  pi/2
+!  E(mu)  =   |       sqrt(mu*sin(x)) dx
+!             |  
+!            _/  0
 !
 !  is defined everywhere and does not need this fix.
 !
