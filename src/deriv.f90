@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.61 2008-03-18 16:23:45 wlyra Exp $
+! $Id: deriv.f90,v 1.62 2008-04-30 23:22:01 wlyra Exp $
 
 module Deriv
 
@@ -212,6 +212,9 @@ module Deriv
         if (lroot) print*, 'der_pencil: no such direction j=', j
         call fatal_error('der_pencil','')
       endif
+!
+      if (lcylindrical_coords.or.lspherical_coords) & 
+           call fatal_error("der_pencil","Not implemented for non-cartesian")
 !
     endsubroutine der_pencil
 !***********************************************************************
