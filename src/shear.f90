@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.52 2008-05-01 08:56:58 ajohan Exp $
+! $Id: shear.f90,v 1.53 2008-05-01 10:22:20 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -55,7 +55,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.52 2008-05-01 08:56:58 ajohan Exp $")
+           "$Id: shear.f90,v 1.53 2008-05-01 10:22:20 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -315,7 +315,7 @@ module Shear
 !  from shear motion.
 !
       if (lshearadvection_as_shift) then
-        uy0=Sshear*x(l1:l2)
+        uy0=Sshear*(x(l1:l2)-x0_shear)
         do ivar=1,mvar
           tmp=f(l1:l2,m1:m2,n1:n2,ivar)
           call fourier_shift_y(tmp,uy0*dt_shear)
