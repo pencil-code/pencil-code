@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.90 2008-04-24 20:16:17 brandenb Exp $
+! $Id: nohydro.f90,v 1.91 2008-05-01 13:24:44 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -75,7 +75,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.90 2008-04-24 20:16:17 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.91 2008-05-01 13:24:44 brandenb Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -297,6 +297,19 @@ module Hydro
         p%uu(:,1)=-fac*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
         p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
         p%uu(:,3)=+fac*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  Glen-Roberts flow (x-direction, positive helicity)
+!  x -> y
+!  y -> z
+!  z -> x
+!
+      elseif (kinflow=='xdir-roberts') then
+        if (headtt) print*,'x-dir Roberts flow; ky_aa,kz_aa=',kky_aa,kkz_aa
+        fac=ampl_kinflow
+        p%uu(:,2)=-fac*cos(kky_aa*y(m))*sin(kkz_aa*z(n))
+        p%uu(:,3)=+fac*sin(kky_aa*y(m))*cos(kkz_aa*z(n))
+        p%uu(:,1)=+fac*cos(kky_aa*y(m))*cos(kkz_aa*z(n))*sqrt(2.)
         if (lpencil(i_divu)) p%divu=0.
 !
 !  z-dependent Roberts flow (positive helicity)
