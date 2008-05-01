@@ -1,4 +1,4 @@
-! $Id: noshear.f90,v 1.16 2007-11-06 21:08:03 bingert Exp $
+! $Id: noshear.f90,v 1.17 2008-05-01 08:56:58 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear are invoked, a corresponding replacement dummy
@@ -39,7 +39,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noshear.f90,v 1.16 2007-11-06 21:08:03 bingert Exp $")
+           "$Id: noshear.f90,v 1.17 2008-05-01 08:56:58 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -82,6 +82,20 @@ module Shear
 
       if (NO_WARN) print*,unit
     endsubroutine write_shear_run_pars
+!***********************************************************************
+    subroutine shear_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set.
+!
+!   1-may-08/anders: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      if (NO_WARN) print*, f
+!
+    endsubroutine shear_before_boundary
 !***********************************************************************
     subroutine shearing(f,df)
 !

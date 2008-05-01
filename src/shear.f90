@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.51 2008-04-09 03:10:25 brandenb Exp $
+! $Id: shear.f90,v 1.52 2008-05-01 08:56:58 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -16,19 +16,19 @@ module Shear
   implicit none
 
   real, dimension (nz) :: uy0_extra, duy0dz_extra
-  real :: eps_vshear=0.0
+  real :: eps_vshear=0.0, x0_shear=0.0
   logical :: luy0_extra=.false.,lshearadvection_as_shift=.false.
-  logical :: lmagnetic_stretching=.true.
+  logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
 
   include 'shear.h'
 
   namelist /shear_init_pars/ &
       qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift, &
-      lmagnetic_stretching
+      lmagnetic_stretching,lrandomx0,x0_shear
 
   namelist /shear_run_pars/ &
       qshear,Sshear,deltay,eps_vshear,Omega,lshearadvection_as_shift, &
-      lmagnetic_stretching
+      lmagnetic_stretching,lrandomx0,x0_shear
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
@@ -55,7 +55,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.51 2008-04-09 03:10:25 brandenb Exp $")
+           "$Id: shear.f90,v 1.52 2008-05-01 08:56:58 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -136,6 +136,33 @@ module Shear
 !
     endsubroutine write_shear_run_pars
 !***********************************************************************
+    subroutine shear_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set.
+!
+!   1-may-08/anders: coded
+!
+      use Cdata
+      use General
+      use Mpicomm
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+!  Possible to shear around a random position in x, to let all points
+!  be subjected to shear in a statistically equal way.
+!
+      if (itsub==1) then
+        if (lrandomx0) then
+          if (lroot) then
+            call random_number_wrapper(x0_shear)
+            x0_shear=x0_shear*Lxyz(1)+xyz0(1)
+          endif
+          call mpibcast_real(x0_shear,1,0)
+        endif
+      endif
+!
+    endsubroutine shear_before_boundary
+!***********************************************************************
     subroutine shearing(f,df)
 !
 !  Calculates the shear terms, -uy0*df/dy (shearing sheat approximation)
@@ -164,7 +191,7 @@ module Shear
 !
 !  add shear term, -uy0*df/dy, for all variables
 !
-      uy0=Sshear*x(l1:l2)
+      uy0=Sshear*(x(l1:l2)-x0_shear)
 !
 !  Add extra rotation profile.
 !
