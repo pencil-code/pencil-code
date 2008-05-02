@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.79 2008-05-02 13:19:23 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.80 2008-05-02 13:20:36 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.79 2008-05-02 13:19:23 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.80 2008-05-02 13:20:36 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.79 2008-05-02 13:19:23 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.80 2008-05-02 13:20:36 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1237,6 +1237,9 @@ module Chemistry
         endif
 
 
+!
+! Natalia thoughts: it should be discussed
+!
          if (lfirst .and. ldt) then
           if (lreactions .and. lcheminp) then
             do j=1,nx
@@ -2242,7 +2245,7 @@ module Chemistry
           xdot=-xdot*species_constants(ichemspec(k),imass)
           xdot_ts=-xdot_ts*species_constants(ichemspec(k),imass)
          endif
-      p%DYDt_reac(:,k)=xdot*unit_time
+        p%DYDt_reac(:,k)=xdot*unit_time
         DYDt_reac_ts(:,k)=xdot_ts*unit_time
 
 ! print*,'Natalia',maxval(p%DYDt_reac(:,4)),unit_time,maxval(xdot)
