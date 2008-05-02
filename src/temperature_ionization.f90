@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.41 2008-04-17 12:24:51 nbabkovs Exp $
+! $Id: temperature_ionization.f90,v 1.42 2008-05-02 13:19:23 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -94,7 +94,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.41 2008-04-17 12:24:51 nbabkovs Exp $")
+           "$Id: temperature_ionization.f90,v 1.42 2008-05-02 13:19:23 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -408,7 +408,7 @@ module Entropy
 !
       real, dimension (nx,3) :: damp
       real, dimension (nx) :: Hmax, sum_DYDt
-      real :: prof
+      real :: prof,react_rate
       integer :: j,k
 !
 !  Initialize maximum heating to zero
@@ -496,7 +496,28 @@ module Entropy
              sum_DYDt=sum_DYDt+p%cvspec(:,k)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
            enddo
 
+         
+
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - f(l1:l2,m,n,ilnTT)*p%cv1(:)*sum_DYDt(:)
+
+!      print*, maxval(df(l1:l2,m,n,ilnTT)),maxval(f(l1:l2,m,n,ilnTT)*p%cv1(:)*sum_DYDt(:)),maxval(f(l1:l2,m,n,ilnTT)),maxval(p%cv1(:)),maxval(sum_DYDt(:))
+
+
+ !      if (lfirst .and. ldt) then
+      !   if (ldt) then
+  !       do j=1,nx
+   !        react_rate=abs((f(l1-1+j,m,n,ilnTT)*p%cv1(j)*sum_DYDt(j)))
+
+
+    !         if (diffus_chem(j)<react_rate) then
+     !    !        diffus_chem(j)=react_rate
+      !        endif
+
+  !       enddo
+
+      !   if (m==10)  print*,react_rate,maxval(diffus_chem)
+  !     endif
+
        endif
       endif
 

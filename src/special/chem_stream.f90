@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.19 2008-04-29 11:10:41 nbabkovs Exp $
+! $Id: chem_stream.f90,v 1.20 2008-05-02 13:19:24 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -139,11 +139,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.19 2008-04-29 11:10:41 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.20 2008-05-02 13:19:24 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.19 2008-04-29 11:10:41 nbabkovs Exp $")
+           "$Id: chem_stream.f90,v 1.20 2008-05-02 13:19:24 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -520,6 +520,14 @@ module Special
            call bc_equil_y(f,-1, bc)
          endselect
          bc%done=.true.
+         case ('HAi')
+         select case (bc%location)
+         case (iBC_X_TOP)
+           call bc_HstreamAir_x(f,-1, bc)
+         case (iBC_X_BOT)
+           call bc_HstreamAir_x(f,-1, bc)
+         endselect
+         bc%done=.true.
 
       endselect
 
@@ -724,14 +732,14 @@ module Special
     if (bc%location==iBC_Y_BOT) then
       ! bottom boundary
         do i=1,nghost
-      !   f(:,m2-i,:,vr)=f(:,m2,:,vr) 
-         f(:,m2-i,:,vr)=2*f(:,m2,:,vr)+sgn*f(:,m2+i,:,vr); 
+         f(:,m2-i,:,vr)=f(:,m2,:,vr) 
+      !   f(:,m2-i,:,vr)=2*f(:,m2,:,vr)+sgn*f(:,m2+i,:,vr); 
         enddo
       elseif (bc%location==iBC_Y_TOP) then
       ! top boundary
         do i=1,nghost
-       ! f(:,m2+i,:,vr)=f(:,m2,:,vr)
-        f(:,m2+i,:,vr)=2*f(:,m2,:,vr)+sgn*f(:,m2-i,:,vr);
+        f(:,m2+i,:,vr)=f(:,m2,:,vr)
+       ! f(:,m2+i,:,vr)=2*f(:,m2,:,vr)+sgn*f(:,m2-i,:,vr);
         enddo
       else
         print*, "bc_BL_y: ", bc%location, " should be `top(", &
@@ -1121,6 +1129,98 @@ module Special
 !
     endsubroutine bc_gpress_wall
 !***********************************************************************
+
+ subroutine bc_HstreamAir_x(f,sgn,bc)
+!
+! Natalia
+!
+    use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (my, nchemspec-1) :: mask
+      integer :: sgn
+      type (boundary_condition) :: bc
+      integer :: i,i1,j,vr,k
+      real :: value1, value2, y0
+
+      y0=3.
+
+      vr=bc%ivar
+
+      value1=bc%value1
+      value2=bc%value2
+
+
+    if (bc%location==iBC_X_BOT) then
+      ! bottom boundary
+
+       if (vr==1) then
+        do k=1,my
+            if (abs(y(k)) .lt. y0) then
+              do i=0,nghost
+                   f(l1-i,k,:,vr)=value1*(1.-(y(k)/y0)**2); 
+              enddo
+            else
+              do i=0,nghost;   f(l1-i,k,:,vr)=0.;  enddo
+            !  do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
+            endif
+        
+        enddo
+       endif
+
+
+       if (vr==5 .or. vr==4 ) then
+         !  if (abs(y(k)) .lt. y0) then
+            do i=0,nghost;  f(l1-i,m1:my,:,vr)=log(value1);  enddo
+         !  else
+          !  do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
+          !  do i=0,nghost; f(l1-i,:,:,vr)=f(l1,:,:,vr); enddo
+          !   do i=0,nghost
+          !      f(l1-i,:,:,vr)=0.5*(f(l1-i+1,:,:,vr)+f(l1-i-1,:,:,vr))
+          !   enddo
+          ! endif
+       endif
+
+     !   if (vr==4 ) then
+     !       do i=0,nghost; f(l1-i,:,:,vr)=f(l1,:,:,vr); enddo
+     ! endif
+
+
+
+       if (vr >= ichemspec(1)) then
+
+         do i=0,nghost; 
+          do k=1,my
+             if (abs(y(k)) .lt. y0) then
+                if (vr == ichemspec(nchemspec))  f(l1-i,k,:,vr)=value1
+                if (vr < ichemspec(nchemspec)) f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4
+             else
+                if (vr < ichemspec(nchemspec)) then
+                 f(l1-i,k,:,vr)=value1
+                endif 
+                if (vr == ichemspec(nchemspec)) then
+                      f(l1-i,k,:,vr)=value1!*((l1-i)/(l1-0.))**4*0.
+             !    f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr)
+             !   f(l1-i,:,:,vr)=0.5*(f(l1-i+1,:,:,vr)+f(l1-i-1,:,:,vr))
+               endif
+             endif
+          enddo
+         enddo
+
+       endif
+
+      elseif (bc%location==iBC_X_TOP) then
+      ! top boundary
+        do i=1,nghost
+        f(l2+i,:,:,vr)=f(l2,:,:,vr)!2*f(l2,:,:,vr)+sgn*f(l2-i,:,:,vr); 
+        enddo
+      else
+        print*, "bc_BL_x: ", bc%location, " should be `top(", &
+                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
+      endif
+!
+    endsubroutine bc_HstreamAir_x
+ !******************************************************************** 
 
     subroutine special_before_boundary(f)
 !

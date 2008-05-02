@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.78 2008-04-30 12:36:21 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.79 2008-05-02 13:19:23 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -77,7 +77,7 @@ module Chemistry
 
   logical :: Natalia_thoughts=.false.
 
-  
+  real, dimension(nx,nchemspec) :: DYDt_reac_ts
 
 
 ! input parameters
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.78 2008-04-30 12:36:21 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.79 2008-05-02 13:19:23 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.78 2008-04-30 12:36:21 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.79 2008-05-02 13:19:23 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1174,18 +1174,8 @@ module Chemistry
            call grad(f,ichemspec(k),gchemspec) 
            call dot_mn(p%uu,gchemspec,ugchemspec)
            df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))-ugchemspec
-
-!
-!this are Natalia's thoughts, which should be discussed later!
-!
-           if (Natalia_thoughts) then
-             do j=l1,l2
-              if (f(j,m,n,ichemspec(k))+df(j,m,n,ichemspec(k)) < 0.) then 
-               df(j,m,n,ichemspec(k))=0.
-              endif
-             enddo
-           endif
-         endif
+ 
+        endif
 !
 !  diffusion operator
 !
@@ -1196,6 +1186,7 @@ module Chemistry
             df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_diff(:,k) 
           endif
 
+
 !
 !  chemical reactions:
 !  multiply with stoichiometric matrix with reaction speed
@@ -1203,6 +1194,22 @@ module Chemistry
 !
          if (lreactions) then
            df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_reac(:,k)
+
+  
+!
+!this are Natalia's thoughts, which should be discussed later!
+!
+           if (Natalia_thoughts) then
+             do j=l1,l2
+              if (f(j,m,n,ichemspec(k))+df(j,m,n,ichemspec(k)) < 0.) then 
+           !    if (f(j,m,n,ichemspec(k))+p%DYDt_reac(l1-j+1,k) < 0.) then 
+               df(j,m,n,ichemspec(k))=-f(j,m,n,ichemspec(k))
+              endif
+             enddo
+           endif
+
+ !    print*,maxval(abs(p%DYDt_reac(:,k))),k
+
          endif
 !
      enddo 
@@ -1210,8 +1217,7 @@ module Chemistry
 !  For the timestep calculation, need maximum diffusion
 !
 
-
-        if (lfirst.and.ldt) then
+        if (lfirst.and. ldt) then
          if (.not. lcheminp) then
           diffus_chem=chem_diff*maxval(chem_diff_prefactor)*dxyz_2
          else
@@ -1220,23 +1226,41 @@ module Chemistry
 !???????????????????????????????????????????????????????????????
 !  This expression should be discussed 
 !??????????????????????????????????????????????????????????????? 
-           diffus_chem(j)=maxval(Diff_full(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
-         else
-           diffus_chem(j)=0.
+            diffus_chem(j)=diffus_chem(j)+maxval(Diff_full(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
+           else
+            diffus_chem(j)=0.
+           endif
+         enddo
+       !  print*,maxval(diffus_chem)
+
+         endif
+        endif
+
+
+         if (lfirst .and. ldt) then
+          if (lreactions .and. lcheminp) then
+            do j=1,nx
+             react_rate=0.
+               do k=1,nchemspec
+             !   react_rate=react_rate+(p%DYDt_reac(j,k)+p%DYDt_reac(j,k)) 
+                react_rate=react_rate+abs(DYDt_reac_ts(j,k)+p%DYDt_diff(j,k))
+            !    if (m==10 .and. j==10)   print*,(DYDt_reac_ts(j,k)),k
+               enddo
+        !      print*,react_rate,p%DYDt_reac(j,2)
+
+               if (diffus_chem(j)<react_rate) then
+                diffus_chem(j)=react_rate*abs(f(l1-1+j,m,n,ilnTT))*p%cv1(j)
+      !     if (j==10)  print*,'react_rate',react_rate
+            
+               endif
+            enddo
+
+         !!   if (m==10)  print*,react_rate,maxval(diffus_chem)
+           endif
          endif
 
-           if (lreactions) then
-              react_rate=maxval(p%DYDt_reac(j,1:nchemspec))
 
-              if (diffus_chem(j)<react_rate) then
-               diffus_chem(j)=react_rate
-              endif
-
-           endif
-
-        enddo
-       endif
-     endif
+!
 
 !
 !  Calculate diagnostic quantities
@@ -1996,7 +2020,7 @@ module Chemistry
         !
       end subroutine write_reactions
 !***************************************************************
-   subroutine get_reaction_rate(f,vreact_p,vreact_m,p)
+   subroutine get_reaction_rate(f,vreact_p,vreact_m, vreactions_ts,p)
 ! Natalia (17.03.2008)
 ! This subroutine calculates forward and reverse reaction rates, if chem.inp file exists.
 ! For more details see Chemkin Theory Manual
@@ -2005,12 +2029,14 @@ module Chemistry
     intent(in) :: f
     type (pencil_case) :: p
     real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1,prod2
+     real, dimension (nx) :: prod1_ts,prod2_ts
     real, dimension (nx) :: kf=0., kr=0.
     real, dimension (nx,nchemspec) :: H0_RT, S0_R
 
     real, dimension (nx) :: T_cgs,rho_cgs,p_atm
 
     real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
+    real, dimension (nx,nreactions), intent(out) :: vreactions_ts
     real :: Rcal
      integer :: k , reac, j, i
      real  :: sum_tmp=0., T_low, T_mid, T_up, T_local, lnT_local, tmp
@@ -2111,25 +2137,59 @@ module Chemistry
 
       prod1=1.
       prod2=1.
+      prod1_ts=1.
+      prod2_ts=1.
 
       do k=1,nchemspec
        prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijp(k,reac)
 
-!!  print*,'prod',maxval(prod1),maxval(rho_cgs(:)),(Sijp(k,reac)-1)
+       
+      do i=0,nx-1
+       if (abs(f(l1+i,m,n,ichemspec(k))) > 0.) then
+         prod1_ts(i+1)=prod1_ts(i+1)*(f(l1+i,m,n,ichemspec(k))*rho_cgs(i+1)/species_constants(k,imass))**Sijp(k,reac)
+       else
+          prod1_ts(i+1)=prod1_ts(i+1)*(1e-3*rho_cgs(i+1)/species_constants(k,imass))**Sijp(k,reac)
+       endif
+      enddo
+
 
       enddo
+
+  !    print*,maxval(prod1), maxval(prod1_ts)
+
       do k=1,nchemspec
-       prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm(k,reac)
+
+        prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm(k,reac)
+       
+      do i=0,nx-1
+       if (abs(f(l1+i,m,n,ichemspec(k))) > 0.) then
+         prod2_ts(i+1)=prod2_ts(i+1)*(f(l1+i,m,n,ichemspec(k))*rho_cgs(i+1)/species_constants(k,imass))**Sijm(k,reac)
+       else
+          prod2_ts(i+1)=prod2_ts(i+1)*(1e-3*rho_cgs(i+1)/species_constants(k,imass))**Sijm(k,reac)
+       endif
       enddo
-       vreact_p(:,reac)=prod1/rho_cgs*kf
-       vreact_m(:,reac)=prod2/rho_cgs*kr
-
-!print*,'int', maxval(prod2/rho_cgs), maxval(kf),maxval(kr)
 
 
+      enddo
+
+        vreact_p(:,reac)=prod1/rho_cgs*kf
+        vreact_m(:,reac)=prod2/rho_cgs*kr
+
+!print*,'int', maxval(prod1/rho_cgs), maxval(prod2/rho_cgs), maxval(kf),maxval(kr)
+
+!print*,maxval(vreact_p(:,reac)-vreact_m(:,reac))
   ! if (reac==5) print*,maxval(kf),maxval(kr)
 
+!**************************************************************
+! calculation of reaction rate for a time step
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+       vreactions_ts(:,reac)=(prod1_ts*kf-prod2_ts*kr)/rho_cgs
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     enddo
+
+   !  print*,'reac_rate',maxval(vreactions_ts),maxval(abs(vreact_p-vreact_m))
 
    end subroutine get_reaction_rate
 !***************************************************************
@@ -2137,7 +2197,8 @@ module Chemistry
 
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
-  real, dimension (nx) :: xdot
+  real, dimension (nx,nreactions) :: vreactions_ts
+  real, dimension (nx) :: xdot, xdot_ts
   type (pencil_case) :: p
   integer :: k,j
 
@@ -2160,14 +2221,16 @@ module Chemistry
           enddo
         else
 ! Chemkin data case
-          call get_reaction_rate(f,vreactions_p,vreactions_m,p)
+          call get_reaction_rate(f,vreactions_p,vreactions_m,vreactions_ts,p)
         endif 
           vreactions=vreactions_p-vreactions_m
 
      do k=1,nchemspec  
           xdot=0.
+          xdot_ts=0.
           do j=1,nreactions
             xdot=xdot+stoichio(k,j)*vreactions(:,j)  
+            xdot_ts=xdot_ts+stoichio(k,j)*vreactions_ts(:,j)
           enddo
          if (lcheminp) then
 !
@@ -2177,8 +2240,10 @@ module Chemistry
 ! Axel, please check your case!!!!
 !
           xdot=-xdot*species_constants(ichemspec(k),imass)
+          xdot_ts=-xdot_ts*species_constants(ichemspec(k),imass)
          endif
       p%DYDt_reac(:,k)=xdot*unit_time
+        DYDt_reac_ts(:,k)=xdot_ts*unit_time
 
 ! print*,'Natalia',maxval(p%DYDt_reac(:,4)),unit_time,maxval(xdot)
 
