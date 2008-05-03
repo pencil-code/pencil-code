@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.516 2008-04-29 22:21:12 dobler Exp $
+! $Id: magnetic.f90,v 1.517 2008-05-03 00:11:08 dobler Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -414,7 +414,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.516 2008-04-29 22:21:12 dobler Exp $")
+           "$Id: magnetic.f90,v 1.517 2008-05-03 00:11:08 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -935,13 +935,14 @@ module Magnetic
                               *sin(kx_aa(j)*x(l1:l2))*erfunc(0.5*z(n)/scaleH)
           enddo; enddo
 
+        case('torus-test'); call torus_test(amplaa(j),f,iaa,xx,yy,zz,tmp,prof)
+
         case default
 !
 !  Catch unknown values
 !
-          if (lroot) &
-              print*, 'init_aa: No such value for initaa: ', trim(initaa(j))
-          call stop_it("init_aa value not recognised")
+          call fatal_error('init_aa', &
+              'init_aa value "' // trim(initaa(j)) // '" not recognised')
 
         endselect
 !
@@ -3869,6 +3870,60 @@ module Magnetic
       vv(:,:,:,2) =   tmp*cos(phi)
 !
     endsubroutine norm_ring
+!***********************************************************************
+    subroutine torus_test(ampl,f,iaa,xx,yy,zz,xxi2,ee)
+!
+!  Initial field concentrated along torus well inside the computational
+!  domain.
+!  Implements the same field for cartesian and spherical cordinates. 
+!  The field is of mixed parity (bb_pol symmetric, bb_tor antisymmetric)
+!  and the relative contributions of toroidal and poloidal field are
+!  determined by
+!    ampl(1) -- bb_pol (through aa_tor)
+!    ampl(3) -- bb_tor (through aa_pol)
+!  Uses x_max as reference radius.
+!
+!   05-may-2008/wolf: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz)         :: xx,yy,zz,xxi2,ee
+      real                               :: ampl
+      integer                            :: iaa
+      intent(in)    :: ampl,iaa,xx,yy,zz
+      intent(inout) :: f
+      intent(out)   :: xxi2,ee
+      !
+      real, dimension (mx,my,mz)         :: costh,sinth
+      real, dimension (mx,my,mz)         :: cosphi,sinphi,ss,rr,aar,aap
+      real :: radius,width
+
+      radius = xyz1(1)
+      width  = 0.1 * radius
+
+      if (lspherical_coords) then
+        xxi2 = (xx*sin(yy) - 0.5*radius)**2 + xx**2*cos(yy)**2
+        ee = ampl * exp(-0.5 * xxi2 / width**2)
+        f(:,:,:,iax) = f(:,:,:,iax) + ee * xx*cos(yy)
+        f(:,:,:,iaz) = f(:,:,:,iaz) + ee
+      else
+        xxi2 = (sqrt(xx**2+yy**2) - 0.5*r_ext)**2 + zz**2
+        ee = ampl * exp(-0.5 * xxi2 / width**2)
+        aar = zz * ee 
+        aap = ee
+        ss = sqrt(xx**2+yy**2)
+        rr = sqrt(xx**2+yy**2+zz**2)
+        ss = max(ss, tini)
+        rr = max(rr, tini)
+        costh = zz/rr
+        sinth = ss/rr
+        cosphi   = xx/ss
+        sinphi   = yy/ss
+        f(:,:,:,iax) = f(:,:,:,iax) + aar*sinth*cosphi - aap*sinphi
+        f(:,:,:,iay) = f(:,:,:,iay) + aar*sinth*sinphi + aap*cosphi
+        f(:,:,:,iaz) = f(:,:,:,iaz) + aar*costh
+      endif
+
+    endsubroutine torus_test
 !***********************************************************************
     subroutine force_free_jet(mu,xx,yy,zz)
 !
