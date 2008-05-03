@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.517 2008-05-03 00:11:08 dobler Exp $
+! $Id: magnetic.f90,v 1.518 2008-05-03 01:15:19 dobler Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -414,7 +414,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.517 2008-05-03 00:11:08 dobler Exp $")
+           "$Id: magnetic.f90,v 1.518 2008-05-03 01:15:19 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3895,18 +3895,19 @@ module Magnetic
       !
       real, dimension (mx,my,mz)         :: costh,sinth
       real, dimension (mx,my,mz)         :: cosphi,sinphi,ss,rr,aar,aap
-      real :: radius,width
+      real :: radius,width,r_cent
 
       radius = xyz1(1)
-      width  = 0.1 * radius
+      width  = 0.1*radius
+      r_cent = 0.6*radius
 
       if (lspherical_coords) then
-        xxi2 = (xx*sin(yy) - 0.5*radius)**2 + xx**2*cos(yy)**2
+        xxi2 = (xx*sin(yy) - r_cent)**2 + xx**2*cos(yy)**2
         ee = ampl * exp(-0.5 * xxi2 / width**2)
         f(:,:,:,iax) = f(:,:,:,iax) + ee * xx*cos(yy)
         f(:,:,:,iaz) = f(:,:,:,iaz) + ee
       else
-        xxi2 = (sqrt(xx**2+yy**2) - 0.5*r_ext)**2 + zz**2
+        xxi2 = (sqrt(xx**2+yy**2) - r_cent)**2 + zz**2
         ee = ampl * exp(-0.5 * xxi2 / width**2)
         aar = zz * ee 
         aap = ee
@@ -4046,7 +4047,7 @@ module Magnetic
 !  This mimics a neutron star just after the Meissner effect forced the
 !  internal field to become vertical (aligned with rotation axis).
 !
-!  AMPL represents mu/4 pi, where  mu = 1/2 Int rr × jj dV  is the
+!  AMPL represents mu/4 pi, where  mu = 1/2 Int rr Ã— jj dV  is the
 !  magnetic moment of the external dipole field.
 !  INCLAA is the inclination of the dipolar field.
 !
