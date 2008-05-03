@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.359 2008-04-16 21:02:05 dobler Exp $
+! $Id: sub.f90,v 1.360 2008-05-03 00:09:05 dobler Exp $
 
 module Sub
 
@@ -2015,7 +2015,10 @@ module Sub
 !
 !  adjustments for spherical coordinate system
 !
-      if (lspherical_coords.and.present(a)) then
+      if (lspherical_coords) then
+        if (.not. present(a)) then
+          call fatal_error("curl_mn", "Need a for spherical curl")
+        endif
         b(:,1)=b(:,1)+a(:,3)*r1_mn*cotth(m)
         b(:,2)=b(:,2)-a(:,3)*r1_mn
         b(:,3)=b(:,3)+a(:,2)*r1_mn
@@ -2194,7 +2197,12 @@ module Sub
          del2f(:,2)=del2f(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn2
       endif
 !
-      if (lspherical_coords.and.present(fij).and.present(pff)) then
+      if (lspherical_coords) then
+         if (.not. (present(fij) .and. present(pff))) then
+              call fatal_error("del2v", &
+                  "Cannot do a spherical del2v without aij and aa")
+         endif
+
 ! for r component (factors of line elements are taken care of inside p%uij
          del2f(:,1)= del2f(:,1)+&
                r1_mn*(2.*(fij(:,1,1)-fij(:,2,2)-fij(:,3,3) &
