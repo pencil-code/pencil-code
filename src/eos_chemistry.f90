@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.19 2008-03-26 13:29:34 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.20 2008-05-05 11:50:17 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -76,6 +76,7 @@ module EquationOfState
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
+  logical :: l_gamma1=.false.
 
   ! input parameters
   namelist /eos_init_pars/  mu, cp, cs0, rho0, gamma, error_cp, ptlaw
@@ -112,7 +113,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.19 2008-03-26 13:29:34 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.20 2008-05-05 11:50:17 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -216,7 +217,7 @@ module EquationOfState
 !  check that everything is OK
 !
       if (lroot) then
-       if (.not. i_gamma1) then
+       if (.not. l_gamma1) then
         print*,'initialize_eos: unit_temperature=',unit_temperature
         print*,'initialize_eos: cp,lnTT0,cs0=',cp,lnTT0,cs0
        else
@@ -593,7 +594,7 @@ module EquationOfState
 !  pretend_lnTT
 !
  
-    if (.not. i_gamma1) then
+    if (.not. l_gamma1) then
       if (pretend_lnTT) then
         cs2=gamma1*exp(cv1*ss)
       else
@@ -627,7 +628,7 @@ module EquationOfState
 !
 !  pretend_lnTT
 !
-    if (.not. i_gamma1) then
+    if (.not. l_gamma1) then
       if (pretend_lnTT) then
         cs2=gamma1*exp(gamma*cp1*ss)
       else
@@ -665,7 +666,7 @@ module EquationOfState
       if (pretend_lnTT) then
         glnTT=gss
        else
-        if (.not. i_gamma1) then
+        if (.not. l_gamma1) then
          glnTT=gamma1*glnrho+cv1*gss
         else
          do i=1,3 
@@ -700,7 +701,7 @@ module EquationOfState
       if (pretend_lnTT) then
         del2lnTT=del2ss
       else
-        if (.not. i_gamma1) then
+        if (.not. l_gamma1) then
          del2lnTT=gamma1*del2lnrho+cv1*del2ss
         else
           del2lnTT=p%gamma1*del2lnrho+p%cv1*del2ss
@@ -839,7 +840,7 @@ module EquationOfState
           if (leos_isentropic) then
             ss_=0
           elseif (leos_isothermal) then
-           if (.not. i_gamma1) then
+           if (.not. l_gamma1) then
             ss_=-cv*gamma1*(lnrho_-lnrho0)
            else
             ss_=-p%cv*p%gamma1*(lnrho_-lnrho0)
@@ -852,7 +853,7 @@ module EquationOfState
           if (leos_isentropic) then
             ss_=0
           elseif (leos_isothermal) then
-           if (.not. i_gamma1) then
+           if (.not. l_gamma1) then
             ss_=-cv*gamma1*(lnrho_-lnrho0)
            else
             ss_=-p%cv*p%gamma1*(lnrho_-lnrho0)
@@ -864,7 +865,7 @@ module EquationOfState
           call fatal_error('eoscalc_farray','no such pencil size')
         end select
 
-        if (.not. i_gamma1) then
+        if (.not. l_gamma1) then
           lnTT_=lnTT0+cv1*ss_+gamma1*(lnrho_-lnrho0)
         else
           lnTT_=lnTT0+p%cv1*ss_+p%gamma1*(lnrho_-lnrho0)
@@ -873,7 +874,7 @@ module EquationOfState
             call fatal_error('eoscalc_farray','gamma=1 not allowed w/entropy')
         if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT_
-       if (.not.  i_gamma1) then 
+       if (.not.  l_gamma1) then 
         if (present(ee)) ee=cv*exp(lnTT_)
         if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
        else
@@ -950,7 +951,7 @@ module EquationOfState
             lnrho_=alog(f(l1:l2,m,n,ieosvar1))
           endif
           if (leos_isentropic) then
-           if (.not. i_gamma1) then 
+           if (.not. l_gamma1) then 
             cs2_=exp(gamma1*(lnrho_-lnrho0)+log(cs20))
            else
             cs2_=exp(p%gamma1*(lnrho_-lnrho0)+log(cs20))
@@ -965,7 +966,7 @@ module EquationOfState
         case (mx)
           lnrho_=f(:,m,n,ieosvar1)
           if (leos_isentropic) then
-           if (.not. i_gamma1) then 
+           if (.not. l_gamma1) then 
             cs2_=exp(gamma1*(lnrho_-lnrho0)+log(cs20))
            else
             cs2_=exp(p%gamma1*(lnrho_-lnrho0)+log(cs20))
@@ -983,7 +984,7 @@ module EquationOfState
 !
         if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT0+log(cs2_)
-       if (.not. i_gamma1) then 
+       if (.not. l_gamma1) then 
         if (present(ee)) ee=gamma11*cs2_/gamma1
         if (present(pp)) pp=gamma11*cs2_*exp(lnrho_)
        else
@@ -1123,7 +1124,7 @@ module EquationOfState
       case (ilnrho_ss)
         lnrho_=var1
         ss_=var2
-       if (.not. i_gamma1) then
+       if (.not. l_gamma1) then
         lnTT_=lnTT0+cv1*ss_+gamma1*(lnrho_-lnrho0)
         ee_=cv*exp(lnTT_)
         pp_=(cp-cv)*exp(lnTT_+lnrho_)
@@ -1140,7 +1141,7 @@ module EquationOfState
       case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
-       if (.not. i_gamma1) then
+       if (.not. l_gamma1) then
         lnTT_=log(cv1*ee_)
         ss_=cv*(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))
         pp_=gamma1*ee_*exp(lnrho_)
@@ -1155,7 +1156,7 @@ module EquationOfState
       case (ilnrho_pp)
         lnrho_=var1
         pp_=var2
-       if (.not. i_gamma1) then
+       if (.not. l_gamma1) then
         ss_=cv*(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma1*(lnrho_-lnrho0))
         ee_=pp_*exp(-lnrho_)/gamma1
         lnTT_=log(cv1*ee_)
@@ -1170,7 +1171,7 @@ module EquationOfState
       case (ilnrho_lnTT)
         lnrho_=var1
         lnTT_=var2
-       if (.not. i_gamma1) then
+       if (.not. l_gamma1) then
         ss_=cv*(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))
         ee_=cv*exp(lnTT_)
         pp_=ee_*exp(lnrho_)*gamma1
@@ -1185,7 +1186,7 @@ module EquationOfState
       case (ilnrho_TT)
         lnrho_=var1
         TT_=var2
-       if (.not. i_gamma1) then
+       if (.not. l_gamma1) then
         ss_=cv*(log(TT_)-lnTT0-gamma1*(lnrho_-lnrho0))
         ee_=cv*TT_
         pp_=ee_*exp(lnrho_)*gamma1
@@ -1222,7 +1223,7 @@ module EquationOfState
       real, intent(in)  :: lnTT
       real, intent(out) :: cs2
 !
-     if (.not.i_gamma1) then 
+     if (.not.l_gamma1) then 
       cs2=gamma1*cp*exp(lnTT)
      else
         call stop_it('chem.inp is found: get_soundspeed can not be used for this moment')
