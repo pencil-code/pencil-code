@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.81 2008-05-04 15:22:19 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.82 2008-05-05 07:32:03 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.81 2008-05-04 15:22:19 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.82 2008-05-05 07:32:03 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.81 2008-05-04 15:22:19 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.82 2008-05-05 07:32:03 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1245,14 +1245,14 @@ module Chemistry
             do j=1,nx
              react_rate=0.
                do k=1,nchemspec
-                react_rate=react_rate+(p%DYDt_reac(j,k)+p%DYDt_diff(j,k)) 
+                react_rate=react_rate+abs(p%DYDt_reac(j,k)+p%DYDt_diff(j,k)) 
              !   react_rate=react_rate+abs(DYDt_reac_ts(j,k)+p%DYDt_diff(j,k))
             !    if (m==10 .and. j==10)   print*,(DYDt_reac_ts(j,k)),k
                enddo
         !      print*,react_rate,p%DYDt_reac(j,2)
 
                if (diffus_chem(j)<react_rate) then
-                diffus_chem(j)=react_rate*abs(f(l1-1+j,m,n,ilnTT))*p%cv1(j)
+                diffus_chem(j)=react_rate!*abs(f(l1-1+j,m,n,ilnTT))*p%cv1(j)
       !     if (j==10)  print*,'react_rate',react_rate
             
                endif
