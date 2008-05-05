@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.20 2008-05-02 13:19:24 nbabkovs Exp $
+! $Id: chem_stream.f90,v 1.21 2008-05-05 18:27:07 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -139,11 +139,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.20 2008-05-02 13:19:24 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.21 2008-05-05 18:27:07 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.20 2008-05-02 13:19:24 nbabkovs Exp $")
+           "$Id: chem_stream.f90,v 1.21 2008-05-05 18:27:07 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -664,7 +664,7 @@ module Special
        endif
 
 
-       if (vr==4 .or. vr==5) then
+       if (vr==5) then
          !  if (abs(y(k)) .lt. y0) then
             do i=0,nghost;  f(l1-i,m1:my,:,vr)=log(value1);  enddo
          !  else
@@ -676,23 +676,41 @@ module Special
           ! endif
        endif
 
+
+       if (vr==4 ) then
+         !  if (abs(y(k)) .lt. y0) then
+      !      do i=0,nghost;  f(l1-i,m1:my,:,vr)=log(value1);  enddo
+         !  else
+          !  do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
+          !  do i=0,nghost; f(l1-i,:,:,vr)=f(l1,:,:,vr); enddo
+          do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
+          !   do i=0,nghost
+          !      f(l1-i,:,:,vr)=0.5*(f(l1-i+1,:,:,vr)+f(l1-i-1,:,:,vr))
+          !   enddo
+          ! endif
+       endif
+
+
        if (vr >= ichemspec(1)) then
 
          do i=0,nghost; 
           do k=1,my
              if (abs(y(k)) .lt. y0) then
                 if (vr < ichemspec(nchemspec))  f(l1-i,k,:,vr)=value1
-                if (vr == ichemspec(nchemspec)) f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4
+                if (vr == ichemspec(nchemspec)) f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4*0.
              else
-                if (vr < ichemspec(nchemspec)) then
-                 f(l1-i,k,:,vr)=value1
-                endif 
-                if (vr == ichemspec(nchemspec)) then
-                      f(l1-i,k,:,vr)=value1!*((l1-i)/(l1-0.))**4*0.
-             !    f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr)
+              !  if (vr < ichemspec(nchemspec)) then
+              !   f(l1-i,k,:,vr)=value1*0.
+              !  endif 
+              !  if (vr == ichemspec(nchemspec)) then
+              !        f(l1-i,k,:,vr)=value1!*((l1-i)/(l1-0.))**4*0.
+
+              ! do i=1,nghost
+                 f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr)
+              ! enddo
              !   f(l1-i,:,:,vr)=0.5*(f(l1-i+1,:,:,vr)+f(l1-i-1,:,:,vr))
                endif
-             endif
+            ! endif
           enddo
          enddo
 
@@ -1192,14 +1210,14 @@ module Special
          do i=0,nghost; 
           do k=1,my
              if (abs(y(k)) .lt. y0) then
-                if (vr == ichemspec(nchemspec))  f(l1-i,k,:,vr)=value1
-                if (vr < ichemspec(nchemspec)) f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4
+                if (vr == ichemspec(nchemspec))  f(l1-i,k,:,vr)=value1*0.
+                if (vr < ichemspec(nchemspec)) f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4*0.
              else
                 if (vr < ichemspec(nchemspec)) then
-                 f(l1-i,k,:,vr)=value1
+                 f(l1-i,k,:,vr)=value1*0.
                 endif 
                 if (vr == ichemspec(nchemspec)) then
-                      f(l1-i,k,:,vr)=value1!*((l1-i)/(l1-0.))**4*0.
+                      f(l1-i,k,:,vr)=value1*0.!*((l1-i)/(l1-0.))**4*0.
              !    f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr)
              !   f(l1-i,:,:,vr)=0.5*(f(l1-i+1,:,:,vr)+f(l1-i-1,:,:,vr))
                endif
