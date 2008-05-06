@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.83 2008-05-05 18:28:12 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.84 2008-05-06 12:38:17 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.83 2008-05-05 18:28:12 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.84 2008-05-06 12:38:17 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.83 2008-05-05 18:28:12 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.84 2008-05-06 12:38:17 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -456,7 +456,7 @@ module Chemistry
 !  Pressure
 !
          if (lpencil(i_pp)) p%pp = Rgas*p%mu1*p%rho*p%TT
-!
+
 !  Specific heat at constant pressure
 !
          if (lpencil(i_cp)) then
@@ -623,7 +623,7 @@ module Chemistry
        if (unit_system == 'cgs') then
 
           Rgas_unit_sys = k_B_cgs/m_u_cgs
-          Rgas=Rgas_unit_sys*unit_energy/unit_velocity**2
+          Rgas=Rgas_unit_sys*unit_temperature/unit_energy
 
        
 
@@ -637,7 +637,6 @@ module Chemistry
                   /species_constants(k,imass)
               enddo
               mu1_full=mu1_full*unit_mass
-
      
 
 
@@ -1936,8 +1935,8 @@ module Chemistry
         write(file_id,*) varname(ichemspec(k))
         write(file_id,'(F10.2,3F10.2)') species_constants(k,imass),&
              species_constants(k,iTemp1:iTemp3)
-        write(file_id,'(7E10.2)') species_constants(k,iaa1)
-        write(file_id,'(7E10.2)') species_constants(k,iaa2)
+        write(file_id,'(7E12.5)') species_constants(k,iaa1)
+        write(file_id,'(7E12.5)') species_constants(k,iaa2)
       enddo dataloop2
       !
       close(file_id)
@@ -2019,7 +2018,7 @@ module Chemistry
           write(file_id,*) trim(output_string)
         enddo
         write(file_id,*) 'END'
-        close(file_id)
+        close(file_id) 
         !
       end subroutine write_reactions
 !***************************************************************
@@ -2043,7 +2042,17 @@ module Chemistry
     real :: Rcal
      integer :: k , reac, j, i
      real  :: sum_tmp=0., T_low, T_mid, T_up, T_local, lnT_local, tmp
+
+     logical,SAVE :: lwrite=.true.
+
+     character (len=20) :: input_file="./data/react.out"
+     integer :: file_id=123
+
 !
+    if (lwrite) then
+     open(file_id,file=input_file)
+
+   
 
 !
 ! p is in atm units; atm/bar=1./0.986
@@ -2051,7 +2060,11 @@ module Chemistry
   Rcal=Rgas_unit_sys/4.14*1e-7
   T_cgs=p%TT*unit_temperature
   rho_cgs=p%rho*unit_mass/unit_length**3
-  p_atm=p%pp*unit_energy/unit_length**3/9.81e5
+  p_atm=p%pp*unit_energy/unit_length**3/10.13e5
+
+     write(file_id,*)'T= ',   T_cgs
+     write(file_id,*)'p_atm= ',   p_atm
+
 
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
@@ -2059,31 +2072,42 @@ module Chemistry
 !  Natalia thoughts
 ! REMEMBER!!! I removed the last term species_constants(k,iaa1(6))/T_local in the decomposition!!!!!!!!
 !
-
+       write(file_id,*)'**************************'
+       write(file_id,*)'H0_RT'
+       write(file_id,*)'**************************'
         do k=1,nchemspec
           T_low=species_constants(k,iTemp1)
           T_mid=species_constants(k,iTemp2)
           T_up= species_constants(k,iTemp3)
          do i=1,nx
           T_local=(T_cgs(i))
-           if (T_local >=T_low .and. T_local <= T_mid) then
+         !  if (T_local >=T_low .and. T_local <= T_mid) then
+            if ( T_local <= T_mid) then
                tmp=0. 
                do j=1,5
                 tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1)/j 
                enddo
-              H0_RT(i,k)=tmp!+species_constants(k,iaa1(6))/T_local
+              H0_RT(i,k)=tmp+species_constants(k,iaa1(6))/T_local
            else
                tmp=0. 
                do j=1,5 
                 tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/j 
+
+           
+
                enddo
-             H0_RT(i,k)=tmp!+species_constants(k,iaa2(6))/T_local
+             H0_RT(i,k)=tmp+species_constants(k,iaa2(6))/T_local
            endif
          enddo
-        enddo
+           write(file_id,*)varname(ichemspec(k)), maxval(H0_RT(:,k)),minval(H0_RT(:,k))
+       enddo
 !
 !  Dimensionless Standard-state molar entropy  S0/R
 !
+      write(file_id,*)'**************************'
+      write(file_id,*)'S0_R'
+      write(file_id,*)'**************************'
+
         do k=1,nchemspec
           T_low=species_constants(k,iTemp1)
           T_mid=species_constants(k,iTemp2)
@@ -2091,7 +2115,8 @@ module Chemistry
          do i=1,nx
           T_local=T_cgs(i)
           lnT_local=p%lnTT(i)+log(unit_temperature)
-           if (T_local >=T_low .and. T_local <= T_mid) then
+          ! if (T_local >=T_low .and. T_local <= T_mid) then
+           if (T_local <= T_mid) then
                tmp=0. 
                do j=2,5
                 tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1)/(j-1) 
@@ -2105,14 +2130,26 @@ module Chemistry
              S0_R(i,k)=species_constants(k,iaa2(1))*lnT_local+tmp+species_constants(k,iaa2(7))
            endif
          enddo
+
+       write(file_id,*)varname(ichemspec(k)), maxval(S0_R(:,k)), minval(S0_R(:,k))
+
         enddo
 
 !
 ! calculation of the reaction rate
 !
 
+    write(file_id,*)'**************************'
+    write(file_id,*)'Reaction rates'
+    write(file_id,*)'**************************'
+
+
     do reac=1,nreactions
      kf(:)=B_n(reac)*T_cgs(:)**alpha_n(reac)*exp(-E_an(reac)/Rcal/T_cgs(:))
+
+
+     write(file_id,*) 'Nreact= ',reac,  'kf=', maxval(kf)
+
 
       dSR=0.
       dHRT=0.
@@ -2121,14 +2158,19 @@ module Chemistry
      do k=1,nchemspec
        dSR(:) =dSR(:)+(Sijm(k,reac)-Sijp(k,reac))*S0_R(:,k)
        dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*H0_RT(:,k)
-!print*,maxval(dSR(:)),maxval(dHRT(:)),k,maxval(p%lnTT)
-!print*,maxval(S0_R(:,k)),maxval(H0_RT(:,k))
        sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
      enddo
+
+    write(file_id,*) 'Nreact= ',reac,'dSR= ', maxval(dSR)
+    write(file_id,*) 'Nreact= ',reac,'dHRT= ', maxval(dHRT)
+
 
 !print*,'sum',maxval(dSR(:)),maxval(dHRT(:))
 
      Kp=exp(dSR-dHRT)
+
+    
+
 
      if (sum_tmp==0.) then
        Kc=Kp
@@ -2136,7 +2178,15 @@ module Chemistry
        Kc=Kp*(p_atm/T_cgs/Rgas_unit_sys)**sum_tmp
      endif
 
+
+
+  write(file_id,*) 'Nreact= ',reac,'Kc= ', maxval(Kc)
+
      kr(:)=kf(:)/Kc
+
+   write(file_id,*) 'Nreact= ',reac,  'kr=', maxval(kr)
+
+    write(file_id,*)'**************************'
 
       prod1=1.
       prod2=1.
@@ -2192,8 +2242,25 @@ module Chemistry
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     enddo
 
-   !  print*,'reac_rate',maxval(vreactions_ts),maxval(abs(vreact_p-vreact_m))
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Printing for a test case
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     
+     
+         write(file_id,*) ''
+         write(file_id,*) '*******************'
+      
 
+
+        print*,'get_reaction_rate: writing react.out file'
+         close(file_id)
+         lwrite=.false.
+      endif
+
+      
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    end subroutine get_reaction_rate
 !***************************************************************
    subroutine calc_reaction_term(f,p)
@@ -2536,7 +2603,7 @@ module Chemistry
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string 
       integer :: VarNumber,i,j,k=1
-      real :: YY_k, air_mass, TT=300., PP=9.81e4
+      real :: YY_k, air_mass, TT=300., PP=10.13e4
       real, dimension(nchemspec) :: stor1,stor2 
       !character (len=*) :: input_file
       !
@@ -2625,6 +2692,7 @@ module Chemistry
        f(:,:,:,4)=log((PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
 
       if (lroot) print*, 'Air temperature, K', TT
+      if (lroot) print*, 'Air pressure, K', PP
       if (lroot) print*, 'Air density, g/cm^3:'
       if (lroot) print '(E10.3)',  PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT
       if (lroot) print*, 'Air mean weight, g/mol', air_mass
