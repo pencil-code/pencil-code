@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.85 2008-05-06 16:05:10 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.86 2008-05-06 16:47:40 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.85 2008-05-06 16:05:10 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.86 2008-05-06 16:47:40 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.85 2008-05-06 16:05:10 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.86 2008-05-06 16:47:40 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -440,6 +440,9 @@ module Chemistry
             if (lpencil(i_mu1)) then 
               p%mu1=mu1_full(l1:l2,m,n)
             endif
+
+ ! print*, 1./maxval(p%mu1)
+
 
             if (lpencil(i_gmu1)) call grad(mu1_full,p%gmu1)
 
@@ -2071,8 +2074,8 @@ module Chemistry
      integer :: file_id=123
 
 !
-    if (lwrite) then
-     open(file_id,file=input_file)
+    
+    if (lwrite)  open(file_id,file=input_file)
 
    
 
@@ -2084,8 +2087,8 @@ module Chemistry
   rho_cgs=p%rho*unit_mass/unit_length**3
   p_atm=p%pp*unit_energy/unit_length**3/10.13e5
 
-     write(file_id,*)'T= ',   T_cgs
-     write(file_id,*)'p_atm= ',   p_atm
+   if (lwrite)   write(file_id,*)'T= ',   T_cgs
+    if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
 
 
 !
@@ -2094,9 +2097,9 @@ module Chemistry
 !  Natalia thoughts
 ! REMEMBER!!! I removed the last term species_constants(k,iaa1(6))/T_local in the decomposition!!!!!!!!
 !
-       write(file_id,*)'**************************'
-       write(file_id,*)'H0_RT'
-       write(file_id,*)'**************************'
+      if (lwrite)  write(file_id,*)'**************************'
+      if (lwrite)  write(file_id,*)'H0_RT'
+      if (lwrite)  write(file_id,*)'**************************'
         do k=1,nchemspec
           T_low=species_constants(k,iTemp1)
           T_mid=species_constants(k,iTemp2)
@@ -2121,14 +2124,14 @@ module Chemistry
              H0_RT(i,k)=tmp+species_constants(k,iaa2(6))/T_local
            endif
          enddo
-           write(file_id,*)varname(ichemspec(k)), maxval(H0_RT(:,k)),minval(H0_RT(:,k))
+        if (lwrite)    write(file_id,*)varname(ichemspec(k)), maxval(H0_RT(:,k)),minval(H0_RT(:,k))
        enddo
 !
 !  Dimensionless Standard-state molar entropy  S0/R
 !
-      write(file_id,*)'**************************'
-      write(file_id,*)'S0_R'
-      write(file_id,*)'**************************'
+     if (lwrite)  write(file_id,*)'**************************'
+     if (lwrite) write(file_id,*)'S0_R'
+     if (lwrite)  write(file_id,*)'**************************'
 
         do k=1,nchemspec
           T_low=species_constants(k,iTemp1)
@@ -2153,7 +2156,7 @@ module Chemistry
            endif
          enddo
 
-       write(file_id,*)varname(ichemspec(k)), maxval(S0_R(:,k)), minval(S0_R(:,k))
+      if (lwrite)  write(file_id,*)varname(ichemspec(k)), maxval(S0_R(:,k)), minval(S0_R(:,k))
 
         enddo
 
@@ -2161,16 +2164,16 @@ module Chemistry
 ! calculation of the reaction rate
 !
 
-    write(file_id,*)'**************************'
-    write(file_id,*)'Reaction rates'
-    write(file_id,*)'**************************'
+   if (lwrite)  write(file_id,*)'**************************'
+   if (lwrite) write(file_id,*)'Reaction rates'
+   if (lwrite)  write(file_id,*)'**************************'
 
 
     do reac=1,nreactions
      kf(:)=B_n(reac)*T_cgs(:)**alpha_n(reac)*exp(-E_an(reac)/Rcal/T_cgs(:))
 
 
-     write(file_id,*) 'Nreact= ',reac,  'kf=', maxval(kf)
+    if (lwrite)  write(file_id,*) 'Nreact= ',reac,  'kf=', maxval(kf)
 
 
       dSR=0.
@@ -2183,8 +2186,8 @@ module Chemistry
        sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
      enddo
 
-    write(file_id,*) 'Nreact= ',reac,'dSR= ', maxval(dSR)
-    write(file_id,*) 'Nreact= ',reac,'dHRT= ', maxval(dHRT)
+    if (lwrite) write(file_id,*) 'Nreact= ',reac,'dSR= ', maxval(dSR)
+    if (lwrite) write(file_id,*) 'Nreact= ',reac,'dHRT= ', maxval(dHRT)
 
 
 !print*,'sum',maxval(dSR(:)),maxval(dHRT(:))
@@ -2202,13 +2205,13 @@ module Chemistry
 
 
 
-  write(file_id,*) 'Nreact= ',reac,'Kc= ', maxval(Kc)
+  if (lwrite) write(file_id,*) 'Nreact= ',reac,'Kc= ', maxval(Kc)
 
      kr(:)=kf(:)/Kc
 
-   write(file_id,*) 'Nreact= ',reac,  'kr=', maxval(kr)
+   if (lwrite) write(file_id,*) 'Nreact= ',reac,  'kr=', maxval(kr)
 
-    write(file_id,*)'**************************'
+    if (lwrite) write(file_id,*)'**************************'
 
       prod1=1.
       prod2=1.
@@ -2244,7 +2247,7 @@ module Chemistry
           prod2_ts(i+1)=prod2_ts(i+1)*(1e-3*rho_cgs(i+1)/species_constants(k,imass))**Sijm(k,reac)
        endif
       enddo
- !print*,'Natalia',maxval(prod2),maxval((f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm(k,reac)),k,reac,maxval(f(l1:l2,m,n,ichemspec(k))),maxval(rho_cgs),(species_constants(k,imass)),Sijm(k,reac)
+! print*,'Natalia',maxval(prod2),maxval((f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm(k,reac)),k,reac,maxval(f(l1:l2,m,n,ichemspec(k))),maxval(rho_cgs),(species_constants(k,imass)),Sijm(k,reac)
 
       enddo
 
@@ -2272,15 +2275,15 @@ module Chemistry
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      
      
-         write(file_id,*) ''
-         write(file_id,*) '*******************'
+     if (lwrite)     write(file_id,*) ''
+       if (lwrite)   write(file_id,*) '*******************'
       
 
 
-        print*,'get_reaction_rate: writing react.out file'
-         close(file_id)
+       if (lwrite) print*,'get_reaction_rate: writing react.out file'
+       if (lwrite)   close(file_id)
          lwrite=.false.
-      endif
+      
 
       
 
@@ -2337,8 +2340,8 @@ module Chemistry
 ! it should be -stoichio(k,j)=-(Sijp-Sijm)
 ! Axel, please check your case!!!!
 !
-          xdot=-xdot*species_constants(ichemspec(k),imass)
-          xdot_ts=-xdot_ts*species_constants(ichemspec(k),imass)
+          xdot=-xdot*species_constants(k,imass)
+          xdot_ts=-xdot_ts*species_constants(k,imass)
          endif
         p%DYDt_reac(:,k)=xdot*unit_time
         DYDt_reac_ts(:,k)=xdot_ts*unit_time
