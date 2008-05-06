@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.21 2008-05-06 12:57:19 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.22 2008-05-06 13:03:14 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -77,6 +77,7 @@ module EquationOfState
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
   logical :: l_gamma1=.true.
+  logical :: l_gamma=.true.
   logical :: l_cp=.true.
 
   ! input parameters
@@ -114,7 +115,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.21 2008-05-06 12:57:19 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.22 2008-05-06 13:03:14 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1034,7 +1035,7 @@ module EquationOfState
       if (gamma1==0.) call fatal_error('eoscalc_point','gamma=1 not allowed w/entropy')
 !
 
-      if (i_gamma) call stop_it('now gamma is a pencil: eoscalc_point can not be used for this moment')
+      if (l_gamma) call stop_it('now gamma is a pencil: eoscalc_point can not be used for this moment')
  
       select case (ivars)
 
@@ -1372,7 +1373,7 @@ module EquationOfState
       integer :: i,ierr
 !
 
-    if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+    if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
       if(ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
@@ -1498,7 +1499,7 @@ module EquationOfState
       integer :: i
 !
 
-     if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+     if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
       if(ldebug) print*,'bc_ss_temp_old: ENTER - cs20,cs0=',cs20,cs0
 !
@@ -1567,7 +1568,7 @@ module EquationOfState
       real :: tmp
       integer :: i
 
-      if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+      if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
 !
       if(ldebug) print*,'bc_ss_temp_x: cs20,cs0=',cs20,cs0
@@ -1647,7 +1648,7 @@ module EquationOfState
       integer :: i
 !
 
-      if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+      if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
       if(ldebug) print*,'bc_ss_temp_y: cs20,cs0=',cs20,cs0
 !
@@ -1710,7 +1711,7 @@ module EquationOfState
       integer :: i
 !
 
-      if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+      if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
       if(ldebug) print*,'bc_ss_temp_z: cs20,cs0=',cs20,cs0
 !
@@ -1797,7 +1798,7 @@ module EquationOfState
       integer :: i
 !
 
-      if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+      if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
       if(ldebug) print*,'bc_lnrho_temp_z: cs20,cs0=',cs20,cs0
 !
@@ -1878,7 +1879,7 @@ module EquationOfState
       integer :: i
 !
 
-      if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+      if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
       if(ldebug) print*,'bc_lnrho_pressure_z: cs20,cs0=',cs20,cs0
 !
@@ -1984,7 +1985,7 @@ module EquationOfState
       integer :: i
 !
 
-      if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+      if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
       if(ldebug) print*,'bc_ss_temp2_z: cs20,cs0=',cs20,cs0
 !
@@ -2042,7 +2043,7 @@ module EquationOfState
       integer :: i
 !
 
-      if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+      if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
       if(ldebug) print*,'bc_ss_stemp_x: cs20,cs0=',cs20,cs0
 !
@@ -2094,7 +2095,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 ! 
-      if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+      if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
       if(ldebug) print*,'bc_ss_stemp_y: cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
@@ -2146,7 +2147,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
-      if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+      if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
       if(ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
 !
@@ -2204,7 +2205,7 @@ module EquationOfState
 !  first!)
 !
 
-    if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+    if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
     select case(topbot)
 !
@@ -2244,7 +2245,7 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+      if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
       if (NO_WARN) print*,f,topbot
@@ -2279,7 +2280,7 @@ module EquationOfState
       integer :: i,j
 
 
-      if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+      if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
       select case (topbot)
 
@@ -2381,7 +2382,7 @@ module EquationOfState
       integer :: i
 
 
-     if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+     if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
       select case (topbot)
 
@@ -2511,7 +2512,7 @@ module EquationOfState
       real :: pot
       integer :: i
 
-      if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+      if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
 !
 !  Get local wave numbers
@@ -2646,7 +2647,7 @@ module EquationOfState
       real, dimension (nx) :: pot,rr_cyl,rr_sph,cs2,tmp1,tmp2
       integer :: i,mm_noghost
 
-      if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+      if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 !
 !  Get local wave numbers
 !
@@ -2830,7 +2831,7 @@ module EquationOfState
       integer :: i
  
 
-     if (i_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
+     if (l_gamma) print*,'gamma is a pencil now! Be careful with using such boundary conditions!!!'
 
       select case (topbot)
 !
