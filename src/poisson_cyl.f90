@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.9 2008-04-30 12:11:53 wlyra Exp $
+! $Id: poisson_cyl.f90,v 1.10 2008-05-06 21:31:59 wlyra Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -35,9 +35,10 @@ module Poisson
 
   implicit none
 
-  real :: kmax=0.0
+  real :: kmax=0.0,iteration_threshold=1e-3
   logical :: lrazor_thin=.true.,lsolve_bessel=.false.,lsolve_cyl2cart=.false.
-  logical :: lsolve_direct=.false.,lsolve_logspirals=.false.,lsolve_relax_sor=.false.
+  logical :: lsolve_direct=.false.,lsolve_logspirals=.false.
+  logical :: lsolve_relax_sor=.false.
   character (len=labellen) :: ipoisson_method='nothing'
 
   integer, parameter :: mmax=8 !eight harmonics for the azimuthal direction
@@ -45,9 +46,9 @@ module Poisson
   include 'poisson.h'
 
   namelist /poisson_init_pars/ &
-       kmax,lrazor_thin,ipoisson_method
+       kmax,lrazor_thin,ipoisson_method,iteration_threshold
   namelist /poisson_run_pars/ &
-       kmax,lrazor_thin,ipoisson_method
+       kmax,lrazor_thin,ipoisson_method,iteration_threshold
 
 !
 ! For the colvolution case, green functions
@@ -64,6 +65,8 @@ module Poisson
   real, dimension(nx,nz,nxgrid,nzgrid,0:mmax) :: Legendre_Qmod
   real, dimension(ny,nygrid,0:mmax) :: fourier_cosine_terms
 !
+! For correcting self-acceleration
+!
   real, dimension(nx,ny,nz) :: phi_previous_step,rhs_previous_step
   real, dimension(nx) :: rad,kr_fft,sqrtrad_1,rad1
   real, dimension(ny) :: tht
@@ -77,7 +80,7 @@ module Poisson
   contains
 
 !***********************************************************************
-    subroutine initialize_poisson()
+    subroutine initialize_poisson
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -183,7 +186,7 @@ module Poisson
            call calculate_cross_green_functions
 !
       if (lsolve_relax_sor) &
-           call calculate_cross_legendre_functions
+        call calculate_cross_legendre_functions
 !
     endsubroutine initialize_poisson
 !***********************************************************************
@@ -207,7 +210,7 @@ module Poisson
         call inverse_laplacian_directsum(phi)
       else if (lsolve_relax_sor) then
         call inverse_laplacian_sor(f,phi)
-      else 
+       else 
         call fatal_error("inverse_laplacian","no solving method given")
       endif
 !
@@ -667,7 +670,8 @@ module Poisson
 !  Solve the 3D Poisson equation in cylindrical coordinates by 
 !  using mesh-relaxation with the SOR algorithm. The borders have
 !  to be pre-computed. For this, we use the analytical expression
-!  of Cohl and Tohline (1999) using expansions in Legendre polinomials
+!  of Cohl and Tohline (1999) using harmonic expansions in Legendre 
+!  functions.
 ! 
 !  This is very expensive and does not need to be done every time. Just 
 !  when the potential has changed by some small threshold
@@ -679,7 +683,6 @@ module Poisson
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz)  :: phi,rhs,b1,b1_rhs
-!      real, dimension (nx,ny,nz), save :: norm0
       real, dimension (nx) :: norm0,norm
       real, dimension (nx) :: a_band,b_band,c_band,d_band
       real, dimension (nx) :: e_band,b_band1,del2phi
@@ -687,9 +690,7 @@ module Poisson
       logical :: lfirst_timestep
       logical, dimension(nx,nz) :: lupdate
       logical, dimension(nx,ny,nz) :: lupdate_grid
-      !logical, dimension(ny,nz,2) :: lupdate_radial_border
-      !logical, dimension(nx,ny,2) :: lupdate_vertical_border
-      logical, save :: lfirstcall=.true.!,lcompute_norm0=.true.
+      logical, save :: lfirstcall=.true.
 !
       if (nzgrid==1)  &
            call fatal_error("inverse_laplacian_sor","This method uses the "//&
@@ -698,18 +699,25 @@ module Poisson
       if (nprocz/=1) &
            call fatal_error("inverse_laplacian_sor","Not yet implemented for z "//&
            "parallelization. Put all processors in the azimuthal direction")
+!
+! The other poisson solvers get the rhs as phi, and overwrite it.
+! This poisson solver needs to store the rhs first.
+!     
+      rhs=phi
 ! 
 ! Upon re-starting, get the stored potential
 !
       if ((it==1).and.(t.ne.0)) &
            phi_previous_step=f(l1:l2,m1:m2,n1:n2,ipotself)
 !
-! Integrate the border. In the first time step, sets the potential to the whole grid
-! The call to check update is to make sure we really need to update the border
+! Get the logical for updating the grid. Check if the quantity 
+! del2phi changed significantly compared to rhs. To avoid non-convergence
+! due to discretization errors, compare the rhs from the previous time
+! with the one from this timestep. 
 !
-      rhs=phi
-      if (.not.lfirstcall) then
-        !if (lcompute_norm0) then 
+      if (lfirstcall) then
+        lupdate_grid=.true.
+      else
         do m=m1,m2;do n=n1,n2
           ith=m-nghost;iz=n-nghost
           call del2(f,ipotself,del2phi)
@@ -722,24 +730,26 @@ module Poisson
             else
               lupdate_grid(ir,ith,iz)=.true.  
             endif
-            !print*,norm(ir),norm0(ir),abs(norm(ir)-norm0(ir))/norm(ir)
           enddo
         enddo;enddo
       endif
+!     
+! Save the rhs from the previous time step
+!   
       rhs_previous_step=rhs
 !
-        !call check_update_border(rhs,f,&
-        !     lupdate_radial_border,lupdate_vertical_border,norm0)
+! Start the solver. Get the borders
 !
-      call get_border_values(rhs,phi,lfirstcall,lupdate_grid)
-!           lupdate_radial_border,lupdate_vertical_border)
+      call get_border_values(rhs,phi,lupdate_grid)
+
 !
 ! For the other time-steps, the potential is known, so use discretization 
 ! of the 5-point formula (in fourier space) to determine the potential
 !
       if (.not.lfirstcall) then
 !
-! Get the phi from the previous time step, apart from the newly updated boundaries
+! Get the phi from the previous time step, apart from the newly 
+! updated boundaries
 !
         if (nprocz >= 2) then 
           if (ipz==0) then 
@@ -777,19 +787,19 @@ module Poisson
 !
       do im=1,nkt
 !
-        b_band=-2*(dr1**2 + dz1**2) - m_fft(im+ipy*nkt)**2
+        b_band=-2*(dr1**2 + dz1**2) - (m_fft(im+ipy*nkt)*rad1)**2
         b_band1=1/b_band
 !          
 ! check the points that need updating, then call the five point solver, in both
 ! real and imaginary parts
 !
-        !call check_update_grid(phi(:,im,:),rhs(:,im,:),a_band,b_band1,c_band,d_band,e_band,lupdate)
-        call five_point_solver(phi(:,im,:),rhs(:,im,:),&
-             a_band,b_band,b_band1,c_band,d_band,e_band,im,lupdate)
+        call five_point_solver(phi(:,im,:),rhs(:,im,:), &
+             a_band,b_band,b_band1,c_band,d_band,e_band,&
+             lupdate_grid(:,im,:))
 !
-        !call check_update_grid(b1(:,im,:),b1_rhs(:,im,:),a_band,b_band1,c_band,d_band,e_band,lupdate)
         call five_point_solver(b1(:,im,:),b1_rhs(:,im,:),&
-             a_band,b_band,b_band1,c_band,d_band,e_band,im,lupdate)
+             a_band,b_band,b_band1,c_band,d_band,e_band, &
+             lupdate_grid(:,im,:))
 !
       enddo
 !
@@ -799,7 +809,7 @@ module Poisson
       call fourier_transform_x(phi,b1,linv=.true.)
       call transp(phi,'y')
 !
-      lfirstcall=.false.
+      if (lfirstcall) lfirstcall=.false.
 !
 ! Save the phi from the previous step
 !
@@ -808,27 +818,37 @@ module Poisson
     endsubroutine inverse_laplacian_sor
 !*************************************************************************
     subroutine five_point_solver(lhs,rhs,&
-         a_band,b_band,b_band1,c_band,d_band,e_band,im,lupdate)
-    
+         a_band,b_band,b_band1,c_band,d_band,e_band,lupdate)
+!
+! Invert a five point matrix 
+!
+!  u(i,j) = 1/b*(a*u(i-1,j) + c*u(i+1,j) + d*u(i,j+1) + 
+!                e*u(i,j-1) + b*u(i,j)   - rhs(i,j))
+!
+! using Chebychev (checkboard, red and black) acceleration 
+!
       real, dimension (nx,nz) :: lhs,rhs,lhs_old
       real, dimension (nx) :: a_band,b_band,c_band,d_band,e_band,b_band1
-      real :: omega,threshold,norm,sig,norm_old,anorm,rjac,resid
-      integer :: n,i,iteration,im
+      real :: omega,norm,sig,norm_old,anorm,rjac,resid
+      integer :: n,i,iteration,skipped
       logical, dimension(nx,nz) :: lupdate
 !
-! Spectral radius and omega 
+! Starters
 !
-      omega=1 ; threshold=1e-3
       sig=1e5 ; norm=1e5
+!
+! Spectral radius and omega. This spectral radius is 
+! only for a equally spaced square grid. 
+!
       rjac=(cos(pi/nr) + (dr/dz)**2*cos(pi/nz))/(1+(dr/dz)**2)
-
 !
       lhs_old=lhs
 !
       iteration=0
 !
-      do while (sig .gt. threshold)
+      do while (sig .gt. iteration_threshold)
         iteration=iteration+1
+        if (mod(iteration,2).ne.0) skipped=0
         do n=2,nz-1
           do i=2,nr-1
             !chebychev : odd-even ordering
@@ -841,6 +861,8 @@ module Poisson
                         b_band(i)*lhs(i,n) - rhs(i,n)
                 anorm=anorm+abs(resid)
                 lhs(i,n)=lhs(i,n)-omega*resid*b_band1(i)
+              else
+                skipped=skipped+1
               endif
             endif
           enddo
@@ -858,26 +880,34 @@ module Poisson
         norm=sum((lhs-lhs_old)**2)
         sig=abs(norm-norm_old)/norm
 !
+        if (iteration .gt. 1000) then 
+          print*,'maximum number of iterations exceeded'
+          call fatal_error("five_point_solver","")
+        endif
       enddo
 !
-      !print*,'number of iterations',iteration,im
+      if (lroot.and.ip<=8) &
+           print*,'fps: skipped ',skipped,' of ',(nr-2)*(nz-2)
+!
+      if (ldebug) print*,'number of iterations',iteration
 !
     endsubroutine five_point_solver
 !***********************************************************************
-    subroutine get_border_values(rhs,phi,lfirstcall,lupdate_grid)!&
-!         lupdate_radial_border,lupdate_vertical_border)
+    subroutine get_border_values(rhs,phi,lupdate_grid)
+!
+! Calculate the value of the potential in the borders of the grid  
+!
+! 28-apr-08/wlad: coded
 !
       use Mpicomm
 !
       real, dimension (nx,ny,nz) :: rhs,phi,rhs_proc
       real, dimension (nx,nygrid,nzgrid)  :: rhs_serial
-      logical :: lfirstcall
       integer :: j,jy,jz,iydo,iyup,izdo,izup
       integer :: ir,ith,iz,skipped
       real    :: potential
       logical, dimension(nx,ny,nz) :: lupdate_grid 
-      !logical, dimension(nx,ny,2) :: lupdate_vertical_border 
-      !logical, dimension(ny,nz,2) :: lupdate_radial_border
+      logical :: lcall_from_self
 !
 ! Construct the serial density
 !
@@ -904,86 +934,91 @@ module Poisson
         rhs_serial(:,1:ny,1:nz)=rhs(:,1:ny,1:nz)
       endif
 !
-! At the first time step, calculate the potential by integration, everywhere
+! Integrate the borders. Count the points skipped because 
+! they do not need update, for monitoring purposes. 
 !
-      if (lfirstcall) then
-! 
-        if ((lroot).and.(ip<=8)) then 
-          print*,'get_border_values: integrating the distribution everywhere'
-          print*,'it will take a lot of time, so go grab a coffee...'
+      skipped=0
+      if ((lroot).and.(ip<=8)) & 
+           print*,'get_border_values: integrating the border values only'
+! Recompute the border. Start with ir=1
+      do iz=1,nz;do ith=1,nth
+        if (lupdate_grid(1,ith,iz)) then 
+          call integrate_border(rhs_serial,1,ith,iz,potential)
+          phi(1,ith,iz)=potential
+        else
+          skipped=skipped+1
+          phi(1,ith,iz)=phi_previous_step(1,ith,iz)
         endif
-!
-        do ir=1,nr;do ith=1,ny;do iz=1,nz
-          call integrate_border(rhs_serial,ir,ith,iz,potential)
-          phi(ir,ith,iz)=potential
-        enddo;enddo;enddo
-!
-      else
-        skipped=0
-        if ((lroot).and.(ip<=8)) then 
-          print*,'get_border_values: integrating the border values only'
+      enddo;enddo
+      if ((lroot).and.(ip<=8)) print*,'done for ir=1'
+! ir=nr
+      do iz=1,nz;do ith=1,nth
+        if (lupdate_grid(nr,ith,iz)) then 
+          call integrate_border(rhs_serial,nr,ith,iz,potential)
+          phi(nr,ith,iz)=potential
+        else
+          skipped=skipped+1
+          phi(nr,ith,iz)=phi_previous_step(nr,ith,iz)
         endif
-          !just recompute the border
-        do iz=1,nz;do ith=1,nth
-          !if (lupdate_radial_border(ith,iz,1)) then
-          if (lupdate_grid(1,ith,iz)) then 
-            call integrate_border(rhs_serial,1,ith,iz,potential)
-            phi(1,ith,iz)=potential
+      enddo;enddo
+      if ((lroot).and.(ip<=8)) print*,'done for ir=nr'
+!
+! Vertical. Take into account parallelization. Just do it
+! for the first and last z-processor. Start with z=1 for the
+! first processor.
+!
+      if (ipz==0) then 
+        do ir=2,nr-1;do ith=1,nth
+          if (lupdate_grid(ir,ith,1)) then 
+            call integrate_border(rhs_serial,ir,ith,1,potential)
+            phi(ir,ith,1)=potential
           else
             skipped=skipped+1
-            phi(1,ith,iz)=phi_previous_step(1,ith,iz)
+            phi(ir,ith,1)=phi_previous_step(ir,ith,1)
           endif
         enddo;enddo
-        if ((lroot).and.(ip<=8)) print*,'done for ir=1'
-!
-        do iz=1,nz;do ith=1,nth
-!          if (lupdate_radial_border(ith,iz,2)) then
-          if (lupdate_grid(nr,ith,iz)) then 
-            call integrate_border(rhs_serial,nr,ith,iz,potential)
-            phi(nr,ith,iz)=potential
+      endif
+      if ((lroot).and.(ip<=8)) print*,'done for iz=1'
+! z=nz for the last processor
+      if (ipz==nprocz-1) then 
+        do ir=2,nr-1;do ith=1,nth
+          if (lupdate_grid(ir,ith,nz)) then 
+            call integrate_border(rhs_serial,ir,ith,nz,potential)
+            phi(ir,ith,nz)=potential
           else
             skipped=skipped+1
-            phi(nr,ith,iz)=phi_previous_step(nr,ith,iz)
+            phi(ir,ith,nz)=phi_previous_step(ir,ith,nz)
           endif
         enddo;enddo
-        if ((lroot).and.(ip<=8)) print*,'done for ir=nr'
+      endif
+      if ((lroot).and.(ip<=8)) print*,'done for iz=nz'
 !
-        if (ipz==0) then 
-          do ir=2,nr-1;do ith=1,nth
-!            if (lupdate_radial_border(ir,ith,1)) then
-            if (lupdate_grid(ir,ith,1)) then 
-              call integrate_border(rhs_serial,ir,ith,1,potential)
-              phi(ir,ith,1)=potential
-            else
-              skipped=skipped+1
-              phi(ir,ith,1)=phi_previous_step(ir,ith,1)
-            endif
-          enddo;enddo
-        endif
-        if ((lroot).and.(ip<=8)) print*,'done for iz=1'
+      if ((lroot).and.(ip<=8)) &
+           print*,'border: skipped ',skipped,' of ',2*nth*(nz+nr-2)
 !
-        if (ipz==nprocz-1) then 
-          do ir=2,nr-1;do ith=1,nth
-!            if (lupdate_radial_border(ir,ith,2)) then
-            if (lupdate_grid(ir,ith,nz)) then 
-              call integrate_border(rhs_serial,ir,ith,nz,potential)
-              phi(ir,ith,nz)=potential
-            else
-              skipped=skipped+1
-              phi(ir,ith,nz)=phi_previous_step(ir,ith,nz)
-            endif
-          enddo;enddo
-        endif
-        if ((lroot).and.(ip<=8)) print*,'done for iz=nz'
-!
-        if ((lroot).and.(ip<=8)) &
-             print*,'border: skipped ',skipped,' of ',2*nth*(nz+nr-2)
-!
-      endif !lfirst_timestep
-
     endsubroutine get_border_values
 !***********************************************************************
     subroutine integrate_border(rhs_serial,ir,ith,iz,potential)
+!
+! Get the potential in the borders by direct integration (see routine
+! calculate_cross_legendre_functions below) 
+!
+! Phi(r,tht,z) = -G/(pi*sqrt(r)) * &
+!                 Int r'dr'dz'dth'/sqrt(r') * rho' * &
+!                 Sum_m=0^infty eps(m)*Q_(m-1/2)*cos(m*(tht-tht'))
+! 
+!                        _               infty
+!                G      /  d3x' rho(x')  ___
+! Phi(x) = _  _______   |  ___________   \   e(m) Q (chi) cos[m(t-t')]
+!                  __   |      __        /__       m-1/2
+!             pi \/r   _/    \/r'         m=0
+!
+!
+! This is time consuming and only done for the border, if they need updating. 
+! In the grid, we iteratively solve the discrete Poisson equation via Chebychev 
+! acceleration. 
+!
+! 28-apr-08/wlad: coded
 !
       real, dimension(nx,nygrid,nzgrid) :: rhs_serial
       real, dimension (nx) :: intr
@@ -1007,8 +1042,9 @@ module Poisson
 ! the jacobian, the division by sqrt(rad) and the neumann
 ! epsilon factor
             do im=0,mmax
-              summation_over_harmonics=summation_over_harmonics+&
-                   Legendre_Qmod(ir,iz,ikr,ikz,im)*fourier_cosine_terms(ith,ikt,im)
+                summation_over_harmonics=summation_over_harmonics+&
+                     Legendre_Qmod(ir,iz,ikr,ikz,im)*&
+                     fourier_cosine_terms(ith,ikt,im)
             enddo
             intr(ikr)=rhs_serial(ikr,ikt,ikz)*summation_over_harmonics
           enddo
@@ -1024,17 +1060,26 @@ module Poisson
     subroutine check_update_grid(rhs,phi_old,a_band,b_band1,&
          c_band,d_band,e_band,lupdate)
 !
-! Check if an update is needed. Otherwise, don't update the lhs
+! Check if the two sides of the poisson equation changed 
+! significantly from one time step to the other. If so, 
+! update the border. Otherwise, don't do anything, which 
+! saves a lot of time. 
+!
+! This routine compares the potential from the previous 
+! timestep and checks against a the potential obtained from 
+! the new density distribution and one Gauss-Seidel iteration.
+! If it did not change by a significant amount, do not perform 
+! the Chebychev iteration. 
+!  
+! 28-apr-08/wlad: coded
 !
       real, dimension(nx,nz), intent(in) :: rhs,phi_old
       real, dimension(nx,nz)  :: lhs
       real, dimension(nx) :: a_band,b_band1,c_band,d_band,e_band
       logical, dimension(nx,nz), intent(out) :: lupdate
-      real :: threshold,norm
+      real :: norm
       integer :: i,n,skipped
 !
-      threshold=1e-4
-!      
       skipped=0
       do n=2,nz-1;do i=2,nr-1
         lhs(i,n)=b_band1(i)*(rhs(i,n) &
@@ -1046,7 +1091,7 @@ module Poisson
 ! don't update if it hadn't change by a significant amount
 !
         norm=abs(lhs(i,n)-phi_old(i,n))!/max(abs(phi_old(i,n)),abs(lhs(i,n))))
-        if (norm .le. threshold) then
+        if (norm .le. iteration_threshold) then
           skipped=skipped+1
           lupdate(i,n)=.false.
         else
@@ -1062,7 +1107,17 @@ module Poisson
     subroutine check_update_border(rhs,f,lupdate_radial_border,&
          lupdate_vertical_border,norm0)
 !
-! Check if an update is needed. Otherwise, don't update the lhs
+! Check if the two sides of the poisson equation changed 
+! significantly from one time step to the other. If so, 
+! update the border. Otherwise, don't do anything, which 
+! saves a lot of time. This routines takes the quantity 
+!  
+!   norm=abs(del2(phi)-4piG*rho)   
+! 
+! and compares with the one calculated in the previous
+! timestep (norm0). 
+!
+! 28-apr-08/wlad: coded
 !
       use Sub,only:del2
 !
@@ -1070,14 +1125,11 @@ module Poisson
       real, dimension(nx,ny,nz), intent(in) :: rhs,norm0
       logical, dimension(ny,nz,2), intent(out) :: lupdate_radial_border
       logical, dimension(nx,ny,2), intent(out) :: lupdate_vertical_border
-      real :: threshold
       integer :: i,n,ith,iz,ir
 
       real, dimension (nx) :: del2phi,nnn
       real  :: norm
       logical :: lfirstcall
-!
-      threshold=1e-4      
 !
 !  compute del2phi and compare it with 4piGrho
 !  as it has discretization errors, compare it with 
@@ -1092,14 +1144,14 @@ module Poisson
         nnn=abs(del2phi - rhs(:,ith,iz))!/rhs(:,ith,iz)
 !
         norm=abs(del2phi(1) - rhs(1,ith,iz))!/rhs(1,ith,iz)
-        if (norm/norm0(1,ith,iz) .lt. threshold) then 
+        if (norm/norm0(1,ith,iz) .lt. iteration_threshold) then 
           lupdate_radial_border(ith,iz,1)=.false.
         else
           lupdate_radial_border(ith,iz,1)=.true.
         endif
 
         norm=abs(del2phi(nr) - rhs(nr,ith,iz))!/rhs(nr,ith,iz)
-        if (norm/norm0(nr,ith,iz) .lt. threshold) then 
+        if (norm/norm0(nr,ith,iz) .lt. iteration_threshold) then 
           lupdate_radial_border(ith,iz,2)=.false.
         else
           lupdate_radial_border(ith,iz,2)=.true.
@@ -1108,7 +1160,7 @@ module Poisson
         if ((ipz==0).and.(iz==1)) then 
           do ir=2,nr-1
             norm=abs(del2phi(ir)-rhs(ir,ith,1))!/rhs(ir,ith,1)
-            if (norm/norm0(ir,ith,1) .lt. threshold) then 
+            if (norm/norm0(ir,ith,1) .lt. iteration_threshold) then 
               lupdate_vertical_border(ir,ith,1)=.false.
             else
               lupdate_vertical_border(ir,ith,1)=.true.
@@ -1119,7 +1171,7 @@ module Poisson
         if ((ipz==nprocz-1).and.(iz==nz)) then 
           do ir=2,nr-1
             norm=abs(del2phi(ir)-rhs(ir,ith,nz))!/rhs(ir,ith,nz)
-            if (norm/norm0(ir,ith,nz) .lt. threshold) then 
+            if (norm/norm0(ir,ith,nz) .lt. iteration_threshold) then 
               lupdate_vertical_border(ir,ith,2)=.false.
             else
               lupdate_vertical_border(ir,ith,2)=.true.
@@ -1151,13 +1203,14 @@ module Poisson
       do ikt=1,nkt
         do ir=1,nr;do ikr=1,nkr
           arg=kr_fft(ikr)*rad(ir)
-          call besselj_nu_int(tmp,m_fft(ikt+ipy*nkt),arg)
+          call besselj_nu_int(tmp,m_fft(ikt+ipy*nkt),arg,&
+               loversample=.true.)
           bessel_grid(ir,ikr,ikt)=tmp
         enddo;enddo
       enddo
 !
       if (lroot) &
-           print*,'calculated all the needed functions'
+           print*,'Calculated all the needed Bessel functions'
 !
     endsubroutine calculate_cross_bessel_functions
 !***********************************************************************
@@ -1196,12 +1249,13 @@ module Poisson
       ith_serial=ith+ipy*nth  
       do ikr=1,nr;do ikt=1,nthgrid
 !
+
         jacobian=rad(ikr)*dr*dth
 !
 ! The distance is 
 !
-!  tmp=sqrt(rad(ir)**2 + rad(ikr)**2 - &
-!       2*rad(ir)*rad(ikr)*cos(tht(ith)-tht_serial(ikt)))
+!       tmp=sqrt(rad(ir)**2 + rad(ikr)**2 - &
+!            2*rad(ir)*rad(ikr)*cos(tht(ith)-tht_serial(ikt)))
 !
 ! But it is better to work in terms of the indices, to avoid
 ! rounding errors. Otherwise, we will get self-accelerations 
@@ -1212,12 +1266,14 @@ module Poisson
 !
         if ((ir/=ikr).and.(ith_serial/=ikt)) then 
           tmp=sqrt(rad(ir)**2 + rad(ikr)**2 - &
-               2*rad(ir)*rad(ikr)*cos(tht(ith)-tht_serial(ikt)))
+              2*rad(ir)*rad(ikr)*cos(dth*(ith_serial-ikt)))
         endif
         if ((ir/=ikr).and.(ith_serial==ikt)) then
+          !same azimuthal location
           tmp=abs(dr*(ir-ikr))
         endif
         if ((ir==ikr).and.(ith_serial/=ikt)) then
+          !same radial location
           tmp=2*rad(ir)**2*(1-cos(dth*(ith_serial-ikt)))
         endif
         if ((ir==ikr).and.(ith_serial==ikt)) then
@@ -1234,11 +1290,46 @@ module Poisson
       enddo;enddo
 !
       if (lroot) &
-           print*,'calculated all the needed green functions'
+           print*,'Calculated all the needed Green functions'
 !
     endsubroutine calculate_cross_green_functions
 !***********************************************************************
     subroutine calculate_cross_legendre_functions
+! 
+! Calculate the Legendre functions of second kind related to
+! the cylindrical grid. They are needed to solve the potential
+! by the analytical expression (Cohl & Tohline 1999)
+!
+! Phi(r,tht,z) = -G/(pi*sqrt(r)) * &
+!                 Int r'dr'dz'dth'/sqrt(r') * rho' * &
+!                 Sum_m=0^infty eps(m)*Q_(m-1/2)*cos(m*(tht-tht'))
+! 
+!                        _               infty
+!                G      /  d3x' rho(x')  ___
+! Phi(x) = _  _______   |  ___________   \   e(m) Q (chi) cos[m(t-t')]
+!                  __   |      __        /__       m-1/2
+!             pi \/r   _/    \/r'         m=0
+!
+! The Neumann factor e(m) is 1 for m=0 and 2 for other harmonics, 
+! chi is a function of the grid
+!          
+!     chi= [r^2 + r'^2 + (z-z')^2]/(2rr')
+!
+! And the Legendre functions can be found by a recurrency relation
+!
+!  Q_(-1/2) = mu*K(mu)
+!  Q_( 1/2) = chi*mu*K(mu) - (1+chi)*mu*E(mu)
+!
+!                4*(m-1)                   2m-3
+!  Q_(m-1/2) =   _______  chi*Q_(m-3/2) - ______  Q_(m-5/2) 
+!
+!                 2m-1                     2m-1
+!
+! where mu=sqrt(2./(1+chi)) and K and E are the first and second
+! kind complete elliptical integrals. The summation is truncated 
+! at a maximum harmonic mmax
+!
+! 28-apr-08/wlad: coded
 !
       use General, only: calc_complete_ellints
 !
@@ -1248,7 +1339,7 @@ module Poisson
       integer, dimension(mmax) :: neumann_factor_eps
       real    :: chi,mu,Kappa_mu,E_mu,jac
       integer :: ir,ith,iz,ikr,ikt,ikz
-      integer :: j,im
+      integer :: j,im,ith_serial,nw,count
 !
       if (lroot) &
         print*,'Pre-calculating the half-integer Legendre functions '//&
@@ -1262,6 +1353,8 @@ module Poisson
         zed_serial(1:nz)=zed(1:nz)
       endif
 !
+      nw=10*int(nr**2*nz*nzgrid/10) ; count=0
+!
       do ir=1,nr;do iz=1,nz        !for all points in this processor 
       do ikr=1,nr;do ikz=1,nzgrid  !integrate over the whole r-z grid
 !
@@ -1271,9 +1364,11 @@ module Poisson
 !
 ! Calculate the elliptic integrals
 ! 
-       chi=(rad(ir)**2+rad(ikr)**2+(zed(iz)-zed_serial(ikz))**2)/(2*rad(ir)*rad(ikr))
+        chi=(rad(ir)**2+rad(ikr)**2+(zed(iz)-zed_serial(ikz))**2)/&
+             (2*rad(ir)*rad(ikr))
         mu=sqrt(2./(1+chi))
-        call calc_complete_ellints(mu,Kappa_mu,E_mu)
+        call calc_complete_ellints(mu,Kappa_mu,E_mu,&
+             loversample=.false.)
 !
 ! Calculate the Legendre functions for each harmonic
 !
@@ -1292,7 +1387,7 @@ module Poisson
             endif
           endif
 !
-! modify the Legendre function by multipying the jacobian
+! modify the Legendre function by multiplying the jacobian
 ! to speed up runtime. Also stick in the neumann factor and 
 ! the 1/sqrt(rad) factor
 !
@@ -1303,26 +1398,44 @@ module Poisson
 ! 
 ! Finished grid integration of the Legendre functions
 !
-        enddo;enddo
-        enddo;enddo
+        if (lroot) then
+          count=count+1
+          if (mod(10*count,nw)==0) print*, 100*count/nw,'% done'
+        endif
+!
+      enddo;enddo
+      enddo;enddo
 !
 ! Now the co-sines in the azimuthal direction
 !
-        if (nprocy /= 1) then
-          call get_serial_array(tht,tht_serial,'y')
-        else
-          tht_serial(1:ny)=tht(1:ny)
-        endif
+      if (nprocy /= 1) then
+        call get_serial_array(tht,tht_serial,'y')
+      else
+        tht_serial(1:ny)=tht(1:ny)
+      endif
 !
-        do ith=1,nth;do ikt=1,nthgrid
-          do im=0,mmax
-            fourier_cosine_terms(ith,ikt,im)=cos(im*(tht(ith)-tht_serial(ikt)))
-          enddo
-        enddo;enddo
-!       
+      if (lroot) print*,'Start calculating the co-sines'
+!
+      do ith=1,nth;do ikt=1,nthgrid  
+        do im=0,mmax
+          fourier_cosine_terms(ith,ikt,im)=&
+               cos(im*(tht(ith)-tht_serial(ikt)))
+        enddo
+      enddo;enddo
+!
+      if (lroot) &
+           print*,'Calculated all the needed Legendre functions'
+!
     endsubroutine calculate_cross_legendre_functions
 !***********************************************************************
     subroutine get_serial_array(array,array_serial,var)
+!
+! Feed in the array present on the processor, and return 
+! (broadcast) a serial array with the elements of that 
+! array in all processors. Used for getting all y or z 
+! elements. 
+!
+! 28-apr-08/wlad: coded
 !
       use Mpicomm
 !
