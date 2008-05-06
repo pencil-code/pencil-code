@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.398 2008-04-30 15:08:38 dintrans Exp $
+### $Id: Makefile.src,v 1.399 2008-05-06 17:37:38 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -440,9 +440,9 @@ LD_FFTW2=
 ## Axel on Neolith (ifc 7.1)
 ##
 #FC=ifort #(neolith)
-#FFLAGS=-O3 -Nmpi#(neolith)
+#FFLAGS=-O3 -Nmpi -L/home/x_axebr/library/lib #(neolith)
 #CC=icc #(neolith)
-#CFLAGS=-O3 -DFUNDERSC=1 #(neolith)
+#CFLAGS=-O3 -DFUNDERSC=1 -I/home/x_axebr/library/include -L/home/x_axebr/library/lib #(neolith)
 #LD_MPI=-Nscampi #(neolith)
 #LD_MPI=-L/opt/scali/lib -lfmpi -lmpi -lpthread #(neolith)
 ##LIBMPISUFFIX=_#(neolith)
