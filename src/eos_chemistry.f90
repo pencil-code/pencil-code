@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.22 2008-05-06 13:03:14 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.23 2008-05-06 16:05:11 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -115,7 +115,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.22 2008-05-06 13:03:14 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.23 2008-05-06 16:05:11 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -474,18 +474,6 @@ module EquationOfState
  if (NO_WARN) print *,f,p
 
 !  Natalia: 26.02.2008: calculation of additional penciles
-!
-!  Temperature
-!
-      if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
-      if (lpencil(i_TT)) p%TT=exp(p%lnTT)
-      if (lpencil(i_TT1)) p%TT1=1./p%TT!
-
-!
-!  Temperature laplacian and gradient
-!
-      if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
-      if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
 
     endsubroutine calc_pencils_eos
 !***********************************************************************

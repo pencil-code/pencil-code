@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.84 2008-05-06 12:38:17 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.85 2008-05-06 16:05:10 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.84 2008-05-06 12:38:17 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.85 2008-05-06 16:05:10 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.84 2008-05-06 12:38:17 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.85 2008-05-06 16:05:10 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -216,7 +216,7 @@ module Chemistry
 
        if (unit_system == 'cgs') then
          Rgas_unit_sys = k_B_cgs/m_u_cgs
-         Rgas=Rgas_unit_sys*unit_energy/unit_velocity**2
+         Rgas=Rgas_unit_sys*unit_temperature/unit_energy
        endif
 
 
@@ -452,10 +452,32 @@ module Chemistry
 !            enddo
       !    endif
 
+  
+
+!
+!  Temperature
+!
+      if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
+      if (lpencil(i_TT)) p%TT=exp(p%lnTT)
+      if (lpencil(i_TT1)) p%TT1=1./p%TT!
+
+
+
+
+
+!
+!  Temperature laplacian and gradient
+!
+      if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
+      if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+
+
+
+
 !
 !  Pressure
 !
-         if (lpencil(i_pp)) p%pp = Rgas*p%mu1*p%rho*p%TT
+         if (lpencil(i_pp)) p%pp = Rgas*p%rho*p%TT*p%mu1
 
 !  Specific heat at constant pressure
 !
@@ -2195,8 +2217,7 @@ module Chemistry
 
       do k=1,nchemspec
        prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijp(k,reac)
-
-       
+ 
       do i=0,nx-1
        if (abs(f(l1+i,m,n,ichemspec(k))) > 0.) then
          prod1_ts(i+1)=prod1_ts(i+1)*(f(l1+i,m,n,ichemspec(k))*rho_cgs(i+1)/species_constants(k,imass))**Sijp(k,reac)
@@ -2208,10 +2229,12 @@ module Chemistry
 
       enddo
 
-  !    print*,maxval(prod1), maxval(prod1_ts)
+   ! if (reac==1) then
+     
+   ! endif
 
       do k=1,nchemspec
-
+        
         prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm(k,reac)
        
       do i=0,nx-1
@@ -2221,9 +2244,11 @@ module Chemistry
           prod2_ts(i+1)=prod2_ts(i+1)*(1e-3*rho_cgs(i+1)/species_constants(k,imass))**Sijm(k,reac)
        endif
       enddo
-
+ !print*,'Natalia',maxval(prod2),maxval((f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm(k,reac)),k,reac,maxval(f(l1:l2,m,n,ichemspec(k))),maxval(rho_cgs),(species_constants(k,imass)),Sijm(k,reac)
 
       enddo
+
+   !    print*,'Natalia',maxval(prod2),minval(prod2)
 
         vreact_p(:,reac)=prod1/rho_cgs*kf
         vreact_m(:,reac)=prod2/rho_cgs*kr
@@ -2293,7 +2318,10 @@ module Chemistry
 ! Chemkin data case
           call get_reaction_rate(f,vreactions_p,vreactions_m,vreactions_ts,p)
         endif 
-          vreactions=vreactions_p-vreactions_m
+         vreactions=vreactions_p-vreactions_m
+
+
+
 
      do k=1,nchemspec  
           xdot=0.
@@ -2314,6 +2342,8 @@ module Chemistry
          endif
         p%DYDt_reac(:,k)=xdot*unit_time
         DYDt_reac_ts(:,k)=xdot_ts*unit_time
+
+ ! print*,'Natalia',maxval(p%DYDt_reac(:,k))/unit_time,k
 
 ! print*,'Natalia',maxval(p%DYDt_reac(:,4)),unit_time,maxval(xdot)
 
