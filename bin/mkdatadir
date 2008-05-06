@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.68 2008-04-28 12:00:18 brandenb Exp $
+#  $Id: mkdatadir,v 1.69 2008-05-06 13:02:21 brandenb Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -39,6 +39,8 @@ else if ($hn =~ node[0-9]*) then
   set str='s/clx\/userhpe\/'$USER'/scratch\/'$USER'\/DATA/g'
 else if ($hn =~ sp[0-9]*) then
   set str='s/sp4\/userhpe/scratch\/DATA/g'
+else if ($hn =~ neolith*) then
+  set str='s/home/nobackup\/global/g'
 else if ($hn =~ ns0*) then
   set str='s/home/data/g'
 else if ($hn =~ ns1*) then

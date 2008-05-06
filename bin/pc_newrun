@@ -1,6 +1,6 @@
 #!/bin/bash 
 #
-#  $Id: pc_newrun,v 1.8 2008-03-09 05:57:09 brandenb Exp $
+#  $Id: pc_newrun,v 1.9 2008-05-06 13:02:21 brandenb Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
@@ -115,5 +115,6 @@ if [ $same_source ]; then
     ln -s `readlink $olddir/src/*.x .`
   else
     ln -s $olddir/src/*.x .
+    cp $olddir/src/*.inc .
   fi
 fi

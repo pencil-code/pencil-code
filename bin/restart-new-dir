@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: restart-new-dir,v 1.8 2005-08-17 00:18:28 mee Exp $
+#$Id: restart-new-dir,v 1.9 2008-05-06 13:02:21 brandenb Exp $
 #
 #  Example:
 #     restart-new-dir ../hydro256e
@@ -12,12 +12,11 @@
 #gt rot512_Om0b
 #mkdatadir
 #cd data
-#mkproc-tree 128
+#pc_mkproctree 128
 #gb
 #restart-new-dir ../rot512_Om0b
 
-cp data/dim.dat $1/data
-cp data/param* $1/data
+cp data/dim.dat data/param* data/index* $1/data
 copy-proc-to-proc grid.dat $1
 copy-proc-to-proc dim.dat $1
 copy-proc-to-proc var.dat $1
