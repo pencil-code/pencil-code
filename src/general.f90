@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.76 2008-04-30 10:42:40 wlyra Exp $
+! $Id: general.f90,v 1.77 2008-05-06 21:47:54 wlyra Exp $
 
 module General
 
@@ -1021,7 +1021,7 @@ module General
       return
     endfunction erfcc
 !*****************************************************************************
-    subroutine besselj_nu_int(res,nu,arg)
+    subroutine besselj_nu_int(res,nu,arg,loversample)
 !
       use Cdata, only: pi,pi_1
 !
@@ -1047,11 +1047,20 @@ module General
       real, dimension(:),allocatable :: angle,a
       real :: arg,res,d_angle
       integer :: i,nu,nnt
+      logical, optional :: loversample
 !
       intent(in)  :: nu,arg
       intent(out) :: res
+!        
+! Possibility of very high resolution
+! useful in start time, for instance
+!        
+      if (present(loversample)) then 
+        nnt=30000
+      else
+        nnt=max(100,nygrid)
+      endif
 !
-      nnt=max(100,nygrid)
       allocate(angle(nnt))
       allocate(a(nnt))
 !
@@ -1066,10 +1075,10 @@ module General
 !
     endsubroutine besselj_nu_int
 !*****************************************************************************
-    subroutine calc_complete_ellints(mu,Kappa_mu,E_mu)
+    subroutine calc_complete_ellints(mu,Kappa_mu,E_mu,loversample)
 !
 !  Calculate the complete elliptic integrals of first (K) 
-!  and second kind (E) bessel function
+!  and second kind (E) 
 !                 
 !              _ 
 !             /  pi/2
@@ -1100,8 +1109,16 @@ module General
       real :: mu,d_angle,Kappa_mu
       real, optional :: E_mu
       integer :: i,nnt
+      logical, optional :: loversample
+!        
+! Possibility of very high resolution
+! useful in start time, for instance
 !        
       nnt=max(100,nygrid)
+      if (present(loversample)) then 
+        if (loversample) nnt=30000
+      endif
+!
       allocate(angle(nnt))
       allocate(a_K(nnt))
       if (present(E_mu)) allocate(a_E(nnt))
@@ -1117,14 +1134,14 @@ module General
       if (mu .eq. 1 ) then
         Kappa_mu=0
       else
-        Kappa_mu=sum(a_k(2:nnt-1)) + .5*(a_k(1)+a_k(nnt))
+        Kappa_mu=sum(a_K(2:nnt-1)) + .5*(a_K(1)+a_K(nnt))
       endif
 !
 ! Elliptic integral of second kind
 !
      if (present(E_mu)) then
         a_E=d_angle*sqrt(1-(mu*sin(angle))**2)
-        E_mu=sum(a_e(2:nnt-1)) + .5*(a_e(1)+a_e(nnt))
+        E_mu=sum(a_E(2:nnt-1)) + .5*(a_E(1)+a_E(nnt))
       endif
 !
     endsubroutine calc_complete_ellints
