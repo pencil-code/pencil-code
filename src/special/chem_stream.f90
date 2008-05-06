@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.21 2008-05-05 18:27:07 nbabkovs Exp $
+! $Id: chem_stream.f90,v 1.22 2008-05-06 17:40:03 nordita Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -139,11 +139,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.21 2008-05-05 18:27:07 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.22 2008-05-06 17:40:03 nordita Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.21 2008-05-05 18:27:07 nbabkovs Exp $")
+           "$Id: chem_stream.f90,v 1.22 2008-05-06 17:40:03 nordita Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -404,7 +404,7 @@ module Special
       integer :: i
 !
       do i=1,3
-        divtau(l1:l2,m,n,i)=p%fvisc(l1:l2,i)*p%rho(:)
+        divtau(l1:l2,m,n,i)=p%fvisc(:,i)*p%rho(:)
       enddo
 
         pres(l1:l2,m,n)=p%pp(:)!/p%mu1(:)
@@ -636,9 +636,9 @@ module Special
       integer :: sgn
       type (boundary_condition) :: bc
       integer :: i,i1,j,vr,k
-      real :: value1, value2, y0
+      real :: value1, value2, yy0
 
-      y0=3.
+      yy0=3.
 
       vr=bc%ivar
 
@@ -651,9 +651,9 @@ module Special
 
        if (vr==1) then
         do k=1,my
-            if (abs(y(k)) .lt. y0) then
+            if (abs(y(k)) .lt. yy0) then
               do i=0,nghost
-                   f(l1-i,k,:,vr)=value1*(1.-(y(k)/y0)**2); 
+                   f(l1-i,k,:,vr)=value1*(1.-(y(k)/yy0)**2); 
               enddo
             else
               do i=0,nghost;   f(l1-i,k,:,vr)=0.;  enddo
@@ -665,7 +665,7 @@ module Special
 
 
        if (vr==5) then
-         !  if (abs(y(k)) .lt. y0) then
+         !  if (abs(y(k)) .lt. yy0) then
             do i=0,nghost;  f(l1-i,m1:my,:,vr)=log(value1);  enddo
          !  else
           !  do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
@@ -678,7 +678,7 @@ module Special
 
 
        if (vr==4 ) then
-         !  if (abs(y(k)) .lt. y0) then
+         !  if (abs(y(k)) .lt. yy0) then
       !      do i=0,nghost;  f(l1-i,m1:my,:,vr)=log(value1);  enddo
          !  else
           !  do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
@@ -695,7 +695,7 @@ module Special
 
          do i=0,nghost; 
           do k=1,my
-             if (abs(y(k)) .lt. y0) then
+             if (abs(y(k)) .lt. yy0) then
                 if (vr < ichemspec(nchemspec))  f(l1-i,k,:,vr)=value1
                 if (vr == ichemspec(nchemspec)) f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4*0.
              else
@@ -1046,7 +1046,7 @@ module Special
       real, dimension (l1+2) :: pp
       integer :: sgn
       type (boundary_condition) :: bc
-      integer :: i,i1,j,vr,k,m,n
+      integer :: i,i1,j,vr,k
       real :: value1, value2
 
       vr=bc%ivar
@@ -1159,9 +1159,9 @@ module Special
       integer :: sgn
       type (boundary_condition) :: bc
       integer :: i,i1,j,vr,k
-      real :: value1, value2, y0
+      real :: value1, value2, yy0
 
-      y0=3.
+      yy0=3.
 
       vr=bc%ivar
 
@@ -1174,9 +1174,9 @@ module Special
 
        if (vr==1) then
         do k=1,my
-            if (abs(y(k)) .lt. y0) then
+            if (abs(y(k)) .lt. yy0) then
               do i=0,nghost
-                   f(l1-i,k,:,vr)=value1*(1.-(y(k)/y0)**2); 
+                   f(l1-i,k,:,vr)=value1*(1.-(y(k)/yy0)**2); 
               enddo
             else
               do i=0,nghost;   f(l1-i,k,:,vr)=0.;  enddo
@@ -1188,7 +1188,7 @@ module Special
 
 
        if (vr==5 .or. vr==4 ) then
-         !  if (abs(y(k)) .lt. y0) then
+         !  if (abs(y(k)) .lt. yy0) then
             do i=0,nghost;  f(l1-i,m1:my,:,vr)=log(value1);  enddo
          !  else
           !  do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
@@ -1209,7 +1209,7 @@ module Special
 
          do i=0,nghost; 
           do k=1,my
-             if (abs(y(k)) .lt. y0) then
+             if (abs(y(k)) .lt. yy0) then
                 if (vr == ichemspec(nchemspec))  f(l1-i,k,:,vr)=value1*0.
                 if (vr < ichemspec(nchemspec)) f(l1-i,k,:,vr)=value1*((l1-i)/(l1-0.))**4*0.
              else

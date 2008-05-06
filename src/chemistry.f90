@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.87 2008-05-06 17:37:05 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.88 2008-05-06 17:40:03 nordita Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.87 2008-05-06 17:37:05 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.88 2008-05-06 17:40:03 nordita Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.87 2008-05-06 17:37:05 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.88 2008-05-06 17:40:03 nordita Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -2653,7 +2653,8 @@ module Chemistry
       character (len=1)  :: tmp_string 
       integer :: VarNumber,i,j,k=1
       real :: YY_k, air_mass, TT=300., PP=10.13e4
-      real, dimension(nchemspec) :: stor1,stor2 
+      real, dimension(nchemspec)    :: stor2 
+      integer, dimension(nchemspec) :: stor1
       !character (len=*) :: input_file
       !
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
