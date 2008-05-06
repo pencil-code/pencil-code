@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.20 2008-05-05 11:50:17 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.21 2008-05-06 12:57:19 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -76,7 +76,8 @@ module EquationOfState
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
-  logical :: l_gamma1=.false.
+  logical :: l_gamma1=.true.
+  logical :: l_cp=.true.
 
   ! input parameters
   namelist /eos_init_pars/  mu, cp, cs0, rho0, gamma, error_cp, ptlaw
@@ -113,7 +114,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.20 2008-05-05 11:50:17 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.21 2008-05-06 12:57:19 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -538,7 +539,7 @@ module EquationOfState
 
       real, intent(out) :: cp1_
 !
-    if (.not. i_cp) then
+    if (.not. l_cp) then
       cp1_=cp1
     else
       call stop_it('chem.inp is found: pressure_gradient_point can not be used for this moment')
@@ -889,7 +890,7 @@ module EquationOfState
         case (nx)
           lnrho_=f(l1:l2,m,n,ieosvar1)
           if (leos_isentropic) then
-           if (.not. i_cp) then
+           if (.not. l_cp) then
             lnTT_=lnTT0+(cp-cv)*(lnrho_-lnrho0)
            else
             lnTT_=lnTT0+(p%cp-p%cv)*(lnrho_-lnrho0)
@@ -902,7 +903,7 @@ module EquationOfState
         case (mx)
           lnrho_=f(:,m,n,ieosvar1)
           if (leos_isentropic) then
-           if (.not. i_cp) then
+           if (.not. l_cp) then
             lnTT_=lnTT0+(cp-cv)*(lnrho_-lnrho0)
            else
             lnTT_=lnTT0+(p%cp-p%cv)*(lnrho_-lnrho0)
@@ -919,7 +920,7 @@ module EquationOfState
         if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT_
 
-       if (.not. i_cp) then
+       if (.not. l_cp) then
         if (present(ee)) ee=cv*exp(lnTT_)
         if (ieosvars==ilnrho_lnTT) then
           if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
