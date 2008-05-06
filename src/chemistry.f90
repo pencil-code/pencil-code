@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.86 2008-05-06 16:47:40 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.87 2008-05-06 17:37:05 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.86 2008-05-06 16:47:40 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.87 2008-05-06 17:37:05 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.86 2008-05-06 16:47:40 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.87 2008-05-06 17:37:05 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -464,8 +464,16 @@ module Chemistry
       if (lpencil(i_TT)) p%TT=exp(p%lnTT)
       if (lpencil(i_TT1)) p%TT1=1./p%TT!
 
+!
+!  Density
+!
+     ! if (lpencil(i_lnrho))
+      p%lnrho=f(l1:l2,m,n,ilnrho)
+     ! if (lpencil(i_rho))
+       p%rho=exp(p%lnrho)
+     
 
-
+!print*,maxval(f(l1:l2,m,n,ilnrho))
 
 
 !
@@ -475,12 +483,14 @@ module Chemistry
       if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
 
 
-
+!print*,maxval(f(l1:l2,m,n,ilnrho))
 
 !
 !  Pressure
 !
          if (lpencil(i_pp)) p%pp = Rgas*p%rho*p%TT*p%mu1
+
+!print*,'p%pp',maxval(p%pp),Rgas,maxval(p%rho),maxval(p%TT),maxval(p%mu1)
 
 !  Specific heat at constant pressure
 !
@@ -2087,6 +2097,8 @@ module Chemistry
   rho_cgs=p%rho*unit_mass/unit_length**3
   p_atm=p%pp*unit_energy/unit_length**3/10.13e5
 
+ !  print*,'Natalia',p_atm
+
    if (lwrite)   write(file_id,*)'T= ',   T_cgs
     if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
 
@@ -2229,6 +2241,7 @@ module Chemistry
        endif
       enddo
 
+ !     print*,'Natalia',maxval(prod1)
 
       enddo
 
@@ -2248,6 +2261,9 @@ module Chemistry
        endif
       enddo
 ! print*,'Natalia',maxval(prod2),maxval((f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm(k,reac)),k,reac,maxval(f(l1:l2,m,n,ichemspec(k))),maxval(rho_cgs),(species_constants(k,imass)),Sijm(k,reac)
+
+   !  print*,'Natalia',maxval(prod2)
+
 
       enddo
 
@@ -2346,7 +2362,7 @@ module Chemistry
         p%DYDt_reac(:,k)=xdot*unit_time
         DYDt_reac_ts(:,k)=xdot_ts*unit_time
 
- ! print*,'Natalia',maxval(p%DYDt_reac(:,k))/unit_time,k
+ !  print*,'Natalia',maxval(p%DYDt_reac(:,k))/unit_time,k
 
 ! print*,'Natalia',maxval(p%DYDt_reac(:,4)),unit_time,maxval(xdot)
 
@@ -2723,6 +2739,9 @@ module Chemistry
        f(:,:,:,5)=log(TT/unit_temperature)
 
        f(:,:,:,4)=log((PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
+
+  !    print*,maxval(f(:,:,:,4))
+
 
       if (lroot) print*, 'Air temperature, K', TT
       if (lroot) print*, 'Air pressure, K', PP
