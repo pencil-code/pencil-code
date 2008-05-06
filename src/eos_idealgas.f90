@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.108 2008-04-28 18:25:18 steveb Exp $
+! $Id: eos_idealgas.f90,v 1.109 2008-05-06 22:36:01 dobler Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.108 2008-04-28 18:25:18 steveb Exp $')
+           '$Id: eos_idealgas.f90,v 1.109 2008-05-06 22:36:01 dobler Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -566,8 +566,10 @@ module EquationOfState
 !  Convert del2lnrho to rho-only terms; done here to avoid
 !  repeated calls to dot2
 !
-      if (ldensity_nolog) call dot2(p%grho,grhogrho)
-      d2rho=p%rho1*(p%del2rho+p%rho1*grhogrho)
+      if (ldensity_nolog) then
+        call dot2(p%grho,grhogrho)
+        d2rho=p%rho1*(p%del2rho+p%rho1*grhogrho)
+      endif
 !
 !
 ! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG
