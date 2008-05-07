@@ -1,7 +1,7 @@
 ;
-;  $Id: pc_magic_var.pro,v 1.45 2008-05-07 15:30:52 ajohan Exp $
-;  $Date: 2008-05-07 15:30:52 $
-;  $Revision: 1.45 $
+;  $Id: pc_magic_var.pro,v 1.46 2008-05-07 15:37:32 ajohan Exp $
+;  $Date: 2008-05-07 15:37:32 $
+;  $Revision: 1.46 $
 ;
 pro pc_magic_var_dep, variables, tags, var, dep
 ;
@@ -278,7 +278,7 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'sadvb') then begin
       tags[iv]=variables[iv]
       if (lshear) then begin
-        variables[iv]='param.qshear*param.omega*spread(x,[2,3],[ny,nz])*yder(bb)'
+        variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(bb)'
       endif else begin
         variables[iv]='fltarr(mx,my,mz,3)*one'
       endelse
@@ -323,7 +323,7 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'sadvu') then begin
       tags[iv]=variables[iv]
       if (lshear) then begin
-        variables[iv]='param.qshear*param.omega*spread(x,[2,3],[ny,nz])*yder(uu)'
+        variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(uu)'
       endif else begin
         variables[iv]='fltarr(mx,my,mz,3)*one'
       endelse
@@ -348,9 +348,9 @@ pro pc_magic_var, variables, tags, $
       tags[iv]=variables[iv]
       if (lshear) then begin
         if (param.ldensity_nolog) then begin
-          variables[iv]='param.qshear*param.omega*spread(x,[2,3],[ny,nz])*yder(lnrho)'
+          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(lnrho)'
         endif else begin
-          variables[iv]='param.qshear*param.omega*spread(x,[2,3],[ny,nz])*yder(exp(lnrho))'
+          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(exp(lnrho))'
         endelse
       endif else begin
         variables[iv]='fltarr(mx,my,mz)*one'
@@ -360,9 +360,9 @@ pro pc_magic_var, variables, tags, $
       tags[iv]=variables[iv]
       if (lshear) then begin
         if (param.ldensity_nolog) then begin
-          variables[iv]='param.qshear*param.omega*spread(x,[2,3],[ny,nz])*yder(alog(lnrho))'
+          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(alog(lnrho))'
         endif else begin
-          variables[iv]='param.qshear*param.omega*spread(x,[2,3],[ny,nz])*yder(lnrho)'
+          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(lnrho)'
         endelse
       endif else begin
         variables[iv]='fltarr(mx,my,mz)*one'
