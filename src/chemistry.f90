@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.88 2008-05-06 17:40:03 nordita Exp $
+! $Id: chemistry.f90,v 1.89 2008-05-07 11:11:35 dobler Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.88 2008-05-06 17:40:03 nordita Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.89 2008-05-07 11:11:35 dobler Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.88 2008-05-06 17:40:03 nordita Exp $")
+           "$Id: chemistry.f90,v 1.89 2008-05-07 11:11:35 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -213,7 +213,10 @@ module Chemistry
     logical :: exist,exist1,exist2
     character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
 
-
+if (unit_temperature == impossible) then
+  write(0,*) 'unit_temperature = impossible here: ', unit_temperature
+  call fatal_error('initialize_chemistry', 'unit_temperature = impossible here')
+endif
        if (unit_system == 'cgs') then
          Rgas_unit_sys = k_B_cgs/m_u_cgs
          Rgas=Rgas_unit_sys*unit_temperature/unit_energy
@@ -871,6 +874,7 @@ module Chemistry
         
        if (lwrite) then
          open(file_id,file=input_file)
+         ! wd (7-may-2008:) who on Earth would _write_ to an _input_ file??
          write(file_id,*) 'Mixture quantities'
          write(file_id,*) '*******************'
          write(file_id,*) ''
@@ -881,7 +885,9 @@ module Chemistry
          write(file_id,'(7E10.2)') maxval(rho_full)*unit_mass/unit_length**3
          write(file_id,*) ''
          write(file_id,*) 'Themperature, K'
-         write(file_id,'(7F7.3)') exp(maxval(f(:,:,:,5)))*unit_temperature
+         ! Commented the next line out because
+         ! samples/2d-tests/chemistry_GrayScott apparently has no f(:,:,:,5)
+         ! write(file_id,'(7F7.3)') exp(maxval(f(:,:,:,5)))*unit_temperature
          write(file_id,*) ''
          write(file_id,*) 'Cp,  erg/mole/K'
          write(file_id,'(7E10.2)')                       maxval(cp_full)/Rgas*Rgas_unit_sys/maxval(mu1_full/unit_mass)
@@ -2658,6 +2664,7 @@ module Chemistry
       !character (len=*) :: input_file
       !
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
+      integer :: iostat
 
       air_mass=0.
       StartInd_1=1; StopInd_1 =0
@@ -2667,7 +2674,8 @@ module Chemistry
 
       dataloop: do
 
-        read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
+        read(file_id,'(80A)',IOSTAT=iostat) ChemInpLine(1:80)
+        if (iostat < 0) exit dataloop
         emptyFile=.false.
         StartInd_1=1; StopInd_1=0
         StopInd_1=index(ChemInpLine,' ') 
@@ -2728,18 +2736,21 @@ module Chemistry
 ! Stop if air.dat is empty
 !
 
-      1000  if (emptyFile)  call stop_it('The input file tran.dat was empty!')
+      if (emptyFile)  call stop_it('The input file tran.dat was empty!')
 
-        air_mass=1./air_mass
+      air_mass=1./air_mass
 
 
-        do j=1,k-1 
-         f(:,:,:,ichemspec(stor1(j)))=stor2(j)*0.01
-        enddo 
+      do j=1,k-1 
+        f(:,:,:,ichemspec(stor1(j)))=stor2(j)*0.01
+      enddo 
 
-       f(:,:,:,5)=log(TT/unit_temperature)
+      if (mvar < 5) then
+          call fatal_error("air_field", "I can only set existing fields")
+      endif
+      f(:,:,:,5)=log(TT/unit_temperature)
 
-       f(:,:,:,4)=log((PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
+      f(:,:,:,4)=log((PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
 
   !    print*,maxval(f(:,:,:,4))
 
