@@ -1,7 +1,7 @@
 ;
-;  $Id: pc_magic_var.pro,v 1.44 2008-04-29 10:13:34 ajohan Exp $
-;  $Date: 2008-04-29 10:13:34 $
-;  $Revision: 1.44 $
+;  $Id: pc_magic_var.pro,v 1.45 2008-05-07 15:30:52 ajohan Exp $
+;  $Date: 2008-05-07 15:30:52 $
+;  $Revision: 1.45 $
 ;
 pro pc_magic_var_dep, variables, tags, var, dep
 ;
@@ -266,6 +266,10 @@ pro pc_magic_var, variables, tags, $
       endif else begin
         variables[iv]='(1+((total(bb^2,4)/(param.mu0*exp(lnrho)))/param2.va2max_jxb)^param2.va2power_jxb)^(-1./param2.va2power_jxb)'
       endelse
+; EMF
+    endif else if (variables[iv] eq 'emf') then begin
+      tags[iv]=variables[iv]
+      variables[iv]='cross(uu,bb)'
 ; Magnetic field advection
     endif else if (variables[iv] eq 'advb') then begin
       tags[iv]=variables[iv]
