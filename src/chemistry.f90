@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.89 2008-05-07 11:11:35 dobler Exp $
+! $Id: chemistry.f90,v 1.90 2008-05-07 13:13:48 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.89 2008-05-07 11:11:35 dobler Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.90 2008-05-07 13:13:48 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.89 2008-05-07 11:11:35 dobler Exp $")
+           "$Id: chemistry.f90,v 1.90 2008-05-07 13:13:48 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1194,7 +1194,7 @@ endif
       intent(in) :: f,p
       intent(inout) :: df
 
-      real :: react_rate=0.
+      real,dimension(nchemspec) :: reac_rate=0.
 !
 !  identify module and boundary conditions
 !
@@ -1235,15 +1235,18 @@ endif
          if (lreactions) then
            df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_reac(:,k)
 
-  endif
+ !if (k==2) print*,f(l1:l2,m,n,ichemspec(k)),p%DYDt_reac(:,k)
+
+             endif
 !
 !this are Natalia's thoughts, which should be discussed later!
 !
            if (Natalia_thoughts) then
              do j=l1,l2
-              if (f(j,m,n,ichemspec(k))+df(j,m,n,ichemspec(k)) < 0.) then 
+              if (f(j,m,n,ichemspec(k))+dt*df(j,m,n,ichemspec(k)) < 0.) then 
            !    if (f(j,m,n,ichemspec(k))+p%DYDt_reac(l1-j+1,k) < 0.) then 
-               df(j,m,n,ichemspec(k))=-f(j,m,n,ichemspec(k))
+               !f(j,m,n,ichemspec(k))=0.!-f(j,m,n,ichemspec(k))
+             !  df(j,m,n,ichemspec(k))=0.
               endif
              enddo
            endif
@@ -1283,22 +1286,9 @@ endif
          if (lfirst .and. ldt) then
           if (lreactions .and. lcheminp) then
             do j=1,nx
-             react_rate=0.
-               do k=1,nchemspec
-                react_rate=react_rate+abs(p%DYDt_reac(j,k)+p%DYDt_diff(j,k)) 
-             !   react_rate=react_rate+abs(DYDt_reac_ts(j,k)+p%DYDt_diff(j,k))
-            !    if (m==10 .and. j==10)   print*,(DYDt_reac_ts(j,k)),k
-               enddo
-        !      print*,react_rate,p%DYDt_reac(j,2)
-
-               if (diffus_chem(j)<react_rate) then
-                diffus_chem(j)=react_rate!*abs(f(l1-1+j,m,n,ilnTT))*p%cv1(j)
-      !     if (j==10)  print*,'react_rate',react_rate
-            
-               endif
+             reac_rate(:)=abs(p%DYDt_reac(j,:))
+             reac_chem(j)=5.*maxval(reac_rate(:))
             enddo
-
-         !!   if (m==10)  print*,react_rate,maxval(diffus_chem)
            endif
          endif
 
@@ -2239,6 +2229,9 @@ endif
       do k=1,nchemspec
        prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijp(k,reac)
  
+   !  print*,f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass),Sijp(k,reac),k,reac
+
+
       do i=0,nx-1
        if (abs(f(l1+i,m,n,ichemspec(k))) > 0.) then
          prod1_ts(i+1)=prod1_ts(i+1)*(f(l1+i,m,n,ichemspec(k))*rho_cgs(i+1)/species_constants(k,imass))**Sijp(k,reac)
@@ -2295,16 +2288,17 @@ endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Printing for a test case
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     
-     
+
+
      if (lwrite)     write(file_id,*) ''
        if (lwrite)   write(file_id,*) '*******************'
-      
+
 
 
        if (lwrite) print*,'get_reaction_rate: writing react.out file'
        if (lwrite)   close(file_id)
          lwrite=.false.
+  
       
 
       
@@ -2321,6 +2315,8 @@ endif
   real, dimension (nx) :: xdot, xdot_ts
   type (pencil_case) :: p
   integer :: k,j
+  real :: sum_omega
+  real :: sum_Y
 
   intent(in) :: f
 
@@ -2368,7 +2364,7 @@ endif
         p%DYDt_reac(:,k)=xdot*unit_time
         DYDt_reac_ts(:,k)=xdot_ts*unit_time
 
- !  print*,'Natalia',maxval(p%DYDt_reac(:,k))/unit_time,k
+  ! print*,'Natalia',maxval(p%DYDt_reac(:,k))/unit_time,k
 
 ! print*,'Natalia',maxval(p%DYDt_reac(:,4)),unit_time,maxval(xdot)
 
@@ -2377,6 +2373,18 @@ endif
   !  print*,''
   !stoichio(k,j),vreactions(10,j),vreactions_p(10,j)-vreactions_m(10,j)
      enddo 
+
+      sum_omega=0.
+      sum_Y=0.
+
+     do k=1,nchemspec
+      sum_omega=sum_omega+maxval(p%DYDt_reac(:,k))/species_constants(k,imass)
+      sum_Y=sum_Y+maxval(f(l1:l2,m,n,ichemspec(k)))
+    !  print*,maxval(f(l1:l2,m,n,ichemspec(k))),k
+     enddo
+
+  !  print*,'sum_omega',sum_omega
+  !  print*,'sum_Y',sum_Y
 
    endsubroutine calc_reaction_term
 !***************************************************************
@@ -2626,7 +2634,7 @@ endif
 
           if (ldiffusion) then
 
-            Diff_full_add(:,:,:,k)=Diff_full(:,:,:,k)*species_constants(ichemspec(k),imass)/unit_mass*mu1_full(:,:,:)
+            Diff_full_add(:,:,:,k)=Diff_full(:,:,:,k)*species_constants(k,imass)/unit_mass*mu1_full(:,:,:)
 
             call del2(XX_full,k,del2XX)
             call grad(XX_full(:,:,:,k),gXX)
@@ -2745,10 +2753,12 @@ endif
         f(:,:,:,ichemspec(stor1(j)))=stor2(j)*0.01
       enddo 
 
+
       if (mvar < 5) then
           call fatal_error("air_field", "I can only set existing fields")
       endif
       f(:,:,:,5)=log(TT/unit_temperature)
+
 
       f(:,:,:,4)=log((PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
 
