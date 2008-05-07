@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.52 2008-03-31 15:21:37 wlyra Exp $
+! $Id: timestep.f90,v 1.53 2008-05-07 13:47:30 nbabkovs Exp $
 
 module Timestep
 
@@ -243,6 +243,7 @@ module Timestep
             print*,"     Dust viscosity:       maxval(diffus_nud)         = ", maxval(diffus_nud)/cdtv
             print*,"     Chirality diffusion:  maxval(diffus_chiral)      = ", maxval(diffus_chiral)/cdtv
             print*,"     Chemicals diffusion:  maxval(diffus_chem)        = ", maxval(diffus_chem)/cdtv
+            print*,"     Chemical reactions:  maxval(reac_chem)       = ", maxval(reac_chem)
             print*,"------------------- END OF CONFESSION -----------------------"
 
 !          endif

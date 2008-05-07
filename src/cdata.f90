@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.421 2008-04-13 13:50:26 brandenb Exp $
+! $Id: cdata.f90,v 1.422 2008-05-07 13:47:30 nbabkovs Exp $
 
 module Cdata
 
@@ -46,6 +46,7 @@ module Cdata
   real, dimension (nx) :: diffus_nud,diffus_nud3
   real, dimension (nx) :: diffus_nun,diffus_nun3
   real, dimension (nx) :: dt1_advec,dt1_diffus,dt1_max
+  real, dimension (nx) :: dt1_reac, reac_chem
 
   real, parameter :: pi=3.14159265358979324D0
   real, parameter :: pi_1=1./pi,pi4_1=pi**(-4)

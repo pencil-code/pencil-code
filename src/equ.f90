@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.404 2008-05-01 08:56:58 ajohan Exp $
+! $Id: equ.f90,v 1.405 2008-05-07 13:47:30 nbabkovs Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -477,7 +477,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.404 2008-05-01 08:56:58 ajohan Exp $")
+           "$Id: equ.f90,v 1.405 2008-05-07 13:47:30 nbabkovs Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -1061,8 +1061,10 @@ module Equ
 !
           dt1_advec  =maxadvec/cdt
           dt1_diffus =maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
+          dt1_reac=reac_chem
 !
-          dt1_max=max(dt1_max,sqrt(dt1_advec**2+dt1_diffus**2))
+          dt1_max=max(dt1_max,sqrt(dt1_advec**2+dt1_diffus**2),dt1_reac)
+
 !
           if (ldiagnos.and.idiag_dtv/=0) then
             call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
