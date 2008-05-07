@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.91 2008-05-07 13:47:30 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.92 2008-05-07 14:52:55 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -176,11 +176,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.91 2008-05-07 13:47:30 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.92 2008-05-07 14:52:55 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.91 2008-05-07 13:47:30 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.92 2008-05-07 14:52:55 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1287,7 +1287,7 @@ endif
           if (lreactions .and. lcheminp) then
             do j=1,nx
              reac_rate(:)=abs(p%DYDt_reac(j,:))
-             reac_chem(j)=5.*maxval(reac_rate(:))
+             reac_chem(j)=50.*maxval(reac_rate(:))
             enddo
            endif
          endif
