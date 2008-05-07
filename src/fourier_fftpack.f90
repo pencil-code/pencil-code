@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.24 2008-01-18 08:54:34 ajohan Exp $
+! $Id: fourier_fftpack.f90,v 1.25 2008-05-07 14:13:57 wlyra Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -409,6 +409,106 @@ module Fourier
       if (lroot .and. ip<10) print*, 'fourier_transform_x: fft has finished'
 !
     endsubroutine fourier_transform_x
+!***********************************************************************
+    subroutine fourier_transform_y(a_re,a_im,linv)
+!
+!  Subroutine to do Fourier transform in the y-direction.
+!  As it is not cache efficient to Fourier transform in other
+!  direction than x, we transpose the array. The original array 
+!  and the transposed one are shown below in the left and right 
+!  sides, respectively 
+!
+! 
+!    ---------------  ^ nygrid     ----------------  ^ nygrid  
+!   |x z Q W E R T Y| |           |r s m W |i h c Y| |        
+!   |j k l m n b v c| |           |e a l Q |u g v T| |        
+!   |---------------| | ^         |----------------| | ^       
+!   |o p a s d f g h| | | ny      |w p k z |y f b R| | | ny    
+!   |q w e r t y u i| | |         |q o j x |t d n E| | |       
+!    ---------------               ----------------          
+!    --------------->              <nygrid><nygrid>           
+!                   nx             ----------------> nx       
+!
+!  The transposed array has the elements in the correct order, but 
+!  for obvious book-keeping reasons, the dimension is still (nx,ny), 
+!  instead of (nygrid,nx). The fourier transform then can be done, but 
+!  the calculation has to be split into boxes of dimension (nygrid,ny). 
+!  Therefore, it only works when nx and nygrid are multiples. 
+!
+!  07-may-08/wlad: coded
+!
+      real, dimension(nx,ny,nz) :: a_re,a_im
+      logical, optional :: linv
+!
+      complex, dimension(nygrid) :: ay
+      real, dimension(4*nx+15) :: wsave
+      integer :: l,n,iarr,ix,ido,iup
+      logical :: lforward
+!
+      if (mod(nxgrid,nygrid)/=0) then
+        print*,'fourier_transform_y: nxgrid needs to be an integer '//&
+             'multiple of nygrid.'
+        call fatal_error('fourier_transform_y','mod(nxgrid,nygrid)/=0')
+      endif
+!
+      lforward=.true.
+      if (present(linv)) then
+        if (linv) lforward=.false.
+      endif
+!
+!  initialize cfft (coefficients for fft?)
+!
+      call cffti(nygrid,wsave)
+!
+      if (lforward) then
+!
+!  Transform y-direction to fourier space
+!
+        if (lroot.and.ip<10) print*, 'fourier_transform_x: doing FFTpack in x'
+        call transp(a_re,'y') ; call transp(a_im,'y')
+        do n=1,nz; do l=1,ny
+          !divide a_re into arrays of size nygrid to fit ay
+          do iarr=0,nxgrid/nygrid-1
+            ix=iarr*nygrid ; ido=ix+1 ; iup=ix+nygrid
+            ay=cmplx(a_re(ido:iup,l,n),a_im(ido:iup,l,n))
+            call cfftf(nygrid,ay,wsave)
+            a_re(ido:iup,l,n)=real(ay)
+            a_im(ido:iup,l,n)=aimag(ay)
+          enddo
+          !
+        enddo; enddo
+        call transp(a_re,'y') ; call transp(a_im,'y')
+      else
+!
+!  Transform y-direction back to real space
+!
+        if (lroot.and.ip<10) print*, 'fourier_transform_xy: doing FFTpack in x'
+        call transp(a_re,'y') ; call transp(a_im,'y')
+        do n=1,nz; do l=1,ny
+          !divide a_re into arrays of size nygrid to fit ay
+          do iarr=0,nxgrid/nygrid-1
+            ix=iarr*nygrid ; ido=ix+1 ; iup=ix+nygrid
+            ay=cmplx(a_re(ido:iup,l,n),a_im(ido:iup,l,n))
+            call cfftb(nygrid,ay,wsave)
+            a_re(ido:iup,l,n)=real(ay)
+            a_im(ido:iup,l,n)=aimag(ay)
+          enddo
+          !
+        enddo; enddo
+        call transp(a_re,'y') ; call transp(a_im,'y')
+!
+      endif
+!
+!  Normalize
+!
+      if (lforward) then
+        a_re=a_re/nygrid
+        a_im=a_im/nygrid
+      endif
+!
+      if (lroot .and. ip<10) print*, 'fourier_transform_x: fft has finished'
+!
+    endsubroutine fourier_transform_y
 !***********************************************************************
     subroutine fourier_transform_shear(a_re,a_im,linv)
 !

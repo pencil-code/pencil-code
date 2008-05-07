@@ -1,4 +1,4 @@
-! $Id: nofourier.f90,v 1.11 2008-04-02 12:45:40 ajohan Exp $
+! $Id: nofourier.f90,v 1.12 2008-05-07 14:13:57 wlyra Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -76,6 +76,20 @@ module Fourier
       if (NO_WARN) print*, a_re, a_im, linv
 !
     endsubroutine fourier_transform_x
+!***********************************************************************
+    subroutine fourier_transform_y(a_re,a_im,linv)
+!
+!  Subroutine to do Fourier transform in the x-direction.
+!
+      real, dimension(nx,ny,nz) :: a_re,a_im
+      logical, optional :: linv
+!
+      call fatal_error('fourier_transform_y', &
+          'this sub is not available in nofourier.f90!')
+!
+      if (NO_WARN) print*, a_re, a_im, linv
+!
+    endsubroutine fourier_transform_y
 !***********************************************************************
     subroutine fourier_transform_shear(a_re,a_im,linv)
 !
