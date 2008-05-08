@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.10 2008-05-06 21:31:59 wlyra Exp $
+! $Id: poisson_cyl.f90,v 1.11 2008-05-08 13:18:42 wlyra Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -537,17 +537,16 @@ module Poisson
       integer :: i,ir,ikr,ikt,nnghost
       real :: fac
 !
-      if (nx/=nygrid) &
-           call fatal_error("inverse_laplacian_bessel","currently only works for nx=nygrid")
       if (nzgrid/=1)  &
-           call fatal_error("inverse_laplacian_bessel","currently only works for 2D simulations")
+           call fatal_error("inverse_laplacian_bessel",&
+           "currently only works for 2D simulations")
+!
       nnghost=npoint-nghost
 !
 ! Fourier transform in theta 
 ! 
-      call transp(phi,'y'); b1=0.
-      call fourier_transform_x(phi,b1)
-      call transp(phi,'y');call transp(b1,'y')
+      b1=0.
+      call fourier_transform_y(phi,b1)
 !
 ! SS is the hankel transform of the density
 !
@@ -572,15 +571,13 @@ module Poisson
         enddo
         do n=1,nz
           phi(:,ikt,n)=real(tmp)
-           b1(:,ikt,n)=aimag(tmp)
+          b1(:,ikt,n)=aimag(tmp)
         enddo
       enddo
 !
 ! Transform back to real space
 !
-      call transp(phi,'y');call transp(b1,'y')
-      call fourier_transform_x(phi,b1,linv=.true.)
-      call transp(phi,'y')
+      call fourier_transform_y(phi,b1,linv=.true.)
 !
       phi=phi*fac
 !
@@ -608,9 +605,6 @@ module Poisson
            call fatal_error("inverse_laplacian_directsum",&
            "currently only works for 2D simulations")
       nnghost=npoint-nghost
-
-      !transfer fac to the green grid
-      !fac=-.25*pi_1 !actually, -G = rhs_poisson_const/4*pi
 !
       if (lmpicomm) then
 !
@@ -647,7 +641,6 @@ module Poisson
 !
 ! Now integrate through direct summation
 !
-      !fac=1.
       do ir=1,nr 
       do ith=1,nth
 !
@@ -767,13 +760,8 @@ module Poisson
 !
 ! Fourier transform the potential and the right-hand-side
 !
-      call transp(phi,'y'); b1=0.
-      call fourier_transform_x(phi,b1)
-      call transp(phi,'y');call transp(b1,'y')        
-!
-      call transp(rhs,'y'); b1_rhs=0.
-      call fourier_transform_x(rhs,b1_rhs)
-      call transp(rhs,'y');call transp(b1_rhs,'y')        
+      call fourier_transform_y(phi,b1)
+      call fourier_transform_y(rhs,b1_rhs)
 !
 ! Solve the five point matrix in fourier space
 !
@@ -805,9 +793,7 @@ module Poisson
 !
 ! Fourier transform back to real space
 !
-      call transp(phi,'y');call transp(b1,'y')
-      call fourier_transform_x(phi,b1,linv=.true.)
-      call transp(phi,'y')
+      call fourier_transform_y(phi,b1,linv=.true.)
 !
       if (lfirstcall) lfirstcall=.false.
 !
@@ -1015,8 +1001,8 @@ module Poisson
 !
 !
 ! This is time consuming and only done for the border, if they need updating. 
-! In the grid, we iteratively solve the discrete Poisson equation via Chebychev 
-! acceleration. 
+! In the grid, we iteratively solve the discrete Poisson equation via 
+! Chebychev acceleration. 
 !
 ! 28-apr-08/wlad: coded
 !
@@ -1194,18 +1180,28 @@ module Poisson
       use General,only: besselj_nu_int
 !
       real    :: tmp,arg
-      integer :: ir,ikr,ikt
+      integer :: ir,ikr,ikt,nw,count
 !
       if (lroot) &
         print*,'Pre-calculating the Bessel functions to '//&
         'solve the Poisson equation'
 !
+      nw=10*int(nr*nkr*nkt/10) ; count=0
+!
       do ikt=1,nkt
         do ir=1,nr;do ikr=1,nkr
           arg=kr_fft(ikr)*rad(ir)
           call besselj_nu_int(tmp,m_fft(ikt+ipy*nkt),arg,&
-               loversample=.true.)
+               loversample=.false.)
           bessel_grid(ir,ikr,ikt)=tmp
+!
+! Print progress
+!
+          if (lroot) then
+            count=count+1
+            if (mod(10*count,nw)==0) print*, 100*count/nw,'% done'
+          endif
+!
         enddo;enddo
       enddo
 !
