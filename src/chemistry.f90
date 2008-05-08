@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.93 2008-05-08 07:35:36 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.94 2008-05-08 18:32:02 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -79,11 +79,12 @@ module Chemistry
 
   real, dimension(nx,nchemspec) :: DYDt_reac_ts
 
+  logical :: TEST=.false.
 
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, Natalia_thoughts,chem_diff,nu_spec
+      amplchemk,amplchemk2, Natalia_thoughts,chem_diff,nu_spec,TEST
 
 ! run parameters
   namelist /chemistry_run_pars/ &
@@ -176,11 +177,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.93 2008-05-08 07:35:36 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.94 2008-05-08 18:32:02 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.93 2008-05-08 07:35:36 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.94 2008-05-08 18:32:02 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1843,6 +1844,7 @@ endif
               StopInd=index(ChemInpLine(StartInd:),'=')+StartInd-1
               if (StopInd>0 .and. ChemInpLine(1:1) /= '!') then
                 NrOfReactions=NrOfReactions+1
+
               endif
             endif
           endif
@@ -1870,10 +1872,24 @@ endif
                 endif
                 !
                 ParanthesisInd=index(ChemInpLine(StartInd:),'(+M)')
+
+
+
                 if (ParanthesisInd>0) then
                   LastLeftCharacter=min(ParanthesisInd,SeparatorInd)-1
+
+!
+!  reading of the additional data for (+M) case 
+!
+
+    ! read(file_id,'(80A)',end=1012) ChemInpLine(1:80)
+
+   !  print*,'Natalia',ParanthesisInd,LastLeftCharacter,ChemInpLine(1:80)
+
+
                 else
                   LastLeftCharacter=SeparatorInd-1
+    !  print*,'Natalia',ParanthesisInd,LastLeftCharacter
                 endif
                 !
                 StartInd=1
@@ -1895,6 +1911,9 @@ endif
                 SeparatorInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
                 !
                 ParanthesisInd=index(ChemInpLine(StartInd:),'(+M)')+StartInd-1
+
+
+
                 if (ParanthesisInd>StartInd) then
                   LastLeftCharacter=min(ParanthesisInd,SeparatorInd)-1
                 else
@@ -1953,6 +1972,12 @@ endif
       !
     end subroutine read_reactions
  !********************************************************************
+    subroutine  read_add_react
+
+
+    endsubroutine read_add_react
+ !********************************************************************
+
     subroutine write_thermodyn()
       !
       ! This subroutine writes the thermodynamical data for every specie
@@ -2085,6 +2110,10 @@ endif
 
      character (len=20) :: input_file="./data/react.out"
      integer :: file_id=123
+
+     real :: B_n_0,alpha_n_0,E_an_0
+     real, dimension (nx) ::  kf_0,Kc_0,Pr,sum_sp,prod1_0,prod2_0
+     real, dimension (nchemspec) :: a_k4 
 
 !
     
@@ -2270,6 +2299,13 @@ endif
 
    !  print*,'Natalia',maxval(prod2)
 
+       if (reac==4)  then
+           Kc_0=Kc
+           prod1_0=prod1
+           prod2_0=prod2
+       endif
+
+
 
       enddo
 
@@ -2297,7 +2333,7 @@ endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-     if (lwrite)     write(file_id,*) ''
+       if (lwrite)     write(file_id,*) ''
        if (lwrite)   write(file_id,*) '*******************'
 
 
@@ -2305,10 +2341,54 @@ endif
        if (lwrite) print*,'get_reaction_rate: writing react.out file'
        if (lwrite)   close(file_id)
          lwrite=.false.
-  
-      
+ 
+!
+! This is just for the test. it will be done more accurately in future
+!
+   
 
-      
+      if (TEST) then
+
+     reac=4
+
+   
+        B_n_0=6.366E+20 
+        alpha_n_0=-1.72 
+        E_an_0=5.248E+02
+
+        a_k4(1)=2.
+        a_k4(2)=0.78
+        a_k4(3)=11.
+        a_k4(4)=0.
+        a_k4(5)=0.
+        a_k4(6)=0.
+        a_k4(7)=0.
+        a_k4(8)=1.
+
+        kf_0(:)=B_n_0*T_cgs(:)**alpha_n_0*exp(-E_an_0/Rcal/T_cgs(:)) 
+
+        Pr=kf_0/kf*rho_cgs(:)*p%mu1/unit_mass
+        kf=kf*(Pr/(1.+Pr))
+        kr(:)=kf(:)/Kc_0
+
+        sum_sp=0.
+
+        do k=1,nchemspec
+          sum_sp=sum_sp+a_k4(k)*f(l1:l2,m,n,ichemspec(k))  &
+                *rho_cgs(:)/species_constants(k,imass)
+
+        enddo
+
+       
+        vreact_p(:,reac)=prod1_0/rho_cgs*kf*sum_sp
+        vreact_m(:,reac)=prod2_0/rho_cgs*kr*sum_sp
+
+
+     !  print*,'Natalia2',maxval(vreact_p(:,reac)),maxval(vreact_m(:,reac)),maxval(kr)
+
+      endif
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2379,13 +2459,13 @@ endif
       sum_Y=0.
 
      do k=1,nchemspec
-      sum_omega=sum_omega+maxval(p%DYDt_reac(:,k))/species_constants(k,imass)
+      sum_omega=sum_omega+maxval(p%DYDt_reac(:,k))!species_constants(k,imass)
       sum_Y=sum_Y+maxval(f(l1:l2,m,n,ichemspec(k)))
     !  print*,maxval(f(l1:l2,m,n,ichemspec(k))),k
      enddo
 
-  !  print*,'sum_omega',sum_omega
-  !  print*,'sum_Y',sum_Y
+   ! print*,'sum_omega',sum_omega
+   ! print*,'sum_Y',sum_Y
 
    endsubroutine calc_reaction_term
 !***************************************************************

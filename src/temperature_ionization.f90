@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.42 2008-05-02 13:19:23 nbabkovs Exp $
+! $Id: temperature_ionization.f90,v 1.43 2008-05-08 18:32:03 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -94,7 +94,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.42 2008-05-02 13:19:23 nbabkovs Exp $")
+           "$Id: temperature_ionization.f90,v 1.43 2008-05-08 18:32:03 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -500,7 +500,9 @@ module Entropy
 
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - f(l1:l2,m,n,ilnTT)*p%cv1(:)*sum_DYDt(:)
 
-!      print*, maxval(df(l1:l2,m,n,ilnTT)),maxval(f(l1:l2,m,n,ilnTT)*p%cv1(:)*sum_DYDt(:)),maxval(f(l1:l2,m,n,ilnTT)),maxval(p%cv1(:)),maxval(sum_DYDt(:))
+    !  print*, maxval(df(l1:l2,m,n,ilnTT)),maxval(f(l1:l2,m,n,ilnTT)*p%cv1(:)*sum_DYDt(:)),maxval(f(l1:l2,m,n,ilnTT)),maxval(p%cv1(:)),maxval(sum_DYDt(:))
+
+      print*, maxval(sum_DYDt(:))
 
 
  !      if (lfirst .and. ldt) then
