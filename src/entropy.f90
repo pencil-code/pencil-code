@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.548 2008-04-24 19:11:53 steveb Exp $
+! $Id: entropy.f90,v 1.549 2008-05-08 13:22:10 dintrans Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -222,7 +222,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.548 2008-04-24 19:11:53 steveb Exp $")
+           "$Id: entropy.f90,v 1.549 2008-05-08 13:22:10 dintrans Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -2785,7 +2785,7 @@ module Entropy
 !
       if (lgravr) then
 !  normalised central heating profile so volume integral = 1
-        if (initss(1).eq.'star_heat') then
+        if (nzgrid == 1) then
           prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
         else
           prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
@@ -3536,7 +3536,7 @@ module Entropy
     use Cdata
     use EquationOfState, only: gamma, gamma1, rho0, lnrho0, cs20, get_soundspeed,eoscalc, ilnrho_TT
     use FArrayManager
-    use Sub, only: step, interp1
+    use Sub, only: step, interp1, erfunc
 
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
     integer, parameter   :: nr=100
@@ -3556,22 +3556,30 @@ module Entropy
       do imn=1,ny*nz
         m=mm(imn)
         n=nn(imn)
-!       rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-        rr_mn=sqrt(x(l1:l2)**2+y(m)**2)
+        if (nzgrid == 1) then
+          rr_mn=sqrt(x(l1:l2)**2+y(m)**2)
+        else
+          rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+        endif
         u_mn=rr_mn/sqrt(2.)/wheat
-!       lumi_mn=luminosity*(erfunc(u_mn)-2.*u_mn/sqrt(pi)*exp(-u_mn**2))
-        lumi_mn=luminosity*(1.-exp(-u_mn**2))
-        g_r=-lumi_mn/(2.*pi*rr_mn)*(mpoly0+1.)/hcond0*gamma1/gamma
+        if (nzgrid == 1) then
+          lumi_mn=luminosity*(1.-exp(-u_mn**2))
+          g_r=-lumi_mn/(2.*pi*rr_mn)*(mpoly0+1.)/hcond0*gamma1/gamma
+          f(l1:l2,m,n,iglobal_gg+2) = 0.                 ! g_z=0
+        else
+          lumi_mn=luminosity*(erfunc(u_mn)-2.*u_mn/sqrt(pi)*exp(-u_mn**2))
+          g_r=-lumi_mn/(4.*pi*rr_mn**2)*(mpoly0+1.)/hcond0*gamma1/gamma
+          f(l1:l2,m,n,iglobal_gg+2) = z(n)/rr_mn*g_r     ! g_z
+        endif
         f(l1:l2,m,n,iglobal_gg)   = x(l1:l2)/rr_mn*g_r   ! g_x
         f(l1:l2,m,n,iglobal_gg+1) = y(m)/rr_mn*g_r       ! g_y
-!       f(l1:l2,m,n,iglobal_gg+2) = z(n)/rr_mn*g_r       ! g_z
-        f(l1:l2,m,n,iglobal_gg+2) = 0.
      enddo
      deallocate(rr_mn,u_mn,lumi_mn,g_r)
      return
     endif
 
-!   rhotop=1.
+! uncomment to force rhotop=rho0 and just compute the corresponding setup
+!   rhotop=rho0
 !   call strat_heat(lnrho,temp,rhotop,rhobot)
 !   goto 20
 
@@ -3614,7 +3622,11 @@ module Entropy
     print*,'final rho0, lnrho0, T0=',rho0, lnrho0, T0
     
 ! define the radial grid r=[0,r_max]
-    r_max=sqrt(xyz1(1)**2+xyz1(2)**2)
+    if (nzgrid == 1) then
+      r_max=sqrt(xyz1(1)**2+xyz1(2)**2)
+    else
+      r_max=sqrt(xyz1(1)**2+xyz1(2)**2+xyz1(3)**2)
+    endif
     do i=1,nr
       r(i)=r_max*float(i-1)/(nr-1)
     enddo
@@ -3624,8 +3636,11 @@ module Entropy
       m=mm(imn)
 !
       do l=l1,l2
-!       r_mn=sqrt(x(l)**2+y(m)**2+z(n)**2)
-        r_mn=sqrt(x(l)**2+y(m)**2)
+        if (nzgrid == 1) then
+          r_mn=sqrt(x(l)**2+y(m)**2)
+        else
+          r_mn=sqrt(x(l)**2+y(m)**2+z(n)**2)
+        endif
         lnrho_r=interp1(r,lnrho,nr,r_mn)
         temp_r=interp1(r,temp,nr,r_mn)
         f(l,m,n,ilnrho)=lnrho_r
@@ -3644,9 +3659,17 @@ module Entropy
       write(11,'(a1,a5,5a14)') '#','r','rho','ss','cs2','grav','hcond'
       do i=nr,1,-1
         u=r(i)/sqrt(2.)/wheat
-        lumi=luminosity*(1.-exp(-u**2))
+        if (nzgrid == 1) then
+          lumi=luminosity*(1.-exp(-u**2))
+        else
+          lumi=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
+        endif
         if (r(i) .ne. 0.) then 
-          g=-lumi/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma1/gamma
+          if (nzgrid == 1) then
+            g=-lumi/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma1/gamma
+          else
+            g=-lumi/(4.*pi*r(i)**2)*(mpoly0+1.)/hcond0*gamma1/gamma
+          endif
         else
           g=0.
         endif
@@ -3675,7 +3698,11 @@ module Entropy
     real                 :: dtemp,dlnrho,dr,u,rhotop,rhobot,lnrhobot,r_max
 
 ! define the radial grid r=[0,r_max]
-    r_max=sqrt(xyz1(1)**2+xyz1(2)**2)
+    if (nzgrid == 1) then
+      r_max=sqrt(xyz1(1)**2+xyz1(2)**2)
+    else
+      r_max=sqrt(xyz1(1)**2+xyz1(2)**2+xyz1(3)**2)
+    endif
     do i=1,nr
       r(i)=r_max*float(i-1)/(nr-1)
     enddo
@@ -3684,9 +3711,13 @@ module Entropy
     lumi(1)=0. ; g(i)=0.
     do i=2,nr
       u=r(i)/sqrt(2.)/wheat
-!     lumi(i)=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
-      lumi(i)=luminosity*(1.-exp(-u**2))
-      g(i)=-lumi(i)/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma1/gamma
+      if (nzgrid == 1) then
+        lumi(i)=luminosity*(1.-exp(-u**2))
+        g(i)=-lumi(i)/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma1/gamma
+      else
+        lumi(i)=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
+        g(i)=-lumi(i)/(4.*pi*r(i)**2)*(mpoly0+1.)/hcond0*gamma1/gamma
+      endif
     enddo
 
 ! radiative conductivity profile
@@ -3706,11 +3737,22 @@ module Entropy
         dlnrho=-gamma*g(i+1)/cs20
       elseif (r(i+1) > r_bcz) then
 ! convective zone
-        dtemp=lumi(i+1)/(2.*pi*r(i+1))/hcond(i+1)
+        if (nzgrid == 1) then
+          dtemp=lumi(i+1)/(2.*pi*r(i+1))/hcond(i+1)
+        else
+          dtemp=lumi(i+1)/(4.*pi*r(i+1)**2)/hcond(i+1)
+        endif
         dlnrho=mpoly0*dtemp/temp(i+1)
+! force adiabatic stratification with m0=3/2
+!       dtemp=-g(i+1)
+!       dlnrho=3./2.*dtemp/temp(i+1)
       else
 ! radiative zone
-        dtemp=lumi(i+1)/(2.*pi*r(i+1))/hcond(i+1)
+        if (nzgrid == 1) then
+          dtemp=lumi(i+1)/(2.*pi*r(i+1))/hcond(i+1)
+        else
+          dtemp=lumi(i+1)/(4.*pi*r(i+1)**2)/hcond(i+1)
+        endif
         dlnrho=mpoly1*dtemp/temp(i+1)
       endif
       temp(i)=temp(i+1)+dtemp*dr
