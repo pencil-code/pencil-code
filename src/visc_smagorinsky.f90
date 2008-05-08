@@ -1,4 +1,4 @@
-! $Id: visc_smagorinsky.f90,v 1.13 2007-10-06 14:00:06 ajohan Exp $
+! $Id: visc_smagorinsky.f90,v 1.14 2008-05-08 12:38:59 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here smagorinsky viscosity
@@ -25,7 +25,7 @@ module Viscosity
 
   character (len=labellen) :: ivisc='smagorinsky'
   integer :: idiag_dtnu=0
-  real :: maxeffectivenu,nu_mol
+  real :: maxeffectivenu,nu_mol,C_smag=0.0
   logical :: lvisc_first=.false.
 
   ! input parameters
@@ -69,7 +69,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_smagorinsky.f90,v 1.13 2007-10-06 14:00:06 ajohan Exp $")
+           "$Id: visc_smagorinsky.f90,v 1.14 2008-05-08 12:38:59 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !

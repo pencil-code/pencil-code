@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.303 2008-04-13 13:50:27 brandenb Exp $
+! $Id: param_io.f90,v 1.304 2008-05-08 12:38:59 ajohan Exp $
 
 module Param_IO
 
@@ -80,16 +80,15 @@ module Param_IO
        lcylindrical, &
        lcylinder_in_a_box,lsphere_in_a_box,llocal_iso,init_loops,lwrite_2d,&
        lcylindrical_gravity,border_frac,border_frac_x,border_frac_y, &
-       border_frac_z,ltemperature_nolog,luse_latitude
- !      lextrapolate_bot_density,ltop_velocity_kep,laccelerat_zone, &
- !      ldecelerat_zone,lsurface_zone,lnstar_entropy,lnstar_T_const, &
- !      lnstar_1D,T_disc
+       border_frac_z,ltemperature_nolog,luse_latitude, &
+       lshift_datacube_x
+
   namelist /run_pars/ &
        cvsid,ip,nt,it1,it1d,dt,cdt,ddt,cdtv,cdtv2,cdtv3,&
        cdts,cdtr,isave,itorder, &
        dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, max_walltime, &
        dtmax, &
-       vel_spec,mag_spec,uxj_spec,vec_spec,ou_spec,ab_spec,fft_switch, &
+       vel_spec,mag_spec,uxj_spec,vec_spec,ou_spec,ab_spec, &
        ro_spec,TT_spec,ss_spec,cc_spec,cr_spec,isaveglobal, &
        lr_spec,r2u_spec,r3u_spec, &
        rhocc_pdf,cc_pdf,lncc_pdf,gcc_pdf,lngcc_pdf, &
