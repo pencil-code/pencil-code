@@ -1,4 +1,4 @@
-! $Id: internal_flow.f90,v 1.8 2008-04-29 08:32:55 nilshau Exp $
+! $Id: internal_flow.f90,v 1.9 2008-05-08 21:03:01 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -84,11 +84,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.8 2008-04-29 08:32:55 nilshau Exp $
+!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.9 2008-05-08 21:03:01 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: internal_flow.f90,v 1.8 2008-04-29 08:32:55 nilshau Exp $")
+           "$Id: internal_flow.f90,v 1.9 2008-05-08 21:03:01 nilshau Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -675,13 +675,15 @@ module Special
       !
       ! 2008.03.22: Nils Erland (Coded)
       !
+      use Mpicomm, only: ipy
+      !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz), intent(in) :: xx,yy,zz
       real, intent(in) :: central_vel,Re_tau
       real :: B1,kappa,utau,nu, height, h2
       integer :: i,j,k
 
-      real :: y_pluss, defect,def_y,log_y,lw
+      real :: y_pluss, defect,def_y,log_y,lw,defect_min,log_max
       !
       height=Lxyz(2)/2
       h2=height**2
@@ -693,8 +695,23 @@ module Special
       lw=nu/utau
       log_y=4
       def_y=30
-!NILSprint*,'u_tau=',utau
-!NILSprint*,'lw=',lw
+!print*,'Re_tau=',Re_tau
+!print*,'height=',height
+!print*,'nu=',nu
+!print*,'u_tau=',utau
+!print*,'lw=',lw
+      !
+      ! Set some interpolation parameters
+      !
+      defect_min=central_vel&
+           +utau*log(def_y*lw/height)/kappa&
+           -B1*utau
+      log_max=log_y
+      !
+      ! Add mean turbulent velocity profile to the possibly already 
+      ! existing turnulent velocity field. As there should be less turbulence
+      ! close to the walls we scale the existing turbulence field with the
+      ! velocity profile.
       !
       do j=m1,m2
         if (yy(l1,j,n1)<xyz0(2)+height) then
@@ -703,13 +720,14 @@ module Special
                +utau*log(y_pluss*lw/height)/kappa&
                -B1*utau
           if (y_pluss .le. log_y) then
-            f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)+y_pluss
+            f(l1:l2,j,n1:n2,iux)=&
+                 (f(l1:l2,j,n1:n2,iux)/central_vel+1)*y_pluss*utau
           elseif (y_pluss .ge. def_y) then
-            f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)+defect
+            f(l1:l2,j,n1:n2,iux)=(f(l1:l2,j,n1:n2,iux)/central_vel+1)*defect
           else
-            f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)&
-                 +defect*(y_pluss-log_y)/(def_y-log_y) &
-                 +log_y*(def_y-y_pluss)/(def_y-log_y)
+            f(l1:l2,j,n1:n2,iux)=(f(l1:l2,j,n1:n2,iux)/central_vel+1)*&
+                 (defect_min*(y_pluss-log_y)/(def_y-log_y) &
+                 +log_max*utau*(def_y-y_pluss)/(def_y-log_y))
           endif
         else
           y_pluss=-(yy(l1,j,n1)-xyz0(2)-Lxyz(2))/lw
@@ -717,19 +735,19 @@ module Special
                +utau*log(y_pluss*lw/height)/kappa&
                -B1*utau
           if (y_pluss .le. log_y) then
-            f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)+y_pluss
+            f(l1:l2,j,n1:n2,iux)=(f(l1:l2,j,n1:n2,iux)/central_vel+1)*y_pluss*utau
           elseif (y_pluss .ge. def_y) then
-            f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)+defect
+            f(l1:l2,j,n1:n2,iux)=(f(l1:l2,j,n1:n2,iux)/central_vel+1)*defect
           else
-            f(l1:l2,j,n1:n2,iux)=f(l1:l2,j,n1:n2,iux)&
-                 +defect*(y_pluss-log_y)/(def_y-log_y) &
-                 +log_y*(def_y-y_pluss)/(def_y-log_y)
+            f(l1:l2,j,n1:n2,iux)=(f(l1:l2,j,n1:n2,iux)/central_vel+1)*&
+                 (defect_min*(y_pluss-log_y)/(def_y-log_y) &
+                 +log_max*utau*(def_y-y_pluss)/(def_y-log_y))
           endif
         endif
         !
       enddo
-      f(l1:l2,m1,n1:n2,iux)=0
-      f(l1:l2,m2,n1:n2,iux)=0
+      if (ipy==0)        f(l1:l2,m1,n1:n2,iux)=0
+      if (ipy==nprocy-1) f(l1:l2,m2,n1:n2,iux)=0
       !
     end subroutine velocity_defect_flowx_wally
 !***********************************************************************
