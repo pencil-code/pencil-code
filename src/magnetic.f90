@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.518 2008-05-03 01:15:19 dobler Exp $
+! $Id: magnetic.f90,v 1.519 2008-05-08 19:30:03 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -414,7 +414,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.518 2008-05-03 01:15:19 dobler Exp $")
+           "$Id: magnetic.f90,v 1.519 2008-05-08 19:30:03 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1960,14 +1960,14 @@ module Magnetic
 !
         if (idiag_bsinphz/=0) then
           call sum_mn_name(-p%bbb(:,1)*sinkz(n),idiag_bsinphz)
-          call sum_mn_name(-p%bbb(:,2)*coskz(n),idiag_bsinphz,ipart=2)
+          call sum_mn_name(+p%bbb(:,2)*coskz(n),idiag_bsinphz,ipart=2)
         endif
 !
 !  calculate B*cos(phi) = <Bx*coskz> + <By*coskz>
 !
         if (idiag_bcosphz/=0) then
           call sum_mn_name(+p%bbb(:,1)*coskz(n),idiag_bcosphz)
-          call sum_mn_name(-p%bbb(:,2)*sinkz(n),idiag_bcosphz,ipart=2)
+          call sum_mn_name(+p%bbb(:,2)*sinkz(n),idiag_bcosphz,ipart=2)
         endif
 !
 !  magnetic field components at one point (=pt)
