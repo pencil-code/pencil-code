@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.77 2008-05-06 21:47:54 wlyra Exp $
+! $Id: general.f90,v 1.78 2008-05-08 10:07:04 wlyra Exp $
 
 module General
 
@@ -1055,10 +1055,9 @@ module General
 ! Possibility of very high resolution
 ! useful in start time, for instance
 !        
+      nnt=max(100,nygrid)
       if (present(loversample)) then 
-        nnt=30000
-      else
-        nnt=max(100,nygrid)
+        if (loversample) nnt=30000
       endif
 !
       allocate(angle(nnt))
