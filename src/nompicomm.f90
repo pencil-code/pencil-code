@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.163 2008-04-28 21:41:09 wlyra Exp $
+! $Id: nompicomm.f90,v 1.164 2008-05-08 13:15:51 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -1080,6 +1080,66 @@ module Mpicomm
       endif
 
     endsubroutine transp_xy_other
+!***********************************************************************
+    subroutine transp_other(a,var)
+!
+!  Doing a transpose in 3D
+!  (dummy version for single processor)
+!
+!  08-may-08/wlad: adapted from transp
+!
+      real, dimension(:,:,:), intent(inout) :: a
+      real, dimension(:,:), allocatable :: tmp
+      character :: var
+      integer :: ibox,iy,ny_other,nx_other,nz_other
+      integer :: m,n,nxgrid_other,nygrid_other,nzgrid_other
+!
+      nx_other=size(a,1); ny_other=size(a,2) ; nz_other=size(a,3)
+      nxgrid_other=nx_other
+      nygrid_other=ny_other*nprocy
+      nzgrid_other=nz_other*nprocz
+!
+      if (var=='y') then
+!
+        if (ny_other/=1) then
+
+          if (mod(nx_other,ny_other)/=0) then
+            call stop_it('transp_other: nxgrid must be an integer'//&
+                 'multiple of nygrid')
+          endif
+
+          allocate (tmp(ny_other,ny_other))
+          do ibox=0,nxgrid_other/nygrid_other-1
+            iy=ibox*ny_other
+            do n=1,nz_other
+              tmp=transpose(a(iy+1:iy+ny_other,:,n))
+              a(iy+1:iy+ny_other,:,n)=tmp
+            enddo
+          enddo
+          deallocate (tmp)
+          
+        endif
+      elseif (var=='z') then 
+        if (nzgrid_other/=1) then
+!
+          if (nx_other/=nz_other) then
+            if (lroot) print*, &
+                 'transp_other: works only for nx_grid=nz_grid!'
+            call stop_it('transp_other')
+          endif
+!
+          allocate (tmp(nx_other,nz_other))
+          do m=1,ny_other
+            tmp=transpose(a(:,m,:))
+            a(:,m,:)=tmp
+          enddo
+          deallocate (tmp)
+          
+        endif
+!
+      endif
+!      
+    endsubroutine transp_other
 !***********************************************************************
     subroutine transp_xz(a,b)
 !

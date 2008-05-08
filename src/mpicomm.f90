@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.222 2008-04-05 21:52:50 wlyra Exp $
+! $Id: mpicomm.f90,v 1.223 2008-05-08 13:15:51 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2199,7 +2199,7 @@ module Mpicomm
 !  Doing x-y transpose if var='y'
 !
       if (var=='y') then
-
+!
         if (mod(nxgrid,nygrid)/=0) then
           print*,'transp: nxgrid needs to be an integer multiple of '//&
                  'nygrid for var==y'
@@ -2474,17 +2474,16 @@ module Mpicomm
       integer :: ytag=101,partner,ierr
       integer :: ibox,iy,nx_other,ny_other
       integer :: nxgrid_other,nygrid_other
-
+!
       nx_other=size(a,1); ny_other=size(a,2)
       nxgrid_other=nx_other
       nygrid_other=ny_other*nprocy   
-
+!
       if (mod(nxgrid_other,nygrid_other)/=0) then
         print*,'transp: nxgrid_other needs to be an integer multiple of '//&
                'nygrid_other for var==y'
         call stop_it('Inconsistency: mod(nxgrid_other,nygrid_other)/=0')
       endif
-
 !
 !  Calculate the size of buffers.
 !  Buffers used for the y-transpose have the same size in y and z.
@@ -2567,6 +2566,187 @@ module Mpicomm
       enddo
 
     endsubroutine transp_xy_other
+!***********************************************************************
+    subroutine transp_other(a,var)
+!
+!  Doing the transpose of information distributed on several processors.
+!  This routine transposes 3D arrays but is presently restricted to the 
+!  case nxgrid=nygrid (if var=y) and nygrid=nzgrid (if var=z)
+!
+!  08-may-08/wlad: Adapted from transp
+!
+! TODO: Implement nxgrid = n*nzgrid
+!
+      real, dimension(:,:,:), intent(inout) :: a
+      character :: var
+!
+      real, dimension(size(a,2),size(a,2),size(a,3)) :: send_buf_y, recv_buf_y
+      real, dimension(size(a,3),size(a,2),size(a,3)) :: send_buf_z, recv_buf_z
+      real, dimension(:,:), allocatable :: tmp
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer :: sendc_y,recvc_y,sendc_z,recvc_z,px
+      integer :: ytag=101,ztag=202,partner,ierr
+      integer :: m,n,ibox,ix,nx_other,ny_other,nz_other
+      integer :: nxgrid_other,nygrid_other,nzgrid_other
+!
+      nx_other=size(a,1); ny_other=size(a,2) ; nz_other=size(a,3)
+      nxgrid_other=nx_other
+      nygrid_other=ny_other*nprocy   
+      nzgrid_other=nz_other*nprocz   
+!
+      if (var=='y') then
+!
+        if (mod(nxgrid_other,nygrid_other)/=0) then
+          print*,'transp: nxgrid_other needs to be an integer multiple of '//&
+               'nygrid_other for var==y'
+          call stop_it('Inconsistency: mod(nxgrid_other,nygrid_other)/=0')
+        endif
+!
+!  Allocate temporary scratch array
+!
+        allocate (tmp(ny_other,ny_other))
+!
+!  Calculate the size of buffers.
+!  Buffers used for the y-transpose have the same size in y and z.
+
+        sendc_y=ny_other**2*nz_other ; recvc_y=sendc_y
+!
+!  Send information to different processors (x-y transpose)
+!  Divide x-range in as many intervals as we have processors in y.
+!  The index px counts through all of them; partner is the index of the
+!  processor we need to communicate with. Thus, px is the ipy of partner,
+!  but at the same time the x index of the given block.
+!
+!  Example: ipy=1, ipz=0, then partner=0,2,3, ..., nprocy-1.
+!
+!
+!        ... |
+!          3 |  D  E  F  /
+!          2 |  B  C  /  F'
+!  ipy=    1 |  A  /  C' E'
+!          0 |  /  A' B' D'
+!            +--------------
+!        px=    0  1  2  3 ..
+!
+
+!        ipy
+!         ^
+!  C D    |
+!  A B    |      --> px
+!
+!  if ipy=1,px=0, then exchange block A with A' on partner=0
+!  if ipy=1,px=2, then exchange block C' with C on partner=2
+!
+!  if nxgrid is an integer multiple of nygrid, we divide the whole domain
+!  into nxgrid/nygrid boxes (indexed by ibox below) of unit aspect ratio
+!  (grid point wise) and only transpose within those boxes.
+!
+!  The following communication patterns is kind of self-regulated. It
+!  avoids deadlock, because there will always be at least one matching
+!  pair of processors; the others will have to wait until their partner
+!  posts the corresponding request.
+!    Doing send and recv together for a given pair of processors
+!  (although in an order that avoids deadlocking) allows us to get away
+!  with only send_buf and recv_buf as buffers
+!
+        do px=0,nprocy-1
+          do ibox=0,nxgrid_other/nygrid_other-1
+            if (px/=ipy) then
+              partner=px+ipz*nprocy ! = iproc + (px-ipy)
+              ix=(ibox*nprocy+px)*ny_other
+              send_buf_y=a(ix+1:ix+ny_other,:,:)
+              if (px<ipy) then      ! above diagonal: send first, receive then
+                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+              elseif (px>ipy) then  ! below diagonal: receive first, send then
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
+              endif
+              a(ix+1:ix+ny_other,:,:)=recv_buf_y
+            endif
+          enddo
+        enddo
+!
+!  Transposing the received data (x-y transpose)
+!  Example:
+!
+!  |12 13 | 14 15|      | 6  7 | 14 15|      | 3  7 | 11 15|
+!  | 8  9 | 10 11|      | 2  3 | 10 11|      | 2  6 | 10 14|
+!  |------+------|  ->  |------+------|  ->  |------+------|
+!  | 4  5 |  6  7|      | 4  5 | 12 13|      | 1  5 |  9 13|
+!  | 0  1 |  2  3|      | 0  1 |  8  9|      | 0  4 |  8 12|
+!     original          2x2 blocks         each block
+!                       transposed         transposed
+!
+        do px=0,nprocy-1
+          do ibox=0,nxgrid_other/nygrid_other-1
+            ix=(ibox*nprocy+px)*ny_other
+            do n=1,nz
+              tmp=transpose(a(ix+1:ix+ny_other,:,n)); a(ix+1:ix+ny_other,:,n)=tmp
+            enddo
+          enddo
+        enddo
+!
+!  Deallocate temporary scratch array
+!
+        deallocate (tmp)
+
+!
+!  Doing x-z transpose if var='z'
+!
+      elseif (var=='z') then
+
+        if (nzgrid_other/=nxgrid_other) then
+          if (lroot) print*, 'transp_other: need to have '//&
+          'nzgrid_other=nxgrid_other for var==z'
+          call stop_it('transp_other: inconsistency - nzgrid/=nxgrid')
+        endif
+!
+!  Calculate the size of buffers.
+!  Buffers used for the z-transpose have the same size in z and x.
+!
+        sendc_z=nz_other**2*ny_other; recvc_z=sendc_z
+!
+!  Allocate temporary scratch array
+!
+        allocate (tmp(nz_other,nz_other))
+!
+!  Send information to different processors (x-z transpose)
+!  See the discussion above for why we use this communication pattern
+        do px=0,nprocz-1
+          if (px/=ipz) then
+            partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
+            send_buf_z=a(px*nz_other+1:(px+1)*nz_other,:,:)
+            if (px<ipz) then      ! above diagonal: send first, receive then
+              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+            elseif (px>ipz) then  ! below diagonal: receive first, send then
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+              call MPI_SSEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+            endif
+            a(px*nz_other+1:(px+1)*nz_other,:,:)=recv_buf_z
+          endif
+        enddo
+!
+!  Transposing the received data (x-z transpose)
+!
+        do px=0,nprocz-1
+          do m=1,ny
+            tmp=transpose(a(px*nz_other+1:(px+1)*nz_other,m,:))
+            a(px*nz_other+1:(px+1)*nz_other,m,:)=tmp
+          enddo
+        enddo
+!
+      else
+        if (lroot) print*,'transp_other: No clue what var=', var, &
+             'is supposed to mean'
+      endif
+!
+!  Synchronize; not strictly necessary, so Axel will prabably remove it..
+!
+      call mpibarrier()
+!
+    endsubroutine transp_other
 !***********************************************************************
     subroutine transp_xz(a,b)
 !
