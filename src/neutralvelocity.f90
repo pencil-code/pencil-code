@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.18 2007-10-06 13:56:53 ajohan Exp $
+! $Id: neutralvelocity.f90,v 1.19 2008-05-08 17:30:31 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -40,7 +40,7 @@ module NeutralVelocity
 !collisional drag,ionization,recombination
   logical :: lviscneutral=.true.
   real :: colldrag,alpha,zeta
-  real :: nun=0.,csn0=0.,csn20,nun_hyper3=0.
+  real :: nun=0.,csn0=0.,csn20,nun_hyper3=0.!,nun_shock=0.
   real, dimension (nx,3,3) :: unij5
 
   character (len=labellen),dimension(ninit) :: iviscn=''
@@ -58,7 +58,7 @@ module NeutralVelocity
        Omega,theta, lupw_uun, &
        borderuun, lfreeze_unint, lpressuregradient, &
        lfreeze_unext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-       colldrag,nun,lviscneutral,iviscn,nun,csn0,nun_hyper3
+       colldrag,nun,lviscneutral,iviscn,nun,csn0,nun_hyper3!,nun_shock
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_un2m=0,idiag_unm2=0
@@ -131,7 +131,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.18 2007-10-06 13:56:53 ajohan Exp $")
+           "$Id: neutralvelocity.f90,v 1.19 2008-05-08 17:30:31 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -315,23 +315,31 @@ module NeutralVelocity
       lpenc_requested(i_rhon1)=.true.
 !
       if (any(iviscn=='nun-const')) then
-         !lpenc_requested(i_snij)=.true.
-         !lpenc_requested(i_glnrhon)=.true.
-         lpenc_requested(i_del2un)=.true.
-         lpenc_requested(i_snglnrhon)=.true.
-         lpenc_requested(i_graddivun)=.true.
-       endif
-       if (any(iviscn=='hyper3_nun-const')) then
-          lpenc_requested(i_del6un)=.true.
-          lpenc_requested(i_glnrhon)=.true.
-       endif
-       if (any(iviscn=='rhon_nun-const')) then
-          lpenc_requested(i_del2un)=.true.
-          lpenc_requested(i_graddivun)=.true.
-       endif
+        !lpenc_requested(i_snij)=.true.
+        !lpenc_requested(i_glnrhon)=.true.
+        lpenc_requested(i_del2un)=.true.
+        lpenc_requested(i_snglnrhon)=.true.
+        lpenc_requested(i_graddivun)=.true.
+      endif
+      if (any(iviscn=='hyper3_nun-const')) then
+        lpenc_requested(i_del6un)=.true.
+        lpenc_requested(i_glnrhon)=.true.
+      endif
+      if (any(iviscn=='rhon_nun-const')) then
+        lpenc_requested(i_del2un)=.true.
+        lpenc_requested(i_graddivun)=.true.
+      endif
+      !if ( lneutraldensity.and.                                    &
+      !     any((iviscn=='shock').or.(iviscn=='nun-shock'))) then 
+      !  lpenc_requested(i_graddivun)=.true.
+      !  lpenc_requested(i_shock)=.true.
+      !  lpenc_requested(i_gshock)=.true.
+      !  lpenc_requested(i_divun)=.true.
+      !  lpenc_requested(i_glnrhon)=.true.
+      !endif
 !
-       if (lpressuregradient) &
-            lpenc_requested(i_glnrhon)=.true.
+      if (lpressuregradient) &
+           lpenc_requested(i_glnrhon)=.true.
 !
 !  diagnostic pencils
 !
@@ -556,7 +564,7 @@ module NeutralVelocity
 !
 ! calculate viscous force on neutrals
 !
-      if (lviscneutral) call calc_viscous_force_neutral(df,p)
+      if (lviscneutral) call calc_viscous_force_neutral(f,df,p)
 !
 ! add pressure gradient on neutrals
 !
@@ -758,7 +766,7 @@ module NeutralVelocity
 !
     endsubroutine set_border_neutralvelocity
 !***********************************************************************
-    subroutine calc_viscous_force_neutral(df,p)
+    subroutine calc_viscous_force_neutral(f,df,p)
 !
 !  calculate viscous force term for right hand side of momentum equation
 !
@@ -767,11 +775,13 @@ module NeutralVelocity
       use Cdata
       use Mpicomm
       use Sub
+      use Deriv, only: der6
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: fvisc,unij5glnrhon
-      real, dimension(nx) :: munrhon1
-      integer :: i,j
+      real, dimension(nx) :: munrhon1,tmp
+      integer :: i,j,jj,ju
       type (pencil_case) :: p
 !
       intent(in) :: p
@@ -821,7 +831,40 @@ module NeutralVelocity
             if (headtt) print*, 'Viscous force (neutral): nun*(del6un+Sn.glnrhon)'
             fvisc = fvisc + nun_hyper3*(p%del6un+unij5glnrhon)
             if (lfirst.and.ldt) diffus_nun3=diffus_nun3+nun_hyper3*dxyz_6
-
+!
+         case('hyper3-cyl','hyper3_cyl','hyper3-sph','hyper3_sph')
+!
+!  Viscous force: anysotropic hyperviscosity
+!
+           do jj=1,3 
+             ju=jj+iuun-1
+             do i=1,3
+               call der6(f,ju,tmp,i,IGNOREDX=.true.)
+               fvisc(:,jj)=fvisc(:,jj)+nun_hyper3*pi4_1*tmp*dline_1(:,i)**2
+             enddo
+             if (lfirst.and.ldt) &
+                  diffus_nun3=diffus_nun3+nun_hyper3*pi4_1*dxyz_2
+           enddo
+!
+     !    case('shock','nun-shock')
+     !      if (.not. lshock) &
+     !           call stop_it('calc_viscous_force_neutral: shock viscosity'// &
+     !           ' but module setting SHOCK=noshock')
+     !      if (nun_shock==0.) &
+     !           call fatal_error('calc_viscous_force_neutral:', &
+     !           'Viscosity coefficient nun_shock is zero!')
+     !      if (lneutraldensity) then
+     !     !tobi: The following only works with operator overloading for pencils
+     !     !      (see sub.f90). Commented out because it seems to be slower.
+     !     !tmp=nu_shock*(p%shock*(p%divu*p%glnrho+p%graddivu)+p%divu*p%gshock)
+     !        call multsv(p%divun,p%glnrhon,tmp2)
+     !        tmp=tmp2 + p%graddivun
+     !        call multsv(nun_shock*p%shock,tmp,tmp2)
+     !        call multsv_add(tmp2,nun_shock*p%divun,p%gshockn,tmp)
+     !        fvisc=fvisc+tmp
+     !        if (lfirst.and.ldt) diffus_total=diffus_total+(nu_shock*p%shock)
+     !      endif
+            !
          case ('')
             ! do nothing
          case default
