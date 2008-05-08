@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.406 2008-05-08 09:16:29 ajohan Exp $
+! $Id: equ.f90,v 1.407 2008-05-08 12:39:40 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -477,7 +477,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.406 2008-05-08 09:16:29 ajohan Exp $")
+           "$Id: equ.f90,v 1.407 2008-05-08 12:39:40 ajohan Exp $")
 !
 !  Initialize counter for calculating and communicating print results.
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -495,6 +495,15 @@ module Equ
       if (ldiagnos)    tdiagnos=t    ! (diagnostics are for THIS time)
       if (l1ddiagnos)  t1ddiagnos=t  ! (1-D averages are for THIS time)
       if (l2davgfirst) t2davgfirst=t ! (2-D averages are for THIS time)
+!
+!  Shift entire data cube by one grid point at the beginning of each
+!  time-step. Useful for smearing out possible x-dependent numerical
+!  diffusion, e.g. in a linear shear flow.
+!
+      if (itsub==1 .and. lshift_datacube_x) then
+        call boundconds_x(f)
+        f(:,:,:,:)=cshift(f(:,:,:,:),1,1)
+      endif
 !
 !  need to finalize communication early either for test purposes, or
 !  when radiation transfer of global ionization is calculatearsd.
