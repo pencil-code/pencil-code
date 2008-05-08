@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.14 2007-09-26 13:01:58 ajohan Exp $
+! $Id: neutraldensity.f90,v 1.15 2008-05-08 17:29:17 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -42,7 +42,7 @@ module NeutralDensity
   logical :: ldiffn_normal=.false.,ldiffn_hyper3=.false.,ldiffn_shock=.false.
   logical :: ldiffn_hyper3lnrhon=.false.,ldiffn_hyper3_aniso=.false.
   logical :: lfreeze_lnrhonint=.false.,lfreeze_lnrhonext=.false.
-  logical :: lneutraldensity_nolog=.false.
+  logical :: lneutraldensity_nolog=.false.,ldiffn_hyper3_cyl_or_sph=.false.
 
   character (len=labellen), dimension(ninit) :: initlnrhon='nothing'
   character (len=labellen), dimension(ndiff_max) :: idiffn=''
@@ -106,7 +106,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.14 2007-09-26 13:01:58 ajohan Exp $")
+           "$Id: neutraldensity.f90,v 1.15 2008-05-08 17:29:17 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -142,6 +142,7 @@ module NeutralDensity
       ldiffn_hyper3=.false.
       ldiffn_hyper3lnrhon=.false.
       ldiffn_hyper3_aniso=.false.
+      ldiffn_hyper3_cyl_or_sph=.false.
 !
       lnothing=.false.
 !
@@ -159,9 +160,14 @@ module NeutralDensity
        case ('hyper3_aniso')
           if (lroot) print*,'diffusion: (Dx*d^6/dx^6 + Dy*d^6/dy^6 + Dz*d^6/dz^6)rhon'
           ldiffn_hyper3_aniso=.true.
+        case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
+          if (lroot) print*,'diffusion: Dhyper/pi^4 *(Delta(rhon))^6/Deltaq^2'
+          ldiffn_hyper3_cyl_or_sph=.true.
         case ('shock')
           if (lroot) print*,'diffusion: shock diffusion'
           ldiffn_shock=.true.
+          call fatal_error("shock diffusion assumes the ions velocity",&
+               "not yet implemented for neutrals")
         case ('')
           if (lroot .and. (.not. lnothing)) print*,'diffusion: nothing'
         case default
@@ -404,9 +410,14 @@ module NeutralDensity
           lpenc_requested(i_del2lnrhon)=.true.
         endif
       endif
-      if (ldiffn_hyper3.or.ldiffn_hyper3_aniso) lpenc_requested(i_del6rhon)=.true.
-      if (ldiffn_hyper3.and..not.lneutraldensity_nolog) lpenc_requested(i_rhon)=.true.
-      if (ldiffn_hyper3lnrhon) lpenc_requested(i_del6lnrhon)=.true.
+      if (ldiffn_hyper3.or.ldiffn_hyper3_aniso) &
+           lpenc_requested(i_del6rhon)=.true.
+      if (ldiffn_hyper3.and..not.lneutraldensity_nolog) &
+           lpenc_requested(i_rhon)=.true.
+      if (ldiffn_hyper3lnrhon) &
+           lpenc_requested(i_del6lnrhon)=.true.
+      if (ldiffn_hyper3_cyl_or_sph.and..not.lneutraldensity_nolog) &
+           lpenc_requested(i_rhon1)=.true.
 !
       if (lmass_source) lpenc_requested(i_rcyl_mn)=.true.
 !
@@ -595,12 +606,14 @@ module NeutralDensity
 !
       use Mpicomm, only: stop_it
       use Sub
+      use Deriv, only: der6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx) :: fdiff, gshockglnrhon, gshockgrhon, tmp
+      integer :: j
 !
       intent(in)  :: f,p
       intent(out) :: df
@@ -657,18 +670,30 @@ module NeutralDensity
       endif
 !
       if (ldiffn_hyper3_aniso) then
-         if (lneutraldensity_nolog) then
-            call del6fj(f,diffrhon_hyper3_aniso,ilnrhon,tmp)
-            fdiff = fdiff + tmp
-            if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+ &
-                 diffrhon_hyper3_aniso(1)*dx_1(l1:l2)**6 + &
-                 diffrhon_hyper3_aniso(2)*dy_1(m)**6 + &
-                 diffrhon_hyper3_aniso(3)*dz_1(n)**6
-            if (headtt) &
-                 print*,'dlnrhon_dt: diffrhon_hyper3=(Dx,Dy,Dz)=',diffrhon_hyper3_aniso
-         else
-            call stop_it("anisotropic hyperdiffusion not implemented for lnrhon")
-         endif
+        if (lneutraldensity_nolog) then
+          call del6fj(f,diffrhon_hyper3_aniso,ilnrhon,tmp)
+          fdiff = fdiff + tmp
+          if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+ &
+               diffrhon_hyper3_aniso(1)*dx_1(l1:l2)**6 + &
+               diffrhon_hyper3_aniso(2)*dy_1(m)**6 + &
+               diffrhon_hyper3_aniso(3)*dz_1(n)**6
+          if (headtt) &
+               print*,'dlnrhon_dt: diffrhon_hyper3=(Dx,Dy,Dz)=',&
+               diffrhon_hyper3_aniso
+        else
+          call stop_it("anisotropic hyperdiffusion not implemented for lnrhon")
+        endif
+      endif
+!
+      if (ldiffn_hyper3_cyl_or_sph) then
+        do j=1,3
+          call der6(f,ilnrhon,tmp,j,IGNOREDX=.true.)
+          if (.not.lneutraldensity_nolog) tmp=tmp*p%rhon1
+          fdiff = fdiff + diffrhon_hyper3*pi4_1*tmp*dline_1(:,j)**2
+        enddo
+        if (lfirst.and.ldt) &
+             diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*pi4_1/dxyz_4
+        if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
       endif
 !
       if (ldiffn_hyper3lnrhon) then
