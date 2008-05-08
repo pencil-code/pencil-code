@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.25 2008-05-07 14:13:57 wlyra Exp $
+! $Id: fourier_fftpack.f90,v 1.26 2008-05-08 13:13:50 wlyra Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -7,7 +7,7 @@ module Fourier
   use Cdata
   use Cparam
   use Messages
-  use Mpicomm, only: transp
+  use Mpicomm, only: transp,transp_other
 
   implicit none
 
@@ -433,22 +433,35 @@ module Fourier
 !  for obvious book-keeping reasons, the dimension is still (nx,ny), 
 !  instead of (nygrid,nx). The fourier transform then can be done, but 
 !  the calculation has to be split into boxes of dimension (nygrid,ny). 
-!  Therefore, it only works when nx and nygrid are multiples. 
+!  Therefore, it only works when nx is a multiple of nygrid.
+!
+!  For the case nx<nygrid, interpolate the x-values to the dimension of
+!  nygrid prior to transposing. Then transform and interpolate back
 !
 !  07-may-08/wlad: coded
 !
-      real, dimension(nx,ny,nz) :: a_re,a_im
+      use General, only: spline
+!
+      real,dimension(nx,ny,nz)     :: a_re,a_im
+      real,dimension(nygrid,ny,nz) :: tmp_re,tmp_im
+      real,dimension(nygrid),save  :: xnyg
+      real,dimension(4*nygrid+15)  :: wsave
+      complex,dimension(nygrid)    :: ay
+      real    :: dnx
+      integer :: l,n,iarr,ix,ido,iup,i
+      logical :: lforward,err,lfirstcall=.true.
       logical, optional :: linv
+
 !
-      complex, dimension(nygrid) :: ay
-      real, dimension(4*nx+15) :: wsave
-      integer :: l,n,iarr,ix,ido,iup
-      logical :: lforward
+! Separate the problem in two cases. nxgrid>= nygrid and its
+! opposite
 !
-      if (mod(nxgrid,nygrid)/=0) then
-        print*,'fourier_transform_y: nxgrid needs to be an integer '//&
-             'multiple of nygrid.'
-        call fatal_error('fourier_transform_y','mod(nxgrid,nygrid)/=0')
+      if (nxgrid >= nygrid) then 
+        if (mod(nxgrid,nygrid)/=0) then
+          print*,'fourier_transform_y: when nxgrid>= nygrid, '//&
+               'nxgrid needs to be an integer multiple of nygrid.'
+          call fatal_error('fourier_transform_y','mod(nxgrid,nygrid)/=0')
+        endif
       endif
 !
       lforward=.true.
@@ -460,53 +473,95 @@ module Fourier
 !
       call cffti(nygrid,wsave)
 !
-      if (lforward) then
+      if (lroot.and.ip<10) print*, 'fourier_transform_y: doing FFTpack in y'
 !
-!  Transform y-direction to fourier space
+!  Transform differently according to sizes of x and y
 !
-        if (lroot.and.ip<10) print*, 'fourier_transform_x: doing FFTpack in x'
+      if (nxgrid>=nygrid) then 
+!
+!  Transpose, transform and transpose back
+!
+        if (lroot .and. ip<10) print*, &
+             'fourier_transform_y: nxgrid>=nygrid'
+!
         call transp(a_re,'y') ; call transp(a_im,'y')
         do n=1,nz; do l=1,ny
-          !divide a_re into arrays of size nygrid to fit ay
+!  Divide a_re into arrays of size nygrid to fit ay
           do iarr=0,nxgrid/nygrid-1
             ix=iarr*nygrid ; ido=ix+1 ; iup=ix+nygrid
             ay=cmplx(a_re(ido:iup,l,n),a_im(ido:iup,l,n))
+            if (lforward) then 
+              call cfftf(nygrid,ay,wsave)
+            else
+              call cfftb(nygrid,ay,wsave)
+            endif
+            a_re(ido:iup,l,n)=real(ay)
+            a_im(ido:iup,l,n)=aimag(ay)
+          enddo
+        enddo;enddo
+        call transp(a_re,'y') ; call transp(a_im,'y')
+!
+! Normalize if forward
+!
+        if (lforward) then
+          a_re=a_re/nygrid
+          a_im=a_im/nygrid
+        endif
+!
+      else !case nxgrid<nygrid
+!
+        if (lroot .and. ip<10) print*, &
+             'fourier_transform_y: nxgrid<nygrid'
+!
+! Save interpolated values of x to dimension nygrid
+!
+        if (lfirstcall) then
+          dnx=Lxyz(1)/(nygrid-1)
+          do i=0,nygrid-1 
+            xnyg(i+1)=x(l1)+i*dnx 
+          enddo
+          lfirstcall=.false.
+        endif
+!
+! Interpolate nx to the same dimension as nygrid, so we 
+! can transpose
+!
+        do n=1,nz;do m=1,ny
+          call spline(x(l1:l2),a_re(:,m,n),xnyg,tmp_re(:,m,n),nx,nygrid,err)
+          call spline(x(l1:l2),a_im(:,m,n),xnyg,tmp_im(:,m,n),nx,nygrid,err)
+        enddo;enddo
+!
+! Transpose, transform, transpose back
+!
+        call transp_other(tmp_re,'y') ; call transp_other(tmp_im,'y')
+        do n=1,nz;do l=1,ny
+          ay=cmplx(tmp_re(:,l,n),tmp_im(:,l,n))
+          if (lforward) then 
             call cfftf(nygrid,ay,wsave)
-            a_re(ido:iup,l,n)=real(ay)
-            a_im(ido:iup,l,n)=aimag(ay)
-          enddo
-          !
-        enddo; enddo
-        call transp(a_re,'y') ; call transp(a_im,'y')
-      else
-!
-!  Transform y-direction back to real space
-!
-        if (lroot.and.ip<10) print*, 'fourier_transform_xy: doing FFTpack in x'
-        call transp(a_re,'y') ; call transp(a_im,'y')
-        do n=1,nz; do l=1,ny
-          !divide a_re into arrays of size nygrid to fit ay
-          do iarr=0,nxgrid/nygrid-1
-            ix=iarr*nygrid ; ido=ix+1 ; iup=ix+nygrid
-            ay=cmplx(a_re(ido:iup,l,n),a_im(ido:iup,l,n))
+          else
             call cfftb(nygrid,ay,wsave)
-            a_re(ido:iup,l,n)=real(ay)
-            a_im(ido:iup,l,n)=aimag(ay)
-          enddo
-          !
+          endif
+          tmp_re(:,l,n)=real(ay)
+          tmp_im(:,l,n)=aimag(ay)
         enddo; enddo
-        call transp(a_re,'y') ; call transp(a_im,'y')
+        call transp_other(tmp_re,'y') ; call transp_other(tmp_im,'y')
 !
+! Normalize if forward
+!
+        if (lforward) then
+          tmp_re=tmp_re/nygrid
+          tmp_im=tmp_im/nygrid
+        endif
+!
+! Interpolate (coarsen) back to dimension nx
+!
+        do n=1,nz;do m=1,ny
+          call spline(xnyg,tmp_re(:,m,n),x(l1:l2),a_re(:,m,n),nygrid,nx,err)
+          call spline(xnyg,tmp_im(:,m,n),x(l1:l2),a_im(:,m,n),nygrid,nx,err)
+        enddo;enddo
       endif
 !
-!  Normalize
-!
-      if (lforward) then
-        a_re=a_re/nygrid
-        a_im=a_im/nygrid
-      endif
-!
-      if (lroot .and. ip<10) print*, 'fourier_transform_x: fft has finished'
+      if (lroot .and. ip<10) print*, 'fourier_transform_y: fft has finished'
 !
     endsubroutine fourier_transform_y
 !***********************************************************************
