@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.405 2008-05-07 13:47:30 nbabkovs Exp $
+! $Id: equ.f90,v 1.406 2008-05-08 09:16:29 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -284,7 +284,7 @@ module Equ
 !***********************************************************************
     subroutine yzaverages_x()
 !
-!  Calculate yz-averages (still depending on x)
+!  Calculate yz-averages (still depending on x).
 !
 !   2-oct-05/anders: adapted from xyaverages_z
 !
@@ -293,8 +293,8 @@ module Equ
 !
       real, dimension (nx,mnamex) :: fsumx
 !
-!  communicate over all processors
-!  the result is only present on the root processor
+!  Communicate over all processors.
+!  The result is only present on the root processor.
 !
       if (nnamex>0) then
         call mpireduce_sum(fnamex,fsumx,nx*nnamex)
@@ -477,13 +477,13 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.405 2008-05-07 13:47:30 nbabkovs Exp $")
+           "$Id: equ.f90,v 1.406 2008-05-08 09:16:29 ajohan Exp $")
 !
-!  initialize counter for calculating and communicating print results
+!  Initialize counter for calculating and communicating print results.
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
 !
-      ldiagnos=lfirst.and.lout
-      l1ddiagnos=lfirst.and.l1dout
+      ldiagnos   =lfirst.and.lout
+      l1ddiagnos =lfirst.and.l1dout
       l2davgfirst=lfirst.and.l2davg
 !
 !  derived diagnostics switches
@@ -492,9 +492,9 @@ module Equ
 !
 !  record times for diagnostic and 2d average output
 !
-      if (ldiagnos) tdiagnos=t       !(diagnostics are for THIS time)
-      if (l1ddiagnos) t1ddiagnos=t   !(1-D averages are for THIS time)
-      if (l2davgfirst) t2davgfirst=t !(2-D averages are for THIS time)
+      if (ldiagnos)    tdiagnos=t    ! (diagnostics are for THIS time)
+      if (l1ddiagnos)  t1ddiagnos=t  ! (1-D averages are for THIS time)
+      if (l2davgfirst) t2davgfirst=t ! (2-D averages are for THIS time)
 !
 !  need to finalize communication early either for test purposes, or
 !  when radiation transfer of global ionization is calculatearsd.
@@ -1162,19 +1162,19 @@ module Equ
 !ajwm idiag_epsK needs close inspection... and requires tidying up
 !ajwm to be consistent in the viscosity.f90 routine.
 !      if (lvisc_hyper .and. ldiagnos) fname(idiag_epsK)=epsK_hyper
-
 !
-!  diagnostic quantities
-!  collect from different processors UUmax for the time step
+!  Collect from different processors max(uu) for the time step.
 !
       if (lfirst.and.ldt) call collect_UUmax
-      if (ldiagnos) then
-!       call diagnostic
+!
+!  1-D diagnostics
+!
+      if (l1ddiagnos) then
         call xyaverages_z
         call xzaverages_y
         call yzaverages_x
-        call phizaverages_r
       endif
+      if (l1dphiavg) call phizaverages_r
 !
 !  2-D averages
 !
