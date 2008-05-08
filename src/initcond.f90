@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.241 2008-04-20 21:44:45 nilshau Exp $
+! $Id: initcond.f90,v 1.242 2008-05-08 21:36:56 nilshau Exp $
 
 module Initcond
 
@@ -2892,41 +2892,50 @@ module Initcond
 !   Still just one processor (but can be remeshed afterwards).
 !
 !   07-may-03/tarek: coded
+!   08-may08/nils: adapted to work on multiple processors
 !
       use Fourier
 !
       logical, intent(in), optional :: lscale_tobox
-      integer :: i,i1,i2
+      integer :: i,i1,i2,ikx,iky,ikz
       real, dimension (nx,ny,nz) :: k2
-      real, dimension (nx) :: k2x
-      real, dimension (ny) :: k2y
-      real, dimension (nz) :: k2z
+      real, dimension(nxgrid) :: kx
+      real, dimension(nygrid) :: ky
+      real, dimension(nzgrid) :: kz
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: u_re,u_im,r
       real :: ampl,initpower,mhalf,cutoff,scale_factor
 
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
-        if (lroot) print*,'powern: set variable to zero; i1,i2=',i1,i2
+        if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
       else
 !
 !  calculate k^2
 !
         scale_factor=1
         if (lscale_tobox) scale_factor=2*pi/Lx
-        k2x = cshift((/(i-(nx+1)/2,i=0,nx-1)/),+(nx+1)/2)*scale_factor
-        k2 =      (spread(spread(k2x,2,ny),3,nz))**2
+        kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
 
         scale_factor=1
         if (lscale_tobox) scale_factor=2*pi/Ly
-        k2y = cshift((/(i-(ny+1)/2,i=0,ny-1)/),+(ny+1)/2)*scale_factor
-        k2 = k2 + (spread(spread(k2y,1,nx),3,nz))**2
+        ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
 
         scale_factor=1
         if (lscale_tobox) scale_factor=2*pi/Lz
-        k2z = cshift((/(i-(nz+1)/2,i=0,nz-1)/),+(nz+1)/2)*scale_factor
-        k2 = k2 + (spread(spread(k2z,1,nx),2,ny))**2
-
+        kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
+!
+!  integration over shells
+!
+        if(lroot .AND. ip<10) &
+             print*,'power_randomphase:fft done; now integrate over shells...'
+        do ikz=1,nz
+          do iky=1,ny
+            do ikx=1,nx
+              k2(ikx,iky,ikz)=kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+            enddo
+          enddo
+        enddo        
         k2(1,1,1) = 1.  ! Avoid division by zero
 !
 !  To get shell integrated power spectrum E ~ k^n, we need u ~ k^m
@@ -2949,7 +2958,6 @@ module Initcond
           ! back to real space
           call fourier_transform(u_re,u_im,linv=.true.)
           f(l1:l2,m1:m2,n1:n2,i)=u_re
-
           if (lroot .and. (cutoff.eq.0)) then
             print*,'powern: k^',initpower,' spectrum : var  i=',i
           else
