@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.24 2008-05-09 17:27:56 brandenb Exp $
+! $Id: chem_stream.f90,v 1.25 2008-05-09 18:16:09 brandenb Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -139,11 +139,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.24 2008-05-09 17:27:56 brandenb Exp $
+!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.25 2008-05-09 18:16:09 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.24 2008-05-09 17:27:56 brandenb Exp $")
+           "$Id: chem_stream.f90,v 1.25 2008-05-09 18:16:09 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -649,15 +649,24 @@ module Special
       real, dimension (mx,my,mz) :: xx, yy
       integer :: k,j,i
 
+      real :: x1_front=45., x2_front=55.
+      real :: rho1_front=1e-3, rho2_front=10./3.*1e-3
+      real :: TT1_front=1000., TT2_front=300.
+
      do k=1,mx 
-      if (x(k)<10. ) then
-        f(k,:,:,5)=log(1000.)
+      if (x(k)<x1_front) then
+        f(k,:,:,ilnTT)=log(1000.)
+        f(k,:,:,ilnrho)=log(1e-3)
       endif
-      if (x(k)>20. ) then
-        f(k,:,:,5)=log(300.)
+      if (x(k)>x2_front) then
+        f(k,:,:,ilnTT)=log(300.)
+        f(k,:,:,ilnrho)=log(1e-3*10./3.)
       endif
-if (x(k)>10. .and. x(k)<20. ) then
-        f(k,:,:,5)=log(-70.*x(k)+1700.)
+      if (x(k)>x1_front .and. x(k)<x2_front) then
+        f(k,:,:,ilnTT)=log((x(k)-x1_front)/(x2_front-x1_front) &
+          *(TT2_front-TT1_front)+TT1_front)
+        f(k,:,:,ilnrho)=log((x(k)-x1_front)/(x2_front-x1_front) &
+          *(rho2_front-rho1_front)+rho1_front)
       endif
 
      enddo
