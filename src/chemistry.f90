@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.94 2008-05-08 18:32:02 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.95 2008-05-09 09:44:08 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -72,8 +72,9 @@ module Chemistry
   real, dimension(nchemspec,18) :: species_constants
   integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
   integer, dimension(7) :: iaa1,iaa2
-  real,    allocatable, dimension(:) :: B_n, alpha_n, E_an
-  real,   dimension(nchemspec,7) :: tran_data
+  real, allocatable, dimension(:)  :: B_n, alpha_n, E_an
+  real, dimension(nchemspec,7)     :: tran_data
+  real, dimension (nx,nchemspec), SAVE  :: H0_RT, S0_R
 
   logical :: Natalia_thoughts=.false.
 
@@ -177,11 +178,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.94 2008-05-08 18:32:02 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.95 2008-05-09 09:44:08 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.94 2008-05-08 18:32:02 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.95 2008-05-09 09:44:08 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1184,7 +1185,7 @@ endif
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gchemspec
-      real, dimension (nx) :: ugchemspec
+      real, dimension (nx) :: ugchemspec, sum_DYDT
       type (pencil_case) :: p
 !
 !  indices
@@ -1256,7 +1257,26 @@ endif
 
          
 !
-     enddo 
+     enddo
+
+      if (ldensity .and. lcheminp) then
+
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - Rgas*p%mu1*p%divu
+
+        sum_DYDt=0.
+          do k=1,nchemspec
+           sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-H0_RT(:,k))/(p%cp-Rgas*p%mu1)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
+          enddo
+
+      !   print*, maxval(sum_DYDt(:)),maxval(df(l1:l2,m,n,ilnTT))
+
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + sum_DYDt(:)
+
+    !  print*, maxval(df(l1:l2,m,n,ilnTT)),maxval(f(l1:l2,m,n,ilnTT)*p%cv1(:)*sum_DYDt(:)),maxval(f(l1:l2,m,n,ilnTT)),maxval(p%cv1(:)),maxval(sum_DYDt(:))
+
+     ! print*, maxval(sum_DYDt(:)),maxval(df(l1:l2,m,n,ilnTT))
+      endif
+ 
 !
 !  For the timestep calculation, need maximum diffusion
 !
@@ -2094,10 +2114,8 @@ endif
     intent(in) :: f
     type (pencil_case) :: p
     real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1,prod2
-     real, dimension (nx) :: prod1_ts,prod2_ts
+    real, dimension (nx) :: prod1_ts,prod2_ts
     real, dimension (nx) :: kf=0., kr=0.
-    real, dimension (nx,nchemspec) :: H0_RT, S0_R
-
     real, dimension (nx) :: T_cgs,rho_cgs,p_atm
 
     real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
