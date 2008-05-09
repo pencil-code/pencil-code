@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.53 2007-02-26 21:43:10 brandenb Exp $
+! $Id: neutron_star.f90,v 1.54 2008-05-09 17:27:56 brandenb Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -179,11 +179,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.53 2007-02-26 21:43:10 brandenb Exp $
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.54 2008-05-09 17:27:56 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.53 2007-02-26 21:43:10 brandenb Exp $")
+           "$Id: neutron_star.f90,v 1.54 2008-05-09 17:27:56 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -424,6 +424,21 @@ module Special
       endif
 !
     endsubroutine rprint_special
+!***********************************************************************
+    subroutine calc_lspecial_pars(f)
+!
+!  dummy routine
+!
+!  15-jan-08/axel: coded
+!
+      use Sub, only: keep_compiler_quiet
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !   06-oct-03/tony: coded

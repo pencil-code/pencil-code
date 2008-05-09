@@ -1,4 +1,4 @@
-! $Id: rtime_phiavg.f90,v 1.13 2007-08-20 11:41:28 wlyra Exp $
+! $Id: rtime_phiavg.f90,v 1.14 2008-05-09 17:27:56 brandenb Exp $
 !
 !  This module calculates a number of outputs and removes a mean
 !  (phi-averaged) emf from the simulations with net vertical fields
@@ -149,11 +149,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.13 2007-08-20 11:41:28 wlyra Exp $
+!  CVS should automatically update everything between $Id: rtime_phiavg.f90,v 1.14 2008-05-09 17:27:56 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: rtime_phiavg.f90,v 1.13 2007-08-20 11:41:28 wlyra Exp $")
+           "$Id: rtime_phiavg.f90,v 1.14 2008-05-09 17:27:56 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -511,6 +511,21 @@ module Special
       enddo
 !
     endsubroutine calc_pencils_special
+!***********************************************************************
+    subroutine calc_lspecial_pars(f)
+!
+!  dummy routine
+!
+!  15-jan-08/axel: coded
+!
+      use Sub, only: keep_compiler_quiet
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !

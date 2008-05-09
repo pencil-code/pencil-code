@@ -1,4 +1,4 @@
-! $Id: lorenz_gauge.f90,v 1.2 2007-02-27 05:12:20 brandenb Exp $
+! $Id: lorenz_gauge.f90,v 1.3 2008-05-09 17:27:56 brandenb Exp $
 !
 !  Lorentz gauge, dphi/dt = -cphi2*divA
 !
@@ -83,7 +83,7 @@ module Special
 !      naux = naux+1
 !
       if (lroot) call cvs_id( &
-           "$Id: lorenz_gauge.f90,v 1.2 2007-02-27 05:12:20 brandenb Exp $")
+           "$Id: lorenz_gauge.f90,v 1.3 2008-05-09 17:27:56 brandenb Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -392,6 +392,21 @@ module Special
       endselect
 !
     endsubroutine get_slices_special
+!***********************************************************************
+    subroutine calc_lspecial_pars(f)
+!
+!  dummy routine
+!
+!  15-jan-08/axel: coded
+!
+      use Sub, only: keep_compiler_quiet
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !

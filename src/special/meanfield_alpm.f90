@@ -1,4 +1,4 @@
-! $Id: meanfield_alpm.f90,v 1.7 2007-11-18 21:23:44 bingert Exp $
+! $Id: meanfield_alpm.f90,v 1.8 2008-05-09 17:27:56 brandenb Exp $
 !
 !  This module serves as a sample for a special_XXX module that
 !  introduces additional primitive variables. Use this as a basis for your
@@ -83,7 +83,7 @@ module Special
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: meanfield_alpm.f90,v 1.7 2007-11-18 21:23:44 bingert Exp $")
+           "$Id: meanfield_alpm.f90,v 1.8 2008-05-09 17:27:56 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -307,6 +307,21 @@ module Special
       endif
 !
     endsubroutine rprint_special
+!***********************************************************************
+    subroutine calc_lspecial_pars(f)
+!
+!  dummy routine
+!
+!  15-jan-08/axel: coded
+!
+      use Sub, only: keep_compiler_quiet
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !

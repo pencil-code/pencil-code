@@ -1,4 +1,4 @@
-! $Id: gross_pitaevskii.f90,v 1.10 2007-02-26 21:43:10 brandenb Exp $
+! $Id: gross_pitaevskii.f90,v 1.11 2008-05-09 17:27:56 brandenb Exp $
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
 !
@@ -183,10 +183,10 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.10 2007-02-26 21:43:10 brandenb Exp $ 
+!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.11 2008-05-09 17:27:56 brandenb Exp $ 
 !  when the file in committed to a CVS repository.
 !
-      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.10 2007-02-26 21:43:10 brandenb Exp $")
+      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.11 2008-05-09 17:27:56 brandenb Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
 !  been configured in a custom module but they do no harm)
@@ -655,6 +655,21 @@ endsubroutine read_special_run_pars
       endselect
 !
     endsubroutine get_slices_special
+!***********************************************************************
+    subroutine calc_lspecial_pars(f)
+!
+!  dummy routine
+!
+!  15-jan-08/axel: coded
+!
+      use Sub, only: keep_compiler_quiet
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine special_calc_density(df,p)
 !

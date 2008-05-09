@@ -1,4 +1,4 @@
-! $Id: internal_flow.f90,v 1.9 2008-05-08 21:03:01 nilshau Exp $
+! $Id: internal_flow.f90,v 1.10 2008-05-09 17:27:56 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -84,11 +84,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.9 2008-05-08 21:03:01 nilshau Exp $
+!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.10 2008-05-09 17:27:56 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: internal_flow.f90,v 1.9 2008-05-08 21:03:01 nilshau Exp $")
+           "$Id: internal_flow.f90,v 1.10 2008-05-09 17:27:56 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -325,39 +325,6 @@ module Special
 99    return
     endsubroutine read_special_init_pars
 !***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  Mean flow velocitites
-!
-!  14-mar-08/nils: coded
-!
-      use Cdata
-      use Sub
-      use Mpicomm, only: mpireduce_sum, mpibcast_real
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nygrid,3) :: mean_u_tmp
-      real :: faq
-      integer :: j,k
-!
-!  calculate mean of velocity in xz planes
-!
-      if(lvid.and.lfirst .or. ldiagnos) then
-        mean_u_tmp=0
-        faq=nxgrid*nzgrid
-        do j=m1,m2
-          do k=1,3
-            mean_u_tmp(j+ny*ipy-nghost,k)=sum(f(l1:l2,j,n1:n2,k+iux-1))/faq
-          enddo
-        enddo        
-        do k=1,3
-          call mpireduce_sum(mean_u_tmp(:,k),mean_u(:,k),nygrid)
-          call mpibcast_real(mean_u(:,k),nygrid)
-        enddo
-      endif
-!
-    endsubroutine calc_lspecial_pars
-!***********************************************************************
     subroutine write_special_init_pars(unit)
 !
       use Sub, only: keep_compiler_quiet
@@ -473,6 +440,39 @@ module Special
 !NILS      call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_special
+!***********************************************************************
+    subroutine calc_lspecial_pars(f)
+!
+!  Mean flow velocitites
+!
+!  14-mar-08/nils: coded
+!
+      use Cdata
+      use Sub
+      use Mpicomm, only: mpireduce_sum, mpibcast_real
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nygrid,3) :: mean_u_tmp
+      real :: faq
+      integer :: j,k
+!
+!  calculate mean of velocity in xz planes
+!
+      if(lvid.and.lfirst .or. ldiagnos) then
+        mean_u_tmp=0
+        faq=nxgrid*nzgrid
+        do j=m1,m2
+          do k=1,3
+            mean_u_tmp(j+ny*ipy-nghost,k)=sum(f(l1:l2,j,n1:n2,k+iux-1))/faq
+          enddo
+        enddo        
+        do k=1,3
+          call mpireduce_sum(mean_u_tmp(:,k),mean_u(:,k),nygrid)
+          call mpibcast_real(mean_u(:,k),nygrid)
+        enddo
+      endif
+!
+    endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
