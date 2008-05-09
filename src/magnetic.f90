@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.519 2008-05-08 19:30:03 brandenb Exp $
+! $Id: magnetic.f90,v 1.520 2008-05-09 23:36:10 dobler Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -55,7 +55,7 @@ module Magnetic
   character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
-  character (len=labellen) :: Omega_profile='nothing',alpha_profile='nothing'
+  character (len=labellen) :: Omega_profile='nothing',alpha_profile='const'
   ! input parameters
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
   real, dimension(3) :: B_ext=(/0.,0.,0./),B1_ext,B_ext_tmp,eta_aniso_hyper3
@@ -414,7 +414,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.519 2008-05-08 19:30:03 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.520 2008-05-09 23:36:10 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1511,7 +1511,8 @@ module Magnetic
         case('siny'); alpha_tmp=sin(y(m))
         case('cosy'); alpha_tmp=cos(y(m))
         case('read'); alpha_tmp=alpha_input(l1:l2,m)
-        case('nothing'); call fatal_error('calc_pencils_magnetic', &
+        case('nothing');
+          call inevitably_fatal_error('calc_pencils_magnetic', &
             'alpha_profile="nothing" has been renamed to "const", please update your run.in')
         endselect
 !

@@ -1,4 +1,4 @@
-! $Id: messages.f90,v 1.16 2007-09-17 08:34:14 brandenb Exp $
+! $Id: messages.f90,v 1.17 2008-05-09 23:36:10 dobler Exp $
 !
 !  This module takes care of messages.
 !
@@ -14,7 +14,7 @@ module Messages
   public :: cvs_id
   public :: initialize_messages
   public :: information, warning, error
-  public :: fatal_error, not_implemented
+  public :: fatal_error, inevitably_fatal_error, not_implemented
   public :: fatal_error_local, fatal_error_local_collect
   public :: life_support_on, life_support_off
 !
@@ -112,6 +112,26 @@ module Messages
       endif
 !
     endsubroutine fatal_error
+!***********************************************************************
+    subroutine inevitably_fatal_error(location,message)
+!
+!  A fatal error that doesn't care for llife_support
+!  Use (sparingly) in those cases where things should fail even during
+!  pencil_consistency_test
+!
+      character(len=*) :: location
+      character(len=*) :: message
+!
+      errors=errors+1
+!
+      call terminal_highlight_fatal_error()
+      write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
+      call terminal_defaultcolor()
+      write (*,*) trim(location) // ": " // trim(message)
+!
+      call die_gracefully()
+!
+    endsubroutine inevitably_fatal_error
 !***********************************************************************
     subroutine fatal_error_local(location,message)
 !
