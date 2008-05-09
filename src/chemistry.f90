@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.96 2008-05-09 10:28:36 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.97 2008-05-09 17:10:45 brandenb Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -102,6 +102,14 @@ module Chemistry
   integer :: idiag_Y6m=0        ! DIAG_DOC: $\left<Y_6\right>$
   integer :: idiag_Y7m=0        ! DIAG_DOC: $\left<Y_7\right>$
   integer :: idiag_Y8m=0        ! DIAG_DOC: $\left<Y_8\right>$
+  integer :: idiag_dY1m=0        ! DIAG_DOC: $\left<dY_1\right>$
+  integer :: idiag_dY2m=0        ! DIAG_DOC: $\left<dY_2\right>$
+  integer :: idiag_dY3m=0        ! DIAG_DOC: $\left<dY_3\right>$
+  integer :: idiag_dY4m=0        ! DIAG_DOC: $\left<dY_4\right>$
+  integer :: idiag_dY5m=0        ! DIAG_DOC: $\left<dY_5\right>$
+  integer :: idiag_dY6m=0        ! DIAG_DOC: $\left<dY_6\right>$
+  integer :: idiag_dY7m=0        ! DIAG_DOC: $\left<dY_7\right>$
+  integer :: idiag_dY8m=0        ! DIAG_DOC: $\left<dY_8\right>$
 !
   contains
 
@@ -178,11 +186,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.96 2008-05-09 10:28:36 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.97 2008-05-09 17:10:45 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.96 2008-05-09 10:28:36 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.97 2008-05-09 17:10:45 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1234,6 +1242,8 @@ module Chemistry
       if (lreset) then
         idiag_Y1m=0; idiag_Y2m=0; idiag_Y3m=0; idiag_Y4m=0
         idiag_Y5m=0; idiag_Y6m=0; idiag_Y7m=0; idiag_Y8m=0
+        idiag_dY1m=0; idiag_dY2m=0; idiag_dY3m=0; idiag_dY4m=0
+        idiag_dY5m=0; idiag_dY6m=0; idiag_dY7m=0; idiag_dY8m=0
       endif
 !
       call chn(nchemspec,schemspec)
@@ -1249,6 +1259,14 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'Y6m',idiag_Y6m)
         call parse_name(iname,cname(iname),cform(iname),'Y7m',idiag_Y7m)
         call parse_name(iname,cname(iname),cform(iname),'Y8m',idiag_Y8m)
+        call parse_name(iname,cname(iname),cform(iname),'dY1m',idiag_dY1m)
+        call parse_name(iname,cname(iname),cform(iname),'dY2m',idiag_dY2m)
+        call parse_name(iname,cname(iname),cform(iname),'dY3m',idiag_dY3m)
+        call parse_name(iname,cname(iname),cform(iname),'dY4m',idiag_dY4m)
+        call parse_name(iname,cname(iname),cform(iname),'dY5m',idiag_dY5m)
+        call parse_name(iname,cname(iname),cform(iname),'dY6m',idiag_dY6m)
+        call parse_name(iname,cname(iname),cform(iname),'dY7m',idiag_dY7m)
+        call parse_name(iname,cname(iname),cform(iname),'dY8m',idiag_dY8m)
       enddo
 !
 !  Write chemistry index in short notation
@@ -1263,6 +1281,14 @@ module Chemistry
         write(3,*) 'i_Y6m=',idiag_Y6m
         write(3,*) 'i_Y7m=',idiag_Y7m
         write(3,*) 'i_Y8m=',idiag_Y8m
+        write(3,*) 'i_dY1m=',idiag_dY1m
+        write(3,*) 'i_dY2m=',idiag_dY2m
+        write(3,*) 'i_dY3m=',idiag_dY3m
+        write(3,*) 'i_dY4m=',idiag_dY4m
+        write(3,*) 'i_dY5m=',idiag_dY5m
+        write(3,*) 'i_dY6m=',idiag_dY6m
+        write(3,*) 'i_dY7m=',idiag_dY7m
+        write(3,*) 'i_dY8m=',idiag_dY8m
         write(3,*) 'ichemspec=indgen('//trim(schemspec)//') + '//trim(snd1)
       endif
 !
@@ -2198,6 +2224,8 @@ module Chemistry
 !***************************************************************
    subroutine calc_reaction_term(f,p)
 
+      use Sub
+
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
   real, dimension (nx,nreactions) :: vreactions_ts
@@ -2206,6 +2234,7 @@ module Chemistry
   integer :: k,j
   real :: sum_omega
   real :: sum_Y
+  integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8
 
   intent(in) :: f
 
@@ -2233,14 +2262,14 @@ module Chemistry
 
 
 
-     do k=1,nchemspec  
-          xdot=0.
-          xdot_ts=0.
-          do j=1,nreactions
-            xdot=xdot+stoichio(k,j)*vreactions(:,j)  
-            xdot_ts=xdot_ts+stoichio(k,j)*vreactions_ts(:,j)
-          enddo
-         if (lcheminp) then
+      do k=1,nchemspec  
+        xdot=0.
+        xdot_ts=0.
+        do j=1,nreactions
+          xdot=xdot+stoichio(k,j)*vreactions(:,j)  
+          xdot_ts=xdot_ts+stoichio(k,j)*vreactions_ts(:,j)
+        enddo
+        if (lcheminp) then
 !
 !  Natalia thoughts
 ! this '-' is because of the possible mistake in stoichio(k,j)
@@ -2249,22 +2278,37 @@ module Chemistry
 !
           xdot=-xdot*species_constants(k,imass)
           xdot_ts=-xdot_ts*species_constants(k,imass)
-         endif
+        endif
         p%DYDt_reac(:,k)=xdot*unit_time
         DYDt_reac_ts(:,k)=xdot_ts*unit_time
 
  !  print*,'Natalia',maxval(p%DYDt_reac(:,k))/unit_time/species_constants(k,imass),k
 
-     enddo 
+      enddo 
 
       sum_omega=0.
       sum_Y=0.
-
+!
+!  sums for diagnostics
+!
      do k=1,nchemspec
       sum_omega=sum_omega+maxval(p%DYDt_reac(:,k))!species_constants(k,imass)
       sum_Y=sum_Y+maxval(f(l1:l2,m,n,ichemspec(k)))
     !  print*,maxval(f(l1:l2,m,n,ichemspec(k))),k
      enddo
+!
+!  Calculate diagnostic quantities
+!
+      if (ldiagnos) then
+        if (idiag_dY1m/=0) call sum_mn_name(p%DYDt_reac(:,i1),idiag_dY1m)
+        if (idiag_dY2m/=0) call sum_mn_name(p%DYDt_reac(:,i2),idiag_dY2m)
+        if (idiag_dY3m/=0) call sum_mn_name(p%DYDt_reac(:,i3),idiag_dY3m)
+        if (idiag_dY4m/=0) call sum_mn_name(p%DYDt_reac(:,i4),idiag_dY4m)
+        if (idiag_dY5m/=0) call sum_mn_name(p%DYDt_reac(:,i5),idiag_dY5m)
+        if (idiag_dY6m/=0) call sum_mn_name(p%DYDt_reac(:,i6),idiag_dY6m)
+        if (idiag_dY7m/=0) call sum_mn_name(p%DYDt_reac(:,i7),idiag_dY7m)
+        if (idiag_dY8m/=0) call sum_mn_name(p%DYDt_reac(:,i8),idiag_dY8m)
+      endif
 
    ! print*,'sum_omega',sum_omega
    ! print*,'sum_Y',sum_Y
