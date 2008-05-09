@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.141 2008-05-09 17:06:03 dhruba Exp $
+! $Id: forcing.f90,v 1.142 2008-05-09 17:18:43 brandenb Exp $
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -119,7 +119,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.141 2008-05-09 17:06:03 dhruba Exp $")
+           "$Id: forcing.f90,v 1.142 2008-05-09 17:18:43 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -784,7 +784,7 @@ module Forcing
         allocate(psif(mx,my,mz))
         allocate(Bessel_alpha(ellno,nalpha))
         if (lroot) print*, '..done'
-        open(unit=76,file="alpha_in.dat")
+        open(unit=76,file="alpha_in.dat",status="old")
         read(76,*) ellmin,ellmax,phin,rmin,rmax
         if(.not. ((Legendrel_min.eq.ellmin).and.(Legendrel_max.eq.ellmax) &
                   .and.(phin.eq.phi_node)) ) then 
