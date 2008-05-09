@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.95 2008-05-09 09:44:08 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.96 2008-05-09 10:28:36 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -178,11 +178,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.95 2008-05-09 09:44:08 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.96 2008-05-09 10:28:36 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.95 2008-05-09 09:44:08 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.96 2008-05-09 10:28:36 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -215,16 +215,17 @@ module Chemistry
     logical :: exist,exist1,exist2
     character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
 
-if (unit_temperature == impossible) then
-  write(0,*) 'unit_temperature = impossible here: ', unit_temperature
-  call fatal_error('initialize_chemistry', 'unit_temperature = impossible here')
-endif
-       if (unit_system == 'cgs') then
+    if (lcheminp) then
+      if (unit_temperature == impossible) then
+         write(0,*) 'unit_temperature = impossible here: ', unit_temperature
+         call fatal_error('initialize_chemistry', 'unit_temperature = impossible here')
+      endif
+
+      if (unit_system == 'cgs') then
          Rgas_unit_sys = k_B_cgs/m_u_cgs
          Rgas=Rgas_unit_sys*unit_temperature/unit_energy
-       endif
-
-
+      endif
+    endif
 
     if (nchemspec==1) then
       lone_spec=.true.
@@ -262,7 +263,7 @@ endif
        call stop_it('there is no data file')
      endif
 
-      call keep_compiler_quiet(f)
+     call keep_compiler_quiet(f)
 !
 
     endsubroutine initialize_chemistry
@@ -368,8 +369,8 @@ endif
        lpenc_requested(i_cs2)=.true.
        lpenc_requested(i_cvspec)=.true.
 
-        lpenc_requested(i_DYDt_reac)=.true.
-        lpenc_requested(i_DYDt_diff)=.true.
+       lpenc_requested(i_DYDt_reac)=.true.
+       lpenc_requested(i_DYDt_diff)=.true.
 
        if (lcheminp) then
         lpenc_requested(i_mu1)=.true.
@@ -428,8 +429,6 @@ endif
       real :: T_local, T_up, T_mid, T_low, tmp,  lnT_local
       real :: mk_mj, nuk_nuj
       logical :: lcheminp_tmp=.false.
-
-!
 !
 !
 !  Mass fraction YY
@@ -437,20 +436,17 @@ endif
       if (lpencil(i_YY)) then
        do k=1,nchemspec;  p%YY(:,k)=f(l1:l2,m,n,ichemspec(k)); enddo
       endif
-
-      if (lcheminp) then
+ 
+     if (lcheminp) then
 !
 !  Mean molecular weight
 !
-            if (lpencil(i_mu1)) then 
-              p%mu1=mu1_full(l1:l2,m,n)
-            endif
-
+        if (lpencil(i_mu1)) then 
+          p%mu1=mu1_full(l1:l2,m,n)
+        endif
  ! print*, 1./maxval(p%mu1)
 
-
-            if (lpencil(i_gmu1)) call grad(mu1_full,p%gmu1)
-
+        if (lpencil(i_gmu1)) call grad(mu1_full,p%gmu1)
 !
 !  Mole fraction XX
 !
@@ -459,157 +455,108 @@ endif
          !    p%XX(:,k)=p%YY(:,k)/species_constants(ichemspec(k),imass)/p%mu1
 !            enddo
       !    endif
-
-  
-
 !
 !  Temperature
 !
-      if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
-      if (lpencil(i_TT)) p%TT=exp(p%lnTT)
-      if (lpencil(i_TT1)) p%TT1=1./p%TT!
-
+        if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
+        if (lpencil(i_TT)) p%TT=exp(p%lnTT)
+        if (lpencil(i_TT1)) p%TT1=1./p%TT!
+!
+!  Temperature laplacian and gradient
+!
+        if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
+        if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
 !
 !  Density
 !
      ! if (lpencil(i_lnrho))
-      p%lnrho=f(l1:l2,m,n,ilnrho)
+     !   p%lnrho=f(l1:l2,m,n,ilnrho)
      ! if (lpencil(i_rho))
-       p%rho=exp(p%lnrho)
-     
-
-!print*,maxval(f(l1:l2,m,n,ilnrho))
-
-
-!
-!  Temperature laplacian and gradient
-!
-      if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
-      if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
-
-
-!print*,maxval(f(l1:l2,m,n,ilnrho))
-
+     !   p%rho=exp(p%lnrho)
 !
 !  Pressure
 !
-         if (lpencil(i_pp)) p%pp = Rgas*p%rho*p%TT*p%mu1
-
-!print*,'p%pp',maxval(p%pp),Rgas,maxval(p%rho),maxval(p%TT),maxval(p%mu1)
+        if (lpencil(i_pp)) p%pp = Rgas*p%rho*p%TT*p%mu1
 
 !  Specific heat at constant pressure
 !
-         if (lpencil(i_cp)) then
-           p%cp=cp_full(l1:l2,m,n)
-  !          do k=1,nx
-  !           if (p%cp(k) < 0.) then
-  !            call stop_it(" NEGATIVE Cp ")
-  !           endif
-  !          enddo 
+        if (lpencil(i_cp)) then
+          p%cp=cp_full(l1:l2,m,n)
+        endif
 
-
-         endif
-
-         if (lpencil(i_cp1))   p%cp1 = 1./p%cp
+        if (lpencil(i_cp1))   p%cp1 = 1./p%cp
 
 !  Gradient of the above
 !
-         if (lpencil(i_gradcp)) call grad(cp_full,p%gradcp)
+        if (lpencil(i_gradcp)) call grad(cp_full,p%gradcp)
 !
 !  Specific heat at constant volume (i.e. density)
 !
-         if (lpencil(i_cv)) p%cv = cv_full(l1:l2,m,n)
+        if (lpencil(i_cv)) p%cv = cv_full(l1:l2,m,n)
 
- !         do k=1,nx
- !            if (p%cv(k) < 0.) then
- !             print*, p%cp(k), p%cv(k)
- !             call stop_it(" NEGATIVE Cv ")
- !            endif
- !          enddo 
+        if (lpencil(i_cv1)) p%cv1=1./p%cv
 
-         if (lpencil(i_cv1)) p%cv1=1./p%cv
-
-         if (lpencil(i_cvspec)) then
+        if (lpencil(i_cvspec)) then
           do k=1,nchemspec
             p%cvspec(:,k)=cvspec_full(l1:l2,m,n,k)
           enddo
-         endif  
+        endif  
 
-
-         if (lpencil(i_lncp)) p%lncp=log(p%cp)
-
+        if (lpencil(i_lncp)) p%lncp=log(p%cp)
 !
 !  Polytropic index
 !
-         if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
-         if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
-         if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
-
+        if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
+        if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
+        if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
 !
 !  Sound speed
 !
-
-   if (lpencil(i_cs2)) p%cs2=p%cp*p%TT*p%gamma1*p%mu1
-
+        if (lpencil(i_cs2)) p%cs2=p%cp*p%TT*p%gamma1*p%mu1
 !
 !  Logarithmic pressure gradient
 !
-      if (lpencil(i_rho1gpp)) then
-        do i=1,3
-          p%rho1gpp(:,i) = p%gamma11*p%cs2*(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
-        enddo
-      endif
-
-
+        if (lpencil(i_rho1gpp)) then
+         do i=1,3
+           p%rho1gpp(:,i) = p%gamma11*p%cs2*(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
+         enddo
+        endif
+!
 !  Viscosity of a mixture
 !
-
-         if (lpencil(i_nu)) then
+        if (lpencil(i_nu)) then
           p%nu=nu_full(l1:l2,m,n)
-             if (lpencil(i_gradnu)) then
-               call grad(nu_full,p%gradnu)
-             endif 
-         endif
+           if (lpencil(i_gradnu)) then
+            call grad(nu_full,p%gradnu)
+           endif 
+        endif
 
       endif
-
 
 !  Artificial Viscosity of a mixture
 !
-
          if (lpencil(i_nu_art)) then
             p%nu_art=nu_art_full(l1:l2,m,n)
          endif
-
-
-
 ! 
 ! Calculate the reaction term and the corresponding pencil 
 !
-
         if (lreactions .and. lpencil(i_DYDt_reac)) then
           call calc_reaction_term(f,p)
         else
           p%DYDt_reac=0.
         endif
-
 ! 
 ! Calculate the diffusion term and the corresponding pencil 
 !
-
-
         if (ldiffusion .and. lpencil(i_DYDt_diff)) then
            call calc_diffusion_term(f,p)
         else
            p%DYDt_diff=0.
         endif
-
-
-
 !
 ! Calculate thermal diffusivity
 !
-
       if (lpenc_requested(i_chi)) then
         p%chi=chi_full(l1:l2,m,n)
         if (lpenc_requested(i_glnchi)) call grad(chi_full,p%glnchi)
@@ -629,7 +576,6 @@ endif
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
-   !   real, dimension (mx,my,mz) ::   Cp_test, Cp_test_full
       real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nuk_nuj, nu_dyn, cp_R_spec
       real, dimension (mx,my,mz,nchemspec,nchemspec) :: Phi
       real, dimension (mx,my,mz,nchemspec) :: species_cond
@@ -642,112 +588,75 @@ endif
       logical :: tran_exist=.false.
       logical,SAVE :: lwrite=.true.
 
-      character (len=20) :: input_file="./data/mix_quant.out"
+      character (len=20) :: output_file="./data/mix_quant.out"
       integer :: file_id=123
 
 ! 
 ! Density
 !
-  !    if (.not. ldensity) then
-  !        call fatal_error("calc_for_chem_mixture", &
-  !            "Cannot calculate rho with DENSITY=nodensity")
-  !    endif
-
-        rho_full=exp(f(:,:,:,ilnrho))
-
+      rho_full=exp(f(:,:,:,ilnrho))
 !
 ! Now this routine is only for chemkin data !!!
 !
       if (lcheminp) then
 
-       if (unit_system == 'cgs') then
+        if (unit_system == 'cgs') then
 
           Rgas_unit_sys = k_B_cgs/m_u_cgs
           Rgas=Rgas_unit_sys*unit_temperature/unit_energy
-
-       
-
-
 !
 !  Mean molecular weight
 !
-            mu1_full=0.
-              do k=1,nchemspec
-                mu1_full(:,:,:)=mu1_full(:,:,:)+f(:,:,:,ichemspec(k)) &
-                  /species_constants(k,imass)
-              enddo
-              mu1_full=mu1_full*unit_mass
-     
-
-
+          mu1_full=0.
+          do k=1,nchemspec
+            mu1_full(:,:,:)=mu1_full(:,:,:)+f(:,:,:,ichemspec(k)) &
+            /species_constants(k,imass)
+          enddo
+          mu1_full=mu1_full*unit_mass
 !
 !  Mole fraction XX
 !
-           do k=1,nchemspec 
-             XX_full(:,:,:,k)=f(:,:,:,ichemspec(k))*unit_mass &
-              /species_constants(k,imass)/mu1_full(:,:,:)
-           enddo
-
-
+          do k=1,nchemspec 
+            XX_full(:,:,:,k)=f(:,:,:,ichemspec(k))*unit_mass &
+            /species_constants(k,imass)/mu1_full(:,:,:)
+          enddo
 !
 !  Specific heat at constant pressure
 !
-
           cp_full=0.
           cv_full=0.
-      !    Cp_test_full=0.
+          do k=1,nchemspec
+            T_low=species_constants(k,iTemp1)
+            T_mid=species_constants(k,iTemp2)
+            T_up= species_constants(k,iTemp3)
 
-
-           do k=1,nchemspec
-
-             T_low=species_constants(k,iTemp1)
-             T_mid=species_constants(k,iTemp2)
-             T_up= species_constants(k,iTemp3)
-
-             do n=1,mz
-              do m=1,my
-
-              do i=1,mx
+            do n=1,mz
+             do m=1,my
+               do i=1,mx
                  T_local=exp(f(i,m,n,ilnTT))*unit_temperature 
-                  if (T_local >=T_low .and. T_local <= T_mid) then
+                 if (T_local >=T_low .and. T_local <= T_mid) then
                    cp_R_spec(i,m,n)=0. 
                     do j=1,5
                      cp_R_spec(i,m,n)=cp_R_spec(i,m,n)+species_constants(k,iaa1(j))*T_local**(j-1) 
                     enddo
                      cvspec_full(i,m,n,k)=cp_R_spec(i,m,n)-1.
                !      Cp_test(i,m,n)=cp_R_spec(i,m,n)
-                  else
-                    cp_R_spec(i,m,n)=0.
+                 else
+                   cp_R_spec(i,m,n)=0.
                     do j=1,5 
                      cp_R_spec(i,m,n)=cp_R_spec(i,m,n)+species_constants(k,iaa2(j))*T_local**(j-1) 
                     enddo
                      cvspec_full(i,m,n,k)=cp_R_spec(i,m,n)-1.
-                  endif
-
+                 endif
+               enddo
               enddo
              enddo
-            enddo
-
-
-          !   print*,maxval(cp_R_spec(:,:,:))/(maxval(cp_R_spec(:,:,:))-1.)
-
-                cp_full(:,:,:)=cp_full(:,:,:)+f(:,:,:,ichemspec(k))  &
-                       *cp_R_spec(:,:,:)/species_constants(k,imass)*Rgas
-                cv_full(:,:,:)=cv_full(:,:,:)+f(:,:,:,ichemspec(k))  &
-                       *cvspec_full(:,:,:,k)/species_constants(k,imass)*Rgas
-
-             !   Cp_test_full(:,:,:)=Cp_test_full(:,:,:) &
-             !     +XX_full(:,:,:,k)*Cp_test(:,:,:)*Rgas
-
-              !  Cp_test_full(:,:,:)=Cp_test_full(:,:,:)+ &
-              !       f(:,:,:,ichemspec(k))*Cp_test(:,:,:)*Rgas
-
-            !  print*, maxval(cp_full(:,:,:)/cv_full(:,:,:)), &
-              !maxval(cp_R_spec(:,:,:)/cvspec_full(:,:,:,k))
+           cp_full(:,:,:)=cp_full(:,:,:)+f(:,:,:,ichemspec(k))  &
+           *cp_R_spec(:,:,:)/species_constants(k,imass)*Rgas
+           cv_full(:,:,:)=cv_full(:,:,:)+f(:,:,:,ichemspec(k))  &
+            *cvspec_full(:,:,:,k)/species_constants(k,imass)*Rgas
 
            enddo
-
-
 !
 !  Binary diffusion coefficients
 !
@@ -756,13 +665,10 @@ endif
         if (tran_exist) then
              call calc_diff_visc_coef(f)
         endif
-
-
 !
 !  Diffusion coeffisient of a mixture
 !
-         if (.not. lone_spec) then
-
+        if (.not. lone_spec) then
            do k=1,nchemspec
             tmp_sum=0.
              do j=1,nchemspec
@@ -774,109 +680,72 @@ endif
               Diff_full(:,:,:,k)=(1.-f(:,:,:,ichemspec(k))) &
                                 *mu1_full(:,:,:)/tmp_sum
            enddo
-
-         endif
-
+        endif
 !print*, Bin_Diff_coef(10,10,3,1,2)
-
- 
 !
 !  Viscosity of a mixture
 !
 
       if  (lone_spec) then
-
        nu_full=species_viscosity(:,:,:,1)/rho_full
-
       else
+       do k=1,nchemspec
+         do j=1,nchemspec
+          mk_mj=species_constants(k,imass) &
+               /species_constants(j,imass)
+          nuk_nuj(:,:,:)=species_viscosity(:,:,:,k) &
+               /species_viscosity(:,:,:,j)
+          Phi(:,:,:,k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
+               *(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
+         enddo
+       enddo
+         nu_dyn=0.
+         tmp_sum2=0.
+       do k=1,nchemspec 
+          do j=1,nchemspec 
+           tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:,k,j) 
+          enddo
+         nu_dyn=nu_dyn+XX_full(:,:,:,k)*species_viscosity(:,:,:,k)/tmp_sum2
+       enddo
+        nu_full=nu_dyn/rho_full
 
-           do k=1,nchemspec
-             do j=1,nchemspec
-               mk_mj=species_constants(k,imass) &
-                    /species_constants(j,imass)
-               nuk_nuj(:,:,:)=species_viscosity(:,:,:,k) &
-                              /species_viscosity(:,:,:,j)
-               Phi(:,:,:,k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
-                       *(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
-             enddo
-           enddo
-
-            nu_dyn=0.
-            tmp_sum2=0.
-           do k=1,nchemspec 
-            do j=1,nchemspec 
-              tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:,k,j) 
-            enddo
-           nu_dyn=nu_dyn+XX_full(:,:,:,k)*species_viscosity(:,:,:,k)/tmp_sum2
-           enddo
-           nu_full=nu_dyn/rho_full
-
-       endif
-
-
+      endif
 !
 !  Artificial Viscosity of a mixture
 !
 
         if (maxval(nu_spec)>0) then
-
-        !  do k=1,nchemspec
-        !     do j=1,nchemspec
-        !       mk_mj=species_constants(ichemspec(k),imass) &
-        !            /species_constants(ichemspec(j),imass)
-        !       nuk_nuj(:,:,:)=nu_spec(k)/nu_spec(j)
-        !       Phi(:,:,:,k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
-        !               *(1.+nuk_nuj**0.5*mk_mj**(-0.25))**2.
-        !     enddo
-        !   enddo
-
          nu_dyn=0.
          tmp_sum2=0.
            do k=1,nchemspec 
-         !    do j=1,nchemspec 
-         !     tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:,k,j) 
-         !    enddo
            nu_dyn=nu_dyn+XX_full(:,:,:,k)*nu_spec(k)!/tmp_sum2
            enddo
            nu_art_full=nu_dyn/rho_full
-
         endif
-
-
-
 !
 !   Thermal diffusivity 
 !
-
 !
 ! Natalia thoughts: one should check the coefficient 15/4
 !
-
           tmp_sum=0.
           tmp_sum2=0.
 
-
            do k=1,nchemspec 
              species_cond(:,:,:,k)=(species_viscosity(:,:,:,k)) &
-                /(species_constants(k,imass)/unit_mass)*15./4.*Rgas
+             /(species_constants(k,imass)/unit_mass)*15./4.*Rgas
             tmp_sum=tmp_sum+XX_full(:,:,:,k)*species_cond(:,:,:,k)
             tmp_sum2=tmp_sum2+XX_full(:,:,:,k)/species_cond(:,:,:,k)
            enddo
 
            chi_full=0.5*(tmp_sum+1./tmp_sum2)/rho_full/cp_full
-
-        !   print*,maxval(0.5*(tmp_sum+1./tmp_sum2)*1e4/Rgas*Rgas_unit_sys)
-
-        else
+      else
          call stop_it('This case works only for cgs units system!')
         endif
       endif
 
-    
-        
-       if (lwrite) then
-         open(file_id,file=input_file)
-         ! wd (7-may-2008:) who on Earth would _write_ to an _input_ file??
+      if (lwrite) then
+         open(file_id,file=output_file)
          write(file_id,*) 'Mixture quantities'
          write(file_id,*) '*******************'
          write(file_id,*) ''
@@ -912,10 +781,6 @@ endif
          close(file_id)
          lwrite=.false.
       endif
-
-      
-
-
  endsubroutine calc_for_chem_mixture
 !**********************************************************************
  subroutine astrobiology_data(f)
@@ -937,8 +802,6 @@ endif
 !
        mreactions=2*nchemspec
        print*,'Number of reactions=',mreactions
-
-
 !
 !  Allocate reaction arrays
 !
@@ -1064,10 +927,7 @@ endif
       integer :: stat,k
       logical :: tran_exist
 
-
       inquire(file='tran.dat',exist=tran_exist)
-
-
 !
 !  Allocate binary diffusion coefficient array
 !
@@ -1091,16 +951,12 @@ endif
          species_viscosity(:,:,:,k)=nu_spec(k)/(unit_mass/unit_length/unit_time)
         enddo
      endif
-
-
 !
 !  Find number of ractions
 !
         call read_reactions(input_file,NrOfReactions=mreactions)
         print*,'Number of reactions=',mreactions
-
         nreactions=mreactions
-
 !
 !  Allocate reaction arrays
 !
@@ -1127,7 +983,6 @@ endif
 !
 !  Initialize data
 !
-
       Sijp=0
       Sijm=0
 !
@@ -1135,17 +990,10 @@ endif
 !
         call read_reactions(input_file)
         call write_reactions()
-
-
 !
 !  calculate stoichio and nreactions
 !
-      !  if (nreactions1==nreactions2) then
-      !    nreactions=nreactions1
-          stoichio=Sijp-Sijm
-      !  else
-      !    call stop_it('nreactions1/=nreactions2')
-      !  endif
+        stoichio=Sijp-Sijm
 !
 !  print input data for verification
 !
@@ -1203,8 +1051,6 @@ endif
       if (headtt.or.ldebug) print*,'dchemistry_dt: SOLVE dchemistry_dt'
 !!      if (headtt) call identify_bcs('ss',iss)
 !
-
-
 !  loop over all chemicals
 !
      do k=1,nchemspec
@@ -1216,8 +1062,7 @@ endif
            call grad(f,ichemspec(k),gchemspec) 
            call dot_mn(p%uu,gchemspec,ugchemspec)
            df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))-ugchemspec
- 
-        endif
+         endif
 !
 !  diffusion operator
 !
@@ -1234,95 +1079,72 @@ endif
 !  multiply with stoichiometric matrix with reaction speed
 !  d/dt(x_i) = S_ij v_j
 !
-         if (lreactions) then
-           df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_reac(:,k)
-
- !if (k==2) print*,f(l1:l2,m,n,ichemspec(k)),p%DYDt_reac(:,k)
-
-             endif
+          if (lreactions) then
+            df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+p%DYDt_reac(:,k)
+          endif
 !
 !this are Natalia's thoughts, which should be discussed later!
 !
-           if (Natalia_thoughts) then
-             do j=l1,l2
+          if (Natalia_thoughts) then
+            do j=l1,l2
               if (f(j,m,n,ichemspec(k))+dt*df(j,m,n,ichemspec(k)) < 0.) then 
            !    if (f(j,m,n,ichemspec(k))+p%DYDt_reac(l1-j+1,k) < 0.) then 
                !f(j,m,n,ichemspec(k))=0.!-f(j,m,n,ichemspec(k))
              !  df(j,m,n,ichemspec(k))=0.
-              endif
-             enddo
-           endif
-
+               endif
+            enddo
+          endif
  !    print*,maxval(abs(p%DYDt_reac(:,k))),k
-
-         
 !
      enddo
 
-      if (ldensity .and. lcheminp) then
-
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - Rgas*p%mu1*p%divu
-
+     if (ldensity .and. lcheminp) then
+       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - Rgas*p%mu1*p%divu
         sum_DYDt=0.
-          do k=1,nchemspec
-           sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-H0_RT(:,k))/(p%cp-Rgas*p%mu1)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
-          enddo
-
+        do k=1,nchemspec
+          sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-H0_RT(:,k))/(p%cp-Rgas*p%mu1)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
+        enddo
       !   print*, maxval(sum_DYDt(:)),maxval(df(l1:l2,m,n,ilnTT))
-
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + sum_DYDt(:)
-
-    !  print*, maxval(df(l1:l2,m,n,ilnTT)),maxval(f(l1:l2,m,n,ilnTT)*p%cv1(:)*sum_DYDt(:)),maxval(f(l1:l2,m,n,ilnTT)),maxval(p%cv1(:)),maxval(sum_DYDt(:))
-
-     ! print*, maxval(sum_DYDt(:)),maxval(df(l1:l2,m,n,ilnTT))
-      endif
+     endif
  
 !
 !  For the timestep calculation, need maximum diffusion
 !
 
         if (lfirst.and. ldt) then
-         if (.not. lcheminp) then
-          diffus_chem=chem_diff*maxval(chem_diff_prefactor)*dxyz_2
-         else
-         do j=1,nx
-           if (ldiffusion) then
+          if (.not. lcheminp) then
+           diffus_chem=chem_diff*maxval(chem_diff_prefactor)*dxyz_2
+          else
+           do j=1,nx
+            if (ldiffusion) then
 !???????????????????????????????????????????????????????????????
 !  This expression should be discussed 
 !??????????????????????????????????????????????????????????????? 
-            diffus_chem(j)=diffus_chem(j)+maxval(Diff_full(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
-           else
-            diffus_chem(j)=0.
-           endif
-         enddo
+             diffus_chem(j)=diffus_chem(j)+maxval(Diff_full(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
+            else
+             diffus_chem(j)=0.
+            endif
+           enddo
        !  print*,maxval(diffus_chem)
-
-         endif
+          endif
         endif
-
-
 !
 ! Natalia thoughts: it should be discussed
 !
          if (lfirst .and. ldt) then
           if (lreactions .and. lcheminp) then
-            do j=1,nx
+           do j=1,nx
              reac_rate(:)=abs(p%DYDt_reac(j,:))
              reac_chem(j)=10.*maxval(reac_rate(:))
-
-            ! print*,reac_chem(j)
-
-             if (reac_chem(j)<1e4) then
+             ! print*,reac_chem(j)
+            if (reac_chem(j)<1e4) then
               reac_chem(j)=1e4
-             endif
-
-            enddo
-           endif
+            endif
+           enddo
+          endif
          endif
-
-
 !
-
 !
 !  Calculate diagnostic quantities
 !
@@ -1632,7 +1454,7 @@ endif
         found_specie=.false. 
       else
         found_specie=.true.
-        print*,species_name,'   global index= ',ind_glob
+        print*,species_name,'   species index= ',ind_chem
       endif
 !
     endsubroutine find_species_index
@@ -2134,25 +1956,20 @@ endif
      real, dimension (nchemspec) :: a_k4 
 
 !
-    
     if (lwrite)  open(file_id,file=input_file)
 
-   
-
 !
-! p is in atm units; atm/bar=1./0.986
-!   
-  Rcal=Rgas_unit_sys/4.14*1e-7
-  T_cgs=p%TT*unit_temperature
-  rho_cgs=p%rho*unit_mass/unit_length**3
-  p_atm=p%pp*unit_energy/unit_length**3/10.13e5
+! p is in atm units; atm/bar=1./10.13
+!
+    Rcal=Rgas_unit_sys/4.14*1e-7
+    T_cgs=p%TT*unit_temperature
+    rho_cgs=p%rho*unit_mass/unit_length**3
+    p_atm=p%pp*unit_energy/unit_length**3/10.13e5
 
  !  print*,'Natalia',p_atm
 
-   if (lwrite)   write(file_id,*)'T= ',   T_cgs
-    if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
-
-
+    if (lwrite)   write(file_id,*)'T= ',   T_cgs
+      if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
@@ -2179,9 +1996,6 @@ endif
                tmp=0. 
                do j=1,5 
                 tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/j 
-
-           
-
                enddo
              H0_RT(i,k)=tmp+species_constants(k,iaa2(6))/T_local
            endif
@@ -2221,89 +2035,72 @@ endif
       if (lwrite)  write(file_id,*)varname(ichemspec(k)), maxval(S0_R(:,k)), minval(S0_R(:,k))
 
         enddo
-
 !
 ! calculation of the reaction rate
 !
 
-   if (lwrite)  write(file_id,*)'**************************'
-   if (lwrite) write(file_id,*)'Reaction rates'
-   if (lwrite)  write(file_id,*)'**************************'
+      if (lwrite)  write(file_id,*)'**************************'
+      if (lwrite) write(file_id,*)'Reaction rates'
+      if (lwrite)  write(file_id,*)'**************************'
+
+      do reac=1,nreactions
+        kf(:)=B_n(reac)*T_cgs(:)**alpha_n(reac)*exp(-E_an(reac)/Rcal/T_cgs(:))
+
+        if (lwrite)  write(file_id,*) 'Nreact= ',reac,  'kf=', maxval(kf)
 
 
-    do reac=1,nreactions
-     kf(:)=B_n(reac)*T_cgs(:)**alpha_n(reac)*exp(-E_an(reac)/Rcal/T_cgs(:))
+        dSR=0.
+        dHRT=0.
+        sum_tmp=0.
+
+        do k=1,nchemspec
+         dSR(:) =dSR(:)+(Sijm(k,reac)-Sijp(k,reac))*S0_R(:,k)
+         dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*H0_RT(:,k)
+         sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
+        enddo
+
+        if (lwrite) write(file_id,*) 'Nreact= ',reac,'dSR= ', maxval(dSR)
+        if (lwrite) write(file_id,*) 'Nreact= ',reac,'dHRT= ', maxval(dHRT)
 
 
-    if (lwrite)  write(file_id,*) 'Nreact= ',reac,  'kf=', maxval(kf)
+        Kp=exp(dSR-dHRT)
 
+        if (sum_tmp==0.) then
+         Kc=Kp
+        else
+         Kc=Kp*(p_atm/T_cgs/Rgas_unit_sys)**sum_tmp
+        endif
 
-      dSR=0.
-      dHRT=0.
-      sum_tmp=0.
+        if (lwrite) write(file_id,*) 'Nreact= ',reac,'Kc= ', maxval(Kc)
 
-     do k=1,nchemspec
-       dSR(:) =dSR(:)+(Sijm(k,reac)-Sijp(k,reac))*S0_R(:,k)
-       dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*H0_RT(:,k)
-       sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
-     enddo
+        kr(:)=kf(:)/Kc
 
-    if (lwrite) write(file_id,*) 'Nreact= ',reac,'dSR= ', maxval(dSR)
-    if (lwrite) write(file_id,*) 'Nreact= ',reac,'dHRT= ', maxval(dHRT)
+        if (lwrite) write(file_id,*) 'Nreact= ',reac,  'kr=', maxval(kr)
 
+        if (lwrite) write(file_id,*)'**************************'
 
-!print*,'sum',maxval(dSR(:)),maxval(dHRT(:))
+        prod1=1.
+        prod2=1.
+        prod1_ts=1.
+        prod2_ts=1.
 
-     Kp=exp(dSR-dHRT)
-
-    
-
-
-     if (sum_tmp==0.) then
-       Kc=Kp
-     else
-       Kc=Kp*(p_atm/T_cgs/Rgas_unit_sys)**sum_tmp
-     endif
-
-
-
-  if (lwrite) write(file_id,*) 'Nreact= ',reac,'Kc= ', maxval(Kc)
-
-     kr(:)=kf(:)/Kc
-
-   if (lwrite) write(file_id,*) 'Nreact= ',reac,  'kr=', maxval(kr)
-
-    if (lwrite) write(file_id,*)'**************************'
-
-      prod1=1.
-      prod2=1.
-      prod1_ts=1.
-      prod2_ts=1.
-
-      do k=1,nchemspec
-       prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijp(k,reac)
+        do k=1,nchemspec
+         prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijp(k,reac)
  
-   !  print*,f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass),Sijp(k,reac),k,reac
-
-
-      do i=0,nx-1
-       if (abs(f(l1+i,m,n,ichemspec(k))) > 0.) then
-         prod1_ts(i+1)=prod1_ts(i+1)*(f(l1+i,m,n,ichemspec(k))*rho_cgs(i+1)/species_constants(k,imass))**Sijp(k,reac)
-       else
-          prod1_ts(i+1)=prod1_ts(i+1)*(1e-3*rho_cgs(i+1)/species_constants(k,imass))**Sijp(k,reac)
-       endif
-      enddo
+          do i=0,nx-1
+           if (abs(f(l1+i,m,n,ichemspec(k))) > 0.) then
+            prod1_ts(i+1)=prod1_ts(i+1)*(f(l1+i,m,n,ichemspec(k))*rho_cgs(i+1)/species_constants(k,imass))**Sijp(k,reac)
+           else
+            prod1_ts(i+1)=prod1_ts(i+1)*(1e-3*rho_cgs(i+1)/species_constants(k,imass))**Sijp(k,reac)
+           endif
+        enddo
 
  !     print*,'Natalia',maxval(prod1)
 
       enddo
 
-   ! if (reac==1) then
-     
-   ! endif
-
       do k=1,nchemspec
-        
+
         prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm(k,reac)
        
       do i=0,nx-1
@@ -2318,9 +2115,9 @@ endif
    !  print*,'Natalia',maxval(prod2)
 
        if (reac==4)  then
-           Kc_0=Kc
-           prod1_0=prod1
-           prod2_0=prod2
+          Kc_0=Kc
+          prod1_0=prod1
+          prod2_0=prod2
        endif
 
 
@@ -2329,19 +2126,14 @@ endif
 
    !    print*,'Natalia',maxval(prod2),minval(prod2)
 
-        vreact_p(:,reac)=prod1/rho_cgs*kf
-        vreact_m(:,reac)=prod2/rho_cgs*kr
-
-!print*,'int', maxval(prod1/rho_cgs), maxval(prod2/rho_cgs), maxval(kf),maxval(kr)
-
-!print*,maxval(vreact_p(:,reac)-vreact_m(:,reac))
-  ! if (reac==5) print*,maxval(kf),maxval(kr)
+      vreact_p(:,reac)=prod1/rho_cgs*kf
+      vreact_m(:,reac)=prod2/rho_cgs*kr
 
 !**************************************************************
 ! calculation of reaction rate for a time step
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-       vreactions_ts(:,reac)=(prod1_ts*kf-prod2_ts*kr)/rho_cgs
+      vreactions_ts(:,reac)=(prod1_ts*kf-prod2_ts*kr)/rho_cgs
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     enddo
@@ -2358,18 +2150,17 @@ endif
 
        if (lwrite) print*,'get_reaction_rate: writing react.out file'
        if (lwrite)   close(file_id)
-         lwrite=.false.
+
+       lwrite=.false.
  
 !
 ! This is just for the test. it will be done more accurately in future
 !
-   
 
-      if (TEST) then
+     if (TEST) then
 
-     reac=4
+      reac=4
 
-   
         B_n_0=6.366E+20 
         alpha_n_0=-1.72 
         E_an_0=5.248E+02
@@ -2397,18 +2188,11 @@ endif
 
         enddo
 
-       
         vreact_p(:,reac)=prod1_0/rho_cgs*kf*sum_sp
         vreact_m(:,reac)=prod2_0/rho_cgs*kr*sum_sp
-
-
-     !  print*,'Natalia2',maxval(vreact_p(:,reac)),maxval(vreact_m(:,reac)),maxval(kr)
-
       endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    end subroutine get_reaction_rate
 !***************************************************************
@@ -2560,10 +2344,6 @@ endif
                   if (StartInd==80) exit
                 enddo stringloop
 
-           !     print*,tran_data(ind_chem,1),tran_data(ind_chem,2), &
-           !       tran_data(ind_chem,3),tran_data(ind_chem,4), &
-           !      tran_data(ind_chem,5),tran_data(ind_chem,6)
-
             endif
       enddo dataloop
 
@@ -2675,7 +2455,6 @@ endif
         enddo
       enddo
 
- 
       omega="Omega22"
       do k=1,nchemspec
 
@@ -2686,11 +2465,6 @@ endif
                     /(tran_data(k,3)*1e-8)**2   &
              /(Omega_kl+0.2*tran_data(k,4)/exp(TT/tran_data(k,3))) 
       species_viscosity(:,:,:,k)=(tmp)/(unit_mass/unit_length/unit_time)
-       !+nu_spec(k)
-
-     ! print*,nu_spec(k),(unit_mass/unit_length/unit_time)
-
-
       enddo
 
 
@@ -2743,10 +2517,7 @@ endif
             call dot_mn(gDiff_full_add,gXX,diff_op2)
           endif
           p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2
-
         endif
-
-
      enddo
 
    endsubroutine calc_diffusion_term
@@ -2842,44 +2613,31 @@ endif
 !
 ! Stop if air.dat is empty
 !
-
       if (emptyFile)  call stop_it('The input file tran.dat was empty!')
-
       air_mass=1./air_mass
-
 
       do j=1,k-1 
         f(:,:,:,ichemspec(stor1(j)))=stor2(j)*0.01
       enddo 
 
-
-       do j=1,nchemspec
-
-         if (maxval(f(:,:,:,ichemspec(j)))==0) then
+      do j=1,nchemspec
+        if (maxval(f(:,:,:,ichemspec(j)))==0) then
            f(:,:,:,ichemspec(j))=1e-15
-         endif 
-
-       enddo
-
-
+        endif 
+      enddo
 
       if (mvar < 5) then
           call fatal_error("air_field", "I can only set existing fields")
       endif
       f(:,:,:,5)=log(TT/unit_temperature)
 
-
       f(:,:,:,4)=log((PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
-
-  !    print*,maxval(f(:,:,:,4))
-
 
       if (lroot) print*, 'Air temperature, K', TT
       if (lroot) print*, 'Air pressure, K', PP
       if (lroot) print*, 'Air density, g/cm^3:'
       if (lroot) print '(E10.3)',  PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT
       if (lroot) print*, 'Air mean weight, g/mol', air_mass
-
 
       close(file_id)
   endsubroutine air_field
