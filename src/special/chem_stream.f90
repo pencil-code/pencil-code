@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.22 2008-05-06 17:40:03 nordita Exp $
+! $Id: chem_stream.f90,v 1.23 2008-05-09 17:11:19 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -139,11 +139,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.22 2008-05-06 17:40:03 nordita Exp $
+!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.23 2008-05-09 17:11:19 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.22 2008-05-06 17:40:03 nordita Exp $")
+           "$Id: chem_stream.f90,v 1.23 2008-05-09 17:11:19 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -218,6 +218,8 @@ module Special
             call stream_field(f,xx,yy)
          case('bomb')
             call bomb_field(f,xx,yy)
+         case('flame_spd')
+            call flame_spd(f,xx)
          case('default')
           if(lroot) print*,'init_special: Default  setup'
      !     call density_init(f,xx,zz)
@@ -622,6 +624,31 @@ module Special
 
    endsubroutine bomb_field
 !**************************************************************************
+ subroutine flame_spd(f,xx)
+!
+! Natalia
+! Initialization of chem. species  in a case of the stream
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx, yy
+      integer :: k,j,i
+
+     do k=1,mx 
+      if (x(k)<10. ) then
+        f(k,:,:,5)=log(1000.)
+      endif
+      if (x(k)>20. ) then
+        f(k,:,:,5)=log(300.)
+      endif
+if (x(k)>10. .and. x(k)<20. ) then
+        f(k,:,:,5)=log(-70.*x(k)+1700.)
+      endif
+
+     enddo
+
+   endsubroutine flame_spd
+!**************************************************************************
+
 !**************************************************************************
 !       BOUNDARY CONDITIONS
 !*88888888888888888888888888888888888888888888888888888888888888888888888888
