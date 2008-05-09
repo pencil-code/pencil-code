@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.400 2008-05-09 17:20:50 brandenb Exp $
+### $Id: Makefile.src,v 1.401 2008-05-09 17:33:06 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -1404,6 +1404,6 @@ write_dummy_namelists.o: write_dummy_namelists.f90 $(comm_deps)
 ## ---------------------------------------------------------------------- #
 ## Dependencies
 ## ---------------------------------------------------------------------- #
-#include Makefile.depend
+include Makefile.depend
 
 # DO NOT DELETE
