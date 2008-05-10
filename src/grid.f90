@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.35 2008-04-16 20:47:49 dobler Exp $
+! $Id: grid.f90,v 1.36 2008-05-10 00:04:09 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -89,7 +89,7 @@ module Grid
       real, dimension(my) :: g2,g2der1,g2der2,xi2,yprim2
       real, dimension(mz) :: g3,g3der1,g3der2,xi3,zprim2
 
-      real :: a,dummy=0.
+      real :: a,dummy1=0.,dummy2=0.
       integer :: i
       logical :: err
 
@@ -150,7 +150,7 @@ module Grid
         dx_tilde = 0.
       else
         ! Test whether grid function is valid
-        call grid_profile(dummy,grid_func(1),dummy,err=err)
+        call grid_profile(dummy1,grid_func(1),dummy2,err=err)
         if (err) call &
             fatal_error('construct_grid','unknown grid_func '//grid_func(1))
 
@@ -204,7 +204,7 @@ module Grid
         dy_tilde = 0.
       else
         ! Test whether grid function is valid
-        call grid_profile(dummy,grid_func(2),dummy,err=err)
+        call grid_profile(dummy1,grid_func(2),dummy2,err=err)
         if (err) &
             call fatal_error('construct_grid','unknown grid_func '//grid_func(2))
 
@@ -292,7 +292,7 @@ module Grid
         dz_tilde = 0.
       else
         ! Test whether grid function is valid
-        call grid_profile(dummy,grid_func(3),dummy,ERR=err)
+        call grid_profile(dummy1,grid_func(3),dummy2,ERR=err)
         if (err) &
             call fatal_error('construct_grid','unknown grid_func '//grid_func(3))
 
