@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.34 2008-04-29 09:08:25 wlyra Exp $
+! $Id: selfgravity.f90,v 1.35 2008-05-10 12:19:56 wlyra Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -32,14 +32,15 @@ module Selfgravity
   real, target :: tstart_selfgrav=0.0
 
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
+  logical :: lselfgravity_neutrals=.false.
 
   namelist /selfgrav_init_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
-      tstart_selfgrav
+      lselfgravity_neutrals,tstart_selfgrav
 
   namelist /selfgrav_run_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
-      tstart_selfgrav
+      lselfgravity_neutrals,tstart_selfgrav
 
   integer :: idiag_gpoten=0, idiag_gpotenmxy=0
   integer :: idiag_gpotselfxm=0, idiag_gpotselfym=0, idiag_gpotselfzm=0
@@ -72,7 +73,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.34 2008-04-29 09:08:25 wlyra Exp $")
+           "$Id: selfgravity.f90,v 1.35 2008-05-10 12:19:56 wlyra Exp $")
 !
 !  Put variable name in array
 !
@@ -116,6 +117,16 @@ module Selfgravity
         call fatal_error('initialize_selfgravity','')
       endif
 !
+      if (lselfgravity_neutrals.and.&
+           .not.(lneutralvelocity.and.lneutraldensity)) then
+        if (lroot) then
+          print*, 'initialize_selfgravity: must choose a neutral velocity '// &
+              'and a neutral density module in Makefile.local for '// &
+              'self-gravity on the neutral fluid'
+        endif
+        call fatal_error('initialize_selfgravity','')
+      endif
+!
 !  Share the variable tstart_selfgrav so that it can be used by other
 !  self-gravity modules.
 !
@@ -138,6 +149,36 @@ module Selfgravity
 !  Check that density and self-potential have consistent boundary conditions.
 !
       if (ldensity) then
+        if (bcx(ipotself)=='p' .and. .not.(bcx(ilnrho)=='p')) then
+          if (lroot) then
+            print*, 'initialize_selfgravity: potself has bcx=''p'', but the density is not'
+            print*, '                        periodic! (you must set a proper boundary condition'
+            print*, '                        for the potential)'
+            print*, 'initialize_selfgravity: bcx=', bcx
+          endif
+          call fatal_error('initialize_selfgravity','')
+        endif
+        if (bcy(ipotself)=='p' .and. .not.(bcy(ilnrho)=='p')) then
+          if (lroot) then
+            print*, 'initialize_selfgravity: potself has bcy=''p'', but the density is not'
+            print*, '                        periodic! (you must set a proper boundary condition'
+            print*, '                        for the potential)'
+            print*, 'initialize_selfgravity: bcy=', bcy
+          endif
+          call fatal_error('initialize_selfgravity','')
+        endif
+        if (bcz(ipotself)=='p' .and. .not.(bcz(ilnrho)=='p')) then
+          if (lroot) then
+            print*, 'initialize_selfgravity: potself has bcz=''p'', but the density is not'
+            print*, '                        periodic! (you must set a proper boundary condition'
+            print*, '                        for the potential)'
+            print*, 'initialize_selfgravity: bcz=', bcz
+          endif
+          call fatal_error('initialize_selfgravity','')
+        endif
+      endif
+!
+      if (lneutraldensity) then
         if (bcx(ipotself)=='p' .and. .not.(bcx(ilnrho)=='p')) then
           if (lroot) then
             print*, 'initialize_selfgravity: potself has bcx=''p'', but the density is not'
@@ -266,6 +307,24 @@ module Selfgravity
             endif
           endif
         endif
+!  Neutrals.
+        if (lneutraldensity.and.lneutralvelocity.and.lselfgravity_neutrals) then
+          if (lneutraldensity_log) then
+            if (lselfgravity_gas.or.lselfgravity_dust) then  ! No need to zero rhs.
+              rhs_poisson = rhs_poisson + &
+                  rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
+            else                        ! Must zero rhs.
+              rhs_poisson = rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
+            endif
+          else
+            if (lselfgravity_gas.or.lselfgravity_dust) then  ! No need to zero rhs.
+              rhs_poisson = rhs_poisson + &
+                  rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,ilnrhon)
+            else                        ! Must zero rhs.
+              rhs_poisson = rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,ilnrhon)
+            endif
+          endif
+        endif
 !
 !  Contribution from particles is taken care of by the particle modules.
 !
@@ -308,6 +367,8 @@ module Selfgravity
             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%gpotself
         if ( ldustvelocity.and.lselfgravity_dust) &
             df(l1:l2,m,n,iudx(1):iudz(1)) = df(l1:l2,m,n,iudx(1):iudz(1)) - p%gpotself
+        if (lneutralvelocity.and.lselfgravity_neutrals) &
+            df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) - p%gpotself
       endif
 !
       if (ldiagnos) then

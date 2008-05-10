@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.34 2007-12-14 15:26:46 theine Exp $
+! $Id: gravity_r.f90,v 1.35 2008-05-10 12:19:56 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -85,7 +85,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.34 2007-12-14 15:26:46 theine Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.35 2008-05-10 12:19:56 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -419,6 +419,11 @@ module Gravity
 !
       if (lgravity_gas) then
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
+             + f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
+      endif
+!
+      if (lneutralvelocity) then 
+        df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) &
              + f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
       endif
 !
