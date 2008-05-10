@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.15 2008-05-08 17:29:17 wlyra Exp $
+! $Id: neutraldensity.f90,v 1.16 2008-05-10 12:17:30 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -13,7 +13,7 @@
 !
 ! PENCILS PROVIDED lnrhon,rhon,rhon1,glnrhon,grhon,unglnrhon,ungrhon
 ! PENCILS PROVIDED del2lnrhon,del2rhon,glnrhon2
-! PENCILS PROVIDED del6lnrhon,del6rhon,snglnrhon
+! PENCILS PROVIDED del6lnrhon,del6rhon,snglnrhon,alpha,zeta
 !
 !***************************************************************
 
@@ -43,6 +43,8 @@ module NeutralDensity
   logical :: ldiffn_hyper3lnrhon=.false.,ldiffn_hyper3_aniso=.false.
   logical :: lfreeze_lnrhonint=.false.,lfreeze_lnrhonext=.false.
   logical :: lneutraldensity_nolog=.false.,ldiffn_hyper3_cyl_or_sph=.false.
+  logical :: lpretend_star
+  real :: star_form_threshold=1.
 
   character (len=labellen), dimension(ninit) :: initlnrhon='nothing'
   character (len=labellen), dimension(ndiff_max) :: idiffn=''
@@ -53,13 +55,14 @@ module NeutralDensity
   integer :: iglobal_rhon=0
 !
   real :: lnrhon0,lnrhon_left,lnrhon_right,alpha,zeta
-
+!
   namelist /neutraldensity_init_pars/ &
        ampllnrhon,initlnrhon,    &
        rhon_left,rhon_right,lnrhon_const,rhon_const, &
        idiffn,lneutraldensity_nolog,    &
        lcontinuity_neutral,lnrhon0,lnrhon_left,lnrhon_right, &
-       alpha,zeta,kx_lnrhon,ky_lnrhon,kz_lnrhon
+       alpha,zeta,kx_lnrhon,ky_lnrhon,kz_lnrhon,lpretend_star,&
+       star_form_threshold
 
   namelist /neutraldensity_run_pars/ &
        diffrhon,diffrhon_hyper3,diffrhon_shock,   &
@@ -67,7 +70,8 @@ module NeutralDensity
        lnrhon_int,lnrhon_ext, &
        lfreeze_lnrhonint,lfreeze_lnrhonext,         &
        lnrhon_const,lcontinuity_neutral,borderlnrhon,    &
-       diffrhon_hyper3_aniso,alpha,zeta
+       diffrhon_hyper3_aniso,alpha,zeta,lpretend_star, &
+       star_form_threshold
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhonm=0,idiag_rhon2m=0,idiag_lnrhon2m=0
@@ -106,7 +110,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.15 2008-05-08 17:29:17 wlyra Exp $")
+           "$Id: neutraldensity.f90,v 1.16 2008-05-10 12:17:30 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -221,8 +225,6 @@ module NeutralDensity
         !  call select_eos_variable('lnrhon',ilnrhon)
         !endif
 !
-! Ionization-Recombination equilibrium is usually the case
-!      
     endsubroutine initialize_neutraldensity
 !***********************************************************************
     subroutine read_neutraldensity_init_pars(unit,iostat)
@@ -376,11 +378,15 @@ module NeutralDensity
 !      
       lpenc_requested(i_rho)  =.true.
       lpenc_requested(i_rhon) =.true.
+      lpenc_requested(i_alpha)=.true.
+      lpenc_requested(i_zeta)=.true.
 !
       if (.not.lneutraldensity_nolog) then
         lpenc_requested(i_rho1) =.true.
         lpenc_requested(i_rhon1)=.true.
       endif
+!
+      if (lpretend_star) lpenc_requested(i_rho1)=.true.
 !
       if (lcontinuity_neutral) then
         lpenc_requested(i_divun)=.true.
@@ -595,6 +601,24 @@ module NeutralDensity
 ! snglnrhon
       if (lpencil(i_snglnrhon)) call multmv(p%snij,p%glnrhon,p%snglnrhon)
 !
+! ionization and recombination pencils
+!
+      p%zeta=zeta
+      if (lpretend_star) then 
+        !star formation rate 
+        !recover d/dt(rho_star)=sfr_const*rho_gas**1.4
+        do i=1,nx
+          if (p%rho(i) .gt. star_form_threshold) then 
+            p%alpha(i)=alpha*p%rho1(i)**0.6
+          else
+            !no star formation below threshold
+            p%alpha(i)=0.
+          endif
+        enddo
+      else
+        p%alpha=alpha
+      endif
+!
     endsubroutine calc_pencils_neutraldensity
 !***********************************************************************
     subroutine dlnrhon_dt(f,df,p)
@@ -636,11 +660,11 @@ module NeutralDensity
 !  Ionization and recombination
 !
       if (lneutraldensity_nolog) then
-         df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - zeta*p%rhon        + alpha*p%rho**2
-         df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + zeta*p%rhon        - alpha*p%rho**2
+         df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%zeta*p%rhon        + p%alpha*p%rho**2
+         df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + p%zeta*p%rhon        - p%alpha*p%rho**2
       else
-         df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - zeta               + alpha*p%rho**2*p%rhon1
-         df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + zeta*p%rhon*p%rho1 - alpha*p%rho
+         df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%zeta               + p%alpha*p%rho**2*p%rhon1
+         df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + p%zeta*p%rhon*p%rho1 - p%alpha*p%rho
       endif
 !
 !  Mass diffusion
@@ -766,14 +790,6 @@ module NeutralDensity
       endif
 !
     endsubroutine dlnrhon_dt
-!***********************************************************************
-    subroutine get_recombine_and_ionize_coeff(alpha_,zeta_)
-!
-      real :: alpha_,zeta_
-!
-      alpha_=alpha;zeta_=zeta
-!
-    endsubroutine get_recombine_and_ionize_coeff
 !***********************************************************************
     subroutine set_border_neutraldensity(f,df,p)
 !

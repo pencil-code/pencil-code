@@ -8,6 +8,6 @@
   public :: init_lnrhon, dlnrhon_dt
 
   public :: pencil_criteria_neutraldensity, pencil_interdep_neutraldensity
-  public :: calc_pencils_neutraldensity,get_recombine_and_ionize_coeff
+  public :: calc_pencils_neutraldensity
   public :: lneutraldensity_nolog
 

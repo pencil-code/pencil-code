@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.19 2008-05-08 17:30:31 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.20 2008-05-10 12:17:30 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -39,7 +39,7 @@ module NeutralVelocity
   logical :: ladvection_velocity=.true.,lpressuregradient=.true.
 !collisional drag,ionization,recombination
   logical :: lviscneutral=.true.
-  real :: colldrag,alpha,zeta
+  real :: colldrag
   real :: nun=0.,csn0=0.,csn20,nun_hyper3=0.!,nun_shock=0.
   real, dimension (nx,3,3) :: unij5
 
@@ -131,7 +131,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.19 2008-05-08 17:30:31 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.20 2008-05-10 12:17:30 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -161,12 +161,6 @@ module NeutralVelocity
 !
       use CData
       use Mpicomm,        only: stop_it
-      use NeutralDensity, only: get_recombine_and_ionize_coeff 
-!
-! Get the recombination (alpha) and ionization (zeta) coefficients
-! from the neutral density modules      
-!      
-      call get_recombine_and_ionize_coeff(alpha,zeta)
 !
 ! Check any module dependencies
 !
@@ -279,6 +273,7 @@ module NeutralVelocity
         case('gaussian-noise-rprof')
           tmp=sqrt(xx**2+yy**2+zz**2)
           call gaunoise_rprof(ampluun(j),tmp,prof,f,iunx,iunz)
+        case('follow-ions'); f(:,:,:,iunx:iunz)=f(:,:,:,iux:iuz)  
         case default
           !
           !  Catch unknown values
@@ -313,6 +308,8 @@ module NeutralVelocity
       lpenc_requested(i_rhon) =.true.
       lpenc_requested(i_rho1) =.true.
       lpenc_requested(i_rhon1)=.true.
+      lpenc_requested(i_alpha)=.true.
+      lpenc_requested(i_zeta) =.true.
 !
       if (any(iviscn=='nun-const')) then
         !lpenc_requested(i_snij)=.true.
@@ -541,8 +538,8 @@ module NeutralVelocity
 !
 ! Neutral-ion collision, ionization and recombination
 !
-     ionization=zeta*p%rho1
-     recombination=alpha*p%rho*p%rhon1
+     ionization=p%zeta*p%rho1
+     recombination=p%alpha*p%rho*p%rhon1
      cions=colldrag+ionization
      cneut=colldrag+recombination
 !
