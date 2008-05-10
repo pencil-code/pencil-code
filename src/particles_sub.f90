@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.136 2008-04-09 18:59:08 wlyra Exp $
+! $Id: particles_sub.f90,v 1.137 2008-05-10 01:11:58 dobler Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -791,7 +791,7 @@ module Particles_sub
       integer :: i,k,jspec,npar_per_species
       integer, dimension (0:ncpus-1) :: ipar1, ipar2
 !
-      intent (out) :: npar_loc,ipar
+      intent (inout) :: npar_loc,ipar
 !
 !  Set index interval of particles that belong to the local processor.
 !
