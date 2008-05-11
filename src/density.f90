@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.386 2008-04-28 23:07:14 steveb Exp $
+! $Id: density.f90,v 1.387 2008-05-11 17:17:17 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -139,7 +139,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.386 2008-04-28 23:07:14 steveb Exp $")
+           "$Id: density.f90,v 1.387 2008-05-11 17:17:17 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -885,6 +885,7 @@ module Density
       case('compressive-shwave')
         ! should be consistent with density 
         f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
+!
       case default
         !
         !  Catch unknown values
@@ -2142,17 +2143,25 @@ module Density
       use Sub, only: get_radial_distance
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: rr_sph,rr_cyl
+      real, dimension(mx) :: rr_sph,rr_cyl,arg
+      real :: rmid,fac
       logical :: lheader
 !
       if (lroot) print*,'setting exponential falling '//&
            'density with e-fold=',r_ref
 !
+      fac=pi/2
       do m=1,my
         do n=1,mz
           lheader=lroot.and.(m==1).and.(n==1)
           call get_radial_distance(rr_sph,rr_cyl)
           f(1:mx,m,n,ilnrho) = lnrho0 - rr_cyl/r_ref
+          if (lexponential_smooth) then 
+            rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
+            arg=(rr_cyl-rshift)/rmid
+            f(1:mx,m,n,ilnrho) = f(1:mx,m,n,ilnrho)*&
+                 .5*(1+atan(arg)/fac)
+          endif
         enddo
       enddo
 !
@@ -2204,7 +2213,7 @@ module Density
               f(l1:l2,m,n,iuy)= sqrt(f(l1:l2,m,n,iuy)**2 + usg)
               !print*,usg
             else
-              call stop_it("local_isothermal_density: "//&
+              call stop_it("correct_for_selfgravity: "//&
                    "Poisson solver not yet implemented for"//&
                    " global Cartesian disks")
             endif
