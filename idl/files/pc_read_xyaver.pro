@@ -1,4 +1,4 @@
-;; $Id: pc_read_xyaver.pro,v 1.9 2007-10-29 17:16:34 pkapyla Exp $
+;; $Id: pc_read_xyaver.pro,v 1.10 2008-05-11 08:20:10 ajohan Exp $
 ;;
 ;;   Read xy-averages from file
 ;;
@@ -72,6 +72,11 @@ for it=0,nit-1 do begin
     if (execute(cmd,0) ne 1) then message, 'Error putting data in array'
   endfor
 endfor
+;;
+;;  Close file.
+;;
+close, file
+free_lun, file
 ;;
 ;;  Make time monotonous and crop all variables accordingly.
 ;;  

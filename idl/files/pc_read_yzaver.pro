@@ -1,4 +1,4 @@
-;; $Id: pc_read_yzaver.pro,v 1.6 2007-08-03 09:53:26 ajohan Exp $
+;; $Id: pc_read_yzaver.pro,v 1.7 2008-05-11 08:20:10 ajohan Exp $
 ;;
 ;;   Read yz-averages from file
 ;;
@@ -26,7 +26,6 @@ nx=dim.nx
 ;;  Read variables from xyaver.in
 ;;
 spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-print, datatopdir
 spawn, 'cat '+datatopdir+'/yzaver.in', varnames
 if (not quiet) then print, 'Preparing to read yz-averages ', $
     arraytostring(varnames,quote="'",/noleader)
@@ -73,6 +72,11 @@ for it=0L,nit-1 do begin
     if (execute(cmd,0) ne 1) then message, 'Error putting data in array'
   endfor
 endfor
+;;
+;;  Close file.
+;;
+close, file
+free_lun, file
 ;;
 ;;  Make time monotonous and crop all variables accordingly.
 ;;  
