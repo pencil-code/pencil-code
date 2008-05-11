@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.164 2008-05-08 13:15:51 wlyra Exp $
+! $Id: nompicomm.f90,v 1.165 2008-05-11 17:13:01 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -972,7 +972,7 @@ module Mpicomm
       real, dimension(:,:), allocatable :: tmp
       character :: var
 !
-      integer :: m, n
+      integer :: m, n, iy, ibox
 !
       if (ip<10) print*, 'transp for single processor'
 !
@@ -981,15 +981,19 @@ module Mpicomm
       if (var=='y') then
         if (nygrid/=1) then
 !
-          if (nx/=ny) then
-            if (lroot) print*, 'transp: works only for nx=ny!'
+          if (mod(nx,ny)/=0) then
+            if (lroot) print*, 'transp: works only if nx is an integer '//&
+                 'multiple of ny!'
             call stop_it('transp')
           endif
 
           allocate (tmp(nx,ny))
           do n=1,nz
-            tmp=transpose(a(:,:,n))
-            a(:,:,n)=tmp
+            do ibox=0,nx/nygrid-1
+              iy=ibox*ny
+              tmp=transpose(a(iy+1:iy+ny,:,n))
+              a(iy+1:iy+ny,:,n)=tmp
+            enddo
           enddo
           deallocate (tmp)
 
