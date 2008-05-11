@@ -24,11 +24,13 @@
 ;       ivar: a number to optionally append to the end of the        [integer]
 ;             varfile name.
 ;
-;          t: returns the time of the snapshot                       [precision(mx)]
+;          t: returns the time of the snapshot
 ;
 ;     object: optional structure in which to return all the above    [structure]
 ;             (or those vars specified in 'variables')
 ;  variables: array of variable name to return                       [string(*)]
+;  exit_status: suppress fatal errors in favour of reporting the
+;               error through exit_status/=0.
 ;
 ;  /additional: Load all variables stored in the files, PLUS any additional
 ;               variables specified with the variables=[] option.
@@ -62,7 +64,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.66 2008-04-28 09:47:08 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.67 2008-05-11 08:18:57 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -76,7 +78,8 @@ pro pc_read_var, t=t,                                             $
     nxrange=nxrange, nyrange=nyrange, nzrange=nzrange,            $
     stats=stats, nostats=nostats, quiet=quiet, help=help,         $
     swap_endian=swap_endian, varcontent=varcontent,               $
-    global=global, scalar=scalar, run2D=run2D
+    global=global, scalar=scalar, run2D=run2D, $
+    exit_status=exit_status
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -93,6 +96,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, magic, 0
   default, trimall, 0
   default, validate_variables, 1
+  if (arg_present(exit_status)) then exit_status=0
 ;
 ; If no meaningful parameters are given show some help!
 ;
@@ -302,11 +306,18 @@ COMPILE_OPT IDL2,HIDDEN
       pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet
     endelse
 ;
-; Check for existance and read the data
+; Check for existence and read the data
 ;
-    dummy=findfile(filename, COUNT=countfile)
-    if (not countfile gt 0) then begin
-      message, 'ERROR: cannot find file '+ filename
+    dummy=findfile(filename, count=countfile)
+    if (countfile lt 1) then begin
+      if (arg_present(exit_status)) then begin
+        exit_status=1
+        print, 'ERROR: cannot find file '+ filename
+        close, /all
+        return
+      endif else begin
+        message, 'ERROR: cannot find file '+ filename
+      endelse
     endif
 ;
 ; Setup the coordinates mappings from the processor
