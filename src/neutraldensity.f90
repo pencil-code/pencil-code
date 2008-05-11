@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.16 2008-05-10 12:17:30 wlyra Exp $
+! $Id: neutraldensity.f90,v 1.17 2008-05-11 17:15:36 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -110,7 +110,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.16 2008-05-10 12:17:30 wlyra Exp $")
+           "$Id: neutraldensity.f90,v 1.17 2008-05-11 17:15:36 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -487,6 +487,7 @@ module NeutralDensity
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: alpha_time,ramping_period
       type (pencil_case) :: p
 !
       integer :: i, mm, nn
@@ -605,11 +606,19 @@ module NeutralDensity
 !
       p%zeta=zeta
       if (lpretend_star) then 
+        !smooth transition over a ramping period of 5 orbits
+        ramping_period=2*pi*x(lpoint) !omega=v/r; v=1; 1/omega=r
+        if (t .le. ramping_period) then
+          alpha_time=alpha*(sin((.5*pi)*(t/ramping_period))**2)
+        else
+          alpha_time=alpha
+        endif
+          
         !star formation rate 
         !recover d/dt(rho_star)=sfr_const*rho_gas**1.4
         do i=1,nx
           if (p%rho(i) .gt. star_form_threshold) then 
-            p%alpha(i)=alpha*p%rho1(i)**0.6
+            p%alpha(i)=alpha_time*p%rho1(i)**0.6
           else
             !no star formation below threshold
             p%alpha(i)=0.
