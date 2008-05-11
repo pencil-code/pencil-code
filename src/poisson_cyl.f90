@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.11 2008-05-08 13:18:42 wlyra Exp $
+! $Id: poisson_cyl.f90,v 1.12 2008-05-11 17:19:39 wlyra Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -35,7 +35,7 @@ module Poisson
 
   implicit none
 
-  real :: kmax=0.0,iteration_threshold=1e-3
+  real :: kmax=0.0,iteration_threshold=1e-3,rjac=1.
   logical :: lrazor_thin=.true.,lsolve_bessel=.false.,lsolve_cyl2cart=.false.
   logical :: lsolve_direct=.false.,lsolve_logspirals=.false.
   logical :: lsolve_relax_sor=.false.
@@ -187,6 +187,12 @@ module Poisson
 !
       if (lsolve_relax_sor) &
         call calculate_cross_legendre_functions
+!
+!
+! Spectral radius and omega. This spectral radius is 
+! only for an equally spaced square grid. 
+!
+      rjac=(cos(pi/nr) + (dr/dz)**2*cos(pi/nz))/(1+(dr/dz)**2)
 !
     endsubroutine initialize_poisson
 !***********************************************************************
@@ -684,6 +690,11 @@ module Poisson
       logical, dimension(nx,nz) :: lupdate
       logical, dimension(nx,ny,nz) :: lupdate_grid
       logical, save :: lfirstcall=.true.
+      logical :: lverbose
+!
+      lverbose=lroot.and.(lfirstcall.or.(ip<=8))
+!
+      if (lverbose) print*,'Solving the Poisson equation with SOR'
 !
       if (nzgrid==1)  &
            call fatal_error("inverse_laplacian_sor","This method uses the "//&
@@ -733,8 +744,9 @@ module Poisson
 !
 ! Start the solver. Get the borders
 !
-      call get_border_values(rhs,phi,lupdate_grid)
-
+      if (lverbose) print*,'calculating the border'
+      call get_border_values(rhs,phi,lupdate_grid,lverbose)
+      if (lverbose) print*,'done calculating the border'
 !
 ! For the other time-steps, the potential is known, so use discretization 
 ! of the 5-point formula (in fourier space) to determine the potential
@@ -763,6 +775,8 @@ module Poisson
       call fourier_transform_y(phi,b1)
       call fourier_transform_y(rhs,b1_rhs)
 !
+      if (lverbose) print*,'fourier transforms done'
+!
 ! Solve the five point matrix in fourier space
 !
       a_band= dr1**2 - .5*dr1*rad1
@@ -770,7 +784,8 @@ module Poisson
       d_band= dz1**2
       e_band= dz1**2
 !
-      if (lroot.and.ip<=8) print*,'initializing the iterations '//&
+      if (lverbose) &
+           print*,'initializing the iterations '//&
            'to solve the Poisson equation in the grid'
 !
       do im=1,nkt
@@ -783,13 +798,15 @@ module Poisson
 !
         call five_point_solver(phi(:,im,:),rhs(:,im,:), &
              a_band,b_band,b_band1,c_band,d_band,e_band,&
-             lupdate_grid(:,im,:))
+             lupdate_grid(:,im,:),lverbose)
 !
         call five_point_solver(b1(:,im,:),b1_rhs(:,im,:),&
              a_band,b_band,b_band1,c_band,d_band,e_band, &
-             lupdate_grid(:,im,:))
+             lupdate_grid(:,im,:),lverbose)
 !
       enddo
+!
+      if (lverbose) print*,'done with the iterative solution in the grid'
 !
 ! Fourier transform back to real space
 !
@@ -803,8 +820,8 @@ module Poisson
 !
     endsubroutine inverse_laplacian_sor
 !*************************************************************************
-    subroutine five_point_solver(lhs,rhs,&
-         a_band,b_band,b_band1,c_band,d_band,e_band,lupdate)
+    subroutine five_point_solver(lhs,rhs,a_band,b_band,b_band1,&
+         c_band,d_band,e_band,lupdate,lverbose)
 !
 ! Invert a five point matrix 
 !
@@ -815,22 +832,19 @@ module Poisson
 !
       real, dimension (nx,nz) :: lhs,rhs,lhs_old
       real, dimension (nx) :: a_band,b_band,c_band,d_band,e_band,b_band1
-      real :: omega,norm,sig,norm_old,anorm,rjac,resid
+      real :: omega,norm,sig,norm_old,anorm,resid
       integer :: n,i,iteration,skipped
       logical, dimension(nx,nz) :: lupdate
+      logical :: lverbose
 !
 ! Starters
 !
       sig=1e5 ; norm=1e5
-!
-! Spectral radius and omega. This spectral radius is 
-! only for a equally spaced square grid. 
-!
-      rjac=(cos(pi/nr) + (dr/dz)**2*cos(pi/nz))/(1+(dr/dz)**2)
-!
       lhs_old=lhs
-!
       iteration=0
+!
+      if (lverbose) &
+           print*,'five_point_solver: Jacobian of the spectral matrix=',rjac
 !
       do while (sig .gt. iteration_threshold)
         iteration=iteration+1
@@ -864,7 +878,7 @@ module Poisson
 !
         norm_old=norm
         norm=sum((lhs-lhs_old)**2)
-        sig=abs(norm-norm_old)/norm
+        sig=abs(norm-norm_old)/max(norm,epsi)
 !
         if (iteration .gt. 1000) then 
           print*,'maximum number of iterations exceeded'
@@ -872,14 +886,14 @@ module Poisson
         endif
       enddo
 !
-      if (lroot.and.ip<=8) &
-           print*,'fps: skipped ',skipped,' of ',(nr-2)*(nz-2)
-!
-      if (ldebug) print*,'number of iterations',iteration
+      if (lverbose)  then
+        print*,'fps: skipped ',skipped,' of ',(nr-2)*(nz-2)
+        print*,'number of iterations',iteration
+      endif
 !
     endsubroutine five_point_solver
 !***********************************************************************
-    subroutine get_border_values(rhs,phi,lupdate_grid)
+    subroutine get_border_values(rhs,phi,lupdate_grid,lverbose)
 !
 ! Calculate the value of the potential in the borders of the grid  
 !
@@ -894,6 +908,7 @@ module Poisson
       real    :: potential
       logical, dimension(nx,ny,nz) :: lupdate_grid 
       logical :: lcall_from_self
+      logical :: lverbose 
 !
 ! Construct the serial density
 !
@@ -924,7 +939,7 @@ module Poisson
 ! they do not need update, for monitoring purposes. 
 !
       skipped=0
-      if ((lroot).and.(ip<=8)) & 
+      if (lverbose) & 
            print*,'get_border_values: integrating the border values only'
 ! Recompute the border. Start with ir=1
       do iz=1,nz;do ith=1,nth
@@ -936,7 +951,7 @@ module Poisson
           phi(1,ith,iz)=phi_previous_step(1,ith,iz)
         endif
       enddo;enddo
-      if ((lroot).and.(ip<=8)) print*,'done for ir=1'
+      if (lverbose) print*,'done for ir=1'
 ! ir=nr
       do iz=1,nz;do ith=1,nth
         if (lupdate_grid(nr,ith,iz)) then 
@@ -947,7 +962,7 @@ module Poisson
           phi(nr,ith,iz)=phi_previous_step(nr,ith,iz)
         endif
       enddo;enddo
-      if ((lroot).and.(ip<=8)) print*,'done for ir=nr'
+      if (lverbose) print*,'done for ir=nr'
 !
 ! Vertical. Take into account parallelization. Just do it
 ! for the first and last z-processor. Start with z=1 for the
@@ -964,7 +979,7 @@ module Poisson
           endif
         enddo;enddo
       endif
-      if ((lroot).and.(ip<=8)) print*,'done for iz=1'
+      if (lverbose) print*,'done for iz=1'
 ! z=nz for the last processor
       if (ipz==nprocz-1) then 
         do ir=2,nr-1;do ith=1,nth
@@ -977,9 +992,9 @@ module Poisson
           endif
         enddo;enddo
       endif
-      if ((lroot).and.(ip<=8)) print*,'done for iz=nz'
+      if (lverbose) print*,'done for iz=nz'
 !
-      if ((lroot).and.(ip<=8)) &
+      if (lverbose) &
            print*,'border: skipped ',skipped,' of ',2*nth*(nz+nr-2)
 !
     endsubroutine get_border_values
