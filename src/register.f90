@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.235 2008-04-05 10:19:04 brandenb Exp $
+! $Id: register.f90,v 1.236 2008-05-12 13:55:13 dhruba Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -209,6 +209,7 @@ module Register
       real, dimension (nz,nprocz) :: z_allprocs_tmp
       real :: sinth_min=1e-5 !(to avoid axis)
       logical :: lstarting
+      integer :: xj,yj,zj
 
 !
 !  Defaults for some logicals; will later be set to true if needed
@@ -435,6 +436,17 @@ module Register
 !  Need to modify for 2-D and 1-D cases!
 !
         r2_weight=x(l1:l2)**2
+! Calculate the volume of the box, for non-cartesian coordinates
+       nVol=0.
+        do xj=l1,l2
+          do yj=m1,m2
+            do zj=n1,n2
+              nVol=nVol+x(xj)*x(xj)*sinth(yj)
+            enddo
+          enddo
+        enddo
+        nVol1=1./nVol 
+        write(*,*) 'DHRUBA:',nVol,nVol1      
 !
 !  Trapezoidal rule
 !

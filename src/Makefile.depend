@@ -1,6 +1,6 @@
 ### -*-Makefile-*- (for Emacs)
 ###
-### $Id: Makefile.depend,v 1.98 2008-04-13 13:50:26 brandenb Exp $
+### $Id: Makefile.depend,v 1.99 2008-05-12 13:55:13 dhruba Exp $
 ### Makefile dependencies for modular Pencil Code.
 ###
 ##
@@ -217,6 +217,12 @@ gsl_wrapper.o: gsl_wrapper.c
 #
 gsl_wrapper_r8.o: gsl_wrapper_r8.c
 	$(CC) $(CFLAGS) -c gsl_wrapper_r8.c 
+## ---------------------------------------------------------------------- #
+## Automatically generatable dependencies
+## ---------------------------------------------------------------------- #
+start.o:     start.f90 $(start_deps)
+run.o:       run.f90 $(run_deps)
+test.o:      test.f90 $(test_deps)
 ##
 ## Explict dependencies for the Fourier routines to allow them to pull in
 ## different library routines.
