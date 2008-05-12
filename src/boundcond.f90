@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.208 2008-04-23 14:07:04 ajohan Exp $
+! $Id: boundcond.f90,v 1.209 2008-05-12 13:09:33 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1525,10 +1525,10 @@ module Boundcond
 ! **********************************************************************
     subroutine bc_set_sfree_y(f,topbot,j)
 ! Stress-free boundary condition for spherical coordinate system. 
-! d_r(u_{\theta}) = u_{\theta}/r  with u_r = 0 sets S_{r \theta}
-! component of the strain matrix to be zero in spherical coordinate system. 
-! This subroutine sets only the first part of this boundary condition for 'j'-th
-! component of f. 
+! d_{\theta}(u_{\phi}) = u_{\phi}cot(\theta)/r  with u_{\theta} = 0 sets 
+! S_{\theta \phi} component of the strain matrix to be zero in spherical 
+! coordinate system. This subroutine sets only the first part of this 
+! boundary condition for 'j'-th component of f. 
 !
 !  25-Aug-2007/dhruba: coded
 !
