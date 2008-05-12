@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.12 2008-05-11 17:19:39 wlyra Exp $
+! $Id: poisson_cyl.f90,v 1.13 2008-05-12 09:16:20 wlyra Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -1344,7 +1344,7 @@ module Poisson
 !
       use General, only: calc_complete_ellints
 !
-      real, dimension(mmax)   :: Legendre_Q
+      real, dimension(0:mmax)   :: Legendre_Q
       real, dimension(nzgrid) :: zed_serial
       real, dimension(nygrid) :: tht_serial
       integer, dimension(mmax) :: neumann_factor_eps
