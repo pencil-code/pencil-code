@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.98 2008-05-12 04:30:12 brandenb Exp $
+! $Id: chemistry.f90,v 1.99 2008-05-12 10:46:52 brandenb Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -186,11 +186,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.98 2008-05-12 04:30:12 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.99 2008-05-12 10:46:52 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.98 2008-05-12 04:30:12 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.99 2008-05-12 10:46:52 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -2673,9 +2673,9 @@ module Chemistry
       if (mvar < 5) then
           call fatal_error("air_field", "I can only set existing fields")
       endif
-      f(:,:,:,5)=log(TT/unit_temperature)
+      f(:,:,:,ilnTT)=log(TT/unit_temperature)
 
-      f(:,:,:,4)=log((PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
+      f(:,:,:,ilnrho)=log((PP*10./(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3)
 
       if (lroot) print*, 'Air temperature, K', TT
       if (lroot) print*, 'Air pressure, K', PP
