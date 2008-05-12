@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.402 2008-05-12 06:41:01 ajohan Exp $
+### $Id: Makefile.src,v 1.403 2008-05-12 07:13:35 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -460,7 +460,7 @@ LD_FFTW2=
 ##
 ##FC=g95 -fsecond-underscore#(nl6)
 ##FC=g95 -fno-second-underscore -freal=nan -finteger=-2147483648 -fbounds-check #(nl6)
-##FFLAGS=-O4  -I/home/brandenb/pencil-code/dhruba/perf-vertical/perf_conductor/32x32x32a/test/gsl-1.9/include/ -L/home/brandenb/pencil-code/dhruba/perf-vertical/perf_conductor/32x32x32a/test/gsl-1.9/ #(nl6)
+##FFLAGS=-O4  -I/home/brandenb/library/include/gsl-1.9/include/ -L/home/brandenb/library/include/gsl-1.9/ #(nl6)
 ##LD_MPI=#(nl6)
 ##CFLAGS=-DFUNDERSC=1 #(nl6)
 ##
@@ -470,7 +470,7 @@ LD_FFTW2=
 #FFLAGS=-O3 -I/usr/lib/openmpi/include -CB #(nl6)
 #FFLAGS=-O3 -I/usr/lib/openmpi/include #(nl6)
 #FFLAGS=-O3 -I/usr/lib/openmpi/include -L/usr/lib#(nl6)
-#FFLAGS=-O3  -I/usr/lib/openmpi/include -I/home/brandenb/pencil-code/dhruba/perf-vertical/perf_conductor/32x32x32a/test/gsl-1.9/include/ -L/home/brandenb/pencil-code/dhruba/perf-vertical/perf_conductor/32x32x32a/test/gsl-1.9/lib/ #(nl6)
+#FFLAGS=-O3  -I/usr/lib/openmpi/include -I/home/brandenb/library/include/gsl-1.9/include/ -L/home/brandenb/library/include>/gsl-1.9/lib/ #(nl6)
 #LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(nl6)
 #CC=icc #(nl6)
 #CFLAGS=-O3 -DFUNDERSC=1 #(nl6)
