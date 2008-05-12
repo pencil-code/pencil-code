@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.97 2008-05-09 17:10:45 brandenb Exp $
+! $Id: chemistry.f90,v 1.98 2008-05-12 04:30:12 brandenb Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -186,11 +186,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.97 2008-05-09 17:10:45 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.98 2008-05-12 04:30:12 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.97 2008-05-09 17:10:45 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.98 2008-05-12 04:30:12 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1980,7 +1980,7 @@ module Chemistry
      real :: B_n_0,alpha_n_0,E_an_0
      real, dimension (nx) ::  kf_0,Kc_0,Pr,sum_sp,prod1_0,prod2_0
      real, dimension (nchemspec) :: a_k4 
-
+     integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8
 !
     if (lwrite)  open(file_id,file=input_file)
 
@@ -2191,14 +2191,14 @@ module Chemistry
         alpha_n_0=-1.72 
         E_an_0=5.248E+02
 
-        a_k4(1)=2.
-        a_k4(2)=0.78
-        a_k4(3)=11.
-        a_k4(4)=0.
-        a_k4(5)=0.
-        a_k4(6)=0.
-        a_k4(7)=0.
-        a_k4(8)=1.
+        a_k4(i1)=2.
+        a_k4(i2)=0.78
+        a_k4(i3)=11.
+        a_k4(i4)=0.
+        a_k4(i5)=0.
+        a_k4(i6)=0.
+        a_k4(i7)=0.
+        a_k4(i8)=1.
 
         kf_0(:)=B_n_0*T_cgs(:)**alpha_n_0*exp(-E_an_0/Rcal/T_cgs(:)) 
 
