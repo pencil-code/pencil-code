@@ -1,6 +1,6 @@
 #!/bin/bash 
 #
-#  $Id: pc_newrun,v 1.9 2008-05-06 13:02:21 brandenb Exp $
+#  $Id: pc_newrun,v 1.10 2008-05-12 15:00:00 dhruba Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
@@ -99,6 +99,7 @@ cp *.in $targetdir
 [ -f chemistry_p.dat ] && cp chemistry_p.dat $targetdir
 [ -f parameters.pro ] && cp parameters.pro $targetdir
 [ -f stratification.dat ] && cp stratification.dat $targetdir
+[ -f alpha_in.dat ] && cp alpha_in.dat $targetdir
 #
 
 #
