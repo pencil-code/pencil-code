@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.143 2008-05-12 13:55:13 dhruba Exp $
+! $Id: forcing.f90,v 1.144 2008-05-12 18:33:56 dhruba Exp $
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -119,7 +119,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.143 2008-05-12 13:55:13 dhruba Exp $")
+           "$Id: forcing.f90,v 1.144 2008-05-12 18:33:56 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -835,7 +835,7 @@ module Forcing
    ell_index= nint(rell*(ellno-1)) 
    Legendrel = 2*(Legendrel_min+ell_index)+1
    Balpha = Bessel_alpha(ell_index+1,anode)
-!  if (lroot) write(*,*) "Dhruba",Legendrel,Balpha 
+!  if(lroot) write(*,*) "Dhruba",Legendrel,Balpha 
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
 ! Now construct the Z_psi(r) 
@@ -855,7 +855,8 @@ module Forcing
       do n=n1-nghost,n2+nghost
         do m=m1-nghost,m2+nghost
           psilm=0.
-          emm=phi_peak*int((2.*pi)/(z(n2)-z(n1)))
+          emm=phi_peak*int((2.*pi)/(Lz-z0))
+!          write(*,*)"DHRUBA",emm,Legendrel 
           call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n)) 
           call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
           psilm= RYlm*cos(rphase1)-IYlm*sin(rphase1)
