@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90,v 1.26 2008-05-13 15:03:22 nbabkovs Exp $
+! $Id: chem_stream.f90,v 1.27 2008-05-13 15:44:29 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -139,11 +139,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.26 2008-05-13 15:03:22 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chem_stream.f90,v 1.27 2008-05-13 15:44:29 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chem_stream.f90,v 1.26 2008-05-13 15:03:22 nbabkovs Exp $")
+           "$Id: chem_stream.f90,v 1.27 2008-05-13 15:44:29 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -546,7 +546,14 @@ module Special
            call bc_HstreamAir_x(f,-1, bc)
          endselect
          bc%done=.true.
-
+         case ('sim')
+         select case (bc%location)
+         case (iBC_X_TOP)
+           call bc_simple_x(f,-1, bc)
+         case (iBC_X_BOT)
+           call bc_simple_x(f,-1, bc)
+         endselect
+         bc%done=.true.
       endselect
 
       if (NO_WARN) print*,f(1,1,1,1),bc%bcname
@@ -1292,6 +1299,40 @@ module Special
       endif
 !
     endsubroutine bc_HstreamAir_x
+ !******************************************************************** 
+   subroutine bc_simple_x(f,sgn,bc)
+!
+! Natalia
+!
+    use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: sgn
+      type (boundary_condition) :: bc
+      integer :: i,vr
+      real :: value1, value2
+
+      vr=bc%ivar
+
+      value1=bc%value1
+      value2=bc%value2
+
+
+      if (bc%location==iBC_X_BOT) then
+      ! bottom boundary 
+       do i=0,nghost; f(l1-i,:,:,vr)=f(l1,:,:,vr); enddo
+
+      elseif (bc%location==iBC_X_TOP) then
+      ! top boundary
+        do i=0,nghost
+        f(l2+i,:,:,vr)=f(l2,:,:,vr)
+        enddo
+      else
+        print*, "bc_BL_x: ", bc%location, " should be `top(", &
+                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
+      endif
+!
+    endsubroutine bc_simple_x
  !******************************************************************** 
 
     subroutine special_before_boundary(f)
