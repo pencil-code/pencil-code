@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.223 2008-04-28 10:18:11 ajohan Exp $
+! $Id: particles_dust.f90,v 1.224 2008-05-13 13:29:23 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -138,7 +138,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.223 2008-04-28 10:18:11 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.224 2008-05-13 13:29:23 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -875,7 +875,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 (Omega*tausp+1/(Omega*tausp))*cs
           enddo
 
-       case ('Keplerian')
+       case ('Keplerian','keplerian')
 !
 !  Keplerian velocities assuming GM=1 
 !
@@ -2323,7 +2323,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !  The Knudsen number is the ratio of the mean free path to the particle radius, 2s
 !  To keep consistency with the formulation evolving for radius, tausp1 is C/(s*rhops)
 !  where C is 2/pi for 2d runs and sqrt(8/pi) for 3D runs (because of the sqrt(2*pi) 
-!  factor coming from the substitution Sigma=rho/(sqrt(2*pi)*H)
+!  factor coming from the substitution Sigma=rho/(sqrt(2*pi)*H). 's' is the particle 
+!  radius
 !
         if (iap/=0) then
           particle_radius=fp(k,iap)
