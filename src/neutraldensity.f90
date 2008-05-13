@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.17 2008-05-11 17:15:36 wlyra Exp $
+! $Id: neutraldensity.f90,v 1.18 2008-05-13 13:31:02 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -43,8 +43,8 @@ module NeutralDensity
   logical :: ldiffn_hyper3lnrhon=.false.,ldiffn_hyper3_aniso=.false.
   logical :: lfreeze_lnrhonint=.false.,lfreeze_lnrhonext=.false.
   logical :: lneutraldensity_nolog=.false.,ldiffn_hyper3_cyl_or_sph=.false.
-  logical :: lpretend_star
-  real :: star_form_threshold=1.
+  logical :: lpretend_star,lramp_up
+  real :: star_form_threshold=1.,star_form_exponent=1.5
 
   character (len=labellen), dimension(ninit) :: initlnrhon='nothing'
   character (len=labellen), dimension(ndiff_max) :: idiffn=''
@@ -62,7 +62,7 @@ module NeutralDensity
        idiffn,lneutraldensity_nolog,    &
        lcontinuity_neutral,lnrhon0,lnrhon_left,lnrhon_right, &
        alpha,zeta,kx_lnrhon,ky_lnrhon,kz_lnrhon,lpretend_star,&
-       star_form_threshold
+       star_form_threshold,lramp_up,star_form_exponent
 
   namelist /neutraldensity_run_pars/ &
        diffrhon,diffrhon_hyper3,diffrhon_shock,   &
@@ -71,7 +71,7 @@ module NeutralDensity
        lfreeze_lnrhonint,lfreeze_lnrhonext,         &
        lnrhon_const,lcontinuity_neutral,borderlnrhon,    &
        diffrhon_hyper3_aniso,alpha,zeta,lpretend_star, &
-       star_form_threshold
+       star_form_threshold,lramp_up,star_form_exponent
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhonm=0,idiag_rhon2m=0,idiag_lnrhon2m=0
@@ -110,7 +110,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.17 2008-05-11 17:15:36 wlyra Exp $")
+           "$Id: neutraldensity.f90,v 1.18 2008-05-13 13:31:02 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -386,7 +386,11 @@ module NeutralDensity
         lpenc_requested(i_rhon1)=.true.
       endif
 !
-      if (lpretend_star) lpenc_requested(i_rho1)=.true.
+      if (lpretend_star) then 
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_uu)=.true.
+        lpenc_requested(i_rcyl_mn1)=.true.
+      endif
 !
       if (lcontinuity_neutral) then
         lpenc_requested(i_divun)=.true.
@@ -491,6 +495,7 @@ module NeutralDensity
       type (pencil_case) :: p
 !
       integer :: i, mm, nn
+      real :: OO
 !
       intent(inout) :: f,p
 ! lnrhon
@@ -605,20 +610,28 @@ module NeutralDensity
 ! ionization and recombination pencils
 !
       p%zeta=zeta
-      if (lpretend_star) then 
+      if (lpretend_star) then
+        if (.not.lcylindrical_coords) &
+             call fatal_error("lpretend_star",&
+             "not implemented for other than cylindrical coordinates")
         !smooth transition over a ramping period of 5 orbits
-        ramping_period=2*pi*x(lpoint) !omega=v/r; v=1; 1/omega=r
-        if (t .le. ramping_period) then
-          alpha_time=alpha*(sin((.5*pi)*(t/ramping_period))**2)
+        if (lramp_up) then 
+          ramping_period=2*pi*x(lpoint) !omega=v/r; v=1; 1/omega=r
+          if (t .le. ramping_period) then
+            alpha_time=alpha*(sin((.5*pi)*(t/ramping_period))**2)
+          else
+            alpha_time=alpha
+          endif
         else
           alpha_time=alpha
         endif
           
         !star formation rate 
-        !recover d/dt(rho_star)=sfr_const*rho_gas**1.4
+        !recover d/dt(rho_star)=sfr_const*omega*rho_gas**1.5
         do i=1,nx
-          if (p%rho(i) .gt. star_form_threshold) then 
-            p%alpha(i)=alpha_time*p%rho1(i)**0.6
+          if (p%rho(i) .gt. star_form_threshold) then
+            OO=p%uu(i,2)*p%rcyl_mn1(i)
+            p%alpha(i)=alpha_time*OO*p%rho1(i)**(2-star_form_exponent)
           else
             !no star formation below threshold
             p%alpha(i)=0.
