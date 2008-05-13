@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.144 2008-05-12 18:33:56 dhruba Exp $
+! $Id: forcing.f90,v 1.145 2008-05-13 11:49:23 dhruba Exp $
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -119,7 +119,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.144 2008-05-12 18:33:56 dhruba Exp $")
+           "$Id: forcing.f90,v 1.145 2008-05-13 11:49:23 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -855,8 +855,8 @@ module Forcing
       do n=n1-nghost,n2+nghost
         do m=m1-nghost,m2+nghost
           psilm=0.
-          emm=phi_peak*int((2.*pi)/(Lz-z0))
-!          write(*,*)"DHRUBA",emm,Legendrel 
+          emm=int(phi_peak*(2.*pi)/(Lz-z0))
+!          write(*,*)"DHRUBA",emm,Legendrel,Lz-z0,phi_peak
           call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n)) 
           call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
           psilm= RYlm*cos(rphase1)-IYlm*sin(rphase1)
