@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.44 2008-05-09 09:44:08 nbabkovs Exp $
+! $Id: temperature_ionization.f90,v 1.45 2008-05-13 15:03:22 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2,uglnTT,DYDt_reac,DYDt_diff,cvspec,chi,glnchi
+! PENCILS PROVIDED Ma2,uglnTT,DYDt_reac,DYDt_diff,cvspec,lambda,glnlambda
 !
 !***************************************************************
 module Entropy
@@ -94,7 +94,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.44 2008-05-09 09:44:08 nbabkovs Exp $")
+           "$Id: temperature_ionization.f90,v 1.45 2008-05-13 15:03:22 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -310,8 +310,8 @@ module Entropy
         lpenc_requested(i_DYDt_reac)=.true.
         lpenc_requested(i_DYDt_diff)=.true.
         if (lheatc_chemistry) then
-           lpenc_requested(i_chi)=.true.
-           lpenc_requested(i_glnchi)=.true.
+           lpenc_requested(i_lambda)=.true.
+           lpenc_requested(i_glnlambda)=.true.
         endif
       endif
 
@@ -715,21 +715,17 @@ module Entropy
       real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension(nx) :: g2TT,g2cp, g2TTrho=0., g2TTlnchi=0.
+      real, dimension(nx) :: g2TT, g2TTlnlambda=0.
 !
-      call dot(p%glnTT,p%glnchi,g2TTlnchi)
-      call dot(p%glnTT,p%glnrho,g2TTrho)
-      call dot(p%glnTT,p%glnTT,g2TT)
-      call dot(p%glnTT,p%gradcp,g2cp)
-
+       call dot(p%glnTT,p%glnlambda,g2TTlnlambda)
+       call dot(p%glnTT,p%glnTT,g2TT)
 !
 !  Add heat conduction to RHS of temperature equation
 
 
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  & 
          ! + p%gamma*p%chi(:)*(p%del2lnTT+g2TT+g2TTrho &
-           + p%gamma*p%chi(:)*(p%del2lnTT+g2TT+g2TTrho &
-          + g2cp/p%cp+g2TTlnchi)
+           + p%lambda(:)*(p%del2lnTT+g2TT +g2TTlnlambda)
 
 
     endsubroutine calc_heatcond_chemistry

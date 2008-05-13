@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.99 2008-05-12 10:46:52 brandenb Exp $
+! $Id: chemistry.f90,v 1.100 2008-05-13 15:03:21 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,cs2,rho1gpp,gmu1
-! PENCILS PROVIDED nu,gradnu,nu_art,DYDt_reac,DYDt_diff,cvspec, chi,glnchi
+! PENCILS PROVIDED nu,gradnu,nu_art,DYDt_reac,DYDt_diff,cvspec, lambda,glnlambda
 !***************************************************************
 
 module Chemistry
@@ -27,7 +27,7 @@ module Chemistry
   include 'chemistry.h'
 
   real :: Rgas, Rgas_unit_sys=1.
-  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, chi_full, rho_full, nu_art_full
+  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, lambda_full, rho_full, nu_art_full
   real, dimension (mx,my,mz,nchemspec) :: cvspec_full
 
   logical :: lone_spec=.false.
@@ -186,11 +186,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.99 2008-05-12 10:46:52 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.100 2008-05-13 15:03:21 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.99 2008-05-12 10:46:52 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.100 2008-05-13 15:03:21 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -565,10 +565,10 @@ module Chemistry
 !
 ! Calculate thermal diffusivity
 !
-      if (lpenc_requested(i_chi)) then
-        p%chi=chi_full(l1:l2,m,n)
-        if (lpenc_requested(i_glnchi)) call grad(chi_full,p%glnchi)
-      endif 
+        if (lpenc_requested(i_lambda)) then
+          p%lambda=lambda_full(l1:l2,m,n)
+          if (lpenc_requested(i_glnlambda)) call grad(lambda_full,p%glnlambda)
+        endif 
 
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -746,7 +746,7 @@ module Chemistry
             tmp_sum2=tmp_sum2+XX_full(:,:,:,k)/species_cond(:,:,:,k)
            enddo
 
-           chi_full=0.5*(tmp_sum+1./tmp_sum2)/rho_full/cp_full
+           lambda_full=0.5*(tmp_sum+1./tmp_sum2)
       else
          call stop_it('This case works only for cgs units system!')
         endif
