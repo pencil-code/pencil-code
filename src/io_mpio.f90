@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.38 2006-11-30 09:03:35 dobler Exp $
+! $Id: io_mpio.f90,v 1.39 2008-05-14 22:25:14 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -113,7 +113,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.38 2006-11-30 09:03:35 dobler Exp $")
+           "$Id: io_mpio.f90,v 1.39 2008-05-14 22:25:14 dobler Exp $")
 !
 !  consistency check
 !
@@ -556,7 +556,7 @@ contains
                MPI_INFO_NULL, fhandle, ierr)
       ! Abort if ierr=.true. on any processor.
       ! Possibly, MPI would realize  problems and abort, but who knows..
-      call stop_it_if_any(ierr, &
+      call stop_it_if_any(ierr /= 0, &
            "Cannot MPI_FILE_OPEN " // trim(file) // &
            " (or similar) for writing" // &
            " -- is data/ visible from all nodes?")
@@ -603,6 +603,30 @@ contains
       call MPI_TYPE_FREE(memtype, ierr)
 !
     endsubroutine read_grid_data
+!***********************************************************************
+    subroutine log_filename_to_file(filename,flist)
+!
+!  In the directory containing `filename', append one line to file
+!  `flist' containing the file part of filename
+!
+!  13-may-08/wolf: adapted from io_dist.f90
+!
+      use Cdata, only: lroot,lcopysnapshots_exp,datadir
+      use Cparam, only: fnlen
+      use General, only: parse_filename
+      use Mpicomm, only: mpibarrier
+!
+      character (len=*) :: filename,flist
+      character (len=fnlen) :: dir,fpart
+!
+      if (lroot) then
+        call parse_filename(filename,dir,fpart)
+        open(1,FILE=trim(dir)//'/'//trim(flist),POSITION='append')
+        write(1,'(A)') trim(fpart)
+        close(1)
+      endif
+!
+    endsubroutine log_filename_to_file
 !***********************************************************************
     subroutine wgrid(file)
 !
