@@ -1,4 +1,4 @@
-! $Id: shared_variables.f90,v 1.13 2007-09-13 11:04:56 ajohan Exp $
+! $Id: shared_variables.f90,v 1.14 2008-05-14 22:27:21 dobler Exp $
 !
 !  This module is an interface to allow modules
 !  to register pointers to their internal variables so that
@@ -129,8 +129,10 @@ module SharedVariables
       character (len=*) :: varname
       real, pointer :: variable
       integer, optional :: ierr
-!
       type (shared_variable_list), pointer :: item
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
 !
       if (present(ierr)) ierr=0
 !
@@ -180,8 +182,10 @@ module SharedVariables
       character (len=*) :: varname
       real, dimension(:), pointer :: variable
       integer, optional :: ierr
-!
       type (shared_variable_list), pointer :: item
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
 !
       if (present(ierr)) ierr=0
 !
@@ -231,8 +235,10 @@ module SharedVariables
       character (len=*) :: varname
       integer, pointer :: variable
       integer, optional :: ierr
-!
       type (shared_variable_list), pointer :: item
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
 !
       if (present(ierr)) ierr=0
 !
@@ -282,8 +288,10 @@ module SharedVariables
       character (len=*) :: varname
       integer, dimension(:), pointer :: variable
       integer, optional :: ierr
-!
       type (shared_variable_list), pointer :: item
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
 !
       if (present(ierr)) ierr=0
 !
@@ -333,8 +341,10 @@ module SharedVariables
       character (len=*) :: varname
       logical, pointer :: variable
       integer, optional :: ierr
-!
       type (shared_variable_list), pointer :: item
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
 !
       if (present(ierr)) ierr=0
 !
@@ -384,8 +394,10 @@ module SharedVariables
       character (len=*) :: varname
       integer, target :: variable
       integer, optional :: ierr
-!
       type (shared_variable_list), pointer :: new
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
 !
       if (present(ierr)) ierr=0
 !
@@ -414,8 +426,10 @@ module SharedVariables
       character (len=*) :: varname
       integer, dimension(:), target :: variable
       integer, optional :: ierr
-!
       type (shared_variable_list), pointer :: new
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
 !
       if (present(ierr)) ierr=0
 !
@@ -444,8 +458,10 @@ module SharedVariables
       character (len=*) :: varname
       real, target :: variable
       integer, optional :: ierr
-!
       type (shared_variable_list), pointer :: new
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
 !
       if (present(ierr)) ierr=0
 !
@@ -474,8 +490,10 @@ module SharedVariables
       character (len=*) :: varname
       real, dimension(:), target :: variable
       integer, optional :: ierr
-!
       type (shared_variable_list), pointer :: new
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
 !
       if (present(ierr)) ierr=0
 !
@@ -504,8 +522,10 @@ module SharedVariables
       character (len=*) :: varname
       logical, target :: variable
       integer, optional :: ierr
-!
       type (shared_variable_list), pointer :: new
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
 !
       if (present(ierr)) ierr=0
 !
@@ -532,8 +552,9 @@ module SharedVariables
 !  Comment me.
 !    
       character (len=*) :: varname
-!
       type (shared_variable_list), pointer :: find_variable
+!
+      intent(in)  :: varname
 !
       find_variable=>thelist
       do while (associated(find_variable))
@@ -554,7 +575,6 @@ module SharedVariables
 !  Comment me.
 !    
       type (shared_variable_list), pointer :: list
-!
       type (shared_variable_list), pointer :: next
 !
       do while (associated(list))
@@ -593,6 +613,8 @@ module SharedVariables
 !
       character(len=labellen) :: string
       integer                 :: ierr
+!
+      intent(in)  :: ierr
 !
       select case (ierr)
       case(iSHVAR_ERR_NOSUCHVAR);     string='SHVAR_ERR_NOSUCHVAR'

@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.35 2008-05-10 12:19:56 wlyra Exp $
+! $Id: gravity_r.f90,v 1.36 2008-05-14 22:27:21 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -85,7 +85,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.35 2008-05-10 12:19:56 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.36 2008-05-14 22:27:21 dobler Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -445,9 +445,11 @@ module Gravity
 
       real, dimension (mx,my,mz) :: xx,yy,zz, pot
       real, optional :: pot0           ! potential at r=0
-
       real, dimension (mx,my,mz) :: rr
       integer :: j
+!
+      intent(in)  :: xx,yy,zz
+      intent(out) :: pot,pot0
 !
       if (lcylindrical_gravity) &
            call stop_it("gravity_r: potential global not implemented "//&
@@ -498,13 +500,15 @@ module Gravity
       use Sub,     only: poly
       use Mpicomm, only: stop_it
 
-
       real, dimension (:) :: pot
       real, dimension (size(pot)) :: rad
       real, optional :: ymn,zmn,pot0
       real, optional, dimension (size(pot)) :: xmn,rmn
       real, optional, dimension (size(pot),3) :: grav
       integer :: j
+!
+      intent(in)  :: xmn,ymn,zmn,rmn
+      intent(out) :: pot,pot0,grav
 
       if (present(rmn)) then
         rad = rmn
@@ -544,8 +548,10 @@ module Gravity
         endselect
       enddo
 !
-      if (present(grav)) call stop_it("POTENTIAL_PENC: Argument grav"//&
-                                      "not implemented")
+      if (present(grav)) then
+        call not_implemented("potential_penc", "optional argument grav")
+        if (NO_WARN) grav = 0.
+      endif
 !
     endsubroutine potential_penc
 !***********************************************************************
@@ -563,6 +569,9 @@ module Gravity
       real, optional :: x,y,z,r
       real, optional :: pot0,grav
       integer :: j
+!
+      intent(in)  :: x,y,z,r
+      intent(out) :: pot,pot0,grav
 
       if (present(r)) then
         rad = r
@@ -602,8 +611,10 @@ module Gravity
         endselect
       enddo
 !
-      if (present(grav)) call stop_it("POTENTIAL_PENC: Argument grav"//&
-                                      "not implemented")
+      if (present(grav)) then
+        call not_implemented("potential_point", "optional argument grav")
+        if (NO_WARN) grav = 0.
+      endif
 !
     endsubroutine potential_point
 !***********************************************************************
@@ -620,7 +631,6 @@ module Gravity
 !  Calculate acceleration from master pencils defined in initialize_gravity
 !
       call fatal_error("acceleration_penc","Not implemented")
-
       if (NO_WARN) gg=0.
 !
     endsubroutine acceleration_penc
@@ -641,6 +651,8 @@ module Gravity
       real, dimension (:) :: g_r
       real, dimension(size(g_r)) :: rr_mn,rr_sph,rr_cyl,pot
       integer :: j
+!
+      intent(out) :: g_r
 !
       call get_radial_distance(rr_sph,rr_cyl)
       if (lcylindrical_gravity) then

@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.242 2008-05-08 21:36:56 nilshau Exp $
+! $Id: initcond.f90,v 1.243 2008-05-14 22:27:21 dobler Exp $
 
 module Initcond
 
@@ -515,6 +515,9 @@ module Initcond
       integer :: i,ll1,ll2,mm1,mm2,nn1,nn2
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,ampl2,width
+!
+      intent(in)  :: ampl,ampl2,i,width
+      intent(out) :: f
 !
 !  inner box
 !

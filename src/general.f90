@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.78 2008-05-08 10:07:04 wlyra Exp $
+! $Id: general.f90,v 1.79 2008-05-14 22:27:21 dobler Exp $
 
 module General
 
@@ -432,7 +432,8 @@ module General
       character (len=*), optional :: label
       integer :: n
 !
-      intent(in) :: n
+      intent(in) :: n,label
+      intent(out) :: ch
 !
       ch='     '
       if (n<0) stop 'chn: lt1'
@@ -563,6 +564,9 @@ module General
       integer :: naa,ii,ii1,ii2
       real, dimension (naa) :: aa
       real :: aa1,aa2
+!
+      intent(in)  :: aa,naa,aa1,aa2
+      intent(out) :: ii1,ii2
 !
 !  if not extent in this direction, set indices to interior values
 !

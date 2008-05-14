@@ -1,4 +1,4 @@
- ! $Id: global_gg_halo.f90,v 1.9 2006-08-20 22:35:50 wlyra Exp $
+ ! $Id: global_gg_halo.f90,v 1.10 2008-05-14 22:27:21 dobler Exp $
 
 module Global
 
@@ -87,6 +87,8 @@ module Global
       integer :: m,n
       character (len=*) ::label
 !
+      intent(in)  :: var,m,n,label,length
+!
       if (length/=nx) then
         print*, 'set_global_vect: only nx pencils allowed!'
         call stop_it('set_global_vect')
@@ -118,6 +120,8 @@ module Global
       integer :: m,n
       character (len=*) ::label
 !
+      intent(in)  :: var,m,n,label,length
+!
       if (length/=nx) then
         print*, 'set_global_scal: only nx pencils allowed!'
             call stop_it('set_global_scal')
@@ -146,6 +150,8 @@ module Global
       integer :: l,m,n
       character (len=*) :: label
 !
+      intent(in)  :: var,l,m,n,label
+!
       if (NO_WARN) print*, l, var(1), m, n, label ! keep compiler quiet
 !
     endsubroutine set_global_vect_point
@@ -160,6 +166,8 @@ module Global
       integer :: l,m,n
       character (len=*) :: label
 !
+      intent(in)  :: var,l,m,n,label
+!
       if (NO_WARN) print*, l, var, m, n, label ! keep compiler quiet
 !
     endsubroutine set_global_scal_point
@@ -171,6 +179,8 @@ module Global
 !  20-jun-05/anders: dummy
 !
       character (len=*) :: label
+!
+      intent(in)  :: label
 !
       if (ip == 0) print*, label ! keep compiler quiet
 !
@@ -185,6 +195,9 @@ module Global
       real, dimension(nx,3) :: var
       integer :: m,n
       character (len=*) ::label
+!
+      intent(in)  :: m,n,label
+      intent(out) :: var
 !
       select case(label)
 
@@ -209,6 +222,9 @@ module Global
       integer :: m,n
       character (len=*) ::label
 !
+      intent(in)  :: m,n,label
+      intent(out) :: var
+!
       select case(label)
 
       case ('halo')
@@ -231,6 +247,9 @@ module Global
       real, dimension(3) :: var
       integer :: l,m,n
       character (len=*) ::label
+!
+      intent(in)  :: l,m,n,label
+      intent(out) :: var
 !
       select case(label)
 
@@ -255,6 +274,9 @@ module Global
       real :: var
       integer :: l,m,n
       character (len=*) ::label
+!
+      intent(in)  :: l,m,n,label
+      intent(out) :: var
 !
       select case(label)
 
