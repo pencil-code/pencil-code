@@ -1,4 +1,4 @@
-$Id: developers.txt,v 1.10 2008-04-22 20:46:52 dobler Exp $
+$Id: developers.txt,v 1.11 2008-05-14 14:11:03 brandenb Exp $
 
 Below are the contact details of some of the Pencil Code developers.
 Their web pages may be found in the pencil code manual.
@@ -11,7 +11,7 @@ phone calls even outside office hours.
 
 Name             email                     office             mobile/home
 ----------------------------------------------------------------------------
-Natalia Babkovskaia nbabkovs/sun3.oulu.fi
+Natalia Babkovskaia nbabkovs/sun3.oulu.fi  +358 8 553 1939
 Steve Berukoff   steveb/physics.ucla.edu
 Sven Bingert     bingert/kis.uni-freiburg.de 
 Axel Brandenburg brandenb/nordita.dk       +46 8 5537 8707    +46 70 574 0650
