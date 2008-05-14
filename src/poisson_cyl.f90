@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.13 2008-05-12 09:16:20 wlyra Exp $
+! $Id: poisson_cyl.f90,v 1.14 2008-05-14 18:58:26 wlyra Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -108,7 +108,7 @@ module Poisson
              'Cartesian grid and applies Fourier transforms there'
         lsolve_cyl2cart  =.true.
 
-      case('directsum')
+      case('directsum','direct-sum')
         if (lroot) print*,'Selecting the cylindrical '//&
              'Poisson solver that performs direct summation'
         lsolve_direct    =.true.
