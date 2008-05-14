@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.100 2008-05-13 15:03:21 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.101 2008-05-14 13:14:14 brandenb Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -68,7 +68,7 @@ module Chemistry
 !
 !  Chemkin related parameters
 !
-  logical :: lcheminp=.false.
+  logical :: lcheminp=.false., lchem_cdtc=.false.
   real, dimension(nchemspec,18) :: species_constants
   integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
   integer, dimension(7) :: iaa1,iaa2
@@ -90,7 +90,8 @@ module Chemistry
 ! run parameters
   namelist /chemistry_run_pars/ &
       lkreactions_profile,kreactions_profile,kreactions_profile_width, &
-      chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, lreactions
+      chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
+      lreactions,lchem_cdtc
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -186,11 +187,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.100 2008-05-13 15:03:21 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.101 2008-05-14 13:14:14 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.100 2008-05-13 15:03:21 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.101 2008-05-14 13:14:14 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1061,7 +1062,7 @@ module Chemistry
 !
 !  loop over all chemicals
 !
-     do k=1,nchemspec
+      do k=1,nchemspec
 !
 !  advection terms
 ! 
@@ -1104,7 +1105,7 @@ module Chemistry
           endif
  !    print*,maxval(abs(p%DYDt_reac(:,k))),k
 !
-     enddo
+      enddo
 
      if (ldensity .and. lcheminp) then
        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - Rgas*p%mu1*p%divu
@@ -1115,11 +1116,9 @@ module Chemistry
       !   print*, maxval(sum_DYDt(:)),maxval(df(l1:l2,m,n,ilnTT))
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + sum_DYDt(:)
      endif
- 
 !
 !  For the timestep calculation, need maximum diffusion
 !
-
         if (lfirst.and. ldt) then
           if (.not. lcheminp) then
            diffus_chem=chem_diff*maxval(chem_diff_prefactor)*dxyz_2
@@ -1141,18 +1140,28 @@ module Chemistry
 ! Natalia thoughts: it should be discussed
 !
          if (lfirst .and. ldt) then
-          if (lreactions .and. lcheminp) then
-           do j=1,nx
-             reac_rate(:)=abs(p%DYDt_reac(j,:))
-             reac_chem(j)=10.*maxval(reac_rate(:))
-             ! print*,reac_chem(j)
-            if (reac_chem(j)<1e4) then
-              reac_chem(j)=1e4
-            endif
-           enddo
-          endif
-         endif
+           if (lreactions) then
 !
+!  calculate maximum of *relative* reaction rate
+!
+             if (lchem_cdtc) then
+               reac_chem=0.
+               do k=1,nchemspec
+                 reac_chem=max(reac_chem,-p%DYDt_reac(:,k)/max(p%YY(:,k),tiny(p%YY(:,k))))
+               enddo
+!
+             elseif (lcheminp) then
+               do j=1,nx
+                 reac_rate(:)=abs(p%DYDt_reac(j,:))
+                 reac_chem(j)=10.*maxval(reac_rate(:))
+                 ! print*,reac_chem(j)
+                 if (reac_chem(j)<1e4) then
+                   reac_chem(j)=1e4
+                 endif
+               enddo
+             endif
+           endif
+         endif
 !
 !  Calculate diagnostic quantities
 !

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.423 2008-05-08 12:38:59 ajohan Exp $
+! $Id: cdata.f90,v 1.424 2008-05-14 13:14:14 brandenb Exp $
 !
 !  Global variables are defined in this module.
 !
@@ -79,7 +79,7 @@ module Cdata
   real :: tmax=1e33
   real :: max_walltime=0.0  ! in seconds
   real :: t,dt=0.0
-  real :: cdt=0.4,cdts=1.0,cdtr=1.0,cdtv=0.25,cdtv2=0.03,cdtv3=0.01
+  real :: cdt=0.4,cdts=1.,cdtr=1.,cdtc=1.,cdtv=0.25,cdtv2=0.03,cdtv3=0.01
   real :: cdtvDim
   real :: ddt=0.
   real :: dt1_last=0.

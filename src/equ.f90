@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.408 2008-05-14 06:31:19 ajohan Exp $
+! $Id: equ.f90,v 1.409 2008-05-14 13:14:14 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -76,6 +76,11 @@ module Equ
           intdr_rel     =      (xyz1(1)**3-    xyz0(1)**3)/(3.*dx)
           intdtheta_rel = -(cos(xyz1(2))  -cos(xyz0(2)))/dy
           intdphi_rel   =      (xyz1(3)   -    xyz0(3)) /dz
+!
+!  prevent zeros from less then 3-dimensional runs
+!  (maybe this should be 2pi, but maybe not )
+!
+          !(axel) if(intdphi_rel==0.) intdphi_rel=1.
           dVol_rel1=1./(intdr_rel*intdtheta_rel*intdphi_rel)
         elseif (lcylindrical_coords) then
           intdr_rel   =      (xyz1(1)**2-    xyz0(1)**2)/(2.*dx)
@@ -477,7 +482,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.408 2008-05-14 06:31:19 ajohan Exp $")
+           "$Id: equ.f90,v 1.409 2008-05-14 13:14:14 brandenb Exp $")
 !
 !  Initialize counter for calculating and communicating print results.
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -1070,9 +1075,11 @@ module Equ
              endif
           endif
 !
+!  cdt, cdtv, and cdtc are empirical coefficients
+!
           dt1_advec  =maxadvec/cdt
           dt1_diffus =maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
-          dt1_reac=reac_chem
+          dt1_reac=reac_chem/cdtc
 !
           dt1_max=max(dt1_max,sqrt(dt1_advec**2+dt1_diffus**2),dt1_reac)
 

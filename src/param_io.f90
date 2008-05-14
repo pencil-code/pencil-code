@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.304 2008-05-08 12:38:59 ajohan Exp $
+! $Id: param_io.f90,v 1.305 2008-05-14 13:14:14 brandenb Exp $
 
 module Param_IO
 
@@ -85,7 +85,7 @@ module Param_IO
 
   namelist /run_pars/ &
        cvsid,ip,nt,it1,it1d,dt,cdt,ddt,cdtv,cdtv2,cdtv3,&
-       cdts,cdtr,isave,itorder, &
+       cdts,cdtr,cdtc,isave,itorder, &
        dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, max_walltime, &
        dtmax, &
        vel_spec,mag_spec,uxj_spec,vec_spec,ou_spec,ab_spec, &
