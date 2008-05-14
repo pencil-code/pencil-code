@@ -1,4 +1,4 @@
-# $Id: ts.py,v 1.4 2008-03-20 09:25:34 tgastine Exp $
+# $Id: ts.py,v 1.5 2008-05-14 16:03:35 dintrans Exp $
 #
 # read time_series.dat and return a TimeSeries class of 1D numpy
 # arrrays
@@ -95,7 +95,7 @@ class read_ts:
       if (hasattr(self, 'brms') and self.brms.max() != 0.):
          cnt+=1
          P.subplot(2,1,cnt)
-         P.semilogy(self.t, self.urms)
+         P.semilogy(self.t, self.brms)
          P.xlabel('Time')
          P.ylabel('brms')
          listargs.remove('brms')
