@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.14 2008-05-14 18:58:26 wlyra Exp $
+! $Id: poisson_cyl.f90,v 1.15 2008-05-14 19:01:18 wlyra Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -1058,131 +1058,6 @@ module Poisson
 !  
     endsubroutine integrate_border
 !***********************************************************************
-    subroutine check_update_grid(rhs,phi_old,a_band,b_band1,&
-         c_band,d_band,e_band,lupdate)
-!
-! Check if the two sides of the poisson equation changed 
-! significantly from one time step to the other. If so, 
-! update the border. Otherwise, don't do anything, which 
-! saves a lot of time. 
-!
-! This routine compares the potential from the previous 
-! timestep and checks against a the potential obtained from 
-! the new density distribution and one Gauss-Seidel iteration.
-! If it did not change by a significant amount, do not perform 
-! the Chebychev iteration. 
-!  
-! 28-apr-08/wlad: coded
-!
-      real, dimension(nx,nz), intent(in) :: rhs,phi_old
-      real, dimension(nx,nz)  :: lhs
-      real, dimension(nx) :: a_band,b_band1,c_band,d_band,e_band
-      logical, dimension(nx,nz), intent(out) :: lupdate
-      real :: norm
-      integer :: i,n,skipped
-!
-      skipped=0
-      do n=2,nz-1;do i=2,nr-1
-        lhs(i,n)=b_band1(i)*(rhs(i,n) &
-             - a_band(i)*phi_old(i-1,n)      &
-             - c_band(i)*phi_old(i+1,n)      &
-             - d_band(i)*phi_old(i,n+1)      &
-             - e_band(i)*phi_old(i,n-1)    )
-!
-! don't update if it hadn't change by a significant amount
-!
-        norm=abs(lhs(i,n)-phi_old(i,n))!/max(abs(phi_old(i,n)),abs(lhs(i,n))))
-        if (norm .le. iteration_threshold) then
-          skipped=skipped+1
-          lupdate(i,n)=.false.
-        else
-          lupdate(i,n)=.true.
-        endif
-!
-      enddo;enddo
-!
-      if (ldebug) print*,' grid: skipped ',skipped,' of ',2*ny*(nz+nx-4)
-!
-    endsubroutine check_update_grid
-!***********************************************************************
-    subroutine check_update_border(rhs,f,lupdate_radial_border,&
-         lupdate_vertical_border,norm0)
-!
-! Check if the two sides of the poisson equation changed 
-! significantly from one time step to the other. If so, 
-! update the border. Otherwise, don't do anything, which 
-! saves a lot of time. This routines takes the quantity 
-!  
-!   norm=abs(del2(phi)-4piG*rho)   
-! 
-! and compares with the one calculated in the previous
-! timestep (norm0). 
-!
-! 28-apr-08/wlad: coded
-!
-      use Sub,only:del2
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx,ny,nz), intent(in) :: rhs,norm0
-      logical, dimension(ny,nz,2), intent(out) :: lupdate_radial_border
-      logical, dimension(nx,ny,2), intent(out) :: lupdate_vertical_border
-      integer :: i,n,ith,iz,ir
-
-      real, dimension (nx) :: del2phi,nnn
-      real  :: norm
-      logical :: lfirstcall
-!
-!  compute del2phi and compare it with 4piGrho
-!  as it has discretization errors, compare it with 
-!  the one computed at the beginning of the calculations
-!
-      do m=m1,m2;do n=n1,n2
-!
-        ith=m-nghost;iz=n-nghost
-!
-        call del2(f,ipotself,del2phi)
-!        
-        nnn=abs(del2phi - rhs(:,ith,iz))!/rhs(:,ith,iz)
-!
-        norm=abs(del2phi(1) - rhs(1,ith,iz))!/rhs(1,ith,iz)
-        if (norm/norm0(1,ith,iz) .lt. iteration_threshold) then 
-          lupdate_radial_border(ith,iz,1)=.false.
-        else
-          lupdate_radial_border(ith,iz,1)=.true.
-        endif
-
-        norm=abs(del2phi(nr) - rhs(nr,ith,iz))!/rhs(nr,ith,iz)
-        if (norm/norm0(nr,ith,iz) .lt. iteration_threshold) then 
-          lupdate_radial_border(ith,iz,2)=.false.
-        else
-          lupdate_radial_border(ith,iz,2)=.true.
-        endif
-!      
-        if ((ipz==0).and.(iz==1)) then 
-          do ir=2,nr-1
-            norm=abs(del2phi(ir)-rhs(ir,ith,1))!/rhs(ir,ith,1)
-            if (norm/norm0(ir,ith,1) .lt. iteration_threshold) then 
-              lupdate_vertical_border(ir,ith,1)=.false.
-            else
-              lupdate_vertical_border(ir,ith,1)=.true.
-            endif
-          enddo
-        endif
-!
-        if ((ipz==nprocz-1).and.(iz==nz)) then 
-          do ir=2,nr-1
-            norm=abs(del2phi(ir)-rhs(ir,ith,nz))!/rhs(ir,ith,nz)
-            if (norm/norm0(ir,ith,nz) .lt. iteration_threshold) then 
-              lupdate_vertical_border(ir,ith,2)=.false.
-            else
-              lupdate_vertical_border(ir,ith,2)=.true.
-            endif
-          enddo
-        endif
-      enddo;enddo
-!
-    endsubroutine check_update_border
-!***************************************************************************
     subroutine calculate_cross_bessel_functions
 !
 !  Calculate the Bessel functions related to the 
@@ -1241,6 +1116,7 @@ module Poisson
       real, dimension(nygrid) :: tht_serial
       real    :: jacobian,tmp,Delta,fac
       integer :: ir,ith,ikr,ikt,ith_serial
+      integer :: nw,count
 !
       if (lroot) &
         print*,'Pre-calculating the Green functions to '//&
@@ -1255,6 +1131,8 @@ module Poisson
 ! Define the smoothing length as the minimum resolution element present
 !
       Delta=min(dr,dth)
+!
+      nw=10*int(nr**2*nth*nthgrid/10) ; count=0
 !
       do ir =1,nr;do ith=1,nth
       ith_serial=ith+ipy*nth  
@@ -1295,6 +1173,13 @@ module Poisson
           green_grid_2D(ir,ith,ikr,ikt)= fac*jacobian/tmp
         else
           green_grid_2D(ir,ith,ikr,ikt)= 0.
+        endif
+!
+! Print progress
+!
+        if (lroot) then
+          count=count+1
+          if (mod(10*count,nw)==0) print*, 100.*count/nw,'% done'
         endif
 !
       enddo;enddo
