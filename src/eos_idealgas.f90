@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.109 2008-05-06 22:36:01 dobler Exp $
+! $Id: eos_idealgas.f90,v 1.110 2008-05-14 22:21:51 dobler Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -110,7 +110,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.109 2008-05-06 22:36:01 dobler Exp $')
+           '$Id: eos_idealgas.f90,v 1.110 2008-05-14 22:21:51 dobler Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1489,8 +1489,8 @@ module EquationOfState
 !
       use Cdata
       use Gravity
-      use SharedVariables,only:get_shared_variable
-      use Mpicomm, only:stop_it
+      use SharedVariables, only: get_shared_variable
+      use Mpicomm, only: stop_it
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
       logical, pointer :: lmultilayer, lheatc_chiconst
@@ -2391,8 +2391,6 @@ module EquationOfState
           uphi=f(l1-i,:,:,iuy)
 
           centterm= uphi**2 * step/(rad*cs2)
-          
-          
           if (ldensity_nolog) then
             f(l1-i,:,:,ilnrho)=f(l1+i,:,:,ilnrho)*exp(gravterm + centterm)
           else  
@@ -2421,8 +2419,7 @@ module EquationOfState
           rad=x(l2+i)
           uphi=f(l2+i,:,:,iuy)
 
-          centterm= uphi**2 * step/(rad*cs2)
-          
+          centterm= uphi**2 * step/(rad*cs2)          
           if (ldensity_nolog) then
             f(l2+i,:,:,ilnrho) = f(l2-i,:,:,ilnrho)*exp(gravterm + centterm)
           else
