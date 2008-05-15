@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.104 2007-12-03 21:10:47 wlyra Exp $
+! $Id: noentropy.f90,v 1.105 2008-05-15 00:16:42 wlyra Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -72,7 +72,7 @@ module Entropy
 !  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.104 2007-12-03 21:10:47 wlyra Exp $")
+           "$Id: noentropy.f90,v 1.105 2008-05-15 00:16:42 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -242,17 +242,7 @@ module Entropy
       if (lhydro .and. lpressuregradient_gas) then
         do j=1,3
           ju=j+iuu-1
-          if (lneutralvelocity) then
-!
-!  Factor two for electron pressure. [AJ: Wlad, perhaps more details here?]
-!  [WL: For my partial ionization run, I was assuming that the electron 
-!       pressure is equal to the gas pressure, hence the factor two. 
-!       More info in Brandenburg & Zveibel, 1995 (the too little too late one)]
-!
-            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+2*p%fpres(:,j)
-          else
-            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%fpres(:,j)
-          endif
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%fpres(:,j)
         enddo
 !
 !  Add pressure force from global density gradient.

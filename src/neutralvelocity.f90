@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.20 2008-05-10 12:17:30 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.21 2008-05-15 00:16:42 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -38,8 +38,8 @@ module NeutralVelocity
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: ladvection_velocity=.true.,lpressuregradient=.true.
 !collisional drag,ionization,recombination
-  logical :: lviscneutral=.true.
-  real :: colldrag
+  logical :: lviscneutral=.true.,lelectron_pressure=.false.
+  real :: colldrag=0,electron_pressure=1
   real :: nun=0.,csn0=0.,csn20,nun_hyper3=0.!,nun_shock=0.
   real, dimension (nx,3,3) :: unij5
 
@@ -58,7 +58,8 @@ module NeutralVelocity
        Omega,theta, lupw_uun, &
        borderuun, lfreeze_unint, lpressuregradient, &
        lfreeze_unext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-       colldrag,nun,lviscneutral,iviscn,nun,csn0,nun_hyper3!,nun_shock
+       colldrag,nun,lviscneutral,iviscn,nun,csn0,nun_hyper3,&!,nun_shock
+       lelectron_pressure,electron_pressure
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_un2m=0,idiag_unm2=0
@@ -131,7 +132,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.20 2008-05-10 12:17:30 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.21 2008-05-15 00:16:42 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -337,6 +338,9 @@ module NeutralVelocity
 !
       if (lpressuregradient) &
            lpenc_requested(i_glnrhon)=.true.
+
+      if (lhydro.and.lelectron_pressure) &
+           lpenc_requested(i_fpres)=.true.
 !
 !  diagnostic pencils
 !
@@ -552,10 +556,19 @@ module NeutralVelocity
         df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) + &
              cneut*p%rho *(p%uu(:,j)-p%uun(:,j))
 !
-! ions gain momentum by ionization
+! ions gain momentum by ionization and electron pressure
 ! 
-        df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji) - &
-             cions*p%rhon*(p%uu(:,j)-p%uun(:,j))
+        if (lhydro) then 
+          df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji) - &
+               cions*p%rhon*(p%uu(:,j)-p%uun(:,j))
+!
+! add electron pressure to the ions if needed
+!
+          if (lelectron_pressure) &
+               df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji)+&
+               electron_pressure*p%fpres(:,j)
+!
+        endif
 !
      enddo
 !
