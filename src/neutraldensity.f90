@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.18 2008-05-13 13:31:02 wlyra Exp $
+! $Id: neutraldensity.f90,v 1.19 2008-05-15 14:39:04 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -110,7 +110,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.18 2008-05-13 13:31:02 wlyra Exp $")
+           "$Id: neutraldensity.f90,v 1.19 2008-05-15 14:39:04 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -326,6 +326,12 @@ module NeutralDensity
             case('const_lnrhon'); f(:,:,:,ilnrhon)=lnrhon_const
             case('const_rhon'); f(:,:,:,ilnrhon)=log(rhon_const)
             case('constant'); f(:,:,:,ilnrhon)=log(rhon_left)
+            case('scale-ions') 
+              if (ldensity_nolog) then 
+                f(:,:,:,ilnrhon)=log(rhon_const)+log(f(:,:,:,ilnrho)) 
+              else
+                f(:,:,:,ilnrhon)=log(rhon_const)+f(:,:,:,ilnrho) 
+              endif
             case('sinwave-z'); call sinwave(ampllnrhon,f,ilnrhon,kz=kz_lnrhon)
             case('gaussian-noise')
                if (lnrhon_left /= 0.) f(:,:,:,ilnrhon)=lnrhon_left
@@ -491,6 +497,7 @@ module NeutralDensity
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: tmp,smooth_step_threshold
       real :: alpha_time,ramping_period
       type (pencil_case) :: p
 !
@@ -625,18 +632,22 @@ module NeutralDensity
         else
           alpha_time=alpha
         endif
-          
-        !star formation rate 
-        !recover d/dt(rho_star)=sfr_const*omega*rho_gas**1.5
-        do i=1,nx
-          if (p%rho(i) .gt. star_form_threshold) then
-            OO=p%uu(i,2)*p%rcyl_mn1(i)
-            p%alpha(i)=alpha_time*OO*p%rho1(i)**(2-star_form_exponent)
-          else
-            !no star formation below threshold
-            p%alpha(i)=0.
-          endif
-        enddo
+!          
+! Star formation rate 
+! These lines below recover d/dt(rho_star)=sfr_const*omega*rho_gas**1.5
+!
+! There is threshold that has to be smoothed. The star formation
+! rate falls drastically after the threshold of 5-10 solar masses
+! per cubic parsec. A arctangent smoothing over a tenth of this value 
+! is okay to avoid numerical disasters. 
+! 
+        tmp=(p%rho-star_form_threshold)/(.1*star_form_threshold)
+        smooth_step_threshold=.5*(1+atan(tmp)*2*pi_1)
+
+        !OO=p%uu(*,2)*p%rcyl_mn1
+        p%alpha=(alpha_time*smooth_step_threshold)*&
+             (p%uu(:,2)*p%rcyl_mn1)*p%rho1**(2-star_form_exponent)
+      
       else
         p%alpha=alpha
       endif
