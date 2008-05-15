@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.15 2008-05-14 19:01:18 wlyra Exp $
+! $Id: poisson_cyl.f90,v 1.16 2008-05-15 19:23:31 wlyra Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -35,10 +35,10 @@ module Poisson
 
   implicit none
 
-  real :: kmax=0.0,iteration_threshold=1e-3,rjac=1.
+  real :: kmax=0.0,iteration_threshold=1e-3,rjac=1.,smooth_green=2.
   logical :: lrazor_thin=.true.,lsolve_bessel=.false.,lsolve_cyl2cart=.false.
   logical :: lsolve_direct=.false.,lsolve_logspirals=.false.
-  logical :: lsolve_relax_sor=.false.
+  logical :: lsolve_relax_sor=.false.,lsmooth_green=.true.
   character (len=labellen) :: ipoisson_method='nothing'
 
   integer, parameter :: mmax=8 !eight harmonics for the azimuthal direction
@@ -46,9 +46,11 @@ module Poisson
   include 'poisson.h'
 
   namelist /poisson_init_pars/ &
-       kmax,lrazor_thin,ipoisson_method,iteration_threshold
+       kmax,lrazor_thin,ipoisson_method,iteration_threshold,&
+       lsmooth_green,smooth_green
   namelist /poisson_run_pars/ &
-       kmax,lrazor_thin,ipoisson_method,iteration_threshold
+       kmax,lrazor_thin,ipoisson_method,iteration_threshold,&
+       lsmooth_green,smooth_green
 
 !
 ! For the colvolution case, green functions
@@ -1130,7 +1132,11 @@ module Poisson
 !
 ! Define the smoothing length as the minimum resolution element present
 !
-      Delta=min(dr,dth)
+      if (lsmooth_green) then
+        Delta=smooth_green*min(dr,dth)        
+      else
+        Delta=0
+      endif
 !
       nw=10*int(nr**2*nth*nthgrid/10) ; count=0
 !
@@ -1155,24 +1161,23 @@ module Poisson
 !
         if ((ir/=ikr).and.(ith_serial/=ikt)) then 
           tmp=sqrt(rad(ir)**2 + rad(ikr)**2 - &
-              2*rad(ir)*rad(ikr)*cos(dth*(ith_serial-ikt)))
+              2*rad(ir)*rad(ikr)*cos(dth*(ith_serial-ikt)) + Delta**2)
         endif
         if ((ir/=ikr).and.(ith_serial==ikt)) then
           !same azimuthal location
-          tmp=abs(dr*(ir-ikr))
+          tmp=sqrt((dr*(ir-ikr))**2+Delta**2)
         endif
         if ((ir==ikr).and.(ith_serial/=ikt)) then
           !same radial location
-          tmp=2*rad(ir)**2*(1-cos(dth*(ith_serial-ikt)))
+          tmp=sqrt(2*rad(ir)**2*(1-cos(dth*(ith_serial-ikt))) + Delta**2)
         endif
         if ((ir==ikr).and.(ith_serial==ikt)) then
-          tmp=0.
+          tmp=Delta
         endif
 !
-        if (tmp .ne. 0 ) then 
-          green_grid_2D(ir,ith,ikr,ikt)= fac*jacobian/tmp
-        else
-          green_grid_2D(ir,ith,ikr,ikt)= 0.
+        green_grid_2D(ir,ith,ikr,ikt)= fac*jacobian/tmp
+        if (.not.lsmooth_green) then 
+          if (tmp==0.) green_grid_2D(ir,ith,ikr,ikt)= 0.
         endif
 !
 ! Print progress
