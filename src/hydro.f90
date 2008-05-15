@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.432 2008-04-30 12:44:22 dintrans Exp $
+! $Id: hydro.f90,v 1.433 2008-05-15 13:43:29 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -339,7 +339,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.432 2008-04-30 12:44:22 dintrans Exp $")
+           "$Id: hydro.f90,v 1.433 2008-05-15 13:43:29 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1948,14 +1948,27 @@ use Mpicomm, only: stop_it
             if (any(g_r .gt. 0.)) then
               do i=1,mx
                 if (g_r(i) .gt. 0) then
-                  print*,"centrifugal_balance: gravity at point ",x(i),y(m),&
-                       z(n),"is directed outwards"
-                  call stop_it("")
+                  if ((i <= nghost).or.(i >= mx-nghost)) then
+                    !ghost zones, just emit a warning
+                    if (ip<=7) then
+                      print*,"centrifugal_balance: gravity at ghost point ",&
+                           x(i),y(m),z(n),"is directed outwards"
+                      call warning("","")
+                    endif
+                    OO(i)=0
+                  else
+                    !physical point. Break!
+                    print*,"centrifugal_balance: gravity at physical point ",&
+                         x(i),y(m),z(n),"is directed outwards"
+                    call stop_it("")
+                  endif
+                else !g_r ne zero
+                  OO(i)=sqrt(-g_r(i)/rr_cyl(i))
                 endif
               enddo
             else
               if ( (coord_system=='cylindric')  .or.&
-                   (coord_system=='cartesian')) then 
+                   (coord_system=='cartesian')) then
                 OO=sqrt(max(-g_r/rr_cyl,0.))
               else if (coord_system=='spherical') then
                 OO=sqrt(max(-g_r/(rr_sph*sinth(m)**2),0.))
