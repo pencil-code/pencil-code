@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.520 2008-05-09 23:36:10 dobler Exp $
+! $Id: magnetic.f90,v 1.521 2008-05-16 12:15:55 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -199,6 +199,12 @@ module Magnetic
   integer :: idiag_exjm2=0      ! DIAG_DOC:
   integer :: idiag_brms=0       ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$
   integer :: idiag_bmax=0       ! DIAG_DOC: $\max(|\Bv|)$
+  integer :: idiag_bxmin=0      ! DIAG_DOC: $\min(|B_x|)$
+  integer :: idiag_bymin=0      ! DIAG_DOC: $\min(|B_y|)$
+  integer :: idiag_bzmin=0      ! DIAG_DOC: $\min(|B_z|)$
+  integer :: idiag_bxmax=0      ! DIAG_DOC: $\max(|B_x|)$
+  integer :: idiag_bymax=0      ! DIAG_DOC: $\max(|B_y|)$
+  integer :: idiag_bzmax=0      ! DIAG_DOC: $\max(|B_z|)$
   integer :: idiag_jrms=0       ! DIAG_DOC: $\left<\jv^2\right>^{1/2}$
   integer :: idiag_jmax=0       ! DIAG_DOC: $\max(|\jv|)$
   integer :: idiag_vArms=0      ! DIAG_DOC: $\left<\Bv^2/\varrho\right>^{1/2}$
@@ -414,7 +420,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.520 2008-05-09 23:36:10 dobler Exp $")
+           "$Id: magnetic.f90,v 1.521 2008-05-16 12:15:55 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -563,6 +569,8 @@ module Magnetic
         case ('smagorinsky-cross')
           if (lroot) print*, 'resistivity: smagorinsky_cross'
           lresi_smagorinsky_cross=.true.
+        case ('none')
+          ! do nothing
         case ('')
           ! do nothing
         case default
@@ -1942,6 +1950,12 @@ module Magnetic
         if (idiag_bm2/=0) call max_mn_name(p%b2,idiag_bm2)
         if (idiag_brms/=0) call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
         if (idiag_bmax/=0) call max_mn_name(p%b2,idiag_bmax,lsqrt=.true.)
+        if (idiag_bxmin/=0) call max_mn_name(-p%bb(:,1),idiag_bxmin,lneg=.true.)
+        if (idiag_bymin/=0) call max_mn_name(-p%bb(:,2),idiag_bymin,lneg=.true.)
+        if (idiag_bzmin/=0) call max_mn_name(-p%bb(:,3),idiag_bzmin,lneg=.true.)
+        if (idiag_bxmax/=0) call max_mn_name(p%bb(:,1),idiag_bxmax)
+        if (idiag_bymax/=0) call max_mn_name(p%bb(:,2),idiag_bymax)
+        if (idiag_bzmax/=0) call max_mn_name(p%bb(:,3),idiag_bzmax)
         if (idiag_aybym2/=0) &
             call sum_mn_name(2*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
         if (idiag_abm/=0) call sum_mn_name(p%ab,idiag_abm)
@@ -4995,6 +5009,8 @@ module Magnetic
         idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0; idiag_epsM_LES=0
         idiag_aybym2=0; idiag_exaym2=0; idiag_exjm2=0
         idiag_brms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0; idiag_vArms=0
+        idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
+        idiag_bxmax=0; idiag_bymax=0; idiag_bzmax=0
         idiag_vAmax=0; idiag_dtb=0; idiag_arms=0; idiag_amax=0
         idiag_beta1m=0; idiag_beta1max=0
         idiag_bxm=0; idiag_bym=0; idiag_bzm=0
@@ -5056,6 +5072,12 @@ module Magnetic
             'epsM_LES',idiag_epsM_LES)
         call parse_name(iname,cname(iname),cform(iname),'brms',idiag_brms)
         call parse_name(iname,cname(iname),cform(iname),'bmax',idiag_bmax)
+        call parse_name(iname,cname(iname),cform(iname),'bxmin',idiag_bxmin)
+        call parse_name(iname,cname(iname),cform(iname),'bymin',idiag_bymin)
+        call parse_name(iname,cname(iname),cform(iname),'bzmin',idiag_bzmin)
+        call parse_name(iname,cname(iname),cform(iname),'bxmax',idiag_bxmax)
+        call parse_name(iname,cname(iname),cform(iname),'bymax',idiag_bymax)
+        call parse_name(iname,cname(iname),cform(iname),'bzmax',idiag_bzmax)
         call parse_name(iname,cname(iname),cform(iname),'jrms',idiag_jrms)
         call parse_name(iname,cname(iname),cform(iname),'jmax',idiag_jmax)
         call parse_name(iname,cname(iname),cform(iname),'axm',idiag_axm)
