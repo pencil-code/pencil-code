@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.96 2008-05-08 12:38:59 ajohan Exp $
+! $Id: viscosity.f90,v 1.97 2008-05-16 12:16:56 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -110,8 +110,10 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.96 2008-05-08 12:38:59 ajohan Exp $")
-
+           "$Id: viscosity.f90,v 1.97 2008-05-16 12:16:56 ajohan Exp $")
+!
+!  Default viscosity.
+!
       ivisc(1)='nu-const'
 !
     endsubroutine register_viscosity
@@ -235,12 +237,14 @@ module Viscosity
         case ('snr_damp')
           if (lroot) print*,'viscous force: SNR damping'
           lvisc_snr_damp=.true.
-        case ('')
-          ! do nothing
         case ('nu-mixture')
           if (lroot) print*,'viscous force: nu is calculated for a mixture'
           lpenc_requested(i_sij)=.true.
           lvisc_mixture=.true.
+        case ('none')
+          ! do nothing
+        case ('')
+          ! do nothing
         case default
           if (lroot) print*, 'No such value for ivisc(',i,'): ', trim(ivisc(i))
           call stop_it('calc_viscous_forcing')
