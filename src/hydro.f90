@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.433 2008-05-15 13:43:29 wlyra Exp $
+! $Id: hydro.f90,v 1.434 2008-05-16 12:13:58 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -144,6 +144,9 @@ module Hydro
   integer :: idiag_umax=0       ! DIAG_DOC: $\max(|\uv|)$
   integer :: idiag_uzrms=0      ! DIAG_DOC: $\left<u_z^2\right>^{1/2}$
   integer :: idiag_uzrmaxs=0    ! DIAG_DOC: 
+  integer :: idiag_uxmin=0      ! DIAG_DOC: $\min(|u_x|)$
+  integer :: idiag_uymin=0      ! DIAG_DOC: $\min(|u_y|)$
+  integer :: idiag_uzmin=0      ! DIAG_DOC: $\min(|u_z|)$
   integer :: idiag_uxmax=0      ! DIAG_DOC: $\max(|u_x|)$
   integer :: idiag_uymax=0      ! DIAG_DOC: $\max(|u_y|)$
   integer :: idiag_uzmax=0      ! DIAG_DOC: $\max(|u_z|)$
@@ -339,7 +342,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.433 2008-05-15 13:43:29 wlyra Exp $")
+           "$Id: hydro.f90,v 1.434 2008-05-16 12:13:58 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1374,6 +1377,9 @@ use Mpicomm, only: stop_it
             call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)
         if (idiag_uzrmaxs/=0) &
             call max_mn_name(p%uu(:,3)**2,idiag_uzrmaxs,lsqrt=.true.)
+        if (idiag_uxmin/=0) call max_mn_name(-p%uu(:,1),idiag_uxmin,lneg=.true.)
+        if (idiag_uymin/=0) call max_mn_name(-p%uu(:,2),idiag_uymin,lneg=.true.)
+        if (idiag_uzmin/=0) call max_mn_name(-p%uu(:,3),idiag_uzmin,lneg=.true.)
         if (idiag_uxmax/=0) call max_mn_name(p%uu(:,1),idiag_uxmax)
         if (idiag_uymax/=0) call max_mn_name(p%uu(:,2),idiag_uymax)
         if (idiag_uzmax/=0) call max_mn_name(p%uu(:,3),idiag_uzmax)
@@ -2365,6 +2371,9 @@ use Mpicomm, only: stop_it
         idiag_umax=0
         idiag_uzrms=0
         idiag_uzrmaxs=0
+        idiag_uxmin=0
+        idiag_uymin=0
+        idiag_uzmin=0
         idiag_uxmax=0
         idiag_uymax=0
         idiag_uzmax=0
@@ -2504,6 +2513,9 @@ use Mpicomm, only: stop_it
         call parse_name(iname,cname(iname),cform(iname),'dtu',idiag_dtu)
         call parse_name(iname,cname(iname),cform(iname),'urms',idiag_urms)
         call parse_name(iname,cname(iname),cform(iname),'umax',idiag_umax)
+        call parse_name(iname,cname(iname),cform(iname),'uxmin',idiag_uxmin)
+        call parse_name(iname,cname(iname),cform(iname),'uymin',idiag_uymin)
+        call parse_name(iname,cname(iname),cform(iname),'uzmin',idiag_uzmin)
         call parse_name(iname,cname(iname),cform(iname),'uxmax',idiag_uxmax)
         call parse_name(iname,cname(iname),cform(iname),'uymax',idiag_uymax)
         call parse_name(iname,cname(iname),cform(iname),'uzmax',idiag_uzmax)
