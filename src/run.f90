@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.256 2008-04-05 10:19:04 brandenb Exp $
+! $Id: run.f90,v 1.257 2008-05-18 06:57:32 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -31,6 +31,7 @@
         use Timeavg
         use Interstellar,    only: check_SN
         use Shear
+        use Testfield,       only: rescaling_testfield
         use TestPerturb,     only: testperturb_begin, testperturb_finalize
         use Forcing
         use EquationOfState
@@ -38,7 +39,7 @@
         use Dustdensity,     only: init_nd
         use NeutralVelocity, only: init_uun
         use NeutralDensity,  only: init_lnrhon
-        use Magnetic,        only: pert_aa, rescaling
+        use Magnetic,        only: pert_aa, rescaling_magnetic
         use Particles_main
         use Particles_nbody, only: particles_nbody_read_snapshot,&
                                    particles_nbody_write_snapshot
@@ -75,7 +76,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.256 2008-04-05 10:19:04 brandenb Exp $")
+             "$Id: run.f90,v 1.257 2008-05-18 06:57:32 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -488,7 +489,8 @@
 !  Add forcing and/or do rescaling (if applicable)
 !
           if (lforcing) call addforce(f)
-          if (lrescaling) call rescaling(f)
+          if (lrescaling_magnetic)  call rescaling_magnetic(f)
+          if (lrescaling_testfield) call rescaling_testfield(f)
 !
 !  Check for SNe, and update f if necessary (see interstellar.f90)
 !

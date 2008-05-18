@@ -149,11 +149,7 @@ module Testfield
 !***********************************************************************
     subroutine calc_ltestfield_pars(f)
 !
-!  calculate <uxb>, which is needed when lsoca=.false.
-!
 !  29-jan-06/axel: dummy routine
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in)     :: f
@@ -161,6 +157,17 @@ module Testfield
       if (NO_WARN) print*, f
 !
     endsubroutine calc_ltestfield_pars
+!***********************************************************************
+    subroutine rescaling_testfield(f)
+!
+!  18-may-08/axel: dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
+!
+      if (NO_WARN) print*, f
+!
+    endsubroutine rescaling_testfield
 !***********************************************************************
     subroutine rprint_testfield(lreset,lwrite)
 !

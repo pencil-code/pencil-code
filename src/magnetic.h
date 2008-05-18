@@ -15,7 +15,7 @@
 
   public :: calc_mfield, idiag_bcosphz, idiag_bsinphz
   public :: bc_aa_pot, bc_aa_pot2, bc_aa_pot3, bc_frozen_in_bb
-  public :: pert_aa, rescaling
+  public :: pert_aa, rescaling_magnetic
   public :: bb_unitvec_shock, remove_mean_emf
   public :: lelectron_inertia, inertial_length, linertial_2
 

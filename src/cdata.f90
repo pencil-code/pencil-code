@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.424 2008-05-14 13:14:14 brandenb Exp $
+! $Id: cdata.f90,v 1.425 2008-05-18 06:57:32 brandenb Exp $
 !
 !  Global variables are defined in this module.
 !
@@ -434,7 +434,8 @@ module Cdata
   logical :: lisotropic_advection=.false.
   logical :: pretend_lnTT=.false.
   logical :: lmonolithic_io=.false.
-  logical :: lrescaling=.false.
+  logical :: lrescaling_magnetic=.false.
+  logical :: lrescaling_testfield=.false.
   logical :: llocal_iso=.false.
   logical :: lthermo_ppd=.false.
 !

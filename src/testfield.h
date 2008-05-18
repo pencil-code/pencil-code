@@ -9,4 +9,5 @@
   public :: init_aatest, daatest_dt
   public :: pencil_criteria_testfield, pencil_interdep_testfield
   public :: calc_ltestfield_pars
+  public :: rescaling_testfield
 

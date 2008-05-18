@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.35 2007-11-21 13:56:36 wlyra Exp $
+! $Id: testfield.f90,v 1.36 2008-05-18 06:57:32 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -44,10 +44,12 @@ module Testfield
 
   ! run parameters
   real :: etatest=0.
+  real, dimension(njtest) :: rescale_aatest=0.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,xextent,zextent,lsoca, &
        lset_bbtest2,etatest,itestfield,ktestfield,daainit, &
-       linit_aatest
+       linit_aatest, &
+       rescale_aatest
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0,idiag_alp21=0,idiag_alp31=0
@@ -115,7 +117,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.35 2007-11-21 13:56:36 wlyra Exp $")
+           "$Id: testfield.f90,v 1.36 2008-05-18 06:57:32 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -578,6 +580,55 @@ module Testfield
       headtt=headtt_save
 !
     endsubroutine calc_ltestfield_pars
+!***********************************************************************
+    subroutine rescaling_testfield(f)
+!
+!  Rescale testfield by factor rescale_aatest(jtest),
+!  which could be different for different testfields
+!
+!  18-may-08/axel: rewrite from rescaling as used in magnetic
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=130) :: file
+      character (len=5) :: ch
+      integer,save :: ifirst=0
+      integer :: j,jtest
+!
+      intent(inout) :: f
+!
+! reinitialize aatest periodically if requested
+!
+      if (linit_aatest) then
+        file=trim(datadir)//'/tinit_aatest.dat'
+        if (ifirst==0) then
+          call read_snaptime(trim(file),taainit,naainit,daainit,t)
+          if (taainit==0 .or. taainit < t-daainit) then
+            taainit=t+daainit
+          endif
+          ifirst=1
+        endif
+!
+!  Do only one xy plane at a time (for cache efficiency)
+!
+        if (t >= taainit) then
+          do jtest=1,njtest
+            iaxtest=iaatest+3*(jtest-1)
+            iaztest=iaxtest+2
+            do j=iaxtest,iaztest
+              do n=n1,n2
+                f(l1:l2,m1:m2,n,j)=rescale_aatest(jtest)*f(l1:l2,m1:m2,n,j)
+              enddo
+            enddo
+          enddo
+          call update_snaptime(file,taainit,naainit,daainit,t, &
+            ltestfield,ch,ENUM=.false.)
+        endif
+      endif
+!
+    endsubroutine rescaling_testfield
 !***********************************************************************
     subroutine set_bbtest(bbtest,jtest,ktestfield)
 !

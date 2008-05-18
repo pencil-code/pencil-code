@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.305 2008-05-14 13:14:14 brandenb Exp $
+! $Id: param_io.f90,v 1.306 2008-05-18 06:57:32 brandenb Exp $
 
 module Param_IO
 
@@ -120,7 +120,7 @@ module Param_IO
        border_frac,border_frac_x,border_frac_y,border_frac_z, &
        lpoint,mpoint,npoint, &
        lpoint2,mpoint2,npoint2, &
-       lrescaling, lcylinder_in_a_box, lsphere_in_a_box,&
+       lrescaling_magnetic, lcylinder_in_a_box, lsphere_in_a_box,&
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
        lbidiagonal_derij,lisotropic_advection, &

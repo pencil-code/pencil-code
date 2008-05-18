@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.521 2008-05-16 12:15:55 ajohan Exp $
+! $Id: magnetic.f90,v 1.522 2008-05-18 06:57:32 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -420,7 +420,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.521 2008-05-16 12:15:55 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.522 2008-05-18 06:57:32 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2517,7 +2517,7 @@ module Magnetic
 !
     endsubroutine calc_bthresh
 !***********************************************************************
-    subroutine rescaling(f)
+    subroutine rescaling_magnetic(f)
 !
 !  This routine could be turned into a wrapper routine later on,
 !  if we want to do dynamic rescaling also on other quantities.
@@ -2538,7 +2538,7 @@ module Magnetic
 !
       if (brms/=0) then
         scl=1.+rescaling_fraction*(brms_target/brms-1.)
-        if (headtt) print*,'rescaling: scl=',scl
+        if (headtt) print*,'rescaling_magnetic: scl=',scl
         do j=iax,iaz
           do n=n1,n2
             f(l1:l2,m1:m2,n,j)=scl*f(l1:l2,m1:m2,n,j)
@@ -2546,7 +2546,7 @@ module Magnetic
         enddo
       endif
 !
-    endsubroutine rescaling
+    endsubroutine rescaling_magnetic
 !***********************************************************************
     subroutine calc_tau_aa_exterior(f,df)
 !
