@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.88 2008-04-24 20:16:17 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.89 2008-05-18 08:34:48 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -65,7 +65,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.88 2008-04-24 20:16:17 brandenb Exp $")
+           "$Id: nomagnetic.f90,v 1.89 2008-05-18 08:34:48 brandenb Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -197,7 +197,7 @@ module Magnetic
 !
     endsubroutine df_diagnos_magnetic
 !***********************************************************************
-    subroutine rescaling(f)
+    subroutine rescaling_magnetic(f)
 !
 !  Dummy routine
 !
@@ -211,7 +211,7 @@ module Magnetic
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine rescaling
+    endsubroutine rescaling_magnetic
 !***********************************************************************
     subroutine read_magnetic_init_pars(unit,iostat)
       integer, intent(in) :: unit
