@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.53 2008-05-01 10:22:20 ajohan Exp $
+! $Id: shear.f90,v 1.54 2008-05-19 09:03:27 pkapyla Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -55,7 +55,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.53 2008-05-01 10:22:20 ajohan Exp $")
+           "$Id: shear.f90,v 1.54 2008-05-19 09:03:27 pkapyla Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -298,12 +298,12 @@ module Shear
       real, dimension (nx) :: uy0
       integer :: l, ivar
 !
-!  Works currently only when Sshear is not positive.
+!  Must currently use lshearadvection_as_shift=T when Sshear is positive.
 !
-!      if (Sshear>0.) then
-!        if (lroot) print*, 'Note: must use non-positive values of Sshear'
-!        call stop_it('')
-!      endif
+      if (Sshear>0. .and. .not. lshearadvection_as_shift) then
+        if (lroot) print*, 'Note: must use lshearadvection_as_shift=T with positive values of Sshear'
+        call stop_it('')
+      endif
 !
 !  Make sure deltay is in the range 0 <= deltay < Ly (assuming Sshear<0).
 !
