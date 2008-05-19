@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.60 2008-05-15 07:18:25 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.61 2008-05-19 13:37:09 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -139,7 +139,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.60 2008-05-15 07:18:25 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.61 2008-05-19 13:37:09 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1175,7 +1175,7 @@ module Entropy
 !
 !  08-Sep-07/gastine+dintrans: coded
 !  2-D ADI scheme for the radiative diffusion term (see
-!  Peaceman & Rachford 1955). Each direction are solved implicitly:
+!  Peaceman & Rachford 1955). Each direction is solved implicitly:
 !
 !    (1-dt/2*Lambda_x)*T^(n+1/2) = (1+dt/2*Lambda_y)*T^n + source/2
 !    (1-dt/2*Lambda_y)*T^(n+1)   = (1+dt/2*Lambda_x)*T^(n+1/2) + source/2
