@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.35 2008-05-10 12:19:56 wlyra Exp $
+! $Id: selfgravity.f90,v 1.36 2008-05-19 16:40:00 wlyra Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -30,17 +30,18 @@ module Selfgravity
 
   real, target :: rhs_poisson_const=1.0
   real, target :: tstart_selfgrav=0.0
+  real :: gravitational_const=0.0
 
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
   logical :: lselfgravity_neutrals=.false.
 
   namelist /selfgrav_init_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
-      lselfgravity_neutrals,tstart_selfgrav
+      lselfgravity_neutrals,tstart_selfgrav, gravitational_const
 
   namelist /selfgrav_run_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
-      lselfgravity_neutrals,tstart_selfgrav
+      lselfgravity_neutrals,tstart_selfgrav, gravitational_const
 
   integer :: idiag_gpoten=0, idiag_gpotenmxy=0
   integer :: idiag_gpotselfxm=0, idiag_gpotselfym=0, idiag_gpotselfzm=0
@@ -73,7 +74,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.35 2008-05-10 12:19:56 wlyra Exp $")
+           "$Id: selfgravity.f90,v 1.36 2008-05-19 16:40:00 wlyra Exp $")
 !
 !  Put variable name in array
 !
@@ -95,6 +96,11 @@ module Selfgravity
       use SharedVariables
 !
       integer :: ierr=0
+!
+      if (gravitational_const .ne. 0) then 
+        !gravitational const was set, re-define rhs_poisson_const
+        rhs_poisson_const=4*pi*gravitational_const
+      endif
 !
       if (.not.lpoisson) then
         if (lroot) print*, 'initialize_selfgravity: must choose a Poisson '// &
