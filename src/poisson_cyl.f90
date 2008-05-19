@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.17 2008-05-19 13:55:47 wlyra Exp $
+! $Id: poisson_cyl.f90,v 1.18 2008-05-19 16:25:53 wlyra Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -551,10 +551,10 @@ module Poisson
 !
       nnghost=npoint-nghost
 !
-! Fast Fourier transform in theta (don't normalize)
+! Fast Fourier transform in theta
 ! 
       b1=0.
-      call fourier_transform_y(phi,b1,lnorm=.false.)
+      call fourier_transform_y(phi,b1)
 !
 ! SS is the hankel transform of the density
 !
@@ -656,10 +656,8 @@ module Poisson
 !
         integrand=cross*green_grid_2D(ir,ith,:,:)
 !
-        phi(ir,ith,1:nz)=sum(                    &
-             sum(integrand(2:nr-1,:)) +          &
-             .5*(integrand(1,:)+integrand(nr,:)) &
-                       )
+        phi(ir,ith,1:nz)=sum(integrand(2:nr-1,:)) + &
+             .5*sum(integrand(1,:) + integrand(nr,:)) 
 !
       enddo
       enddo
@@ -1150,7 +1148,8 @@ module Poisson
 ! The distance is 
 !
 !       tmp=sqrt(rad(ir)**2 + rad(ikr)**2 - &
-!            2*rad(ir)*rad(ikr)*cos(tht(ith)-tht_serial(ikt)))
+!            2*rad(ir)*rad(ikr)*cos(tht(ith)-tht_serial(ikt)) + &
+!            Delta**2)
 !
 ! But it is better to work in terms of the indices, to avoid
 ! rounding errors. Otherwise, we will get self-accelerations 
