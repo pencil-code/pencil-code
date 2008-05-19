@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.405 2008-05-19 13:37:09 dintrans Exp $
+### $Id: Makefile.src,v 1.406 2008-05-19 15:20:02 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -498,19 +498,26 @@ LD_FFTW2=
 #LD_MPI=-Wl,-rpath -Wl,/usr/lib -Wl,-rpath -Wl,/opt/shared/intel_fc_81/lib -L/usr/lib farg.o -lmpichfarg -lmpich -lpthread -lrt  #(fe03*)
 #LIBMPISUFFIX=_#(fe03*)
 ##
+##  norlx01 Nordita computer
+##
+#FC=g95 -fno-second-underscore #(norlx0*)
+#FFLAGS= -freal=nan -finteger=-2147483648 -fbounds-check ftrace=full -Wall -Wno=140,141,109,112,137 -Werror#(norlx0*)
+#FFLAGS= -freal=nan -finteger=-2147483648 -fbounds-check -Wall -Wno=140,141,109,112,137 -Werror#(norlx0*)
+#LD_MPI=#(norlx0*)
+##
+##  Pencil-Code Servers
+##
+#FC=/usr/bin/gfortran #(norlx5*)
+#F77=$(FC) #(norlx5*)
+#CC=gcc #(norlx5*)
+#FFLAGS=-O3 #(norlx5*)
+##
 ##  Patrik's playstation
 ##
 #FC=/usr/bin/gfortran #(playstation-desktop)
 #F77=$(FC) #(playstation-desktop)
 #CC=gcc #(playstation-desktop)
 #FFLAGS=-O3 #(playstation-desktop)
-##
-##  norlx01 Nordita computer
-##
-#FC=g95 -fno-second-underscore #(norlx*)
-#FFLAGS= -freal=nan -finteger=-2147483648 -fbounds-check ftrace=full -Wall -Wno=140,141,109,112,137 -Werror#(norlx*)
-#FFLAGS= -freal=nan -finteger=-2147483648 -fbounds-check -Wall -Wno=140,141,109,112,137 -Werror#(norlx*)
-#LD_MPI=#(norlx*)
 ##
 ## Natalia's laptop (Natalia, 1.8 GHz)
 ##
@@ -564,7 +571,7 @@ LD_FFTW2=
 ## starlink Newcastle's general access machine
 ##
 #FC=ifort -static -I/usr/local/lib/idl/lam/include #(starlink)
-#LD_MPI=-L/usr/local/lib/idl/lam/lib -llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(starlink)
+#LD_MpI=-L/usr/local/lib/idl/lam/lib -llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(starlink)
 #LIBMPISUFFIX=_#(starlink)
 #MAKEOPTS=-j 3 #(starlink)
 #
