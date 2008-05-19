@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.26 2008-05-08 13:13:50 wlyra Exp $
+! $Id: fourier_fftpack.f90,v 1.27 2008-05-19 13:55:47 wlyra Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -410,7 +410,7 @@ module Fourier
 !
     endsubroutine fourier_transform_x
 !***********************************************************************
-    subroutine fourier_transform_y(a_re,a_im,linv)
+    subroutine fourier_transform_y(a_re,a_im,linv,lnorm)
 !
 !  Subroutine to do Fourier transform in the y-direction.
 !  As it is not cache efficient to Fourier transform in other
@@ -449,9 +449,9 @@ module Fourier
       complex,dimension(nygrid)    :: ay
       real    :: dnx
       integer :: l,n,iarr,ix,ido,iup,i
-      logical :: lforward,err,lfirstcall=.true.
+      logical :: lforward,lnormalize,err,lfirstcall=.true.
       logical, optional :: linv
-
+      logical, optional :: lnorm
 !
 ! Separate the problem in two cases. nxgrid>= nygrid and its
 ! opposite
@@ -467,6 +467,11 @@ module Fourier
       lforward=.true.
       if (present(linv)) then
         if (linv) lforward=.false.
+      endif
+!
+      lnormalize=.true.
+      if (present(lnorm)) then
+        if (.not.lnorm) lnormalize=.false.
       endif
 !
 !  initialize cfft (coefficients for fft?)
@@ -504,8 +509,10 @@ module Fourier
 ! Normalize if forward
 !
         if (lforward) then
-          a_re=a_re/nygrid
-          a_im=a_im/nygrid
+          if (lnormalize) then 
+            a_re=a_re/nygrid
+            a_im=a_im/nygrid
+          endif
         endif
 !
       else !case nxgrid<nygrid
@@ -549,8 +556,10 @@ module Fourier
 ! Normalize if forward
 !
         if (lforward) then
-          tmp_re=tmp_re/nygrid
-          tmp_im=tmp_im/nygrid
+          if (lnormalize) then 
+            tmp_re=tmp_re/nygrid
+            tmp_im=tmp_im/nygrid
+          endif
         endif
 !
 ! Interpolate (coarsen) back to dimension nx

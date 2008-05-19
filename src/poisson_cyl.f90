@@ -1,4 +1,4 @@
-! $Id: poisson_cyl.f90,v 1.16 2008-05-15 19:23:31 wlyra Exp $
+! $Id: poisson_cyl.f90,v 1.17 2008-05-19 13:55:47 wlyra Exp $
 
 !
 !  This module solves the Poisson equation in cylindrical coordinates
@@ -551,10 +551,10 @@ module Poisson
 !
       nnghost=npoint-nghost
 !
-! Fourier transform in theta 
+! Fast Fourier transform in theta (don't normalize)
 ! 
       b1=0.
-      call fourier_transform_y(phi,b1)
+      call fourier_transform_y(phi,b1,lnorm=.false.)
 !
 ! SS is the hankel transform of the density
 !
