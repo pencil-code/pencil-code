@@ -1,5 +1,6 @@
-! $Id: spiegel.f90,v 1.5 2008-05-09 17:27:56 brandenb Exp $
+! $Id: spiegel.f90,v 1.6 2008-05-20 11:18:12 brandenb Exp $
 !
+!  This module is currently fairly much obsolete.
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
 !
@@ -156,11 +157,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: spiegel.f90,v 1.5 2008-05-09 17:27:56 brandenb Exp $ 
+!  CVS should automatically update everything between $Id: spiegel.f90,v 1.6 2008-05-20 11:18:12 brandenb Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: spiegel.f90,v 1.5 2008-05-09 17:27:56 brandenb Exp $")
+           "$Id: spiegel.f90,v 1.6 2008-05-20 11:18:12 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
