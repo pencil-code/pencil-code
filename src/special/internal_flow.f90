@@ -1,4 +1,4 @@
-! $Id: internal_flow.f90,v 1.10 2008-05-09 17:27:56 brandenb Exp $
+! $Id: internal_flow.f90,v 1.11 2008-05-20 08:57:09 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -84,11 +84,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.10 2008-05-09 17:27:56 brandenb Exp $
+!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.11 2008-05-20 08:57:09 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: internal_flow.f90,v 1.10 2008-05-09 17:27:56 brandenb Exp $")
+           "$Id: internal_flow.f90,v 1.11 2008-05-20 08:57:09 nilshau Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -162,6 +162,8 @@ module Special
         call poiseulle_flowx_wally(f,xx,yy,zz,central_vel)
       case('velocity_defect_xy')
         call velocity_defect_flowx_wally(f,xx,yy,zz,central_vel,Re_tau)
+      case('log_law_xy')
+        call log_law_flowx_wally(f,xx,yy,zz,central_vel,Re_tau)
       case default
         !
         !  Catch unknown values
@@ -750,6 +752,59 @@ module Special
       if (ipy==nprocy-1) f(l1:l2,m2,n1:n2,iux)=0
       !
     end subroutine velocity_defect_flowx_wally
+!***********************************************************************
+    subroutine log_law_flowx_wally(f,xx,yy,zz,central_vel,Re_tau)
+      !
+      ! Set initial turbulent flow in x-direction.
+      ! The walls are in the y-direction.
+      ! This method is based on log-law.
+      ! More data on this can be found in e.g. Pope's book on turbulent flows.
+      !
+      ! 2008.05.20: Nils Erland (Coded)
+      !
+      use Mpicomm, only: ipy
+      !
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz), intent(in) :: xx,yy,zz
+      real, intent(in) :: central_vel,Re_tau
+      real :: B1,kappa,utau,nu, height, h2
+      integer :: i,j,k
+
+      real :: y_pluss, lw, u_log, u_lam
+      !
+      height=Lxyz(2)/2
+      h2=height**2
+      B1=5.5
+      kappa=2.5
+      print*,'WARNING!!!!! nu is hardcoded - this must be fixed!'
+      nu=1.5e-5
+      utau=Re_tau*nu/height
+      lw=nu/utau
+      !
+      ! Add mean turbulent velocity profile to the possibly already 
+      ! existing turnulent velocity field. As there should be less turbulence
+      ! close to the walls we scale the existing turbulence field with the
+      ! velocity profile.
+      !
+      do j=m1,m2
+        if (yy(l1,j,n1)<xyz0(2)+height) then
+          y_pluss=(yy(l1,j,n1)-xyz0(2))/lw
+          u_log=(kappa*log(y_pluss+tini)+B1)*utau
+          u_lam=y_pluss*utau
+          f(l1:l2,j,n1:n2,iux)=&
+               (f(l1:l2,j,n1:n2,iux)/central_vel+1)*min(u_log,u_lam)
+        else
+          y_pluss=-(yy(l1,j,n1)-xyz0(2)-Lxyz(2))/lw
+          u_log=(kappa*log(y_pluss+tini)+B1)*utau
+          u_lam=y_pluss*utau
+          f(l1:l2,j,n1:n2,iux)=&
+               (f(l1:l2,j,n1:n2,iux)/central_vel+1)*min(u_log,u_lam)
+        endif
+      enddo
+      if (ipy==0)        f(l1:l2,m1,n1:n2,iux)=0
+      if (ipy==nprocy-1) f(l1:l2,m2,n1:n2,iux)=0
+      !
+    end subroutine log_law_flowx_wally
 !***********************************************************************
     subroutine bc_poi_x(f,sgn,topbot,j,rel,val)
 !
