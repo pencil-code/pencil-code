@@ -1,55 +1,101 @@
-% $Id: notes.tex,v 1.1 2008-03-22 15:12:10 brandenb Exp $
+% $Id: notes.tex,v 1.2 2008-05-20 07:09:48 brandenb Exp $
 \documentclass{article}
+\setlength{\textwidth}{160mm}
+\setlength{\oddsidemargin}{-0mm}
+\setlength{\textheight}{220mm}
+\setlength{\topmargin}{-8mm}
 \usepackage{graphicx}
 \usepackage{bm}
 \graphicspath{{./fig/}{./png/}}
 \input apj
 \title{Test Perturbations}
 \author{}
-\date{\today,~ $ $Revision: 1.1 $ $}
+\date{\today,~ $ $Revision: 1.2 $ $}
 \begin{document}
 \maketitle
 
+In the following, $\emf_i^\sigma$ for $i=1,2,3$ and $\sigma=0,1,...,4$
+denote fully three-dimensional arrays and angular brackets denote volume
+averages.
 \EQ
 \alpha_{11}
-=\left(\emf_1^1-\emf_1^0\right)B^{-1}\cos kz
+=\left\langle
+\left(\emf_1^1-\emf_1^0\right)B^{-1}\cos kz
 +\left(\emf_1^2-\emf_1^0\right)B^{-1}\sin kz
+\right\rangle
 \EN
 \EQ
 \alpha_{21}
-=\left(\emf_2^1-\emf_2^0\right)B^{-1}\cos kz
+=\left\langle
+\left(\emf_2^1-\emf_2^0\right)B^{-1}\cos kz
 +\left(\emf_2^2-\emf_2^0\right)B^{-1}\sin kz
+\right\rangle
 \EN
 \EQ
 \alpha_{12}
-=\left(\emf_1^3-\emf_1^0\right)B^{-1}\cos kz
+=\left\langle
+\left(\emf_1^3-\emf_1^0\right)B^{-1}\cos kz
 +\left(\emf_1^4-\emf_1^0\right)B^{-1}\sin kz
+\right\rangle
 \EN
 \EQ
 \alpha_{22}
-=\left(\emf_2^3-\emf_2^0\right)B^{-1}\cos kz
+=\left\langle
+\left(\emf_2^3-\emf_2^0\right)B^{-1}\cos kz
 +\left(\emf_2^4-\emf_2^0\right)B^{-1}\sin kz
+\right\rangle
 \EN
 \EQ
 \eta_{113}
-=-\left(\emf_1^1-\emf_1^0\right)B^{-1}k^{-1}\sin kz
+=\left\langle
+-\left(\emf_1^1-\emf_1^0\right)B^{-1}k^{-1}\sin kz
 +\left(\emf_1^2-\emf_1^0\right)B^{-1}k^{-1}\cos kz
+\right\rangle
 \EN
 \EQ
 \eta_{213}
-=-\left(\emf_2^1-\emf_2^0\right)B^{-1}k^{-1}\sin kz
+=\left\langle
+-\left(\emf_2^1-\emf_2^0\right)B^{-1}k^{-1}\sin kz
 +\left(\emf_2^2-\emf_2^0\right)B^{-1}k^{-1}\cos kz
+\right\rangle
 \EN
 \EQ
 \eta_{123}
-=-\left(\emf_1^3-\emf_1^0\right)B^{-1}k^{-1}\sin kz
+=\left\langle
+-\left(\emf_1^3-\emf_1^0\right)B^{-1}k^{-1}\sin kz
 +\left(\emf_1^4-\emf_1^0\right)B^{-1}k^{-1}\cos kz
+\right\rangle
 \EN
 \EQ
 \eta_{223}
-=-\left(\emf_2^3-\emf_2^0\right)B^{-1}k^{-1}\sin kz
+=\left\langle
+-\left(\emf_2^3-\emf_2^0\right)B^{-1}k^{-1}\sin kz
 +\left(\emf_2^4-\emf_2^0\right)B^{-1}k^{-1}\cos kz
+\right\rangle
 \EN
+
+The final result can be split into 3 separate volume averages, i.e.\
+\EQA
+\alpha_{p1}B
+=\bra{\emf_p^1\cos kz}
++\bra{\emf_p^2\sin kz}
+-\bra{\emf_p^0(\cos kz+\sin kz)}
+\\
+\alpha_{p2}B
+=\bra{\emf_p^3\cos kz}
++\bra{\emf_p^4\sin kz}
+-\bra{\emf_p^0(\cos kz+\sin kz)}
+\\
+\eta_{p13}kB=
+-\bra{\emf_p^1\sin kz}
++\bra{\emf_p^2\cos kz}
++\bra{\emf_p^0(\sin kz-\cos kz)}
+\\
+\eta_{p23}kB=
+-\bra{\emf_p^3\sin kz}
++\bra{\emf_p^4\cos kz}
++\bra{\emf_p^0(\sin kz-\cos kz)}
+\ENA
 
 %\begin{figure}[t!]\begin{center}
 %\includegraphics[width=\columnwidth]{pcoolheat}
@@ -61,7 +107,7 @@
 %\end{verbatim}
 
 \vfill\bigskip\noindent\tiny\begin{verbatim}
-$Header: /var/cvs/brandenb/f90/pencil-code/doc/implementation/testperturb/notes.tex,v 1.1 2008-03-22 15:12:10 brandenb Exp $
+$Header: /var/cvs/brandenb/f90/pencil-code/doc/implementation/testperturb/notes.tex,v 1.2 2008-05-20 07:09:48 brandenb Exp $
 \end{verbatim}
 
 \end{document}
