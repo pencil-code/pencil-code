@@ -1,4 +1,4 @@
-! $Id: internal_flow.f90,v 1.11 2008-05-20 08:57:09 nilshau Exp $
+! $Id: internal_flow.f90,v 1.12 2008-05-21 09:45:22 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -84,11 +84,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.11 2008-05-20 08:57:09 nilshau Exp $
+!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.12 2008-05-21 09:45:22 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: internal_flow.f90,v 1.11 2008-05-20 08:57:09 nilshau Exp $")
+           "$Id: internal_flow.f90,v 1.12 2008-05-21 09:45:22 nilshau Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -801,8 +801,14 @@ module Special
                (f(l1:l2,j,n1:n2,iux)/central_vel+1)*min(u_log,u_lam)
         endif
       enddo
-      if (ipy==0)        f(l1:l2,m1,n1:n2,iux)=0
-      if (ipy==nprocy-1) f(l1:l2,m2,n1:n2,iux)=0
+      if (ipy==0) then
+        f(l1:l2,m1,n1:n2,iux)  =0
+        f(l1:l2,m1+1,n1:n2,iux)=(yy(l1,m1+1,n1)-xyz0(2))/lw*utau
+      endif
+      if (ipy==nprocy-1) then
+        f(l1:l2,m2,n1:n2,iux)=0
+        f(l1:l2,m2-1,n1:n2,iux)=-(yy(l1,m2-1,n1)-xyz0(2)-Lxyz(2))/lw*utau
+      endif
       !
     end subroutine log_law_flowx_wally
 !***********************************************************************
