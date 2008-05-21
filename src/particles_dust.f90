@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.224 2008-05-13 13:29:23 wlyra Exp $
+! $Id: particles_dust.f90,v 1.225 2008-05-21 19:01:43 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -138,7 +138,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.224 2008-05-13 13:29:23 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.225 2008-05-21 19:01:43 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -441,7 +441,7 @@ module Particles
           if (nzgrid/=1) &
               fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
 
-       case ('random-cylindrical')
+       case ('random-cylindrical','random-cyl')
           if (lroot) print*, 'init_particles: Random particle '//&
                'cylindrical positions with power-law pdlaw=',pdlaw
 !
