@@ -1,4 +1,4 @@
-# $Id: ts.py,v 1.5 2008-05-14 16:03:35 dintrans Exp $
+# $Id: ts.py,v 1.6 2008-05-23 06:45:42 dintrans Exp $
 #
 # read time_series.dat and return a TimeSeries class of 1D numpy
 # arrrays
@@ -77,6 +77,8 @@ class read_ts:
           available or zero, fill the list with the first two variables other
           than `it' and `dt*'
       """
+# speed the graphics (in connection with an ending P.show())
+      P.ioff()
       elim=re.compile(r'dt|it|__|plot')
       # every argument of the read_ts class is listed in listargs
       listargs=dir(self) 
@@ -109,8 +111,8 @@ class read_ts:
           P.xlabel('Time')
           P.ylabel(listargs[i])
           i+=1
-
-     
+      P.show()
+      P.ion()
      
 if __name__=='__main__':
     read_ts.__doc__
