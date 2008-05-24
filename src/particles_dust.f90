@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.225 2008-05-21 19:01:43 wlyra Exp $
+! $Id: particles_dust.f90,v 1.226 2008-05-24 10:14:42 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -138,7 +138,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.225 2008-05-21 19:01:43 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.226 2008-05-24 10:14:42 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1687,6 +1687,11 @@ k_loop:   do while (.not. (k>npar_loc))
             dt1_drag=dt1_drag/cdtp
             dt1_max=max(dt1_max,dt1_drag)
           endif
+        else
+!
+!  No particles in this pencil.
+!          
+          if (lfirst.and.ldt) dt1_drag=0.0
         endif
       endif
 !
