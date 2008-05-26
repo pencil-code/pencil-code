@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.223 2008-05-08 13:15:51 wlyra Exp $
+! $Id: mpicomm.f90,v 1.224 2008-05-26 03:18:12 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -100,6 +100,7 @@ module Mpicomm
   interface mpibcast_logical
     module procedure mpibcast_logical_scl
     module procedure mpibcast_logical_arr
+    module procedure mpibcast_logical_arr2
   endinterface
 
   interface mpibcast_int
@@ -1180,7 +1181,7 @@ module Mpicomm
 !  04-sep-06/anders: coded
 !
       integer :: nbcast_array
-      real, dimension(nbcast_array) :: bcast_array
+      logical, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -1537,6 +1538,29 @@ module Mpicomm
           MPI_COMM_WORLD,ierr)
 !
     endsubroutine mpibcast_logical_arr
+!***********************************************************************
+    subroutine mpibcast_logical_arr2(lbcast_array,nbcast_array,proc)
+!
+!  Communicate logical array(:,:) to other processor.
+!
+!  25-may-08/wlad: adapted
+!
+      integer, dimension(2) :: nbcast_array
+      logical, dimension(nbcast_array(1),nbcast_array(2)) :: lbcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc,nbcast
+!
+      nbcast=nbcast_array(1)*nbcast_array(2)
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(lbcast_array, nbcast, MPI_LOGICAL, ibcast_proc, &
+          MPI_COMM_WORLD,ierr)
+!
+    endsubroutine mpibcast_logical_arr2
 !***********************************************************************
     subroutine mpibcast_int_scl(ibcast_array,nbcast_array,proc)
 !

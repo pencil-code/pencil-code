@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.165 2008-05-11 17:13:01 wlyra Exp $
+! $Id: nompicomm.f90,v 1.166 2008-05-26 03:18:12 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -56,6 +56,7 @@ module Mpicomm
   interface mpibcast_logical
     module procedure mpibcast_logical_scl
     module procedure mpibcast_logical_arr
+    module procedure mpibcast_logical_arr2
   endinterface
 
   interface mpibcast_int
@@ -608,6 +609,16 @@ module Mpicomm
       if (NO_WARN) print*, lbcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_logical_arr
+!***********************************************************************
+    subroutine mpibcast_logical_arr2(bcast_array,nbcast_array,proc)
+!
+      integer, dimension(2) :: nbcast_array
+      logical, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer, optional :: proc
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc
+!
+    endsubroutine mpibcast_logical_arr2
 !***********************************************************************
     subroutine mpibcast_int_scl(ibcast_array,nbcast_array,proc)
 !
