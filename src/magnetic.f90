@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.522 2008-05-18 06:57:32 brandenb Exp $
+! $Id: magnetic.f90,v 1.523 2008-05-26 12:15:13 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -420,7 +420,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.522 2008-05-18 06:57:32 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.523 2008-05-26 12:15:13 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1136,7 +1136,9 @@ module Magnetic
       if (idiag_gpxbm/=0) lpenc_diagnos(i_glnrhoxb)=.true.
       if (idiag_jxbxbm/=0) lpenc_diagnos(i_jxbxb)=.true.
       if (idiag_oxuxbm/=0) lpenc_diagnos(i_oxuxb)=.true.
-      if (idiag_exaym2/=0 .or. idiag_exjm2/=0) lpenc_diagnos(i_jj)=.true.
+      if (idiag_exaym2/=0 .or. idiag_exjm2/=0 .or. &
+          idiag_jmx/=0 .or. idiag_jmy/=0 .or. idiag_jmz/=0 .or. &
+          idiag_jmbmz/=0 .or. idiag_kmz/=0 ) lpenc_diagnos(i_jj)=.true.
       if (idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
           idiag_bmax/=0) lpenc_diagnos(i_b2)=.true.
 !
