@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.50 2008-05-26 03:17:43 wlyra Exp $
+! $Id: poisson.f90,v 1.51 2008-05-26 09:50:13 wlyra Exp $
 
 !
 !  This module solves the Poisson equation
@@ -110,7 +110,7 @@ module Poisson
         call inverse_laplacian_semispectral(phi)
       else
         if (lexpand_grid) then
-          call inverse_laplacian_fft_expandgrid(phi)
+          call inverse_laplacian_expandgrid(phi)
         else
           call inverse_laplacian_fft(phi)
         endif
@@ -134,7 +134,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.50 2008-05-26 03:17:43 wlyra Exp $")
+        "$Id: poisson.f90,v 1.51 2008-05-26 09:50:13 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -247,7 +247,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.50 2008-05-26 03:17:43 wlyra Exp $")
+        "$Id: poisson.f90,v 1.51 2008-05-26 09:50:13 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -323,7 +323,7 @@ module Poisson
 !
     endsubroutine inverse_laplacian_semispectral
 !***********************************************************************
-    subroutine inverse_laplacian_fft_expandgrid(phi)
+    subroutine inverse_laplacian_expandgrid(phi)
 !
       use Mpicomm
 !
@@ -361,12 +361,12 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.50 2008-05-26 03:17:43 wlyra Exp $")
+        "$Id: poisson.f90,v 1.51 2008-05-26 09:50:13 wlyra Exp $")
 !
 !  Break if lshear or 3D
 !
       if (lshear) &
-           call fatal_error("inverse_laplacian_fft_expandgrid",&
+           call fatal_error("inverse_laplacian_expandgrid",&
            "not implemented for external shear")
 !
       if (lroot.and.lfirstcall) print*,'Entered inverse_laplacian_expandgrid'
@@ -490,7 +490,7 @@ module Poisson
             nb1(ikx,iky) = 0.0
           else
             if (.not.lrazor_thin) then
-              call fatal_error("inverse_laplacian_fft_expandgrid",&
+              call fatal_error("inverse_laplacian_expandgrid",&
                    "3d case not implemented yet")
 !
 !  Razor-thin approximation. Here we solve the equation
@@ -565,7 +565,7 @@ module Poisson
 !
       if (lfirstcall) lfirstcall=.false.
 !
-    endsubroutine inverse_laplacian_fft_expandgrid
+    endsubroutine inverse_laplacian_expandgrid
 !***********************************************************************
     subroutine read_poisson_init_pars(unit,iostat)
 !
