@@ -64,7 +64,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.67 2008-05-11 08:18:57 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.68 2008-05-26 16:20:46 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -240,7 +240,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   default, global, 0
   if (global) then begin
-    pc_read_global, obj=gg, datadir=datadir, /quiet
+    pc_read_global, obj=gg, proc=proc, datadir=datadir, /quiet
     global_names=tag_names(gg)
   endif
 ;
