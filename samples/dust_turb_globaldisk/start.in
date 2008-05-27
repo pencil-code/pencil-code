@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.3 2007-09-09 09:30:27 wlyra Exp $',
+  cvsid='$Id: start.in,v 1.4 2008-05-27 00:17:42 wlyra Exp $',
   ip=14,                        ! debugging parameter
   xyz0  = -2.6,-2.6,-0.26,       ! first corner of box
   xyz1  =  2.6, 2.6, 0.26,       ! second corner of box
@@ -46,5 +46,5 @@
   initxxp='random-cylindrical', initvvp='Keplerian'
   tausp=1.0
   lparticlemesh_tsc=T
-  lcartesian_mig=F
+  bcpx='flk',bcpy='out'
 /

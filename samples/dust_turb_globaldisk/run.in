@@ -3,7 +3,7 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.3 2007-08-24 14:35:36 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.4 2008-05-27 00:17:42 wlyra Exp $',
   ip=14,
   nt=10, it1=1, isave=500, itorder=3, ialive=1
   cdt=0.4, 
@@ -58,7 +58,6 @@
   lmigration_redo=T
   gravr_profile='no-smooth'
   lparticlemesh_tsc=T
-  lcartesian_mig=F
 /
 &shock_run_pars
   lshock_first=T
