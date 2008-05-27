@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.226 2008-05-24 10:14:42 ajohan Exp $
+! $Id: particles_dust.f90,v 1.227 2008-05-27 00:16:35 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -82,7 +82,7 @@ module Particles
       lcollisional_cooling_twobody, ipar_fence_species, tausp_species, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole, &
-      epsp_friction_increase,lcartesian_mig, lcollisional_dragforce_cooling, &
+      epsp_friction_increase,lcollisional_dragforce_cooling, &
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier,&
@@ -101,7 +101,7 @@ module Particles
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
-      lmigration_real_check,lcartesian_mig,ldraglaw_variable, &
+      lmigration_real_check,ldraglaw_variable, &
       ldraglaw_epstein, ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
       ldraglaw_epstein_transonic,lcheck_exact_frontier,ldraglaw_eps_stk_transonic
 
@@ -138,7 +138,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.226 2008-05-24 10:14:42 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.227 2008-05-27 00:16:35 wlyra Exp $")
 !
 !  Indices for particle position.
 !
