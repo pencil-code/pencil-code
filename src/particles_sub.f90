@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.137 2008-05-10 01:11:58 dobler Exp $
+! $Id: particles_sub.f90,v 1.138 2008-05-27 00:15:32 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -205,81 +205,30 @@ module Particles_sub
 !
       intent (inout) :: fp, npar_loc, ipar, dfp
 !
-! Cylindrical boundary conditions      
+!  Reversing direction of looping is needed for removal
 !
-      if (.not.lcartesian_mig) then
+      if ((bcpx=='rmv').or.(bcpy=='rmv').or.(bcpz=='rmv')) then 
+        k1=npar_loc;k2=1;ik=-1
+      else
+        k1=1;k2=npar_loc;ik=1
+      endif
 !
-        if ((lparticles_nbody).and.(nspar<npar)) &
-             call stop_it("boundcond_particles, cylindrical "//&
-             "migration not yet adapted for dust+sinks")
+      do k=k1,k2,ik
 !
-        if (.not.lcylinder_in_a_box) &
-             call stop_it("boundcond_particles, cylindrical "//&
-             "migration is just for embedded cylinders")
+!  Check if we are dealing with a dust or a massive particle
 !
-!  radial boundary condition
-!
-        do k=1,npar_loc
-          rad = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2)
-!  rp < rp_int : flush particle and move to outer boundary
-          if (rad<rp_int) then
-            xold=fp(k,ixp); yold=fp(k,iyp); r1old = 1./max(rad,tini)
-            rad=rp_ext
-!
-            fp(k,ixp) = rad*xold*r1old ! r*cos(theta)
-            fp(k,iyp) = rad*yold*r1old ! r*sin(theta)
-            OO=rad**(-1.5)
-!  Set particle velocity to local Kepler speed.
-            fp(k,ivpx) = -OO*fp(k,iyp)
-            fp(k,ivpy) =  OO*fp(k,ixp)
-          endif
-!  rp >= rp_ext : flush particle and move to outer boundary
-          if (rad>=rp_ext) then
-            xold=fp(k,ixp); yold=fp(k,iyp); r1old = 1./max(rad,tini)
-!
-            rad=rp_ext
-            fp(k,ixp) = rad*xold*r1old ! r*cos(theta)
-            fp(k,iyp) = rad*yold*r1old ! r*sin(theta)
-            OO=rad**(-1.5)
-            fp(k,ivpx) = -OO*fp(k,iyp)
-            fp(k,ivpy) =  OO*fp(k,ixp)
-          endif
-!
-        enddo
-!
-        if (nzgrid/=1) then
-          if (bcpz=='p') then
-            do k=1,npar_loc
-!  zp < z0
-              if (fp(k,izp)< xyz0(3)) then
-                fp(k,izp)=fp(k,izp)+Lxyz(3)
-                if (fp(k,izp)< xyz0(3)) then
-                  print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
-                       ' was further than Lz outside the simulation box!'
-                  print*, 'This must never happen.'
-                  print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
-                  call fatal_error_local('boundconds_particles','')
-                endif
-              endif
-!  zp > z1
-              if (fp(k,izp)>=xyz1(3)) then
-                fp(k,izp)=fp(k,izp)-Lxyz(3)
-                if (fp(k,izp)>=xyz1(3)) then
-                  print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
-                       ' was further than Lz outside the simulation box!'
-                  print*, 'This must never happen.'
-                  print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
-                  call fatal_error_local('boundconds_particles','')
-                endif
-              endif
-            enddo
-          else
-            print*, 'boundconds_particles: No such boundary condition bcpz=', bcpz
-            call stop_it('boundconds_particles')
-          endif
+        lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
+        if (.not.lsink) then
+          boundx=bcpx ;boundy=bcpy ;boundz=bcpz
+        else
+          boundx=bcspx;boundy=bcspy;boundz=bcspz
         endif
 !
-      else
+!  Calculate rad for cylinder-in-a-box calculations
+!
+        if (lcylinder_in_a_box) then
+          rad = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2)
+        endif
 !
 !  Cartesian boundaries: Boundary condition in the x-direction. The physical
 !  domain is in the interval
@@ -288,78 +237,107 @@ module Particles_sub
 !    y \in [y0,y1[
 !    z \in [z0,z1[
 !
-        if (bcpx=='rmv') then 
-          k1=npar_loc;k2=1;ik=-1
-        else
-          k1=1;k2=npar_loc;ik=1
-        endif
-!
-        do k=k1,k2,ik
-          lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
-          if (.not.lsink) then
-            !dust particle
-            boundx=bcpx ;boundy=bcpy ;boundz=bcpz
-          else
-            !massive particle
-            boundx=bcspx;boundy=bcspy;boundz=bcspz
-          endif
-!
-          if (nxgrid/=1) then
-            if (boundx=='p') then
+        if (nxgrid/=1) then
+          if (boundx=='p') then
    
 !  xp < x0
-              if (fp(k,ixp)< xyz0(1)) then
-                fp(k,ixp)=fp(k,ixp)+Lxyz(1)
-                if (lshear.and.nygrid/=1) fp(k,iyp)=fp(k,iyp)-deltay
+            if (fp(k,ixp)< xyz0(1)) then
+              fp(k,ixp)=fp(k,ixp)+Lxyz(1)
+              if (lshear.and.nygrid/=1) fp(k,iyp)=fp(k,iyp)-deltay
 !  Particle position must never need more than one addition of Lx to get back
 !  in the box. Often a NaN or Inf in the particle position will show up as a
 !  problem here.
-                if (fp(k,ixp)< xyz0(1)) then
-                  print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
-                       ' was further than Lx outside the simulation box!'
-                  print*, 'This must never happen.'
-                  print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
-                  call fatal_error_local('boundconds_particles','')
-                endif
+              if (fp(k,ixp)< xyz0(1)) then
+                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                     ' was further than Lx outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                call fatal_error_local('boundconds_particles','')
               endif
+            endif
 !  xp > x1
+            if (fp(k,ixp)>=xyz1(1)) then
+              fp(k,ixp)=fp(k,ixp)-Lxyz(1)
+              if (lshear.and.nygrid/=1) fp(k,iyp)=fp(k,iyp)+deltay
               if (fp(k,ixp)>=xyz1(1)) then
-                fp(k,ixp)=fp(k,ixp)-Lxyz(1)
-                if (lshear.and.nygrid/=1) fp(k,iyp)=fp(k,iyp)+deltay
-                if (fp(k,ixp)>=xyz1(1)) then
-                  print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
-                       ' was further than Lx outside the simulation box!'
-                  print*, 'This must never happen.'
-                  print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
-                  call fatal_error_local('boundconds_particles','')
-                endif
+                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                     ' was further than Lx outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                call fatal_error_local('boundconds_particles','')
               endif
-            elseif (boundx=='out') then
-              ! Do nothing. A massive particle, can be out of the
-              ! box. A star, for example, in a cylindrical simulation
-            elseif (boundx=='flk') then
-              ! Flush-Keplerian
-              ! flush it to the outer boundary with keplerian speed
-              if (lcylindrical_coords) then
-                if ((fp(k,ixp)< rp_int).or.(fp(k,ixp)>= rp_ext)) then
-                  !flush to outer boundary
-                  fp(k,ixp)  = rp_ext  
-                  !random new azimuthal y position
-                  call random_number_wrapper(fp(k,iyp))   
-                  fp(k,iyp)=xyz0_loc(2)+fp(k,iyp)*Lxyz_loc(2)
-                  !zero radial velocity
-                  fp(k,ivpx) = 0. 
-                  !keplerian azimuthal velocity
-                  fp(k,ivpy) = fp(k,ixp)**(-1.5) 
+            endif
+          elseif (boundx=='out') then
+!
+!  Do nothing. A massive particle, can be out of the
+!  box. A star, for example, in a cylindrical simulation
+!
+          elseif (boundx=='flk') then
+!
+!  Flush-Keplerian - flush the particle to 
+!  the outer boundary with keplerian speed
+!
+            if (lcylindrical_coords) then
+              if ((fp(k,ixp)< rp_int).or.(fp(k,ixp)>= rp_ext)) then
+!   Flush to outer boundary
+                fp(k,ixp)  = rp_ext  
+!   Random new azimuthal y position
+                call random_number_wrapper(fp(k,iyp))   
+                fp(k,iyp)=xyz0_loc(2)+fp(k,iyp)*Lxyz_loc(2)
+!   Zero radial, Keplerian azimuthal, velocities
+                fp(k,ivpx) = 0. 
+!   Keplerian azimuthal velocity
+                fp(k,ivpy) = fp(k,ixp)**(-1.5) 
+              endif
+!
+            elseif (lcartesian_coords) then 
+!
+! The Cartesian case has the option cylinder_in_a_box, sphere_in_a_box
+! and nothing (assumed to be the common shearing box. Only the cylinder
+! is considered. The code will break otherwise 
+!
+              if (lcylinder_in_a_box) then 
+!
+                if (boundy/='out') then 
+                  call fatal_error_local("boundconds_particles",&
+                       "The radial boundary already does it all"//&
+                       "so the y-boundary has to be set to 'out'")
+                endif
+!
+                if ((rad<=rp_int).or.(rad>rp_ext)) then
+!  Flush to outer boundary
+                  xold=fp(k,ixp); yold=fp(k,iyp); r1old = 1./max(rad,tini)
+                  fp(k,ixp) = rp_ext*xold*r1old ! r*cos(theta)
+                  fp(k,iyp) = rp_ext*yold*r1old ! r*sin(theta)
+!  Set particle velocity to local Keplerian speed.
+                  OO=rp_ext**(-1.5)
+                  fp(k,ivpx) = -OO*fp(k,iyp)
+                  fp(k,ivpy) =  OO*fp(k,ixp)
                 endif
               else
                 call fatal_error_local('boundconds_particles',&
-                     'flush-keplerian only ready for cylindrical')
+                     'no clue how to do flush-keplerian in a cartesian box')
               endif
-            elseif (boundx=='rmv') then
-              !remove the particle from the simulation
-              if (lcylindrical_coords) then
-                if ((fp(k,ixp)< rp_int).or.(fp(k,ixp)>= rp_ext)) then
+            elseif (lspherical_coords) then  
+              call fatal_error_local('boundconds_particles',&
+                   'flush-keplerian not ready for spherical coords')
+            endif
+!
+          elseif (boundx=='rmv') then
+!
+!  Remove the particle from the simulation
+!
+            if (lcylindrical_coords) then
+              if ((fp(k,ixp)< rp_int).or.(fp(k,ixp)>= rp_ext)) then
+                if (present(dfp)) then
+                  call remove_particle(fp,npar_loc,ipar,k,dfp)
+                else
+                  call remove_particle(fp,npar_loc,ipar,k)
+                endif
+              endif
+            elseif (lcartesian_coords) then 
+              if (lcylinder_in_a_box) then 
+                if ((rad< rp_int).or.(rad>= rp_ext)) then
                   if (present(dfp)) then
                     call remove_particle(fp,npar_loc,ipar,k,dfp)
                   else
@@ -368,94 +346,97 @@ module Particles_sub
                 endif
               else
                 call fatal_error_local('boundconds_particles',&
-                     'remove particles only ready for cylindrical')
+                     'remove particles not ready for cartesian boxes')
               endif
-            else
-              print*, 'boundconds_particles: No such boundary condition =', boundx
-              call stop_it('boundconds_particles')
+            elseif (lspherical_coords) then 
+              call fatal_error_local('boundconds_particles',&
+                   'remove particles not ready for spherical coords')
             endif
+          else
+            print*, 'boundconds_particles: No such boundary condition =', boundx
+            call stop_it('boundconds_particles')
           endif
+        endif
 !
 !  Boundary condition in the y-direction.
 !
-          if (nygrid/=1) then
-            if (boundy=='p') then
+        if (nygrid/=1) then
+          if (boundy=='p') then
 !  yp < y0
+            if (fp(k,iyp)< xyz0(2)) then
+              fp(k,iyp)=fp(k,iyp)+Lxyz(2)
               if (fp(k,iyp)< xyz0(2)) then
-                fp(k,iyp)=fp(k,iyp)+Lxyz(2)
-                if (fp(k,iyp)< xyz0(2)) then
-                  print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
-                       ' was further than Ly outside the simulation box!'
-                  print*, 'This must never happen.'
-                  print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
-                  call fatal_error_local('boundconds_particles','')
-                endif
+                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                     ' was further than Ly outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                call fatal_error_local('boundconds_particles','')
               endif
-!  yp > y1
-              if (fp(k,iyp)>=xyz1(2)) then
-                fp(k,iyp)=fp(k,iyp)-Lxyz(2)
-                if (fp(k,iyp)>=xyz1(2)) then
-                  print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
-                       ' was further than Ly outside the simulation box!'
-                  print*, 'This must never happen.'
-                  print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
-                  call fatal_error_local('boundconds_particles','')
-                endif
-              endif
-            elseif (boundy=='out') then
-              ! massive particles can be out of the box
-              ! the star, for example, in a cylindrical simulation
-            else
-              print*, 'boundconds_particles: No such boundary condition =', boundy
-              call stop_it('boundconds_particles')
             endif
+!  yp > y1
+            if (fp(k,iyp)>=xyz1(2)) then
+              fp(k,iyp)=fp(k,iyp)-Lxyz(2)
+              if (fp(k,iyp)>=xyz1(2)) then
+                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                     ' was further than Ly outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                call fatal_error_local('boundconds_particles','')
+              endif
+            endif
+          elseif (boundy=='out') then
+            ! massive particles can be out of the box
+            ! the star, for example, in a cylindrical simulation
+          else
+            print*, 'boundconds_particles: No such boundary condition =', boundy
+            call stop_it('boundconds_particles')
           endif
+        endif
 !
 !  Boundary condition in the z-direction.
 !
-          if (nzgrid/=1) then
-            if (boundz=='p') then
+        if (nzgrid/=1) then
+          if (boundz=='p') then
 !  zp < z0
+            if (fp(k,izp)< xyz0(3)) then
+              fp(k,izp)=fp(k,izp)+Lxyz(3)
               if (fp(k,izp)< xyz0(3)) then
-                fp(k,izp)=fp(k,izp)+Lxyz(3)
-                if (fp(k,izp)< xyz0(3)) then
-                  print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
-                       ' was further than Lz outside the simulation box!'
-                  print*, 'This must never happen.'
-                  print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
-                  call fatal_error_local('boundconds_particles','')
-                endif
+                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                     ' was further than Lz outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                call fatal_error_local('boundconds_particles','')
               endif
-!  zp > z1
-              if (fp(k,izp)>=xyz1(3)) then
-                fp(k,izp)=fp(k,izp)-Lxyz(3)
-                if (fp(k,izp)>=xyz1(3)) then
-                  print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
-                       ' was further than Lz outside the simulation box!'
-                  print*, 'This must never happen.'
-                  print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
-                  call fatal_error_local('boundconds_particles','')
-                endif
-              endif
-            elseif (boundz=='out') then
-              !let particles be out of the box, why not?
-              !do nothing, the particle is happy
-            else
-              print*, 'boundconds_particles: No such boundary condition=', boundz
-              call stop_it('boundconds_particles')
             endif
+!  zp > z1
+            if (fp(k,izp)>=xyz1(3)) then
+              fp(k,izp)=fp(k,izp)-Lxyz(3)
+              if (fp(k,izp)>=xyz1(3)) then
+                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                     ' was further than Lz outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                call fatal_error_local('boundconds_particles','')
+              endif
+            endif
+          elseif (boundz=='out') then
+            !let particles be out of the box, why not?
+            !do nothing, the particle is happy
+          else
+            print*, 'boundconds_particles: No such boundary condition=', boundz
+            call stop_it('boundconds_particles')
           endif
-        enddo
-      endif
+        endif
+      enddo
 !
 !  Redistribute particles among processors (internal boundary conditions).
 !
       if (lmpicomm) then
-         if (present(dfp)) then
-            call redist_particles_procs(fp,npar_loc,ipar,dfp)
-         else
-            call redist_particles_procs(fp,npar_loc,ipar)
-         endif
+        if (present(dfp)) then
+          call redist_particles_procs(fp,npar_loc,ipar,dfp)
+        else
+          call redist_particles_procs(fp,npar_loc,ipar)
+        endif
       endif
 !
     endsubroutine boundconds_particles
