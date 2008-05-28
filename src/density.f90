@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.388 2008-05-28 17:27:48 wlyra Exp $
+! $Id: density.f90,v 1.389 2008-05-28 22:00:25 steveb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -139,7 +139,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.388 2008-05-28 17:27:48 wlyra Exp $")
+           "$Id: density.f90,v 1.389 2008-05-28 22:00:25 steveb Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -486,15 +486,14 @@ module Density
       case('coswave-z'); call coswave(ampllnrho,f,ilnrho,kz=kz_lnrho)
       case('sinx_siny_sinz'); call sinx_siny_sinz(ampllnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho)
       case('corona'); call corona_init(f)
-      case('gaussian3d'); call gaussian3d(ampllnrho,f,ilnrho,xx,yy,zz,radius_lnrho)
+      case('gaussian3d'); call gaussian3d(ampllnrho,f,ilnrho,xx,yy,zz,radius_lnrho) 
+      case('gaussian-z'); call power_law_gaussian_disk(f)
 
 
-
-      case('gaussian-z')
-        do n=n1,n2
-          f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
-              alog(exp(f(:,:,n,ilnrho))+ampllnrho*(exp(-z(n)**2/(2*radius_lnrho**2))))
-        enddo
+!        do n=n1,n2
+!          f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
+!              alog(exp(f(:,:,n,ilnrho))+ampllnrho*(exp(-z(n)**2/(2*radius_lnrho**2))))
+!        enddo
 
       case('gauss-z-offset')
         do n=n1,n2
@@ -2277,7 +2276,41 @@ module Density
         enddo
       endif ! if (lselfgravity)
 !
-    endsubroutine correct_for_selfgravity
+    endsubroutine correct_for_selfgravity    
+!**********************************************************************
+subroutine power_law_gaussian_disk(f)
+!
+!  power-law with gaussian z
+!
+! 18/04/08/steveb: coded
+!
+      use Sub, only: get_radial_distance
+      use Gravity, only: g0
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx) :: rr_sph,rr_cyl
+      logical :: lheader
+!
+!      if (lroot) print*,'setting density gradient of power '//&
+!           'law=',plaw
+!
+      do m=1,my
+         do n=1,mz
+            lheader=lroot.and.(m==1).and.(n==1)
+            call get_radial_distance(rr_sph,rr_cyl)
+            f(:,m,n,ilnrho) = & ! f(:,m,n,ilnrho) + &
+                 lnrho_const+0.5*log(r_ref/rr_cyl) &
+                 - z(n)**2.*g0/(2.*cs20*rr_cyl*3.)
+         enddo
+      enddo
+      call impose_density_floor(f)
+!      print*,f(:,:,:,ilnrho),"\n"
+!
+! Correct the velocities by this density gradient
+!
+      call correct_density_gradient(f)
+!
+    endsubroutine power_law_gaussian_disk
 !**********************************************************************
     subroutine power_law_disk(f)
 !
