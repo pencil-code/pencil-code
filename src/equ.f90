@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.409 2008-05-14 13:14:14 brandenb Exp $
+! $Id: equ.f90,v 1.410 2008-05-28 22:01:36 steveb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -482,7 +482,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.409 2008-05-14 13:14:14 brandenb Exp $")
+           "$Id: equ.f90,v 1.410 2008-05-28 22:01:36 steveb Exp $")
 !
 !  Initialize counter for calculating and communicating print results.
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -719,7 +719,7 @@ module Equ
         endif
 !
         if (any(lfreeze_varext).or.any(lfreeze_varint)) then
-          if (lcylinder_in_a_box) then
+          if (lcylinder_in_a_box.or.lcylindrical_coords) then
             lpencil(i_rcyl_mn)=.true.
           else
             lpencil(i_r_mn)=.true.
@@ -879,7 +879,7 @@ module Equ
                   ' : ', lfreeze_varint
           if (.not.lborder_profiles) then
 !  there is not much sense in using both border driving and smoothed freezing 
-            if (lcylinder_in_a_box) then
+            if (lcylinder_in_a_box.or.lcylindrical_coords) then
               pfreeze_int = &
                    quintic_step(p%rcyl_mn,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
             else
@@ -1048,7 +1048,7 @@ module Equ
 !  exclude the frozen zones from the time-step calculation
 !
           if (any(lfreeze_varint)) then
-             if (lcylinder_in_a_box) then
+             if (lcylinder_in_a_box.or.lcylindrical_coords) then
                 where (p%rcyl_mn .le. rfreeze_int)
                    maxadvec=0.
                    maxdiffus=0.
@@ -1062,7 +1062,7 @@ module Equ
           endif
 !
           if (any(lfreeze_varext)) then
-             if (lcylinder_in_a_box) then
+             if (lcylinder_in_a_box.or.lcylindrical_coords) then
                 where (p%rcyl_mn .ge. rfreeze_ext)
                    maxadvec=0.
                    maxdiffus=0.
