@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.51 2008-05-26 09:50:13 wlyra Exp $
+! $Id: poisson.f90,v 1.52 2008-05-28 17:24:46 wlyra Exp $
 
 !
 !  This module solves the Poisson equation
@@ -134,7 +134,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.51 2008-05-26 09:50:13 wlyra Exp $")
+        "$Id: poisson.f90,v 1.52 2008-05-28 17:24:46 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -247,7 +247,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.51 2008-05-26 09:50:13 wlyra Exp $")
+        "$Id: poisson.f90,v 1.52 2008-05-28 17:24:46 wlyra Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -346,7 +346,7 @@ module Poisson
       logical, dimension(0:ncpus-1) :: lproc_comm_loc,ltmp
       logical, dimension(0:ncpus-1,0:ncpus-1) :: lproc_comm_send,lproc_comm_recv
 !
-      real :: k2
+      real :: rr,k2
       integer :: ikx, iky, ikz
 !
       real    :: x0,xn,y0,yn,dxc,dyc,dxc1,dyc1,Lxn,Lyn
@@ -361,7 +361,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.51 2008-05-26 09:50:13 wlyra Exp $")
+        "$Id: poisson.f90,v 1.52 2008-05-28 17:24:46 wlyra Exp $")
 !
 !  Break if lshear or 3D
 !
@@ -459,9 +459,9 @@ module Poisson
       nphi=0.
       do i=1,nnx
         do m=1,nny
-!  Zero mass outside of the grid
-          if ((xc(i).gt.xyz1(1)).or.(xc(i).lt.xyz0(1)).or.&
-              (yc(m).gt.xyz1(2)).or.(yc(m).lt.xyz0(2))) then 
+!  Zero mass outside of the domain
+          rr=sqrt(xc(i)**2+yc(m)**2)
+          if ((rr .gt. r_ext).or.(rr.lt.r_int)) then
             nphi(i,m)=0
           else
             ix=i-nx/2
