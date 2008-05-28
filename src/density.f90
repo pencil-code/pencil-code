@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.389 2008-05-28 22:00:25 steveb Exp $
+! $Id: density.f90,v 1.390 2008-05-28 22:04:50 steveb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -139,7 +139,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.389 2008-05-28 22:00:25 steveb Exp $")
+           "$Id: density.f90,v 1.390 2008-05-28 22:04:50 steveb Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -487,13 +487,13 @@ module Density
       case('sinx_siny_sinz'); call sinx_siny_sinz(ampllnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho)
       case('corona'); call corona_init(f)
       case('gaussian3d'); call gaussian3d(ampllnrho,f,ilnrho,xx,yy,zz,radius_lnrho) 
-      case('gaussian-z'); call power_law_gaussian_disk(f)
+      case('plaw_gauss_disk'); call power_law_gaussian_disk(f)
 
-
-!        do n=n1,n2
-!          f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
-!              alog(exp(f(:,:,n,ilnrho))+ampllnrho*(exp(-z(n)**2/(2*radius_lnrho**2))))
-!        enddo
+      case('gaussian-z')
+        do n=n1,n2
+          f(:,:,n,ilnrho) = f(:,:,n,ilnrho) + &
+              alog(exp(f(:,:,n,ilnrho))+ampllnrho*(exp(-z(n)**2/(2*radius_lnrho**2))))
+        enddo
 
       case('gauss-z-offset')
         do n=n1,n2
