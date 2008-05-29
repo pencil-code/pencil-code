@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.145 2008-05-13 11:49:23 dhruba Exp $
+! $Id: forcing.f90,v 1.146 2008-05-29 15:26:17 brandenb Exp $
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -119,7 +119,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.145 2008-05-13 11:49:23 dhruba Exp $")
+           "$Id: forcing.f90,v 1.146 2008-05-29 15:26:17 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -811,9 +811,8 @@ module Forcing
         if (lroot) print*, '..done'
         open(unit=76,file="alpha_in.dat",status="old")
         read(76,*) ellmin,ellmax,phin,rmin,rmax
-        if(.not. ((Legendrel_min.eq.ellmin).and.(Legendrel_max.eq.ellmax) &
-                  .and.(phin.eq.phi_peak)) ) then 
-          call stop_it("In CK forcing:  Legendrel s or phi_peak do not match abroting. Check  files run.in  and alpha_in.dat")
+        if(.not. ((Legendrel_min.eq.ellmin).and.(Legendrel_max.eq.ellmax))) then 
+          call stop_it("In CK forcing:  Legendrel s do not match abroting. Check  files run.in  and alpha_in.dat")
         else
         endif
         if (lroot) then
@@ -855,7 +854,7 @@ module Forcing
       do n=n1-nghost,n2+nghost
         do m=m1-nghost,m2+nghost
           psilm=0.
-          emm=int(phi_peak*(2.*pi)/(Lz-z0))
+          emm=int((2.*pi)/(Lz-z0))
 !          write(*,*)"DHRUBA",emm,Legendrel,Lz-z0,phi_peak
           call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n)) 
           call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
