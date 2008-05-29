@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.19 2008-05-29 18:22:58 wlyra Exp $
+! $Id: particles_selfgravity.f90,v 1.20 2008-05-29 18:25:00 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -55,7 +55,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.19 2008-05-29 18:22:58 wlyra Exp $")
+           "$Id: particles_selfgravity.f90,v 1.20 2008-05-29 18:25:00 wlyra Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -279,7 +279,7 @@ module Particles_selfgravity
 !  Possibility of switching off self-gravity for the
 !  massive n-body particles
 !
-            if (lparticles_nbody.and.(.not.lselfgrav_nbodyparticles)) then 
+            if (lparticles_nbody.and.(.not.lselfgravity_nbodyparticles)) then 
               lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
               if (lsink) gpotself=0
             endif
