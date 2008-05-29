@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.18 2008-04-28 10:20:34 ajohan Exp $
+! $Id: particles_selfgravity.f90,v 1.19 2008-05-29 18:22:58 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -27,12 +27,13 @@ module Particles_selfgravity
   real :: dummy
   real, pointer :: tstart_selfgrav
   logical :: lselfgravity_particles=.true.
+  logical :: lselfgravity_nbodyparticles=.false.
 
   namelist /particles_selfgrav_init_pars/ &
-      lselfgravity_particles
+      lselfgravity_particles,lselfgravity_nbodyparticles
 
   namelist /particles_selfgrav_run_pars/ &
-      lselfgravity_particles
+      lselfgravity_particles,lselfgravity_nbodyparticles
 
   integer :: idiag_gpotenp=0
 
@@ -54,7 +55,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.18 2008-04-28 10:20:34 ajohan Exp $")
+           "$Id: particles_selfgravity.f90,v 1.19 2008-05-29 18:22:58 wlyra Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -275,24 +276,15 @@ module Particles_selfgravity
               gpotself=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),igpotselfx:igpotselfz)
             endif
 !            
-            if (lparticles_nbody) then 
+!  Possibility of switching off self-gravity for the
+!  massive n-body particles
 !
-!  A sink particle can be out of the box, in which case the 
-!  interpolation is not possible. The nbody module will take 
-!  care of this case
-! 
+            if (lparticles_nbody.and.(.not.lselfgrav_nbodyparticles)) then 
               lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
-              if (lsink) then
-                if ((fp(k,ixp)< xyz0(1)).or.(fp(k,ixp) > xyz1(1)) .or. &
-                    (fp(k,iyp)< xyz0(2)).or.(fp(k,iyp) > xyz1(2)) .or. &
-                    (fp(k,izp)< xyz0(3)).or.(fp(k,izp) > xyz1(3))) &
-                    gpotself=0.
-              endif
+              if (lsink) gpotself=0
             endif
 !
             dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)-gpotself
-!            print*, it, itsub, dt, dfp
-!            stop
 !
           enddo
         endif
