@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.101 2008-05-14 13:14:14 brandenb Exp $
+! $Id: chemistry.f90,v 1.102 2008-05-30 16:01:52 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,cs2,rho1gpp,gmu1
-! PENCILS PROVIDED nu,gradnu,nu_art,DYDt_reac,DYDt_diff,cvspec, lambda,glnlambda
+! PENCILS PROVIDED nu,gradnu,nu_art,DYDt_reac,DYDt_diff,cvspec, lambda,glnlambda,ghY
 !***************************************************************
 
 module Chemistry
@@ -29,6 +29,8 @@ module Chemistry
   real :: Rgas, Rgas_unit_sys=1.
   real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, lambda_full, rho_full, nu_art_full
   real, dimension (mx,my,mz,nchemspec) :: cvspec_full
+  real, dimension (mx,my,mz) ::  TT_full
+  real, dimension (mx,my,mz) :: hY_full 
 
   logical :: lone_spec=.false.
 
@@ -74,7 +76,8 @@ module Chemistry
   integer, dimension(7) :: iaa1,iaa2
   real, allocatable, dimension(:)  :: B_n, alpha_n, E_an
   real, dimension(nchemspec,7)     :: tran_data
-  real, dimension (nx,nchemspec), SAVE  :: H0_RT, S0_R
+  real, dimension (nx,nchemspec), SAVE  :: S0_R
+  real, dimension (mx,my,mz,nchemspec), SAVE :: H0_RT
 
   logical :: Natalia_thoughts=.false.
 
@@ -187,11 +190,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.101 2008-05-14 13:14:14 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.102 2008-05-30 16:01:52 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.101 2008-05-14 13:14:14 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.102 2008-05-30 16:01:52 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -394,6 +397,7 @@ module Chemistry
         lpenc_requested(i_gamma)=.true.
         lpenc_requested(i_gamma1)=.true.
         lpenc_requested(i_gamma11)=.true.
+        lpenc_requested(i_ghY)=.true.
        endif
 
 
@@ -571,6 +575,18 @@ module Chemistry
           if (lpenc_requested(i_glnlambda)) call grad(lambda_full,p%glnlambda)
         endif 
 
+!
+!  Calculate grad(enthalpy)
+!
+
+
+
+        if (lpenc_requested(i_ghY)) then
+         call grad(hY_full,p%ghY)
+        endif
+
+
+
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
 !
@@ -719,6 +735,10 @@ module Chemistry
         nu_full=nu_dyn/rho_full
 
       endif
+
+
+
+
 !
 !  Artificial Viscosity of a mixture
 !
@@ -1042,7 +1062,7 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gchemspec
-      real, dimension (nx) :: ugchemspec, sum_DYDT
+      real, dimension (nx) :: ugchemspec, sum_DYDT, ghY_uu
       type (pencil_case) :: p
 !
 !  indices
@@ -1054,6 +1074,8 @@ module Chemistry
       intent(inout) :: df
 
       real,dimension(nchemspec) :: reac_rate=0.
+
+      real,dimension(nx) :: sum_reac_rate
 !
 !  identify module and boundary conditions
 !
@@ -1111,10 +1133,17 @@ module Chemistry
        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - Rgas*p%mu1*p%divu
         sum_DYDt=0.
         do k=1,nchemspec
-          sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-H0_RT(:,k))/(p%cp-Rgas*p%mu1)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
+          sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-H0_RT(l1:l2,m,n,k))/(p%cp-Rgas*p%mu1)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
         enddo
       !   print*, maxval(sum_DYDt(:)),maxval(df(l1:l2,m,n,ilnTT))
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + sum_DYDt(:)
+
+         call dot_mn(p%ghY,p%uu,ghY_uu)
+
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + sum_DYDt(:) &
+           - (hY_full(l1:l2,m,n)*p%divu(:)+ghY_uu(:))/p%TT(:)
+
+!           print*,'Natalia'  maxval(hY_full(l1:l2,m,n)*p%divu(:)),maxval(sum_DYDt(:))
+
      endif
 !
 !  For the timestep calculation, need maximum diffusion
@@ -1151,14 +1180,25 @@ module Chemistry
                enddo
 !
              elseif (lcheminp) then
-               do j=1,nx
-                 reac_rate(:)=abs(p%DYDt_reac(j,:))
-                 reac_chem(j)=10.*maxval(reac_rate(:))
+            !   do j=1,nx
+             !    reac_rate(:)=abs(p%DYDt_reac(j,:))
+             !    reac_chem(j)=10.*maxval(reac_rate(:))
                  ! print*,reac_chem(j)
-                 if (reac_chem(j)<1e4) then
-                   reac_chem(j)=1e4
-                 endif
+             !    if (reac_chem(j)<1e4) then
+             !      reac_chem(j)=1e4
+             !    endif
+             !  enddo
+               reac_chem=0.
+               sum_reac_rate=0.
+               do k=1,nchemspec
+                reac_chem=reac_chem+abs(p%DYDt_reac(:,k)/p%YY(:,k))
+                sum_reac_rate=sum_reac_rate+p%DYDt_reac(:,k)
                enddo
+    !    print*,'Natalia',maxval(reac_chem),maxval(sum_reac_rate)
+                 if (maxval(reac_chem)>1e11) then
+                   reac_chem=1e11
+                 endif
+
              endif
            endif
          endif
@@ -1974,11 +2014,12 @@ module Chemistry
     real, dimension (nx) :: prod1_ts,prod2_ts
     real, dimension (nx) :: kf=0., kr=0.
     real, dimension (nx) :: T_cgs,rho_cgs,p_atm
+    real, dimension (mx,my,mz) :: T_cgs_full
 
     real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
     real, dimension (nx,nreactions), intent(out) :: vreactions_ts
     real :: Rcal
-     integer :: k , reac, j, i
+     integer :: k , reac, j, i, v, t
      real  :: sum_tmp=0., T_low, T_mid, T_up, T_local, lnT_local, tmp
 
      logical,SAVE :: lwrite=.true.
@@ -1998,6 +2039,7 @@ module Chemistry
 !
     Rcal=Rgas_unit_sys/4.14*1e-7
     T_cgs=p%TT*unit_temperature
+    T_cgs_full=exp(f(:,:,:,ilnTT))*unit_temperature
     rho_cgs=p%rho*unit_mass/unit_length**3
     p_atm=p%pp*unit_energy/unit_length**3/10.13e5
 
@@ -2008,9 +2050,6 @@ module Chemistry
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
-!  Natalia thoughts
-! REMEMBER!!! I removed the last term species_constants(k,iaa1(6))/T_local in the decomposition!!!!!!!!
-!
       if (lwrite)  write(file_id,*)'**************************'
       if (lwrite)  write(file_id,*)'H0_RT'
       if (lwrite)  write(file_id,*)'**************************'
@@ -2018,25 +2057,43 @@ module Chemistry
           T_low=species_constants(k,iTemp1)
           T_mid=species_constants(k,iTemp2)
           T_up= species_constants(k,iTemp3)
-         do i=1,nx
-          T_local=(T_cgs(i))
+         do v=1,mz
+          do t=1,my
+           do i=1,mx
+             T_local=(T_cgs_full(i,t,v))
          !  if (T_local >=T_low .and. T_local <= T_mid) then
-            if ( T_local <= T_mid) then
-               tmp=0. 
-               do j=1,5
+               if ( T_local <= T_mid) then
+                tmp=0. 
+                do j=1,5
                 tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1)/j 
-               enddo
-              H0_RT(i,k)=tmp+species_constants(k,iaa1(6))/T_local
-           else
-               tmp=0. 
-               do j=1,5 
+                enddo
+                H0_RT(i,t,v,k)=tmp+species_constants(k,iaa1(6))/T_local
+               else
+                tmp=0. 
+                do j=1,5 
                 tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/j 
-               enddo
-             H0_RT(i,k)=tmp+species_constants(k,iaa2(6))/T_local
-           endif
+                enddo
+                H0_RT(i,t,v,k)=tmp+species_constants(k,iaa2(6))/T_local
+               endif
+           enddo
+          enddo
          enddo
-        if (lwrite)    write(file_id,*)varname(ichemspec(k)), maxval(H0_RT(:,k)),minval(H0_RT(:,k))
+        if (lwrite)    write(file_id,*)varname(ichemspec(k)), maxval(H0_RT(:,:,:,k)),minval(H0_RT(:,:,:,k))
        enddo
+
+
+!
+! Enthalpy flux
+!
+
+          hY_full=0.
+          TT_full=exp(f(:,:,:,ilnTT))
+          do k=1,nchemspec
+            hY_full=hY_full+H0_RT(:,:,:,k)*Rgas*TT_full(:,:,:)/species_constants(k,imass)*f(:,:,:,ichemspec(k))
+          enddo
+
+
+
 !
 !  Dimensionless Standard-state molar entropy  S0/R
 !
@@ -2090,7 +2147,7 @@ module Chemistry
 
         do k=1,nchemspec
          dSR(:) =dSR(:)+(Sijm(k,reac)-Sijp(k,reac))*S0_R(:,k)
-         dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*H0_RT(:,k)
+         dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*H0_RT(l1:l2,m,n,k)
          sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
         enddo
 
