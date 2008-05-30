@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.146 2008-05-29 15:26:17 brandenb Exp $
+! $Id: forcing.f90,v 1.147 2008-05-30 22:45:08 dhruba Exp $
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -51,10 +51,8 @@ module Forcing
   character (len=labellen) :: iforce_profile='nothing'
 ! For helical forcing in sphreical polar coordinate system
   real,allocatable,dimension(:,:,:) :: psif
-  integer :: Legendrel_min,Legendrel_max
-  integer :: helsign=0
-  integer :: nalpha=9,anode=9,phi_peak=5
-  real,allocatable,dimension(:,:) ::  Bessel_alpha
+  real,allocatable,dimension(:,:) :: cklist
+  integer :: helsign=0,nlist_ck=25
   real :: fpre = 1.0
 ! Persistent stuff
   real :: tsforce=-10.
@@ -89,10 +87,10 @@ module Forcing
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
        iforce_profile,lscale_kvector_tobox, &
        force_direction, force_strength, &
-       Legendrel_min,Legendrel_max,nalpha,lhelical_test,fpre,helsign, &
+       lhelical_test,fpre,helsign,nlist_ck,&
        lforcing_cont,iforcing_cont, &
        lembed,k1_ff,ampl_ff,width_fcont,x1_fcont,x2_fcont, &
-       kf_fcont,omega_fcont,phi_peak,anode
+       kf_fcont,omega_fcont
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -119,7 +117,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.146 2008-05-29 15:26:17 brandenb Exp $")
+           "$Id: forcing.f90,v 1.147 2008-05-30 22:45:08 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -755,49 +753,17 @@ module Forcing
       real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
       real, dimension(nx,3,3) :: psi_ij,Tij
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: emm,iread,l,j,jf,mmin,mmax,ellmin,ellmax,ellno,ell,& 
-                 jalpha,ilread,ell_index,Legendrel,phin
+      integer :: emm,iread,l,j,jf,ell,jalpha,Legendrel,lmindex,ilread,ilm,ckno
       complex :: psi_ell_m
       real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,& 
               Pell,psilm,RYlm,IYlm
-      real :: rz,ralp,rell,remm,rphase2,Plmreal, Plmimag,& 
-              ran_min,ran_max,rmin,rmax
+      real :: rz,rindex,Plmreal, Plmimag,& 
+              ran_min,ran_max,rmin,rmax,rphase2
       real, dimension(mx) :: Z_psi
       real,dimension(my) :: Pl
-      real,allocatable,dimension(:) :: mphase
-! -----------------------------------------
-! The idea is as follows: Assume that we want to have our forcing to be 
-! equivalent to a cartesian forcing with kf=5. This implises that there 
-! will be 5 peaks of the forcing function in each direction. We set to achieve
-! this in the CK function 
-! \psi = [j_l(\alpha r) + n_l(\alpha r)]P^m_l(cos(theta))exp(im\phi) 
-! First consider the \phi direction, m = 5. (2 \pi)/(\Delta \phi)
-! Then l should be at least as large as m. Now we need to have 5 peaks
-! of \psi between \Delta \theta. If \Delta \theta and \Delta \phi are roughly
-! the same amount, then l = 2 m seems a good choice. Anyhow this needs to be 
-! fixed by plotting the spherical harmonics within the domin of simulation
-! and chosen. This is done outside the pencil code. We also choose l such
-! that \psi goes to zero at the equator. This implies l + m = odd 
-! m being mostly even, l is odd. We choose 5 odd l s such that they 
-! have 5 peaks within the computational domain in the theta direction. 
-! Next choose \alpha in a way such that 
-! (i) \psi is zero at the two radial boundaries. 
-! (ii) there are 9 zeros of \psi in the radial direction (i.e. 5 peaks) 
-! Such values of \alpha are determined by the c code (see misc directory)
-! "find_alpha_oddl.c". This code takes as inputs the values of l
-! To introduce randomness we take 5 different values of l for which there
-! are roughly 5 peaks and for each snapshot choose randomly one such value
-! of l and also add a random phase to \phi. These random numbers are 
-! the same over the whole comain at a particular time. If you want to 
-! for at a different kf you need to repeat this whole process from the beginning.
-! **********************************************************************
-! Note : The Legendre l that we actually use is l = 2*ell+1 
-! where ell is the Legengre l we get from the run.in file and also in the 
-! alpha_in_oddl.c file. 
-! **********************************************************************
+
 !========================================================
       if (.not. lspherical_coords) call warning('chandra-kendall forcing:','This forcing works only in spherical coordinates!')
-      ellno=Legendrel_max-Legendrel_min+1
       if (ifirst==0) then
 ! If this is the first time this function is being called allocate \psi.
 ! Next read from file "alpha_in.dat" the two values of \ell. If this two
@@ -805,14 +771,13 @@ module Forcing
         if (lroot) print*,'Helical forcing in spherical polar coordinate'
         if (lroot) print*,'allocating psif ..'
         allocate(psif(mx,my,mz))
-! nalpha is the number of possible alpha s. Which particular value of \alpha
-! to actually use is given by anode (=9 implies 5 peaks) 
-        allocate(Bessel_alpha(ellno,nalpha))
+! Read the list of values for emm, ell and alpha. This code is designed for 25 such
+        allocate(cklist(nlist_ck,3))
         if (lroot) print*, '..done'
         open(unit=76,file="alpha_in.dat",status="old")
-        read(76,*) ellmin,ellmax,phin,rmin,rmax
-        if(.not. ((Legendrel_min.eq.ellmin).and.(Legendrel_max.eq.ellmax))) then 
-          call stop_it("In CK forcing:  Legendrel s do not match abroting. Check  files run.in  and alpha_in.dat")
+        read(76,*) ckno,rmin,rmax
+        if(.not. (ckno.eq.nlist_ck)) then
+          call stop_it("CK forcing aborting:  The list does not match check entries in alpha_in.dat")
         else
         endif
         if (lroot) then
@@ -821,20 +786,21 @@ module Forcing
         else
         endif
 ! ---------- 
-        do ilread=1,ellno
-          read(76,*) ell,(Bessel_alpha(ilread,jalpha),jalpha=1,nalpha)
+        do ilread=1,nlist_ck
+          read(76,*) (cklist(ilread,ilm),ilm=1,3)
         enddo
         close(76)
         ifirst= ifirst+1
         if (lroot) write(*,*) 'dhruba: first time in Chandra-Kendall successful'
       else
       endif
-! Now choose a random \ell and and a the anode th \alpha
-   call random_number_wrapper(rell)
-   ell_index= nint(rell*(ellno-1)) 
-   Legendrel = 2*(Legendrel_min+ell_index)+1
-   Balpha = Bessel_alpha(ell_index+1,anode)
-!  if(lroot) write(*,*) "Dhruba",Legendrel,Balpha 
+! This is designed from 5 emm values and for each one 5 ell values. Total 25 values
+   call random_number_wrapper(rindex)
+   lmindex=nint(rindex*24.)+1
+   emm = cklist(lmindex,1)
+   Legendrel = cklist(lmindex,2)
+   Balpha = cklist(lmindex,3)
+!  if(lroot) write(*,*) "Dhruba",lmindex,emm,Legendrel,Balpha 
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
 ! Now construct the Z_psi(r) 
@@ -854,8 +820,6 @@ module Forcing
       do n=n1-nghost,n2+nghost
         do m=m1-nghost,m2+nghost
           psilm=0.
-          emm=int((2.*pi)/(Lz-z0))
-!          write(*,*)"DHRUBA",emm,Legendrel,Lz-z0,phi_peak
           call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n)) 
           call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
           psilm= RYlm*cos(rphase1)-IYlm*sin(rphase1)

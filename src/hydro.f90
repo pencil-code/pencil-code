@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.435 2008-05-26 09:37:12 bingert Exp $
+! $Id: hydro.f90,v 1.436 2008-05-30 22:45:08 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -24,7 +24,7 @@ module Hydro
   use Cdata, only: Omega, theta, huge1
   use Viscosity
   use Messages
-! Dhruba 
+
 
   implicit none
 
@@ -342,7 +342,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.435 2008-05-26 09:37:12 bingert Exp $")
+           "$Id: hydro.f90,v 1.436 2008-05-30 22:45:08 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

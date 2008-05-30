@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.209 2008-05-12 13:09:33 dhruba Exp $
+! $Id: boundcond.f90,v 1.210 2008-05-30 22:45:08 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1467,6 +1467,7 @@ module Boundcond
 !  3-jan-2008/dhruba: coded
 !
       use Cdata
+      use Sub
 !
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -1474,7 +1475,10 @@ module Boundcond
       integer :: i,j,k
       real, dimension(mcom),intent(in) :: fracall,uzeroall
       real :: frac,uzero,ylim,ymid,ydif,y1,zlim,zmid,zdif,z1
-
+      real :: yhat_min,yhat_max,zhat_min,zhat_max
+      real :: width_hat=0.01
+      real, dimension (ny) :: hatprofy
+      real, dimension (nz) :: hatprofz
       y1 = xyz1(2)
       z1 = xyz1(3)
       frac = fracall(jj)
@@ -1486,24 +1490,20 @@ module Boundcond
         case('bot')               ! bottom boundary
           ylim = (y1-y0)*frac
           ymid = y0+(y1-y0)/2.
+          yhat_min=ymid-ylim/2.
+          yhat_max=ymid+ylim/2
+          hatprofy=step(y(m1:m2),yhat_min,width_hat)*(1.-step(y(m1:m2),yhat_max,width_hat))
           zlim = (z1-z0)*frac
           zmid = z0+(z1-z0)/2.
+          zhat_min=zmid-zlim/2.
+          zhat_max=zmid+zlim/2
+          hatprofz=step(z(n1:n2),zhat_min,width_hat)*(1.-step(z(n1:n2),zhat_max,width_hat))
           do j=m1,m2
             do k=n1,n2
-              ydif = abs(y(j)-ymid)
-              zdif = abs(z(k)-zmid)
-              if((ydif.lt.ylim).and.(zdif.lt.zlim)) then
-!                write(*,*) y(j),z(k),ydif,zdif,ymid,zmid,ylim,zlim  
-                f(l1,j,k,iux)= uzero
+                f(l1,j,k,iux)= uzero*hatprofy(j)*hatprofz(k)
                 do i=1,nghost
-                  f(l1-i,j,k,iux)= uzero
+                  f(l1-i,j,k,iux)= uzero*hatprofy(j)*hatprofz(k)
                 enddo
-              else
-                f(l1,j,k,iux)= 0.
-                do i=1,nghost
-                  f(l1-i,j,k,iux)= 0.
-                enddo
-              endif
             enddo
           enddo
 !! -----------
