@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.102 2008-05-30 16:01:52 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.103 2008-05-31 09:17:26 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,cs2,rho1gpp,gmu1
-! PENCILS PROVIDED nu,gradnu,nu_art,DYDt_reac,DYDt_diff,cvspec, lambda,glnlambda,ghY
+! PENCILS PROVIDED nu,gradnu,nu_art,DYDt_reac,DYDt_diff,cvspec, lambda,glnlambda,ghYrho,DYDt_reac,DYDt_diff,lambda,glnlambda
 !***************************************************************
 
 module Chemistry
@@ -30,7 +30,7 @@ module Chemistry
   real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, lambda_full, rho_full, nu_art_full
   real, dimension (mx,my,mz,nchemspec) :: cvspec_full
   real, dimension (mx,my,mz) ::  TT_full
-  real, dimension (mx,my,mz) :: hY_full 
+  real, dimension (mx,my,mz) :: hYrho_full 
 
   logical :: lone_spec=.false.
 
@@ -40,6 +40,8 @@ module Chemistry
   logical :: lreactions=.true.
   logical :: ladvection=.true.
   logical :: ldiffusion=.true.
+
+  logical :: lheatc_chemistry=.false.
 
   logical :: lkreactions_profile=.false.
   integer :: nreactions=0,nreactions1=0,nreactions2=0
@@ -94,7 +96,7 @@ module Chemistry
   namelist /chemistry_run_pars/ &
       lkreactions_profile,kreactions_profile,kreactions_profile_width, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
-      lreactions,lchem_cdtc
+      lreactions,lchem_cdtc,lheatc_chemistry
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -190,11 +192,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.102 2008-05-30 16:01:52 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.103 2008-05-31 09:17:26 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.102 2008-05-30 16:01:52 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.103 2008-05-31 09:17:26 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -397,8 +399,17 @@ module Chemistry
         lpenc_requested(i_gamma)=.true.
         lpenc_requested(i_gamma1)=.true.
         lpenc_requested(i_gamma11)=.true.
-        lpenc_requested(i_ghY)=.true.
-       endif
+        lpenc_requested(i_ghYrho)=.true.
+
+        lpenc_requested(i_DYDt_reac)=.true.
+        lpenc_requested(i_DYDt_diff)=.true.
+        if (lheatc_chemistry) then
+           lpenc_requested(i_lambda)=.true.
+           lpenc_requested(i_glnlambda)=.true.
+
+        endif
+
+      endif
 
 
      endsubroutine pencil_criteria_chemistry
@@ -581,8 +592,8 @@ module Chemistry
 
 
 
-        if (lpenc_requested(i_ghY)) then
-         call grad(hY_full,p%ghY)
+        if (lpenc_requested(i_ghYrho)) then
+         call grad(hYrho_full,p%ghYrho)
         endif
 
 
@@ -1062,7 +1073,7 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gchemspec
-      real, dimension (nx) :: ugchemspec, sum_DYDT, ghY_uu
+      real, dimension (nx) :: ugchemspec, sum_DYDT, ghYrho_uu
       type (pencil_case) :: p
 !
 !  indices
@@ -1118,31 +1129,31 @@ module Chemistry
 !
           if (Natalia_thoughts) then
             do j=l1,l2
-              if (f(j,m,n,ichemspec(k))+dt*df(j,m,n,ichemspec(k)) < 0.) then 
-           !    if (f(j,m,n,ichemspec(k))+p%DYDt_reac(l1-j+1,k) < 0.) then 
-               !f(j,m,n,ichemspec(k))=0.!-f(j,m,n,ichemspec(k))
+              if (f(j,m,n,ichemspec(k))+dt*df(j,m,n,ichemspec(k)) < 0.) then
+               !f(j,m,n,ichemspec(k))=-f(j,m,n,ichemspec(k))
              !  df(j,m,n,ichemspec(k))=0.
                endif
             enddo
           endif
- !    print*,maxval(abs(p%DYDt_reac(:,k))),k
-!
+
       enddo
 
      if (ldensity .and. lcheminp) then
-       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - Rgas*p%mu1*p%divu
         sum_DYDt=0.
         do k=1,nchemspec
-          sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-H0_RT(l1:l2,m,n,k))/(p%cp-Rgas*p%mu1)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
+          sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-H0_RT(l1:l2,m,n,k))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
         enddo
       !   print*, maxval(sum_DYDt(:)),maxval(df(l1:l2,m,n,ilnTT))
 
-         call dot_mn(p%ghY,p%uu,ghY_uu)
+         call dot_mn(p%ghYrho,p%uu,ghYrho_uu)
 
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + sum_DYDt(:) &
-           - (hY_full(l1:l2,m,n)*p%divu(:)+ghY_uu(:))/p%TT(:)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + (sum_DYDt(:) &
+        - Rgas*p%mu1*p%divu - (hYrho_full(l1:l2,m,n)*p%divu(:)+ghYrho_uu(:))/p%TT(:))/(p%cp-Rgas*p%mu1)
 
-!           print*,'Natalia'  maxval(hY_full(l1:l2,m,n)*p%divu(:)),maxval(sum_DYDt(:))
+!           print*,'Natalia'  maxval(hYrho_full(l1:l2,m,n)*p%divu(:)),maxval(sum_DYDt(:))
+
+
+        if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
 
      endif
 !
@@ -2086,12 +2097,12 @@ module Chemistry
 ! Enthalpy flux
 !
 
-          hY_full=0.
+          hYrho_full=0.
           TT_full=exp(f(:,:,:,ilnTT))
           do k=1,nchemspec
-            hY_full=hY_full+H0_RT(:,:,:,k)*Rgas*TT_full(:,:,:)/species_constants(k,imass)*f(:,:,:,ichemspec(k))
+            hYrho_full=hYrho_full+H0_RT(:,:,:,k)*Rgas*TT_full(:,:,:)/species_constants(k,imass)*f(:,:,:,ichemspec(k))
           enddo
-
+          hYrho_full=hYrho_full*exp(f(:,:,:,ilnrho))
 
 
 !
@@ -2632,6 +2643,32 @@ module Chemistry
 
    endsubroutine calc_diffusion_term
 !***************************************************************
+    subroutine calc_heatcond_chemistry(f,df,p)
+!
+!  29-Feb-08/: Natalia
+!  calculate gamma*chi*(del2lnT+gradlnTT.grad(lnT+lnrho+lncp+lnchi))
+!
+  !    use EquationOfState, only: cp_full
+      use Sub
+
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+
+      real, dimension(nx) :: g2TT, g2TTlnlambda=0.
+!
+       call dot(p%glnTT,p%glnlambda,g2TTlnlambda)
+       call dot(p%glnTT,p%glnTT,g2TT)
+!
+!  Add heat conduction to RHS of temperature equation
+
+
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  & 
+           + p%lambda(:)*(p%del2lnTT+g2TT +g2TTlnlambda)/(p%cp-Rgas*p%mu1)
+
+    endsubroutine calc_heatcond_chemistry
+!***********************************************************************
+
    subroutine air_field(f)
 
   use Mpicomm

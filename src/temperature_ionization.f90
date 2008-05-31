@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.45 2008-05-13 15:03:22 nbabkovs Exp $
+! $Id: temperature_ionization.f90,v 1.46 2008-05-31 09:17:26 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2,uglnTT,DYDt_reac,DYDt_diff,cvspec,lambda,glnlambda
+! PENCILS PROVIDED Ma2,uglnTT,cvspec
 !
 !***************************************************************
 module Entropy
@@ -38,7 +38,7 @@ module Entropy
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
-  logical :: lheatc_hyper3=.false.,lheatc_chemistry=.false.
+  logical :: lheatc_hyper3=.false.
   logical :: lviscous_heat=.true.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=5) :: iinit_str
@@ -57,7 +57,7 @@ module Entropy
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
       heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
-      lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3,lheatc_chemistry, &
+      lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
       lviscous_heat
 
   ! other variables (needs to be consistent with reset list below)
@@ -94,7 +94,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.45 2008-05-13 15:03:22 nbabkovs Exp $")
+           "$Id: temperature_ionization.f90,v 1.46 2008-05-31 09:17:26 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -306,14 +306,14 @@ module Entropy
 
       if (lheatc_hyper3) lpenc_requested(i_del6lnTT)=.true.
 
-      if (lchemistry) then
-        lpenc_requested(i_DYDt_reac)=.true.
-        lpenc_requested(i_DYDt_diff)=.true.
-        if (lheatc_chemistry) then
-           lpenc_requested(i_lambda)=.true.
-           lpenc_requested(i_glnlambda)=.true.
-        endif
-      endif
+     ! if (lchemistry) then
+     !   lpenc_requested(i_DYDt_reac)=.true.
+     !   lpenc_requested(i_DYDt_diff)=.true.
+     !   if (lheatc_chemistry) then
+     !      lpenc_requested(i_lambda)=.true.
+     !      lpenc_requested(i_glnlambda)=.true.
+     !   endif
+     ! endif
 
 !
 !  Diagnostics
@@ -472,7 +472,7 @@ module Entropy
 
 ! Natalia: thermal conduction for the chemistry case: lheatc_chemistry=true
 
-      if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
+    !  if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
 
 
 !
@@ -703,33 +703,7 @@ module Entropy
 !
     endsubroutine rprint_entropy
 !***********************************************************************
-    subroutine calc_heatcond_chemistry(f,df,p)
-!
-!  29-Feb-08/: Natalia
-!  calculate gamma*chi*(del2lnT+gradlnTT.grad(lnT+lnrho+lncp+lnchi))
-!
-  !    use EquationOfState, only: cp_full
-      use Sub
 
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-
-      real, dimension(nx) :: g2TT, g2TTlnlambda=0.
-!
-       call dot(p%glnTT,p%glnlambda,g2TTlnlambda)
-       call dot(p%glnTT,p%glnTT,g2TT)
-!
-!  Add heat conduction to RHS of temperature equation
-
-
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  & 
-         ! + p%gamma*p%chi(:)*(p%del2lnTT+g2TT+g2TTrho &
-           + p%lambda(:)*(p%del2lnTT+g2TT +g2TTlnlambda)
-
-
-    endsubroutine calc_heatcond_chemistry
-!***********************************************************************
     subroutine calc_heatcond_ADI(finit,f)
 
       use Cparam
