@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.228 2008-05-31 16:06:15 wlyra Exp $
+! $Id: particles_dust.f90,v 1.229 2008-05-31 16:16:28 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -139,7 +139,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.228 2008-05-31 16:06:15 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.229 2008-05-31 16:16:28 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -2403,8 +2403,6 @@ k_loop:   do while (.not. (k>npar_loc))
         if (nzgrid==1) then
           if (luse_tau_ap) then 
             tausp1_par=tausp1*2*pi_1*OO*p%rho(inx0)*fac/ rho0
-            print*,1/tausp1_par
-            stop
           else
             tausp1_par=tausp1*OO*p%rho(inx0)*fac/ rho0
           endif
