@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.227 2008-05-27 00:16:35 wlyra Exp $
+! $Id: particles_dust.f90,v 1.228 2008-05-31 16:06:15 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -61,6 +61,7 @@ module Particles
   logical :: ldraglaw_variable=.false.
   logical :: ldraglaw_epstein_transonic=.false.
   logical :: ldraglaw_eps_stk_transonic=.false.
+  logical :: luse_tau_ap=.true.
  
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
@@ -101,7 +102,7 @@ module Particles
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
-      lmigration_real_check,ldraglaw_variable, &
+      lmigration_real_check,ldraglaw_variable, luse_tau_ap, &
       ldraglaw_epstein, ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
       ldraglaw_epstein_transonic,lcheck_exact_frontier,ldraglaw_eps_stk_transonic
 
@@ -138,7 +139,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.227 2008-05-27 00:16:35 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.228 2008-05-31 16:06:15 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -2320,7 +2321,8 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
              
         if (nzgrid==1) then
-          lambda=mean_free_path_gas * sqrt(2*pi*p%cs2(inx0))*rho0/(p%rho(inx0)*OO*cs0)
+          !the sqrt(2pi) factor is inside the mean_free_path_gas constant
+          lambda=mean_free_path_gas * sqrt(p%cs2(inx0))*rho0/(p%rho(inx0)*OO*cs0)
         else
           lambda=mean_free_path_gas * rho0/p%rho(inx0)
         endif        
@@ -2334,10 +2336,15 @@ k_loop:   do while (.not. (k>npar_loc))
         if (iap/=0) then
           particle_radius=fp(k,iap)
         else
-          if (nzgrid==1) then
-            particle_radius=2*pi_1/tausp1       !rhops=1, particle_radius in meters
+          if (luse_tau_ap) then
+            ! use tausp as the radius (in meter) to make life easier
+            particle_radius=tausp
           else
-            particle_radius=sqrt(8*pi_1)/tausp1 !rhops=1, particle_radius in meters
+            if (nzgrid==1) then
+              particle_radius=2*pi_1*tausp       !rhops=1, particle_radius in meters
+            else
+              particle_radius=sqrt(8*pi_1)*tausp !rhops=1, particle_radius in meters
+            endif
           endif
         endif
 !
@@ -2347,7 +2354,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !    Re = 2*s*rho_g*|delta(v)|/mu_kin
 !
-        reynolds=sqrt(.5*pi)*mach/knudsen
+        reynolds=3.*sqrt(pi/8.)*mach/knudsen
 !
 !  the Reynolds number of the flow over the particle. It can parameterized by 
 !        
@@ -2366,43 +2373,53 @@ k_loop:   do while (.not. (k>npar_loc))
         kn_crit=3*knudsen 
         fac=kn_crit/(kn_crit+1)**2 * (kn_crit*fd + kd)
 !
-        else 
+      else 
 !
 !  Only use Epstein drag
 !
-          if (lfirstcall) &
-               print*,'get_frictiontime: Epstein transonic drag law'
+        if (lfirstcall) &
+             print*,'get_frictiontime: Epstein transonic drag law'
 !
-          mach2=(duu(1)**2+duu(2)**2+duu(3)**2)/p%cs2(inx0)
-          fd=sqrt(1+(9.*pi/128)*mach2)
-          fac=fd
+        mach2=(duu(1)**2+duu(2)**2+duu(3)**2)/p%cs2(inx0)
+        fd=sqrt(1+(9.*pi/128)*mach2)
+        fac=fd
 !
-        endif
+      endif
 !
 ! Calculate tausp1_par for 2d and 3d cases with and without particle_radius 
 ! as a dynamical variable
 !      
-        if (iap/=0) then
-          if (fp(k,iap)/=0.0) then
-            if (nzgrid==1) then
-              tausp1_par=     2*pi_1*OO          *p%rho(inx0)*fac/(fp(k,iap)*rhops)
-            else
-              tausp1_par=sqrt(8*pi_1*p%cs2(inx0))*p%rho(inx0)*fac/(fp(k,iap)*rhops)
-            endif
+      if (iap/=0) then
+        if (fp(k,iap)/=0.0) then
+          if (nzgrid==1) then
+            tausp1_par=     2*pi_1*OO          *p%rho(inx0)*fac/(fp(k,iap)*rhops)
+          else
+            tausp1_par=sqrt(8*pi_1*p%cs2(inx0))*p%rho(inx0)*fac/(fp(k,iap)*rhops)
           endif
-        else
+        endif
+      else
           !normalize to make tausp1 not dependent on cs0 or rho0
           !bad because it comes at the expense of evil divisions
-          if (nzgrid==1) then
-            tausp1_par=tausp1*OO               *p%rho(inx0)*fac/ rho0
+        if (nzgrid==1) then
+          if (luse_tau_ap) then 
+            tausp1_par=tausp1*2*pi_1*OO*p%rho(inx0)*fac/ rho0
+            print*,1/tausp1_par
+            stop
+          else
+            tausp1_par=tausp1*OO*p%rho(inx0)*fac/ rho0
+          endif
+        else
+          if (luse_tau_ap) then
+            tausp1_par=tausp1*sqrt(8*pi_1*p%cs2(inx0))*p%rho(inx0)*fac/(rho0*cs0)
           else
             tausp1_par=tausp1*sqrt(p%cs2(inx0))*p%rho(inx0)*fac/(rho0*cs0)
           endif
         endif
+      endif
 !
-        if (lfirstcall) lfirstcall=.false. 
+      if (lfirstcall) lfirstcall=.false. 
 !
-      endsubroutine calc_draglaw_parameters
+    endsubroutine calc_draglaw_parameters
 !***********************************************************************
     subroutine collisional_cooling(f,df,fp,dfp,p,ineargrid)
 !
