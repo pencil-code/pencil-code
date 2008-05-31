@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.103 2008-05-31 09:17:26 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.104 2008-05-31 09:30:51 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -192,11 +192,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.103 2008-05-31 09:17:26 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.104 2008-05-31 09:30:51 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.103 2008-05-31 09:17:26 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.104 2008-05-31 09:30:51 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1191,25 +1191,15 @@ module Chemistry
                enddo
 !
              elseif (lcheminp) then
-            !   do j=1,nx
-             !    reac_rate(:)=abs(p%DYDt_reac(j,:))
-             !    reac_chem(j)=10.*maxval(reac_rate(:))
-                 ! print*,reac_chem(j)
-             !    if (reac_chem(j)<1e4) then
-             !      reac_chem(j)=1e4
-             !    endif
-             !  enddo
                reac_chem=0.
-               sum_reac_rate=0.
+             !  sum_reac_rate=0.
                do k=1,nchemspec
                 reac_chem=reac_chem+abs(p%DYDt_reac(:,k)/p%YY(:,k))
-                sum_reac_rate=sum_reac_rate+p%DYDt_reac(:,k)
+             !   sum_reac_rate=sum_reac_rate+p%DYDt_reac(:,k)
                enddo
-    !    print*,'Natalia',maxval(reac_chem),maxval(sum_reac_rate)
                  if (maxval(reac_chem)>1e11) then
                    reac_chem=1e11
                  endif
-
              endif
            endif
          endif
