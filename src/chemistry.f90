@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.104 2008-05-31 09:30:51 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.105 2008-06-01 15:41:04 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -192,11 +192,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.104 2008-05-31 09:30:51 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.105 2008-06-01 15:41:04 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.104 2008-05-31 09:30:51 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.105 2008-06-01 15:41:04 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -612,7 +612,8 @@ module Chemistry
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nuk_nuj, nu_dyn, cp_R_spec
+      real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nuk_nuj, nu_dyn
+      real, dimension (mx,my,mz,nchemspec) ::  cp_R_spec
       real, dimension (mx,my,mz,nchemspec,nchemspec) :: Phi
       real, dimension (mx,my,mz,nchemspec) :: species_cond
 !
@@ -671,28 +672,33 @@ module Chemistry
                do i=1,mx
                  T_local=exp(f(i,m,n,ilnTT))*unit_temperature 
                  if (T_local >=T_low .and. T_local <= T_mid) then
-                   cp_R_spec(i,m,n)=0. 
+                   tmp=0. 
                     do j=1,5
-                     cp_R_spec(i,m,n)=cp_R_spec(i,m,n)+species_constants(k,iaa1(j))*T_local**(j-1) 
+                     tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1) 
                     enddo
-                     cvspec_full(i,m,n,k)=cp_R_spec(i,m,n)-1.
+                     cp_R_spec(i,m,n,k)=tmp
+                     cvspec_full(i,m,n,k)=cp_R_spec(i,m,n,k)-1.
                !      Cp_test(i,m,n)=cp_R_spec(i,m,n)
                  else
-                   cp_R_spec(i,m,n)=0.
+! SS
+                   tmp=0.
                     do j=1,5 
-                     cp_R_spec(i,m,n)=cp_R_spec(i,m,n)+species_constants(k,iaa2(j))*T_local**(j-1) 
+                     tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1) 
                     enddo
-                     cvspec_full(i,m,n,k)=cp_R_spec(i,m,n)-1.
+                     cp_R_spec(i,m,n,k)=tmp
+                     cvspec_full(i,m,n,k)=cp_R_spec(i,m,n,k)-1.
                  endif
                enddo
               enddo
              enddo
-           cp_full(:,:,:)=cp_full(:,:,:)+f(:,:,:,ichemspec(k))  &
-           *cp_R_spec(:,:,:)/species_constants(k,imass)*Rgas
-           cv_full(:,:,:)=cv_full(:,:,:)+f(:,:,:,ichemspec(k))  &
-            *cvspec_full(:,:,:,k)/species_constants(k,imass)*Rgas
+
+            cp_full(:,:,:)=cp_full(:,:,:)+f(:,:,:,ichemspec(k))  &
+                *cp_R_spec(:,:,:,k)/species_constants(k,imass)*Rgas
+            cv_full(:,:,:)=cv_full(:,:,:)+f(:,:,:,ichemspec(k))  &
+                *cvspec_full(:,:,:,k)/species_constants(k,imass)*Rgas
 
            enddo
+     
 !
 !  Binary diffusion coefficients
 !
@@ -773,7 +779,7 @@ module Chemistry
 
            do k=1,nchemspec 
              species_cond(:,:,:,k)=(species_viscosity(:,:,:,k)) &
-             /(species_constants(k,imass)/unit_mass)*15./4.*Rgas
+             /(species_constants(k,imass)/unit_mass)*Rgas*15./4.! 15./4.
             tmp_sum=tmp_sum+XX_full(:,:,:,k)*species_cond(:,:,:,k)
             tmp_sum2=tmp_sum2+XX_full(:,:,:,k)/species_cond(:,:,:,k)
            enddo
@@ -1138,17 +1144,25 @@ module Chemistry
 
       enddo
 
+! NNNN
+
      if (ldensity .and. lcheminp) then
         sum_DYDt=0.
+      !  do k=1,nchemspec
+      !    sum_DYDt=sum_DYDt+Rgas*(1.*0.-H0_RT(l1:l2,m,n,k)/species_constants(k,imass))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
+      !  enddo
+
         do k=1,nchemspec
           sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-H0_RT(l1:l2,m,n,k))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
         enddo
-      !   print*, maxval(sum_DYDt(:)),maxval(df(l1:l2,m,n,ilnTT))
 
          call dot_mn(p%ghYrho,p%uu,ghYrho_uu)
 
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + (sum_DYDt(:) &
-        - Rgas*p%mu1*p%divu - (hYrho_full(l1:l2,m,n)*p%divu(:)+ghYrho_uu(:))/p%TT(:))/(p%cp-Rgas*p%mu1)
+     !   df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + (sum_DYDt(:) &
+     !   - Rgas*p%mu1*p%divu - (hYrho_full(l1:l2,m,n)*p%divu(:)+ghYrho_uu(:))/p%TT(:))/(p%cp-Rgas*p%mu1*0.)
+
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + sum_DYDt(:)/(p%cp-Rgas*p%mu1)
+
 
 !           print*,'Natalia'  maxval(hYrho_full(l1:l2,m,n)*p%divu(:)),maxval(sum_DYDt(:))
 
@@ -2070,18 +2084,21 @@ module Chemistry
                 enddo
                 H0_RT(i,t,v,k)=tmp+species_constants(k,iaa1(6))/T_local
                else
+
                 tmp=0. 
-                do j=1,5 
-                tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/j 
+                do j=1,5
+                 tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/j 
                 enddo
                 H0_RT(i,t,v,k)=tmp+species_constants(k,iaa2(6))/T_local
-               endif
+              endif
            enddo
           enddo
          enddo
+
         if (lwrite)    write(file_id,*)varname(ichemspec(k)), maxval(H0_RT(:,:,:,k)),minval(H0_RT(:,:,:,k))
        enddo
 
+! HHHH
 
 !
 ! Enthalpy flux
@@ -2090,10 +2107,15 @@ module Chemistry
           hYrho_full=0.
           TT_full=exp(f(:,:,:,ilnTT))
           do k=1,nchemspec
-            hYrho_full=hYrho_full+H0_RT(:,:,:,k)*Rgas*TT_full(:,:,:)/species_constants(k,imass)*f(:,:,:,ichemspec(k))
+            hYrho_full=hYrho_full+H0_RT(:,:,:,k)*Rgas*TT_full(:,:,:)*f(:,:,:,ichemspec(k))/species_constants(k,imass)
           enddo
-          hYrho_full=hYrho_full*exp(f(:,:,:,ilnrho))
 
+ !  print*,'HHH', &
+ !  hYrho_full(l1,m1,n1)-Rgas*exp(f(l1,m1,n1,ilnTT))*mu1_full(l1,m1,n1),&
+ !   hYrho_full(l1,m1,n1)
+
+
+          hYrho_full=hYrho_full*exp(f(:,:,:,ilnrho))
 
 !
 !  Dimensionless Standard-state molar entropy  S0/R
@@ -2361,8 +2383,8 @@ module Chemistry
      do k=1,nchemspec
       sum_omega=sum_omega+maxval(p%DYDt_reac(:,k))!species_constants(k,imass)
       sum_Y=sum_Y+maxval(f(l1:l2,m,n,ichemspec(k)))
-    !  print*,maxval(f(l1:l2,m,n,ichemspec(k))),k
      enddo
+  !    print*,'sum_Y',sum_Y
 !
 !  Calculate diagnostic quantities
 !
@@ -2656,6 +2678,8 @@ module Chemistry
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  & 
            + p%lambda(:)*(p%del2lnTT+g2TT +g2TTlnlambda)/(p%cp-Rgas*p%mu1)
 
+!print*,'Natalia',maxval(p%lambda(:)),maxval(p%del2lnTT),maxval(p%del2lnTT+g2TT +g2TTlnlambda)/(p%cp-Rgas*p%mu1))
+
     endsubroutine calc_heatcond_chemistry
 !***********************************************************************
 
@@ -2664,6 +2688,7 @@ module Chemistry
   use Mpicomm
 
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: sum_Y
       !
 
       logical :: IsSpecie=.false., emptyfile
@@ -2762,6 +2787,21 @@ module Chemistry
            f(:,:,:,ichemspec(j))=1e-15
         endif 
       enddo
+
+   do j=1,nchemspec
+        if (maxval(f(:,:,:,ichemspec(j)))==0) then
+           f(:,:,:,ichemspec(j))=1e-15
+        endif 
+      enddo
+
+     do j=1,nchemspec
+      sum_Y=sum_Y+f(:,:,:,ichemspec(j))
+     enddo
+     do j=1,nchemspec
+      f(:,:,:,ichemspec(j))=f(:,:,:,ichemspec(j))/sum_Y
+     enddo
+
+
 
       if (mvar < 5) then
           call fatal_error("air_field", "I can only set existing fields")
