@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.306 2008-05-18 06:57:32 brandenb Exp $
+! $Id: param_io.f90,v 1.307 2008-06-01 22:25:57 brandenb Exp $
 
 module Param_IO
 
@@ -68,6 +68,7 @@ module Param_IO
        c_light,G_Newton,hbar, &
        random_gen,nfilter,lserial_io, &
        lread_oldsnap,lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
+       lread_oldsnap_notestfield, &
        lwrite_aux,pretend_lnTT, &
        lprocz_slowest, lcopysnapshots_exp, &
        bcx,bcy,bcz,r_int,r_ext,rp_int,rp_ext,r_ref,rsmooth, &
@@ -100,6 +101,7 @@ module Param_IO
        lnowrite, &
        lwrite_yaverages,lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
        lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
+       lread_oldsnap_notestfield, &
        comment_char, &
        ix,iy,iz,iz2,slice_position,zbot_slice,ztop_slice, &
        bcx,bcy,bcz,r_int,r_ext,rp_int,rp_ext, &

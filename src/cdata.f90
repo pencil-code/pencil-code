@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.425 2008-05-18 06:57:32 brandenb Exp $
+! $Id: cdata.f90,v 1.426 2008-06-01 22:25:56 brandenb Exp $
 !
 !  Global variables are defined in this module.
 !
@@ -114,6 +114,7 @@ module Cdata
   logical :: lreinit=.false.
   logical :: lread_oldsnap=.false., lread_oldsnap_nomag=.false.
   logical :: lread_oldsnap_nopscalar=.false.
+  logical :: lread_oldsnap_notestfield=.false.
   logical :: save_lastsnap=.true.
 !
 !  Units (need to be in double precision).
@@ -183,7 +184,7 @@ module Cdata
   integer :: ifcr=0,ifcrx=0,ifcry=0,ifcrz=0
   integer :: iaatest=0,iaxtest=0,iaytest=0,iaztest=0,iaxtestpq=0,iaztestpq=0
   integer :: iuutest=0,iuxtest=0,iuytest=0,iuztest=0,iuxtestpq=0,iuztestpq=0
-  integer :: ihhtest=0,ihhtestpq=0
+  integer :: ihhtest=0,ihhtestpq=0,ntestfield=0
   integer :: iam=0,iamx=0,iamy=0,iamz=0
   integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0

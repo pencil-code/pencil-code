@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.26 2008-04-05 19:46:52 brandenb Exp $
+! $Id: snapshot.f90,v 1.27 2008-06-01 22:25:57 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -139,11 +139,24 @@ contains
           print*,'read old snapshot file (but without passive scalar)'
           call input_snap(chsnap,f,msnap-1,1)
           ! shift the rest of the data
-          if (iaz<mvar) then
+          if (ilncc<mvar) then
             do ivar=ilncc+1,mvar
               f(:,:,:,ivar)=f(:,:,:,ivar-1)
             enddo
             f(:,:,:,ilncc)=0.
+          endif
+!
+!  read data without testfield into new run with testfield
+!
+        elseif(lread_oldsnap_notestfield) then
+          print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar=',iaatest,iaztestpq,mvar
+          call input_snap(chsnap,f,msnap-ntestfield,1)
+          ! shift the rest of the data
+          if (iaztestpq<mvar) then
+            do ivar=iaztestpq+1,mvar
+              f(:,:,:,ivar)=f(:,:,:,ivar-ntestfield)
+            enddo
+            f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
           endif
         else
           call input_snap(chsnap,f,msnap,1)
