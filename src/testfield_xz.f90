@@ -1,4 +1,4 @@
-! $Id: testfield_xz.f90,v 1.13 2008-05-18 06:57:33 brandenb Exp $
+! $Id: testfield_xz.f90,v 1.14 2008-06-02 05:15:47 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -42,7 +42,7 @@ module Testfield
   logical :: linit_aatest=.false.
   character (len=labellen) :: itestfield='B11-B21'
   real :: ktestfield=1.
-  integer, parameter :: njtest=2,ntestfield=3*njtest
+  integer, parameter :: njtest=2,mtestfield=3*njtest
   integer :: naainit
 
   namelist /testfield_init_pars/ &
@@ -69,7 +69,7 @@ module Testfield
   integer :: idiag_b11rms=0     ! DIAG_DOC: $\left<b_{11}^2\right>$
   integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>$
 
-  real, dimension (mz,3,ntestfield/3) :: uxbtestm
+  real, dimension (mz,3,mtestfield/3) :: uxbtestm
 
   contains
 
@@ -93,6 +93,7 @@ module Testfield
 !
       ltestfield = .true.
       iaatest = nvar+1          ! indices to access aa
+      ntestfield=mtestfield
       nvar = nvar+ntestfield    ! added ntestfield variables
 !
       if ((ip<=8) .and. lroot) then
@@ -109,7 +110,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_xz.f90,v 1.13 2008-05-18 06:57:33 brandenb Exp $")
+           "$Id: testfield_xz.f90,v 1.14 2008-06-02 05:15:47 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

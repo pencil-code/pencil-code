@@ -1,4 +1,4 @@
-! $Id: testfield_x.f90,v 1.3 2008-05-18 06:57:33 brandenb Exp $
+! $Id: testfield_x.f90,v 1.4 2008-06-02 05:15:47 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -58,7 +58,7 @@ module Testfield
   logical :: lignore_uxbtestm=.false.
   character (len=labellen) :: itestfield='B11-B21'
   real :: ktestfield=1., ktestfield1=1.
-  integer, parameter :: ntestfield=3*njtest
+  integer, parameter :: mtestfield=3*njtest
   integer :: naainit
   real :: bamp=1.
   namelist /testfield_init_pars/ &
@@ -129,7 +129,7 @@ module Testfield
 !
 !  arrays for horizontally averaged uxb and jxb
 !
-  real, dimension (mz,3,ntestfield/3) :: uxbtestm,jxbtestm
+  real, dimension (mz,3,mtestfield/3) :: uxbtestm,jxbtestm
 
   contains
 
@@ -163,6 +163,7 @@ module Testfield
       iaztest=iaatest+2
       iaxtestpq=iaatest+3*(njtest-1)
       iaztestpq=iaxtestpq+2
+      ntestfield=mtestfield
       nvar=nvar+ntestfield
 !
       if ((ip<=8) .and. lroot) then
@@ -179,7 +180,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_x.f90,v 1.3 2008-05-18 06:57:33 brandenb Exp $")
+           "$Id: testfield_x.f90,v 1.4 2008-06-02 05:15:47 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

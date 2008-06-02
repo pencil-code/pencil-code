@@ -1,10 +1,14 @@
-! $Id: testfield.f90,v 1.36 2008-05-18 06:57:32 brandenb Exp $
+! $Id: testfield.f90,v 1.37 2008-06-02 05:15:47 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
 !  testfield relevant subroutines listed in here.
-
+!
+!  NOTE: since the fall of 2007 we have been using the routine
+!  testfield_z.f90, not this one! For more information, please
+!  contact Axel Brandenburg <brandenb@nordita.org>
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -35,8 +39,7 @@ module Testfield
   logical :: linit_aatest=.false.
   integer :: itestfield=1
   real :: ktestfield=1.
-  integer, parameter :: njtest=12,ntestfield=3*njtest
-! integer, parameter :: njtest=6,ntestfield=3*njtest
+  integer, parameter :: njtest=12,mtestfield=3*njtest
   integer :: naainit
 
   namelist /testfield_init_pars/ &
@@ -77,7 +80,7 @@ module Testfield
   integer :: idiag_alp12exz=0,idiag_alp22exz=0,idiag_alp32exz=0
   integer :: idiag_alp13exz=0,idiag_alp23exz=0,idiag_alp33exz=0
 
-  real, dimension (mz,3,ntestfield/3) :: uxbtestm
+  real, dimension (mz,3,mtestfield/3) :: uxbtestm
 
   contains
 
@@ -101,6 +104,7 @@ module Testfield
 !
       ltestfield = .true.
       iaatest = nvar+1          ! indices to access aa
+      ntestfield=mtestfield
       nvar = nvar+ntestfield    ! added ntestfield variables
 !
       if ((ip<=8) .and. lroot) then
@@ -117,7 +121,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.36 2008-05-18 06:57:32 brandenb Exp $")
+           "$Id: testfield.f90,v 1.37 2008-06-02 05:15:47 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
