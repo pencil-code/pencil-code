@@ -1,6 +1,6 @@
 ### -*-Makefile-*- (for Emacs)
 ###
-### $Id: Makefile.depend,v 1.99 2008-05-12 13:55:13 dhruba Exp $
+### $Id: Makefile.depend,v 1.100 2008-06-03 11:52:57 ajohan Exp $
 ### Makefile dependencies for modular Pencil Code.
 ###
 ##
@@ -256,7 +256,8 @@ $(CDATA_OBJ): $(CDATA_SRC) $(CPARAM_OBJ)
 $(GRID_OBJ): $(GRID_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ)
 #
 $(GENERAL_OBJ): $(GENERAL_SRC) $(MESSAGES_OBJ) $(CPARAM_OBJ) $(CDATA_OBJ)
-shock.o: shock.h shock.f90 shock_profile.inc $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) boundcond.o $(FARRAY_OBJ) $(INTERSTELLAR_OBJ)
+#
+shock.o: shock.h shock.f90 shock_profile.inc $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) boundcond.o $(FARRAY_OBJ) $(INTERSTELLAR_OBJ) $(MAGNETIC_OBJ)
 #
 shock_highorder.o: shock.h shock_highorder.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) boundcond.o $(FARRAY_OBJ)
 #
@@ -282,7 +283,7 @@ register.o: register.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(phys
 #
 $(EQU_OBJ): $(EQU_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(physics) boundcond.o $(POISSON_OBJ) $(GLOBAL_OBJ) $(PARTICLES_MAIN_OBJ) $(INTERSTELLAR_OBJ) $(GRID_OBJ) snapshot.o $(FORCING_OBJ)
 #
-boundcond.o: boundcond.f90 cdata.o cparam.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) $(MAGNETIC_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(SHEAR_OBJ) $(SPECIAL_OBJ)
+boundcond.o: boundcond.f90 cdata.o cparam.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(SHEAR_OBJ) $(SPECIAL_OBJ)
 #
 $(INITCOND_OBJ): initcond.f90 cdata.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) general.o $(GRAVITY_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(PARTICLES_NBODY_OBJ) sub.o
 #

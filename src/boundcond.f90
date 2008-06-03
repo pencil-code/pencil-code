@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.210 2008-05-30 22:45:08 dhruba Exp $
+! $Id: boundcond.f90,v 1.211 2008-06-03 11:52:57 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -10,8 +10,9 @@
 
 module Boundcond
 
-  use Mpicomm
+  use Cdata
   use Messages
+  use Mpicomm
 
   implicit none
 
@@ -63,9 +64,7 @@ module Boundcond
 !  11-nov-02/wolf: unified bot/top, now handled by loop
 !  15-dec-06/wolf: Replaced "if (bcx1(1)=='she') then" by "any" command
 !
-      use Cdata
       use EquationOfState
-      use Magnetic
       use Shear
       use Special, only: special_boundconds
 !
@@ -256,9 +255,6 @@ module Boundcond
 !   8-jul-02/axel: split up into different routines for x,y and z directions
 !  11-nov-02/wolf: unified bot/top, now handled by loop
 !
-      use Cdata
-!!      use Entropy
-      use Magnetic
       use Special, only: special_boundconds
       use EquationOfState
 !
@@ -381,10 +377,8 @@ module Boundcond
 !   8-jul-02/axel: split up into different routines for x,y and z directions
 !  11-nov-02/wolf: unified bot/top, now handled by loop
 !
-      use Cdata
 !!      use Entropy, only: hcond0,hcond1,Fbot,FbotKbot,Ftop,FtopKtop,chi, &
 !!                         lmultilayer,lheatc_chiconst
-      use Magnetic
       use Special, only: special_boundconds
       !use Density
       use EquationOfState
@@ -635,8 +629,6 @@ module Boundcond
 !  periodic boundary condition
 !  11-nov-02/wolf: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       character (len=3) :: topbot
@@ -661,8 +653,6 @@ module Boundcond
 !  periodic boundary condition
 !  11-nov-02/wolf: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       character (len=3) :: topbot
@@ -686,8 +676,6 @@ module Boundcond
 !
 !  periodic boundary condition
 !  11-nov-02/wolf: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
@@ -717,8 +705,6 @@ module Boundcond
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
-!
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -768,8 +754,6 @@ module Boundcond
 !
 !  11-nov-02/wolf: coded
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
@@ -817,8 +801,6 @@ module Boundcond
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  25-feb-07/axel: adapted from bc_sym_x
-!
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -876,8 +858,6 @@ module Boundcond
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  25-feb-07/axel: adapted from bc_sym_x
-!
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -942,8 +922,6 @@ module Boundcond
 !
 !  25-feb-07/axel: adapted from bc_sym_x
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom) :: dist
@@ -982,8 +960,6 @@ module Boundcond
 !  or f(n1-i) = f(n1+i)*exp{[z(n1-i)-z(n1+i)]/dist}.
 !
 !  25-feb-07/axel: adapted from bc_sym_z
-!
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1026,8 +1002,6 @@ module Boundcond
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  25-feb-07/axel: adapted from bc_slope_x
-!
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1085,8 +1059,6 @@ module Boundcond
 !  11-nov-02/wolf: coded
 !  10-apr-05/axel: added val argument
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
@@ -1136,8 +1108,6 @@ module Boundcond
 !  11-nov-02/wolf: coded
 !  10-apr-05/axel: added val argument
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
@@ -1185,8 +1155,6 @@ module Boundcond
 !  11-nov-02/wolf: coded
 !  10-apr-05/axel: added val argument
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
@@ -1229,8 +1197,6 @@ module Boundcond
 !
 !  14-may-2006/tobi: coded
 !
-      use Cdata
-!
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
@@ -1261,8 +1227,6 @@ module Boundcond
 !
 !  27-apr-2007/dhruba: coded
 !
-      use Cdata
-!
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
@@ -1288,8 +1252,6 @@ module Boundcond
 !  Sets the value of f from a file
 !
 !   9-jan-2008/axel+nils+natalia: coded
-!
-      use Cdata
 !
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -1356,8 +1318,6 @@ module Boundcond
 !
 !  27-apr-2007/dhruba: coded
 !
-      use Cdata
-!
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
@@ -1397,8 +1357,6 @@ module Boundcond
 !
 !  25-Aug-2007/dhruba: coded
 !
-      use Cdata
-!
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
@@ -1433,8 +1391,6 @@ module Boundcond
 !
 !  25-Aug-2007/dhruba: coded
 !
-      use Cdata
-!
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
@@ -1466,7 +1422,6 @@ module Boundcond
 !
 !  3-jan-2008/dhruba: coded
 !
-      use Cdata
       use Sub
 !
       character (len=3), intent (in) :: topbot
@@ -1532,8 +1487,6 @@ module Boundcond
 !
 !  25-Aug-2007/dhruba: coded
 !
-      use Cdata
-!
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
@@ -1573,8 +1526,6 @@ module Boundcond
 !
 !  25-Aug-2007/dhruba: coded
 !
-      use Cdata
-!
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
@@ -1608,8 +1559,6 @@ module Boundcond
 !
 !  14-may-2006/tobi: coded
 !
-      use Cdata
-!
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
@@ -1637,8 +1586,6 @@ module Boundcond
 !  Sets the derivative on the boundary to a given value
 !
 !  14-may-2006/tobi: coded
-!
-      use Cdata
 !
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -1668,8 +1615,6 @@ module Boundcond
 !  (TODO: clarify what this means)
 !
 !  26-apr-06/tobi: coded
-!
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1701,8 +1646,6 @@ module Boundcond
 !
 !  26-apr-06/tobi: coded
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
@@ -1733,8 +1676,6 @@ module Boundcond
 !
 !  26-apr-06/tobi: coded
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
@@ -1764,8 +1705,6 @@ module Boundcond
 !  (useful for vertical hydrostatic equilibrium in discs)
 !
 !  19-aug-03/anders: coded
-!
-    use Cdata
 !
     character (len=3) :: topbot
     real, dimension (mx,my,mz,mfarray) :: f
@@ -1806,8 +1745,6 @@ module Boundcond
 !
 !  17-jun-03/wolf: coded
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: Nyquist=impossible
@@ -1847,8 +1784,6 @@ module Boundcond
 !  corresponding to (9.207)-(9.210) in Ferriz-Mas proceedings.
 !
 !   5-apr-03/axel: coded
-!
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1895,8 +1830,6 @@ module Boundcond
 !
 !   19-jun-03/wolf: coded
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
@@ -1927,8 +1860,6 @@ module Boundcond
 !  of freedom by minimizing L2 norm of coefficient vector.
 !
 !   19-jun-03/wolf: coded
-!
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1961,8 +1892,6 @@ module Boundcond
 !
 !   19-jun-03/wolf: coded
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
@@ -1994,8 +1923,6 @@ module Boundcond
 !
 !   19-jun-03/wolf: coded
 !    1-jul-03/axel: introduced abbreviations n1p4,n2m4
-!
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2035,8 +1962,6 @@ module Boundcond
 !   19-jun-03/wolf: coded
 !    1-jul-03/axel: introduced abbreviations n1p4,n2m4
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,l1p4,l2m4
@@ -2075,8 +2000,6 @@ module Boundcond
 !   19-jun-03/wolf: coded
 !    1-jul-03/axel: introduced abbreviations n1p4,n2m4
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,m1p4,m2m4
@@ -2113,8 +2036,6 @@ module Boundcond
 !  of freedom by minimizing L2 norm of coefficient vector.
 !
 !    9-oct-03/wolf: coded
-!
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2177,8 +2098,6 @@ module Boundcond
 !
 !    9-oct-03/wolf: coded
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
@@ -2213,8 +2132,6 @@ module Boundcond
 !  NOTE: This is not the final formula, but just bc_extrap_2_2() with f(bdry)=0
 !
 !    9-oct-03/wolf: coded
-!
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2261,8 +2178,6 @@ module Boundcond
 !  11-jul-2002/nils: moved into the density module
 !  13-aug-2002/nils: moved into boundcond
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: fder
@@ -2304,8 +2219,6 @@ module Boundcond
 !  11-jul-2002/nils: moved into the density module
 !  13-aug-2002/nils: moved into boundcond
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: fder
@@ -2345,7 +2258,6 @@ module Boundcond
 !
 !  26-apr-2004/wolf: coded
 !
-      use Cdata
       use EquationOfState, only: gamma1, cs2top, cs2bot
 !
       character (len=3) :: topbot
@@ -2413,7 +2325,6 @@ module Boundcond
 !
 !  09-mar-2007/dintrans: coded
 !
-      use Cdata
       use EquationOfState, only: gamma1, cs2top, cs2bot
 !
       character (len=3) :: topbot
@@ -2465,8 +2376,6 @@ module Boundcond
 !
 !  26-apr-2004/wolf: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: idz,j
       real :: kx,ky
@@ -2492,8 +2401,6 @@ module Boundcond
 !  26-apr-2004/wolf: coded
 !  10-apr-2005/axel: adapted for A
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: idz,j
       real :: kx,ky
@@ -2517,8 +2424,6 @@ module Boundcond
 !  Set bdry values to 1 for debugging purposes
 !
 !  11-jul-02/wolf: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
@@ -2545,8 +2450,6 @@ module Boundcond
 !
 !  11-jul-02/wolf: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       character (len=3) :: topbot
@@ -2572,8 +2475,6 @@ module Boundcond
 !
 !  11-jul-02/wolf: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       character (len=3) :: topbot
@@ -2598,8 +2499,6 @@ module Boundcond
 !  Tell other modules that variable with slot j is to be frozen in on
 !  given boundary
 !
-      use Cdata
-!
       integer :: j
       character (len=3) :: topbot
 !
@@ -2621,8 +2520,6 @@ module Boundcond
 !  Tell other modules that variable with slot j is to be frozen in on
 !  given boundary
 !
-      use Cdata
-!
       integer :: j
       character (len=3) :: topbot
 !
@@ -2643,8 +2540,6 @@ module Boundcond
 !
 !  Tell other modules that variable with slot j is to be frozen in on
 !  given boundary
-!
-      use Cdata
 !
       integer :: j
       character (len=3) :: topbot
@@ -2688,7 +2583,6 @@ module Boundcond
 !  27-mai-04/bing: coded
 !  11-aug-06/axel: make it compile with nprocx>0, renamed quenching -> quen
 !
-       use Cdata
        use EquationOfState, only : gamma,gamma1,gamma11,cs20,lnrho0
 
        real, dimension (mx,my,mz,mfarray) :: f
@@ -2813,7 +2707,6 @@ module Boundcond
 !  constant flux boundary condition for temperature (called when bcx='c1')
 !  12-Mar-2007/dintrans: coded
 !
-      use Cdata
       use SharedVariables, only: get_shared_variable
 !
       real, pointer :: hcond0, hcond1, Fbot
@@ -2863,7 +2756,6 @@ module Boundcond
 !  constant flux boundary condition for temperature (called when bcz='c1')
 !  12-May-07/dintrans: coded
 !
-      use Cdata
       use SharedVariables, only: get_shared_variable
 !
       real, pointer :: hcond0, Fbot
@@ -2909,7 +2801,6 @@ module Boundcond
 !  constant flux boundary condition for entropy (called when bcx='c1')
 !  17-mar-07/dintrans: coded
 !
-      use Cdata
       use EquationOfState, only: gamma, gamma1, lnrho0, cs20
       use SharedVariables, only: get_shared_variable
 !
@@ -2967,7 +2858,6 @@ module Boundcond
 !
 !  11-oct-06/wolf: Adapted from Tobi's bc_aa_pot2
 !
-      use Cdata
       use Fourier, only: fourier_transform_xy_xy
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -3059,8 +2949,6 @@ module Boundcond
 !
 !  13-aug-2007/anders: implemented
 !
-      use Cdata, only: mx, my, mz, mfarray, n1, n2, nghost
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
@@ -3094,8 +2982,6 @@ module Boundcond
 !  condition is set to 's', otherwise it is set to 'a'.
 !
 !  12-aug-2007/anders: implemented
-!
-      use Cdata, only: mx, my, mz, mfarray, n1, n2, nghost
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3144,8 +3030,6 @@ module Boundcond
 !
 !  15-aug-2007/anders: implemented
 !
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
@@ -3172,5 +3056,463 @@ module Boundcond
       endselect
 !
     endsubroutine bc_copy_z
+!***********************************************************************
+    subroutine bc_frozen_in_bb(topbot,j)
+!
+!  Set flags to indicate that magnetic flux is frozen-in at the
+!  z boundary. The implementation occurs in daa_dt where magnetic
+!  diffusion is switched off in that layer.
+!
+      use SharedVariables
+!
+      character (len=3) :: topbot
+      integer :: j
+!
+      logical, save :: lfirstcall=.true.
+      logical, pointer, save, dimension (:) :: lfrozen_bb_bot, lfrozen_bb_top
+      integer :: ierr
+!
+      if (lfirstcall) then
+        call get_shared_variable('lfrozen_bb_bot',lfrozen_bb_bot,ierr)
+        if (ierr/=0) call fatal_error('bc_frozen_in_bb', &
+            'there was a problem getting lfrozen_bb_bot')
+        call get_shared_variable('lfrozen_bb_top',lfrozen_bb_top,ierr)
+        if (ierr/=0) call fatal_error('bc_frozen_in_bb', &
+            'there was a problem getting lfrozen_bb_top')
+      endif
+!
+      select case(topbot)
+      case('bot')               ! bottom boundary
+        lfrozen_bb_bot(j-iax+1) = .true.    ! set flag
+      case('top')               ! top boundary
+        lfrozen_bb_top(j-iax+1) = .true.    ! set flag
+      case default
+        print*, "bc_frozen_in_bb: ", topbot, " should be `top' or `bot'"
+      endselect
+!
+      lfirstcall=.false.
+!
+    endsubroutine bc_frozen_in_bb
+!***********************************************************************
+    subroutine bc_aa_pot3(f,topbot)
+!
+!  Pontential field boundary condition
+!
+!  11-oct-06/wolf: Adapted from Tobi's bc_aa_pot2
+!
+      use Fourier, only: fourier_transform_xy_xy
+      use Mpicomm, only: communicate_bc_aa_pot
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+!
+      real, dimension (nx,ny,iax:iaz) :: aa_re,aa_im
+      real, dimension (nx,ny) :: kx,ky,kappa,kappa1,exp_fact
+      real, dimension (nx,ny) :: tmp_re,tmp_im
+      real    :: delta_z
+      integer :: i,j
+!
+!  Get local wave numbers
+!
+      kx = spread(kx_fft(ipx*nx+1:ipx*nx+nx),2,ny)
+      ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
+!
+!  Calculate 1/k^2, zero mean
+!
+      kappa = sqrt(kx**2 + ky**2)
+      where (kappa > 0)
+        kappa1 = 1/kappa
+      elsewhere
+        kappa1 = 0
+      endwhere
+!
+!  Check whether we want to do top or bottom (this is precessor dependent)
+!
+      select case(topbot)
+!
+!  Potential field condition at the bottom
+!
+      case('bot')
+
+        do j=1,nghost
+!
+! Calculate delta_z based on z(), not on dz to improve behavior for
+! non-equidistant grid (still not really correct, but could be OK)
+!
+          delta_z  = z(n1+j) - z(n1-j)
+          exp_fact = exp(-kappa*delta_z)
+!
+!  Determine potential field in ghost zones
+!
+          !  Fourier transforms of x- and y-components on the boundary
+          do i=iax,iaz
+            tmp_re = f(l1:l2,m1:m2,n1+j,i)
+            tmp_im = 0.0
+            call fourier_transform_xy_xy(tmp_re,tmp_im)
+            aa_re(:,:,i) = tmp_re*exp_fact
+            aa_im(:,:,i) = tmp_im*exp_fact
+          enddo
+
+         ! Transform back
+          do i=iax,iaz
+            tmp_re = aa_re(:,:,i)
+            tmp_im = aa_im(:,:,i)
+            call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
+            f(l1:l2,m1:m2,n1-j,i) = tmp_re
+          enddo
+
+        enddo
+!
+!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
+!
+        call communicate_bc_aa_pot(f,topbot)
+!
+!  Potential field condition at the top
+!
+      case('top')
+
+        do j=1,nghost
+!
+! Calculate delta_z based on z(), not on dz to improve behavior for
+! non-equidistant grid (still not really correct, but could be OK)
+!
+          delta_z  = z(n2+j) - z(n2-j)
+          exp_fact = exp(-kappa*delta_z)
+!
+!  Determine potential field in ghost zones
+!
+          !  Fourier transforms of x- and y-components on the boundary
+          do i=iax,iaz
+            tmp_re = f(l1:l2,m1:m2,n2-j,i)
+            tmp_im = 0.0
+            call fourier_transform_xy_xy(tmp_re,tmp_im)
+            aa_re(:,:,i) = tmp_re*exp_fact
+            aa_im(:,:,i) = tmp_im*exp_fact
+          enddo
+
+          ! Transform back
+          do i=iax,iaz
+            tmp_re = aa_re(:,:,i)
+            tmp_im = aa_im(:,:,i)
+            call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
+            f(l1:l2,m1:m2,n2+j,i) = tmp_re
+          enddo
+
+        enddo
+!
+!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
+!
+        call communicate_bc_aa_pot(f,topbot)
+
+      case default
+
+        if (lroot) print*,"bc_aa_pot2: invalid argument"
+
+      endselect
+
+    endsubroutine bc_aa_pot3
+!***********************************************************************
+    subroutine bc_aa_pot2(f,topbot)
+!
+!  Pontential field boundary condition
+!
+!  10-oct-06/tobi: Coded
+!
+      use Fourier, only: fourier_transform_xy_xy
+      use Mpicomm, only: communicate_bc_aa_pot
+
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+
+      real, dimension (nx,ny,iax:iaz) :: aa_re,aa_im
+      real, dimension (nx,ny) :: kx,ky,kappa,kappa1
+      real, dimension (nx,ny) :: tmp_re,tmp_im
+      real, dimension (nx,ny) :: fac
+      integer :: i,j
+!
+!  Get local wave numbers
+!
+      kx = spread(kx_fft(ipx*nx+1:ipx*nx+nx),2,ny)
+      ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
+!
+!  Calculate 1/k^2, zero mean
+!
+      kappa = sqrt(kx**2 + ky**2)
+      where (kappa > 0)
+        kappa1 = 1/kappa
+      elsewhere
+        kappa1 = 0
+      endwhere
+!
+!  Check whether we want to do top or bottom (this is precessor dependent)
+!
+      select case(topbot)
+!
+!  Pontential field condition at the bottom
+!
+      case('bot')
+!
+!  Fourier transforms of x- and y-components on the boundary
+!
+        do i=iax,iaz
+          tmp_re = f(l1:l2,m1:m2,n1,i)
+          tmp_im = 0.0
+          call fourier_transform_xy_xy(tmp_re,tmp_im)
+          aa_re(:,:,i) = tmp_re
+          aa_im(:,:,i) = tmp_im
+        enddo
+!
+!  Determine potential field in ghost zones
+!
+        do j=1,nghost
+          fac = exp(-j*kappa*dz)
+          do i=iax,iaz
+            tmp_re = fac*aa_re(:,:,i)
+            tmp_im = fac*aa_im(:,:,i)
+            call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
+            f(l1:l2,m1:m2,n1-j,i) = tmp_re
+          enddo
+        enddo
+!
+!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
+!
+        call communicate_bc_aa_pot(f,topbot)
+!
+!  Pontential field condition at the top
+!
+      case('top')
+!
+!  Fourier transforms of x- and y-components on the boundary
+!
+        do i=iax,iaz
+          tmp_re = f(l1:l2,m1:m2,n2,i)
+          tmp_im = 0.0
+          call fourier_transform_xy_xy(tmp_re,tmp_im)
+          aa_re(:,:,i) = tmp_re
+          aa_im(:,:,i) = tmp_im
+        enddo
+!
+!  Determine potential field in ghost zones
+!
+        do j=1,nghost
+          fac = exp(-j*kappa*dz)
+          do i=iax,iaz
+            tmp_re = fac*aa_re(:,:,i)
+            tmp_im = fac*aa_im(:,:,i)
+            call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
+            f(l1:l2,m1:m2,n2+j,i) = tmp_re
+          enddo
+        enddo
+!
+!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
+!
+        call communicate_bc_aa_pot(f,topbot)
+
+      case default
+
+        if (lroot) print*,"bc_aa_pot2: invalid argument"
+
+      endselect
+
+    endsubroutine bc_aa_pot2
+!***********************************************************************
+      subroutine bc_aa_pot(f,topbot)
+!
+!  Potential field boundary condition for magnetic vector potential at
+!  bottom or top boundary (in z).
+!
+!  14-jun-2002/axel: adapted from similar
+!   8-jul-2002/axel: introduced topbot argument
+!
+      use Mpicomm, only: stop_it,communicate_bc_aa_pot
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,ny) :: f2,f3
+      real, dimension (nx,ny,nghost+1) :: fz
+      integer :: j
+!
+!  pontential field condition
+!  check whether we want to do top or bottom (this is precessor dependent)
+!
+      select case(topbot)
+!
+!  pontential field condition at the bottom
+!
+      case('bot')
+        if (headtt) print*,'bc_aa_pot: pot-field bdry cond at bottom'
+        if (mod(nxgrid,nygrid)/=0) &
+             call stop_it("bc_aa_pot: pot-field doesn't work "//&
+                          "with mod(nxgrid,nygrid)/=1")
+        do j=0,1
+          f2=f(l1:l2,m1:m2,n1+1,iax+j)
+          f3=f(l1:l2,m1:m2,n1+2,iax+j)
+          call potential_field(fz,f2,f3,-1)
+          f(l1:l2,m1:m2,1:n1,iax+j)=fz
+        enddo
+        !
+        f2=f(l1:l2,m1:m2,n1,iax)
+        f3=f(l1:l2,m1:m2,n1,iay)
+        call potentdiv(fz,f2,f3,-1)
+        f(l1:l2,m1:m2,1:n1,iaz)=-fz
+        call communicate_bc_aa_pot(f,topbot)
+!
+!  pontential field condition at the top
+!
+      case('top')
+        if (headtt) print*,'bc_aa_pot: pot-field bdry cond at top'
+        if (mod(nxgrid,nygrid)/=0) &
+             call stop_it("bc_aa_pot: pot-field doesn't work "//&
+                          "with mod(nxgrid,nygrid)/=1")
+        do j=0,1
+          f2=f(l1:l2,m1:m2,n2-1,iax+j)
+          f3=f(l1:l2,m1:m2,n2-2,iax+j)
+          call potential_field(fz,f2,f3,+1)
+          f(l1:l2,m1:m2,n2:mz,iax+j)=fz
+        enddo
+        !
+        f2=f(l1:l2,m1:m2,n2,iax)
+        f3=f(l1:l2,m1:m2,n2,iay)
+        call potentdiv(fz,f2,f3,+1)
+        f(l1:l2,m1:m2,n2:mz,iaz)=-fz
+        call communicate_bc_aa_pot(f,topbot)
+      case default
+        if (lroot) print*,"bc_aa_pot: invalid argument"
+      endselect
+!
+      endsubroutine bc_aa_pot
+!***********************************************************************
+      subroutine potential_field(fz,f2,f3,irev)
+!
+!  solves the potential field boundary condition;
+!  fz is the boundary layer, and f2 and f3 are the next layers inwards.
+!  The condition is the same on the two sides.
+!
+!  20-jan-00/axel+wolf: coded
+!  22-mar-00/axel: corrected sign (it is the same on both sides)
+!  29-sep-06/axel: removed multiple calls, removed normalization, non-para
+!
+      use Fourier
+!
+      real, dimension (nx,ny) :: fac,kk,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
+      real, dimension (nx,ny,nghost+1) :: fz
+      real, dimension (nx) :: kx
+      real, dimension (nygrid) :: ky
+      real :: delz
+      integer :: i,irev
+!
+!  initialize workspace
+!
+      f2r=f2; f2i=0
+      f3r=f3; f3i=0
+!
+!  Transform; real and imaginary parts
+!
+      call fourier_transform_xy_xy(f2r,f2i)
+      call fourier_transform_xy_xy(f3r,f3i)
+!
+!  define wave vector
+!
+      kx=cshift((/(i-(nx-1)/2,i=0,nx-1)/),+(nx-1)/2)*2*pi/Lx
+      ky=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
+!
+!  calculate 1/k^2, zero mean
+!
+      kk=sqrt(spread(kx**2,2,ny)+spread(ky(ipy*ny+1:(ipy+1)*ny)**2,1,nx))
+!
+!  one-sided derivative
+!
+      fac=1./(3.+2.*dz*kk)
+      f1r=fac*(4.*f2r-f3r)
+      f1i=fac*(4.*f2i-f3i)
+!
+!  set ghost zones
+!
+      do i=0,nghost
+        delz=i*dz
+        fac=exp(-kk*delz)
+        g1r=fac*f1r
+        g1i=fac*f1i
+!
+!  Transform back
+!
+        call fourier_transform_xy_xy(g1r,g1i,linv=.true.)
+!
+!  reverse order if irev=-1 (if we are at the bottom)
+!
+        if (irev==+1) fz(:,:,       i+1) = g1r
+        if (irev==-1) fz(:,:,nghost-i+1) = g1r
+      enddo
+!
+    endsubroutine potential_field
+!***********************************************************************
+      subroutine potentdiv(fz,f2,f3,irev)
+!
+!  solves the divA=0 for potential field boundary condition;
+!  f2 and f3 correspond to Ax and Ay (input) and fz corresponds to Ax (out)
+!  In principle we could save some ffts, by combining with the potential
+!  subroutine above, but this is now easier
+!
+!  22-mar-02/axel: coded
+!  29-sep-06/axel: removed multiple calls, removed normalization, non-para
+!   7-oct-06/axel: corrected sign for irev==+1.
+!
+      use Fourier
+!
+      real, dimension (nx,ny) :: fac,kk,kkkx,kkky,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
+      real, dimension (nx,ny,nghost+1) :: fz
+      real, dimension (nx) :: kx
+      real, dimension (nygrid) :: ky
+      real :: delz
+      integer :: i,irev
+!
+      f2r=f2; f2i=0
+      f3r=f3; f3i=0
+!
+!  Transform
+!
+      call fourier_transform_xy_xy(f2r,f2i)
+      call fourier_transform_xy_xy(f3r,f3i)
+!
+!  define wave vector
+!
+      kx=cshift((/(i-nx/2,i=0,nx-1)/),+nx/2)*2*pi/Lx
+      ky=cshift((/(i-nygrid/2,i=0,nygrid-1)/),+nygrid/2)*2*pi/Ly
+!
+!  calculate 1/k^2, zero mean
+!
+      kk=sqrt(spread(kx**2,2,ny)+spread(ky(ipy*ny+1:(ipy+1)*ny)**2,1,nx))
+      kkkx=spread(kx,2,ny)
+      kkky=spread(ky(ipy*ny+1:(ipy+1)*ny),1,nx)
+!
+!  calculate 1/kk
+!
+      kk(1,1)=1.
+      fac=1./kk
+      fac(1,1)=0.
+!
+      f1r=fac*(-kkkx*f2i-kkky*f3i)
+      f1i=fac*(+kkkx*f2r+kkky*f3r)
+!
+!  set ghost zones
+!
+      do i=0,nghost
+        delz=i*dz
+        fac=exp(-kk*delz)
+        g1r=fac*f1r
+        g1i=fac*f1i
+!
+!  Transform back
+!
+        call fourier_transform_xy_xy(g1r,g1i,linv=.true.)
+!
+!  reverse order if irev=-1 (if we are at the bottom)
+!  but reverse sign if irev=+1 (if we are at the top)
+!
+        if (irev==+1) fz(:,:,       i+1) = -g1r
+        if (irev==-1) fz(:,:,nghost-i+1) = +g1r
+      enddo
+!
+    endsubroutine potentdiv
 !***********************************************************************
 endmodule Boundcond
