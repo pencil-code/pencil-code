@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.236 2008-05-12 13:55:13 dhruba Exp $
+! $Id: register.f90,v 1.237 2008-06-03 14:06:52 dhruba Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -446,7 +446,6 @@ module Register
           enddo
         enddo
         nVol1=1./nVol 
-        write(*,*) 'DHRUBA:',nVol,nVol1      
 !
 !  Trapezoidal rule
 !

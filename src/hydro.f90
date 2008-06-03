@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.436 2008-05-30 22:45:08 dhruba Exp $
+! $Id: hydro.f90,v 1.437 2008-06-03 14:06:52 dhruba Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -342,7 +342,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.436 2008-05-30 22:45:08 dhruba Exp $")
+           "$Id: hydro.f90,v 1.437 2008-06-03 14:06:52 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3154,6 +3154,16 @@ use Mpicomm, only: stop_it
       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
         -prof_amp1*cos(kx_diffrot*x(l1:l2))**xexp_diffrot*cos(z(n)))
 !
+!  modified diffrot profile from Brandenburg & Sandin (2004, A&A)
+      case ('BS04m')
+      if (wdamp/=0.) then
+        prof_amp1=ampl1_diffrot*(1.-step(x(l1:l2),rdampint,wdamp))
+      else
+        prof_amp1=ampl1_diffrot
+      endif
+      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
+        -prof_amp1*sin((pi/(2.*x(l2)))*x(l1:l2))*cos((pi/(2.*y(m2)))*y(m)))
+
 !  vertical shear profile
 !
       case ('vertical_shear')

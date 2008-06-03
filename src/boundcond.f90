@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.211 2008-06-03 11:52:57 ajohan Exp $
+! $Id: boundcond.f90,v 1.212 2008-06-03 14:06:52 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1518,9 +1518,10 @@ module Boundcond
     subroutine bc_set_pfc_y(f,topbot,j)
 !
 ! In spherical polar coordinate system,
-! at a radial boundary set : $A_{\theta} = 0$ and $A_{phi} = 0$,
-! and demand $div A = 0$ gives the condition on $A_r$ to be
-! $d/dr( A_r) + 2/r = 0$ . This subroutine sets this condition of
+! at a theta boundary set : $A_{r} = 0$ and $A_{phi} = 0$,
+! and demand $div A = 0$ gives the condition on $A_{\theta}$ to be
+! $d/d{\theta}( A_{\theta}) + \cot(\theta)A_{\theta} = 0$ . 
+! This subroutine sets this condition on 
 ! $j$ the component of f. As this is related to setting the
 ! perfect conducting boundary condition we call this "pfc". 
 !

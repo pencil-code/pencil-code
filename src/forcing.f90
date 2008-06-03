@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.147 2008-05-30 22:45:08 dhruba Exp $
+! $Id: forcing.f90,v 1.148 2008-06-03 14:06:52 dhruba Exp $
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -117,7 +117,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.147 2008-05-30 22:45:08 dhruba Exp $")
+           "$Id: forcing.f90,v 1.148 2008-06-03 14:06:52 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -753,11 +753,12 @@ module Forcing
       real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
       real, dimension(nx,3,3) :: psi_ij,Tij
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: emm,iread,l,j,jf,ell,jalpha,Legendrel,lmindex,ilread,ilm,ckno
+      integer :: emm,iread,l,j,jf,ell,jalpha,Legendrel,lmindex,ilread,ilm,&
+                 aindex,ckno
       complex :: psi_ell_m
       real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,& 
               Pell,psilm,RYlm,IYlm
-      real :: rz,rindex,Plmreal, Plmimag,& 
+      real :: rz,rindex,ralpha,Plmreal, Plmimag,& 
               ran_min,ran_max,rmin,rmax,rphase2
       real, dimension(mx) :: Z_psi
       real,dimension(my) :: Pl
@@ -772,7 +773,7 @@ module Forcing
         if (lroot) print*,'allocating psif ..'
         allocate(psif(mx,my,mz))
 ! Read the list of values for emm, ell and alpha. This code is designed for 25 such
-        allocate(cklist(nlist_ck,3))
+        allocate(cklist(nlist_ck,5))
         if (lroot) print*, '..done'
         open(unit=76,file="alpha_in.dat",status="old")
         read(76,*) ckno,rmin,rmax
@@ -787,7 +788,7 @@ module Forcing
         endif
 ! ---------- 
         do ilread=1,nlist_ck
-          read(76,*) (cklist(ilread,ilm),ilm=1,3)
+          read(76,*) (cklist(ilread,ilm),ilm=1,5)
         enddo
         close(76)
         ifirst= ifirst+1
@@ -799,7 +800,9 @@ module Forcing
    lmindex=nint(rindex*24.)+1
    emm = cklist(lmindex,1)
    Legendrel = cklist(lmindex,2)
-   Balpha = cklist(lmindex,3)
+   call random_number_wrapper(ralpha)
+   aindex=nint(ralpha*2)
+   Balpha = cklist(lmindex,3+aindex)
 !  if(lroot) write(*,*) "Dhruba",lmindex,emm,Legendrel,Balpha 
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
