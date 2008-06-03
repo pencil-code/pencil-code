@@ -66,7 +66,7 @@ int main (void)
         izeros = izeros+1;
       }
       printf("m = %d, Legendrel=%d ,alpha=%f \n",emm,ell,zeros[Nzeros]);     
-      fprintf(fout,"%d %d %f \n ",emm,ell,zeros[Nzeros]);
+      fprintf(fout,"%d %d %f %f %f \n ",emm,ell,zeros[Nzeros-2],zeros[Nzeros-1],zeros[Nzeros]);
     }
   }
   fclose(fout);
