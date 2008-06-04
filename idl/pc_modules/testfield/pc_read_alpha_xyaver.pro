@@ -1,4 +1,4 @@
-;$Id: pc_read_alpha_xyaver.pro,v 1.4 2008-04-29 04:36:32 brandenb Exp $
+;$Id: pc_read_alpha_xyaver.pro,v 1.5 2008-06-04 11:25:43 brandenb Exp $
 ;
 ;  In order to determine the z-dependence of the alpha and eta tensors
 ;  we have to read the horizontal averages of Epq, i.e. we assume that
@@ -19,9 +19,9 @@ if use_grid eq 1 then begin
 endif else begin
   ;
   ;  map z-array to a (-pi,pi) interval
-  ;  set default nz to 128, but this can be changed
   ;
-  default,nz,128
+  pc_read_dim,o=dim
+  default,nz,dim.nz
   n1=3 & n2=nz+2
   z1=4.*!pi & z0=-z1
   dz=(z1-z0)/nz
@@ -71,4 +71,9 @@ for it=0,nt-1 do begin
 endfor
 ;
 print,'tvscl,alpij(*,*,0,0)'
+;
+alpijm=total(alpij,2)/nt
+etaijm=total(etaij,2)/nt
+;
+save,file='alpetaij.sav',zzz,alpijm,etaijm
 END
