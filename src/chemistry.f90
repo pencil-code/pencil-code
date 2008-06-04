@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.105 2008-06-01 15:41:04 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.106 2008-06-04 14:40:53 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -192,11 +192,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.105 2008-06-01 15:41:04 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.106 2008-06-04 14:40:53 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.105 2008-06-01 15:41:04 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.106 2008-06-04 14:40:53 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1148,23 +1148,20 @@ module Chemistry
 
      if (ldensity .and. lcheminp) then
         sum_DYDt=0.
-      !  do k=1,nchemspec
-      !    sum_DYDt=sum_DYDt+Rgas*(1.*0.-H0_RT(l1:l2,m,n,k)/species_constants(k,imass))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
-      !  enddo
-
         do k=1,nchemspec
           sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-H0_RT(l1:l2,m,n,k))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
         enddo
 
-         call dot_mn(p%ghYrho,p%uu,ghYrho_uu)
+        call dot_mn(p%ghYrho,p%uu,ghYrho_uu)
 
-     !   df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + (sum_DYDt(:) &
-     !   - Rgas*p%mu1*p%divu - (hYrho_full(l1:l2,m,n)*p%divu(:)+ghYrho_uu(:))/p%TT(:))/(p%cp-Rgas*p%mu1*0.)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
+         + (sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1 &
+          !/(p%cp-Rgas*p%mu1)&
+        +(hYrho_full(l1:l2,m,n)*p%divu(:)+ghYrho_uu(:))/p%TT(:)*p%cv1
+          !/(p%cp-Rgas*p%mu1)
 
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + sum_DYDt(:)/(p%cp-Rgas*p%mu1)
 
-
-!           print*,'Natalia'  maxval(hYrho_full(l1:l2,m,n)*p%divu(:)),maxval(sum_DYDt(:))
+!       print*,'Natalia'            maxval(hYrho_full(l1:l2,m,n)*p%divu(:)),maxval(sum_DYDt(:))
 
 
         if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
@@ -2676,7 +2673,8 @@ module Chemistry
 
 
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  & 
-           + p%lambda(:)*(p%del2lnTT+g2TT +g2TTlnlambda)/(p%cp-Rgas*p%mu1)
+        + p%lambda(:)*(p%del2lnTT+g2TT+g2TTlnlambda)*p%cv1
+                            !/(p%cp-Rgas*p%mu1)
 
 !print*,'Natalia',maxval(p%lambda(:)),maxval(p%del2lnTT),maxval(p%del2lnTT+g2TT +g2TTlnlambda)/(p%cp-Rgas*p%mu1))
 
