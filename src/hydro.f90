@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.437 2008-06-03 14:06:52 dhruba Exp $
+! $Id: hydro.f90,v 1.438 2008-06-04 12:46:22 bingert Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -342,7 +342,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.437 2008-06-03 14:06:52 dhruba Exp $")
+           "$Id: hydro.f90,v 1.438 2008-06-04 12:46:22 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -741,7 +741,7 @@ module Hydro
           if (lroot) print*,'init_uu: constant y-velocity'
           f(:,:,:,iuy) = ampluu(j)
 
-case('const-uz')
+        case('const-uz')
 !
 !  constant z-velocity
 !
