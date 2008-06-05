@@ -1,4 +1,4 @@
-;$Id: pc_read_alpha_xyaver.pro,v 1.5 2008-06-04 11:25:43 brandenb Exp $
+;$Id: pc_read_alpha_xyaver.pro,v 1.6 2008-06-05 10:00:51 brandenb Exp $
 ;
 ;  In order to determine the z-dependence of the alpha and eta tensors
 ;  we have to read the horizontal averages of Epq, i.e. we assume that
@@ -75,5 +75,9 @@ print,'tvscl,alpij(*,*,0,0)'
 alpijm=total(alpij,2)/nt
 etaijm=total(etaij,2)/nt
 ;
-save,file='alpetaij.sav',zzz,alpijm,etaijm
+alpij_end=reform(alpij(*,nt-1,*,*))
+etaij_end=reform(etaij(*,nt-1,*,*))
+;
+save,file='alpetaij.sav',zzz,alpijm,etaijm,alpij_end,etaij_end
+;
 END
