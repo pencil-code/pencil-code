@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.27 2008-06-01 22:25:57 brandenb Exp $
+! $Id: snapshot.f90,v 1.28 2008-06-05 10:15:25 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -149,11 +149,11 @@ contains
 !  read data without testfield into new run with testfield
 !
         elseif(lread_oldsnap_notestfield) then
-          print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar=',iaatest,iaztestpq,mvar
+          print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar,msnap=',iaatest,iaztestpq,mvar,msnap
           call input_snap(chsnap,f,msnap-ntestfield,1)
           ! shift the rest of the data
-          if (iaztestpq<mvar) then
-            do ivar=iaztestpq+1,mvar
+          if (iaztestpq<msnap) then
+            do ivar=iaztestpq+1,msnap
               f(:,:,:,ivar)=f(:,:,:,ivar-ntestfield)
             enddo
             f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
