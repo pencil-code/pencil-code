@@ -100,5 +100,5 @@ Makefile_inc:
 	    exit 1; \
 	    ;; \
 	esac; \
-	./src/scripts/precision-check .current-precision "$$desired_precision"
+	./src/scripts/precision-check src/.current-precision "$$desired_precision"
 

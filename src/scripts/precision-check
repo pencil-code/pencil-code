@@ -9,7 +9,7 @@
 
 use strict;
 
-my $debug = 1;
+my $debug = 0;
 
 logger("debug = $debug");
 logger("\@ARGV = " . join(", ", @ARGV));
@@ -24,23 +24,7 @@ logger("\$current = <$current>, \$desired = <$desired>\n");
 if ($current ne $desired) {
     logger("not equal");
     if (check_for_object_files('./src')) {
-        print <<"BOUSTROPHEDON";
-You are about to compile for $desired precision, but the existing .o files
-appear to be for $current precision.
-BOUSTROPHEDON
-        print "Run `make clean' to start over? [Y/n]";
-        my $answer = <STDIN>;
-        chomp($answer);
-        logger("\$answer = <$answer>");
-        if ($answer =~ /^\s*[nN]/) {
-            print "Quitting\n";
-            exit 1;
-        } else {
-            logger("Running\n  system('make', 'clean');\n  system('make')");
-            system('make', 'clean') == 0
-              and system('make');
-            write_current_file($desired);
-        }
+        sort_out_conflict();
     }
 }
 
@@ -57,6 +41,34 @@ sub read_precision_from {
     close(CURRENT);
     $current =~ s/\s*(\S+).*/$1/s;
     return $current;
+}
+# ---------------------------------------------------------------------- #
+sub sort_out_conflict {
+# We have conflicting precisions, so ask the user (if connected to a
+# terminal) or quit.
+
+    if (! (-t STDIN && -t STDOUT)) {
+        print "Conflicting precisions -- quitting\n";
+        exit 1;
+    }
+
+    print <<"BOUSTROPHEDON";
+You are about to compile for $desired precision, but the existing .o files
+appear to be for $current precision.
+BOUSTROPHEDON
+    print "Run `make clean' to start over? [Y/n]";
+    my $answer = <STDIN>;
+    chomp($answer);
+    logger("\$answer = <$answer>");
+    if ($answer =~ /^\s*[nN]/) {
+        print "Quitting\n";
+        exit 1;
+    } else {
+        logger("Running\n  system('make', 'clean');\n  system('make')");
+        system('make', 'clean') == 0
+          and system('make');
+        write_current_file($desired);
+    }
 }
 # ---------------------------------------------------------------------- #
 sub check_for_object_files {
