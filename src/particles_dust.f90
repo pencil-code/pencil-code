@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.229 2008-05-31 16:16:28 wlyra Exp $
+! $Id: particles_dust.f90,v 1.230 2008-06-05 15:00:41 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -139,7 +139,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.229 2008-05-31 16:16:28 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.230 2008-06-05 15:00:41 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -2059,7 +2059,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       type (pencil_case) :: p
-      real :: tausp1_par
+      real :: tausp1_par, tmp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k
       logical, optional :: nochange_opt
@@ -2088,29 +2088,29 @@ k_loop:   do while (.not. (k>npar_loc))
         if (iap/=0) then
           if (fp(k,iap)/=0.0) tausp1_par = 1/(fp(k,iap)*rhops)
         else
+!  Check if we are using multiple or single particle species.
           if (npar_species>1) then
-!  Multiple dust particle species.
             jspec=npar_species*(ipar(k)-1)/npar+1
-            tausp1_par=tausp1_species(jspec)
+            tmp=tausp1_species(jspec)
           else
-!  Single species of dust particles.
-            if (ldraglaw_variable) then
-!  Special case for 1/tau=omega when omega is not 
-!   constant (as, for instance, global Keplerian disks,
-!   for which omega=rad**(-3/2)
-              if (lcartesian_coords) then
-                OO=(fp(k,ixp)**2 + fp(k,iyp)**2)**(-0.75) 
-              elseif (lcylindrical_coords) then
-                OO=fp(k,ixp)**(-1.5)
-              elseif (lspherical_coords) then
-                call fatal_error("get_frictiontime",&
-                     "variable draglaw not implemented for"//&
-                     "spherical coordinates")
-              endif
-              tausp1_par=tausp1*OO
-            else
-              tausp1_par=tausp1
+            tmp=tausp1
+          endif
+!  Discriminate between constant tau and special case for 
+!  1/tau=omega when omega is not constant (as, for instance, 
+!  global Keplerian disks, for which omega=rad**(-3/2)
+          if (ldraglaw_variable) then
+            if (lcartesian_coords) then
+              OO=(fp(k,ixp)**2 + fp(k,iyp)**2)**(-0.75) 
+            elseif (lcylindrical_coords) then
+              OO=fp(k,ixp)**(-1.5)
+            elseif (lspherical_coords) then
+              call fatal_error("get_frictiontime",&
+                   "variable draglaw not implemented for"//&
+                   "spherical coordinates")
             endif
+            tausp1_par=tmp*OO
+          else
+            tausp1_par=tmp
           endif
         endif
       else if (ldraglaw_epstein_stokes_linear) then
@@ -2195,11 +2195,11 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension(3) :: uup,duu
       type (pencil_case) :: p
-      real :: tausp1_par
-      integer :: k, inx0
+      real :: tausp1_par,tmp,tmp1
+      integer :: k, inx0, jspec
       real :: kd,fd,mach,mach2,fac,OO
       real :: knudsen,reynolds,lambda
-      real :: particle_radius,kn_crit
+      real :: inv_particle_radius,kn_crit
       logical, optional :: lstokes
       logical, save :: lfirstcall
 !
@@ -2274,6 +2274,19 @@ k_loop:   do while (.not. (k>npar_loc))
 !  
 !  the constant terms are tausp1. The same follows for Stokes drag
 !
+!  Friction time for different species
+!
+      if (npar_species==1) then 
+        tmp=tausp
+        tmp1=tausp1
+      else
+        jspec=npar_species*(ipar(k)-1)/npar+1
+        tmp=tausp_species(jspec)
+        tmp1=tausp1_species(jspec)
+      endif
+!
+!  Relative velocity
+!
       duu=fp(k,ivpx:ivpz)-uup
 !
       if (nzgrid==1) then 
@@ -2334,27 +2347,27 @@ k_loop:   do while (.not. (k>npar_loc))
 !  radius
 !
         if (iap/=0) then
-          particle_radius=fp(k,iap)
+          inv_particle_radius=1./fp(k,iap)
         else
           if (luse_tau_ap) then
             ! use tausp as the radius (in meter) to make life easier
-            particle_radius=tausp
+            inv_particle_radius=tmp1
           else
             if (nzgrid==1) then
-              particle_radius=2*pi_1*tausp       !rhops=1, particle_radius in meters
+              inv_particle_radius=.5*pi*tmp1       !rhops=1, particle_radius in meters
             else
-              particle_radius=sqrt(8*pi_1)*tausp !rhops=1, particle_radius in meters
+              inv_particle_radius=sqrt(pi/8)*tmp1 !rhops=1, particle_radius in meters
             endif
           endif
         endif
 !
-        knudsen=.5*lambda/particle_radius
+        knudsen=.5*lambda*inv_particle_radius
 !
 !  The Stokes drag depends non-linearly on 
 !
 !    Re = 2*s*rho_g*|delta(v)|/mu_kin
 !
-        reynolds=3.*sqrt(pi/8.)*mach/knudsen
+        reynolds=3.*sqrt(pi/8)*mach/knudsen
 !
 !  the Reynolds number of the flow over the particle. It can parameterized by 
 !        
@@ -2402,15 +2415,15 @@ k_loop:   do while (.not. (k>npar_loc))
           !bad because it comes at the expense of evil divisions
         if (nzgrid==1) then
           if (luse_tau_ap) then 
-            tausp1_par=tausp1*2*pi_1*OO*p%rho(inx0)*fac/ rho0
+            tausp1_par=tmp1*2*pi_1*OO*p%rho(inx0)*fac/ rho0
           else
-            tausp1_par=tausp1*OO*p%rho(inx0)*fac/ rho0
+            tausp1_par=tmp1*OO*p%rho(inx0)*fac/ rho0
           endif
         else
           if (luse_tau_ap) then
-            tausp1_par=tausp1*sqrt(8*pi_1*p%cs2(inx0))*p%rho(inx0)*fac/(rho0*cs0)
+            tausp1_par=tmp1*sqrt(8*pi_1*p%cs2(inx0))*p%rho(inx0)*fac/(rho0*cs0)
           else
-            tausp1_par=tausp1*sqrt(p%cs2(inx0))*p%rho(inx0)*fac/(rho0*cs0)
+            tausp1_par=tmp1*sqrt(p%cs2(inx0))*p%rho(inx0)*fac/(rho0*cs0)
           endif
         endif
       endif
