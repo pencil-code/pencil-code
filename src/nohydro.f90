@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.91 2008-05-01 13:24:44 brandenb Exp $
+! $Id: nohydro.f90,v 1.92 2008-06-05 10:17:11 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -75,7 +75,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.91 2008-05-01 13:24:44 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.92 2008-06-05 10:17:11 brandenb Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -242,7 +242,8 @@ module Hydro
 !   08-nov-04/tony: coded
 !
       use Cdata
-      use Sub, only: dot_mn,dot2_mn, sum_mn_name, max_mn_name, integrate_mn_name
+      use Sub, only: dot_mn,dot2_mn, sum_mn_name, max_mn_name, &
+        integrate_mn_name, quintic_step, quintic_der_step
       use Magnetic, only: ABC_A,ABC_B,ABC_C,kx_aa,ky_aa,kz_aa
       use General
 !
@@ -250,8 +251,9 @@ module Hydro
       type (pencil_case) :: p
 !
       real, dimension(nx) :: kdotxwt,cos_kdotxwt,sin_kdotxwt
-      real :: kkx_aa,kky_aa,kkz_aa, fac, fac2, ecost, esint
+      real :: kkx_aa,kky_aa,kkz_aa, fac, fpara, dfpara, ecost, esint
       integer :: modeN
+      real :: sqrt2, sqrt21k1
 !
       intent(in) :: f
       intent(inout) :: p
@@ -316,13 +318,19 @@ module Hydro
 !
       elseif (kinflow=='zdep-roberts') then
         if (headtt) print*,'z-dependent Roberts flow; kx,ky=',kkx_aa,kky_aa
-        fac=ampl_kinflow*sin(kkz_aa*z(n))
-        fac2=ampl_kinflow*cos(kkz_aa*z(n))*kkz_aa
-        p%uu(:,1)=-fac*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m)) &
-                 +fac2*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
-        p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m)) &
-                 -fac2*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
-        p%uu(:,3)=+fac*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)
+        fpara=ampl_kinflow*(quintic_step(z(n),-1.+eps_kinflow,eps_kinflow) &
+                           -quintic_step(z(n),+1.-eps_kinflow,eps_kinflow))
+        dfpara=ampl_kinflow*(quintic_der_step(z(n),-1.+eps_kinflow,eps_kinflow)&
+                            -quintic_der_step(z(n),+1.-eps_kinflow,eps_kinflow))
+!
+        sqrt2=sqrt(2.)
+        sqrt21k1=1./(sqrt2*kx_aa(1))
+!
+        p%uu(:,1)=-cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m)) &
+           -dfpara*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt21k1
+        p%uu(:,2)=+sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m)) &
+           -dfpara*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*sqrt21k1
+        p%uu(:,3)=+fpara*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt2
         if (lpencil(i_divu)) p%divu=0.
 !
 !  Taylor-Green flow
