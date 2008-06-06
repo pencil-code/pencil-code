@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.238 2008-06-02 11:30:06 mvaisala Exp $
+# $Id: getconf.csh,v 1.239 2008-06-06 21:29:42 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -1330,7 +1330,6 @@ endif
 
 # Wrap up nodelist as (scalar, colon-separated) environment variable
 # NODELIST for transport to sub-processes.
-echo "set NODELIST by stream-editing nodelist (=$nodelist)"
 setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
 
 if ($debug) then
