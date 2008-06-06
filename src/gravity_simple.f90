@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.47 2008-04-03 12:50:49 ajohan Exp $
+! $Id: gravity_simple.f90,v 1.48 2008-06-06 13:50:46 mkorpi Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -58,6 +58,7 @@ module Gravity
   real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
   double precision :: g_B, g_D
   double precision, parameter :: g_B_cgs=6.172D20, g_D_cgs=3.086D21
+  real :: cs0hs, H0hs
   integer :: n_pot=10  ! exponent for smoothed potential
   character (len=labellen) :: gravx_profile='zero',gravy_profile='zero'
   character (len=labellen) :: gravz_profile='zero'
@@ -76,7 +77,8 @@ module Gravity
        z1,z2,zref,lnrho_bot,lnrho_top,ss_bot,ss_top, &
        lgravx_gas,lgravx_dust,lgravy_gas,lgravy_dust,lgravz_gas,lgravz_dust, &
        xinfty,yinfty,zinfty, &
-       reduced_top,lboussinesq,grav_profile,n_pot
+       reduced_top,lboussinesq,grav_profile,n_pot, &
+       cs0hs,H0hs
 
   namelist /grav_run_pars/ &
        gravx_profile,gravy_profile,gravz_profile,gravx,gravy,gravz, &
@@ -110,7 +112,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.47 2008-04-03 12:50:49 ajohan Exp $")
+           "$Id: gravity_simple.f90,v 1.48 2008-06-06 13:50:46 mkorpi Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.
@@ -301,6 +303,13 @@ module Gravity
 !AB: These numbers should be inserted in the appropriate units.
 !AB: As it is now, it can never make much sense.
         gravz_zpencil = -(g_A*z/sqrt(z**2+g_B**2) + g_C*z/g_D)
+
+      case('Galactic-hs')
+        if (lroot) print*,'Galactic hydrostatic equilibrium gravity profile'
+        if (lroot.and.(cs0hs==0.or.H0hs==0)) &
+            call fatal_error('initialize-gravity', &
+            'Set cs0hs and H0hs in grav_init_pars!')
+        gravz_zpencil = -z*(cs0hs/H0hs)**2/sqrt(1 + (z/H0hs)**2)
 
       case('reduced_top')
         if (lroot) print*,'duu_dt_grav: reduced, gravz=',gravz

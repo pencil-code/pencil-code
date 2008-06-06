@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.549 2008-05-08 13:22:10 dintrans Exp $
+! $Id: entropy.f90,v 1.550 2008-06-06 13:50:46 mkorpi Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -64,6 +64,7 @@ module Entropy
   real :: heat_uniform=0.,cool_RTV=0.
   real :: deltaT_poleq=0.,beta_hand=1.,r_bcz=0.
   real :: tau_cool=0.0, TTref_cool=0.0
+  real :: cs0hs,H0hs,rho0hs
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kconst=.false.,lheatc_simple=.false.
@@ -124,7 +125,7 @@ module Entropy
       T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy, &
       lviscosity_heat, &
       r_bcz,luminosity,wheat,hcond0,tau_cool,TTref_cool,lhcond_global, &
-      cool_fac
+      cool_fac,cs0hs,H0hs,rho0hs
 
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -222,7 +223,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.549 2008-05-08 13:22:10 dintrans Exp $")
+           "$Id: entropy.f90,v 1.550 2008-06-06 13:50:46 mkorpi Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -733,6 +734,7 @@ module Entropy
           call hydrostatic_isentropic(f,lnrho_bot,ss_const)
         case('wave'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const+ampl_ss*sin(kx_ss*xx(:,:,:) + pi)
         case('Ferriere'); call ferriere(f)
+        case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
         case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
         case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
         case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
@@ -1565,6 +1567,50 @@ module Entropy
       if (lroot) print*, 'ferriere: cs2bot=',cs2bot, ' cs2top=',cs2top
 !
     endsubroutine ferriere
+!***********************************************************************
+    subroutine galactic_hs(f,rho0hs,cs0hs,H0hs)
+!
+!   Density and isothermal entropy profile in hydrostatic equilibrium
+!   with the galactic-hs-gravity profile set in gravity_simple.
+!   Parameters cs0hs and H0hs need to be set consistently
+!   both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
+!   equilibrium. 
+!
+      use Mpicomm, only: mpibcast_real
+      use EquationOfState, only: eosperturb
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(nx) :: rho,pp,lnrho,ss
+      real, dimension(1) :: fmpi1
+      real :: rho0hs,cs0hs,H0hs
+!
+      if (lroot) print*, &
+         'Galactic-hs: hydrostatic equilibrium density and entropy profiles'
+
+      do n=n1,n2            
+      do m=m1,m2
+        rho=rho0hs*exp(1 - sqrt(1 + (z(n)/H0hs)**2))
+        lnrho=log(rho)
+        f(l1:l2,m,n,ilnrho)=lnrho        
+        if (lentropy) then
+!  Isothermal 
+          pp=rho*cs0hs**2
+          call eosperturb(f,nx,pp=pp)
+          ss=f(l1:l2,m,n,ilnrho)
+          fmpi1=(/ cs2bot /)
+          call mpibcast_real(fmpi1,1,0)
+          cs2bot=fmpi1(1)
+          fmpi1=(/ cs2top /)
+          call mpibcast_real(fmpi1,1,ncpus-1)
+          cs2top=fmpi1(1)
+!
+         endif
+       enddo
+     enddo
+!
+      if (lroot) print*, 'Galactic-hs: cs2bot=',cs2bot, ' cs2top=',cs2top
+!
+    endsubroutine galactic_hs
 !***********************************************************************
     subroutine shock2d(f,xx,yy,zz)
 !

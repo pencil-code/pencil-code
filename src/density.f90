@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.390 2008-05-28 22:04:50 steveb Exp $
+! $Id: density.f90,v 1.391 2008-06-06 13:50:46 mkorpi Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -139,7 +139,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.390 2008-05-28 22:04:50 steveb Exp $")
+           "$Id: density.f90,v 1.391 2008-06-06 13:50:46 mkorpi Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -806,6 +806,8 @@ module Density
             gamma,cs20,rho0,widthlnrho)
 
       case('Ferriere'); call information('init_lnrho','Ferriere set in entropy')
+      case('Galactic-hs'); call information('init_lnrho', &
+           'Galactic hydrostatic equilibrium setup done in entropy')
 
       case('geo-kws')
       !
