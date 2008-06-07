@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.26 2007-10-19 16:59:02 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.27 2008-06-07 17:50:43 wlyra Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -261,15 +261,17 @@ endfor
 ;
 ;  Check if all particles found exactly once.
 ;
-if ( (max(ipar) ne 1) or (min(ipar) ne 1)) then begin
-  print, 'Warning: Some particles not found at all or found more'
-  print, 'than once in snapshot files.'
-  print, 'Particle number---No. of occurences'
-  for i=0,npar-1 do begin
-    if (ipar[i] ne 1) then begin
-      print, i, ipar[i]
+if (not keyword_set(quiet)) then begin
+    if ( (max(ipar) ne 1) or (min(ipar) ne 1)) then begin
+        print, 'Warning: Some particles not found at all or found more'
+        print, 'than once in snapshot files.'
+        print, 'Particle number---No. of occurences'
+        for i=0,npar-1 do begin
+            if (ipar[i] ne 1) then begin
+                print, i, ipar[i]
+            endif
+        endfor
     endif
-  endfor
 endif
 ;
 ;  Put data and parameters in object.
