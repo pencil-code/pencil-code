@@ -1,9 +1,9 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.408 2008-06-04 07:37:09 dobler Exp $
+### $Id: Makefile.src,v 1.409 2008-06-08 01:42:40 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
-## which should be present in each local run directory.
+## which should be present in each local to run directory.
 
 MPICOMM          =   mpicomm
 GLOBAL           = noglobal
@@ -778,7 +778,7 @@ LD_FFTW2=
 #FFLAGS_SLOPPY=$(FFLAGS) -Wno=154,155 #(frenesi)
 #CC=gcc #(frenesi)
 #CFLAGS=-O3 -DFUNDERSC=1 #(frenesi)
-#LD_MPI=-pthread -I/usr/lib -lmpi_f90 -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(frenesi)
+#LD_MPI=-pthread -I/usr/lib -lmpi_f90 -lmpi -lorte -lopal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(frenesi)
 #LIBMPISUFFIX=_#(frenesi)
 ##
 ## Steve's test cluster
@@ -1058,9 +1058,44 @@ PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
 # ---------------------------------------------------------------------- #
 ## Symbolic targets
 
-default: start_buildtime Makefile cparam.inc code stop_buildtime buildinfo
+default: start_buildtime Makefile Makefile_inc cparam.inc code stop_buildtime buildinfo
 
 pacx: pacx-makefile cparam.inc code
+
+# Create Makefile.inc, but need this to be a `phony' target (i.e. not a
+# filename as target), so this file is always written.
+# Don't know whether .PHONY declaration is portable, so we just slightly
+# rename the target.
+Makefile_inc:
+	@printf \
+	    "%s\n" \
+	    "# src/Makefile.inc                      -*-Makefile-*- (for Emacs)" \
+	    "# ----------------" \
+	    "" \
+	    "# This file was automatically generated at `date` by 'make'." \
+	    "# Its main role is to set the precision (single vs. double) of a" \
+	    "# run for compilation." \
+	    "" > Makefile.inc
+	@case "$(REAL_PRECISION)" in \
+	default|4) \
+	    ;; \
+	double|8) \
+	    echo "FFLAGS_GENERAL=$(FFLAGS_DOUBLE)" >> Makefile.inc; \
+	    echo "CFLAGS_GENERAL=$(CFLAGS_DOUBLE)" >> Makefile.inc; \
+	    case "$(MPICOMM)" in \
+	    mpicomm) \
+	        echo "MPICOMM=mpicomm_double" >> Makefile.inc; \
+	        ;; \
+	    mpicomm_) \
+	        echo "MPICOMM=mpicomm_double_" >> Makefile.inc; \
+	        ;; \
+	    esac; \
+	    ;; \
+	*) \
+	    echo "What is REAL_PRECISION=$(REAL_PRECISION) supposed to mean?"; \
+	    exit 1; \
+	    ;; \
+	esac
 
 Makefile: Makefile.src
 	scripts/check-mkfile Makefile.local Makefile.src
@@ -1220,7 +1255,7 @@ EXECUTABLES=start.x run.x \
 # files before linking, because FC=g95_quick_and_dirty will otherwise
 # delete already compiled .x files:
 LAST_OBJ=$(EXECUTABLES:.x=.o)
-code: Makefile.inc cparam.inc
+code: Makefile_inc cparam.inc
 	@# Realize error even when last command in pipe is FCCLEANER:
 	@echo "$(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
@@ -1346,7 +1381,7 @@ cleanall: cleann
 distclean: cleanall
 	find . -type l -print0 | xargs -0 rm -f
 	rm -rf special Makefile Makefile.inc Makefile.depend
-	rm -rf semiauto-conf* *.log shock_profiles history
+	rm -rf semiauto-conf* *.log
 
 ## ---------------------------------------------------------------------- #
 ## Code targets

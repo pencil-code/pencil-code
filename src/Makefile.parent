@@ -6,7 +6,7 @@
 #
 
 # Build the code:
-default: Makefile_inc
+default:
 	touch src/.build-history
 	echo $(USER)"@"`hostname` "("`date`")" >> src/.build-history
 	( cd src && \
@@ -62,43 +62,4 @@ semiauto-conf:
 	$(MAKE) -s cleanall
 	@(cd src; $(MAKE) -s FROM_PARENT=src/ semiauto-conf)
 
-# Create Makefile.inc, but need this to be a `phony' target (i.e. not a
-# filename as target), so this file is always written.
-# Don't know whether .PHONY declaration is portable, so we just slightly
-# rename the target.
-Makefile_inc:
-	@echo "MAKING src/Makefile.inc"
-	@printf \
-	    "%s\n" \
-	    '# src/Makefile.inc                   -*-Makefile-*- (for Emacs)' \
-	    '# ----------------' \
-	    '' \
-	    "# This file was automatically generated at `date` by 'make'." \
-	    '# Its main role is to set the precision (single vs. double) of a' \
-	    '# run for compilation.' \
-	    '' > src/Makefile.inc
-	@case "$(REAL_PRECISION)" in \
-	''|default|4) \
-	    desired_precision='single'; \
-	    echo '# Default flags: single precision' >> src/Makefile.inc; \
-	    ;; \
-	double|8) \
-	    desired_precision='double'; \
-	    echo 'FFLAGS_GENERAL=$$(FFLAGS_DOUBLE)' >> src/Makefile.inc; \
-	    echo 'CFLAGS_GENERAL=$$(CFLAGS_DOUBLE)' >> src/Makefile.inc; \
-	    case '$(MPICOMM)' in \
-	    mpicomm) \
-	        echo 'MPICOMM=mpicomm_double' >> src/Makefile.inc; \
-	        ;; \
-	    mpicomm_) \
-	        echo 'MPICOMM=mpicomm_double_' >> src/Makefile.inc; \
-	        ;; \
-	    esac; \
-	    ;; \
-	*) \
-	    echo "What is REAL_PRECISION=$(REAL_PRECISION) supposed to mean?"; \
-	    exit 1; \
-	    ;; \
-	esac; \
-	./src/scripts/precision-check src/.current-precision "$$desired_precision"
 
