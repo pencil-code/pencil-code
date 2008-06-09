@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.409 2008-06-08 01:42:40 dobler Exp $
+### $Id: Makefile.src,v 1.410 2008-06-09 20:07:30 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -775,10 +775,10 @@ LD_FFTW2=
 ##
 #FC=g95 -fno-second-underscore -std=f95 #(frenesi)
 #FFLAGS=-O3 #(frenesi)
-#FFLAGS_SLOPPY=$(FFLAGS) -Wno=154,155 #(frenesi)
+#FFLAGS_SLOPPY=$(FFLAGS) -Wno=154,155 -I/usr/lib/openmpi/include #(frenesi)
 #CC=gcc #(frenesi)
 #CFLAGS=-O3 -DFUNDERSC=1 #(frenesi)
-#LD_MPI=-pthread -I/usr/lib -lmpi_f90 -lmpi -lorte -lopal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(frenesi)
+#LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl
 #LIBMPISUFFIX=_#(frenesi)
 ##
 ## Steve's test cluster
