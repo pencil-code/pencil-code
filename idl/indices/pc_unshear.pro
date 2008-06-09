@@ -1,25 +1,53 @@
 ;;
+;;  $Id: pc_unshear.pro,v 1.2 2008-06-09 14:50:09 ajohan Exp $
+;;
 ;;  Transform from sheared to unsheared frame by shifting data along the
 ;;  y-direction to match last purely periodic state.
-;;
-;;  Input:
-;;         a : 2-D or 3-D array of scalar, vector, or matrix data.
-;;    deltay : azimuthal distance between periodic points at inner and outer
-;;             edge of the box. May be calculated from
-;;             deltay=-qshear*Omega*Lx*t
-;;         x : array of x coordinates
-;;
 ;;
 ;;  Author : Anders Johansen
 ;;  Date   : 06/06/2008
 ;;
-function pc_unshear, a, deltay=deltay, x=x, Lx=Lx, Ly=Ly
+;;  Input:
+;;          a : trimmed 2-D or 3-D array of scalar, vector, or matrix data
+;;     deltay : azimuthal distance between periodic points at inner and outer
+;;              radial edge of the box. May be calculated from
+;;                deltay=-Sshear*Lx*t
+;;          x : trimmed array of x coordinates
+;;      param : structure containing initial conditions, used if deltay is not
+;;              provided
+;;          t : time of snapshot, used if deltay is not provided
+;;    datadir : directory for reading param, used if param is not provided
+;;
+function pc_unshear, a, deltay=deltay, x=x, Lx=Lx, Ly=Ly, $
+    param=param, t=t, datadir=datadir
 ;
-; Default values.
+; If deltay is not provided, the program can read the relevant information
+; from param.
 ;
-default, deltay, 0.0d
-default, Lx, 2*!dpi
-default, Ly, 2*!dpi
+if (not keyword_set(deltay)) then begin
+  if (not keyword_set(param)) then begin
+    if (keyword_set(datadir)) then begin
+      pc_read_param, obj=param, datadir=datadir, /quiet
+    endif else begin
+      print, 'pc_unshear: must provide either param or datadir or {deltay,x,Lx,Ly}'
+      return, a
+    endelse
+  endif
+  if (not keyword_set(t)) then begin
+    print, 'pc_unshear: must provide t when deltay is not provided'
+    return, a
+  endif
+  Lx=param.Lxyz[0]
+  Ly=param.Lxyz[1]
+  deltay=-param.Sshear*Lx*t
+endif
+;
+; x must always be provided.
+;
+if (not keyword_set(x)) then begin
+  print, 'pc_unshear: must provide 1-D array of x-coordinates'
+  return, a
+endif
 ;
 ; Check if a has correct size.
 ;
@@ -38,6 +66,16 @@ if (s[0] gt 4) then nm=s[5] else nm=1
 ;
 if (n_elements(x) ne nx) then begin
   print, 'error: pc_unshear: x must have same number of elements as a[*,0,0]'
+  return, a
+endif
+;
+;  The array must be trimmed of ghost cells for the interpolation to be
+;  meaningful.
+;
+if ( (a[3,3,3] eq a[3,3,ny-3]) $
+     or (total(a[0:2,0:2,*]) eq 0.0 and max(a) ne 0.0) ) then begin
+  print, 'error: pc_unshear: it seems that a still contains ghost cells.'
+  print, '                   You must trim a before unshearing!'
   return, a
 endif
 ;
@@ -66,7 +104,7 @@ for ix=0,nx-1 do begin
 ;  Transform back to real space.
 ;
   plane_yz=fft(plane_yz_ky,dim=1,/inverse)
-  a[ix,*,*,*]=plane_yz
+  a[ix,*,*,*,*]=plane_yz
 ;
 endfor
 ;
