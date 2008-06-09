@@ -1,4 +1,4 @@
-;+
+; +
 ; NAME:
 ;       PC_READ_VAR
 ;
@@ -44,6 +44,8 @@
 ;                     pc_noghost(..., dim=dim)
 ;               pc_noghost will skip, i.e. do nothing to variables not
 ;               initially of size (dim.mx,dim.my,dim.mz)
+;   /unshear: convert coordinates to unsheared frame (good e.g. for Fourier
+;             transform)
 ;
 ;   /nostats: don't print any summary statistics for the returned fields
 ;     /stats: force printing of summary statistics even if quiet is set
@@ -64,14 +66,14 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.68 2008-05-26 16:20:46 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.69 2008-06-09 13:35:12 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
 pro pc_read_var, t=t,                                             $
     object=object, varfile=varfile_, associate=associate,         $
     variables=variables, tags=tags, magic=magic, bbtoo=bbtoo,     $
-    trimxyz=trimxyz, trimall=trimall,                             $
+    trimxyz=trimxyz, trimall=trimall, unshear=unshear,            $
     nameobject=nameobject, validate_variables=validate_variables, $
     dim=dim, param=param, par2=par2, ivar=ivar,                   $
     datadir=datadir, proc=proc, additional=additional,            $
@@ -95,6 +97,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   default, magic, 0
   default, trimall, 0
+  default, unshear, 0
   default, validate_variables, 1
   if (arg_present(exit_status)) then exit_status=0
 ;
@@ -240,7 +243,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   default, global, 0
   if (global) then begin
-    pc_read_global, obj=gg, proc=proc, datadir=datadir, /quiet
+    pc_read_global, obj=gg, proc=proc, $
+        param=param, dim=dim, datadir=datadir, /quiet
     global_names=tag_names(gg)
   endif
 ;
@@ -505,6 +509,10 @@ COMPILE_OPT IDL2,HIDDEN
   endif else begin
     xyzstring="x,y,z"
   endelse
+;
+; Transform to unsheared frame if requested.
+;
+  if (keyword_set(unshear)) then variables = 'pc_unshear('+variables+',deltay=-param.Sshear*param.Lxyz[0]*t,x=x,Lx=param.Lxyz[0],Ly=param.Lxyz[1])'
 ;
 ; Remove ghost zones if requested.
 ;
