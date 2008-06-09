@@ -1,5 +1,5 @@
 ;
-;  $Id: yderzder_6th_ghost.pro,v 1.3 2008-01-16 14:53:38 ajohan Exp $
+;  $Id: yderzder_6th_ghost.pro,v 1.4 2008-06-09 19:36:03 bingert Exp $
 ;
 ;  Second derivative d2/dydz
 ;  - 6th-order
@@ -19,11 +19,6 @@ function yderzder,f
 ;
 ;  Not implemented for non-equidistant grid.
 ;
-  if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
-  if (not all(lequidist)) then begin
-    print, 'yderzder is not implemented for non equidistant grid'
-    stop
-  endif
 ;
 ;  Determine location of ghost zones - assume nghost=3 for now.
 ;
@@ -31,8 +26,6 @@ function yderzder,f
   m1=3 & m2=my-4
   n1=3 & n2=mz-4
 ;
-  dy_1=1/(y[4]-y[3])
-  dz_1=1/(z[4]-z[3])
 ;
 ;  Calculate d2/dydz.
 ;
@@ -40,7 +33,7 @@ function yderzder,f
     d=fltarr(mx,my,mz)
     if ( (m1 ne m2) and (n1 ne n2) ) then begin
       for n=n1,n2 do begin & for m=m1,m2 do begin
-        fac=(1/60.0^2)*dy_1*dz_1
+        fac=(1/60.0^2)*dy_1[m]*dz_1[n]
         d[l1:l2,m,n,*]=fac*( $
             45.*( (45.*(f[l1:l2,m+1,n+1]-f[l1:l2,m-1,n+1])  $
                    -9.*(f[l1:l2,m+2,n+1]-f[l1:l2,m-2,n+1])  $
@@ -66,7 +59,7 @@ function yderzder,f
     d=fltarr(mx,my,mz,3)
     if ( (m1 ne m2) and (n1 ne n2) ) then begin
       for n=n1,n2 do begin & for m=m1,m2 do begin
-        fac=(1/60.0^2)*dy_1*dz_1
+        fac=(1/60.0^2)*dy_1[m]*dz_1[n]
         d[l1:l2,m,n,*]=fac*( $
             45.*( (45.*(f[l1:l2,m+1,n+1,*]-f[l1:l2,m-1,n+1,*])  $
                    -9.*(f[l1:l2,m+2,n+1,*]-f[l1:l2,m-2,n+1,*])  $
