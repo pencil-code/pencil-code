@@ -66,7 +66,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.69 2008-06-09 13:35:12 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.70 2008-06-09 14:50:56 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -104,13 +104,19 @@ COMPILE_OPT IDL2,HIDDEN
 ; If no meaningful parameters are given show some help!
 ;
   if (keyword_set(help)) then begin
-    doc_library,'pc_read_var'
+    doc_library, 'pc_read_var'
     return
   endif
 ;
 ; Default data directory
 ;
   if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+;
+; Can only unshear coordinate frame if variables have been trimmed.
+;
+  if (keyword_set(unshear) and (not keyword_set(trimall))) then begin
+    message, 'pc_read_var: /unshear only works with /trimall'
+  endif
 ;
 ; Name and path of varfile to read
 ;
@@ -510,13 +516,13 @@ COMPILE_OPT IDL2,HIDDEN
     xyzstring="x,y,z"
   endelse
 ;
-; Transform to unsheared frame if requested.
-;
-  if (keyword_set(unshear)) then variables = 'pc_unshear('+variables+',deltay=-param.Sshear*param.Lxyz[0]*t,x=x,Lx=param.Lxyz[0],Ly=param.Lxyz[1])'
-;
 ; Remove ghost zones if requested.
 ;
   if (keyword_set(trimall)) then variables = 'pc_noghost('+variables+',dim=dim)'
+;
+; Transform to unsheared frame if requested.
+;
+  if (keyword_set(unshear)) then variables = 'pc_unshear('+variables+',param=param,x=x[dim.l1:dim.l2],t=t)'
 ;
 ; Make structure out of the variables.
 ;
