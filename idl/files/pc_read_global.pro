@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_read_global.pro,v 1.11 2008-04-22 12:55:54 wlyra Exp $
+;  $Id: pc_read_global.pro,v 1.12 2008-06-09 13:34:36 ajohan Exp $
 ;
 ;  Same as pc_read_var, but for global variables.
 ;
@@ -7,7 +7,7 @@ pro pc_read_global,                                                  $
     object=object, varfile=varfile_, variables=variables, tags=tags, $
     validate_variables=validate_variables, trimall=trimall,          $
     nameobject=nameobject,                                           $
-    dim=dim,param=param, param2=param2, datadir=datadir, proc=proc,  $
+    dim=dim, param=param, datadir=datadir, proc=proc,  $
     stats=stats, nostats=nostats, quiet=quiet, help=help,            $
     swap_endian=swap_endian, varcontent=varcontent,                  $
     scalar=scalar, run2D=run2D
