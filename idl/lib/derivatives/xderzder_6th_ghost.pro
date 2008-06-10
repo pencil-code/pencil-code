@@ -1,5 +1,5 @@
 ;;
-;;  $Id: xderzder_6th_ghost.pro,v 1.5 2008-06-10 13:07:41 ajohan Exp $
+;;  $Id: xderzder_6th_ghost.pro,v 1.6 2008-06-10 17:20:57 ajohan Exp $
 ;;
 ;;
 ;;  Second derivative d2/dxdz
@@ -26,9 +26,7 @@ function xderzder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
 ;  Determine location of ghost zones - assume nghost=3 for now.
 ;
-  l1=3 & l2=mx-4
-  m1=3 & m2=my-4
-  n1=3 & n2=mz-4
+  l1=3 & l2=mx-4 & m1=3 & m2=my-4 & n1=3 & n2=mz-4
 ;
 ;
 ;  Calculate d2/dxdz.
