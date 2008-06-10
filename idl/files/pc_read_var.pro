@@ -44,8 +44,9 @@
 ;                     pc_noghost(..., dim=dim)
 ;               pc_noghost will skip, i.e. do nothing to variables not
 ;               initially of size (dim.mx,dim.my,dim.mz)
-;   /unshear: convert coordinates to unsheared frame (good e.g. for Fourier
+;   /unshear: convert coordinates to unsheared frame (needed for Fourier
 ;             transform)
+;     /ghost: set ghost zones on derived variables (such as bb)
 ;
 ;   /nostats: don't print any summary statistics for the returned fields
 ;     /stats: force printing of summary statistics even if quiet is set
@@ -66,7 +67,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.70 2008-06-09 14:50:56 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.71 2008-06-10 17:46:35 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -80,7 +81,8 @@ pro pc_read_var, t=t,                                             $
     nxrange=nxrange, nyrange=nyrange, nzrange=nzrange,            $
     stats=stats, nostats=nostats, quiet=quiet, help=help,         $
     swap_endian=swap_endian, varcontent=varcontent,               $
-    global=global, scalar=scalar, run2D=run2D, $
+    global=global, scalar=scalar, run2D=run2D,                    $
+    ghost=ghost, bcx=bcx, bcy=bcy, bcz=bcz,                       $
     exit_status=exit_status
 
 COMPILE_OPT IDL2,HIDDEN
@@ -98,6 +100,10 @@ COMPILE_OPT IDL2,HIDDEN
   default, magic, 0
   default, trimall, 0
   default, unshear, 0
+  default, ghost, 0
+  default, bcx, 'none'
+  default, bcy, 'none'
+  default, bcz, 'none'
   default, validate_variables, 1
   if (arg_present(exit_status)) then exit_status=0
 ;
@@ -515,6 +521,17 @@ COMPILE_OPT IDL2,HIDDEN
   endif else begin
     xyzstring="x,y,z"
   endelse
+;
+; Set ghost zones on derived variables (not default).
+;
+  if (keyword_set(ghost)) then begin
+    for iv=0,n_elements(variables)-1 do begin
+; Check that only derived variables get their ghost zones set.
+      if (total(variables[iv] eq varcontent.idlvar) eq 0) then begin
+        variables[iv] = 'pc_setghost('+variables[iv]+',bcx='''+bcx+''',bcy='''+bcy+''',bcz='''+bcz+''',param=param,t=t)'
+      endif
+    endfor
+  endif
 ;
 ; Remove ghost zones if requested.
 ;
