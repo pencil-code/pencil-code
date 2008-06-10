@@ -1,5 +1,5 @@
 ;;
-;;  $Id: xder6_6th_ghost.pro,v 1.2 2008-06-10 13:07:41 ajohan Exp $
+;;  $Id: xder6_6th_ghost.pro,v 1.3 2008-06-10 17:22:24 ajohan Exp $
 ;;
 ;;  Sixth derivative d^6/dx^6
 ;;  - 6th-order (7-point stencil)
@@ -41,25 +41,25 @@ function xder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   if (s[0] eq 3) then begin
     if (l2 gt l1) then begin
-      d[l1:l2,*,*]=dx6*( -20.*f[l1:l2,*,*]$
-                         +15.*(f[l1-1:l2-1,*,*]+f[l1+1:l2+1,*,*])$
-                          -6.*(f[l1-2:l2-2,*,*]+f[l1+2:l2+2,*,*])$
-                          +1.*(f[l1-3:l2-3,*,*]+f[l1+3:l2+3,*,*])$
-                       )
+      d[l1:l2,m1:m2,n1:n2]=dx6* $
+          ( -20.*f[l1:l2,m1:m2,n1:n2] $
+            +15.*(f[l1-1:l2-1,m1:m2,n1:n2]+f[l1+1:l2+1,m1:m2,n1:n2]) $
+             -6.*(f[l1-2:l2-2,m1:m2,n1:n2]+f[l1+2:l2+2,m1:m2,n1:n2]) $
+             +1.*(f[l1-3:l2-3,m1:m2,n1:n2]+f[l1+3:l2+3,m1:m2,n1:n2]) )
     endif else begin
-      d[l1:l2,*,*]=0.
+      d[l1:l2,m1:m2,n1:n2]=0.
     endelse
 ;
   endif else if (s[0] eq 4) then begin
 ;
     if (l2 gt l1) then begin
-      d[l1:l2,*,*,*]=dx6*( -20.*f[l1:l2,*,*,*]$
-                           +15.*(f[l1-1:l2-1,*,*,*]+f[l1+1:l2+1,*,*,*])$
-                            -6.*(f[l1-2:l2-2,*,*,*]+f[l1+2:l2+2,*,*,*])$
-                            +1.*(f[l1-3:l2-3,*,*,*]+f[l1+3:l2+3,*,*,*])$
-                         )
+      d[l1:l2,m1:m2,n1:n2,*]=dx6* $
+          ( -20.*f[l1:l2,m1:m2,n1:n2,*] $
+            +15.*(f[l1-1:l2-1,m1:m2,n1:n2,*]+f[l1+1:l2+1,m1:m2,n1:n2,*]) $
+             -6.*(f[l1-2:l2-2,m1:m2,n1:n2,*]+f[l1+2:l2+2,m1:m2,n1:n2,*]) $
+             +1.*(f[l1-3:l2-3,m1:m2,n1:n2,*]+f[l1+3:l2+3,m1:m2,n1:n2,*]) )
     endif else begin
-      d[l1:l2,*,*,*]=0.
+      d[l1:l2,m1:m2,n1:n2,*]=0.
     endelse
 ;
   endif else begin

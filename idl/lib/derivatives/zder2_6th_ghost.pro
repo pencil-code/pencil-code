@@ -1,5 +1,5 @@
 ;;
-;;  $Id: zder2_6th_ghost.pro,v 1.10 2008-06-10 13:07:41 ajohan Exp $
+;;  $Id: zder2_6th_ghost.pro,v 1.11 2008-06-10 17:22:24 ajohan Exp $
 ;;
 ;;  Second derivative d^2/dz^2
 ;;  - 6th-order (7-point stencil)
@@ -48,13 +48,13 @@ function zder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
         dd  = d1*spread(dz_tilde,[0,0],[s[2],s[1]])
         ; will also work on slices like zder2(ss[10,20,*])
       endif
-      d[*,*,n1:n2]=dz2*(-490.*f[*,*,n1:n2]$
-                        +270.*(f[*,*,n1-1:n2-1]+f[*,*,n1+1:n2+1])$
-                         -27.*(f[*,*,n1-2:n2-2]+f[*,*,n1+2:n2+2])$
-                          +2.*(f[*,*,n1-3:n2-3]+f[*,*,n1+3:n2+3])$
-                       )
+      d[l1:l2,m1:m2,n1:n2]=dz2* $
+          (-490.*f[l1:l2,m1:m2,n1:n2] $
+           +270.*(f[l1:l2,m1:m2,n1-1:n2-1]+f[l1:l2,m1:m2,n1+1:n2+1]) $
+            -27.*(f[l1:l2,m1:m2,n1-2:n2-2]+f[l1:l2,m1:m2,n1+2:n2+2]) $
+             +2.*(f[l1:l2,m1:m2,n1-3:n2-3]+f[l1:l2,m1:m2,n1+3:n2+3]) )
     endif else begin
-      d[*,*,n1:n2]=0.
+      d[l1:l2,m1:m2,n1:n2]=0.
     endelse
 ;
   endif else if (s[0] eq 4) then begin
@@ -65,13 +65,13 @@ function zder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
         dd  = d1*spread(dz_tilde,[0,0,3],[s[2],s[1],s[4]])
         ; will also work on slices like zder2(uu[10,20,*,*])
       endif
-      d[*,*,n1:n2,*]=dz2*(-490.*f[*,*,n1:n2,*]$
-                          +270.*(f[*,*,n1-1:n2-1,*]+f[*,*,n1+1:n2+1,*])$
-                           -27.*(f[*,*,n1-2:n2-2,*]+f[*,*,n1+2:n2+2,*])$
-                            +2.*(f[*,*,n1-3:n2-3,*]+f[*,*,n1+3:n2+3,*])$
-                         )
+      d[l1:l2,m1:m2,n1:n2,*]=dz2* $
+          (-490.*f[l1:l2,m1:m2,n1:n2,*] $
+           +270.*(f[l1:l2,m1:m2,n1-1:n2-1,*]+f[l1:l2,m1:m2,n1+1:n2+1,*]) $
+            -27.*(f[l1:l2,m1:m2,n1-2:n2-2,*]+f[l1:l2,m1:m2,n1+2:n2+2,*]) $
+             +2.*(f[l1:l2,m1:m2,n1-3:n2-3,*]+f[l1:l2,m1:m2,n1+3:n2+3,*]) )
     endif else begin
-      d[*,*,n1:n2,*]=0.
+      d[l1:l2,m1:m2,n1:n2,*]=0.
     endelse
 ;
   endif else begin

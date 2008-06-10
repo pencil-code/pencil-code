@@ -1,5 +1,5 @@
 ;;
-;;  $Id: xder2_6th_ghost.pro,v 1.10 2008-06-10 13:07:41 ajohan Exp $
+;;  $Id: xder2_6th_ghost.pro,v 1.11 2008-06-10 17:22:24 ajohan Exp $
 ;;
 ;;  Second derivative d^2/dx^2
 ;;  - 6th-order (7-point stencil)
@@ -28,7 +28,7 @@ function xder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
 ;  Determine location of ghost zones, assume nghost=3 for now.
 ;
-  l1=3 & l2=nx-4
+  l1=3 & l2=nx-4 & m1=3 & m2=ny-4 & n1=3 & n2=nz-4
 ;
   if (lequidist[0]) then begin
     dx2=1./(180.*(x[4]-x[3])^2)
@@ -47,13 +47,13 @@ function xder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
         dx2 =    spread(dx2,     [1,2],[s[2],s[3]])
         dd  = d1*spread(dx_tilde,[1,2],[s[2],s[3]])
       endif
-      d[l1:l2,*,*]=dx2*(-490.*f[l1:l2,*,*]$
-                        +270.*(f[l1-1:l2-1,*,*]+f[l1+1:l2+1,*,*])$
-                         -27.*(f[l1-2:l2-2,*,*]+f[l1+2:l2+2,*,*])$
-                          +2.*(f[l1-3:l2-3,*,*]+f[l1+3:l2+3,*,*])$
-                       )
+      d[l1:l2,m1:m2,n1:n2]=dx2* $
+          (-490.*f[l1:l2,m1:m2,n1:n2] $
+           +270.*(f[l1-1:l2-1,m1:m2,n1:n2]+f[l1+1:l2+1,m1:m2,n1:n2]) $
+            -27.*(f[l1-2:l2-2,m1:m2,n1:n2]+f[l1+2:l2+2,m1:m2,n1:n2]) $
+             +2.*(f[l1-3:l2-3,m1:m2,n1:n2]+f[l1+3:l2+3,m1:m2,n1:n2]) )
     endif else begin
-      d[l1:l2,*,*]=0.
+      d[l1:l2,m1:m2,n1:n2]=0.
     endelse
 ;
   endif else if (s[0] eq 4) then begin
@@ -63,13 +63,13 @@ function xder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
         dx2 =    spread(dx2,     [1,2,3],[s[2],s[3],s[4]])
         dd  = d1*spread(dx_tilde,[1,2,3],[s[2],s[3],s[4]])
       endif
-      d[l1:l2,*,*,*]=dx2*(-490.*f[l1:l2,*,*,*]$
-                          +270.*(f[l1-1:l2-1,*,*,*]+f[l1+1:l2+1,*,*,*])$
-                           -27.*(f[l1-2:l2-2,*,*,*]+f[l1+2:l2+2,*,*,*])$
-                            +2.*(f[l1-3:l2-3,*,*,*]+f[l1+3:l2+3,*,*,*])$
-                         )
+      d[l1:l2,m1:m2,n1:n2,*]=dx2* $
+          (-490.*f[l1:l2,m1:m2,n1:n2,*] $
+           +270.*(f[l1-1:l2-1,m1:m2,n1:n2,*]+f[l1+1:l2+1,m1:m2,n1:n2,*]) $
+            -27.*(f[l1-2:l2-2,m1:m2,n1:n2,*]+f[l1+2:l2+2,m1:m2,n1:n2,*]) $
+             +2.*(f[l1-3:l2-3,m1:m2,n1:n2,*]+f[l1+3:l2+3,m1:m2,n1:n2,*]) )
     endif else begin
-      d[l1:l2,*,*,*]=0.
+      d[l1:l2,m1:m2,n1:n2,*]=0.
     endelse
 ;
   endif else begin

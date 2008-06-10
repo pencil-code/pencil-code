@@ -1,5 +1,5 @@
 ;;
-;;  $Id: xder_6th_ghost.pro,v 1.13 2008-06-10 13:07:41 ajohan Exp $
+;;  $Id: xder_6th_ghost.pro,v 1.14 2008-06-10 17:22:24 ajohan Exp $
 ;;
 ;;  First derivative d/dx
 ;;  - 6th-order
@@ -30,7 +30,7 @@ function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
 ;  Determine location of ghost zones, assume nghost=3 for now.
 ;
-  l1=3 & l2=nx-4
+   l1=3 & l2=nx-4 & m1=3 & m2=ny-4 & n1=3 & n2=nz-4
 ;
   if (lequidist[0]) then begin
     dx2=1./(60.*(x[4]-x[3]))
@@ -38,34 +38,37 @@ function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     dx2=dx_1[l1:l2]/60.
   endelse
 ;
-  if (s[0] eq 3) then begin
-    if (l2 gt l1) then begin
-      if (lequidist[0] eq 0) then dx2=spread(dx2,[1,2],[s[2],s[3]])
-      d[l1:l2,*,*]=dx2*( +45.*(f[l1+1:l2+1,*,*]-f[l1-1:l2-1,*,*]) $
-                          -9.*(f[l1+2:l2+2,*,*]-f[l1-2:l2-2,*,*]) $
-                             +(f[l1+3:l2+3,*,*]-f[l1-3:l2-3,*,*]) )
-    endif else begin
-      d[l1:l2,*,*]=0.
-    endelse
-;
-  endif else if (s[0] eq 2) then begin
+  if (s[0] eq 2) then begin
 ;
     if (l2 gt l1) then begin
       if (lequidist[0] eq 0) then dx2=spread(dx2,1,s[2])
-      d[l1:l2,*]=dx2*( +45.*(f[l1+1:l2+1,*]-f[l1-1:l2-1,*]) $
-                        -9.*(f[l1+2:l2+2,*]-f[l1-2:l2-2,*]) $
-                           +(f[l1+3:l2+3,*]-f[l1-3:l2-3,*]) )
+      d[l1:l2,m1:m2]=dx2* $
+          ( +45.*(f[l1+1:l2+1,m1:m2]-f[l1-1:l2-1,m1:m2]) $
+             -9.*(f[l1+2:l2+2,m1:m2]-f[l1-2:l2-2,m1:m2]) $
+                +(f[l1+3:l2+3,m1:m2]-f[l1-3:l2-3,m1:m2]) )
     endif else d[l1:l2,*]=0.
+;
+  endif else if (s[0] eq 3) then begin
+    if (l2 gt l1) then begin
+      if (lequidist[0] eq 0) then dx2=spread(dx2,[1,2],[s[2],s[3]])
+      d[l1:l2,m1:m2,n1:n2,*]=dx2* $
+          ( +45.*(f[l1+1:l2+1,m1:m2,n1:n2]-f[l1-1:l2-1,m1:m2,n1:n2]) $
+             -9.*(f[l1+2:l2+2,m1:m2,n1:n2]-f[l1-2:l2-2,m1:m2,n1:n2]) $
+                +(f[l1+3:l2+3,m1:m2,n1:n2]-f[l1-3:l2-3,m1:m2,n1:n2]) )
+    endif else begin
+      d[l1:l2,m1:m2,n1:n2]=0.
+    endelse
 ;
   endif else if (s[0] eq 4) then begin
 ;
     if (l2 gt l1) then begin
       if (lequidist[0] eq 0) then dx2=spread(dx2,[1,2,3],[s[2],s[3],s[4]])
-      d[l1:l2,*,*,*]=dx2*( +45.*(f[l1+1:l2+1,*,*,*]-f[l1-1:l2-1,*,*,*]) $
-                            -9.*(f[l1+2:l2+2,*,*,*]-f[l1-2:l2-2,*,*,*]) $
-                               +(f[l1+3:l2+3,*,*,*]-f[l1-3:l2-3,*,*,*]) )
+      d[l1:l2,m1:m2,n1:n2,*]=dx2* $
+          ( +45.*(f[l1+1:l2+1,m1:m2,n1:n2,*]-f[l1-1:l2-1,m1:m2,n1:n2,*]) $
+             -9.*(f[l1+2:l2+2,m1:m2,n1:n2,*]-f[l1-2:l2-2,m1:m2,n1:n2,*]) $
+                +(f[l1+3:l2+3,m1:m2,n1:n2,*]-f[l1-3:l2-3,m1:m2,n1:n2,*]) )
     endif else begin
-      d[l1:l2,*,*,*]=0.
+      d[l1:l2,m1:m2,n1:n2,*]=0.
     endelse
 ;
   endif else begin
