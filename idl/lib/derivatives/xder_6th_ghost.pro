@@ -1,35 +1,34 @@
-;
-;  $Id: xder_6th_ghost.pro,v 1.12 2007-06-26 09:29:51 dintrans Exp $
-;
-;  First derivative d/dx
-;  - 6th-order
-;  - with ghost cells
-;  - on potentially non-equidistant grid
-;
-;***********************************************************************
-function xder,f
+;;
+;;  $Id: xder_6th_ghost.pro,v 1.13 2008-06-10 13:07:41 ajohan Exp $
+;;
+;;  First derivative d/dx
+;;  - 6th-order
+;;  - with ghost cells
+;;  - on potentially non-equidistant grid
+;;
+function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
-  ;common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0 
-  ;AB: chose to read in only x, y, and z, not nx, ny, and nz.
-  ;AB: Thus, we can redefine them freely.
-  ;AB: For non-uniform meshes dx_1, dy_1, and dz_1 would not be ok.
   common cdat,x,y,z
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
 ;
-;  calculate nx, ny, and nz, based on the input array size
+;  Default values.
+;
+  default, ghost, 0
+;
+;  Calculate nx, ny, and nz, based on the input array size.
 ;
   s=size(f) & d=make_array(size=s)
   nx=s[1] & ny=s[2] & nz=s[3]
 ; 26-jun-2007/dintrans: 2-D case only means (x,z) for the moment
   if (s[0] eq 2) then nz=s[2]
 ;
-;  Check for degenerate case (no x-extension)
+;  Check for degenerate case (no x-extension).
 ;
   if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
   if (nx eq 1) then return,fltarr(nx,ny,nz)
 ;
-;  determine location of ghost zones, assume nghost=3 for now.
+;  Determine location of ghost zones, assume nghost=3 for now.
 ;
   l1=3 & l2=nx-4
 ;
@@ -73,6 +72,10 @@ function xder,f
     print, 'error: xder_6th_ghost not implemented for ', $
         strtrim(s[0],2), '-D arrays'
   endelse
+;
+;  Set ghost zones.
+;
+  if (ghost) then d=pc_setghost(d,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
 ;
   return, d
 ;

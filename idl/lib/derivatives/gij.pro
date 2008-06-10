@@ -1,16 +1,20 @@
-;
-;  $Id: gij.pro,v 1.3 2008-04-29 22:13:08 dobler Exp $
-;
-;  Calculate derivative matrix
-;
-function gij,f
+;;
+;;  $Id: gij.pro,v 1.4 2008-06-10 13:07:40 ajohan Exp $
+;;
+;;  Calculate derivative matrix.
+;;
+function gij,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
+;
   common cdat_coords, coord_system
-
+;
+;  Default values.
+;
+  default, ghost, 0
+;
   if (coord_system ne 'cartesian') then $
       message, $
         "gij not yet implemented for coord_system='" + coord_system + "'"
-
 ;
   s=size(f)
 ;
@@ -30,6 +34,10 @@ function gij,f
   endif else begin
     print, 'error: gij only implemented for 4-D arrays'
   endelse
+;
+;  Set ghost zones.
+;
+  if (ghost) then w=pc_setghost(w,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
 ;
   return, w
 ;

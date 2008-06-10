@@ -1,18 +1,21 @@
-;
-;  $Id: xder6_6th_ghost.pro,v 1.1 2007-08-12 12:17:36 ajohan Exp $
-;
-;  Sixth derivative d^6/dx^6
-;  - 6th-order (7-point stencil)
-;  - with ghost cells
-;
-;***********************************************************************
-function xder6,f
+;;
+;;  $Id: xder6_6th_ghost.pro,v 1.2 2008-06-10 13:07:41 ajohan Exp $
+;;
+;;  Sixth derivative d^6/dx^6
+;;  - 6th-order (7-point stencil)
+;;  - with ghost cells
+;;
+function xder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat,x,y,z
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
 ;
-;  calculate nx, ny, and nz, based on the input array size
+;  Default values.
+;
+  default, ghost, 0
+;
+;  Calculate nx, ny, and nz, based on the input array size.
 ;
   s=size(f) & d=make_array(size=s)
   nx=s[1] & ny=s[2] & nz=s[3]
@@ -22,7 +25,7 @@ function xder6,f
   if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
   if (nx eq 1) then return, fltarr(nx,ny,nz)
 ;
-;  determine location of ghost zones, assume nghost=3 for now.
+;  Determine location of ghost zones, assume nghost=3 for now.
 ;
   l1=3 & l2=nx-4
 ;
@@ -64,6 +67,10 @@ function xder6,f
            strtrim(s[0],2), '-D arrays'
     stop
   endelse
+;
+;  Set ghost zones.
+;
+  if (ghost) then d=pc_setghost(d,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
 ;
   return, d
 ;

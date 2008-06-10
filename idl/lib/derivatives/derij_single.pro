@@ -1,20 +1,30 @@
+;;
+;;  $Id: derij_single.pro,v 1.2 2008-06-10 13:07:40 ajohan Exp $
+;;
+;;  Calculate single component of second derivative matrix.
+;;
+;;  20-mar-04/axel: coded
+;;
+function derij_single,f,i,j,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
-;  $Id: derij_single.pro,v 1.1 2008-01-18 10:39:04 ajohan Exp $
+;  Default values.
 ;
-;  Calculate single component of second derivative matrix.
+  default, ghost, 0
 ;
-;  20-mar-04/axel: coded
+  if (i eq 0 and j eq 0) then w=xder2(f)
+  if (i eq 0 and j eq 1) then w=xderyder(f)
+  if (i eq 0 and j eq 2) then w=xderzder(f)
+  if (i eq 1 and j eq 0) then w=yderxder(f)
+  if (i eq 1 and j eq 1) then w=yder2(f)
+  if (i eq 1 and j eq 2) then w=yderzder(f)
+  if (i eq 2 and j eq 0) then w=zderxder(f)
+  if (i eq 2 and j eq 1) then w=zderyder(f)
+  if (i eq 2 and j eq 2) then w=zder2(f)
 ;
-function derij_single, f, i, j
+;  Set ghost zones.
 ;
-if (i eq 0 and j eq 0) then return, xder2(f)
-if (i eq 0 and j eq 1) then return, xderyder(f)
-if (i eq 0 and j eq 2) then return, xderzder(f)
-if (i eq 1 and j eq 0) then return, yderxder(f)
-if (i eq 1 and j eq 1) then return, yder2(f)
-if (i eq 1 and j eq 2) then return, yderzder(f)
-if (i eq 2 and j eq 0) then return, zderxder(f)
-if (i eq 2 and j eq 1) then return, zderyder(f)
-if (i eq 2 and j eq 2) then return, zder2(f)
+  if (ghost) then w=pc_setghost(w,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
+;
+  return, w
 ;
 end

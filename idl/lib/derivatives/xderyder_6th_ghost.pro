@@ -1,16 +1,19 @@
-;
-;  $Id: xderyder_6th_ghost.pro,v 1.4 2008-06-09 19:36:03 bingert Exp $
-;
-;  Second derivative d2f/dxdy
-;  - 6th-order
-;  - with ghost cells
-;
-;***********************************************************************
-function xderyder,f
+;;
+;;  $Id: xderyder_6th_ghost.pro,v 1.5 2008-06-10 13:07:41 ajohan Exp $
+;;
+;;  Second derivative d2f/dxdy
+;;  - 6th-order
+;;  - with ghost cells
+;;
+function xderyder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat,x,y,z
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
+;
+;  Default values.
+;
+  default, ghost, 0
 ;
 ;  calculate mx, my, and mz, based on the input array size
 ;
@@ -85,6 +88,10 @@ function xderyder,f
     print, 'error: xderyder_6th_ghost not implemented for ', $
         strtrim(s[0],2), '-D arrays'
   endelse
+;
+;  Set ghost zones.
+;
+  if (ghost) then d=pc_setghost(d,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
 ;
   return, d
 ;

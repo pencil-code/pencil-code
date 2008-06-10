@@ -1,15 +1,25 @@
+;;
+;;  $Id: der_single.pro,v 1.2 2008-06-10 13:07:40 ajohan Exp $
+;;
+;;  Calculate single component of firstst derivative; the second argument
+;;  gives the direction.
+;;
+;;  20-mar-04/axel: coded
+;;
+function der_single,f,j,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
-;  $Id: der_single.pro,v 1.1 2008-01-18 10:39:04 ajohan Exp $
+;  Default values.
 ;
-;  Calculate single component of firstst derivative; the second argument
-;  gives the direction.
+  default, ghost, 0
 ;
-;  20-mar-04/axel: coded
+  if (j eq 0) then w=xder(f)
+  if (j eq 1) then w=yder(f)
+  if (j eq 2) then w=zder(f)
 ;
-function der_single, f, j
+;  Set ghost zones.
 ;
-if (j eq 0) then return, xder(f)
-if (j eq 1) then return, yder(f)
-if (j eq 2) then return, zder(f)
+  if (ghost) then w=pc_setghost(w,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
+;
+  return, w
 ;
 end

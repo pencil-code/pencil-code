@@ -1,12 +1,17 @@
-;
-;  $Id: del6.pro,v 1.1 2008-06-03 13:49:16 ajohan Exp $
-;
-;  Calculate del6 of f.
-;
-;  03-jun-08/anders: coded
-;
-function del6,f
+;;
+;;  $Id: del6.pro,v 1.2 2008-06-10 13:07:40 ajohan Exp $
+;;
+;;  Calculate del6 of f.
+;;
+;;  03-jun-08/anders: coded
+;;
+function del6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
+;
+;  Default values.
+;
+  default, ghost, 0
+;
   common cdat_coords, coord_system
 ;
   if (coord_system ne 'cartesian') then message, $
@@ -28,6 +33,10 @@ function del6,f
     print, 'error: del6 not implemented for arrays of size ', s
     message, 'no point in continuing'
   endelse
+;
+;  Set ghost zones.
+;
+  if (ghost) then w=pc_setghost(w,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
 ;
   return, w
 ;

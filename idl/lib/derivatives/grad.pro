@@ -1,6 +1,14 @@
-;;; Calculate the gradient of a 3-d scalar field
-function grad,f
-COMPILE_OPT IDL2,HIDDEN
+;;
+;;  $Id: grad.pro,v 1.8 2008-06-10 13:07:40 ajohan Exp $
+;;
+;;  Calculate the gradient of a 3-D scalar field.
+;;
+function grad,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
+  COMPILE_OPT IDL2,HIDDEN
+;
+;  Default values.
+;
+  default, ghost, 0
 ;
   s=size(f) & nx=s[1] & ny=s[2] & nz=s[3]
   if s[0] eq 2 then nz=1
@@ -10,6 +18,10 @@ COMPILE_OPT IDL2,HIDDEN
   w[*,*,*,1]=yder(f)
   w[*,*,*,2]=zder(f)
 ;
-  return,w
+;  Set ghost zones.
+;
+  if (ghost) then w=pc_setghost(w,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
+;
+  return, w
 ;
 end

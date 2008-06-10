@@ -1,11 +1,16 @@
-;
-;  $Id: graddiv.pro,v 1.3 2008-04-30 15:00:10 ajohan Exp $
-;
-;  Calculate gradient of the divergence of a vector.
-;
-function graddiv,f
+;;
+;;  $Id: graddiv.pro,v 1.4 2008-06-10 13:07:41 ajohan Exp $
+;;
+;;  Calculate gradient of the divergence of a vector.
+;;
+function graddiv,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
+;
   common cdat_coords, coord_system
+;
+;  Default values.
+;
+  default, ghost, 0
 ;
   if (coord_system ne 'cartesian') then message, $
       "graddiv not yet implemented for coord_system='" + coord_system + "'"
@@ -23,6 +28,10 @@ function graddiv,f
   endif else begin
     print, 'error: graddiv only implemented for 4-D arrays'
   endelse
+;
+;  Set ghost zones.
+;
+  if (ghost) then w=pc_setghost(w,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
 ;
   return, w
 ;

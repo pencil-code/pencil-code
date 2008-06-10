@@ -1,29 +1,32 @@
-;
-;  $Id: yder2_6th_ghost.pro,v 1.9 2008-03-07 14:36:14 ajohan Exp $
-;
-;  Second derivative d^2/dy^2
-;  - 6th-order (7-point stencil)
-;  - with ghost cells
-;  - on potentially non-equidistant grid
-;
-;***********************************************************************
-function yder2,f
+;;
+;;  $Id: yder2_6th_ghost.pro,v 1.10 2008-06-10 13:07:41 ajohan Exp $
+;;
+;;  Second derivative d^2/dy^2
+;;  - 6th-order (7-point stencil)
+;;  - with ghost cells
+;;  - on potentially non-equidistant grid
+;;
+function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat,x,y,z
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
 ;
-;  calculate nx, ny, and nz, based on the input array size
+;  Default values.
+;
+  default, ghost, 0
+;
+;  Calculate nx, ny, and nz, based on the input array size.
 ;
   s=size(f) & d=make_array(size=s)
   nx=s[1] & ny=s[2] & nz=s[3]
 ;
-;  Check for degenerate case (no x-extension)
+;  Check for degenerate case (no x-extension).
 ;
   if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
   if (ny eq 1) then return, fltarr(nx,ny,nz)
 ;
-;  determine location of ghost zones, assume nghost=3 for now.
+;  Determine location of ghost zones, assume nghost=3 for now.
 ;
   m1=3 & m2=ny-4
 ;
@@ -32,8 +35,8 @@ function yder2,f
   endif else begin
     dy2=dy_1[m1:m2]^2/180.
 ;
-;  nonuniform mesh correction
-;  d2f/dy2  = f"*psi'^2 + psi"f'   see also the manual
+;  Nonuniform mesh correction.
+;  d2f/dy2  = f"*psi'^2 + psi"f', see also the manual.
 ;
     d1=yder(f)
   endelse
@@ -76,9 +79,13 @@ function yder2,f
            strtrim(s[0],2), '-D arrays'
   endelse
 ;
-; apply correction only for nonuniform mesh
+;  Apply correction only for nonuniform mesh.
 ;
   if (not lequidist[1]) then d=d+dd
+;
+;  Set ghost zones.
+;
+  if (ghost) then d=pc_setghost(d,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
 ;
   return, d
 ;

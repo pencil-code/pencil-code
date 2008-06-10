@@ -1,10 +1,14 @@
-;
-;  $Id: derij.pro,v 1.1 2007-11-30 12:24:49 ajohan Exp $
-;
-;  Calculate second derivative matrix f_l,ij.
-;
-function derij,f
+;;
+;;  $Id: derij.pro,v 1.2 2008-06-10 13:07:40 ajohan Exp $
+;;
+;;  Calculate second derivative matrix f_l,ij.
+;;
+function derij,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
+;
+;  Default values.
+;
+  default, ghost, 0
 ;
   s=size(f)
 ;
@@ -21,6 +25,10 @@ function derij,f
   endif else begin
     print, 'error: derij only implemented for 4-D arrays'
   endelse
+;
+;  Set ghost zones.
+;
+  if (ghost) then w=pc_setghost(w,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
 ;
   return, w
 ;
