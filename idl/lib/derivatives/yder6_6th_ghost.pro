@@ -1,5 +1,5 @@
 ;;
-;;  $Id: yder6_6th_ghost.pro,v 1.3 2008-06-10 17:22:24 ajohan Exp $
+;;  $Id: yder6_6th_ghost.pro,v 1.4 2008-06-10 17:29:19 ajohan Exp $
 ;;
 ;;  Sixth derivative d^6/dy^6
 ;;  - 6th-order (7-point stencil)
@@ -27,7 +27,7 @@ function yder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
 ;  Determine location of ghost zones, assume nghost=3 for now.
 ;
-  m1=3 & m2=ny-4
+   l1=3 & l2=nx-4 & m1=3 & m2=ny-4 & n1=3 & n2=nz-4
 ;
   if (lequidist[1]) then begin
     dy6=1./(y[4]-y[3])^6
