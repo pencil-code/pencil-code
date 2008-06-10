@@ -1,5 +1,5 @@
 ;;
-;;  $Id: curl.pro,v 1.12 2008-06-10 13:07:40 ajohan Exp $
+;;  $Id: curl.pro,v 1.13 2008-06-10 17:24:36 ajohan Exp $
 ;;
 ;;  Calculate the curl of a 3-D vector field
 ;;
@@ -51,7 +51,7 @@ function curl,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   default, ghost, 0
 ;
-  w=make_array(size=size(f),/nozero)
+  w=make_array(size=size(f))
 ;
   tmp=size(f) & mx=tmp[1] & my=tmp[2] &  mz=tmp[3]
   xx=spread(x,[1,2],[my,mz])

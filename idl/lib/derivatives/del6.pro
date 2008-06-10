@@ -1,5 +1,5 @@
 ;;
-;;  $Id: del6.pro,v 1.2 2008-06-10 13:07:40 ajohan Exp $
+;;  $Id: del6.pro,v 1.3 2008-06-10 17:24:36 ajohan Exp $
 ;;
 ;;  Calculate del6 of f.
 ;;
@@ -21,12 +21,12 @@ function del6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   if (s[0] eq 3) then begin
 ;
-    w=make_array(n_elements(f[*,0,0]),n_elements(f[0,*,0]),n_elements(f[0,0,*]),3,/nozero)
+    w=make_array(n_elements(f[*,0,0]),n_elements(f[0,*,0]),n_elements(f[0,0,*]),3)
     w=xder6(f)+yder6(f)+zder6(f)
 ;
   endif else if (s[0] eq 4) then begin
 ;
-    w=make_array(n_elements(f[*,0,0,0]),n_elements(f[0,*,0,0]),n_elements(f[0,0,*,0]),3,/nozero)
+    w=make_array(n_elements(f[*,0,0,0]),n_elements(f[0,*,0,0]),n_elements(f[0,0,*,0]),3)
     w=xder6(f)+yder6(f)+zder6(f)
 ;
   endif else begin

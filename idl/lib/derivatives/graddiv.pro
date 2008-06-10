@@ -1,5 +1,5 @@
 ;;
-;;  $Id: graddiv.pro,v 1.4 2008-06-10 13:07:41 ajohan Exp $
+;;  $Id: graddiv.pro,v 1.5 2008-06-10 17:24:37 ajohan Exp $
 ;;
 ;;  Calculate gradient of the divergence of a vector.
 ;;
@@ -20,7 +20,7 @@ function graddiv,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   if (s[0] eq 4) then begin
 
 ;
-    w=make_array(n_elements(f[*,0,0,0]),n_elements(f[0,*,0,0]),n_elements(f[0,0,*,0]),3,/nozero)
+    w=make_array(n_elements(f[*,0,0,0]),n_elements(f[0,*,0,0]),n_elements(f[0,0,*,0]),3)
     w[*,*,*,0]=   xder2(f[*,*,*,0])+xderyder(f[*,*,*,1])+xderzder(f[*,*,*,2])
     w[*,*,*,1]=xderyder(f[*,*,*,0])+   yder2(f[*,*,*,1])+yderzder(f[*,*,*,2])
     w[*,*,*,2]=xderzder(f[*,*,*,0])+yderzder(f[*,*,*,1])+   zder2(f[*,*,*,2])

@@ -1,5 +1,5 @@
 ;;
-;;  $Id: derij.pro,v 1.2 2008-06-10 13:07:40 ajohan Exp $
+;;  $Id: derij.pro,v 1.3 2008-06-10 17:24:36 ajohan Exp $
 ;;
 ;;  Calculate second derivative matrix f_l,ij.
 ;;
@@ -14,7 +14,7 @@ function derij,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   if (s[0] eq 4) then begin
 ;
-    w=make_array(n_elements(f[*,0,0,0]),n_elements(f[0,*,0,0]),n_elements(f[0,0,*,0]),3,3,3,/nozero)
+    w=make_array(n_elements(f[*,0,0,0]),n_elements(f[0,*,0,0]),n_elements(f[0,0,*,0]),3,3,3)
     w[*,*,*,*,0,0]=xder2(f[*,*,*,*])
     w[*,*,*,*,1,1]=yder2(f[*,*,*,*])
     w[*,*,*,*,2,2]=zder2(f[*,*,*,*])

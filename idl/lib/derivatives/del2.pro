@@ -1,5 +1,5 @@
 ;;
-;;  $Id: del2.pro,v 1.5 2008-06-10 13:07:40 ajohan Exp $
+;;  $Id: del2.pro,v 1.6 2008-06-10 17:24:36 ajohan Exp $
 ;;
 ;;  Calculate the Laplacian of f, i.e.
 ;;    div(grad(f)) if f is a scalar field, or
@@ -23,12 +23,12 @@ function del2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   if (s[0] eq 3) then begin
 ;
-    w=make_array(n_elements(f[*,0,0]),n_elements(f[0,*,0]),n_elements(f[0,0,*]),3,/nozero)
+    w=make_array(n_elements(f[*,0,0]),n_elements(f[0,*,0]),n_elements(f[0,0,*]),3)
     w=xder2(f)+yder2(f)+zder2(f)
 ;
   endif else if (s[0] eq 4) then begin
 ;
-    w=make_array(n_elements(f[*,0,0,0]),n_elements(f[0,*,0,0]),n_elements(f[0,0,*,0]),3,/nozero)
+    w=make_array(n_elements(f[*,0,0,0]),n_elements(f[0,*,0,0]),n_elements(f[0,0,*,0]),3)
     w=xder2(f)+yder2(f)+zder2(f)
 ;
   endif else begin
