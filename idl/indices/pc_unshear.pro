@@ -1,5 +1,5 @@
 ;;
-;;  $Id: pc_unshear.pro,v 1.2 2008-06-09 14:50:09 ajohan Exp $
+;;  $Id: pc_unshear.pro,v 1.3 2008-06-10 09:13:03 ajohan Exp $
 ;;
 ;;  Transform from sheared to unsheared frame by shifting data along the
 ;;  y-direction to match last purely periodic state.
@@ -72,12 +72,12 @@ endif
 ;  The array must be trimmed of ghost cells for the interpolation to be
 ;  meaningful.
 ;
-if ( (a[3,3,3] eq a[3,3,ny-3]) $
-     or (total(a[0:2,0:2,*]) eq 0.0 and max(a) ne 0.0) ) then begin
-  print, 'error: pc_unshear: it seems that a still contains ghost cells.'
-  print, '                   You must trim a before unshearing!'
-  return, a
-endif
+;if ( (a[l1,m1,n1] eq a[l1,ny-3,3]) $
+;     or (total(a[0:2,0:2,*]) eq 0.0 and max(a) ne 0.0) ) then begin
+;  print, 'error: pc_unshear: it seems that a still contains ghost cells.'
+;  print, '                   You must trim a before unshearing!'
+;  return, a
+;endif
 ;
 ;  Define wavenumbers based on the Nyquist frequency.
 ;
@@ -90,7 +90,7 @@ for ix=0,nx-1 do begin
 ;
 ;  Define complex shift array.
 ;
-  deltay_x=-(deltay mod (2*!dpi))*x[ix]/Lx
+  deltay_x=-(deltay mod Ly)*x[ix]/Lx
 ;
 ;  Fourier transform along y.
 ;
