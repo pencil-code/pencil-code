@@ -40,11 +40,12 @@ end
 ;;  Currently, only a subset of periodic boundary conditions are prepared.
 ;;
 function pc_setghost, f, bcx=bcx, bcy=bcy, bcz=bcz, debug=debug, $
-    deltay=deltay, Ly=Ly
+    addghost=addghost, deltay=deltay, Ly=Ly
 ;
 default, bcx, 'p'
 default, bcy, 'p'
 default, bcz, 'p'
+default, addghost, 0
 ;
 s=size(f)
 if (s[0] lt 3) then begin
@@ -52,11 +53,28 @@ if (s[0] lt 3) then begin
   return, f
 endif
 ;
-mx=s[1] & my=s[2] & mz=s[3]
+;  Add ghost cells to trimmed array.
+;
 nghost=3
-l1=nghost & l2=mx-nghost-1
-m1=nghost & m2=my-nghost-1
-n1=nghost & n2=mz-nghost-1
+if (addghost) then begin
+  nx=s[1] & ny=s[2] & nz=s[3]
+  mx=nx+2*nghost & my=ny+2*nghost & mz=nz+2*nghost
+  l1=nghost & l2=mx-nghost-1
+  m1=nghost & m2=my-nghost-1
+  n1=nghost & n2=mz-nghost-1
+  f2=dblarr(nx+2*nghost,ny+2*nghost,nz+2*nghost)
+  f2[l1:l2,m1:m2,n1:n2,*]=f
+  f=f2
+  undefine, f2
+endif else begin
+;
+;  Untrimmed array, no need to add ghost cells.
+;
+  mx=s[1] & my=s[2] & mz=s[3]
+  l1=nghost & l2=mx-nghost-1
+  m1=nghost & m2=my-nghost-1
+  n1=nghost & n2=mz-nghost-1
+endelse
 ;
 ;  Debug output.
 ;
