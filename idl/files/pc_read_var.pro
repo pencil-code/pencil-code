@@ -67,7 +67,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.71 2008-06-10 17:46:35 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.72 2008-06-10 18:01:18 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -488,6 +488,17 @@ COMPILE_OPT IDL2,HIDDEN
     endfor
   endif
 ;
+; Set ghost zones on derived variables (not default).
+;
+  if (keyword_set(ghost)) then begin
+    for iv=0,n_elements(variables)-1 do begin
+; Check that only derived variables get their ghost zones set.
+      if (total(variables[iv] eq varcontent.idlvar) eq 0) then begin
+        variables[iv] = 'pc_setghost('+variables[iv]+',bcx='''+bcx+''',bcy='''+bcy+''',bcz='''+bcz+''',param=param,t=t)'
+      endif
+    endfor
+  endif
+;
 ; Check variables one at a time and skip the ones that give errors.
 ; This way the program can still return the other variables, instead
 ; of dying with an error. One can turn off this option off to decrease
@@ -521,17 +532,6 @@ COMPILE_OPT IDL2,HIDDEN
   endif else begin
     xyzstring="x,y,z"
   endelse
-;
-; Set ghost zones on derived variables (not default).
-;
-  if (keyword_set(ghost)) then begin
-    for iv=0,n_elements(variables)-1 do begin
-; Check that only derived variables get their ghost zones set.
-      if (total(variables[iv] eq varcontent.idlvar) eq 0) then begin
-        variables[iv] = 'pc_setghost('+variables[iv]+',bcx='''+bcx+''',bcy='''+bcy+''',bcz='''+bcz+''',param=param,t=t)'
-      endif
-    endfor
-  endif
 ;
 ; Remove ghost zones if requested.
 ;
