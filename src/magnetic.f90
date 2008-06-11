@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.525 2008-06-11 09:42:20 brandenb Exp $
+! $Id: magnetic.f90,v 1.526 2008-06-11 18:53:10 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -423,7 +423,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.525 2008-06-11 09:42:20 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.526 2008-06-11 18:53:10 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -793,6 +793,7 @@ module Magnetic
         case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
         case('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa,xx,yy,zz)
         case('sinxsinz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
+        case('sinxsinz_Hz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),KKz=kz_aa(j))
         case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)

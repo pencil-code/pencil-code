@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.243 2008-05-14 22:27:21 dobler Exp $
+! $Id: initcond.f90,v 1.244 2008-06-11 18:53:10 brandenb Exp $
 
 module Initcond
 
@@ -69,7 +69,7 @@ module Initcond
   contains
 
 !***********************************************************************
-    subroutine sinxsinz(ampl,f,i,kx,ky,kz)
+    subroutine sinxsinz(ampl,f,i,kx,ky,kz,KKx,KKy,KKz)
 !
 !  sinusoidal wave. Note: f(:,:,:,j) with j=i+1 is set.
 !
@@ -77,8 +77,8 @@ module Initcond
 !
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx,ky,kz
-      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+      real,optional :: kx,ky,kz,KKx,KKy,KKz
+      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.,KKx1=0.,KKy1=0.,KKz1=0.
 !
 !  wavenumber k, helicity H=ampl (can be either sign)
 !
@@ -87,14 +87,22 @@ module Initcond
       if (present(kx)) kx1=kx
       if (present(ky)) ky1=ky
       if (present(kz)) kz1=kz
+!
+!  Gaussian scake heights
+!
+      if (present(KKx)) KKx1=KKx
+      if (present(KKy)) KKy1=KKy
+      if (present(KKz)) KKz1=KKz
+!
       if (ampl==0) then
         if (lroot) print*,'sinxsinz: ampl=0 in sinx*sinz wave; kx,kz=',kx1,kz1
       else
         if (lroot) print*,'sinxsinz: sinx*sinz wave; ampl,kx,kz=',ampl,kx1,kz1
         j=i+1
-        f(:,:,:,j)=f(:,:,:,j)+ampl*(spread(spread(cos(kx1*x),2,my),3,mz)&
-                                   *spread(spread(cos(ky1*y),1,mx),3,mz)&
-                                   *spread(spread(cos(kz1*z),1,mx),2,my))
+        f(:,:,:,j)=f(:,:,:,j)+ampl*(&
+          spread(spread(cos(kx1*x)*exp(-.5*(KKx1*x)**2),2,my),3,mz)*&
+          spread(spread(cos(ky1*y)*exp(-.5*(KKy1*y)**2),1,mx),3,mz)*&
+          spread(spread(cos(kz1*z)*exp(-.5*(KKz1*z)**2),1,mx),2,my))
       endif
 !
     endsubroutine sinxsinz
