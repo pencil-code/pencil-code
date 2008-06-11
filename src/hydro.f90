@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.438 2008-06-04 12:46:22 bingert Exp $
+! $Id: hydro.f90,v 1.439 2008-06-11 16:01:51 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -111,7 +111,12 @@ module Hydro
   logical :: lforcing_cont_uu=.false.
   character (len=labellen) :: uuprof='nothing'
 !
-! geodynamo
+!  parameters for interior boundary conditions
+!
+  character (len=labellen) :: interior_bc_hydro_profile='nothing'
+  logical :: lhydro_bc_interior=.false.
+  real :: z1_interior_bc_hydro=0.
+!
   namelist /hydro_run_pars/ &
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
@@ -128,6 +133,7 @@ module Hydro
        lforcing_cont_uu, &
        width_ff_uu,x1_ff_uu,x2_ff_uu, &
        luut_as_aux,loutest, ldiffrot_test,&
+       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
        velocity_ceiling
 
 ! end geodynamo
@@ -342,7 +348,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.438 2008-06-04 12:46:22 bingert Exp $")
+           "$Id: hydro.f90,v 1.439 2008-06-11 16:01:51 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1628,7 +1634,12 @@ use Mpicomm, only: stop_it
       integer :: m,n,j
       real :: fact
 !
-      intent(in) :: f
+!     intent(in) :: f
+      intent(inout) :: f
+!
+!  possibility of setting interior boundary conditions
+!
+      if (lhydro_bc_interior) call interior_bc_hydro(f)
 !
 !  calculate averages of rho*ux and rho*uy
 !
@@ -3122,6 +3133,45 @@ use Mpicomm, only: stop_it
       endif
 
     endsubroutine remove_mean_flow
+!***********************************************************************
+    subroutine interior_bc_hydro(f)
+!
+!  Set interior boundary condition within the domain
+!
+!  11-jun-08/axel: coded
+!
+      use Cdata, only: l1,l2,m,m1,m2,n,n1,n2,z,iux,iuz,lroot
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer :: l1bc,l2bc
+!
+      select case(interior_bc_hydro_profile)
+!
+!  single propeller blade
+!
+      case ('blade')
+        z1_interior_bc_hydro=2.
+        l1bc=(l1+l2)/2
+        l2bc=l1bc+1
+        do n=n1,n2
+          if (z(n).lt.z1_interior_bc_hydro) then
+            do m=m1,m2
+              f(l1bc:l2bc,m,n,iux:iuz)=0.
+            enddo
+          endif
+        enddo
+!
+!  no profile
+!
+      case ('nothing')
+!
+!  no profile matches
+!
+      case default
+        if(lroot) print*,'duu_dt: No such profile ',interior_bc_hydro_profile
+      endselect
+!
+    endsubroutine interior_bc_hydro
 !***********************************************************************
     subroutine impose_profile_diffrot(f,df,prof_diffrot,ldiffrot_test)
 !
