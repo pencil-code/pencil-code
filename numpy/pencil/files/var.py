@@ -1,4 +1,4 @@
-# $Id: var.py,v 1.9 2008-03-19 12:18:35 tgastine Exp $
+# $Id: var.py,v 1.10 2008-06-11 15:43:48 tgastine Exp $
 #
 # read VAR files. based on the read_var.pro IDL script.
 #
@@ -197,7 +197,6 @@ class read_var:
             y = y_loc
             z = z_loc
         #endif MPI run
-        
     #endfor directories loop
 
     # trim ghost zones if asked
@@ -224,6 +223,9 @@ class read_var:
         self.n1 = dim.n1
         self.n2 = dim.n2+1
         
+    #11-jun-2008/tgastine: temporary correction to deal
+		# with shocks
+    if index.index.has_key('shock'): index.index.pop('shock')
     for i in range(len(index.index.keys())):
       setattr(self,index.index.keys()[i],self.f[index.index.values()[i]-1,...])
     self.t = t
