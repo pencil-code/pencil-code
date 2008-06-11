@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.45 2008-06-01 22:25:57 brandenb Exp $
+! $Id: testfield_z.f90,v 1.46 2008-06-11 09:42:21 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -100,6 +100,16 @@ module Testfield
   integer :: idiag_eta21sc=0    ! DIAG_DOC: $\eta_{21}\sin kz\cos kz$
   integer :: idiag_eta12cs=0    ! DIAG_DOC: $\eta_{12}\cos kz\sin kz$
   integer :: idiag_eta22ss=0    ! DIAG_DOC: $\eta_{22}\sin^2 kz$
+  integer :: idiag_bx11pt=0     ! DIAG_DOC: $b_x^{11}$
+  integer :: idiag_bx21pt=0     ! DIAG_DOC: $b_x^{21}$
+  integer :: idiag_bx12pt=0     ! DIAG_DOC: $b_x^{12}$
+  integer :: idiag_bx22pt=0     ! DIAG_DOC: $b_x^{22}$
+  integer :: idiag_bx0pt=0      ! DIAG_DOC: $b_x^{0}$
+  integer :: idiag_by11pt=0     ! DIAG_DOC: $b_y^{11}$
+  integer :: idiag_by21pt=0     ! DIAG_DOC: $b_y^{21}$
+  integer :: idiag_by12pt=0     ! DIAG_DOC: $b_y^{12}$
+  integer :: idiag_by22pt=0     ! DIAG_DOC: $b_y^{22}$
+  integer :: idiag_by0pt=0      ! DIAG_DOC: $b_y^{0}$
   integer :: idiag_b11rms=0     ! DIAG_DOC: $\left<b_{11}^2\right>^{1/2}$
   integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>^{1/2}$
   integer :: idiag_b12rms=0     ! DIAG_DOC: $\left<b_{12}^2\right>^{1/2}$
@@ -110,6 +120,16 @@ module Testfield
   integer :: idiag_E12rms=0     ! DIAG_DOC: $\left<{\cal E}_{12}^2\right>^{1/2}$
   integer :: idiag_E22rms=0     ! DIAG_DOC: $\left<{\cal E}_{22}^2\right>^{1/2}$
   integer :: idiag_E0rms=0      ! DIAG_DOC: $\left<{\cal E}_{0}^2\right>^{1/2}$
+  integer :: idiag_Ex11pt=0     ! DIAG_DOC: ${\cal E}_x^{11}$
+  integer :: idiag_Ex21pt=0     ! DIAG_DOC: ${\cal E}_x^{21}$
+  integer :: idiag_Ex12pt=0     ! DIAG_DOC: ${\cal E}_x^{12}$
+  integer :: idiag_Ex22pt=0     ! DIAG_DOC: ${\cal E}_x^{22}$
+  integer :: idiag_Ex0pt=0      ! DIAG_DOC: ${\cal E}_x^{0}^$
+  integer :: idiag_Ey11pt=0     ! DIAG_DOC: ${\cal E}_y^{11}$
+  integer :: idiag_Ey21pt=0     ! DIAG_DOC: ${\cal E}_y^{21}$
+  integer :: idiag_Ey12pt=0     ! DIAG_DOC: ${\cal E}_y^{12}$
+  integer :: idiag_Ey22pt=0     ! DIAG_DOC: ${\cal E}_y^{22}$
+  integer :: idiag_Ey0pt=0      ! DIAG_DOC: ${\cal E}_y^{0}^$
   integer :: idiag_E111z=0      ! DIAG_DOC: ${\cal E}_1^{11}$
   integer :: idiag_E211z=0      ! DIAG_DOC: ${\cal E}_2^{11}$
   integer :: idiag_E311z=0      ! DIAG_DOC: ${\cal E}_3^{11}$
@@ -183,7 +203,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.45 2008-06-01 22:25:57 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.46 2008-06-11 09:42:21 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -727,6 +747,29 @@ module Testfield
           endif
         endif
 !
+        if (lroot.and.m==mpoint.and.n==npoint) then
+          if (idiag_bx0pt/=0)  call save_name(bpq(lpoint-nghost,1,iE0),idiag_bx0pt)
+          if (idiag_bx11pt/=0) call save_name(bpq(lpoint-nghost,1,i1),idiag_bx11pt)
+          if (idiag_bx21pt/=0) call save_name(bpq(lpoint-nghost,1,i2),idiag_bx21pt)
+          if (idiag_bx12pt/=0) call save_name(bpq(lpoint-nghost,1,i3),idiag_bx12pt)
+          if (idiag_bx22pt/=0) call save_name(bpq(lpoint-nghost,1,i4),idiag_bx22pt)
+          if (idiag_by0pt/=0)  call save_name(bpq(lpoint-nghost,2,iE0),idiag_by0pt)
+          if (idiag_by11pt/=0) call save_name(bpq(lpoint-nghost,2,i1),idiag_by11pt)
+          if (idiag_by21pt/=0) call save_name(bpq(lpoint-nghost,2,i2),idiag_by21pt)
+          if (idiag_by12pt/=0) call save_name(bpq(lpoint-nghost,2,i3),idiag_by12pt)
+          if (idiag_by22pt/=0) call save_name(bpq(lpoint-nghost,2,i4),idiag_by22pt)
+          if (idiag_Ex0pt/=0)  call save_name(Eipq(lpoint-nghost,1,iE0),idiag_Ex0pt)
+          if (idiag_Ex11pt/=0) call save_name(Eipq(lpoint-nghost,1,i1),idiag_Ex11pt)
+          if (idiag_Ex21pt/=0) call save_name(Eipq(lpoint-nghost,1,i2),idiag_Ex21pt)
+          if (idiag_Ex12pt/=0) call save_name(Eipq(lpoint-nghost,1,i3),idiag_Ex12pt)
+          if (idiag_Ex22pt/=0) call save_name(Eipq(lpoint-nghost,1,i4),idiag_Ex22pt)
+          if (idiag_Ey0pt/=0)  call save_name(Eipq(lpoint-nghost,2,iE0),idiag_Ey0pt)
+          if (idiag_Ey11pt/=0) call save_name(Eipq(lpoint-nghost,2,i1),idiag_Ey11pt)
+          if (idiag_Ey21pt/=0) call save_name(Eipq(lpoint-nghost,2,i2),idiag_Ey21pt)
+          if (idiag_Ey12pt/=0) call save_name(Eipq(lpoint-nghost,2,i3),idiag_Ey12pt)
+          if (idiag_Ey22pt/=0) call save_name(Eipq(lpoint-nghost,2,i4),idiag_Ey22pt)
+        endif
+!
 !  rms values of small scales fields bpq in response to the test fields Bpq
 !  Obviously idiag_b0rms and idiag_b12rms cannot both be invoked!
 !  Needs modification!
@@ -1164,6 +1207,10 @@ module Testfield
         idiag_b0rms=0; idiag_E0rms=0
         idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
         idiag_E11rms=0; idiag_E21rms=0; idiag_E12rms=0; idiag_E22rms=0
+        idiag_bx0pt=0; idiag_bx11pt=0; idiag_bx21pt=0; idiag_bx12pt=0; idiag_bx22pt=0
+        idiag_by0pt=0; idiag_by11pt=0; idiag_by21pt=0; idiag_by12pt=0; idiag_by22pt=0
+        idiag_Ex0pt=0; idiag_Ex11pt=0; idiag_Ex21pt=0; idiag_Ex12pt=0; idiag_Ex22pt=0
+        idiag_Ey0pt=0; idiag_Ey11pt=0; idiag_Ey21pt=0; idiag_Ey12pt=0; idiag_Ey22pt=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1189,6 +1236,26 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'eta21sc',idiag_eta21sc)
         call parse_name(iname,cname(iname),cform(iname),'eta12cs',idiag_eta12cs)
         call parse_name(iname,cname(iname),cform(iname),'eta22ss',idiag_eta22ss)
+        call parse_name(iname,cname(iname),cform(iname),'bx11pt',idiag_bx11pt)
+        call parse_name(iname,cname(iname),cform(iname),'bx21pt',idiag_bx21pt)
+        call parse_name(iname,cname(iname),cform(iname),'bx12pt',idiag_bx12pt)
+        call parse_name(iname,cname(iname),cform(iname),'bx22pt',idiag_bx22pt)
+        call parse_name(iname,cname(iname),cform(iname),'bx0pt',idiag_bx0pt)
+        call parse_name(iname,cname(iname),cform(iname),'by11pt',idiag_by11pt)
+        call parse_name(iname,cname(iname),cform(iname),'by21pt',idiag_by21pt)
+        call parse_name(iname,cname(iname),cform(iname),'by12pt',idiag_by12pt)
+        call parse_name(iname,cname(iname),cform(iname),'by22pt',idiag_by22pt)
+        call parse_name(iname,cname(iname),cform(iname),'by0pt',idiag_by0pt)
+        call parse_name(iname,cname(iname),cform(iname),'Ex11pt',idiag_Ex11pt)
+        call parse_name(iname,cname(iname),cform(iname),'Ex21pt',idiag_Ex21pt)
+        call parse_name(iname,cname(iname),cform(iname),'Ex12pt',idiag_Ex12pt)
+        call parse_name(iname,cname(iname),cform(iname),'Ex22pt',idiag_Ex22pt)
+        call parse_name(iname,cname(iname),cform(iname),'Ex0pt',idiag_Ex0pt)
+        call parse_name(iname,cname(iname),cform(iname),'Ey11pt',idiag_Ey11pt)
+        call parse_name(iname,cname(iname),cform(iname),'Ey21pt',idiag_Ey21pt)
+        call parse_name(iname,cname(iname),cform(iname),'Ey12pt',idiag_Ey12pt)
+        call parse_name(iname,cname(iname),cform(iname),'Ey22pt',idiag_Ey22pt)
+        call parse_name(iname,cname(iname),cform(iname),'Ey0pt',idiag_Ey0pt)
         call parse_name(iname,cname(iname),cform(iname),'b11rms',idiag_b11rms)
         call parse_name(iname,cname(iname),cform(iname),'b21rms',idiag_b21rms)
         call parse_name(iname,cname(iname),cform(iname),'b12rms',idiag_b12rms)
@@ -1248,6 +1315,26 @@ module Testfield
         write(3,*) 'idiag_eta21sc=',idiag_eta21sc
         write(3,*) 'idiag_eta12cs=',idiag_eta12cs
         write(3,*) 'idiag_eta22ss=',idiag_eta22ss
+        write(3,*) 'idiag_bx11pt=',idiag_bx11pt
+        write(3,*) 'idiag_bx21pt=',idiag_bx21pt
+        write(3,*) 'idiag_bx12pt=',idiag_bx12pt
+        write(3,*) 'idiag_bx22pt=',idiag_bx22pt
+        write(3,*) 'idiag_bx0pt=',idiag_bx0pt
+        write(3,*) 'idiag_by11pt=',idiag_by11pt
+        write(3,*) 'idiag_by21pt=',idiag_by21pt
+        write(3,*) 'idiag_by12pt=',idiag_by12pt
+        write(3,*) 'idiag_by22pt=',idiag_by22pt
+        write(3,*) 'idiag_by0pt=',idiag_by0pt
+        write(3,*) 'idiag_Ex11pt=',idiag_Ex11pt
+        write(3,*) 'idiag_Ex21pt=',idiag_Ex21pt
+        write(3,*) 'idiag_Ex12pt=',idiag_Ex12pt
+        write(3,*) 'idiag_Ex22pt=',idiag_Ex22pt
+        write(3,*) 'idiag_Ex0pt=',idiag_Ex0pt
+        write(3,*) 'idiag_Ey11pt=',idiag_Ey11pt
+        write(3,*) 'idiag_Ey21pt=',idiag_Ey21pt
+        write(3,*) 'idiag_Ey12pt=',idiag_Ey12pt
+        write(3,*) 'idiag_Ey22pt=',idiag_Ey22pt
+        write(3,*) 'idiag_Ey0pt=',idiag_Ey0pt
         write(3,*) 'idiag_b11rms=',idiag_b11rms
         write(3,*) 'idiag_b21rms=',idiag_b21rms
         write(3,*) 'idiag_b12rms=',idiag_b12rms

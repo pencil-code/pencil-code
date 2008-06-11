@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.524 2008-06-03 11:52:57 ajohan Exp $
+! $Id: magnetic.f90,v 1.525 2008-06-11 09:42:20 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -193,6 +193,9 @@ module Magnetic
   integer :: idiag_bxpt=0       ! DIAG_DOC: $B_x(x_0,y_0,z_0,t)$
   integer :: idiag_bypt=0       ! DIAG_DOC: $B_y(x_0,y_0,z_0,t)$
   integer :: idiag_bzpt=0       ! DIAG_DOC: $B_z(x_0,y_0,z_0,t)$
+  integer :: idiag_Expt=0       ! DIAG_DOC: ${\cal E}_x(x_0,y_0,z_0,t)$
+  integer :: idiag_Eypt=0       ! DIAG_DOC: ${\cal E}_y(x_0,y_0,z_0,t)$
+  integer :: idiag_Ezpt=0       ! DIAG_DOC: ${\cal E}_z(x_0,y_0,z_0,t)$
   integer :: idiag_epsM_LES=0   ! DIAG_DOC:
   integer :: idiag_aybym2=0     ! DIAG_DOC:
   integer :: idiag_exaym2=0     ! DIAG_DOC:
@@ -420,7 +423,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.524 2008-06-03 11:52:57 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.525 2008-06-11 09:42:20 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2000,6 +2003,9 @@ module Magnetic
           if (idiag_bxpt/=0) call save_name(p%bb(lpoint-nghost,1),idiag_bxpt)
           if (idiag_bypt/=0) call save_name(p%bb(lpoint-nghost,2),idiag_bypt)
           if (idiag_bzpt/=0) call save_name(p%bb(lpoint-nghost,3),idiag_bzpt)
+          if (idiag_Expt/=0) call save_name(uxbb(lpoint-nghost,1),idiag_Expt)
+          if (idiag_Eypt/=0) call save_name(uxbb(lpoint-nghost,2),idiag_Eypt)
+          if (idiag_Ezpt/=0) call save_name(uxbb(lpoint-nghost,3),idiag_Ezpt)
         endif
 !
 !  v_A = |B|/sqrt(rho); in units where mu_0=1
@@ -4567,8 +4573,9 @@ module Magnetic
 !
       if (lreset) then
         idiag_b2m=0; idiag_bm2=0; idiag_j2m=0; idiag_jm2=0; idiag_abm=0
-        idiag_jbm=0; idiag_ubm=0; idiag_epsM=0
-        idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0; idiag_epsM_LES=0
+        idiag_jbm=0; idiag_ubm=0; idiag_epsM=0; idiag_epsM_LES=0
+        idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0
+        idiag_Expt=0; idiag_Eypt=0; idiag_Ezpt=0
         idiag_aybym2=0; idiag_exaym2=0; idiag_exjm2=0
         idiag_brms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0; idiag_vArms=0
         idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
@@ -4699,6 +4706,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bxpt',idiag_bxpt)
         call parse_name(iname,cname(iname),cform(iname),'bypt',idiag_bypt)
         call parse_name(iname,cname(iname),cform(iname),'bzpt',idiag_bzpt)
+        call parse_name(iname,cname(iname),cform(iname),'Expt',idiag_Expt)
+        call parse_name(iname,cname(iname),cform(iname),'Eypt',idiag_Eypt)
+        call parse_name(iname,cname(iname),cform(iname),'Ezpt',idiag_Ezpt)
         call parse_name(iname,cname(iname),cform(iname),'uxBrms',idiag_uxBrms)
         call parse_name(iname,cname(iname),cform(iname),'Bresrms',idiag_Bresrms)
         call parse_name(iname,cname(iname),cform(iname),'Rmrms',idiag_Rmrms)
@@ -4920,6 +4930,9 @@ module Magnetic
         write(3,*) 'i_bxpt=',idiag_bxpt
         write(3,*) 'i_bypt=',idiag_bypt
         write(3,*) 'i_bzpt=',idiag_bzpt
+        write(3,*) 'i_Expt=',idiag_Expt
+        write(3,*) 'i_Eypt=',idiag_Eypt
+        write(3,*) 'i_Ezpt=',idiag_Ezpt
         write(3,*) 'i_bxmxy=',idiag_bxmxy
         write(3,*) 'i_bymxy=',idiag_bymxy
         write(3,*) 'i_bzmxy=',idiag_bzmxy

@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.65 2007-12-20 09:16:38 dobler Exp $
+! $Id: cparam.f90,v 1.66 2008-06-11 09:42:20 brandenb Exp $
 
 module Cparam
 
@@ -59,7 +59,7 @@ module Cparam
 !
 !  number of slots in initlnrho etc.
 !
-  integer, parameter :: ninit=4
+  integer, parameter :: ninit=5
 !
 !  significant length of random number generator state
 !  Different compilers have different lengths:
