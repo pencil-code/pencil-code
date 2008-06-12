@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.org)
-%%  CVS: $Id: manual.tex,v 1.392 2008-05-02 06:46:58 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.393 2008-06-12 13:38:41 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2008-05-02 06:46:58 $ $,~ $ $Revision: 1.392 $ $}
+%\date{$ $Date: 2008-06-12 13:38:41 $ $,~ $ $Revision: 1.393 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2008-05-02 06:46:58 $ $,~ $ $Revision: 1.392 $ $}\\
+  \emph{$ $Date: 2008-06-12 13:38:41 $ $,~ $ $Revision: 1.393 $ $}\\
   \url{http://www.nordita.org/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -634,7 +634,7 @@ Brandenburg, A., \& Multam\"aki, T.\yjourS{2004}{Int.\ J.\ Astrobiol.}{3}{209}
 
 McMillan, D. G., \& Sarson, G. R.\ypepi{2005}{153}{124}
 {135}{Dynamo simulations in a spherical shell of ideal gas using a 
-high-order cartesian magnetohydrodynamics code}
+high-order Cartesian magnetohydrodynamics code}
 
 Heinemann, T., Dobler, W., Nordlund, \AA., \&
 Brandenburg, A.\yana{2006}{448}{731}
@@ -3012,6 +3012,7 @@ sheet boundary conditions and have stress-free instead).
 % ---------------------------------------------------------------------- %
 
 \subsection{Restarting a simulation}
+\index{Restarting}
 
 When a run stops at the end of a simulation, you can just resubmit
 the job again, and it will start from the latest snapshot saved in
@@ -3030,6 +3031,9 @@ files for the random number generator. The easiest way to get all these
 other files is to run \cmd{start.csh} again on the new machine (or in
 a new directory) and then to overwrite the
 \file[var.dat]{data/proc*/var.dat} files with the correct ones.
+
+For restarting from runs that didn't have magnetic fields, passive scalar
+fields, or testfields, see Section~\ref{RestartingFromLessPhysics}.
 
 % ---------------------------------------------------------------------- %
 
@@ -4510,6 +4514,16 @@ the mesh using either NGP, CIC or TSC assignment. The same scheme is used both
 for interpolation and for assignment to avoid any risk of a particle
 accelerating itself (see Hockney \& Eastwood 1981).
 
+\subsubsection{Testfield equations}
+\index{Testfield method}
+
+The testfield method is used to calculate turbulent transport coefficients
+for magnetohydrodynamics.
+This a rapidly evolving field and we refer the interested reader to
+recent papers in this field, e.g.\ by Sur et al.\ (2008) or
+Brandenburg et al.\ (2008).
+For technical details, see also Section~\ref{RestartingFromLessPhysics}.
+
 % ====================================================================== %
 
 \section{Troubleshooting / Frequently Asked Questions}
@@ -5911,7 +5925,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2008-05-02 06:46:58 $ $,~ $ $Revision: 1.392 $ $}
+  \hfill\normalsize\rm$ $Date: 2008-06-12 13:38:41 $ $,~ $ $Revision: 1.393 $ $}
 
 \section{Timings}
 
@@ -7054,6 +7068,122 @@ continue from \file{VAR1} at $128^3$ (on
   \end{alltt}
 \end{enumerate}
 
+% --------------------------------------------------------------------- %
+
+\subsection{Restarting from a run with less physics}
+\label{RestartingFromLessPhysics}
+\index{Restarting}
+\index{Testfield method}
+
+First, prepare a new run directory with the new physics included.
+By new physics, we mean that the new run wants to read in more fields
+(e.g.\ magnetic fields, if the old run didn't have magnetic fields).
+
+Example for testfields:
+
+\begin{enumerate}
+\item Prepare \file{src/cparam.local}
+
+Add the following 2 fragments into the \file{cparam.local} file.
+The first piece comes in the beginnin and the second in the end of the file.
+
+\begin{alltt}
+!** AUTOMATIC CPARAM.INC GENERATION ****************************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+! Use MVAR to reserve the appropriate workspace for testfield_z.f90
+! The MAUX number must be equally big and is used for uxb in the f-array.
+! At the end of this file, njtest must be set such that 3*njtest=MVAR.
+!
+! MVAR CONTRIBUTION 12
+! MAUX CONTRIBUTION 12
+!
+!***************************************************************************
+\end{alltt}
+
+\begin{alltt}
+!
+!  note that MVAR=MAUX=3*njtest must be obeyed
+!
+integer, parameter :: njtest=4
+!
+\end{alltt}
+
+\item Prepare \file{src/Makefile.local}
+
+Add the line \code{TESTFIELD=testfield_z} to the file.
+Finally, compile the code.
+
+\item Prepare restart data
+
+Go into data directory of the new run and prepare the directory tree
+using, e.g., the command \cmd{ pc_mkproctree 16}. [In principle this
+could be automatized, but it isn't yet.]
+
+Next, go into old run directory and say \cms{restart-new-dir ../32c},
+if \file{../32c} is the name of the new run directory.
+This procedure copies all the files from the processor tree, plus
+files like \file{param.nml}, but this file may need some manual
+modification (or you could just us one from another runs with the
+new physics included).
+
+\item Prepare \file{run.in}
+
+Set \code{lread_oldsnap_notestfield=T} in \name{run_pars}.
+This means (as the name says) that one reads an old snapshot that
+did not have testfields in it.
+
+Reset boundary conditions and add stuff for the newly added fields, e.g.,
+\code{bcz='a:s','a','a:s','a2','p','p','p','p','p','p','p','p','p','p','p','p'}
+in \name{run_pars}.
+
+Add the following text fragments in the right position
+(after \name{grav_run_pars} and \name{magnetic_run_pars},
+but before \name{shear_run_pars} and \name{viscosity_run_pars}.
+\begin{alltt}
+&testfield_run_pars
+  !linit_aatest=T, daainit=100.
+  itestfield='B11-B22', leta_rank2=T
+  etatest=1e-4
+  lsoca=F
+/
+\end{alltt}
+Make sure that the data above are correct. You may want to change
+the values of \name{daainit} or \name{etatest}.
+
+If you now run, and if you didn't fix the file \file{data/param.nml}
+you might get something like the following error:
+
+\begin{alltt}
+forrtl: severe (24): end-of-file during read, unit 1, file /wkspace/brandenb/pencil-code/axel/Poiseuille/2d/32c/data/param.nml, line 258, position 0
+\end{alltt}
+
+The reason for this is that it reads the old boundary data, but the
+corresponding array is too short. This includes stuff like \name{FBCX1}
+to \name{FBCX2_2}, but it is still not enough. Therefore it is easiest
+to use the \file{data/param.nml} file from another run.
+You may well just use one from a single processor run with a different
+mesh. But remember to fix the \file{start.in} file by correcting the
+boundary conditions and adding things like
+\begin{alltt}
+&testfield_init_pars
+  luxb_as_aux=T
+/
+\end{alltt}
+
+\item Prepare \file{print.in}, \file{xyaver.in}, and other obvious files
+such as \file{video.in}.
+
+\item Once it works and it running, you want to remove (or uncomment)
+like this:
+\begin{alltt}
+&run_pars
+  ...
+  ! lread_oldsnap_notestfield=T
+/
+\end{alltt}
+because otherwise you won't read in your precious testfield data next
+time you restart the code!
 
 % ====================================================================== %
 
@@ -9413,7 +9543,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.392 2008-05-02 06:46:58 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.393 2008-06-12 13:38:41 brandenb Exp $ $}
 
 
 \end{document}
