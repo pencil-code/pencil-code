@@ -1,25 +1,27 @@
-; $Id: pc_read_grid.pro,v 1.16 2008-04-22 12:55:54 wlyra Exp $
+;;
+;; $Id: pc_read_grid.pro,v 1.17 2008-06-12 13:26:15 ajohan Exp $
+;;
+;;   Read grid.dat
+;;
+;;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
+;;  $Date: 2008-06-12 13:26:15 $
+;;  $Revision: 1.17 $
+;;
+;;  27-nov-02/tony: coded 
+;;
+pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
+    datadir=datadir, proc=proc, print=print, quiet=quiet, help=help, $
+    swap_endian=swap_endian
+  COMPILE_OPT IDL2,HIDDEN
 ;
-;   Read grid.dat
-;
-;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2008-04-22 12:55:54 $
-;  $Revision: 1.16 $
-;
-;  27-nov-02/tony: coded 
-;
-;  
-pro pc_read_grid,object=object, dim=dim, param=param, $
-                 TRIMXYZ=TRIMXYZ, $
-                 datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP, $
-                 SWAP_ENDIAN=SWAP_ENDIAN
-COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
   common pc_precision, zero, one
   common cdat_coords,coord_system
-; If no meaningful parameters are given show some help!
-  IF ( keyword_set(HELP) ) THEN BEGIN
+;
+; Show some help!
+;
+  if (keyword_set(help)) then begin
     print, "Usage: "
     print, ""
     print, "pc_read_grid, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, $                      "
@@ -39,31 +41,34 @@ COMPILE_OPT IDL2,HIDDEN
     print, "    /HELP: display this usage information, and exit                           "
     return
   ENDIF
-
+;
 ; Default data directory
-
+;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
-
-; Get necessary dimensions, inheriting QUIET
-if n_elements(dim) eq 0 then  $
-     pc_read_dim,object=dim,datadir=datadir,proc=proc,QUIET=QUIET 
-if n_elements(param) eq 0 then  $
-     pc_read_param,object=param,datadir=datadir,QUIET=QUIET 
+;
+; Get necessary dimensions.
+;
+if (n_elements(dim) eq 0) then  $
+    pc_read_dim,object=dim,datadir=datadir,proc=proc,QUIET=QUIET 
+if (n_elements(param) eq 0) then  $
+    pc_read_param,object=param,datadir=datadir,QUIET=QUIET 
 
 ncpus=dim.nprocx*dim.nprocy*dim.nprocz
-
+;
 ; Set mx,my,mz in common block for derivative routines
+;
 mx=dim.mx
 my=dim.my
 mz=dim.mz
 lequidist=safe_get_tag(param,'lequidist',default=[1,1,1])
-;set coord_system
+;
+;  Set coordinate system.
+;
 coord_system=param.coord_system
-
-
-; and check pc_precision is set!
-pc_set_precision,dim=dim,QUIET=QUIET
-
+;
+;  Check pc_precision is set!
+;
+pc_set_precision, dim=dim, quiet=quiet
 ;
 ; Initialize / set default returns for ALL variables
 ;
@@ -73,9 +78,10 @@ dx=zero &  dy=zero &  dz=zero
 Lx=zero &  Ly=zero &  Lz=zero 
 dx_1=fltarr(dim.mx)*one & dy_1=fltarr(dim.my)*one & dz_1=fltarr(dim.mz)*one
 dx_tilde=fltarr(dim.mx)*one & dy_tilde=fltarr(dim.my)*one & dz_tilde=fltarr(dim.mz)*one
-
+;
 ; Get a unit number
-GET_LUN, file
+;
+get_lun, file
 
 for i=0,ncpus-1 do begin
   ; Build the full path and filename
@@ -140,95 +146,97 @@ for i=0,ncpus-1 do begin
     message, 'ERROR: cannot find file '+ filename
   endif
 
-  IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' , filename , '...'
+  if (not keyword_set(quiet)) THEN print, 'Reading ' , filename , '...'
 
   openr,file,filename,/F77,SWAP_ENDIAN=SWAP_ENDIAN
     
-  if n_elements(proc) ne 0 then begin
-      readu,file, t,x,y,z
-      readu,file, dx,dy,dz
-      found_Lxyz=0
-      found_grid_der=0
-      ON_IOERROR, missing
-      found_Lxyz=1
-      readu,file, Lx,Ly,Lz
-      readu,file, dx_1,dy_1,dz_1
-      readu,file, dx_tilde,dy_tilde,dz_tilde
+  if (n_elements(proc) ne 0) then begin
+    readu,file, t,x,y,z
+    readu,file, dx,dy,dz
+    found_Lxyz=0
+    found_grid_der=0
+    on_ioerror, missing
+    found_Lxyz=1
+    readu,file, Lx,Ly,Lz
+    readu,file, dx_1,dy_1,dz_1
+    readu,file, dx_tilde,dy_tilde,dz_tilde
   endif else begin
-      readu,file, t,xloc,yloc,zloc
-      x[i0x:i1x] = xloc[i0xloc:i1xloc]
-      y[i0y:i1y] = yloc[i0yloc:i1yloc]
-      z[i0z:i1z] = zloc[i0zloc:i1zloc]
-      
-      readu,file, dx,dy,dz
-      found_Lxyz=0
-      found_grid_der=0
-      ON_IOERROR, missing
-      found_Lxyz=1
-      readu,file, Lx,Ly,Lz
+    readu,file, t,xloc,yloc,zloc
+    x[i0x:i1x] = xloc[i0xloc:i1xloc]
+    y[i0y:i1y] = yloc[i0yloc:i1yloc]
+    z[i0z:i1z] = zloc[i0zloc:i1zloc]
+    
+    readu,file, dx,dy,dz
+    found_Lxyz=0
+    found_grid_der=0
+    on_ioerror, missing
+    found_Lxyz=1
+    readu,file, Lx,Ly,Lz
 
-      readu,file,xloc,yloc,zloc
-      dx_1[i0x:i1x] = xloc[i0xloc:i1xloc]
-      dy_1[i0y:i1y] = yloc[i0yloc:i1yloc]
-      dz_1[i0z:i1z] = zloc[i0zloc:i1zloc]
+    readu,file,xloc,yloc,zloc
+    dx_1[i0x:i1x] = xloc[i0xloc:i1xloc]
+    dy_1[i0y:i1y] = yloc[i0yloc:i1yloc]
+    dz_1[i0z:i1z] = zloc[i0zloc:i1zloc]
 
-      readu,file,xloc,yloc,zloc
-      dx_tilde[i0x:i1x] = xloc[i0xloc:i1xloc]
-      dy_tilde[i0y:i1y] = yloc[i0yloc:i1yloc]
-      dz_tilde[i0z:i1z] = zloc[i0zloc:i1zloc]
+    readu,file,xloc,yloc,zloc
+    dx_tilde[i0x:i1x] = xloc[i0xloc:i1xloc]
+    dy_tilde[i0y:i1y] = yloc[i0yloc:i1yloc]
+    dz_tilde[i0z:i1z] = zloc[i0zloc:i1zloc]
   endelse
   found_grid_der=1    
 
 missing:
-  ON_IOERROR, Null
+  on_ioerror, Null
 
   close,file 
 
 endfor
-FREE_LUN,file
-
-if (keyword_set(TRIMXYZ)) then begin
+;
+;
+;
+free_lun,file
+;
+;  Trim coordinate arrays of ghost zones.
+;
+if (keyword_set(trimxyz)) then begin
   x=x[dim.l1:dim.l2]
   y=y[dim.m1:dim.m2]
   z=z[dim.n1:dim.n2]
 endif
-; Build structure of all the variables
+;
+;  Build structure of all the variables
+;
 if (found_Lxyz and found_grid_der) then begin
-  object = CREATE_STRUCT(name="pc_read_grid_" + $
-                          str((size(x))[1]) + '_' + $
-                          str((size(y))[1]) + '_' + $
-                          str((size(z))[1]), $
-                     ['t','x','y','z','dx','dy','dz', $
-                      'Lx','Ly','Lz', $
-                      'dx_1','dy_1','dz_1', $
-                      'dx_tilde','dy_tilde','dz_tilde'], $
-                       t,x,y,z,dx,dy,dz,Lx,Ly,Lz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde)
+  object = create_struct(name="pc_read_grid_" + $
+      str((size(x))[1]) + '_' + $
+      str((size(y))[1]) + '_' + $
+      str((size(z))[1]), $
+      ['t','x','y','z','dx','dy','dz','Lx','Ly','Lz', $
+       'dx_1','dy_1','dz_1','dx_tilde','dy_tilde','dz_tilde'], $
+      t,x,y,z,dx,dy,dz,Lx,Ly,Lz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde)
 endif else if (found_Lxyz) then begin
-  object = CREATE_STRUCT(name="pc_read_grid_" + $
-                          str((size(x))[1]) + '_' + $
-                          str((size(y))[1]) + '_' + $
-                          str((size(z))[1]), $
-                     ['t','x','y','z','dx','dy','dz', $
-                      'Lx','Ly','Lz'], $
-                       t,x,y,z,dx,dy,dz,Lx,Ly,Lz)
-
+  object = create_struct(name="pc_read_grid_" + $
+      str((size(x))[1]) + '_' + $
+      str((size(y))[1]) + '_' + $
+      str((size(z))[1]), $
+      ['t','x','y','z','dx','dy','dz','Lx','Ly','Lz'], $
+      t,x,y,z,dx,dy,dz,Lx,Ly,Lz)
   dx_1=zero  & dy_1=zero  & dz_1=zero
   dx_tilde=zero & dy_tilde=zero & dz_tilde=zero
 endif else if (found_grid_der) then begin
-  object = CREATE_STRUCT(name="pc_read_grid_" + $
-                          str((size(x))[1]) + '_' + $
-                          str((size(y))[1]) + '_' + $
-                          str((size(z))[1]), $
-                     ['t','x','y','z','dx','dy','dz', $
-                      'dx_1','dy_1','dz_1', $
-                      'dx_tilde','dy_tilde','dz_tilde'], $
-                       t,x,y,z,dx,dy,dz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde)
+  object = create_struct(name="pc_read_grid_" + $
+      str((size(x))[1]) + '_' + $
+      str((size(y))[1]) + '_' + $
+      str((size(z))[1]), $
+      ['t','x','y','z','dx','dy','dz','dx_1','dy_1','dz_1', $
+       'dx_tilde','dy_tilde','dz_tilde'], $
+      t,x,y,z,dx,dy,dz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde)
 endif
-
-
+;
 ; If requested print a summary
+;
 fmt = '(A,4G15.6)'
-if keyword_set(PRINT) then begin
+if (keyword_set(print)) then begin
   if n_elements(proc) eq 0 then begin
     print, FORMAT='(A,I2,A)', 'For all processors calculation domain:'
   endif else begin
@@ -240,7 +248,5 @@ if keyword_set(PRINT) then begin
   print, 'min(z), max(z) = ',min(z),', ',max(z)
   print, '    dx, dy, dz = ' , dx , ', ' , dy , ', ' , dz
 endif
-
+;
 end
-
-
