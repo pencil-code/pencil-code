@@ -67,7 +67,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.73 2008-06-12 07:11:09 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.74 2008-06-12 13:25:18 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -162,7 +162,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Call pc_read_grid to make sure any derivative stuff is correctly set in the
 ; common block. Don't need the data for anything though.
 ;
-  pc_read_grid, dim=dim, datadir=datadir, param=param, /quiet, $
+  pc_read_grid, dim=dim, proc=proc, datadir=datadir, param=param, /quiet, $
       swap_endian=swap_endian
 ;
 ; Read problem dimensions (global)...
@@ -265,7 +265,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   if (keyword_set(magic)) then $
       pc_magic_var, variables, tags, $
-      param=param, global_names=global_names, datadir=datadir, quiet=quiet
+      param=param, par2=par2, global_names=global_names, $
+      datadir=datadir, quiet=quiet
 ;
 ; Get a free unit number
 ;

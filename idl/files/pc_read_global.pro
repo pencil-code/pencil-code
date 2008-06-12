@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_read_global.pro,v 1.13 2008-06-12 11:33:34 ajohan Exp $
+;  $Id: pc_read_global.pro,v 1.14 2008-06-12 13:24:56 ajohan Exp $
 ;
 ;  Same as pc_read_var, but for global variables.
 ;
@@ -55,7 +55,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Call pc_read_grid to make sure any derivative stuff is correctly set in the
 ; common block. Don't need the data for anything though.
 ;
-  pc_read_grid, dim=dim, datadir=datadir, param=param, /quiet,swap_endian=swap_endian
+  pc_read_grid, dim=dim, datadir=datadir, param=param, proc=proc, /quiet,swap_endian=swap_endian
 ;
 ; Read problem dimensions (global)...
 ;
