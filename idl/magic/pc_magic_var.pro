@@ -1,7 +1,7 @@
 ;
-;  $Id: pc_magic_var.pro,v 1.47 2008-05-11 10:33:52 ajohan Exp $
-;  $Date: 2008-05-11 10:33:52 $
-;  $Revision: 1.47 $
+;  $Id: pc_magic_var.pro,v 1.48 2008-06-12 07:24:57 ajohan Exp $
+;  $Date: 2008-06-12 07:24:57 $
+;  $Revision: 1.48 $
 ;
 pro pc_magic_var_dep, variables, tags, var, dep
 ;
@@ -108,7 +108,8 @@ end
 ;    argpsi  -> atan(imag(psi),real(psi))
 ;
 pro pc_magic_var, variables, tags, $
-    param=param, datadir=datadir, global_names=global_names, quiet=quiet
+    param=param, par2=par2, $
+    datadir=datadir, global_names=global_names, quiet=quiet
 ;
 ;  Default values.
 ;
@@ -117,6 +118,8 @@ pro pc_magic_var, variables, tags, $
   if (not keyword_set(datadir)) then datadir='data'
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, datadir=datadir, /quiet
+  if (n_elements(par2) eq 0) then $
+      pc_read_param, object=par2, /param2, datadir=datadir, /quiet
 ;
 ;  Add global values if requested (e.g. external magnetic field to bb).
 ;
@@ -149,6 +152,8 @@ pro pc_magic_var, variables, tags, $
   pc_magic_var_dep, variables, tags, 'compb', 'bb'
   pc_magic_var_dep, variables, tags, 'divadvu', 'uu'
   pc_magic_var_dep, variables, tags, 'divadvu', 'uij'
+  pc_magic_var_dep, variables, tags, 'fvisc', 'uij'
+  pc_magic_var_dep, variables, tags, 'fresi', 'bb'
 ;
 ;  Modules.
 ;
@@ -262,9 +267,9 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'alflim') then begin
       tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='(1+((total(bb^2,4)/(param.mu0*lnrho))/param2.va2max_jxb)^param2.va2power_jxb)^(-1./param2.va2power_jxb)'
+        variables[iv]='(1+((total(bb^2,4)/(param.mu0*lnrho))/par2.va2max_jxb)^par2.va2power_jxb)^(-1./par2.va2power_jxb)'
       endif else begin
-        variables[iv]='(1+((total(bb^2,4)/(param.mu0*exp(lnrho)))/param2.va2max_jxb)^param2.va2power_jxb)^(-1./param2.va2power_jxb)'
+        variables[iv]='(1+((total(bb^2,4)/(param.mu0*exp(lnrho)))/par2.va2max_jxb)^par2.va2power_jxb)^(-1./par2.va2power_jxb)'
       endelse
 ; EMF
     endif else if (variables[iv] eq 'emf') then begin
@@ -488,7 +493,47 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'argpsi') then begin
       tags[iv]=variables[iv]
       variables[iv]="atan(psi_imag,psi_real)"
-    endif
+; Viscosity.
+    endif else if (variables[iv] eq 'fvisc') then begin
+      tags[iv]=variables[iv]
+      if (par2.ivisc[0] eq 'simplified') then begin
+        variables[iv]='par2.nu*del2(uu)'
+      endif else if (par2.ivisc[0] eq 'rho_nu-const') then begin
+        if (param.ldensity_nolog) then begin
+          variables[iv]='par2.nu/spread(lnrho,3,3)*(del2(uu)+1/3.*graddiv(uu))'
+        endif else begin
+          variables[iv]='par2.nu/spread(exp(lnrho),3,3)*(del2(uu)+1/3.*graddiv(uu))'
+        endelse
+      endif else if (par2.ivisc[0] eq 'nu-const') then begin
+        if (param.ldensity_nolog) then begin
+          variables[iv]='2*par2.nu*total((uij+transpose(uij,[0,1,2,4,3]))*spread(grad(alog(lnrho)),4,3),5)+par2.nu*(del2(uu)+1/3.*graddiv(uu))'
+        endif else  begin
+          variables[iv]='2*par2.nu*total((uij+transpose(uij,[0,1,2,4,3]))*spread(grad(lnrho),4,3),5)+par2.nu*(del2(uu)+1/3.*graddiv(uu))'
+        endelse
+      endif else if (par2.ivisc[0] eq 'hyper3_simplified') then begin
+        variables[iv]='del6(uu)'
+      endif else if (par2.ivisc[0] eq 'hyper3_rho_nu-const') then begin
+        if (param.ldensity_nolog) then begin
+          variables[iv]='1/spread(lnrho,3,3)*del6(uu)'
+        endif else begin
+          variables[iv]='1/spread(exp(lnrho),3,3)*del6(uu)'
+        endelse
+      endif else begin
+        print, 'pc_magic_var: unknown viscosity type ivisc=', par2.ivisc[0]
+        variables[iv]='fltarr(mx,my,mz,3)'
+      endelse
+; Resistivity.
+    endif else if (variables[iv] eq 'fresi') then begin
+      tags[iv]=variables[iv]
+      if (par2.iresistivity[0] eq 'eta-const') then begin
+        variables[iv]='par2.eta*del2(bb)'
+      endif else if (par2.iresistivity[0] eq 'hyper3') then begin
+        variables[iv]='par2.eta_hyper3*del6(bb)'
+      endif else begin
+        print, 'pc_magic_var: unknown resistivity type ivisc=', par2.iresistivity[0]
+        variables[iv]='fltarr(mx,my,mz,3)'
+      endelse
+    endif 
   endfor
 ;
 end
