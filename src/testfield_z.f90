@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.46 2008-06-11 09:42:21 brandenb Exp $
+! $Id: testfield_z.f90,v 1.47 2008-06-12 13:55:23 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -124,12 +124,12 @@ module Testfield
   integer :: idiag_Ex21pt=0     ! DIAG_DOC: ${\cal E}_x^{21}$
   integer :: idiag_Ex12pt=0     ! DIAG_DOC: ${\cal E}_x^{12}$
   integer :: idiag_Ex22pt=0     ! DIAG_DOC: ${\cal E}_x^{22}$
-  integer :: idiag_Ex0pt=0      ! DIAG_DOC: ${\cal E}_x^{0}^$
+  integer :: idiag_Ex0pt=0      ! DIAG_DOC: ${\cal E}_x^{0}$
   integer :: idiag_Ey11pt=0     ! DIAG_DOC: ${\cal E}_y^{11}$
   integer :: idiag_Ey21pt=0     ! DIAG_DOC: ${\cal E}_y^{21}$
   integer :: idiag_Ey12pt=0     ! DIAG_DOC: ${\cal E}_y^{12}$
   integer :: idiag_Ey22pt=0     ! DIAG_DOC: ${\cal E}_y^{22}$
-  integer :: idiag_Ey0pt=0      ! DIAG_DOC: ${\cal E}_y^{0}^$
+  integer :: idiag_Ey0pt=0      ! DIAG_DOC: ${\cal E}_y^{0}$
   integer :: idiag_E111z=0      ! DIAG_DOC: ${\cal E}_1^{11}$
   integer :: idiag_E211z=0      ! DIAG_DOC: ${\cal E}_2^{11}$
   integer :: idiag_E311z=0      ! DIAG_DOC: ${\cal E}_3^{11}$
@@ -203,7 +203,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.46 2008-06-11 09:42:21 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.47 2008-06-12 13:55:23 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
