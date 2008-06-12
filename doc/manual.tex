@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.org)
-%%  CVS: $Id: manual.tex,v 1.393 2008-06-12 13:38:41 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.394 2008-06-12 13:54:31 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2008-06-12 13:38:41 $ $,~ $ $Revision: 1.393 $ $}
+%\date{$ $Date: 2008-06-12 13:54:31 $ $,~ $ $Revision: 1.394 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2008-06-12 13:38:41 $ $,~ $ $Revision: 1.393 $ $}\\
+  \emph{$ $Date: 2008-06-12 13:54:31 $ $,~ $ $Revision: 1.394 $ $}\\
   \url{http://www.nordita.org/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -4514,7 +4514,7 @@ the mesh using either NGP, CIC or TSC assignment. The same scheme is used both
 for interpolation and for assignment to avoid any risk of a particle
 accelerating itself (see Hockney \& Eastwood 1981).
 
-\subsubsection{Testfield equations}
+\subsection{Testfield equations}
 \index{Testfield method}
 
 The testfield method is used to calculate turbulent transport coefficients
@@ -5925,7 +5925,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2008-06-12 13:38:41 $ $,~ $ $Revision: 1.393 $ $}
+  \hfill\normalsize\rm$ $Date: 2008-06-12 13:54:31 $ $,~ $ $Revision: 1.394 $ $}
 
 \section{Timings}
 
@@ -7120,7 +7120,7 @@ Go into data directory of the new run and prepare the directory tree
 using, e.g., the command \cmd{ pc_mkproctree 16}. [In principle this
 could be automatized, but it isn't yet.]
 
-Next, go into old run directory and say \cms{restart-new-dir ../32c},
+Next, go into old run directory and say \cmd{restart-new-dir ../32c},
 if \file{../32c} is the name of the new run directory.
 This procedure copies all the files from the processor tree, plus
 files like \file{param.nml}, but this file may need some manual
@@ -7184,6 +7184,8 @@ like this:
 \end{alltt}
 because otherwise you won't read in your precious testfield data next
 time you restart the code!
+
+\end{enumerate}
 
 % ====================================================================== %
 
@@ -9543,7 +9545,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.393 2008-06-12 13:38:41 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.394 2008-06-12 13:54:31 brandenb Exp $ $}
 
 
 \end{document}
