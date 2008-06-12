@@ -67,7 +67,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.72 2008-06-10 18:01:18 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.73 2008-06-12 07:11:09 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -143,7 +143,7 @@ COMPILE_OPT IDL2,HIDDEN
   if (n_elements(par2) eq 0 and magic) then begin
     spawn, 'ls '+datadir+'/param2.nml', dummy, exit_status=exit_status
     if (exit_status eq 0) then begin
-      pc_read_param, object=param2, /param2, dim=dim, datadir=datadir, /quiet
+      pc_read_param, object=par2, /param2, dim=dim, datadir=datadir, /quiet
     endif else begin
       print, 'Could not find '+datadir+'/param2. This may give problems with'+ $
           ' magic variables.'
@@ -162,7 +162,8 @@ COMPILE_OPT IDL2,HIDDEN
 ; Call pc_read_grid to make sure any derivative stuff is correctly set in the
 ; common block. Don't need the data for anything though.
 ;
-  pc_read_grid, dim=dim, datadir=datadir, param=param, /quiet,swap_endian=swap_endian
+  pc_read_grid, dim=dim, datadir=datadir, param=param, /quiet, $
+      swap_endian=swap_endian
 ;
 ; Read problem dimensions (global)...
 ;
