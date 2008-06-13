@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.412 2008-06-10 05:49:47 ajohan Exp $
+### $Id: Makefile.src,v 1.413 2008-06-13 09:16:09 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -253,8 +253,10 @@ LD_FFTW2=
 #LD_MPI=-l pthread -L /home/johansen/local/mpich2/lib -lmpich #(aida69)
 #FC=mpif90 #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*|milipeia|goose)
 #FC=f90 #(p5120)
+#F77=fort77 #(p5120)
 #FFLAGS=-O3 -I/opt/ibmhpc/ppe.poe/include/thread64 #(p5120)
 #LD_MPI=-L /opt/ibmhpc/ppe.poe/lib/libmpi64/ -lpoe -lmpi_ibm -L /opt/ibmhpc/lapi/lib/lapi64 -llapi  #(p5120)
+#FFLAGS_DOUBLE=-qrealsize=8 #(p5120)
 #FFLAGS=-O3 -L /usr/include/#(goose)
 #FC=g95 #(dintel)
 #FFLAGS=-O3 -I /home/ajohan/local/openmpi/include/ #(dintel)
