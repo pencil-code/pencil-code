@@ -1,4 +1,4 @@
-! $Id: noparticles_stalker.f90,v 1.2 2007-11-14 23:01:42 dobler Exp $
+! $Id: noparticles_stalker.f90,v 1.3 2008-06-13 09:13:17 ajohan Exp $
 !
 !  This module writes information about the local state of the gas at
 !  the positions of a selected number of particles.
@@ -8,9 +8,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lparticles_stalker=.true.
-!
-! MSCRATCH CONTRIBUTION 1
+! CPARAM logical, parameter :: lparticles_stalker=.false.
 !
 !***************************************************************
 module Particles_stalker
