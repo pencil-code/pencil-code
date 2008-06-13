@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.92 2008-06-05 10:17:11 brandenb Exp $
+! $Id: nohydro.f90,v 1.93 2008-06-13 23:45:56 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -75,7 +75,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.92 2008-06-05 10:17:11 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.93 2008-06-13 23:45:56 brandenb Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -383,8 +383,8 @@ module Hydro
         if (t.gt.tphase_kinflow) then
           call random_number_wrapper(fran1)
           tphase_kinflow=t+dtphase_kinflow
-          phase1=pi*(2*fran1(1)-1.)
-          phase2=pi*(2*fran1(2)-1.)
+          phase1=eps_kinflow*pi*(2*fran1(1)-1.)
+          phase2=eps_kinflow*pi*(2*fran1(2)-1.)
         endif
         p%uu(:,1)=-fac*sin(kky_aa*y(m)    +phase1)*kky_aa
         p%uu(:,2)=+fac*sin(kkx_aa*x(l1:l2)+phase2)*kkx_aa

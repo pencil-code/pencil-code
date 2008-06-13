@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.47 2008-06-12 13:55:23 brandenb Exp $
+! $Id: testfield_z.f90,v 1.48 2008-06-13 23:45:56 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -61,7 +61,7 @@ module Testfield
   real :: ktestfield=1., ktestfield1=1.
   integer, parameter :: mtestfield=3*njtest
   integer :: naainit
-  real :: bamp=1.
+  real :: bamp=1.,bamp1=1.
   namelist /testfield_init_pars/ &
        B_ext,zextent,initaatest, &
        amplaatest,kx_aatest,ky_aatest,kz_aatest, &
@@ -203,7 +203,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.47 2008-06-12 13:55:23 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.48 2008-06-13 23:45:56 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -279,6 +279,14 @@ module Testfield
         ktestfield1=1.
       else
         ktestfield1=1./ktestfield
+      endif
+!
+!  calculate inverse testfield amplitude (unless it is set to zero)
+!
+      if (bamp==0.) then
+        bamp1=1.
+      else
+        bamp1=1./bamp
       endif
 !
 !  calculate iE0
@@ -657,7 +665,7 @@ module Testfield
           call cross_mn(p%uu,bbtest,uxbtest)
         endif
         bpq(:,:,jtest)=bbtest
-        Eipq(:,:,jtest)=uxbtest/bamp
+        Eipq(:,:,jtest)=uxbtest*bamp1
       enddo
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
