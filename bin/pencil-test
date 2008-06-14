@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2008-06-14 00:08:30 $
-# $Revision: 1.36 $
+# $Date: 2008-06-14 22:12:02 $
+# $Revision: 1.37 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -88,7 +88,7 @@ GetOptions(\%opts,
 	            --tag-stable=s
 	            --tag-broken=s
 	       )) or die "$!\n";
-die '$Id: pencil-test,v 1.36 2008-06-14 00:08:30 dobler Exp $ ' . "\n"
+die '$Id: pencil-test,v 1.37 2008-06-14 22:12:02 dobler Exp $ ' . "\n"
             if    ($opts{'v'} || $opts{'version'});
 die usage() if    ($opts{'h'} || $opts{'help'}        || @ARGV < 1);
 my $debug       = (              $opts{'debug'}       || 0 );
@@ -173,15 +173,22 @@ foreach my $host (@ARGV) {
 
     if ($debug) { print STDERR "open(POUT, \"@cmd '$remcmd' |\")\n" };
     open(POUT, "@cmd '$remcmd' |");
+    if ($timingsfile ne '') {
+        open(TIMINGS, ">> $timingsfile")
+          or warn "Couldn't open $timingsfile for writing\n";
+    }
     my ($line,$timings,$result);
     while (defined($line=<POUT>)) {
         if ($line =~ /^#TIMING\s+(.*)/) {
             print "<$line>\n" if ($debug);
-            $timings .= "$1\n";
+            print TIMINGS "$1\n";
             next;
         }
 	print $line;
 	$result .= $line;
+    }
+    if ($timingsfile ne '') {
+        close TIMINGS;
     }
     close(POUT);
 
@@ -191,9 +198,6 @@ foreach my $host (@ARGV) {
 
     # Send emails if necessary
     notify_on_error($result,$shost);
-
-    # Record timings if requested
-    write_timings($timings, $timingsfile);
 
    $first = 0;
 }
@@ -341,7 +345,6 @@ sub write_timings {
     my ($timings, $file) = @_;
 
     if (defined $timings) {
-        open(TIMINGS, ">> $file") or warn "Couldn't open $file for writing\n";
         print TIMINGS $timings;
         close(TIMINGS);
     }
