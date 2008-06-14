@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.55 2008-04-28 09:47:29 ajohan Exp $
+! $Id: nodensity.f90,v 1.56 2008-06-14 13:20:33 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.55 2008-04-28 09:47:29 ajohan Exp $")
+           "$Id: nodensity.f90,v 1.56 2008-06-14 13:20:33 dobler Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -170,7 +170,7 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (NO_WARN) print*, f(1,1,1,1)
+      call keep_compiler_quiet(f)
 !
     endsubroutine density_before_boundary
 !***********************************************************************
@@ -195,7 +195,7 @@ module Density
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (present(iostat)) call keep_compiler_quiet(iostat)
       call keep_compiler_quiet(unit)
 !
     endsubroutine read_density_init_pars
@@ -211,7 +211,7 @@ module Density
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (present(iostat)) call keep_compiler_quiet(iostat)
       call keep_compiler_quiet(unit)
 !
     endsubroutine read_density_run_pars
