@@ -1,6 +1,6 @@
 #!/bin/sh
 # -*-perl-*-
-#======================================================================#
+# ====================================================================== #
 # Run the right perl version:
 if [ -x /usr/local/bin/perl ]; then
   perl=/usr/local/bin/perl
@@ -11,39 +11,42 @@ else
 fi
 
 exec $perl -x -S $0 "$@"     # -x: start from the following line
-#======================================================================#
+# ====================================================================== #
 #! /Good_Path/perl -w
 # line 17
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2008-05-09 09:55:06 $
-# $Revision: 1.35 $
+# $Date: 2008-06-14 00:08:30 $
+# $Revision: 1.36 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
 # Usage:
-#   pencil-test [-H] [-u] [-c] [-m <emaillist>] host1 [host2 [host3 ..]]
+#   pencil-test [options] host1 [host2 [host3 ..]]
 # Options:
-#   -h, --help             -- Help
-#   -H, --html             -- Write output as elementary HTML (mostly <pre>)
-#   -u, --update           -- `cvs update' before compiling
-#   -U, --up-d-samples     -- `cvs update; cvs update -d samples'
-#                              before compiling
-#   -c, --clean            -- `make cleann' before compiling
-#   -r, --reload           -- Keep reloading parameters (using KEEP_RELOADING)
-#   -s, --short            -- Print short directory names only
-#   -D <DIR>, --pencil-home=<DIR>
-#                          -- set PENCIL_HOME directory to DIR
-#   -N <N>, --nice=<N>     -- Run tests with nice value of <N>
+#   -h, --help                -- Help
+#   -H, --html                -- Write output as elementary HTML (mostly <pre>)
+#   -X, --xml                 -- Write output as XML
+#   -u, --update              -- `cvs update' before compiling
+#   -U, --up-d-samples        -- `cvs update; cvs update -d samples'
+#                                before compiling
+#   -r, --reload              -- Do `touch RELOAD' after every time step
+#   -s, --short               -- Use short directory names
+#   -c, --clean               -- `make cleann' before compiling
+#   -D <DIR>,
+#       --pencil-home=<DIR>   -- set PENCIL_HOME directory to DIR
+#   -N <N>, --nice=<N>        -- Run tests with nice value of <N>
 #   -i <file>,
-#       --infofile=<file>  -- After last test, print content of <file>
-#   -p <PP>,
-#       --postproc=<PP>    -- Use postprocessor <PP> for output from make
+#       --infofile=<file>     -- After last test, print content of <file>
 #   -m <emaillist>,
-#       --mail=<emaillist> -- Specify who to send mail to if tests fail
+#       --mail=<emaillist>    -- Specify who to send mail to if tests fail
 #   -M <mailer>,
-#      --Mailer=<mailer>   -- Specify e-mail program to use
+#      --Mailer=<mailer>      -- Specify e-mail program to use
+#   -p <PP>,
+#       --postproc=<PP>       -- Use postprocessor <PP> for output from make
+#   -T <file>,
+#       --timings-file=<file> -- Use postprocessor <PP> for output from make
 # Email list syntax:
 #   -m '{-:fluxrings},defaulty@any.where,nosy@some.where{+:fluxrings,+:rad1},ignorant@else.where{-:hydro.*}'
 #   will not send mail if `interlocked-fluxrings' fails -- except for Nosy
@@ -81,12 +84,13 @@ GetOptions(\%opts,
 	       -m=s --mail=s
 	       -M=s --Mailer=s
 	       -p=s --postproc=s
+               -T=s --timings-file=s
 	            --tag-stable=s
 	            --tag-broken=s
 	       )) or die "$!\n";
-die '$Id: pencil-test,v 1.35 2008-05-09 09:55:06 dobler Exp $ ' . "\n"
+die '$Id: pencil-test,v 1.36 2008-06-14 00:08:30 dobler Exp $ ' . "\n"
             if    ($opts{'v'} || $opts{'version'});
-die usage() if    ($opts{'h'} || $opts{'help'}     || @ARGV < 1);
+die usage() if    ($opts{'h'} || $opts{'help'}        || @ARGV < 1);
 my $debug       = (              $opts{'debug'}       || 0 );
 my $html        = ($opts{'H'} || $opts{'html'}        || 0 );
 my $clean       = ($opts{'c'} || $opts{'clean'}       || 0 );
@@ -103,6 +107,7 @@ if ($UPDATE) { $update=1 };
 my $emails      = ($opts{'m'} || $opts{'mail'}        || '');
 my $mailer      = ($opts{'M'} || $opts{'Mailer'}      || '');
 my $postproc    = ($opts{'p'} || $opts{'postproc'}    || '');
+my $timingsfile = ($opts{'T'} || $opts{'timings-file'}|| '');
 my $with_xml    = ($opts{'x'} || $opts{'xml'}         || '');
 
 my $blurb =
@@ -152,35 +157,43 @@ foreach my $host (@ARGV) {
     # Construct and execute remote command
     my @cmd = ("ssh", "-x", "-n", "$host");
     my $remcmd = "cd $pencil_home";
-    if ($update)         { $remcmd .= "; cvs update >& /dev/null" };
-    if ($UPDATE)         { $remcmd .=
-                             "; cvs update -d samples bin >& /dev/null"
-                         };
+    if ($update)            { $remcmd .= "; cvs update >& /dev/null" };
+    if ($UPDATE)            { $remcmd .=
+                                "; cvs update -d samples bin >& /dev/null"
+                            };
     $remcmd .= "; env PENCIL_HOME=$pencil_home ./bin/auto-test -t";
-    if ($with_xml)       { $remcmd .= " --xml" };
-    if ($clean)          { $remcmd .= " --clean" };
-    if ($reload)         { $remcmd .= " --reload" };
-    if ($short)          { $remcmd .= " --short" };
-    if ($nice)           { $remcmd .= " --nice=$nice" };
-    if ($infofile ne '') { $remcmd .= " --infofile=$infofile" };
-    if ($postproc)       { $remcmd .= " --postproc=\"$postproc\"" };
-#    push @cmd, $remcmd;
-#    system("@cmd |");
-    if ($debug) { print STDERR "open(POUT, \"@cmd '$remcmd' |\"\n" };
+    if ($with_xml)          { $remcmd .= " --xml" };
+    if ($clean)             { $remcmd .= " --clean" };
+    if ($reload)            { $remcmd .= " --reload" };
+    if ($short)             { $remcmd .= " --short" };
+    if ($nice)              { $remcmd .= " --nice=$nice" };
+    if ($infofile ne '')    { $remcmd .= " --infofile=$infofile" };
+    if ($postproc)          { $remcmd .= " --postproc=\"$postproc\"" };
+    if ($timingsfile ne '') { $remcmd .= " --summarize-times" };
+
+    if ($debug) { print STDERR "open(POUT, \"@cmd '$remcmd' |\")\n" };
     open(POUT, "@cmd '$remcmd' |");
-#    print "<",join("> <",@cmd,">\n");
-#    print "<@cmd'>\n");
-    my ($line,$result);
+    my ($line,$timings,$result);
     while (defined($line=<POUT>)) {
+        if ($line =~ /^#TIMING\s+(.*)/) {
+            print "<$line>\n" if ($debug);
+            $timings .= "$1\n";
+            next;
+        }
 	print $line;
 	$result .= $line;
     }
     close(POUT);
+
     # Put tag on files if auto-test breaks
     tag_breakage_on_error($result,$host) if ($tag_broken);
     tag_stable_on_success($result,$host) if ($tag_stable);
+
     # Send emails if necessary
     notify_on_error($result,$shost);
+
+    # Record timings if requested
+    write_timings($timings, $timingsfile);
 
    $first = 0;
 }
@@ -259,7 +272,7 @@ sub tag_breakage_on_error{
     }
 }
 # ---------------------------------------------------------------------- #
-sub notify_on_error{
+sub notify_on_error {
 ## Check for errors and send emails
     my $result = (shift || '');
     my $host   = (shift || '');
@@ -322,6 +335,18 @@ sub notify_on_error{
         send_mail($address,$mailer,$host,$nerrors,$blurb,$summary,$main);
     }
 }
+# ---------------------------------------------------------------------- #
+sub write_timings {
+## Append timing results to file
+    my ($timings, $file) = @_;
+
+    if (defined $timings) {
+        open(TIMINGS, ">> $file") or warn "Couldn't open $file for writing\n";
+        print TIMINGS $timings;
+        close(TIMINGS);
+    }
+}
+
 # ---------------------------------------------------------------------- #
 sub parse_emails {
 # Parse the email list into hashes
