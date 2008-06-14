@@ -12,3 +12,4 @@ mpicomm_double.f90
 mpicomm_double_.f90
 .buildinfo
 .buildtime
+.current-precision
