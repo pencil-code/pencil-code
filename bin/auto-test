@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.101 2008-06-14 00:08:30 dobler Exp $
+# CVS: $Id: auto-test,v 1.102 2008-06-14 21:37:49 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -105,7 +105,7 @@ my (%opts);			# variables written by GetOptions
 (my $cmdname = $0) =~ s{.*/}{};
 my $help  = 0;
 my $itest = 1;
-my $indi_fmt = '%-17s';         # allow that much space for indicators like
+my $indi_fmt = '%-17s';        # allow that much space for indicators like
                                # `[double]' or `[KEEP_RELOADING]'
 
 my $usage =
@@ -188,7 +188,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.101 2008-06-14 00:08:30 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.102 2008-06-14 21:37:49 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -971,7 +971,7 @@ sub test_rundir {
     # Write timings in greppable form
     if (%time_summary) {
         record_time('total', time_diff($t0,$t3));
-        for my $phase qw( starting running total ) {
+        for my $phase qw( compilation starting running total ) {
             write_timing_summary($dir, $phase, \%time_summary);
         }
     }
@@ -983,7 +983,7 @@ sub write_timing_summary {
 
     my $time = $summary_ref->{$phase};
     if (defined($phase) && defined($time)) {
-        printf "%s %-45s %-10s %12.1f %7.3f\n",
+        printf "%s %-45s %-12s %12.1f %7.3f\n",
           "#TIMING ", compactify(quote($dir)), ($phase), time_stamp(), $time;
     }
 }
