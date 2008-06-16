@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.106 2008-06-04 14:40:53 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.107 2008-06-16 18:51:56 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -77,6 +77,7 @@ module Chemistry
   integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
   integer, dimension(7) :: iaa1,iaa2
   real, allocatable, dimension(:)  :: B_n, alpha_n, E_an
+  real, allocatable, dimension(:,:) :: low_coeff,troe_coeff
   real, dimension(nchemspec,7)     :: tran_data
   real, dimension (nx,nchemspec), SAVE  :: S0_R
   real, dimension (mx,my,mz,nchemspec), SAVE :: H0_RT
@@ -192,11 +193,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.106 2008-06-04 14:40:53 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.107 2008-06-16 18:51:56 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.106 2008-06-04 14:40:53 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.107 2008-06-16 18:51:56 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1026,6 +1027,13 @@ module Chemistry
       allocate(E_an(mreactions),STAT=stat)
       if (stat>0) call stop_it("Couldn't allocate memory for E_an")
  
+      allocate(low_coeff(3,mreactions),STAT=stat)
+      low_coeff=0.
+      if (stat>0) call stop_it("Couldn't allocate memory for low_coeff")
+      allocate(troe_coeff(3,mreactions),STAT=stat)
+      troe_coeff=0.
+      if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
+
 !
 !  Initialize data
 !
@@ -1744,12 +1752,11 @@ module Chemistry
       !
       logical :: IsReaction=.false.,LastSpecie
       integer, optional :: NrOfReactions
-      integer :: k,file_id=123, StartInd, StopInd, StopIndName
-      integer :: VarNumber, SeparatorInd, StartSpecie,stoi, PlusInd
+      integer :: i,k,file_id=123, StartInd, StopInd, StartInd_add, StopInd_add, StopInd_add_,StopIndName
+      integer :: VarNumber, VarNumber_add, SeparatorInd, StartSpecie,stoi, PlusInd
       integer :: LastLeftCharacter,ParanthesisInd
-      character (len=80) :: ChemInpLine
+      character (len=80) :: ChemInpLine, ChemInpLine_add
       character (len=*) :: input_file
-      !
 
       if (present(NrOfReactions)) NrOfReactions=0
 
@@ -1808,12 +1815,79 @@ module Chemistry
                   LastLeftCharacter=min(ParanthesisInd,SeparatorInd)-1
 
 !
-!  reading of the additional data for (+M) case 
-!
+!  reading of the additional data for (+M) case
 
-    ! read(file_id,'(80A)',end=1012) ChemInpLine(1:80)
-
-   !  print*,'Natalia',ParanthesisInd,LastLeftCharacter,ChemInpLine(1:80)
+  100            read(file_id,'(80A)',end=1012) ChemInpLine_add(1:80)
+                 if (ChemInpLine_add(1:1) == ' ') then
+                    i=1
+                    do while (i<80)
+                     if (ChemInpLine_add(i:i)==' ') then
+                      i=i+1
+                     elseif (ChemInpLine_add(i:i+2)=='LOW') then
+                       print*,ChemInpLine_add(i:i+2),'   coefficients for reaction ', reaction_name(k),'number ', k 
+                      VarNumber_add=1; StartInd_add=i+4; StopInd_add=i+4
+                       do while (VarNumber_add<4)
+                        StopInd_add=index(ChemInpLine_add(StartInd_add:),' ')+StartInd_add-2
+                        StopInd_add_=index(ChemInpLine_add(StartInd_add:),'/')+StartInd_add-2
+                        StopInd_add=min(StopInd_add,StopInd_add_)
+                        if (StopInd_add==StartInd_add) then
+                         StartInd_add=StartInd_add+1
+                        else
+                         if (VarNumber_add==1) then
+                          read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') low_coeff(1,k)
+                          print*,low_coeff(1,k)
+                         elseif (VarNumber_add==2) then
+                          read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') low_coeff(2,k)
+                          print*,low_coeff(2,k)
+                         elseif (VarNumber_add==3) then
+                          read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') low_coeff(3,k)
+                          print*,low_coeff(3,k)
+                       else
+                         call stop_it("No such VarNumber!")
+                       endif
+                     endif
+                     VarNumber_add=VarNumber_add+1
+                   !   StartInd_add=StopInd_add
+                      StartInd_add=verify(ChemInpLine_add(StopInd_add+1:),' ')+StopInd_add
+                      StopInd_add=StartInd_add
+                    enddo
+                     i=80
+                    elseif (ChemInpLine_add(i:i+3)=='TROE') then
+                      print*,ChemInpLine_add(i:i+3),'   coefficients for reaction ', reaction_name(k),'number ', k 
+                      VarNumber_add=1; StartInd_add=i+5; StopInd_add=i+5
+                       do while (VarNumber_add<4)
+                        StopInd_add=index(ChemInpLine_add(StartInd_add:),' ')+StartInd_add-2
+                        StopInd_add_=index(ChemInpLine_add(StartInd_add:),'/')+StartInd_add-2
+                        StopInd_add=min(StopInd_add,StopInd_add_)
+                        if (StopInd_add==StartInd_add) then
+                         StartInd_add=StartInd_add+1
+                        else
+                         if (VarNumber_add==1) then
+                          read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') troe_coeff(1,k)
+                          print*,troe_coeff(1,k)
+                         elseif (VarNumber_add==2) then
+                          read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') troe_coeff(2,k)
+                          print*,troe_coeff(2,k)
+                         elseif (VarNumber_add==3) then
+                          read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') troe_coeff(3,k)
+                          print*,troe_coeff(3,k)
+                       else
+                         call stop_it("No such VarNumber!")
+                       endif
+                     endif
+                     VarNumber_add=VarNumber_add+1
+                   !   StartInd_add=StopInd_add
+                      StartInd_add=verify(ChemInpLine_add(StopInd_add+1:),' ')+StopInd_add
+                      StopInd_add=StartInd_add
+                    enddo
+                     i=80
+                    else 
+                     print*,'Natalia',i,ChemInpLine_add(i:i)
+                     i=80
+                    endif
+                    enddo
+                    goto 100
+                 endif
 
 
                 else
@@ -1842,9 +1916,9 @@ module Chemistry
                 ParanthesisInd=index(ChemInpLine(StartInd:),'(+M)')+StartInd-1
 
 
-
                 if (ParanthesisInd>StartInd) then
                   LastLeftCharacter=min(ParanthesisInd,SeparatorInd)-1
+
                 else
                   LastLeftCharacter=SeparatorInd-1
                 endif
