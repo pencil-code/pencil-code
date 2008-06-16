@@ -1,4 +1,4 @@
-# $Id: der_6th_order_w_ghosts.py,v 1.1 2007-11-19 14:29:08 joishi Exp $
+# $Id: der_6th_order_w_ghosts.py,v 1.2 2008-06-16 08:33:07 tgastine Exp $
 #
 #
 # calculate 6th order spatial derivatives with ghost zones assumed to be in the arrays
@@ -21,7 +21,7 @@ def xder_6th(f,dx):
         raise ValueError
 
     dx2 = 1./(60.*dx)
-    dfdx = N.zeros(f.shape)
+    dfdx = N.zeros_like(f)
     l1 = 3
     l2 = f.shape[-1]-3
     if (l2 > l1):
@@ -39,7 +39,7 @@ def yder_6th(f,dy):
         raise ValueError
 
     dy2 = 1./(60.*dy)
-    dfdy = N.zeros(f.shape)
+    dfdy = N.zeros_like(f)
     m1 = 3
     m2 = f.shape[-2]-3
 
@@ -59,16 +59,15 @@ def zder_6th(f,dz):
         raise ValueError
 
     dz2 = 1./(60.*dz)
-    dfdz = N.zeros(f.shape)
+    dfdz = N.zeros_like(f)
     n1 = 3
-    n2 = f.shape[-3]-3
+    n2 = f.shape[1]-3
     if (n2 > n1):
-        dfdz[...,n1:n2,:,:] = dz2*( +45.*(f[...,n1+1:n2+1,:,:]-f[...,n1-1:n2-1,:,:]) 
-                                -9.*(f[...,n1+2:n2+2,:,:]-f[...,n1-2:n2-2,:,:]) 
-                                +(f[...,n1+3:n2+3,:,:]-f[...,n1-3:n2-3,:,:]) )
+        dfdz[:,n1:n2,...] = dz2*(+45.*(f[:,n1+1:n2+1,...]-f[:,n1-1:n2-1,...]) 
+                                -9.*(f[:,n1+2:n2+2,...]-f[:,n1-2:n2-2,...]) 
+                                +(f[:,n1+3:n2+3,...]-f[:,n1-3:n2-3,...]) )
     else:
         dfdz=0
-
     return dfdz
 
 def xder2_6th(f,dx):
@@ -79,7 +78,7 @@ def xder2_6th(f,dx):
 
 
     dx2 = 1./(180.*dx**2.)
-    dfdx = N.zeros(f.shape)
+    dfdx = N.zeros_like(f)
     l1 = 3
     l2 = f.shape[-1]-3
     if (l2 > l1):
@@ -99,7 +98,7 @@ def yder2_6th(f,dy):
         raise ValueError
     
     dy2 = 1./(180.*dy**2.)
-    dfdy = N.zeros(f.shape)
+    dfdy = N.zeros_like(f)
     m1 = 3
     m2 = f.shape[-2]-3
     if (m2 > m1):
@@ -118,9 +117,9 @@ def zder2_6th(f,dz):
         raise ValueError
 
     dz2 = 1./(180.*dz**2.)
-    dfdz = N.zeros(f.shape)
+    dfdz = N.zeros_like(f)
     n1 = 3
-    n2 = f.shape[-3]-3
+    n2 = f.shape[1]-3
     if (n2 > n1):
         dfdz[...,n1:n2,:,:] = dz2*(-490.*f[...,n1:n2,:,:]
                               +270.*(f[...,n1-1:n2-1,:,:]+f[...,n1+1:n2+1,:,:])

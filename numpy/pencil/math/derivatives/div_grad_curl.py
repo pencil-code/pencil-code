@@ -1,5 +1,5 @@
 #
-# $Id: div_grad_curl.py,v 1.1 2007-11-19 14:29:08 joishi Exp $
+# $Id: div_grad_curl.py,v 1.2 2008-06-16 08:33:07 tgastine Exp $
 #
 """module to do div, grad, curl (but not 'all that') for pencil-code data.
 
@@ -37,14 +37,17 @@ def curl(f,dx,dy,dz):
     """
     take the curl of a pencil code vector array.
     """
-    if (f.ndim != 4 or f.shape[0] != 3):
+    if (f.shape[0] != 3):
         print "curl: must have vector 4-D array f[3,mz,my,mx] for curl"
         raise ValueError
 
-    curl = N.empty(f.shape)
-    curl[0,...] = yder(f[2,...],dy) - zder(f[1,...],dz)
-    curl[1,...] = zder(f[0,...],dz) - xder(f[2,...],dx)
-    curl[2,...] = xder(f[1,...],dx) - yder(f[0,...],dy)
+    curl = N.empty_like(f)
+    if (dy != 0.):
+      curl[0,...] = yder(f[2,...],dy) - zder(f[1,...],dz)
+      curl[1,...] = zder(f[0,...],dz) - xder(f[2,...],dx)
+      curl[2,...] = xder(f[1,...],dx) - yder(f[0,...],dy)
+    else: # to deal the 2-D case
+      curl[0,...] = zder(f,dz)[0,...] - xder(f,dx)[2,...]
     
     return curl
 
