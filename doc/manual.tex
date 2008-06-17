@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.org)
-%%  CVS: $Id: manual.tex,v 1.394 2008-06-12 13:54:31 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.395 2008-06-17 15:35:09 ajohan Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2008-06-12 13:54:31 $ $,~ $ $Revision: 1.394 $ $}
+%\date{$ $Date: 2008-06-17 15:35:09 $ $,~ $ $Revision: 1.395 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2008-06-12 13:54:31 $ $,~ $ $Revision: 1.394 $ $}\\
+  \emph{$ $Date: 2008-06-17 15:35:09 $ $,~ $ $Revision: 1.395 $ $}\\
   \url{http://www.nordita.org/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -5653,8 +5653,10 @@ is a derived variable of the logarithmic density \code{lnrho}.
 The pencils provided by a given physics module are declared in the header of
 the file, e.g. in the Density module:
 \begin{alltt}
-! PENCILS PROVIDED lnrho,rho,rho1,glnrho,grho,uglnrho,ugrho
+! PENCILS PROVIDED lnrho; rho; rho1; glnrho(3); grho(3); uglnrho; ugrho
 \end{alltt}
+Notice that the pencil names are separated with a semi-colon and that vector
+pencils are declared with ``(3)'' after the name.
 Before compiling the code, the script \file{mkcparam} collects the names of all
 pencils that are provided by the chosen physics modules. It then defines the
 structure \code{p} with slots for every single of these pencils. The definition
@@ -5727,9 +5729,9 @@ combination of events can occur:
 Adding a new pencil to the pencil case is trivial but requires a few steps.
 \begin{itemize}
   \item Declare the name of the pencil in the header of the proper physics
-      module
-  \item Define the new pencil in \file{\$PENCIL_HOME/src/sripts/mkcparam}. Here
-      is also set whether the pencil is a scalar, a vector or a matrix.
+      module. Pencils names must appear come in a ";" separated list, with
+      dimensions in parenthesis after the name [(3) for vector, (3,3) for
+      matrix, etc.].
   \item Set interdependency of the new pencil (i.e.\ what other pencils does it
       depend on) in the subroutine \code{pencil_interdep_modulename}
   \item Make rule for calculating the pencil in \code{calc_pencils_modulename}
@@ -5925,7 +5927,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2008-06-12 13:54:31 $ $,~ $ $Revision: 1.394 $ $}
+  \hfill\normalsize\rm$ $Date: 2008-06-17 15:35:09 $ $,~ $ $Revision: 1.395 $ $}
 
 \section{Timings}
 
@@ -9545,7 +9547,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.394 2008-06-12 13:54:31 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.395 2008-06-17 15:35:09 ajohan Exp $ $}
 
 
 \end{document}
