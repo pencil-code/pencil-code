@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.62 2008-03-05 16:01:03 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.63 2008-06-17 15:34:08 ajohan Exp $
 
 !  Dummy routine for ideal gas
 
@@ -9,9 +9,9 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 1
 !
-! PENCILS PROVIDED ss,ee,pp,lnTT,cs2,nabla_ad,glnTT,TT,TT1
-! PENCILS PROVIDED yH,del2lnTT,cv,cv1,cp,cp1,gamma,gamma1,gamma11,mu1
-! PENCILS PROVIDED glnTT,rho1gpp,delta,gradcp,del6lnTT
+! PENCILS PROVIDED ss; ee; pp; lnTT; cs2; nabla_ad; glnTT(3); TT; TT1
+! PENCILS PROVIDED yH; del2lnTT; cv; cv1; cp; cp1; gamma; gamma1; gamma11; mu1
+! PENCILS PROVIDED glnTT(3); rho1gpp(3); delta; gradcp(3); del6lnTT
 !
 !***************************************************************
 
@@ -129,7 +129,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.62 2008-03-05 16:01:03 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.63 2008-06-17 15:34:08 ajohan Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************

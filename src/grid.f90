@@ -1,14 +1,14 @@
-! $Id: grid.f90,v 1.36 2008-05-10 00:04:09 dobler Exp $
+! $Id: grid.f90,v 1.37 2008-06-17 15:34:08 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! PENCILS PROVIDED x_mn, y_mn, z_mn, r_mn, r_mn1
-! PENCILS PROVIDED phix, phiy
-! PENCILS PROVIDED pomx, pomy
-! PENCILS PROVIDED rcyl_mn, rcyl_mn1, phi_mn
-! PENCILS PROVIDED evr, rr
+! PENCILS PROVIDED x_mn; y_mn; z_mn; r_mn; r_mn1
+! PENCILS PROVIDED phix; phiy
+! PENCILS PROVIDED pomx; pomy
+! PENCILS PROVIDED rcyl_mn; rcyl_mn1; phi_mn
+! PENCILS PROVIDED evr(3); rr(3)
 !
 !***************************************************************
 module Grid

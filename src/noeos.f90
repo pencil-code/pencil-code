@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.40 2007-11-21 11:45:00 wlyra Exp $
+! $Id: noeos.f90,v 1.41 2008-06-17 15:34:09 ajohan Exp $
 
 !  Dummy routine for ideal gas
 
@@ -9,8 +9,9 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1,cp1tilde,glnTT,TT,TT1
-! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT
+! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp1; cp1tilde
+! PENCILS PROVIDED glnTT(3); TT; TT1
+! PENCILS PROVIDED yH; hss(3,3); hlnTT(3,3); del2ss; del6ss; del2lnTT
 !
 !***************************************************************
 
@@ -81,7 +82,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.40 2007-11-21 11:45:00 wlyra Exp $')
+           '$Id: noeos.f90,v 1.41 2008-06-17 15:34:09 ajohan Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************

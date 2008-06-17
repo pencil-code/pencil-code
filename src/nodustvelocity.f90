@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.32 2007-01-31 12:50:12 wlyra Exp $
+! $Id: nodustvelocity.f90,v 1.33 2008-06-17 15:34:09 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -10,7 +10,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED uud,divud,sdij
+! PENCILS PROVIDED uud(3,ndustspec); divud(ndustspec); sdij(3,3,ndustspec)
 !
 !***************************************************************
 
@@ -73,7 +73,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.32 2007-01-31 12:50:12 wlyra Exp $")
+           "$Id: nodustvelocity.f90,v 1.33 2008-06-17 15:34:09 ajohan Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************

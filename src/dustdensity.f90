@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.177 2007-10-06 13:56:52 ajohan Exp $
+! $Id: dustdensity.f90,v 1.178 2008-06-17 15:34:08 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -10,10 +10,15 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED glnnd,gmi,gmd,gnd,md,mi,nd,rhod,epsd
-! PENCILS PROVIDED udgmi,udgmd,udglnnd,udgnd,glnnd2
-! PENCILS PROVIDED sdglnnd,del2nd,del2lnnd,del6nd,del2md,del2mi
-! PENCILS PROVIDED gndglnrho,glnndglnrho,del6lnnd
+! PENCILS PROVIDED glnnd(3,ndustspec); gmi(3,ndustspec); gmd(3,ndustspec)
+! PENCILS PROVIDED gnd(3,ndustspec); md(ndustspec); mi(ndustspec)
+! PENCILS PROVIDED nd(ndustspec); rhod(ndustspec); epsd(ndustspec)
+! PENCILS PROVIDED udgmi(ndustspec); udgmd(ndustspec); udglnnd(ndustspec)
+! PENCILS PROVIDED udgnd(ndustspec); glnnd2(ndustspec)
+! PENCILS PROVIDED sdglnnd(3,ndustspec); del2nd(ndustspec);
+! PENCILS PROVIDED del2lnnd(ndustspec); del6nd(ndustspec); del2md(ndustspec)
+! PENCILS PROVIDED del2mi(ndustspec); del6lnnd(ndustspec)
+! PENCILS PROVIDED gndglnrho(ndustspec); glnndglnrho(ndustspec)
 !
 !***************************************************************
 
@@ -140,7 +145,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.177 2007-10-06 13:56:52 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.178 2008-06-17 15:34:08 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

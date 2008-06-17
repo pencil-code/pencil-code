@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.105 2008-05-15 00:16:42 wlyra Exp $
+! $Id: noentropy.f90,v 1.106 2008-06-17 15:34:09 ajohan Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -9,7 +9,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED cs2,pp,TT1,Ma2,fpres,cv1
+! PENCILS PROVIDED cs2; pp; TT1; Ma2; fpres(3); cv1
 !
 !***************************************************************
 
@@ -72,7 +72,7 @@ module Entropy
 !  Identify version number.
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.105 2008-05-15 00:16:42 wlyra Exp $")
+           "$Id: noentropy.f90,v 1.106 2008-06-17 15:34:09 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************

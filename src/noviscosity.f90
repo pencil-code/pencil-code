@@ -1,4 +1,4 @@
-! $Id: noviscosity.f90,v 1.12 2008-03-29 05:26:02 brandenb Exp $
+! $Id: noviscosity.f90,v 1.13 2008-06-17 15:34:09 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -12,7 +12,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED gshock,shock, visc_heat
+! PENCILS PROVIDED gshock(3); shock; visc_heat
 !
 !***************************************************************
 
@@ -61,7 +61,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noviscosity.f90,v 1.12 2008-03-29 05:26:02 brandenb Exp $")
+           "$Id: noviscosity.f90,v 1.13 2008-06-17 15:34:09 ajohan Exp $")
 
     endsubroutine register_viscosity
 !***********************************************************************

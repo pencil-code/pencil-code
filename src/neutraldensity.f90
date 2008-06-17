@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.19 2008-05-15 14:39:04 wlyra Exp $
+! $Id: neutraldensity.f90,v 1.20 2008-06-17 15:34:09 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -11,9 +11,9 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED lnrhon,rhon,rhon1,glnrhon,grhon,unglnrhon,ungrhon
-! PENCILS PROVIDED del2lnrhon,del2rhon,glnrhon2
-! PENCILS PROVIDED del6lnrhon,del6rhon,snglnrhon,alpha,zeta
+! PENCILS PROVIDED lnrhon; rhon; rhon1; glnrhon(3); grhon(3);
+! PENCILS PROVIDED unglnrhon; ungrhon; del2lnrhon; del2rhon; glnrhon2
+! PENCILS PROVIDED del6lnrhon; del6rhon; snglnrhon(3); alpha; zeta
 !
 !***************************************************************
 
@@ -110,7 +110,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.19 2008-05-15 14:39:04 wlyra Exp $")
+           "$Id: neutraldensity.f90,v 1.20 2008-06-17 15:34:09 ajohan Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************

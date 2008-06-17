@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.74 2008-03-27 04:05:59 brandenb Exp $
+! $Id: pscalar.f90,v 1.75 2008-06-17 15:34:09 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -9,7 +9,8 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED cc,cc1,lncc,glncc,uglncc,del2lncc,hlncc
+! PENCILS PROVIDED cc; cc1; lncc; glncc(3); uglncc; del2lncc
+! PENCILS PROVIDED hlncc(3,3)
 !
 !***************************************************************
 
@@ -115,7 +116,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.74 2008-03-27 04:05:59 brandenb Exp $")
+           "$Id: pscalar.f90,v 1.75 2008-06-17 15:34:09 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

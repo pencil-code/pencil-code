@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.46 2008-05-31 09:17:26 nbabkovs Exp $
+! $Id: temperature_ionization.f90,v 1.47 2008-06-17 15:34:10 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2,uglnTT,cvspec
+! PENCILS PROVIDED Ma2; uglnTT; cvspec(nchemspec)
 !
 !***************************************************************
 module Entropy
@@ -94,7 +94,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.46 2008-05-31 09:17:26 nbabkovs Exp $")
+           "$Id: temperature_ionization.f90,v 1.47 2008-06-17 15:34:10 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

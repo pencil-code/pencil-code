@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.440 2008-06-17 15:06:55 pkapyla Exp $
+! $Id: hydro.f90,v 1.441 2008-06-17 15:34:08 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -11,9 +11,10 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED divu,oo,o2,ou,u2,uij,uu,sij,sij2,uij5,ugu,oij,qq
-! PENCILS PROVIDED u3u21,u1u32,u2u13,del2u,del4u,del6u,graddivu,del6u_bulk
-! PENCILS PROVIDED grad5divu
+! PENCILS PROVIDED divu; oo(3); o2; ou; u2; uij(3,3); uu(3)
+! PENCILS PROVIDED sij(3,3); sij2; uij5(3,3); ugu(3); oij(3,3); qq(3)
+! PENCILS PROVIDED u3u21; u1u32; u2u13; del2u(3); del4u(3); del6u(3)
+! PENCILS PROVIDED graddivu(3); del6u_bulk(3); grad5divu(3)
 !
 !***************************************************************
 module Hydro
@@ -348,7 +349,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.440 2008-06-17 15:06:55 pkapyla Exp $")
+           "$Id: hydro.f90,v 1.441 2008-06-17 15:34:08 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

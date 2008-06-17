@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.40 2007-09-19 14:04:26 wlyra Exp $
+! $Id: particles_tracers.f90,v 1.41 2008-06-17 15:34:09 ajohan Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -10,7 +10,7 @@
 ! MAUX CONTRIBUTION 1
 ! CPARAM logical, parameter :: lparticles=.true.
 !
-! PENCILS PROVIDED np,rhop,epsp
+! PENCILS PROVIDED np; rhop; epsp
 !
 !***************************************************************
 module Particles
@@ -65,7 +65,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.40 2007-09-19 14:04:26 wlyra Exp $")
+           "$Id: particles_tracers.f90,v 1.41 2008-06-17 15:34:09 ajohan Exp $")
 !
 !  Indices for particle position.
 !

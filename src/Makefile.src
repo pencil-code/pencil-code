@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.414 2008-06-16 15:32:32 dhruba Exp $
+### $Id: Makefile.src,v 1.415 2008-06-17 15:34:07 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -1181,7 +1181,7 @@ diagrams_svg: run.svg run_nocdata.svg start.svg start_nocdata.svg switchable.svg
 #
 #
 cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam
-	scripts/mkcparam $(switchable:.o=.f90) grid.f90 cparam.local -M "" -o cparam.inc
+	scripts/mkcparam $(switchable:.o=.f90) grid.f90 cparam.local -o cparam.inc
 cparam.o:  cparam.f90 cparam.local cparam.inc
 	if [ "" ]; then \
 		 rm -f cparam.inc; \

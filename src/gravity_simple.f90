@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.48 2008-06-06 13:50:46 mkorpi Exp $
+! $Id: gravity_simple.f90,v 1.49 2008-06-17 15:34:08 ajohan Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -15,7 +15,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED gg
+! PENCILS PROVIDED gg(3)
 !
 !***************************************************************
 
@@ -112,7 +112,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.48 2008-06-06 13:50:46 mkorpi Exp $")
+           "$Id: gravity_simple.f90,v 1.49 2008-06-17 15:34:08 ajohan Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !  Set lgravz only when gravz_profile is set.

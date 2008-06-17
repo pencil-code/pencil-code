@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.110 2008-05-14 22:21:51 dobler Exp $
+! $Id: eos_idealgas.f90,v 1.111 2008-06-17 15:34:08 ajohan Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -9,8 +9,9 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp,cp1,cp1tilde,glnTT,TT,TT1,gTT
-! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1,del6lnTT,gamma,lncp
+! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp; cp1; cp1tilde
+! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
+! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; del6lnTT; gamma; lncp
 !
 !***************************************************************
 
@@ -110,7 +111,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.110 2008-05-14 22:21:51 dobler Exp $')
+           '$Id: eos_idealgas.f90,v 1.111 2008-06-17 15:34:08 ajohan Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !

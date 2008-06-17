@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.550 2008-06-06 13:50:46 mkorpi Exp $
+! $Id: entropy.f90,v 1.551 2008-06-17 15:34:08 ajohan Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ugss,Ma2,fpres,uglnTT
+! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT
 !
 !***************************************************************
 module Entropy
@@ -223,7 +223,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.550 2008-06-06 13:50:46 mkorpi Exp $")
+           "$Id: entropy.f90,v 1.551 2008-06-17 15:34:08 ajohan Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !

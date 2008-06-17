@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.93 2008-06-13 23:45:56 brandenb Exp $
+! $Id: nohydro.f90,v 1.94 2008-06-17 15:34:09 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -8,7 +8,8 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED oo,ou,uij,uu,u2,sij,divu,uij5
+! PENCILS PROVIDED oo(3); ou; uij(3,3); uu(3); u2; sij(3,3)
+! PENCILS PROVIDED divu; uij5(3,3)
 !
 !***************************************************************
 
@@ -75,7 +76,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.93 2008-06-13 23:45:56 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.94 2008-06-17 15:34:09 ajohan Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.

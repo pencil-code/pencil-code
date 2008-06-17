@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.125 2007-11-21 14:32:47 wlyra Exp $
+! $Id: dustvelocity.f90,v 1.126 2008-06-17 15:34:08 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -9,8 +9,11 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED divud,ood,od2,oud,ud2,udij,sdij,udgud,uud
-! PENCILS PROVIDED del2ud,del6ud,graddivud
+! PENCILS PROVIDED divud(ndustspec); ood(3,ndustspec); od2(ndustspec)
+! PENCILS PROVIDED oud(ndustspec); ud2(ndustspec); udij(3,3,ndustspec)
+! PENCILS PROVIDED sdij(3,3,ndustspec); udgud(3,ndustspec); uud(3,ndustspec)
+! PENCILS PROVIDED del2ud(3,ndustspec); del6ud(3,ndustspec)
+! PENCILS PROVIDED graddivud(3,ndustspec)
 !
 !***************************************************************
 
@@ -136,7 +139,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.125 2007-11-21 14:32:47 wlyra Exp $")
+           "$Id: dustvelocity.f90,v 1.126 2008-06-17 15:34:08 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

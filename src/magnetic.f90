@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.526 2008-06-11 18:53:10 brandenb Exp $
+! $Id: magnetic.f90,v 1.527 2008-06-17 15:34:09 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -13,11 +13,13 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED aa,a2,aij,bb,bbb,ab,uxb,b2,bij,del2a,graddiva,jj
-! PENCILS PROVIDED j2,jb,va2,jxb,jxbr,ub,uxb,uxb2,uxj,beta,uga
-! PENCILS PROVIDED djuidjbi,jo,ujxb,oxu,oxuxb,jxbxb,jxbrxb
-! PENCILS PROVIDED glnrhoxb,del4a,del6a,oxj,diva,jij,sj,ss12
-! PENCILS PROVIDED mf_EMF, mf_EMFdotB
+! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; uxb(3)
+! PENCILS PROVIDED b2; bij(3,3); del2a(3); graddiva(3); jj(3)
+! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); ub; uxb(3); uxb2
+! PENCILS PROVIDED uxj(3); beta; uga(3); djuidjbi; jo
+! PENCILS PROVIDED ujxb; oxu(3); oxuxb(3); jxbxb(3); jxbrxb(3)
+! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
+! PENCILS PROVIDED jij(3,3); sj; ss12; mf_EMF(3); mf_EMFdotB
 !
 !***************************************************************
 
@@ -423,7 +425,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.526 2008-06-11 18:53:10 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.527 2008-06-17 15:34:09 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

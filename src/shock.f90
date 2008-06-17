@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.35 2008-04-03 12:50:50 ajohan Exp $
+! $Id: shock.f90,v 1.36 2008-06-17 15:34:09 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -20,7 +20,7 @@
 ! MAUX CONTRIBUTION 1
 ! COMMUNICATED AUXILIARIES 1
 !
-! PENCILS PROVIDED shock,gshock,shock_perp,gshock_perp
+! PENCILS PROVIDED shock; gshock(3); shock_perp; gshock_perp(3)
 !
 !***************************************************************
 
@@ -113,7 +113,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.35 2008-04-03 12:50:50 ajohan Exp $")
+           "$Id: shock.f90,v 1.36 2008-06-17 15:34:09 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !

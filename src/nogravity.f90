@@ -1,4 +1,4 @@
-! $Id: nogravity.f90,v 1.12 2007-09-08 17:35:47 wlyra Exp $
+! $Id: nogravity.f90,v 1.13 2008-06-17 15:34:09 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -7,7 +7,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED gg
+! PENCILS PROVIDED gg(3)
 !
 !***************************************************************
 
@@ -73,7 +73,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nogravity.f90,v 1.12 2007-09-08 17:35:47 wlyra Exp $")
+           "$Id: nogravity.f90,v 1.13 2008-06-17 15:34:09 ajohan Exp $")
 !
       lgrav = .false.
       lgravz = .false.

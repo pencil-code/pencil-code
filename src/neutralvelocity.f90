@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.21 2008-05-15 00:16:42 wlyra Exp $
+! $Id: neutralvelocity.f90,v 1.22 2008-06-17 15:34:09 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -10,8 +10,8 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED divun,un2,unij,uun,snij,ungun
-! PENCILS PROVIDED del2un,del6un,graddivun
+! PENCILS PROVIDED divun; un2; unij(3,3); uun(3); snij(3,3); ungun(3)
+! PENCILS PROVIDED del2un(3); del6un(3); graddivun(3)
 !
 !***************************************************************
 module NeutralVelocity
@@ -132,7 +132,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.21 2008-05-15 00:16:42 wlyra Exp $")
+           "$Id: neutralvelocity.f90,v 1.22 2008-06-17 15:34:09 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

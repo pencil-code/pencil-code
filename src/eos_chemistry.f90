@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.23 2008-05-06 16:05:11 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.24 2008-06-17 15:34:08 ajohan Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -9,9 +9,9 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED lnTT,cp1tilde,glnTT,TT,TT1,gTT
-! PENCILS PROVIDED hss,hlnTT,del2ss,del6ss,del2lnTT,del6lnTT
-! PENCILS PROVIDED yH,ee,ss,pp,delta
+! PENCILS PROVIDED lnTT; cp1tilde; glnTT(3); TT; TT1; gTT(3)
+! PENCILS PROVIDED hss(3,3); hlnTT(3,3); del2ss; del6ss; del2lnTT; del6lnTT
+! PENCILS PROVIDED yH; ee; ss; pp; delta
 !
 !***************************************************************
 
@@ -115,7 +115,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.23 2008-05-06 16:05:11 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.24 2008-06-17 15:34:08 ajohan Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !

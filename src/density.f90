@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.391 2008-06-06 13:50:46 mkorpi Exp $
+! $Id: density.f90,v 1.392 2008-06-17 15:34:08 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -12,9 +12,9 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED lnrho,rho,rho1,glnrho,grho,uglnrho,ugrho
-! PENCILS PROVIDED glnrho2,del2lnrho,del2rho
-! PENCILS PROVIDED del6lnrho,del6rho,hlnrho,sglnrho,uij5glnrho
+! PENCILS PROVIDED lnrho; rho; rho1; glnrho(3); grho(3); uglnrho; ugrho
+! PENCILS PROVIDED glnrho2; del2lnrho; del2rho; del6lnrho; del6rho
+! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3)
 !
 !***************************************************************
 
@@ -139,7 +139,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.391 2008-06-06 13:50:46 mkorpi Exp $")
+           "$Id: density.f90,v 1.392 2008-06-17 15:34:08 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.110 2008-06-17 11:52:43 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.111 2008-06-17 15:34:08 ajohan Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -10,8 +10,13 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED gTT,mu1,gamma,gamma1,gamma11,gradcp,cv,cv1,cp,cp1,lncp,YY,cs2,rho1gpp,gmu1
-! PENCILS PROVIDED nu,gradnu,nu_art,DYDt_reac,DYDt_diff,cvspec, lambda,glnlambda,ghYrho,DYDt_reac,DYDt_diff,lambda,glnlambda
+! PENCILS PROVIDED gTT(3); mu1; gamma; gamma1; gamma11; gradcp(3)
+! PENCILS PROVIDED cv; cv1; cp; cp1; lncp; YY(nchemspec)
+! PENCILS PROVIDED cs2; rho1gpp(3); gmu1(3); nu; gradnu(3); nu_art
+! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec); cvspec(nchemspec)
+! PENCILS PROVIDED lambda; glnlambda(3); ghYrho(3)
+! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
+!
 !***************************************************************
 
 module Chemistry
@@ -192,11 +197,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.110 2008-06-17 11:52:43 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.111 2008-06-17 15:34:08 ajohan Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.110 2008-06-17 11:52:43 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.111 2008-06-17 15:34:08 ajohan Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't

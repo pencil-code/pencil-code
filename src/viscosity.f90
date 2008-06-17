@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.97 2008-05-16 12:16:56 ajohan Exp $
+! $Id: viscosity.f90,v 1.98 2008-06-17 15:34:10 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -11,8 +11,9 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
-! PENCILS PROVIDED fvisc, diffus_total, diffus_total2, diffus_total3
-! PENCILS PROVIDED visc_heat,nu,nu_art,gradnu,sgnu
+!
+! PENCILS PROVIDED fvisc(3); diffus_total; diffus_total2; diffus_total3
+! PENCILS PROVIDED visc_heat; nu; nu_art; gradnu(3); sgnu(3)
 !
 !***************************************************************
 
@@ -110,7 +111,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.97 2008-05-16 12:16:56 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.98 2008-06-17 15:34:10 ajohan Exp $")
 !
 !  Default viscosity.
 !

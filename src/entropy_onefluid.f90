@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.27 2008-05-29 11:30:02 ajohan Exp $
+! $Id: entropy_onefluid.f90,v 1.28 2008-06-17 15:34:08 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance) for a fluid consisting of gas and perfectly
@@ -14,8 +14,9 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1tilde,glnTT,TT,TT1,Ma2
-! PENCILS PROVIDED ugss,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1
+! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp1tilde; glnTT(3)
+! PENCILS PROVIDED TT; TT1; Ma2; ugss; hss(3,3); hlnTT(3,3)
+! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1
 !
 !***************************************************************
 module Entropy
@@ -93,7 +94,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.27 2008-05-29 11:30:02 ajohan Exp $")
+           "$Id: entropy_onefluid.f90,v 1.28 2008-06-17 15:34:08 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
