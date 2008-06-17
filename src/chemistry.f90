@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.108 2008-06-17 09:46:08 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.109 2008-06-17 11:37:29 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -87,12 +87,11 @@ module Chemistry
 
   real, dimension(nx,nchemspec) :: DYDt_reac_ts
 
-  logical :: TEST=.false.
 
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, Natalia_thoughts,chem_diff,nu_spec,TEST
+      amplchemk,amplchemk2, Natalia_thoughts,chem_diff,nu_spec
 
 ! run parameters
   namelist /chemistry_run_pars/ &
@@ -194,11 +193,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.108 2008-06-17 09:46:08 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.109 2008-06-17 11:37:29 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.108 2008-06-17 09:46:08 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.109 2008-06-17 11:37:29 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1912,6 +1911,11 @@ module Chemistry
                  StartInd_add=StartInd_add+1
                 enddo
                i=80
+
+               call find_species_index('N2',ind_glob,ind_chem,found_specie)
+
+               if (found_specie) a_k4(ind_chem)=1.
+
               endif
              enddo
  print*,' ------------------------------'
@@ -2134,7 +2138,6 @@ module Chemistry
     real :: Rcal
      integer :: k , reac, j, i, v, t
      real  :: sum_tmp=0., T_low, T_mid, T_up, T_local, lnT_local, tmp
-
      logical,SAVE :: lwrite=.true.
 
      character (len=20) :: input_file="./data/react.out"
@@ -2366,26 +2369,14 @@ module Chemistry
 
        lwrite=.false.
  
-!
-! This is just for the test. it will be done more accurately in future
-!
 
-     if (TEST) then
+     do reac=1,nreactions
 
-      reac=4
+        if (maxval(abs(low_coeff(:,reac))) > 0.) then
+         B_n_0=low_coeff(1,reac) 
+         alpha_n_0=low_coeff(2,reac)
+         E_an_0=low_coeff(3,reac)
 
-        B_n_0=6.366E+20 
-        alpha_n_0=-1.72 
-        E_an_0=5.248E+02
-
-        a_k4(i1)=2.
-        a_k4(i2)=0.78
-        a_k4(i3)=11.
-        a_k4(i4)=0.
-        a_k4(i5)=0.
-        a_k4(i6)=0.
-        a_k4(i7)=0.
-        a_k4(i8)=1.
 
         kf_0(:)=B_n_0*T_cgs(:)**alpha_n_0*exp(-E_an_0/Rcal/T_cgs(:)) 
 
@@ -2403,9 +2394,12 @@ module Chemistry
 
         vreact_p(:,reac)=prod1_0/rho_cgs*kf*sum_sp
         vreact_m(:,reac)=prod2_0/rho_cgs*kr*sum_sp
-      endif
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        endif
+
+      enddo
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    end subroutine get_reaction_rate
 !***************************************************************
