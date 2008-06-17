@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.439 2008-06-11 16:01:51 brandenb Exp $
+! $Id: hydro.f90,v 1.440 2008-06-17 15:06:55 pkapyla Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -348,7 +348,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.439 2008-06-11 16:01:51 brandenb Exp $")
+           "$Id: hydro.f90,v 1.440 2008-06-17 15:06:55 pkapyla Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3187,6 +3187,7 @@ use Mpicomm, only: stop_it
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: prof_amp1,prof_amp2
+      real, dimension (nz) :: prof_amp3
       character (len=labellen) :: prof_diffrot 
       logical :: ldiffrot_test
       integer :: llx
@@ -3203,6 +3204,18 @@ use Mpicomm, only: stop_it
       endif
       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
         -prof_amp1*cos(kx_diffrot*x(l1:l2))**xexp_diffrot*cos(z(n)))
+!
+!  diffrot profile from Brandenburg & Sandin (2004, A&A), modified
+!  for convection.
+!
+      case ('BS04c')
+      if (wdamp/=0.) then
+        prof_amp3=ampl1_diffrot*(step(z,rdampint,wdamp))
+      else
+        prof_amp3=ampl1_diffrot
+      endif
+      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
+        -prof_amp3(n)*sin(0.5*pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot)
 !
 !  modified diffrot profile from Brandenburg & Sandin (2004, A&A)
       case ('BS04m')
