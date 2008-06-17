@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.109 2008-06-17 11:37:29 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.110 2008-06-17 11:52:43 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -85,7 +85,6 @@ module Chemistry
 
   logical :: Natalia_thoughts=.false.
 
-  real, dimension(nx,nchemspec) :: DYDt_reac_ts
 
 
 ! input parameters
@@ -193,11 +192,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.109 2008-06-17 11:37:29 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.110 2008-06-17 11:52:43 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.109 2008-06-17 11:37:29 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.110 2008-06-17 11:52:43 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1027,10 +1026,10 @@ module Chemistry
       allocate(E_an(mreactions),STAT=stat)
       if (stat>0) call stop_it("Couldn't allocate memory for E_an")
  
-      allocate(low_coeff(3,mreactions),STAT=stat)
+      allocate(low_coeff(3,nreactions),STAT=stat)
       low_coeff=0.
       if (stat>0) call stop_it("Couldn't allocate memory for low_coeff")
-      allocate(troe_coeff(3,mreactions),STAT=stat)
+      allocate(troe_coeff(3,nreactions),STAT=stat)
       troe_coeff=0.
       if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
 !
@@ -2119,7 +2118,7 @@ module Chemistry
         !
       end subroutine write_reactions
 !***************************************************************
-   subroutine get_reaction_rate(f,vreact_p,vreact_m, vreactions_ts,p)
+   subroutine get_reaction_rate(f,vreact_p,vreact_m,p)
 ! Natalia (17.03.2008)
 ! This subroutine calculates forward and reverse reaction rates, if chem.inp file exists.
 ! For more details see Chemkin Theory Manual
@@ -2134,7 +2133,6 @@ module Chemistry
     real, dimension (mx,my,mz) :: T_cgs_full
 
     real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
-    real, dimension (nx,nreactions), intent(out) :: vreactions_ts
     real :: Rcal
      integer :: k , reac, j, i, v, t
      real  :: sum_tmp=0., T_low, T_mid, T_up, T_local, lnT_local, tmp
@@ -2303,14 +2301,6 @@ module Chemistry
         do k=1,nchemspec
          prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijp(k,reac)
  
-          do i=0,nx-1
-           if (abs(f(l1+i,m,n,ichemspec(k))) > 0.) then
-            prod1_ts(i+1)=prod1_ts(i+1)*(f(l1+i,m,n,ichemspec(k))*rho_cgs(i+1)/species_constants(k,imass))**Sijp(k,reac)
-           else
-            prod1_ts(i+1)=prod1_ts(i+1)*(1e-3*rho_cgs(i+1)/species_constants(k,imass))**Sijp(k,reac)
-           endif
-        enddo
-
  !     print*,'Natalia',maxval(prod1)
 
       enddo
@@ -2345,13 +2335,7 @@ module Chemistry
       vreact_p(:,reac)=prod1/rho_cgs*kf
       vreact_m(:,reac)=prod2/rho_cgs*kr
 
-!**************************************************************
-! calculation of reaction rate for a time step
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      vreactions_ts(:,reac)=(prod1_ts*kf-prod2_ts*kr)/rho_cgs
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     enddo
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2409,8 +2393,7 @@ module Chemistry
 
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
-  real, dimension (nx,nreactions) :: vreactions_ts
-  real, dimension (nx) :: xdot, xdot_ts
+  real, dimension (nx) :: xdot
   type (pencil_case) :: p
   integer :: k,j
   real :: sum_omega
@@ -2436,35 +2419,21 @@ module Chemistry
           enddo
         else
 ! Chemkin data case
-          call get_reaction_rate(f,vreactions_p,vreactions_m,vreactions_ts,p)
+          call get_reaction_rate(f,vreactions_p,vreactions_m,p)
         endif 
          vreactions=vreactions_p-vreactions_m
 
-
-
-
       do k=1,nchemspec  
         xdot=0.
-        xdot_ts=0.
         do j=1,nreactions
           xdot=xdot+stoichio(k,j)*vreactions(:,j)  
-          xdot_ts=xdot_ts+stoichio(k,j)*vreactions_ts(:,j)
         enddo
         if (lcheminp) then
 !
-!  Natalia thoughts
-! this '-' is because of the possible mistake in stoichio(k,j)
-! it should be -stoichio(k,j)=-(Sijp-Sijm)
-! Axel, please check your case!!!!
 !
           xdot=-xdot*species_constants(k,imass)
-          xdot_ts=-xdot_ts*species_constants(k,imass)
         endif
         p%DYDt_reac(:,k)=xdot*unit_time
-        DYDt_reac_ts(:,k)=xdot_ts*unit_time
-
- !  print*,'Natalia',maxval(p%DYDt_reac(:,k))/unit_time/species_constants(k,imass),k
-
       enddo 
 
       sum_omega=0.
