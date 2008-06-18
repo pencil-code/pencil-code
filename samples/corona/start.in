@@ -2,19 +2,19 @@
 ! Initialisation parameters for corona 
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.3 2007-09-03 10:39:41 bingert Exp $'
+  cvsid='$Id: start.in,v 1.4 2008-06-18 13:29:55 bingert Exp $'
   xyz0 = 0., 0., 0.
-  Lxyz = 50., 50. , 30.
+  Lxyz = 5e4, 5e4 , 3e4
   !
   unit_system  ='SI'
-  unit_length  =1e6
+  unit_length  =1e3
   unit_velocity=1e3
   unit_density =1e-4
   !
   lperi = T,    T,   F,
   grid_func  =  ,  , 'sinh'
-  coeff_grid =  ,  , 0.08 
-  xyz_star   =  ,  , 5.
+  coeff_grid =  ,  , 0.08e-3  ! [] = 1/unit_length
+  xyz_star   =  ,  , 5.e3     ! [] = unit_length
   !
   bcz = 's','s','a','a2','cT','a2','a2','a2'
 /
@@ -33,7 +33,7 @@
 &grav_init_pars
   gravz_profile='const'
   zref = 0
-  gravz=-274. ! gravz * unit_velocity^2 / unit_length = 274 m/s
+  gravz=-274e-3 ! gravz * unit_velocity^2 / unit_length = 274 m/s
 /
 &entropy_init_pars
   initlnTT='nothing'

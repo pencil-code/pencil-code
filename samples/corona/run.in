@@ -3,10 +3,10 @@
 !
 &run_pars
   ip=14
-  cvsid='$Id: run.in,v 1.5 2008-01-16 13:37:04 bingert Exp $'
+  cvsid='$Id: run.in,v 1.6 2008-06-18 13:29:55 bingert Exp $'
   nt=21, it1=5, isave=50
   cdt=0.4, cdtv=0.08, cdts=0.08, itorder=3
-  dsnap=0.03
+  dsnap=30. 
   !
   bcz = 'g:s' ,'nil:s' ,'a','a2','cT','fB:a2','fB:a2','a2:a2'
   force_lower_bound='uxy_convection '
@@ -23,20 +23,20 @@
 &entropy_run_pars
   iheatcond='K-const'
   !
-  hcond0=1.e-7
+  hcond0=1.e-4
 /
 &magnetic_run_pars
- iresistivity='shock','eta-const'
- eta_shock= 1.
- eta=10.
+  iresistivity='shock','eta-const'
+  eta_shock= 1.
+  eta=5e5
 /
 &viscosity_run_pars
- ivisc='nu-shock','nu-const' 
- nu_shock=1.
- nu=100.
+  ivisc='nu-shock','nu-const' 
+  nu_shock=1.
+  nu=5e3
 /
 &shock_run_pars
- lforce_periodic_shockviscosity=T
- lshock_first=F
- lshock_max5=T
+  lforce_periodic_shockviscosity=T
+  lshock_first=F
+  lshock_max5=T
 /
