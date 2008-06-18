@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.527 2008-06-17 15:34:09 ajohan Exp $
+! $Id: magnetic.f90,v 1.528 2008-06-18 09:46:40 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -88,6 +88,7 @@ module Magnetic
   real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
   real :: phase_beltrami=0., ampl_beltrami=0.
   real :: bmz=0, bmz_beltrami_phase=0.
+  real :: etadust0=0.0
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
   integer :: N_modes_aa=1
   integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
@@ -101,7 +102,7 @@ module Magnetic
   logical :: lresi_hyper3=.false.
   logical :: lresi_hyper3_cyl_or_sph=.false.
   logical :: lresi_hyper3_strict=.false.
-  logical :: lresi_zdep=.false.
+  logical :: lresi_zdep=.false., lresi_dust=.false.
   logical :: lresi_hyper3_aniso=.false.
   logical :: lresi_eta_shock=.false.
   logical :: lresi_eta_shock_perp=.false.
@@ -132,7 +133,8 @@ module Magnetic
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa, &
        rmode,zmode,rm_int,rm_ext,lgauss,lcheck_positive_va2, &
-       lbb_as_aux,ljj_as_aux,beta_const,lbext_curvilinear
+       lbb_as_aux,ljj_as_aux,beta_const,lbext_curvilinear, &
+       etadust0
 
   ! run parameters
   real :: eta=0.,eta1=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
@@ -181,7 +183,8 @@ module Magnetic
        sigma_ratio,zdep_profile,eta_width,eta_z0, &
        borderaa,eta_aniso_hyper3, &
        lelectron_inertia,inertial_length,lbext_curvilinear, &
-       lbb_as_aux,ljj_as_aux,lremove_mean_emf,lkinematic
+       lbb_as_aux,ljj_as_aux,lremove_mean_emf,lkinematic, &
+       etadust0
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_b2m=0        ! DIAG_DOC: $\left<\Bv^2\right>$
@@ -425,7 +428,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.527 2008-06-17 15:34:09 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.528 2008-06-18 09:46:40 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -550,6 +553,9 @@ module Magnetic
           if (lroot) print*, 'resistivity: z-dependent'
           lresi_zdep=.true.
           call eta_zdep(eta_z,geta_z,zdep_profile)
+        case('dust')
+          if (lroot) print*, 'resistivity: depending on dust density'
+          lresi_dust=.true.
         case('hyper3-aniso')
           if (lroot) print*, 'resistivity: hyper3_aniso'
           lresi_hyper3_aniso=.true.
@@ -1080,6 +1086,7 @@ module Magnetic
       if (lentropy .or. lresi_smagorinsky .or. ltemperature) then
         lpenc_requested(i_j2)=.true.
       endif
+      if (lresi_dust) lpenc_requested(i_rhop)=.true.
 
       if ((borderaa=='Alfven-rz').or.(borderaa=='Alfven-zconst')) then
         lpenc_requested(i_rcyl_mn) =.true.
@@ -1602,7 +1609,8 @@ module Magnetic
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b3b21,b1b32,b2b13,sign_jo,rho1_jxb
       real, dimension (nx) :: B1dot_glnrhoxb,tmp1
-      real, dimension (nx) :: eta_mn,eta_smag,etatotal,fres2,etaSS,penc
+      real, dimension (nx) :: eta_mn,eta_smag,etadust,etatotal
+      real, dimension (nx) :: fres2,etaSS,penc
       real :: tmp,eta_out1,OmegaSS=1.
       integer :: i,j,k,ju
 !
@@ -1677,6 +1685,18 @@ module Magnetic
         enddo
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_z(n)
         etatotal=etatotal+eta_z(n)
+      endif
+!
+      if (lresi_dust) then 
+        if (lweyl_gauge) then
+          etadust=etadust0*p%rhop
+          do j=1,3; fres(:,j)=fres(:,j)-etadust*p%jj(:,j); enddo
+        else
+          if (lroot) print*, 'daa_dt: dust resistivity only works with Weyl gauge'
+          call fatal_error('daa_dt','')
+        endif
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+etadust
+        etatotal=etatotal+etadust
       endif
 !
       if (lresi_hyper2) then
