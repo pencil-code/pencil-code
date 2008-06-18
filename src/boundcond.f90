@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.212 2008-06-03 14:06:52 dhruba Exp $
+! $Id: boundcond.f90,v 1.213 2008-06-18 08:34:47 bingert Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -2583,6 +2583,7 @@ module Boundcond
 !
 !  27-mai-04/bing: coded
 !  11-aug-06/axel: make it compile with nprocx>0, renamed quenching -> quen
+!  18-jun-08/bing: quenching depends on B^2, not only Bz^2
 !
        use EquationOfState, only : gamma,gamma1,gamma11,cs20,lnrho0
 
@@ -2590,7 +2591,7 @@ module Boundcond
        real, dimension (nxgrid,nygrid),save :: uxl,uxr,uyl,uyr
        real, dimension (nxgrid,nygrid) :: uxd,uyd
        real, dimension (nx,ny) :: quen,pp,betaq,fac
-       real, dimension (nx,ny) :: bbz,bb2
+       real, dimension (nx,ny) :: bbx,bby,bbz,bb2
        integer :: lend,iostat=0,i=0,j
        real,save :: tl=0.,tr=0.,delta_t=0.
 
@@ -2651,9 +2652,44 @@ module Boundcond
 !
 !   suppress footpoint motion at low plasma beta
 !
-!   First get Bz component:
+!   Calculate B^2 for plasma beta
 !
-      if (nxgrid/=1) then
+!----------------------------------------------------------------------------------------
+       if (nygrid/=1) then
+          fac=(1./60)*spread(dy_1(m1:m2),1,nx)
+          bbx= fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,n1,iaz)-f(l1:l2,m1-1:m2-1,n1,iaz)) &
+                -  9.0*(f(l1:l2,m1+2:m2+2,n1,iaz)-f(l1:l2,m1-2:m2-2,n1,iaz)) &
+                +      (f(l1:l2,m1+3:m2+3,n1,iaz)-f(l1:l2,m1-3:m2-3,n1,iaz)))
+       else
+          if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
+       endif
+       if (nzgrid/=1) then
+          fac=(1./60)*spread(spread(dz_1(n1),1,nx),2,ny)
+          bbx= bbx -fac*(+ 45.0*(f(l1:l2,m1:m2,n1+1,iay)-f(l1:l2,m1:m2,n1-1,iay)) &
+               -  9.0*(f(l1:l2,m1:m2,n1+2,iay)-f(l1:l2,m1:m2,n1-2,iay)) &
+               +      (f(l1:l2,m1:m2,n1+3,iay)-f(l1:l2,m1:m2,n1-2,iay)))
+       else
+          if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
+       endif
+!----------------------------------------------------------------------------------------
+       if (nzgrid/=1) then
+          fac=(1./60)*spread(spread(dz_1(n1),1,nx),2,ny)
+          bby= fac*(+ 45.0*(f(l1:l2,m1:m2,n1+1,iax)-f(l1:l2,m1:m2,n1-1,iax)) &
+               -  9.0*(f(l1:l2,m1:m2,n1+2,iax)-f(l1:l2,m1:m2,n1-2,iax)) &
+               +      (f(l1:l2,m1:m2,n1+3,iax)-f(l1:l2,m1:m2,n1-3,iax)))
+       else
+          if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
+       endif
+       if (nxgrid/=1) then
+          fac=(1./60)*spread(dx_1(l1:l2),2,ny)
+          bby= bby -fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,n1,iaz)-f(l1-1:l2-1,m1:m2,n1,iaz)) &
+               -  9.0*(f(l1+2:l2+2,m1:m2,n1,iaz)-f(l1-2:l2-2,m1:m2,n1,iaz)) &
+               +      (f(l1+3:l2+3,m1:m2,n1,iaz)-f(l1-3:l2-3,m1:m2,n1,iaz)))
+       else
+          if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
+       endif
+!----------------------------------------------------------------------------------------
+       if (nxgrid/=1) then
           fac=(1./60)*spread(dx_1(l1:l2),2,ny)
           bbz= fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,n1,iay)-f(l1-1:l2-1,m1:m2,n1,iay)) &
                -  9.0*(f(l1+2:l2+2,m1:m2,n1,iay)-f(l1-2:l2-2,m1:m2,n1,iay)) &
@@ -2669,37 +2705,34 @@ module Boundcond
        else
           if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
        endif
-
-       bb2 = bbz*bbz
-       bb2 = bb2/(2*mu0)*300.
+!----------------------------------------------------------------------------------------
 !
-       if (ltemperature) pp = gamma1*gamma11*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnTT))
+       bb2 = bbx*bbx + bby*bby + bbz*bbz
+       bb2 = bb2/(2.*mu0)
 !
-       if (lentropy) then
+       if (ltemperature) then
+          pp = gamma1*gamma11*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnTT))
+       else if (lentropy) then          
           if (pretend_lnTT) then
              pp = gamma1*gamma11*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,iss))
           else
              pp = gamma* (f(l1:l2,m1:m2,n1,iss)+f(l1:l2,m1:m2,n1,ilnrho))-gamma1*lnrho0
              pp = exp(pp) * cs20*gamma11
           endif
+       else
+          pp=gamma11*cs20*exp(lnrho0)
        endif
 !
 !   limit plasma beta
 !
-       where (bb2 .gt. sqrt(tini))
-          betaq =  pp / bb2
-       elsewhere
-          betaq = pp * sqrt(tini)
-       endwhere
+       betaq = pp / max(tini,bb2)
 !
-       quen=(1.+betaq**2)/(3.+betaq**2)
+       quen=(1.+betaq**2)/(1e3+betaq**2)
 !
-!   Fill the ghost cells and the bottom layer with velocity field
+!   Fill bottom layer with velocity field
 !
-       do j=1,n1
-         f(l1:l2,m1:m2,j,iux)=uxd(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)*quen
-         f(l1:l2,m1:m2,j,iuy)=uyd(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)*quen
-       enddo
+       f(l1:l2,m1:m2,n1,iux)=uxd(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)*quen
+       f(l1:l2,m1:m2,n1,iuy)=uyd(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)*quen
 !
      endsubroutine uu_driver
 !***********************************************************************
