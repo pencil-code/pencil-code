@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name    : mkcparam
 # Author  : wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started : 06-Jul-2002
-# CVS     : $Id: mkcparam,v 1.81 2008-06-17 15:34:10 ajohan Exp $
+# CVS     : $Id: mkcparam,v 1.82 2008-06-18 06:33:51 ajohan Exp $
 #
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
@@ -350,9 +350,13 @@ subroutine initialize_pencils(p,penc0)
   type (pencil_case) :: p
   real :: penc0
 
-endsubroutine initialize_pencils
-
 EOF
+#
+foreach my $pencil (@pencil_names) {
+  print OUT_PENC_INIT "  p%$pencil = penc0\n";
+}
+#
+print OUT_PENC_INIT "\nendsubroutine initialize_pencils";
 #
 # Close the files.
 #
