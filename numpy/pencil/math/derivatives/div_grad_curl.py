@@ -1,11 +1,12 @@
 #
-# $Id: div_grad_curl.py,v 1.2 2008-06-16 08:33:07 tgastine Exp $
+# $Id: div_grad_curl.py,v 1.3 2008-06-19 08:40:03 dintrans Exp $
 #
 """module to do div, grad, curl (but not 'all that') for pencil-code data.
 
 """
 import numpy as N
 from der import *
+from sys import exit
 
 def div(f,dx,dy,dz):
     """
@@ -42,12 +43,14 @@ def curl(f,dx,dy,dz):
         raise ValueError
 
     curl = N.empty_like(f)
-    if (dy != 0.):
+    if (dy != 0. and dz != 0.):
       curl[0,...] = yder(f[2,...],dy) - zder(f[1,...],dz)
       curl[1,...] = zder(f[0,...],dz) - xder(f[2,...],dx)
       curl[2,...] = xder(f[1,...],dx) - yder(f[0,...],dy)
-    else: # to deal the 2-D case
+    elif (dy == 0.):
       curl[0,...] = zder(f,dz)[0,...] - xder(f,dx)[2,...]
+    else:
+      curl[0,...] = xder(f,dx)[1,...] - yder(f,dy)[0,...]
     
     return curl
 
