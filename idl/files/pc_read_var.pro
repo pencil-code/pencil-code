@@ -67,7 +67,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.74 2008-06-12 13:25:18 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.75 2008-06-19 15:42:47 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -541,7 +541,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Transform to unsheared frame if requested.
 ;
-  if (keyword_set(unshear)) then variables = 'pc_unshear('+variables+',param=param,x=x[dim.l1:dim.l2],t=t)'
+  if (keyword_set(unshear)) then variables = 'pc_unshear('+variables+',param=param,xax=x[dim.l1:dim.l2],t=t)'
 ;
 ; Make structure out of the variables.
 ;
