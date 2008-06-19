@@ -1,4 +1,4 @@
-! $Id: internal_flow.f90,v 1.12 2008-05-21 09:45:22 nilshau Exp $
+! $Id: internal_flow.f90,v 1.13 2008-06-19 14:12:29 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -84,11 +84,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.12 2008-05-21 09:45:22 nilshau Exp $
+!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.13 2008-06-19 14:12:29 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: internal_flow.f90,v 1.12 2008-05-21 09:45:22 nilshau Exp $")
+           "$Id: internal_flow.f90,v 1.13 2008-06-19 14:12:29 nilshau Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -603,13 +603,10 @@ module Special
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
 !   Some precalculated pencils of data are passed in for efficiency
 !   others may be calculated directly from the f array
 !
-!   06-oct-03/tony: coded
+!   2008-06-19/nils: coded
 !
       use Cdata
       use Cparam
@@ -822,7 +819,7 @@ module Special
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom), optional :: val
+      real, optional :: val
       real :: umax,y2,height,h2
       integer :: sgn,i,j,jj
       logical, optional :: rel
@@ -835,7 +832,7 @@ module Special
       case('bot')               ! bottom boundary
         if (present(val)) then
           ! Multiply by three halfs to get max velocity from mean velocity
-          umax=val(j)!*3/2
+          umax=val!*3/2
         else
           umax=0
         endif
@@ -858,7 +855,7 @@ module Special
 
       case('top')               ! top boundary
         if (present(val)) then
-          umax=val(j)
+          umax=val
         else
           umax=0
         endif
