@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name    : mkcparam
 # Author  : wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started : 06-Jul-2002
-# CVS     : $Id: mkcparam,v 1.82 2008-06-18 06:33:51 ajohan Exp $
+# CVS     : $Id: mkcparam,v 1.83 2008-06-19 10:27:52 ajohan Exp $
 #
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
@@ -144,6 +144,8 @@ line: while (defined($line=<INPUT>)) {
   if ($line=~ /$pencils_decl/) {
     my @pencils = split /\s*;\s*/, $2;
     foreach my $pencil (@pencils) {
+#    while ($line =~ s{^(?:! PENCILS PROVIDED|\s*[,;])\s*([a-zA-Z0-9_]+(\([0-9]+(,[0-9]+)*\))?)}{}) {
+#      my $pencil=$1;
       my $pencil_name=$pencil;
       my $pencil_size=$pencil;
 #
