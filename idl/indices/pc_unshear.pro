@@ -1,5 +1,5 @@
 ;;
-;;  $Id: pc_unshear.pro,v 1.3 2008-06-10 09:13:03 ajohan Exp $
+;;  $Id: pc_unshear.pro,v 1.4 2008-06-19 14:57:27 ajohan Exp $
 ;;
 ;;  Transform from sheared to unsheared frame by shifting data along the
 ;;  y-direction to match last purely periodic state.
@@ -18,8 +18,13 @@
 ;;          t : time of snapshot, used if deltay is not provided
 ;;    datadir : directory for reading param, used if param is not provided
 ;;
-function pc_unshear, a, deltay=deltay, x=x, Lx=Lx, Ly=Ly, $
-    param=param, t=t, datadir=datadir
+function pc_unshear, a, deltay=deltay, xax=xax, x0=x0, Lx=Lx, Ly=Ly, $
+    param=param, t=t, interpolation_type=interpolation_type, datadir=datadir
+;
+; Default values.
+;
+default, x0, 0.0d
+default, interpolation_type, 'fourier'
 ;
 ; If deltay is not provided, the program can read the relevant information
 ; from param.
@@ -29,7 +34,7 @@ if (not keyword_set(deltay)) then begin
     if (keyword_set(datadir)) then begin
       pc_read_param, obj=param, datadir=datadir, /quiet
     endif else begin
-      print, 'pc_unshear: must provide either param or datadir or {deltay,x,Lx,Ly}'
+      print, 'pc_unshear: must provide either param or datadir or {deltay,xax,Lx,Ly}'
       return, a
     endelse
   endif
@@ -42,9 +47,9 @@ if (not keyword_set(deltay)) then begin
   deltay=-param.Sshear*Lx*t
 endif
 ;
-; x must always be provided.
+; xax must always be provided.
 ;
-if (not keyword_set(x)) then begin
+if (not keyword_set(xax)) then begin
   print, 'pc_unshear: must provide 1-D array of x-coordinates'
   return, a
 endif
@@ -64,8 +69,8 @@ if (s[0] gt 2) then nz=s[3] else nz=1
 if (s[0] gt 3) then nv=s[4] else nv=1
 if (s[0] gt 4) then nm=s[5] else nm=1
 ;
-if (n_elements(x) ne nx) then begin
-  print, 'error: pc_unshear: x must have same number of elements as a[*,0,0]'
+if (n_elements(xax) ne nx) then begin
+  print, 'error: pc_unshear: xax must have same number of elements as a[*,0,0]'
   return, a
 endif
 ;
@@ -84,29 +89,122 @@ endif
 k0=2*!dpi/Ly
 ky_fft=k0*double([indgen(ny/2+1),-reverse(indgen(ny/2-1)+1)])
 ;
+;  Different interpolation schemes.
+;
+if (interpolation_type eq 'linear') then begin
+;
+;  Linear interpolation.
+;
+  dy=Ly/ny
+  for ix=0,nx-1 do begin
+    pencil_y=reform(a[ix,*,*,*,*])
+    deltay_x=(deltay mod Ly)*(xax[ix]-x0)/Lx
+    deltay_x_int=fix(deltay_x/dy)
+    deltay_x_fra=deltay_x/dy-deltay_x_int
+;
+;  Integer displacement is done as a simple circular shift.
+;
+    pencil_y=shift(pencil_y,deltay_x_int)
+;
+;  Fractional displacement by linear interpolation.
+;
+    pencil_y_ghost=dblarr(nx+2)
+    m1=1 & m2=m1+ny-1
+    pencil_y_ghost[m1:m2]=pencil_y
+    pencil_y_ghost[0]=pencil_y_ghost[m2]
+    pencil_y_ghost[m2+1]=pencil_y_ghost[m1]
+    for iy=m1,m2 do begin
+      if (deltay_x_fra gt 0.0) then begin
+        pencil_y[iy-1,*,*,*,*]=pencil_y_ghost[iy,*,*,*,*]+(pencil_y_ghost[iy+1,*,*,*,*]-pencil_y_ghost[iy,*,*,*,*])*deltay_x_fra
+      endif else begin
+        pencil_y[iy-1,*,*,*,*]=pencil_y_ghost[iy,*,*,*,*]+(pencil_y_ghost[iy,*,*,*,*]-pencil_y_ghost[iy-1,*,*,*,*])*deltay_x_fra
+      endelse
+    endfor
+    a[ix,*,*,*,*]=pencil_y
+  endfor
+endif else if (interpolation_type eq 'sixth') then begin
+;
+;  Sixth order polynomial interpolation.
+;
+  dy=Ly/ny
+  for ix=0,nx-1 do begin
+    deltay_x=deltay*(xax[ix]-x0)/Lx
+    deltay_x_int=fix(deltay_x/dy)
+    deltay_x_fra=deltay_x/dy-deltay_x_int
+
+    pencil_y=reform(a[ix,*])
+;
+;  Integer displacement is done as a simple circular shift.
+;
+    pencil_y=shift(pencil_y,deltay_x_int)
+;
+;  Fractional displacement by interpolation.
+;    
+    pencil_y_ghost=dblarr(nx+6)
+    m1=3 & m2=m1+ny-1
+    pencil_y_ghost[m1:m2]=pencil_y
+    pencil_y_ghost[0:2]=pencil_y_ghost[m2-2:m2]
+    pencil_y_ghost[m2+1:m2+3]=pencil_y_ghost[m1:m1+2]
+    frak=abs(deltay_x_fra)
+    c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
+    c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
+    c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
+    c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
+    c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
+    c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
+    if (deltay_x_fra lt 0.0) then begin
+      for iy=m1,m2 do begin
+        pencil_y[iy-3]=c1*pencil_y_ghost[iy-2] + $
+                       c2*pencil_y_ghost[iy-1] + $
+                       c3*pencil_y_ghost[iy]   + $
+                       c4*pencil_y_ghost[iy+1] + $
+                       c5*pencil_y_ghost[iy+2] + $
+                       c6*pencil_y_ghost[iy+3]
+      endfor
+    endif else begin
+      for iy=m1,m2 do begin
+        pencil_y[iy-3]=c1*pencil_y_ghost[iy+2] + $
+                       c2*pencil_y_ghost[iy+1] + $
+                       c3*pencil_y_ghost[iy]   + $
+                       c4*pencil_y_ghost[iy-1] + $
+                       c5*pencil_y_ghost[iy-2] + $
+                       c6*pencil_y_ghost[iy-3]
+      endfor
+    endelse
+    a[ix,*,*,*,*]=pencil_y
+  endfor
+endif else if (interpolation_type eq 'fourier') then begin
+;
 ;  Fourier transform along y and interpolate in Fourier space.
 ;
-for ix=0,nx-1 do begin
+  for ix=0,nx-1 do begin
 ;
 ;  Define complex shift array.
 ;
-  deltay_x=-(deltay mod Ly)*x[ix]/Lx
+;    deltay_x=(deltay mod Ly)*(xax[ix]-x0)/Lx
+    deltay_x=deltay*(xax[ix]-x0)/Lx
+    print, ix, deltay_x
 ;
 ;  Fourier transform along y.
 ;
-  plane_yz=reform(a[ix,*,*,*,*])
-  plane_yz_ky=fft(plane_yz,dim=1)
+    plane_yz=reform(a[ix,*,*,*,*])
+    plane_yz_ky=fft(plane_yz,dim=1)
 ;
 ;  Shift plane by the amount deltay_x in Fourier space.
 ;
-  plane_yz_ky=plane_yz_ky*spread(exp(complex(0.0d,ky_fft*deltay_x)),[1,2,3],[nz,nv,nm])
+    plane_yz_ky=plane_yz_ky*spread(exp(complex(0.0d,ky_fft*deltay_x)),[1,2,3],[nz,nv,nm])
 ;
 ;  Transform back to real space.
 ;
-  plane_yz=fft(plane_yz_ky,dim=1,/inverse)
-  a[ix,*,*,*,*]=plane_yz
+    plane_yz=fft(plane_yz_ky,dim=1,/inverse)
+    a[ix,*,*,*,*]=plane_yz
 ;
-endfor
+  endfor
+;
+endif else begin
+  print, 'pc_unshear: no such interpolation type ', interpolation_type
+  return, a
+endelse
 ;
 return, a
 ;
