@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.149 2008-06-17 15:34:08 ajohan Exp $
+! $Id: forcing.f90,v 1.150 2008-06-19 12:04:11 dhruba Exp $
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -52,6 +52,10 @@ module Forcing
 ! For helical forcing in sphreical polar coordinate system
   real,allocatable,dimension(:,:,:) :: psif
   real,allocatable,dimension(:,:) :: cklist
+  logical :: lfastCK=.false.
+! allocated only if we have lfastCK=T
+  real,allocatable,dimension(:,:,:) :: Zpsi_list
+  real,allocatable,dimension(:,:,:) :: RYlm_list,IYlm_list
   integer :: helsign=0,nlist_ck=25
   real :: fpre = 1.0
 ! Persistent stuff
@@ -87,7 +91,7 @@ module Forcing
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
        iforce_profile,lscale_kvector_tobox, &
        force_direction, force_strength, &
-       lhelical_test,fpre,helsign,nlist_ck,&
+       lhelical_test,lfastCK,fpre,helsign,nlist_ck,&
        lforcing_cont,iforcing_cont, &
        lembed,k1_ff,ampl_ff,width_fcont,x1_fcont,x2_fcont, &
        kf_fcont,omega_fcont
@@ -117,7 +121,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.149 2008-06-17 15:34:08 ajohan Exp $")
+           "$Id: forcing.f90,v 1.150 2008-06-19 12:04:11 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -754,7 +758,7 @@ module Forcing
       real, dimension(nx,3,3) :: psi_ij,Tij
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: emm,iread,l,j,jf,ell,jalpha,Legendrel,lmindex,ilread,ilm,&
-                 aindex,ckno
+                 aindex,ckno,ilist
       complex :: psi_ell_m
       real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,& 
               Pell,psilm,RYlm,IYlm
@@ -791,6 +795,35 @@ module Forcing
           read(76,*) (cklist(ilread,ilm),ilm=1,5)
         enddo
         close(76)
+        if (lfastCK) then
+          allocate(Zpsi_list(mx,nlist_ck,3))
+          allocate(RYlm_list(my,mz,nlist_ck),IYlm_list(my,mz,nlist_ck))
+          do ilist=1,nlist_ck
+            emm = cklist(ilist,1)
+            Legendrel = cklist(ilist,2)
+            do n=n1-nghost,n2+nghost
+              do m=m1-nghost,m2+nghost
+                call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n))
+                call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
+                RYlm_list(m,n,ilist)=RYlm
+                IYlm_list(m,n,ilist)=IYlm
+              enddo
+            enddo
+            do aindex=1,3
+              Balpha = cklist(ilist,2+aindex)
+              call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
+              call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
+              a_ell = -anum/adenom
+              do l=l1-nghost,l2+nghost
+                alphar=Balpha*x(l)
+                call sp_besselj_l(jlm,Legendrel,alphar)
+                call sp_bessely_l(ylm,Legendrel,alphar)
+                Zpsi_list(l,ilist,aindex) = (a_ell*jlm+ylm)
+              enddo
+            enddo
+          enddo
+        else
+        endif
         ifirst= ifirst+1
         if (lroot) write(*,*) 'dhruba: first time in Chandra-Kendall successful'
       else
@@ -807,28 +840,39 @@ module Forcing
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
 ! Now construct the Z_psi(r) 
-      call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
-      call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
-      a_ell = -anum/adenom
+   call random_number_wrapper(rphase1)
+   rphase1=rphase1*2*pi
+   if(lfastCK) then
+     do n=n1-nghost,n2+nghost
+       do m=m1-nghost,m2+nghost
+         psilm=0.
+         psilm= RYlm_list(m,n,lmindex)*cos(rphase1)- &
+           IYlm_list(m,n,lmindex)*sin(rphase1)
+         psif(:,m,n) = psilm*Zpsi_list(:,lmindex,aindex+1)
+       enddo
+     enddo
+   else
+     call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
+     call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
+     a_ell = -anum/adenom
 !        write(*,*) 'dhruba:',anum,adenom,Legendrel,Bessel_alpha,x(l1)
-      do l=l1-nghost,l2+nghost
-        alphar=Balpha*x(l)
-        call sp_besselj_l(jlm,Legendrel,alphar)
-        call sp_bessely_l(ylm,Legendrel,alphar)
-        Z_psi(l) = (a_ell*jlm+ylm)
-      enddo
+     do l=l1-nghost,l2+nghost
+       alphar=Balpha*x(l)
+       call sp_besselj_l(jlm,Legendrel,alphar)
+       call sp_bessely_l(ylm,Legendrel,alphar)
+       Z_psi(l) = (a_ell*jlm+ylm)
+     enddo
 !-------
-      call random_number_wrapper(rphase1)
-      rphase1=rphase1*2*pi
-      do n=n1-nghost,n2+nghost
-        do m=m1-nghost,m2+nghost
-          psilm=0.
-          call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n)) 
-          call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
-          psilm= RYlm*cos(rphase1)-IYlm*sin(rphase1)
-          psif(:,m,n) = Z_psi*psilm
-        enddo
-      enddo
+     do n=n1-nghost,n2+nghost
+       do m=m1-nghost,m2+nghost
+         psilm=0.
+         call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n)) 
+         call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
+         psilm= RYlm*cos(rphase1)-IYlm*sin(rphase1)
+         psif(:,m,n) = Z_psi*psilm
+       enddo
+     enddo
+   endif
 ! ----- Now calculate the force from the potential and add this to
 ! velocity
 ! get a random unit vector with three components ee_r, ee_theta, ee_phi
@@ -836,36 +880,36 @@ module Forcing
 ! get random psi. 
 !      write(*,*) 'mmin=',mmin
 !! ----------now generate and add the force ------------
-      call random_number_wrapper(rz)
-      ee(3) = rz
-      call random_number_wrapper(rphase2)
-      rphase2 = pi*rphase2
-      ee(1) = sqrt(1-rz*rz)*cos(rphase2)
-      ee(2) = sqrt(1-rz*rz)*sin(rphase2)
-      fnorm = fpre*cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt)
- !     write(*,*) 'dhruba:',fnorm*sqrt(dt),dt,ee(1),ee(2),ee(3)
-      do n=n1,n2
-        do m=m1,m2
-          psi(:,1) = psif(l1:l2,m,n)*ee(1)
-          psi(:,2) = psif(l1:l2,m,n)*ee(2)
-          psi(:,3) = psif(l1:l2,m,n)*ee(3)
-          call gij_psi(psif,ee,psi_ij)
-          call curl_mn(psi_ij,capitalT,psi)
-          call gij_psi_etc(psif,ee,psi,psi_ij,Tij)
-          call curl_mn(Tij,capitalS,capitalT)
-          capitalS = float(helsign)*(1./Balpha)*capitalS
-          capitalH = capitalT + capitalS
-          do j=1,3
-            jf = iuu+j-1
-            if(lhelical_test) then
-              f(l1:l2,m,n,jf) = fnorm*capitalH(:,j)
-            else
+   call random_number_wrapper(rz)
+   ee(3) = rz
+   call random_number_wrapper(rphase2)
+   rphase2 = pi*rphase2
+   ee(1) = sqrt(1-rz*rz)*cos(rphase2)
+   ee(2) = sqrt(1-rz*rz)*sin(rphase2)
+   fnorm = fpre*cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt)
+!     write(*,*) 'dhruba:',fnorm*sqrt(dt),dt,ee(1),ee(2),ee(3)
+   do n=n1,n2
+     do m=m1,m2
+       psi(:,1) = psif(l1:l2,m,n)*ee(1)
+       psi(:,2) = psif(l1:l2,m,n)*ee(2)
+       psi(:,3) = psif(l1:l2,m,n)*ee(3)
+       call gij_psi(psif,ee,psi_ij)
+       call curl_mn(psi_ij,capitalT,psi)
+       call gij_psi_etc(psif,ee,psi,psi_ij,Tij)
+       call curl_mn(Tij,capitalS,capitalT)
+       capitalS = float(helsign)*(1./Balpha)*capitalS
+       capitalH = capitalT + capitalS
+       do j=1,3
+         jf = iuu+j-1
+         if(lhelical_test) then
+           f(l1:l2,m,n,jf) = fnorm*capitalH(:,j)
+         else
 ! stochastic euler scheme of integration[sqrt(dt) is already included in fnorm] 
-            f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ fnorm*capitalH(:,j)
-            endif
-          enddo
-        enddo
-      enddo
+           f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ fnorm*capitalH(:,j)
+         endif
+       enddo
+     enddo
+   enddo
  !! -------------     
     endsubroutine forcing_chandra_kendall
 !***********************************************************************
