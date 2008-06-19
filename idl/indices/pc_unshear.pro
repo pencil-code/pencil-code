@@ -1,5 +1,5 @@
 ;;
-;;  $Id: pc_unshear.pro,v 1.4 2008-06-19 14:57:27 ajohan Exp $
+;;  $Id: pc_unshear.pro,v 1.5 2008-06-19 14:57:54 ajohan Exp $
 ;;
 ;;  Transform from sheared to unsheared frame by shifting data along the
 ;;  y-direction to match last purely periodic state.
@@ -181,9 +181,7 @@ endif else if (interpolation_type eq 'fourier') then begin
 ;
 ;  Define complex shift array.
 ;
-;    deltay_x=(deltay mod Ly)*(xax[ix]-x0)/Lx
-    deltay_x=deltay*(xax[ix]-x0)/Lx
-    print, ix, deltay_x
+    deltay_x=(deltay mod Ly)*(xax[ix]-x0)/Lx
 ;
 ;  Fourier transform along y.
 ;
