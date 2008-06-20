@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.22 2007-12-13 13:23:43 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.23 2008-06-20 06:33:19 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -13,7 +13,8 @@ pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
     position=position, fillwindow=fillwindow, tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
-    xsize=xsize, ysize=ysize, it1=it1, variables=variables, quiet=quiet
+    xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
+    xshift=xshift, debug=debug, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;;
@@ -50,6 +51,8 @@ default, fillwindow, 0
 default, tformat, '(f5.1)'
 default, it1, 10
 default, variables, ''
+default, xshift, 0
+default, debug, 0
 default, quiet, 0
 ;;
 ;;  Define line and character thickness (will revert to old settings later).
@@ -63,6 +66,10 @@ if (fillwindow) then position=[0.1,0.1,0.9,0.9]
 ;;
 pc_read_dim, obj=dim, datadir=datadir, /quiet
 pc_set_precision, dim=dim, /quiet
+;;
+;;  Need to know box size for certain operations.
+;;
+if (xshift ne 0) then pc_read_param, obj=par, datadir=datadir, /quiet
 ;;
 ;;  Derived dimensions.
 ;;
@@ -154,10 +161,47 @@ endif
 it=0 & itimg=0
 lwindow_opened=0
 while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
-
+;;
+;;  Read time.
+;;
   readu, file, t
+  if (it eq 0) then t0=t
+;;
+;;  Read data.
+;;    
   if ( (t ge tmin) and (it mod njump eq 0) ) then begin
     readu, file, array
+;;
+;;  Shift plane in the radial direction.
+;;
+    if (xshift ne 0) then begin
+      for ivar=1,nvarall-1 do begin
+        array[*,*,ivar]=shift(array[*,*,ivar],xshift,0)
+      endfor
+;;
+;;  With shear we need to displace part of the plane.
+;;
+      if (par.Sshear ne 0.0) then begin
+        dy=yax[1]-yax[0]
+        deltay=(-par.Sshear*t*par.Lxyz[0]) mod par.Lxyz[1]
+        deltay_int=fix(deltay/dy)
+        if (debug) then print, t, deltay, deltay_int, deltay/dy-deltay_int
+        for ivar=1,nvarall-1 do begin
+          array2=array[*,*,ivar]
+          for ix=0,xshift-1 do begin
+            array2[ix,*]=shift(reform(array2[ix,*]),deltay_int)
+            array2[ix,*]=pc_shift_6th(reform(array2[ix,*]),yax,deltay-deltay_int*dy)
+          endfor
+;;
+;;  Comove with central grid point.
+;;        
+          for ix=0,nx-1 do begin
+            array2[ix,*]=pc_shift_6th(reform(array2[ix,*]),yax,-par.Sshear*(t-t0)*xax[0])
+          endfor
+          array[*,*,ivar]=array2
+        endfor
+      endif
+    endif
 ;;
 ;;  Plot requested variable (plotting is turned off by default).
 ;;
