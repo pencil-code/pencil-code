@@ -1,4 +1,4 @@
-! $Id: neutralvelocity.f90,v 1.22 2008-06-17 15:34:09 ajohan Exp $
+! $Id: neutralvelocity.f90,v 1.23 2008-06-20 10:13:26 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -132,7 +132,7 @@ module NeutralVelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutralvelocity.f90,v 1.22 2008-06-17 15:34:09 ajohan Exp $")
+           "$Id: neutralvelocity.f90,v 1.23 2008-06-20 10:13:26 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -691,7 +691,7 @@ module NeutralVelocity
              call phizsum_mn_name_r(p%uun(:,3),idiag_unzmr)
       endif
 !
-!  phi-averages
+!  2-D averages.
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then

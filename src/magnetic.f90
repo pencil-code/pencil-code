@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.528 2008-06-18 09:46:40 ajohan Exp $
+! $Id: magnetic.f90,v 1.529 2008-06-20 10:13:26 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -428,7 +428,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.528 2008-06-18 09:46:40 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.529 2008-06-20 10:13:26 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2240,7 +2240,7 @@ module Magnetic
           call xyintegrate_mn_name_z(p%bb(:,3),idiag_mflux_z)
       endif
 !
-!  phi-averages
+!  2-D averages.
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.441 2008-06-17 15:34:08 ajohan Exp $
+! $Id: hydro.f90,v 1.442 2008-06-20 10:13:26 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -349,7 +349,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.441 2008-06-17 15:34:08 ajohan Exp $")
+           "$Id: hydro.f90,v 1.442 2008-06-20 10:13:26 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1551,7 +1551,7 @@ use Mpicomm, only: stop_it
              call phizsum_mn_name_r(p%oo(:,3),idiag_ozmr)
         endif
 !
-!  phi-averages
+!  2-D averages.
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then

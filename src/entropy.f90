@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.551 2008-06-17 15:34:08 ajohan Exp $
+! $Id: entropy.f90,v 1.552 2008-06-20 10:13:26 ajohan Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -223,7 +223,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.551 2008-06-17 15:34:08 ajohan Exp $")
+           "$Id: entropy.f90,v 1.552 2008-06-20 10:13:26 ajohan Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -2133,6 +2133,8 @@ module Entropy
         if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma11,idiag_TTp,p)
       endif
 !
+!  1-D averages.
+!
       if (l1ddiagnos) then
         if (idiag_fconvz/=0) &
             call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
@@ -2151,6 +2153,8 @@ module Entropy
         if (idiag_uzTTmz/=0) &
             call xysum_mn_name_z(p%uu(:,3)*p%TT,idiag_uzTTmz)
       endif
+!
+!  2-D averages.
 !
       if (l2davgfirst) then
         if (idiag_TTmxy/=0) call zsum_mn_name_xy(p%TT,idiag_TTmxy)
