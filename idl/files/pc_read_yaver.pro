@@ -1,4 +1,4 @@
-;; $Id: pc_read_yaver.pro,v 1.11 2007-12-13 13:23:42 ajohan Exp $
+;; $Id: pc_read_yaver.pro,v 1.12 2008-06-20 13:55:51 ajohan Exp $
 ;;
 ;;   Read y-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -13,7 +13,8 @@ pro pc_read_yaver, object=object, varfile=varfile, datadir=datadir, $
     t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
     position=position, fillwindow=fillwindow, tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
-    xsize=xsize, ysize=ysize, it1=it1, variables=variables, quiet=quiet
+    xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
+    colorbar=colorbar, bartitle=bartitle, readpar=readpar, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;;
@@ -50,6 +51,9 @@ default, fillwindow, 0
 default, tformat, '(f5.1)'
 default, it1, 10
 default, variables, ''
+default, colorbar, 0
+default, bartitle, ''
+default, readpar, 0
 default, quiet, 0
 ;;
 ;;  Define line and character thickness (will revert to old settings later).
@@ -64,6 +68,10 @@ if (fillwindow) then position=[0.1,0.1,0.9,0.9]
 pc_read_dim, obj=dim, datadir=datadir, /quiet
 pc_set_precision, dim=dim, /quiet
 ;;
+;;  Need to know box size for proper axes.
+;;
+if (readpar) then pc_read_param, obj=par, datadir=datadir, /quiet
+;;
 ;;  Derived dimensions.
 ;;
 nx=dim.nx
@@ -73,8 +81,13 @@ nz=dim.nz
 ;;
 if (n_elements(xax) eq 0) then xax=findgen(nx)
 if (n_elements(zax) eq 0) then zax=findgen(nz)
-x0=xax[0] & x1=xax[nx-1] & z0=zax[0] & z1=zax[nz-1]
-Lx=xax[nx-1]-xax[0] & Lz=zax[nz-1]-zax[0]
+if (n_elements(par) ne 0) then begin
+  x0=par.xyz0[0] & x1=par.xyz1[0] & z0=par.xyz0[2] & z1=par.xyz1[2]
+  Lx=par.Lxyz[0] & Lz=par.Lxyz[2]
+endif else begin
+  x0=xax[0] & x1=xax[nx-1] & z0=zax[0] & z1=zax[nz-1]
+  Lx=xax[nx-1]-xax[0] & Lz=zax[nz-1]-zax[0]
+endelse
 ;;
 ;;  Read variables from yaver.in
 ;;
@@ -246,7 +259,11 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
                [subpos[1],subpos[1],subpos[3],subpos[3],subpos[1]], /normal, $
                thick=thick
       endif
-
+;;  Colorbar indicating range.
+      if (colorbar) then begin
+        colorbar, range=[min,max], pos=[0.89,0.15,0.91,0.35], divisions=1, $
+            title=bartitle, /normal, /vertical
+      endif
 ;;  For png output, take image from z-buffer.          
       if (png) then begin
         image = tvrd()
