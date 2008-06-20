@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.24 2008-06-20 09:55:08 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.25 2008-06-20 13:55:40 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -14,7 +14,8 @@ pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     position=position, fillwindow=fillwindow, tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
-    xshift=xshift, timefix=timefix, debug=debug, quiet=quiet
+    colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, $
+    readpar=readpar, debug=debug, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;;
@@ -51,8 +52,11 @@ default, fillwindow, 0
 default, tformat, '(f5.1)'
 default, it1, 10
 default, variables, ''
+default, colorbar, 0
+default, bartitle, ''
 default, xshift, 0
 default, timefix, 0
+default, readpar, 0
 default, debug, 0
 default, quiet, 0
 ;;
@@ -68,9 +72,10 @@ if (fillwindow) then position=[0.1,0.1,0.9,0.9]
 pc_read_dim, obj=dim, datadir=datadir, /quiet
 pc_set_precision, dim=dim, /quiet
 ;;
-;;  Need to know box size for certain operations.
+;;  Need to know box size for proper axes and for shifting the shearing
+;;  frame.
 ;;
-if (xshift ne 0) then pc_read_param, obj=par, datadir=datadir, /quiet
+if (readpar or (xshift ne 0)) then pc_read_param, obj=par, datadir=datadir, /quiet
 ;;
 ;;  Some z-averages are erroneously calculated together with time series
 ;;  diagnostics. The proper time is thus found in time_series.dat.
@@ -86,8 +91,13 @@ ny=dim.ny
 ;;
 if (n_elements(xax) eq 0) then xax=findgen(nx)
 if (n_elements(yax) eq 0) then yax=findgen(ny)
-x0=xax[0] & x1=xax[nx-1] & y0=yax[0] & y1=yax[ny-1]
-Lx=xax[nx-1]-xax[0] & Ly=yax[ny-1]-yax[0]
+if (n_elements(par) ne 0) then begin
+  x0=par.xyz0[0] & x1=par.xyz1[0] & y0=par.xyz0[1] & y1=par.xyz1[1]
+  Lx=par.Lxyz[0] & Ly=par.Lxyz[1]
+endif else begin
+  x0=xax[0] & x1=xax[nx-1] & y0=yax[0] & y1=yax[ny-1]
+  Lx=xax[nx-1]-xax[0] & Ly=yax[ny-1]-yax[0]
+endelse
 ;;
 ;;  Read variables from zaver.in
 ;;
@@ -243,6 +253,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
           lwindow_opened=1
         endelse
       endelse
+      sym=texsyms()
 ;;  Put current time in title if requested.      
       if (t_title) then $
           title='t='+strtrim(string(t/t_scale-t_zero,format=tformat),2)
@@ -307,7 +318,11 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
                [subpos[1],subpos[1],subpos[3],subpos[3],subpos[1]], /normal, $
                thick=thick
       endif
-
+;;  Colorbar indicating range.
+      if (colorbar) then begin
+        colorbar, range=[min,max], pos=[0.89,0.15,0.91,0.35], divisions=1, $
+            title=bartitle, /normal, /vertical
+      endif
 ;;  For png output, take image from z-buffer.          
       if (png) then begin
         image = tvrd()
