@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.36 2008-06-17 15:34:09 ajohan Exp $
+! $Id: shock.f90,v 1.37 2008-06-20 10:02:05 bingert Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -113,7 +113,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.36 2008-06-17 15:34:09 ajohan Exp $")
+           "$Id: shock.f90,v 1.37 2008-06-20 10:02:05 bingert Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -139,7 +139,7 @@ module Shock
 !
 !  20-nov-02/tony: coded
 !
-       use CData
+       use Cdata
 
        real, dimension (mx,my,mz,mfarray) :: f
        logical, intent(in) :: lstarting
@@ -189,7 +189,7 @@ module Shock
 !  periodic boundaries if the shock viscosity is assumed periodic.
 !
       if (.not. lstarting .and. .not. lforce_periodic_shockviscosity) then
-        if (bcx(ishock)=='p' .and. .not. all((/bcx(iux:iuz)/)=='p')) then
+        if (bcx(ishock)=='p' .and. .not. all(bcx(iux:iuz)=='p'   )) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcx=''p'', but the velocity field is not'
             print*, '                  periodic! (you must set a proper boundary condition for the'
@@ -200,7 +200,7 @@ module Shock
           endif
           call fatal_error('initialize_shock','')
         endif
-        if (bcy(ishock)=='p' .and. .not. all((/bcy(iux:iuz)/)=='p')) then
+        if (bcy(ishock)=='p' .and. .not. all(bcy(iux:iuz)=='p')) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcy=''p'', but the velocity field is not'
             print*, '                  periodic! (you must set a proper boundary condition for the'
@@ -211,7 +211,7 @@ module Shock
           endif
           call fatal_error('initialize_shock','')
         endif
-        if (bcz(ishock)=='p' .and. .not. all((/bcz(iux:iuz)/)=='p')) then
+        if (bcz(ishock)=='p' .and. .not. all(bcz(iux:iuz)=='p')) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcz=''p'', but the velocity field is not'
             print*, '                  periodic! (you must set a proper boundary condition for the'
