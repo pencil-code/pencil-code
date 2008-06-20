@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.96 2007-08-28 19:25:28 brandenb Exp $
+! $Id: prints.f90,v 1.97 2008-06-20 07:44:40 ajohan Exp $
 
 module Print
 
@@ -364,7 +364,7 @@ module Print
       if (lroot.and.nnamexz>0) then
         open(1, file=trim(datadir)//'/yaverages.dat', form='unformatted', &
             position='append')
-        write(1) t
+        write(1) t2davgfirst
         write(1) fnamexz(:,:,:,1:nnamexz)
         close(1)
       endif
@@ -385,7 +385,7 @@ module Print
       if (lroot.and.nnamexy>0) then
         open(1, file=trim(datadir)//'/zaverages.dat', form='unformatted', &
             position='append')
-        write(1) t
+        write(1) t2davgfirst
         write(1) fnamexy(:,:,:,1:nnamexy)
         close(1)
       endif
