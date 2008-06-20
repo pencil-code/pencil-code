@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.45 2007-11-21 13:56:36 wlyra Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.46 2008-06-20 10:12:43 ajohan Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -109,7 +109,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.45 2007-11-21 13:56:36 wlyra Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.46 2008-06-20 10:12:43 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -373,15 +373,21 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
            bz2 = bb(:,3)*bb(:,3)
            call sum_mn_name(bz2,idiag_bz2m)
         endif
+      endif
 !
-!  this doesn't need to be as frequent (check later)
+!  1-D averages.
 !
-        if (idiag_bxmz/=0.or.idiag_bxmxy/=0) bx=bb(:,1)
-        if (idiag_bymz/=0.or.idiag_bymxy/=0) by=bb(:,2)
-        if (idiag_bzmz/=0.or.idiag_bzmxy/=0) bz=bb(:,3)
+      if (l1ddiagnos) then
+        bx=bb(:,1); by=bb(:,2); bz=bb(:,3)
         if (idiag_bxmz/=0) call xysum_mn_name_z(bx,idiag_bxmz)
         if (idiag_bymz/=0) call xysum_mn_name_z(by,idiag_bymz)
         if (idiag_bzmz/=0) call xysum_mn_name_z(bz,idiag_bzmz)
+      endif
+!
+!  2-D averages.
+!
+      if (l2davgfirst) then
+        bx=bb(:,1); by=bb(:,2); bz=bb(:,3)
         if (idiag_bxmxy/=0) call zsum_mn_name_xy(bx,idiag_bxmxy)
         if (idiag_bymxy/=0) call zsum_mn_name_xy(by,idiag_bymxy)
         if (idiag_bzmxy/=0) call zsum_mn_name_xy(bz,idiag_bzmxy)
@@ -390,7 +396,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
 !
-        if(lvid.and.lfirst) then
+        if (lvid.and.lfirst) then
           do j=1,3
             bb_yz(m-m1+1,n-n1+1,j)=bb(ix-l1+1,j)
             if (m.eq.iy)  bb_xz(:,n-n1+1,j)=bb(:,j)

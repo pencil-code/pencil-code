@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.126 2008-06-17 15:34:08 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.127 2008-06-20 10:12:43 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -139,7 +139,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.126 2008-06-17 15:34:08 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.127 2008-06-20 10:12:43 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1140,15 +1140,6 @@ module Dustvelocity
                 call xysum_mn_name_z(p%uud(:,3,k)**2,idiag_udz2mz(k))
           endif
 !
-!  z-averages
-!
-          if (idiag_udxmxy(k)/=0) &
-              call zsum_mn_name_xy(p%uud(:,1,k),idiag_udxmxy(k))
-          if (idiag_udymxy(k)/=0) &
-              call zsum_mn_name_xy(p%uud(:,2,k),idiag_udymxy(k))
-          if (idiag_udzmxy(k)/=0) &
-              call zsum_mn_name_xy(p%uud(:,3,k),idiag_udzmxy(k))
-!
 !  kinetic field components at one point (=pt)
 !
           if (lroot.and.m==mpoint.and.n==npoint) then
@@ -1169,6 +1160,17 @@ module Dustvelocity
           if (idiag_od2m(k)/=0) call sum_mn_name(p%od2,idiag_od2m(k))
           if (idiag_oudm(k)/=0) call sum_mn_name(p%oud,idiag_oudm(k))
 !
+        endif
+!
+!  2-D averages.
+!
+        if (l2davgfirst) then
+          if (idiag_udxmxy(k)/=0) &
+              call zsum_mn_name_xy(p%uud(:,1,k),idiag_udxmxy(k))
+          if (idiag_udymxy(k)/=0) &
+              call zsum_mn_name_xy(p%uud(:,2,k),idiag_udymxy(k))
+          if (idiag_udzmxy(k)/=0) &
+              call zsum_mn_name_xy(p%uud(:,3,k),idiag_udzmxy(k))
         endif
 !
 !  End loop over dust species

@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.31 2008-05-26 09:37:12 bingert Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.32 2008-06-20 10:12:43 ajohan Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -95,7 +95,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.31 2008-05-26 09:37:12 bingert Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.32 2008-06-20 10:12:43 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -403,9 +403,6 @@ module Hydro
         if (idiag_uxmz/=0) call xysum_mn_name_z(ux,idiag_uxmz)
         if (idiag_uymz/=0) call xysum_mn_name_z(uy,idiag_uymz)
         if (idiag_uzmz/=0) call xysum_mn_name_z(uz,idiag_uzmz)
-        if (idiag_uxmxy/=0) call zsum_mn_name_xy(ux,idiag_uxmxy)
-        if (idiag_uymxy/=0) call zsum_mn_name_xy(uy,idiag_uymxy)
-        if (idiag_uzmxy/=0) call zsum_mn_name_xy(uz,idiag_uzmxy)
         !
         !  mean momenta
         !
@@ -439,6 +436,14 @@ module Hydro
             if(idiag_o2m/=0)  call sum_mn_name(o2,idiag_o2m)
           endif
         endif
+      endif
+!
+!  2-D averages.
+!
+      if (l2davgfirst) then
+        if (idiag_uxmxy/=0) call zsum_mn_name_xy(ux,idiag_uxmxy)
+        if (idiag_uymxy/=0) call zsum_mn_name_xy(uy,idiag_uymxy)
+        if (idiag_uzmxy/=0) call zsum_mn_name_xy(uz,idiag_uzmxy)
       endif
 !
 !  make sure compiler doesn't complain, so need to set them
