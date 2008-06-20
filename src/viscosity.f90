@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.98 2008-06-17 15:34:10 ajohan Exp $
+! $Id: viscosity.f90,v 1.99 2008-06-20 14:03:55 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -32,6 +32,7 @@ module Viscosity
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   real :: nu=0., nu_mol=0., nu_hyper2=0., nu_hyper3=0., nu_shock=0.
   real :: nu_jump=1., znu=0., xnu=0., widthnu=0.1, C_smag=0.0
+  real :: pnlaw=0.
   real, dimension(3) :: nu_aniso_hyper3=0.
 
   ! dummy logical
@@ -42,6 +43,8 @@ module Viscosity
   logical :: lvisc_nu_const=.false.
   logical :: lvisc_nu_prof=.false.
   logical :: lvisc_nu_profx=.false.
+  logical :: lvisc_nu_profr=.false.
+  logical :: lvisc_nu_profr_powerlaw=.false.
   logical :: lvisc_nu_shock=.false.
   logical :: lvisc_hyper2_simplified=.false.
   logical :: lvisc_hyper3_simplified=.false.
@@ -66,7 +69,8 @@ module Viscosity
   ! run parameters
   namelist /viscosity_run_pars/ &
       nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
-      nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,widthnu
+      nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,widthnu, &
+      pnlaw
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
@@ -111,7 +115,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.98 2008-06-17 15:34:10 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.99 2008-06-20 14:03:55 wlyra Exp $")
 !
 !  Default viscosity.
 !
@@ -139,6 +143,8 @@ module Viscosity
       lvisc_nu_const=.false.
       lvisc_nu_prof=.false.
       lvisc_nu_profx=.false.
+      lvisc_nu_profr=.false.
+      lvisc_nu_profr_powerlaw=.false.
       lvisc_nu_shock=.false.
       lvisc_hyper2_simplified=.false.
       lvisc_hyper3_simplified=.false.
@@ -175,6 +181,14 @@ module Viscosity
           if (lroot) print*,'viscous force with a horizontal profile for nu'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nu_profx=.true.
+        case('nu-profr')
+          if (lroot) print*,'viscous force with a radial profile for nu'
+          if (nu/=0.) lpenc_requested(i_sij)=.true.
+          lvisc_nu_profr=.true.
+        case('nu-profr-powerlaw')
+          if (lroot) print*,'viscous force with a power law profile'
+          if (nu/=0.) lpenc_requested(i_sij)=.true.
+          lvisc_nu_profr_powerlaw=.true.
         case('nu-shock','shock')
           if (lroot) print*,'viscous force: nu_shock*(XXXXXXXXXXX)'
           lvisc_nu_shock=.true.
@@ -426,10 +440,12 @@ module Viscosity
       if ((lentropy.or.ltemperature) .and. &
           (lvisc_simplified .or. lvisc_rho_nu_const .or. &
            lvisc_nu_const .or. lvisc_nu_shock .or. &
-           lvisc_nu_prof .or. lvisc_nu_profx))&
+           lvisc_nu_prof .or. lvisc_nu_profx .or. &
+           lvisc_nu_profr .or. lvisc_nu_profr_powerlaw))&
            lpenc_requested(i_TT1)=.true.
       if (lvisc_rho_nu_const .or. lvisc_nu_const .or. &
-          lvisc_nu_prof .or. lvisc_nu_profx) then
+           lvisc_nu_prof .or. lvisc_nu_profx .or. &
+           lvisc_nu_profr .or. lvisc_nu_profr_powerlaw) then
         if (lentropy.or.ltemperature) lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
@@ -439,9 +455,16 @@ module Viscosity
       if (lvisc_smag_cross_simplified) lpenc_requested(i_ss12)=.true.
       if (lvisc_nu_prof) lpenc_requested(i_z_mn)=.true.
       if (lvisc_nu_profx) lpenc_requested(i_x_mn)=.true.
+      if (lvisc_nu_profr) then 
+        lpenc_requested(i_rcyl_mn)=.true.
+        if (lcylinder_in_a_box) lpenc_requested(i_rcyl_mn1)=.true.
+      endif
+      if (lvisc_nu_profr_powerlaw) lpenc_requested(i_rcyl_mn)=.true.
       if (lvisc_simplified .or. lvisc_rho_nu_const .or. lvisc_nu_const .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
-          lvisc_nu_prof .or. lvisc_nu_profx) lpenc_requested(i_del2u)=.true.
+          lvisc_nu_prof .or. lvisc_nu_profx .or. & 
+          lvisc_nu_profr_powerlaw .or. lvisc_nu_profr) &
+          lpenc_requested(i_del2u)=.true.
       if (lvisc_hyper3_simplified .or. lvisc_hyper3_rho_nu_const .or. &
           lvisc_hyper3_nu_const .or. lvisc_hyper3_rho_nu_const_symm) &
           lpenc_requested(i_del6u)=.true.
@@ -462,7 +485,8 @@ module Viscosity
           lvisc_hyper3_mu_const_strict) lpenc_requested(i_rho1)=.true.
 
       if (lvisc_nu_const .or. lvisc_nu_prof .or. lvisc_nu_profx .or. &
-          lvisc_smag_simplified .or. lvisc_smag_cross_simplified)  &
+          lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
+          lvisc_nu_profr_powerlaw .or. lvisc_nu_profr) &
           lpenc_requested(i_sglnrho)=.true.
       if (lvisc_hyper3_nu_const) lpenc_requested(i_uij5glnrho)=.true.
       if (ldensity.and.lvisc_nu_shock) then
@@ -547,7 +571,7 @@ module Viscosity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu
-      real, dimension (nx) :: murho1,nu_smag,tmp3,pnu
+      real, dimension (nx) :: murho1,nu_smag,tmp3,tmp4,pnu
 !
       integer :: i,j,ju
 !
@@ -635,18 +659,47 @@ module Viscosity
       if (lfirst.and.ldt) p%diffus_total=p%diffus_total+p%nu
 
      endif
-
-
 !
-      if (lvisc_nu_profx) then
+      if (lvisc_nu_profx.or.lvisc_nu_profr) then
 !
 !  viscous force: nu(x)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
 !  -- here the nu viscosity depends on x; nu_jump=nu2/nu1
-        pnu = nu + nu*(nu_jump-1.)*step(abs(p%x_mn),xnu,widthnu)
-!  Write out viscosity z-profile (during first time step only)
+!!        pnu = nu + nu*(nu_jump-1.)*step(abs(p%x_mn),xnu,widthnu)
+        if (lvisc_nu_profx) tmp3=p%x_mn
+        if (lvisc_nu_profr) tmp3=p%rcyl_mn
+        if (lvisc_nu_profx.and.lvisc_nu_profr) then 
+          print*,'You are using both radial and horizontal '
+          print*,'profiles for a viscosity jump. Are you '
+          print*,'this is reasonable? Better stop and check.'
+          call fatal_error("","")
+        endif
+        pnu = nu + nu*(nu_jump-1.)*step(tmp3,xnu,widthnu)
+        tmp4=nu*(nu_jump-1.)*der_step(tmp3,xnu,widthnu)
+        call get_gradnu(tmp4,lvisc_nu_profx,&
+                             lvisc_nu_profr,p,gradnu)
 !  A routine for write_xprof should be written here
 !       call write_xprof('visc',pnu)
-        gradnu(:,1) = nu*(nu_jump-1.)*der_step(abs(p%x_mn),xnu,widthnu)
+        !gradnu(:,1) = nu*(nu_jump-1.)*der_step(tmp3,xnu,widthnu)
+        !gradnu(:,2) = 0.
+        !gradnu(:,3) = 0.
+        call multmv(p%sij,gradnu,sgradnu)
+        call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
+        !tobi: The following only works with operator overloading for pencils
+        !      (see sub.f90). Commented out because it seems to be slower.
+        !p%fvisc=p%fvisc+2*pnu*p%sglnrho+pnu*(p%del2u+1./3.*p%graddivu) &
+        !        +2*sgradnu
+        p%fvisc=p%fvisc+tmp+2*sgradnu
+        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + 2*pnu*p%sij2
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+pnu
+     endif
+!
+      if (lvisc_nu_profr_powerlaw) then
+!
+!  viscous force: nu(x)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
+!  -- here the nu viscosity depends on r; nu=nu_0/r^n
+        pnu = nu*p%rcyl_mn**(-pnlaw)
+!  viscosity gradient
+        gradnu(:,1) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)
         gradnu(:,2) = 0.
         gradnu(:,3) = 0.
         call multmv(p%sij,gradnu,sgradnu)
@@ -658,9 +711,7 @@ module Viscosity
         p%fvisc=p%fvisc+tmp+2*sgradnu
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + 2*pnu*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+pnu
-     endif
-
-     
+      endif
 !
       if (lvisc_nu_prof) then
 !
@@ -1009,6 +1060,32 @@ module Viscosity
       if(NO_WARN) print*,f  !(to keep compiler quiet)
 !
     endsubroutine calc_viscosity
+!***********************************************************************
+    subroutine get_gradnu(tmp,ljumpx,ljumpr,p,gradnu)
+!
+! Calculate grad nu for vicosity jump in different 
+! coordinate systems
+!
+! 20-jun-08/wlad :: coded
+!
+      real, dimension(nx)  ,intent(in) :: tmp
+      real, dimension(nx,3),intent(out) :: gradnu
+      logical, intent (in) :: ljumpx,ljumpr
+      type (pencil_case) :: p
+!
+      if (ljumpx.or.(ljumpr.and.lcylindrical_coords)) then 
+        gradnu(:,1)=tmp ; gradnu(:,2)=0 ; gradnu(:,3)=0
+      elseif (ljumpr.and.lcylinder_in_a_box) then 
+        gradnu(:,1)=tmp*x(l1:l2)*p%rcyl_mn1
+        gradnu(:,2)=tmp*y(  m  )*p%rcyl_mn1
+      else
+        print*,'get gradnu: not yet implemented for '
+        print*,'other than Cartesian, cylindrical coordinates '
+        print*,'or cylinder-in-a-box'
+        call fatal_error("","")
+      endif
+!
+    endsubroutine get_gradnu
 !***********************************************************************
     subroutine calc_viscous_heat(f,df,p,Hmax)
 !
