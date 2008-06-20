@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.23 2008-06-20 06:33:19 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.24 2008-06-20 09:55:08 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -14,7 +14,7 @@ pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     position=position, fillwindow=fillwindow, tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
-    xshift=xshift, debug=debug, quiet=quiet
+    xshift=xshift, timefix=timefix, debug=debug, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;;
@@ -52,6 +52,7 @@ default, tformat, '(f5.1)'
 default, it1, 10
 default, variables, ''
 default, xshift, 0
+default, timefix, 0
 default, debug, 0
 default, quiet, 0
 ;;
@@ -70,6 +71,11 @@ pc_set_precision, dim=dim, /quiet
 ;;  Need to know box size for certain operations.
 ;;
 if (xshift ne 0) then pc_read_param, obj=par, datadir=datadir, /quiet
+;;
+;;  Some z-averages are erroneously calculated together with time series
+;;  diagnostics. The proper time is thus found in time_series.dat.
+;;
+if (timefix) then pc_read_ts, obj=ts, datadir=datadir, /quiet
 ;;
 ;;  Derived dimensions.
 ;;
@@ -183,9 +189,20 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
 ;;
       if (par.Sshear ne 0.0) then begin
         dy=yax[1]-yax[0]
-        deltay=(-par.Sshear*t*par.Lxyz[0]) mod par.Lxyz[1]
+;;  Some z-averages are erroneously calculated together with time series
+;;  diagnostics. The proper time is thus found in time_series.dat.
+        if (timefix) then begin
+          ii=where( abs(ts.t-t) eq min(abs(ts.t-t)) ) & ii=ii[0]
+          if (ts.t[ii] ge (t-ts.dt[ii])) then ii=ii-1
+          if (debug) then print, 'it, t, t_ts, dt_ts=', $
+              it, t, ts.t[ii], ts.dt[ii]
+          deltay=(-par.Sshear*ts.t[ii]*par.Lxyz[0]) mod par.Lxyz[1]
+        endif else begin
+          deltay=(-par.Sshear*t*par.Lxyz[0]) mod par.Lxyz[1]
+        endelse
         deltay_int=fix(deltay/dy)
-        if (debug) then print, t, deltay, deltay_int, deltay/dy-deltay_int
+        if (debug) then print, 'it, t, deltay, deltay_int, deltay_frac', $
+            it, t, deltay, deltay_int, deltay/dy-deltay_int
         for ivar=1,nvarall-1 do begin
           array2=array[*,*,ivar]
           for ix=0,xshift-1 do begin
