@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.442 2008-06-20 10:13:26 ajohan Exp $
+! $Id: hydro.f90,v 1.443 2008-06-21 11:46:53 pkapyla Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -349,7 +349,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.442 2008-06-20 10:13:26 ajohan Exp $")
+           "$Id: hydro.f90,v 1.443 2008-06-21 11:46:53 pkapyla Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3188,7 +3188,7 @@ use Mpicomm, only: stop_it
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: prof_amp1,prof_amp2
-      real, dimension (nz) :: prof_amp3
+      real, dimension (mz) :: prof_amp3
       character (len=labellen) :: prof_diffrot 
       logical :: ldiffrot_test
       integer :: llx
@@ -3211,7 +3211,8 @@ use Mpicomm, only: stop_it
 !
       case ('BS04c')
       if (wdamp/=0.) then
-        prof_amp3=ampl1_diffrot*(step(z,rdampint,wdamp))
+!        prof_amp3=ampl1_diffrot*(step(z(n1:n2),rdampint,wdamp))
+        prof_amp3=ampl1_diffrot*0.5*(1+tanh((z-rdampint)/(wdamp)))
       else
         prof_amp3=ampl1_diffrot
       endif
@@ -3247,7 +3248,7 @@ use Mpicomm, only: stop_it
       case ('vertical_shear_z1')
       zbot=z1
       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-        -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*tanh((z(n)-z1)/width_ff_uu))
+        -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
 !
 !  write differential rotation in terms of Gegenbauer polynomials
 !  Omega = Omega0 + Omega2*P31(costh)/sinth + Omega4*P51(costh)/sinth + ...
