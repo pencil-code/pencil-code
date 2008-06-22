@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.99 2008-06-20 14:03:55 wlyra Exp $
+! $Id: viscosity.f90,v 1.100 2008-06-22 01:07:14 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -31,7 +31,7 @@ module Viscosity
   integer, parameter :: nvisc_max = 4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   real :: nu=0., nu_mol=0., nu_hyper2=0., nu_hyper3=0., nu_shock=0.
-  real :: nu_jump=1., znu=0., xnu=0., widthnu=0.1, C_smag=0.0
+  real :: nu_jump=1., znu=0., xnu=0., xnu2=0.,widthnu=0.1, C_smag=0.0
   real :: pnlaw=0.
   real, dimension(3) :: nu_aniso_hyper3=0.
 
@@ -69,7 +69,7 @@ module Viscosity
   ! run parameters
   namelist /viscosity_run_pars/ &
       nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
-      nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,widthnu, &
+      nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
       pnlaw
 
   ! other variables (needs to be consistent with reset list below)
@@ -115,7 +115,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.99 2008-06-20 14:03:55 wlyra Exp $")
+           "$Id: viscosity.f90,v 1.100 2008-06-22 01:07:14 wlyra Exp $")
 !
 !  Default viscosity.
 !
@@ -673,8 +673,10 @@ module Viscosity
           print*,'this is reasonable? Better stop and check.'
           call fatal_error("","")
         endif
-        pnu = nu + nu*(nu_jump-1.)*step(tmp3,xnu,widthnu)
-        tmp4=nu*(nu_jump-1.)*der_step(tmp3,xnu,widthnu)
+        pnu = nu + nu*(nu_jump-1.)*(step(tmp3,xnu ,widthnu) - &
+                                    step(tmp3,xnu2,widthnu)) 
+        tmp4=nu*(nu_jump-1.)*(der_step(tmp3,xnu ,widthnu)- &
+                              der_step(tmp3,xnu2,widthnu))
         call get_gradnu(tmp4,lvisc_nu_profx,&
                              lvisc_nu_profr,p,gradnu)
 !  A routine for write_xprof should be written here
