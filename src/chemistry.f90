@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.111 2008-06-17 15:34:08 ajohan Exp $
+! $Id: chemistry.f90,v 1.112 2008-06-23 13:28:46 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -197,11 +197,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.111 2008-06-17 15:34:08 ajohan Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.112 2008-06-23 13:28:46 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.111 2008-06-17 15:34:08 ajohan Exp $")
+           "$Id: chemistry.f90,v 1.112 2008-06-23 13:28:46 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -1160,7 +1160,7 @@ module Chemistry
      if (ldensity .and. lcheminp) then
         sum_DYDt=0.
         do k=1,nchemspec
-          sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-H0_RT(l1:l2,m,n,k))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
+         sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-H0_RT(l1:l2,m,n,k))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
         enddo
 
         call dot_mn(p%ghYrho,p%uu,ghYrho_uu)
@@ -1170,9 +1170,6 @@ module Chemistry
           !/(p%cp-Rgas*p%mu1)&
         +(hYrho_full(l1:l2,m,n)*p%divu(:)+ghYrho_uu(:))/p%TT(:)*p%cv1
           !/(p%cp-Rgas*p%mu1)
-
-
-!       print*,'Natalia'            maxval(hYrho_full(l1:l2,m,n)*p%divu(:)),maxval(sum_DYDt(:))
 
 
         if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
