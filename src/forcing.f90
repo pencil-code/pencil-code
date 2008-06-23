@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.150 2008-06-19 12:04:11 dhruba Exp $
+! $Id: forcing.f90,v 1.151 2008-06-23 16:27:23 dhruba Exp $
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -121,7 +121,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.150 2008-06-19 12:04:11 dhruba Exp $")
+           "$Id: forcing.f90,v 1.151 2008-06-23 16:27:23 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -830,7 +830,7 @@ module Forcing
       endif
 ! This is designed from 5 emm values and for each one 5 ell values. Total 25 values
    call random_number_wrapper(rindex)
-   lmindex=nint(rindex*24.)+1
+   lmindex=nint(rindex*(nlist_ck-1))+1
    emm = cklist(lmindex,1)
    Legendrel = cklist(lmindex,2)
    call random_number_wrapper(ralpha)
