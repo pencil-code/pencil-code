@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.24 2008-06-17 15:34:08 ajohan Exp $
+! $Id: eos_chemistry.f90,v 1.25 2008-06-23 14:15:32 nbabkovs Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -76,9 +76,15 @@ module EquationOfState
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
-  logical :: l_gamma1=.true.
-  logical :: l_gamma=.true.
-  logical :: l_cp=.true.
+
+  character (len=20) :: input_file='chem.inp'
+  logical, SAVE ::  lcheminp_eos=.false.
+
+  logical :: l_gamma1=.false.
+  logical :: l_gamma=.false.
+  logical :: l_cp=.false.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 
 
   ! input parameters
   namelist /eos_init_pars/  mu, cp, cs0, rho0, gamma, error_cp, ptlaw
@@ -115,7 +121,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.24 2008-06-17 15:34:08 ajohan Exp $')
+           '$Id: eos_chemistry.f90,v 1.25 2008-06-23 14:15:32 nbabkovs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -215,10 +221,18 @@ module EquationOfState
       endif
 
 
+      inquire(FILE=input_file, EXIST=lcheminp_eos)
+
+      if (lcheminp_eos) then
+       l_gamma1=.true.
+       l_gamma=.true.
+       l_cp=.true.
+      endif
 !
 !  check that everything is OK
 !
       if (lroot) then
+
        if (.not. l_gamma1) then
         print*,'initialize_eos: unit_temperature=',unit_temperature
         print*,'initialize_eos: cp,lnTT0,cs0=',cp,lnTT0,cs0
