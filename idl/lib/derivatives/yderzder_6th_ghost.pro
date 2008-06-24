@@ -1,5 +1,5 @@
 ;;
-;;  $Id: yderzder_6th_ghost.pro,v 1.6 2008-06-10 17:20:57 ajohan Exp $
+;;  $Id: yderzder_6th_ghost.pro,v 1.7 2008-06-24 17:11:00 brandenb Exp $
 ;;
 ;;  Second derivative d2/dydz
 ;;  - 6th-order
@@ -34,7 +34,15 @@ function yderzder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     d=fltarr(mx,my,mz)
     if ( (m1 ne m2) and (n1 ne n2) ) then begin
       for n=n1,n2 do begin & for m=m1,m2 do begin
-        fac=(1/60.0^2)*dy_1[m]*dz_1[n]
+        ;
+        ;  take care of nonuniform meah
+        ;
+        if (lequidist[0]) then begin
+          fac=1/(60.^2*(y[4]-y[3])*(z[4]-z[3]))
+        endif else begin
+          fac=(1/60.^2)*dy_1[m]*dz_1[n]
+        endelse
+        ;
         d[l1:l2,m,n,*]=fac*( $
             45.*( (45.*(f[l1:l2,m+1,n+1]-f[l1:l2,m-1,n+1])  $
                    -9.*(f[l1:l2,m+2,n+1]-f[l1:l2,m-2,n+1])  $
@@ -60,7 +68,15 @@ function yderzder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     d=fltarr(mx,my,mz,3)
     if ( (m1 ne m2) and (n1 ne n2) ) then begin
       for n=n1,n2 do begin & for m=m1,m2 do begin
-        fac=(1/60.0^2)*dy_1[m]*dz_1[n]
+        ;
+        ;  take care of nonuniform meah
+        ;
+        if (lequidist[0]) then begin
+          fac=1/(60.^2*(y[4]-y[3])*(z[4]-z[3]))
+        endif else begin
+          fac=(1/60.^2)*dy_1[m]*dz_1[n]
+        endelse
+        ;
         d[l1:l2,m,n,*]=fac*( $
             45.*( (45.*(f[l1:l2,m+1,n+1,*]-f[l1:l2,m-1,n+1,*])  $
                    -9.*(f[l1:l2,m+2,n+1,*]-f[l1:l2,m-2,n+1,*])  $
