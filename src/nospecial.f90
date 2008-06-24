@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.31 2008-06-24 09:37:25 bingert Exp $
+! $Id: nospecial.f90,v 1.32 2008-06-24 09:43:04 bingert Exp $
 
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
@@ -46,7 +46,7 @@
 ! --------------------
 !
 ! Change the line above 
-!    CPARAM logical, parameter :: lspecial = .true.
+!    lspecial = .true.
 ! to enable use of special hooks.
 !
 ! The rest of this file may be used as a template for your own
@@ -141,11 +141,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.31 2008-06-24 09:37:25 bingert Exp $
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.32 2008-06-24 09:43:04 bingert Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.31 2008-06-24 09:37:25 bingert Exp $")
+           "$Id: nospecial.f90,v 1.32 2008-06-24 09:43:04 bingert Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
