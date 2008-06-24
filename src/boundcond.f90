@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.213 2008-06-18 08:34:47 bingert Exp $
+! $Id: boundcond.f90,v 1.214 2008-06-24 14:52:29 bingert Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -596,6 +596,14 @@ module Boundcond
               case ('ouf')
                 ! BCZ_DOC: allow outflow, but no inflow (experimental)
                 call bc_outflow_z(f,topbot,j)
+              case ('win')
+                ! BCZ_DOC: forces massflux given as 
+                ! BCZ_DOC: $\Sigma \rho_i ( u_i + u_0) = \textrm{fbcz1/2}(\rho)$
+                if (j==ilnrho) then
+                   call bc_wind_z(f,topbot,fbcz12(j))     !
+                   call bc_sym_z(f,-1,topbot,j,REL=.true.)!  'a2'
+                   call bc_sym_z(f,+1,topbot,iuz)         !  's'
+                endif
               case ('cop')
                 ! BCZ_DOC: copy value of last physical point to all ghost cells
                 call bc_copy_z(f,topbot,j)
@@ -3548,5 +3556,100 @@ module Boundcond
       enddo
 !
     endsubroutine potentdiv
+!***********************************************************************
+    subroutine bc_wind_z(f,topbot,massflux)
+!
+!  Calculates u_0 so that rho*(u+u_0)=massflux 
+!  massflux can be set as fbcz1/2(rho) in run.in
+!  
+!  18-06-2008/bing: coded
+!
+      use Mpicomm, only: mpisend_real,mpirecv_real,stop_it
+
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,ipt,ntb
+      real :: massflux,u_add
+      real :: local_flux,local_mass
+      real :: total_flux,total_mass
+      real :: get_lf,get_lm
+!
+      if (headtt) then
+         print*,'bc_wind: Massflux',massflux
+!
+!   check wether routine can be implied
+!
+         if (.not.(lequidist(1) .and. lequidist(2))) &
+              call stop_it("bc_wind_z:non equidistant grid in x and y not implemented")
+         if (nprocx .gt. 1)  &
+              call stop_it('bc_wind: nprocx > 1 not yet implemented')
+!
+!   check for warnings
+!
+         if (.not. ldensity)  &
+              call warning('bc_wind',"no defined density, using rho=1 ?")
+      endif
+!
+      select case(topbot)
+!
+!  Bottom boundary.
+!
+      case('bot')
+         ntb = n1
+!
+!  Top boundary.
+!
+       case('top')
+         ntb = n2
+!
+!  Default.
+!
+      case default
+        print*, "bc_wind: ", topbot, " should be `top' or `bot'"
+!
+      endselect
+!
+      local_flux=sum(exp(f(l1:l2,m1:m2,ntb,ilnrho))*f(l1:l2,m1:m2,ntb,iuz))
+      local_mass=sum(exp(f(l1:l2,m1:m2,ntb,ilnrho)))
+!
+!  One  processor has to collect the data
+!
+      if (ipy .ne. 0) then
+         ! send to first processor at given height
+         !
+         call mpisend_real(local_flux,1,ipz*nprocy,111+iproc)
+         call mpisend_real(local_mass,1,ipz*nprocy,211+iproc)
+      else
+         do i=1,nprocy-1   
+            ipt=ipz*nprocy+i
+            call mpirecv_real(get_lf,1,ipt,111+ipt)
+            call mpirecv_real(get_lm,1,ipt,211+ipt)
+            total_flux=total_flux+get_lf
+            total_mass=total_mass+get_lm
+         enddo
+         total_flux=total_flux+local_flux
+         total_mass=total_mass+local_mass
+         !
+         ! Get u0 addition rho*(u+u0) = wind
+         ! rho*u + u0 *rho =wind
+         ! u0 = (wind-rho*u)/rho
+         u_add = (massflux-total_flux) / total_mass 
+      endif
+      !
+      ! now distribute u_add
+      if (ipy .eq. 0) then 
+         do i=1,nprocy-1   
+            ipt=ipz*nprocy+i
+            call mpisend_real(u_add,1,ipt,311+ipt)
+         enddo
+      else 
+         call mpirecv_real(u_add,1,ipz*nprocy,311+iproc)
+      endif
+      !
+      ! Set boundary
+      !
+      f(l1:l2,m1:m2,ntb,iuz) =  f(l1:l2,m1:m2,ntb,iuz)+u_add
+      !
+     endsubroutine bc_wind_z
 !***********************************************************************
 endmodule Boundcond
