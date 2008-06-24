@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.240 2008-06-24 12:02:02 dintrans Exp $
+# $Id: getconf.csh,v 1.241 2008-06-24 15:44:37 dintrans Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -1206,7 +1206,7 @@ else if (($hn =~ *pastel*) || ($hn =~ *violette*)) then
   endif
   set mpirunops="-x LD_LIBRARY_PATH"
 
-else if ($hn =~ shal.ast.obs-mip.fr) then
+else if (($hn =~ shal.ast.obs-mip.fr) || ($hn =~ yang)) then
     set mpirun = 'orterun'
 
 else
