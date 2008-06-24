@@ -1,5 +1,14 @@
+;$Id: pc_shift_6th.pro,v 1.2 2008-06-24 16:08:13 brandenb Exp $
 function pc_shift_6th, f, x, deltax
-
+;
+;  20-jun-2008/anders: coded
+;
+;  Shift 1-D array by 6th order interpolation, similar to what is done in the
+;  Pencil Code for shearing boundary conditions.
+;
+;  Syntax (example):
+;     plot,zzz,pc_shift_6th(xyaver.bxmz(*,10),zzz,-c*t(it))
+;
 g=f
 
 nx=n_elements(g)
