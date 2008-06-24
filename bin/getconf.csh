@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.239 2008-06-06 21:29:42 dobler Exp $
+# $Id: getconf.csh,v 1.240 2008-06-24 12:02:02 dintrans Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -78,6 +78,7 @@ set start_x = "src/start.x"
 set run_x   = "src/run.x"
 set x_ops = ""         # arguments to both start.x and run.x
 set mpirun = 'mpirun'
+set mpirun = 'orterun'
 
 
 # Check if experimental copy-snapshots is used
@@ -1205,6 +1206,9 @@ else if (($hn =~ *pastel*) || ($hn =~ *violette*)) then
   endif
   set mpirunops="-x LD_LIBRARY_PATH"
 
+else if ($hn =~ shal.ast.obs-mip.fr) then
+    set mpirun = 'orterun'
+
 else
   echo "Generic setup; hostname is <$hn>"
   if ($mpi) echo "Use mpirun"
@@ -1241,6 +1245,8 @@ if ($mpi) then
   else if ("$mpirun" =~ *aprun*) then
     set mpirun = 'aprun'
     set npops = "-n $ncpus"
+  else if ("$mpirun" =~ *orterun*) then
+    set npops = "-np $ncpus"
   else
     echo "getconf.csh: No clue how to tell $mpirun to use $ncpus nodes"
   endif
