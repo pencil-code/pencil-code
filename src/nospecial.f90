@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.30 2008-01-16 07:02:43 brandenb Exp $
+! $Id: nospecial.f90,v 1.31 2008-06-24 09:37:25 bingert Exp $
 
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
@@ -44,6 +44,10 @@
 !
 ! HOW TO USE THIS FILE
 ! --------------------
+!
+! Change the line above 
+!    CPARAM logical, parameter :: lspecial = .true.
+! to enable use of special hooks.
 !
 ! The rest of this file may be used as a template for your own
 ! special module.  Lines which are double commented are intended
@@ -137,11 +141,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.30 2008-01-16 07:02:43 brandenb Exp $
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.31 2008-06-24 09:37:25 bingert Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.30 2008-01-16 07:02:43 brandenb Exp $")
+           "$Id: nospecial.f90,v 1.31 2008-06-24 09:37:25 bingert Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -418,7 +422,7 @@ module Special
     subroutine special_calc_density(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
+!   continuity equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
 !   others may be calculated directly from the f array
@@ -448,7 +452,7 @@ module Special
     subroutine special_calc_hydro(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
+!   momentum equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
 !   others may be calculated directly from the f array
@@ -480,7 +484,7 @@ module Special
     subroutine special_calc_magnetic(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
+!   induction equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
 !   others may be calculated directly from the f array
@@ -539,9 +543,6 @@ module Special
     endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine special_boundconds(f,bc)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
 !   others may be calculated directly from the f array
