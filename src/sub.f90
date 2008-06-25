@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.363 2008-06-25 02:03:21 theine Exp $
+! $Id: sub.f90,v 1.364 2008-06-25 03:01:43 brandenb Exp $
 
 module Sub
 
@@ -1241,13 +1241,14 @@ module Sub
       real, dimension (nx) :: c
 !
       logical, optional :: linc
+      logical :: linc1=.false.
 
-      intent(in) :: a,b
+      intent(in) :: a,b,linc
       intent(out) :: c
 
-      if (.not.present(linc)) linc=.false.
+      if (present(linc)) linc1=.true.
 !
-      if (linc) then
+      if (linc1) then
         c=c+a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
       else
         c=a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
@@ -1510,11 +1511,12 @@ module Sub
       real, dimension (nx) :: tmp
       integer :: i,j
       logical, optional :: linc
+      logical :: linc1=.false.
 !
-      intent(in) :: a,b
+      intent(in) :: a,b,linc
       intent(out) :: c
 !
-      if (.not.present(linc)) linc=.false.
+      if (present(linc)) linc1=.true.
 
       do i=1,3
 
@@ -1524,7 +1526,7 @@ module Sub
           tmp=tmp+a(:,i,j)*b(:,j)
         enddo
 
-        if (linc) then
+        if (linc1) then
           c(:,i)=c(:,i)+tmp
         else
           c(:,i)=tmp
@@ -1550,11 +1552,12 @@ module Sub
       real, dimension (nx) :: tmp
       integer :: i,j
       logical, optional :: linc
+      logical :: linc1=.false.
 !
-      intent(in) :: a,b
+      intent(in) :: a,b,linc
       intent(out) :: c
 !
-      if (.not.present(linc)) linc=.false.
+      if (present(linc)) linc1=.true.
 
       do i=1,3
         j=1
@@ -1563,7 +1566,7 @@ module Sub
           tmp=tmp+a(:,j,i)*b(:,j)
         enddo
 
-        if (linc) then
+        if (linc1) then
           c(:,i)=c(:,i)+tmp
         else
           c(:,i)=tmp
@@ -3038,15 +3041,16 @@ module Sub
       real, dimension (nx) :: tmp
       integer :: j,k
       logical, optional :: upwind,linc
+      logical :: linc1=.false.
 !
 !  upwind
 !
-      if (.not.present(linc)) linc=.false.
+      if (present(linc)) linc1=.true.
 
       if (present(upwind)) then
         do j=1,3
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
-          if (linc) then
+          if (linc1) then
             ugradf(:,j)=ugradf(:,j)+tmp
           else
             ugradf(:,j)=tmp
@@ -3055,7 +3059,7 @@ module Sub
       else
         do j=1,3
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp)
-          if (linc) then
+          if (linc1) then
             ugradf(:,j)=ugradf(:,j)+tmp
           else
             ugradf(:,j)=tmp
@@ -3104,16 +3108,17 @@ module Sub
       real, dimension (nx) :: tmp
       integer :: j,k
       logical, optional :: upwind,linc
+      logical :: linc1=.false.
 !
 !  upwind
 !
-      if (.not.present(linc)) linc=.false.
+      if (present(linc)) linc1=.true.
 
       if (present(upwind)) then
         do j=1,3
 
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
-          if (linc) then
+          if (linc1) then
             ugradf(:,j)=ugradf(:,j)+tmp
           else
             ugradf(:,j)=tmp
@@ -3123,7 +3128,7 @@ module Sub
       else
         do j=1,3
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp)
-          if (linc) then
+          if (linc1) then
             ugradf(:,j)=ugradf(:,j)+tmp
           else
             ugradf(:,j)=tmp
