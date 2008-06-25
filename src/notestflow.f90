@@ -1,4 +1,4 @@
-! $Id: notestflow.f90,v 1.2 2008-03-25 08:31:42 brandenb Exp $
+! $Id: notestflow.f90,v 1.3 2008-06-25 09:00:12 rei Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -143,14 +143,15 @@ module Testflow
 !
     endsubroutine get_slices_testflow
 !***********************************************************************
-    subroutine calc_ltestflow_pars(f)
+    subroutine calc_ltestflow_nonlin_terms(f,df)
 !
 !  Dummy routine
 !
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      intent(inout) :: f,df
 !
       if (NO_WARN) print*, f
 !
