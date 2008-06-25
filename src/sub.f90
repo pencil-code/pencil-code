@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.364 2008-06-25 03:01:43 brandenb Exp $
+! $Id: sub.f90,v 1.365 2008-06-25 08:53:08 rei Exp $
 
 module Sub
 
@@ -1648,13 +1648,14 @@ module Sub
 !
     endsubroutine multsv_global
 !***********************************************************************
-    subroutine multsv_mn(a,b,c)
+    subroutine multsv_mn(a,b,c,linc)
 !
 !  vector multiplied with scalar, gives vector
 !
 !  22-nov-01/nils erland: coded
 !  10-oct-03/axel: a is now the scalar (now consistent with old routines)
-!
+!  24-jun-08/MR: linc added for incremental work
+
       use Cdata, only: nx
 !
       intent(in) :: a,b
@@ -1663,9 +1664,14 @@ module Sub
       real, dimension (nx,3) :: b,c
       real, dimension (nx) :: a
       integer :: i
+      logical, optional :: linc
 !
       do i=1,3
-        c(:,i)=a*b(:,i)
+        if (present(linc)) then
+          c(:,i)=c(:,i)+a*b(:,i)
+        else
+          c(:,i)=a*b(:,i)
+        endif
       enddo
 !
     endsubroutine multsv_mn
