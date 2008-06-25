@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.362 2008-06-25 01:51:39 rei Exp $
+! $Id: sub.f90,v 1.363 2008-06-25 02:03:21 theine Exp $
 
 module Sub
 
@@ -1241,13 +1241,13 @@ module Sub
       real, dimension (nx) :: c
 !
       logical, optional :: linc
-	  
+
       intent(in) :: a,b
       intent(out) :: c
 
       if (.not.present(linc)) linc=.false.
 !
-      if ( linc ) then
+      if (linc) then
         c=c+a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
       else
         c=a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
@@ -1517,19 +1517,19 @@ module Sub
       if (.not.present(linc)) linc=.false.
 
       do i=1,3
-	  
+
         j=1
         tmp=a(:,i,j)*b(:,j)
         do j=2,3
           tmp=tmp+a(:,i,j)*b(:,j)
         enddo
-		
-	if ( linc ) then
-	  c(:,i)=c(:,i)+tmp
-	else
-	  c(:,i)=tmp
-	endif
-		
+
+        if (linc) then
+          c(:,i)=c(:,i)+tmp
+        else
+          c(:,i)=tmp
+        endif
+
       enddo
 !
     endsubroutine multmv_mn
@@ -1562,13 +1562,13 @@ module Sub
         do j=2,3
           tmp=tmp+a(:,j,i)*b(:,j)
         enddo
-		
-	if ( linc ) then
-	  c(:,i)=c(:,i)+tmp
-	else
-	  c(:,i)=tmp
-	endif
-		
+
+        if (linc) then
+          c(:,i)=c(:,i)+tmp
+        else
+          c(:,i)=tmp
+        endif
+
       enddo
 !
     endsubroutine multmv_mn_transp
@@ -3046,20 +3046,20 @@ module Sub
       if (present(upwind)) then
         do j=1,3
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
-          if ( linc ) then
-	    ugradf(:,j)=ugradf(:,j)+tmp
+          if (linc) then
+            ugradf(:,j)=ugradf(:,j)+tmp
           else
-	    ugradf(:,j)=tmp
-	  endif
+            ugradf(:,j)=tmp
+          endif
         enddo
       else
         do j=1,3
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp)
-	  if ( linc ) then
-	    ugradf(:,j)=ugradf(:,j)+tmp
+          if (linc) then
+            ugradf(:,j)=ugradf(:,j)+tmp
           else
-	    ugradf(:,j)=tmp
-	  endif
+            ugradf(:,j)=tmp
+          endif
         enddo
       endif
 !
@@ -3111,22 +3111,22 @@ module Sub
 
       if (present(upwind)) then
         do j=1,3
-		
+
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
-	  if ( linc ) then
-	    ugradf(:,j)=ugradf(:,j)+tmp
+          if (linc) then
+            ugradf(:,j)=ugradf(:,j)+tmp
           else
-	    ugradf(:,j)=tmp
+            ugradf(:,j)=tmp
           endif
-		  
+
         enddo
       else
         do j=1,3
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp)
-	  if ( linc ) then
-	    ugradf(:,j)=ugradf(:,j)+tmp
+          if (linc) then
+            ugradf(:,j)=ugradf(:,j)+tmp
           else
-	    ugradf(:,j)=tmp
+            ugradf(:,j)=tmp
           endif
         enddo
       endif
