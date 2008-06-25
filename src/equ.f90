@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.410 2008-05-28 22:01:36 steveb Exp $
+! $Id: equ.f90,v 1.411 2008-06-25 08:57:05 rei Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -482,7 +482,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.410 2008-05-28 22:01:36 steveb Exp $")
+           "$Id: equ.f90,v 1.411 2008-06-25 08:57:05 rei Exp $")
 !
 !  Initialize counter for calculating and communicating print results.
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -641,7 +641,7 @@ module Equ
       if (lforcing_cont) call calc_lforcing_cont_pars(f)
       if (lforcing_cont) call calc_lforcing_cont_pars(f)
       if (ltestfield) call calc_ltestfield_pars(f)
-      if (ltestflow) call calc_ltestflow_pars(f)
+      if (ltestflow) call calc_ltestflow_nonlin_terms(f,df)
       if (lspecial) call calc_lspecial_pars(f)
 !
 !  do loop over y and z
