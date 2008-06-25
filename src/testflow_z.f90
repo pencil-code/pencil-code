@@ -1,4 +1,4 @@
-! $Id: testflow_z.f90,v 1.10 2008-06-25 04:48:48 brandenb Exp $
+! $Id: testflow_z.f90,v 1.11 2008-06-25 04:54:50 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -161,7 +161,7 @@ module Testflow
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testflow_z.f90,v 1.10 2008-06-25 04:48:48 brandenb Exp $")
+           "$Id: testflow_z.f90,v 1.11 2008-06-25 04:54:50 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -375,13 +375,13 @@ module Testflow
 !
 !  calculate du^(pq)/dt = -( u^(0) .grad u^(pq) + u^(pq).grad u ) + < u^(0) .grad u^(pq) + u^(pq).grad u >
 !        [alternatively:  -( u^(pq).grad u^(0)  + u.grad u^(pq) ) + < u^(pq).grad u^(0)  + u.grad u^(pq) >]
-!						  - grad h^(pq)
+!                                                 - grad h^(pq)
 !                         -U^(pq).grad u - u.grad U^(pq)
 !                         + Lorentz force (added in testfield)
-!						  
+!                                                 
 !  and dh^(pq)/dt = -( u^(0).grad h^(pq) + u^(pq).grad h ) + < u^(0).grad h^(pq) + u^(pq).grad h >
 !  [alternatively:  -( u^(pq).grad h^(0) + u.grad h^(pq) ) + < u^(pq).grad h^(0) + u.grad h^(pq) > ]
-!					- cs2*div u^(pq)
+!                                       - cs2*div u^(pq)
 !                   -U.grad h -u.grad H 
 !
 !
@@ -406,7 +406,7 @@ module Testflow
       real, dimension (nx,3) :: U0test=0,gU0test=0,U0gutest,ugU0test,gH0test=0
       real, dimension (nx)   :: H0test=0,ugH0test,U0ghtest,upq2,divutest,help
       real, dimension (nx,3,njtest) :: Fipq,upq
-	  real, dimension (nx,njtest) :: Qipq,hpq
+          real, dimension (nx,njtest) :: Qipq,hpq
       real, dimension (nx,3,3) :: uijtest
 
       integer :: jtest,jfnamez,j,i,i3,i4
@@ -433,10 +433,10 @@ module Testflow
         do j=1,3
           uufluct(:,j)=uufluct(:,j)-uumz(n,j)
         enddo
-        ghfluct=ghfluct-alog(rhomz(n))		!MR: noch falsch!!!
+        ghfluct=ghfluct-alog(rhomz(n))          !MR: noch falsch!!!
       endif
 !
-!  do each of the njtest test flow at a time		
+!  do each of the njtest test flow at a time            
 !  jtest=0  refers to primary turbulence (u^(0), h^(0))
 !
       do jtest=0,njtest
@@ -452,16 +452,16 @@ module Testflow
         hpq(:  ,jtest)=hhtest
 !
 !  velocity gradient matrix and div u term
-!								
+!                                                               
         call gij(f,iuxtest,uijtest,1)
-        call div_mn(uijtest,divutest,uutest)			!MR: better determine divutest without determining uijtest
+        call div_mn(uijtest,divutest,uutest)                    !MR: better determine divutest without determining uijtest
 !
 !  gradient of (pseudo) enthalpy
 !
         call grad(f,ihhtest,ghtest)
         if (jtest.gt.0) then
-          select case(itestfield)			! get testfield U^(pq), gradU^(pq), H^(pq), gradH^(pq)
-		  
+          select case(itestfield)                       ! get testfield U^(pq), gradU^(pq), H^(pq), gradH^(pq)
+                  
             case('W11-W22'); call set_U0test_W11_W22(U0test,gU0test,H0test,gH0test)  !!gU0test -> gU0test
             case('W=0'); U0test=0; gU0test=0; H0test=0.;gH0test=0.
             case default
@@ -513,7 +513,7 @@ module Testflow
         endif
 !
 !  calculate mean force and mean source
-!		
+!               
         Fipq(:,:,jtest)=unltestm(:,:,jtest)/wamp
         Qipq(:,  jtest)=hnltestm(:,  jtest)/wamp
 !
@@ -742,7 +742,7 @@ module Testflow
               do j=1,3
                 uufluct(:,j)=uufluct(:,j)-uumz(n,j)
               enddo
-              hhfluct=hhfluct-alog(rhomz(n))		!MR: noch falsch!!!
+              hhfluct=hhfluct-alog(rhomz(n))            !MR: noch falsch!!!
             endif
 !
 !  velocity vector and enthalpy gradient
@@ -770,12 +770,12 @@ module Testflow
 ! primary turbulence
 !
           if (jtest.eq.0) then
-            gh0  = ghtest						! save primary turbulence
-            uu0  = uutest						! besser: nur Zeiger
+            gh0  = ghtest                                               ! save primary turbulence
+            uu0  = uutest                                               ! besser: nur Zeiger
             sij0 = sijtest
             iux0 = iuxtest
 !
-!  u.gradu term	and u.gradh term
+!  u.gradu term and u.gradh term
 !
             call u_dot_grad(f,iuxtest,uijtest,uutest,unltest)
             call dot_mn(uutest,ghtest,hnltest)
@@ -783,9 +783,9 @@ module Testflow
           else 
             if ( .not.lsoca_testflow ) then
               call u_dot_grad(f,iuxtest,uijtest,uufluct,unltest)
-              call u_dot_grad(f,iux0   ,uij0   ,uutest ,unltest,linc=.true.)		!MR: adjust u_dot_grad for incremental work
+              call u_dot_grad(f,iux0   ,uij0   ,uutest ,unltest,linc=.true.)            !MR: adjust u_dot_grad for incremental work
               call dot_mn(uu0   ,ghtest ,hnltest)
-              call dot_mn(uutest,ghfluct,hnltest,linc=.true.)					!MR: adjust dot_mn for incremental work
+              call dot_mn(uutest,ghfluct,hnltest,linc=.true.)                                   !MR: adjust dot_mn for incremental work
             endif
           endif
 !
@@ -827,47 +827,47 @@ module Testflow
 !  do communication for arrays of size nz*nprocz*3*njtest and nz*nprocz*njtest, resp.
 !
       if (.not.calc_fluct) then
-	
+        
       if (nprocy>1) then
-	  
-        call mpireduce_sum(unltestm1,unltestm1_tmp,nz*nprocz*3*njtest)		!MR: allreduce?
+          
+        call mpireduce_sum(unltestm1,unltestm1_tmp,nz*nprocz*3*njtest)          !MR: allreduce?
         call mpibcast_real(unltestm1_tmp,nz*nprocz*3*njtest)
-		
-        call mpireduce_sum(hnltestm1,hnltestm1_tmp,nz*nprocz*njtest)		!MR: allreduce?
+                
+        call mpireduce_sum(hnltestm1,hnltestm1_tmp,nz*nprocz*njtest)            !MR: allreduce?
         call mpibcast_real(hnltestm1_tmp,nz*nprocz*njtest)
-		
+                
         do jtest=1,njtest
           do n=n1,n2
-		  
+                  
             do j=1,3
               unltestm(n,j,jtest)=unltestm1_tmp(n-n1+1,ipz+1,j,jtest)
             enddo
-			
-		    hnltestm(n,jtest)=hnltestm1_tmp(n-n1+1,ipz+1,jtest)
-			
+                        
+                    hnltestm(n,jtest)=hnltestm1_tmp(n-n1+1,ipz+1,jtest)
+                        
           enddo
         enddo
-		
+                
       endif
 
-	  do jtest=0,njtest
-	
-	    iuxtest=iuutest+4*jtest
-	    ihhtest=iuxtest+3
-		  
-	    do n=n1,n2
-		  do m=m1,m2
+          do jtest=0,njtest
+        
+            iuxtest=iuutest+4*jtest
+            ihhtest=iuxtest+3
+                  
+            do n=n1,n2
+                  do m=m1,m2
 
              if ( jtest.eq.0 .or. .not.lsoca_testflow ) then
-		  
-			  do j=1,4
-			    ju = iuxtest+j-1
-			    df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-unltestm(n,j,jtest)
-			  enddo
-			
-		  enddo
-	    enddo
-	  enddo
+                  
+                          do j=1,4
+                            ju = iuxtest+j-1
+                            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-unltestm(n,j,jtest)
+                          enddo
+                        
+                  enddo
+            enddo
+          enddo
 !
 !  reset headtt
 !
