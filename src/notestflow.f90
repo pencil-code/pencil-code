@@ -1,4 +1,4 @@
-! $Id: notestflow.f90,v 1.3 2008-06-25 09:00:12 rei Exp $
+! $Id: notestflow.f90,v 1.4 2008-06-25 13:33:39 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -155,7 +155,7 @@ module Testflow
 !
       if (NO_WARN) print*, f
 !
-    endsubroutine calc_ltestflow_pars
+    endsubroutine calc_ltestflow_nonlin_terms
 !***********************************************************************
     subroutine rprint_testflow(lreset,lwrite)
 !
