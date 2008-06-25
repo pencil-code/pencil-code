@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.361 2008-06-25 00:04:45 rei Exp $
+! $Id: sub.f90,v 1.362 2008-06-25 01:51:39 rei Exp $
 
 module Sub
 
@@ -1242,7 +1242,7 @@ module Sub
 !
       logical, optional :: linc
 	  
-      intent(in) :: a,b,linc
+      intent(in) :: a,b
       intent(out) :: c
 
       if (.not.present(linc)) linc=.false.
@@ -1511,7 +1511,7 @@ module Sub
       integer :: i,j
       logical, optional :: linc
 !
-      intent(in) :: a,b,linc
+      intent(in) :: a,b
       intent(out) :: c
 !
       if (.not.present(linc)) linc=.false.
@@ -1524,7 +1524,7 @@ module Sub
           tmp=tmp+a(:,i,j)*b(:,j)
         enddo
 		
-	if ( linc )
+	if ( linc ) then
 	  c(:,i)=c(:,i)+tmp
 	else
 	  c(:,i)=tmp
@@ -1551,7 +1551,7 @@ module Sub
       integer :: i,j
       logical, optional :: linc
 !
-      intent(in) :: a,b,linc
+      intent(in) :: a,b
       intent(out) :: c
 !
       if (.not.present(linc)) linc=.false.
@@ -3029,7 +3029,7 @@ module Sub
       use Cdata, only: mx,my,mz,lspherical_coords,lcylindrical_coords, &
                        mfarray,r1_mn,cotth,rcyl_mn1,m,nx
 !
-      intent(in) :: f,k,gradf,uu,upwind,linc
+      intent(in) :: f,k,gradf,uu,upwind
       intent(out) :: ugradf
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3046,8 +3046,8 @@ module Sub
       if (present(upwind)) then
         do j=1,3
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
-          if ( linc )
-	    ugradf(:,f)=ugradf(:,j)+tmp
+          if ( linc ) then
+	    ugradf(:,j)=ugradf(:,j)+tmp
           else
 	    ugradf(:,j)=tmp
 	  endif
@@ -3055,8 +3055,8 @@ module Sub
       else
         do j=1,3
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp)
-	  if ( linc )
-	    ugradf(:,f)=ugradf(:,j)+tmp
+	  if ( linc ) then
+	    ugradf(:,j)=ugradf(:,j)+tmp
           else
 	    ugradf(:,j)=tmp
 	  endif
@@ -3095,7 +3095,7 @@ module Sub
       use Cdata, only: mx,my,mz,lspherical_coords,lcylindrical_coords, &
                        mfarray,r1_mn,cotth,rcyl_mn1,l1,l2,m,n,nx
 !
-      intent(in) :: f,k,gradf,uu,upwind,linc
+      intent(in) :: f,k,gradf,uu,upwind
       intent(out) :: ugradf
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3113,8 +3113,8 @@ module Sub
         do j=1,3
 		
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
-	  if ( linc )
-	    ugradf(:,f)=ugradf(:,j)+tmp
+	  if ( linc ) then
+	    ugradf(:,j)=ugradf(:,j)+tmp
           else
 	    ugradf(:,j)=tmp
           endif
@@ -3123,8 +3123,8 @@ module Sub
       else
         do j=1,3
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp)
-	  if ( linc )
-	    ugradf(:,f)=ugradf(:,j)+tmp
+	  if ( linc ) then
+	    ugradf(:,j)=ugradf(:,j)+tmp
           else
 	    ugradf(:,j)=tmp
           endif
