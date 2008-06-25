@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.530 2008-06-25 13:56:48 dhruba Exp $
+! $Id: magnetic.f90,v 1.531 2008-06-25 16:21:07 dhruba Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -428,7 +428,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.530 2008-06-25 13:56:48 dhruba Exp $")
+           "$Id: magnetic.f90,v 1.531 2008-06-25 16:21:07 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1161,7 +1161,7 @@ module Magnetic
           idiag_jmbmz/=0 .or. idiag_kmz/=0 ) lpenc_diagnos(i_jj)=.true.
       if (idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
           idiag_bmax/=0) lpenc_diagnos(i_b2)=.true.
-!
+
 !  pencils for meanfield dynamo diagnostics
 !
       if (idiag_EMFdotBm/=0) lpenc_diagnos(i_mf_EMFdotB)=.true.
@@ -3396,12 +3396,13 @@ module Magnetic
       use Sub
 !
       logical,save :: first=.true.
-      real :: bxmxy,bymxy,bzmxy,btemp,bmxy_rms,nVol2d
+      real :: bxmxy,bymxy,bzmxy,bmxy_rms,nVol2d,btemp
       integer :: l,j
 !
 !  This only works if bxmz and bzmz are in xyaver,
 !  so print warning if this is not ok.
 !
+      bmxy_rms=0.
       if (idiag_bxmxy==0.or.idiag_bymxy==0.or.idiag_bzmxy==0) then
         if (first) then
           print*,"calc_mfield: WARNING"
@@ -3410,7 +3411,6 @@ module Magnetic
         endif
         bmxy_rms=0.
       else
-        bmxy_rms=0.
         nVol2d=0.
         do l=1,nx
           do m=1,ny
@@ -3418,14 +3418,15 @@ module Magnetic
               bxmxy=fnamexy(l,m,j,idiag_bxmxy)
               bymxy=fnamexy(l,m,j,idiag_bymxy)
               bzmxy=fnamexy(l,m,j,idiag_bzmxy)
-              bmxy_rms = bmxy_rms+bxmxy**2+bymxy**2+bzmxy**2
+              btemp = bxmxy**2+bymxy**2+bzmxy**2
               if(lspherical_coords) then 
-                bmxy_rms = bmxy_rms*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+                btemp = btemp*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
                 nVol2d = nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
               else
               endif
               if(lcylindrical_coords) & 
                   call stop_it("bmxy_rms not yet implemented for cylindrical")
+              bmxy_rms=bmxy_rms+btemp
             enddo
           enddo
         enddo
@@ -5021,7 +5022,7 @@ module Magnetic
         write(3,*) 'iay=',iay
         write(3,*) 'iaz=',iaz
         write(3,*) 'ihypres=',ihypres
-        write(3,*) 'i_bmxy_rms=',idiag_bmxy_rms
+        write(3,*) 'idiag_bmxy_rms=',idiag_bmxy_rms
       endif
 !
     endsubroutine rprint_magnetic
