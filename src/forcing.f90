@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.151 2008-06-23 16:27:23 dhruba Exp $
+! $Id: forcing.f90,v 1.152 2008-06-25 13:56:48 dhruba Exp $
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -58,6 +58,7 @@ module Forcing
   real,allocatable,dimension(:,:,:) :: RYlm_list,IYlm_list
   integer :: helsign=0,nlist_ck=25
   real :: fpre = 1.0
+  integer :: icklist
 ! Persistent stuff
   real :: tsforce=-10.
   real, dimension (3) :: location
@@ -121,7 +122,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.151 2008-06-23 16:27:23 dhruba Exp $")
+           "$Id: forcing.f90,v 1.152 2008-06-25 13:56:48 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -269,6 +270,7 @@ module Forcing
         case ('gaussianpot');     call forcing_gaussianpot(f,force)
         case ('hel_smooth');      call forcing_hel_smooth(f)
         case ('chandra_kendall'); call forcing_chandra_kendall(f)
+        case ('cktest'); call forcing_cktest(f)
         case default; if(lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
         endselect
       endif
@@ -912,6 +914,179 @@ module Forcing
    enddo
  !! -------------     
     endsubroutine forcing_chandra_kendall
+!***********************************************************************
+!***********************************************************************
+    subroutine forcing_cktest(f)
+!
+! Testing the Chandrasekhar-Kendall forcing function
+!  22-june-08/dhruba: adapted from forcing_chandrasekhar_kendall
+!
+      use Mpicomm
+      use Cdata
+      use General
+      use Sub
+      use EquationOfState, only: cs0
+!      use SpecialFunctions
+!
+      real :: phase,ffnorm,irufm
+      integer, save :: ifirst
+      real, dimension(3) :: ee
+      real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
+      real, dimension(nx,3,3) :: psi_ij,Tij
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: emm,iread,l,j,jf,ell,jalpha,Legendrel,lmindex,ilread,ilm,&
+                 aindex,ckno,ilist
+      complex :: psi_ell_m
+      real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,& 
+              Pell,psilm,RYlm,IYlm
+      real :: rz,rindex,ralpha,Plmreal, Plmimag,& 
+              ran_min,ran_max,rmin,rmax,rphase2
+      real, dimension(mx) :: Z_psi
+      real,dimension(my) :: Pl
+
+!========================================================
+      if (.not. lspherical_coords) call warning('chandra-kendall forcing:','This forcing works only in spherical coordinates!')
+      if (ifirst==0) then
+! If this is the first time this function is being called allocate \psi.
+! Next read from file "alpha_in.dat" the two values of \ell. If this two
+! matches Legendrel_min and Legendrel_max proceed.  
+        if (lroot) print*,'Testing helical forcing in spherical polar coordinate'
+        if (lroot) print*,'allocating psif ..'
+        allocate(psif(mx,my,mz))
+! Read the list of values for emm, ell and alpha. This code is designed for 25 such
+        allocate(cklist(nlist_ck,5))
+        if (lroot) print*, '..done'
+        open(unit=76,file="alpha_in.dat",status="old")
+        read(76,*) ckno,rmin,rmax
+        if(.not. (ckno.eq.nlist_ck)) then
+          call stop_it("CK forcing aborting:  The list does not match check entries in alpha_in.dat")
+        else
+        endif
+        if (lroot) then
+          if(.not.((helsign.eq.1).or.(helsign.eq.-1))) & 
+            call stop_it("CK forcing: helsign must be +1 or -1, aborting")
+        else
+        endif
+! ---------- 
+        do ilread=1,nlist_ck
+          read(76,*) (cklist(ilread,ilm),ilm=1,5)
+        enddo
+        close(76)
+        if (lfastCK) then
+          allocate(Zpsi_list(mx,nlist_ck,3))
+          allocate(RYlm_list(my,mz,nlist_ck),IYlm_list(my,mz,nlist_ck))
+          do ilist=1,nlist_ck
+            emm = cklist(ilist,1)
+            Legendrel = cklist(ilist,2)
+            do n=n1-nghost,n2+nghost
+              do m=m1-nghost,m2+nghost
+                call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n))
+                call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
+                RYlm_list(m,n,ilist)=RYlm
+                IYlm_list(m,n,ilist)=IYlm
+              enddo
+            enddo
+            do aindex=1,3
+              Balpha = cklist(ilist,2+aindex)
+              call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
+              call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
+              a_ell = -anum/adenom
+              do l=l1-nghost,l2+nghost
+                alphar=Balpha*x(l)
+                call sp_besselj_l(jlm,Legendrel,alphar)
+                call sp_bessely_l(ylm,Legendrel,alphar)
+                Zpsi_list(l,ilist,aindex) = (a_ell*jlm+ylm)
+              enddo
+            enddo
+          enddo
+        else
+        endif
+        icklist=0
+        ifirst= ifirst+1
+        if (lroot) write(*,*) 'dhruba: first time in Chandra-Kendall successful'
+      else
+      endif
+! This is designed from 5 emm values and for each one 5 ell values. Total 25 values
+   icklist=icklist+1
+   if(icklist.eq.(nlist_ck+1)) & 
+            call stop_it("CK testing: no more value in list; ending")
+   lmindex=icklist
+   emm = cklist(lmindex,1)
+   Legendrel = cklist(lmindex,2)
+   call random_number_wrapper(ralpha)
+   aindex=nint(ralpha*2)
+   Balpha = cklist(lmindex,3)
+  if(lroot) write(*,*) "Dhruba",lmindex,emm,Legendrel,Balpha 
+! Now calculate the "potential" for the helical forcing. The expression
+! is taken from Chandrasekhar and Kendall.
+! Now construct the Z_psi(r) 
+   call random_number_wrapper(rphase1)
+   rphase1=rphase1*2*pi
+   if(lfastCK) then
+     do n=n1-nghost,n2+nghost
+       do m=m1-nghost,m2+nghost
+         psilm=0.
+         psilm= RYlm_list(m,n,lmindex)*cos(rphase1)- &
+           IYlm_list(m,n,lmindex)*sin(rphase1)
+         psif(:,m,n) = psilm*Zpsi_list(:,lmindex,aindex+1)
+       enddo
+     enddo
+   else
+     call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
+     call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
+     a_ell = -anum/adenom
+!        write(*,*) 'dhruba:',anum,adenom,Legendrel,Bessel_alpha,x(l1)
+     do l=l1-nghost,l2+nghost
+       alphar=Balpha*x(l)
+       call sp_besselj_l(jlm,Legendrel,alphar)
+       call sp_bessely_l(ylm,Legendrel,alphar)
+       Z_psi(l) = (a_ell*jlm+ylm)
+     enddo
+!-------
+     do n=n1-nghost,n2+nghost
+       do m=m1-nghost,m2+nghost
+         psilm=0.
+         call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n)) 
+         call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
+         psilm= RYlm*cos(rphase1)-IYlm*sin(rphase1)
+         psif(:,m,n) = Z_psi*psilm
+       enddo
+     enddo
+   endif
+! ----- Now calculate the force from the potential and add this to
+! velocity
+! get a random unit vector with three components ee_r, ee_theta, ee_phi
+! psi at present is just Z_{ell}^m. We next do a sum over random coefficients 
+! get random psi. 
+!      write(*,*) 'mmin=',mmin
+!! ----------now generate and add the force ------------
+   call random_number_wrapper(rz)
+   ee(3) = rz
+   call random_number_wrapper(rphase2)
+   rphase2 = pi*rphase2
+   ee(1) = sqrt(1-rz*rz)*cos(rphase2)
+   ee(2) = sqrt(1-rz*rz)*sin(rphase2)
+   fnorm = fpre*cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt)
+!     write(*,*) 'dhruba:',fnorm*sqrt(dt),dt,ee(1),ee(2),ee(3)
+   do n=n1,n2
+     do m=m1,m2
+       psi(:,1) = psif(l1:l2,m,n)*ee(1)
+       psi(:,2) = psif(l1:l2,m,n)*ee(2)
+       psi(:,3) = psif(l1:l2,m,n)*ee(3)
+       call gij_psi(psif,ee,psi_ij)
+       call curl_mn(psi_ij,capitalT,psi)
+       call gij_psi_etc(psif,ee,psi,psi_ij,Tij)
+       call curl_mn(Tij,capitalS,capitalT)
+       capitalS = float(helsign)*(1./Balpha)*capitalS
+       capitalH = capitalT + capitalS
+       do j=1,3
+         jf = iuu+j-1
+         f(l1:l2,m,n,jf) = fnorm*capitalH(:,j)
+       enddo
+     enddo
+   enddo
+ !! -------------     
+    endsubroutine forcing_cktest
 !***********************************************************************
     subroutine forcing_GP(f)
 !

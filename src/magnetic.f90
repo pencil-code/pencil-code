@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.529 2008-06-20 10:13:26 ajohan Exp $
+! $Id: magnetic.f90,v 1.530 2008-06-25 13:56:48 dhruba Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -428,7 +428,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.529 2008-06-20 10:13:26 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.530 2008-06-25 13:56:48 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3396,7 +3396,7 @@ module Magnetic
       use Sub
 !
       logical,save :: first=.true.
-      real :: bxmxy,bymxy,bzmxy,bmxy_rms
+      real :: bxmxy,bymxy,bzmxy,btemp,bmxy_rms,nVol2d
       integer :: l,j
 !
 !  This only works if bxmz and bzmz are in xyaver,
@@ -3411,21 +3411,26 @@ module Magnetic
         bmxy_rms=0.
       else
         bmxy_rms=0.
+        nVol2d=0.
         do l=1,nx
-          do j=1,nprocy
-            do m=1,ny
+          do m=1,ny
+            do j=1,nprocy
               bxmxy=fnamexy(l,m,j,idiag_bxmxy)
               bymxy=fnamexy(l,m,j,idiag_bymxy)
               bzmxy=fnamexy(l,m,j,idiag_bzmxy)
               bmxy_rms = bmxy_rms+bxmxy**2+bymxy**2+bzmxy**2
-              if(lspherical_coords) & 
-                  bmxy_rms = bmxy_rms*x(l+nghost)*x(l+nghost)*sinth(m+nghost)
+              if(lspherical_coords) then 
+                bmxy_rms = bmxy_rms*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+                nVol2d = nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+              else
+              endif
               if(lcylindrical_coords) & 
                   call stop_it("bmxy_rms not yet implemented for cylindrical")
             enddo
           enddo
         enddo
         bmxy_rms = bmxy_rms/(nx*ny*nprocy)
+        if(lspherical_coords) bmxy_rms=bmxy_rms/nVol2d
         bmxy_rms = sqrt(bmxy_rms)
       endif
 !
@@ -4100,7 +4105,7 @@ module Magnetic
 !  This mimics a neutron star just after the Meissner effect forced the
 !  internal field to become vertical (aligned with rotation axis).
 !
-!  AMPL represents mu/4 pi, where  mu = 1/2 Int rr × jj dV  is the
+!  AMPL represents mu/4 pi, where  mu = 1/2 Int rr Ã jj dV  is the
 !  magnetic moment of the external dipole field.
 !  INCLAA is the inclination of the dipolar field.
 !

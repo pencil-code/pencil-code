@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.237 2008-06-03 14:06:52 dhruba Exp $
+! $Id: register.f90,v 1.238 2008-06-25 13:56:48 dhruba Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -210,6 +210,7 @@ module Register
       real :: sinth_min=1e-5 !(to avoid axis)
       logical :: lstarting
       integer :: xj,yj,zj
+      integer :: itheta
 
 !
 !  Defaults for some logicals; will later be set to true if needed
@@ -366,14 +367,14 @@ module Register
         endif
 !
       elseif (coord_system=='spherical' &
-          .or.coord_system=='spherical_coords') then
+        .or.coord_system=='spherical_coords') then
         lcartesian_coords=.false.
         lspherical_coords=.true.
         lcylindrical_coords=.false.
 !
 ! An attempt to work with full sphere 
 !  calculate 1/r
-!
+! For spherical coordinates
         if (x(l1)==0.) then
           r1_mn(2:)=1./x(l1+1:l2)
           r1_mn(1)=0.
@@ -394,7 +395,7 @@ module Register
           costh=sin(lat)
         else
           costh=cos(y)
-        endif        
+        endif
 !
 !  calculate 1/sin(theta). To avoid the axis we check that sinth
 !  is always larger than a minmal value, sinth_min. The problem occurs
@@ -436,8 +437,12 @@ module Register
 !  Need to modify for 2-D and 1-D cases!
 !
         r2_weight=x(l1:l2)**2
+        sinth_weight=sinth
+        do itheta=0,nygrid-1
+          sinth_weight_across_proc(itheta)=sin(xyz0(2)+dy*itheta)
+        enddo
 ! Calculate the volume of the box, for non-cartesian coordinates
-       nVol=0.
+        nVol=0.
         do xj=l1,l2
           do yj=m1,m2
             do zj=n1,n2
@@ -452,11 +457,10 @@ module Register
         if (ipx==0       ) r2_weight( 1)=.5*r2_weight( 1)
         if (ipx==nprocx-1) r2_weight(nx)=.5*r2_weight(nx)
 !
-        sinth_weight=sinth
         if (ipy==0       ) sinth_weight(m1)=.5*sinth_weight(m1)
         if (ipy==nprocy-1) sinth_weight(m2)=.5*sinth_weight(m2)
 !
-!  end of coord_system=='cylindrical_coords' query
+!  end of coord_system=='spherical_coords' query
 !  Introduce new names (cylindrical_coords), in addition to the old ones.
 !
       elseif (coord_system=='cylindric' &

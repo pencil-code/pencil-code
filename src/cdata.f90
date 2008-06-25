@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.426 2008-06-01 22:25:56 brandenb Exp $
+! $Id: cdata.f90,v 1.427 2008-06-25 13:56:48 dhruba Exp $
 !
 !  Global variables are defined in this module.
 !
@@ -50,6 +50,7 @@ module Cdata
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real, dimension (nx) :: r1_mn,r2_mn,r2_weight,dvolume,dvolume_1
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth,sinth_weight
+  real, dimension (nygrid) :: sinth_weight_across_proc
   real, dimension (nx) :: rcyl_mn,rcyl_mn1,rcyl_mn2,rcyl_weight
   real, dimension (nx,3) :: dline_1
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
