@@ -1,4 +1,4 @@
-! $Id: testflow_z.f90,v 1.12 2008-06-25 09:47:13 rei Exp $
+! $Id: testflow_z.f90,v 1.13 2008-06-25 21:48:54 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -109,8 +109,8 @@ module Testflow
   integer :: idiag_uy0mz=0      ! DIAG_DOC: $\left<u_{y}\right>_{xy}$
   integer :: idiag_uz0mz=0      ! DIAG_DOC: $\left<u_{z}\right>_{xy}$
 
-  real, dimension (mz,3,ntestflow/4) :: unltestm  !MR: noch unklar
-  real, dimension (mz,ntestflow/4) :: hnltestm    !MR: evtl ueberfluessig
+  real, dimension (mz,3,0:njtest) :: unltestm
+  real, dimension (mz,0:njtest) :: hnltestm
 
   contains
 
@@ -162,7 +162,7 @@ module Testflow
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testflow_z.f90,v 1.12 2008-06-25 09:47:13 rei Exp $")
+           "$Id: testflow_z.f90,v 1.13 2008-06-25 21:48:54 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -314,7 +314,8 @@ module Testflow
 !
       use Cdata
 !
-      lpenc_requested(i_uu)=.true. !MR: dasselbe fuer hh?
+      lpenc_requested(i_uu)=.true.
+      lpenc_requested(i_lnrho)=.true.
 !
     endsubroutine pencil_criteria_testflow
 !***********************************************************************
@@ -436,9 +437,11 @@ module Testflow
         do j=1,3
           uufluct(:,j)=uufluct(:,j)-uumz(n,j)
         enddo
-
+!
+!  rhomz is not currently calculated....
+!
 !!!	ghfluct=ghfluct-alog(rhomz(n))		!MR: noch falsch!!!
-		
+
       endif
 !
 !  do each of the njtest test flow at a time            
@@ -465,16 +468,14 @@ module Testflow
 !  gradient of (pseudo) enthalpy
 !
         call grad(f,ihhtest,ghtest)
-		
-        if (jtest.gt.0) then
 
+        if (jtest.gt.0) then
           select case(itestfield)                       ! get testfield U^(pq), gradU^(pq), H^(pq), gradH^(pq)
             case('W11-W22'); call set_U0test_W11_W22(U0test,gU0test,H0test,gH0test,jtest) 
             case('W=0'); U0test=0; gU0test=0; H0test=0.;gH0test=0.
             case default
               call fatal_error('duutest_dt','undefined itestfield value')
           endselect
-		  
         endif
 !
 !  rhs of continuity equation (nonlinear terms already in df!), dh^pq/dt = n.l.Terms - cs^2*div u^pq -u.gradH^pq - U^pq.gradh,
@@ -503,15 +504,15 @@ module Testflow
           if (lset_U0test) then
 			
             call h_dot_grad(U0test,p%uij,uufluct,U0gutest)
-            call multsv(uufluct(:,3),gU0test,ugU0test,LINC=.true.) 
+            call multsv(uufluct(:,3),gU0test,ugU0test,ladd=.true.) 
 
             df(l1:l2,m,n,iuxtest:iuztest) = df(l1:l2,m,n,iuxtest:iuztest) - U0gutest-ugU0test
 		  
             call multmv(p%sij,gH0test,U0gutest)
 			
             call multsv(ghfluct(:,3),gU0test,ugU0test)
-            call multsv(-(1./3.)*gU0test(:,3),ghfluct,ugU0test,LINC=.true.)
-            ghfluct(:,3) = 0.			!MR: from here on ghfluct no longer valid 
+            call multsv(-(1./3.)*gU0test(:,3),ghfluct,ugU0test,ladd=.true.)
+            ghfluct(:,3)=0.			!MR: from here on ghfluct no longer valid 
             call dot_mn(gU0test,ghfluct,help)
             ugU0test(:,3) = ugU0test(:,3) + help
 
@@ -531,11 +532,12 @@ module Testflow
         endif
 !
 !  calculate mean force and mean source
-!		
-     !   Fipq(:,:,jtest)=unltestm(:,:,jtest)/wamp  !MR:Dimensionen stimmen noch nicht
-     !   Qipq(:,  jtest)=hnltestm(:,  jtest)/wamp  !Fipq und Qipq sollten (nz,...) sein
-		
-!--print*,'Fipq(11,:,jtest)=',Fipq(11,:,jtest)
+!  (this will not be ok on multiproceesor jobs)
+!
+        do j=1,3
+          Fipq(:,j,jtest)=unltestm(n,j,jtest)/wamp
+        enddo
+        Qipq(:,  jtest)=hnltestm(n,  jtest)/wamp
 !
 !  check for testflow timestep
 !
@@ -718,7 +720,7 @@ module Testflow
       use Mpicomm, only: mpireduce_sum, mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f 
-      real, dimension (mx,my,mz,mvar) :: df  !MR:richtig??
+      real, dimension (mx,my,mz,mvar) :: df
 !
       intent(inout) :: df
       intent(in)    :: f
@@ -726,7 +728,7 @@ module Testflow
       real, dimension (nz,nprocz,3,0:njtest) :: unltestm1
       real, dimension (nz,nprocz,0:njtest  ) :: hnltestm1
   
-      real, dimension (nz,nprocz,3,0:njtest) :: unltestm1_tmp  !MR: richtig?
+      real, dimension (nz,nprocz,3,0:njtest) :: unltestm1_tmp  !MR: richtig? ?Axel
       real, dimension (nz,nprocz,0:njtest  ) :: hnltestm1_tmp
  
       real, dimension (nx,3)   :: uufluct,uutest, uu0, ghfluct, ghtest, gh0, sghtest, unltest
@@ -800,7 +802,7 @@ module Testflow
             if ( jtest.eq.0 ) then    ! primary turbulence
   
               gh0  = ghtest           ! save primary turbulence
-              uu0  = uutest           !MR: besser nur Zeiger
+              uu0  = uutest
               sij0 = sijtest
               iux0 = iuxtest
 
@@ -812,10 +814,10 @@ module Testflow
             elseif ( .not.lsoca_testflow ) then
 
               call u_dot_grad(f,iuxtest,uijtest,uufluct,unltest)
-              call u_dot_grad(f,iux0   ,uij0   ,uutest ,unltest,LINC=.true.)
+              call u_dot_grad(f,iux0   ,uij0   ,uutest ,unltest,ladd=.true.)
 
               call dot_mn(uu0   ,ghtest ,hnltest)
-              call dot_mn(uutest,ghfluct,hnltest,LINC=.true.)
+              call dot_mn(uutest,ghfluct,hnltest,ladd=.true.)
 
             endif
 !
@@ -832,7 +834,7 @@ module Testflow
               elseif ( .not.lsoca_testflow ) then
  
                 call multmv(sijtest,ghfluct,sghtest)		  
-                call multmv(sij0   ,ghtest ,sghtest, LINC=.true.)		  
+                call multmv(sij0   ,ghtest ,sghtest, ladd=.true.)		  
  
               endif
 
@@ -888,7 +890,9 @@ module Testflow
         enddo
       enddo
     endif
-
+!
+!  start with zero
+!
     do jtest=0,njtest
 
       iuxtest=iuutest+4*jtest
@@ -899,18 +903,20 @@ module Testflow
 
           if ( jtest.eq.0 .or. .not.lsoca_testflow ) then
             
-            do j=1,4
+            do j=1,3
               ju = iuxtest+j-1
               df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-unltestm(n,j,jtest)
             enddo
+            df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest)-hnltestm(n,jtest)
 
-          endif	
+          endif
         enddo
       enddo
     enddo
 !
 !  reset headtt
 !
+print*,'unltestm,hnltestm=',unltestm,hnltestm
     headtt=headtt_save
 !
     endsubroutine calc_ltestflow_nonlin_terms

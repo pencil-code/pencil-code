@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.365 2008-06-25 08:53:08 rei Exp $
+! $Id: sub.f90,v 1.366 2008-06-25 21:48:54 brandenb Exp $
 
 module Sub
 
@@ -1229,26 +1229,26 @@ module Sub
 !
     endsubroutine dot_global
 !***********************************************************************
-    subroutine dot_mn(a,b,c,linc)
+    subroutine dot_mn(a,b,c,ladd)
 !
 !  dot product, c=a.b, on pencil arrays
 !   3-apr-01/axel+gitta: coded
-!  24-jun-08/MR: linc added for incremental work
+!  24-jun-08/MR: ladd added for incremental work
 
       use Cdata, only: nx
 !
       real, dimension (nx,3) :: a,b
       real, dimension (nx) :: c
 !
-      logical, optional :: linc
-      logical :: linc1=.false.
+      logical, optional :: ladd
+      logical :: ladd1=.false.
 
-      intent(in) :: a,b,linc
+      intent(in) :: a,b,ladd
       intent(out) :: c
 
-      if (present(linc)) linc1=.true.
+      if (present(ladd)) ladd1=ladd
 !
-      if (linc1) then
+      if (ladd1) then
         c=c+a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
       else
         c=a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
@@ -1496,13 +1496,13 @@ module Sub
 !
     end subroutine multm2_mn
 !***********************************************************************
-    subroutine multmv_mn(a,b,c,linc)
+    subroutine multmv_mn(a,b,c,ladd)
 !
 !  matrix multiplied with vector, gives vector
 !  C_i = A_{i,j} B_j
 !
 !   3-apr-01/axel+gitta: coded
-!  24-jun-08/MR: linc added for incremental work
+!  24-jun-08/MR: ladd added for incremental work
 !
       use Cdata, only: nx
 !
@@ -1510,13 +1510,13 @@ module Sub
       real, dimension (nx,3) :: b,c
       real, dimension (nx) :: tmp
       integer :: i,j
-      logical, optional :: linc
-      logical :: linc1=.false.
+      logical, optional :: ladd
+      logical :: ladd1=.false.
 !
-      intent(in) :: a,b,linc
+      intent(in) :: a,b,ladd
       intent(out) :: c
 !
-      if (present(linc)) linc1=.true.
+      if (present(ladd)) ladd1=ladd
 
       do i=1,3
 
@@ -1526,7 +1526,7 @@ module Sub
           tmp=tmp+a(:,i,j)*b(:,j)
         enddo
 
-        if (linc1) then
+        if (ladd1) then
           c(:,i)=c(:,i)+tmp
         else
           c(:,i)=tmp
@@ -1536,14 +1536,14 @@ module Sub
 !
     endsubroutine multmv_mn
 !***********************************************************************
-    subroutine multmv_mn_transp(a,b,c,linc)
+    subroutine multmv_mn_transp(a,b,c,ladd)
 !
 !  transposed matrix multiplied with vector, gives vector
 !  could have called multvm_mn, but this may not be clear enough
 !  C_i = A_{j,i} B_j
 !
 !  21-jul-03/axel: adapted from multmv_mn
-!  24-jun-08/MR: linc added for incremental work
+!  24-jun-08/MR: ladd added for incremental work
 !
       use Cdata, only: nx
 !
@@ -1551,13 +1551,13 @@ module Sub
       real, dimension (nx,3) :: b,c
       real, dimension (nx) :: tmp
       integer :: i,j
-      logical, optional :: linc
-      logical :: linc1=.false.
+      logical, optional :: ladd
+      logical :: ladd1=.false.
 !
-      intent(in) :: a,b,linc
+      intent(in) :: a,b,ladd
       intent(out) :: c
 !
-      if (present(linc)) linc1=.true.
+      if (present(ladd)) ladd1=ladd
 
       do i=1,3
         j=1
@@ -1566,7 +1566,7 @@ module Sub
           tmp=tmp+a(:,j,i)*b(:,j)
         enddo
 
-        if (linc1) then
+        if (ladd1) then
           c(:,i)=c(:,i)+tmp
         else
           c(:,i)=tmp
@@ -1648,13 +1648,13 @@ module Sub
 !
     endsubroutine multsv_global
 !***********************************************************************
-    subroutine multsv_mn(a,b,c,linc)
+    subroutine multsv_mn(a,b,c,ladd)
 !
 !  vector multiplied with scalar, gives vector
 !
 !  22-nov-01/nils erland: coded
 !  10-oct-03/axel: a is now the scalar (now consistent with old routines)
-!  24-jun-08/MR: linc added for incremental work
+!  24-jun-08/MR: ladd added for incremental work
 
       use Cdata, only: nx
 !
@@ -1664,10 +1664,13 @@ module Sub
       real, dimension (nx,3) :: b,c
       real, dimension (nx) :: a
       integer :: i
-      logical, optional :: linc
+      logical, optional :: ladd
+      logical :: ladd1=.false.
+!
+      if (present(ladd)) ladd1=ladd
 !
       do i=1,3
-        if (present(linc)) then
+        if (ladd1) then
           c(:,i)=c(:,i)+a*b(:,i)
         else
           c(:,i)=a*b(:,i)
@@ -3025,7 +3028,7 @@ module Sub
 !
     endsubroutine del6fjv
 !***********************************************************************
-    subroutine u_dot_gradu_vec(f,k,gradf,uu,ugradf,upwind,linc)
+    subroutine u_dot_gradu_vec(f,k,gradf,uu,ugradf,upwind,ladd)
 !
 !  u.gradu
 !  for spherical coordinates works correctly for u.gradu,
@@ -3033,7 +3036,7 @@ module Sub
 !
 !  21-feb-07/axel+dhruba: added spherical coordinates
 !  12-mar-07/wlad: added cylindrical coordinates
-!  24-jun-08/MR: linc added for incremental work
+!  24-jun-08/MR: ladd added for incremental work
 !
       use Cdata, only: mx,my,mz,lspherical_coords,lcylindrical_coords, &
                        mfarray,r1_mn,cotth,rcyl_mn1,m,nx
@@ -3046,17 +3049,17 @@ module Sub
       real, dimension (nx,3) :: uu,ugradf
       real, dimension (nx) :: tmp
       integer :: j,k
-      logical, optional :: upwind,linc
-      logical :: linc1=.false.
+      logical, optional :: upwind,ladd
+      logical :: ladd1=.false.
 !
 !  upwind
 !
-      if (present(linc)) linc1=.true.
+      if (present(ladd)) ladd1=ladd
 
       if (present(upwind)) then
         do j=1,3
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
-          if (linc1) then
+          if (ladd1) then
             ugradf(:,j)=ugradf(:,j)+tmp
           else
             ugradf(:,j)=tmp
@@ -3065,7 +3068,7 @@ module Sub
       else
         do j=1,3
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp)
-          if (linc1) then
+          if (ladd1) then
             ugradf(:,j)=ugradf(:,j)+tmp
           else
             ugradf(:,j)=tmp
@@ -3092,7 +3095,7 @@ module Sub
 !
     endsubroutine u_dot_gradu_vec
 !***********************************************************************
-    subroutine u_dot_grad_vec(f,k,gradf,uu,ugradf,upwind,linc)
+    subroutine u_dot_grad_vec(f,k,gradf,uu,ugradf,upwind,ladd)
 !
 !  u.gradu
 !  for spherical coordinates works correctly for u.gradu,
@@ -3100,7 +3103,7 @@ module Sub
 !
 !  21-feb-07/axel+dhruba: added spherical coordinates
 !   7-mar-07/wlad: added cylindrical coordinates
-!  24-jun-08/MR: linc added for incremental work
+!  24-jun-08/MR: ladd added for incremental work
 !
       use Cdata, only: mx,my,mz,lspherical_coords,lcylindrical_coords, &
                        mfarray,r1_mn,cotth,rcyl_mn1,l1,l2,m,n,nx
@@ -3113,18 +3116,18 @@ module Sub
       real, dimension (nx,3) :: uu,ff,ugradf
       real, dimension (nx) :: tmp
       integer :: j,k
-      logical, optional :: upwind,linc
-      logical :: linc1=.false.
+      logical, optional :: upwind,ladd
+      logical :: ladd1=.false.
 !
 !  upwind
 !
-      if (present(linc)) linc1=.true.
+      if (present(ladd)) ladd1=ladd
 
       if (present(upwind)) then
         do j=1,3
 
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
-          if (linc1) then
+          if (ladd1) then
             ugradf(:,j)=ugradf(:,j)+tmp
           else
             ugradf(:,j)=tmp
@@ -3134,7 +3137,7 @@ module Sub
       else
         do j=1,3
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp)
-          if (linc1) then
+          if (ladd1) then
             ugradf(:,j)=ugradf(:,j)+tmp
           else
             ugradf(:,j)=tmp

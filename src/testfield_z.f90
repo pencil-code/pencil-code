@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.48 2008-06-13 23:45:56 brandenb Exp $
+! $Id: testfield_z.f90,v 1.49 2008-06-25 21:48:54 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -203,7 +203,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.48 2008-06-13 23:45:56 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.49 2008-06-25 21:48:54 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1019,6 +1019,9 @@ module Testfield
             bcosphz=fname(idiag_bcosphz)
             bsinphz=fname(idiag_bsinphz)
             phase_testfield=atan2(bsinphz,bcosphz)
+          else
+            call fatal_error('calc_ltestfield_pars', &
+            'need bcosphz, bsinphz in print.in for lphase_adjust=T')
           endif
         endif
         call mpibcast_real(phase_testfield,1)
