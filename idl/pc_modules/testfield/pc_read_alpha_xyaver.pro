@@ -1,15 +1,22 @@
-;$Id: pc_read_alpha_xyaver.pro,v 1.6 2008-06-05 10:00:51 brandenb Exp $
+;$Id: pc_read_alpha_xyaver.pro,v 1.7 2008-06-26 19:11:34 brandenb Exp $
+common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
 ;
 ;  In order to determine the z-dependence of the alpha and eta tensors
 ;  we have to read the horizontal averages of Epq, i.e. we assume that
 ;  E111z, ..., E222z has been set in xyaver.in
 ;
+;  Note: if you forgot to say use_grid=0 first time round, you may need
+;  to exit and run this again.
+;
 ;  30-mar-08/axel
 ;
-pc_read_xyaver,o=xyaver
+@xder_6th
+;pc_read_xyaver,o=xyaver
 pc_read_param,o=param,/param2
 ;
 default,use_grid,1
+spawn,'touch parameters.pro'
+@parameters
 ;
 if use_grid eq 1 then begin
   pc_read_grid,o=grid
@@ -22,10 +29,16 @@ endif else begin
   ;
   pc_read_dim,o=dim
   default,nz,dim.nz
-  n1=3 & n2=nz+2
-  z1=4.*!pi & z0=-z1
-  dz=(z1-z0)/nz
-  zzz=z0+dz*(.5+findgen(nz))
+  ;n1=3 & n2=nz+2
+  ;z1=!pi & z0=-z1
+  ;dz=(z1-z0)/nz
+  ;zzz=z0+dz*(.5+findgen(nz))
+  pc_read_param,o=param1
+  z0=param1.xyz0(2)
+  z1=param1.xyz1(2)
+  dz=(z1-z0)/(nz-1)
+  print,'assume non-periodic domain with dz=',dz
+  zzz=z0+dz*findgen(nz)
 endelse
 ;
 ;  prepare relevant array for testfield sine and cosine functions
@@ -71,13 +84,23 @@ for it=0,nt-1 do begin
 endfor
 ;
 print,'tvscl,alpij(*,*,0,0)'
+print,'contour,transpose(alpij(*,*,1,1)),tt,zzz,nlev=20,/fil'
 ;
-alpijm=total(alpij,2)/nt
-etaijm=total(etaij,2)/nt
+;tarray=spread(xyaver.t,[0,2,3],[nz,2,2])
+;default,good,where(tarray gt 0.)
+;spawn,'touch good.pro'
+;@good
+;ntgood=n_elements(tarray(good))/(nz*2*2)
+;
+default,it1,0
+ntgood=n_elements(xyaver.t(it1:*))
+;
+alpijm=total(alpij(*,it1:*,*,*),2)/ntgood
+etaijm=total(etaij(*,it1:*,*,*),2)/ntgood
 ;
 alpij_end=reform(alpij(*,nt-1,*,*))
 etaij_end=reform(etaij(*,nt-1,*,*))
 ;
-save,file='alpetaij.sav',zzz,alpijm,etaijm,alpij_end,etaij_end
+save,file='alpetaij.sav',zzz,alpijm,etaijm,alpij_end,etaij_end,ntgood
 ;
 END
