@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.org)
-%%  CVS: $Id: manual.tex,v 1.396 2008-06-17 17:41:50 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.397 2008-06-27 16:05:04 dhruba Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -375,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2008-06-17 17:41:50 $ $,~ $ $Revision: 1.396 $ $}
+%\date{$ $Date: 2008-06-27 16:05:04 $ $,~ $ $Revision: 1.397 $ $}
 
 % ====================================================================== %
 
@@ -412,7 +412,11 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2008-06-17 17:41:50 $ $,~ $ $Revision: 1.396 $ $}\\
+<<<<<<< manual.tex
+  \emph{$ $Date: 2008-06-27 16:05:04 $ $,~ $ $Revision: 1.397 $ $}\\
+=======
+  \emph{$ $Date: 2008-06-27 16:05:04 $ $,~ $ $Revision: 1.397 $ $}\\
+>>>>>>> 1.396
   \url{http://www.nordita.org/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -474,7 +478,14 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
   dhruba & \htmladdnormallink{Dhrubaditya Mitra}{http://www.maths.qmul.ac.uk/~dhruba/} & Queen Mary College\\
   dorch & \htmladdnormallink{Bertil Dorch}{http://www.astro.ku.dk/~dorch/} & University of Copenhagen\\
   dobler & \htmladdnormallink{Wolfgang Dobler}{http://www.kis.uni-freiburg.de/~dobler/} & University of Calgary\\
+<<<<<<< manual.tex
+  dintrans & \htmladdnormallink{Boris
+Dintrans}{http://www.ast.obs-mip.fr/dintrans} &  Observatoire Midi-Pyr\'en\'ees, Toulouse\\
+dhruba & \htmladdnormallink{Dhrubaditya
+Mitra}{http://www.maths.qmul.ac.uk/~dhruba} &  Queen Mary College, London\\
+=======
   dintrans & \htmladdnormallink{Boris Dintrans}{http://www.ast.obs-mip.fr/dintrans} &  Observatoire Midi-Pyr\'en\'ees, Toulouse\\
+>>>>>>> 1.369
   christer & \htmladdnormallink{Christer Sandin}{http://www.astro.uu.se/~christer/CS_index.html} & University of Uppsala\\
   brandenb & \htmladdnormallink{Axel Brandenburg}{http://www.nordita.org/~brandenb/} & Nordita\\
   bing & \htmladdnormallink{Sven Bingert}{http://www.kis.uni-freiburg.de/~peter/corona/} & Kiepenheuer Institute\\
@@ -3557,7 +3568,7 @@ To get power spectra from the code, edit \file{run.in} and add for example
 the following lines
 \begin{alltt}
   dspec=2.3, 
-  vel_spec=T,mag_spec=T,
+  ou_spec=T,ab_spec=T,
   fft_switch='fftpack',
   oned=T \
 \end{alltt}
@@ -3572,7 +3583,7 @@ power spectra also the one-dimensional power spectra will be calculated
 In addition one must edit 
 \file[Makefile.local]{src/Makefile.local} and add the lines
 \begin{alltt}
-   FOURIER=fft_pack
+   FOURIER=fourier_fftpack
    POWER=power_spectrum
 \end{alltt}
 You should also make sure that \var{nxgrid}=\var{nygrid}=\var{nzgrid}.
@@ -5927,7 +5938,11 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2008-06-17 17:41:50 $ $,~ $ $Revision: 1.396 $ $}
+<<<<<<< manual.tex
+  \hfill\normalsize\rm$ $Date: 2008-06-27 16:05:04 $ $,~ $ $Revision: 1.397 $ $}
+=======
+  \hfill\normalsize\rm$ $Date: 2008-06-27 16:05:04 $ $,~ $ $Revision: 1.397 $ $}
+>>>>>>> 1.396
 
 \section{Timings}
 
@@ -9547,7 +9562,11 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.396 2008-06-17 17:41:50 brandenb Exp $ $}
+<<<<<<< manual.tex
+$ $Id: manual.tex,v 1.397 2008-06-27 16:05:04 dhruba Exp $ $}
+=======
+$ $Id: manual.tex,v 1.397 2008-06-27 16:05:04 dhruba Exp $ $}
+>>>>>>> 1.396
 
 
 \end{document}
