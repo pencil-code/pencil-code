@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.112 2008-06-23 13:28:46 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.113 2008-06-28 20:41:02 dobler Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -197,11 +197,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.112 2008-06-23 13:28:46 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.113 2008-06-28 20:41:02 dobler Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.112 2008-06-23 13:28:46 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.113 2008-06-28 20:41:02 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -2147,6 +2147,11 @@ module Chemistry
      real, dimension (nx) ::  kf_0,Kc_0,Pr,sum_sp,prod1_0,prod2_0
      real, dimension (nchemspec) :: a_k4 
      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8
+!
+! Hopefully, the following will make things blow up for the people who try to
+! use a_k4 without setting it (not to mention their bizarre code indentation...)
+!
+    a_k4 = -impossible 
 !
     if (lwrite)  open(file_id,file=input_file)
 
