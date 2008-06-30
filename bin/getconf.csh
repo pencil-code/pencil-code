@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.241 2008-06-24 15:44:37 dintrans Exp $
+# $Id: getconf.csh,v 1.242 2008-06-30 14:41:12 dintrans Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -1179,32 +1179,25 @@ else if ($hn =~ vsl2*) then
 
 else if (($hn =~ *pastel*) || ($hn =~ *violette*)) then
 # use the local /tmp by default on every node
-  set local_disc     = 1
-  set one_local_disc = 0
-  setenv SCRATCH_DIR /tmp
-  set remove_scratch_root = 1
-  setenv SSH rsh
-  setenv SCP rcp
+# set local_disc     = 1
+# set one_local_disc = 0
+# setenv SCRATCH_DIR /tmp
+# set remove_scratch_root = 1
+# setenv SSH rsh
+# setenv SCP rcp
   if ($?OAR_FILE_NODES) then
     echo "OAR job"
     cat $OAR_FILE_NODES >! lamhosts
-    setenv LAMHOME /usr/local/mpilam
-    setenv LAMRSH '/usr/bin/rsh'
-    setenv PATH ${LAMHOME}/bin:${PATH} 
-    echo "lambooting.."
-    lamboot -prefix ${LAMHOME} lamhosts
-    lamnodes
-    set booted_lam = 1
   else
     echo "Non-OAR, running on `hostname`"
     echo `hostname` >! lamhosts
   endif
-  if (  $?LD_LIBRARY_PATH) then
-    setenv LD_LIBRARY_PATH /home/toulouse/bdintran/opt/intel_fce_80/lib:${LD_LIBRARY_PATH}
+  if ($?LD_LIBRARY_PATH) then
+    setenv LD_LIBRARY_PATH /usr/local/openmpi/lib:/home/toulouse/bdintran/opt/intel_fce_80/lib:${LD_LIBRARY_PATH}
   else
-    setenv LD_LIBRARY_PATH /home/toulouse/bdintran/opt/intel_fce_80/lib
+    setenv LD_LIBRARY_PATH /usr/local/openmpi/lib:/home/toulouse/bdintran/opt/intel_fce_80/lib
   endif
-  set mpirunops="-x LD_LIBRARY_PATH"
+  set mpirun = 'orterun'
 
 else if (($hn =~ shal.ast.obs-mip.fr) || ($hn =~ yang)) then
     set mpirun = 'orterun'
