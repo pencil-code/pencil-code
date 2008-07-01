@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.411 2008-06-25 08:57:05 rei Exp $
+! $Id: equ.f90,v 1.412 2008-07-01 16:51:46 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -215,22 +215,38 @@ module Equ
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
 !
       if (iuut/=0) f(:,:,:,iuxt:iuzt)=0.
+      if (ioot/=0) f(:,:,:,ioxt:iozt)=0.
+      if (ibbt/=0) f(:,:,:,ibxt:ibzt)=0.
+      if (ijjt/=0) f(:,:,:,ijxt:ijzt)=0.
 !
     endsubroutine initialize_time_integrals
 !***********************************************************************
-    subroutine time_integrals(f)
+    subroutine time_integrals(f,p)
 !
-!  Calculate time_integrals of full chunks
+!  Calculate time_integrals within each pencil (as long as each
+!  pencil case p still contains the current data). This routine
+!  is now being called at the end of equ.
 !
 !  28-jun-07/axel+mreinhard: coded
+!  24-jun-08/axel: moved call to this routine to the individual pde routines
 !
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
 !
-      if (iuut/=0) f(:,:,:,iuxt:iuzt)=f(:,:,:,iuxt:iuzt)+dt*f(:,:,:,iux:iuz)
+      intent(inout) :: f
+      intent(in) :: p
+!
+      if (itsub==itorder) then
+        if (iuut/=0) f(l1:l2,m,n,iuxt:iuzt)=f(l1:l2,m,n,iuxt:iuzt)+dt*p%uu
+        if (ioot/=0) f(l1:l2,m,n,ioxt:iozt)=f(l1:l2,m,n,ioxt:iozt)+dt*p%oo
+        if (ibbt/=0) f(l1:l2,m,n,ibxt:ibzt)=f(l1:l2,m,n,ibxt:ibzt)+dt*p%bb
+        if (ijjt/=0) f(l1:l2,m,n,ijxt:ijzt)=f(l1:l2,m,n,ijxt:ijzt)+dt*p%jj
+      endif
 !
     endsubroutine time_integrals
 !***********************************************************************
@@ -482,7 +498,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.411 2008-06-25 08:57:05 rei Exp $")
+           "$Id: equ.f90,v 1.412 2008-07-01 16:51:46 brandenb Exp $")
 !
 !  Initialize counter for calculating and communicating print results.
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -866,6 +882,10 @@ module Equ
           call phisum_mn_name_rz(p%z_mn,idiag_zmphi)
           call phisum_mn_name_rz(p%r_mn,idiag_rmphi)
         endif
+!
+!  Do the vorticity integration here, before the omega penci is overwritten
+!
+      if (ltime_integrals) call time_integrals(f,p)
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)

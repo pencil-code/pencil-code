@@ -1,4 +1,4 @@
-! $Id: nofourier.f90,v 1.12 2008-05-07 14:13:57 wlyra Exp $
+! $Id: nofourier.f90,v 1.13 2008-07-01 16:51:47 brandenb Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -208,5 +208,17 @@ module Fourier
       if (NO_WARN) print*, a_re, shift_y
 !
     endsubroutine fourier_shift_y
+!***********************************************************************
+    subroutine fourier_transform_real_1(a,na,ifirst_fft,linv)
+!
+!   1-jul-08/axel: dummy routine
+!
+      real, dimension(na) :: a
+      integer, intent(in) :: na,ifirst_fft
+      logical, optional :: linv
+!
+      if (NO_WARN) print*,a,na,ifirst_fft,linv
+!
+    endsubroutine fourier_transform_real_1
 !***********************************************************************
 endmodule Fourier

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.257 2008-05-18 06:57:32 brandenb Exp $
+! $Id: run.f90,v 1.258 2008-07-01 16:51:47 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -76,7 +76,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.257 2008-05-18 06:57:32 brandenb Exp $")
+             "$Id: run.f90,v 1.258 2008-07-01 16:51:47 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -484,7 +484,6 @@
 !
           call diagnostic
           if (ltavg) call update_timeavgs(f,dt)
-          if (ltime_integrals) call time_integrals(f)
 !
 !  Add forcing and/or do rescaling (if applicable)
 !

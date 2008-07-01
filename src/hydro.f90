@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.443 2008-06-21 11:46:53 pkapyla Exp $
+! $Id: hydro.f90,v 1.444 2008-07-01 16:51:47 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -74,7 +74,7 @@ module Hydro
   logical :: ladvection_velocity=.true.
   logical :: lprecession=.false.
   logical :: lshear_rateofstrain=.false.
-  logical :: luut_as_aux=.false.
+  logical :: luut_as_aux=.false.,loot_as_aux=.false.
   logical :: lpressuregradient_gas=.true.
   logical :: lscale_tobox=.true.
 ! Dhruba
@@ -88,7 +88,8 @@ module Hydro
        uy_left, uy_right,uu_const, Omega,  initpower, cutoff, &
        u_out_kep, N_modes_uu, lcoriolis_force, lcentrifugal_force, &
        ladvection_velocity, lprecession, omega_precession, &
-       luut_as_aux, velocity_ceiling, mu_omega, nb_rings, om_rings, gap, &
+       luut_as_aux,loot_as_aux, &
+       velocity_ceiling, mu_omega, nb_rings, om_rings, gap, &
        lscale_tobox
 
   ! run parameters
@@ -133,7 +134,8 @@ module Hydro
        lalways_use_gij_etc,lcalc_uumean, &
        lforcing_cont_uu, &
        width_ff_uu,x1_ff_uu,x2_ff_uu, &
-       luut_as_aux,loutest, ldiffrot_test,&
+       luut_as_aux,loot_as_aux, &
+       loutest, ldiffrot_test,&
        interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
        velocity_ceiling
 
@@ -141,6 +143,10 @@ module Hydro
 
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_u2tm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\uv(t')
+                                ! DIAG_DOC:   dt'\right>$
+  integer :: idiag_uotm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\ov(t')
+                                ! DIAG_DOC:   dt'\right>$
+  integer :: idiag_outm=0       ! DIAG_DOC: $\left<\ov(t)\cdot\int_0^t\uv(t')
                                 ! DIAG_DOC:   dt'\right>$
   integer :: idiag_u2m=0        ! DIAG_DOC: $\left<\uv^2\right>$
   integer :: idiag_um2=0        ! DIAG_DOC: 
@@ -189,6 +195,9 @@ module Hydro
                                 ! DIAG_DOC:   velocity)
   integer :: idiag_uymz=0       ! DIAG_DOC: 
   integer :: idiag_uzmz=0       ! DIAG_DOC: 
+  integer :: idiag_oxmz=0       ! DIAG_DOC: $\left< \omega_x \right>_{xy}$
+  integer :: idiag_oymz=0       ! DIAG_DOC: $\left< \omega_y \right>_{xy}$
+  integer :: idiag_ozmz=0       ! DIAG_DOC: $\left< \omega_z \right>_{xy}$
   integer :: idiag_umx=0        ! DIAG_DOC: 
   integer :: idiag_umy=0        ! DIAG_DOC: 
   integer :: idiag_uxmy=0       ! DIAG_DOC: 
@@ -349,7 +358,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.443 2008-06-21 11:46:53 pkapyla Exp $")
+           "$Id: hydro.f90,v 1.444 2008-07-01 16:51:47 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -385,7 +394,8 @@ module Hydro
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
 !
       use Mpicomm, only: stop_it
-      use Cdata,   only: r_int,r_ext,lfreeze_varint,lfreeze_varext,epsi,leos,iux,iuy,iuz,iuut,iuxt,iuyt,iuzt,lroot,datadir
+      use Cdata,   only: r_int,r_ext,lfreeze_varint,lfreeze_varext,epsi, &
+        leos,iux,iuy,iuz,iuut,iuxt,iuyt,iuzt,ioot,ioxt,ioyt,iozt,lroot,datadir
       use FArrayManager
       use SharedVariables
 !
@@ -472,6 +482,24 @@ module Hydro
           write(3,*) 'iuxt=',iuxt
           write(3,*) 'iuyt=',iuyt
           write(3,*) 'iuzt=',iuzt
+          close(3)
+        endif
+      endif
+!
+      if (loot_as_aux) then
+        if (ioot==0) then
+          call farray_register_auxiliary('oot',ioot,vector=3)
+          ioxt=ioot
+          ioyt=ioot+1
+          iozt=ioot+2
+        endif
+        if (ioot/=0.and.lroot) then
+          print*, 'initialize_velocity: ioot = ', ioot
+          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+          write(3,*) 'ioot=',ioot
+          write(3,*) 'ioxt=',ioxt
+          write(3,*) 'ioyt=',ioyt
+          write(3,*) 'iozt=',iozt
           close(3)
         endif
       endif
@@ -959,7 +987,8 @@ module Hydro
       if (idiag_ormr/=0 .or. idiag_opmr/=0 .or. idiag_ozmr/=0) &
           lpenc_diagnos(i_oo)=.true.
 
-      if (idiag_oxmxy/=0 .or. idiag_oymxy/=0 .or. idiag_ozmxy/=0) &
+      if (idiag_oxmxy/=0 .or. idiag_oymxy/=0 .or. idiag_ozmxy/=0 .or. &
+          idiag_oxmz/=0 .or. idiag_oymz/=0 .or. idiag_ozmz/=0) &
           lpenc_diagnos2d(i_oo)=.true.
 
       if (idiag_totangmom/=0 ) lpenc_diagnos(i_rcyl_mn)=.true.
@@ -1206,7 +1235,7 @@ use Mpicomm, only: stop_it
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: space_part_re,space_part_im,u2t
+      real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out
       real :: c2,s2,kx
       integer :: j
 !
@@ -1406,6 +1435,23 @@ use Mpicomm, only: stop_it
           call dot(p%uu,f(l1:l2,m,n,iuxt:iuzt),u2t)
           call sum_mn_name(u2t,idiag_u2tm)
         endif
+!
+!  integrate velocity in time, to calculate correlation time later
+!
+        if (idiag_outm/=0) then
+          if (iuut==0) call stop_it("Cannot calculate outm if iuut==0")
+          call dot(p%oo,f(l1:l2,m,n,iuxt:iuzt),out)
+          call sum_mn_name(out,idiag_outm)
+        endif
+!
+!  integrate velocity in time, to calculate correlation time later
+!
+        if (idiag_uotm/=0) then
+          if (ioot==0) call stop_it("Cannot calculate uotm if ioot==0")
+          call dot(p%uu,f(l1:l2,m,n,ioxt:iozt),uot)
+          call sum_mn_name(uot,idiag_uotm)
+        endif
+!
         if (idiag_u2m/=0)     call sum_mn_name(p%u2,idiag_u2m)
         if (idiag_um2/=0)     call max_mn_name(p%u2,idiag_um2)
         if (idiag_divum/=0)   call sum_mn_name(p%divu,idiag_divum)
@@ -1505,6 +1551,9 @@ use Mpicomm, only: stop_it
         if (idiag_uxmz/=0)   call xysum_mn_name_z(p%uu(:,1),idiag_uxmz)
         if (idiag_uymz/=0)   call xysum_mn_name_z(p%uu(:,2),idiag_uymz)
         if (idiag_uzmz/=0)   call xysum_mn_name_z(p%uu(:,3),idiag_uzmz)
+        if (idiag_oxmz/=0)   call xysum_mn_name_z(p%oo(:,1),idiag_oxmz)
+        if (idiag_oymz/=0)   call xysum_mn_name_z(p%oo(:,2),idiag_oymz)
+        if (idiag_ozmz/=0)   call xysum_mn_name_z(p%oo(:,3),idiag_ozmz)
         if (idiag_uxmy/=0)   call xzsum_mn_name_y(p%uu(:,1),idiag_uxmy)
         if (idiag_uymy/=0)   call xzsum_mn_name_y(p%uu(:,2),idiag_uymy)
         if (idiag_uzmy/=0)   call xzsum_mn_name_y(p%uu(:,3),idiag_uzmy)
@@ -2381,6 +2430,8 @@ use Mpicomm, only: stop_it
 !
       if (lreset) then
         idiag_u2tm=0
+        idiag_uotm=0
+        idiag_outm=0
         idiag_u2m=0
         idiag_um2=0
         idiag_uxpt=0
@@ -2411,6 +2462,12 @@ use Mpicomm, only: stop_it
         idiag_ux2mz=0
         idiag_uy2mz=0 
         idiag_uz2mz=0 
+        idiag_uxmz=0
+        idiag_uymz=0
+        idiag_uzmz=0
+        idiag_oxmz=0
+        idiag_oymz=0
+        idiag_ozmz=0
         idiag_uxuym=0
         idiag_uxuzm=0
         idiag_uyuzm=0
@@ -2525,6 +2582,8 @@ use Mpicomm, only: stop_it
         call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
         call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)
         call parse_name(iname,cname(iname),cform(iname),'u2tm',idiag_u2tm)
+        call parse_name(iname,cname(iname),cform(iname),'uotm',idiag_uotm)
+        call parse_name(iname,cname(iname),cform(iname),'outm',idiag_outm)
         call parse_name(iname,cname(iname),cform(iname),'u2m',idiag_u2m)
         call parse_name(iname,cname(iname),cform(iname),'um2',idiag_um2)
         call parse_name(iname,cname(iname),cform(iname),'o2m',idiag_o2m)
@@ -2602,6 +2661,9 @@ use Mpicomm, only: stop_it
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxmz',idiag_uxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uymz',idiag_uymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzmz',idiag_uzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxmz',idiag_oxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oymz',idiag_oymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ozmz',idiag_ozmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'ux2mz',idiag_ux2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
@@ -2731,6 +2793,8 @@ use Mpicomm, only: stop_it
         write(3,*) 'i_ekin=',idiag_ekin
         write(3,*) 'i_ekintot=',idiag_ekintot
         write(3,*) 'i_u2tm=',idiag_u2tm
+        write(3,*) 'i_uotm=',idiag_uotm
+        write(3,*) 'i_outm=',idiag_outm
         write(3,*) 'i_u2m=',idiag_u2m
         write(3,*) 'i_um2=',idiag_um2
         write(3,*) 'i_o2m=',idiag_o2m
@@ -2790,6 +2854,9 @@ use Mpicomm, only: stop_it
         write(3,*) 'i_uxmz=',idiag_uxmz
         write(3,*) 'i_uymz=',idiag_uymz
         write(3,*) 'i_uzmz=',idiag_uzmz
+        write(3,*) 'i_oxmz=',idiag_oxmz
+        write(3,*) 'i_oymz=',idiag_oymz
+        write(3,*) 'i_ozmz=',idiag_ozmz
         write(3,*) 'i_uxmxy=',idiag_uxmxy
         write(3,*) 'i_uymxy=',idiag_uymxy
         write(3,*) 'i_uzmxy=',idiag_uzmxy

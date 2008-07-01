@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.531 2008-06-25 16:21:07 dhruba Exp $
+! $Id: magnetic.f90,v 1.532 2008-07-01 16:51:47 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -118,6 +118,7 @@ module Magnetic
   logical :: lmeanfield_noalpm=.false., lmeanfield_jxb=.false.
   logical :: lgauss=.false.
   logical :: lbb_as_aux=.false.,ljj_as_aux=.false.
+  logical :: lbbt_as_aux=.false.,ljjt_as_aux=.false.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   character (len=labellen) :: pertaa='zero'
 
@@ -134,6 +135,7 @@ module Magnetic
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa, &
        rmode,zmode,rm_int,rm_ext,lgauss,lcheck_positive_va2, &
        lbb_as_aux,ljj_as_aux,beta_const,lbext_curvilinear, &
+       lbbt_as_aux,ljjt_as_aux, &
        etadust0
 
   ! run parameters
@@ -184,9 +186,16 @@ module Magnetic
        borderaa,eta_aniso_hyper3, &
        lelectron_inertia,inertial_length,lbext_curvilinear, &
        lbb_as_aux,ljj_as_aux,lremove_mean_emf,lkinematic, &
+       lbbt_as_aux,ljjt_as_aux, &
        etadust0
 
   ! diagnostic variables (need to be consistent with reset list below)
+  integer :: idiag_b2tm=0       ! DIAG_DOC: $\left<\bv(t)\cdot\int_0^t\bv(t')
+                                ! DIAG_DOC:   dt'\right>$
+  integer :: idiag_bjtm=0       ! DIAG_DOC: $\left<\bv(t)\cdot\int_0^t\jv(t')
+                                ! DIAG_DOC:   dt'\right>$
+  integer :: idiag_jbtm=0       ! DIAG_DOC: $\left<\jv(t)\cdot\int_0^t\bv(t')
+                                ! DIAG_DOC:   dt'\right>$
   integer :: idiag_b2m=0        ! DIAG_DOC: $\left<\Bv^2\right>$
   integer :: idiag_bm2=0        ! DIAG_DOC: $\max(\Bv^2)$
   integer :: idiag_j2m=0        ! DIAG_DOC: $\left<\jv^2\right>$
@@ -428,7 +437,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.531 2008-06-25 16:21:07 dhruba Exp $")
+           "$Id: magnetic.f90,v 1.532 2008-07-01 16:51:47 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -684,6 +693,45 @@ module Magnetic
           write(3,*) 'ijx=',ijx
           write(3,*) 'ijy=',ijy
           write(3,*) 'ijz=',ijz
+          close(3)
+        endif
+      endif
+!
+!  After a reload, we need to rewrite index.pro, but the auxiliary
+!  arrays are already allocated and must not be allocated again.
+!
+      if (lbbt_as_aux) then
+        if (ibbt==0) then
+          call farray_register_auxiliary('bbt',ibbt,vector=3)
+          ibxt=ibbt
+          ibyt=ibbt+1
+          ibzt=ibbt+2
+        endif
+        if (ibbt/=0.and.lroot) then
+          print*, 'initialize_velocity: ibbt = ', ibbt
+          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+          write(3,*) 'ibbt=',ibbt
+          write(3,*) 'ibxt=',ibxt
+          write(3,*) 'ibyt=',ibyt
+          write(3,*) 'ibzt=',ibzt
+          close(3)
+        endif
+      endif
+!
+      if (ljjt_as_aux) then
+        if (ijjt==0) then
+          call farray_register_auxiliary('jjt',ijjt,vector=3)
+          ijxt=ijjt
+          ijyt=ijjt+1
+          ijzt=ijjt+2
+        endif
+        if (ijjt/=0.and.lroot) then
+          print*, 'initialize_velocity: ijjt = ', ijjt
+          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+          write(3,*) 'ijjt=',ijjt
+          write(3,*) 'ijxt=',ijxt
+          write(3,*) 'ijyt=',ijyt
+          write(3,*) 'ijzt=',ijzt
           close(3)
         endif
       endif
@@ -1609,6 +1657,7 @@ module Magnetic
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b3b21,b1b32,b2b13,sign_jo,rho1_jxb
       real, dimension (nx) :: B1dot_glnrhoxb,tmp1
+      real, dimension (nx) :: b2t,bjt,jbt
       real, dimension (nx) :: eta_mn,eta_smag,etadust,etatotal
       real, dimension (nx) :: fres2,etaSS,penc
       real :: tmp,eta_out1,OmegaSS=1.
@@ -1980,7 +2029,31 @@ module Magnetic
  
         if (idiag_beta1m/=0) call sum_mn_name(p%beta,idiag_beta1m)
         if (idiag_beta1max/=0) call max_mn_name(p%beta,idiag_beta1max)
-
+!
+!  integrate velocity in time, to calculate correlation time later
+!
+        if (idiag_b2tm/=0) then
+          if (ibbt==0) call stop_it("Cannot calculate b2tm if ibbt==0")
+          call dot(p%bb,f(l1:l2,m,n,ibxt:ibzt),b2t)
+          call sum_mn_name(b2t,idiag_b2tm)
+        endif
+!
+!  integrate velocity in time, to calculate correlation time later
+!
+        if (idiag_jbtm/=0) then
+          if (ibbt==0) call stop_it("Cannot calculate jbtm if ibbt==0")
+          call dot(p%jj,f(l1:l2,m,n,ibxt:ibzt),jbt)
+          call sum_mn_name(jbt,idiag_jbtm)
+        endif
+!
+!  integrate velocity in time, to calculate correlation time later
+!
+        if (idiag_bjtm/=0) then
+          if (ijjt==0) call stop_it("Cannot calculate bjtm if ijjt==0")
+          call dot(p%bb,f(l1:l2,m,n,ijxt:ijzt),bjt)
+          call sum_mn_name(bjt,idiag_bjtm)
+        endif
+!
         if (idiag_b2m/=0) call sum_mn_name(p%b2,idiag_b2m)
         if (idiag_bm2/=0) call max_mn_name(p%b2,idiag_bm2)
         if (idiag_brms/=0) call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
@@ -4601,6 +4674,9 @@ module Magnetic
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
+        idiag_b2tm=0
+        idiag_bjtm=0
+        idiag_jbtm=0
         idiag_b2m=0; idiag_bm2=0; idiag_j2m=0; idiag_jm2=0; idiag_abm=0
         idiag_jbm=0; idiag_ubm=0; idiag_epsM=0; idiag_epsM_LES=0
         idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0
@@ -4658,6 +4734,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'aybym2',idiag_aybym2)
         call parse_name(iname,cname(iname),cform(iname),'exaym2',idiag_exaym2)
         call parse_name(iname,cname(iname),cform(iname),'exjm2',idiag_exjm2)
+        call parse_name(iname,cname(iname),cform(iname),'b2tm',idiag_b2tm)
+        call parse_name(iname,cname(iname),cform(iname),'bjtm',idiag_bjtm)
+        call parse_name(iname,cname(iname),cform(iname),'jbtm',idiag_jbtm)
         call parse_name(iname,cname(iname),cform(iname),'abm',idiag_abm)
         call parse_name(iname,cname(iname),cform(iname),'jbm',idiag_jbm)
         call parse_name(iname,cname(iname),cform(iname),'ubm',idiag_ubm)
@@ -4879,6 +4958,9 @@ module Magnetic
         write(3,*) 'i_aybym2=',idiag_aybym2
         write(3,*) 'i_exaym2=',idiag_exaym2
         write(3,*) 'i_exjm2=',idiag_exjm2
+        write(3,*) 'i_b2tm=',idiag_b2tm
+        write(3,*) 'i_bjtm=',idiag_bjtm
+        write(3,*) 'i_jbtm=',idiag_jbtm
         write(3,*) 'i_abm=',idiag_abm
         write(3,*) 'i_jbm=',idiag_jbm
         write(3,*) 'i_ubm=',idiag_ubm
