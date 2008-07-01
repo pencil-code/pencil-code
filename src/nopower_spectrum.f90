@@ -1,4 +1,4 @@
-! $Id: nopower_spectrum.f90,v 1.16 2006-11-30 09:03:36 dobler Exp $
+! $Id: nopower_spectrum.f90,v 1.17 2008-07-01 16:47:49 wlyra Exp $
 !
 module  power_spectrum
   !
@@ -69,5 +69,26 @@ module  power_spectrum
   if(ip<0) print*,f,variabl,pdf_mean,pdf_rms !(keep compiler quiet)
   endsubroutine pdf
 !***********************************************************************
-
+  subroutine power_phi(f,sp)
+!
+! dummy 
+!
+    real, dimension (mx,my,mz,mfarray) :: f
+    character (len=*) :: sp
+!
+    if (NO_WARN) print*,f,sp
+!
+  endsubroutine power_phi
+!***********************************************************************
+  subroutine powerhel_phi(f,sp)
+!
+! dummy 
+!
+    real, dimension (mx,my,mz,mfarray) :: f
+    character (len=*) :: sp
+!
+    if (NO_WARN) print*,f,sp
+!
+  endsubroutine powerhel_phi
+!***********************************************************************
 endmodule power_spectrum

@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.224 2008-05-26 03:18:12 wlyra Exp $
+! $Id: mpicomm.f90,v 1.225 2008-07-01 16:47:49 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2927,4 +2927,18 @@ module Mpicomm
 
     endsubroutine communicate_bc_aa_pot
 !***********************************************************************
+    subroutine z2x(a,xi,yj,yproc_no,az)
+!
+!  dummy
+!
+      real, dimension(nx,ny,nz), intent(in) :: a
+      real, dimension(nz), intent(out) :: az
+      integer, intent(in) :: xi,yj,yproc_no
+!
+      az=0
+      if (NO_WARN) print*,xi,yj,yproc_no,az,a
+!
+    endsubroutine z2x
+!***********************************************************************
+
 endmodule Mpicomm
