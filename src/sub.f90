@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.366 2008-06-25 21:48:54 brandenb Exp $
+! $Id: sub.f90,v 1.367 2008-07-01 13:53:18 dhruba Exp $
 
 module Sub
 
@@ -2127,7 +2127,8 @@ module Sub
 !  22-oct-02/axel+tarek: adapted from curl
 !
       use Cdata, only: mx,my,mz,mfarray,nx,                           &
-                        lspherical_coords,lcylindrical_coords
+                        lspherical_coords,lcylindrical_coords,        &
+                        r1_mn,cotth,l1,l2,m,n
       use Deriv, only: der
       use Mpicomm, only: stop_it
 !
@@ -2147,21 +2148,27 @@ module Sub
       call der(f,k1+3,tmp1,2)
       call der(f,k1+2,tmp2,3)
       g=tmp1-tmp2
+      if(lspherical_coords) g=tmp1-tmp2& 
+            +f(l1:l2,m,n,k1+3)*r1_mn*cotth(m)
 !
       case(2)
       call der(f,k1+1,tmp1,3)
       call der(f,k1+3,tmp2,1)
       g=tmp1-tmp2
+      if(lspherical_coords) g=tmp1-tmp2& 
+            -f(l1:l2,m,n,k1+3)*r1_mn
 !
       case(3)
       call der(f,k1+2,tmp1,1)
       call der(f,k1+1,tmp2,2)
       g=tmp1-tmp2
+      if(lspherical_coords) g=tmp1-tmp2& 
+            +f(l1:l2,m,n,k1+2)*r1_mn
 !
       endselect
 !
-      if (lcylindrical_coords.or.lspherical_coords) &
-        call stop_it("curli not implemented for non-cartesian coordinates")
+      if (lcylindrical_coords) &
+        call stop_it("curli not implemented for cylindrical coordinates")
 !
     endsubroutine curli
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.27 2008-05-19 13:55:47 wlyra Exp $
+! $Id: fourier_fftpack.f90,v 1.28 2008-07-01 13:53:18 dhruba Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -11,8 +11,12 @@ module Fourier
 
   implicit none
 
-  include 'fourier.h'
 
+  include 'fourier.h'
+! Allocatable array which can be used for temporary storage
+! in FFT
+
+!
   interface fourier_transform_other
     module procedure fourier_transform_other_1
     module procedure fourier_transform_other_2
@@ -1533,5 +1537,61 @@ module Fourier
       endif
 !
     endsubroutine fourier_shift_y
+!***********************************************************************
+    subroutine fourier_transform_real_1(a,na,ifirst_fft,linv)
+!
+!  Subroutine to do Fourier transform on a 1-D *real* array of arbitrary size.
+!  This routine does not operate in parallel, but should be used to Fourier
+!  transform an array present in its entirety on the local processor.
+!  The routine overwrites the input data.
+!
+!  1-jul-2006/dhruba: Adapted from fourier_transform_other_1
+!
+      use Mpicomm, only: stop_it
+!
+      real, dimension(na) :: a
+      integer, intent(in) :: na,ifirst_fft
+      logical, optional :: linv
+      real, dimension(2*na+15) :: wsavex_temp  
+!
+      integer :: nx_other
+      logical :: lforward
+!----------
+      if(ifirst_fft.eq.1) then
+! Initialize fftpack
+        call rffti(na,wsavex_temp)
+      else
+      endif
+!---------
+      lforward=.true.
+      if (present(linv)) then
+        if (linv) lforward=.false.
+      endif
+!
+!  Transform x-direction.
+!
+      if (lforward) then
+        if (lroot .and. ip<10) &
+            print*, 'fourier_transform_real_1: doing FFTpack in x'
+        call rfftf(na,a,wsavex_temp)
+      else
+!
+!  Transform x-direction back.
+!
+        if (lroot .and. ip<10) &
+            print*, 'fourier_transform_real_1: doing FFTpack in x'
+        call rfftb(na,a,wsavex_temp)
+      endif
+!
+!  Normalize
+!
+      if (lforward) then
+        a=a/na
+      endif
+!
+      if (lroot .and. ip<10) &
+          print*, 'fourier_transform_real_1: fft has finished'
+!
+    endsubroutine fourier_transform_real_1
 !***********************************************************************
 endmodule Fourier

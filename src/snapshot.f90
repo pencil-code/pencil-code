@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.28 2008-06-05 10:15:25 brandenb Exp $
+! $Id: snapshot.f90,v 1.29 2008-07-01 13:53:18 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -249,6 +249,11 @@ contains
           if (mag_spec) call power_2d(a,'b')
           if (vec_spec) call power_2d(a,'a')
         endif
+        if (vel_phispec) call power_phi(a,'u')
+        if (mag_phispec) call power_phi(a,'b')
+        if (vec_phispec) call power_phi(a,'a')
+        if (ab_phispec)  call powerhel_phi(a,'mag')
+        if (ou_phispec)  call powerhel_phi(a,'kin')
 !
 !  Spectra of particle variables.
 !

@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.61 2007-11-21 12:32:36 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -45,7 +45,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.61 2007-11-21 12:32:36 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -148,7 +148,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.61 2007-11-21 12:32:36 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -248,7 +248,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.61 2007-11-21 12:32:36 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -389,7 +389,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.61 2007-11-21 12:32:36 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -488,7 +488,7 @@ module  power_spectrum
 !  identify version
 !
     if (lroot .AND. ip<10) call cvs_id( &
-        "$Id: power_spectrum.f90,v 1.61 2007-11-21 12:32:36 brandenb Exp $")
+        "$Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $")
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -778,5 +778,218 @@ module  power_spectrum
 11 format(8i10)
 endsubroutine pdf
 !***********************************************************************
-
+    subroutine power_phi(f,sp)
+!
+! Power spectra in phi direction in spherical coordinates:
+! I define power_phi of a variable 'u' in the following way:
+! {\hat u}(r,\theta,k) \equiv FFT (u(r,\theta,k))
+! power_phi(u) \equiv 
+!         \sum_{r,\theta} dr d\theta 
+!             {\hat u}(r,\theta,k)*{\hat u}(r,\theta,-k) r^2 sin(\theta)
+! ---------------------------------------------------------------------
+! As this subroutine is called at the end of a time-step df can be 
+! used for storing temporary data. 
+! The \phi direction is the z direction. 
+! ----------------------------------------------------------------------
+  integer, parameter :: nk=nz/2
+  integer :: i,j,k,l,ikz,im,in,ivec,ispec,ifirst_fft
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension(nx,ny,nz) :: a1
+  real, dimension(nx) :: bb
+  real, dimension(nzgrid/2) :: spectrum=0.,spectrum_sum=0
+  real, dimension(nzgrid) :: aatemp
+  real :: kz,nVol2d,spec_real,spec_imag
+  character (len=*) :: sp
+  !
+  !  identify version
+  !
+  if (lroot .AND. ip<10) call cvs_id( &
+       "$Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $")
+!--------------Makes sense only in spherical coordinate system -----------
+  if(.not.lspherical_coords) call stop_it("power_phi works only in spherical coordinates")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  !
+  spectrum=0
+  spectrum_sum=0
+  !
+  !  In fft, real and imaginary parts are handled separately.
+  !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
+  !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
+  !
+  do ivec=1,3
+     !
+     if (trim(sp)=='u') then
+        a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+      elseif (trim(sp)=='b') then
+        do n=n1,n2
+           do m=m1,m2
+              call curli(f,iaa,bb,ivec)
+              im=m-nghost
+              in=n-nghost
+              a1(:,im,in)=bb
+           enddo
+        enddo
+     elseif (trim(sp)=='a') then
+        a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+     else
+        print*,'There are no such sp=',trim(sp)
+     endif
+!
+     ifirst_fft=1
+     do l=1,nx
+       do m=1,ny
+         do j=1,nprocy
+           call z2x(a1,l,m,j,aatemp)
+! For multiple processor runs aatemp exists only in the root 
+! processor. Hence rest of the analysis is done only
+! in the root processor
+           if (lroot) then 
+             call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft)
+             ifirst_fft = ifirst_fft+1
+             spectrum(1)=(aatemp(1)**2)&
+                    *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+             do ispec=2,nzgrid/2
+               spec_real=aatemp(2*ispec-2)
+               spec_imag=aatemp(2*ispec-1)
+               spectrum(ispec)= 2.*(spec_real**2+spec_imag**2)&
+                    *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+             enddo
+             spectrum(nzgrid/2)=(aatemp(nzgrid)**2)&
+                    *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+             spectrum_sum=spectrum_sum+spectrum
+             nVol2d = nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+           else
+             nVol2d=1.
+           endif
+         enddo ! loop over yproc
+       enddo   ! loop over ny
+     enddo     ! loop over nx
+!
+   enddo !(from loop over ivec)
+!
+!  append to diagnostics file
+!
+  if (iproc==root) then
+     if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
+          ,'to ',trim(datadir)//'/power_phi'//trim(sp)//'.dat'
+     spectrum_sum=.5*spectrum_sum
+     open(1,file=trim(datadir)//'/power_phi'//trim(sp)//'.dat',position='append')
+     write(1,*) t
+     write(1,'(1p,8e10.2)') spectrum_sum/nVol2d
+     close(1)
+  endif
+  !
+  endsubroutine power_phi
+!***********************************************************************
+    subroutine powerhel_phi(f,sp)
+!
+! Power spectra in phi direction in spherical coordinates:
+! I define power_phi of a variable 'u' in the following way:
+! {\hat u}(r,\theta,k) \equiv FFT (u(r,\theta,k))
+! power_phi(u) \equiv 
+!         \sum_{r,\theta} dr d\theta 
+!             {\hat u}(r,\theta,k)*{\hat u}(r,\theta,-k) r^2 sin(\theta)
+! ---------------------------------------------------------------------
+! As this subroutine is called at the end of a time-step df can be 
+! used for storing temporary data. 
+! The \phi direction is the z direction. 
+! ----------------------------------------------------------------------
+  integer, parameter :: nk=nz/2
+  integer :: i,j,k,l,ikz,im,in,ivec,ifirst_fft,ispec
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension(nx,ny,nz) :: a1
+  real, dimension(nx) :: bb
+  real, dimension(nzgrid/2) :: spectrum=0.,spectrum_sum=0
+  real, dimension(nzgrid) :: aatemp
+  real :: kz,nVol2d,spec_real,spec_imag
+  character (len=*) :: sp
+  !
+  call stop_it("subroutine powerhel_phi not written yet")
+  !  identify version
+  !
+  if (lroot .AND. ip<10) call cvs_id( &
+       "$Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $")
+!--------------Makes sense only in spherical coordinate system -----------
+  if(.not.lspherical_coords) call stop_it("power_phi works only in spherical coordinates")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  !
+  spectrum=0
+  spectrum_sum=0
+  !
+  !  In fft, real and imaginary parts are handled separately.
+  !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
+  !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
+  !
+  do ivec=1,3
+     !
+     if (trim(sp)=='u') then
+        a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+      elseif (trim(sp)=='b') then
+        do n=n1,n2
+           do m=m1,m2
+              call curli(f,iaa,bb,ivec)
+              im=m-nghost
+              in=n-nghost
+              a1(:,im,in)=bb
+           enddo
+        enddo
+     elseif (trim(sp)=='a') then
+        a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+     else
+        print*,'There are no such sp=',trim(sp)
+     endif
+!
+     do l=1,nx
+       do m=1,ny
+         do j=1,nprocy
+           call z2x(a1,l,m,j,aatemp)
+! For multiple processor runs aatemp exists only in the root 
+! processor. Hence rest of the analysis is done only
+! in the root processor
+           if (lroot) then 
+             call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft)
+             ifirst_fft = ifirst_fft+1
+             spectrum(1)=(aatemp(1)**2)&
+                    *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+             do ispec=2,nzgrid/2
+               spec_real=aatemp(2*ispec-2)
+               spec_imag=aatemp(2*ispec-1)
+               spectrum(ispec)= 2.*(spec_real**2+spec_imag**2)&
+                    *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+             enddo
+             spectrum(nzgrid/2)=(aatemp(nzgrid)**2)&
+                    *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+             spectrum_sum=spectrum_sum+spectrum
+             nVol2d = nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+           else
+             nVol2d=1.
+           endif
+         enddo ! loop over yproc
+       enddo   ! loop over ny
+     enddo     ! loop over nx
+!
+   enddo !(from loop over ivec)
+!
+!  append to diagnostics file
+!
+  if (iproc==root) then
+     if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
+          ,'to ',trim(datadir)//'/power_phi'//trim(sp)//'.dat'
+     spectrum_sum=.5*spectrum_sum
+     open(1,file=trim(datadir)//'/power_phi'//trim(sp)//'.dat',position='append')
+     write(1,*) t
+     write(1,'(1p,8e10.2)') spectrum_sum/nVol2d
+     close(1)
+  endif
+  !
+  endsubroutine powerhel_phi
+!***********************************************************************
 endmodule power_spectrum

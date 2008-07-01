@@ -2,3 +2,4 @@
  private
 
  public :: power, powerhel, powerscl, power_1d, power_2d, pdf
+ public :: power_phi,powerhel_phi

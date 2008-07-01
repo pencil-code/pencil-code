@@ -1,5 +1,5 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
-!$Id: mpicomm.h,v 1.36 2008-05-08 13:15:51 wlyra Exp $
+!$Id: mpicomm.h,v 1.37 2008-07-01 13:53:18 dhruba Exp $
 !
   private
 
@@ -28,6 +28,7 @@
   public :: initiate_shearing, finalize_shearing
 
   public :: transp,transp_xy,transp_xz,transp_zx
+  public :: z2x
   public :: communicate_bc_aa_pot,transp_xy_other,transp_other
 
 ! Radiation ray routines

@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.166 2008-05-26 03:18:12 wlyra Exp $
+! $Id: nompicomm.f90,v 1.167 2008-07-01 13:53:18 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -1183,6 +1183,20 @@ module Mpicomm
       a=transpose(b)
 !
     endsubroutine transp_zx
+!***********************************************************************
+    subroutine z2x(a,xi,yj,yproc_no,az)
+
+! Load the z dimension of an array in a 1-d array
+! 1-july-2008: dhruba
+! ---------------------------------------------
+      real, dimension(nx,ny,nz), intent(in) :: a
+      real, dimension(nz), intent(out) :: az
+      integer, intent(in) :: xi,yj,yproc_no
+      
+!
+      az(:)=a(xi,yj,:) 
+!
+    endsubroutine z2x
 !***********************************************************************
     subroutine communicate_bc_aa_pot(f,topbot)
 !
