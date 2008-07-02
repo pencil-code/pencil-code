@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.50 2008-07-02 00:33:55 brandenb Exp $
+! $Id: testfield_z.f90,v 1.51 2008-07-02 01:33:43 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -45,13 +45,13 @@ module Testfield
   real :: phase_testfield=.0
 !
   character (len=labellen), dimension(ninit) :: initaatest='nothing'
+  real, dimension (ninit) :: kx_aatest=1.,ky_aatest=1.,kz_aatest=1.
   real, dimension (ninit) :: amplaatest=0.
   integer :: iE0=0
 
   ! input parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
   real, dimension (nx,3) :: bbb
-  real :: amplaa=0., kx_aatest=1.,ky_aatest=1.,kz_aatest=1.
   real :: taainit=0.,daainit=0.
   logical :: reinitialize_aatest=.false.
   logical :: zextent=.true.,lsoca=.true.,lsoca_jxb=.true.,lset_bbtest2=.false.
@@ -204,7 +204,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.50 2008-07-02 00:33:55 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.51 2008-07-02 01:33:43 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -399,12 +399,12 @@ module Testfield
       case('gaussian-noise-3'); call gaunoise(amplaatest(j),f,iaxtest+6,iaztest+6)
       case('gaussian-noise-4'); call gaunoise(amplaatest(j),f,iaxtest+9,iaztest+9)
       case('gaussian-noise-5'); call gaunoise(amplaatest(j),f,iaxtest+12,iaztest+12)
-      case('sinwave-x-1'); call sinwave(amplaatest(j),f,iaxtest+0+1,kx=kx_aatest)
-      case('sinwave-x-2'); call sinwave(amplaatest(j),f,iaxtest+3+1,kx=kx_aatest)
-      case('sinwave-x-3'); call sinwave(amplaatest(j),f,iaxtest+6+1,kx=kx_aatest)
-      case('Beltrami-z-1'); call beltrami(amplaatest(j),f,iaxtest+0,kz=kz_aatest)
-      case('Beltrami-z-3'); call beltrami(amplaatest(j),f,iaxtest+6,kz=kz_aatest)
-      case('Beltrami-z-5'); call beltrami(amplaatest(j),f,iaxtest+12,kz=kz_aatest)
+      case('sinwave-x-1'); call sinwave(amplaatest(j),f,iaxtest+0+1,kx=kx_aatest(j))
+      case('sinwave-x-2'); call sinwave(amplaatest(j),f,iaxtest+3+1,kx=kx_aatest(j))
+      case('sinwave-x-3'); call sinwave(amplaatest(j),f,iaxtest+6+1,kx=kx_aatest(j))
+      case('Beltrami-z-1'); call beltrami(amplaatest(j),f,iaxtest+0,kz=kz_aatest(j))
+      case('Beltrami-z-3'); call beltrami(amplaatest(j),f,iaxtest+6,kz=kz_aatest(j))
+      case('Beltrami-z-5'); call beltrami(amplaatest(j),f,iaxtest+12,kz=kz_aatest(j))
       case('nothing'); !(do nothing)
 
       case default
