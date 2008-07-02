@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.49 2008-06-25 21:48:54 brandenb Exp $
+! $Id: testfield_z.f90,v 1.50 2008-07-02 00:33:55 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -115,6 +115,7 @@ module Testfield
   integer :: idiag_b12rms=0     ! DIAG_DOC: $\left<b_{12}^2\right>^{1/2}$
   integer :: idiag_b22rms=0     ! DIAG_DOC: $\left<b_{22}^2\right>^{1/2}$
   integer :: idiag_b0rms=0      ! DIAG_DOC: $\left<b_{0}^2\right>^{1/2}$
+  integer :: idiag_jb0m=0       ! DIAG_DOC: $\left<jb_{0}\right>$
   integer :: idiag_E11rms=0     ! DIAG_DOC: $\left<{\cal E}_{11}^2\right>^{1/2}$
   integer :: idiag_E21rms=0     ! DIAG_DOC: $\left<{\cal E}_{21}^2\right>^{1/2}$
   integer :: idiag_E12rms=0     ! DIAG_DOC: $\left<{\cal E}_{12}^2\right>^{1/2}$
@@ -203,7 +204,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.49 2008-06-25 21:48:54 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.50 2008-07-02 00:33:55 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -297,7 +298,7 @@ module Testfield
         case('B11-B22+B=0'); iE0=5
         case('B11-B21'); iE0=0
         case('B11-B22'); iE0=0
-        case('B=0') !(dont do anything)
+        case('B=0'); iE0=1
       case default
         call fatal_error('initialize_testfield','undefined itestfield value')
       endselect
@@ -507,11 +508,11 @@ module Testfield
       real, dimension (nx,3) :: bb,aa,uxB,B0test=0,bbtest
       real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbrtest
       real, dimension (nx,3) :: J0test,jxB0rtest,J0xbrtest
-      real, dimension (nx,3,njtest) :: Eipq,bpq
+      real, dimension (nx,3,njtest) :: Eipq,bpq,jpq
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest,bijtest
-      real, dimension (nx) :: bpq2,Epq2
+      real, dimension (nx) :: jbpq,bpq2,Epq2
       integer :: jtest,jfnamez,j, i1=1, i2=2, i3=3, i4=4
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
@@ -598,7 +599,7 @@ module Testfield
 !
 !  Calculate Lorentz force
 !
-        if (ltestflow) then
+        if (ltestflow.or.(ldiagnos.and.idiag_jb0m/=0)) then
           iuxtest=iuutest+4*(jtest-1)
           iuytest=iuxtest+1 !(even though its not used)
           iuztest=iuxtest+2
@@ -610,9 +611,11 @@ module Testfield
 !
           call curl_mn(aijtest,bbtest,aatest)
           call curl_mn(bijtest,jjtest,bbtest)
+        endif
 !
 !  calculate jpq x B0pq
 !
+        if (ltestflow) then
           call cross_mn(jjtest,B0test,jxB0rtest)
 !
 !  calculate J0pq x bpq
@@ -666,6 +669,7 @@ module Testfield
         endif
         bpq(:,:,jtest)=bbtest
         Eipq(:,:,jtest)=uxbtest*bamp1
+        if (ldiagnos.and.idiag_jb0m/=0) jpq(:,:,jtest)=jjtest
       enddo
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
@@ -686,9 +690,9 @@ module Testfield
         if (idiag_E111z/=0) call xysum_mn_name_z(Eipq(:,1,1),idiag_E111z)
         if (idiag_E211z/=0) call xysum_mn_name_z(Eipq(:,2,1),idiag_E211z)
         if (idiag_E311z/=0) call xysum_mn_name_z(Eipq(:,3,1),idiag_E311z)
-        if (idiag_E121z/=0) call xysum_mn_name_z(Eipq(:,1,2),idiag_E121z)
-        if (idiag_E221z/=0) call xysum_mn_name_z(Eipq(:,2,2),idiag_E221z)
-        if (idiag_E321z/=0) call xysum_mn_name_z(Eipq(:,3,2),idiag_E321z)
+        if (idiag_E121z/=0) call xysum_mn_name_z(Eipq(:,1,i2),idiag_E121z)
+        if (idiag_E221z/=0) call xysum_mn_name_z(Eipq(:,2,i2),idiag_E221z)
+        if (idiag_E321z/=0) call xysum_mn_name_z(Eipq(:,3,i2),idiag_E321z)
         if (idiag_E112z/=0) call xysum_mn_name_z(Eipq(:,1,i3),idiag_E112z)
         if (idiag_E212z/=0) call xysum_mn_name_z(Eipq(:,2,i3),idiag_E212z)
         if (idiag_E312z/=0) call xysum_mn_name_z(Eipq(:,3,i3),idiag_E312z)
@@ -701,22 +705,22 @@ module Testfield
 !
 !  averages of alpha and eta
 !
-        if (idiag_alp11/=0) call sum_mn_name(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2),idiag_alp11)
-        if (idiag_alp21/=0) call sum_mn_name(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2),idiag_alp21)
-        if (idiag_alp31/=0) call sum_mn_name(+cz(n)*Eipq(:,3,1)+sz(n)*Eipq(:,3,2),idiag_alp31)
+        if (idiag_alp11/=0) call sum_mn_name(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,i2),idiag_alp11)
+        if (idiag_alp21/=0) call sum_mn_name(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,i2),idiag_alp21)
+        if (idiag_alp31/=0) call sum_mn_name(+cz(n)*Eipq(:,3,1)+sz(n)*Eipq(:,3,i2),idiag_alp31)
         if (leta_rank2) then
           if (idiag_eta12/=0) call sum_mn_name(-(-sz(n)*Eipq(:,1,i1)+cz(n)*Eipq(:,1,i2))*ktestfield1,idiag_eta12)
           if (idiag_eta22/=0) call sum_mn_name(-(-sz(n)*Eipq(:,2,i1)+cz(n)*Eipq(:,2,i2))*ktestfield1,idiag_eta22)
         else
-          if (idiag_eta11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))*ktestfield1,idiag_eta11)
-          if (idiag_eta21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))*ktestfield1,idiag_eta21)
-          if (idiag_eta31/=0) call sum_mn_name((-sz(n)*Eipq(:,3,1)+cz(n)*Eipq(:,3,2))*ktestfield1,idiag_eta31)
+          if (idiag_eta11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,i2))*ktestfield1,idiag_eta11)
+          if (idiag_eta21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,i2))*ktestfield1,idiag_eta21)
+          if (idiag_eta31/=0) call sum_mn_name((-sz(n)*Eipq(:,3,1)+cz(n)*Eipq(:,3,i2))*ktestfield1,idiag_eta31)
         endif
 !
 !  weighted averages alpha and eta
 !
-        if (idiag_alp11cc/=0) call sum_mn_name(c2z(n)*(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2)),idiag_alp11cc)
-        if (idiag_alp21sc/=0) call sum_mn_name(csz(n)*(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2)),idiag_alp21sc)
+        if (idiag_alp11cc/=0) call sum_mn_name(c2z(n)*(+cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,i2)),idiag_alp11cc)
+        if (idiag_alp21sc/=0) call sum_mn_name(csz(n)*(+cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,i2)),idiag_alp21sc)
         if (leta_rank2) then
           if (idiag_eta12cs/=0) call sum_mn_name(-csz(n)*(-sz(n)*Eipq(:,1,i1)+cz(n)*Eipq(:,1,i2))*ktestfield1,idiag_eta12cs)
           if (idiag_eta22ss/=0) call sum_mn_name(-s2z(n)*(-sz(n)*Eipq(:,2,i1)+cz(n)*Eipq(:,2,i2))*ktestfield1,idiag_eta22ss)
@@ -782,6 +786,11 @@ module Testfield
 !  Obviously idiag_b0rms and idiag_b12rms cannot both be invoked!
 !  Needs modification!
 !
+        if (idiag_jb0m/=0) then
+          call dot(jpq(:,:,iE0),bpq(:,:,iE0),jbpq)
+          call sum_mn_name(jbpq,idiag_jb0m)
+        endif
+!
         if (idiag_b0rms/=0) then
           call dot2(bpq(:,:,iE0),bpq2)
           call sum_mn_name(bpq2,idiag_b0rms,lsqrt=.true.)
@@ -793,7 +802,7 @@ module Testfield
         endif
 !
         if (idiag_b21rms/=0) then
-          call dot2(bpq(:,:,2),bpq2)
+          call dot2(bpq(:,:,i2),bpq2)
           call sum_mn_name(bpq2,idiag_b21rms,lsqrt=.true.)
         endif
 !
@@ -1215,7 +1224,7 @@ module Testfield
         idiag_eta12=0; idiag_eta22=0; idiag_eta32=0
         idiag_alp11cc=0; idiag_alp21sc=0; idiag_alp12cs=0; idiag_alp22ss=0
         idiag_eta11cc=0; idiag_eta21sc=0; idiag_eta12cs=0; idiag_eta22ss=0
-        idiag_b0rms=0; idiag_E0rms=0
+        idiag_jb0m=0; idiag_b0rms=0; idiag_E0rms=0
         idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
         idiag_E11rms=0; idiag_E21rms=0; idiag_E12rms=0; idiag_E22rms=0
         idiag_bx0pt=0; idiag_bx11pt=0; idiag_bx21pt=0; idiag_bx12pt=0; idiag_bx22pt=0
@@ -1271,6 +1280,7 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'b21rms',idiag_b21rms)
         call parse_name(iname,cname(iname),cform(iname),'b12rms',idiag_b12rms)
         call parse_name(iname,cname(iname),cform(iname),'b22rms',idiag_b22rms)
+        call parse_name(iname,cname(iname),cform(iname),'jb0m',idiag_jb0m)
         call parse_name(iname,cname(iname),cform(iname),'b0rms',idiag_b0rms)
         call parse_name(iname,cname(iname),cform(iname),'E11rms',idiag_E11rms)
         call parse_name(iname,cname(iname),cform(iname),'E21rms',idiag_E21rms)
@@ -1350,6 +1360,7 @@ module Testfield
         write(3,*) 'idiag_b21rms=',idiag_b21rms
         write(3,*) 'idiag_b12rms=',idiag_b12rms
         write(3,*) 'idiag_b22rms=',idiag_b22rms
+        write(3,*) 'idiag_jb0m=',idiag_jb0m
         write(3,*) 'idiag_b0rms=',idiag_b0rms
         write(3,*) 'idiag_E11rms=',idiag_E11rms
         write(3,*) 'idiag_E21rms=',idiag_E21rms
