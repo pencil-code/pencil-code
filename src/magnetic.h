@@ -8,6 +8,7 @@
   public :: rprint_magnetic
   public :: get_slices_magnetic
   public :: init_aa, daa_dt
+  public :: time_integrals_magnetic
   public :: df_diagnos_magnetic
 
   public :: pencil_criteria_magnetic, pencil_interdep_magnetic

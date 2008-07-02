@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.94 2008-06-17 15:34:09 ajohan Exp $
+! $Id: nohydro.f90,v 1.95 2008-07-02 00:31:46 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -76,7 +76,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.94 2008-06-17 15:34:09 ajohan Exp $")
+           "$Id: nohydro.f90,v 1.95 2008-07-02 00:31:46 brandenb Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -522,6 +522,22 @@ module Hydro
       call keep_compiler_quiet(f,df)
 !
     endsubroutine duu_dt
+!***********************************************************************
+    subroutine time_integrals_hydro(f,p)
+!
+!   1-jul-08/axel: dummy
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      intent(in) :: f,p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine time_integrals_hydro
 !***********************************************************************
     subroutine calc_lhydro_pars(f)
 !

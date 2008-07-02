@@ -8,6 +8,7 @@
   public :: rprint_hydro
   public :: get_slices_hydro
   public :: init_uu, duu_dt, calc_lhydro_pars, calc_pencils_hydro
+  public :: time_integrals_hydro
   public :: pencil_criteria_hydro, pencil_interdep_hydro
   public :: calc_mflow, remove_mean_momenta, impose_velocity_ceiling
   public :: uumz,lcalc_uumean

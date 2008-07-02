@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.412 2008-07-01 16:51:46 brandenb Exp $
+! $Id: equ.f90,v 1.413 2008-07-02 00:31:46 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -234,6 +234,8 @@ module Equ
 !  24-jun-08/axel: moved call to this routine to the individual pde routines
 !
       use Cdata
+      use Hydro, only: time_integrals_hydro
+      use Magnetic, only: time_integrals_magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -242,10 +244,8 @@ module Equ
       intent(in) :: p
 !
       if (itsub==itorder) then
-        if (iuut/=0) f(l1:l2,m,n,iuxt:iuzt)=f(l1:l2,m,n,iuxt:iuzt)+dt*p%uu
-        if (ioot/=0) f(l1:l2,m,n,ioxt:iozt)=f(l1:l2,m,n,ioxt:iozt)+dt*p%oo
-        if (ibbt/=0) f(l1:l2,m,n,ibxt:ibzt)=f(l1:l2,m,n,ibxt:ibzt)+dt*p%bb
-        if (ijjt/=0) f(l1:l2,m,n,ijxt:ijzt)=f(l1:l2,m,n,ijxt:ijzt)+dt*p%jj
+        if (lhydro) call time_integrals_hydro(f,p)
+        if (lmagnetic) call time_integrals_magnetic(f,p)
       endif
 !
     endsubroutine time_integrals
@@ -498,7 +498,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.412 2008-07-01 16:51:46 brandenb Exp $")
+           "$Id: equ.f90,v 1.413 2008-07-02 00:31:46 brandenb Exp $")
 !
 !  Initialize counter for calculating and communicating print results.
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -1097,9 +1097,9 @@ module Equ
 !
 !  cdt, cdtv, and cdtc are empirical coefficients
 !
-          dt1_advec  =maxadvec/cdt
-          dt1_diffus =maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
-          dt1_reac=reac_chem/cdtc
+          dt1_advec  = maxadvec/cdt
+          dt1_diffus = maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
+          dt1_reac   = reac_chem/cdtc
 !
           dt1_max=max(dt1_max,sqrt(dt1_advec**2+dt1_diffus**2),dt1_reac)
 

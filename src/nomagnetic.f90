@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.91 2008-06-17 15:34:09 ajohan Exp $
+! $Id: nomagnetic.f90,v 1.92 2008-07-02 00:31:46 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -65,7 +65,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.91 2008-06-17 15:34:09 ajohan Exp $")
+           "$Id: nomagnetic.f90,v 1.92 2008-07-02 00:31:46 brandenb Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -179,6 +179,22 @@ module Magnetic
       call keep_compiler_quiet(p)
 !
     endsubroutine daa_dt
+!***********************************************************************
+    subroutine time_integrals_magnetic(f,p)
+!
+!   1-jul-08/axel: dummy
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      intent(in) :: f,p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine time_integrals_magnetic
 !***********************************************************************
     subroutine df_diagnos_magnetic(f,df,p)
 !

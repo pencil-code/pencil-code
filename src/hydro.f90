@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.444 2008-07-01 16:51:47 brandenb Exp $
+! $Id: hydro.f90,v 1.445 2008-07-02 00:31:46 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -358,7 +358,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.444 2008-07-01 16:51:47 brandenb Exp $")
+           "$Id: hydro.f90,v 1.445 2008-07-02 00:31:46 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1144,8 +1144,10 @@ use Mpicomm, only: stop_it
 ! ugu
       if (lpencil(i_ugu)) then
         if (headtt.and.lupw_uu) then
-          print *,'calc_pencils_hydro: upwinding advection term. '//&
-                  'Not well tested; use at own risk!'
+          print *,'calc_pencils_hydro: upwinding advection term'
+          !AB: I think this cautious comment is now obsolete.
+          !print *,'calc_pencils_hydro: upwinding advection term. '//&
+          !        'Not well tested; use at own risk!'
         endif
         call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
       endif
@@ -1657,6 +1659,29 @@ use Mpicomm, only: stop_it
       endif
 !
     endsubroutine duu_dt
+!***********************************************************************
+    subroutine time_integrals_hydro(f,p)
+!
+!  Calculate time_integrals within each pencil (as long as each
+!  pencil case p still contains the current data). This routine
+!  is now being called at the end of equ.
+!
+!  28-jun-07/axel+mreinhard: coded
+!  24-jun-08/axel: moved call to this routine to the individual pde routines
+!   1-jul-08/axel: moved this part to hydro
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      intent(inout) :: f
+      intent(in) :: p
+!
+      if (iuut/=0) f(l1:l2,m,n,iuxt:iuzt)=f(l1:l2,m,n,iuxt:iuzt)+dt*p%uu
+      if (ioot/=0) f(l1:l2,m,n,ioxt:iozt)=f(l1:l2,m,n,ioxt:iozt)+dt*p%oo
+!
+    endsubroutine time_integrals_hydro
 !***********************************************************************
     subroutine calc_lhydro_pars(f)
 !

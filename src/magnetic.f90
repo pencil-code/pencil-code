@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.532 2008-07-01 16:51:47 brandenb Exp $
+! $Id: magnetic.f90,v 1.533 2008-07-02 00:31:46 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -437,7 +437,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.532 2008-07-01 16:51:47 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.533 2008-07-02 00:31:46 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2422,6 +2422,29 @@ module Magnetic
       endif
 !
     endsubroutine daa_dt
+!***********************************************************************
+    subroutine time_integrals_magnetic(f,p)
+!
+!  Calculate time_integrals within each pencil (as long as each
+!  pencil case p still contains the current data). This routine
+!  is now being called at the end of equ.
+!
+!  28-jun-07/axel+mreinhard: coded
+!  24-jun-08/axel: moved call to this routine to the individual pde routines
+!   1-jul-08/axel: moved this part to magnetic
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      intent(inout) :: f
+      intent(in) :: p
+!
+      if (ibbt/=0) f(l1:l2,m,n,ibxt:ibzt)=f(l1:l2,m,n,ibxt:ibzt)+dt*p%bb
+      if (ijjt/=0) f(l1:l2,m,n,ijxt:ijzt)=f(l1:l2,m,n,ijxt:ijzt)+dt*p%jj
+!
+    endsubroutine time_integrals_magnetic
 !***********************************************************************
     subroutine df_diagnos_magnetic(f,df,p)
 !

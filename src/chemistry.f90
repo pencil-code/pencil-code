@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.113 2008-06-28 20:41:02 dobler Exp $
+! $Id: chemistry.f90,v 1.114 2008-07-02 00:31:46 brandenb Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -197,12 +197,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.113 2008-06-28 20:41:02 dobler Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.114 2008-07-02 00:31:46 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.113 2008-06-28 20:41:02 dobler Exp $")
-!
+           "$Id: chemistry.f90,v 1.114 2008-07-02 00:31:46 brandenb Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -1201,12 +1200,14 @@ module Chemistry
          if (lfirst .and. ldt) then
            if (lreactions) then
 !
-!  calculate maximum of *relative* reaction rate
+!  calculate maximum of *relative* reaction rate if decaying,
+!  or maximum of absolute rate, if growing.
 !
              if (lchem_cdtc) then
                reac_chem=0.
                do k=1,nchemspec
-                 reac_chem=max(reac_chem,-p%DYDt_reac(:,k)/max(p%YY(:,k),tiny(p%YY(:,k))))
+                 reac_chem=max(reac_chem, &
+                  abs(p%DYDt_reac(:,k)/max(p%YY(:,k),.001)))
                enddo
 !
              elseif (lcheminp) then
