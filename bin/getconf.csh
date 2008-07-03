@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.242 2008-06-30 14:41:12 dintrans Exp $
+# $Id: getconf.csh,v 1.243 2008-07-03 08:24:11 dintrans Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -166,7 +166,11 @@ else if ($?SLURM_NODELIST) then
   # into the explicit list form
   #   n41 n43 n44 n45 n46 n47 n48 n49 n69 n70 n111 n112 n113 n114
   # using a Perl ``one-liner'':
-  set nodelist = `echo "$SLURM_NODELIST" | perl -ne 'next if /^\s*(#.*)?$/; if (/\s*([^[]+)\[([^\]]*)/) { ($prefix,$list)=($1,$2); $list =~ s/([0-9]+)-([0-9]+)/join(" ", $1..$2)/eg; $list =~ s/([ ,]+)/ $prefix/g}; print "$prefix$list\n";'`
+  if ($SLURM_NNODES != 1) then
+    set nodelist = `echo "$SLURM_NODELIST" | perl -ne 'next if /^\s*(#.*)?$/; if (/\s*([^[]+)\[([^\]]*)/) { ($prefix,$list)=($1,$2); $list =~ s/([0-9]+)-([0-9]+)/join(" ", $1..$2)/eg; $list =~ s/([ ,]+)/ $prefix/g}; print "$prefix$list\n";'`
+  else
+    set nodelist = $SLURM_NODELIST
+  endif
   echo "SLURM_NODELIST = $SLURM_NODELIST"
   echo "nodelist = $nodelist"
   echo "SLURM_TASKS_PER_NODE = $SLURM_TASKS_PER_NODE"
@@ -1199,7 +1203,7 @@ else if (($hn =~ *pastel*) || ($hn =~ *violette*)) then
   endif
   set mpirun = 'orterun'
 
-else if (($hn =~ shal.ast.obs-mip.fr) || ($hn =~ yang)) then
+else if (($hn =~ shal.ast.obs-mip.fr) || ($hn =~ yang) || ($hn =~ n[25-28]*)) then
     set mpirun = 'orterun'
 
 else
