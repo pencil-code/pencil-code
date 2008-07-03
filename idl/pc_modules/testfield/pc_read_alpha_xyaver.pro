@@ -1,4 +1,4 @@
-;$Id: pc_read_alpha_xyaver.pro,v 1.8 2008-07-01 17:05:47 brandenb Exp $
+;$Id: pc_read_alpha_xyaver.pro,v 1.9 2008-07-03 18:03:40 brandenb Exp $
 common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
 ;
 ;  In order to determine the z-dependence of the alpha and eta tensors
@@ -36,7 +36,8 @@ endif else begin
   pc_read_param,o=param1
   z0=param1.xyz0(2)
   z1=param1.xyz1(2)
-  dz=(z1-z0)/(nz-1)
+  Lz=z1-z0
+  dz=Lz/(nz-1)
   print,'assume non-periodic domain with dz=',dz
   zzz=z0+dz*findgen(nz)
 endelse
@@ -56,13 +57,16 @@ tt=xyaver.t
 nt=n_elements(tt)
 ;
 ;  prepare sine and cosine functions
+;  Note that param.ktestfield is only correct if Lz=2*pi.
+;  Multiply param.ktestfield by 2.*!pi/Lz, which works in all cases.
 ;
 k=param.ktestfield
+kscaled=k*2.*!pi/Lz
 cz=cos(k*ztestfield)
 sz=sin(k*ztestfield)
 ;
-k1cz=cz/k
-k1sz=sz/k
+k1cz=cz/kscaled
+k1sz=sz/kscaled
 ;
 alpij=fltarr(nz,nt,2,2)
 etaij=fltarr(nz,nt,2,2)
@@ -94,6 +98,9 @@ print,'contour,transpose(alpij(*,*,1,1)),tt,zzz,nlev=20,/fil'
 ;
 default,it1,0
 ntgood=n_elements(xyaver.t(it1:*))
+;
+alpijmt=total(alpij(*,*,*,*),1)/nz
+etaijmt=total(etaij(*,*,*,*),1)/nz
 ;
 alpijm=total(alpij(*,it1:*,*,*),2)/ntgood
 etaijm=total(etaij(*,it1:*,*,*),2)/ntgood
