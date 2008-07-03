@@ -1,4 +1,4 @@
-! $Id: fourier_fft.f90,v 1.8 2008-03-27 22:26:25 nilshau Exp $
+! $Id: fourier_fft.f90,v 1.9 2008-07-03 16:15:30 dhruba Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -211,5 +211,21 @@ module Fourier
     if (NO_WARN) print*, a_re, shift_y
 !
   endsubroutine fourier_shift_y
+!***********************************************************************
+    subroutine fourier_transform_real_1(a,na,ifirst_fft,wsavex_temp,linv)
+!
+    use Mpicomm, only: stop_it
+!
+!   3-jul-08/dhruba: dummy routine
+!
+      real, dimension(na) :: a
+      integer, intent(in) :: na,ifirst_fft
+      logical, optional :: linv
+      real, dimension(2*na+15),optional :: wsavex_temp
+!
+      if (NO_WARN) print*,a,na,ifirst_fft,linv
+      call stop_it('fourier_transform_real_1: written only for fftpack')
+!
+    endsubroutine fourier_transform_real_1
 !***********************************************************************
 endmodule Fourier

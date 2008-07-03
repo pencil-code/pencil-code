@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $
+! $Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -45,7 +45,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $")
+       "$Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -148,7 +148,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $")
+       "$Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -248,7 +248,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $")
+       "$Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -389,7 +389,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $")
+       "$Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -488,7 +488,7 @@ module  power_spectrum
 !  identify version
 !
     if (lroot .AND. ip<10) call cvs_id( &
-        "$Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $")
+        "$Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $")
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -798,13 +798,14 @@ endsubroutine pdf
   real, dimension(nx) :: bb
   real, dimension(nzgrid/2) :: spectrum=0.,spectrum_sum=0
   real, dimension(nzgrid) :: aatemp
+  real, dimension(2*nzgrid+15) :: fftpack_temp
   real :: kz,nVol2d,spec_real,spec_imag
   character (len=*) :: sp
   !
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $")
+       "$Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $")
 !--------------Makes sense only in spherical coordinate system -----------
   if(.not.lspherical_coords) call stop_it("power_phi works only in spherical coordinates")
   !
@@ -848,7 +849,8 @@ endsubroutine pdf
 ! processor. Hence rest of the analysis is done only
 ! in the root processor
            if (lroot) then 
-             call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft)
+!             write(*,*)l,m,j,'got data shall fft'
+             call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft,fftpack_temp)
              ifirst_fft = ifirst_fft+1
              spectrum(1)=(aatemp(1)**2)&
                     *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
@@ -905,6 +907,7 @@ endsubroutine pdf
   real, dimension(nx) :: bb
   real, dimension(nzgrid/2) :: spectrum=0.,spectrum_sum=0
   real, dimension(nzgrid) :: aatemp
+  real, dimension(2*nzgrid+15) :: fftpack_temp
   real :: kz,nVol2d,spec_real,spec_imag
   character (len=*) :: sp
   !
@@ -912,7 +915,7 @@ endsubroutine pdf
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.62 2008-07-01 13:53:18 dhruba Exp $")
+       "$Id: power_spectrum.f90,v 1.63 2008-07-03 16:15:30 dhruba Exp $")
 !--------------Makes sense only in spherical coordinate system -----------
   if(.not.lspherical_coords) call stop_it("power_phi works only in spherical coordinates")
   !
@@ -955,7 +958,7 @@ endsubroutine pdf
 ! processor. Hence rest of the analysis is done only
 ! in the root processor
            if (lroot) then 
-             call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft)
+             call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft,fftpack_temp)
              ifirst_fft = ifirst_fft+1
              spectrum(1)=(aatemp(1)**2)&
                     *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)

@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.28 2008-07-01 13:53:18 dhruba Exp $
+! $Id: fourier_fftpack.f90,v 1.29 2008-07-03 16:15:30 dhruba Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -1538,7 +1538,7 @@ module Fourier
 !
     endsubroutine fourier_shift_y
 !***********************************************************************
-    subroutine fourier_transform_real_1(a,na,ifirst_fft,linv)
+    subroutine fourier_transform_real_1(a,na,ifirst_fft,wsavex_temp,linv)
 !
 !  Subroutine to do Fourier transform on a 1-D *real* array of arbitrary size.
 !  This routine does not operate in parallel, but should be used to Fourier

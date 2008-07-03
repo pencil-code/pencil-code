@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.225 2008-07-01 16:47:49 wlyra Exp $
+! $Id: mpicomm.f90,v 1.226 2008-07-03 16:15:30 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2929,14 +2929,27 @@ module Mpicomm
 !***********************************************************************
     subroutine z2x(a,xi,yj,yproc_no,az)
 !
-!  dummy
 !
       real, dimension(nx,ny,nz), intent(in) :: a
-      real, dimension(nz), intent(out) :: az
+      real, dimension(nzgrid), intent(out) :: az
+      real, dimension(nzgrid) :: az_local
       integer, intent(in) :: xi,yj,yproc_no
+      integer :: my_iniz,my_finz
 !
-      az=0
-      if (NO_WARN) print*,xi,yj,yproc_no,az,a
+!      write(*,*)'Dhruba',ipx,ipy,ipz,iproc 
+      az=0.
+      az_local=0.
+      if(ipy.eq.(yproc_no-1)) then
+        my_iniz=ipz*nz+1
+        my_finz=(ipz+1)*nz
+!       write(*,*)'DM',iproc,ipy,yproc_no,ipz,my_iniz,my_finz,nzgrid
+        az_local(my_iniz:my_finz)=a(xi,yj,:)
+      else
+      az_local=0.
+      endif
+      call mpireduce_sum(az_local,az,nzgrid)
+! maybe we should synchrosize here. 
+      call mpibarrier
 !
     endsubroutine z2x
 !***********************************************************************
