@@ -1,0 +1,445 @@
+#!/bin/sh
+# -*-perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w
+#line 17
+#
+# Name:   reaper
+# Author: wd (wdobler [at] gmail [dot] com)
+# Date:   17-Jun-2008
+# Description:
+#   Run a shell script like run.csh and kill it and its child processes
+#   after a given time, including subprocesses started via mpirun/mpiexec.
+# Usage:
+#   reaper -t <time,run.x> run.csh [<args>]
+# Options:
+#   -t <time_spec>,
+#   --time=<time_spec> Kill all process of the given name after the given
+#                       time, possibly trying to softly shut it down some
+#                       time before. See `time_spec format'below for
+#                       details.
+#   -h, --help          This help
+#   -v, --version       Print version number
+#   -q, --quiet         Be quiet
+# Time_spec format:
+#   <time>,<name>       Kill all processes <name> after the total duration
+#                       <time>. The time format is sort of self-explaining
+#                       e.g.
+#                       `1h[our] 5m[in] 7s[ec]'
+#                       `1:05:07'  (ditto)
+#                       `1:05'     (same as `1h 5m')
+#   <time>,<name>,<warn>,<shutdown_cmd>
+#                       # set total duration, [Vorlaufzeit] between trying
+#                       # to softly shut down and killing, and command for
+#                       # softly shutting down. E.g.
+#                       `15m,run.x,2m,touch STOP' will run `touch STOP'
+#                       after 13 minutes and kill all processes with name
+#                       run.x after 15 minutes.
+# Examples:
+#   reaper -t '3s,sleep' sleep 10                # sleep for 3 seconds only
+#   reaper -t '15m,run.x,2m,touch STOP' run.csh  # runs no longer than 15 min,
+#                                                # creates STOP file after 13 min
+
+# Copyright (C) 2008  Wolfgang Dobler
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the same conditions as Perl or under the GNU General Public
+# License, version 3 or later.
+
+use strict;
+
+use Getopt::Long;
+# Allow for `-Plp' as equivalent to `-P lp' etc:
+Getopt::Long::config("bundling");
+
+my (%opts);                     # Options hash for GetOptions
+my $doll='\$';                  # Need this to trick CVS
+my $prefix = '';
+
+## Process command line
+GetOptions(\%opts,
+           qw( -h   --help
+                      --debug
+                 -q   --quiet
+                 -v   --version
+                 -t=s --time=s
+             ));
+
+my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
+if ($debug) {
+    printopts(\%opts);
+    print "\@ARGV = `@ARGV'\n";
+}
+
+if ($opts{'h'} || $opts{'help'})    { die usage();   }
+if ($opts{'v'} || $opts{'version'}) { die version(); }
+
+my $update_interval = 2;        # check for processes after this interval
+
+my ($child_pid, @old_procs);
+my $our_procs_started = 0;
+
+my ($total_time,$proc_name,$warn_time,$warn_cmd)
+  = parse_time_spec( $opts{t} || $opts{time} || '' );
+
+die usage() unless(@ARGV);
+my $cmd = shift;
+my @cmd_args = @ARGV;
+
+my $warntime = 0;
+timed_system_call($total_time, [$cmd, @cmd_args], $proc_name,
+                  $warn_time, $warn_cmd);
+
+# ====================================================================== #
+
+sub timed_system_call {
+# Run @cmd in a forked process.
+# If $warn > 0, run @warncmd after time $total-$warn
+# Kill forked subprocess with name $proc_name (unless they existed before)
+# after time $total.
+# However, if such processes appear and then disappear, just exit.
+
+    my ($total, $cmd_ref, $proc_name, $warn, $warncmd) = @_;
+    my @cmd = @$cmd_ref;
+
+    logger("timed_system_call:"
+           . " \$total=$total,"
+           . " \@cmd=<" . join(' ', @cmd) . '>,'
+           . " \$proc_name=<$proc_name>,"
+           . " \$warn=$warn,"
+           . " \$warncmd=" . (defined($warncmd) ? "<$warncmd>" : '[undef]')
+          );
+
+    # Don't kill processes that are already running
+    @old_procs = get_proc_list($proc_name);
+
+    if ($child_pid=fork) {      # parent
+        my $t0 = time();
+        $prefix = 'Parent: ';
+        logger("pid=$$, childid=$child_pid");
+
+        # Try to be nice
+        my $sleep = $total - (time() - $t0) - $warn;
+        logger("Sleeping for $sleep seconds");
+        watch_procs($proc_name, $sleep);
+        if (defined($warncmd)) {
+            logger("Running  system(\"$warncmd &\");");
+            system("$warncmd &");
+        } else {
+            logger("No \$warncmd, sleeping on...");
+        }
+
+        # Be tough
+        $sleep = $total - (time() - $t0);
+        logger("Sleeping for $sleep seconds");
+        watch_procs($proc_name, $sleep);
+        # kill_processes();  # Now handled by END{} block
+    } else {                    # child
+        $prefix = 'Child: ';
+        logger("pid=$$");
+        exec("@cmd &");
+    }
+
+    print "\n";
+}
+# ---------------------------------------------------------------------- #
+sub watch_procs {
+# Essentially sleep for $sleep seconds, but periodically watch for
+# processes of ours called $name. If new ones appear, add them to the
+# @our_procs list. If there have been processes in @our_procs, but now
+# there are none, exit.
+    my ($name, $sleep) = @_;
+
+    my $t0 = time();
+    do {
+        if (get_proc_list($name)) { # found running procs
+            logger("watch_procs: Found running procs");
+            $our_procs_started = 1;
+        } else {
+            logger("Our procs have run and quit -- exiting");
+            exit 0 if ($our_procs_started)
+        }
+
+        # sleep until the next check
+        my $time_left = $sleep - (time() - $t0);
+        sleep min($update_interval, $time_left);
+    } while ((time() - $t0) <  $sleep);
+
+}
+# ---------------------------------------------------------------------- #
+sub kill_processes {
+# Kill all processes we are supposed to reap
+        my @procs = ( get_proc_list($proc_name, \@old_procs),
+                      $child_pid
+                    );
+        logger("kill -KILL @procs\n");
+        kill 'KILL', @procs;
+    }
+# ---------------------------------------------------------------------- #
+END {
+# Clean up, in particular kill child process if parent exits prematurely
+    if ($child_pid) {
+        kill_processes();
+    }
+}
+# ---------------------------------------------------------------------- #
+sub parse_time_spec {
+# Parse -t argument of form
+#   <totaltime>,<procname>
+# or
+#   <totaltime>,<procname>,<warntime>,<shutdowncmd>
+# into components
+    my ($spec) = @_;
+
+    logger("\$spec = <$spec>");
+    my ($total, $name, $rest)
+      = ($spec =~ /
+                      ^
+                      \s*
+                      ([^,]+)
+                      ,
+                      ([^,]+)
+                      (?:       # optional $rest part
+                          ,
+                          (.*)
+                      )?
+                  /x
+        )
+        or die "Invalid time_spec argument: <$spec>\n";
+    my ($warn, $shutdown);
+    if (defined($rest) && $rest ne '') {
+        ($warn, $shutdown)
+          = ($rest =~ /
+                          ^
+                          \s*
+                          ([^,]+)
+                          , \s*
+                          (.*?)
+                          \s*
+                          $
+                      /x
+            )
+          or die "Invalid extended time_spec argument: <$rest>\n";
+    }
+
+    my $totaltime = parse_time($total);
+    my $warntime  = ( defined($warn) ? parse_time($warn) : '0');
+
+    my $msg = "parse_time_spec: "
+        . "\$totaltime = ${totaltime}s"
+        . ", \$name = <$name>"
+        . ", \$warn = " . (defined($warn) ? "${warntime}s" : '[undef]')
+        . ", \$shutdown = " . (defined($warn) ? "<shutdown>" : '[undef]');
+    logger($msg);
+
+    if ($warntime > $totaltime) {
+        die "Warn time must be <= total time,",
+          " but got ${warntime}s > ${totaltime}s\n";
+    }
+
+    return ($totaltime, $name, $warntime, $shutdown)
+}
+# ---------------------------------------------------------------------- #
+sub parse_time {
+# Parse a time interval of the form
+# `1h[our] 5m[in] 7s[ec]'
+# `1:05:07'  (ditto)
+# `1:05'     (same as `1h 5m')
+#  into seconds.
+    my ($string) = (@_);
+
+    my ($hour, $min, $sec);
+
+    if ($string =~ /:/) {
+        ($hour, $min, $sec)
+          = ($string =~ /^\s*([0-9]+):([0-9]+)(?::([0-9]+))?\s*$/)
+            or die "Cannot parse <$string> in hh:mm[:ss] format\n";
+    } else {
+        ($hour, $min, $sec)
+          = ($string =~
+             /
+                 ^\s*
+                 (?:
+                     ([0-9]+)    # capture hours
+                     h[^0-9]* # h[ours]
+                     \s*
+                 )?              # hours are optional
+                 (?:
+                     ([0-9]+)    # capture minutes
+                     m[^0-9]* # m[in[utes]]
+                     \s*         # minutes are optional
+                 )?
+                 (?:
+                     ([0-9]+)    # capture seconds
+                     s[^0-9]* # s[ec[onds]]
+                     \s*         # seconds are optional
+                 )?
+                 \s*
+                 $
+             /x
+            ) or die
+              "Cannot parse <$string> in [<hh>h] [<mm>m] [<ss>s] format\n";
+    }
+
+    die "Bad time format <string>\n"
+      unless (defined($hour) || defined($min) || defined($sec));
+
+    my $time = numeric_value($hour);
+    $time = 60*$time + numeric_value($min);
+    $time = 60*$time + numeric_value($sec);
+
+    return $time;
+}
+# ---------------------------------------------------------------------- #
+sub min {
+# Minmum of two (numerical) arguments
+    my ($a, $b) = @_;
+    if ($a < $b) {
+        return $a;
+    } else {
+        return $b
+    }
+}
+# ---------------------------------------------------------------------- #
+sub numeric_value {
+# Return argument as number; if undefined, return 0
+    my ($arg) = (@_);
+    return ( defined($arg) ? "0" + $arg : "0" );
+}
+# ---------------------------------------------------------------------- #
+sub get_proc_list {
+# Return list of processes that have a given name, are owned by us and are
+# not in @$blacklist
+    my ($name, $blacklist) = @_;
+    $blacklist = [] unless (defined($blacklist));
+
+    my @list;
+    foreach my $p (pgrep($name)) {
+        push @list, $p unless (grep /^$p$/, @$blacklist);
+    }
+
+    logger(
+           'original_list ~ (' . join(', ', pgrep($name)) . ")\n"
+           . '    @$blacklist = (' . join(', ', @$blacklist) . ")\n"
+           . '    @list = (' . join(', ', @list) . ")."
+          );
+    return @list;
+}
+# ---------------------------------------------------------------------- #
+sub pgrep {
+# Return list of pids of all processes that
+# (a) have a given command name, and
+# (b) are owned by ourselves.
+# String matching may be (and typically is) done on truncated
+# cmd names [Ubntu Hardy: truncated to 16 characters].
+    my ($name) = @_;
+
+    my $uid = $<;
+
+    # Strip leading path as `ps -C' matches only without path
+    if ($name =~ s{.*/}{}) {
+        warn "Stripping path from cmd name: \"$_[0]\" --> \"$name\"\n";
+    }
+
+    die "pgrep: empty \$name" if ($name =~ /^\s*$/);
+    my @ps;
+    foreach my $ps (`ps -C $name -o pid,uid=`) {
+        next unless $ps =~ /^\s*([0-9]+)\s+$uid/;
+        push @ps, $1;
+    }
+    if ($debug) {
+        print STDERR "pgrep(): found ", (@ps+0), " processes:\n";
+        if (@ps) {
+            system('ps', '-o', 'pid,user,time,pcpu,pmem,cmd', '-p', join(",", @ps));
+        }
+    }
+
+    return @ps;
+}
+# ---------------------------------------------------------------------- #
+sub print_tree {
+# [For debugging purposes:]
+# Print the processes related to this one.
+    my ($pid) = @_;
+    my $sid = get_session_id($pid);
+    warn "sid($pid) = $sid\n";
+    system("ps xf -o pid,ppid,euid,ruid,suid,euser,ruser,suser,gid,rgid,sgid,group,rgroup,sgroup,pgid,fgid,fuid,fgroup,fuser,rgid,fsgid,sid,lwp,psr,tpgid,cmd");
+}
+
+# ---------------------------------------------------------------------- #
+sub get_session_id {
+# Return the given process' sessionid. Not very helpful, as (on Linux
+# 2.6.24-16-generic [Ubuntu]) the subprocesses started by mpirun have a
+# different session id than the calling shell script.
+    my ($pid) = @_;
+    my $ps = `ps -p $pid -o sess=`;
+    if ($ps =~ /^\s*([0-9]+)$/) {
+        return $1;
+    } else {
+        die "Bad output from `ps -o sess=': <$ps>\n";
+    }
+}
+# ---------------------------------------------------------------------- #
+sub logger {
+# Log some diagnostics, if $debug is true
+    my @text = @_;
+    if ($debug) {
+        for my $line (@text) {
+            chomp($line);
+            print STDERR $prefix, $line, "\n";
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub printopts {
+# Print command line options
+    my $optsref = shift;
+    my %opts = %$optsref;
+    foreach my $opt (keys(%opts)) {
+        print STDERR "\$opts{$opt} = `$opts{$opt}'\n";
+    }
+}
+# ---------------------------------------------------------------------- #
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+        # Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^\s*\#\s*(Description|Usage):/m;
+        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+    return $_ or "<No usage information found>\n";
+}
+# ---------------------------------------------------------------------- #
+sub version {
+# Return CVS data and version info.
+    my $doll='\$';              # Need this to trick CVS
+    my $cmdname = (split('/', $0))[-1];
+    my $rev = '$Revision: 1.1 $';
+    my $date = '$Date: 2008-07-06 21:51:53 $';
+    $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
+    $date =~ s/${doll}Date:\s*(\S+).*/$1/;
+
+    return "$cmdname version $rev ($date)\n";
+}
+# ---------------------------------------------------------------------- #
+
+
+# End of file reaper
