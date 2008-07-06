@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.244 2008-06-11 18:53:10 brandenb Exp $
+! $Id: initcond.f90,v 1.245 2008-07-06 22:46:30 nilshau Exp $
 
 module Initcond
 
@@ -2903,7 +2903,9 @@ module Initcond
 !   Still just one processor (but can be remeshed afterwards).
 !
 !   07-may-03/tarek: coded
-!   08-may08/nils: adapted to work on multiple processors
+!   08-may-08/nils: adapted to work on multiple processors
+!   06-jul-08/nils+andre: Fixed problem when running on 
+!      mult. procs (thanks to Andre Kapelrud for finding the bug) 
 !
       use Fourier
 !
@@ -2947,7 +2949,7 @@ module Initcond
             enddo
           enddo
         enddo        
-        k2(1,1,1) = 1.  ! Avoid division by zero
+        if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
 !
 !  To get shell integrated power spectrum E ~ k^n, we need u ~ k^m
 !  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1.
