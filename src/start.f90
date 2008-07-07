@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.183 2008-04-01 17:18:47 wlyra Exp $
+! $Id: start.f90,v 1.184 2008-07-07 14:12:42 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -105,7 +105,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.183 2008-04-01 17:18:47 wlyra Exp $")
+             "$Id: start.f90,v 1.184 2008-07-07 14:12:42 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -114,7 +114,6 @@
         Lxyz = (/impossible, impossible, impossible/) ! box lengths
         lperi =(/.true.,.true.,.true. /) ! all directions periodic
         lequidist=(/.true.,.true.,.true. /) ! all directions equidistant grid
-! dgm
         lshift_origin=(/.false.,.false.,.false./) ! don't shift origin
 !
 !  Initialize start time
@@ -162,11 +161,17 @@
 !
 !  Set box dimensions, make sure Lxyz and xyz1 are in sync.
 !  Box defaults to [-pi,pi] for all directions if none of xyz1 or Lxyz are set
+!  If luniform_z_mesh_aspect_ratio=T, the default Lz scales with nzgrid/nxgrid
 !
         do i=1,3
           if (Lxyz(i) == impossible) then
             if (xyz1(i) == impossible) then
-              Lxyz(i) = 2*pi    ! default value
+              if (i==3.and.luniform_z_mesh_aspect_ratio) then
+                Lxyz(i)=2*pi*real(nzgrid)/real(nxgrid)
+                xyz0(i)=-pi*real(nzgrid)/real(nxgrid)
+              else
+                Lxyz(i)=2*pi    ! default value
+              endif
             else
               Lxyz(i) = xyz1(i)-xyz0(i)
             endif
@@ -180,8 +185,8 @@
 !
 !  Abbreviations
 !
-        x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
-        Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
+        x0=xyz0(1); y0=xyz0(2); z0=xyz0(3)
+        Lx=Lxyz(1); Ly=Lxyz(2); Lz=Lxyz(3)
 !
 !  Size of box at local processor.
 !

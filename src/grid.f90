@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.37 2008-06-17 15:34:08 ajohan Exp $
+! $Id: grid.f90,v 1.38 2008-07-07 14:12:42 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -92,10 +92,13 @@ module Grid
       real :: a,dummy1=0.,dummy2=0.
       integer :: i
       logical :: err
-
-
+!
+!  set lequidist for an equidistant (uniform) mesh
+!
       lequidist=(grid_func=='linear')
-
+!
+!  x-direction
+!
       if (lperi(1)) then
         dx=Lx/nxgrid
         x00=x0+.5*dx
@@ -105,6 +108,9 @@ module Grid
         x00=x0
         if (lshift_origin(1)) x00=x0+.5*dx
       endif
+!
+!  y-direction
+!
       if (lperi(2)) then
         dy=Ly/nygrid
         y00=y0+.5*dy
@@ -114,6 +120,9 @@ module Grid
         y00=y0
         if (lshift_origin(2)) y00=y0+.5*dy
       endif
+!
+!  z-direction
+!
       if (lperi(3)) then
         dz=Lz/nzgrid
         z00=z0+.5*dz

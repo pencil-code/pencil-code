@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.429 2008-07-01 16:51:46 brandenb Exp $
+! $Id: cdata.f90,v 1.430 2008-07-07 14:12:41 brandenb Exp $
 !
 !  Global variables are defined in this module.
 !
@@ -47,6 +47,7 @@ module Cdata
   logical :: lsphere_in_a_box=.false.,lcylinder_in_a_box=.false.
   logical :: luse_latitude=.false.
   logical :: lcylindrical_gravity=.false.
+  logical :: luniform_z_mesh_aspect_ratio=.false.
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real, dimension (nx) :: r1_mn,r2_mn,r2_weight,dvolume,dvolume_1
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth,sinth_weight

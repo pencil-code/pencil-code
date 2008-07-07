@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.51 2008-07-02 01:33:43 brandenb Exp $
+! $Id: testfield_z.f90,v 1.52 2008-07-07 14:12:42 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -54,7 +54,7 @@ module Testfield
   real, dimension (nx,3) :: bbb
   real :: taainit=0.,daainit=0.
   logical :: reinitialize_aatest=.false.
-  logical :: zextent=.true.,lsoca=.true.,lsoca_jxb=.true.,lset_bbtest2=.false.
+  logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true.,lset_bbtest2=.false.
   logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,linit_aatest=.false.
   logical :: lignore_uxbtestm=.false., lphase_adjust=.false.
   character (len=labellen) :: itestfield='B11-B21'
@@ -204,7 +204,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.51 2008-07-02 01:33:43 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.52 2008-07-07 14:12:42 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -236,6 +236,7 @@ module Testfield
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mz) :: ztestfield, c, s
+      real :: ktestfield_effective
       integer :: jtest
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
@@ -246,10 +247,13 @@ module Testfield
 !
 !  set cosine and sine function for setting test fields and analysis
 !  Choice of using rescaled z-array or original z-array
+!  Define ktestfield_effective to deal with boxes bigger than 2pi.
 !
       if (ltestfield_newz) then
-        ztestfield=2.*pi*(z-z0)/Lz-pi
+        ktestfield_effective=ktestfield*(2.*pi/Lz)
+        ztestfield=ktestfield_effective*(z-z0)-pi
       else
+        ktestfield_effective=ktestfield
         ztestfield=z
       endif
       cz=cos(ktestfield*ztestfield)
@@ -279,7 +283,7 @@ module Testfield
       if (ktestfield==0) then
         ktestfield1=1.
       else
-        ktestfield1=1./ktestfield
+        ktestfield1=1./ktestfield_effective
       endif
 !
 !  calculate inverse testfield amplitude (unless it is set to zero)

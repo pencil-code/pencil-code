@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.39 2008-05-14 22:25:14 dobler Exp $
+! $Id: io_mpio.f90,v 1.40 2008-07-07 14:12:42 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -113,7 +113,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.39 2008-05-14 22:25:14 dobler Exp $")
+           "$Id: io_mpio.f90,v 1.40 2008-07-07 14:12:42 brandenb Exp $")
 !
 !  consistency check
 !
@@ -696,7 +696,9 @@ contains
                 MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
       dxmax = maxval( (/dx,dy,dz,epsilon(dx)/), &
                 MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
-
+!
+!  inherit Lx, Ly, Lz from start, and assume uniform mesh
+!
       Lx=dx*nx*nprocx
       Ly=dy*ny*nprocy
       Lz=dz*nz*nprocz
