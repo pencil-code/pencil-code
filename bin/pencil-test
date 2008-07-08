@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2008-06-14 22:12:02 $
-# $Revision: 1.37 $
+# $Date: 2008-07-08 22:04:32 $
+# $Revision: 1.38 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -46,7 +46,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -p <PP>,
 #       --postproc=<PP>       -- Use postprocessor <PP> for output from make
 #   -T <file>,
-#       --timings-file=<file> -- Use postprocessor <PP> for output from make
+#       --timings-file=<file> -- Append timings to <file>
 # Email list syntax:
 #   -m '{-:fluxrings},defaulty@any.where,nosy@some.where{+:fluxrings,+:rad1},ignorant@else.where{-:hydro.*}'
 #   will not send mail if `interlocked-fluxrings' fails -- except for Nosy
@@ -54,7 +54,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   or `hydrogen-bond' fail. Note that the patterns are anchored at the end,
 #   but not at the beginning.
 # Crontab entry:
-#   05 01 * * *     $HOME/bin/pencil-test -HUrs -N 15 -m '{-:solar1d4},email1@domain1,email2@domain2' kabul > $HOME/public_html/pencil-code/tests/kabul.html
+#   30 02 * * *  $HOME/f90/pencil-auto-test/bin/pencil-test -D /home/wdobler/f90/pencil-auto-test -N15 -Uc -rs -T $HOME/public_html/pencil-code/tests/g95_debug_timings.txt -Hm wdobler@gmail.com norlx50 > $HOME/public_html/pencil-code/tests/g95_debug.html
 
 use strict;
 use Getopt::Long;
@@ -88,7 +88,7 @@ GetOptions(\%opts,
 	            --tag-stable=s
 	            --tag-broken=s
 	       )) or die "$!\n";
-die '$Id: pencil-test,v 1.37 2008-06-14 22:12:02 dobler Exp $ ' . "\n"
+die '$Id: pencil-test,v 1.38 2008-07-08 22:04:32 dobler Exp $ ' . "\n"
             if    ($opts{'v'} || $opts{'version'});
 die usage() if    ($opts{'h'} || $opts{'help'}        || @ARGV < 1);
 my $debug       = (              $opts{'debug'}       || 0 );
