@@ -3,7 +3,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2,datatopdir=datatopdir
 ;
-;  $Id: power.pro,v 1.28 2007-11-20 08:24:18 ajohan Exp $
+;  $Id: power.pro,v 1.29 2008-07-08 21:30:23 dhruba Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -106,6 +106,11 @@ size=2*!pi
 ;
 first='true'
 nx=mx-nghostx*2
+if v1 EQ "_phiu" then begin
+   nx=mz-nghostz*2
+   pc_read_grid,o=grid,/quiet
+   size=grid.Lz
+end
 ;print,'nx=',nx
 imax=nx/2
 spectrum1=fltarr(imax)
@@ -114,6 +119,10 @@ k0=2.*!pi/size
 wavenumbers=indgen(imax)*k0 
 k=findgen(imax)+1.
 k=findgen(imax)
+if v1 EQ "_phiu" then begin
+   k = k*k0   
+end
+
 ;
 ;  Looping through all the data to get number of spectral snapshots
 ;
@@ -149,7 +158,7 @@ endif
 !x.title='!8k!3'
 fo='(f4.2)'
 if compensate eq 0. then !y.title='!8P!3(!8k!3)' else !y.title='!8k!6!u'+string(compensate,fo=fo)+' !8P!3(!8k!3)'
-!x.range=[1,imax]
+!x.range=[1,imax*k0]
 ;
 ;  check whether we want png files (for movies)
 ;
@@ -195,7 +204,7 @@ openr,1, datatopdir+'/'+file1
        	if (last eq 0) then begin
 	  if (time ge tmin) then begin
 	    if (time le tmax) then begin
-	      xrr=[1,imax]
+	      xrr=[1,imax*k0]
 	      yrr=[globalmin,globalmax]
 	      !p.title='t='+str(time)
               if iplot eq 1 then begin
