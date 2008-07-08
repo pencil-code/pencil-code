@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.445 2008-07-02 00:31:46 brandenb Exp $
+! $Id: hydro.f90,v 1.446 2008-07-08 16:02:58 joishi Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -358,7 +358,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.445 2008-07-02 00:31:46 brandenb Exp $")
+           "$Id: hydro.f90,v 1.446 2008-07-08 16:02:58 joishi Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -855,14 +855,15 @@ module Hydro
 
         case('compressive-shwave')
 ! compressive (non-vortical) shear wave of Johnson & Gammie (2005a)
-          call coswave_phase(f,iux,ampl_ux(i),kx_ux(i),ky_ux(i),kz_ux(i),phase_ux(i))
-          call coswave_phase(f,iuy,ampl_uy(i),kx_uy(i),ky_uy(i),kz_uy(i),phase_uy(i))
+          call coswave_phase(f,iux,ampl_ux(j),kx_uu,ky_uu,kz_uu,phase_ux(j))
+          call coswave_phase(f,iuy,ampl_uy(j),kx_uu,ky_uu,kz_uu,phase_uy(j))
           eta_sigma = (2. - qshear)*Omega
-          do m=m1,m2; do n=n1,n2
-            f(l1:l2,m,n,ilnrho) = -kx_ux(i)*ampl_uy(i)*eta_sigma* & 
-                (cos(kx_ux(i)*x(l1:l2)+ky_ux(i)*y(m)+kz_ux(i)*z(n)) + &
-                sin(kx_uy(i)*x(l1:l2)+ky_uy(i)*y(m)+kz_uy(i)*z(n)))
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ilnrho) = -kx_uu*ampl_uy(j)*eta_sigma* & 
+                (cos(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) + &
+                sin(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)))
           enddo; enddo
+
         case default
           !
           !  Catch unknown values
