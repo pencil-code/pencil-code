@@ -4,7 +4,7 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.20 2007-06-18 04:46:53 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.21 2008-07-08 13:26:07 brandenb Exp $',
   nt=50, it1=10, isave=200, itorder=3,
   dsnap=20., dvid=0.2,
   bcx = 'p','p','p', 'p',    'p'
@@ -12,7 +12,6 @@
   bcz = 's','s','a','a2','c1:cT'
   cdtv=0.30
   lpencil_check=T
-  lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
 /
 &eos_run_pars
 /
