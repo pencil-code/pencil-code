@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.25 2008-06-20 13:55:40 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.26 2008-07-09 08:26:16 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -234,13 +234,20 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
 ;;
     if (iplot ne -1) then begin
       array_plot=array[*,*,ivarpos[iplot]]
+      if (zoom ne 1.0) then begin
+        array_plot=congrid(array_plot,zoom*nx,zoom*ny,/interp)
+        xax=congrid(xax,zoom*nx,/interp)
+        yax=congrid(yax,zoom*ny,/interp)
+      endif
       if (logplot) then array_plot=alog(array_plot)
 ;;  Plot to post script (eps).      
       if (ps) then begin
         set_plot, 'ps'
         imgname='img_'+strtrim(string(itimg,'(i20.4)'),2)+'.eps'
         device, filename=imgdir+'/'+imgname, xsize=xsize, ysize=ysize, $
-            color=1, /encapsulated
+            color=1, /encapsulated, bits_per_pixel=8
+        ps_fonts
+        !p.font=-1
       endif else if (png) then begin
 ;;  Plot to png.
       endif else begin
@@ -316,7 +323,7 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
             interp=interp, charsize=charsize, thick=thick
         plots, [subpos[0],subpos[2],subpos[2],subpos[0],subpos[0]], $
                [subpos[1],subpos[1],subpos[3],subpos[3],subpos[1]], /normal, $
-               thick=thick
+               thick=thick, color=subboxcolor
       endif
 ;;  Colorbar indicating range.
       if (colorbar) then begin
