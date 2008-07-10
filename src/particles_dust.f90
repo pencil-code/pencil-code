@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.232 2008-07-10 16:29:17 ajohan Exp $
+! $Id: particles_dust.f90,v 1.233 2008-07-10 17:53:26 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -140,7 +140,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.232 2008-07-10 16:29:17 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.233 2008-07-10 17:53:26 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -2873,7 +2873,7 @@ k_loop:   do while (.not. (k>npar_loc))
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname,inamez,inamey,inamex,inamexy,inamer,inamerz
+      integer :: iname,inamez,inamey,inamex,inamexy,inamexz,inamer,inamerz
       logical :: lwr
 !
 !  Write information to index.pro
