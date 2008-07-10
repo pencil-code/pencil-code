@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.231 2008-06-17 15:34:09 ajohan Exp $
+! $Id: particles_dust.f90,v 1.232 2008-07-10 16:29:17 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -121,6 +121,7 @@ module Particles
   integer :: idiag_mpt=0, idiag_dedragp=0, idiag_rhopmxy=0, idiag_rhopmr=0
   integer :: idiag_dvpx2m=0, idiag_dvpy2m=0, idiag_dvpz2m=0
   integer :: idiag_dvpm=0,idiag_dvpmax=0
+  integer :: idiag_rhopmxz=0
 
   contains
 
@@ -139,7 +140,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.231 2008-06-17 15:34:09 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.232 2008-07-10 16:29:17 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1348,7 +1349,7 @@ k_loop:   do while (.not. (k>npar_loc))
       endif
       if (idiag_epspmx/=0 .or. idiag_epspmy/=0 .or. idiag_epspmz/=0) &
           lpenc_diagnos(i_epsp)=.true.
-      if (idiag_rhopmxy/=0) lpenc_diagnos2d(i_rhop)=.true.
+      if (idiag_rhopmxy/=0 .or. idiag_rhopmxz/=0) lpenc_diagnos2d(i_rhop)=.true.
 !
     endsubroutine pencil_criteria_particles
 !***********************************************************************
@@ -1769,6 +1770,7 @@ k_loop:   do while (.not. (k>npar_loc))
       if (l2davgfirst) then
         if (idiag_rhopmphi/=0) call phisum_mn_name_rz(p%rhop,idiag_rhopmphi)
         if (idiag_rhopmxy/=0)  call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
+        if (idiag_rhopmxz/=0)  call ysum_mn_name_xz(p%rhop,idiag_rhopmxz)
       endif
 !
     endsubroutine dvvp_dt_pencil
@@ -2906,7 +2908,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_npmx=0; idiag_npmy=0; idiag_npmz=0
         idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
         idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
-        idiag_rhopmxy=0; idiag_rhopmr=0
+        idiag_rhopmxy=0; idiag_rhopmxz=0; idiag_rhopmr=0
         idiag_dvpx2m=0; idiag_dvpy2m=0; idiag_dvpz2m=0
         idiag_dvpmax=0; idiag_dvpm=0
       endif
@@ -2986,6 +2988,12 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       do inamexy=1,nnamexy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhopmxy',idiag_rhopmxy)
+      enddo
+!
+!  check for those quantities for which we want xz-averages
+!
+      do inamexz=1,nnamexz
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'rhopmxz',idiag_rhopmxz)
       enddo
 !
 !  check for those quantities for which we want phiz-averages
