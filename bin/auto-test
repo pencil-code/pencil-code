@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.102 2008-06-14 21:37:49 dobler Exp $
+# CVS: $Id: auto-test,v 1.103 2008-07-11 08:22:47 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -128,7 +128,7 @@ Options:
   -l,  --list              \tList test directories (don't run any tests)
   -L,  --list-all          \tList even test dirs lacking reference.out
   -t,  --time              \tPrint CPU time used
-  -T,  --summarize-times \tPrint a timings line for pencil-test and statistics
+  -T,  --summarize-times   \tPrint a timings line for pencil-test and statistics
   -i,  --infofile=<file>   \tAfter last test, print content of <file>
   -D,  --pencil-home=<dir> \tSet PENCIL_HOME directory to <dir>
   -N,  --nice=<n>          \tRun tests with nice value <n>
@@ -140,7 +140,7 @@ Options:
        --rsh=RSH-PROG      \tUse the specified program as to get a remote shell
        --nodelist=NODE1,.. \tUse a forked remote shell to parallelize
        --no-summary        \tDo not summarize at the end
-       --no-lock            \tIgnore and don't write lock file
+       --no-lock           \tIgnore and don't write lock file
        --debug             \tPrint lots of debugging output
 Examples:
   auto-test      # run auto-test standard program, recycling .o files
@@ -188,7 +188,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.102 2008-06-14 21:37:49 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.103 2008-07-11 08:22:47 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -228,6 +228,9 @@ $list_only = 1 if ($list_all);
 
 my $makeopts  = '';
 if ($makejobs) { $makeopts = "-j $makejobs"; }
+
+my $host = `hostname`;
+chomp($host);
 
 my $nice="";
 if ($niceval != 0) { $nice = "\\nice -n $niceval" };
@@ -278,8 +281,12 @@ $| = 1;
 @ARGV = grep { /./ } @ARGV;	# Eliminate empty @ARGV list (needed under
 				# OSF1, no clue why)
 
-if ($list_only) {
+if ($list_only && ! $short) {
     print "Test directories:\n"
+}
+
+if ($summarize_t) {
+    write_timing_summary_header();
 }
 
 my %t_global = (
@@ -977,6 +984,15 @@ sub test_rundir {
     }
 }
 # ---------------------------------------------------------------------- #
+sub write_timing_summary_header {
+# Write comment to make timing summary files more comprehensible 
+    printf "%s %s\n", '#TIMING ',
+        '# --------------------------------------------------';
+    printf "%s %s\n", '#TIMING ', '# Date: ' . localtime() . ", host: $host"; 
+    printf "%s %-45s %-12s %-12s %-7s\n",
+      '#TIMING ', '# directory', 'phase', 'time-stamp', 'seconds';
+}
+# ---------------------------------------------------------------------- #
 sub write_timing_summary {
 # Write timings summary in greppable form
     my ($dir, $phase, $summary_ref) = @_;
@@ -984,7 +1000,7 @@ sub write_timing_summary {
     my $time = $summary_ref->{$phase};
     if (defined($phase) && defined($time)) {
         printf "%s %-45s %-12s %12.1f %7.3f\n",
-          "#TIMING ", compactify(quote($dir)), ($phase), time_stamp(), $time;
+          '#TIMING ', compactify(quote($dir)), ($phase), time_stamp(), $time;
     }
 }
 # ---------------------------------------------------------------------- #
