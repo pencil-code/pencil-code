@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2008-07-10 21:16:40 $
-# $Revision: 1.39 $
+# $Date: 2008-07-11 05:02:53 $
+# $Revision: 1.40 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -91,7 +91,7 @@ GetOptions(\%opts,
 	            --tag-stable=s
 	            --tag-broken=s
 	       )) or die "$!\n";
-die '$Id: pencil-test,v 1.39 2008-07-10 21:16:40 dobler Exp $ ' . "\n"
+die '$Id: pencil-test,v 1.40 2008-07-11 05:02:53 dobler Exp $ ' . "\n"
             if    ($opts{'v'} || $opts{'version'});
 die usage() if    ($opts{'h'} || $opts{'help'});
 my $debug       = (              $opts{'debug'}       || 0 );
@@ -201,9 +201,9 @@ sub build_remote_cmd {
 # Construct the command to send to the remote host
 
     my $remcmd = "cd $pencil_home";
-    if ($update)            { $remcmd .= "; cvs update >& /dev/null" };
+    if ($update)            { $remcmd .= "; cvs -Q update" };
     if ($UPDATE)            { $remcmd .=
-                                "; cvs update -d samples bin >& /dev/null"
+                                "; cvs -Q update -d samples bin"
                             };
     $remcmd .= "; env PENCIL_HOME=$pencil_home ./bin/auto-test";
     $remcmd .= " --time";
