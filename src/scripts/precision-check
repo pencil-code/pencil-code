@@ -60,7 +60,7 @@ BOUSTROPHEDON
     my $answer = <STDIN>;
     chomp($answer);
     logger("\$answer = <$answer>");
-    if ($answer =~ /^\s*[nN]/) {
+    if ($answer !~ /^\s*[yY]/) {
         print "Quitting\n";
         exit 1;
     } else {
