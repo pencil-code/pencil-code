@@ -3,9 +3,8 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM=nompicomm
-MPICOMM=mpicomm
-HYDRO=hydro
-DENSITY=density
-MAGNETIC=magnetic
-FOURIER=fourier_fftpack
+MPICOMM  = mpicomm
+HYDRO    = hydro
+DENSITY  = density
+MAGNETIC = magnetic
+FOURIER  = fourier_fftpack
