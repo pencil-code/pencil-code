@@ -1,4 +1,4 @@
-# $Id: var.py,v 1.10 2008-06-11 15:43:48 tgastine Exp $
+# $Id: var.py,v 1.11 2008-07-16 23:41:16 joishi Exp $
 #
 # read VAR files. based on the read_var.pro IDL script.
 #
@@ -57,9 +57,9 @@ class read_var:
     if (dim == None):
       dim = read_dim(datadir,proc) 
     if (param == None):
-      param = read_param(datadir,quiet=quiet)
+      param = read_param(datadir=datadir,quiet=quiet)
     if (index == None):
-      index = read_index()
+      index = read_index(datadir=datadir)
     if dim.precision == 'D':
         precision = 'd'
     else:
