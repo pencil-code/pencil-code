@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.114 2008-07-02 00:31:46 brandenb Exp $
+! $Id: chemistry.f90,v 1.115 2008-07-16 19:32:29 nilshau Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -197,11 +197,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.114 2008-07-02 00:31:46 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.115 2008-07-16 19:32:29 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.114 2008-07-02 00:31:46 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.115 2008-07-16 19:32:29 nilshau Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -746,8 +746,8 @@ module Chemistry
          enddo
        enddo
          nu_dyn=0.
-         tmp_sum2=0.
        do k=1,nchemspec 
+         tmp_sum2=0.
           do j=1,nchemspec 
            tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:,k,j) 
           enddo
@@ -800,33 +800,34 @@ module Chemistry
          write(file_id,*) '*******************'
          write(file_id,*) ''
          write(file_id,*) 'Mass, g/mole'
-         write(file_id,'(7E10.2)') 1./maxval(mu1_full/unit_mass)
+         write(file_id,'(7E12.4)') 1./maxval(mu1_full/unit_mass)
          write(file_id,*) ''
          write(file_id,*) 'Density, g/cm^3'
-         write(file_id,'(7E10.2)') maxval(rho_full)*unit_mass/unit_length**3
+         write(file_id,'(7E12.4)') maxval(rho_full)*unit_mass/unit_length**3
          write(file_id,*) ''
          write(file_id,*) 'Themperature, K'
          ! Commented the next line out because
          ! samples/2d-tests/chemistry_GrayScott apparently has no f(:,:,:,5)
-         ! write(file_id,'(7F7.3)') exp(maxval(f(:,:,:,5)))*unit_temperature
+         !write(file_id,'(7E12.4)') exp(maxval(f(:,:,:,5)))*unit_temperature
+!print*,'temp=',exp(maxval(f(:,:,:,5)))*unit_temperature
          write(file_id,*) ''
          write(file_id,*) 'Cp,  erg/mole/K'
-         write(file_id,'(7E10.2)')                       maxval(cp_full)/Rgas*Rgas_unit_sys/maxval(mu1_full/unit_mass)
+         write(file_id,'(7E12.4)')                       maxval(cp_full)/Rgas*Rgas_unit_sys/maxval(mu1_full/unit_mass)
          write(file_id,*) ''
          write(file_id,*) 'cp, erg/g/K'
-         write(file_id,'(7E10.2)') maxval(cp_full)/Rgas*Rgas_unit_sys
+         write(file_id,'(7E12.4)') maxval(cp_full)/Rgas*Rgas_unit_sys
          write(file_id,*) ''
          write(file_id,*) 'gamma,max,min'
-         write(file_id,'(7E10.2)') maxval(cp_full)/maxval(cv_full),minval(cp_full)/minval(cv_full)
+         write(file_id,'(7E12.4)') maxval(cp_full)/maxval(cv_full),minval(cp_full)/minval(cv_full)
          write(file_id,*) ''
          write(file_id,*) 'Viscosity, g/cm/s,'
-         write(file_id,'(7E10.2)') maxval(nu_dyn)*(unit_mass/unit_length/unit_time)
+         write(file_id,'(7E12.4)') maxval(nu_dyn)*(unit_mass/unit_length/unit_time)
          write(file_id,*) ''
          write(file_id,*) 'Thermal cond, erg/(cm K s),'
-         write(file_id,'(7E10.2)') maxval(0.5*(tmp_sum+1./tmp_sum2)*1e4/Rgas*Rgas_unit_sys)
+         write(file_id,'(7E12.4)') maxval(0.5*(tmp_sum+1./tmp_sum2)*1e4/Rgas*Rgas_unit_sys)
          write(file_id,*) ''
          write(file_id,*) ' Diffusion coefficient, cm^2/s'
-         write(file_id,'(7E10.2)') maxval(Diff_full)*unit_length**2/unit_time
+         write(file_id,'(7E12.4)') maxval(Diff_full)*unit_length**2/unit_time
         print*,'calc_for_chem_mixture: writing mix_quant.out file'
          close(file_id)
          lwrite=.false.
