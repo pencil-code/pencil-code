@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.243 2008-07-03 08:24:11 dintrans Exp $
+# $Id: getconf.csh,v 1.244 2008-07-17 14:25:08 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -1030,14 +1030,14 @@ else if ($hn =~ comp*) then
 
 else if ($hostname =~ *huygens.sara.nl*) then
   echo "huygens cluster in Amsteradam"
-  set nprocpernode = 1
-  set local_disc = 0
+  set local_disc = 1
   set one_local_disc = 1
+  set masternode = p6012
   set mpirun = mpiexec
   set npops = ''
-  setenv SSH 'ssh -x'
-  setenv SCP scp
-  setenv SCRATCH_DIR /var/tmp/$USER
+  setenv SSH "ssh -q -x"
+  setenv SCP "scp -q"
+  setenv SCRATCH_DIR /scratch/shared/$USER
 
 else if ($hn =~ *mckenzie*) then
   echo "McKenzie cluster at CITA"
