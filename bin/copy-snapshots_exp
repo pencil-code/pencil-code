@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: copy-snapshots_exp,v 1.7 2005-06-26 17:34:16 eos_merger_tony Exp $
+# CVS: $Id: copy-snapshots_exp,v 1.8 2008-07-17 14:25:41 ajohan Exp $
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -56,14 +56,14 @@ if ($?varfile) then
 ##
     if ($debug) then
       printf "\n  ##Checking if scratch directory is accessible\n"
-      printf "\n$SSH $node ls -ltd $SCRATCH_DIR :\n"
-      $SSH $node "ls -ltd $SCRATCH_DIR"
+      printf "\n$SSH $node \\ls -ltd $SCRATCH_DIR :\n"
+      $SSH $node "\\ls -ltd $SCRATCH_DIR"
       printf "\n\n  ##Checking for presence of $varfile on scratch disc\n"
-      printf "\n$SSH $node ls -ltd $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR/allprocs/$varfile :\n"
-      $SSH $node "ls -ltd $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR/allprocs/$varfile"
+      printf "\n$SSH $node \\ls -ltd $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR/allprocs/$varfile :\n"
+      $SSH $node "\\ls -ltd $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR/allprocs/$varfile"
       printf "\n  ##Checking for presence of $varfile in data directory\n"
-      printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
-      $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
+      printf "\n$SSH $node \\ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
+      $SSH $node "\\ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
       echo
     endif
 ##
@@ -73,7 +73,7 @@ if ($?varfile) then
 ##
     if ($debug) printf "  ##Copying proc*/$varfile and allprocs/$varfile to data directory\n\n"
 
-    set remcmd = 'cd '"$SCRATCH_DIR"'; for f in `ls proc*/'"$varfile"' allprocs/'"$varfile"' 2> /dev/null`; do echo "Copying '"$SCRATCH_DIR"'/$f to '"$targetdir"'/$f"; cp '"$SCRATCH_DIR"'/$f '"$targetdir"'/$f; done'
+    set remcmd = 'cd '"$SCRATCH_DIR"'; for f in `\\ls proc*/'"$varfile"' allprocs/'"$varfile"' 2> /dev/null`; do echo "Copying '"$SCRATCH_DIR"'/$f to '"$targetdir"'/$f"; cp '"$SCRATCH_DIR"'/$f '"$targetdir"'/$f; done'
 
     if ($debug) echo "Now running <$SSH $node sh -c $remcmd>"
     
@@ -81,8 +81,8 @@ if ($?varfile) then
     
     if ($debug) then
       printf "\n  ##Checking for changes to $varfile in data directory\n"
-      printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
-      $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
+      printf "\n$SSH $node \\ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
+      $SSH $node "\\ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
     endif
 
   end  # loop over nodes
