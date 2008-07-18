@@ -67,7 +67,7 @@
 ;                                        ;; vars.bb without ghost points
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.75 2008-06-19 15:42:47 ajohan Exp $
+;       $Id: pc_read_var.pro,v 1.76 2008-07-18 15:36:07 ajohan Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -401,8 +401,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Open a varfile and read some data!
 ;
-    close,file
-    openr,file, filename, /f77, swap_endian=swap_endian
+    close, file
+    openr, file, filename, /f77, swap_endian=swap_endian
     if (not keyword_set(associate)) then begin
       if (execute('readu,file'+res) ne 1) then $
           message, 'Error reading: ' + 'readu,' + str(file) + res
