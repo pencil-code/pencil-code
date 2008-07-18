@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.533 2008-07-02 00:31:46 brandenb Exp $
+! $Id: magnetic.f90,v 1.534 2008-07-18 17:43:04 ajohan Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -324,6 +324,9 @@ module Magnetic
   integer :: idiag_jxmxy=0      ! DIAG_DOC: $\left< J_x \right>_{xy}$
   integer :: idiag_jymxy=0      ! DIAG_DOC: $\left< J_y \right>_{xy}$
   integer :: idiag_jzmxy=0      ! DIAG_DOC: $\left< J_z \right>_{xy}$
+  integer :: idiag_axmxz=0      ! DIAG_DOC: $\left< A_x \right>_{xz}$
+  integer :: idiag_aymxz=0      ! DIAG_DOC: $\left< A_y \right>_{xz}$
+  integer :: idiag_azmxz=0      ! DIAG_DOC: $\left< A_z \right>_{xz}$
   integer :: idiag_bxmxz=0      ! DIAG_DOC: $\left< B_x \right>_{xz}$
   integer :: idiag_bymxz=0      ! DIAG_DOC: $\left< B_y \right>_{xz}$
   integer :: idiag_bzmxz=0      ! DIAG_DOC: $\left< B_z \right>_{xz}$
@@ -437,7 +440,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.533 2008-07-02 00:31:46 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.534 2008-07-18 17:43:04 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1176,9 +1179,10 @@ module Magnetic
       endif
 !
       if (idiag_armr/=0 .or. idiag_apmr/=0 .or. idiag_azmr/=0) &
-           lpenc_diagnos(i_aa)=.true.
+          lpenc_diagnos(i_aa)=.true.
 !
-      if (idiag_armphi/=0 .or. idiag_apmphi/=0 .or. idiag_azmphi/=0) &
+      if (idiag_armphi/=0 .or. idiag_apmphi/=0 .or. idiag_azmphi/=0 .or. &
+          idiag_axmxz/=0 .or. idiag_aymxz/=0 .or. idiag_azmxz/=0) &
            lpenc_diagnos2d(i_aa)=.true.
 !
       if (idiag_aybym2/=0 .or. idiag_exaym2/=0) lpenc_diagnos(i_aa)=.true.
@@ -2343,6 +2347,9 @@ module Magnetic
         if (idiag_jxmxy/=0)  call zsum_mn_name_xy(p%jj(:,1),idiag_jxmxy)
         if (idiag_jymxy/=0)  call zsum_mn_name_xy(p%jj(:,2),idiag_jymxy)
         if (idiag_jzmxy/=0)  call zsum_mn_name_xy(p%jj(:,3),idiag_jzmxy)
+        if (idiag_axmxz/=0)  call ysum_mn_name_xz(p%aa(:,1),idiag_axmxz)
+        if (idiag_aymxz/=0)  call ysum_mn_name_xz(p%aa(:,2),idiag_aymxz)
+        if (idiag_azmxz/=0)  call ysum_mn_name_xz(p%aa(:,3),idiag_azmxz)
         if (idiag_bxmxz/=0)  call ysum_mn_name_xz(p%bb(:,1),idiag_bxmxz)
         if (idiag_bymxz/=0)  call ysum_mn_name_xz(p%bb(:,2),idiag_bymxz)
         if (idiag_bzmxz/=0)  call ysum_mn_name_xz(p%bb(:,3),idiag_bzmxz)
@@ -4728,6 +4735,8 @@ module Magnetic
         idiag_bx2mxy=0; idiag_by2mxy=0; idiag_bz2mxy=0
         idiag_bxbymxy=0; idiag_bxbzmxy=0; idiag_bybzmxy=0
         idiag_bxbymxz=0; idiag_bxbzmxz=0; idiag_bybzmxz=0
+        idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0
+        idiag_axmxz=0; idiag_aymxz=0; idiag_azmxz=0
         idiag_uxbm=0; idiag_oxuxbm=0; idiag_jxbxbm=0.; idiag_gpxbm=0.
         idiag_uxDxuxbm=0.; idiag_uxbmx=0; idiag_uxbmy=0; idiag_uxbmz=0
         idiag_uxjm=0; idiag_ujxbm=0
@@ -4913,6 +4922,9 @@ module Magnetic
 !  check for those quantities for which we want y-averages
 !
       do ixz=1,nnamexz
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'axmxz',idiag_axmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'aymxz',idiag_aymxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'azmxz',idiag_azmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxmxz',idiag_bxmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bymxz',idiag_bymxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bzmxz',idiag_bzmxz)
@@ -5073,6 +5085,9 @@ module Magnetic
         write(3,*) 'i_jxmxy=',idiag_jxmxy
         write(3,*) 'i_jymxy=',idiag_jymxy
         write(3,*) 'i_jzmxy=',idiag_jzmxy
+        write(3,*) 'i_axmxz=',idiag_axmxz
+        write(3,*) 'i_aymxz=',idiag_aymxz
+        write(3,*) 'i_azmxz=',idiag_azmxz
         write(3,*) 'i_bxmxz=',idiag_bxmxz
         write(3,*) 'i_bymxz=',idiag_bymxz
         write(3,*) 'i_bzmxz=',idiag_bzmxz
