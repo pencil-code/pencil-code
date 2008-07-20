@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90,v 1.52 2008-07-07 14:12:42 brandenb Exp $
+! $Id: testfield_z.f90,v 1.53 2008-07-20 16:50:30 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -204,7 +204,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield_z.f90,v 1.52 2008-07-07 14:12:42 brandenb Exp $")
+           "$Id: testfield_z.f90,v 1.53 2008-07-20 16:50:30 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -406,9 +406,12 @@ module Testfield
       case('sinwave-x-1'); call sinwave(amplaatest(j),f,iaxtest+0+1,kx=kx_aatest(j))
       case('sinwave-x-2'); call sinwave(amplaatest(j),f,iaxtest+3+1,kx=kx_aatest(j))
       case('sinwave-x-3'); call sinwave(amplaatest(j),f,iaxtest+6+1,kx=kx_aatest(j))
-      case('Beltrami-z-1'); call beltrami(amplaatest(j),f,iaxtest+0,kz=kz_aatest(j))
-      case('Beltrami-z-3'); call beltrami(amplaatest(j),f,iaxtest+6,kz=kz_aatest(j))
-      case('Beltrami-z-5'); call beltrami(amplaatest(j),f,iaxtest+12,kz=kz_aatest(j))
+      case('Beltrami-x-1'); call beltrami(amplaatest(j),f,iaxtest+0,kx=-kx_aatest(j))
+      case('Beltrami-z-1'); call beltrami(amplaatest(j),f,iaxtest+0,kz=-kz_aatest(j))
+      case('Beltrami-z-2'); call beltrami(amplaatest(j),f,iaxtest+3,kz=-kz_aatest(j))
+      case('Beltrami-z-3'); call beltrami(amplaatest(j),f,iaxtest+6,kz=-kz_aatest(j))
+      case('Beltrami-z-4'); call beltrami(amplaatest(j),f,iaxtest+9,kz=-kz_aatest(j))
+      case('Beltrami-z-5'); call beltrami(amplaatest(j),f,iaxtest+12,kz=-kz_aatest(j))
       case('nothing'); !(do nothing)
 
       case default
@@ -688,12 +691,12 @@ module Testfield
 !  so prevent this warning by writing i3=3 and i4=4
 !
       if (ldiagnos) then
-        if (idiag_bx0mz/=0) call xysum_mn_name_z(bpq(:,1,i3),idiag_bx0mz)
-        if (idiag_by0mz/=0) call xysum_mn_name_z(bpq(:,2,i3),idiag_by0mz)
-        if (idiag_bz0mz/=0) call xysum_mn_name_z(bpq(:,3,i3),idiag_bz0mz)
-        if (idiag_E111z/=0) call xysum_mn_name_z(Eipq(:,1,1),idiag_E111z)
-        if (idiag_E211z/=0) call xysum_mn_name_z(Eipq(:,2,1),idiag_E211z)
-        if (idiag_E311z/=0) call xysum_mn_name_z(Eipq(:,3,1),idiag_E311z)
+        if (idiag_bx0mz/=0) call xysum_mn_name_z(bpq(:,1,iE0),idiag_bx0mz)
+        if (idiag_by0mz/=0) call xysum_mn_name_z(bpq(:,2,iE0),idiag_by0mz)
+        if (idiag_bz0mz/=0) call xysum_mn_name_z(bpq(:,3,iE0),idiag_bz0mz)
+        if (idiag_E111z/=0) call xysum_mn_name_z(Eipq(:,1,i1),idiag_E111z)
+        if (idiag_E211z/=0) call xysum_mn_name_z(Eipq(:,2,i1),idiag_E211z)
+        if (idiag_E311z/=0) call xysum_mn_name_z(Eipq(:,3,i1),idiag_E311z)
         if (idiag_E121z/=0) call xysum_mn_name_z(Eipq(:,1,i2),idiag_E121z)
         if (idiag_E221z/=0) call xysum_mn_name_z(Eipq(:,2,i2),idiag_E221z)
         if (idiag_E321z/=0) call xysum_mn_name_z(Eipq(:,3,i2),idiag_E321z)
