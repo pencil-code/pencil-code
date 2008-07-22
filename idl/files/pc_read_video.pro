@@ -1,5 +1,5 @@
 ;;
-;; $Id: pc_read_video.pro,v 1.4 2007-12-13 13:18:59 ajohan Exp $
+;; $Id: pc_read_video.pro,v 1.5 2008-07-22 10:19:44 ajohan Exp $
 ;;
 ;; NAME:
 ;;      PC_READ_VIDEO
@@ -11,17 +11,21 @@
 ;;     Written by: Anders Johansen (johansen@mpia.de) on 28.06.2007
 ;;
 pro pc_read_video, field=field, object=object, nt=nt, njump=njump, $
-    dim=dim, datadir=datadir, print=print, quiet=quiet, help=help
+    dim=dim, datadir=datadir, swap_endian=swap_endian, $
+    print=print, quiet=quiet, help=help
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
 ; Default values.
 ;
-default, print, 1
 default, field, 'lnrho'
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default, nt, 100
 default, njump, 0
+default, swap_endian, 0
+default, print, 1
+default, quiet, 0
+default, help, 0
 ;
 ; Read dimensions and set precision.
 ;
@@ -53,10 +57,10 @@ t  =fltarr(nt)*one
 ;
 ; Open slice files.
 ;
-close, 1 & openr, 1, file_slice1, /f77
-close, 2 & openr, 2, file_slice2, /f77
-close, 3 & openr, 3, file_slice3, /f77
-close, 4 & openr, 4, file_slice4, /f77
+close, 1 & openr, 1, file_slice1, /f77, swap_endian=swap_endian
+close, 2 & openr, 2, file_slice2, /f77, swap_endian=swap_endian
+close, 3 & openr, 3, file_slice3, /f77, swap_endian=swap_endian
+close, 4 & openr, 4, file_slice4, /f77, swap_endian=swap_endian
 ;
 ; Read slices at nt times.
 ;
