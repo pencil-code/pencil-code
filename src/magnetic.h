@@ -15,7 +15,8 @@
   public :: calc_pencils_magnetic
 
   public :: calc_mfield, idiag_bcosphz, idiag_bsinphz
-  public :: pert_aa, rescaling_magnetic
+! public :: pert_aa, rescaling_magnetic
+  public :: rescaling_magnetic
   public :: bb_unitvec_shock, remove_mean_emf
   public :: lelectron_inertia, inertial_length, linertial_2
 

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.446 2008-07-08 16:02:58 joishi Exp $
+! $Id: hydro.f90,v 1.447 2008-07-23 02:36:45 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -358,7 +358,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.446 2008-07-08 16:02:58 joishi Exp $")
+           "$Id: hydro.f90,v 1.447 2008-07-23 02:36:45 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1271,6 +1271,7 @@ use Mpicomm, only: stop_it
         elseif (lspherical_coords) then
           call coriolis_spherical(df,p)
         elseif (lprecession) then
+          !call precession_old(df,p)
           call precession(df,p)
         else
           if (theta==0) then

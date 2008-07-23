@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.367 2008-07-01 13:53:18 dhruba Exp $
+! $Id: sub.f90,v 1.368 2008-07-23 02:36:46 brandenb Exp $
 
 module Sub
 
@@ -1276,7 +1276,7 @@ module Sub
 !***********************************************************************
     subroutine dot_mn_sm(a,b,c)
 !
-!  dot product, c=a.b, between non-pencilized vector and  pencil matrix
+!  dot product, c=a.b, between non-pencilized vector and pencil matrix
 !  10-oct-06/axel: coded
 !
       use Cdata, only: nx
@@ -1447,9 +1447,9 @@ module Sub
       integer :: i,j
 !
       do i=1,3
-         do j=1,3
-            c(:,i,j)=a(:,j)*b(:,i)
-         end do
+        do j=1,3
+          c(:,i,j)=a(:,j)*b(:,i)
+        end do
       end do
 !
     end subroutine multvv_mat_mn

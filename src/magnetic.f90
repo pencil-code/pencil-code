@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.534 2008-07-18 17:43:04 ajohan Exp $
+! $Id: magnetic.f90,v 1.535 2008-07-23 02:36:45 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -357,6 +357,15 @@ module Magnetic
   integer :: idiag_uxbmx=0      ! DIAG_DOC:
   integer :: idiag_uxbmy=0      ! DIAG_DOC:
   integer :: idiag_uxbmz=0      ! DIAG_DOC:
+  integer :: idiag_examx=0      ! DIAG_DOC:
+  integer :: idiag_examy=0      ! DIAG_DOC:
+  integer :: idiag_examz=0      ! DIAG_DOC:
+  integer :: idiag_exjmx=0      ! DIAG_DOC: $\left<\Ev\times\Jv\right>|_x$
+  integer :: idiag_exjmy=0      ! DIAG_DOC: $\left<\Ev\times\Jv\right>|_y$
+  integer :: idiag_exjmz=0      ! DIAG_DOC: $\left<\Ev\times\Jv\right>|_z$
+  integer :: idiag_dexbmx=0     ! DIAG_DOC: $\left<\nabla\times\Ev\times\Bv\right>|_x$
+  integer :: idiag_dexbmy=0     ! DIAG_DOC: $\left<\nabla\times\Ev\times\Bv\right>|_y$
+  integer :: idiag_dexbmz=0     ! DIAG_DOC: $\left<\nabla\times\Ev\times\Bv\right>|_z$
   integer :: idiag_uxjm=0       ! DIAG_DOC:
   integer :: idiag_brmphi=0     ! DIAG_DOC:
   integer :: idiag_bpmphi=0     ! DIAG_DOC:
@@ -440,7 +449,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.534 2008-07-18 17:43:04 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.535 2008-07-23 02:36:45 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -516,12 +525,21 @@ module Magnetic
       B_ext11=sqrt(B_ext21)
       B1_ext=B_ext*B_ext11
 !
-!  set to zero and then rescale the magnetic field
-!  (in future, could call something like init_aa_simple)
+!  rescale magnetic field by a factor reinitalize_aa
+!
+!AB: removed this call to pert_aa on 23-jun-08 for 2 reasons.
+!AB: Firstly, the old method of *just* rescaling the
+!AB: magnitude of the field no longer works.
+!AB: Secondly, pert_aa allocates the full 3-D x,y,z arrays,
+!AB: which is a waste of memory.
+!AB: These comments should be removed by 21-aug-08.
+!
+! !  set to zero and then rescale the magnetic field
+! !  (in future, could call something like init_aa_simple)
 !
       if (reinitalize_aa) then
         f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
-        call pert_aa(f)
+!--     call pert_aa(f)
       endif
 !
       if (lfreeze_aint) lfreeze_varint(iax:iaz) = .true.
@@ -1055,27 +1073,27 @@ module Magnetic
       endif
 !
     endsubroutine init_aa
-!***********************************************************************
-    subroutine pert_aa(f)
-!
-!   perturb magnetic field when reading old NON-magnetic snapshot
-!   called from run.f90; this uses a lot of memory and should be modified.
-!
-!   30-july-2004/dave: coded
-!
-      use Cdata
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
-!
-      xx=spread(spread(x,2,my),3,mz)
-      yy=spread(spread(y,1,mx),3,mz)
-      zz=spread(spread(z,1,mx),2,my)
-      initaa=pertaa
-      amplaa=pertamplaa
-      call init_aa(f,xx,yy,zz)
-!
-    endsubroutine pert_aa
+! !***********************************************************************
+!     subroutine pert_aa(f)
+! !
+! !   perturb magnetic field when reading old NON-magnetic snapshot
+! !   called from run.f90; this uses a lot of memory and should be modified.
+! !
+! !   30-july-2004/dave: coded
+! !
+!       use Cdata
+! !
+!       real, dimension (mx,my,mz,mfarray) :: f
+!       real, dimension (mx,my,mz) :: xx,yy,zz
+! !
+!       xx=spread(spread(x,2,my),3,mz)
+!       yy=spread(spread(y,1,mx),3,mz)
+!       zz=spread(spread(z,1,mx),2,my)
+!       initaa=pertaa
+!       amplaa=pertamplaa
+!       call init_aa(f,xx,yy,zz)
+! !
+!     endsubroutine pert_aa
 !***********************************************************************
     subroutine pencil_criteria_magnetic()
 !
@@ -1185,11 +1203,14 @@ module Magnetic
           idiag_axmxz/=0 .or. idiag_aymxz/=0 .or. idiag_azmxz/=0) &
            lpenc_diagnos2d(i_aa)=.true.
 !
-      if (idiag_aybym2/=0 .or. idiag_exaym2/=0) lpenc_diagnos(i_aa)=.true.
+      if (idiag_aybym2/=0 .or. idiag_exaym2/=0 .or. &
+          idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 &
+         ) lpenc_diagnos(i_aa)=.true.
       if (idiag_arms/=0 .or. idiag_amax/=0) lpenc_diagnos(i_a2)=.true.
       if (idiag_abm/=0) lpenc_diagnos(i_ab)=.true.
-      if (idiag_djuidjbim/=0 .or. idiag_b3b21m/=0 .or. &
-          idiag_b1b32m/=0 .or.  idiag_b2b13m/=0) &
+      if (idiag_djuidjbim/=0 .or. idiag_b3b21m/=0 &
+          .or. idiag_dexbmx/=0 .or. idiag_dexbmy/=0 .or. idiag_dexbmz/=0 &
+          .or. idiag_b1b32m/=0 .or.  idiag_b2b13m/=0) &
           lpenc_diagnos(i_bij)=.true.
       if (idiag_j2m/=0 .or. idiag_jm2/=0 .or. idiag_jrms/=0 .or. &
           idiag_jmax/=0 .or. idiag_epsM/=0 .or. idiag_epsM_LES/=0) &
@@ -1208,9 +1229,12 @@ module Magnetic
       if (idiag_gpxbm/=0) lpenc_diagnos(i_glnrhoxb)=.true.
       if (idiag_jxbxbm/=0) lpenc_diagnos(i_jxbxb)=.true.
       if (idiag_oxuxbm/=0) lpenc_diagnos(i_oxuxb)=.true.
-      if (idiag_exaym2/=0 .or. idiag_exjm2/=0 .or. &
-          idiag_jmx/=0 .or. idiag_jmy/=0 .or. idiag_jmz/=0 .or. &
-          idiag_jmbmz/=0 .or. idiag_kmz/=0 ) lpenc_diagnos(i_jj)=.true.
+      if (idiag_exaym2/=0 .or. idiag_exjm2/=0 &
+          .or. idiag_jmx/=0 .or. idiag_jmy/=0 .or. idiag_jmz/=0 &
+          .or. idiag_jmbmz/=0 .or. idiag_kmz/=0 &
+          .or. idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 &
+          .or. idiag_exjmx/=0 .or. idiag_exjmy/=0 .or. idiag_exjmz/=0 &
+         ) lpenc_diagnos(i_jj)=.true.
       if (idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
           idiag_bmax/=0) lpenc_diagnos(i_b2)=.true.
 
@@ -1657,7 +1681,7 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
+      real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2,exa,exj,dexb
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b3b21,b1b32,b2b13,sign_jo,rho1_jxb
       real, dimension (nx) :: B1dot_glnrhoxb,tmp1
@@ -2151,6 +2175,7 @@ module Magnetic
 !  calculate surface integral <2ExJ>*dS
 !
         if (idiag_exjm2/=0) call curflux(p%uxb,p%jj)
+!--     if (idiag_exjm2/=0) call curflux_dS(p%uxb,p%jj)
 !
 !  calculate emf for alpha effect (for imposed field)
 !  Note that uxbm means <EMF.B0>/B0^2, so it gives already alpha=EMF/B0.
@@ -2163,6 +2188,35 @@ module Magnetic
           if (idiag_uxbmx/=0) call sum_mn_name(uxbb(:,1),idiag_uxbmx)
           if (idiag_uxbmy/=0) call sum_mn_name(uxbb(:,2),idiag_uxbmy)
           if (idiag_uxbmz/=0) call sum_mn_name(uxbb(:,3),idiag_uxbmz)
+        endif
+!
+!  calculate magnetic helicity flux (for imposed field)
+!
+        if (idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0) then
+          call cross_mn(-p%uxb+eta*p%jj,p%aa,exa)
+          if (idiag_examx/=0) call sum_mn_name(exa(:,1),idiag_examx)
+          if (idiag_examy/=0) call sum_mn_name(exa(:,2),idiag_examy)
+          if (idiag_examz/=0) call sum_mn_name(exa(:,3),idiag_examz)
+        endif
+!
+!  calculate part I of current helicity flux (for imposed field)
+!
+        if (idiag_exjmx/=0 .or. idiag_exjmy/=0 .or. idiag_exjmz/=0) then
+          call cross_mn(-p%uxb+eta*p%jj,p%jj,exj)
+          if (idiag_exjmx/=0) call sum_mn_name(exj(:,1),idiag_exjmx)
+          if (idiag_exjmy/=0) call sum_mn_name(exj(:,2),idiag_exjmy)
+          if (idiag_exjmz/=0) call sum_mn_name(exj(:,3),idiag_exjmz)
+        endif
+!
+!  calculate part II of current helicity flux (for imposed field)
+!  < curlE x B >|_i  =  < B_{j,i} E_j >
+!  Use the full B (with B_ext)
+!
+        if (idiag_dexbmx/=0 .or. idiag_dexbmy/=0 .or. idiag_dexbmz/=0) then
+          call multmv_transp(p%bij,-p%uxb+eta*p%jj,dexb)
+          if (idiag_dexbmx/=0) call sum_mn_name(dexb(:,1),idiag_dexbmx)
+          if (idiag_dexbmy/=0) call sum_mn_name(dexb(:,2),idiag_dexbmy)
+          if (idiag_dexbmz/=0) call sum_mn_name(dexb(:,3),idiag_dexbmz)
         endif
 !
 !  calculate <uxj>.B0/B0^2
@@ -2663,6 +2717,10 @@ module Magnetic
 !  This routine could be turned into a wrapper routine later on,
 !  if we want to do dynamic rescaling also on other quantities.
 !
+!AB: When I tested last this routine (23-jul-08) it didn't seem useful
+!AB: in its current configuration. Next time somebody uses it, it
+!AB: should be improved.
+!
 !  22-feb-05/axel: coded
 !
       use Cdata
@@ -2838,7 +2896,7 @@ module Magnetic
 !
     endsubroutine helflux
 !***********************************************************************
-    subroutine curflux(uxb,jj)
+    subroutine curflux_dS(uxb,jj)
 !
 !  current helicity flux (preliminary)
 !
@@ -2867,6 +2925,30 @@ module Magnetic
       if (ipz==0       .and.n==n1) FC=FC-sum(FCz)
       if (ipz==nprocz-1.and.n==n2) FC=FC+sum(FCz)
       call surf_mn_name(FC,idiag_exjm2)
+!
+    endsubroutine curflux_dS
+!***********************************************************************
+    subroutine curflux(uxb,jj)
+!
+!  current helicity flux (preliminary)
+!
+!  27-nov-03/axel: adapted from helflux
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (nx,3), intent(in) :: uxb,jj
+      real, dimension (nx,3) :: ee
+      real, dimension (nx) :: FCz
+      real :: FC
+!
+      ee=eta*jj-uxb
+!
+!  calculate current helicity flux in the Z direction
+!  exj = e1*j2 - e2*j1
+!
+      FCz=2*(ee(:,1)*jj(:,2)-ee(:,2)*jj(:,1))
+      call sum_mn_name(FCz,idiag_exjm2)
 !
     endsubroutine curflux
 !***********************************************************************
@@ -4739,6 +4821,9 @@ module Magnetic
         idiag_axmxz=0; idiag_aymxz=0; idiag_azmxz=0
         idiag_uxbm=0; idiag_oxuxbm=0; idiag_jxbxbm=0.; idiag_gpxbm=0.
         idiag_uxDxuxbm=0.; idiag_uxbmx=0; idiag_uxbmy=0; idiag_uxbmz=0
+        idiag_examx=0; idiag_examy=0; idiag_examz=0
+        idiag_exjmx=0; idiag_exjmy=0; idiag_exjmz=0
+        idiag_dexbmx=0; idiag_dexbmy=0; idiag_dexbmz=0
         idiag_uxjm=0; idiag_ujxbm=0
         idiag_b3b21m=0; idiag_b1b32m=0; idiag_b2b13m=0
         idiag_EMFdotBm=0
@@ -4817,6 +4902,15 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'uxbmx',idiag_uxbmx)
         call parse_name(iname,cname(iname),cform(iname),'uxbmy',idiag_uxbmy)
         call parse_name(iname,cname(iname),cform(iname),'uxbmz',idiag_uxbmz)
+        call parse_name(iname,cname(iname),cform(iname),'examx',idiag_examx)
+        call parse_name(iname,cname(iname),cform(iname),'examy',idiag_examy)
+        call parse_name(iname,cname(iname),cform(iname),'examz',idiag_examz)
+        call parse_name(iname,cname(iname),cform(iname),'exjmx',idiag_exjmx)
+        call parse_name(iname,cname(iname),cform(iname),'exjmy',idiag_exjmy)
+        call parse_name(iname,cname(iname),cform(iname),'exjmz',idiag_exjmz)
+        call parse_name(iname,cname(iname),cform(iname),'dexbmx',idiag_dexbmx)
+        call parse_name(iname,cname(iname),cform(iname),'dexbmy',idiag_dexbmy)
+        call parse_name(iname,cname(iname),cform(iname),'dexbmz',idiag_dexbmz)
         call parse_name(iname,cname(iname),cform(iname),'uxjm',idiag_uxjm)
         call parse_name(iname,cname(iname),cform(iname),'ujxbm',idiag_ujxbm)
         call parse_name(iname,cname(iname),cform(iname),'jxbxbm',idiag_jxbxbm)
@@ -5034,6 +5128,15 @@ module Magnetic
         write(3,*) 'i_uxbmx=',idiag_uxbmx
         write(3,*) 'i_uxbmy=',idiag_uxbmy
         write(3,*) 'i_uxbmz=',idiag_uxbmz
+        write(3,*) 'i_examx=',idiag_examx
+        write(3,*) 'i_examy=',idiag_examy
+        write(3,*) 'i_examz=',idiag_examz
+        write(3,*) 'i_exjmx=',idiag_exjmx
+        write(3,*) 'i_exjmy=',idiag_exjmy
+        write(3,*) 'i_exjmz=',idiag_exjmz
+        write(3,*) 'i_dexbmx=',idiag_dexbmx
+        write(3,*) 'i_dexbmy=',idiag_dexbmy
+        write(3,*) 'i_dexbmz=',idiag_dexbmz
         write(3,*) 'i_uxjm=',idiag_uxjm
         write(3,*) 'i_ujxbm=',idiag_ujxbm
         write(3,*) 'i_oxuxbm=',idiag_oxuxbm

@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.95 2008-07-02 00:31:46 brandenb Exp $
+! $Id: nohydro.f90,v 1.96 2008-07-23 02:36:46 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -76,7 +76,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.95 2008-07-02 00:31:46 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.96 2008-07-23 02:36:46 brandenb Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -252,7 +252,7 @@ module Hydro
       type (pencil_case) :: p
 !
       real, dimension(nx) :: kdotxwt,cos_kdotxwt,sin_kdotxwt
-      real :: kkx_aa,kky_aa,kkz_aa, fac, fpara, dfpara, ecost, esint
+      real :: kkx_aa,kky_aa,kkz_aa, fac, fpara, dfpara, ecost, esint, epst
       integer :: modeN
       real :: sqrt2, sqrt21k1
 !
@@ -358,6 +358,39 @@ module Hydro
         if (lpencil(i_divu)) p%divu=0.
         if (lpencil(i_oo)) p%oo=-kkx_aa*p%uu
 !
+!  Tilgner flow, U=-z x grad(psi) - z k psi, where
+!  psi = U0/kH * (cosX+cosY), so U = U0 * (-sinY, sinX, -cosX-cosY).
+!  This makes sense only for kkx_aa=kky_aa
+!
+      elseif (kinflow=='Tilgner') then
+        if (headtt) print*,'Tilgner flow; kx_aa,ky_aa=',kkx_aa,kky_aa
+        fac=ampl_kinflow
+        epst=eps_kinflow*t
+kkx_aa=2.*pi
+kky_aa=2.*pi
+        p%uu(:,1)=-fac* sin(kky_aa*y(m)         )
+        p%uu(:,2)=+fac* sin(kkx_aa*x(l1:l2)+epst)
+        p%uu(:,3)=-fac*(cos(kkx_aa*x(l1:l2)+epst)+cos(kky_aa*y(m)))
+        if (lpencil(i_divu)) p%divu=0.
+        if (lpencil(i_oo)) p%oo=-kkx_aa*p%uu
+!
+!  Tilgner flow, U=-z x grad(psi) - z k psi, where
+!  psi = U0/kH * (cosX+cosY), so U = U0 * (-sinY, sinX, -cosX-cosY).
+!  This makes sense only for kkx_aa=kky_aa
+!
+      elseif (kinflow=='Tilgner-orig') then
+        if (headtt) print*,'Tilgner-orig flow; kx_aa,ky_aa=',kkx_aa,kky_aa
+        fac=ampl_kinflow
+        epst=eps_kinflow*t
+kkx_aa=2.*pi
+kky_aa=2.*pi
+sqrt2=sqrt(2.)
+        p%uu(:,1)=+fac*sqrt2*sin(kkx_aa*(x(l1:l2)+epst))*cos(kky_aa*y(m))
+        p%uu(:,2)=-fac*sqrt2*cos(kkx_aa*(x(l1:l2)+epst))*sin(kky_aa*y(m))
+        p%uu(:,3)=+fac*0.500*sin(kkx_aa*(x(l1:l2)+epst))*sin(kky_aa*y(m))
+        if (lpencil(i_divu)) p%divu=0.
+        if (lpencil(i_oo)) p%oo=-kkx_aa*p%uu
+!
 !  Galloway-Proctor flow with random temporal phase
 !
       elseif (kinflow=='Galloway-Proctor-RandomTemporalPhase') then
@@ -413,6 +446,15 @@ module Hydro
         p%uu(:,2)=+0.
         p%uu(:,3)=kkx_aa*sin(kkx_aa*x(l1:l2))*cos(kkz_aa*z(n))
 ! divu
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  Twist (Yousef & Brandenburg 2003)
+!
+      elseif (kinflow=='Twist') then
+        if (headtt) print*,'Twist flow; eps_kinflow,kx=',eps_kinflow,kkx_aa
+        p%uu(:,1)=0.
+        p%uu(:,2)=eps_kinflow*z(n)*sin(kkx_aa*x(l1:l2))
+        p%uu(:,3)=1.+cos(kkx_aa*x(l1:l2))
         if (lpencil(i_divu)) p%divu=0.
 !
 !  KS-flow

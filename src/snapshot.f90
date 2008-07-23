@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.29 2008-07-01 13:53:18 dhruba Exp $
+! $Id: snapshot.f90,v 1.30 2008-07-23 02:36:46 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -101,7 +101,7 @@ contains
 !
       use Cdata
       use Mpicomm
-      use Magnetic, only: pert_aa
+!     use Magnetic, only: pert_aa
 !
 !  the dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90
@@ -130,8 +130,14 @@ contains
             enddo
             f(:,:,:,iax:iaz)=0.
           endif
-! dgm
-          if (lrun) call pert_aa(f)
+!
+!AB: removed this call to pert_aa on 23-jun-08.
+!AB: Such modification of initial conditions should be done in
+!AB: the subroutine initialize_magnetic.
+!AB: These comments should be removed by 21-aug-08.
+!
+! ! dgm
+!           if (lrun) call pert_aa(f)
 !
 !  read data without passive scalar into new run with passive scalar
 !
