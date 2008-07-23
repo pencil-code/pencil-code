@@ -1,4 +1,4 @@
-# $Id: ts.py,v 1.7 2008-07-15 16:41:39 theine Exp $
+# $Id: ts.py,v 1.8 2008-07-23 22:06:30 joishi Exp $
 #
 # read time_series.dat and return a TimeSeries class of 1D numpy
 # arrrays
@@ -15,7 +15,7 @@ class read_ts:
     read_ts -- holds pencil code time series data. each variable is
     represented by a data member of the class.
     """
-    def __init__(self,filename='time_series.dat',datadir='data',double=0,print_std=0,quiet=0):
+    def __init__(self,filename='time_series.dat',datadir='data',double=0,print_std=0,quiet=0,plot_data=True):
       """
       constructor:
       -----------
@@ -65,7 +65,7 @@ class read_ts:
       for i in range(0,len(keys)):
         setattr(self,keys[i],data[:,i])
        
-      if hasattr(self,'t'): self.plot()
+      if hasattr(self,'t') and plot_data: self.plot()
 
             
     def plot(self):
