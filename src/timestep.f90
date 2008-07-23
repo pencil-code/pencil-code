@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.53 2008-05-07 13:47:30 nbabkovs Exp $
+! $Id: timestep.f90,v 1.54 2008-07-23 17:00:29 brandenb Exp $
 
 module Timestep
 
@@ -90,8 +90,6 @@ module Timestep
 !
         if (lfirst.and.ldt) then
           dt1_local=maxval(dt1_max(1:nx))
-
-
           !Timestep growth limiter
           if (real(ddt) .gt. 0.) dt1_local=max(dt1_local(1),dt1_last)
           call mpireduce_max(dt1_local,dt1,1)
@@ -100,7 +98,9 @@ module Timestep
           if (ddt/=0.) dt1_last=dt1_local(1)/ddt
           call mpibcast_real(dt,1)
         endif
-
+!
+!  calculate dt_beta_ts (e.g. for t=t+dt_beta_ts(itsub)*ds or for Dustdensity)
+!
         if (ldt) dt_beta_ts=dt*beta_ts
         if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
 !
