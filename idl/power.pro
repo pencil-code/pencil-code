@@ -3,7 +3,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2,datatopdir=datatopdir
 ;
-;  $Id: power.pro,v 1.29 2008-07-08 21:30:23 dhruba Exp $
+;  $Id: power.pro,v 1.30 2008-07-24 23:44:42 brandenb Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -106,10 +106,12 @@ size=2*!pi
 ;
 first='true'
 nx=mx-nghostx*2
-if v1 EQ "_phiu" then begin
-   nx=mz-nghostz*2
-   pc_read_grid,o=grid,/quiet
-   size=grid.Lz
+if  keyword_set(v1) then begin
+  if v1 EQ "_phiu" then begin
+     nx=mz-nghostz*2
+     pc_read_grid,o=grid,/quiet
+     size=grid.Lz
+  end
 end
 ;print,'nx=',nx
 imax=nx/2
@@ -119,10 +121,11 @@ k0=2.*!pi/size
 wavenumbers=indgen(imax)*k0 
 k=findgen(imax)+1.
 k=findgen(imax)
-if v1 EQ "_phiu" then begin
-   k = k*k0   
+if  keyword_set(v1) then begin
+  if v1 EQ "_phiu" then begin
+    k = k*k0   
+  end
 end
-
 ;
 ;  Looping through all the data to get number of spectral snapshots
 ;
