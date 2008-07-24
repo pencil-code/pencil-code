@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.420 2008-07-24 10:14:07 arnelohr Exp $
+### $Id: Makefile.src,v 1.421 2008-07-24 11:47:06 arnelohr Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -303,7 +303,7 @@ LD_FFTW2=
 #FC=gfortran -I. #(vsl174)
 ##FFLAGS=-O3 -I/home/arnelohr/mpich2/include #(vsl174)
 #FFLAGS= -I/home/arnelohr/mpich2/include #(vsl174)
-#FFLAGS_DOUBLE=-fdefault-real-8
+#FFLAGS_DOUBLE=-fdefault-real-8 #(vsl174)
 #LD_MPI=-L/home/arnelohr/mpich2/lib -lfmpich -lmpich -pthread #(vsl174)
 #FC=ifort  #(co-login)
 #LD_MPI=-lmpi  #(co-login)
