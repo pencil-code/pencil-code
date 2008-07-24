@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.62 2008-04-30 23:22:01 wlyra Exp $
+! $Id: deriv.f90,v 1.63 2008-07-24 10:14:07 arnelohr Exp $
 
 module Deriv
 
@@ -11,6 +11,7 @@ module Deriv
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j
   public :: der6_other, der_pencil, der2_pencil
   public :: der_upwind1st
+  public :: der_onesided_4_slice
 
 !debug  integer, parameter :: icount_der   = 1         !DERCOUNT
 !debug  integer, parameter :: icount_der2  = 2         !DERCOUNT
@@ -1507,6 +1508,68 @@ module Deriv
       endif
 !
     endsubroutine der_upwind1st
+!***********************************************************************
+    subroutine der_onesided_4_slice(f,sgn,k,df,pos,j)
+      use Cdata
+!
+!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos. 
+!   Uses a one-sided 4th order stencil.
+!   sgn = +1 for forward difference, sgn = -1 for backwards difference.
+!
+!   Because of its original intended use in relation to solving
+!   characteristic equations on boundaries (NSCBC), this sub should 
+!   return only PARTIAL derivatives, NOT COVARIANT. Applying the right
+!   scaling factors and connection terms should instead be done when
+!   solving the characteristic equations.
+!
+!   7-jul-08/arne: coded.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:) :: df
+      real :: fac
+      integer :: pos,k,sgn,j
+!
+      intent(in)  :: f,k,pos,sgn,j
+      intent(out) :: df
+
+      if (j==1) then
+        if (nxgrid/=1) then
+          fac=1./12.*dx_1(pos)
+          df = fac*(-sgn*25*f(pos,m1:m2,n1:n2,k)&
+                  +sgn*48*f(pos+sgn*1,m1:m2,n1:n2,k)&
+                  -sgn*36*f(pos+sgn*2,m1:m2,n1:n2,k)&
+                  +sgn*16*f(pos+sgn*3,m1:m2,n1:n2,k)&
+                  -sgn*3 *f(pos+sgn*4,m1:m2,n1:n2,k))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-direction'
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          fac=1./12.*dx_1(pos)
+          df = fac*(-sgn*25*f(l1:l2,pos,n1:n2,k)&
+                  +sgn*48*f(l1:l2,pos+sgn*1,n1:n2,k)&
+                  -sgn*36*f(l1:l2,pos+sgn*2,n1:n2,k)&
+                  +sgn*16*f(l1:l2,pos+sgn*3,n1:n2,k)&
+                  -sgn*3 *f(l1:l2,pos+sgn*4,n1:n2,k))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          fac=1./12.*dx_1(pos)
+          df = fac*(-sgn*25*f(l1:l2,m1:m2,pos,k)&
+                  +sgn*48*f(l1:l2,m1:m2,pos+sgn*1,k)&
+                  -sgn*36*f(l1:l2,m1:m2,pos+sgn*1,k)&
+                  +sgn*16*f(l1:l2,m1:m2,pos+sgn*1,k)&
+                  -sgn*3 *f(l1:l2,m1:m2,pos+sgn*1,k))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
+        endif
+      endif
+    endsubroutine
 !***********************************************************************
 
 

@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.419 2008-07-01 10:46:23 dintrans Exp $
+### $Id: Makefile.src,v 1.420 2008-07-24 10:14:07 arnelohr Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -300,6 +300,11 @@ LD_FFTW2=
 #FC=pgf90 #(sintef*|tycho|linux29|monolith)
 #FC=ifort #(vmware|erland|bohm|igor|onsager|char)
 #FC=ifort #(vsl21*|vsl22*|vsl230)
+#FC=gfortran -I. #(vsl174)
+##FFLAGS=-O3 -I/home/arnelohr/mpich2/include #(vsl174)
+#FFLAGS= -I/home/arnelohr/mpich2/include #(vsl174)
+#FFLAGS_DOUBLE=-fdefault-real-8
+#LD_MPI=-L/home/arnelohr/mpich2/lib -lfmpich -lmpich -pthread #(vsl174)
 #FC=ifort  #(co-login)
 #LD_MPI=-lmpi  #(co-login)
 ##FC=pgf90 #(erland|bohm|igor|onsager)
@@ -363,7 +368,7 @@ LD_FFTW2=
 #CFLAGS=-O3 -DFUNDERSC=2 -Wall #(mhd|metropolis)
 #F77=$(FC) -dusty #(nl3|Mephisto|Aladdin)
 #F77=$(FC) -lm  #(tycho|monolith)
-#F77=$(FC) #(sintef*|vmware|erland|bohm|igor|onsager|vsl21*|vsl22*|vsl230)
+#F77=$(FC) #(sintef*|vmware|erland|bohm|igor|onsager|vsl21*|vsl22*|vsl230|vsl174)
 #F77=$(FC) #(Owen|Master|nw17|nl11)
 #F77FLAGS=-w90 #(nw[0-9]+|ns0|nw17|nl11|sandin)
 #FC=ifort #(lws.Stanford.EDU|lws2.Stanford.EDU)

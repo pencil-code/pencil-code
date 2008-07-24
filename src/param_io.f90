@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.311 2008-07-16 21:13:02 nilshau Exp $
+! $Id: param_io.f90,v 1.312 2008-07-24 10:14:07 arnelohr Exp $
 
 module Param_IO
 
@@ -72,6 +72,7 @@ module Param_IO
        lwrite_aux,pretend_lnTT, &
        lprocz_slowest, lcopysnapshots_exp, &
        bcx,bcy,bcz,r_int,r_ext,rp_int,rp_ext,r_ref,rsmooth, &
+       nscbc, &
        mu0,force_lower_bound,force_upper_bound, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2,fbcz1_1,fbcz1_2,fbcz2_1,fbcz2_2, &
        fbcx1_2,fbcx2_2, &
@@ -106,6 +107,7 @@ module Param_IO
        comment_char, &
        ix,iy,iz,iz2,slice_position,zbot_slice,ztop_slice, &
        bcx,bcy,bcz,r_int,r_ext,rp_int,rp_ext, &
+       nscbc, &
        lfreeze_varsquare,lfreeze_varint,lfreeze_varext, &
        xfreeze_square,yfreeze_square,rfreeze_int,rfreeze_ext, &
        wfreeze,wfreeze_int,wfreeze_ext, &
@@ -203,8 +205,10 @@ module Param_IO
 !
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
+!   7-jul-08/arne: added setting of logical lnscbc, and call
+!                  to parse_nscbc
 !
-      integer :: ierr
+      integer :: ierr,i
       logical, optional :: print,file
       character (len=30) :: label='[none]'
 !
@@ -378,6 +382,10 @@ module Param_IO
         print*, 'lperi= ', lperi
       endif
       call check_consistency_of_lperi('read_startpars')
+      do i=1,3
+        if (nscbc(i) /= '') lnscbc = .true.
+      enddo
+      if(lnscbc) call parse_nscbc(nscbc,nscbc1,nscbc2)
 !
 !  produce a warning when somebody still sets lcylindrical
 !
@@ -528,13 +536,15 @@ module Param_IO
 !  31-may-02/wolf: renamed from cread to read_runpars
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
+!   7-jul-08/arne: added setting of logical lnscbc, and call
+!                  to parse_nscbc
 !
       use Mpicomm, only: stop_it
       use Sub, only: parse_bc
       use Dustvelocity, only: copy_bcs_dust
       use Slices, only: setup_slices
 !
-      integer :: ierr
+      integer :: ierr,i
       logical, optional :: print,file
       character (len=*), optional :: annotation
       character (len=30) :: label='[none]'
@@ -734,6 +744,10 @@ module Param_IO
         print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
       endif
       call check_consistency_of_lperi('read_runpars')
+      do i=1,3
+        if (nscbc(i) /= '') lnscbc = .true.
+      enddo
+      if(lnscbc) call parse_nscbc(nscbc,nscbc1,nscbc2)
 !
 !  in case of i/o error: print sample input list
 !

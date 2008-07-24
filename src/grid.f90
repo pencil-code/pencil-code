@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.38 2008-07-07 14:12:42 brandenb Exp $
+! $Id: grid.f90,v 1.39 2008-07-24 10:14:07 arnelohr Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -89,7 +89,7 @@ module Grid
       real, dimension(my) :: g2,g2der1,g2der2,xi2,yprim2
       real, dimension(mz) :: g3,g3der1,g3der2,xi3,zprim2
 
-      real :: a,dummy1=0.,dummy2=0.
+      real :: a,b,dummy1=0.,dummy2=0.
       integer :: i
       logical :: err
 !
@@ -193,6 +193,71 @@ module Grid
           x     = x00 + g1-g1lo
           xprim = g1der1
           xprim2= g1der2
+
+        case('duct')
+          a = pi/(max(nxgrid-1,1))
+          call grid_profile(a*xi1  -pi/2,grid_func(1),g1,g1der1,g1der2)
+          call grid_profile(a*xi1lo-pi/2,grid_func(1),g1lo)
+          call grid_profile(a*xi1up-pi/2,grid_func(1),g1up)
+
+          x     =x00+Lx*(g1-g1lo)/2
+          xprim =    Lx*(g1der1*a   )/2
+          xprim2=    Lx*(g1der2*a**2)/2
+
+          if (ipx==0) then
+            bound_prim1=x(l1+1)-x(l1)
+            do i=1,nghost
+              x(l1-i)=x(l1)-i*bound_prim1
+              xprim(1:l1)=bound_prim1
+            enddo
+          endif
+          if (ipx==nprocx-1) then
+            bound_prim2=x(l2)-x(l2-1)
+            do i=1,nghost
+              x(l2+i)=x(l2)+i*bound_prim2
+              xprim(l2:mx)=bound_prim2
+            enddo            
+          endif
+
+        case('squared')
+          ! Grid distance increases linearily
+          a=max(nxgrid,1)
+          b=-max(nxgrid,1)/10
+          !b=0.
+          call grid_profile(a*(xi1  -b),grid_func(1),g1,g1der1,g1der2)
+          call grid_profile(a*(xi1lo-b),grid_func(1),g1lo)
+          call grid_profile(a*(xi1up-b),grid_func(1),g1up)
+
+          x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
+          xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
+          xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
+          
+          if (ipx==0) then
+            bound_prim1=x(l1+1)-x(l1)
+            do i=1,nghost
+              x(l1-i)=x(l1)-i*bound_prim1
+              xprim(1:l1)=bound_prim1
+            enddo
+          endif
+          if (ipx==nprocx-1) then
+            bound_prim2=x(l2)-x(l2-1)
+            do i=1,nghost
+              x(l2+i)=x(l2)+i*bound_prim2
+              xprim(l2:mx)=bound_prim2
+            enddo            
+          endif
+        
+        case('frozensphere')
+          ! Just like sinh, except set dx constant below a certain radius.
+          a=coeff_grid(1,1)*dx
+          xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,0.9*xyz_star(1),grid_func(1))/a
+          call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2)
+          call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo)
+          call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up)
+
+          x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
+          xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
+          xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
         case default
           call fatal_error('construct_grid', &
                            'No such x grid function - '//grid_func(1))
@@ -257,8 +322,7 @@ module Grid
               yprim(m2:my)=bound_prim2
             enddo            
           endif
-
-
+        
 
         case ('step-linear')
 
@@ -547,6 +611,7 @@ module Grid
       logical, optional :: err
       real,optional,dimension(3) :: dxyz
       real,optional,dimension(2) :: xistep,delta
+      real a1
 !
       intent(in)  :: xi,grid_func,dxyz,xistep,delta
       intent(out) :: g,gder1,gder2,err
@@ -575,6 +640,35 @@ module Grid
         g=sin(xi)
         if (present(gder1)) gder1= cos(xi)
         if (present(gder2)) gder2=-sin(xi)
+
+      case('squared')
+        ! Grid distance increases linearily
+        g=0.5*xi**2
+        if (present(gder1)) gder1= xi
+        if (present(gder2)) gder2= 0.
+
+      case ('frozensphere')
+        ! Just like sinh, except set dx constant below a certain radius.
+        a1 = 10.
+        if (xi<0) then
+          g = a1*xi
+        else 
+          g=sinh(xi)
+        endif
+        if (present(gder1)) then
+          if (xi<0) then
+            gder1 = a1
+          else 
+            gder1=cosh(xi)
+          endif
+        endif
+        if (present(gder2)) then
+          if (xi<0) then
+            gder2 = 0.
+          else
+            gder2=sinh(xi)
+          endif
+        endif
 
       case ('step-linear')
        ! [Document me!
@@ -625,6 +719,7 @@ module Grid
       logical, optional                     :: err
       real, optional, dimension(3) :: dxyz
       real, optional, dimension(2) :: xistep,delta
+      real a1
 !
       intent(in)  :: xi,grid_func,dxyz,xistep,delta
       intent(out) :: g, gder1,gder2,err
@@ -647,6 +742,35 @@ module Grid
         g=sin(xi)
         if (present(gder1)) gder1= cos(xi)
         if (present(gder2)) gder2=-sin(xi)
+
+      case('squared')
+        ! Grid distance increases linearily
+        g=0.5*xi**2
+        if (present(gder1)) gder1= xi
+        if (present(gder2)) gder2= 0.
+
+      case ('frozensphere')
+        ! Just like sinh, except set dx constant below a certain radius.
+        a1 = 10.
+        where (xi<0) 
+          g = a1*xi
+        elsewhere 
+          g=sinh(xi)
+        endwhere
+        if (present(gder1)) then
+          where (xi<0) 
+            gder1 = a1
+          elsewhere 
+            gder1=cosh(xi)
+          endwhere
+        endif
+        if (present(gder2)) then
+          where (xi<0) 
+            gder2 = 0.
+          elsewhere 
+            gder2=sinh(xi)
+          endwhere
+        endif
 
       case ('step-linear')
        if (present(dxyz) .and. present(xistep) .and. present(delta)) then

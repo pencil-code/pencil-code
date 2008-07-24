@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.430 2008-07-07 14:12:41 brandenb Exp $
+! $Id: cdata.f90,v 1.431 2008-07-24 10:14:07 arnelohr Exp $
 !
 !  Global variables are defined in this module.
 !
@@ -359,6 +359,21 @@ module Cdata
                                             bcz1='',bcz2=''
   character (len=10), dimension(mfarray) :: varname
   character (len=labellen) :: force_lower_bound='',force_upper_bound=''
+!
+! NSCBC stuff. An alternative way of imposing (time-dependent) boundary 
+! conditions through solving differential equations on the boundaries.
+!
+! Format: nscbc = 'bottom_x:top_x','bottom_y:top_y','bottom_z:top_z'
+! for top and bottom boundary treatment at x, y and z-boundaries.
+!
+! nscbc1(1) refers to boundary treatment at bottom x-boundary, nscbc2(1)
+! at top x-boundary etc.
+! fbcx1, fbcx2 etc. are still used to impose values of variables at the
+! boundaries.
+!
+  logical :: lnscbc = .false.
+  character(len=2*nscbc_len+1), dimension(3) :: nscbc=''
+  character(len=nscbc_len), dimension(3) :: nscbc1,nscbc2
 !
 !  Parameters for freezing boundary zones.
 !

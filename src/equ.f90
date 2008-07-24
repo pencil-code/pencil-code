@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.413 2008-07-02 00:31:46 brandenb Exp $
+! $Id: equ.f90,v 1.414 2008-07-24 10:14:07 arnelohr Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -498,7 +498,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.413 2008-07-02 00:31:46 brandenb Exp $")
+           "$Id: equ.f90,v 1.414 2008-07-24 10:14:07 arnelohr Exp $")
 !
 !  Initialize counter for calculating and communicating print results.
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -852,6 +852,7 @@ module Equ
 !
 !  Add and extra 'special' physics
 !
+
         if (lspecial)                    call dspecial_dt(f,df,p)
 !
 !  Add radiative cooling and radiative pressure (for ray method)
@@ -1154,6 +1155,19 @@ module Equ
        if (lneutralvelocity) print*, 'advec_csn2 =',advec_csn2
        call fatal_error_local('pde','')
      endif
+!
+!  Boundary treatment of the df-array. 
+!
+!  This is a way to impose (time-
+!  dependent) boundary conditions by solving a so-called characteristic
+!  form of the fluid equations on the boundaries, as opposed to setting 
+!  actual values of the variables in the f-array. The method is called 
+!  Navier-Stokes characteristic boundary conditions (NSCBC).
+!
+!  The treatment should be done after the y-z-loop, but before the Runge-
+!  Kutta solver adds to the f-array.
+!
+      if (lnscbc) call nscbc_boundtreat(f,df)
 !
 !  Take care of flux-limited diffusion
 !

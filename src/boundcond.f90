@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.215 2008-07-16 23:49:02 dhruba Exp $
+! $Id: boundcond.f90,v 1.216 2008-07-24 10:14:07 arnelohr Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -21,6 +21,7 @@ module Boundcond
   public :: boundconds, boundconds_x, boundconds_y, boundconds_z
   public :: bc_per_x, bc_per_y, bc_per_z
   public :: update_ghosts
+  public :: nscbc_boundtreat
 
   integer, pointer :: iglobal_gg
 
@@ -631,6 +632,90 @@ module Boundcond
       endselect
 !
     endsubroutine boundconds_z
+!***********************************************************************
+    subroutine nscbc_boundtreat(f,df)
+!
+!  Boundary treatment of the df-array. 
+!
+!  This is a way to impose (time-
+!  dependent) boundary conditions by solving a so-called characteristic
+!  form of the fluid equations on the boundaries, as opposed to setting 
+!  actual values of the variables in the f-array. The method is called 
+!  Navier-Stokes characteristic boundary conditions (NSCBC).
+!  The current implementation only solves a simplified version of the
+!  equations, namely a set of so-called local one-dimensional inviscid
+!  (LODI) relations. This means that transversal and viscous terms are
+!  dropped on the boundaries.
+!
+!  The treatment should be done after the y-z-loop, but before the Runge-
+!  Kutta solver adds to the f-array.
+!
+!   7-jul-08/arne: coded.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+
+      intent(in) :: f
+      intent(inout) :: df
+
+      if (nscbc1(1) /= '' .or. nscbc2(1) /= '') &
+          call nscbc_boundtreat_xyz(f,df,1)
+      if (nscbc1(2) /= '' .or. nscbc2(2) /= '') &
+          call nscbc_boundtreat_xyz(f,df,2)
+      if (nscbc1(3) /= '' .or. nscbc2(3) /= '') &
+          call nscbc_boundtreat_xyz(f,df,3)
+    endsubroutine
+!***********************************************************************
+    subroutine nscbc_boundtreat_xyz(f,df,j)
+!
+!   NSCBC boundary treatment.
+!   j = 1, 2 or 3 for x, y or z-boundaries respectively.
+!
+!   7-jul-08/arne: coded.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      character (len=nscbc_len), dimension(3) :: bc12
+      character (len=3) :: topbot
+      integer j,k
+      real, dimension(mcom) :: valx,valy,valz
+
+      intent(in) :: f,j
+      intent(out) :: df
+
+      do k=1,2                ! loop over 'bot','top'
+        if (k==1) then
+          topbot='bot'; bc12=nscbc1(j);!val=bt_val1(j)
+          valx=fbcx1; valy=fbcy1; valz=fbcz1
+        else
+          topbot='top'; bc12=nscbc2(j);!val=bt_val2(j)
+          valx=fbcx2; valy=fbcy2; valz=fbcz2
+        endif
+
+        select case(bc12(j))
+        case('part_ref_outlet')
+!   Partially reflecting outlet.
+          if (j==1) then 
+            call bc_nscbc_prf_x(f,df,topbot)
+          elseif (j==2) then 
+            call bc_nscbc_prf_y(f,df,topbot)
+          elseif (j==3) then 
+            call bc_nscbc_prf_z(f,df,topbot)
+          endif
+        case('part_ref_inlet')
+!   Partially reflecting inlet, ie. impose a velocity u_t.
+          if (j==1) then 
+            call bc_nscbc_prf_x(f,df,topbot,linlet=.true.,u_t=valx(1))
+          elseif (j==2) then 
+            call bc_nscbc_prf_y(f,df,topbot,linlet=.true.,u_t=valy(2))
+          elseif (j==3) then 
+            call bc_nscbc_prf_z(f,df,topbot,linlet=.true.,u_t=valz(3))
+          endif
+        case('')
+!   Do nothing.
+        endselect
+      end do
+    end subroutine
 !***********************************************************************
     subroutine bc_per_x(f,topbot,j)
 !
@@ -3651,5 +3736,239 @@ module Boundcond
       f(l1:l2,m1:m2,ntb,iuz) =  f(l1:l2,m1:m2,ntb,iuz)+u_add
       !
      endsubroutine bc_wind_z
+!***********************************************************************
+    subroutine bc_nscbc_prf_x(f,df,topbot,linlet,u_t)
+!
+!   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to 
+!   x-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
+!
+!   7-jul-08/arne: coded.
+!
+      use MpiComm, only: stop_it
+      use EquationOfState, only: cs0, cs20
+      use Deriv, only: der_onesided_4_slice
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      character (len=3) :: topbot
+      logical, optional :: linlet
+      logical :: llinlet
+      real, optional :: u_t
+      real, parameter :: sigma = 1.
+      real, dimension(ny,nz) :: du_dx, dlnrho_dx, rho0, L_1, L_5 
+      real, dimension(ny,nz) :: dp_prefac, prefac1, prefac2
+      integer lll
+      integer sgn
+
+      intent(in) :: f
+      intent(out) :: df
+
+      llinlet = .false.
+      if (present(linlet)) llinlet = linlet
+      if (llinlet.and..not.present(u_t)) call stop_it(&
+           'bc_nscbc_prf_x: when using linlet=T, you must also specify u_t)')
+      select case(topbot)
+      case('bot')
+        lll = l1
+        sgn = 1
+      case('top')
+        lll = l2
+        sgn = -1
+      case default
+        print*, "bc_nscbc_prf_x: ", topbot, " should be `top' or `bot'"
+      endselect
+      if (leos_idealgas) then
+        if (ldensity_nolog) then
+          rho0 = f(lll,m1:m2,n1:n2,ilnrho)
+          ! ``dp = cs20*drho''
+          dp_prefac = cs20
+        else
+          rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
+          ! ``dp = cs20*rho0*dlnrho''
+          dp_prefac = cs20*rho0
+        endif
+        prefac1 = -1./(2*rho0*cs20)
+        prefac2 = -1./(2*rho0*cs0)
+      else
+        print*,"bc_nscbc_prf_x: leos_idealgas=",leos_idealgas,"."
+        print*,"NSCBC boundary treatment only implemented for an ideal gas." 
+        print*,"Boundary treatment skipped."
+        return
+      endif
+      call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
+      call der_onesided_4_slice(f,sgn,iux,du_dx,lll,1)
+      L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0)*&
+            (dp_prefac*dlnrho_dx - sgn*rho0*cs0*du_dx)
+      if (llinlet) then
+        L_5 = sigma*cs20*rho0*(sgn*f(lll,m1:m2,n1:n2,iux)-sgn*u_t)
+      else
+        L_5 = 0
+      end if
+      select case(topbot)
+      ! NB: For 'top' L_1 plays the role of L5 and L_5 the role of L1
+      case('bot')
+        df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_5 + L_1)
+        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_5 - L_1)
+      case('top')
+        df(lll,m1:m2,n1:n2,ilnrho) = prefac1*(L_1 + L_5)
+        df(lll,m1:m2,n1:n2,iux) = prefac2*(L_1 - L_5)
+      endselect
+    endsubroutine
+!***********************************************************************
+    subroutine bc_nscbc_prf_y(f,df,topbot,linlet,u_t)
+!
+!   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to 
+!   y-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
+!
+!   7-jul-08/arne: coded.
+!
+      use MpiComm, only: stop_it
+      use EquationOfState, only: cs0, cs20
+      use Deriv, only: der_onesided_4_slice
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      character (len=3) :: topbot
+      logical, optional :: linlet
+      logical :: llinlet
+      real, optional :: u_t
+      real, parameter :: sigma = 1.
+      real, dimension(nx,nz) :: du_dy, dlnrho_dy, rho0, L_1, L_5
+      real, dimension(nx,nz) :: dp_prefac, prefac1, prefac2
+      integer lll,sgn
+
+      intent(in) :: f
+      intent(out) :: df
+
+      llinlet = .false.
+      if (present(linlet)) llinlet = linlet
+      if (llinlet.and..not.present(u_t)) call stop_it(&
+           'bc_nscbc_prf_y:when using linlet=T, you must also specify u_t)')
+
+      select case(topbot)
+      case('bot')
+        lll = m1
+        sgn = 1
+      case('top')
+        lll = m2
+        sgn = -1
+      case default
+        print*, "bc_nscbc_prf_y: ", topbot, " should be `top' or `bot'"
+      endselect
+      if (leos_idealgas) then
+        if (ldensity_nolog) then
+          rho0 = f(l1:l2,lll,n1:n2,ilnrho)
+          ! ``dp = cs20*drho''
+          dp_prefac = cs20
+        else
+          rho0 = exp(f(l1:l2,lll,n1:n2,ilnrho))
+          ! ``dp = cs20*rho0*dlnrho''
+          dp_prefac = cs20*rho0
+        endif
+        prefac1 = -1./(2*rho0*cs20)
+        prefac2 = -1./(2*rho0*cs0)
+      else
+        print*,"bc_nscbc_prf_y: leos_idealgas=",leos_idealgas,"." 
+        print*,"NSCBC boundary treatment only implemented for an ideal gas."
+        print*,"Boundary treatment skipped."
+        return
+      endif
+      call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dy,lll,2)
+      call der_onesided_4_slice(f,sgn,iuy,du_dy,lll,2)
+      L_1 = (f(l1:l2,lll,n1:n2,iuy) - sgn*cs0)*&
+            (dp_prefac*dlnrho_dy - sgn*rho0*cs0*du_dy)
+      if (llinlet) then
+        L_5 = sigma*cs20*rho0*(sgn*f(l1:l2,lll,n1:n2,iuy)-sgn*u_t)
+      else
+        L_5 = 0
+      end if
+      select case(topbot)
+      ! NB: For 'top' L_1 plays the role of L5 and L_5 the role of L1
+      case('bot')
+        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_5 + L_1)
+        df(l1:l2,lll,n1:n2,iuy) = prefac2*(L_5 - L_1)
+      case('top')
+        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_1 + L_5)
+        df(l1:l2,lll,n1:n2,iuy) = prefac2*(L_1 - L_5)
+      endselect
+    endsubroutine
+!***********************************************************************
+    subroutine bc_nscbc_prf_z(f,df,topbot,linlet,u_t)
+!
+!   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to 
+!   z-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
+!
+!   7-jul-08/arne: coded.
+!
+      use MpiComm, only: stop_it
+      use EquationOfState, only: cs0, cs20
+      use Deriv, only: der_onesided_4_slice
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      character (len=3) :: topbot
+      logical, optional :: linlet
+      logical :: llinlet
+      real, optional :: u_t
+      real, parameter :: sigma = 1.
+      real, dimension(nx,ny) :: du_dz, dlnrho_dz, rho0, L_1, L_5
+      real, dimension(nx,ny) :: dp_prefac, prefac1, prefac2
+      integer lll,sgn
+
+      intent(in) :: f
+      intent(out) :: df
+
+      llinlet = .false.
+      if (present(linlet)) llinlet = linlet
+      if (llinlet.and..not.present(u_t)) call stop_it(&
+           'bc_nscbc_prf_z: when using linlet=T, you must also specify u_t)')
+
+      select case(topbot)
+      case('bot')
+        lll = n1
+        sgn = 1
+      case('top')
+        lll = n2
+        sgn = -1
+      case default
+        print*, "bc_nscbc_prf_z: ", topbot, " should be `top' or `bot'"
+      endselect
+      if (leos_idealgas) then
+        if (ldensity_nolog) then
+          rho0 = f(l1:l2,m1:m2,lll,ilnrho)
+          ! ``dp = cs20*drho''
+          dp_prefac = cs20
+        else
+          rho0 = exp(f(l1:l2,m1:m2,lll,ilnrho))
+          ! ``dp = cs20*rho0*dlnrho''
+          dp_prefac = cs20*rho0
+        endif
+        prefac1 = -1./(2*rho0*cs20)
+        prefac2 = -1./(2*rho0*cs0)
+      else
+        print*,"bc_nscbc_prf_y: leos_idealgas=",leos_idealgas,"." 
+        print*,"NSCBC boundary treatment only implemented for an ideal gas."
+        print*,"Boundary treatment skipped."
+        return
+      endif
+      call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dz,lll,3)
+      call der_onesided_4_slice(f,sgn,iuz,du_dz,lll,3)
+      L_1 = (f(l1:l2,m1:m2,lll,iuz) - sgn*cs0)*&
+            (dp_prefac*dlnrho_dz - sgn*rho0*cs0*du_dz)
+      if (llinlet) then
+        L_5 = sigma*cs20*rho0*(sgn*f(l1:l2,m1:m2,lll,iuz)-sgn*u_t)
+      else
+        L_5 = 0
+      end if
+      select case(topbot)
+      ! NB: For 'top' L_1 plays the role of L5 and L_5 the role of L1
+      case('bot')
+        df(l1:l2,m1:m2,lll,ilnrho) = prefac1*(L_5 + L_1)
+        df(l1:l2,m1:m2,lll,iuz) = prefac2*(L_5 - L_1)
+      case('top')
+        df(l1:l2,m1:m2,lll,ilnrho) = prefac1*(L_1 + L_5)
+        df(l1:l2,m1:m2,lll,iuz) = prefac2*(L_1 - L_5)
+      endselect
+    endsubroutine
 !***********************************************************************
 endmodule Boundcond

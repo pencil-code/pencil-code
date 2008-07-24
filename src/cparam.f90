@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.66 2008-06-11 09:42:20 brandenb Exp $
+! $Id: cparam.f90,v 1.67 2008-07-24 10:14:07 arnelohr Exp $
 
 module Cparam
 
@@ -56,6 +56,7 @@ module Cparam
 !            date-and-time string
 !
   integer, parameter :: fnlen=128,bclen=3,labellen=25,linelen=256,datelen=30
+  integer, parameter :: nscbc_len=24
 !
 !  number of slots in initlnrho etc.
 !
