@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.369 2008-07-24 10:14:07 arnelohr Exp $
+! $Id: sub.f90,v 1.370 2008-07-24 20:53:56 brandenb Exp $
 
 module Sub
 
@@ -1354,8 +1354,9 @@ module Sub
       if (present(fast_sqrt)) fast_sqrt1=fast_sqrt
       if (present(precise_sqrt)) precise_sqrt1=precise_sqrt
 !
-!  rescale before taking sqrt, but add tini in case a=0.
-!  AB: is this really needed?
+!  rescale by factor a_max before taking sqrt.
+!  In single precision this increases the dynamic range from 1e18 to 1e36.
+!  To avoid division by zero when calculating a_max, we add tini.
 !
       if (precise_sqrt1) then
          a_max=tini+maxval(abs(a),dim=2)
