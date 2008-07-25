@@ -7,9 +7,12 @@ pro rvid_plane,field,mpeg=mpeg,png=png,TRUEPNG=png_truecolor,tmin=tmin,$
                r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
                contourplot=contourplot,color=color,sqroot=sqroot,tunit=tunit, $
                nsmooth=nsmooth, textsize=textsize, $
-               _extra=_extra
+               _extra=_extra, $
+               polar=polar, anglecoord=anglecoord, $
+               style_polar=style_polar,nlevels=nlevels, $
+               doublebuffer=doublebuffer,wsx=wsx,wsy=wsy
 ;
-; $Id: rvid_plane.pro,v 1.33 2008-03-10 10:36:04 brandenb Exp $
+; $Id: rvid_plane.pro,v 1.34 2008-07-25 09:38:27 arnelohr Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -52,6 +55,20 @@ default,pixelsize,1
 default,ximg,1
 default,yimg,1
 default,textsize,1.0
+default,anglecoord,'z'
+default,style_polar,'fill'
+default,wsx,640
+default,wsy,480
+default,nlevels,30
+;
+;  Set up a window for double buffering
+;
+if(keyword_set(doublebuffer)) then begin
+  base=WIDGET_BASE()
+  draw=WIDGET_DRAW(base,XSIZE=wsx,YSIZE=wsy)
+  WIDGET_CONTROL,/REALIZE,base
+  WIDGET_CONTROL,draw,GET_VALUE=windex
+endif
 ;
 if (keyword_set(png_truecolor)) then png=1
 ; Construct location of slice_var.plane files 
@@ -85,7 +102,7 @@ ncpus=nprocx*nprocy*nprocz
 ;  read grid data
 ;
 pc_read_grid, obj=grid;, datadir=datadir
-x=grid.x(dim.l1:dim.l2) & y=grid.y(dim.m1:dim.m2)
+x=grid.x(dim.l1:dim.l2) & y=grid.y(dim.m1:dim.m2) & z=grid.z(dim.n1:dim.n2)
 ;
 ;  Set reasonable extension for 2-D runs.
 ;
@@ -99,6 +116,22 @@ endif else begin
   file_slice=datadir+'/slice_'+field+'.'+extension
   print,'file_slice=',file_slice
 endelse
+;
+if (keyword_set(polar)) then begin 
+  if (anglecoord eq 'y') then begin
+    theta = y
+  end else if (anglecoord eq 'z') then begin
+    theta = z
+  endif
+  xx = fltarr(nx,nz)
+  yy = fltarr(nx,nz)
+  for i=0,nx-1 do begin
+    for j=0,nz-1 do begin
+      xx(i,j) = x(i)*cos(theta(j))
+      yy(i,j) = x(i)*sin(theta(j))
+    endfor
+  endfor
+endif
 ;
 if (keyword_set(shell)) then begin
   ;
@@ -350,13 +383,34 @@ while (not eof(1)) do begin
 ;
 ;  show image scaled between amin and amax and filling whole screen
 ;
+
+        if(keyword_set(doublebuffer)) then begin
+;
+;  paint into buffer
+;       
+          window,XSIZE=wsx,YSIZE=wsy,/Pixmap,/Free
+          pixID=!D.Window
+        endif
         if (keyword_set(contourplot)) then begin
-          contourfill, plane, x, y, levels=grange(amin,amax,60), $
-              tit='!8t!6 ='+string(t/tunit,fo="(f6.1)"), _extra=_extra
+           contourfill, plane, x, y, levels=grange(amin,amax,60), $
+               tit='!8t!6 ='+string(t/tunit,fo="(f6.1)"), _extra=_extra
+        end else if (keyword_set(polar)) then begin
+          if (style_polar eq 'fill') then begin
+            contourfill, plane, xx, yy, levels=grange(amin,amax,60), $
+                tit='!8t!6 ='+string(t/tunit,fo="(f6.1)"), _extra=_extra
+          end else if (style_polar eq 'lines') then begin
+            contour, plane, xx, yy, nlevels=nlevels, $
+                tit='!8t!6 ='+string(t/tunit,fo="(f6.1)"), _extra=_extra
+          endif
         endif else begin
 ;          plotimage, plane2, range=[amin,amax]
           tv, bytscl(plane2,min=amin,max=amax), iplane
         endelse
+        if(keyword_set(doublebuffer)) then begin
+          wset,windex
+          device,copy=[0,0,!D.X_Size,!D.Y_Size,0,0,pixID]
+          wdelete,pixID
+        endif
         ;xyouts, 0.05, 0.9, /normal, $
         ;    '!8t!6='+string(t/tunit,fo="(f6.1)"), color=color, size=textsize
         if (keyword_set(png)) then begin
