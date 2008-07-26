@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.447 2008-07-23 02:36:45 brandenb Exp $
+! $Id: hydro.f90,v 1.448 2008-07-26 15:49:19 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -144,9 +144,9 @@ module Hydro
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_u2tm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\uv(t')
                                 ! DIAG_DOC:   dt'\right>$
-  integer :: idiag_uotm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\ov(t')
+  integer :: idiag_uotm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\omv(t')
                                 ! DIAG_DOC:   dt'\right>$
-  integer :: idiag_outm=0       ! DIAG_DOC: $\left<\ov(t)\cdot\int_0^t\uv(t')
+  integer :: idiag_outm=0       ! DIAG_DOC: $\left<\omv(t)\cdot\int_0^t\uv(t')
                                 ! DIAG_DOC:   dt'\right>$
   integer :: idiag_u2m=0        ! DIAG_DOC: $\left<\uv^2\right>$
   integer :: idiag_um2=0        ! DIAG_DOC: 
@@ -358,7 +358,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.447 2008-07-23 02:36:45 brandenb Exp $")
+           "$Id: hydro.f90,v 1.448 2008-07-26 15:49:19 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
