@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.421 2008-07-24 11:47:06 arnelohr Exp $
+### $Id: Makefile.src,v 1.422 2008-07-28 15:03:46 rplasson Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -816,7 +816,7 @@ LD_FFTW2=
 #FFLAGS_DOUBLE=-fdefault-real-8  #(wintermute)
 #CC=gcc     #(wintermute)
 #CFLAGS=-O3 -DFUNDERSC=1   #(wintermute)
-#LD_MPI=-lmpi  #(wintermute)
+#LD_MPI=-lmpi -llam #(wintermute)
 
 ## Darwin:
 ## Power Macintosh
