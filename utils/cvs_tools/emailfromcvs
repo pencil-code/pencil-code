@@ -18,14 +18,14 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   emailfromcvs
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Started:   17-Feb-2004
-# CVS: $Id: emailfromcvs,v 1.7 2007-06-23 20:13:05 brandenb Exp $
+# CVS: $Id: emailfromcvs,v 1.8 2008-07-28 18:41:35 brandenb Exp $
 # Usage:
 #   emailfromcvs <cvs_user_id> <subject> <to_addr_1> [to_addr_2 ...]
 # Description:
 #   Lookup <cvs_user_id> in cvsemail file and mail STDIN data to
 #   <to_addr_1>, etc. with subject <subject>.
 # Example:
-#    emailfromcvs mee 'Committed changes' brandenb@nordita.dk 
+#    emailfromcvs mee 'Committed changes' brandenb@nordita.org 
 # Note:
 #   IRL stands for `in real life'
 # Test with:
@@ -53,7 +53,7 @@ my $mailprog = "/usr/sbin/sendmail -t";
 if ($debug) { $mailprog = "cat"};
 
 # try all of these until one is readable:
-my @cvsemailfiles = ("/scrn/norast/brandenb/pencil-code/www/", "./axelcvsIRL");
+my @cvsemailfiles = ("/home/brandenb/pencil-code/utils/cvs_tools", "./axelcvsIRL");
 
 my $success;
 irlfile: foreach my $irlfile (@cvsemailfiles) {
@@ -80,7 +80,7 @@ close(CVSEMAIL);
 my @message=<STDIN>;
 open(MAIL,"| $mailprog") or die "Cannot start $mailprog\n";
 print MAIL "To: $to\n";
-print MAIL "From: Pencil-Code\@nordita.dk\n";
+print MAIL "From: Pencil-Code\@nordita.org\n";
 print MAIL "Reply-To: $from\n" if ($from =~ /\S/); # skip if empty
 print MAIL "Subject: $subject\n\n";
 print MAIL @message;
