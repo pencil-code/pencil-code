@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.39 2008-07-24 10:14:07 arnelohr Exp $
+! $Id: grid.f90,v 1.40 2008-07-30 09:02:29 arnelohr Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -248,9 +248,10 @@ module Grid
           endif
         
         case('frozensphere')
-          ! Just like sinh, except set dx constant below a certain radius.
+          ! Just like sinh, except set dx constant below a certain radius, and
+          ! constant for top ghost points.
           a=coeff_grid(1,1)*dx
-          xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,0.9*xyz_star(1),grid_func(1))/a
+          xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,0.8*xyz_star(1),grid_func(1))/a
           call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2)
           call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo)
           call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up)
@@ -258,6 +259,14 @@ module Grid
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
+
+          if (ipx==nprocx-1) then
+            bound_prim2=x(l2-2)-x(l2-3)
+            do i=1,nghost+2
+              x(l2-2+i)=x(l2-2)+i*bound_prim2
+              xprim(l2-2:mx)=bound_prim2
+            enddo            
+          endif
         case default
           call fatal_error('construct_grid', &
                            'No such x grid function - '//grid_func(1))
@@ -649,7 +658,7 @@ module Grid
 
       case ('frozensphere')
         ! Just like sinh, except set dx constant below a certain radius.
-        a1 = 10.
+        a1 = 4.
         if (xi<0) then
           g = a1*xi
         else 
@@ -712,6 +721,7 @@ module Grid
 !
 !  25-jun-04/tobi+wolf: coded
 !
+      use Cdata, only: Lx,Ly,Lz
       real, dimension(:)                    :: xi
       character(len=*)                      :: grid_func
       real, dimension(size(xi,1))           :: g
@@ -751,21 +761,21 @@ module Grid
 
       case ('frozensphere')
         ! Just like sinh, except set dx constant below a certain radius.
-        a1 = 10.
+        a1 = 4.
         where (xi<0) 
           g = a1*xi
-        elsewhere 
+        elsewhere
           g=sinh(xi)
         endwhere
         if (present(gder1)) then
-          where (xi<0) 
+          where (xi<0)
             gder1 = a1
           elsewhere 
             gder1=cosh(xi)
           endwhere
         endif
         if (present(gder2)) then
-          where (xi<0) 
+          where (xi<0)
             gder2 = 0.
           elsewhere 
             gder2=sinh(xi)

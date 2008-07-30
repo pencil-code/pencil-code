@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.431 2008-07-24 10:14:07 arnelohr Exp $
+! $Id: cdata.f90,v 1.432 2008-07-30 09:02:29 arnelohr Exp $
 !
 !  Global variables are defined in this module.
 !
@@ -371,9 +371,14 @@ module Cdata
 ! fbcx1, fbcx2 etc. are still used to impose values of variables at the
 ! boundaries.
 !
+! nscbc_sigma is a parameter describing how fast the velocity will reach
+! an imposed velocity at an inlet in the absence of outgoing waves. How
+! to set it is case dependent.
+!
   logical :: lnscbc = .false.
   character(len=2*nscbc_len+1), dimension(3) :: nscbc=''
   character(len=nscbc_len), dimension(3) :: nscbc1,nscbc2
+  real :: nscbc_sigma = 1.
 !
 !  Parameters for freezing boundary zones.
 !

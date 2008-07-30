@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.216 2008-07-24 10:14:07 arnelohr Exp $
+! $Id: boundcond.f90,v 1.217 2008-07-30 09:02:29 arnelohr Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -136,6 +136,9 @@ module Boundcond
                 case ('v')
                   ! BCX_DOC: vanishing third derivative
                   call bc_van_x(f,topbot,j)
+                case ('1s')
+                  ! BCX_DOC: onesided
+                  call bc_onesided_x(f,topbot,j)
                 case ('cT')
                   ! BCX_DOC: constant temperature (implemented as
                   ! BCX_DOC: condition for entropy $s$ or temperature $T$) 
@@ -1870,6 +1873,51 @@ module Boundcond
       endselect
 !
     endsubroutine bc_asym3
+!***********************************************************************
+    subroutine bc_onesided_x(f,topbot,j)
+!
+!  One-sided conditions.
+!  These expressions result from combining Eqs(207)-(210), astro-ph/0109497,
+!  corresponding to (9.207)-(9.210) in Ferriz-Mas proceedings.
+!
+!   5-apr-03/axel: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,j,k
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        do i=1,nghost
+          k=l1-i
+          f(k,:,:,j)=7*f(k+1,:,:,j) &
+                   -21*f(k+2,:,:,j) &
+                   +35*f(k+3,:,:,j) &
+                   -35*f(k+4,:,:,j) &
+                   +21*f(k+5,:,:,j) &
+                    -7*f(k+6,:,:,j) &
+                      +f(k+7,:,:,j)
+        enddo
+
+      case('top')               ! top boundary
+        do i=1,nghost
+          k=l2+i
+          f(k,:,:,j)=7*f(k-1,:,:,j) &
+                   -21*f(k-2,:,:,j) &
+                   +35*f(k-3,:,:,j) &
+                   -35*f(k-4,:,:,j) &
+                   +21*f(k-5,:,:,j) &
+                    -7*f(k-6,:,:,j) &
+                      +f(k-7,:,:,j)
+        enddo
+
+      case default
+        print*, "bc_onesided_x ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_onesided_x
 !***********************************************************************
     subroutine bc_onesided_z(f,topbot,j)
 !
@@ -3754,7 +3802,7 @@ module Boundcond
       logical, optional :: linlet
       logical :: llinlet
       real, optional :: u_t
-      real, parameter :: sigma = 1.
+      !real, parameter :: sigma = 1.
       real, dimension(ny,nz) :: du_dx, dlnrho_dx, rho0, L_1, L_5 
       real, dimension(ny,nz) :: dp_prefac, prefac1, prefac2
       integer lll
@@ -3800,7 +3848,7 @@ module Boundcond
       L_1 = (f(lll,m1:m2,n1:n2,iux) - sgn*cs0)*&
             (dp_prefac*dlnrho_dx - sgn*rho0*cs0*du_dx)
       if (llinlet) then
-        L_5 = sigma*cs20*rho0*(sgn*f(lll,m1:m2,n1:n2,iux)-sgn*u_t)
+        L_5 = nscbc_sigma*cs20*rho0*(sgn*f(lll,m1:m2,n1:n2,iux)-sgn*u_t)
       else
         L_5 = 0
       end if
@@ -3832,7 +3880,7 @@ module Boundcond
       logical, optional :: linlet
       logical :: llinlet
       real, optional :: u_t
-      real, parameter :: sigma = 1.
+      !real, parameter :: sigma = 1.
       real, dimension(nx,nz) :: du_dy, dlnrho_dy, rho0, L_1, L_5
       real, dimension(nx,nz) :: dp_prefac, prefac1, prefac2
       integer lll,sgn
@@ -3878,7 +3926,7 @@ module Boundcond
       L_1 = (f(l1:l2,lll,n1:n2,iuy) - sgn*cs0)*&
             (dp_prefac*dlnrho_dy - sgn*rho0*cs0*du_dy)
       if (llinlet) then
-        L_5 = sigma*cs20*rho0*(sgn*f(l1:l2,lll,n1:n2,iuy)-sgn*u_t)
+        L_5 = nscbc_sigma*cs20*rho0*(sgn*f(l1:l2,lll,n1:n2,iuy)-sgn*u_t)
       else
         L_5 = 0
       end if
@@ -3910,7 +3958,7 @@ module Boundcond
       logical, optional :: linlet
       logical :: llinlet
       real, optional :: u_t
-      real, parameter :: sigma = 1.
+      !real, parameter :: sigma = 1.
       real, dimension(nx,ny) :: du_dz, dlnrho_dz, rho0, L_1, L_5
       real, dimension(nx,ny) :: dp_prefac, prefac1, prefac2
       integer lll,sgn
@@ -3956,7 +4004,7 @@ module Boundcond
       L_1 = (f(l1:l2,m1:m2,lll,iuz) - sgn*cs0)*&
             (dp_prefac*dlnrho_dz - sgn*rho0*cs0*du_dz)
       if (llinlet) then
-        L_5 = sigma*cs20*rho0*(sgn*f(l1:l2,m1:m2,lll,iuz)-sgn*u_t)
+        L_5 = nscbc_sigma*cs20*rho0*(sgn*f(l1:l2,m1:m2,lll,iuz)-sgn*u_t)
       else
         L_5 = 0
       end if
