@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.448 2008-07-26 15:49:19 brandenb Exp $
+! $Id: hydro.f90,v 1.449 2008-07-31 20:42:14 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -59,7 +59,7 @@ module Hydro
   real, dimension (ninit) :: ky_ux=0.0, ky_uy=0.0, ky_uz=0.0
   real, dimension (ninit) :: kz_ux=0.0, kz_uy=0.0, kz_uz=0.0
   real, dimension (ninit) :: phase_ux=0.0, phase_uy=0.0, phase_uz=0.0
-  real :: omega_precession=0.
+  real :: omega_precession=0., alpha_precession=0.
   real, dimension (ninit) :: ampluu=0.0
   character (len=labellen), dimension(ninit) :: inituu='nothing'
   character (len=labellen) :: borderuu='nothing'
@@ -87,7 +87,7 @@ module Hydro
        kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
        uy_left, uy_right,uu_const, Omega,  initpower, cutoff, &
        u_out_kep, N_modes_uu, lcoriolis_force, lcentrifugal_force, &
-       ladvection_velocity, lprecession, omega_precession, &
+       ladvection_velocity, lprecession, omega_precession, alpha_precession, &
        luut_as_aux,loot_as_aux, &
        velocity_ceiling, mu_omega, nb_rings, om_rings, gap, &
        lscale_tobox
@@ -130,7 +130,7 @@ module Hydro
        borderuu, lfreeze_uint, lpressuregradient_gas, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
        utop,ubot,omega_out,omega_in, & 
-       lprecession, omega_precession, lshear_rateofstrain, &
+       lprecession, omega_precession, alpha_precession, lshear_rateofstrain, &
        lalways_use_gij_etc,lcalc_uumean, &
        lforcing_cont_uu, &
        width_ff_uu,x1_ff_uu,x2_ff_uu, &
@@ -358,7 +358,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.448 2008-07-26 15:49:19 brandenb Exp $")
+           "$Id: hydro.f90,v 1.449 2008-07-31 20:42:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1271,7 +1271,6 @@ use Mpicomm, only: stop_it
         elseif (lspherical_coords) then
           call coriolis_spherical(df,p)
         elseif (lprecession) then
-          !call precession_old(df,p)
           call precession(df,p)
         else
           if (theta==0) then
@@ -1694,6 +1693,7 @@ use Mpicomm, only: stop_it
 !  calculate <U>, when lcalc_uumean=.true.
 !
 !   9-nov-06/axel: adapted from calc_ltestfield_pars
+!  31-jul-08/axel: Poincare force with O=(sinalp*cosot,sinalp*sinot,cosalp)
 !
       use Cdata, only: iux,iuy,iuz,ilnrho,l1,l2,m1,m2,n1,n2,lroot,t,x,y
       use Mpicomm, only: mpiallreduce_sum
@@ -1707,8 +1707,9 @@ use Mpicomm, only: stop_it
       integer :: nxy=nxgrid*nygrid
 !     real, dimension (nz,nprocz,3) :: uumz1
 !     real, dimension (nz*nprocz*3) :: uumz2,uumz3
-      real :: c,s
-      integer :: m,n,j
+      real, dimension (3) :: OO, dOO
+      real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
+      integer :: m,n,i,j
       real :: fact
 !
 !     intent(in) :: f
@@ -1776,32 +1777,88 @@ use Mpicomm, only: stop_it
 !       enddo
 !     endif
 !
-!  calculate precession matrices
+!  calculate precession matrices, assume that alpha_precession is given
+!  in degrees.
 !
       if (lprecession) then
         c=cos(omega_precession*t)
         s=sin(omega_precession*t)
-        mat_cori1(2,3)=+1.
-        mat_cori1(3,2)=-1.
-        mat_cori2(1,2)=+c
-        mat_cori2(1,3)=-s
-        mat_cori2(2,1)=-c
-        mat_cori2(3,1)=+s
-        mat_cent1(2,2)=+1.
-        mat_cent1(3,3)=+1.
-        mat_cent2(1,1)=+1.
-        mat_cent2(2,2)=+c**2
-        mat_cent2(3,3)=+s**2
-        mat_cent2(2,3)=-2.*s*c
-        mat_cent2(3,2)=-2.*s*c
-        mat_cent3(1,2)=-s+c
-        mat_cent3(2,1)=-s-c
-        mat_cent3(1,3)=-s-c
-        mat_cent3(3,1)=+s-c
-        mat_cori=2.*(omega_precession*mat_cori1+Omega*mat_cori2)
-        mat_cent=omega_precession**2*mat_cent1+Omega**2*mat_cent2 &
-          +2.*omega_precession*Omega*mat_cent3
+        alpha_precession_rad=alpha_precession
+        cosalp=cos(alpha_precession_rad)
+        sinalp=sin(alpha_precession_rad)
+!
+!  Components of Omega vector
+!
+        OO(1)=Omega*sinalp*c
+        OO(2)=Omega*sinalp*s
+        OO(3)=Omega*cosalp
+!
+!  Components of time derivative of Omega vector
+!
+        dOO(1)=-Omega*sinalp*s
+        dOO(2)=+Omega*sinalp*c
+        dOO(3)=0.
+!
+!  Coriolis matrix
+!
+        mat_cori(1,2)=+2.*OO(3); mat_cori(2,1)=-2.*OO(3)
+        mat_cori(2,3)=+2.*OO(1); mat_cori(3,2)=-2.*OO(1)
+        mat_cori(3,1)=+2.*OO(2); mat_cori(1,3)=-2.*OO(2)
+!
+!  1st centrifugal matrix
+!
+        do i=1,3
+        do j=1,3
+          mat_cent1(i,j)=-OO(i)*OO(j)
+        enddo
+        enddo
+!
+!  2nd centrifugal matrix
+!
+        OO2=OO(1)+OO(2)+OO(3)
+        do j=1,3
+          mat_cent2(j,j)=OO2
+        enddo
+!
+!  3rd centrifugal matrix
+!
+        mat_cent3(1,2)=+dOO(3); mat_cent3(2,1)=-dOO(3)
+        mat_cent3(2,3)=+dOO(1); mat_cent3(3,2)=-dOO(1)
+        mat_cent3(3,1)=+dOO(2); mat_cent3(1,3)=-dOO(2)
+!
+!  adding the three centrifugal matrixes together
+!
+        mat_cent=mat_cent1+mat_cent2+mat_cent3
       endif
+!
+!  calculate precession matrices
+!
+!     if (lprecession) then
+!       c=cos(omega_precession*t)
+!       s=sin(omega_precession*t)
+!       mat_cori1(2,3)=+1.
+!       mat_cori1(3,2)=-1.
+!
+!
+!       mat_cori2(1,2)=+c
+!       mat_cori2(1,3)=-s
+!       mat_cori2(2,1)=-c
+!       mat_cori2(3,1)=+s
+!       mat_cent1(2,2)=+1.
+!       mat_cent1(3,3)=+1.
+!       mat_cent2(1,1)=+1.
+!       mat_cent2(2,2)=+c**2
+!       mat_cent2(3,3)=+s**2
+!       mat_cent2(2,3)=-2.*s*c
+!       mat_cent2(3,2)=-2.*s*c
+!       mat_cent3(1,2)=-s+c
+!       mat_cent3(2,1)=-s-c
+!       mat_cent3(1,3)=-s-c
+!       mat_cent3(3,1)=+s-c
+!       mat_cori=2.*(omega_precession*mat_cori1+Omega*mat_cori2)
+!       mat_cent=omega_precession**2*mat_cent1+Omega**2*mat_cent2 &
+!         +2.*omega_precession*Omega*mat_cent3
+!     endif
 !
     endsubroutine calc_lhydro_pars
 !***********************************************************************
@@ -1918,7 +1975,7 @@ use Mpicomm, only: stop_it
         !get the exponents for density and cs2
         call get_ptlaw(ptlaw)
         call get_shared_variable('plaw',plaw,ierr)
-        if (ierr/=0) call stop_it("borderuu: "//&
+        if (ierr/=0) calL STOP_IT("borderuu: "//&
                "there was a problem when getting plaw")
         call get_shared_variable('zmode',zmode,ierr)
         if (ierr/=0) call stop_it("borderuu: "//&
