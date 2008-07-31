@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.217 2008-07-30 09:02:29 arnelohr Exp $
+! $Id: boundcond.f90,v 1.218 2008-07-31 21:37:37 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -680,7 +680,7 @@ module Boundcond
       real, dimension (mx,my,mz,mvar) :: df
       character (len=nscbc_len), dimension(3) :: bc12
       character (len=3) :: topbot
-      integer j,k
+      integer j,k,direction
       real, dimension(mcom) :: valx,valy,valz
 
       intent(in) :: f,j
@@ -708,11 +708,14 @@ module Boundcond
         case('part_ref_inlet')
 !   Partially reflecting inlet, ie. impose a velocity u_t.
           if (j==1) then 
-            call bc_nscbc_prf_x(f,df,topbot,linlet=.true.,u_t=valx(1))
+            direction = 1
+            call bc_nscbc_prf_x(f,df,topbot,linlet=.true.,u_t=valx(direction))
           elseif (j==2) then 
-            call bc_nscbc_prf_y(f,df,topbot,linlet=.true.,u_t=valy(2))
+            direction = 2
+            call bc_nscbc_prf_y(f,df,topbot,linlet=.true.,u_t=valy(direction))
           elseif (j==3) then 
-            call bc_nscbc_prf_z(f,df,topbot,linlet=.true.,u_t=valz(3))
+            direction = 3
+            call bc_nscbc_prf_z(f,df,topbot,linlet=.true.,u_t=valz(direction))
           endif
         case('')
 !   Do nothing.
