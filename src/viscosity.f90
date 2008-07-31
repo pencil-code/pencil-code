@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.100 2008-06-22 01:07:14 wlyra Exp $
+! $Id: viscosity.f90,v 1.101 2008-07-31 13:05:33 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -115,7 +115,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.100 2008-06-22 01:07:14 wlyra Exp $")
+           "$Id: viscosity.f90,v 1.101 2008-07-31 13:05:33 ajohan Exp $")
 !
 !  Default viscosity.
 !
@@ -818,7 +818,7 @@ module Viscosity
               'is not implemented for lvisc_hyper3_rho_nu_const')
           endif
         endif
-        if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
+        if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+murho1
       endif
 !
       if (lvisc_hyper3_rho_nu_const_symm) then
@@ -837,7 +837,7 @@ module Viscosity
                 .5*nu_hyper3*(p%uij5(:,i,j)+p%uij5(:,j,i))*p%uij(:,i,j)
           enddo; enddo
         endif
-        if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
+        if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+murho1
       endif
 !
       if (lvisc_hyper3_mu_const_strict) then
@@ -949,7 +949,7 @@ module Viscosity
               'is not implemented for lvisc_hyper3_rho_nu_const_bulk')
           endif
         endif
-        if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
+        if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+murho1
       endif
 !
       if (lvisc_hyper3_nu_const) then
