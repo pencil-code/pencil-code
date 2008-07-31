@@ -1,7 +1,7 @@
 ;
-;  $Id: pc_magic_var.pro,v 1.48 2008-06-12 07:24:57 ajohan Exp $
-;  $Date: 2008-06-12 07:24:57 $
-;  $Revision: 1.48 $
+;  $Id: pc_magic_var.pro,v 1.49 2008-07-31 10:07:55 ajohan Exp $
+;  $Date: 2008-07-31 10:07:55 $
+;  $Revision: 1.49 $
 ;
 pro pc_magic_var_dep, variables, tags, var, dep
 ;
@@ -118,8 +118,6 @@ pro pc_magic_var, variables, tags, $
   if (not keyword_set(datadir)) then datadir='data'
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, datadir=datadir, /quiet
-  if (n_elements(par2) eq 0) then $
-      pc_read_param, object=par2, /param2, datadir=datadir, /quiet
 ;
 ;  Add global values if requested (e.g. external magnetic field to bb).
 ;
@@ -532,6 +530,19 @@ pro pc_magic_var, variables, tags, $
       endif else begin
         print, 'pc_magic_var: unknown resistivity type ivisc=', par2.iresistivity[0]
         variables[iv]='fltarr(mx,my,mz,3)'
+      endelse
+; Mass diffusion.
+    endif else if (variables[iv] eq 'fdiff') then begin
+      tags[iv]=variables[iv]
+      if (par2.idiff[0] eq 'shock') then begin
+        if (param.ldensity_nolog) then begin
+          variables[iv]='par2.nu_shock*shock*del2(lnrho)'
+        endif else begin
+          variables[iv]='par2.nu_shock*shock*1/exp(lnrho)*del2(exp(lnrho))'
+        endelse
+      endif else begin
+        print, 'pc_magic_var: unknown diffusion type ivisc=', par2.iresistivity[0]
+        variables[iv]='fltarr(mx,my,mz)'
       endelse
     endif 
   endfor
