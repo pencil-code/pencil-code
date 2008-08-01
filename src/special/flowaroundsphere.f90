@@ -1,4 +1,4 @@
-! $Id: flowaroundsphere.f90,v 1.1 2008-07-30 09:03:43 arnelohr Exp $
+! $Id: flowaroundsphere.f90,v 1.2 2008-08-01 16:52:42 arnelohr Exp $
 
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
@@ -82,7 +82,7 @@ module Special
           sph_l1,sph_l2,sph_n1,sph_n2,&
           sph_center_x,sph_nx,sph_ny,&
           sph_dia,sph_rad,&
-          northern,southern,nequator
+          northern,southern,nequator,ltest
 !
 ! Run parameters
 !
@@ -131,11 +131,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: flowaroundsphere.f90,v 1.1 2008-07-30 09:03:43 arnelohr Exp $
+!  CVS should automatically update everything between $Id: flowaroundsphere.f90,v 1.2 2008-08-01 16:52:42 arnelohr Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: flowaroundsphere.f90,v 1.1 2008-07-30 09:03:43 arnelohr Exp $")
+           "$Id: flowaroundsphere.f90,v 1.2 2008-08-01 16:52:42 arnelohr Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -689,8 +689,8 @@ module Special
 !
 !   Non-reflecting boundaries
 !
-      call bc_nscbc_prf_r(f,df,l2-2)
-      call bc_nscbc_prf_r(f,df,l2-1)
+      !call bc_nscbc_prf_r(f,df,l2-2)
+      !call bc_nscbc_prf_r(f,df,l2-1)
       call bc_nscbc_prf_r(f,df,l2)
 !
 !   Make a small disturbance to check unstability.
@@ -712,6 +712,7 @@ module Special
 !
 !***********************************************************************
 
+!***********************************************************************
     subroutine bc_nscbc_prf_r(f,df,lll)
 !
 !   Set du_r, du_phi and dlnrho at a partially reflecting outlet normal
@@ -755,9 +756,17 @@ module Special
       ! df below, but it is more convenient to set L_1 explicitly for testing
       ! purposes.
       L_5 = (u_r + cs0)*(cs20*rho0*dlnrho_dr + rho0*cs0*dur_dr)
-      !L_1 = -cs20*rho0*(2*u_r*r_1 + duphi_dphi*r_1)
-      !L_1 = -cs20*rho0*(2*u_r*r_1) ! This one reflects!! But it does not crash :)
-      L_1 = 0
+      !L_1 = 0 ! This one causes drift...
+      !L_1 = -cs20*rho0*(2*u_r*r_1) ! This one reflects!!
+      L_1 = -cs20*rho0*(2*u_r*r_1 + duphi_dphi*r_1) ! Chrashes around phi=0 and pi 
+                                                     ! after some time. Best sofar.
+      !L_1 = -cs0*rho0*r_1*u_phi**2 - cs20*rho0*r_1*(2*u_r + duphi_dphi) ! Drift
+      !L_1 = -cs0*rho0*r_1*u_phi**2 - cs20*rho0*r_1*(2*u_r) ! Drift and reflection!
+      !L_1 = cs0*rho0*r_1*(u_phi*dur_dphi - u_phi**2) &
+      !      - cs20*rho0*r_1*(2*u_r + duphi_dphi) ! Nix
+      !L_1 = cs0*rho0*r_1*(u_phi*dur_dphi - u_phi**2) &
+      !      -u_phi*rho0*r_1*dlnrho_dphi- cs20*rho0*r_1*(2*u_r + duphi_dphi) ! Nix
+      
       
       where (u_r < 0)
         !L_4 = -u_phi*r_1*duphi_dphi
@@ -780,20 +789,20 @@ module Special
       endif
 
       df(lll,m1:m2,n1:n2,ilnrho) =    & 
-          itsub/3.*(                     &
+          itsub*(                     &
           -1./(2.*cs20*rho0)*(L_5+L_1)&
           - u_phi*r_1*dlnrho_dphi     &
           - 2*u_r*r_1                 &
           - duphi_dphi*r_1            &
           )
       df(lll,m1:m2,n1:n2,iux) =       &
-          itsub/3.*(                     &
+          itsub*(                     &
           -1./(2.*cs0*rho0)*(L_5-L_1) &
           - u_phi*r_1*dur_dphi        &
           + u_phi**2*r_1              &
           )
       df(lll,m1:m2,n1:n2,iuz) =       &
-          itsub/3.*(                     &
+          itsub*(                     &
           -L_4                        &
           - u_phi*r_1*duphi_dphi      &
           - cs20*r_1*dlnrho_dphi      &
