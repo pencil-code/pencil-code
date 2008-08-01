@@ -1,4 +1,4 @@
-;$Id: pc_read_alpha_xyaver.pro,v 1.9 2008-07-03 18:03:40 brandenb Exp $
+;$Id: pc_read_alpha_xyaver.pro,v 1.10 2008-08-01 03:45:32 brandenb Exp $
 common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
 ;
 ;  In order to determine the z-dependence of the alpha and eta tensors
@@ -75,7 +75,8 @@ etaij=fltarr(nz,nt,2,2)
 ;  They are also consistent with BRRK08 and BRS08, except
 ;  that there p and q are interchanged.
 ;
-for it=0,nt-1 do begin
+help,nt
+for it=0L,nt-1L do begin
   alpij(*,it,0,0)=cz*xyaver.E111z(*,it)+sz*xyaver.E121z(*,it)
   alpij(*,it,0,1)=cz*xyaver.E112z(*,it)+sz*xyaver.E122z(*,it)
   alpij(*,it,1,0)=cz*xyaver.E211z(*,it)+sz*xyaver.E221z(*,it)
@@ -107,7 +108,28 @@ etaijm=total(etaij(*,it1:*,*,*),2)/ntgood
 ;
 alpij_end=reform(alpij(*,nt-1,*,*))
 etaij_end=reform(etaij(*,nt-1,*,*))
+print,tt(nt-1),nt
+tt=xyaver.t
 ;
+nevery=40
+ntout=nt/nevery
+print,'ntout=',ntout
+print,'nz=',nz
+it2=nt-1
+it1=nt-nevery*ntout
+;
+ttt=every(tt,nevery)
+alpijc=reform((reform(alpij(*,it1:it2,*,*),nz,nevery,ntout,2,2))(*,nevery-1,*,*,*))
+etaijc=reform((reform(etaij(*,it1:it2,*,*),nz,nevery,ntout,2,2))(*,nevery-1,*,*,*))
+;
+save,file='alpetaijm_end.sav',zzz,alpijm,etaijm,alpij_end,etaij_end,tt
+;
+;  save courase grained arrays
+;
+alpij=alpijc
+etaij=etaijc
+tt=ttt
+;save,file='alpetaij.sav',zzz,alpij,etaij,tt
 save,file='alpetaij.sav',zzz,alpijm,etaijm,alpij_end,etaij_end,ntgood
 ;
 END

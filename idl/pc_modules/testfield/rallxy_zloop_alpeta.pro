@@ -10,7 +10,7 @@
 
 ;;;
 ;;;  Author: nils/ adapted from rall.pro 20-nov-2003    
-;;;  $Id: rallxy_zloop_alpeta.pro,v 1.1 2008-06-15 05:58:50 brandenb Exp $
+;;;  $Id: rallxy_zloop_alpeta.pro,v 1.2 2008-08-01 03:45:32 brandenb Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors in a xy-plane (select plane by 
@@ -244,13 +244,13 @@ print,'bottom of z-loop'
 ;
 ;  mean field
 ;
+print,'current z-array: ',z(n1:n2),ipz
 zzz(*,target_ipz)=z(n1:n2)
 bm(*,target_ipz,*)=haverv((curl(aa))(l1:l2,m1:m2,n1:n2,*))
 aatest=reform(aatest,mx,my,mz,3,njtest)
 for jtest=0,njtest-1 do begin
   uxbtestm(*,target_ipz,*,jtest)=haverv((reform(cross(uu,curl(aatest(*,*,*,*,jtest)))))(l1:l2,m1:m2,n1:n2,*))
 endfor
-help,target_ipz,bm,uxbtestm
 ;
 endfor
 zzz=reform(zzz,nzgrid)
