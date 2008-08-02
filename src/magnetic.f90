@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.535 2008-07-23 02:36:45 brandenb Exp $
+! $Id: magnetic.f90,v 1.536 2008-08-02 15:39:57 wlyra Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -100,7 +100,7 @@ module Magnetic
   logical :: lresi_etaSS=.false.
   logical :: lresi_hyper2=.false.
   logical :: lresi_hyper3=.false.
-  logical :: lresi_hyper3_cyl_or_sph=.false.
+  logical :: lresi_hyper3_polar=.false.
   logical :: lresi_hyper3_strict=.false.
   logical :: lresi_zdep=.false., lresi_dust=.false.
   logical :: lresi_hyper3_aniso=.false.
@@ -449,7 +449,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.535 2008-07-23 02:36:45 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.536 2008-08-02 15:39:57 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -551,7 +551,7 @@ module Magnetic
       lresi_eta_const=.false.
       lresi_hyper2=.false.
       lresi_hyper3=.false.
-      lresi_hyper3_cyl_or_sph=.false.
+      lresi_hyper3_polar=.false.
       lresi_hyper3_strict=.false.
       lresi_hyper3_aniso=.false.
       lresi_eta_shock=.false.
@@ -575,7 +575,7 @@ module Magnetic
           lresi_hyper3=.true.
         case('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           if (lroot) print*, 'resistivity: hyper3 curvilinear'
-          lresi_hyper3_cyl_or_sph=.true.
+          lresi_hyper3_polar=.true.
         case('hyper3_strict')
           if (lroot) print*, 'resistivity: strict hyper3 with positive definite heating rate'
           lresi_hyper3_strict=.true.
@@ -634,7 +634,7 @@ module Magnetic
         if (lresi_hyper3.and.eta_hyper3==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper3 is zero!')
-        if (lresi_hyper3_cyl_or_sph.and.eta_hyper3==0.0) &
+        if (lresi_hyper3_polar.and.eta_hyper3==0.0) &
              call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper3 is zero!')
         if (lresi_hyper3_strict.and.eta_hyper3==0.0) &
@@ -1786,7 +1786,7 @@ module Magnetic
         if (lfirst.and.ldt) diffus_eta3=diffus_eta3+eta_hyper3
       endif
 !
-      if (lresi_hyper3_cyl_or_sph) then
+      if (lresi_hyper3_polar) then
         do j=1,3
           ju=j+iaa-1
           do i=1,3

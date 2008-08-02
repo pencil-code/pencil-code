@@ -1,4 +1,4 @@
-! $Id: neutraldensity.f90,v 1.20 2008-06-17 15:34:09 ajohan Exp $
+! $Id: neutraldensity.f90,v 1.21 2008-08-02 15:39:57 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -42,7 +42,7 @@ module NeutralDensity
   logical :: ldiffn_normal=.false.,ldiffn_hyper3=.false.,ldiffn_shock=.false.
   logical :: ldiffn_hyper3lnrhon=.false.,ldiffn_hyper3_aniso=.false.
   logical :: lfreeze_lnrhonint=.false.,lfreeze_lnrhonext=.false.
-  logical :: lneutraldensity_nolog=.false.,ldiffn_hyper3_cyl_or_sph=.false.
+  logical :: lneutraldensity_nolog=.false.,ldiffn_hyper3_polar=.false.
   logical :: lpretend_star,lramp_up
   real :: star_form_threshold=1.,star_form_exponent=1.5
 
@@ -110,7 +110,7 @@ module NeutralDensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: neutraldensity.f90,v 1.20 2008-06-17 15:34:09 ajohan Exp $")
+           "$Id: neutraldensity.f90,v 1.21 2008-08-02 15:39:57 wlyra Exp $")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
@@ -146,7 +146,7 @@ module NeutralDensity
       ldiffn_hyper3=.false.
       ldiffn_hyper3lnrhon=.false.
       ldiffn_hyper3_aniso=.false.
-      ldiffn_hyper3_cyl_or_sph=.false.
+      ldiffn_hyper3_polar=.false.
 !
       lnothing=.false.
 !
@@ -166,7 +166,7 @@ module NeutralDensity
           ldiffn_hyper3_aniso=.true.
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           if (lroot) print*,'diffusion: Dhyper/pi^4 *(Delta(rhon))^6/Deltaq^2'
-          ldiffn_hyper3_cyl_or_sph=.true.
+          ldiffn_hyper3_polar=.true.
         case ('shock')
           if (lroot) print*,'diffusion: shock diffusion'
           ldiffn_shock=.true.
@@ -432,7 +432,7 @@ module NeutralDensity
            lpenc_requested(i_rhon)=.true.
       if (ldiffn_hyper3lnrhon) &
            lpenc_requested(i_del6lnrhon)=.true.
-      if (ldiffn_hyper3_cyl_or_sph.and..not.lneutraldensity_nolog) &
+      if (ldiffn_hyper3_polar.and..not.lneutraldensity_nolog) &
            lpenc_requested(i_rhon1)=.true.
 !
       if (lmass_source) lpenc_requested(i_rcyl_mn)=.true.
@@ -742,7 +742,7 @@ module NeutralDensity
         endif
       endif
 !
-      if (ldiffn_hyper3_cyl_or_sph) then
+      if (ldiffn_hyper3_polar) then
         do j=1,3
           call der6(f,ilnrhon,tmp,j,IGNOREDX=.true.)
           if (.not.lneutraldensity_nolog) tmp=tmp*p%rhon1
