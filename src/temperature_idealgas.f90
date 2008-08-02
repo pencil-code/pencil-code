@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.63 2008-06-17 15:34:10 ajohan Exp $
+! $Id: temperature_idealgas.f90,v 1.64 2008-08-02 18:11:57 wlyra Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -51,19 +51,20 @@ module Entropy
   real :: zbot=0.0,ztop=0.0
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
   real :: center1_x=0., center1_y=0., center1_z=0.
-  real :: r_bcz=0.
+  real :: r_bcz=0.,chi_shock=0.,chi_hyper3=0.
 ! entries for ADI
   real :: Tbump=0.,Kmin=0.,Kmax=0.,hole_slope=0.,hole_width=0.
   real :: hole_alpha ! initialized _after_ the reading
   integer, parameter :: nheatc_max=2
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
-  logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.,ldiff_hyper=.false.
+  logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.,lheatc_hyper3=.false.
   logical :: lheatc_Kconst=.false.,lheatc_Kprof=.false.,lheatc_Karctan=.false.
   logical :: lheatc_tensordiffusion=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lfreeze_lnTTint=.false.,lfreeze_lnTText=.false.
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   logical :: lhcond_global=.false.
+  logical :: lheatc_shock=.false.,lheatc_hyper3_polar=.false.
   logical :: lviscosity_heat=.true.
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -82,7 +83,7 @@ module Entropy
       lnTT_left,lnTT_right,lnTT_const,TT_const, &
       kx_lnTT,ky_lnTT,kz_lnTT,center1_x,center1_y,center1_z, &
       mpoly0,mpoly1,r_bcz, &
-      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width
+      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width,ltemperature_nolog
 
 ! run parameters
   namelist /entropy_run_pars/ &
@@ -90,7 +91,7 @@ module Entropy
       heat_uniform,chi,iheatcond,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
       lheatc_chiconst_accurate,hcond0,lcalc_heat_cool,&
       lfreeze_lnTTint,lfreeze_lnTText,widthlnTT,mpoly0,mpoly1, &
-      lhcond_global,lviscosity_heat,difflnTT_hyper, &
+      lhcond_global,lviscosity_heat,chi_hyper3,chi_shock, &
       Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width,Kgpara,Kgperp
 !
 ! other variables (needs to be consistent with reset list below)
@@ -139,7 +140,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.63 2008-06-17 15:34:10 ajohan Exp $")
+           "$Id: temperature_idealgas.f90,v 1.64 2008-08-02 18:11:57 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -207,7 +208,13 @@ module Entropy
       lheatc_Karctan= .false.
       lheatc_tensordiffusion=.false.
       lheatc_chiconst = .false.
-      ldiff_hyper = .false.
+!
+!  Initialize thermal diffusion
+!
+      lheatc_shock=.false.
+      lheatc_hyper3=.false.
+      lheatc_hyper3_polar=.false.
+!
       lnothing = .false.
 !
       do i=1,nheatc_max
@@ -220,6 +227,7 @@ module Entropy
           lheatc_Kprof=.true.
 ! 
 !  TODO..... ailleurs !
+!  WL: we would appreciate having only English in the code...
 !
           hcond1=(mpoly1+1.)/(mpoly0+1.)
           Fbot=-gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
@@ -230,9 +238,15 @@ module Entropy
         case('chi-const')
           lheatc_chiconst=.true.
           if (lroot) call information('initialize_entropy',' heat conduction: constant chi')
-        case ('hyper')
-          ldiff_hyper=.true.
-          if (lroot) call information('initialize_entropy','hyper diffusion')
+        case ('chi-hyper3')
+          lheatc_hyper3=.true.
+          if (lroot) call information('initialize_entropy','hyper conductivity')
+        case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
+          lheatc_hyper3_polar=.true.
+          if (lroot) call information('initialize_entropy','hyper conductivity: polar coords')
+        case ('shock','chi-shock')
+          lheatc_shock=.true.
+          if (lroot) call information('initialize_entropy','shock conductivity')
         case ('tensor-diffusion')
           lheatc_tensordiffusion=.true.
           if (lroot) print*, 'heat conduction: tensor diffusion'
@@ -246,6 +260,7 @@ module Entropy
           endif
        endselect
        enddo
+! WL: is this correct? In density, lnothing=.true. is inside the do-loop
        lnothing=.true.
 !
 !  compute and store hcond and dhcond if hcond_global=.true.
@@ -323,6 +338,15 @@ module Entropy
       if (lheatc_chiconst .and. chi==0.0) then
         call warning('initialize_entropy','chi is zero!')
       endif
+      if (lrun) then
+        if (lheatc_hyper3 .and. chi_hyper3==0.0) &
+            call fatal_error('initialize_entropy', &
+            'Conductivity coefficient chi_hyper3 is zero!')
+        if (lheatc_shock .and. chi_shock==0.0) &
+            call fatal_error('initialize_entropy', &
+            'Conductivity coefficient chi_shock is zero!')
+      endif
+
       if (iheatcond(1)=='nothing') then
         if (hcond0 /= impossible) call warning('initialize_entropy', 'No heat conduction, but hcond0 /= 0')
         if (chi /= impossible) call warning('initialize_entropy', 'No heat conduction, but chi /= 0')
@@ -402,6 +426,8 @@ module Entropy
       enddo
       if (lnothing.and.lroot) print*,'init_ss: nothing'
 !
+      if (ltemperature_nolog) f(:,:,:,ilnTT)=exp(f(:,:,:,ilnTT))
+!
       if (NO_WARN) print*,xx,yy  !(to keep compiler quiet)        
 
     endsubroutine init_ss
@@ -457,14 +483,14 @@ module Entropy
         lpenc_requested(i_cp1)=.true.
       endif
 !
-      !if (lheatc_shock) then
-      !   lpenc_requested(i_glnrho)=.true.
-      !   lpenc_requested(i_gss)=.true.
-      !   lpenc_requested(i_del2lnTT)=.true.
-      !   lpenc_requested(i_gshock)=.true.
-      !   lpenc_requested(i_shock)=.true.
-      !   lpenc_requested(i_glnTT)=.true.
-      !endif
+      if (lheatc_shock) then
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_shock)=.true.
+        lpenc_requested(i_del2lnrho)=.true.
+        lpenc_requested(i_gshock)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+      endif
 !
       if (lheatc_tensordiffusion) then
         lpenc_requested(i_bb)=.true.
@@ -475,7 +501,7 @@ module Entropy
         lpenc_requested(i_cp1)=.true.
       endif
 !
-      if (ldiff_hyper) lpenc_requested(i_del6lnTT)=.true.
+      if (lheatc_hyper3) lpenc_requested(i_del6lnTT)=.true.
 !
       if (ladvection_temperature) lpenc_requested(i_uglnTT)=.true.
 !
@@ -547,7 +573,7 @@ module Entropy
 
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       type (pencil_case), intent (inout) :: p
-      integer :: j
+      integer :: j,i
 !
 !  Mach Speed
 !
@@ -590,12 +616,13 @@ module Entropy
       use Viscosity, only: calc_viscous_heat
       use EquationOfState, only: gamma1,gamma
       use Special, only: special_calc_entropy
+      use Deriv, only: der6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: Hmax=0., hcond, dhcond
-      real, dimension (nx) :: vKpara,vKperp,rhs            
+      real, dimension(nx) :: Hmax=0., hcond, dhcond, thdiff
+      real, dimension (nx) :: vKpara,vKperp,rhs,tmp
       real :: fradtop
       integer :: j,ju
 !
@@ -606,7 +633,7 @@ module Entropy
 !
       if (headtt.or.ldebug) print*,'SOLVE dlnTT_dt'
       if (headtt) call identify_bcs('lnTT',ilnTT)
-      if (headtt) print*,'dlnTT_dt: lnTT,cs2=', p%lnTT(1), p%cs2(1)
+      if (headtt) print*,'dss_dt: lnTT,cs2=', p%lnTT(1), p%cs2(1)
 !
 !  entropy gradient: needed for advection and pressure gradient
 !
@@ -614,12 +641,12 @@ module Entropy
 !
 !  sound speed squared
 !
-      if (headtt) print*,'dlnTT_dt: cs20=',p%cs2(1)
+      if (headtt) print*,'dss_dt: cs20=',p%cs2(1)
 !
 !  ``cs2/dx^2'' for timestep
 !
       if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'dlnTT_dt: max(advec_cs2) =',maxval(advec_cs2)
+      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  subtract pressure gradient term in momentum equation
 !
@@ -658,12 +685,44 @@ module Entropy
 !
 !  Hyper diffusion
 !
-      if (ldiff_hyper) then
-         if(headtt) print*,'Hyper diffusion: difflnTT_hyper=',difflnTT_hyper
-         !
-         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + difflnTT_hyper*p%del6lnTT
-         !
-         if (lfirst.and.ldt) diffus_chi3=diffus_chi3+difflnTT_hyper*dxyz_6
+      if (lheatc_hyper3) then
+        if (ltemperature_nolog) then 
+          thdiff=thdiff+chi_hyper3*p%del6TT
+        else
+          thdiff=thdiff+chi_hyper3*p%del6lnTT
+        endif
+        if (lfirst.and.ldt) diffus_chi3=diffus_chi3+chi_hyper3
+        if (headtt) print*,'dss_dt: chi_hyper3=', chi_hyper3
+      endif
+!
+      if (lheatc_hyper3_polar) then
+        do j=1,3
+          call der6(f,ilnTT,tmp,j,IGNOREDX=.true.)
+          if (.not.ltemperature_nolog) tmp=tmp*p%TT1
+          thdiff = thdiff + chi_hyper3*pi4_1*tmp*dline_1(:,j)**2
+        enddo
+        if (lfirst.and.ldt) &
+             diffus_chi3=diffus_chi3+chi_hyper3*pi4_1/dxyz_4
+        if (headtt) print*,'dss_dt: chi_hyper3=', chi_hyper3
+      endif
+!
+! Shock diffusion 
+!
+      if (lheatc_shock) call calc_heatcond_shock(df,p,diffus_chi)
+!
+!  Add thermal diffusion to temperature equation
+!
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + thdiff
+!
+!  Multiply diffusion coefficient by Nyquist scale.
+!
+      if (lfirst.and.ldt) then
+        diffus_chi =diffus_chi *dxyz_2
+        diffus_chi3=diffus_chi3*dxyz_6
+        if (headtt.or.ldebug) then
+          print*,'dss_dt: max(diffus_chi ) =', maxval(diffus_chi)
+          print*,'dss_dt: max(diffus_chi3) =', maxval(diffus_chi3)
+        endif
       endif
 !
 !  Need to add left-hand-side of the continuity equation (see manual)
@@ -704,6 +763,60 @@ module Entropy
       endif
 !
     endsubroutine dss_dt
+!***********************************************************************
+    subroutine calc_heatcond_shock(df,p,diffus_chi)
+!
+!  Adds in shock diffusion to the temperature equation.
+!  Ds/Dt = ... + 1/(rho*T) grad(flux), where
+!  flux = chi_shock*rho*T*grads
+!  (in comments we say chi_shock, but in the code this is "chi_shock*p%shock")
+!
+!  01-aug-08/wlad: adapted from entropy
+!
+      use Cdata
+      use Sub
+      use EquationOfState, only: gamma
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx) :: thdiff,diffus_chi,g2,gshockglnTT
+!
+      intent(in) :: p
+      intent(out) :: df,diffus_chi
+!
+      if(headtt) print*,'calc_heatcond_shock: chi_shock=',chi_shock
+!
+!  calculate terms for shock diffusion
+!
+      call dot(p%gshock,p%glnTT,gshockglnTT)
+      call dot(p%glnrho+p%glnTT,p%glnTT,g2)
+!
+!  shock entropy diffusivity
+!
+      if (headtt) print*,'calc_heatcond_shock: chi_shock=',chi_shock
+      if (ltemperature_nolog) then
+!  WL: can someone explain this equation?      
+        thdiff=gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
+      else 
+!  D(lnTT)/Dt = ... + 1/pp*grad(shock*pp*glnTT)      
+        thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
+      endif
+!
+      df(l1:l2,m,n,ilntt) = df(l1:l2,m,n,ilntt) + thdiff
+      if (headtt) print*,'calc_heatcond_shock: added thdiff'
+!
+      if (lfirst.and.ldt) then
+        if (leos_idealgas) then
+          diffus_chi=diffus_chi+(gamma*chi_shock*p%shock)*dxyz_2
+        else
+          diffus_chi=diffus_chi+(chi_shock*p%shock)*dxyz_2
+        endif
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
+      endif
+! 
+    endsubroutine calc_heatcond_shock
 !***********************************************************************
     subroutine rad_equil(f)
 !
