@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.245 2008-07-06 22:46:30 nilshau Exp $
+! $Id: initcond.f90,v 1.246 2008-08-02 18:06:08 wlyra Exp $
 
 module Initcond
 
@@ -3151,19 +3151,21 @@ module Initcond
 !
       if ((gamma==1.0).and.lenergy) then
         if (lroot) then
-          print*,"set_thermodynamical_quantities: gamma=1.0 "             //&
-               "means an isothermal disk. You don't need entropy or "     //&
-               "temperature for that. Switch to noentropy instead, which "//&
-               "is a better way of having isothermality. "                //&
-               "If you do not want isothermality but wants to keep a "    //&
-               "static temperature gradient through the simulation, use " //&
-               "noentropy with the switch llocal_iso in init_pars "       //& 
-               "(start.in file) and add the following line "      
+          print*,"" 
+          print*,"set_thermodynamical_quantities: gamma=1.0 means "         
+          print*,"an isothermal disk. You don't need entropy or "           
+          print*,"temperature for that. Switch to noentropy instead, "      
+          print*,"which is a better way of having isothermality. "          
+          print*,"If you do not want isothermality but wants to keep a "    
+          print*,"static temperature gradient through the simulation, use " 
+          print*,"noentropy with the switch llocal_iso in init_pars "       
+          print*,"(start.in file) and add the following line "      
           print*,""
           print*,"! MGLOBAL CONTRIBUTION 4"
           print*,""
           print*,"(containing the '!') to the header of the "//&
                "src/cparam.local file"
+          print*,""
           call stop_it("")
         endif
       endif
@@ -3212,17 +3214,20 @@ module Initcond
               f(:,m,n,iglobal_glnTT+1)=gslnTT*costh(m)
               f(:,m,n,iglobal_glnTT+2)=0.
             endif
-!
-!  else do it as temperature
-!
           elseif (ltemperature) then
+!
+!  else do it as temperature ...
+!
             f(:,m,n,ilnTT)=log(cs2*cp1/gamma1)
+!
           elseif (lentropy) then
-!            call stop_it("set_thermodynamical_variables: Wlad got lazy and "//&
-!                 "didn't want to calculate the entropy for the given "//&
-!                 "sound speed")
+!
+!  ... or entropy
+!
             f(:,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma1*lnrho0)
+!
           else
+!
             call stop_it("No thermodynamical variable. Choose if you want "//&
                  "a local thermodynamical approximation "//&
                  "(switch llocal_iso=T init_pars and entropy=noentropy on "//&
