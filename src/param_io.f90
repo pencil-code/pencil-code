@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.312 2008-07-24 10:14:07 arnelohr Exp $
+! $Id: param_io.f90,v 1.313 2008-08-02 18:07:56 wlyra Exp $
 
 module Param_IO
 
@@ -82,7 +82,7 @@ module Param_IO
        lcylindrical, &
        lcylinder_in_a_box,lsphere_in_a_box,llocal_iso,init_loops,lwrite_2d,&
        lcylindrical_gravity,border_frac,border_frac_x,border_frac_y, &
-       border_frac_z,ltemperature_nolog,luse_latitude, &
+       border_frac_z,luse_latitude, &
        lshift_datacube_x
 
   namelist /run_pars/ &
@@ -130,7 +130,7 @@ module Param_IO
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init,lwrite_2d, &
        lbidiagonal_derij,lisotropic_advection, &
        crash_file_dtmin_factor,niter_poisson, &
-       lADI,ltestperturb,ltemperature_nolog
+       lADI,ltestperturb
   contains
 
 !***********************************************************************
