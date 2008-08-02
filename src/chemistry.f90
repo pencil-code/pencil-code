@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.116 2008-08-02 04:06:52 brandenb Exp $
+! $Id: chemistry.f90,v 1.117 2008-08-02 17:12:03 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -199,11 +199,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.116 2008-08-02 04:06:52 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.117 2008-08-02 17:12:03 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.116 2008-08-02 04:06:52 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.117 2008-08-02 17:12:03 nbabkovs Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -739,12 +739,14 @@ module Chemistry
       else
        do k=1,nchemspec
          do j=1,nchemspec
-          mk_mj=species_constants(k,imass) &
+         ! if (j .ne. k) then
+           mk_mj=species_constants(k,imass) &
                /species_constants(j,imass)
-          nuk_nuj(:,:,:)=species_viscosity(:,:,:,k) &
+           nuk_nuj(:,:,:)=species_viscosity(:,:,:,k) &
                /species_viscosity(:,:,:,j)
-          Phi(:,:,:,k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
+           Phi(:,:,:,k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
                *(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
+         ! endif
          enddo
        enddo
          nu_dyn=0.
@@ -1158,7 +1160,7 @@ module Chemistry
 
       enddo
 
-! NNNN
+
 
      if (ldensity .and. lcheminp) then
         sum_DYDt=0.
@@ -2630,7 +2632,7 @@ module Chemistry
    real, dimension (mx,my,mz) :: Omega_kl, prefactor, lnT, TT, lnTjk, pp_full, rho, lnTk
    real, dimension (mx,my,mz) :: tmp
    integer :: k,j
-   real :: eps_jk, sigma_jk, m_jk, delta_jk
+   real :: eps_jk, sigma_jk, m_jk, delta_jk, delta_st
    character (len=7) :: omega
    real :: Na=6.022E23
 
@@ -2660,7 +2662,7 @@ module Chemistry
            call calc_collision_integral(omega,lnTjk,Omega_kl)
 
            Bin_Diff_coef(:,:,:,k,j)=prefactor/sqrt(m_jk)/sigma_jk**2 &
-                  /(Omega_kl+0.19*delta_jk/exp(TT/eps_jk)) &
+                  /(Omega_kl+0.19*delta_jk/(TT/eps_jk)) &
                         /(unit_length**2/unit_time)
   
    !  if (Bin_Diff_coef(10,10,3,k,j)>5) then
@@ -2673,12 +2675,14 @@ module Chemistry
       do k=1,nchemspec
 
       lnTk=lnT-log(tran_data(k,2))
+      delta_st=tran_data(k,4)**2/2./tran_data(k,2)/(tran_data(k,3)*1e-8)**3
 
-      call calc_collision_integral(omega,lnTjk,Omega_kl)
+      call calc_collision_integral(omega,lnTk,Omega_kl)
       tmp=5./16.*sqrt(k_B_cgs*species_constants(k,imass)/Na*TT/pi) &
-                    /(tran_data(k,3)*1e-8)**2   &
-             /(Omega_kl+0.2*tran_data(k,4)/exp(TT/tran_data(k,3))) 
+      /(tran_data(k,3)*1e-8)**2   &
+      /(Omega_kl+0.2*delta_st/(TT/tran_data(k,2))) 
       species_viscosity(:,:,:,k)=(tmp)/(unit_mass/unit_length/unit_time)
+
       enddo
 
 
@@ -2865,16 +2869,12 @@ module Chemistry
       enddo 
 
       do j=1,nchemspec
-        if (maxval(f(:,:,:,ichemspec(j)))==0) then
+        if (maxval(f(:,:,:,ichemspec(j)))<1e-15) then
            f(:,:,:,ichemspec(j))=1e-15
         endif 
       enddo
 
-   do j=1,nchemspec
-        if (maxval(f(:,:,:,ichemspec(j)))==0) then
-           f(:,:,:,ichemspec(j))=1e-15
-        endif 
-      enddo
+    sum_Y=0.
 
      do j=1,nchemspec
       sum_Y=sum_Y+f(:,:,:,ichemspec(j))
