@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.64 2008-08-02 18:11:57 wlyra Exp $
+! $Id: temperature_idealgas.f90,v 1.65 2008-08-02 22:00:22 wlyra Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -20,7 +20,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; uglnTT; fpres(3)
+! PENCILS PROVIDED Ma2; uglnTT; ugTT; fpres(3)
 !
 !***************************************************************
 module Entropy
@@ -68,6 +68,7 @@ module Entropy
   logical :: lviscosity_heat=.true.
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
+  logical :: linitial_log=.false.
 
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=5) :: iinit_str
@@ -76,15 +77,16 @@ module Entropy
   real :: hcond0=impossible, hcond1=1.
   real :: Fbot=impossible,FbotKbot,Ftop,Kbot,FtopKtop
   logical :: lmultilayer=.false.
-
+!
 ! input parameters
   namelist /entropy_init_pars/ &
       initlnTT,radius_lnTT,ampl_lnTT,widthlnTT, &
       lnTT_left,lnTT_right,lnTT_const,TT_const, &
       kx_lnTT,ky_lnTT,kz_lnTT,center1_x,center1_y,center1_z, &
       mpoly0,mpoly1,r_bcz, &
-      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width,ltemperature_nolog
-
+      Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width,ltemperature_nolog,&
+      linitial_log
+!
 ! run parameters
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
@@ -140,7 +142,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.64 2008-08-02 18:11:57 wlyra Exp $")
+           "$Id: temperature_idealgas.f90,v 1.65 2008-08-02 22:00:22 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -426,7 +428,8 @@ module Entropy
       enddo
       if (lnothing.and.lroot) print*,'init_ss: nothing'
 !
-      if (ltemperature_nolog) f(:,:,:,ilnTT)=exp(f(:,:,:,ilnTT))
+      if (ltemperature_nolog.and.linitial_log) &
+           f(:,:,:,ilnTT)=exp(f(:,:,:,ilnTT))
 !
       if (NO_WARN) print*,xx,yy  !(to keep compiler quiet)        
 
@@ -503,7 +506,13 @@ module Entropy
 !
       if (lheatc_hyper3) lpenc_requested(i_del6lnTT)=.true.
 !
-      if (ladvection_temperature) lpenc_requested(i_uglnTT)=.true.
+      if (ladvection_temperature) then 
+        if (ltemperature_nolog) then 
+          lpenc_requested(i_ugTT)=.true.
+        else
+          lpenc_requested(i_uglnTT)=.true.
+        endif
+      endif
 !
 !  Diagnostics
 !
@@ -548,13 +557,10 @@ module Entropy
       endif
 !
       if (lpencil_in(i_uglnTT)) lpencil_in(i_glnTT)=.true.
+      if (lpencil_in(i_ugTT))   lpencil_in(i_gTT)  =.true.
 !
       if (lpencil_in(i_fpres)) then
-        if (ltemperature_nolog) then
-          lpencil_in(i_TT)=.true.
-        else
-          lpencil_in(i_cs2)=.true.
-        endif
+        lpencil_in(i_cs2)=.true.
         lpencil_in(i_glnrho)=.true.
         lpencil_in(i_glnTT)=.true.
       endif
@@ -585,15 +591,15 @@ module Entropy
       if (lpencil(i_uglnTT)) &
         call u_dot_grad(f,ilnTT,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_lnTT)
 !
+      if (lpencil(i_ugTT)) then
+        call u_dot_grad(f,ilnTT,p%gTT,p%uu,p%ugTT,UPWIND=lupw_lnTT)
+      endif
+!
 ! fpres
 !
       if (lpencil(i_fpres)) then
         do j=1,3
-          if (ltemperature_nolog) then
-            p%fpres(:,j)=-gamma1*gamma11*(p%TT*p%glnrho(:,j) + p%glnTT(:,j))
-          else
-            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma11
-          endif
+          p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma11
         enddo
       endif
 !
@@ -655,8 +661,13 @@ module Entropy
 !
 !  advection term and PdV-work
 !
-      if (ladvection_temperature) &
-         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%uglnTT
+      if (ladvection_temperature) then
+        if (ltemperature_nolog) then 
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%ugTT
+        else
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%uglnTT
+        endif
+      endif
 !
 !  Calculate viscous contribution to temperature
 !
