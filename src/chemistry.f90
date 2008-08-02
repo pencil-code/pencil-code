@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.115 2008-07-16 19:32:29 nilshau Exp $
+! $Id: chemistry.f90,v 1.116 2008-08-02 04:06:52 brandenb Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -113,6 +113,7 @@ module Chemistry
   integer :: idiag_Y6m=0        ! DIAG_DOC: $\left<Y_6\right>$
   integer :: idiag_Y7m=0        ! DIAG_DOC: $\left<Y_7\right>$
   integer :: idiag_Y8m=0        ! DIAG_DOC: $\left<Y_8\right>$
+  integer :: idiag_Y9m=0        ! DIAG_DOC: $\left<Y_9\right>$
   integer :: idiag_dY1m=0        ! DIAG_DOC: $\left<dY_1\right>$
   integer :: idiag_dY2m=0        ! DIAG_DOC: $\left<dY_2\right>$
   integer :: idiag_dY3m=0        ! DIAG_DOC: $\left<dY_3\right>$
@@ -121,6 +122,7 @@ module Chemistry
   integer :: idiag_dY6m=0        ! DIAG_DOC: $\left<dY_6\right>$
   integer :: idiag_dY7m=0        ! DIAG_DOC: $\left<dY_7\right>$
   integer :: idiag_dY8m=0        ! DIAG_DOC: $\left<dY_8\right>$
+  integer :: idiag_dY9m=0        ! DIAG_DOC: $\left<dY_9\right>$
 !
   contains
 
@@ -197,11 +199,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.115 2008-07-16 19:32:29 nilshau Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.116 2008-08-02 04:06:52 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.115 2008-07-16 19:32:29 nilshau Exp $")
+           "$Id: chemistry.f90,v 1.116 2008-08-02 04:06:52 brandenb Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -847,29 +849,30 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: exist,exist1,exist2
       integer :: i,j,k,stat,reac,spec
-
 !
 !  Find number of ractions
 !
        mreactions=2*nchemspec
        print*,'Number of reactions=',mreactions
 !
-!  Allocate reaction arrays
+!  Allocate reaction arrays (but not during reloading!)
 !
-      allocate(stoichio(nchemspec,mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for stoichio")
-      allocate(Sijm(nchemspec,mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for Sijm")
-      allocate(Sijp(nchemspec,mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for Sijp")
-      allocate(kreactions_z(mz,mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_z")
-      allocate(kreactions_p(mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_p")
-      allocate(kreactions_m(mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_m")
-      allocate(reaction_name(mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for reaction_name")
+      if (.not.lreloading) then
+        allocate(stoichio(nchemspec,mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for stoichio")
+        allocate(Sijm(nchemspec,mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for Sijm")
+        allocate(Sijp(nchemspec,mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for Sijp")
+        allocate(kreactions_z(mz,mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for kreactions_z")
+        allocate(kreactions_p(mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for kreactions_p")
+        allocate(kreactions_m(mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for kreactions_m")
+        allocate(reaction_name(mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for reaction_name")
+      endif
 !
 !  Initialize data
 !
@@ -959,9 +962,9 @@ module Chemistry
           endif
         enddo
       endif
-
+!
  100   format(8i4)
-
+!
     endsubroutine astrobiology_data
 !**********************************************************************
    subroutine chemkin_data(f)
@@ -1096,7 +1099,7 @@ module Chemistry
 !  indices
 !
       integer :: j,k
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8
+      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -1236,6 +1239,7 @@ module Chemistry
         if (idiag_Y6m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i6)),idiag_Y6m)
         if (idiag_Y7m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i7)),idiag_Y7m)
         if (idiag_Y8m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i8)),idiag_Y8m)
+        if (idiag_Y9m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i9)),idiag_Y9m)
       endif
 !
 ! Keep compiler quiet by ensuring every parameter is used
@@ -1313,8 +1317,10 @@ module Chemistry
       if (lreset) then
         idiag_Y1m=0; idiag_Y2m=0; idiag_Y3m=0; idiag_Y4m=0
         idiag_Y5m=0; idiag_Y6m=0; idiag_Y7m=0; idiag_Y8m=0
+        idiag_Y9m=0
         idiag_dY1m=0; idiag_dY2m=0; idiag_dY3m=0; idiag_dY4m=0
         idiag_dY5m=0; idiag_dY6m=0; idiag_dY7m=0; idiag_dY8m=0
+        idiag_dY9m=0
       endif
 !
       call chn(nchemspec,schemspec)
@@ -1330,6 +1336,7 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'Y6m',idiag_Y6m)
         call parse_name(iname,cname(iname),cform(iname),'Y7m',idiag_Y7m)
         call parse_name(iname,cname(iname),cform(iname),'Y8m',idiag_Y8m)
+        call parse_name(iname,cname(iname),cform(iname),'Y9m',idiag_Y9m)
         call parse_name(iname,cname(iname),cform(iname),'dY1m',idiag_dY1m)
         call parse_name(iname,cname(iname),cform(iname),'dY2m',idiag_dY2m)
         call parse_name(iname,cname(iname),cform(iname),'dY3m',idiag_dY3m)
@@ -1338,6 +1345,7 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'dY6m',idiag_dY6m)
         call parse_name(iname,cname(iname),cform(iname),'dY7m',idiag_dY7m)
         call parse_name(iname,cname(iname),cform(iname),'dY8m',idiag_dY8m)
+        call parse_name(iname,cname(iname),cform(iname),'dY9m',idiag_dY9m)
       enddo
 !
 !  Write chemistry index in short notation
@@ -1352,6 +1360,7 @@ module Chemistry
         write(3,*) 'i_Y6m=',idiag_Y6m
         write(3,*) 'i_Y7m=',idiag_Y7m
         write(3,*) 'i_Y8m=',idiag_Y8m
+        write(3,*) 'i_Y9m=',idiag_Y9m
         write(3,*) 'i_dY1m=',idiag_dY1m
         write(3,*) 'i_dY2m=',idiag_dY2m
         write(3,*) 'i_dY3m=',idiag_dY3m
@@ -1360,6 +1369,7 @@ module Chemistry
         write(3,*) 'i_dY6m=',idiag_dY6m
         write(3,*) 'i_dY7m=',idiag_dY7m
         write(3,*) 'i_dY8m=',idiag_dY8m
+        write(3,*) 'i_dY9m=',idiag_dY9m
         write(3,*) 'ichemspec=indgen('//trim(schemspec)//') + '//trim(snd1)
       endif
 !
@@ -2148,7 +2158,7 @@ module Chemistry
      real :: B_n_0,alpha_n_0,E_an_0
      real, dimension (nx) ::  kf_0,Kc_0,Pr,sum_sp,prod1_0,prod2_0
      real, dimension (nchemspec) :: a_k4 
-     integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8
+     integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
 !
 ! Hopefully, the following will make things blow up for the people who try to
 ! use a_k4 without setting it (not to mention their bizarre code indentation...)
@@ -2407,7 +2417,7 @@ module Chemistry
   integer :: k,j
   real :: sum_omega
   real :: sum_Y
-  integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8
+  integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
 
   intent(in) :: f
 
@@ -2467,6 +2477,7 @@ module Chemistry
         if (idiag_dY6m/=0) call sum_mn_name(p%DYDt_reac(:,i6),idiag_dY6m)
         if (idiag_dY7m/=0) call sum_mn_name(p%DYDt_reac(:,i7),idiag_dY7m)
         if (idiag_dY8m/=0) call sum_mn_name(p%DYDt_reac(:,i8),idiag_dY8m)
+        if (idiag_dY9m/=0) call sum_mn_name(p%DYDt_reac(:,i9),idiag_dY9m)
       endif
 
    ! print*,'sum_omega',sum_omega
