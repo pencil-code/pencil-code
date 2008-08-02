@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.112 2008-08-02 18:07:04 wlyra Exp $
+! $Id: eos_idealgas.f90,v 1.113 2008-08-02 21:53:12 wlyra Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -113,7 +113,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.112 2008-08-02 18:07:04 wlyra Exp $')
+           '$Id: eos_idealgas.f90,v 1.113 2008-08-02 21:53:12 wlyra Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -553,8 +553,8 @@ module EquationOfState
 !
       case (irho_TT)
         if (lpencil_in(i_ss)) then
-          lpencil_in(i_rho)=.true.
-          lpencil_in(i_TT)=.true.
+          lpencil_in(i_lnrho)=.true.
+          lpencil_in(i_lnTT)=.true.
         endif
         if (lpencil_in(i_glnTT)) then
           lpencil_in(i_gTT)=.true.
@@ -705,10 +705,11 @@ module EquationOfState
 !  work out thermodynamic quantities for given lnrho or rho and TT
 !
       case (ilnrho_TT,irho_TT)
-        if (lpencil(i_TT))  p%TT=f(l1:l2,m,n,ieosvar2)
-        if (lpencil(i_TT1)) p%TT1=1./f(l1:l2,m,n,ieosvar2)
-        if (lpencil(i_cs2)) p%cs2=cp*p%TT*gamma1
-        if (lpencil(i_gTT)) call grad(f,ieosvar2,p%gTT)
+        if (lpencil(i_TT))   p%TT=f(l1:l2,m,n,ieosvar2)
+        if (lpencil(i_TT1))  p%TT1=1./f(l1:l2,m,n,ieosvar2)
+        if (lpencil(i_lnTT)) p%lnTT=log(f(l1:l2,m,n,ieosvar2))
+        if (lpencil(i_cs2))  p%cs2=cp*gamma1*f(l1:l2,m,n,ieosvar2)
+        if (lpencil(i_gTT))  call grad(f,ieosvar2,p%gTT)
         if (lpencil(i_glnTT)) then
           do i=1,3;p%glnTT(:,i)=p%gTT(:,i)*p%TT1;enddo
         endif
@@ -721,7 +722,7 @@ module EquationOfState
           p%del2lnTT=p%del2TT*p%TT1 - tmp
         endif
         if (lpencil(i_del6TT)) call del6(f,ieosvar2,p%del6TT)
-        if (lpencil(i_ss)) p%ss=cv*(log(p%TT)-lnTT0-gamma1*(p%lnrho-lnrho0))
+        if (lpencil(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma1*(p%lnrho-lnrho0))
 !
 !  work out thermodynamic quantities for given lnrho or rho and cs2
 !
