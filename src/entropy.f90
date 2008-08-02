@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.552 2008-06-20 10:13:26 ajohan Exp $
+! $Id: entropy.f90,v 1.553 2008-08-02 23:39:14 wlyra Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -73,6 +73,7 @@ module Entropy
   logical :: lheatc_hubeny=.false.
   logical :: lheatc_corona=.false.
   logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
+  logical :: lheatc_hyper3ss_polar=.false.
   logical :: lupw_ss=.false.
   logical, target :: lmultilayer=.true.
   logical :: ladvection_entropy=.true.
@@ -223,7 +224,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.552 2008-06-20 10:13:26 ajohan Exp $")
+           "$Id: entropy.f90,v 1.553 2008-08-02 23:39:14 wlyra Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -511,6 +512,7 @@ module Entropy
       lheatc_corona=.false.
       lheatc_shock=.false.
       lheatc_hyper3ss=.false.
+      lheatc_hyper3ss_polar=.false.
 !
       lnothing=.false.
 !
@@ -546,6 +548,9 @@ module Entropy
         case ('hyper3_ss')
           lheatc_hyper3ss=.true.
           if (lroot) print*, 'heat conduction: hyperdiffusivity of ss'
+        case ('hyper3_cyl','hyper3-cyl','hyper3-sph','hyper3_sph')
+          lheatc_hyper3ss_polar=.true.
+          if (lroot) print*, 'heat conduction: hyperdiffusivity of ss'
         case ('nothing')
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
@@ -576,6 +581,9 @@ module Entropy
         call warning('initialize_entropy','Kgperp or Kgpara is zero!')
       endif
       if (lheatc_hyper3ss .and. chi_hyper3==0.0) then
+        call warning('initialize_entropy','chi_hyper3 is zero!')
+      endif
+      if (lheatc_hyper3ss_polar .and. chi_hyper3==0.0) then
         call warning('initialize_entropy','chi_hyper3 is zero!')
       endif
       if (lheatc_shock .and. chi_shock==0.0) then
@@ -2068,6 +2076,7 @@ module Entropy
           dt1_max=max(dt1_max,maxval(abs(rhs*p%rho1)*gamma)/(cdts))
         endif
       endif
+      if (lheatc_hyper3ss_polar) call calc_heatcond_hyper3_polar(f,df,p)
 !
 !  Explicit heating/cooling terms.
 !
@@ -2313,6 +2322,43 @@ module Entropy
       if (lfirst.and.ldt) diffus_chi3=diffus_chi3+chi_hyper3*dxyz_6
 !
     endsubroutine calc_heatcond_hyper3
+!***********************************************************************
+    subroutine calc_heatcond_hyper3_polar(f,df,p)
+!
+!  Naive hyperdiffusivity of entropyin polar coordinates
+!
+!  03-aug-08/wlad: coded
+!
+      use Cdata
+      use Sub
+      use Deriv, only: der6
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: tmp
+      integer :: j
+      type (pencil_case) :: p
+!
+      real, dimension (nx) :: thdiff
+!
+      intent(in)  :: f
+      intent(out) :: df
+!
+      if (headtt) print*, 'calc_heatcond_hyper3: chi_hyper3=', chi_hyper3
+!
+      do j=1,3
+        call der6(f,iss,tmp,j,IGNOREDX=.true.)
+        thdiff = thdiff + chi_hyper3*pi4_1*tmp*dline_1(:,j)**2
+      enddo
+!
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+!
+      if (headtt) print*,'calc_heatcond_hyper3: added thdiff'
+!
+      if (lfirst.and.ldt) &
+           diffus_chi3=diffus_chi3+diffus_chi3*pi4_1*dxyz_2
+!
+    endsubroutine calc_heatcond_hyper3_polar
 !***********************************************************************
     subroutine calc_heatcond_shock(df,p)
 !
