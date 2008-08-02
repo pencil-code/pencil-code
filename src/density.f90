@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.392 2008-06-17 15:34:08 ajohan Exp $
+! $Id: density.f90,v 1.393 2008-08-02 15:39:13 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -57,7 +57,7 @@ module Density
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_aniso=.false.
-  logical :: ldiff_hyper3_cyl_or_sph=.false.,lanti_shockdiffusion=.false.
+  logical :: ldiff_hyper3_polar=.false.,lanti_shockdiffusion=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: lfreeze_lnrhosqu=.false.,lexponential_smooth=.false.
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
@@ -139,7 +139,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.392 2008-06-17 15:34:08 ajohan Exp $")
+           "$Id: density.f90,v 1.393 2008-08-02 15:39:13 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -190,14 +190,14 @@ module Density
         print*, 'initialize_density: 0-D run, turned off continity equation'
       endif
 !
-!  Initialize dust diffusion
+!  Initialize mass diffusion
 !
       ldiff_normal=.false.
       ldiff_shock=.false.
       ldiff_hyper3=.false.
       ldiff_hyper3lnrho=.false.
       ldiff_hyper3_aniso=.false.
-      ldiff_hyper3_cyl_or_sph=.false.
+      ldiff_hyper3_polar=.false.
 !
       lnothing=.false.
 !
@@ -217,7 +217,7 @@ module Density
           ldiff_hyper3_aniso=.true.
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           if (lroot) print*,'diffusion: Dhyper/pi^4 *(Delta(rho))^6/Deltaq^2'
-          ldiff_hyper3_cyl_or_sph=.true.
+          ldiff_hyper3_polar=.true.
         case ('shock','diff-shock','diffrho-shock')
           if (lroot) print*,'diffusion: shock diffusion'
           ldiff_shock=.true.
@@ -1190,7 +1190,7 @@ module Density
       endif
       if (ldiff_hyper3) lpenc_requested(i_del6rho)=.true.
       if (ldiff_hyper3.and..not.ldensity_nolog) lpenc_requested(i_rho)=.true.
-      if (ldiff_hyper3_cyl_or_sph.and..not.ldensity_nolog) &
+      if (ldiff_hyper3_polar.and..not.ldensity_nolog) &
            lpenc_requested(i_rho1)=.true.
       if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
 !
@@ -1495,7 +1495,7 @@ module Density
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
 !
-      if (ldiff_hyper3_cyl_or_sph) then
+      if (ldiff_hyper3_polar) then
         do j=1,3
           call der6(f,ilnrho,tmp,j,IGNOREDX=.true.)
           if (.not.ldensity_nolog) tmp=tmp*p%rho1

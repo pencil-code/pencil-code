@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.101 2008-07-31 13:05:33 ajohan Exp $
+! $Id: viscosity.f90,v 1.102 2008-08-02 15:39:13 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -48,7 +48,7 @@ module Viscosity
   logical :: lvisc_nu_shock=.false.
   logical :: lvisc_hyper2_simplified=.false.
   logical :: lvisc_hyper3_simplified=.false.
-  logical :: lvisc_hyper3_cyl_or_sph=.false.
+  logical :: lvisc_hyper3_polar=.false.
   logical :: lvisc_hyper3_rho_nu_const=.false.
   logical :: lvisc_hyper3_mu_const_strict=.false.
   logical :: lvisc_hyper3_nu_const_strict=.false.
@@ -115,7 +115,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.101 2008-07-31 13:05:33 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.102 2008-08-02 15:39:13 wlyra Exp $")
 !
 !  Default viscosity.
 !
@@ -148,7 +148,7 @@ module Viscosity
       lvisc_nu_shock=.false.
       lvisc_hyper2_simplified=.false.
       lvisc_hyper3_simplified=.false.
-      lvisc_hyper3_cyl_or_sph=.false.
+      lvisc_hyper3_polar=.false.
       lvisc_hyper3_rho_nu_const=.false.
       lvisc_hyper3_rho_nu_const_symm=.false.
       lvisc_hyper3_mu_const_strict=.false.
@@ -203,7 +203,7 @@ module Viscosity
           lvisc_hyper3_simplified=.true.
         case ('hyper3-cyl','hyper3_cyl','hyper3-sph','hyper3_sph')  
           if (lroot) print*,'viscous force: nu_hyper/pi^4 *(Deltav)^6/Deltaq^2'
-          lvisc_hyper3_cyl_or_sph=.true.
+          lvisc_hyper3_polar=.true.
         case ('hyper3_rho_nu-const')
           if (lroot) print*,'viscous force: nu_hyper/rho*del6v'
           lvisc_hyper3_rho_nu_const=.true.
@@ -280,7 +280,7 @@ module Viscosity
         if ( (lvisc_hyper3_simplified.or.lvisc_hyper3_rho_nu_const.or. &
               lvisc_hyper3_rho_nu_const_bulk.or.lvisc_hyper3_nu_const.or. &
               lvisc_hyper3_rho_nu_const_symm.or. &
-              lvisc_hyper3_cyl_or_sph.or.&
+              lvisc_hyper3_polar.or.&
               lvisc_hyper3_mu_const_strict .or. &
               lvisc_hyper3_nu_const_strict ).and. &
               nu_hyper3==0.0 ) &
@@ -783,7 +783,7 @@ module Viscosity
         if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
       endif
 !
-      if (lvisc_hyper3_cyl_or_sph) then
+      if (lvisc_hyper3_polar) then
 !
 ! General way of coding an anisotropic hyperviscosity.
 !
@@ -796,7 +796,7 @@ module Viscosity
           if (lpencil(i_visc_heat)) then
             if (headtt) then
               call warning('calc_pencils_viscosity', 'viscous heating term '//&
-                   'is not implemented for lvisc_hyper3_cyl_or_sph')
+                   'is not implemented for lvisc_hyper3_polar')
             endif
           endif
           if (lfirst.and.ldt) &
