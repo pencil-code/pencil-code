@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.111 2008-06-17 15:34:08 ajohan Exp $
+! $Id: eos_idealgas.f90,v 1.112 2008-08-02 18:07:04 wlyra Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -12,6 +12,7 @@
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp; cp1; cp1tilde
 ! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; del6lnTT; gamma; lncp
+! PENCILS PROVIDED del2TT; del6TT
 !
 !***************************************************************
 
@@ -40,6 +41,7 @@ module EquationOfState
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
   integer, parameter :: ilnrho_lnTT=4,ilnrho_cs2=5
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
+  integer, parameter :: irho_TT=10
 
   integer :: iglobal_cs2, iglobal_glnTT
 
@@ -111,7 +113,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.111 2008-06-17 15:34:08 ajohan Exp $')
+           '$Id: eos_idealgas.f90,v 1.112 2008-08-02 18:07:04 wlyra Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -357,6 +359,9 @@ module EquationOfState
         case (ieosvar_rho+ieosvar_cs2)
           if (lroot) print*,"select_eos_variable: Using rho and cs2",iproc
           ieosvars=irho_cs2
+        case (ieosvar_rho+ieosvar_TT)
+          if (lroot) print*,"select_eos_variable: Using rho and TT"
+          ieosvars=irho_TT
         case default
           if (lroot) print*,"select_eos_variable: Thermodynamic variable combination, ieosvar_selected= ",ieosvar_selected
           call fatal_error("select_eos_variable", &
@@ -422,7 +427,9 @@ module EquationOfState
       logical, dimension(npencils) :: lpencil_in
 !
       if (lpencil_in(i_cp)) lpencil_in(i_cp1)=.true.
+!
       select case (ieosvars)
+!
       case (ilnrho_ss,irho_ss)
         if (lpencil_in(i_ee)) then
           lpencil_in(i_lnTT)=.true.
@@ -473,6 +480,7 @@ module EquationOfState
             lpencil_in(i_ss)=.true.
           endif
         endif
+!
       case (ilnrho_lnTT,irho_lnTT)
         if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
         if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
@@ -516,6 +524,7 @@ module EquationOfState
         else
           if (lpencil_in(i_cs2)) lpencil_in(i_lnTT)=.true.
         endif
+!
       case (ilnrho_cs2,irho_cs2)
         if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
         if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
@@ -535,12 +544,28 @@ module EquationOfState
         else
           if (lpencil_in(i_pp)) lpencil_in(i_cs2)=.true.
         endif
+!
       case (ilnrho_TT)
         if (lpencil_in(i_ss)) then
           lpencil_in(i_lnrho)=.true.
           lpencil_in(i_TT)=.true.
         endif
-
+!
+      case (irho_TT)
+        if (lpencil_in(i_ss)) then
+          lpencil_in(i_rho)=.true.
+          lpencil_in(i_TT)=.true.
+        endif
+        if (lpencil_in(i_glnTT)) then
+          lpencil_in(i_gTT)=.true.
+          lpencil_in(i_TT1)=.true.
+        endif
+        if (lpencil_in(i_del2lnTT)) then
+          lpencil_in(i_del2TT)=.true.
+          lpencil_in(i_glnTT)=.true.
+          lpencil_in(i_TT1)=.true.
+        endif
+!
       case default
         call fatal_error("pencil_interdep_eos","case not implemented yet")
       endselect
@@ -562,7 +587,8 @@ module EquationOfState
 !
       intent(in) :: f
       intent(inout) :: p
-      real, dimension(nx) :: grhogrho,d2rho
+      real, dimension(nx) :: grhogrho,d2rho,tmp
+      integer :: i
 !
 !  Convert del2lnrho to rho-only terms; done here to avoid
 !  repeated calls to dot2
@@ -571,7 +597,6 @@ module EquationOfState
         call dot2(p%grho,grhogrho)
         d2rho=p%rho1*(p%del2rho+p%rho1*grhogrho)
       endif
-!
 !
 ! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG
 ! FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
@@ -677,14 +702,25 @@ module EquationOfState
         if (lpencil(i_hss)) p%hss=cv*(p%hlnTT-gamma1*p%hlnrho)
         if (lpencil(i_del6ss)) call fatal_error("calc_pencils_eos","del6ss not available for ilnrho_lnTT")
 !
-!  work out thermodynamic quantities for given lnrho and TT
+!  work out thermodynamic quantities for given lnrho or rho and TT
 !
-      case (ilnrho_TT)
+      case (ilnrho_TT,irho_TT)
         if (lpencil(i_TT))  p%TT=f(l1:l2,m,n,ieosvar2)
         if (lpencil(i_TT1)) p%TT1=1./f(l1:l2,m,n,ieosvar2)
         if (lpencil(i_cs2)) p%cs2=cp*p%TT*gamma1
-        if (lpencil(i_glnTT)) call grad(f,ieosvar2,p%glnTT)
-        if (lpencil(i_del2lnTT)) call del2(f,ieosvar2,p%del2lnTT)
+        if (lpencil(i_gTT)) call grad(f,ieosvar2,p%gTT)
+        if (lpencil(i_glnTT)) then
+          do i=1,3;p%glnTT(:,i)=p%gTT(:,i)*p%TT1;enddo
+        endif
+        if (lpencil(i_del2TT)) call del2(f,ieosvar2,p%del2TT)
+        if (lpencil(i_del2lnTT)) then 
+          tmp=0.
+          do i=1,3
+            tmp=tmp+p%glnTT(:,i)**2
+          enddo
+          p%del2lnTT=p%del2TT*p%TT1 - tmp
+        endif
+        if (lpencil(i_del6TT)) call del6(f,ieosvar2,p%del6TT)
         if (lpencil(i_ss)) p%ss=cv*(log(p%TT)-lnTT0-gamma1*(p%lnrho-lnrho0))
 !
 !  work out thermodynamic quantities for given lnrho or rho and cs2
@@ -1127,10 +1163,10 @@ module EquationOfState
           if (present(pp)) pp=(cp-cv)*exp(lnTT_)*lnrho_
         endif
 !
-! Log rho and T
+! Log rho or rho and T
 !
-      case (ilnrho_TT)
-          call fatal_error('eoscalc_farray','no implemented for lnrho_TT')
+      case (ilnrho_TT,irho_TT)
+          call fatal_error('eoscalc_farray','no implemented for lnrho_TT or rho_TT')
 !
 ! Log rho and cs2
 !
