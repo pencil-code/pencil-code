@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.118 2008-08-03 08:58:44 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.119 2008-08-03 10:25:37 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -199,11 +199,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.118 2008-08-03 08:58:44 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.119 2008-08-03 10:25:37 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.118 2008-08-03 08:58:44 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.119 2008-08-03 10:25:37 nbabkovs Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -828,7 +828,7 @@ module Chemistry
          write(file_id,'(7E12.4)') maxval(nu_dyn)*(unit_mass/unit_length/unit_time)
          write(file_id,*) ''
          write(file_id,*) 'Thermal cond, erg/(cm K s),'
-         write(file_id,'(7E12.4)') maxval(0.5*(tmp_sum+1./tmp_sum2)*1e4/Rgas*Rgas_unit_sys)
+         write(file_id,'(7E12.4)') maxval(0.5*(tmp_sum+1./tmp_sum2)*unit_energy/unit_time/unit_length/unit_temperature)
          write(file_id,*) ''
          write(file_id,*) ' Diffusion coefficient, cm^2/s'
          write(file_id,'(7E12.4)') maxval(Diff_full)*unit_length**2/unit_time
