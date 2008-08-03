@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.117 2008-08-02 17:12:03 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.118 2008-08-03 08:58:44 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -199,11 +199,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.117 2008-08-02 17:12:03 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.118 2008-08-03 08:58:44 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.117 2008-08-02 17:12:03 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.118 2008-08-03 08:58:44 nbabkovs Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -1166,6 +1166,14 @@ module Chemistry
         sum_DYDt=0.
         do k=1,nchemspec
          sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-H0_RT(l1:l2,m,n,k))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Testing of the conservation of enthalpy !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! HHHHH
+
+!         sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-0.*H0_RT(l1:l2,m,n,k))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
+
         enddo
 
         call dot_mn(p%ghYrho,p%uu,ghYrho_uu)
@@ -1175,6 +1183,17 @@ module Chemistry
           !/(p%cp-Rgas*p%mu1)&
         +(hYrho_full(l1:l2,m,n)*p%divu(:)+ghYrho_uu(:))/p%TT(:)*p%cv1
           !/(p%cp-Rgas*p%mu1)
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Testing of the conservation of enthalpy !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! HHHHHHH
+
+ !       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
+ !       + (sum_DYDt(:)- Rgas*p%mu1*p%divu) &
+ !         /(p%cp-Rgas*p%mu1*0.)
 
 
         if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
@@ -2230,9 +2249,12 @@ module Chemistry
             hYrho_full=hYrho_full+H0_RT(:,:,:,k)*Rgas*TT_full(:,:,:)*f(:,:,:,ichemspec(k))/species_constants(k,imass)
           enddo
 
- !  print*,'HHH', &
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Testing of the conservation of enthalpy !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ !  print*,'HHHHH', &
  !  hYrho_full(l1,m1,n1)-Rgas*exp(f(l1,m1,n1,ilnTT))*mu1_full(l1,m1,n1),&
- !   hYrho_full(l1,m1,n1)
+!    hYrho_full(l1,m1,n1)
 
 
           hYrho_full=hYrho_full*exp(f(:,:,:,ilnrho))
@@ -2763,6 +2785,15 @@ module Chemistry
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  & 
         + p%lambda(:)*(p%del2lnTT+g2TT+g2TTlnlambda)*p%cv1
                             !/(p%cp-Rgas*p%mu1)
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Testing of the conservation of enthalpy !! 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! HHHHH
+  !     df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  & 
+  !      + p%lambda(:)*(p%del2lnTT+g2TT+g2TTlnlambda) &
+  !                /(p%cp-Rgas*p%mu1*0.)
 
 !print*,'Natalia',maxval(p%lambda(:)),maxval(p%del2lnTT),maxval(p%del2lnTT+g2TT +g2TTlnlambda)/(p%cp-Rgas*p%mu1))
 
