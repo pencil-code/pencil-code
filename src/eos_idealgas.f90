@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.113 2008-08-02 21:53:12 wlyra Exp $
+! $Id: eos_idealgas.f90,v 1.114 2008-08-03 13:03:37 wlyra Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -113,7 +113,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.113 2008-08-02 21:53:12 wlyra Exp $')
+           '$Id: eos_idealgas.f90,v 1.114 2008-08-03 13:03:37 wlyra Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1287,7 +1287,15 @@ module EquationOfState
         ss_=cv*(log(TT_)-lnTT0-gamma1*(lnrho_-lnrho0))
         ee_=cv*TT_
         pp_=ee_*exp(lnrho_)*gamma1
-        cs2_=gamma1*TT_
+        cs2_=cp*gamma1*TT_
+
+      case (irho_TT)
+        lnrho_=log(var1)
+        TT_=var2
+        ss_=cv*(log(TT_)-lnTT0-gamma1*(lnrho_-lnrho0))
+        ee_=cv*TT_
+        pp_=ee_*var1*gamma1
+        cs2_=cp*gamma1*TT_
 
       case default
         call not_implemented('eoscalc_point')
@@ -1370,7 +1378,15 @@ module EquationOfState
         ss_=cv*(log(TT_)-lnTT0-gamma1*(lnrho_-lnrho0))
         ee_=cv*TT_
         pp_=ee_*exp(lnrho_)*gamma1
-        cs2_=gamma1*TT_
+        cs2_=cp*gamma1*TT_
+
+      case (irho_TT)
+        lnrho_=log(var1)
+        TT_=var2
+        ss_=cv*(log(TT_)-lnTT0-gamma1*(lnrho_-lnrho0))
+        ee_=cv*TT_
+        pp_=ee_*var1*gamma1
+        cs2_=cp*gamma1*TT_
 
       case default
         call not_implemented('eoscalc_point')
