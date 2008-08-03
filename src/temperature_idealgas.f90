@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.65 2008-08-02 22:00:22 wlyra Exp $
+! $Id: temperature_idealgas.f90,v 1.66 2008-08-03 17:21:46 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -142,7 +142,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.65 2008-08-02 22:00:22 wlyra Exp $")
+           "$Id: temperature_idealgas.f90,v 1.66 2008-08-03 17:21:46 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -466,9 +466,13 @@ module Entropy
 !
       if (lheatc_Kconst) then
         if (ldensity) lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_glnTT)=.true.
-        lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_cp1)=.true.
+        if (ltemperature_nolog) then
+          lpenc_requested(i_del2TT)=.true.
+        else
+          lpenc_requested(i_glnTT)=.true.
+          lpenc_requested(i_del2lnTT)=.true.
+        endif
       endif
 !
       if (lheatc_Kprof) then
@@ -728,7 +732,7 @@ module Entropy
 !  Multiply diffusion coefficient by Nyquist scale.
 !
       if (lfirst.and.ldt) then
-        diffus_chi =diffus_chi *dxyz_2
+!       diffus_chi =diffus_chi *dxyz_2
         diffus_chi3=diffus_chi3*dxyz_6
         if (headtt.or.ldebug) then
           print*,'dss_dt: max(diffus_chi ) =', maxval(diffus_chi)
@@ -1012,7 +1016,7 @@ module Entropy
       endif
 !
       if (ltemperature_nolog) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*p%del2lnTT
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*p%del2TT
       else
         call dot(p%glnTT,p%glnTT,g2)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g2 + p%del2lnTT)
