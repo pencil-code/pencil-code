@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.68 2008-08-04 17:20:39 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.69 2008-08-04 21:45:38 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -142,7 +142,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.68 2008-08-04 17:20:39 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.69 2008-08-04 21:45:38 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -236,6 +236,8 @@ module Entropy
           if (lroot) call information('initialize_entropy',' heat conduction: K=K(r)')
         case('K-arctan')
           lheatc_Karctan=.true.         
+          if (.not. ltemperature_nolog) &
+            call fatal_error('calc_heatcond_arctan','only valid for TT')
           if (lroot) call information('initialize_entropy',' heat conduction: arctan profile')
         case('chi-const')
           lheatc_chiconst=.true.
@@ -488,8 +490,8 @@ module Entropy
       if (lheatc_Karctan) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_TT)=.true.
-        lpenc_requested(i_glnTT)=.true.
-        lpenc_requested(i_del2lnTT)=.true.
+        lpenc_requested(i_gTT)=.true.
+        lpenc_requested(i_del2TT)=.true.
         lpenc_requested(i_cp1)=.true.
       endif
 !
@@ -1047,20 +1049,18 @@ module Entropy
       real, dimension (nx,3) :: gLnhcond=0.
       type (pencil_case)     :: p
 !
-      if (.not. ltemperature_nolog) &
-         call fatal_error('calc_heatcond_arctan','only valid for TT')
-!
       call heatcond_TT(p%TT, hcond, dhcond)
 ! must specify the new bottom value of hcond for the 'c1' BC
       if (n == n1) hcond0=hcond(1) 
+! grad LnK=grad_T Ln K.grad(TT)
       dhcond=dhcond/hcond
-      call multsv(dhcond, p%glnTT, gLnhcond)
-      call dot(gLnhcond, p%glnTT, g1)
+      call multsv(dhcond, p%gTT, gLnhcond)
+      call dot(gLnhcond, p%gTT, g1)
 !
 !  Add heat conduction to RHS of temperature equation
 !
       chix=p%rho1*hcond*p%cp1
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g1+p%del2lnTT)
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g1+p%del2TT)
 !
 !  check maximum diffusion from thermal diffusion
 !
