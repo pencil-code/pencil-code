@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.121 2008-08-05 13:55:00 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.122 2008-08-05 15:39:42 brandenb Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -223,11 +223,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.121 2008-08-05 13:55:00 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.122 2008-08-05 15:39:42 brandenb Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.121 2008-08-05 13:55:00 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.122 2008-08-05 15:39:42 brandenb Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -2261,6 +2261,7 @@ module Chemistry
      real :: B_n_0,alpha_n_0,E_an_0
      real, dimension (nx) ::  kf_0,Kc_0,Pr,sum_sp,prod1_0,prod2_0
      real, dimension (nchemspec) :: a_k4 
+!--     real, dimension (nchemspec) :: fact !(Axel test)
      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
 !
 ! Hopefully, the following will make things blow up for the people who try to
@@ -2315,6 +2316,14 @@ module Chemistry
            enddo
           enddo
          enddo
+!
+!  experminent: H0_RT_3 -> -H0_RT_3
+!
+!fact=Rgas*TT_full(4,4,4)/species_constants(:,imass)
+!print*,'1) H0_RT(4,4,4,:)=',H0_RT(4,4,4,:)*fact
+!H0_RT(4,4,4,3)=abs(H0_RT(4,4,4,3))
+!H0_RT(4,4,4,3)=0.
+!print*,'2) H0_RT(4,4,4,:)=',H0_RT(4,4,4,:)*fact
 
         if (lwrite)    write(file_id,*)varname(ichemspec(k)), maxval(H0_RT(:,:,:,k)),minval(H0_RT(:,:,:,k))
        enddo
