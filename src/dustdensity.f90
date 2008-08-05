@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.180 2008-08-05 06:26:07 ajohan Exp $
+! $Id: dustdensity.f90,v 1.181 2008-08-05 12:37:54 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -11,11 +11,12 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED glnnd(3,ndustspec); gmi(3,ndustspec); gmd(3,ndustspec)
-! PENCILS PROVIDED gnd(3,ndustspec); md(ndustspec); mi(ndustspec)
+! PENCILS PROVIDED gnd(3,ndustspec); grhod(3,ndustspec)
+! PENCILS PROVIDED md(ndustspec); mi(ndustspec)
 ! PENCILS PROVIDED nd(ndustspec); rhod(ndustspec); epsd(ndustspec)
 ! PENCILS PROVIDED udgmi(ndustspec); udgmd(ndustspec); udglnnd(ndustspec)
 ! PENCILS PROVIDED udgnd(ndustspec); glnnd2(ndustspec)
-! PENCILS PROVIDED sdglnnd(3,ndustspec); del2nd(ndustspec);
+! PENCILS PROVIDED sdglnnd(3,ndustspec); del2nd(ndustspec); del2rhod(ndustspec)
 ! PENCILS PROVIDED del2lnnd(ndustspec); del6nd(ndustspec); del2md(ndustspec)
 ! PENCILS PROVIDED del2mi(ndustspec); del6lnnd(ndustspec)
 ! PENCILS PROVIDED gndglnrho(ndustspec); glnndglnrho(ndustspec)
@@ -36,7 +37,7 @@ module Dustdensity
   integer, parameter :: ndiffd_max=4
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(0:5) :: coeff_smooth=0.0
-  real :: diffnd=0.0,diffnd_hyper3=0.0,diffmd=0.0,diffmi=0.0
+  real :: diffnd=0.0,diffnd_hyper3=0.0,diffmd=0.0,diffmi=0.0,diffnd_shock=0.0
   real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,Sigmad=1.0
   real :: mdave0=1., adpeak=5e-4, supsatfac=1.,supsatfac1=1.
   real :: amplnd=1.,kx_nd=1.,ky_nd=1.,kz_nd=1.,widthnd=1.,Hnd=1.0,Hepsd=1.0
@@ -54,6 +55,7 @@ module Dustdensity
   logical :: lreinit_dustvars_ndneg=.false.
   logical :: ldiffd_simplified=.false.,ldiffd_dusttogasratio=.false.
   logical :: ldiffd_hyper3=.false.,ldiffd_hyper3lnnd=.false.
+  logical :: ldiffd_shock=.false.
 
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, mdave0, Hnd, &
@@ -65,7 +67,8 @@ module Dustdensity
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
-      idiffd, lreinit_dustvars_ndneg, lupw_ndmdmi, deltavd_imposed
+      idiffd, lreinit_dustvars_ndneg, lupw_ndmdmi, deltavd_imposed, &
+      diffnd_shock
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
@@ -146,7 +149,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.180 2008-08-05 06:26:07 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.181 2008-08-05 12:37:54 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -207,6 +210,7 @@ module Dustdensity
       ldiffd_simplified=.false.
       ldiffd_dusttogasratio=.false.
       ldiffd_hyper3=.false.
+      ldiffd_shock=.false.
 !
       lnothing=.false.
 !
@@ -224,6 +228,9 @@ module Dustdensity
         case ('hyper3lnnd')
           if (lroot) print*,'dust diffusion: (d^6/dx^6+d^6/dy^6+d^6/dz^6)lnnd'
           ldiffd_hyper3lnnd=.true.
+        case ('shock')
+          if (lroot) print*,'dust diffusion: div(Dshock*grad(nd))'
+          ldiffd_shock=.true.
         case ('')
           if (lroot .and. (.not. lnothing)) print*,'dust diffusion: nothing'
         case default
@@ -245,6 +252,11 @@ module Dustdensity
             'dust diffusion coefficient diffnd_hyper3 is zero!')
         ldiffd_hyper3=.false.
         ldiffd_hyper3lnnd=.false.
+      endif
+      if ( ldiffd_shock .and. diffnd_shock==0.0) then
+        call warning('initialize_dustdensity', &
+            'dust diffusion coefficient diffnd_shock is zero!')
+        ldiffd_shock=.false.
       endif
 !
 !  Hyperdiffusion only works with (not log) density. One must either use
@@ -709,6 +721,12 @@ module Dustdensity
       if (ldiffd_dusttogasratio .and. ldustdensity_log) &
           lpenc_requested(i_glnndglnrho)=.true.
       if (ldiffd_hyper3lnnd) lpenc_requested(i_del6lnnd)=.true.
+      if (ldiffd_shock) then
+        lpenc_requested(i_shock)=.true.
+        lpenc_requested(i_gshock)=.true.
+        lpenc_requested(i_gnd)=.true.
+        lpenc_requested(i_del2nd)=.true.
+      endif
       if (lmdvar .and. diffmd/=0.) lpenc_requested(i_del2md)=.true.
       if (lmice .and. diffmi/=0.) lpenc_requested(i_del2mi)=.true.
 !
@@ -804,6 +822,12 @@ module Dustdensity
           else
             call grad(f,ind(k),p%gnd(:,:,k))
           endif
+        endif
+! grhod
+        if (lpencil(i_grhod)) then
+          do i=1,3
+            p%grhod(:,i,k)=p%gnd(:,i,k)*p%md(:,k)
+          enddo
         endif
 ! glnnd
         if (lpencil(i_glnnd)) then
@@ -927,6 +951,8 @@ module Dustdensity
             endif
           endif
         endif
+! del2rhod
+        if (lpencil(i_del2rhod)) p%del2rhod(:,k)=p%md(:,k)*p%del2nd(:,k)
 ! del2md
         if (lpencil(i_del2md)) then
           if (lmdvar) then
@@ -968,7 +994,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: mfluxcond,fdiffd
+      real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd
       integer :: k
 !
       intent(in)  :: f,p
@@ -1054,6 +1080,15 @@ module Dustdensity
           endif
           if (lfirst.and.ldt) diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*dxyz_6
         endif
+!
+        if (ldiffd_shock) then
+          call dot_mn(p%gshock,p%gnd(:,:,k),gshockgnd)
+          fdiffd = fdiffd + diffnd_shock*p%shock*p%del2nd(:,k) + &
+                   diffnd_shock*gshockgnd
+          if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd_shock*p%shock*dxyz_2
+        endif
+!
+!  Add diffusion term.
 !
         df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + fdiffd
 !
