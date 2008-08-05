@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.179 2008-07-29 07:53:44 ajohan Exp $
+! $Id: dustdensity.f90,v 1.180 2008-08-05 06:26:07 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -73,6 +73,7 @@ module Dustdensity
   integer, dimension(ndustspec) :: idiag_ndm=0,idiag_ndmin=0,idiag_ndmax=0
   integer, dimension(ndustspec) :: idiag_nd2m=0,idiag_rhodm=0,idiag_epsdrms=0
   integer, dimension(ndustspec) :: idiag_ndmx=0,idiag_rhodmz=0
+  integer, dimension(ndustspec) :: idiag_rhodmin=0,idiag_rhodmax=0
 
   integer :: iglobal_nd=0
 
@@ -145,7 +146,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.179 2008-07-29 07:53:44 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.180 2008-08-05 06:26:07 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -712,7 +713,9 @@ module Dustdensity
       if (lmice .and. diffmi/=0.) lpenc_requested(i_del2mi)=.true.
 !
       lpenc_diagnos(i_nd)=.true.
-      if (maxval(idiag_epsdrms)/=0) lpenc_requested(i_rho1)=.true.
+      if (maxval(idiag_epsdrms)/=0) lpenc_diagnos(i_rho1)=.true.
+      if (maxval(idiag_rhodm)/=0 .or. maxval(idiag_rhodmin)/=0 .or. &
+          maxval(idiag_rhodmax)/=0) lpenc_diagnos(i_rhod)=.true.
 !
     endsubroutine pencil_criteria_dustdensity
 !***********************************************************************
@@ -1069,13 +1072,11 @@ module Dustdensity
           if (idiag_ndmin(k)/=0) &
               call max_mn_name(-p%nd(:,k),idiag_ndmin(k),lneg=.true.)
           if (idiag_ndmax(k)/=0) call max_mn_name(p%nd(:,k),idiag_ndmax(k))
-          if (idiag_rhodm(k)/=0) then
-            if (lmdvar) then
-              call sum_mn_name(p%nd(:,k)*f(l1:l2,m,n,imd(k)),idiag_rhodm(k))
-            else
-              call sum_mn_name(p%nd(:,k)*md(k),idiag_rhodm(k))
-            endif
-          endif
+          if (idiag_rhodm(k)/=0) call sum_mn_name(p%rhod(:,k),idiag_rhodm(k))
+          if (idiag_rhodmin(k)/=0) &
+              call max_mn_name(-p%rhod(:,k),idiag_rhodmin(k),lneg=.true.)
+          if (idiag_rhodmax(k)/=0) &
+              call max_mn_name(p%rhod(:,k),idiag_rhodmax(k))
           if (idiag_epsdrms(k)/=0) then
             if (lmdvar) then
               call sum_mn_name((p%nd(:,k)*f(l1:l2,m,n,imd(k))*p%rho1)**2, &
@@ -1546,6 +1547,7 @@ module Dustdensity
 !
       if (lreset) then
         idiag_ndm=0; idiag_ndmin=0; idiag_ndmax=0; idiag_ndmt=0; idiag_rhodm=0
+        idiag_rhodmin=0; idiag_rhodmax=0
         idiag_nd2m=0; idiag_rhodmt=0; idiag_rhoimt=0; idiag_epsdrms=0
         idiag_rhodmz=0; idiag_ndmx=0; idiag_adm=0; idiag_mdm=0
       endif
@@ -1572,6 +1574,10 @@ module Dustdensity
               'ndmax'//trim(sdust),idiag_ndmax(k))
           call parse_name(iname,cname(iname),cform(iname), &
               'rhodm'//trim(sdust),idiag_rhodm(k))
+          call parse_name(iname,cname(iname),cform(iname), &
+              'rhodmin'//trim(sdust),idiag_rhodmin(k))
+          call parse_name(iname,cname(iname),cform(iname), &
+              'rhodmax'//trim(sdust),idiag_rhodmax(k))
           call parse_name(iname,cname(iname),cform(iname), &
               'epsdrms'//trim(sdust),idiag_epsdrms(k))
         enddo
