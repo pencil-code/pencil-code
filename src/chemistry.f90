@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.119 2008-08-03 10:25:37 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.120 2008-08-05 13:36:11 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -34,6 +34,7 @@ module Chemistry
   real :: Rgas, Rgas_unit_sys=1.
   real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, lambda_full, rho_full, nu_art_full
   real, dimension (mx,my,mz,nchemspec) :: cvspec_full
+   real, dimension (mx,my,mz,nchemspec) ::  cp_R_spec
   real, dimension (mx,my,mz) ::  TT_full
   real, dimension (mx,my,mz) :: hYrho_full 
 
@@ -123,6 +124,23 @@ module Chemistry
   integer :: idiag_dY7m=0        ! DIAG_DOC: $\left<dY_7\right>$
   integer :: idiag_dY8m=0        ! DIAG_DOC: $\left<dY_8\right>$
   integer :: idiag_dY9m=0        ! DIAG_DOC: $\left<dY_9\right>$
+
+  integer :: idiag_h1m=0
+  integer :: idiag_h2m=0
+  integer :: idiag_h3m=0
+  integer :: idiag_h4m=0
+  integer :: idiag_h5m=0
+  integer :: idiag_h6m=0
+  
+  integer :: idiag_cp1m=0
+  integer :: idiag_cp2m=0
+  integer :: idiag_cp3m=0
+  integer :: idiag_cp4m=0
+  integer :: idiag_cp5m=0
+  integer :: idiag_cp6m=0
+
+  
+
 !
   contains
 
@@ -199,11 +217,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.119 2008-08-03 10:25:37 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.120 2008-08-05 13:36:11 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.119 2008-08-03 10:25:37 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.120 2008-08-05 13:36:11 nbabkovs Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -619,12 +637,12 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nuk_nuj, nu_dyn
-      real, dimension (mx,my,mz,nchemspec) ::  cp_R_spec
       real, dimension (mx,my,mz,nchemspec,nchemspec) :: Phi
       real, dimension (mx,my,mz,nchemspec) :: species_cond
 !
       intent(in) :: f
       integer :: k,i,j
+       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
       real :: T_local, T_up, T_mid, T_low, tmp,  lnT_local
       real :: mk_mj
 
@@ -836,6 +854,10 @@ module Chemistry
          close(file_id)
          lwrite=.false.
       endif
+
+
+
+
  endsubroutine calc_for_chem_mixture
 !**********************************************************************
  subroutine astrobiology_data(f)
@@ -1261,7 +1283,16 @@ module Chemistry
         if (idiag_Y7m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i7)),idiag_Y7m)
         if (idiag_Y8m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i8)),idiag_Y8m)
         if (idiag_Y9m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i9)),idiag_Y9m)
+      
+        if (idiag_cp1m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i1)*Rgas/species_constants(i1,imass),idiag_cp1m)
+        if (idiag_cp2m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i2)*Rgas/species_constants(i2,imass),idiag_cp2m)
+        if (idiag_cp3m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i3)*Rgas/species_constants(i3,imass),idiag_cp3m)
+        if (idiag_cp4m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i4)*Rgas/species_constants(i4,imass),idiag_cp4m)
+        if (idiag_cp5m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i5)*Rgas/species_constants(i5,imass),idiag_cp5m)
+        if (idiag_cp6m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i6)*Rgas/species_constants(i6,imass),idiag_cp6m)
       endif
+
+
 !
 ! Keep compiler quiet by ensuring every parameter is used
 !
@@ -1342,6 +1373,10 @@ module Chemistry
         idiag_dY1m=0; idiag_dY2m=0; idiag_dY3m=0; idiag_dY4m=0
         idiag_dY5m=0; idiag_dY6m=0; idiag_dY7m=0; idiag_dY8m=0
         idiag_dY9m=0
+        idiag_h1m=0; idiag_h2m=0; idiag_h3m=0; idiag_h4m=0;
+        idiag_h5m=0; idiag_h6m=0
+        idiag_cp1m=0; idiag_cp2m=0; idiag_cp3m=0; idiag_cp4m=0;
+        idiag_cp5m=0; idiag_cp6m=0
       endif
 !
       call chn(nchemspec,schemspec)
@@ -1367,6 +1402,18 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'dY7m',idiag_dY7m)
         call parse_name(iname,cname(iname),cform(iname),'dY8m',idiag_dY8m)
         call parse_name(iname,cname(iname),cform(iname),'dY9m',idiag_dY9m)
+        call parse_name(iname,cname(iname),cform(iname),'h1m',idiag_h1m)
+        call parse_name(iname,cname(iname),cform(iname),'h2m',idiag_h2m)
+        call parse_name(iname,cname(iname),cform(iname),'h3m',idiag_h3m)
+        call parse_name(iname,cname(iname),cform(iname),'h4m',idiag_h4m)
+        call parse_name(iname,cname(iname),cform(iname),'h5m',idiag_h5m)
+        call parse_name(iname,cname(iname),cform(iname),'h6m',idiag_h6m)
+        call parse_name(iname,cname(iname),cform(iname),'cp1m',idiag_cp1m)
+        call parse_name(iname,cname(iname),cform(iname),'cp2m',idiag_cp2m)
+        call parse_name(iname,cname(iname),cform(iname),'cp3m',idiag_cp3m)
+        call parse_name(iname,cname(iname),cform(iname),'cp4m',idiag_cp4m)
+        call parse_name(iname,cname(iname),cform(iname),'cp5m',idiag_cp5m)
+        call parse_name(iname,cname(iname),cform(iname),'cp6m',idiag_cp6m)
       enddo
 !
 !  Write chemistry index in short notation
@@ -1391,6 +1438,18 @@ module Chemistry
         write(3,*) 'i_dY7m=',idiag_dY7m
         write(3,*) 'i_dY8m=',idiag_dY8m
         write(3,*) 'i_dY9m=',idiag_dY9m
+        write(3,*) 'i_h1m=',idiag_h1m
+        write(3,*) 'i_h2m=',idiag_h2m
+        write(3,*) 'i_h3m=',idiag_h3m
+        write(3,*) 'i_h4m=',idiag_h4m
+        write(3,*) 'i_h5m=',idiag_h5m
+        write(3,*) 'i_h6m=',idiag_h6m
+        write(3,*) 'i_cp1m=',idiag_cp1m
+        write(3,*) 'i_cp2m=',idiag_cp2m
+        write(3,*) 'i_cp3m=',idiag_cp3m
+        write(3,*) 'i_cp4m=',idiag_cp4m
+        write(3,*) 'i_cp5m=',idiag_cp5m
+        write(3,*) 'i_cp6m=',idiag_cp6m
         write(3,*) 'ichemspec=indgen('//trim(schemspec)//') + '//trim(snd1)
       endif
 !
@@ -2255,7 +2314,7 @@ module Chemistry
  !  print*,'HHHHH', &
  !  hYrho_full(l1,m1,n1)-Rgas*exp(f(l1,m1,n1,ilnTT))*mu1_full(l1,m1,n1),&
 !    hYrho_full(l1,m1,n1)
-
+!maxval(H0_RT(:,:,:,1)*Rgas*TT_full(:,:,:))
 
           hYrho_full=hYrho_full*exp(f(:,:,:,ilnrho))
 
@@ -2488,7 +2547,7 @@ module Chemistry
       sum_omega=sum_omega+maxval(p%DYDt_reac(:,k))!species_constants(k,imass)
       sum_Y=sum_Y+maxval(f(l1:l2,m,n,ichemspec(k)))
      enddo
-  !    print*,'sum_Y',sum_Y
+  !    print*,'sum_Y',sum_Y,m,n
 !
 !  Calculate diagnostic quantities
 !
@@ -2502,6 +2561,12 @@ module Chemistry
         if (idiag_dY7m/=0) call sum_mn_name(p%DYDt_reac(:,i7),idiag_dY7m)
         if (idiag_dY8m/=0) call sum_mn_name(p%DYDt_reac(:,i8),idiag_dY8m)
         if (idiag_dY9m/=0) call sum_mn_name(p%DYDt_reac(:,i9),idiag_dY9m)
+        if (idiag_h1m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i1)*Rgas*p%TT(:)/species_constants(i1,imass),idiag_h1m)
+        if (idiag_h2m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i2)*Rgas*p%TT(:)/species_constants(i2,imass),idiag_h2m)
+        if (idiag_h3m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i3)*Rgas*p%TT(:)/species_constants(i3,imass),idiag_h3m)
+        if (idiag_h4m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i4)*Rgas*p%TT(:)/species_constants(i4,imass),idiag_h4m)
+        if (idiag_h5m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i5)*Rgas*p%TT(:)/species_constants(i5,imass),idiag_h5m)
+        if (idiag_h6m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i6)*Rgas*p%TT(:)/species_constants(i6,imass),idiag_h6m)
       endif
 
    ! print*,'sum_omega',sum_omega
