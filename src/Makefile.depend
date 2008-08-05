@@ -1,6 +1,6 @@
 ### -*-Makefile-*- (for Emacs)
 ###
-### $Id: Makefile.depend,v 1.101 2008-07-03 22:11:24 dobler Exp $
+### $Id: Makefile.depend,v 1.102 2008-08-05 12:52:17 ajohan Exp $
 ### Makefile dependencies for modular Pencil Code.
 ###
 ##
@@ -345,7 +345,7 @@ $(CHEMISTRY_OBJ): chemistry.h $(CHEMISTRY_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(
 #
 $(DUSTVELOCITY_OBJ): dustvelocity.h $(DUSTVELOCITY_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(GENERAL_OBJ) $(EOS_OBJ) $(PSCALAR_OBJ) $(GRAVITY_OBJ)
 #
-$(DUSTDENSITY_OBJ): dustdensity.h $(DUSTDENSITY_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(DUSTVELOCITY_OBJ) slices.o
+$(DUSTDENSITY_OBJ): dustdensity.h $(DUSTDENSITY_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(DUSTVELOCITY_OBJ) $(SHOCK_OBJ) slices.o
 #
 $(NEUTRALDENSITY_OBJ): neutraldensity.h $(NEUTRALDENSITY_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) 
 #
