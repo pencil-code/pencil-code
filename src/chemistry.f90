@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.122 2008-08-05 15:39:42 brandenb Exp $
+! $Id: chemistry.f90,v 1.123 2008-08-06 18:38:14 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -223,11 +223,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.122 2008-08-05 15:39:42 brandenb Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.123 2008-08-06 18:38:14 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.122 2008-08-05 15:39:42 brandenb Exp $")
+           "$Id: chemistry.f90,v 1.123 2008-08-06 18:38:14 nbabkovs Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -1195,6 +1195,8 @@ module Chemistry
         do k=1,nchemspec
          sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)*(1.-H0_RT(l1:l2,m,n,k))*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
 
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Testing of the conservation of enthalpy !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1213,7 +1215,6 @@ module Chemistry
           !/(p%cp-Rgas*p%mu1)
 
 
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Testing of the conservation of enthalpy !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1225,6 +1226,7 @@ module Chemistry
 
 
         if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
+
 
      endif
 !
@@ -2302,26 +2304,33 @@ module Chemistry
                if ( T_local <= T_mid) then
                 tmp=0. 
                 do j=1,5
-                tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1)/j 
+                tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/j 
                 enddo
-                H0_RT(i,t,v,k)=tmp+species_constants(k,iaa1(6))/T_local
+                H0_RT(i,t,v,k)=tmp+species_constants(k,iaa2(6))/T_local
                else
 
                 tmp=0. 
                 do j=1,5
-                 tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/j 
+                 tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1)/j 
                 enddo
-                H0_RT(i,t,v,k)=tmp+species_constants(k,iaa2(6))/T_local
+                H0_RT(i,t,v,k)=tmp+species_constants(k,iaa1(6))/T_local
+
+
+
               endif
            enddo
           enddo
          enddo
+
+!print*,(H0_RT(4,4,4,2)),species_constants(2,iaa2(3))
+
+
 !
-!  experminent: H0_RT_3 -> -H0_RT_3
+!  experiment: H0_RT_3 -> -H0_RT_3
 !
 !fact=Rgas*TT_full(4,4,4)/species_constants(:,imass)
 !print*,'1) H0_RT(4,4,4,:)=',H0_RT(4,4,4,:)*fact
-!H0_RT(4,4,4,3)=abs(H0_RT(4,4,4,3))
+!H0_RT(:,:,:,3)=(((H0_RT(:,:,:,3)))-species_constants(3,iaa2(6))/T_local)
 !H0_RT(4,4,4,3)=0.
 !print*,'2) H0_RT(4,4,4,:)=',H0_RT(4,4,4,:)*fact
 
@@ -2368,15 +2377,15 @@ module Chemistry
            if (T_local <= T_mid) then
                tmp=0. 
                do j=2,5
-                tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1)/(j-1) 
+                tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/(j-1) 
                enddo
-              S0_R(i,k)=species_constants(k,iaa1(1))*lnT_local+tmp+species_constants(k,iaa1(7))
+              S0_R(i,k)=species_constants(k,iaa2(1))*lnT_local+tmp+species_constants(k,iaa2(7))
            else
                tmp=0. 
                do j=2,5 
-                tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1)/(j-1) 
+                tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1)/(j-1) 
                enddo
-             S0_R(i,k)=species_constants(k,iaa2(1))*lnT_local+tmp+species_constants(k,iaa2(7))
+             S0_R(i,k)=species_constants(k,iaa1(1))*lnT_local+tmp+species_constants(k,iaa1(7))
            endif
          enddo
 
@@ -2403,7 +2412,15 @@ module Chemistry
 
         do k=1,nchemspec
          dSR(:) =dSR(:)+(Sijm(k,reac)-Sijp(k,reac))*S0_R(:,k)
-         dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*H0_RT(l1:l2,m,n,k)
+
+! experiment
+!if (k==3) then
+
+!         dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*(-(H0_RT(l1:l2,m,n,k)))
+!else
+          dHRT(:)=dHRT(:)+(Sijm(k,reac)-Sijp(k,reac))*H0_RT(l1:l2,m,n,k)  
+!endif
+
          sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
         enddo
 
@@ -2568,6 +2585,9 @@ module Chemistry
           xdot=-xdot*species_constants(k,imass)
         endif
         p%DYDt_reac(:,k)=xdot*unit_time
+
+!print*,'Natalia',maxval(p%DYDt_reac(:,k)),k
+
       enddo 
 
       sum_omega=0.
