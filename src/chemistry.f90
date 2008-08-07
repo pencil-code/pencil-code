@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.124 2008-08-07 12:14:06 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.125 2008-08-07 18:48:41 nilshau Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -83,8 +83,7 @@ module Chemistry
   integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
   integer, dimension(7) :: iaa1,iaa2
   real, allocatable, dimension(:)  :: B_n, alpha_n, E_an
-  real, allocatable, dimension(:,:) :: low_coeff,troe_coeff
-  real, dimension(nchemspec) :: a_k4
+  real, allocatable, dimension(:,:) :: low_coeff,troe_coeff,a_k4
   real, dimension(nchemspec,7)     :: tran_data
   real, dimension (nx,nchemspec), SAVE  :: S0_R
   real, dimension (mx,my,mz,nchemspec), SAVE :: H0_RT
@@ -223,11 +222,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.124 2008-08-07 12:14:06 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.125 2008-08-07 18:48:41 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.124 2008-08-07 12:14:06 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.125 2008-08-07 18:48:41 nilshau Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -1072,6 +1071,8 @@ module Chemistry
       allocate(troe_coeff(3,nreactions),STAT=stat)
       troe_coeff=0.
       if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
+      allocate(a_k4(nchemspec,nreactions),STAT=stat)
+      a_k4=impossible
 !
 !  Initialize data
 !
@@ -2007,7 +2008,7 @@ module Chemistry
 !
               else 
    print*,' --------------  a_k4 coefficients----------------'
-                a_k4=0.
+!                a_k4=0.
                 StartInd_add=i; StopInd_add=0; StopInd_add_=0
                 do while (ChemInpLine_add(i:i+1)/='  ')
                  find_specie=.true.
@@ -2018,8 +2019,8 @@ module Chemistry
                      call find_species_index(ChemInpLine_add(StartInd_add:StopInd_add),ind_glob,ind_chem,found_specie)
                     else
                      if (found_specie) then
-                      read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') a_k4(ind_chem)
-                      print*, a_k4(ind_chem)
+                      read (unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') a_k4(ind_chem,k)
+                      print*, 'a_k4(ind_chem,k)=',a_k4(ind_chem,k),ind_chem,k
                      else
                        call stop_it("Did not find specie!")
                      endif
@@ -2032,9 +2033,12 @@ module Chemistry
                 enddo
                i=80
 
-               call find_species_index('N2',ind_glob,ind_chem,found_specie)
+               !call find_species_index('N2',ind_glob,ind_chem,found_specie)
 
-               if (found_specie) a_k4(ind_chem)=1.
+               !if (found_specie) a_k4(ind_chem,k)=1.
+               do ind_chem=1,nchemspec
+                 if (a_k4(ind_chem,k)==impossible) a_k4(ind_chem,k)=1
+               enddo
 
               endif
              enddo
@@ -2513,22 +2517,27 @@ module Chemistry
          prod1_0=prod1
          prod2_0=prod2
 
-        if (maxval(abs(low_coeff(:,reac))) > 0.) then
-         B_n_0=low_coeff(1,reac) 
-         alpha_n_0=low_coeff(2,reac)
-         E_an_0=low_coeff(3,reac)
+!print*,reac,': a_k4(:,reac)=',a_k4(:,reac)
+
+         if (maxval(abs(low_coeff(:,reac))) > 0.) then
+           B_n_0=low_coeff(1,reac) 
+           alpha_n_0=low_coeff(2,reac)
+           E_an_0=low_coeff(3,reac)           
+           
+           kf_0(:)=B_n_0*T_cgs(:)**alpha_n_0*exp(-E_an_0/Rcal/T_cgs(:)) 
+           
+           Pr=kf_0/kf*rho_cgs(:)*p%mu1/unit_mass
+           kf=kf*(Pr/(1.+Pr))
+           kr(:)=kf(:)/Kc_0
+         endif
 
 
-        kf_0(:)=B_n_0*T_cgs(:)**alpha_n_0*exp(-E_an_0/Rcal/T_cgs(:)) 
-
-        Pr=kf_0/kf*rho_cgs(:)*p%mu1/unit_mass
-        kf=kf*(Pr/(1.+Pr))
-        kr(:)=kf(:)/Kc_0
-
-        sum_sp=0.
-
-        do k=1,nchemspec
-          sum_sp=sum_sp+a_k4(k)*f(l1:l2,m,n,ichemspec(k))  &
+         if (minval(a_k4(:,reac))<impossible) then
+!print*,'reac with a_k4=',reac
+           sum_sp=0.
+           do k=1,nchemspec
+!          
+          sum_sp=sum_sp+a_k4(k,reac)*f(l1:l2,m,n,ichemspec(k))  &
                 *rho_cgs(:)/species_constants(k,imass)
 
 ! print*,'Natalia',a_k4(k)
