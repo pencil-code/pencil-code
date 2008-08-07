@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.123 2008-08-06 18:38:14 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.124 2008-08-07 12:14:06 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -223,11 +223,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.123 2008-08-06 18:38:14 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.124 2008-08-07 12:14:06 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.123 2008-08-06 18:38:14 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.124 2008-08-07 12:14:06 nbabkovs Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -772,6 +772,8 @@ module Chemistry
                *(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
          ! endif
          enddo
+!print*,'Natalia',maxval(species_viscosity(:,:,:,k)),maxval(XX_full(:,:,:,k)),
+
        enddo
          nu_dyn=0.
        do k=1,nchemspec 
@@ -2262,14 +2264,14 @@ module Chemistry
 
      real :: B_n_0,alpha_n_0,E_an_0
      real, dimension (nx) ::  kf_0,Kc_0,Pr,sum_sp,prod1_0,prod2_0
-     real, dimension (nchemspec) :: a_k4 
+    ! real, dimension (nchemspec) :: a_k4 
 !--     real, dimension (nchemspec) :: fact !(Axel test)
      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
 !
 ! Hopefully, the following will make things blow up for the people who try to
 ! use a_k4 without setting it (not to mention their bizarre code indentation...)
 !
-    a_k4 = -impossible 
+   ! a_k4 = -impossible 
 !
     if (lwrite)  open(file_id,file=input_file)
 
@@ -2460,22 +2462,22 @@ module Chemistry
 
         prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm(k,reac)
        
-      do i=0,nx-1
-       if (abs(f(l1+i,m,n,ichemspec(k))) > 0.) then
-         prod2_ts(i+1)=prod2_ts(i+1)*(f(l1+i,m,n,ichemspec(k))*rho_cgs(i+1)/species_constants(k,imass))**Sijm(k,reac)
-       else
-          prod2_ts(i+1)=prod2_ts(i+1)*(1e-3*rho_cgs(i+1)/species_constants(k,imass))**Sijm(k,reac)
-       endif
-      enddo
+   !   do i=0,nx-1
+   !    if (abs(f(l1+i,m,n,ichemspec(k))) > 0.) then
+   !      prod2_ts(i+1)=prod2_ts(i+1)*(f(l1+i,m,n,ichemspec(k))*rho_cgs(i+1)/species_constants(k,imass))**Sijm(k,reac)
+   !    else
+   !       prod2_ts(i+1)=prod2_ts(i+1)*(1e-3*rho_cgs(i+1)/species_constants(k,imass))**Sijm(k,reac)
+   !    endif
+     ! enddo
 ! print*,'Natalia',maxval(prod2),maxval((f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm(k,reac)),k,reac,maxval(f(l1:l2,m,n,ichemspec(k))),maxval(rho_cgs),(species_constants(k,imass)),Sijm(k,reac)
 
-   !  print*,'Natalia',maxval(prod2)
+   !  print*,'Natalia',maxval(Kc)
 
-       if (reac==4)  then
-          Kc_0=Kc
-          prod1_0=prod1
-          prod2_0=prod2
-       endif
+    !   if (reac==4)  then
+    !      Kc_0=Kc
+    !      prod1_0=prod1
+    !      prod2_0=prod2
+    !   endif
 
 
 
@@ -2487,13 +2489,13 @@ module Chemistry
       vreact_m(:,reac)=prod2/rho_cgs*kr
 
 
-    enddo
+  !  enddo
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Printing for a test case
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
+!print*,'Natalia'
        if (lwrite)     write(file_id,*) ''
        if (lwrite)   write(file_id,*) '*******************'
 
@@ -2504,8 +2506,12 @@ module Chemistry
 
        lwrite=.false.
  
+! print*,'Natalia'
+  !   do reac=1,nreactions
 
-     do reac=1,nreactions
+         Kc_0=Kc
+         prod1_0=prod1
+         prod2_0=prod2
 
         if (maxval(abs(low_coeff(:,reac))) > 0.) then
          B_n_0=low_coeff(1,reac) 
@@ -2525,10 +2531,14 @@ module Chemistry
           sum_sp=sum_sp+a_k4(k)*f(l1:l2,m,n,ichemspec(k))  &
                 *rho_cgs(:)/species_constants(k,imass)
 
+! print*,'Natalia',a_k4(k)
+
         enddo
 
-        vreact_p(:,reac)=prod1_0/rho_cgs*kf*sum_sp
-        vreact_m(:,reac)=prod2_0/rho_cgs*kr*sum_sp
+        vreact_p(:,reac)=prod1_0*kf*sum_sp!
+        vreact_m(:,reac)=prod2_0*kr*sum_sp!
+
+!  print*,'Natalia',reac, B_n_0,alpha_n_0,maxval(sum_sp),Kc_0,a_k4()
 
         endif
 
