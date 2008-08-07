@@ -1,4 +1,4 @@
-! $Id: eos_chemistry.f90,v 1.25 2008-06-23 14:15:32 nbabkovs Exp $
+! $Id: eos_chemistry.f90,v 1.26 2008-08-07 13:00:14 nilshau Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -23,7 +23,7 @@ module EquationOfState
 
   implicit none
 
-  include 'eos_chemistry.h'
+  include 'eos.h'
 
   interface eoscalc ! Overload subroutine `eoscalc' function
     module procedure eoscalc_pencil   ! explicit f implicit m,n
@@ -121,7 +121,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_chemistry.f90,v 1.25 2008-06-23 14:15:32 nbabkovs Exp $')
+           '$Id: eos_chemistry.f90,v 1.26 2008-08-07 13:00:14 nilshau Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -715,7 +715,7 @@ module EquationOfState
       if (NO_WARN) print*,f !(keep compiler quiet)
     endsubroutine temperature_laplacian
 !***********************************************************************
-    subroutine temperature_hessian_commented(f,hlnrho,hss,hlnTT)
+    subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
 !
 !   Calculate thermodynamical quantities, cs2 and cp1
 !   and optionally hlnPP and hlnTT
@@ -731,20 +731,14 @@ module EquationOfState
 
       type (pencil_case) :: p
 !
-      if (gamma1==0.) call fatal_error('temperature_hessian','gamma=1 not allowed w/entropy')
+      call fatal_error('temperature_hessian','This routine is not coded for eos_chemistry')
 !
-!  pretend_lnTT
-!
-      if (pretend_lnTT) then
-        hlnTT=hss
-      else
-        hlnTT=gamma1*hlnrho+cv1*hss
-      endif
+      hlnTT(:,:,:)=0
 !
       if (NO_WARN) print*,f !(keep compiler quiet)
-    endsubroutine temperature_hessian_commented
+    endsubroutine temperature_hessian
 !***********************************************************************
-    subroutine eosperturb_commented(f,psize,ee,pp,ss)
+    subroutine eosperturb(f,psize,ee,pp,ss)
 !
 !  Set f(l1:l2,m,n,iss), depending on the valyes of ee and pp
 !  Adding pressure perturbations is not implemented
@@ -756,52 +750,12 @@ module EquationOfState
 
       if (psize==nx) then
         lnrho_=f(l1:l2,m,n,ilnrho)
-        if (present(ee)) then
-          if (pretend_lnTT) then
-            f(l1:l2,m,n,iss)=log(cv1*ee)
-          else
-            f(l1:l2,m,n,iss)=cv*(log(cv1*ee)-lnTT0-gamma1*(lnrho_-lnrho0))
-          endif
-        elseif (present(pp)) then
-          if (pretend_lnTT) then
-            f(l1:l2,m,n,iss)=log(gamma*pp/(gamma1*lnrho_))
-          else
-            f(l1:l2,m,n,iss)=cv*(log(gamma*pp/gamma1)-gamma*lnrho_-gamma1*lnrho0-lnTT0)
-          endif
-        elseif (present(ss)) then
-          if (pretend_lnTT) then
-            f(l1:l2,m,n,iss)=lnTT0+cv1*ss+gamma1*(lnrho_-lnrho0)
-          else
-            f(l1:l2,m,n,iss)=ss
-          endif
-        endif
-
       elseif (psize==mx) then
         lnrho_=f(:,m,n,ilnrho)
-        if (present(ee)) then
-          if (pretend_lnTT) then
-            f(:,m,n,iss)=log(cv1*ee)
-          else
-            f(:,m,n,iss)=cv*(log(cv1*ee)-lnTT0-gamma1*(lnrho_-lnrho0))
-          endif
-        elseif (present(pp)) then
-          if (pretend_lnTT) then
-            f(:,m,n,iss)=log(gamma*pp/(gamma1*lnrho_))
-          else
-            f(:,m,n,iss)=cv*(log(gamma*pp/gamma1)-gamma*lnrho_-gamma1*lnrho0-lnTT0)
-          endif
-        elseif (present(ss)) then
-          if (pretend_lnTT) then
-            f(:,m,n,iss)=lnTT0+cv1*ss+gamma1*(lnrho_-lnrho0)
-          else
-            f(:,m,n,iss)=ss
-          endif
-        endif
-
       else
         call not_implemented("eosperturb")
       endif
-    end subroutine eosperturb_commented
+    end subroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,kapparho)
 !
@@ -1275,7 +1229,7 @@ module EquationOfState
 
     endsubroutine write_eos_run_pars
 !***********************************************************************
-    subroutine isothermal_entropy_commented(f,T0)
+    subroutine isothermal_entropy(f,T0)
 !
 !  Isothermal stratification (for lnrho and ss)
 !  This routine should be independent of the gravity module used.
@@ -1319,9 +1273,9 @@ module EquationOfState
       call get_soundspeed(log(T0),cs2bot)
       cs2top=cs2bot
 !
-    endsubroutine isothermal_entropy_commented
+    endsubroutine isothermal_entropy
 !***********************************************************************
-    subroutine isothermal_lnrho_ss_commented(f,T0,rho0)
+    subroutine isothermal_lnrho_ss(f,T0,rho0)
 !
 !  Isothermal stratification for lnrho and ss (for yH=0!)
 !
@@ -1332,7 +1286,7 @@ module EquationOfState
 !
       if (NO_WARN) print*,f,T0,rho0
 !
-    endsubroutine isothermal_lnrho_ss_commented
+    endsubroutine isothermal_lnrho_ss
 !***********************************************************************
  !   subroutine Hminus_opacity(f,kapparho)
 !
