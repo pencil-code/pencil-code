@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.553 2008-08-02 23:39:14 wlyra Exp $
+! $Id: entropy.f90,v 1.554 2008-08-07 21:10:15 dobler Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -28,8 +28,6 @@ module Entropy
                          beta_glnrho_global
 
   implicit none
-
-  public :: calc_heatcond_ADI
 
   include 'entropy.h'
 
@@ -224,7 +222,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.553 2008-08-02 23:39:14 wlyra Exp $")
+           "$Id: entropy.f90,v 1.554 2008-08-07 21:10:15 dobler Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
