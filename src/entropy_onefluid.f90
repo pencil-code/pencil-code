@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.28 2008-06-17 15:34:08 ajohan Exp $
+! $Id: entropy_onefluid.f90,v 1.29 2008-08-07 17:00:53 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance) for a fluid consisting of gas and perfectly
@@ -29,6 +29,8 @@ module Entropy
   use EquationOfState, only: gamma, gamma1, cs20, beta_glnrho_global
 
   implicit none
+
+  public :: calc_heatcond_ADI
 
   include 'entropy.h'
 
@@ -94,7 +96,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.28 2008-06-17 15:34:08 ajohan Exp $")
+           "$Id: entropy_onefluid.f90,v 1.29 2008-08-07 17:00:53 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
