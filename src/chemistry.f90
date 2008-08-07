@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.125 2008-08-07 18:48:41 nilshau Exp $
+! $Id: chemistry.f90,v 1.126 2008-08-07 20:07:56 nilshau Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -222,11 +222,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.125 2008-08-07 18:48:41 nilshau Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.126 2008-08-07 20:07:56 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.125 2008-08-07 18:48:41 nilshau Exp $")
+           "$Id: chemistry.f90,v 1.126 2008-08-07 20:07:56 nilshau Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -1876,7 +1876,7 @@ module Chemistry
       integer, SAVE :: ind_glob, ind_chem
       integer :: i,k,file_id=123, StartInd, StopInd, StartInd_add, StopInd_add, StopInd_add_,StopIndName
       integer :: VarNumber, VarNumber_add, SeparatorInd, StartSpecie,stoi, PlusInd
-      integer :: LastLeftCharacter,ParanthesisInd
+      integer :: LastLeftCharacter,ParanthesisInd,Mplussind
       character (len=80) :: ChemInpLine, ChemInpLine_add
       character (len=*) :: input_file
 
@@ -1930,10 +1930,14 @@ module Chemistry
                 endif
                 !
                 ParanthesisInd=index(ChemInpLine(StartInd:),'(+M)')
+                MplussInd=index(ChemInpLine(StartInd:),'+M')
 
-                if (ParanthesisInd>0) then
-                  LastLeftCharacter=min(ParanthesisInd,SeparatorInd)-1
-
+                if (ParanthesisInd>0 .or. Mplussind>0) then
+                  if (ParanthesisInd>0) then
+                    LastLeftCharacter=min(ParanthesisInd,SeparatorInd)-1
+                  else
+                    LastLeftCharacter=min(MplussInd,SeparatorInd)-1
+                  endif
 !
 !  reading of the additional data for (+M) case
 !  NNNNN 
@@ -2069,11 +2073,12 @@ module Chemistry
                 SeparatorInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
                 !
                 ParanthesisInd=index(ChemInpLine(StartInd:),'(+M)')+StartInd-1
-
+                MplussInd=index(ChemInpLine(StartInd:),'+M')+StartInd-1
 
                 if (ParanthesisInd>StartInd) then
                   LastLeftCharacter=min(ParanthesisInd,SeparatorInd)-1
-
+                elseif (MplussInd>StartInd) then
+                  LastLeftCharacter=min(MplussInd,SeparatorInd)-1
                 else
                   LastLeftCharacter=SeparatorInd-1
                 endif
