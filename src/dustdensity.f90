@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.181 2008-08-05 12:37:54 ajohan Exp $
+! $Id: dustdensity.f90,v 1.182 2008-08-07 17:03:36 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -149,7 +149,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.181 2008-08-05 12:37:54 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.182 2008-08-07 17:03:36 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -420,17 +420,17 @@ module Dustdensity
 
           do m=m1,m2; do n=n1,n2
             if (ldensity_nolog) then
-              if (ldustdensity_log) then
-                eps=exp(f(l1:l2,m,n,ind(1)))/f(l1:l2,m,n,ilnrho)
-              else
+!              if (ldustdensity_log) then
+!                eps=exp(f(l1:l2,m,n,ind(1)))/f(l1:l2,m,n,ilnrho)
+!              else
                 eps=f(l1:l2,m,n,ind(1))/f(l1:l2,m,n,ilnrho)
-              endif
+!              endif
             else
-              if (ldustdensity_log) then
-                eps=exp(f(l1:l2,m,n,ind(1)))/exp(f(l1:l2,m,n,ilnrho))
-              else
+!              if (ldustdensity_log) then
+!                eps=exp(f(l1:l2,m,n,ind(1)))/exp(f(l1:l2,m,n,ilnrho))
+!              else
                 eps=f(l1:l2,m,n,ind(1))/exp(f(l1:l2,m,n,ilnrho))
-              endif
+!              endif
             endif
 !
 !  Gas and dust velocity fields.
