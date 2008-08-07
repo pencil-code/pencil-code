@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.126 2008-08-07 20:07:56 nilshau Exp $
+! $Id: chemistry.f90,v 1.127 2008-08-07 20:19:37 nilshau Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -222,11 +222,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.126 2008-08-07 20:07:56 nilshau Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.127 2008-08-07 20:19:37 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.126 2008-08-07 20:07:56 nilshau Exp $")
+           "$Id: chemistry.f90,v 1.127 2008-08-07 20:19:37 nilshau Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -2242,6 +2242,12 @@ module Chemistry
           write(unit=output_string(47:62),fmt='(E14.4)') alpha_n(reac)
           write(unit=output_string(64:79),fmt='(E14.4)') E_an(reac)
           write(file_id,*) trim(output_string)
+          if (maxval(abs(low_coeff(:,reac))) > 0.) then
+            write(file_id,*) 'LOW/',low_coeff(:,reac) 
+          endif
+          if (minval(a_k4(:,reac))<impossible) then
+            write(file_id,*) a_k4(:,reac)
+          endif
         enddo
         write(file_id,*) 'END'
         close(file_id) 
