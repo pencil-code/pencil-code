@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.69 2008-08-04 21:45:38 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.70 2008-08-08 09:34:55 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -32,8 +32,6 @@ module Entropy
   use EquationOfState, only: mpoly0, mpoly1
 
   implicit none
-
-  public :: calc_heatcond_ADI
 
   include 'entropy.h'
 
@@ -142,7 +140,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.69 2008-08-04 21:45:38 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.70 2008-08-08 09:34:55 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
