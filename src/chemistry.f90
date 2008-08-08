@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.127 2008-08-07 20:19:37 nilshau Exp $
+! $Id: chemistry.f90,v 1.128 2008-08-08 10:48:28 nbabkovs Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -222,11 +222,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.127 2008-08-07 20:19:37 nilshau Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.128 2008-08-08 10:48:28 nbabkovs Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.127 2008-08-07 20:19:37 nilshau Exp $")
+           "$Id: chemistry.f90,v 1.128 2008-08-08 10:48:28 nbabkovs Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -762,17 +762,15 @@ module Chemistry
       else
        do k=1,nchemspec
          do j=1,nchemspec
-         ! if (j .ne. k) then
+        !  if (j .ne. k) then
            mk_mj=species_constants(k,imass) &
                /species_constants(j,imass)
            nuk_nuj(:,:,:)=species_viscosity(:,:,:,k) &
                /species_viscosity(:,:,:,j)
            Phi(:,:,:,k,j)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
                *(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
-         ! endif
+        !  endif
          enddo
-!print*,'Natalia',maxval(species_viscosity(:,:,:,k)),maxval(XX_full(:,:,:,k)),
-
        enddo
          nu_dyn=0.
        do k=1,nchemspec 
@@ -781,6 +779,7 @@ module Chemistry
            tmp_sum2=tmp_sum2+XX_full(:,:,:,j)*Phi(:,:,:,k,j) 
           enddo
          nu_dyn=nu_dyn+XX_full(:,:,:,k)*species_viscosity(:,:,:,k)/tmp_sum2
+
        enddo
         nu_full=nu_dyn/rho_full
 
@@ -1666,7 +1665,7 @@ module Chemistry
       ! Check if the specie was really found
       !
       if (ind_glob==0) then
-        found_specie=.false. 
+        found_specie=.false.
       else
         found_specie=.true.
         print*,species_name,'   species index= ',ind_chem
@@ -2185,6 +2184,8 @@ module Chemistry
         StartSpecie=verify(ChemInpLine(StartInd:StopInd),"1234567890")+StartInd-1
         call find_species_index(ChemInpLine(StartSpecie:StopInd),&
              ind_glob,ind_chem,found_specie)
+
+!print*,'Natalia',ChemInpLine(StartSpecie:StopInd)
         if (.not. found_specie) call stop_it("Did not find specie!")
         if (StartSpecie==StartInd) then
           stoi=1
@@ -2279,14 +2280,9 @@ module Chemistry
 
      real :: B_n_0,alpha_n_0,E_an_0
      real, dimension (nx) ::  kf_0,Kc_0,Pr,sum_sp,prod1_0,prod2_0
-    ! real, dimension (nchemspec) :: a_k4 
 !--     real, dimension (nchemspec) :: fact !(Axel test)
      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
 !
-! Hopefully, the following will make things blow up for the people who try to
-! use a_k4 without setting it (not to mention their bizarre code indentation...)
-!
-   ! a_k4 = -impossible 
 !
     if (lwrite)  open(file_id,file=input_file)
 
@@ -2331,9 +2327,6 @@ module Chemistry
                  tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1)/j 
                 enddo
                 H0_RT(i,t,v,k)=tmp+species_constants(k,iaa1(6))/T_local
-
-
-
               endif
            enddo
           enddo
@@ -2355,7 +2348,6 @@ module Chemistry
        enddo
 
 ! HHHH
-
 !
 ! Enthalpy flux
 !
@@ -2847,7 +2839,7 @@ module Chemistry
       do k=1,nchemspec
 
       lnTk=lnT-log(tran_data(k,2))
-      delta_st=tran_data(k,4)**2/2./tran_data(k,2)/(tran_data(k,3)*1e-8)**3
+      delta_st=tran_data(k,4)**2/2./tran_data(k,2)/(tran_data(k,3))**3*(1e-8**3)
 
       call calc_collision_integral(omega,lnTk,Omega_kl)
       tmp=5./16.*sqrt(k_B_cgs*species_constants(k,imass)/Na*TT/pi) &
@@ -2855,6 +2847,7 @@ module Chemistry
       /(Omega_kl+0.2*delta_st/(TT/tran_data(k,2))) 
       species_viscosity(:,:,:,k)=(tmp)/(unit_mass/unit_length/unit_time)
 
+!print*,'Natalia',maxval(species_viscosity(:,:,:,k))
       enddo
 
 
