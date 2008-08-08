@@ -1,4 +1,4 @@
-! $Id: chemistry.f90,v 1.128 2008-08-08 10:48:28 nbabkovs Exp $
+! $Id: chemistry.f90,v 1.129 2008-08-08 12:24:07 nilshau Exp $
 !  This modules addes chemical species and reactions.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -222,11 +222,11 @@ module Chemistry
       if (lcheminp) call write_thermodyn()
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: chemistry.f90,v 1.128 2008-08-08 10:48:28 nbabkovs Exp $
+!  CVS should automatically update everything between $Id: chemistry.f90,v 1.129 2008-08-08 12:24:07 nilshau Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: chemistry.f90,v 1.128 2008-08-08 10:48:28 nbabkovs Exp $")
+           "$Id: chemistry.f90,v 1.129 2008-08-08 12:24:07 nilshau Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -1015,8 +1015,10 @@ module Chemistry
 !
 !  Allocate binary diffusion coefficient array
 !
-      allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for binary diffusion coefficients") 
+      if (.not.lreloading) then
+        allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for binary diffusion coefficients") 
+      endif
 
      if (tran_exist) then 
       if (lroot) then
@@ -1044,34 +1046,36 @@ module Chemistry
 !
 !  Allocate reaction arrays
 !
-      allocate(stoichio(nchemspec,mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for stoichio")
-      allocate(Sijm(nchemspec,mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for Sijm")
-      allocate(Sijp(nchemspec,mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for Sijp")
-      allocate(kreactions_p(mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_p")
-      allocate(kreactions_m(mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for kreactions_m")
-      allocate(reaction_name(mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for reaction_name")
-
-      allocate(B_n(mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for B_n")
-      allocate(alpha_n(mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for alpha_n")
-      allocate(E_an(mreactions),STAT=stat)
-      if (stat>0) call stop_it("Couldn't allocate memory for E_an")
- 
-      allocate(low_coeff(3,nreactions),STAT=stat)
-      low_coeff=0.
-      if (stat>0) call stop_it("Couldn't allocate memory for low_coeff")
-      allocate(troe_coeff(3,nreactions),STAT=stat)
-      troe_coeff=0.
-      if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
-      allocate(a_k4(nchemspec,nreactions),STAT=stat)
-      a_k4=impossible
+        if (.not.lreloading) then
+          allocate(stoichio(nchemspec,mreactions),STAT=stat)
+          if (stat>0) call stop_it("Couldn't allocate memory for stoichio")
+          allocate(Sijm(nchemspec,mreactions),STAT=stat)
+          if (stat>0) call stop_it("Couldn't allocate memory for Sijm")
+          allocate(Sijp(nchemspec,mreactions),STAT=stat)
+          if (stat>0) call stop_it("Couldn't allocate memory for Sijp")
+          allocate(kreactions_p(mreactions),STAT=stat)
+          if (stat>0) call stop_it("Couldn't allocate memory for kreactions_p")
+          allocate(kreactions_m(mreactions),STAT=stat)
+          if (stat>0) call stop_it("Couldn't allocate memory for kreactions_m")
+          allocate(reaction_name(mreactions),STAT=stat)
+          if (stat>0) call stop_it("Couldn't allocate memory for reaction_name")
+          
+          allocate(B_n(mreactions),STAT=stat)
+          if (stat>0) call stop_it("Couldn't allocate memory for B_n")
+          allocate(alpha_n(mreactions),STAT=stat)
+          if (stat>0) call stop_it("Couldn't allocate memory for alpha_n")
+          allocate(E_an(mreactions),STAT=stat)
+          if (stat>0) call stop_it("Couldn't allocate memory for E_an")
+          
+          allocate(low_coeff(3,nreactions),STAT=stat)
+          low_coeff=0.
+          if (stat>0) call stop_it("Couldn't allocate memory for low_coeff")
+          allocate(troe_coeff(3,nreactions),STAT=stat)
+          troe_coeff=0.
+          if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
+          allocate(a_k4(nchemspec,nreactions),STAT=stat)
+          a_k4=impossible
+        endif
 !
 !  Initialize data
 !
@@ -2147,7 +2151,10 @@ module Chemistry
       !
       ! 2008.03.06 Nils Erland: Coded
       !
+      use General
+      !
       character (len=20) :: input_file="./data/chem.out"
+      character (len=5) :: ispec
       integer :: file_id=123,k
       !
       open(file_id,file=input_file)
@@ -2166,9 +2173,21 @@ module Chemistry
       !
       close(file_id)
       !
+      if (lroot) then
+        print*,'Write pc_constants.pro in chemistiry.f90'
+        open (143,file=trim(datadir)//'/pc_constants.pro',position="append")
+        write (143,*) 'specname=strarr(',nchemspec,')'
+        write (143,*) 'specmass=fltarr(',nchemspec,')'
+        do k=1,nchemspec
+          call chn(k-1,ispec)
+          write (143,*) 'specname(',trim(ispec),')=',"'",trim(varname(ichemspec(k))),"'"
+          write (143,*) 'specmass(',trim(ispec),')=',species_constants(k,imass)
+        enddo
+        close (143)
+      endif
+      !
     end subroutine write_thermodyn
 !***************************************************************
-!**************************************************************
     subroutine build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,product)
       !
       ! 2008.03.10 Nils Erland: Coded
