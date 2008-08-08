@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.235 2008-07-18 05:09:59 ajohan Exp $
+! $Id: particles_dust.f90,v 1.236 2008-08-08 12:23:23 nilshau Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -145,7 +145,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.235 2008-07-18 05:09:59 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.236 2008-08-08 12:23:23 nilshau Exp $")
 !
 !  Indices for particle position.
 !
@@ -406,7 +406,7 @@ module Particles
 !  Write constants to disk.
 !
       if (lroot) then
-        open (1,file=trim(datadir)//'/pc_constants.pro')
+        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
           write (1,*) 'rhop_tilde=', rhop_tilde
         close (1)
       endif

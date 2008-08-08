@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.238 2008-06-25 13:56:48 dhruba Exp $
+! $Id: register.f90,v 1.239 2008-08-08 12:23:23 nilshau Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -95,6 +95,15 @@ module Register
         write(4,*) 'readu,1 $'
       endif
       ioerr = .false.
+!
+!  Initialize file for writing constants to be read by IDL
+!
+      if (lroot) then
+        open (1,file=trim(datadir)//'/pc_constants.pro')
+        write (1,*) '; This file contain pc constants of interest to IDL'
+        close (1)
+      endif
+
 !
       call register_io
       call register_global
@@ -211,7 +220,6 @@ module Register
       logical :: lstarting
       integer :: xj,yj,zj
       integer :: itheta
-
 !
 !  Defaults for some logicals; will later be set to true if needed
       lpenc_requested(:) = .false.

@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.63 2008-06-17 15:34:08 ajohan Exp $
+! $Id: eos_temperature_ionization.f90,v 1.64 2008-08-08 12:23:23 nilshau Exp $
 
 !  Dummy routine for ideal gas
 
@@ -129,7 +129,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.63 2008-06-17 15:34:08 ajohan Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.64 2008-08-08 12:23:23 nilshau Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -162,7 +162,7 @@ module EquationOfState
 !  write scale non-free constants to file; to be read by idl
 !
       if (lroot) then
-        open (1,file=trim(datadir)//'/pc_constants.pro')
+        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
         write (1,*) 'mu1_0=',mu1_0
         write (1,*) 'Rgas=',Rgas
         write (1,*) 'TT_ion=',TT_ion

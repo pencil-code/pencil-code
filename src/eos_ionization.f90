@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.56 2008-06-17 15:34:08 ajohan Exp $
+! $Id: eos_ionization.f90,v 1.57 2008-08-08 12:23:23 nilshau Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -116,7 +116,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.56 2008-06-17 15:34:08 ajohan Exp $")
+           "$Id: eos_ionization.f90,v 1.57 2008-08-08 12:23:23 nilshau Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -204,7 +204,7 @@ module EquationOfState
 !  write scale non-free constants to file; to be read by idl
 !
       if (lroot) then
-        open (1,file=trim(datadir)//'/pc_constants.pro')
+        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
         write (1,*) 'TT_ion=',TT_ion
         write (1,*) 'lnTT_ion=',lnTT_ion
         write (1,*) 'TT_ion_=',TT_ion_

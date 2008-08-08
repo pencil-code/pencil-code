@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.116 2008-08-04 17:20:39 dintrans Exp $
+! $Id: eos_idealgas.f90,v 1.117 2008-08-08 12:23:23 nilshau Exp $
 
 !  Equation of state for an ideal gas without ionization.
 
@@ -113,7 +113,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.116 2008-08-04 17:20:39 dintrans Exp $')
+           '$Id: eos_idealgas.f90,v 1.117 2008-08-08 12:23:23 nilshau Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -232,7 +232,7 @@ module EquationOfState
 !  using an include file or another module.
 !
       if (lroot) then
-        open (1,file=trim(datadir)//'/pc_constants.pro')
+        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
 !        write (1,*) 'TT_ion=',TT_ion
 !        write (1,*) 'TT_ion_=',TT_ion_
 !        write (1,*) 'lnrho_e=',lnrho_e
