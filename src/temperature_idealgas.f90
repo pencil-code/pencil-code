@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90,v 1.70 2008-08-08 09:34:55 dintrans Exp $
+! $Id: temperature_idealgas.f90,v 1.71 2008-08-11 09:07:31 dintrans Exp $
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
 !  with constant coefficients (no ionization) we have:
@@ -83,7 +83,7 @@ module Entropy
       kx_lnTT,ky_lnTT,kz_lnTT,center1_x,center1_y,center1_z, &
       mpoly0,mpoly1,r_bcz, &
       Fbot,Tbump,Kmin,Kmax,hole_slope,hole_width,ltemperature_nolog,&
-      linitial_log
+      linitial_log,hcond0
 !
 ! run parameters
   namelist /entropy_run_pars/ &
@@ -140,7 +140,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_idealgas.f90,v 1.70 2008-08-08 09:34:55 dintrans Exp $")
+           "$Id: temperature_idealgas.f90,v 1.71 2008-08-11 09:07:31 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -226,8 +226,7 @@ module Entropy
         case('K-profile')
           lheatc_Kprof=.true.
 ! 
-!  TODO..... ailleurs !
-!  WL: we would appreciate having only English in the code...
+!  11-Aug-2008/dintrans: better somewhere else?
 !
           hcond1=(mpoly1+1.)/(mpoly0+1.)
           Fbot=-gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
@@ -369,12 +368,16 @@ module Entropy
       use General,  only: chn
       use Sub,      only: blob
       use Initcond, only: jump
-      use EquationOfState, only: gamma1, cs2bot, cs2top
+      use EquationOfState, only: gamma, gamma1, cs2bot, cs2top, cs20, &
+                                 lnrho0, get_cp1
+      use Gravity, only: gravz
+      use Mpicomm, only: stop_it
 !
       integer :: j
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz), intent (in) :: xx,yy,zz
       logical :: lnothing=.true.
+      real :: haut, Rgas, cp1, Ttop, alpha, beta, expo
 !
       do iinit=1,ninit
 !
@@ -411,7 +414,39 @@ module Entropy
                radius_lnTT, ampl_lnTT, center1_x, center1_y, center1_z
             call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
             call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)
-         !
+!
+        case('isothermal')
+          if (lroot) print*, 'init_lnTT: isothermal atmosphere'
+          if (ltemperature_nolog) then
+            f(:,:,:,ilnTT)=cs20/gamma1
+          else
+            f(:,:,:,ilnTT)=log(cs20/gamma1)
+          endif
+          haut=-cs20/gamma/gravz
+          do j=n1,n2
+            f(:,:,j,ilnrho)=lnrho0+(1.-z(j))/haut
+          enddo
+!
+        case('hydro_rad')
+          if (lroot) print*, 'init_lnTT: hydrostatic+radiative equilibria'
+          if (Fbot==impossible .or. hcond0==impossible) &
+            call stop_it("initialize_lnTT: Fbot or hcond0 not initialized")
+          call get_cp1(cp1)
+          Rgas=(1.-1./gamma)/cp1
+          Ttop=cs20/gamma1
+          beta=-Fbot/hcond0
+          alpha=Ttop-beta
+          expo=-gravz/beta/Rgas
+          do j=n1,n2
+            if (ltemperature_nolog) then
+              f(:,:,j,ilnTT)=beta*z(j)+alpha
+            else
+              f(:,:,j,ilnTT)=log(beta*z(j)+alpha)
+            endif
+            f(:,:,j,ilnrho)=lnrho0+ &
+              (1.+expo)*log((1.+alpha/beta)/(z(j)+alpha/beta))
+          enddo
+!
         case default
           !
           !  Catch unknown values
