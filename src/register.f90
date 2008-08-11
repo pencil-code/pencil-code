@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.239 2008-08-08 12:23:23 nilshau Exp $
+! $Id: register.f90,v 1.240 2008-08-11 15:09:41 dhruba Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -467,6 +467,8 @@ module Register
 !
         if (ipy==0       ) sinth_weight(m1)=.5*sinth_weight(m1)
         if (ipy==nprocy-1) sinth_weight(m2)=.5*sinth_weight(m2)
+        sinth_weight_across_proc(1)=0.5*sinth_weight_across_proc(1)
+        sinth_weight_across_proc(nygrid)=0.5*sinth_weight_across_proc(nygrid)
 !
 !  end of coord_system=='spherical_coords' query
 !  Introduce new names (cylindrical_coords), in addition to the old ones.

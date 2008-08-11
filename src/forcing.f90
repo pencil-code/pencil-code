@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.152 2008-06-25 13:56:48 dhruba Exp $
+! $Id: forcing.f90,v 1.153 2008-08-11 15:09:40 dhruba Exp $
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -122,7 +122,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.152 2008-06-25 13:56:48 dhruba Exp $")
+           "$Id: forcing.f90,v 1.153 2008-08-11 15:09:40 dhruba Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -1016,7 +1016,6 @@ module Forcing
    call random_number_wrapper(ralpha)
    aindex=nint(ralpha*2)
    Balpha = cklist(lmindex,3)
-  if(lroot) write(*,*) "Dhruba",lmindex,emm,Legendrel,Balpha 
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
 ! Now construct the Z_psi(r) 

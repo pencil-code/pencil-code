@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.370 2008-07-24 20:53:56 brandenb Exp $
+! $Id: sub.f90,v 1.371 2008-08-11 15:09:41 dhruba Exp $
 
 module Sub
 
@@ -3227,7 +3227,7 @@ module Sub
           ugradf=ugradf-abs(uu(:,3))*del6f
         else
           if(lspherical_coords) &
-             ugradf=ugradf-r1_mn*sin1th(m)*abs(uu(:,2))*del6f
+             ugradf=ugradf-r1_mn*sin1th(m)*abs(uu(:,3))*del6f
         endif
         
       endif; endif

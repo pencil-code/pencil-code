@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.218 2008-07-31 21:37:37 dobler Exp $
+! $Id: boundcond.f90,v 1.219 2008-08-11 15:09:40 dhruba Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1467,11 +1467,11 @@ module Boundcond
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
         f(l1-1,:,:,j)= f(l1+1,:,:,j) +  2.*60.*f(l1,:,:,j)*dx/(45.*x(l1))
-        f(l1-2,:,:,j)= f(l1+2,:,:,j) -  2.*60.*f(l1,:,:,j)*dx/(9.*x(l1))
+        f(l1-2,:,:,j)= f(l1+2,:,:,j) +  2.*60.*f(l1,:,:,j)*dx/(9.*x(l1))
         f(l1-3,:,:,j)= f(l1+3,:,:,j) +  2.*60.*f(l1,:,:,j)*dx/x(l1)
       case('top')               ! top boundary
         f(l2+1,:,:,j)= f(l2-1,:,:,j) -  2.*60.*f(l2,:,:,j)*dx/(45.*x(l2))
-        f(l2+2,:,:,j)= f(l2-2,:,:,j) +  2.*60.*f(l2,:,:,j)*dx/(9.*x(l2))
+        f(l2+2,:,:,j)= f(l2-2,:,:,j) -  2.*60.*f(l2,:,:,j)*dx/(9.*x(l2))
         f(l2+3,:,:,j)= f(l2-3,:,:,j) -  2.*60.*f(l2,:,:,j)*dx/(x(l2))
 
       case default
@@ -1501,11 +1501,11 @@ module Boundcond
 ! The coding assumes we are using 6-th order centered finite difference for our
 ! derivatives. 
         f(l1-1,:,:,j)= f(l1+1,:,:,j) -  60.*f(l1,:,:,j)*dx/(45.*x(l1))
-        f(l1-2,:,:,j)= f(l1+2,:,:,j) +  60.*f(l1,:,:,j)*dx/(9.*x(l1))
+        f(l1-2,:,:,j)= f(l1+2,:,:,j) -  60.*f(l1,:,:,j)*dx/(9.*x(l1))
         f(l1-3,:,:,j)= f(l1+3,:,:,j) -  60.*f(l1,:,:,j)*dx/(x(l1))
       case('top')               ! top boundary
         f(l2+1,:,:,j)= f(l2-1,:,:,j) +  60.*f(l1,:,:,j)*dx/(45.*x(l2))
-        f(l2+2,:,:,j)= f(l2-2,:,:,j) -  60.*f(l1,:,:,j)*dx/(9.*x(l2))
+        f(l2+2,:,:,j)= f(l2-2,:,:,j) +  60.*f(l1,:,:,j)*dx/(9.*x(l2))
         f(l2+3,:,:,j)= f(l2-3,:,:,j) +  60.*f(l1,:,:,j)*dx/(x(l2))
 
       case default
@@ -1598,12 +1598,12 @@ module Boundcond
 ! derivatives. 
         cottheta= cotth(m1)
         f(:,m1-1,:,j)= f(:,m1+1,:,j) -  60.*dy*cottheta*f(:,m1,:,j)/45.
-        f(:,m1-2,:,j)= f(:,m1+2,:,j) +  60.*dy*cottheta*f(:,m1,:,j)/9.
+        f(:,m1-2,:,j)= f(:,m1+2,:,j) -  60.*dy*cottheta*f(:,m1,:,j)/9.
         f(:,m1-3,:,j)= f(:,m1+3,:,j) -  60.*dy*cottheta*f(:,m1,:,j)
       case('top')               ! top boundary
         cottheta= cotth(m2)
         f(:,m2+1,:,j)= f(:,m2-1,:,j) +  60.*dy*cottheta*f(:,m2,:,j)/45.
-        f(:,m2+2,:,j)= f(:,m2-2,:,j) -  60.*dy*cottheta*f(:,m2,:,j)/9.
+        f(:,m2+2,:,j)= f(:,m2-2,:,j) +  60.*dy*cottheta*f(:,m2,:,j)/9.
         f(:,m2+3,:,j)= f(:,m2-3,:,j) +  60.*dy*cottheta*f(:,m2,:,j)
 
       case default

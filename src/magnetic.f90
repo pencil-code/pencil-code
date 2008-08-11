@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.536 2008-08-02 15:39:57 wlyra Exp $
+! $Id: magnetic.f90,v 1.537 2008-08-11 15:09:40 dhruba Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -449,7 +449,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.536 2008-08-02 15:39:57 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.537 2008-08-11 15:09:40 dhruba Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3581,7 +3581,7 @@ module Magnetic
       use Sub
 !
       logical,save :: first=.true.
-      real :: bxmxy,bymxy,bzmxy,bmxy_rms,nVol2d,btemp
+      real :: bxmxy,bymxy,bzmxy,bmxy_rms,nVol2d,btemp,area
       integer :: l,j
 !
 !  This only works if bxmz and bzmz are in xyaver,
@@ -3603,10 +3603,10 @@ module Magnetic
               bxmxy=fnamexy(l,m,j,idiag_bxmxy)
               bymxy=fnamexy(l,m,j,idiag_bymxy)
               bzmxy=fnamexy(l,m,j,idiag_bzmxy)
-              btemp = bxmxy**2+bymxy**2+bzmxy**2
+              btemp=bxmxy**2+bymxy**2+bzmxy**2
               if(lspherical_coords) then 
-                btemp = btemp*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-                nVol2d = nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+                btemp=btemp*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+                nVol2d=nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
               else
               endif
               if(lcylindrical_coords) & 
@@ -3615,7 +3615,7 @@ module Magnetic
             enddo
           enddo
         enddo
-        bmxy_rms = bmxy_rms/(nx*ny*nprocy)
+	if(lcartesian_coords) bmxy_rms = bmxy_rms/(nx*ny*nprocy)
         if(lspherical_coords) bmxy_rms=bmxy_rms/nVol2d
         bmxy_rms = sqrt(bmxy_rms)
       endif
@@ -4955,9 +4955,9 @@ module Magnetic
       enddo
 !
 ! Currently need to force zaverage calculation at every lout step for
-! bmx and bmy.
+! bmx and bmy and bmxy_rms.
 !
-      if ((idiag_bmx+idiag_bmy)>0) ldiagnos_need_zaverages=.true.
+      if ((idiag_bmx+idiag_bmy+idiag_bmxy_rms)>0) ldiagnos_need_zaverages=.true.
 !
 !  check for those quantities for which we want xy-averages
 !
