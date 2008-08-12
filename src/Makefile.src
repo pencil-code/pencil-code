@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.422 2008-07-28 15:03:46 rplasson Exp $
+### $Id: Makefile.src,v 1.423 2008-08-12 21:03:06 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -521,6 +521,7 @@ LD_FFTW2=
 #F77=$(FC) #(norlx5*)
 #CC=gcc #(norlx5*)
 #FFLAGS=-O3 #(norlx5*)
+#LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(norlx5*)
 ##
 ##  Patrik's playstation
 ##
