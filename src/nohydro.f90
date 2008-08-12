@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.96 2008-07-23 02:36:46 brandenb Exp $
+! $Id: nohydro.f90,v 1.97 2008-08-12 01:20:30 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -76,7 +76,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.96 2008-07-23 02:36:46 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.97 2008-08-12 01:20:30 brandenb Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -254,7 +254,7 @@ module Hydro
       real, dimension(nx) :: kdotxwt,cos_kdotxwt,sin_kdotxwt
       real :: kkx_aa,kky_aa,kkz_aa, fac, fpara, dfpara, ecost, esint, epst
       integer :: modeN
-      real :: sqrt2, sqrt21k1
+      real :: sqrt2, sqrt21k1, WW=0.25
 !
       intent(in) :: f
       intent(inout) :: p
@@ -364,30 +364,32 @@ module Hydro
 !
       elseif (kinflow=='Tilgner') then
         if (headtt) print*,'Tilgner flow; kx_aa,ky_aa=',kkx_aa,kky_aa
-        fac=ampl_kinflow
+        fac=ampl_kinflow*sqrt(2.)
         epst=eps_kinflow*t
 kkx_aa=2.*pi
 kky_aa=2.*pi
         p%uu(:,1)=-fac* sin(kky_aa*y(m)         )
-        p%uu(:,2)=+fac* sin(kkx_aa*x(l1:l2)+epst)
-        p%uu(:,3)=-fac*(cos(kkx_aa*x(l1:l2)+epst)+cos(kky_aa*y(m)))
+        p%uu(:,2)=+fac* sin(kkx_aa*(x(l1:l2)+epst))
+        p%uu(:,3)=-fac*(cos(kkx_aa*(x(l1:l2)+epst))+cos(kky_aa*y(m)))
         if (lpencil(i_divu)) p%divu=0.
         if (lpencil(i_oo)) p%oo=-kkx_aa*p%uu
 !
 !  Tilgner flow, U=-z x grad(psi) - z k psi, where
 !  psi = U0/kH * (cosX+cosY), so U = U0 * (-sinY, sinX, -cosX-cosY).
 !  This makes sense only for kkx_aa=kky_aa
+!  Here, W in Tilgner's equation is chosen to be 0.25.
 !
       elseif (kinflow=='Tilgner-orig') then
-        if (headtt) print*,'Tilgner-orig flow; kx_aa,ky_aa=',kkx_aa,kky_aa
+        if (headtt) print*,'original Tilgner flow; kx_aa,ky_aa=',kkx_aa,kky_aa
         fac=ampl_kinflow
         epst=eps_kinflow*t
-kkx_aa=2.*pi
-kky_aa=2.*pi
-sqrt2=sqrt(2.)
-        p%uu(:,1)=+fac*sqrt2*sin(kkx_aa*(x(l1:l2)+epst))*cos(kky_aa*y(m))
-        p%uu(:,2)=-fac*sqrt2*cos(kkx_aa*(x(l1:l2)+epst))*sin(kky_aa*y(m))
-        p%uu(:,3)=+fac*0.500*sin(kkx_aa*(x(l1:l2)+epst))*sin(kky_aa*y(m))
+        kkx_aa=2.*pi
+        kky_aa=2.*pi
+        sqrt2=sqrt(2.)
+        WW=0.25
+        p%uu(:,1)=+fac*sqrt2*sin(kkx_aa*(x(l1:l2)-epst))*cos(kky_aa*y(m))
+        p%uu(:,2)=-fac*sqrt2*cos(kkx_aa*(x(l1:l2)-epst))*sin(kky_aa*y(m))
+        p%uu(:,3)=+fac*2.*WW*sin(kkx_aa*(x(l1:l2)-epst))*sin(kky_aa*y(m))
         if (lpencil(i_divu)) p%divu=0.
         if (lpencil(i_oo)) p%oo=-kkx_aa*p%uu
 !

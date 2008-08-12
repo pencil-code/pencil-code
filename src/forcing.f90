@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.153 2008-08-11 15:09:40 dhruba Exp $
+! $Id: forcing.f90,v 1.154 2008-08-12 01:20:30 brandenb Exp $
 
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -68,7 +68,7 @@ module Forcing
   logical :: lembed=.false.
   character (len=labellen) :: iforcing_cont='ABC'
   real :: ampl_ff=1.,width_fcont=1.,x1_fcont=0.,x2_fcont=0.
-  real :: kf_fcont=0.,omega_fcont=0.
+  real :: kf_fcont=0.,omega_fcont=0.,eps_fcont=0.
 !
 !  auxiliary functions for continuous forcing function
 !
@@ -95,7 +95,7 @@ module Forcing
        lhelical_test,lfastCK,fpre,helsign,nlist_ck,&
        lforcing_cont,iforcing_cont, &
        lembed,k1_ff,ampl_ff,width_fcont,x1_fcont,x2_fcont, &
-       kf_fcont,omega_fcont
+       kf_fcont,omega_fcont,eps_fcont
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -122,7 +122,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.153 2008-08-11 15:09:40 dhruba Exp $")
+           "$Id: forcing.f90,v 1.154 2008-08-12 01:20:30 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -202,6 +202,10 @@ module Forcing
         sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
       elseif (iforcing_cont=='RobertsFlow') then
         if (lroot) print*,'forcing_cont: Roberts Flow'
+        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
+        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+      elseif (iforcing_cont=='RobertsFlow-zdep') then
+        if (lroot) print*,'forcing_cont: z-dependent Roberts Flow'
         sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
         siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
       elseif (iforcing_cont=='nocos') then
@@ -2594,12 +2598,13 @@ module Forcing
 !
 !  24-mar-08/axel: adapted from density.f90
 !
+      use Sub, only: quintic_step, quintic_der_step
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real :: fact
+      real :: fact,fpara, dfpara,sqrt2,sqrt21k1
 !
       intent(inout) :: f,p
 !
@@ -2616,6 +2621,25 @@ module Forcing
           p%fcont(:,1)=-fact*cosx(l1:l2)*siny(m)
           p%fcont(:,2)=+fact*sinx(l1:l2)*cosy(m)
           p%fcont(:,3)=+fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
+        elseif (iforcing_cont=='RobertsFlow-zdep') then
+          if (headtt) print*,'z-dependent Roberts flow; eps_fcont=',eps_fcont
+          fpara=quintic_step(z(n),-1.+eps_fcont,eps_fcont) &
+               -quintic_step(z(n),+1.-eps_fcont,eps_fcont)
+          dfpara=quintic_der_step(z(n),-1.+eps_fcont,eps_fcont)&
+                -quintic_der_step(z(n),+1.-eps_fcont,eps_fcont)
+!
+!  abbreviations
+!
+          sqrt2=sqrt(2.)
+          sqrt21k1=1./(sqrt2*k1_ff)
+!
+!  amplitude factor missing in upper lines
+!
+          p%fcont(:,1)=-ampl_ff*cosx(l1:l2)*siny(m) &
+                -dfpara*ampl_ff*sinx(l1:l2)*cosy(m)*sqrt21k1
+          p%fcont(:,2)=+ampl_ff*sinx(l1:l2)*cosy(m) &
+                -dfpara*ampl_ff*cosx(l1:l2)*siny(m)*sqrt21k1
+          p%fcont(:,3)=+fpara*ampl_ff*cosx(l1:l2)*cosy(m)*sqrt2
         elseif (iforcing_cont=='nocos') then
           fact=ampl_ff
           p%fcont(:,1)=fact*sinz(n)
