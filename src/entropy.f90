@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.554 2008-08-07 21:10:15 dobler Exp $
+! $Id: entropy.f90,v 1.555 2008-08-12 14:41:17 wlyra Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -222,7 +222,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.554 2008-08-07 21:10:15 dobler Exp $")
+           "$Id: entropy.f90,v 1.555 2008-08-12 14:41:17 wlyra Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -2177,12 +2177,13 @@ module Entropy
 !  28-jul-06/wlad: coded
 !
       use BorderProfiles, only: border_driving
+      use EquationOfState, only: cs20,get_ptlaw,get_cp1,lnrho0
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx) :: f_target,cs2_0
-      real :: g0=1.,r0_pot=0.1
+      real, dimension(nx) :: f_target,cs2
+      real :: g0=1.,r0_pot=0.1,ptlaw,cp1
 !
       select case(borderss)
 !
@@ -2190,9 +2191,12 @@ module Entropy
          f_target=0.
       case('constant')
          f_target=ss_const
-      case('globaldisc')
-         cs2_0=(cs20*p%rcyl_mn**2)*(p%rcyl_mn**(-3))
-         f_target= gamma11*log(cs2_0) !- gamma1*gamma11*lnrho
+      case('power-law')
+        call get_ptlaw(ptlaw) 
+        call get_cp1(cp1)
+        call power_law(cs20,p%rcyl_mn,ptlaw,cs2,r_ref)
+        f_target=1./(gamma*cp1)*(log(cs2/cs20)-gamma1*lnrho0)
+         !f_target= gamma11*log(cs2_0) !- gamma1*gamma11*lnrho
       case('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_entropy: borderss='nothing'"
