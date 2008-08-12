@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.449 2008-07-31 20:42:14 brandenb Exp $
+! $Id: hydro.f90,v 1.450 2008-08-12 14:46:08 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -358,7 +358,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.449 2008-07-31 20:42:14 brandenb Exp $")
+           "$Id: hydro.f90,v 1.450 2008-08-12 14:46:08 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1945,7 +1945,7 @@ use Mpicomm, only: stop_it
         call get_shared_variable('plaw',plaw,ierr)
         if (ierr/=0) call stop_it("borderuu: "//&
              "there was a problem when getting plaw")
-          !no need to do the whole nx array. the border is all we need
+        !no need to do the whole nx array. the border is all we need
         do i=1,nx
           if ( ((p%rborder_mn(i).ge.r_int).and.(p%rborder_mn(i).le.r_int+2*wborder_int)).or.&
                ((p%rborder_mn(i).ge.r_ext-2*wborder_ext).and.(p%rborder_mn(i).le.r_ext))) then

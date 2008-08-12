@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.555 2008-08-12 14:41:17 wlyra Exp $
+! $Id: entropy.f90,v 1.556 2008-08-12 14:46:09 wlyra Exp $
 ! 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -222,7 +222,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.555 2008-08-12 14:41:17 wlyra Exp $")
+           "$Id: entropy.f90,v 1.556 2008-08-12 14:46:09 wlyra Exp $")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
@@ -2178,6 +2178,7 @@ module Entropy
 !
       use BorderProfiles, only: border_driving
       use EquationOfState, only: cs20,get_ptlaw,get_cp1,lnrho0
+      use Sub, only: power_law
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p

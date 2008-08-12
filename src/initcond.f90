@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.246 2008-08-02 18:06:08 wlyra Exp $
+! $Id: initcond.f90,v 1.247 2008-08-12 14:46:09 wlyra Exp $
 
 module Initcond
 
@@ -3197,7 +3197,6 @@ module Initcond
           gslnTT=-ptlaw/((rr_cyl/r_ref)**2+rsmooth**2)*rr_cyl/r_ref**2
 !
 !  Put in the global arrays if they are to be static
-!  else put in the temperature or entropy array
 !
           if (llocal_iso) then
             f(:,m,n,iglobal_cs2)= cs2
@@ -3215,17 +3214,11 @@ module Initcond
               f(:,m,n,iglobal_glnTT+2)=0.
             endif
           elseif (ltemperature) then
-!
 !  else do it as temperature ...
-!
             f(:,m,n,ilnTT)=log(cs2*cp1/gamma1)
-!
           elseif (lentropy) then
-!
 !  ... or entropy
-!
             f(:,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma1*lnrho0)
-!
           else
 !
             call stop_it("No thermodynamical variable. Choose if you want "//&
