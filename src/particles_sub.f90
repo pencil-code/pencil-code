@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.138 2008-05-27 00:15:32 wlyra Exp $
+! $Id: particles_sub.f90,v 1.139 2008-08-14 11:35:17 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -448,7 +448,8 @@ module Particles_sub
 !
 !  01-jan-05/anders: coded
 !
-      use Messages, only: fatal_error, fatal_error_local,warning
+      use Messages, only: fatal_error, fatal_error_local, &
+                          fatal_error_local_collect, warning
       use Mpicomm
       use Sub, only: max_name
 !
@@ -657,6 +658,16 @@ module Particles_sub
             enddo
           endif
         enddo
+!
+!  Check that there is room for the new particles at each processor.
+!
+        if (npar_loc+sum(nmig(:,iproc))>mpar_loc) then
+          print*, 'redist_particles_proc: Too many particles want to be at proc', iproc
+          print*, 'redist_particles_proc: npar_loc, mpar_loc, nmig=', &
+              npar_loc, mpar_loc, sum(nmig(:,iproc))
+          call fatal_error_local('redist_particles_proc','')
+        endif
+        call fatal_error_local_collect()
 !
 !  Set to receive.
 !
