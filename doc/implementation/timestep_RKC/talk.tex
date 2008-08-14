@@ -1,0 +1,416 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%            -*-LaTeX-*-
+%%%   multigrid.tex   %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% Date:   21-Jun-2007
+%% Author: wd (Wolfgang.Dobler@ucalgary.ca)
+%% Description: 
+%%   
+
+%% Choose appropriate driver:
+\RequirePackage{ifpdf}
+\ifpdf
+  \def\mydriver{pdftex}         % writing PDF
+\else
+  \def\mydriver{dvips}          % writing DVI
+\fi
+
+\documentclass[\mydriver,12pt,twoside,notitlepage]{article}
+
+%\usepackage{german,a4}
+%\usepackage[german,british]{babel}
+%\usepackage[latin1]{inputenc}
+%\usepackage[T1]{fontenc}\usepackage{lmodern}
+\usepackage[scaled]{helvet}
+\renewcommand{\familydefault}{phv}
+
+\usepackage{amsmath,amssymb,bm,wasysym}
+%\usepackage{latexsym,exscale}%\usepackage{newcent,helvet}%\usepackage{pxfonts}%\usepackage{txfonts}
+%\usepackage[it,footnotesize]{caption2}
+%\setlength{\abovecaptionskip}{5pt} % Space before caption
+%\setlength{\belowcaptionskip}{5pt} % Space after caption
+
+%% Load titlesec before hyperref or \section links will be off with dvipdfm
+%\usepackage[bf,sf,small,nonindentfirst]{titlesec}
+%\newcommand{\sectionbreak}{\clearpage}
+%\titleformat{\subsubsection}{\normalfont\itshape}{\thesubsubsection}{.5em}{}
+%\titlespacing{\subsubsection}{0pt}{*1}{*-1}
+
+\usepackage{units}
+
+\usepackage{graphicx,color}
+\usepackage{multicol}
+\usepackage{parskip}
+\usepackage[paperwidth=20cm,paperheight=15cm,hmargin=20mm,top=15mm,bottom=15mm,twosideshift=5mm]{geometry}
+
+\usepackage{fancyvrb}
+
+\usepackage{makeidx}
+\usepackage[bookmarksopen=true,bookmarksopenlevel=2]{hyperref} % should come late/last
+
+\ifpdf
+  \usepackage{pdfpages}
+\else
+  \newcommand{\includepdf}[2][]{%
+%     \fbox{%
+%       \vfill\\%
+%       \centerline{#2}%
+%       \vfill\\%
+%       }%
+    \centerline{%
+      \fbox{%
+        \parbox[c][0.5\textheight]{0.5\textwidth}{%
+          \vspace*{\stretch{1}}%
+          \hfill Include file \path{#2}\hfill\mbox{}%
+          \vspace*{\stretch{2}}%
+        }%
+      }%
+    }%
+  }%
+  \fi
+
+\definecolor{DarkBlue}{rgb}{0,0,0.7}
+
+%% Fancyvrb customizations
+\DefineShortVerb{\|}
+\newcommand{\BoxLabel}[1]{\fbox{\rmfamily\emph{#1}}}
+%% A customized verbatim environment
+\DefineVerbatimEnvironment%
+  {CodeVerbatim}%
+  {Verbatim}%
+  {frame=single,%
+   framesep=10pt,%
+   xleftmargin=4ex,%
+   xrightmargin=4ex,%   
+   commandchars=\\\{\},%
+   gobble=2%
+  }
+
+
+\frenchspacing
+\sloppy
+%%% Multiple, three-column indexes
+\makeindex
+%% The following is adapted from hyperref.sty and fixes hyperrefs in the
+%% index after all of our nasty manipulations:
+% \makeatletter
+%   \@ifpackageloaded{hyperref}{%
+%     \let\HyInd@org@wrindex\@wrindex
+%     \def\@wrindex#1#2{\HyInd@@wrindex{#1}#2||\\}%
+%     \def\HyInd@@wrindex#1#2|#3|#4\\{%
+%       \ifx\\#3\\%
+%         \HyInd@org@wrindex{#1}{#2|hyperpage}%
+%       \else
+%         \def\Hy@temp@A{#3}%
+%         \ifx\Hy@temp@A\HyInd@ParenLeft
+%           HyInd@org@wrindex{#1}{#2|#3hyperpage}%
+%         \else
+%           \HyInd@org@wrindex{#1}{#2|#3}%
+%         \fi
+%       \fi
+%     }%
+%   }{}
+% \makeatother
+%% Redefine index to be in three columns (adapted from `index.sty'):
+\makeatletter
+\renewenvironment{theindex}{%
+  %\edef\indexname{\the\@nameuse{idxtitle@\@indextype}}%
+  \if@twocolumn\@restonecolfalse
+  \else\@restonecoltrue
+  \fi
+  \columnseprule \z@
+  \columnsep 35\p@
+  \begin{multicols}{3}[\section*{\indexname}%
+    %\ifx\index@prologue\@empty%
+    %\else\index@prologue\bigskip
+    %\fi
+  ]%
+  \@mkboth{\MakeUppercase\indexname}%
+          {\MakeUppercase\indexname}%
+  \thispagestyle{plain}%
+  \parindent\z@
+  \parskip\z@ \@plus .3\p@\relax
+  \let\item\@idxitem
+}
+{ \end{multicols}
+  \if@restonecol\onecolumn\else\clearpage\fi
+}
+\makeatother
+
+%% Matrices and tensors
+\newcommand{\matx}[1]{\mbox{\boldmath${\cal #1}$\unboldmath}}
+\newcommand{\tensor}[1]{\matx{#1}}
+
+%% Math macros
+\newcommand{\Av}      {\mathbf{A}}
+
+\newcommand{\Bv}      {\mathbf{B}}
+
+
+\newcommand{\etav}    {\bm{\eta}}
+\newcommand{\Ev}      {\mathbf{E}}
+
+\newcommand{\fv}      {\mathbf{f}}
+
+\newcommand{\gv}      {\mathbf{g}}
+
+\newcommand{\jv}      {\mathbf{j}}
+
+\newcommand{\kv}      {\mathbf{k}}
+
+\newcommand{\Laplace} { \mathop{\Delta}\nolimits}
+
+\newcommand{\mtildei} {\widetilde{m}_{\rm i}}
+
+\newcommand{\uv}      {\mathbf{u}}
+\newcommand{\uve}     {\uv_{\rm e}}
+\newcommand{\uvi}     {\uv_{\rm i}}
+
+\newcommand{\vv}      {\mathbf{v}}
+\newcommand{\vve}     {\vv_{\rm e}}
+
+\newcommand{\xv}{\mathbf{x}}
+
+% ---------------------------------------------------------------------- %
+
+\title{Long Time Steps for the \textsc{Pencil Code}\\[1.5ex]
+  {\large Implementing and testing Runge--Kutta--Chebyshev schemes\\
+    for highly diffusive problems}
+}
+\author{Wolfgang Dobler}
+
+% ---------------------------------------------------------------------- %
+
+\begin{document}
+\thispagestyle{empty}
+
+\maketitle
+
+\clearpage
+\tableofcontents
+\clearpage
+
+%%%%%%%%
+\section{Introduction: Runge--Kutta Schemes}
+%%%%%%%%
+
+%%%
+\subsection{Classical explicit schemes}
+Explicit Runge--Kutta scheme:
+\begin{align}
+  \tau_1 &= t_0 \; ,
+            & \etav_1 &= \yv_0 \; ,
+                         & \kv_1 &= h\fv(\tau_1, \etav_1) \; ,\\
+  \tau_2 &= t_0 + c_2 h \; ,
+            & \etav_2 &= \yv_0 + a_{21} \kv_1 \; ,
+                         & \kv_2 &= h\fv(\tau_2, \etav_2) \; ,\\
+  \tau_3 &= t_0 + c_3 h \; ,
+            & \etav_3 &= \yv_0 + a_{31} \kv_1 + a_{32} \kv_2 \; ,
+                         & \kv_3 &= h\fv(\tau_3, \etav_3) \; ,\\
+  & \vdots &  & \vdots  &  &\vdots \nonumber \\
+  \tau_s &= t_0 + c_s h \; ,
+            & \etav_s &= \yv_0 + a_{s1} \kv_1 + a_{s2} \kv_2
+             + \ldots + a_{s,s-1} \kv_{s-1} \; ,
+                              & \kv_s &= h\fv(\tau_s, \etav_s) \; ,\\
+  t_1 &= t_0 + h \; ,
+            & \yv_1   &= \yv_0 + b_1 \kv_1 + b_2 \kv_2
+                         + \ldots + b_{s-1} \kv_{s-1} + b_{s} \kv_{s} \; .
+\end{align}
+
+
+Butcher tableau:
+\begin{equation}
+  \begin{array}{c|ccccc}
+    0                                                 \\
+    c_2    & a_{21}                                   \\
+    c_3    & a_{31} & a_{32}                          \\
+    \vdots & \vdots &        & \ddots &               \\
+    c_s    & a_{s1} & a_{s2} & \cdots & a_{s,s-1}     \\
+    \hline
+    (1)    & b_1    & b_2    & \cdots & b_{s-1} & b_s
+  \end{array}
+\end{equation}
+
+where all omitted elements $a_{ij}$ vanish.\footnote{
+  For embedded schemes there will be two lines with
+  coefficients $b_i$ and $\tilde{b}_i$:
+  \begin{equation}
+    \begin{array}{c|ccccc}
+      0                                                 \\
+      c_2    & a_{21}                                   \\
+      c_3    & a_{31} & a_{32}                          \\
+      \vdots & \vdots &        & \ddots &               \\
+      c_s    & a_{s1} & a_{s2} & \cdots & a_{s,s-1}     \\
+      \hline
+             & b_1    & b_2    & \cdots & b_{s-1} & b_s \\
+      \hline
+             & \tilde{b}_1
+                      & \tilde{b}_2
+                               & \cdots
+                                        & \tilde{b}_{s-1}
+                                                  & \tilde{b}_s
+    \end{array}
+  \end{equation}
+  The sets of $b$ correspond to two different schemes of different order,
+  which are combined in order to estimate the error.
+}
+
+
+An implicit $s$-stage Runge--Kutta (of order $p$) for the system of
+ordinary differential equations
+\begin{equation}
+  \dot{\yv} = \fv(t,\yv)
+\end{equation}
+is given by
+\begin{align}
+  \tau_i  &= t_0 + c_j h \; ,
+             & \etav_i &= \yv_0 + \sum\limits_{j=1}^{s} a_{ij} \kv_j \; ,
+                          & \kv_j &= h\fv(\tau_i, \etav_j) \; ,\\
+  t_1     &= t_0 + h \; ,
+             & \yv_1   &= \yv_0 + \sum\limits_{j=1}^{s} b_j \kv_j \; .
+\end{align}
+
+All schemes typically use (at least) first-order accurat sub-steps:
+\begin{equation}
+  \sum\limits_{j=1}^{s} a_{ij} = c_i \; , \qquad i=1,2,\ldots,s \; .
+\end{equation}
+
+The coefficients $c_j$, $a_{ij}$, $b_j$ are conveniently represented in a
+\emph{Butcher tableau},
+\begin{equation}
+  \begin{array}{c|c}
+    \cv & \Av \\
+    \hline
+        & \bv^{\mathsf T}
+  \end{array}
+  \quad=\quad
+  \begin{array}{c|ccccc}
+    c_1    & a_{11} & a_{12} & a_{13} & \cdots & a_{1s} \\
+    c_2    & a_{21} & a_{22} & a_{23} & \cdots & a_{2s} \\
+    c_3    & a_{31} & a_{32} & a_{33} & \cdots & a_{3s} \\
+    \vdots & \vdots &        &        & \ddots &        \\
+    c_s    & a_{s1} & a_{s2} & a_{s3} & \cdots & a_{ss} \\
+    \hline
+    (1)    & b_1    & b_2    & b_3    & \cdots & b_s
+  \end{array}
+\end{equation}
+
+Implicit Runge--Kutta schemes require the solution of nonlinear systems of
+equations in each substep, but have desirable stability properties.
+
+Explicit schemes are far easier to implement.
+
+
+
+%%%
+\subsection{$2N$-schemes}
+
+%%%
+\subsection{Stability}
+
+\begin{itemize}
+  \item Stability polynomial
+  \item Plots
+\end{itemize}
+
+% ---------------------------------------------------------------------- %
+
+%%%%%%%%
+\section{Runge--Kutta--Chebyshev schemes}
+%%%%%%%%
+
+We can do better \ldots{}
+Sounds familiar? $\rightarrow$ Chebyshev
+
+$\rightarrow$ RKC-1 stability polynomial
+-- but that's no scheme yet.
+
+
+% ---------------------------------------------------------------------- %
+
+%%%%%%%%
+\section{Example}
+%%%%%%%%
+
+Kinematic $\alpha^2$-dynamo:
+
+$\alpha=\mathrm{const.}$ in a sphere $r<1$,
+\qquad
+$\eta = \begin{cases}
+    1 & \text{for $r<1$} \; , \\
+    8 & \text{for $r>1$}\\
+  \end{cases}$
+
+\medskip
+
+{\small\color{DarkBlue}
+\begin{CodeVerbatim}[label=\BoxLabel{run.in}]
+  &run_pars
+    ! For eta_ext=8, stability limits are
+    !   itorder=3:  dt_eta=1.69e-5
+    !   RKC-40:     dt_eta=7.03e-3
+    dt=3.5e-3, tmax=2.0
+  /
+  &magnetic_run_pars
+    iresistivity='shell', wresistivity=0.03,
+    eta=1.0, eta_ext=8.0
+    ! For eta=1.0, eta_ext=4.0, critical alpha_effect is around 11.3
+    lmeanfield_theory=T, alpha_effect=15, alpha_quenching=0.
+    alpha_profile='const', lweyl_gauge=T
+  /
+\end{CodeVerbatim}
+}
+
+[Resolution + geometry\ldots]
+
+% ---------------------------------------------------------------------- %
+
+%%%
+\subsection{Comparison}
+\begin{enumerate}
+\item Standard 3rd-order Runge--Kutta scheme (Williamson)\\
+  \texttt{dt=7.00e-6}
+\item RKC-20\\
+  \texttt{dt=4.375e-4}
+\item RKC-40\\
+  \texttt{dt=3.50e-3}
+\end{enumerate}
+(each at $\approx 1/2\,\delta t_{\rm max}$).
+
+Speed:
+\begin{enumerate}
+\item $\unit[71.9]{\mu s}$ per step + grid pt   
+  (at 98.7\%)
+  \RedArrow $\unit[0.021]{\mu s}$ per step + time unit
+\item $\unit[35.0]{\mu s}$ per step + grid pt
+  (at 98.7\%)
+  \RedArrow $\unit[0.080]{\mu s}$ per step + time unit
+\item $\unit[4.77]{\mu s}$ per step + grid pt
+  (at 98.2\%)
+  \RedArrow $\unit[0.68]{\mu s}$ per step + time unit
+\end{enumerate}
+\bigskip
+
+{\small\color{DarkBlue}
+\begin{CodeVerbatim}[label=\BoxLabel{top}]
+   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND           
+  3693 wdobler   20   0  818m 196m 1916 R   99 10.4  21:30.87 run.x              
+  3741 wdobler   20   0  697m  96m 1900 R   95  5.1  18:22.56 run.x              
+\end{CodeVerbatim}
+}
+
+
+[Growth rate changed from 53.62 (RK-40) to 53.74 (RK-20)]
+
+\end{document}
+
+% End of file multigrid.tex
+
+%%% Please leave this for Emacs [wd]:
+
+%% Local Variables:
+%% ispell-check-comments: t
+%% Local IspellDict: canadian
+%% End:
+
+% LocalWords:  ifpdf pdftex dvips
