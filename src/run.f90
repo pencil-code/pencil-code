@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.259 2008-07-23 02:36:46 brandenb Exp $
+! $Id: run.f90,v 1.260 2008-08-14 10:25:18 dhruba Exp $
 !
 !***********************************************************************
       program run
@@ -76,7 +76,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.259 2008-07-23 02:36:46 brandenb Exp $")
+             "$Id: run.f90,v 1.260 2008-08-14 10:25:18 dhruba Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -354,7 +354,12 @@
             if (lroot) inquire(FILE="RELOAD", EXIST=lreload_file)
             if (lroot) inquire(FILE="RELOAD_ALWAYS", EXIST=lreload_always_file)
             lreloading = lreload_file .or. lreload_always_file
-            !
+! In some compilers (particularly pathf90) the file reload is being give
+! unit = 1 hence there is conflict during re-reading of parameters. 
+! In this temporary fix, the RELOAD file is being removed just after it
+! has been seen, not after RELOAD-ing has been completed. There must
+! be a better solution. 
+            if (lroot .and. lreload_file) call remove_file("RELOAD")
             call mpibcast_logical(lreloading, 1)
             if (lreloading) then
               if (lroot) write(0,*) 'Found RELOAD file -- reloading parameters'
