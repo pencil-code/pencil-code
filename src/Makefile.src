@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.424 2008-08-15 14:28:09 kapelrud Exp $
+### $Id: Makefile.src,v 1.425 2008-08-15 19:51:14 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -1338,7 +1338,8 @@ TAGS: $(TAG_SOURCE)
 # Clean up, but leave makefile and TAGS
 clean:
 	rm -f *.x *.o *.mod *.d cparam*.inc cparam_pencils*.inc *.il
-	rm -f special/*.o special/*.mod 
+	rm -f special/*.o special/*.mod
+	rm -f .current-precision
 	rm -f *.dot *.ps  # Dependency diagram files
 	rm -f work.pc work.pcl .build*
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
