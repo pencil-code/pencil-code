@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.423 2008-08-12 21:03:06 dobler Exp $
+### $Id: Makefile.src,v 1.424 2008-08-15 14:28:09 kapelrud Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -54,6 +54,7 @@ PARTICLES_MAIN         = noparticles_main
 PARTICLES_SUB          = noparticles_sub
 PARTICLES              = noparticles
 PARTICLES_RADIUS       = noparticles_radius
+PARTICLES_SPIN         = noparticles_spin
 PARTICLES_NUMBER       = noparticles_number
 PARTICLES_SELFGRAVITY  = noparticles_selfgravity
 PARTICLES_NBODY        = noparticles_nbody
@@ -1023,7 +1024,7 @@ endif
 ## Abbreviations
 technical=cparam.o cdata.o particles_cdata.o messages.o general.o farray.o shared_variables.o $(FOURIER).o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o persist.o $(GRID).o
 #
-physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(POISSON).o $(SELFGRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(CHEMISTRY).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(TESTFIELD).o $(TESTFLOW).o $(PARTICLES).o $(PARTICLES_RADIUS).o $(PARTICLES_NUMBER).o $(PARTICLES_SELFGRAVITY).o $(PARTICLES_NBODY).o $(PARTICLES_STALKER).o $(NEUTRALVELOCITY).o $(NEUTRALDENSITY).o $(HYPERVISC_STRICT).o $(HYPERRESI_STRICT).o
+physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(POISSON).o $(SELFGRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(CHEMISTRY).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(TESTFIELD).o $(TESTFLOW).o $(PARTICLES).o $(PARTICLES_RADIUS).o $(PARTICLES_SPIN).o $(PARTICLES_NUMBER).o $(PARTICLES_SELFGRAVITY).o $(PARTICLES_NBODY).o $(PARTICLES_STALKER).o $(NEUTRALVELOCITY).o $(NEUTRALDENSITY).o $(HYPERVISC_STRICT).o $(HYPERRESI_STRICT).o
 #
 switchable=$(physics) $(BORDER_PROFILES).o
 #
@@ -1133,7 +1134,7 @@ buildinfo:
 	                       -e "TESTFIELD='$(TESTFIELD)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
 	                       -e "TESTFLOW='$(TESTFLOW)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
 	                       -e "TIMEAVG='$(TIMEAVG)';SPECIAL='$(SPECIAL)';PARTICLES='$(PARTICLES)';PARTICLES_SUB='$(PARTICLES_SUB)';" \
-	                       -e "PARTICLES_MAIN='$(PARTICLES_MAIN)';PARTICLES_RADIUS='$(PARTICLES_RADIUS)';" \
+	                       -e "PARTICLES_MAIN='$(PARTICLES_MAIN)';PARTICLES_RADIUS='$(PARTICLES_RADIUS)';PARTICLES_SPIN='$(PARTICLES_SPIN)';" \
 	                       -e "SHOCK_PROFILE='$(SHOCK_PROFILE)';SHOCK_FINDER='$(SHOCK_FINDER)';" > .buildinfo
 
 # special function module disabled above

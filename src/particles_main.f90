@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.67 2008-04-09 16:44:40 dobler Exp $
+! $Id: particles_main.f90,v 1.68 2008-08-15 14:28:09 kapelrud Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -11,6 +11,7 @@ module Particles_main
   use Particles_nbody
   use Particles_number
   use Particles_radius
+  use Particles_spin
   use Particles_selfgravity
   use Particles_stalker
   use Particles_sub
@@ -33,6 +34,7 @@ module Particles_main
 !
       call register_particles         ()
       call register_particles_radius  ()
+      call register_particles_spin    ()
       call register_particles_number  ()
       call register_particles_selfgrav()
       call register_particles_nbody   ()
@@ -51,6 +53,7 @@ module Particles_main
           STATUS='old', POSITION='append')
       call rprint_particles         (lreset,LWRITE=lroot)
       call rprint_particles_radius  (lreset,LWRITE=lroot)
+      call rprint_particles_spin    (lreset,LWRITE=lroot)
       call rprint_particles_number  (lreset,LWRITE=lroot)
       call rprint_particles_selfgrav(lreset,LWRITE=lroot)
       call rprint_particles_nbody   (lreset,LWRITE=lroot)
@@ -82,10 +85,15 @@ module Particles_main
 !
       call initialize_particles         (lstarting)
       call initialize_particles_radius  (lstarting)
+      call initialize_particles_spin    (lstarting)
       call initialize_particles_number  (lstarting)
       call initialize_particles_selfgrav(lstarting)
       call initialize_particles_nbody   (lstarting)
       call initialize_particles_stalker (lstarting)
+!
+!  Make sure all requested interpolation variables are available.
+!
+      call interpolation_consistency_check()
 !
 !  Set internal and external radii of particles
 !  (moved here from start.f90)
@@ -108,6 +116,7 @@ module Particles_main
 !
       call init_particles(f,fp,ineargrid)
       if (lparticles_radius) call init_particles_radius(f,fp)
+      if (lparticles_spin)   call init_particles_spin(f,fp)
       if (lparticles_number) call init_particles_number(f,fp)
       if (lparticles_nbody)  call init_particles_nbody(f,fp)
 !
@@ -230,6 +239,27 @@ module Particles_main
 !
     endsubroutine particles_boundconds
 !***********************************************************************
+    subroutine particles_doprepencil_calc(f,ivar1,ivar2)
+!
+!  Do some pre-pencil-loop calculation on the f array.
+!  The returned indices should be used for recommication of ghost zones.
+!
+!  11-aug-08/kapelrud: coded
+!
+      real, dimension(mx,my,mz,mfarray),intent(inout) :: f
+      integer, intent(out) :: ivar1, ivar2
+!
+      if (lparticles_spin) then
+        call particles_spin_prepencil_calc(f)
+        ivar1=iox
+        ivar2=ioz
+      else
+        ivar1=-1
+        ivar2=-1
+      endif
+!
+    endsubroutine particles_doprepencil_calc
+!***********************************************************************
     subroutine particles_calc_selfpotential(f,rhs_poisson,rhs_poisson_const,lcontinued)
 !
 !  Calculate the potential of the dust particles (wrapper).
@@ -261,6 +291,7 @@ module Particles_main
 !
       call pencil_criteria_particles()
       if (lparticles_radius) call pencil_criteria_par_radius()
+      if (lparticles_spin)   call pencil_criteria_par_spin()
       if (lparticles_number) call pencil_criteria_par_number()
       if (lparticles_selfgravity) call pencil_criteria_par_selfgrav()
       if (lparticles_nbody) call pencil_criteria_par_nbody()
@@ -314,16 +345,25 @@ module Particles_main
       if (allocated(kneighbour)) &
           call shepherd_neighbour(f,fp,ineargrid,kshepherd,kneighbour)
 !
+!  Interpolate required quantities using the predefined policies. Variables
+!  are found in interp.
+!  (Clean-up should be performed at end of this subroutine!)
+!
+     call interpolate_quantities(f,fp,ineargrid)
+!
 !  Dynamical equations.
 !
       call dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
       call dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_radius) call dap_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_spin) call dps_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_number) call dnptilde_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_selfgravity) &
           call dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_nbody) &
           call dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
+!
+      call cleanup_interpolated_quantities()
 !
     endsubroutine particles_pde_pencil
 !***********************************************************************
@@ -350,6 +390,7 @@ module Particles_main
       call dxxp_dt(f,df,fp,dfp,ineargrid)
       call dvvp_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_radius)      call dap_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_spin)        call dps_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_number)      call dnptilde_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
       if (lparticles_nbody) then
@@ -420,6 +461,7 @@ module Particles_main
 !
       call read_particles_init_pars(unit,iostat)
       if (lparticles_radius) call read_particles_rad_init_pars(unit,iostat)
+      if (lparticles_spin)   call read_particles_spin_init_pars(unit,iostat)
       if (lparticles_number) call read_particles_num_init_pars(unit,iostat)
       if (lparticles_selfgravity) &
           call read_particles_selfg_init_pars(unit,iostat)
@@ -436,6 +478,7 @@ module Particles_main
 !
       call write_particles_init_pars(unit)
       if (lparticles_radius) call write_particles_rad_init_pars(unit)
+      if (lparticles_spin)   call write_particles_spin_init_pars(unit)
       if (lparticles_number) call write_particles_num_init_pars(unit)
       if (lparticles_selfgravity) &
           call write_particles_selfg_init_pars(unit)
@@ -453,6 +496,7 @@ module Particles_main
 !
       call read_particles_run_pars(unit,iostat)
       if (lparticles_radius) call read_particles_rad_run_pars(unit,iostat)
+      if (lparticles_spin)   call read_particles_spin_run_pars(unit,iostat)
       if (lparticles_number) call read_particles_num_run_pars(unit,iostat)
       if (lparticles_selfgravity) &
           call read_particles_selfg_run_pars(unit,iostat)
@@ -469,6 +513,7 @@ module Particles_main
 !
       call write_particles_run_pars(unit)
       if (lparticles_radius) call write_particles_rad_run_pars(unit)
+      if (lparticles_spin)   call write_particles_spin_run_pars(unit)
       if (lparticles_number) call write_particles_num_run_pars(unit)
       if (lparticles_selfgravity) &
           call write_particles_selfg_run_pars(unit)

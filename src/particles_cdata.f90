@@ -1,4 +1,4 @@
-! $Id: particles_cdata.f90,v 1.35 2008-05-27 00:16:35 wlyra Exp $
+! $Id: particles_cdata.f90,v 1.36 2008-08-15 14:28:09 kapelrud Exp $
 !!
 !! Global particle variables
 !!
@@ -19,6 +19,7 @@ module Particles_cdata
 
   integer :: npvar=0, npar_loc=0, mspar=0
   integer :: ixp=0,iyp=0,izp=0,ivpx=0,ivpy=0,ivpz=0,iap=0,inptilde=0
+  integer :: ipsx=0, ipsy=0, ipsz=0
   integer :: inp=0
   integer :: idiag_nmigmax=0
   integer, dimension(ny*nz) :: npar_imn, k1_imn, k2_imn
@@ -33,5 +34,31 @@ module Particles_cdata
 
   integer, dimension (nx) :: kshepherd
   integer, allocatable, dimension (:) :: kneighbour
+
+  type quant_interp_penc
+!
+!  Interpolation toggles:
+    logical :: luu,loo,lTT,lrho
+!
+!  Interpolated quantities:
+    real, dimension(:,:), allocatable :: uu, oo
+    real, dimension(:), allocatable :: TT, rho
+!
+!  Interpolation policies:
+    integer :: pol_uu, pol_oo, pol_TT, pol_rho
+  end type quant_interp_penc
+  
+  type(quant_interp_penc) :: interp
+
+!
+!  Interpolation policies:
+!     cic := cloud in cell (linear interpolation)
+!     tsc := triangular shaped cloud (spline or
+!               quadratic interpolation; depends on linterpolate_spline flag)
+!     ngp := nearest grid point
+!
+  integer, parameter :: cic=0
+  integer, parameter :: tsc=1
+  integer, parameter :: ngp=2
 
 endmodule Particles_cdata

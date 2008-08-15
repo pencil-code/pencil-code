@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.414 2008-07-24 10:14:07 arnelohr Exp $
+! $Id: equ.f90,v 1.415 2008-08-15 14:28:09 kapelrud Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -491,6 +491,7 @@ module Equ
       real, dimension (nx) :: maxadvec,maxdiffus,maxdiffus2,maxdiffus3
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
       integer :: i,iv
+      integer :: ivar1,ivar2
 !
 !  print statements when they are first executed
 !
@@ -498,7 +499,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.414 2008-07-24 10:14:07 arnelohr Exp $")
+           "$Id: equ.f90,v 1.415 2008-08-15 14:28:09 kapelrud Exp $")
 !
 !  Initialize counter for calculating and communicating print results.
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
@@ -534,7 +535,7 @@ module Equ
 !
       early_finalize=test_nonblocking.or.leos_ionization.or.lradiation_ray.or. &
                      lhyperviscosity_strict.or.lhyperresistivity_strict.or. &
-                     ltestfield.or.ltestflow
+                     ltestfield.or.ltestflow.or.lparticles_prepencil_calc
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
@@ -616,6 +617,22 @@ module Equ
         call finalize_isendrcv_bdry(f)
         call boundconds_y(f)
         call boundconds_z(f)
+      endif
+!
+!  Give the particle modules a chance to do something special with a fully
+!  communicated f array, for instance: the particles_spin module needs to
+!  maintain the full vorticity field, including ghost zones, to be able to do
+!  interpolation on the vorticity to subgrid particles positions.
+!
+      if(early_finalize.and.lparticles_prepencil_calc) then
+        call particles_doprepencil_calc(f,ivar1,ivar2);
+        if(ivar1>=0 .and. ivar2>=0) then
+          call boundconds_x(f,ivar1,ivar2)
+          call initiate_isendrcv_bdry(f,ivar1,ivar2)
+          call finalize_isendrcv_bdry(f,ivar1,ivar2)
+          call boundconds_y(f,ivar1,ivar2)
+          call boundconds_z(f,ivar1,ivar2)
+        endif
       endif
 !
 !  For sixth order momentum-conserving, symmetric hyperviscosity with positive

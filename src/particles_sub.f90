@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.139 2008-08-14 11:35:17 ajohan Exp $
+! $Id: particles_sub.f90,v 1.140 2008-08-15 14:28:09 kapelrud Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -21,6 +21,13 @@ module Particles_sub
   public :: particle_pencil_index
   public :: shepherd_neighbour,remove_particle
   public :: get_particles_interdistance
+  public :: interpolation_consistency_check
+  public :: interpolate_quantities, cleanup_interpolated_quantities
+
+  interface interp_field_pencil_wrap
+    module procedure interp_field_pencil_0
+    module procedure interp_field_pencil_1
+  endinterface
 
   contains
 
@@ -387,6 +394,23 @@ module Particles_sub
           elseif (boundy=='out') then
             ! massive particles can be out of the box
             ! the star, for example, in a cylindrical simulation
+          elseif (boundy=='rmv') then
+            if(lcartesian_coords) then
+              if(fp(k,iyp) <= xyz0(2)) then
+                if (present(dfp)) then
+                  call remove_particle(fp,npar_loc,ipar,k,dfp)
+                else
+                  call remove_particle(fp,npar_loc,ipar,k)
+                endif
+
+              elseif(fp(k,iyp) >= xyz1(2)) then
+                if (present(dfp)) then
+                  call remove_particle(fp,npar_loc,ipar,k,dfp)
+                else
+                  call remove_particle(fp,npar_loc,ipar,k)
+                endif
+              endif
+            endif
           else
             print*, 'boundconds_particles: No such boundary condition =', boundy
             call stop_it('boundconds_particles')
@@ -452,6 +476,7 @@ module Particles_sub
                           fatal_error_local_collect, warning
       use Mpicomm
       use Sub, only: max_name
+      use Cdata, only: procy_bounds,procz_bounds
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mpar_loc,mpvar), optional :: dfp
@@ -459,43 +484,12 @@ module Particles_sub
       integer :: npar_loc
 !
       real, dimension (0:ncpus-1,npar_mig,mpvar) :: fp_mig, dfp_mig
-      double precision, save :: dx1, dy1, dz1
-      real, save :: y0_mig, y1_mig, z0_mig, z1_mig
-      real, dimension(nprocy), save :: y0_proc, y1_proc
-      real, dimension(nprocz), save :: z0_proc, z1_proc
       integer, dimension (0:ncpus-1,npar_mig) :: ipar_mig
       integer, dimension (0:ncpus-1,0:ncpus-1) :: nmig
-      integer :: i, j, k, iproc_rec, ipy_rec, ipz_rec, iy0_rec, iz0_rec
-      logical :: lfirstcall=.true., lredo, lredo_all
+      integer :: i, j, k, iproc_rec, ipy_rec, ipz_rec
+      logical :: lredo, lredo_all
 !
       intent (inout) :: fp, npar_loc, ipar, dfp
-!
-      if (lfirstcall) then
-!
-!  Need to define special processor boundaries for migration since the physical
-!  processor boundaries may be closer to a ghost point than to a physical grid
-!  point. Thus we need to define the boundary as the average coordinate value
-!  of the last grid point and the first ghost point.
-!        
-        y0_mig=0.5*(y(m1)+y(m1-1)); y1_mig=0.5*(y(m2)+y(m2+1))
-        z0_mig=0.5*(z(n1)+z(n1-1)); z1_mig=0.5*(z(n2)+z(n2+1))
-        if (.not. all(lequidist)) then
-          print*, 'redist_particles_procs: only works for equidistant grid!'
-          call fatal_error('redist_particles_procs','')
-        endif
-        dx1=1/dx; dy1=1/dy; dz1=1/dz
-        !boundaries - y
-        do j=1,nprocy
-          y0_proc(j) =  xyz0(2)+(j-1)*Lxyz(2)/ nprocy
-          y1_proc(j) =  xyz0(2)+ j   *Lxyz(2)/ nprocy
-        enddo
-        !boundaries - z
-        do j=1,nprocz
-          z0_proc(j) =  xyz0(3)*(j-1)*Lxyz(3)/ nprocz
-          z1_proc(j) =  xyz0(3)* j   *Lxyz(3)/ nprocz
-        enddo
-        lfirstcall=.false.
-      endif
 !
 !  Possible to iterate until all particles have migrated.
 !
@@ -509,32 +503,36 @@ module Particles_sub
         do k=npar_loc,1,-1
 !  Find y index of receiving processor.
           ipy_rec=ipy
-          if (fp(k,iyp)>=y1_mig) then
-            iy0_rec=nint((fp(k,iyp)-y(m1))*dy1+nygrid)-nygrid+1
-            do while (iy0_rec>ny)
-              ipy_rec=ipy_rec+1
-              iy0_rec=iy0_rec-ny
+          if (fp(k,iyp)>procy_bounds(ipy+1).and.ipy<nprocy-1) then
+            do j=ipy+1,nprocy-1
+              ipy_rec=j
+              if (fp(k,iyp)<procy_bounds(j+1)) then
+                exit
+              endif
             enddo
-          else if (fp(k,iyp)<y0_mig) then
-            iy0_rec=nint((fp(k,iyp)-y(m1))*dy1+nygrid)-nygrid+1
-            do while (iy0_rec<1)
-              ipy_rec=ipy_rec-1
-              iy0_rec=iy0_rec+ny
+          else if (fp(k,iyp)<procy_bounds(ipy).and.ipy>0) then
+            do j=ipy-1,0,-1
+              ipy_rec=j
+              if (fp(k,iyp)>procy_bounds(j)) then
+                exit
+              endif
             enddo
           endif
 !  Find z index of receiving processor.
           ipz_rec=ipz
-          if (fp(k,izp)>=z1_mig) then
-            iz0_rec=nint((fp(k,izp)-z(n1))*dz1+nzgrid)-nzgrid+1
-            do while (iz0_rec>nz)
-              ipz_rec=ipz_rec+1
-              iz0_rec=iz0_rec-nz
+          if (fp(k,izp)>procz_bounds(ipz+1).and.ipz<nprocz-1) then
+            do j=ipz+1,nprocz-1
+              if (fp(k,izp)<procz_bounds(j+1)) then
+                ipz_rec=j
+                exit
+              endif
             enddo
-          else if (fp(k,izp)<z0_mig) then
-            iz0_rec=nint((fp(k,izp)-z(n1))*dz1+nzgrid)-nzgrid+1
-            do while (iz0_rec<1)
-              ipz_rec=ipz_rec-1
-              iz0_rec=iz0_rec+nz
+          else if (fp(k,izp)<procz_bounds(ipz).and.ipz>0) then
+            do j=ipz-1,0,-1
+              if (fp(k,izp)>procz_bounds(j)) then
+                ipz_rec=j
+                exit
+              endif
             enddo
           endif
 !
@@ -552,18 +550,18 @@ module Particles_sub
                 !this hopefully doesn't happen often, so 
                 !the division is not as bad as it seems
                 !and makes it more legible
-                if (xyz0(2)-fp(k,iyp).le.dy/2) ipy_rec=0
+                if (xyz0(2)-fp(k,iyp).le.(y(m1)-y(m1-1))/2) ipy_rec=0
               endif
               if (ipy_rec==nprocy) then 
-                if (fp(k,iyp)-xyz1(2).le.dy/2) ipy_rec=nprocy-1
+                if (fp(k,iyp)-xyz1(2).le.(y(m2+1)-y(m2))/2) ipy_rec=nprocy-1
               endif
             endif
             if (nprocz/=1) then 
               if (ipz_rec==-1) then 
-                if (xyz0(3)-fp(k,izp).le.dz/2) ipz_rec=0
+                if (xyz0(3)-fp(k,izp).le.(z(n1)-z(n1-1))/2) ipz_rec=0
               endif
               if (ipz_rec==nprocz) then
-                if (fp(k,izp)-xyz1(3).le.dz/2) ipz_rec=nprocz-1
+                if (fp(k,izp)-xyz1(3).le.(z(n2+1)-z(n2))/2) ipz_rec=nprocz-1
               endif
             endif
           endif
@@ -586,8 +584,8 @@ module Particles_sub
                   iproc, iproc_rec
               print*, 'redist_particles_procs: ipar(k), xxp=', &
                   ipar(k), fp(k,ixp:izp)
-              print*, 'redist_particles_procs: y0_mig, y1_mig=', y0_mig, y1_mig
-              print*, 'redist_particles_procs: z0_mig, z1_mig=', z0_mig, z1_mig
+              print*, 'redist_particles_procs: y0_mig, y1_mig=', procy_bounds(ipy), procy_bounds(ipy+1)
+              print*, 'redist_particles_procs: z0_mig, z1_mig=', procz_bounds(ipz), procz_bounds(ipz+1)
               call fatal_error_local("","")
             endif
 !
@@ -598,7 +596,7 @@ module Particles_sub
               print '(a,i3,a,i3,a)', &
                   'redist_particles_procs: too many particles migrating '// &
                   'from proc ', iproc, ' to proc ', iproc_rec
-              print*, '                       (npar_mig=', npar_mig, ')'
+              print*, '                       (npar_mig=', npar_mig, 'nmig=',nmig,')'
               if (ip<=8) then
                 print*, 'redist_particles_procs: iproc, npar_mig=', &
                     iproc, npar_mig
@@ -696,23 +694,23 @@ module Particles_sub
             if (lmigration_real_check) then
               do k=npar_loc+1,npar_loc+nmig(i,iproc)
                 if (nygrid/=1) then
-                  if (fp(k,iyp)<y0_mig .or. fp(k,iyp)>=y1_mig) then
+                  if (fp(k,iyp)<procy_bounds(ipy) .or. fp(k,iyp)>=procy_bounds(ipy+1)) then
                     print*, 'redist_particles_procs: received particle '// &
                         'closer to ghost point than to physical grid point!'
                     print*, 'redist_particles_procs: ipar, xxp=', &
                         ipar(k), fp(k,ixp:izp)
                     print*, 'redist_particles_procs: y0_mig, y1_mig=', &
-                        y0_mig, y1_mig
+                        procy_bounds(ipy), procy_bounds(ipy+1)
                   endif
                 endif
                 if (nzgrid/=1) then
-                  if (fp(k,izp)<z0_mig .or. fp(k,izp)>=z1_mig) then
+                  if (fp(k,izp)<procz_bounds(ipz) .or. fp(k,izp)>=procz_bounds(ipz+1)) then
                     print*, 'redist_particles_procs: received particle '// &
                         'closer to ghost point than to physical grid point!'
                     print*, 'redist_particles_procs: ipar, xxp=', &
                         ipar(k), fp(k,ixp:izp)
                     print*, 'redist_particles_procs: z0_mig, z1_mig=', &
-                        z0_mig, z1_mig
+                        procz_bounds(ipz), procz_bounds(ipz+1)
                   endif
                 endif
               enddo
@@ -1046,7 +1044,6 @@ module Particles_sub
       real :: xp0, yp0, zp0
       real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
       integer :: i, ix0, iy0, iz0
-      logical :: lfirstcall=.true.
 !
       intent(in)  :: f, xxp, ivar1
       intent(out) :: gp
@@ -1081,19 +1078,37 @@ module Particles_sub
       endif
 !
 !  Redefine the interpolation point in coordinates relative to lowest corner.
+!  Set it equal to 0 for dimensions having 1 grid points; this will make sure
+!  that the interpolation is bilinear for 2D grids.
 !
-      xp0=xxp(1)-x(ix0)
-      yp0=xxp(2)-y(iy0)
-      zp0=xxp(3)-z(iz0)
+      xp0=0; yp0=0; zp0=0
+      if(nxgrid/=1) xp0=xxp(1)-x(ix0)
+      if(nygrid/=1) yp0=xxp(2)-y(iy0)
+      if(nzgrid/=1) zp0=xxp(3)-z(iz0)
 !
-!  Calculate derived grid spacing variables in the first call to this sub.
+!  Calculate derived grid spacing every time called to accomodate non-equidist.
+!  grids.
 !
-      if (lfirstcall) then
-        dx1=1/dx;  dy1=1/dy;  dz1=1/dz
-        dxdy1=1/(dx*dy);  dxdz1=1/(dx*dz);  dydz1=1/(dy*dz)
-        dxdydz1=1/(dx*dy*dz)
-        lfirstcall=.false.
+      if(lequidist(1)) then
+        dx1=dx_1(ix0) !1/dx
+      else
+        dx1=1/(x(ix0+1)-x(ix0))
       endif
+!
+      if(lequidist(2)) then
+        dy1=1/dy
+      else
+        dy1=1/(y(iy0+1)-y(iy0))
+      endif
+!
+      if(lequidist(3)) then
+        dz1=1/dz
+      else
+        dz1=1/(z(iz0+1)-z(iz0))
+      endif
+!
+      dxdy1=dx1*dy1;  dxdz1=dx1*dz1;  dydz1=dy1*dz1
+      dxdydz1=dx1*dy1*dz1
 !
 !  Function values at all corners.
 !
@@ -1421,6 +1436,7 @@ module Particles_sub
 !  Find index (ix0, iy0, iz0) of nearest grid point of all the particles.
 !
 !  23-jan-05/anders: coded
+!  08-jul-08/kapelrud: support for non-equidist. grids
 !
       use Cdata
       use Messages
@@ -1433,6 +1449,7 @@ module Particles_sub
       integer :: k, ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
       logical :: lspecial_boundx,lsink
+      integer :: jl,jm,ju
 !
       intent(in)  :: fp
       intent(out) :: ineargrid
@@ -1442,19 +1459,84 @@ module Particles_sub
       ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
 !
       if (lfirstcall) then
-        if (.not. all(lequidist)) then
-          print*, 'map_xx_vv_grid: only works for equidistant grid!'
-          call stop_it('map_xx_vv_grid')
-        endif
         dx1=1/dx; dy1=1/dy; dz1=1/dz
         lfirstcall=.false.
       endif
 !
       do k=1,npar_loc
+        !
+        ! Find nearest grid point in x-direction by bisection if the grid
+        ! isn't equidistant.
+        !
+        if (nxgrid/=1) then
+          if(lequidist(1)) then
+            ix0 = nint((fp(k,ixp)-x(1))*dx1) + 1
+          else
+            ju=l2; jl=l1
+            do while((ju-jl)>1)
+              jm=(ju+jl)/2
+              if(fp(k,ixp) > x(jm)) then
+                jl=jm
+              else
+                ju=jm
+              endif
+            enddo
+            if(fp(k,ixp)-x(jl) <= x(ju)-fp(k,ixp)) then
+              ix0=jl
+            else
+              ix0=ju
+            endif
+          endif
+        endif
+        !
+        ! Find nearest grid point in y-direction by bisection if the grid
+        ! isn't equidistant.
+        !
+        if (nygrid/=1) then
+          if(lequidist(2)) then
+            iy0 = nint((fp(k,iyp)-y(1))*dy1) + 1
+          else
+            ju=m2; jl=m1
+            do while((ju-jl)>1)
+              jm=(ju+jl)/2
+              if(fp(k,iyp) > y(jm)) then
+                jl=jm
+              else
+                ju=jm
+              endif
+            enddo
+            if(fp(k,iyp)-y(jl) <= y(ju)-fp(k,iyp)) then
+              iy0=jl
+            else
+              iy0=ju
+            endif
+          endif
+        endif
+        !
+        ! Find nearest grid point in z-direction by bisection if the grid
+        ! isn't equidistant.
+        !
+        if (nzgrid/=1) then
+          if(lequidist(3)) then
+            iz0 = nint((fp(k,izp)-z(1))*dz1) + 1
+          else
+            ju=n2; jl=n1
+            do while((ju-jl)>1)
+              jm=(ju+jl)/2
+              if(fp(k,izp) > z(jm)) then
+                jl=jm
+              else
+                ju=jm
+              endif
+            enddo
+            if(fp(k,izp)-z(jl) <= z(ju)-fp(k,izp)) then
+              iz0=jl
+            else
+              iz0=ju
+            endif
+          endif
+        endif
 !
-        if (nxgrid/=1) ix0 = nint((fp(k,ixp)-x(1))*dx1) + 1
-        if (nygrid/=1) iy0 = nint((fp(k,iyp)-y(1))*dy1) + 1
-        if (nzgrid/=1) iz0 = nint((fp(k,izp)-z(1))*dz1) + 1
         ineargrid(k,1)=ix0; ineargrid(k,2)=iy0; ineargrid(k,3)=iz0
 !
 !  Small fix for the fact that we have some special particles that ARE
@@ -1472,7 +1554,7 @@ module Particles_sub
 !
           if (lcheck_exact_frontier .and. &
                any(ineargrid(k,:)==(/l1-1,m1-1,n1-1/)) .or.  &
-               any(ineargrid(k,:)==(/m1-1,m2+1,n2+1/))) then
+               any(ineargrid(k,:)==(/l2+1,m2+1,n2+1/))) then
  
             if(ineargrid(k,1)==l1-1) then
               ineargrid(k,1)=l1
@@ -2032,20 +2114,19 @@ module Particles_sub
         call fatal_error("remove_particle","are you sure this should happen?")
       endif
 !
+! Write to the respective processor that the particle
+! is removed
+!
+      open(20,file=trim(directory)//'/rmv_par.dat',position='append')
+      write(20,*) t,ipar(k),fp(k,ivpx:ivpz)
+      close(20)
+!
 ! switch the removed particle with the last particle present in the processor npar_loc
 !
       fp(k,:)=fp(npar_loc,:)
       if (present(dfp)) dfp(k,:)=dfp(npar_loc,:)
       if (present(ineargrid)) ineargrid(k,:)=ineargrid(npar_loc,:)
       ipar(k)=ipar(npar_loc)
-!
-! Write to the respective processor that the particle
-! was removed
-!
-      open(20,file=trim(directory)//'/rmv_par.dat',position='append')
-      write(20,*) ipar(npar_loc) 
-      close(20)
-!
       if (lroot.and.(ip<=8)) print*,'removed particle ',ipar(npar_loc)
 !
 !
@@ -2053,6 +2134,231 @@ module Particles_sub
 !
       npar_loc=npar_loc-1
 !
-  endsubroutine remove_particle
+    endsubroutine remove_particle
 !***********************************************************************
+    subroutine interpolation_consistency_check()
+!
+!  Check that all interpolation requirements are satisfied:
+!
+      use Particles_cdata
+      use Cdata
+      use Messages, only: fatal_error
+!
+      if(interp%luu .and. (.not.lhydro)) then
+        call fatal_error('initialize_particles','interpolation of uu '// &
+          'impossible without the Hydro module!')
+      endif
+!
+      if(interp%loo .and. (.not.lparticles_spin)) then
+        call fatal_error('initialize_particles','interpolation of oo '// &
+          'impossible without the Particles_lift module!')
+      endif
+!
+      if(interp%lTT .and. ((.not.lentropy).and.(.not.ltemperature))) then
+        call fatal_error('initialize_particles','interpolation of TT '//&
+          'impossible without the Entropy (or temperature_idealgas) module!')
+      endif
+!
+      if(interp%lrho .and. (.not.ldensity)) then
+        call fatal_error('initialize_particles','interpolation of rho '// &
+          'impossible without the Density module!')
+      endif
+!
+    endsubroutine interpolation_consistency_check
+!***********************************************************************
+    subroutine interpolate_quantities(f,fp,ineargrid)
+!
+!  Interpolate the needed sub-grid quantities according to preselected
+!  interpolation policies.
+!
+!  28-jul-08/kapelrud: coded
+!
+      use Particles_cdata
+      use Cdata
+      use Messages, only: fatal_error
+!
+      real,dimension(mx,my,mz,mfarray) :: f
+      real,dimension(mpar_loc,mpvar) :: fp
+      integer,dimension(mpar_loc,3) :: ineargrid
+!
+      intent(in) :: f,fp,ineargrid
+!
+      integer :: k1,k2
+!
+      k1=k1_imn(imn); k2=k2_imn(imn)
+!
+!  Flow velocity:
+!
+      if(interp%luu) then
+        allocate(interp%uu(k1:k2,3))
+        if(.not.allocated(interp%uu)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp%uu'
+          call fatal_error('interpolate_quantities','')
+        endif
+        call interp_field_pencil_wrap(f,iux,iuz,fp,ineargrid,interp%uu, &
+          interp%pol_uu)
+      endif
+!
+!  Flow vorticity:
+!
+      if(interp%loo) then
+        allocate(interp%oo(k1:k2,3))
+        if(.not.allocated(interp%oo)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp%oo'
+          call fatal_error('interpolate_quantities','')
+        endif
+        call interp_field_pencil_wrap(f,iox,ioz,fp,ineargrid,interp%oo, &
+          interp%pol_oo)
+      endif
+!
+!  Temperature:
+!
+      if(interp%lTT) then
+        allocate(interp%TT(k1:k2))
+        if(.not.allocated(interp%TT)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp%TT'
+          call fatal_error('interpolate_quantities','')
+        endif
+!
+!  Determine what quantity to interpolate (temperature or entropy)
+!
+        if(lentropy) then
+          call interp_field_pencil_wrap(f,iss,iss,fp,ineargrid,interp%TT, &
+            interp%pol_TT)
+        elseif (ltemperature) then
+          call interp_field_pencil_wrap(f,ilnTT,ilnTT,fp,ineargrid,interp%TT, &
+            interp%pol_TT)
+        endif
+!
+        if ( (lentropy.and.pretend_lnTT)   .or. &
+           (ltemperature.and.(.not.ltemperature_nolog)) ) then
+          interp%TT=exp(interp%TT)
+        elseif(lentropy.and.(.not.pretend_lnTT)) then
+          call fatal_error('interpolate_quantities','enable flag '//&
+            'pretend_lnTT in init_pars to be able to interpolate'// &
+            ' the temperature if using the regular temperature module!')
+        endif
+      endif
+!
+!  Density:
+!
+      if(interp%lrho) then
+        allocate(interp%rho(k1:k2))
+        if(.not.allocated(interp%rho)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp%rho'
+          call fatal_error('interpolate_quantities','')
+        endif
+        call interp_field_pencil_wrap(f,ilnrho,ilnrho,fp,ineargrid,interp%rho, &
+          interp%pol_rho)
+!
+        if(.not.ldensity_nolog) then
+          interp%rho=exp(interp%rho)
+        endif
+      endif
+!
+    endsubroutine interpolate_quantities
+!***********************************************************************
+    subroutine cleanup_interpolated_quantities
+!
+!  Deallocate memory from particle pencil interpolation variables
+!
+!  28-jul-08/kapelrud: coded
+!
+      use Particles_cdata
+!
+      if(allocated(interp%uu)) deallocate(interp%uu)
+      if(allocated(interp%oo)) deallocate(interp%oo)
+      if(allocated(interp%TT)) deallocate(interp%TT)
+      if(allocated(interp%rho)) deallocate(interp%rho)
+!
+    endsubroutine cleanup_interpolated_quantities
+!***********************************************************************
+    subroutine interp_field_pencil_0(f,i1,i2,fp,ineargrid,vec,policy)
+!
+!  Overloaded interpolation wrapper for scalar fields.
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: i1,i2
+      real, dimension(mpar_loc,mpvar) :: fp
+      integer, dimension(mpar_loc,3) :: ineargrid
+      real, dimension(:), allocatable :: vec
+      integer :: policy
+!
+      intent(in) :: f,i1,i2,fp,ineargrid, policy
+      intent(inout) :: vec
+!
+      call interp_field_pencil(f,i1,i2,fp,ineargrid, &
+          lbound(vec,1),ubound(vec,1),1,vec,policy)
+!
+    endsubroutine interp_field_pencil_0
+!***********************************************************************
+    subroutine interp_field_pencil_1(f,i1,i2,fp,ineargrid,vec,policy)
+!
+!  Overloaded interpolation wrapper for vector fields.
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: i1,i2
+      real, dimension(mpar_loc,mpvar) :: fp
+      integer, dimension(mpar_loc,3) :: ineargrid
+      real, dimension(:,:), allocatable :: vec
+      integer :: policy
+!
+      intent(in) :: f,i1,i2,fp,ineargrid, policy
+      intent(inout) :: vec
+!
+      call interp_field_pencil(f,i1,i2,fp,ineargrid, &
+          lbound(vec,1),ubound(vec,1),ubound(vec,2),vec,policy)
+!
+    endsubroutine interp_field_pencil_1
+!***********************************************************************
+    subroutine interp_field_pencil(f,i1,i2,fp,ineargrid, &
+      lvec,uvec,uvec2,vec,policy)
+!
+!  Interpolate stream field to all sub grid particle positions in the
+!  current pencil.
+!  i1 & i2 sets the component to interpolate; ex.: iux:iuz, or iss:iss
+!
+!  16-jul-08/kapelrud: coded
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: i1,i2
+      real, dimension(mpar_loc,mpvar) :: fp
+      integer, dimension(mpar_loc,3) :: ineargrid
+      integer :: lvec,uvec,uvec2,policy
+      real, dimension(lvec:uvec,uvec2) :: vec
+!
+      intent(in) :: f,i1,i2,fp,ineargrid, policy
+      intent(inout) :: vec
+!
+      integer :: k
+!
+      if(npar_imn(imn)/=0) then
+        do k=k1_imn(imn),k2_imn(imn)
+          select case(policy)
+          case (cic)
+            call interpolate_linear( &
+                f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),ipar(k) )
+          case (tsc)
+            if (linterpolate_spline) then
+              call interpolate_quadratic_spline( &
+                   f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),ipar(k) )
+            else
+              call interpolate_quadratic( &
+                   f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),ipar(k) )
+            endif
+          case (ngp)
+            vec(k,:)=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),i1:i2)
+          endselect
+        enddo
+      endif
+!
+    endsubroutine interp_field_pencil
+!***********************************************************************
+
 endmodule Particles_sub

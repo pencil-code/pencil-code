@@ -1,4 +1,4 @@
-! $Id: noparticles_main.f90,v 1.24 2008-03-14 17:53:56 wlyra Exp $
+! $Id: noparticles_main.f90,v 1.25 2008-08-15 14:28:09 kapelrud Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -293,4 +293,14 @@ module Particles_main
 !
     endsubroutine get_slices_particles
 !***********************************************************************
+    subroutine particles_doprepencil_calc(f,ivar1,ivar2)
+!
+!  12-aug-08/kapelrud: dummy coded
+!
+      real,dimension(mx,my,mz,mfarray),intent(inout) :: f
+      integer, intent(out) :: ivar1, ivar2
+!
+    endsubroutine particles_doprepencil_calc
+!***********************************************************************
+
 endmodule Particles_main

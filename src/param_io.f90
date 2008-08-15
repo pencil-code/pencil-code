@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.313 2008-08-02 18:07:56 wlyra Exp $
+! $Id: param_io.f90,v 1.314 2008-08-15 14:28:09 kapelrud Exp $
 
 module Param_IO
 
@@ -448,6 +448,8 @@ module Param_IO
             print*,'&particles_init_pars         /'
         if (lparticles_radius) &
             print*,'&particles_radius_init_pars  /'
+        if (lparticles_spin) &
+            print*,'&particles_spin_init_pars  /'
         if (lparticles_number) &
             print*,'&particles_number_init_pars  /'
         if (lparticles_selfgravity) &
@@ -796,6 +798,8 @@ module Param_IO
             print*,'&particles_run_pars         /'
         if (lparticles_radius) &
             print*,'&particles_radius_run_pars  /'
+        if (lparticles_spin) &
+            print*,'&particles_spin_run_pars  /'
         if (lparticles_number) &
             print*,'&particles_number_run_pars  /'
         if (lparticles_selfgravity) &
