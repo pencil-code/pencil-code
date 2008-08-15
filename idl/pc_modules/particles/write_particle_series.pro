@@ -1,5 +1,5 @@
 pro write_particle_series, n0=n0, n1=n1, npar=npar, imgdir=imgdir, $
-    random=random, seed=seed
+    random=random, seed=seed, sym=sym
 
 default, n0, 0
 default, n1, 10
@@ -7,6 +7,7 @@ default, npar, 1000
 default, imgdir, '.'
 default, random, 0
 default, seed, 1
+default, sym, 3
 
 for i=n0,n1 do begin
   zeros=''
@@ -28,7 +29,7 @@ for i=n0,n1 do begin
   endif
 
   filename='PVAR'+zeros+strtrim(i,2)+'.eps'
-  pc_plot_par, fp.xx[ii,*], color=0, $
+  pc_plot_par, fp.xx[ii,*], color=0, sym=sym, $
       filename=filename, imgdir=imgdir, /ps
 endfor
 

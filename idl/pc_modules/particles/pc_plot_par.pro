@@ -1,10 +1,10 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.16 2006-12-14 13:35:29 ajohan Exp $
+;  $Id: pc_plot_par.pro,v 1.17 2008-08-15 14:35:44 kapelrud Exp $
 ;
 pro pc_plot_par, xx, $
     x=x, y=y, z=z, com=com, shiftx=shiftx, shifty=shifty, shiftz=shiftz, $
     position=position, ps=ps, color=color, pcolor=pcolor, fcolor=fcolor, $
-    noerase=noerase, drawgrid=drawgrid, thick=thick, $
+    noerase=noerase, drawgrid=drawgrid, thick=thick, sym=sym, $
     ax=ax, az=az, $
     filename=filename, imgdir=imgdir, datadir=datadir, $
     lxy=lxy, lxz=lxz, lyz=lyz, quiet=quiet
@@ -18,6 +18,7 @@ default, color, 0
 default, noerase, 0
 default, drawgrid, 0
 default, thick, 3.0
+default, sym, 3
 default, filename, 'particles.eps'
 default, imgdir, '.'
 default, datadir, './data/'
@@ -100,7 +101,7 @@ if ( (nx ne 1) and (ny ne 1) and (nz ne 1) ) then begin
   axis, zaxis=0, x1, y1, z0, /t3d, ztickformat='(A1)',col=fcolor
   axis, zaxis=0, x1, y0, z0, /t3d, ztickformat='(A1)',col=fcolor
 
-  plots, xx[*,0], xx[*,1], xx[*,2], psym=3, col=pcolor, /t3d
+  plots, xx[*,0], xx[*,1], xx[*,2], psym=sym, col=pcolor, /t3d
 
   axis, zaxis=1, x0, y0, z0, /t3d, ztickformat='(A1)',col=fcolor
   axis, yaxis=0, x0, y0, z1, /t3d, ytickformat='(A1)',col=fcolor
@@ -109,12 +110,12 @@ if ( (nx ne 1) and (ny ne 1) and (nz ne 1) ) then begin
 endif else if ( (nx ne 1) and (ny ne 1) and (nz eq 1) ) then begin
   
   plot, xx[*,0], xrange=[x0,x1], yrange=[y0,y1], /nodata, xstyle=1, ystyle=1
-  plots, xx[*,0], xx[*,1], psym=3
+  plots, xx[*,0], xx[*,1], psym=sym
  
 endif else if ( (nx ne 1) and (ny eq 1) and (nz ne 1) ) then begin
   
   plot, xx[*,0], xrange=[x0,x1], yrange=[z0,z1], /nodata, xstyle=1, ystyle=1
-  plots, xx[*,0], xx[*,2], psym=3
+  plots, xx[*,0], xx[*,2], psym=sym
   if (drawgrid) then begin
     oplot, [x[nx/2]  ,x[nx/2]]  , [z[0]     ,z[nz-1]]
     oplot, [x[nx/2+1],x[nx/2+1]], [z[0]     ,z[nz-1]]
@@ -125,7 +126,7 @@ endif else if ( (nx ne 1) and (ny eq 1) and (nz ne 1) ) then begin
 endif else if ( (nx eq 1) and (ny ne 1) and (nz ne 1) ) then begin
   
   plot, xx[*,0], xrange=[y0,y1], yrange=[z0,z1], /nodata, xstyle=1, ystyle=1
-  plots, xx[*,1], xx[*,2], psym=3
+  plots, xx[*,1], xx[*,2], psym=sym
 
 endif
 
