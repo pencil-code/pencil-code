@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.432 2008-07-30 09:02:29 arnelohr Exp $
+! $Id: cdata.f90,v 1.433 2008-08-15 12:03:12 kapelrud Exp $
 !
 !  Global variables are defined in this module.
 !
@@ -65,6 +65,8 @@ module Cdata
   logical, dimension(3) :: lperi,lshift_origin
   logical, dimension(3) :: lequidist=(/.true.,.true.,.true. /)
   character (len=labellen), dimension(3) :: grid_func='linear'
+  real, dimension(0:nprocy) :: procy_bounds
+  real, dimension(0:nprocz) :: procz_bounds
 !
 !  Box dimensions.
 !  
@@ -179,6 +181,7 @@ module Cdata
   integer :: nvar,naux,naux_com
   integer, target :: ilnrho=0
   integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0
+  integer :: iox=0,ioy=0,ioz=0
   integer :: iuut=0,iuxt=0,iuyt=0,iuzt=0,ioot=0,ioxt=0,ioyt=0,iozt=0
   integer :: ibbt=0,ibxt=0,ibyt=0,ibzt=0,ijjt=0,ijxt=0,ijyt=0,ijzt=0
   integer :: igg=0,igx=0,igy=0,igz=0,ipotself=0
@@ -464,5 +467,10 @@ module Cdata
   logical :: lrescaling_testfield=.false.
   logical :: llocal_iso=.false.
   logical :: lthermo_ppd=.false.
+!
+!  Allow particles modules to do something special with f; like calculating
+!  the full vorticity field (see equ.f90:pde)
+!
+  logical :: lparticles_prepencil_calc
 !
 endmodule Cdata

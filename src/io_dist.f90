@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.94 2008-05-14 22:25:14 dobler Exp $
+! $Id: io_dist.f90,v 1.95 2008-08-15 12:03:12 kapelrud Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -94,7 +94,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.94 2008-05-14 22:25:14 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.95 2008-08-15 12:03:12 kapelrud Exp $")
 !
     endsubroutine register_io
 !
@@ -426,6 +426,48 @@ contains
       if(NO_WARN) print*,tdummy  !(keep compiler quiet)
 !
     endsubroutine rgrid
+!***********************************************************************
+    subroutine wproc_bounds(file)
+!
+!   Export processor boundaries to file.
+!
+!   10-jul-08/kapelrud: coded
+!
+      use Cdata
+      use Mpicomm, only: stop_it_if_any
+!
+      character (len=*) :: file
+      logical :: ioerr=.true.
+!
+      open(20,FILE=file,FORM='unformatted',err=930)
+      write(20) procy_bounds
+      write(20) procz_bounds
+      close(20)
+      ioerr=.false.
+
+930   call stop_it_if_any(ioerr, &
+          "Cannot open " // trim(file) // " (or similar) for writing" // &
+          " -- is data/ visible from all nodes?")
+
+    endsubroutine wproc_bounds
+!***********************************************************************
+    subroutine rproc_bounds(file)
+!
+!   Import processor boundaries from file.
+!
+!   10-jul-08/kapelrud: coded
+!
+      use Cdata
+      use Mpicomm, only: stop_it_if_any
+!
+      character (len=*) :: file
+!
+      open(1,FILE=file,FORM='unformatted')
+      read(1) procy_bounds
+      read(1) procz_bounds
+      close(1)
+!
+    endsubroutine rproc_bounds
 !***********************************************************************
     subroutine wtime(file,tau)
 !

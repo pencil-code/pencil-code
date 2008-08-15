@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.260 2008-08-14 10:25:18 dhruba Exp $
+! $Id: run.f90,v 1.261 2008-08-15 12:03:12 kapelrud Exp $
 !
 !***********************************************************************
       program run
@@ -76,7 +76,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.260 2008-08-14 10:25:18 dhruba Exp $")
+             "$Id: run.f90,v 1.261 2008-08-15 12:03:12 kapelrud Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -200,6 +200,13 @@
 !
         if (ip<=6.and.lroot) print*,'reading grid coordinates'
         call rgrid(trim(directory)//'/grid.dat')
+!
+!  read processor boundaries
+!
+        if(lparticles) then
+          if (ip<=6.and.lroot) print*,'reading processor boundaries'
+          call rproc_bounds(trim(directory)//'/proc_bounds.dat')
+        endif
 !
 !  The following is here to avoid division in sub.f90 for diagnostic
 !  outputs of integrated values in the non equidistant case

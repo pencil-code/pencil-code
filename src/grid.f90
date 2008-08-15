@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.40 2008-07-30 09:02:29 arnelohr Exp $
+! $Id: grid.f90,v 1.41 2008-08-15 12:03:12 kapelrud Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,6 +70,7 @@ module Grid
       use Cdata, only: xyz_step,xi_step_frac,xi_step_width
       use Cdata, only: lperi,lshift_origin,xyz_star,lequidist
       use Cdata, only: pi
+      use Cdata, only: procy_bounds,procz_bounds
       use Messages
 
       real, dimension(mx), intent(out) :: x
@@ -89,16 +90,15 @@ module Grid
       real, dimension(my) :: g2,g2der1,g2der2,xi2,yprim2
       real, dimension(mz) :: g3,g3der1,g3der2,xi3,zprim2
 
+      real, dimension(0:2*nprocy+1) :: xi2proc,g2proc
+      real, dimension(0:2*nprocz+1) :: xi3proc,g3proc
+
       real :: a,b,dummy1=0.,dummy2=0.
       integer :: i
       logical :: err
-!
-!  set lequidist for an equidistant (uniform) mesh
-!
+
       lequidist=(grid_func=='linear')
-!
-!  x-direction
-!
+
       if (lperi(1)) then
         dx=Lx/nxgrid
         x00=x0+.5*dx
@@ -108,9 +108,6 @@ module Grid
         x00=x0
         if (lshift_origin(1)) x00=x0+.5*dx
       endif
-!
-!  y-direction
-!
       if (lperi(2)) then
         dy=Ly/nygrid
         y00=y0+.5*dy
@@ -120,9 +117,6 @@ module Grid
         y00=y0
         if (lshift_origin(2)) y00=y0+.5*dy
       endif
-!
-!  z-direction
-!
       if (lperi(3)) then
         dz=Lz/nzgrid
         z00=z0+.5*dz
@@ -139,11 +133,25 @@ module Grid
       do i=1,my; xi2(i)=i-nghost-1+ipy*ny; enddo
       do i=1,mz; xi3(i)=i-nghost-1+ipz*nz; enddo
 !
+!  Produce index arrays for processor boundaries, which are needed for
+!  particle migration (see redist_particles_bounds). The select cases
+!  should use these arrays to set g{2,3}proc using the grid function.
+!
+      if(lparticles) then
+        do i=0,nprocy
+          xi2proc(2*i)  =i*ny-1
+          xi2proc(2*i+1)=i*ny
+        enddo
+        do i=0,nprocz
+          xi3proc(2*i)  =i*nz-1
+          xi3proc(2*i+1)=i*nz
+        enddo
+      endif
+!
 !  The following is correct for periodic and non-periodic case
 !
       xi1lo=0.; xi1up=nxgrid-merge(0.,1.,lperi(1))
       xi2lo=0.; xi2up=nygrid-merge(0.,1.,lperi(2))
-
       xi3lo=0.; xi3up=nzgrid-merge(0.,1.,lperi(3))
 !
 !  Construct nonequidistant grid
@@ -285,6 +293,7 @@ module Grid
         yprim2 = 0.
         dy_1 = 0.
         dy_tilde = 0.
+        g2proc=y00
       else
         ! Test whether grid function is valid
         call grid_profile(dummy1,grid_func(2),dummy2,err=err)
@@ -305,6 +314,11 @@ module Grid
           yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
           yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
 
+          if(lparticles) then
+            call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc)
+            g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
+          endif
+
 
         case ('duct')
 
@@ -316,6 +330,13 @@ module Grid
           y     =y00+Ly*(g2-g2lo)/2
           yprim =    Ly*(g2der1*a   )/2
           yprim2=    Ly*(g2der2*a**2)/2
+
+          if(lparticles) then
+            g2proc=y00+Ly*(g2proc-g2lo)/2
+            call grid_profile(a*xi2proc-pi/2,grid_func(2),g2proc)
+            g2proc(0)=g2proc(1)-y(m1+1)+y(m1)
+            g2proc(2*nprocy+1)=g2proc(2*nprocy)+y(m2)-y(m2-1)
+          endif
 
           if (ipy==0) then
             bound_prim1=y(m1+1)-y(m1)
@@ -329,7 +350,7 @@ module Grid
             do i=1,nghost
               y(m2+i)=y(m2)+i*bound_prim2
               yprim(m2:my)=bound_prim2
-            enddo            
+            enddo 
           endif
         
 
@@ -349,6 +370,13 @@ module Grid
           y     = y00 + g2-g2lo
           yprim = g2der1
           yprim2= g2der2
+          
+          if(lparticles) then
+            g2proc=y00+g2proc-g2lo
+            call grid_profile(xi2proc,grid_func(2),g2proc, &
+              dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
+          endif
+
         case default
           call fatal_error('construct_grid', &
                            'No such y grid function - '//grid_func(2))
@@ -372,6 +400,7 @@ module Grid
         zprim2 = 0.
         dz_1 = 0.
         dz_tilde = 0.
+        g3proc=z00
       else
         ! Test whether grid function is valid
         call grid_profile(dummy1,grid_func(3),dummy2,ERR=err)
@@ -391,6 +420,11 @@ module Grid
           z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
           zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
+
+          if(lparticles) then
+            g3proc=z00+Lz*(g3proc-g3lo)/(g3up-g3lo)
+            call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc)
+          endif
 !
         case ('step-linear')
 
@@ -408,6 +442,13 @@ module Grid
           z     = z00 + g3-g3lo
           zprim = g3der1
           zprim2= g3der2
+          
+          if(lparticles) then
+            g3proc=z00+g3proc-g3lo
+            call grid_profile(xi3proc,grid_func(2),g3proc, &
+              dxyz=dxyz_step(3,:),xistep=xi_step(3,:),delta=xi_step_width(3,:))
+          endif
+
         case default
           call fatal_error('construct_grid', &
                            'No such z grid function - '//grid_func(3))
@@ -415,6 +456,19 @@ module Grid
 
         dz_1=1./zprim
         dz_tilde=-zprim2/zprim**2
+      endif
+!
+!  Compute averages across processor boundaries to calculate the physical
+!  boundaries
+!
+      if(lparticles) then
+        do i=0,nprocy
+          procy_bounds(i)=(g2proc(2*i)+g2proc(2*i+1))*0.5
+        enddo
+!
+        do i=0,nprocz
+          procz_bounds(i)=(g3proc(2*i)+g3proc(2*i+1))*0.5
+        enddo
       endif
 !
 !  determine global minimum and maximum of grid spacing in any direction

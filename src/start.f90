@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.184 2008-07-07 14:12:42 brandenb Exp $
+! $Id: start.f90,v 1.185 2008-08-15 12:03:12 kapelrud Exp $
 !
 !***********************************************************************
       program start
@@ -105,7 +105,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.184 2008-07-07 14:12:42 brandenb Exp $")
+             "$Id: start.f90,v 1.185 2008-08-15 12:03:12 kapelrud Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -231,6 +231,8 @@
 !  write grid.dat file
 !
         call wgrid(trim(directory)//'/grid.dat')
+        if(lparticles) &
+          call wproc_bounds(trim(directory)//'/proc_bounds.dat')
 !
 !  write .general file for data explorer
 !
