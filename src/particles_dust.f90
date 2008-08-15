@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.236 2008-08-08 12:23:23 nilshau Exp $
+! $Id: particles_dust.f90,v 1.237 2008-08-15 13:50:49 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -145,7 +145,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.236 2008-08-08 12:23:23 nilshau Exp $")
+           "$Id: particles_dust.f90,v 1.237 2008-08-15 13:50:49 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -430,7 +430,7 @@ module Particles
 !
       real, dimension (3) :: uup
       real :: vpx_sum, vpy_sum, vpz_sum
-      real :: r, p, px, py, pz, eps, cs, k2_xxp
+      real :: r, p, q, px, py, pz, eps, cs, k2_xxp
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       real :: rad,rad_scl,phi,tmp
       integer :: l, j, k, ix0, iy0, iz0
@@ -707,6 +707,16 @@ k_loop:   do while (.not. (k>npar_loc))
               fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
           if (nygrid/=1) &
               fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+
+        case ('gaussian-r')
+          if (lroot) print*, 'init_particles: Gaussian particle positions'
+          do k=1,npar_loc
+            call random_number_wrapper(r)
+            call random_number_wrapper(p)
+            call random_number_wrapper(q)
+            fp(k,ixp)= xp0*sqrt(-2*alog(r))*cos(2*pi*p)*cos(2*pi*q)
+            fp(k,iyp)= yp0*sqrt(-2*alog(r))*cos(2*pi*p)*sin(2*pi*q)
+          enddo
 
         case ('hole')
           call map_nearest_grid(fp,ineargrid)
