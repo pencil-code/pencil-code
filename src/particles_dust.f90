@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.238 2008-08-15 14:30:08 kapelrud Exp $
+! $Id: particles_dust.f90,v 1.239 2008-08-15 14:37:10 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -124,7 +124,7 @@ module Particles
       ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, lshort_friction_approx, &
       tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
-      tstart_brownian_par, lbrownian_forces, lenforce_policy &
+      tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
       brownian_T0
 
@@ -162,7 +162,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.238 2008-08-15 14:30:08 kapelrud Exp $")
+           "$Id: particles_dust.f90,v 1.239 2008-08-15 14:37:10 wlyra Exp $")
 !
 !  Indices for particle position.
 !
