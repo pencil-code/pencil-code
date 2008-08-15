@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.237 2008-08-15 13:50:49 ajohan Exp $
+! $Id: particles_dust.f90,v 1.238 2008-08-15 14:30:08 kapelrud Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -41,10 +41,13 @@ module Particles
   real :: kz_vpx=0.0, kz_vpy=0.0, kz_vpz=0.0
   real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
   real :: tstart_dragforce_par=0.0, tstart_grav_par=0.0
+  real :: tstart_liftforce_par=0.0
+  real :: tstart_brownian_par=0.0
   real :: tstart_collisional_cooling=0.0
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, mean_free_path_gas=0.0
   real :: pdlaw=0.0, tausp_short_friction=0.0, tausp1_short_friction=0.0
+  real :: brownian_T0=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iscratch_short_friction=0
   integer, dimension (npar_species) :: ipar_fence_species=0
@@ -58,13 +61,21 @@ module Particles
   logical :: ldragforce_equi_global_eps=.false.
   logical :: ldraglaw_epstein=.true.
   logical :: ldraglaw_epstein_stokes_linear=.false.
+  logical :: ldraglaw_steadystate=.false.
   logical :: lcoldstart_amplitude_correction=.false.
   logical :: ldraglaw_variable=.false.
   logical :: ldraglaw_epstein_transonic=.false.
   logical :: ldraglaw_eps_stk_transonic=.false.
   logical :: luse_tau_ap=.true.
   logical :: lshort_friction_approx=.false.
- 
+  logical :: lbrownian_forces=.false.
+  logical :: lenforce_policy=.false.
+
+  character (len=labellen) :: interp_pol_uu ='ngp'
+  character (len=labellen) :: interp_pol_oo ='ngp'
+  character (len=labellen) :: interp_pol_TT ='ngp'
+  character (len=labellen) :: interp_pol_rho='ngp'
+  
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
   character (len=labellen) :: gravx_profile='', gravz_profile=''
@@ -90,7 +101,10 @@ module Particles
       lmigration_real_check, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier,&
       ldraglaw_eps_stk_transonic, pdlaw, lshort_friction_approx, &
-      tausp_short_friction
+      tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
+      tstart_brownian_par, lbrownian_forces, lenforce_policy &
+      interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
+      brownian_T0
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -109,7 +123,10 @@ module Particles
       ldraglaw_epstein, ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
       ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, lshort_friction_approx, &
-      tausp_short_friction
+      tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
+      tstart_brownian_par, lbrownian_forces, lenforce_policy &
+      interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
+      brownian_T0
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -145,7 +162,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.237 2008-08-15 13:50:49 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.238 2008-08-15 14:30:08 kapelrud Exp $")
 !
 !  Indices for particle position.
 !
@@ -364,8 +381,9 @@ module Particles
       if (lcollisional_cooling_twobody) allocate(kneighbour(mpar_loc))
 !
       if (ldraglaw_epstein_stokes_linear) ldraglaw_epstein=.false.
-      if (ldraglaw_epstein_transonic         .or.&
-          ldraglaw_eps_stk_transonic) then 
+      if (ldraglaw_epstein_transonic    .or.&
+          ldraglaw_eps_stk_transonic    .or.&
+          ldraglaw_steadystate) then 
         ldraglaw_epstein=.false. 
       endif
       if (ldraglaw_epstein_transonic         .and.&
@@ -402,6 +420,79 @@ module Particles
              'approximation for all particle sizes'
         endif
       endif
+!
+!  Set up interpolation logicals. These logicals can be OR'ed with some logical
+!  in the other particle modules' initialization subroutines to enable
+!  interpolation based on some condition local to that module.
+!  (The particles_spin module will for instance enable interpolation of the
+!  vorticity oo)
+!
+      interp%luu=ldragforce_dust_par
+      interp%loo=.false.
+      interp%lTT=lbrownian_forces.and.(brownian_T0/=0.0)
+      interp%lrho=lbrownian_forces.or.ldraglaw_steadystate
+!
+!  Determine interpolation policies:
+!   Make sure that interpolation of uu is chosen in a backwards compatible
+!   manner. NGP is chosen by default.
+!
+      if(.not.lenforce_policy) then
+        if(lparticlemesh_cic) then
+          interp_pol_uu='cic'
+        else if(lparticlemesh_tsc) then
+          interp_pol_uu='tsc'
+        endif
+      endif
+!
+!  Overwrite with new policy variables:
+!     
+      select case(interp_pol_uu)
+      case ('tsc')
+        interp%pol_uu=tsc
+      case ('cic')
+        interp%pol_uu=cic
+      case ('ngp')
+        interp%pol_uu=ngp
+      case default
+        call fatal_error('initialize_particles','No such such value for '// &
+          'interp_pol_uu: '//trim(interp_pol_uu))
+      endselect
+!
+      select case(interp_pol_oo)
+      case ('tsc')
+        interp%pol_oo=tsc
+      case ('cic')
+        interp%pol_oo=cic
+      case ('ngp')
+        interp%pol_oo=ngp
+      case default
+        call fatal_error('initialize_particles','No such such value for '// &
+          'interp_pol_oo: '//trim(interp_pol_oo))
+      endselect
+!
+      select case(interp_pol_TT)
+      case ('tsc')
+        interp%pol_TT=tsc
+      case ('cic')
+        interp%pol_TT=cic
+      case ('ngp')
+        interp%pol_TT=ngp
+      case default
+        call fatal_error('initialize_particles','No such such value for '// &
+          'interp_pol_TT: '//trim(interp_pol_TT))
+      endselect
+!
+      select case(interp_pol_rho)
+      case ('tsc')
+        interp%pol_rho=tsc
+      case ('cic')
+        interp%pol_rho=cic
+      case ('ngp')
+        interp%pol_rho=ngp
+      case default
+        call fatal_error('initialize_particles','No such such value for '// &
+          'interp_pol_rho: '//trim(interp_pol_rho))
+      endselect
 !
 !  Write constants to disk.
 !
@@ -1464,9 +1555,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !  25-apr-06/anders: coded
 !
       use Cdata
+      use Cparam, only: lparticles_spin
       use EquationOfState, only: cs20, gamma
       use Mpicomm, only: stop_it
       use Particles_number, only: get_nptilde
+      use Particles_spin, only: calc_liftforce
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1477,16 +1570,87 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
-      real, dimension (3) :: uup, dragforce
+      real, dimension (3) :: dragforce, liftforce, bforce
+      real, dimension(:), allocatable :: rep,stocunn
       real :: rho_point, rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
       real :: dt1_advpx, dt1_advpy, dt1_advpz
       integer :: k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       logical :: lsink
+      logical :: lfirsttime=.true.
+      logical,save :: lcalc_rep,lcalc_sto_cunn
 !
       intent (in) :: fp, ineargrid
       intent (inout) :: f, df, dfp
+!
+!  Do logical checks on the first run, to determine what quantities we
+!  need to calculate.
+!     
+      if(lfirsttime) then
+        if(lroot) print*,'dvvp_dt_pencil: calculate dvvp_dt'
+        lfirsttime=.false.
+!
+!  Do we need the particle Reynolds number?
+!
+        lcalc_rep=  ldraglaw_steadystate  .or. &
+                    lparticles_spin
+!
+!  Do we need the stokes cunningham factor?
+!
+        lcalc_sto_cunn= ldraglaw_steadystate.or.lbrownian_forces
+!
+      endif
+!
+      if(npar_imn(imn)/=0) then
+!
+!  Calculate particle Reynolds numbers.
+!
+        if(lcalc_rep) then
+          allocate(rep(k1_imn(imn):k2_imn(imn)))
+!
+          if(.not.allocated(rep)) then
+            call fatal_error('dvvp_dt_pencil','unable to allocate sufficient'// &
+              ' memory for rep')
+          endif
+!
+          call calc_pencil_rep(fp,interp%uu,rep)
+        endif
+!
+!  Calculate Stokes-Cunningham factor
+!
+        if(lcalc_sto_cunn) then
+          allocate(stocunn(k1_imn(imn):k2_imn(imn)))
+          if(.not.allocated(stocunn)) then
+            call fatal_error('dvvp_dt_pencil','unable to allocate sufficient'// &
+              'memory for stocunn')
+          endif
+!
+          call calc_stokes_cunningham(fp,stocunn)
+        endif
+      endif
+!
+!  Add lift forces.
+!
+      if(lparticles_spin .and. t>=tstart_liftforce_par) then
+        if(npar_imn(imn)/=0) then
+          do k=k1_imn(imn),k2_imn(imn)
+            call calc_liftforce(fp(k,:), k, rep(k), liftforce)
+            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+liftforce
+          enddo
+        endif
+      endif
+!
+!  Add Brownian forces.
+!
+      if(lbrownian_forces .and. t>=tstart_brownian_par) then
+        if(npar_imn(imn)/=0) then
+          do k=k1_imn(imn),k2_imn(imn)
+            call calc_brownian_force(fp,k,stocunn(k),bforce)
+            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+bforce
+          enddo
+        endif
+      endif
 !
 !  Add drag force.
 !
@@ -1510,6 +1674,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
             lsink=(lparticles_nbody.and.any(ipar(k).eq.ipar_sink))
             if (.not.lsink) then
+              ix0=ineargrid(k,1)
+              iy0=ineargrid(k,2)
+              iz0=ineargrid(k,3)
 !
 !  Get the friction time. For the case of |uup| ~> cs, the Epstein drag law
 !  is dependent on the relative mach number, hence the need to feed uup as 
@@ -1517,7 +1684,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !
               if (ldraglaw_epstein_transonic .or. &
                   ldraglaw_eps_stk_transonic) then
-                call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup)
+                call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par, &
+                  interp%uu(k,:))
+              elseif (ldraglaw_steadystate) then
+                call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,rep=rep(k), &
+                  stocunn=stocunn(k))
               else
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
               endif
@@ -1529,29 +1700,7 @@ k_loop:   do while (.not. (k>npar_loc))
               if (lshort_friction_approx .and. &
                   tausp1_par>tausp1_short_friction) cycle
 !
-!  Use interpolation to calculate gas velocity at position of particles.
-!
-              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-              if (lhydro) then
-                if (lparticlemesh_cic) then
-                  call interpolate_linear( &
-                       f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
-                elseif (lparticlemesh_tsc) then
-                  if (linterpolate_spline) then
-                    call interpolate_quadratic_spline( &
-                         f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
-                  else
-                    call interpolate_quadratic( &
-                         f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
-                  endif
-                else
-                  uup=f(ix0,iy0,iz0,iux:iuz)
-                endif
-              else
-                uup=0.0
-              endif
-!
-              dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-uup)
+              dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-interp%uu(k,:))
 !
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !
@@ -1559,9 +1708,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
               if (ldragforce_heat .or. (ldiagnos .and. idiag_dedragp/=0)) then
                 if (ldragforce_gas_par) then
-                  up2=sum((fp(k,ivpx:ivpz)-uup)**2)
+                  up2=sum((fp(k,ivpx:ivpz)-interp%uu(k,:))**2)
                 else
-                  up2=sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-uup))
+                  up2=sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-interp%uu(k,:)))
                 endif
 !
                 drag_heat(ix0-nghost)=drag_heat(ix0-nghost) + &
@@ -1836,6 +1985,11 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhopmxy/=0)  call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
         if (idiag_rhopmxz/=0)  call ysum_mn_name_xz(p%rhop,idiag_rhopmxz)
       endif
+!
+!  Clean up (free allocated memory)
+!
+      if(allocated(rep)) deallocate(rep)
+      if(allocated(stocunn)) deallocate(stocunn)
 !
     endsubroutine dvvp_dt_pencil
 !***********************************************************************
@@ -2118,7 +2272,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dvvp_dt
 !***********************************************************************
-    subroutine get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup,nochange_opt)
+    subroutine get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup,&
+      nochange_opt,rep,stocunn)
 !
 !  Calculate the friction time.
 !
@@ -2130,11 +2285,14 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: k
       logical, optional :: nochange_opt
 !
+      real, optional, dimension(3) :: uup
+      real, optional :: rep, stocunn
+!
       real :: tausg1_point,OO
       integer :: ix0, inx0, jspec
       logical :: nochange=.false.
 !
-      real, optional, dimension(3) :: uup
+      intent(in) :: rep,uup
 !
       if (present(nochange_opt)) then
         if (nochange_opt) then
@@ -2223,7 +2381,20 @@ k_loop:   do while (.not. (k>npar_loc))
 ! intermediate mach number. Pure Stokes drag is not implemented.
 !
         call calc_draglaw_parameters(fp,k,uup,p,inx0,tausp1_par,lstokes=.true.)
-!        
+!
+      elseif (ldraglaw_steadystate) then
+        if (.not.present(rep)) then
+          call fatal_error('get_frictiontime','need particle reynolds '// &
+                  'number, rep, to calculate the steady state drag '// &
+                  'relaxation time!')
+        elseif (.not.present(stocunn)) then
+          call fatal_error('get_frictiontime','need particle stokes '// &
+                  'cunningham factor, stocunn, to calculate the steady '// &
+                  ' state drag relaxation time!')
+        else
+          call calc_draglaw_steadystate(fp,k,rep,stocunn,tausp1_par)
+        endif
+!
       endif
 !
 !  Change friction time artificially.
@@ -2863,7 +3034,163 @@ k_loop:   do while (.not. (k>npar_loc))
       if (idiag_dvpmax/=0) call max_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),&
                                             idiag_dvpmax,lsqrt=.true.)
 !     
-      endsubroutine calculate_rms_speed
+    endsubroutine calculate_rms_speed
+!***********************************************************************
+    subroutine calc_pencil_rep(fp,uup,rep)
+!
+!  Calculate particle Reynolds numbers
+!
+!  16-jul-08/kapelrud: coded
+!
+      use Viscosity, only: getnu
+!
+      real,dimension(mpar_loc,mpvar) :: fp
+      real,dimension(:,:),allocatable :: uup
+      real,dimension(:),allocatable :: rep
+      intent(in) :: fp, uup
+      intent(inout) :: rep
+!
+      real :: nu
+      integer :: k
+!
+      call getnu(nu)
+!
+      if(.not.lparticles_radius) then
+        print*,'calc_pencil_rep: particle_radius module needs to be '// &
+          'enabled to calculate the particles Reynolds numbers.'
+        call fatal_error('calc_pencil_rep','')
+      elseif(nu==0.0) then
+        print*,'calc_pencil_rep: nu (kinematic visc.) must be non-zero!'
+        call fatal_error('calc_pencil_rep','')
+      endif
+!
+      do k=k1_imn(imn),k2_imn(imn)
+        rep(k)=2.0*fp(k,iap)*sqrt(sum((uup(k,:)-fp(k,ivpx:ivpz))**2))/nu
+      enddo
+!
+    endsubroutine calc_pencil_rep
+!***********************************************************************
+    subroutine calc_stokes_cunningham(fp,stocunn)
+!
+!  Calculate thi Stokes-Cunningham factor
+!
+!  12-aug-08/kapelrud: coded
+!
+      use Particles_radius
+!
+      real,dimension(mpar_loc,mpvar) :: fp
+      real,dimension(:),allocatable :: stocunn
+!
+      real :: dia
+      integer :: k
+!
+      do k=k1_imn(imn),k2_imn(imn)
+!
+!  Particle diameter
+!
+        dia=2.0*fp(k,iap)
+!
+        stocunn(k)=1.+2.*mean_free_path_gas/dia* &
+          (1.257+0.4*exp(-0.55*dia/mean_free_path_gas))
+!
+      enddo
+!
+    endsubroutine calc_stokes_cunningham
+!***********************************************************************
+    subroutine calc_draglaw_steadystate(fp,k,rep,stocunn,tausp1_par)
+!
+!   Calculate relaxation time for particles under steady state drag.
+!
+!   15-jul-08/kapelrud: coded
+!
+      use Viscosity, only: getnu
+      use Particles_radius
+!
+      real, dimension(mpar_loc,mpvar) :: fp
+      integer :: k
+      real :: rep, stocunn, tausp1_par
+!
+      intent(in) :: fp,k,rep,stocunn
+      intent(out) :: tausp1_par
+!
+      real :: cdrag,dia,nu
+!
+      call getnu(nu)
+!
+!  Particle diameter
+!
+      if(.not.lparticles_radius) then
+        print*,'calc_draglaw_steadystate: need particles_radius module to '// &
+            'calculate the relaxation time!'
+        call fatal_error('calc_draglaw_steadystate','')
+      endif
+!
+      dia=2.0*fp(k,iap)
+!
+!  Calculate drag coefficent pre-factor:
+!
+      if(rep<1) then
+        cdrag=1.0
+      elseif(rep>1000) then
+        cdrag=0.44*rep/24.0
+      else
+        cdrag=(1.+0.15*rep**0.687)
+      endif
+!
+!  Relaxation time:
+!
+      tausp1_par=18.0*cdrag*nu/((rhop_tilde/interp%rho(k))*stocunn*dia**2)
+!
+    endsubroutine calc_draglaw_steadystate
+!***********************************************************************
+    subroutine calc_brownian_force(fp,k,stocunn,force)
+!
+!  Calculate the Brownian force contribution due to the random thermal motions
+!  of the gas molecules.
+!
+!  28-jul-08/kapelrud: coded
+!
+      use Cdata, only: pi_1, k_B, dt
+      use General, only: normal_deviate
+      use Viscosity, only: getnu
+!
+      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension(3), intent(out) :: force
+      integer :: k
+      real :: stocunn
+!
+      intent(in) :: fp,k
+!
+      real :: Szero,dia,TT,nu
+!
+      call getnu(nu)
+!
+!  Particle diameter:
+!
+      dia=2.0*fp(k,iap)
+!
+!  Get zero mean, unit variance Gaussian random numbers:
+!
+      call normal_deviate(force(1))
+      call normal_deviate(force(2))
+      call normal_deviate(force(3))
+!
+      if(interp%lTT) then
+        TT=interp%TT(k)
+      else
+        TT=brownian_T0
+      endif
+!
+      Szero=216*nu*k_B*TT*pi_1/ &
+        (dia**5*stocunn*rhop_tilde**2/interp%rho(k))
+!
+      if(dt==0.0) then
+        force=0.0
+      else
+        force=force*sqrt(Szero/dt)
+      endif
+!
+    endsubroutine calc_brownian_force
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !
