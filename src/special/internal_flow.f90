@@ -1,4 +1,4 @@
-! $Id: internal_flow.f90,v 1.13 2008-06-19 14:12:29 nilshau Exp $
+! $Id: internal_flow.f90,v 1.14 2008-08-15 11:47:25 kapelrud Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -84,11 +84,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.13 2008-06-19 14:12:29 nilshau Exp $
+!  CVS should automatically update everything between $Id: internal_flow.f90,v 1.14 2008-08-15 11:47:25 kapelrud Exp $
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: internal_flow.f90,v 1.13 2008-06-19 14:12:29 nilshau Exp $")
+           "$Id: internal_flow.f90,v 1.14 2008-08-15 11:47:25 kapelrud Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -237,6 +237,7 @@ module Special
       use Sub
       use Global
       use Deriv, only: der_pencil
+      use Viscosity, only: getnu
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -247,12 +248,12 @@ module Special
       type (pencil_case) :: p
       integer :: i,j
       real, dimension (my) :: tmp,du_mean_dy
-      real :: tau_tmp
-      
-
+      real :: tau_tmp,nu
 !
       intent(in) :: f,p
       intent(inout) :: df
+!
+      call getnu(nu)
 !
 !  identify module and boundary conditions
 !
@@ -295,8 +296,8 @@ module Special
               tmp=0
               tmp(m1:m2)=mean_u(1:ny,1)
               call der_pencil(2,tmp,du_mean_dy)
-              print*,'nu and rhom is hardcoded in internal_flow.f90: dspecial_dt'
-              tau_tmp=du_mean_dy(m1+3)*1.5e-5*1.2
+              print*,'rhom is hardcoded in internal_flow.f90: dspecial_dt'
+              tau_tmp=du_mean_dy(m1+3)*nu*1.2
 !              tau_tmp=-(mean_u(2,1)-mean_u(1,1))/(y(l1+1)-y(l1+0))
             else
               tau_tmp=0
@@ -675,28 +676,28 @@ module Special
       ! 2008.03.22: Nils Erland (Coded)
       !
       use Mpicomm, only: ipy
+      use Viscosity, only: getnu
       !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz), intent(in) :: xx,yy,zz
       real, intent(in) :: central_vel,Re_tau
-      real :: B1,kappa,utau,nu, height, h2
+      real :: B1,kappa,utau,height, h2, nu
       integer :: i,j,k
 
       real :: y_pluss, defect,def_y,log_y,lw,defect_min,log_max
-      !
+!
+      call getnu(nu)
+!
       height=Lxyz(2)/2
       h2=height**2
       B1=0.2
       kappa=0.41
-      print*,'WARNING!!!!! nu is hardcoded - this must be fixed!'
-      nu=1.5e-5
       utau=Re_tau*nu/height
       lw=nu/utau
       log_y=4
       def_y=30
 !print*,'Re_tau=',Re_tau
 !print*,'height=',height
-!print*,'nu=',nu
 !print*,'u_tau=',utau
 !print*,'lw=',lw
       !
@@ -760,21 +761,22 @@ module Special
       ! 2008.05.20: Nils Erland (Coded)
       !
       use Mpicomm, only: ipy
+      use Viscosity, only: getnu
       !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz), intent(in) :: xx,yy,zz
       real, intent(in) :: central_vel,Re_tau
-      real :: B1,kappa,utau,nu, height, h2
+      real :: B1,kappa,utau,height, h2, nu
       integer :: i,j,k
 
       real :: y_pluss, lw, u_log, u_lam
       !
+      call getnu(nu)
+!
       height=Lxyz(2)/2
       h2=height**2
       B1=5.5
       kappa=2.5
-      print*,'WARNING!!!!! nu is hardcoded - this must be fixed!'
-      nu=1.5e-5
       utau=Re_tau*nu/height
       lw=nu/utau
       !

@@ -1,4 +1,4 @@
-! $Id: noviscosity.f90,v 1.13 2008-06-17 15:34:09 ajohan Exp $
+! $Id: noviscosity.f90,v 1.14 2008-08-15 11:47:25 kapelrud Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
@@ -61,7 +61,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noviscosity.f90,v 1.13 2008-06-17 15:34:09 ajohan Exp $")
+           "$Id: noviscosity.f90,v 1.14 2008-08-15 11:47:25 kapelrud Exp $")
 
     endsubroutine register_viscosity
 !***********************************************************************
@@ -223,6 +223,18 @@ module Viscosity
       if(NO_WARN) print*,f,df,p  !(keep compiler quiet)
 !
     End subroutine calc_visc_heat_ppd
+!***********************************************************************
+    subroutine getnu(nu_)
+!
+!  Dummy routine
+!
+      real,intent(out) :: nu_
+!
+      nu_=0.0
+!
+      if(NO_WARN) print*,nu_  !(keep compiler quiet)
+!
+    endsubroutine getnu
 !***********************************************************************
 
 endmodule Viscosity
