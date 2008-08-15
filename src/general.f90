@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.79 2008-05-14 22:27:21 dobler Exp $
+! $Id: general.f90,v 1.80 2008-08-15 11:49:59 kapelrud Exp $
 
 module General
 
@@ -14,7 +14,7 @@ module General
 
   public :: safe_character_assign,safe_character_append, chn
   public :: random_seed_wrapper
-  public :: random_number_wrapper, random_gen
+  public :: random_number_wrapper, random_gen, normal_deviate
   public :: parse_filename
 
   public :: setup_mm_nn
@@ -265,6 +265,35 @@ module General
       endselect
 !
     endsubroutine random_number_wrapper_3
+!***********************************************************************
+    subroutine normal_deviate(a)
+!
+!  Return a normal deviate (Gaussian random number, mean=0, var=1) by means
+!  of the "Ratio-of-uniforms" method
+!
+!  28-jul-08/kapelrud: coded
+!
+      real,intent(out) :: a
+!
+      real :: u,v,x,y,q
+      logical :: lloop
+!
+      lloop=.true.
+      do while(lloop)
+        call random_number_wrapper_0(u)
+        call random_number_wrapper_0(v)
+        v=1.7156*(v-0.5)
+        x=u-0.449871
+        y=abs(v)+0.386595
+        q=x**2+y*(0.19600*y-0.25472*x)
+        lloop=q>0.27597
+        if(lloop) &
+          lloop=(q>0.27846).or.(v**2>-4.0*log(u)*u**2)
+      enddo
+!
+      a=v/u
+!      
+    endsubroutine normal_deviate
 !***********************************************************************
     subroutine random_seed_wrapper(size,put,get)
 !
