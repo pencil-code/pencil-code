@@ -1,4 +1,4 @@
-! $Id: grid.f90,v 1.41 2008-08-15 12:03:12 kapelrud Exp $
+! $Id: grid.f90,v 1.42 2008-08-16 11:01:29 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -137,7 +137,7 @@ module Grid
 !  particle migration (see redist_particles_bounds). The select cases
 !  should use these arrays to set g{2,3}proc using the grid function.
 !
-      if(lparticles) then
+      if (lparticles) then
         do i=0,nprocy
           xi2proc(2*i)  =i*ny-1
           xi2proc(2*i+1)=i*ny
@@ -314,7 +314,7 @@ module Grid
           yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
           yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
 
-          if(lparticles) then
+          if (lparticles) then
             call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc)
             g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
           endif
@@ -331,7 +331,7 @@ module Grid
           yprim =    Ly*(g2der1*a   )/2
           yprim2=    Ly*(g2der2*a**2)/2
 
-          if(lparticles) then
+          if (lparticles) then
             g2proc=y00+Ly*(g2proc-g2lo)/2
             call grid_profile(a*xi2proc-pi/2,grid_func(2),g2proc)
             g2proc(0)=g2proc(1)-y(m1+1)+y(m1)
@@ -371,7 +371,7 @@ module Grid
           yprim = g2der1
           yprim2= g2der2
           
-          if(lparticles) then
+          if (lparticles) then
             g2proc=y00+g2proc-g2lo
             call grid_profile(xi2proc,grid_func(2),g2proc, &
               dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
@@ -421,7 +421,7 @@ module Grid
           zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
 
-          if(lparticles) then
+          if (lparticles) then
             g3proc=z00+Lz*(g3proc-g3lo)/(g3up-g3lo)
             call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc)
           endif
@@ -443,7 +443,7 @@ module Grid
           zprim = g3der1
           zprim2= g3der2
           
-          if(lparticles) then
+          if (lparticles) then
             g3proc=z00+g3proc-g3lo
             call grid_profile(xi3proc,grid_func(2),g3proc, &
               dxyz=dxyz_step(3,:),xistep=xi_step(3,:),delta=xi_step_width(3,:))
@@ -461,7 +461,7 @@ module Grid
 !  Compute averages across processor boundaries to calculate the physical
 !  boundaries
 !
-      if(lparticles) then
+      if (lparticles) then
         do i=0,nprocy
           procy_bounds(i)=(g2proc(2*i)+g2proc(2*i+1))*0.5
         enddo
@@ -483,11 +483,11 @@ module Grid
       !
       if (lequidist(2) .or. nygrid <= 1) then
         dxmin_y = dy
-        if(lspherical_coords) dxmin_y = dy*minval(x(l1:l2))
-        if(lcylindrical_coords) dxmin_y = dy*minval(x(l1:l2))
+        if (lspherical_coords) dxmin_y = dy*minval(x(l1:l2))
+        if (lcylindrical_coords) dxmin_y = dy*minval(x(l1:l2))
         dxmax_y = dy
-        if(lspherical_coords) dxmax_y = dy*maxval(x(l1:l2))
-        if(lcylindrical_coords) dxmax_y = dy*maxval(x(l1:l2))
+        if (lspherical_coords) dxmax_y = dy*maxval(x(l1:l2))
+        if (lcylindrical_coords) dxmax_y = dy*maxval(x(l1:l2))
       else
         dxmin_y = minval(yprim(m1:m2))
         dxmax_y = maxval(yprim(m1:m2))
@@ -496,8 +496,8 @@ module Grid
       if (lequidist(3) .or. nzgrid <= 1) then
         dxmin_z = dz
         dxmax_z = dz
-        if(lspherical_coords) dxmin_z = dz*minval(x(l1:l2))*minval(sinth(m1:m2))
-        if(lspherical_coords) dxmax_z = dz*maxval(x(l1:l2))*maxval(sinth(m1:m2))
+        if (lspherical_coords) dxmin_z = dz*minval(x(l1:l2))*minval(sinth(m1:m2))
+        if (lspherical_coords) dxmax_z = dz*maxval(x(l1:l2))*maxval(sinth(m1:m2))
       else
         dxmin_z = minval(zprim(n1:n2))
         dxmax_z = maxval(zprim(n1:n2))
@@ -652,7 +652,7 @@ module Grid
         endif
       endif
 !
-      if(NO_WARN) print*,f   !(keep compiler quiet)
+      if (NO_WARN) print*,f   !(keep compiler quiet)
 !
     endsubroutine calc_pencils_grid
 !***********************************************************************

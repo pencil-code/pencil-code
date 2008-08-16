@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.143 2008-08-16 10:38:52 ajohan Exp $
+! $Id: particles_sub.f90,v 1.144 2008-08-16 11:01:29 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -583,8 +583,10 @@ module Particles_sub
                   iproc, iproc_rec
               print*, 'redist_particles_procs: ipar(k), xxp=', &
                   ipar(k), fp(k,ixp:izp)
-              print*, 'redist_particles_procs: y0_mig, y1_mig=', procy_bounds(ipy), procy_bounds(ipy+1)
-              print*, 'redist_particles_procs: z0_mig, z1_mig=', procz_bounds(ipz), procz_bounds(ipz+1)
+              print*, 'redist_particles_procs: y0_mig, y1_mig=', &
+                  procy_bounds(ipy), procy_bounds(ipy+1)
+              print*, 'redist_particles_procs: z0_mig, z1_mig=', &
+                  procz_bounds(ipz), procz_bounds(ipz+1)
               call fatal_error_local("","")
             endif
 !
