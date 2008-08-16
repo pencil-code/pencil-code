@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.141 2008-08-16 08:09:04 ajohan Exp $
+! $Id: particles_sub.f90,v 1.142 2008-08-16 10:04:50 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -19,7 +19,7 @@ module Particles_sub
   public :: interpolate_quadratic, interpolate_quadratic_spline
   public :: map_nearest_grid, map_xxp_grid, sort_particles_imn
   public :: particle_pencil_index
-  public :: shepherd_neighbour,remove_particle
+  public :: shepherd_neighbour, remove_particle
   public :: get_particles_interdistance
   public :: interpolation_consistency_check
   public :: interpolate_quantities, cleanup_interpolated_quantities
@@ -1043,6 +1043,7 @@ module Particles_sub
       real :: xp0, yp0, zp0
       real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
       integer :: i, ix0, iy0, iz0
+      logical :: lfirstcall=.true.
 !
       intent(in)  :: f, xxp, ivar1
       intent(out) :: gp
@@ -1085,29 +1086,31 @@ module Particles_sub
       if (nygrid/=1) yp0=xxp(2)-y(iy0)
       if (nzgrid/=1) zp0=xxp(3)-z(iz0)
 !
-!  Calculate derived grid spacing every time called to accomodate non-equidist.
-!  grids.
+!  Calculate derived grid spacing parameters needed for interpolation.
+!  For an equidistant grid we only need to do this at the first call.
 !
-      if (lequidist(1)) then
+      if (lequidist(1) .and. lfirstcall) then
         dx1=dx_1(ix0) !1/dx
       else
         dx1=1/(x(ix0+1)-x(ix0))
       endif
 !
-      if (lequidist(2)) then
-        dy1=1/dy
+      if (lequidist(2) .and. lfirstcall) then
+        dy1=dy_1(iy0)
       else
         dy1=1/(y(iy0+1)-y(iy0))
       endif
 !
-      if (lequidist(3)) then
-        dz1=1/dz
+      if (lequidist(3) .and. lfirstcall) then
+        dz1=dz_1(iz0)
       else
         dz1=1/(z(iz0+1)-z(iz0))
       endif
 !
-      dxdy1=dx1*dy1; dxdz1=dx1*dz1; dydz1=dy1*dz1
-      dxdydz1=dx1*dy1*dz1
+      if ( (.not. all(lequidist)) .or. lfirstcall) then
+        dxdy1=dx1*dy1; dxdz1=dx1*dz1; dydz1=dy1*dz1
+        dxdydz1=dx1*dy1*dz1
+      endif
 !
 !  Function values at all corners.
 !
@@ -1156,6 +1159,8 @@ module Particles_sub
         enddo
       endif
 !
+      if (lfirstcall) lfirstcall=.false.
+!
     endsubroutine interpolate_linear
 !***********************************************************************
     subroutine interpolate_quadratic(f,ivar1,ivar2,xxp,gp,inear,ipar)
@@ -1163,7 +1168,7 @@ module Particles_sub
 !  Quadratic interpolation of g to arbitrary (xp, yp, zp) coordinate
 !  using the biquadratic interpolation function
 !
-!    g(x,y,z) = (1+x+x^2)*(1+z+z^2)
+!    g(x,y,z) = (1+x+x^2)*(1+y+y^2)*(1+z+z^2)
 !
 !  The coefficients (9, one for each unique term) are determined by the 9
 !  grid points surrounding the interpolation point.
@@ -1913,13 +1918,12 @@ module Particles_sub
 !  Nearest Grid Point (NGP) method.
 !
         else
-            f(l1:l2,m1:m2,n1:n2,irhop)=f(l1:l2,m1:m2,n1:n2,inp)
+          f(l1:l2,m1:m2,n1:n2,irhop)=f(l1:l2,m1:m2,n1:n2,inp)
         endif
 !
 !  Fold first ghost zone of f.
 !
-        if (lparticlemesh_cic.or.lparticlemesh_tsc) & 
-             call fold_f(f,irhop,irhop)
+        if (lparticlemesh_cic.or.lparticlemesh_tsc) call fold_f(f,irhop,irhop)
         if (lcartesian_coords) then
           f(l1:l2,m1:m2,n1:n2,irhop)=rhop_tilde*f(l1:l2,m1:m2,n1:n2,irhop)  
         else
