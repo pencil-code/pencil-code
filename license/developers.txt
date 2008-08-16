@@ -1,4 +1,4 @@
-$Id: developers.txt,v 1.12 2008-08-16 09:37:03 brandenb Exp $
+$Id: developers.txt,v 1.13 2008-08-16 12:58:06 dhruba Exp $
 
 Below are the contact details of some of the Pencil Code developers.
 Their web pages may be found in the pencil code manual.
@@ -26,7 +26,7 @@ Maarit Korpi     maarit.korpi/helsinki.fi
 Petri Käpylä     petri.kapyla/helsinki.fi  +358 9 191 22952   +358 40 533 4117
 Wladimir Lyra    wlyra/astro.uu.se         +46 18 471 5994    +46 73 574 5894
 Tony Mee         A.J.Mee/ncl.ac.uk                            +44 77 9871 7765
-Dhrubaditya Mitra dhruba.mitra/gmail.com   +44 207 882 3187   +44 79 4683 2758
+Dhrubaditya Mitra dhruba.mitra/gmail.com   +44 207 882 3187   +44 782 808 3503 
 Jeffrey S. Oishi joishi/amnh.org           +1 212 313 7439
 Graeme R. Sarson g.r.sarson/ncl.ac.uk      +44 191 222 5375
 Andrew Snodin    andrew.snodin/ncl.ac.uk
