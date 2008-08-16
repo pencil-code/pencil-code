@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.145 2008-08-16 11:04:58 ajohan Exp $
+! $Id: particles_sub.f90,v 1.146 2008-08-16 11:07:44 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -699,7 +699,8 @@ module Particles_sub
             if (lmigration_real_check) then
               do k=npar_loc+1,npar_loc+nmig(i,iproc)
                 if (nygrid/=1) then
-                  if (fp(k,iyp)<procy_bounds(ipy) .or. fp(k,iyp)>=procy_bounds(ipy+1)) then
+                  if (fp(k,iyp)<procy_bounds(ipy) .or. &
+                      fp(k,iyp)>=procy_bounds(ipy+1)) then
                     print*, 'redist_particles_procs: received particle '// &
                         'closer to ghost point than to physical grid point!'
                     print*, 'redist_particles_procs: ipar, xxp=', &
@@ -709,7 +710,8 @@ module Particles_sub
                   endif
                 endif
                 if (nzgrid/=1) then
-                  if (fp(k,izp)<procz_bounds(ipz) .or. fp(k,izp)>=procz_bounds(ipz+1)) then
+                  if (fp(k,izp)<procz_bounds(ipz) .or. &
+                      fp(k,izp)>=procz_bounds(ipz+1)) then
                     print*, 'redist_particles_procs: received particle '// &
                         'closer to ghost point than to physical grid point!'
                     print*, 'redist_particles_procs: ipar, xxp=', &
