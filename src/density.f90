@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.394 2008-08-02 21:50:17 wlyra Exp $
+! $Id: density.f90,v 1.395 2008-08-16 21:53:21 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -139,7 +139,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.394 2008-08-02 21:50:17 wlyra Exp $")
+           "$Id: density.f90,v 1.395 2008-08-16 21:53:21 dobler Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -421,6 +421,9 @@ module Density
       real, dimension (nx) :: r_mn,lnrho,TT,ss
       logical :: lnothing
       complex :: omega_jeans
+!
+      intent(inout) :: f
+      intent(in)    :: xx,yy,zz
 
 !
 !  define bottom and top height
