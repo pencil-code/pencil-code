@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.142 2008-08-16 10:04:50 ajohan Exp $
+! $Id: particles_sub.f90,v 1.143 2008-08-16 10:38:52 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1089,20 +1089,20 @@ module Particles_sub
 !  Calculate derived grid spacing parameters needed for interpolation.
 !  For an equidistant grid we only need to do this at the first call.
 !
-      if (lequidist(1) .and. lfirstcall) then
-        dx1=dx_1(ix0) !1/dx
+      if (lequidist(1)) then
+        if (lfirstcall) dx1=dx_1(ix0) !1/dx
       else
         dx1=1/(x(ix0+1)-x(ix0))
       endif
 !
-      if (lequidist(2) .and. lfirstcall) then
-        dy1=dy_1(iy0)
+      if (lequidist(2)) then
+        if (lfirstcall) dy1=dy_1(iy0)
       else
         dy1=1/(y(iy0+1)-y(iy0))
       endif
 !
-      if (lequidist(3) .and. lfirstcall) then
-        dz1=dz_1(iz0)
+      if (lequidist(3)) then
+        if (lfirstcall) dz1=dz_1(iz0)
       else
         dz1=1/(z(iz0+1)-z(iz0))
       endif
