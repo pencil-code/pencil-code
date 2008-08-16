@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.144 2008-08-16 11:01:29 ajohan Exp $
+! $Id: particles_sub.f90,v 1.145 2008-08-16 11:04:58 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -498,6 +498,10 @@ module Particles_sub
         lredo=.false.
 !
 !  Find out which particles are not in the local processor's yz-interval.
+!  Need to use special definition of processor boundaries for migration since
+!  the physical processor boundaries may be closer to a ghost point than to a
+!  physical grid point. Thus we need to define the boundary as the average
+!  coordinate value of the last grid point and the first ghost point.
 !
         nmig=0
         do k=npar_loc,1,-1
