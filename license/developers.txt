@@ -1,4 +1,4 @@
-$Id: developers.txt,v 1.14 2008-08-16 12:59:13 dhruba Exp $
+$Id: developers.txt,v 1.15 2008-08-17 18:12:59 dobler Exp $
 
 Below are the contact details of some of the Pencil Code developers.
 Their web pages may be found in the pencil code manual.
@@ -21,7 +21,7 @@ Wolfgang Dobler  wdobler/gmail.com         +49 33201 43791    +49 1520 4056 762
 Anders Johansen  johansen/mpia-hd.mpg.de   +31 71 527 8454    +31 648 211 427
 Nils E.L. Haugen Nils.E.Haugen/sintef.no   +47 73 55 06 75    +47 986 086 83
 Tobias Heinemann T.Heinemann/damtp.cam.ac.uk +44 1223 760 393 +44 784 716 5958
-André Kapelrud   kapelrud@stud.ntnu.no
+André Kapelrud   kapelrud/stud.ntnu.no
 Maarit Korpi     maarit.korpi/helsinki.fi
 Petri Käpylä     petri.kapyla/helsinki.fi  +358 9 191 22952   +358 40 533 4117
 Wladimir Lyra    wlyra/astro.uu.se         +46 18 471 5994    +46 73 574 5894
