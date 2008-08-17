@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.68 2008-08-15 14:28:09 kapelrud Exp $
+! $Id: particles_main.f90,v 1.69 2008-08-17 17:29:29 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -456,21 +456,119 @@ module Particles_main
 !***********************************************************************
     subroutine read_particles_init_pars_wrap(unit,iostat)
 !
+! 01-sep-05/anders: coded
+!
+! 17-aug-08/wlad: added individual check for  
+!                 the modules inside the wrap
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
       call read_particles_init_pars(unit,iostat)
-      if (lparticles_radius) call read_particles_rad_init_pars(unit,iostat)
-      if (lparticles_spin)   call read_particles_spin_init_pars(unit,iostat)
-      if (lparticles_number) call read_particles_num_init_pars(unit,iostat)
-      if (lparticles_selfgravity) &
-          call read_particles_selfg_init_pars(unit,iostat)
-      if (lparticles_nbody) &
-          call read_particles_nbody_init_pars(unit,iostat)
-      if (lparticles_stalker) &
-          call read_pstalker_init_pars(unit,iostat)
+      if (present(iostat).and.(iostat.ne.0)) &
+        call samplepar_startpars('particles_init_pars',iostat)
+!
+      if (lparticles_radius) then 
+        call read_particles_rad_init_pars(unit,iostat)
+        if (present(iostat).and.(iostat.ne.0)) &
+             call samplepar_startpars('particles_rad_init_pars',iostat)
+      endif
+!
+      if (lparticles_spin) then
+        call read_particles_spin_init_pars(unit,iostat)
+        if (present(iostat).and.(iostat.ne.0)) &
+             call samplepar_startpars('particles_spin_init_pars',iostat)
+      endif
+!
+      if (lparticles_number) then 
+        call read_particles_num_init_pars(unit,iostat)
+        if (present(iostat).and.(iostat.ne.0)) &
+             call samplepar_startpars('particles_num_init_pars',iostat)
+      endif
+!
+      if (lparticles_selfgravity) then
+        call read_particles_selfg_init_pars(unit,iostat)
+        if (present(iostat).and.(iostat.ne.0)) &
+             call samplepar_startpars('particles_selg_init_pars',iostat)
+      endif
+!
+      if (lparticles_nbody) then
+        call read_particles_nbody_init_pars(unit,iostat)
+        if (present(iostat).and.(iostat.ne.0)) &
+             call samplepar_startpars('particles_nbody_init_pars',iostat)
+      endif
+!
+      if (lparticles_stalker) then
+        call read_pstalker_init_pars(unit,iostat)
+        if (present(iostat).and.(iostat.ne.0)) &
+             call samplepar_startpars('particles_pstalker_init_pars',iostat)
+      endif
 !
     endsubroutine read_particles_init_pars_wrap
+!***********************************************************************
+    subroutine samplepar_startpars(label,iostat)
+!
+! 17-aug-08/wlad: copied from param_io. By some 
+!                 reason my compiler does not 
+!                 accept it in general.f90
+!
+      use Mpicomm, only: stop_it
+!
+      character (len=*), optional :: label
+      integer, optional :: iostat
+!
+      if (lroot) then
+        print*
+        print*,'-----BEGIN sample namelist ------'
+        print*,'&init_pars                 /'
+        if (leos            ) print*,'&eos_init_pars             /'
+        if (lhydro          ) print*,'&hydro_init_pars           /'
+        if (ldensity        ) print*,'&density_init_pars         /'
+        ! no input parameters for forcing
+        if (lgrav           ) print*,'&grav_init_pars            /'
+        if (lselfgravity    ) print*,'&selfgrav_init_pars        /'
+        if (lpoisson        ) print*,'&poisson_init_pars         /'
+        if (lentropy        ) print*,'&entropy_init_pars         /'
+        if (ltemperature    ) print*,'&entropy_init_pars         /'
+        if (lmagnetic       ) print*,'&magnetic_init_pars        /'
+        if (ltestfield      ) print*,'&testfield_init_pars       /'
+        if (ltestflow       ) print*,'&testflow_init_pars        /'
+        if (lradiation      ) print*,'&radiation_init_pars       /'
+        if (lpscalar        ) print*,'&pscalar_init_pars         /'
+        if (lchiral         ) print*,'&chiral_init_pars          /'
+        if (lchemistry      ) print*,'&chemistry_init_pars       /'
+        if (ldustvelocity   ) print*,'&dustvelocity_init_pars    /'
+        if (ldustdensity    ) print*,'&dustdensity_init_pars     /'
+        if (lneutralvelocity) print*,'&neutralvelocity_init_pars /'
+        if (lneutraldensity ) print*,'&neutraldensity_init_pars  /'
+        if (lcosmicray      ) print*,'&cosmicray_init_pars       /'
+        if (lcosmicrayflux  ) print*,'&cosmicrayflux_init_pars   /'
+        if (linterstellar   ) print*,'&interstellar_init_pars    /'
+        if (lshear          ) print*,'&shear_init_pars           /'
+        if (ltestperturb    ) print*,'&testperturb_init_pars     /'
+        if (lspecial        ) print*,'&special_init_pars         /'
+        if (lparticles) &
+            print*,'&particles_init_pars         /'
+        if (lparticles_radius) &
+            print*,'&particles_radius_init_pars  /'
+        if (lparticles_spin) &
+            print*,'&particles_spin_init_pars  /'
+        if (lparticles_number) &
+            print*,'&particles_number_init_pars  /'
+        if (lparticles_selfgravity) &
+            print*,'&particles_selfgrav_init_pars/'
+        if (lparticles_nbody) &
+            print*,'&particles_nbody_init_pars   /'
+        print*,'------END sample namelist -------'
+        print*
+        if (present(label))  print*, 'Found error in input namelist "' // trim(label)
+        if (present(iostat)) print*, 'iostat = ', iostat
+        if (present(iostat).or.present(label)) &
+                           print*,  '-- use sample above.'
+      endif
+      call stop_it('')
+!
+    endsubroutine samplepar_startpars
 !***********************************************************************
     subroutine write_particles_init_pars_wrap(unit)
 !
@@ -495,17 +593,108 @@ module Particles_main
       integer, intent (inout), optional :: iostat
 !
       call read_particles_run_pars(unit,iostat)
-      if (lparticles_radius) call read_particles_rad_run_pars(unit,iostat)
-      if (lparticles_spin)   call read_particles_spin_run_pars(unit,iostat)
-      if (lparticles_number) call read_particles_num_run_pars(unit,iostat)
-      if (lparticles_selfgravity) &
-          call read_particles_selfg_run_pars(unit,iostat)
-      if (lparticles_nbody) &
-          call read_particles_nbody_run_pars(unit,iostat)
-      if (lparticles_stalker) &
-          call read_pstalker_run_pars(unit,iostat)
+      if (iostat.ne.0) &
+           call samplepar_runpars('particles_run_pars',iostat)
+!      
+      if (lparticles_radius) then 
+        call read_particles_rad_run_pars(unit,iostat)
+        if (iostat.ne.0) &
+             call samplepar_runpars('particles_rad_run_pars',iostat)
+      endif
+!
+      if (lparticles_spin) then
+        call read_particles_spin_run_pars(unit,iostat)
+        if (iostat.ne.0) &
+             call samplepar_runpars('particles_spin_run_pars',iostat)
+      endif
+!
+      if (lparticles_number) then
+        call read_particles_num_run_pars(unit,iostat)
+        if (iostat.ne.0) &
+             call samplepar_runpars('particles_num_run_pars',iostat)
+      endif
+!
+      if (lparticles_selfgravity) then
+        call read_particles_selfg_run_pars(unit,iostat)
+        if (iostat.ne.0) &
+             call samplepar_runpars('particles_selfg_run_pars',iostat)
+      endif
+!
+      if (lparticles_nbody) then
+        call read_particles_nbody_run_pars(unit,iostat)
+        if (iostat.ne.0) &
+             call samplepar_runpars('particles_nbody_run_pars',iostat)
+      endif
+!
+      if (lparticles_stalker) then
+        call read_pstalker_run_pars(unit,iostat)
+        if (iostat.ne.0) &
+             call samplepar_runpars('particles_pstalker_run_pars',iostat)
+      endif
 !
     endsubroutine read_particles_run_pars_wrap
+!***********************************************************************
+    subroutine samplepar_runpars(label,iostat)
+!
+      use Mpicomm, only: stop_it
+
+      character (len=*), optional :: label
+      integer, optional :: iostat
+
+      if (lroot) then
+        print*
+        print*,'-----BEGIN sample namelist ------'
+                              print*,'&run_pars                 /'
+        if (leos            ) print*,'&eos_run_pars             /'
+        if (lhydro          ) print*,'&hydro_run_pars           /'
+        if (ldensity        ) print*,'&density_run_pars         /'
+        if (lforcing        ) print*,'&forcing_run_pars         /'
+        if (lgrav           ) print*,'&grav_run_pars            /'
+        if (lselfgravity    ) print*,'&selfgrav_run_pars        /'
+        if (lpoisson        ) print*,'&poisson_run_pars         /'
+        if (lentropy        ) print*,'&entropy_run_pars         /'
+        if (ltemperature    ) print*,'&entropy_run_pars         /'
+        if (lmagnetic       ) print*,'&magnetic_run_pars        /'
+        if (ltestfield      ) print*,'&testfield_run_pars       /'
+        if (ltestflow       ) print*,'&testflow_run_pars        /'
+        if (lradiation      ) print*,'&radiation_run_pars       /'
+        if (lpscalar        ) print*,'&pscalar_run_pars         /'
+        if (lchiral         ) print*,'&chiral_run_pars          /'
+        if (lchemistry      ) print*,'&chemistry_run_pars       /'
+        if (ldustvelocity   ) print*,'&dustvelocity_run_pars    /'
+        if (ldustdensity    ) print*,'&dustdensity_run_pars     /'
+        if (lneutralvelocity) print*,'&neutralvelocity_run_pars /'
+        if (lneutraldensity ) print*,'&neutraldensity_run_pars  /'
+        if (lcosmicray      ) print*,'&cosmicray_run_pars       /'
+        if (lcosmicrayflux  ) print*,'&cosmicrayflux_run_pars   /'
+        if (linterstellar   ) print*,'&interstellar_run_pars    /'
+        if (lshear          ) print*,'&shear_run_pars           /'
+        if (ltestperturb    ) print*,'&testperturb_run_pars     /'
+        if (lviscosity      ) print*,'&viscosity_run_pars       /'
+        if (lspecial        ) print*,'&special_run_pars         /'
+        if (lparticles) &
+            print*,'&particles_run_pars         /'
+        if (lparticles_radius) &
+            print*,'&particles_radius_run_pars  /'
+        if (lparticles_spin) &
+            print*,'&particles_spin_run_pars  /'
+        if (lparticles_number) &
+            print*,'&particles_number_run_pars  /'
+        if (lparticles_selfgravity) &
+            print*,'&particles_selfgrav_run_pars/'
+        if (lparticles_nbody) &
+            print*,'&particles_nbody_run_pars   /'
+        if (lshock        ) print*,'&shock_run_pars           /'
+        print*,'------END sample namelist -------'
+        print*
+        if (present(label))  print*, 'Found error in input namelist "' // trim(label)
+        if (present(iostat)) print*, 'iostat = ', iostat
+        if (present(iostat).or.present(label)) &
+                           print*,  '-- use sample above.'
+      endif
+      call stop_it('')
+!
+    endsubroutine samplepar_runpars
 !***********************************************************************
     subroutine write_particles_run_pars_wrap(unit)
 !
