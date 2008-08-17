@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.240 2008-08-15 14:41:31 wlyra Exp $
+! $Id: particles_dust.f90,v 1.241 2008-08-17 08:30:43 dobler Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -162,7 +162,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.240 2008-08-15 14:41:31 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.241 2008-08-17 08:30:43 dobler Exp $")
 !
 !  Indices for particle position.
 !
@@ -3045,8 +3045,8 @@ k_loop:   do while (.not. (k>npar_loc))
       use Viscosity, only: getnu
 !
       real,dimension(mpar_loc,mpvar) :: fp
-      real,dimension(:,:),allocatable :: uup
-      real,dimension(:),allocatable :: rep
+      real,dimension(:,:) :: uup
+      real,dimension(:) :: rep
       intent(in) :: fp, uup
       intent(inout) :: rep
 !
@@ -3079,7 +3079,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use Particles_radius
 !
       real,dimension(mpar_loc,mpvar) :: fp
-      real,dimension(:),allocatable :: stocunn
+      real,dimension(:) :: stocunn
 !
       real :: dia
       integer :: k
