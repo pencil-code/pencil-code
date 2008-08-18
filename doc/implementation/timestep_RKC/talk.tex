@@ -25,7 +25,10 @@
 \renewcommand{\familydefault}{phv}
 
 \usepackage{amsmath,amssymb,bm,wasysym}
-%\usepackage{latexsym,exscale}%\usepackage{newcent,helvet}%\usepackage{pxfonts}%\usepackage{txfonts}
+%\usepackage{latexsym,exscale}
+%\usepackage{newcent,helvet}
+\usepackage{pxfonts}
+%\usepackage{txfonts}
 %\usepackage[it,footnotesize]{caption2}
 %\setlength{\abovecaptionskip}{5pt} % Space before caption
 %\setlength{\belowcaptionskip}{5pt} % Space after caption
@@ -104,8 +107,12 @@
 \definecolor{DarkishBlue}{rgb}{0,0,0.9}
 \definecolor{DarkishMagenta}{rgb}{0.8,0,0.8}
 \definecolor{math}{rgb}{0,0.55,0}
+\definecolor{gray60}{gray}{0.5}
+\definecolor{green60}{rgb}{0.3,0.5,0.3}
 
 \everymath{\color{math}}        % all math in green
+\newcommand{\Black}{\color{black}}
+\newcommand{\GreyedOut}{\color{gray60}}
 
 \newcommand{\mathcol}[1]{\textcolor{math}{#1}}
 \newcommand{\name}[1]   {\textcolor{name}{#1}}
@@ -164,8 +171,8 @@
 
 % ---------------------------------------------------------------------- %
 
+\pagestyle{empty}
 \begin{document}
-\thispagestyle{empty}
 
 \maketitle
 
@@ -234,7 +241,7 @@ Butcher tableau:
   \end{array}
 \end{equation}
 
-Requires solution of nonlinear systems of equations in each substep,
+\colEmph{nonlinear system of equations} in each substep,\\
 \ColEmph{but}: desirable stability properties.
 
 \clearpage
@@ -245,23 +252,27 @@ Requires solution of nonlinear systems of equations in each substep,
 %
 \paragraph{All schemes} typically satisfy
 \begin{equation}
+  \color{math}
   \sum\limits_{j=1}^{s} a_{ij} = c_i \; .
 \end{equation}
 %
 \paragraph{First-order} accuracy:
 \begin{equation}
+  \color{math}
   \sum\limits_{i=1}^{s} b_{i} = 1 \; .  
 \end{equation}
 
 %
 \paragraph{Second-order} accuracy additionally requires
 \begin{equation}
+  \color{math}
   \sum\limits_{i=1}^{s} b_{i} c_i = \dfrac{1}{2} \; .  
 \end{equation}
 
 %
 \paragraph{Third-order} accuracy additionally requires
 \begin{equation}
+  \color{math}
   \sum\limits_{i=1}^{s} b_{i} c_i^2        = \dfrac{1}{3} \; ,
   \qquad
   \sum\limits_{i,j=1}^{s} b_{i} a_{ij} c_j = \dfrac{1}{6} \; .  
@@ -281,17 +292,22 @@ Requires solution of nonlinear systems of equations in each substep,
 
 \medskip
 etc.
-\medskip
+
+\bigskip
 
 Total number of conditions:
+\medskip
 \begin{center}
   \begin{tabular}{lllllllllll}
   \toprule
-    Order $p$  & 1 & 2 & 3 & 4 &  5 &  6 &  7 &   8 &  9  &   10\\
+    \Black Order $p$
+        & 1 & 2 & 3 & 4 &  5 &  6 &  7 &   8 &  9  &   10\\
   \midrule
-    Conditions & 1 & 2 & 4 & 8 & 17 & 37 & 85 & 200 & 486 & 1205\\
+    \Black Conditions
+        & 1 & 2 & 4 & 8 & 17 & 37 & 85 & 200 & 486 & 1205\\
   \midrule
-    Minimum number of stages & 1 & 2 & 3 & 4 & 6 & \\
+    \Black Minimum number of stages
+        & 1 & 2 & 3 & 4 & 6 & \\
   \bottomrule
   \end{tabular}
 \end{center}
@@ -300,24 +316,27 @@ Total number of conditions:
 %%%
 \subsection{$2N$-schemes}
 
-Cassical schemes: need to store all $\kv_i$.
+Classical schemes: need to store all $\kv_i$.
 
 \medskip
 
 \cite{Williamson:LowStorage}: schemes that only need one $\yv$ and one
-$\kv$ array at a time (our \Code{f(:,:,:,1:mvar)} and \Code{df(:,:,:,:)}).
+$\kv$ array at a time\\
+(our \Code{f(:,:,:,1:mvar)} and \Code{df(:,:,:,:)}).
 
 \medskip
 
 \begin{center}
   \begin{tabular}{lllllllllll}
   \toprule
-    Order $p$  & 1 & 2 & 3 & 4 & ??? \\
+    Order $p$  & 1 & 2 & 3 & 4 & 5 \\
   \midrule
-    Minimum number of stages & 1 & 2 & 3 & 5 & ??? & \\
+    Minimum number of stages & 1 & 2 & 3 & 5 & 9 & \\
   \bottomrule
   \end{tabular}
 \end{center}
+
+\bigskip
 
 In a sense, we trade order for memory-efficiency.
 
@@ -334,7 +353,7 @@ leads to
   \dfrac{df}{dt} = - \nu k^2 \,f
 \end{equation}
 ($k \simeq 1/\delta x$: an effective wave number for most
-unstable Fourier mode (normally the Nyquist mode).
+unstable Fourier mode [normally the Nyquist mode]).
 
 Exact solution:
 \begin{equation}
@@ -355,24 +374,49 @@ One (full) time step of a time-stepping scheme gives
   \end{cases}
 \end{equation*}
 
-Courant number: $\Courant \equiv \delta t \, \nu k^2$ (dimensionless time step). 
-
 \clearpage
 
-\begin{tabular}{@{}ll}
-  Exact:                           & $A(\Courant) = \exp(-\Courant)$\\[1.5ex]
-  Explicit Runge--Kutta:           &  $A(\Courant)$ is a polynomial.\\[1.5ex]
-  General (implicit) Runge--Kutta: & $A(\Courant)$ is rational function\\{}
-                                     [Padé approx. to $\exp(-\Courant)$].
-\end{tabular}
+Courant number: $\Courant \equiv \delta t \, \nu k^2$ (dimensionless time step). 
 
 \bigskip
 
-[image: stability function]
+\begin{tabular}{@{}ll}
+  \Black
+  Exact:                           & $A(\Courant) = \exp(-\Courant)$\\[1.5ex]
+  \Black
+  Explicit Runge--Kutta:           &  $A(\Courant)$ is a polynomial.\\[1.5ex]
+  \Black
+  General (implicit) Runge--Kutta: & $A(\Courant)$ is rational function
+                                     [Padé approx.\ to $\exp(-\Courant)$].
+\end{tabular}
 
-Higher-order explicit schemes $\RedArrow$ larger stability interval
+\clearpage
 
-But: also more substeps, so effort per time step is roughly constant.
+\enlargethispage{1.8em}
+\centerline{%
+  \includegraphics[width=1.1\textwidth,height=0.68\textheight,keepaspectratio]%
+                  {stab-poly-classical}%
+}
+
+\vspace{-0.5\baselineskip}
+\begin{itemize}
+
+\item Higher-order explicit schemes
+  $\RedArrow$ larger stability interval.
+
+  \ColEmph{But:} also more substeps,
+  $\RedArrow$
+  $\dfrac{\text{total effort}}{\text{full time step}}
+  \approx \mathrm{const.}$
+
+\item For large $\Courant$, even implicit schemes give wrong result\\
+  But qualitatively correct:
+  \begin{itemize}
+  \item quickly decays
+  \item doesn't blow up
+  \end{itemize}
+
+\end{itemize}
 
 % ---------------------------------------------------------------------- %
 
@@ -380,12 +424,145 @@ But: also more substeps, so effort per time step is roughly constant.
 \section{Runge--Kutta--Chebyshev schemes}
 %%%%%%%%
 
-We can do better \ldots{}
-Sounds familiar? $\rightarrow$ Chebyshev
+\colEmph{Wanted:} stability polynomial (degree $n$)
+with maximal stability interval
 
-$\rightarrow$ RKC-1 stability polynomial
--- but that's no scheme yet.
+\begin{itemize}
+\item $A(0) = 1$ (consistency)
+\item $A'(0) = -1$ (1st-order accurate)
+\item $A''(0) = 1$ (2nd-order accurate)
+\item \ldots
+\item $A(\Courant)$ oscillates between $1$ and $-1$ as often as possible
+\end{itemize}
 
+\bigskip
+
+Sounds familiar? $\rightarrow$ \ColEmph{Chebyshev polynomials}
+
+\clearpage
+
+%
+\paragraph{First-order Runge--Kutta--Chebyshev scheme:}
+\begin{equation}
+  \color{math}
+  A(\Courant)
+  = T_s\left(1 - \dfrac{\Courant}{s^2} \right)
+\end{equation}
+where $s = $ number of stages.
+
+\centerline{%
+  \includegraphics[width=1.1\textwidth,height=0.68\textheight,keepaspectratio]%
+                  {stab-poly-cheby-1}%
+}
+
+
+\begin{quote}
+  \itshape
+  ``\ldots have been rediscovered in the literature again and again\ldots''
+\end{quote}
+
+Stability interval $[0, 2\,s^2]$.
+
+\bigskip
+
+Any position where $|A(\Courant)| = 1$ is problematic (no damping at all).
+
+\RedArrow{} add safety margin $\varepsilon$, so $A(\Courant)$ oscillates
+between $-1+\varepsilon$ and $1-\varepsilon$.
+
+\bigskip
+
+
+\clearpage
+%
+\paragraph{Second-order Runge--Kutta--Chebyshev scheme:}
+
+With Chebyshev polynomials:
+\begin{equation}
+    A(\Courant)
+    = \dfrac{2}{3}
+      + \dfrac{1}{3\,s^2}
+      + \left( \dfrac{1}{3} - \dfrac{1}{3\,s^2} \right)
+        T_s\left( 1 + \dfrac{3\,\Courant}{s^2{-}1} \right)
+    \qquad
+    \text{(stable on $[0, 2\,s^2]$)}
+\end{equation}
+
+\centerline{%
+  \includegraphics[width=1.1\textwidth,height=0.68\textheight,keepaspectratio]%
+                  {stab-poly-cheby-2}%
+}
+
+
+\emph{Not} the optimal polynomial:
+just $\approx 80\%$ of optimal stability interval length.
+
+But still: $\Courant_{\rm crit} \approx 0.653 \, s^2$.
+
+I.\,e.~maximum stable time step $\propto s^2$, \quad number of substeps $=s$,\\[2ex]
+\RedArrow\quad
+$\dfrac{\text{total effort}}{\text{full time step}}
+  \propto \dfrac{1}{s}$
+
+\begin{center}
+\boldmath
+  \begin{tabular}{lll}
+  \toprule
+    \multicolumn{1}{c}{\Black \emph{Scheme}} &
+      \multicolumn{1}{c}{$\Courant_{\rm crit}$} &
+        \multicolumn{1}{c}{$\Courant_{\rm crit}/s$}\\
+  \midrule
+    \Black Euler                         & $2$    & $2$ \\
+    \Black 2nd-order 2-step Runge--Kutta & $2$    & $1$ \\
+    \Black 3rd-order 3-step Runge--Kutta & $2.51$ & $0.838$ \\
+  \midrule
+    \Black RKC-2, $s=2$                  & $2$    & $1$ \\
+    \Black RKC-2, $s=5$                  & $16.6$ & $3.32$ \\
+    \Black RKC-2, $s=10$                 & $64.8$ & $6.48$ \\
+    \Black RKC-2, $s=20$                 & $261$  & $13.0$ \\
+    \Black RKC-2, $s=40$                 & $1040$ & $26.1$ \\
+    \Black RKC-2, $s=45$                 & $1280$ & $28.4$ \\
+    \color{gray60}
+    RKC-2, $\GreyedOut=50$         & $\GreyedOut1630$ & $\GreyedOut32.7$ \\
+    \color{gray60}
+    RKC-2, $\GreyedOut=100$        & $\GreyedOut6530$ & $\GreyedOut65.3$ \\
+  \bottomrule
+  \end{tabular}
+\end{center}
+
+\clearpage
+
+%
+\paragraph{Turning this into a scheme:} \
+
+\colEmph{Internal stability:} A naïvely written $50$-stage scheme can
+catastrophically enhance roundoff error between the substeps.
+
+\cite{SommeijerEtal:RKC}: Use stable recurrence relation for Chebyshev
+polynomials to ensure internal stability.
+
+\bigskip
+
+\paragraph{Memory usage:} \
+
+\begin{tabular}{@{}ll}
+  5 slots              & \textcolor{blue}{\large \frownie} \\
+  independent from $s$ & \textcolor{blue}{\large \smiley \smiley}
+\end{tabular}
+
+\clearpage
+
+%
+\paragraph{Implementation}
+
+Perl script \colEmph{\texttt{generate\_timestep\_RKC}} generates appropriate
+variant  \colEmph{\texttt{timestep\_RKC-$s$.f90}}.
+
+\begin{itemize}
+\item Uses exact rational arithmetic internally
+\item Rounds only final numbers it puts into code
+\item Currently not as memory-efficient as could be
+\end{itemize}
 
 % ---------------------------------------------------------------------- %
 
@@ -402,6 +579,8 @@ $\eta = \begin{cases}
     8 & \text{for $r>1$}\\
   \end{cases}$
 
+Box size: $3\times3\times3$;
+resolution: $64\times64\times64$
 \medskip
 
 {\small\color{DarkBlue}
@@ -422,33 +601,34 @@ $\eta = \begin{cases}
 \end{CodeVerbatim}
 }
 
-[Resolution + geometry\ldots]
 
 % ---------------------------------------------------------------------- %
 
 %%%
 \subsection{Comparison}
 \begin{enumerate}
+\item RKC-40 ($\equiv$ $40$-stage Runge--Kutta--Chebyshev)\\
+  \texttt{dt=3.50e-3} $\approx 0.5\,\delta t_{\rm crit}$
+\item RKC-20 ($\equiv$ $20$-stage Runge--Kutta--Chebyshev)\\
+  \texttt{dt=4.375e-4} $\approx 0.25\,\delta t_{\rm crit}$
 \item Standard 3rd-order Runge--Kutta scheme (Williamson)\\
-  \texttt{dt=7.00e-6}
-\item RKC-20\\
-  \texttt{dt=4.375e-4}
-\item RKC-40\\
-  \texttt{dt=3.50e-3}
+  \texttt{dt=7.00e-6} $\approx 0.5\,\delta t_{\rm crit}$
 \end{enumerate}
 (each at $\approx 1/2\,\delta t_{\rm max}$).
-
 Speed:
 \begin{enumerate}
-\item $\unit[71.9]{\mu s}$ per step + grid pt   
-  (at 98.7\%)
-  \RedArrow $\unit[0.021]{\mu s}$ per step + time unit
-\item $\unit[35.0]{\mu s}$ per step + grid pt
-  (at 98.7\%)
-  \RedArrow $\unit[0.080]{\mu s}$ per step + time unit
-\item $\unit[4.77]{\mu s}$ per step + grid pt
+\item $71.9\,\dfrac{\unit{\mu s}}{\text{time step $\times$ grid pt}}$
   (at 98.2\%)
-  \RedArrow $\unit[0.68]{\mu s}$ per step + time unit
+  {\ \RedArrow\ \ } 
+  $0.021\,\dfrac{\unit{s}}{\text{time unit $\times$ grid pt}}$
+\item$35.0\,\dfrac{\unit{\mu s}}{\text{time step $\times$ grid pt}}$
+  (at 98.7\%)
+  {\ \RedArrow\ \ } 
+  $0.080\,\dfrac{\unit{s}}{\text{time unit $\times$ grid pt}}$
+\item $4.77\,\dfrac{\unit{\mu s}}{\text{time step $\times$ grid pt}}$
+  (at 98.7\%)
+  {\ \RedArrow\ \ } 
+  $0.68\,\dfrac{\unit{s}}{\text{time unit $\times$ grid pt}}$
 \end{enumerate}
 \bigskip
 
@@ -460,9 +640,103 @@ Speed:
 \end{CodeVerbatim}
 }
 
+\clearpage
 
-[Growth rate changed from 53.62 (RK-40) to 53.74 (RK-20)]
+\centerline{%
+  \includegraphics[width=1.1\textwidth,height=0.95\textheight,keepaspectratio]%
+                  {field-growth-1}%
+}
 
+\clearpage
+
+
+\centerline{%
+  \includegraphics[width=1.1\textwidth,height=0.85\textheight,keepaspectratio]%
+                  {field-growth-2}%
+}
+
+[Growth rate changed from $53.62$ (RK-40) to $\approx53.74$ (RK-20)]
+
+\clearpage
+
+Horizontal section (left: $\Bv$; right: $\tanh(\alpha \Bv$):
+\medskip
+
+\centerline{%
+  \includegraphics[width=0.48\textwidth,height=0.9\textheight,keepaspectratio]%
+                  {section_x-y}%
+  \hfill
+  \includegraphics[width=0.48\textwidth,height=0.9\textheight,keepaspectratio]%
+                  {section_x-y_vtanh}%
+}
+
+\clearpage
+
+Vertical section (left: $\Bv$; right: $\tanh(\alpha \Bv$)
+\medskip
+
+\centerline{%
+  \includegraphics[width=0.48\textwidth,height=0.9\textheight,keepaspectratio]%
+                  {section_x-z}%
+  \hfill
+  \includegraphics[width=0.48\textwidth,height=0.9\textheight,keepaspectratio]%
+                  {section_x-z_vtanh}%
+}
+
+
+% ---------------------------------------------------------------------- %
+
+%%%
+\subsection{Problem}
+
+RKC schemes with  $s >= 46$ fail due to round-off error (for double
+precision).
+
+Probably not \colEmph{internal instability} (RKC should be internally
+stable)
+
+Use RKC subroutine to evaluate (and plot) stability polynomial:
+\RedArrow{} same thing, roundoff error kills precision completely for
+$s > 45$.
+
+This is not mentioned in the papers, but appears to be inevitable.
+
+\bigskip
+
+Still not too bad: factor of 40 is tremendous.
+
+
+% ---------------------------------------------------------------------- %
+
+
+%%%%%%%%
+\section{Conclusions}
+%%%%%%%%
+
+\begin{itemize}
+
+\item RKC allows an up to $\approx 40$ times larger time step, just by
+  switching to\\
+{\small\color{DarkBlue}
+\begin{CodeVerbatim}[label=\BoxLabel{Makefile.local}]
+  TIMESTEP = timestpe_RKC-40
+\end{CodeVerbatim}
+}
+\item \colEmph{Moderate memory requirement}
+  (albeit higher than $2N$schemes)
+
+\item Works fine in cases where you would use implicit schemes
+
+\item Unclear: Interaction with dynamic time steps
+  \begin{itemize}
+  \item Disadvantage: Can only change time step after $s$ substeps
+  \item But moderate $s$ should still be better than classical
+    Runge--Kutta
+  \end{itemize}
+
+\item \ColEmph{Highly recommended} if your time step is limited by diffusion
+
+\end{itemize}
 
 % ---------------------------------------------------------------------- %
 
@@ -481,4 +755,6 @@ Speed:
 %% Local IspellDict: canadian
 %% End:
 
-% LocalWords:  ifpdf pdftex dvips
+% LocalWords:  ifpdf pdftex dvips substep lllllllllll mvar df substeps const nd
+% LocalWords:  lll crit RKC gray naïvely DarkBlue itorder dt tmax iresistivity
+% LocalWords:  wresistivity lmeanfield lweyl PID VIRT SHR wdobler RK
