@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.146 2008-08-16 11:07:44 ajohan Exp $
+! $Id: particles_sub.f90,v 1.147 2008-08-18 20:24:32 kapelrud Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -2206,52 +2206,52 @@ module Particles_sub
 !  Flow velocity:
 !
       if (interp%luu) then
-        allocate(interp%uu(k1:k2,3))
-        if (.not.allocated(interp%uu)) then
+        allocate(interp_uu(k1:k2,3))
+        if (.not.allocated(interp_uu)) then
           print*,'interpolate_quantities: unable to allocate '// &
-                 'sufficient memory for interp%uu'
+                 'sufficient memory for interp_uu'
           call fatal_error('interpolate_quantities','')
         endif
-        call interp_field_pencil_wrap(f,iux,iuz,fp,ineargrid,interp%uu, &
+        call interp_field_pencil_wrap(f,iux,iuz,fp,ineargrid,interp_uu, &
           interp%pol_uu)
       endif
 !
 !  Flow vorticity:
 !
       if (interp%loo) then
-        allocate(interp%oo(k1:k2,3))
-        if (.not.allocated(interp%oo)) then
+        allocate(interp_oo(k1:k2,3))
+        if (.not.allocated(interp_oo)) then
           print*,'interpolate_quantities: unable to allocate '// &
-                 'sufficient memory for interp%oo'
+                 'sufficient memory for interp_oo'
           call fatal_error('interpolate_quantities','')
         endif
-        call interp_field_pencil_wrap(f,iox,ioz,fp,ineargrid,interp%oo, &
+        call interp_field_pencil_wrap(f,iox,ioz,fp,ineargrid,interp_oo, &
           interp%pol_oo)
       endif
 !
 !  Temperature:
 !
       if (interp%lTT) then
-        allocate(interp%TT(k1:k2))
-        if (.not.allocated(interp%TT)) then
+        allocate(interp_TT(k1:k2))
+        if (.not.allocated(interp_TT)) then
           print*,'interpolate_quantities: unable to allocate '// &
-                 'sufficient memory for interp%TT'
+                 'sufficient memory for interp_TT'
           call fatal_error('interpolate_quantities','')
         endif
 !
 !  Determine what quantity to interpolate (temperature or entropy)
 !
         if (lentropy) then
-          call interp_field_pencil_wrap(f,iss,iss,fp,ineargrid,interp%TT, &
+          call interp_field_pencil_wrap(f,iss,iss,fp,ineargrid,interp_TT, &
             interp%pol_TT)
         elseif (ltemperature) then
-          call interp_field_pencil_wrap(f,ilnTT,ilnTT,fp,ineargrid,interp%TT, &
+          call interp_field_pencil_wrap(f,ilnTT,ilnTT,fp,ineargrid,interp_TT, &
             interp%pol_TT)
         endif
 !
         if ( (lentropy.and.pretend_lnTT)   .or. &
            (ltemperature.and.(.not.ltemperature_nolog)) ) then
-          interp%TT=exp(interp%TT)
+          interp_TT=exp(interp_TT)
         elseif (lentropy.and.(.not.pretend_lnTT)) then
           call fatal_error('interpolate_quantities','enable flag '//&
             'pretend_lnTT in init_pars to be able to interpolate'// &
@@ -2262,17 +2262,17 @@ module Particles_sub
 !  Density:
 !
       if (interp%lrho) then
-        allocate(interp%rho(k1:k2))
-        if (.not.allocated(interp%rho)) then
+        allocate(interp_rho(k1:k2))
+        if (.not.allocated(interp_rho)) then
           print*,'interpolate_quantities: unable to allocate '// &
-                 'sufficient memory for interp%rho'
+                 'sufficient memory for interp_rho'
           call fatal_error('interpolate_quantities','')
         endif
-        call interp_field_pencil_wrap(f,ilnrho,ilnrho,fp,ineargrid,interp%rho, &
+        call interp_field_pencil_wrap(f,ilnrho,ilnrho,fp,ineargrid,interp_rho, &
           interp%pol_rho)
 !
         if (.not.ldensity_nolog) then
-          interp%rho=exp(interp%rho)
+          interp_rho=exp(interp_rho)
         endif
       endif
 !
@@ -2286,10 +2286,10 @@ module Particles_sub
 !
       use Particles_cdata
 !
-      if (allocated(interp%uu)) deallocate(interp%uu)
-      if (allocated(interp%oo)) deallocate(interp%oo)
-      if (allocated(interp%TT)) deallocate(interp%TT)
-      if (allocated(interp%rho)) deallocate(interp%rho)
+      if (allocated(interp_uu)) deallocate(interp_uu)
+      if (allocated(interp_oo)) deallocate(interp_oo)
+      if (allocated(interp_TT)) deallocate(interp_TT)
+      if (allocated(interp_rho)) deallocate(interp_rho)
 !
     endsubroutine cleanup_interpolated_quantities
 !***********************************************************************

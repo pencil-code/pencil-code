@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.241 2008-08-17 08:30:43 dobler Exp $
+! $Id: particles_dust.f90,v 1.242 2008-08-18 20:24:32 kapelrud Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -162,7 +162,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.241 2008-08-17 08:30:43 dobler Exp $")
+           "$Id: particles_dust.f90,v 1.242 2008-08-18 20:24:32 kapelrud Exp $")
 !
 !  Indices for particle position.
 !
@@ -1614,7 +1614,7 @@ k_loop:   do while (.not. (k>npar_loc))
               ' memory for rep')
           endif
 !
-          call calc_pencil_rep(fp,interp%uu,rep)
+          call calc_pencil_rep(fp,interp_uu,rep)
         endif
 !
 !  Calculate Stokes-Cunningham factor
@@ -1685,7 +1685,7 @@ k_loop:   do while (.not. (k>npar_loc))
               if (ldraglaw_epstein_transonic .or. &
                   ldraglaw_eps_stk_transonic) then
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par, &
-                  interp%uu(k,:))
+                  interp_uu(k,:))
               elseif (ldraglaw_steadystate) then
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,rep=rep(k), &
                   stocunn=stocunn(k))
@@ -1700,7 +1700,7 @@ k_loop:   do while (.not. (k>npar_loc))
               if (lshort_friction_approx .and. &
                   tausp1_par>tausp1_short_friction) cycle
 !
-              dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-interp%uu(k,:))
+              dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-interp_uu(k,:))
 !
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !
@@ -1708,9 +1708,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
               if (ldragforce_heat .or. (ldiagnos .and. idiag_dedragp/=0)) then
                 if (ldragforce_gas_par) then
-                  up2=sum((fp(k,ivpx:ivpz)-interp%uu(k,:))**2)
+                  up2=sum((fp(k,ivpx:ivpz)-interp_uu(k,:))**2)
                 else
-                  up2=sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-interp%uu(k,:)))
+                  up2=sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-interp_uu(k,:)))
                 endif
 !
                 drag_heat(ix0-nghost)=drag_heat(ix0-nghost) + &
@@ -3139,7 +3139,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Relaxation time:
 !
-      tausp1_par=18.0*cdrag*nu/((rhop_tilde/interp%rho(k))*stocunn*dia**2)
+      tausp1_par=18.0*cdrag*nu/((rhop_tilde/interp_rho(k))*stocunn*dia**2)
 !
     endsubroutine calc_draglaw_steadystate
 !***********************************************************************
@@ -3176,13 +3176,13 @@ k_loop:   do while (.not. (k>npar_loc))
       call normal_deviate(force(3))
 !
       if(interp%lTT) then
-        TT=interp%TT(k)
+        TT=interp_TT(k)
       else
         TT=brownian_T0
       endif
 !
       Szero=216*nu*k_B*TT*pi_1/ &
-        (dia**5*stocunn*rhop_tilde**2/interp%rho(k))
+        (dia**5*stocunn*rhop_tilde**2/interp_rho(k))
 !
       if(dt==0.0) then
         force=0.0

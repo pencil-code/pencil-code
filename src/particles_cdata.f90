@@ -1,4 +1,4 @@
-! $Id: particles_cdata.f90,v 1.36 2008-08-15 14:28:09 kapelrud Exp $
+! $Id: particles_cdata.f90,v 1.37 2008-08-18 20:24:32 kapelrud Exp $
 !!
 !! Global particle variables
 !!
@@ -40,15 +40,16 @@ module Particles_cdata
 !  Interpolation toggles:
     logical :: luu,loo,lTT,lrho
 !
-!  Interpolated quantities:
-    real, dimension(:,:), allocatable :: uu, oo
-    real, dimension(:), allocatable :: TT, rho
-!
 !  Interpolation policies:
     integer :: pol_uu, pol_oo, pol_TT, pol_rho
   end type quant_interp_penc
   
   type(quant_interp_penc) :: interp
+!
+!  Interpolated quantities: moved outside type to conform to
+!  the f90 standard.
+    real, dimension(:,:), allocatable :: interp_uu, interp_oo
+    real, dimension(:), allocatable :: interp_TT, interp_rho
 
 !
 !  Interpolation policies:

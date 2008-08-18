@@ -1,4 +1,4 @@
-! $Id: particles_spin.f90,v 1.1 2008-08-15 14:28:09 kapelrud Exp $
+! $Id: particles_spin.f90,v 1.2 2008-08-18 20:24:32 kapelrud Exp $
 !
 !  This module takes care of everything related to particle spin
 !  including lifting forces. The module maintains a full f-array
@@ -64,7 +64,7 @@ module Particles_spin
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_spin.f90,v 1.1 2008-08-15 14:28:09 kapelrud Exp $")
+           "$Id: particles_spin.f90,v 1.2 2008-08-18 20:24:32 kapelrud Exp $")
 !
 !  Indices for flow field vorticity. The vorticity is a communicated auxiliary
 !  vector.
@@ -246,8 +246,8 @@ module Particles_spin
 !
  !         ip_tilde=0.4*mp_tilde*fp(k,iap)**2
 !
- !         tau=8.0*pi*interp%rho(k)*nu*fp(k,iap)**3* &
- !             (0.5*interp%oo(k,:)-fp(k,ipsx:ipsz))
+ !         tau=8.0*pi*interp_rho(k)*nu*fp(k,iap)**3* &
+ !             (0.5*interp_oo(k,:)-fp(k,ipsx:ipsz))
  !         dfp(k,ipsx:ipsz)=dfp(k,ipsx:ipsz)+tau/ip_tilde
  !       enddo
  !     endif
@@ -414,7 +414,7 @@ module Particles_spin
       endif
 !
       dia=2*fp(iap)
-      oo=sqrt(sum(interp%oo(k,:)**2))
+      oo=sqrt(sum(interp_oo(k,:)**2))
 !
       beta=dia**2*oo/(2.0*rep*nu)
       if(beta<0.005) then
@@ -429,8 +429,8 @@ module Particles_spin
         csaff=0.0524*(beta*rep)**0.5
       endif
 !
-      call cross(interp%uu(k,:)-fp(ivpx:ivpz),interp%oo(k,:),dlift)
-      dlift=1.61*csaff*dia**2*nu**0.5*interp%rho(k)*oo**(-0.5)*dlift/mp_tilde
+      call cross(interp_uu(k,:)-fp(ivpx:ivpz),interp_oo(k,:),dlift)
+      dlift=1.61*csaff*dia**2*nu**0.5*interp_rho(k)*oo**(-0.5)*dlift/mp_tilde
 !
     endsubroutine calc_saffman_liftforce
 !***********************************************************************
@@ -468,14 +468,14 @@ module Particles_spin
 !
 !  Calculate the Magnus lift coefficent
 !
-      uu_rel=interp%uu(k,:)-fp(ivpx:ivpz)
+      uu_rel=interp_uu(k,:)-fp(ivpx:ivpz)
       spin_omega=fp(iap)*sqrt(sum(fp(ipsx:ipsz)**2))/sqrt(sum(uu_rel**2))
       const_lr=min(0.5,0.5*spin_omega)
 !
-      ps_rel=fp(ipsx:ipsz)-0.5*interp%oo(k,:)
+      ps_rel=fp(ipsx:ipsz)-0.5*interp_oo(k,:)
       call cross(uu_rel,ps_rel,dlift)
       dlift=dlift/sqrt(sum(ps_rel**2))
-      dlift=0.25*interp%rho(k)*(rep*nu/fp(iap))*const_lr*area/mp_tilde*dlift
+      dlift=0.25*interp_rho(k)*(rep*nu/fp(iap))*const_lr*area/mp_tilde*dlift
 !
     endsubroutine calc_magnus_liftforce
 !***********************************************************************
