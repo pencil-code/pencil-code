@@ -5,12 +5,18 @@
 !  The schemes used here are all second-order (p=2) accurate Runge-Kutta
 !  schemes of stage number (number of substeps) s > 2 that trade order for
 !  extended stability interval.
-!    Thus, for example for s=10, we have a 2nd-order, 10-step Runge-Kutta
-!  scheme that has a critical Courant number of ~ ... as compared to ... for
+!    For this file, s=25, so we have a 2nd-order, 25-step Runge-Kutta
+!  scheme with a critical Courant number of ~408.125 as compared to 2.513 for
 !  any p=s=3 Runge-Kutta scheme (like the Williamson scheme in timestep.f90).
+!  Here the Courant number is
+!    Cou = c nu dt / dx^2 ,
+!  where
+!    c = 272/45 = 6.04444
+!  for 6th-order central finite differences in space.
 !
-!  This scheme uses 4N array slots (as opposed to 2N for the Williamson
+!  This scheme uses 5N array slots (as opposed to 2N for the Williamson
 !  scheme in timestep.f90), irrespective of s.
+!  [TODO: it currently uses more, but this should be fixed...]
 
 module Timestep
 
@@ -32,7 +38,7 @@ contains
     !  Long-time-step Runge--Kutta--Chebyshev stepping, accurate to second
     !  order.
     !
-    !  09-aug-08/perl: generated
+    !  18-aug-08/perl: generated
     !
 
         use Mpicomm
@@ -83,7 +89,7 @@ contains
         ! What do we need to do with dt_beta_ts?
         ! if (ldt) dt_beta_ts=dt*beta_ts
         !
-        if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  ! same dt everywhere?
+        if (ip<=6) print*, 'TIMESTEP: iproc,dt=',iproc,dt  ! same dt everywhere?
 
         lfirst = .false.
 
@@ -417,7 +423,7 @@ contains
     !
     ! Swap two pointers
     !
-    !  09-aug-08/perl: generated
+    !  18-aug-08/perl: generated
     !
 
 !        real, pointer :: a(:,:,:,:), b(:,:,:,:), tmp(:,:,:,:)
