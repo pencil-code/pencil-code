@@ -1,0 +1,627 @@
+#!/usr/bin/perl -w
+
+# Name:   generate_timestep_RKC
+# Author: wd (wdobler [at] gm ail <dot> com)
+# Date:   25-Mar-2007
+# Description:
+#   Write timestep module based on RKC (Runge-Kutta-Chebyshev)-type
+#   Runge-Kutta formulae (stabilized RK formulae, i.e. [2nd-order] RK
+#   formulae optimized to allow a long time step).
+# References:
+#   B. P. Sommeijer, L. F. Shampine and J. G. Verwer (1997),
+#     ``RKC: An explicit solver for parabolic PDEs'',
+#     J. Comp. Appl. Math. 88, 315--326
+#   J. G. Verwer (1980),
+#     ``Explicit Runge-Kutta methods for parabolic partial differential
+#     equations'',
+#     Appl. Numer. Math. 22, 359--379
+# Usage:
+#   generate_timestep_RKC [-f] <n_stages>
+#   generate_timestep_RKC [-h|-v]
+# Example:
+#   ./src/scripts/generate_timestep_RKC --f90 20 > ./src/timestep_RKC-20.f90
+#
+# Options:
+#   -h, --help      This help
+#   -v, --version   Print version number
+#   -f, --f90       Write an F90 subroutine (or module?) that can be
+#                   incorparated into (replace?) PENCIL_HOME/src/timestep.f90
+
+# Copyright (C) 2008  Wolfgang Dobler
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the same conditions as Perl or under the GNU General Public
+# License, version 3 or later.
+
+use strict;
+use Math::BigRat lib => 'FastCalc'; # all coefficients are rational numbers
+
+use Getopt::Long;
+# Allow for `-Plp' as equivalent to `-P lp' etc:
+Getopt::Long::config("bundling");
+
+my (%opts);			# Options hash for GetOptions
+my $doll='\$';			# Need this to trick CVS
+
+## Process command line
+GetOptions(\%opts,
+	   qw( -h   --help
+	            --debug
+               -f   --f90
+               -v   --version ));
+
+my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
+if ($debug) {
+    printopts(\%opts);
+    print "\@ARGV = `@ARGV'\n";
+}
+
+if ($opts{'h'} || $opts{'help'})    { die usage();   }
+if ($opts{'v'} || $opts{'version'}) { die version(); }
+
+my $f90 = ($opts{'f'} || $opts{'f90'} || ''); # flag for F90 vs text output
+
+# use Memoize;
+# memoize('Cheby_coeffs');
+# memoize('Cheby_der_coeffs');
+# memoize('Cheby_der2_coeffs');
+
+my $module = 'Timestep';        # F90 module name
+my $subroutine = 'rk_2n';          # name of subroutine
+my $indent = '    ';
+my $indent_by = 0;
+my $date_string = lc(strftime("%d-%b-%y", localtime()));
+
+my $s = $ARGV[0] || 4;          # number of stages
+my $coeffs = calculate_coeffs($s);
+
+
+if ($debug) {
+    use Data::Dumper;
+    print Dumper($coeffs);
+}
+
+##
+write_stability_polynomial($coeffs);
+
+## Now print the results
+if ($f90) {
+    print_f90_module_header($module);
+    print_f90_subroutine($coeffs);
+    print_f90_module_footer($module);
+} else {
+    print_coeffs($coeffs);
+}
+
+# ====================================================================== #
+sub calculate_coeffs {
+# Calculate all coefficients following Sommeijer et al (1997)
+    my $s = shift;              # number of stages
+
+    my $epsilon = Math::BigRat->new('2/13');
+    my $w0      = 1 + $epsilon/$s**2;
+    my $w1      = Cheby_der($s,$w0) / Cheby_der2($s,$w0);
+
+    my @b = (0,0);              # will fill in correct values below
+    foreach my $j (2..$s) {
+        push @b, Cheby_der2($j,$w0) / (Cheby_der($j,$w0))**2;
+    }
+    $b[0] = $b[1] = $b[2];
+    my (@mu,@mutilde,@nu,@gammatilde);
+    # Note: while mutilde_1 is used in the Runge-Kutta formula, the other
+    # three coefficients are only interesting starting from index 2.
+    # In Perl index notation (counting from zero), this means that we can
+    # set $mu[0]=$nu[0]=$gammatilde[0]=0, while $mutilde[0] takes its
+    # well-defined value.
+    foreach my $j (1..$s) {
+        my ($mu,$mutilde,$nu,$gammatilde) = (0,0,0,0);
+        if ($j == 1) {
+            $mutilde = $b[1]*$w1;
+        } else {
+            $mutilde = 2*$b[$j]*$w1/$b[$j-1];
+            $mu = 2*$b[$j]*$w0/$b[$j-1];
+            $nu = -$b[$j]/$b[$j-2];
+            $gammatilde = -(1-$b[$j-1]*Cheby($j-1,$w0)) * $mutilde;
+        }
+
+        push @mu,         $mu;
+        push @mutilde,    $mutilde;
+        push @nu,         $nu;
+        push @gammatilde, $gammatilde;
+    }
+    my @c = (0);                # will fill in correct value below
+    foreach my $j (2..$s-1) {
+        push @c, Cheby_der($s,$w0) / Cheby_der2($s,$w0)
+                 * Cheby_der2($j,$w0) / Cheby_der($j,$w0);
+    }
+    push @c, 1;
+    $c[0] = $c[1] / Cheby_der(2,$w0);
+
+    # Now collect what we have
+    my $coeffs =
+      { 's'          => $s,
+        'c'          => \@c,
+        'mu'         => \@mu,
+        'mutilde'    => \@mutilde,
+        'nu'         => \@nu,
+        'gammatilde' => \@gammatilde,
+      };
+
+    return $coeffs;
+}
+# ---------------------------------------------------------------------- #
+sub print_coeffs {
+    my $coeffs = shift;
+
+    # Unpack coefficients
+    my $s          =   $coeffs->{'s'};
+    my @c          = @{$coeffs->{'c'}};
+    my @mu         = @{$coeffs->{'mu'}};
+    my @mutilde    = @{$coeffs->{'mutilde'}};
+    my @nu         = @{$coeffs->{'nu'}};
+    my @gammatilde = @{$coeffs->{'gammatilde'}};
+
+    # Print scheme
+    print "Y_0 = U_n\n";
+    print "    F_0 = F(t_n, Y_0)\n";
+    print "Y_1 = Y_0 + $mutilde[0]*tau*F_0\n";
+    for my $j (2..$s) {
+        print "    F_", $j-1, " = F(t_n+",$c[$j-2],"*tau, Y_",$j-1,")\n";
+        print "Y_$j = ",
+          1 - $mu[$j-1] - $nu[$j-1], "*Y_0",
+          " + ", $mu[$j-1], "*Y_", $j-1,
+          " + ", $nu[$j-1], "*Y_", $j-2,
+          " + ", $mutilde[$j-1], "*tau*F_", $j-1,
+          " + ", $gammatilde[$j-1], "*tau*F_0\n";
+    }
+    print "----------------\n";
+    print "U_{n+1} = Y_$s\n";
+
+}
+# ---------------------------------------------------------------------- #
+sub write_stability_polynomial {
+# Print the stability polynomial, for plotting and further analysis
+# Output is an octave(1) function, written to its own file
+    my $coeffs = shift;
+
+    # Unpack coefficients
+    my $s          =   $coeffs->{'s'};
+    my @c          = @{$coeffs->{'c'}};
+    my @mu         = @{$coeffs->{'mu'}};
+    my @mutilde    = @{$coeffs->{'mutilde'}};
+    my @nu         = @{$coeffs->{'nu'}};
+    my @gammatilde = @{$coeffs->{'gammatilde'}};
+
+    my $name = 'stability_polynomial';
+    open(OCTAVE, "> $name.m") or die "Cannot open $name.m for writing\n";
+
+    print OCTAVE <<"TOVES";
+function res=$name(dt)
+# Evaluate the stability polynomial for a $s-stage RKC schems.
+# Usage:
+#   amplification_factor = stability_polynomial(Cou);
+#
+
+# The stability interval is approximatlely:
+#   s    interval
+#    2   [0,    2.00]
+#    3   [0,    6.18]
+#    4   [0,    9.87]
+#    5   [0,   16.6]
+#   10   [0,   64.8]
+#   15   [0,  147.3]
+#   20   [0,  260.9]
+#   25   [0,  408.6]
+#   30   [0,  588.0]
+#   35   [0,  801.0]
+#   40   [0, 1045. ]
+#   45   [0, 1280. ]
+# and from this point, roundoff error kills stability:
+#   46   [0,    3.45]   (but still first-order accurate)
+#   47   [0,    1.81]   (just zeroth-order accurate from here on)
+#   48   [0,    0.304]
+#   50   [0,    1.06]
+# Asymptotically, the interval is [0, 0.653*s^2)]
+
+TOVES
+
+    print OCTAVE "    # Step n = 0:\n";
+    print OCTAVE "    t0 = 0.;\n";
+    print OCTAVE "    f0 = 1.;\n";
+    print OCTAVE "    df0 = - f0;\n";
+    print OCTAVE "\n";
+    print OCTAVE "    # Step n = 1:\n";
+    print OCTAVE "    fn1 = f0;\n";
+    print OCTAVE "    fn = f0 + " . f90($mutilde[0]) . "*dt.*df0;\n";
+    foreach my $j (2..$s) {
+        print OCTAVE "    dfn = -fn;\n";
+        print OCTAVE "\n";
+        print OCTAVE "    # Step n = $j:\n";
+        print OCTAVE "    fn1 = " . f90($nu[$j-1]) . "*fn1 \\\n";
+        print OCTAVE "        + " . f90($mu[$j-1])         . "*fn \\\n";
+        print OCTAVE "        + " . f90(1 - $mu[$j-1] - $nu[$j-1]) . "*f0 \\\n";
+        print OCTAVE "        + " . f90($mutilde[$j-1])    . "*dt.*dfn \\\n";
+        print OCTAVE "        + " . f90($gammatilde[$j-1]) . "*dt.*df0;\n";
+        print OCTAVE "    # Swap fn, fn1:\n";
+        print OCTAVE "    tmp = fn;\n";
+        print OCTAVE "    fn = fn1;\n";
+        print OCTAVE "    fn1 = tmp;\n";
+        print OCTAVE "\n";
+    }
+    print OCTAVE "    # Done: last fn is the updated f\n";
+    print OCTAVE "    res = fn;\n";
+    print OCTAVE "    \n";
+
+    print OCTAVE "endfunction\n";
+
+    close OCTAVE;
+}
+# ---------------------------------------------------------------------- #
+sub print_f90_subroutine_header {
+    use POSIX qw/strftime/;
+    print <<"JABBERWOCK";
+!***********************************************************************
+    subroutine $subroutine(f,df,p)
+    !
+    !  Long-time-step Runge--Kutta--Chebyshev stepping, accurate to second
+    !  order.
+    !
+    !  $date_string/perl: generated
+    !
+
+        use Mpicomm
+
+        real, dimension (mx,my,mz,mfarray) :: f
+        ! real, dimension (mx,my,mz,mvar) :: fn_target, fn1_target
+        real, dimension (mx,my,mz,mvar) :: df, dfn
+        type (pencil_case) :: p
+        real, dimension(1) :: dt1, dt1_local
+        real               :: t0
+        integer :: iv
+
+        ! Use pointers for cheaply flipping fn and fn1 after each substep
+        ! target :: f, df
+        ! target :: fn_target, fn1_target
+        ! real, pointer :: f0(:,:,:,:), df0(:,:,:,:)
+        ! real, pointer :: fn(:,:,:,:), fn1(:,:,:,:)
+        real, dimension(mx,my,mz,mvar) :: f0, df0, fn, fn1
+
+        ! f0  => f(:,:,:,1:mvar)
+        f0  = f(:,:,:,1:mvar)
+        ! fn  => fn_target;
+        ! fn1 => fn1_target;
+
+JABBERWOCK
+
+}
+# ---------------------------------------------------------------------- #
+sub print_f90_subroutine {
+    my $coeffs = shift;
+
+    print_f90_subroutine_header();
+
+    # Unpack coefficients
+    my $s          =   $coeffs->{'s'};
+    my @c          = @{$coeffs->{'c'}};
+    my @mu         = @{$coeffs->{'mu'}};
+    my @mutilde    = @{$coeffs->{'mutilde'}};
+    my @nu         = @{$coeffs->{'nu'}};
+    my @gammatilde = @{$coeffs->{'gammatilde'}};
+
+    $indent_by = 2;
+
+    print_indented(
+                   "! Step n = 0:",
+                   "lfirst = .true.",
+                   "t0 = t",
+                   "df0 = 0.",
+                   "call pde(f,df0,p)",
+                  );
+    print_indented(
+                   "!",
+                   "! In the first time substep we need to calculate timestep dt.",
+                   "! Done here because it uses UUmax which was calculated in pde.",
+                   "! Only do this on root processor, then broadcast dt to all others.",
+                   "!",
+                   "if (ldt) then",
+                   "    dt1_local=maxval(dt1_max(1:nx))",
+                   "",
+                   "    ! Timestep growth limiter",
+                   "    if (real(ddt) .gt. 0.) dt1_local=max(dt1_local(1),dt1_last)",
+                   "    call mpireduce_max(dt1_local,dt1,1)",
+                   "    if (lroot) dt=1.0/dt1(1)",
+                   "    ! Timestep growth limiter",
+                   "    if (ddt/=0.) dt1_last=dt1_local(1)/ddt",
+                   "    call mpibcast_real(dt,1)",
+                   "endif",
+                   "!",
+                   "! IMPLEMENT ME:",
+                   "! What do we need to do with dt_beta_ts?",
+                   "! if (ldt) dt_beta_ts=dt*beta_ts",
+                   "!",
+                   "if (ip<=6) print*, 'TIMESTEP: iproc,dt=',iproc,dt  ! same dt everywhere?",
+                   "",
+                   "lfirst = .false.",
+                   "",
+                  );
+    print_indented(
+                   "! Step n = 1:",
+                   "fn1 = f0",
+                   "fn = f0 + " . f90($mutilde[0]) . "*dt*df0",
+                  );
+    foreach my $j (2..$s) {
+        print_indented(
+                       "t = t0 + " . f90($c[$j-2]) . "*dt",
+                       "f(:,:,:,1:mvar) = fn",
+                       "dfn = 0.",
+                       "call pde(f,dfn,p)",
+                       ""
+                      );
+
+        print_indented(
+                       "! Step n = $j:",
+                       "fn1 = " . f90($nu[$j-1]) . "*fn1 \&",
+                       "      + " . f90($mu[$j-1])         . "*fn \&",
+                       "      + " . f90(1 - $mu[$j-1] - $nu[$j-1]) . "*f0 \&",
+                       "      + " . f90($mutilde[$j-1])    . "*dt*dfn \&",
+                       "      + " . f90($gammatilde[$j-1]) . "*dt*df0\n",
+                       "call swap(fn, fn1)",
+                       ""
+                      );
+    }
+    print_indented  (
+                     "! Done: last fn is the updated f:",
+                     # "t = t0 + " . f90($c[$s-1]) . "*dt",
+                     "t = t0 + dt",
+                     "! need explicit loop here, as f(:,:,:,1:mvar) = fn",
+                     "! causes a `stack smashing' exception",
+                     "do iv=1,mvar",
+                     "  f(:,:,:,iv) = fn(:,:,:,iv)",
+                     "enddo",
+                    );
+
+    print_f90_subroutine_footer();
+}
+# ---------------------------------------------------------------------- #
+sub print_f90_subroutine_footer {
+    print <<"SNARK";
+
+    endsubroutine $subroutine
+!***********************************************************************
+
+SNARK
+
+}
+# ---------------------------------------------------------------------- #
+sub print_indented {
+
+    foreach my $original_line (@_) {
+        my $prefix = $indent x $indent_by;
+        my $line = "$prefix" . $original_line;
+        $line =~ s/\s+$//;      # strip trailing spaces and newlines
+        print "$line\n"
+    }
+}
+# ---------------------------------------------------------------------- #
+sub print_f90_module_header {
+    my $module = shift;
+
+    my $Cou_crit = 0.653*$s**2;
+
+    print <<"EOF";
+!
+!  [Auto-generated file, so think twice before editing]
+!
+!  A second-order timestepping module similar to RKC (Runge-Kutta-Chebyshev).
+!  The schemes used here are all second-order (p=2) accurate Runge-Kutta
+!  schemes of stage number (number of substeps) s > 2 that trade order for
+!  extended stability interval.
+!    For this file, s=$s, so we have a 2nd-order, $s-step Runge-Kutta
+!  scheme with a critical Courant number of ~$Cou_crit as compared to 2.513 for
+!  any p=s=3 Runge-Kutta scheme (like the Williamson scheme in timestep.f90).
+!  Here the Courant number is
+!    Cou = c nu dt / dx^2 ,
+!  where
+!    c = 272/45 = 6.04444
+!  for 6th-order central finite differences in space.
+!
+!  This scheme uses 5N array slots (as opposed to 2N for the Williamson
+!  scheme in timestep.f90), irrespective of s.
+!  [TODO: it currently uses more, but this should be fixed...]
+
+module $module
+
+    use Cparam
+    use Cdata
+    use Equ
+
+    implicit none
+
+    private
+
+    public :: $subroutine, timestep_autopsy
+
+contains
+
+EOF
+}
+# ---------------------------------------------------------------------- #
+sub print_f90_module_footer {
+    my $module = shift;
+
+    print <<"BOROGOVE";
+    subroutine swap(a, b)
+    !
+    ! Swap two pointers
+    !
+    !  $date_string/perl: generated
+    !
+
+!        real, pointer :: a(:,:,:,:), b(:,:,:,:), tmp(:,:,:,:)
+
+!        tmp => a
+!        a   => b
+!        b   => tmp
+
+        real :: a(:,:,:,:), b(:,:,:,:), tmp(size(a,1), size(a,2), size(a,3), size(a,4))
+
+        tmp = a
+        a   = b
+        b   = tmp
+
+
+
+    endsubroutine swap
+!***********************************************************************
+    subroutine timestep_autopsy()
+
+        use Messages
+
+        call not_implemented("timestep_autopsy", "just a dummy routine")
+
+    endsubroutine timestep_autopsy
+!***********************************************************************
+
+endmodule $module
+
+! End of file
+
+BOROGOVE
+
+}
+# ---------------------------------------------------------------------- #
+sub f90 {
+# Encapsulate string representation of rational number for use in a F90
+# program. Originally, this meant to append a period (to avoid integer
+# division) and enclose th string in brackets (so it can safely and
+# readably appear after a minus sign).
+# But for larger number of stages, we need to convert the fractions to
+# double precision, because the compilers cannot parse arbitrarily long
+# floats or integers.
+    my ($rat) = @_;
+#    my $enumerator  = $rat->numerator()->bstr() + 0; # convert to float
+#    my $denominator = $rat->denominator()->bstr() + 0; # convert to float
+
+#    my $float = $enumerator / $denominator;
+#    return "($float)";
+
+# multiply by 1e30, truncate to integer, then divide by 1e30.
+# This gives us 30 digits after the decimal point before the numbers are
+# converted to floating-point by Perl.
+    my $scale_fact = Math::BigRat->new('100000_00000_00000_00000_00000_00000');
+    my $rat_scaled = $rat * $scale_fact;
+    my $decadic_mantissa = $rat_scaled->as_int();
+
+    return ($decadic_mantissa->bstr() + 0) / ($scale_fact->bstr() + 0);
+}
+# ---------------------------------------------------------------------- #
+sub Cheby {
+# Chebyshev polynomial T_n(x).
+# We use the brute-force closed form and don't care about accumulating
+# roundoff errors, as we use Math::BigFloat anyway.
+    my $n = shift;
+    my $x = shift;
+
+    my @c = Cheby_coeffs($n);
+    return poly(\@c,$x);
+}
+# ---------------------------------------------------------------------- #
+sub Cheby_der {
+# First derivative of Chebyshev polynomial
+    my $n = shift;
+    my $x = shift;
+
+    my @c = Cheby_der_coeffs($n);
+    return poly(\@c,$x);
+}
+# ---------------------------------------------------------------------- #
+sub Cheby_der2 {
+# Second derivative of the Chebyshev polynomial
+    my $n = shift;
+    my $x = shift;
+
+    my @c = Cheby_der2_coeffs($n);
+    return poly(\@c,$x);
+}
+# ---------------------------------------------------------------------- #
+sub Cheby_coeffs {
+# Return polynomial coefficients for Chebyshev polynomial of order $n.
+# A natural candidate for Memoize.
+    my $n = shift;
+
+    ## Special case $n=0:
+    return (1) if ($n == 0);
+
+    # Accumulate values starting with c_n
+    my $c = 2**($n-1);
+    my @coef = ($c);
+    $n--;
+
+    # Then recurse:
+    foreach my $k (1..$n/2+1) {
+        if ($n >= 0) {
+            push @coef, 0;     # every other coefficient is zero
+            $n--;
+        }
+        if ($n >= 0) {
+            $c = -$c * ($n+1)*($n+2) / (4*$k*($n+$k));
+            push @coef, $c;
+            $n--;
+        }
+    }
+
+    return reverse(@coef);
+}
+# ---------------------------------------------------------------------- #
+sub Cheby_der_coeffs {
+# Return polynomial coefficients for first derivative of Chebyshev
+# polynomial of order $n.
+# A natural candidate for Memoize.
+    my $n = shift;
+
+    my @c = Cheby_coeffs($n);
+    return poly_deriv(@c);
+}
+# ---------------------------------------------------------------------- #
+sub Cheby_der2_coeffs {
+# Return polynomial coefficients for second derivative of Chebyshev
+# polynomial of order $n.
+# A natural candidate for Memoize.
+    my $n = shift;
+
+    my @c = Cheby_coeffs($n);
+    return poly_deriv(poly_deriv(@c));
+}
+# ---------------------------------------------------------------------- #
+sub poly {
+# Evaluate polynomial c[0] + c[1]*x + c[2]*x^2 + ... using Horner's scheme
+    my $coef_ref = shift;
+    my $x        = shift;
+
+    my @coeffs = @$coef_ref;
+    my $poly   = pop(@coeffs);
+    while (@coeffs) {
+        $poly = $poly*$x + pop(@coeffs);
+    };
+
+    return $poly;
+}
+# ---------------------------------------------------------------------- #
+sub poly_deriv {
+# Take coefficients of a polynomial, return coefficients of first derivative
+    my @c = @_;
+
+    my @der;
+    foreach my $i (1..$#c) {
+        push @der, $i * $c[$i];
+    }
+
+    @der = (0) unless (@der);   # so we get (0) for constant polynomial
+
+    return @der;
+}
+# ---------------------------------------------------------------------- #
+
+
+
+# End of file generate_timestep_RKC
