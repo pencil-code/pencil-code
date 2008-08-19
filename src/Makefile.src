@@ -5,8 +5,6 @@
 ## Default settings: they can be overwritten by src/Makefile.local
 ## which should be present in each local run directory.
 
-#***** TEST *****
-
 MPICOMM          =   mpicomm
 GLOBAL           = noglobal
 GRID             =   grid
