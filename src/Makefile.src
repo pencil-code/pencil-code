@@ -536,7 +536,16 @@ LD_FFTW2=
 #FC=ifort #(nbabkovs)
 #FC=ifort #(hikari)
 ##
-## renton & morvern (ngrs's desktop & laptop)
+## rockall (ngrs's current laptop)
+##
+#FC=gfortran #(rockall)
+#FFLAGS=-O3 -I/usr/lib/lam/include #(rockall)
+#FFLAGS_DOUBLE= -fdefault-real-8 #(rockall)
+#LD_MPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -llammpi++ #(rockall)
+#F77FLAGS=-w90 #(rockall)
+#LIBMPISUFFIX=_#(rockall)
+##
+## renton & morvern (ngrs's older desktop & laptop)
 ##
 #FC=ifort #(renton|morvern)
 #FFLAGS=-O3 -I/usr/lib/lam/include #(renton|morvern)
