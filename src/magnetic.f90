@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.537 2008-08-11 15:09:40 dhruba Exp $
+! $Id: magnetic.f90,v 1.538 2008-08-19 09:09:28 brandenb Exp $
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -22,6 +22,7 @@
 ! PENCILS PROVIDED jij(3,3); sj; ss12; mf_EMF(3); mf_EMFdotB
 !
 !***************************************************************
+
 module Magnetic
 
   use Cdata
@@ -448,7 +449,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.537 2008-08-11 15:09:40 dhruba Exp $")
+           "$Id: magnetic.f90,v 1.538 2008-08-19 09:09:28 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -3614,8 +3615,8 @@ module Magnetic
             enddo
           enddo
         enddo
-	if(lcartesian_coords) bmxy_rms = bmxy_rms/(nx*ny*nprocy)
-        if(lspherical_coords) bmxy_rms=bmxy_rms/nVol2d
+        if (lcartesian_coords) bmxy_rms=bmxy_rms/(nx*ny*nprocy)
+        if (lspherical_coords) bmxy_rms=bmxy_rms/nVol2d
         bmxy_rms = sqrt(bmxy_rms)
       endif
 !

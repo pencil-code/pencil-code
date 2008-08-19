@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.97 2008-08-12 01:20:30 brandenb Exp $
+! $Id: nohydro.f90,v 1.98 2008-08-19 09:03:52 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -76,7 +76,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.97 2008-08-12 01:20:30 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.98 2008-08-19 09:03:52 brandenb Exp $")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
@@ -265,10 +265,22 @@ module Hydro
       kky_aa=ky_aa(1)
       kkz_aa=kz_aa(1)
 !
+!  choose from a list of different flow profiles.
+!  Begin with a constant flow in the x direction.
+!
+      if (kinflow=='const-x') then
+        if (lpencil(i_uu)) then
+          if (headtt) print*,'const-x'
+          p%uu(:,1)=1.
+          p%uu(:,2)=0.
+          p%uu(:,3)=0.
+        endif
+        if (lpencil(i_divu)) p%divu=0.
+!
 !  choose from a list of different flow profiles
 !  ABC-flow
 !
-      if (kinflow=='ABC') then
+      elseif (kinflow=='ABC') then
 ! uu
         if (lpencil(i_uu)) then
           if (headtt) print*,'ABC flow'
