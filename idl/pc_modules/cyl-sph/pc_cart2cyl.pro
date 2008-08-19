@@ -54,7 +54,7 @@ nnc= nx > ny
 
 nr=nnc       & nphi=nr
 
-rad=grange(rint,x(nx-1),Nr)
+rad=grange(rint,rext,Nr)
 phi=grange(-!pi,!pi,Nphi)
 
 fieldrp=fltarr(Nr,Nphi)
@@ -75,9 +75,11 @@ for ir=0,Nr-1 do begin
 
         iy1 = floor(disty*dy1) & iy2 = ceil(disty*dy1)
 
+        if (ix1 lt 0 ) then ix1=0
+        if (iy1 lt 0 ) then iy1=0
         if (ix2 ge Nx) then ix2=Nx-1
         if (iy2 ge Ny) then iy2=Ny-1
-
+        
         dudxdo   = (field[ix2,iy1] - field[ix1,iy1])*dx1
         dudxup   = (field[ix2,iy2] - field[ix1,iy2])*dx1
 
