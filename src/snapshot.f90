@@ -131,14 +131,6 @@ contains
             f(:,:,:,iax:iaz)=0.
           endif
 !
-!AB: removed this call to pert_aa on 23-jun-08.
-!AB: Such modification of initial conditions should be done in
-!AB: the subroutine initialize_magnetic.
-!AB: These comments should be removed by 21-aug-08.
-!
-! ! dgm
-!           if (lrun) call pert_aa(f)
-!
 !  read data without passive scalar into new run with passive scalar
 !
         elseif(lread_oldsnap_nopscalar) then
