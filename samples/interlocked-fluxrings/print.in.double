@@ -1,7 +1,7 @@
 it(f6.0)
 t(f20.13)
 urms(e20.13)
-umax(e20.13)
+umax(e20.12)
 brms(e20.13)
 bmax(e20.13)
 jrms(e20.13)
