@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.396 2008-08-16 23:15:21 dobler Exp $
+! $Id: density.f90,v 1.397 2008-08-19 07:53:51 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -139,7 +139,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.396 2008-08-16 23:15:21 dobler Exp $")
+           "$Id: density.f90,v 1.397 2008-08-19 07:53:51 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -283,7 +283,7 @@ module Density
          if (lroot) print*,'initializing global gravity in density'
          call farray_register_global('gg',iglobal_gg,vector=3)
       endif
-
+!
       if (llocal_iso) then
         call put_shared_variable('plaw',plaw,ierr)
         if (ierr/=0) call stop_it("local_isothermal_density: "//&
@@ -1933,7 +1933,7 @@ module Density
       real                   :: ptlaw,cp1,rmid
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: i
-      logical                :: lheader,lenergy
+      logical                :: lheader,lenergy,lpresent_zed
 !
       real, dimension(nx,3)  :: gpotself
       real, dimension(nx)    :: usg
@@ -1954,8 +1954,16 @@ module Density
         call set_thermodynamical_quantities(f,ptlaw)
       endif
 !
+      lpresent_zed=.false.
+      if (lspherical_coords) then 
+        if (nygrid/=1) lpresent_zed=.true.
+      else
+        if (nzgrid/=1) lpresent_zed=.true.
+      endif
+!
       do n=1,mz
         do m=1,my
+!
           lheader=lroot.and.(m==1).and.(n==1)
 !
 ! midplane density
@@ -1973,7 +1981,7 @@ module Density
 !
 ! vertical stratification, if needed
 !
-          if (.not.lcylindrical_gravity.and.nzgrid/=1) then 
+          if (.not.lcylindrical_gravity.and.lpresent_zed) then 
             if (lheader) &
                  print*,"Adding vertical stratification with "//&
                  "scale height h/r=",cs0
