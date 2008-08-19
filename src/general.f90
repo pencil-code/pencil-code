@@ -359,13 +359,14 @@ module General
 !***********************************************************************
     function mars_ran(init)
 !
-! 26-sep-02/wolf: Adapted from `Numerical Recipes for F90' ran() routine
+! 26-sep-02/wolf: Implemented, following `Numerical Recipes for F90'
+!                 ran() routine
 !
-! "Minimal" random number generator of Park and Miller combined
-! with a Marsaglia shift sequence. Returns a uniform random deviate
-! between 0.0 and 1.0 (exclusive of the endpoint values).
+! "Minimal" random number generator of Park and Miller, combined
+! with a Marsaglia shift sequence, with a period of supposedly
+! ~ 3.1×10^18.
+! Returns a uniform random number in (0, 1).
 ! Call with (INIT=ival) to initialize.
-! The period of this generator is supposed to be about 3.1×10^18.
 !
       implicit none
 !
