@@ -527,19 +527,8 @@ module Magnetic
 !
 !  rescale magnetic field by a factor reinitalize_aa
 !
-!AB: removed this call to pert_aa on 23-jun-08 for 2 reasons.
-!AB: Firstly, the old method of *just* rescaling the
-!AB: magnitude of the field no longer works.
-!AB: Secondly, pert_aa allocates the full 3-D x,y,z arrays,
-!AB: which is a waste of memory.
-!AB: These comments should be removed by 21-aug-08.
-!
-! !  set to zero and then rescale the magnetic field
-! !  (in future, could call something like init_aa_simple)
-!
       if (reinitalize_aa) then
         f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
-!--     call pert_aa(f)
       endif
 !
       if (lfreeze_aint) lfreeze_varint(iax:iaz) = .true.
