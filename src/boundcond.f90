@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.219 2008-08-11 15:09:40 dhruba Exp $
+! $Id: boundcond.f90,v 1.220 2008-08-19 07:54:11 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1617,7 +1617,7 @@ module Boundcond
     subroutine bc_set_pfc_y(f,topbot,j)
 !
 ! In spherical polar coordinate system,
-! at a theta boundary set : $A_{r} = 0$ and $A_{phi} = 0$,
+! at a theta boundary set : $A_{r} = 0$ and $A_{\phi} = 0$,
 ! and demand $div A = 0$ gives the condition on $A_{\theta}$ to be
 ! $d/d{\theta}( A_{\theta}) + \cot(\theta)A_{\theta} = 0$ . 
 ! This subroutine sets this condition on 
