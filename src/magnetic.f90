@@ -22,7 +22,7 @@
 ! PENCILS PROVIDED jij(3,3); sj; ss12; mf_EMF(3); mf_EMFdotB
 !
 !***************************************************************
-
+! Hello testing checkin : Dhruba
 module Magnetic
 
   use Cdata
