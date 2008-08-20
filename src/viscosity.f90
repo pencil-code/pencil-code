@@ -852,7 +852,7 @@ module Viscosity
           p%fvisc(:,i)=p%fvisc(:,i)+murho1*f(l1:l2,m,n,ihypvis-1+i)
         enddo
         if (lpencil(i_visc_heat)) then  ! Should be eps=2*mu*{del2[del2(S)]}^2
-          if (headtt) then              ! (see Haugen & Brandenburg 2004)
+          if (headtt) then              ! (see Haugen & Brandenburg 2004 eq. 7)
             call warning('calc_pencils_viscosity', 'viscous heating term '// &
               'is not implemented for lvisc_hyper3_mu_const_strict')
           endif
