@@ -66,9 +66,9 @@ if (! $?_sourceme) then		# called for the fist time?
     endif
     #  Set PYTHON path
     if ($?PYTHONPATH) then
-      setenv PYTHONPATH "${PYTHONPATH}:${PENCIL_HOME}/numpy"
+      setenv PYTHONPATH "${PYTHONPATH}:${PENCIL_HOME}"
     else
-      setenv PYTHONPATH "${PENCIL_HOME}/numpy"
+      setenv PYTHONPATH "${PENCIL_HOME}"
     endif
 
 #    #  Set Perl module path

@@ -5,8 +5,8 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.1 2006-03-27 17:15:36 ngrs Exp $',
-  nt=10000000, it1=5000, isave=10000, itorder=3,
-  !nt=1000, it1=100, isave=100, itorder=3,
+  !nt=10000000, it1=5000, isave=10000, itorder=3,
+  nt=1000, it1=100, isave=100, itorder=3,
   cdt=0.4, cdtv=0.2, dtmin=1e-6,
   dsnap=20., dvid=2.0,
 /
@@ -20,7 +20,7 @@
 &grav_run_pars
 /
 &entropy_run_pars
-  iheatcond='simple', lmultilayer=.false.
+  iheatcond='K-const', lmultilayer=.false.
   hcond0=1.12289       ! hcond0 = 5/2 sqrt(20) * 0.100434
   !hcond0=1.00435       ! increase Ra by factor 1.25 (together w/ nu, below)
   lupw_ss=T
