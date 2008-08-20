@@ -1,7 +1,7 @@
 #$Id: zprof.py,v 1.2 2008-03-13 14:16:27 dintrans Exp $
 
 import numpy as N
-import pencil as pc
+import pc_python as pc
 
 class read_zprof:
   """ 
