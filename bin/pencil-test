@@ -201,9 +201,9 @@ sub build_remote_cmd {
 # Construct the command to send to the remote host
 
     my $remcmd = "cd $pencil_home";
-    if ($update)            { $remcmd .= "; svn -Q update" };
+    if ($update)            { $remcmd .= "; svn -q update" };
     if ($UPDATE)            { $remcmd .=
-                                "; svn -Q update -d samples bin"
+                                "; svn -q update -d samples bin"
                             };
     $remcmd .= "; env PENCIL_HOME=$pencil_home ./bin/auto-test";
     $remcmd .= " --time";
@@ -281,6 +281,7 @@ sub usage {
 # ---------------------------------------------------------------------- #
 sub tag_stable_on_success{
 ## Put tag on files of auto-test succeeds
+## [Most likely broken for SVN]
     my $result = (shift || '');
     my $host   = (shift || '');
     my $svncmd;
@@ -288,14 +289,15 @@ sub tag_stable_on_success{
     return if ($result =~ /^Failed ([0-9]+) test/m);
 
     $svncmd=        "ssh -x -n $host 'cd \$PENCIL_HOME;";
-    $svncmd=$svncmd."svn -Q tag -d ".$tag_broken." src bin > /dev/null;" if ($tag_broken);
-    $svncmd=$svncmd."svn -Q tag -F ".$tag_stable." src bin > /dev/null";
+    $svncmd=$svncmd."svn -q tag -d ".$tag_broken." src bin > /dev/null;" if ($tag_broken);
+    $svncmd=$svncmd."svn -q tag -F ".$tag_stable." src bin > /dev/null";
     $svncmd=$svncmd."'";
     system($svncmd);
 }
 # ---------------------------------------------------------------------- #
 sub tag_breakage_on_error{
 ## Put tag on files if auto-test breaks (only first break)
+## [Most likely broken for SVN]
     my $result = (shift || '');
     my $host   = (shift || '');
     my $svncmd;
@@ -305,7 +307,7 @@ sub tag_breakage_on_error{
       return if ($hastag =~ /$tag_broken/);
 # If we haven't already tagged it... Do so now.
       $svncmd=        "ssh -x -n $host 'cd \$PENCIL_HOME;";
-      $svncmd=$svncmd."svn -Q tag -F ".$tag_broken." src bin > /dev/null;";
+      $svncmd=$svncmd."svn -q tag -F ".$tag_broken." src bin > /dev/null;";
       $svncmd=$svncmd."'";
       system($svncmd);
     }
