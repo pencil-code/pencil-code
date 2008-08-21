@@ -421,9 +421,9 @@ module Special
       type (pencil_case), intent(in) :: p
       integer :: i
 !
-      do i=1,3
-        divtau(l1:l2,m,n,i)=p%fvisc(:,i)*p%rho(:)
-      enddo
+!      do i=1,3
+!        divtau(l1:l2,m,n,i)=p%fvisc(:,i)*p%rho(:)
+!      enddo
 
         pres(l1:l2,m,n)=p%pp(:)!/p%mu1(:)
         mmu1(l1:l2,m,n)=p%mu1(:)
