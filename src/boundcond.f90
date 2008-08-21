@@ -205,6 +205,9 @@ module Boundcond
                 case('sfr')
                   ! BCX_DOC: stress-free boundary condition for spherical coordinate system. 
                   call bc_set_sfree_x(f,topbot,j)
+                case('ovf')
+                  ! BCX_DOC: Open-vertical field bc for spherical coordinate system. 
+                  call bc_set_ovf_x(f,topbot,j)
                 case('pfc')
                   !BCX_DOC: perfect-conductor in spherical coordinate: $d/dr( A_r) + 2/r = 0$ . 
                   call bc_set_pfc_x(f,topbot,j)
@@ -344,6 +347,9 @@ module Boundcond
               case('sfr')
                   ! BCY_DOC: stress-free boundary condition for spherical coordinate system. 
                 call bc_set_sfree_y(f,topbot,j)
+              case('ovf')
+                  ! BCY_DOC: open-vertical field bc for spherical coordinate system. 
+                call bc_set_ovf_y(f,topbot,j)
               case('pfc')
                   !BCY_DOC: perfect conducting boundary condition along $\theta$ boundary  
                 call bc_set_pfc_y(f,topbot,j)
@@ -1481,6 +1487,39 @@ module Boundcond
 !
     endsubroutine bc_set_pfc_x
 !***********************************************************************
+    subroutine bc_set_ovf_x(f,topbot,j)
+! Open-vertical field boundary condition for spherical coordinate system. 
+! d_r(A_{\theta}) = -A_{\theta}/r  with A_r = 0 sets B_{r} to zero
+! in spherical coordinate system. 
+! (compare with next subroutine sfree )
+!
+!  25-Aug-2007/dhruba: coded
+!
+      character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer, intent (in) :: j
+
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+! The coding assumes we are using 6-th order centered finite difference for our
+! derivatives. 
+        f(l1-1,:,:,j)= f(l1+1,:,:,j) +  60.*f(l1,:,:,j)*dx/(45.*x(l1))
+        f(l1-2,:,:,j)= f(l1+2,:,:,j) +  60.*f(l1,:,:,j)*dx/(9.*x(l1))
+        f(l1-3,:,:,j)= f(l1+3,:,:,j) +  60.*f(l1,:,:,j)*dx/(x(l1))
+      case('top')               ! top boundary
+        f(l2+1,:,:,j)= f(l2-1,:,:,j) -  60.*f(l1,:,:,j)*dx/(45.*x(l2))
+        f(l2+2,:,:,j)= f(l2-2,:,:,j) -  60.*f(l1,:,:,j)*dx/(9.*x(l2))
+        f(l2+3,:,:,j)= f(l2-3,:,:,j) -  60.*f(l1,:,:,j)*dx/(x(l2))
+
+      case default
+        call warning('bc_set_ovf_x',topbot//" should be `top' or `bot'")
+
+      endselect
+!
+    endsubroutine bc_set_ovf_x
+! **********************************************************************
     subroutine bc_set_sfree_x(f,topbot,j)
 ! Stress-free boundary condition for spherical coordinate system. 
 ! d_r(u_{\theta}) = u_{\theta}/r  with u_r = 0 sets S_{r \theta}
@@ -1576,6 +1615,42 @@ module Boundcond
       endif
 !
     endsubroutine bc_set_jethat_x
+! **********************************************************************
+    subroutine bc_set_ovf_y(f,topbot,j)
+! Stress-free boundary condition for spherical coordinate system. 
+! d_{\theta}(A_{\phi}) = -A_{\phi}cot(\theta)/r  with A_{\theta} = 0 sets 
+! B_{\theta}=0 in spherical polar
+! coordinate system. This subroutine sets only the first part of this 
+! boundary condition for 'j'-th component of f. 
+!
+!  25-Aug-2007/dhruba: coded
+!
+      character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer, intent (in) :: j
+      real :: cottheta
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+! The coding assumes we are using 6-th order centered finite difference for our
+! derivatives. 
+        cottheta= cotth(m1)
+        f(:,m1-1,:,j)= f(:,m1+1,:,j) +  60.*dy*cottheta*f(:,m1,:,j)/45.
+        f(:,m1-2,:,j)= f(:,m1+2,:,j) +  60.*dy*cottheta*f(:,m1,:,j)/9.
+        f(:,m1-3,:,j)= f(:,m1+3,:,j) +  60.*dy*cottheta*f(:,m1,:,j)
+      case('top')               ! top boundary
+        cottheta= cotth(m2)
+        f(:,m2+1,:,j)= f(:,m2-1,:,j) -  60.*dy*cottheta*f(:,m2,:,j)/45.
+        f(:,m2+2,:,j)= f(:,m2-2,:,j) -  60.*dy*cottheta*f(:,m2,:,j)/9.
+        f(:,m2+3,:,j)= f(:,m2-3,:,j) -  60.*dy*cottheta*f(:,m2,:,j)
+
+      case default
+        call warning('bc_set_ovf_y',topbot//" should be `top' or `bot'")
+
+      endselect
+!
+    endsubroutine bc_set_ovf_y
 ! **********************************************************************
     subroutine bc_set_sfree_y(f,topbot,j)
 ! Stress-free boundary condition for spherical coordinate system. 
