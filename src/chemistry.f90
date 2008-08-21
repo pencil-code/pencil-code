@@ -36,7 +36,7 @@ module Chemistry
   real, dimension (mx,my,mz,nchemspec) :: cvspec_full
    real, dimension (mx,my,mz,nchemspec) ::  cp_R_spec
   real, dimension (mx,my,mz) ::  TT_full
-  real, dimension (mx,my,mz) :: hYrho_full 
+  real, dimension (mx,my,mz) :: hYrho_full, e_int_full
 
   logical :: lone_spec=.false.
 
@@ -143,7 +143,7 @@ module Chemistry
   integer :: idiag_cp7m=0
   integer :: idiag_cp8m=0
   integer :: idiag_cp9m=0
-
+  integer :: idiag_e_intm=0
   
 
 !
@@ -1306,6 +1306,7 @@ module Chemistry
         if (idiag_cp7m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i7)*Rgas/species_constants(i7,imass),idiag_cp7m)
         if (idiag_cp8m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i8)*Rgas/species_constants(i8,imass),idiag_cp8m)
         if (idiag_cp9m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i9)*Rgas/species_constants(i9,imass),idiag_cp9m)
+        if (idiag_e_intm/=0) call sum_mn_name(e_int_full(l1:l2,m,n),idiag_e_intm)
 
       endif
 
@@ -1396,6 +1397,7 @@ module Chemistry
         idiag_cp1m=0; idiag_cp2m=0; idiag_cp3m=0; idiag_cp4m=0;
         idiag_cp5m=0; idiag_cp6m=0; idiag_cp7m=0; idiag_cp8m=0; 
         idiag_cp9m=0
+        idiag_e_intm=0
       endif
 !
       call chn(nchemspec,schemspec)
@@ -1439,6 +1441,7 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'cp7m',idiag_cp7m)
         call parse_name(iname,cname(iname),cform(iname),'cp8m',idiag_cp8m)
         call parse_name(iname,cname(iname),cform(iname),'cp9m',idiag_cp9m)
+        call parse_name(iname,cname(iname),cform(iname),'e_intm',idiag_e_intm)
       enddo
 !
 !  Write chemistry index in short notation
@@ -1481,6 +1484,7 @@ module Chemistry
         write(3,*) 'i_cp7m=',idiag_cp7m
         write(3,*) 'i_cp8m=',idiag_cp8m
         write(3,*) 'i_cp9m=',idiag_cp9m
+        write(3,*) 'i_e_intm=',idiag_e_intm
         write(3,*) 'ichemspec=indgen('//trim(schemspec)//') + '//trim(snd1)
       endif
 !
@@ -2309,6 +2313,9 @@ module Chemistry
 ! p is in atm units; atm/bar=1./10.13
 !
     Rcal=Rgas_unit_sys/4.14*1e-7
+
+!print*,'Rcal',Rcal
+
     T_cgs=p%TT*unit_temperature
     T_cgs_full=exp(f(:,:,:,ilnTT))*unit_temperature
     rho_cgs=p%rho*unit_mass/unit_length**3
@@ -2377,15 +2384,26 @@ module Chemistry
             hYrho_full=hYrho_full+H0_RT(:,:,:,k)*Rgas*TT_full(:,:,:)*f(:,:,:,ichemspec(k))/species_constants(k,imass)
           enddo
 
+
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Testing of the conservation of enthalpy !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !  print*,'HHHHH', &
- !  hYrho_full(l1,m1,n1)-Rgas*exp(f(l1,m1,n1,ilnTT))*mu1_full(l1,m1,n1),&
+ !  hYrho_full(l1,m1,n1)-Rgas*exp(f(l1,m1,n1,ilnTT))*mu1_full(l1,m1,n1)
+!,&
 !    hYrho_full(l1,m1,n1)
 !maxval(H0_RT(:,:,:,1)*Rgas*TT_full(:,:,:))
 
           hYrho_full=hYrho_full*exp(f(:,:,:,ilnrho))
+
+!
+! Internal energy
+!
+          e_int_full=hYrho_full+Rgas*TT_full(:,:,:)*mu1_full
+
+!print*,'   ',e_int_full(l1:l2,m1:m2,n1:n2)
 
 !
 !  Dimensionless Standard-state molar entropy  S0/R
