@@ -6,18 +6,20 @@
 &run_pars
    cvsid='$Id: run.in,v 1.3 2005-06-26 17:34:40 eos_merger_tony Exp $',
    it1=10, isave=100, itorder=3,
-   tmax=1.,
-   dsnap=0.3,
+   tmax=1.5,
+   dsnap=0.2,
    dvid=0.01, slice_position='m'
    bcx = 'a','s','s','s','s'
    bcy = 's','a','s','s','s'
    bcz = 's','s','a','s','s'
-   old_cdtv=F
-   border_frac = 0.5, 0.5, 0.5
-  lpencil_check=T
+   border_frac_x = 0.5, 0.5
+   border_frac_y = 0.5, 0.5
+   border_frac_z = 0.5, 0.5
+   lpencil_check=T
+/
+&eos_run_pars
 /
 &hydro_run_pars
-  nu=4e-3
 /
 &density_run_pars
   lupw_lnrho=T ! use upwinding for lnrho to avoid wiggles
@@ -26,12 +28,13 @@
   hcond0=4.e-3
   lupw_ss=T ! use upwinding for entropy to avoid wiggles
 /
-
+&viscosity_run_pars
+  nu=4.e-3
+/
 ! Nomenclature for boundary conditions:
 !   Variables are (currently): ux,uy,uz,lam,ent,ax,ay,az
 !   p      : periodic
 !   s/a/a2 : symmetric/antisymmetric/antisymmetric w.r.t. boundary value
 !   s:a2   : bc `s' at lower (left) and `a2' at upper (right) boundary
-
 ! tinit    -- initial time for smoothly switching on heating, etc
 
