@@ -134,6 +134,9 @@ module Chemistry
   integer :: idiag_h8m=0
   integer :: idiag_h9m=0
   
+  integer :: idiag_cpfull=0
+  integer :: idiag_cvfull=0
+
   integer :: idiag_cp1m=0
   integer :: idiag_cp2m=0
   integer :: idiag_cp3m=0
@@ -530,6 +533,7 @@ module Chemistry
 !  Pressure
 !
         if (lpencil(i_pp)) p%pp = Rgas*p%rho*p%TT*p%mu1
+!p%pp=1e5
 
 !  Specific heat at constant pressure
 !
@@ -702,20 +706,23 @@ module Chemistry
                  T_local=exp(f(i,m,n,ilnTT))*unit_temperature 
                  if (T_local >=T_low .and. T_local <= T_mid) then
                    tmp=0. 
-                    do j=1,5
+                   do j=1,5
+                     tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1) 
+                   enddo
+                   cp_R_spec(i,m,n,k)=tmp
+                   cvspec_full(i,m,n,k)=cp_R_spec(i,m,n,k)-1.
+                 elseif (T_local >=T_mid .and. T_local <= T_up) then
+                   tmp=0.
+                   do j=1,5 
                      tmp=tmp+species_constants(k,iaa1(j))*T_local**(j-1) 
                     enddo
-                     cp_R_spec(i,m,n,k)=tmp
-                     cvspec_full(i,m,n,k)=cp_R_spec(i,m,n,k)-1.
-               !      Cp_test(i,m,n)=cp_R_spec(i,m,n)
-                 else
-! SS
-                   tmp=0.
-                    do j=1,5 
-                     tmp=tmp+species_constants(k,iaa2(j))*T_local**(j-1) 
-                    enddo
-                     cp_R_spec(i,m,n,k)=tmp
-                     cvspec_full(i,m,n,k)=cp_R_spec(i,m,n,k)-1.
+                    cp_R_spec(i,m,n,k)=tmp
+                    cvspec_full(i,m,n,k)=cp_R_spec(i,m,n,k)-1.
+                  else
+                    print*,'T_local=',T_local
+                    print*,'i,m,n=',i,m,n
+                    call fatal_error('calc_for_chem_mixture','T_local is outside range')
+                    
                  endif
                enddo
               enddo
@@ -726,8 +733,7 @@ module Chemistry
             cv_full(:,:,:)=cv_full(:,:,:)+f(:,:,:,ichemspec(k))  &
                 *cvspec_full(:,:,:,k)/species_constants(k,imass)*Rgas
 
-           enddo
-     
+          enddo
 !
 !  Binary diffusion coefficients
 !
@@ -1297,6 +1303,10 @@ module Chemistry
         if (idiag_Y7m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i7)),idiag_Y7m)
         if (idiag_Y8m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i8)),idiag_Y8m)
         if (idiag_Y9m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i9)),idiag_Y9m)
+
+        if (idiag_cpfull/=0) call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
+        if (idiag_cvfull/=0) call sum_mn_name(cv_full(l1:l2,m,n),idiag_cvfull)
+
         if (idiag_cp1m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i1)*Rgas/species_constants(i1,imass),idiag_cp1m)
         if (idiag_cp2m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i2)*Rgas/species_constants(i2,imass),idiag_cp2m)
         if (idiag_cp3m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i3)*Rgas/species_constants(i3,imass),idiag_cp3m)
@@ -1396,7 +1406,7 @@ module Chemistry
         idiag_h9m=0
         idiag_cp1m=0; idiag_cp2m=0; idiag_cp3m=0; idiag_cp4m=0;
         idiag_cp5m=0; idiag_cp6m=0; idiag_cp7m=0; idiag_cp8m=0; 
-        idiag_cp9m=0
+        idiag_cp9m=0; idiag_cpfull=0; idiag_cvfull=0
         idiag_e_intm=0
       endif
 !
@@ -1432,6 +1442,8 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'h7m',idiag_h7m)
         call parse_name(iname,cname(iname),cform(iname),'h8m',idiag_h8m)
         call parse_name(iname,cname(iname),cform(iname),'h9m',idiag_h9m)
+        call parse_name(iname,cname(iname),cform(iname),'cpfull',idiag_cpfull)
+        call parse_name(iname,cname(iname),cform(iname),'cvfull',idiag_cvfull)
         call parse_name(iname,cname(iname),cform(iname),'cp1m',idiag_cp1m)
         call parse_name(iname,cname(iname),cform(iname),'cp2m',idiag_cp2m)
         call parse_name(iname,cname(iname),cform(iname),'cp3m',idiag_cp3m)
@@ -1475,6 +1487,8 @@ module Chemistry
         write(3,*) 'i_h7m=',idiag_h7m
         write(3,*) 'i_h8m=',idiag_h8m
         write(3,*) 'i_h9m=',idiag_h9m
+        write(3,*) 'i_cpfull=',idiag_cpfull
+        write(3,*) 'i_cvfull=',idiag_cvfull
         write(3,*) 'i_cp1m=',idiag_cp1m
         write(3,*) 'i_cp2m=',idiag_cp2m
         write(3,*) 'i_cp3m=',idiag_cp3m
