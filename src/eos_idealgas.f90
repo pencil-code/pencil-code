@@ -1755,7 +1755,7 @@ module EquationOfState
 !  This assumes that the density is already set (ie density _must_ register
 !  first!)
 !
-!  check whether we want to do top or bottom (this is precessor dependent)
+!  check whether we want to do top or bottom (this is processor dependent)
 !
       select case(topbot)
 !

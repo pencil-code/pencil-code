@@ -447,6 +447,11 @@ module Entropy
           else
             lmultilayer=.false.  ! to ensure that hcond=cte
             TT_ext=T0            ! T0 defined in start.in for geodynamo
+            if(lspherical_coords)then
+              r_ext=x(l2)
+              r_int=x(l1)
+            else
+            endif
             TT_int=TT_ext*(1.+beta1*(r_ext/r_int-1.))
           endif
           if (lroot) then
@@ -1375,9 +1380,12 @@ module Entropy
 !  a spherical shell
 !
 !  20-oct-03/dave -- coded
+!  21-aug-08/dhruba: added spherical coordinates
 !
+      use Cdata, only :lspherical_coords,lcylindrical_coords,lcartesian_coords
       use Gravity, only: g0
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
+      use Mpicomm, only:stop_it
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT,r_mn
@@ -1391,24 +1399,45 @@ module Entropy
 !
 !  set intial condition
 !
-      do imn=1,ny*nz
-        n=nn(imn)
-        m=mm(imn)
+      if(lspherical_coords)then
+        do imn=1,ny*nz
+          n=nn(imn)
+          m=mm(imn)
+          call shell_ss_perturb(pert_TT)
 !
-        r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-        call shell_ss_perturb(pert_TT)
+          TT(1)=TT_int
+          TT(2:nx-1)=TT_ext*(1.+beta1*(x(l2)/x(l1+1:l2-1)-1))+pert_TT(2:nx-1)
+          TT(nx)=TT_ext
 !
-        where (r_mn >= r_ext) TT = TT_ext
-        where (r_mn < r_ext .AND. r_mn > r_int) &
-          TT = TT_ext*(1.+beta1*(r_ext/r_mn-1))+pert_TT
-        where (r_mn <= r_int) TT = TT_int
+          lnrho=f(l1:l2,m,n,ilnrho)
+          lnTT=log(TT)
+          call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
+          f(l1:l2,m,n,iss)=ss
 !
-        lnrho=f(l1:l2,m,n,ilnrho)
-        lnTT=log(TT)
-        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
-        f(l1:l2,m,n,iss)=ss
+        enddo
+      elseif(lcylindrical_coords) then
+        call stop_it('shell_ss:not valid in cylindrical coordinates')
+      else
+        do imn=1,ny*nz
+          n=nn(imn)
+          m=mm(imn)
 !
-      enddo
+          r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+          call shell_ss_perturb(pert_TT)
+!
+          where (r_mn >= r_ext) TT = TT_ext
+          where (r_mn < r_ext .AND. r_mn > r_int) &
+            TT = TT_ext*(1.+beta1*(r_ext/r_mn-1))+pert_TT
+          where (r_mn <= r_int) TT = TT_int
+!
+          lnrho=f(l1:l2,m,n,ilnrho)
+          lnTT=log(TT)
+          call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
+          f(l1:l2,m,n,iss)=ss
+!
+        enddo
+!
+      endif
 !
     endsubroutine shell_ss
 !***********************************************************************
@@ -1417,7 +1446,9 @@ module Entropy
 !  Compute perturbation to initial temperature profile
 !
 !  22-june-04/dave -- coded
-!
+!  21-aug-08/dhruba : added spherical coords
+      use Cdata, only :lspherical_coords,lcylindrical_coords,lcartesian_coords
+
       real, dimension (nx), intent(out) :: pert_TT
       real, dimension (nx) :: xr,cos_4phi,sin_theta4,r_mn,rcyl_mn,phi_mn
       real :: ampl0=.885065
@@ -1428,13 +1459,20 @@ module Entropy
           pert_TT=0.
 !
         case ('geo-benchmark')
-          r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-          rcyl_mn=sqrt(x(l1:l2)**2+y(m)**2)
-          phi_mn=atan2(spread(y(m),1,nx),x(l1:l2))
-          xr=2*r_mn-r_int-r_ext              ! radial part of perturbation
-          cos_4phi=cos(4*phi_mn)             ! azimuthal part
-          sin_theta4=(rcyl_mn/r_mn)**4       ! meridional part
-          pert_TT=ampl0*ampl_TT*(1-3*xr**2+3*xr**4-xr**6)*sin_theta4*cos_4phi
+          if(lspherical_coords)then
+            xr=x(l1:l2)
+            sin_theta4=sin(y(m))**4
+            pert_TT=ampl0*ampl_TT*(1-3*xr**2+3*xr**4-xr**6)*&
+                          (sin(y(m))**4)*cos(4*z(n))
+          else
+            r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+            rcyl_mn=sqrt(x(l1:l2)**2+y(m)**2)
+            phi_mn=atan2(spread(y(m),1,nx),x(l1:l2))
+            xr=2*r_mn-r_int-r_ext              ! radial part of perturbation
+            cos_4phi=cos(4*phi_mn)             ! azimuthal part
+            sin_theta4=(rcyl_mn/r_mn)**4       ! meridional part
+            pert_TT=ampl0*ampl_TT*(1-3*xr**2+3*xr**4-xr**6)*sin_theta4*cos_4phi
+          endif
 !
       endselect
 !

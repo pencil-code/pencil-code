@@ -1101,8 +1101,12 @@ module Density
         lnrho_ext=lnrho0
 !
 ! always inside the fluid shell
-        f(l1:l2-1,m,n,ilnrho)=lnrho0+mpoly*log(1+beta1*(x(l2)/x(l1:l2-1)-1.))
-        f(l2,m,n,ilnrho)=lnrho_ext
+        do imn=1,ny*nz
+          n=nn(imn)
+          m=mm(imn)
+          f(l1:l2-1,m,n,ilnrho)=lnrho0+mpoly*log(1+beta1*(x(l2)/x(l1:l2-1)-1.))
+          f(l2,m,n,ilnrho)=lnrho_ext
+        enddo
 !
       elseif (lcylindrical_coords) then
         call stop_it('shell_lnrho: this is not consistent with cylindrical coords')
