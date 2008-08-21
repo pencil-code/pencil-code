@@ -160,7 +160,7 @@ module Timestep
       real, intent(inout) :: errmax
       real :: errmaxs
       integer :: j,lll
-      char (len=20) :: timestep_scaling='cons_err'
+      character (len=20) :: timestep_scaling='cons_err'
 
 
       df=0.
