@@ -1083,8 +1083,11 @@ module Density
 !  a spherical shell
 !
 !  22-oct-03/dave -- coded
+!  21-aug-08/dhruba -- added spherical coordinates
 !
       use Gravity, only: g0,potential
+      use Cdata, only:lspherical_coords,lcylindrical_coords,lcartesian_coords
+      use Mpicomm,only:stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: pot, r_mn
@@ -1092,31 +1095,44 @@ module Density
 !
       beta1=g0/(mpoly+1)*gamma/gamma1  ! gamma1/gamma=R_{*} (for cp=1)
 !
+      if(lspherical_coords) then
 !     densities at shell boundaries
-      lnrho_int=lnrho0+mpoly*log(1+beta1*(r_ext/r_int-1.))
-      lnrho_ext=lnrho0
+        lnrho_int=lnrho0+mpoly*log(1+beta1*(x(l2)/x(l1)-1.))
+        lnrho_ext=lnrho0
 !
-      do imn=1,ny*nz
-        n=nn(imn)
-        m=mm(imn)
+! always inside the fluid shell
+        f(l1:l2-1,m,n,ilnrho)=lnrho0+mpoly*log(1+beta1*(x(l2)/x(l1:l2-1)-1.))
+        f(l2,m,n,ilnrho)=lnrho_ext
 !
-        r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+      elseif (lcylindrical_coords) then
+        call stop_it('shell_lnrho: this is not consistent with cylindrical coords')
+      else
+!     densities at shell boundaries
+        lnrho_int=lnrho0+mpoly*log(1+beta1*(r_ext/r_int-1.))
+        lnrho_ext=lnrho0
+!
+        do imn=1,ny*nz
+          n=nn(imn)
+          m=mm(imn)
+!
+          r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
 !
         ! in the fluid shell
-        where (r_mn < r_ext .AND. r_mn > r_int) f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*log(1+beta1*(r_ext/r_mn-1.))
+          where (r_mn < r_ext .AND. r_mn > r_int) f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*log(1+beta1*(r_ext/r_mn-1.))
         ! outside the fluid shell
-        if (initlnrho(1)=='geo-kws') then
-          where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext
-          where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int
-        elseif (initlnrho(1)=='geo-kws-constant-T'.or.initlnrho(1)=='geo-benchmark') then
-          call potential(R=r_int,POT=pot_int)
-          call potential(R=r_ext,POT=pot_ext)
-          call potential(RMN=r_mn,POT=pot)
-          ! gamma/gamma1=1/R_{*} (for cp=1)
-          where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext+(pot_ext-pot)*exp(-lnrho_ext/mpoly)*gamma/gamma1
-          where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int+(pot_int-pot)*exp(-lnrho_int/mpoly)*gamma/gamma1
-        endif
-      enddo
+            if (initlnrho(1)=='geo-kws') then
+              where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext
+              where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int
+            elseif (initlnrho(1)=='geo-kws-constant-T'.or.initlnrho(1)=='geo-benchmark') then
+              call potential(R=r_int,POT=pot_int)
+              call potential(R=r_ext,POT=pot_ext)
+              call potential(RMN=r_mn,POT=pot)
+! gamma/gamma1=1/R_{*} (for cp=1)
+              where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext+(pot_ext-pot)*exp(-lnrho_ext/mpoly)*gamma/gamma1
+              where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int+(pot_int-pot)*exp(-lnrho_int/mpoly)*gamma/gamma1
+            endif
+        enddo
+      endif
 !
     endsubroutine shell_lnrho
 !***********************************************************************

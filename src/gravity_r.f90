@@ -237,15 +237,16 @@ module Gravity
             do n=n1,n2
               do m=m1,m2
 !
-!  rr_mn differs from system used
+!  rr_mn differs depending on the coordinate system
 !
                 call get_radial_distance(rr_sph,rr_cyl)
 !
-!  choose between spherical and cylindrical gravity
+!  choose between sphere-in-box and cylindrical gravity
 !
                 if (lcylindrical_gravity) then 
                   rr_mn=rr_cyl
                 else
+! sphere in a box
                   rr_mn=rr_sph
                 endif
 !
