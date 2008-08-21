@@ -78,7 +78,7 @@ module Timestep
         ! Step succeeded so exit
         if (errmax <= safety) exit
         ! Step didn't succeed so decrease the time step
-        print*,"Decreasing"
+!        print*,"Decreasing"
         dt_temp = safety*dt*(errmax**dt_decrease)
         ! Don't decrease the time step by more than a factor of ten
         dt = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
@@ -122,7 +122,7 @@ module Timestep
       use Cdata
       use Mpicomm, only: mpiallreduce_max
       use Equ
-
+    ! RK parameters by Cash and Karp
       real, parameter :: b21      = 0.2
       real, parameter :: b31      = 0.075
       real, parameter :: b32      = 0.225
@@ -159,13 +159,14 @@ module Timestep
       real, dimension(nx) :: scal, err
       real, intent(inout) :: errmax
       real :: errmaxs
-      integer :: j
+      integer :: j,lll
+      char (len=20) :: timestep_scaling='cons_err'
 
-      k=0.
+
       df=0.
       errmax=0.
-
       allocate(k(5,mx,my,mz,mvar))
+      k=0.
 
       call pde(f,k(1,:,:,:,:),p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
@@ -229,27 +230,47 @@ module Timestep
                             c3*k(3,l1:l2,m,n,j) + c4*k(4,l1:l2,m,n,j) + &
                             c5*k(5,l1:l2,m,n,j) + c6*df(l1:l2,m,n,j)
 
-
           ! Get the maximum error over the whole field
-!
-! Per variable error
-          scal=  ( &
-               sqrt(f(l1:l2,m,n,1)**2+f(l1:l2,m,n,2)**2)  + &
-                sqrt(k(1,l1:l2,m,n,1)**2 + k(1,l1:l2,m,n,2)**2) + &
-                1e-30)
-          errmaxs = max(maxval(abs(err/scal)),errmaxs)
-
-!
-! Per variable error
-!          scal=  ( &
-!               abs(f(l1:l2,m,n,j))  + abs(k(1,l1:l2,m,n,j)) + 1e-30)
-!          errmaxs = max(maxval(abs(err/scal)),errmaxs)
-
-! Constant fractional error
-!          errmaxs = max(maxval(abs(err/f(l1:l2,m,n,j))),errmaxs)
-      enddo; enddo; enddo
-      errmaxs=errmaxs/eps
-!
+          !
+          select case(timestep_scaling)
+          case('per_var_err')
+            !
+            ! Per variable error
+            !    
+            scal=  ( &
+                 sqrt(f(l1:l2,m,n,1)**2+f(l1:l2,m,n,2)**2)  + &
+                 sqrt(k(1,l1:l2,m,n,1)**2 + k(1,l1:l2,m,n,2)**2) + &
+                 1e-30)
+            errmaxs = max(maxval(abs(err/scal)),errmaxs)
+            !scal=  ( &
+            !     abs(f(l1:l2,m,n,j))  + abs(k(1,l1:l2,m,n,j)) + 1e-30)
+            !errmaxs = max(maxval(abs(err/scal)),errmaxs)
+          case('cons_frac_err')
+            !
+            ! Constant fractional error
+            !
+            errmaxs = max(maxval(abs(err/f(l1:l2,m,n,j))),errmaxs)
+          case('cons_err')
+            !
+            ! Constant error
+            !
+            do lll=1,nx
+              if (j.eq.ilnrho) then
+                scal(lll)=max(1e-8,abs(f(lll+l1-1,n,m,j)))            
+              else              
+                scal(lll)=max(1e-8,abs(f(lll+l1-1,n,m,j)))            
+              endif
+            enddo
+            errmaxs = max(maxval(abs(err/scal)),errmaxs)
+            !
+          endselect
+          !
+        enddo; enddo; enddo
+        !
+        ! Divide your maximum error by the required accuracy
+        !
+        errmaxs=errmaxs/eps
+        !
       call mpiallreduce_max(errmaxs,errmax)
 
   end subroutine rkck
