@@ -1,7 +1,8 @@
 $Id: README,v 1.2 2008-04-19 22:44:07 brandenb Exp $
 
-This directory contains a sole subdirectory, pencil. sourceme.sh now resents
-your $PYTHONPATH to include $PENCIL_HOME/numpy, so you can just do
+This directory contains the python subroutines for postprocessing.
+sourceme.sh now resents your $PYTHONPATH to include $PENCIL_HOME/python,
+so you can just do
 
 import pencil as pc
 
