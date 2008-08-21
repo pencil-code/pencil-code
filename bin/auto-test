@@ -27,7 +27,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # To Do:
 # - Add an option to exclude those tests that use MPI
 # - Remove directory from /var/tmp when encountering Ctl-c
-# - Treat `cvs update' as separate stage that can be `OK' or not
+# - Treat `svn update' as separate stage that can be `OK' or not
 use strict;
 use constant NOQUIET     => 0;
 use constant QUIET       => 1;
