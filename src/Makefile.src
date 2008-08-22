@@ -927,7 +927,7 @@ LD_FFTW2=
 ## Boris' MacBook Pro
 ##
 #FC=ifort #(ulysse)
-#FFLAGS=-O0 -I${HOME}/lam/include -stand f90 -assume no2underscores -vec-report0 #(ulysse)
+#FFLAGS=-O3 -I${HOME}/lam/include -stand f90 -assume no2underscores -vec-report0 #(ulysse)
 #CFLAGS=-DFUNDERSC=1 #(ulysse)
 #LD_MPI= -L${HOME}/lam/lib -llammpio -llamf77mpi -lmpi -llam -ldl #(ulysse)
 ##
