@@ -9,7 +9,7 @@ Added:
 Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 Recommended resolution:
-    128x128x128 (nu=hcond0=4.e-3 and Pr=1)
+    128x128x128 (nu=4.e-3)
 Comments:
     Spherical sound wave to check the buffer zones for absorbing outgoing waves.
     See Colonius & Ran, 2002, J. Comput. Phys., 182, 191-212 (2002)

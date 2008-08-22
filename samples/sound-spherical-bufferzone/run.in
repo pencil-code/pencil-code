@@ -25,8 +25,7 @@
   lupw_lnrho=T ! use upwinding for lnrho to avoid wiggles
 /
 &entropy_run_pars
-  hcond0=4.e-3
-  lupw_ss=T ! use upwinding for entropy to avoid wiggles
+  lupw_ss=T    ! use upwinding for entropy to avoid wiggles
 /
 &viscosity_run_pars
   nu=4.e-3
