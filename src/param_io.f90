@@ -81,7 +81,7 @@ module Param_IO
 !AB/15-Mar-07: the lcylindrical is kept to produce a warning: outdated
        lcylindrical, &
        lcylinder_in_a_box,lsphere_in_a_box,llocal_iso,init_loops,lwrite_2d,&
-       lcylindrical_gravity,border_frac,border_frac_x,border_frac_y, &
+       lcylindrical_gravity,border_frac_x,border_frac_y, &
        border_frac_z,luse_latitude, &
        lshift_datacube_x
 
@@ -122,7 +122,7 @@ module Param_IO
        lwrite_aux,onedall,pretend_lnTT,old_cdtv,lmaxadvec_sum, &
        save_lastsnap, &
        force_lower_bound,force_upper_bound,twod, &
-       border_frac,border_frac_x,border_frac_y,border_frac_z, &
+       border_frac_x,border_frac_y,border_frac_z, &
        lpoint,mpoint,npoint, &
        lpoint2,mpoint2,npoint2, &
        lrescaling_magnetic, lcylinder_in_a_box, lsphere_in_a_box,&

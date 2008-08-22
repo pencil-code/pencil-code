@@ -35,8 +35,8 @@ module BorderProfiles
 !
 !  Position-dependent quenching factor that multiplies rhs of pde
 !  by a factor that goes gradually to zero near the boundaries.
-!  border_frac is a 3-D array, separately for all three directions.
-!  border_frac=1 would affect everything between center and border.
+!  border_frac_[xyz] is a 2-D array, separately for all three directions.
+!  border_frac_[xyz]=1 would affect everything between center and border.
 !
       use Cdata
       use Messages
@@ -275,8 +275,8 @@ module BorderProfiles
 !
 !  Position-dependent quenching factor that multiplies rhs of pde
 !  by a factor that goes gradually to zero near the boundaries.
-!  border_frac is a 3-D array, separately for all three directions.
-!  border_frac=1 would affect everything between center and border.
+!  border_frac_[xyz] is a 2-D array, separately for all three directions.
+!  border_frac_[xyz]=1 would affect everything between center and border.
 !
        df(l1:l2,m,n,j) = df(l1:l2,m,n,j) &
           *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
