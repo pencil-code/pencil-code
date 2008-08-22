@@ -343,7 +343,7 @@ In a sense, we trade order for memory-efficiency.
 %%%
 \subsection{Linear Stability}
 
-Linear stability analysis for diffusion equation
+\ColEmph{Linear stability analysis} for \colEmph{diffusion equation}
 \begin{equation}
   \dfrac{\partial f}{\partial t}
   = \nu \Laplace f
@@ -384,7 +384,8 @@ Courant number: $\Courant \equiv \delta t \, \nu k^2$ (dimensionless time step).
   \Black
   Exact:                           & $A(\Courant) = \exp(-\Courant)$\\[1.5ex]
   \Black
-  Explicit Runge--Kutta:           &  $A(\Courant)$ is a polynomial.\\[1.5ex]
+  $s$-stage explicit Runge--Kutta: & $A(\Courant)$ is polynomial of degree
+                                     $s$.\\[1.5ex]
   \Black
   General (implicit) Runge--Kutta: & $A(\Courant)$ is rational function
                                      [Padé approx.\ to $\exp(-\Courant)$].
@@ -516,16 +517,16 @@ $\dfrac{\text{total effort}}{\text{full time step}}
     \Black 2nd-order 2-step Runge--Kutta & $2$    & $1$ \\
     \Black 3rd-order 3-step Runge--Kutta & $2.51$ & $0.838$ \\
   \midrule
-    \Black RKC-2, $s=2$                  & $2$    & $1$ \\
-    \Black RKC-2, $s=5$                  & $16.6$ & $3.32$ \\
-    \Black RKC-2, $s=10$                 & $64.8$ & $6.48$ \\
-    \Black RKC-2, $s=20$                 & $261$  & $13.0$ \\
-    \Black RKC-2, $s=40$                 & $1040$ & $26.1$ \\
-    \Black RKC-2, $s=45$                 & $1280$ & $28.4$ \\
+    \Black 2nd- order RKC, $s=2$         & $2$    & $1$ \\
+    \Black 2nd- order RKC, $s=5$         & $16.6$ & $3.32$ \\
+    \Black 2nd- order RKC, $s=10$        & $64.8$ & $6.48$ \\
+    \Black 2nd- order RKC, $s=20$        & $261$  & $13.0$ \\
+    \Black 2nd- order RKC, $s=40$        & $1040$ & $26.1$ \\
+    \Black 2nd- order RKC, $s=45$        & $1280$ & $28.4$ \\
     \color{gray60}
-    RKC-2, $\GreyedOut=50$         & $\GreyedOut1630$ & $\GreyedOut32.7$ \\
+    2nd- order RKC, $\GreyedOut=50$      & $\GreyedOut1630$ & $\GreyedOut32.7$ \\
     \color{gray60}
-    RKC-2, $\GreyedOut=100$        & $\GreyedOut6530$ & $\GreyedOut65.3$ \\
+    2nd- order RKC, $\GreyedOut=100$     & $\GreyedOut6530$ & $\GreyedOut65.3$ \\
   \bottomrule
   \end{tabular}
 \end{center}
@@ -703,7 +704,7 @@ This is not mentioned in the papers, but appears to be inevitable.
 
 \bigskip
 
-Still not too bad: factor of 40 is tremendous.
+Still not too bad: factor of 30 is tremendous.
 
 
 % ---------------------------------------------------------------------- %
@@ -715,7 +716,7 @@ Still not too bad: factor of 40 is tremendous.
 
 \begin{itemize}
 
-\item RKC allows an up to $\approx 40$ times larger time step, just by
+\item RKC allows an up to $\approx 30$ times larger time step, just by
   switching to\\
 {\small\color{DarkBlue}
 \begin{CodeVerbatim}[label=\BoxLabel{Makefile.local}]
