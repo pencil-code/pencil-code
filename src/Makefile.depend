@@ -21,7 +21,7 @@ GENERAL_SRC=general.f90
 MESSAGES_OBJ=messages.o
 MESSAGES_SRC=messages.f90
 #
-DERIV_OBJ=deriv.o
+$(DERIV).oBJ=$(DERIV).o
 DERIV_SRC=deriv.f90
 #
 SHARED_VARIABLES_OBJ=shared_variables.o
@@ -268,7 +268,7 @@ shock_perp.o: shock.h shock_perp.f90 shock_profile.inc $(CDATA_OBJ) $(CPARAM_OBJ
 #
 noshock.o: shock.h noshock.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(FARRAY_OBJ)
 #
-deriv.o: deriv.f90 $(CDATA_OBJ) $(MESSAGES_OBJ)
+$(DERIV).o: deriv.f90 $(CDATA_OBJ) $(MESSAGES_OBJ)
 #
 $(FARRAY_OBJ): farray.f90 $(CDATA_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ)
 #
@@ -278,7 +278,7 @@ $(BORDER_PROFILES_OBJ): $(CDATA_OBJ) $(BORDER_PROFILES_SRC) $(SUB_OBJ)
 #
 slices.o: slices.f90 $(CDATA_OBJ) $(SUB_OBJ) $(EOS_OBJ) $(PARTICLES_MAIN_OBJ) $(SHOCK_OBJ) $(INTERSTELLAR_OBJ) $(HYDRO_OBJ) $(RADIATION_OBJ) $(MAGNETIC_OBJ) $(SPECIAL_OBJ) $(CHIRAL_OBJ) $(TESTFIELD_OBJ) $(TESTFLOW_OBJ)
 #
-$(SUB_OBJ): sub.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) deriv.o $(MESSAGES_OBJ) $(GENERAL_OBJ) $(GRID_OBJ)
+$(SUB_OBJ): sub.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(DERIV).o $(MESSAGES_OBJ) $(GENERAL_OBJ) $(GRID_OBJ)
 #
 param_io.o: param_io.f90 $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(TIMESTEP_OBJ) $(TIMEAVG_OBJ) $(physics) $(PARTICLES_MAIN_OBJ) $(TESTPERTURB_OBJ)
 #
@@ -316,7 +316,7 @@ $(GLOBAL_OBJ): global.h $(GLOBAL_SRC) $(COMMON_DEPS) $(IO_OBJ)
 #
 $(VISCOSITY_OBJ): viscosity.h $(VISCOSITY_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(INTERSTELLAR_OBJ) 
 #
-$(SHEAR_OBJ): shear.h $(SHEAR_SRC) cdata.o deriv.o messages.o $(FOURIER_OBJ) $(MPICOMM_FIX_OBJ) sub.o
+$(SHEAR_OBJ): shear.h $(SHEAR_SRC) cdata.o $(DERIV).o messages.o $(FOURIER_OBJ) $(MPICOMM_FIX_OBJ) sub.o
 #
 $(GRAVITY_OBJ): gravity.h $(GRAVITY_SRC) $(COMMON_DEPS) $(GLOBAL_OBJ) $(SHARED_VARIABLES_OBJ)
 #
