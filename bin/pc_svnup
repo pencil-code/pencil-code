@@ -1,0 +1,23 @@
+#!/bin/csh
+#
+# $Id$
+#
+# Script to update the Pencil Code tree from svn.
+#
+# Update all the necessaries but nothing else, i.e. miss out the runs
+# directory. Works from anywhere in the Pencil Code tree.
+#
+echo svn up $PENCIL_HOME/src
+svn up $PENCIL_HOME/src
+echo svn up $PENCIL_HOME/samples
+svn up $PENCIL_HOME/samples
+echo svn up $PENCIL_HOME/bin
+svn up $PENCIL_HOME/bin
+echo svn up $PENCIL_HOME/lib
+svn up $PENCIL_HOME/lib
+echo svn up $PENCIL_HOME/doc
+svn up $PENCIL_HOME/doc
+echo svn up $PENCIL_HOME/idl
+svn up $PENCIL_HOME/idl
+echo svn up $PENCIL_HOME/numpy
+svn up $PENCIL_HOME/numpy
