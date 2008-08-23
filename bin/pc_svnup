@@ -7,6 +7,14 @@
 # Update all the necessaries but nothing else, i.e. miss out the runs
 # directory. Works from anywhere in the Pencil Code tree.
 #
+if ($1 == '-h' || $1 == '-help') then
+  echo "Update all the necessaries but nothing else, i.e. miss out the runs"
+  echo "directory. Works from anywhere in the Pencil Code tree."
+  echo "-h  this help menue"
+  echo "-i  update only the important directories"
+  exit 1
+endif
+#
 echo svn up $PENCIL_HOME/src
 svn up $PENCIL_HOME/src
 echo svn up $PENCIL_HOME/samples
@@ -19,5 +27,21 @@ echo svn up $PENCIL_HOME/doc
 svn up $PENCIL_HOME/doc
 echo svn up $PENCIL_HOME/idl
 svn up $PENCIL_HOME/idl
-echo svn up $PENCIL_HOME/numpy
-svn up $PENCIL_HOME/numpy
+echo svn up $PENCIL_HOME/python
+svn up $PENCIL_HOME/python
+#
+#  don't do the following directories unless
+#  we only want the important ones (pc_svnup -i)
+#
+if ($1 != '-i') then
+  echo svn up $PENCIL_HOME/license
+  svn up $PENCIL_HOME/license
+  echo svn up $PENCIL_HOME/bugs
+  svn up $PENCIL_HOME/bugs
+  echo svn up $PENCIL_HOME/dx
+  svn up $PENCIL_HOME/dx
+  echo svn up $PENCIL_HOME/misc
+  svn up $PENCIL_HOME/misc
+  echo svn up $PENCIL_HOME/utils
+  svn up $PENCIL_HOME/utils
+endif
