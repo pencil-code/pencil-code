@@ -31,7 +31,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -H, --html                -- Write output as elementary HTML (mostly <pre>)
 #   -X, --xml                 -- Write output as XML
 #   -u, --update              -- `svn update' before compiling
-#   -U, --up-d-samples        -- `svn update; svn update -d samples'
+#   -U, --up-d-samples        -- `svn update; svn update samples'
 #                                before compiling
 #   -r, --reload              -- Do `touch RELOAD' after every time step
 #   -s, --short               -- Use short directory names
@@ -203,7 +203,7 @@ sub build_remote_cmd {
     my $remcmd = "cd $pencil_home";
     if ($update)            { $remcmd .= "; svn -q update" };
     if ($UPDATE)            { $remcmd .=
-                                "; svn -q update -d samples bin"
+                                "; svn -q update samples bin"
                             };
     $remcmd .= "; env PENCIL_HOME=$pencil_home ./bin/auto-test";
     $remcmd .= " --time";
