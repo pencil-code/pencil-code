@@ -31,7 +31,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -H, --html                -- Write output as elementary HTML (mostly <pre>)
 #   -X, --xml                 -- Write output as XML
 #   -u, --update              -- `svn update' before compiling
-#   -U, --up-d-samples        -- `svn update; svn update samples'
+#   -U, --up-samples          -- `svn update; svn update samples'
 #                                before compiling
 #   -r, --reload              -- Do `touch RELOAD' after every time step
 #   -s, --short               -- Use short directory names
@@ -77,7 +77,7 @@ GetOptions(\%opts,
 	       -H   --html
 	       -X   --xml
 	       -u   --update
-	       -U   --up-d-samples
+	       -U   --up-samples
 	       -r   --reload
 	       -s   --short
 	       -c   --clean
@@ -96,13 +96,13 @@ die '$Id: pencil-test,v 1.40 2008-07-11 05:02:53 dobler Exp $ ' . "\n"
 die usage() if    ($opts{'h'} || $opts{'help'});
 my $debug       = (              $opts{'debug'}       || 0 );
 my $html        = ($opts{'H'} || $opts{'html'}        || 0 );
-my $local       = ($opts{'l'} || $opts{'cocal'}       || 0 );
+my $local       = ($opts{'l'} || $opts{'local'}       || 0 );
 my $clean       = ($opts{'c'} || $opts{'clean'}       || 0 );
 my $pencil_home = ($opts{'D'} || $opts{'pencil-home'} || '$PENCIL_HOME' );
 my $nice        = ($opts{'N'} || $opts{'nice'}        || 0 );
 my $infofile    = ($opts{'i'} || $opts{'infofile'}    || '' );
 my $update      = ($opts{'u'} || $opts{'update'}      || 0 );
-my $UPDATE      = ($opts{'U'} || $opts{'up-d-samples'}|| 0 );
+my $UPDATE      = ($opts{'U'} || $opts{'up-samples'}  || 0 );
 my $reload      = ($opts{'r'} || $opts{'reload'}      || 0 );
 my $short       = ($opts{'s'} || $opts{'short'}       || 0 );
 my $tag_stable  = (              $opts{'tag-stable'}  || 0 );
