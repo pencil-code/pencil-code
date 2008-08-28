@@ -205,9 +205,10 @@ module Boundcond
                 case('sfr')
                   ! BCX_DOC: stress-free boundary condition for spherical coordinate system. 
                   call bc_set_sfree_x(f,topbot,j)
-                case('ovf')
-                  ! BCX_DOC: Open-vertical field bc for spherical coordinate system. 
-                  call bc_set_ovf_x(f,topbot,j)
+                case('nfr')
+                  ! BCX_DOC: Normal-field bc for spherical coordinate system.
+                  ! BCX_DOC: Some people call this the ``(angry) hedgehog bc''.
+                  call bc_set_nfr_x(f,topbot,j)
                 case('pfc')
                   !BCX_DOC: perfect-conductor in spherical coordinate: $d/dr( A_r) + 2/r = 0$ . 
                   call bc_set_pfc_x(f,topbot,j)
@@ -347,9 +348,10 @@ module Boundcond
               case('sfr')
                   ! BCY_DOC: stress-free boundary condition for spherical coordinate system. 
                 call bc_set_sfree_y(f,topbot,j)
-              case('ovf')
-                  ! BCY_DOC: open-vertical field bc for spherical coordinate system. 
-                call bc_set_ovf_y(f,topbot,j)
+              case('nfr')
+                  ! BCY_DOC: Normal-field bc for spherical coordinate system.
+                  ! BCY_DOC: Some people call this the ``(angry) hedgehog bc''.
+                call bc_set_nfr_y(f,topbot,j)
               case('pfc')
                   !BCY_DOC: perfect conducting boundary condition along $\theta$ boundary  
                 call bc_set_pfc_y(f,topbot,j)
@@ -1487,8 +1489,9 @@ module Boundcond
 !
     endsubroutine bc_set_pfc_x
 !***********************************************************************
-    subroutine bc_set_ovf_x(f,topbot,j)
-! Open-vertical field boundary condition for spherical coordinate system. 
+    subroutine bc_set_nfr_x(f,topbot,j)
+! Normal-field (or angry-hedgehog) boundary condition for spherical
+! coordinate system. 
 ! d_r(A_{\theta}) = -A_{\theta}/r  with A_r = 0 sets B_{r} to zero
 ! in spherical coordinate system. 
 ! (compare with next subroutine sfree )
@@ -1514,11 +1517,11 @@ module Boundcond
         f(l2+3,:,:,j)= f(l2-3,:,:,j) -  60.*f(l1,:,:,j)*dx/(x(l2))
 
       case default
-        call warning('bc_set_ovf_x',topbot//" should be `top' or `bot'")
+        call warning('bc_set_nfr_x',topbot//" should be `top' or `bot'")
 
       endselect
 !
-    endsubroutine bc_set_ovf_x
+    endsubroutine bc_set_nfr_x
 ! **********************************************************************
     subroutine bc_set_sfree_x(f,topbot,j)
 ! Stress-free boundary condition for spherical coordinate system. 
@@ -1616,7 +1619,7 @@ module Boundcond
 !
     endsubroutine bc_set_jethat_x
 ! **********************************************************************
-    subroutine bc_set_ovf_y(f,topbot,j)
+    subroutine bc_set_nfr_y(f,topbot,j)
 ! Stress-free boundary condition for spherical coordinate system. 
 ! d_{\theta}(A_{\phi}) = -A_{\phi}cot(\theta)/r  with A_{\theta} = 0 sets 
 ! B_{\theta}=0 in spherical polar
@@ -1646,11 +1649,11 @@ module Boundcond
         f(:,m2+3,:,j)= f(:,m2-3,:,j) -  60.*dy*cottheta*f(:,m2,:,j)
 
       case default
-        call warning('bc_set_ovf_y',topbot//" should be `top' or `bot'")
+        call warning('bc_set_nfr_y',topbot//" should be `top' or `bot'")
 
       endselect
 !
-    endsubroutine bc_set_ovf_y
+    endsubroutine bc_set_nfr_y
 ! **********************************************************************
     subroutine bc_set_sfree_y(f,topbot,j)
 ! Stress-free boundary condition for spherical coordinate system. 
