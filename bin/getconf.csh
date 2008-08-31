@@ -1203,7 +1203,7 @@ else if (($hn =~ *pastel*) || ($hn =~ *violette*)) then
   endif
   set mpirun = 'orterun'
 
-else if (($hn =~ shal.ast.obs-mip.fr) || ($hn =~ yang) || ($hn =~ n[25-28]*)) then
+else if (($hn =~ shal.ast.obs-mip.fr) || ($hn =~ yang) || ($hn =~ n[25-28]* || ($hn =~ ulysse))) then
     set mpirun = 'orterun'
 
 else

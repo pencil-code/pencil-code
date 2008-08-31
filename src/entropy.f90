@@ -65,7 +65,7 @@ module Entropy
   real :: cs0hs,H0hs,rho0hs
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
-  logical :: lheatc_Kconst=.false.,lheatc_simple=.false.
+  logical :: lheatc_Kprof=.false.,lheatc_Kconst=.false.
   logical, target :: lheatc_chiconst=.false.
   logical :: lheatc_tensordiffusion=.false.,lheatc_spitzer=.false.
   logical :: lheatc_hubeny=.false.
@@ -506,8 +506,8 @@ module Entropy
 !
 !  Initialize heat conduction.
 !
+      lheatc_Kprof=.false.
       lheatc_Kconst=.false.
-      lheatc_simple=.false.
       lheatc_chiconst=.false.
       lheatc_tensordiffusion=.false.
       lheatc_spitzer=.false.
@@ -524,12 +524,12 @@ module Entropy
       if (lroot) print*,'initialize_entropy: nheatc_max,iheatcond=',nheatc_max,iheatcond(1:nheatc_max)
       do i=1,nheatc_max
         select case (iheatcond(i))
-        case('K-profile', 'K-const')
-          lheatc_Kconst=.true.
+        case('K-profile')
+          lheatc_Kprof=.true.
           if (lroot) print*, 'heat conduction: K-profile'
-        case('simple')
-          lheatc_simple=.true.
-          if (lroot) print*, 'heat conduction: simple'
+        case('K-const')
+          lheatc_Kconst=.true.
+          if (lroot) print*, 'heat conduction: K=cte'
         case('chi-const')
           lheatc_chiconst=.true.
           if (lroot) print*, 'heat conduction: constant chi'
@@ -568,7 +568,7 @@ module Entropy
 !
 !  A word of warning...
 !
-      if (lheatc_Kconst .and. hcond0==0.0) then
+      if (lheatc_Kprof .and. hcond0==0.0) then
         call warning('initialize_entropy', 'hcond0 is zero!')
       endif
       if (lheatc_chiconst .and. chi==0.0) then
@@ -577,7 +577,7 @@ module Entropy
       if (all(iheatcond=='nothing') .and. hcond0/=0.0) then
         call warning('initialize_entropy', 'No heat conduction, but hcond0 /= 0')
       endif
-      if (lheatc_simple .and. Kbot==0.0) then
+      if (lheatc_Kconst .and. Kbot==0.0) then
         call warning('initialize_entropy','Kbot is zero!')
       endif
       if ((lheatc_spitzer.or.lheatc_corona) .and. (Kgpara==0.0 .or. Kgperp==0.0) ) then
@@ -1747,7 +1747,7 @@ module Entropy
       use Cdata
       use EquationOfState, only: beta_glnrho_scaled
 !
-      if (lheatc_simple .or. lheatc_chiconst .or. lheatc_Kconst .or. &
+      if (lheatc_Kconst .or. lheatc_chiconst .or. lheatc_Kprof .or. &
           tau_cor>0) lpenc_requested(i_cp1)=.true.
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
@@ -1787,12 +1787,12 @@ module Entropy
           lpenc_requested(i_r_mn)=.true.
         endif
       endif
-      if (lheatc_simple) then
+      if (lheatc_Kconst) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
       endif
-      if (lheatc_Kconst) then
+      if (lheatc_Kprof) then
         if (hcond0/=0) then
           lpenc_requested(i_rho1)=.true.
           lpenc_requested(i_glnTT)=.true.
@@ -2090,8 +2090,8 @@ module Entropy
 !
 !  Thermal conduction delegated to different subroutines.
 !
-      if (lheatc_Kconst)   call calc_heatcond(f,df,p)
-      if (lheatc_simple)   call calc_heatcond_simple(df,p)
+      if (lheatc_Kprof)    call calc_heatcond(f,df,p)
+      if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_shock)    call calc_heatcond_shock(df,p)
       if (lheatc_hyper3ss) call calc_heatcond_hyper3(df,p)
@@ -2476,7 +2476,7 @@ module Entropy
 !
     endsubroutine calc_heatcond_shock
 !***********************************************************************
-    subroutine calc_heatcond_simple(df,p)
+    subroutine calc_heatcond_constK(df,p)
 !
 !  heat conduction
 !
@@ -2500,7 +2500,7 @@ module Entropy
 !
       hcond=Kbot
       if (headtt) then
-        print*,'calc_heatcond_simple: hcond=', maxval(hcond)
+        print*,'calc_heatcond_constK: hcond=', maxval(hcond)
       endif
 !
 !  Heat conduction
@@ -2532,7 +2532,7 @@ module Entropy
 !  add heat conduction to entropy equation
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
-      if (headtt) print*,'calc_heatcond_simple: added thdiff'
+      if (headtt) print*,'calc_heatcond_constK: added thdiff'
 !
 !  check maximum diffusion from thermal diffusion
 !  With heat conduction, the second-order term for entropy is
@@ -2545,7 +2545,7 @@ module Entropy
         endif
       endif
 !
-    endsubroutine calc_heatcond_simple
+    endsubroutine calc_heatcond_constK
 !***********************************************************************
     subroutine calc_heatcond_spitzer(df,p)
 !

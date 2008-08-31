@@ -28,7 +28,7 @@
 /
 &entropy_run_pars
   Luminosity=0., wheat=0.1, cool=15., wcool=0.2,
-  iheatcond='K-const', hcond0=8.e-3
+  iheatcond='K-profile', hcond0=8.e-3
   lupw_ss=T ! use upwinding for entropy to avoid wiggles
 /
 &viscosity_run_pars
