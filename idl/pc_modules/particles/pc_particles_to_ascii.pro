@@ -6,19 +6,30 @@
 ;  Author: Anders Johansen
 ;
 pro pc_particles_to_ascii, xxp, filename=filename, npar=npar, $
+    xshift=xshift, yshift=yshift, zshift=zshift, deltay=deltay, $
     lwrite_tauf=lwrite_tauf, datadir=datadir
 ;
 ;  Default values.
 ;
 default, filename, './particles.dat'
 default, npar, n_elements(xxp[*,0])
+default, xshift, 0.0
+default, yshift, 0.0
+default, zshift, 0.0
+default, deltay, 0.0
 default, lwrite_tauf, 0
 default, datadir, './data'
+;
+;  Define box size
+;
+pc_read_param, obj=par, datadir=datadir, /quiet
+x0=par.xyz0[0] & x1=par.xyz1[0] & Lx=par.Lxyz[0]
+y0=par.xyz0[1] & y1=par.xyz1[1] & Ly=par.Lxyz[1]
+z0=par.xyz0[2] & z1=par.xyz1[2] & Lz=par.Lxyz[2]
 ;
 ;  Read friction time from parameter files.
 ;
 if (lwrite_tauf) then begin
-  pc_read_param, obj=par, datadir=datadir, /quiet
   pc_read_pdim, obj=pdim, datadir=datadir, /quiet
   if (max(par.tausp_species) eq 0.0) then begin
 ;
@@ -47,6 +58,45 @@ openw, 1, filename
 ;  Loop over particles.
 ;
 for ipar=0L,npar-1 do begin
+  xxpar=xxp[ipar,*]
+;
+;  Shift in the x-direction.
+;
+  if (xshift ne 0.0) then begin
+    xxpar[0]=xxpar[0]+xshift
+    if (xxpar[0] lt x0) then begin
+      xxpar[0]=xxpar[0]+Lx
+      if (deltay ne 0.0) then begin
+        xxpar[1]=xxpar[1]-deltay
+        if (xxpar[1] lt y0) then xxpar[1]=xxpar[1]+Ly
+        if (xxpar[1] gt y1) then xxpar[1]=xxpar[1]-Ly
+      endif
+    endif
+    if (xxpar[0] gt x1) then begin
+      xxpar[0]=xxpar[0]-Lx
+      if (deltay ne 0.0) then begin
+        xxpar[1]=xxpar[1]+deltay
+        if (xxpar[1] lt y0) then xxpar[1]=xxpar[1]+Ly
+        if (xxpar[1] gt y1) then xxpar[1]=xxpar[1]-Ly
+      endif
+    endif
+  endif
+;
+;  Shift in the y-direction.
+;
+  if (yshift ne 0.0) then begin
+    xxpar[1]=xxpar[1]+yshift
+    if (xxpar[1] lt y0) then xxpar[1]=xxpar[1]+Ly
+    if (xxpar[1] gt y1) then xxpar[1]=xxpar[1]-Ly
+  endif
+  if (zshift ne 0.0) then begin
+    xxpar[2]=xxpar[2]+zshift
+    if (xxpar[2] lt z0) then xxpar[2]=xxpar[2]+Lz
+    if (xxpar[2] gt z1) then xxpar[2]=xxpar[2]-Lz
+  endif
+;
+;  Write particle friction time to file as well.
+;
   if (lwrite_tauf) then begin
     if (max(par.tausp_species) eq 0.0) then begin
       tauf=par.tausp
@@ -57,9 +107,9 @@ for ipar=0L,npar-1 do begin
       endwhile
       tauf=par.tausp_species[ispec]
     endelse
-    printf, 1, xxp[ipar,*], tauf, format='(4f9.4)'
+    printf, 1, xxpar, tauf, format='(4f9.4)'
   endif else begin
-    printf, 1, xxp[ipar,*], format='(3f9.4)'
+    printf, 1, xxpar, format='(3f9.4)'
   endelse
 endfor
 ;
