@@ -89,6 +89,9 @@ for ipar=0L,npar-1 do begin
     if (xxpar[1] lt y0) then xxpar[1]=xxpar[1]+Ly
     if (xxpar[1] gt y1) then xxpar[1]=xxpar[1]-Ly
   endif
+;
+;  Shift in the z-direction.
+;
   if (zshift ne 0.0) then begin
     xxpar[2]=xxpar[2]+zshift
     if (xxpar[2] lt z0) then xxpar[2]=xxpar[2]+Lz
