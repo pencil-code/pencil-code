@@ -447,7 +447,7 @@ module Entropy
           else
             lmultilayer=.false.  ! to ensure that hcond=cte
             TT_ext=T0            ! T0 defined in start.in for geodynamo
-            if(lspherical_coords)then
+            if(coord_system=='spherical')then
               r_ext=x(l2)
               r_int=x(l1)
             else
@@ -2867,7 +2867,7 @@ module Entropy
 !
 !  Vertical gravity determines some heat/cool models.
 !
-      if (headtt) print*, 'calc_heat_cool: lgravz, lgravr=', lgravz, lgravr
+      if (headtt) print*, 'calc_heat_cool: lgravz, lgravr= lgravx= lspherical_coords=', lgravz, lgravr,lgravx,lspherical_coords
 !
 !  Initialize heating/cooling term.
 !
@@ -2973,6 +2973,62 @@ module Entropy
             prof = 1 - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
             heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
           endif
+!
+        case default
+          write(unit=errormsg,fmt=*) &
+               'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
+          call fatal_error('calc_heat_cool',errormsg)
+        endselect
+      endif
+!
+!  Spherical gravity in spherical coordinate case: 
+!           heat at centre, cool outer layers.
+!
+      if (lgravx.and.lspherical_coords) then
+        r_ext=x(l1)
+        r_int=x(l2)
+!  normalised central heating profile so volume integral = 1
+        if (nzgrid == 1) then
+          prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
+        else
+          prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
+        endif
+        heat = luminosity*prof
+        if (headt .and. lfirst .and. ip<=9) &
+          call output_pencil(trim(directory)//'/heat.dat',heat,1)
+!
+!  surface cooling: entropy or temperature
+!  cooling profile; maximum = 1
+!
+!       prof = 0.5*(1+tanh((r_mn-1.)/wcool))
+        if (rcool==0.) rcool=r_ext
+        prof = step(x(l1:l2),rcool,wcool)
+ 
+!
+!  pick type of cooling
+!
+        select case(cooltype)
+        case ('shell')          !  heating/cooling at shell boundaries
+!
+!  possibility of a latitudinal heating profile
+!  T=T0-(2/3)*delT*P2(costheta), for testing Taylor-Proudman theorem
+!  Note that P2(x)=(1/2)*(3*x^2-1).
+!
+          if (deltaT_poleq/=0.) then
+            if (headtt) print*,'calc_heat_cool: deltaT_poleq=',deltaT_poleq
+            if (headtt) print*,'p%rcyl_mn=',p%rcyl_mn
+            if (headtt) print*,'p%z_mn=',p%z_mn
+            theta_profile=(1./3.-(p%rcyl_mn/p%z_mn)**2)*deltaT_poleq
+            prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
+            heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
+            prof = 1 - step(p%r_mn,r_int,wcool)  ! inner heating/cooling step
+            heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
+          else
+            prof = step(x(l1:l2),r_ext,wcool)     ! outer heating/cooling step
+            heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
+            prof = 1 - step(x(l1:l2),r_int,wcool) ! inner heating/cooling step
+            heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
+            endif
 !
         case default
           write(unit=errormsg,fmt=*) &

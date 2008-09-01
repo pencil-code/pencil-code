@@ -152,6 +152,7 @@ module Gravity
 !
 !  Different x-gravity profiles
 !
+      if(gravx/=0) lgravx=.true.
       select case (gravx_profile)
 
       case('zero')
@@ -185,6 +186,7 @@ module Gravity
         if (lroot) print*,'initialize_gravity: kepler x-grav, gravx=',gravx
         gravx_xpencil=-gravx/x**2
         potx_xpencil=-gravx/x
+        g0=gravx
 
       case default
         if (lroot) print*, &

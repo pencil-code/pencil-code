@@ -391,6 +391,9 @@ module Register
         endif
         r2_mn=r1_mn**2
 !
+        r_int=x(l1)
+        r_ext=x(l2)
+!
 !  calculate sin(theta)
 !
         sinth=sin(y)
