@@ -15,7 +15,7 @@ pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
     colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, $
-    readpar=readpar, debug=debug, quiet=quiet
+    readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;;
@@ -57,6 +57,7 @@ default, bartitle, ''
 default, xshift, 0
 default, timefix, 0
 default, readpar, 0
+default, readgrid, 0
 default, debug, 0
 default, quiet, 0
 ;;
@@ -75,7 +76,18 @@ pc_set_precision, dim=dim, /quiet
 ;;  Need to know box size for proper axes and for shifting the shearing
 ;;  frame.
 ;;
-if (readpar or (xshift ne 0)) then pc_read_param, obj=par, datadir=datadir, /quiet
+if (readpar) then pc_read_param, obj=par, datadir=datadir, /quiet
+if (readgrid) then begin
+  pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet
+  xax=grid.x & yax=grid.y
+endif
+if (xshift ne 0) then begin
+  if (not readpar) then pc_read_param, obj=par, datadir=datadir, /quiet
+  if (not readgrid) then begin
+    pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet
+    xax=grid.x & yax=grid.y
+  endif
+endif
 ;;
 ;;  Some z-averages are erroneously calculated together with time series
 ;;  diagnostics. The proper time is thus found in time_series.dat.
@@ -191,14 +203,13 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
 ;;  Shift plane in the radial direction.
 ;;
     if (xshift ne 0) then begin
-      for ivar=1,nvarall-1 do begin
+      for ivar=0,nvarall-1 do begin
         array[*,*,ivar]=shift(array[*,*,ivar],xshift,0)
       endfor
 ;;
 ;;  With shear we need to displace part of the plane.
 ;;
       if (par.Sshear ne 0.0) then begin
-        dy=yax[1]-yax[0]
 ;;  Some z-averages are erroneously calculated together with time series
 ;;  diagnostics. The proper time is thus found in time_series.dat.
         if (timefix) then begin
@@ -210,14 +221,14 @@ while ( not eof(file) and (nit eq 0 or it lt nit) ) do begin
         endif else begin
           deltay=(-par.Sshear*t*par.Lxyz[0]) mod par.Lxyz[1]
         endelse
-        deltay_int=fix(deltay/dy)
+        deltay_int=fix(deltay/grid.dy)
         if (debug) then print, 'it, t, deltay, deltay_int, deltay_frac', $
-            it, t, deltay, deltay_int, deltay/dy-deltay_int
-        for ivar=1,nvarall-1 do begin
+            it, t, deltay, deltay_int, deltay/grid.dy-deltay_int
+        for ivar=0,nvarall-1 do begin
           array2=array[*,*,ivar]
           for ix=0,xshift-1 do begin
             array2[ix,*]=shift(reform(array2[ix,*]),deltay_int)
-            array2[ix,*]=pc_shift_6th(reform(array2[ix,*]),yax,deltay-deltay_int*dy)
+            array2[ix,*]=pc_shift_6th(reform(array2[ix,*]),grid.y,deltay-deltay_int*grid.dy)
           endfor
 ;;
 ;;  Comove with central grid point.
