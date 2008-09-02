@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.538 2008-08-19 09:09:28 brandenb Exp $
+! $Id$
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -449,7 +449,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.538 2008-08-19 09:09:28 brandenb Exp $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
