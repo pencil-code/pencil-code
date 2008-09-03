@@ -1029,10 +1029,12 @@ else if ($hn =~ comp*) then
   setenv SCRATCH_DIR /var/tmp/$USER
 
 else if ($hostname =~ *huygens.sara.nl*) then
-  echo "huygens cluster in Amsteradam"
-  set local_disc = 1
+  echo "huygens cluster in Amsterdam"
+#  set local_disc = 1
+#  set one_local_disc = 1
+#  set masternode = p6012
+  set local_disc = 0
   set one_local_disc = 1
-  set masternode = p6012
   set mpirun = mpiexec
   set npops = ''
   setenv SSH "ssh -q -x"
