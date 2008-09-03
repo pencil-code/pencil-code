@@ -176,6 +176,20 @@ module Fourier
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
+    subroutine fourier_transform_y_y(a_re,a_im,linv)
+!
+!  Subroutine to do Fourier transform of a 1-D array under MPI.
+!
+      real, dimension(ny) :: a_re, a_im
+      logical, optional :: linv
+!
+      call fatal_error('fourier_transform_y_y', &
+          'this sub is not available in nofourier.f90!')
+!
+      if (NO_WARN) print*, a_re, a_im, linv
+!
+    endsubroutine fourier_transform_y_y
+!***********************************************************************
     subroutine fourier_shift_yz_y(a_re,shift_y)
 !
 !  Performs a periodic shift in the y-direction of an entire y-z plane by

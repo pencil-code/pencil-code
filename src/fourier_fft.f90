@@ -112,6 +112,20 @@ module Fourier
 !
     endsubroutine fourier_transform_xy_xy
 !***********************************************************************
+    subroutine fourier_transform_y_y(a_re,a_im,linv)
+!
+!  Subroutine to do Fourier transform of a 1-D array under MPI.
+!
+      real, dimension(ny) :: a_re, a_im
+      logical, optional :: linv
+!
+      call fatal_error('fourier_transform_y_y', &
+          'this sub is not available in fourier_fft.f90!')
+!
+      if (NO_WARN) print*, a_re, a_im, linv
+!
+    endsubroutine fourier_transform_y_y
+!***********************************************************************
     subroutine fourier_transform_xy_xy_other(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform in the x- and y-directions

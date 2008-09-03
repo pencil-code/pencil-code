@@ -393,7 +393,7 @@ module Fourier
 !
 !  Transform x-direction back to real space
 !
-        if (lroot.and.ip<10) print*, 'fourier_transform_xy: doing FFTpack in x'
+        if (lroot.and.ip<10) print*, 'fourier_transform_x: doing FFTpack in x'
         do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftb(nx,ax,wsavex)
@@ -1075,30 +1075,30 @@ module Fourier
       real, dimension(ny) :: deltay_x
       integer :: l,m,ibox
       logical :: lforward
-
+!
       if (mod(nxgrid,nygrid)/=0) then
-        call fatal_error('fourier_transform_xy', &
+        call fatal_error('fourier_transform_xy_xy', &
                          'nxgrid needs to be an integer multiple of nygrid.')
       endif
-
+!
       lforward=.true.
       if (present(linv)) then
         if (linv) lforward=.false.
       endif
-
+!
       if (lshear) deltay_x=-deltay*(x(m1+ipy*ny:m2+ipy*ny)-(x0+Lx/2))/Lx
-
+!
       if (lforward) then
-
+!
         if (nygrid>1) then
 !
 !  Transform y-direction.
 !
           call transp_xy(a_re)
           call transp_xy(a_im)
-
+!
           call cffti(nygrid,wsavey)
-
+!
           do ibox=0,nxgrid/nygrid-1
             iy=ibox*nygrid
             do l=1,ny
@@ -1109,53 +1109,53 @@ module Fourier
               a_im(iy+1:iy+nygrid,l)=aimag(ay)
             enddo
           enddo
-
+!
           call transp_xy(a_re)
           call transp_xy(a_im)
-
+!
         endif
-
+!
         if (nxgrid>1) then
 !
 !  Transform x-direction.
 !
           call cffti(nxgrid,wsavex)
-
+!
           do m=1,ny
             ax=cmplx(a_re(:,m),a_im(:,m))
             call cfftf(nxgrid,ax,wsavex)
             a_re(:,m)=real(ax)
             a_im(:,m)=aimag(ax)
           enddo
-
+!
         endif
-
+!
       else
-
+!
         if (nxgrid>1) then
 !
 !  Transform x-direction back.
 !
           call cffti(nxgrid,wsavex)
-
+!
           do m=1,ny
             ax=cmplx(a_re(:,m),a_im(:,m))
             call cfftb(nxgrid,ax,wsavex)
             a_re(:,m)=real(ax)
             a_im(:,m)=aimag(ax)
           enddo
-
+!
         endif
-
+!
         if (nygrid>1) then
 !
 !  Transform y-direction back.
 !
           call transp_xy(a_re)
           call transp_xy(a_im)
-
+!
           call cffti(nygrid,wsavey)
-
+!
           do ibox=0,nxgrid/nygrid-1
             iy=ibox*nygrid
             do l=1,ny
@@ -1166,12 +1166,12 @@ module Fourier
               a_im(iy+1:iy+nygrid,l)=aimag(ay)
             enddo
           enddo
-
+!
           call transp_xy(a_re)
           call transp_xy(a_im)
-
+!
         endif
-
+!
       endif
 !
 !  Normalize
@@ -1180,7 +1180,7 @@ module Fourier
         a_re=a_re/(nxgrid*nygrid)
         a_im=a_im/(nxgrid*nygrid)
       endif
-
+!
     endsubroutine fourier_transform_xy_xy
 !***********************************************************************
     subroutine fourier_transform_xy_xy_other(a_re,a_im,linv)
@@ -1304,6 +1304,129 @@ module Fourier
       endif
 !
     endsubroutine fourier_transform_xy_xy_other
+!***********************************************************************
+    subroutine fourier_transform_y_y(a_re,a_im,linv)
+!
+!  Subroutine to do Fourier transform of a 1-D array under MPI. Not very
+!  efficient since the ipy=0 processors do all the work.
+!
+!   3-sep-2008/anders: adapted from fourier_transform_xy_xy
+!
+      use Mpicomm, only: mpirecv_real, mpisend_real
+!
+      real, dimension(ny) :: a_re, a_im
+      logical, optional :: linv
+!
+      real, dimension(nygrid) :: a_re_full, a_im_full
+      complex, dimension(nygrid) :: ay
+      real, dimension(4*nygrid+15) :: wsavey
+      integer :: ipy_send
+      logical :: lforward
+!
+      lforward=.true.
+      if (present(linv)) then
+        if (linv) lforward=.false.
+      endif
+!
+      if (lforward) then
+!
+        if (nygrid>1) then
+!
+!  Transform y-direction.
+!
+          if (ipy==0) then
+            a_re_full(1:ny)=a_re
+            a_im_full(1:ny)=a_im
+            do ipy_send=1,nprocy-1
+              call mpirecv_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
+                  ny,iproc+ipy_send,111)
+              call mpirecv_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
+                  ny,iproc+ipy_send,222)
+            enddo
+          else
+            call mpisend_real(a_re,ny,iproc-ipy,111)
+            call mpisend_real(a_im,ny,iproc-ipy,222)
+          endif
+!
+          if (ipy==0) then
+!
+            call cffti(nygrid,wsavey)
+!
+            ay=cmplx(a_re_full,a_im_full)
+            call cfftf(nygrid,ay,wsavey)
+            a_re_full=real(ay)
+            a_im_full=aimag(ay)
+!
+            a_re=a_re_full(1:ny)
+            a_im=a_im_full(1:ny)
+!
+            do ipy_send=1,nprocy-1
+              call mpisend_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
+                  ny,iproc+ipy_send,111)
+              call mpisend_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
+                  ny,iproc+ipy_send,222)
+            enddo
+          else
+            call mpirecv_real(a_re,ny,iproc-ipy,111)
+            call mpirecv_real(a_im,ny,iproc-ipy,222)
+          endif
+!
+        endif
+!
+      else
+!
+!  Transform y-direction back.
+!
+        if (nygrid>1) then
+          if (ipy==0) then
+            a_re_full(1:ny)=a_re
+            a_im_full(1:ny)=a_im
+            do ipy_send=1,nprocy-1
+              call mpirecv_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
+                  ny,iproc+ipy_send,111)
+              call mpirecv_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
+                  ny,iproc+ipy_send,222)
+            enddo
+          else
+            call mpisend_real(a_re,ny,iproc-ipy,111)
+            call mpisend_real(a_im,ny,iproc-ipy,222)
+          endif
+!
+          if (ipy==0) then
+!
+            call cffti(nygrid,wsavey)
+!
+            ay=cmplx(a_re_full,a_im_full)
+            call cfftb(nygrid,ay,wsavey)
+            a_re_full=real(ay)
+            a_im_full=aimag(ay)
+!
+            a_re=a_re_full(1:ny)
+            a_im=a_im_full(1:ny)
+!
+            do ipy_send=1,nprocy-1
+              call mpisend_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
+                  ny,iproc+ipy_send,111)
+              call mpisend_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
+                  ny,iproc+ipy_send,222)
+            enddo
+          else
+            call mpirecv_real(a_re,ny,iproc-ipy,111)
+            call mpirecv_real(a_im,ny,iproc-ipy,222)
+          endif
+!
+        endif
+!
+      endif
+!
+!  Normalize
+!
+      if (lforward) then
+        a_re=a_re/nygrid
+        a_im=a_im/nygrid
+      endif
+!
+    endsubroutine fourier_transform_y_y
 !***********************************************************************
     subroutine fourier_shift_yz_y(a_re,shift_y)
 !
