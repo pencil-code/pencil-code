@@ -3474,7 +3474,7 @@ module Boundcond
 !
 !  10-oct-06/tobi: Coded
 !
-      use Fourier, only: fourier_transform_xy_xy
+      use Fourier, only: fourier_transform_xy_xy, fourier_transform_y_y
       use Mpicomm, only: communicate_bc_aa_pot
 
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -3488,8 +3488,13 @@ module Boundcond
 !
 !  Get local wave numbers
 !
-      kx = spread(kx_fft(ipx*nx+1:ipx*nx+nx),2,ny)
-      ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
+      if (nxgrid>1) then
+        kx = spread(kx_fft(ipx*nx+1:ipx*nx+nx),2,ny)
+        ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
+      else
+        kx(1,:) = 0.0
+        ky(1,:) = ky_fft(ipy*ny+1:ipy*ny+ny)
+      endif
 !
 !  Calculate 1/k^2, zero mean
 !
@@ -3513,7 +3518,11 @@ module Boundcond
         do i=iax,iaz
           tmp_re = f(l1:l2,m1:m2,n1,i)
           tmp_im = 0.0
-          call fourier_transform_xy_xy(tmp_re,tmp_im)
+          if (nxgrid>1) then
+            call fourier_transform_xy_xy(tmp_re,tmp_im)
+          else
+            call fourier_transform_y_y(tmp_re,tmp_im)
+          endif
           aa_re(:,:,i) = tmp_re
           aa_im(:,:,i) = tmp_im
         enddo
@@ -3525,7 +3534,11 @@ module Boundcond
           do i=iax,iaz
             tmp_re = fac*aa_re(:,:,i)
             tmp_im = fac*aa_im(:,:,i)
-            call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
+            if (nxgrid>1) then
+              call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
+            else
+              call fourier_transform_y_y(tmp_re,tmp_im,linv=.true.)
+            endif
             f(l1:l2,m1:m2,n1-j,i) = tmp_re
           enddo
         enddo
@@ -3543,7 +3556,11 @@ module Boundcond
         do i=iax,iaz
           tmp_re = f(l1:l2,m1:m2,n2,i)
           tmp_im = 0.0
-          call fourier_transform_xy_xy(tmp_re,tmp_im)
+          if (nxgrid>1) then
+            call fourier_transform_xy_xy(tmp_re,tmp_im)
+          else
+            call fourier_transform_y_y(tmp_re,tmp_im)
+          endif
           aa_re(:,:,i) = tmp_re
           aa_im(:,:,i) = tmp_im
         enddo
@@ -3555,7 +3572,11 @@ module Boundcond
           do i=iax,iaz
             tmp_re = fac*aa_re(:,:,i)
             tmp_im = fac*aa_im(:,:,i)
-            call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
+            if (nxgrid>1) then
+              call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
+            else
+              call fourier_transform_y_y(tmp_re,tmp_im,linv=.true.)
+            endif
             f(l1:l2,m1:m2,n2+j,i) = tmp_re
           enddo
         enddo
